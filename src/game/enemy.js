@@ -171,6 +171,150 @@ export function defineEnemy(name, spec) {
 }
 
 // --------------------------------------------------------------------------
+// Bosses
+// --------------------------------------------------------------------------
+//
+// BOSS DEFINITION FORMAT (contract for boss data files):
+//
+//   defineBoss('gohmaraq', {
+//     hp: 30, damage: 4, pal: 'enemyr',
+//     w: 32, h: 32, hb: { x: 3, y: 8, w: 26, h: 22 },
+//     frames: ['boss_gohmaraq_0', 'boss_gohmaraq_1', 'boss_gohmaraq_2'],
+//     hurtFrame: 'boss_gohmaraq_hurt',
+//     rate: 10,
+//     intro: 90,                  // frames of held pose before it acts
+//     shell: true,                // ignores hits unless weakOpen is set
+//     phases: [                   // picked by remaining health fraction
+//       { above: 0.66, ai(e, g) {} },
+//       { above: 0.33, ai(e, g) {} },
+//       { above: 0.00, ai(e, g) {} },
+//     ],
+//     onIntro(e, g) {}, onPhase(e, g, i) {}, onDie(e, g) {},
+//   });
+//
+// A boss that reads the tide should do so via g.tide.level, and may set
+// e.weakOpen = true to become vulnerable for a window.
+
+export class Boss extends Enemy {
+  constructor(x, y, spec, opts = {}) {
+    super(x, y, spec, opts);
+    this.isBoss = true;
+    this.oncePerGame = spec.oncePerGame !== false;
+    this.intro = spec.intro != null ? spec.intro : 80;
+    this.phase = -1;
+    this.weakOpen = !spec.shell;
+    this.deathTime = 0;
+    this.dying = false;
+    this.w = spec.w || 32; this.h = spec.h || 32;
+    this.hb = spec.hb || { x: 4, y: 8, w: this.w - 8, h: this.h - 12 };
+    this.depth = 2;
+    this.shadow = false;
+  }
+
+  currentPhase() {
+    const list = this.spec.phases || [];
+    const frac = this.hp / this.maxHp;
+    for (let i = 0; i < list.length; i++) {
+      if (frac > (list[i].above != null ? list[i].above : -1)) return i;
+    }
+    return Math.max(0, list.length - 1);
+  }
+
+  update(game) {
+    this.tick++;
+    if (this.invuln > 0) this.invuln--;
+    if (this.flicker > 0) this.flicker--;
+
+    if (this.dying) {
+      this.deathTime++;
+      if (this.deathTime % 9 === 0) {
+        game.spawnEffect('boom',
+          this.x + Math.random() * this.w - 8,
+          this.y + Math.random() * this.h - 8);
+        game.shake(3, 8);
+      }
+      if (this.deathTime > 72) { this.dying = false; super.die(game); }
+      return;
+    }
+
+    if (this.intro > 0) {
+      this.intro--;
+      if (this.intro === 0 && this.spec.onIntro) this.spec.onIntro(this, game);
+      if (this.intro === Math.floor((this.spec.intro || 80) / 2)) game.audio.play('boss');
+      return;
+    }
+
+    if (this.knockTime > 0) {
+      this.knockTime--;
+      moveEntity(game, this, this.knockX, this.knockY);
+      this.knockX *= 0.8; this.knockY *= 0.8;
+      return;
+    }
+    if (this.stun > 0) { this.stun--; return; }
+
+    const p = this.currentPhase();
+    if (p !== this.phase) {
+      this.phase = p;
+      this.invuln = Math.max(this.invuln, 20);
+      if (this.spec.onPhase) this.spec.onPhase(this, game, p);
+      game.audio.sfx('charged');
+    }
+    const ph = (this.spec.phases || [])[p];
+    if (ph && ph.ai) ph.ai(this, game);
+    else if (this.spec.ai) this.spec.ai(this, game);
+  }
+
+  hurt(game, dmg, dir, knock) {
+    if (this.dying) return false;
+    if (this.spec.shell && !this.weakOpen) {
+      game.audio.sfx('block');
+      game.spawnEffect('spark', this.cx - 8, this.cy - 8);
+      return false;
+    }
+    if (this.invuln > 0) return false;
+    this.hp -= dmg;
+    this.invuln = 20;
+    this.flicker = 20;
+    if (knock && dir) {
+      const [dx, dy] = DIR_VEC[dir] || [0, 0];
+      this.knockX = dx * (knock * 0.4); this.knockY = dy * (knock * 0.4);
+      this.knockTime = 6;
+    }
+    if (this.spec.onHurt) this.spec.onHurt(this, game, dmg);
+    if (this.hp <= 0) { this.beginDeath(game); return true; }
+    game.audio.sfx('enemyHit');
+    return true;
+  }
+
+  beginDeath(game) {
+    this.dying = true;
+    this.deathTime = 0;
+    this.hp = 0;
+    game.audio.stop();
+    game.audio.sfx('bossDie');
+  }
+
+  spriteName() {
+    if (this.flicker > 0 && this.spec.hurtFrame) return this.spec.hurtFrame;
+    return super.spriteName();
+  }
+
+  draw(ctx, game, ox, oy) {
+    if (this.dying && (this.deathTime >> 1) % 2 === 0) return;
+    super.draw(ctx, game, ox, oy);
+  }
+}
+
+export function defineBoss(name, spec) {
+  defineEntity(name, (x, y, opts, game) => {
+    const e = new Boss(x, y, spec, opts);
+    if (spec.init) spec.init(e, game);
+    return e;
+  });
+  return spec;
+}
+
+// --------------------------------------------------------------------------
 // AI toolkit
 // --------------------------------------------------------------------------
 

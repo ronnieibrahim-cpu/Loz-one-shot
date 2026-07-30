@@ -16,12 +16,17 @@ import { TILES, validateTiles } from '../src/world/tileset.js';
 import { MAPS, validateMaps } from '../src/world/maps.js';
 import { LEGENDS, getLegend } from '../src/world/room.js';
 import { installData, ART_PACKS, SPRITE_PACKS } from '../src/data/index.js';
+import { REQUIRED_SPRITES, expectedSize, allRequired } from '../src/data/sprite-manifest.js';
+
+const STRICT = process.argv.includes('--strict');
+const ONLY = (process.argv.find(a => a.startsWith('--pack=')) || '').slice(7);
 
 const problems = [];
 const warn = [];
 
-function checkArtPack(label, pack, expectW, expectH, { allowVariable = false } = {}) {
+function checkArtPack(label, pack, expectW, expectH, { allowVariable = false, sizeFor = null } = {}) {
   for (const [name, src] of Object.entries(pack)) {
+    if (sizeFor) { const [w, h] = sizeFor(name); expectW = w; expectH = h; }
     if (typeof src !== 'string') { problems.push(`${label}/${name}: art is not a string`); continue; }
     const lines = src.split('\n').map(l => l.trimEnd()).filter(l => l.trim() !== '');
     if (!lines.length) { problems.push(`${label}/${name}: art is empty`); continue; }
@@ -50,7 +55,29 @@ for (const [label, pack] of Object.entries(ART_PACKS)) {
   checkArtPack('tile:' + label, pack, 16, 16);
 }
 for (const [label, pack] of Object.entries(SPRITE_PACKS)) {
-  checkArtPack('sprite:' + label, pack, 16, 16, { allowVariable: true });
+  checkArtPack('sprite:' + label, pack, 16, 16, { sizeFor: expectedSize });
+}
+
+// --- sprite coverage against the manifest ---------------------------------
+// Warnings by default so structural checks stay usable while art lands;
+// --strict turns them into failures for the final gate.
+const registered = new Set(Object.values(SPRITE_PACKS).flatMap(p => Object.keys(p)));
+let missingTotal = 0;
+for (const [pack, names] of Object.entries(REQUIRED_SPRITES)) {
+  if (ONLY && ONLY !== pack) continue;
+  const missing = names.filter(n => !registered.has(n));
+  missingTotal += missing.length;
+  if (!missing.length) continue;
+  const line = `sprite pack '${pack}': ${missing.length}/${names.length} missing: ${missing.join(' ')}`;
+  if (STRICT) problems.push(line); else warn.push(line);
+}
+
+// Extra sprites that nothing asks for usually mean a typo in a name.
+const requiredSet = new Set(allRequired());
+for (const name of registered) {
+  if (!requiredSet.has(name)) {
+    warn.push(`sprite '${name}' is registered but not in the manifest (typo, or add it to sprite-manifest.js)`);
+  }
 }
 
 // --- tiles ----------------------------------------------------------------

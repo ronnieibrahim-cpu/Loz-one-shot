@@ -7,14 +7,35 @@ import { installLegends } from './legends.js';
 import { installOverworld } from './overworld.js';
 import { installCaves } from './caves.js';
 import { installEnemies } from './enemies.js';
+import { installBosses } from './bosses.js';
+import { installDungeonsA } from './dungeons-a.js';
+import { installDungeonsB } from './dungeons-b.js';
 import { installStory } from './story.js';
 import { installAudio } from './audio.js';
+import { installLinkSprites, LINK_ART, FX_ART, FX_BIG_ART, UI_ART } from './sprites-link.js';
+import { installWorldSprites, PICKUP_ART, OBJECT_ART, SHOT_ART, NPC_ART } from './sprites-world.js';
+import { installEnemySprites, ENEMY_ART } from './sprites-enemies.js';
+import { installBossSprites, BOSS_ART, MINIBOSS_ART } from './sprites-bosses.js';
 
+// Background tile art: validated at 16x16.
 export const ART_PACKS = {
   core: CORE_TILE_ART,
 };
 
-export const SPRITE_PACKS = {};
+// Sprite art: validated against the sizes in sprite-manifest.js.
+export const SPRITE_PACKS = {
+  link: LINK_ART,
+  fx: FX_ART,
+  fxBig: FX_BIG_ART,
+  ui: UI_ART,
+  pickups: PICKUP_ART,
+  objects: OBJECT_ART,
+  shots: SHOT_ART,
+  npcs: NPC_ART,
+  enemies: ENEMY_ART,
+  bosses: BOSS_ART,
+  minibosses: MINIBOSS_ART,
+};
 
 let installed = false;
 
@@ -24,9 +45,16 @@ export function installData() {
   // Order matters: tiles and legends before any map that references them.
   installCoreTiles();
   installLegends();
+  installLinkSprites();
+  installWorldSprites();
+  installEnemySprites();
+  installBossSprites();
   installEnemies();
+  installBosses();
   installOverworld();
   installCaves();
+  installDungeonsA();
+  installDungeonsB();
   installStory();
   installAudio();
 }
