@@ -15,7 +15,12 @@ import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, '..');
-const SHOT_DIR = join(HERE, 'shots');
+const arg = (name, dflt) => {
+  const a = process.argv.find(v => v.startsWith('--' + name + '='));
+  return a ? a.slice(name.length + 3) : dflt;
+};
+// Overridable so several agents can run the harness at once without colliding.
+const SHOT_DIR = resolve(HERE, arg('shot-dir', 'shots'));
 const WANT_SHOTS = process.argv.includes('--shots');
 const HEADED = process.argv.includes('--keep');
 
@@ -64,7 +69,8 @@ async function loadPlaywright() {
 
 const main = async () => {
   const { chromium } = await loadPlaywright();
-  const PORT = 8731;
+  // Random high port: concurrent runs must not fight over a fixed one.
+  const PORT = Number(arg('port', 0)) || (20000 + Math.floor(Math.random() * 20000));
   const server = await serve(PORT);
   const browser = await chromium.launch({ headless: !HEADED });
   const page = await browser.newPage({ viewport: { width: 800, height: 720 } });
