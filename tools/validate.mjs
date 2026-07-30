@@ -45,6 +45,14 @@ function checkArtPack(label, pack, expectW, expectH, { allowVariable = false, si
     const bad = new Set();
     for (const r of rows) for (const c of r) if (!'0123. '.includes(c)) bad.add(c);
     if (bad.size) problems.push(`${label}/${name}: illegal characters ${[...bad].map(c => JSON.stringify(c)).join(',')} (only 0-3 and . allowed)`);
+
+    // A space between two drawn pixels is nearly always a typo for '.' or a
+    // missing pixel: it punches a transparent hole through the middle of a sprite.
+    rows.forEach((r, y) => {
+      if (/[0-3.] [0-3.]/.test(r)) {
+        problems.push(`${label}/${name}: row ${y} has an interior space — use '.' for transparent, or fill the pixel: "${r}"`);
+      }
+    });
   }
 }
 
