@@ -1,0 +1,276 @@
+// Music and sound effects. See core/audio.js for the tracker and SFX formats.
+
+import { audio } from '../core/audio.js';
+
+const SFX = {
+  // --- Link ---------------------------------------------------------------
+  sword1: { type: 'noise', freq: 3200, freq2: 900, dur: 0.09, q: 1.4, vol: 0.16 },
+  sword2: { type: 'noise', freq: 3800, freq2: 800, dur: 0.11, q: 1.6, vol: 0.18 },
+  sword3: {
+    type: 'multi', parts: [
+      { type: 'noise', freq: 4200, freq2: 700, dur: 0.12, q: 1.8, vol: 0.18 },
+      { type: 'blip', freq: 1400, freq2: 2600, dur: 0.1, duty: 0.25, vol: 0.08, delay: 0.01 },
+    ],
+  },
+  spin: {
+    type: 'multi', parts: [
+      { type: 'noise', freq: 3000, freq2: 1400, dur: 0.3, q: 1.2, vol: 0.15 },
+      { type: 'arp', notes: ['C5', 'E5', 'G5', 'C6'], step: 0.05, duty: 0.5, vol: 0.1, delay: 0.02 },
+    ],
+  },
+  charged: { type: 'blip', freq: 900, freq2: 1800, dur: 0.14, duty: 0.125, vol: 0.07 },
+  linkHurt: { type: 'blip', freq: 420, freq2: 130, dur: 0.24, duty: 0.5, wave: 'saw', vol: 0.15 },
+  jump: { type: 'blip', freq: 500, freq2: 950, dur: 0.11, duty: 0.25, vol: 0.11 },
+  land: { type: 'noise', freq: 700, freq2: 240, dur: 0.07, q: 0.9, vol: 0.1, lp: true },
+  splash: { type: 'noise', freq: 2400, freq2: 400, dur: 0.2, q: 0.8, vol: 0.13 },
+  dive: { type: 'blip', freq: 700, freq2: 220, dur: 0.22, duty: 0.5, wave: 'tri', vol: 0.12 },
+  lift: { type: 'blip', freq: 380, freq2: 720, dur: 0.1, duty: 0.5, vol: 0.1 },
+  throw: { type: 'blip', freq: 800, freq2: 340, dur: 0.09, duty: 0.25, vol: 0.1 },
+  shatter: { type: 'noise', freq: 4200, freq2: 1100, dur: 0.14, q: 2.0, vol: 0.14 },
+  dig: { type: 'noise', freq: 900, freq2: 300, dur: 0.14, q: 0.7, vol: 0.12, lp: true },
+  fall: { type: 'blip', freq: 900, freq2: 90, dur: 0.55, duty: 0.5, wave: 'tri', vol: 0.13 },
+
+  // --- items --------------------------------------------------------------
+  conch: {
+    type: 'multi', parts: [
+      { type: 'blip', freq: 392, freq2: 523, dur: 0.28, duty: 0.5, wave: 'tri', vol: 0.14 },
+      { type: 'blip', freq: 523, freq2: 659, dur: 0.3, duty: 0.5, wave: 'tri', vol: 0.12, delay: 0.16 },
+      { type: 'noise', freq: 1600, freq2: 500, dur: 0.5, q: 0.6, vol: 0.07, delay: 0.28 },
+    ],
+  },
+  boomerang: { type: 'blip', freq: 1100, freq2: 700, dur: 0.5, duty: 0.125, vol: 0.07 },
+  catch: { type: 'blip', freq: 900, freq2: 1300, dur: 0.06, duty: 0.5, vol: 0.09 },
+  hookshot: { type: 'noise', freq: 2600, freq2: 1800, dur: 0.24, q: 3.0, vol: 0.1 },
+  hookHit: { type: 'blip', freq: 1600, freq2: 500, dur: 0.09, duty: 0.25, vol: 0.12 },
+  place: { type: 'blip', freq: 300, freq2: 200, dur: 0.07, duty: 0.5, vol: 0.1 },
+  explode: {
+    type: 'multi', parts: [
+      { type: 'noise', freq: 900, freq2: 60, dur: 0.42, q: 0.5, vol: 0.26, lp: true },
+      { type: 'blip', freq: 220, freq2: 40, dur: 0.34, duty: 0.5, wave: 'tri', vol: 0.14 },
+    ],
+  },
+  fire: { type: 'noise', freq: 1800, freq2: 700, dur: 0.28, q: 0.8, vol: 0.11 },
+  seed: { type: 'blip', freq: 1200, freq2: 1700, dur: 0.07, duty: 0.25, vol: 0.09 },
+  shoot: { type: 'blip', freq: 1500, freq2: 900, dur: 0.07, duty: 0.125, vol: 0.1 },
+  pegasus: { type: 'arp', notes: ['C5', 'E5', 'G5'], step: 0.04, duty: 0.25, vol: 0.09 },
+  magnet: { type: 'blip', freq: 260, freq2: 620, dur: 0.16, duty: 0.125, vol: 0.09 },
+  valve: { type: 'noise', freq: 700, freq2: 260, dur: 0.4, q: 1.4, vol: 0.12 },
+
+  // --- combat -------------------------------------------------------------
+  enemyHit: { type: 'noise', freq: 2000, freq2: 600, dur: 0.08, q: 1.2, vol: 0.13 },
+  enemyDie: {
+    type: 'multi', parts: [
+      { type: 'noise', freq: 2600, freq2: 300, dur: 0.16, q: 1.0, vol: 0.15 },
+      { type: 'blip', freq: 700, freq2: 180, dur: 0.14, duty: 0.5, vol: 0.09, delay: 0.02 },
+    ],
+  },
+  bossDie: {
+    type: 'multi', parts: [
+      { type: 'noise', freq: 1200, freq2: 80, dur: 0.7, q: 0.5, vol: 0.24, lp: true },
+      { type: 'blip', freq: 300, freq2: 50, dur: 0.6, duty: 0.5, wave: 'tri', vol: 0.16, delay: 0.05 },
+    ],
+  },
+  enemyShoot: { type: 'blip', freq: 700, freq2: 420, dur: 0.09, duty: 0.125, vol: 0.09 },
+  block: { type: 'noise', freq: 3600, freq2: 2600, dur: 0.06, q: 3.0, vol: 0.13 },
+  ricochet: { type: 'blip', freq: 2000, freq2: 1200, dur: 0.05, duty: 0.25, vol: 0.1 },
+  charge: { type: 'blip', freq: 200, freq2: 480, dur: 0.16, duty: 0.5, wave: 'saw', vol: 0.1 },
+  hop: { type: 'blip', freq: 420, freq2: 700, dur: 0.07, duty: 0.5, vol: 0.07 },
+
+  // --- pickups & UI -------------------------------------------------------
+  rupee: { type: 'arp', notes: ['E6', 'B6'], step: 0.05, duty: 0.5, vol: 0.09 },
+  rupeeBig: { type: 'arp', notes: ['E6', 'G6', 'B6'], step: 0.05, duty: 0.5, vol: 0.1 },
+  heart: { type: 'arp', notes: ['G5', 'C6'], step: 0.06, duty: 0.5, vol: 0.1 },
+  fairy: { type: 'arp', notes: ['C6', 'E6', 'G6', 'C7'], step: 0.05, duty: 0.25, vol: 0.09 },
+  key: { type: 'arp', notes: ['A5', 'D6'], step: 0.07, duty: 0.5, vol: 0.1 },
+  unlock: { type: 'arp', notes: ['D5', 'A5', 'D6'], step: 0.07, duty: 0.5, vol: 0.11 },
+  chest: { type: 'arp', notes: ['C5', 'F5', 'A5'], step: 0.07, duty: 0.5, vol: 0.1 },
+  puzzle: { type: 'arp', notes: ['C5', 'E5', 'G5', 'C6'], step: 0.08, duty: 0.5, vol: 0.11 },
+  switchOn: { type: 'blip', freq: 900, freq2: 1300, dur: 0.07, duty: 0.5, vol: 0.1 },
+  switchOff: { type: 'blip', freq: 1300, freq2: 900, dur: 0.07, duty: 0.5, vol: 0.09 },
+  push: { type: 'noise', freq: 500, freq2: 300, dur: 0.22, q: 0.8, vol: 0.09, lp: true },
+  cut: { type: 'noise', freq: 3000, freq2: 1400, dur: 0.08, q: 1.6, vol: 0.12 },
+  break: { type: 'noise', freq: 2200, freq2: 500, dur: 0.16, q: 1.0, vol: 0.14 },
+  stairs: { type: 'blip', freq: 600, freq2: 900, dur: 0.1, duty: 0.5, vol: 0.09 },
+  whirl: { type: 'noise', freq: 400, freq2: 2200, dur: 0.6, q: 1.6, vol: 0.14 },
+  text: { type: 'blip', freq: 1500, dur: 0.014, duty: 0.5, vol: 0.05 },
+  textNext: { type: 'blip', freq: 1000, freq2: 1400, dur: 0.04, duty: 0.5, vol: 0.07 },
+  cursor: { type: 'blip', freq: 1200, dur: 0.03, duty: 0.5, vol: 0.08 },
+  confirm: { type: 'arp', notes: ['C6', 'G6'], step: 0.045, duty: 0.5, vol: 0.09 },
+  deny: { type: 'blip', freq: 300, freq2: 180, dur: 0.12, duty: 0.5, vol: 0.09 },
+  pause: { type: 'blip', freq: 800, freq2: 1200, dur: 0.06, duty: 0.25, vol: 0.08 },
+};
+
+// --------------------------------------------------------------------------
+// Music
+// --------------------------------------------------------------------------
+
+const TRACKS = {
+  title: {
+    bpm: 96, rowsPerBeat: 4, loop: true,
+    cfg: { p1: { duty: 0.5, vol: 0.15, decay: 0.3 }, p2: { duty: 0.25, vol: 0.09, decay: 0.35 }, wav: { vol: 0.2, decay: 0.4 } },
+    patterns: {
+      A: {
+        p1: 'C5 -  -  -  -  -  -  -  G4 -  -  -  -  -  -  -  A4 -  -  -  -  -  -  -  E4 -  -  -  -  -  -  -',
+        p2: 'E4 -  -  -  -  -  -  -  C4 -  -  -  -  -  -  -  F4 -  -  -  -  -  -  -  C4 -  -  -  -  -  -  -',
+        wav: 'C3 -  -  -  -  -  -  -  E3 -  -  -  -  -  -  -  F3 -  -  -  -  -  -  -  G3 -  -  -  -  -  -  -',
+      },
+      B: {
+        p1: 'F5 -  -  -  E5 -  -  -  D5 -  -  -  C5 -  -  -  D5 -  -  -  E5 -  -  -  G5 -  -  -  -  -  -  -',
+        p2: 'A4 -  -  -  G4 -  -  -  F4 -  -  -  E4 -  -  -  F4 -  -  -  G4 -  -  -  B4 -  -  -  -  -  -  -',
+        wav: 'F3 -  -  -  -  -  -  -  G3 -  -  -  -  -  -  -  A3 -  -  -  -  -  -  -  G3 -  -  -  -  -  -  -',
+      },
+    },
+    order: ['A', 'B'],
+  },
+
+  overworld: {
+    bpm: 132, rowsPerBeat: 4, loop: true,
+    cfg: {
+      p1: { duty: 0.5, vol: 0.17, decay: 0.12 },
+      p2: { duty: 0.25, vol: 0.11, decay: 0.16 },
+      wav: { vol: 0.22, decay: 0.08 },
+      noi: { vol: 0.12 },
+    },
+    patterns: {
+      A: {
+        p1: 'G4 .  C5 .  E5 .  C5 .  D5 .  G4 .  B4 .  .  .  A4 .  C5 .  F5 .  C5 .  E5 -  -  .  .  .  .  .',
+        p2: 'C4 .  .  .  G3 .  .  .  B3 .  .  .  G3 .  .  .  A3 .  .  .  F3 .  .  .  C4 .  .  .  G3 .  .  .',
+        wav: 'C3 -  -  -  C3 -  -  -  G2 -  -  -  G2 -  -  -  F2 -  -  -  F2 -  -  -  C3 -  -  -  G2 -  -  -',
+        noi: 'x  .  h  .  s  .  h  .  x  .  h  .  s  .  h  h  x  .  h  .  s  .  h  .  x  .  h  h  s  .  h  .',
+      },
+      B: {
+        p1: 'E5 .  G5 .  A5 -  -  .  G5 .  E5 .  D5 -  -  .  C5 .  E5 .  G5 -  -  .  A5 -  -  -  -  -  -  .',
+        p2: 'C4 .  E4 .  F4 .  .  .  E4 .  C4 .  B3 .  .  .  A3 .  C4 .  E4 .  .  .  F4 -  -  -  -  -  -  .',
+        wav: 'A2 -  -  -  A2 -  -  -  E3 -  -  -  E3 -  -  -  F2 -  -  -  F2 -  -  -  G2 -  -  -  G2 -  -  -',
+        noi: 'x  .  h  .  s  .  h  .  x  .  h  .  s  .  h  h  x  .  h  .  s  .  h  .  x  h  h  .  s  .  h  h',
+      },
+      C: {
+        p1: 'F5 .  E5 .  D5 .  C5 .  B4 .  C5 .  D5 -  -  .  G4 .  B4 .  D5 .  G5 .  E5 -  -  -  -  -  -  .',
+        p2: 'A3 .  C4 .  B3 .  A3 .  G3 .  A3 .  B3 .  .  .  D4 .  G3 .  B3 .  D4 .  C4 -  -  -  -  -  -  .',
+        wav: 'D3 -  -  -  D3 -  -  -  G2 -  -  -  G2 -  -  -  C3 -  -  -  C3 -  -  -  G2 -  -  -  C3 -  -  -',
+        noi: 'x  .  h  .  s  .  h  .  x  .  h  h  s  .  h  .  x  .  h  .  s  .  h  .  x  .  s  .  x  h  h  h',
+      },
+    },
+    order: ['A', 'A', 'B', 'C'],
+  },
+
+  village: {
+    bpm: 112, rowsPerBeat: 4, loop: true,
+    cfg: { p1: { duty: 0.5, vol: 0.15, decay: 0.2 }, p2: { duty: 0.125, vol: 0.09, decay: 0.24 }, wav: { vol: 0.2, decay: 0.1 }, noi: { vol: 0.08 } },
+    patterns: {
+      A: {
+        p1: 'C5 .  E5 .  G5 .  E5 .  F5 .  D5 .  C5 -  -  .  D5 .  F5 .  A5 .  F5 .  G5 -  -  -  -  -  -  .',
+        p2: 'C4 .  .  .  E4 .  .  .  F4 .  .  .  E4 .  .  .  D4 .  .  .  F4 .  .  .  E4 .  .  .  G4 .  .  .',
+        wav: 'C3 -  -  -  G2 -  -  -  F2 -  -  -  C3 -  -  -  D3 -  -  -  F2 -  -  -  C3 -  -  -  G2 -  -  -',
+        noi: '.  .  h  .  .  .  h  .  .  .  h  .  .  .  h  .  .  .  h  .  .  .  h  .  .  .  h  .  .  .  h  h',
+      },
+    },
+    order: ['A'],
+  },
+
+  cave: {
+    bpm: 88, rowsPerBeat: 4, loop: true,
+    cfg: { p1: { duty: 0.125, vol: 0.1, decay: 0.4 }, wav: { vol: 0.18, decay: 0.5 } },
+    patterns: {
+      A: {
+        p1: 'A4 -  -  -  -  -  -  -  C5 -  -  -  -  -  -  -  B4 -  -  -  -  -  -  -  E4 -  -  -  -  -  -  -',
+        wav: 'A2 -  -  -  -  -  -  -  F2 -  -  -  -  -  -  -  G2 -  -  -  -  -  -  -  E2 -  -  -  -  -  -  -',
+      },
+    },
+    order: ['A'],
+  },
+
+  dungeon: {
+    bpm: 124, rowsPerBeat: 4, loop: true,
+    cfg: { p1: { duty: 0.25, vol: 0.14, decay: 0.14 }, p2: { duty: 0.125, vol: 0.1, decay: 0.18 }, wav: { vol: 0.22, decay: 0.08 }, noi: { vol: 0.13 } },
+    patterns: {
+      A: {
+        p1: 'D5 .  D5 .  F5 .  D5 .  C5 .  D5 .  A4 -  -  .  D5 .  D5 .  G5 .  F5 .  E5 -  -  .  .  .  .  .',
+        p2: 'D4 .  .  .  A3 .  .  .  F3 .  .  .  A3 .  .  .  D4 .  .  .  B3 .  .  .  G3 .  .  .  A3 .  .  .',
+        wav: 'D2 -  -  -  D2 -  -  -  A2 -  -  -  A2 -  -  -  F2 -  -  -  F2 -  -  -  G2 -  -  -  A2 -  -  -',
+        noi: 'x  .  .  h  s  .  .  h  x  .  .  h  s  .  h  h  x  .  .  h  s  .  .  h  x  h  s  .  s  .  h  h',
+      },
+      B: {
+        p1: 'A5 .  G5 .  F5 .  E5 .  D5 .  E5 .  F5 -  -  .  A4 .  C5 .  E5 .  G5 .  F5 -  -  -  -  -  -  .',
+        p2: 'F4 .  E4 .  D4 .  C4 .  B3 .  C4 .  D4 .  .  .  F3 .  A3 .  C4 .  E4 .  D4 -  -  -  -  -  -  .',
+        wav: 'F2 -  -  -  F2 -  -  -  D2 -  -  -  D2 -  -  -  A2 -  -  -  A2 -  -  -  D2 -  -  -  D2 -  -  -',
+        noi: 'x  .  h  h  s  .  h  .  x  .  h  h  s  .  h  .  x  .  h  h  s  .  h  .  x  s  x  s  h  h  h  h',
+      },
+    },
+    order: ['A', 'A', 'B'],
+  },
+
+  boss: {
+    bpm: 150, rowsPerBeat: 4, loop: true,
+    cfg: { p1: { duty: 0.5, vol: 0.17, decay: 0.1 }, p2: { duty: 0.25, vol: 0.12, decay: 0.12 }, wav: { vol: 0.24, decay: 0.06 }, noi: { vol: 0.16 } },
+    patterns: {
+      A: {
+        p1: 'C5 C5 .  C5 Eb5 .  C5 .  F5 .  Eb5 .  C5 .  .  .  C5 C5 .  C5 G5 .  F5 .  Eb5 -  -  .  .  .  .  .',
+        p2: 'C4 .  .  .  G3 .  .  .  Ab3 .  .  .  G3 .  .  .  C4 .  .  .  Bb3 .  .  .  Ab3 .  .  .  G3 .  .  .',
+        wav: 'C2 C2 -  C2 C2 -  C2 -  Ab1 -  -  -  G1 -  -  -  C2 C2 -  C2 C2 -  C2 -  F1 -  -  -  G1 -  -  -',
+        noi: 'x  .  s  .  x  .  s  s  x  .  s  .  x  h  s  h  x  .  s  .  x  .  s  s  x  s  x  s  c  .  .  .',
+      },
+    },
+    order: ['A'],
+  },
+
+  // --- jingles (loop: false, they hand control back to the previous track) --
+  fanfare: {
+    bpm: 140, rowsPerBeat: 4, loop: false,
+    cfg: { p1: { duty: 0.5, vol: 0.18, decay: 0.2 }, wav: { vol: 0.22, decay: 0.2 } },
+    patterns: {
+      A: {
+        p1: 'G5 .  G5 .  G5 .  C6 -  -  -  -  .  .  .  .  .',
+        wav: 'C3 .  C3 .  C3 .  E3 -  -  -  -  .  .  .  .  .',
+      },
+    },
+    order: ['A'],
+  },
+  fanfareShort: {
+    bpm: 150, rowsPerBeat: 4, loop: false,
+    cfg: { p1: { duty: 0.5, vol: 0.16, decay: 0.2 } },
+    patterns: { A: { p1: 'C5 E5 G5 C6 -  -  .  .' } },
+    order: ['A'],
+  },
+  essence: {
+    bpm: 100, rowsPerBeat: 4, loop: false,
+    cfg: { p1: { duty: 0.5, vol: 0.17, decay: 0.3 }, p2: { duty: 0.25, vol: 0.1, decay: 0.3 }, wav: { vol: 0.2, decay: 0.3 } },
+    patterns: {
+      A: {
+        p1: 'C5 .  E5 .  G5 .  C6 .  B5 .  C6 -  -  -  -  -  -  -  -  .  .  .  .  .',
+        p2: 'E4 .  G4 .  C5 .  E5 .  D5 .  E5 -  -  -  -  -  -  -  -  .  .  .  .  .',
+        wav: 'C3 -  -  -  C3 -  -  -  G2 -  -  -  C3 -  -  -  -  -  -  .  .  .  .  .',
+      },
+    },
+    order: ['A'],
+  },
+  bossClear: {
+    bpm: 120, rowsPerBeat: 4, loop: false,
+    cfg: { p1: { duty: 0.5, vol: 0.18, decay: 0.25 }, wav: { vol: 0.22, decay: 0.25 } },
+    patterns: {
+      A: {
+        p1: 'C5 .  G5 .  E5 .  C6 .  G5 .  C6 -  -  -  -  -  -  .  .  .',
+        wav: 'C3 -  -  -  E3 -  -  -  G3 -  -  -  C3 -  -  -  -  .  .  .',
+      },
+    },
+    order: ['A'],
+  },
+  gameOver: {
+    bpm: 84, rowsPerBeat: 4, loop: false,
+    cfg: { p1: { duty: 0.5, vol: 0.16, decay: 0.4 }, wav: { vol: 0.2, decay: 0.4 } },
+    patterns: {
+      A: {
+        p1: 'C5 -  -  -  B4 -  -  -  Bb4 -  -  -  A4 -  -  -  -  -  -  -  .  .  .  .',
+        wav: 'C3 -  -  -  B2 -  -  -  Bb2 -  -  -  A2 -  -  -  -  -  -  -  .  .  .  .',
+      },
+    },
+    order: ['A'],
+  },
+};
+
+export function installAudio() {
+  audio.addSfx(SFX);
+  audio.addTracks(TRACKS);
+}
+
+export { SFX, TRACKS };

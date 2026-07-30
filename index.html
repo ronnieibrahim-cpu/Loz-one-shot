@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>The Legend of Zelda: Oracle of Tides</title>
+<style>
+  html,body{margin:0;padding:0;height:100%;background:#0b0f14;overflow:hidden;
+    font-family:monospace;color:#8fa}
+  #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+  #screen{
+    image-rendering:pixelated;
+    image-rendering:-moz-crisp-edges;
+    image-rendering:crisp-edges;
+    background:#000;
+    box-shadow:0 0 0 4px #1a2530, 0 0 48px rgba(60,120,90,.25);
+  }
+  #shell{position:relative}
+  #boot{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+    background:#0b0f14;z-index:10;font-size:13px;letter-spacing:1px}
+  #boot.hidden{display:none}
+  #err{position:fixed;left:0;right:0;bottom:0;max-height:45%;overflow:auto;
+    background:#2a0d12;color:#ffb3c0;font-size:11px;padding:8px;white-space:pre-wrap;
+    display:none;z-index:20;border-top:2px solid #ff5c7a}
+  /* Touch controls: only shown on touch devices */
+  #touch{position:fixed;inset:0;z-index:5;display:none;touch-action:none}
+  body.touch #touch{display:block}
+  .tbtn{position:absolute;border-radius:50%;background:rgba(200,230,210,.13);
+    border:2px solid rgba(200,230,210,.28);color:#cfe;display:flex;
+    align-items:center;justify-content:center;font-size:14px;user-select:none}
+  .tbtn.act{background:rgba(200,230,210,.35)}
+  #dpad{position:absolute;left:4%;bottom:6%;width:150px;height:150px}
+  #dpad .tbtn{width:48px;height:48px;border-radius:8px}
+  #btns{position:absolute;right:5%;bottom:8%;width:170px;height:130px}
+  #btns .tbtn{width:58px;height:58px}
+  #sysbtns{position:absolute;right:5%;top:4%}
+  #sysbtns .tbtn{width:46px;height:30px;border-radius:6px;position:relative;
+    display:inline-flex;margin-left:6px;font-size:10px}
+</style>
+</head>
+<body>
+<div id="boot">LOADING&hellip;</div>
+<div id="wrap"><div id="shell"><canvas id="screen" width="160" height="144"></canvas></div></div>
+<div id="touch">
+  <div id="dpad">
+    <div class="tbtn" data-k="up"    style="left:51px;top:0"></div>
+    <div class="tbtn" data-k="left"  style="left:0;top:51px"></div>
+    <div class="tbtn" data-k="right" style="left:102px;top:51px"></div>
+    <div class="tbtn" data-k="down"  style="left:51px;top:102px"></div>
+  </div>
+  <div id="btns">
+    <div class="tbtn" data-k="b" style="left:0;top:36px">B</div>
+    <div class="tbtn" data-k="a" style="left:86px;top:0">A</div>
+  </div>
+  <div id="sysbtns">
+    <div class="tbtn" data-k="select">SEL</div>
+    <div class="tbtn" data-k="start">START</div>
+  </div>
+</div>
+<div id="err"></div>
+<script>
+  // Surface load/runtime errors on-screen; a black canvas is useless for debugging.
+  (function(){
+    var box = document.getElementById('err');
+    function show(msg){
+      box.style.display='block';
+      box.textContent += msg + '\n';
+      document.getElementById('boot').classList.add('hidden');
+    }
+    window.addEventListener('error', function(e){
+      show('ERROR: ' + (e.message||e.type) + (e.filename? ('\n  at '+e.filename+':'+e.lineno):''));
+    });
+    window.addEventListener('unhandledrejection', function(e){
+      show('PROMISE REJECTION: ' + (e.reason && (e.reason.stack||e.reason.message) || e.reason));
+    });
+    window.__showError = show;
+  })();
+</script>
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>

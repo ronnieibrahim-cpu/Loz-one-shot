@@ -1,0 +1,14 @@
+{
+  "name": "oracle-of-tides",
+  "version": "1.0.0",
+  "description": "The Legend of Zelda: Oracle of Tides - a Game Boy Color style action-adventure",
+  "type": "module",
+  "scripts": {
+    "dev": "node tools/serve.mjs",
+    "build": "node tools/build.mjs",
+    "test": "node tools/test.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.49.0"
+  }
+}

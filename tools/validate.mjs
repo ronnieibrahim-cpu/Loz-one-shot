@@ -1,0 +1,111 @@
+// Data validator. Runs in plain Node (no DOM) against the game's data modules and
+// reports every structural problem it can find without launching a browser.
+//
+// Checks:
+//   * every art string is rectangular and the expected size
+//   * every tile definition is well formed and tide variants resolve
+//   * every room grid is exactly 8 rows x 10 columns
+//   * every legend character used by a room maps to a registered tile
+//   * every warp resolves to a room that exists
+//
+// Usage: node tools/validate.mjs
+
+import { parseArt } from '../src/gfx/art.js';
+import { PALETTES } from '../src/gfx/palettes.js';
+import { TILES, validateTiles } from '../src/world/tileset.js';
+import { MAPS, validateMaps } from '../src/world/maps.js';
+import { LEGENDS, getLegend } from '../src/world/room.js';
+import { installData, ART_PACKS, SPRITE_PACKS } from '../src/data/index.js';
+
+const problems = [];
+const warn = [];
+
+function checkArtPack(label, pack, expectW, expectH, { allowVariable = false } = {}) {
+  for (const [name, src] of Object.entries(pack)) {
+    if (typeof src !== 'string') { problems.push(`${label}/${name}: art is not a string`); continue; }
+    const lines = src.split('\n').map(l => l.trimEnd()).filter(l => l.trim() !== '');
+    if (!lines.length) { problems.push(`${label}/${name}: art is empty`); continue; }
+    const indent = Math.min(...lines.map(l => l.match(/^ */)[0].length));
+    const rows = lines.map(l => l.slice(indent));
+    const widths = [...new Set(rows.map(r => r.length))];
+    if (widths.length > 1) {
+      problems.push(`${label}/${name}: ragged rows, widths ${widths.join(',')} (rows must all be the same length)`);
+    }
+    const a = parseArt(src);
+    if (!allowVariable) {
+      if (a.w !== expectW || a.h !== expectH) {
+        problems.push(`${label}/${name}: is ${a.w}x${a.h}, expected ${expectW}x${expectH}`);
+      }
+    }
+    const bad = new Set();
+    for (const r of rows) for (const c of r) if (!'0123. '.includes(c)) bad.add(c);
+    if (bad.size) problems.push(`${label}/${name}: illegal characters ${[...bad].map(c => JSON.stringify(c)).join(',')} (only 0-3 and . allowed)`);
+  }
+}
+
+installData();
+
+// --- art ------------------------------------------------------------------
+for (const [label, pack] of Object.entries(ART_PACKS)) {
+  checkArtPack('tile:' + label, pack, 16, 16);
+}
+for (const [label, pack] of Object.entries(SPRITE_PACKS)) {
+  checkArtPack('sprite:' + label, pack, 16, 16, { allowVariable: true });
+}
+
+// --- tiles ----------------------------------------------------------------
+for (const p of validateTiles()) problems.push('tile: ' + p);
+for (const [name, d] of TILES) {
+  if (!PALETTES[d.pal]) problems.push(`tile ${name}: unknown palette '${d.pal}'`);
+  if (d.underArt && !TILES.has(d.underArt)) problems.push(`tile ${name}: underArt '${d.underArt}' is not a tile`);
+}
+
+// --- maps -----------------------------------------------------------------
+for (const p of validateMaps()) problems.push('map: ' + p);
+
+// legend coverage: every char a room actually uses must resolve
+for (const m of MAPS.values()) {
+  for (const [key, def] of Object.entries(m.roomDefs)) {
+    const legend = getLegend(def.legend || m.legend);
+    const missing = new Set();
+    for (const row of (def.map || [])) {
+      for (const ch of row) {
+        if (ch === ' ') continue;
+        const t = legend[ch];
+        if (!t) missing.add(ch);
+        else if (!TILES.has(t)) problems.push(`map ${m.id}/${key}: legend '${ch}' -> unregistered tile '${t}'`);
+      }
+    }
+    if (missing.size) {
+      problems.push(`map ${m.id}/${key}: legend '${def.legend || m.legend}' has no entry for ${[...missing].map(c => JSON.stringify(c)).join(',')}`);
+    }
+  }
+}
+
+// --- reachability sanity: dungeons need an entrance and a boss room -------
+for (const m of MAPS.values()) {
+  if (m.kind !== 'dungeon') continue;
+  const d = m.dungeon;
+  if (!d) { problems.push(`map ${m.id}: dungeon map without a dungeon block`); continue; }
+  if (!d.entrance) problems.push(`dungeon ${m.id}: no entrance defined`);
+  if (d.bossRoom && !m.roomDefs[d.bossRoom]) problems.push(`dungeon ${m.id}: bossRoom '${d.bossRoom}' does not exist`);
+  const roomCount = Object.keys(m.roomDefs).length;
+  if (roomCount < 6) warn.push(`dungeon ${m.id}: only ${roomCount} rooms`);
+}
+
+// --- report ---------------------------------------------------------------
+const counts = {
+  tiles: TILES.size,
+  legends: LEGENDS.size,
+  maps: MAPS.size,
+  rooms: [...MAPS.values()].reduce((a, m) => a + Object.keys(m.roomDefs).length, 0),
+};
+console.log(`validate: ${counts.tiles} tiles, ${counts.legends} legends, ${counts.maps} maps, ${counts.rooms} rooms`);
+for (const w of warn) console.log('  warn: ' + w);
+
+if (problems.length) {
+  console.error(`\n${problems.length} problem(s):`);
+  for (const p of problems) console.error('  ' + p);
+  process.exit(1);
+}
+console.log('validate: OK');

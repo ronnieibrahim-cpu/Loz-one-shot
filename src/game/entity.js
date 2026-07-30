@@ -1,0 +1,250 @@
+// Entity base class, tile collision, and the spawn registry.
+//
+// Coordinates are room-local pixels: x in 0..159, y in 0..127. `z` is height off
+// the ground for jumps and flying enemies; it shifts the sprite up and detaches
+// the entity from ground hazards without moving its shadow.
+
+import { TILE, ROOM_W, ROOM_H, VIEW_W, VIEW_H } from '../core/screen.js';
+import { sprites } from '../gfx/art.js';
+import { F } from '../world/tileset.js';
+
+export const ENTITY_TYPES = new Map();
+
+/** Register a spawnable entity. `factory(x, y, opts, game) -> Entity`. */
+export function defineEntity(name, factory) {
+  ENTITY_TYPES.set(name, factory);
+}
+
+export function spawnEntity(game, name, tx, ty, opts) {
+  const f = ENTITY_TYPES.get(name);
+  if (!f) { console.warn('[entity] unknown type:', name); return null; }
+  const e = f(tx * TILE, ty * TILE, opts || {}, game);
+  if (e) { e.type = name; game.addEntity(e); }
+  return e;
+}
+
+export const DIRS = ['down', 'up', 'left', 'right'];
+export const DIR_VEC = { down: [0, 1], up: [0, -1], left: [-1, 0], right: [1, 0] };
+
+export function dirFromVec(dx, dy) {
+  if (Math.abs(dx) > Math.abs(dy)) return dx < 0 ? 'left' : 'right';
+  return dy < 0 ? 'up' : 'down';
+}
+
+export function dirTo(a, b) {
+  return dirFromVec((b.x + b.w / 2) - (a.x + a.w / 2), (b.y + b.h / 2) - (a.y + a.h / 2));
+}
+
+let nextId = 1;
+
+export class Entity {
+  constructor(x, y, opts = {}) {
+    this.id = nextId++;
+    this.x = x; this.y = y;
+    this.w = 16; this.h = 16;
+    this.vx = 0; this.vy = 0;
+    this.z = 0; this.vz = 0;
+    this.dir = 'down';
+    this.frame = 0;          // animation counter, ticks each update
+    this.hp = 1; this.maxHp = 1;
+    this.damage = 0;         // contact damage dealt to the player, in half-hearts
+    this.invuln = 0;
+    this.flicker = 0;
+    this.stun = 0;
+    this.dead = false;
+    this.remove = false;
+    this.solid = false;      // blocks the player like a pushable block
+    this.pushable = false;
+    this.isEnemy = false;
+    this.isBoss = false;
+    this.isProjectile = false;
+    this.isDrop = false;
+    this.isEffect = false;
+    this.harmless = false;   // never damages the player (NPCs, drops)
+    this.grounded = true;    // affected by pits/water
+    this.flying = false;
+    this.knockTime = 0;
+    this.knockX = 0; this.knockY = 0;
+    this.hb = { x: 2, y: 4, w: 12, h: 11 };   // hitbox inset within w/h
+    this.shadow = true;
+    this.depth = 0;          // draw-order tiebreak
+    this.opts = opts;
+    this.spawnTx = Math.floor(x / TILE);
+    this.spawnTy = Math.floor(y / TILE);
+  }
+
+  get cx() { return this.x + this.w / 2; }
+  get cy() { return this.y + this.h / 2; }
+
+  rect() {
+    return { x: this.x + this.hb.x, y: this.y + this.hb.y, w: this.hb.w, h: this.hb.h };
+  }
+
+  overlaps(o) {
+    const a = this.rect(), b = o.rect();
+    return a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+  }
+
+  distTo(o) {
+    const dx = this.cx - o.cx, dy = this.cy - o.cy;
+    return Math.hypot(dx, dy);
+  }
+
+  /** Take damage. `dir` is the direction the hit came *from* the attacker's view. */
+  hurt(game, dmg, dir, knock = 3) {
+    if (this.invuln > 0 || this.dead) return false;
+    this.hp -= dmg;
+    this.invuln = 24;
+    this.flicker = 24;
+    if (knock && dir) {
+      const [dx, dy] = DIR_VEC[dir] || [0, 0];
+      this.knockX = dx * knock; this.knockY = dy * knock;
+      this.knockTime = 8;
+    }
+    if (this.hp <= 0) { this.die(game); return true; }
+    game.audio.sfx('enemyHit');
+    if (this.onHurt) this.onHurt(game);
+    return true;
+  }
+
+  die(game) {
+    if (this.dead) return;
+    this.dead = true;
+    this.remove = true;
+    if (this.onDie) this.onDie(game);
+    game.spawnEffect('puff', this.cx - 8, this.cy - 8 - this.z);
+    game.audio.sfx(this.isBoss ? 'bossDie' : 'enemyDie');
+    if (this.isEnemy) game.onEnemyDefeated(this);
+  }
+
+  update(game) { }
+
+  draw(ctx, game, ox, oy) {
+    if (this.flicker > 0 && (this.flicker >> 1) % 2 === 0) return;
+    const name = this.spriteName ? this.spriteName(game) : this.sprite;
+    if (!name) return;
+    sprites.draw(ctx, name, ox + this.x, oy + this.y - this.z, {
+      pal: this.pal, flipX: this.flipX, alpha: this.alpha,
+    });
+  }
+
+  drawShadow(ctx, game, ox, oy) {
+    if (!this.shadow || this.z <= 1) return;
+    sprites.draw(ctx, 'shadow', ox + this.x, oy + this.y + 6, { pal: 'uidark', alpha: 0.5 });
+  }
+}
+
+// --------------------------------------------------------------------------
+// Tile collision
+// --------------------------------------------------------------------------
+
+/**
+ * Try to move an entity by (dx, dy) against the room's solid tiles.
+ * Axis-separated so sliding along walls works, with a small corner-nudge so
+ * the player doesn't snag on tile seams (matches how the GBC games felt).
+ * Returns { hitX, hitY }.
+ */
+export function moveEntity(game, e, dx, dy, caps) {
+  const room = game.room;
+  const c = caps || e.caps || null;
+  let hitX = false, hitY = false;
+
+  if (dx !== 0) {
+    const nx = e.x + dx;
+    if (canOccupy(game, e, nx, e.y, c)) {
+      e.x = nx;
+    } else {
+      // corner nudge: allow the move if shifting a pixel on the other axis frees it
+      let ok = false;
+      for (const ny of [e.y - 1, e.y + 1]) {
+        if (canOccupy(game, e, nx, ny, c)) { e.x = nx; e.y = ny; ok = true; break; }
+      }
+      if (!ok) hitX = true;
+    }
+  }
+  if (dy !== 0) {
+    const ny = e.y + dy;
+    if (canOccupy(game, e, e.x, ny, c)) {
+      e.y = ny;
+    } else {
+      let ok = false;
+      for (const nx of [e.x - 1, e.x + 1]) {
+        if (canOccupy(game, e, nx, ny, c)) { e.y = ny; e.x = nx; ok = true; break; }
+      }
+      if (!ok) hitY = true;
+    }
+  }
+  return { hitX, hitY };
+}
+
+/** Would the entity's hitbox at (x, y) be free of solid tiles? */
+export function canOccupy(game, e, x, y, caps) {
+  const room = game.room;
+  if (!room) return false;
+  const r = { x: x + e.hb.x, y: y + e.hb.y, w: e.hb.w, h: e.hb.h };
+  // Flying entities and mid-jump entities ignore ground obstructions but not walls.
+  const airborne = (e.flying || e.z > 2);
+  const cps = caps || { jumping: airborne, swim: !!e.swimming, cutting: false };
+  const x0 = r.x, x1 = r.x + r.w - 1, y0 = r.y, y1 = r.y + r.h - 1;
+  const xs = sampleAxis(x0, x1), ys = sampleAxis(y0, y1);
+  // Enemies additionally refuse terrain they will not walk on (water, pits, lava),
+  // so they path around hazards instead of shuffling into them.
+  const avoid = (!airborne && e.avoidFlags) ? e.avoidFlags : 0;
+  for (const py of ys) {
+    for (const px of xs) {
+      if (px < 0 || py < 0 || px >= VIEW_W || py >= VIEW_H) return false;
+      if (room.solidAt(px, py, game.tide.level, cps)) return false;
+      if (avoid) {
+        const tx = Math.floor(px / TILE), ty = Math.floor(py / TILE);
+        if (room.flagsAt(tx, ty, game.tide.level) & avoid) return false;
+      }
+    }
+  }
+  return true;
+}
+
+// Sample the hitbox edges plus interior points at 8px intervals, so a hitbox
+// never tunnels through a thin obstruction.
+function sampleAxis(a, b) {
+  const out = [a];
+  for (let v = a + 8; v < b; v += 8) out.push(v);
+  out.push(b);
+  return out;
+}
+
+/** Tile flags under an entity's feet (its hitbox centre-bottom). */
+export function groundFlags(game, e) {
+  const room = game.room;
+  if (!room) return 0;
+  const px = Math.floor(e.x + e.hb.x + e.hb.w / 2);
+  const py = Math.floor(e.y + e.hb.y + e.hb.h - 2);
+  const tx = Math.floor(px / TILE), ty = Math.floor(py / TILE);
+  return room.flagsAt(tx, ty, game.tide.level);
+}
+
+export function groundTile(game, e) {
+  const room = game.room;
+  const px = Math.floor(e.x + e.hb.x + e.hb.w / 2);
+  const py = Math.floor(e.y + e.hb.y + e.hb.h - 2);
+  return { tx: Math.floor(px / TILE), ty: Math.floor(py / TILE) };
+}
+
+/** Nearest tile the given entity can legally stand on. Used after a tide change. */
+export function findSafeTile(game, e, maxRadius = 6) {
+  const { tx, ty } = groundTile(game, e);
+  for (let r = 0; r <= maxRadius; r++) {
+    for (let dy = -r; dy <= r; dy++) {
+      for (let dx = -r; dx <= r; dx++) {
+        if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+        const nx = tx + dx, ny = ty + dy;
+        if (nx < 0 || ny < 0 || nx >= ROOM_W || ny >= ROOM_H) continue;
+        const f = game.room.flagsAt(nx, ny, game.tide.level);
+        if (f & (F.SOLID | F.VOID | F.DEEP | F.PIT | F.HAZARD | F.JUMPABLE)) continue;
+        const px = nx * TILE + (TILE - e.w) / 2;
+        const py = ny * TILE + (TILE - e.h) / 2;
+        if (canOccupy(game, e, px, py, { jumping: false, swim: false })) return { x: px, y: py };
+      }
+    }
+  }
+  return null;
+}

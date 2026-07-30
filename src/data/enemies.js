@@ -1,0 +1,223 @@
+// Enemy roster. See game/enemy.js for the definition contract and AI toolkit.
+// Damage values are in quarter-hearts (2 = half a heart).
+
+import { defineEnemy } from '../game/enemy.js';
+import {
+  wander, chase, flee, patrol, bounceDiag, hop, charge, orbit, submerge,
+  shoot, shootRing, every, timer, aligned, facePlayer, distToPlayer, moveDir,
+} from '../game/enemy.js';
+import { spawnEntity } from '../game/entity.js';
+import { F } from '../world/tileset.js';
+import { TILE } from '../core/screen.js';
+
+export function installEnemies() {
+  // --- Octorok: wanders and spits rocks along its facing axis -------------
+  defineEnemy('octorok', {
+    hp: 2, damage: 2, pal: 'enemyg', speed: 0.42, rate: 11,
+    frames: {
+      down: ['octorok_d0', 'octorok_d1'],
+      up: ['octorok_u0', 'octorok_u1'],
+      side: ['octorok_s0', 'octorok_s1'],
+    },
+    hb: { x: 2, y: 5, w: 12, h: 10 },
+    drops: 'common',
+    ai(e, g) {
+      wander(e, g, { turnChance: 0.014 });
+      if (every(e, 74) && aligned(e, g, 14) && distToPlayer(e, g) < 96) {
+        shoot(e, g, { sprite: 'shot_rock', speed: 1.5, damage: 2 });
+      }
+    },
+  });
+
+  // --- Sea Octorok: the aquatic cousin, only present at higher tides ------
+  defineEnemy('octorokSea', {
+    hp: 3, damage: 2, pal: 'enemyb', speed: 0.5, rate: 10, terrain: 'water',
+    frames: {
+      down: ['octorok_d0', 'octorok_d1'],
+      up: ['octorok_u0', 'octorok_u1'],
+      side: ['octorok_s0', 'octorok_s1'],
+    },
+    drops: 'common',
+    tideOnly: [1, 2],
+    ai(e, g) {
+      wander(e, g, { turnChance: 0.02 });
+      if (every(e, 60) && distToPlayer(e, g) < 90) {
+        shoot(e, g, { sprite: 'shot_bubble', pal: 'water', speed: 1.4, aim: true, damage: 2 });
+      }
+    },
+  });
+
+  // --- Crab: scuttles sideways, shielded from the front -------------------
+  defineEnemy('crab', {
+    hp: 2, damage: 2, pal: 'enemyr', speed: 0.62, rate: 8,
+    frames: ['crab_0', 'crab_1'],
+    hb: { x: 1, y: 6, w: 14, h: 9 },
+    terrain: 'shallow',
+    shield: 'front',
+    drops: 'common',
+    ai(e, g) {
+      patrol(e, g, { axis: 'x' });
+      if (every(e, 120)) e._pdir = e._pdir === 'left' ? 'right' : 'left';
+      if (distToPlayer(e, g) < 40 && every(e, 30)) facePlayer(e, g);
+    },
+  });
+
+  // --- Zol: a slime that splits when struck ------------------------------
+  defineEnemy('zol', {
+    hp: 2, damage: 2, pal: 'slime', speed: 0.3, rate: 14,
+    frames: ['zol_0', 'zol_1'],
+    hb: { x: 3, y: 6, w: 10, h: 9 },
+    terrain: 'any',
+    drops: 'common',
+    ai(e, g) { hop(e, g, { wait: 52, power: 1.7, speed: 0.9 }); },
+    onDie(e, g) {
+      // Splits into two gels, unless this zol was itself a split.
+      if (e.opts.split) return;
+      for (const dx of [-9, 9]) {
+        spawnEntity(g, 'gel', (e.x + dx) / TILE, e.y / TILE, { split: true });
+      }
+    },
+  });
+
+  defineEnemy('gel', {
+    hp: 1, damage: 1, pal: 'slime', speed: 0.42, rate: 10,
+    frames: ['gel_0', 'gel_1'],
+    w: 16, h: 16,
+    hb: { x: 5, y: 8, w: 6, h: 7 },
+    terrain: 'any',
+    drops: 'none',
+    ai(e, g) { chase(e, g, { speed: 0.42 }); },
+  });
+
+  // --- Keese: erratic flier, ignores terrain -----------------------------
+  defineEnemy('keese', {
+    hp: 1, damage: 1, pal: 'shadow', speed: 1.0, rate: 5, terrain: 'air',
+    frames: ['keese_0', 'keese_1'],
+    hb: { x: 3, y: 4, w: 10, h: 8 },
+    z: 8,
+    drops: 'common',
+    ai(e, g) {
+      // Rests, then darts toward Link in bursts.
+      if (e._rest == null) e._rest = 60;
+      if (e._rest > 0) { e._rest--; if (e._rest === 0) e._dash = 70; return; }
+      if (e._dash > 0) { e._dash--; bounceDiag(e, g, { speed: 1.15 }); if (e._dash === 0) e._rest = 50; }
+    },
+  });
+
+  // --- Leever: burrows and surfaces near you -----------------------------
+  defineEnemy('leever', {
+    hp: 2, damage: 2, pal: 'enemyp', speed: 0.5, rate: 9,
+    frames: ['leever_0', 'leever_1'],
+    terrain: 'land',
+    drops: 'common',
+    ai(e, g) {
+      submerge(e, g, { down: 70, up: 110, whileUp: (e2, g2) => chase(e2, g2, { speed: 0.5 }) });
+    },
+  });
+
+  // --- Bubble: invulnerable drifting hazard ------------------------------
+  defineEnemy('bubble', {
+    hp: 999, damage: 2, pal: 'spark', speed: 1.0, rate: 6, terrain: 'air',
+    frames: ['bubble_0', 'bubble_1'],
+    shield: 'all',
+    drops: 'none',
+    z: 6,
+    ai(e, g) { bounceDiag(e, g, { speed: 1.05 }); },
+  });
+
+  // --- Beamos: static, fires when you are in line ------------------------
+  defineEnemy('beamos', {
+    hp: 999, damage: 2, pal: 'stonedk', speed: 0, rate: 12,
+    frames: ['beamos_0', 'beamos_1'],
+    shield: 'all',
+    terrain: 'any',
+    drops: 'none',
+    ai(e, g) {
+      if (every(e, 44) && distToPlayer(e, g) < 80) {
+        facePlayer(e, g);
+        shoot(e, g, { sprite: 'shot_beam', pal: 'enemyr', speed: 2.0, aim: true, damage: 2 });
+      }
+    },
+  });
+
+  // --- Spiked Beetle: charges in straight lines -------------------------
+  defineEnemy('beetle', {
+    hp: 3, damage: 2, pal: 'enemyk', speed: 0.4, rate: 9,
+    frames: {
+      down: ['beetle_d0', 'beetle_d1'],
+      up: ['beetle_d0', 'beetle_d1'],
+      side: ['beetle_s0', 'beetle_s1'],
+    },
+    shield: 'front',
+    drops: 'good',
+    ai(e, g) {
+      charge(e, g, { speed: 1.9, tell: 16, range: 88, shake: true, idle: (e2, g2) => wander(e2, g2, { turnChance: 0.01 }) });
+    },
+  });
+
+  // --- Tektite: hops at you across water ---------------------------------
+  defineEnemy('tektite', {
+    hp: 2, damage: 2, pal: 'enemyb', speed: 0.6, rate: 8, terrain: 'any',
+    frames: ['tektite_0', 'tektite_1'],
+    drops: 'common',
+    ai(e, g) { hop(e, g, { wait: 34, power: 2.6, speed: 1.3 }); },
+  });
+
+  // --- Wisp: circles a point and shoots rings ---------------------------
+  defineEnemy('wisp', {
+    hp: 3, damage: 2, pal: 'magic', speed: 0, rate: 7, terrain: 'air',
+    frames: ['wisp_0', 'wisp_1'],
+    z: 8,
+    drops: 'good',
+    ai(e, g) {
+      orbit(e, g, { radius: 28, speed: 0.03 });
+      if (every(e, 150)) shootRing(e, g, 6, { sprite: 'shot_orb', pal: 'magic', speed: 1.0, damage: 2 });
+    },
+  });
+
+  // --- Urchin: harmless until the tide covers it, then it drifts --------
+  defineEnemy('urchin', {
+    hp: 2, damage: 2, pal: 'enemyp', speed: 0.25, rate: 16, terrain: 'any',
+    frames: ['urchin_0', 'urchin_1'],
+    shield: 'front',
+    drops: 'common',
+    ai(e, g) {
+      if (g.tide.level >= 1) wander(e, g, { speed: 0.3, turnChance: 0.03 });
+    },
+  });
+
+  // --- Moblin: throws spears, retreats when close ------------------------
+  defineEnemy('moblin', {
+    hp: 4, damage: 3, pal: 'enemyg', speed: 0.45, rate: 10,
+    frames: {
+      down: ['moblin_d0', 'moblin_d1'],
+      up: ['moblin_u0', 'moblin_u1'],
+      side: ['moblin_s0', 'moblin_s1'],
+    },
+    hb: { x: 2, y: 4, w: 12, h: 11 },
+    drops: 'good',
+    ai(e, g) {
+      const d = distToPlayer(e, g);
+      if (d < 30) flee(e, g, { speed: 0.55 });
+      else wander(e, g, { turnChance: 0.01 });
+      if (every(e, 88) && aligned(e, g, 16) && d < 100) {
+        shoot(e, g, { sprite: 'shot_spear', pal: 'wood', speed: 1.8, damage: 3 });
+      }
+    },
+  });
+
+  // --- Stalfos: skittish skeleton that hops away from your sword --------
+  defineEnemy('stalfos', {
+    hp: 3, damage: 2, pal: 'enemyk', speed: 0.7, rate: 8,
+    frames: {
+      down: ['stalfos_d0', 'stalfos_d1'],
+      up: ['stalfos_d0', 'stalfos_d1'],
+      side: ['stalfos_s0', 'stalfos_s1'],
+    },
+    drops: 'good',
+    ai(e, g) {
+      if (distToPlayer(e, g) < 26) flee(e, g, { speed: 0.9 });
+      else chase(e, g, { speed: 0.55 });
+    },
+  });
+}
