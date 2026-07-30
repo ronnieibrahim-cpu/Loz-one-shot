@@ -437,3 +437,44 @@ asserting no page errors and that the scheduler advanced (`audio.track` set,
 `_orderIdx`/`_row` moving). Silent or throwing tracks are bugs. Also assert every
 track name above exists in `TRACKS`, and that every `music:` name referenced
 anywhere in `src/data/*.js` resolves to a real track.
+
+---
+
+## Section J — extracting art from a ripped sprite sheet
+
+Some art is lifted from the original games rather than drawn. `tools/ripkit.py`
+does the work; `tools/rip-npcs.py` is a complete worked example, and
+`tools/rip-link.py` is a second one using a hand-written coordinate map.
+
+The workflow:
+
+1. `load(path)` then `background(px, W, H)` — the background is whichever colour
+   dominates the sheet border (green on most sheets, white on some).
+2. `find_cells(px, W, H, bg, size=16, y1=...)` returns cell origins. Bound the
+   scan with `x0/x1/y0/y1` to skip label text and credit blocks.
+3. `contact_sheet(im, cells, 'tools/shots/<name>-index.png')` writes a numbered
+   PNG. **Read that image** and write down which index is which creature.
+4. Map index -> engine sprite name, then `quantise()` each cell and
+   `emit_module()` the result.
+5. Wire the new module into `src/data/index.js`, registering it **after** the
+   placeholder pack so the extracted art wins.
+
+Three traps that cost real time the first time round:
+
+- **Sheets do not use a uniform row pitch.** Assuming 16px steps cuts every
+  sprite in half. `find_cells` measures each sprite's own bounding box; do not
+  replace that with a fixed grid.
+- **Full-colour sprites need per-sprite palettes.** Link's sheet happened to use
+  three colours, but most do not. `quantise` returns a palette per sprite,
+  `emit_module` binds it via the `{ art, pal }` form, and `registerPalettes`
+  installs it. If art renders in the wrong colours, the palette is not bound.
+- **Packed sheets leak neighbours.** Adjacent sprites bleed a pixel or two into
+  a cell; `_trim_slivers` drops edge columns that are disconnected from the body.
+
+Sizes and names must match `src/data/sprite-manifest.js`. Directional sets use
+`_d` (down), `_u` (up), `_s` (side facing RIGHT — mirror with `flip=True` if the
+sheet faces left). Verify with `node tools/validate.mjs --strict --pack=<pack>`,
+then `node tools/preview.mjs <pack> --scale=6` and **look at the PNG**.
+
+Record the source and ripper credit in the generated module's header, as the
+existing rip modules do.
