@@ -5,6 +5,7 @@ import { Entity, defineEntity, moveEntity, canOccupy, groundFlags, DIR_VEC } fro
 import { F } from '../world/tileset.js';
 import { TILE } from '../core/screen.js';
 import { sprites } from '../gfx/art.js';
+import { drawText } from '../gfx/font.js';
 import {
   addRupees, heal, addBombs, addSeeds, addKey, giveItem, addHeartContainer,
   addHeartPiece, HEART_UNITS, setFlag, flag,
@@ -247,6 +248,175 @@ export class Sign extends Entity {
   interact(game) { game.say(this.text); }
 }
 defineEntity('sign', (x, y, o) => new Sign(x, y, o));
+
+// --------------------------------------------------------------------------
+// Shop item: an item on the floor with a price tag, bought by pressing A.
+//
+//   ['shopItem', 3, 3, { item: 'shield', level: 1, price: 30 }]
+//   ['shopItem', 5, 3, { pickup: 'bomb4', price: 20, name: 'Bombs' }]
+//   ['shopItem', 7, 3, { ring: 'power', price: 80 }]
+// --------------------------------------------------------------------------
+
+export class ShopItem extends Entity {
+  constructor(x, y, o = {}) {
+    super(x, y, o);
+    this.w = 16; this.h = 16;
+    this.hb = { x: 2, y: 2, w: 12, h: 12 };
+    this.harmless = true;
+    this.shadow = false;
+    this.solid = false;
+    this.price = o.price || 10;
+    this.item = o.item || null;
+    this.level = o.level || 1;
+    this.pickup = o.pickup || null;
+    this.ring = o.ring || null;
+    this.label = o.name || null;
+    this.saveKey = o.saveKey || null;
+    this.once = o.once !== false;      // most stock is one-per-save
+    this.sold = false;
+    this.depth = -3;
+  }
+
+  get displayName() {
+    if (this.label) return this.label;
+    if (this.item) return itemName(this.item, this.level);
+    if (this.ring) return 'a magic ring';
+    return 'something';
+  }
+
+  get icon() {
+    if (this.item) return itemIcon(this.item, this.level);
+    if (this.ring) return 'i_ring';
+    return (PICKUPS[this.pickup] || PICKUPS.rupee1).sprite;
+  }
+
+  interact(game) {
+    if (this.sold) { game.say('Sold out, sorry.'); return; }
+    const p = game.progress;
+    if (p.rupees < this.price) {
+      game.audio.sfx('deny');
+      game.say(`${this.displayName} — ${this.price} Rupees.\nYou cannot afford it.`);
+      return;
+    }
+    game.ask(`${this.displayName} — ${this.price} Rupees.\nBuy it?`, ['Yes', 'No'], (pick) => {
+      if (pick !== 0) return;
+      addRupees(p, -this.price);
+      game.audio.sfx('rupee');
+      if (this.item) {
+        giveItem(p, this.item, this.level);
+        game.autoEquip(this.item);
+        if (this.item === 'bombs' && !p.maxBombs) { p.maxBombs = 10; addBombs(p, 10); }
+        game.presentItem(this.item, this.level);
+      } else if (this.ring) {
+        p.rings[this.ring] = true;
+        game.audio.jingle('fanfareShort');
+        game.say('You got a magic ring! Check the Quest screen.');
+      } else if (this.pickup) {
+        (PICKUPS[this.pickup] || PICKUPS.rupee1).get(game);
+      }
+      if (this.once) {
+        this.sold = true;
+        if (this.saveKey) p.secrets[this.saveKey] = true;
+      }
+    });
+  }
+
+  update(game) {
+    this.frame++;
+    if (!this._checked) {
+      this._checked = true;
+      if (this.saveKey && game.progress.secrets[this.saveKey]) this.sold = true;
+    }
+  }
+
+  draw(ctx, game, ox, oy) {
+    if (this.sold) return;
+    const bob = Math.round(Math.sin(this.frame * 0.06) * 1);
+    sprites.draw(ctx, this.icon, ox + this.x, oy + this.y + bob,
+      { pal: (this.item && ITEMS[this.item] && ITEMS[this.item].pal) || 'ui' });
+    drawText(ctx, String(this.price), ox + this.x + 2, oy + this.y + 15, '#f8f8e8', '#181c18');
+  }
+}
+defineEntity('shopItem', (x, y, o) => new ShopItem(x, y, o));
+
+// --------------------------------------------------------------------------
+// Giver: an NPC who hands over an item once a condition is met.
+//
+//   ['giver', 4, 3, {
+//     sprite: 'npc_maku', pal: 'maku',
+//     item: 'satchel', level: 1,
+//     needEssences: 1,                 // or needFlag: 'someFlag'
+//     flag: 'gotSatchel',              // set once given, so it happens once
+//     dialogue: 'makuSatchel',         // said when the condition holds
+//     waiting: 'makuWaiting',          // said when it does not
+//     after: 'makuIdle',               // said on later visits
+//   }]
+// --------------------------------------------------------------------------
+
+export class Giver extends NPC {
+  constructor(x, y, o = {}) {
+    super(x, y, o);
+    this.item = o.item || null;
+    this.level = o.level || 1;
+    this.pickup = o.pickup || null;
+    this.ring = o.ring || null;
+    this.needEssences = o.needEssences || 0;
+    this.needFlag = o.needFlag || null;
+    this.giveFlag = o.flag || null;
+    this.waitingText = o.waiting || null;
+    this.afterText = o.after || null;
+  }
+
+  ready(game) {
+    const p = game.progress;
+    if (p.essences.length < this.needEssences) return false;
+    if (this.needFlag && !flag(p, this.needFlag)) return false;
+    return true;
+  }
+
+  interact(game, player) {
+    const p = game.progress;
+    if (this.faceOnTalk) {
+      const dx = player.cx - this.cx, dy = player.cy - this.cy;
+      this.dir = Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 'left' : 'right') : (dy < 0 ? 'up' : 'down');
+    }
+    if (this.giveFlag && flag(p, this.giveFlag)) {
+      if (this.afterText) game.startDialogue(this.afterText, this);
+      else if (this.dialogue) game.startDialogue(this.dialogue, this);
+      return;
+    }
+    if (!this.ready(game)) {
+      if (this.waitingText) game.startDialogue(this.waitingText, this);
+      else if (this.dialogue) game.startDialogue(this.dialogue, this);
+      return;
+    }
+    if (this.giveFlag) setFlag(p, this.giveFlag);
+    const grant = () => {
+      if (this.item) {
+        giveItem(p, this.item, this.level);
+        game.autoEquip(this.item);
+        if (this.item === 'satchel' && !p.maxSeeds) {
+          p.maxSeeds = 20; addSeeds(p, 'ember', 20); p.seedSelected = 'ember';
+        }
+        if (this.item === 'bombs' && !p.maxBombs) { p.maxBombs = 10; addBombs(p, 10); }
+        game.presentItem(this.item, this.level);
+      } else if (this.ring) {
+        p.rings[this.ring] = true;
+        game.audio.jingle('fanfareShort');
+        game.say('You got a magic ring!');
+      } else if (this.pickup) {
+        (PICKUPS[this.pickup] || PICKUPS.rupee1).get(game);
+      }
+    };
+    // Speak first, then hand the item over once the box is dismissed.
+    if (this.dialogue) {
+      game.startDialogue(this.dialogue, this);
+      if (game.dialogue.active) { game.dialogue.onClose = grant; return; }
+    }
+    grant();
+  }
+}
+defineEntity('giver', (x, y, o) => new Giver(x, y, o));
 
 // --------------------------------------------------------------------------
 // Pushable block, floor switch, torch
