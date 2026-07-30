@@ -540,6 +540,8 @@ export class Game {
         spawnEntity(this, 'essence', 4, 3, { index: d.index });
       });
     }
+    // The boss track was stopped, so nothing would resume once the jingle ends.
+    this.frameLater(220, () => this.updateMusic());
     if (room.def.script && room.def.script.onEvent) room.def.script.onEvent(this, 'bossDead', e);
   }
 
