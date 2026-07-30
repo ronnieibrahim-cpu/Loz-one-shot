@@ -25,8 +25,10 @@ const problems = [];
 const warn = [];
 
 function checkArtPack(label, pack, expectW, expectH, { allowVariable = false, sizeFor = null } = {}) {
-  for (const [name, src] of Object.entries(pack)) {
+  for (const [name, entry] of Object.entries(pack)) {
     if (sizeFor) { const [w, h] = sizeFor(name); expectW = w; expectH = h; }
+    // Entries are either a bare art string or { art, pal } binding a palette.
+    const src = (entry && typeof entry === 'object') ? entry.art : entry;
     if (typeof src !== 'string') { problems.push(`${label}/${name}: art is not a string`); continue; }
     const lines = src.split('\n').map(l => l.trimEnd()).filter(l => l.trim() !== '');
     if (!lines.length) { problems.push(`${label}/${name}: art is empty`); continue; }

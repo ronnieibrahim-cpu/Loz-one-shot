@@ -186,7 +186,9 @@ export class NPC extends Entity {
     super(x, y, o);
     this.w = 16; this.h = 16;
     this.hb = { x: 2, y: 5, w: 12, h: 10 };
-    this.pal = o.pal || 'npc';
+    // No default palette: extracted NPC art carries its own colours, and only an
+    // explicit `pal` in room data should override them.
+    this.pal = o.pal || null;
     this.sprite = o.sprite || 'npc_villager';
     this.frames = o.frames || null;
     this.solid = true;

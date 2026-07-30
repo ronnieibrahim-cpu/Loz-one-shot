@@ -112,3 +112,14 @@ export function brightenPalette(pal, amount) {
 export function getPalette(name) {
   return PALETTES[name] || PALETTES.stone;
 }
+
+/**
+ * Add palettes at load time. Sprites extracted from the original games each
+ * carry their own four colours, so the rip tools emit a palette alongside the
+ * art rather than forcing everything through the hand-authored set above.
+ */
+export function registerPalettes(defs) {
+  for (const [name, colors] of Object.entries(defs)) {
+    if (Array.isArray(colors) && colors.length === 4) PALETTES[name] = colors;
+  }
+}
