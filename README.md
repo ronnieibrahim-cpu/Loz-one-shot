@@ -88,7 +88,8 @@ The engine is complete and verified: all 35 assertions pass.
 | Tide system and tide-variant tiles | Done |
 | Player, combat, items, enemies framework | Done |
 | Boss framework (phases, tells, weak points) | Done |
-| Link, HUD and terrain art | Done |
+| Link sprite | Extracted from the Oracle of Ages sheet, on-model |
+| HUD and terrain art | Done |
 | Boss and miniboss art | Placeholder quality, needs a redraw |
 | Enemy, NPC, object, effect and item-icon art | Not yet drawn |
 | Overworld (120 screens) | 6 screens of 120 |
@@ -106,9 +107,17 @@ fixed and machine-checked: `docs/GAME-PLAN.md` pins the region layout, dungeon
 and item assignments and progression gates, and `docs/briefs/AGENTS.md` carries
 a complete spec for each remaining pack.
 
-## A note on names
+## A note on names and art
 
 This is a fan work. It uses Nintendo's character and world names directly
-(Link, Zelda, Farore, the Maku Tree, Rupees, Octoroks) while the code, art,
-music and the land of Thalassia are original. Fine as a personal project;
-publishing or hosting it would be a trademark and copyright problem.
+(Link, Zelda, Farore, the Maku Tree, Rupees, Octoroks), and Link's sprites are
+extracted from a rip of *Oracle of Ages* (ripped by Mister Mike, via
+spriters-resource.com) — that artwork is Nintendo's. The engine, the tide
+mechanic, the land of Thalassia, its bosses and its music are original.
+
+Fine as a personal project. Publishing or hosting it would be both a trademark
+and a copyright problem, and the extracted sprites make that unambiguous.
+
+`tools/rip-link.py` holds the extraction: point it at the sheet and it
+regenerates `src/data/sprites-player.js`. Swapping in original art means
+replacing that one file.

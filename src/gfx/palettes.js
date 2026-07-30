@@ -30,7 +30,10 @@ export const PALETTES = {
   gold:    ['#fff0a0', '#e8c040', '#a87818', '#503408'],
 
   // --- characters ----------------------------------------------------------
-  link:    ['#f8e0b8', '#68c058', '#286030', '#181410'],   // skin / tunic / dark tunic / outline
+  // Exact Oracle-series values: skin and blond hair share one tone, the tunic is
+  // a single green, and everything else is the black outline. Index 2 is unused
+  // by the ripped art but kept as a darker green for anything drawn by hand.
+  link:    ['#ffd68c', '#10ad42', '#0b7a2e', '#000000'],   // skin / tunic / dark tunic / outline
   linkblue:['#f8e0b8', '#68a8e0', '#284878', '#181410'],
   linkred: ['#f8e0b8', '#e87058', '#983020', '#181410'],
   linkswim:['#f8e0b8', '#68c058', '#2868b8', '#181410'],

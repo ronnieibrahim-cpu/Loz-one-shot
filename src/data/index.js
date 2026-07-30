@@ -13,6 +13,7 @@ import { installDungeonsB } from './dungeons-b.js';
 import { installStory } from './story.js';
 import { installAudio } from './audio.js';
 import { installLinkSprites, LINK_ART, FX_ART, FX_BIG_ART, UI_ART } from './sprites-link.js';
+import { installPlayerSprites, PLAYER_ART } from './sprites-player.js';
 import { installWorldSprites, PICKUP_ART, OBJECT_ART, SHOT_ART, NPC_ART } from './sprites-world.js';
 import { installEnemySprites, ENEMY_ART } from './sprites-enemies.js';
 import { installBossSprites, BOSS_ART, MINIBOSS_ART } from './sprites-bosses.js';
@@ -25,6 +26,7 @@ export const ART_PACKS = {
 // Sprite art: validated against the sizes in sprite-manifest.js.
 export const SPRITE_PACKS = {
   link: LINK_ART,
+  player: PLAYER_ART,
   fx: FX_ART,
   fxBig: FX_BIG_ART,
   ui: UI_ART,
@@ -46,6 +48,8 @@ export function installData() {
   installCoreTiles();
   installLegends();
   installLinkSprites();
+  // After sprites-link.js, so the on-model Link art overrides the earlier pass.
+  installPlayerSprites();
   installWorldSprites();
   installEnemySprites();
   installBossSprites();
