@@ -4,7 +4,10 @@ State of the project as of this handoff, and what a fresh session needs to know.
 
 ## Where things stand
 
-Branch: `claude/zelda-style-game-piqt8v` (everything committed and pushed).
+Branch: `claude/zelda-boss-behavior-jgbfwo` (everything committed and pushed).
+It branches from `claude/zelda-style-game-piqt8v` and contains all of that
+branch's history plus the boss, art and story passes. `piqt8v` is unchanged and
+can be fast-forwarded onto this one.
 
 **The engine is complete and verified.** `node tools/test.mjs` boots the game in
 headless Chromium and passes 35 assertions covering boot, movement, sword
@@ -26,17 +29,18 @@ sprite packs still to be drawn.
 | **Enemy roster (22 types)** | **Done** — `src/data/enemies.js` |
 | **Overworld** | **Done — all 120 screens** |
 | **Dungeons 1-8** | **Done — 179 rooms, all solvable** |
-| Effects + item icons (83) | **Not done** — placeholder boxes |
+| **Effects + item icons (83)** | **Done** — hand-drawn |
+| **Pickups, objects, projectiles (37)** | **Done** — hand-drawn |
+| **Boss/miniboss behaviour (16)** | **Done** — `src/data/bosses.js` |
+| **Story and dialogue** | **Done** — 20 ids, 15 cutscenes |
 | Boss/miniboss art (49) | **Poor** — script-generated blobs, needs redraw |
-| Boss/miniboss behaviour (16) | **Not started** — `src/data/bosses.js` is a stub |
-| Story and dialogue | **Intro only** — the overworld references ~14 unwritten ids |
 | Music | 6 tracks, needs about 14 |
 
-### The one thing blocking a playable game
+### The game is now completable end to end
 
-`src/data/bosses.js` is still a stub, so all sixteen boss and miniboss names
-spawn nothing. **No dungeon can currently be finished.** This is the highest
-value work left. Section G of `docs/briefs/AGENTS.md` specifies it exactly.
+The blocker is gone: all sixteen bosses and minibosses are implemented and
+verified beatable. `node tools/test.mjs` reports **0 unauthored art names**,
+down from 17. What is left is polish — boss art and music — not structure.
 
 ## The two documents that matter
 
@@ -52,6 +56,9 @@ value work left. Section G of `docs/briefs/AGENTS.md` specifies it exactly.
 - **`docs/briefs/AGENTS.md`** — a complete authoring spec per work area,
   sections A through J. Each section names the one file to edit and how to
   verify. Section J documents the sprite-sheet extraction workflow.
+- **`docs/NEXT-SESSION.md`** — a ready-to-paste prompt for a fresh session,
+  naming the branch, the two remaining jobs and how to prove them. Start there
+  if you are picking this up cold, and keep it current as work lands.
 
 ## Tooling
 
@@ -124,6 +131,60 @@ several can run at once.
    at `--scale=6` the rightmost column is cut off — use `--scale=2` to see a
    whole pack.
 
+**Boss and miniboss behaviour** (`src/data/bosses.js`) — four traps, all paid
+for, all of which produce a boss that *validates* and is *unwinnable*:
+
+1. **A miniboss must clear `isBoss` in its `init`.** `game.onEnemyDefeated`
+   keys `progress.beaten` off the **map id**, not the entity, so a miniboss
+   counted as a boss marks its whole dungeon beaten. That deletes the real boss
+   when you walk into its room (`spawnRoomEntities` removes it) *and* spawns the
+   dungeon's essence in the miniboss room. It also blocks the miniboss room's
+   own `puzzle: { enemies: true }` reward, because `onEnemyDefeated` returns
+   early for bosses and never sets `room.cleared`.
+2. **`submerge()` is sticky.** It parks the entity `hidden`, `harmless` and on
+   `invuln: 9999`. A later phase that does not call `submerge` inherits all
+   three and you get an invisible, invulnerable, unkillable boss standing in the
+   room. Every boss that submerges in *any* phase calls `surface(e)` on *every*
+   phase change.
+3. **`e.stun` makes `Boss.update` return before the AI runs**, so an attack
+   cannot be executed inline after setting a wind-up. The `windUp`/`runPending`
+   pair in `bosses.js` parks the attack on the entity and fires it on the next
+   live frame. Every heavy attack goes through it, which is also what guarantees
+   every attack has a tell.
+4. **A tide gate must never be a boss's only vulnerability.** Nereth pins the
+   tide to MID in phase 1 — which is the level the player walks in at — so an
+   unconditional "sealed while the tide sits at my level" made him invulnerable
+   from the first frame with no way to learn otherwise. Every boss now has a
+   timed window that does not depend on the conch; the tide widens it.
+
+Boss rooms are authored `noTide: true`, which only sets `tide.locked` and only
+stops the *conch* — `tide.setLevel` still works. Each boss calls `unlockTide` on
+its intro to hand tide control back for the fight, and the late bosses force it
+back to the level that suits them.
+
+**Art** (`sprites-link.js`, `sprites-world.js`):
+
+- **Transparency, not outline, is what separates two shapes.** Five icons
+  (conch, cape, gloves, flippers, magnet) came out as solid blobs because the
+  gap between prongs/fingers/wings was drawn with `3` instead of `.`. At 16x16
+  an outline pixel is just another coloured pixel.
+- `preview.mjs` renders a whole pack in **one** palette, so it shows silhouette
+  and shape but not in-game colour. That is the right tool for "does it read as
+  the thing it names"; use `test.mjs --shots` for colour.
+- The engine's `slashD` effect (`src/game/effects.js`) wants `fx_slash_d0` and
+  `fx_slash_d1`, and `player.js` spawns it on **every sword swing** — but
+  neither name is in `sprite-manifest.js`, so nothing flagged them and the
+  most-seen effect in the game drew as a placeholder box for the whole project.
+  If you add an effect to the engine, add its frames to the manifest.
+
+**Data contracts drift from engine contracts, and nothing checks it.** Both
+`giver` entities in `overworld.js` passed `giveFlag`, `waitingText`, `afterText`
+and a `ready` function; `Giver` in `src/game/objects.js` reads `flag`,
+`waiting`, `after` and `needEssences`. Every option was silently dropped, so the
+Maku Tree and the digger handed over the Seed Satchel and the Shovel on first
+contact with no Essence requirement and repeated it on every later talk. The
+validator cannot see this. When wiring a data entity, read the class.
+
 **Map authoring:**
 
 - Rooms whose edges must line up are **not** worth hand-checking. Both the
@@ -162,9 +223,51 @@ several can run at once.
 
 ## Verification harnesses
 
-Two throwaway checkers were written for this pass and are worth rebuilding
-rather than trusting a read-through. Neither is committed; both are described
-well enough here to rewrite in a few minutes.
+Four throwaway checkers have been written for this project. **None is
+committed** — they are described well enough here to rewrite in a few minutes,
+and rewriting is better than trusting a read-through. All four copy the boot
+pattern in `tools/test.mjs`.
+
+Two of them need engine internals that `main.js` does not publish. It only sets
+`window.__game`; pull the rest out of the live module graph from inside the
+page, which returns the same instances:
+
+```js
+await page.evaluate(async () => {
+  const m = await import('/src/game/entity.js');
+  window.__spawn = m.spawnEntity;              // and MAPS, getText, CUTSCENES
+});
+```
+
+- **Boss harness** (brief section G) — for each of the 16 types: spawn it into
+  its real arena, run ~1200 frames with the player attacking and ~1200 idle,
+  and assert it moves or attacks, takes sword damage, opens a weak point if
+  `shell`, reaches a later phase, damages an idle player, and dies. 264
+  assertions. Three things this harness taught the hard way, which you will
+  otherwise mis-attribute to the AI:
+  - **Spawn minibosses on their real tile.** Bosses sit at `(4,2)`; minibosses
+    at `(4,3)` or `(4,4)` depending on the dungeon. Dropping a miniboss at
+    `(4,2)` puts it inside a wall, where it cannot move and looks inert.
+  - **Keep the player alive between samples.** A boss that kills them drops the
+    game into `gameover`, where nothing updates and *every later subject in the
+    run* looks inert.
+  - **Reset the game between subjects.** A boss's death drops an essence; the
+    parked player collects it, which opens a text box and then an essence
+    cutscene. An active dialogue freezes every entity **while `mode` stays
+    `'play'`**, which is a genuinely confusing way to fail.
+- **Tide probe** — hold the tide at each level for 600 frames per boss and
+  record open-window percentage, distance travelled, `z` and self-healing.
+  Proves the eight hooks actually differ instead of taking the comments' word
+  for it. A companion probe pins the boss in place and measures how far the
+  *player* is dragged, which is the only way to see Thalassor's whirlpool and
+  Gustharpy's downdraught.
+- **Story harness** (brief section H) — walk `MAPS` collecting every
+  `dialogue`/`waiting`/`after` id any room entity references, assert each
+  resolves via `getText`, then run every cutscene in `CUTSCENES` via
+  `startCutscene`, pressing A/START until it completes, asserting each ends
+  within 3000 frames. A cutscene that never ends soft-locks the game.
+
+The two below predate this session and are still worth rebuilding.
 
 - **Overworld checker** — imports `src/data/index.js` in plain Node (no
   browser), asserts all 120 screens exist, that every seam's walkable edge tiles
@@ -192,20 +295,23 @@ backgrounds, and a fan-made Oracle-style overworld tileset.
 
 ## What is left, highest value first
 
-1. **Boss and miniboss behaviour** (`src/data/bosses.js`, brief section G).
-   Sixteen types. Nothing can be finished without them.
-2. **Effects, pickups, objects, projectiles and item icons** (brief sections A
-   and B — `sprites-link.js`, `sprites-world.js`). 83 names still render as
-   placeholder boxes, and they are the most-seen art in the game: chests, signs,
-   rupees, hearts, the sword slash.
-3. **Story and dialogue** (`src/data/story.js`, brief section H). The overworld
-   and the village interiors reference dialogue ids that do not exist yet:
-   `villager1` `villager2` `villageChild` `digger` `diggerWait` `diggerAfter`
-   `shopkeeper` `makuTree` `makuWait` `makuAfter` `faroreHome` `coastFisher`
-   `coastChild` `stoneFisher` `wreckSurvivor` `salterElder` `reefFisher`
-   `coralDiver` `woodChild` `bogWitch`. An unknown id shows an empty box.
-4. **Boss art redraw** (`src/data/sprites-bosses.js`, brief section C).
-5. **Music** (`src/data/audio.js`, brief section I).
+1. **Boss and miniboss art redraw** (`src/data/sprites-bosses.js`, brief
+   section C). 49 names: `BOSS_ART` 33 at **32x32**, `MINIBOSS_ART` 16 at
+   **24x24**. They currently exist as script-generated blobs, which is why
+   `validate` passes and the screen still looks wrong. This is the single
+   biggest remaining visual problem — these are the set pieces, and every one
+   of them now has a real fight attached to it that the player will be staring
+   at for a minute at a time. `docs/ART-DIRECTION.md` is binding; the failure
+   mode it describes is exactly the one in this file today.
+2. **Music** (`src/data/audio.js`, brief section I). 6 tracks exist, about 14
+   are wanted. **Keep the entire `SFX` object as it is** — only extend or
+   replace `TRACKS`. The tracker format is defined in the top comment of
+   `src/core/audio.js`. Track names referenced by map data that do not exist
+   play nothing silently, so the names in the brief matter.
+3. **Optional polish**, in rough order of payoff:
+   - `i_compass` is the one item icon that still does not read well.
+   - Dungeon room interiors are correct and solvable but plain (see below).
+   - The three overworld region gates that do not match GAME-PLAN.md.
 
 ## Known soft spots in what has been done
 
