@@ -18,6 +18,7 @@ regenerate byte-identical output.
 | `oracle-seasons-trading-characters.png` | Oracle of Seasons | Mister Mike | not yet used |
 | `oracle-seasons-dungeon-backgrounds.png` | Oracle of Seasons | Mister Mike | not yet used — dungeon tiles |
 | `custom-oracle-style-overworld.png` | fan-made, Oracle style | community edit | not yet used — overworld tiles |
+| `oracle-seasons-hud-gear.png` | Oracle of Seasons | Mister Mike | `tools/rip-hud.py` -> `src/data/sprites-hud.js` |
 
 All obtained via spriters-resource.com. Most sheets carry two halves: "GBC LCD
 Colors" simulates the handheld screen, "True Colors" is the raw palette. The

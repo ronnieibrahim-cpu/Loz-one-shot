@@ -52,6 +52,16 @@ if (PACK && !REQUIRED_SPRITES[PACK]) {
   process.exit(2);
 }
 
+// Sprites where a `hole` is the artwork, not a defect. Each was checked against
+// the source sheet pixel for pixel before being listed: the '?' has a counter
+// above its stem, and three of the satchel seeds are notched shapes. Keep this
+// list tiny and only add to it after diffing the extraction against its source —
+// its whole value is that a real slot still fails the build.
+const HOLE_OK = new Set([
+  'i_unknown',                                  // the counter of the question mark
+  'i_seed_pegasus', 'i_seed_gale', 'i_seed_mystery',
+]);
+
 const isBossArt = (n) => n.startsWith('boss_') || n.startsWith('mini_');
 const holes = [], outdents = [], detached = [];
 
@@ -84,7 +94,7 @@ for (const [name, def] of sprites.defs) {
       if (gap <= 2) {
         let up = true, dn = true;
         for (let i = x; i < e; i++) { if (!drawn(i, y - 1)) up = false; if (!drawn(i, y + 1)) dn = false; }
-        if (up && dn) holes.push([name, y, `${gap}px see-through slot at x=${x}`, render(y)]);
+        if (up && dn && !HOLE_OK.has(name)) holes.push([name, y, `${gap}px see-through slot at x=${x}`, render(y)]);
       }
       x = e - 1;
     }

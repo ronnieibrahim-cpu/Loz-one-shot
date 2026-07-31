@@ -300,11 +300,11 @@ export class ThrownObject extends Entity {
 
 export const SEED_KINDS = ['ember', 'scent', 'pegasus', 'gale', 'mystery'];
 export const SEED_INFO = {
-  ember: { name: 'Ember Seed', pal: 'fire', icon: 'i_seed_ember' },
-  scent: { name: 'Scent Seed', pal: 'enemyy', icon: 'i_seed_scent' },
-  pegasus: { name: 'Pegasus Seed', pal: 'spark', icon: 'i_seed_pegasus' },
-  gale: { name: 'Gale Seed', pal: 'reef', icon: 'i_seed_gale' },
-  mystery: { name: 'Mystery Seed', pal: 'magic', icon: 'i_seed_mystery' },
+  ember: { name: 'Ember Seed', icon: 'i_seed_ember' },
+  scent: { name: 'Scent Seed', icon: 'i_seed_scent' },
+  pegasus: { name: 'Pegasus Seed', icon: 'i_seed_pegasus' },
+  gale: { name: 'Gale Seed', icon: 'i_seed_gale' },
+  mystery: { name: 'Mystery Seed', icon: 'i_seed_mystery' },
 };
 
 /** Apply a seed's effect at a point (used by both hand-use and the slingshot). */
@@ -345,7 +345,7 @@ export function applySeed(game, kind, x, y, fromPlayer) {
 
 export class SeedShot extends Projectile {
   constructor(x, y, o = {}) {
-    super(x, y, { ...o, sprite: SEED_INFO[o.kind].icon, pal: SEED_INFO[o.kind].pal, damage: 1, fromPlayer: true });
+    super(x, y, { ...o, sprite: SEED_INFO[o.kind].icon, damage: 1, fromPlayer: true });
     this.kind = o.kind;
     this.w = 8; this.h = 8;
   }
@@ -363,14 +363,14 @@ export const ITEMS = {
   sword: {
     names: ['Wooden Sword', 'Noble Sword', 'Master Sword'],
     icon: ['i_sword1', 'i_sword2', 'i_sword3'],
-    pal: 'ui', equippable: true,
+    equippable: true,
     desc: 'Press to slash. Hold to charge a spin attack.',
     use(game, p, level) { return p.startSwing(game, level); },
   },
   shield: {
     names: ['Wooden Shield', 'Iron Shield', 'Mirror Shield'],
     icon: ['i_shield1', 'i_shield2', 'i_shield3'],
-    pal: 'ui', equippable: true,
+    equippable: true,
     desc: 'Hold to block. Higher tiers block more.',
     hold: true,
     use(game, p, level) { p.shielding = true; return true; },
@@ -385,14 +385,14 @@ export const ITEMS = {
   feather: {
     names: ["Roc's Feather", "Roc's Cape"],
     icon: ['i_feather', 'i_cape'],
-    pal: 'ui', equippable: true,
+    equippable: true,
     desc: 'Leap over gaps and shallow water.',
     use(game, p, level) { return p.startJump(game, level >= 2 ? 3.3 : 2.6, level >= 2); },
   },
   bombs: {
     names: ['Bombs'],
     icon: ['i_bomb'],
-    pal: 'bomb', equippable: true, counted: 'bombs',
+    equippable: true, counted: 'bombs',
     desc: 'Blast cracked walls and stubborn foes.',
     use(game, p, level) {
       if (game.progress.bombs <= 0) { game.audio.sfx('deny'); return true; }
@@ -410,7 +410,7 @@ export const ITEMS = {
   bracelet: {
     names: ['Power Bracelet', 'Power Gloves'],
     icon: ['i_bracelet', 'i_gloves'],
-    pal: 'ui', equippable: true,
+    equippable: true,
     desc: 'Lift rocks and pots. Press again to throw.',
     use(game, p, level) {
       if (p.carrying) return p.throwCarried(game);
@@ -454,7 +454,7 @@ export const ITEMS = {
   satchel: {
     names: ['Seed Satchel'],
     icon: ['i_satchel'],
-    pal: 'tree', equippable: true,
+    equippable: true,
     desc: 'Holds the five kinds of seed. Press to use the selected one.',
     use(game, p, level) {
       const kind = game.progress.seedSelected || 'ember';
@@ -468,7 +468,7 @@ export const ITEMS = {
   slingshot: {
     names: ['Slingshot', 'Hyper Slingshot'],
     icon: ['i_slingshot', 'i_hyperslingshot'],
-    pal: 'wood', equippable: true,
+    equippable: true,
     desc: 'Fires seeds a long way. The hyper model fires three at once.',
     use(game, p, level) {
       const kind = game.progress.seedSelected || 'ember';
@@ -488,7 +488,7 @@ export const ITEMS = {
   shovel: {
     names: ['Shovel'],
     icon: ['i_shovel'],
-    pal: 'wood', equippable: true,
+    equippable: true,
     desc: 'Dig in soft sand and soil. Who knows what is buried.',
     use(game, p, level) { return p.startDig(game); },
   },
@@ -507,7 +507,7 @@ export const ITEMS = {
   ringbox: {
     names: ['Ring Box', 'Ring Box L2', 'Ring Box L3'],
     icon: ['i_ringbox'],
-    pal: 'gold', passive: true,
+    passive: true,
     desc: 'Holds magic rings. Bigger boxes let you wear more at once.',
   },
   map: { names: ['Dungeon Map'], icon: ['i_map'], pal: 'ui', passive: true, desc: 'Reveals the dungeon layout.' },

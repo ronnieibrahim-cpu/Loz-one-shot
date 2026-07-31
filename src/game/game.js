@@ -943,7 +943,7 @@ export class Game {
     if (!p) return;
     const s = this.itemShow;
     sprites.draw(ctx, itemIcon(s.id, s.lv), p.x, HUD_H + p.y - 16,
-      { pal: (ITEMS[s.id] && ITEMS[s.id].pal) || 'ui' });
+      { pal: ITEMS[s.id] && ITEMS[s.id].pal });
   }
 
   drawGameOver(ctx) {

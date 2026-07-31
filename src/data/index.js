@@ -18,6 +18,7 @@ import { installNpcSprites, NPC_ART as NPC_RIPPED_ART } from './sprites-npcs.js'
 import { installWorldSprites, PICKUP_ART, OBJECT_ART, SHOT_ART, NPC_ART } from './sprites-world.js';
 import { installEnemySprites, ENEMY_ART } from './sprites-enemies.js';
 import { installBossSprites, BOSS_ART, MINIBOSS_ART } from './sprites-bosses.js';
+import { installHudSprites, HUD_ART } from './sprites-hud.js';
 
 // Background tile art: validated at 16x16.
 export const ART_PACKS = {
@@ -39,6 +40,7 @@ export const SPRITE_PACKS = {
   enemies: ENEMY_ART,
   bosses: BOSS_ART,
   minibosses: MINIBOSS_ART,
+  hudRipped: HUD_ART,
 };
 
 let installed = false;
@@ -57,6 +59,9 @@ export function installData() {
   installNpcSprites();
   installEnemySprites();
   installBossSprites();
+  // After sprites-link.js, so the extracted HUD and gear icons override the
+  // hand-drawn ones for the items Oracle of Seasons actually has.
+  installHudSprites();
   installEnemies();
   installBosses();
   installOverworld();

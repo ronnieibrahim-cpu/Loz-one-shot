@@ -164,7 +164,7 @@ export class Menu {
       const sel = i === this.cursor;
       ctx.fillStyle = sel ? '#586878' : '#182028';
       ctx.fillRect(cx, cy, cw - 3, ch - 3);
-      sprites.draw(ctx, itemIcon(it.id, it.level), cx + 3, cy + 1, { pal: it.def.pal || 'ui' });
+      sprites.draw(ctx, itemIcon(it.id, it.level), cx + 3, cy + 1, { pal: it.def.pal });
       if (p.equipB === it.id) drawText(ctx, 'B', cx + cw - 9, cy + 10, '#a8f0f8');
       if (p.equipA === it.id) drawText(ctx, 'A', cx + cw - 9, cy + 1, '#f8e890');
     });

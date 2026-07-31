@@ -79,7 +79,7 @@ function drawSlot(ctx, x, itemId, p, label) {
   if (!itemId || !ITEMS[itemId]) return;
   const def = ITEMS[itemId];
   const lv = p.items[itemId] || 1;
-  sprites.draw(ctx, itemIcon(itemId, lv), x + 9, 0, { pal: def.pal || 'ui' });
+  sprites.draw(ctx, itemIcon(itemId, lv), x + 9, 0, { pal: def.pal });
 
   // Counted items show their quantity; levelled ones show the level, both
   // tucked into the icon's bottom-right the way the Oracle bar does.
@@ -114,13 +114,13 @@ function drawHearts(ctx, p) {
     const x = HEART_X + (i % HEARTS_PER_ROW) * 8;
     const y = Math.floor(i / HEARTS_PER_ROW) * 8;
     const filled = Math.max(0, Math.min(HEART_UNITS, p.hearts - i * HEART_UNITS));
-    sprites.draw(ctx, 'hud_heart' + filled, x, y, { pal: 'heart' });
+    sprites.draw(ctx, 'hud_heart' + filled, x, y);
   }
 }
 
 /** Rupee icon stacked over a three-digit count, as in the Oracle bar. */
 function drawRupees(ctx, p) {
-  sprites.draw(ctx, 'hud_rupee', RUPEE_X, 0, { pal: 'rupee' });
+  sprites.draw(ctx, 'hud_rupee', RUPEE_X, 0);
   const s = String(Math.min(999, p.rupees)).padStart(3, '0');
   drawText(ctx, s, RUPEE_X, 8, INK);
 }

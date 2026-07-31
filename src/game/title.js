@@ -118,7 +118,7 @@ export class Title {
         const total = Math.ceil(s.maxHearts / HEART_UNITS);
         for (let h = 0; h < Math.min(total, 12); h++) {
           const filled = Math.max(0, Math.min(HEART_UNITS, s.hearts - h * HEART_UNITS));
-          sprites.draw(ctx, 'hud_heart' + filled, 13 + h * 8, y + 14, { pal: 'heart' });
+          sprites.draw(ctx, 'hud_heart' + filled, 13 + h * 8, y + 14);
         }
       } else {
         drawText(ctx, 'NEW GAME', 14, y + 9, '#606860');
