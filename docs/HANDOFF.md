@@ -75,6 +75,16 @@ python3 tools/rip-enemies.py         # regenerate src/data/sprites-enemies.js
 `test.mjs` and `preview.mjs` take `--shot-dir=` and pick a random port, so
 several can run at once.
 
+**`test.mjs` is timing-flaky under CPU load, and always has been.** It counts
+frames with `requestAnimationFrame` and drives the game with real keyboard
+events, so when the machine is busy — immediately after a long harness run, or
+two `test.mjs` runs back to back with no gap — rAF throttles, taps land in the
+wrong game state, and you get a spurious 5-7 failures clustered in "contact
+damage lands", "menu opens" and the save tab. It is not a regression and it is
+not your change: give the box a few seconds and re-run, and confirm a red run
+by reproducing it twice rather than once. This was verified against the
+untouched baseline before any of this session's work.
+
 ### Environment setup a fresh container needs
 
 1. `npm install`.

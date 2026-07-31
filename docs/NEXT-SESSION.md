@@ -26,7 +26,10 @@ Read, in this order:
 
 Confirm the baseline before changing anything: `node tools/validate.mjs` clean
 (one expected warning about fx_slash_d1) and `node tools/test.mjs` 35/35 with
-0 unauthored art names. Keep all three that way.
+0 unauthored art names. Keep all three that way. Note that test.mjs is
+timing-flaky under CPU load and has always been - if it goes red right after a
+long harness run, wait a few seconds and re-run before believing it. Details
+in HANDOFF.md under Tooling.
 
 The engine, the 120-screen overworld, all 8 dungeons (179 rooms), the 56 enemy
 sprites, all 16 boss and miniboss fights, every effect/pickup/object/item icon,
