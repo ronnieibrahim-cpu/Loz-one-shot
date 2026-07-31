@@ -445,7 +445,7 @@ export function installDungeonsA() {
     name: 'Coral Spire',
     w: 8, h: 8, floors: 2,
     legend: 'dungeon',
-    music: 'dungeon',
+    music: 'dungeon2',
     tint: 'cave',
     scroll: false,
     dungeon: {
@@ -1206,7 +1206,7 @@ export function installDungeonsA() {
     name: 'Cliffside Cistern',
     w: 8, h: 8, floors: 1,
     legend: 'dungeon',
-    music: 'dungeon',
+    music: 'dungeon2',
     tint: 'cave',
     scroll: false,
     dungeon: {

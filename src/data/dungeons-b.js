@@ -457,10 +457,12 @@ export function installDungeonsB() {
       },
       '1,4,3': {
         name: 'Upper Drift',
+        // The fourth Small Key spends here: this is the only way up to the Boss
+        // Key, so the key the dungeon used to hand out spare now has a door.
         map: [
           '####..####',
           '##......##',
-          '##......##',
+          '####L#####',
           '#........#',
           '#........#',
           '##......##',
@@ -545,15 +547,15 @@ export function installDungeonsB() {
   //   -> 3,4 dry the basins -> 2,4 Compass -> 4,4 Small Key 2
   //   -> 3,3 locked -> stairs at 4,3 up to floor 1
   //   -> 1F 3,5 -> 2,5 Small Key 3 -> 4,5 Small Key 4 -> 3,4 locked
-  //   -> 2,4 Saltwraith (miniboss) -> 1,4 big chest: Hookshot
-  //   -> 3,3 locked -> 3,2 Boss Key and boss door -> 3,1 Brinehulk
+  //   -> 2,4 Saltwraith (miniboss) -> 1,4 locked, big chest: Hookshot
+  //   -> 3,3 locked, Boss Key -> 3,2 boss door -> 3,1 Brinehulk
   registerMap({
     id: 'd6',
     kind: 'dungeon',
     name: 'Salt Pan Vault',
     w: 8, h: 8, floors: 2,
     legend: 'dungeon',
-    music: 'dungeon',
+    music: 'dungeon2',
     tint: 'cave',
     scroll: false,
     dungeon: {
@@ -806,13 +808,16 @@ export function installDungeonsB() {
       },
       '1,1,4': {
         name: 'Hookshot Vault',
+        // The fourth Small Key spends here. d6 has no corridor above its
+        // miniboss to gate, so the door goes across the vault itself and the
+        // spare key buys the Hookshot instead of nothing.
         map: [
           '##########',
           '##########',
-          '##......##',
-          '##........',
-          '#.........',
-          '##......##',
+          '##....#.##',
+          '##....L...',
+          '#.....#...',
+          '##....#.##',
           '##########',
           '##########',
         ],
@@ -1028,7 +1033,7 @@ export function installDungeonsB() {
   //   -> 3,3 locked -> stairs at 2,3 up to floor 1
   //   -> 1F 3,5 -> 4,5 Small Key 3 -> 2,5 Small Key 4 -> 3,4 locked
   //   -> 4,4 Gustharpy (miniboss) -> 5,4 big chest: Magnetic Gloves
-  //   -> 3,3 locked -> 3,2 Boss Key and boss door -> 3,1 Thalassor
+  //   -> 4,3 locked -> 4,2 Boss Key -> 3,2 boss door -> 3,1 Thalassor
   registerMap({
     id: 'd7',
     kind: 'dungeon',
@@ -1455,10 +1460,12 @@ export function installDungeonsB() {
       },
       '1,4,3': {
         name: 'Upper Current',
+        // The fourth Small Key spends here: this is the only way up to the Boss
+        // Key, so the key the dungeon used to hand out spare now has a door.
         map: [
           '####..####',
           '##......##',
-          '##......##',
+          '####L#####',
           '#........#',
           '#........#',
           '##......##',
@@ -1546,14 +1553,14 @@ export function installDungeonsB() {
   //   -> 3,3 locked -> stairs at 2,3 up to floor 1
   //   -> 1F 3,5 -> 4,5 Small Key 3 -> 2,5 Small Key 4 -> 3,4 locked
   //   -> 4,4 Tideshade (miniboss) -> 5,4 big chest: Mermaid Suit
-  //   -> 3,3 locked -> 3,2 Boss Key and boss door -> 3,1 Nereth
+  //   -> 4,3 locked -> 4,2 Boss Key -> 3,2 boss door -> 3,1 Nereth
   registerMap({
     id: 'd8',
     kind: 'dungeon',
     name: 'Abyssal Keep',
     w: 8, h: 8, floors: 2,
     legend: 'dungeon',
-    music: 'dungeon',
+    music: 'dungeon2',
     tint: 'cave',
     scroll: false,
     dungeon: {
@@ -1972,10 +1979,12 @@ export function installDungeonsB() {
       },
       '1,4,3': {
         name: 'Upper Drown',
+        // The fourth Small Key spends here: this is the only way up to the Boss
+        // Key, so the key the dungeon used to hand out spare now has a door.
         map: [
           '####..####',
           '##......##',
-          '##......##',
+          '####L#####',
           '#........#',
           '#........#',
           '##......##',
