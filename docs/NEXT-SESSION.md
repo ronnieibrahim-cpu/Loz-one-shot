@@ -13,10 +13,11 @@ maintain and the most expensive thing to not have.
 ```
 Continue building "Oracle of Tides", a GBC-style Zelda fan game.
 
-Branch: claude/zelda-boss-behavior-jgbfwo — fetch it. `main` is an empty
-README, and claude/zelda-style-game-piqt8v is an older ancestor of this branch,
-not a parallel line of work. Everything is committed and pushed; the tree is
-clean.
+Branch: claude/zelda-style-game-piqt8v — fetch it. That is the single
+canonical branch: `main` is an empty README, and
+claude/zelda-boss-behavior-jgbfwo is a leftover alias pointing at the same
+commit, not a parallel line of work. Everything is committed and pushed; the
+tree is clean.
 
 Read, in this order:
   docs/HANDOFF.md        - current state, environment setup, and every trap
@@ -120,12 +121,12 @@ Tell me plainly what is done, what is weak, and what you skipped.
 
 ## Commits in the pass this file describes
 
+Eight commits, from the boss behaviour pass through to the sprite-integrity
+fixes. To see them without them going stale in this file:
+
+```sh
+git log --oneline c23096c..HEAD
 ```
-ffafd2b Document the sprite-integrity check and the extraction fixes
-dcb6580 Fix sprites whose rows render detached from the body, and add a check
-2ac6e49 Document the pre-existing timing flakiness in test.mjs
-0954136 Update the handoff for the boss, art and story passes
-a671190 Write the story, and fix the two mis-wired item givers
-b8a2919 Draw the effects, pickups, objects, projectiles and item icons
-8ae9ef3 Give all sixteen bosses and minibosses their behaviour
-```
+
+`c23096c` is the last commit of the previous pass (the enemy, overworld and
+dungeon work).

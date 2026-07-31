@@ -4,10 +4,14 @@ State of the project as of this handoff, and what a fresh session needs to know.
 
 ## Where things stand
 
-Branch: `claude/zelda-boss-behavior-jgbfwo` (everything committed and pushed).
-It branches from `claude/zelda-style-game-piqt8v` and contains all of that
-branch's history plus the boss, art and story passes. `piqt8v` is unchanged and
-can be fast-forwarded onto this one.
+Branch: **`claude/zelda-style-game-piqt8v`** — the single canonical branch.
+Everything is committed and pushed.
+
+The boss, art, story and sprite-integrity passes were developed on
+`claude/zelda-boss-behavior-jgbfwo` and have been fast-forwarded onto
+`piqt8v`; both names now point at the same commit, so there is no divergence
+and nothing to merge. `jgbfwo` is a leftover alias and can be deleted. Work on
+`piqt8v`.
 
 **The engine is complete and verified.** `node tools/test.mjs` boots the game in
 headless Chromium and passes 35 assertions covering boot, movement, sword
