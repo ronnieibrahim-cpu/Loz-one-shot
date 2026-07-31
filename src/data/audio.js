@@ -214,6 +214,222 @@ const TRACKS = {
     order: ['A'],
   },
 
+  // A second dungeon theme so 1-8 do not all share one loop. Same tension as
+  // `dungeon` but in E minor, with a chromatic climb in C instead of a chorus.
+  dungeon2: {
+    bpm: 116, rowsPerBeat: 4, loop: true,
+    cfg: { p1: { duty: 0.25, vol: 0.14, decay: 0.15 }, p2: { duty: 0.125, vol: 0.1, decay: 0.2 }, wav: { vol: 0.22, decay: 0.08 }, noi: { vol: 0.12 } },
+    patterns: {
+      A: {
+        p1: 'E5 .  E5 .  G5 .  E5 .  D5 .  E5 .  B4 -  -  .  E5 .  G5 .  B5 .  A5 .  G5 -  -  .  .  .  .  .',
+        p2: 'B3 .  .  .  E4 .  .  .  G3 .  .  .  B3 .  .  .  E4 .  .  .  G4 .  .  .  D4 .  .  .  B3 .  .  .',
+        wav: 'E2 -  -  -  E2 -  -  -  B1 -  -  -  B1 -  -  -  C2 -  -  -  C2 -  -  -  D2 -  -  -  B1 -  -  -',
+        noi: 'x  .  .  h  s  .  .  h  x  .  .  h  s  .  h  h  x  .  .  h  s  .  .  h  x  h  s  .  s  .  h  h',
+      },
+      B: {
+        p1: 'C6 -  -  .  B5 .  A5 .  G5 .  F#5 .  E5 -  -  .  A5 .  G5 .  F#5 .  E5 .  D5 -  -  -  -  -  -  .',
+        p2: 'A4 .  .  .  G4 .  .  .  E4 .  .  .  C4 .  .  .  F#4 .  .  .  E4 .  .  .  B3 -  -  -  -  -  -  .',
+        wav: 'A1 -  -  -  A1 -  -  -  C2 -  -  -  C2 -  -  -  D2 -  -  -  D2 -  -  -  B1 -  -  -  B1 -  -  -',
+        noi: 'x  .  h  h  s  .  h  .  x  .  h  h  s  .  h  .  x  .  h  h  s  .  h  .  x  s  x  s  h  h  h  h',
+      },
+      C: {
+        p1: 'E4 .  F4 .  F#4 .  G4 .  G#4 .  A4 .  Bb4 .  B4 .  C5 -  -  .  B4 -  -  .  E5 -  -  -  -  -  -  .',
+        p2: 'B3 -  -  -  -  -  -  -  C4 -  -  -  -  -  -  -  E4 -  -  -  D4 -  -  -  B3 -  -  -  -  -  -  .',
+        wav: 'E1 -  -  -  E1 -  -  -  E1 -  -  -  E1 -  -  -  C2 -  -  -  D2 -  -  -  E2 -  -  -  E2 -  -  -',
+        noi: 'x  .  .  .  s  .  .  .  x  .  .  .  s  .  .  h  x  .  .  h  s  .  .  h  x  s  x  s  c  .  .  .',
+      },
+    },
+    order: ['A', 'A', 'B', 'C'],
+  },
+
+  // Nereth. Faster and darker than `boss`: D Phrygian, tritone-heavy, with a
+  // full chromatic descent in C for the last phase.
+  finalBoss: {
+    bpm: 158, rowsPerBeat: 4, loop: true,
+    cfg: { p1: { duty: 0.5, vol: 0.17, decay: 0.09 }, p2: { duty: 0.25, vol: 0.12, decay: 0.11 }, wav: { vol: 0.25, decay: 0.05 }, noi: { vol: 0.17 } },
+    patterns: {
+      A: {
+        p1: 'D5 D5 .  D5 Eb5 .  D5 .  A5 .  Ab5 .  G5 .  .  .  D5 D5 .  D5 F5 .  Eb5 .  D5 -  -  .  .  .  .  .',
+        p2: 'D4 .  .  .  A3 .  .  .  Bb3 .  .  .  A3 .  .  .  D4 .  .  .  C4 .  .  .  Bb3 .  .  .  A3 .  .  .',
+        wav: 'D1 D1 -  D1 D1 -  D1 -  Bb1 -  -  -  A1 -  -  -  D1 D1 -  D1 D1 -  D1 -  G1 -  -  -  A1 -  -  -',
+        noi: 'x  .  s  .  x  .  s  s  x  .  s  .  x  h  s  h  x  .  s  .  x  .  s  s  x  s  x  s  c  .  .  .',
+      },
+      B: {
+        p1: 'A5 -  -  .  Bb5 -  -  .  C6 -  -  .  D6 -  -  -  -  -  -  .  C6 .  Bb5 .  A5 -  -  -  -  -  -  .',
+        p2: 'F4 -  -  .  G4 -  -  .  A4 -  -  .  Bb4 -  -  -  -  -  -  .  A4 .  G4 .  F4 -  -  -  -  -  -  .',
+        wav: 'F1 -  -  -  F1 -  -  -  G1 -  -  -  G1 -  -  -  Bb1 -  -  -  Bb1 -  -  -  A1 -  -  -  A1 -  -  -',
+        noi: 'x  h  s  h  x  h  s  h  x  h  s  h  x  h  s  s  x  h  s  h  x  h  s  h  x  s  x  s  c  .  .  .',
+      },
+      C: {
+        p1: 'D6 .  C#6 .  C6 .  B5 .  Bb5 .  A5 .  Ab5 .  G5 .  F#5 .  F5 .  E5 .  Eb5 .  D5 -  -  -  -  -  -  .',
+        p2: 'Bb4 .  A4 .  Ab4 .  G4 .  F#4 .  F4 .  E4 .  Eb4 .  D4 .  C#4 .  C4 .  B3 .  Bb3 -  -  -  -  -  -  .',
+        wav: 'D1 -  -  -  D1 -  -  -  Bb1 -  -  -  Bb1 -  -  -  G1 -  -  -  G1 -  -  -  A1 -  -  -  A1 -  -  -',
+        noi: 'x  .  s  s  x  .  s  s  x  .  s  s  x  .  s  s  x  .  s  s  x  .  s  s  x  s  x  s  c  .  .  .',
+      },
+    },
+    order: ['A', 'A', 'B', 'A', 'C'],
+  },
+
+  // --- region themes (referenced by map data; a missing name is silent) -----
+
+  // Coral Reef: bright and aquatic, D major, the counter-melody shimmering
+  // above the lead on the short duty.
+  reef: {
+    bpm: 128, rowsPerBeat: 4, loop: true,
+    cfg: { p1: { duty: 0.5, vol: 0.16, decay: 0.13 }, p2: { duty: 0.125, vol: 0.1, decay: 0.18 }, wav: { vol: 0.21, decay: 0.08 }, noi: { vol: 0.1 } },
+    patterns: {
+      A: {
+        p1: 'D5 .  F#5 .  A5 -  -  .  G5 .  F#5 .  E5 -  -  .  D5 .  F#5 .  B5 -  -  .  A5 -  -  -  -  -  -  .',
+        p2: 'A4 .  .  .  D5 .  .  .  B4 .  .  .  A4 .  .  .  F#4 .  .  .  D5 .  .  .  E5 .  .  .  A4 .  .  .',
+        wav: 'D2 -  -  -  D2 -  -  -  B1 -  -  -  B1 -  -  -  G1 -  -  -  G1 -  -  -  A1 -  -  -  A1 -  -  -',
+        noi: '.  .  h  .  s  .  h  .  .  .  h  .  s  .  h  h  .  .  h  .  s  .  h  .  .  .  h  h  s  .  h  .',
+      },
+      B: {
+        p1: 'B5 -  -  .  A5 .  F#5 .  G5 -  -  .  E5 .  D5 .  E5 .  F#5 .  G5 .  A5 .  B5 -  -  -  -  -  -  .',
+        p2: 'G4 .  .  .  F#4 .  .  .  E4 .  .  .  C#4 .  .  .  A3 .  .  .  B3 .  .  .  D4 -  -  -  -  -  -  .',
+        wav: 'G1 -  -  -  G1 -  -  -  E2 -  -  -  E2 -  -  -  A1 -  -  -  A1 -  -  -  D2 -  -  -  D2 -  -  -',
+        noi: '.  .  h  .  s  .  h  h  .  .  h  .  s  .  h  .  .  .  h  .  s  .  h  h  .  .  h  .  s  h  h  h',
+      },
+      C: {
+        p1: 'F#5 .  E5 .  D5 .  C#5 .  D5 -  -  .  E5 -  -  .  A4 .  C#5 .  E5 .  A5 .  F#5 -  -  -  -  -  -  .',
+        p2: 'D4 .  .  .  A3 .  .  .  F#4 .  .  .  A4 .  .  .  E4 .  .  .  C#5 .  .  .  D5 -  -  -  -  -  -  .',
+        wav: 'D2 -  -  -  D2 -  -  -  A1 -  -  -  A1 -  -  -  E2 -  -  -  E2 -  -  -  D2 -  -  -  D2 -  -  -',
+        noi: '.  .  h  .  s  .  h  .  .  .  h  h  s  .  h  .  .  .  h  .  s  .  h  .  .  .  s  .  s  h  h  h',
+      },
+    },
+    order: ['A', 'A', 'B', 'C'],
+  },
+
+  // Sunken Marsh: D dorian, murky, the drums soft and off the beat.
+  marsh: {
+    bpm: 104, rowsPerBeat: 4, loop: true,
+    cfg: { p1: { duty: 0.25, vol: 0.13, decay: 0.22 }, p2: { duty: 0.5, vol: 0.08, decay: 0.3 }, wav: { vol: 0.22, decay: 0.14 }, noi: { vol: 0.09 } },
+    patterns: {
+      A: {
+        p1: 'D5 .  F5 .  G5 -  -  .  A5 .  G5 .  F5 -  -  .  E5 .  D5 .  C5 -  -  .  D5 -  -  -  -  -  -  .',
+        p2: 'A4 .  .  .  D4 .  .  .  F4 .  .  .  C4 .  .  .  G3 .  .  .  A3 .  .  .  D4 -  -  -  -  -  -  .',
+        wav: 'D2 -  -  -  D2 -  -  -  F1 -  -  -  F1 -  -  -  C2 -  -  -  C2 -  -  -  D2 -  -  -  D2 -  -  -',
+        noi: 'x  .  .  h  .  .  s  .  x  .  .  h  .  .  s  h  x  .  .  h  .  .  s  .  x  .  s  .  .  .  h  h',
+      },
+      B: {
+        p1: 'A4 .  C5 .  D5 -  -  .  F5 .  E5 .  D5 -  -  .  C5 .  A4 .  G4 -  -  .  A4 -  -  -  -  -  -  .',
+        p2: 'E4 .  .  .  A3 .  .  .  C4 .  .  .  A3 .  .  .  G3 .  .  .  E3 .  .  .  A3 -  -  -  -  -  -  .',
+        wav: 'A1 -  -  -  A1 -  -  -  C2 -  -  -  C2 -  -  -  G1 -  -  -  G1 -  -  -  A1 -  -  -  A1 -  -  -',
+        noi: 'x  .  .  h  .  .  s  h  x  .  .  h  .  .  s  .  x  .  .  h  .  .  s  .  x  .  s  h  .  .  h  h',
+      },
+      C: {
+        p1: 'D5 -  -  -  -  -  .  .  C5 -  -  -  -  -  .  .  Bb4 -  -  -  -  -  .  .  A4 -  -  -  -  -  -  .',
+        p2: '.  .  .  .  A4 -  -  .  .  .  .  .  G4 -  -  .  .  .  .  .  F4 -  -  .  .  .  .  .  E4 -  -  .',
+        wav: 'D2 -  -  -  -  -  -  -  Bb1 -  -  -  -  -  -  -  G1 -  -  -  -  -  -  -  A1 -  -  -  -  -  -  -',
+        noi: 'x  .  .  .  .  .  s  .  x  .  .  .  .  .  s  .  x  .  .  .  .  .  s  .  x  .  .  .  .  .  s  H',
+      },
+    },
+    order: ['A', 'A', 'B', 'C'],
+  },
+
+  // Salt Pans: A minor pentatonic, dry and wide, long rests between phrases.
+  salt: {
+    bpm: 100, rowsPerBeat: 4, loop: true,
+    cfg: { p1: { duty: 0.125, vol: 0.13, decay: 0.26 }, p2: { duty: 0.5, vol: 0.08, decay: 0.3 }, wav: { vol: 0.2, decay: 0.12 }, noi: { vol: 0.08 } },
+    patterns: {
+      A: {
+        p1: 'A4 .  C5 .  D5 .  E5 -  -  .  .  .  G5 .  E5 .  D5 -  -  .  .  .  C5 .  A4 -  -  -  -  -  -  .',
+        p2: 'E4 .  .  .  .  .  A4 .  .  .  .  .  D5 .  .  .  B4 .  .  .  .  .  G4 .  E4 -  -  -  -  -  -  .',
+        wav: 'A1 -  -  -  A1 -  -  -  D2 -  -  -  D2 -  -  -  G1 -  -  -  G1 -  -  -  A1 -  -  -  A1 -  -  -',
+        noi: 'x  .  .  .  s  .  .  .  x  .  .  .  s  .  .  h  x  .  .  .  s  .  .  .  x  .  s  .  .  .  h  .',
+      },
+      B: {
+        p1: 'E5 .  G5 .  A5 -  -  .  .  .  G5 .  E5 .  D5 .  C5 .  D5 .  E5 -  -  .  A4 -  -  -  -  -  -  .',
+        p2: 'C5 .  .  .  E5 .  .  .  .  .  D5 .  .  .  B4 .  A4 .  .  .  C5 .  .  .  E4 -  -  -  -  -  -  .',
+        wav: 'C2 -  -  -  C2 -  -  -  E2 -  -  -  E2 -  -  -  F1 -  -  -  F1 -  -  -  A1 -  -  -  A1 -  -  -',
+        noi: 'x  .  .  .  s  .  .  h  x  .  .  .  s  .  .  .  x  .  .  .  s  .  .  h  x  .  s  .  .  .  h  H',
+      },
+    },
+    order: ['A', 'A', 'B', 'A'],
+  },
+
+  // Abyssal approach: C minor, very slow, almost no percussion — the last
+  // stretch before the Keep should feel like held breath.
+  abyss: {
+    bpm: 80, rowsPerBeat: 4, loop: true,
+    cfg: { p1: { duty: 0.125, vol: 0.11, decay: 0.45 }, p2: { duty: 0.5, vol: 0.07, decay: 0.5 }, wav: { vol: 0.2, decay: 0.4 }, noi: { vol: 0.07 } },
+    patterns: {
+      A: {
+        p1: 'C5 -  -  -  -  -  -  -  Eb5 -  -  -  -  -  -  -  D5 -  -  -  -  -  -  -  G4 -  -  -  -  -  -  -',
+        p2: '.  .  .  .  G4 -  -  -  .  .  .  .  Bb4 -  -  -  .  .  .  .  F4 -  -  -  .  .  .  .  D4 -  -  -',
+        wav: 'C2 -  -  -  -  -  -  -  Ab1 -  -  -  -  -  -  -  Bb1 -  -  -  -  -  -  -  G1 -  -  -  -  -  -  -',
+        noi: 'x  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  x  .  .  .  .  .  .  .  .  .  .  .  .  .  .  H',
+      },
+      B: {
+        p1: 'Ab4 -  -  -  -  -  -  -  G4 -  -  -  -  -  -  -  F4 -  -  -  -  -  -  -  Eb4 -  -  -  -  -  -  -',
+        p2: '.  .  .  .  Eb5 -  -  -  .  .  .  .  D5 -  -  -  .  .  .  .  C5 -  -  -  .  .  .  .  Bb4 -  -  -',
+        wav: 'Ab1 -  -  -  -  -  -  -  G1 -  -  -  -  -  -  -  F1 -  -  -  -  -  -  -  Eb1 -  -  -  -  -  -  -',
+        noi: 'x  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  x  .  .  .  .  .  .  .  .  .  .  .  c  .  .  .',
+      },
+      C: {
+        p1: 'C5 -  -  -  D5 -  -  -  Eb5 -  -  -  F5 -  -  -  G5 -  -  -  -  -  -  -  -  -  -  -  -  -  -  .',
+        p2: 'G4 -  -  -  -  -  -  -  Ab4 -  -  -  -  -  -  -  Bb4 -  -  -  -  -  -  -  C5 -  -  -  -  -  -  .',
+        wav: 'C2 -  -  -  C2 -  -  -  Ab1 -  -  -  Ab1 -  -  -  G1 -  -  -  G1 -  -  -  C2 -  -  -  -  -  -  -',
+        noi: 'x  .  .  .  .  .  .  .  x  .  .  .  .  .  .  .  x  .  .  .  .  .  .  .  x  .  .  .  c  .  .  .',
+      },
+    },
+    order: ['A', 'A', 'B', 'C'],
+  },
+
+  // Village shop: F major, short and bouncy, no kick — just hats and snare.
+  shop: {
+    bpm: 124, rowsPerBeat: 4, loop: true,
+    cfg: { p1: { duty: 0.5, vol: 0.15, decay: 0.16 }, p2: { duty: 0.25, vol: 0.09, decay: 0.2 }, wav: { vol: 0.2, decay: 0.1 }, noi: { vol: 0.08 } },
+    patterns: {
+      A: {
+        p1: 'F5 .  A5 .  C6 .  A5 .  G5 .  Bb5 .  A5 -  -  .  F5 .  A5 .  D6 .  C6 .  Bb5 -  -  .  A5 -  -  .',
+        p2: 'C5 .  .  .  F5 .  .  .  Bb4 .  .  .  C5 .  .  .  A4 .  .  .  F5 .  .  .  G4 .  .  .  C5 .  .  .',
+        wav: 'F2 -  -  -  F2 -  -  -  Bb1 -  -  -  Bb1 -  -  -  D2 -  -  -  D2 -  -  -  C2 -  -  -  C2 -  -  -',
+        noi: '.  .  h  .  s  .  h  .  .  .  h  .  s  .  h  h  .  .  h  .  s  .  h  .  .  .  h  .  s  .  h  h',
+      },
+      B: {
+        p1: 'C6 .  Bb5 .  A5 .  G5 .  F5 .  G5 .  A5 -  -  .  Bb5 .  A5 .  G5 .  F5 .  E5 -  -  -  -  -  -  .',
+        p2: 'A4 .  G4 .  F4 .  E4 .  D4 .  E4 .  F4 .  .  .  G4 .  F4 .  E4 .  D4 .  C4 -  -  -  -  -  -  .',
+        wav: 'A1 -  -  -  A1 -  -  -  D2 -  -  -  D2 -  -  -  G1 -  -  -  G1 -  -  -  C2 -  -  -  C2 -  -  -',
+        noi: '.  .  h  h  s  .  h  .  .  .  h  h  s  .  h  .  .  .  h  h  s  .  h  .  .  .  s  .  s  h  h  h',
+      },
+    },
+    order: ['A', 'A', 'B', 'A'],
+  },
+
+  // Ending: C major. A and B are the triumphant half, C and D let it settle.
+  ending: {
+    bpm: 108, rowsPerBeat: 4, loop: true,
+    cfg: { p1: { duty: 0.5, vol: 0.16, decay: 0.22 }, p2: { duty: 0.25, vol: 0.1, decay: 0.26 }, wav: { vol: 0.22, decay: 0.12 }, noi: { vol: 0.1 } },
+    patterns: {
+      A: {
+        p1: 'C5 .  E5 .  G5 .  C6 -  -  .  B5 .  C6 -  -  .  A5 .  F5 .  G5 -  -  .  E5 -  -  -  -  -  -  .',
+        p2: 'E4 .  G4 .  C5 .  E5 .  .  .  D5 .  E5 .  .  .  F4 .  A4 .  B4 .  .  .  C5 -  -  -  -  -  -  .',
+        wav: 'C2 -  -  -  C2 -  -  -  G1 -  -  -  G1 -  -  -  F1 -  -  -  F1 -  -  -  C2 -  -  -  C2 -  -  -',
+        noi: 'x  .  h  .  s  .  h  .  x  .  h  .  s  .  h  h  x  .  h  .  s  .  h  .  x  .  s  .  c  .  .  .',
+      },
+      B: {
+        p1: 'G5 .  A5 .  B5 .  C6 .  D6 -  -  .  C6 -  -  .  B5 .  A5 .  G5 .  F5 .  E5 -  -  -  -  -  -  .',
+        p2: 'B4 .  C5 .  D5 .  E5 .  F5 .  .  .  E5 .  .  .  D5 .  C5 .  B4 .  A4 .  G4 -  -  -  -  -  -  .',
+        wav: 'G1 -  -  -  G1 -  -  -  D2 -  -  -  D2 -  -  -  G1 -  -  -  G1 -  -  -  C2 -  -  -  C2 -  -  -',
+        noi: 'x  .  h  h  s  .  h  .  x  .  h  h  s  .  h  .  x  .  h  h  s  .  h  .  x  s  x  s  c  .  .  .',
+      },
+      C: {
+        p1: 'E5 -  -  -  -  -  .  .  D5 -  -  -  -  -  .  .  C5 -  -  -  -  -  .  .  G4 -  -  -  -  -  -  .',
+        p2: 'C5 -  -  -  -  -  .  .  B4 -  -  -  -  -  .  .  G4 -  -  -  -  -  .  .  E4 -  -  -  -  -  -  .',
+        wav: 'C2 -  -  -  -  -  -  -  G1 -  -  -  -  -  -  -  A1 -  -  -  -  -  -  -  E1 -  -  -  -  -  -  -',
+        noi: '.  .  .  .  s  .  .  .  .  .  .  .  s  .  .  .  .  .  .  .  s  .  .  .  .  .  .  .  s  .  .  H',
+      },
+      D: {
+        p1: 'C5 -  -  -  -  -  -  -  E5 -  -  -  -  -  -  -  G5 -  -  -  -  -  -  -  C6 -  -  -  -  -  -  -',
+        p2: 'G4 -  -  -  -  -  -  -  C5 -  -  -  -  -  -  -  E5 -  -  -  -  -  -  -  G5 -  -  -  -  -  -  -',
+        wav: 'C2 -  -  -  -  -  -  -  C2 -  -  -  -  -  -  -  G1 -  -  -  -  -  -  -  C2 -  -  -  -  -  -  -',
+        noi: '.  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  c  .  .  .  .  .  .  .',
+      },
+    },
+    order: ['A', 'A', 'B', 'A', 'C', 'D'],
+  },
+
   // --- jingles (loop: false, they hand control back to the previous track) --
   fanfare: {
     bpm: 140, rowsPerBeat: 4, loop: false,
@@ -262,6 +478,43 @@ const TRACKS = {
       A: {
         p1: 'C5 -  -  -  B4 -  -  -  Bb4 -  -  -  A4 -  -  -  -  -  -  -  .  .  .  .',
         wav: 'C3 -  -  -  B2 -  -  -  Bb2 -  -  -  A2 -  -  -  -  -  -  -  .  .  .  .',
+      },
+    },
+    order: ['A'],
+  },
+  // Held overhead: a rising arpeggio that lands an octave up.
+  itemGet: {
+    bpm: 132, rowsPerBeat: 4, loop: false,
+    cfg: { p1: { duty: 0.5, vol: 0.17, decay: 0.22 }, p2: { duty: 0.25, vol: 0.1, decay: 0.25 }, wav: { vol: 0.21, decay: 0.2 } },
+    patterns: {
+      A: {
+        p1: 'G4 .  C5 .  E5 .  G5 .  C6 -  -  -  -  -  -  -  -  .  .  .',
+        p2: 'E4 .  G4 .  C5 .  E5 .  G5 -  -  -  -  -  -  -  -  .  .  .',
+        wav: 'C3 -  -  -  C3 -  -  -  C3 -  -  -  -  -  -  -  -  .  .  .',
+      },
+    },
+    order: ['A'],
+  },
+  // Something opened that should not have: the six-note discovery phrase.
+  secret: {
+    bpm: 144, rowsPerBeat: 4, loop: false,
+    cfg: { p1: { duty: 0.5, vol: 0.16, decay: 0.18 }, wav: { vol: 0.2, decay: 0.18 } },
+    patterns: {
+      A: {
+        p1: 'G5 .  F#5 .  D#5 .  A4 .  G#4 .  E5 .  G#5 .  C6 -  -  -  -  .  .  .',
+        wav: 'G2 .  F#2 .  D#2 .  A1 .  G#1 .  E2 .  G#2 .  C3 -  -  -  -  .  .  .',
+      },
+    },
+    order: ['A'],
+  },
+  // Quarter heart: shorter and sweeter than a full container.
+  heartPiece: {
+    bpm: 138, rowsPerBeat: 4, loop: false,
+    cfg: { p1: { duty: 0.25, vol: 0.16, decay: 0.24 }, p2: { duty: 0.5, vol: 0.09, decay: 0.26 } },
+    patterns: {
+      A: {
+        p1: 'E5 .  G5 .  B5 .  E6 -  -  -  -  -  .  .  .  .',
+        p2: 'G4 .  B4 .  E5 .  G5 -  -  -  -  -  .  .  .  .',
       },
     },
     order: ['A'],
