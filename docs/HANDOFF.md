@@ -264,6 +264,23 @@ validator cannot see this. When wiring a data entity, read the class.
 - Room grids are **exactly 8 rows of exactly 10 characters**, and digits 0-9 are
   always tide tiles.
 
+**Extracted icons carry their own palette, so draw sites must not pass one.**
+This is trap 6 under sprite-sheet extraction in a new place. `art.js` `bake()`
+resolves `palName || d.pal`, so an explicit palette at the draw site silently
+overrides the sprite's extracted colours and renders it in the wrong ramp. The
+items in `src/game/items.js` whose icons come from `sprites-hud.js` therefore
+have **no** `pal` field, and the draw sites in `hud.js`, `menu.js`, `game.js`
+and `title.js` no longer fall back to `'ui'`. If you extract more icons, drop
+the item's `pal` at the same time; if you add an item using hand-drawn art,
+give it one.
+
+**`tools/scan-sprites.mjs` has a `HOLE_OK` allowlist**, currently four names.
+Those are extractions whose gaps are the artwork — the counter of the `?` and
+notches in three seeds — each diffed against the source sheet pixel for pixel
+before being listed. Do not add to it to make a red run go away; diff the
+extraction against its source first, because the check's whole value is that a
+real see-through slot still fails.
+
 **The status bar is modelled on the Oracle of Seasons / Ages bar** — a parchment
 panel, `B[icon]`/`A[icon]` in tall drawn brackets, the rupee icon stacked over
 its three digits, hearts right-aligned in two rows of seven. Two things there
@@ -385,7 +402,9 @@ committed. See `assets/sheets/README.md` for what each sheet contains, who
 ripped it, and the copyright position.
 
 Sheets present but not yet used: non-human races, trading characters, dungeon
-backgrounds, and a fan-made Oracle-style overworld tileset.
+backgrounds, and a fan-made Oracle-style overworld tileset. The HUD/Gear sheet
+is used by `tools/rip-hud.py`; the icons Seasons does not have (Flippers,
+Mermaid Suit, Hookshot, Moon Conch, Map, Compass) stay hand-drawn.
 
 ## What is left, highest value first
 
