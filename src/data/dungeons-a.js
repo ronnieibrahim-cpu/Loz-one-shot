@@ -9,6 +9,15 @@
 // Locked doors sit inside rooms rather than on the seam between two, because
 // the engine places an arriving player just past the room edge: a locked tile
 // on a seam would drop them inside solid stone from the far side.
+//
+// A PUSH BLOCK MOVES EXACTLY ONE TILE, EVER. `PushBlock` takes `once: true` by
+// default and sets `moved` when its single slide lands, so a block placed two
+// tiles from the switch it is meant to cover can never reach it. Every `block`
+// in a `switches` puzzle is therefore seated orthogonally ADJACENT to its
+// switch, with plain floor behind it for the player to push from. Where a room
+// has fewer blocks than switches the player stands on the last one. This was
+// wrong in every switch room in the game at one point, and each of those rooms
+// rewards a Small Key, so it silently cost the dungeon a key.
 
 import { registerMap } from '../world/maps.js';
 
@@ -77,7 +86,19 @@ export function installDungeonsA() {
         ],
         entities: [
           ['crab', 4, 3],
+          ['switch', 2, 2],
+          ['switch', 7, 2],
+          ['block', 2, 3],
+          ['block', 7, 3],
         ],
+        puzzle: {
+          switches: 'all',
+          flag: 'd1_013_puzzle',
+          reward: {
+            spawn: [['pickup', 4, 1, { kind: 'rupee20' }]],
+            say: 'A catch lets go under the floor.',
+          },
+        },
       },
       '0,2,1': {
         name: 'North Cell',
@@ -111,7 +132,18 @@ export function installDungeonsA() {
         entities: [
           ['keese', 4, 2],
           ['zol', 3, 4],
+          ['torch', 2, 2],
+          ['torch', 7, 2],
+          ['torch', 2, 5],
         ],
+        puzzle: {
+          torches: 'all',
+          flag: 'd1_022_puzzle',
+          reward: {
+            spawn: [['pickup', 4, 3, { kind: 'heart' }]],
+            say: 'Water drains out of a niche in the wall.',
+          },
+        },
       },
       '0,2,3': {
         name: 'Weeping Wall',
@@ -129,6 +161,14 @@ export function installDungeonsA() {
           ['keese', 3, 2],
           ['zol', 6, 4],
         ],
+        puzzle: {
+          enemies: true,
+          flag: 'd1_023_puzzle',
+          reward: {
+            spawn: [['pickup', 4, 3, { kind: 'rupee5' }]],
+            say: 'Loose stone shifts, and something rolls out.',
+          },
+        },
       },
       '0,2,4': {
         name: 'Crab Pit',
@@ -258,7 +298,19 @@ export function installDungeonsA() {
         entities: [
           ['zol', 4, 2],
           ['crab', 2, 5],
+          ['switch', 1, 2],
+          ['switch', 8, 2],
+          ['block', 1, 3],
+          ['block', 8, 3],
         ],
+        puzzle: {
+          switches: 'all',
+          flag: 'd1_035_puzzle',
+          reward: {
+            spawn: [['pickup', 4, 3, { kind: 'fairy' }]],
+            say: 'A light comes up out of the water.',
+          },
+        },
       },
       '0,3,6': {
         name: 'Drowned Landing',
@@ -275,7 +327,18 @@ export function installDungeonsA() {
         entities: [
           ['crab', 3, 3],
           ['crab', 6, 4],
+          ['torch', 1, 1],
+          ['torch', 8, 1],
+          ['torch', 1, 6],
         ],
+        puzzle: {
+          torches: 'all',
+          flag: 'd1_036_puzzle',
+          reward: {
+            spawn: [['pickup', 4, 1, { kind: 'bomb4' }]],
+            say: 'A cache opens in the wall.',
+          },
+        },
       },
       '0,3,7': {
         name: 'Grotto Mouth',
@@ -344,6 +407,14 @@ export function installDungeonsA() {
           ['crab', 3, 3],
           ['tektite', 6, 4],
         ],
+        puzzle: {
+          enemies: true,
+          flag: 'd1_043_puzzle',
+          reward: {
+            spawn: [['pickup', 4, 3, { kind: 'rupee20' }]],
+            say: 'A catch lets go under the floor.',
+          },
+        },
       },
       '0,4,4': {
         name: 'Switch Room',
@@ -360,8 +431,8 @@ export function installDungeonsA() {
         entities: [
           ['switch', 2, 2],
           ['switch', 7, 2],
-          ['block', 3, 4],
-          ['block', 6, 4],
+          ['block', 2, 3],
+          ['block', 7, 3],
         ],
         puzzle: {
           switches: 'all',
@@ -509,7 +580,19 @@ export function installDungeonsA() {
         entities: [
           ['jellyfish', 3, 2],
           ['barnacle', 6, 5],
+          ['switch', 1, 2],
+          ['switch', 8, 2],
+          ['block', 1, 3],
+          ['block', 8, 3],
         ],
+        puzzle: {
+          switches: 'all',
+          flag: 'd2_034_puzzle',
+          reward: {
+            spawn: [['pickup', 4, 3, { kind: 'heart' }]],
+            say: 'Water drains out of a niche in the wall.',
+          },
+        },
       },
       '0,3,5': {
         name: 'Spire Well',
@@ -526,7 +609,18 @@ export function installDungeonsA() {
         entities: [
           ['jellyfish', 4, 3],
           ['crab', 2, 5],
+          ['torch', 1, 1],
+          ['torch', 8, 1],
+          ['torch', 1, 6],
         ],
+        puzzle: {
+          torches: 'all',
+          flag: 'd2_035_puzzle',
+          reward: {
+            spawn: [['pickup', 4, 1, { kind: 'rupee5' }]],
+            say: 'Loose stone shifts, and something rolls out.',
+          },
+        },
       },
       '0,3,6': {
         name: 'Coral Landing',
@@ -544,6 +638,14 @@ export function installDungeonsA() {
           ['urchin', 3, 3],
           ['crab', 6, 4],
         ],
+        puzzle: {
+          enemies: true,
+          flag: 'd2_036_puzzle',
+          reward: {
+            spawn: [['pickup', 4, 3, { kind: 'fairy' }]],
+            say: 'A light comes up out of the water.',
+          },
+        },
       },
       '0,3,7': {
         name: 'Spire Mouth',
@@ -799,7 +901,7 @@ export function installDungeonsA() {
           '##########',
         ],
         entities: [
-          ['block', 3, 3],
+          ['block', 4, 4],
           ['block', 5, 3],
           ['switch', 4, 5],
         ],
@@ -1036,7 +1138,19 @@ export function installDungeonsA() {
           ['zol', 4, 2],
           ['keese', 2, 5],
           ['barnacle', 7, 3],
+          ['switch', 1, 2],
+          ['switch', 8, 2],
+          ['block', 1, 3],
+          ['block', 8, 3],
         ],
+        puzzle: {
+          switches: 'all',
+          flag: 'd3_035_puzzle',
+          reward: {
+            spawn: [['pickup', 4, 3, { kind: 'bomb4' }]],
+            say: 'A cache opens in the wall.',
+          },
+        },
       },
       '0,3,6': {
         name: 'Reed Landing',
@@ -1053,7 +1167,18 @@ export function installDungeonsA() {
         entities: [
           ['zol', 3, 3],
           ['leever', 6, 4],
+          ['torch', 1, 1],
+          ['torch', 8, 1],
+          ['torch', 1, 6],
         ],
+        puzzle: {
+          torches: 'all',
+          flag: 'd3_036_puzzle',
+          reward: {
+            spawn: [['pickup', 4, 3, { kind: 'rupee20' }]],
+            say: 'A catch lets go under the floor.',
+          },
+        },
       },
       '0,3,7': {
         name: 'Sanctum Door',
@@ -1267,6 +1392,14 @@ export function installDungeonsA() {
         entities: [
           ['darknut', 4, 3],
         ],
+        puzzle: {
+          enemies: true,
+          flag: 'd4_023_puzzle',
+          reward: {
+            spawn: [['pickup', 4, 2, { kind: 'heart' }]],
+            say: 'Water drains out of a niche in the wall.',
+          },
+        },
       },
       '0,2,4': {
         name: 'Compass Vault',
@@ -1389,7 +1522,19 @@ export function installDungeonsA() {
         entities: [
           ['tektite', 4, 2],
           ['stalfos', 2, 5],
+          ['switch', 1, 2],
+          ['switch', 8, 2],
+          ['block', 1, 3],
+          ['block', 8, 3],
         ],
+        puzzle: {
+          switches: 'all',
+          flag: 'd4_035_puzzle',
+          reward: {
+            spawn: [['pickup', 4, 3, { kind: 'rupee5' }]],
+            say: 'Loose stone shifts, and something rolls out.',
+          },
+        },
       },
       '0,3,6': {
         name: 'Cistern Landing',
@@ -1406,7 +1551,18 @@ export function installDungeonsA() {
         entities: [
           ['tektite', 3, 3],
           ['keese', 6, 4],
+          ['torch', 1, 1],
+          ['torch', 8, 1],
+          ['torch', 1, 6],
         ],
+        puzzle: {
+          torches: 'all',
+          flag: 'd4_036_puzzle',
+          reward: {
+            spawn: [['pickup', 4, 3, { kind: 'fairy' }]],
+            say: 'A light comes up out of the water.',
+          },
+        },
       },
       '0,3,7': {
         name: 'Cistern Head',
@@ -1497,7 +1653,7 @@ export function installDungeonsA() {
         entities: [
           ['switch', 2, 2],
           ['switch', 7, 5],
-          ['block', 4, 3],
+          ['block', 2, 3],
         ],
         puzzle: {
           switches: 'all',

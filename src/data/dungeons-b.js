@@ -10,7 +10,9 @@
 //
 // As in dungeons-a.js, locked doors sit inside rooms rather than on the seam
 // between two — the engine places an arriving player just past the room edge,
-// so a locked tile on a seam would drop them inside solid stone.
+// so a locked tile on a seam would drop them inside solid stone. And, also as
+// in dungeons-a.js, a push block moves exactly one tile ever, so every `block`
+// in a `switches` puzzle sits orthogonally adjacent to its switch.
 
 import { registerMap } from '../world/maps.js';
 
@@ -170,6 +172,14 @@ export function installDungeonsB() {
           ['anglerfry', 2, 5],
           ['wisp', 7, 3],
         ],
+        puzzle: {
+          enemies: true,
+          flag: 'd5_035_puzzle',
+          reward: {
+            spawn: [['pickup', 3, 3, { kind: 'bomb4' }]],
+            say: 'A cache opens in the wall.',
+          },
+        },
       },
       '0,3,6': {
         name: 'Root Landing',
@@ -186,7 +196,19 @@ export function installDungeonsB() {
         entities: [
           ['zol', 3, 3],
           ['keese', 6, 4],
+          ['switch', 1, 2],
+          ['switch', 8, 2],
+          ['block', 1, 3],
+          ['block', 8, 3],
         ],
+        puzzle: {
+          switches: 'all',
+          flag: 'd5_036_puzzle',
+          reward: {
+            spawn: [['pickup', 4, 3, { kind: 'rupee20' }]],
+            say: 'A catch lets go under the floor.',
+          },
+        },
       },
       '0,3,7': {
         name: 'Shrine Door',
@@ -336,8 +358,8 @@ export function installDungeonsB() {
           '##########',
         ],
         entities: [
-          ['block', 3, 3],
-          ['block', 6, 3],
+          ['block', 2, 3],
+          ['block', 7, 4],
           ['switch', 2, 2],
           ['switch', 7, 5],
         ],
@@ -400,7 +422,18 @@ export function installDungeonsB() {
         entities: [
           ['jellyfish', 4, 3],
           ['stalfos', 2, 2],
+          ['torch', 1, 1],
+          ['torch', 8, 1],
+          ['torch', 1, 6],
         ],
+        puzzle: {
+          torches: 'all',
+          flag: 'd5_133_puzzle',
+          reward: {
+            spawn: [['pickup', 4, 2, { kind: 'heart' }]],
+            say: 'Water drains out of a niche in the wall.',
+          },
+        },
       },
       '1,3,4': {
         name: 'Canopy Lock',
@@ -686,6 +719,14 @@ export function installDungeonsB() {
           ['zol', 4, 3],
           ['beetle', 2, 2],
         ],
+        puzzle: {
+          enemies: true,
+          flag: 'd6_034_puzzle',
+          reward: {
+            spawn: [['pickup', 3, 3, { kind: 'rupee5' }]],
+            say: 'Loose stone shifts, and something rolls out.',
+          },
+        },
       },
       '0,3,5': {
         name: 'Brine Hall',
@@ -702,7 +743,19 @@ export function installDungeonsB() {
         entities: [
           ['darknut', 4, 3],
           ['keese', 2, 5],
+          ['switch', 1, 2],
+          ['switch', 8, 2],
+          ['block', 1, 3],
+          ['block', 8, 3],
         ],
+        puzzle: {
+          switches: 'all',
+          flag: 'd6_035_puzzle',
+          reward: {
+            spawn: [['pickup', 3, 3, { kind: 'fairy' }]],
+            say: 'A light comes up out of the water.',
+          },
+        },
       },
       '0,3,6': {
         name: 'Salt Landing',
@@ -719,7 +772,18 @@ export function installDungeonsB() {
         entities: [
           ['beetle', 3, 3],
           ['zol', 6, 4],
+          ['torch', 1, 1],
+          ['torch', 8, 1],
+          ['torch', 1, 6],
         ],
+        puzzle: {
+          torches: 'all',
+          flag: 'd6_036_puzzle',
+          reward: {
+            spawn: [['pickup', 4, 3, { kind: 'bomb4' }]],
+            say: 'A cache opens in the wall.',
+          },
+        },
       },
       '0,3,7': {
         name: 'Vault Door',
@@ -774,7 +838,7 @@ export function installDungeonsB() {
         entities: [
           ['switch', 2, 2],
           ['switch', 7, 5],
-          ['block', 4, 3],
+          ['block', 2, 3],
           ['wizzrobe', 6, 2],
         ],
         puzzle: {
@@ -1156,6 +1220,14 @@ export function installDungeonsB() {
           ['octorokSea', 4, 3],
           ['jellyfish', 2, 2],
         ],
+        puzzle: {
+          enemies: true,
+          flag: 'd7_034_puzzle',
+          reward: {
+            spawn: [['pickup', 3, 3, { kind: 'rupee20' }]],
+            say: 'A catch lets go under the floor.',
+          },
+        },
       },
       '0,3,5': {
         name: 'Current Hall',
@@ -1173,7 +1245,19 @@ export function installDungeonsB() {
           ['siren', 4, 2],
           ['octorokSea', 2, 5],
           ['jellyfish', 7, 3],
+          ['switch', 1, 2],
+          ['switch', 8, 2],
+          ['block', 1, 3],
+          ['block', 8, 3],
         ],
+        puzzle: {
+          switches: 'all',
+          flag: 'd7_035_puzzle',
+          reward: {
+            spawn: [['pickup', 4, 3, { kind: 'heart' }]],
+            say: 'Water drains out of a niche in the wall.',
+          },
+        },
       },
       '0,3,6': {
         name: 'Palace Landing',
@@ -1190,7 +1274,18 @@ export function installDungeonsB() {
         entities: [
           ['crab', 3, 3],
           ['jellyfish', 6, 4],
+          ['torch', 1, 1],
+          ['torch', 8, 1],
+          ['torch', 1, 6],
         ],
+        puzzle: {
+          torches: 'all',
+          flag: 'd7_036_puzzle',
+          reward: {
+            spawn: [['pickup', 4, 3, { kind: 'rupee5' }]],
+            say: 'Loose stone shifts, and something rolls out.',
+          },
+        },
       },
       '0,3,7': {
         name: 'Palace Door',
@@ -1245,7 +1340,7 @@ export function installDungeonsB() {
           ['beamos', 2, 2],
           ['beamos', 7, 5],
           ['switch', 4, 3],
-          ['block', 4, 5],
+          ['block', 4, 4],
         ],
         puzzle: {
           switches: 'all',
@@ -1404,6 +1499,14 @@ export function installDungeonsB() {
           ['octorokSea', 4, 3],
           ['darknut', 2, 2],
         ],
+        puzzle: {
+          enemies: true,
+          flag: 'd7_133_puzzle',
+          reward: {
+            spawn: [['pickup', 4, 2, { kind: 'fairy' }]],
+            say: 'A light comes up out of the water.',
+          },
+        },
       },
       '1,3,4': {
         name: 'Upper Lock',
@@ -1675,7 +1778,19 @@ export function installDungeonsB() {
         entities: [
           ['wizzrobe', 4, 3],
           ['jellyfish', 2, 2],
+          ['switch', 1, 2],
+          ['switch', 8, 2],
+          ['block', 1, 3],
+          ['block', 8, 3],
         ],
+        puzzle: {
+          switches: 'all',
+          flag: 'd8_034_puzzle',
+          reward: {
+            spawn: [['pickup', 3, 3, { kind: 'bomb4' }]],
+            say: 'A cache opens in the wall.',
+          },
+        },
       },
       '0,3,5': {
         name: 'Drowned Hall',
@@ -1693,7 +1808,18 @@ export function installDungeonsB() {
           ['wizzrobe', 4, 2],
           ['darknut', 2, 5],
           ['siren', 7, 3],
+          ['torch', 1, 1],
+          ['torch', 8, 1],
+          ['torch', 1, 6],
         ],
+        puzzle: {
+          torches: 'all',
+          flag: 'd8_035_puzzle',
+          reward: {
+            spawn: [['pickup', 4, 3, { kind: 'rupee20' }]],
+            say: 'A catch lets go under the floor.',
+          },
+        },
       },
       '0,3,6': {
         name: 'Keep Landing',
@@ -1711,6 +1837,14 @@ export function installDungeonsB() {
           ['darknut', 3, 3],
           ['keese', 6, 4],
         ],
+        puzzle: {
+          enemies: true,
+          flag: 'd8_036_puzzle',
+          reward: {
+            spawn: [['pickup', 4, 3, { kind: 'heart' }]],
+            say: 'Water drains out of a niche in the wall.',
+          },
+        },
       },
       '0,3,7': {
         name: 'Keep Door',
@@ -1764,7 +1898,7 @@ export function installDungeonsB() {
         entities: [
           ['switch', 2, 2],
           ['switch', 7, 5],
-          ['block', 4, 3],
+          ['block', 2, 3],
           ['beamos', 6, 2],
         ],
         puzzle: {
@@ -1922,7 +2056,19 @@ export function installDungeonsB() {
         entities: [
           ['darknut', 4, 3],
           ['darknut', 2, 2],
+          ['switch', 1, 2],
+          ['switch', 8, 2],
+          ['block', 1, 3],
+          ['block', 8, 3],
         ],
+        puzzle: {
+          switches: 'all',
+          flag: 'd8_133_puzzle',
+          reward: {
+            spawn: [['pickup', 4, 2, { kind: 'rupee5' }]],
+            say: 'Loose stone shifts, and something rolls out.',
+          },
+        },
       },
       '1,3,4': {
         name: 'Upper Lock',
