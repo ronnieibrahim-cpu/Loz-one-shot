@@ -37,8 +37,8 @@ sprite packs still to be drawn.
 | **Pickups, objects, projectiles (37)** | **Done** — hand-drawn |
 | **Boss/miniboss behaviour (16)** | **Done** — `src/data/bosses.js` |
 | **Story and dialogue** | **Done** — 20 ids, 15 cutscenes |
-| Boss/miniboss art (49) | **Poor** — script-generated blobs, needs redraw |
-| Music | 6 tracks, needs about 14 |
+| **Boss/miniboss art (49)** | **Done** — redrawn by hand |
+| **Music (22 tracks)** | **Done** — 14 looping + 8 jingles |
 
 ### The game is now completable end to end
 
@@ -334,25 +334,30 @@ backgrounds, and a fan-made Oracle-style overworld tileset.
 
 ## What is left, highest value first
 
-1. **Boss and miniboss art redraw** (`src/data/sprites-bosses.js`, brief
-   section C). 49 names: `BOSS_ART` 33 at **32x32**, `MINIBOSS_ART` 16 at
-   **24x24**. They currently exist as script-generated blobs, which is why
-   `validate` passes and the screen still looks wrong. This is the single
-   biggest remaining visual problem — these are the set pieces, and every one
-   of them now has a real fight attached to it that the player will be staring
-   at for a minute at a time. `docs/ART-DIRECTION.md` is binding; the failure
-   mode it describes is exactly the one in this file today.
-2. **Music** (`src/data/audio.js`, brief section I). 6 tracks exist, about 14
-   are wanted. **Keep the entire `SFX` object as it is** — only extend or
-   replace `TRACKS`. The tracker format is defined in the top comment of
-   `src/core/audio.js`. Track names referenced by map data that do not exist
-   play nothing silently, so the names in the brief matter.
-3. **Optional polish**, in rough order of payoff:
-   - `i_compass` is the one item icon that still does not read well.
-   - Dungeon room interiors are correct and solvable but plain (see below).
-   - The three overworld region gates that do not match GAME-PLAN.md.
+Boss art and music are both done. What remains is polish, in rough order of
+payoff:
+
+1. **Dungeon room interiors** are correct and solvable but plain (see below).
+2. **The three overworld region gates** that do not match GAME-PLAN.md.
+3. **A few boss sprites are honest but not their best** — see the soft spots
+   below for which, and what specifically is weak about each.
 
 ## Known soft spots in what has been done
+
+- **Three boss/miniboss sprites read weakly** even after the redraw, and are
+  the first place to spend more art time. `rootmaw` reads as a green mass with
+  a toothy maw rather than as a *tree* — the canopy branches are too small to
+  carry the idea and the maw takes 18 of the 32 columns. `thalassor` reads
+  closer to a coiled shell than to an eel with a gaping jaw. `mini_thornvine_1`
+  (the open-bloom frame) is a wide oval where frame 0 is a clean round bloom.
+  Everything else in the pack reads as its creature both in the contact sheet
+  and in-game.
+- **`test.mjs` also goes flaky on "all three tide levels reachable"**, not only
+  on the assertions listed under Tooling above. It failed on that one twice
+  during this session — once after the boss-art commit and once after the
+  music commit — and passed on an immediate re-run both times, on changes that
+  touch only `src/data/sprites-bosses.js` and `src/data/audio.js` and so cannot
+  affect the tide. Treat it as part of the same load-related flakiness.
 
 - Three overworld region gates do not match GAME-PLAN.md, because no overworld
   tile carries `F.BOMBABLE` and nothing can be gated on the Boomerang or the
