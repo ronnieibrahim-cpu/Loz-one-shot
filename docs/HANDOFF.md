@@ -38,6 +38,11 @@ always visible on screen and countable.
   grid, all eight dungeons with their map ids, items, bosses, minibosses,
   overworld entrance screens and tide themes, the item progression table, and
   the damage/HP numbers. Content that disagrees with this is wrong.
+- **`docs/ART-DIRECTION.md`** — binding for anything visual. Declares
+  `assets/sheets/` the canonical art reference, gives the style rules measured
+  from those sheets, and sets the rule: extract when a sheet has it, draw to
+  match when it does not. New assets are held to the same standard as extracted
+  ones.
 - **`docs/briefs/AGENTS.md`** — a complete authoring spec per work area,
   sections A through J. Each section names the one file to edit and how to
   verify. Section J documents the sprite-sheet extraction workflow.

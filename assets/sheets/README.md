@@ -1,5 +1,9 @@
 # Source sprite sheets
 
+**These sheets are the canonical reference for every visual in this project**,
+including assets drawn from scratch — see `docs/ART-DIRECTION.md` for the rules
+they impose.
+
 Reference sheets the extraction tools in `tools/` read from. They are committed
 so the extractions are reproducible in any checkout — `tools/rip-link.py` and
 `tools/rip-npcs.py` resolve paths here relative to the repo root, and both

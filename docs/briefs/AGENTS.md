@@ -3,6 +3,12 @@
 Each section is one agent's job. Read `docs/GAME-PLAN.md` first — it is
 authoritative for names, layout, items, bosses and progression.
 
+**For anything visual, `docs/ART-DIRECTION.md` is binding.** It names
+`assets/sheets/` as the canonical reference for every visual in the project,
+gives the measured style rules, and states the rule that governs all art work:
+extract it if a sheet has it, and draw it to match if no sheet does. Read it
+before drawing or extracting a single pixel.
+
 ## Rules that apply to every brief
 
 1. **Edit only the file(s) your section names.** Never touch `src/core`,

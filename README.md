@@ -52,7 +52,9 @@ src/world/    tile registry with tide variants, rooms, maps
 src/game/     player, enemies, bosses, items, objects, HUD, menus, cutscenes
 src/data/     all content: tiles, sprites, maps, dungeons, enemies, story, music
 tools/        validator, headless play-test harness, sprite preview
-docs/         GAME-PLAN.md (content contract), briefs/AGENTS.md (authoring specs)
+assets/sheets/ source sprite sheets: the canonical art reference
+docs/         GAME-PLAN.md (content contract), ART-DIRECTION.md (art rules),
+              HANDOFF.md (project state), briefs/AGENTS.md (authoring specs)
 ```
 
 Content is data, not code. `src/data/index.js` installs every pack into the
