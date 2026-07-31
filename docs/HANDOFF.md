@@ -81,19 +81,23 @@ several can run at once.
 - The validator rejects a space between two drawn pixels: it is legal in the
   grammar but punches a transparent hole through a sprite.
 
-## The uploaded sprite sheets do not persist
+## Source sprite sheets are in the repo
 
-Link and the NPCs were extracted from PNGs uploaded into the session that built
-them, under `/root/.claude/uploads/<session-id>/`. **A new session will not have
-those files.** The *generated* art is committed and works fine, so nothing is
-lost — but to run or adjust an extraction, the sheets must be re-uploaded and
-the `SHEET` constant at the top of the relevant `tools/rip-*.py` updated.
+The reference sheets live in `assets/sheets/` and are committed, so extractions
+are reproducible in any checkout — nothing depends on a session's upload
+directory. Both extractors resolve their paths relative to the repo root:
 
-Sheets used so far, all from spriters-resource.com:
-- Oracle of Ages — Link (ripped by Mister Mike)
-- Oracle of Seasons — NPCs (ripped by Trailsdegamer)
-- Oracle of Seasons — Enemies, Non-Human Races, Trading Sequence Characters,
-  dungeon backgrounds, and a custom Oracle-style overworld (all still unused)
+```sh
+python3 tools/rip-link.py --emit    # regenerates src/data/sprites-player.js
+python3 tools/rip-npcs.py           # regenerates src/data/sprites-npcs.js
+```
+
+Both currently produce byte-identical output to what is committed. See
+`assets/sheets/README.md` for what each sheet contains, who ripped it, and the
+copyright position.
+
+Sheets present but not yet used: enemies, non-human races, trading characters,
+dungeon backgrounds, and a fan-made Oracle-style overworld tileset.
 
 ## Ordering advice
 

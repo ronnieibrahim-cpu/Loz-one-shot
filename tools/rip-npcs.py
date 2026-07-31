@@ -10,9 +10,9 @@ import sys, os
 sys.path.insert(0, os.path.dirname(__file__))
 from ripkit import load, background, find_cells, quantise, emit_module
 
-SHEET = ('/root/.claude/uploads/e1a0b698-0df5-5023-8a07-1567bba31dd1/'
-         '84037355-Game_Boy___GBC__The_Legend_of_Zelda__Oracle_of_Seasons__'
-         'NonPlayable_Characters__NPCs.png')
+SHEET = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    'assets', 'sheets', 'oracle-seasons-npcs.png')
 
 # Cell index on the detected grid -> engine sprite name.
 # Indices come from the contact sheet written by tools/ripkit.contact_sheet.

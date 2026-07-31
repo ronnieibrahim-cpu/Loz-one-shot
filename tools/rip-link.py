@@ -22,10 +22,9 @@ import sys, json, os
 
 from PIL import Image
 
-SHEET = os.environ.get('LINK_SHEET') or (
-    '/root/.claude/uploads/e1a0b698-0df5-5023-8a07-1567bba31dd1/'
-    'bfacc259-Game_Boy___GBC__The_Legend_of_Zelda__Oracle_of_Ages__'
-    'Playable_Characters__Link.png')
+SHEET = os.environ.get('LINK_SHEET') or os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    'assets', 'sheets', 'oracle-ages-link.png')
 
 SHEET_GREEN = (0, 128, 0)
 WHITE = (255, 255, 255)
@@ -85,22 +84,6 @@ def band_tops(x0=888):
         elif n == 0:
             inb = False
     return tops
-
-
-if __name__ == '__main__':
-    a = sys.argv[1:]
-    if a and a[0] == '--dump':
-        ox, oy = int(a[1]), int(a[2])
-        flip = '--flip' in a
-        for r in cell(ox, oy, flip=flip):
-            print(r)
-    elif a and a[0] == '--scan':
-        y = int(a[1])
-        print(f'y={y}:', scan(y))
-    elif a and a[0] == '--bands':
-        print(band_tops())
-    else:
-        print(__doc__)
 
 
 # ---------------------------------------------------------------------------
@@ -212,3 +195,24 @@ def emit(path):
     lines.append('}')
     open(path, 'w').write('\n'.join(lines) + '\n')
     return len(art)
+
+
+if __name__ == '__main__':
+    a = sys.argv[1:]
+    if a and a[0] == '--dump':
+        ox, oy = int(a[1]), int(a[2])
+        flip = '--flip' in a
+        for r in cell(ox, oy, flip=flip):
+            print(r)
+    elif a and a[0] == '--scan':
+        y = int(a[1])
+        print(f'y={y}:', scan(y))
+    elif a and a[0] == '--bands':
+        print(band_tops())
+    elif a and a[0] == '--emit':
+        import os as _os
+        out = _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))),
+                            'src', 'data', 'sprites-player.js')
+        print('emitted', emit(out), 'frames ->', out)
+    else:
+        print(__doc__)
