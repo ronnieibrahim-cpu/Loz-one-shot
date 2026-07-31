@@ -1599,9 +1599,9 @@ const rooms = {
       ['npc', 3, 4, { sprite: 'npc_villager2', wander: true, dialogue: 'villager2' }],
       ['npc', 8, 4, { sprite: 'npc_child', wander: true, dialogue: 'villageChild' }],
       ['giver', 7, 2, {
-        sprite: 'npc_elder', dialogue: 'digger', waitingText: 'diggerWait',
-        afterText: 'diggerAfter', giveFlag: 'gotShovel', item: 'shovel', level: 1,
-        ready: (g) => g.progress.essences.filter(Boolean).length >= 2,
+        sprite: 'npc_elder', dialogue: 'digger', waiting: 'diggerWait',
+        after: 'diggerAfter', flag: 'gotShovel', item: 'shovel', level: 1,
+        needEssences: 2,
       }],
     ],
   },
@@ -2213,9 +2213,9 @@ function installHouses() {
         ],
         entities: [
           ['giver', 4, 2, {
-            sprite: 'npc_maku', dialogue: 'makuTree', waitingText: 'makuWait',
-            afterText: 'makuAfter', giveFlag: 'gotSatchel', item: 'satchel', level: 1,
-            ready: (g) => g.progress.essences.filter(Boolean).length >= 1,
+            sprite: 'npc_maku', dialogue: 'makuTree', waiting: 'makuWait',
+            after: 'makuAfter', flag: 'gotSatchel', item: 'satchel', level: 1,
+            needEssences: 1,
           }],
           ['npc', 7, 4, { sprite: 'npc_farore_0', dialogue: 'faroreHome' }],
         ],
