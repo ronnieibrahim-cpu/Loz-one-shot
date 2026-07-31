@@ -69,6 +69,7 @@ node tools/validate.mjs --strict     # also fail on unauthored sprites
 node tools/validate.mjs --pack=enemies   # scope the sprite-coverage check
 node tools/test.mjs --shots          # 35 assertions + screenshots
 node tools/preview.mjs enemies --scale=6  # contact sheet of a sprite pack
+node tools/scan-sprites.mjs --skip-bosses # rows split or floating off the body
 python3 tools/rip-enemies.py         # regenerate src/data/sprites-enemies.js
 ```
 
@@ -135,7 +136,23 @@ untouched baseline before any of this session's work.
    everything render in the wrong colours.
 7. Packed sheets **leak neighbouring pixels** into a cell; `_trim_slivers`
    drops edge columns disconnected from the sprite body.
-8. Always `preview.mjs` the pack and **look at the PNG**. Dimensional validity
+8. **`_trim_slivers` only caught one-pixel leaks** until it was rewritten. It
+   blanked an edge line only when the very next line was empty, so a leak two
+   or three columns wide with a gap between it and the sprite survived and
+   rendered as a bar floating beside it. It now groups each axis into runs and
+   drops detached edge runs small enough to be a leak.
+9. **Quantisation punches pinholes.** A pixel inside the body that happens to
+   match the sheet background goes transparent and you get a see-through slot
+   across the sprite. `_fill_pinholes` in `ripkit.py` fills any transparent
+   pixel with all four orthogonal neighbours drawn.
+10. **A single-pass hole filler does not converge.** `seal_holes` in
+   `rip-enemies.py` skipped a two-pixel gap on its horizontal test, filled one
+   of the two vertically, and never revisited the one-pixel hole left behind
+   the cursor. Both fillers now iterate to a fixed point.
+11. **Both extractors reproduce byte-identically**, which is what makes it safe
+   to change `ripkit.py` and re-run: run them once before touching anything,
+   confirm an empty `git diff`, then change and read the diff.
+12. Always `preview.mjs` the pack and **look at the PNG**. Dimensional validity
    says nothing about whether a sprite reads as the creature it names. Note
    that `preview.mjs` screenshots the canvas clipped to the 1400px viewport, so
    at `--scale=6` the rightmost column is cut off — use `--scale=2` to see a
@@ -173,6 +190,14 @@ its intro to hand tide control back for the fight, and the late bosses force it
 back to the level that suits them.
 
 **Art** (`sprites-link.js`, `sprites-world.js`):
+
+- **`validate.mjs` cannot see a broken sprite, only a wrong-sized one.** A row
+  split by a see-through slot, or shifted out past the rest of the body so it
+  renders as a detached line, passes validation and looks wrong on screen.
+  `tools/scan-sprites.mjs` is the check for that class; run it after any art
+  work. It scans the **resolved** registry, which matters because 37 of the 40
+  names in `LINK_ART` are shadowed by `PLAYER_ART` — scan the source packs and
+  you get a list of defects in art nobody ever sees.
 
 - **Transparency, not outline, is what separates two shapes.** Five icons
   (conch, cape, gloves, flippers, magnet) came out as solid blobs because the

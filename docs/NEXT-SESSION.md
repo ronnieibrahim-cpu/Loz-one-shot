@@ -42,6 +42,9 @@ order, committing and pushing after each:
      screen - ART-DIRECTION.md names this exact failure as the thing it exists
      to prevent. These are the set pieces, and every one now has a real fight
      attached that the player stares at for a minute at a time.
+     Eight sprites in this pack also still have a row that renders detached
+     from the body (wyverna, nereth, reefguard) - `node tools/scan-sprites.mjs`
+     lists them. A full redraw fixes those by construction; do not patch them.
 
   2. Music - src/data/audio.js, brief section I. 6 tracks exist, ~14 wanted.
      Keep the entire SFX object exactly as it is; only extend or replace
@@ -62,6 +65,10 @@ Verification is part of the task, not an optional extra.
     one palette, so it shows silhouette but not in-game colour. Dimensional
     validity and "it validated" prove nothing about whether a sprite reads as
     its creature.
+  - For art, also run `node tools/scan-sprites.mjs --strict --skip-bosses`,
+    which catches rows split by a see-through slot or shifted off the body -
+    validate.mjs cannot see that class and it is what made several sprites
+    look broken before.
   - For music: write a throwaway harness that plays every track, runs ~600
     ticks, and asserts the scheduler advanced and nothing threw.
   The harness patterns, and the three ways the boss harness fooled me before
