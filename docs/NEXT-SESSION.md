@@ -13,11 +13,11 @@ maintain and the most expensive thing to not have.
 ```
 Continue building "Oracle of Tides", a GBC-style Zelda fan game.
 
-Branch: claude/oracle-tides-boss-music-4c24tm — fetch it. That is the current
-canonical branch. `main` is an empty README; claude/zelda-style-game-piqt8v
-and claude/zelda-boss-behavior-jgbfwo are the older line this branch was built
-on and are behind it, not parallel work. Everything is committed and pushed;
-the tree is clean.
+Branch: claude/oracle-tides-polish-nphkj0 — fetch it. That is the current
+canonical branch. `main` is an empty README; claude/zelda-style-game-piqt8v,
+claude/zelda-boss-behavior-jgbfwo and claude/oracle-tides-boss-music-4c24tm
+are the older line this branch was built on and are behind it, not parallel
+work. Everything is committed and pushed; the tree is clean.
 
 Read, in this order:
   docs/HANDOFF.md        - current state, environment setup, and every trap
@@ -47,34 +47,46 @@ WHAT IS ALREADY DONE - do not redo any of this
   - all 16 boss and miniboss fights (src/data/bosses.js), verified beatable
   - every effect, pickup, object, projectile and item icon
   - the whole story: 20 dialogue ids, 15 cutscenes, all verified to terminate
-  - ALL 49 boss and miniboss sprites, redrawn by hand. scan-sprites --strict
-    is 0 hard findings across the whole registry, so the eight sprites that
-    used to render a row detached from the body are fixed too.
-  - music: 22 tracks (14 looping + 8 jingles). Every `music:` name referenced
-    by room, map or cutscene data resolves to a real track.
-  - i_compass now reads as a compass rather than a tablet.
+  - ALL 49 boss and miniboss sprites, drawn by hand and each checked in its own
+    arena in its own palette. rootmaw reads as a tree, thalassor as a gaping
+    eel, thornvine's open frame as a bloom. scan-sprites --strict is 0 hard
+    findings across the whole registry.
+  - music: 22 tracks (14 looping + 8 jingles), two dungeon themes alternating
+    across d1-d8. Every `music:` name in room, map AND cutscene data resolves.
+  - every dungeon room has something to do in it: 28 formerly-plain rooms now
+    carry switch, torch or clear-the-room puzzles with rewards.
+  - Small Keys equal locked doors in all eight dungeons, and every switch
+    puzzle is solvable by pushing (blocks move ONE tile only - see HANDOFF).
+  - the Sunken Marsh is gated on Bombs via a bombable `cliffCracked` tile, at
+    both of its entrances, proved with and without Bombs.
 
-WHAT IS LEFT - polish only, in rough order of payoff. Pick up as much as fits.
+WHAT IS LEFT - in rough order of payoff. Pick up as much as fits.
 
-  1. Three sprites read weakly and are the best remaining art spend.
-     `boss_rootmaw_*` reads as a green mass with a maw rather than as a TREE -
-     the canopy branches are too small to carry the idea and the maw eats 18
-     of the 32 columns. `boss_thalassor_*` reads closer to a coiled shell than
-     to an eel with a gaping jaw. `mini_thornvine_1` is a wide oval where
-     frame 0 is a clean round bloom. Everything else in the pack reads.
+  1. Terrain art. assets/sheets/oracle-seasons-dungeon-backgrounds.png and
+     custom-oracle-style-overworld.png are committed and completely unused;
+     every tile in tiles-core.js is hand-drawn. ART-DIRECTION.md is explicit
+     that these should be extracted from rather than approximated. This is the
+     largest remaining visual upgrade in the project. Brief section J and
+     tools/ripkit.py have the workflow; both existing extractors reproduce
+     byte-identically, so run them first and confirm an empty git diff before
+     changing ripkit.
 
-  2. Dungeon room interiors are correct and solvable but plain - corridors of
-     pots and tide tiles. Adding `puzzle` blocks and one-way ledges to the
-     middle rooms is cheap now that the structure is proved.
+  2. One-way ledges are DECLARED BUT NOT IMPLEMENTED. F.LEDGE exists in
+     src/world/tileset.js and ledgeS sets ledge: 'down', but nothing under
+     src/game ever reads either - grep and the only hits are the tileset
+     assigning them. Implementing a hop-down in src/game/player.js would
+     unlock real verticality in the dungeons. This is engine work, which the
+     briefs put off limits for content agents; decide deliberately.
 
-  3. The three overworld region gates that do not match GAME-PLAN.md. Adding a
-     cracked-cliff tile to tiles-core.js plus a `bomb` transform would let the
-     Marsh gate match the plan. See the overworld.js file header.
+  3. Two overworld region gates still do not match GAME-PLAN.md: the Salt Pans
+     want the Magic Boomerang and the Abyssal approach the Magnetic Gloves,
+     and nothing in the tileset can express a gap only those items cross. The
+     Marsh gate shows the shape of the fix (a tile with a flag plus a
+     transform) but these two need engine support or a plan change.
 
-  4. Each of dungeons 5-8 carries one Small Key more than it has locked doors.
-
-  5. `dungeon2` exists as a track but nothing references it yet. Wiring half
-     the dungeons to it is a one-line-per-map change in the dungeon data.
+  4. `itemGet`, `secret` and `heartPiece` are composed in TRACKS but nothing
+     plays them - the engine reaches for fanfare/fanfareShort at each of those
+     moments. Engine change, not a data one.
 
 Do the work yourself rather than spawning subagents - past sessions hit usage
 limits that way and lost the work.
@@ -90,18 +102,19 @@ VERIFICATION IS PART OF THE TASK, NOT AN OPTIONAL EXTRA
   - Also run `node tools/scan-sprites.mjs --strict`. It catches rows split by a
     see-through slot or shifted off the body; validate.mjs cannot see that
     class, and it is what made several sprites look broken before.
-  - For music: a throwaway harness that plays every track, runs ~600 ticks, and
-    asserts the scheduler advanced (audio.track set, _orderIdx/_row moving) and
-    nothing threw. Assert every referenced name resolves - and scan CUTSCENES
-    as well as room/map data, because `finalBoss` and `ending` are referenced
-    ONLY from cutscene steps in src/data/story.js.
-  The harness patterns are written up in docs/HANDOFF.md under "Verification
-  harnesses". Read that before writing one.
+  - For anything touching dungeon data, rebuild the dungeon walker and the
+    switch-puzzle solver described in HANDOFF.md under "Verification
+    harnesses". Counting keys statically is NOT enough - it is exactly what
+    hid seven unearnable Small Keys until a harness pushed the blocks.
+  The harness patterns are all written up in docs/HANDOFF.md. Read that before
+  writing one.
 
 main.js only publishes window.__game. Anything else a harness needs
-(spawnEntity, MAPS, getText, CUTSCENES) must be pulled out of the live module
-graph with a dynamic import from inside the page; there is a worked snippet in
-HANDOFF.md. Note MAPS holds room definitions under `roomDefs`, not `rooms`.
+(spawnEntity, MAPS, getText, STORY_CUTSCENES) must be pulled out of the live
+module graph with a dynamic import from inside the page; there is a worked
+snippet in HANDOFF.md. Note MAPS is a Map keyed by map id, and holds room
+definitions under `roomDefs`, whose grids are under `map` (not `rooms`, not
+`grid`). Cutscenes export as STORY_CUTSCENES, not CUTSCENES.
 
 Tell me plainly what is done, what is weak, and what you skipped.
 ```
@@ -110,27 +123,27 @@ Tell me plainly what is done, what is weak, and what you skipped.
 
 ## If you are picking this up cold, the short version
 
-- **Everything structural is finished, and so is the art and the music.** The
-  game can be started, played through eight dungeons, and completed, with every
-  boss drawn by hand and every region carrying its own theme.
-- **What is left is taste, not scaffolding.** Three sprites that read weakly,
-  dungeon interiors that are correct but plain, and a few small data
-  mismatches. All of it is the kind of work where the validator happily reports
-  success while the result looks or sounds wrong. Look at the output and listen
-  to it; do not trust the exit code.
+- **The game is content-complete.** Engine, world, dungeons, bosses, story, art
+  and music are all done, and the dungeons are now *interesting* rather than
+  merely solvable.
+- **What is left is mostly engine work or a large art extraction.** The cheap
+  data-only wins are gone; every remaining item on the list either needs a
+  change under `src/game`, or a serious pass over the sprite sheets.
 - **The biggest risk is spending context re-deriving what is already known.**
   The traps in `HANDOFF.md` under "Hard-won lessons" are all real and all cost
   hours the first time. Read them before writing code, not after a harness
-  fails.
+  fails. Two of them were added by the pass this file describes and are the
+  kind that pass every validator: a push block moves exactly one tile ever, and
+  an open dialogue freezes every entity in the *next* room a harness visits.
 
 ## Commits in the pass this file describes
 
-Three commits: the 49-sprite boss art redraw, the music tracks, and the
-compass icon. To see them without them going stale in this file:
+Four commits: the three weak sprites redrawn, the key/lock balance plus the
+`dungeon2` wiring, the Marsh bomb gate, and the dungeon room puzzles with the
+switch-room fix.
 
 ```sh
-git log --oneline f213b99..HEAD
+git log --oneline dc769da..HEAD
 ```
 
-`f213b99` is the last commit of the previous pass (boss behaviour, story and
-sprite-integrity).
+`dc769da` is the last commit of the previous pass (boss art, music, compass).

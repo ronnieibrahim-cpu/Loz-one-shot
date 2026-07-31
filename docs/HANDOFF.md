@@ -4,14 +4,13 @@ State of the project as of this handoff, and what a fresh session needs to know.
 
 ## Where things stand
 
-Branch: **`claude/zelda-style-game-piqt8v`** — the single canonical branch.
+Branch: **`claude/oracle-tides-polish-nphkj0`** — the single canonical branch.
 Everything is committed and pushed.
 
-The boss, art, story and sprite-integrity passes were developed on
-`claude/zelda-boss-behavior-jgbfwo` and have been fast-forwarded onto
-`piqt8v`; both names now point at the same commit, so there is no divergence
-and nothing to merge. `jgbfwo` is a leftover alias and can be deleted. Work on
-`piqt8v`.
+Earlier branches (`claude/zelda-style-game-piqt8v`,
+`claude/zelda-boss-behavior-jgbfwo`, `claude/oracle-tides-boss-music-4c24tm`)
+are the line this was built on and are all behind it, not parallel work.
+`main` is an empty README.
 
 **The engine is complete and verified.** `node tools/test.mjs` boots the game in
 headless Chromium and passes 35 assertions covering boot, movement, sword
@@ -38,7 +37,10 @@ sprite packs still to be drawn.
 | **Boss/miniboss behaviour (16)** | **Done** — `src/data/bosses.js` |
 | **Story and dialogue** | **Done** — 20 ids, 15 cutscenes |
 | **Boss/miniboss art (49)** | **Done** — redrawn by hand |
-| **Music (22 tracks)** | **Done** — 14 looping + 8 jingles |
+| **Music (22 tracks)** | **Done** — 14 looping + 8 jingles, two dungeon themes wired |
+| **Dungeon room puzzles** | **Done** — every room now has something in it |
+| **Small Key economy** | **Done** — keys equal locks in all eight dungeons |
+| **Marsh gate on Bombs** | **Done** — `cliffCracked`, both entrances |
 
 ### The game is now completable end to end
 
@@ -216,6 +218,23 @@ back to the level that suits them.
   most-seen effect in the game drew as a placeholder box for the whole project.
   If you add an effect to the engine, add its frames to the manifest.
 
+**A push block moves exactly one tile, ever.** `PushBlock` takes `once: true`
+by default and sets `moved` the moment its single slide lands, so a block placed
+two tiles from the switch it is meant to cover can never reach it. Every switch
+room in the game was authored that way, and each rewards a Small Key, so seven
+dungeons silently had a key that could not be earned — and neither `validate.mjs`
+nor the dungeon walker can see it, because both count keys statically from the
+data. Blocks now sit orthogonally **adjacent** to their switch with plain floor
+behind them to push from. If you add a switch puzzle, either do the same or pass
+`{ once: false }`.
+
+**An active dialogue freezes every entity while `mode` is still `'play'`.**
+This is called out under the boss harness below, but it bites any harness that
+visits several rooms in a row: a `puzzle.reward.say` from one room leaves a text
+box open, and in the *next* room nothing updates — switches never press, blocks
+never slide, and the room looks broken. Clear `game.dialogue.active` between
+rooms before concluding anything.
+
 **Data contracts drift from engine contracts, and nothing checks it.** Both
 `giver` entities in `overworld.js` passed `giveFlag`, `waitingText`, `afterText`
 and a `ready` function; `Giver` in `src/game/objects.js` reads `flag`,
@@ -313,6 +332,28 @@ The two below predate this session and are still worth rebuilding.
   agree at all three tide levels, that the world border is solid, and that a
   *tile-by-tile* flood from Tidewatch Village reaches every screen. Tile-by-tile
   matters: a screen-level flood misses an interior wall stranding an exit.
+  Give it a `--bombs` mode that makes `F.BOMBABLE` passable and it also proves
+  the Marsh gate: without Bombs 10 of the 12 marsh screens are unreachable, with
+  Bombs all 120 are. The two boundary screens still count as reached either way,
+  because the doorway pocket you stand in is inside them. Note the flood must
+  treat a tile as passable if it is walkable at **any** tide level — the player
+  controls the tide — which is also why this checker cannot prove the
+  swim/feather gates, only the bombable one.
+
+- **Music harness** — plays every track and asserts the scheduler advanced.
+  `audio.update()` schedules against `ctx.currentTime`, so a synchronous loop of
+  600 `update()` calls advances **nothing** and reports a false failure on every
+  looping track; real frames have to elapse via the game's own rAF loop, and the
+  context needs a keypress to unlock. Then assert every `music:` name in room,
+  map and cutscene data resolves. Cutscenes are exported as **`STORY_CUTSCENES`**
+  from `src/data/story.js`, not `CUTSCENES`; get that wrong and `finalBoss` and
+  `ending` silently look unreferenced.
+
+- **Switch-puzzle solver** — for every room with a `switches` puzzle, call the
+  engine's own `game.tryPushBlock` exactly **once** per block, park the player on
+  any switch still unpressed, and assert `room._puzzleDone`. One push per block
+  is the whole point: teleporting blocks onto switches passes even when the
+  puzzle is unsolvable, which is how the one-tile bug above survived.
 - **Dungeon walker** — boots headless, `enterMap`s into every room of every
   dungeon, and checks: no page errors, the room renders, no tile falls through
   to `void`, every entity type in the room resolves, every seam has a doorway
@@ -334,24 +375,19 @@ backgrounds, and a fan-made Oracle-style overworld tileset.
 
 ## What is left, highest value first
 
-Boss art and music are both done. What remains is polish, in rough order of
-payoff:
+Art, music, dungeon interiors, the key economy and the Marsh gate are all done.
+What remains, in rough order of payoff:
 
-1. **Dungeon room interiors** are correct and solvable but plain (see below).
-2. **The three overworld region gates** that do not match GAME-PLAN.md.
-3. **A few boss sprites are honest but not their best** — see the soft spots
-   below for which, and what specifically is weak about each.
+1. **The Salt Pans and Abyssal approach gates** still do not match
+   GAME-PLAN.md, and cannot until something can gate on the Boomerang and the
+   Magnetic Gloves. See the soft spots below.
+2. **One-way ledges** need engine support before any dungeon can use them.
+3. **`itemGet`, `secret` and `heartPiece`** are composed but never played.
+4. **Terrain art** — `assets/sheets/oracle-seasons-dungeon-backgrounds.png` and
+   `custom-oracle-style-overworld.png` are committed and unused. ART-DIRECTION
+   says extract from them rather than approximate when that work is picked up.
 
 ## Known soft spots in what has been done
-
-- **Three boss/miniboss sprites read weakly** even after the redraw, and are
-  the first place to spend more art time. `rootmaw` reads as a green mass with
-  a toothy maw rather than as a *tree* — the canopy branches are too small to
-  carry the idea and the maw takes 18 of the 32 columns. `thalassor` reads
-  closer to a coiled shell than to an eel with a gaping jaw. `mini_thornvine_1`
-  (the open-bloom frame) is a wide oval where frame 0 is a clean round bloom.
-  Everything else in the pack reads as its creature both in the contact sheet
-  and in-game.
 - **`test.mjs` also goes flaky on "all three tide levels reachable"**, not only
   on the assertions listed under Tooling above. It failed on that one twice
   during this session — once after the boss-art commit and once after the
@@ -359,14 +395,22 @@ payoff:
   touch only `src/data/sprites-bosses.js` and `src/data/audio.js` and so cannot
   affect the tide. Treat it as part of the same load-related flakiness.
 
-- Three overworld region gates do not match GAME-PLAN.md, because no overworld
-  tile carries `F.BOMBABLE` and nothing can be gated on the Boomerang or the
-  Magnetic Gloves. The Marsh is gated on the tide instead of Bombs, and the Salt
-  Pans and Abyssal approach on earlier items. The file header names all three.
-  Adding a cracked-cliff tile to `tiles-core.js` plus a `bomb` transform would
-  let the Marsh gate match the plan.
-- Each of dungeons 5-8 carries one Small Key more than it has locked doors.
-- Dungeon room interiors are honest but plain — corridors of pots and tide
-  tiles. They are correct and solvable; they are not yet *interesting*. Adding
-  `puzzle` blocks and one-way ledges to the middle rooms is cheap now that the
-  structure is proved.
+- **Two overworld region gates still do not match GAME-PLAN.md.** The Salt Pans
+  are gated on Feather + Bracelet and the Abyssal approach on Flippers +
+  Hookshot, where the plan calls for the Magic Boomerang and the Magnetic
+  Gloves. Neither item gates terrain: nothing in the tileset can express "a gap
+  only a boomerang can cross". Doing it properly needs either a new tile with
+  its own flag and engine support, or accepting a different item. The Marsh
+  gate now matches the plan — see `cliffCracked` in `tiles-core.js`.
+- **One-way ledges are declared but not implemented.** `F.LEDGE` exists in
+  `src/world/tileset.js` and `ledgeS` sets `ledge: 'down'`, but nothing under
+  `src/game` ever reads either — grep for `F.LEDGE` and `.ledge` and the only
+  hit is the tileset assigning them. `ledgeS` is therefore just a decorative
+  walkable tile, and any "one-way ledge" work needs a hop-down in
+  `src/game/player.js` first.
+- **`itemGet`, `secret` and `heartPiece` exist in `TRACKS` but nothing plays
+  them.** The engine reaches for `fanfare`/`fanfareShort` at each of those
+  moments (`src/game/objects.js`, `src/game/game.js`). Wiring them up is an
+  engine change, not a data one.
+- The overworld's item gates other than the Marsh are terrain-shaped, so the
+  throwaway overworld checker below cannot prove them the way it proves Bombs.
