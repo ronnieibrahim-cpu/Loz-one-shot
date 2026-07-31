@@ -345,16 +345,26 @@ def seal_holes(rows):
     Legal in the grammar but it punches a see-through hole through a sprite,
     and the validator rejects it. Quantisation can create these where a fifth
     colour was snapped away.
+
+    One left-to-right pass is not enough. A two-pixel gap is skipped on the
+    horizontal test, then the vertical test fills one of the two, leaving a
+    one-pixel hole behind the cursor that is never revisited — `tektite_0`
+    carried exactly that. Repeat until nothing changes.
     """
     out = [list(r) for r in rows]
-    for y, row in enumerate(out):
-        for x in range(1, SIZE - 1):
-            if row[x] != '.':
-                continue
-            if row[x - 1] != '.' and row[x + 1] != '.':
-                row[x] = row[x - 1]
-            elif 0 < y < SIZE - 1 and out[y - 1][x] != '.' and out[y + 1][x] != '.':
-                row[x] = out[y - 1][x]
+    changed = True
+    while changed:
+        changed = False
+        for y, row in enumerate(out):
+            for x in range(1, SIZE - 1):
+                if row[x] != '.':
+                    continue
+                if row[x - 1] != '.' and row[x + 1] != '.':
+                    row[x] = row[x - 1]
+                    changed = True
+                elif 0 < y < SIZE - 1 and out[y - 1][x] != '.' and out[y + 1][x] != '.':
+                    row[x] = out[y - 1][x]
+                    changed = True
     return [''.join(r) for r in out]
 
 

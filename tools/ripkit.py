@@ -134,37 +134,93 @@ def quantise(px, ox, oy, w, h, bg, flip=False):
             row.append('.' if p == bg else str(nearest(p)))
         rows.append(''.join(row))
     rows = _trim_slivers(rows)
+    rows = _fill_pinholes(rows)
     pal = ['#%02x%02x%02x' % c for c in cols]
     return rows, pal
 
 
-def _trim_slivers(rows):
-    """Blank edge columns separated from the sprite by an empty column.
+def _fill_pinholes(rows):
+    """Fill single transparent pixels that are enclosed by the sprite.
 
-    Neighbouring sprites on a packed sheet can leak a pixel or two into a cell.
-    A column of content with nothing between it and the border is never part of
-    the sprite, so it is dropped.
+    A pixel inside the body that happens to match the sheet background quantises
+    to transparent and punches a see-through pinhole — one row of the sprite
+    reads as split, and whatever is behind it shows through. A gap that is
+    genuinely part of the art (between two legs, inside a handle) is always open
+    to the outside on at least one side, so requiring all four orthogonal
+    neighbours to be drawn is a safe test.
+
+    Filling one pinhole can enclose the next, so repeat until nothing changes.
     """
     if not rows:
         return rows
-    w = len(rows[0])
     grid = [list(r) for r in rows]
+    h, w = len(grid), len(grid[0])
+    changed = True
+    while changed:
+        changed = False
+        for y in range(1, h - 1):
+            for x in range(1, w - 1):
+                if grid[y][x] != '.':
+                    continue
+                around = [grid[y - 1][x], grid[y + 1][x], grid[y][x - 1], grid[y][x + 1]]
+                if any(c == '.' for c in around):
+                    continue
+                grid[y][x] = max(set(around), key=around.count)
+                changed = True
+    return [''.join(g) for g in grid]
 
-    def col_empty(c):
-        return all(g[c] == '.' for g in grid)
 
-    for c in range(0, w // 2):
-        if col_empty(c + 1):
-            for g in grid:
-                g[c] = '.'
-        else:
-            break
-    for c in range(w - 1, w // 2, -1):
-        if col_empty(c - 1):
-            for g in grid:
-                g[c] = '.'
-        else:
-            break
+def _trim_slivers(rows):
+    """Blank leaked edge bands that are detached from the sprite body.
+
+    Neighbouring sprites on a packed sheet leak into a cell. The original rule
+    here only blanked an edge line when the very next line was empty, so it
+    caught one-pixel leaks and nothing else: a leak two or three lines wide,
+    with a gap between it and the body, survived and rendered as a bar floating
+    beside the sprite. `npc_farore_1` carried exactly that — a three-column
+    strip down the left edge with four empty columns between it and her.
+
+    So group each axis into runs of non-empty lines, take the run holding the
+    most pixels as the body, and drop any other run that touches an edge, is
+    separated from the body by at least one empty line, and is small enough
+    relative to the body to be a leak rather than a held sword or a wing.
+    """
+    if not rows:
+        return rows
+    grid = [list(r) for r in rows]
+    h, w = len(grid), len(grid[0])
+
+    def sweep(n, count_at, blank_at):
+        filled = [count_at(i) for i in range(n)]
+        runs, i = [], 0
+        while i < n:
+            if filled[i]:
+                j = i
+                while j < n and filled[j]:
+                    j += 1
+                runs.append((i, j, sum(filled[i:j])))
+                i = j
+            else:
+                i += 1
+        if len(runs) < 2:
+            return
+        body = max(runs, key=lambda r: r[2])
+        for a, b, px in runs:
+            if (a, b) == (body[0], body[1]):
+                continue
+            touches_edge = a == 0 or b == n
+            detached = b <= body[0] or a >= body[1]     # a gap separates them
+            if touches_edge and detached and px <= body[2] * 0.30:
+                for i in range(a, b):
+                    blank_at(i)
+
+    sweep(w,
+          lambda c: sum(1 for g in grid if g[c] != '.'),
+          lambda c: [g.__setitem__(c, '.') for g in grid])
+    sweep(h,
+          lambda r: sum(1 for ch in grid[r] if ch != '.'),
+          lambda r: grid.__setitem__(r, ['.'] * w))
+
     return [''.join(g) for g in grid]
 
 
