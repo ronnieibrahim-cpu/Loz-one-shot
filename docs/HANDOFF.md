@@ -264,6 +264,20 @@ validator cannot see this. When wiring a data entity, read the class.
 - Room grids are **exactly 8 rows of exactly 10 characters**, and digits 0-9 are
   always tide tiles.
 
+**The status bar is modelled on the Oracle of Seasons / Ages bar** — a parchment
+panel, `B[icon]`/`A[icon]` in tall drawn brackets, the rupee icon stacked over
+its three digits, hearts right-aligned in two rows of seven. Two things there
+are deliberate and look like bugs if you do not know:
+
+- **The panel is a warm tan (`#f0e0b0`), not the text box's near-white.** Most
+  item icons use palette `ui`, whose lightest index is `#f8f8e8`; on a near-white
+  bar a sword or a conch washes out to nothing. The tan is what makes them read.
+- **`drawHud` suspends the room tint around itself.** `applyTint` sets the tint
+  on the whole *sprite atlas*, so hearts and item icons would otherwise dim with
+  the room — invisible on the old black bar, but on a light panel it reads as a
+  rendering fault. It is safe to toggle without `flush()` because `bake` keys its
+  cache on `tintKey`, so tinted and untinted bakes coexist rather than thrashing.
+
 **Engine gotchas already fixed, worth not reintroducing:**
 
 - Input latches key presses, so a tap shorter than one frame still registers.
