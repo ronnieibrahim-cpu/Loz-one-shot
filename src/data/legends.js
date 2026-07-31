@@ -19,7 +19,7 @@ export function installLegends() {
     'm': 'mud', 'R': 'rockFloor', 'r': 'rockFloorDk',
     '~': 'waterS', '=': 'waterD',
     // barriers and props
-    '#': 'cliff', '^': 'cliffTop', '%': 'cliffDk',
+    '#': 'cliff', '^': 'cliffTop', '%': 'cliffDk', 'X': 'cliffCracked',
     'T': 'tree', 'Y': 'treeSand', 'P': 'palm',
     'b': 'bush', 'B': 'bushSand', 'o': 'rock', 'O': 'rockSand',
     'q': 'post', 'Q': 'postSand', 'x': 'digSpot',
@@ -53,7 +53,7 @@ export function installLegends() {
   // ---- marsh: sunken, muddy region ---------------------------------------
   registerLegend('marsh', {
     'g': 'grassDark', 'G': 'grassDark', '.': 'mud', ',': 'mud',
-    'T': 'tree', '#': 'cliffDk',
+    'T': 'tree', '#': 'cliffDk', 'X': 'cliffCrackedDk',
   }, 'base');
 
   // ---- dunes: the sandbar flats ------------------------------------------

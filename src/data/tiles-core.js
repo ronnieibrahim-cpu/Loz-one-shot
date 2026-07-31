@@ -297,6 +297,27 @@ const ART = {
     1111111111111111
     2222222222222222`,
 
+  // The same courses as `cliff` with a fault line zigzagging down through them,
+  // so a bombable stretch of cliff reads as cracked at a glance without leaving
+  // the terrain register. Dithering is allowed on terrain; this is a hard line.
+  cliffCracked: `
+    3333333333333333
+    1111113111111111
+    1111131111111111
+    1211311111111121
+    1111311111111111
+    2222322222222222
+    3333333333333333
+    1111311111111111
+    1111131111111111
+    1111132112111111
+    1111113111111111
+    2222223222222222
+    3333333333333333
+    1111113111111111
+    1111131111111111
+    2222232222222222`,
+
   cliffTop: `
     2222222222222222
     2111111111111112
@@ -889,6 +910,11 @@ export function installCoreTiles() {
     cliffCoral: { art: ART.cliff, pal: 'coral', flags: F.SOLID },
     cliffMarble: { art: ART.cliff, pal: 'marble', flags: F.SOLID },
     cliffAbyss: { art: ART.cliff, pal: 'abyss', flags: F.SOLID },
+    // Outdoor bombable walls. dWallCracked is the indoor equivalent; these let
+    // an overworld region be gated on Bombs, which GAME-PLAN.md asks for and
+    // nothing outdoors could express before.
+    cliffCracked: { art: ART.cliffCracked, pal: 'stone', flags: F.SOLID | F.BOMBABLE },
+    cliffCrackedDk: { art: ART.cliffCracked, pal: 'stonedk', flags: F.SOLID | F.BOMBABLE },
     treeDead: { art: ART.tree, pal: 'treedead', flags: F.SOLID, underArt: 'grassBog' },
     treeDark: { art: ART.tree, pal: 'treedk', flags: F.SOLID, underArt: 'grassDark' },
     tree: { art: ART.tree, pal: 'tree', flags: F.SOLID, underArt: 'grass' },
@@ -961,6 +987,8 @@ export function installCoreTiles() {
     pot: { lift: 'dFloor', drop: 'common' },
     sign: { cut: 'sign' },
     dWallCracked: { bomb: 'dFloor', fx: 'boom', persist: true, sfx: 'break' },
+    cliffCracked: { bomb: 'sand', fx: 'boom', persist: true, sfx: 'break' },
+    cliffCrackedDk: { bomb: 'mud', fx: 'boom', persist: true, sfx: 'break' },
     dFloorCrack: { bomb: 'dPit', fx: 'boom', persist: true, sfx: 'break' },
     digSpot: { dig: 'sand', drop: 'common' },
     sandDeep: { dig: 'sand' },

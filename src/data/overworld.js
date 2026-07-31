@@ -11,13 +11,17 @@
 //   Cliffs of Kell  boulders               Power Bracelet  (as planned)
 //   Drowned Wood  a wide deep channel      Zora's Flippers (as planned)
 //   Reef Palace   posts over deep water    Hookshot        (as planned)
-//   Sunken Marsh  a channel wadeable only at LOW tide — the plan calls for
-//                 Bombs, but no overworld tile carries F.BOMBABLE, so the
-//                 gate is the tide instead of an item.
+//   Sunken Marsh  cracked cliff             Bombs           (as planned)
 //   Salt Pans     a deep gap and boulders (Feather + Bracelet) — the plan
 //                 calls for the Magic Boomerang, which gates nothing here.
 //   Abyssal app.  deep water and posts (Flippers + Hookshot) — the plan
 //                 calls for the Magnetic Gloves, likewise.
+//
+// The Marsh has exactly two ways in — Bog Causeway (2,7) from the Coast and Bog
+// Stair (1,6) down from the Cliffs — and both are now sealed by a `cliffCracked`
+// tile with a solid cliff run beside it, so each entrance is a one-tile pocket
+// you stand in until you have Bombs. Sealing only the Coast side would have
+// gated nothing, because the Cliffs back door reaches the same screens.
 
 import { registerMap } from '../world/maps.js';
 
@@ -1315,7 +1319,7 @@ const rooms = {
     legend: 'marsh', music: 'marsh',
     map: [
       'TTTggggTTT',
-      'Tgg....ggT',
+      'Tgg#X##ggT',
       'gg.!!!!.gg',
       'gg......gg',
       'gg.!!!!.gg',
@@ -1542,10 +1546,10 @@ const rooms = {
     map: [
       'TTTggggTTT',
       'TgTTTTTTgT',
-      'gg......gg',
-      'gg.5555.gg',
-      'gg.5555.gg',
-      'ggTTTTTTgg',
+      'gg......Xg',
+      'gg.5555.%g',
+      'gg.5555.%g',
+      'ggTTTTTT%g',
       'TggggggggT',
       'TTTggggTTT',
     ],
