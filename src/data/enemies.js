@@ -5,6 +5,7 @@ import { defineEnemy } from '../game/enemy.js';
 import {
   wander, chase, flee, patrol, bounceDiag, hop, charge, orbit, submerge,
   shoot, shootRing, every, timer, aligned, facePlayer, distToPlayer, moveDir,
+  driftWithTide,
 } from '../game/enemy.js';
 import { spawnEntity } from '../game/entity.js';
 import { F } from '../world/tileset.js';
@@ -218,6 +219,135 @@ export function installEnemies() {
     ai(e, g) {
       if (distToPlayer(e, g) < 26) flee(e, g, { speed: 0.9 });
       else chase(e, g, { speed: 0.55 });
+    },
+  });
+
+  // --- Darknut: armoured knight, only vulnerable from behind ------------
+  defineEnemy('darknut', {
+    hp: 6, damage: 3, pal: 'enemyr', speed: 0.5, rate: 10,
+    frames: {
+      down: ['darknut_d0', 'darknut_d1'],
+      up: ['darknut_d0', 'darknut_d1'],
+      side: ['darknut_s0', 'darknut_s1'],
+    },
+    hb: { x: 2, y: 4, w: 12, h: 11 },
+    shield: 'front',
+    drops: 'rich',
+    ai(e, g) {
+      // Advances steadily with its shield up, then lunges once you are close.
+      // Circle behind it: the shield only covers the way it faces.
+      const d = distToPlayer(e, g);
+      if (d < 60) {
+        charge(e, g, { speed: 1.5, tell: 22, range: 60, shake: true,
+          idle: (e2, g2) => chase(e2, g2, { speed: 0.5 }) });
+      } else {
+        patrol(e, g, { axis: e.homeX % 32 < 16 ? 'x' : 'y' });
+      }
+    },
+  });
+
+  // --- Wizzrobe: blinks in, fires, blinks out ---------------------------
+  defineEnemy('wizzrobe', {
+    hp: 3, damage: 3, pal: 'enemyp', speed: 0, rate: 12, terrain: 'any',
+    frames: ['wizzrobe_0', 'wizzrobe_1'],
+    drops: 'good',
+    ai(e, g) {
+      // submerge() is the engine's appear/disappear cycle; it hides the sprite
+      // and drops the hitbox while down, which is exactly a wizzrobe's phase.
+      submerge(e, g, {
+        down: 90, up: 80,
+        whileUp(e2, g2) {
+          if (every(e2, 44)) {
+            facePlayer(e2, g2);
+            shoot(e2, g2, { sprite: 'shot_orb', pal: 'magic', speed: 1.6, aim: true, damage: 3 });
+          }
+        },
+      });
+    },
+  });
+
+  // --- Anglerfry: hangs in deep water, lunges when you swim near --------
+  defineEnemy('anglerfry', {
+    hp: 3, damage: 3, pal: 'enemyb', speed: 0.35, rate: 12, terrain: 'water',
+    frames: ['anglerfry_0', 'anglerfry_1'],
+    drops: 'good',
+    tideOnly: [1, 2],
+    ai(e, g) {
+      // Drifts on its lure until you are close, then dashes in a straight line.
+      charge(e, g, { speed: 2.1, tell: 26, range: 70, shake: true,
+        idle: (e2, g2) => wander(e2, g2, { speed: 0.35, turnChance: 0.02 }) });
+    },
+  });
+
+  // --- Barnacle: fixed, opens to spit, shielded while shut --------------
+  defineEnemy('barnacle', {
+    hp: 999, damage: 2, pal: 'enemyk', speed: 0, rate: 22, terrain: 'any',
+    frames: ['barnacle_0', 'barnacle_1'],
+    shield: 'all',
+    drops: 'none',
+    ai(e, g) {
+      if (every(e, 96) && distToPlayer(e, g) < 100) {
+        facePlayer(e, g);
+        shoot(e, g, { sprite: 'shot_ink', pal: 'shadow', speed: 1.3, aim: true, damage: 2 });
+      }
+    },
+  });
+
+  // --- Jellyfish: drifts with the tide, stings on contact ---------------
+  defineEnemy('jellyfish', {
+    hp: 2, damage: 3, pal: 'enemyb', speed: 0.4, rate: 14, terrain: 'water',
+    frames: ['jellyfish_0', 'jellyfish_1'],
+    hb: { x: 3, y: 4, w: 10, h: 10 },
+    drops: 'common',
+    ai(e, g) {
+      // Carried by the water rather than swimming: the higher the tide, the
+      // harder the current shoves it along.
+      bounceDiag(e, g, { speed: 0.4 });
+      driftWithTide(e, g, { perLevel: 0.14 });
+    },
+  });
+
+  // --- Siren: surfaces to sing a shot at you, submerges to dodge --------
+  defineEnemy('siren', {
+    hp: 4, damage: 3, pal: 'enemyb', speed: 0, rate: 16, terrain: 'water',
+    frames: ['siren_0', 'siren_1'],
+    drops: 'good',
+    ai(e, g) {
+      submerge(e, g, {
+        down: 76, up: 70,
+        whileUp(e2, g2) {
+          if (every(e2, 40)) {
+            facePlayer(e2, g2);
+            shootRing(e2, g2, 5, { sprite: 'shot_bubble', pal: 'water', speed: 1.2, damage: 3 });
+          }
+        },
+      });
+    },
+  });
+
+  // --- Pincer: an eel head on a tether, lunging out of its burrow -------
+  defineEnemy('pincer', {
+    hp: 3, damage: 3, pal: 'enemyr', speed: 0, rate: 10, terrain: 'any',
+    frames: ['pincer_0', 'pincer_1'],
+    hb: { x: 3, y: 3, w: 10, h: 11 },
+    drops: 'common',
+    ai(e, g) {
+      // Never leaves its hole: it snaps out along one axis and is reeled back,
+      // so the safe ground is diagonal to it.
+      if (e._out == null) { e._out = 0; e._back = 0; }
+      if (e._back > 0) {
+        e._back--;
+        const dx = e.homeX - e.x, dy = e.homeY - e.y;
+        e.x += dx * 0.2; e.y += dy * 0.2;
+        return;
+      }
+      if (e._out > 0) { e._out--; moveDir(e, g, e.dir, 2.2); if (e._out === 0) e._back = 24; return; }
+      if (every(e, 70) && aligned(e, g, 14) && distToPlayer(e, g) < 72) {
+        facePlayer(e, g);
+        g.spawnEffect('spark', e.x, e.y - 6);
+        e.stun = 10;
+        e._out = 14;
+      }
     },
   });
 }

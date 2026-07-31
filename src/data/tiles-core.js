@@ -828,7 +828,7 @@ export function installCoreTiles() {
   // Animation frames are art without being tiles in their own right.
   declareAnimArt(Object.keys(ART));
 
-  registerTiles({
+  const TILE_DEFS = {
     void: { art: ART.void, pal: 'abyss', flags: F.VOID | F.SOLID },
 
     // --- walkable ground ---
@@ -936,7 +936,18 @@ export function installCoreTiles() {
     dBasin: { tide: ['dFloor', 'dFloorWet', 'dWaterS'] },
     dWell: { tide: ['dWaterS', 'dWaterD', 'dWaterD'] },
     dDrain: { tide: ['dPit', 'dWaterS', 'dWaterD'] },
-  });
+  };
+  registerTiles(TILE_DEFS);
+
+  // Rooms draw a tile by its *tile* name, but the art above is keyed by art
+  // name — so every palette-swap tile (grassDark reusing ART.grass, treeDark
+  // reusing ART.tree, and the rest) had no entry to find and rendered as a
+  // placeholder box. Alias each tile name to the art it declared.
+  const aliases = {};
+  for (const [name, def] of Object.entries(TILE_DEFS)) {
+    if (def && def.art && !(name in ART)) aliases[name] = def.art;
+  }
+  tileSheet.add(aliases, 'stone');
 
   // What each tile becomes when acted upon. `persist: true` survives leaving the
   // room, which is right for walls you blew open and wrong for bushes.
