@@ -75,9 +75,10 @@ WHAT IS LEFT - in rough order of payoff. Pick up as much as fits.
      every tile in tiles-core.js is hand-drawn. ART-DIRECTION.md is explicit
      that these should be extracted from rather than approximated. This is the
      largest remaining visual upgrade in the project. Brief section J and
-     tools/ripkit.py have the workflow; both existing extractors reproduce
+     tools/ripkit.py have the workflow; all four extractors reproduce
      byte-identically, so run them first and confirm an empty git diff before
-     changing ripkit.
+     changing ripkit. Note rip-hud.py does NOT use ripkit.quantise - see the
+     traps below.
 
   2. One-way ledges are DECLARED BUT NOT IMPLEMENTED. F.LEDGE exists in
      src/world/tileset.js and ledgeS sets ledge: 'down', but nothing under
@@ -95,6 +96,10 @@ WHAT IS LEFT - in rough order of payoff. Pick up as much as fits.
   4. `itemGet`, `secret` and `heartPiece` are composed in TRACKS but nothing
      plays them - the engine reaches for fanfare/fanfareShort at each of those
      moments. Engine change, not a data one.
+
+  5. Two hand-drawn icons in src/data/sprites-gear.js are honest but not good:
+     i_flippers reads more like a leaf than a swim fin, and i_chain is a plain
+     grey pill. Everything else in the ui pack reads. Low stakes, quick win.
 
 Do the work yourself rather than spawning subagents - past sessions hit usage
 limits that way and lost the work.
@@ -116,6 +121,26 @@ VERIFICATION IS PART OF THE TASK, NOT AN OPTIONAL EXTRA
     hid seven unearnable Small Keys until a harness pushed the blocks.
   The harness patterns are all written up in docs/HANDOFF.md. Read that before
   writing one.
+
+FOUR TRAPS THAT PASS EVERY VALIDATOR - all four cost real time to find
+  - A PUSH BLOCK MOVES EXACTLY ONE TILE, EVER (`once: true` by default). Every
+    switch puzzle in the game was authored with its blocks two-plus tiles from
+    the switch, so none was solvable, and seven rewarded an unearnable Small
+    Key. Blocks now sit ADJACENT to their switch.
+  - AN OPEN DIALOGUE FREEZES EVERY ENTITY while `mode` is still 'play'. A
+    reward's `say` from one room leaves the box open and the NEXT room a
+    harness visits looks completely inert. Clear game.dialogue.active between
+    rooms.
+  - AN EXPLICIT PALETTE AT A DRAW SITE OVERRIDES A SPRITE'S OWN. art.js bake()
+    resolves `palName || d.pal`. Every item icon now binds its own palette, so
+    no item carries a `pal` and no draw site passes one. Keep it that way.
+  - PLATE COLOUR ENCLOSED BY A SPRITE'S OUTLINE IS ARTWORK, not background.
+    Erasing all of it punches holes through the Seed Satchel, ring box and
+    gloves. rip-hud.py flood-fills from the cell border; a part-filled heart
+    opts out via HOLLOW because there the bar really is showing through.
+  Also: ripkit.quantise is NOT deterministic when it pads a short palette (it
+  ties on distance and the winner is not pinned down). rip-hud.py uses its own
+  quantise_exact instead. If another rip ever starts drifting, that is why.
 
 main.js only publishes window.__game. Anything else a harness needs
 (spawnEntity, MAPS, getText, STORY_CUTSCENES) must be pulled out of the live
@@ -140,15 +165,16 @@ Tell me plainly what is done, what is weak, and what you skipped.
 - **The biggest risk is spending context re-deriving what is already known.**
   The traps in `HANDOFF.md` under "Hard-won lessons" are all real and all cost
   hours the first time. Read them before writing code, not after a harness
-  fails. Two of them were added by the pass this file describes and are the
-  kind that pass every validator: a push block moves exactly one tile ever, and
-  an open dialogue freezes every entity in the *next* room a harness visits.
+  fails. Four were added by the pass this file describes, and every one of them
+  passes `validate.mjs` while being wrong on screen or unwinnable in play.
 
 ## Commits in the pass this file describes
 
-Four commits: the three weak sprites redrawn, the key/lock balance plus the
-`dungeon2` wiring, the Marsh bomb gate, and the dungeon room puzzles with the
-switch-room fix.
+Eight, in order: the three weak boss sprites redrawn; the key/lock balance plus
+the `dungeon2` wiring; the Marsh bomb gate; the dungeon room puzzles with the
+switch-room fix; the docs; the Oracle-style status bar; the 29-icon extraction
+from the HUD/Gear sheet; and the last three extractions plus the hand-drawn
+gear pack, which is also where the two extraction bugs were found and fixed.
 
 ```sh
 git log --oneline dc769da..HEAD
