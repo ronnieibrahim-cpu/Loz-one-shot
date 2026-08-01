@@ -59,11 +59,14 @@ WHAT IS ALREADY DONE - do not redo any of this
     puzzle is solvable by pushing (blocks move ONE tile only - see HANDOFF).
   - the Sunken Marsh is gated on Bombs via a bombable `cliffCracked` tile, at
     both of its entrances, proved with and without Bombs.
-  - the status bar is rebuilt after the Oracle of Seasons / Ages HUD, and 29
-    HUD and gear icons are EXTRACTED from that game's sheet rather than drawn
-    (tools/rip-hud.py). Extracted icons bind their own palette, so their items
-    carry no `pal` and the draw sites pass none - see HANDOFF before touching
-    either.
+  - the status bar is rebuilt after the Oracle of Seasons / Ages HUD, 32 HUD
+    and gear icons are EXTRACTED from that game's sheet (tools/rip-hud.py), and
+    the 10 items Seasons does not have are hand-drawn to match in
+    src/data/sprites-gear.js. No placeholder item icons remain.
+  - EVERY item icon binds its own palette, so no item carries a `pal` and no
+    draw site passes one. Read HANDOFF before touching either, and before
+    writing another rip: plate enclosed by a sprite's outline is artwork, and
+    ripkit.quantise is unstable when it pads a short palette.
 
 WHAT IS LEFT - in rough order of payoff. Pick up as much as fits.
 
