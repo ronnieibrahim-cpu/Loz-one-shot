@@ -239,10 +239,10 @@ export class Hookshot extends Entity {
     const n = Math.max(1, Math.floor(Math.hypot(dx, dy) / 5));
     for (let i = 0; i < n; i++) {
       const lx = sx + dx * (i / n), ly = sy + dy * (i / n);
-      sprites.draw(ctx, 'i_chain', ox + lx, oy + ly - this.z, { pal: 'stone' });
+      sprites.draw(ctx, 'i_chain', ox + lx, oy + ly - this.z);
     }
     sprites.draw(ctx, 'i_hookhead', ox + this.x, oy + this.y - this.z,
-      { pal: 'stone', flipX: this.dir === 'left', flipY: this.dir === 'up' });
+      { flipX: this.dir === 'left', flipY: this.dir === 'up' });
   }
 }
 
@@ -378,7 +378,7 @@ export const ITEMS = {
   conch: {
     names: ['Moon Conch'],
     icon: ['i_conch'],
-    pal: 'spark', equippable: true,
+    equippable: true,
     desc: 'Play it to turn the tide: LOW, MID, HIGH.',
     use(game, p, level) { return p.playConch(game); },
   },
@@ -420,13 +420,13 @@ export const ITEMS = {
   flippers: {
     names: ["Zora's Flippers", 'Mermaid Suit'],
     icon: ['i_flippers', 'i_suit'],
-    pal: 'enemyb', passive: true,
+    passive: true,
     desc: 'Swim in deep water. The suit lets you dive and fight the current.',
   },
   boomerang: {
     names: ['Boomerang', 'Magic Boomerang'],
     icon: ['i_boomerang_0', 'i_boomerang_mag'],
-    pal: 'wood', equippable: true,
+    equippable: true,
     desc: 'Stuns foes and fetches items. The magic one you can steer.',
     use(game, p, level) {
       if (p.boomerang && !p.boomerang.remove) return true;
@@ -440,7 +440,7 @@ export const ITEMS = {
   hookshot: {
     names: ['Hookshot', 'Long Hook'],
     icon: ['i_hookshot', 'i_longhook'],
-    pal: 'stone', equippable: true,
+    equippable: true,
     desc: 'Latch onto posts to cross gaps and water.',
     use(game, p, level) {
       if (p.hookshot && !p.hookshot.remove) return true;
@@ -495,7 +495,7 @@ export const ITEMS = {
   magnet: {
     names: ['Magnetic Gloves'],
     icon: ['i_magnet'],
-    pal: 'enemyb', equippable: true,
+    equippable: true,
     desc: 'Attract or repel iron. Press to flip polarity.',
     use(game, p, level) {
       p.magnet = p.magnet === 1 ? -1 : 1;
@@ -510,8 +510,8 @@ export const ITEMS = {
     passive: true,
     desc: 'Holds magic rings. Bigger boxes let you wear more at once.',
   },
-  map: { names: ['Dungeon Map'], icon: ['i_map'], pal: 'ui', passive: true, desc: 'Reveals the dungeon layout.' },
-  compass: { names: ['Compass'], icon: ['i_compass'], pal: 'ui', passive: true, desc: 'Chimes near keys and marks the boss.' },
+  map: { names: ['Dungeon Map'], icon: ['i_map'], passive: true, desc: 'Reveals the dungeon layout.' },
+  compass: { names: ['Compass'], icon: ['i_compass'], passive: true, desc: 'Chimes near keys and marks the boss.' },
 };
 
 export function itemName(id, level = 1) {

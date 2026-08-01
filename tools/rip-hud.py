@@ -20,7 +20,7 @@ Regenerate with:  python3 tools/rip-hud.py
 """
 import sys, os
 sys.path.insert(0, os.path.dirname(__file__))
-from ripkit import load, quantise, emit_module
+from ripkit import load, emit_module
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SHEET = os.path.join(ROOT, 'assets', 'sheets', 'oracle-seasons-hud-gear.png')
@@ -46,6 +46,7 @@ GRID = {
     'i_bomb': (2, 3),
     'i_shovel': (2, 5),
     'i_satchel': (4, 3),            # Seed Satchel
+    'i_boomerang_0': (1, 3), 'i_boomerang_mag': (1, 5),
     'i_slingshot': (5, 3), 'i_hyperslingshot': (5, 4),
     'i_unknown': (6, 0),            # the red '?'
 }
@@ -56,6 +57,9 @@ GRID = {
 # communicated by the HUD's 'L2' badge, exactly as the Oracle bar does it.
 RECTS = {
     'i_ringbox': (394, 126, 11, 16),   # 11 wide: a maroon swatch fills the rest
+    # Magnetic Gloves, the blue S-polarity plate. 8 wide because the 'S' caption
+    # sits beside the glove rather than past LABEL_X, so strip_label misses it.
+    'i_magnet': (610, 96, 8, 16),
     'i_ring': (419, 126, 16, 16),
     'hud_rupee': (345, 100, 8, 8),
     # satchel order matches REQUIRED_SPRITES.ui, which is the satchel's own order
@@ -73,6 +77,9 @@ RECTS = {
 # Cells where a quantity swatch shares the plate with the icon. Painting the
 # swatch out before quantising keeps it from becoming a fourth colour.
 SWATCH = {(255, 255, 0), (0, 255, 255), (255, 0, 0), (0, 255, 0), (255, 128, 0)}
+
+# Shapes whose enclosed plate is the bar showing through, not a highlight.
+HOLLOW = {'hud_heart0', 'hud_heart1', 'hud_heart2', 'hud_heart3'}
 
 
 def centre(rows, w, h):
@@ -93,6 +100,71 @@ def centre(rows, w, h):
             if 0 <= ny < h and 0 <= nx < w:
                 out[ny][nx] = c
     return [''.join(r) for r in out]
+
+
+def lum(c):
+    return 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]
+
+
+def quantise_exact(px, ox, oy, w, h, bg, hollow=False):
+    """Map a cell's colours to indices directly, with no nearest-colour search.
+
+    ripkit's `quantise` picks each pixel's index by scanning for the smallest
+    squared distance and keeping the first minimum. When it pads a short palette
+    by repeating a colour, several indices tie at distance zero and which one
+    wins is not pinned down, so the same cell can emit different indices from run
+    to run — this rip was three pixels unstable across runs before this.
+
+    Every cell on this sheet has at most four colours, so no snapping is needed:
+    sort the distinct colours light to dark, break ties on the RGB tuple so the
+    order is total, and look each pixel up. Byte-identical every time.
+    """
+    # Plate colour enclosed by a sprite's own outline is ARTWORK, not plate —
+    # the Seed Satchel, ring box and gloves all use it as a highlight. Erase only
+    # plate reachable from the edge of the cell, exactly as docs/HANDOFF.md warns
+    # under sprite-sheet extraction; treating every plate pixel as transparent
+    # punches holes straight through those sprites.
+    # …except where the shape is *meant* to be see-through. A part-filled heart
+    # is an outline with the bar showing through it, not a heart with a tan
+    # middle, so those opt out and keep every plate pixel transparent.
+    outside = set()
+    if hollow:
+        outside = {(x, y) for y in range(h) for x in range(w)
+                   if px[ox + x, oy + y] == bg}
+    stack = [] if hollow else [(x, 0) for x in range(w)] + [(x, h - 1) for x in range(w)] \
+        + [(0, y) for y in range(h)] + [(w - 1, y) for y in range(h)]
+    stack = [q for q in stack if px[ox + q[0], oy + q[1]] == bg]
+    outside.update(stack)
+    while stack:
+        cx, cy = stack.pop()
+        for nx, ny in ((cx + 1, cy), (cx - 1, cy), (cx, cy + 1), (cx, cy - 1)):
+            if 0 <= nx < w and 0 <= ny < h and (nx, ny) not in outside \
+                    and px[ox + nx, oy + ny] == bg:
+                outside.add((nx, ny))
+                stack.append((nx, ny))
+
+    seen = {}
+    for y in range(h):
+        for x in range(w):
+            if (x, y) in outside:
+                continue
+            p = px[ox + x, oy + y]
+            seen[p] = seen.get(p, 0) + 1
+    if not seen:
+        return None, None
+    cols = sorted(seen, key=lambda c: (-lum(c), c))[:4]
+    idx = {c: i for i, c in enumerate(cols)}
+    pal = list(cols)
+    while len(pal) < 4:
+        pal.append(pal[-1])
+    rows = []
+    for y in range(h):
+        row = []
+        for x in range(w):
+            p = px[ox + x, oy + y]
+            row.append('.' if (x, y) in outside else str(idx[p]))
+        rows.append(''.join(row))
+    return rows, ['#%02x%02x%02x' % c for c in pal]
 
 
 LABEL_X = 10        # "L-1"/"L-2" starts at this column of every gear cell
@@ -144,12 +216,26 @@ def main():
 
     art, pals = {}, {}
     for name, (x, y, w, h) in sorted(cells.items()):
-        rows, pal = quantise(px, x, y, w, h, PLATE)
+        rows, pal = quantise_exact(px, x, y, w, h, PLATE, name in HOLLOW)
         if rows is None:
             print('skip (empty):', name)
             continue
-        art[name] = centre(rows, 16 if w > 8 else 8, 16 if h > 8 else 8)
+        small = (w == 8 and h == 8)
+        art[name] = centre(rows, 8 if small else 16, 8 if small else 16)
         pals[name] = pal
+
+    # The boomerang spins as one sprite rotated, in the original as here, so the
+    # other three frames are turns of the extracted one rather than new drawings.
+    for turn, suffix in ((1, '1'), (2, '2'), (3, '3')):
+        base = art.get('i_boomerang_0')
+        if not base:
+            break
+        rows = base
+        for _ in range(turn):
+            rows = [''.join(rows[len(rows) - 1 - x][y] for x in range(len(rows)))
+                    for y in range(len(rows[0]))]
+        art['i_boomerang_' + suffix] = rows
+        pals['i_boomerang_' + suffix] = pals['i_boomerang_0']
 
     header = '\n'.join([
         '// HUD and item-gear icons extracted from the Oracle of Seasons HUD/Gear sheet.',

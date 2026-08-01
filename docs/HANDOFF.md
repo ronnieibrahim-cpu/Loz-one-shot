@@ -274,12 +274,27 @@ and `title.js` no longer fall back to `'ui'`. If you extract more icons, drop
 the item's `pal` at the same time; if you add an item using hand-drawn art,
 give it one.
 
-**`tools/scan-sprites.mjs` has a `HOLE_OK` allowlist**, currently four names.
-Those are extractions whose gaps are the artwork — the counter of the `?` and
-notches in three seeds — each diffed against the source sheet pixel for pixel
-before being listed. Do not add to it to make a red run go away; diff the
-extraction against its source first, because the check's whole value is that a
-real see-through slot still fails.
+**Plate colour enclosed by a sprite's own outline is ARTWORK.** This is trap 3
+above, and `tools/rip-hud.py` hit it again from the other side: the Seed Satchel,
+ring box and Power Gloves all use the plate tone as a highlight *inside* the
+outline, so treating every plate pixel as transparent punched holes straight
+through them. `quantise_exact` flood-fills the plate from the cell border and
+only erases what is reachable from outside. When that first went in it filled the
+empty heart's middle too — a part-filled heart is an outline with the bar showing
+through, not a heart with a tan centre — so `HOLLOW` opts those four out. If a
+new extraction shows see-through slots, this is the first thing to check; an
+allowlist in `scan-sprites.mjs` would have hidden a real bug rather than fixed it.
+
+**`ripkit.quantise` is not deterministic when it pads a short palette.** It pads
+to four by repeating the last colour, then picks each pixel's index by scanning
+for the smallest squared distance — with duplicate entries several indices tie at
+zero and the winner is not pinned down, so the same cell emits different indices
+from run to run. `rip-hud.py` was three pixels unstable across runs before
+`quantise_exact` replaced the search with a direct lookup keyed on a total order
+(`-luminance`, then the RGB tuple). Every cell on that sheet has at most four
+colours so nothing needs snapping. **`rip-enemies.py`, `rip-link.py` and
+`rip-npcs.py` still use `ripkit.quantise`** — they reproduce byte-identically
+today, but if one ever starts drifting, this is why.
 
 **The status bar is modelled on the Oracle of Seasons / Ages bar** — a parchment
 panel, `B[icon]`/`A[icon]` in tall drawn brackets, the rupee icon stacked over
