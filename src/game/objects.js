@@ -51,7 +51,7 @@ export const PICKUPS = {
     sprite: 'p_heartpiece', pal: 'heart', persistent: true,
     get(g) {
       const done = addHeartPiece(g.progress);
-      g.audio.jingle('fanfareShort');
+      g.audio.jingle('heartPiece');
       g.say(done
         ? 'A Piece of Heart! The four pieces make a whole heart!'
         : `A Piece of Heart! You have ${g.progress.heartPieces} of 4.`);

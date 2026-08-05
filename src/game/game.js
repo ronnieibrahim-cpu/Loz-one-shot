@@ -417,7 +417,7 @@ export class Game {
       if (!this.progress.secrets[key]) {
         this.progress.secrets[key] = true;
         this.spawnPickup(tx * TILE, ty * TILE, buried[2], { grabDelay: 14 });
-        this.audio.jingle('fanfareShort');
+        this.audio.jingle('secret');
       }
       return true;
     }
@@ -598,7 +598,15 @@ export class Game {
       for (const s of reward.spawn) spawnEntity(this, s[0], s[1], s[2], s[3] || {});
     }
     if (!silent) {
-      this.audio.sfx(reward.sfx || 'puzzle');
+      // A reward that changes the room — a door opened, a tile swapped, a prize
+      // released — is the discovery moment `secret` was written for. A reward
+      // that only talks keeps the short sfx, and one that names its own wins.
+      const opened = (reward.openDoors && reward.openDoors.length)
+        || (reward.tiles && reward.tiles.length)
+        || (reward.spawn && reward.spawn.length);
+      if (reward.sfx) this.audio.sfx(reward.sfx);
+      else if (opened) this.audio.jingle('secret');
+      else this.audio.sfx('puzzle');
       if (reward.say) this.say(reward.say);
     }
   }
@@ -628,7 +636,10 @@ export class Game {
   /** Freeze, hold the item overhead, and describe it. */
   presentItem(id, lv) {
     const def = ITEMS[id];
-    this.audio.jingle('fanfare');
+    // `itemGet` is the rising arpeggio composed for exactly this beat — the
+    // item held overhead. `fanfare` is the longer piece, kept for the moments
+    // that earn it (heart container, essence, dungeon cleared).
+    this.audio.jingle('itemGet');
     this.player.frozen = 90;
     this.itemShow = { id, lv, t: 90 };
     const name = itemName(id, lv);
