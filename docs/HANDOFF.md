@@ -4,9 +4,9 @@ State of the project as of this handoff, and what a fresh session needs to know.
 
 ## Where things stand
 
-Branch: **`claude/oracle-tides-polish-grjnhj`** — the single canonical branch.
-Everything is committed and pushed. It continues
-`claude/oracle-tides-polish-nphkj0`, which is now behind it.
+Branch: **`claude/oracle-tides-polish-aqche8`** — the single canonical branch.
+It continues `claude/oracle-tides-polish-grjnhj`, which is now behind it.
+Everything is committed and pushed.
 
 Earlier branches (`claude/zelda-style-game-piqt8v`,
 `claude/zelda-boss-behavior-jgbfwo`, `claude/oracle-tides-boss-music-4c24tm`)
@@ -43,7 +43,7 @@ sprite packs still to be drawn.
 | **Small Key economy** | **Done** — keys equal locks in all eight dungeons |
 | **Marsh gate on Bombs** | **Done** — `cliffCracked`, both entrances |
 | **Terrain art (9 tiles)** | **Done** — extracted, `tools/rip-terrain.py` |
-| **One-way ledges** | **Engine done** — no map places one yet |
+| **One-way ledges** | **Done** — 38 runs placed, 9 regional variants |
 | **itemGet / secret / heartPiece** | **Done** — wired to their moments |
 
 ### The game is now completable end to end
@@ -266,6 +266,21 @@ back to the level that suits them.
   most-seen effect in the game drew as a placeholder box for the whole project.
   If you add an effect to the engine, add its frames to the manifest.
 
+**A ledge is solid from three sides, so it partitions the room it is in.**
+Placing one is the same class of hazard as a mis-stamped doorway. The 38 runs
+placed were chosen by a script that, for every candidate run, re-floods the room
+at all three tide levels and rejects the run unless every tile reachable before
+is still reachable after — walking only, no hop. Three further rules, each of
+which a hand placement would get wrong:
+
+- **The tile below the run must be dry at all three tide levels.** A ledge that
+  drops you into water that is only shallow at LOW is a trap you cannot see in
+  the grid.
+- **Never in a switch, door, transition or boss room.** A solid lip in a switch
+  room is a new way to make a one-tile push unreachable.
+- **Ledges are south-facing only.** `ledgeS` is the only direction the tileset
+  declares, so a run must be approached from the north and land to the south.
+
 **A push block moves exactly one tile, ever.** `PushBlock` takes `once: true`
 by default and sets `moved` the moment its single slide lands, so a block placed
 two tiles from the switch it is meant to cover can never reach it. Every switch
@@ -443,7 +458,30 @@ The two below predate this session and are still worth rebuilding.
   from `src/data/story.js`, not `CUTSCENES`; get that wrong and `finalBoss` and
   `ending` silently look unreferenced.
 
-- **Ledge harness** — paint a run of `ledgeS` into a live room with
+- **Ledge harness** — now best run over the *placed* ledges rather than painted
+  ones: collect every `_` run out of `MAPS`, park the player on the tile above
+  its middle, hold Down, and assert the landing tile is past the lip with
+  `z === 0`; then park below and hold Up and assert it is refused. Four things
+  that make this read as "the hop does not fire" when the hop is fine:
+  **clear `game.dialogue.active` LAST**, after the room has settled, because a
+  room script can reopen the box during the settle and an open dialogue freezes
+  everything while `mode` is still `'play'`; **reset `mode` to `'play'` and
+  refill hearts each probe**, or the first room that kills the parked player
+  drops the run into `gameover` and every later probe looks inert; **hold the
+  key ~22 frames, not 40**, or the player walks out of the room and arrives at
+  the top of the next one, which is indistinguishable from never having moved;
+  and **wait for `player.ledgeHop` to clear before measuring**, because the hop
+  drives `z` along a scripted arc and mid-arc reads as a failure.
+- **The dungeon walker must model Roc's Feather.** `solidAt` lets a jumping
+  player through `F.DEEP` and `F.JUMPABLE` alike, and half of d4 is a one-tile
+  drown-wall band — a wall at LOW and MID, deep water at HIGH — whose intended
+  crossing is to raise the sea and jump it. A flood that cannot jump reports 15
+  of d4's 18 rooms stranded and the dungeon unbeatable. It is not.
+  The walker must also **follow warps**: floors are joined by stairs, not by
+  seams, so an edge-only flood never leaves floor 0 and reports every upper
+  room stranded. And the Boss Key is authored `['chest', x, y, { pickup:
+  'bossKey' }]` — look for `pickup`, not `item` or `kind`.
+- **Ledge harness (painting variant)** — paint a run of `ledgeS` into a live room with
   `room.setTile` and walk the player at it from each side: downhill clears it
   and lands with `z === 0`, uphill is blocked, along the lip is blocked, and a
   ledge with `cliff` behind it refuses the hop. `room.invalidate()` after
@@ -484,23 +522,23 @@ The dungeon-background and fan-made overworld sheets are used by
 Art, music, dungeon interiors, the key economy and the Marsh gate are all done.
 What remains, in rough order of payoff:
 
-1. **Place ledges.** The hop works and nothing uses it: `_` is in both legends
-   and appears zero times across all 303 room grids. This is now pure content
-   work, and it is the cheapest real verticality the dungeons can get. Any
-   placement needs the dungeon walker rerun — a ledge is solid from three
-   sides, so it can strand a room the way a mis-stamped doorway can.
-2. **More terrain.** Nine tiles are extracted; `cliff`, `cliffTop`, `tree`,
+1. **More terrain.** Nine tiles are extracted; `cliff`, `cliffTop`, `tree`,
    `bush`, `rock`, `flowers`, `stump` and `palm` are still hand-drawn. They are
    harder than the nine that landed because they are *structured* — a cliff
    needs a top, a face and corners, and no single 16x16 window supplies that —
    and because they carry transparency and an `underArt`. The seamless-window
    trick in `tools/rip-terrain.py`'s header does not find them; they have to be
    picked by eye from a region dump.
-3. **The Salt Pans and Abyssal approach gates** still do not match
+2. **The Salt Pans and Abyssal approach gates** still do not match
    GAME-PLAN.md, and cannot until something can gate on the Boomerang and the
    Magnetic Gloves. See the soft spots below.
-4. **Water is still hand-drawn** and stays that way until someone finds a
+3. **Water is still hand-drawn** and stays that way until someone finds a
    second animation frame: both terrain sheets are static maps.
+4. **More ledges.** 38 runs are placed and 169 more rooms take one safely; the
+   38 were curated (at most three per dungeon, never adjacent, never in a
+   switch, door, transition or boss room) rather than capped by what is
+   possible. Ledges are also south-facing only — `ledgeS` is the only direction
+   the tileset declares, and `tryLedgeHop` already handles all four.
 
 ## Known soft spots in what has been done
 - **`test.mjs` also goes flaky on "all three tide levels reachable"**, not only
@@ -517,12 +555,16 @@ What remains, in rough order of payoff:
   only a boomerang can cross". Doing it properly needs either a new tile with
   its own flag and engine support, or accepting a different item. The Marsh
   gate now matches the plan — see `cliffCracked` in `tiles-core.js`.
-- **One-way ledges are declared but not implemented.** `F.LEDGE` exists in
-  `src/world/tileset.js` and `ledgeS` sets `ledge: 'down'`, but nothing under
-  `src/game` ever reads either — grep for `F.LEDGE` and `.ledge` and the only
-  hit is the tileset assigning them. `ledgeS` is therefore just a decorative
-  walkable tile, and any "one-way ledge" work needs a hop-down in
-  `src/game/player.js` first.
+- **Every placed ledge is a shortcut, never a route.** The selector rejected
+  any run that changed the room's walking connectivity at any tide level, so no
+  ledge is load-bearing and none can strand a room. That is deliberately
+  conservative: it also means a ledge saves at most a ten-tile detour, because
+  a room is only 10x8. Ledges here are verticality and texture first.
+- **`underArt` under a ledge is one fixed tile per variant**, so where a region
+  mixes grounds — sand beside salt crust, say — the two transparent rows at the
+  top and foot of the drop show the variant's ground rather than the neighbouring
+  tile. It is two pixels of mismatch and reads fine; matching exactly would need
+  the tile to know what is beside it.
 - **`itemGet`, `secret` and `heartPiece` exist in `TRACKS` but nothing plays
   them.** The engine reaches for `fanfare`/`fanfareShort` at each of those
   moments (`src/game/objects.js`, `src/game/game.js`). Wiring them up is an

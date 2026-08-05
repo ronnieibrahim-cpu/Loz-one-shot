@@ -45,14 +45,14 @@ export function installLegends() {
 
   // ---- reef: bright shallow-sea region -----------------------------------
   registerLegend('reef', {
-    'g': 'rockFloor', 'G': 'rockFloor',
+    'g': 'rockFloor', 'G': 'rockFloor', '_': 'ledgeRock',
     '~': 'waterSReef', '=': 'waterDReef',
     'T': 'palm', 'b': 'bushSand',
   }, 'base');
 
   // ---- marsh: sunken, muddy region ---------------------------------------
   registerLegend('marsh', {
-    'g': 'grassDark', 'G': 'grassDark', '.': 'mud', ',': 'mud',
+    'g': 'grassDark', 'G': 'grassDark', '.': 'mud', ',': 'mud', '_': 'ledgeDk',
     'T': 'tree', '#': 'cliffDk', 'X': 'cliffCrackedDk',
   }, 'base');
 
@@ -60,27 +60,27 @@ export function installLegends() {
   registerLegend('dunes', {
     'g': 'sandRipple', 'G': 'sand', 'f': 'sand', 'v': 'sandDeep',
     'T': 'palm', 'b': 'bushSand', 'o': 'rockSand', 'q': 'postSand',
-    '#': 'cliffSand', '^': 'cliffSand', '_': 'ledgeS',
+    '#': 'cliffSand', '^': 'cliffSand', '_': 'ledgeSand',
   }, 'base');
 
   // ---- cliffs: high stone shelves over deep water ------------------------
   registerLegend('cliffs', {
     'g': 'rockFloor', 'G': 'rockFloorDk', 'f': 'rockFloor',
     'T': 'treeDead', 'b': 'bush', 'o': 'rock',
-    '#': 'cliffDk', '^': 'cliffTop', '%': 'cliffDk',
+    '#': 'cliffDk', '^': 'cliffTop', '%': 'cliffDk', '_': 'ledgeRock',
   }, 'base');
 
   // ---- drowned wood: sunken forest --------------------------------------
   registerLegend('wood', {
     'g': 'grassDark', 'G': 'grassTuft', 'T': 'treeDark', 'P': 'treeDark',
-    'b': 'bush', '#': 'cliffDk',
+    'b': 'bush', '#': 'cliffDk', '_': 'ledgeDk',
   }, 'base');
 
   // ---- salt flats: bleached pans that flood ------------------------------
   registerLegend('salt', {
     'g': 'saltFlat', 'G': 'saltCrust', '.': 'saltCrust', ',': 'saltFlat',
     'T': 'treeDead', 'b': 'bushSand', 'o': 'rockSand',
-    '#': 'cliffMarble', '^': 'cliffMarble',
+    '#': 'cliffMarble', '^': 'cliffMarble', '_': 'ledgeSalt',
   }, 'base');
 
   // ---- abyss: the deepest water, endgame region -------------------------
@@ -88,6 +88,7 @@ export function installLegends() {
     'g': 'rockFloorDk', 'G': 'rockFloorRust', '.': 'sandRust', ',': 'sandRust',
     '~': 'waterD', '=': 'waterAbyss',
     'T': 'treeDead', 'o': 'rock', '#': 'cliffAbyss', '^': 'cliffAbyss',
+    '_': 'ledgeAbyss',
   }, 'base');
 
   // ---- coral: the reef city ---------------------------------------------
@@ -95,6 +96,7 @@ export function installLegends() {
     'g': 'rockFloorCoral', 'G': 'sandCoral', '.': 'sandCoral', ',': 'sandCoral',
     '~': 'waterSReef', '=': 'waterDReef',
     'T': 'palm', 'b': 'bushSand', 'o': 'rock', '#': 'cliffCoral', '^': 'cliffCoral',
+    '_': 'ledgeCoral',
   }, 'base');
 
   // ---- dungeon: shared indoor vocabulary ---------------------------------
@@ -105,7 +107,7 @@ export function installLegends() {
     'O': 'dPit', '^': 'spikes', 'p': 'pot',
     'D': 'dDoorClosed', 'o': 'dDoorOpen', 'L': 'dDoorLocked', 'B': 'dDoorBoss',
     '/': 'dStairs',
-    'R': 'rockFloor', 'r': 'rockFloorDk',
+    'R': 'rockFloor', 'r': 'rockFloorDk', '_': 'dLedge',
     // TIDE TILES (digits) — the indoor versions
     '1': 'dSluice',    // dry floor -> shallow -> deep
     '2': 'dBasin',     // dry -> damp -> shallow
@@ -121,7 +123,7 @@ export function installLegends() {
     ' ': 'void',
     '.': 'rockFloorDk', 'g': 'rockFloor', '#': 'cliffDk', '%': 'cliffDk',
     '~': 'waterS', '=': 'waterD', 'O': 'dPit', 'p': 'pot', 'o': 'rock',
-    '/': 'stairsDown', 'C': 'caveMouth', 'q': 'dPost',
+    '/': 'stairsDown', 'C': 'caveMouth', 'q': 'dPost', '_': 'ledgeRockDk',
     '1': 'sandbar', '2': 'tidePool', '3': 'shoal', '4': 'seafloor',
     '5': 'channel', '8': 'tideRock', '9': 'drownWall',
   });

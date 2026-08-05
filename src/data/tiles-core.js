@@ -519,21 +519,36 @@ const HAND_ART = {
     1111111111111111
     2222222222222222`,
 
+  // The lip of a one-way drop, facing south. The old art was two dark bands and
+  // read as a painted line on the floor rather than an edge you can fall off.
+  //
+  // Three things make a drop read in a top-down game, and the tile needs all
+  // three: a *lit* top edge catching the light, a face tall enough to be a
+  // height rather than a border, and a shadow that falls onto the ground below.
+  // The face is nine rows here — a thin one is what made the first attempt
+  // vanish into the Drowned Wood's greens.
+  //
+  // Both ends are transparent on purpose. The top two rows let the room's own
+  // ground run right up to the brink, so the lip sits flush with whatever
+  // terrain is above it instead of stamping a strip of some other colour there;
+  // the bottom two let the ground at the foot of the drop show through the
+  // ragged shadow fringe, which is what sells the two levels as different
+  // heights. `underArt` is what shows in both.
   ledgeS: `
-    1111111111111111
-    1111111111111111
-    1111111111111111
-    1111111111111111
-    1111111111111111
-    1111111111111111
-    2222222222222222
-    3333333333333333
-    3333333333333333
-    2222222222222222
-    2222222222222222
-    3333333333333333
     ................
     ................
+    0000000000000000
+    0000000000000000
+    2222222222222222
+    2222322222232222
+    2223322222233222
+    2222322222232222
+    3222322223232222
+    3222222223232223
+    3232333323333233
+    3333333333333333
+    3333333333333333
+    .33.33333.333.3.
     ................
     ................`,
 
@@ -941,7 +956,29 @@ export function installCoreTiles() {
     caveMouth: { art: ART.caveMouth, pal: 'stonedk', flags: F.SOLID | F.WARP, mask: 0 },
     caveMouthSolid: { art: ART.caveMouth, pal: 'stonedk', flags: F.SOLID },
     stairsDown: { art: ART.stairsDown, pal: 'stone', flags: F.WARP | F.STAIRS },
-    ledgeS: { art: ART.ledgeS, pal: 'grass', flags: F.LEDGE, ledge: 'down', underArt: 'grass' },
+    // One-way ledges. The art is one tile; what changes per region is the
+    // palette and the ground drawn under its transparent top and foot, the same
+    // palette-swap trick every cliff variant uses. Without these a ledge in the
+    // dunes was a green lip on yellow sand, and the dungeons had no ledge
+    // character in their legend at all.
+    //
+    // Every variant takes its region's CLIFF palette, not its ground palette.
+    // A ledge is the lip of a short cliff — exposed rock, not grass seen edge
+    // on — and that is also the only choice that guarantees contrast: the first
+    // pass gave the Drowned Wood's ledge the region's own `grassdk`, and the
+    // drop vanished into the grass it was cut out of.
+    ledgeS: { art: ART.ledgeS, pal: 'stone', flags: F.LEDGE, ledge: 'down', underArt: 'grass' },
+    ledgeDk: { art: ART.ledgeS, pal: 'stonedk', flags: F.LEDGE, ledge: 'down', underArt: 'grassDark' },
+    ledgeSand: { art: ART.ledgeS, pal: 'sand', flags: F.LEDGE, ledge: 'down', underArt: 'sand' },
+    ledgeRock: { art: ART.ledgeS, pal: 'stonedk', flags: F.LEDGE, ledge: 'down', underArt: 'rockFloor' },
+    ledgeRockDk: { art: ART.ledgeS, pal: 'stonedk', flags: F.LEDGE, ledge: 'down', underArt: 'rockFloorDk' },
+    ledgeSalt: { art: ART.ledgeS, pal: 'marble', flags: F.LEDGE, ledge: 'down', underArt: 'saltFlat' },
+    ledgeCoral: { art: ART.ledgeS, pal: 'coral', flags: F.LEDGE, ledge: 'down', underArt: 'rockFloorCoral' },
+    ledgeAbyss: { art: ART.ledgeS, pal: 'abyss', flags: F.LEDGE, ledge: 'down', underArt: 'rockFloorDk' },
+    // Indoors the lip wants contrast against the tan flagstone, so it takes the
+    // wall's palette rather than the floor's narrow `stonef` ramp — three
+    // near-identical greys would lose the lit top edge entirely.
+    dLedge: { art: ART.ledgeS, pal: 'stonedk', flags: F.LEDGE, ledge: 'down', underArt: 'dFloor' },
 
     // --- dungeon ---
     dFloor: { art: ART.dFloor, pal: 'brickf' },
