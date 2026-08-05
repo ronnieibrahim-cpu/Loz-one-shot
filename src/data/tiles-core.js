@@ -996,7 +996,11 @@ export function installCoreTiles() {
     grass: { art: ART.grass, pal: 'grass' },
     grassTuft: { art: ART.grassTuft, pal: 'grass' },
     grassDark: { art: ART.grass, pal: 'grassdk' },
-    flowers: { art: ART.flowers, pal: 'grass' },
+    // The extracted `flowers` is a transparent prop rather than a filled ground
+    // tile, so it needs a base drawn under it like `bush` and `rock` do. Still
+    // walkable, and still cuts down to plain grass (see TRANSFORMS below).
+    flowers: { art: ART.flowers, pal: 'grass', underArt: 'grass' },
+    flowersDark: { art: ART.flowers, pal: 'grassdk', underArt: 'grassDark' },
     tallgrass: { art: ART.tallgrass, pal: 'grassdk', flags: F.TALLGRASS },
     sand: { art: ART.sand, pal: 'sand' },
     sandWet: { art: ART.sandWet, pal: 'sandwet' },
@@ -1190,6 +1194,7 @@ export function installCoreTiles() {
     bushSand: { cut: 'sand', bomb: 'sand', fire: 'sand', fx: 'cut', drop: 'common', sfx: 'cut' },
     tallgrass: { cut: 'grass', fire: 'grass', fx: 'cut', drop: 'hearts', sfx: 'cut' },
     flowers: { cut: 'grass', fx: 'cut', sfx: 'cut' },
+    flowersDark: { cut: 'grassDark', fx: 'cut', sfx: 'cut' },
     rock: { lift: 'grass', drop: 'common' },
     rockSand: { lift: 'sand', drop: 'common' },
     pot: { lift: 'dFloor', drop: 'common' },

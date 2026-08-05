@@ -63,6 +63,28 @@ PICKS = [
     ('dWall',       DG,  483,   26, 'dungeon wall run, lit top and hatched base'),
 ]
 
+# Props are a different shape of problem from ground, and need their own pass.
+#
+# A ground tile fills its cell; a prop is an object with ground showing around
+# it, so it carries transparency and a base tile underneath (`underArt`). It is
+# therefore NOT found by the seamless-window scan that found the nine above —
+# nothing about a prop repeats — and it cannot be quantised the same way,
+# because the ground it sits on must become transparent rather than an index.
+#
+# Almost every prop on the overworld sheet is ~30x30, i.e. TWO game tiles wide
+# and two tall (see docs/HANDOFF.md). `flowers` is the one that fits a single
+# 16x16 cell, which is why it is the only entry here.
+#
+# `slots` maps the prop's own colours, lightest first, onto palette indices.
+# It is explicit rather than 0,1,2,3 for the reason recorded in HANDOFF: index
+# 1 is the *field* tone of a region's ground palette, so any prop pixel placed
+# there sinks into the ground it is standing on. Flowers take (0, 2, 3) — a
+# bright body, a dark shade, a near-black outline — which is what makes the
+# shape read against grass.
+PROPS = [
+    ('flowers', OW, 2061, 1469, (0, 2, 3), 'leafy flowering plant, on the forest path'),
+]
+
 
 def lum(c):
     return 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]
@@ -87,6 +109,43 @@ def quantise(block):
     return grid, keep
 
 
+def quantise_prop(block, slots):
+    """16x16 RGB -> (grid of 0-3 and '.', the prop's own colours lightest first).
+
+    The ground the prop stands on becomes transparent, but only where it is
+    reachable from the cell border. Source colour *enclosed* by the prop's own
+    outline is artwork, not background — the same trap `rip-hud.py` hit with the
+    Seed Satchel's highlight, recorded in docs/HANDOFF.md. Flood-filling inward
+    rather than testing colour equality is what keeps a flower's pale centre.
+    """
+    bg = block[0][0]
+    grid = [[None] * 16 for _ in range(16)]
+    stack = [(i, e) for i in range(16) for e in (0, 15)]
+    stack += [(e, i) for i in range(16) for e in (0, 15)]
+    seen = set()
+    while stack:
+        cx, cy = stack.pop()
+        if not (0 <= cx < 16 and 0 <= cy < 16) or (cx, cy) in seen:
+            continue
+        if block[cy][cx] != bg:
+            continue
+        seen.add((cx, cy))
+        grid[cy][cx] = '.'
+        stack += [(cx + 1, cy), (cx - 1, cy), (cx, cy + 1), (cx, cy - 1)]
+
+    kept = sorted({block[cy][cx] for cy in range(16) for cx in range(16)
+                   if grid[cy][cx] is None}, key=lambda c: (-lum(c), c))
+    if len(kept) > len(slots):
+        raise SystemExit('rip-terrain: prop has %d colours, %d slots given'
+                         % (len(kept), len(slots)))
+    idx = {c: slots[i] for i, c in enumerate(kept)}
+    for cy in range(16):
+        for cx in range(16):
+            if grid[cy][cx] is None:
+                grid[cy][cx] = str(idx[block[cy][cx]])
+    return [''.join(r) for r in grid], kept
+
+
 def hexc(c):
     return '#%02x%02x%02x' % c
 
@@ -103,6 +162,15 @@ def main():
         grid, keep = quantise(block)
         if before > 4:
             dropped.append((name, before))
+        arts.append((name, note, os.path.basename(path), x, y, grid))
+        pals.append((name, keep))
+
+    for name, path, x, y, slots, note in PROPS:
+        im = sheets.get(path)
+        if im is None:
+            im = sheets[path] = Image.open(path).convert('RGB')
+        block = [[im.getpixel((x + cx, y + cy)) for cx in range(16)] for cy in range(16)]
+        grid, keep = quantise_prop(block, slots)
         arts.append((name, note, os.path.basename(path), x, y, grid))
         pals.append((name, keep))
 
@@ -139,7 +207,8 @@ def main():
 
     with open(OUT, 'w') as f:
         f.write('\n'.join(lines))
-    print('emitted %d terrain tiles -> %s' % (len(arts), OUT))
+    print('emitted %d terrain tiles (%d ground, %d props) -> %s'
+          % (len(arts), len(PICKS), len(PROPS), OUT))
     for name, n in dropped:
         print('  note: %s had %d colours on the sheet, merged down to 4' % (name, n))
 

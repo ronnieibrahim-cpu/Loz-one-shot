@@ -46,7 +46,7 @@ export function installLegends() {
 
   // ---- reef: bright shallow-sea region -----------------------------------
   registerLegend('reef', {
-    'g': 'rockFloor', 'G': 'rockFloor', '_': 'ledgeRock',
+    'g': 'rockFloor', 'G': 'rockFloor', 'f': 'rockFloor', '_': 'ledgeRock',
     '"': 'ledgeRockN', '>': 'ledgeRockE', '<': 'ledgeRockW',
     '~': 'waterSReef', '=': 'waterDReef',
     'T': 'palm', 'b': 'bushSand',
@@ -54,7 +54,7 @@ export function installLegends() {
 
   // ---- marsh: sunken, muddy region ---------------------------------------
   registerLegend('marsh', {
-    'g': 'grassDark', 'G': 'grassDark', '.': 'mud', ',': 'mud', '_': 'ledgeDk',
+    'g': 'grassDark', 'G': 'grassDark', 'f': 'flowersDark', '.': 'mud', ',': 'mud', '_': 'ledgeDk',
     '"': 'ledgeDkN', '>': 'ledgeDkE', '<': 'ledgeDkW',
     'T': 'tree', '#': 'cliffDk', 'X': 'cliffCrackedDk',
   }, 'base');
@@ -77,14 +77,15 @@ export function installLegends() {
 
   // ---- drowned wood: sunken forest --------------------------------------
   registerLegend('wood', {
-    'g': 'grassDark', 'G': 'grassTuft', 'T': 'treeDark', 'P': 'treeDark',
+    'g': 'grassDark', 'G': 'grassTuft', 'f': 'flowersDark',
+    'T': 'treeDark', 'P': 'treeDark',
     'b': 'bush', '#': 'cliffDk', '_': 'ledgeDk',
     '"': 'ledgeDkN', '>': 'ledgeDkE', '<': 'ledgeDkW',
   }, 'base');
 
   // ---- salt flats: bleached pans that flood ------------------------------
   registerLegend('salt', {
-    'g': 'saltFlat', 'G': 'saltCrust', '.': 'saltCrust', ',': 'saltFlat',
+    'g': 'saltFlat', 'G': 'saltCrust', 'f': 'saltFlat', '.': 'saltCrust', ',': 'saltFlat',
     'T': 'treeDead', 'b': 'bushSand', 'o': 'rockSand',
     '#': 'cliffMarble', '^': 'cliffMarble', '_': 'ledgeSalt',
     'V': 'saltVane',        // region gate: only the Magic Boomerang turns it
@@ -93,7 +94,8 @@ export function installLegends() {
 
   // ---- abyss: the deepest water, endgame region -------------------------
   registerLegend('abyss', {
-    'g': 'rockFloorDk', 'G': 'rockFloorRust', '.': 'sandRust', ',': 'sandRust',
+    'g': 'rockFloorDk', 'G': 'rockFloorRust', 'f': 'rockFloorDk',
+    '.': 'sandRust', ',': 'sandRust',
     '~': 'waterD', '=': 'waterAbyss',
     'T': 'treeDead', 'o': 'rock', '#': 'cliffAbyss', '^': 'cliffAbyss',
     'V': 'abyssPlug',       // region gate: only the Magnetic Gloves shift it
@@ -103,7 +105,8 @@ export function installLegends() {
 
   // ---- coral: the reef city ---------------------------------------------
   registerLegend('coral', {
-    'g': 'rockFloorCoral', 'G': 'sandCoral', '.': 'sandCoral', ',': 'sandCoral',
+    'g': 'rockFloorCoral', 'G': 'sandCoral', 'f': 'rockFloorCoral',
+    '.': 'sandCoral', ',': 'sandCoral',
     '~': 'waterSReef', '=': 'waterDReef',
     'T': 'palm', 'b': 'bushSand', 'o': 'rock', '#': 'cliffCoral', '^': 'cliffCoral',
     '_': 'ledgeCoral',

@@ -183,6 +183,25 @@ export const TERRAIN_ART = {
     3333333333333333
     3333333333333333`,
 
+  // leafy flowering plant, on the forest path — custom-oracle-style-overworld.png @ 2061,1469
+  flowers: `
+    .......33.......
+    .33...3003...33.
+    .303.300003.303.
+    .30033033033003.
+    .30203300330203.
+    .30020300302003.
+    ..300230032003..
+    ...3333223333...
+    ..300233332003..
+    .30020302322003.
+    .30003002030003.
+    .33333000033333.
+    .....300003.....
+    ......3333......
+    ................
+    ................`,
+
 };
 
 // The source colours, lightest first — not installed, kept for reference.
@@ -196,4 +215,5 @@ export const TERRAIN_SRC_PALETTES = {
   rockFloor: ['#fce8b1', '#e3a14d', '#8c5527', '#000000'],
   dFloor: ['#abcfe6', '#85b2cf', '#5c8eb0'],
   dWall: ['#d3f9fd', '#aaccdc', '#7996b2', '#000000'],
+  flowers: ['#93a846', '#546d25', '#000000'],
 };
