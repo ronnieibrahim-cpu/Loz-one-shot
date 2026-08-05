@@ -154,6 +154,16 @@ snippet in HANDOFF.md. Note MAPS is a Map keyed by map id, and holds room
 definitions under `roomDefs`, whose grids are under `map` (not `rooms`, not
 `grid`). Cutscenes export as STORY_CUTSCENES, not CUTSCENES.
 
+Four engine-API details a harness gets wrong on the first try:
+  - enterMap is (mapId, FLOOR, rx, ry, px, py, dir) - floor is the second
+    argument, and passing rx there silently lands you in the wrong room.
+  - the equipped items are progress.equipB / progress.equipA. Setting
+    progress.b does nothing and the game happily keeps whatever was equipped,
+    so a "the hookshot did not fire" result is usually this.
+  - after room.setTile you must call room.invalidate(), or the room keeps
+    drawing from its cached bake.
+  - keys are KeyZ = B and KeyX = A (src/core/input.js), Enter = START.
+
 Tell me plainly what is done, what is weak, and what you skipped.
 ```
 
