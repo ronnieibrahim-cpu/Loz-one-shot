@@ -355,6 +355,27 @@ const HAND_ART = {
     1211111111211111
     1111111111111111`,
 
+  // A boulder: deliberately bigger and rounder than `rock`, and drawn to the
+  // tile edge on all four sides, so a player can tell at a glance that it is
+  // not the ordinary liftable rock standing next to it.
+  boulder: `
+    ......3333......
+    ....33111133....
+    ..331111111133..
+    .33111111111133.
+    3311011111111133
+    3110111111111233
+    3101111111112233
+    3011111111122233
+    3011111111222233
+    3011111112222233
+    3011111122222233
+    .30111122222233.
+    .33012222222233.
+    ..332222222233..
+    ....33222233....
+    ......3333......`,
+
   // ---- props (transparent, need underArt) ---------------------------------
   tree: `
     ....33333333....
@@ -1064,6 +1085,27 @@ export function installCoreTiles() {
     // rather than any boomerang.
     saltVane: { art: ART.saltVane, pal: 'marble', flags: F.SOLID | F.VANE, underArt: 'saltFlat' },
     abyssPlug: { art: ART.abyssPlug, pal: 'rust', flags: F.SOLID | F.MAGNETIC, underArt: 'rockFloorDk' },
+
+    // ---- the four terrain-shaped region gates ------------------------------
+    // Each carries TWO flags: the ordinary one that tells the engine what the
+    // tile physically is, and a marker naming the item that gets you past it.
+    // The engine already knows how to cross all of these — `Room.solidAt` lets
+    // a jumping player through JUMPABLE and a swimming one through DEEP — so
+    // none of this needed an engine change. The marker is purely so a checker
+    // can tell "gated on the Hookshot" from "unreachable".
+    //
+    // WIDTH IS PART OF THE GATE for three of them, and no flag can express it:
+    // a jumping player crosses DEEP as well as JUMPABLE, so a one-tile channel
+    // is not a Flippers gate, and a one-tile chasm is not a Hookshot gate.
+    // `tools/check-gates.mjs` measures the reach in-engine rather than trusting
+    // this comment; the widths it proved are recorded there.
+    chasm: {
+      art: ART.dPit, pal: 'abyss', flags: F.JUMPABLE | F.GAP,
+    },
+    boulder: {
+      art: ART.boulder, pal: 'stonedk', flags: F.SOLID | F.ROCK | F.HEAVY,
+      underArt: 'rockFloor', liftLevel: 1,
+    },
     cliffCrackedDk: { art: ART.cliffCracked, pal: 'stonedk', flags: F.SOLID | F.BOMBABLE },
     treeDead: { art: ART.tree, pal: 'treedead', flags: F.SOLID, underArt: 'grassBog' },
     treeDark: { art: ART.tree, pal: 'treedk', flags: F.SOLID, underArt: 'grassDark' },
@@ -1201,6 +1243,10 @@ export function installCoreTiles() {
     sign: { cut: 'sign' },
     dWallCracked: { bomb: 'dFloor', fx: 'boom', persist: true, sfx: 'break' },
     cliffCracked: { bomb: 'sand', fx: 'boom', persist: true, sfx: 'break' },
+    boulder: {
+      lift: 'rockFloor', drop: 'none', persist: true,
+      deny: 'Far too heavy to shift bare-handed.',
+    },
     cliffCrackedDk: { bomb: 'mud', fx: 'boom', persist: true, sfx: 'break' },
     saltVane: {
       boomerang: 'saltFlat', level: 2, fx: 'cut', persist: true, sfx: 'break',

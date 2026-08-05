@@ -47,6 +47,18 @@ export const F = {
   TALLGRASS: 1 << 23,  // hides the player's feet, drops rupees when cut
   VANE:      1 << 24,  // salt vane: only the MAGIC boomerang (level 2) turns it
   MAGNETIC:  1 << 25,  // iron plug: the Magnetic Gloves haul it out of the way
+  // Region-gate markers. These do NOT drive traversal — the engine already
+  // knows how to cross each of these tiles, because each one also carries the
+  // ordinary flag for what it is (a chasm is JUMPABLE, a channel is DEEP, a
+  // boulder is SOLID+ROCK). The marker exists so a checker can say *which item*
+  // a given impassable tile is holding shut, which is the whole difference
+  // between "the region is unreachable" and "the region is gated on the
+  // Hookshot". Reusing JUMPABLE or DEEP for that would make every gap and
+  // every stretch of ocean in the world read as the same gate.
+  HEAVY:     1 << 26,  // boulder: only the Power Bracelet shifts it
+  SWIMGATE:  1 << 27,  // deep channel: only Zora's Flippers cross it
+  GRAPPLE:   1 << 28,  // span crossed by hookshotting a post on the far side
+  GAP:       1 << 29,  // chasm: only Roc's Feather clears it
 };
 
 // Convenient composites

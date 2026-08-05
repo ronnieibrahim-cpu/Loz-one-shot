@@ -44,8 +44,20 @@ sprite packs still to be drawn.
 | **Marsh gate on Bombs** | **Done** — `cliffCracked`, both entrances |
 | **Terrain art (9 tiles)** | **Done** — extracted, `tools/rip-terrain.py` |
 | **One-way ledges** | **Done** — 88 runs, all four cardinals, 36 tile variants |
-| **Region gates (all 3)** | **Done** — Bombs, Magic Boomerang, Magnetic Gloves |
+| **Region gates (5 of 9)** | **Done** — Bombs, Boomerang, Gloves, Feather, Bracelet |
+| **Terrain art (10 tiles)** | **Done** — 9 ground + `flowers`, `tools/rip-terrain.py` |
 | **itemGet / secret / heartPiece** | **Done** — wired to their moments |
+
+### Five region gates are now machine-checkable
+
+`check-overworld.mjs` proves five of the nine GAME-PLAN gates in both
+directions, and `check-gates.mjs` proves four of them in-engine with a live
+player. Roc's Feather (`chasm`, Coral Reef) and the Power Bracelet (`boulder`,
+Cliffs of Kell) were added this session.
+
+**Zora's Flippers and the Hookshot were built and reverted.** Both are recorded
+under "The two gates that cannot be tiles" below; neither is a placement
+problem and neither should be retried without reading that section first.
 
 ### Region gates and ledges are done
 
@@ -434,6 +446,42 @@ are deliberate and look like bugs if you do not know:
   the art they declare. If you add a tile that reuses another's art, that alias
   loop already covers it.
 
+## The two gates that cannot be tiles
+
+Roc's Feather and the Power Bracelet became real tile gates this session. The
+other two were implemented, measured, and taken back out. The measurements are
+the point — do not redo them:
+
+**Roc's Feather travels 2.27 tiles while airborne** (28 airborne frames,
+36.4px), measured by driving a real jump and sampling `player.z` and `player.x`
+every frame. Everything below follows from that number.
+
+**`Room.solidAt` lets a JUMPING player through `F.DEEP` as well as
+`F.JUMPABLE`.** So deep water is not, by itself, a Flippers gate: any channel
+the Feather can clear is crossed without Flippers, and the player has the
+Feather from D1. A Flippers channel therefore has to be **at least 3 tiles
+wide**, and so does anything meant to stop the Feather.
+
+- **Zora's Flippers / Drowned Wood — sealed 68 of 120 screens.** At 3 tiles
+  wide, gating the Wood's five crossings cuts the map in half, because the
+  Drowned Wood sits in the middle of the 12x10 grid and nearly every route
+  crosses it. This is a level-design fact, not a tuning problem: the Wood is a
+  thoroughfare. Making it a hard gate needs the region moved or a second route
+  around it, which is a map change, not a tile change.
+- **Hookshot / Reef Palace — the post is always out of reach.** A span has to
+  be 3 wide to stop the Feather. The player fires from the tile before the
+  span, must land on solid ground, and the post has to be one tile beyond that
+  landing — so the post sits 5 tiles (80px) from the player. `Hookshot.maxLen`
+  is **64px at level 1** (104 at level 2). The arithmetic never closes at L1.
+  A 2-wide span reaches, but the Feather crosses a 2-wide span — verified: on
+  the 3-wide span a jumping player reached the second tile and no further.
+  This needs an engine decision (a longer L1 hookshot) or a different mechanic.
+
+**A gate whose action nothing fires is the failure mode to watch.** The first
+Reef Palace span had no post to latch onto at all. It flooded correctly in
+`check-overworld.mjs` and was impassable in play — exactly the gap the two
+checkers exist to close, caught by the in-engine half.
+
 ## Verification harnesses
 
 **Five of these are now committed**, and that is a deliberate reversal. The
@@ -444,6 +492,8 @@ failure rather than a harness failure, which is the expensive kind. A working
 harness beats an accurate description of one:
 
 ```sh
+node tools/find-crossings.mjs    # every tile-level way into a region (reporter)
+node tools/shoot-rooms.mjs       # screenshot named rooms in their real palettes
 node tools/walk-dungeons.mjs     # every dungeon room, every ledge, all 4 faces
 node tools/check-overworld.mjs   # seams, border, flood, all three item gates
 node tools/solve-switches.mjs    # one push per block
@@ -594,8 +644,17 @@ The dungeon-background and fan-made overworld sheets are used by
 Art, music, dungeon interiors, the key economy and the Marsh gate are all done.
 What remains, in rough order of payoff:
 
-1. **More terrain.** Nine tiles are extracted; `cliff`, `cliffTop`, `tree`,
-   `bush`, `rock`, `flowers`, `stump` and `palm` are still hand-drawn. They are
+0. **The overworld sheet's props are 2x2 game tiles, not 1x1.** This is the
+   finding that closes most of the terrain question. Measured this session:
+   the bush at 1693,1307 is ~30x31, the ringed stump at 1802,1565 is ~30x28,
+   and the tree was already known to be 16x32. The game's tiles are 16x16, so
+   none of them extracts — compositing a 2x2 source prop down to one game tile
+   is authoring, not extraction. **`flowers` was the only prop on the sheet
+   that fits a single cell** (2061,1469, a 14x14 leafy rosette) and it is now
+   extracted and planted. Do not go looking for the others again.
+
+1. **More terrain.** Ten tiles are extracted; `cliff`, `cliffTop`, `tree`,
+   `bush`, `rock`, `stump` and `palm` are still hand-drawn. They are
    harder than the nine that landed because they are *structured* — a cliff
    needs a top, a face and corners, and no single 16x16 window supplies that —
    and because they carry transparency and an `underArt`. The seamless-window
@@ -636,6 +695,18 @@ What remains, in rough order of payoff:
    have placed forty of them.
 
 ## Known soft spots in what has been done
+- **Four legend characters were declared and never used.** `f` (flowers), `^`
+  (cliffTop), `Y` (treeSand) and `P` (palm) appeared in 0 of 303 room grids, so
+  their art was never rendered anywhere in the game. `f` is now placed (127
+  tiles across the 40 grass screens). The other three are still dead, and all
+  three are SOLID, which is the dangerous class to place — a solid tile can
+  strand a room and still validate.
+- **`chasm` uses the dungeon pit art**, which on open sand reads as a hard-edged
+  dark rectangle with no lip. It is legible as a gap but it is the weakest new
+  tile; a proper overworld chasm wants a lit rim the way `ledgeS` has one.
+- **`f` resolves per region** (`flowersDark` in marsh and wood, each region's
+  own ground in salt, abyss, coral and reef) rather than meaning grass-flowers
+  everywhere. If you add a region legend, give it an `f`.
 - **`test.mjs` also goes flaky on "all three tide levels reachable"**, not only
   on the assertions listed under Tooling above. It failed on that one twice
   during this session — once after the boss-art commit and once after the

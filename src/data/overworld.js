@@ -496,7 +496,7 @@ const rooms = {
     legend: 'cliffs', music: 'overworld',
     map: [
       '###gggg###',
-      '#gg....gg#',
+      '#ggMMMMgg#',
       'gg.9999.gg',
       'gg......gg',
       'gg.9999.gg',
@@ -933,10 +933,10 @@ const rooms = {
     map: [
       '###gggg###',
       '#gGGGGGGg#',
-      'gg......gg',
-      'gg.====.gg',
-      'gg......gg',
-      'gg______gg',
+      'gg......Mg',
+      'gg.====.Mg',
+      'gg......Mg',
+      'gg______Mg',
       '#gggggggg#',
       '###gggg###',
     ],
@@ -1114,7 +1114,7 @@ const rooms = {
       'gg......gg',
       'ggg....ggg',
       'ggg____ggg',
-      '#gg....gg#',
+      '#MM....MM#',
       '###gggg###',
     ],
     entities: [
@@ -1443,11 +1443,11 @@ const rooms = {
     map: [
       'TTTTTTTTTT',
       'Tgg....ggT',
-      'gg.vvvv.gg',
-      'gg......gg',
-      'gg.1111.gg',
-      'ggg....ggg',
-      'TggggggggT',
+      'gJ.vvvv.gg',
+      'gJ......gg',
+      'gJ.1111.gg',
+      'gJg....ggg',
+      'TggJJJJggT',
       'TTTggggTTT',
     ],
     entities: [
@@ -1464,7 +1464,7 @@ const rooms = {
       'gg.1111.gg',
       'gg.1111.gg',
       'ggg....ggg',
-      'TggggggggT',
+      'TggJJJJggT',
       'TTTggggTTT',
     ],
     entities: [
@@ -1481,7 +1481,7 @@ const rooms = {
       'gg......gg',
       'gg.=..=.gg',
       'ggg....ggg',
-      'TggggggggT',
+      'TggJJJJggT',
       'TTTggggTTT',
     ],
     entities: [
@@ -1498,7 +1498,7 @@ const rooms = {
       'gg......gT',
       'gg.1111.gT',
       'ggg....ggT',
-      'TggggggggT',
+      'TggJJJJggT',
       'TTTggggTTT',
     ],
     entities: [

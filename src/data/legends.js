@@ -24,6 +24,11 @@ export function installLegends() {
     'b': 'bush', 'B': 'bushSand', 'o': 'rock', 'O': 'rockSand',
     'q': 'post', 'Q': 'postSand', 'x': 'digSpot',
     // transitions
+    // region gates. In `base` rather than per region: a region's boundary
+    // screen frequently belongs to the NEIGHBOURING region's legend, so a gate
+    // char scoped to one region is undefined precisely where it must be placed.
+    'J': 'chasm',        // Roc's Feather   — 1 tile, clearable at 2.27 tiles
+    'M': 'boulder',      // Power Bracelet  — lift it out of the way
     'C': 'caveMouth', 'c': 'caveMouthSolid', '/': 'stairsDown', '_': 'ledgeS',
     '"': 'ledgeN', '>': 'ledgeE', '<': 'ledgeW',
     // TIDE TILES (digits)

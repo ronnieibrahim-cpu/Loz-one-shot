@@ -178,6 +178,73 @@ check('the Magnetic Gloves pull the abyssal plug', plugAfter !== 'abyssPlug', pl
 const neighbour = await nameAt(6, 6);
 check('the gloves only shift the plug in front', neighbour === 'abyssPlug', neighbour);
 
+// --- the four terrain-shaped gates -----------------------------------------
+//
+// These are traversal gates, not transform gates: nothing about the tile
+// changes, the player simply gets past it. That makes the in-engine half of
+// the proof MORE important rather than less, because the map-side flood in
+// check-overworld.mjs is satisfied by a flag alone. A span with no post to
+// latch floods exactly like one with a post, and is impassable in play — that
+// is a bug this harness caught on the Reef Palace span.
+//
+// Width is load-bearing and no flag expresses it. `Room.solidAt` lets a
+// JUMPING player through DEEP as well as JUMPABLE, and Roc's Feather was
+// measured at 2.27 tiles of airborne travel, so the Hookshot span is 3 wide
+// specifically to be out of the Feather's reach. The last check below is what
+// keeps that true if anyone edits the map.
+
+// Hold a direction for ~22 frames and report the tile the player ends on.
+// Not 40: the player walks out of the room and arrives in the next one, which
+// is indistinguishable from never having moved.
+const walkAt = async (key, jump) => {
+  await page.keyboard.down(key);
+  if (jump) { await frames(3); await page.keyboard.press('KeyZ'); }
+  await frames(22);
+  await page.keyboard.up(key);
+  await frames(14);
+  return page.evaluate(() => ({
+    tx: Math.floor((window.__game.player.x + 8) / 16),
+    ty: Math.floor((window.__game.player.y + 8) / 16),
+  }));
+};
+
+// --- Power Bracelet: the Cliffs boulder ------------------------------------
+// Room 0,2,2: boulders at row 1, cols 3-6, behind the north doorway.
+const BOULDER = { rx: 2, ry: 2, gx: 4, gy: 1, tx: 4, ty: 0, dir: 'down' };
+let b0 = await setup({ ...BOULDER, item: 'sword', level: 1 });
+check('the cliff boulder starts as a boulder', b0 === 'boulder', b0);
+await page.keyboard.press('KeyZ');
+await frames(20);
+const bSword = await nameAt(BOULDER.gx, BOULDER.gy);
+check('a sword does not shift the boulder', bSword === 'boulder', bSword);
+
+await setup({ ...BOULDER, item: 'bracelet', level: 1 });
+await page.keyboard.press('KeyZ');
+await frames(20);
+const bLift = await nameAt(BOULDER.gx, BOULDER.gy);
+check('the Power Bracelet lifts the boulder', bLift !== 'boulder', bLift);
+
+// --- Roc's Feather: the Coral Reef chasm -----------------------------------
+// Room 0,8,6: a one-tile chasm at col 1, rows 2-5, behind the west doorway.
+const CHASM = { rx: 8, ry: 6, gx: 1, gy: 3, tx: 0, ty: 3, dir: 'right' };
+const c0 = await setup({ ...CHASM, item: 'sword', level: 1 });
+check('the coral chasm is a chasm', c0 === 'chasm', c0);
+const cWalk = await walkAt('ArrowRight', false);
+check('the chasm cannot be walked across', cWalk.tx === 0, `ended tx=${cWalk.tx}`);
+
+await setup({ ...CHASM, item: 'feather', level: 1 });
+const cJump = await walkAt('ArrowRight', true);
+check("Roc's Feather clears the chasm", cJump.tx >= 2, `ended tx=${cJump.tx}`);
+
+// --- Hookshot / Zora's Flippers: NOT expressible as tiles ------------------
+// Both were built and both were reverted; docs/HANDOFF.md records the numbers.
+// In short: a Flippers channel has to be 3 wide (a JUMPING player crosses DEEP,
+// and the Feather reaches 2.27 tiles), and gating the Drowned Wood at that
+// width seals 68 screens because the Wood is the map's central thoroughfare.
+// A Hookshot span has the same 3-wide floor, which puts the post it must latch
+// 5 tiles from the player, and the level-1 Hookshot reaches 64px = 4 tiles.
+// Neither is a placement problem; both need a design or engine decision.
+
 check('no page errors', errs.length === 0, errs.slice(0, 3).join(' | '));
 
 console.log(`\n=== ${passed} passed, ${failures.length} failed ===`);

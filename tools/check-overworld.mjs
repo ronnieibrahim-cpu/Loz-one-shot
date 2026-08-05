@@ -44,6 +44,17 @@ const GATES = {
     flag: F.MAGNETIC, region: 'Abyssal approach',
     covers: [[0, 3, 0, 1]],
   },
+  feather: {
+    flag: F.GAP, region: 'Coral Reef',
+    covers: [[8, 11, 4, 6]],
+  },
+  bracelet: {
+    flag: F.HEAVY, region: 'Cliffs of Kell',
+    // The Cliffs are the only way up to the Abyssal approach, and the Marsh's
+    // two northern screens hang off the Bog Stair rather than off the Marsh
+    // proper, so both sit behind this gate as well.
+    covers: [[0, 3, 2, 5], [0, 3, 0, 1], [0, 2, 6, 6]],
+  },
 };
 const covered = (g, k) => {
   const [, x, y] = k.split(',').map(Number);
@@ -73,7 +84,7 @@ function walkableAt(legend, ch, tide) {
   const d = defAt(legend, ch, tide);
   if (!d) return false;
   if (openMask && (d.flags & openMask)) return true;
-  return !(d.flags & (F.VOID | F.SOLID | F.PIT | F.DEEP | F.LEDGE | F.HAZARD));
+  return !(d.flags & (F.VOID | F.SOLID | F.PIT | F.DEEP | F.LEDGE | F.HAZARD | F.JUMPABLE));
 }
 // The player controls the tide, so a tile is passable if any level allows it.
 const passable = (legend, ch) => [0, 1, 2].some(t => walkableAt(legend, ch, t));

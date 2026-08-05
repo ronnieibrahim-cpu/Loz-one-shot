@@ -37,9 +37,9 @@ y 0-9 top to bottom). Tidewatch Village is at `0,4,7`.
 |---|---|---|---|
 | Tidewatch Coast (start, village) | x3-6, y7-9 | `coast` | — |
 | The Shallows (dunes, D1) | x7-11, y6-9 | `dunes` | — |
-| Coral Reef (D2) | x8-11, y4-6 | `coral` | Roc's Feather |
+| Coral Reef (D2) | x8-11, y4-6 | `coral` | Roc's Feather (`chasm`) |
 | Sunken Marsh (D3) | x0-2, y6-9 | `marsh` | Bombs (`cliffCracked`) |
-| Cliffs of Kell (D4) | x0-3, y2-5 | `cliffs` | Power Bracelet |
+| Cliffs of Kell (D4) | x0-3, y2-5 | `cliffs` | Power Bracelet (`boulder`) |
 | Drowned Wood (D5) | x4-7, y3-6 | `wood` | Zora's Flippers |
 | Salt Pans (D6) | x4-7, y0-2 | `salt` | Magic Boomerang (`saltVane`) |
 | Reef Palace approach (D7) | x8-11, y0-3 | `reef` | Hookshot |
@@ -47,12 +47,22 @@ y 0-9 top to bottom). Tidewatch Village is at `0,4,7`.
 
 Every screen in the 12x10 grid must exist so the overworld never has holes.
 
-Three of these gates are expressed as a tile with a flag plus a transform, named
-in the table above, and `node tools/check-overworld.mjs` proves each one in both
-directions. The rest (Roc's Feather, Power Bracelet, Zora's Flippers, Hookshot)
-are terrain-shaped rather than tile-shaped and are enforced by level design
-only — no checker can prove them. Note the Salt Pans gate also holds the Reef
-Palace shut, since the Palace's Hookshot is in D6 inside the Pans.
+**Five** of these gates are expressed as a tile carrying a flag, named in the
+table above, and `node tools/check-overworld.mjs` proves each one in both
+directions — sealed without the item, open with it, and sealing nothing outside
+its own branch. Four of the five are also proved in-engine with a live player
+and the real item by `node tools/check-gates.mjs`.
+
+The remaining two — **Zora's Flippers** (Drowned Wood) and the **Hookshot**
+(Reef Palace) — are enforced by level design only. Both were implemented as
+tiles and reverted: the Wood is the map's central thoroughfare and gating it
+seals 68 of 120 screens, and a Hookshot span wide enough to stop Roc's Feather
+puts the post it must latch beyond the level-1 Hookshot's 64px reach. The
+measurements behind both are in `docs/HANDOFF.md` under "The two gates that
+cannot be tiles"; neither is a placement problem.
+
+Note the Salt Pans gate also holds the Reef Palace shut, since the Palace's
+Hookshot is in D6 inside the Pans.
 
 ## Dungeons
 

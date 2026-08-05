@@ -13,7 +13,7 @@ maintain and the most expensive thing to not have.
 ```
 Continue building "Oracle of Tides", a GBC-style Zelda fan game.
 
-Branch: claude/oracle-tides-polish-aqche8 — fetch it. That is the current
+Branch: claude/oracle-tides-continued-ebfuit — fetch it. That is the current
 canonical branch. `main` is an empty README; claude/zelda-style-game-piqt8v,
 claude/zelda-boss-behavior-jgbfwo, claude/oracle-tides-boss-music-4c24tm,
 claude/oracle-tides-polish-nphkj0, claude/oracle-tides-polish-grjnhj and
