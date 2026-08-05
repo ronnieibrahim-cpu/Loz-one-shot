@@ -83,6 +83,10 @@ node tools/scan-sprites.mjs --skip-bosses # rows split or floating off the body
 python3 tools/rip-enemies.py         # regenerate src/data/sprites-enemies.js
 python3 tools/rip-terrain.py         # regenerate src/data/tiles-terrain.js
 node tools/preview.mjs --tiles --scale=2  # contact sheet of every tile
+node tools/walk-dungeons.mjs         # every dungeon room + every ledge
+node tools/check-overworld.mjs       # seams, border, tile-by-tile flood
+node tools/check-overworld.mjs --bombs   # ...and the Marsh gate
+node tools/solve-switches.mjs        # one push per block, every switch room
 ```
 
 `test.mjs` and `preview.mjs` take `--shot-dir=` and pick a random port, so
@@ -390,10 +394,22 @@ are deliberate and look like bugs if you do not know:
 
 ## Verification harnesses
 
-Four throwaway checkers have been written for this project. **None is
-committed** — they are described well enough here to rewrite in a few minutes,
-and rewriting is better than trusting a read-through. All four copy the boot
-pattern in `tools/test.mjs`.
+**Three of these are now committed**, and that is a deliberate reversal. The
+old note here said none was committed because "rewriting is better than trusting
+a read-through". In practice rebuilding them from this prose reproduced five
+separate harness bugs in one session — every one of which reads as a *game*
+failure rather than a harness failure, which is the expensive kind. A working
+harness beats an accurate description of one:
+
+```sh
+node tools/walk-dungeons.mjs     # every dungeon room, every ledge
+node tools/check-overworld.mjs   # seams, border, flood  (--bombs for the gate)
+node tools/solve-switches.mjs    # one push per block
+```
+
+Run all three after touching any room data. The rest below are still
+uncommitted and still worth rebuilding; all copy the boot pattern in
+`tools/test.mjs`.
 
 Two of them need engine internals that `main.js` does not publish. It only sets
 `window.__game`; pull the rest out of the live module graph from inside the
@@ -436,8 +452,8 @@ await page.evaluate(async () => {
 
 The two below predate this session and are still worth rebuilding.
 
-- **Overworld checker** — imports `src/data/index.js` in plain Node (no
-  browser), asserts all 120 screens exist, that every seam's walkable edge tiles
+- **Overworld checker** (`tools/check-overworld.mjs`) — imports
+  `src/data/index.js` in plain Node (no browser), asserts all 120 screens exist, that every seam's walkable edge tiles
   agree at all three tide levels, that the world border is solid, and that a
   *tile-by-tile* flood from Tidewatch Village reaches every screen. Tile-by-tile
   matters: a screen-level flood misses an interior wall stranding an exit.
@@ -490,12 +506,17 @@ The two below predate this session and are still worth rebuilding.
   `'$jingle:' + name`, which is what to assert on; the scheduler only advances
   over real frames. Wrapping `game.audio.jingle` and calling `presentItem` or
   `applyReward` is how to prove a moment plays the track it should.
-- **Switch-puzzle solver** — for every room with a `switches` puzzle, call the
+- **Switch-puzzle solver** (`tools/solve-switches.mjs`) — the classes are
+  `PushBlock` and `FloorSwitch` in `src/game/objects.js`, the switch's flag is
+  `.pressed`, and `game.tryPushBlock(tx, ty, dx, dy)` takes the **block's** tile
+  rather than the player's. Satisfy the puzzle's other clauses (`pz.tide`,
+  `pz.enemies`) first or a switch room that also wants the room cleared reads as
+  an unsolvable switch puzzle. For every room with a `switches` puzzle, call the
   engine's own `game.tryPushBlock` exactly **once** per block, park the player on
   any switch still unpressed, and assert `room._puzzleDone`. One push per block
   is the whole point: teleporting blocks onto switches passes even when the
   puzzle is unsolvable, which is how the one-tile bug above survived.
-- **Dungeon walker** — boots headless, `enterMap`s into every room of every
+- **Dungeon walker** (`tools/walk-dungeons.mjs`) — boots headless, `enterMap`s into every room of every
   dungeon, and checks: no page errors, the room renders, no tile falls through
   to `void`, every entity type in the room resolves, every seam has a doorway
   facing its doorway, and a flood from the entrance — treating locked doors as
