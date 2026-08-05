@@ -552,6 +552,53 @@ const HAND_ART = {
     ................
     ................`,
 
+  // The two region gates. Both must read as MECHANISMS rather than terrain —
+  // a player who cannot tell a lock from a rock just concludes the region is
+  // scenery and stops looking for the way in.
+  //
+  // A salt vane: a bladed crossbar on a post, struck by the Magic Boomerang.
+  // The blade is the widest thing on the tile so a run of them reads as a line
+  // of machinery across the pass rather than a fence.
+  saltVane: `
+    ................
+    ................
+    ..333333333333..
+    ..311111111113..
+    ..312222222213..
+    ..311111111113..
+    ..333333333333..
+    ......3113......
+    ......3113......
+    ......3113......
+    ......3113......
+    ......3113......
+    ....33333333....
+    ....31111113....
+    ....32222223....
+    ....33333333....`,
+
+  // An iron plug: a riveted plate the Magnetic Gloves haul out of the socket.
+  // Four corner rivets and a square bolt head, all in hard 1px dark, so it
+  // reads as worked metal. It takes `rust`, not a grey: the abyss is blue-grey
+  // stone throughout, and a grey plate sank into it in the first pass.
+  abyssPlug: `
+    3333333333333333
+    3111111111111113
+    3122222222222233
+    3123132222313233
+    3121032222103233
+    3123332222333233
+    3122223333222233
+    3122223013222233
+    3122223113222233
+    3122223333222233
+    3123132222313233
+    3121032222103233
+    3123332222333233
+    3122222222222233
+    3133333333333333
+    3333333333333333`,
+
   // The other three faces. `tryLedgeHop` has always handled all four cardinals
   // and every legend only ever declared the south one, so ledgeN/E/W are a
   // tile-data gap, not an engine one.
@@ -1007,6 +1054,12 @@ export function installCoreTiles() {
     // an overworld region be gated on Bombs, which GAME-PLAN.md asks for and
     // nothing outdoors could express before.
     cliffCracked: { art: ART.cliffCracked, pal: 'stone', flags: F.SOLID | F.BOMBABLE },
+    // The two region gates GAME-PLAN.md asks for. The Marsh gate proved the
+    // shape — a solid tile with a flag, plus a transform naming what opens it —
+    // and these two only add `level`, so the gate can name the MAGIC boomerang
+    // rather than any boomerang.
+    saltVane: { art: ART.saltVane, pal: 'marble', flags: F.SOLID | F.VANE, underArt: 'saltFlat' },
+    abyssPlug: { art: ART.abyssPlug, pal: 'rust', flags: F.SOLID | F.MAGNETIC, underArt: 'rockFloorDk' },
     cliffCrackedDk: { art: ART.cliffCracked, pal: 'stonedk', flags: F.SOLID | F.BOMBABLE },
     treeDead: { art: ART.tree, pal: 'treedead', flags: F.SOLID, underArt: 'grassBog' },
     treeDark: { art: ART.tree, pal: 'treedk', flags: F.SOLID, underArt: 'grassDark' },
@@ -1144,6 +1197,14 @@ export function installCoreTiles() {
     dWallCracked: { bomb: 'dFloor', fx: 'boom', persist: true, sfx: 'break' },
     cliffCracked: { bomb: 'sand', fx: 'boom', persist: true, sfx: 'break' },
     cliffCrackedDk: { bomb: 'mud', fx: 'boom', persist: true, sfx: 'break' },
+    saltVane: {
+      boomerang: 'saltFlat', level: 2, fx: 'cut', persist: true, sfx: 'break',
+      deny: 'The vane is set too far to reach. Something must strike it and come back.',
+    },
+    abyssPlug: {
+      magnet: 'rockFloorDk', fx: 'spark', persist: true, sfx: 'magnet',
+      deny: 'Iron, sunk deep. Nothing here will shift it by hand.',
+    },
     dFloorCrack: { bomb: 'dPit', fx: 'boom', persist: true, sfx: 'break' },
     digSpot: { dig: 'sand', drop: 'common' },
     sandDeep: { dig: 'sand' },

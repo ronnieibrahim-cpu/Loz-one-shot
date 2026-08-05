@@ -105,7 +105,14 @@ export class Boomerang extends Entity {
       const before = { x: this.x, y: this.y };
       const r = moveEntity(game, this, this.vx, this.vy);
       this.travelled += Math.hypot(this.x - before.x, this.y - before.y);
-      if (r.hitX || r.hitY) { this.returning = true; game.audio.sfx('ricochet'); }
+      if (r.hitX || r.hitY) {
+        // A region vane is SOLID, so the boomerang bounces off it before its
+        // own rect ever overlaps the tile — probing the rect finds nothing and
+        // the gate reads as ordinary rock. Probe the tile it just struck, the
+        // way the hookshot probes ahead for something to latch onto.
+        this.strikeTile(game);
+        this.returning = true; game.audio.sfx('ricochet');
+      }
       if (this.travelled >= this.range) this.returning = true;
       if (this.x < -8 || this.y < -8 || this.x > VIEW_W || this.y > VIEW_H) this.returning = true;
     } else {
@@ -138,6 +145,19 @@ export class Boomerang extends Entity {
       }
     }
     game.checkTileAction(this.rect(), 'cut');
+  }
+
+  /**
+   * Apply the 'boomerang' action to the tile just past the leading edge. The
+   * level is what the gate reads: a salt vane asks for 2, so the plain
+   * boomerang rattles off it and only the Magic one turns it.
+   */
+  strikeTile(game) {
+    const d = Math.hypot(this.vx, this.vy);
+    if (!d) return false;
+    const tx = Math.floor((this.cx + (this.vx / d) * TILE * 0.6) / TILE);
+    const ty = Math.floor((this.cy + (this.vy / d) * TILE * 0.6) / TILE);
+    return game.applyTileAction(tx, ty, 'boomerang', this.level);
   }
 
   spriteName() { return 'i_boomerang_' + (Math.floor(this.frame / 3) % 4); }
@@ -498,6 +518,11 @@ export const ITEMS = {
     equippable: true,
     desc: 'Attract or repel iron. Press to flip polarity.',
     use(game, p, level) {
+      // Facing an iron plug, the gloves haul it out rather than flip polarity —
+      // otherwise the region gate would need a second button nobody would find.
+      const [dx, dy] = DIR_VEC[p.dir];
+      const tx = Math.floor((p.cx + dx * TILE) / TILE), ty = Math.floor((p.cy + dy * TILE) / TILE);
+      if (game.applyTileAction(tx, ty, 'magnet', level)) return true;
       p.magnet = p.magnet === 1 ? -1 : 1;
       game.audio.sfx('magnet');
       game.spawnEffect('spark', p.cx - 8, p.cy - 8, { pal: p.magnet === 1 ? 'enemyb' : 'enemyr' });

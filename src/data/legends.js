@@ -87,6 +87,7 @@ export function installLegends() {
     'g': 'saltFlat', 'G': 'saltCrust', '.': 'saltCrust', ',': 'saltFlat',
     'T': 'treeDead', 'b': 'bushSand', 'o': 'rockSand',
     '#': 'cliffMarble', '^': 'cliffMarble', '_': 'ledgeSalt',
+    'V': 'saltVane',        // region gate: only the Magic Boomerang turns it
     '"': 'ledgeSaltN', '>': 'ledgeSaltE', '<': 'ledgeSaltW',
   }, 'base');
 
@@ -95,6 +96,7 @@ export function installLegends() {
     'g': 'rockFloorDk', 'G': 'rockFloorRust', '.': 'sandRust', ',': 'sandRust',
     '~': 'waterD', '=': 'waterAbyss',
     'T': 'treeDead', 'o': 'rock', '#': 'cliffAbyss', '^': 'cliffAbyss',
+    'V': 'abyssPlug',       // region gate: only the Magnetic Gloves shift it
     '_': 'ledgeAbyss',
     '"': 'ledgeAbyssN', '>': 'ledgeAbyssE', '<': 'ledgeAbyssW',
   }, 'base');

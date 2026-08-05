@@ -192,6 +192,14 @@ export class Game {
 
   /** Wipe entities (except the player) and spawn the current room's list. */
   spawnRoomEntities() {
+    // Mark what is being dropped as removed before dropping it. The player
+    // holds direct references to some of its own projectiles (`player.boomerang`
+    // is the one that bit), and those guards read `.remove` to decide whether
+    // the item is still in flight. Filtering the list without setting the flag
+    // leaves a dangling reference that looks live forever — throw the boomerang,
+    // walk through a door, and you can never throw it again for the rest of the
+    // run. Nothing validates that; it just quietly stops working.
+    for (const e of this.entities) if (e !== this.player) e.remove = true;
     this.entities = this.entities.filter(e => e === this.player);
     this.boss = null;
     this.lure = null;
@@ -327,8 +335,12 @@ export class Game {
 
   // ------------------------------------------------------------ tile actions
 
-  /** Apply an action ('cut','bomb','fire','hook','magnet') to tiles under a rect. */
-  checkTileAction(rect, action) {
+  /**
+   * Apply an action ('cut','bomb','fire','hook','magnet','boomerang') to the
+   * tiles under a rect. `level` is the acting item's level; a transform that
+   * asks for more is refused, which is how a gate names one specific item.
+   */
+  checkTileAction(rect, action, level = 99) {
     const room = this.room;
     if (!room) return false;
     let any = false;
@@ -337,7 +349,7 @@ export class Game {
     for (let ty = y0; ty <= y1; ty++) {
       for (let tx = x0; tx <= x1; tx++) {
         if (!room.inBounds(tx, ty)) continue;
-        if (this.applyTileAction(tx, ty, action)) any = true;
+        if (this.applyTileAction(tx, ty, action, level)) any = true;
       }
     }
     // Torch entities respond to fire too.
@@ -354,15 +366,21 @@ export class Game {
     return any;
   }
 
-  breakTilesInRect(rect, action) { return this.checkTileAction(rect, action); }
+  breakTilesInRect(rect, action, level) { return this.checkTileAction(rect, action, level); }
 
-  applyTileAction(tx, ty, action) {
+  applyTileAction(tx, ty, action, level = 99) {
     const room = this.room;
     const name = room.baseName(tx, ty);
     // Resolve through tide variants so bombing a flooded crack still works.
     const concrete = resolveTile(name, this.tide.level).name;
     const tr = transformFor(name, action) || transformFor(concrete, action);
     if (!tr) return false;
+    // A gate that names a specific item refuses the weaker one — and says so,
+    // because a tile that simply ignores you reads as scenery, not as a lock.
+    if (tr.level && level < tr.level) {
+      if (tr.deny && !this.dialogue.active) this.say(tr.deny);
+      return false;
+    }
     room.setTile(tx, ty, tr.to);
     if (tr.persist) this.persistTile(tx, ty, tr.to);
     if (tr.fx) this.spawnEffect(tr.fx, tx * TILE, ty * TILE);

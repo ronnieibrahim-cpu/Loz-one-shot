@@ -45,6 +45,8 @@ export const F = {
   VOID:      1 << 21,  // outside the map: solid and never rendered as floor
   SANDBAR:   1 << 22,  // marks tiles whose walkability depends on tide (for hints)
   TALLGRASS: 1 << 23,  // hides the player's feet, drops rupees when cut
+  VANE:      1 << 24,  // salt vane: only the MAGIC boomerang (level 2) turns it
+  MAGNETIC:  1 << 25,  // iron plug: the Magnetic Gloves haul it out of the way
 };
 
 // Convenient composites
@@ -154,9 +156,15 @@ export function declareAnimArt(names) { for (const n of names) ANIM_ART.add(n); 
 //   });
 //
 // Actions: 'cut' (sword), 'bomb', 'fire' (ember seed / flame), 'lift' (bracelet),
-// 'dig' (shovel), 'hook' (hookshot), 'magnet'.
+// 'dig' (shovel), 'hook' (hookshot), 'magnet', 'boomerang'.
 // `fx` names an effect to spawn, `drop` a drop table to roll, `flagged` a save
 // flag so the change persists.
+//
+// `level` is the minimum item level the action must carry. It is what lets a
+// gate name a SPECIFIC item rather than a category: the Salt Pans vane wants
+// `boomerang` at level 2, so the plain boomerang bounces off it and only the
+// Magic Boomerang opens the region. Without it every "needs item X" gate
+// degrades to "needs anything in X's family".
 // --------------------------------------------------------------------------
 
 export const TRANSFORMS = new Map();
@@ -172,5 +180,8 @@ export function transformFor(tileName, action) {
   if (!r) return null;
   const to = r[action];
   if (to === undefined) return null;
-  return { to, fx: r.fx || null, drop: r.drop || null, sfx: r.sfx || null, persist: !!r.persist };
+  return {
+    to, fx: r.fx || null, drop: r.drop || null, sfx: r.sfx || null,
+    persist: !!r.persist, level: r.level || 0, deny: r.deny || null,
+  };
 }

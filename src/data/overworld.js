@@ -285,7 +285,7 @@ const rooms = {
       'gg..gg..gg',
       'ggg____ggg',
       'gg.GGGG.gg',
-      '#gggggggg#',
+      '#ggVVVVgg#',
       '###gggg###',
     ],
     entities: [
@@ -372,10 +372,10 @@ const rooms = {
     map: [
       '###gggg###',
       '#gGGGGGGg#',
-      'gg......gg',
-      'gg.qqqq.gg',
-      'gg......gg',
-      'gg______gg',
+      'gg......Vg',
+      'gg.qqqq.Vg',
+      'gg......Vg',
+      'gg______Vg',
       '#gggggggg#',
       '###gggg###',
     ],
@@ -570,7 +570,7 @@ const rooms = {
       'gg......gg',
       'ggg2222ggg',
       'ggg2222ggg',
-      '#gg....gg#',
+      '#ggVVVVgg#',
       '###gggg###',
     ],
     entities: [
