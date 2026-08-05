@@ -7,8 +7,9 @@
 
 import { tiles as tileSheet } from '../gfx/art.js';
 import { registerTiles, F, declareAnimArt, registerTransforms } from '../world/tileset.js';
+import { TERRAIN_ART } from './tiles-terrain.js';
 
-const ART = {
+const HAND_ART = {
   // ---- ground -------------------------------------------------------------
   grass: `
     1111111111111111
@@ -844,6 +845,13 @@ const ART = {
     3333333333333333`,
 };
 
+// Terrain extracted from assets/sheets/ wins over the hand-drawn tile of the
+// same name — ART-DIRECTION.md's rule 1, "if a sheet has it, extract it". Only
+// the pixels are replaced; every tile keeps the palette its definition below
+// binds, so the palette-swap variants and the region colour schemes are
+// untouched. Regenerate with `python3 tools/rip-terrain.py`.
+const ART = { ...HAND_ART, ...TERRAIN_ART };
+
 export function installCoreTiles() {
   tileSheet.add(ART, 'stone');
   // Animation frames are art without being tiles in their own right.
@@ -936,9 +944,9 @@ export function installCoreTiles() {
     ledgeS: { art: ART.ledgeS, pal: 'grass', flags: F.LEDGE, ledge: 'down', underArt: 'grass' },
 
     // --- dungeon ---
-    dFloor: { art: ART.dFloor, pal: 'brick' },
+    dFloor: { art: ART.dFloor, pal: 'brickf' },
     dFloorCrack: { art: ART.dFloorCrack, pal: 'brick' },
-    dFloorWet: { art: ART.dFloor, pal: 'stonedk' },
+    dFloorWet: { art: ART.dFloor, pal: 'stonef' },
     dWall: { art: ART.dWall, pal: 'stonedk', flags: F.SOLID },
     dWallCracked: { art: ART.dWallCracked, pal: 'stonedk', flags: F.SOLID | F.BOMBABLE },
     dPit: { art: ART.dPit, pal: 'abyss', flags: F.PIT },

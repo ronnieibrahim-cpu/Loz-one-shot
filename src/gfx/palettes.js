@@ -20,6 +20,12 @@ export const PALETTES = {
   stone:   ['#e0e0d0', '#a0a898', '#606860', '#242c28'],
   stonedk: ['#98a098', '#687068', '#404840', '#181c1a'],
   brick:   ['#d8c0a0', '#a88860', '#705038', '#301c14'],
+  // Deliberately narrow ramps for the two extracted dungeon floors. The source
+  // flagstone in assets/sheets/oracle-seasons-dungeon-backgrounds.png is three
+  // near-identical blues, so replaying it through `brick`'s full light-to-dark
+  // spread turned a subtle mottle into loud blotches across all 179 rooms.
+  brickf:  ['#cbb294', '#b39c7e', '#94795c', '#301c14'],
+  stonef:  ['#9aa29a', '#868e88', '#6e766e', '#181c1a'],
   marble:  ['#f8f0e0', '#d0c8b8', '#908878', '#403c34'],
   coral:   ['#f8c0d0', '#e07898', '#a04060', '#481828'],
   lava:    ['#f8d870', '#e88830', '#c03818', '#500c08'],
