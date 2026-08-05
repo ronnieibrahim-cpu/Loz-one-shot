@@ -38,14 +38,21 @@ y 0-9 top to bottom). Tidewatch Village is at `0,4,7`.
 | Tidewatch Coast (start, village) | x3-6, y7-9 | `coast` | — |
 | The Shallows (dunes, D1) | x7-11, y6-9 | `dunes` | — |
 | Coral Reef (D2) | x8-11, y4-6 | `coral` | Roc's Feather |
-| Sunken Marsh (D3) | x0-2, y6-9 | `marsh` | Bombs |
+| Sunken Marsh (D3) | x0-2, y6-9 | `marsh` | Bombs (`cliffCracked`) |
 | Cliffs of Kell (D4) | x0-3, y2-5 | `cliffs` | Power Bracelet |
 | Drowned Wood (D5) | x4-7, y3-6 | `wood` | Zora's Flippers |
-| Salt Pans (D6) | x4-7, y0-2 | `salt` | Magic Boomerang |
+| Salt Pans (D6) | x4-7, y0-2 | `salt` | Magic Boomerang (`saltVane`) |
 | Reef Palace approach (D7) | x8-11, y0-3 | `reef` | Hookshot |
-| Abyssal approach (D8) | x0-3, y0-1 | `abyss` | Magnetic Gloves |
+| Abyssal approach (D8) | x0-3, y0-1 | `abyss` | Magnetic Gloves (`abyssPlug`) |
 
 Every screen in the 12x10 grid must exist so the overworld never has holes.
+
+Three of these gates are expressed as a tile with a flag plus a transform, named
+in the table above, and `node tools/check-overworld.mjs` proves each one in both
+directions. The rest (Roc's Feather, Power Bracelet, Zora's Flippers, Hookshot)
+are terrain-shaped rather than tile-shaped and are enforced by level design
+only — no checker can prove them. Note the Salt Pans gate also holds the Reef
+Palace shut, since the Palace's Hookshot is in D6 inside the Pans.
 
 ## Dungeons
 

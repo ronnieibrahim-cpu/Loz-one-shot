@@ -43,8 +43,17 @@ sprite packs still to be drawn.
 | **Small Key economy** | **Done** — keys equal locks in all eight dungeons |
 | **Marsh gate on Bombs** | **Done** — `cliffCracked`, both entrances |
 | **Terrain art (9 tiles)** | **Done** — extracted, `tools/rip-terrain.py` |
-| **One-way ledges** | **Done** — 38 runs placed, 9 regional variants |
+| **One-way ledges** | **Done** — 88 runs, all four cardinals, 36 tile variants |
+| **Region gates (all 3)** | **Done** — Bombs, Magic Boomerang, Magnetic Gloves |
 | **itemGet / secret / heartPiece** | **Done** — wired to their moments |
+
+### Region gates and ledges are done
+
+All three tile-expressible region gates match GAME-PLAN.md, and one-way ledges
+face all four cardinals with 88 runs placed. Two engine bugs surfaced doing it —
+a projectile's rect never touching the solid tile it bounced off, and a dangling
+`player.boomerang` that disabled the item for the rest of a run — both recorded
+under "Hard-won lessons" and both now covered by `tools/check-gates.mjs`.
 
 ### The game is now completable end to end
 
@@ -87,6 +96,9 @@ node tools/walk-dungeons.mjs         # every dungeon room + every ledge
 node tools/check-overworld.mjs       # seams, border, tile-by-tile flood
 node tools/check-overworld.mjs --bombs   # ...and the Marsh gate
 node tools/solve-switches.mjs        # one push per block, every switch room
+node tools/check-gates.mjs           # the two item gates, in-engine
+node tools/find-ledges.mjs           # where a ledge can go without walling a room
+node tools/check-overworld.mjs --items=bombs,boomerang,magnet
 ```
 
 `test.mjs` and `preview.mjs` take `--shot-dir=` and pick a random port, so
@@ -282,8 +294,38 @@ which a hand placement would get wrong:
   the grid.
 - **Never in a switch, door, transition or boss room.** A solid lip in a switch
   room is a new way to make a one-tile push unreachable.
-- **Ledges are south-facing only.** `ledgeS` is the only direction the tileset
-  declares, so a run must be approached from the north and land to the south.
+- **Ledges now face all four cardinals.** `_` south, `"` north, `>` east, `<`
+  west, in every legend that declares `_`. Two things follow that a harness or
+  a placement script gets wrong first try: **`>` and `<` runs are COLUMNS, not
+  rows** — scanning every direction as if it were a row silently reports zero
+  east/west ledges while they sit in the data — and a lip is **solid from three
+  sides**, so a run dropped across a corridor makes rooms unreachable while
+  still validating and still rendering. Use `tools/find-ledges.mjs`, which
+  refuses any candidate without two plain tiles continuing past each end.
+
+**A SOLID tile is never hit by a projectile's own rect.** The boomerang
+ricochets off a solid tile *before* its rect ever overlaps it, so
+`checkTileAction(this.rect(), ...)` finds nothing and a solid gate tile reads as
+ordinary rock. `Boomerang.strikeTile` probes the tile just past the leading edge
+instead, the way the hookshot probes ahead for a latch. Any future
+"projectile opens a solid tile" mechanic needs the same probe — the rect test
+that works fine for bushes silently does nothing here.
+
+**An entity dropped from `game.entities` must be marked `remove` first.** The
+player holds direct references to some of its own projectiles — `player.boomerang`
+is the one that bit — and the guard in the item's `use` reads `.remove` to decide
+whether the item is still in flight. `spawnRoomEntities` filtered the list
+without setting the flag, so throwing the boomerang and then changing rooms left
+a dangling reference that looked live forever: **you could never throw the
+boomerang again for the rest of the run.** Nothing validated it, nothing errored,
+the item just quietly stopped working. It now marks the dropped entities first,
+which covers the whole class rather than the one case.
+
+**A gate tile must sit INSIDE a screen, not on its boundary row.** The seam
+check asserts both sides of a screen boundary agree about passability, and a
+solid gate on the boundary makes them disagree. This is why the Marsh's cracked
+cliff is one tile in, and the first placement of the salt vanes — directly on
+the seam the scan reported — failed the seam check immediately.
 
 **A push block moves exactly one tile, ever.** `PushBlock` takes `once: true`
 by default and sets `moved` the moment its single slide lands, so a block placed
@@ -394,7 +436,7 @@ are deliberate and look like bugs if you do not know:
 
 ## Verification harnesses
 
-**Three of these are now committed**, and that is a deliberate reversal. The
+**Five of these are now committed**, and that is a deliberate reversal. The
 old note here said none was committed because "rewriting is better than trusting
 a read-through". In practice rebuilding them from this prose reproduced five
 separate harness bugs in one session — every one of which reads as a *game*
@@ -402,12 +444,21 @@ failure rather than a harness failure, which is the expensive kind. A working
 harness beats an accurate description of one:
 
 ```sh
-node tools/walk-dungeons.mjs     # every dungeon room, every ledge
-node tools/check-overworld.mjs   # seams, border, flood  (--bombs for the gate)
+node tools/walk-dungeons.mjs     # every dungeon room, every ledge, all 4 faces
+node tools/check-overworld.mjs   # seams, border, flood, all three item gates
 node tools/solve-switches.mjs    # one push per block
+node tools/check-gates.mjs       # the two item gates, in-engine, with real items
+node tools/find-ledges.mjs       # reports where a ledge may go (not a check)
 ```
 
-Run all three after touching any room data. The rest below are still
+Run the first four after touching any room data.
+
+**`check-overworld.mjs` and `check-gates.mjs` are deliberately redundant, and
+both are needed.** check-overworld proves the MAP side — the region is
+unreachable without its item and reachable with it — but it never runs the
+game, so a vane whose transform names an action nothing fires floods correctly
+there and is still impassable in play. check-gates proves the ITEM side with a
+live player. That gap is exactly where the two boomerang bugs below lived. The rest below are still
 uncommitted and still worth rebuilding; all copy the boot pattern in
 `tools/test.mjs`.
 
@@ -574,16 +625,15 @@ What remains, in rough order of payoff:
      one game tile is authoring, not extraction, and needs an in-game
      screenshot across several regions before it is believed — `preview.mjs`
      renders a pack in one palette and cannot show it.
-2. **The Salt Pans and Abyssal approach gates** still do not match
-   GAME-PLAN.md, and cannot until something can gate on the Boomerang and the
-   Magnetic Gloves. See the soft spots below.
-3. **Water is still hand-drawn** and stays that way until someone finds a
+2. **Water is still hand-drawn** and stays that way until someone finds a
    second animation frame: both terrain sheets are static maps.
-4. **More ledges.** 38 runs are placed and 169 more rooms take one safely; the
-   38 were curated (at most three per dungeon, never adjacent, never in a
-   switch, door, transition or boss room) rather than capped by what is
-   possible. Ledges are also south-facing only — `ledgeS` is the only direction
-   the tileset declares, and `tryLedgeHop` already handles all four.
+3. **More ledges, if wanted.** 88 runs are placed across all four cardinals and
+   `node tools/find-ledges.mjs` reports ~660 more tiles that would take one
+   without walling a room off. That is a taste ceiling now, not a technical
+   one. Run the finder rather than placing by eye: a lip is SOLID from three
+   sides, so a run dropped across a corridor makes rooms unreachable and still
+   validates, still renders, and is only caught by a flood pass long after you
+   have placed forty of them.
 
 ## Known soft spots in what has been done
 - **`test.mjs` also goes flaky on "all three tide levels reachable"**, not only
@@ -593,13 +643,15 @@ What remains, in rough order of payoff:
   touch only `src/data/sprites-bosses.js` and `src/data/audio.js` and so cannot
   affect the tide. Treat it as part of the same load-related flakiness.
 
-- **Two overworld region gates still do not match GAME-PLAN.md.** The Salt Pans
-  are gated on Feather + Bracelet and the Abyssal approach on Flippers +
-  Hookshot, where the plan calls for the Magic Boomerang and the Magnetic
-  Gloves. Neither item gates terrain: nothing in the tileset can express "a gap
-  only a boomerang can cross". Doing it properly needs either a new tile with
-  its own flag and engine support, or accepting a different item. The Marsh
-  gate now matches the plan — see `cliffCracked` in `tiles-core.js`.
+- **All three tile-expressible region gates now match GAME-PLAN.md**:
+  Bombs/`cliffCracked` (Marsh), Magic Boomerang/`saltVane` (Salt Pans) and
+  Magnetic Gloves/`abyssPlug` (Abyssal approach). The remaining plan gates —
+  Feather, Bracelet, Flippers, Hookshot — are terrain-shaped rather than
+  tile-shaped, so no checker can prove them; they are asserted by level design
+  only. **The Salt Pans gate also holds the Reef Palace shut**, because the
+  Palace's own gate is the Hookshot and the Hookshot is in D6 inside the Pans.
+  That is intended and `check-overworld.mjs` encodes it in `GATES.boomerang.covers`;
+  if you move a gate, move the `covers` rectangle with it.
 - **Every placed ledge is a shortcut, never a route.** The selector rejected
   any run that changed the room's walking connectivity at any tide level, so no
   ledge is load-bearing and none can strand a room. That is deliberately
@@ -614,5 +666,15 @@ What remains, in rough order of payoff:
   them.** The engine reaches for `fanfare`/`fanfareShort` at each of those
   moments (`src/game/objects.js`, `src/game/game.js`). Wiring them up is an
   engine change, not a data one.
-- The overworld's item gates other than the Marsh are terrain-shaped, so the
-  throwaway overworld checker below cannot prove them the way it proves Bombs.
+- The overworld's remaining item gates (Feather, Bracelet, Flippers, Hookshot)
+  are terrain-shaped, so `check-overworld.mjs` cannot prove them the way it
+  proves the three flag-shaped ones.
+- **North-facing ledges are drawn shallower than the other three on purpose.**
+  A drop facing away from the camera shows almost no face, and the nine-row
+  wall that sells `ledgeS` reads as a dark stripe painted across the floor.
+  `ledgeN`'s face is six rows. East and west are straight quarter-turn
+  rotations of the south lip, which keeps the speckle and face weight identical.
+- **`ledgeN`/`dLedgeN` sit close to a dungeon wall in silhouette**, because both
+  take `stonedk` and a dungeon wall is also a dark horizontal band. The lit
+  bottom lip is what separates them, and it does read in game — but if a future
+  dungeon palette narrows that contrast, this is the tile that breaks first.
