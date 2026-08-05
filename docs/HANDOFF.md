@@ -4,8 +4,9 @@ State of the project as of this handoff, and what a fresh session needs to know.
 
 ## Where things stand
 
-Branch: **`claude/oracle-tides-polish-nphkj0`** — the single canonical branch.
-Everything is committed and pushed.
+Branch: **`claude/oracle-tides-polish-grjnhj`** — the single canonical branch.
+Everything is committed and pushed. It continues
+`claude/oracle-tides-polish-nphkj0`, which is now behind it.
 
 Earlier branches (`claude/zelda-style-game-piqt8v`,
 `claude/zelda-boss-behavior-jgbfwo`, `claude/oracle-tides-boss-music-4c24tm`)
@@ -41,6 +42,9 @@ sprite packs still to be drawn.
 | **Dungeon room puzzles** | **Done** — every room now has something in it |
 | **Small Key economy** | **Done** — keys equal locks in all eight dungeons |
 | **Marsh gate on Bombs** | **Done** — `cliffCracked`, both entrances |
+| **Terrain art (9 tiles)** | **Done** — extracted, `tools/rip-terrain.py` |
+| **One-way ledges** | **Engine done** — no map places one yet |
+| **itemGet / secret / heartPiece** | **Done** — wired to their moments |
 
 ### The game is now completable end to end
 
@@ -77,6 +81,8 @@ node tools/test.mjs --shots          # 35 assertions + screenshots
 node tools/preview.mjs enemies --scale=6  # contact sheet of a sprite pack
 node tools/scan-sprites.mjs --skip-bosses # rows split or floating off the body
 python3 tools/rip-enemies.py         # regenerate src/data/sprites-enemies.js
+python3 tools/rip-terrain.py         # regenerate src/data/tiles-terrain.js
+node tools/preview.mjs --tiles --scale=2  # contact sheet of every tile
 ```
 
 `test.mjs` and `preview.mjs` take `--shot-dir=` and pick a random port, so
@@ -112,6 +118,9 @@ untouched baseline before any of this session's work.
    (Check the revision `playwright` actually asks for in the error message; it
    was 1234 at the time of writing.)
 3. `pip install pillow` if you are going to run any of the `rip-*.py` tools.
+   `rip-terrain.py` needs only Pillow; the scratch script that *finds* its
+   source rectangles used numpy, but it is not committed and the tool does not
+   import it.
 
 ## Hard-won lessons — do not rediscover these
 
@@ -163,6 +172,45 @@ untouched baseline before any of this session's work.
    that `preview.mjs` screenshots the canvas clipped to the 1400px viewport, so
    at `--scale=6` the rightmost column is cut off — use `--scale=2` to see a
    whole pack.
+
+**Terrain extraction** (`tools/rip-terrain.py`) — the two terrain sheets are
+assembled **maps**, not tile palettes, so none of the cell-finding in
+`ripkit.py` applies. Each map block sits at its own origin and there is no
+global 16px grid: a search over all 256 offsets scores them nearly equally,
+because the base ground tile is mostly flat and matches itself at any phase.
+
+What does work: a ground tile is the 16x16 window that repeats at **+16 in x
+and +16 in y**. A window that passes is correctly phased and tiles seamlessly
+by construction, which is exactly what ART-DIRECTION demands of terrain. Two
+things to know if you rebuild that scan:
+
+1. **Collapse the phase shifts.** A seamless tile stays seamless when rolled,
+   so every hit appears at all 256 offsets and a frequency ranking is nothing
+   but shifted copies of one tile. Key each hit on the smallest of its 256
+   cyclic shifts. Do it *after* deduplicating exact bytes — canonicalising
+   half a million raw hits does not finish.
+2. **It only finds ground.** `cliff`, `tree`, `bush` and the rest are
+   structured and directional; no single window supplies a top, a face and
+   corners, and the scan returns nothing for a tree grove. Those have to be
+   picked by eye from a region dump.
+
+Two judgement calls in the tool that are deliberate:
+
+- **The extracted art keeps the game's palettes**, and only the pixels change.
+  Binding the source colours instead would have shifted every region's scheme
+  under the extracted Seasons enemies, and broken the palette-swap variants
+  (`grassDark`, `saltFlat`, `iceFloor`, `rockFloorRust`) that are how this game
+  gives each region a look without redrawing every tile. `TERRAIN_SRC_PALETTES`
+  records the source colours for reference.
+- **…but a palette can need narrowing.** The source dungeon flagstone is three
+  near-identical blues. Replayed through `brick`'s full light-to-dark spread it
+  became loud blotches across all 179 rooms, and it took an in-game screenshot
+  to see — `preview.mjs --tiles` renders every tile in one palette. `brickf`
+  and `stonef` in `palettes.js` are narrow ramps added for exactly this.
+
+A first pick can also be simply wrong for its job: the original `rockFloor`
+source was brick courses, which reads as a **wall** in a top-down game. It was
+swapped for cobbles after looking at a screenshot, not after validating.
 
 **Boss and miniboss behaviour** (`src/data/bosses.js`) — four traps, all paid
 for, all of which produce a boss that *validates* and is *unwinnable*:
@@ -395,6 +443,15 @@ The two below predate this session and are still worth rebuilding.
   from `src/data/story.js`, not `CUTSCENES`; get that wrong and `finalBoss` and
   `ending` silently look unreferenced.
 
+- **Ledge harness** — paint a run of `ledgeS` into a live room with
+  `room.setTile` and walk the player at it from each side: downhill clears it
+  and lands with `z === 0`, uphill is blocked, along the lip is blocked, and a
+  ledge with `cliff` behind it refuses the hop. `room.invalidate()` after
+  setting tiles or the room draws from its cached bake.
+- **Audio harness** — `audio.jingle(name)` sets `trackName` to
+  `'$jingle:' + name`, which is what to assert on; the scheduler only advances
+  over real frames. Wrapping `game.audio.jingle` and calling `presentItem` or
+  `applyReward` is how to prove a moment plays the track it should.
 - **Switch-puzzle solver** — for every room with a `switches` puzzle, call the
   engine's own `game.tryPushBlock` exactly **once** per block, park the player on
   any switch still unpressed, and assert `room._puzzleDone`. One push per block
@@ -416,24 +473,34 @@ relative to the repo root and produce byte-identical output to what is
 committed. See `assets/sheets/README.md` for what each sheet contains, who
 ripped it, and the copyright position.
 
-Sheets present but not yet used: non-human races, trading characters, dungeon
-backgrounds, and a fan-made Oracle-style overworld tileset. The HUD/Gear sheet
-is used by `tools/rip-hud.py`; the icons Seasons does not have (Flippers,
-Mermaid Suit, Hookshot, Moon Conch, Map, Compass) stay hand-drawn.
+Sheets present but not yet used: non-human races and trading characters. The
+HUD/Gear sheet is used by `tools/rip-hud.py`; the icons Seasons does not have
+(Flippers, Mermaid Suit, Hookshot, Moon Conch, Map, Compass) stay hand-drawn.
+The dungeon-background and fan-made overworld sheets are used by
+`tools/rip-terrain.py` for nine ground and wall tiles.
 
 ## What is left, highest value first
 
 Art, music, dungeon interiors, the key economy and the Marsh gate are all done.
 What remains, in rough order of payoff:
 
-1. **The Salt Pans and Abyssal approach gates** still do not match
+1. **Place ledges.** The hop works and nothing uses it: `_` is in both legends
+   and appears zero times across all 303 room grids. This is now pure content
+   work, and it is the cheapest real verticality the dungeons can get. Any
+   placement needs the dungeon walker rerun — a ledge is solid from three
+   sides, so it can strand a room the way a mis-stamped doorway can.
+2. **More terrain.** Nine tiles are extracted; `cliff`, `cliffTop`, `tree`,
+   `bush`, `rock`, `flowers`, `stump` and `palm` are still hand-drawn. They are
+   harder than the nine that landed because they are *structured* — a cliff
+   needs a top, a face and corners, and no single 16x16 window supplies that —
+   and because they carry transparency and an `underArt`. The seamless-window
+   trick in `tools/rip-terrain.py`'s header does not find them; they have to be
+   picked by eye from a region dump.
+3. **The Salt Pans and Abyssal approach gates** still do not match
    GAME-PLAN.md, and cannot until something can gate on the Boomerang and the
    Magnetic Gloves. See the soft spots below.
-2. **One-way ledges** need engine support before any dungeon can use them.
-3. **`itemGet`, `secret` and `heartPiece`** are composed but never played.
-4. **Terrain art** — `assets/sheets/oracle-seasons-dungeon-backgrounds.png` and
-   `custom-oracle-style-overworld.png` are committed and unused. ART-DIRECTION
-   says extract from them rather than approximate when that work is picked up.
+4. **Water is still hand-drawn** and stays that way until someone finds a
+   second animation frame: both terrain sheets are static maps.
 
 ## Known soft spots in what has been done
 - **`test.mjs` also goes flaky on "all three tide levels reachable"**, not only

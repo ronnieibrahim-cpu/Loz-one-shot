@@ -13,11 +13,12 @@ maintain and the most expensive thing to not have.
 ```
 Continue building "Oracle of Tides", a GBC-style Zelda fan game.
 
-Branch: claude/oracle-tides-polish-nphkj0 — fetch it. That is the current
+Branch: claude/oracle-tides-polish-grjnhj — fetch it. That is the current
 canonical branch. `main` is an empty README; claude/zelda-style-game-piqt8v,
-claude/zelda-boss-behavior-jgbfwo and claude/oracle-tides-boss-music-4c24tm
-are the older line this branch was built on and are behind it, not parallel
-work. Everything is committed and pushed; the tree is clean.
+claude/zelda-boss-behavior-jgbfwo, claude/oracle-tides-boss-music-4c24tm and
+claude/oracle-tides-polish-nphkj0 are the older line this branch was built on
+and are behind it, not parallel work. Everything is committed and pushed; the
+tree is clean.
 
 Read, in this order:
   docs/HANDOFF.md        - current state, environment setup, and every trap
@@ -48,44 +49,47 @@ WHAT IS ALREADY DONE - do not redo any of this
   - every effect, pickup, object, projectile and item icon
   - the whole story: 20 dialogue ids, 15 cutscenes, all verified to terminate
   - ALL 49 boss and miniboss sprites, drawn by hand and each checked in its own
-    arena in its own palette. rootmaw reads as a tree, thalassor as a gaping
-    eel, thornvine's open frame as a bloom. scan-sprites --strict is 0 hard
-    findings across the whole registry.
-  - music: 22 tracks (14 looping + 8 jingles), two dungeon themes alternating
-    across d1-d8. Every `music:` name in room, map AND cutscene data resolves.
-  - every dungeon room has something to do in it: 28 formerly-plain rooms now
-    carry switch, torch or clear-the-room puzzles with rewards.
-  - Small Keys equal locked doors in all eight dungeons, and every switch
-    puzzle is solvable by pushing (blocks move ONE tile only - see HANDOFF).
-  - the Sunken Marsh is gated on Bombs via a bombable `cliffCracked` tile, at
-    both of its entrances, proved with and without Bombs.
+    arena in its own palette. scan-sprites --strict is 0 hard findings across
+    the whole registry.
+  - music: 22 tracks (14 looping + 8 jingles). Every `music:` name in room, map
+    AND cutscene data resolves, and every jingle in TRACKS is now PLAYED -
+    itemGet on presentItem, heartPiece on the pickup, secret on a buried dig
+    and on a puzzle reward that changes the room.
+  - every dungeon room has something to do in it; Small Keys equal locked doors
+    in all eight dungeons; every switch puzzle is solvable by pushing (blocks
+    move ONE tile only - see HANDOFF).
+  - the Sunken Marsh is gated on Bombs via a bombable `cliffCracked` tile.
   - the status bar is rebuilt after the Oracle of Seasons / Ages HUD, 32 HUD
     and gear icons are EXTRACTED from that game's sheet (tools/rip-hud.py), and
-    the 10 items Seasons does not have are hand-drawn to match in
-    src/data/sprites-gear.js. No placeholder item icons remain.
-  - EVERY item icon binds its own palette, so no item carries a `pal` and no
-    draw site passes one. Read HANDOFF before touching either, and before
-    writing another rip: plate enclosed by a sprite's outline is artwork, and
-    ripkit.quantise is unstable when it pads a short palette.
+    the rest are hand-drawn to match in src/data/sprites-gear.js. No
+    placeholder item icons remain. EVERY item icon binds its own palette, so no
+    item carries a `pal` and no draw site passes one.
+  - NINE terrain tiles are extracted from the two terrain sheets
+    (tools/rip-terrain.py): grassTuft, tallgrass, sand, sandWet, sandRipple,
+    mud, rockFloor, dFloor, dWall. Only the pixels changed - every tile keeps
+    the palette tiles-core.js binds, so the palette-swap variants still work.
+  - ONE-WAY LEDGES WORK. The hop is in src/game/player.js and room.solidAt
+    blocks F.LEDGE on the ground, which is the half that makes it one-way.
 
 WHAT IS LEFT - in rough order of payoff. Pick up as much as fits.
 
-  1. Terrain art. assets/sheets/oracle-seasons-dungeon-backgrounds.png and
-     custom-oracle-style-overworld.png are committed and completely unused;
-     every tile in tiles-core.js is hand-drawn. ART-DIRECTION.md is explicit
-     that these should be extracted from rather than approximated. This is the
-     largest remaining visual upgrade in the project. Brief section J and
-     tools/ripkit.py have the workflow; all four extractors reproduce
-     byte-identically, so run them first and confirm an empty git diff before
-     changing ripkit. Note rip-hud.py does NOT use ripkit.quantise - see the
-     traps below.
+  1. PLACE LEDGES. The hop works and nothing uses it: `_` is in both legends in
+     src/data/legends.js and appears ZERO times across all 303 room grids. This
+     is now pure content work and it is the cheapest real verticality the
+     dungeons can get. Two things first: `ledgeS`'s art is a thin dark line and
+     does not read as the lip of a drop, so redraw it (a lit top edge over a
+     short shadowed face, like the cliff tiles); and a ledge is SOLID from
+     three sides, so it can strand a room the way a mis-stamped doorway can -
+     rerun the dungeon walker over anything you place.
 
-  2. One-way ledges are DECLARED BUT NOT IMPLEMENTED. F.LEDGE exists in
-     src/world/tileset.js and ledgeS sets ledge: 'down', but nothing under
-     src/game ever reads either - grep and the only hits are the tileset
-     assigning them. Implementing a hop-down in src/game/player.js would
-     unlock real verticality in the dungeons. This is engine work, which the
-     briefs put off limits for content agents; decide deliberately.
+  2. More terrain. Nine tiles are extracted; cliff, cliffTop, tree, bush, rock,
+     flowers, stump and palm are still hand-drawn. These are harder than the
+     nine that landed: they are structured (a cliff needs a top, a face and
+     corners - no single 16x16 window supplies that) and they carry
+     transparency and an `underArt`. The seamless-window trick documented in
+     tools/rip-terrain.py's header does NOT find them; they have to be picked
+     by eye from a region dump. Run every rip-*.py first and confirm an empty
+     git diff before changing anything shared.
 
   3. Two overworld region gates still do not match GAME-PLAN.md: the Salt Pans
      want the Magic Boomerang and the Abyssal approach the Magnetic Gloves,
@@ -93,25 +97,21 @@ WHAT IS LEFT - in rough order of payoff. Pick up as much as fits.
      Marsh gate shows the shape of the fix (a tile with a flag plus a
      transform) but these two need engine support or a plan change.
 
-  4. `itemGet`, `secret` and `heartPiece` are composed in TRACKS but nothing
-     plays them - the engine reaches for fanfare/fanfareShort at each of those
-     moments. Engine change, not a data one.
-
-  5. Two hand-drawn icons in src/data/sprites-gear.js are honest but not good:
-     i_flippers reads more like a leaf than a swim fin, and i_chain is a plain
-     grey pill. Everything else in the ui pack reads. Low stakes, quick win.
+  4. Water is still hand-drawn and stays that way until someone finds a second
+     animation frame: both terrain sheets are static maps, not tile palettes.
 
 Do the work yourself rather than spawning subagents - past sessions hit usage
 limits that way and lost the work.
 
 VERIFICATION IS PART OF THE TASK, NOT AN OPTIONAL EXTRA
-  - For art: `node tools/preview.mjs <pack> --scale=2` and actually LOOK at the
-    PNG with the Read tool. preview clips to the viewport, so a higher scale
-    silently drops the rightmost column. Then write a throwaway script in /tmp
-    that boots headlessly, walks into each arena and screenshots it, and look
-    at those too - preview renders a whole pack in ONE palette, so it shows
-    silhouette but not in-game colour. Dimensional validity and "it validated"
-    prove nothing about whether a sprite reads as its creature.
+  - For art: `node tools/preview.mjs <pack> --scale=2` (or `--tiles`) and
+    actually LOOK at the PNG with the Read tool. preview clips to the viewport,
+    so a higher scale silently drops the rightmost column. Then write a
+    throwaway script in /tmp that boots headlessly, warps to each room and
+    screenshots it, and look at those too - preview renders a whole pack in ONE
+    palette, so it shows silhouette but not in-game colour. That is exactly how
+    the dungeon floor's blotchiness and a wall-textured "floor" tile were
+    caught; both had validated clean.
   - Also run `node tools/scan-sprites.mjs --strict`. It catches rows split by a
     see-through slot or shifted off the body; validate.mjs cannot see that
     class, and it is what made several sprites look broken before.
@@ -122,7 +122,7 @@ VERIFICATION IS PART OF THE TASK, NOT AN OPTIONAL EXTRA
   The harness patterns are all written up in docs/HANDOFF.md. Read that before
   writing one.
 
-FOUR TRAPS THAT PASS EVERY VALIDATOR - all four cost real time to find
+FIVE TRAPS THAT PASS EVERY VALIDATOR - all cost real time to find
   - A PUSH BLOCK MOVES EXACTLY ONE TILE, EVER (`once: true` by default). Every
     switch puzzle in the game was authored with its blocks two-plus tiles from
     the switch, so none was solvable, and seven rewarded an unearnable Small
@@ -138,9 +138,14 @@ FOUR TRAPS THAT PASS EVERY VALIDATOR - all four cost real time to find
     Erasing all of it punches holes through the Seed Satchel, ring box and
     gloves. rip-hud.py flood-fills from the cell border; a part-filled heart
     opts out via HOLLOW because there the bar really is showing through.
+  - A SOURCE TILE'S CONTRAST IS NOT THE GAME'S CONTRAST. The extracted dungeon
+    flagstone is three near-identical blues; replayed through `brick`'s full
+    light-to-dark spread it became loud blotches across all 179 rooms. `brickf`
+    and `stonef` in palettes.js are narrow ramps added for that.
   Also: ripkit.quantise is NOT deterministic when it pads a short palette (it
-  ties on distance and the winner is not pinned down). rip-hud.py uses its own
-  quantise_exact instead. If another rip ever starts drifting, that is why.
+  ties on distance and the winner is not pinned down). rip-hud.py and
+  rip-terrain.py use their own exact quantiser instead. If another rip ever
+  starts drifting, that is why.
 
 main.js only publishes window.__game. Anything else a harness needs
 (spawnEntity, MAPS, getText, STORY_CUTSCENES) must be pulled out of the live
@@ -157,27 +162,25 @@ Tell me plainly what is done, what is weak, and what you skipped.
 ## If you are picking this up cold, the short version
 
 - **The game is content-complete.** Engine, world, dungeons, bosses, story, art
-  and music are all done, and the dungeons are now *interesting* rather than
-  merely solvable.
-- **What is left is mostly engine work or a large art extraction.** The cheap
-  data-only wins are gone; every remaining item on the list either needs a
-  change under `src/game`, or a serious pass over the sprite sheets.
+  and music are all done, and the dungeons are *interesting* rather than merely
+  solvable.
+- **What is left is one content job and one art job.** Placing ledges is pure
+  data now that the hop exists. The rest of the terrain extraction is real art
+  work: the easy, seamless-by-construction ground tiles have been taken, and
+  what remains is structured and directional.
 - **The biggest risk is spending context re-deriving what is already known.**
   The traps in `HANDOFF.md` under "Hard-won lessons" are all real and all cost
   hours the first time. Read them before writing code, not after a harness
-  fails. Four were added by the pass this file describes, and every one of them
-  passes `validate.mjs` while being wrong on screen or unwinnable in play.
+  fails. Every one of them passes `validate.mjs` while being wrong on screen or
+  unwinnable in play.
 
 ## Commits in the pass this file describes
 
-Eight, in order: the three weak boss sprites redrawn; the key/lock balance plus
-the `dungeon2` wiring; the Marsh bomb gate; the dungeon room puzzles with the
-switch-room fix; the docs; the Oracle-style status bar; the 29-icon extraction
-from the HUD/Gear sheet; and the last three extractions plus the hand-drawn
-gear pack, which is also where the two extraction bugs were found and fixed.
+Four: the nine-tile terrain extraction; the three silent jingles wired up
+alongside two redrawn icons; the one-way ledge hop; and the docs.
 
 ```sh
-git log --oneline dc769da..HEAD
+git log --oneline 6bc7d59..HEAD
 ```
 
-`dc769da` is the last commit of the previous pass (boss art, music, compass).
+`6bc7d59` is the last commit of the previous pass (the HUD/gear extraction).

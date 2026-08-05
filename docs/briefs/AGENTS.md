@@ -484,3 +484,14 @@ then `node tools/preview.mjs <pack> --scale=6` and **look at the PNG**.
 
 Record the source and ripper credit in the generated module's header, as the
 existing rip modules do.
+
+**Terrain is a different job.** `assets/sheets/oracle-seasons-dungeon-backgrounds.png`
+and `custom-oracle-style-overworld.png` are assembled *maps*, not tile
+palettes, so `find_cells` has nothing to find — each map block sits at its own
+origin and there is no global 16px grid. `tools/rip-terrain.py` is the worked
+example, and its header documents the scan that replaces `find_cells`: a ground
+tile is the 16x16 window that repeats at +16 in x *and* +16 in y, which is
+correctly phased and seamless by construction. It only finds ground; structured
+tiles (cliffs, trees) have to be picked by eye. See `docs/HANDOFF.md` under
+"Terrain extraction" for the two things that make the scan usable and the two
+judgement calls the tool makes about palettes.

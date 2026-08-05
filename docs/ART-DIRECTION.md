@@ -83,8 +83,19 @@ seamlessly with themselves on all four edges.
 
 `assets/sheets/oracle-seasons-dungeon-backgrounds.png` and
 `custom-oracle-style-overworld.png` are the references for dungeon and overworld
-terrain respectively, and should be extracted from rather than approximated when
-that work is picked up.
+terrain respectively, and should be extracted from rather than approximated.
+Nine tiles have been: `tools/rip-terrain.py` lifts the ground and wall textures
+and `src/data/tiles-terrain.js` overrides the hand-drawn art of the same name.
+The structured tiles — cliffs, trees, bushes — are still hand-drawn, because a
+single 16x16 window cannot supply a top, a face and corners.
+
+**Extracted terrain keeps the game's palettes.** Only the pixels are replaced.
+That is what keeps the palette-swap variants (`grassDark`, `saltFlat`,
+`iceFloor`, `rockFloorRust`) working, and it is how this game gives each region
+a look without redrawing every tile — the same trick the GBC originals used. A
+source tile's own contrast is not the game's contrast, though: check the result
+in a screenshot, not in `preview.mjs --tiles`, which draws every tile in one
+palette.
 
 ## Verifying a new asset
 
