@@ -25,6 +25,7 @@ export function installLegends() {
     'q': 'post', 'Q': 'postSand', 'x': 'digSpot',
     // transitions
     'C': 'caveMouth', 'c': 'caveMouthSolid', '/': 'stairsDown', '_': 'ledgeS',
+    '"': 'ledgeN', '>': 'ledgeE', '<': 'ledgeW',
     // TIDE TILES (digits)
     '1': 'sandbar',    // dry at low, wadeable at mid, deep at high
     '2': 'tidePool',   // wet sand at low, wadeable, then deep
@@ -46,6 +47,7 @@ export function installLegends() {
   // ---- reef: bright shallow-sea region -----------------------------------
   registerLegend('reef', {
     'g': 'rockFloor', 'G': 'rockFloor', '_': 'ledgeRock',
+    '"': 'ledgeRockN', '>': 'ledgeRockE', '<': 'ledgeRockW',
     '~': 'waterSReef', '=': 'waterDReef',
     'T': 'palm', 'b': 'bushSand',
   }, 'base');
@@ -53,6 +55,7 @@ export function installLegends() {
   // ---- marsh: sunken, muddy region ---------------------------------------
   registerLegend('marsh', {
     'g': 'grassDark', 'G': 'grassDark', '.': 'mud', ',': 'mud', '_': 'ledgeDk',
+    '"': 'ledgeDkN', '>': 'ledgeDkE', '<': 'ledgeDkW',
     'T': 'tree', '#': 'cliffDk', 'X': 'cliffCrackedDk',
   }, 'base');
 
@@ -61,6 +64,7 @@ export function installLegends() {
     'g': 'sandRipple', 'G': 'sand', 'f': 'sand', 'v': 'sandDeep',
     'T': 'palm', 'b': 'bushSand', 'o': 'rockSand', 'q': 'postSand',
     '#': 'cliffSand', '^': 'cliffSand', '_': 'ledgeSand',
+    '"': 'ledgeSandN', '>': 'ledgeSandE', '<': 'ledgeSandW',
   }, 'base');
 
   // ---- cliffs: high stone shelves over deep water ------------------------
@@ -68,12 +72,14 @@ export function installLegends() {
     'g': 'rockFloor', 'G': 'rockFloorDk', 'f': 'rockFloor',
     'T': 'treeDead', 'b': 'bush', 'o': 'rock',
     '#': 'cliffDk', '^': 'cliffTop', '%': 'cliffDk', '_': 'ledgeRock',
+    '"': 'ledgeRockN', '>': 'ledgeRockE', '<': 'ledgeRockW',
   }, 'base');
 
   // ---- drowned wood: sunken forest --------------------------------------
   registerLegend('wood', {
     'g': 'grassDark', 'G': 'grassTuft', 'T': 'treeDark', 'P': 'treeDark',
     'b': 'bush', '#': 'cliffDk', '_': 'ledgeDk',
+    '"': 'ledgeDkN', '>': 'ledgeDkE', '<': 'ledgeDkW',
   }, 'base');
 
   // ---- salt flats: bleached pans that flood ------------------------------
@@ -81,6 +87,7 @@ export function installLegends() {
     'g': 'saltFlat', 'G': 'saltCrust', '.': 'saltCrust', ',': 'saltFlat',
     'T': 'treeDead', 'b': 'bushSand', 'o': 'rockSand',
     '#': 'cliffMarble', '^': 'cliffMarble', '_': 'ledgeSalt',
+    '"': 'ledgeSaltN', '>': 'ledgeSaltE', '<': 'ledgeSaltW',
   }, 'base');
 
   // ---- abyss: the deepest water, endgame region -------------------------
@@ -89,6 +96,7 @@ export function installLegends() {
     '~': 'waterD', '=': 'waterAbyss',
     'T': 'treeDead', 'o': 'rock', '#': 'cliffAbyss', '^': 'cliffAbyss',
     '_': 'ledgeAbyss',
+    '"': 'ledgeAbyssN', '>': 'ledgeAbyssE', '<': 'ledgeAbyssW',
   }, 'base');
 
   // ---- coral: the reef city ---------------------------------------------
@@ -97,6 +105,7 @@ export function installLegends() {
     '~': 'waterSReef', '=': 'waterDReef',
     'T': 'palm', 'b': 'bushSand', 'o': 'rock', '#': 'cliffCoral', '^': 'cliffCoral',
     '_': 'ledgeCoral',
+    '"': 'ledgeCoralN', '>': 'ledgeCoralE', '<': 'ledgeCoralW',
   }, 'base');
 
   // ---- dungeon: shared indoor vocabulary ---------------------------------
@@ -108,6 +117,7 @@ export function installLegends() {
     'D': 'dDoorClosed', 'o': 'dDoorOpen', 'L': 'dDoorLocked', 'B': 'dDoorBoss',
     '/': 'dStairs',
     'R': 'rockFloor', 'r': 'rockFloorDk', '_': 'dLedge',
+    '"': 'dLedgeN', '>': 'dLedgeE', '<': 'dLedgeW',
     // TIDE TILES (digits) — the indoor versions
     '1': 'dSluice',    // dry floor -> shallow -> deep
     '2': 'dBasin',     // dry -> damp -> shallow
@@ -124,6 +134,7 @@ export function installLegends() {
     '.': 'rockFloorDk', 'g': 'rockFloor', '#': 'cliffDk', '%': 'cliffDk',
     '~': 'waterS', '=': 'waterD', 'O': 'dPit', 'p': 'pot', 'o': 'rock',
     '/': 'stairsDown', 'C': 'caveMouth', 'q': 'dPost', '_': 'ledgeRockDk',
+    '"': 'ledgeRockDkN', '>': 'ledgeRockDkE', '<': 'ledgeRockDkW',
     '1': 'sandbar', '2': 'tidePool', '3': 'shoal', '4': 'seafloor',
     '5': 'channel', '8': 'tideRock', '9': 'drownWall',
   });

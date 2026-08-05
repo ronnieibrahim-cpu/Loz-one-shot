@@ -4,9 +4,15 @@
 // spent and the boss door until the Boss Key is found, and asserts every room
 // and the boss room is reached.
 //
-// Also proves the newly-placed ledges: for every `_` run in the data it walks a
-// live player into the lip from above and asserts the hop fires and lands, and
-// walks into it from below and asserts it is refused.
+// Also proves the placed ledges: for every ledge run in the data it walks a
+// live player into the lip from the high side and asserts the hop fires and
+// lands, then walks into it from the low side and asserts it is refused.
+//
+// All four cardinals are covered. `_` and `"` are horizontal runs probed along
+// y; `>` and `<` are VERTICAL runs — a lip facing east is a column, not a row —
+// and are probed along x. Scanning every direction as if it were a row was the
+// first version of this and it silently reported zero east/west ledges while
+// they were sitting in the data.
 //
 // Boot pattern copied from tools/test.mjs.
 
@@ -274,31 +280,63 @@ for (const r of reach) {
 }
 
 // ------------------------------------------------------- part 3: the ledges
-const placements = await page.evaluate(() => {
+// The four ledge characters, each with the unit vector the player hops along
+// and the unit vector its run extends along (always the perpendicular).
+const LEDGE_CHARS = {
+  '_': { dir: 'down',  ux: 0, uy: 1,  ax: 1, ay: 0 },
+  '"': { dir: 'up',    ux: 0, uy: -1, ax: 1, ay: 0 },
+  '>': { dir: 'right', ux: 1, uy: 0,  ax: 0, ay: 1 },
+  '<': { dir: 'left',  ux: -1, uy: 0, ax: 0, ay: 1 },
+};
+
+const placements = await page.evaluate((CHARS) => {
   const out = [];
   for (const [mapId, m] of window.__MAPS) {
     for (const [key, def] of Object.entries(m.roomDefs || {})) {
-      (def.map || []).forEach((row, y) => {
-        let i = 0;
-        while (i < row.length) {
-          if (row[i] !== '_') { i++; continue; }
-          let j = i; while (row[j] === '_') j++;
-          out.push({ mapId, key, y, x0: i, len: j - i });
-          i = j;
+      const grid = def.map || [];
+      const at = (x, y) => (grid[y] || '')[x];
+      const seen = new Set();
+      for (let y = 0; y < grid.length; y++) {
+        for (let x = 0; x < (grid[y] || '').length; x++) {
+          const ch = at(x, y);
+          const spec = CHARS[ch];
+          if (!spec || seen.has(`${ch}${x},${y}`)) continue;
+          // Walk to the end of the run along the lip's own axis, marking as we
+          // go so the rest of the run is not re-reported as its own placement.
+          let len = 0, cx = x, cy = y;
+          while (at(cx, cy) === ch) {
+            seen.add(`${ch}${cx},${cy}`);
+            len++; cx += spec.ax; cy += spec.ay;
+          }
+          out.push({ mapId, key, ch, x0: x, y0: y, len, ...spec });
         }
-      });
+      }
     }
   }
   return out;
-});
-console.log(`  ${placements.length} ledge runs placed`);
+}, LEDGE_CHARS);
+
+const byDir = {};
+for (const p of placements) byDir[p.dir] = (byDir[p.dir] || 0) + 1;
+console.log(`  ${placements.length} ledge runs placed (${
+  Object.entries(byDir).map(([d, n]) => `${d} ${n}`).join(', ') || 'none'})`);
+
+const KEY = { down: 'ArrowDown', up: 'ArrowUp', left: 'ArrowLeft', right: 'ArrowRight' };
+const OPP = { down: 'up', up: 'down', left: 'right', right: 'left' };
 
 let hopOk = 0, hopFail = [], blockOk = 0, blockFail = [];
 for (const p of placements) {
   const [f, rx, ry] = p.key.split(',').map(Number);
-  const mid = p.x0 + (p.len >> 1);
-  // --- downhill: walk into the lip from above, expect a hop that lands below
-  const place = async (a, row, dir) => page.evaluate(async (b) => {
+  // The midpoint of the run, measured along the lip's own axis.
+  const mx = p.x0 + p.ax * (p.len >> 1);
+  const my = p.y0 + p.ay * (p.len >> 1);
+  // The lip's coordinate on the hop axis, and which way "past it" points.
+  const sign = p.ux || p.uy;
+  const lipC = p.ux ? p.x0 : p.y0;
+  const tileOf = (a) => (p.ux ? a.tx : a.ty);
+  const beyond = (t) => (sign > 0 ? t > lipC : t < lipC);
+  // --- downhill: walk into the lip from the high side, expect a hop that lands
+  const place = async (a, tx, ty, dir) => page.evaluate(async (b) => {
     const g = window.__game;
     // Rooms are full of live enemies. A parked player dies, the game drops into
     // 'gameover' where nothing updates, and EVERY later probe in the run reads
@@ -315,7 +353,7 @@ for (const p of placements) {
     g.entities = g.entities.filter(e => e === g.player);
     g.tide.setLevel(1);
     g.player.z = 0; g.player.vz = 0; g.player.jumping = false; g.player.ledgeHop = null;
-    g.player.x = b.mid * 16; g.player.y = b.row * 16;
+    g.player.x = b.tx * 16; g.player.y = b.ty * 16;
     g.player.lastSafe.x = g.player.x; g.player.lastSafe.y = g.player.y;
     await new Promise(r => { const s = g.frame; const t = () => (g.frame - s >= 2 ? r() : requestAnimationFrame(t)); t(); });
     // Clear the text box LAST. A room script or a reward `say` can reopen it
@@ -324,37 +362,52 @@ for (const p of placements) {
     // as "the hop did not fire".
     if (g.dialogue) g.dialogue.active = false;
     g.mode = 'play';
-    return { y0: g.player.y, tile: Math.floor((g.player.y + 8) / 16), rk: g.room.key, mode: g.mode, dlg: !!(g.dialogue && g.dialogue.active) };
-  }, { ...a, row, dir });
+    return {
+      x0: g.player.x, y0: g.player.y,
+      tx: Math.floor((g.player.x + 8) / 16), ty: Math.floor((g.player.y + 8) / 16),
+      rk: g.room.key, mode: g.mode, dlg: !!(g.dialogue && g.dialogue.active),
+    };
+  }, { ...a, tx, ty, dir });
 
-  const down = await place({ mapId: p.mapId, f, rx, ry, mid }, p.y - 1, 'down');
+  const at = { mapId: p.mapId, f, rx, ry };
+  const down = await place(at, mx - p.ux, my - p.uy, p.dir);
   // 22 frames is far enough to clear a 1-3 tile lip and short enough that the
-  // player never reaches the room edge — walking out of the room and arriving at
-  // the top of the next one reads exactly like a failed hop.
-  await page.keyboard.down('ArrowDown');
+  // player never reaches the room edge — walking out of the room and arriving in
+  // the next one reads exactly like a failed hop.
+  await page.keyboard.down(KEY[p.dir]);
   await frames(22);
-  await page.keyboard.up('ArrowDown');
+  await page.keyboard.up(KEY[p.dir]);
   // The hop drives z along a scripted arc; measuring mid-arc reads as a fail.
   await page.evaluate(() => new Promise(res => {
     let n = 0;
     const t = () => (++n > 60 || (!window.__game.player.ledgeHop && window.__game.player.z === 0)) ? res() : requestAnimationFrame(t);
     t();
   }));
-  const after = await page.evaluate(() => ({ y: window.__game.player.y, z: window.__game.player.z, tile: Math.floor((window.__game.player.y + 8) / 16) }));
-  if (down.tile !== p.y - 1 || down.rk !== p.key || down.mode !== 'play' || down.dlg) hopFail.push(`${p.mapId} ${p.key}: harness failed to place the player (row ${down.tile} in ${down.rk})`);
-  else if (after.tile > p.y && after.z === 0) hopOk++;
-  else hopFail.push(`${p.mapId} ${p.key} row${p.y} x${p.x0}: y ${down.y0}->${after.y} (tile ${after.tile}, z ${after.z})`);
+  const after = await page.evaluate(() => ({
+    x: window.__game.player.x, y: window.__game.player.y, z: window.__game.player.z,
+    tx: Math.floor((window.__game.player.x + 8) / 16),
+    ty: Math.floor((window.__game.player.y + 8) / 16),
+  }));
+  const where = `${p.mapId} ${p.key} '${p.ch}' ${p.dir} @${p.x0},${p.y0}`;
+  if (tileOf(down) !== lipC - sign || down.rk !== p.key || down.mode !== 'play' || down.dlg) {
+    hopFail.push(`${where}: harness failed to place the player (at ${down.tx},${down.ty} in ${down.rk})`);
+  } else if (beyond(tileOf(after)) && after.z === 0) hopOk++;
+  else hopFail.push(`${where}: ${down.x0},${down.y0} -> ${after.x},${after.y} (tile ${after.tx},${after.ty}, z ${after.z})`);
 
-  // --- uphill: walk into the same lip from below, expect to be refused
-  const up0 = await place({ mapId: p.mapId, f, rx, ry, mid }, p.y + 1, 'up');
-  await page.keyboard.down('ArrowUp');
+  // --- uphill: walk into the same lip from the low side, expect to be refused
+  const up0 = await place(at, mx + p.ux, my + p.uy, OPP[p.dir]);
+  await page.keyboard.down(KEY[OPP[p.dir]]);
   await frames(22);
-  await page.keyboard.up('ArrowUp');
+  await page.keyboard.up(KEY[OPP[p.dir]]);
   await frames(4);
-  const up = await page.evaluate(() => ({ tile: Math.floor((window.__game.player.y + 8) / 16) }));
-  if (up0.tile !== p.y + 1 || up0.rk !== p.key || up0.mode !== 'play' || up0.dlg) blockFail.push(`${p.mapId} ${p.key}: harness failed to place the player (row ${up0.tile})`);
-  else if (up.tile > p.y) blockOk++;
-  else blockFail.push(`${p.mapId} ${p.key} row${p.y}: walked up onto/past the lip (tile ${up.tile})`);
+  const up = await page.evaluate(() => ({
+    tx: Math.floor((window.__game.player.x + 8) / 16),
+    ty: Math.floor((window.__game.player.y + 8) / 16),
+  }));
+  if (tileOf(up0) !== lipC + sign || up0.rk !== p.key || up0.mode !== 'play' || up0.dlg) {
+    blockFail.push(`${where}: harness failed to place the player (at ${up0.tx},${up0.ty})`);
+  } else if (beyond(tileOf(up))) blockOk++;
+  else blockFail.push(`${where}: walked up onto/past the lip (tile ${up.tx},${up.ty})`);
 }
 check(`every ledge run hops downhill (${hopOk}/${placements.length})`, hopFail.length === 0, hopFail.slice(0, 6).join(' | '));
 check(`every ledge run blocks uphill (${blockOk}/${placements.length})`, blockFail.length === 0, blockFail.slice(0, 6).join(' | '));

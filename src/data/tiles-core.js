@@ -552,6 +552,76 @@ const HAND_ART = {
     ................
     ................`,
 
+  // The other three faces. `tryLedgeHop` has always handled all four cardinals
+  // and every legend only ever declared the south one, so ledgeN/E/W are a
+  // tile-data gap, not an engine one.
+  //
+  // East and west are the south lip rotated a quarter turn, which keeps the
+  // speckle and the 2/3 face weight identical rather than re-inventing them:
+  // two transparent columns on the high side, the lit brink, the face darkening
+  // across the tile, and the ragged fringe where the shadow meets the ground
+  // below. Rotating puts the light on the high side of the drop in both, which
+  // is what makes them read as the same cliff seen from a different side.
+  ledgeE: `
+    ..00222223333...
+    ..002222223333..
+    ..00222222233...
+    ..002232223333..
+    ..002333333333..
+    ..002222223333..
+    ..00222233333...
+    ..002222222333..
+    ..002222223333..
+    ..002222223333..
+    ..002222223333..
+    ..002333323333..
+    ..00223222233...
+    ..002222223333..
+    ..002222222333..
+    ..00222233333...`,
+
+  ledgeW: `
+    ...33333222200..
+    ..333222222200..
+    ..333322222200..
+    ...33222232200..
+    ..333323333200..
+    ..333322222200..
+    ..333322222200..
+    ..333322222200..
+    ..333222222200..
+    ...33333222200..
+    ..333322222200..
+    ..333333333200..
+    ..333322232200..
+    ...33222222200..
+    ..333322222200..
+    ...33332222200..`,
+
+  // North is NOT the south lip flipped. A drop that faces away from the camera
+  // shows almost no face — you are standing on the high ground looking over the
+  // brink, and the nine-row wall that sells `ledgeS` would read as a dark stripe
+  // painted across the floor. So the face is six rows, not nine, and the order
+  // top to bottom is: the ground beyond the drop, the shadow the cliff casts
+  // into it, then the lit brink of the ground you are standing on.
+  ledgeN: `
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    .33.33333.333.3.
+    3333333333333333
+    3333333333333333
+    3232333323333233
+    2222322222232222
+    2222222222222222
+    2222222222222222
+    0000000000000000
+    0000000000000000
+    ................`,
+
   // ---- dungeon ------------------------------------------------------------
   dFloor: `
     2222222222222222
@@ -979,6 +1049,46 @@ export function installCoreTiles() {
     // wall's palette rather than the floor's narrow `stonef` ramp — three
     // near-identical greys would lose the lit top edge entirely.
     dLedge: { art: ART.ledgeS, pal: 'stonedk', flags: F.LEDGE, ledge: 'down', underArt: 'dFloor' },
+
+    // The same nine families facing the other three cardinals. Each keeps its
+    // family's palette and `underArt` exactly — only the art and the `ledge`
+    // direction change — so a north drop in the dunes is the same rock as the
+    // south drop beside it rather than a second, subtly different cliff.
+    ledgeN: { art: ART.ledgeN, pal: 'stone', flags: F.LEDGE, ledge: 'up', underArt: 'grass' },
+    ledgeE: { art: ART.ledgeE, pal: 'stone', flags: F.LEDGE, ledge: 'right', underArt: 'grass' },
+    ledgeW: { art: ART.ledgeW, pal: 'stone', flags: F.LEDGE, ledge: 'left', underArt: 'grass' },
+
+    ledgeDkN: { art: ART.ledgeN, pal: 'stonedk', flags: F.LEDGE, ledge: 'up', underArt: 'grassDark' },
+    ledgeDkE: { art: ART.ledgeE, pal: 'stonedk', flags: F.LEDGE, ledge: 'right', underArt: 'grassDark' },
+    ledgeDkW: { art: ART.ledgeW, pal: 'stonedk', flags: F.LEDGE, ledge: 'left', underArt: 'grassDark' },
+
+    ledgeSandN: { art: ART.ledgeN, pal: 'sand', flags: F.LEDGE, ledge: 'up', underArt: 'sand' },
+    ledgeSandE: { art: ART.ledgeE, pal: 'sand', flags: F.LEDGE, ledge: 'right', underArt: 'sand' },
+    ledgeSandW: { art: ART.ledgeW, pal: 'sand', flags: F.LEDGE, ledge: 'left', underArt: 'sand' },
+
+    ledgeRockN: { art: ART.ledgeN, pal: 'stonedk', flags: F.LEDGE, ledge: 'up', underArt: 'rockFloor' },
+    ledgeRockE: { art: ART.ledgeE, pal: 'stonedk', flags: F.LEDGE, ledge: 'right', underArt: 'rockFloor' },
+    ledgeRockW: { art: ART.ledgeW, pal: 'stonedk', flags: F.LEDGE, ledge: 'left', underArt: 'rockFloor' },
+
+    ledgeRockDkN: { art: ART.ledgeN, pal: 'stonedk', flags: F.LEDGE, ledge: 'up', underArt: 'rockFloorDk' },
+    ledgeRockDkE: { art: ART.ledgeE, pal: 'stonedk', flags: F.LEDGE, ledge: 'right', underArt: 'rockFloorDk' },
+    ledgeRockDkW: { art: ART.ledgeW, pal: 'stonedk', flags: F.LEDGE, ledge: 'left', underArt: 'rockFloorDk' },
+
+    ledgeSaltN: { art: ART.ledgeN, pal: 'marble', flags: F.LEDGE, ledge: 'up', underArt: 'saltFlat' },
+    ledgeSaltE: { art: ART.ledgeE, pal: 'marble', flags: F.LEDGE, ledge: 'right', underArt: 'saltFlat' },
+    ledgeSaltW: { art: ART.ledgeW, pal: 'marble', flags: F.LEDGE, ledge: 'left', underArt: 'saltFlat' },
+
+    ledgeCoralN: { art: ART.ledgeN, pal: 'coral', flags: F.LEDGE, ledge: 'up', underArt: 'rockFloorCoral' },
+    ledgeCoralE: { art: ART.ledgeE, pal: 'coral', flags: F.LEDGE, ledge: 'right', underArt: 'rockFloorCoral' },
+    ledgeCoralW: { art: ART.ledgeW, pal: 'coral', flags: F.LEDGE, ledge: 'left', underArt: 'rockFloorCoral' },
+
+    ledgeAbyssN: { art: ART.ledgeN, pal: 'abyss', flags: F.LEDGE, ledge: 'up', underArt: 'rockFloorDk' },
+    ledgeAbyssE: { art: ART.ledgeE, pal: 'abyss', flags: F.LEDGE, ledge: 'right', underArt: 'rockFloorDk' },
+    ledgeAbyssW: { art: ART.ledgeW, pal: 'abyss', flags: F.LEDGE, ledge: 'left', underArt: 'rockFloorDk' },
+
+    dLedgeN: { art: ART.ledgeN, pal: 'stonedk', flags: F.LEDGE, ledge: 'up', underArt: 'dFloor' },
+    dLedgeE: { art: ART.ledgeE, pal: 'stonedk', flags: F.LEDGE, ledge: 'right', underArt: 'dFloor' },
+    dLedgeW: { art: ART.ledgeW, pal: 'stonedk', flags: F.LEDGE, ledge: 'left', underArt: 'dFloor' },
 
     // --- dungeon ---
     dFloor: { art: ART.dFloor, pal: 'brickf' },
