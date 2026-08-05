@@ -193,6 +193,12 @@ export class Room {
     if (f & F.DEEP) return !(caps && (caps.swim || caps.jumping));
     // Gaps are crossed by jumping only.
     if (f & F.JUMPABLE) return !(caps && caps.jumping);
+    // A ledge is the lip of a drop, not a floor. Nothing stands on it: the
+    // player clears it in a hop (Player.tryLedgeHop) and is airborne while it
+    // happens, so caps.jumping is what lets the hop through. Blocking it on
+    // the ground is the half that makes the ledge one-way — otherwise you
+    // could walk back up the drop or stroll along the lip.
+    if (f & F.LEDGE) return !(caps && caps.jumping);
     if (f & F.BUSH) return !(caps && caps.cutting);
     if (f & F.ROCK) return true;
     return false;

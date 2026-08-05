@@ -28,6 +28,13 @@ const SHIELD_SPEED = 1.0;
 const SLOW_FACTOR = 0.6;
 
 const SWING_FRAMES = 14;
+
+// One-way ledges. A run of ledge tiles is cleared in a single hop, so a two-
+// tile drop reads as one movement rather than two; 3 is as wide as any ledge
+// worth authoring.
+const LEDGE_MAX_SPAN = 3;
+const LEDGE_HOP_FRAMES = 18;
+const LEDGE_HOP_HEIGHT = 7;
 const SWING_HIT_START = 2;
 const SWING_HIT_END = 9;
 const CHARGE_FRAMES = 42;
@@ -66,6 +73,7 @@ export class Player extends Entity {
     this.frozen = 0;              // cutscene lock
     this.animT = 0;
     this.caps = { jumping: false, swim: false, cutting: false };
+    this.ledgeHop = null;         // in-progress one-way ledge hop
     this.lastSafe = { x, y };
   }
 
@@ -127,6 +135,9 @@ export class Player extends Entity {
   // --------------------------------------------------------------- terrain
 
   updateTerrain(game) {
+    // Mid-hop the player is over the drop, not in it — the arc dips below z=2
+    // at both ends, and water under a ledge would otherwise wash them out.
+    if (this.ledgeHop) return;
     const f = groundFlags(game, this);
     const wasDeep = this.inDeep;
     this.inShallow = !!(f & F.WATER) && this.z <= 2;
@@ -265,6 +276,10 @@ export class Player extends Entity {
 
     if (dx && dy) { const k = Math.SQRT1_2; dx *= k; dy *= k; }
 
+    // A hop in progress owns the controls until it lands.
+    if (this.ledgeHop) { this.updateLedgeHop(game); this.animT++; return; }
+    if ((dx || dy) && this.tryLedgeHop(game, dx, dy)) { this.animT++; return; }
+
     if (dx || dy) {
       const res = moveEntity(game, this, dx * speed, dy * speed);
       this.animT++;
@@ -275,6 +290,88 @@ export class Player extends Entity {
       this.pushing = false;
       if (this.inDeep) this.animT++;      // treading water keeps animating
     }
+  }
+
+  // ------------------------------------------------------------ one-way ledge
+  //
+  // `F.LEDGE` and a tile's `ledge` direction have existed in the tileset since
+  // the world was built, and nothing under src/game ever read either — the tile
+  // was a decorative floor. A ledge is one-way in two halves, and both are
+  // needed for it to mean anything:
+  //
+  //   * walking into its face from the uphill side launches a hop that carries
+  //     you clear of it (here), and
+  //   * the tile is solid from every other side (room.solidAt), so you cannot
+  //     walk back up or stroll along the lip.
+  //
+  // The hop refuses to start unless the landing tile is standable, because a
+  // ledge that drops you into a wall is worse than one that does not fire.
+
+  /** Start a hop if the player is walking into the face of a ledge. */
+  tryLedgeHop(game, dx, dy) {
+    if (this.jumping || this.z > 0 || this.inDeep || this.carrying) return false;
+    const room = game.room;
+    if (!room) return false;
+    // A diagonal press picks its dominant axis: a ledge only faces a cardinal.
+    let ux = 0, uy = 0;
+    if (Math.abs(dx) > Math.abs(dy)) ux = Math.sign(dx);
+    else if (Math.abs(dy) > 0) uy = Math.sign(dy);
+    if (!ux && !uy) return false;
+    const facing = ux ? (ux < 0 ? 'left' : 'right') : (uy < 0 ? 'up' : 'down');
+
+    const tx = Math.floor((this.cx + ux * 10) / TILE);
+    const ty = Math.floor((this.cy + uy * 10) / TILE);
+    const def = this.tileDefAt(game, tx, ty);
+    if (!def || !(def.flags & F.LEDGE) || def.ledge !== facing) return false;
+
+    // Clear the lip and everything else flagged as ledge behind it, then land.
+    let n = 1;
+    while (n < LEDGE_MAX_SPAN) {
+      const d = this.tileDefAt(game, tx + ux * n, ty + uy * n);
+      if (!d || !(d.flags & F.LEDGE)) break;
+      n++;
+    }
+    // Land squared onto the tile past the drop on the hop axis only; the other
+    // axis keeps whatever the player had, so the hop does not slide sideways.
+    const land = {
+      x: ux ? (tx + ux * n) * TILE : this.x,
+      y: uy ? (ty + uy * n) * TILE : this.y,
+    };
+    if (!canOccupy(game, this, land.x, land.y, { jumping: false, swim: this._flippers, cutting: false })) {
+      return false;
+    }
+
+    this.ledgeHop = { fromX: this.x, fromY: this.y, toX: land.x, toY: land.y, t: 0, n: LEDGE_HOP_FRAMES };
+    this.jumping = true;
+    this.vz = 0;
+    this.gliding = false;
+    this.lockDir = true;
+    this.dir = facing;
+    game.audio.sfx('jump');
+    return true;
+  }
+
+  /** Carry the hop along its arc; `z` is set outright, not integrated. */
+  updateLedgeHop(game) {
+    const h = this.ledgeHop;
+    h.t++;
+    const u = Math.min(1, h.t / h.n);
+    this.x = h.fromX + (h.toX - h.fromX) * u;
+    this.y = h.fromY + (h.toY - h.fromY) * u;
+    this.z = Math.sin(u * Math.PI) * LEDGE_HOP_HEIGHT;
+    if (u < 1) return;
+    this.ledgeHop = null;
+    this.z = 0; this.vz = 0; this.jumping = false; this.lockDir = false;
+    const f = groundFlags(game, this);
+    if ((f & F.DEEP) && !this._flippers) { this.beginWash(game); return; }
+    if (f & F.PIT) { this.beginFall(game); return; }
+    game.audio.sfx('land');
+    game.spawnEffect((f & F.WET) ? 'splash' : 'dust', this.x, this.y + 4, { life: 12 });
+  }
+
+  tileDefAt(game, tx, ty) {
+    if (tx < 0 || ty < 0 || tx * TILE >= VIEW_W || ty * TILE >= VIEW_H) return null;
+    return game.room.tile(tx, ty, game.tide.level);
   }
 
   tryPush(game, dx, dy) {
@@ -365,6 +462,9 @@ export class Player extends Entity {
   }
 
   updateJump(game) {
+    // A ledge hop drives z along a scripted arc; the ballistic integrator here
+    // would pull it straight back to the ground on the first frame.
+    if (this.ledgeHop) return;
     if (!this.jumping) {
       if (this.z > 0) { this.z = Math.max(0, this.z - 0.5); }
       return;
@@ -536,6 +636,7 @@ export class Player extends Entity {
     if (this.falling > 0) return;
     this.falling = 34;
     this.jumping = false;
+    this.ledgeHop = null;
     this.z = 0;
     game.audio.sfx('fall');
   }
@@ -555,6 +656,7 @@ export class Player extends Entity {
     if (this.washing > 0) return;
     this.washing = 30;
     this.jumping = false;
+    this.ledgeHop = null;
     this.vz = 0;
     game.audio.sfx('splash');
     game.spawnEffect('splash', this.x, this.y);
