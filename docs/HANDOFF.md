@@ -529,6 +529,30 @@ What remains, in rough order of payoff:
    and because they carry transparency and an `underArt`. The seamless-window
    trick in `tools/rip-terrain.py`'s header does not find them; they have to be
    picked by eye from a region dump.
+
+   **Three things a session was spent establishing, so do not redo them:**
+
+   - There is a scan that *does* find structured terrain, and it is a one-line
+     change from the ground scan: a band (cliff face, wall run, hedge) is the
+     16x16 window that repeats at **+16 in x and NOT at +16 in y**. Collapse
+     only the 16 *horizontal* phase shifts — vertical position is real
+     information there, it is what tells a cliff top from a cliff face — and
+     dedup on exact bytes before canonicalising, same as the ground scan.
+     Ranked by frequency on the overworld sheet this returns desert dune
+     shelves, roof tiles, plastered building walls and one grey brick wall.
+   - **It returns no natural cliff face.** The overworld sheet is a fan-made
+     assembled map that is mostly town and desert; its closest analogue to
+     `cliff` is a sandy plateau edge, which is a corner piece, not a repeating
+     face. `cliff` and `cliffTop` are the two tiles least likely to come off
+     this sheet, not the most.
+   - **The sheet's tree is 16 wide by 32 tall** — a canopy tile over a separate
+     root/base tile — while the game's `tree` is one 16x16 with canopy *and*
+     trunk. `x1760,y1400` on the overworld sheet is a clean grove to work from
+     (stumps and grass tufts are in the same crop), but a straight 16x16
+     extraction gives a canopy with no trunk. Compositing two source tiles into
+     one game tile is authoring, not extraction, and needs an in-game
+     screenshot across several regions before it is believed — `preview.mjs`
+     renders a pack in one palette and cannot show it.
 2. **The Salt Pans and Abyssal approach gates** still do not match
    GAME-PLAN.md, and cannot until something can gate on the Boomerang and the
    Magnetic Gloves. See the soft spots below.
