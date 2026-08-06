@@ -889,6 +889,40 @@ one side asserts and check each one is still expressible on the other side's
 terms. If an assertion becomes trivially true, it has not survived the merge —
 it has been deleted.
 
+### P4 was then built a second time, in parallel, and the duplicate was binned
+
+The note above ended with "redo P4 on fixed-point". **Two sessions read that
+note and both did it**, neither aware of the other, and the second one finished
+against a `main` that already had the first. Both were complete: a lattice, a
+per-step turn cadence, scripted knockback, a `check-motion.mjs`, both replays
+re-recorded, every checker green. The convergence was almost total — same 8px
+step, same `round(span * f / n)` interpolation, same `instanceof Boss` test,
+and both independently discovered that the D1 Crab Pit crabs carry
+`shield: 'front'` and stall the replay actor.
+
+The duplicate was **discarded whole**, not merged, and that was not a close
+call. Two implementations of one mechanic do not combine into a better one;
+they combine into a mechanic nobody can reason about. The comparison that
+settled it took about ten minutes and was decided on three points where the
+version already on trunk was simply better:
+
+- it splits `PLAYER_HURT_FRAMES` from `PLAYER_KNOCK_FRAMES`, so the stun and
+  the shove are separate durations rather than one number doing two jobs
+- `beginStep` probes the destination before anything moves and `advanceStep`
+  rewinds to the step's origin if the way closes mid-step, so a step is atomic
+  and an interrupted enemy is still on the lattice
+- its shield handling generalises (`shield: 'all'` as well as `'front'`, and it
+  only switches axis if the perpendicular one is actually unshielded)
+
+**How to not pay this again.** Before starting a numbered prompt, `git fetch`
+and check whether `main` already contains it — the phase sections in
+NEXT-SESSION.md and the "already done" list are the index, and they are only
+worth anything if they are read first and written last. A stale "P4 is next"
+line survived in this file's reading list even after P4 landed elsewhere in the
+same file, which is exactly the kind of contradiction that starts a second
+implementation. **When two statements in these docs disagree about what is
+done, stop and check the repository rather than picking one.**
+
 ## Verification harnesses
 
 **Five of these are now committed**, and that is a deliberate reversal. The

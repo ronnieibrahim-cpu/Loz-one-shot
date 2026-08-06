@@ -277,8 +277,8 @@ Continue building "Oracle of Tides", a GBC-style Zelda fan game.
 
 Read, in this order:
   CLAUDE.md              - the hard rules. They are hard rules.
-  docs/EXECUTION-PLAN.md - the roadmap. P0, P1, P2 and P3 are done. P4
-                           (grid-lock enemy motion) is next.
+  docs/EXECUTION-PLAN.md - the roadmap. P0 through P4 are done. P5 (the tide
+                           becomes a field) is next.
   docs/FEEL-SPEC.md      - what every timing constant means and how sure we are
   docs/HANDOFF.md        - current state, environment setup, and every trap
                            already paid for. Read the environment section
