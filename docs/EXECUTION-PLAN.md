@@ -335,143 +335,301 @@ before executing.
 Do this before any other new item.
 ```
 
-### P6 — The item roster
+Rule for every session below: one prompt, one branch off main, one PR. Never two prompts in one session. Never two sessions in parallel on room data.
 
-```
-Write docs/ITEMS.md from the roster in the execution plan, then implement it.
+#	Phase	Effort	Gates
+P5	Tide field + Anchor	high	P6, P8
+P6	Item roster	high	P8, P9
+P7	Scrimshaw	medium	—
+P8.1–8.6	Dungeons 1–6	high	P9
+P9	Overworld gates + difficulty	high	P10, P11
+P10	Audio fidelity	medium	—
+P11	Pixel-level terrain polish	medium	—
 
-Order: Brineglass Lens, Kelp-Soled Cleats, Squall Bellows, Reefseed, Dredge
-Line, Resonance Rod, Ferryman's Coin, Chartstone, Bottled Tide. The
-Tidewright's Anchor is already done in P5.
+P10 and P11 are polish and come after content is complete. Polishing assets you later delete is the most expensive mistake available here.
 
-Each needs: an entry in src/game/items.js, a sprite in sprites-gear.js, an
-icon, a desc, and at least one overworld use and one dungeon use.
+P6 — The item roster
 
-Remove: feather (fold the hop into the base moveset), bracelet, boomerang,
+Effort: high. This is the session most likely to sprawl: nine items land while eleven are removed, against 303 rooms that reference them.
+
+Read CLAUDE.md and docs/EXECUTION-PLAN.md first. Branch off main.
+
+Write docs/ITEMS.md from the roster in the plan, then implement it.
+
+ADD, in this order. The Tidewright's Anchor is already done in P5.
+  1. Brineglass Lens    — hold to render the room as a ghosted overlay at the
+                          NEXT tide level: terrain, platforms, currents, and
+                          the enemies that only exist there. Release to snap
+                          back. Combat verb: reveals phase-shifted enemies and
+                          makes them hittable. Never a gate.
+  2. Kelp-Soled Cleats  — replaces Zora's Flippers entirely. Two modes on one
+                          item button. Swim: surface movement over DEEP, as
+                          flippers now. Sink: walk the floor beneath the water
+                          — slow, no jump, no sword, immune to currents and
+                          knockback, can carry heavy objects. Mermaid Suit
+                          becomes Cleats L2: unlimited breath in sink mode and
+                          underwater block pushing.
+  3. Squall Bellows     — directional gust. Pushes light enemies, spins wheels,
+                          drives a raft. While HELD, holds the tide back one
+                          level in a cone ahead of Link; releases when you stop.
+                          Costs your movement while active.
+  4. Reefseed           — thrown at floor or wall; a coral pillar grows after
+                          about 2 seconds. LOW: climbable block. MID: wall.
+                          HIGH: submerged, swimmable-over and Rod-ringable.
+                          The delay is the design.
+  5. Dredge Line        — cast into deep water and drag. Pulls up chests, keys,
+                          carryables, or an enemy (which flops on land,
+                          vulnerable). A fixed snag pulls Link instead.
+                          Absorbs the shovel and the magnetic gloves.
+  6. Resonance Rod      — trading-sequence reward, replaces the slingshot.
+                          Rings all metal and crystal in the room: grates
+                          retract, submerged bells chime and point, armoured
+                          enemies lock rigid ~90 frames. Range roughly doubles
+                          at HIGH tide — the one item whose own power is
+                          tide-dependent.
+  7. Ferryman's Coin    — secret cave, 3 essences. Throw it; on the next tide
+                          change Link and the coin swap places. One coin,
+                          recallable.
+  8. Chartstone         — replaces the Compass. Marks which rooms change at
+                          which tide level.
+  9. Bottled Tide       — consumable. Forces one tide step in a room carrying
+                          noTide.
+
+REMOVE: feather (fold the hop into the base moveset), bracelet, boomerang,
 hookshot, magnet, shovel, satchel and all five seeds, slingshot, flippers
-(absorbed into Cleats), ringbox. Keep sword, shield.
+(absorbed into Cleats), ringbox (P7 replaces it).
 
-Every removal breaks room data. Run node tools/validate.mjs and
-node tools/walk-dungeons.mjs after each item and fix grids as you go. Do not
-batch nine items and then untangle 303 rooms at once.
-```
+KEEP: sword, shield.
 
-### P7 — Scrimshaw
+Each new item needs: an entry in src/game/items.js; sprites in
+sprites-gear.js drawn to the register in that file's header; a HUD icon; a
+desc; constants in feel.js tagged `guessed` with units; at least one overworld
+use and one dungeon use.
 
-```
-Replace the ring system with scrimshaw, per Part 2 of the execution plan.
+Every item must have at least two of the three verbs — movement, combat,
+puzzle. If you cannot name them for an item, say so rather than shipping it.
 
-Passive charms slotted by tide level: a charm in the LOW slot only works at LOW
-tide. One slot (MID) at the start; LOW and HIGH unlock over the game; a late
-case upgrade gives a second charm per level.
+PROCESS, and this is the part that decides whether the session survives: after
+EACH item — added or removed — run node tools/validate.mjs and
+node tools/walk-dungeons.mjs and fix the room data before moving to the next
+item. Commit after each. Do not batch. If room data is broken in more than
+about 30 rooms by a single removal, stop and tell me rather than fixing it
+blind.
 
-1. src/game/scrimshaw.js replacing rings.js. Slots are part of save state.
-2. Implement the 16 named charms from the plan. Add enough more to reach 30 —
-   original, tide-flavoured, and each stated in one line.
-3. A scrimshander NPC in Tidewatch: hand over a blank plus rupees, get a carved
-   charm after one tide cycle. Blanks drop from the Dredge Line, digging, and
-   enemies.
-4. Menu screen showing three slots stacked as tide levels, with the active one
-   highlighted. It must be legible at 160x144 with the existing font.
+Both existing replays must still pass. Then npm run build, commit dist/,
+update docs/NEXT-SESSION.md losslessly, and log surprises in HANDOFF.md.
+P7 — Scrimshaw
+
+Effort: medium. Mostly additive, and it touches no room data.
+
+Read CLAUDE.md and docs/EXECUTION-PLAN.md first. Branch off main.
+
+Replace the ring system with scrimshaw.
+
+The mechanic: passive charms slotted BY TIDE LEVEL. A charm in the LOW slot
+only works at LOW tide. Link starts with one slot (MID); the LOW and HIGH slots
+unlock over the game; a late case upgrade gives a second charm per level. The
+point is that changing the tide also changes what Link is good at.
+
+1. src/game/scrimshaw.js replacing rings.js. Slot contents are save state.
+2. Implement these 16, then add enough more to reach 30. Each must be
+   original, tide-flavoured, and stateable in one line.
+     LOW:  Dunerunner (no slowdown on sand or salt crust); Wrecker's Eye
+           (buried items and chests glimmer through terrain); Salt-Etched
+           (sword +1 while any part of the room is dry); Beachcomber (double
+           rupee drops)
+     MID:  Split Fang (wider sword arc); Ballast Heart (knockback taken
+           halved); Barnacle Skin (one free hit per room, then cracks until
+           you leave); Quartermaster's Mark (carry two more Reefseeds)
+     HIGH: Gillcarve (unlimited breath in sink mode); Riptide Fin (swim speed
+           +40%); Anemone's Gift (aquatic contact damage halved); Drowned
+           Lantern (see in flooded dark rooms)
+     CROSS: Wrackbone (double sword damage, double damage taken); Neap Charm
+           (your charms stay active 3 seconds after the tide leaves their
+           slot); Fisherman's Regret (the charm one slot BELOW the current
+           tide stays active too); Deadweight (immune to all currents, 15%
+           slower everywhere)
+   Neap Charm and Fisherman's Regret are the design payoff — they make the
+   player think about the transition between tide states. Get those exactly
+   right even if others are rough.
+3. A scrimshander NPC in Tidewatch: hand over a blank plus rupees, get a
+   carved charm after one tide cycle. Blanks drop from the Dredge Line,
+   digging, and enemies.
+4. Menu screen: three slots stacked as tide levels, active one highlighted.
+   It must be legible at 160x144 with the existing font. Verify with
+   tools/test.mjs --shots and LOOK at the PNG.
 5. Delete src/game/rings.js and every reference.
-```
 
-### P8 — Dungeon re-authoring (six sessions, one per dungeon)
+All effect magnitudes go in feel.js tagged `guessed`. Every checker green.
+npm run build, commit dist/, update NEXT-SESSION.md and HANDOFF.md.
+P8 — Dungeons, one session each
 
-```
-Re-author dungeon N against docs/ITEMS.md and the dungeon table in the
-execution plan. The game is six dungeons now, not eight — fold the two removed
-dungeons' best rooms into their neighbours rather than deleting them outright.
+Effort: high, every time. Six sessions. Never two dungeons in one session, never two dungeon sessions in parallel.
+
+Read CLAUDE.md, docs/EXECUTION-PLAN.md and docs/ITEMS.md first. Branch off
+main. This session re-authors DUNGEON N ONLY.
+
+The game is six dungeons now, not eight. Fold the two removed dungeons' best
+rooms into their neighbours rather than deleting them outright.
+
+  D1 Tidewash Grotto     — Tidewright's Anchor  — two tide levels in one room
+  D2 Coral Spire         — Brineglass Lens      — commit-blind becomes plan-first
+  D3 Bogwater Sanctum    — Kelp-Soled Cleats    — surface route vs seafloor route
+  D4 Cliffside Cistern   — Squall Bellows       — tide held back by hand
+  D5 Drowned Wood Shrine — Reefseed             — build now, use after the change
+  D6 Abyssal Keep        — Dredge Line          — the floor of the world opens up
 
 Constraints:
 - 22-32 rooms across 1-3 floors.
-- The dungeon's item is found roughly halfway through, and every room after it
+- The dungeon's item is found roughly halfway through, and EVERY room after it
   requires the verb that item introduced.
-- The tide theme in the table is the constraint, not a suggestion. If a room's
-  puzzle would still work at a fixed tide level, it is the wrong puzzle.
-- Chartstone and 2-4 small keys plus a boss key. One miniboss two thirds
-  through. One Heart Container from the boss room's onEvent('bossDead').
+- The tide theme is the constraint, not a suggestion. If a room's puzzle would
+  still work at a fixed tide level, it is the wrong puzzle. Say so and replace
+  it rather than shipping it.
+- Chartstone, 2-4 small keys, a boss key. One miniboss two thirds through.
+  One Heart Container from the boss room's onEvent('bossDead').
 - Essence index equals the dungeon number.
+- The boss must use the tide. A boss that ignores it is a boss from a
+  different game.
 
-Run validate.mjs, walk-dungeons.mjs and solve-switches.mjs after every room you
-change, not at the end.
-```
+Run node tools/validate.mjs, node tools/walk-dungeons.mjs and
+node tools/solve-switches.mjs after EVERY room you change, not at the end.
+A solid tile can sever connectivity while rendering fine and validating clean.
 
-### P9 — Overworld re-gating and difficulty
+Finish with tools/test.mjs --shots and describe what each screenshot shows.
+Then npm run build, commit dist/, update NEXT-SESSION.md and HANDOFF.md.
 
-```
+Do not touch any other dungeon.
+
+After each of these six, download dist/oracle-of-tides.html and play the dungeon. The checkers prove it is completable. They cannot tell you room three is boring. That judgement does not exist anywhere but in your hands.
+
+P9 — Overworld gates and difficulty
+
+Effort: high. Touches every region and the whole damage model.
+
+Read CLAUDE.md and docs/EXECUTION-PLAN.md first. Branch off main.
+
 The overworld has eight regions gated on items that no longer exist.
 
-1. Re-gate for six dungeons. Five gates should be tile-flag-shaped so
-   check-overworld.mjs can prove them in both directions; terrain-shaped gates
-   are a last resort and must be documented as unprovable.
-2. The Brineglass Lens is informational and must never be a gate.
-3. Re-tune to match the source games: 3 hearts at start, half-heart contact
-   damage from ordinary enemies. Six Heart Containers plus heart pieces should
-   land the cap at 14-16 hearts, so heart pieces need to scale up from the
-   eight-dungeon assumption.
-4. Re-run every checker and both replays.
-```
+1. Re-gate for six dungeons. At least five gates must be tile-flag-shaped so
+   check-overworld.mjs can prove them in both directions. A terrain-shaped
+   gate is a last resort and must be documented in the file as unprovable.
+2. The Brineglass Lens is informational and must NEVER be a gate.
+3. No anchor placement may open any gate. check-overworld.mjs already asserts
+   this from P5 — keep it green as you move gates.
+4. Re-tune to match the source games: 3 hearts at start; half-heart contact
+   damage from ordinary enemies; six Heart Containers plus heart pieces
+   landing the cap at 14-16 hearts. Heart pieces need to scale up from the
+   eight-dungeon assumption — recount them.
+5. Enemy damage values were set against an eight-dungeon curve. Re-derive them
+   for six and record the new numbers in FEEL-SPEC.md as `derived`, with the
+   reasoning.
 
-### PB — Single-file build (done)
+Every checker green, both replays unchanged. npm run build, commit dist/,
+update NEXT-SESSION.md and HANDOFF.md.
+P10 — Audio fidelity from source MIDI
 
-Landed on `claude/oracle-build-script-coklp7`. Kept here because the
-constraints are the interesting part and will bind every future change to the
-build.
+Effort: medium. Do this after P9. The engine is already the best code in the repo — this is a data pipeline on top of it, not a rewrite.
 
-```
-package.json declares a `build` script pointing at tools/build.mjs, which does
-not exist. Write it.
+Read CLAUDE.md and docs/EXECUTION-PLAN.md first. Branch off main.
 
-It must bundle index.html plus every ES module under src/ into ONE
-self-contained HTML file at dist/oracle-of-tides.html, with all JavaScript
-inlined as a single classic <script> (not type="module"), so the file opens
-and runs correctly from a file:// URL with no web server and no network
-access.
+I have MIDI transcriptions of the source games' soundtracks. They are in
+assets/midi/ (I will upload them before this session; if the directory is
+empty, stop and tell me rather than proceeding).
 
-This is possible because the game loads no runtime assets: all sprite data is
-procedural JS and all audio is WebAudio synthesis. Verify that claim yourself
-before relying on it — grep for fetch, XMLHttpRequest, new Image, and any
-reference to an image or audio file under src/ and index.html. If you find a
-runtime asset load, stop and tell me rather than working around it.
+src/core/audio.js is a four-channel Game Boy synth — two pulse channels with
+duty cycles, one wave channel, one noise channel — and src/data/music.js holds
+song data in its own format. The goal is to use the MIDIs as an accurate
+source for note and timing data rather than continuing to hand-author melodies
+by ear.
 
-Requirements:
-- The touch control layer already in index.html must survive the bundle, so
-  the file is playable on a phone browser as well as a desktop one.
-- No build-time dependency beyond what package.json already has. Plain Node,
-  no bundler package.
-- Running `npm run build` must produce the file and exit zero.
+1. Write tools/midi-to-song.mjs. Parse standard MIDI files with no new
+   dependency beyond what package.json has — a minimal SMF parser is a few
+   hundred lines and avoids adding a package for one tool. Emit song data in
+   the exact format src/data/music.js already uses.
 
-Then:
-1. Run the build and commit dist/oracle-of-tides.html.
-2. Open the built file in Playwright from a file:// URL, let it run for a few
-   seconds, and assert the canvas is rendering and no console errors were
-   thrown. Save that as tools/check-build.mjs and add it to the verification
-   table in CLAUDE.md.
-3. Add a line to CLAUDE.md under Workflow: every session ends by running
-   `npm run build` and committing dist/oracle-of-tides.html.
-4. Add this build prompt to docs/EXECUTION-PLAN.md so it's preserved.
+2. The hard part is REDUCTION, and it is where a naive conversion will sound
+   wrong. A MIDI has arbitrarily many tracks; the Game Boy has four voices and
+   one note each. Implement and document the reduction:
+   - Melody (highest sustained line) -> pulse 1
+   - Counter-melody or harmony -> pulse 2
+   - Bass -> wave channel
+   - Percussion (channel 10) -> noise, mapped to a small kit
+   - Where more than one note lands on one channel at one instant, keep the
+     one the reduction rule prefers and LOG the dropped note with its time and
+     track, so I can see what the conversion threw away.
+   Write the rules to docs/AUDIO.md with the reasoning, not just the code.
 
-Finally: update docs/NEXT-SESSION.md losslessly, and add anything surprising
-to the hard-won-lessons section of docs/HANDOFF.md.
-```
+3. Duty cycles carry most of the character. Map each source instrument to a
+   duty value and put the table in docs/AUDIO.md as an editable mapping, not
+   buried in the converter.
 
----
+4. Commit both the source MIDI and the generated song data. Regeneration must
+   be byte-identical on a second run — assert that in a checker.
 
-## Part 4 — Order of execution
+5. What you CANNOT verify: whether it sounds right. Do not claim it does.
+   What you CAN verify, and should, in tools/check-music.mjs: no channel has
+   overlapping notes; every song's duration matches its MIDI within one tick;
+   no note falls outside the Game Boy's frequency range; the noise channel
+   only carries percussion. Add it to the CLAUDE.md verification table.
 
-| # | Prompt | Gates |
-|---|---|---|
-| 1 | P0 trunk | everything |
-| 2 | P1 feel spec + RNG + replay | P2, P3, P4 |
-| 3 | P2 flaky test | — |
-| 4 | P3 fixed-point movement | — |
-| 5 | P4 enemy grid-lock | — |
-| 6 | P5 tide field + Anchor | P6, P8 |
-| 7 | P6 item roster | P8, P9 |
-| 8 | P7 scrimshaw | — |
-| 9–14 | P8 dungeons 1–6 | P9 |
-| 15 | P9 overworld + difficulty | — |
+6. Convert the overworld theme first and STOP. Tell me it is ready and let me
+   listen before you convert anything else. If the reduction is wrong, I want
+   to find out on one song, not thirty.
 
-Use plan mode for P5 and P3. Both touch dozens of call sites and a wrong split
-costs a session.
+npm run build, commit dist/, update NEXT-SESSION.md and HANDOFF.md.
+P11 — Pixel-level terrain polish
+
+Effort: medium. After P9, and after P10 if you want the two polish passes separated cleanly.
+
+Read CLAUDE.md, docs/ART-DIRECTION.md and docs/EXECUTION-PLAN.md first.
+Branch off main.
+
+Terrain and props are a mix of extracted tiles and hand-drawn ones. On screen
+together they do not read as one game: outline weight, dither density and
+palette discipline drift between them. Close that gap.
+
+1. Build tools/contact-sheet.mjs: for every terrain tile and prop, emit a PNG
+   putting the game's tile beside the closest source-sheet equivalent at 4x,
+   labelled. One sheet per region. This is a LOOKING tool — its output is for
+   me and for you to look at, not to assert on.
+
+2. Go through them and fix, in this order of importance:
+   - Outline: hard 1px pure black all the way round, no gaps, no soft edges.
+   - Colour count: three plus transparency. A tile using four is wrong even
+     if it looks fine in isolation.
+   - Dither: light on terrain only, never on characters, and matching the
+     source's dither PERIOD, not merely its density.
+   - The drop-shadow convention: apply it consistently to every prop that
+     sits on ground, or to none.
+   - Silhouette: a tree that is not identifiable in pure black is not fixed
+     by shading it.
+
+3. Where a source sheet supplies a tile cleanly as a single cell or a clean
+   2x2 quad, extract it through the existing PICKS/PROPS/QUADS machinery
+   rather than redrawing. Where it does not, redraw against the measured
+   register. LOG rather than attempt anything needing two source tiles
+   composited into one game tile — CLAUDE.md classes that as authoring, and
+   it needs in-game screenshots across several regions before it is believed.
+
+4. STOP RULE so this does not eat the session: fix at most 25 tiles. Order
+   them by how often the tile actually appears in room data, so the pass hits
+   what I will actually be looking at. Log the rest in docs/ART-BACKLOG.md
+   with what is wrong with each.
+
+5. Water stays hand-drawn and stays logged as blocked: both terrain sheets
+   are static maps with no second animation frame to extract.
+
+6. Refresh tools/shots-link-baseline/ and run tools/test.mjs --shots. For
+   each region screenshot, tell me specifically what changed and what still
+   looks wrong. "Looks good" is not a report.
+
+node tools/scan-sprites.mjs --strict must show 0 hard findings. Every other
+checker green. npm run build, commit dist/, update NEXT-SESSION.md and
+HANDOFF.md.
+Reminders that keep costing sessions
+Run walk-dungeons and check-overworld after each tile placement, not at the end of a batch. A solid tile can sever a room and still validate clean.
+A ledge is solid from three sides. Use find-ledges.mjs; never place by eye.
+A green src/ with a stale dist/ is a red session.
+An intermittently failing test is a real bug. Never add a retry.
+Screenshots are for looking at. An assertion on a PNG proves nothing about whether it looks right.
