@@ -48,6 +48,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OW = os.path.join(ROOT, 'assets/sheets/custom-oracle-style-overworld.png')
 DG = os.path.join(ROOT, 'assets/sheets/oracle-seasons-dungeon-backgrounds.png')
 AG = os.path.join(ROOT, 'assets/sheets/oracle-ages-overworld.png')
+SB = os.path.join(ROOT, 'assets/sheets/oracle-seasons-tileset-subrosia.png')
 OUT = os.path.join(ROOT, 'src/data/tiles-terrain.js')
 
 # art name -> (sheet, x, y, note). The note is what the tile is on the sheet,
@@ -100,6 +101,30 @@ PROPS = [
     # right source for it. See docs/HANDOFF.md.
 ]
 
+# Objects that are BIGGER THAN A TILE, cut into their four 16x16 quadrants.
+#
+# Every tree in every Oracle sheet — Seasons, Ages, the fan-made map — is 32x32.
+# There is no 16x16 tree anywhere to find, so a faithful tree cannot be one
+# tile, and the hand-drawn one it replaces was a 16x16 impression of a 32x32
+# object. That is why the game's trees never looked like the source's.
+#
+# The engine reassembles them: a tile def carrying `quad: 'treeQ'` draws
+# `treeQ_<x&1><y&1>` instead of its own art, so a 2x2 patch of tree tiles is one
+# whole source tree and a longer run is a correctly-phased forest canopy — the
+# same way the source games' own maps are authored. No room grid changes.
+#
+# `bg` is stated because a quadrant's corner pixel is often the object's own
+# outline rather than the ground behind it.
+QUADS = [
+    ('treeQ', SB, 224, 32, (0xf0, 0xf8, 0x38), {
+        '#08c850': 0,     # canopy highlight
+        '#086018': 1,     # canopy body
+        '#c08820': 2,     # trunk, lit
+        '#704820': 2,     # trunk, shadow — merged: four indices, five colours
+        '#000000': 3,     # outline
+     }, 'round broadleaf tree with roots, spring band of the tileset'),
+]
+
 
 def lum(c):
     return 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]
@@ -124,7 +149,32 @@ def quantise(block):
     return grid, keep
 
 
-def quantise_prop(block, slots):
+def quantise_quad(block, colmap, bg):
+    """16x16 RGB -> grid of 0-3 and '.', mapping colours by an EXPLICIT table.
+
+    Quadrants cannot use `quantise_prop`'s slot list. That ranks the colours
+    *present in this cell* by luminance and indexes by rank — and each quadrant
+    of an object holds a different subset, so the same green lands on a
+    different index in every quarter. The tree came out with a brown canopy that
+    way. An object bigger than a cell has one palette, so it needs one table,
+    written per colour and shared by all four quarters.
+    """
+    out = []
+    for row in block:
+        line = []
+        for p in row:
+            if p == bg:
+                line.append('.')
+                continue
+            key = '#%02x%02x%02x' % p
+            if key not in colmap:
+                raise SystemExit('rip-terrain: quad colour %s not in the map' % key)
+            line.append(str(colmap[key]))
+        out.append(''.join(line))
+    return out
+
+
+def quantise_prop(block, slots, bg=None):
     """16x16 RGB -> (grid of 0-3 and '.', the prop's own colours lightest first).
 
     The ground the prop stands on becomes transparent, but only where it is
@@ -133,8 +183,34 @@ def quantise_prop(block, slots):
     Seed Satchel's highlight, recorded in docs/HANDOFF.md. Flood-filling inward
     rather than testing colour equality is what keeps a flower's pale centre.
     """
-    bg = block[0][0]
+    # The background must be stated for a quadrant of a larger object: its
+    # corner pixel is as likely to be the object's own outline as the ground,
+    # and sniffing it there eats the outline and then the whole sprite.
+    #
+    # Stating it also changes what it MEANS. Sniffed, the flood fill only clears
+    # background reachable from the border, so colour walled in by the object
+    # stays artwork — that is what keeps a flower's pale centre. Stated, the
+    # caller is asserting "this colour is ground wherever it appears", which is
+    # what a tree needs: the sky between its roots is ground showing through and
+    # must let the grass under it out, even though the outline encloses it.
     grid = [[None] * 16 for _ in range(16)]
+    if bg is not None:
+        for cy in range(16):
+            for cx in range(16):
+                if block[cy][cx] == bg:
+                    grid[cy][cx] = '.'
+        kept = sorted({block[cy][cx] for cy in range(16) for cx in range(16)
+                       if grid[cy][cx] is None}, key=lambda c: (-lum(c), c))
+        if len(kept) > len(slots):
+            raise SystemExit('rip-terrain: prop has %d colours, %d slots given'
+                             % (len(kept), len(slots)))
+        idx = {c: slots[i] for i, c in enumerate(kept)}
+        for cy in range(16):
+            for cx in range(16):
+                if grid[cy][cx] is None:
+                    grid[cy][cx] = str(idx[block[cy][cx]])
+        return [''.join(r) for r in grid], kept
+    bg = block[0][0]
     stack = [(i, e) for i in range(16) for e in (0, 15)]
     stack += [(e, i) for i in range(16) for e in (0, 15)]
     seen = set()
@@ -308,14 +384,14 @@ def prop_scan(path, px, py, x0, y0, x1, y1, out_png=None, top=120):
 def main():
     if '--props' in sys.argv:
         a = sys.argv[sys.argv.index('--props') + 1:]
-        sheet = {'ow': OW, 'dg': DG, 'ag': AG}[a[0]]
+        sheet = {'ow': OW, 'dg': DG, 'ag': AG, 'sb': SB}[a[0]]
         prop_scan(sheet, int(a[1]), int(a[2]), int(a[3]), int(a[4]), int(a[5]), int(a[6]),
                   out_png=a[7] if len(a) > 7 else None)
         return
 
     if '--scan' in sys.argv:
         a = sys.argv[sys.argv.index('--scan') + 1:]
-        sheet = {'ow': OW, 'dg': DG, 'ag': AG}[a[0]]
+        sheet = {'ow': OW, 'dg': DG, 'ag': AG, 'sb': SB}[a[0]]
         seamless_scan(sheet, int(a[1]), int(a[2]), int(a[3]), int(a[4]))
         return
 
@@ -332,6 +408,20 @@ def main():
             dropped.append((name, before))
         arts.append((name, note, os.path.basename(path), x, y, grid))
         pals.append((name, keep))
+
+    for name, path, x, y, bg, colmap, note in QUADS:
+        im = sheets.get(path)
+        if im is None:
+            im = sheets[path] = Image.open(path).convert('RGB')
+        for qy in (0, 1):
+            for qx in (0, 1):
+                ox, oy = x + qx * 16, y + qy * 16
+                block = [[im.getpixel((ox + cx, oy + cy)) for cx in range(16)] for cy in range(16)]
+                grid = quantise_quad(block, colmap, bg)
+                keep = [tuple(int(k[i:i + 2], 16) for i in (1, 3, 5)) for k in colmap]
+                arts.append((f'{name}_{qx}{qy}', f'{note} ({"TL" if (qx, qy) == (0, 0) else "TR" if qx else "BL" if qy == 1 and not qx else "BR"})',
+                             os.path.basename(path), ox, oy, grid))
+                pals.append((f'{name}_{qx}{qy}', keep))
 
     for name, path, x, y, slots, note in PROPS:
         im = sheets.get(path)

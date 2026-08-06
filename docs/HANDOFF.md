@@ -953,11 +953,36 @@ Found with `--props` (see below) and checked cell by cell, so nobody repeats it:
   already in the game is not a worse approximation of it — it is the same idea.
   The dense weave at AG 162,952 that the seamless scan ranks first is the sheet's
   scrub, i.e. the `tallgrass` role, which is already filled.
-- **`tree` — still 2x2, so still blocked.** Ages trees are 32x32, four cells,
-  cleanly separated on the grid (worked example at AG 50,936). The game spends
-  one tile on a tree. Extracting them means spending four and re-cutting every
-  overworld room grid that has a tree in it — a real session, and a content
-  decision rather than an art one.
+- **`tree` — DONE, via quadrant auto-tiling.** Every tree in every sheet is
+  32x32; there is no 16x16 tree to find, which is exactly why the hand-drawn one
+  never matched. It is now cut from the Subrosia tileset at SB 224,32 into four
+  quadrants, and `tileFace` picks which quarter a tile shows. No room grids
+  changed. Three things that cost time getting there:
+
+  1. **Slots are ranked per cell, and a quadrant is not a cell.** `quantise_prop`
+     maps colours to indices by luminance *rank among the colours present in
+     this 16x16 block* — and each quarter of a tree holds a different subset, so
+     the canopy green ranked first in the top halves and third in the bottom
+     ones. The tree came out with a brown canopy and green roots. An object
+     bigger than a cell has one palette and needs one explicit colour->index
+     table shared by all four quarters; that is `quantise_quad`.
+  2. **An explicitly stated background means something stronger than a sniffed
+     one.** Sniffed from the corner, the flood fill only clears background
+     reachable from the border, which is what preserves a flower's enclosed pale
+     centre. A tree needs the opposite: the ground walled in between its roots
+     is ground and must let the grass under it through. So a stated `bg` now
+     means "this colour is background wherever it appears".
+  3. **Parity on both axes is the obvious choice and it is wrong.** It makes a
+     lone tree on an odd row draw the root half by itself — a brown smear in a
+     field, and about a fifth of the overworld's tree tiles stand alone. The row
+     is chosen from the neighbour above instead, so a lone tree is always a
+     treetop. The column stays parity, because that is what makes a long run
+     read as continuous canopy.
+
+  The tree palettes are new (`treeoak`, `treeoakdk`, `treeoakdd`): the old ones
+  are all-green with no brown, because the hand-drawn tree they were built for
+  had no trunk. `tree`/`treedk`/`treedead` are untouched — `bush`, `bushSand`
+  and `palm` still use them.
 - **`cliff` / `cliffTop` — the sheet's cliffs are low ledges,** one cell of
   banded rock over sand (AG 82,136 and its neighbours), not the tall faces the
   game builds plateaus from. Not obviously better than what is there.

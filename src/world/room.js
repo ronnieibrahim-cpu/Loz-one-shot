@@ -28,7 +28,7 @@
 
 import { TILE, ROOM_W, ROOM_H, VIEW_W, VIEW_H, offscreen } from '../core/screen.js';
 import { tiles as tileSheet } from '../gfx/art.js';
-import { F, resolveTile, getTileDef, tileArt } from './tileset.js';
+import { F, resolveTile, getTileDef, tileArt, tileFace } from './tileset.js';
 
 export const LEGENDS = new Map();
 
@@ -124,6 +124,16 @@ export class Room {
 
   invalidate() { this._cacheDirty = true; }
 
+  /**
+   * Is the tile above (x, y) part of the same over-sized object?
+   * Only `quad` tiles ask. Off the top of the room counts as NOT joined, so a
+   * tree against the room's top edge shows its canopy rather than its roots.
+   */
+  joinsAbove(x, y, def, tide) {
+    if (!def.quad || y === 0) return false;
+    return this.tile(x, y - 1, tide).quad === def.quad;
+  }
+
   /** Render (and cache) the static tile layer for a tide level. */
   render(tide, frame) {
     if (!this._cache) this._cache = offscreen(VIEW_W, VIEW_H);
@@ -147,7 +157,8 @@ export class Room {
           }
           if (d.over) { this.overCells.push({ x, y, def: d }); continue; }
           if (d.anim) { this.animCells.push({ x, y, def: d }); continue; }
-          tileSheet.draw(ctx, d.name, x * TILE, y * TILE, { pal: d.pal });
+          tileSheet.draw(ctx, tileFace(d, x, y, frame, this.joinsAbove(x, y, d, tide)),
+            x * TILE, y * TILE, { pal: d.pal });
         }
       }
       this._cacheTide = tide;
@@ -166,7 +177,8 @@ export class Room {
   /** Draw tiles that occlude entities (treetops, arches, pillars). */
   drawOver(ctx, ox, oy, tide, frame) {
     for (const c of this.overCells) {
-      tileSheet.draw(ctx, tileArt(c.def, frame), ox + c.x * TILE, oy + c.y * TILE, { pal: c.def.pal });
+      tileSheet.draw(ctx, tileFace(c.def, c.x, c.y, frame, this.joinsAbove(c.x, c.y, c.def, tide)),
+        ox + c.x * TILE, oy + c.y * TILE, { pal: c.def.pal });
     }
   }
 

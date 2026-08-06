@@ -24,6 +24,16 @@ and equally to art drawn from scratch for things the sheets do not contain.
    `src/data/sprite-manifest.js`, and anchor it at the draw site. Cropping to
    16×16 to satisfy a convention throws away the thing that made the frame
    worth extracting.
+
+   **The same goes for TILES, and it is why the trees never matched.** Every
+   tree in every Oracle sheet is 32×32, so a 16×16 tree is not a tree the source
+   ever drew — it can only be somebody's impression of one. Rather than shrink
+   it, cut the object into its four quadrants and let the tile pick which
+   quarter it is: a def carrying `quad: 'treeQ'` draws `treeQ_<col><row>`, with
+   the column from parity and the row from whether the tile above is the same
+   object. A 2×2 patch is then one whole source tree and a run is a continuous
+   forest canopy, with no room-grid changes at all. See `tileFace` in
+   `src/world/tileset.js`.
 2. **If no sheet has it, draw it to match.** Everything original to this game —
    the eight bosses, the minibosses, Nereth, the Essence orb, the tide valve,
    the Moon Conch, the tide-variant terrain — must be indistinguishable in
@@ -111,20 +121,25 @@ terrain. Both should be extracted from rather than approximated.
 weaker source — it supplied the ground tiles below, but its props are merged
 into masses. Prefer the Ages sheet, whose props are standalone cells on a
 strict grid at phase (2, 8).
-Nine tiles have been: `tools/rip-terrain.py` lifts the ground and wall textures
-and `src/data/tiles-terrain.js` overrides the hand-drawn art of the same name.
-The structured tiles — cliffs, trees, bushes — are still hand-drawn. That is a
-finding, not a policy: the automatic scan looks for a window that repeats at
-+16 in both axes, which is what makes a tile seamless, and a cliff face does
-not repeat that way. It does not mean those tiles should stay hand-drawn. They
-are the highest-value extraction left, and doing it means picking origins by
-eye from the map and checking the result in-game rather than in
-`preview.mjs --tiles`. See `docs/HANDOFF.md` under "Terrain extraction".
+`tools/rip-terrain.py` lifts them and `src/data/tiles-terrain.js` overrides the
+hand-drawn art of the same name. Nine ground tiles, the rock and the tree are
+done. `cliff`, `cliffTop`, `bush`, `stump` and `palm` are not yet, and each is
+a stated reason rather than an omission — see `docs/HANDOFF.md`, which records
+what was searched for and what came back.
 
 **Extracted terrain keeps the game's palettes.** Only the pixels are replaced.
 That is what keeps the palette-swap variants (`grassDark`, `saltFlat`,
 `iceFloor`, `rockFloorRust`) working, and it is how this game gives each region
-a look without redrawing every tile — the same trick the GBC originals used. A
+a look without redrawing every tile — the same trick the GBC originals used.
+
+The one exception so far, and the bar for making another: the extracted tree
+needed a **trunk**, and all three tree ramps were pure green because the
+hand-drawn tree they were built for had no trunk in it. No amount of index
+juggling puts brown in a palette that has none, so `treeoak`, `treeoakdk` and
+`treeoakdd` were added — the same ramps with index 2 swapped for wood. The
+originals were left alone rather than edited, because `bush`, `bushSand` and
+`palm` still use them. Add a palette when the source genuinely has a colour the
+game's ramp cannot express; do not add one to avoid choosing an index. A
 source tile's own contrast is not the game's contrast, though: check the result
 in a screenshot, not in `preview.mjs --tiles`, which draws every tile in one
 palette.

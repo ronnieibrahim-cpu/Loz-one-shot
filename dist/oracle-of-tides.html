@@ -900,6 +900,16 @@ const PALETTES = {
   tree:    ['#a8d868', '#4c9040', '#20582c', '#0c2414'],
   treedk:  ['#6c9848', '#3c6830', '#1c3c22', '#08160c'],
   treedead:['#c8b088', '#907048', '#584028', '#20140c'],
+  // The extracted tree needs a TRUNK, and the three ramps above have none:
+  // they are all-green because the hand-drawn tree they were built for was
+  // all-green. The source draws a tree in five colours — two canopy greens, two
+  // trunk browns, an outline — so a faithful one needs brown at index 2, with
+  // the two browns merged to fit four indices. These are the same ramps with
+  // index 2 swapped for wood; `tree`/`treedk`/`treedead` stay exactly as they
+  // were, because `bush`, `bushSand` and `palm` still use them.
+  treeoak:  ['#a8d868', '#4c9040', '#8c5c28', '#0c2414'],
+  treeoakdk:['#6c9848', '#3c6830', '#5c3c1c', '#08160c'],
+  treeoakdd:['#c8b088', '#907048', '#6c4c2c', '#20140c'],
   sand:    ['#f8e8b0', '#e0c078', '#a88048', '#584028'],
   sandwet: ['#d8c898', '#b09860', '#786040', '#382c20'],
   water:   ['#b0e8f8', '#58b0e0', '#2868b8', '#10305c'],
@@ -1502,6 +1512,7 @@ function registerTiles(defs) {
       anim: def.anim || null,
       animRate: def.animRate || 10,
       over: !!def.over,
+      quad: def.quad || null,
       push: def.push || null,
       ledge: def.ledge || null,
       depth: def.depth || 0,
@@ -1511,7 +1522,7 @@ function registerTiles(defs) {
 
 const EMPTY = {
   name: '__missing', pal: 'stone', flags: 0, mask: 0, tide: null,
-  anim: null, animRate: 10, over: false, push: null, ledge: null, depth: 0,
+  anim: null, animRate: 10, over: false, quad: null, push: null, ledge: null, depth: 0,
 };
 
 const warned = new Set();
@@ -1542,6 +1553,37 @@ function tileArt(def, frame) {
     return def.anim[i];
   }
   return def.name;
+}
+
+/**
+ * The art a tile shows at (tx, ty) — `tileArt` plus quadrant auto-tiling.
+ *
+ * A tile carrying `quad` is one cell of an object that is BIGGER than a cell.
+ * Every tree in every Oracle sheet is 32x32; there is no 16x16 tree to extract,
+ * which is why the hand-drawn one never matched — it was a one-cell impression
+ * of a two-cell object. Rather than re-cut 300 room grids to spend 2x2 on every
+ * tree, the tile picks its quarter of the source art from its own position:
+ *
+ * The HALVES ARE CHOSEN DIFFERENTLY on each axis, and that asymmetry is the
+ * whole trick:
+ *
+ *   across — column parity, so a run of trees alternates left half, right half,
+ *            left half and reads as continuous canopy however long it is.
+ *   down   — whether the tile ABOVE is part of the same object. A tree with
+ *            nothing above it is a treetop; one growing out of another is the
+ *            trunk-and-roots half.
+ *
+ * Using parity on both axes is the obvious version and it is wrong: it makes a
+ * lone tree on an odd row draw the root half on its own, which is a brown smear
+ * in the middle of a field. Roughly a fifth of the overworld's tree tiles stand
+ * alone, so that is not a rare case. Asking the neighbour instead means a lone
+ * tree is always a treetop, a stacked pair is a whole tree, and a two-row
+ * forest border is a row of canopies over a row of trunks — which is exactly
+ * how the source games' own maps are built.
+ */
+function tileFace(def, tx, ty, frame, joinedAbove) {
+  if (def.quad) return `${def.quad}_${tx & 1}${joinedAbove ? 1 : 0}`;
+  return tileArt(def, frame);
 }
 
 /** True if any tile in the set changes appearance with the tide. */
@@ -1622,6 +1664,7 @@ __exports["registerTiles"] = registerTiles;
 __exports["getTileDef"] = getTileDef;
 __exports["resolveTile"] = resolveTile;
 __exports["tileArt"] = tileArt;
+__exports["tileFace"] = tileFace;
 __exports["isTideSensitive"] = isTideSensitive;
 __exports["validateTiles"] = validateTiles;
 __exports["ANIM_ART"] = ANIM_ART;
@@ -1663,7 +1706,7 @@ __define("world/room.js", function (__exports, __require) {
 
 const { TILE, ROOM_W, ROOM_H, VIEW_W, VIEW_H, offscreen } = __require("core/screen.js");
 const { tiles: tileSheet } = __require("gfx/art.js");
-const { F, resolveTile, getTileDef, tileArt } = __require("world/tileset.js");
+const { F, resolveTile, getTileDef, tileArt, tileFace } = __require("world/tileset.js");
 
 const LEGENDS = new Map();
 
@@ -1759,6 +1802,16 @@ class Room {
 
   invalidate() { this._cacheDirty = true; }
 
+  /**
+   * Is the tile above (x, y) part of the same over-sized object?
+   * Only `quad` tiles ask. Off the top of the room counts as NOT joined, so a
+   * tree against the room's top edge shows its canopy rather than its roots.
+   */
+  joinsAbove(x, y, def, tide) {
+    if (!def.quad || y === 0) return false;
+    return this.tile(x, y - 1, tide).quad === def.quad;
+  }
+
   /** Render (and cache) the static tile layer for a tide level. */
   render(tide, frame) {
     if (!this._cache) this._cache = offscreen(VIEW_W, VIEW_H);
@@ -1782,7 +1835,8 @@ class Room {
           }
           if (d.over) { this.overCells.push({ x, y, def: d }); continue; }
           if (d.anim) { this.animCells.push({ x, y, def: d }); continue; }
-          tileSheet.draw(ctx, d.name, x * TILE, y * TILE, { pal: d.pal });
+          tileSheet.draw(ctx, tileFace(d, x, y, frame, this.joinsAbove(x, y, d, tide)),
+            x * TILE, y * TILE, { pal: d.pal });
         }
       }
       this._cacheTide = tide;
@@ -1801,7 +1855,8 @@ class Room {
   /** Draw tiles that occlude entities (treetops, arches, pillars). */
   drawOver(ctx, ox, oy, tide, frame) {
     for (const c of this.overCells) {
-      tileSheet.draw(ctx, tileArt(c.def, frame), ox + c.x * TILE, oy + c.y * TILE, { pal: c.def.pal });
+      tileSheet.draw(ctx, tileFace(c.def, c.x, c.y, frame, this.joinsAbove(c.x, c.y, c.def, tide)),
+        ox + c.x * TILE, oy + c.y * TILE, { pal: c.def.pal });
     }
   }
 
@@ -8079,6 +8134,82 @@ const TERRAIN_ART = {
     3333333333333333
     3333333333333333`,
 
+  // round broadleaf tree with roots, spring band of the tileset (TL) — oracle-seasons-tileset-subrosia.png @ 224,32
+  treeQ_00: `
+    ..........033333
+    .........3310000
+    ........31000...
+    .......31000....
+    ......0310000...
+    ......3111000000
+    ......3011010000
+    .....33011110010
+    ....313010111010
+    ..03131000111111
+    .033130000110111
+    .311110100010101
+    .311111100000001
+    1331111100100000
+    3111111001110000
+    3113111011100100`,
+
+  // round broadleaf tree with roots, spring band of the tileset (TR) — oracle-seasons-tileset-subrosia.png @ 240,32
+  treeQ_10: `
+    333330..........
+    0000133.........
+    ..000013........
+    ...000013.......
+    ..00000130......
+    0000000113......
+    0000101103......
+    10011011033.....
+    110111100313....
+    1111101001313...
+    11111000003133..
+    011010011011113.
+    0010000011011130
+    0000010011111331
+    0100111001111113
+    0110011101113113`,
+
+  // round broadleaf tree with roots, spring band of the tileset (BL) — oracle-seasons-tileset-subrosia.png @ 224,48
+  treeQ_01: `
+    3331111111100100
+    3111111111101110
+    3111131111111110
+    3311311111111111
+    2333111131111111
+    3333311331111311
+    3223333333111311
+    3322332233333331
+    233232.222223333
+    22232...22222222
+    .232...222322...
+    .232.22233332...
+    ..322233322322..
+    ..23332222223222
+    ......2222222332
+    .........2222233`,
+
+  // round broadleaf tree with roots, spring band of the tileset (TR) — oracle-seasons-tileset-subrosia.png @ 240,48
+  treeQ_11: `
+    0110011111111333
+    0111011111111113
+    1111111111311113
+    1111111111131133
+    1111111311113332
+    1113111131133333
+    1113311333333223
+    1133333323332233
+    2333322222232232
+    222222222.223322
+    .222232222.22322
+    .222333322222322
+    2222322333222222
+    222332222333322.
+    23332222222222..
+    33222222........`,
+
   // leafy flowering plant, on the forest path — custom-oracle-style-overworld.png @ 2061,1469
   flowers: `
     .......33.......
@@ -8130,6 +8261,10 @@ const TERRAIN_SRC_PALETTES = {
   rockFloor: ['#fce8b1', '#e3a14d', '#8c5527', '#000000'],
   dFloor: ['#abcfe6', '#85b2cf', '#5c8eb0'],
   dWall: ['#d3f9fd', '#aaccdc', '#7996b2', '#000000'],
+  treeQ_00: ['#08c850', '#086018', '#c08820', '#704820', '#000000'],
+  treeQ_10: ['#08c850', '#086018', '#c08820', '#704820', '#000000'],
+  treeQ_01: ['#08c850', '#086018', '#c08820', '#704820', '#000000'],
+  treeQ_11: ['#08c850', '#086018', '#c08820', '#704820', '#000000'],
   flowers: ['#93a846', '#546d25', '#000000'],
   rock: ['#c88808', '#805000', '#000000'],
 };
@@ -9248,10 +9383,10 @@ function installCoreTiles() {
       underArt: 'rockFloor', liftLevel: 1,
     },
     cliffCrackedDk: { art: ART.cliffCracked, pal: 'stonedk', flags: F.SOLID | F.BOMBABLE },
-    treeDead: { art: ART.tree, pal: 'treedead', flags: F.SOLID, underArt: 'grassBog' },
-    treeDark: { art: ART.tree, pal: 'treedk', flags: F.SOLID, underArt: 'grassDark' },
-    tree: { art: ART.tree, pal: 'tree', flags: F.SOLID, underArt: 'grass' },
-    treeSand: { art: ART.tree, pal: 'tree', flags: F.SOLID, underArt: 'sand' },
+    treeDead: { art: ART.tree, quad: 'treeQ', pal: 'treeoakdd', flags: F.SOLID, underArt: 'grassBog' },
+    treeDark: { art: ART.tree, quad: 'treeQ', pal: 'treeoakdk', flags: F.SOLID, underArt: 'grassDark' },
+    tree: { art: ART.tree, quad: 'treeQ', pal: 'treeoak', flags: F.SOLID, underArt: 'grass' },
+    treeSand: { art: ART.tree, quad: 'treeQ', pal: 'treeoak', flags: F.SOLID, underArt: 'sand' },
     palm: { art: ART.palmTree, pal: 'tree', flags: F.SOLID, underArt: 'sand' },
     bush: { art: ART.bush, pal: 'tree', flags: F.SOLID | F.BUSH, underArt: 'grass' },
     bushSand: { art: ART.bush, pal: 'tree', flags: F.SOLID | F.BUSH, underArt: 'sand' },

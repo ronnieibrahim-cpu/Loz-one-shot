@@ -18,12 +18,24 @@ regenerate byte-identical output.
 | `oracle-seasons-dungeon-backgrounds.png` | Oracle of Seasons | Mister Mike | `tools/rip-terrain.py` | `src/data/tiles-terrain.js` — dungeon ground |
 | `custom-oracle-style-overworld.png` | fan-made, Oracle style | community edit | `tools/rip-terrain.py` | `src/data/tiles-terrain.js` — overworld ground |
 | `oracle-ages-overworld.png` | Oracle of Ages | *unattributed — see below* | `tools/rip-terrain.py` | `src/data/tiles-terrain.js` — overworld props |
+| `oracle-seasons-tileset-subrosia.png` | Oracle of Seasons | KOOLKID6789 | `tools/rip-terrain.py` | `src/data/tiles-terrain.js` — the tree |
+| `oracle-seasons-overworld-spring.png` | Oracle of Seasons | Mister Mike | — | not yet extracted from — Holodrum, spring |
+| `oracle-seasons-overworld-winter.png` | Oracle of Seasons | Mister Mike | — | not yet extracted from — Holodrum, winter palette |
+| `oracle-seasons-maku-tree.png` | Oracle of Seasons | Mister Mike | — | not yet extracted from |
+| `oracle-seasons-fairies.png` | Oracle of Seasons | Mister Mike | — | not yet extracted from |
+| `oracle-seasons-effects.png` | Oracle of Seasons | Darth RPG | — | not yet extracted from |
+| `oracle-seasons-title-screen.gif` | Oracle of Seasons | Tails585 | — | reference only |
 | `oracle-seasons-nonhuman-races.png` | Oracle of Seasons | Mister Mike | — | not yet extracted from |
 | `oracle-seasons-trading-characters.png` | Oracle of Seasons | Mister Mike | — | not yet extracted from |
 
+**`oracle-seasons-tileset-subrosia.png` is the only true TILESET here** — 16
+cells wide, 163 tall, phase 0, with all four seasons banded down it. Everything
+else is an assembled map you have to find the grid phase in. Reach for the
+tileset first: picking a tile off it is reading a grid reference, not a survey.
+
 `oracle-ages-overworld.png` is the Labrynna Present outdoor background, True
 Colors half, and it is **the real overworld reference** — the one to reach for
-first. `custom-oracle-style-overworld.png` is a fan-made assembled map and its
+after the tileset. `custom-oracle-style-overworld.png` is a fan-made assembled map and its
 props are merged into masses; the Ages sheet has standalone props on a strict
 16px grid at phase (2, 8), which is what makes them extractable at all. It was
 supplied without a ripper credit in its filename; it is from
