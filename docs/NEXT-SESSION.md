@@ -105,7 +105,7 @@ HANDOFF under "Environment setup a fresh container needs" — check the revision
 number in the error message. It has been 1234 every time so far, and the
 installed one has been 1194.
 
-Confirm the baseline before changing anything, and keep all seven green:
+Confirm the baseline before changing anything, and keep every line below green:
   node tools/validate.mjs                      clean (two expected warnings
                                                about fx_slash_d0/fx_slash_d1)
   node tools/test.mjs                          36/36, 0 unauthored art names
@@ -115,6 +115,46 @@ Confirm the baseline before changing anything, and keep all seven green:
   node tools/check-gates.mjs                   15/15, both item gates in-engine
   node tools/solve-switches.mjs                17 rooms, one push per block
   node tools/scan-sprites.mjs --strict         0 hard findings
+  npm run build                                48 modules -> one HTML file
+  node tools/check-build.mjs                   the built file boots from file://
+
+EVERY SESSION ENDS BY RUNNING `npm run build` AND COMMITTING
+dist/oracle-of-tides.html. That file is the playable game — one self-contained
+HTML document that runs from a file:// URL with no server and no network, on a
+phone as well as a desktop. A commit that changes src/ and leaves the build
+stale ships a game that is not the game. See CLAUDE.md, Workflow.
+
+THE BUILD - what it assumes, and what breaks it
+  tools/build.mjs is a bundler, so it hard-fails rather than guessing:
+  - It refuses to build if the game ever starts loading something at runtime
+    (fetch, XMLHttpRequest, new Image/Audio, createImageBitmap, WebSocket, an
+    .png/.wav/.json reference, an <img>/<audio>/<link src=>). The whole
+    single-file trick rests on the game being procedural sprites plus WebAudio
+    synthesis. If you add a real asset, the build tells you instead of shipping
+    a file that 404s from file://. Teach it to embed the asset as a data: URI;
+    do not delete the guard. It scans code with comments and string literals
+    blanked out, so provenance comments naming .png sheets and room-grid
+    strings that happen to spell "ogg" do not trip it, and `new Audio()` is
+    allowed in src/core/audio.js because that module declares its own
+    `class Audio`.
+  - It understands exactly one import form, `import { … } from './x.js'`, and
+    the export forms already in use (`export const/let/var/function/class` and
+    `export { A as B }`). No default export, no `export *`, no re-export, no
+    dynamic import, no multi-declarator `export const A = 1, B = 2`. Any of
+    those is a build error naming the file and line. THIS BINDS src/data/feel.js
+    IN PARTICULAR: it is a long list of single-declarator `export const`s and
+    must stay that way — collapsing two constants onto one line would publish
+    only half of them, silently.
+  - IT REFUSES IMPORT CYCLES. Imports become destructuring from an eagerly
+    evaluated module, so a cycle would snapshot `undefined`. src/core/rng.js
+    and src/data/feel.js import nothing, which is deliberate — they sit at the
+    bottom of the graph precisely because everything else imports them.
+  - src/data/sprite-manifest.js is not reachable from main.js, so it is not
+    bundled and the build says so. That is correct — it is tooling data.
+  - The output must stay a CLASSIC script. A `<script type="module">`, even
+    inline with no imports, is fetched with an opaque origin and blocked by
+    file:// in every browser. That constraint is the reason for the whole
+    module-registry design; do not "simplify" it back to a module.
 
 DETERMINISM IS NOW LOAD-BEARING. Two rules, both easy to break by accident:
 
@@ -133,6 +173,10 @@ provenance comment: measured, derived, or guessed. NOTHING is currently
 `measured` — every value was carried over from the old code and is a guess.
 Never upgrade a `guessed` to `measured` because the game feels fine; that word
 means someone frame-stepped a reference and wrote the number down.
+
+FOR ANYTHING AT ALL: `npm run build && node tools/check-build.mjs`, then
+commit the rebuilt dist/oracle-of-tides.html. A green src/ with a stale build
+is a red session.
 
 AFTER ANY CHANGE TO A FEEL CONSTANT OR TO MOVEMENT/COMBAT:
   node tools/replay.mjs                 expect it to FAIL
@@ -167,6 +211,13 @@ Tell me plainly what is done, what is weak, and what you skipped.
 - music: 22 tracks (14 looping + 8 jingles), every name resolves
 - one-way ledges in all four cardinals: 88 runs, all verified in-engine
 - all three tile-expressible region gates, proved in both directions
+- **the single-file build.** `npm run build` flattens `index.html` plus every
+  module reachable from `src/main.js` into `dist/oracle-of-tides.html` — one
+  classic `<script>`, playable from a `file://` URL with no server and no
+  network. That file is committed and must be rebuilt at the end of every
+  session. `tools/check-build.mjs` boots it from a real `file://` URL and fails
+  on a console error, an off-document request, a black canvas or a frozen
+  `game.frame`.
 - **the feel spec, the seeded RNG and the replay harness (P1)**
 
 ## What is left

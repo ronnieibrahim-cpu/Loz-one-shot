@@ -197,7 +197,7 @@ themselves.
 
 One prompt = one session = one branch = one `/clear` afterward. Do not chain.
 
-### P0 — Establish a trunk
+### P0 — Establish a trunk (done)
 
 ```
 This repo has an empty `main` (14-byte README) and seven divergent `claude/*`
@@ -220,7 +220,7 @@ The repo is private and permanently personal. Do not add a LICENSE, a public
 README, or any publication scaffolding. Do not touch game code.
 ```
 
-### P1 — Feel spec, seeded RNG, replay harness
+### P1 — Feel spec, seeded RNG, replay harness (done)
 
 ```
 The engine has no ground truth for how it should feel, so every constant is
@@ -245,6 +245,13 @@ someone's guess. Build the missing layer.
 
 Determinism is the prerequisite for every fidelity claim after this.
 ```
+
+P1 landed `src/data/feel.js`, `docs/FEEL-SPEC.md`, `src/core/rng.js`,
+`tools/replay.mjs` and two committed replays. One thing it did **not** land:
+the second replay is `d1-descent`, a real run through Tidewash Grotto that
+stops at the north-half locked door, not a full clear. Finishing it needs a
+push directive, a boss routine that reads `weakOpen`, and a jump verb — see
+`docs/NEXT-SESSION.md`. Do not fake it by granting keys in the replay's setup.
 
 ### P2 — Root-cause the intermittent test
 
@@ -411,6 +418,49 @@ The overworld has eight regions gated on items that no longer exist.
    land the cap at 14-16 hearts, so heart pieces need to scale up from the
    eight-dungeon assumption.
 4. Re-run every checker and both replays.
+```
+
+### PB — Single-file build (done)
+
+Landed on `claude/oracle-build-script-coklp7`. Kept here because the
+constraints are the interesting part and will bind every future change to the
+build.
+
+```
+package.json declares a `build` script pointing at tools/build.mjs, which does
+not exist. Write it.
+
+It must bundle index.html plus every ES module under src/ into ONE
+self-contained HTML file at dist/oracle-of-tides.html, with all JavaScript
+inlined as a single classic <script> (not type="module"), so the file opens
+and runs correctly from a file:// URL with no web server and no network
+access.
+
+This is possible because the game loads no runtime assets: all sprite data is
+procedural JS and all audio is WebAudio synthesis. Verify that claim yourself
+before relying on it — grep for fetch, XMLHttpRequest, new Image, and any
+reference to an image or audio file under src/ and index.html. If you find a
+runtime asset load, stop and tell me rather than working around it.
+
+Requirements:
+- The touch control layer already in index.html must survive the bundle, so
+  the file is playable on a phone browser as well as a desktop one.
+- No build-time dependency beyond what package.json already has. Plain Node,
+  no bundler package.
+- Running `npm run build` must produce the file and exit zero.
+
+Then:
+1. Run the build and commit dist/oracle-of-tides.html.
+2. Open the built file in Playwright from a file:// URL, let it run for a few
+   seconds, and assert the canvas is rendering and no console errors were
+   thrown. Save that as tools/check-build.mjs and add it to the verification
+   table in CLAUDE.md.
+3. Add a line to CLAUDE.md under Workflow: every session ends by running
+   `npm run build` and committing dist/oracle-of-tides.html.
+4. Add this build prompt to docs/EXECUTION-PLAN.md so it's preserved.
+
+Finally: update docs/NEXT-SESSION.md losslessly, and add anything surprising
+to the hard-won-lessons section of docs/HANDOFF.md.
 ```
 
 ---
