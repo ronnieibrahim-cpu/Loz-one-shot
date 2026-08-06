@@ -4,12 +4,13 @@
 import { defineEnemy } from '../game/enemy.js';
 import {
   wander, chase, flee, patrol, bounceDiag, hop, charge, orbit, submerge,
-  shoot, shootRing, every, timer, aligned, facePlayer, distToPlayer, moveDir,
-  driftWithTide,
+  shoot, shootRing, every, timer, aligned, facePlayer, distToPlayer,
+  driftWithTide, beginStep, advanceStep, OPPOSITE,
 } from '../game/enemy.js';
 import { spawnEntity } from '../game/entity.js';
 import { F } from '../world/tileset.js';
 import { TILE } from '../core/screen.js';
+import { ENEMY_GRID_STEP } from './feel.js';
 
 export function installEnemies() {
   // --- Octorok: wanders and spits rocks along its facing axis -------------
@@ -23,7 +24,7 @@ export function installEnemies() {
     hb: { x: 2, y: 5, w: 12, h: 10 },
     drops: 'common',
     ai(e, g) {
-      wander(e, g, { turnChance: 0.014 });
+      wander(e, g, { decide: 2 });
       if (every(e, 74) && aligned(e, g, 14) && distToPlayer(e, g) < 96) {
         shoot(e, g, { sprite: 'shot_rock', speed: 1.5, damage: 2 });
       }
@@ -70,11 +71,13 @@ export function installEnemies() {
     hb: { x: 3, y: 6, w: 10, h: 9 },
     terrain: 'any',
     drops: 'common',
-    ai(e, g) { hop(e, g, { wait: 52, power: 1.7, speed: 0.9 }); },
+    ai(e, g) { hop(e, g, { wait: 52, dist: 8, height: 7, frames: 16 }); },
     onDie(e, g) {
-      // Splits into two gels, unless this zol was itself a split.
+      // Splits into two gels, unless this zol was itself a split. The offset is
+      // a whole lattice cell: a gel that spawned between lattice points would
+      // walk a shifted grid for the rest of its short life.
       if (e.opts.split) return;
-      for (const dx of [-9, 9]) {
+      for (const dx of [-ENEMY_GRID_STEP, ENEMY_GRID_STEP]) {
         spawnEntity(g, 'gel', (e.x + dx) / TILE, e.y / TILE, { split: true });
       }
     },
@@ -152,7 +155,7 @@ export function installEnemies() {
     shield: 'front',
     drops: 'good',
     ai(e, g) {
-      charge(e, g, { speed: 1.9, tell: 16, range: 88, shake: true, idle: (e2, g2) => wander(e2, g2, { turnChance: 0.01 }) });
+      charge(e, g, { speed: 1.9, tell: 16, range: 88, shake: true, idle: (e2, g2) => wander(e2, g2, { decide: 4 }) });
     },
   });
 
@@ -161,7 +164,7 @@ export function installEnemies() {
     hp: 2, damage: 2, pal: 'enemyb', speed: 0.6, rate: 8, terrain: 'any',
     frames: ['tektite_0', 'tektite_1'],
     drops: 'common',
-    ai(e, g) { hop(e, g, { wait: 34, power: 2.6, speed: 1.3 }); },
+    ai(e, g) { hop(e, g, { wait: 34, dist: 16, height: 13, frames: 20 }); },
   });
 
   // --- Wisp: circles a point and shoots rings ---------------------------
@@ -183,7 +186,7 @@ export function installEnemies() {
     shield: 'front',
     drops: 'common',
     ai(e, g) {
-      if (g.tide.level >= 1) wander(e, g, { speed: 0.3, turnChance: 0.03 });
+      if (g.tide.level >= 1) wander(e, g, { speed: 0.3, decide: 2 });
     },
   });
 
@@ -200,7 +203,7 @@ export function installEnemies() {
     ai(e, g) {
       const d = distToPlayer(e, g);
       if (d < 30) flee(e, g, { speed: 0.55 });
-      else wander(e, g, { turnChance: 0.01 });
+      else wander(e, g, { decide: 4 });
       if (every(e, 88) && aligned(e, g, 16) && d < 100) {
         shoot(e, g, { sprite: 'shot_spear', pal: 'wood', speed: 1.8, damage: 3 });
       }
@@ -333,20 +336,27 @@ export function installEnemies() {
     drops: 'common',
     ai(e, g) {
       // Never leaves its hole: it snaps out along one axis and is reeled back,
-      // so the safe ground is diagonal to it.
-      if (e._out == null) { e._out = 0; e._back = 0; }
-      if (e._back > 0) {
-        e._back--;
-        const dx = e.homeX - e.x, dy = e.homeY - e.y;
-        e.x += dx * 0.2; e.y += dy * 0.2;
+      // so the safe ground is diagonal to it. Both halves of that are lattice
+      // steps — two cells out, two cells back — which is what makes the reach
+      // something the player can measure by eye rather than guess at. It used
+      // to be reeled home by a proportional lerp that never quite arrived.
+      if (e._pinch == null) e._pinch = 'hole';
+      if (e._pinch === 'out' || e._pinch === 'back') {
+        advanceStep(e, g);
+        if (e.step) return;
+        if (e._pinch === 'out') {
+          e._pinch = 'back';
+          if (!beginStep(e, g, OPPOSITE[e.dir], ENEMY_GRID_STEP * 2, 24)) e._pinch = 'hole';
+        } else {
+          e._pinch = 'hole';
+        }
         return;
       }
-      if (e._out > 0) { e._out--; moveDir(e, g, e.dir, 2.2); if (e._out === 0) e._back = 24; return; }
       if (every(e, 70) && aligned(e, g, 14) && distToPlayer(e, g) < 72) {
         facePlayer(e, g);
         g.spawnEffect('spark', e.x, e.y - 6);
         e.stun = 10;
-        e._out = 14;
+        if (beginStep(e, g, e.dir, ENEMY_GRID_STEP * 2, 14)) e._pinch = 'out';
       }
     },
   });

@@ -13,7 +13,9 @@
 //       side: ['octorok_s0', 'octorok_s1'],
 //     },
 //     rate: 10,                 // frames per animation step
-//     speed: 0.45,              // pixels per frame
+//     speed: 0.45,              // pixels per frame. For a ground enemy this is
+//                               // an average: it walks the 8px lattice, and the
+//                               // speed sets how many frames a step takes.
 //     hb: { x: 2, y: 5, w: 12, h: 10 },
 //     drops: 'common',          // 'none' | 'common' | 'good' | 'rich'
 //     terrain: 'land',          // 'land' | 'water' | 'any' | 'air'
@@ -39,15 +41,18 @@ import { TILE, VIEW_W, VIEW_H } from '../core/screen.js';
 import { hash32 } from '../core/rng.js';
 import {
   ENEMY_DEFAULT_SPEED, ENEMY_DEFAULT_RATE, ENEMY_TURN_CHANCE,
-  ENEMY_KNOCK_DECAY, ENEMY_BEACHED_FRAMES,
-  ENEMY_CHARGE_SPEED_MULT, ENEMY_HOP_SPEED_MULT, ENEMY_CHARGE_RECOVER_FRAMES,
+  ENEMY_BEACHED_FRAMES, ENEMY_GRID_STEP, ENEMY_DECIDE_STEPS,
+  ENEMY_TURN_PAUSE_FRAMES,
+  ENEMY_CHARGE_SPEED_MULT, ENEMY_CHARGE_RECOVER_FRAMES,
   ENEMY_CHARGE_TOLERANCE, ENEMY_CHARGE_RANGE, ENEMY_HOP_WAIT_FRAMES,
-  ENEMY_HOP_POWER, ENEMY_HOP_GRAVITY, ENEMY_ORBIT_SPEED, ENEMY_ORBIT_RADIUS,
+  ENEMY_HOP_DIST, ENEMY_HOP_FRAMES, ENEMY_HOP_HEIGHT,
+  ENEMY_ORBIT_SPEED, ENEMY_ORBIT_RADIUS,
   ENEMY_SUBMERGE_DOWN_FRAMES, ENEMY_SUBMERGE_UP_FRAMES,
   ENEMY_SURFACE_MIN_DIST, ENEMY_SURFACE_DIST_SPAN, ENEMY_ALIGN_TOLERANCE,
-  ENEMY_SHOT_SPEED, ENEMY_SHOT_LIFE, RING_SHOT_SPEED, RING_SHOT_LIFE,
+  ENEMY_KNOCK_FRAMES, ENEMY_SHOT_SPEED, ENEMY_SHOT_LIFE,
+  RING_SHOT_SPEED, RING_SHOT_LIFE,
   BOSS_INTRO_FRAMES, BOSS_INVULN_FRAMES, BOSS_PHASE_INVULN_FRAMES,
-  BOSS_KNOCK_FRAMES, BOSS_KNOCK_SCALE, BOSS_KNOCK_DECAY,
+  BOSS_KNOCK_FRAMES, BOSS_KNOCK_SCALE,
   BOSS_DEATH_FRAMES, BOSS_DEATH_BOOM_EVERY,
   SHAKE_MEDIUM, SHAKE_SMALL_FRAMES, TIDE_DRIFT_PER_LEVEL,
 } from '../data/feel.js';
@@ -78,6 +83,12 @@ export class Enemy extends Entity {
     this.shield = spec.shield || null;
     this.drops = opts.drops || spec.drops || 'common';
     this.dir = opts.dir || 'down';
+    // Lattice motion. `step` is the step in progress, `stepping` mirrors it for
+    // anything outside this file (tools/check-motion.mjs reads it), and
+    // `charging` marks the one ground state that is deliberately continuous.
+    this.step = null;
+    this.stepping = false;
+    this.charging = false;
     this.aiState = 0;
     this.aiTimer = 0;
     this.tick = 0;
@@ -131,10 +142,16 @@ export class Enemy extends Entity {
     }
     if (this.dormant) return;
 
+    // Knockback is a scripted displacement: constant speed, fixed distance,
+    // fixed frame count. It also throws a ground enemy off the lattice, so the
+    // last frame of it puts the enemy back on.
     if (this.knockTime > 0) {
       this.knockTime--;
       moveEntity(game, this, this.knockX, this.knockY);
-      this.knockX *= ENEMY_KNOCK_DECAY; this.knockY *= ENEMY_KNOCK_DECAY;
+      if (this.knockTime === 0) {
+        this.step = null; this.stepping = false;
+        realign(this, game);
+      }
       return;
     }
     if (this.stun > 0) { this.stun--; return; }
@@ -262,7 +279,6 @@ export class Boss extends Enemy {
     if (this.knockTime > 0) {
       this.knockTime--;
       moveEntity(game, this, this.knockX, this.knockY);
-      this.knockX *= BOSS_KNOCK_DECAY; this.knockY *= BOSS_KNOCK_DECAY;
       return;
     }
     if (this.stun > 0) { this.stun--; return; }
@@ -291,8 +307,11 @@ export class Boss extends Enemy {
     this.invuln = BOSS_INVULN_FRAMES;
     this.flicker = BOSS_INVULN_FRAMES;
     if (knock && dir) {
+      // `knock` is a distance; a boss covers a fraction of it, at a constant
+      // speed, over BOSS_KNOCK_FRAMES frames.
       const [dx, dy] = DIR_VEC[dir] || [0, 0];
-      this.knockX = dx * (knock * BOSS_KNOCK_SCALE); this.knockY = dy * (knock * BOSS_KNOCK_SCALE);
+      const per = (knock * BOSS_KNOCK_SCALE) / BOSS_KNOCK_FRAMES;
+      this.knockX = dx * per; this.knockY = dy * per;
       this.knockTime = BOSS_KNOCK_FRAMES;
     }
     if (this.spec.onHurt) this.spec.onHurt(this, game, dmg);
@@ -386,48 +405,270 @@ export function moveDir(e, g, dir, speed) {
   return false;
 }
 
-/** Amble about, changing direction on walls and occasionally at random. */
+export const OPPOSITE = { up: 'down', down: 'up', left: 'right', right: 'left' };
+
+// --------------------------------------------------------------------------
+// The 8px lattice
+// --------------------------------------------------------------------------
+//
+// A ground enemy has no velocity. It stands on a lattice point, decides where
+// to go, and then takes a whole step — ENEMY_GRID_STEP pixels in one cardinal
+// direction, spread over however many frames its speed implies. Once a step is
+// running it runs to the end. Nothing can turn the enemy mid-step, and nothing
+// draws from the room's stream mid-step either.
+//
+// That is the entire mechanism, and it is what makes an octorok dodgeable: the
+// player can see the enemy standing on a lattice point, knows a decision is
+// about to happen, and knows the answer will be one of four whole steps. A
+// per-frame turn probability on a floating velocity gives none of that — the
+// enemy can reverse at any subpixel, so there is nothing to read.
+//
+// WHO IS ON THE LATTICE. Ground enemies: not bosses (a boss is a set piece and
+// wants to feel unconstrained), not fliers, not aquatic enemies (water carries
+// you, it does not step). And `charge`, `orbit` and `bounceDiag` are
+// continuous even for a ground enemy, by design — those verbs exist to feel
+// different from walking.
+
+/**
+ * Is this entity's ordinary walking motion locked to the lattice?
+ *
+ * The boss test is `instanceof`, not `e.isBoss`, and that is not fussiness:
+ * minibosses are built with `defineBoss` and then CLEAR `isBoss` in their init,
+ * because `onEnemyDefeated` keys "dungeon beaten" off that flag. Reading the
+ * flag here would put every miniboss on the lattice on the strength of a piece
+ * of progress bookkeeping. What the class says — this thing is a set piece —
+ * is what motion actually cares about.
+ */
+export function gridLocked(e) {
+  if (e instanceof Boss) return false;
+  return !e.flying && e.terrain !== 'water';
+}
+
+/** True while `e` is somewhere between two lattice points and cannot decide. */
+export function midStep(e) {
+  return !!e.stepping;
+}
+
+function latticePair(v) {
+  const lo = Math.floor(v / ENEMY_GRID_STEP) * ENEMY_GRID_STEP;
+  const hi = lo + ENEMY_GRID_STEP;
+  return (v - lo <= hi - v) ? [lo, hi] : [hi, lo];
+}
+
+/**
+ * Put an entity back on the lattice, nearest legal point first.
+ *
+ * Knockback, a charge into a wall and a resurfacing all leave a ground enemy
+ * between lattice points. Rather than let it walk a shifted lattice forever,
+ * every one of those states ends by calling this. The shift is at most 4px on
+ * each axis, which is under a frame of walking and invisible in motion.
+ */
+export function realign(e, g) {
+  if (!gridLocked(e)) return false;
+  const xs = latticePair(e.x), ys = latticePair(e.y);
+  for (const y of ys) {
+    for (const x of xs) {
+      if (!canOccupy(g, e, x, y)) continue;
+      if (e.terrainOk && !e.terrainOk(g, x, y)) continue;
+      e.x = x; e.y = y;
+      return true;
+    }
+  }
+  // Nowhere legal within half a step: on the lattice still beats off it, and
+  // the step probe will refuse to walk the enemy anywhere it should not go.
+  e.x = xs[0]; e.y = ys[0];
+  return false;
+}
+
+/**
+ * Begin a step of `dist` pixels in `dir`, taking `frames` frames.
+ *
+ * The destination is probed before anything moves, so a step is either taken
+ * whole or not taken at all — the enemy never ends up wedged half into a wall
+ * and off the lattice. Returns false if the way is blocked.
+ */
+export function beginStep(e, g, dir, dist, frames, o = {}) {
+  const [dx, dy] = DIR_VEC[dir] || [0, 0];
+  if (!dx && !dy) return false;
+  if (!Number.isInteger(e.x) || !Number.isInteger(e.y)) realign(e, g);
+  const tx = e.x + dx * dist, ty = e.y + dy * dist;
+  // A hop clears ground obstructions a walk cannot; canOccupy decides that
+  // from the entity's own height, so lift it for the probe.
+  const z0 = e.z;
+  if (o.air) e.z = 4;
+  const ok = canOccupy(g, e, tx, ty) && (!e.terrainOk || e.terrainOk(g, tx, ty));
+  e.z = z0;
+  if (!ok) return false;
+  e.step = { dir, dx, dy, dist, n: Math.max(1, Math.round(frames)), f: 0, x0: e.x, y0: e.y };
+  e.stepping = true;
+  return true;
+}
+
+/**
+ * Carry a step forward one frame. Returns true while the step is still
+ * running. A step that is interrupted anyway — a block that appeared after the
+ * probe, a door closing — is rewound to where it started, which is a lattice
+ * point.
+ */
+export function advanceStep(e, g) {
+  const s = e.step;
+  if (!s) return false;
+  s.f++;
+  // Position is a fraction of the whole step rounded to a pixel, not an
+  // accumulated velocity, so the last frame lands exactly on the lattice
+  // however the arithmetic rounds on the way.
+  const want = Math.round((s.dist * s.f) / s.n);
+  const r = moveEntity(g, e, s.x0 + s.dx * want - e.x, s.y0 + s.dy * want - e.y);
+  if (r.hitX || r.hitY) {
+    e.x = s.x0; e.y = s.y0;
+    e.step = null; e.stepping = false;
+    return false;
+  }
+  if (s.f >= s.n) {
+    e.x = s.x0 + s.dx * s.dist; e.y = s.y0 + s.dy * s.dist;
+    e.step = null; e.stepping = false;
+  }
+  return true;
+}
+
+/** Frames one lattice step takes at the given average speed. */
+function stepFrames(speed, dist) {
+  return Math.max(1, Math.round(dist / Math.max(Math.abs(speed), 0.01)));
+}
+
+/**
+ * Take one whole lattice step in `dir` if the way is clear. The workhorse the
+ * lattice half of wander/chase/flee/patrol is built from.
+ */
+export function gridStep(e, g, dir, speed, o = {}) {
+  const dist = o.dist || ENEMY_GRID_STEP;
+  return beginStep(e, g, dir, dist, stepFrames(speed, dist), o);
+}
+
+/**
+ * The shared front half of every lattice walker: finish a running step, sit
+ * out a hesitation, and otherwise report that a decision is due this frame.
+ */
+function readyToDecide(e, g) {
+  if (e.stepping) { advanceStep(e, g); return false; }
+  if (e._pause > 0) { e._pause--; return false; }
+  return true;
+}
+
+// --------------------------------------------------------------------------
+// Walking verbs
+// --------------------------------------------------------------------------
+
+/**
+ * Amble about. On the lattice: walk ENEMY_DECIDE_STEPS whole steps, then draw
+ * a fresh direction from the room's stream. Off it (bosses, aquatic drifters):
+ * the old continuous drift with a per-frame turn probability.
+ *
+ * The cadence, not the probability, is the point. An enemy that rolls to turn
+ * every frame turns at unpredictable subpixels; one that decides every third
+ * step turns where the player can see it coming.
+ */
 export function wander(e, g, o = {}) {
   const speed = o.speed != null ? o.speed : e.speed;
-  const turn = o.turnChance != null ? o.turnChance : ENEMY_TURN_CHANCE;
-  if (o.pause && e._pause > 0) { e._pause--; return; }
-  if (!moveDir(e, g, e.dir, speed) || g.rng.chance(turn)) {
+  if (!gridLocked(e)) {
+    const turn = o.turnChance != null ? o.turnChance : ENEMY_TURN_CHANCE;
+    if (o.pause && e._pause > 0) { e._pause--; return; }
+    if (!moveDir(e, g, e.dir, speed) || g.rng.chance(turn)) {
+      e.dir = randDir(g);
+      if (o.pause) e._pause = o.pause;
+    }
+    return;
+  }
+  if (!readyToDecide(e, g)) return;
+  const run = o.decide != null ? o.decide : ENEMY_DECIDE_STEPS;
+  if (!(e._runLeft > 0)) {
     e.dir = randDir(g);
-    if (o.pause) e._pause = o.pause;
+    e._runLeft = run;
+    if (o.pause) { e._pause = o.pause; return; }
+  }
+  if (gridStep(e, g, e.dir, speed, o)) {
+    e._runLeft--;
+  } else {
+    // Walked into something. Hesitate, then decide again next time — one draw
+    // per hesitation rather than one per frame, so a cornered enemy cannot
+    // chew through the room's stream.
+    e._runLeft = 0;
+    e._pause = ENEMY_TURN_PAUSE_FRAMES;
   }
 }
 
-/** Walk toward the player, preferring the axis with the greater gap. */
+/**
+ * Walk toward the player, preferring the axis with the greater gap. On the
+ * lattice the choice is remade at every lattice point and nowhere else, so a
+ * chaser tracks the player in visible right-angled steps instead of sliding
+ * diagonally onto them.
+ */
 export function chase(e, g, o = {}) {
   const p = o.target || g.player;
   if (!p) return;
   const speed = o.speed != null ? o.speed : e.speed;
   const dx = p.cx - e.cx, dy = p.cy - e.cy;
-  const primary = Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 'left' : 'right') : (dy < 0 ? 'up' : 'down');
-  const secondary = Math.abs(dx) > Math.abs(dy) ? (dy < 0 ? 'up' : 'down') : (dx < 0 ? 'left' : 'right');
-  e.dir = primary;
-  if (!moveDir(e, g, primary, speed)) {
-    e.dir = secondary;
-    if (!moveDir(e, g, secondary, speed)) e.dir = primary;
+  const xMajor = Math.abs(dx) > Math.abs(dy);
+  const primary = xMajor ? (dx < 0 ? 'left' : 'right') : (dy < 0 ? 'up' : 'down');
+  const secondary = xMajor ? (dy < 0 ? 'up' : 'down') : (dx < 0 ? 'left' : 'right');
+  if (!gridLocked(e)) {
+    e.dir = primary;
+    if (!moveDir(e, g, primary, speed)) {
+      e.dir = secondary;
+      if (!moveDir(e, g, secondary, speed)) e.dir = primary;
+    }
+    return;
   }
+  if (!readyToDecide(e, g)) return;
+  e.dir = primary;
+  if (gridStep(e, g, primary, speed, o)) return;
+  e.dir = secondary;
+  if (gridStep(e, g, secondary, speed, o)) return;
+  e.dir = primary;
+  e._pause = ENEMY_TURN_PAUSE_FRAMES;
 }
 
+/** The reverse of `chase`: put distance between yourself and the player. */
 export function flee(e, g, o = {}) {
   const p = o.target || g.player;
   if (!p) return;
   const speed = o.speed != null ? o.speed : e.speed;
   const dx = e.cx - p.cx, dy = e.cy - p.cy;
-  const dir = Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 'left' : 'right') : (dy < 0 ? 'up' : 'down');
-  e.dir = dir;
-  if (!moveDir(e, g, dir, speed)) e.dir = randDir(g);
+  const xMajor = Math.abs(dx) > Math.abs(dy);
+  const primary = xMajor ? (dx < 0 ? 'left' : 'right') : (dy < 0 ? 'up' : 'down');
+  const secondary = xMajor ? (dy < 0 ? 'up' : 'down') : (dx < 0 ? 'left' : 'right');
+  if (!gridLocked(e)) {
+    e.dir = primary;
+    if (!moveDir(e, g, primary, speed)) e.dir = randDir(g);
+    return;
+  }
+  if (!readyToDecide(e, g)) return;
+  e.dir = primary;
+  if (gridStep(e, g, primary, speed, o)) return;
+  e.dir = secondary;
+  if (gridStep(e, g, secondary, speed, o)) return;
+  // Cornered with the player in the way: turn and take it.
+  e.dir = randDir(g);
+  e._pause = ENEMY_TURN_PAUSE_FRAMES;
 }
 
-/** Back-and-forth along one axis, reversing at walls. */
+/**
+ * Back-and-forth along one axis, reversing at walls. On the lattice the
+ * reversal happens at a lattice point, so a line of patrolling crabs stays a
+ * line instead of smearing out of phase.
+ */
 export function patrol(e, g, o = {}) {
   const speed = o.speed != null ? o.speed : e.speed;
   if (!e._pdir) e._pdir = o.axis === 'y' ? 'down' : 'right';
-  if (!moveDir(e, g, e._pdir, speed)) {
-    e._pdir = { up: 'down', down: 'up', left: 'right', right: 'left' }[e._pdir];
+  if (!gridLocked(e)) {
+    if (!moveDir(e, g, e._pdir, speed)) e._pdir = OPPOSITE[e._pdir];
+    e.dir = e._pdir;
+    return;
+  }
+  if (!readyToDecide(e, g)) { e.dir = e._pdir; return; }
+  if (!gridStep(e, g, e._pdir, speed, o)) {
+    e._pdir = OPPOSITE[e._pdir];
+    if (!gridStep(e, g, e._pdir, speed, o)) e._pause = ENEMY_TURN_PAUSE_FRAMES;
   }
   e.dir = e._pdir;
 }
@@ -445,44 +686,75 @@ export function bounceDiag(e, g, o = {}) {
   e.dir = Math.abs(e._bvx) > Math.abs(e._bvy) ? (e._bvx < 0 ? 'left' : 'right') : (e._bvy < 0 ? 'up' : 'down');
 }
 
-/** Hop: rise, travel, land. Used by leevers, crabs, jumping slimes. */
+/**
+ * Hop: rise, travel, land. Used by zols, crabs, tektites.
+ *
+ * A hop is a lattice step with an arc drawn on it. The distance is a whole
+ * number of lattice cells and the airtime is a fixed frame count, so the
+ * hopper leaves the lattice and lands back on it — the landing pixel and the
+ * landing frame are both known the instant the hop starts, which is what makes
+ * a tektite something you can walk under rather than something you flinch at.
+ *
+ * The old version integrated a velocity against a gravity constant, so the
+ * landing spot depended on how the two divided and was never on the lattice.
+ */
 export function hop(e, g, o = {}) {
-  const speed = o.speed != null ? o.speed : e.speed * ENEMY_HOP_SPEED_MULT;
-  if (e._hopState == null) { e._hopState = 'wait'; e._hopWait = o.wait || ENEMY_HOP_WAIT_FRAMES; }
-  if (e._hopState === 'wait') {
-    if (--e._hopWait <= 0) {
-      e._hopState = 'air';
-      e.vz = o.power || ENEMY_HOP_POWER;
-      if (o.toward !== false) facePlayer(e, g);
-      const [dx, dy] = DIR_VEC[e.dir];
-      e._hvx = dx * speed; e._hvy = dy * speed;
-      if (g.audio) g.audio.sfx('hop');
+  const wait = o.wait || ENEMY_HOP_WAIT_FRAMES;
+  const dist = o.dist || ENEMY_HOP_DIST;
+  const air = o.frames || ENEMY_HOP_FRAMES;
+  const height = o.height || ENEMY_HOP_HEIGHT;
+  if (e._hopState == null) { e._hopState = 'wait'; e._hopWait = wait; }
+
+  if (e._hopState === 'air') {
+    advanceStep(e, g);
+    if (e.step) {
+      // A parabola through (0,0) and (1,0) peaking at `height`. Fitted to the
+      // step's own progress, so it cannot land early or late.
+      const t = e.step.f / e.step.n;
+      e.z = height * 4 * t * (1 - t);
+    } else {
+      e.z = 0; e.vz = 0;
+      e._hopState = 'wait';
+      e._hopWait = wait;
     }
     return;
   }
-  e.z += e.vz;
-  e.vz -= ENEMY_HOP_GRAVITY;
-  moveEntity(g, e, e._hvx, e._hvy);
-  if (e.z <= 0) {
-    e.z = 0; e.vz = 0;
-    e._hopState = 'wait';
-    e._hopWait = o.wait || ENEMY_HOP_WAIT_FRAMES;
+
+  if (--e._hopWait > 0) return;
+  if (o.toward !== false) facePlayer(e, g);
+  // Blocked ahead: try one other direction from the room's stream rather than
+  // hopping into a wall, then wait out another beat if that is blocked too.
+  if (!beginStep(e, g, e.dir, dist, air, { air: true })) {
+    e.dir = randDir(g);
+    if (!beginStep(e, g, e.dir, dist, air, { air: true })) { e._hopWait = wait; return; }
   }
+  e._hopState = 'air';
+  if (g.audio) g.audio.sfx('hop');
 }
 
-/** Charge in a straight line once the player lines up; stop at walls. */
+/**
+ * Charge in a straight line once the player lines up; stop at walls.
+ *
+ * Deliberately continuous, lattice or no lattice. A charge is the one thing a
+ * ground enemy does that is supposed to feel like it has momentum, and putting
+ * it on the lattice would make it read as a fast walk. It ends by putting the
+ * enemy back on the lattice, so the walking that follows is aligned again.
+ */
 export function charge(e, g, o = {}) {
   const speed = o.speed != null ? o.speed : e.speed * ENEMY_CHARGE_SPEED_MULT;
-  if (e._charging) {
+  if (e.charging) {
     if (!moveDir(e, g, e.dir, speed)) {
-      e._charging = false;
+      e.charging = false;
       e.stun = o.recover || ENEMY_CHARGE_RECOVER_FRAMES;
+      realign(e, g);
       if (o.shake) g.shake(SHAKE_MEDIUM, SHAKE_SMALL_FRAMES);
     }
     return true;
   }
   if (aligned(e, g, o.tol || ENEMY_CHARGE_TOLERANCE) && distToPlayer(e, g) < (o.range || ENEMY_CHARGE_RANGE)) {
-    e._charging = true;
+    // Abandon any step in progress: the charge is the decision now.
+    e.step = null; e.stepping = false;
+    e.charging = true;
     if (o.tell) e.stun = o.tell;
     if (g.audio) g.audio.sfx(o.sfx || 'charge');
     return true;
@@ -519,9 +791,15 @@ export function submerge(e, g, o = {}) {
     if (o.reposition !== false && g.player) {
       const a = g.rng.angle();
       const d = ENEMY_SURFACE_MIN_DIST + g.rng.float() * ENEMY_SURFACE_DIST_SPAN;
-      const nx = Math.max(8, Math.min(VIEW_W - 24, g.player.cx + Math.cos(a) * d - 8));
-      const ny = Math.max(8, Math.min(VIEW_H - 24, g.player.cy + Math.sin(a) * d - 8));
-      if (canOccupy(g, e, nx, ny)) { e.x = nx; e.y = ny; }
+      let nx = Math.max(8, Math.min(VIEW_W - 24, g.player.cx + Math.cos(a) * d - 8));
+      let ny = Math.max(8, Math.min(VIEW_H - 24, g.player.cy + Math.sin(a) * d - 8));
+      // A leever that surfaces off the lattice would walk a shifted one for the
+      // rest of its life, so it comes up on a lattice point.
+      if (gridLocked(e)) {
+        nx = Math.round(nx / ENEMY_GRID_STEP) * ENEMY_GRID_STEP;
+        ny = Math.round(ny / ENEMY_GRID_STEP) * ENEMY_GRID_STEP;
+      }
+      if (canOccupy(g, e, nx, ny)) { e.x = nx; e.y = ny; e.step = null; e.stepping = false; }
     }
     if (g.audio) g.audio.sfx('splash');
   }
@@ -571,4 +849,5 @@ export const AI = {
   wander, chase, flee, patrol, bounceDiag, hop, charge, orbit, submerge,
   shoot, shootRing, every, timer, aligned, facePlayer, distToPlayer, moveDir,
   randDir, driftWithTide,
+  gridLocked, gridStep, beginStep, advanceStep, realign, midStep,
 };

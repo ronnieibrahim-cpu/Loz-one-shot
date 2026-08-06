@@ -2112,13 +2112,19 @@ const PLAYER_RECOVER_INVULN_FRAMES = 60;
 /** f — how long Link is shoved and unable to act after a hit. guessed. */
 const PLAYER_HURT_FRAMES = 12;
 
-/** px/f — Link's knockback speed on the first frame after a hit. guessed. */
-const PLAYER_KNOCK_SPEED = 3.2;
+/** px — how far Link is shoved by a hit, in total. guessed.
+ *  A GB Zelda's knockback is a scripted displacement, not a physics impulse:
+ *  a fixed distance over a fixed frame count, at a constant speed, so it always
+ *  ends the same distance from the thing that hit you and you can plan around
+ *  it. This number and PLAYER_KNOCK_FRAMES are the whole of it. Chosen to match
+ *  the total travel of the exponential decay it replaces (3.2 px/f decaying by
+ *  0.84 over 12 frames covers ~17.6px), so the change is a change of shape
+ *  rather than of reach. See docs/FEEL-SPEC.md. */
+const PLAYER_KNOCK_DIST = 18;
 
-/** x — per-frame decay of Link's knockback. guessed.
- *  Exponential decay is wrong for a GB Zelda — the source games move you a
- *  fixed distance over a fixed frame count. P4 replaces this; see FEEL-SPEC. */
-const PLAYER_KNOCK_DECAY = 0.84;
+/** f — how long that shove takes. guessed; kept equal to PLAYER_HURT_FRAMES so
+ *  Link regains control on the frame he stops sliding. */
+const PLAYER_KNOCK_FRAMES = 12;
 
 /** f — invulnerability after an ordinary enemy takes a hit. guessed. */
 const ENEMY_INVULN_FRAMES = 24;
@@ -2126,27 +2132,45 @@ const ENEMY_INVULN_FRAMES = 24;
 /** f — how long an ordinary enemy flickers after a hit. guessed. */
 const ENEMY_FLICKER_FRAMES = 24;
 
-/** f — how long an ordinary enemy is shoved after a hit. guessed. */
+/** f — how long an ordinary enemy is shoved after a hit. guessed. Together with
+ *  the KNOCK_* distances below this is the fixed frame count half of the
+ *  fixed-distance-over-fixed-frames rule; nothing decays.
+ *
+ *  Worth knowing when tuning it: contact damage does not care that an enemy is
+ *  mid-knockback, so these are frames the enemy is travelling away and can
+ *  still hurt you. The exponential decay this replaces covered most of its
+ *  distance in the first two frames, so shortening this is the lever that
+ *  restores that snap. Trying 5 instead of 8 changed nothing measurable in
+ *  either committed replay, so it is left where it was. */
 const ENEMY_KNOCK_FRAMES = 8;
 
-/** x — per-frame decay of enemy knockback. guessed. Same objection as
- *  PLAYER_KNOCK_DECAY. */
-const ENEMY_KNOCK_DECAY = 0.82;
+// The KNOCK_* values below are DISTANCES IN PIXELS, not speeds. A hit shoves
+// its target KNOCK_x pixels over ENEMY_KNOCK_FRAMES frames at a constant
+// speed. They were speeds until P4; the numbers are the total travel the old
+// exponential decay produced from the old speeds, so a sword still throws an
+// enemy about as far as it used to, in a straight predictable line instead of
+// an asymptote. All guessed.
 
-/** px/f — default knockback dealt when a hit does not name its own. guessed. */
-const KNOCK_DEFAULT = 3;
+/** px — default knockback dealt when a hit does not name its own. guessed. */
+const KNOCK_DEFAULT = 13;
 
-/** px/f — knockback dealt by a sword swing. guessed. */
-const KNOCK_SWORD = 4;
+/** px — knockback dealt by a sword swing. guessed. */
+const KNOCK_SWORD = 18;
 
-/** px/f — knockback dealt by a spin attack. guessed. */
-const KNOCK_SPIN = 5;
+/** px — knockback dealt by a spin attack. guessed. */
+const KNOCK_SPIN = 22;
 
-/** px/f — knockback dealt by a projectile. guessed. */
-const KNOCK_PROJECTILE = 3;
+/** px — knockback dealt by a projectile. guessed. */
+const KNOCK_PROJECTILE = 13;
 
-/** px/f — knockback dealt by an explosion. guessed. */
-const KNOCK_EXPLOSION = 2;
+/** px — knockback dealt by an explosion. guessed. */
+const KNOCK_EXPLOSION = 9;
+
+/** px — knockback dealt by a thrown or dropped object. guessed. */
+const KNOCK_THROWN = 9;
+
+/** px — knockback dealt by a boomerang or another stunning tool. guessed. */
+const KNOCK_TOOL = 5;
 
 /** f — invulnerability after a boss takes a hit. guessed; shorter than an
  *  ordinary enemy's so a boss can be combo'd. */
@@ -2158,11 +2182,8 @@ const BOSS_PHASE_INVULN_FRAMES = 20;
 /** f — how long a boss is shoved after a hit. guessed. */
 const BOSS_KNOCK_FRAMES = 6;
 
-/** x — bosses take this fraction of the knockback an enemy would. guessed. */
+/** x — bosses travel this fraction of the distance an enemy would. guessed. */
 const BOSS_KNOCK_SCALE = 0.4;
-
-/** x — per-frame decay of boss knockback. guessed. */
-const BOSS_KNOCK_DECAY = 0.8;
 
 /** qh — damage from standing on a hazard tile (lava, spikes). guessed. */
 const HAZARD_DAMAGE = 2;
@@ -2296,11 +2317,35 @@ const CARRY_HEIGHT = 13;
 // Enemy cadence
 // ---------------------------------------------------------------------------
 
+// --- The lattice ---------------------------------------------------------
+//
+// Ground enemies do not have velocities. They take whole steps along an 8px
+// lattice, and a step, once begun, runs to its end. Every decision an enemy
+// makes about where to go is made standing on a lattice point. That is what
+// makes an octorok's shot dodgeable and a room of them read as patterned
+// rather than noisy. See docs/FEEL-SPEC.md, "The lattice".
+
+/** px — the increment a ground enemy moves in. guessed, but constrained: it
+ *  has to divide the 16px tile, and half a tile is the coarsest value that
+ *  still lets an enemy stand in a doorway's centre. */
+const ENEMY_GRID_STEP = 8;
+
+/** steps — how many lattice steps a wandering enemy commits to before it draws
+ *  a new direction from the room's stream. guessed. This is the cadence that
+ *  replaces the old per-frame turn probability: three steps is 24px, about a
+ *  tile and a half, which is long enough to read as a decision and short
+ *  enough that the enemy still feels loose. */
+const ENEMY_DECIDE_STEPS = 3;
+
+/** f — how long an enemy hesitates after walking into something before it
+ *  picks a new direction. guessed. Also bounds how often a cornered enemy can
+ *  draw from the room stream. */
+const ENEMY_TURN_PAUSE_FRAMES = 6;
+
 /** p — per-frame chance a wandering enemy changes direction. guessed.
- *  A per-frame probability is the wrong shape for a GB Zelda: the source games
- *  decide on a fixed cadence and only turn when grid-aligned, which is what
- *  makes a room of octoroks read as patterned rather than noisy. P4 replaces
- *  this with a cadence; see docs/FEEL-SPEC.md. */
+ *  This now governs only the CONTINUOUS wander fallback — bosses and aquatic
+ *  drifters, which are deliberately not on the lattice. A ground enemy never
+ *  reads it. */
 const ENEMY_TURN_CHANCE = 0.012;
 
 /** px/f — fallback speed for an enemy whose spec does not name one. guessed. */
@@ -2311,9 +2356,6 @@ const ENEMY_DEFAULT_RATE = 10;
 
 /** x — multiplier on an enemy's speed while charging. guessed. */
 const ENEMY_CHARGE_SPEED_MULT = 3;
-
-/** x — multiplier on an enemy's speed while hopping. guessed. */
-const ENEMY_HOP_SPEED_MULT = 2;
 
 /** f — recovery stun after a charge hits a wall. guessed. */
 const ENEMY_CHARGE_RECOVER_FRAMES = 24;
@@ -2327,11 +2369,19 @@ const ENEMY_CHARGE_RANGE = 90;
 /** f — pause between hops. guessed. */
 const ENEMY_HOP_WAIT_FRAMES = 40;
 
-/** px/f — initial upward velocity of a hop. guessed. */
-const ENEMY_HOP_POWER = 2.2;
+/** px — how far a hop carries, if the enemy does not name its own. guessed.
+ *  Must be a multiple of ENEMY_GRID_STEP: a hop is a lattice step with an arc
+ *  on it, so it has to land the hopper back on the lattice. */
+const ENEMY_HOP_DIST = 16;
 
-/** px/f^2 — downward acceleration during an enemy hop. guessed. */
-const ENEMY_HOP_GRAVITY = 0.16;
+/** f — how long a hop is in the air, if the enemy does not name its own.
+ *  guessed. Fixed, not derived from gravity: the arc is a curve fitted between
+ *  two known endpoints rather than an integration, so the landing frame and the
+ *  landing pixel are both known when the hop starts. */
+const ENEMY_HOP_FRAMES = 22;
+
+/** px — peak height of a hop's arc. guessed. */
+const ENEMY_HOP_HEIGHT = 10;
 
 /** rad/f — default angular speed of an orbiting enemy. guessed. */
 const ENEMY_ORBIT_SPEED = 0.045;
@@ -2479,22 +2529,22 @@ __exports["PLAYER_INVULN_FRAMES"] = PLAYER_INVULN_FRAMES;
 __exports["PLAYER_FLICKER_FRAMES"] = PLAYER_FLICKER_FRAMES;
 __exports["PLAYER_RECOVER_INVULN_FRAMES"] = PLAYER_RECOVER_INVULN_FRAMES;
 __exports["PLAYER_HURT_FRAMES"] = PLAYER_HURT_FRAMES;
-__exports["PLAYER_KNOCK_SPEED"] = PLAYER_KNOCK_SPEED;
-__exports["PLAYER_KNOCK_DECAY"] = PLAYER_KNOCK_DECAY;
+__exports["PLAYER_KNOCK_DIST"] = PLAYER_KNOCK_DIST;
+__exports["PLAYER_KNOCK_FRAMES"] = PLAYER_KNOCK_FRAMES;
 __exports["ENEMY_INVULN_FRAMES"] = ENEMY_INVULN_FRAMES;
 __exports["ENEMY_FLICKER_FRAMES"] = ENEMY_FLICKER_FRAMES;
 __exports["ENEMY_KNOCK_FRAMES"] = ENEMY_KNOCK_FRAMES;
-__exports["ENEMY_KNOCK_DECAY"] = ENEMY_KNOCK_DECAY;
 __exports["KNOCK_DEFAULT"] = KNOCK_DEFAULT;
 __exports["KNOCK_SWORD"] = KNOCK_SWORD;
 __exports["KNOCK_SPIN"] = KNOCK_SPIN;
 __exports["KNOCK_PROJECTILE"] = KNOCK_PROJECTILE;
 __exports["KNOCK_EXPLOSION"] = KNOCK_EXPLOSION;
+__exports["KNOCK_THROWN"] = KNOCK_THROWN;
+__exports["KNOCK_TOOL"] = KNOCK_TOOL;
 __exports["BOSS_INVULN_FRAMES"] = BOSS_INVULN_FRAMES;
 __exports["BOSS_PHASE_INVULN_FRAMES"] = BOSS_PHASE_INVULN_FRAMES;
 __exports["BOSS_KNOCK_FRAMES"] = BOSS_KNOCK_FRAMES;
 __exports["BOSS_KNOCK_SCALE"] = BOSS_KNOCK_SCALE;
-__exports["BOSS_KNOCK_DECAY"] = BOSS_KNOCK_DECAY;
 __exports["HAZARD_DAMAGE"] = HAZARD_DAMAGE;
 __exports["PIT_DAMAGE"] = PIT_DAMAGE;
 __exports["WASH_DAMAGE"] = WASH_DAMAGE;
@@ -2532,17 +2582,20 @@ __exports["CONTEXT_REACH"] = CONTEXT_REACH;
 __exports["LIFT_REACH"] = LIFT_REACH;
 __exports["THROW_SPEED"] = THROW_SPEED;
 __exports["CARRY_HEIGHT"] = CARRY_HEIGHT;
+__exports["ENEMY_GRID_STEP"] = ENEMY_GRID_STEP;
+__exports["ENEMY_DECIDE_STEPS"] = ENEMY_DECIDE_STEPS;
+__exports["ENEMY_TURN_PAUSE_FRAMES"] = ENEMY_TURN_PAUSE_FRAMES;
 __exports["ENEMY_TURN_CHANCE"] = ENEMY_TURN_CHANCE;
 __exports["ENEMY_DEFAULT_SPEED"] = ENEMY_DEFAULT_SPEED;
 __exports["ENEMY_DEFAULT_RATE"] = ENEMY_DEFAULT_RATE;
 __exports["ENEMY_CHARGE_SPEED_MULT"] = ENEMY_CHARGE_SPEED_MULT;
-__exports["ENEMY_HOP_SPEED_MULT"] = ENEMY_HOP_SPEED_MULT;
 __exports["ENEMY_CHARGE_RECOVER_FRAMES"] = ENEMY_CHARGE_RECOVER_FRAMES;
 __exports["ENEMY_CHARGE_TOLERANCE"] = ENEMY_CHARGE_TOLERANCE;
 __exports["ENEMY_CHARGE_RANGE"] = ENEMY_CHARGE_RANGE;
 __exports["ENEMY_HOP_WAIT_FRAMES"] = ENEMY_HOP_WAIT_FRAMES;
-__exports["ENEMY_HOP_POWER"] = ENEMY_HOP_POWER;
-__exports["ENEMY_HOP_GRAVITY"] = ENEMY_HOP_GRAVITY;
+__exports["ENEMY_HOP_DIST"] = ENEMY_HOP_DIST;
+__exports["ENEMY_HOP_FRAMES"] = ENEMY_HOP_FRAMES;
+__exports["ENEMY_HOP_HEIGHT"] = ENEMY_HOP_HEIGHT;
 __exports["ENEMY_ORBIT_SPEED"] = ENEMY_ORBIT_SPEED;
 __exports["ENEMY_ORBIT_RADIUS"] = ENEMY_ORBIT_RADIUS;
 __exports["ENEMY_SUBMERGE_DOWN_FRAMES"] = ENEMY_SUBMERGE_DOWN_FRAMES;
@@ -2816,7 +2869,16 @@ class Entity {
     return Math.hypot(dx, dy);
   }
 
-  /** Take damage. `dir` is the direction the hit came *from* the attacker's view. */
+  /**
+   * Take damage. `dir` is the direction the hit came *from* the attacker's
+   * view, and `knock` is a DISTANCE IN PIXELS, not a speed.
+   *
+   * Knockback is a scripted displacement, the way the GB Zeldas do it: the
+   * target travels `knock` pixels over ENEMY_KNOCK_FRAMES frames at a constant
+   * speed and stops. It used to be an impulse that decayed by 0.82 a frame,
+   * which made the distance a function of the initial speed and put a strong
+   * hit and a weak hit in unrelated places. See docs/FEEL-SPEC.md.
+   */
   hurt(game, dmg, dir, knock = KNOCK_DEFAULT) {
     if (this.invuln > 0 || this.dead) return false;
     this.hp -= dmg;
@@ -2824,7 +2886,8 @@ class Entity {
     this.flicker = ENEMY_FLICKER_FRAMES;
     if (knock && dir) {
       const [dx, dy] = DIR_VEC[dir] || [0, 0];
-      this.knockX = dx * knock; this.knockY = dy * knock;
+      const per = knock / ENEMY_KNOCK_FRAMES;
+      this.knockX = dx * per; this.knockY = dy * per;
       this.knockTime = ENEMY_KNOCK_FRAMES;
     }
     if (this.hp <= 0) { this.die(game); return true; }
@@ -3221,7 +3284,7 @@ __define("game/projectile.js", function (__exports, __require) {
 const { Entity, moveEntity, canOccupy, defineEntity, DIR_VEC } = __require("game/entity.js");
 const { VIEW_W, VIEW_H, TILE } = __require("core/screen.js");
 const { F } = __require("world/tileset.js");
-const { PROJECTILE_LIFE, PROJECTILE_SPEED, PROJECTILE_Z } = __require("data/feel.js");
+const { PROJECTILE_LIFE, PROJECTILE_SPEED, PROJECTILE_Z, KNOCK_PROJECTILE } = __require("data/feel.js");
 
 class Projectile extends Entity {
   constructor(x, y, o = {}) {
@@ -3280,7 +3343,7 @@ class Projectile extends Entity {
         if (!this.overlaps(e)) continue;
         const dir = Math.abs(this.vx) > Math.abs(this.vy)
           ? (this.vx < 0 ? 'left' : 'right') : (this.vy < 0 ? 'up' : 'down');
-        if (e.hurt(game, this.damage, dir, 3) && !this.pierce) { this.expire(game); return; }
+        if (e.hurt(game, this.damage, dir, KNOCK_PROJECTILE) && !this.pierce) { this.expire(game); return; }
       }
     } else if (this.damage > 0 && game.player && !game.player.invincible) {
       if (this.overlaps(game.player)) {
@@ -3486,7 +3549,7 @@ const { Explosion } = __require("game/effects.js");
 const { F } = __require("world/tileset.js");
 const { TILE, VIEW_W, VIEW_H } = __require("core/screen.js");
 const { hasItem, itemLevel, addBombs } = __require("game/progress.js");
-const { PEGASUS_FRAMES } = __require("data/feel.js");
+const { PEGASUS_FRAMES, KNOCK_TOOL, KNOCK_THROWN } = __require("data/feel.js");
 const { sprites } = __require("gfx/art.js");
 
 // --------------------------------------------------------------------------
@@ -3606,7 +3669,7 @@ class Boomerang extends Entity {
       if (e.isEnemy && this.overlaps(e)) {
         const dir = Math.abs(this.vx) > Math.abs(this.vy)
           ? (this.vx < 0 ? 'left' : 'right') : (this.vy < 0 ? 'up' : 'down');
-        if (e.hurt(game, this.damage, dir, 2)) e.stun = Math.max(e.stun, 45);
+        if (e.hurt(game, this.damage, dir, KNOCK_TOOL)) e.stun = Math.max(e.stun, 45);
         this.returning = true;
       }
       if (e.isDrop && !e.attached && this.overlaps(e)) {
@@ -3682,7 +3745,7 @@ class Hookshot extends Entity {
       for (const e of game.entities) {
         if (e.dead || !this.overlaps(e)) continue;
         if (e.isEnemy) {
-          e.hurt(game, this.level >= 2 ? 2 : 1, this.dir, 2);
+          e.hurt(game, this.level >= 2 ? 2 : 1, this.dir, KNOCK_TOOL);
           e.stun = Math.max(e.stun, 40);
           this.state = 'back';
           break;
@@ -3766,7 +3829,7 @@ class ThrownObject extends Entity {
     if (r.hitX || r.hitY) { this.shatter(game); return; }
     for (const e of game.entities) {
       if (e.isEnemy && !e.dead && this.overlaps(e)) {
-        e.hurt(game, this.power, null, 3);
+        e.hurt(game, this.power, null, KNOCK_THROWN);
         this.shatter(game);
         return;
       }
@@ -3806,7 +3869,7 @@ function applySeed(game, kind, x, y, fromPlayer) {
       game.checkTileAction({ x: x + 4, y: y + 4, w: 8, h: 8 }, 'fire');
       for (const e of game.entities) {
         if (e.isEnemy && !e.dead && Math.hypot(e.cx - (x + 8), e.cy - (y + 8)) < 14) {
-          e.hurt(game, 2, null, 1);
+          e.hurt(game, 2, null, KNOCK_TOOL);
         }
       }
       game.audio.sfx('fire');
@@ -4079,7 +4142,7 @@ const { TILE, VIEW_W, VIEW_H } = __require("core/screen.js");
 const { sprites } = __require("gfx/art.js");
 const { hasItem, itemLevel, HEART_UNITS } = __require("game/progress.js");
 const { useEquipped, ITEMS, ThrownObject } = __require("game/items.js");
-const { WALK_SPEED, SWIM_SPEED, DIVE_SPEED, BOOST_SPEED, SHIELD_SPEED, SLOW_FACTOR, SHALLOW_FACTOR, CARRY_FACTOR, SPIN_DRIFT_SPEED, SWING_FRAMES, SWING_HIT_START, SWING_HIT_END, CHARGE_FRAMES, CHARGE_SPARKLE_EVERY, SPIN_FRAMES, SWORD_REACH, SWORD_SPAN, SWORD_GAP, SPIN_BOX, PLAYER_INVULN_FRAMES, PLAYER_FLICKER_FRAMES, PLAYER_RECOVER_INVULN_FRAMES, PLAYER_HURT_FRAMES, PLAYER_KNOCK_SPEED, PLAYER_KNOCK_DECAY, KNOCK_SWORD, KNOCK_SPIN, HAZARD_DAMAGE, PIT_DAMAGE, WASH_DAMAGE, JUMP_GRAVITY, GLIDE_GRAVITY, LAND_SETTLE_RATE, LEDGE_MAX_SPAN, LEDGE_HOP_FRAMES, LEDGE_HOP_HEIGHT, LEDGE_PROBE_REACH, FALL_FRAMES, WASH_FRAMES, DIG_FRAMES, CONCH_FRAMES, PUSH_DELAY_FRAMES, DIVE_FRAMES, CONTEXT_REACH, LIFT_REACH, THROW_SPEED, CARRY_HEIGHT, SHAKE_SMALL, SHAKE_SMALL_FRAMES, CHARGE_SPARKLE_SPREAD, WADE_FOAM_EVERY, DIAGONAL_FACTOR, PUSH_PROBE_REACH } = __require("data/feel.js");
+const { WALK_SPEED, SWIM_SPEED, DIVE_SPEED, BOOST_SPEED, SHIELD_SPEED, SLOW_FACTOR, SHALLOW_FACTOR, CARRY_FACTOR, SPIN_DRIFT_SPEED, SWING_FRAMES, SWING_HIT_START, SWING_HIT_END, CHARGE_FRAMES, CHARGE_SPARKLE_EVERY, SPIN_FRAMES, SWORD_REACH, SWORD_SPAN, SWORD_GAP, SPIN_BOX, PLAYER_INVULN_FRAMES, PLAYER_FLICKER_FRAMES, PLAYER_RECOVER_INVULN_FRAMES, PLAYER_HURT_FRAMES, PLAYER_KNOCK_DIST, PLAYER_KNOCK_FRAMES, KNOCK_SWORD, KNOCK_SPIN, HAZARD_DAMAGE, PIT_DAMAGE, WASH_DAMAGE, JUMP_GRAVITY, GLIDE_GRAVITY, LAND_SETTLE_RATE, LEDGE_MAX_SPAN, LEDGE_HOP_FRAMES, LEDGE_HOP_HEIGHT, LEDGE_PROBE_REACH, FALL_FRAMES, WASH_FRAMES, DIG_FRAMES, CONCH_FRAMES, PUSH_DELAY_FRAMES, DIVE_FRAMES, CONTEXT_REACH, LIFT_REACH, THROW_SPEED, CARRY_HEIGHT, SHAKE_SMALL, SHAKE_SMALL_FRAMES, CHARGE_SPARKLE_SPREAD, WADE_FOAM_EVERY, DIAGONAL_FACTOR, PUSH_PROBE_REACH } = __require("data/feel.js");
 
 class Player extends Entity {
   constructor(x, y) {
@@ -4149,8 +4212,12 @@ class Player extends Entity {
 
     if (this.hurtTime > 0) {
       this.hurtTime--;
-      moveEntity(game, this, this.knockX, this.knockY);
-      this.knockX *= PLAYER_KNOCK_DECAY; this.knockY *= PLAYER_KNOCK_DECAY;
+      // Fixed distance, fixed frames, constant speed — the same shape as enemy
+      // knockback, so where a hit puts you is something you can learn.
+      if (this.knockTime > 0) {
+        this.knockTime--;
+        moveEntity(game, this, this.knockX, this.knockY);
+      }
       return;
     }
 
@@ -4661,9 +4728,11 @@ class Player extends Entity {
     if (!o.noKnockDir && source) {
       const dx = this.cx - source.cx, dy = this.cy - source.cy;
       const d = Math.hypot(dx, dy) || 1;
-      this.knockX = dx / d * PLAYER_KNOCK_SPEED; this.knockY = dy / d * PLAYER_KNOCK_SPEED;
+      const per = PLAYER_KNOCK_DIST / PLAYER_KNOCK_FRAMES;
+      this.knockX = dx / d * per; this.knockY = dy / d * per;
+      this.knockTime = PLAYER_KNOCK_FRAMES;
     } else {
-      this.knockX = 0; this.knockY = 0;
+      this.knockX = 0; this.knockY = 0; this.knockTime = 0;
     }
     this.charge = 0;
     if (this.carrying) this.dropCarried(game);
@@ -11500,7 +11569,9 @@ __define("game/enemy.js", function (__exports, __require) {
 //       side: ['octorok_s0', 'octorok_s1'],
 //     },
 //     rate: 10,                 // frames per animation step
-//     speed: 0.45,              // pixels per frame
+//     speed: 0.45,              // pixels per frame. For a ground enemy this is
+//                               // an average: it walks the 8px lattice, and the
+//                               // speed sets how many frames a step takes.
 //     hb: { x: 2, y: 5, w: 12, h: 10 },
 //     drops: 'common',          // 'none' | 'common' | 'good' | 'rich'
 //     terrain: 'land',          // 'land' | 'water' | 'any' | 'air'
@@ -11522,7 +11593,7 @@ const { fire } = __require("game/projectile.js");
 const { F } = __require("world/tileset.js");
 const { TILE, VIEW_W, VIEW_H } = __require("core/screen.js");
 const { hash32 } = __require("core/rng.js");
-const { ENEMY_DEFAULT_SPEED, ENEMY_DEFAULT_RATE, ENEMY_TURN_CHANCE, ENEMY_KNOCK_DECAY, ENEMY_BEACHED_FRAMES, ENEMY_CHARGE_SPEED_MULT, ENEMY_HOP_SPEED_MULT, ENEMY_CHARGE_RECOVER_FRAMES, ENEMY_CHARGE_TOLERANCE, ENEMY_CHARGE_RANGE, ENEMY_HOP_WAIT_FRAMES, ENEMY_HOP_POWER, ENEMY_HOP_GRAVITY, ENEMY_ORBIT_SPEED, ENEMY_ORBIT_RADIUS, ENEMY_SUBMERGE_DOWN_FRAMES, ENEMY_SUBMERGE_UP_FRAMES, ENEMY_SURFACE_MIN_DIST, ENEMY_SURFACE_DIST_SPAN, ENEMY_ALIGN_TOLERANCE, ENEMY_SHOT_SPEED, ENEMY_SHOT_LIFE, RING_SHOT_SPEED, RING_SHOT_LIFE, BOSS_INTRO_FRAMES, BOSS_INVULN_FRAMES, BOSS_PHASE_INVULN_FRAMES, BOSS_KNOCK_FRAMES, BOSS_KNOCK_SCALE, BOSS_KNOCK_DECAY, BOSS_DEATH_FRAMES, BOSS_DEATH_BOOM_EVERY, SHAKE_MEDIUM, SHAKE_SMALL_FRAMES, TIDE_DRIFT_PER_LEVEL } = __require("data/feel.js");
+const { ENEMY_DEFAULT_SPEED, ENEMY_DEFAULT_RATE, ENEMY_TURN_CHANCE, ENEMY_BEACHED_FRAMES, ENEMY_GRID_STEP, ENEMY_DECIDE_STEPS, ENEMY_TURN_PAUSE_FRAMES, ENEMY_CHARGE_SPEED_MULT, ENEMY_CHARGE_RECOVER_FRAMES, ENEMY_CHARGE_TOLERANCE, ENEMY_CHARGE_RANGE, ENEMY_HOP_WAIT_FRAMES, ENEMY_HOP_DIST, ENEMY_HOP_FRAMES, ENEMY_HOP_HEIGHT, ENEMY_ORBIT_SPEED, ENEMY_ORBIT_RADIUS, ENEMY_SUBMERGE_DOWN_FRAMES, ENEMY_SUBMERGE_UP_FRAMES, ENEMY_SURFACE_MIN_DIST, ENEMY_SURFACE_DIST_SPAN, ENEMY_ALIGN_TOLERANCE, ENEMY_KNOCK_FRAMES, ENEMY_SHOT_SPEED, ENEMY_SHOT_LIFE, RING_SHOT_SPEED, RING_SHOT_LIFE, BOSS_INTRO_FRAMES, BOSS_INVULN_FRAMES, BOSS_PHASE_INVULN_FRAMES, BOSS_KNOCK_FRAMES, BOSS_KNOCK_SCALE, BOSS_DEATH_FRAMES, BOSS_DEATH_BOOM_EVERY, SHAKE_MEDIUM, SHAKE_SMALL_FRAMES, TIDE_DRIFT_PER_LEVEL } = __require("data/feel.js");
 
 const TERRAIN_AVOID = {
   land: F.WATER | F.DEEP | F.PIT | F.HAZARD | F.JUMPABLE,
@@ -11550,6 +11621,12 @@ class Enemy extends Entity {
     this.shield = spec.shield || null;
     this.drops = opts.drops || spec.drops || 'common';
     this.dir = opts.dir || 'down';
+    // Lattice motion. `step` is the step in progress, `stepping` mirrors it for
+    // anything outside this file (tools/check-motion.mjs reads it), and
+    // `charging` marks the one ground state that is deliberately continuous.
+    this.step = null;
+    this.stepping = false;
+    this.charging = false;
     this.aiState = 0;
     this.aiTimer = 0;
     this.tick = 0;
@@ -11603,10 +11680,16 @@ class Enemy extends Entity {
     }
     if (this.dormant) return;
 
+    // Knockback is a scripted displacement: constant speed, fixed distance,
+    // fixed frame count. It also throws a ground enemy off the lattice, so the
+    // last frame of it puts the enemy back on.
     if (this.knockTime > 0) {
       this.knockTime--;
       moveEntity(game, this, this.knockX, this.knockY);
-      this.knockX *= ENEMY_KNOCK_DECAY; this.knockY *= ENEMY_KNOCK_DECAY;
+      if (this.knockTime === 0) {
+        this.step = null; this.stepping = false;
+        realign(this, game);
+      }
       return;
     }
     if (this.stun > 0) { this.stun--; return; }
@@ -11734,7 +11817,6 @@ class Boss extends Enemy {
     if (this.knockTime > 0) {
       this.knockTime--;
       moveEntity(game, this, this.knockX, this.knockY);
-      this.knockX *= BOSS_KNOCK_DECAY; this.knockY *= BOSS_KNOCK_DECAY;
       return;
     }
     if (this.stun > 0) { this.stun--; return; }
@@ -11763,8 +11845,11 @@ class Boss extends Enemy {
     this.invuln = BOSS_INVULN_FRAMES;
     this.flicker = BOSS_INVULN_FRAMES;
     if (knock && dir) {
+      // `knock` is a distance; a boss covers a fraction of it, at a constant
+      // speed, over BOSS_KNOCK_FRAMES frames.
       const [dx, dy] = DIR_VEC[dir] || [0, 0];
-      this.knockX = dx * (knock * BOSS_KNOCK_SCALE); this.knockY = dy * (knock * BOSS_KNOCK_SCALE);
+      const per = (knock * BOSS_KNOCK_SCALE) / BOSS_KNOCK_FRAMES;
+      this.knockX = dx * per; this.knockY = dy * per;
       this.knockTime = BOSS_KNOCK_FRAMES;
     }
     if (this.spec.onHurt) this.spec.onHurt(this, game, dmg);
@@ -11858,48 +11943,270 @@ function moveDir(e, g, dir, speed) {
   return false;
 }
 
-/** Amble about, changing direction on walls and occasionally at random. */
+const OPPOSITE = { up: 'down', down: 'up', left: 'right', right: 'left' };
+
+// --------------------------------------------------------------------------
+// The 8px lattice
+// --------------------------------------------------------------------------
+//
+// A ground enemy has no velocity. It stands on a lattice point, decides where
+// to go, and then takes a whole step — ENEMY_GRID_STEP pixels in one cardinal
+// direction, spread over however many frames its speed implies. Once a step is
+// running it runs to the end. Nothing can turn the enemy mid-step, and nothing
+// draws from the room's stream mid-step either.
+//
+// That is the entire mechanism, and it is what makes an octorok dodgeable: the
+// player can see the enemy standing on a lattice point, knows a decision is
+// about to happen, and knows the answer will be one of four whole steps. A
+// per-frame turn probability on a floating velocity gives none of that — the
+// enemy can reverse at any subpixel, so there is nothing to read.
+//
+// WHO IS ON THE LATTICE. Ground enemies: not bosses (a boss is a set piece and
+// wants to feel unconstrained), not fliers, not aquatic enemies (water carries
+// you, it does not step). And `charge`, `orbit` and `bounceDiag` are
+// continuous even for a ground enemy, by design — those verbs exist to feel
+// different from walking.
+
+/**
+ * Is this entity's ordinary walking motion locked to the lattice?
+ *
+ * The boss test is `instanceof`, not `e.isBoss`, and that is not fussiness:
+ * minibosses are built with `defineBoss` and then CLEAR `isBoss` in their init,
+ * because `onEnemyDefeated` keys "dungeon beaten" off that flag. Reading the
+ * flag here would put every miniboss on the lattice on the strength of a piece
+ * of progress bookkeeping. What the class says — this thing is a set piece —
+ * is what motion actually cares about.
+ */
+function gridLocked(e) {
+  if (e instanceof Boss) return false;
+  return !e.flying && e.terrain !== 'water';
+}
+
+/** True while `e` is somewhere between two lattice points and cannot decide. */
+function midStep(e) {
+  return !!e.stepping;
+}
+
+function latticePair(v) {
+  const lo = Math.floor(v / ENEMY_GRID_STEP) * ENEMY_GRID_STEP;
+  const hi = lo + ENEMY_GRID_STEP;
+  return (v - lo <= hi - v) ? [lo, hi] : [hi, lo];
+}
+
+/**
+ * Put an entity back on the lattice, nearest legal point first.
+ *
+ * Knockback, a charge into a wall and a resurfacing all leave a ground enemy
+ * between lattice points. Rather than let it walk a shifted lattice forever,
+ * every one of those states ends by calling this. The shift is at most 4px on
+ * each axis, which is under a frame of walking and invisible in motion.
+ */
+function realign(e, g) {
+  if (!gridLocked(e)) return false;
+  const xs = latticePair(e.x), ys = latticePair(e.y);
+  for (const y of ys) {
+    for (const x of xs) {
+      if (!canOccupy(g, e, x, y)) continue;
+      if (e.terrainOk && !e.terrainOk(g, x, y)) continue;
+      e.x = x; e.y = y;
+      return true;
+    }
+  }
+  // Nowhere legal within half a step: on the lattice still beats off it, and
+  // the step probe will refuse to walk the enemy anywhere it should not go.
+  e.x = xs[0]; e.y = ys[0];
+  return false;
+}
+
+/**
+ * Begin a step of `dist` pixels in `dir`, taking `frames` frames.
+ *
+ * The destination is probed before anything moves, so a step is either taken
+ * whole or not taken at all — the enemy never ends up wedged half into a wall
+ * and off the lattice. Returns false if the way is blocked.
+ */
+function beginStep(e, g, dir, dist, frames, o = {}) {
+  const [dx, dy] = DIR_VEC[dir] || [0, 0];
+  if (!dx && !dy) return false;
+  if (!Number.isInteger(e.x) || !Number.isInteger(e.y)) realign(e, g);
+  const tx = e.x + dx * dist, ty = e.y + dy * dist;
+  // A hop clears ground obstructions a walk cannot; canOccupy decides that
+  // from the entity's own height, so lift it for the probe.
+  const z0 = e.z;
+  if (o.air) e.z = 4;
+  const ok = canOccupy(g, e, tx, ty) && (!e.terrainOk || e.terrainOk(g, tx, ty));
+  e.z = z0;
+  if (!ok) return false;
+  e.step = { dir, dx, dy, dist, n: Math.max(1, Math.round(frames)), f: 0, x0: e.x, y0: e.y };
+  e.stepping = true;
+  return true;
+}
+
+/**
+ * Carry a step forward one frame. Returns true while the step is still
+ * running. A step that is interrupted anyway — a block that appeared after the
+ * probe, a door closing — is rewound to where it started, which is a lattice
+ * point.
+ */
+function advanceStep(e, g) {
+  const s = e.step;
+  if (!s) return false;
+  s.f++;
+  // Position is a fraction of the whole step rounded to a pixel, not an
+  // accumulated velocity, so the last frame lands exactly on the lattice
+  // however the arithmetic rounds on the way.
+  const want = Math.round((s.dist * s.f) / s.n);
+  const r = moveEntity(g, e, s.x0 + s.dx * want - e.x, s.y0 + s.dy * want - e.y);
+  if (r.hitX || r.hitY) {
+    e.x = s.x0; e.y = s.y0;
+    e.step = null; e.stepping = false;
+    return false;
+  }
+  if (s.f >= s.n) {
+    e.x = s.x0 + s.dx * s.dist; e.y = s.y0 + s.dy * s.dist;
+    e.step = null; e.stepping = false;
+  }
+  return true;
+}
+
+/** Frames one lattice step takes at the given average speed. */
+function stepFrames(speed, dist) {
+  return Math.max(1, Math.round(dist / Math.max(Math.abs(speed), 0.01)));
+}
+
+/**
+ * Take one whole lattice step in `dir` if the way is clear. The workhorse the
+ * lattice half of wander/chase/flee/patrol is built from.
+ */
+function gridStep(e, g, dir, speed, o = {}) {
+  const dist = o.dist || ENEMY_GRID_STEP;
+  return beginStep(e, g, dir, dist, stepFrames(speed, dist), o);
+}
+
+/**
+ * The shared front half of every lattice walker: finish a running step, sit
+ * out a hesitation, and otherwise report that a decision is due this frame.
+ */
+function readyToDecide(e, g) {
+  if (e.stepping) { advanceStep(e, g); return false; }
+  if (e._pause > 0) { e._pause--; return false; }
+  return true;
+}
+
+// --------------------------------------------------------------------------
+// Walking verbs
+// --------------------------------------------------------------------------
+
+/**
+ * Amble about. On the lattice: walk ENEMY_DECIDE_STEPS whole steps, then draw
+ * a fresh direction from the room's stream. Off it (bosses, aquatic drifters):
+ * the old continuous drift with a per-frame turn probability.
+ *
+ * The cadence, not the probability, is the point. An enemy that rolls to turn
+ * every frame turns at unpredictable subpixels; one that decides every third
+ * step turns where the player can see it coming.
+ */
 function wander(e, g, o = {}) {
   const speed = o.speed != null ? o.speed : e.speed;
-  const turn = o.turnChance != null ? o.turnChance : ENEMY_TURN_CHANCE;
-  if (o.pause && e._pause > 0) { e._pause--; return; }
-  if (!moveDir(e, g, e.dir, speed) || g.rng.chance(turn)) {
+  if (!gridLocked(e)) {
+    const turn = o.turnChance != null ? o.turnChance : ENEMY_TURN_CHANCE;
+    if (o.pause && e._pause > 0) { e._pause--; return; }
+    if (!moveDir(e, g, e.dir, speed) || g.rng.chance(turn)) {
+      e.dir = randDir(g);
+      if (o.pause) e._pause = o.pause;
+    }
+    return;
+  }
+  if (!readyToDecide(e, g)) return;
+  const run = o.decide != null ? o.decide : ENEMY_DECIDE_STEPS;
+  if (!(e._runLeft > 0)) {
     e.dir = randDir(g);
-    if (o.pause) e._pause = o.pause;
+    e._runLeft = run;
+    if (o.pause) { e._pause = o.pause; return; }
+  }
+  if (gridStep(e, g, e.dir, speed, o)) {
+    e._runLeft--;
+  } else {
+    // Walked into something. Hesitate, then decide again next time — one draw
+    // per hesitation rather than one per frame, so a cornered enemy cannot
+    // chew through the room's stream.
+    e._runLeft = 0;
+    e._pause = ENEMY_TURN_PAUSE_FRAMES;
   }
 }
 
-/** Walk toward the player, preferring the axis with the greater gap. */
+/**
+ * Walk toward the player, preferring the axis with the greater gap. On the
+ * lattice the choice is remade at every lattice point and nowhere else, so a
+ * chaser tracks the player in visible right-angled steps instead of sliding
+ * diagonally onto them.
+ */
 function chase(e, g, o = {}) {
   const p = o.target || g.player;
   if (!p) return;
   const speed = o.speed != null ? o.speed : e.speed;
   const dx = p.cx - e.cx, dy = p.cy - e.cy;
-  const primary = Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 'left' : 'right') : (dy < 0 ? 'up' : 'down');
-  const secondary = Math.abs(dx) > Math.abs(dy) ? (dy < 0 ? 'up' : 'down') : (dx < 0 ? 'left' : 'right');
-  e.dir = primary;
-  if (!moveDir(e, g, primary, speed)) {
-    e.dir = secondary;
-    if (!moveDir(e, g, secondary, speed)) e.dir = primary;
+  const xMajor = Math.abs(dx) > Math.abs(dy);
+  const primary = xMajor ? (dx < 0 ? 'left' : 'right') : (dy < 0 ? 'up' : 'down');
+  const secondary = xMajor ? (dy < 0 ? 'up' : 'down') : (dx < 0 ? 'left' : 'right');
+  if (!gridLocked(e)) {
+    e.dir = primary;
+    if (!moveDir(e, g, primary, speed)) {
+      e.dir = secondary;
+      if (!moveDir(e, g, secondary, speed)) e.dir = primary;
+    }
+    return;
   }
+  if (!readyToDecide(e, g)) return;
+  e.dir = primary;
+  if (gridStep(e, g, primary, speed, o)) return;
+  e.dir = secondary;
+  if (gridStep(e, g, secondary, speed, o)) return;
+  e.dir = primary;
+  e._pause = ENEMY_TURN_PAUSE_FRAMES;
 }
 
+/** The reverse of `chase`: put distance between yourself and the player. */
 function flee(e, g, o = {}) {
   const p = o.target || g.player;
   if (!p) return;
   const speed = o.speed != null ? o.speed : e.speed;
   const dx = e.cx - p.cx, dy = e.cy - p.cy;
-  const dir = Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 'left' : 'right') : (dy < 0 ? 'up' : 'down');
-  e.dir = dir;
-  if (!moveDir(e, g, dir, speed)) e.dir = randDir(g);
+  const xMajor = Math.abs(dx) > Math.abs(dy);
+  const primary = xMajor ? (dx < 0 ? 'left' : 'right') : (dy < 0 ? 'up' : 'down');
+  const secondary = xMajor ? (dy < 0 ? 'up' : 'down') : (dx < 0 ? 'left' : 'right');
+  if (!gridLocked(e)) {
+    e.dir = primary;
+    if (!moveDir(e, g, primary, speed)) e.dir = randDir(g);
+    return;
+  }
+  if (!readyToDecide(e, g)) return;
+  e.dir = primary;
+  if (gridStep(e, g, primary, speed, o)) return;
+  e.dir = secondary;
+  if (gridStep(e, g, secondary, speed, o)) return;
+  // Cornered with the player in the way: turn and take it.
+  e.dir = randDir(g);
+  e._pause = ENEMY_TURN_PAUSE_FRAMES;
 }
 
-/** Back-and-forth along one axis, reversing at walls. */
+/**
+ * Back-and-forth along one axis, reversing at walls. On the lattice the
+ * reversal happens at a lattice point, so a line of patrolling crabs stays a
+ * line instead of smearing out of phase.
+ */
 function patrol(e, g, o = {}) {
   const speed = o.speed != null ? o.speed : e.speed;
   if (!e._pdir) e._pdir = o.axis === 'y' ? 'down' : 'right';
-  if (!moveDir(e, g, e._pdir, speed)) {
-    e._pdir = { up: 'down', down: 'up', left: 'right', right: 'left' }[e._pdir];
+  if (!gridLocked(e)) {
+    if (!moveDir(e, g, e._pdir, speed)) e._pdir = OPPOSITE[e._pdir];
+    e.dir = e._pdir;
+    return;
+  }
+  if (!readyToDecide(e, g)) { e.dir = e._pdir; return; }
+  if (!gridStep(e, g, e._pdir, speed, o)) {
+    e._pdir = OPPOSITE[e._pdir];
+    if (!gridStep(e, g, e._pdir, speed, o)) e._pause = ENEMY_TURN_PAUSE_FRAMES;
   }
   e.dir = e._pdir;
 }
@@ -11917,44 +12224,75 @@ function bounceDiag(e, g, o = {}) {
   e.dir = Math.abs(e._bvx) > Math.abs(e._bvy) ? (e._bvx < 0 ? 'left' : 'right') : (e._bvy < 0 ? 'up' : 'down');
 }
 
-/** Hop: rise, travel, land. Used by leevers, crabs, jumping slimes. */
+/**
+ * Hop: rise, travel, land. Used by zols, crabs, tektites.
+ *
+ * A hop is a lattice step with an arc drawn on it. The distance is a whole
+ * number of lattice cells and the airtime is a fixed frame count, so the
+ * hopper leaves the lattice and lands back on it — the landing pixel and the
+ * landing frame are both known the instant the hop starts, which is what makes
+ * a tektite something you can walk under rather than something you flinch at.
+ *
+ * The old version integrated a velocity against a gravity constant, so the
+ * landing spot depended on how the two divided and was never on the lattice.
+ */
 function hop(e, g, o = {}) {
-  const speed = o.speed != null ? o.speed : e.speed * ENEMY_HOP_SPEED_MULT;
-  if (e._hopState == null) { e._hopState = 'wait'; e._hopWait = o.wait || ENEMY_HOP_WAIT_FRAMES; }
-  if (e._hopState === 'wait') {
-    if (--e._hopWait <= 0) {
-      e._hopState = 'air';
-      e.vz = o.power || ENEMY_HOP_POWER;
-      if (o.toward !== false) facePlayer(e, g);
-      const [dx, dy] = DIR_VEC[e.dir];
-      e._hvx = dx * speed; e._hvy = dy * speed;
-      if (g.audio) g.audio.sfx('hop');
+  const wait = o.wait || ENEMY_HOP_WAIT_FRAMES;
+  const dist = o.dist || ENEMY_HOP_DIST;
+  const air = o.frames || ENEMY_HOP_FRAMES;
+  const height = o.height || ENEMY_HOP_HEIGHT;
+  if (e._hopState == null) { e._hopState = 'wait'; e._hopWait = wait; }
+
+  if (e._hopState === 'air') {
+    advanceStep(e, g);
+    if (e.step) {
+      // A parabola through (0,0) and (1,0) peaking at `height`. Fitted to the
+      // step's own progress, so it cannot land early or late.
+      const t = e.step.f / e.step.n;
+      e.z = height * 4 * t * (1 - t);
+    } else {
+      e.z = 0; e.vz = 0;
+      e._hopState = 'wait';
+      e._hopWait = wait;
     }
     return;
   }
-  e.z += e.vz;
-  e.vz -= ENEMY_HOP_GRAVITY;
-  moveEntity(g, e, e._hvx, e._hvy);
-  if (e.z <= 0) {
-    e.z = 0; e.vz = 0;
-    e._hopState = 'wait';
-    e._hopWait = o.wait || ENEMY_HOP_WAIT_FRAMES;
+
+  if (--e._hopWait > 0) return;
+  if (o.toward !== false) facePlayer(e, g);
+  // Blocked ahead: try one other direction from the room's stream rather than
+  // hopping into a wall, then wait out another beat if that is blocked too.
+  if (!beginStep(e, g, e.dir, dist, air, { air: true })) {
+    e.dir = randDir(g);
+    if (!beginStep(e, g, e.dir, dist, air, { air: true })) { e._hopWait = wait; return; }
   }
+  e._hopState = 'air';
+  if (g.audio) g.audio.sfx('hop');
 }
 
-/** Charge in a straight line once the player lines up; stop at walls. */
+/**
+ * Charge in a straight line once the player lines up; stop at walls.
+ *
+ * Deliberately continuous, lattice or no lattice. A charge is the one thing a
+ * ground enemy does that is supposed to feel like it has momentum, and putting
+ * it on the lattice would make it read as a fast walk. It ends by putting the
+ * enemy back on the lattice, so the walking that follows is aligned again.
+ */
 function charge(e, g, o = {}) {
   const speed = o.speed != null ? o.speed : e.speed * ENEMY_CHARGE_SPEED_MULT;
-  if (e._charging) {
+  if (e.charging) {
     if (!moveDir(e, g, e.dir, speed)) {
-      e._charging = false;
+      e.charging = false;
       e.stun = o.recover || ENEMY_CHARGE_RECOVER_FRAMES;
+      realign(e, g);
       if (o.shake) g.shake(SHAKE_MEDIUM, SHAKE_SMALL_FRAMES);
     }
     return true;
   }
   if (aligned(e, g, o.tol || ENEMY_CHARGE_TOLERANCE) && distToPlayer(e, g) < (o.range || ENEMY_CHARGE_RANGE)) {
-    e._charging = true;
+    // Abandon any step in progress: the charge is the decision now.
+    e.step = null; e.stepping = false;
+    e.charging = true;
     if (o.tell) e.stun = o.tell;
     if (g.audio) g.audio.sfx(o.sfx || 'charge');
     return true;
@@ -11991,9 +12329,15 @@ function submerge(e, g, o = {}) {
     if (o.reposition !== false && g.player) {
       const a = g.rng.angle();
       const d = ENEMY_SURFACE_MIN_DIST + g.rng.float() * ENEMY_SURFACE_DIST_SPAN;
-      const nx = Math.max(8, Math.min(VIEW_W - 24, g.player.cx + Math.cos(a) * d - 8));
-      const ny = Math.max(8, Math.min(VIEW_H - 24, g.player.cy + Math.sin(a) * d - 8));
-      if (canOccupy(g, e, nx, ny)) { e.x = nx; e.y = ny; }
+      let nx = Math.max(8, Math.min(VIEW_W - 24, g.player.cx + Math.cos(a) * d - 8));
+      let ny = Math.max(8, Math.min(VIEW_H - 24, g.player.cy + Math.sin(a) * d - 8));
+      // A leever that surfaces off the lattice would walk a shifted one for the
+      // rest of its life, so it comes up on a lattice point.
+      if (gridLocked(e)) {
+        nx = Math.round(nx / ENEMY_GRID_STEP) * ENEMY_GRID_STEP;
+        ny = Math.round(ny / ENEMY_GRID_STEP) * ENEMY_GRID_STEP;
+      }
+      if (canOccupy(g, e, nx, ny)) { e.x = nx; e.y = ny; e.step = null; e.stepping = false; }
     }
     if (g.audio) g.audio.sfx('splash');
   }
@@ -12043,6 +12387,7 @@ const AI = {
   wander, chase, flee, patrol, bounceDiag, hop, charge, orbit, submerge,
   shoot, shootRing, every, timer, aligned, facePlayer, distToPlayer, moveDir,
   randDir, driftWithTide,
+  gridLocked, gridStep, beginStep, advanceStep, realign, midStep,
 };
 __exports["Enemy"] = Enemy;
 __exports["defineEnemy"] = defineEnemy;
@@ -12055,6 +12400,13 @@ __exports["distToPlayer"] = distToPlayer;
 __exports["facePlayer"] = facePlayer;
 __exports["aligned"] = aligned;
 __exports["moveDir"] = moveDir;
+__exports["OPPOSITE"] = OPPOSITE;
+__exports["gridLocked"] = gridLocked;
+__exports["midStep"] = midStep;
+__exports["realign"] = realign;
+__exports["beginStep"] = beginStep;
+__exports["advanceStep"] = advanceStep;
+__exports["gridStep"] = gridStep;
 __exports["wander"] = wander;
 __exports["chase"] = chase;
 __exports["flee"] = flee;
@@ -12076,10 +12428,11 @@ __define("data/enemies.js", function (__exports, __require) {
 // Damage values are in quarter-hearts (2 = half a heart).
 
 const { defineEnemy } = __require("game/enemy.js");
-const { wander, chase, flee, patrol, bounceDiag, hop, charge, orbit, submerge, shoot, shootRing, every, timer, aligned, facePlayer, distToPlayer, moveDir, driftWithTide } = __require("game/enemy.js");
+const { wander, chase, flee, patrol, bounceDiag, hop, charge, orbit, submerge, shoot, shootRing, every, timer, aligned, facePlayer, distToPlayer, driftWithTide, beginStep, advanceStep, OPPOSITE } = __require("game/enemy.js");
 const { spawnEntity } = __require("game/entity.js");
 const { F } = __require("world/tileset.js");
 const { TILE } = __require("core/screen.js");
+const { ENEMY_GRID_STEP } = __require("data/feel.js");
 
 function installEnemies() {
   // --- Octorok: wanders and spits rocks along its facing axis -------------
@@ -12093,7 +12446,7 @@ function installEnemies() {
     hb: { x: 2, y: 5, w: 12, h: 10 },
     drops: 'common',
     ai(e, g) {
-      wander(e, g, { turnChance: 0.014 });
+      wander(e, g, { decide: 2 });
       if (every(e, 74) && aligned(e, g, 14) && distToPlayer(e, g) < 96) {
         shoot(e, g, { sprite: 'shot_rock', speed: 1.5, damage: 2 });
       }
@@ -12140,11 +12493,13 @@ function installEnemies() {
     hb: { x: 3, y: 6, w: 10, h: 9 },
     terrain: 'any',
     drops: 'common',
-    ai(e, g) { hop(e, g, { wait: 52, power: 1.7, speed: 0.9 }); },
+    ai(e, g) { hop(e, g, { wait: 52, dist: 8, height: 7, frames: 16 }); },
     onDie(e, g) {
-      // Splits into two gels, unless this zol was itself a split.
+      // Splits into two gels, unless this zol was itself a split. The offset is
+      // a whole lattice cell: a gel that spawned between lattice points would
+      // walk a shifted grid for the rest of its short life.
       if (e.opts.split) return;
-      for (const dx of [-9, 9]) {
+      for (const dx of [-ENEMY_GRID_STEP, ENEMY_GRID_STEP]) {
         spawnEntity(g, 'gel', (e.x + dx) / TILE, e.y / TILE, { split: true });
       }
     },
@@ -12222,7 +12577,7 @@ function installEnemies() {
     shield: 'front',
     drops: 'good',
     ai(e, g) {
-      charge(e, g, { speed: 1.9, tell: 16, range: 88, shake: true, idle: (e2, g2) => wander(e2, g2, { turnChance: 0.01 }) });
+      charge(e, g, { speed: 1.9, tell: 16, range: 88, shake: true, idle: (e2, g2) => wander(e2, g2, { decide: 4 }) });
     },
   });
 
@@ -12231,7 +12586,7 @@ function installEnemies() {
     hp: 2, damage: 2, pal: 'enemyb', speed: 0.6, rate: 8, terrain: 'any',
     frames: ['tektite_0', 'tektite_1'],
     drops: 'common',
-    ai(e, g) { hop(e, g, { wait: 34, power: 2.6, speed: 1.3 }); },
+    ai(e, g) { hop(e, g, { wait: 34, dist: 16, height: 13, frames: 20 }); },
   });
 
   // --- Wisp: circles a point and shoots rings ---------------------------
@@ -12253,7 +12608,7 @@ function installEnemies() {
     shield: 'front',
     drops: 'common',
     ai(e, g) {
-      if (g.tide.level >= 1) wander(e, g, { speed: 0.3, turnChance: 0.03 });
+      if (g.tide.level >= 1) wander(e, g, { speed: 0.3, decide: 2 });
     },
   });
 
@@ -12270,7 +12625,7 @@ function installEnemies() {
     ai(e, g) {
       const d = distToPlayer(e, g);
       if (d < 30) flee(e, g, { speed: 0.55 });
-      else wander(e, g, { turnChance: 0.01 });
+      else wander(e, g, { decide: 4 });
       if (every(e, 88) && aligned(e, g, 16) && d < 100) {
         shoot(e, g, { sprite: 'shot_spear', pal: 'wood', speed: 1.8, damage: 3 });
       }
@@ -12403,20 +12758,27 @@ function installEnemies() {
     drops: 'common',
     ai(e, g) {
       // Never leaves its hole: it snaps out along one axis and is reeled back,
-      // so the safe ground is diagonal to it.
-      if (e._out == null) { e._out = 0; e._back = 0; }
-      if (e._back > 0) {
-        e._back--;
-        const dx = e.homeX - e.x, dy = e.homeY - e.y;
-        e.x += dx * 0.2; e.y += dy * 0.2;
+      // so the safe ground is diagonal to it. Both halves of that are lattice
+      // steps — two cells out, two cells back — which is what makes the reach
+      // something the player can measure by eye rather than guess at. It used
+      // to be reeled home by a proportional lerp that never quite arrived.
+      if (e._pinch == null) e._pinch = 'hole';
+      if (e._pinch === 'out' || e._pinch === 'back') {
+        advanceStep(e, g);
+        if (e.step) return;
+        if (e._pinch === 'out') {
+          e._pinch = 'back';
+          if (!beginStep(e, g, OPPOSITE[e.dir], ENEMY_GRID_STEP * 2, 24)) e._pinch = 'hole';
+        } else {
+          e._pinch = 'hole';
+        }
         return;
       }
-      if (e._out > 0) { e._out--; moveDir(e, g, e.dir, 2.2); if (e._out === 0) e._back = 24; return; }
       if (every(e, 70) && aligned(e, g, 14) && distToPlayer(e, g) < 72) {
         facePlayer(e, g);
         g.spawnEffect('spark', e.x, e.y - 6);
         e.stun = 10;
-        e._out = 14;
+        if (beginStep(e, g, e.dir, ENEMY_GRID_STEP * 2, 14)) e._pinch = 'out';
       }
     },
   });
@@ -12626,10 +12988,10 @@ function installBosses() {
       // in a wall leaves it dazed with the eye open.
       { above: 0.30, ai(e, g) {
         runPending(e, g); closeTick(e, g);
-        const wasCharging = e._charging;
+        const wasCharging = e.charging;
         charge(e, g, { speed: 1.9, tell: 18, range: 130, shake: true, tol: 14,
           idle: (e2, g2) => patrol(e2, g2, { axis: 'x', speed: 0.85 }) });
-        if (wasCharging && !e._charging) open(e, g, 70);
+        if (wasCharging && !e.charging) open(e, g, 70);
         if (timer(e, 'slam', 130)) gohmaraqSlam(e, g, 5, 80);
       } },
       // Cornered: constant slams and a burst of spray in every direction.
@@ -13371,17 +13733,17 @@ function installBosses() {
     phases: [
       { above: 0.50, ai(e, g) {
         runPending(e, g); closeTick(e, g); ironknightRust(e, g);
-        const was = e._charging;
+        const was = e.charging;
         charge(e, g, { speed: 1.8, tell: 20, range: 110, shake: true, tol: 12,
           idle: (e2, g2) => chase(e2, g2, { speed: 0.5 }) });
-        if (was && !e._charging) open(e, g, 90);
+        if (was && !e.charging) open(e, g, 90);
       } },
       { above: 0.00, ai(e, g) {
         runPending(e, g); closeTick(e, g); ironknightRust(e, g);
-        const was = e._charging;
+        const was = e.charging;
         charge(e, g, { speed: 2.2, tell: 14, range: 140, shake: true, tol: 16,
           idle: (e2, g2) => chase(e2, g2, { speed: 0.7 }) });
-        if (was && !e._charging) open(e, g, 70);
+        if (was && !e.charging) open(e, g, 70);
         if (timer(e, 'throw', 150)) {
           windUp(e, g, 16, (e2, g2) => spread(e2, g2, 3, 34,
             { sprite: 'shot_spear', pal: 'stonedk', speed: 1.9, damage: 3 }));

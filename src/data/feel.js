@@ -135,13 +135,19 @@ export const PLAYER_RECOVER_INVULN_FRAMES = 60;
 /** f — how long Link is shoved and unable to act after a hit. guessed. */
 export const PLAYER_HURT_FRAMES = 12;
 
-/** px/f — Link's knockback speed on the first frame after a hit. guessed. */
-export const PLAYER_KNOCK_SPEED = 3.2;
+/** px — how far Link is shoved by a hit, in total. guessed.
+ *  A GB Zelda's knockback is a scripted displacement, not a physics impulse:
+ *  a fixed distance over a fixed frame count, at a constant speed, so it always
+ *  ends the same distance from the thing that hit you and you can plan around
+ *  it. This number and PLAYER_KNOCK_FRAMES are the whole of it. Chosen to match
+ *  the total travel of the exponential decay it replaces (3.2 px/f decaying by
+ *  0.84 over 12 frames covers ~17.6px), so the change is a change of shape
+ *  rather than of reach. See docs/FEEL-SPEC.md. */
+export const PLAYER_KNOCK_DIST = 18;
 
-/** x — per-frame decay of Link's knockback. guessed.
- *  Exponential decay is wrong for a GB Zelda — the source games move you a
- *  fixed distance over a fixed frame count. P4 replaces this; see FEEL-SPEC. */
-export const PLAYER_KNOCK_DECAY = 0.84;
+/** f — how long that shove takes. guessed; kept equal to PLAYER_HURT_FRAMES so
+ *  Link regains control on the frame he stops sliding. */
+export const PLAYER_KNOCK_FRAMES = 12;
 
 /** f — invulnerability after an ordinary enemy takes a hit. guessed. */
 export const ENEMY_INVULN_FRAMES = 24;
@@ -149,27 +155,45 @@ export const ENEMY_INVULN_FRAMES = 24;
 /** f — how long an ordinary enemy flickers after a hit. guessed. */
 export const ENEMY_FLICKER_FRAMES = 24;
 
-/** f — how long an ordinary enemy is shoved after a hit. guessed. */
+/** f — how long an ordinary enemy is shoved after a hit. guessed. Together with
+ *  the KNOCK_* distances below this is the fixed frame count half of the
+ *  fixed-distance-over-fixed-frames rule; nothing decays.
+ *
+ *  Worth knowing when tuning it: contact damage does not care that an enemy is
+ *  mid-knockback, so these are frames the enemy is travelling away and can
+ *  still hurt you. The exponential decay this replaces covered most of its
+ *  distance in the first two frames, so shortening this is the lever that
+ *  restores that snap. Trying 5 instead of 8 changed nothing measurable in
+ *  either committed replay, so it is left where it was. */
 export const ENEMY_KNOCK_FRAMES = 8;
 
-/** x — per-frame decay of enemy knockback. guessed. Same objection as
- *  PLAYER_KNOCK_DECAY. */
-export const ENEMY_KNOCK_DECAY = 0.82;
+// The KNOCK_* values below are DISTANCES IN PIXELS, not speeds. A hit shoves
+// its target KNOCK_x pixels over ENEMY_KNOCK_FRAMES frames at a constant
+// speed. They were speeds until P4; the numbers are the total travel the old
+// exponential decay produced from the old speeds, so a sword still throws an
+// enemy about as far as it used to, in a straight predictable line instead of
+// an asymptote. All guessed.
 
-/** px/f — default knockback dealt when a hit does not name its own. guessed. */
-export const KNOCK_DEFAULT = 3;
+/** px — default knockback dealt when a hit does not name its own. guessed. */
+export const KNOCK_DEFAULT = 13;
 
-/** px/f — knockback dealt by a sword swing. guessed. */
-export const KNOCK_SWORD = 4;
+/** px — knockback dealt by a sword swing. guessed. */
+export const KNOCK_SWORD = 18;
 
-/** px/f — knockback dealt by a spin attack. guessed. */
-export const KNOCK_SPIN = 5;
+/** px — knockback dealt by a spin attack. guessed. */
+export const KNOCK_SPIN = 22;
 
-/** px/f — knockback dealt by a projectile. guessed. */
-export const KNOCK_PROJECTILE = 3;
+/** px — knockback dealt by a projectile. guessed. */
+export const KNOCK_PROJECTILE = 13;
 
-/** px/f — knockback dealt by an explosion. guessed. */
-export const KNOCK_EXPLOSION = 2;
+/** px — knockback dealt by an explosion. guessed. */
+export const KNOCK_EXPLOSION = 9;
+
+/** px — knockback dealt by a thrown or dropped object. guessed. */
+export const KNOCK_THROWN = 9;
+
+/** px — knockback dealt by a boomerang or another stunning tool. guessed. */
+export const KNOCK_TOOL = 5;
 
 /** f — invulnerability after a boss takes a hit. guessed; shorter than an
  *  ordinary enemy's so a boss can be combo'd. */
@@ -181,11 +205,8 @@ export const BOSS_PHASE_INVULN_FRAMES = 20;
 /** f — how long a boss is shoved after a hit. guessed. */
 export const BOSS_KNOCK_FRAMES = 6;
 
-/** x — bosses take this fraction of the knockback an enemy would. guessed. */
+/** x — bosses travel this fraction of the distance an enemy would. guessed. */
 export const BOSS_KNOCK_SCALE = 0.4;
-
-/** x — per-frame decay of boss knockback. guessed. */
-export const BOSS_KNOCK_DECAY = 0.8;
 
 /** qh — damage from standing on a hazard tile (lava, spikes). guessed. */
 export const HAZARD_DAMAGE = 2;
@@ -319,11 +340,35 @@ export const CARRY_HEIGHT = 13;
 // Enemy cadence
 // ---------------------------------------------------------------------------
 
+// --- The lattice ---------------------------------------------------------
+//
+// Ground enemies do not have velocities. They take whole steps along an 8px
+// lattice, and a step, once begun, runs to its end. Every decision an enemy
+// makes about where to go is made standing on a lattice point. That is what
+// makes an octorok's shot dodgeable and a room of them read as patterned
+// rather than noisy. See docs/FEEL-SPEC.md, "The lattice".
+
+/** px — the increment a ground enemy moves in. guessed, but constrained: it
+ *  has to divide the 16px tile, and half a tile is the coarsest value that
+ *  still lets an enemy stand in a doorway's centre. */
+export const ENEMY_GRID_STEP = 8;
+
+/** steps — how many lattice steps a wandering enemy commits to before it draws
+ *  a new direction from the room's stream. guessed. This is the cadence that
+ *  replaces the old per-frame turn probability: three steps is 24px, about a
+ *  tile and a half, which is long enough to read as a decision and short
+ *  enough that the enemy still feels loose. */
+export const ENEMY_DECIDE_STEPS = 3;
+
+/** f — how long an enemy hesitates after walking into something before it
+ *  picks a new direction. guessed. Also bounds how often a cornered enemy can
+ *  draw from the room stream. */
+export const ENEMY_TURN_PAUSE_FRAMES = 6;
+
 /** p — per-frame chance a wandering enemy changes direction. guessed.
- *  A per-frame probability is the wrong shape for a GB Zelda: the source games
- *  decide on a fixed cadence and only turn when grid-aligned, which is what
- *  makes a room of octoroks read as patterned rather than noisy. P4 replaces
- *  this with a cadence; see docs/FEEL-SPEC.md. */
+ *  This now governs only the CONTINUOUS wander fallback — bosses and aquatic
+ *  drifters, which are deliberately not on the lattice. A ground enemy never
+ *  reads it. */
 export const ENEMY_TURN_CHANCE = 0.012;
 
 /** px/f — fallback speed for an enemy whose spec does not name one. guessed. */
@@ -334,9 +379,6 @@ export const ENEMY_DEFAULT_RATE = 10;
 
 /** x — multiplier on an enemy's speed while charging. guessed. */
 export const ENEMY_CHARGE_SPEED_MULT = 3;
-
-/** x — multiplier on an enemy's speed while hopping. guessed. */
-export const ENEMY_HOP_SPEED_MULT = 2;
 
 /** f — recovery stun after a charge hits a wall. guessed. */
 export const ENEMY_CHARGE_RECOVER_FRAMES = 24;
@@ -350,11 +392,19 @@ export const ENEMY_CHARGE_RANGE = 90;
 /** f — pause between hops. guessed. */
 export const ENEMY_HOP_WAIT_FRAMES = 40;
 
-/** px/f — initial upward velocity of a hop. guessed. */
-export const ENEMY_HOP_POWER = 2.2;
+/** px — how far a hop carries, if the enemy does not name its own. guessed.
+ *  Must be a multiple of ENEMY_GRID_STEP: a hop is a lattice step with an arc
+ *  on it, so it has to land the hopper back on the lattice. */
+export const ENEMY_HOP_DIST = 16;
 
-/** px/f^2 — downward acceleration during an enemy hop. guessed. */
-export const ENEMY_HOP_GRAVITY = 0.16;
+/** f — how long a hop is in the air, if the enemy does not name its own.
+ *  guessed. Fixed, not derived from gravity: the arc is a curve fitted between
+ *  two known endpoints rather than an integration, so the landing frame and the
+ *  landing pixel are both known when the hop starts. */
+export const ENEMY_HOP_FRAMES = 22;
+
+/** px — peak height of a hop's arc. guessed. */
+export const ENEMY_HOP_HEIGHT = 10;
 
 /** rad/f — default angular speed of an orbiting enemy. guessed. */
 export const ENEMY_ORBIT_SPEED = 0.045;

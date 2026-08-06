@@ -84,7 +84,7 @@ The constants deleted from game code and moved into `feel.js` this session:
 | `src/game/player.js` | walk/swim/dive/boost/shield speeds, terrain multipliers, the whole sword swing, charge and spin timing, the sword box geometry, invulnerability and knockback, jump gravity, ledge hop span/duration/height, fall, wash, dig, conch, push delay, throw speed, carry height |
 | `src/game/entity.js` | enemy invulnerability, flicker and knockback frames, the default knockback strength |
 | `src/game/game.js` | room transition length, the room exit margin, fade rate, banner duration, shake amplitudes and durations, boss death beats, item-present and essence freezes, the game-over wait |
-| `src/game/enemy.js` (the AI toolkit) | default enemy speed and animation rate, turn chance, charge/hop/orbit/submerge parameters, alignment tolerance, beaching, every boss timing constant, projectile speeds and lifetimes |
+| `src/game/enemy.js` (the AI toolkit) | default enemy speed and animation rate, turn chance, charge/hop/orbit/submerge parameters, the lattice step, decision cadence and turn pause, alignment tolerance, beaching, every boss timing constant, projectile speeds and lifetimes |
 | `src/game/tide.js` | the tide sweep length |
 | `src/game/projectile.js` | default projectile speed, life and flight height |
 | `src/game/objects.js` | pickup life, pop, gravity, settle and grab delay, fairy drift, NPC wander cadence and speed |
@@ -121,6 +121,9 @@ with re-deriving `WALK_SPEED` — that is P3 in `docs/EXECUTION-PLAN.md`.
 
 ## Two numbers that are wrong on purpose, and why they are still here
 
+Three, until P4 landed the lattice and the scripted knockback. `WALK_SPEED` and
+its margin are what is left; P3 takes them.
+
 ### `WALK_SPEED = 1.35` and `ROOM_EXIT_MARGIN = 3`
 
 1.35 px/frame is not representable as a clean subpixel step, so the player
@@ -133,25 +136,122 @@ that does not divide the tile. Both are `guessed`, and `ROOM_EXIT_MARGIN` is
 tagged `derived` from `WALK_SPEED` to say so. P3 picks a walk speed that
 divides 16 evenly at 60 Hz and drops the margin to 1.
 
-### `PLAYER_KNOCK_DECAY = 0.84`, `ENEMY_KNOCK_DECAY = 0.82`
+---
 
-Knockback currently decays exponentially: multiply the velocity by ~0.83 every
-frame until it peters out. The GB Zeldas move you a **fixed distance over a
-fixed frame count** — knockback there is a scripted displacement, not a
-physics impulse, which is why it always ends in the same place relative to the
-hit and why you can plan around it.
+## Knockback: a distance and a frame count
 
-Exponential decay makes the distance depend on the initial speed, so a strong
-hit and a weak hit land you in unrelated places. Both constants are `guessed`,
-and both are on their way out in P4.
+**Both numbers, for both sides:**
 
-### `ENEMY_TURN_CHANCE = 0.012`
+| | Distance | Frames | Speed |
+|---|---|---|---|
+| Link, hit by anything | `PLAYER_KNOCK_DIST = 18` px | `PLAYER_KNOCK_FRAMES = 12` | 1.5 px/f |
+| An enemy, hit by anything | the hit's own `KNOCK_*` px | `ENEMY_KNOCK_FRAMES = 8` | distance / 8 |
+| A boss | `KNOCK_* × BOSS_KNOCK_SCALE` px | `BOSS_KNOCK_FRAMES = 6` | distance / 6 |
 
-A per-frame probability that a wandering enemy turns. The source games decide
-on a **fixed cadence** and only turn when the enemy is aligned to the grid,
-which is what makes a room of octoroks read as patterned rather than noisy,
-and what makes their shots dodgeable. A per-frame coin flip cannot produce
-that. P4 replaces it.
+Constant speed throughout. Nothing decays. All of it `guessed`.
+
+Knockback used to be an impulse that decayed by ~0.83 a frame until it petered
+out. That is a physics model, and it is the wrong one: in the GB Zeldas
+knockback is a **scripted displacement**, a fixed distance over a fixed frame
+count, which is why it always ends the same distance from the thing that hit
+you and why you can plan the next swing around it. Exponential decay makes the
+distance a function of the initial speed, so a strong hit and a weak hit put
+you in unrelated places and neither is predictable.
+
+The `KNOCK_*` constants therefore changed **units**: they were px/f, they are
+now total px. The new numbers are the total travel the old decay produced from
+the old speeds, so a sword throws an enemy about as far as it always did — the
+change is one of shape, not reach.
+
+One thing that falls out of it and is worth knowing before tuning
+`ENEMY_KNOCK_FRAMES`: contact damage does not care that an enemy is mid-
+knockback. Every frame the enemy spends travelling away is a frame it can
+still hurt you. The old decay covered most of its distance in the first two
+frames and hid that; a constant speed does not, so the frame count is the
+lever that restores the snap. Eight frames was kept because five measurably
+changed nothing in either replay.
+
+---
+
+## The lattice
+
+**A ground enemy has no velocity.** It stands on a point of an 8px lattice,
+decides where to go, and takes a whole step — `ENEMY_GRID_STEP = 8` pixels in
+one cardinal direction, over however many frames its speed implies. Once a step
+is running it runs to the end. Nothing turns the enemy mid-step and nothing
+draws from the room's stream mid-step.
+
+That is the whole mechanism, and it is what makes an octorok dodgeable. The
+player can see the enemy standing on a lattice point, knows a decision is about
+to happen, and knows the answer will be one of four whole steps. A per-frame
+turn probability on a floating velocity gives none of that: the enemy can
+reverse at any subpixel, so there is nothing to read, and a room of them looks
+like noise rather than a pattern.
+
+| Constant | Value | What it does |
+|---|---|---|
+| `ENEMY_GRID_STEP` | 8 px | the increment. Divides the 16px tile; half a tile is the coarsest value that still lets an enemy stand in a doorway's centre |
+| `ENEMY_DECIDE_STEPS` | 3 steps | how many whole steps a wandering enemy commits to before drawing a new direction. **This is the cadence that replaces `ENEMY_TURN_CHANCE`** |
+| `ENEMY_TURN_PAUSE_FRAMES` | 6 f | the hesitation after walking into something, before deciding again |
+
+Three steps is 24px, about a tile and a half: long enough to read as a
+decision, short enough that the enemy still feels loose. All three `guessed`.
+
+### Who is on it, and who is not
+
+`gridLocked(e)` in `src/game/enemy.js`. On the lattice: ordinary ground
+enemies. Off it, deliberately:
+
+- **Bosses and minibosses.** A set piece should not move like a room fixture.
+  The test is `instanceof Boss`, *not* `e.isBoss` — minibosses clear `isBoss`
+  in their init so `onEnemyDefeated` does not mark the whole dungeon beaten,
+  and reading that flag here would grid-lock every one of them on the strength
+  of a piece of progress bookkeeping.
+- **Fliers.** `keese`, `bubble`, `wisp`.
+- **Aquatic enemies.** Water carries you; it does not step.
+
+And three *verbs* stay continuous even for an enemy that is otherwise on the
+lattice, because they exist to feel different from walking:
+`bounceDiag`, `orbit`, and `charge`. A charge is the one thing a ground enemy
+does that is supposed to have momentum; putting it on the lattice would make it
+read as a fast walk. It ends by calling `realign`, so the walking that follows
+is back on the lattice.
+
+`wander`, `chase`, `flee` and `patrol` are lattice verbs, and `hop` is a
+lattice step with a fitted arc drawn on it — `ENEMY_HOP_DIST` must stay a
+multiple of `ENEMY_GRID_STEP`, and the arc is a parabola fitted between two
+known endpoints rather than an integrated gravity, so the landing pixel and the
+landing frame are both known the instant the hop starts.
+
+### What keeps it true
+
+Knockback, a charge into a wall and a leever surfacing all leave a ground enemy
+between lattice points. Every one of those states ends by calling `realign`,
+which snaps to the nearest *legal* lattice point — at most 4px on each axis,
+under a frame of walking, invisible in motion.
+
+`node tools/check-motion.mjs` is the proof. It spawns one of every enemy in an
+emptied room, runs 600 deterministic frames, and asserts that every lattice
+enemy is 8px-aligned on every single frame it is not mid-step, mid-charge,
+mid-knockback or submerged. It also asserts the converse — that fliers and
+swimmers *do* leave the lattice — so a future change that quietly grid-locks
+everything fails it too.
+
+### The cost, which is real
+
+The lattice makes enemies harder to juke. A committed 8px step cannot be
+deflected, which is the point: a human reads the commitment and steps out of
+it. `tools/replay.mjs`'s recording actor cannot — it lines up on one axis,
+swings, and stands still for the length of the swing — so it takes roughly 60%
+more contact damage through Tidewash Grotto than it did against the old
+floating drift, and on three hearts it dies in the Crab Pit. The `d1-descent`
+plan now starts it on five. That is a statement about the actor, not about the
+game's difficulty; do not read it as a tuning decision.
+
+### `ENEMY_TURN_CHANCE = 0.012` is still here
+
+It governs the **continuous** wander fallback only — bosses and aquatic
+drifters. No ground enemy reads it.
 
 ---
 

@@ -551,6 +551,46 @@ Not fixed here: it is dungeon content, and P8 re-authors D1 anyway. The D1
 replay opens the chest deliberately (an opened chest is persisted save state
 worth asserting on) and its plan comment says the Compass is not collected.
 
+### A miniboss is not `isBoss`, and motion has to test the class
+
+Cost a failing `check-motion.mjs` run and a confusing table. Minibosses are
+built with `defineBoss` — they want its phases, intro hold and staged death —
+and then **clear `isBoss` in their `init`**, because `onEnemyDefeated` keys
+"dungeon beaten" off that flag and a miniboss counted as a boss marks its whole
+dungeon complete. That is documented at the top of `src/data/bosses.js` and it
+is correct.
+
+The trap is that `e.isBoss` therefore answers a *progress bookkeeping*
+question, not a "what kind of thing is this" question. `gridLocked()` in
+`enemy.js` asked it and put all eight minibosses on the 8px lattice, which is
+exactly what a set piece must not be on. It tests `instanceof Boss` now. Any
+future code that wants to know whether something is a set piece has the same
+choice to make, and the flag is the wrong side of it.
+
+### Grid-locked enemies cost the replay actor about 60% more health
+
+Not a bug, but it will look like one. The recording actor in `tools/replay.mjs`
+lines up on one axis, swings, and stands still for the length of the swing. It
+is tuned against enemies that drift continuously and can be nudged. An enemy on
+the lattice commits to a whole 8px step and cannot be deflected mid-step —
+which is the entire point of the design, and which a human handles by reading
+the commitment and stepping out of it.
+
+The actor cannot read anything. On three hearts it now dies in the Crab Pit.
+`d1-descent`'s plan gives it five hearts, with a comment saying why. Two other
+actor fixes were needed at the same time and are worth keeping in mind if a
+route starts behaving oddly:
+
+- **`dFight` chased the last foe out through a doorway** and carried on
+  fighting in the next room, on whatever health was left. It now bails when the
+  room changes: a `fight` directive means "clear *this* room".
+- **`dExit` stopped pressing the moment the room changed**, which leaves the
+  player one or two pixels inside the new room, still on the seam. The next
+  directive's first step back toward it re-triggered the transition. It now
+  keeps walking for ten frames after the change.
+
+Both were latent before P4; the lattice is only what made them bite.
+
 ## The two gates that cannot be tiles
 
 Roc's Feather and the Power Bracelet became real tile gates this session. The
@@ -603,6 +643,7 @@ node tools/walk-dungeons.mjs     # every dungeon room, every ledge, all 4 faces
 node tools/check-overworld.mjs   # seams, border, flood, all three item gates
 node tools/solve-switches.mjs    # one push per block
 node tools/check-gates.mjs       # the two item gates, in-engine, with real items
+node tools/check-motion.mjs      # ground enemies on the 8px lattice, fliers off it
 node tools/find-ledges.mjs       # reports where a ledge may go (not a check)
 node tools/check-build.mjs       # the shipped single-file build boots from file://
 ```

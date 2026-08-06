@@ -3,7 +3,7 @@
 import { Entity, moveEntity, canOccupy, defineEntity, DIR_VEC } from './entity.js';
 import { VIEW_W, VIEW_H, TILE } from '../core/screen.js';
 import { F } from '../world/tileset.js';
-import { PROJECTILE_LIFE, PROJECTILE_SPEED, PROJECTILE_Z } from '../data/feel.js';
+import { PROJECTILE_LIFE, PROJECTILE_SPEED, PROJECTILE_Z, KNOCK_PROJECTILE } from '../data/feel.js';
 
 export class Projectile extends Entity {
   constructor(x, y, o = {}) {
@@ -62,7 +62,7 @@ export class Projectile extends Entity {
         if (!this.overlaps(e)) continue;
         const dir = Math.abs(this.vx) > Math.abs(this.vy)
           ? (this.vx < 0 ? 'left' : 'right') : (this.vy < 0 ? 'up' : 'down');
-        if (e.hurt(game, this.damage, dir, 3) && !this.pierce) { this.expire(game); return; }
+        if (e.hurt(game, this.damage, dir, KNOCK_PROJECTILE) && !this.pierce) { this.expire(game); return; }
       }
     } else if (this.damage > 0 && game.player && !game.player.invincible) {
       if (this.overlaps(game.player)) {

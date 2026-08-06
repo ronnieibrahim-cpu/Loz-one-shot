@@ -93,7 +93,16 @@ export class Entity {
     return Math.hypot(dx, dy);
   }
 
-  /** Take damage. `dir` is the direction the hit came *from* the attacker's view. */
+  /**
+   * Take damage. `dir` is the direction the hit came *from* the attacker's
+   * view, and `knock` is a DISTANCE IN PIXELS, not a speed.
+   *
+   * Knockback is a scripted displacement, the way the GB Zeldas do it: the
+   * target travels `knock` pixels over ENEMY_KNOCK_FRAMES frames at a constant
+   * speed and stops. It used to be an impulse that decayed by 0.82 a frame,
+   * which made the distance a function of the initial speed and put a strong
+   * hit and a weak hit in unrelated places. See docs/FEEL-SPEC.md.
+   */
   hurt(game, dmg, dir, knock = KNOCK_DEFAULT) {
     if (this.invuln > 0 || this.dead) return false;
     this.hp -= dmg;
@@ -101,7 +110,8 @@ export class Entity {
     this.flicker = ENEMY_FLICKER_FRAMES;
     if (knock && dir) {
       const [dx, dy] = DIR_VEC[dir] || [0, 0];
-      this.knockX = dx * knock; this.knockY = dy * knock;
+      const per = knock / ENEMY_KNOCK_FRAMES;
+      this.knockX = dx * per; this.knockY = dy * per;
       this.knockTime = ENEMY_KNOCK_FRAMES;
     }
     if (this.hp <= 0) { this.die(game); return true; }

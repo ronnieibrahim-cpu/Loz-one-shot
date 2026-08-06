@@ -316,7 +316,16 @@ async function installRuntime() {
     const m = BIT[dir] || 0;
     for (let f = 0; f < (maxF || 400); f++) {
       const now = g.mapId + '/' + (g.room ? g.room.key : '');
-      if (now !== was && !g.transition && !g.fadeDir && !g.dialogue.active) { yield* dWait(6); return; }
+      // Keep walking for a moment after the room changes. A transition leaves
+      // the player a pixel or two inside the new room, still on the seam, and
+      // the next directive's first step back toward it re-triggers the exit —
+      // which is how a `fight` in the room you just entered turns into a fight
+      // in the room you just left.
+      if (now !== was && !g.transition && !g.fadeDir && !g.dialogue.active) {
+        for (let i = 0; i < 10; i++) yield m;
+        yield* dWait(4);
+        return;
+      }
       const dm = dialogueMask(g, f);
       yield dm === null ? m : dm;
     }
@@ -356,11 +365,21 @@ async function installRuntime() {
   function* dFight(maxF, patience) {
     const g = window.__game;
     const giveUp = patience == null ? 420 : patience;
-    const NEAR = 14, FAR = 19, LINED = 4;
+    // The standoff window has to be wider than one enemy step. Ground enemies
+    // move in whole 8px lurches, so a 5px-wide window is one the enemy jumps
+    // clean over: the swordsman shuffles back and forth inside it and never
+    // swings. This is the window it stands in, not a tolerance.
+    const NEAR = 13, FAR = 23, LINED = 4;
+    // A `fight` directive means "clear THIS room". Chasing the last foe out
+    // through a doorway walks the actor into the next room's spawn list with
+    // whatever health it has left, which is how a route that clears Tidewash
+    // Grotto turns into a route that dies in the Crab Pit.
+    const home = g.mapId + '/' + (g.room ? g.room.key : '');
     let lastCount = -1, stale = 0;
     for (let f = 0; f < (maxF || 900);) {
       const p = g.player;
       if (!p || g.mode !== 'play') { yield 0; f++; continue; }
+      if (g.mapId + '/' + (g.room ? g.room.key : '') !== home) { yield* dWait(6); return; }
       const dm = dialogueMask(g, f);
       if (dm !== null) { yield dm; f++; continue; }
       const foes = g.entities.filter(e => e.isEnemy && !e.dead && !e.dormant && !e.hidden);

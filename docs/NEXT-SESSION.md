@@ -10,7 +10,67 @@ maintain and the most expensive thing to not have.
 
 ---
 
-## What the last session did (P1: feel spec, seeded RNG, replay harness)
+## What the last session did (P4: grid-locked enemy motion)
+
+**P4 landed out of order. P2 and P3 are still outstanding** — the flaky tide
+assertion has not been root-caused, positions are still floats, `WALK_SPEED` is
+still 1.35 and diagonals are still normalised. Nothing in P4 depended on them
+and nothing in it blocks them.
+
+- **The 8px lattice.** A ground enemy no longer has a velocity. It stands on a
+  lattice point, decides, and takes a whole `ENEMY_GRID_STEP` step which runs to
+  its end; nothing turns it mid-step and nothing draws from the room's stream
+  mid-step. `wander` now commits to `ENEMY_DECIDE_STEPS` (3) whole steps and
+  then draws a direction — a fixed cadence, not a per-frame coin flip.
+  `chase`, `flee` and `patrol` remake their choice at lattice points and
+  nowhere else. `hop` is a lattice step with a parabola fitted between its two
+  endpoints, so the landing pixel and the landing frame are both known when the
+  hop starts (it used to integrate a velocity against a gravity constant and
+  land wherever that came out).
+- **`bounceDiag`, `orbit` and `charge` are untouched and continuous**, as the
+  brief asked. So are bosses, minibosses, fliers and aquatic enemies —
+  `gridLocked()` says who is on the lattice and why.
+- **Knockback is a scripted displacement.** Fixed distance, fixed frame count,
+  constant speed, no decay, for the player, enemies and bosses alike. The
+  `KNOCK_*` constants changed **units**: px/f before, total px now. Both
+  numbers for all three cases are tabulated in `docs/FEEL-SPEC.md`.
+- **`tools/check-motion.mjs`** — spawns one of every enemy in an emptied room
+  (one pass dry, one wet), runs 600 deterministic frames, and asserts every
+  lattice enemy is 8px-aligned on every frame it is not mid-step, mid-charge,
+  mid-knockback or submerged. It also asserts the converse, that fliers and
+  swimmers *do* leave the lattice, so a change that quietly grid-locks
+  everything fails too. 8/8.
+- Three call-site fixes the lattice exposed: the pincer's lunge was reeled home
+  by a proportional lerp that never quite arrived (it is two lattice steps out
+  and two back now), a split zol spawned its gels 9px apart onto a shifted
+  lattice, and a resurfacing leever came up wherever the angle put it.
+
+Both replays were re-recorded and pass to the pixel. Every other checker is
+green.
+
+### What it cost, and what is weak
+
+The lattice makes enemies harder to juke — a committed step cannot be
+deflected. That is the design. But `replay.mjs`'s recording actor cannot read a
+commitment the way a human does, so it takes roughly 60% more contact damage
+through Tidewash Grotto and, on three hearts, dies in the Crab Pit.
+`d1-descent`'s plan now starts it on five hearts with a comment saying why.
+**That is a statement about the actor, not a difficulty decision** — if P9
+re-tunes difficulty, do not treat the five hearts as evidence of anything.
+
+Two latent actor bugs had to be fixed at the same time, both written up in
+HANDOFF: `dFight` chased the last foe out through a doorway and carried on
+fighting in the next room, and `dExit` stopped pressing while the player was
+still on the seam, so the next directive bounced straight back.
+
+Not done, and worth knowing: nobody has watched this in motion. Every claim
+above is from checkers. The lattice is the kind of change whose whole point is
+how it *looks*, and `ENEMY_DECIDE_STEPS = 3` in particular is a taste number
+that has never been seen on screen.
+
+---
+
+## What the session before that did (P1: feel spec, seeded RNG, replay harness)
 
 Landed in full:
 
@@ -49,6 +109,10 @@ eleven room entries, 21 kills, a chest opened, the Dungeon Map taken, a Small
 Key earned by clearing the crab room and spent on a locked door, the conch
 cycled all the way round, ending on 5 of 12 quarter-hearts in room `0,3,3`.
 4036 frames. It stops at the locked door in `3,3`'s north wall.
+
+(P4 re-recorded it: same route, same ending room, 4218 frames, and it now
+starts on 20 quarter-hearts rather than 12 — see the P4 section above for why.
+Everything below is unchanged.)
 
 It stops there because the recording actor has three verbs — walk, open, swing
 — and everything past that door needs more:
@@ -113,6 +177,7 @@ Confirm the baseline before changing anything, and keep every line below green:
   node tools/walk-dungeons.mjs                 27/27, 88 ledge runs
   node tools/check-overworld.mjs               16/16, all three gates
   node tools/check-gates.mjs                   15/15, both item gates in-engine
+  node tools/check-motion.mjs                   8/8, enemies on the 8px lattice
   node tools/solve-switches.mjs                17 rooms, one push per block
   node tools/scan-sprites.mjs --strict         0 hard findings
   npm run build                                48 modules -> one HTML file
@@ -187,9 +252,17 @@ AFTER ANY CHANGE TO A FEEL CONSTANT OR TO MOVEMENT/COMBAT:
   constant is dead code or the replays do not exercise it. Both matter.
 
 NEXT UP: P2 (root-cause the intermittent test) and P3 (fixed-point movement
-and the sword-hold), in docs/EXECUTION-PLAN.md. P1 gave P2 the tool it needs:
-a fixed seed and a deterministic stepper, so "run the assertion 200 times"
-is now a thing you can actually do. Use plan mode for P3 and P5.
+and the sword-hold), in docs/EXECUTION-PLAN.md. P4 has landed ahead of both;
+neither is blocked by it. P1 gave P2 the tool it needs: a fixed seed and a
+deterministic stepper, so "run the assertion 200 times" is now a thing you can
+actually do. Use plan mode for P3 and P5.
+
+P3 TOUCHES THE LATTICE. Moving positions to 8.8 fixed point has to keep
+`beginStep`/`advanceStep` in src/game/enemy.js landing exactly on multiples of
+ENEMY_GRID_STEP — they round a fraction of the whole step to a pixel rather
+than accumulating a velocity, precisely so the last frame lands on the lattice
+however the arithmetic rounds. node tools/check-motion.mjs is what tells you if
+that survived.
 
 Do the work yourself rather than spawning subagents - past sessions hit usage
 limits that way and lost the work.
@@ -219,10 +292,12 @@ Tell me plainly what is done, what is weak, and what you skipped.
   on a console error, an off-document request, a black canvas or a frozen
   `game.frame`.
 - **the feel spec, the seeded RNG and the replay harness (P1)**
+- **grid-locked enemy motion and scripted knockback (P4)**
 
 ## What is left
 
-P2 through P9 in `docs/EXECUTION-PLAN.md`, in that order. Plus, carried over:
+P2, P3, then P5 through P9 in `docs/EXECUTION-PLAN.md` — P4 is done, out of
+order. Plus, carried over:
 
 1. **More terrain.** Nine tiles are extracted; cliff, cliffTop, tree, bush,
    rock, flowers, stump and palm are still hand-drawn. HANDOFF records three

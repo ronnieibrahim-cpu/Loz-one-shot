@@ -97,6 +97,17 @@ export const PLANS = {
       items: { sword: 1, conch: 1, shield: 1 },
       equipB: 'sword',
       equipA: 'conch',
+      // Five hearts, not the three a real run starts on. The recorder's
+      // swordsman lines up on one axis, swings, and stands still for the length
+      // of the swing; against enemies that walk the 8px lattice and commit to a
+      // whole step it eats about 60% more contact damage than it did against
+      // the old floating drift, and on three hearts it dies in the Crab Pit.
+      // A human reads a committed step and steps out of it — that is the point
+      // of the lattice — but the actor cannot, and this replay exists to prove
+      // the engine is deterministic, not to prove the game is beatable on three
+      // hearts. Do not read the headroom as a difficulty statement.
+      maxHearts: 20,
+      hearts: 20,
       tide: 1,
       enter: ['d1', 0, 3, 7, 64, 96, 'up'],
     },

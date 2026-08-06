@@ -71,6 +71,7 @@ Nothing new is extracted from them. New art is drawn.
 | `node tools/check-overworld.mjs` | Region gates seal and open correctly |
 | `node tools/check-gates.mjs` | Gates hold in-engine with a live player |
 | `node tools/solve-switches.mjs` | Every switch puzzle has a solution |
+| `node tools/check-motion.mjs` | Ground enemies stay on the 8px lattice; fliers and swimmers stay off it |
 | `node tools/replay.mjs` | Movement and combat are frame-identical to a recorded baseline |
 | `node tools/check-build.mjs` | The shipped single-file build boots and plays from a `file://` URL |
 | `node tools/test.mjs` | Everything else |

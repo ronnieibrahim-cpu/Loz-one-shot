@@ -17,7 +17,7 @@ import { Explosion } from './effects.js';
 import { F } from '../world/tileset.js';
 import { TILE, VIEW_W, VIEW_H } from '../core/screen.js';
 import { hasItem, itemLevel, addBombs } from './progress.js';
-import { PEGASUS_FRAMES } from '../data/feel.js';
+import { PEGASUS_FRAMES, KNOCK_TOOL, KNOCK_THROWN } from '../data/feel.js';
 import { sprites } from '../gfx/art.js';
 
 // --------------------------------------------------------------------------
@@ -137,7 +137,7 @@ export class Boomerang extends Entity {
       if (e.isEnemy && this.overlaps(e)) {
         const dir = Math.abs(this.vx) > Math.abs(this.vy)
           ? (this.vx < 0 ? 'left' : 'right') : (this.vy < 0 ? 'up' : 'down');
-        if (e.hurt(game, this.damage, dir, 2)) e.stun = Math.max(e.stun, 45);
+        if (e.hurt(game, this.damage, dir, KNOCK_TOOL)) e.stun = Math.max(e.stun, 45);
         this.returning = true;
       }
       if (e.isDrop && !e.attached && this.overlaps(e)) {
@@ -213,7 +213,7 @@ export class Hookshot extends Entity {
       for (const e of game.entities) {
         if (e.dead || !this.overlaps(e)) continue;
         if (e.isEnemy) {
-          e.hurt(game, this.level >= 2 ? 2 : 1, this.dir, 2);
+          e.hurt(game, this.level >= 2 ? 2 : 1, this.dir, KNOCK_TOOL);
           e.stun = Math.max(e.stun, 40);
           this.state = 'back';
           break;
@@ -297,7 +297,7 @@ export class ThrownObject extends Entity {
     if (r.hitX || r.hitY) { this.shatter(game); return; }
     for (const e of game.entities) {
       if (e.isEnemy && !e.dead && this.overlaps(e)) {
-        e.hurt(game, this.power, null, 3);
+        e.hurt(game, this.power, null, KNOCK_THROWN);
         this.shatter(game);
         return;
       }
@@ -337,7 +337,7 @@ export function applySeed(game, kind, x, y, fromPlayer) {
       game.checkTileAction({ x: x + 4, y: y + 4, w: 8, h: 8 }, 'fire');
       for (const e of game.entities) {
         if (e.isEnemy && !e.dead && Math.hypot(e.cx - (x + 8), e.cy - (y + 8)) < 14) {
-          e.hurt(game, 2, null, 1);
+          e.hurt(game, 2, null, KNOCK_TOOL);
         }
       }
       game.audio.sfx('fire');

@@ -25,7 +25,7 @@ import {
   SWING_FRAMES, SWING_HIT_START, SWING_HIT_END, CHARGE_FRAMES, CHARGE_SPARKLE_EVERY,
   SPIN_FRAMES, SWORD_REACH, SWORD_SPAN, SWORD_GAP, SPIN_BOX,
   PLAYER_INVULN_FRAMES, PLAYER_FLICKER_FRAMES, PLAYER_RECOVER_INVULN_FRAMES,
-  PLAYER_HURT_FRAMES, PLAYER_KNOCK_SPEED, PLAYER_KNOCK_DECAY,
+  PLAYER_HURT_FRAMES, PLAYER_KNOCK_DIST, PLAYER_KNOCK_FRAMES,
   KNOCK_SWORD, KNOCK_SPIN, HAZARD_DAMAGE, PIT_DAMAGE, WASH_DAMAGE,
   JUMP_GRAVITY, GLIDE_GRAVITY, LAND_SETTLE_RATE,
   LEDGE_MAX_SPAN, LEDGE_HOP_FRAMES, LEDGE_HOP_HEIGHT, LEDGE_PROBE_REACH,
@@ -103,8 +103,12 @@ export class Player extends Entity {
 
     if (this.hurtTime > 0) {
       this.hurtTime--;
-      moveEntity(game, this, this.knockX, this.knockY);
-      this.knockX *= PLAYER_KNOCK_DECAY; this.knockY *= PLAYER_KNOCK_DECAY;
+      // Fixed distance, fixed frames, constant speed — the same shape as enemy
+      // knockback, so where a hit puts you is something you can learn.
+      if (this.knockTime > 0) {
+        this.knockTime--;
+        moveEntity(game, this, this.knockX, this.knockY);
+      }
       return;
     }
 
@@ -615,9 +619,11 @@ export class Player extends Entity {
     if (!o.noKnockDir && source) {
       const dx = this.cx - source.cx, dy = this.cy - source.cy;
       const d = Math.hypot(dx, dy) || 1;
-      this.knockX = dx / d * PLAYER_KNOCK_SPEED; this.knockY = dy / d * PLAYER_KNOCK_SPEED;
+      const per = PLAYER_KNOCK_DIST / PLAYER_KNOCK_FRAMES;
+      this.knockX = dx / d * per; this.knockY = dy / d * per;
+      this.knockTime = PLAYER_KNOCK_FRAMES;
     } else {
-      this.knockX = 0; this.knockY = 0;
+      this.knockX = 0; this.knockY = 0; this.knockTime = 0;
     }
     this.charge = 0;
     if (this.carrying) this.dropCarried(game);

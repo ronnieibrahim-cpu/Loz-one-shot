@@ -202,10 +202,10 @@ export function installBosses() {
       // in a wall leaves it dazed with the eye open.
       { above: 0.30, ai(e, g) {
         runPending(e, g); closeTick(e, g);
-        const wasCharging = e._charging;
+        const wasCharging = e.charging;
         charge(e, g, { speed: 1.9, tell: 18, range: 130, shake: true, tol: 14,
           idle: (e2, g2) => patrol(e2, g2, { axis: 'x', speed: 0.85 }) });
-        if (wasCharging && !e._charging) open(e, g, 70);
+        if (wasCharging && !e.charging) open(e, g, 70);
         if (timer(e, 'slam', 130)) gohmaraqSlam(e, g, 5, 80);
       } },
       // Cornered: constant slams and a burst of spray in every direction.
@@ -947,17 +947,17 @@ export function installBosses() {
     phases: [
       { above: 0.50, ai(e, g) {
         runPending(e, g); closeTick(e, g); ironknightRust(e, g);
-        const was = e._charging;
+        const was = e.charging;
         charge(e, g, { speed: 1.8, tell: 20, range: 110, shake: true, tol: 12,
           idle: (e2, g2) => chase(e2, g2, { speed: 0.5 }) });
-        if (was && !e._charging) open(e, g, 90);
+        if (was && !e.charging) open(e, g, 90);
       } },
       { above: 0.00, ai(e, g) {
         runPending(e, g); closeTick(e, g); ironknightRust(e, g);
-        const was = e._charging;
+        const was = e.charging;
         charge(e, g, { speed: 2.2, tell: 14, range: 140, shake: true, tol: 16,
           idle: (e2, g2) => chase(e2, g2, { speed: 0.7 }) });
-        if (was && !e._charging) open(e, g, 70);
+        if (was && !e.charging) open(e, g, 70);
         if (timer(e, 'throw', 150)) {
           windUp(e, g, 16, (e2, g2) => spread(e2, g2, 3, 34,
             { sprite: 'shot_spear', pal: 'stonedk', speed: 1.9, damage: 3 }));
