@@ -754,6 +754,35 @@ a third tuft pattern (2287,670), none of which is better than the flat field
 already there, and one of which would make `grass` and `tallgrass` read the
 same — which matters, because `tallgrass` is the cuttable one.
 
+### P4 exists on a branch and does NOT merge — it needs redoing on fixed-point
+
+`claude/enemy-grid-aligned-movement-n2xv16` is a complete P4: an 8px lattice for
+ground enemies, scripted fixed-distance knockback, three creatures un-shifted,
+and `tools/check-motion.mjs` to prove it. It was written from the same base as
+P2 — that is, **before P3** — and it does not merge.
+
+Not because of textual conflicts, though there are eleven in the source. Because
+the two prompts disagree about what a position *is*:
+
+```
+P4:  e.x = x; e.y = y;                 // writes a float field
+     if (!Number.isInteger(e.x) ...)   // guards against drift off the lattice
+P3:  get x() { return toPx(this.fx); } // an accessor over integer subpixels
+```
+
+Under P3 every `e.x` is an integer by construction, so P4's realign guard is
+always true and quietly does nothing — the merge would compile, pass a good
+number of checks, and silently drop the guarantee the prompt exists to make.
+That is the worst possible outcome, so the merge was aborted rather than
+resolved.
+
+**Redo P4 on top of fixed-point instead of merging it.** The branch is worth
+reading first — the lattice design, the knockback numbers and `check-motion.mjs`
+all carry over; only the arithmetic changes, and it gets simpler, because an
+8px lattice is `2048` subpixels and alignment is an exact integer test rather
+than a float comparison. P3 also left `moveDir` as the single funnel every
+ground AI goes through, which is where the lattice belongs.
+
 ## Verification harnesses
 
 **Five of these are now committed**, and that is a deliberate reversal. The

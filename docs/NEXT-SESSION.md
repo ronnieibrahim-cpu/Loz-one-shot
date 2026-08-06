@@ -353,7 +353,11 @@ save seed with ?seed=. If you write a new harness, do both — otherwise it is
 measuring the machine, not the game. test.mjs is no longer load-flaky; a
 failure there is now yours.
 
-NEXT UP: P4 (grid-lock enemy motion), in docs/EXECUTION-PLAN.md. P3 left it
+NEXT UP: P4 (grid-lock enemy motion), in docs/EXECUTION-PLAN.md. NOTE there is
+already a complete P4 on claude/enemy-grid-aligned-movement-n2xv16, written
+before P3. DO NOT MERGE IT — it assumes `e.x` is a writable float and its
+anti-drift guard is dead code against fixed-point positions. Read it, then
+redo it; HANDOFF says what carries over. P3 left it
 set up: enemy positions are already on the 8.8 grid, so "a direction change may
 only happen at an 8px boundary" is a test you can write, and moveDir is the
 single funnel every ground AI goes through. P4 also inherits the two knockback
