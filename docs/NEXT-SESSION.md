@@ -13,8 +13,11 @@ maintain and the most expensive thing to not have.
 ```
 Continue building "Oracle of Tides", a GBC-style Zelda fan game.
 
-Branch: claude/oracle-tides-continued-ebfuit — fetch it. That is the current
-canonical branch. `main` is an empty README; claude/zelda-style-game-piqt8v,
+Branch: branch from `main` — it is trunk now and carries everything (see
+docs/BRANCHING.md and CLAUDE.md). The most recent work sits on
+claude/oracle-build-script-coklp7, which added the single-file build; fetch
+that too if `main` has not absorbed it yet. Historically the canonical branch
+was claude/oracle-tides-continued-ebfuit; claude/zelda-style-game-piqt8v,
 claude/zelda-boss-behavior-jgbfwo, claude/oracle-tides-boss-music-4c24tm,
 claude/oracle-tides-polish-nphkj0, claude/oracle-tides-polish-grjnhj and
 claude/oracle-tides-polish-3p8g1s are the older line this branch was built on
@@ -38,22 +41,25 @@ pre-installed Chromium does not match, so every headless harness dies with
 HANDOFF under "Environment setup a fresh container needs" — check the revision
 number in the error message, it was 1234 both times so far.
 
-Confirm the baseline before changing anything, and keep all six green:
+Confirm the baseline before changing anything, and keep every line below green:
   node tools/validate.mjs                      clean (two expected warnings
                                                about fx_slash_d0/fx_slash_d1)
   node tools/test.mjs                          35/35, 0 unauthored art names
   node tools/scan-sprites.mjs --strict         0 hard findings
   node tools/walk-dungeons.mjs                 27/27, 88 ledge runs
   node tools/check-overworld.mjs               12/12, all three gates
-  node tools/check-gates.mjs                    9/9, both item gates in-engine
+  node tools/check-gates.mjs                   15/15, both item gates in-engine
   node tools/solve-switches.mjs                17 rooms, one push per block
+  npm run build                                46 modules -> ~743 KB, exit 0
+  node tools/check-build.mjs                   the built file boots from file://
   node tools/preview.mjs <pack> --scale=2      renders
 
 test.mjs is timing-flaky under CPU load and always has been - if it goes red
 right after a long harness run, wait a few seconds and re-run before believing
 it. Confirm a red run by reproducing it twice. Details in HANDOFF.md, Tooling.
 
-FIVE HARNESSES ARE COMMITTED - run them after touching any room data
+SIX HARNESSES ARE COMMITTED - run the room-data ones after touching any room
+data, and check-build.mjs after touching anything at all
   node tools/walk-dungeons.mjs     every dungeon room enters and renders, every
                                    room and boss room is reachable, and every
                                    ledge run in all four cardinals hops downhill
@@ -70,6 +76,13 @@ FIVE HARNESSES ARE COMMITTED - run them after touching any room data
   node tools/solve-switches.mjs    all 17 switch rooms, ONE push per block
   node tools/find-ledges.mjs       reports where a ledge can go without walling
                                    a room off (a reporter, not a check)
+  node tools/check-build.mjs       the SHIPPED build boots: opens
+                                   dist/oracle-of-tides.html from a real file://
+                                   URL, runs it four seconds, and fails on any
+                                   console error, page error, off-document
+                                   request, a canvas that is black or single
+                                   -coloured, a missing touch layer, or a frozen
+                                   game.frame
 
 check-overworld and check-gates are deliberately redundant and both are needed:
 the first proves the MAP side but never runs the game, so a gate whose transform
@@ -101,6 +114,40 @@ WHAT IS ALREADY DONE - do not redo any of this
     Magnetic Gloves/`abyssPlug` (Abyssal approach). A transform may now carry
     `level`, which is what lets a gate name the MAGIC boomerang rather than any
     boomerang.
+  - THE SINGLE-FILE BUILD. `npm run build` (tools/build.mjs, plain Node, no
+    bundler dependency) flattens index.html plus all 46 modules reachable from
+    src/main.js into dist/oracle-of-tides.html — one classic <script>, ~743 KB,
+    playable from a file:// URL with no server and no network, phone or desktop.
+    That file is committed and MUST be rebuilt and committed at the end of every
+    session (CLAUDE.md, Workflow). See "THE BUILD" below before touching it.
+
+THE BUILD - what it assumes, and what breaks it
+  tools/build.mjs is a bundler, so it hard-fails rather than guessing:
+  - It refuses to build if the game ever starts loading something at runtime
+    (fetch, XMLHttpRequest, new Image/Audio, createImageBitmap, WebSocket, an
+    .png/.wav/.json reference, an <img>/<audio>/<link src=>). The whole
+    single-file trick rests on the game being procedural sprites plus WebAudio
+    synthesis. If you add a real asset, the build tells you instead of shipping
+    a file that 404s from file://. Teach it to embed the asset as a data: URI;
+    do not delete the guard. It scans code with comments and string literals
+    blanked out, so provenance comments naming .png sheets and room-grid strings
+    that happen to spell "ogg" do not trip it, and `new Audio()` is allowed in
+    src/core/audio.js because that module declares its own `class Audio`.
+  - It understands exactly one import form, `import { … } from './x.js'`, and
+    the export forms already in use (`export const/let/var/function/class` and
+    `export { A as B }`). No default export, no `export *`, no re-export, no
+    dynamic import, no multi-declarator `export const A = 1, B = 2`. Any of
+    those is a build error naming the file and line. If you need one, extend
+    build.mjs — the emitted module registry is 8 lines at the top of emit().
+  - IT REFUSES IMPORT CYCLES. Imports become destructuring from an eagerly
+    evaluated module, so a cycle would snapshot `undefined`. The graph is
+    acyclic today; if you introduce a cycle the build names the loop.
+  - src/data/sprite-manifest.js is not reachable from main.js, so it is not
+    bundled and the build says so. That is correct — it is tooling data.
+  - The output must stay a CLASSIC script. A `<script type="module">`, even
+    inline with no imports, is fetched with an opaque origin and blocked by
+    file:// in every browser. That constraint is the reason for the whole
+    module-registry design; do not "simplify" it back to a module.
 
 WHAT IS LEFT - in rough order of payoff. Pick up as much as fits.
 
@@ -140,7 +187,10 @@ VERIFICATION IS PART OF THE TASK, NOT AN OPTIONAL EXTRA
     and a ledge that vanished into the Drowned Wood's greens were all caught;
     every one of them had validated clean.
   - Also run `node tools/scan-sprites.mjs --strict`.
-  - For anything touching room data, run the four committed checkers above.
+  - For anything touching room data, run the committed room checkers above.
+  - For anything at all: `npm run build && node tools/check-build.mjs`, then
+    commit the rebuilt dist/oracle-of-tides.html. The build is what the game
+    actually ships as; a green src/ with a stale build is a red session.
 
 NINE TRAPS THAT PASS EVERY VALIDATOR - all cost real time to find
   - A PUSH BLOCK MOVES EXACTLY ONE TILE, EVER (`once: true` by default).

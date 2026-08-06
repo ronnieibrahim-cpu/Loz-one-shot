@@ -413,6 +413,49 @@ The overworld has eight regions gated on items that no longer exist.
 4. Re-run every checker and both replays.
 ```
 
+### PB — Single-file build (done)
+
+Landed on `claude/oracle-build-script-coklp7`. Kept here because the
+constraints are the interesting part and will bind every future change to the
+build.
+
+```
+package.json declares a `build` script pointing at tools/build.mjs, which does
+not exist. Write it.
+
+It must bundle index.html plus every ES module under src/ into ONE
+self-contained HTML file at dist/oracle-of-tides.html, with all JavaScript
+inlined as a single classic <script> (not type="module"), so the file opens
+and runs correctly from a file:// URL with no web server and no network
+access.
+
+This is possible because the game loads no runtime assets: all sprite data is
+procedural JS and all audio is WebAudio synthesis. Verify that claim yourself
+before relying on it — grep for fetch, XMLHttpRequest, new Image, and any
+reference to an image or audio file under src/ and index.html. If you find a
+runtime asset load, stop and tell me rather than working around it.
+
+Requirements:
+- The touch control layer already in index.html must survive the bundle, so
+  the file is playable on a phone browser as well as a desktop one.
+- No build-time dependency beyond what package.json already has. Plain Node,
+  no bundler package.
+- Running `npm run build` must produce the file and exit zero.
+
+Then:
+1. Run the build and commit dist/oracle-of-tides.html.
+2. Open the built file in Playwright from a file:// URL, let it run for a few
+   seconds, and assert the canvas is rendering and no console errors were
+   thrown. Save that as tools/check-build.mjs and add it to the verification
+   table in CLAUDE.md.
+3. Add a line to CLAUDE.md under Workflow: every session ends by running
+   `npm run build` and committing dist/oracle-of-tides.html.
+4. Add this build prompt to docs/EXECUTION-PLAN.md so it's preserved.
+
+Finally: update docs/NEXT-SESSION.md losslessly, and add anything surprising
+to the hard-won-lessons section of docs/HANDOFF.md.
+```
+
 ---
 
 ## Part 4 — Order of execution
