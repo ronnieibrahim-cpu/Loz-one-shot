@@ -17,6 +17,7 @@ import { Explosion } from './effects.js';
 import { F } from '../world/tileset.js';
 import { TILE, VIEW_W, VIEW_H } from '../core/screen.js';
 import { hasItem, itemLevel, addBombs } from './progress.js';
+import { PEGASUS_FRAMES } from '../data/feel.js';
 import { sprites } from '../gfx/art.js';
 
 // --------------------------------------------------------------------------
@@ -348,7 +349,7 @@ export function applySeed(game, kind, x, y, fromPlayer) {
       game.audio.sfx('seed');
       break;
     case 'pegasus':
-      if (p) p.speedBoost = 300;
+      if (p) p.speedBoost = PEGASUS_FRAMES;
       game.spawnEffect('sparkle', p ? p.x : x, p ? p.y : y, { life: 30 });
       game.audio.sfx('pegasus');
       break;
@@ -356,7 +357,7 @@ export function applySeed(game, kind, x, y, fromPlayer) {
       game.startGaleWarp();
       break;
     case 'mystery': {
-      const roll = ['ember', 'scent', 'pegasus'][(Math.random() * 3) | 0];
+      const roll = game.rng.pick(['ember', 'scent', 'pegasus']);
       applySeed(game, roll, x, y, fromPlayer);
       break;
     }

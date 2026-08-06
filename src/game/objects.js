@@ -11,6 +11,12 @@ import {
   addHeartPiece, HEART_UNITS, setFlag, flag,
 } from './progress.js';
 import { itemName, itemIcon, ITEMS } from './items.js';
+import {
+  PICKUP_LIFE_FRAMES, PICKUP_POP_SPEED, PICKUP_GRAVITY, PICKUP_SETTLE_FRAMES,
+  PICKUP_GRAB_DELAY, FAIRY_DRIFT_TURN, FAIRY_DRIFT_X, FAIRY_DRIFT_Y,
+  NPC_WANDER_PERIOD, NPC_WANDER_SPEED,
+  ESSENCE_SPARKLE_EVERY, ESSENCE_SPARKLE_SPREAD,
+} from '../data/feel.js';
 
 // --------------------------------------------------------------------------
 // Pickups
@@ -71,11 +77,16 @@ export const DROP_TABLES = {
   hearts: [[30, null], [70, 'heart']],
 };
 
-export function rollDropTable(name) {
+/**
+ * Roll a drop. `stream` is the room's RNG (game.rng) and is required — a drop
+ * table rolled off a global stream would make one enemy's loot depend on how
+ * many other enemies died first, and the room would stop replaying.
+ */
+export function rollDropTable(name, stream) {
   const t = DROP_TABLES[name] || DROP_TABLES.none;
   let total = 0;
   for (const [w] of t) total += w;
-  let r = Math.random() * total;
+  let r = stream.float() * total;
   for (const [w, item] of t) { r -= w; if (r <= 0) return item; }
   return null;
 }
@@ -93,11 +104,11 @@ export class Pickup extends Entity {
     this.isDrop = true;
     this.harmless = true;
     this.shadow = false;
-    this.life = spec.persistent ? Infinity : (o.life || 460);
-    this.vy = o.vy != null ? o.vy : -1.2;
+    this.life = spec.persistent ? Infinity : (o.life || PICKUP_LIFE_FRAMES);
+    this.vy = o.vy != null ? o.vy : PICKUP_POP_SPEED;
     this.z = 0;
-    this.settle = 12;
-    this.grabDelay = o.grabDelay != null ? o.grabDelay : 8;
+    this.settle = PICKUP_SETTLE_FRAMES;
+    this.grabDelay = o.grabDelay != null ? o.grabDelay : PICKUP_GRAB_DELAY;
     this.saveKey = o.saveKey || null;
     this.depth = -2;
   }
@@ -108,13 +119,14 @@ export class Pickup extends Entity {
     if (this.settle > 0) {
       this.settle--;
       this.y += this.vy;
-      this.vy += 0.16;
+      this.vy += PICKUP_GRAVITY;
     }
     if (this.spec.float) {
       // Fairies drift about.
-      if (this._fa == null) this._fa = Math.random() * 6.28;
-      this._fa += 0.06;
-      moveEntity(game, this, Math.cos(this._fa) * 0.7, Math.sin(this._fa * 1.3) * 0.6);
+      if (this._fa == null) this._fa = game.rng.angle();
+      this._fa += FAIRY_DRIFT_TURN;
+      moveEntity(game, this,
+        Math.cos(this._fa) * FAIRY_DRIFT_X, Math.sin(this._fa * 1.3) * FAIRY_DRIFT_Y);
     }
     if (this.grabDelay > 0) this.grabDelay--;
     if (this.life !== Infinity && --this.life <= 0) { this.remove = true; return; }
@@ -205,10 +217,12 @@ export class NPC extends Entity {
   update(game) {
     this.frame++;
     if (this.wander && !game.dialogue.active) {
-      if (this.frame % 90 === 0) this._wdir = ['up', 'down', 'left', 'right', null][(Math.random() * 5) | 0];
+      if (this.frame % NPC_WANDER_PERIOD === 0) {
+        this._wdir = game.rng.pick(['up', 'down', 'left', 'right', null]);
+      }
       if (this._wdir) {
         const [dx, dy] = DIR_VEC[this._wdir];
-        const r = moveEntity(game, this, dx * 0.3, dy * 0.3);
+        const r = moveEntity(game, this, dx * NPC_WANDER_SPEED, dy * NPC_WANDER_SPEED);
         if (r.hitX || r.hitY) this._wdir = null;
         else this.dir = this._wdir;
       }
@@ -549,8 +563,10 @@ export class Essence extends Entity {
   }
   update(game) {
     this.frame++;
-    if (this.frame % 10 === 0) {
-      game.spawnEffect('sparkle', this.x + (Math.random() * 10 - 5), this.y + (Math.random() * 10 - 5), { life: 16 });
+    if (this.frame % ESSENCE_SPARKLE_EVERY === 0) {
+      const s = ESSENCE_SPARKLE_SPREAD / 2;
+      game.spawnEffect('sparkle',
+        this.x + game.rng.range(-s, s), this.y + game.rng.range(-s, s), { life: 16 });
     }
     if (!this.taken && game.player && this.overlaps(game.player)) {
       this.taken = true;

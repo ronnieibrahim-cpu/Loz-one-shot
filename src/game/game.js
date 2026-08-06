@@ -50,8 +50,13 @@ import { Menu } from './menu.js';
 import { RINGS } from './rings.js';
 import { Title } from './title.js';
 import { runCutscene, CUTSCENES } from './cutscene.js';
-
-const TRANSITION_FRAMES = 34;
+import { Stream, seedGlobal, roomStream, noise1 } from '../core/rng.js';
+import {
+  ROOM_TRANSITION_FRAMES, ROOM_EXIT_MARGIN, FADE_RATE, BANNER_FRAMES,
+  SHAKE_LARGE, SHAKE_LARGE_FRAMES, BOSS_ESSENCE_DELAY_FRAMES,
+  BOSS_MUSIC_RESUME_FRAMES, ITEM_PRESENT_FRAMES, ESSENCE_FREEZE_FRAMES,
+  GAMEOVER_WAIT_FRAMES,
+} from '../data/feel.js';
 
 export class Game {
   constructor(screen, input) {
@@ -89,13 +94,20 @@ export class Game {
     this.deathTime = 0;
     this.tintKey = 'none';
     this.roomSnapshot = offscreen(VIEW_W, VIEW_H);
+    // The per-room stream. Replaced on every room entry from the save seed and
+    // the room's identity, so a room replays identically. Everything that
+    // rolls during play reads this, never Math.random and never the global
+    // stream. Before a room exists it runs on a fixed seed so the title screen
+    // is reproducible too.
+    this.rng = new Stream(1, 'preroom');
   }
 
   // ------------------------------------------------------------------ setup
 
-  newGame(slot, name = 'LINK') {
+  newGame(slot, name = 'LINK', seed) {
     this.slot = slot;
-    this.progress = newProgress(name);
+    this.progress = seed != null ? newProgress(name, seed) : newProgress(name);
+    seedGlobal(this.progress.seed);
     resetRooms();
     this.entities.length = 0;
     this.boss = null;
@@ -113,6 +125,7 @@ export class Game {
     if (!p) return false;
     this.slot = slot;
     this.progress = p;
+    seedGlobal(p.seed);
     resetRooms();
     this.entities.length = 0;
     this.boss = null;
@@ -157,7 +170,7 @@ export class Game {
     }
     if (changedMap || o.banner) {
       this.bannerText = m.kind === 'dungeon' ? m.name : (this.room && this.room.name) || m.name;
-      this.bannerTime = 120;
+      this.bannerTime = BANNER_FRAMES;
     }
     if (!o.instant) this.fadeIn();
     this.updateMusic();
@@ -167,6 +180,9 @@ export class Game {
     const r = getRoom(this.mapId, floor, rx, ry);
     if (!r) { console.warn('[game] missing room', this.mapId, floor, rx, ry); return; }
     this.room = r;
+    // Rebuild the room's stream before anything in the room can roll: the room
+    // script, the puzzle check and every entity spawned below all read it.
+    this.rng = roomStream(this.progress.seed, this.mapId, r.key);
     r.visited = true;
     this.progress.secrets['seen:' + this.mapId + ':' + r.key] = true;
     this.tide.applyRoomRules(r);
@@ -249,9 +265,7 @@ export class Game {
     const p = this.player;
     const r = p.rect();
     const i = this.input;
-    // Movement happens in ~1.35px steps, so the player can never land exactly on
-    // the boundary. The margin has to exceed one step or exits never trigger.
-    const M = 3;
+    const M = ROOM_EXIT_MARGIN;
     let dir = null;
     if (i.down('right') && r.x + r.w >= VIEW_W - M) dir = 'right';
     else if (i.down('left') && r.x <= M) dir = 'left';
@@ -291,13 +305,13 @@ export class Game {
   updateTransition() {
     const t = this.transition;
     t.t++;
-    const k = t.t / TRANSITION_FRAMES;
+    const k = t.t / ROOM_TRANSITION_FRAMES;
     const p = this.player;
     // Ease the player across the seam while the view slides.
     p.x = t.startX + (t.endPos.x + (t.dir === 'right' ? VIEW_W : t.dir === 'left' ? -VIEW_W : 0) - t.startX) * k;
     p.y = t.startY + (t.endPos.y + (t.dir === 'down' ? VIEW_H : t.dir === 'up' ? -VIEW_H : 0) - t.startY) * k;
     p.animT++;
-    if (t.t >= TRANSITION_FRAMES) {
+    if (t.t >= ROOM_TRANSITION_FRAMES) {
       this.setRoom(this.room.floor, t.nx, t.ny);
       p.x = t.endPos.x; p.y = t.endPos.y;
       p.lastSafe.x = p.x; p.lastSafe.y = p.y;
@@ -322,7 +336,7 @@ export class Game {
 
   updateFade() {
     if (!this.fadeDir) return;
-    this.fadeAmount += this.fadeDir * 0.09;
+    this.fadeAmount += this.fadeDir * FADE_RATE;
     if (this.fadeDir > 0 && this.fadeAmount >= 1) {
       this.fadeAmount = 1;
       const t = this.fadeThen; this.fadeThen = null; this.fadeDir = 0;
@@ -548,18 +562,18 @@ export class Game {
 
   onBossDefeated(e) {
     const d = this.map && this.map.dungeon;
-    this.shake(4, 40);
+    this.shake(SHAKE_LARGE, SHAKE_LARGE_FRAMES);
     this.audio.stop();
     // Boss death opens the way to the essence.
     const room = this.room;
     if (d && d.essence != null) {
-      this.frameLater(70, () => {
+      this.frameLater(BOSS_ESSENCE_DELAY_FRAMES, () => {
         this.audio.jingle('bossClear');
         spawnEntity(this, 'essence', 4, 3, { index: d.index });
       });
     }
     // The boss track was stopped, so nothing would resume once the jingle ends.
-    this.frameLater(220, () => this.updateMusic());
+    this.frameLater(BOSS_MUSIC_RESUME_FRAMES, () => this.updateMusic());
     if (room.def.script && room.def.script.onEvent) room.def.script.onEvent(this, 'bossDead', e);
   }
 
@@ -658,8 +672,8 @@ export class Game {
     // item held overhead. `fanfare` is the longer piece, kept for the moments
     // that earn it (heart container, essence, dungeon cleared).
     this.audio.jingle('itemGet');
-    this.player.frozen = 90;
-    this.itemShow = { id, lv, t: 90 };
+    this.player.frozen = ITEM_PRESENT_FRAMES;
+    this.itemShow = { id, lv, t: ITEM_PRESENT_FRAMES };
     const name = itemName(id, lv);
     this.say(`You got the ${name}!\n${def ? def.desc : ''}`);
   }
@@ -677,7 +691,7 @@ export class Game {
     if (!p.essences.includes(index)) p.essences.push(index);
     p.essences.sort((a, b) => a - b);
     this.audio.jingle('essence');
-    this.player.frozen = 150;
+    this.player.frozen = ESSENCE_FREEZE_FRAMES;
     this.startCutscene('essence' + index, { fallback: 'essenceGeneric', data: { index } });
   }
 
@@ -688,7 +702,7 @@ export class Game {
   }
 
   rollDrop(x, y, table) {
-    const kind = rollDropTable(table);
+    const kind = rollDropTable(table, this.rng);
     if (!kind) return null;
     return this.spawnPickup(x, y, kind);
   }
@@ -863,7 +877,7 @@ export class Game {
 
   updateGameOver() {
     this.deathTime++;
-    if (this.deathTime < 100) return;
+    if (this.deathTime < GAMEOVER_WAIT_FRAMES) return;
     if (this.input.pressed('a') || this.input.pressed('start')) {
       if (this.deathChoice === undefined) this.deathChoice = 0;
       this.respawn();
@@ -882,8 +896,12 @@ export class Game {
 
     let ox = 0, oy = HUD_H;
     if (this.shakeTime > 0) {
-      ox += Math.round((Math.random() * 2 - 1) * this.shakeAmp);
-      oy += Math.round((Math.random() * 2 - 1) * this.shakeAmp);
+      // draw() runs at display rate, not at the fixed 60 Hz step, so this must
+      // not touch a stream — a slow machine would draw a different number of
+      // times per update and silently advance the run's randomness. noise1 is
+      // a pure hash of the frame counter: same shake, no state consumed.
+      ox += Math.round(noise1(this.frame * 2) * this.shakeAmp);
+      oy += Math.round(noise1(this.frame * 2 + 1) * this.shakeAmp);
     }
 
     ctx.save();
@@ -944,7 +962,7 @@ export class Game {
 
   drawTransition(ctx, ox, oy) {
     const t = this.transition;
-    const k = t.t / TRANSITION_FRAMES;
+    const k = t.t / ROOM_TRANSITION_FRAMES;
     const d = { right: [-1, 0], left: [1, 0], down: [0, -1], up: [0, 1] }[t.dir];
     const sx = Math.round(d[0] * VIEW_W * k), sy = Math.round(d[1] * VIEW_H * k);
     ctx.drawImage(this.roomSnapshot.canvas, ox + sx, oy + sy);
@@ -980,7 +998,7 @@ export class Game {
     this.screen.fade(t * 0.85);
     if (this.deathTime > 60) {
       drawTextCentered(ctx, 'YOU DIED', SCREEN_W / 2, 56, '#e04858');
-      if (this.deathTime > 100 && (this.frame >> 4) % 2 === 0) {
+      if (this.deathTime > GAMEOVER_WAIT_FRAMES && (this.frame >> 4) % 2 === 0) {
         drawTextCentered(ctx, 'Press A to continue', SCREEN_W / 2, 80, '#f8f8e8');
       }
     }

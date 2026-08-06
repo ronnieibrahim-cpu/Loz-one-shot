@@ -19,26 +19,21 @@ import { TILE, VIEW_W, VIEW_H } from '../core/screen.js';
 import { sprites } from '../gfx/art.js';
 import { hasItem, itemLevel, HEART_UNITS } from './progress.js';
 import { useEquipped, ITEMS, ThrownObject } from './items.js';
-
-const WALK_SPEED = 1.35;
-const SWIM_SPEED = 0.95;
-const DIVE_SPEED = 1.1;
-const BOOST_SPEED = 2.5;
-const SHIELD_SPEED = 1.0;
-const SLOW_FACTOR = 0.6;
-
-const SWING_FRAMES = 14;
-
-// One-way ledges. A run of ledge tiles is cleared in a single hop, so a two-
-// tile drop reads as one movement rather than two; 3 is as wide as any ledge
-// worth authoring.
-const LEDGE_MAX_SPAN = 3;
-const LEDGE_HOP_FRAMES = 18;
-const LEDGE_HOP_HEIGHT = 7;
-const SWING_HIT_START = 2;
-const SWING_HIT_END = 9;
-const CHARGE_FRAMES = 42;
-const SPIN_FRAMES = 26;
+import {
+  WALK_SPEED, SWIM_SPEED, DIVE_SPEED, BOOST_SPEED, SHIELD_SPEED, SLOW_FACTOR,
+  SHALLOW_FACTOR, CARRY_FACTOR, SPIN_DRIFT_SPEED,
+  SWING_FRAMES, SWING_HIT_START, SWING_HIT_END, CHARGE_FRAMES, CHARGE_SPARKLE_EVERY,
+  SPIN_FRAMES, SWORD_REACH, SWORD_SPAN, SWORD_GAP, SPIN_BOX,
+  PLAYER_INVULN_FRAMES, PLAYER_FLICKER_FRAMES, PLAYER_RECOVER_INVULN_FRAMES,
+  PLAYER_HURT_FRAMES, PLAYER_KNOCK_SPEED, PLAYER_KNOCK_DECAY,
+  KNOCK_SWORD, KNOCK_SPIN, HAZARD_DAMAGE, PIT_DAMAGE, WASH_DAMAGE,
+  JUMP_GRAVITY, GLIDE_GRAVITY, LAND_SETTLE_RATE,
+  LEDGE_MAX_SPAN, LEDGE_HOP_FRAMES, LEDGE_HOP_HEIGHT, LEDGE_PROBE_REACH,
+  FALL_FRAMES, WASH_FRAMES, DIG_FRAMES, CONCH_FRAMES, PUSH_DELAY_FRAMES,
+  DIVE_FRAMES, CONTEXT_REACH, LIFT_REACH, THROW_SPEED, CARRY_HEIGHT,
+  SHAKE_SMALL, SHAKE_SMALL_FRAMES, CHARGE_SPARKLE_SPREAD, WADE_FOAM_EVERY,
+  DIAGONAL_FACTOR, PUSH_PROBE_REACH,
+} from '../data/feel.js';
 
 export class Player extends Entity {
   constructor(x, y) {
@@ -109,7 +104,7 @@ export class Player extends Entity {
     if (this.hurtTime > 0) {
       this.hurtTime--;
       moveEntity(game, this, this.knockX, this.knockY);
-      this.knockX *= 0.84; this.knockY *= 0.84;
+      this.knockX *= PLAYER_KNOCK_DECAY; this.knockY *= PLAYER_KNOCK_DECAY;
       return;
     }
 
@@ -128,7 +123,7 @@ export class Player extends Entity {
 
     if (this.carrying) {
       this.carrying.x = this.x;
-      this.carrying.y = this.y - 13;
+      this.carrying.y = this.y - CARRY_HEIGHT;
     }
   }
 
@@ -157,7 +152,7 @@ export class Player extends Entity {
       game.spawnEffect('splash', this.x, this.y + 2);
       this.diving = 0;
     }
-    if (this.inShallow && this.frame % 14 === 0) {
+    if (this.inShallow && this.frame % WADE_FOAM_EVERY === 0) {
       game.spawnEffect('foam', this.x, this.y + 4, { life: 16 });
     }
     // Remember the last dry, safe spot so a tide change can wash us back to it.
@@ -176,7 +171,7 @@ export class Player extends Entity {
     const f = groundFlags(game, this);
     if (this.z > 2 || this.jumping) return;
     if (f & F.PIT) { this.beginFall(game); return; }
-    if (f & F.HAZARD) this.takeDamage(game, 2, null, { noKnockDir: true });
+    if (f & F.HAZARD) this.takeDamage(game, HAZARD_DAMAGE, null, { noKnockDir: true });
     if (f & F.WHIRL) game.enterWhirlpool(this);
   }
 
@@ -205,8 +200,10 @@ export class Player extends Entity {
       if (i.down(swordSlot) && this.swinging === 0) {
         this.charge++;
         if (this.charge === CHARGE_FRAMES) game.audio.sfx('charged');
-        if (this.charge > CHARGE_FRAMES && this.charge % 6 === 0) {
-          game.spawnEffect('sparkle', this.x + (Math.random() * 12 - 6), this.y + (Math.random() * 12 - 6), { life: 12 });
+        if (this.charge > CHARGE_FRAMES && this.charge % CHARGE_SPARKLE_EVERY === 0) {
+          const s = CHARGE_SPARKLE_SPREAD / 2;
+          game.spawnEffect('sparkle',
+            this.x + game.rng.range(-s, s), this.y + game.rng.range(-s, s), { life: 12 });
         }
       } else if (i.released(swordSlot)) {
         if (this.charge >= CHARGE_FRAMES) this.startSpin(game);
@@ -217,7 +214,7 @@ export class Player extends Entity {
     }
     // Mermaid Suit dive
     if (this.inDeep && itemLevel(game.progress, 'flippers') >= 2 && i.pressed('a')) {
-      this.diving = this.diving > 0 ? 0 : 180;
+      this.diving = this.diving > 0 ? 0 : DIVE_FRAMES;
       game.audio.sfx('dive');
     }
   }
@@ -225,7 +222,7 @@ export class Player extends Entity {
   /** Talk to NPCs, read signs, open chests, grab blocks. */
   tryContextAction(game) {
     const [dx, dy] = DIR_VEC[this.dir];
-    const px = this.cx + dx * 12, py = this.cy + dy * 12;
+    const px = this.cx + dx * CONTEXT_REACH, py = this.cy + dy * CONTEXT_REACH;
     // entities first
     for (const e of game.entities) {
       if (e.interact && !e.dead) {
@@ -271,10 +268,10 @@ export class Player extends Entity {
     else if (this.shielding) speed = SHIELD_SPEED;
     const f = groundFlags(game, this);
     if ((f & F.SLOW) && this.z <= 2) speed *= SLOW_FACTOR;
-    if (this.inShallow && this.z <= 2) speed *= 0.86;
-    if (this.carrying) speed *= 0.9;
+    if (this.inShallow && this.z <= 2) speed *= SHALLOW_FACTOR;
+    if (this.carrying) speed *= CARRY_FACTOR;
 
-    if (dx && dy) { const k = Math.SQRT1_2; dx *= k; dy *= k; }
+    if (dx && dy) { dx *= DIAGONAL_FACTOR; dy *= DIAGONAL_FACTOR; }
 
     // A hop in progress owns the controls until it lands.
     if (this.ledgeHop) { this.updateLedgeHop(game); this.animT++; return; }
@@ -319,8 +316,8 @@ export class Player extends Entity {
     if (!ux && !uy) return false;
     const facing = ux ? (ux < 0 ? 'left' : 'right') : (uy < 0 ? 'up' : 'down');
 
-    const tx = Math.floor((this.cx + ux * 10) / TILE);
-    const ty = Math.floor((this.cy + uy * 10) / TILE);
+    const tx = Math.floor((this.cx + ux * LEDGE_PROBE_REACH) / TILE);
+    const ty = Math.floor((this.cy + uy * LEDGE_PROBE_REACH) / TILE);
     const def = this.tileDefAt(game, tx, ty);
     if (!def || !(def.flags & F.LEDGE) || def.ledge !== facing) return false;
 
@@ -376,10 +373,10 @@ export class Player extends Entity {
 
   tryPush(game, dx, dy) {
     this._pushT = (this._pushT || 0) + 1;
-    if (this._pushT < 18) return;
+    if (this._pushT < PUSH_DELAY_FRAMES) return;
     const [ux, uy] = [Math.sign(dx), Math.sign(dy)];
-    const tx = Math.floor((this.cx + ux * 10) / TILE);
-    const ty = Math.floor((this.cy + uy * 10) / TILE);
+    const tx = Math.floor((this.cx + ux * PUSH_PROBE_REACH) / TILE);
+    const ty = Math.floor((this.cy + uy * PUSH_PROBE_REACH) / TILE);
     if (game.tryPushBlock(tx, ty, ux, uy)) this._pushT = 0;
   }
 
@@ -405,7 +402,7 @@ export class Player extends Entity {
       if (!e.isEnemy || e.dead || this.swingHit.has(e.id)) continue;
       if (rectOverlap(box, e.rect())) {
         this.swingHit.add(e.id);
-        e.hurt(game, swordDamage(this.swordLevel), this.dir, 4);
+        e.hurt(game, swordDamage(this.swordLevel), this.dir, KNOCK_SWORD);
       }
     }
     // tiles (bushes, signs)
@@ -414,12 +411,12 @@ export class Player extends Entity {
 
   swordBox() {
     const [dx, dy] = DIR_VEC[this.dir];
-    const reach = 13;
-    const w = dx !== 0 ? reach : 14;
-    const h = dy !== 0 ? reach : 14;
+    const reach = SWORD_REACH;
+    const w = dx !== 0 ? reach : SWORD_SPAN;
+    const h = dy !== 0 ? reach : SWORD_SPAN;
     return {
-      x: this.cx - w / 2 + dx * (reach / 2 + 3),
-      y: this.cy - h / 2 + dy * (reach / 2 + 3),
+      x: this.cx - w / 2 + dx * (reach / 2 + SWORD_GAP),
+      y: this.cy - h / 2 + dy * (reach / 2 + SWORD_GAP),
       w, h,
     };
   }
@@ -437,13 +434,13 @@ export class Player extends Entity {
     this.animT++;
     // Spin drifts you slightly in the facing direction.
     const [dx, dy] = DIR_VEC[this.dir];
-    moveEntity(game, this, dx * 0.35, dy * 0.35);
-    const box = { x: this.cx - 15, y: this.cy - 15, w: 30, h: 30 };
+    moveEntity(game, this, dx * SPIN_DRIFT_SPEED, dy * SPIN_DRIFT_SPEED);
+    const box = { x: this.cx - SPIN_BOX / 2, y: this.cy - SPIN_BOX / 2, w: SPIN_BOX, h: SPIN_BOX };
     for (const e of game.entities) {
       if (!e.isEnemy || e.dead || this.spinHit.has(e.id)) continue;
       if (rectOverlap(box, e.rect())) {
         this.spinHit.add(e.id);
-        e.hurt(game, swordDamage(this.swordLevel || 1) + 1, this.dir, 5);
+        e.hurt(game, swordDamage(this.swordLevel || 1) + 1, this.dir, KNOCK_SPIN);
       }
     }
     game.checkTileAction(box, 'cut');
@@ -466,13 +463,13 @@ export class Player extends Entity {
     // would pull it straight back to the ground on the first frame.
     if (this.ledgeHop) return;
     if (!this.jumping) {
-      if (this.z > 0) { this.z = Math.max(0, this.z - 0.5); }
+      if (this.z > 0) { this.z = Math.max(0, this.z - LAND_SETTLE_RATE); }
       return;
     }
     this.z += this.vz;
     // Roc's Cape hangs in the air a moment longer.
     this.vz -= (this.gliding && this.vz < 0 && game.input.down(game.progress.equipB === 'feather' ? 'b' : 'a'))
-      ? 0.08 : 0.19;
+      ? GLIDE_GRAVITY : JUMP_GRAVITY;
     if (this.z <= 0) {
       this.z = 0; this.vz = 0; this.jumping = false;
       const f = groundFlags(game, this);
@@ -490,11 +487,11 @@ export class Player extends Entity {
   tryLift(game, level) {
     if (this.carrying) return true;
     const [dx, dy] = DIR_VEC[this.dir];
-    const tx = Math.floor((this.cx + dx * 12) / TILE);
-    const ty = Math.floor((this.cy + dy * 12) / TILE);
+    const tx = Math.floor((this.cx + dx * LIFT_REACH) / TILE);
+    const ty = Math.floor((this.cy + dy * LIFT_REACH) / TILE);
     // liftable entities first (bombs, pots placed as entities)
     for (const e of game.entities) {
-      if (e.liftable && !e.dead && Math.hypot(e.cx - (this.cx + dx * 12), e.cy - (this.cy + dy * 12)) < 12) {
+      if (e.liftable && !e.dead && Math.hypot(e.cx - (this.cx + dx * LIFT_REACH), e.cy - (this.cy + dy * LIFT_REACH)) < LIFT_REACH) {
         this.carrying = e;
         e.carried = true;
         game.audio.sfx('lift');
@@ -514,14 +511,14 @@ export class Player extends Entity {
     c.carried = false;
     const [dx, dy] = DIR_VEC[this.dir];
     if (c instanceof ThrownObject || c.thrownVx !== undefined) {
-      c.thrownVx = dx * 2.6; c.thrownVy = dy * 2.6;
+      c.thrownVx = dx * THROW_SPEED; c.thrownVy = dy * THROW_SPEED;
       c.x = this.x + dx * 4; c.y = this.y + dy * 4;
       c.remove = false;
     } else {
       c.remove = true;
       game.addEntity(new ThrownObject(this.x + dx * 4, this.y + dy * 4, {
         sprite: c.sprite || 'rock16', pal: c.pal || 'stone',
-        vx: dx * 2.6, vy: dy * 2.6, z: 13, drops: c.dropTable || 'none',
+        vx: dx * THROW_SPEED, vy: dy * THROW_SPEED, z: CARRY_HEIGHT, drops: c.dropTable || 'none',
       }));
     }
     game.audio.sfx('throw');
@@ -542,7 +539,7 @@ export class Player extends Entity {
   startDig(game) {
     if (this.digging > 0 || this.inDeep) return true;
     const f = groundFlags(game, this);
-    this.digging = 18;
+    this.digging = DIG_FRAMES;
     if (f & (F.SLOW)) {
       game.audio.sfx('dig');
       const { tx, ty } = groundTile(game, this);
@@ -565,8 +562,8 @@ export class Player extends Entity {
         : (why === 'forced' ? 'Something holds the water fast.' : ''));
       return true;
     }
-    this.conchTime = 46;
-    this.frozen = 46;
+    this.conchTime = CONCH_FRAMES;
+    this.frozen = CONCH_FRAMES;
     game.audio.sfx('conch');
     game.tide.cycle();
     game.onConchPlayed();
@@ -612,20 +609,20 @@ export class Player extends Entity {
     if (game.hasRing('redJoy')) dmg = Math.round(dmg * 2);
 
     p.hearts = Math.max(0, p.hearts - dmg);
-    this.invuln = 46;
-    this.flicker = 46;
-    this.hurtTime = 12;
+    this.invuln = PLAYER_INVULN_FRAMES;
+    this.flicker = PLAYER_FLICKER_FRAMES;
+    this.hurtTime = PLAYER_HURT_FRAMES;
     if (!o.noKnockDir && source) {
       const dx = this.cx - source.cx, dy = this.cy - source.cy;
       const d = Math.hypot(dx, dy) || 1;
-      this.knockX = dx / d * 3.2; this.knockY = dy / d * 3.2;
+      this.knockX = dx / d * PLAYER_KNOCK_SPEED; this.knockY = dy / d * PLAYER_KNOCK_SPEED;
     } else {
       this.knockX = 0; this.knockY = 0;
     }
     this.charge = 0;
     if (this.carrying) this.dropCarried(game);
     game.audio.sfx('linkHurt');
-    game.shake(2, 8);
+    game.shake(SHAKE_SMALL, SHAKE_SMALL_FRAMES);
     if (p.hearts <= 0) game.onPlayerDied();
     return true;
   }
@@ -634,7 +631,7 @@ export class Player extends Entity {
 
   beginFall(game) {
     if (this.falling > 0) return;
-    this.falling = 34;
+    this.falling = FALL_FRAMES;
     this.jumping = false;
     this.ledgeHop = null;
     this.z = 0;
@@ -646,15 +643,15 @@ export class Player extends Entity {
     if (this.falling === 0) {
       const safe = findSafeTile(game, this) || this.lastSafe;
       this.x = safe.x; this.y = safe.y;
-      this.takeDamage(game, 2, null, { noKnockDir: true });
-      this.invuln = 60;
+      this.takeDamage(game, PIT_DAMAGE, null, { noKnockDir: true });
+      this.invuln = PLAYER_RECOVER_INVULN_FRAMES;
     }
   }
 
   /** Swept back to shore by water you cannot swim in. */
   beginWash(game) {
     if (this.washing > 0) return;
-    this.washing = 30;
+    this.washing = WASH_FRAMES;
     this.jumping = false;
     this.ledgeHop = null;
     this.vz = 0;
@@ -669,8 +666,8 @@ export class Player extends Entity {
       const safe = findSafeTile(game, this) || this.lastSafe;
       this.x = safe.x; this.y = safe.y;
       this.z = 0;
-      this.takeDamage(game, 2, null, { noKnockDir: true });
-      this.invuln = 60;
+      this.takeDamage(game, WASH_DAMAGE, null, { noKnockDir: true });
+      this.invuln = PLAYER_RECOVER_INVULN_FRAMES;
       game.say('The tide swept you back!');
     }
   }
@@ -697,8 +694,8 @@ export class Player extends Entity {
     this.flipX = this.dir === 'left';
     const key = side ? 'side' : this.dir;
 
-    if (this.falling > 0) return 'link_fall_' + Math.min(2, Math.floor((34 - this.falling) / 8));
-    if (this.digging > 0) return 'link_dig_' + (this.digging > 9 ? 0 : 1);
+    if (this.falling > 0) return 'link_fall_' + Math.min(2, Math.floor((FALL_FRAMES - this.falling) / 8));
+    if (this.digging > 0) return 'link_dig_' + (this.digging > DIG_FRAMES / 2 ? 0 : 1);
     if (this.spinning > 0) return 'link_spin_' + (Math.floor(this.frame / 3) % 4);
     if (this.conchTime > 0) return 'link_conch_' + key;
     if (this.inDeep) {

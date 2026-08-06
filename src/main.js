@@ -43,6 +43,23 @@ function boot() {
   document.getElementById('boot')?.classList.add('hidden');
 
   let acc = 0, last = performance.now(), fpsT = last, frames = 0;
+  let driven = false;
+
+  // Stepping hook for tools/replay.mjs. A replay has to advance the game one
+  // fixed step at a time with scripted input; the wall-clock loop below cannot
+  // do that, because how many times it steps depends on how busy the machine
+  // is. `takeOver` stops it stepping at all and hands the clock to the caller.
+  // Drawing keeps running so screenshots still work — nothing in draw() may
+  // consume randomness, which is why the screen shake is a pure hash.
+  window.__harness = {
+    get driven() { return driven; },
+    takeOver() { driven = true; },
+    release() { driven = false; acc = 0; last = performance.now(); },
+    /** Advance exactly n fixed updates. Only legal while driven. */
+    step(n = 1) { for (let i = 0; i < n; i++) game.update(); return game.frame; },
+    game,
+  };
+
   function loop(now) {
     requestAnimationFrame(loop);
     let dt = now - last;
@@ -50,7 +67,8 @@ function boot() {
     if (dt > 250) dt = STEP;             // tab was backgrounded: don't fast-forward
     acc += dt;
     let steps = 0;
-    while (acc >= STEP && steps < 4) {
+    if (driven) acc = 0;
+    while (!driven && acc >= STEP && steps < 4) {
       game.update();
       acc -= STEP;
       steps++;

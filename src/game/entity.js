@@ -7,6 +7,9 @@
 import { TILE, ROOM_W, ROOM_H, VIEW_W, VIEW_H } from '../core/screen.js';
 import { sprites } from '../gfx/art.js';
 import { F } from '../world/tileset.js';
+import {
+  ENEMY_INVULN_FRAMES, ENEMY_FLICKER_FRAMES, ENEMY_KNOCK_FRAMES, KNOCK_DEFAULT,
+} from '../data/feel.js';
 
 export const ENTITY_TYPES = new Map();
 
@@ -91,15 +94,15 @@ export class Entity {
   }
 
   /** Take damage. `dir` is the direction the hit came *from* the attacker's view. */
-  hurt(game, dmg, dir, knock = 3) {
+  hurt(game, dmg, dir, knock = KNOCK_DEFAULT) {
     if (this.invuln > 0 || this.dead) return false;
     this.hp -= dmg;
-    this.invuln = 24;
-    this.flicker = 24;
+    this.invuln = ENEMY_INVULN_FRAMES;
+    this.flicker = ENEMY_FLICKER_FRAMES;
     if (knock && dir) {
       const [dx, dy] = DIR_VEC[dir] || [0, 0];
       this.knockX = dx * knock; this.knockY = dy * knock;
-      this.knockTime = 8;
+      this.knockTime = ENEMY_KNOCK_FRAMES;
     }
     if (this.hp <= 0) { this.die(game); return true; }
     game.audio.sfx('enemyHit');

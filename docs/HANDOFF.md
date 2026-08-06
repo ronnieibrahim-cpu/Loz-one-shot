@@ -111,6 +111,9 @@ node tools/solve-switches.mjs        # one push per block, every switch room
 node tools/check-gates.mjs           # the two item gates, in-engine
 node tools/find-ledges.mjs           # where a ledge can go without walling a room
 node tools/check-overworld.mjs --items=bombs,boomerang,magnet
+node tools/replay.mjs                # both committed replays, to the pixel
+node tools/replay.mjs --record-all   # re-baseline them after a feel change
+node tools/replay.mjs --shots        # ...and screenshot the final frame
 ```
 
 `test.mjs` and `preview.mjs` take `--shot-dir=` and pick a random port, so
@@ -149,6 +152,30 @@ untouched baseline before any of this session's work.
    `rip-terrain.py` needs only Pillow; the scratch script that *finds* its
    source rectangles used numpy, but it is not committed and the tool does not
    import it.
+
+## Determinism, feel constants and replays
+
+`src/data/feel.js` is the single source of every timing and speed constant, and
+`src/core/rng.js` is the single source of randomness. `docs/FEEL-SPEC.md` is
+the why. Three things about them that are cheap to get wrong:
+
+**Nothing in `feel.js` is `measured`.** Every value is a guess carried over
+from the code as it stood, and is labelled `guessed`. `measured` means someone
+frame-stepped a reference recording. It is not a synonym for "we like it".
+Do not upgrade a tag because the game feels fine.
+
+**Nothing in a draw path may consume randomness.** `Game.draw` runs at display
+rate; `Game.update` runs at a fixed 60 Hz step. A stream drawn from inside
+`draw` advances a different number of times on a slow machine and the run
+silently desyncs — no error, no warning, just two runs that disagree. The
+screen shake was exactly this and now uses `noise1`, a pure hash of the frame
+counter that consumes nothing. Any future draw-time jitter must do the same.
+
+**`every(e, n)` hashes the entity id; it does not draw from a stream.** An
+enemy asked both `every(e, 30)` and `every(e, 90)` would otherwise take its
+phase from whichever call happened to run first, which depends on AI branch
+order and is not stable. Same reasoning applies to anything else that wants a
+stable per-entity constant.
 
 ## Hard-won lessons — do not rediscover these
 
@@ -445,6 +472,28 @@ are deliberate and look like bugs if you do not know:
   as a placeholder box until `installCoreTiles` started aliasing tile names to
   the art they declare. If you add a tile that reuses another's art, that alias
   loop already covers it.
+
+### A chest's pickup can land on a solid tile and be uncollectable
+
+Found while recording the D1 replay, and it passes every existing checker.
+
+`Game.openChest` spawns a `chest.pickup` at `chest.y - 12`, one tile above the
+chest, with no check that the tile there is standable. In `d1` room `0,4,5` the
+Compass chest sits at (4,3) with a **pot** at (4,2). The pickup settles at
+y≈32.2, its rect is y 36.2–46.2, and no legally standable tile in the room
+overlaps it — measured, not inferred. The chest opens, the jingle plays, the
+save records the chest as opened, and the Compass is never collected. The pot
+is liftable, so it becomes reachable once the player has the bracelet from a
+later dungeon; on the intended first visit it is not.
+
+Two things follow. Any chest with a solid tile directly above it has this bug,
+so it is worth a checker rather than a one-room fix. And `openChest` spawning
+into an unvalidated tile is the actual defect — `findSafeTile` already exists
+for exactly this shape of problem.
+
+Not fixed here: it is dungeon content, and P8 re-authors D1 anyway. The D1
+replay opens the chest deliberately (an opened chest is persisted save state
+worth asserting on) and its plan comment says the Compass is not collected.
 
 ## The two gates that cannot be tiles
 

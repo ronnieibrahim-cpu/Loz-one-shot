@@ -36,6 +36,21 @@ import {
 import { fire } from './projectile.js';
 import { F } from '../world/tileset.js';
 import { TILE, VIEW_W, VIEW_H } from '../core/screen.js';
+import { hash32 } from '../core/rng.js';
+import {
+  ENEMY_DEFAULT_SPEED, ENEMY_DEFAULT_RATE, ENEMY_TURN_CHANCE,
+  ENEMY_KNOCK_DECAY, ENEMY_BEACHED_FRAMES,
+  ENEMY_CHARGE_SPEED_MULT, ENEMY_HOP_SPEED_MULT, ENEMY_CHARGE_RECOVER_FRAMES,
+  ENEMY_CHARGE_TOLERANCE, ENEMY_CHARGE_RANGE, ENEMY_HOP_WAIT_FRAMES,
+  ENEMY_HOP_POWER, ENEMY_HOP_GRAVITY, ENEMY_ORBIT_SPEED, ENEMY_ORBIT_RADIUS,
+  ENEMY_SUBMERGE_DOWN_FRAMES, ENEMY_SUBMERGE_UP_FRAMES,
+  ENEMY_SURFACE_MIN_DIST, ENEMY_SURFACE_DIST_SPAN, ENEMY_ALIGN_TOLERANCE,
+  ENEMY_SHOT_SPEED, ENEMY_SHOT_LIFE, RING_SHOT_SPEED, RING_SHOT_LIFE,
+  BOSS_INTRO_FRAMES, BOSS_INVULN_FRAMES, BOSS_PHASE_INVULN_FRAMES,
+  BOSS_KNOCK_FRAMES, BOSS_KNOCK_SCALE, BOSS_KNOCK_DECAY,
+  BOSS_DEATH_FRAMES, BOSS_DEATH_BOOM_EVERY,
+  SHAKE_MEDIUM, SHAKE_SMALL_FRAMES, TIDE_DRIFT_PER_LEVEL,
+} from '../data/feel.js';
 
 const TERRAIN_AVOID = {
   land: F.WATER | F.DEEP | F.PIT | F.HAZARD | F.JUMPABLE,
@@ -53,8 +68,8 @@ export class Enemy extends Entity {
     this.maxHp = this.hp = opts.hp || spec.hp || 1;
     this.damage = opts.damage != null ? opts.damage : (spec.damage != null ? spec.damage : 1);
     this.pal = opts.pal || spec.pal || 'enemyg';
-    this.speed = opts.speed || spec.speed || 0.5;
-    this.rate = spec.rate || 10;
+    this.speed = opts.speed || spec.speed || ENEMY_DEFAULT_SPEED;
+    this.rate = spec.rate || ENEMY_DEFAULT_RATE;
     this.w = spec.w || 16; this.h = spec.h || 16;
     this.hb = spec.hb || { x: 2, y: 5, w: 12, h: 10 };
     this.terrain = spec.terrain || 'land';
@@ -119,7 +134,7 @@ export class Enemy extends Entity {
     if (this.knockTime > 0) {
       this.knockTime--;
       moveEntity(game, this, this.knockX, this.knockY);
-      this.knockX *= 0.82; this.knockY *= 0.82;
+      this.knockX *= ENEMY_KNOCK_DECAY; this.knockY *= ENEMY_KNOCK_DECAY;
       return;
     }
     if (this.stun > 0) { this.stun--; return; }
@@ -129,7 +144,7 @@ export class Enemy extends Entity {
     // Aquatic enemies that end up on dry land after the tide drops flop and die.
     if (this.terrain === 'water' && !this.terrainOk(game, this.x, this.y)) {
       this.beached = (this.beached || 0) + 1;
-      if (this.beached > 90) this.die(game);
+      if (this.beached > ENEMY_BEACHED_FRAMES) this.die(game);
     } else {
       this.beached = 0;
     }
@@ -200,7 +215,7 @@ export class Boss extends Enemy {
     super(x, y, spec, opts);
     this.isBoss = true;
     this.oncePerGame = spec.oncePerGame !== false;
-    this.intro = spec.intro != null ? spec.intro : 80;
+    this.intro = spec.intro != null ? spec.intro : BOSS_INTRO_FRAMES;
     this.phase = -1;
     this.weakOpen = !spec.shell;
     this.deathTime = 0;
@@ -227,27 +242,27 @@ export class Boss extends Enemy {
 
     if (this.dying) {
       this.deathTime++;
-      if (this.deathTime % 9 === 0) {
+      if (this.deathTime % BOSS_DEATH_BOOM_EVERY === 0) {
         game.spawnEffect('boom',
-          this.x + Math.random() * this.w - 8,
-          this.y + Math.random() * this.h - 8);
-        game.shake(3, 8);
+          this.x + game.rng.float() * this.w - 8,
+          this.y + game.rng.float() * this.h - 8);
+        game.shake(SHAKE_MEDIUM, SHAKE_SMALL_FRAMES);
       }
-      if (this.deathTime > 72) { this.dying = false; super.die(game); }
+      if (this.deathTime > BOSS_DEATH_FRAMES) { this.dying = false; super.die(game); }
       return;
     }
 
     if (this.intro > 0) {
       this.intro--;
       if (this.intro === 0 && this.spec.onIntro) this.spec.onIntro(this, game);
-      if (this.intro === Math.floor((this.spec.intro || 80) / 2)) game.audio.play('boss');
+      if (this.intro === Math.floor((this.spec.intro || BOSS_INTRO_FRAMES) / 2)) game.audio.play('boss');
       return;
     }
 
     if (this.knockTime > 0) {
       this.knockTime--;
       moveEntity(game, this, this.knockX, this.knockY);
-      this.knockX *= 0.8; this.knockY *= 0.8;
+      this.knockX *= BOSS_KNOCK_DECAY; this.knockY *= BOSS_KNOCK_DECAY;
       return;
     }
     if (this.stun > 0) { this.stun--; return; }
@@ -255,7 +270,7 @@ export class Boss extends Enemy {
     const p = this.currentPhase();
     if (p !== this.phase) {
       this.phase = p;
-      this.invuln = Math.max(this.invuln, 20);
+      this.invuln = Math.max(this.invuln, BOSS_PHASE_INVULN_FRAMES);
       if (this.spec.onPhase) this.spec.onPhase(this, game, p);
       game.audio.sfx('charged');
     }
@@ -273,12 +288,12 @@ export class Boss extends Enemy {
     }
     if (this.invuln > 0) return false;
     this.hp -= dmg;
-    this.invuln = 20;
-    this.flicker = 20;
+    this.invuln = BOSS_INVULN_FRAMES;
+    this.flicker = BOSS_INVULN_FRAMES;
     if (knock && dir) {
       const [dx, dy] = DIR_VEC[dir] || [0, 0];
-      this.knockX = dx * (knock * 0.4); this.knockY = dy * (knock * 0.4);
-      this.knockTime = 6;
+      this.knockX = dx * (knock * BOSS_KNOCK_SCALE); this.knockY = dy * (knock * BOSS_KNOCK_SCALE);
+      this.knockTime = BOSS_KNOCK_FRAMES;
     }
     if (this.spec.onHurt) this.spec.onHurt(this, game, dmg);
     if (this.hp <= 0) { this.beginDeath(game); return true; }
@@ -318,11 +333,21 @@ export function defineBoss(name, spec) {
 // AI toolkit
 // --------------------------------------------------------------------------
 
-export function randDir() { return DIRS[(Math.random() * 4) | 0]; }
+/**
+ * A random cardinal direction, drawn from the room's stream. `g` is required:
+ * a direction chosen off a global stream would make one enemy's turn depend on
+ * how many other enemies had rolled first, and the room would stop replaying.
+ */
+export function randDir(g) { return DIRS[g.rng.int(4)]; }
 
-/** True once every n frames (per-entity phase so a group doesn't act in lockstep). */
+/**
+ * True once every n frames, with a per-entity phase so a group does not act in
+ * lockstep. The phase is a pure hash of the entity id rather than a draw from
+ * a stream — an entity that is asked `every(e, 30)` and `every(e, 90)` would
+ * otherwise get its phase from whichever call happened to run first.
+ */
 export function every(e, n) {
-  if (e._phase == null) e._phase = (Math.random() * n) | 0;
+  if (e._phase == null) e._phase = hash32('phase', e.id, n) % n;
   return ((e.tick + e._phase) % n) === 0;
 }
 
@@ -343,7 +368,7 @@ export function facePlayer(e, g) {
 }
 
 /** Is the player roughly on the same row/column, within `tol` pixels? */
-export function aligned(e, g, tol = 12) {
+export function aligned(e, g, tol = ENEMY_ALIGN_TOLERANCE) {
   if (!g.player) return false;
   const p = g.player;
   if (Math.abs(p.cy - e.cy) <= tol) { e.dir = p.cx < e.cx ? 'left' : 'right'; return true; }
@@ -364,10 +389,10 @@ export function moveDir(e, g, dir, speed) {
 /** Amble about, changing direction on walls and occasionally at random. */
 export function wander(e, g, o = {}) {
   const speed = o.speed != null ? o.speed : e.speed;
-  const turn = o.turnChance != null ? o.turnChance : 0.012;
+  const turn = o.turnChance != null ? o.turnChance : ENEMY_TURN_CHANCE;
   if (o.pause && e._pause > 0) { e._pause--; return; }
-  if (!moveDir(e, g, e.dir, speed) || Math.random() < turn) {
-    e.dir = randDir();
+  if (!moveDir(e, g, e.dir, speed) || g.rng.chance(turn)) {
+    e.dir = randDir(g);
     if (o.pause) e._pause = o.pause;
   }
 }
@@ -394,7 +419,7 @@ export function flee(e, g, o = {}) {
   const dx = e.cx - p.cx, dy = e.cy - p.cy;
   const dir = Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 'left' : 'right') : (dy < 0 ? 'up' : 'down');
   e.dir = dir;
-  if (!moveDir(e, g, dir, speed)) e.dir = randDir();
+  if (!moveDir(e, g, dir, speed)) e.dir = randDir(g);
 }
 
 /** Back-and-forth along one axis, reversing at walls. */
@@ -411,7 +436,7 @@ export function patrol(e, g, o = {}) {
 export function bounceDiag(e, g, o = {}) {
   const speed = o.speed != null ? o.speed : e.speed;
   if (e._bvx == null) {
-    const a = Math.random() * Math.PI * 2;
+    const a = g.rng.angle();
     e._bvx = Math.cos(a) * speed; e._bvy = Math.sin(a) * speed;
   }
   const r = moveEntity(g, e, e._bvx, e._bvy);
@@ -422,12 +447,12 @@ export function bounceDiag(e, g, o = {}) {
 
 /** Hop: rise, travel, land. Used by leevers, crabs, jumping slimes. */
 export function hop(e, g, o = {}) {
-  const speed = o.speed != null ? o.speed : e.speed * 2;
-  if (e._hopState == null) { e._hopState = 'wait'; e._hopWait = o.wait || 40; }
+  const speed = o.speed != null ? o.speed : e.speed * ENEMY_HOP_SPEED_MULT;
+  if (e._hopState == null) { e._hopState = 'wait'; e._hopWait = o.wait || ENEMY_HOP_WAIT_FRAMES; }
   if (e._hopState === 'wait') {
     if (--e._hopWait <= 0) {
       e._hopState = 'air';
-      e.vz = o.power || 2.2;
+      e.vz = o.power || ENEMY_HOP_POWER;
       if (o.toward !== false) facePlayer(e, g);
       const [dx, dy] = DIR_VEC[e.dir];
       e._hvx = dx * speed; e._hvy = dy * speed;
@@ -436,27 +461,27 @@ export function hop(e, g, o = {}) {
     return;
   }
   e.z += e.vz;
-  e.vz -= 0.16;
+  e.vz -= ENEMY_HOP_GRAVITY;
   moveEntity(g, e, e._hvx, e._hvy);
   if (e.z <= 0) {
     e.z = 0; e.vz = 0;
     e._hopState = 'wait';
-    e._hopWait = o.wait || 40;
+    e._hopWait = o.wait || ENEMY_HOP_WAIT_FRAMES;
   }
 }
 
 /** Charge in a straight line once the player lines up; stop at walls. */
 export function charge(e, g, o = {}) {
-  const speed = o.speed != null ? o.speed : e.speed * 3;
+  const speed = o.speed != null ? o.speed : e.speed * ENEMY_CHARGE_SPEED_MULT;
   if (e._charging) {
     if (!moveDir(e, g, e.dir, speed)) {
       e._charging = false;
-      e.stun = o.recover || 24;
-      if (o.shake) g.shake(3, 8);
+      e.stun = o.recover || ENEMY_CHARGE_RECOVER_FRAMES;
+      if (o.shake) g.shake(SHAKE_MEDIUM, SHAKE_SMALL_FRAMES);
     }
     return true;
   }
-  if (aligned(e, g, o.tol || 10) && distToPlayer(e, g) < (o.range || 90)) {
+  if (aligned(e, g, o.tol || ENEMY_CHARGE_TOLERANCE) && distToPlayer(e, g) < (o.range || ENEMY_CHARGE_RANGE)) {
     e._charging = true;
     if (o.tell) e.stun = o.tell;
     if (g.audio) g.audio.sfx(o.sfx || 'charge');
@@ -468,9 +493,9 @@ export function charge(e, g, o = {}) {
 
 /** Circle a fixed point (spinners, orbiting eyes). */
 export function orbit(e, g, o = {}) {
-  const r = o.radius || 24;
-  const sp = o.speed != null ? o.speed : 0.045;
-  if (e._ang == null) e._ang = Math.random() * Math.PI * 2;
+  const r = o.radius || ENEMY_ORBIT_RADIUS;
+  const sp = o.speed != null ? o.speed : ENEMY_ORBIT_SPEED;
+  if (e._ang == null) e._ang = g.rng.angle();
   e._ang += sp;
   e.x = (o.cx != null ? o.cx : e.homeX) + Math.cos(e._ang) * r;
   e.y = (o.cy != null ? o.cy : e.homeY) + Math.sin(e._ang) * r;
@@ -478,7 +503,7 @@ export function orbit(e, g, o = {}) {
 
 /** Sink out of sight, then surface somewhere near the player. */
 export function submerge(e, g, o = {}) {
-  const down = o.down || 90, up = o.up || 120;
+  const down = o.down || ENEMY_SUBMERGE_DOWN_FRAMES, up = o.up || ENEMY_SUBMERGE_UP_FRAMES;
   if (e._subState == null) { e._subState = 'up'; e._subT = up; }
   if (--e._subT > 0) {
     if (e._subState === 'up' && o.whileUp) o.whileUp(e, g);
@@ -492,7 +517,8 @@ export function submerge(e, g, o = {}) {
     e._subState = 'up'; e._subT = up;
     e.hidden = false; e.harmless = false; e.invuln = 0;
     if (o.reposition !== false && g.player) {
-      const a = Math.random() * Math.PI * 2, d = 32 + Math.random() * 24;
+      const a = g.rng.angle();
+      const d = ENEMY_SURFACE_MIN_DIST + g.rng.float() * ENEMY_SURFACE_DIST_SPAN;
       const nx = Math.max(8, Math.min(VIEW_W - 24, g.player.cx + Math.cos(a) * d - 8));
       const ny = Math.max(8, Math.min(VIEW_H - 24, g.player.cy + Math.sin(a) * d - 8));
       if (canOccupy(g, e, nx, ny)) { e.x = nx; e.y = ny; }
@@ -509,10 +535,10 @@ export function shoot(e, g, o = {}) {
     sprite: o.sprite || 'shot',
     pal: o.pal || e.pal,
     damage: o.damage != null ? o.damage : 1,
-    speed: o.speed || 1.5,
+    speed: o.speed || ENEMY_SHOT_SPEED,
     dir: o.dir || e.dir,
     at: o.aim === false ? null : (o.aim ? g.player : null),
-    life: o.life || 140,
+    life: o.life || ENEMY_SHOT_LIFE,
     w: o.w, h: o.h,
     overWater: o.overWater,
     bounces: o.bounces,
@@ -527,8 +553,8 @@ export function shootRing(e, g, n = 8, o = {}) {
     fire(g, e, {
       sprite: o.sprite || 'shot', pal: o.pal || e.pal,
       damage: o.damage != null ? o.damage : 1,
-      vx: Math.cos(a) * (o.speed || 1.2), vy: Math.sin(a) * (o.speed || 1.2),
-      life: o.life || 130, w: o.w, h: o.h,
+      vx: Math.cos(a) * (o.speed || RING_SHOT_SPEED), vy: Math.sin(a) * (o.speed || RING_SHOT_SPEED),
+      life: o.life || RING_SHOT_LIFE, w: o.w, h: o.h,
     });
   }
   if (g.audio) g.audio.sfx(o.sfx || 'enemyShoot');
@@ -537,7 +563,7 @@ export function shootRing(e, g, n = 8, o = {}) {
 /** Drift with the current while the tide is high (aquatic enemies). */
 export function driftWithTide(e, g, o = {}) {
   const lvl = g.tide.level;
-  const push = (o.perLevel || 0.12) * lvl;
+  const push = (o.perLevel || TIDE_DRIFT_PER_LEVEL) * lvl;
   if (push) moveEntity(g, e, (o.dx || 1) * push, (o.dy || 0) * push);
 }
 

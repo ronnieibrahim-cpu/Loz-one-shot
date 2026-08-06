@@ -127,7 +127,7 @@ function clampArena(e, m = 12) {
 /** Summon minions in a puff, at arm's length from the boss and inside the room. */
 function summon(g, e, type, n = 1) {
   for (let i = 0; i < n; i++) {
-    const a = Math.random() * Math.PI * 2;
+    const a = g.rng.angle();
     const x = Math.max(24, Math.min(VIEW_W - 40, e.cx + Math.cos(a) * 36));
     const y = Math.max(24, Math.min(VIEW_H - 40, e.cy + Math.sin(a) * 36));
     g.spawnEffect('puff', x - 8, y - 8);
@@ -345,7 +345,7 @@ export function installBosses() {
             if (every(e2, 96)) {
               windUp(e2, g2, 16, (e3, g3) => {
                 spread(e3, g3, 5, 60, { sprite: 'shot_ink', pal: 'shadow', speed: 1.6, damage: 2 });
-                if (Math.random() < 0.6) summon(g3, e3, 'gel', 1);
+                if (g3.rng.chance(0.6)) summon(g3, e3, 'gel', 1);
               });
             }
           },
@@ -988,7 +988,7 @@ export function installBosses() {
         // Drop the water and the vine wilts: slower thorns, longer gaps.
         if (timer(e, 'thorn', g.tide.level === LOW ? 190 : 130)) {
           windUp(e, g, 16, (e2, g2) => shootRing(e2, g2, 6,
-            { sprite: 'shot', pal: 'wood', speed: 1.3, damage: 2, offset: Math.random() }));
+            { sprite: 'shot', pal: 'wood', speed: 1.3, damage: 2, offset: g2.rng.angle() }));
         }
       } },
       { above: 0.00, ai(e, g) {

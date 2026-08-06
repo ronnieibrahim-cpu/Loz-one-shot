@@ -4,14 +4,22 @@
 // games could take a quarter heart off you. Enemy `damage` values are in the same
 // units, so `damage: 2` is half a heart.
 
+import { hash32 } from '../core/rng.js';
+
 export const HEART_UNITS = 4;
 export const SAVE_KEY = 'oracleOfTides.save.v1';
 export const SLOTS = 3;
 
-export function newProgress(name = 'LINK') {
+/**
+ * `seed` is the root of every random decision the run will ever make. It is
+ * saved, so a reloaded game keeps rolling the same way, and tools/replay.mjs
+ * pins it explicitly. Passing one makes a new game fully reproducible.
+ */
+export function newProgress(name = 'LINK', seed = (Date.now() >>> 0)) {
   return {
     version: 1,
     name,
+    seed: seed >>> 0,
     // health
     hearts: 3 * HEART_UNITS,
     maxHearts: 3 * HEART_UNITS,
@@ -182,6 +190,9 @@ function migrate(p) {
     'beaten', 'flags', 'chests', 'doors', 'secrets', 'rings', 'trade', 'pos', 'respawn']) {
     out[k] = { ...base[k], ...(p[k] || {}) };
   }
+  // A save written before seeds existed gets one derived from what it does
+  // carry, so it is at least stable across loads rather than fresh each time.
+  if (p.seed == null) out.seed = hash32('legacy', p.name || 'LINK', p.createdAt || 0);
   if (!Array.isArray(out.essences)) out.essences = [];
   if (!Array.isArray(out.ringsEquipped)) out.ringsEquipped = [null, null];
   return out;

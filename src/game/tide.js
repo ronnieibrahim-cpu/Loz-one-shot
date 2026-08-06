@@ -9,18 +9,17 @@
 
 import { VIEW_W, VIEW_H, offscreen } from '../core/screen.js';
 import { F } from '../world/tileset.js';
+import { TIDE_SWEEP_FRAMES } from '../data/feel.js';
 
 export const TIDE_NAMES = ['LOW', 'MID', 'HIGH'];
 export const TIDE_COUNT = 3;
-
-const SWEEP_FRAMES = 44;
 
 export class Tide {
   constructor(game) {
     this.game = game;
     this.level = 1;
     this.prevLevel = 1;
-    this.sweep = 0;            // 0 = idle, otherwise counts up to SWEEP_FRAMES
+    this.sweep = 0;            // 0 = idle, otherwise counts up to TIDE_SWEEP_FRAMES
     this.snapshot = null;      // pre-change render of the current room
     this.locked = false;       // room forbids tide changes
     this.forced = null;        // room pins the tide to a level
@@ -81,12 +80,12 @@ export class Tide {
   update() {
     if (this.sweep > 0) {
       this.sweep++;
-      if (this.sweep > SWEEP_FRAMES) this.sweep = 0;
+      if (this.sweep > TIDE_SWEEP_FRAMES) this.sweep = 0;
     }
   }
 
   /** Progress of the wipe, 0..1. */
-  get sweepT() { return this.sweep > 0 ? Math.min(1, this.sweep / SWEEP_FRAMES) : 1; }
+  get sweepT() { return this.sweep > 0 ? Math.min(1, this.sweep / TIDE_SWEEP_FRAMES) : 1; }
 
   /**
    * Draw the room during a tide change: old state, then the new state revealed

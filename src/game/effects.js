@@ -4,6 +4,10 @@
 
 import { Entity, defineEntity } from './entity.js';
 import { sprites } from '../gfx/art.js';
+import {
+  EXPLOSION_FRAMES, EXPLOSION_SELF_DAMAGE, KNOCK_EXPLOSION,
+  SHAKE_MEDIUM, SHAKE_MEDIUM_FRAMES,
+} from '../data/feel.js';
 
 export class Effect extends Entity {
   constructor(x, y, spec, opts = {}) {
@@ -71,7 +75,7 @@ export class Explosion extends Entity {
     this.isEffect = true;
     this.harmless = true;
     this.shadow = false;
-    this.life = 24;
+    this.life = EXPLOSION_FRAMES;
     this.damage = 0;
     this.hitDone = false;
     this.depth = 50;
@@ -83,14 +87,14 @@ export class Explosion extends Entity {
     if (!this.hitDone) {
       this.hitDone = true;
       game.audio.sfx('explode');
-      game.shake(3, 10);
+      game.shake(SHAKE_MEDIUM, SHAKE_MEDIUM_FRAMES);
       for (const e of game.entities) {
         if (e === this || e.dead) continue;
-        if (e.isEnemy && this.overlaps(e)) e.hurt(game, this.power, null, 2);
+        if (e.isEnemy && this.overlaps(e)) e.hurt(game, this.power, null, KNOCK_EXPLOSION);
         if (e.bombable && this.overlaps(e) && e.onBombed) e.onBombed(game);
       }
       if (game.player && this.overlaps(game.player)) {
-        game.player.takeDamage(game, 2, this, { noKnockDir: true });
+        game.player.takeDamage(game, EXPLOSION_SELF_DAMAGE, this, { noKnockDir: true });
       }
       game.breakTilesInRect(this.rect(), 'bomb');
     }

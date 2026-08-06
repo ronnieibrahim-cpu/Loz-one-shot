@@ -9,8 +9,8 @@
 //   node tools/test.mjs --keep        leave the browser open (headed) for a look
 
 import { createServer } from 'node:http';
-import { readFile, stat, mkdir, writeFile } from 'node:fs/promises';
-import { extname, join, normalize, resolve, dirname } from 'node:path';
+import { readFile, readdir, stat, mkdir, writeFile } from 'node:fs/promises';
+import { extname, join, normalize, resolve, dirname, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -67,7 +67,62 @@ async function loadPlaywright() {
   return mod.chromium ? mod : mod.default;
 }
 
+// --- determinism: nothing under src/ may call Math.random -------------------
+//
+// One global stream seeded from the save plus a per-room derived stream is the
+// whole determinism story (src/core/rng.js). A single Math.random anywhere in
+// src/ silently voids it, and nothing else in the suite would notice — the
+// game would still run, still validate, and still be unreproducible. So this
+// check runs first, before the browser even starts, and it is fatal.
+//
+// Comments are stripped before matching, because rng.js and game.js both talk
+// about Math.random in prose and a naive grep would flag its own documentation.
+
+function stripComments(src) {
+  let out = '', i = 0, n = src.length;
+  while (i < n) {
+    const c = src[i], d = src[i + 1];
+    if (c === '/' && d === '/') { while (i < n && src[i] !== '\n') i++; continue; }
+    if (c === '/' && d === '*') { i += 2; while (i < n && !(src[i] === '*' && src[i + 1] === '/')) i++; i += 2; continue; }
+    if (c === '"' || c === "'" || c === '`') {
+      out += c; i++;
+      while (i < n && src[i] !== c) { if (src[i] === '\\') { out += src[i]; i++; } out += src[i]; i++; }
+      out += src[i]; i++; continue;
+    }
+    out += c; i++;
+  }
+  return out;
+}
+
+async function jsFilesUnder(dir) {
+  const out = [];
+  for (const ent of await readdir(dir, { withFileTypes: true })) {
+    const full = join(dir, ent.name);
+    if (ent.isDirectory()) out.push(...await jsFilesUnder(full));
+    else if (ent.name.endsWith('.js') || ent.name.endsWith('.mjs')) out.push(full);
+  }
+  return out;
+}
+
+async function checkNoMathRandom() {
+  const hits = [];
+  for (const file of (await jsFilesUnder(join(ROOT, 'src'))).sort()) {
+    const code = stripComments(await readFile(file, 'utf8'));
+    code.split('\n').forEach((line, i) => {
+      if (/Math\s*\.\s*random\s*\(/.test(line)) {
+        hits.push(`${relative(ROOT, file)}:${i + 1}: ${line.trim().slice(0, 80)}`);
+      }
+    });
+  }
+  check('no Math.random anywhere under src/', hits.length === 0,
+    hits.length ? `${hits.length} call site(s): ` + hits.slice(0, 6).join(' | ') : '');
+  return hits;
+}
+
 const main = async () => {
+  console.log('\n--- determinism ---');
+  await checkNoMathRandom();
+
   const { chromium } = await loadPlaywright();
   // Random high port: concurrent runs must not fight over a fixed one.
   const PORT = Number(arg('port', 0)) || (20000 + Math.floor(Math.random() * 20000));

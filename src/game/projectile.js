@@ -3,6 +3,7 @@
 import { Entity, moveEntity, canOccupy, defineEntity, DIR_VEC } from './entity.js';
 import { VIEW_W, VIEW_H, TILE } from '../core/screen.js';
 import { F } from '../world/tileset.js';
+import { PROJECTILE_LIFE, PROJECTILE_SPEED, PROJECTILE_Z } from '../data/feel.js';
 
 export class Projectile extends Entity {
   constructor(x, y, o = {}) {
@@ -13,7 +14,7 @@ export class Projectile extends Entity {
     this.sprite = o.sprite || 'shot';
     this.pal = o.pal || 'enemyr';
     this.damage = o.damage != null ? o.damage : 1;
-    this.life = o.life != null ? o.life : 150;
+    this.life = o.life != null ? o.life : PROJECTILE_LIFE;
     this.fromPlayer = !!o.fromPlayer;
     this.pierce = !!o.pierce;
     this.bounces = o.bounces || 0;
@@ -26,7 +27,7 @@ export class Projectile extends Entity {
     this.owner = o.owner || null;
     this.onImpact = o.onImpact || null;
     this.hitFx = o.hitFx || 'spark';
-    this.z = o.z || 4;
+    this.z = o.z || PROJECTILE_Z;
   }
 
   update(game) {
@@ -104,7 +105,7 @@ export class Projectile extends Entity {
 
 /** Convenience: fire a projectile from an entity toward a direction or point. */
 export function fire(game, from, o = {}) {
-  const speed = o.speed || 1.6;
+  const speed = o.speed || PROJECTILE_SPEED;
   let vx = o.vx, vy = o.vy;
   if (vx == null && vy == null) {
     if (o.at) {

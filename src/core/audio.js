@@ -33,6 +33,8 @@
 // Rows are looked up per-pattern; a channel may be omitted or shorter than the
 // pattern's longest channel, in which case it is silent for the remainder.
 
+import { Stream } from './rng.js';
+
 const NOTE_BASE = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
 
 export function noteFreq(tok) {
@@ -63,9 +65,13 @@ function noiseBuffer(ctx, seconds = 1) {
   const buf = ctx.createBuffer(1, len, ctx.sampleRate);
   const d = buf.getChannelData(0);
   // Emulate the LFSR-ish character of GB noise with a coarse sample-and-hold.
+  // This is a fixed waveform, not a gameplay roll, so it gets its own stream on
+  // a constant seed rather than the save's: the drum hiss should be the same
+  // sound in every run, and it must not perturb anything the game rolls.
+  const noise = new Stream(0x5EED10FF, 'noise');
   let v = 0;
   for (let i = 0; i < len; i++) {
-    if ((i & 3) === 0) v = Math.random() * 2 - 1;
+    if ((i & 3) === 0) v = noise.float() * 2 - 1;
     d[i] = v;
   }
   return buf;
