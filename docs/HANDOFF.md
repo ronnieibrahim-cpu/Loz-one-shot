@@ -47,6 +47,7 @@ sprite packs still to be drawn.
 | **Region gates (5 of 9)** | **Done** — Bombs, Boomerang, Gloves, Feather, Bracelet |
 | **Terrain art (10 tiles)** | **Done** — 9 ground + `flowers`, `tools/rip-terrain.py` |
 | **itemGet / secret / heartPiece** | **Done** — wired to their moments |
+| **Single-file build** | **Done** — `npm run build` → `dist/oracle-of-tides.html`, runs from `file://` |
 
 ### Five region gates are now machine-checkable
 
@@ -144,7 +145,17 @@ untouched baseline before any of this session's work.
    touch chromium_headless_shell-1234/{INSTALLATION_COMPLETE,DEPENDENCIES_VALIDATED}
    ```
    (Check the revision `playwright` actually asks for in the error message; it
-   was 1234 at the time of writing.)
+   was 1234 the first three times.) A headful `chromium.launch()` — which
+   `check-build.mjs` uses, because a canvas assertion wants a real browser —
+   needs the same shim for the full browser as well:
+   ```sh
+   mkdir -p /opt/pw-browsers/chromium-1234
+   ln -sfn /opt/pw-browsers/chromium-1194/chrome-linux /opt/pw-browsers/chromium-1234/chrome-linux
+   touch /opt/pw-browsers/chromium-1234/{INSTALLATION_COMPLETE,DEPENDENCIES_VALIDATED}
+   ```
+   `check-build.mjs` also falls back to `$CHROMIUM_PATH` or
+   `/opt/pw-browsers/chromium` on its own if the launch throws, so it runs on an
+   unshimmed container; the other harnesses do not, and still need the shim.
 3. `pip install pillow` if you are going to run any of the `rip-*.py` tools.
    `rip-terrain.py` needs only Pillow; the scratch script that *finds* its
    source rectangles used numpy, but it is not committed and the tool does not
@@ -446,6 +457,51 @@ are deliberate and look like bugs if you do not know:
   the art they declare. If you add a tile that reuses another's art, that alias
   loop already covers it.
 
+**The single-file build** (`tools/build.mjs`, checked by `tools/check-build.mjs`).
+`npm run build` flattens `index.html` and the 46 modules reachable from
+`src/main.js` into `dist/oracle-of-tides.html`, which runs from a `file://` URL
+with no server and no network. Five things that were not obvious:
+
+1. **It has to be a classic `<script>`, not an inline module.** A
+   `<script type="module">` is fetched with an opaque origin under `file://` and
+   blocked by CORS in every browser — even inline, even with every import
+   already resolved away. That single fact is the reason the build flattens the
+   module graph into a tiny synchronous registry instead of just concatenating
+   the modules and keeping `type="module"`. Anyone "simplifying" it back will
+   produce a file that is blank on double-click and fine over `npm run dev`.
+2. **The no-runtime-assets claim is real, and the build now enforces it.** There
+   is no `fetch`, no `XMLHttpRequest`, no `new Image`, no `<img>`/`<audio>`
+   anywhere: sprites are procedural JS, audio is WebAudio synthesis. The build
+   greps for all of it and refuses rather than emitting a file that 404s. If a
+   real asset ever lands, embed it as a `data:` URI — do not remove the guard.
+3. **That grep must run over comment- and string-stripped code.** The naive
+   version fired twice on innocent lines: `tiles-terrain.js` provenance comments
+   name `.png` sheets, and the overworld room grid `'Tg.....ogg'` is tile
+   letters that happen to spell an audio extension. `stripCommentsAndStrings`
+   in build.mjs exists for exactly this.
+4. **`new Audio()` in `src/core/audio.js` is not the DOM `Audio`.** That module
+   declares its own `class Audio` — the synth. The asset scan skips a global
+   that the module shadows with its own declaration, which is why the pattern
+   table carries a `shadow` column.
+5. **Imports become destructuring, so an import cycle would break silently.**
+   Every export in `src/` is a `const`, `function` or `class` — nothing is
+   reassigned — so snapshotting a binding is safe *provided* the dependency has
+   already evaluated. The build therefore topologically sorts and hard-fails on
+   a cycle, naming the loop. It also rejects the forms it cannot express
+   (default exports, `export *`, re-exports, dynamic `import()`, and
+   multi-declarator `export const A = 1, B = 2`, which the transform would
+   publish only half of). Extend build.mjs rather than working around it.
+
+Also: `dist/` is in `.gitignore`, which silently swallowed the built file the
+first time. It is now `dist/*` plus `!dist/oracle-of-tides.html`, so the build
+output is committed and nothing else in `dist/` is.
+
+And: `check-build.mjs` is only worth anything if it fails. It was verified by
+sabotaging the bundle's last line with a thrown error and confirming it went
+red on six separate assertions at once. `window.__game.frame` is the frame
+counter — there is no `tick` or `frameCount`, and a check that reads a field
+which does not exist passes forever.
+
 ## The two gates that cannot be tiles
 
 Roc's Feather and the Power Bracelet became real tile gates this session. The
@@ -499,9 +555,12 @@ node tools/check-overworld.mjs   # seams, border, flood, all three item gates
 node tools/solve-switches.mjs    # one push per block
 node tools/check-gates.mjs       # the two item gates, in-engine, with real items
 node tools/find-ledges.mjs       # reports where a ledge may go (not a check)
+node tools/check-build.mjs       # the shipped single-file build boots from file://
 ```
 
-Run the first four after touching any room data.
+Run the room checkers after touching any room data, and check-build.mjs after
+touching anything at all — it is the only thing that proves the file the game
+actually ships as still runs.
 
 **`check-overworld.mjs` and `check-gates.mjs` are deliberately redundant, and
 both are needed.** check-overworld proves the MAP side — the region is

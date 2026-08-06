@@ -72,6 +72,7 @@ Nothing new is extracted from them. New art is drawn.
 | `node tools/check-gates.mjs` | Gates hold in-engine with a live player |
 | `node tools/solve-switches.mjs` | Every switch puzzle has a solution |
 | `node tools/replay.mjs` | Movement and combat are frame-identical to a recorded baseline |
+| `node tools/check-build.mjs` | The shipped single-file build boots and plays from a `file://` URL |
 | `node tools/test.mjs` | Everything else |
 
 Run the cheap deterministic checkers instead of reasoning about correctness.
@@ -125,3 +126,8 @@ dungeons' themes can be stated in the same sentence, one of them is wrong.
   Cost that was paid once should not be paid twice.
 - Commit messages describe what changed in the game, not what changed in the
   code.
+- Every session ends by running `npm run build` and committing
+  `dist/oracle-of-tides.html`. That file is the playable game — one
+  self-contained HTML document that runs from a `file://` URL with no server
+  and no network, on a phone as well as a desktop. A commit that changes `src/`
+  and leaves the build stale ships a game that is not the game.
