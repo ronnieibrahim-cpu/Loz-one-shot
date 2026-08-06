@@ -2320,8 +2320,12 @@ const ROOM_TRANSITION_FRAMES = 34;
  *  boundary without ever landing on it. */
 const ROOM_EXIT_MARGIN = 1;
 
-/** f — length of the tide's wave-front wipe across the screen. guessed. */
-const TIDE_SWEEP_FRAMES = 44;
+/** f — length of the tide's wave-front wipe across the screen. guessed.
+ *  Was 44 while game.js stepped the sweep twice per frame, so the wipe really
+ *  crossed in 23 and the constant described nothing. 23 is what the game has
+ *  always looked like: the number moved to match the screen, not the other way
+ *  round, so the wipe and the replays are unchanged. */
+const TIDE_SWEEP_FRAMES = 23;
 
 /** x — fade opacity change per frame; a full fade is 1/FADE_RATE frames. guessed. */
 const FADE_RATE = 0.09;
@@ -6945,6 +6949,10 @@ class Game {
 
     this.frame = 0;
     this.mode = 'title';
+    // Set by main.js from ?seed= in the URL. A new game normally seeds itself
+    // from the wall clock, which is right for play and wrong for any tool that
+    // needs the same world twice — see tools/test.mjs.
+    this.seedOverride = null;
     this.progress = newProgress();
     this.tide = new Tide(this);
     this.dialogue = new Dialogue(this);
@@ -6982,7 +6990,8 @@ class Game {
 
   newGame(slot, name = 'LINK', seed) {
     this.slot = slot;
-    this.progress = seed != null ? newProgress(name, seed) : newProgress(name);
+    const useSeed = seed != null ? seed : this.seedOverride;
+    this.progress = useSeed != null ? newProgress(name, useSeed) : newProgress(name);
     seedGlobal(this.progress.seed);
     resetRooms();
     this.entities.length = 0;
@@ -7743,7 +7752,12 @@ class Game {
     }
 
     if (this.transition) { this.updateTransition(); this.flushPending(); return; }
-    if (this.tide.busy) { this.tide.update(); return; }
+    // The sweep was already stepped at the top of play mode. Stepping it again
+    // here ran the wave front at double speed and made TIDE_SWEEP_FRAMES mean
+    // half what it said; it also stretched the conch lock-out, because nothing
+    // below this line runs during a sweep, so the player's own timers stall
+    // for its whole length.
+    if (this.tide.busy) return;
     if (this.fadeDir) return;
 
     if (this.player) this.player.update(this);
@@ -26133,6 +26147,13 @@ function boot() {
   }
 
   const game = new Game(screen, input);
+  // ?seed=N pins the save seed a new game starts from. Play leaves it off and
+  // gets a fresh world from the clock; tools that must replay the same world
+  // twice pass it. Nothing else reads the URL.
+  const urlSeed = new URLSearchParams(location.search).get('seed');
+  if (urlSeed !== null && urlSeed !== '' && Number.isFinite(Number(urlSeed))) {
+    game.seedOverride = Number(urlSeed) >>> 0;
+  }
   window.__game = game;          // handy for the test harness and debugging
 
   // The audio context can only start from a user gesture.
