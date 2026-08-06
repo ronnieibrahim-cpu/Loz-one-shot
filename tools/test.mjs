@@ -23,6 +23,9 @@ const arg = (name, dflt) => {
 const SHOT_DIR = resolve(HERE, arg('shot-dir', 'shots'));
 const WANT_SHOTS = process.argv.includes('--shots');
 const HEADED = process.argv.includes('--keep');
+// The save seed the run plays on. Overridable so a failure can be re-created
+// on a different world without editing the file.
+const SEED = Number(arg('seed', 20260806));
 
 const MIME = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
@@ -137,16 +140,29 @@ const main = async () => {
   await mkdir(SHOT_DIR, { recursive: true });
 
   const G = (fn, ...args) => page.evaluate(fn, ...args);
-  const frames = (n) => page.evaluate((k) => new Promise(res => {
-    const start = window.__game.frame;
-    const tick = () => (window.__game.frame - start >= k) ? res(window.__game.frame) : requestAnimationFrame(tick);
-    tick();
-  }), n);
+
+  // THE HARNESS OWNS THE CLOCK.
+  //
+  // This used to count frames with requestAnimationFrame while main.js's
+  // wall-clock loop kept stepping the game, which made every number below a
+  // lie. `frames(30)` waited for 30 updates but the game also ran throughout
+  // the surrounding CDP round trips, so `hold('ArrowRight', 30)` really held
+  // the key for 30 frames plus however long the machine took to answer — and
+  // on a busy box that was twice as far. Link's position when a later
+  // assertion ran was therefore a function of CPU load, not of the test.
+  //
+  // window.__harness (built for tools/replay.mjs) stops the loop stepping and
+  // hands the clock over, so every hold and every tap below lasts exactly the
+  // number of fixed updates it says, on any machine. Drawing keeps running,
+  // so screenshots and the fps counter still work.
+  const frames = (n) => page.evaluate((k) => window.__harness.step(k), n);
   const shot = async (name) => {
     if (!WANT_SHOTS) return;
     const el = await page.$('#screen');
     await el.screenshot({ path: join(SHOT_DIR, name + '.png') });
   };
+  // keyboard.down/up resolve once the event has been dispatched into the page.
+  // Nothing steps in between, so the key is held for exactly n updates.
   const hold = async (key, n) => {
     await page.keyboard.down(key);
     await frames(n);
@@ -155,8 +171,12 @@ const main = async () => {
   };
   const tap = async (key) => { await page.keyboard.press(key); await frames(4); };
 
-  await page.goto(`http://localhost:${PORT}/index.html`, { waitUntil: 'load' });
-  await page.waitForFunction(() => !!window.__game, { timeout: 15000 });
+  // A fixed seed, so the suite plays the same game every run. Without it
+  // newProgress() falls back to Date.now(), every run rolls a different world,
+  // and P1's determinism guarantee stops at the front door.
+  await page.goto(`http://localhost:${PORT}/index.html?seed=${SEED}`, { waitUntil: 'load' });
+  await page.waitForFunction(() => !!window.__game && !!window.__harness, { timeout: 15000 });
+  await G(() => window.__harness.takeOver());
 
   console.log('\n--- boot ---');
   const errText = await page.$eval('#err', el => el.textContent).catch(() => '');
@@ -208,18 +228,41 @@ const main = async () => {
   await frames(20);
 
   console.log('\n--- the tide (core mechanic) ---');
+  // Stand somewhere known before testing the conch. A is the context button
+  // first and the item button second, so a villager who has wandered within
+  // reach eats the press and opens a text box instead — and once a text box is
+  // up, Game.update returns early and every later press feeds the box, not the
+  // conch. That is what used to make this section fail at random on a busy
+  // machine. The dialogue guard below names the problem if it ever recurs.
+  await G(() => {
+    const g = window.__game;
+    g.enterMap('overworld', 0, 4, 7, 72, 64, 'down', { instant: true });
+  });
+  await frames(6);
   await G(() => { window.__game.progress.equipA = 'conch'; });
+  check('nothing is talking to Link before the conch test',
+    await G(() => !window.__game.dialogue.active));
+  // A conch press locks the player out for the sweep (TIDE_SWEEP_FRAMES, during
+  // which nothing below the tide runs at all, so his own timers stall) and then
+  // for CONCH_FRAMES of holding the shell up — 69 frames all told. The old gap
+  // here was 64, i.e. inside the lock-out, so half these presses were being
+  // swallowed and the assertion only passed on the presses that happened to
+  // land. Wait past the whole animation.
+  const CONCH_GAP = 80;
   const t0 = await G(() => window.__game.tide.level);
   await tap('x');                                   // A -> play the conch
-  await frames(60);
+  await frames(CONCH_GAP);
   const t1 = await G(() => window.__game.tide.level);
   check('conch changed the tide', t1 !== t0, `${t0} -> ${t1}`);
   check('tide cycles within 0..2', t1 >= 0 && t1 <= 2, String(t1));
   await shot('05-tide-changed');
-  // Cycle all the way round.
+  // Cycle all the way round. Every press must now land, so two presses are
+  // enough to have seen all three levels and the remaining two prove it wraps.
   const seen = new Set([t0, t1]);
-  for (let i = 0; i < 4; i++) { await tap('x'); await frames(60); seen.add(await G(() => window.__game.tide.level)); }
+  for (let i = 0; i < 4; i++) { await tap('x'); await frames(CONCH_GAP); seen.add(await G(() => window.__game.tide.level)); }
   check('all three tide levels reachable', seen.size === 3, [...seen].join(','));
+  check('the conch presses reached the conch, not a text box',
+    await G(() => !window.__game.dialogue.active));
 
   console.log('\n--- tide reshapes terrain ---');
   // The Shallows room has sandbar tiles: walkable at low, deep at high.

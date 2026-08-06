@@ -242,8 +242,12 @@ export const ROOM_TRANSITION_FRAMES = 34;
  *  once WALK_SPEED divides the tile evenly. */
 export const ROOM_EXIT_MARGIN = 3;
 
-/** f — length of the tide's wave-front wipe across the screen. guessed. */
-export const TIDE_SWEEP_FRAMES = 44;
+/** f — length of the tide's wave-front wipe across the screen. guessed.
+ *  Was 44 while game.js stepped the sweep twice per frame, so the wipe really
+ *  crossed in 23 and the constant described nothing. 23 is what the game has
+ *  always looked like: the number moved to match the screen, not the other way
+ *  round, so the wipe and the replays are unchanged. */
+export const TIDE_SWEEP_FRAMES = 23;
 
 /** x — fade opacity change per frame; a full fade is 1/FADE_RATE frames. guessed. */
 export const FADE_RATE = 0.09;
