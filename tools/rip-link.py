@@ -95,6 +95,9 @@ def band_tops(x0=888):
 
 IDLE_Y, ACT_Y = 38, 69
 
+# A frame is (x, y, flip) for a 16x16 cell, or (x, y, flip, w, h) for one that
+# is not 16x16. Only the held-blade poses need the second form — see HOLD below.
+
 FRAMES = {
     'link_walk_down_0': (895, IDLE_Y, False),
     'link_walk_down_1': (895, IDLE_Y, True),
@@ -143,6 +146,25 @@ FRAMES = {
     'link_conch_down':  (1370, ACT_Y, False),
     'link_conch_up':    (1387, ACT_Y, False),
     'link_conch_side':  (1404, ACT_Y, True),
+
+    # ---- walking with the blade held out -----------------------------------
+    #
+    # The sheet's "Charge" band. In the Oracles, holding the button IS the
+    # charge, and these are the frames it draws: Link with the blade extended,
+    # walking. Four frames per direction — the last two are the charged flash,
+    # with the blade tinted; the first is the plain held pose and the one the
+    # engine wants.
+    #
+    # THESE ARE NOT 16x16 AND MUST NOT BE CROPPED TO IT. The blade runs 13px
+    # past Link's feet facing the viewer, 11px past his head facing away, and
+    # 12px past his shoulder in profile. A 16x16 window keeps the body and
+    # throws the sword away, which is the one thing the pose exists to show.
+    # They are emitted at their native size; the engine derives the draw anchor
+    # from the sprite's own dimensions so the BODY lands on the same pixel a
+    # 16x16 frame would put it on. See Player.draw.
+    'link_hold_down':   (895, 362, False, 16, 30),
+    'link_hold_up':     (967, 362, False, 16, 28),
+    'link_hold_side':   (895, 397, True, 28, 16),
 }
 
 
@@ -160,8 +182,16 @@ def shrink(rows, size):
 
 def emit(path):
     art = {}
-    for name, (ox, oy, flip) in FRAMES.items():
-        art[name] = cell(ox, oy, flip=flip)
+    for name, spec in FRAMES.items():
+        ox, oy, flip = spec[0], spec[1], spec[2]
+        w, h = (spec[3], spec[4]) if len(spec) > 3 else (16, 16)
+        # Emitted rows are kept exactly as cut. art.js strips leading and
+        # trailing rows that are WHITESPACE-only, and a row of '.' is not
+        # whitespace — so a fully transparent row survives the parse and counts
+        # toward the sprite's height. Trimming them here would silently shrink
+        # every frame and move the held-blade anchor, which is derived from the
+        # sprite's height at draw time.
+        art[name] = cell(ox, oy, w, h, flip)
     base = cell(895, IDLE_Y)
     art['link_fall_0'] = shrink(base, 13)
     art['link_fall_1'] = shrink(base, 9)

@@ -31,9 +31,15 @@ three verbs") and the cost of each mistake is in `docs/HANDOFF.md` under
    so it must be a power of two in subpixels — 256 is the only candidate that
    is not a crawl or a dash.
 4. **The sword-hold.** Holding the button after a swing keeps the blade out:
-   its own pose (three new sprites, `link_hold_down/up/side`), reduced walk
-   speed, contact damage, cutting, and a clink off walls. Charge-to-spin still
-   runs underneath.
+   its own pose, reduced walk speed, contact damage, cutting, and a clink off
+   walls. Charge-to-spin still runs underneath. The pose is
+   `link_hold_down/up/side`, **extracted** from the sheet's Charge band by
+   `tools/rip-link.py` — in the Oracles, holding the button is the charge, so
+   those are the frames the source game draws for this exact state. They are
+   the only Link sprites that are not 16x16 (16x30, 16x28, 28x16), because the
+   blade runs past the edge of the cell; `Player.draw` derives the anchor from
+   the sprite's own size. Note the CLAUDE.md rule changed with this: Link's
+   frames may be extracted, everything else is still drawn.
 5. **Both replays re-recorded** and passing; `tools/shots-link-baseline/`
    diffed and refreshed.
 
@@ -53,8 +59,12 @@ three verbs") and the cost of each mistake is in `docs/HANDOFF.md` under
   movement got 26% slower and diagonal got 4% faster. No enemy, gap or dodge
   window has been re-examined against that, and it is a real balance lever.
 - **`SWORD_HOLD_DAMAGE`, `KNOCK_HOLD`, `SWORD_HOLD_SPEED` and the two hold
-  timings are all `guessed`.** The hold's *existence* is the fidelity claim;
-  its numbers are not.
+  timings are all `guessed`.** The hold's *existence* and its *art* are the
+  fidelity claims; its numbers are not.
+- **A non-16x16 player sprite is new ground.** Three of them exist now and only
+  `Player.draw` knows how to anchor them. Anything else that draws Link — a
+  cutscene, a future menu portrait — will place them wrong. There is no guard
+  against that beyond `expectedSize` asserting the dimensions.
 - **Enemy knockback still decays exponentially** and enemies still turn on a
   per-frame probability. Both are P4, untouched here beyond making the
   arithmetic integer.

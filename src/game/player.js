@@ -821,8 +821,27 @@ export class Player extends Entity {
     if (this.inDeep) cropH = this.diving > 0 ? 6 : 11;
     else if (this.inShallow && this.z <= 1) cropH = 13;
 
+    // The held-blade frames are the source game's own and are NOT 16x16 — the
+    // blade runs past the edge of Link's cell in whichever direction he faces.
+    // They are drawn at native size with an anchor that puts his BODY on the
+    // pixel a 16x16 frame would have put it on. The offset is derived from the
+    // sprite's own dimensions rather than written down, so art and anchor
+    // cannot drift apart: whatever the blade overhangs by, the anchor undoes.
+    //
+    // Facing left, the engine mirrors the side frame inside its own 28px
+    // canvas, which carries the body to the far end — so the offset moves with
+    // the flip, not with the direction.
+    let ax = 0, ay = 0;
+    if (name.startsWith('link_hold_')) {
+      const s = sprites.size(name);
+      if (this.dir === 'up') ay = -(s.h - 16);
+      else if (this.flipX) ax = -(s.w - 16);
+    }
     const dy = oy + this.y - this.z;
-    sprites.draw(ctx, name, ox + this.x, dy, { pal, flipX: this.flipX, h: cropH });
+    // The wading crop is a water line in room space; inside a taller frame it
+    // sits `ay` lower, because that is how much of the frame is above Link.
+    sprites.draw(ctx, name, ox + this.x + ax, dy + ay,
+      { pal, flipX: this.flipX, h: cropH == null ? null : cropH - ay });
 
     // Sword arc
     if (this.swinging > 0) {

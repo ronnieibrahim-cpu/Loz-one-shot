@@ -252,7 +252,15 @@ were already fighting in.
 The hold state is entered `SWORD_HOLD_DELAY` frames after a swing ends if the
 button is still down, and it gives:
 
-- a distinct pose — `link_hold_down/up/side`, drawn for this and nothing else
+- a distinct pose — `link_hold_down/up/side`, extracted from the sheet's
+  **Charge** band by `tools/rip-link.py`. In the Oracles, holding the button
+  *is* the charge, so those are the frames the source game draws for exactly
+  this state. They are the only Link sprites that are **not 16x16** (16x30,
+  16x28 and 28x16): the blade runs past the edge of Link's cell in whichever
+  direction he faces, and cropping it back would delete the sword, which is the
+  one thing the pose exists to show. `Player.draw` derives the anchor from the
+  sprite's own dimensions so the body lands on the pixel a 16x16 frame would
+  have put it on, and so art and anchor cannot drift apart.
 - `SWORD_HOLD_SPEED`, three quarters of walking, the same as the raised shield
 - contact damage in the swing's own box, at `SWORD_HOLD_DAMAGE` and
   `KNOCK_HOLD`. It is deliberately **not** rate-limited here: the enemy's own

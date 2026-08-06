@@ -586,6 +586,31 @@ Also worth knowing: the old replay baselines recorded final positions like
 `x: 63.015805675746414`. They are integers now, which is what "asserts to the
 pixel" was always supposed to mean.
 
+### A sprite that does not fit its cell, and the two ways to get it wrong
+
+The held-blade poses are the game's first non-16x16 player sprites. Two traps
+came out of adding them:
+
+**`parseArt` strips WHITESPACE-only rows, not transparent ones.** A row of
+`................` is not blank — dots are not whitespace — so it survives the
+parse and counts toward the sprite's height. A first attempt trimmed all-dot
+rows in the ripper "to match", which silently shrank a dozen existing frames
+(`link_swim_up_0` went 16x16 -> 16x13) and moved the anchor of the new ones.
+`validate.mjs` caught it, because `expectedSize` asserts every sprite's
+dimensions. Emit exactly what was cut.
+
+**Derive the draw anchor from the sprite, not from a constant.** These frames
+are anchored so Link's *body* lands where a 16x16 frame would put it, which
+means offsetting by the overhang — 12px up for the up-facing frame, 12px left
+when the side frame is mirrored. `Player.draw` reads `sprites.size(name)` and
+computes it, so re-cutting the frames in `rip-link.py` cannot leave a stale
+offset behind. Writing the numbers down would have been three lines shorter and
+one silent bug away.
+
+And the flip is about the sprite's own canvas, not the world: mirroring a
+28-wide side frame carries the body to the far end of the canvas, so the offset
+belongs to `flipX`, not to `dir === 'left'`.
+
 ### `tools/shots-link-baseline/` was three weeks stale
 
 P3's brief said to diff it. Doing so showed 47–96% of pixels differing on most

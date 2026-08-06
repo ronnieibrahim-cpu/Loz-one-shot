@@ -36,8 +36,16 @@ faster than cardinal. This is deliberate and it is a signature of the source
 games.
 
 **No assets from any commercial game enter this repo.** The sprite sheets under
-`assets/sheets/` are grandfathered reference for the existing extractions only.
-Nothing new is extracted from them. New art is drawn.
+`assets/sheets/` are grandfathered; nothing new is added to them.
+
+One carve-out, decided deliberately: **Link's own frames may still be extracted
+from `oracle-ages-link.png` via `tools/rip-link.py`.** Every Link sprite in the
+game already comes from that sheet, so a hand-drawn addition sits next to
+extracted art and betrays itself immediately — which is the failure the art
+rules exist to prevent. Add the frame to `FRAMES` in the ripper and re-emit;
+never hand-edit `src/data/sprites-player.js`.
+
+Everything else — enemies, bosses, NPCs, terrain, items, effects — is drawn.
 
 ---
 

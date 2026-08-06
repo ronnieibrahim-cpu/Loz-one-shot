@@ -109,6 +109,14 @@ export const REQUIRED_SPRITES = {
 
 /** Expected pixel size for a sprite name, used by the validator. */
 export function expectedSize(name) {
+  // The held-blade poses are the only Link frames that are not 16x16: the
+  // source game draws the extended sword past the edge of his cell, and
+  // cropping it back to 16x16 would remove the sword. The engine derives the
+  // draw anchor from these dimensions (see Player.draw), so if the ripper's
+  // crop changes, this must change with it — that is what the assert is for.
+  if (name === 'link_hold_down') return [16, 30];
+  if (name === 'link_hold_up') return [16, 28];
+  if (name === 'link_hold_side') return [28, 16];
   if (REQUIRED_SPRITES.fxBig.includes(name)) return [32, 32];
   if (name.startsWith('boss_')) return name.endsWith('_48') ? [48, 48] : [32, 32];
   if (name.startsWith('mini_')) return [24, 24];
