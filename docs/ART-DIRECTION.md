@@ -25,15 +25,14 @@ and equally to art drawn from scratch for things the sheets do not contain.
    16×16 to satisfy a convention throws away the thing that made the frame
    worth extracting.
 
-   **The same goes for TILES, and it is why the trees never matched.** Every
-   tree in every Oracle sheet is 32×32, so a 16×16 tree is not a tree the source
-   ever drew — it can only be somebody's impression of one. Rather than shrink
-   it, cut the object into its four quadrants and let the tile pick which
-   quarter it is: a def carrying `quad: 'treeQ'` draws `treeQ_<col><row>`, with
-   the column from parity and the row from whether the tile above is the same
-   object. A 2×2 patch is then one whole source tree and a run is a continuous
-   forest canopy, with no room-grid changes at all. See `tileFace` in
-   `src/world/tileset.js`.
+   **But check what the MAP can hold before cutting a big object up.** Every
+   tree in every Oracle sheet is 32×32, and the tempting move is to cut one into
+   four quadrants so a 2×2 patch of tree tiles reassembles it. That was tried
+   and reverted: this game's rooms place trees one cell at a time — 643 of its
+   vertical tree runs are a single row tall — so most tiles had no partner and
+   the result was half-trees offset against each other. Measure the data first.
+   When the map cannot hold the source's object, rule 2 applies and you draw it
+   to match at the size the map actually uses. See `docs/HANDOFF.md`.
 2. **If no sheet has it, draw it to match.** Everything original to this game —
    the eight bosses, the minibosses, Nereth, the Essence orb, the tide valve,
    the Moon Conch, the tide-variant terrain — must be indistinguishable in

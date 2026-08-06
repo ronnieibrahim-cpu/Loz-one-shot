@@ -377,19 +377,25 @@ const HAND_ART = {
     ......3333......`,
 
   // ---- props (transparent, need underArt) ---------------------------------
+  // A whole tree in ONE cell, because the game's rooms place trees one cell at
+  // a time — 643 of its vertical tree runs are a single row tall. Every tree in
+  // every Oracle sheet is 32x32, so this is drawn to match rather than
+  // extracted: the source's silhouette (light crown, scalloped foliage line,
+  // flared trunk) at the size the map actually uses. Index 2 is the trunk, so
+  // it needs a palette with wood in it — see `treeoak` in gfx/palettes.js.
   tree: `
     ....33333333....
-    ..333311113333..
-    .33111111111133.
-    3311101111011133
+    ..333300003333..
+    .33000000000033.
+    3300000000000033
+    3000000000000003
+    3001100000011003
+    3011110000111103
+    3111111001111113
     3111111111111113
-    3111121111211113
-    3111111111111113
-    3111112112111113
     .33111111111133.
     ..333322223333..
     ....33222233....
-    ......3223......
     ......3223......
     ......3223......
     .....322233.....
@@ -1107,10 +1113,10 @@ export function installCoreTiles() {
       underArt: 'rockFloor', liftLevel: 1,
     },
     cliffCrackedDk: { art: ART.cliffCracked, pal: 'stonedk', flags: F.SOLID | F.BOMBABLE },
-    treeDead: { art: ART.tree, quad: 'treeQ', pal: 'treeoakdd', flags: F.SOLID, underArt: 'grassBog' },
-    treeDark: { art: ART.tree, quad: 'treeQ', pal: 'treeoakdk', flags: F.SOLID, underArt: 'grassDark' },
-    tree: { art: ART.tree, quad: 'treeQ', pal: 'treeoak', flags: F.SOLID, underArt: 'grass' },
-    treeSand: { art: ART.tree, quad: 'treeQ', pal: 'treeoak', flags: F.SOLID, underArt: 'sand' },
+    treeDead: { art: ART.tree, pal: 'treeoakdd', flags: F.SOLID, underArt: 'grassBog' },
+    treeDark: { art: ART.tree, pal: 'treeoakdk', flags: F.SOLID, underArt: 'grassDark' },
+    tree: { art: ART.tree, pal: 'treeoak', flags: F.SOLID, underArt: 'grass' },
+    treeSand: { art: ART.tree, pal: 'treeoak', flags: F.SOLID, underArt: 'sand' },
     palm: { art: ART.palmTree, pal: 'tree', flags: F.SOLID, underArt: 'sand' },
     bush: { art: ART.bush, pal: 'tree', flags: F.SOLID | F.BUSH, underArt: 'grass' },
     bushSand: { art: ART.bush, pal: 'tree', flags: F.SOLID | F.BUSH, underArt: 'sand' },

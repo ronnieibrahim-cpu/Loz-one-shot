@@ -953,36 +953,48 @@ Found with `--props` (see below) and checked cell by cell, so nobody repeats it:
   already in the game is not a worse approximation of it — it is the same idea.
   The dense weave at AG 162,952 that the seamless scan ranks first is the sheet's
   scrub, i.e. the `tallgrass` role, which is already filled.
-- **`tree` — DONE, via quadrant auto-tiling.** Every tree in every sheet is
-  32x32; there is no 16x16 tree to find, which is exactly why the hand-drawn one
-  never matched. It is now cut from the Subrosia tileset at SB 224,32 into four
-  quadrants, and `tileFace` picks which quarter a tile shows. No room grids
-  changed. Three things that cost time getting there:
+- **`tree` — fixed, but NOT by extraction, and the failed attempt is the
+  lesson.** Every tree in every Oracle sheet is 32x32. The obvious move is to
+  cut one into four quadrants and let each tile draw its quarter, so a 2x2 patch
+  of tree tiles becomes one whole source tree. That was built, and it looked
+  broken in play: trees offset from tile to tile, half-canopies butting into
+  each other.
 
-  1. **Slots are ranked per cell, and a quadrant is not a cell.** `quantise_prop`
-     maps colours to indices by luminance *rank among the colours present in
-     this 16x16 block* — and each quarter of a tree holds a different subset, so
-     the canopy green ranked first in the top halves and third in the bottom
-     ones. The tree came out with a brown canopy and green roots. An object
-     bigger than a cell has one palette and needs one explicit colour->index
-     table shared by all four quarters; that is `quantise_quad`.
-  2. **An explicitly stated background means something stronger than a sniffed
-     one.** Sniffed from the corner, the flood fill only clears background
-     reachable from the border, which is what preserves a flower's enclosed pale
-     centre. A tree needs the opposite: the ground walled in between its roots
-     is ground and must let the grass under it through. So a stated `bg` now
-     means "this colour is background wherever it appears".
-  3. **Parity on both axes is the obvious choice and it is wrong.** It makes a
-     lone tree on an odd row draw the root half by itself — a brown smear in a
-     field, and about a fifth of the overworld's tree tiles stand alone. The row
-     is chosen from the neighbour above instead, so a lone tree is always a
-     treetop. The column stays parity, because that is what makes a long run
-     read as continuous canopy.
+  **Measure the data before designing against it.** The overworld's tree tiles
+  are not authored in 2x2 blocks and never were:
 
-  The tree palettes are new (`treeoak`, `treeoakdk`, `treeoakdd`): the old ones
-  are all-green with no brown, because the hand-drawn tree they were built for
-  had no trunk. `tree`/`treedk`/`treedead` are untouched — `bush`, `bushSand`
-  and `palm` still use them.
+  | shape | count |
+  |---|---|
+  | vertical tree runs 1 tile tall | 643 |
+  | vertical runs 2 tall | 248 |
+  | horizontal runs 1 wide | 341 |
+  | horizontal runs 3 wide | 186 |
+  | horizontal runs starting on an ODD column | 266 of 639 |
+
+  A 32x32 object cannot be assembled out of runs that are one tile tall and
+  three tiles wide. Two thirds of the tree tiles in the game had no partner to
+  form a tree with, and every run starting on an odd column drew its halves in
+  the wrong order — which is exactly what "offset from tile to tile" looked
+  like. Column parity, neighbour-joining, run-relative indexing: none of them
+  fix it, because the information needed is not in the map.
+
+  So `tree` is a whole tree in ONE cell, drawn to match rather than extracted —
+  rule 2 of `docs/ART-DIRECTION.md`, which is the correct rule when no sheet
+  supplies the thing at the size needed. It carries the source's silhouette: a
+  light crown, a scalloped foliage line, a flared trunk. The quadrant machinery
+  (`tileFace`, `def.quad`, `QUADS`) was removed rather than left dormant,
+  because leaving it invites the same wrong turn again.
+
+  The one piece of that work worth keeping is the palettes. Trees need a
+  **trunk**, and all three tree ramps were pure green because the hand-drawn
+  tree they were built for had none. `treeoak`, `treeoakdk` and `treeoakdd` are
+  those ramps with index 2 swapped for wood; the originals are untouched
+  because `bush`, `bushSand` and `palm` still use them.
+
+  If the overworld is ever re-authored to place trees as 2x2 blocks, the
+  quadrant approach becomes right and the source coordinates are SB 224,32.
+  Re-check the table above first.
+
 - **`cliff` / `cliffTop` — the sheet's cliffs are low ledges,** one cell of
   banded rock over sand (AG 82,136 and its neighbours), not the tall faces the
   game builds plateaus from. Not obviously better than what is there.

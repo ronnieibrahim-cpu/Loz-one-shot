@@ -83,7 +83,6 @@ export function registerTiles(defs) {
       anim: def.anim || null,
       animRate: def.animRate || 10,
       over: !!def.over,
-      quad: def.quad || null,
       push: def.push || null,
       ledge: def.ledge || null,
       depth: def.depth || 0,
@@ -93,7 +92,7 @@ export function registerTiles(defs) {
 
 const EMPTY = {
   name: '__missing', pal: 'stone', flags: 0, mask: 0, tide: null,
-  anim: null, animRate: 10, over: false, quad: null, push: null, ledge: null, depth: 0,
+  anim: null, animRate: 10, over: false, push: null, ledge: null, depth: 0,
 };
 
 const warned = new Set();
@@ -126,36 +125,6 @@ export function tileArt(def, frame) {
   return def.name;
 }
 
-/**
- * The art a tile shows at (tx, ty) — `tileArt` plus quadrant auto-tiling.
- *
- * A tile carrying `quad` is one cell of an object that is BIGGER than a cell.
- * Every tree in every Oracle sheet is 32x32; there is no 16x16 tree to extract,
- * which is why the hand-drawn one never matched — it was a one-cell impression
- * of a two-cell object. Rather than re-cut 300 room grids to spend 2x2 on every
- * tree, the tile picks its quarter of the source art from its own position:
- *
- * The HALVES ARE CHOSEN DIFFERENTLY on each axis, and that asymmetry is the
- * whole trick:
- *
- *   across — column parity, so a run of trees alternates left half, right half,
- *            left half and reads as continuous canopy however long it is.
- *   down   — whether the tile ABOVE is part of the same object. A tree with
- *            nothing above it is a treetop; one growing out of another is the
- *            trunk-and-roots half.
- *
- * Using parity on both axes is the obvious version and it is wrong: it makes a
- * lone tree on an odd row draw the root half on its own, which is a brown smear
- * in the middle of a field. Roughly a fifth of the overworld's tree tiles stand
- * alone, so that is not a rare case. Asking the neighbour instead means a lone
- * tree is always a treetop, a stacked pair is a whole tree, and a two-row
- * forest border is a row of canopies over a row of trunks — which is exactly
- * how the source games' own maps are built.
- */
-export function tileFace(def, tx, ty, frame, joinedAbove) {
-  if (def.quad) return `${def.quad}_${tx & 1}${joinedAbove ? 1 : 0}`;
-  return tileArt(def, frame);
-}
 
 /** True if any tile in the set changes appearance with the tide. */
 export function isTideSensitive(name) {

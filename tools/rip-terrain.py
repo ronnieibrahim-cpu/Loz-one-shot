@@ -115,15 +115,7 @@ PROPS = [
 #
 # `bg` is stated because a quadrant's corner pixel is often the object's own
 # outline rather than the ground behind it.
-QUADS = [
-    ('treeQ', SB, 224, 32, (0xf0, 0xf8, 0x38), {
-        '#08c850': 0,     # canopy highlight
-        '#086018': 1,     # canopy body
-        '#c08820': 2,     # trunk, lit
-        '#704820': 2,     # trunk, shadow — merged: four indices, five colours
-        '#000000': 3,     # outline
-     }, 'round broadleaf tree with roots, spring band of the tileset'),
-]
+QUADS = []
 
 
 def lum(c):
