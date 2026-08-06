@@ -40,13 +40,14 @@ import sys
 from collections import Counter
 
 try:
-    from PIL import Image
+    from PIL import Image, ImageDraw
 except ImportError:
     sys.exit("rip-terrain: needs Pillow — run `pip install pillow`")
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OW = os.path.join(ROOT, 'assets/sheets/custom-oracle-style-overworld.png')
 DG = os.path.join(ROOT, 'assets/sheets/oracle-seasons-dungeon-backgrounds.png')
+AG = os.path.join(ROOT, 'assets/sheets/oracle-ages-overworld.png')
 OUT = os.path.join(ROOT, 'src/data/tiles-terrain.js')
 
 # art name -> (sheet, x, y, note). The note is what the tile is on the sheet,
@@ -83,6 +84,20 @@ PICKS = [
 # shape read against grass.
 PROPS = [
     ('flowers', OW, 2061, 1469, (0, 2, 3), 'leafy flowering plant, on the forest path'),
+
+    # From the Labrynna Present overworld — a real Oracle of Ages background rip
+    # rather than the fan-made assembled map, which is why these two exist at
+    # all. On that sheet the props are single 16x16 cells sitting on their own
+    # ground, on a strict grid at phase (2, 8). `--props` found them; see
+    # docs/HANDOFF.md for what else it found and what it could not.
+    ('rock', AG, 418, 936, (1, 2, 3), 'liftable boulder, beside the dirt clearing'),
+
+    # NOT extracted, deliberately: the Ages shrub at AG 450,920 is the sheet's
+    # cuttable bush and is authentic, but it is the same four-leaf rosette as
+    # `flowers` above — extracting it makes a tile the player must cut look
+    # identical to one that is scenery. `bush` stays hand-drawn until `flowers`
+    # is re-picked as something actually floral, at which point 450,920 is the
+    # right source for it. See docs/HANDOFF.md.
 ]
 
 
@@ -230,10 +245,77 @@ def seamless_scan(path, x0, y0, x1, y1, top=24):
     return ranked
 
 
+def prop_scan(path, px, py, x0, y0, x1, y1, out_png=None, top=120):
+    """Find candidate PROPS on a sheet whose tile grid has phase (px, py).
+
+    The seamless scan finds ground, and by construction it cannot find props:
+    a prop does not repeat, which is the whole test. A prop is instead a cell
+    that is *mostly* the ground around it with an object sitting in the middle —
+    so this walks the grid, measures how much of each cell is the ground colour
+    dominating its 3x3 neighbourhood, and keeps the cells that are neither
+    empty ground nor solid object.
+
+    It reports candidates, not answers. Read the contact sheet it writes and
+    pick by eye, the way `docs/briefs/AGENTS.md` section J says to.
+    """
+    im = Image.open(path).convert('RGB')
+    W, H = im.size
+    px_ = im.load()
+
+    def cell(x, y):
+        return [px_[x + i, y + j] for j in range(16) for i in range(16)]
+
+    found = {}
+    for y in range(y0 + (py - y0) % 16, min(y1, H - 16), 16):
+        for x in range(x0 + (px - x0) % 16, min(x1, W - 16), 16):
+            here = cell(x, y)
+            ring = []
+            for dy in (-16, 0, 16):
+                for dx in (-16, 0, 16):
+                    if dx == 0 and dy == 0:
+                        continue
+                    if 0 <= x + dx < W - 16 and 0 <= y + dy < H - 16:
+                        ring += cell(x + dx, y + dy)
+            if not ring:
+                continue
+            ground = Counter(ring).most_common(1)[0][0]
+            share = sum(1 for p in here if p == ground) / 256.0
+            # Neither bare ground nor a solid block of something else.
+            if not (0.25 <= share <= 0.80):
+                continue
+            if len(set(here)) > 8:          # too busy to be a clean prop
+                continue
+            found.setdefault(bytes(b for p in here for b in p), (x, y, share))
+
+    ranked = list(found.values())[:top]
+    if out_png:
+        S, COLS = 4, 16
+        rows = (len(ranked) + COLS - 1) // COLS
+        sheet = Image.new('RGB', (COLS * (16 * S + 10), max(1, rows) * (16 * S + 18)), (32, 32, 32))
+        d = ImageDraw.Draw(sheet)
+        for i, (x, y, _) in enumerate(ranked):
+            sheet.paste(im.crop((x, y, x + 16, y + 16)).resize((16 * S, 16 * S), Image.NEAREST),
+                        ((i % COLS) * (16 * S + 10) + 4, (i // COLS) * (16 * S + 18) + 2))
+            d.text(((i % COLS) * (16 * S + 10) + 4, (i // COLS) * (16 * S + 18) + 16 * S + 2),
+                   str(i), fill=(225, 225, 225))
+        sheet.save(out_png)
+        print(f'  contact sheet -> {out_png}')
+    for i, (x, y, share) in enumerate(ranked):
+        print(f'  [{i:3}] {x},{y}  ground {share:.0%}')
+    return ranked
+
+
 def main():
+    if '--props' in sys.argv:
+        a = sys.argv[sys.argv.index('--props') + 1:]
+        sheet = {'ow': OW, 'dg': DG, 'ag': AG}[a[0]]
+        prop_scan(sheet, int(a[1]), int(a[2]), int(a[3]), int(a[4]), int(a[5]), int(a[6]),
+                  out_png=a[7] if len(a) > 7 else None)
+        return
+
     if '--scan' in sys.argv:
         a = sys.argv[sys.argv.index('--scan') + 1:]
-        sheet = OW if a[0] == 'ow' else DG
+        sheet = {'ow': OW, 'dg': DG, 'ag': AG}[a[0]]
         seamless_scan(sheet, int(a[1]), int(a[2]), int(a[3]), int(a[4]))
         return
 

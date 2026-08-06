@@ -336,26 +336,25 @@ Tell me plainly what is done, what is weak, and what you skipped.
 
 P2 through P9 in `docs/EXECUTION-PLAN.md`, in that order. Plus, carried over:
 
-1. **An Oracle overworld TILESET rip is the biggest fidelity gap left, and it
-   is an asset, not a task.** `cliff`, `cliffTop`, `tree`, `bush`, `rock`,
-   `stump` and `palm` are still hand-drawn and the art rule says they should
-   not be — but they cannot be extracted from what is in `assets/sheets/`. The
-   only overworld reference there is `custom-oracle-style-overworld.png`, a
-   fan-made assembled *map*, and its trees are a connected forest mass rather
-   than standalone props; its bushes and rocks are tiling area textures. This
-   was checked with a grid overlay and with the seamless scan, and the
-   measurements are in HANDOFF under item 0 — do not re-derive them.
+1. **Overworld props, now that the real sheet is here.**
+   `assets/sheets/oracle-ages-overworld.png` (Labrynna Present) is the genuine
+   Oracle overworld reference — standalone props on a strict grid at phase
+   (2, 8) — and `rock` is extracted from it. Use it, not the fan-made map.
+   `python3 tools/rip-terrain.py --props ag 2 8 <x0> <y0> <x1> <y1> out.png`
+   writes a contact sheet to pick from.
 
-   What unblocks it is a real Oracle of Seasons / Ages overworld tileset sheet,
-   the equivalent of what `oracle-ages-link.png` is for Link. With one in
-   `assets/sheets/`, this becomes an afternoon of `PICKS` entries in
-   `tools/rip-terrain.py` rather than a session of judgement calls. **Ask for
-   the sheet before spending a session approximating it.**
+   HANDOFF records what was checked and what each answer was, so do not redo
+   it: `grass` is deliberately left alone (Ages' base grass is a flat field
+   too), `cliff` is a low ledge on this sheet, and **`bush` was found at
+   AG 450,920 and deliberately not taken** because it is the same four-leaf
+   rosette as `flowers` and a cuttable tile must not look like scenery. The
+   clean fix there is to re-pick `flowers` as something actually floral and
+   then take 450,920 for `bush` — a short job, and the highest-value one left.
 
-   Note the ground tiles are in better shape than the props: ten are extracted,
-   and HANDOFF records that the sheet's remaining grass textures were searched
-   and rejected for stated reasons, so `grass` staying hand-drawn is a decision
-   rather than an omission.
+   `tree` is the big one and it is a **content** decision, not an art one:
+   Ages trees are 32x32, four cells (worked example at AG 50,936), and the game
+   spends one tile on a tree. Taking them means re-cutting every overworld room
+   grid that has a tree in it.
 2. **Water is still hand-drawn**, and unlike the props this one really is
    blocked: both terrain sheets are assembled static maps, so there is no
    second animation frame on them to extract. It needs a sheet that has one.

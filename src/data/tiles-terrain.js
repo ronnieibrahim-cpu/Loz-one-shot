@@ -202,6 +202,25 @@ export const TERRAIN_ART = {
     ................
     ................`,
 
+  // liftable boulder, beside the dirt clearing — oracle-ages-overworld.png @ 418,936
+  rock: `
+    ................
+    1......33333....
+    ......3111223...
+    1....311112223..
+    2...31111122223.
+    3..3111111222223
+    1.31111111222221
+    ..32111112122213
+    ..32211122212133
+    1.32221222221333
+    3.32221222221333
+    2.32221222221333
+    1.32221222221333
+    ...3221222221333
+    1...33222222233.
+    ......3333333...`,
+
 };
 
 // The source colours, lightest first — not installed, kept for reference.
@@ -216,4 +235,5 @@ export const TERRAIN_SRC_PALETTES = {
   dFloor: ['#abcfe6', '#85b2cf', '#5c8eb0'],
   dWall: ['#d3f9fd', '#aaccdc', '#7996b2', '#000000'],
   flowers: ['#93a846', '#546d25', '#000000'],
+  rock: ['#c88808', '#805000', '#000000'],
 };

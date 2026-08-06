@@ -17,8 +17,18 @@ regenerate byte-identical output.
 | `oracle-seasons-hud-gear.png` | Oracle of Seasons | Mister Mike | `tools/rip-hud.py` | `src/data/sprites-hud.js` |
 | `oracle-seasons-dungeon-backgrounds.png` | Oracle of Seasons | Mister Mike | `tools/rip-terrain.py` | `src/data/tiles-terrain.js` — dungeon ground |
 | `custom-oracle-style-overworld.png` | fan-made, Oracle style | community edit | `tools/rip-terrain.py` | `src/data/tiles-terrain.js` — overworld ground |
+| `oracle-ages-overworld.png` | Oracle of Ages | *unattributed — see below* | `tools/rip-terrain.py` | `src/data/tiles-terrain.js` — overworld props |
 | `oracle-seasons-nonhuman-races.png` | Oracle of Seasons | Mister Mike | — | not yet extracted from |
 | `oracle-seasons-trading-characters.png` | Oracle of Seasons | Mister Mike | — | not yet extracted from |
+
+`oracle-ages-overworld.png` is the Labrynna Present outdoor background, True
+Colors half, and it is **the real overworld reference** — the one to reach for
+first. `custom-oracle-style-overworld.png` is a fan-made assembled map and its
+props are merged into masses; the Ages sheet has standalone props on a strict
+16px grid at phase (2, 8), which is what makes them extractable at all. It was
+supplied without a ripper credit in its filename; it is from
+spriters-resource.com like the others, and the credit should be filled in here
+if anyone finds it rather than guessed at.
 
 **Extract rather than redraw.** If one of these sheets has the thing you need,
 take it from the sheet — fidelity to the source is the point of the project,

@@ -104,9 +104,13 @@ The same rules apply, with two differences: background tiles are fully opaque
 acceptable to suggest sand grain, water chop or stone texture. Tiles must tile
 seamlessly with themselves on all four edges.
 
-`assets/sheets/oracle-seasons-dungeon-backgrounds.png` and
-`custom-oracle-style-overworld.png` are the references for dungeon and overworld
-terrain respectively, and should be extracted from rather than approximated.
+`assets/sheets/oracle-ages-overworld.png` is the reference for overworld
+terrain and props, and `oracle-seasons-dungeon-backgrounds.png` for dungeon
+terrain. Both should be extracted from rather than approximated.
+`custom-oracle-style-overworld.png` is a fan-made assembled map and is the
+weaker source — it supplied the ground tiles below, but its props are merged
+into masses. Prefer the Ages sheet, whose props are standalone cells on a
+strict grid at phase (2, 8).
 Nine tiles have been: `tools/rip-terrain.py` lifts the ground and wall textures
 and `src/data/tiles-terrain.js` overrides the hand-drawn art of the same name.
 The structured tiles — cliffs, trees, bushes — are still hand-drawn. That is a

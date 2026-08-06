@@ -691,9 +691,24 @@ Reef Palace span had no post to latch onto at all. It flooded correctly in
 `check-overworld.mjs` and was impassable in play — exactly the gap the two
 checkers exist to close, caught by the in-engine half.
 
-### The seamless-tile scan is a committed tool now
+### The two tile-finding scans are committed tools now
 
-`python3 tools/rip-terrain.py --scan <ow|dg> <x0> <y0> <x1> <y1>`
+```
+python3 tools/rip-terrain.py --scan  <ow|dg|ag> <x0> <y0> <x1> <y1>
+python3 tools/rip-terrain.py --props <ow|dg|ag> <px> <py> <x0> <y0> <x1> <y1> [out.png]
+```
+
+`--props` is the counterpart to `--scan`, and it exists because **the seamless
+scan cannot find a prop by construction**: a prop is exactly the thing that
+does not repeat. It walks the tile grid at the phase you give it, works out the
+ground colour dominating each cell's 3x3 neighbourhood, and keeps the cells
+that are 25-80% ground — an object with ground showing round it, rather than
+bare ground or a solid block of something else. It writes a numbered contact
+sheet; read it and pick by eye, per `docs/briefs/AGENTS.md` section J.
+
+You need the grid phase first, and the cheapest way to get it is `--scan`: any
+ground tile it reports gives it to you as `(x % 16, y % 16)`. On the Ages
+overworld sheet that is (2, 8).
 
 This file used to describe the scan in prose and note that the script was not
 committed, which meant the next person to need it had to rewrite it from the
@@ -910,14 +925,42 @@ What remains, in rough order of payoff:
    texture (1949,1823), and no natural cliff face at all. Those tile into
    areas; they are not props you can stand next to.
 
-   **So the props are not blocked on effort, they are blocked on an asset.**
-   Extracting a faithful tree, bush, rock, stump, palm or cliff needs a real
-   Oracle of Seasons / Ages **overworld tileset** rip — the equivalent of what
-   `oracle-ages-link.png` is for Link. The repo does not have one; the only
-   overworld reference in `assets/sheets/` is the fan-made map. Adding that
-   sheet is the single highest-value thing anyone can do for the game's look,
-   and it turns a session of judgement calls into an afternoon of `PICKS`
-   entries.
+   **That asset arrived.** `assets/sheets/oracle-ages-overworld.png` is the
+   Labrynna Present outdoor background, and it is everything the fan-made map
+   is not: real Oracle art, standalone props, on a strict 16px grid at phase
+   **(2, 8)**. Everything below was found on it. Prefer it for anything
+   overworld from now on.
+
+### What the Ages overworld sheet actually yields
+
+Found with `--props` (see below) and checked cell by cell, so nobody repeats it:
+
+- **`rock` — extracted, AG 418,936.** A clean four-colour boulder. Slotted
+  `(1, 2, 3)` rather than `(0, 2, 3)`: index 0 of `stone` is near-white and
+  blew the highlight out: the boulder read as a snowball. Index 1 is only
+  forbidden for *ground* palettes, where it is the field tone; `rock` sits on
+  grass via `underArt` and uses `stone`, so it is free.
+- **`bush` — found and deliberately NOT extracted, AG 450,920.** It is the
+  sheet's real cuttable bush and it is authentic. It is also the same four-leaf
+  rosette as `flowers`, so shipping it made a tile the player must cut look
+  identical to one that is pure scenery — verified by rendering both in the
+  `tree` palette side by side, where they are near-indistinguishable. Gameplay
+  legibility beat provenance. The clean fix is to re-pick `flowers` as
+  something actually floral and then take 450,920 for `bush`; the coordinates
+  are here so that is a ten-minute job.
+- **`grass` — checked and left alone.** The Ages base grass is a *flat* field
+  with sprig decorations placed as separate tiles, so the hand-drawn flat field
+  already in the game is not a worse approximation of it — it is the same idea.
+  The dense weave at AG 162,952 that the seamless scan ranks first is the sheet's
+  scrub, i.e. the `tallgrass` role, which is already filled.
+- **`tree` — still 2x2, so still blocked.** Ages trees are 32x32, four cells,
+  cleanly separated on the grid (worked example at AG 50,936). The game spends
+  one tile on a tree. Extracting them means spending four and re-cutting every
+  overworld room grid that has a tree in it — a real session, and a content
+  decision rather than an art one.
+- **`cliff` / `cliffTop` — the sheet's cliffs are low ledges,** one cell of
+  banded rock over sand (AG 82,136 and its neighbours), not the tall faces the
+  game builds plateaus from. Not obviously better than what is there.
 
 1. **More terrain.** Ten tiles are extracted; `cliff`, `cliffTop`, `tree`,
    `bush`, `rock`, `stump` and `palm` are still hand-drawn. They are
