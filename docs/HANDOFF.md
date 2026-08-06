@@ -860,10 +860,23 @@ What remains, in rough order of payoff:
    finding that closes most of the terrain question. Measured this session:
    the bush at 1693,1307 is ~30x31, the ringed stump at 1802,1565 is ~30x28,
    and the tree was already known to be 16x32. The game's tiles are 16x16, so
-   none of them extracts — compositing a 2x2 source prop down to one game tile
-   is authoring, not extraction. **`flowers` was the only prop on the sheet
-   that fits a single cell** (2061,1469, a 14x14 leafy rosette) and it is now
-   extracted and planted. Do not go looking for the others again.
+   none of them extracts *into a single tile* — compositing a 2x2 source prop
+   down to one game tile is authoring, not extraction. **`flowers` was the only
+   prop on the sheet that fits a single cell** (2061,1469, a 14x14 leafy
+   rosette) and it is now extracted and planted. Do not go looking for a
+   one-cell version of the others again; the measurements above are final.
+
+   **But re-read the conclusion, not the measurements.** "None of them
+   extracts" assumed the game's `tree` must stay one 16x16 tile. That is a
+   content decision, not an engine constraint: the sheet's tree is 16x32
+   because the source game drew it as a canopy tile stacked on a trunk tile,
+   which is two ordinary tiles in a room grid, and the tileset already has
+   `underArt` and `over` for exactly this kind of layering. The same goes for
+   the 30x31 bush and the 30x28 stump as 2x2 blocks. Under the current art
+   rule — extract when a sheet has it — the honest next step is to change the
+   room data to spend two tiles on a tree and extract both halves, not to keep
+   a hand-drawn one because it fits in one. That is a real session of room-grid
+   edits across the overworld, so it is a decision, not a chore.
 
 1. **More terrain.** Ten tiles are extracted; `cliff`, `cliffTop`, `tree`,
    `bush`, `rock`, `stump` and `palm` are still hand-drawn. They are

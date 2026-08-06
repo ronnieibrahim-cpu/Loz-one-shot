@@ -159,7 +159,15 @@ Read, in this order:
                            headless harness will run, and `pip install pillow`
                            before any rip-*.py tool will.
   docs/GAME-PLAN.md      - regions, dungeons, items, bosses
-  docs/ART-DIRECTION.md  - binding for anything visual
+  docs/ART-DIRECTION.md  - binding for anything visual. Rule 1 is EXTRACT, NOT
+                           DRAW: fidelity to the source games is the product,
+                           so if a sheet in assets/sheets/ has the thing, take
+                           it from the sheet via the tools/rip-*.py workflow
+                           (AGENTS.md section J) instead of hand-drawing an
+                           approximation. Extractions are GENERATED files —
+                           edit the ripper's coordinate map and re-emit, never
+                           the output. Hand-draw only what no sheet contains,
+                           and match the extracted art next to it.
   docs/briefs/AGENTS.md  - authoring spec per work area, sections A-J
 
 ENVIRONMENT, before anything else. Playwright asks for a browser revision the
@@ -323,15 +331,22 @@ Tell me plainly what is done, what is weak, and what you skipped.
 
 P2 through P9 in `docs/EXECUTION-PLAN.md`, in that order. Plus, carried over:
 
-1. **More terrain.** Nine tiles are extracted; cliff, cliffTop, tree, bush,
-   rock, flowers, stump and palm are still hand-drawn. HANDOFF records three
-   findings from a session spent on this — read them first. Short version:
-   there IS a scan that finds structured terrain (repeats at +16 in x and NOT
-   in y), it returns no natural cliff face on the overworld sheet, and the
-   sheet's props are 16x32 against the game's 16x16.
-2. **Water is still hand-drawn** and stays that way until someone finds a
-   second animation frame: both terrain sheets are static maps, not tile
-   palettes.
+1. **More terrain — the biggest fidelity gap left.** Ten tiles are extracted;
+   cliff, cliffTop, tree, bush, rock, stump and palm are still hand-drawn, and
+   the art rule now says plainly that they should not be. HANDOFF records a
+   session of findings — read them first. Short version: there IS a scan that
+   finds structured terrain (repeats at +16 in x and NOT in y), it returns no
+   natural cliff face on the overworld sheet, and the sheet's props are 16x32
+   or 2x2 against the game's 16x16.
+
+   **The last of those is a decision, not a wall.** The source games draw a
+   tree as a canopy tile over a trunk tile; this game spends one tile on it.
+   Spending two — the tileset already has `underArt` and `over` — makes the
+   tree, bush and stump extractable as-is. It costs a pass over the overworld
+   room grids. See HANDOFF item 0.
+2. **Water is still hand-drawn**, and unlike the props this one really is
+   blocked: both terrain sheets are assembled static maps, so there is no
+   second animation frame on them to extract. It needs a sheet that has one.
 3. **A full-D1-clear replay**, per the section above.
 4. **A checker for chests whose pickup lands on a solid tile** — see the
    Compass bug in HANDOFF.

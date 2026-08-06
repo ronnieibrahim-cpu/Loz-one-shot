@@ -9,12 +9,35 @@ and equally to art drawn from scratch for things the sheets do not contain.
 1. **If a sheet has it, extract it.** Do not draw by hand something the source
    material already provides. Extraction is reproducible, exact, and free of
    drift. Follow the workflow in `docs/briefs/AGENTS.md` section J.
+
+   This is the *first* rule because fidelity to the source games is the
+   product. A hand-drawn approximation of something the sheet already has is
+   strictly worse on every axis that matters: it is less faithful, it drifts
+   toward whoever drew it, and it has to be re-judged by eye every time it
+   changes, where an extraction is re-derived by running a script. Reach for
+   the ripper before the pixel editor. "It is only three frames" is how a cast
+   stops matching itself.
+
+   **A frame need not fit a 16×16 cell.** The source draws past the cell in
+   places — Link's held blade runs thirteen pixels past his feet. Cut what the
+   sheet actually contains, declare the real size in
+   `src/data/sprite-manifest.js`, and anchor it at the draw site. Cropping to
+   16×16 to satisfy a convention throws away the thing that made the frame
+   worth extracting.
 2. **If no sheet has it, draw it to match.** Everything original to this game —
    the eight bosses, the minibosses, Nereth, the Essence orb, the tide valve,
    the Moon Conch, the tide-variant terrain — must be indistinguishable in
    style from the extracted art sitting next to it on screen.
 3. **Never mix registers.** A screen containing an extracted Octorok and a
    hand-drawn boss should not betray which is which.
+4. **Extractions are generated files. Never hand-edit one.** Add the frame to
+   the tool's coordinate map and re-emit. A hand edit to a generated module
+   survives exactly until the next person runs the ripper, and it leaves the
+   file's header lying about where its pixels came from.
+
+This governs the *art* only. The design rule is unchanged and this does not
+touch it: mechanics, items, dungeons and story are ours. We borrow how the
+source games look and move, never what they are about.
 
 The failure mode this exists to prevent has already happened once: the first
 pass at boss art was script-generated and produced smooth, soft blobs that
@@ -86,8 +109,13 @@ seamlessly with themselves on all four edges.
 terrain respectively, and should be extracted from rather than approximated.
 Nine tiles have been: `tools/rip-terrain.py` lifts the ground and wall textures
 and `src/data/tiles-terrain.js` overrides the hand-drawn art of the same name.
-The structured tiles — cliffs, trees, bushes — are still hand-drawn, because a
-single 16x16 window cannot supply a top, a face and corners.
+The structured tiles — cliffs, trees, bushes — are still hand-drawn. That is a
+finding, not a policy: the automatic scan looks for a window that repeats at
++16 in both axes, which is what makes a tile seamless, and a cliff face does
+not repeat that way. It does not mean those tiles should stay hand-drawn. They
+are the highest-value extraction left, and doing it means picking origins by
+eye from the map and checking the result in-game rather than in
+`preview.mjs --tiles`. See `docs/HANDOFF.md` under "Terrain extraction".
 
 **Extracted terrain keeps the game's palettes.** Only the pixels are replaced.
 That is what keeps the palette-swap variants (`grassDark`, `saltFlat`,

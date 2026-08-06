@@ -35,17 +35,40 @@ zero and misrounds across x=0, which happens on every room transition).
 faster than cardinal. This is deliberate and it is a signature of the source
 games.
 
-**No assets from any commercial game enter this repo.** The sprite sheets under
-`assets/sheets/` are grandfathered; nothing new is added to them.
+**If a sheet has it, extract it.** Fidelity to the source games is the whole
+product, and extraction is the only way to get it exactly — it is reproducible,
+free of drift, and it cannot slowly wander into someone's own style the way
+hand-drawing does. Do not redraw by hand something `assets/sheets/` already
+provides. `docs/ART-DIRECTION.md` is the authority; `docs/briefs/AGENTS.md`
+section J is the workflow.
 
-One carve-out, decided deliberately: **Link's own frames may still be extracted
-from `oracle-ages-link.png` via `tools/rip-link.py`.** Every Link sprite in the
-game already comes from that sheet, so a hand-drawn addition sits next to
-extracted art and betrays itself immediately — which is the failure the art
-rules exist to prevent. Add the frame to `FRAMES` in the ripper and re-emit;
-never hand-edit `src/data/sprites-player.js`.
+**If no sheet has it, draw it to match.** Everything original to this game —
+the bosses, Nereth, the Essence orb, the tide valve, the Moon Conch, the
+tide-variant terrain — has to be indistinguishable in register from the
+extracted art next to it on screen. A screen mixing an extracted Octorok and a
+hand-drawn boss must not betray which is which.
 
-Everything else — enemies, bosses, NPCs, terrain, items, effects — is drawn.
+**Extraction lands in a generated file. Never hand-edit one.** Add the frame to
+the ripper's coordinate map and re-emit, so the next regeneration does not
+silently throw your edit away. Every generated module records its sheet and its
+ripper credit in the header. The current set:
+
+| Generated file | Tool |
+|---|---|
+| `src/data/sprites-player.js` | `tools/rip-link.py` |
+| `src/data/sprites-npcs.js` | `tools/rip-npcs.py` |
+| `src/data/sprites-enemies.js` | `tools/rip-enemies.py` |
+| `src/data/sprites-hud.js` | `tools/rip-hud.py` |
+| `src/data/tiles-terrain.js` | `tools/rip-terrain.py` |
+
+**This binds the art, not the design.** Goal 2 is unchanged and is not
+negotiable by this rule: mechanics, items, dungeons and story are ours. We
+borrow how the source games *look and move*, never what they are about.
+
+**The sheets are Nintendo's artwork** and the repo is permanently private and
+unpublished, which is the condition this rule depends on. Nothing extracted
+leaves this repo. See the copyright note in `assets/sheets/README.md` for the
+replacement path if that ever changes.
 
 ---
 
@@ -90,13 +113,18 @@ They are faster than you are and they do not rationalise.
 
 ## Art rules
 
-Measured across the existing cast, and binding for everything new:
+These describe the source games' own grammar, measured across the existing
+cast. Extracted art satisfies them by construction — that is the point of
+extracting. They bind **hand-drawn** art, which has to hold the same register:
 
 - Three colours plus transparency. Index 3 is the outline; 0–2 carry the form.
 - A hard 1px black outline all the way round. No exceptions.
 - No anti-aliasing, no gradients, no dithering on characters. Light dithering
   on terrain only.
-- Fill roughly two thirds of the 16×16 cell, feet near the bottom.
+- Fill roughly two thirds of the 16×16 cell, feet near the bottom. A cell is
+  16×16 unless `expectedSize` in `src/data/sprite-manifest.js` says otherwise —
+  a few extracted frames are larger because the source draws past the cell, and
+  `link_hold_*` is the worked example of anchoring one.
 - Two-frame cycles, and the frames must differ by at least three pixels.
 - `_d` faces the viewer, `_u` faces away, `_s` faces **right**. The engine
   mirrors `_s`; never draw a left-facing frame.
