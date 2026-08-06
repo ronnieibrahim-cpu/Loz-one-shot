@@ -25,6 +25,13 @@ function boot() {
   }
 
   const game = new Game(screen, input);
+  // ?seed=N pins the save seed a new game starts from. Play leaves it off and
+  // gets a fresh world from the clock; tools that must replay the same world
+  // twice pass it. Nothing else reads the URL.
+  const urlSeed = new URLSearchParams(location.search).get('seed');
+  if (urlSeed !== null && urlSeed !== '' && Number.isFinite(Number(urlSeed))) {
+    game.seedOverride = Number(urlSeed) >>> 0;
+  }
   window.__game = game;          // handy for the test harness and debugging
 
   // The audio context can only start from a user gesture.

@@ -253,7 +253,7 @@ stops at the north-half locked door, not a full clear. Finishing it needs a
 push directive, a boss routine that reads `weakOpen`, and a jump verb — see
 `docs/NEXT-SESSION.md`. Do not fake it by granting keys in the replay's setup.
 
-### P2 — Root-cause the intermittent test
+### P2 — Root-cause the intermittent test (done)
 
 ```
 docs/HANDOFF.md says tools/test.mjs intermittently fails "all three tide levels
@@ -270,6 +270,14 @@ re-run is the signature of one.
 2. Fix the cause. Do not add a retry.
 3. Delete the paragraph in HANDOFF.md that rationalises it.
 ```
+
+It was neither load flakiness nor an initialisation order: `hold(key, n)` in
+`tools/test.mjs` did not hold a key for n game frames. The wall-clock loop kept
+stepping the game through every CDP round trip, so a busy machine walked Link
+about twice as far, onto the village child — and A is the context button before
+it is the item button, so `x` opened a text box instead of sounding the conch.
+`test.mjs` now takes the clock with `window.__harness.takeOver()` and pins the
+save seed with `?seed=`. Full write-up in `docs/NEXT-SESSION.md`.
 
 ### P3 — Fixed-point movement and the sword-hold
 

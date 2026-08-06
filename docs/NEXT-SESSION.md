@@ -139,6 +139,62 @@ three verbs") and the cost of each mistake is in `docs/HANDOFF.md` under
   arithmetic integer. **P4 does both** — see the section above.
 
 ---
+## What the session before that did (P2: root-cause the intermittent test)
+
+`tools/test.mjs` intermittently failed "all three tide levels reachable".
+HANDOFF blamed load flakiness because it passed on re-run and the failing
+commits touched only sprite and audio data. That was wrong, and the paragraph
+saying it has been deleted.
+
+**What was actually happening.** `hold(key, n)` did not hold a key for n game
+frames. It dispatched keydown, waited for n frames to elapse, then dispatched
+keyup — while `main.js`'s wall-clock loop kept stepping the game throughout
+every CDP round trip in between. So the real hold was n frames *plus* however
+long the machine took to answer, and on a busy box Link walked roughly twice
+as far as the test intended. He ended up standing on the village child (`npc_child`,
+Tidewatch Village tile 8,4) instead of back in the middle of the square. A is
+the context button before it is the item button, so `x` talked to the child
+instead of sounding the conch; `Game.update` then returns early for as long as
+a text box is up, so the press produced no tide change and later presses only
+fed the box. `seen.size` came out 2. Which asset file the commit touched was
+coincidence — `newProgress()` seeds from `Date.now()`, so *every* run was
+already playing a different world.
+
+Reproduced by modelling the round-trip latency against the fixed-step driver:
+at 30 seeds x 61 latencies, 63 runs opened a text box during the conch section
+and 2 came out with `size=2, tides=[1,1,1,2,2]` — the observed failure exactly.
+
+**What changed.**
+
+- `tools/test.mjs` takes the clock with `window.__harness.takeOver()` and steps
+  with `step(n)`, the same driver `replay.mjs` uses. Real Playwright key events
+  are kept — `keyboard.down` resolves once the event is in the page and nothing
+  steps until the test says so — so every hold and tap now lasts exactly the
+  number of updates it says on any machine.
+- The save seed is pinned. `?seed=N` sets `Game.seedOverride`, which `newGame`
+  falls back to; `test.mjs` passes `--seed=` (default 20260806). Play is
+  unaffected and still seeds from the clock.
+- The conch section stands Link somewhere known first, and two new assertions
+  name the failure if a villager ever eats the press again.
+- The gap between conch presses went from 64 frames to 80. The real lock-out is
+  69 (the sweep, during which the player's own timers stall, plus
+  `CONCH_FRAMES`), so the old gap sat *inside* it and half those presses were
+  being swallowed even on an idle machine.
+
+**A game bug found on the way.** `Game.update` called `this.tide.update()`
+twice on every frame of a sweep — once at the top of play mode and again inside
+the `if (this.tide.busy)` guard. The wave front therefore crossed in 23 frames
+while `TIDE_SWEEP_FRAMES` said 44, so the constant described nothing. The
+second call is gone and the constant is 23, which is what the game has always
+looked like: the number moved to match the screen, not the other way round.
+Both replays — including `d1-descent`, which cycles the conch — still pass to
+the pixel, which is the proof that the wipe is unchanged.
+
+**Verified**: the assertion 200/200 under six-way CPU load, one single distinct
+outcome; `test.mjs` 38/38; `replay.mjs` 8/8 to the pixel; every other checker
+green; the build rebuilt and `check-build` clean.
+
+No retry was added anywhere.
 
 ## And the one before that (P1: feel spec, seeded RNG, replay harness)
 
@@ -221,10 +277,8 @@ Continue building "Oracle of Tides", a GBC-style Zelda fan game.
 
 Read, in this order:
   CLAUDE.md              - the hard rules. They are hard rules.
-  docs/EXECUTION-PLAN.md - the roadmap. P0, P1 and P3 are done. P2 (the
-                           intermittent test) and P4 (grid-lock enemy motion)
-                           are both open; P4 is the higher-value one and P3
-                           left it teed up.
+  docs/EXECUTION-PLAN.md - the roadmap. P0, P1, P2 and P3 are done. P4
+                           (grid-lock enemy motion) is next.
   docs/FEEL-SPEC.md      - what every timing constant means and how sure we are
   docs/HANDOFF.md        - current state, environment setup, and every trap
                            already paid for. Read the environment section
@@ -253,7 +307,7 @@ installed one has been 1194.
 Confirm the baseline before changing anything, and keep every line below green:
   node tools/validate.mjs                      clean (two expected warnings
                                                about fx_slash_d0/fx_slash_d1)
-  node tools/test.mjs                          41/41, 0 unauthored art names
+  node tools/test.mjs                          43/43, 0 unauthored art names
   node tools/replay.mjs                         8/8, both replays to the pixel
   node tools/walk-dungeons.mjs                 27/27, 88 ledge runs
   node tools/check-overworld.mjs               16/16, all three gates
@@ -365,17 +419,24 @@ AFTER ANY CHANGE TO A FEEL CONSTANT OR TO MOVEMENT/COMBAT:
   If a movement constant changes and every replay still passes, either the
   constant is dead code or the replays do not exercise it. Both matter.
 
-NEXT UP: P2 (root-cause the intermittent test), then P5 (the tide becomes a
-field), in docs/EXECUTION-PLAN.md. P3 and P4 are both in. P2 has the tool it
-needs from P1: a fixed seed and a deterministic stepper, so "run the assertion
-200 times" is a thing you can actually do. Use plan mode for P5.
+TEST HARNESSES OWN THE CLOCK. main.js steps the game a variable number of
+times per animation frame, so a harness that fires a key and then counts frames
+holds that key for as long as its own round trips take. test.mjs and replay.mjs
+both call window.__harness.takeOver() and step(n) instead, and test.mjs pins the
+save seed with ?seed=. If you write a new harness, do both — otherwise it is
+measuring the machine, not the game. test.mjs is no longer load-flaky; a
+failure there is now yours.
+
+NEXT UP: P5 (the tide becomes a field), in docs/EXECUTION-PLAN.md. P1 through
+P4 are all in. Use plan mode for it.
 
 ANYTHING THAT TOUCHES POSITIONS TOUCHES THE LATTICE. `beginStep`/`advanceStep`
 in src/game/enemy.js must go on landing exactly on multiples of
-`ENEMY_GRID_STEP * FP_ONE`. They recompute progress from the step's origin
-every frame and assign the exact destination on the last one, rather than
-accumulating a velocity, precisely so nothing carries a remainder.
-`node tools/check-motion.mjs` is what tells you if that survived.
+`ENEMY_GRID_STEP * FP_ONE` (8px = 2048 subpixels). They recompute progress from
+the step's origin every frame and assign the exact destination on the last one,
+rather than accumulating a velocity, precisely so nothing carries a remainder.
+`node tools/check-motion.mjs` is what tells you if that survived, and it asserts
+on `fx`/`fy` rather than `x`/`y` for the same reason.
 
 Do the work yourself rather than spawning subagents - past sessions hit usage
 limits that way and lost the work.
@@ -407,12 +468,13 @@ Tell me plainly what is done, what is weak, and what you skipped.
 - **the feel spec, the seeded RNG and the replay harness (P1)**
 - **8.8 fixed-point positions, un-normalised diagonals, a re-derived walk speed
   and the sword-hold state (P3)**
+- **a deterministic `test.mjs` (P2)** — it takes the clock off the wall-clock
+  loop and pins the save seed, so it no longer flakes under load
 - **grid-locked enemy motion and scripted knockback (P4)**
 
 ## What is left
 
-P2, then P5 through P9 in `docs/EXECUTION-PLAN.md` — P3 and P4 are both done.
-Plus, carried over:
+P5 through P9 in `docs/EXECUTION-PLAN.md`, in that order. Plus, carried over:
 
 1. **Overworld props, now that the real sheet is here.**
    `assets/sheets/oracle-ages-overworld.png` (Labrynna Present) is the genuine

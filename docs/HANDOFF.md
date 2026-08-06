@@ -120,15 +120,19 @@ node tools/replay.mjs --shots        # ...and screenshot the final frame
 `test.mjs` and `preview.mjs` take `--shot-dir=` and pick a random port, so
 several can run at once.
 
-**`test.mjs` is timing-flaky under CPU load, and always has been.** It counts
-frames with `requestAnimationFrame` and drives the game with real keyboard
-events, so when the machine is busy — immediately after a long harness run, or
-two `test.mjs` runs back to back with no gap — rAF throttles, taps land in the
-wrong game state, and you get a spurious 5-7 failures clustered in "contact
-damage lands", "menu opens" and the save tab. It is not a regression and it is
-not your change: give the box a few seconds and re-run, and confirm a red run
-by reproducing it twice rather than once. This was verified against the
-untouched baseline before any of this session's work.
+**`test.mjs` used to be timing-flaky under CPU load. It is not any more, and a
+failure is now yours.** It used to count frames with `requestAnimationFrame`
+while `main.js`'s wall-clock loop kept stepping the game underneath, so
+`hold(key, 30)` held the key for 30 frames *plus* every CDP round trip in
+between; on a busy box Link walked roughly twice as far as the test thought,
+and taps landed in whatever state that put him in. That produced the familiar
+spurious cluster in "contact damage lands", "menu opens" and the save tab.
+
+It now takes the clock off the loop with `window.__harness.takeOver()` — the
+same fixed-step driver `tools/replay.mjs` uses — and pins the save seed with
+`?seed=`, so every hold and tap lasts exactly the number of updates it says and
+every run plays the same world. Do not go back to re-running it until it
+passes; if it fails twice, it failed once.
 
 ### Environment setup a fresh container needs
 
@@ -197,6 +201,22 @@ enemy asked both `every(e, 30)` and `every(e, 90)` would otherwise take its
 phase from whichever call happened to run first, which depends on AI branch
 order and is not stable. Same reasoning applies to anything else that wants a
 stable per-entity constant.
+
+**A new game seeds itself from `Date.now()`.** `newProgress()` defaults its
+seed to the wall clock, which is right for play and useless for any tool that
+needs the same world twice — P1's determinism stops at the front door unless
+something pins it. `?seed=N` in the URL now does; `Game.seedOverride` carries
+it, and `tools/test.mjs` passes it on every run. If you write a new harness,
+pass the seed or you are testing a different game each time.
+
+**A browser harness must own the clock, not count frames.** `main.js` steps the
+game a variable number of times per animation frame, so a harness that fires a
+key and then waits n frames holds that key for n frames *plus* however long its
+own round trips took. That is a hidden multiplier on every movement in the
+test, and it scales with how busy the machine is. `window.__harness.takeOver()`
+exists for exactly this and both `replay.mjs` and `test.mjs` now use it. Real
+Playwright key events are still fine — `keyboard.down` resolves once the event
+is in the page, and nothing steps until you say so.
 
 ## Hard-won lessons — do not rediscover these
 
@@ -820,6 +840,55 @@ a third tuft pattern (2287,670), none of which is better than the flat field
 already there, and one of which would make `grass` and `tallgrass` read the
 same — which matters, because `tallgrass` is the cuttable one.
 
+### P4 was written pre-P3 and had to be redone on fixed-point, not merged
+
+This section used to say the P4 branch could not be merged. It was right about
+the reason and the reason has since been dealt with; both halves are worth
+keeping, because the trap is a general one.
+
+`claude/enemy-grid-aligned-movement-n2xv16` was written from the same base as
+P2 — that is, **before P3** — and the two prompts disagreed about what a
+position *is*:
+
+```
+P4:  e.x = x; e.y = y;                 // writes a float field
+     if (!Number.isInteger(e.x) ...)   // guards against drift off the lattice
+P3:  get x() { return toPx(this.fx); } // an accessor over integer subpixels
+```
+
+Under P3 every `e.x` is an integer by construction, so P4's realign guard would
+have been **always true and quietly dead**. A textual merge would have
+compiled, passed most checks, and silently dropped the one guarantee the prompt
+exists to make. That is the worst outcome available, and it is why "there were
+only eleven conflicts and they all resolved" is not evidence a merge is sound.
+
+**What was actually done:** the lattice was rewritten on the subpixel grid
+rather than merged onto it, which is what the objection asked for. It got
+simpler, as predicted:
+
+- a lattice point is a whole multiple of `ENEMY_GRID_STEP * FP_ONE` = **2048
+  subpixels**, and `onLattice(e)` is `e.fx % 2048 === 0 && e.fy % 2048 === 0` —
+  an exact integer test, which is what replaced the dead `Number.isInteger`
+  guard
+- `beginStep`/`advanceStep` work entirely in subpixels. Progress is recomputed
+  from the step's origin every frame as `round(span * f / n)` rather than
+  accumulated, and the final frame is an assignment, so no remainder can exist
+- `tools/check-motion.mjs` asserts on `fx`/`fy`, never on `x`/`y`. A
+  pixel-level check would pass an enemy sitting up to 255 subpixels off a
+  lattice point — precisely the drift an accumulating step would produce, and
+  precisely what the checker exists to catch
+
+The knockback numbers, the lattice design and `check-motion.mjs` carried over
+unchanged; only the arithmetic moved.
+
+**The general lesson.** When two branches disagree about a representation
+rather than about lines of text, the conflict markers understate the problem by
+a lot: the dangerous case is the code that merges cleanly and stops meaning
+anything. Before merging across a representation change, find the invariants
+one side asserts and check each one is still expressible on the other side's
+terms. If an assertion becomes trivially true, it has not survived the merge —
+it has been deleted.
+
 ## Verification harnesses
 
 **Five of these are now committed**, and that is a deliberate reversal. The
@@ -1140,13 +1209,6 @@ Found with `--props` (see below) and checked cell by cell, so nobody repeats it:
 - **`f` resolves per region** (`flowersDark` in marsh and wood, each region's
   own ground in salt, abyss, coral and reef) rather than meaning grass-flowers
   everywhere. If you add a region legend, give it an `f`.
-- **`test.mjs` also goes flaky on "all three tide levels reachable"**, not only
-  on the assertions listed under Tooling above. It failed on that one twice
-  during this session — once after the boss-art commit and once after the
-  music commit — and passed on an immediate re-run both times, on changes that
-  touch only `src/data/sprites-bosses.js` and `src/data/audio.js` and so cannot
-  affect the tide. Treat it as part of the same load-related flakiness.
-
 - **All three tile-expressible region gates now match GAME-PLAN.md**:
   Bombs/`cliffCracked` (Marsh), Magic Boomerang/`saltVane` (Salt Pans) and
   Magnetic Gloves/`abyssPlug` (Abyssal approach). The remaining plan gates —

@@ -70,6 +70,10 @@ export class Game {
 
     this.frame = 0;
     this.mode = 'title';
+    // Set by main.js from ?seed= in the URL. A new game normally seeds itself
+    // from the wall clock, which is right for play and wrong for any tool that
+    // needs the same world twice — see tools/test.mjs.
+    this.seedOverride = null;
     this.progress = newProgress();
     this.tide = new Tide(this);
     this.dialogue = new Dialogue(this);
@@ -107,7 +111,8 @@ export class Game {
 
   newGame(slot, name = 'LINK', seed) {
     this.slot = slot;
-    this.progress = seed != null ? newProgress(name, seed) : newProgress(name);
+    const useSeed = seed != null ? seed : this.seedOverride;
+    this.progress = useSeed != null ? newProgress(name, useSeed) : newProgress(name);
     seedGlobal(this.progress.seed);
     resetRooms();
     this.entities.length = 0;
@@ -868,7 +873,12 @@ export class Game {
     }
 
     if (this.transition) { this.updateTransition(); this.flushPending(); return; }
-    if (this.tide.busy) { this.tide.update(); return; }
+    // The sweep was already stepped at the top of play mode. Stepping it again
+    // here ran the wave front at double speed and made TIDE_SWEEP_FRAMES mean
+    // half what it said; it also stretched the conch lock-out, because nothing
+    // below this line runs during a sweep, so the player's own timers stall
+    // for its whole length.
+    if (this.tide.busy) return;
     if (this.fadeDir) return;
 
     if (this.player) this.player.update(this);
