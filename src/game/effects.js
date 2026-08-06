@@ -3,6 +3,7 @@
 // does so through its own hit pass.
 
 import { Entity, defineEntity } from './entity.js';
+import { sp } from '../core/fixed.js';
 import { sprites } from '../gfx/art.js';
 import {
   EXPLOSION_FRAMES, EXPLOSION_SELF_DAMAGE, KNOCK_EXPLOSION,
@@ -22,15 +23,16 @@ export class Effect extends Entity {
     this.frames = spec.frames;
     this.life = opts.life != null ? opts.life : (spec.life || this.frames.length * this.rate);
     this.depth = spec.depth != null ? spec.depth : 40;
-    this.vx = opts.vx || 0; this.vy = opts.vy || 0;
+    // Drift is named in px/f by whoever spawns the effect; stored in sp/f.
+    this.vx = sp(opts.vx || 0); this.vy = sp(opts.vy || 0);
     this.w = spec.w || 16; this.h = spec.h || 16;
     this.loop = !!spec.loop;
   }
 
   update(game) {
     this.frame++;
-    this.x += this.vx; this.y += this.vy;
-    if (this.spec.gravity) { this.vy += this.spec.gravity; }
+    this.fx += this.vx; this.fy += this.vy;
+    if (this.spec.gravity) { this.vy += sp(this.spec.gravity); }
     if (this.spec.update) this.spec.update(this, game);
     if (--this.life <= 0) this.remove = true;
   }

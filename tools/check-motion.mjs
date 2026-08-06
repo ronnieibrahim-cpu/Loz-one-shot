@@ -16,9 +16,14 @@
 // boss or miniboss, not a flier, not aquatic), on every one of those 600
 // frames:
 //
-//   * its position is a whole number of pixels, and
-//   * both coordinates are multiples of 8, UNLESS it is mid-step, mid-charge,
-//     mid-knockback or submerged.
+//   * its subpixel accumulators are whole integers, and
+//   * both are multiples of 8 pixels (8 * FP_ONE subpixels), UNLESS it is
+//     mid-step, mid-charge, mid-knockback or submerged.
+//
+// The check is on `fx`/`fy` rather than `x`/`y` on purpose. `x` is `fx >> 8`,
+// so a pixel-level check would pass an enemy sitting up to 255 subpixels off a
+// lattice point — which is precisely the drift a step that accumulated a
+// velocity would produce, and precisely what this exists to catch.
 //
 // The exemption list is the interesting part, so it is deliberately short. A
 // step is the only way a lattice enemy is allowed to be between lattice points,
@@ -103,7 +108,13 @@ async function runInPage([ground, wet, frames, seed]) {
   const enemy = await import('/src/game/enemy.js');
   const feel = await import('/src/data/feel.js');
   const screen = await import('/src/core/screen.js');
-  const GRID = feel.ENEMY_GRID_STEP;
+  const fixed = await import('/src/core/fixed.js');
+  // Positions are 8.8 fixed point, so the lattice is asserted on the SUBPIXEL
+  // accumulators, not on the derived pixel positions. `x` is `fx >> 8`, so a
+  // pixel-level check would pass for an enemy sitting 255 subpixels off a
+  // lattice point — which is exactly the drift a step that accumulated a
+  // velocity would produce.
+  const GRID = feel.ENEMY_GRID_STEP * fixed.FP_ONE;
   const ROOM_W = screen.ROOM_W, ROOM_H = screen.ROOM_H;
 
   const g = window.__game;
@@ -169,14 +180,13 @@ async function runInPage([ground, wet, frames, seed]) {
       name, e,
       grid: enemy.gridLocked(e),
       speed: e.speed,
-      x0: e.x, y0: e.y,
+      px: e.fx, py: e.fy,
       bad: [],            // alignment violations: {f, x, y}
       idleAligned: 0,     // frames standing still, on a lattice point
       offLattice: 0,      // frames at a position the lattice does not contain
       steps: 0,           // whole lattice steps begun
       moved: 0,           // total pixels travelled
       wasStepping: false,
-      px: e.x, py: e.y,
     });
   }
 
@@ -186,13 +196,13 @@ async function runInPage([ground, wet, frames, seed]) {
     for (const w of watch) {
       const e = w.e;
       if (e.dead || e.remove) continue;
-      w.moved += Math.abs(e.x - w.px) + Math.abs(e.y - w.py);
-      w.px = e.x; w.py = e.y;
+      w.moved += Math.abs(e.fx - w.px) + Math.abs(e.fy - w.py);
+      w.px = e.fx; w.py = e.fy;
       if (e.stepping && !w.wasStepping) w.steps++;
       w.wasStepping = !!e.stepping;
 
-      const onLattice = Number.isInteger(e.x) && Number.isInteger(e.y)
-        && e.x % GRID === 0 && e.y % GRID === 0;
+      const onLattice = Number.isInteger(e.fx) && Number.isInteger(e.fy)
+        && e.fx % GRID === 0 && e.fy % GRID === 0;
       if (!onLattice) w.offLattice++;
       if (!w.grid) continue;
       // The complete exemption list. Everything else must be on the lattice.
@@ -209,7 +219,7 @@ async function runInPage([ground, wet, frames, seed]) {
     name: w.name, grid: w.grid, speed: w.speed,
     bad: w.bad.filter(Boolean), badCount: w.bad.length,
     idleAligned: w.idleAligned, offLattice: w.offLattice,
-    steps: w.steps, moved: Math.round(w.moved),
+    steps: w.steps, moved: Math.round(w.moved / fixed.FP_ONE),
     alive: !(w.e.dead || w.e.remove),
   }));
 }

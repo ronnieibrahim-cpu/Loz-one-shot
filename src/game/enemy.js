@@ -39,6 +39,7 @@ import { fire } from './projectile.js';
 import { F } from '../world/tileset.js';
 import { TILE, VIEW_W, VIEW_H } from '../core/screen.js';
 import { hash32 } from '../core/rng.js';
+import { FP_ONE, sp, toPx } from '../core/fixed.js';
 import {
   ENEMY_DEFAULT_SPEED, ENEMY_DEFAULT_RATE, ENEMY_TURN_CHANCE,
   ENEMY_BEACHED_FRAMES, ENEMY_GRID_STEP, ENEMY_DECIDE_STEPS,
@@ -310,8 +311,8 @@ export class Boss extends Enemy {
       // `knock` is a distance; a boss covers a fraction of it, at a constant
       // speed, over BOSS_KNOCK_FRAMES frames.
       const [dx, dy] = DIR_VEC[dir] || [0, 0];
-      const per = (knock * BOSS_KNOCK_SCALE) / BOSS_KNOCK_FRAMES;
-      this.knockX = dx * per; this.knockY = dy * per;
+      const per = sp(knock * BOSS_KNOCK_SCALE) / BOSS_KNOCK_FRAMES;
+      this.knockX = Math.round(dx * per); this.knockY = Math.round(dy * per);
       this.knockTime = BOSS_KNOCK_FRAMES;
     }
     if (this.spec.onHurt) this.spec.onHurt(this, game, dmg);
@@ -395,11 +396,19 @@ export function aligned(e, g, tol = ENEMY_ALIGN_TOLERANCE) {
   return false;
 }
 
+/**
+ * Step one tile-cardinal at `speed` PX PER FRAME.
+ *
+ * This is the boundary. Enemy specs are data and say `speed: 0.45`; the mover
+ * underneath only takes whole subpixels. Every ground-AI routine funnels
+ * through here, so the px/f -> sp/f conversion happens once, in one place, and
+ * a spec never has to know the grid exists.
+ */
 export function moveDir(e, g, dir, speed) {
   const [dx, dy] = DIR_VEC[dir] || [0, 0];
-  const nx = e.x + dx * speed, ny = e.y + dy * speed;
-  if (!e.terrainOk || e.terrainOk(g, nx, ny)) {
-    const r = moveEntity(g, e, dx * speed, dy * speed);
+  const step = sp(speed);
+  if (!e.terrainOk || e.terrainOk(g, toPx(e.fx + dx * step), toPx(e.fy + dy * step))) {
+    const r = moveEntity(g, e, dx * step, dy * step);
     return !(r.hitX || r.hitY);
   }
   return false;
@@ -416,6 +425,13 @@ export const OPPOSITE = { up: 'down', down: 'up', left: 'right', right: 'left' }
 // direction, spread over however many frames its speed implies. Once a step is
 // running it runs to the end. Nothing can turn the enemy mid-step, and nothing
 // draws from the room's stream mid-step either.
+//
+// ALL OF IT IS INTEGER SUBPIXEL ARITHMETIC, on the 8.8 grid from
+// src/core/fixed.js. A lattice point is a whole multiple of GRID_SP, a step's
+// progress is a whole number of subpixels, and the last frame of a step is an
+// assignment rather than an addition. There is no accumulated remainder
+// anywhere in here, which is why "8px-aligned" can be asserted as an exact
+// equality by tools/check-motion.mjs rather than within a tolerance.
 //
 // That is the entire mechanism, and it is what makes an octorok dodgeable: the
 // player can see the enemy standing on a lattice point, knows a decision is
@@ -449,9 +465,17 @@ export function midStep(e) {
   return !!e.stepping;
 }
 
+/** One lattice cell, in subpixels. Every position in here is a multiple of it. */
+const GRID_SP = ENEMY_GRID_STEP * FP_ONE;
+
+/** Is this accumulator exactly on a lattice point? */
+export function onLattice(e) {
+  return (e.fx % GRID_SP === 0) && (e.fy % GRID_SP === 0);
+}
+
 function latticePair(v) {
-  const lo = Math.floor(v / ENEMY_GRID_STEP) * ENEMY_GRID_STEP;
-  const hi = lo + ENEMY_GRID_STEP;
+  const lo = Math.floor(v / GRID_SP) * GRID_SP;
+  const hi = lo + GRID_SP;
   return (v - lo <= hi - v) ? [lo, hi] : [hi, lo];
 }
 
@@ -461,27 +485,28 @@ function latticePair(v) {
  * Knockback, a charge into a wall and a resurfacing all leave a ground enemy
  * between lattice points. Rather than let it walk a shifted lattice forever,
  * every one of those states ends by calling this. The shift is at most 4px on
- * each axis, which is under a frame of walking and invisible in motion.
+ * each axis, which is under half a frame of walking and invisible in motion.
  */
 export function realign(e, g) {
   if (!gridLocked(e)) return false;
-  const xs = latticePair(e.x), ys = latticePair(e.y);
-  for (const y of ys) {
-    for (const x of xs) {
+  const xs = latticePair(e.fx), ys = latticePair(e.fy);
+  for (const fy of ys) {
+    for (const fx of xs) {
+      const x = toPx(fx), y = toPx(fy);
       if (!canOccupy(g, e, x, y)) continue;
       if (e.terrainOk && !e.terrainOk(g, x, y)) continue;
-      e.x = x; e.y = y;
+      e.fx = fx; e.fy = fy;
       return true;
     }
   }
   // Nowhere legal within half a step: on the lattice still beats off it, and
   // the step probe will refuse to walk the enemy anywhere it should not go.
-  e.x = xs[0]; e.y = ys[0];
+  e.fx = xs[0]; e.fy = ys[0];
   return false;
 }
 
 /**
- * Begin a step of `dist` pixels in `dir`, taking `frames` frames.
+ * Begin a step of `dist` PIXELS in `dir`, taking `frames` frames.
  *
  * The destination is probed before anything moves, so a step is either taken
  * whole or not taken at all — the enemy never ends up wedged half into a wall
@@ -490,16 +515,20 @@ export function realign(e, g) {
 export function beginStep(e, g, dir, dist, frames, o = {}) {
   const [dx, dy] = DIR_VEC[dir] || [0, 0];
   if (!dx && !dy) return false;
-  if (!Number.isInteger(e.x) || !Number.isInteger(e.y)) realign(e, g);
-  const tx = e.x + dx * dist, ty = e.y + dy * dist;
+  if (!onLattice(e)) realign(e, g);
+  const span = dist * FP_ONE;
+  const tx = toPx(e.fx + dx * span), ty = toPx(e.fy + dy * span);
   // A hop clears ground obstructions a walk cannot; canOccupy decides that
   // from the entity's own height, so lift it for the probe.
-  const z0 = e.z;
-  if (o.air) e.z = 4;
+  const fz0 = e.fz;
+  if (o.air) e.fz = 4 * FP_ONE;
   const ok = canOccupy(g, e, tx, ty) && (!e.terrainOk || e.terrainOk(g, tx, ty));
-  e.z = z0;
+  e.fz = fz0;
   if (!ok) return false;
-  e.step = { dir, dx, dy, dist, n: Math.max(1, Math.round(frames)), f: 0, x0: e.x, y0: e.y };
+  e.step = {
+    dir, dx, dy, span, n: Math.max(1, Math.round(frames)), f: 0,
+    fx0: e.fx, fy0: e.fy,
+  };
   e.stepping = true;
   return true;
 }
@@ -514,18 +543,19 @@ export function advanceStep(e, g) {
   const s = e.step;
   if (!s) return false;
   s.f++;
-  // Position is a fraction of the whole step rounded to a pixel, not an
-  // accumulated velocity, so the last frame lands exactly on the lattice
-  // however the arithmetic rounds on the way.
-  const want = Math.round((s.dist * s.f) / s.n);
-  const r = moveEntity(g, e, s.x0 + s.dx * want - e.x, s.y0 + s.dy * want - e.y);
+  // Progress is a fraction of the WHOLE step, computed fresh from the step's
+  // origin every frame and rounded to a whole subpixel. It is not an
+  // accumulated velocity, so nothing carries a remainder and the last frame is
+  // the exact destination rather than a sum that happens to arrive near it.
+  const want = Math.round((s.span * s.f) / s.n);
+  const r = moveEntity(g, e, s.fx0 + s.dx * want - e.fx, s.fy0 + s.dy * want - e.fy);
   if (r.hitX || r.hitY) {
-    e.x = s.x0; e.y = s.y0;
+    e.fx = s.fx0; e.fy = s.fy0;
     e.step = null; e.stepping = false;
     return false;
   }
   if (s.f >= s.n) {
-    e.x = s.x0 + s.dx * s.dist; e.y = s.y0 + s.dy * s.dist;
+    e.fx = s.fx0 + s.dx * s.span; e.fy = s.fy0 + s.dy * s.span;
     e.step = null; e.stepping = false;
   }
   return true;
@@ -678,7 +708,7 @@ export function bounceDiag(e, g, o = {}) {
   const speed = o.speed != null ? o.speed : e.speed;
   if (e._bvx == null) {
     const a = g.rng.angle();
-    e._bvx = Math.cos(a) * speed; e._bvy = Math.sin(a) * speed;
+    e._bvx = sp(Math.cos(a) * speed); e._bvy = sp(Math.sin(a) * speed);
   }
   const r = moveEntity(g, e, e._bvx, e._bvy);
   if (r.hitX) e._bvx = -e._bvx;
@@ -708,12 +738,14 @@ export function hop(e, g, o = {}) {
   if (e._hopState === 'air') {
     advanceStep(e, g);
     if (e.step) {
-      // A parabola through (0,0) and (1,0) peaking at `height`. Fitted to the
-      // step's own progress, so it cannot land early or late.
-      const t = e.step.f / e.step.n;
-      e.z = height * 4 * t * (1 - t);
+      // A parabola through both ends of the step, peaking at `height` in the
+      // middle. Fitted to the step's own progress rather than integrated, so it
+      // cannot land early or late — and computed in subpixels from whole
+      // integers, so it lands on exactly zero.
+      const { f, n } = e.step;
+      e.fz = Math.round((height * FP_ONE * 4 * f * (n - f)) / (n * n));
     } else {
-      e.z = 0; e.vz = 0;
+      e.fz = 0; e.vz = 0;
       e._hopState = 'wait';
       e._hopWait = wait;
     }
@@ -841,7 +873,10 @@ export function shootRing(e, g, n = 8, o = {}) {
 /** Drift with the current while the tide is high (aquatic enemies). */
 export function driftWithTide(e, g, o = {}) {
   const lvl = g.tide.level;
-  const push = (o.perLevel || TIDE_DRIFT_PER_LEVEL) * lvl;
+  // `perLevel` is px/f when a spec names one; the fallback is already sp/f.
+  // Either way it is well under a pixel a frame, and only moves anything at all
+  // because the position accumulator keeps the remainder between frames.
+  const push = (o.perLevel != null ? sp(o.perLevel) : TIDE_DRIFT_PER_LEVEL) * lvl;
   if (push) moveEntity(g, e, (o.dx || 1) * push, (o.dy || 0) * push);
 }
 

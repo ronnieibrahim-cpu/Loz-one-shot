@@ -4,6 +4,7 @@
 import { Entity, defineEntity, moveEntity, canOccupy, groundFlags, DIR_VEC } from './entity.js';
 import { F } from '../world/tileset.js';
 import { TILE } from '../core/screen.js';
+import { FP_ONE, sp } from '../core/fixed.js';
 import { sprites } from '../gfx/art.js';
 import { drawText } from '../gfx/font.js';
 import {
@@ -105,7 +106,8 @@ export class Pickup extends Entity {
     this.harmless = true;
     this.shadow = false;
     this.life = spec.persistent ? Infinity : (o.life || PICKUP_LIFE_FRAMES);
-    this.vy = o.vy != null ? o.vy : PICKUP_POP_SPEED;
+    // `vy` is px/f when a caller names one; the fallback is already sp/f.
+    this.vy = o.vy != null ? sp(o.vy) : PICKUP_POP_SPEED;
     this.z = 0;
     this.settle = PICKUP_SETTLE_FRAMES;
     this.grabDelay = o.grabDelay != null ? o.grabDelay : PICKUP_GRAB_DELAY;
@@ -118,7 +120,7 @@ export class Pickup extends Entity {
     if (this.attached) return;
     if (this.settle > 0) {
       this.settle--;
-      this.y += this.vy;
+      this.fy += this.vy;
       this.vy += PICKUP_GRAVITY;
     }
     if (this.spec.float) {
@@ -126,7 +128,8 @@ export class Pickup extends Entity {
       if (this._fa == null) this._fa = game.rng.angle();
       this._fa += FAIRY_DRIFT_TURN;
       moveEntity(game, this,
-        Math.cos(this._fa) * FAIRY_DRIFT_X, Math.sin(this._fa * 1.3) * FAIRY_DRIFT_Y);
+        Math.round(Math.cos(this._fa) * FAIRY_DRIFT_X),
+        Math.round(Math.sin(this._fa * 1.3) * FAIRY_DRIFT_Y));
     }
     if (this.grabDelay > 0) this.grabDelay--;
     if (this.life !== Infinity && --this.life <= 0) { this.remove = true; return; }
@@ -223,6 +226,8 @@ export class NPC extends Entity {
       if (this._wdir) {
         const [dx, dy] = DIR_VEC[this._wdir];
         const r = moveEntity(game, this, dx * NPC_WANDER_SPEED, dy * NPC_WANDER_SPEED);
+        // NPC_WANDER_SPEED is well under a pixel a frame; it only carries them
+        // anywhere because the subpixel accumulator keeps the remainder.
         if (r.hitX || r.hitY) this._wdir = null;
         else this.dir = this._wdir;
       }
@@ -464,18 +469,17 @@ export class PushBlock extends Entity {
       if (e !== this && e.solid && !e.dead
         && Math.abs(e.x - nx) < 12 && Math.abs(e.y - ny) < 12) return false;
     }
-    this.slide = { tx: nx, ty: ny, dx, dy };
+    this.slide = { fx: sp(nx), fy: sp(ny), dx, dy };
     game.audio.sfx('push');
     return true;
   }
 
   update(game) {
     if (!this.slide) return;
-    const sp = 1;
-    this.x += Math.sign(this.slide.tx - this.x) * sp;
-    this.y += Math.sign(this.slide.ty - this.y) * sp;
-    if (Math.abs(this.x - this.slide.tx) < 1 && Math.abs(this.y - this.slide.ty) < 1) {
-      this.x = this.slide.tx; this.y = this.slide.ty;
+    const step = FP_ONE;      // one pixel a frame, on the grid
+    this.fx += Math.sign(this.slide.fx - this.fx) * step;
+    this.fy += Math.sign(this.slide.fy - this.fy) * step;
+    if (this.fx === this.slide.fx && this.fy === this.slide.fy) {
       this.slide = null;
       this.moved = true;
       game.onBlockLanded(this);
@@ -609,13 +613,18 @@ export class Raft extends Entity {
     const active = game.tide.level >= this.needTide;
     if (!active) return;
     const t = Math.sin(this.frame * this.speed * 0.02);
-    const nx = this.axis === 'x' ? this.homeX + t * this.range : this.homeX;
-    const ny = this.axis === 'y' ? this.homeY + t * this.range : this.homeY;
+    const nfx = sp(this.axis === 'x' ? this.homeX + t * this.range : this.homeX);
+    const nfy = sp(this.axis === 'y' ? this.homeY + t * this.range : this.homeY);
     const p = game.player;
     const onBoard = p && p.z <= 2 && p.cx > this.x && p.cx < this.x + this.w
       && p.cy > this.y - 2 && p.cy < this.y + this.h + 4;
-    if (onBoard) { p.x += nx - this.x; p.y += ny - this.y; p.lastSafe.x = p.x; p.lastSafe.y = p.y; }
-    this.x = nx; this.y = ny;
+    // The passenger is carried by the raft's subpixel delta, not its pixel one,
+    // or a raft drifting slower than a pixel a frame would leave them behind.
+    if (onBoard) {
+      p.fx += nfx - this.fx; p.fy += nfy - this.fy;
+      p.lastSafe.x = p.x; p.lastSafe.y = p.y;
+    }
+    this.fx = nfx; this.fy = nfy;
   }
 
   draw(ctx, game, ox, oy) {

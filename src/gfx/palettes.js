@@ -12,6 +12,16 @@ export const PALETTES = {
   tree:    ['#a8d868', '#4c9040', '#20582c', '#0c2414'],
   treedk:  ['#6c9848', '#3c6830', '#1c3c22', '#08160c'],
   treedead:['#c8b088', '#907048', '#584028', '#20140c'],
+  // The extracted tree needs a TRUNK, and the three ramps above have none:
+  // they are all-green because the hand-drawn tree they were built for was
+  // all-green. The source draws a tree in five colours — two canopy greens, two
+  // trunk browns, an outline — so a faithful one needs brown at index 2, with
+  // the two browns merged to fit four indices. These are the same ramps with
+  // index 2 swapped for wood; `tree`/`treedk`/`treedead` stay exactly as they
+  // were, because `bush`, `bushSand` and `palm` still use them.
+  treeoak:  ['#a8d868', '#4c9040', '#8c5c28', '#0c2414'],
+  treeoakdk:['#6c9848', '#3c6830', '#5c3c1c', '#08160c'],
+  treeoakdd:['#c8b088', '#907048', '#6c4c2c', '#20140c'],
   sand:    ['#f8e8b0', '#e0c078', '#a88048', '#584028'],
   sandwet: ['#d8c898', '#b09860', '#786040', '#382c20'],
   water:   ['#b0e8f8', '#58b0e0', '#2868b8', '#10305c'],

@@ -41,11 +41,17 @@ Every export in `feel.js` carries a unit and one of three tags.
 
 **Nothing in `feel.js` is currently `measured`. Not one value.**
 
-Every number in it was carried over unchanged from the code as it stood before
-the file existed. They are all guesses that happened to feel acceptable to
-whoever wrote them, and they are all labelled `guessed` accordingly. A handful
-are `derived`, and in every case their ancestor is a guess, which the comment
-says.
+Most numbers in it were carried over unchanged from the code as it stood before
+the file existed. Those are guesses that happened to feel acceptable to whoever
+wrote them, and they are labelled `guessed` accordingly.
+
+P3 turned a handful into `derived`: `WALK_SPEED` and the swim, dive, dash,
+shield and sword-hold speeds that hang off it, `ROOM_EXIT_MARGIN`, and the
+three jump constants. `derived` there means *computed from a stated constraint*
+— the 8.8 grid, the 16px tile, or a reach that had to be preserved — and the
+comment names the constraint and shows the arithmetic. It does **not** mean
+anyone frame-stepped anything. A derived value is only as good as what it
+derives from, and several of these bottom out in a preserved guess.
 
 `measured` is not a compliment and it is not a synonym for "we're happy with
 it". It means a reference was frame-stepped. **Do not upgrade a `guessed` to a
@@ -97,6 +103,54 @@ junk drawer and dilute the one thing it is for.
 
 ---
 
+## Positions are 8.8 fixed-point
+
+Landed in P3. Every entity carries integer subpixel accumulators — `fx`, `fy`
+and `fz`, 256 subpixels to the pixel — and `x`, `y` and `z` are integer pixel
+positions derived from them by an arithmetic shift. Rendering reads the
+integers and rounds nothing. `src/core/fixed.js` is the whole of it, and its
+header carries the reasoning; the short version is three things:
+
+1. **`| 0` truncates toward zero.** It floors correctly for positive
+   coordinates and incorrectly for negative ones, so anything left of the
+   screen edge drew a pixel too far right. `art.js` did this on every sprite.
+   An entity sits at negative x on **every room transition** — the incoming
+   player is placed at `x = -3` and eased across the seam — so the bug fired
+   constantly, one pixel at a time, inside a screen that was already sliding.
+   That is why nobody caught it by looking. `>> 8` floors the same way on both
+   sides of zero.
+2. **A float accumulator drifts.** Adding 1.35 sixty times a second gives a
+   number whose low bits depend on the whole history of the run. The old
+   replay baselines recorded final positions like `x: 63.015805675746414` and
+   `y: 42.00000000000011`; the new ones record `x: 61`. Exact-equality replay
+   assertions are only meaningful now.
+3. **Subpixel accumulation is what lets a sub-pixel speed exist.** A current
+   pushing 0.12 px/f against an integer position rounds to nothing every frame.
+   `TIDE_DRIFT_PER_LEVEL` and `NPC_WANDER_SPEED` are both under a pixel a frame
+   and only move anything because the remainder is kept.
+
+### The unit boundary
+
+`moveEntity` and the accumulators speak **subpixels** (`sp/f`). Enemy and
+projectile *data* goes on speaking px/f — there are several hundred
+`speed: 0.45` literals across `src/data/`, and rewriting them in 256ths would
+buy nothing. The conversion happens at a small number of named edges:
+`moveDir` in the enemy toolkit, the `Projectile` constructor, `hop`'s `power`,
+`driftWithTide`'s `perLevel`, `Entity.hurt`'s `knock`. Each one is commented as
+the boundary it is.
+
+Constants in `feel.js` state which unit they are in. That mixture is
+deliberate, and it is why every export carries a unit.
+
+> **The trap this shape sets.** A constant that moved from px/f to sp/f but has
+> a px/f override coming from data reads the override in the wrong unit and
+> silently stops working. `ENEMY_HOP_POWER` did exactly this: the zol's
+> `power: 1.7` was read as 1.7 subpixels and the slime hopped 1/150th of a
+> pixel. Nothing errored. When converting a constant, grep the data files for
+> anyone overriding it.
+
+---
+
 ## Diagonals
 
 **Diagonal movement is not normalised.** Full speed on both axes: pressing two
@@ -107,34 +161,66 @@ why players who grew up on those games route diagonally without thinking about
 it. Removing it makes movement "correct" and makes it feel like a different
 game.
 
-**The engine does not do this yet.** `player.js` scales both axes by
-`Math.SQRT1_2` when two directions are held. That value now lives in `feel.js`
-as `DIAGONAL_FACTOR`, tagged `guessed` and flagged as known-wrong, so the
-divergence is visible in one place instead of buried in a movement function.
+**The engine does this as of P3.** `DIAGONAL_FACTOR` is gone from `feel.js` and
+there is deliberately no constant in its place — a scale factor sitting there
+at `1` is an invitation to tune it back to something. `updateMovement` leaves
+`dx` and `dy` at ±1 and hands the full per-axis step to both.
 
-Setting it to `1` is not a one-line fix, and it should not be done on its own:
-it makes every diagonal 41% faster than it is today, which changes every
-enemy-dodge window and every corridor traversal in the game. It lands together
-with re-deriving `WALK_SPEED` — that is P3 in `docs/EXECUTION-PLAN.md`.
+Two things fell out of it that are worth knowing:
+
+- Cardinal movement got 26% slower (1.35 → 1.0 px/f) while **diagonal movement
+  got slightly faster** (1.35 → 1.41 px/f). A player who routes diagonally
+  barely notices the change; one who only presses one direction at a time
+  feels the game get harder. The recording actor in `tools/replay.mjs` is the
+  second kind, and it started dying in the D1 crab room until it was taught to
+  disengage diagonally. That is the source games' lesson arriving on schedule.
+- Diagonal is now the fast way to travel, which is a real balance lever nobody
+  has pulled yet. Nothing in the world is tuned around it.
 
 ---
 
-## Two numbers that are wrong on purpose, and why they are still here
+## Two numbers that were wrong on purpose, and how P3 resolved them
 
-Three, until P4 landed the lattice and the scripted knockback. `WALK_SPEED` and
-its margin are what is left; P3 takes them.
+### `WALK_SPEED` and `ROOM_EXIT_MARGIN`
 
-### `WALK_SPEED = 1.35` and `ROOM_EXIT_MARGIN = 3`
+**Was:** 1.35 px/f and a 3px margin. 1.35 is not representable as a clean
+subpixel step, so the player could never land on a tile boundary, and
+`checkRoomExit` needed a margin wider than one movement step to catch them on
+the way past. The margin was not a tuning choice; it was a workaround.
 
-1.35 px/frame is not representable as a clean subpixel step, so the player
-**can never land on a tile boundary**. `checkRoomExit` therefore cannot fire on
-an exact boundary test, and needs a margin wider than one movement step to
-catch the player as they pass through. Three pixels is that margin.
+**Now:** `WALK_SPEED = 256 sp/f` — exactly 1 px/f, exactly 16 frames to the
+tile — and `ROOM_EXIT_MARGIN = 1`.
 
-So the margin is not a tuning choice — it is a workaround for a walk speed
-that does not divide the tile. Both are `guessed`, and `ROOM_EXIT_MARGIN` is
-tagged `derived` from `WALK_SPEED` to say so. P3 picks a walk speed that
-divides 16 evenly at 60 Hz and drops the margin to 1.
+The choice was more constrained than it looks. A speed must be exactly
+representable in 8.8 **and** divide the 16px tile evenly, which means `4096 / s`
+has to be a whole number of frames with `s` a whole number of subpixels — so
+`s` must divide 4096, i.e. be a power of two. Between a crawl and the Pegasus
+dash that leaves 256 and nothing else. It is tagged `derived`, not `measured`:
+nobody has frame-stepped a reference. Worth recording anyway that 1 px/f
+walking and 2 px/f dashing is the granularity the GB Zeldas are built on, so
+the answer the arithmetic forced is at least the right shape.
+
+`BOOST_SPEED` is now exactly `2 * WALK_SPEED`, which is the Pegasus dash.
+
+### A jump's reach is not a property of the jump
+
+The most expensive thing P3 learned, and it is not obvious from either
+constant. The player keeps walking while airborne, so:
+
+```
+reach = 2 * JUMP_POWER / JUMP_GRAVITY * WALK_SPEED
+```
+
+Re-deriving `WALK_SPEED` therefore silently re-derives the length of every gap
+in the game. Dropping 1.35 to 1.0 cut Roc's Feather from 2.3 tiles to 1.7 and
+made the Coral Reef chasm uncrossable — a region gate that simply stopped
+opening. `node tools/check-gates.mjs` caught it. Nothing else would have:
+`validate`, `walk-dungeons`, `check-overworld` and `test` were all green, and
+so were both replays, because no replay jumps.
+
+`JUMP_POWER`, `JUMP_POWER_CAPE` and `JUMP_GRAVITY` are now `derived` and their
+comment carries the formula. **If you change `WALK_SPEED` again, re-derive
+them in the same commit.**
 
 ---
 
@@ -161,7 +247,13 @@ you in unrelated places and neither is predictable.
 The `KNOCK_*` constants therefore changed **units**: they were px/f, they are
 now total px. The new numbers are the total travel the old decay produced from
 the old speeds, so a sword throws an enemy about as far as it always did — the
-change is one of shape, not reach.
+change is one of shape, not reach. `KNOCK_HOLD`, which P3 added for the
+extended blade, is on the same footing: 9 px rather than 2 px/f.
+
+The per-frame step is computed once, in subpixels, when the hit lands —
+`sp(distance) / frames`, rounded to a whole subpixel — and then never touched
+again. Under the old model the velocity was re-rounded every frame, which is
+one more place a run could have drifted.
 
 One thing that falls out of it and is worth knowing before tuning
 `ENEMY_KNOCK_FRAMES`: contact damage does not care that an enemy is mid-
@@ -173,6 +265,42 @@ changed nothing in either replay.
 
 ---
 
+## The sword is three verbs
+
+Landed in P3. Tapping swings, holding charges a spin, and — the part that was
+missing — **holding also keeps the blade extended and lets you walk with it
+out**. The engine had two of the three, which meant the most-used button in the
+game did a third less than it should: you could not shave a bush by walking
+through it, you could not hold a doorway against something walking into you,
+and a long hold read as a dead wait for the spin rather than as a stance you
+were already fighting in.
+
+The hold state is entered `SWORD_HOLD_DELAY` frames after a swing ends if the
+button is still down, and it gives:
+
+- a distinct pose — `link_hold_down/up/side`, extracted from the sheet's
+  **Charge** band by `tools/rip-link.py`. In the Oracles, holding the button
+  *is* the charge, so those are the frames the source game draws for exactly
+  this state. They are the only Link sprites that are **not 16x16** (16x30,
+  16x28 and 28x16): the blade runs past the edge of Link's cell in whichever
+  direction he faces, and cropping it back would delete the sword, which is the
+  one thing the pose exists to show. `Player.draw` derives the anchor from the
+  sprite's own dimensions so the body lands on the pixel a 16x16 frame would
+  have put it on, and so art and anchor cannot drift apart.
+- `SWORD_HOLD_SPEED`, three quarters of walking, the same as the raised shield
+- contact damage in the swing's own box, at `SWORD_HOLD_DAMAGE` and
+  `KNOCK_HOLD`. It is deliberately **not** rate-limited here: the enemy's own
+  invulnerability window after a hit is what spaces the hits out, which is how
+  the source games space them.
+- `checkTileAction(box, 'cut')` every frame, so walking a held blade through
+  undergrowth cuts it
+- a clink and a spark off a solid tile at the blade tip, debounced by
+  `SWORD_CLINK_COOLDOWN` and gated on actually pressing into the wall
+
+The charge keeps running underneath all of it, so hold-to-spin is unchanged.
+
+---
+
 ## The lattice
 
 **A ground enemy has no velocity.** It stands on a point of an 8px lattice,
@@ -180,6 +308,13 @@ decides where to go, and takes a whole step — `ENEMY_GRID_STEP = 8` pixels in
 one cardinal direction, over however many frames its speed implies. Once a step
 is running it runs to the end. Nothing turns the enemy mid-step and nothing
 draws from the room's stream mid-step.
+
+**All of it is integer subpixel arithmetic** on the 8.8 grid. A lattice point
+is a whole multiple of `8 * FP_ONE`; a step's progress is recomputed from the
+step's origin every frame as `round(span * f / n)` rather than accumulated; and
+the final frame of a step is an assignment, not an addition. There is no
+remainder anywhere in it, which is why `check-motion.mjs` can assert alignment
+as an exact equality on `fx`/`fy` instead of within a tolerance.
 
 That is the whole mechanism, and it is what makes an octorok dodgeable. The
 player can see the enemy standing on a lattice point, knows a decision is about
@@ -270,7 +405,8 @@ So the second half of this session is the determinism layer:
   fails the run. See that file's header for which stream is for what.
 - **`tools/replay.mjs`** — records a seed plus a flat list of per-frame button
   masks, plays it back headlessly, and asserts the final position by exact
-  float equality plus a checkpoint every 60 frames.
+  equality plus a checkpoint every 60 frames. Since P3 the positions it
+  compares are integers, which is what that exactness was always meant to be.
 
 The rule that falls out of this and is easy to break by accident:
 

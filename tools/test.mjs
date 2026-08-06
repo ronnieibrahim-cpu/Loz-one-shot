@@ -201,6 +201,59 @@ const main = async () => {
   check('player stayed inside the room',
     await G(() => { const p = window.__game.player; return p.x > -8 && p.x < 168 && p.y > -12 && p.y < 136; }));
 
+  // --- 8.8 fixed-point positions -------------------------------------------
+  //
+  // The whole point of the fixed-point rework is that a rendered coordinate is
+  // a whole number and that flooring one is correct on BOTH sides of zero. The
+  // negative half is what nothing used to check: `| 0` truncates toward zero,
+  // so it was a pixel wrong for every x < 0 — and the player is at negative x
+  // on every room transition, which is the most common thing in the game.
+  console.log('\n--- fixed-point positions ---');
+  const fp = await G(() => {
+    const p = window.__game.player;
+    return { x: p.x, y: p.y, z: p.z, fx: p.fx, fy: p.fy, intFx: Number.isInteger(p.fx) };
+  });
+  check('pixel position is a whole number',
+    Number.isInteger(fp.x) && Number.isInteger(fp.y) && Number.isInteger(fp.z),
+    `x=${fp.x} y=${fp.y} z=${fp.z}`);
+  check('subpixel accumulator is a whole number', fp.intFx, `fx=${fp.fx}`);
+  check('pixel position is the accumulator floored', fp.x === (fp.fx >> 8) && fp.y === (fp.fy >> 8),
+    `fx=${fp.fx} -> ${fp.x}, fy=${fp.fy} -> ${fp.y}`);
+
+  // Walk the accumulator across zero by hand and confirm the derived pixel
+  // floors rather than truncates. -1 subpixel is 1/256th of a pixel to the LEFT
+  // of the origin, so it must read as pixel -1, not 0.
+  const cross = await G(() => {
+    const p = window.__game.player;
+    const keep = p.fx;
+    const out = [];
+    for (const fx of [-512, -257, -256, -255, -1, 0, 1, 255, 256]) {
+      p.fx = fx;
+      out.push([fx, p.x]);
+    }
+    p.fx = keep;
+    return out;
+  });
+  const want = { '-512': -2, '-257': -2, '-256': -1, '-255': -1, '-1': -1, 0: 0, 1: 0, 255: 0, 256: 1 };
+  const wrong = cross.filter(([fx, x]) => x !== want[fx]);
+  check('crossing x=0 floors instead of truncating', wrong.length === 0,
+    wrong.map(([fx, x]) => `fx=${fx} gave ${x}, want ${want[fx]}`).join('; '));
+
+  // Sub-pixel speeds have to survive. A drift slower than a pixel a frame moves
+  // nothing at all without an accumulator, and two of the game's speeds are.
+  const drift = await G(async () => {
+    const ent = await import('/src/game/entity.js');
+    const p = window.__game.player;
+    const keep = { fx: p.fx, fy: p.fy };
+    p.fx = 64 * 256; p.fy = 64 * 256;
+    const x0 = p.x;
+    for (let i = 0; i < 60; i++) ent.moveEntity(window.__game, p, 32, 0);   // 0.125 px/f
+    const moved = p.x - x0;
+    p.fx = keep.fx; p.fy = keep.fy;
+    return moved;
+  });
+  check('a sub-pixel step accumulates', drift === 7, `60 frames at 32 sp/f moved ${drift}px, want 7`);
+
   console.log('\n--- sword ---');
   await G(() => { window.__game.progress.equipB = 'sword'; });
   await tap('z');

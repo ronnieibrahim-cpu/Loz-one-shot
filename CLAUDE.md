@@ -2,14 +2,20 @@
 
 A personal, unpublished GBC-style Zelda. Two goals, in order:
 
-1. **It must feel like Oracle of Seasons / Ages.** Feel is the product. A
-   feature that works but feels wrong is a regression.
+1. **It must look and feel like Oracle of Seasons / Ages.** Fidelity is the
+   product. Aim for the closeness of a ROM hack: a screen of this game should
+   be hard to tell from a screen of the originals until you notice that the
+   items, dungeons, terrain and enemies on it are ones the originals never had.
+   A feature that works but feels wrong is a regression, and so is art that
+   reads as someone's impression of the source rather than the source.
 2. **Its design must be original.** Mechanics, items, dungeons and story are
    ours. Only the genre grammar is borrowed.
 
-Where these conflict, feel wins. We are not trying to be different for its own
-sake; we are trying to build something that plays like the Oracles and isn't a
-retread of them.
+These are not in tension as often as they look. Goal 1 governs the *surface* —
+sprites, tiles, timing, motion — and there the answer is almost always to take
+what the source games already drew. Goal 2 governs *what the game is about*,
+and there nothing is borrowed. Where they do conflict, fidelity wins; we are
+not being different for its own sake.
 
 ---
 
@@ -35,9 +41,40 @@ zero and misrounds across x=0, which happens on every room transition).
 faster than cardinal. This is deliberate and it is a signature of the source
 games.
 
-**No assets from any commercial game enter this repo.** The sprite sheets under
-`assets/sheets/` are grandfathered reference for the existing extractions only.
-Nothing new is extracted from them. New art is drawn.
+**If a sheet has it, extract it.** Fidelity to the source games is the whole
+product, and extraction is the only way to get it exactly — it is reproducible,
+free of drift, and it cannot slowly wander into someone's own style the way
+hand-drawing does. Do not redraw by hand something `assets/sheets/` already
+provides. `docs/ART-DIRECTION.md` is the authority; `docs/briefs/AGENTS.md`
+section J is the workflow.
+
+**If no sheet has it, draw it to match.** Everything original to this game —
+the bosses, Nereth, the Essence orb, the tide valve, the Moon Conch, the
+tide-variant terrain — has to be indistinguishable in register from the
+extracted art next to it on screen. A screen mixing an extracted Octorok and a
+hand-drawn boss must not betray which is which.
+
+**Extraction lands in a generated file. Never hand-edit one.** Add the frame to
+the ripper's coordinate map and re-emit, so the next regeneration does not
+silently throw your edit away. Every generated module records its sheet and its
+ripper credit in the header. The current set:
+
+| Generated file | Tool |
+|---|---|
+| `src/data/sprites-player.js` | `tools/rip-link.py` |
+| `src/data/sprites-npcs.js` | `tools/rip-npcs.py` |
+| `src/data/sprites-enemies.js` | `tools/rip-enemies.py` |
+| `src/data/sprites-hud.js` | `tools/rip-hud.py` |
+| `src/data/tiles-terrain.js` | `tools/rip-terrain.py` |
+
+**This binds the art, not the design.** Goal 2 is unchanged and is not
+negotiable by this rule: mechanics, items, dungeons and story are ours. We
+borrow how the source games *look and move*, never what they are about.
+
+**The sheets are Nintendo's artwork** and the repo is permanently private and
+unpublished, which is the condition this rule depends on. Nothing extracted
+leaves this repo. See the copyright note in `assets/sheets/README.md` for the
+replacement path if that ever changes.
 
 ---
 
@@ -83,13 +120,28 @@ They are faster than you are and they do not rationalise.
 
 ## Art rules
 
-Measured across the existing cast, and binding for everything new:
+**These are not a licence to hand-draw.** They describe the source games' own
+grammar, measured across the existing cast, and extracted art satisfies every
+one of them by construction — which is the argument for extracting rather than
+the argument for drawing carefully. They exist for the art no sheet can supply:
+the bosses, the tide-variant terrain, the items that are ours. Reach for them
+only after `assets/sheets/` has been checked and come up empty.
+
+Terrain and scenery are covered by this too. Rocks, trees, bushes, stumps,
+cliffs and ground textures are exactly the things the sheets are richest in and
+exactly the things most likely to betray a hand doing an impression of the
+source. Extract them.
+
+When you do have to draw:
 
 - Three colours plus transparency. Index 3 is the outline; 0–2 carry the form.
 - A hard 1px black outline all the way round. No exceptions.
 - No anti-aliasing, no gradients, no dithering on characters. Light dithering
   on terrain only.
-- Fill roughly two thirds of the 16×16 cell, feet near the bottom.
+- Fill roughly two thirds of the 16×16 cell, feet near the bottom. A cell is
+  16×16 unless `expectedSize` in `src/data/sprite-manifest.js` says otherwise —
+  a few extracted frames are larger because the source draws past the cell, and
+  `link_hold_*` is the worked example of anchoring one.
 - Two-frame cycles, and the frames must differ by at least three pixels.
 - `_d` faces the viewer, `_u` faces away, `_s` faces **right**. The engine
   mirrors `_s`; never draw a left-facing frame.

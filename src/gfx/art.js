@@ -137,19 +137,31 @@ export class Sheet {
   /**
    * Draw art at integer pixel coordinates.
    * opts: { pal, flipX, flipY, alpha, w, h } — w/h crop the drawn region (top-left anchored).
+   *
+   * `x` and `y` ARE ALREADY WHOLE PIXELS and this draws exactly where it is
+   * told. Entity positions are 8.8 fixed-point with an integer pixel accessor
+   * (src/core/fixed.js), tiles are drawn at multiples of TILE, and the handful
+   * of call sites that compute a fraction — the hookshot's chain links — round
+   * it themselves.
+   *
+   * There used to be an `x | 0` here. It was not a safety net, it was a bug:
+   * `| 0` truncates toward zero, so it floored correctly for positive x and
+   * incorrectly for negative x, putting anything left of the screen edge a
+   * pixel too far right. The player sits at negative x during every single room
+   * transition, so this misdrew on every seam in the game — a one-pixel hitch
+   * hidden inside a scrolling screen, which is why it survived this long.
    */
   draw(ctx, name, x, y, opts) {
     const o = opts || {};
     const c = this.bake(name, o.pal, o.flipX, o.flipY);
     if (!c) return;
-    const px = x | 0, py = y | 0;
     if (o.alpha != null && o.alpha < 1) {
       const prev = ctx.globalAlpha;
       ctx.globalAlpha = o.alpha;
-      this._blit(ctx, c, px, py, o);
+      this._blit(ctx, c, x, y, o);
       ctx.globalAlpha = prev;
     } else {
-      this._blit(ctx, c, px, py, o);
+      this._blit(ctx, c, x, y, o);
     }
   }
 

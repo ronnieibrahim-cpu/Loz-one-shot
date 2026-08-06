@@ -175,14 +175,32 @@ export const PLANS = {
       ['exit', 'left', 400],
       ['fight', 1800],
       ['dialogue', 300],
+      // Sweep the reward tile VERTICALLY rather than stopping on it.
+      //
+      // A dropped pickup pops upward and stays up: `PICKUP_POP_SPEED` against
+      // `PICKUP_GRAVITY` over `PICKUP_SETTLE_FRAMES` nets about five pixels of
+      // rise and nothing brings it back down, so a key spawned at tile (4,3)
+      // comes to rest straddling the tile above. Standing on (4,3) leaves a
+      // one-pixel overlap with its rect — and one pixel is close enough to miss.
+      // Missing it loses the Small Key silently: the locked door two rooms
+      // later never opens, and every directive after it is addressed to a room
+      // the player never reached, while the recording stays perfectly valid.
+      // Walking up through the tile and back cannot miss it.
       ['goto', 4, 3, 400],
+      ['goto', 4, 2, 200],
+      ['goto', 4, 3, 200],
       ['wait', 60],
       ['goto', 8, 3, 400],
       ['exit', 'right', 400],
       // Spend it on the door in the middle of 3,4's north wall.
       ['fight', 900],
       ['goto', 4, 3, 500],
-      ['hold', ['up'], 6],
+      // Walk into the door until it stops you, rather than a computed number of
+      // frames of `up`. The door is solid until it is unlocked, so holding long
+      // enough pins the player flush against it from wherever `goto` happened
+      // to leave him — six frames put him a pixel or two short whenever the
+      // approach ended a pixel or two low, and the A press then found nothing.
+      ['hold', ['up'], 24],
       ['tap', 'a', 30],
       ['dialogue', 300],
       ['goto', 4, 1, 500],

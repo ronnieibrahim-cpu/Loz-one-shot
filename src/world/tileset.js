@@ -125,6 +125,7 @@ export function tileArt(def, frame) {
   return def.name;
 }
 
+
 /** True if any tile in the set changes appearance with the tide. */
 export function isTideSensitive(name) {
   return !!getTileDef(name).tide;

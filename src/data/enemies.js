@@ -339,7 +339,8 @@ export function installEnemies() {
       // so the safe ground is diagonal to it. Both halves of that are lattice
       // steps — two cells out, two cells back — which is what makes the reach
       // something the player can measure by eye rather than guess at. It used
-      // to be reeled home by a proportional lerp that never quite arrived.
+      // to be reeled home by a proportional lerp that never quite arrived, and
+      // then by a subpixel one that arrived but still landed off the lattice.
       if (e._pinch == null) e._pinch = 'hole';
       if (e._pinch === 'out' || e._pinch === 'back') {
         advanceStep(e, g);

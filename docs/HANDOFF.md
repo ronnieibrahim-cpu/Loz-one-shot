@@ -170,10 +170,20 @@ untouched baseline before any of this session's work.
 `src/core/rng.js` is the single source of randomness. `docs/FEEL-SPEC.md` is
 the why. Three things about them that are cheap to get wrong:
 
-**Nothing in `feel.js` is `measured`.** Every value is a guess carried over
-from the code as it stood, and is labelled `guessed`. `measured` means someone
-frame-stepped a reference recording. It is not a synonym for "we like it".
-Do not upgrade a tag because the game feels fine.
+**Nothing in `feel.js` is `measured`.** Most values are guesses carried over
+from the code as it stood and are labelled `guessed`. P3 turned a handful
+`derived` — the walk speed and everything hanging off it, the room exit margin,
+the jump arc — which means *computed from a stated constraint, with the
+arithmetic in the comment*, not *checked against a reference*. `measured` means
+someone frame-stepped a recording. It is not a synonym for "we like it". Do not
+upgrade a tag because the game feels fine.
+
+**Positions are 8.8 fixed-point** (`src/core/fixed.js`). `fx`/`fy`/`fz` are
+integer subpixel accumulators; `x`/`y`/`z` are derived integer pixels. Assigning
+`e.x = 40` is fine and goes through the accessor. `e.x += 0.5` is not — it
+reads whole pixels, so a sub-pixel step rounds to nothing every frame and the
+entity never moves. Add to `fx` or go through `moveEntity`, which takes
+**subpixels**. Data-facing helpers convert px/f at their edge; see FEEL-SPEC.
 
 **Nothing in a draw path may consume randomness.** `Game.draw` runs at display
 rate; `Game.update` runs at a fixed 60 Hz step. A stream drawn from inside
@@ -529,6 +539,100 @@ red on six separate assertions at once. `window.__game.frame` is the frame
 counter — there is no `tick` or `frameCount`, and a check that reads a field
 which does not exist passes forever.
 
+### Fixed-point movement, and the four things it cost (P3)
+
+All five are things that passed at least one green checker on the way through.
+
+**1. A jump's reach is a function of the WALK speed, not the jump.** The player
+keeps walking while airborne, so `reach = 2*power/gravity * WALK_SPEED`.
+Re-deriving `WALK_SPEED` from 1.35 to 1.0 px/f cut Roc's Feather from 2.3 tiles
+to 1.7 and made the Coral Reef chasm — a real region gate — uncrossable.
+`validate`, `test`, `walk-dungeons`, `check-overworld` and **both replays** were
+green; only `check-gates.mjs` caught it, because it is the only harness that
+jumps. If you touch `WALK_SPEED`, re-derive the three jump constants in the same
+commit. The formula is in `feel.js` above `JUMP_POWER`.
+
+**2. A frame budget calibrated against a constant rots when the constant
+moves.** `check-gates.mjs` held a direction for a flat 22 frames, which was 2.1
+tiles at the old walk speed and 1.5 at the new one — so the Feather check
+failed on a chasm the Feather still clears. The fix was not a bigger number: it
+now reads `WALK_SPEED` out of the page and derives the budget. Any harness that
+writes down "n frames" to mean "far enough" has this bug latent in it.
+
+**3. Converting a constant's unit breaks any DATA that overrides it.**
+`ENEMY_HOP_POWER` went from px/f to sp/f, and the zol's `power: 1.7` was then
+read as 1.7 *subpixels* — the slime hopped a 150th of a pixel and nothing
+errored. Same shape for `driftWithTide`'s `perLevel` and `Pickup`'s `vy`. When
+you change a constant's unit, grep `src/data/` for anyone passing an override,
+and make the fallback and the override explicitly different units at the edge.
+
+**4. `e.x += 0.5` silently stops working.** `x` is now an accessor over an
+integer accumulator, so a read gives whole pixels and a sub-pixel increment
+rounds away to nothing every frame. Every `+=` on a position had to become an
+add to `fx`/`fy`/`fz`. The ones that bit were `Effect.update`, `Pickup`'s pop,
+the boomerang's return, the hookshot's retract and the pincer's reel-home —
+all of which would have just frozen in place.
+
+**5. An actor that retreats can retreat out of the room.** Teaching
+`replay.mjs`'s swordsman to disengage diagonally (which it needs, now that
+diagonals are the fast direction) made it back out through doorways mid-fight.
+A `fight` directive that ends in a different room than it started in does not
+fail — it records perfectly, and every directive after it is addressed to a
+room the player is not in, so the rest of the route becomes fiction while still
+producing a green replay. `dFight` now fences every mask it yields against the
+room edges. Cost two recordings to find because the trace looks plausible.
+
+Also worth knowing: the old replay baselines recorded final positions like
+`x: 63.015805675746414`. They are integers now, which is what "asserts to the
+pixel" was always supposed to mean.
+
+### A sprite that does not fit its cell, and the two ways to get it wrong
+
+The held-blade poses are the game's first non-16x16 player sprites. Two traps
+came out of adding them:
+
+**`parseArt` strips WHITESPACE-only rows, not transparent ones.** A row of
+`................` is not blank — dots are not whitespace — so it survives the
+parse and counts toward the sprite's height. A first attempt trimmed all-dot
+rows in the ripper "to match", which silently shrank a dozen existing frames
+(`link_swim_up_0` went 16x16 -> 16x13) and moved the anchor of the new ones.
+`validate.mjs` caught it, because `expectedSize` asserts every sprite's
+dimensions. Emit exactly what was cut.
+
+**Derive the draw anchor from the sprite, not from a constant.** These frames
+are anchored so Link's *body* lands where a 16x16 frame would put it, which
+means offsetting by the overhang — 12px up for the up-facing frame, 12px left
+when the side frame is mirrored. `Player.draw` reads `sprites.size(name)` and
+computes it, so re-cutting the frames in `rip-link.py` cannot leave a stale
+offset behind. Writing the numbers down would have been three lines shorter and
+one silent bug away.
+
+And the flip is about the sprite's own canvas, not the world: mirroring a
+28-wide side frame carries the body to the far end of the canvas, so the offset
+belongs to `flipX`, not to `dir === 'left'`.
+
+### `tools/shots-link-baseline/` was three weeks stale
+
+P3's brief said to diff it. Doing so showed 47–96% of pixels differing on most
+shots, which looks like catastrophe and is not: the baseline was captured on
+2026-07-31 mid-way through the art pass, when 38 sprites were still unauthored
+placeholders and the HUD was not drawn. It had not been refreshed since, so it
+had been silently useless through P1 and P2.
+
+The honest P3 diff needs a *pre-change* capture, not that baseline:
+
+```
+git worktree add /tmp/pre HEAD
+cd /tmp/pre && node tools/test.mjs --shots --shot-dir=shots-pre
+```
+
+Against that, P3 moves 0–5.7% of pixels, all accounted for: Link is a tile
+behind at the same scripted frame count because he walks slower, and the
+file-select screen's animated water is at a different phase. The baseline is
+refreshed as of this session. Nothing in the repo compares against it
+automatically, so it will go stale again unless someone refreshes it when the
+art or the movement changes.
+
 ### A chest's pickup can land on a solid tile and be uncollectable
 
 Found while recording the D1 replay, and it passes every existing checker.
@@ -550,6 +654,33 @@ for exactly this shape of problem.
 Not fixed here: it is dungeon content, and P8 re-authors D1 anyway. The D1
 replay opens the chest deliberately (an opened chest is persisted save state
 worth asserting on) and its plan comment says the Compass is not collected.
+
+### A dropped pickup pops upward and never comes back down
+
+Found while re-recording `d1-descent` after the P3/P4 merge, and it silently
+loses a Small Key.
+
+`Pickup.update` runs `fy += vy; vy += PICKUP_GRAVITY` for `PICKUP_SETTLE_FRAMES`
+frames and then stops. With the current numbers that sums to about **five
+pixels of net rise**, and nothing brings it back down — the settle window ends
+while the pickup is still travelling upward. So a pickup spawned at tile
+`(4, 3)` comes to rest straddling the tile above it, and a player standing on
+`(4, 3)` overlaps its rect by about one pixel.
+
+That was always true — the pre-P3 float constants netted ~3.8px — but P3's
+snap to the subpixel grid took it to ~4.7px, which was enough to turn a
+marginal overlap into a miss. The D1 Crab Pit's reward key stopped being
+collectable, and **the failure is invisible**: the route walks on, the locked
+door two rooms later simply never opens, every directive after it addresses a
+room the player never reached, and the recording is still perfectly valid. It
+was only caught because `expect.doorsChanged` came back 0.
+
+Two things follow. `tools/replay.mjs`'s per-step trace now prints `keys=` and
+`doors=`, because "the route continued without the thing it needed" is not
+visible in a position. And the pop itself is a real defect worth fixing
+properly — a drop should come to rest where it was dropped. Fixing it moves
+every drop in the game by a few pixels and re-baselines both replays, so it
+wants its own change rather than riding along with someone else's.
 
 ### A miniboss is not `isBoss`, and motion has to test the class
 
@@ -589,7 +720,26 @@ route starts behaving oddly:
   directive's first step back toward it re-triggered the transition. It now
   keeps walking for ten frames after the change.
 
-Both were latent before P4; the lattice is only what made them bite.
+Both were latent before P4; the lattice is only what made them bite. P3 had
+independently fixed the first of them with a `fence` that strips any direction
+that would carry the player out of the room — that is the better mechanism and
+it is what survived the merge; the room-change bail is kept as a backstop.
+
+The one that actually mattered on the merged engine is different and worth
+stating on its own: **the swordsman attacked shielded enemies from the front
+and swung into the shield forever.** A `shield: 'front'` enemy blocks whatever
+arrives at its facing side, and the nearest axis is very often exactly that
+side. Three shielded crabs in the D1 Crab Pit is where it shows, and an
+unclearable Crab Pit means no Small Key. `dFight` now prefers whichever axis is
+*not* looking back at it, which is what a player does without thinking: a crab
+patrols along x, so its facing is left or right nearly every frame, and coming
+at it from above makes the shield irrelevant.
+
+Two things that were tried first and were worse, so do not re-try them:
+widening the standoff band to one full enemy step (16..24) — standing further
+out means walking further in, and the extra approach frames cost more health
+than the extra swings win — and raising the patience, which only made the actor
+spend longer failing the same way.
 
 ## The two gates that cannot be tiles
 
@@ -626,6 +776,49 @@ wide**, and so does anything meant to stop the Feather.
 Reef Palace span had no post to latch onto at all. It flooded correctly in
 `check-overworld.mjs` and was impassable in play — exactly the gap the two
 checkers exist to close, caught by the in-engine half.
+
+### The two tile-finding scans are committed tools now
+
+```
+python3 tools/rip-terrain.py --scan  <ow|dg|ag> <x0> <y0> <x1> <y1>
+python3 tools/rip-terrain.py --props <ow|dg|ag> <px> <py> <x0> <y0> <x1> <y1> [out.png]
+```
+
+`--props` is the counterpart to `--scan`, and it exists because **the seamless
+scan cannot find a prop by construction**: a prop is exactly the thing that
+does not repeat. It walks the tile grid at the phase you give it, works out the
+ground colour dominating each cell's 3x3 neighbourhood, and keeps the cells
+that are 25-80% ground — an object with ground showing round it, rather than
+bare ground or a solid block of something else. It writes a numbered contact
+sheet; read it and pick by eye, per `docs/briefs/AGENTS.md` section J.
+
+You need the grid phase first, and the cheapest way to get it is `--scan`: any
+ground tile it reports gives it to you as `(x % 16, y % 16)`. On the Ages
+overworld sheet that is (2, 8).
+
+This file used to describe the scan in prose and note that the script was not
+committed, which meant the next person to need it had to rewrite it from the
+paragraph. It is in the ripper now. A ground tile is the 16x16 window that
+repeats at +16 in x **and** +16 in y; passing that test proves the window is
+correctly phased and tiles seamlessly, which is the property terrain has to
+have. It prints each distinct tile with a real origin you can paste into
+`PICKS`, ranked by how much of the region it covers.
+
+The one implementation note worth keeping: **deduplicate hits on raw bytes
+before canonicalising them.** Every hit has 256 cyclic phase shifts that are
+the same tile, and canonicalising every hit instead of every distinct hit is
+the difference between seconds and not finishing.
+
+What it found when it was run across the overworld sheet's green regions,
+so nobody repeats the search: the sheet has exactly two seamless grass
+textures worth having and **both are already extracted** — `tallgrass`
+(886,1049) and `grassTuft` (1611,307). The dense herringbone at 1305,1194 that
+looks like a promising base grass is `tallgrass` again at a different phase.
+Base `grass` stays hand-drawn not because nobody tried but because the sheet's
+only alternatives are a banded field (508,1549), a dither field (532,1500) and
+a third tuft pattern (2287,670), none of which is better than the flat field
+already there, and one of which would make `grass` and `tallgrass` read the
+same — which matters, because `tallgrass` is the cuttable one.
 
 ## Verification harnesses
 
@@ -797,10 +990,101 @@ What remains, in rough order of payoff:
    finding that closes most of the terrain question. Measured this session:
    the bush at 1693,1307 is ~30x31, the ringed stump at 1802,1565 is ~30x28,
    and the tree was already known to be 16x32. The game's tiles are 16x16, so
-   none of them extracts — compositing a 2x2 source prop down to one game tile
-   is authoring, not extraction. **`flowers` was the only prop on the sheet
-   that fits a single cell** (2061,1469, a 14x14 leafy rosette) and it is now
-   extracted and planted. Do not go looking for the others again.
+   none of them extracts *into a single tile* — compositing a 2x2 source prop
+   down to one game tile is authoring, not extraction. **`flowers` was the only
+   prop on the sheet that fits a single cell** (2061,1469, a 14x14 leafy
+   rosette) and it is now extracted and planted. Do not go looking for a
+   one-cell version of the others again; the measurements above are final.
+
+   **A correction, made after actually looking.** An earlier revision of this
+   file suggested the fix was to spend two tiles on a tree and extract the
+   canopy and trunk halves separately, on the reasoning that the source games
+   draw a tree that way. That is true of the source games and false of *this
+   sheet*. `custom-oracle-style-overworld.png` is a fan-made assembled map, and
+   its trees are not standalone objects at all — they are a **connected forest
+   mass**, canopies merged into each other with a root strip along the bottom
+   edge of the run. There is no 16x16 or 16x32 window anywhere in it that is
+   one tree. Rendered with a 16px grid over the forest at 1760,1390 this is
+   obvious in one look; do that before theorising again.
+
+   The same holds for `bush`, `rock` and `cliff`. What the sheet has are
+   *masses*: a tiling foliage texture (645,1516), a tiling boulder-field
+   texture (1949,1823), and no natural cliff face at all. Those tile into
+   areas; they are not props you can stand next to.
+
+   **That asset arrived.** `assets/sheets/oracle-ages-overworld.png` is the
+   Labrynna Present outdoor background, and it is everything the fan-made map
+   is not: real Oracle art, standalone props, on a strict 16px grid at phase
+   **(2, 8)**. Everything below was found on it. Prefer it for anything
+   overworld from now on.
+
+### What the Ages overworld sheet actually yields
+
+Found with `--props` (see below) and checked cell by cell, so nobody repeats it:
+
+- **`rock` — extracted, AG 418,936.** A clean four-colour boulder. Slotted
+  `(1, 2, 3)` rather than `(0, 2, 3)`: index 0 of `stone` is near-white and
+  blew the highlight out: the boulder read as a snowball. Index 1 is only
+  forbidden for *ground* palettes, where it is the field tone; `rock` sits on
+  grass via `underArt` and uses `stone`, so it is free.
+- **`bush` — found and deliberately NOT extracted, AG 450,920.** It is the
+  sheet's real cuttable bush and it is authentic. It is also the same four-leaf
+  rosette as `flowers`, so shipping it made a tile the player must cut look
+  identical to one that is pure scenery — verified by rendering both in the
+  `tree` palette side by side, where they are near-indistinguishable. Gameplay
+  legibility beat provenance. The clean fix is to re-pick `flowers` as
+  something actually floral and then take 450,920 for `bush`; the coordinates
+  are here so that is a ten-minute job.
+- **`grass` — checked and left alone.** The Ages base grass is a *flat* field
+  with sprig decorations placed as separate tiles, so the hand-drawn flat field
+  already in the game is not a worse approximation of it — it is the same idea.
+  The dense weave at AG 162,952 that the seamless scan ranks first is the sheet's
+  scrub, i.e. the `tallgrass` role, which is already filled.
+- **`tree` — fixed, but NOT by extraction, and the failed attempt is the
+  lesson.** Every tree in every Oracle sheet is 32x32. The obvious move is to
+  cut one into four quadrants and let each tile draw its quarter, so a 2x2 patch
+  of tree tiles becomes one whole source tree. That was built, and it looked
+  broken in play: trees offset from tile to tile, half-canopies butting into
+  each other.
+
+  **Measure the data before designing against it.** The overworld's tree tiles
+  are not authored in 2x2 blocks and never were:
+
+  | shape | count |
+  |---|---|
+  | vertical tree runs 1 tile tall | 643 |
+  | vertical runs 2 tall | 248 |
+  | horizontal runs 1 wide | 341 |
+  | horizontal runs 3 wide | 186 |
+  | horizontal runs starting on an ODD column | 266 of 639 |
+
+  A 32x32 object cannot be assembled out of runs that are one tile tall and
+  three tiles wide. Two thirds of the tree tiles in the game had no partner to
+  form a tree with, and every run starting on an odd column drew its halves in
+  the wrong order — which is exactly what "offset from tile to tile" looked
+  like. Column parity, neighbour-joining, run-relative indexing: none of them
+  fix it, because the information needed is not in the map.
+
+  So `tree` is a whole tree in ONE cell, drawn to match rather than extracted —
+  rule 2 of `docs/ART-DIRECTION.md`, which is the correct rule when no sheet
+  supplies the thing at the size needed. It carries the source's silhouette: a
+  light crown, a scalloped foliage line, a flared trunk. The quadrant machinery
+  (`tileFace`, `def.quad`, `QUADS`) was removed rather than left dormant,
+  because leaving it invites the same wrong turn again.
+
+  The one piece of that work worth keeping is the palettes. Trees need a
+  **trunk**, and all three tree ramps were pure green because the hand-drawn
+  tree they were built for had none. `treeoak`, `treeoakdk` and `treeoakdd` are
+  those ramps with index 2 swapped for wood; the originals are untouched
+  because `bush`, `bushSand` and `palm` still use them.
+
+  If the overworld is ever re-authored to place trees as 2x2 blocks, the
+  quadrant approach becomes right and the source coordinates are SB 224,32.
+  Re-check the table above first.
+
+- **`cliff` / `cliffTop` — the sheet's cliffs are low ledges,** one cell of
+  banded rock over sand (AG 82,136 and its neighbours), not the tall faces the
+  game builds plateaus from. Not obviously better than what is there.
 
 1. **More terrain.** Ten tiles are extracted; `cliff`, `cliffTop`, `tree`,
    `bush`, `rock`, `stump` and `palm` are still hand-drawn. They are

@@ -9,12 +9,44 @@ and equally to art drawn from scratch for things the sheets do not contain.
 1. **If a sheet has it, extract it.** Do not draw by hand something the source
    material already provides. Extraction is reproducible, exact, and free of
    drift. Follow the workflow in `docs/briefs/AGENTS.md` section J.
+
+   This is the *first* rule because fidelity to the source games is the
+   product. A hand-drawn approximation of something the sheet already has is
+   strictly worse on every axis that matters: it is less faithful, it drifts
+   toward whoever drew it, and it has to be re-judged by eye every time it
+   changes, where an extraction is re-derived by running a script. Reach for
+   the ripper before the pixel editor. "It is only three frames" is how a cast
+   stops matching itself.
+
+   **A frame need not fit a 16×16 cell.** The source draws past the cell in
+   places — Link's held blade runs thirteen pixels past his feet. Cut what the
+   sheet actually contains, declare the real size in
+   `src/data/sprite-manifest.js`, and anchor it at the draw site. Cropping to
+   16×16 to satisfy a convention throws away the thing that made the frame
+   worth extracting.
+
+   **But check what the MAP can hold before cutting a big object up.** Every
+   tree in every Oracle sheet is 32×32, and the tempting move is to cut one into
+   four quadrants so a 2×2 patch of tree tiles reassembles it. That was tried
+   and reverted: this game's rooms place trees one cell at a time — 643 of its
+   vertical tree runs are a single row tall — so most tiles had no partner and
+   the result was half-trees offset against each other. Measure the data first.
+   When the map cannot hold the source's object, rule 2 applies and you draw it
+   to match at the size the map actually uses. See `docs/HANDOFF.md`.
 2. **If no sheet has it, draw it to match.** Everything original to this game —
    the eight bosses, the minibosses, Nereth, the Essence orb, the tide valve,
    the Moon Conch, the tide-variant terrain — must be indistinguishable in
    style from the extracted art sitting next to it on screen.
 3. **Never mix registers.** A screen containing an extracted Octorok and a
    hand-drawn boss should not betray which is which.
+4. **Extractions are generated files. Never hand-edit one.** Add the frame to
+   the tool's coordinate map and re-emit. A hand edit to a generated module
+   survives exactly until the next person runs the ripper, and it leaves the
+   file's header lying about where its pixels came from.
+
+This governs the *art* only. The design rule is unchanged and this does not
+touch it: mechanics, items, dungeons and story are ours. We borrow how the
+source games look and move, never what they are about.
 
 The failure mode this exists to prevent has already happened once: the first
 pass at boss art was script-generated and produced smooth, soft blobs that
@@ -81,18 +113,32 @@ The same rules apply, with two differences: background tiles are fully opaque
 acceptable to suggest sand grain, water chop or stone texture. Tiles must tile
 seamlessly with themselves on all four edges.
 
-`assets/sheets/oracle-seasons-dungeon-backgrounds.png` and
-`custom-oracle-style-overworld.png` are the references for dungeon and overworld
-terrain respectively, and should be extracted from rather than approximated.
-Nine tiles have been: `tools/rip-terrain.py` lifts the ground and wall textures
-and `src/data/tiles-terrain.js` overrides the hand-drawn art of the same name.
-The structured tiles — cliffs, trees, bushes — are still hand-drawn, because a
-single 16x16 window cannot supply a top, a face and corners.
+`assets/sheets/oracle-ages-overworld.png` is the reference for overworld
+terrain and props, and `oracle-seasons-dungeon-backgrounds.png` for dungeon
+terrain. Both should be extracted from rather than approximated.
+`custom-oracle-style-overworld.png` is a fan-made assembled map and is the
+weaker source — it supplied the ground tiles below, but its props are merged
+into masses. Prefer the Ages sheet, whose props are standalone cells on a
+strict grid at phase (2, 8).
+`tools/rip-terrain.py` lifts them and `src/data/tiles-terrain.js` overrides the
+hand-drawn art of the same name. Nine ground tiles, the rock and the tree are
+done. `cliff`, `cliffTop`, `bush`, `stump` and `palm` are not yet, and each is
+a stated reason rather than an omission — see `docs/HANDOFF.md`, which records
+what was searched for and what came back.
 
 **Extracted terrain keeps the game's palettes.** Only the pixels are replaced.
 That is what keeps the palette-swap variants (`grassDark`, `saltFlat`,
 `iceFloor`, `rockFloorRust`) working, and it is how this game gives each region
-a look without redrawing every tile — the same trick the GBC originals used. A
+a look without redrawing every tile — the same trick the GBC originals used.
+
+The one exception so far, and the bar for making another: the extracted tree
+needed a **trunk**, and all three tree ramps were pure green because the
+hand-drawn tree they were built for had no trunk in it. No amount of index
+juggling puts brown in a palette that has none, so `treeoak`, `treeoakdk` and
+`treeoakdd` were added — the same ramps with index 2 swapped for wood. The
+originals were left alone rather than edited, because `bush`, `bushSand` and
+`palm` still use them. Add a palette when the source genuinely has a colour the
+game's ramp cannot express; do not add one to avoid choosing an index. A
 source tile's own contrast is not the game's contrast, though: check the result
 in a screenshot, not in `preview.mjs --tiles`, which draws every tile in one
 palette.

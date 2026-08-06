@@ -12,10 +12,10 @@ maintain and the most expensive thing to not have.
 
 ## What the last session did (P4: grid-locked enemy motion)
 
-**P4 landed out of order. P2 and P3 are still outstanding** — the flaky tide
-assertion has not been root-caused, positions are still floats, `WALK_SPEED` is
-still 1.35 and diagonals are still normalised. Nothing in P4 depended on them
-and nothing in it blocks them.
+P4 was written against the pre-P3 engine and merged onto it afterwards, so the
+lattice is stated in the 8.8 subpixel arithmetic P3 introduced rather than in
+floats. **P2 is still outstanding** — the flaky tide assertion has not been
+root-caused.
 
 - **The 8px lattice.** A ground enemy no longer has a velocity. It stands on a
   lattice point, decides, and takes a whole `ENEMY_GRID_STEP` step which runs to
@@ -51,17 +51,26 @@ green.
 ### What it cost, and what is weak
 
 The lattice makes enemies harder to juke — a committed step cannot be
-deflected. That is the design. But `replay.mjs`'s recording actor cannot read a
-commitment the way a human does, so it takes roughly 60% more contact damage
-through Tidewash Grotto and, on three hearts, dies in the Crab Pit.
-`d1-descent`'s plan now starts it on five hearts with a comment saying why.
-**That is a statement about the actor, not a difficulty decision** — if P9
-re-tunes difficulty, do not treat the five hearts as evidence of anything.
+deflected. That is the design, and a human handles it by reading the
+commitment. `replay.mjs`'s recording actor cannot read anything, so it takes
+substantially more contact damage through Tidewash Grotto and, on three hearts,
+dies in the Crab Pit. `d1-descent`'s plan now starts it on five hearts with a
+comment saying why. **That is a statement about the actor, not a difficulty
+decision** — if P9 re-tunes difficulty, do not treat the five hearts as
+evidence of anything.
 
-Two latent actor bugs had to be fixed at the same time, both written up in
-HANDOFF: `dFight` chased the last foe out through a doorway and carried on
-fighting in the next room, and `dExit` stopped pressing while the player was
-still on the seam, so the next directive bounced straight back.
+Three actor fixes were needed, all written up in HANDOFF. The one that
+mattered: the swordsman attacked `shield: 'front'` enemies from the front and
+swung into the shield forever, which made the Crab Pit unclearable and lost the
+Small Key. It now prefers the axis that is not looking back at it. `dExit` also
+stopped pressing while the player was still on the room seam, so the next
+directive bounced straight back through it.
+
+And one engine defect the re-recording exposed, which is NOT from P4: a dropped
+pickup pops about five pixels upward and never comes back down, so a reward key
+comes to rest straddling the tile above the one it was spawned on. Full write-up
+in HANDOFF. It is worth fixing on its own — it moves every drop in the game and
+re-baselines both replays.
 
 Not done, and worth knowing: nobody has watched this in motion. Every claim
 above is from checkers. The lattice is the kind of change whose whole point is
@@ -70,7 +79,68 @@ that has never been seen on screen.
 
 ---
 
-## What the session before that did (P1: feel spec, seeded RNG, replay harness)
+## What the session before that did (P3: fixed-point movement and the sword-hold)
+
+All five parts of the P3 brief landed. Full reasoning is in `docs/FEEL-SPEC.md`
+(new sections: "Positions are 8.8 fixed-point", "Diagonals", "The sword is
+three verbs") and the cost of each mistake is in `docs/HANDOFF.md` under
+"Fixed-point movement, and the four things it cost".
+
+1. **8.8 fixed-point positions.** New `src/core/fixed.js`. Every entity has
+   integer subpixel accumulators `fx`/`fy`/`fz`; `x`/`y`/`z` are accessors
+   returning derived integer pixels via `>> 8`. `moveEntity` takes
+   **subpixels**. `art.js`'s `x | 0` is gone — it truncated toward zero, so it
+   misdrew every entity at negative x, which is every entity on every room
+   transition.
+2. **Diagonals are no longer normalised.** `DIAGONAL_FACTOR` is deleted, not
+   set to 1 — a scale factor sitting there is an invitation to tune it back.
+3. **`WALK_SPEED` re-derived to 256 sp/f** (exactly 1 px/f, 16 frames to the
+   tile). `ROOM_EXIT_MARGIN` is 1 and the hack comment is gone. The constraint
+   is tighter than it looks: a speed must be exact in 8.8 *and* divide 16px,
+   so it must be a power of two in subpixels — 256 is the only candidate that
+   is not a crawl or a dash.
+4. **The sword-hold.** Holding the button after a swing keeps the blade out:
+   its own pose, reduced walk speed, contact damage, cutting, and a clink off
+   walls. Charge-to-spin still runs underneath. The pose is
+   `link_hold_down/up/side`, **extracted** from the sheet's Charge band by
+   `tools/rip-link.py` — in the Oracles, holding the button is the charge, so
+   those are the frames the source game draws for this exact state. They are
+   the only Link sprites that are not 16x16 (16x30, 16x28, 28x16), because the
+   blade runs past the edge of the cell; `Player.draw` derives the anchor from
+   the sprite's own size. Note the CLAUDE.md rule changed with this: Link's
+   frames may be extracted, everything else is still drawn.
+5. **Both replays re-recorded** and passing; `tools/shots-link-baseline/`
+   diffed and refreshed.
+
+### What is weak about it
+
+- **`tools/replay.mjs`'s swordsman was retuned to survive the new speed.** At
+  1 px/f, backing out of contact range on one axis is too slow, and the actor
+  died in the D1 crab room. It now backs off diagonally and is fenced against
+  walking out of the room. That is a legitimate change — a player would route
+  diagonally too — but it does mean the actor's competence moved in the same
+  commit as the movement model, so the two cannot be compared across it.
+- **`d1-descent` ends holding one foe alive** in `0,3,3` and gives up on two
+  in `0,3,5` (a stale-count bail, same as the previous recording did). It
+  still spends the Small Key, takes the Dungeon Map, opens the Compass chest
+  and ends in the north half on 8/12 quarter-hearts.
+- **Nothing is tuned around diagonals being the fast direction.** Cardinal
+  movement got 26% slower and diagonal got 4% faster. No enemy, gap or dodge
+  window has been re-examined against that, and it is a real balance lever.
+- **`SWORD_HOLD_DAMAGE`, `KNOCK_HOLD`, `SWORD_HOLD_SPEED` and the two hold
+  timings are all `guessed`.** The hold's *existence* and its *art* are the
+  fidelity claims; its numbers are not.
+- **A non-16x16 player sprite is new ground.** Three of them exist now and only
+  `Player.draw` knows how to anchor them. Anything else that draws Link — a
+  cutscene, a future menu portrait — will place them wrong. There is no guard
+  against that beyond `expectedSize` asserting the dimensions.
+- **Enemy knockback still decays exponentially** and enemies still turn on a
+  per-frame probability. Both are P4, untouched here beyond making the
+  arithmetic integer. **P4 does both** — see the section above.
+
+---
+
+## And the one before that (P1: feel spec, seeded RNG, replay harness)
 
 Landed in full:
 
@@ -151,7 +221,10 @@ Continue building "Oracle of Tides", a GBC-style Zelda fan game.
 
 Read, in this order:
   CLAUDE.md              - the hard rules. They are hard rules.
-  docs/EXECUTION-PLAN.md - the roadmap. P0 and P1 are done; P2 is next.
+  docs/EXECUTION-PLAN.md - the roadmap. P0, P1 and P3 are done. P2 (the
+                           intermittent test) and P4 (grid-lock enemy motion)
+                           are both open; P4 is the higher-value one and P3
+                           left it teed up.
   docs/FEEL-SPEC.md      - what every timing constant means and how sure we are
   docs/HANDOFF.md        - current state, environment setup, and every trap
                            already paid for. Read the environment section
@@ -159,7 +232,15 @@ Read, in this order:
                            headless harness will run, and `pip install pillow`
                            before any rip-*.py tool will.
   docs/GAME-PLAN.md      - regions, dungeons, items, bosses
-  docs/ART-DIRECTION.md  - binding for anything visual
+  docs/ART-DIRECTION.md  - binding for anything visual. Rule 1 is EXTRACT, NOT
+                           DRAW: fidelity to the source games is the product,
+                           so if a sheet in assets/sheets/ has the thing, take
+                           it from the sheet via the tools/rip-*.py workflow
+                           (AGENTS.md section J) instead of hand-drawing an
+                           approximation. Extractions are GENERATED files —
+                           edit the ripper's coordinate map and re-emit, never
+                           the output. Hand-draw only what no sheet contains,
+                           and match the extracted art next to it.
   docs/briefs/AGENTS.md  - authoring spec per work area, sections A-J
 
 ENVIRONMENT, before anything else. Playwright asks for a browser revision the
@@ -172,13 +253,20 @@ installed one has been 1194.
 Confirm the baseline before changing anything, and keep every line below green:
   node tools/validate.mjs                      clean (two expected warnings
                                                about fx_slash_d0/fx_slash_d1)
-  node tools/test.mjs                          36/36, 0 unauthored art names
+  node tools/test.mjs                          41/41, 0 unauthored art names
   node tools/replay.mjs                         8/8, both replays to the pixel
   node tools/walk-dungeons.mjs                 27/27, 88 ledge runs
   node tools/check-overworld.mjs               16/16, all three gates
   node tools/check-gates.mjs                   15/15, both item gates in-engine
+                                               (the ONLY harness that jumps —
+                                               see the jump-reach note below)
   node tools/check-motion.mjs                   8/8, enemies on the 8px lattice
   node tools/solve-switches.mjs                17 rooms, one push per block
+  python3 tools/rip-terrain.py                 regenerates tiles-terrain.js
+                                               BYTE-IDENTICAL; if it does not,
+                                               someone hand-edited a generated
+                                               file. --scan <ow|dg> x0 y0 x1 y1
+                                               finds seamless tiles in a region.
   node tools/scan-sprites.mjs --strict         0 hard findings
   npm run build                                48 modules -> one HTML file
   node tools/check-build.mjs                   the built file boots from file://
@@ -234,10 +322,36 @@ DETERMINISM IS NOW LOAD-BEARING. Two rules, both easy to break by accident:
 
 EVERY TIMING AND SPEED CONSTANT LIVES IN src/data/feel.js. No module-level
 `const WALK_SPEED = ...` anywhere else. Each export carries a unit and a
-provenance comment: measured, derived, or guessed. NOTHING is currently
-`measured` — every value was carried over from the old code and is a guess.
-Never upgrade a `guessed` to `measured` because the game feels fine; that word
-means someone frame-stepped a reference and wrote the number down.
+provenance comment: measured, derived, or guessed. NOTHING is `measured`. Most
+values are guesses carried over from the old code; P3 made a handful `derived`,
+which means computed from a stated constraint with the arithmetic in the
+comment, NOT checked against a reference. Never upgrade a tag because the game
+feels fine; `measured` means someone frame-stepped a recording.
+
+POSITIONS ARE 8.8 FIXED-POINT (src/core/fixed.js). Four things about it:
+
+  - `fx`/`fy`/`fz` are integer subpixel accumulators, 256 to the pixel.
+    `x`/`y`/`z` are ACCESSORS returning derived integer pixels via `>> 8`.
+    `e.x = 40` works and is right. `e.x += 0.5` does NOT — the read gives whole
+    pixels, so a sub-pixel step rounds away every frame and the entity freezes
+    in place with no error. Add to `fx`, or go through `moveEntity`.
+  - `moveEntity(game, e, sdx, sdy)` takes SUBPIXELS. Enemy and projectile data
+    still says `speed: 0.45` in px/f; the conversion happens at named edges —
+    `moveDir`, the `Projectile` constructor, `hop`'s `power`, `driftWithTide`'s
+    `perLevel`, `Entity.hurt`'s `knock`. If you change a constant's unit, grep
+    src/data/ for anyone overriding it, or the override arrives in the wrong
+    unit and silently does nothing.
+  - NEVER floor a coordinate with `| 0`. It truncates toward zero, so it is a
+    pixel wrong for every negative coordinate — and the player is at negative x
+    on every room transition. Use `toPx`/`>> 8`.
+  - Nothing in a draw path may round. Every draw coordinate is already whole.
+
+A JUMP'S REACH IS A FUNCTION OF WALK_SPEED, not of the jump:
+`reach = 2 * JUMP_POWER / JUMP_GRAVITY * WALK_SPEED`. Change the walk speed and
+you change the length of every gap in the game. Only check-gates.mjs catches
+it — it is the only harness that jumps, and both replays stayed green while
+Roc's Feather stopped clearing the Coral Reef chasm. Re-derive the three jump
+constants in the same commit.
 
 FOR ANYTHING AT ALL: `npm run build && node tools/check-build.mjs`, then
 commit the rebuilt dist/oracle-of-tides.html. A green src/ with a stale build
@@ -251,18 +365,17 @@ AFTER ANY CHANGE TO A FEEL CONSTANT OR TO MOVEMENT/COMBAT:
   If a movement constant changes and every replay still passes, either the
   constant is dead code or the replays do not exercise it. Both matter.
 
-NEXT UP: P2 (root-cause the intermittent test) and P3 (fixed-point movement
-and the sword-hold), in docs/EXECUTION-PLAN.md. P4 has landed ahead of both;
-neither is blocked by it. P1 gave P2 the tool it needs: a fixed seed and a
-deterministic stepper, so "run the assertion 200 times" is now a thing you can
-actually do. Use plan mode for P3 and P5.
+NEXT UP: P2 (root-cause the intermittent test), then P5 (the tide becomes a
+field), in docs/EXECUTION-PLAN.md. P3 and P4 are both in. P2 has the tool it
+needs from P1: a fixed seed and a deterministic stepper, so "run the assertion
+200 times" is a thing you can actually do. Use plan mode for P5.
 
-P3 TOUCHES THE LATTICE. Moving positions to 8.8 fixed point has to keep
-`beginStep`/`advanceStep` in src/game/enemy.js landing exactly on multiples of
-ENEMY_GRID_STEP — they round a fraction of the whole step to a pixel rather
-than accumulating a velocity, precisely so the last frame lands on the lattice
-however the arithmetic rounds. node tools/check-motion.mjs is what tells you if
-that survived.
+ANYTHING THAT TOUCHES POSITIONS TOUCHES THE LATTICE. `beginStep`/`advanceStep`
+in src/game/enemy.js must go on landing exactly on multiples of
+`ENEMY_GRID_STEP * FP_ONE`. They recompute progress from the step's origin
+every frame and assign the exact destination on the last one, rather than
+accumulating a velocity, precisely so nothing carries a remainder.
+`node tools/check-motion.mjs` is what tells you if that survived.
 
 Do the work yourself rather than spawning subagents - past sessions hit usage
 limits that way and lost the work.
@@ -292,22 +405,37 @@ Tell me plainly what is done, what is weak, and what you skipped.
   on a console error, an off-document request, a black canvas or a frozen
   `game.frame`.
 - **the feel spec, the seeded RNG and the replay harness (P1)**
+- **8.8 fixed-point positions, un-normalised diagonals, a re-derived walk speed
+  and the sword-hold state (P3)**
 - **grid-locked enemy motion and scripted knockback (P4)**
 
 ## What is left
 
-P2, P3, then P5 through P9 in `docs/EXECUTION-PLAN.md` — P4 is done, out of
-order. Plus, carried over:
+P2, then P5 through P9 in `docs/EXECUTION-PLAN.md` — P3 and P4 are both done.
+Plus, carried over:
 
-1. **More terrain.** Nine tiles are extracted; cliff, cliffTop, tree, bush,
-   rock, flowers, stump and palm are still hand-drawn. HANDOFF records three
-   findings from a session spent on this — read them first. Short version:
-   there IS a scan that finds structured terrain (repeats at +16 in x and NOT
-   in y), it returns no natural cliff face on the overworld sheet, and the
-   sheet's props are 16x32 against the game's 16x16.
-2. **Water is still hand-drawn** and stays that way until someone finds a
-   second animation frame: both terrain sheets are static maps, not tile
-   palettes.
+1. **Overworld props, now that the real sheet is here.**
+   `assets/sheets/oracle-ages-overworld.png` (Labrynna Present) is the genuine
+   Oracle overworld reference — standalone props on a strict grid at phase
+   (2, 8) — and `rock` is extracted from it. Use it, not the fan-made map.
+   `python3 tools/rip-terrain.py --props ag 2 8 <x0> <y0> <x1> <y1> out.png`
+   writes a contact sheet to pick from.
+
+   HANDOFF records what was checked and what each answer was, so do not redo
+   it: `grass` is deliberately left alone (Ages' base grass is a flat field
+   too), `cliff` is a low ledge on this sheet, and **`bush` was found at
+   AG 450,920 and deliberately not taken** because it is the same four-leaf
+   rosette as `flowers` and a cuttable tile must not look like scenery. The
+   clean fix there is to re-pick `flowers` as something actually floral and
+   then take 450,920 for `bush` — a short job, and the highest-value one left.
+
+   `tree` is the big one and it is a **content** decision, not an art one:
+   Ages trees are 32x32, four cells (worked example at AG 50,936), and the game
+   spends one tile on a tree. Taking them means re-cutting every overworld room
+   grid that has a tree in it.
+2. **Water is still hand-drawn**, and unlike the props this one really is
+   blocked: both terrain sheets are assembled static maps, so there is no
+   second animation frame on them to extract. It needs a sheet that has one.
 3. **A full-D1-clear replay**, per the section above.
 4. **A checker for chests whose pickup lands on a solid tile** — see the
    Compass bug in HANDOFF.
@@ -350,3 +478,11 @@ These are in HANDOFF in full. The short list, because each one cost a session:
 - Reset `g.mode` to 'play' and refill hearts between probes, or the first room
   that kills a parked player drops the run into gameover.
 - Park probes on CLEAR floor.
+- `newGame` does NOT grant the sword — the intro cutscene does. A probe that
+  clears the cutscene must `giveItem(g.progress, 'sword', 1)` itself, or every
+  sword input is silently swallowed by `useEquipped` and the probe looks like a
+  broken feature rather than a broken setup.
+- Reading a feel constant from inside a harness: `await import('/src/data/feel.js')`
+  in the page. Prefer that to writing the number down in the tool — a frame
+  budget hard-coded against a constant rots the moment the constant moves, and
+  `check-gates.mjs` had exactly that bug.

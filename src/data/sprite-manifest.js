@@ -12,6 +12,7 @@ export const REQUIRED_SPRITES = {
   link: [
     ...seq('link_walk_down_', 2), ...seq('link_walk_up_', 2), ...seq('link_walk_side_', 2),
     'link_sword_down', 'link_sword_up', 'link_sword_side',
+    'link_hold_down', 'link_hold_up', 'link_hold_side',
     ...seq('link_swim_down_', 2), ...seq('link_swim_up_', 2), ...seq('link_swim_side_', 2),
     'link_carry_down', 'link_carry_up', 'link_carry_side',
     'link_push_down', 'link_push_up', 'link_push_side',
@@ -108,6 +109,14 @@ export const REQUIRED_SPRITES = {
 
 /** Expected pixel size for a sprite name, used by the validator. */
 export function expectedSize(name) {
+  // The held-blade poses are the only Link frames that are not 16x16: the
+  // source game draws the extended sword past the edge of his cell, and
+  // cropping it back to 16x16 would remove the sword. The engine derives the
+  // draw anchor from these dimensions (see Player.draw), so if the ripper's
+  // crop changes, this must change with it — that is what the assert is for.
+  if (name === 'link_hold_down') return [16, 30];
+  if (name === 'link_hold_up') return [16, 28];
+  if (name === 'link_hold_side') return [28, 16];
   if (REQUIRED_SPRITES.fxBig.includes(name)) return [32, 32];
   if (name.startsWith('boss_')) return name.endsWith('_48') ? [48, 48] : [32, 32];
   if (name.startsWith('mini_')) return [24, 24];

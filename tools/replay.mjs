@@ -111,6 +111,7 @@ async function installRuntime() {
   const screen = await import('/src/core/screen.js');
 
   const TILE = screen.TILE, ROOM_W = screen.ROOM_W, ROOM_H = screen.ROOM_H;
+  const VIEW_W = screen.VIEW_W, VIEW_H = screen.VIEW_H;
   const BUTTONS = ['up', 'down', 'left', 'right', 'a', 'b', 'start', 'select'];
   const BIT = {};
   BUTTONS.forEach((b, i) => { BIT[b] = 1 << i; });
@@ -355,27 +356,70 @@ async function installRuntime() {
    * Close on the nearest live enemy and swing at it.
    *
    * The naive version — walk at it, press B — loses. Contact damage lands the
-   * moment the hitboxes touch, and the sword's box starts about nine pixels in
-   * front of Link and reaches to about twenty-two, so walking all the way onto
-   * an enemy trades a hit for every hit. This lines up on one axis, holds a
-   * standoff inside sword range but outside contact range, and swings from
+   * moment the hitboxes touch, and the sword's box starts about eleven pixels
+   * in front of Link and reaches to about twenty-two, so walking all the way
+   * onto an enemy trades a hit for every hit. This lines up on one axis, holds
+   * a standoff inside sword range but outside contact range, and swings from
    * there. On three hearts that is the difference between clearing Tidewash
    * Grotto and dying in the crab room.
+   *
+   * The standoff is not enough on its own, because a swing roots Link for its
+   * whole duration and anything walking at him closes most of the gap while he
+   * is stuck in it. So every swing is followed by a deliberate step back, held
+   * from the moment the button goes down: the rooted frames cost nothing, and
+   * the retreat starts on the first frame it can.
+   *
+   * That retreat is DIAGONAL, and it has to be. Since P3 the engine does not
+   * normalise diagonals — both axes get the full step — so backing off on two
+   * axes breaks contact roughly sqrt(2) times faster than backing off on one.
+   * A cardinal retreat at the current walk speed does not clear the crab room:
+   * the swordsman dies in it. This is the actor learning the same lesson the
+   * source games teach a player in their first dungeon.
    */
   function* dFight(maxF, patience) {
     const g = window.__game;
-    const giveUp = patience == null ? 420 : patience;
-    // The standoff window has to be wider than one enemy step. Ground enemies
-    // move in whole 8px lurches, so a 5px-wide window is one the enemy jumps
-    // clean over: the swordsman shuffles back and forth inside it and never
-    // swings. This is the window it stands in, not a tolerance.
-    const NEAR = 13, FAR = 23, LINED = 4;
-    // A `fight` directive means "clear THIS room". Chasing the last foe out
-    // through a doorway walks the actor into the next room's spawn list with
-    // whatever health it has left, which is how a route that clears Tidewash
-    // Grotto turns into a route that dies in the Crab Pit.
+    // How long to keep at it with nothing dying before giving the room up.
+    // 420 frames was enough when enemies drifted; a shielded enemy on the
+    // lattice turns to face you as a whole committed step rather than as a
+    // one-frame flicker, so the swordsman needs several more passes to catch
+    // one of the three crabs side-on. Under-set, this reads as "the room is
+    // unclearable" and the route silently continues without the key it needed.
+    const giveUp = patience == null ? 900 : patience;
+    // Widening this band to one enemy step (16..24) was tried when the lattice
+    // landed and is WORSE: standing further out means walking further in, and
+    // the extra approach frames cost more health than the extra swings win. The
+    // narrow band plus a longer patience is what gets through the Crab Pit.
+    const NEAR = 16, FAR = 21, LINED = 4, BACKOFF = 26, EDGE = 12;
+    // A `fight` directive means "clear THIS room", and `fence` below is the
+    // main defence of that. This is the backstop for when the fence is not
+    // enough — a transition can still fire from a corner the fence does not
+    // cover, and a fight that carries on in the next room walks the actor into
+    // that room's spawn list with whatever health is left.
     const home = g.mapId + '/' + (g.room ? g.room.key : '');
     let lastCount = -1, stale = 0;
+
+    /**
+     * Strip whichever directions would carry the player out of the room.
+     *
+     * A fight directive that ends in a different room than it started in is
+     * worse than one that fails: every directive after it is addressed to a
+     * room the player is not standing in, so the rest of the route quietly
+     * becomes fiction while still recording perfectly well. It happened twice
+     * while re-recording this route for P3, once backing out of a doorway
+     * mid-retreat and once while stepping away from a foe at the seam.
+     *
+     * So it is applied to EVERY mask this directive yields, not just the
+     * retreat — closing on a foe near an edge steps out just as easily.
+     */
+    const fence = (m) => {
+      const q = g.player;
+      if (!q) return m;
+      if (q.x < EDGE) m &= ~BIT.left;
+      if (q.x > VIEW_W - 16 - EDGE) m &= ~BIT.right;
+      if (q.y < EDGE) m &= ~BIT.up;
+      if (q.y > VIEW_H - 16 - EDGE) m &= ~BIT.down;
+      return m;
+    };
     for (let f = 0; f < (maxF || 900);) {
       const p = g.player;
       if (!p || g.mode !== 'play') { yield 0; f++; continue; }
@@ -392,28 +436,56 @@ async function installRuntime() {
       let best = foes[0], bd = 1e9;
       for (const e of foes) { const d = p.distTo(e); if (d < bd) { bd = d; best = e; } }
       const dx = best.cx - p.cx, dy = best.cy - p.cy;
-      const axisX = Math.abs(dx) >= Math.abs(dy);
+
+      /**
+       * Approach on the axis that is not looking back at us.
+       *
+       * A `shield: 'front'` enemy blocks anything arriving at its facing side,
+       * and the nearest axis is very often exactly that side. The swordsman
+       * used to close on it anyway and swing into the shield forever: three
+       * shielded crabs in the D1 Crab Pit is where that shows, and an
+       * unclearable Crab Pit means no Small Key, which means the locked door
+       * never opens and every directive after it addresses a room the player
+       * never reached.
+       *
+       * A crab patrols along x, so its facing is left or right almost every
+       * frame — approach it on y and the shield is irrelevant. Preferring the
+       * unblocked axis is what a player does without thinking about it, and it
+       * is cheaper and truer than widening the standoff band, which was tried
+       * and made things worse: standing further out means walking further in,
+       * and the extra approach frames cost more health than the extra swings
+       * win.
+       */
+      const OPP = { up: 'down', down: 'up', left: 'right', right: 'left' };
+      const faceOn = (useX) => useX ? (dx < 0 ? 'left' : 'right') : (dy < 0 ? 'up' : 'down');
+      const shielded = (f2) => best.shield === 'all'
+        || (best.shield === 'front' && OPP[f2] === best.dir);
+      let axisX = Math.abs(dx) >= Math.abs(dy);
+      if (best.shield && shielded(faceOn(axisX)) && !shielded(faceOn(!axisX))) axisX = !axisX;
+
       const along = axisX ? dx : dy;
       const perp = axisX ? dy : dx;
-      const face = axisX ? (dx < 0 ? 'left' : 'right') : (dy < 0 ? 'up' : 'down');
+      const face = faceOn(axisX);
 
       if (Math.abs(perp) > LINED) {
         // Off the enemy's row or column: the sword box is narrow, so line up
         // before closing or the swing goes past it.
-        yield axisX ? (dy < 0 ? BIT.up : BIT.down) : (dx < 0 ? BIT.left : BIT.right);
+        yield fence(axisX ? (dy < 0 ? BIT.up : BIT.down) : (dx < 0 ? BIT.left : BIT.right));
         f++; continue;
       }
       const dist = Math.abs(along);
-      if (dist > FAR) { yield BIT[face]; f++; continue; }
+      if (dist > FAR) { yield fence(BIT[face]); f++; continue; }
       if (dist < NEAR) {
-        yield axisX ? (dx < 0 ? BIT.right : BIT.left) : (dy < 0 ? BIT.down : BIT.up);
+        yield fence(axisX ? (dx < 0 ? BIT.right : BIT.left) : (dy < 0 ? BIT.down : BIT.up));
         f++; continue;
       }
-      // In the window: face, swing, and stand still for the swing's duration —
-      // an attack roots the player anyway.
-      yield BIT[face]; f++;
+      // In the window: face, swing, then back off diagonally until the enemy
+      // has to come and find us again.
+      const backAlong = axisX ? (dx < 0 ? BIT.right : BIT.left) : (dy < 0 ? BIT.down : BIT.up);
+      const backPerp = axisX ? (dy < 0 ? BIT.down : BIT.up) : (dx < 0 ? BIT.right : BIT.left);
+      yield fence(BIT[face]); f++;
       yield BIT.b; f++;
-      for (let i = 0; i < 15; i++) { yield 0; f++; }
+      for (let i = 0; i < BACKOFF; i++) { yield fence(backAlong | backPerp); f++; }
     }
   }
 
@@ -441,6 +513,11 @@ async function installRuntime() {
         x: p ? Math.round(p.x) : null, y: p ? Math.round(p.y) : null,
         hp: g.progress.hearts, tide: g.tide.level,
         foes: g.entities.filter(e => e.isEnemy && !e.dead).length,
+        // Keys and opened doors, because "the route silently continued without
+        // the key it needed" is the failure mode this trace exists to catch and
+        // it is invisible in a position.
+        keys: g.progress.keys[g.mapId] || 0,
+        doors: Object.keys(g.progress.doors).length,
       });
     }
   }
@@ -623,7 +700,8 @@ async function record(browser, port, name) {
   await writeFile(join(REPLAY_DIR, name + '.json'), JSON.stringify(doc, null, 1) + '\n');
   for (const t of res.trace) {
     console.log(`    [${String(t.step).padStart(2)}] ${t.kind.padEnd(9)} f=${String(t.frame).padStart(6)} ` +
-      `${t.room.padEnd(12)} (${t.x},${t.y}) hp=${t.hp} tide=${t.tide} foes=${t.foes}`);
+      `${t.room.padEnd(12)} (${t.x},${t.y}) hp=${t.hp} tide=${t.tide} foes=${t.foes} ` +
+      `keys=${t.keys} doors=${t.doors}`);
   }
   console.log(`  recorded ${name}: ${res.frames} frames, ${res.input.length} input runs`);
   console.log(`    ends at ${doc.expect.mapId} ${doc.expect.room} (${doc.expect.x}, ${doc.expect.y}) ` +
