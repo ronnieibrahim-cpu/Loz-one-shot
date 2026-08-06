@@ -12,6 +12,7 @@ export const REQUIRED_SPRITES = {
   link: [
     ...seq('link_walk_down_', 2), ...seq('link_walk_up_', 2), ...seq('link_walk_side_', 2),
     'link_sword_down', 'link_sword_up', 'link_sword_side',
+    'link_hold_down', 'link_hold_up', 'link_hold_side',
     ...seq('link_swim_down_', 2), ...seq('link_swim_up_', 2), ...seq('link_swim_side_', 2),
     'link_carry_down', 'link_carry_up', 'link_carry_side',
     'link_push_down', 'link_push_up', 'link_push_side',

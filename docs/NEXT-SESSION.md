@@ -10,7 +10,58 @@ maintain and the most expensive thing to not have.
 
 ---
 
-## What the last session did (P1: feel spec, seeded RNG, replay harness)
+## What the last session did (P3: fixed-point movement and the sword-hold)
+
+All five parts of the P3 brief landed. Full reasoning is in `docs/FEEL-SPEC.md`
+(new sections: "Positions are 8.8 fixed-point", "Diagonals", "The sword is
+three verbs") and the cost of each mistake is in `docs/HANDOFF.md` under
+"Fixed-point movement, and the four things it cost".
+
+1. **8.8 fixed-point positions.** New `src/core/fixed.js`. Every entity has
+   integer subpixel accumulators `fx`/`fy`/`fz`; `x`/`y`/`z` are accessors
+   returning derived integer pixels via `>> 8`. `moveEntity` takes
+   **subpixels**. `art.js`'s `x | 0` is gone — it truncated toward zero, so it
+   misdrew every entity at negative x, which is every entity on every room
+   transition.
+2. **Diagonals are no longer normalised.** `DIAGONAL_FACTOR` is deleted, not
+   set to 1 — a scale factor sitting there is an invitation to tune it back.
+3. **`WALK_SPEED` re-derived to 256 sp/f** (exactly 1 px/f, 16 frames to the
+   tile). `ROOM_EXIT_MARGIN` is 1 and the hack comment is gone. The constraint
+   is tighter than it looks: a speed must be exact in 8.8 *and* divide 16px,
+   so it must be a power of two in subpixels — 256 is the only candidate that
+   is not a crawl or a dash.
+4. **The sword-hold.** Holding the button after a swing keeps the blade out:
+   its own pose (three new sprites, `link_hold_down/up/side`), reduced walk
+   speed, contact damage, cutting, and a clink off walls. Charge-to-spin still
+   runs underneath.
+5. **Both replays re-recorded** and passing; `tools/shots-link-baseline/`
+   diffed and refreshed.
+
+### What is weak about it
+
+- **`tools/replay.mjs`'s swordsman was retuned to survive the new speed.** At
+  1 px/f, backing out of contact range on one axis is too slow, and the actor
+  died in the D1 crab room. It now backs off diagonally and is fenced against
+  walking out of the room. That is a legitimate change — a player would route
+  diagonally too — but it does mean the actor's competence moved in the same
+  commit as the movement model, so the two cannot be compared across it.
+- **`d1-descent` ends holding one foe alive** in `0,3,3` and gives up on two
+  in `0,3,5` (a stale-count bail, same as the previous recording did). It
+  still spends the Small Key, takes the Dungeon Map, opens the Compass chest
+  and ends in the north half on 8/12 quarter-hearts.
+- **Nothing is tuned around diagonals being the fast direction.** Cardinal
+  movement got 26% slower and diagonal got 4% faster. No enemy, gap or dodge
+  window has been re-examined against that, and it is a real balance lever.
+- **`SWORD_HOLD_DAMAGE`, `KNOCK_HOLD`, `SWORD_HOLD_SPEED` and the two hold
+  timings are all `guessed`.** The hold's *existence* is the fidelity claim;
+  its numbers are not.
+- **Enemy knockback still decays exponentially** and enemies still turn on a
+  per-frame probability. Both are P4, untouched here beyond making the
+  arithmetic integer.
+
+---
+
+## What the session before that did (P1: feel spec, seeded RNG, replay harness)
 
 Landed in full:
 
@@ -87,7 +138,10 @@ Continue building "Oracle of Tides", a GBC-style Zelda fan game.
 
 Read, in this order:
   CLAUDE.md              - the hard rules. They are hard rules.
-  docs/EXECUTION-PLAN.md - the roadmap. P0 and P1 are done; P2 is next.
+  docs/EXECUTION-PLAN.md - the roadmap. P0, P1 and P3 are done. P2 (the
+                           intermittent test) and P4 (grid-lock enemy motion)
+                           are both open; P4 is the higher-value one and P3
+                           left it teed up.
   docs/FEEL-SPEC.md      - what every timing constant means and how sure we are
   docs/HANDOFF.md        - current state, environment setup, and every trap
                            already paid for. Read the environment section
@@ -108,11 +162,13 @@ installed one has been 1194.
 Confirm the baseline before changing anything, and keep every line below green:
   node tools/validate.mjs                      clean (two expected warnings
                                                about fx_slash_d0/fx_slash_d1)
-  node tools/test.mjs                          36/36, 0 unauthored art names
+  node tools/test.mjs                          41/41, 0 unauthored art names
   node tools/replay.mjs                         8/8, both replays to the pixel
   node tools/walk-dungeons.mjs                 27/27, 88 ledge runs
   node tools/check-overworld.mjs               16/16, all three gates
   node tools/check-gates.mjs                   15/15, both item gates in-engine
+                                               (the ONLY harness that jumps —
+                                               see the jump-reach note below)
   node tools/solve-switches.mjs                17 rooms, one push per block
   node tools/scan-sprites.mjs --strict         0 hard findings
   npm run build                                48 modules -> one HTML file
@@ -169,10 +225,36 @@ DETERMINISM IS NOW LOAD-BEARING. Two rules, both easy to break by accident:
 
 EVERY TIMING AND SPEED CONSTANT LIVES IN src/data/feel.js. No module-level
 `const WALK_SPEED = ...` anywhere else. Each export carries a unit and a
-provenance comment: measured, derived, or guessed. NOTHING is currently
-`measured` — every value was carried over from the old code and is a guess.
-Never upgrade a `guessed` to `measured` because the game feels fine; that word
-means someone frame-stepped a reference and wrote the number down.
+provenance comment: measured, derived, or guessed. NOTHING is `measured`. Most
+values are guesses carried over from the old code; P3 made a handful `derived`,
+which means computed from a stated constraint with the arithmetic in the
+comment, NOT checked against a reference. Never upgrade a tag because the game
+feels fine; `measured` means someone frame-stepped a recording.
+
+POSITIONS ARE 8.8 FIXED-POINT (src/core/fixed.js). Four things about it:
+
+  - `fx`/`fy`/`fz` are integer subpixel accumulators, 256 to the pixel.
+    `x`/`y`/`z` are ACCESSORS returning derived integer pixels via `>> 8`.
+    `e.x = 40` works and is right. `e.x += 0.5` does NOT — the read gives whole
+    pixels, so a sub-pixel step rounds away every frame and the entity freezes
+    in place with no error. Add to `fx`, or go through `moveEntity`.
+  - `moveEntity(game, e, sdx, sdy)` takes SUBPIXELS. Enemy and projectile data
+    still says `speed: 0.45` in px/f; the conversion happens at named edges —
+    `moveDir`, the `Projectile` constructor, `hop`'s `power`, `driftWithTide`'s
+    `perLevel`, `Entity.hurt`'s `knock`. If you change a constant's unit, grep
+    src/data/ for anyone overriding it, or the override arrives in the wrong
+    unit and silently does nothing.
+  - NEVER floor a coordinate with `| 0`. It truncates toward zero, so it is a
+    pixel wrong for every negative coordinate — and the player is at negative x
+    on every room transition. Use `toPx`/`>> 8`.
+  - Nothing in a draw path may round. Every draw coordinate is already whole.
+
+A JUMP'S REACH IS A FUNCTION OF WALK_SPEED, not of the jump:
+`reach = 2 * JUMP_POWER / JUMP_GRAVITY * WALK_SPEED`. Change the walk speed and
+you change the length of every gap in the game. Only check-gates.mjs catches
+it — it is the only harness that jumps, and both replays stayed green while
+Roc's Feather stopped clearing the Coral Reef chasm. Re-derive the three jump
+constants in the same commit.
 
 FOR ANYTHING AT ALL: `npm run build && node tools/check-build.mjs`, then
 commit the rebuilt dist/oracle-of-tides.html. A green src/ with a stale build
@@ -186,10 +268,15 @@ AFTER ANY CHANGE TO A FEEL CONSTANT OR TO MOVEMENT/COMBAT:
   If a movement constant changes and every replay still passes, either the
   constant is dead code or the replays do not exercise it. Both matter.
 
-NEXT UP: P2 (root-cause the intermittent test) and P3 (fixed-point movement
-and the sword-hold), in docs/EXECUTION-PLAN.md. P1 gave P2 the tool it needs:
-a fixed seed and a deterministic stepper, so "run the assertion 200 times"
-is now a thing you can actually do. Use plan mode for P3 and P5.
+NEXT UP: P4 (grid-lock enemy motion) or P2 (root-cause the intermittent test),
+in docs/EXECUTION-PLAN.md. P4 is the higher-value one and P3 left it set up:
+enemy positions are already on the 8.8 grid, so "a direction change may only
+happen at an 8px boundary" is now a test you can write, and moveDir is the
+single funnel every ground AI goes through. P4 also inherits the two knockback
+decays and ENEMY_TURN_CHANCE, which FEEL-SPEC still flags as wrong on purpose.
+P2 has the tool it needs from P1: a fixed seed and a deterministic stepper, so
+"run the assertion 200 times" is a thing you can actually do. Use plan mode
+for P5.
 
 Do the work yourself rather than spawning subagents - past sessions hit usage
 limits that way and lost the work.
@@ -219,6 +306,8 @@ Tell me plainly what is done, what is weak, and what you skipped.
   on a console error, an off-document request, a black canvas or a frozen
   `game.frame`.
 - **the feel spec, the seeded RNG and the replay harness (P1)**
+- **8.8 fixed-point positions, un-normalised diagonals, a re-derived walk speed
+  and the sword-hold state (P3)**
 
 ## What is left
 
@@ -275,3 +364,11 @@ These are in HANDOFF in full. The short list, because each one cost a session:
 - Reset `g.mode` to 'play' and refill hearts between probes, or the first room
   that kills a parked player drops the run into gameover.
 - Park probes on CLEAR floor.
+- `newGame` does NOT grant the sword — the intro cutscene does. A probe that
+  clears the cutscene must `giveItem(g.progress, 'sword', 1)` itself, or every
+  sword input is silently swallowed by `useEquipped` and the probe looks like a
+  broken feature rather than a broken setup.
+- Reading a feel constant from inside a harness: `await import('/src/data/feel.js')`
+  in the page. Prefer that to writing the number down in the tool — a frame
+  budget hard-coded against a constant rots the moment the constant moves, and
+  `check-gates.mjs` had exactly that bug.

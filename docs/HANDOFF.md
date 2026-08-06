@@ -170,10 +170,20 @@ untouched baseline before any of this session's work.
 `src/core/rng.js` is the single source of randomness. `docs/FEEL-SPEC.md` is
 the why. Three things about them that are cheap to get wrong:
 
-**Nothing in `feel.js` is `measured`.** Every value is a guess carried over
-from the code as it stood, and is labelled `guessed`. `measured` means someone
-frame-stepped a reference recording. It is not a synonym for "we like it".
-Do not upgrade a tag because the game feels fine.
+**Nothing in `feel.js` is `measured`.** Most values are guesses carried over
+from the code as it stood and are labelled `guessed`. P3 turned a handful
+`derived` — the walk speed and everything hanging off it, the room exit margin,
+the jump arc — which means *computed from a stated constraint, with the
+arithmetic in the comment*, not *checked against a reference*. `measured` means
+someone frame-stepped a recording. It is not a synonym for "we like it". Do not
+upgrade a tag because the game feels fine.
+
+**Positions are 8.8 fixed-point** (`src/core/fixed.js`). `fx`/`fy`/`fz` are
+integer subpixel accumulators; `x`/`y`/`z` are derived integer pixels. Assigning
+`e.x = 40` is fine and goes through the accessor. `e.x += 0.5` is not — it
+reads whole pixels, so a sub-pixel step rounds to nothing every frame and the
+entity never moves. Add to `fx` or go through `moveEntity`, which takes
+**subpixels**. Data-facing helpers convert px/f at their edge; see FEEL-SPEC.
 
 **Nothing in a draw path may consume randomness.** `Game.draw` runs at display
 rate; `Game.update` runs at a fixed 60 Hz step. A stream drawn from inside
@@ -528,6 +538,75 @@ sabotaging the bundle's last line with a thrown error and confirming it went
 red on six separate assertions at once. `window.__game.frame` is the frame
 counter — there is no `tick` or `frameCount`, and a check that reads a field
 which does not exist passes forever.
+
+### Fixed-point movement, and the four things it cost (P3)
+
+All five are things that passed at least one green checker on the way through.
+
+**1. A jump's reach is a function of the WALK speed, not the jump.** The player
+keeps walking while airborne, so `reach = 2*power/gravity * WALK_SPEED`.
+Re-deriving `WALK_SPEED` from 1.35 to 1.0 px/f cut Roc's Feather from 2.3 tiles
+to 1.7 and made the Coral Reef chasm — a real region gate — uncrossable.
+`validate`, `test`, `walk-dungeons`, `check-overworld` and **both replays** were
+green; only `check-gates.mjs` caught it, because it is the only harness that
+jumps. If you touch `WALK_SPEED`, re-derive the three jump constants in the same
+commit. The formula is in `feel.js` above `JUMP_POWER`.
+
+**2. A frame budget calibrated against a constant rots when the constant
+moves.** `check-gates.mjs` held a direction for a flat 22 frames, which was 2.1
+tiles at the old walk speed and 1.5 at the new one — so the Feather check
+failed on a chasm the Feather still clears. The fix was not a bigger number: it
+now reads `WALK_SPEED` out of the page and derives the budget. Any harness that
+writes down "n frames" to mean "far enough" has this bug latent in it.
+
+**3. Converting a constant's unit breaks any DATA that overrides it.**
+`ENEMY_HOP_POWER` went from px/f to sp/f, and the zol's `power: 1.7` was then
+read as 1.7 *subpixels* — the slime hopped a 150th of a pixel and nothing
+errored. Same shape for `driftWithTide`'s `perLevel` and `Pickup`'s `vy`. When
+you change a constant's unit, grep `src/data/` for anyone passing an override,
+and make the fallback and the override explicitly different units at the edge.
+
+**4. `e.x += 0.5` silently stops working.** `x` is now an accessor over an
+integer accumulator, so a read gives whole pixels and a sub-pixel increment
+rounds away to nothing every frame. Every `+=` on a position had to become an
+add to `fx`/`fy`/`fz`. The ones that bit were `Effect.update`, `Pickup`'s pop,
+the boomerang's return, the hookshot's retract and the pincer's reel-home —
+all of which would have just frozen in place.
+
+**5. An actor that retreats can retreat out of the room.** Teaching
+`replay.mjs`'s swordsman to disengage diagonally (which it needs, now that
+diagonals are the fast direction) made it back out through doorways mid-fight.
+A `fight` directive that ends in a different room than it started in does not
+fail — it records perfectly, and every directive after it is addressed to a
+room the player is not in, so the rest of the route becomes fiction while still
+producing a green replay. `dFight` now fences every mask it yields against the
+room edges. Cost two recordings to find because the trace looks plausible.
+
+Also worth knowing: the old replay baselines recorded final positions like
+`x: 63.015805675746414`. They are integers now, which is what "asserts to the
+pixel" was always supposed to mean.
+
+### `tools/shots-link-baseline/` was three weeks stale
+
+P3's brief said to diff it. Doing so showed 47–96% of pixels differing on most
+shots, which looks like catastrophe and is not: the baseline was captured on
+2026-07-31 mid-way through the art pass, when 38 sprites were still unauthored
+placeholders and the HUD was not drawn. It had not been refreshed since, so it
+had been silently useless through P1 and P2.
+
+The honest P3 diff needs a *pre-change* capture, not that baseline:
+
+```
+git worktree add /tmp/pre HEAD
+cd /tmp/pre && node tools/test.mjs --shots --shot-dir=shots-pre
+```
+
+Against that, P3 moves 0–5.7% of pixels, all accounted for: Link is a tile
+behind at the same scripted frame count because he walks slower, and the
+file-select screen's animated water is at a different phase. The baseline is
+refreshed as of this session. Nothing in the repo compares against it
+automatically, so it will go stale again unless someone refreshes it when the
+art or the movement changes.
 
 ### A chest's pickup can land on a solid tile and be uncollectable
 

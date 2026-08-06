@@ -26,7 +26,15 @@
 //     ground truth and we should keep saying so.
 //
 // Units used below:
-//   px/f    pixels per frame at 60 Hz
+//   sp/f    SUBPIXELS per frame at 60 Hz. 256 sp = 1 px; positions are 8.8
+//           fixed-point, so this is the engine's native speed unit and the one
+//           anything that moves a position is written in. See src/core/fixed.js.
+//   sp/f^2  subpixels per frame squared — an acceleration on the same grid
+//   sp      subpixels
+//   px/f    pixels per frame at 60 Hz. Kept for the constants that feed the
+//           DATA-facing helpers — an enemy spec says `speed: 0.45` and the AI
+//           toolkit converts it with `sp()` at its edge — so enemy and
+//           projectile data does not have to be rewritten in 256ths.
 //   f       frames at 60 Hz
 //   px      pixels
 //   x       dimensionless multiplier
@@ -38,22 +46,43 @@
 // Player movement
 // ---------------------------------------------------------------------------
 
-/** px/f — Link's ground speed. guessed.
- *  Not representable as a clean 8.8 subpixel step, which is why ROOM_EXIT_MARGIN
- *  has to be as wide as it is. P3 re-derives this; see docs/FEEL-SPEC.md. */
-export const WALK_SPEED = 1.35;
+/** sp/f — Link's ground speed. derived from the 8.8 grid and the 16px tile.
+ *
+ *  256 sp/f is exactly 1 px/f, so a tile takes exactly 16 frames to cross and
+ *  the player lands on every tile boundary he passes. That is the property the
+ *  old 1.35 px/f did not have, and ROOM_EXIT_MARGIN was three pixels wide to
+ *  paper over it.
+ *
+ *  The choice is not free-form. A speed must be exactly representable in 8.8
+ *  AND divide 16px evenly, which means 4096/s must be a whole number of frames
+ *  with s a whole number of subpixels — so s has to divide 4096, i.e. be a
+ *  power of two. Between 128 sp/f (a crawl) and 512 sp/f (the Pegasus dash),
+ *  256 is the only candidate left. It is `derived`, not `measured`: nobody has
+ *  frame-stepped a reference. It is worth noting anyway that 1 px/f walking and
+ *  2 px/f dashing is the granularity the GB Zeldas are built on, so this is at
+ *  least the right shape. */
+export const WALK_SPEED = 256;
 
-/** px/f — surface swimming. guessed. */
-export const SWIM_SPEED = 0.95;
+/** sp/f — surface swimming. derived: three quarters of WALK_SPEED, the same
+ *  ratio the old guessed pair (0.95 / 1.35) had, snapped to the grid. */
+export const SWIM_SPEED = 192;
 
-/** px/f — swimming underwater with the Mermaid Suit. guessed. */
-export const DIVE_SPEED = 1.1;
+/** sp/f — swimming underwater with the Mermaid Suit. derived: seven eighths of
+ *  WALK_SPEED, keeping the old ratio to SWIM_SPEED. */
+export const DIVE_SPEED = 224;
 
-/** px/f — under the Pegasus Seed. guessed. */
-export const BOOST_SPEED = 2.5;
+/** sp/f — under the Pegasus Seed. derived: exactly twice WALK_SPEED, so the
+ *  dash covers a tile in 8 frames. */
+export const BOOST_SPEED = 512;
 
-/** px/f — walking with the shield raised. guessed. */
-export const SHIELD_SPEED = 1.0;
+/** sp/f — walking with the shield raised. derived: three quarters of
+ *  WALK_SPEED. */
+export const SHIELD_SPEED = 192;
+
+/** sp/f — walking with the sword held out. derived: kept equal to
+ *  SHIELD_SPEED, because both are "you are committed to something and cannot
+ *  move at full pace". guessed insofar as its ancestor is. */
+export const SWORD_HOLD_SPEED = 192;
 
 /** x — multiplier on F.SLOW terrain (sand, deep grass). guessed. */
 export const SLOW_FACTOR = 0.6;
@@ -64,23 +93,23 @@ export const SHALLOW_FACTOR = 0.86;
 /** x — multiplier while carrying something. guessed. */
 export const CARRY_FACTOR = 0.9;
 
-/** px/f — drift in the facing direction during a spin attack. guessed. */
-export const SPIN_DRIFT_SPEED = 0.35;
+/** sp/f — drift in the facing direction during a spin attack. guessed. */
+export const SPIN_DRIFT_SPEED = 96;
 
-/** px/f — sideways push from a current tile while swimming is the tile's own
- *  `push` vector; this scales the aquatic-enemy drift per tide level. guessed. */
-export const TIDE_DRIFT_PER_LEVEL = 0.12;
+/** sp/f — sideways push from a current tile while swimming is the tile's own
+ *  `push` vector; this scales the aquatic-enemy drift per tide level. guessed.
+ *  Below one pixel per frame, which only moves anything at all because
+ *  positions accumulate in subpixels. */
+export const TIDE_DRIFT_PER_LEVEL = 32;
 
-/** x — per-axis multiplier applied when both axes are pressed. guessed, AND
- *  KNOWN WRONG. The design rule is that diagonal movement is NOT normalised:
- *  the GB Zeldas apply full speed on both axes, so diagonal is sqrt(2) times
- *  cardinal, and that asymmetry is a signature of how they feel. The engine
- *  currently divides by sqrt(2) instead. The value is parked here rather than
- *  left inline so the divergence is visible in one place; setting it to 1 is
- *  what P3 does, together with re-deriving WALK_SPEED. Do not "fix" it here
- *  on its own — the two changes have to land together or the walk speed comes
- *  out wrong. See docs/FEEL-SPEC.md, "Diagonals". */
-export const DIAGONAL_FACTOR = Math.SQRT1_2;
+// DIAGONALS ARE NOT NORMALISED, and there is deliberately no constant here to
+// scale them with. Holding two directions applies the full per-axis speed to
+// both axes, so a diagonal covers sqrt(2) times what a cardinal does. That
+// asymmetry is a signature of the GB Zeldas — it is why cutting the corner of a
+// room feels quicker than walking the two edges, and why players who grew up on
+// them route diagonally without thinking about it. `DIAGONAL_FACTOR` used to
+// live here at 1/sqrt(2) and is gone; re-introducing one would make movement
+// "correct" and make the game feel like something else. See docs/FEEL-SPEC.md.
 
 // ---------------------------------------------------------------------------
 // Sword
@@ -117,6 +146,25 @@ export const SWORD_GAP = 3;
 /** px — side of the square hitbox swept by a spin attack. guessed. */
 export const SPIN_BOX = 30;
 
+/** f — frames after a swing ends before the still-held button becomes a hold
+ *  rather than the tail of the swing. guessed; small enough that the blade
+ *  never visibly drops between the two poses. */
+export const SWORD_HOLD_DELAY = 2;
+
+/** qh — damage the extended blade deals on contact. guessed; half a swing's,
+ *  because walking into something with the sword out is meant to be worth less
+ *  than choosing to swing at it. The enemy's own invulnerability window is what
+ *  rate-limits it, so this is damage per enemy-invuln period, not per frame. */
+export const SWORD_HOLD_DAMAGE = 1;
+
+/** px/f — knockback dealt by the extended blade. guessed; weaker than
+ *  KNOCK_SWORD so a held blade shoves rather than launches. */
+export const KNOCK_HOLD = 2;
+
+/** f — how long after a clink off a wall the blade may clink again. guessed;
+ *  without it the sfx retriggers every frame you lean on the wall. */
+export const SWORD_CLINK_COOLDOWN = 20;
+
 // ---------------------------------------------------------------------------
 // Damage, invulnerability and knockback
 // ---------------------------------------------------------------------------
@@ -135,8 +183,9 @@ export const PLAYER_RECOVER_INVULN_FRAMES = 60;
 /** f — how long Link is shoved and unable to act after a hit. guessed. */
 export const PLAYER_HURT_FRAMES = 12;
 
-/** px/f — Link's knockback speed on the first frame after a hit. guessed. */
-export const PLAYER_KNOCK_SPEED = 3.2;
+/** sp/f — Link's knockback speed on the first frame after a hit. guessed;
+ *  3 px/f, snapped to the grid from the old 3.2. */
+export const PLAYER_KNOCK_SPEED = 768;
 
 /** x — per-frame decay of Link's knockback. guessed.
  *  Exponential decay is wrong for a GB Zelda — the source games move you a
@@ -203,14 +252,42 @@ export const EXPLOSION_SELF_DAMAGE = 2;
 // Jumping and the one-way ledge hop
 // ---------------------------------------------------------------------------
 
-/** px/f^2 — downward acceleration during a jump. guessed. */
-export const JUMP_GRAVITY = 0.19;
+// A JUMP'S REACH IS NOT A PROPERTY OF THE JUMP.
+//
+// The player keeps walking while airborne, so how far a hop carries is
+// (airtime x WALK_SPEED) — and airtime is 2 * power / gravity. Re-deriving the
+// walk speed therefore silently re-derives the length of every gap in the game.
+// It did: dropping 1.35 px/f to 1.0 px/f cut the Feather's reach from 2.3 tiles
+// to 1.7 and made the Coral Reef chasm uncrossable, which
+// `node tools/check-gates.mjs` caught and nothing else would have. The three
+// constants below are re-derived to put the reach back where it was.
+//
+//   reach  = 2 * power / gravity * WALK_SPEED
+//   apex   = power^2 / (2 * gravity)
+//
+// Feather: 2*512/28 = 36.6 frames aloft, 36.6 px of ground covered (2.3 tiles),
+// apex 18.3 px. The old pair covered 36.9 px and peaked at 17.8 px.
 
-/** px/f^2 — downward acceleration while gliding (Roc's Cape held). guessed. */
-export const GLIDE_GRAVITY = 0.08;
+/** sp/f — upward velocity of a Roc's Feather hop. derived from WALK_SPEED and
+ *  JUMP_GRAVITY to preserve a 2.3-tile reach; 2 px/f exactly. It used to sit
+ *  inline in items.js as 2.6. */
+export const JUMP_POWER = 512;
 
-/** px/f — rate `z` bleeds back to the ground when not jumping. guessed. */
-export const LAND_SETTLE_RATE = 0.5;
+/** sp/f — upward velocity of a Roc's Cape hop. derived the same way; 2.5 px/f,
+ *  giving 45.7 px of reach against the old pair's 46.9. It used to sit inline
+ *  in items.js as 3.3. */
+export const JUMP_POWER_CAPE = 640;
+
+/** sp/f^2 — downward acceleration during a jump. derived: chosen with
+ *  JUMP_POWER so that reach and apex both survive the new WALK_SPEED. */
+export const JUMP_GRAVITY = 28;
+
+/** sp/f^2 — downward acceleration while gliding (Roc's Cape held). derived:
+ *  the same fraction of JUMP_GRAVITY the old guessed pair had (0.08/0.19). */
+export const GLIDE_GRAVITY = 12;
+
+/** sp/f — rate `z` bleeds back to the ground when not jumping. guessed. */
+export const LAND_SETTLE_RATE = 128;
 
 /** tiles — widest ledge run cleared in a single hop. guessed.
  *  A run is cleared in one hop so a two-tile drop reads as one movement. */
@@ -236,11 +313,12 @@ export const PUSH_PROBE_REACH = 10;
 export const ROOM_TRANSITION_FRAMES = 34;
 
 /** px — how close to the room edge the player's hitbox must be for an exit to
- *  fire. derived from WALK_SPEED: the margin must exceed one movement step or
- *  the player steps over the boundary without ever landing on it. WALK_SPEED
- *  is itself guessed, so this is a guess wearing arithmetic. P3 drops it to 1
- *  once WALK_SPEED divides the tile evenly. */
-export const ROOM_EXIT_MARGIN = 3;
+ *  fire. derived from WALK_SPEED. At 256 sp/f the player advances exactly one
+ *  pixel per frame and stops flush against the last legal column, so the exit
+ *  test can be a one-pixel band at the edge. It used to be three, which was not
+ *  a tuning choice but a workaround for a walk speed that could step over the
+ *  boundary without ever landing on it. */
+export const ROOM_EXIT_MARGIN = 1;
 
 /** f — length of the tide's wave-front wipe across the screen. guessed. */
 export const TIDE_SWEEP_FRAMES = 44;
@@ -309,8 +387,24 @@ export const CONTEXT_REACH = 12;
 /** px — how far in front of Link a lift reaches. guessed. */
 export const LIFT_REACH = 12;
 
-/** px/f — speed of an object thrown by the player. guessed. */
-export const THROW_SPEED = 2.6;
+/** sp/f — speed of an object thrown by the player. guessed; 2.5 px/f, snapped
+ *  to the grid from 2.6. */
+export const THROW_SPEED = 640;
+
+/** sp/f — upward velocity a thrown object leaves the hand with. guessed;
+ *  0.625 px/f, snapped from the 0.6 that used to sit inline in items.js. */
+export const THROW_ARC_RISE = 160;
+
+/** sp/f^2 — downward acceleration on a thrown object's arc. guessed; snapped
+ *  from the 0.22 that used to sit inline in items.js. */
+export const THROW_ARC_GRAVITY = 56;
+
+/** x — per-frame decay on a thrown bomb's ground slide. guessed; it used to
+ *  sit inline in items.js. */
+export const THROW_SLIDE_DECAY = 0.9;
+
+/** sp/f — below this a thrown bomb's slide is called finished. guessed. */
+export const THROW_SLIDE_STOP = 26;
 
 /** px — height an object is held at while carried. guessed. */
 export const CARRY_HEIGHT = 13;
@@ -350,11 +444,12 @@ export const ENEMY_CHARGE_RANGE = 90;
 /** f — pause between hops. guessed. */
 export const ENEMY_HOP_WAIT_FRAMES = 40;
 
-/** px/f — initial upward velocity of a hop. guessed. */
-export const ENEMY_HOP_POWER = 2.2;
+/** sp/f — initial upward velocity of a hop. guessed; 2.25 px/f, snapped to the
+ *  grid from 2.2. */
+export const ENEMY_HOP_POWER = 576;
 
-/** px/f^2 — downward acceleration during an enemy hop. guessed. */
-export const ENEMY_HOP_GRAVITY = 0.16;
+/** sp/f^2 — downward acceleration during an enemy hop. guessed. */
+export const ENEMY_HOP_GRAVITY = 40;
 
 /** rad/f — default angular speed of an orbiting enemy. guessed. */
 export const ENEMY_ORBIT_SPEED = 0.045;
@@ -402,8 +497,10 @@ export const BOSS_MUSIC_RESUME_FRAMES = 220;
 /** f — how often a wandering NPC picks a new direction. guessed. */
 export const NPC_WANDER_PERIOD = 90;
 
-/** px/f — how fast a wandering NPC ambles. guessed. */
-export const NPC_WANDER_SPEED = 0.3;
+/** sp/f — how fast a wandering NPC ambles. guessed; 0.3125 px/f, snapped to
+ *  the grid from 0.3. Under a pixel a frame, so it exists only because
+ *  positions accumulate in subpixels. */
+export const NPC_WANDER_SPEED = 80;
 
 // ---------------------------------------------------------------------------
 // Projectiles
@@ -437,11 +534,12 @@ export const PROJECTILE_Z = 4;
 /** f — how long a dropped pickup lingers before vanishing. guessed. */
 export const PICKUP_LIFE_FRAMES = 460;
 
-/** px/f — the little upward pop a drop makes when it appears. guessed. */
-export const PICKUP_POP_SPEED = -1.2;
+/** sp/f — the little upward pop a drop makes when it appears. guessed;
+ *  -1.25 px/f, snapped to the grid from -1.2. */
+export const PICKUP_POP_SPEED = -320;
 
-/** px/f^2 — gravity on that pop. guessed. */
-export const PICKUP_GRAVITY = 0.16;
+/** sp/f^2 — gravity on that pop. guessed. */
+export const PICKUP_GRAVITY = 40;
 
 /** f — how long the pop lasts before the drop settles. guessed. */
 export const PICKUP_SETTLE_FRAMES = 12;
@@ -452,11 +550,11 @@ export const PICKUP_GRAB_DELAY = 8;
 /** rad/f — how fast a fairy's drift angle turns. guessed. */
 export const FAIRY_DRIFT_TURN = 0.06;
 
-/** px/f — amplitude of a fairy's drift on x. guessed. */
-export const FAIRY_DRIFT_X = 0.7;
+/** sp/f — amplitude of a fairy's drift on x. guessed; 0.6875 px/f. */
+export const FAIRY_DRIFT_X = 176;
 
-/** px/f — amplitude of a fairy's drift on y. guessed. */
-export const FAIRY_DRIFT_Y = 0.6;
+/** sp/f — amplitude of a fairy's drift on y. guessed; 0.625 px/f. */
+export const FAIRY_DRIFT_Y = 160;
 
 // ---------------------------------------------------------------------------
 // Effects

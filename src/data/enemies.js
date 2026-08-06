@@ -10,6 +10,7 @@ import {
 import { spawnEntity } from '../game/entity.js';
 import { F } from '../world/tileset.js';
 import { TILE } from '../core/screen.js';
+import { sp } from '../core/fixed.js';
 
 export function installEnemies() {
   // --- Octorok: wanders and spits rocks along its facing axis -------------
@@ -337,8 +338,10 @@ export function installEnemies() {
       if (e._out == null) { e._out = 0; e._back = 0; }
       if (e._back > 0) {
         e._back--;
-        const dx = e.homeX - e.x, dy = e.homeY - e.y;
-        e.x += dx * 0.2; e.y += dy * 0.2;
+        // Reeled home in subpixels: the last few frames of the retract are
+        // fractions of a pixel and would otherwise stall short of the burrow.
+        const dfx = sp(e.homeX) - e.fx, dfy = sp(e.homeY) - e.fy;
+        e.fx += Math.round(dfx * 0.2); e.fy += Math.round(dfy * 0.2);
         return;
       }
       if (e._out > 0) { e._out--; moveDir(e, g, e.dir, 2.2); if (e._out === 0) e._back = 24; return; }

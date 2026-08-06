@@ -37,6 +37,7 @@ import { fire } from './projectile.js';
 import { F } from '../world/tileset.js';
 import { TILE, VIEW_W, VIEW_H } from '../core/screen.js';
 import { hash32 } from '../core/rng.js';
+import { sp, toPx } from '../core/fixed.js';
 import {
   ENEMY_DEFAULT_SPEED, ENEMY_DEFAULT_RATE, ENEMY_TURN_CHANCE,
   ENEMY_KNOCK_DECAY, ENEMY_BEACHED_FRAMES,
@@ -134,7 +135,8 @@ export class Enemy extends Entity {
     if (this.knockTime > 0) {
       this.knockTime--;
       moveEntity(game, this, this.knockX, this.knockY);
-      this.knockX *= ENEMY_KNOCK_DECAY; this.knockY *= ENEMY_KNOCK_DECAY;
+      this.knockX = Math.round(this.knockX * ENEMY_KNOCK_DECAY);
+      this.knockY = Math.round(this.knockY * ENEMY_KNOCK_DECAY);
       return;
     }
     if (this.stun > 0) { this.stun--; return; }
@@ -262,7 +264,8 @@ export class Boss extends Enemy {
     if (this.knockTime > 0) {
       this.knockTime--;
       moveEntity(game, this, this.knockX, this.knockY);
-      this.knockX *= BOSS_KNOCK_DECAY; this.knockY *= BOSS_KNOCK_DECAY;
+      this.knockX = Math.round(this.knockX * BOSS_KNOCK_DECAY);
+      this.knockY = Math.round(this.knockY * BOSS_KNOCK_DECAY);
       return;
     }
     if (this.stun > 0) { this.stun--; return; }
@@ -292,7 +295,8 @@ export class Boss extends Enemy {
     this.flicker = BOSS_INVULN_FRAMES;
     if (knock && dir) {
       const [dx, dy] = DIR_VEC[dir] || [0, 0];
-      this.knockX = dx * (knock * BOSS_KNOCK_SCALE); this.knockY = dy * (knock * BOSS_KNOCK_SCALE);
+      this.knockX = sp(dx * knock * BOSS_KNOCK_SCALE);
+      this.knockY = sp(dy * knock * BOSS_KNOCK_SCALE);
       this.knockTime = BOSS_KNOCK_FRAMES;
     }
     if (this.spec.onHurt) this.spec.onHurt(this, game, dmg);
@@ -376,11 +380,19 @@ export function aligned(e, g, tol = ENEMY_ALIGN_TOLERANCE) {
   return false;
 }
 
+/**
+ * Step one tile-cardinal at `speed` PX PER FRAME.
+ *
+ * This is the boundary. Enemy specs are data and say `speed: 0.45`; the mover
+ * underneath only takes whole subpixels. Every ground-AI routine funnels
+ * through here, so the px/f -> sp/f conversion happens once, in one place, and
+ * a spec never has to know the grid exists.
+ */
 export function moveDir(e, g, dir, speed) {
   const [dx, dy] = DIR_VEC[dir] || [0, 0];
-  const nx = e.x + dx * speed, ny = e.y + dy * speed;
-  if (!e.terrainOk || e.terrainOk(g, nx, ny)) {
-    const r = moveEntity(g, e, dx * speed, dy * speed);
+  const step = sp(speed);
+  if (!e.terrainOk || e.terrainOk(g, toPx(e.fx + dx * step), toPx(e.fy + dy * step))) {
+    const r = moveEntity(g, e, dx * step, dy * step);
     return !(r.hitX || r.hitY);
   }
   return false;
@@ -437,7 +449,7 @@ export function bounceDiag(e, g, o = {}) {
   const speed = o.speed != null ? o.speed : e.speed;
   if (e._bvx == null) {
     const a = g.rng.angle();
-    e._bvx = Math.cos(a) * speed; e._bvy = Math.sin(a) * speed;
+    e._bvx = sp(Math.cos(a) * speed); e._bvy = sp(Math.sin(a) * speed);
   }
   const r = moveEntity(g, e, e._bvx, e._bvy);
   if (r.hitX) e._bvx = -e._bvx;
@@ -452,19 +464,20 @@ export function hop(e, g, o = {}) {
   if (e._hopState === 'wait') {
     if (--e._hopWait <= 0) {
       e._hopState = 'air';
-      e.vz = o.power || ENEMY_HOP_POWER;
+      // `power` is px/f when a spec names one; the fallback is already sp/f.
+      e.vz = o.power != null ? sp(o.power) : ENEMY_HOP_POWER;
       if (o.toward !== false) facePlayer(e, g);
       const [dx, dy] = DIR_VEC[e.dir];
-      e._hvx = dx * speed; e._hvy = dy * speed;
+      e._hvx = dx * sp(speed); e._hvy = dy * sp(speed);
       if (g.audio) g.audio.sfx('hop');
     }
     return;
   }
-  e.z += e.vz;
+  e.fz += e.vz;
   e.vz -= ENEMY_HOP_GRAVITY;
   moveEntity(g, e, e._hvx, e._hvy);
-  if (e.z <= 0) {
-    e.z = 0; e.vz = 0;
+  if (e.fz <= 0) {
+    e.fz = 0; e.vz = 0;
     e._hopState = 'wait';
     e._hopWait = o.wait || ENEMY_HOP_WAIT_FRAMES;
   }
@@ -563,7 +576,10 @@ export function shootRing(e, g, n = 8, o = {}) {
 /** Drift with the current while the tide is high (aquatic enemies). */
 export function driftWithTide(e, g, o = {}) {
   const lvl = g.tide.level;
-  const push = (o.perLevel || TIDE_DRIFT_PER_LEVEL) * lvl;
+  // `perLevel` is px/f when a spec names one; the fallback is already sp/f.
+  // Either way it is well under a pixel a frame, and only moves anything at all
+  // because the position accumulator keeps the remainder between frames.
+  const push = (o.perLevel != null ? sp(o.perLevel) : TIDE_DRIFT_PER_LEVEL) * lvl;
   if (push) moveEntity(g, e, (o.dx || 1) * push, (o.dy || 0) * push);
 }
 

@@ -51,6 +51,7 @@ import { RINGS } from './rings.js';
 import { Title } from './title.js';
 import { runCutscene, CUTSCENES } from './cutscene.js';
 import { Stream, seedGlobal, roomStream, noise1 } from '../core/rng.js';
+import { sp } from '../core/fixed.js';
 import {
   ROOM_TRANSITION_FRAMES, ROOM_EXIT_MARGIN, FADE_RATE, BANNER_FRAMES,
   SHAKE_LARGE, SHAKE_LARGE_FRAMES, BOSS_ESSENCE_DELAY_FRAMES,
@@ -265,6 +266,10 @@ export class Game {
     const p = this.player;
     const r = p.rect();
     const i = this.input;
+    // One pixel. It was three, to catch a player who could step over the
+    // boundary without ever landing on it; at 256 sp/f he advances a pixel at a
+    // time and stops flush against the last legal column, so a one-pixel band
+    // at the edge is enough. See ROOM_EXIT_MARGIN in feel.js.
     const M = ROOM_EXIT_MARGIN;
     let dir = null;
     if (i.down('right') && r.x + r.w >= VIEW_W - M) dir = 'right';
@@ -285,7 +290,7 @@ export class Game {
     this.transition = {
       dir, t: 0, from: this.room, to: next, nx, ny,
       fromCanvas: this.room.render(this.tide.level, this.frame),
-      startX: p.x, startY: p.y,
+      startFx: p.fx, startFy: p.fy,
       endPos: this.entryPos(dir, p),
     };
     // Snapshot the outgoing room so animated tiles do not tick during the slide.
@@ -307,9 +312,13 @@ export class Game {
     t.t++;
     const k = t.t / ROOM_TRANSITION_FRAMES;
     const p = this.player;
-    // Ease the player across the seam while the view slides.
-    p.x = t.startX + (t.endPos.x + (t.dir === 'right' ? VIEW_W : t.dir === 'left' ? -VIEW_W : 0) - t.startX) * k;
-    p.y = t.startY + (t.endPos.y + (t.dir === 'down' ? VIEW_H : t.dir === 'up' ? -VIEW_H : 0) - t.startY) * k;
+    // Ease the player across the seam while the view slides. The whole slide
+    // runs in subpixels: the incoming player sits at a negative x for a third
+    // of it, which is exactly the case a truncating floor gets wrong.
+    const endFx = sp(t.endPos.x + (t.dir === 'right' ? VIEW_W : t.dir === 'left' ? -VIEW_W : 0));
+    const endFy = sp(t.endPos.y + (t.dir === 'down' ? VIEW_H : t.dir === 'up' ? -VIEW_H : 0));
+    p.fx = t.startFx + Math.round((endFx - t.startFx) * k);
+    p.fy = t.startFy + Math.round((endFy - t.startFy) * k);
     p.animT++;
     if (t.t >= ROOM_TRANSITION_FRAMES) {
       this.setRoom(this.room.floor, t.nx, t.ny);

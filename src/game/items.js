@@ -17,7 +17,11 @@ import { Explosion } from './effects.js';
 import { F } from '../world/tileset.js';
 import { TILE, VIEW_W, VIEW_H } from '../core/screen.js';
 import { hasItem, itemLevel, addBombs } from './progress.js';
-import { PEGASUS_FRAMES } from '../data/feel.js';
+import { FP_ONE, sp, toPx } from '../core/fixed.js';
+import {
+  PEGASUS_FRAMES, JUMP_POWER, JUMP_POWER_CAPE,
+  THROW_ARC_RISE, THROW_ARC_GRAVITY, THROW_SLIDE_DECAY, THROW_SLIDE_STOP,
+} from '../data/feel.js';
 import { sprites } from '../gfx/art.js';
 
 // --------------------------------------------------------------------------
@@ -40,10 +44,12 @@ export class Bomb extends Entity {
   update(game) {
     this.frame++;
     if (this.thrownVx || this.thrownVy) {
+      // Subpixels per frame, so the decay rounds back onto the grid.
       moveEntity(game, this, this.thrownVx, this.thrownVy);
-      this.thrownVx *= 0.9; this.thrownVy *= 0.9;
-      if (Math.abs(this.thrownVx) < 0.1) this.thrownVx = 0;
-      if (Math.abs(this.thrownVy) < 0.1) this.thrownVy = 0;
+      this.thrownVx = Math.round(this.thrownVx * THROW_SLIDE_DECAY);
+      this.thrownVy = Math.round(this.thrownVy * THROW_SLIDE_DECAY);
+      if (Math.abs(this.thrownVx) < THROW_SLIDE_STOP) this.thrownVx = 0;
+      if (Math.abs(this.thrownVy) < THROW_SLIDE_STOP) this.thrownVy = 0;
     }
     if (--this.fuse <= 0) {
       this.remove = true;
@@ -75,7 +81,8 @@ export class Boomerang extends Entity {
     this.damage = this.level >= 2 ? 2 : 1;
     this.owner = o.owner;
     const [dx, dy] = DIR_VEC[o.dir || 'down'];
-    this.vx = dx * this.speed; this.vy = dy * this.speed;
+    // `speed` is px/f (item data); velocities are sp/f (the mover's unit).
+    this.vx = sp(dx * this.speed); this.vy = sp(dy * this.speed);
     this.travelled = 0;
     this.returning = false;
     this.harmless = true;
@@ -99,13 +106,14 @@ export class Boomerang extends Entity {
         if (i.down('up')) ty -= 1; if (i.down('down')) ty += 1;
         const d = Math.hypot(tx, ty);
         if (d) {
-          this.vx += (tx / d * this.speed - this.vx) * 0.12;
-          this.vy += (ty / d * this.speed - this.vy) * 0.12;
+          this.vx += Math.round((sp(tx / d * this.speed) - this.vx) * 0.12);
+          this.vy += Math.round((sp(ty / d * this.speed) - this.vy) * 0.12);
         }
       }
-      const before = { x: this.x, y: this.y };
+      const before = { fx: this.fx, fy: this.fy };
       const r = moveEntity(game, this, this.vx, this.vy);
-      this.travelled += Math.hypot(this.x - before.x, this.y - before.y);
+      // Measured in subpixels and converted back, so a slow steer still counts.
+      this.travelled += Math.hypot(this.fx - before.fx, this.fy - before.fy) / FP_ONE;
       if (r.hitX || r.hitY) {
         // A region vane is SOLID, so the boomerang bounces off it before its
         // own rect ever overlaps the tile — probing the rect finds nothing and
@@ -120,8 +128,9 @@ export class Boomerang extends Entity {
       if (!p) { this.remove = true; return; }
       const dx = p.cx - this.cx, dy = p.cy - this.cy;
       const d = Math.hypot(dx, dy) || 1;
-      const sp = this.speed + 0.6;
-      this.x += dx / d * sp; this.y += dy / d * sp;
+      const back = sp(this.speed + 0.6);
+      this.fx += Math.round(dx / d * back);
+      this.fy += Math.round(dy / d * back);
       for (const c of this.carried) { c.x = this.x; c.y = this.y; }
       if (d < 9) {
         this.remove = true;
@@ -196,7 +205,9 @@ export class Hookshot extends Entity {
     const [dx, dy] = DIR_VEC[this.dir];
 
     if (this.state === 'out') {
-      const nx = this.x + dx * this.speed, ny = this.y + dy * this.speed;
+      const step = sp(this.speed);
+      const nfx = this.fx + dx * step, nfy = this.fy + dy * step;
+      const nx = toPx(nfx), ny = toPx(nfy);
       // Latch onto hookable tiles.
       const tx = Math.floor((nx + 5) / TILE), ty = Math.floor((ny + 5) / TILE);
       const f = game.room.flagsAt(tx, ty, game.tide.level);
@@ -207,7 +218,7 @@ export class Hookshot extends Entity {
         return;
       }
       if (f & (F.SOLID | F.VOID)) { this.state = 'back'; game.audio.sfx('ricochet'); return; }
-      this.x = nx; this.y = ny;
+      this.fx = nfx; this.fy = nfy;
       if (this.length >= this.maxLen) this.state = 'back';
 
       for (const e of game.entities) {
@@ -231,17 +242,20 @@ export class Hookshot extends Entity {
       const tdx = (this.x - (p.cx - 5)), tdy = (this.y - (p.cy - 5));
       const d = Math.hypot(tdx, tdy);
       if (d < 6) { this.finish(game, p); return; }
-      const step = 3;
-      const before = { x: p.x, y: p.y };
-      moveEntity(game, p, tdx / d * step, tdy / d * step, { jumping: true, swim: true });
-      if (Math.abs(p.x - before.x) < 0.2 && Math.abs(p.y - before.y) < 0.2) { this.finish(game, p); return; }
+      const pull = sp(3);
+      const before = { fx: p.fx, fy: p.fy };
+      moveEntity(game, p, Math.round(tdx / d * pull), Math.round(tdy / d * pull),
+        { jumping: true, swim: true });
+      // Snagged on something: the chain stopped making ground, so let go.
+      if (p.fx === before.fx && p.fy === before.fy) { this.finish(game, p); return; }
     } else {
       if (!p) { this.remove = true; return; }
       const tdx = (p.cx - 5) - this.x, tdy = (p.cy - 5) - this.y;
       const d = Math.hypot(tdx, tdy) || 1;
       if (d < 6) { this.finish(game, p); return; }
-      this.x += tdx / d * (this.speed + 1);
-      this.y += tdy / d * (this.speed + 1);
+      const back = sp(this.speed + 1);
+      this.fx += Math.round(tdx / d * back);
+      this.fy += Math.round(tdy / d * back);
       if (this.hooked) { this.hooked.x = this.x - 3; this.hooked.y = this.y - 3; }
     }
   }
@@ -259,7 +273,10 @@ export class Hookshot extends Entity {
     const dx = this.x - sx, dy = this.y - sy;
     const n = Math.max(1, Math.floor(Math.hypot(dx, dy) / 5));
     for (let i = 0; i < n; i++) {
-      const lx = sx + dx * (i / n), ly = sy + dy * (i / n);
+      // The chain links sit at fractions of the span, which is the one place in
+      // the game a draw coordinate is not already whole. It is rounded here
+      // rather than in the blitter: art.js draws exactly where it is told.
+      const lx = Math.round(sx + dx * (i / n)), ly = Math.round(sy + dy * (i / n));
       sprites.draw(ctx, 'i_chain', ox + lx, oy + ly - this.z);
     }
     sprites.draw(ctx, 'i_hookhead', ox + this.x, oy + this.y - this.z,
@@ -271,6 +288,11 @@ export class Hookshot extends Entity {
 // Carried object (lifted rock / pot / bomb)
 // --------------------------------------------------------------------------
 
+/**
+ * A lifted rock, pot or bomb in flight. Unlike a Projectile — whose callers are
+ * enemy data and name speeds in px/f — this is only ever built by the engine,
+ * so `o.vx` and `o.vy` are sp/f and go straight into the accumulator.
+ */
 export class ThrownObject extends Entity {
   constructor(x, y, o = {}) {
     super(x, y, o);
@@ -278,9 +300,9 @@ export class ThrownObject extends Entity {
     this.hb = { x: 3, y: 3, w: 10, h: 10 };
     this.sprite = o.sprite || 'rock16';
     this.pal = o.pal || 'stone';
-    this.vx = o.vx || 0; this.vy = o.vy || 0;
+    this.vx = o.vx || 0; this.vy = o.vy || 0;      // sp/f
     this.z = o.z || 14;
-    this.vz = 0.6;
+    this.vz = THROW_ARC_RISE;
     this.damage = 0;
     this.harmless = true;
     this.shadow = true;
@@ -291,8 +313,8 @@ export class ThrownObject extends Entity {
 
   update(game) {
     this.frame++;
-    this.z += this.vz;
-    this.vz -= 0.22;
+    this.fz += this.vz;
+    this.vz -= THROW_ARC_GRAVITY;
     const r = moveEntity(game, this, this.vx, this.vy, { jumping: true, swim: true });
     if (r.hitX || r.hitY) { this.shatter(game); return; }
     for (const e of game.entities) {
@@ -302,7 +324,7 @@ export class ThrownObject extends Entity {
         return;
       }
     }
-    if (this.z <= 0) this.shatter(game);
+    if (this.fz <= 0) this.shatter(game);
   }
 
   shatter(game) {
@@ -408,7 +430,9 @@ export const ITEMS = {
     icon: ['i_feather', 'i_cape'],
     equippable: true,
     desc: 'Leap over gaps and shallow water.',
-    use(game, p, level) { return p.startJump(game, level >= 2 ? 3.3 : 2.6, level >= 2); },
+    use(game, p, level) {
+      return p.startJump(game, level >= 2 ? JUMP_POWER_CAPE : JUMP_POWER, level >= 2);
+    },
   },
   bombs: {
     names: ['Bombs'],

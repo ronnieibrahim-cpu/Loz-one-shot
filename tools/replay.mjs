@@ -111,6 +111,7 @@ async function installRuntime() {
   const screen = await import('/src/core/screen.js');
 
   const TILE = screen.TILE, ROOM_W = screen.ROOM_W, ROOM_H = screen.ROOM_H;
+  const VIEW_W = screen.VIEW_W, VIEW_H = screen.VIEW_H;
   const BUTTONS = ['up', 'down', 'left', 'right', 'a', 'b', 'start', 'select'];
   const BIT = {};
   BUTTONS.forEach((b, i) => { BIT[b] = 1 << i; });
@@ -346,18 +347,54 @@ async function installRuntime() {
    * Close on the nearest live enemy and swing at it.
    *
    * The naive version — walk at it, press B — loses. Contact damage lands the
-   * moment the hitboxes touch, and the sword's box starts about nine pixels in
-   * front of Link and reaches to about twenty-two, so walking all the way onto
-   * an enemy trades a hit for every hit. This lines up on one axis, holds a
-   * standoff inside sword range but outside contact range, and swings from
+   * moment the hitboxes touch, and the sword's box starts about eleven pixels
+   * in front of Link and reaches to about twenty-two, so walking all the way
+   * onto an enemy trades a hit for every hit. This lines up on one axis, holds
+   * a standoff inside sword range but outside contact range, and swings from
    * there. On three hearts that is the difference between clearing Tidewash
    * Grotto and dying in the crab room.
+   *
+   * The standoff is not enough on its own, because a swing roots Link for its
+   * whole duration and anything walking at him closes most of the gap while he
+   * is stuck in it. So every swing is followed by a deliberate step back, held
+   * from the moment the button goes down: the rooted frames cost nothing, and
+   * the retreat starts on the first frame it can.
+   *
+   * That retreat is DIAGONAL, and it has to be. Since P3 the engine does not
+   * normalise diagonals — both axes get the full step — so backing off on two
+   * axes breaks contact roughly sqrt(2) times faster than backing off on one.
+   * A cardinal retreat at the current walk speed does not clear the crab room:
+   * the swordsman dies in it. This is the actor learning the same lesson the
+   * source games teach a player in their first dungeon.
    */
   function* dFight(maxF, patience) {
     const g = window.__game;
     const giveUp = patience == null ? 420 : patience;
-    const NEAR = 14, FAR = 19, LINED = 4;
+    const NEAR = 16, FAR = 21, LINED = 4, BACKOFF = 26, EDGE = 12;
     let lastCount = -1, stale = 0;
+
+    /**
+     * Strip whichever directions would carry the player out of the room.
+     *
+     * A fight directive that ends in a different room than it started in is
+     * worse than one that fails: every directive after it is addressed to a
+     * room the player is not standing in, so the rest of the route quietly
+     * becomes fiction while still recording perfectly well. It happened twice
+     * while re-recording this route for P3, once backing out of a doorway
+     * mid-retreat and once while stepping away from a foe at the seam.
+     *
+     * So it is applied to EVERY mask this directive yields, not just the
+     * retreat — closing on a foe near an edge steps out just as easily.
+     */
+    const fence = (m) => {
+      const q = g.player;
+      if (!q) return m;
+      if (q.x < EDGE) m &= ~BIT.left;
+      if (q.x > VIEW_W - 16 - EDGE) m &= ~BIT.right;
+      if (q.y < EDGE) m &= ~BIT.up;
+      if (q.y > VIEW_H - 16 - EDGE) m &= ~BIT.down;
+      return m;
+    };
     for (let f = 0; f < (maxF || 900);) {
       const p = g.player;
       if (!p || g.mode !== 'play') { yield 0; f++; continue; }
@@ -381,20 +418,22 @@ async function installRuntime() {
       if (Math.abs(perp) > LINED) {
         // Off the enemy's row or column: the sword box is narrow, so line up
         // before closing or the swing goes past it.
-        yield axisX ? (dy < 0 ? BIT.up : BIT.down) : (dx < 0 ? BIT.left : BIT.right);
+        yield fence(axisX ? (dy < 0 ? BIT.up : BIT.down) : (dx < 0 ? BIT.left : BIT.right));
         f++; continue;
       }
       const dist = Math.abs(along);
-      if (dist > FAR) { yield BIT[face]; f++; continue; }
+      if (dist > FAR) { yield fence(BIT[face]); f++; continue; }
       if (dist < NEAR) {
-        yield axisX ? (dx < 0 ? BIT.right : BIT.left) : (dy < 0 ? BIT.down : BIT.up);
+        yield fence(axisX ? (dx < 0 ? BIT.right : BIT.left) : (dy < 0 ? BIT.down : BIT.up));
         f++; continue;
       }
-      // In the window: face, swing, and stand still for the swing's duration —
-      // an attack roots the player anyway.
-      yield BIT[face]; f++;
+      // In the window: face, swing, then back off diagonally until the enemy
+      // has to come and find us again.
+      const backAlong = axisX ? (dx < 0 ? BIT.right : BIT.left) : (dy < 0 ? BIT.down : BIT.up);
+      const backPerp = axisX ? (dy < 0 ? BIT.down : BIT.up) : (dx < 0 ? BIT.right : BIT.left);
+      yield fence(BIT[face]); f++;
       yield BIT.b; f++;
-      for (let i = 0; i < 15; i++) { yield 0; f++; }
+      for (let i = 0; i < BACKOFF; i++) { yield fence(backAlong | backPerp); f++; }
     }
   }
 

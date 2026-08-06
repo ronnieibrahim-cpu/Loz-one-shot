@@ -30,6 +30,8 @@ import { spawnEntity } from './entity.js';
 import { giveItem, setFlag } from './progress.js';
 import { DIR_VEC } from './entity.js';
 import { moveEntity } from './entity.js';
+import { sp } from '../core/fixed.js';
+import { WALK_SPEED } from '../data/feel.js';
 
 export const CUTSCENES = {};
 
@@ -116,7 +118,9 @@ export function runCutscene(game, steps, data = {}) {
           const [dx, dy] = DIR_VEC[walking.dir] || [0, 0];
           p.dir = walking.dir;
           p.animT++;
-          moveEntity(game, p, dx * (walking.speed || 1), dy * (walking.speed || 1));
+          // A scene may name its own pace in px/f; the default is Link's own.
+          const step = walking.speed != null ? sp(walking.speed) : WALK_SPEED;
+          moveEntity(game, p, dx * step, dy * step);
         }
         if (--walking.t <= 0) walking = null;
       }

@@ -1,11 +1,23 @@
 // Entity base class, tile collision, and the spawn registry.
 //
-// Coordinates are room-local pixels: x in 0..159, y in 0..127. `z` is height off
-// the ground for jumps and flying enemies; it shifts the sprite up and detaches
-// the entity from ground hazards without moving its shadow.
+// Coordinates are room-local: x in 0..159, y in 0..127. `z` is height off the
+// ground for jumps and flying enemies; it shifts the sprite up and detaches the
+// entity from ground hazards without moving its shadow.
+//
+// POSITIONS ARE 8.8 FIXED-POINT. `fx`, `fy` and `fz` are integer subpixel
+// accumulators; `x`, `y` and `z` are integer pixel positions derived from them
+// by an arithmetic shift. Rendering reads the pixel positions and rounds
+// nothing. See src/core/fixed.js for why both halves of that matter.
+//
+// Assigning `e.x = 40` still works and is still the right way to place an
+// entity — the accessor converts and the accumulator follows. What does NOT
+// work is `e.x += 0.5`: the read gives whole pixels, so a step smaller than a
+// pixel rounds away to nothing every frame and the entity never moves. Add to
+// `e.fx` instead, or go through `moveEntity`.
 
 import { TILE, ROOM_W, ROOM_H, VIEW_W, VIEW_H } from '../core/screen.js';
 import { sprites } from '../gfx/art.js';
+import { FP_ONE, sp, toPx } from '../core/fixed.js';
 import { F } from '../world/tileset.js';
 import {
   ENEMY_INVULN_FRAMES, ENEMY_FLICKER_FRAMES, ENEMY_KNOCK_FRAMES, KNOCK_DEFAULT,
@@ -43,10 +55,10 @@ let nextId = 1;
 export class Entity {
   constructor(x, y, opts = {}) {
     this.id = nextId++;
-    this.x = x; this.y = y;
+    this.fx = sp(x); this.fy = sp(y); this.fz = 0;
     this.w = 16; this.h = 16;
-    this.vx = 0; this.vy = 0;
-    this.z = 0; this.vz = 0;
+    this.vx = 0; this.vy = 0;      // sp/f
+    this.vz = 0;                   // sp/f
     this.dir = 'down';
     this.frame = 0;          // animation counter, ticks each update
     this.hp = 1; this.maxHp = 1;
@@ -76,6 +88,15 @@ export class Entity {
     this.spawnTy = Math.floor(y / TILE);
   }
 
+  // The pixel position is derived, never stored: anything may add to `fx`
+  // directly, and a cached copy would go stale the moment something did.
+  get x() { return toPx(this.fx); }
+  set x(v) { this.fx = sp(v); }
+  get y() { return toPx(this.fy); }
+  set y(v) { this.fy = sp(v); }
+  get z() { return toPx(this.fz); }
+  set z(v) { this.fz = sp(v); }
+
   get cx() { return this.x + this.w / 2; }
   get cy() { return this.y + this.h / 2; }
 
@@ -93,7 +114,11 @@ export class Entity {
     return Math.hypot(dx, dy);
   }
 
-  /** Take damage. `dir` is the direction the hit came *from* the attacker's view. */
+  /**
+   * Take damage. `dir` is the direction the hit came *from* the attacker's
+   * view. `knock` is px/f — it comes from data and from call sites that pass a
+   * bare number — and is converted to the engine's subpixel step here.
+   */
   hurt(game, dmg, dir, knock = KNOCK_DEFAULT) {
     if (this.invuln > 0 || this.dead) return false;
     this.hp -= dmg;
@@ -101,7 +126,7 @@ export class Entity {
     this.flicker = ENEMY_FLICKER_FRAMES;
     if (knock && dir) {
       const [dx, dy] = DIR_VEC[dir] || [0, 0];
-      this.knockX = dx * knock; this.knockY = dy * knock;
+      this.knockX = sp(dx * knock); this.knockY = sp(dy * knock);
       this.knockTime = ENEMY_KNOCK_FRAMES;
     }
     if (this.hp <= 0) { this.die(game); return true; }
@@ -142,37 +167,46 @@ export class Entity {
 // --------------------------------------------------------------------------
 
 /**
- * Try to move an entity by (dx, dy) against the room's solid tiles.
+ * Try to move an entity by (sdx, sdy) SUBPIXELS against the room's solid tiles.
  * Axis-separated so sliding along walls works, with a small corner-nudge so
  * the player doesn't snag on tile seams (matches how the GBC games felt).
  * Returns { hitX, hitY }.
+ *
+ * The deltas are subpixels, not pixels — 256 to the pixel. A caller holding a
+ * px/f speed converts it with `sp()`; the enemy AI toolkit does this once at
+ * its edge so enemy data can go on being written in px/f.
+ *
+ * A step that does not change the whole-pixel position still lands: the
+ * accumulator takes it, `canOccupy` is asked about the same pixel it already
+ * occupies and says yes. That is how a 0.12 px/f current pushes at all.
  */
-export function moveEntity(game, e, dx, dy, caps) {
-  const room = game.room;
+export function moveEntity(game, e, sdx, sdy, caps) {
   const c = caps || e.caps || null;
   let hitX = false, hitY = false;
 
-  if (dx !== 0) {
-    const nx = e.x + dx;
+  if (sdx !== 0) {
+    const nfx = e.fx + sdx;
+    const nx = toPx(nfx);
     if (canOccupy(game, e, nx, e.y, c)) {
-      e.x = nx;
+      e.fx = nfx;
     } else {
       // corner nudge: allow the move if shifting a pixel on the other axis frees it
       let ok = false;
-      for (const ny of [e.y - 1, e.y + 1]) {
-        if (canOccupy(game, e, nx, ny, c)) { e.x = nx; e.y = ny; ok = true; break; }
+      for (const nfy of [e.fy - FP_ONE, e.fy + FP_ONE]) {
+        if (canOccupy(game, e, nx, toPx(nfy), c)) { e.fx = nfx; e.fy = nfy; ok = true; break; }
       }
       if (!ok) hitX = true;
     }
   }
-  if (dy !== 0) {
-    const ny = e.y + dy;
+  if (sdy !== 0) {
+    const nfy = e.fy + sdy;
+    const ny = toPx(nfy);
     if (canOccupy(game, e, e.x, ny, c)) {
-      e.y = ny;
+      e.fy = nfy;
     } else {
       let ok = false;
-      for (const nx of [e.x - 1, e.x + 1]) {
-        if (canOccupy(game, e, nx, ny, c)) { e.y = ny; e.x = nx; ok = true; break; }
+      for (const nfx of [e.fx - FP_ONE, e.fx + FP_ONE]) {
+        if (canOccupy(game, e, toPx(nfx), ny, c)) { e.fy = nfy; e.fx = nfx; ok = true; break; }
       }
       if (!ok) hitY = true;
     }

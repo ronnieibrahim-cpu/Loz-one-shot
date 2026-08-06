@@ -9,6 +9,7 @@
 //   link_push_down         link_push_up         link_push_side
 //   link_hurt              link_fall_0/1/2      link_dig_0/1
 //   link_dive              link_spin_0/1/2/3
+//   link_hold_down/up/side (blade held out, walking with it)
 //   fx_slash_down/up/side  (the sword arc, drawn separately from Link)
 
 import {
@@ -16,14 +17,16 @@ import {
 } from './entity.js';
 import { F, transformFor } from '../world/tileset.js';
 import { TILE, VIEW_W, VIEW_H } from '../core/screen.js';
+import { sp, toPx } from '../core/fixed.js';
 import { sprites } from '../gfx/art.js';
 import { hasItem, itemLevel, HEART_UNITS } from './progress.js';
 import { useEquipped, ITEMS, ThrownObject } from './items.js';
 import {
   WALK_SPEED, SWIM_SPEED, DIVE_SPEED, BOOST_SPEED, SHIELD_SPEED, SLOW_FACTOR,
-  SHALLOW_FACTOR, CARRY_FACTOR, SPIN_DRIFT_SPEED,
+  SHALLOW_FACTOR, CARRY_FACTOR, SPIN_DRIFT_SPEED, SWORD_HOLD_SPEED,
   SWING_FRAMES, SWING_HIT_START, SWING_HIT_END, CHARGE_FRAMES, CHARGE_SPARKLE_EVERY,
   SPIN_FRAMES, SWORD_REACH, SWORD_SPAN, SWORD_GAP, SPIN_BOX,
+  SWORD_HOLD_DELAY, SWORD_HOLD_DAMAGE, SWORD_CLINK_COOLDOWN, KNOCK_HOLD,
   PLAYER_INVULN_FRAMES, PLAYER_FLICKER_FRAMES, PLAYER_RECOVER_INVULN_FRAMES,
   PLAYER_HURT_FRAMES, PLAYER_KNOCK_SPEED, PLAYER_KNOCK_DECAY,
   KNOCK_SWORD, KNOCK_SPIN, HAZARD_DAMAGE, PIT_DAMAGE, WASH_DAMAGE,
@@ -32,7 +35,7 @@ import {
   FALL_FRAMES, WASH_FRAMES, DIG_FRAMES, CONCH_FRAMES, PUSH_DELAY_FRAMES,
   DIVE_FRAMES, CONTEXT_REACH, LIFT_REACH, THROW_SPEED, CARRY_HEIGHT,
   SHAKE_SMALL, SHAKE_SMALL_FRAMES, CHARGE_SPARKLE_SPREAD, WADE_FOAM_EVERY,
-  DIAGONAL_FACTOR, PUSH_PROBE_REACH,
+  PUSH_PROBE_REACH,
 } from '../data/feel.js';
 
 export class Player extends Entity {
@@ -48,6 +51,9 @@ export class Player extends Entity {
     this.swinging = 0;
     this.charge = 0;
     this.spinning = 0;
+    this.holding = false;         // blade out, walking with it
+    this.holdT = 0;               // frames spent in the hold
+    this.clinkCool = 0;           // sfx debounce for the blade scraping a wall
     this.shielding = false;
     this.jumping = false;
     this.digging = 0;
@@ -93,6 +99,7 @@ export class Player extends Entity {
     if (this.flicker > 0) this.flicker--;
     if (this.speedBoost > 0) this.speedBoost--;
     if (this.conchTime > 0) this.conchTime--;
+    if (this.clinkCool > 0) this.clinkCool--;
 
     if (this.falling > 0) { this.updateFalling(game); return; }
     if (this.washing > 0) { this.updateWashing(game); return; }
@@ -104,7 +111,11 @@ export class Player extends Entity {
     if (this.hurtTime > 0) {
       this.hurtTime--;
       moveEntity(game, this, this.knockX, this.knockY);
-      this.knockX *= PLAYER_KNOCK_DECAY; this.knockY *= PLAYER_KNOCK_DECAY;
+      // Knockback is subpixels per frame, so the decay has to land back on a
+      // whole subpixel — a fractional step would put a float into the
+      // accumulator and undo the point of having one.
+      this.knockX = Math.round(this.knockX * PLAYER_KNOCK_DECAY);
+      this.knockY = Math.round(this.knockY * PLAYER_KNOCK_DECAY);
       return;
     }
 
@@ -116,6 +127,7 @@ export class Player extends Entity {
     if (this.swinging > 0) { this.updateSwing(game); }
 
     this.handleInput(game);
+    this.updateSwordHold(game);
     this.updateMovement(game);
     this.updateJump(game);
     this.updateContactDamage(game);
@@ -163,7 +175,8 @@ export class Player extends Entity {
     if (this.inDeep) {
       const { tx, ty } = groundTile(game, this);
       const def = game.room.tile(tx, ty, game.tide.level);
-      if (def.push) moveEntity(game, this, def.push[0], def.push[1]);
+      // A tile's `push` is data, written in px/f; the mover speaks subpixels.
+      if (def.push) moveEntity(game, this, sp(def.push[0]), sp(def.push[1]));
     }
   }
 
@@ -193,11 +206,11 @@ export class Player extends Entity {
       const id = slot === 'A' ? game.progress.equipA : game.progress.equipB;
       if (id === 'shield' && i.down(slot.toLowerCase()) && !this.inDeep) this.shielding = true;
     }
-    // Sword charge: holding the sword button past a threshold charges a spin.
-    const swordSlot = game.progress.equipB === 'sword' ? 'b'
-      : (game.progress.equipA === 'sword' ? 'a' : null);
-    if (swordSlot && hasItem(game.progress, 'sword') && !this.inDeep) {
-      if (i.down(swordSlot) && this.swinging === 0) {
+    // Sword hold: keeping the button down after the swing keeps the blade out
+    // (see updateSwordHold) and, past a threshold, charges a spin.
+    const slot = this.swordSlot(game);
+    if (slot && hasItem(game.progress, 'sword') && !this.inDeep) {
+      if (i.down(slot) && this.swinging === 0) {
         this.charge++;
         if (this.charge === CHARGE_FRAMES) game.audio.sfx('charged');
         if (this.charge > CHARGE_FRAMES && this.charge % CHARGE_SPARKLE_EVERY === 0) {
@@ -205,7 +218,7 @@ export class Player extends Entity {
           game.spawnEffect('sparkle',
             this.x + game.rng.range(-s, s), this.y + game.rng.range(-s, s), { life: 12 });
         }
-      } else if (i.released(swordSlot)) {
+      } else if (i.released(slot)) {
         if (this.charge >= CHARGE_FRAMES) this.startSpin(game);
         this.charge = 0;
       }
@@ -263,15 +276,25 @@ export class Player extends Entity {
     }
     this._lastDx = dx; this._lastDy = dy;
 
+    // Speeds are subpixels per frame. The terrain multipliers are
+    // dimensionless, so their product has to land back on a whole subpixel
+    // before it reaches the mover — and never on zero, or slow ground would be
+    // a wall.
     let speed = this.speedBoost > 0 ? BOOST_SPEED : WALK_SPEED;
     if (this.inDeep) speed = this.diving > 0 ? DIVE_SPEED : SWIM_SPEED;
     else if (this.shielding) speed = SHIELD_SPEED;
+    else if (this.holding) speed = SWORD_HOLD_SPEED;
     const f = groundFlags(game, this);
-    if ((f & F.SLOW) && this.z <= 2) speed *= SLOW_FACTOR;
-    if (this.inShallow && this.z <= 2) speed *= SHALLOW_FACTOR;
-    if (this.carrying) speed *= CARRY_FACTOR;
+    let mult = 1;
+    if ((f & F.SLOW) && this.z <= 2) mult *= SLOW_FACTOR;
+    if (this.inShallow && this.z <= 2) mult *= SHALLOW_FACTOR;
+    if (this.carrying) mult *= CARRY_FACTOR;
+    if (mult !== 1) speed = Math.max(1, Math.round(speed * mult));
 
-    if (dx && dy) { dx *= DIAGONAL_FACTOR; dy *= DIAGONAL_FACTOR; }
+    // DIAGONALS ARE NOT NORMALISED. `dx` and `dy` stay at ±1 and both axes get
+    // the full step, so holding two directions moves sqrt(2) times as far as
+    // holding one. That is deliberate and it is a signature of the source
+    // games; see docs/FEEL-SPEC.md.
 
     // A hop in progress owns the controls until it lands.
     if (this.ledgeHop) { this.updateLedgeHop(game); this.animT++; return; }
@@ -338,7 +361,11 @@ export class Player extends Entity {
       return false;
     }
 
-    this.ledgeHop = { fromX: this.x, fromY: this.y, toX: land.x, toY: land.y, t: 0, n: LEDGE_HOP_FRAMES };
+    this.ledgeHop = {
+      fromFx: this.fx, fromFy: this.fy,
+      toFx: sp(land.x), toFy: sp(land.y),
+      t: 0, n: LEDGE_HOP_FRAMES,
+    };
     this.jumping = true;
     this.vz = 0;
     this.gliding = false;
@@ -348,17 +375,21 @@ export class Player extends Entity {
     return true;
   }
 
-  /** Carry the hop along its arc; `z` is set outright, not integrated. */
+  /**
+   * Carry the hop along its arc; `z` is set outright, not integrated.
+   * The interpolation runs in subpixels and rounds once per frame, so the hop
+   * lands on the exact tile it aimed at rather than a rounded-off neighbour.
+   */
   updateLedgeHop(game) {
     const h = this.ledgeHop;
     h.t++;
     const u = Math.min(1, h.t / h.n);
-    this.x = h.fromX + (h.toX - h.fromX) * u;
-    this.y = h.fromY + (h.toY - h.fromY) * u;
-    this.z = Math.sin(u * Math.PI) * LEDGE_HOP_HEIGHT;
+    this.fx = h.fromFx + Math.round((h.toFx - h.fromFx) * u);
+    this.fy = h.fromFy + Math.round((h.toFy - h.fromFy) * u);
+    this.fz = Math.round(sp(LEDGE_HOP_HEIGHT) * Math.sin(u * Math.PI));
     if (u < 1) return;
     this.ledgeHop = null;
-    this.z = 0; this.vz = 0; this.jumping = false; this.lockDir = false;
+    this.fz = 0; this.vz = 0; this.jumping = false; this.lockDir = false;
     const f = groundFlags(game, this);
     if ((f & F.DEEP) && !this._flippers) { this.beginWash(game); return; }
     if (f & F.PIT) { this.beginFall(game); return; }
@@ -382,9 +413,70 @@ export class Player extends Entity {
 
   // ----------------------------------------------------------------- sword
 
+  /** Which button the sword is bound to, or null if it is not equipped. */
+  swordSlot(game) {
+    if (game.progress.equipB === 'sword') return 'b';
+    if (game.progress.equipA === 'sword') return 'a';
+    return null;
+  }
+
+  // ------------------------------------------------------------- sword hold
+  //
+  // In the Oracles the sword is three verbs, not one. Tapping swings. Holding
+  // charges a spin. And holding ALSO keeps the blade extended in front of you
+  // and lets you walk with it out: it damages what it touches, it clinks off
+  // walls, and Link is drawn in a different pose the whole time.
+  //
+  // The engine had the first two. Without the third, the most-used button in
+  // the game does a third less than it should — you cannot shave a bush by
+  // walking through it, you cannot hold a corridor against something walking
+  // into you, and the long hold reads as a dead wait for the spin rather than
+  // as a stance you are already fighting in.
+  //
+  // The contact damage is not rate-limited here. It does not need to be: the
+  // enemy's own invulnerability window after a hit is what spaces the hits out,
+  // which is exactly how the source games space them.
+
+  updateSwordHold(game) {
+    const slot = this.swordSlot(game);
+    const out = !!slot && hasItem(game.progress, 'sword') && game.input.down(slot)
+      && this.swinging === 0 && this.spinning === 0
+      && !this.inDeep && !this.carrying && !this.hookPulling
+      && this.charge >= SWORD_HOLD_DELAY;
+    if (!out) { this.holding = false; this.holdT = 0; return; }
+
+    this.holding = true;
+    this.holdT++;
+
+    const box = this.swordBox();
+    for (const e of game.entities) {
+      if (!e.isEnemy || e.dead || e.dormant || e.hidden) continue;
+      if (!rectOverlap(box, e.rect())) continue;
+      e.hurt(game, SWORD_HOLD_DAMAGE, this.dir, KNOCK_HOLD);
+    }
+    // Walking a held blade through undergrowth cuts it, as it does in Seasons.
+    game.checkTileAction(box, 'cut');
+    this.checkSwordClink(game);
+  }
+
+  /** The blade tip scraping something solid: a clink, a spark, no damage. */
+  checkSwordClink(game) {
+    if (this.clinkCool > 0 || !game.room || !game.input.anyDir()) return;
+    const [dx, dy] = DIR_VEC[this.dir];
+    const tx = this.cx + dx * (SWORD_REACH + SWORD_GAP);
+    const ty = this.cy + dy * (SWORD_REACH + SWORD_GAP);
+    if (tx < 0 || ty < 0 || tx >= VIEW_W || ty >= VIEW_H) return;
+    if (!game.room.solidAt(tx, ty, game.tide.level, { jumping: false, swim: false })) return;
+    this.clinkCool = SWORD_CLINK_COOLDOWN;
+    game.audio.sfx('block');
+    game.spawnEffect('spark', tx - 8, ty - 8);
+  }
+
   startSwing(game, level) {
     if (this.swinging > 0 || this.spinning > 0 || this.inDeep || this.carrying) return true;
     this.swinging = SWING_FRAMES;
+    this.holding = false;
+    this.holdT = 0;
     this.swordLevel = level;
     this.swingHit = new Set();
     game.audio.sfx(level >= 3 ? 'sword3' : (level >= 2 ? 'sword2' : 'sword1'));
@@ -426,6 +518,8 @@ export class Player extends Entity {
     this.spinning = SPIN_FRAMES;
     this.spinHit = new Set();
     this.swinging = 0;
+    this.holding = false;
+    this.holdT = 0;
     game.audio.sfx('spin');
   }
 
@@ -463,15 +557,17 @@ export class Player extends Entity {
     // would pull it straight back to the ground on the first frame.
     if (this.ledgeHop) return;
     if (!this.jumping) {
-      if (this.z > 0) { this.z = Math.max(0, this.z - LAND_SETTLE_RATE); }
+      if (this.fz > 0) { this.fz = Math.max(0, this.fz - LAND_SETTLE_RATE); }
       return;
     }
-    this.z += this.vz;
+    // Height integrates on the same subpixel grid as x and y: `vz` is sp/f and
+    // gravity is sp/f^2, so a jump arc is exactly reproducible.
+    this.fz += this.vz;
     // Roc's Cape hangs in the air a moment longer.
     this.vz -= (this.gliding && this.vz < 0 && game.input.down(game.progress.equipB === 'feather' ? 'b' : 'a'))
       ? GLIDE_GRAVITY : JUMP_GRAVITY;
-    if (this.z <= 0) {
-      this.z = 0; this.vz = 0; this.jumping = false;
+    if (this.fz <= 0) {
+      this.fz = 0; this.vz = 0; this.jumping = false;
       const f = groundFlags(game, this);
       // Landing in water you can't swim in throws you back.
       if ((f & F.DEEP) && !this._flippers) { this.beginWash(game); return; }
@@ -615,11 +711,13 @@ export class Player extends Entity {
     if (!o.noKnockDir && source) {
       const dx = this.cx - source.cx, dy = this.cy - source.cy;
       const d = Math.hypot(dx, dy) || 1;
-      this.knockX = dx / d * PLAYER_KNOCK_SPEED; this.knockY = dy / d * PLAYER_KNOCK_SPEED;
+      this.knockX = Math.round(dx / d * PLAYER_KNOCK_SPEED);
+      this.knockY = Math.round(dy / d * PLAYER_KNOCK_SPEED);
     } else {
       this.knockX = 0; this.knockY = 0;
     }
     this.charge = 0;
+    this.holding = false; this.holdT = 0;
     if (this.carrying) this.dropCarried(game);
     game.audio.sfx('linkHurt');
     game.shake(SHAKE_SMALL, SHAKE_SMALL_FRAMES);
@@ -704,6 +802,7 @@ export class Player extends Entity {
     }
     if (this.hurtTime > 0) return 'link_hurt_' + key;
     if (this.swinging > 0) return 'link_sword_' + key;
+    if (this.holding) return 'link_hold_' + key;
     if (this.carrying) return 'link_carry_' + key;
     if (this.pushing) return 'link_push_' + key;
     const moving = this._lastDx || this._lastDy;

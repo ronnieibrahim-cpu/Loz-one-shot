@@ -2,6 +2,7 @@
 
 import { Entity, moveEntity, canOccupy, defineEntity, DIR_VEC } from './entity.js';
 import { VIEW_W, VIEW_H, TILE } from '../core/screen.js';
+import { sp, toPx } from '../core/fixed.js';
 import { F } from '../world/tileset.js';
 import { PROJECTILE_LIFE, PROJECTILE_SPEED, PROJECTILE_Z } from '../data/feel.js';
 
@@ -10,7 +11,10 @@ export class Projectile extends Entity {
     super(x, y, o);
     this.w = o.w || 8; this.h = o.h || 8;
     this.hb = o.hb || { x: 1, y: 1, w: this.w - 2, h: this.h - 2 };
-    this.vx = o.vx || 0; this.vy = o.vy || 0;
+    // Callers name a shot's velocity in px/f, the way every enemy spec and
+    // every `shootRing` does. It lands here as an integer subpixel step, which
+    // is the only thing the position accumulator will take.
+    this.vx = sp(o.vx || 0); this.vy = sp(o.vy || 0);
     this.sprite = o.sprite || 'shot';
     this.pal = o.pal || 'enemyr';
     this.damage = o.damage != null ? o.damage : 1;
@@ -34,21 +38,22 @@ export class Projectile extends Entity {
     this.frame++;
     if (--this.life <= 0) { this.expire(game); return; }
 
-    const nx = this.x + this.vx, ny = this.y + this.vy;
+    const nfx = this.fx + this.vx, nfy = this.fy + this.vy;
+    const nx = toPx(nfx), ny = toPx(nfy);
     // Walls stop shots; water does not (unless overWater is false).
     const blocked = !this.canPass(game, nx, ny);
     if (blocked) {
       if (this.bounces > 0) {
         this.bounces--;
-        if (!this.canPass(game, this.x + this.vx, this.y)) this.vx = -this.vx;
-        if (!this.canPass(game, this.x, this.y + this.vy)) this.vy = -this.vy;
+        if (!this.canPass(game, nx, this.y)) this.vx = -this.vx;
+        if (!this.canPass(game, this.x, ny)) this.vy = -this.vy;
         game.audio.sfx('ricochet');
       } else {
         this.expire(game);
         return;
       }
     } else {
-      this.x = nx; this.y = ny;
+      this.fx = nfx; this.fy = nfy;
     }
 
     if (this.x < -12 || this.y < -12 || this.x > VIEW_W + 12 || this.y > VIEW_H + 12) {
@@ -103,7 +108,11 @@ export class Projectile extends Entity {
   }
 }
 
-/** Convenience: fire a projectile from an entity toward a direction or point. */
+/**
+ * Convenience: fire a projectile from an entity toward a direction or point.
+ * `speed`, `vx` and `vy` are px/f here — this is the data-facing edge, and the
+ * Projectile constructor converts them to the engine's subpixel step.
+ */
 export function fire(game, from, o = {}) {
   const speed = o.speed || PROJECTILE_SPEED;
   let vx = o.vx, vy = o.vy;

@@ -50,6 +50,7 @@ import {
 import { spawnEntity, moveEntity } from '../game/entity.js';
 import { fire } from '../game/projectile.js';
 import { VIEW_W, VIEW_H, TILE } from '../core/screen.js';
+import { sp } from '../core/fixed.js';
 
 const LOW = 0, MID = 1, HIGH = 2;
 
@@ -683,7 +684,7 @@ export function installBosses() {
     const p = g.player;
     if (strength > 0 && p && !e.hidden) {
       const dx = e.cx - p.cx, dy = e.cy - p.cy, d = Math.hypot(dx, dy) || 1;
-      if (d < 96) moveEntity(g, p, (dx / d) * strength, (dy / d) * strength);
+      if (d < 96) moveEntity(g, p, sp((dx / d) * strength), sp((dy / d) * strength));
       if (every(e, 20)) g.spawnEffect('ripple', e.cx - 8, e.cy - 8, { life: 24 });
     }
     return lvl === LOW ? 1.9 : 1.0;   // beached: no pull, but twice the thrash
@@ -1079,7 +1080,7 @@ export function installBosses() {
     const p = g.player;
     if (push > 0 && p && distToPlayer(e, g) < 80) {
       const dx = p.cx - e.cx, dy = p.cy - e.cy, d = Math.hypot(dx, dy) || 1;
-      moveEntity(g, p, (dx / d) * push, (dy / d) * push);
+      moveEntity(g, p, sp((dx / d) * push), sp((dy / d) * push));
     }
   }
 

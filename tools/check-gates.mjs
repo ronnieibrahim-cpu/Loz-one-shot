@@ -193,13 +193,27 @@ check('the gloves only shift the plug in front', neighbour === 'abyssPlug', neig
 // specifically to be out of the Feather's reach. The last check below is what
 // keeps that true if anyone edits the map.
 
-// Hold a direction for ~22 frames and report the tile the player ends on.
-// Not 40: the player walks out of the room and arrives in the next one, which
-// is indistinguishable from never having moved.
+// How long to hold a direction for the player to cover three tiles, read from
+// the engine's own walk speed rather than written down here. It used to be a
+// flat 22 frames, which was 2.1 tiles at the walk speed of the day and 1.5
+// tiles after P3 re-derived it — so the Feather check started failing on a
+// chasm the Feather still clears. A frame budget calibrated against a constant
+// has to be derived from that constant or it silently measures the wrong thing.
+const walkPxPerFrame = await page.evaluate(async () => {
+  const feel = await import('/src/data/feel.js');
+  const fixed = await import('/src/core/fixed.js');
+  return feel.WALK_SPEED / fixed.FP_ONE;
+});
+const CROSS_FRAMES = Math.ceil(3 * 16 / walkPxPerFrame);
+
+// Hold a direction long enough to cross three tiles, then report the tile the
+// player ends on. Three and no more: far enough that a cleared gap is
+// unambiguous, near enough that the player does not walk out of the room, which
+// would be indistinguishable from never having moved.
 const walkAt = async (key, jump) => {
   await page.keyboard.down(key);
   if (jump) { await frames(3); await page.keyboard.press('KeyZ'); }
-  await frames(22);
+  await frames(CROSS_FRAMES);
   await page.keyboard.up(key);
   await frames(14);
   return page.evaluate(() => ({
