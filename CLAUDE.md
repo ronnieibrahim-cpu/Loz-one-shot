@@ -2,14 +2,20 @@
 
 A personal, unpublished GBC-style Zelda. Two goals, in order:
 
-1. **It must feel like Oracle of Seasons / Ages.** Feel is the product. A
-   feature that works but feels wrong is a regression.
+1. **It must look and feel like Oracle of Seasons / Ages.** Fidelity is the
+   product. Aim for the closeness of a ROM hack: a screen of this game should
+   be hard to tell from a screen of the originals until you notice that the
+   items, dungeons, terrain and enemies on it are ones the originals never had.
+   A feature that works but feels wrong is a regression, and so is art that
+   reads as someone's impression of the source rather than the source.
 2. **Its design must be original.** Mechanics, items, dungeons and story are
    ours. Only the genre grammar is borrowed.
 
-Where these conflict, feel wins. We are not trying to be different for its own
-sake; we are trying to build something that plays like the Oracles and isn't a
-retread of them.
+These are not in tension as often as they look. Goal 1 governs the *surface* —
+sprites, tiles, timing, motion — and there the answer is almost always to take
+what the source games already drew. Goal 2 governs *what the game is about*,
+and there nothing is borrowed. Where they do conflict, fidelity wins; we are
+not being different for its own sake.
 
 ---
 
@@ -113,9 +119,19 @@ They are faster than you are and they do not rationalise.
 
 ## Art rules
 
-These describe the source games' own grammar, measured across the existing
-cast. Extracted art satisfies them by construction — that is the point of
-extracting. They bind **hand-drawn** art, which has to hold the same register:
+**These are not a licence to hand-draw.** They describe the source games' own
+grammar, measured across the existing cast, and extracted art satisfies every
+one of them by construction — which is the argument for extracting rather than
+the argument for drawing carefully. They exist for the art no sheet can supply:
+the bosses, the tide-variant terrain, the items that are ours. Reach for them
+only after `assets/sheets/` has been checked and come up empty.
+
+Terrain and scenery are covered by this too. Rocks, trees, bushes, stumps,
+cliffs and ground textures are exactly the things the sheets are richest in and
+exactly the things most likely to betray a hand doing an impression of the
+source. Extract them.
+
+When you do have to draw:
 
 - Three colours plus transparency. Index 3 is the outline; 0–2 carry the form.
 - A hard 1px black outline all the way round. No exceptions.

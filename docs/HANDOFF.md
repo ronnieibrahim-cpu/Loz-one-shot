@@ -691,6 +691,34 @@ Reef Palace span had no post to latch onto at all. It flooded correctly in
 `check-overworld.mjs` and was impassable in play — exactly the gap the two
 checkers exist to close, caught by the in-engine half.
 
+### The seamless-tile scan is a committed tool now
+
+`python3 tools/rip-terrain.py --scan <ow|dg> <x0> <y0> <x1> <y1>`
+
+This file used to describe the scan in prose and note that the script was not
+committed, which meant the next person to need it had to rewrite it from the
+paragraph. It is in the ripper now. A ground tile is the 16x16 window that
+repeats at +16 in x **and** +16 in y; passing that test proves the window is
+correctly phased and tiles seamlessly, which is the property terrain has to
+have. It prints each distinct tile with a real origin you can paste into
+`PICKS`, ranked by how much of the region it covers.
+
+The one implementation note worth keeping: **deduplicate hits on raw bytes
+before canonicalising them.** Every hit has 256 cyclic phase shifts that are
+the same tile, and canonicalising every hit instead of every distinct hit is
+the difference between seconds and not finishing.
+
+What it found when it was run across the overworld sheet's green regions,
+so nobody repeats the search: the sheet has exactly two seamless grass
+textures worth having and **both are already extracted** — `tallgrass`
+(886,1049) and `grassTuft` (1611,307). The dense herringbone at 1305,1194 that
+looks like a promising base grass is `tallgrass` again at a different phase.
+Base `grass` stays hand-drawn not because nobody tried but because the sheet's
+only alternatives are a banded field (508,1549), a dither field (532,1500) and
+a third tuft pattern (2287,670), none of which is better than the flat field
+already there, and one of which would make `grass` and `tallgrass` read the
+same — which matters, because `tallgrass` is the cuttable one.
+
 ## Verification harnesses
 
 **Five of these are now committed**, and that is a deliberate reversal. The
@@ -866,17 +894,30 @@ What remains, in rough order of payoff:
    rosette) and it is now extracted and planted. Do not go looking for a
    one-cell version of the others again; the measurements above are final.
 
-   **But re-read the conclusion, not the measurements.** "None of them
-   extracts" assumed the game's `tree` must stay one 16x16 tile. That is a
-   content decision, not an engine constraint: the sheet's tree is 16x32
-   because the source game drew it as a canopy tile stacked on a trunk tile,
-   which is two ordinary tiles in a room grid, and the tileset already has
-   `underArt` and `over` for exactly this kind of layering. The same goes for
-   the 30x31 bush and the 30x28 stump as 2x2 blocks. Under the current art
-   rule — extract when a sheet has it — the honest next step is to change the
-   room data to spend two tiles on a tree and extract both halves, not to keep
-   a hand-drawn one because it fits in one. That is a real session of room-grid
-   edits across the overworld, so it is a decision, not a chore.
+   **A correction, made after actually looking.** An earlier revision of this
+   file suggested the fix was to spend two tiles on a tree and extract the
+   canopy and trunk halves separately, on the reasoning that the source games
+   draw a tree that way. That is true of the source games and false of *this
+   sheet*. `custom-oracle-style-overworld.png` is a fan-made assembled map, and
+   its trees are not standalone objects at all — they are a **connected forest
+   mass**, canopies merged into each other with a root strip along the bottom
+   edge of the run. There is no 16x16 or 16x32 window anywhere in it that is
+   one tree. Rendered with a 16px grid over the forest at 1760,1390 this is
+   obvious in one look; do that before theorising again.
+
+   The same holds for `bush`, `rock` and `cliff`. What the sheet has are
+   *masses*: a tiling foliage texture (645,1516), a tiling boulder-field
+   texture (1949,1823), and no natural cliff face at all. Those tile into
+   areas; they are not props you can stand next to.
+
+   **So the props are not blocked on effort, they are blocked on an asset.**
+   Extracting a faithful tree, bush, rock, stump, palm or cliff needs a real
+   Oracle of Seasons / Ages **overworld tileset** rip — the equivalent of what
+   `oracle-ages-link.png` is for Link. The repo does not have one; the only
+   overworld reference in `assets/sheets/` is the fan-made map. Adding that
+   sheet is the single highest-value thing anyone can do for the game's look,
+   and it turns a session of judgement calls into an afternoon of `PICKS`
+   entries.
 
 1. **More terrain.** Ten tiles are extracted; `cliff`, `cliffTop`, `tree`,
    `bush`, `rock`, `stump` and `palm` are still hand-drawn. They are

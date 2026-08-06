@@ -150,7 +150,93 @@ def hexc(c):
     return '#%02x%02x%02x' % c
 
 
+def seamless_scan(path, x0, y0, x1, y1, top=24):
+    """Rank the seamless 16x16 tiles in a region of a sheet.
+
+    This is the scan the module header describes, and it is committed now
+    because it was not before — `docs/HANDOFF.md` recorded the algorithm in
+    prose and left the next person to rewrite it, which is a session's work to
+    recover something that fits on a screen.
+
+    A ground tile is the 16x16 window that repeats at +16 in x AND +16 in y.
+    Passing that test means the window is correctly phased and tiles seamlessly
+    with itself, which is exactly what `docs/ART-DIRECTION.md` demands of
+    terrain — so the test does not just find candidates, it proves the property.
+
+    Every hit has 256 cyclic phase shifts that are the same tile, so hits are
+    deduplicated on their raw bytes first and only the distinct ones are
+    canonicalised. Doing it the other way round is what makes the naive version
+    too slow to run on a whole sheet.
+    """
+    im = Image.open(path).convert('RGB')
+    W, H = im.size
+    x1, y1 = min(x1, W - 32), min(y1, H - 32)
+    px = im.load()
+
+    def row(x, y):
+        return bytes(b for i in range(16) for b in px[x + i, y])
+
+    rows = {}
+
+    def block(x, y):
+        out = []
+        for j in range(16):
+            k = (x, y + j)
+            r = rows.get(k)
+            if r is None:
+                r = rows[k] = row(x, y + j)
+            out.append(r)
+        return out
+
+    hits = Counter()
+    for y in range(y0, y1):
+        for x in range(x0, x1):
+            b = block(x, y)
+            if block(x + 16, y) != b:
+                continue
+            if block(x, y + 16) != b:
+                continue
+            hits[b''.join(b)] += 1
+
+    # Collapse the 256 phase shifts of each distinct hit onto one key.
+    def canonical(raw):
+        grid = [raw[j * 48:(j + 1) * 48] for j in range(16)]
+        best = None
+        for dy in range(16):
+            rot = grid[dy:] + grid[:dy]
+            for dx in range(16):
+                s = b''.join(r[dx * 3:] + r[:dx * 3] for r in rot)
+                if best is None or s < best:
+                    best = s
+        return best
+
+    groups = {}
+    for raw, n in hits.items():
+        k = canonical(raw)
+        g = groups.setdefault(k, [0, raw])
+        g[0] += n
+    ranked = sorted(groups.values(), key=lambda g: -g[0])[:top]
+
+    print(f'{path}  region ({x0},{y0})-({x1},{y1})')
+    print(f'  {sum(hits.values())} seamless windows, {len(groups)} distinct tiles\n')
+    for i, (n, raw) in enumerate(ranked):
+        # Report a real origin for the tile so it can go straight into PICKS.
+        origin = next(xy for xy, r in
+                      ((xy, b''.join(block(*xy))) for xy in
+                       ((x, y) for y in range(y0, y1) for x in range(x0, x1)))
+                      if r == raw)
+        cols = len({raw[k:k + 3] for k in range(0, len(raw), 3)})
+        print(f'  [{i:2}] {n:6} windows  origin {origin[0]},{origin[1]}  {cols} colours')
+    return ranked
+
+
 def main():
+    if '--scan' in sys.argv:
+        a = sys.argv[sys.argv.index('--scan') + 1:]
+        sheet = OW if a[0] == 'ow' else DG
+        seamless_scan(sheet, int(a[1]), int(a[2]), int(a[3]), int(a[4]))
+        return
+
     sheets = {}
     arts, pals, dropped = [], [], []
     for name, path, x, y, note in PICKS:

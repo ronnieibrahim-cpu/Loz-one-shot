@@ -188,6 +188,11 @@ Confirm the baseline before changing anything, and keep every line below green:
                                                (the ONLY harness that jumps —
                                                see the jump-reach note below)
   node tools/solve-switches.mjs                17 rooms, one push per block
+  python3 tools/rip-terrain.py                 regenerates tiles-terrain.js
+                                               BYTE-IDENTICAL; if it does not,
+                                               someone hand-edited a generated
+                                               file. --scan <ow|dg> x0 y0 x1 y1
+                                               finds seamless tiles in a region.
   node tools/scan-sprites.mjs --strict         0 hard findings
   npm run build                                48 modules -> one HTML file
   node tools/check-build.mjs                   the built file boots from file://
@@ -331,19 +336,26 @@ Tell me plainly what is done, what is weak, and what you skipped.
 
 P2 through P9 in `docs/EXECUTION-PLAN.md`, in that order. Plus, carried over:
 
-1. **More terrain — the biggest fidelity gap left.** Ten tiles are extracted;
-   cliff, cliffTop, tree, bush, rock, stump and palm are still hand-drawn, and
-   the art rule now says plainly that they should not be. HANDOFF records a
-   session of findings — read them first. Short version: there IS a scan that
-   finds structured terrain (repeats at +16 in x and NOT in y), it returns no
-   natural cliff face on the overworld sheet, and the sheet's props are 16x32
-   or 2x2 against the game's 16x16.
+1. **An Oracle overworld TILESET rip is the biggest fidelity gap left, and it
+   is an asset, not a task.** `cliff`, `cliffTop`, `tree`, `bush`, `rock`,
+   `stump` and `palm` are still hand-drawn and the art rule says they should
+   not be — but they cannot be extracted from what is in `assets/sheets/`. The
+   only overworld reference there is `custom-oracle-style-overworld.png`, a
+   fan-made assembled *map*, and its trees are a connected forest mass rather
+   than standalone props; its bushes and rocks are tiling area textures. This
+   was checked with a grid overlay and with the seamless scan, and the
+   measurements are in HANDOFF under item 0 — do not re-derive them.
 
-   **The last of those is a decision, not a wall.** The source games draw a
-   tree as a canopy tile over a trunk tile; this game spends one tile on it.
-   Spending two — the tileset already has `underArt` and `over` — makes the
-   tree, bush and stump extractable as-is. It costs a pass over the overworld
-   room grids. See HANDOFF item 0.
+   What unblocks it is a real Oracle of Seasons / Ages overworld tileset sheet,
+   the equivalent of what `oracle-ages-link.png` is for Link. With one in
+   `assets/sheets/`, this becomes an afternoon of `PICKS` entries in
+   `tools/rip-terrain.py` rather than a session of judgement calls. **Ask for
+   the sheet before spending a session approximating it.**
+
+   Note the ground tiles are in better shape than the props: ten are extracted,
+   and HANDOFF records that the sheet's remaining grass textures were searched
+   and rejected for stated reasons, so `grass` staying hand-drawn is a decision
+   rather than an omission.
 2. **Water is still hand-drawn**, and unlike the props this one really is
    blocked: both terrain sheets are assembled static maps, so there is no
    second animation frame on them to extract. It needs a sheet that has one.
