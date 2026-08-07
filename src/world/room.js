@@ -26,7 +26,7 @@
 // Coordinates: tileX 0..9, tileY 0..7. Pixel space within a room is
 // tileX*16 .. tileX*16+15 and tileY*16 .. tileY*16+15.
 
-import { TILE, ROOM_W, ROOM_H, VIEW_W, VIEW_H, offscreen } from '../core/screen.js';
+import { TILE, ROOM_W, ROOM_H, offscreen } from '../core/screen.js';
 import { tiles as tileSheet } from '../gfx/art.js';
 import { F, resolveTile, getTileDef, tileArt } from './tileset.js';
 
@@ -204,15 +204,18 @@ export class Room {
 
   /** Render (and cache) the static tile layer for a tide level or field. */
   render(tide, frame) {
-    if (!this._cache) this._cache = offscreen(VIEW_W, VIEW_H);
+    // ROOM-SIZED, not viewport-sized: the whole room is rendered once and the
+    // camera window is blitted out of it. Re-rendering per frame would throw
+    // away the entire point of the cache the moment a room got wider.
+    if (!this._cache) this._cache = offscreen(this.pw, this.ph);
     const key = this.cacheKeyFor(tide);
     if (this._cacheDirty || this._cacheTide !== key) {
       const ctx = this._cache.ctx;
-      ctx.clearRect(0, 0, VIEW_W, VIEW_H);
+      ctx.clearRect(0, 0, this.pw, this.ph);
       this.animCells.length = 0;
       this.overCells.length = 0;
-      for (let y = 0; y < ROOM_H; y++) {
-        for (let x = 0; x < ROOM_W; x++) {
+      for (let y = 0; y < this.th; y++) {
+        for (let x = 0; x < this.tw; x++) {
           const d = this.tile(x, y, tide);
           if (d.flags & F.VOID) {
             ctx.fillStyle = '#000';
@@ -257,12 +260,12 @@ export class Room {
   renderAt(tide, frame) {
     const key = this.cacheKeyFor(tide);
     let a = this._alt.get(key);
-    if (!a) { a = offscreen(VIEW_W, VIEW_H); a.dirty = true; this._alt.set(key, a); }
+    if (!a) { a = offscreen(this.pw, this.ph); a.dirty = true; this._alt.set(key, a); }
     if (a.dirty) {
       const ctx = a.ctx;
-      ctx.clearRect(0, 0, VIEW_W, VIEW_H);
-      for (let y = 0; y < ROOM_H; y++) {
-        for (let x = 0; x < ROOM_W; x++) {
+      ctx.clearRect(0, 0, this.pw, this.ph);
+      for (let y = 0; y < this.th; y++) {
+        for (let x = 0; x < this.tw; x++) {
           const d = this.tile(x, y, tide);
           if (d.flags & F.VOID) continue;
           if (d.underArt) {

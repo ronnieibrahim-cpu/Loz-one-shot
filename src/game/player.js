@@ -552,7 +552,7 @@ export class Player extends Entity {
   }
 
   tileDefAt(game, tx, ty) {
-    if (tx < 0 || ty < 0 || tx * TILE >= VIEW_W || ty * TILE >= VIEW_H) return null;
+    if (!game.room || !game.room.inBounds(tx, ty)) return null;
     return game.room.tile(tx, ty, game.tide);
   }
 
@@ -622,7 +622,10 @@ export class Player extends Entity {
     const [dx, dy] = DIR_VEC[this.dir];
     const tx = this.cx + dx * (SWORD_REACH + SWORD_GAP);
     const ty = this.cy + dy * (SWORD_REACH + SWORD_GAP);
-    if (tx < 0 || ty < 0 || tx >= VIEW_W || ty >= VIEW_H) return;
+    // `tx`/`ty` are PIXELS here despite the names, so they compare against the
+    // room's pixel extent. (Noted in the P7.6 plan as a thing that looks like a
+    // bug and is not — do not "fix" the naming into a real one.)
+    if (tx < 0 || ty < 0 || tx >= game.room.pw || ty >= game.room.ph) return;
     if (!game.room.solidAt(tx, ty, game.tide, { jumping: false, swim: false })) return;
     this.clinkCool = SWORD_CLINK_COOLDOWN;
     game.audio.sfx('block');
@@ -1301,8 +1304,8 @@ export function roomHasDryGround(game) {
   const stamp = game.tide.stamp + ':' + game.tide.level;
   if (room._dryStamp === stamp) return room._dryCached;
   let dry = false;
-  for (let y = 0; y < ROOM_H && !dry; y++) {
-    for (let x = 0; x < ROOM_W; x++) {
+  for (let y = 0; y < room.th && !dry; y++) {
+    for (let x = 0; x < room.tw; x++) {
       const f = room.flagsAt(x, y, game.tide);
       if (f & (F.WATER | F.DEEP | F.SOLID | F.PIT)) continue;
       dry = true; break;

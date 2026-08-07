@@ -277,12 +277,19 @@ export class Tide {
       // `this` is the field, and the base has not moved yet, so the snapshot
       // carries the old water everywhere the conch reaches and the held water
       // everywhere an override does.
+      // [A8] SNAPSHOT THE CAMERA WINDOW, not the room's origin. In a wide room
+      // the room canvas is bigger than the snapshot, so blitting at 0,0 would
+      // freeze the room's top-left corner and wipe it over wherever the player
+      // actually is. The camera is frozen for the whole sweep (Game.update
+      // returns early), so this window is still the window when the front
+      // lands.
       if (!this.snapshot) this.snapshot = offscreen(VIEW_W, VIEW_H);
+      const cx = g.cam ? g.cam.x : 0, cy = g.cam ? g.cam.y : 0;
       this.snapshot.ctx.clearRect(0, 0, VIEW_W, VIEW_H);
       const before = g.room.render(this, g.frame);
-      this.snapshot.ctx.drawImage(before, 0, 0);
-      g.room.drawAnim(this.snapshot.ctx, 0, 0, this, g.frame);
-      g.room.drawOver(this.snapshot.ctx, 0, 0, this, g.frame);
+      this.snapshot.ctx.drawImage(before, -cx, -cy);
+      g.room.drawAnim(this.snapshot.ctx, -cx, -cy, this, g.frame);
+      g.room.drawOver(this.snapshot.ctx, -cx, -cy, this, g.frame);
       this.sweep = 1;
     }
 
@@ -307,7 +314,21 @@ export class Tide {
    * Draw the room during a tide change: old state, then the new state revealed
    * behind an advancing wave front with foam at its edge.
    */
-  drawSweep(ctx, ox, oy, newCanvas, drawNewExtras) {
+  /**
+   * [A8] SCREEN-SPACE, deliberately, and it must stay that way.
+   *
+   * `ox/oy` is the SCREEN origin and the clip and the wave front are both the
+   * viewport. `camX/camY` shift only the room-sized canvases being blitted
+   * through that clip.
+   *
+   * Making the sweep room-space would make the wipe's duration a function of
+   * room size — a 3x1 room would take three times as long and most of the
+   * front would travel where nobody is looking — and TIDE_SWEEP_FRAMES would
+   * stop describing anything. That constant is 23 because P2 measured it
+   * against the screen; a room-space sweep re-introduces, geometrically, the
+   * exact defect P2 fixed.
+   */
+  drawSweep(ctx, ox, oy, newCanvas, drawNewExtras, camX = 0, camY = 0) {
     const t = this.sweepT;
     const front = Math.round(t * (VIEW_W + 40)) - 20;
     // old state on the right of the front
@@ -316,6 +337,8 @@ export class Tide {
       ctx.beginPath();
       ctx.rect(ox + Math.max(0, front), oy, VIEW_W, VIEW_H);
       ctx.clip();
+      // The snapshot is already a picture of the WINDOW (see setLevel), so it
+      // is drawn at the screen origin with no camera term.
       ctx.drawImage(this.snapshot.canvas, ox, oy);
       ctx.restore();
     }
@@ -324,7 +347,8 @@ export class Tide {
     ctx.beginPath();
     ctx.rect(ox, oy, Math.max(0, Math.min(VIEW_W, front)), VIEW_H);
     ctx.clip();
-    ctx.drawImage(newCanvas, ox, oy);
+    // ...but `newCanvas` is the whole ROOM, so it takes the camera.
+    ctx.drawImage(newCanvas, ox - camX, oy - camY);
     if (drawNewExtras) drawNewExtras();
     ctx.restore();
 

@@ -91,6 +91,50 @@ export function hasRoom(mapId, floor, x, y) {
   return !!(m && m.roomDefs[roomKey(floor, x, y)]);
 }
 
+/**
+ * The ORIGIN key of the room covering this grid cell, or null.
+ *
+ * A multi-screen room is keyed at its top-left cell and occupies several. Its
+ * other cells are not keys, so `hasRoom` answers false for them — and a player
+ * walking east into the far half of a 2x1 room would find no room there and
+ * simply not transition. Every lookup that means "what room is at this cell"
+ * has to go through here rather than through the key.
+ *
+ * The index is built once per map and invalidated by resetRooms, because room
+ * DEFS never change during a run — only room instances do.
+ */
+export function roomOriginAt(mapId, floor, x, y) {
+  const m = MAPS.get(mapId);
+  if (!m) return null;
+  if (!m._cover) {
+    const cover = new Map();
+    for (const [key, def] of Object.entries(m.roomDefs)) {
+      const parts = key.split(',');
+      if (parts.length !== 3) continue;
+      const [f, rx, ry] = parts.map(Number);
+      const [sw, sh] = roomSpan(def);
+      for (let dy = 0; dy < sh; dy++) {
+        for (let dx = 0; dx < sw; dx++) cover.set(roomKey(f, rx + dx, ry + dy), key);
+      }
+    }
+    m._cover = cover;
+  }
+  return m._cover.get(roomKey(floor, x, y)) || null;
+}
+
+/** Does ANY room cover this cell, including a multi-screen room's far half? */
+export function coversRoom(mapId, floor, x, y) {
+  return roomOriginAt(mapId, floor, x, y) !== null;
+}
+
+/** The Room instance covering a cell, resolving through a multi-screen span. */
+export function getRoomCovering(mapId, floor, x, y) {
+  const origin = roomOriginAt(mapId, floor, x, y);
+  if (!origin) return null;
+  const [f, rx, ry] = origin.split(',').map(Number);
+  return getRoom(mapId, f, rx, ry);
+}
+
 /** Every room instance that has been created so far (for save/restore of state). */
 export function liveRooms(mapId) {
   const m = MAPS.get(mapId);
@@ -99,7 +143,7 @@ export function liveRooms(mapId) {
 
 /** Reset all instantiated rooms (used on new game / load). */
 export function resetRooms() {
-  for (const m of MAPS.values()) m._rooms.clear();
+  for (const m of MAPS.values()) { m._rooms.clear(); m._cover = null; }
 }
 
 /** All dungeon maps in index order. */

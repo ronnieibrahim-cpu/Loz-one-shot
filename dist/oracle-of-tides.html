@@ -203,8 +203,11 @@ class Input {
       // Convenience: fullscreen + mute handled by the game, not the pad. KeyU
       // and KeyY tune the anchor's held patch in the hand — see
       // Game.cycleAnchorRadius for why that constant is settled by play.
+      // KeyC is the camera's deadzone overlay (P7.6). A debug key that is not
+      // in this list never reaches takeExtra and does nothing at all, silently
+      // — which is exactly what the P7.6 plan's original KeyI would have done.
       if (e.code === 'KeyF' || e.code === 'KeyP' || e.code === 'KeyO' || e.code === 'KeyR'
-        || e.code === 'KeyU' || e.code === 'KeyY') {
+        || e.code === 'KeyU' || e.code === 'KeyY' || e.code === 'KeyC') {
         this.extra = e.code;
       }
     }, { passive: false });
@@ -1695,7 +1698,7 @@ __define("world/room.js", function (__exports, __require) {
 // Coordinates: tileX 0..9, tileY 0..7. Pixel space within a room is
 // tileX*16 .. tileX*16+15 and tileY*16 .. tileY*16+15.
 
-const { TILE, ROOM_W, ROOM_H, VIEW_W, VIEW_H, offscreen } = __require("core/screen.js");
+const { TILE, ROOM_W, ROOM_H, offscreen } = __require("core/screen.js");
 const { tiles: tileSheet } = __require("gfx/art.js");
 const { F, resolveTile, getTileDef, tileArt } = __require("world/tileset.js");
 
@@ -1873,15 +1876,18 @@ class Room {
 
   /** Render (and cache) the static tile layer for a tide level or field. */
   render(tide, frame) {
-    if (!this._cache) this._cache = offscreen(VIEW_W, VIEW_H);
+    // ROOM-SIZED, not viewport-sized: the whole room is rendered once and the
+    // camera window is blitted out of it. Re-rendering per frame would throw
+    // away the entire point of the cache the moment a room got wider.
+    if (!this._cache) this._cache = offscreen(this.pw, this.ph);
     const key = this.cacheKeyFor(tide);
     if (this._cacheDirty || this._cacheTide !== key) {
       const ctx = this._cache.ctx;
-      ctx.clearRect(0, 0, VIEW_W, VIEW_H);
+      ctx.clearRect(0, 0, this.pw, this.ph);
       this.animCells.length = 0;
       this.overCells.length = 0;
-      for (let y = 0; y < ROOM_H; y++) {
-        for (let x = 0; x < ROOM_W; x++) {
+      for (let y = 0; y < this.th; y++) {
+        for (let x = 0; x < this.tw; x++) {
           const d = this.tile(x, y, tide);
           if (d.flags & F.VOID) {
             ctx.fillStyle = '#000';
@@ -1926,12 +1932,12 @@ class Room {
   renderAt(tide, frame) {
     const key = this.cacheKeyFor(tide);
     let a = this._alt.get(key);
-    if (!a) { a = offscreen(VIEW_W, VIEW_H); a.dirty = true; this._alt.set(key, a); }
+    if (!a) { a = offscreen(this.pw, this.ph); a.dirty = true; this._alt.set(key, a); }
     if (a.dirty) {
       const ctx = a.ctx;
-      ctx.clearRect(0, 0, VIEW_W, VIEW_H);
-      for (let y = 0; y < ROOM_H; y++) {
-        for (let x = 0; x < ROOM_W; x++) {
+      ctx.clearRect(0, 0, this.pw, this.ph);
+      for (let y = 0; y < this.th; y++) {
+        for (let x = 0; x < this.tw; x++) {
           const d = this.tile(x, y, tide);
           if (d.flags & F.VOID) continue;
           if (d.underArt) {
@@ -2098,6 +2104,50 @@ function hasRoom(mapId, floor, x, y) {
   return !!(m && m.roomDefs[roomKey(floor, x, y)]);
 }
 
+/**
+ * The ORIGIN key of the room covering this grid cell, or null.
+ *
+ * A multi-screen room is keyed at its top-left cell and occupies several. Its
+ * other cells are not keys, so `hasRoom` answers false for them — and a player
+ * walking east into the far half of a 2x1 room would find no room there and
+ * simply not transition. Every lookup that means "what room is at this cell"
+ * has to go through here rather than through the key.
+ *
+ * The index is built once per map and invalidated by resetRooms, because room
+ * DEFS never change during a run — only room instances do.
+ */
+function roomOriginAt(mapId, floor, x, y) {
+  const m = MAPS.get(mapId);
+  if (!m) return null;
+  if (!m._cover) {
+    const cover = new Map();
+    for (const [key, def] of Object.entries(m.roomDefs)) {
+      const parts = key.split(',');
+      if (parts.length !== 3) continue;
+      const [f, rx, ry] = parts.map(Number);
+      const [sw, sh] = roomSpan(def);
+      for (let dy = 0; dy < sh; dy++) {
+        for (let dx = 0; dx < sw; dx++) cover.set(roomKey(f, rx + dx, ry + dy), key);
+      }
+    }
+    m._cover = cover;
+  }
+  return m._cover.get(roomKey(floor, x, y)) || null;
+}
+
+/** Does ANY room cover this cell, including a multi-screen room's far half? */
+function coversRoom(mapId, floor, x, y) {
+  return roomOriginAt(mapId, floor, x, y) !== null;
+}
+
+/** The Room instance covering a cell, resolving through a multi-screen span. */
+function getRoomCovering(mapId, floor, x, y) {
+  const origin = roomOriginAt(mapId, floor, x, y);
+  if (!origin) return null;
+  const [f, rx, ry] = origin.split(',').map(Number);
+  return getRoom(mapId, f, rx, ry);
+}
+
 /** Every room instance that has been created so far (for save/restore of state). */
 function liveRooms(mapId) {
   const m = MAPS.get(mapId);
@@ -2106,7 +2156,7 @@ function liveRooms(mapId) {
 
 /** Reset all instantiated rooms (used on new game / load). */
 function resetRooms() {
-  for (const m of MAPS.values()) m._rooms.clear();
+  for (const m of MAPS.values()) { m._rooms.clear(); m._cover = null; }
 }
 
 /** All dungeon maps in index order. */
@@ -2206,6 +2256,9 @@ __exports["getMap"] = getMap;
 __exports["roomKey"] = roomKey;
 __exports["getRoom"] = getRoom;
 __exports["hasRoom"] = hasRoom;
+__exports["roomOriginAt"] = roomOriginAt;
+__exports["coversRoom"] = coversRoom;
+__exports["getRoomCovering"] = getRoomCovering;
 __exports["liveRooms"] = liveRooms;
 __exports["resetRooms"] = resetRooms;
 __exports["dungeons"] = dungeons;
@@ -3711,12 +3764,19 @@ class Tide {
       // `this` is the field, and the base has not moved yet, so the snapshot
       // carries the old water everywhere the conch reaches and the held water
       // everywhere an override does.
+      // [A8] SNAPSHOT THE CAMERA WINDOW, not the room's origin. In a wide room
+      // the room canvas is bigger than the snapshot, so blitting at 0,0 would
+      // freeze the room's top-left corner and wipe it over wherever the player
+      // actually is. The camera is frozen for the whole sweep (Game.update
+      // returns early), so this window is still the window when the front
+      // lands.
       if (!this.snapshot) this.snapshot = offscreen(VIEW_W, VIEW_H);
+      const cx = g.cam ? g.cam.x : 0, cy = g.cam ? g.cam.y : 0;
       this.snapshot.ctx.clearRect(0, 0, VIEW_W, VIEW_H);
       const before = g.room.render(this, g.frame);
-      this.snapshot.ctx.drawImage(before, 0, 0);
-      g.room.drawAnim(this.snapshot.ctx, 0, 0, this, g.frame);
-      g.room.drawOver(this.snapshot.ctx, 0, 0, this, g.frame);
+      this.snapshot.ctx.drawImage(before, -cx, -cy);
+      g.room.drawAnim(this.snapshot.ctx, -cx, -cy, this, g.frame);
+      g.room.drawOver(this.snapshot.ctx, -cx, -cy, this, g.frame);
       this.sweep = 1;
     }
 
@@ -3741,7 +3801,21 @@ class Tide {
    * Draw the room during a tide change: old state, then the new state revealed
    * behind an advancing wave front with foam at its edge.
    */
-  drawSweep(ctx, ox, oy, newCanvas, drawNewExtras) {
+  /**
+   * [A8] SCREEN-SPACE, deliberately, and it must stay that way.
+   *
+   * `ox/oy` is the SCREEN origin and the clip and the wave front are both the
+   * viewport. `camX/camY` shift only the room-sized canvases being blitted
+   * through that clip.
+   *
+   * Making the sweep room-space would make the wipe's duration a function of
+   * room size — a 3x1 room would take three times as long and most of the
+   * front would travel where nobody is looking — and TIDE_SWEEP_FRAMES would
+   * stop describing anything. That constant is 23 because P2 measured it
+   * against the screen; a room-space sweep re-introduces, geometrically, the
+   * exact defect P2 fixed.
+   */
+  drawSweep(ctx, ox, oy, newCanvas, drawNewExtras, camX = 0, camY = 0) {
     const t = this.sweepT;
     const front = Math.round(t * (VIEW_W + 40)) - 20;
     // old state on the right of the front
@@ -3750,6 +3824,8 @@ class Tide {
       ctx.beginPath();
       ctx.rect(ox + Math.max(0, front), oy, VIEW_W, VIEW_H);
       ctx.clip();
+      // The snapshot is already a picture of the WINDOW (see setLevel), so it
+      // is drawn at the screen origin with no camera term.
       ctx.drawImage(this.snapshot.canvas, ox, oy);
       ctx.restore();
     }
@@ -3758,7 +3834,8 @@ class Tide {
     ctx.beginPath();
     ctx.rect(ox, oy, Math.max(0, Math.min(VIEW_W, front)), VIEW_H);
     ctx.clip();
-    ctx.drawImage(newCanvas, ox, oy);
+    // ...but `newCanvas` is the whole ROOM, so it takes the camera.
+    ctx.drawImage(newCanvas, ox - camX, oy - camY);
     if (drawNewExtras) drawNewExtras();
     ctx.restore();
 
@@ -4095,7 +4172,9 @@ function canOccupy(game, e, x, y, caps) {
   const avoid = (!airborne && e.avoidFlags) ? e.avoidFlags : 0;
   for (const py of ys) {
     for (const px of xs) {
-      if (px < 0 || py < 0 || px >= VIEW_W || py >= VIEW_H) return false;
+      // The ROOM's extent, not the viewport's. These were equal until P7.6 and
+      // the constant that was reached for was the wrong one of the two.
+      if (px < 0 || py < 0 || px >= room.pw || py >= room.ph) return false;
       if (room.solidAt(px, py, game.tide, cps)) return false;
       if (avoid) {
         const tx = Math.floor(px / TILE), ty = Math.floor(py / TILE);
@@ -4153,7 +4232,7 @@ function findSafeTile(game, e, maxRadius = 6) {
       for (let dx = -r; dx <= r; dx++) {
         if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
         const nx = tx + dx, ny = ty + dy;
-        if (nx < 0 || ny < 0 || nx >= ROOM_W || ny >= ROOM_H) continue;
+        if (nx < 0 || ny < 0 || nx >= game.room.tw || ny >= game.room.th) continue;
         const f = game.room.flagsAt(nx, ny, game.tide);
         if (f & (F.SOLID | F.VOID | F.DEEP | F.PIT | F.HAZARD | F.JUMPABLE)) continue;
         const px = nx * TILE + (TILE - e.w) / 2;
@@ -6538,7 +6617,7 @@ class Player extends Entity {
   }
 
   tileDefAt(game, tx, ty) {
-    if (tx < 0 || ty < 0 || tx * TILE >= VIEW_W || ty * TILE >= VIEW_H) return null;
+    if (!game.room || !game.room.inBounds(tx, ty)) return null;
     return game.room.tile(tx, ty, game.tide);
   }
 
@@ -6608,7 +6687,10 @@ class Player extends Entity {
     const [dx, dy] = DIR_VEC[this.dir];
     const tx = this.cx + dx * (SWORD_REACH + SWORD_GAP);
     const ty = this.cy + dy * (SWORD_REACH + SWORD_GAP);
-    if (tx < 0 || ty < 0 || tx >= VIEW_W || ty >= VIEW_H) return;
+    // `tx`/`ty` are PIXELS here despite the names, so they compare against the
+    // room's pixel extent. (Noted in the P7.6 plan as a thing that looks like a
+    // bug and is not — do not "fix" the naming into a real one.)
+    if (tx < 0 || ty < 0 || tx >= game.room.pw || ty >= game.room.ph) return;
     if (!game.room.solidAt(tx, ty, game.tide, { jumping: false, swim: false })) return;
     this.clinkCool = SWORD_CLINK_COOLDOWN;
     game.audio.sfx('block');
@@ -7287,8 +7369,8 @@ function roomHasDryGround(game) {
   const stamp = game.tide.stamp + ':' + game.tide.level;
   if (room._dryStamp === stamp) return room._dryCached;
   let dry = false;
-  for (let y = 0; y < ROOM_H && !dry; y++) {
-    for (let x = 0; x < ROOM_W; x++) {
+  for (let y = 0; y < room.th && !dry; y++) {
+    for (let x = 0; x < room.tw; x++) {
       const f = room.flagsAt(x, y, game.tide);
       if (f & (F.WATER | F.DEEP | F.SOLID | F.PIT)) continue;
       dry = true; break;
@@ -9175,6 +9257,25 @@ class Camera {
   }
 
   /**
+   * The deadzone box and the window's travel, on KeyC. [A1]: KeyC rather than
+   * the plan's KeyI (never whitelisted, would have done nothing) or the
+   * review's KeyU (P5's anchor-radius cycle).
+   *
+   * Drawn in SCREEN space — it describes the window, not the room.
+   */
+  drawDebug(ctx, sox, soy, room) {
+    if (!this.debug) return;
+    const [mx, my] = this.limits(room);
+    ctx.save();
+    ctx.strokeStyle = '#f8f860';
+    ctx.strokeRect(sox + VIEW_W / 2 - CAM_DEADZONE_W + 0.5, soy + VIEW_H / 2 - CAM_DEADZONE_H + 0.5,
+      CAM_DEADZONE_W * 2, CAM_DEADZONE_H * 2);
+    ctx.fillStyle = '#f8f860';
+    ctx.fillText(`cam ${this.x},${this.y} / ${mx},${my}`, sox + 3, soy + 9);
+    ctx.restore();
+  }
+
+  /**
    * [A3] Should this entity be simulated?
    *
    * Off-camera entities FREEZE — not despawn, not cull. The reason is P4:
@@ -9558,7 +9659,7 @@ const { tiles: tileSheet, sprites } = __require("gfx/art.js");
 const { TINTS } = __require("gfx/palettes.js");
 const { drawText, drawTextCentered, textWidth } = __require("gfx/font.js");
 const { F, transformFor, getTileDef, resolveTile } = __require("world/tileset.js");
-const { getMap, getRoom, hasRoom, resetRooms, MAPS } = __require("world/maps.js");
+const { getMap, getRoom, hasRoom, getRoomCovering, coversRoom, resetRooms, MAPS } = __require("world/maps.js");
 const { Tide, TIDE_COUNT } = __require("game/tide.js");
 const { Player } = __require("game/player.js");
 const { spawnEntity, ENTITY_TYPES, Entity, findSafeTile } = __require("game/entity.js");
@@ -9576,6 +9677,11 @@ const { runCutscene, CUTSCENES } = __require("game/cutscene.js");
 const { Stream, seedGlobal, roomStream, noise1, rng: rngGlobal } = __require("core/rng.js");
 const { sp } = __require("core/fixed.js");
 const { ROOM_TRANSITION_FRAMES, ROOM_EXIT_MARGIN, FADE_RATE, BANNER_FRAMES, SHAKE_LARGE, SHAKE_LARGE_FRAMES, BOSS_ESSENCE_DELAY_FRAMES, BOSS_MUSIC_RESUME_FRAMES, ITEM_PRESENT_FRAMES, ESSENCE_FREEZE_FRAMES, GAMEOVER_WAIT_FRAMES, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, LENS_FADE_FRAMES, LENS_GHOST_ALPHA, LENS_TINT_ALPHA, LENS_PHASE_ALPHA, LENS_SHIMMER_FRAMES, REEFSEED_CAPACITY, COIN_SWAP_DELAY_FRAMES, BOTTLE_CAPACITY, CARVE_TIDE_TURNS, QUARTERMASTER_BONUS, CHANDLER_FACTOR, LANTERN_RADIUS, GULLS_TALLY_FACTOR, CARVE_PRICE, PICKUP_LIFE_FRAMES, WRECK_GLIMMER_PERIOD, WRECK_GLIMMER_ON, WRECK_GLIMMER_ALPHA } = __require("data/feel.js");
+
+// [A6] What shows through where the room does not reach. The `void` tiledef's
+// darkest colour, so the gap a shake opens at a room edge reads as more wall
+// rather than as a hole in the screen.
+const VOID_COLOUR = '#000000';
 
 class Game {
   constructor(screen, input) {
@@ -9837,40 +9943,77 @@ class Game {
     // time and stops flush against the last legal column, so a one-pixel band
     // at the edge is enough. See ROOM_EXIT_MARGIN in feel.js.
     const M = ROOM_EXIT_MARGIN;
+    const room = this.room;
+    // THE ROOM'S EDGE, NOT THE SCREEN'S. An internal screen seam inside a
+    // multi-screen room is not a boundary and never was one — nothing here was
+    // ever looking for a seam, only for the room's extent, which is why this is
+    // the whole of the transition change.
     let dir = null;
-    if (i.down('right') && r.x + r.w >= VIEW_W - M) dir = 'right';
+    if (i.down('right') && r.x + r.w >= room.pw - M) dir = 'right';
     else if (i.down('left') && r.x <= M) dir = 'left';
-    else if (i.down('down') && r.y + r.h >= VIEW_H - M) dir = 'down';
+    else if (i.down('down') && r.y + r.h >= room.ph - M) dir = 'down';
     else if (i.down('up') && r.y <= M) dir = 'up';
     if (!dir) return;
 
+    // Step over the room's whole SPAN, not one cell: a 2x1 room at (3,4) has
+    // its eastern neighbour at (5,4).
     const d = { right: [1, 0], left: [-1, 0], down: [0, 1], up: [0, -1] }[dir];
-    const nx = this.room.rx + d[0], ny = this.room.ry + d[1];
-    if (!hasRoom(this.mapId, this.room.floor, nx, ny)) return;
+    const nx = room.rx + (d[0] > 0 ? room.sw : d[0]);
+    const ny = room.ry + (d[1] > 0 ? room.sh : d[1]);
+    // Resolve THROUGH a span: the neighbour may be the far half of a wide room,
+    // which is not itself a key. `hasRoom` would answer false and the player
+    // would walk into the wall of a room that is plainly there.
+    const next = getRoomCovering(this.mapId, room.floor, nx, ny);
+    if (!next) return;
 
-    const next = getRoom(this.mapId, this.room.floor, nx, ny);
+    // [A5] The slide shows the camera window as of THIS INSTANT, and that
+    // window is guaranteed to be the room's clamp for exactly one reason: the
+    // exit fires at room.pw/ph, so Link is flush against the far edge and the
+    // camera — clamped to [0, pw - VIEW_W] — is necessarily at its maximum.
+    // Nothing else enforces it. If a change to the deadzone, to CAM_MAX_SPEED
+    // or to ROOM_EXIT_MARGIN ever leaves the camera short at this moment, the
+    // two halves of the slide do not meet and the seam tears. Fail loudly here
+    // rather than shipping a rare visual tear nobody can reproduce.
+    const axis = (dir === 'left' || dir === 'right') ? 'x' : 'y';
+    if ((dir === 'right' || dir === 'down') && !this.cam.atClamp(room, axis)) {
+      console.error('[transition] camera is not at its clamp at the moment of exit; '
+        + 'the slide will tear. cam=' + this.cam.x + ',' + this.cam.y
+        + ' room=' + room.key + ' ' + room.sw + 'x' + room.sh);
+    }
     if (this.map.scroll === false) {
-      this.warpTo(this.mapId, this.room.floor, nx, ny, this.entryPos(dir, p), dir);
+      this.warpTo(this.mapId, room.floor, next.rx, next.ry, this.entryPos(dir, p, next), dir);
       return;
     }
     this.transition = {
-      dir, t: 0, from: this.room, to: next, nx, ny,
-      fromCanvas: this.room.render(this.tide, this.frame),
+      dir, t: 0, from: room, to: next, nx: next.rx, ny: next.ry,
+      fromCanvas: room.render(this.tide, this.frame),
       startFx: p.fx, startFy: p.fy,
-      endPos: this.entryPos(dir, p),
+      endPos: this.entryPos(dir, p, next),
     };
-    // Snapshot the outgoing room so animated tiles do not tick during the slide.
+    // Snapshot the outgoing room so animated tiles do not tick during the
+    // slide. [A5] It is a picture of the CAMERA WINDOW, not of the room's
+    // origin — in a wide room those differ, and snapshotting the origin would
+    // slide the room's top-left corner away from wherever the player is.
+    const cx = this.cam.x, cy = this.cam.y;
     this.roomSnapshot.ctx.clearRect(0, 0, VIEW_W, VIEW_H);
-    this.roomSnapshot.ctx.drawImage(this.transition.fromCanvas, 0, 0);
-    this.room.drawAnim(this.roomSnapshot.ctx, 0, 0, this.tide, this.frame);
-    this.room.drawOver(this.roomSnapshot.ctx, 0, 0, this.tide, this.frame);
+    this.roomSnapshot.ctx.drawImage(this.transition.fromCanvas, -cx, -cy);
+    room.drawAnim(this.roomSnapshot.ctx, -cx, -cy, this.tide, this.frame);
+    room.drawOver(this.roomSnapshot.ctx, -cx, -cy, this.tide, this.frame);
   }
 
-  entryPos(dir, p) {
+  /**
+   * Where the player lands in the room being entered.
+   *
+   * The far-edge cases read the INCOMING room's extent: walking west out of a
+   * room puts you against the east wall of the next one, and that wall is at
+   * its own `pw`, which is not the screen's width once rooms can be wide.
+   */
+  entryPos(dir, p, next) {
+    const nw = next ? next.pw : VIEW_W, nh = next ? next.ph : VIEW_H;
     if (dir === 'right') return { x: -3, y: p.y };
-    if (dir === 'left') return { x: VIEW_W - 13, y: p.y };
+    if (dir === 'left') return { x: nw - 13, y: p.y };
     if (dir === 'down') return { x: p.x, y: -8 };
-    return { x: p.x, y: VIEW_H - 16 };
+    return { x: p.x, y: nh - 16 };
   }
 
   updateTransition() {
@@ -10518,6 +10661,10 @@ class Game {
     if (extra === 'KeyO') { this.debug = !this.debug; }
     if (extra === 'KeyU') { this.cycleAnchorRadius(); }
     if (extra === 'KeyY') { this.cycleAnchorShape(); }
+    // [A1] The camera's deadzone overlay. KeyC, NOT the plan's KeyI (which is
+    // not in input.js's whitelist and would have silently done nothing) and
+    // NOT KeyU (P5's anchor radius). Verified against the live chain above.
+    if (extra === 'KeyC') { this.cam.debug = !this.cam.debug; }
 
     switch (this.mode) {
       case 'title': this.title.update(); return;
@@ -10800,16 +10947,43 @@ class Game {
     if (this.debug) this.drawDebug(ctx);
   }
 
-  drawScene(ctx, ox, oy) {
+  /**
+   * TWO ORIGINS, and confusing them is the bug this whole feature invites.
+   *
+   *   sox/soy  SCREEN space — where the viewport is, shaken. Anything that
+   *            describes the window itself uses this: the void fill and the
+   *            tide sweep's clip.
+   *   ox/oy    WORLD space — the screen origin minus the camera. Everything
+   *            that lives in the room uses this: tiles, entities, the Lens,
+   *            the glimmer, the darkness.
+   *
+   * In a 1x1 room the camera is pinned at 0 and the two are identical, which
+   * is why every existing room draws exactly as it did before.
+   */
+  drawScene(ctx, sox, soy) {
     const room = this.room;
     if (!room) return;
+    const cam = this.cam;
+    const ox = sox - cam.x, oy = soy - cam.y;
     const base = room.render(this.tide, this.frame);
 
+    // [A6] The shake moves the sampled window, and at a room edge the camera
+    // is already clamped, so the sum can point past the room canvas. Painting
+    // the viewport first gives that gap a colour instead of leaving it
+    // undefined. It only ever covers pixels a tile was not going to cover, so
+    // it changes nothing in any room that is not shaking — including every
+    // 1x1 room, where this has quietly been showing black during a shake since
+    // long before there was a camera.
+    ctx.fillStyle = VOID_COLOUR;
+    ctx.fillRect(sox - VIEW_W, soy - VIEW_H, VIEW_W * 3, VIEW_H * 3);
+
     if (this.tide.busy) {
-      this.tide.drawSweep(ctx, ox, oy, base, () => {
+      // [A8] The sweep is SCREEN-space: its clip and its wave front are the
+      // window, not the room. See Tide.drawSweep.
+      this.tide.drawSweep(ctx, sox, soy, base, () => {
         room.drawAnim(ctx, ox, oy, this.tide, this.frame);
         room.drawOver(ctx, ox, oy, this.tide, this.frame);
-      });
+      }, cam.x, cam.y);
       // Link keeps standing there while the water changes around him.
       if (this.player) this.player.draw(ctx, this, ox, oy);
       return;
@@ -10832,6 +11006,7 @@ class Game {
     if (this.charm('wreckersEye')) this.drawWrecksGlimmer(ctx, ox, oy);
     if (this.player && this.player.lensT > 0) this.drawLensGhost(ctx, ox, oy);
     if (this.debug && this.tide.overrides.length) this.drawAnchorField(ctx, ox, oy);
+    if (this.debug) this.cam.drawDebug(ctx, sox, soy, room);
     if (room.dark && !flag(this.progress, 'lantern')) this.drawDarkness(ctx, ox, oy);
     if (this.itemShow) this.drawItemShow(ctx);
   }
@@ -10855,8 +11030,8 @@ class Game {
       if (!(e instanceof Chest) || e.opened) continue;
       this.glimmerAt(ctx, ox + e.x + 8, oy + e.y + 8, e.x + e.y);
     }
-    for (let ty = 0; ty < ROOM_H; ty++) {
-      for (let tx = 0; tx < ROOM_W; tx++) {
+    for (let ty = 0; ty < room.th; ty++) {
+      for (let tx = 0; tx < room.tw; tx++) {
         const name = room.baseName(tx, ty);
         if (!transformFor(name, 'dredge')) continue;
         this.glimmerAt(ctx, ox + tx * TILE + 8, oy + ty * TILE + 8, tx * 7 + ty * 13);

@@ -81,6 +81,25 @@ export class Camera {
   }
 
   /**
+   * The deadzone box and the window's travel, on KeyC. [A1]: KeyC rather than
+   * the plan's KeyI (never whitelisted, would have done nothing) or the
+   * review's KeyU (P5's anchor-radius cycle).
+   *
+   * Drawn in SCREEN space — it describes the window, not the room.
+   */
+  drawDebug(ctx, sox, soy, room) {
+    if (!this.debug) return;
+    const [mx, my] = this.limits(room);
+    ctx.save();
+    ctx.strokeStyle = '#f8f860';
+    ctx.strokeRect(sox + VIEW_W / 2 - CAM_DEADZONE_W + 0.5, soy + VIEW_H / 2 - CAM_DEADZONE_H + 0.5,
+      CAM_DEADZONE_W * 2, CAM_DEADZONE_H * 2);
+    ctx.fillStyle = '#f8f860';
+    ctx.fillText(`cam ${this.x},${this.y} / ${mx},${my}`, sox + 3, soy + 9);
+    ctx.restore();
+  }
+
+  /**
    * [A3] Should this entity be simulated?
    *
    * Off-camera entities FREEZE — not despawn, not cull. The reason is P4:
