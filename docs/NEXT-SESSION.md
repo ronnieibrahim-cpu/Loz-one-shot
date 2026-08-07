@@ -10,7 +10,88 @@ maintain and the most expensive thing to not have.
 
 ---
 
-## What the last session did (P4: grid-locked enemy motion)
+## What the last session did (P6: the item roster)
+
+`docs/ITEMS.md` is new and is the authoritative roster. Nine items in, ten out,
+one commit each, every checker run between them.
+
+**Added.** Brineglass Lens, Kelp-Soled Cleats, Squall Bellows, Reefseed, Dredge
+Line, Resonance Rod, Ferryman's Coin, Chartstone, Bottled Tide. Each has an
+entry in `src/game/items.js`, a hand-drawn icon in `src/data/sprites-gear.js`,
+a HUD icon, a desc, constants in `feel.js` tagged `guessed` with units, and one
+overworld use and one dungeon use. `docs/ITEMS.md` names all three verbs for
+each, and says out loud where one is missing.
+
+**Removed.** `feather`, `bracelet`, `boomerang`, `hookshot`, `magnet`,
+`shovel`, `satchel` and all five seeds, `slingshot`, `flippers`, `ringbox`. The
+registry is now `sword shield conch bombs map` plus the ten roster items, and
+`tools/check-items.mjs` asserts exactly that.
+
+**`tools/check-items.mjs` is new and is the interesting part.** 78 assertions
+that press each item's button in-engine and check what it did. It exists
+because nothing else could see an item at all: `validate` reads room data,
+`walk-dungeons` walks tiles, and neither runs a button press. It caught six
+real defects during the session, listed in HANDOFF — including a chest that
+went on granting a deleted item in complete silence, and two edits that deleted
+items nobody meant to touch.
+
+### THE TIDE IS STILL A SCALAR. P5 was running in parallel and P6 did not fight it.
+
+`tide.levelAt(tx, ty)` does not exist. P5 owns it. One P6 item needed a local
+override, so `src/game/tidelocal.js` exists with a header addressed to whoever
+merges P5: `game.tideAt(tx, ty)` is a one-line method on `Game`, six call sites
+are spatial, and `game.tideHolds` is a stand-in for P5's override list that
+**must not survive alongside it**. Merging P5 is one function body.
+
+**D1's dungeon item is deliberately empty** (`item: null`, the big chest holds a
+Heart Piece) so that P5 can put the Tidewright's Anchor there without either
+session defining it twice.
+
+### Two verbs are base moveset now
+
+- **The hop.** Not on a button — walking into a one-tile gap hops it, reusing
+  `ledgeHop`'s arc. `GAP_HOP_MAX_SPAN` decides the width and
+  `check-overworld`'s flood reads that constant.
+- **The lift.** On the context button. **A is context-first**, so standing next
+  to a pot with an item bound to A means the pot comes up; `test.mjs` had to
+  turn Link around before its conch section for exactly this.
+
+### The overworld gates moved
+
+| Gate | Was | Is |
+|---|---|---|
+| Salt Pans | Magic Boomerang | **Resonance Rod**, and its range doubles at HIGH — the only gate whose key is the core mechanic. Both halves asserted in `check-gates`. |
+| Abyssal approach | Magnetic Gloves | **Dredge Line** |
+| Cliffs of Kell | Power Bracelet | **Dredge Line** (the boulder is `liftLevel: 2`, past bare hands) |
+| Coral Reef | Roc's Feather | **nothing**, on purpose. P9 re-gates. |
+
+### What is weak about it
+
+- **Nobody has watched any of this in motion.** Every claim above is from
+  checkers. The Lens overlay, the sink-mode palette, the gust cone's redraw and
+  the coral pillar's growth are all things whose whole point is how they LOOK,
+  and none has been seen on screen.
+- **Every new constant in `feel.js` is `guessed`, and cannot be otherwise** —
+  none of these items exists in the source games, so `measured` is not
+  available even in principle. `BELLOWS_RANGE`, `ROD_LOCK_FRAMES`,
+  `REEFSEED_GROW_FRAMES` and `CLEATS_BREATH_FRAMES` are the four most likely to
+  be wrong, because they are the four the player waits on.
+- **Item placement is minimum-churn, not designed.** Each new item sits where
+  the item it displaced sat, so every dungeon's key economy survived P6
+  untouched. P8 re-authors all six dungeons and will move them.
+- **The Reefseed's coral, the grates and the riptides reuse existing tile art**
+  in new palettes rather than being drawn. That is the `grassDark` pattern and
+  it is deliberate, but it means three mechanics are told apart by their flags
+  and not by their drawing. Worth a screenshot pass.
+- **`src/game/rings.js` and the menu's ring tab are still standing.** The Ring
+  Box is gone from the registry but the system it fed is P7's to delete, because
+  removing it means changing the save format.
+- **The Cleats' sink mode does not change WHERE you can go, only how.** The
+  brief asked for the behavioural difference (speed, currents, knockback, sword,
+  carry, breath) and that is all implemented; a genuinely separate seafloor
+  ROUTE layer — tiles that block the surface and not the floor — is not.
+
+## What the session before that did (P4: grid-locked enemy motion)
 
 P4 was written against the pre-P3 engine and merged onto it afterwards, so the
 lattice is stated in the 8.8 subpixel arithmetic P3 introduced rather than in
@@ -277,8 +358,11 @@ Continue building "Oracle of Tides", a GBC-style Zelda fan game.
 
 Read, in this order:
   CLAUDE.md              - the hard rules. They are hard rules.
-  docs/EXECUTION-PLAN.md - the roadmap. P0 through P4 are done. P5 (the tide
-                           becomes a field) is next.
+  docs/EXECUTION-PLAN.md - the roadmap. P0-P4 and P6 are done. P5 (the tide
+                           becomes a field) was running in parallel with P6 —
+                           CHECK WHETHER IT HAS LANDED before starting anything.
+  docs/ITEMS.md          - the item roster. Authoritative. tools/check-items.mjs
+                           asserts the registry is exactly this document.
   docs/FEEL-SPEC.md      - what every timing constant means and how sure we are
   docs/HANDOFF.md        - current state, environment setup, and every trap
                            already paid for. Read the environment section
@@ -310,10 +394,16 @@ Confirm the baseline before changing anything, and keep every line below green:
   node tools/test.mjs                          43/43, 0 unauthored art names
   node tools/replay.mjs                         8/8, both replays to the pixel
   node tools/walk-dungeons.mjs                 27/27, 88 ledge runs
-  node tools/check-overworld.mjs               16/16, all three gates
-  node tools/check-gates.mjs                   15/15, both item gates in-engine
-                                               (the ONLY harness that jumps —
-                                               see the jump-reach note below)
+  node tools/check-overworld.mjs               14/14, three tile gates + the
+                                               base hop modelled against
+                                               GAP_HOP_MAX_SPAN
+  node tools/check-gates.mjs                   15/15, three item gates in-engine
+                                               and the base hop (the ONLY
+                                               harness that hops — see the
+                                               jump-reach note below)
+  node tools/check-items.mjs                   78/78, every item's verbs proved
+                                               in-engine, and the registry
+                                               matched against docs/ITEMS.md
   node tools/check-motion.mjs                   8/8, enemies on the 8px lattice
   node tools/solve-switches.mjs                17 rooms, one push per block
   python3 tools/rip-terrain.py                 regenerates tiles-terrain.js
@@ -427,8 +517,16 @@ save seed with ?seed=. If you write a new harness, do both — otherwise it is
 measuring the machine, not the game. test.mjs is no longer load-flaky; a
 failure there is now yours.
 
-NEXT UP: P5 (the tide becomes a field), in docs/EXECUTION-PLAN.md. P1 through
-P4 are all in. Use plan mode for it.
+NEXT UP: P7 (scrimshaw), then P8 (six dungeon sessions) and P9. P1-P4 and P6
+are in.
+
+P5 (the tide becomes a field) was being implemented in a parallel session while
+P6 ran. BEFORE YOU START ANYTHING, check whether it landed — `git grep levelAt
+src/`. If it has, read the header of src/game/tidelocal.js first: merging P5
+means deleting one function body and one list, and doing it wrong leaves two
+override systems that both look correct. If it has NOT landed, P5 is next and
+the Tidewright's Anchor's slot is waiting for it in d1 (`item: null`, big chest
+holding a Heart Piece).
 
 ANYTHING THAT TOUCHES POSITIONS TOUCHES THE LATTICE. `beginStep`/`advanceStep`
 in src/game/enemy.js must go on landing exactly on multiples of
@@ -471,10 +569,14 @@ Tell me plainly what is done, what is weak, and what you skipped.
 - **a deterministic `test.mjs` (P2)** — it takes the clock off the wall-clock
   loop and pins the save seed, so it no longer flakes under load
 - **grid-locked enemy motion and scripted knockback (P4)**
+- **the item roster (P6)** — `docs/ITEMS.md`, nine items added and ten removed,
+  plus `tools/check-items.mjs`, which proves each item's verbs in-engine and
+  asserts the registry is exactly that document's roster
 
 ## What is left
 
-P5 through P9 in `docs/EXECUTION-PLAN.md`, in that order. Plus, carried over:
+P5 (if it has not landed in parallel), then P7, P8 and P9 in
+`docs/EXECUTION-PLAN.md`. Plus, carried over:
 
 1. **Overworld props, now that the real sheet is here.**
    `assets/sheets/oracle-ages-overworld.png` (Labrynna Present) is the genuine
@@ -500,7 +602,11 @@ P5 through P9 in `docs/EXECUTION-PLAN.md`, in that order. Plus, carried over:
    second animation frame on them to extract. It needs a sheet that has one.
 3. **A full-D1-clear replay**, per the section above.
 4. **A checker for chests whose pickup lands on a solid tile** — see the
-   Compass bug in HANDOFF.
+   Compass bug in HANDOFF. (`tools/check-items.mjs` now proves a chest names a
+   REAL item; it does not yet prove the pickup lands somewhere collectable.)
+5. **Nobody has watched P6's items in motion.** The Lens overlay, sink mode's
+   palette, the gust cone's redraw and the coral pillar's growth are all things
+   whose point is how they look, and all are green from checkers only.
 
 ## Traps that pass every validator
 
@@ -518,6 +624,10 @@ These are in HANDOFF in full. The short list, because each one cost a session:
   sides, so a run across a corridor strands rooms and still validates — use
   `find-ledges.mjs` rather than placing by eye.
 - Digits 0–9 in a room grid are always tide tiles.
+- A chest can hand over an item that does not exist, in total silence.
+- A tiledef field `registerTiles` does not name is silently discarded.
+- Deleting an entry from `ITEMS` by slicing between banner comments takes its
+  neighbours with it. Match the whole entry, brace-counted.
 
 ## Engine-API details a harness gets wrong on the first try
 
