@@ -188,6 +188,16 @@ const reach = await page.evaluate((ids) => {
       }
       return false;
     };
+    // A door a PUZZLE opens is not a wall. `reward.openDoors` names the tiles a
+    // solved room switches to their open form, so those tiles are passable in
+    // the connectivity model — the flood cannot solve a puzzle, and asserting
+    // the puzzle is solvable is a different tool's job (solve-switches.mjs for
+    // switch rooms, check-anchor.mjs for the tide-gauge rooms). Without this a
+    // room behind a puzzle door reads as stranded and the dungeon looks broken.
+    const puzzleDoors = new Set();
+    for (const [rk, def] of Object.entries(m.roomDefs)) {
+      for (const [dx0, dy0] of def.puzzle?.reward?.openDoors || []) puzzleDoors.add(`${rk}:${dx0},${dy0}`);
+    }
     const isLock = (ch) => legend[ch] === 'dDoorLocked';
     const isBossDoor = (ch) => legend[ch] === 'dDoorBoss';
     // Floors are joined by warps, not by seams. A flood that only crosses room
@@ -252,7 +262,7 @@ const reach = await page.evaluate((ids) => {
           const nx = x + dx, ny = y + dy;
           if (nx >= 0 && ny >= 0 && nx < W && ny < H) {
             const ch = def.map[ny][nx];
-            if (passable(ch)) push(rk, nx, ny);
+            if (passable(ch) || puzzleDoors.has(`${rk}:${nx},${ny}`)) push(rk, nx, ny);
             else if (jumpable(ch)) {
               const jx = x + dx * 2, jy = y + dy * 2;
               if (jx >= 0 && jy >= 0 && jx < W && jy < H && passable(def.map[jy][jx])) push(rk, jx, jy);

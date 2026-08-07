@@ -1,0 +1,246 @@
+{
+ "name": "d1-sluicegate",
+ "note": "The Iron Pipe: freeze the wells at LOW, raise the sea to MID, and walk a corridor no setting of the conch crosses",
+ "engine": 1,
+ "setup": {
+  "seed": 20260806,
+  "playerName": "LINK",
+  "items": {
+   "sword": 1,
+   "conch": 1,
+   "shield": 1,
+   "anchor": 1
+  },
+  "equipB": "anchor",
+  "equipA": "conch",
+  "tide": 0,
+  "enter": [
+   "d1",
+   0,
+   4,
+   2,
+   0,
+   48,
+   "right"
+  ],
+  "probes": [
+   [
+    2,
+    3
+   ],
+   [
+    7,
+    3
+   ]
+  ]
+ },
+ "buttons": [
+  "up",
+  "down",
+  "left",
+  "right",
+  "a",
+  "b",
+  "start",
+  "select"
+ ],
+ "frames": 462,
+ "input": [
+  [
+   0,
+   30
+  ],
+  [
+   32,
+   1
+  ],
+  [
+   0,
+   100
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   160
+  ],
+  [
+   8,
+   130
+  ],
+  [
+   0,
+   40
+  ]
+ ],
+ "trailEvery": 60,
+ "trail": [
+  {
+   "f": 60,
+   "x": 0,
+   "y": 48,
+   "hp": 12,
+   "e": 2,
+   "d": 0,
+   "r": "0,4,2",
+   "pl": [
+    0,
+    0
+   ],
+   "pp": [
+    3725859685,
+    396107757
+   ]
+  },
+  {
+   "f": 120,
+   "x": 0,
+   "y": 48,
+   "hp": 12,
+   "e": 1,
+   "d": 0,
+   "r": "0,4,2",
+   "pl": [
+    0,
+    0
+   ],
+   "pp": [
+    3725859685,
+    396107757
+   ]
+  },
+  {
+   "f": 180,
+   "x": 0,
+   "y": 48,
+   "hp": 12,
+   "e": 2,
+   "d": 0,
+   "r": "0,4,2",
+   "pl": [
+    0,
+    1
+   ],
+   "pp": [
+    3725859685,
+    3725859685
+   ]
+  },
+  {
+   "f": 240,
+   "x": 0,
+   "y": 48,
+   "hp": 12,
+   "e": 1,
+   "d": 0,
+   "r": "0,4,2",
+   "pl": [
+    0,
+    1
+   ],
+   "pp": [
+    3725859685,
+    3725859685
+   ]
+  },
+  {
+   "f": 300,
+   "x": 8,
+   "y": 48,
+   "hp": 12,
+   "e": 1,
+   "d": 0,
+   "r": "0,4,2",
+   "pl": [
+    0,
+    1
+   ],
+   "pp": [
+    3725859685,
+    3725859685
+   ]
+  },
+  {
+   "f": 360,
+   "x": 59,
+   "y": 48,
+   "hp": 12,
+   "e": 2,
+   "d": 0,
+   "r": "0,4,2",
+   "pl": [
+    0,
+    1
+   ],
+   "pp": [
+    3725859685,
+    3725859685
+   ]
+  },
+  {
+   "f": 420,
+   "x": 111,
+   "y": 48,
+   "hp": 12,
+   "e": 2,
+   "d": 0,
+   "r": "0,4,2",
+   "pl": [
+    0,
+    1
+   ],
+   "pp": [
+    3725859685,
+    3725859685
+   ]
+  }
+ ],
+ "expect": {
+  "frame": 462,
+  "mapId": "d1",
+  "room": "0,4,2",
+  "floor": 0,
+  "x": 112,
+  "y": 48,
+  "z": 0,
+  "dir": "right",
+  "playerId": 1,
+  "hearts": 12,
+  "maxHearts": 12,
+  "rupees": 0,
+  "kills": 0,
+  "deaths": 0,
+  "keys": 0,
+  "essences": [],
+  "items": [
+   "anchor",
+   "conch",
+   "shield",
+   "sword"
+  ],
+  "dungeonMap": false,
+  "chartstone": false,
+  "flags": [],
+  "doorsChanged": 0,
+  "secretsSeen": 2,
+  "chestsOpened": 0,
+  "tide": 1,
+  "probeLevels": [
+   0,
+   1
+  ],
+  "probePix": [
+   3725859685,
+   3725859685
+  ],
+  "mode": "play",
+  "entities": 2,
+  "enemies": 0,
+  "roomSeed": 3274780612,
+  "roomDraws": 0,
+  "globalSeed": 781976111,
+  "globalDraws": 0
+ }
+}

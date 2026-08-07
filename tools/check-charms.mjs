@@ -905,6 +905,51 @@ section('no charm is an orphan');
 }
 
 // ===========================================================================
+// EVERY CHARM PLACED IN THE WORLD MUST EXIST. `giveCharm` returns false for an
+// id that is not in CHARMS and says nothing about it, so a chest, a shop shelf
+// or a giver naming a charm that has been renamed opens, plays its jingle, and
+// hands over nothing — the same silent failure a chest granting a deleted ITEM
+// used to have before check-items.mjs went looking for it.
+section('every charm placed in the world is a real charm');
+
+r = await read(async () => {
+  const maps = await import('/src/world/maps.js');
+  const ids = new Set(Object.keys(window.__S.CHARMS));
+  const bad = [], placed = [];
+  for (const [mapId, m] of maps.MAPS) {
+    for (const [key, def] of Object.entries(m.roomDefs || {})) {
+      for (const e of def.entities || []) {
+        const id = e[3] && e[3].charm;
+        if (!id) continue;
+        placed.push(`${mapId} ${key} ${id}`);
+        if (!ids.has(id)) bad.push(`${mapId} ${key}: '${id}'`);
+      }
+    }
+  }
+  return { bad, placed };
+});
+check('no room hands over a charm that does not exist', r.bad.length === 0, r.bad.join('; '));
+const placedCharms = r.placed;
+
+// And the branch that grants it is real. `openChest` grew a `charm` case for
+// P8's hand-placed charms; a chest whose charm fell through to "Nothing but
+// sand." would still open, still be marked as opened in the save, and still be
+// unrecoverable.
+r = await read(async () => {
+  const obj = await import('/src/game/objects.js');
+  const g = window.__game;
+  delete g.progress.charms.splitFang;
+  const chest = new obj.Chest(64, 64, { charm: 'splitFang' });
+  g.openChest(chest);
+  if (g.dialogue) g.dialogue.active = false;
+  return { owned: !!g.progress.charms.splitFang };
+});
+check('a chest with a charm actually grants it', r.owned);
+check(`charms are placed by hand in the world (${placedCharms.length})`, placedCharms.length > 0,
+  'every charm in the game comes from the scrimshander\'s random carve');
+console.log('       ' + placedCharms.join('\n       '));
+
+// ===========================================================================
 check('no page errors', errs.length === 0, errs.slice(0, 3).join(' | '));
 
 console.log(`\n=== ${passed} passed, ${failures.length} failed ===`);

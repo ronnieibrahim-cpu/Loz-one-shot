@@ -10,7 +10,95 @@ maintain and the most expensive thing to not have.
 
 ---
 
-## What the last session did (P7: scrimshaw, plus P7.5 and P7.6)
+## What the last session did (P8, dungeon 1: Tidewash Grotto)
+
+**D1 is re-authored around the Tidewright's Anchor, and the claim is proved
+rather than asserted.** 24 rooms, one floor, the Anchor at room 12 of 24, and
+every room after it behind an anchor gate. The full constraint-by-constraint
+table is in `docs/EXECUTION-PLAN.md` under "P8 status", and the dungeon's own
+header comment in `src/data/dungeons-a.js` states the gate primitive once and
+then builds five rooms out of it. Also there: the P7 audit and how D1 fits the
+charm gating, which is the other half of what the session was asked for.
+
+### `tools/check-anchor.mjs` is new, and it is the point
+
+Pure Node, no browser, 14 assertions. For every room declaring `anchorGate` or
+`anchorGauges` it proves BOTH directions: that no sequence of walking, hopping
+and sounding the conch crosses it, and that one anchor placement does. It reads
+the patch radius, the throw arc and the hop reach out of `feel.js` rather than
+writing them down, so retuning `WALK_SPEED` or `ANCHOR_RADIUS_TILES` re-proves
+every gate instead of quietly breaking one. It prints the solution it found for
+each room, so the tool output is the record of each room's intended answer.
+
+**It earned itself on its first run by failing all three gates.** Each had a
+forgiving tile of `dSluice` between its two bands, put there so the five-tile
+held patch would spill onto something harmless — and since `dSluice` is dry at
+LOW and shallow at MID, it was somewhere to STAND, and the conch can be sounded
+anywhere you can stand. All three gates fell to one button press while reading
+as anchor rooms in the data. That is exactly the failure the dungeon walker
+cannot see, because its flood grants every tile whichever level suits it.
+
+### The Anchor does not fit in a 10x8 room, and that is a P7.6 argument
+
+The patch is 5x5 and the throw carries two tiles, so one gate needs
+`stand + 4 + 3 + far side` — a whole room row, with the rest of the room walled
+off so the player cannot walk round it. Hence three bare corridors, and no room
+holding two gates or a gate and anything else. A 2x1 room is 20 tiles wide and
+turns anchor geometry from a fit problem into a design space. Weigh that into
+P7.6's value: D3 onwards will keep hitting it.
+
+### Things that changed outside D1
+
+- **`openChest` grew a `charm` branch.** `Chest` accepted `{ charm: ... }` in
+  room data and `openChest` fell through to "Nothing but sand." — an opened
+  chest, a saved flag, no charm. `check-charms.mjs` now proves the branch grants
+  in-engine, sweeps every room in the game for a `charm:` that names a charm not
+  in `CHARMS`, and prints the hand-placed list (2: the shop's Ballast Heart and
+  D1's Split Fang).
+- **`walk-dungeons.mjs` understands puzzle-opened doors.** A tile named in any
+  room's `puzzle.reward.openDoors` is passable to the flood. Without it the Boss
+  Key room behind D1's gauge puzzle read as stranded.
+- **A fourth replay, `d1-sluicegate`**, crosses a real gate in the engine: throw,
+  conch, hold `right`, and the probes read LOW at (2,3) and MID at (7,3) in the
+  same frame while the player ends at x=112 on 12/12 hearts — no wash, no fall.
+  462 frames. `d1-descent` was rewritten for the new layout and re-recorded
+  (6365 frames); its frame counts are not comparable with the pre-P8 recording,
+  because the world changed rather than the movement.
+- **The Compass-on-a-pot bug is gone in D1** — the Chartstone chest has floor
+  above it and `d1-descent` collects it. The engine defect behind it is
+  untouched and five dungeons are unaudited for it.
+
+### Seen on screen, for once
+
+Four rooms were screenshot at LOW and MID with `tools/shoot-rooms.mjs` and
+looked at: the gates read (shallow water one side, black pits the other), the
+drinking floor at MID is unmistakably a chamber you have to drain, and the gauge
+room shows its door, its heart piece and its return stairs from the doorway. The
+gauges themselves are the weak part — see the new entry in `docs/ART-BACKLOG.md`
+for the fixture they want.
+
+### What is weak about it
+
+- **The three gates are the same primitive twice over.** Two orderings (wells
+  near, drains near) and three instances. The gauge rooms are the only other
+  anchor idea in the dungeon, and they are also duplicated (side by side, then
+  stacked). D1 is a tutorial dungeon so repetition is defensible; D3 will need
+  more than this, and P7.6 is what buys it.
+- **The gate corridors are visually bare** — two open rows in a room of wall,
+  because anything else in the room is either a way round the gate or a place to
+  stand and sound the conch. Decorating them safely needs care: a niche off the
+  corridor broke the gate in the first cut.
+- **Nothing in the post-item half has been played by a human**, only proved. The
+  gauge rooms in particular ask the player to infer a rule from a plaque.
+- **`0,5,2` and the boss room do not require the Anchor**, only being reached
+  through a gate does. Stated as an exception rather than papered over.
+- **check-anchor's model has no swimming in it**, so it is only sound before the
+  Cleats. It asserts that no declared anchor room is in a later dungeon, which
+  is what will catch the first D3 room that tries.
+- **The two removed dungeons are still in the data.** Eight dungeons, six in the
+  plan. D1 did not need the consolidation; D7/D8 folding is still owed.
+
+## What the session before that did (P7: scrimshaw, plus P7.5 and P7.6)
 
 ### P7 — the ring system is gone and scrimshaw replaced it
 
@@ -209,7 +297,7 @@ how it *looks*, and `ENEMY_DECIDE_STEPS = 3` in particular is a taste number
 that has never been seen on screen.
 
 ---
-## What the last session did (P5: the tide became a field, and the Anchor)
+## And before that (P5: the tide became a field, and the Anchor)
 
 All four parts of the P5 brief landed, plus the sprite and documentation work
 asked for alongside it. Reasoning is in `docs/FEEL-SPEC.md` (new section: "The
@@ -481,8 +569,10 @@ Continue building "Oracle of Tides", a GBC-style Zelda fan game.
 
 Read, in this order:
   CLAUDE.md              - the hard rules. They are hard rules.
-  docs/EXECUTION-PLAN.md - the roadmap. P0-P7 are done. P7.5 is BLOCKED on
-                           four missing dungeon map rips (see ART-BACKLOG.md);
+  docs/EXECUTION-PLAN.md - the roadmap. P0-P7 are done and so is P8's first
+                           dungeon; read "P8 status" and the P7 audit in it
+                           before touching either. P7.5 is BLOCKED on four
+                           missing dungeon map rips (see ART-BACKLOG.md);
                            P7.6 is PLANNED and awaiting approval in
                            docs/briefs/P7.6-PLAN.md. PT (towns) is independent
                            and can be taken whenever a session wants content.
@@ -534,16 +624,22 @@ Confirm the baseline before changing anything, and keep every line below green:
                                                BYTE-IDENTICAL. --sheet writes a
                                                contact sheet of every pick.
   node tools/test.mjs                          58/58
-  node tools/replay.mjs                        12/12, all three replays to the
+  node tools/replay.mjs                        16/16, all four replays to the
                                                pixel
-  node tools/walk-dungeons.mjs                 28/28
+  node tools/walk-dungeons.mjs                 28/28 (d1 is 24 rooms now)
   node tools/check-overworld.mjs               17/17 (the field flood is ~30s
                                                of its runtime)
   node tools/check-gates.mjs                   15/15 (pins ?seed= and owns the
                                                clock since the flake below)
   node tools/check-items.mjs                   78/78
-  node tools/check-charms.mjs                  60/60, every charm proved
-                                               in-engine and no charm orphaned
+  node tools/check-anchor.mjs                  14/14, every room that claims to
+                                               need the Anchor proved impassable
+                                               with the conch alone and passable
+                                               with one placement
+  node tools/check-charms.mjs                  63/63, every charm proved
+                                               in-engine, no charm orphaned, and
+                                               no room handing over a charm that
+                                               does not exist
   node tools/check-motion.mjs                   8/8
   node tools/solve-switches.mjs                17 rooms, one push per block
   node tools/check-tilesets.mjs                 6/6 (needs Pillow; it SKIPS
@@ -665,19 +761,48 @@ failure there is now yours.
 
 NEXT UP, and pick ONE:
   - P7.6, multi-screen dungeon rooms. The plan is written and needs your
-    approval first: docs/briefs/P7.6-PLAN.md. Highest value of the three,
-    because P8 is much better with it than without it.
+    approval first: docs/briefs/P7.6-PLAN.md. D1 made the case for it concrete:
+    the Anchor's held patch is 5x5 and its throw carries two tiles, so ONE gate
+    eats a whole 10-tile room row and the rest of the room has to be walled off
+    to stop the player walking round it. Every anchor room in D1 is a bare
+    corridor for that reason. A 2x1 room is 20 tiles wide.
   - PT, towns and buildings. Independent of everything, stated top design
     priority, and the only one that needs no decision from anybody.
-  - P8, the six dungeon sessions. Better after P7.6.
+  - P8 for D2, and then D3-D6. D1 is DONE — see EXECUTION-PLAN's "P8 status"
+    for the constraint table it was checked against, and read the gate primitive
+    at the top of d1 in src/data/dungeons-a.js before designing another one. A
+    room that claims to need its dungeon's item should declare it and be proved
+    by a checker; check-anchor.mjs is the worked example and it needs teaching
+    to swim before D3.
   - P7.5's remainder is BLOCKED: it needs four dungeon map rips that are not
     in this repo. Do not start it by inventing the colour-register decision.
+
+TWO DECISIONS D1 SURFACED AND DID NOT TAKE, both yours:
+  - The charm cases open when you TALK TO THE SCRIMSHANDER, not when the essence
+    lands, so a player who never returns to Tidewatch never opens the LOW or
+    HIGH case. Open it on the essence, or keep the visit as the beat and signpost
+    it? See the P7 audit in docs/EXECUTION-PLAN.md.
+  - At one essence the MID case is the only case open, and D1's whole design is
+    "take the sea down to LOW" — so the player's one charm is dark for most of
+    the dungeon. Leave it, open LOW at one essence, or place the Neap Charm
+    early? Same section, with the argument for each.
 
 SCRIMSHAW IS IN AND THE RING SYSTEM IS GONE. `game.charm(id)` replaced
 `hasRing`. A charm is live only while the tide UNDER THE PLAYER'S FEET matches
 its case — `tideAt(game, player)`, never `tide.level` — so an anchored patch
 keeps its charms alive. If you add a charm, something in src/ outside
-scrimshaw.js must READ it, or check-charms fails you.
+scrimshaw.js must READ it, or check-charms fails you. A charm PLACED in a
+dungeon must fit a case the player has open at that point in the game: at one
+essence that is MID and nothing else, so a LOW charm in D1 is a reward nobody
+can switch on for two dungeons. check-charms prints every hand-placed charm.
+
+AN ANCHOR GATE IS ONE RULE PLUS GEOMETRY. No tile between the two bands may be
+walkable at BOTH levels — the conch can be sounded anywhere the player can
+stand, so one forgiving tile in the middle turns the whole gate into a button
+press. That mistake was made and caught by tools/check-anchor.mjs in the same
+session, in all three gates at once. Bands are 4 near and 3 far because the hop
+clears two whole tiles and the patch is five across; both numbers come out of
+feel.js, not out of memory.
 
 ANYTHING THAT TOUCHES POSITIONS TOUCHES THE LATTICE. `beginStep`/`advanceStep`
 in src/game/enemy.js must go on landing exactly on multiples of
@@ -742,6 +867,9 @@ Tell me plainly what is done, what is weak, and what you skipped.
   menu screen, and `tools/check-charms.mjs`. The ring system is deleted.
 - **`tools/rip-dungeon-maps.py` (P7.5, partial)** — stitched floor maps to
   deduplicated tilesets, byte-identical, checked by `check-tilesets.mjs`
+- **D1 re-authored around the Anchor (P8, dungeon 1 of 6)** — 24 rooms, three
+  gate corridors, two gauge rooms, the item at the halfway point, and
+  `tools/check-anchor.mjs` proving each anchor room in both directions
 - **the eight dungeon themes (P7.5 step 8)** — `tools/rip-dungeon-themes.py`
   plus a themed legend per dungeon. Every dungeon is now identifiable from one
   screenshot, and no room grid changed to do it.
@@ -749,7 +877,9 @@ Tell me plainly what is done, what is weak, and what you skipped.
 ## What is left
 
 1. **P7.6 — multi-screen dungeon rooms.** PLANNED, NOT BUILT, awaiting your
-   approval: `docs/briefs/P7.6-PLAN.md`. Do the plan, not a fresh design.
+   approval: `docs/briefs/P7.6-PLAN.md`. Do the plan, not a fresh design. D1
+   supplied the hard argument for it: one anchor gate does not leave room for
+   anything else in a 10x8 screen.
 
 2. **PT — towns, buildings and terrain polish.** A stated top design priority,
    independent of the systems spine, and blocked on nothing. Thalassia's
@@ -765,7 +895,8 @@ Tell me plainly what is done, what is weak, and what you skipped.
    See `docs/ART-BACKLOG.md`. The colour-register decision is explicitly yours,
    not a session's.
 
-4. **P8 and P9.** Better after P7.6.
+4. **P8 for D2-D6, and then P9.** D1 is done. The other five are better after
+   P7.6, and the six-versus-eight dungeon consolidation is still owed.
 
 Carried over, and none of it blocking:
 
@@ -780,8 +911,13 @@ Carried over, and none of it blocking:
 - **Water is still hand-drawn** and genuinely blocked — every terrain sheet in
   the repo is a static map with no second animation frame.
 - **A full-D1-clear replay.** The actor needs a push verb, a boss routine, and
-  a jump.
-- **A checker for chests whose pickup lands on a solid tile.**
+  — new with P8 — a way to aim a throw at a named tile and then sound the conch
+  in order, since every room past the Anchor needs that. `d1-sluicegate` is a
+  hand-scripted stand-in for one gate.
+- **A checker for chests whose pickup lands on a solid tile.** D1's instance is
+  fixed by re-authoring; the engine defect and five dungeons are not.
+- **A tide-gauge fixture** so the two gauge rooms signal their rule with
+  something other than a plaque. See `docs/ART-BACKLOG.md`.
 
 ## Traps that pass every validator
 

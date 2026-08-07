@@ -755,6 +755,15 @@ export class Game {
         addBottles(p, BOTTLE_CAPACITY);
       }
       this.presentItem(id, lv);
+    } else if (chest.charm) {
+      // Charms in the world came only out of the shop and the scrimshander's
+      // random carve until P8 started placing them by hand, and a chest is the
+      // natural fixture for that. Granted outright rather than dropped: a charm
+      // is not in PICKUPS and a pickup that fell onto the wrong tile would lose
+      // it (see docs/HANDOFF.md on the Compass that landed on a pot).
+      giveCharm(p, chest.charm);
+      this.audio.jingle('fanfareShort');
+      this.say('A carved charm! Slot it on the CHARM screen.');
     } else if (chest.pickup) {
       this.spawnPickup(chest.x, chest.y - 12, chest.pickup, { grabDelay: 10 });
     } else if (chest.rupees) {
