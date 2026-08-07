@@ -8,7 +8,47 @@ import { drawPanel, drawBox } from './dialogue.js';
 import { ITEMS, itemIcon, itemName, equippableItems, SEED_KINDS, SEED_INFO } from './items.js';
 import { RINGS, ownedRings, equipRing } from './rings.js';
 import { HEART_UNITS } from './progress.js';
-import { MAPS, getMap, hasRoom } from '../world/maps.js';
+import { MAPS, getMap, hasRoom, getRoom } from '../world/maps.js';
+import { TIDE_NAMES, TIDE_COUNT } from './tide.js';
+
+// The Chartstone's pips, LOW to HIGH. Sand, shallow, deep — the same three
+// tones the water itself is drawn in, so the mark needs no key to read.
+const TIDE_PIP = ['#e0c078', '#58b0e0', '#1848a0'];
+
+/**
+ * Which tide levels CHANGE a room, as a 3-bit mask. This is the Chartstone,
+ * and it is information the game already computes on every room load and then
+ * throws away.
+ *
+ * Level n is marked when the room's grid at n differs from the grid at the
+ * level below it — that is, when ARRIVING at n is an event. LOW is compared
+ * against HIGH, because the conch cycles round rather than sliding up and down.
+ *
+ * Cached per room: it is a pure function of authored data and never changes
+ * during a run, and the map screen would otherwise do eighty tile lookups per
+ * room per frame.
+ */
+const CHART_CACHE = new Map();
+function tideMarks(mapId, floor, rx, ry) {
+  const key = mapId + ':' + floor + ',' + rx + ',' + ry;
+  if (CHART_CACHE.has(key)) return CHART_CACHE.get(key);
+  let mask = 0;
+  const room = getRoom(mapId, floor, rx, ry);
+  if (room) {
+    for (let lv = 0; lv < TIDE_COUNT; lv++) {
+      const prev = (lv + TIDE_COUNT - 1) % TIDE_COUNT;
+      let differs = false;
+      for (let y = 0; y < ROOM_H && !differs; y++) {
+        for (let x = 0; x < ROOM_W; x++) {
+          if (room.tile(x, y, lv).name !== room.tile(x, y, prev).name) { differs = true; break; }
+        }
+      }
+      if (differs) mask |= 1 << lv;
+    }
+  }
+  CHART_CACHE.set(key, mask);
+  return mask;
+}
 
 const TABS = ['ITEMS', 'MAP', 'QUEST', 'SAVE'];
 const COLS = 5;
@@ -191,6 +231,7 @@ export class Menu {
     if (!m) return;
     const isDungeon = m.kind === 'dungeon';
     const haveMap = isDungeon ? !!g.progress.dungeonMaps[m.id] : true;
+    const haveChart = !!g.progress.charts[m.id];
     drawTextCentered(ctx, m.name, SCREEN_W / 2, HUD_H + 15, '#f8f8e8');
 
     const floor = isDungeon ? (this.mapFloor || 0) : 0;
@@ -206,11 +247,35 @@ export class Menu {
         const here = g.room && g.room.rx === x && g.room.ry === y && g.room.floor === floor;
         ctx.fillStyle = here ? '#f8f8e8' : (seen ? '#58b0e0' : '#304858');
         ctx.fillRect(ox + x * cell, oy + y * cell, cell - 1, cell - 1);
+
+        // THE CHARTSTONE. A room is marked with one pip per tide level that
+        // CHANGES it — which is information the game already computes on every
+        // room load and then throws away. The pips are stacked LOW at the
+        // bottom and HIGH at the top, matching how water is drawn everywhere
+        // else in this game, so the mark is readable without a key.
+        if (!haveChart || !isDungeon) continue;
+        const marks = tideMarks(m.id, floor, x, y);
+        if (!marks) continue;
+        for (let lv = 0; lv < 3; lv++) {
+          if (!(marks & (1 << lv))) continue;
+          ctx.fillStyle = TIDE_PIP[lv];
+          ctx.fillRect(ox + x * cell + cell - 3, oy + y * cell + (2 - lv) * 3, 2, 2);
+        }
       }
     }
     if (isDungeon) {
       drawText(ctx, 'FLOOR ' + (floor + 1) + '/' + m.floors, 6, SCREEN_H - 24, '#a8b0a0');
       if (!haveMap) drawText(ctx, 'No map found', 6, SCREEN_H - 34, '#e04858');
+      if (haveChart) {
+        // The key, in the same stacking order as the pips.
+        let kx = SCREEN_W - 46;
+        for (let lv = 2; lv >= 0; lv--) {
+          ctx.fillStyle = TIDE_PIP[lv];
+          ctx.fillRect(kx, SCREEN_H - 24, 2, 2);
+          drawText(ctx, TIDE_NAMES[lv][0], kx + 4, SCREEN_H - 26, '#a8b0a0');
+          kx += 13;
+        }
+      }
     }
   }
 

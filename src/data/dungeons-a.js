@@ -453,7 +453,7 @@ export function installDungeonsA() {
           '##########',
         ],
         entities: [
-          ['chest', 4, 3, { pickup: 'compass' }],
+          ['chest', 4, 3, { pickup: 'chartstone' }],
           ['keese', 6, 4],
         ],
       },
@@ -755,7 +755,7 @@ export function installDungeonsA() {
           '##########',
         ],
         entities: [
-          ['chest', 4, 3, { pickup: 'compass' }],
+          ['chest', 4, 3, { pickup: 'chartstone' }],
           ['urchin', 6, 2],
         ],
       },
@@ -1295,7 +1295,7 @@ export function installDungeonsA() {
           '##########',
         ],
         entities: [
-          ['chest', 4, 3, { pickup: 'compass' }],
+          ['chest', 4, 3, { pickup: 'chartstone' }],
           ['keese', 2, 4],
         ],
       },
@@ -1419,7 +1419,7 @@ export function installDungeonsA() {
           '####..####',
         ],
         entities: [
-          ['chest', 4, 3, { pickup: 'compass' }],
+          ['chest', 4, 3, { pickup: 'chartstone' }],
           ['stalfos', 6, 4],
         ],
       },

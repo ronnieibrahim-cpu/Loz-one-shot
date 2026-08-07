@@ -83,7 +83,7 @@ export function installDungeonsB() {
           '####..####',
         ],
         entities: [
-          ['chest', 4, 3, { pickup: 'compass' }],
+          ['chest', 4, 3, { pickup: 'chartstone' }],
           ['wisp', 6, 4],
         ],
       },
@@ -652,7 +652,7 @@ export function installDungeonsB() {
           '####..####',
         ],
         entities: [
-          ['chest', 4, 3, { pickup: 'compass' }],
+          ['chest', 4, 3, { pickup: 'chartstone' }],
           ['darknut', 6, 4],
         ],
       },
@@ -1153,7 +1153,7 @@ export function installDungeonsB() {
           '####..####',
         ],
         entities: [
-          ['chest', 4, 3, { pickup: 'compass' }],
+          ['chest', 4, 3, { pickup: 'chartstone' }],
           ['siren', 6, 4],
         ],
       },
@@ -1712,7 +1712,7 @@ export function installDungeonsB() {
           '####..####',
         ],
         entities: [
-          ['chest', 4, 3, { pickup: 'compass' }],
+          ['chest', 4, 3, { pickup: 'chartstone' }],
           ['darknut', 6, 4],
         ],
       },

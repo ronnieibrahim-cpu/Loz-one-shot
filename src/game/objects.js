@@ -51,9 +51,13 @@ export const PICKUPS = {
     sprite: 'i_map', pal: 'ui', persistent: true,
     get(g) { g.progress.dungeonMaps[g.mapId] = true; g.audio.sfx('key'); g.say('You found the Dungeon Map!'); },
   },
-  compass: {
-    sprite: 'i_compass', pal: 'ui', persistent: true,
-    get(g) { g.progress.compasses[g.mapId] = true; g.audio.sfx('key'); g.say('You found the Compass!'); },
+  chartstone: {
+    sprite: 'i_chart', pal: null, persistent: true,
+    get(g) {
+      g.progress.charts[g.mapId] = true;
+      g.audio.sfx('key');
+      g.say('You found the Chartstone!\nThe map will show what the tide moves.');
+    },
   },
   heartPiece: {
     sprite: 'p_heartpiece', pal: 'heart', persistent: true,

@@ -645,6 +645,60 @@ check('the coin can be recalled from anywhere', r.had === true && r.after === nu
 check('...and only one is ever on the board', r.onBoard === 0, `${r.onBoard} coins`);
 
 // ===========================================================================
+section('Chartstone');
+
+await park({ map: 'd1', rx: 3, ry: 7, tx: 4, ty: 4, dir: 'up', tide: 1, items: {} });
+r = await page.evaluate(async () => {
+  const g = window.__game;
+  const { ITEMS } = await import('/src/game/items.js');
+  return {
+    exists: !!ITEMS.chartstone, passive: !!(ITEMS.chartstone && ITEMS.chartstone.passive),
+    compassGone: !ITEMS.compass,
+    charts: !!g.progress.charts, compasses: g.progress.compasses === undefined,
+  };
+});
+check('the Chartstone exists and is never equipped', r.exists && r.passive);
+check('the Compass is gone', r.compassGone && r.compasses, 'compass still in the registry or the save');
+
+// It has to actually SEPARATE rooms, or the mark says nothing.
+r = await page.evaluate(async () => {
+  const { getMap, getRoom, hasRoom } = await import('/src/world/maps.js');
+  const counts = { none: 0, some: 0, all: 0, total: 0 };
+  for (const id of ['d1', 'd2', 'd3', 'd4', 'd5', 'd6', 'd7', 'd8']) {
+    const m = getMap(id);
+    if (!m) continue;
+    for (let f = 0; f < m.floors; f++) {
+      for (let y = 0; y < m.h; y++) {
+        for (let x = 0; x < m.w; x++) {
+          if (!hasRoom(id, f, x, y)) continue;
+          const room = getRoom(id, f, x, y);
+          let mask = 0;
+          for (let lv = 0; lv < 3; lv++) {
+            const prev = (lv + 2) % 3;
+            let d = false;
+            for (let ry = 0; ry < 8 && !d; ry++) {
+              for (let rx = 0; rx < 10; rx++) {
+                if (room.tile(rx, ry, lv).name !== room.tile(rx, ry, prev).name) { d = true; break; }
+              }
+            }
+            if (d) mask |= 1 << lv;
+          }
+          counts.total++;
+          if (mask === 0) counts.none++;
+          else if (mask === 7) counts.all++;
+          else counts.some++;
+        }
+      }
+    }
+  }
+  return counts;
+});
+check('some dungeon rooms are unmoved by the tide', r.none > 0, JSON.stringify(r));
+check('some are moved by it', r.none + r.some + r.all === r.total && r.total - r.none > 0, JSON.stringify(r));
+check('...and the mark distinguishes WHICH level, not just whether',
+  r.some > 0, `rooms changing at only some levels: ${r.some}`);
+
+// ===========================================================================
 check('no page errors', errs.length === 0, errs.slice(0, 3).join(' | '));
 
 console.log(`\n=== ${passed} passed, ${failures.length} failed ===`);

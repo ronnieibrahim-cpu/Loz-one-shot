@@ -175,7 +175,7 @@ async function installRuntime() {
       // secret dug up all land in a different bucket from `items`, and every
       // one of them is a thing a drifting run would get wrong.
       dungeonMap: !!g.progress.dungeonMaps[g.mapId],
-      compass: !!g.progress.compasses[g.mapId],
+      chartstone: !!g.progress.charts[g.mapId],
       flags: Object.keys(g.progress.flags).filter(k => g.progress.flags[k]).sort(),
       doorsChanged: Object.keys(g.progress.doors).length,
       secretsSeen: Object.keys(g.progress.secrets).length,

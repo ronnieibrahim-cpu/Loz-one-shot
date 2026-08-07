@@ -40,7 +40,7 @@ export function newProgress(name = 'LINK', seed = (Date.now() >>> 0)) {
     keys: {},                // mapId -> small key count
     bossKeys: {},            // mapId -> true
     dungeonMaps: {},         // mapId -> true
-    compasses: {},           // mapId -> true
+    charts: {},              // mapId -> true (Chartstone; replaced the Compass)
     beaten: {},              // mapId -> true (boss defeated)
     flags: {},               // arbitrary story/world flags
     chests: {},              // "mapId:roomKey:index" -> true
@@ -196,7 +196,7 @@ export function deleteSlot(slot) {
 function migrate(p) {
   const base = newProgress(p.name || 'LINK');
   const out = { ...base, ...p };
-  for (const k of ['seeds', 'items', 'keys', 'bossKeys', 'dungeonMaps', 'compasses',
+  for (const k of ['seeds', 'items', 'keys', 'bossKeys', 'dungeonMaps', 'charts',
     'beaten', 'flags', 'chests', 'doors', 'secrets', 'rings', 'trade', 'pos', 'respawn']) {
     out[k] = { ...base[k], ...(p[k] || {}) };
   }

@@ -153,22 +153,26 @@ export const GEAR_ART = {
     ...333333333....
     ................
     ................` },
-  i_compass: { pal: 'i_compass', art: `
+  // Chartstone: a slab of banded stone with three tide lines scored across
+  // it. Three lines, because there are three tide levels and the stone's whole
+  // job is to say which of them changes a room. Deliberately NOT round — it
+  // replaces the Compass and must not be mistaken for one.
+  i_chart: { pal: 'i_chart', art: `
     ................
-    ................
-    ......3333......
-    ....33000033....
-    ...3000000003...
-    ...3000110003...
-    ..300011100003..
-    ..300011100003..
-    ..300001110003..
-    ..300001110003..
-    ...3000110003...
-    ...3000000003...
-    ....33000033....
-    ......3333......
-    ................
+    ..333333333333..
+    ..300000000003..
+    ..301111111103..
+    ..322222222203..
+    ..301111111103..
+    ..300000000003..
+    ..322222222203..
+    ..300000000003..
+    ..301111111103..
+    ..322222222203..
+    ..300000000003..
+    ..301111111103..
+    ..300000000003..
+    ..333333333333..
     ................` },
   // ---- the item roster (docs/ITEMS.md) ----------------------------------
   //
@@ -367,7 +371,7 @@ const GEAR_PALETTES = {
   i_chain: ['#e8e8f0', '#8890a8', '#000000', '#000000'],
   i_hookhead: ['#e8e8f0', '#8890a8', '#000000', '#000000'],
   i_map: ['#f0e8c0', '#d83820', '#000000', '#000000'],
-  i_compass: ['#f0c030', '#e83828', '#000000', '#000000'],
+  i_chart: ['#e8e0c8', '#78a8c0', '#3868a0', '#000000'],
   i_bomb_lit: ['#73adff', '#0000ff', '#000000', '#ffd020'],
   // Sea-glass green over brass. The green is the same family as the water
   // palettes so the Lens reads as belonging to the tide, not to the shop.

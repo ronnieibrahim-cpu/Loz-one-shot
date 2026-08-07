@@ -1102,7 +1102,17 @@ export const ITEMS = {
     desc: 'Holds magic rings. Bigger boxes let you wear more at once.',
   },
   map: { names: ['Dungeon Map'], icon: ['i_map'], passive: true, desc: 'Reveals the dungeon layout.' },
-  compass: { names: ['Compass'], icon: ['i_compass'], passive: true, desc: 'Chimes near keys and marks the boss.' },
+  // The Chartstone is one verb — information — and the three-verb rule does
+  // not apply to it. The rule is for TOOLS, things bound to a button that the
+  // player composes with something else. This sits beside the Dungeon Map, is
+  // never equipped, and is read rather than used. docs/ITEMS.md says so out
+  // loud rather than pretending otherwise.
+  chartstone: {
+    names: ['Chartstone'],
+    icon: ['i_chart'],
+    passive: true,
+    desc: 'Marks which rooms the tide changes, and at which level.',
+  },
 };
 
 export function itemName(id, level = 1) {

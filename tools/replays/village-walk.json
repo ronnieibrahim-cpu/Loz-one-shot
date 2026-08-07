@@ -229,7 +229,7 @@
    "sword"
   ],
   "dungeonMap": false,
-  "compass": false,
+  "chartstone": false,
   "flags": [],
   "doorsChanged": 0,
   "secretsSeen": 2,

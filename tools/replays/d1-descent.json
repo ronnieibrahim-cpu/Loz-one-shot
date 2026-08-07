@@ -2079,7 +2079,7 @@
    "sword"
   ],
   "dungeonMap": true,
-  "compass": false,
+  "chartstone": false,
   "flags": [
    "d1_crabpit"
   ],
