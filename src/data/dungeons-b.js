@@ -597,7 +597,7 @@ export function installDungeonsB() {
     scroll: false,
     dungeon: {
       index: 6,
-      item: 'hookshot', itemLevel: 1,
+      item: 'bottle', itemLevel: 1,
       essence: 6,
       boss: 'brinehulk',
       bossRoom: '1,3,1',
@@ -890,7 +890,7 @@ export function installDungeonsB() {
           '##########',
         ],
         entities: [
-          ['chest', 4, 3, { big: true, item: 'hookshot', level: 1 }],
+          ['chest', 4, 3, { big: true, item: 'bottle', level: 1 }],
         ],
       },
       '1,2,3': {

@@ -699,6 +699,65 @@ check('...and the mark distinguishes WHICH level, not just whether',
   r.some > 0, `rooms changing at only some levels: ${r.some}`);
 
 // ===========================================================================
+section('Bottled Tide');
+
+// The Black Causeway: the one overworld screen the conch does not reach.
+await park({ map: 'overworld', rx: 2, ry: 0, tx: 4, ty: 2, dir: 'down', tide: 1, items: { bottle: 1, conch: 1 }, equipB: 'bottle' });
+await page.evaluate(() => { const g = window.__game; g.progress.maxBottles = 4; g.progress.bottles = 4; });
+await step(4);
+r = await read(() => ({ blocked: window.__game.tide.blockedReason(), level: window.__game.tide.level }));
+check('the causeway suppresses the conch', r.blocked === 'locked', `reason=${r.blocked}`);
+
+r = await page.evaluate(async () => {
+  const g = window.__game;
+  const before = g.tide.level;
+  const cycled = g.tide.cycle();
+  const afterConch = g.tide.level;
+  const { ITEMS } = await import('/src/game/items.js');
+  const bottles = g.progress.bottles;
+  ITEMS.bottle.use(g, g.player, 1);
+  for (let i = 0; i < 40; i++) g.update();
+  return {
+    before, cycled, afterConch, afterBottle: g.tide.level,
+    bottlesBefore: bottles, bottlesAfter: g.progress.bottles,
+  };
+});
+check('the conch does nothing here', r.cycled === 'locked' && r.afterConch === r.before,
+  `${r.before} -> ${r.afterConch} (${r.cycled})`);
+check('a bottle moves it one step anyway', r.afterBottle === (r.before + 1) % 3,
+  `${r.before} -> ${r.afterBottle}`);
+check('...and costs exactly one bottle', r.bottlesAfter === r.bottlesBefore - 1,
+  `${r.bottlesBefore} -> ${r.bottlesAfter}`);
+
+// It refuses to be a second conch.
+await park({ map: 'overworld', rx: 4, ry: 7, tx: 4, ty: 4, dir: 'down', tide: 1, items: { bottle: 1 }, equipB: 'bottle' });
+await page.evaluate(() => { const g = window.__game; g.progress.maxBottles = 4; g.progress.bottles = 4; });
+await step(4);
+r = await page.evaluate(async () => {
+  const g = window.__game;
+  const { ITEMS } = await import('/src/game/items.js');
+  const before = { level: g.tide.level, bottles: g.progress.bottles };
+  ITEMS.bottle.use(g, g.player, 1);
+  return { before, level: g.tide.level, bottles: g.progress.bottles };
+});
+check('a bottle does nothing where the conch works', r.level === r.before.level);
+check('...and is not spent trying', r.bottles === r.before.bottles, `${r.before.bottles} -> ${r.bottles}`);
+
+// A boss room that kept the mechanic.
+r = await page.evaluate(async () => {
+  const { getRoom } = await import('/src/world/maps.js');
+  const room = getRoom('d1', 0, 3, 1);
+  if (!room) return { found: false };
+  let changes = 0;
+  for (let y = 0; y < 8; y++) for (let x = 0; x < 10; x++) {
+    if (room.tile(x, y, 0).name !== room.tile(x, y, 2).name) changes++;
+  }
+  return { found: true, noTide: !!room.def.noTide, changes };
+});
+check('the D1 boss arena still suppresses the conch', r.found && r.noTide);
+check('...but its floor does move with the tide', r.changes > 0, `${r.changes} tiles differ LOW vs HIGH`);
+
+// ===========================================================================
 check('no page errors', errs.length === 0, errs.slice(0, 3).join(' | '));
 
 console.log(`\n=== ${passed} passed, ${failures.length} failed ===`);

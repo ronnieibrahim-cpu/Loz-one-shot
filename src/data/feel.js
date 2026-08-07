@@ -791,3 +791,13 @@ export const COIN_SWAP_DELAY_FRAMES = 24;
 
 /** f — interval between the coin's glints while it waits. guessed. */
 export const COIN_GLINT_EVERY = 40;
+
+// --- Bottled Tide ----------------------------------------------------------
+
+/** how many Bottled Tides you can carry at once. guessed; the number is the
+ *  difficulty dial on every boss room that keeps the mechanic switched on. */
+export const BOTTLE_CAPACITY = 4;
+
+/** f — Link is held while the bottle is poured out. guessed; long enough that
+ *  using one in a boss fight is a window you have to make. */
+export const BOTTLE_POUR_FRAMES = 34;

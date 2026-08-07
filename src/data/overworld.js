@@ -81,6 +81,16 @@ const rooms = {
   '0,2,0': {
     name: 'Black Causeway',
     legend: 'abyss', music: 'abyss',
+    // The one place on the map the conch does not reach. The Keep holds the
+    // water here fast, so the causeway is whatever it was when you arrived —
+    // and a Bottled Tide is the only thing that moves it. It is the Bottled
+    // Tide's overworld room, and it is why the item is not just boss-room
+    // furniture.
+    //
+    // Nothing is sealed by this: the walkable rows either side of each
+    // drowned-wall band run the full width of the screen at every tide level,
+    // so the causeway is a shortcut and never a gate.
+    noTide: true,
     map: [
       '##########',
       '#gg9999gg#',
@@ -93,6 +103,7 @@ const rooms = {
     ],
     entities: [
       ['wizzrobe', 4, 3],
+      ['sign', 1, 6, { text: 'THE BLACK CAUSEWAY\nThe Keep holds this water. No shell\nsounds here. Bring your own sea.' }],
     ],
   },
   '0,3,0': {
@@ -2220,6 +2231,7 @@ function installHouses() {
           ['shopItem', 4, 3, { item: 'shield', level: 1, price: 30, once: true, saveKey: 'shopShield' }],
           ['shopItem', 6, 3, { pickup: 'bomb4', price: 20, name: 'Bombs' }],
           ['shopItem', 8, 3, { pickup: 'heart', price: 10, name: 'Heart' }],
+          ['shopItem', 4, 5, { pickup: 'bottle', price: 40, name: 'Bottled Tide' }],
           ['shopItem', 2, 5, { ring: 'power', price: 80, once: true, saveKey: 'shopRing' }],
         ],
         warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 4, ry: 7, px: 48, py: 40, dir: 'down' } }],

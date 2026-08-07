@@ -212,14 +212,19 @@ export function installDungeonsA() {
       },
       '0,3,1': {
         name: 'Gohmaraq, the Tidewash Claw',
+        // A boss room that KEEPS the mechanic instead of switching it off. The
+        // conch is still suppressed — `noTide` — so the arena is whatever it
+        // was when you walked in, and the only thing that moves it is a
+        // Bottled Tide. One step, one bottle, and you brought however many
+        // bottles you brought. See docs/ITEMS.md.
         map: [
           '##########',
-          '#........#',
-          '#........#',
+          '#..2222..#',
+          '#..2222..#',
           '.....>....',
           '.....>....',
-          '#....>...#',
-          '#........#',
+          '#..2222..#',
+          '#..2222..#',
           '####..####',
         ],
         noTide: true,

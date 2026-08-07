@@ -8,7 +8,7 @@ import { FP_ONE, sp } from '../core/fixed.js';
 import { sprites } from '../gfx/art.js';
 import { drawText } from '../gfx/font.js';
 import {
-  addRupees, heal, addBombs, addSeeds, addKey, giveItem, addHeartContainer,
+  addRupees, heal, addBombs, addSeeds, addBottles, addKey, giveItem, addHeartContainer,
   addHeartPiece, HEART_UNITS, setFlag, flag,
 } from './progress.js';
 import { itemName, itemIcon, ITEMS } from './items.js';
@@ -69,6 +69,15 @@ export const PICKUPS = {
         : `A Piece of Heart! You have ${g.progress.heartPieces} of 4.`);
     },
   },
+  bottle: {
+    sprite: 'i_bottle', pal: null,
+    get(g) {
+      if (g.progress.maxBottles <= 0) { g.audio.sfx('deny'); return; }
+      const got = addBottles(g.progress, 1);
+      g.audio.sfx(got ? 'rupee' : 'deny');
+      if (!got) g.say('Your case is full.');
+    },
+  },
   heartContainer: {
     sprite: 'p_heartcontainer', pal: 'heart', persistent: true,
     get(g) { addHeartContainer(g.progress); g.audio.jingle('fanfare'); g.say('You got a Heart Container!'); },
@@ -78,8 +87,8 @@ export const PICKUPS = {
 export const DROP_TABLES = {
   none: [],
   common: [[40, null], [26, 'rupee1'], [16, 'heart'], [10, 'rupee5'], [8, 'bomb4']],
-  good: [[16, null], [24, 'rupee5'], [26, 'heart'], [20, 'rupee1'], [14, 'bomb4']],
-  rich: [[10, null], [30, 'rupee20'], [30, 'heart'], [20, 'rupee5'], [10, 'fairy']],
+  good: [[16, null], [24, 'rupee5'], [24, 'heart'], [20, 'rupee1'], [12, 'bomb4'], [4, 'bottle']],
+  rich: [[10, null], [28, 'rupee20'], [28, 'heart'], [18, 'rupee5'], [10, 'fairy'], [6, 'bottle']],
   hearts: [[30, null], [70, 'heart']],
 };
 

@@ -43,7 +43,7 @@ import { Pickup, rollDropTable, PushBlock, Torch, FloorSwitch, Chest } from './o
 import { ThrownObject, ITEMS, itemName, itemIcon } from './items.js';
 import {
   newProgress, saveSlot, loadSlot, giveItem, addRupees, addKey, useKey, keyCount,
-  itemLevel, hasItem, HEART_UNITS, addBombs, addSeeds, addReefseeds, setFlag, flag,
+  itemLevel, hasItem, HEART_UNITS, addBombs, addSeeds, addReefseeds, addBottles, setFlag, flag,
 } from './progress.js';
 import { drawHud, drawAreaBanner, drawBossBar } from './hud.js';
 import { Dialogue, drawBox, drawPanel, getText } from './dialogue.js';
@@ -59,7 +59,7 @@ import {
   BOSS_MUSIC_RESUME_FRAMES, ITEM_PRESENT_FRAMES, ESSENCE_FREEZE_FRAMES,
   GAMEOVER_WAIT_FRAMES,
   LENS_FADE_FRAMES, LENS_GHOST_ALPHA, LENS_TINT_ALPHA, LENS_PHASE_ALPHA,
-  LENS_SHIMMER_FRAMES, REEFSEED_CAPACITY, COIN_SWAP_DELAY_FRAMES,
+  LENS_SHIMMER_FRAMES, REEFSEED_CAPACITY, COIN_SWAP_DELAY_FRAMES, BOTTLE_CAPACITY,
 } from '../data/feel.js';
 
 export class Game {
@@ -728,6 +728,10 @@ export class Game {
         p.maxReefseeds = Math.max(p.maxReefseeds, REEFSEED_CAPACITY);
         addReefseeds(p, REEFSEED_CAPACITY);
       }
+      if (id === 'bottle') {
+        p.maxBottles = Math.max(p.maxBottles, BOTTLE_CAPACITY);
+        addBottles(p, BOTTLE_CAPACITY);
+      }
       if (id === 'satchel') { p.maxSeeds = Math.max(p.maxSeeds, 20); addSeeds(p, 'ember', 20); p.seedSelected = 'ember'; }
       this.presentItem(id, lv);
     } else if (chest.pickup) {
@@ -1008,6 +1012,13 @@ export class Game {
    * and says what P5 does to it.
    */
   tideAt(tx, ty) { return tideLevelAt(this, tx, ty); }
+
+  /** The Bottled Tide's one step. Kept here so bosses can watch for it. */
+  forceTideStep() {
+    if (!this.tide.force()) return false;
+    this.roomEvent('bottle', { level: this.tide.level });
+    return true;
+  }
 
   /**
    * Move an entity to the nearest tile it can legally stand on. Used when

@@ -53,6 +53,21 @@ export class Tide {
     return null;
   }
 
+  /**
+   * One step, in spite of the room. This is the Bottled Tide, and it is the
+   * ONLY thing that overrides `locked` and `forced` — see docs/ITEMS.md.
+   *
+   * `forced` is cleared as well as stepped past. A room that pins the tide is
+   * pinning it to a level, and a bottle that moved the water and then let the
+   * room haul it straight back would be a bottle that did nothing.
+   */
+  force() {
+    if (this.busy) return false;
+    this.forced = null;
+    this.setLevel((this.level + 1) % TIDE_COUNT);
+    return true;
+  }
+
   setLevel(next, { instant = false } = {}) {
     next = ((next % TIDE_COUNT) + TIDE_COUNT) % TIDE_COUNT;
     if (next === this.level && !instant) return;

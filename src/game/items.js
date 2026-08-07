@@ -16,7 +16,7 @@ import { Projectile, fire } from './projectile.js';
 import { Explosion } from './effects.js';
 import { F } from '../world/tileset.js';
 import { TILE, VIEW_W, VIEW_H } from '../core/screen.js';
-import { hasItem, itemLevel, addBombs, addReefseeds } from './progress.js';
+import { hasItem, itemLevel, addBombs, addReefseeds, addBottles } from './progress.js';
 import { TIDE_COUNT } from './tide.js';
 import { FP_ONE, sp, toPx } from '../core/fixed.js';
 import {
@@ -27,7 +27,7 @@ import {
   DREDGE_RANGE, DREDGE_CAST_SPEED, DREDGE_HAUL_SPEED, DREDGE_PULL_SPEED,
   DREDGE_FLOP_FRAMES,
   ROD_RANGE, ROD_RANGE_HIGH, ROD_LOCK_FRAMES, ROD_RING_FRAMES, ROD_COOLDOWN_FRAMES,
-  COIN_THROW_SPEED, COIN_SETTLE_FRAMES, COIN_GLINT_EVERY,
+  COIN_THROW_SPEED, COIN_SETTLE_FRAMES, COIN_GLINT_EVERY, BOTTLE_POUR_FRAMES,
   SHAKE_SMALL, SHAKE_SMALL_FRAMES,
 } from '../data/feel.js';
 import { sprites } from '../gfx/art.js';
@@ -914,6 +914,41 @@ export const ITEMS = {
     hold: true,
     desc: 'Hold to blow. The water ahead of you falls a level while you pump.',
     use(game, p, level) { p.bellowsHeld = true; return true; },
+  },
+  bottle: {
+    names: ['Bottled Tide'],
+    icon: ['i_bottle'],
+    equippable: true, counted: 'bottles',
+    desc: 'A measure of sea. It moves water the conch cannot reach.',
+    /**
+     * One tide step in a room where the conch is suppressed.
+     *
+     * The point is boss rooms. Today a boss room switches the mechanic off
+     * wholesale, because a boss trivialised by a tide change is a bad boss.
+     * With this, a boss room can KEEP the mechanic and price it: one step, one
+     * bottle, and you brought however many bottles you brought.
+     *
+     * It deliberately refuses to work where the conch already works. A second
+     * conch that costs a consumable is not an item, it is a tax.
+     */
+    use(game, p, level) {
+      const pr = game.progress;
+      if (pr.bottles <= 0) { game.audio.sfx('deny'); return true; }
+      const why = game.tide.blockedReason();
+      if (why === 'busy') return true;
+      if (!why) {
+        game.audio.sfx('deny');
+        game.say('The water here already answers the conch.');
+        return true;
+      }
+      addBottles(pr, -1);
+      p.frozen = BOTTLE_POUR_FRAMES;
+      p.conchTime = BOTTLE_POUR_FRAMES;
+      game.audio.sfx('conch');
+      game.spawnEffect('splash', p.cx - 8, p.cy - 8);
+      game.forceTideStep();
+      return true;
+    },
   },
   coin: {
     names: ["Ferryman's Coin"],
