@@ -539,7 +539,8 @@ Confirm the baseline before changing anything, and keep every line below green:
   node tools/walk-dungeons.mjs                 28/28
   node tools/check-overworld.mjs               17/17 (the field flood is ~30s
                                                of its runtime)
-  node tools/check-gates.mjs                   15/15
+  node tools/check-gates.mjs                   15/15 (pins ?seed= and owns the
+                                               clock since the flake below)
   node tools/check-items.mjs                   78/78
   node tools/check-charms.mjs                  60/60, every charm proved
                                                in-engine and no charm orphaned

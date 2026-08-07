@@ -652,6 +652,34 @@ own feet, NOT `tide.level`, so standing in the Anchor's held patch keeps that
 patch's charms alive. That is deliberate and it is the interaction most likely
 to be "fixed" by a future session that has not read this paragraph.
 
+### check-gates was unseeded, and failed on an IDLE machine
+
+`tools/check-gates.mjs` intermittently failed its two Resonance Rod vane
+assertions — roughly twice in ten runs. The tell was backwards from the usual
+one: it failed on an IDLE machine and PASSED under six-way CPU load, and adding
+a single `console.log` between the setup and the press made it pass every time.
+
+**The cause was that it never pinned the save seed.** `newProgress` falls back
+to `Date.now()`, so every run of the harness played a different world. This is
+the SAME defect P2 root-caused in `test.mjs`, in the one harness P2 never
+reached — and the paragraph P2 wrote about it applies verbatim: which file a
+commit touched was coincidence, because every run was already a different game.
+`?seed=20260806` fixes it: 18 idle runs and 5 under load, no failures, against
+a baseline of about two per ten.
+
+**A diagnosis that was wrong, recorded so nobody repeats it.** The obvious
+suspect was `page.keyboard.press()` firing keydown and keyup inside one game
+frame and the edge-triggered `pressed()` swallowing it. That cannot happen:
+`src/core/input.js` keeps a `_latch` precisely so a key that goes down and up
+between two updates is still seen for exactly one frame. Read the latch before
+blaming the press.
+
+The harness was ALSO wall-clock driven — it polled `requestAnimationFrame`
+against `game.frame` while `main.js` kept stepping — and it now calls
+`takeOver()` and `step(n)` like `test.mjs` and `replay.mjs`. That is the
+documented standard for a harness in this repo and it makes every hold exact
+rather than approximate, but it is not what fixed the flake; the seed was.
+
 ### Dungeon themes, and the four things they cost
 
 **A wall tile must tile with itself in BOTH axes, and a contact sheet cannot

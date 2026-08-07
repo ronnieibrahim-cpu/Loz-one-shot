@@ -76,24 +76,52 @@ const errs = [];
 page.on('pageerror', e => errs.push('PAGEERROR: ' + (e.stack || e.message)));
 page.on('console', m => { if (m.type() === 'error') errs.push('console: ' + m.text()); });
 
-await page.goto(`http://localhost:${PORT}/index.html`, { waitUntil: 'load' });
-await page.waitForFunction(() => !!window.__game, { timeout: 15000 });
+// PIN THE SAVE SEED. `newProgress` falls back to Date.now(), so without this
+// every run of this harness played a DIFFERENT WORLD — the same defect P2
+// root-caused in test.mjs, in the one harness P2 never reached. It is what made
+// the two Resonance Rod vane assertions fail perhaps twice in ten runs, on an
+// idle machine, with nothing else changing. See docs/HANDOFF.md.
+await page.goto(`http://localhost:${PORT}/index.html?seed=20260806`, { waitUntil: 'load' });
+await page.waitForFunction(() => !!window.__game && !!window.__harness, { timeout: 15000 });
+// THIS HARNESS OWNS THE CLOCK. It did not, and that made it intermittently
+// fail on an IDLE machine — see the note on `tap` below and docs/HANDOFF.md.
+await page.evaluate(() => window.__harness.takeOver());
 await page.evaluate(async () => {
   const prog = await import('/src/game/progress.js');
   window.__giveItem = prog.giveItem;
 });
 
-const frames = (n) => page.evaluate((k) => new Promise(res => {
-  const s = window.__game.frame;
-  const t = () => (window.__game.frame - s >= k) ? res() : requestAnimationFrame(t);
-  t();
-}), n);
+// Exactly n fixed updates, no wall clock anywhere near it.
+const frames = (n) => page.evaluate((k) => window.__harness.step(k), n);
+
+/**
+ * Press a key for real, and HOLD IT ACROSS A FRAME.
+ *
+ * `page.keyboard.press()` fires keydown and keyup back to back. `pressed()` is
+ * edge-triggered and cleared by the next `input.update()`, so if both events
+ * land inside one game frame the press is swallowed and the item never fires.
+ * Whether they do was a race between CDP round trips and main.js's wall-clock
+ * loop — which is why this harness failed on an IDLE machine and PASSED under
+ * CPU load, and why adding a single console.log between setup and the press
+ * made it pass every time. The Resonance Rod's two vane assertions were the
+ * ones that lost.
+ *
+ * Holding the key down, stepping the clock ourselves, and only then releasing
+ * makes the press exactly one frame long on any machine. Same fix P2 applied
+ * to test.mjs; this was the harness it never reached.
+ */
+const tap = async (code) => {
+  await page.keyboard.down(code);
+  await frames(2);
+  await page.keyboard.up(code);
+  await frames(1);
+};
 
 // New game, skip the intro.
-await page.keyboard.press('Enter'); await frames(6);
-await page.keyboard.press('Enter'); await frames(20);
+await tap('Enter'); await frames(6);
+await tap('Enter'); await frames(20);
 for (let i = 0; i < 140 && await page.evaluate(() => window.__game.mode === 'cutscene'); i++) {
-  await page.keyboard.press('Enter'); await frames(4);
+  await tap('Enter'); await frames(4);
 }
 
 // Park the player in a room holding one item at one level, equipped to B.
@@ -101,7 +129,7 @@ const setup = (o) => page.evaluate(async (b) => {
   const g = window.__game;
   g.mode = 'play';
   g.enterMap('overworld', 0, b.rx, b.ry, 80, 64, b.dir, { instant: true });
-  await new Promise(r => { const s = g.frame; const t = () => (g.frame - s >= 3 ? r() : requestAnimationFrame(t)); t(); });
+  window.__harness.step(3);
   if (g.dialogue) g.dialogue.active = false;
   g.mode = 'play';
   g.progress.hearts = g.progress.maxHearts;
@@ -130,7 +158,7 @@ const setup = (o) => page.evaluate(async (b) => {
   g.player.x = b.tx * 16; g.player.y = b.ty * 16;
   g.player.dir = b.dir;
   g.player.lastSafe.x = g.player.x; g.player.lastSafe.y = g.player.y;
-  await new Promise(r => { const s = g.frame; const t = () => (g.frame - s >= 2 ? r() : requestAnimationFrame(t)); t(); });
+  window.__harness.step(2);
   // Clear the text box LAST: a room script can reopen it during the settle, and
   // an open dialogue freezes every entity while mode is still 'play'.
   if (g.dialogue) g.dialogue.active = false;
@@ -167,21 +195,21 @@ const VANE = { rx: 7, ry: 1, gx: 8, gy: 2, dir: 'right', item: 'rod' };
 
 let before = await setup({ ...VANE, tx: 5, ty: 2, level: 1 });
 check('the salt vane starts as a vane', before === 'saltVane', before);
-await page.keyboard.press('KeyZ');
+await tap('KeyZ');
 await frames(20);
 const vNear = await nameAt(VANE.gx, VANE.gy);
 check('the Resonance Rod rings the salt vane open', vNear !== 'saltVane', vNear);
 
 before = await setup({ ...VANE, tx: farTx, ty: 2, level: 1 });
 check('the vane is shut again for the range run', before === 'saltVane', before);
-await page.keyboard.press('KeyZ');
+await tap('KeyZ');
 await frames(20);
 const vFarMid = await nameAt(VANE.gx, VANE.gy);
 check('...out of range at MID the note does not reach', vFarMid === 'saltVane', vFarMid);
 
 await page.evaluate(() => window.__game.tide.setLevel(2, { instant: true }));
 await frames(6);
-await page.keyboard.press('KeyZ');
+await tap('KeyZ');
 await frames(20);
 const vFarHigh = await nameAt(VANE.gx, VANE.gy);
 check('...but at HIGH tide the water carries it', vFarHigh !== 'saltVane', vFarHigh);
@@ -192,7 +220,7 @@ check('...but at HIGH tide the water carries it', vFarHigh !== 'saltVane', vFarH
 const PLUG = { rx: 2, ry: 1, gx: 4, gy: 6, tx: 4, ty: 5, dir: 'down', item: 'dredge', level: 1 };
 const plugBefore = await setup(PLUG);
 check('the abyssal plug starts as a plug', plugBefore === 'abyssPlug', plugBefore);
-await page.keyboard.press('KeyZ');
+await tap('KeyZ');
 await frames(20);
 const plugAfter = await nameAt(PLUG.gx, PLUG.gy);
 check('the Dredge Line hauls the abyssal plug out', plugAfter !== 'abyssPlug', plugAfter);
@@ -235,7 +263,7 @@ const CROSS_FRAMES = Math.ceil(3 * 16 / walkPxPerFrame);
 // would be indistinguishable from never having moved.
 const walkAt = async (key, jump) => {
   await page.keyboard.down(key);
-  if (jump) { await frames(3); await page.keyboard.press('KeyZ'); }
+  if (jump) { await frames(3); await tap('KeyZ'); }
   await frames(CROSS_FRAMES);
   await page.keyboard.up(key);
   await frames(14);
@@ -258,19 +286,19 @@ const walkAt = async (key, jump) => {
 const BOULDER = { rx: 2, ry: 2, gx: 4, gy: 1, tx: 4, ty: 0, dir: 'down' };
 let b0 = await setup({ ...BOULDER, item: 'sword', level: 1 });
 check('the cliff boulder starts as a boulder', b0 === 'boulder', b0);
-await page.keyboard.press('KeyZ');
+await tap('KeyZ');
 await frames(20);
 const bSword = await nameAt(BOULDER.gx, BOULDER.gy);
 check('a sword does not shift the boulder', bSword === 'boulder', bSword);
 
 // Bare hands lift a pot and a loose rock; they do not lift this.
-await page.keyboard.press('KeyX');
+await tap('KeyX');
 await frames(24);
 const bHands = await nameAt(BOULDER.gx, BOULDER.gy);
 check('bare hands do not lift the boulder', bHands === 'boulder', bHands);
 
 await setup({ ...BOULDER, item: 'dredge', level: 1 });
-await page.keyboard.press('KeyZ');
+await tap('KeyZ');
 await frames(60);        // a cast flies out and comes back; a lift did not
 const bLift = await nameAt(BOULDER.gx, BOULDER.gy);
 check('the Dredge Line drags the boulder clear', bLift !== 'boulder', bLift);
