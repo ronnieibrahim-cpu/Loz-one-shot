@@ -73,8 +73,23 @@ export function installDungeonsA() {
           [7, 2, 'A rusted plate: "Shut the sluice, and the grotto drinks."'],
         ],
       },
+      // P7.6's first authored multi-screen room, and it is deliberately an
+      // EARLY TEACHING SPACE rather than a late-game set piece.
+      //
+      // It is 1x2: the room the player already knew sits on top, and the tall
+      // half below it is new. The point is that the sluice they just learned to
+      // read at one screen keeps going past the bottom of the screen, so the
+      // first thing a wide room teaches is that the room is bigger than the
+      // window — before anything depends on understanding that.
+      //
+      // Its exits all live in the TOP half, where they were: east to 0,2,3 on
+      // rows 3-4 and north to 0,1,2. The lower half is a dead end on purpose,
+      // so converting this room could not change the dungeon's connectivity —
+      // walk-dungeons proves that, but the room is authored so the proof is
+      // boring.
       '0,1,3': {
         name: 'Cistern Corner',
+        size: [1, 2],
         map: [
           '####..####',
           '##......##',
@@ -82,6 +97,14 @@ export function installDungeonsA() {
           '#..1111...',
           '#..1111...',
           '##.1111.##',
+          '##......##',
+          '##..111..#',
+          '##..111..#',
+          '##..111..#',
+          '#........#',
+          '#..2222..#',
+          '#..2222...',
+          '##........',
           '##......##',
           '##########',
         ],
@@ -91,6 +114,8 @@ export function installDungeonsA() {
           ['switch', 7, 2],
           ['block', 2, 3],
           ['block', 7, 3],
+          // Down in the new half, where the camera has had to move to show it.
+          ['crab', 5, 12],
         ],
         puzzle: {
           switches: 'all',

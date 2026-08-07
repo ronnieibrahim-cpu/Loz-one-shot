@@ -344,9 +344,17 @@ export class Game {
 
     // Step over the room's whole SPAN, not one cell: a 2x1 room at (3,4) has
     // its eastern neighbour at (5,4).
+    //
+    // AND THE OTHER AXIS DEPENDS ON WHERE ALONG THE EDGE YOU LEFT. A 2x1 room's
+    // southern edge is two cells wide and they are different rooms; walking out
+    // of the right-hand half must arrive in the right-hand neighbour. Taking
+    // the room's origin instead would silently send every southern exit to the
+    // same room, and the far half of the edge would look like a door that lies.
     const d = { right: [1, 0], left: [-1, 0], down: [0, 1], up: [0, -1] }[dir];
-    const nx = room.rx + (d[0] > 0 ? room.sw : d[0]);
-    const ny = room.ry + (d[1] > 0 ? room.sh : d[1]);
+    const alongX = Math.max(0, Math.min(room.sw - 1, Math.floor(p.cx / VIEW_W)));
+    const alongY = Math.max(0, Math.min(room.sh - 1, Math.floor(p.cy / VIEW_H)));
+    const nx = d[0] === 0 ? room.rx + alongX : room.rx + (d[0] > 0 ? room.sw : -1);
+    const ny = d[1] === 0 ? room.ry + alongY : room.ry + (d[1] > 0 ? room.sh : -1);
     // Resolve THROUGH a span: the neighbour may be the far half of a wide room,
     // which is not itself a key. `hasRoom` would answer false and the player
     // would walk into the wall of a room that is plainly there.
@@ -368,14 +376,14 @@ export class Game {
         + ' room=' + room.key + ' ' + room.sw + 'x' + room.sh);
     }
     if (this.map.scroll === false) {
-      this.warpTo(this.mapId, room.floor, next.rx, next.ry, this.entryPos(dir, p, next), dir);
+      this.warpTo(this.mapId, room.floor, next.rx, next.ry, this.entryPos(dir, p, next, nx, ny), dir);
       return;
     }
     this.transition = {
       dir, t: 0, from: room, to: next, nx: next.rx, ny: next.ry,
       fromCanvas: room.render(this.tide, this.frame),
       startFx: p.fx, startFy: p.fy,
-      endPos: this.entryPos(dir, p, next),
+      endPos: this.entryPos(dir, p, next, nx, ny),
     };
     // Snapshot the outgoing room so animated tiles do not tick during the
     // slide. [A5] It is a picture of the CAMERA WINDOW, not of the room's
@@ -395,12 +403,18 @@ export class Game {
    * room puts you against the east wall of the next one, and that wall is at
    * its own `pw`, which is not the screen's width once rooms can be wide.
    */
-  entryPos(dir, p, next) {
+  entryPos(dir, p, next, nx, ny) {
     const nw = next ? next.pw : VIEW_W, nh = next ? next.ph : VIEW_H;
-    if (dir === 'right') return { x: -3, y: p.y };
-    if (dir === 'left') return { x: nw - 13, y: p.y };
-    if (dir === 'down') return { x: p.x, y: -8 };
-    return { x: p.x, y: nh - 16 };
+    // Which screen OF THE INCOMING ROOM'S SPAN was entered. The player's
+    // position carries over along the seam, but it is in the outgoing room's
+    // coordinates — entering the second screen of a 2x1 room means adding a
+    // screen to it, or he arrives a screen to the left of the door he used.
+    const offX = (next && nx != null) ? (nx - next.rx) * VIEW_W : 0;
+    const offY = (next && ny != null) ? (ny - next.ry) * VIEW_H : 0;
+    if (dir === 'right') return { x: -3, y: p.y + offY };
+    if (dir === 'left') return { x: nw - 13, y: p.y + offY };
+    if (dir === 'down') return { x: p.x + offX, y: -8 };
+    return { x: p.x + offX, y: nh - 16 };
   }
 
   updateTransition() {

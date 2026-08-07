@@ -8767,7 +8767,7 @@ const { drawPanel, drawBox } = __require("game/dialogue.js");
 const { ITEMS, itemIcon, itemName, equippableItems } = __require("game/items.js");
 const { CHARMS, CHARM_SLOTS, CHARM_COUNT, ownedCharms, charmsForSlot, slotCharm, caseSize, slotOpen, equippedIn } = __require("game/scrimshaw.js");
 const { HEART_UNITS } = __require("game/progress.js");
-const { MAPS, getMap, hasRoom, getRoom } = __require("world/maps.js");
+const { MAPS, getMap, hasRoom, getRoom, roomSpan } = __require("world/maps.js");
 const { TIDE_NAMES, TIDE_COUNT } = __require("game/tide.js");
 
 // The Chartstone's pips, LOW to HIGH. Sand, shallow, deep — the same three
@@ -8797,8 +8797,8 @@ function tideMarks(mapId, floor, rx, ry) {
     for (let lv = 0; lv < TIDE_COUNT; lv++) {
       const prev = (lv + TIDE_COUNT - 1) % TIDE_COUNT;
       let differs = false;
-      for (let y = 0; y < ROOM_H && !differs; y++) {
-        for (let x = 0; x < ROOM_W; x++) {
+      for (let y = 0; y < room.th && !differs; y++) {
+        for (let x = 0; x < room.tw; x++) {
           if (room.tile(x, y, lv).name !== room.tile(x, y, prev).name) { differs = true; break; }
         }
       }
@@ -9037,12 +9037,19 @@ class Menu {
 
     for (let y = 0; y < m.h; y++) {
       for (let x = 0; x < m.w; x++) {
+        // P7.6: a multi-screen room is ONE room drawn across the cells it
+        // spans, the way the source's dungeon maps draw them — not one blob
+        // per cell, and not one cell for a room that is plainly bigger. Only
+        // the origin cell draws; the rest are skipped, so nothing is painted
+        // twice and the room reads as a single space.
         if (!hasRoom(m.id, floor, x, y)) continue;
+        const rdef = m.roomDefs[floor + ',' + x + ',' + y];
+        const [rsw, rsh] = roomSpan(rdef);
         const seen = g.progress.secrets['seen:' + m.id + ':' + floor + ',' + x + ',' + y];
         if (!seen && !haveMap) continue;
         const here = g.room && g.room.rx === x && g.room.ry === y && g.room.floor === floor;
         ctx.fillStyle = here ? '#f8f8e8' : (seen ? '#58b0e0' : '#304858');
-        ctx.fillRect(ox + x * cell, oy + y * cell, cell - 1, cell - 1);
+        ctx.fillRect(ox + x * cell, oy + y * cell, rsw * cell - 1, rsh * cell - 1);
 
         // THE CHARTSTONE. A room is marked with one pip per tide level that
         // CHANGES it — which is information the game already computes on every
@@ -9055,7 +9062,8 @@ class Menu {
         for (let lv = 0; lv < 3; lv++) {
           if (!(marks & (1 << lv))) continue;
           ctx.fillStyle = TIDE_PIP[lv];
-          ctx.fillRect(ox + x * cell + cell - 3, oy + y * cell + (2 - lv) * 3, 2, 2);
+          // Pips sit at the room's top-right corner whatever its span.
+          ctx.fillRect(ox + (x + rsw) * cell - 3, oy + y * cell + (2 - lv) * 3, 2, 2);
         }
       }
     }
@@ -9957,9 +9965,17 @@ class Game {
 
     // Step over the room's whole SPAN, not one cell: a 2x1 room at (3,4) has
     // its eastern neighbour at (5,4).
+    //
+    // AND THE OTHER AXIS DEPENDS ON WHERE ALONG THE EDGE YOU LEFT. A 2x1 room's
+    // southern edge is two cells wide and they are different rooms; walking out
+    // of the right-hand half must arrive in the right-hand neighbour. Taking
+    // the room's origin instead would silently send every southern exit to the
+    // same room, and the far half of the edge would look like a door that lies.
     const d = { right: [1, 0], left: [-1, 0], down: [0, 1], up: [0, -1] }[dir];
-    const nx = room.rx + (d[0] > 0 ? room.sw : d[0]);
-    const ny = room.ry + (d[1] > 0 ? room.sh : d[1]);
+    const alongX = Math.max(0, Math.min(room.sw - 1, Math.floor(p.cx / VIEW_W)));
+    const alongY = Math.max(0, Math.min(room.sh - 1, Math.floor(p.cy / VIEW_H)));
+    const nx = d[0] === 0 ? room.rx + alongX : room.rx + (d[0] > 0 ? room.sw : -1);
+    const ny = d[1] === 0 ? room.ry + alongY : room.ry + (d[1] > 0 ? room.sh : -1);
     // Resolve THROUGH a span: the neighbour may be the far half of a wide room,
     // which is not itself a key. `hasRoom` would answer false and the player
     // would walk into the wall of a room that is plainly there.
@@ -9981,14 +9997,14 @@ class Game {
         + ' room=' + room.key + ' ' + room.sw + 'x' + room.sh);
     }
     if (this.map.scroll === false) {
-      this.warpTo(this.mapId, room.floor, next.rx, next.ry, this.entryPos(dir, p, next), dir);
+      this.warpTo(this.mapId, room.floor, next.rx, next.ry, this.entryPos(dir, p, next, nx, ny), dir);
       return;
     }
     this.transition = {
       dir, t: 0, from: room, to: next, nx: next.rx, ny: next.ry,
       fromCanvas: room.render(this.tide, this.frame),
       startFx: p.fx, startFy: p.fy,
-      endPos: this.entryPos(dir, p, next),
+      endPos: this.entryPos(dir, p, next, nx, ny),
     };
     // Snapshot the outgoing room so animated tiles do not tick during the
     // slide. [A5] It is a picture of the CAMERA WINDOW, not of the room's
@@ -10008,12 +10024,18 @@ class Game {
    * room puts you against the east wall of the next one, and that wall is at
    * its own `pw`, which is not the screen's width once rooms can be wide.
    */
-  entryPos(dir, p, next) {
+  entryPos(dir, p, next, nx, ny) {
     const nw = next ? next.pw : VIEW_W, nh = next ? next.ph : VIEW_H;
-    if (dir === 'right') return { x: -3, y: p.y };
-    if (dir === 'left') return { x: nw - 13, y: p.y };
-    if (dir === 'down') return { x: p.x, y: -8 };
-    return { x: p.x, y: nh - 16 };
+    // Which screen OF THE INCOMING ROOM'S SPAN was entered. The player's
+    // position carries over along the seam, but it is in the outgoing room's
+    // coordinates — entering the second screen of a 2x1 room means adding a
+    // screen to it, or he arrives a screen to the left of the door he used.
+    const offX = (next && nx != null) ? (nx - next.rx) * VIEW_W : 0;
+    const offY = (next && ny != null) ? (ny - next.ry) * VIEW_H : 0;
+    if (dir === 'right') return { x: -3, y: p.y + offY };
+    if (dir === 'left') return { x: nw - 13, y: p.y + offY };
+    if (dir === 'down') return { x: p.x + offX, y: -8 };
+    return { x: p.x + offX, y: nh - 16 };
   }
 
   updateTransition() {
@@ -18435,8 +18457,23 @@ function installDungeonsA() {
           [7, 2, 'A rusted plate: "Shut the sluice, and the grotto drinks."'],
         ],
       },
+      // P7.6's first authored multi-screen room, and it is deliberately an
+      // EARLY TEACHING SPACE rather than a late-game set piece.
+      //
+      // It is 1x2: the room the player already knew sits on top, and the tall
+      // half below it is new. The point is that the sluice they just learned to
+      // read at one screen keeps going past the bottom of the screen, so the
+      // first thing a wide room teaches is that the room is bigger than the
+      // window — before anything depends on understanding that.
+      //
+      // Its exits all live in the TOP half, where they were: east to 0,2,3 on
+      // rows 3-4 and north to 0,1,2. The lower half is a dead end on purpose,
+      // so converting this room could not change the dungeon's connectivity —
+      // walk-dungeons proves that, but the room is authored so the proof is
+      // boring.
       '0,1,3': {
         name: 'Cistern Corner',
+        size: [1, 2],
         map: [
           '####..####',
           '##......##',
@@ -18444,6 +18481,14 @@ function installDungeonsA() {
           '#..1111...',
           '#..1111...',
           '##.1111.##',
+          '##......##',
+          '##..111..#',
+          '##..111..#',
+          '##..111..#',
+          '#........#',
+          '#..2222..#',
+          '#..2222...',
+          '##........',
           '##......##',
           '##########',
         ],
@@ -18453,6 +18498,8 @@ function installDungeonsA() {
           ['switch', 7, 2],
           ['block', 2, 3],
           ['block', 7, 3],
+          // Down in the new half, where the camera has had to move to show it.
+          ['crab', 5, 12],
         ],
         puzzle: {
           switches: 'all',
