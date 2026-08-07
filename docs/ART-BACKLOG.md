@@ -14,6 +14,8 @@ therefore not done:
   without the maps is recorded there, and it is not enough to decide on. This
   is explicitly the user's call, not a session's.
 - **Tiledefs for those four dungeons** (step 8). Nothing to derive them from.
+  Note the EXISTING dungeon map did yield eight themes — see below — so what is
+  blocked is the extra material those four would add, not the technique.
 - Their entries in `MAPS` at the top of `tools/rip-dungeon-maps.py`. Adding
   them is the only change the tool needs once the files land.
 
@@ -38,6 +40,58 @@ one wall tile into a family of sixteen. The grid must start at each BLOCK's own
 top-left corner — `blocks_in()` finds them by splitting each band on
 all-background columns. The honest ratio is 2181/24389, and the most common
 tile occurs 1244 times, which is what a wall should look like.
+
+## Dungeon themes (P7.5 step 8) — LANDED
+
+Eight dungeons shared one legend and therefore one look: `dFloor` and `dWall`
+in a different palette, eight times. They now have eight themes, extracted from
+the map by `tools/rip-dungeon-themes.py`:
+
+| Dungeon | Floor | Wall |
+|---|---|---|
+| d1 Tidewash Grotto | pale scalloped flagstone | blue brick courses |
+| d2 Coral Spire | blue scored flagstone | rose-bevelled blocks |
+| d3 Bogwater Sanctum | gold lattice on olive | knurled gold-olive masonry |
+| d4 Cliffside Cistern | sunken tan panels | cold studded wall |
+| d5 Drowned Wood Shrine | amber lozenge tiling | brown brick courses |
+| d6 Salt Pan Vault | bleached rosette | pale bevelled blocks |
+| d7 Reef Palace | rosette flagstone | gold-studded wall |
+| d8 Abyssal Keep | studded violet-black | violet capstone masonry |
+
+**A theme is a legend, not a room edit.** `registerLegend(name, overrides,
+'dungeon')` points five characters — floor, cracked floor, wall, bombable wall,
+block — at themed tiles and inherits everything else. A dungeon changes its
+look by changing one `legend:` field and not one character of one room grid
+moves. `validate.mjs` asserts every themed tile carries EXACTLY the flags of
+the shared tile it stands in for, so a theme can never change where the player
+can walk.
+
+### Three things this cost, all of which will recur
+
+**A wall tile must tile with itself in BOTH axes.** The first cut picked
+`hatchWall` and `forgeWall` for four dungeons off a single-cell contact sheet.
+In game they came out as vertical stripes: both are wall RUNS, directional by
+construction, and repeating one down a two-tile border reads as a picket fence.
+There is no substitute for rendering a 4x4 tiling of a candidate and looking at
+it. What does tile in both axes is bevelled block grids and brick courses.
+
+**`registerPalettes` silently drops anything that is not exactly four
+colours.** A flat tile can have two or three, so its palette registered
+nothing, its tiledef named a palette that did not exist, and it drew in the
+fallback. `validate.mjs` caught it and nothing else would have. The ripper pads
+to four now. `rip-terrain.py` emits the same short arrays and has never
+noticed, because it does not install its palettes.
+
+**A tile on a room boundary carries the room frame.** Both copies of the pale
+panelled flagstone on the map have a stripe of the stitcher's frame bled into
+the right edge. The deduplicator cannot know that is not art — it is different
+pixels, so it is a different tile, and it dedupes to itself perfectly. Always
+check a pick against the contact sheet.
+
+**And one legibility rule.** d5's floor and wall were both brick courses, so
+the room read as one continuous texture with no line between what you can walk
+on and what you cannot. A theme has to keep floor and wall legible before it is
+allowed to be atmospheric.
 
 ## The 60-tile limit
 

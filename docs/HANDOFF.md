@@ -652,6 +652,39 @@ own feet, NOT `tide.level`, so standing in the Anchor's held patch keeps that
 patch's charms alive. That is deliberate and it is the interaction most likely
 to be "fixed" by a future session that has not read this paragraph.
 
+### Dungeon themes, and the four things they cost
+
+**A wall tile must tile with itself in BOTH axes, and a contact sheet cannot
+tell you that.** Four dungeons were themed off single-cell previews with
+`hatchWall` and `forgeWall`, which are wall RUNS — directional art meant for
+the top course of a room. Repeated down a two-tile border they read as a picket
+fence. Render a 4x4 tiling of a candidate and LOOK at it; the tiles that
+survive that test are bevelled block grids and brick courses.
+
+**`registerPalettes` silently ignores any palette that is not exactly four
+colours.** A flat tile can quantise to two or three, so its palette registered
+nothing, its tiledef named a palette that did not exist, and the tile drew in
+the fallback. `validate.mjs` was the only thing that caught it. The ripper pads
+to four now — and note `rip-terrain.py` emits the same short arrays and has
+never noticed, because it does not install its palettes. If a future session
+makes it install them, pad there too.
+
+**A tile sitting on a room boundary in a stitched map carries the boundary.**
+Both copies of one flagstone have a stripe of the stitcher's frame in the right
+edge. The deduplicator cannot know that is not art — different pixels means a
+different tile, and it dedupes to itself perfectly.
+
+**Floor and wall must stay legible before a theme is allowed to be
+atmospheric.** d5's floor and wall were both brick courses and the room read as
+one texture with no line between walkable and not.
+
+**The shape of the solution is worth reusing.** A theme is
+`registerLegend(name, {five characters}, 'dungeon')` — it inherits the shared
+legend and overrides floor, cracked floor, wall, bombable wall and block. No
+room grid changed; a dungeon picks its look with one `legend:` field.
+`validate.mjs` asserts every themed tile carries exactly the flags of the tile
+it stands in for, so a theme can never move a wall.
+
 ### P7.5 is blocked on assets, and P7.6 is planned but not built
 
 The four Oracle of Seasons dungeon map rips P7.5 is written against are not in

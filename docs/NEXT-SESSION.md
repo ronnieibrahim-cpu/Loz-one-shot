@@ -80,6 +80,27 @@ says an inconsistency is the user's call, and it is.
 
 Step 8 (tiledefs) is blocked with it. Step 9 said to author no rooms anyway.
 
+### P7.5 step 8 — the eight dungeons no longer look the same
+
+The tile pack got used. `tools/rip-dungeon-themes.py` extracts 21 themed tiles
+off the Seasons dungeon map into `src/data/tiles-dungeon-themes.js`
+(GENERATED — edit the tool's PICKS and re-emit), each citing its map coordinate
+and occurrence count. Eight themes are wired up, one per dungeon, and every one
+is identifiable from a single screenshot.
+
+**A theme is a legend, not a room edit.** `registerLegend(name, overrides,
+'dungeon')` repoints five characters and inherits the rest, so a dungeon
+changes its look with one `legend:` field and no room grid moves.
+`validate.mjs` asserts each themed tile carries exactly the flags of the shared
+tile it replaces — a theme may change the look, never the rules. Verified by
+adding F.SLOW to a themed floor and watching it fail.
+
+Unlike `rip-terrain.py`, this ripper INSTALLS its palettes: those tiles are new
+and have no game palette to preserve, and the cartridge's own colours are what
+make one dungeon look unlike another. Where a theme names a palette from
+palettes.js instead, that is a deliberate swap into a colour the game already
+uses.
+
 ### P7.6 — planned, deliberately not built
 
 The brief says "use plan mode and show me the plan before you touch code", so
@@ -506,7 +527,12 @@ installed one has been 1194.
 
 Confirm the baseline before changing anything, and keep every line below green:
   node tools/validate.mjs                      clean (two expected warnings
-                                               about fx_slash_d0/fx_slash_d1)
+                                               about fx_slash_d0/fx_slash_d1);
+                                               also asserts no dungeon theme
+                                               changes a tile's flags
+  python3 tools/rip-dungeon-themes.py          regenerates tiles-dungeon-themes.js
+                                               BYTE-IDENTICAL. --sheet writes a
+                                               contact sheet of every pick.
   node tools/test.mjs                          58/58
   node tools/replay.mjs                        12/12, all three replays to the
                                                pixel
@@ -715,6 +741,9 @@ Tell me plainly what is done, what is weak, and what you skipped.
   menu screen, and `tools/check-charms.mjs`. The ring system is deleted.
 - **`tools/rip-dungeon-maps.py` (P7.5, partial)** — stitched floor maps to
   deduplicated tilesets, byte-identical, checked by `check-tilesets.mjs`
+- **the eight dungeon themes (P7.5 step 8)** — `tools/rip-dungeon-themes.py`
+  plus a themed legend per dungeon. Every dungeon is now identifiable from one
+  screenshot, and no room grid changed to do it.
 
 ## What is left
 
