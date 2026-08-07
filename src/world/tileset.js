@@ -57,11 +57,11 @@ export const F = {
   // boulder is SOLID+ROCK). The marker exists so a checker can say *which item*
   // a given impassable tile is holding shut, which is the whole difference
   // between "the region is unreachable" and "the region is gated on the
-  // Hookshot". Reusing JUMPABLE or DEEP for that would make every gap and
+  // Dredge Line". Reusing JUMPABLE or DEEP for that would make every gap and
   // every stretch of ocean in the world read as the same gate.
   HEAVY:     1 << 26,  // boulder: only the Dredge Line drags it clear
   SWIMGATE:  1 << 27,  // deep channel: only Zora's Flippers cross it
-  GRAPPLE:   1 << 28,  // span crossed by hookshotting a post on the far side
+  GRAPPLE:   1 << 28,  // span crossed by dredging a fixed snag on the far side
   GAP:       1 << 29,  // chasm: only Roc's Feather clears it
   // Metal, crystal, or grown coral: the Resonance Rod makes it answer. Not a
   // traversal flag — a ringable tile also carries whatever it actually is.

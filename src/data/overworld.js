@@ -10,7 +10,7 @@
 //   Coral Reef   1-tile deep gaps          Roc's Feather   (as planned)
 //   Cliffs of Kell  boulders               Power Bracelet  (as planned)
 //   Drowned Wood  a wide deep channel      Zora's Flippers (as planned)
-//   Reef Palace   posts over deep water    Hookshot        (as planned)
+//   Reef Palace   posts over deep water    Dredge Line     (as planned)
 //   Sunken Marsh  cracked cliff             Bombs           (as planned)
 //   Salt Pans     a deep gap and boulders (Feather + Bracelet) — the plan
 //                 calls for the Resonance Rod, which gates nothing here.

@@ -39,7 +39,7 @@ const SFX = {
     ],
   },
   catch: { type: 'blip', freq: 900, freq2: 1300, dur: 0.06, duty: 0.5, vol: 0.09 },
-  hookshot: { type: 'noise', freq: 2600, freq2: 1800, dur: 0.24, q: 3.0, vol: 0.1 },
+  dredgeCast: { type: 'noise', freq: 2600, freq2: 1800, dur: 0.24, q: 3.0, vol: 0.1 },
   hookHit: { type: 'blip', freq: 1600, freq2: 500, dur: 0.09, duty: 0.25, vol: 0.12 },
   place: { type: 'blip', freq: 300, freq2: 200, dur: 0.07, duty: 0.5, vol: 0.1 },
   explode: {

@@ -141,7 +141,7 @@ export class Sheet {
    * `x` and `y` ARE ALREADY WHOLE PIXELS and this draws exactly where it is
    * told. Entity positions are 8.8 fixed-point with an integer pixel accessor
    * (src/core/fixed.js), tiles are drawn at multiples of TILE, and the handful
-   * of call sites that compute a fraction — the hookshot's chain links — round
+   * of call sites that compute a fraction — the dredge line's chain links — round
    * it themselves.
    *
    * There used to be an `x | 0` here. It was not a safety net, it was a bug:

@@ -41,7 +41,7 @@ export const REQUIRED_SPRITES = {
     'i_conch',
     'i_bomb', 'i_bomb_lit',
     'i_cleats', 'i_cleats2',
-    'i_hookshot', 'i_longhook', 'i_chain', 'i_hookhead',
+    'i_chain', 'i_hookhead',
     'i_satchel', 'i_slingshot', 'i_hyperslingshot',
     'i_shovel', 'i_magnet', 'i_ringbox', 'i_ring',
     'i_map', 'i_chart', 'i_unknown',

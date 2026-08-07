@@ -78,7 +78,6 @@ export class Player extends Entity {
     this.washing = 0;
     this.conchTime = 0;
     this.magnet = 1;
-    this.hookshot = null;
     this.hookPulling = false;
     this.lensHeld = false;        // set per-frame by the held-item hook
     this.lensT = 0;               // 0..LENS_FADE_FRAMES, the overlay's fade
@@ -130,7 +129,7 @@ export class Player extends Entity {
     if (this.sinkT > 0) { this.updateSinkTransition(game); return; }
     if (this.frozen > 0) { this.frozen--; this.animT++; return; }
 
-    // Being reeled in by the hookshot suspends normal control.
+    // Being reeled in by the Dredge Line suspends normal control.
     if (this.hookPulling) { this.animT++; return; }
 
     if (this.hurtTime > 0) {

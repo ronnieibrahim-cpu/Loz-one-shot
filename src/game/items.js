@@ -74,117 +74,6 @@ export class Bomb extends Entity {
 defineEntity('bomb', (x, y, o) => new Bomb(x, y, o));
 
 // --------------------------------------------------------------------------
-// Hookshot
-// --------------------------------------------------------------------------
-
-export class Hookshot extends Entity {
-  constructor(x, y, o = {}) {
-    super(x, y, o);
-    this.w = 10; this.h = 10;
-    this.hb = { x: 2, y: 2, w: 6, h: 6 };
-    this.pal = 'stone';
-    this.level = o.level || 1;
-    this.maxLen = this.level >= 2 ? 104 : 64;
-    this.speed = 4;
-    this.owner = o.owner;
-    this.dir = o.dir || 'down';
-    this.originX = this.x; this.originY = this.y;
-    this.state = 'out';
-    this.harmless = true;
-    this.shadow = false;
-    this.flying = true;
-    this.z = 6;
-    this.depth = 30;
-    this.hooked = null;
-  }
-
-  get length() { return Math.hypot(this.x - this.originX, this.y - this.originY); }
-
-  update(game) {
-    const p = this.owner || game.player;
-    const [dx, dy] = DIR_VEC[this.dir];
-
-    if (this.state === 'out') {
-      const step = sp(this.speed);
-      const nfx = this.fx + dx * step, nfy = this.fy + dy * step;
-      const nx = toPx(nfx), ny = toPx(nfy);
-      // Latch onto hookable tiles.
-      const tx = Math.floor((nx + 5) / TILE), ty = Math.floor((ny + 5) / TILE);
-      const f = game.room.flagsAt(tx, ty, game.tide.level);
-      if (f & F.SNAG) {
-        this.state = 'pull';
-        this.anchorX = tx * TILE; this.anchorY = ty * TILE;
-        game.audio.sfx('hookHit');
-        return;
-      }
-      if (f & (F.SOLID | F.VOID)) { this.state = 'back'; game.audio.sfx('ricochet'); return; }
-      this.fx = nfx; this.fy = nfy;
-      if (this.length >= this.maxLen) this.state = 'back';
-
-      for (const e of game.entities) {
-        if (e.dead || !this.overlaps(e)) continue;
-        if (e.isEnemy) {
-          e.hurt(game, this.level >= 2 ? 2 : 1, this.dir, KNOCK_TOOL);
-          e.stun = Math.max(e.stun, 40);
-          this.state = 'back';
-          break;
-        }
-        if (e.isDrop || e.hookable) {
-          this.hooked = e;
-          this.state = 'back';
-          break;
-        }
-      }
-    } else if (this.state === 'pull') {
-      // Drag the player along the chain.
-      if (!p) { this.remove = true; return; }
-      p.hookPulling = true;
-      const tdx = (this.x - (p.cx - 5)), tdy = (this.y - (p.cy - 5));
-      const d = Math.hypot(tdx, tdy);
-      if (d < 6) { this.finish(game, p); return; }
-      const pull = sp(3);
-      const before = { fx: p.fx, fy: p.fy };
-      moveEntity(game, p, Math.round(tdx / d * pull), Math.round(tdy / d * pull),
-        { jumping: true, swim: true });
-      // Snagged on something: the chain stopped making ground, so let go.
-      if (p.fx === before.fx && p.fy === before.fy) { this.finish(game, p); return; }
-    } else {
-      if (!p) { this.remove = true; return; }
-      const tdx = (p.cx - 5) - this.x, tdy = (p.cy - 5) - this.y;
-      const d = Math.hypot(tdx, tdy) || 1;
-      if (d < 6) { this.finish(game, p); return; }
-      const back = sp(this.speed + 1);
-      this.fx += Math.round(tdx / d * back);
-      this.fy += Math.round(tdy / d * back);
-      if (this.hooked) { this.hooked.x = this.x - 3; this.hooked.y = this.y - 3; }
-    }
-  }
-
-  finish(game, p) {
-    this.remove = true;
-    if (p) { p.hookPulling = false; p.hookshot = null; }
-    if (this.hooked) { this.hooked.attached = null; }
-  }
-
-  draw(ctx, game, ox, oy) {
-    // chain links from origin to head
-    const p = this.owner || game.player;
-    const sx = p ? p.cx - 4 : this.originX, sy = p ? p.cy - 4 - 2 : this.originY;
-    const dx = this.x - sx, dy = this.y - sy;
-    const n = Math.max(1, Math.floor(Math.hypot(dx, dy) / 5));
-    for (let i = 0; i < n; i++) {
-      // The chain links sit at fractions of the span, which is the one place in
-      // the game a draw coordinate is not already whole. It is rounded here
-      // rather than in the blitter: art.js draws exactly where it is told.
-      const lx = Math.round(sx + dx * (i / n)), ly = Math.round(sy + dy * (i / n));
-      sprites.draw(ctx, 'i_chain', ox + lx, oy + ly - this.z);
-    }
-    sprites.draw(ctx, 'i_hookhead', ox + this.x, oy + this.y - this.z,
-      { flipX: this.dir === 'left', flipY: this.dir === 'up' });
-  }
-}
-
-// --------------------------------------------------------------------------
 // Dredge Line
 // --------------------------------------------------------------------------
 
@@ -873,7 +762,7 @@ export const ITEMS = {
       const d = new DredgeLine(p.cx - 5, p.cy - 5, { dir: p.dir, level, owner: p });
       p.dredge = d;
       game.addEntity(d);
-      game.audio.sfx('hookshot');
+      game.audio.sfx('dredgeCast');
       return true;
     },
   },
@@ -916,20 +805,6 @@ export const ITEMS = {
     equippable: true,
     desc: 'Swim the surface, or press to sink and walk the floor beneath it.',
     use(game, p, level) { return p.toggleCleats(game); },
-  },
-  hookshot: {
-    names: ['Hookshot', 'Long Hook'],
-    icon: ['i_hookshot', 'i_longhook'],
-    equippable: true,
-    desc: 'Latch onto posts to cross gaps and water.',
-    use(game, p, level) {
-      if (p.hookshot && !p.hookshot.remove) return true;
-      const h = new Hookshot(p.cx - 5, p.cy - 5, { dir: p.dir, level, owner: p });
-      p.hookshot = h;
-      game.addEntity(h);
-      game.audio.sfx('hookshot');
-      return true;
-    },
   },
   satchel: {
     names: ['Seed Satchel'],
