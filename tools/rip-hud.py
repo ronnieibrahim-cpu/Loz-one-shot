@@ -39,8 +39,6 @@ GRID_ROWS = [28, 45, 62, 79, 96, 113, 130]
 GRID = {
     'i_sword1': (0, 0), 'i_sword2': (0, 1), 'i_sword3': (0, 2),
     'i_shield1': (0, 3), 'i_shield2': (0, 4), 'i_shield3': (0, 5),
-    'i_feather': (1, 0),            # Roc's Feather
-    'i_cape': (1, 2),               # Roc's Cape
     'i_bracelet': (2, 0),           # Power Bracelet
     'i_gloves': (2, 2),             # Power Gloves
     'i_bomb': (2, 3),

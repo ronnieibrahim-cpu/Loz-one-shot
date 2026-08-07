@@ -20,7 +20,7 @@ import { hasItem, itemLevel, addBombs, addReefseeds, addBottles } from './progre
 import { TIDE_COUNT } from './tide.js';
 import { FP_ONE, sp, toPx } from '../core/fixed.js';
 import {
-  PEGASUS_FRAMES, JUMP_POWER, JUMP_POWER_CAPE, KNOCK_TOOL, KNOCK_THROWN,
+  PEGASUS_FRAMES, KNOCK_TOOL, KNOCK_THROWN,
   THROW_ARC_RISE, THROW_ARC_GRAVITY, THROW_SLIDE_DECAY, THROW_SLIDE_STOP,
   REEFSEED_GROW_FRAMES, REEFSEED_SETTLE_FRAMES, REEFSEED_THROW_SPEED,
   REEFSEED_SHUDDER_EVERY,
@@ -897,15 +897,6 @@ export const ITEMS = {
     equippable: true,
     desc: 'Play it to turn the tide: LOW, MID, HIGH.',
     use(game, p, level) { return p.playConch(game); },
-  },
-  feather: {
-    names: ["Roc's Feather", "Roc's Cape"],
-    icon: ['i_feather', 'i_cape'],
-    equippable: true,
-    desc: 'Leap over gaps and shallow water.',
-    use(game, p, level) {
-      return p.startJump(game, level >= 2 ? JUMP_POWER_CAPE : JUMP_POWER, level >= 2);
-    },
   },
   bellows: {
     names: ['Squall Bellows'],

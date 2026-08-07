@@ -7,7 +7,11 @@
 //
 // The flood treats a tile as passable if it is walkable at ANY tide level — the
 // player controls the tide — which is also why this cannot prove the swim or
-// feather gates, only the ones expressed as a solid tile with a flag.
+// terrain-shaped gates, only the ones expressed as a solid tile with a flag.
+//
+// ROC'S FEATHER IS GONE and the hop is base moveset, so F.GAP no longer gates
+// anything: a one-tile chasm is crossed by walking into it. The Coral Reef
+// entry is removed rather than left failing. P9 re-gates the overworld.
 //
 // THREE such gates exist, and this proves each one twice: that the region is
 // sealed without its item, and that it opens with it.
@@ -22,6 +26,7 @@ import { installData } from '../src/data/index.js';
 import { MAPS } from '../src/world/maps.js';
 import { getLegend } from '../src/world/room.js';
 import { getTileDef, F } from '../src/world/tileset.js';
+import { GAP_HOP_MAX_SPAN } from '../src/data/feel.js';
 
 installData();
 // Each gate: the flag its tile carries, and the region it holds shut.
@@ -43,10 +48,6 @@ const GATES = {
   magnet: {
     flag: F.MAGNETIC, region: 'Abyssal approach',
     covers: [[0, 3, 0, 1]],
-  },
-  feather: {
-    flag: F.GAP, region: 'Coral Reef',
-    covers: [[8, 11, 4, 6]],
   },
   bracelet: {
     flag: F.HEAVY, region: 'Cliffs of Kell',
@@ -86,8 +87,68 @@ function walkableAt(legend, ch, tide) {
   if (openMask && (d.flags & openMask)) return true;
   return !(d.flags & (F.VOID | F.SOLID | F.PIT | F.DEEP | F.LEDGE | F.HAZARD | F.JUMPABLE));
 }
+
+// --- the base hop ----------------------------------------------------------
+//
+// ROC'S FEATHER IS GONE and the hop is base moveset: walking into a gap hops
+// it, if the run of gap tiles is short enough and there is somewhere to land.
+// The engine's rule is in Player.tryGapHop and its width is GAP_HOP_MAX_SPAN,
+// which this reads rather than writing down — a checker that hardcodes a
+// constant rots the moment the constant moves, and check-gates.mjs already had
+// exactly that bug once (see docs/HANDOFF.md).
+//
+// So a gap tile is crossable when the run containing it, along at least one
+// axis, is shorter than GAP_HOP_MAX_SPAN. Blanket-passing every F.JUMPABLE
+// would walk the flood straight through the four-tile decorative chasm bands
+// along the bottom of the Coral Reef, which no hop clears.
+function isGap(l, ch) {
+  const d = defAt(l, ch, 1);
+  return !!(d && (d.flags & F.JUMPABLE));
+}
+function runLen(l, def, x, y, dx, dy) {
+  let n = 1;
+  for (let i = 1; ; i++) {
+    const nx = x + dx * i, ny = y + dy * i;
+    if (nx < 0 || ny < 0 || nx >= W || ny >= H || !isGap(l, def.map[ny][nx])) break;
+    n++;
+  }
+  for (let i = 1; ; i++) {
+    const nx = x - dx * i, ny = y - dy * i;
+    if (nx < 0 || ny < 0 || nx >= W || ny >= H || !isGap(l, def.map[ny][nx])) break;
+    n++;
+  }
+  return n;
+}
+function hoppable(l, def, x, y) {
+  if (!isGap(l, def.map[y][x])) return false;
+  return runLen(l, def, x, y, 1, 0) < GAP_HOP_MAX_SPAN
+      || runLen(l, def, x, y, 0, 1) < GAP_HOP_MAX_SPAN;
+}
+/** Flood-passability WITH position, so the hop can be modelled properly. */
+function passableAt(l, def, x, y) {
+  return passable(l, def.map[y][x]) || hoppable(l, def, x, y);
+}
 // The player controls the tide, so a tile is passable if any level allows it.
 const passable = (legend, ch) => [0, 1, 2].some(t => walkableAt(legend, ch, t));
+
+// --- 0. how many gaps the base hop actually clears --------------------------
+// Reported, not asserted: a wide gap is legitimate level design (the Coral
+// Reef's four-tile chasm bands are meant to be walls), and a narrow one is a
+// route. What matters is that the flood below models both the same way the
+// engine does, which is what `hoppable` is for.
+{
+  let hop = 0, wall = 0;
+  for (let ry = 0; ry < OH; ry++) for (let rx = 0; rx < OW; rx++) {
+    const def = m.roomDefs[`0,${rx},${ry}`];
+    if (!def) continue;
+    const l = legendOf(def);
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      if (!isGap(l, def.map[y][x])) continue;
+      if (hoppable(l, def, x, y)) hop++; else wall++;
+    }
+  }
+  console.log(`  gap tiles: ${hop} hoppable, ${wall} too wide (GAP_HOP_MAX_SPAN=${GAP_HOP_MAX_SPAN})`);
+}
 
 // --- 1. every screen exists ------------------------------------------------
 const missing = [];
@@ -154,7 +215,7 @@ function flood() {
   const sd = m.roomDefs[start], sl = legendOf(sd);
   const q = [];
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-    if (passable(sl, sd.map[y][x])) { const k = `${start}:${x},${y}`; if (!seen.has(k)) { seen.add(k); q.push([start, x, y]); } }
+    if (passableAt(sl, sd, x, y)) { const k = `${start}:${x},${y}`; if (!seen.has(k)) { seen.add(k); q.push([start, x, y]); } }
   }
   while (q.length) {
     const [rk, x, y] = q.pop();
@@ -170,7 +231,7 @@ function flood() {
       }
       const k = `${trk}:${tx},${ty}`;
       if (seen.has(k)) continue;
-      if (!passable(legendOf(m.roomDefs[trk]), m.roomDefs[trk].map[ty][tx])) continue;
+      if (!passableAt(legendOf(m.roomDefs[trk]), m.roomDefs[trk], tx, ty)) continue;
       seen.add(k); q.push([trk, tx, ty]);
     }
   }

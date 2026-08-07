@@ -38,7 +38,7 @@ export const REQUIRED_SPRITES = {
     ...seq('hud_heart', 5), 'hud_rupee',
     'i_sword1', 'i_sword2', 'i_sword3',
     'i_shield1', 'i_shield2', 'i_shield3',
-    'i_conch', 'i_feather', 'i_cape',
+    'i_conch',
     'i_bomb', 'i_bomb_lit',
     'i_bracelet', 'i_gloves',
     'i_cleats', 'i_cleats2',

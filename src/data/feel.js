@@ -282,26 +282,23 @@ export const EXPLOSION_SELF_DAMAGE = 2;
 //   reach  = 2 * power / gravity * WALK_SPEED
 //   apex   = power^2 / (2 * gravity)
 //
-// Feather: 2*512/28 = 36.6 frames aloft, 36.6 px of ground covered (2.3 tiles),
-// apex 18.3 px. The old pair covered 36.9 px and peaked at 17.8 px.
+// 2*512/28 = 36.6 frames aloft, 36.6 px of ground covered (2.3 tiles), apex
+// 18.3 px. The old pair covered 36.9 px and peaked at 17.8 px.
+//
+// ROC'S FEATHER IS GONE. Nothing launches a free-standing jump any more: the
+// hop is base moveset and fires by walking into a gap or a ledge, along a
+// SCRIPTED arc (`ledgeHop`) rather than a ballistic one. These two constants
+// still govern that arc's height and settle, and the reach formula above is
+// still what decides how wide a gap may be, so they stay — but the numbers no
+// longer describe an item anyone can be missing.
 
-/** sp/f — upward velocity of a Roc's Feather hop. derived from WALK_SPEED and
- *  JUMP_GRAVITY to preserve a 2.3-tile reach; 2 px/f exactly. It used to sit
- *  inline in items.js as 2.6. */
+/** sp/f — upward velocity of a hop. derived from WALK_SPEED and JUMP_GRAVITY
+ *  to preserve a 2.3-tile reach; 2 px/f exactly. */
 export const JUMP_POWER = 512;
-
-/** sp/f — upward velocity of a Roc's Cape hop. derived the same way; 2.5 px/f,
- *  giving 45.7 px of reach against the old pair's 46.9. It used to sit inline
- *  in items.js as 3.3. */
-export const JUMP_POWER_CAPE = 640;
 
 /** sp/f^2 — downward acceleration during a jump. derived: chosen with
  *  JUMP_POWER so that reach and apex both survive the new WALK_SPEED. */
 export const JUMP_GRAVITY = 28;
-
-/** sp/f^2 — downward acceleration while gliding (Roc's Cape held). derived:
- *  the same fraction of JUMP_GRAVITY the old guessed pair had (0.08/0.19). */
-export const GLIDE_GRAVITY = 12;
 
 /** sp/f — rate `z` bleeds back to the ground when not jumping. guessed. */
 export const LAND_SETTLE_RATE = 128;
@@ -801,3 +798,10 @@ export const BOTTLE_CAPACITY = 4;
 /** f — Link is held while the bottle is poured out. guessed; long enough that
  *  using one in a boss fight is a window you have to make. */
 export const BOTTLE_POUR_FRAMES = 34;
+
+/** tiles — the widest gap the base hop clears. derived, not guessed: the hop
+ *  reuses the one-way ledge arc, whose span is LEDGE_MAX_SPAN, and a gap is
+ *  cleared the same way a ledge lip is. Two means a one-tile chasm is free and
+ *  a two-tile one is not, which is the line every gap in the world is drawn
+ *  against now that Roc's Feather is gone and the hop is base moveset. */
+export const GAP_HOP_MAX_SPAN = 2;

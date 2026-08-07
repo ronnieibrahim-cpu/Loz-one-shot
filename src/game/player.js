@@ -31,8 +31,9 @@ import {
   PLAYER_INVULN_FRAMES, PLAYER_FLICKER_FRAMES, PLAYER_RECOVER_INVULN_FRAMES,
   PLAYER_HURT_FRAMES, PLAYER_KNOCK_DIST, PLAYER_KNOCK_FRAMES,
   KNOCK_SWORD, KNOCK_SPIN, HAZARD_DAMAGE, PIT_DAMAGE, WASH_DAMAGE,
-  JUMP_GRAVITY, GLIDE_GRAVITY, LAND_SETTLE_RATE,
+  JUMP_GRAVITY, LAND_SETTLE_RATE,
   LEDGE_MAX_SPAN, LEDGE_HOP_FRAMES, LEDGE_HOP_HEIGHT, LEDGE_PROBE_REACH,
+  GAP_HOP_MAX_SPAN,
   FALL_FRAMES, WASH_FRAMES, DIG_FRAMES, CONCH_FRAMES, PUSH_DELAY_FRAMES,
   LENS_FADE_FRAMES,
   BELLOWS_RANGE, BELLOWS_WARMUP_FRAMES, BELLOWS_PUSH, BELLOWS_PUFF_EVERY,
@@ -364,6 +365,7 @@ export class Player extends Entity {
     // A hop in progress owns the controls until it lands.
     if (this.ledgeHop) { this.updateLedgeHop(game); this.animT++; return; }
     if ((dx || dy) && this.tryLedgeHop(game, dx, dy)) { this.animT++; return; }
+    if ((dx || dy) && this.tryGapHop(game, dx, dy)) { this.animT++; return; }
 
     if (dx || dy) {
       const res = moveEntity(game, this, dx * speed, dy * speed);
@@ -436,6 +438,70 @@ export class Player extends Entity {
     this.gliding = false;
     this.lockDir = true;
     this.dir = facing;
+    game.audio.sfx('jump');
+    return true;
+  }
+
+  // --------------------------------------------------------------- the hop
+  //
+  // ROC'S FEATHER IS GONE AND THE HOP IS BASE MOVESET. The Oracles hand you a
+  // jump because they need something to gate on; this game gates on the tide,
+  // so a jump behind an item was a lock wearing a costume — and it made the
+  // most basic verb in the genre a mid-game unlock.
+  //
+  // It is not on a button. Walking into a one-tile gap hops it, exactly the
+  // way walking into a ledge already dropped you off it, and for the same
+  // reason: in the source games the hop is what your legs do, not what your
+  // inventory does. That also means it reuses `ledgeHop` whole — one arc, one
+  // set of constants, one thing to get wrong.
+  //
+  // The refusal is what keeps it honest: it will not start unless the tile on
+  // the far side is somewhere you can stand. A hop into a wall, into water you
+  // cannot swim, or over a two-tile span simply does not fire, and the gap
+  // still reads as a gap.
+
+  tryGapHop(game, dx, dy) {
+    if (this.jumping || this.z > 0 || this.inDeep || this.underwater) return false;
+    if (this.carrying || this.bellowsOpen || this.hookPulling) return false;
+    const room = game.room;
+    if (!room) return false;
+    // A diagonal press picks its dominant axis; a hop is cardinal.
+    let ux = 0, uy = 0;
+    if (Math.abs(dx) > Math.abs(dy)) ux = Math.sign(dx);
+    else if (Math.abs(dy) > 0) uy = Math.sign(dy);
+    if (!ux && !uy) return false;
+
+    const tx = Math.floor((this.cx + ux * LEDGE_PROBE_REACH) / TILE);
+    const ty = Math.floor((this.cy + uy * LEDGE_PROBE_REACH) / TILE);
+    const def = this.tileDefAt(game, tx, ty);
+    if (!def || !(def.flags & F.JUMPABLE) || (def.flags & F.NOFLY)) return false;
+
+    // Clear the gap and any gap tiles behind it, up to the reach of a hop.
+    let n = 1;
+    while (n < GAP_HOP_MAX_SPAN) {
+      const d = this.tileDefAt(game, tx + ux * n, ty + uy * n);
+      if (!d || !(d.flags & F.JUMPABLE)) break;
+      n++;
+    }
+    if (n >= GAP_HOP_MAX_SPAN) return false;      // too wide to clear
+
+    const land = {
+      x: ux ? (tx + ux * n) * TILE : this.x,
+      y: uy ? (ty + uy * n) * TILE : this.y,
+    };
+    if (!canOccupy(game, this, land.x, land.y,
+      { jumping: false, swim: this._cleats > 0, cutting: false })) return false;
+
+    this.ledgeHop = {
+      fromFx: this.fx, fromFy: this.fy,
+      toFx: sp(land.x), toFy: sp(land.y),
+      t: 0, n: LEDGE_HOP_FRAMES,
+    };
+    this.jumping = true;
+    this.vz = 0;
+    this.gliding = false;
+    this.lockDir = true;
+    this.dir = ux ? (ux < 0 ? 'left' : 'right') : (uy < 0 ? 'up' : 'down');
     game.audio.sfx('jump');
     return true;
   }
@@ -632,8 +698,7 @@ export class Player extends Entity {
     // gravity is sp/f^2, so a jump arc is exactly reproducible.
     this.fz += this.vz;
     // Roc's Cape hangs in the air a moment longer.
-    this.vz -= (this.gliding && this.vz < 0 && game.input.down(game.progress.equipB === 'feather' ? 'b' : 'a'))
-      ? GLIDE_GRAVITY : JUMP_GRAVITY;
+    this.vz -= JUMP_GRAVITY;
     if (this.fz <= 0) {
       this.fz = 0; this.vz = 0; this.jumping = false;
       const f = groundFlags(game, this);

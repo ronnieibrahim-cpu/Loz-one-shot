@@ -106,7 +106,14 @@ const setup = (o) => page.evaluate(async (b) => {
   g.mode = 'play';
   g.progress.hearts = g.progress.maxHearts;
   g.player.invuln = 100000;
-  g.entities = g.entities.filter(e => e === g.player);   // no enemy may interrupt
+  // Anything the player picked up in a PREVIOUS probe is still in his hands:
+  // the entity list is filtered below, but `player.carrying` is a direct
+  // reference and survives it (see docs/HANDOFF.md — the same shape of bug as
+  // the dangling `player.boomerang`). A carrying player refuses to hop, so
+  // this made the base-hop assertion look like a broken feature.
+  if (g.player.carrying) { g.player.carrying.remove = true; g.player.carrying = null; }
+  g.player.ledgeHop = null; g.player.jumping = false; g.player.z = 0;
+  g.entities = g.entities.filter(e => { if (e === g.player) return true; e.remove = true; return false; });
   g.tide.setLevel(1);
   window.__giveItem(g.progress, b.item, b.level);
   g.progress.equipB = b.item;
@@ -219,6 +226,9 @@ const walkAt = async (key, jump) => {
   return page.evaluate(() => ({
     tx: Math.floor((window.__game.player.x + 8) / 16),
     ty: Math.floor((window.__game.player.y + 8) / 16),
+    room: window.__game.room ? window.__game.room.key : '?',
+    map: window.__game.mapId,
+    mode: window.__game.mode,
   }));
 };
 
@@ -238,17 +248,20 @@ await frames(20);
 const bLift = await nameAt(BOULDER.gx, BOULDER.gy);
 check('the Power Bracelet lifts the boulder', bLift !== 'boulder', bLift);
 
-// --- Roc's Feather: the Coral Reef chasm -----------------------------------
+// --- The Coral Reef chasm: no longer a gate --------------------------------
+// Roc's Feather is gone and THE HOP IS BASE MOVESET. A one-tile chasm is
+// therefore crossed by everyone, by walking into it — there is no item to be
+// missing and no button to press. That is a deliberate loss of a gate, not an
+// oversight: docs/EXECUTION-PLAN.md P9 re-gates the overworld for the new
+// roster, and this checker's job here is to prove the HOP works, since nothing
+// else in the suite walks into a gap.
+//
 // Room 0,8,6: a one-tile chasm at col 1, rows 2-5, behind the west doorway.
 const CHASM = { rx: 8, ry: 6, gx: 1, gy: 3, tx: 0, ty: 3, dir: 'right' };
 const c0 = await setup({ ...CHASM, item: 'sword', level: 1 });
 check('the coral chasm is a chasm', c0 === 'chasm', c0);
 const cWalk = await walkAt('ArrowRight', false);
-check('the chasm cannot be walked across', cWalk.tx === 0, `ended tx=${cWalk.tx}`);
-
-await setup({ ...CHASM, item: 'feather', level: 1 });
-const cJump = await walkAt('ArrowRight', true);
-check("Roc's Feather clears the chasm", cJump.tx >= 2, `ended tx=${cJump.tx}`);
+check('walking into a one-tile chasm hops it', cWalk.tx >= 2, `ended ${JSON.stringify(cWalk)}`);
 
 // --- Hookshot / Zora's Flippers: NOT expressible as tiles ------------------
 // Both were built and both were reverted; docs/HANDOFF.md records the numbers.
