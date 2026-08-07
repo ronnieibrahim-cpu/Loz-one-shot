@@ -114,6 +114,15 @@ they are also how a future session finds which sheet a tile came from.
   `drawAnim` + `drawOver` the way `drawScene` does, and hash a whole 16x16 tile
   rather than one pixel — shallow and deep reef water share their colour at the
   tile's centre.
+- **An anchor puzzle is broken by moving a row, and nothing else notices.** The
+  Anchor holds a square of radius `ANCHOR_RADIUS_TILES` (2), so a gate tile
+  three rows from the bank you throw from is outside the patch and a gate two
+  rows away is inside it — and a gate frozen together with its shelf is a room
+  with no way through. The spacing is invisible in the room text and survives
+  `validate`, `walk-dungeons` and `solve-switches` untouched, because all three
+  reason about a tile at *some* tide level rather than about two levels at
+  once. Declare `anchorGate: { from, to }` on the room and let
+  `tools/check-anchor.mjs` prove it both ways.
 - **Rebuilding an options object field by field drops what you forget.**
   `addOverride` did exactly that and silently discarded the tag the Anchor used
   to find its own override. Everything worked except the one thing.
@@ -129,6 +138,7 @@ they are also how a future session finds which sheet a tile came from.
 | `node tools/check-overworld.mjs` | Region gates seal and open correctly |
 | `node tools/check-gates.mjs` | Gates hold in-engine with a live player |
 | `node tools/solve-switches.mjs` | Every switch puzzle has a solution |
+| `node tools/check-anchor.mjs` | Every room declaring an `anchorGate` is closed at all three tide levels and opened by some legal anchor placement |
 | `node tools/check-motion.mjs` | Ground enemies stay on the 8px lattice; fliers and swimmers stay off it |
 | `node tools/check-items.mjs` | Every item does the verb `docs/ITEMS.md` claims for it, and nothing hands out an item that no longer exists |
 | `node tools/replay.mjs` | Movement and combat are frame-identical to a recorded baseline |

@@ -220,6 +220,36 @@ is in the page, and nothing steps until you say so.
 
 ## Hard-won lessons — do not rediscover these
 
+**Re-authoring Tidewash Grotto (P8, D1), and the three things it cost.**
+
+1. **An anchor puzzle's spacing is invisible and unvalidated.** The Anchor holds
+   a square of radius 2, so a gate tile two rows from the bank you throw from is
+   INSIDE the patch and freezes shut with the shelf, while three rows away it is
+   outside and stays on the conch. Every existing checker reasons about a tile at
+   *some* tide level, never about two levels at once, so a gate placed one row
+   wrong is a room with no way through that renders correctly and passes
+   `validate`, `walk-dungeons` and `solve-switches`. `tools/check-anchor.mjs` is
+   the answer: a room declares `anchorGate: { from, to }` and the tool proves
+   both halves — no uniform level walks it, and some legal placement does. It
+   models the throw the way the item behaves (cardinal, up to four tiles, over
+   water and pits but not walls) and refuses a placement that strands its own
+   thrower, because `Anchor.land` refuses that in-engine too.
+
+2. **A stairs warp in a room with enemies is a trapdoor for the replay actor.**
+   `tools/replay.mjs`'s `fight` directive chases; the actor chased a crab across
+   the Tide Gallery's stairs tile and recorded eleven directives' worth of route
+   in the wrong floor of the dungeon, with the recording still perfectly valid.
+   The room reads better without them anyway — a junction with a notice board on
+   the wall should be quiet — but the general rule is that a warp tile and a
+   chasable enemy do not belong in the same open room.
+
+3. **A chest spawns its prize one tile ABOVE itself with no check that the tile
+   is standable.** That is not new — it ate the old Compass in `0,4,5` for the
+   whole life of the room — but it is worth repeating because the fix is purely
+   in the room data and costs nothing: put the pots BELOW the chest. The
+   re-authored Chart Alcove does, and `d1-descent` now records
+   `chartstone: true` where it used to record an opened chest and no item.
+
 **The tide field (P5), and the four things it cost.**
 
 1. **A dropped field on an options object is invisible.** `Tide.addOverride`

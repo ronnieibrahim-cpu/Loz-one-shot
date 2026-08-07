@@ -153,11 +153,12 @@ export const PLANS = {
   // anywhere in four thousand frames lands as a mismatched rupee count at the
   // end, and the checkpoint trail says which frame it happened on.
   //
-  // IT IS NOT A FULL CLEAR, and the name says so. It stops at the locked door
-  // in 3,3's north wall. Everything past that point needs verbs this actor
-  // does not have — see docs/NEXT-SESSION.md for what is missing and why the
-  // shortest way to a full-clear replay is a push directive, not a better
-  // pathfinder.
+  // IT IS NOT A FULL CLEAR, and the name says so. It stops in Held Water, the
+  // first room past the locked door — which since P8 re-authored the grotto is
+  // also the first room whose way on is the Tidewright's Anchor and nothing
+  // else. The actor cannot throw one, so the route ends exactly where the
+  // dungeon stops being walkable; see docs/NEXT-SESSION.md for the verbs it is
+  // missing.
   // -------------------------------------------------------------------------
   'd1-descent': {
     note: 'Tidewash Grotto: entrance to the north-half door — fighting through, '
@@ -184,20 +185,20 @@ export const PLANS = {
     },
     steps: [
       ['wait', 20],
-      // 3,7 Entrance -> 3,6 Drowned Landing. Two crabs.
+      // 3,7 Grotto Mouth -> 3,6 Drowned Landing. Two crabs.
       ['goto', 4, 1, 400],
       ['exit', 'up', 400],
       ['fight', 1200],
       ['dialogue', 200],
-      // -> 3,5 the hub. Two more.
+      // -> 3,5 Sunken Hall, the hub. Three more.
       ['goto', 4, 1, 600],
       ['exit', 'up', 400],
-      ['fight', 1200],
+      ['fight', 1400],
       ['dialogue', 200],
-      // West wing: the Dungeon Map is a loose pickup, so walking over it is
-      // enough. A keese is in there and gets left alive on purpose — an enemy
-      // still running when the room is left is a room whose stream has to be
-      // rebuilt correctly when it is re-entered.
+      // West into 2,5 Map Alcove. The Dungeon Map is a loose pickup, so
+      // walking over it is enough. The keese in there gets left alive on
+      // purpose — an enemy still running when the room is left is a room whose
+      // stream has to be rebuilt correctly when it is re-entered.
       ['goto', 1, 3, 400],
       ['exit', 'left', 400],
       ['goto', 4, 3, 500],
@@ -206,13 +207,11 @@ export const PLANS = {
       ['wait', 40],
       ['goto', 8, 3, 400],
       ['exit', 'right', 400],
-      // East wing: the Compass chest needs an A press with the player stood
-      // square below it and facing up. The chest opens; the Compass itself is
-      // NOT collected, and cannot be — the pickup settles onto the solid pot
-      // above the chest and no standable tile in the room overlaps it. That is
-      // a content bug in the room, not a fault in the actor; it is written up
-      // in docs/HANDOFF.md. The chest is still worth opening here, because an
-      // opened chest is persisted save state and this replay asserts on it.
+      // Back through the hub and east into 4,5 Chart Alcove. The chest needs
+      // an A press with the player stood square below it and facing up. The
+      // Chartstone IS collected now: P8 moved the pots below the chest, so the
+      // tile the prize lands on is floor rather than a solid pot. That bug ate
+      // the old Compass for the whole life of the room.
       ['fight', 900],
       ['goto', 8, 3, 500],
       ['exit', 'right', 400],
@@ -221,26 +220,26 @@ export const PLANS = {
       ['hold', ['up'], 6],
       ['tap', 'a', 30],
       ['dialogue', 300],
-      ['goto', 4, 3, 300],
+      ['goto', 4, 2, 300],
       ['wait', 60],
+      // Back west into the hub, and cycle the conch all the way round on plain
+      // floor: LOW, HIGH and back to MID. Each press freezes the player, wipes
+      // the room and reconciles them against terrain that has just changed
+      // under their feet.
       ['goto', 1, 3, 400],
       ['exit', 'left', 400],
-      // Back up the spine into 3,4. The hub respawns its pair every time it is
-      // re-entered, so it gets cleared every time too.
       ['fight', 900],
-      ['goto', 4, 1, 600],
-      ['exit', 'up', 400],
-      ['fight', 1200],
-      ['dialogue', 200],
-      // Cycle the conch all the way round on plain floor: LOW, HIGH and back
-      // to MID. Each press freezes the player, wipes the room and reconciles
-      // them against terrain that has just changed under their feet.
       ['goto', 4, 3, 400],
       ['tap', 'a', 110],
       ['tap', 'a', 110],
       ['tap', 'a', 110],
       ['dialogue', 200],
-      // West into the crab room. Clearing it is the puzzle, and the reward is
+      // North into 3,4 Tide Gallery.
+      ['goto', 4, 1, 600],
+      ['exit', 'up', 400],
+      ['fight', 1200],
+      ['dialogue', 200],
+      // West into 2,4 Crab Pit. Clearing it is the puzzle and the reward is
       // the first Small Key.
       ['goto', 1, 3, 400],
       ['exit', 'left', 400],
@@ -252,31 +251,30 @@ export const PLANS = {
       // `PICKUP_GRAVITY` over `PICKUP_SETTLE_FRAMES` nets about five pixels of
       // rise and nothing brings it back down, so a key spawned at tile (4,3)
       // comes to rest straddling the tile above. Standing on (4,3) leaves a
-      // one-pixel overlap with its rect — and one pixel is close enough to miss.
-      // Missing it loses the Small Key silently: the locked door two rooms
-      // later never opens, and every directive after it is addressed to a room
-      // the player never reached, while the recording stays perfectly valid.
-      // Walking up through the tile and back cannot miss it.
+      // one-pixel overlap with its rect — and one pixel is close enough to
+      // miss. Missing it loses the Small Key silently: the locked door never
+      // opens, and every directive after it is addressed to a room the player
+      // never reached, while the recording stays perfectly valid.
       ['goto', 4, 3, 400],
       ['goto', 4, 2, 200],
       ['goto', 4, 3, 200],
       ['wait', 60],
       ['goto', 8, 3, 400],
       ['exit', 'right', 400],
-      // Spend it on the door in the middle of 3,4's north wall.
+      // Spend it on the door in the middle of 3,4's north wall. Walk into the
+      // door until it stops you, rather than a computed number of frames of
+      // `up`: the door is solid until it is unlocked, so holding long enough
+      // pins the player flush against it from wherever `goto` left him.
       ['fight', 900],
       ['goto', 4, 3, 500],
-      // Walk into the door until it stops you, rather than a computed number of
-      // frames of `up`. The door is solid until it is unlocked, so holding long
-      // enough pins the player flush against it from wherever `goto` happened
-      // to leave him — six frames put him a pixel or two short whenever the
-      // approach ended a pixel or two low, and the A press then found nothing.
       ['hold', ['up'], 24],
       ['tap', 'a', 30],
       ['dialogue', 300],
       ['goto', 4, 1, 500],
       ['exit', 'up', 400],
-      // 3,3, the north half. Two zols.
+      // 3,3 Held Water. The route on is the '4' shelf and the '3' gate above
+      // it, and there is no tide level that walks both — this is where the
+      // actor runs out of verbs. Clear the room and stop.
       ['fight', 1800],
       ['dialogue', 200],
       ['wait', 60],

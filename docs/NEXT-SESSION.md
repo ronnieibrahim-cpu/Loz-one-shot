@@ -10,7 +10,132 @@ maintain and the most expensive thing to not have.
 
 ---
 
-## What the last session did (P6: the item roster)
+## What the last session did (P8 / D1: Tidewash Grotto re-authored)
+
+**One dungeon only.** D1 is done to the P8 brief. D2-D6 are untouched and are
+five more sessions, one each.
+
+`src/data/dungeons-a.js`'s D1 block is rewritten end to end: **26 rooms across
+2 floors** (was 21 across 1), and the whole north half is written against the
+Tidewright's Anchor's one verb.
+
+### The dungeon's grammar, which is the interesting part
+
+At D1's moveset there are no Cleats, so deep water is a wall — and that turns
+two of the indoor tide tiles into exact opposites:
+
+| tile | LOW | MID | HIGH | passable at |
+|---|---|---|---|---|
+| `4` `dDrain` | pit | wadeable | deep | **MID only** |
+| `3` `dWell` | wadeable | deep | deep | **LOW only** |
+| `1` `dSluice` | dry | wadeable | deep | LOW or MID |
+| `2` `dBasin` | dry | damp | wadeable | always |
+
+A route that crosses a `4` band and then a `3` band cannot be walked at any
+single tide level. Six rooms are built on that, in a fixed shape:
+
+```
+row k     GATE   '3' (or '4')  — passable only at the BASE level
+row k+1   SHELF  '4' (or '3')  — passable only at the HELD level
+row k+2   SHELF
+row k+3   BANK   plain floor   — where you stand and throw
+```
+
+The patch is a square of radius `ANCHOR_RADIUS_TILES` (2), so an anchor laid on
+the bank holds rows k+1..k+5 and leaves the gate to the conch. **That spacing is
+the puzzle and it is load-bearing** — see the trap note in CLAUDE.md and in
+HANDOFF. Two rooms run the polarity the other way (shelf `3` held at LOW, gate
+`4` opened by raising the sea) and one runs the whole thing sideways, as
+columns rather than rows.
+
+### `tools/check-anchor.mjs` is new and is what makes the claim honest
+
+A room declares `anchorGate: { from: [x,y], to: [x,y] }` and the tool proves
+both halves in-engine:
+
+1. **No single tide level opens it.** The room is flooded from `from` to `to` at
+   a uniform LOW, MID and HIGH, and all three must fail. This is the design rule
+   in the execution plan — "if a room's puzzle would still work at a fixed tide
+   level, it is the wrong puzzle" — restated as an assertion.
+2. **Some anchor placement does.** The throw is modelled the way the item
+   behaves: walk the room at a uniform held level, throw cardinally up to four
+   tiles over anything that is not a wall, hold a radius-2 square, then set a
+   *different* base — and the tile you threw from has to still be standable
+   under the resulting field, because `Anchor.land` refuses a bite that strands
+   its thrower rather than surviving it.
+
+13/13 across the six gated rooms. It reads both radii out of `feel.js` rather
+than writing them down, so it moves when the constant moves.
+
+### The route, and where things sit
+
+```
+0,3,7 entrance -> 3,6 (the conch: the floor is water, let it out)
+ -> 3,5 hub -> 2,5 Dungeon Map -> 2,4 Crab Pit (Small Key 1)
+ -> 4,5 CHARTSTONE -> 4,4 Switch Room (Small Key 2)
+ -> 3,4 Tide Gallery: locked door north, stairs down to the Undercroft
+ -> 1F 3,4 landing -> 1F 2,4 / 4,4 -> 1F 3,3 locked -> 1F 3,2 BIG CHEST: the
+    TIDEWRIGHT'S ANCHOR (room 13 of 26 — halfway, as the brief asks)
+ -> back up through 3,4's locked door -> 3,3 Held Water  [gate 1]
+ -> 4,3 Shell Corridor [gate 2] -> 5,3 Barnacle Bend [gate 3]
+ -> 5,2 CLAWCRAB, the miniboss (room 17 of 26 — two thirds)
+ -> 2,3 Weeping Wall [gate 4] -> 1,3 Cistern Corner (Small Key 3) [gate 5]
+ -> 1,2 Old Sluice -> 2,2 Drip Passage -> 2,1 North Cell [gate 6]
+ -> 4,2 Anchorage: locked door -> BOSS KEY -> 4,1
+ -> 3,2 Storm Gate -> boss door -> 3,1 Gohmaraq -> Heart Container, essence 1
+```
+
+Three Small Keys, three locked doors, one Boss Key, one Chartstone, one
+miniboss, one Heart Container from `onEvent('bossDead')`, essence index 1.
+
+### Two long-standing bugs closed on the way
+
+- **The Compass was uncollectable and now the Chartstone is not.** A chest
+  spawns its prize one tile above itself with no standability check, and a pot
+  sat on that tile. The pots moved below the chest; `d1-descent` now records
+  `chartstone: true`.
+- **`0,3,4`'s enemies are gone**, because a chasable enemy and a stairs warp in
+  the same open room is a trapdoor — the replay actor chased a crab down the
+  stairs and recorded eleven directives in the wrong floor.
+
+### `d1-descent` was re-recorded and the route is new
+
+5721 frames, 25 kills, the Dungeon Map, the Chartstone *collected*, a full conch
+cycle, a Small Key earned in the Crab Pit and spent on the Tide Gallery's door,
+ending in Held Water. It still is not a full clear and the name still says so —
+it now stops exactly where the dungeon stops being walkable without an anchor,
+which is a better place to stop than the old arbitrary one. Teaching the actor
+to throw and recall an anchor is the single change that would extend it.
+
+### What is weak about it
+
+- **Nobody has played it.** Four rooms were screenshotted at two tide levels and
+  they read well — the shelf and the gate are plainly different water — but no
+  human has thrown an anchor in any of these rooms. `check-anchor.mjs` proves a
+  placement exists; it does not prove one is *findable*, and there is still no
+  in-world signal for where the held patch ends (see the P5 notes below).
+- **The six gate rooms share one shape.** Three variations on it — polarity
+  flipped, turned ninety degrees, bank-in-the-doorway — but a player will see
+  the trick once and then recognise it. A second anchor idiom would be worth
+  more to this dungeon than a seventh room of the first one.
+- **The Undercroft is thin.** Five rooms, conch-only, and two of them are side
+  cells with a pickup. It exists to put the Anchor halfway through and to give
+  the grotto a second floor; it does not have an idea of its own.
+- **The miniboss does not require the Anchor**, and neither does Gohmaraq. Both
+  are the fights P5/P6 left; the chain sweep is *available* in them and the
+  boss room still suppresses the conch, but nothing in either fight is written
+  against the item. That is the biggest gap against "every room after it
+  requires the verb".
+- **`heartPiece` count.** The Clawcrab now drops one and Held Water holds one,
+  so D1 alone hands out two of the four a container is worth. P9 re-tunes the
+  heart economy and should re-count these.
+- **The two removed dungeons' rooms have not been folded anywhere.** The brief
+  says the game is six dungeons; d7 and d8 still exist in the data and D1 is not
+  their neighbour, so that fold belongs to whichever session re-authors D5/D6.
+
+---
+
+## What the session before that did (P6: the item roster)
 
 `docs/ITEMS.md` is new and is the authoritative roster. Nine items in, ten out,
 one commit each, every checker run between them.
@@ -443,9 +568,15 @@ Continue building "Oracle of Tides", a GBC-style Zelda fan game.
 
 Read, in this order:
   CLAUDE.md              - the hard rules. They are hard rules.
-  docs/EXECUTION-PLAN.md - the roadmap. P0-P6 are done and merged. P7
-                           (scrimshaw) is next; PT (towns) and P7.5/P7.6 are
-                           also queued ahead of P8.
+  docs/EXECUTION-PLAN.md - the roadmap. P0-P6 are done and merged, and P8's
+                           first dungeon (D1 Tidewash Grotto) is done. P7
+                           (scrimshaw), PT (towns) and P7.5/P7.6 are open and
+                           independent; P8 D2-D6 are five more sessions, one
+                           dungeon each. NOTE P7.5 and P7.6 have NOT landed, so
+                           the P8 amendment about dungeon tilesets and
+                           multi-screen rooms could not be honoured for D1 —
+                           every room is still 1x1 and the shared dungeon
+                           legend.
   docs/ITEMS.md          - the item roster. Authoritative. tools/check-items.mjs
                            asserts the registry is exactly this document.
   docs/EXECUTION-PLAN.md - the roadmap. P0, P1, P3 and P5 are done. P6 (the
@@ -512,7 +643,10 @@ Confirm the baseline before changing anything, and keep every line below green:
   node tools/check-gates.mjs                   15/15, both item gates in-engine
                                                (the ONLY harness that jumps —
                                                see the jump-reach note below)
-  node tools/solve-switches.mjs                17 rooms, one push per block
+  node tools/solve-switches.mjs                16 rooms, one push per block
+  node tools/check-anchor.mjs                  13/13 — D1's six anchor gates are
+                                               shut at all three tide levels and
+                                               opened by a modelled throw
   python3 tools/rip-terrain.py                 regenerates tiles-terrain.js
                                                BYTE-IDENTICAL; if it does not,
                                                someone hand-edited a generated
@@ -624,8 +758,11 @@ save seed with ?seed=. If you write a new harness, do both — otherwise it is
 measuring the machine, not the game. test.mjs is no longer load-flaky; a
 failure there is now yours.
 
-NEXT UP: P7 (scrimshaw), then P8 (six dungeon sessions) and P9. P1-P4 and P6
-are in.
+NEXT UP: P8 DUNGEON 2 (Coral Spire). D1 is done — read the D1 section at the
+top of this file first, especially the anchor gate/shelf/bank spacing and
+tools/check-anchor.mjs, because every later dungeon inherits the Anchor and can
+reuse both. P7 (scrimshaw), PT (towns), P7.5/P7.6 and P9 are all still open.
+P1-P6 are in.
 
 P5 IS MERGED. This branch carries both the tide field and the item roster, and
 every checker is green across the pair. Nothing about the tide is outstanding.

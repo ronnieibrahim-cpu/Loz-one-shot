@@ -328,7 +328,7 @@ mechanic's button. The Dungeon Map is the Chartstone's sibling, not its rival.
 
 | Item | Source |
 |---|---|
-| Tidewright's Anchor | d1 Tidewash Grotto — **P5**. The big chest holds a Heart Piece in the meantime, so nothing is stubbed and the two sessions cannot both define it. |
+| Tidewright's Anchor | d1 Tidewash Grotto, the Tidewright's Well (1F, big chest) — thirteenth room of twenty-six, and every room of the grotto's north half is written against it. |
 | Brineglass Lens | d2 Coral Spire, Sealed Cell (bombs stay in the Bomb Vault) |
 | Kelp-Soled Cleats L1 | d3 Bogwater Sanctum |
 | Squall Bellows | d4 Cliffside Cistern, the Bellows Vault |
