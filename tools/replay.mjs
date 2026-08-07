@@ -181,6 +181,18 @@ async function installRuntime() {
       secretsSeen: Object.keys(g.progress.secrets).length,
       chestsOpened: Object.keys(g.progress.chests).length,
       tide: g.tide.level,
+      // THE FIELD, at the tiles the plan asked about. `tide` above is the base
+      // — one number for the world — and a replay that only asserted that could
+      // not tell a room held at two levels from a room held at one.
+      //
+      // Two readings per probe, because they fail differently. `probeLevels` is
+      // what the engine BELIEVES, and catches the field going wrong. `probePix`
+      // is a hash of the 16x16 tile as actually RENDERED, and catches the room
+      // still being DRAWN at the old level while every query answers correctly
+      // — a stale cache is invisible to collision and invisible to levelAt, and
+      // it is the one mistake in this refactor that nothing else would see.
+      probeLevels: probeLevels(),
+      probePix: probePix(),
       mode: g.mode,
       entities: g.entities.length,
       enemies: g.entities.filter(e => e.isEnemy && !e.dead).length,
@@ -194,9 +206,40 @@ async function installRuntime() {
     };
   }
 
+  /** The tide level the engine reports at each of the plan's probe tiles. */
+  function probeLevels() {
+    const g = window.__game;
+    const probes = window.__rp && window.__rp.probes;
+    if (!probes || !probes.length || !g.room) return null;
+    return probes.map(([tx, ty]) => g.tide.levelAt(tx, ty, g.room));
+  }
+
+  /**
+   * A hash of each probe tile as it is actually drawn — base layer, animated
+   * layer and over layer composited the way drawScene does, with the animation
+   * frame held at 0 so the number is about the tide and not about which frame
+   * of the wave the tile happened to be on.
+   */
+  function probePix() {
+    const g = window.__game;
+    const probes = window.__rp && window.__rp.probes;
+    if (!probes || !probes.length || !g.room) return null;
+    const s = screen.offscreen(VIEW_W, VIEW_H);
+    s.ctx.clearRect(0, 0, VIEW_W, VIEW_H);
+    s.ctx.drawImage(g.room.render(g.tide, 0), 0, 0);
+    g.room.drawAnim(s.ctx, 0, 0, g.tide, 0);
+    g.room.drawOver(s.ctx, 0, 0, g.tide, 0);
+    return probes.map(([tx, ty]) => {
+      const d = s.ctx.getImageData(tx * TILE, ty * TILE, TILE, TILE).data;
+      let h = 2166136261;
+      for (let i = 0; i < d.length; i++) { h ^= d[i]; h = Math.imul(h, 16777619); }
+      return h >>> 0;
+    });
+  }
+
   function mark() {
     const g = window.__game, p = g.player;
-    return {
+    const m = {
       f: g.frame,
       x: p ? p.x : null, y: p ? p.y : null,
       hp: g.progress.hearts,
@@ -204,6 +247,13 @@ async function installRuntime() {
       d: g.rng.draws,
       r: g.room ? g.room.key : null,
     };
+    // A plan that names probe tiles gets the field at every checkpoint, not
+    // just at the end. The end is the wrong place to assert a split: a run that
+    // demonstrates the Anchor and then recalls it finishes with the room back
+    // on one level, and the final snapshot would show nothing.
+    const probes = window.__rp && window.__rp.probes;
+    if (probes && probes.length) { m.pl = probeLevels(); m.pp = probePix(); }
+    return m;
   }
 
   // ---------------------------------------------------------------- pathing
@@ -488,6 +538,7 @@ async function installRuntime() {
     if (setup.bossKey) g.progress.bossKeys[setup.bossKey] = true;
     if (setup.flags) for (const k of setup.flags) g.progress.flags[k] = true;
     if (setup.tide != null) g.tide.setLevel(setup.tide, { instant: true });
+    window.__rp.probes = setup.probes || [];
     const e = setup.enter;
     g.enterMap(e[0], e[1], e[2], e[3], e[4], e[5], e[6], { instant: true });
     // Start from a settled screen: no fade, no banner, no held item.
