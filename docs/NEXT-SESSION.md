@@ -764,6 +764,35 @@ tools/check-anchor.mjs, because every later dungeon inherits the Anchor and can
 reuse both. P7 (scrimshaw), PT (towns), P7.5/P7.6 and P9 are all still open.
 P1-P6 are in.
 
+TWO PARAGRAPHS OF THE P8 PROMPT ARE CURRENTLY UNCASHABLE, AND THEY ARE THE TWO
+MOST LIKELY TO BE PLANNED AROUND BEFORE ANYONE CHECKS:
+
+  "Rooms may now be 1x1, 2x1, 1x2, 2x2 or 3x1 screens. Use the larger sizes
+   deliberately, not decoratively: a multi-screen room should exist because the
+   puzzle or the fight needs the space, and a dungeon where every room is 2x2
+   reads as flat as one where every room is 1x1. Reference the map rips in
+   assets/sheets/ for how Seasons paces this — most rooms are one screen, and
+   the large ones land on set pieces.
+
+   Use the tilesets from P7.5 for this dungeon's visual identity. Each of the
+   six dungeons should be identifiable from a single screenshot."
+
+NEITHER IS BUILT YET. P7.6 has not landed: src/world/room.js is hard-coded to
+one 10x8 screen per room, there is no {sw, sh}, and the camera does not follow
+inside a room — every seam is a transition. P7.5 has not landed either: there is
+no tools/rip-dungeon-maps.py and none of the four Seasons dungeon map rips are
+in assets/sheets/, so `dungeon` is the only indoor legend there is and all six
+dungeons share it. Verify both yourself in thirty seconds rather than trusting
+this paragraph, which rots the moment either lands.
+
+If they are still missing when you take D2: author against what exists and say
+so, do NOT build P7.5 or P7.6 on the way. Each is its own session and doing one
+inside a dungeon session gets a bad version of both. D1 was taken under exactly
+this constraint and is 1x1 rooms in the shared legend throughout — so if you
+would rather have the dungeons look distinct, the cheaper order is to take
+P7.5 and P7.6 NEXT, before any more dungeons are authored, and revisit D1 once
+with the other five.
+
 P5 IS MERGED. This branch carries both the tide field and the item roster, and
 every checker is green across the pair. Nothing about the tide is outstanding.
 

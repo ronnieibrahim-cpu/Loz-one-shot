@@ -584,19 +584,12 @@ CONSTRAINTS:
   - Overworld behaviour is byte-identical before and after.
 
 npm run build, commit dist/, update NEXT-SESSION.md and HANDOFF.md.
-Amendment to P8
 
-Add to each dungeon session prompt:
+P7.5 and P7.6 exist to be spent by P8, and the two paragraphs they earn — room
+sizes, and a tileset per dungeon — are part of the P8 prompt below rather than
+an amendment floating beside it. There is only ever ONE P8 prompt; all six
+dungeon sessions paste it with a different N.
 
-Rooms may now be 1x1, 2x1, 1x2, 2x2 or 3x1 screens. Use the larger sizes
-deliberately, not decoratively: a multi-screen room should exist because the
-puzzle or the fight needs the space, and a dungeon where every room is 2x2
-reads as flat as one where every room is 1x1. Reference the map rips in
-assets/sheets/ for how Seasons paces this — most rooms are one screen, and
-the large ones land on set pieces.
-
-Use the tilesets from P7.5 for this dungeon's visual identity. Each of the
-six dungeons should be identifiable from a single screenshot.
 ### P8 — Dungeon re-authoring (six sessions, one per dungeon)
 
 ```
@@ -624,9 +617,34 @@ the large ones land on set pieces.
 Use the tilesets from P7.5 for this dungeon's visual identity. Each of the
 six dungeons should be identifiable from a single screenshot.
 
+CHECK BOTH OF THOSE ARE ACTUALLY THERE BEFORE YOU PLAN AROUND THEM. The two
+paragraphs above are cashing cheques P7.5 and P7.6 write, and a dungeon session
+is not the place to discover they have not landed:
+
+  - multi-screen rooms need a room `{sw, sh}` in src/world/room.js and a camera
+    that clamps to it. Grep for `sw` there; if every room is still hard-coded
+    10x8, P7.6 has not landed and every room you author is 1x1.
+  - a dungeon tileset needs tools/rip-dungeon-maps.py and the four Seasons map
+    rips in assets/sheets/. If they are not there, P7.5 has not landed and this
+    dungeon looks like every other one — the shared `dungeon` legend.
+
+If either is missing, DO NOT build it on the way. Both are their own session
+and doing one inside a dungeon session gets you a bad version of both. Author
+the dungeon against what exists, and say plainly in NEXT-SESSION.md which of
+the two paragraphs you could not honour and what it would cost to come back
+for it. Re-authoring a finished dungeon into larger rooms later is a smaller
+job than it sounds; authoring it around rooms that do not exist is not.
+
 Run validate.mjs, walk-dungeons.mjs and solve-switches.mjs after every room you
 change, not at the end.
 ```
+
+D1 (Tidewash Grotto) is done. It was authored before P7.5 and P7.6, so it is
+1x1 rooms in the shared legend throughout and is the first candidate for a
+revisit once both land. Read the D1 section at the top of docs/NEXT-SESSION.md
+before starting any other dungeon: the anchor gate/shelf/bank spacing and
+`tools/check-anchor.mjs` generalise to every dungeon after it, because every
+dungeon after it also has the Anchor.
 
 ### P9 — Overworld re-gating and difficulty
 
@@ -702,8 +720,15 @@ to the hard-won-lessons section of docs/HANDOFF.md.
 | 7 | P6 item roster | P8, P9 |
 | 8 | **PT towns, buildings, terrain polish** | P9 |
 | 9 | P7 scrimshaw | — |
+| 9a | P7.5 dungeon tilesets from the map rips | P8 |
+| 9b | P7.6 multi-screen dungeon rooms | P8 |
 | 10–15 | P8 dungeons 1–6 | P9 |
 | 16 | P9 overworld + difficulty | — |
+
+P7.5 and P7.6 gate P8 in the sense that a dungeon authored before them cannot
+use them, not in the sense that P8 is blocked: D1 was taken before either and
+is a finished dungeon. But every dungeon authored ahead of them is a dungeon
+that will want revisiting, so the cheaper order is to take both before D2.
 
 PT sits before P9 deliberately. A gate is a tile flag dropped into a finished
 screen; a town is the screen itself. Re-gating a finished village is a small
