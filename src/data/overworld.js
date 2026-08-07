@@ -45,6 +45,11 @@ const rooms = {
     ],
     entities: [
       ['keese', 2, 3], ['keese', 6, 4],
+      // The Rod's overworld verb: struck here, the bell points at the hole
+      // with the Heart Piece in it. A direction, never a distance — it
+      // narrows the search and does not finish it. And the note carries twice
+      // as far at HIGH tide, which is what makes this shore worth revisiting.
+      ['bell', 1, 5, { points: [3, 3], say: 'The bell leans toward the near hole.' }],
     ],
     // `abyssHole` is deep at every tide level. Nothing on this shore has ever
     // been able to reach what is in them; the Dredge Line reads the same
@@ -2243,7 +2248,7 @@ function installHouses() {
         entities: [
           ['giver', 4, 2, {
             sprite: 'npc_maku', dialogue: 'makuTree', waiting: 'makuWait',
-            after: 'makuAfter', flag: 'gotSatchel', item: 'satchel', level: 1,
+            after: 'makuAfter', flag: 'gotRod', item: 'rod', level: 1,
             needEssences: 1,
           }],
           ['npc', 7, 4, { sprite: 'npc_farore_0', dialogue: 'faroreHome' }],

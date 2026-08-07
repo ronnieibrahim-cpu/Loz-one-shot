@@ -26,6 +26,7 @@ import {
   REEFSEED_SHUDDER_EVERY,
   DREDGE_RANGE, DREDGE_CAST_SPEED, DREDGE_HAUL_SPEED, DREDGE_PULL_SPEED,
   DREDGE_FLOP_FRAMES,
+  ROD_RANGE, ROD_RANGE_HIGH, ROD_LOCK_FRAMES, ROD_RING_FRAMES, ROD_COOLDOWN_FRAMES,
   SHAKE_SMALL, SHAKE_SMALL_FRAMES,
 } from '../data/feel.js';
 import { sprites } from '../gfx/art.js';
@@ -718,6 +719,71 @@ export class SeedShot extends Projectile {
 }
 
 // --------------------------------------------------------------------------
+// Resonance Rod
+// --------------------------------------------------------------------------
+
+/**
+ * Strike the rod and everything metal or crystal within earshot answers at
+ * once: grates retract, submerged bells chime and point, and armoured enemies
+ * lock rigid — armour is metal, and metal is what the rod has an opinion
+ * about.
+ *
+ * THE RANGE DEPENDS ON THE TIDE. Water carries a note, so the radius roughly
+ * doubles at HIGH. This is the only item in the game whose own power is a
+ * function of the mechanic rather than a thing applied to it, which is why it
+ * is the trading reward: it sends the player back to rooms they had already
+ * decided were finished.
+ *
+ * It is a room effect, not a projectile. There is nothing to aim, and that is
+ * the point — the decision is WHERE TO STAND and WHEN, not where to point.
+ */
+export function ringResonance(game, p, level) {
+  if (p.rodCool > 0) { game.audio.sfx('deny'); return true; }
+  p.rodCool = ROD_COOLDOWN_FRAMES;
+  p.rodRing = ROD_RING_FRAMES;
+
+  // The level AT LINK'S OWN TILE, not the base level: standing in a Squall
+  // Bellows cone or on an anchored disc really does change how far the note
+  // goes, which is the two items composing rather than coexisting.
+  const ptx = Math.floor(p.cx / TILE), pty = Math.floor(p.cy / TILE);
+  const high = game.tideAt(ptx, pty) >= 2;
+  const range = high ? ROD_RANGE_HIGH : ROD_RANGE;
+  p.rodRange = range;
+
+  game.audio.sfx('valve');
+  game.spawnEffect('shine', p.cx - 8, p.cy - 8, { life: ROD_RING_FRAMES });
+
+  let any = false;
+  const room = game.room;
+  if (room) {
+    const r = Math.ceil(range / TILE);
+    for (let ty = pty - r; ty <= pty + r; ty++) {
+      for (let tx = ptx - r; tx <= ptx + r; tx++) {
+        if (!room.inBounds(tx, ty)) continue;
+        if (Math.hypot((tx + 0.5) * TILE - p.cx, (ty + 0.5) * TILE - p.cy) > range) continue;
+        if (!(room.flagsAt(tx, ty, game.tideAt(tx, ty)) & F.RING)) continue;
+        if (game.applyTileAction(tx, ty, 'ring', level)) any = true;
+      }
+    }
+  }
+
+  for (const e of game.entities) {
+    if (e.remove || e.dead) continue;
+    if (Math.hypot(e.cx - p.cx, e.cy - p.cy) > range) continue;
+    if (e.onRing) { e.onRing(game, p); any = true; continue; }
+    // Armoured: a shield is metal, and so is anything that says it is.
+    if (!e.isEnemy || (!e.shield && !e.metal)) continue;
+    e.rodLock = ROD_LOCK_FRAMES;
+    e.stun = Math.max(e.stun || 0, ROD_LOCK_FRAMES);
+    game.spawnEffect('spark', e.cx - 8, e.cy - 8);
+    any = true;
+  }
+
+  if (!any) game.audio.sfx('block');
+  return true;
+}
+
+// --------------------------------------------------------------------------
 // Item registry
 // --------------------------------------------------------------------------
 
@@ -768,6 +834,13 @@ export const ITEMS = {
     hold: true,
     desc: 'Hold to blow. The water ahead of you falls a level while you pump.',
     use(game, p, level) { p.bellowsHeld = true; return true; },
+  },
+  rod: {
+    names: ['Resonance Rod'],
+    icon: ['i_rod'],
+    equippable: true,
+    desc: 'Strike it. Every metal and crystal thing in earshot answers.',
+    use(game, p, level) { return ringResonance(game, p, level); },
   },
   dredge: {
     names: ['Dredge Line', 'Deepline'],

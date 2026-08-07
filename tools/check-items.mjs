@@ -510,6 +510,90 @@ check('...and takes double damage', r.flopDamage === r.normalDamage * r.scale,
   `flop=${r.flopDamage} normal=${r.normalDamage} scale=${r.scale}`);
 
 // ===========================================================================
+section('Resonance Rod');
+
+// The Bosskey Crypt's alcove is behind a grate.
+await park({ map: 'd8', floor: 1, rx: 4, ry: 2, tx: 4, ty: 4, dir: 'up', tide: 1, items: { rod: 1 }, equipB: 'rod' });
+await step(4);
+r = await read(() => ({
+  name: window.__game.room.baseName(4, 3),
+  stand: window.__standable(4, 3),
+  chest: window.__standable(4, 2),
+}));
+check('the boss key alcove is behind a grate', r.name === 'grate' && r.stand === false, `${r.name}`);
+
+r = await page.evaluate(async () => {
+  const g = window.__game;
+  const { ringResonance } = await import('/src/game/items.js');
+  ringResonance(g, g.player, 1);
+  for (let i = 0; i < 4; i++) g.update();
+  return { name: g.room.baseName(4, 3), stand: window.__standable(4, 3) };
+});
+check('the Rod retracts a grate', r.name === 'grateOpen' && r.stand === true, `${r.name} stand=${r.stand}`);
+
+// Range doubles at HIGH, and it is the level AT LINK'S TILE that decides.
+r = await page.evaluate(async () => {
+  const g = window.__game;
+  const feel = await import('/src/data/feel.js');
+  const { ringResonance } = await import('/src/game/items.js');
+  const out = {};
+  for (const lv of [1, 2]) {
+    g.tide.setLevel(lv, { instant: true });
+    g.player.rodCool = 0;
+    ringResonance(g, g.player, 1);
+    out[lv] = g.player.rodRange;
+  }
+  g.tide.setLevel(1, { instant: true });
+  out.low = feel.ROD_RANGE; out.high = feel.ROD_RANGE_HIGH;
+  return out;
+});
+check('the Rod reaches further at HIGH tide', r[2] > r[1], `MID=${r[1]} HIGH=${r[2]}`);
+check('...by roughly double', r[2] === r.high && r[1] === r.low, `${r[1]}/${r[2]} vs ${r.low}/${r.high}`);
+
+// Armour is metal, and metal that is ringing is not blocking.
+r = await page.evaluate(async () => {
+  const g = window.__game;
+  const { spawnEntity } = await import('/src/game/entity.js');
+  const { ringResonance } = await import('/src/game/items.js');
+  const feel = await import('/src/data/feel.js');
+  g.entities = g.entities.filter(e => e === g.player);
+  g.player.x = 4 * 16; g.player.y = 4 * 16; g.player.dir = 'up';
+  const knight = spawnEntity(g, 'darknut', 4, 5, {});
+  g.flushPending();          // addEntity queues; nothing sees it until flushed
+  knight.dir = 'up';
+  knight.invuln = 0;
+  // From the front, before: the shield holds.
+  const blocked = knight.hurt(g, 1, 'down', 0);
+  knight.invuln = 0;
+  g.player.rodCool = 0;
+  ringResonance(g, g.player, 1);
+  const locked = knight.rodLock;
+  const through = knight.hurt(g, 1, 'down', 0);
+  return { shield: knight.shield, blocked, locked, through, lockFrames: feel.ROD_LOCK_FRAMES };
+});
+check('an armoured enemy blocks a frontal hit', r.shield && r.blocked === false, `shield=${r.shield}`);
+check('the Rod locks it rigid', r.locked === r.lockFrames, `rodLock=${r.locked}`);
+check('...and its armour is no use while it rings', r.through === true);
+
+// The bell points, and only when it is rung.
+r = await page.evaluate(async () => {
+  const g = window.__game;
+  const { spawnEntity } = await import('/src/game/entity.js');
+  const { ringResonance } = await import('/src/game/items.js');
+  g.entities = g.entities.filter(e => e === g.player);
+  const bell = spawnEntity(g, 'bell', 5, 4, { points: [8, 4] });
+  g.flushPending();
+  const before = { chime: bell.chime, fx: g.entities.filter(e => e.isEffect).length };
+  g.player.rodCool = 0;
+  ringResonance(g, g.player, 1);
+  g.flushPending && g.flushPending();
+  return { before, chime: bell.chime, sparks: g.entities.filter(e => e.isEffect).length };
+});
+check('a bell is silent until it is rung', r.before.chime === 0);
+check('the Rod makes it chime and point', r.chime > 0 && r.sparks > r.before.fx,
+  `chime=${r.chime} sparks=${r.before.fx}->${r.sparks}`);
+
+// ===========================================================================
 check('no page errors', errs.length === 0, errs.slice(0, 3).join(' | '));
 
 console.log(`\n=== ${passed} passed, ${failures.length} failed ===`);

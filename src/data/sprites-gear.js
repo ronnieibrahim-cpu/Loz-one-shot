@@ -298,6 +298,26 @@ export const GEAR_ART = {
     .3113..303..3113
     ..33...333...33.
     ................` },
+  // Resonance Rod: a tuning fork on a wrapped grip. Two tines and a stem —
+  // the shape is doing all the work, so the tines are drawn long and the grip
+  // short, which is what tells it apart from the Bellows' nozzle at 16px.
+  i_rod: { pal: 'i_rod', art: `
+    ................
+    ...33......33...
+    ..3003....3003..
+    ..3113....3113..
+    ..3113....3113..
+    ..3113....3113..
+    ..3113....3113..
+    ..3113....3113..
+    ..311300003113..
+    ..311111111113..
+    ...3011111103...
+    ....30122103....
+    ....30211203....
+    ....30122103....
+    .....300003.....
+    ......3333......` },
   i_bomb_lit: { pal: 'i_bomb_lit', art: `
     ................
     .........33.....
@@ -342,6 +362,8 @@ const GEAR_PALETTES = {
   i_reefseed: ['#ffe0d0', '#e87878', '#a83848', '#000000'],
   // Wet iron: a bright rim, a grey body, a rust throat.
   i_dredge: ['#d8dce8', '#7880a0', '#8a5030', '#000000'],
+  // Struck bronze over a bound leather grip.
+  i_rod: ['#ffe8a0', '#c89020', '#7a4a18', '#000000'],
 };
 
 

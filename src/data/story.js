@@ -26,7 +26,7 @@ export const DIALOGUE = {
 
   // The Maku Tree: Seed Satchel after the first Essence, Master Sword after all eight.
   makuWait: 'Hoo. You are small and the sea is large.\nBring me one Essence of the Tide and I\nwill be awake enough to help.',
-  makuTree: 'Hoo hoo! One Essence, and my roots feel\nthe Bell again. Take this satchel — the\nseeds are mine, the trouble is yours.',
+  makuTree: 'Hoo hoo! One Essence, and my roots feel\nthe Bell again. Take the Rod. Strike it and\nevery drowned bell in Tidemere answers.',
   makuAfter: 'Eight Essences, Link. Eight. Then the way\nto the Keep opens, and I go back to sleep\nfor a hundred years.',
 
   faroreHome: 'The Bell is not a thing, exactly.\nIt is an agreement between the moon and\nthe water. Nereth broke the agreement.',
@@ -154,8 +154,8 @@ const CUTSCENES = {
   // ---- the Maku Tree beats ------------------------------------------------
   makuSatchel: [
     { say: 'Maku Tree: Hoo hoo! One Essence and my roots can feel the Bell again.' },
-    { say: 'Maku Tree: Take my satchel. The seeds are mine. The trouble you get into with them is yours.' },
-    { give: { item: 'satchel', level: 1 }, jingle: 'fanfare' },
+    { say: 'Maku Tree: Take the Rod. It was cut from the Bell that used to keep the tide honest.' },
+    { give: { item: 'rod', level: 1 }, jingle: 'fanfare' },
     { say: 'Maku Tree: Bring me eight, Link, and I will open the road to the Abyssal Keep. Then I am going back to sleep.' },
   ],
   makuMaster: [

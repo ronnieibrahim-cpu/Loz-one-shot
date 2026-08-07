@@ -1112,6 +1112,16 @@ export function installCoreTiles() {
     coralSunk: { art: ART.waterD0, pal: 'coral', flags: F.DEEP | F.RING, anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 13 },
     coralPillar: { tide: ['coralStep', 'coralWall', 'coralSunk'] },
 
+    // --- metal the Resonance Rod answers ----------------------------------
+    // A grate is a wall until it is rung, and then it is not. Reusing the
+    // dungeon block art in a bronze ramp rather than drawing a new one: the
+    // thing that says "metal" here is that the Rod moves it and nothing else
+    // does, which the player learns in one room.
+    grate: { art: ART.dBlock, pal: 'rust', flags: F.SOLID | F.RING, underArt: 'dFloor' },
+    grateOpen: { art: ART.dFloor, pal: 'brickf' },
+    grateOw: { art: ART.dBlock, pal: 'rust', flags: F.SOLID | F.RING, underArt: 'rockFloor' },
+    grateOwOpen: { art: ART.rockFloor, pal: 'stone' },
+
     // --- barriers ---
     cliff: { art: ART.cliff, pal: 'stone', flags: F.SOLID },
     cliffTop: { art: ART.cliffTop, pal: 'stone', flags: F.SOLID },
@@ -1304,6 +1314,10 @@ export function installCoreTiles() {
     },
     dFloorCrack: { bomb: 'dPit', fx: 'boom', persist: true, sfx: 'break' },
     digSpot: { dig: 'sand', drop: 'common' },
+    // The Rod retracts a grate. `persist: true` so a room stays open once it
+    // has been opened, the way a bombed wall does.
+    grate: { ring: 'grateOpen', fx: 'spark', persist: true, sfx: 'valve' },
+    grateOw: { ring: 'grateOwOpen', fx: 'spark', persist: true, sfx: 'valve' },
     sandDeep: { dig: 'sand' },
     mud: { dig: 'mud' },
   });

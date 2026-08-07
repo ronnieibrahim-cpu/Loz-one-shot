@@ -40,6 +40,7 @@ import {
   SINK_SPEED, SINK_ENTER_FRAMES, CLEATS_BREATH_FRAMES,
   CLEATS_BREATH_WARN_FRAMES, SINK_BUBBLE_EVERY, SINK_DROWN_DAMAGE,
   CONTEXT_REACH, LIFT_REACH, THROW_SPEED, CARRY_HEIGHT,
+  ROD_RING_FRAMES,
   SHAKE_SMALL, SHAKE_SMALL_FRAMES, CHARGE_SPARKLE_SPREAD, WADE_FOAM_EVERY,
   PUSH_PROBE_REACH,
 } from '../data/feel.js';
@@ -84,6 +85,9 @@ export class Player extends Entity {
     this.bellowsHeld = false;     // ditto
     this.bellowsT = 0;            // frames spent pumping; the cone opens at warmup
     this.bellowsHold = null;      // the ConeHold registered in game.tideHolds
+    this.rodCool = 0;             // Resonance Rod lock-out
+    this.rodRing = 0;             // frames of the ring still expanding
+    this.rodRange = 0;            // px the last ring reached, for the draw
     this.invincible = false;      // debug / cutscene
     this.frozen = 0;              // cutscene lock
     this.animT = 0;
@@ -118,6 +122,8 @@ export class Player extends Entity {
     if (this.speedBoost > 0) this.speedBoost--;
     if (this.conchTime > 0) this.conchTime--;
     if (this.clinkCool > 0) this.clinkCool--;
+    if (this.rodCool > 0) this.rodCool--;
+    if (this.rodRing > 0) this.rodRing--;
 
     if (this.falling > 0) { this.updateFalling(game); return; }
     if (this.washing > 0) { this.updateWashing(game); return; }
@@ -1105,6 +1111,20 @@ export class Player extends Entity {
     }
     if (this.inDeep && !this.underwater) {
       sprites.draw(ctx, 'fx_ripple0', ox + this.x, oy + this.y + 6, { pal: 'water' });
+    }
+    // The Resonance Rod's note, drawn as an expanding ring at the radius it
+    // actually reached — so the tide doubling the range is something you SEE
+    // rather than something the manual tells you.
+    if (this.rodRing > 0 && this.rodRange > 0) {
+      const t = 1 - this.rodRing / ROD_RING_FRAMES;
+      ctx.save();
+      ctx.globalAlpha = (1 - t) * 0.9;
+      ctx.strokeStyle = '#ffe8a0';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(ox + this.cx, oy + this.cy, Math.max(1, t * this.rodRange), 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
     }
   }
 }

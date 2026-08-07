@@ -17,7 +17,7 @@ import {
   PICKUP_GRAB_DELAY, FAIRY_DRIFT_TURN, FAIRY_DRIFT_X, FAIRY_DRIFT_Y,
   NPC_WANDER_PERIOD, NPC_WANDER_SPEED,
   ESSENCE_SPARKLE_EVERY, ESSENCE_SPARKLE_SPREAD,
-  BELLOWS_PUSH, BELLOWS_RAFT_SCALE, BELLOWS_WHEEL_COAST,
+  BELLOWS_PUSH, BELLOWS_RAFT_SCALE, BELLOWS_WHEEL_COAST, BELL_CHIME_FRAMES,
 } from '../data/feel.js';
 
 // --------------------------------------------------------------------------
@@ -733,3 +733,53 @@ export class GustWheel extends TideValve {
   spriteName() { return this.open ? 'o_valve_open' : 'o_valve'; }
 }
 defineEntity('wheel', (x, y, o) => new GustWheel(x, y, o));
+
+// --------------------------------------------------------------------------
+// Sunken bell: answers the Resonance Rod, and points
+// --------------------------------------------------------------------------
+
+/**
+ * A bell on the bottom. It does nothing at all until the Resonance Rod is
+ * sounded in earshot, and then it chimes and throws sparks toward whatever it
+ * is tuned to — `points: [tx, ty]`, in tiles.
+ *
+ * This is the Rod's navigation verb, and it is deliberately the weakest kind
+ * of help: it tells you a DIRECTION and never a distance, so it narrows a
+ * search without finishing it.
+ */
+export class SunkenBell extends Entity {
+  constructor(x, y, o = {}) {
+    super(x, y, o);
+    this.w = 16; this.h = 16;
+    this.hb = { x: 2, y: 3, w: 12, h: 12 };
+    this.solid = true;
+    this.harmless = true;
+    this.shadow = false;
+    this.pal = 'rust';
+    this.points = o.points || null;
+    this.say = o.say || 'The bell hums, and something answers.';
+    this.chime = 0;
+  }
+
+  /** Called by ringResonance for every entity in earshot. */
+  onRing(game) {
+    this.chime = BELL_CHIME_FRAMES;
+    game.audio.sfx('secret');
+    if (!this.points) { game.say(this.say); return; }
+    const tx = this.points[0] * TILE + 8, ty = this.points[1] * TILE + 8;
+    const dx = tx - this.cx, dy = ty - this.cy;
+    const d = Math.hypot(dx, dy) || 1;
+    for (let i = 1; i <= 4; i++) {
+      game.spawnEffect('sparkle',
+        this.cx - 8 + (dx / d) * i * 10, this.cy - 8 + (dy / d) * i * 10,
+        { life: BELL_CHIME_FRAMES, pal: 'gold' });
+    }
+  }
+
+  update() { if (this.chime > 0) this.chime--; }
+
+  interact(game) { game.say('A bell, green with salt. Nothing you can reach will move it.'); }
+
+  spriteName() { return this.chime > 0 ? 'o_valve_open' : 'o_valve'; }
+}
+defineEntity('bell', (x, y, o) => new SunkenBell(x, y, o));

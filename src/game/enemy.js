@@ -148,6 +148,8 @@ export class Enemy extends Entity {
     }
     if (this.dormant) return;
 
+    if (this.rodLock > 0) this.rodLock--;
+
     // Landed by the Dredge Line. It lies on the bank taking double damage and
     // doing none, then works its way back to being itself.
     if (this.dredged > 0) {
@@ -190,6 +192,9 @@ export class Enemy extends Entity {
     if (this.dredged > 0) {
       return super.hurt(game, Math.round(dmg * DREDGE_FLOP_DAMAGE_SCALE), dir, knock);
     }
+    // Rung. Armour that is ringing is armour that is not blocking — locking a
+    // darknut rigid would be a stun, and a stun is not an answer to armour.
+    if (this.rodLock > 0) return super.hurt(game, dmg, dir, knock);
     if (this.shield && dir) {
       // A shielded enemy blocks hits arriving at its facing side.
       const opposite = { up: 'down', down: 'up', left: 'right', right: 'left' };

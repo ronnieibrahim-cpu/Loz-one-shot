@@ -751,3 +751,27 @@ export const DREDGE_FLOP_FRAMES = 150;
 /** x — damage multiplier on a flopping creature. guessed; being landed is
  *  supposed to be the answer to an aquatic enemy, not a nudge. */
 export const DREDGE_FLOP_DAMAGE_SCALE = 2;
+
+// --- Resonance Rod ---------------------------------------------------------
+
+/** px — how far the note carries at LOW and MID tide. guessed; three tiles. */
+export const ROD_RANGE = 48;
+
+/** px — how far it carries at HIGH. guessed; water carries a note, and this is
+ *  the one item whose own power depends on the tide. Roughly double. */
+export const ROD_RANGE_HIGH = 96;
+
+/** f — how long armoured metal locks rigid when it is rung. guessed; the brief
+ *  says about 90 frames and this is that number until someone plays it. */
+export const ROD_LOCK_FRAMES = 90;
+
+/** f — how long the ring itself lasts on screen. guessed. */
+export const ROD_RING_FRAMES = 26;
+
+/** f — how long the rod cannot be sounded again. guessed; long enough that
+ *  holding the button is not a stun-lock. */
+export const ROD_COOLDOWN_FRAMES = 48;
+
+/** f — how long a sunken bell hums after the Resonance Rod is sounded near it,
+ *  and how long its pointing sparks last. guessed. */
+export const BELL_CHIME_FRAMES = 60;

@@ -1888,6 +1888,9 @@ export function installDungeonsB() {
         entities: [
           ['siren', 3, 2],
           ['anglerfry', 6, 5],
+          // Rung, it points at the well with the key in it. A direction and
+          // never a distance — see docs/ITEMS.md.
+          ['bell', 8, 4, { points: [4, 2], say: 'The bell hums toward the near well.' }],
         ],
       },
       '0,4,4': {
@@ -2115,11 +2118,15 @@ export function installDungeonsB() {
       },
       '1,4,2': {
         name: 'Bosskey Crypt',
+        // The Boss Key sits behind a grate: metal, and the only thing in the
+        // game that retracts metal is the Resonance Rod. The grate seals the
+        // alcove and nothing else, because a grate across a corridor would
+        // strand the room and still validate.
         map: [
           '##########',
           '##########',
-          '##......##',
-          '#........#',
+          '###....###',
+          '###GGGG###',
           '##..44..##',
           '##......##',
           '####..####',

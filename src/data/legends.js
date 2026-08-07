@@ -27,6 +27,7 @@ export function installLegends() {
     // region gates. In `base` rather than per region: a region's boundary
     // screen frequently belongs to the NEIGHBOURING region's legend, so a gate
     // char scoped to one region is undefined precisely where it must be placed.
+    'K': 'grateOw',      // metal: only the Resonance Rod retracts it
     'J': 'chasm',        // Roc's Feather   — 1 tile, clearable at 2.27 tiles
     'M': 'boulder',      // Power Bracelet  — lift it out of the way
     'C': 'caveMouth', 'c': 'caveMouthSolid', '/': 'stairsDown', '_': 'ledgeS',
@@ -127,6 +128,7 @@ export function installLegends() {
     '#': 'dWall', 'X': 'dWallCracked', '=': 'dBlock', 'q': 'dPost',
     'O': 'dPit', '^': 'spikes', 'p': 'pot',
     'D': 'dDoorClosed', 'o': 'dDoorOpen', 'L': 'dDoorLocked', 'B': 'dDoorBoss',
+    'G': 'grate',      // metal: only the Resonance Rod retracts it
     '/': 'dStairs',
     'R': 'rockFloor', 'r': 'rockFloorDk', '_': 'dLedge',
     '"': 'dLedgeN', '>': 'dLedgeE', '<': 'dLedgeW',
