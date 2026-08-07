@@ -95,6 +95,15 @@ they are also how a future session finds which sheet a tile came from.
 - **A test that fails intermittently is a real bug, not load flakiness.** If a
   seeded, deterministic run varies, the non-determinism is in initialisation
   order. Find it. Never add a retry.
+- **Animated tiles are not in the room's render cache.** Water, lava and
+  torches are pushed to `animCells` and drawn separately, so sampling
+  `room.render()` alone reads them as transparent. Composite `render` +
+  `drawAnim` + `drawOver` the way `drawScene` does, and hash a whole 16x16 tile
+  rather than one pixel — shallow and deep reef water share their colour at the
+  tile's centre.
+- **Rebuilding an options object field by field drops what you forget.**
+  `addOverride` did exactly that and silently discarded the tag the Anchor used
+  to find its own override. Everything worked except the one thing.
 
 ---
 
@@ -154,8 +163,19 @@ is which.
 
 ## Design rules
 
-**The tide is a field, not a global.** `tide.levelAt(tx, ty)`. `tide.level` is
-the base level and only music, HUD and save should read it.
+**The tide is a field, not a global.** `tide.levelAt(tx, ty, room)`, or pass
+`game.tide` straight to a room query and it resolves per tile. `tide.level` is
+the BASE and only the HUD gauge, the music, the save and the conch's own
+plumbing should read it. Inside the world, `tideAt(game, e)` is the level under
+an entity's own feet — that is what an enemy, a boss or a raft means by "the
+tide". A new call site that says `tide.level` and means "the water here" is
+right until the first anchor lands near it and wrong forever after.
+
+**A room's render cache is keyed on the field's stamp, not on a level.** The
+stamp is monotonic and is never reset — not by `clearOverrides`, not by a new
+game. Rooms outlive a new game, so a stamp that went backwards could collide
+with a key a cached canvas still holds, and the room would draw the wrong water
+while every collision query answered correctly.
 
 **Every item needs three verbs** — one for movement, one for combat, one for
 puzzles. An item with fewer than two is a key wearing a costume.

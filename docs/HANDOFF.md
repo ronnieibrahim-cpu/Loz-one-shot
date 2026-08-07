@@ -200,6 +200,66 @@ stable per-entity constant.
 
 ## Hard-won lessons — do not rediscover these
 
+**The tide field (P5), and the four things it cost.**
+
+1. **A dropped field on an options object is invisible.** `Tide.addOverride`
+   destructured `{mapId, roomKey, tx, ty, r, level, shape}` and rebuilt the
+   object from those names — so the `src: 'anchor'` the caller passed was
+   silently thrown away. Everything worked: the anchor landed, the field split,
+   the room rendered correctly, every flag query answered right. The only thing
+   that failed was the item finding its own override again, so the anchor could
+   be thrown and never recalled. Rebuilding an object field-by-field drops
+   whatever you forget, and nothing type-checks it.
+
+2. **A render cache keyed on a scalar silently survives a field.** `Room` cached
+   its tile layer against the tide *level*. With a field the key has to be the
+   field's version stamp, because the level no longer identifies the picture.
+   Get this wrong and collision is right while the pixels are stale — the room
+   draws yesterday's water and every test still passes. The stamp is monotonic
+   and **must never be reset**, including by `clearOverrides` or a new game:
+   Room objects outlive a new game, so a stamp that went back to zero could
+   collide with a key a cached canvas is still holding.
+
+3. **A single-pixel probe is not a pixel test.** The first version of the render
+   assertion sampled one pixel at the centre of each band and passed on nothing,
+   twice, for two different reasons. First: animated tiles — which is every kind
+   of water — are pushed to `animCells` and deliberately left OUT of the cached
+   canvas, so both bands read as transparent. Composite `render` + `drawAnim` +
+   `drawOver` the way `drawScene` does. Second: shallow and deep reef water
+   happen to share their colour at the tile's centre pixel, so even composited,
+   one pixel reported them identical. Hash the whole 16x16 tile.
+
+4. **`levelAt`'s default room is wrong in exactly one place.** It defaults to
+   `game.room`, which is right for game logic and wrong during a room-slide
+   transition, where two rooms are on screen and one of them is not `game.room`.
+   Everything going through `room.tile`/`flagsAt`/`solidAt`/`render` is safe
+   because `Room` passes itself; the rule binds direct callers in draw paths.
+
+**A replay that walks somewhere proves less than it looks.** The two-level
+replay would have passed just as well in a room held uniformly at one level —
+the walk succeeds either way. What makes it a proof is the probe tiles either
+side of the held patch, recorded at every checkpoint, in two independent senses:
+what the engine believes the level is, and a hash of how the tile is actually
+drawn. Also: use held directions, not `goto`. A pathfinder routes around the
+interesting part of the room by the boring columns at its edge.
+
+**The radius had to be checked against a real room before the replay was built.**
+At radius 3 the held patch reaches from the reef flat into the tide-rock band
+three rows away, both bands freeze together, and the replay walks a uniformly
+MID room while claiming to prove a split. The margin between the probes is the
+reason the radius is 2.
+
+**`flowers` and `bush` were the same rosette, and that is why `bush` could not
+be extracted.** Two sessions recorded "bush stays hand-drawn" as a constraint
+when it was a consequence: the Ages shrub at AG 450,920 is authentic, but the
+`flowers` tile was a leafy rosette from the fan-made map and the two cells are
+indistinguishable. The fix was upstream — re-pick `flowers` from Seasons'
+**spring** overworld (a sheet nothing had ever read from; spring is when
+Holodrum is in bloom), and the shrub becomes available immediately. When a
+extraction is blocked by "it would look like X", check whether X is the thing
+that should move.
+
+
 **Sprite-sheet extraction** (`tools/ripkit.py`; worked examples in
 `tools/rip-link.py`, `tools/rip-npcs.py` and `tools/rip-enemies.py`):
 
