@@ -97,10 +97,29 @@ export class Room {
     return this.override[ty * ROOM_W + tx] || this.base[ty * ROOM_W + tx];
   }
 
-  /** Concrete tile definition at the given tide level. */
+  /**
+   * The tide level to resolve one tile against.
+   *
+   * Every query below takes a `tide` that is EITHER a plain 0/1/2 or the Tide
+   * field itself. The field is what the running game passes, and it answers per
+   * tile, which is what makes a room able to be dry in one half and flooded in
+   * the other. The plain number is what the offline checkers and the
+   * level-by-level probes in the harnesses pass, and it stays supported on
+   * purpose — "what would this room be at HIGH everywhere" is a question worth
+   * being able to ask.
+   *
+   * `this` is handed to the field so it resolves against THIS room's overrides.
+   * A room being drawn during a transition must not pick up the overrides of
+   * the room sliding in beside it.
+   */
+  levelAt(tide, tx, ty) {
+    return typeof tide === 'number' ? tide : tide.levelAt(tx, ty, this);
+  }
+
+  /** Concrete tile definition at the given tide level or field. */
   tile(tx, ty, tide) {
     if (!this.inBounds(tx, ty)) return getTileDef('void');
-    return resolveTile(this.baseName(tx, ty), tide);
+    return resolveTile(this.baseName(tx, ty), this.levelAt(tide, tx, ty));
   }
 
   flagsAt(tx, ty, tide) { return this.tile(tx, ty, tide).flags; }
@@ -124,10 +143,24 @@ export class Room {
 
   invalidate() { this._cacheDirty = true; }
 
-  /** Render (and cache) the static tile layer for a tide level. */
+  /**
+   * The cache key for a tide argument.
+   *
+   * For a plain level it is the level. For the field it is the field's stamp,
+   * which bumps on every change to the base OR to the override list — so an
+   * anchor thrown, recalled or resized re-renders the room. Getting this wrong
+   * is silent: the room keeps drawing the old water while collision uses the
+   * new one, which looks like an art bug and fails no test.
+   */
+  cacheKeyFor(tide) {
+    return typeof tide === 'number' ? tide : 'f' + tide.stamp;
+  }
+
+  /** Render (and cache) the static tile layer for a tide level or field. */
   render(tide, frame) {
     if (!this._cache) this._cache = offscreen(VIEW_W, VIEW_H);
-    if (this._cacheDirty || this._cacheTide !== tide) {
+    const key = this.cacheKeyFor(tide);
+    if (this._cacheDirty || this._cacheTide !== key) {
       const ctx = this._cache.ctx;
       ctx.clearRect(0, 0, VIEW_W, VIEW_H);
       this.animCells.length = 0;
@@ -150,7 +183,7 @@ export class Room {
           tileSheet.draw(ctx, d.name, x * TILE, y * TILE, { pal: d.pal });
         }
       }
-      this._cacheTide = tide;
+      this._cacheTide = key;
       this._cacheDirty = false;
     }
     return this._cache.canvas;
@@ -177,6 +210,8 @@ export class Room {
   solidAt(px, py, tide, caps) {
     const tx = Math.floor(px / TILE), ty = Math.floor(py / TILE);
     if (tx < 0 || ty < 0 || tx >= ROOM_W || ty >= ROOM_H) return true;
+    // The tile is resolved at ITS OWN tide level, so a hitbox spanning the edge
+    // of a frozen patch is solid on one side and wadeable on the other.
     const d = this.tile(tx, ty, tide);
     const f = d.flags;
 

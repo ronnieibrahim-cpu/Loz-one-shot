@@ -230,10 +230,10 @@ export function canOccupy(game, e, x, y, caps) {
   for (const py of ys) {
     for (const px of xs) {
       if (px < 0 || py < 0 || px >= VIEW_W || py >= VIEW_H) return false;
-      if (room.solidAt(px, py, game.tide.level, cps)) return false;
+      if (room.solidAt(px, py, game.tide, cps)) return false;
       if (avoid) {
         const tx = Math.floor(px / TILE), ty = Math.floor(py / TILE);
-        if (room.flagsAt(tx, ty, game.tide.level) & avoid) return false;
+        if (room.flagsAt(tx, ty, game.tide) & avoid) return false;
       }
     }
   }
@@ -256,7 +256,7 @@ export function groundFlags(game, e) {
   const px = Math.floor(e.x + e.hb.x + e.hb.w / 2);
   const py = Math.floor(e.y + e.hb.y + e.hb.h - 2);
   const tx = Math.floor(px / TILE), ty = Math.floor(py / TILE);
-  return room.flagsAt(tx, ty, game.tide.level);
+  return room.flagsAt(tx, ty, game.tide);
 }
 
 export function groundTile(game, e) {
@@ -264,6 +264,19 @@ export function groundTile(game, e) {
   const px = Math.floor(e.x + e.hb.x + e.hb.w / 2);
   const py = Math.floor(e.y + e.hb.y + e.hb.h - 2);
   return { tx: Math.floor(px / TILE), ty: Math.floor(py / TILE) };
+}
+
+/**
+ * The tide level under an entity's own feet, 0-2.
+ *
+ * This is what anything reading "the tide" from inside the world should ask
+ * for — an enemy, a boss, a raft. `game.tide.level` is the BASE, which is a
+ * different question and is only the right one for the HUD, the music and the
+ * save. Since the Anchor, the two can disagree inside a single room.
+ */
+export function tideAt(game, e) {
+  const { tx, ty } = groundTile(game, e);
+  return game.tide.levelAt(tx, ty, game.room);
 }
 
 /** Nearest tile the given entity can legally stand on. Used after a tide change. */
@@ -275,7 +288,7 @@ export function findSafeTile(game, e, maxRadius = 6) {
         if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
         const nx = tx + dx, ny = ty + dy;
         if (nx < 0 || ny < 0 || nx >= ROOM_W || ny >= ROOM_H) continue;
-        const f = game.room.flagsAt(nx, ny, game.tide.level);
+        const f = game.room.flagsAt(nx, ny, game.tide);
         if (f & (F.SOLID | F.VOID | F.DEEP | F.PIT | F.HAZARD | F.JUMPABLE)) continue;
         const px = nx * TILE + (TILE - e.w) / 2;
         const py = ny * TILE + (TILE - e.h) / 2;

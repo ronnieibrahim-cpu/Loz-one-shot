@@ -30,8 +30,11 @@ export class Input {
     window.addEventListener('keydown', (e) => {
       const b = KEYMAP[e.code];
       if (b) { this._raw[b] = true; this._latch[b] = true; this.anyPressEver = true; e.preventDefault(); }
-      // Convenience: fullscreen + mute handled by the game, not the pad.
-      if (e.code === 'KeyF' || e.code === 'KeyP' || e.code === 'KeyO' || e.code === 'KeyR') {
+      // Convenience: fullscreen + mute handled by the game, not the pad. KeyU
+      // and KeyY tune the anchor's held patch in the hand — see
+      // Game.cycleAnchorRadius for why that constant is settled by play.
+      if (e.code === 'KeyF' || e.code === 'KeyP' || e.code === 'KeyO' || e.code === 'KeyR'
+        || e.code === 'KeyU' || e.code === 'KeyY') {
         this.extra = e.code;
       }
     }, { passive: false });

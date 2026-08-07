@@ -11,7 +11,9 @@
 //     use(game, player, level) -> boolean   // true if the press was consumed
 //   }
 
-import { Entity, defineEntity, moveEntity, canOccupy, DIR_VEC, groundFlags } from './entity.js';
+import {
+  Entity, defineEntity, moveEntity, canOccupy, findSafeTile, DIR_VEC, dirFromVec, groundFlags,
+} from './entity.js';
 import { Projectile, fire } from './projectile.js';
 import { Explosion } from './effects.js';
 import { F } from '../world/tileset.js';
@@ -21,6 +23,8 @@ import { FP_ONE, sp, toPx } from '../core/fixed.js';
 import {
   PEGASUS_FRAMES, JUMP_POWER, JUMP_POWER_CAPE,
   THROW_ARC_RISE, THROW_ARC_GRAVITY, THROW_SLIDE_DECAY, THROW_SLIDE_STOP,
+  ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, ANCHOR_THROW_SPEED, ANCHOR_RECALL_SPEED,
+  ANCHOR_SETTLE_FRAMES, ANCHOR_CHAIN_DAMAGE,
 } from '../data/feel.js';
 import { sprites } from '../gfx/art.js';
 
@@ -210,7 +214,7 @@ export class Hookshot extends Entity {
       const nx = toPx(nfx), ny = toPx(nfy);
       // Latch onto hookable tiles.
       const tx = Math.floor((nx + 5) / TILE), ty = Math.floor((ny + 5) / TILE);
-      const f = game.room.flagsAt(tx, ty, game.tide.level);
+      const f = game.room.flagsAt(tx, ty, game.tide);
       if (f & F.HOOKABLE) {
         this.state = 'pull';
         this.anchorX = tx * TILE; this.anchorY = ty * TILE;
@@ -336,6 +340,190 @@ export class ThrownObject extends Entity {
     game.rollDrop(this.cx - 8, this.cy - 8, this.opts.drops || 'none');
   }
 }
+
+// --------------------------------------------------------------------------
+// The Tidewright's Anchor
+//
+// Throw it; it sinks and holds. Every tile within ANCHOR_RADIUS_TILES stays at
+// whatever tide level was current when it landed, while the rest of the room
+// goes on obeying the conch. Press again — from anywhere — to recall it.
+//
+// THE OVERRIDE IS THE TRUTH, THE ENTITY IS ITS PICTURE. `spawnRoomEntities`
+// wipes every non-player entity on a room change, so a landed anchor's state
+// cannot live on the entity. It lives in `game.tide.overrides`, keyed to the
+// map and room it was laid in, and Game.setRoom re-spawns the sprite when the
+// player comes back. That is also what makes a cancelled room transition safe:
+// an anchor still IN FLIGHT is simply dropped with no override registered, so
+// walking through a seam mid-throw returns the item rather than leaving a
+// frozen patch nobody can see the cause of.
+//
+// Three verbs, per the design rule in CLAUDE.md:
+//   movement  freeze a route open behind you and walk it at the wrong tide
+//   puzzles   two tide levels in one room
+//   combat    the chain sweeps along its line on both throw and recall
+// --------------------------------------------------------------------------
+
+/** The live anchor override, or null. There is at most one. */
+export function anchorOverride(game) {
+  return game.tide.overrides.find(o => o.src === 'anchor') || null;
+}
+
+export class Anchor extends Entity {
+  constructor(x, y, o = {}) {
+    super(x, y, o);
+    this.w = 16; this.h = 16;
+    this.hb = { x: 4, y: 4, w: 8, h: 8 };
+    this.sprite = 'o_anchor';
+    this.harmless = true;
+    this.shadow = true;
+    this.depth = -2;
+    this.state = o.state || 'flight';     // 'flight' | 'held' | 'recall'
+    this.overrideId = o.overrideId || null;
+    this.settle = 0;
+    this.hit = new Set();
+    const [dx, dy] = DIR_VEC[o.dir || 'down'];
+    this.vx = dx * ANCHOR_THROW_SPEED;
+    this.vy = dy * ANCHOR_THROW_SPEED;
+    if (this.state === 'flight') {
+      this.flying = true;
+      this.z = 12;
+      this.vz = THROW_ARC_RISE;
+    } else {
+      this.z = 0; this.vz = 0;
+      this.vx = 0; this.vy = 0;
+    }
+  }
+
+  update(game) {
+    this.frame++;
+    if (this.state === 'flight') this.updateFlight(game);
+    else if (this.state === 'recall') this.updateRecall(game);
+    else if (this.settle > 0) this.settle--;
+  }
+
+  updateFlight(game) {
+    this.fz += this.vz;
+    this.vz -= THROW_ARC_GRAVITY;
+    const r = moveEntity(game, this, this.vx, this.vy, { jumping: true, swim: true });
+    this.sweepChain(game);
+    // A wall stops it short; otherwise it flies its arc and bites where it falls.
+    if (r.hitX || r.hitY || this.fz <= 0) this.land(game);
+  }
+
+  /**
+   * Bite. Registers the override at the level current AT THIS TILE, which with
+   * one anchor is the base — asking the field rather than the base is what
+   * keeps this correct if a second source of overrides ever exists.
+   */
+  land(game) {
+    this.fz = 0; this.vz = 0; this.flying = false;
+    const tx = Math.floor(this.cx / TILE), ty = Math.floor(this.cy / TILE);
+    const room = game.room;
+    if (!room || !room.inBounds(tx, ty)) { this.returnToHand(game); return; }
+
+    const level = game.tide.levelAt(tx, ty, room);
+    const id = game.tide.addOverride({
+      mapId: game.mapId, roomKey: room.key, tx, ty,
+      r: game.anchorRadius != null ? game.anchorRadius : ANCHOR_RADIUS_TILES,
+      shape: game.anchorShape || ANCHOR_SHAPE,
+      level, src: 'anchor',
+    });
+
+    // NEVER STRAND THE PLAYER. The field has just changed under everyone's
+    // feet. `reconcileWithTide` can nudge Link out of new water or a new wall,
+    // but only if there is somewhere to nudge him to — and findSafeTile now
+    // searches the FIELD, so it answers about the world the anchor just made.
+    // If there is nowhere, the bite is refused outright rather than drowning
+    // him: a tool that can kill you by being used is not a tool.
+    const p = game.player;
+    if (p && !canOccupy(game, p, p.x, p.y, p.caps) && !findSafeTile(game, p)) {
+      game.tide.removeOverride(id);
+      this.returnToHand(game);
+      game.audio.sfx('deny');
+      game.say('There is nowhere to stand if it bites here.');
+      return;
+    }
+
+    this.state = 'held';
+    this.overrideId = id;
+    this.settle = ANCHOR_SETTLE_FRAMES;
+    this.x = tx * TILE; this.y = ty * TILE;
+    game.audio.sfx((game.room.flagsAt(tx, ty, game.tide) & F.WET) ? 'splash' : 'place');
+    game.spawnEffect((game.room.flagsAt(tx, ty, game.tide) & F.WET) ? 'splash' : 'dust',
+      this.cx - 8, this.cy - 8);
+    if (p) p.reconcileWithTide(game);
+    game.roomEvent('anchor', { tx, ty, level });
+  }
+
+  /** Reel in: remove the override, sweep the chain back, vanish. */
+  recall(game) {
+    if (this.overrideId != null) game.tide.removeOverride(this.overrideId);
+    this.overrideId = null;
+    this.state = 'recall';
+    this.flying = true;
+    this.hit.clear();
+    game.audio.sfx('hookshot');
+    const p = game.player;
+    if (p) p.reconcileWithTide(game);
+  }
+
+  updateRecall(game) {
+    const p = game.player;
+    if (!p) { this.remove = true; return; }
+    const dx = p.cx - this.cx, dy = p.cy - this.cy;
+    const d = Math.hypot(dx, dy);
+    if (d < 8) { this.remove = true; if (p.anchor === this) p.anchor = null; return; }
+    this.fx += Math.round(dx / d * ANCHOR_RECALL_SPEED);
+    this.fy += Math.round(dy / d * ANCHOR_RECALL_SPEED);
+    this.sweepChain(game);
+  }
+
+  /**
+   * The combat verb: the chain is a line, not a point, so it damages along its
+   * whole length rather than only where the head is. Sampled every 6px, and
+   * each enemy is hit at most once per throw or recall.
+   */
+  sweepChain(game) {
+    const p = game.player;
+    if (!p) return;
+    const dx = this.cx - p.cx, dy = this.cy - p.cy;
+    const n = Math.max(1, Math.round(Math.hypot(dx, dy) / 6));
+    for (const e of game.entities) {
+      if (!e.isEnemy || e.dead || e.dormant || e.hidden || this.hit.has(e.id)) continue;
+      const r = e.rect();
+      for (let i = 0; i <= n; i++) {
+        const sx = p.cx + dx * i / n, sy = p.cy + dy * i / n;
+        if (sx >= r.x && sx < r.x + r.w && sy >= r.y && sy < r.y + r.h) {
+          this.hit.add(e.id);
+          e.hurt(game, ANCHOR_CHAIN_DAMAGE, dirFromVec(dx, dy), 2);
+          break;
+        }
+      }
+    }
+  }
+
+  returnToHand(game) {
+    this.remove = true;
+    const p = game.player;
+    if (p && p.anchor === this) p.anchor = null;
+  }
+
+  /** The chain, drawn back to Link whenever he is on the same screen. */
+  draw(ctx, game, ox, oy) {
+    const p = game.player;
+    if (p && this.state !== 'held') {
+      const dx = this.cx - p.cx, dy = this.cy - p.cy;
+      const n = Math.max(1, Math.round(Math.hypot(dx, dy) / 5));
+      for (let i = 1; i < n; i++) {
+        sprites.draw(ctx, 'i_chain',
+          ox + Math.round(p.cx + dx * i / n) - 4,
+          oy + Math.round(p.cy + dy * i / n) - 4 - Math.round(this.z * i / n));
+      }
+    }
+    sprites.draw(ctx, this.sprite, ox + this.x, oy + this.y - this.z);
+  }
+}
+defineEntity('anchor', (x, y, o) => new Anchor(x, y, o));
 
 // --------------------------------------------------------------------------
 // Seeds
@@ -559,6 +747,39 @@ export const ITEMS = {
     icon: ['i_ringbox'],
     passive: true,
     desc: 'Holds magic rings. Bigger boxes let you wear more at once.',
+  },
+  anchor: {
+    names: ["Tidewright's Anchor"],
+    icon: ['i_anchor'],
+    equippable: true,
+    desc: 'Throw it to hold the tide where it lands. Press again to recall it.',
+    use(game, p, level) {
+      // In flight: the throw is already committed, and a second press must not
+      // spawn a second anchor.
+      if (p.anchor && !p.anchor.remove && p.anchor.state === 'flight') return true;
+
+      // Placed — anywhere in the world, not just this room. Recall is always
+      // available, which is what makes the item safe: nothing it does to a room
+      // can be permanent, so nothing it does can lock you out of one.
+      const held = anchorOverride(game);
+      if (held) {
+        if (p.anchor && !p.anchor.remove && p.anchor.state === 'held') {
+          p.anchor.recall(game);
+        } else {
+          // Held in a room we are not standing in. It simply comes back.
+          game.tide.removeOverride(held.id);
+          game.audio.sfx('hookshot');
+          p.reconcileWithTide(game);
+        }
+        return true;
+      }
+
+      const a = new Anchor(p.cx - 8, p.cy - 8, { dir: p.dir });
+      p.anchor = a;
+      game.addEntity(a);
+      game.audio.sfx('throw');
+      return true;
+    },
   },
   map: { names: ['Dungeon Map'], icon: ['i_map'], passive: true, desc: 'Reveals the dungeon layout.' },
   compass: { names: ['Compass'], icon: ['i_compass'], passive: true, desc: 'Chimes near keys and marks the boss.' },

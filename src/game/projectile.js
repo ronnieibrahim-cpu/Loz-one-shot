@@ -86,7 +86,7 @@ export class Projectile extends Entity {
     ];
     for (const [px, py] of pts) {
       const tx = Math.floor(px / TILE), ty = Math.floor(py / TILE);
-      const f = room.flagsAt(tx, ty, game.tide.level);
+      const f = room.flagsAt(tx, ty, game.tide);
       if (f & (F.SOLID | F.VOID)) return false;
       if (!this.overWater && (f & F.DEEP)) return false;
     }

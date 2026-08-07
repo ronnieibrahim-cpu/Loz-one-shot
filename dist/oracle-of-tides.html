@@ -200,8 +200,11 @@ class Input {
     window.addEventListener('keydown', (e) => {
       const b = KEYMAP[e.code];
       if (b) { this._raw[b] = true; this._latch[b] = true; this.anyPressEver = true; e.preventDefault(); }
-      // Convenience: fullscreen + mute handled by the game, not the pad.
-      if (e.code === 'KeyF' || e.code === 'KeyP' || e.code === 'KeyO' || e.code === 'KeyR') {
+      // Convenience: fullscreen + mute handled by the game, not the pad. KeyU
+      // and KeyY tune the anchor's held patch in the hand — see
+      // Game.cycleAnchorRadius for why that constant is settled by play.
+      if (e.code === 'KeyF' || e.code === 'KeyP' || e.code === 'KeyO' || e.code === 'KeyR'
+        || e.code === 'KeyU' || e.code === 'KeyY') {
         this.extra = e.code;
       }
     }, { passive: false });
@@ -1743,10 +1746,29 @@ class Room {
     return this.override[ty * ROOM_W + tx] || this.base[ty * ROOM_W + tx];
   }
 
-  /** Concrete tile definition at the given tide level. */
+  /**
+   * The tide level to resolve one tile against.
+   *
+   * Every query below takes a `tide` that is EITHER a plain 0/1/2 or the Tide
+   * field itself. The field is what the running game passes, and it answers per
+   * tile, which is what makes a room able to be dry in one half and flooded in
+   * the other. The plain number is what the offline checkers and the
+   * level-by-level probes in the harnesses pass, and it stays supported on
+   * purpose — "what would this room be at HIGH everywhere" is a question worth
+   * being able to ask.
+   *
+   * `this` is handed to the field so it resolves against THIS room's overrides.
+   * A room being drawn during a transition must not pick up the overrides of
+   * the room sliding in beside it.
+   */
+  levelAt(tide, tx, ty) {
+    return typeof tide === 'number' ? tide : tide.levelAt(tx, ty, this);
+  }
+
+  /** Concrete tile definition at the given tide level or field. */
   tile(tx, ty, tide) {
     if (!this.inBounds(tx, ty)) return getTileDef('void');
-    return resolveTile(this.baseName(tx, ty), tide);
+    return resolveTile(this.baseName(tx, ty), this.levelAt(tide, tx, ty));
   }
 
   flagsAt(tx, ty, tide) { return this.tile(tx, ty, tide).flags; }
@@ -1770,10 +1792,24 @@ class Room {
 
   invalidate() { this._cacheDirty = true; }
 
-  /** Render (and cache) the static tile layer for a tide level. */
+  /**
+   * The cache key for a tide argument.
+   *
+   * For a plain level it is the level. For the field it is the field's stamp,
+   * which bumps on every change to the base OR to the override list — so an
+   * anchor thrown, recalled or resized re-renders the room. Getting this wrong
+   * is silent: the room keeps drawing the old water while collision uses the
+   * new one, which looks like an art bug and fails no test.
+   */
+  cacheKeyFor(tide) {
+    return typeof tide === 'number' ? tide : 'f' + tide.stamp;
+  }
+
+  /** Render (and cache) the static tile layer for a tide level or field. */
   render(tide, frame) {
     if (!this._cache) this._cache = offscreen(VIEW_W, VIEW_H);
-    if (this._cacheDirty || this._cacheTide !== tide) {
+    const key = this.cacheKeyFor(tide);
+    if (this._cacheDirty || this._cacheTide !== key) {
       const ctx = this._cache.ctx;
       ctx.clearRect(0, 0, VIEW_W, VIEW_H);
       this.animCells.length = 0;
@@ -1796,7 +1832,7 @@ class Room {
           tileSheet.draw(ctx, d.name, x * TILE, y * TILE, { pal: d.pal });
         }
       }
-      this._cacheTide = tide;
+      this._cacheTide = key;
       this._cacheDirty = false;
     }
     return this._cache.canvas;
@@ -1823,6 +1859,8 @@ class Room {
   solidAt(px, py, tide, caps) {
     const tx = Math.floor(px / TILE), ty = Math.floor(py / TILE);
     if (tx < 0 || ty < 0 || tx >= ROOM_W || ty >= ROOM_H) return true;
+    // The tile is resolved at ITS OWN tide level, so a hitbox spanning the edge
+    // of a frozen patch is solid on one side and wadeable on the other.
     const d = this.tile(tx, ty, tide);
     const f = d.flags;
 
@@ -2410,6 +2448,53 @@ const THROW_SLIDE_STOP = 26;
 const CARRY_HEIGHT = 13;
 
 // ---------------------------------------------------------------------------
+// The Tidewright's Anchor
+//
+// The anchor holds a patch of the room at whatever tide level was current when
+// it landed, while the rest of the room goes on obeying the conch.
+// ---------------------------------------------------------------------------
+
+/**
+ * tiles — how far the held patch reaches from the anchor, in every direction.
+ * guessed, AND EXPLICITLY UNSETTLED — to be decided by play, not by argument.
+ * Press KeyU in game to cycle 1-4 and KeyY to swap the footprint's shape.
+ *
+ * The arithmetic that rules out the larger values, since it is not obvious: a
+ * room is 10 tiles wide and 8 tall, so the radius has to split BOTH axes to be
+ * worth anything. 4 spans 9 tiles and swallows the whole screen — the conch
+ * appears to stop working. 3 spans 7 and covers 7 of the 8 rows, so it splits
+ * horizontally and not vertically. 2 spans 5 and splits both. The execution
+ * plan's original "~8 tiles" predates anyone checking this against a room.
+ */
+const ANCHOR_RADIUS_TILES = 2;
+
+/**
+ * 'square' | 'disc' — the held patch's footprint. guessed, same debug key.
+ *
+ * At this scale the shape is legible to the player and has to be predictable.
+ * A radius-2 disc is 13 tiles and reads as a fat plus sign whose edge is hard
+ * to eyeball; a radius-2 square is a clean 5x5 whose corners you can see. Hence
+ * square, but it is a feel question and the key exists to settle it.
+ */
+const ANCHOR_SHAPE = 'square';
+
+/** sp/f — how fast the anchor flies when thrown. guessed; matches THROW_SPEED
+ *  so it reads as the same arm that throws a pot. */
+const ANCHOR_THROW_SPEED = 640;
+
+/** sp/f — how fast the chain reels the anchor back on recall. guessed; faster
+ *  than the throw, because a recall is a snap and a throw is a lob. */
+const ANCHOR_RECALL_SPEED = 896;
+
+/** frames — how long the anchor stays visibly settling after it lands, before
+ *  the water changes. guessed; long enough to read as a splash-then-hold. */
+const ANCHOR_SETTLE_FRAMES = 10;
+
+/** hp — damage the chain does sweeping along its line on throw and recall.
+ *  guessed; one quarter-heart less than a sword tap, since it is incidental. */
+const ANCHOR_CHAIN_DAMAGE = 1;
+
+// ---------------------------------------------------------------------------
 // Enemy cadence
 // ---------------------------------------------------------------------------
 
@@ -2663,6 +2748,12 @@ __exports["THROW_ARC_GRAVITY"] = THROW_ARC_GRAVITY;
 __exports["THROW_SLIDE_DECAY"] = THROW_SLIDE_DECAY;
 __exports["THROW_SLIDE_STOP"] = THROW_SLIDE_STOP;
 __exports["CARRY_HEIGHT"] = CARRY_HEIGHT;
+__exports["ANCHOR_RADIUS_TILES"] = ANCHOR_RADIUS_TILES;
+__exports["ANCHOR_SHAPE"] = ANCHOR_SHAPE;
+__exports["ANCHOR_THROW_SPEED"] = ANCHOR_THROW_SPEED;
+__exports["ANCHOR_RECALL_SPEED"] = ANCHOR_RECALL_SPEED;
+__exports["ANCHOR_SETTLE_FRAMES"] = ANCHOR_SETTLE_FRAMES;
+__exports["ANCHOR_CHAIN_DAMAGE"] = ANCHOR_CHAIN_DAMAGE;
 __exports["ENEMY_TURN_CHANCE"] = ENEMY_TURN_CHANCE;
 __exports["ENEMY_DEFAULT_SPEED"] = ENEMY_DEFAULT_SPEED;
 __exports["ENEMY_DEFAULT_RATE"] = ENEMY_DEFAULT_RATE;
@@ -2713,14 +2804,34 @@ __exports["WADE_FOAM_EVERY"] = WADE_FOAM_EVERY;
 
 /* ===== src/game/tide.js ===== */
 __define("game/tide.js", function (__exports, __require) {
-// The tide: a single global three-state variable that every tide tile in the
-// world resolves against. This is the game's fundamental mechanic.
+// The tide: a three-state FIELD that every tide tile in the world resolves
+// against. This is the game's fundamental mechanic.
 //
 //   0 = LOW   sandbars and seafloor exposed, caves open, channels wadeable
 //   1 = MID   the world's default state
 //   2 = HIGH  shallows become deep, low walls submerge, rafts float to high ledges
 //
 // The Moon Conch cycles LOW -> MID -> HIGH -> LOW. Two presses reach any state.
+//
+// A FIELD, NOT A GLOBAL
+//
+// `level` is the BASE: what the conch last set, what the HUD gauge shows, what
+// the save file stores. It is not what the water is doing at a given tile.
+// `levelAt(tx, ty)` is, and almost everything wants that one — collision, tile
+// resolution, rendering, enemies, the raft. A local OVERRIDE (the Tidewright's
+// Anchor lays one) holds a disc of tiles at whatever level was current when it
+// landed while the rest of the room goes on obeying the conch, so a room can be
+// dry here and flooded there.
+//
+// Overrides are ROOM-SCOPED. Each carries the map and room it was laid in, and
+// `levelAt` takes the room it is being asked about — defaulting to the one the
+// game is in, but passed explicitly by Room's own queries. That is what keeps a
+// room-slide transition correct for nothing: the outgoing room resolves against
+// its own overrides and the incoming room against its, in the same frame.
+//
+// `stamp` bumps on ANY change to the base or the override list, and Room caches
+// its rendered tile layer against it. Miss a bump and the room draws the old
+// water while collision uses the new — it looks wrong and nothing fails.
 
 const { VIEW_W, VIEW_H, offscreen } = __require("core/screen.js");
 const { F } = __require("world/tileset.js");
@@ -2732,16 +2843,124 @@ const TIDE_COUNT = 3;
 class Tide {
   constructor(game) {
     this.game = game;
-    this.level = 1;
+    this.level = 1;            // the BASE level — see levelAt for the field
     this.prevLevel = 1;
     this.sweep = 0;            // 0 = idle, otherwise counts up to TIDE_SWEEP_FRAMES
     this.snapshot = null;      // pre-change render of the current room
     this.locked = false;       // room forbids tide changes
     this.forced = null;        // room pins the tide to a level
     this.listeners = [];
+    // { id, mapId, roomKey, tx, ty, r, level } — a disc of tiles held at `level`.
+    this.overrides = [];
+    this.stamp = 0;
+    this._nextId = 1;
   }
 
   get busy() { return this.sweep > 0; }
+
+  // ------------------------------------------------------------- the field
+
+  /**
+   * The tide level at one tile of one room, 0-2.
+   *
+   * PASS `room` EXPLICITLY FROM ANY DRAW PATH. It defaults to the room the game
+   * is in, which is right for game logic — an entity asking about the water it
+   * is standing in is asking about the room it is standing in. It is WRONG
+   * during a room-slide transition, where two rooms are on screen at once and
+   * one of them is not `game.room`. Room's own queries pass `this`, so anything
+   * going through `room.tile`/`flagsAt`/`solidAt`/`render` is already correct;
+   * the rule binds direct callers of this method.
+   *
+   * LAST PLACED WINS. Overlapping overrides are searched newest-first, so two
+   * anchors covering the same tile give a defined answer instead of one that
+   * depends on the order the list happens to be in. (The Anchor allows only one
+   * at a time, so today this never arises — it is defined so that the day a
+   * second source of overrides appears, the behaviour is a decision rather than
+   * an accident.)
+   */
+  levelAt(tx, ty, room) {
+    const list = this.overrides;
+    if (list.length) {
+      const r = room !== undefined ? room : this.game.room;
+      if (r) {
+        const mapId = this.game.mapId, key = r.key;
+        for (let i = list.length - 1; i >= 0; i--) {
+          const o = list[i];
+          if (o.roomKey !== key || o.mapId !== mapId) continue;
+          if (this.covers(o, tx, ty)) return o.level;
+        }
+      }
+    }
+    return this.level;
+  }
+
+  /**
+   * Is this tile inside the override's footprint?
+   *
+   * Two shapes, because at this scale the shape is legible to the player and
+   * has to be predictable. A radius-2 Euclidean disc is 13 tiles and reads as a
+   * fat plus sign — hard to eyeball the edge of. A square of the same radius is
+   * 5x5 and reads as a clean region you can see the corners of. `square` is the
+   * default for that reason; the debug key toggles between them so the choice
+   * can be made by throwing the thing. See ANCHOR_SHAPE in feel.js.
+   */
+  covers(o, tx, ty) {
+    const dx = Math.abs(tx - o.tx), dy = Math.abs(ty - o.ty);
+    if (o.shape === 'disc') return dx * dx + dy * dy <= o.r * o.r;
+    return dx <= o.r && dy <= o.r;
+  }
+
+  /** True if any override is live in this room — the cheap test for "is it split". */
+  hasOverrideIn(room) {
+    const key = room ? room.key : null;
+    return this.overrides.some(o => o.roomKey === key && o.mapId === this.game.mapId);
+  }
+
+  overrideById(id) { return this.overrides.find(o => o.id === id) || null; }
+
+  /**
+   * Lay a local override. Returns its id.
+   *
+   * The caller owns the consequences: an override can put the player inside
+   * water or a wall, so whoever adds one is responsible for reconciling the
+   * player afterwards (see the Anchor, which refuses the placement outright
+   * rather than drowning anyone).
+   */
+  addOverride({ mapId, roomKey, tx, ty, r, level, shape = 'square' }) {
+    const o = { id: this._nextId++, mapId, roomKey, tx, ty, r, level, shape };
+    this.overrides.push(o);
+    this.touch();
+    return o.id;
+  }
+
+  removeOverride(id) {
+    const i = this.overrides.findIndex(o => o.id === id);
+    if (i < 0) return false;
+    this.overrides.splice(i, 1);
+    this.touch();
+    return true;
+  }
+
+  clearOverrides() {
+    if (!this.overrides.length) return;
+    this.overrides.length = 0;
+    this.touch();
+  }
+
+  /**
+   * Everything that changes the field goes through here.
+   *
+   * `stamp` IS MONOTONIC AND IS NEVER RESET — not by clearOverrides, not by a
+   * new game, not by a load. Rooms cache their rendered tile layer against it,
+   * and Room objects outlive a new game, so a stamp that went back to 0 could
+   * collide with a key a cached canvas was already holding and render stale
+   * water that nothing would flag. It only ever goes up.
+   */
+  touch() {
+    this.stamp++;
+    const g = this.game;
+    if (g && g.room) g.room.invalidate();
+  }
 
   /** Room rules: some rooms pin or forbid the tide. Called on every room entry. */
   applyRoomRules(room) {
@@ -2776,18 +2995,21 @@ class Tide {
 
     if (!instant && g.room) {
       // Snapshot the room as it looks now so the sweep can wipe between states.
+      // `this` is the field, and the base has not moved yet, so the snapshot
+      // carries the old water everywhere the conch reaches and the held water
+      // everywhere an override does.
       if (!this.snapshot) this.snapshot = offscreen(VIEW_W, VIEW_H);
       this.snapshot.ctx.clearRect(0, 0, VIEW_W, VIEW_H);
-      const before = g.room.render(this.level, g.frame);
+      const before = g.room.render(this, g.frame);
       this.snapshot.ctx.drawImage(before, 0, 0);
-      g.room.drawAnim(this.snapshot.ctx, 0, 0, this.level, g.frame);
-      g.room.drawOver(this.snapshot.ctx, 0, 0, this.level, g.frame);
+      g.room.drawAnim(this.snapshot.ctx, 0, 0, this, g.frame);
+      g.room.drawOver(this.snapshot.ctx, 0, 0, this, g.frame);
       this.sweep = 1;
     }
 
     this.level = next;
     if (g.progress) g.progress.tide = next;
-    if (g.room) g.room.invalidate();
+    this.touch();
     for (const fn of this.listeners) fn(next, this.prevLevel, g);
     if (g.onTideChanged) g.onTideChanged(next, this.prevLevel);
   }
@@ -3147,10 +3369,10 @@ function canOccupy(game, e, x, y, caps) {
   for (const py of ys) {
     for (const px of xs) {
       if (px < 0 || py < 0 || px >= VIEW_W || py >= VIEW_H) return false;
-      if (room.solidAt(px, py, game.tide.level, cps)) return false;
+      if (room.solidAt(px, py, game.tide, cps)) return false;
       if (avoid) {
         const tx = Math.floor(px / TILE), ty = Math.floor(py / TILE);
-        if (room.flagsAt(tx, ty, game.tide.level) & avoid) return false;
+        if (room.flagsAt(tx, ty, game.tide) & avoid) return false;
       }
     }
   }
@@ -3173,7 +3395,7 @@ function groundFlags(game, e) {
   const px = Math.floor(e.x + e.hb.x + e.hb.w / 2);
   const py = Math.floor(e.y + e.hb.y + e.hb.h - 2);
   const tx = Math.floor(px / TILE), ty = Math.floor(py / TILE);
-  return room.flagsAt(tx, ty, game.tide.level);
+  return room.flagsAt(tx, ty, game.tide);
 }
 
 function groundTile(game, e) {
@@ -3181,6 +3403,19 @@ function groundTile(game, e) {
   const px = Math.floor(e.x + e.hb.x + e.hb.w / 2);
   const py = Math.floor(e.y + e.hb.y + e.hb.h - 2);
   return { tx: Math.floor(px / TILE), ty: Math.floor(py / TILE) };
+}
+
+/**
+ * The tide level under an entity's own feet, 0-2.
+ *
+ * This is what anything reading "the tide" from inside the world should ask
+ * for — an enemy, a boss, a raft. `game.tide.level` is the BASE, which is a
+ * different question and is only the right one for the HUD, the music and the
+ * save. Since the Anchor, the two can disagree inside a single room.
+ */
+function tideAt(game, e) {
+  const { tx, ty } = groundTile(game, e);
+  return game.tide.levelAt(tx, ty, game.room);
 }
 
 /** Nearest tile the given entity can legally stand on. Used after a tide change. */
@@ -3192,7 +3427,7 @@ function findSafeTile(game, e, maxRadius = 6) {
         if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
         const nx = tx + dx, ny = ty + dy;
         if (nx < 0 || ny < 0 || nx >= ROOM_W || ny >= ROOM_H) continue;
-        const f = game.room.flagsAt(nx, ny, game.tide.level);
+        const f = game.room.flagsAt(nx, ny, game.tide);
         if (f & (F.SOLID | F.VOID | F.DEEP | F.PIT | F.HAZARD | F.JUMPABLE)) continue;
         const px = nx * TILE + (TILE - e.w) / 2;
         const py = ny * TILE + (TILE - e.h) / 2;
@@ -3214,6 +3449,7 @@ __exports["moveEntity"] = moveEntity;
 __exports["canOccupy"] = canOccupy;
 __exports["groundFlags"] = groundFlags;
 __exports["groundTile"] = groundTile;
+__exports["tideAt"] = tideAt;
 __exports["findSafeTile"] = findSafeTile;
 });
 
@@ -3532,7 +3768,7 @@ class Projectile extends Entity {
     ];
     for (const [px, py] of pts) {
       const tx = Math.floor(px / TILE), ty = Math.floor(py / TILE);
-      const f = room.flagsAt(tx, ty, game.tide.level);
+      const f = room.flagsAt(tx, ty, game.tide);
       if (f & (F.SOLID | F.VOID)) return false;
       if (!this.overWater && (f & F.DEEP)) return false;
     }
@@ -3719,14 +3955,14 @@ __define("game/items.js", function (__exports, __require) {
 //     use(game, player, level) -> boolean   // true if the press was consumed
 //   }
 
-const { Entity, defineEntity, moveEntity, canOccupy, DIR_VEC, groundFlags } = __require("game/entity.js");
+const { Entity, defineEntity, moveEntity, canOccupy, findSafeTile, DIR_VEC, dirFromVec, groundFlags } = __require("game/entity.js");
 const { Projectile, fire } = __require("game/projectile.js");
 const { Explosion } = __require("game/effects.js");
 const { F } = __require("world/tileset.js");
 const { TILE, VIEW_W, VIEW_H } = __require("core/screen.js");
 const { hasItem, itemLevel, addBombs } = __require("game/progress.js");
 const { FP_ONE, sp, toPx } = __require("core/fixed.js");
-const { PEGASUS_FRAMES, JUMP_POWER, JUMP_POWER_CAPE, THROW_ARC_RISE, THROW_ARC_GRAVITY, THROW_SLIDE_DECAY, THROW_SLIDE_STOP } = __require("data/feel.js");
+const { PEGASUS_FRAMES, JUMP_POWER, JUMP_POWER_CAPE, THROW_ARC_RISE, THROW_ARC_GRAVITY, THROW_SLIDE_DECAY, THROW_SLIDE_STOP, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, ANCHOR_THROW_SPEED, ANCHOR_RECALL_SPEED, ANCHOR_SETTLE_FRAMES, ANCHOR_CHAIN_DAMAGE } = __require("data/feel.js");
 const { sprites } = __require("gfx/art.js");
 
 // --------------------------------------------------------------------------
@@ -3915,7 +4151,7 @@ class Hookshot extends Entity {
       const nx = toPx(nfx), ny = toPx(nfy);
       // Latch onto hookable tiles.
       const tx = Math.floor((nx + 5) / TILE), ty = Math.floor((ny + 5) / TILE);
-      const f = game.room.flagsAt(tx, ty, game.tide.level);
+      const f = game.room.flagsAt(tx, ty, game.tide);
       if (f & F.HOOKABLE) {
         this.state = 'pull';
         this.anchorX = tx * TILE; this.anchorY = ty * TILE;
@@ -4041,6 +4277,190 @@ class ThrownObject extends Entity {
     game.rollDrop(this.cx - 8, this.cy - 8, this.opts.drops || 'none');
   }
 }
+
+// --------------------------------------------------------------------------
+// The Tidewright's Anchor
+//
+// Throw it; it sinks and holds. Every tile within ANCHOR_RADIUS_TILES stays at
+// whatever tide level was current when it landed, while the rest of the room
+// goes on obeying the conch. Press again — from anywhere — to recall it.
+//
+// THE OVERRIDE IS THE TRUTH, THE ENTITY IS ITS PICTURE. `spawnRoomEntities`
+// wipes every non-player entity on a room change, so a landed anchor's state
+// cannot live on the entity. It lives in `game.tide.overrides`, keyed to the
+// map and room it was laid in, and Game.setRoom re-spawns the sprite when the
+// player comes back. That is also what makes a cancelled room transition safe:
+// an anchor still IN FLIGHT is simply dropped with no override registered, so
+// walking through a seam mid-throw returns the item rather than leaving a
+// frozen patch nobody can see the cause of.
+//
+// Three verbs, per the design rule in CLAUDE.md:
+//   movement  freeze a route open behind you and walk it at the wrong tide
+//   puzzles   two tide levels in one room
+//   combat    the chain sweeps along its line on both throw and recall
+// --------------------------------------------------------------------------
+
+/** The live anchor override, or null. There is at most one. */
+function anchorOverride(game) {
+  return game.tide.overrides.find(o => o.src === 'anchor') || null;
+}
+
+class Anchor extends Entity {
+  constructor(x, y, o = {}) {
+    super(x, y, o);
+    this.w = 16; this.h = 16;
+    this.hb = { x: 4, y: 4, w: 8, h: 8 };
+    this.sprite = 'o_anchor';
+    this.harmless = true;
+    this.shadow = true;
+    this.depth = -2;
+    this.state = o.state || 'flight';     // 'flight' | 'held' | 'recall'
+    this.overrideId = o.overrideId || null;
+    this.settle = 0;
+    this.hit = new Set();
+    const [dx, dy] = DIR_VEC[o.dir || 'down'];
+    this.vx = dx * ANCHOR_THROW_SPEED;
+    this.vy = dy * ANCHOR_THROW_SPEED;
+    if (this.state === 'flight') {
+      this.flying = true;
+      this.z = 12;
+      this.vz = THROW_ARC_RISE;
+    } else {
+      this.z = 0; this.vz = 0;
+      this.vx = 0; this.vy = 0;
+    }
+  }
+
+  update(game) {
+    this.frame++;
+    if (this.state === 'flight') this.updateFlight(game);
+    else if (this.state === 'recall') this.updateRecall(game);
+    else if (this.settle > 0) this.settle--;
+  }
+
+  updateFlight(game) {
+    this.fz += this.vz;
+    this.vz -= THROW_ARC_GRAVITY;
+    const r = moveEntity(game, this, this.vx, this.vy, { jumping: true, swim: true });
+    this.sweepChain(game);
+    // A wall stops it short; otherwise it flies its arc and bites where it falls.
+    if (r.hitX || r.hitY || this.fz <= 0) this.land(game);
+  }
+
+  /**
+   * Bite. Registers the override at the level current AT THIS TILE, which with
+   * one anchor is the base — asking the field rather than the base is what
+   * keeps this correct if a second source of overrides ever exists.
+   */
+  land(game) {
+    this.fz = 0; this.vz = 0; this.flying = false;
+    const tx = Math.floor(this.cx / TILE), ty = Math.floor(this.cy / TILE);
+    const room = game.room;
+    if (!room || !room.inBounds(tx, ty)) { this.returnToHand(game); return; }
+
+    const level = game.tide.levelAt(tx, ty, room);
+    const id = game.tide.addOverride({
+      mapId: game.mapId, roomKey: room.key, tx, ty,
+      r: game.anchorRadius != null ? game.anchorRadius : ANCHOR_RADIUS_TILES,
+      shape: game.anchorShape || ANCHOR_SHAPE,
+      level, src: 'anchor',
+    });
+
+    // NEVER STRAND THE PLAYER. The field has just changed under everyone's
+    // feet. `reconcileWithTide` can nudge Link out of new water or a new wall,
+    // but only if there is somewhere to nudge him to — and findSafeTile now
+    // searches the FIELD, so it answers about the world the anchor just made.
+    // If there is nowhere, the bite is refused outright rather than drowning
+    // him: a tool that can kill you by being used is not a tool.
+    const p = game.player;
+    if (p && !canOccupy(game, p, p.x, p.y, p.caps) && !findSafeTile(game, p)) {
+      game.tide.removeOverride(id);
+      this.returnToHand(game);
+      game.audio.sfx('deny');
+      game.say('There is nowhere to stand if it bites here.');
+      return;
+    }
+
+    this.state = 'held';
+    this.overrideId = id;
+    this.settle = ANCHOR_SETTLE_FRAMES;
+    this.x = tx * TILE; this.y = ty * TILE;
+    game.audio.sfx((game.room.flagsAt(tx, ty, game.tide) & F.WET) ? 'splash' : 'place');
+    game.spawnEffect((game.room.flagsAt(tx, ty, game.tide) & F.WET) ? 'splash' : 'dust',
+      this.cx - 8, this.cy - 8);
+    if (p) p.reconcileWithTide(game);
+    game.roomEvent('anchor', { tx, ty, level });
+  }
+
+  /** Reel in: remove the override, sweep the chain back, vanish. */
+  recall(game) {
+    if (this.overrideId != null) game.tide.removeOverride(this.overrideId);
+    this.overrideId = null;
+    this.state = 'recall';
+    this.flying = true;
+    this.hit.clear();
+    game.audio.sfx('hookshot');
+    const p = game.player;
+    if (p) p.reconcileWithTide(game);
+  }
+
+  updateRecall(game) {
+    const p = game.player;
+    if (!p) { this.remove = true; return; }
+    const dx = p.cx - this.cx, dy = p.cy - this.cy;
+    const d = Math.hypot(dx, dy);
+    if (d < 8) { this.remove = true; if (p.anchor === this) p.anchor = null; return; }
+    this.fx += Math.round(dx / d * ANCHOR_RECALL_SPEED);
+    this.fy += Math.round(dy / d * ANCHOR_RECALL_SPEED);
+    this.sweepChain(game);
+  }
+
+  /**
+   * The combat verb: the chain is a line, not a point, so it damages along its
+   * whole length rather than only where the head is. Sampled every 6px, and
+   * each enemy is hit at most once per throw or recall.
+   */
+  sweepChain(game) {
+    const p = game.player;
+    if (!p) return;
+    const dx = this.cx - p.cx, dy = this.cy - p.cy;
+    const n = Math.max(1, Math.round(Math.hypot(dx, dy) / 6));
+    for (const e of game.entities) {
+      if (!e.isEnemy || e.dead || e.dormant || e.hidden || this.hit.has(e.id)) continue;
+      const r = e.rect();
+      for (let i = 0; i <= n; i++) {
+        const sx = p.cx + dx * i / n, sy = p.cy + dy * i / n;
+        if (sx >= r.x && sx < r.x + r.w && sy >= r.y && sy < r.y + r.h) {
+          this.hit.add(e.id);
+          e.hurt(game, ANCHOR_CHAIN_DAMAGE, dirFromVec(dx, dy), 2);
+          break;
+        }
+      }
+    }
+  }
+
+  returnToHand(game) {
+    this.remove = true;
+    const p = game.player;
+    if (p && p.anchor === this) p.anchor = null;
+  }
+
+  /** The chain, drawn back to Link whenever he is on the same screen. */
+  draw(ctx, game, ox, oy) {
+    const p = game.player;
+    if (p && this.state !== 'held') {
+      const dx = this.cx - p.cx, dy = this.cy - p.cy;
+      const n = Math.max(1, Math.round(Math.hypot(dx, dy) / 5));
+      for (let i = 1; i < n; i++) {
+        sprites.draw(ctx, 'i_chain',
+          ox + Math.round(p.cx + dx * i / n) - 4,
+          oy + Math.round(p.cy + dy * i / n) - 4 - Math.round(this.z * i / n));
+      }
+    }
+    sprites.draw(ctx, this.sprite, ox + this.x, oy + this.y - this.z);
+  }
+}
+defineEntity('anchor', (x, y, o) => new Anchor(x, y, o));
 
 // --------------------------------------------------------------------------
 // Seeds
@@ -4265,6 +4685,39 @@ const ITEMS = {
     passive: true,
     desc: 'Holds magic rings. Bigger boxes let you wear more at once.',
   },
+  anchor: {
+    names: ["Tidewright's Anchor"],
+    icon: ['i_anchor'],
+    equippable: true,
+    desc: 'Throw it to hold the tide where it lands. Press again to recall it.',
+    use(game, p, level) {
+      // In flight: the throw is already committed, and a second press must not
+      // spawn a second anchor.
+      if (p.anchor && !p.anchor.remove && p.anchor.state === 'flight') return true;
+
+      // Placed — anywhere in the world, not just this room. Recall is always
+      // available, which is what makes the item safe: nothing it does to a room
+      // can be permanent, so nothing it does can lock you out of one.
+      const held = anchorOverride(game);
+      if (held) {
+        if (p.anchor && !p.anchor.remove && p.anchor.state === 'held') {
+          p.anchor.recall(game);
+        } else {
+          // Held in a room we are not standing in. It simply comes back.
+          game.tide.removeOverride(held.id);
+          game.audio.sfx('hookshot');
+          p.reconcileWithTide(game);
+        }
+        return true;
+      }
+
+      const a = new Anchor(p.cx - 8, p.cy - 8, { dir: p.dir });
+      p.anchor = a;
+      game.addEntity(a);
+      game.audio.sfx('throw');
+      return true;
+    },
+  },
   map: { names: ['Dungeon Map'], icon: ['i_map'], passive: true, desc: 'Reveals the dungeon layout.' },
   compass: { names: ['Compass'], icon: ['i_compass'], passive: true, desc: 'Chimes near keys and marks the boss.' },
 };
@@ -4307,6 +4760,8 @@ __exports["Bomb"] = Bomb;
 __exports["Boomerang"] = Boomerang;
 __exports["Hookshot"] = Hookshot;
 __exports["ThrownObject"] = ThrownObject;
+__exports["anchorOverride"] = anchorOverride;
+__exports["Anchor"] = Anchor;
 __exports["SEED_KINDS"] = SEED_KINDS;
 __exports["SEED_INFO"] = SEED_INFO;
 __exports["applySeed"] = applySeed;
@@ -4479,7 +4934,7 @@ class Player extends Entity {
     // Water currents push you while swimming.
     if (this.inDeep) {
       const { tx, ty } = groundTile(game, this);
-      const def = game.room.tile(tx, ty, game.tide.level);
+      const def = game.room.tile(tx, ty, game.tide);
       // A tile's `push` is data, written in px/f; the mover speaks subpixels.
       if (def.push) moveEntity(game, this, sp(def.push[0]), sp(def.push[1]));
     }
@@ -4704,7 +5159,7 @@ class Player extends Entity {
 
   tileDefAt(game, tx, ty) {
     if (tx < 0 || ty < 0 || tx * TILE >= VIEW_W || ty * TILE >= VIEW_H) return null;
-    return game.room.tile(tx, ty, game.tide.level);
+    return game.room.tile(tx, ty, game.tide);
   }
 
   tryPush(game, dx, dy) {
@@ -4771,7 +5226,7 @@ class Player extends Entity {
     const tx = this.cx + dx * (SWORD_REACH + SWORD_GAP);
     const ty = this.cy + dy * (SWORD_REACH + SWORD_GAP);
     if (tx < 0 || ty < 0 || tx >= VIEW_W || ty >= VIEW_H) return;
-    if (!game.room.solidAt(tx, ty, game.tide.level, { jumping: false, swim: false })) return;
+    if (!game.room.solidAt(tx, ty, game.tide, { jumping: false, swim: false })) return;
     this.clinkCool = SWORD_CLINK_COOLDOWN;
     game.audio.sfx('block');
     game.spawnEffect('spark', tx - 8, ty - 8);
@@ -5195,7 +5650,7 @@ __define("game/objects.js", function (__exports, __require) {
 // World objects: pickups, chests, NPCs, signs, pushable blocks, switches,
 // torches, rafts, essences. All are spawnable from room data via entity tuples.
 
-const { Entity, defineEntity, moveEntity, canOccupy, groundFlags, DIR_VEC } = __require("game/entity.js");
+const { Entity, defineEntity, moveEntity, canOccupy, groundFlags, tideAt, DIR_VEC } = __require("game/entity.js");
 const { F } = __require("world/tileset.js");
 const { TILE } = __require("core/screen.js");
 const { FP_ONE, sp } = __require("core/fixed.js");
@@ -5796,7 +6251,9 @@ class Raft extends Entity {
 
   update(game) {
     this.frame++;
-    const active = game.tide.level >= this.needTide;
+    // The water under the RAFT, not the room's base: an anchor holding this
+    // corner at HIGH floats it while the rest of the room is dry.
+    const active = tideAt(game, this) >= this.needTide;
     if (!active) return;
     const t = Math.sin(this.frame * this.speed * 0.02);
     const nfx = sp(this.axis === 'x' ? this.homeX + t * this.range : this.homeX);
@@ -5814,7 +6271,7 @@ class Raft extends Entity {
   }
 
   draw(ctx, game, ox, oy) {
-    if (game.tide.level < this.needTide) return;
+    if (tideAt(game, this) < this.needTide) return;
     sprites.draw(ctx, this.sprite, ox + this.x, oy + this.y, { pal: this.pal });
     sprites.draw(ctx, this.sprite, ox + this.x + 16, oy + this.y, { pal: this.pal, flipX: true });
   }
@@ -6014,6 +6471,23 @@ function drawTideGauge(ctx, game) {
   ctx.fillRect(x + 8, y + 1, 1, 6);
   const label = TIDE_NAMES[lvl][0];
   drawText(ctx, label, x + Math.round((13 - textWidth(label)) / 2), 8, INK);
+
+  // The gauge shows the BASE — what the conch last set — because that is what
+  // the player pressed a button to choose. Since the Anchor that can disagree
+  // with the water Link is actually standing in, and a gauge that quietly
+  // reports the wrong one is worse than no gauge. When they differ, a pip in
+  // the corner carries the local level, coloured like its own water.
+  const p = game.player;
+  if (p && game.room) {
+    const here = game.tide.levelAt(
+      Math.floor(p.cx / 16), Math.floor(p.cy / 16), game.room);
+    if (here !== lvl) {
+      ctx.fillStyle = INK;
+      ctx.fillRect(x + 9, y, 4, 4);
+      ctx.fillStyle = ['#e0c078', '#58b0e0', '#2878c0'][here];
+      ctx.fillRect(x + 10, y + 1, 2, 2);
+    }
+  }
 }
 
 /** Keys and boss key in dungeons; essence count in the overworld. */
@@ -6932,7 +7406,7 @@ const { Title } = __require("game/title.js");
 const { runCutscene, CUTSCENES } = __require("game/cutscene.js");
 const { Stream, seedGlobal, roomStream, noise1 } = __require("core/rng.js");
 const { sp } = __require("core/fixed.js");
-const { ROOM_TRANSITION_FRAMES, ROOM_EXIT_MARGIN, FADE_RATE, BANNER_FRAMES, SHAKE_LARGE, SHAKE_LARGE_FRAMES, BOSS_ESSENCE_DELAY_FRAMES, BOSS_MUSIC_RESUME_FRAMES, ITEM_PRESENT_FRAMES, ESSENCE_FREEZE_FRAMES, GAMEOVER_WAIT_FRAMES } = __require("data/feel.js");
+const { ROOM_TRANSITION_FRAMES, ROOM_EXIT_MARGIN, FADE_RATE, BANNER_FRAMES, SHAKE_LARGE, SHAKE_LARGE_FRAMES, BOSS_ESSENCE_DELAY_FRAMES, BOSS_MUSIC_RESUME_FRAMES, ITEM_PRESENT_FRAMES, ESSENCE_FREEZE_FRAMES, GAMEOVER_WAIT_FRAMES, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE } = __require("data/feel.js");
 
 class Game {
   constructor(screen, input) {
@@ -6967,6 +7441,9 @@ class Game {
     this.linkPal = 'link';
     this.paused = false;
     this.debug = false;
+    // null = use the feel.js constant. Debug-only overrides, see cycleAnchorRadius.
+    this.anchorRadius = null;
+    this.anchorShape = null;
     this.deathTime = 0;
     this.tintKey = 'none';
     this.roomSnapshot = offscreen(VIEW_W, VIEW_H);
@@ -6987,6 +7464,7 @@ class Game {
     resetRooms();
     this.entities.length = 0;
     this.boss = null;
+    this.tide.clearOverrides();
     this.tide.level = this.progress.tide;
     const s = this.progress.pos;
     this.player = new Player(s.px, s.py);
@@ -7005,6 +7483,10 @@ class Game {
     resetRooms();
     this.entities.length = 0;
     this.boss = null;
+    // A placed anchor is run state, not save state: reloading returns it to
+    // your pocket rather than restoring a frozen patch you cannot see the
+    // reason for.
+    this.tide.clearOverrides();
     this.tide.level = p.tide;
     const s = p.pos;
     this.player = new Player(s.px, s.py);
@@ -7064,6 +7546,7 @@ class Game {
     this.tide.applyRoomRules(r);
     this.applyTint(r.tint);
     if (o.spawnEntities !== false) this.spawnRoomEntities();
+    this.respawnAnchor();
     this.restoreRoomState();
     this.checkPuzzle();
     if (r.def.script && r.def.script.onEnter) r.def.script.onEnter(this, r);
@@ -7117,6 +7600,26 @@ class Game {
     this.flushPending();
   }
 
+  /**
+   * Put the anchor's sprite back if one is held in the room being entered.
+   *
+   * `spawnRoomEntities` has just wiped every non-player entity, which is right:
+   * the anchor's state does not live on the entity, it lives in the tide's
+   * override list keyed to this map and room. This re-draws the picture. An
+   * anchor still in flight when the room changed is simply gone, and no
+   * override was ever registered for it — which is how a cancelled transition
+   * mid-throw returns the item instead of stranding a frozen patch.
+   */
+  respawnAnchor() {
+    const room = this.room;
+    if (!room) return;
+    const o = this.tide.overrides.find(
+      v => v.src === 'anchor' && v.mapId === this.mapId && v.roomKey === room.key);
+    if (!o) return;
+    const a = spawnEntity(this, 'anchor', o.tx, o.ty, { state: 'held', overrideId: o.id });
+    if (a && this.player) this.player.anchor = a;
+  }
+
   /** Re-apply persisted tile changes (opened doors, bombed walls). */
   restoreRoomState() {
     const room = this.room;
@@ -7164,15 +7667,15 @@ class Game {
     }
     this.transition = {
       dir, t: 0, from: this.room, to: next, nx, ny,
-      fromCanvas: this.room.render(this.tide.level, this.frame),
+      fromCanvas: this.room.render(this.tide, this.frame),
       startFx: p.fx, startFy: p.fy,
       endPos: this.entryPos(dir, p),
     };
     // Snapshot the outgoing room so animated tiles do not tick during the slide.
     this.roomSnapshot.ctx.clearRect(0, 0, VIEW_W, VIEW_H);
     this.roomSnapshot.ctx.drawImage(this.transition.fromCanvas, 0, 0);
-    this.room.drawAnim(this.roomSnapshot.ctx, 0, 0, this.tide.level, this.frame);
-    this.room.drawOver(this.roomSnapshot.ctx, 0, 0, this.tide.level, this.frame);
+    this.room.drawAnim(this.roomSnapshot.ctx, 0, 0, this.tide, this.frame);
+    this.room.drawOver(this.roomSnapshot.ctx, 0, 0, this.tide, this.frame);
   }
 
   entryPos(dir, p) {
@@ -7270,7 +7773,7 @@ class Game {
     const room = this.room;
     const name = room.baseName(tx, ty);
     // Resolve through tide variants so bombing a flooded crack still works.
-    const concrete = resolveTile(name, this.tide.level).name;
+    const concrete = resolveTile(name, this.tide.levelAt(tx, ty, room)).name;
     const tr = transformFor(name, action) || transformFor(concrete, action);
     if (!tr) return false;
     // A gate that names a specific item refuses the weaker one — and says so,
@@ -7356,7 +7859,7 @@ class Game {
     const room = this.room;
     if (!room.inBounds(tx, ty)) return false;
     const name = room.baseName(tx, ty);
-    const def = resolveTile(name, this.tide.level);
+    const def = resolveTile(name, this.tide.levelAt(tx, ty, room));
     if (name === 'dDoorLocked') {
       if (useKey(this.progress, this.mapId)) {
         room.setTile(tx, ty, 'dDoorOpen');
@@ -7391,7 +7894,7 @@ class Game {
     const p = this.player;
     if (p.z > 2) return;
     const tx = Math.floor(p.cx / TILE), ty = Math.floor((p.y + 12) / TILE);
-    const f = this.room.flagsAt(tx, ty, this.tide.level);
+    const f = this.room.flagsAt(tx, ty, this.tide);
     // Arriving on a warp tile must not bounce straight back through it: stay
     // locked until the player has stepped off any warp tile.
     if (!(f & F.WARP)) { this._warpLock = false; return; }
@@ -7480,7 +7983,16 @@ class Game {
     if (pz.enemies) {
       if (this.entities.some(e => e.isEnemy && !e.dead)) return;
     }
-    if (pz.tide != null && this.tide.level !== pz.tide) return;
+    // A room-level tide clause has no single tile to ask about, so it reads the
+    // BASE — what the conch was last set to. A puzzle that wants the local
+    // level (stand in the held water and the door opens) names the tile it
+    // means with `tideAt: [tx, ty]`.
+    if (pz.tide != null) {
+      const lvl = pz.tideAt
+        ? this.tide.levelAt(pz.tideAt[0], pz.tideAt[1], room)
+        : this.tide.level;
+      if (lvl !== pz.tide) return;
+    }
     if (pz.blocks) {
       const bs = this.entities.filter(e => e instanceof PushBlock);
       const ok = pz.blocks.every(([tx, ty]) =>
@@ -7695,6 +8207,7 @@ class Game {
     this.entities.length = 0;
     this.player = new Player(s.px, s.py);
     this.player.dir = s.dir || 'down';
+    this.tide.clearOverrides();
     this.tide.setLevel(1, { instant: true });
     this.enterMap(s.map, s.floor, s.rx, s.ry, s.px, s.py, s.dir, { instant: true });
     this.fadeIn();
@@ -7714,6 +8227,8 @@ class Game {
     const extra = this.input.takeExtra();
     if (extra === 'KeyP') { this.audio.toggleMute(); }
     if (extra === 'KeyO') { this.debug = !this.debug; }
+    if (extra === 'KeyU') { this.cycleAnchorRadius(); }
+    if (extra === 'KeyY') { this.cycleAnchorShape(); }
 
     switch (this.mode) {
       case 'title': this.title.update(); return;
@@ -7757,6 +8272,84 @@ class Game {
     this.checkRoomExit();
     this.checkWarpTile();
     this.checkPuzzle();
+  }
+
+  // --------------------------------------------------------- anchor tuning
+  //
+  // ANCHOR_RADIUS_TILES and ANCHOR_SHAPE are `guessed` and are meant to be
+  // settled by throwing the thing, not by arithmetic — so both are tunable in
+  // the hand. KeyU cycles the radius 1-4 and back to the constant; KeyY swaps
+  // the footprint between a square and a disc.
+  //
+  // Both re-apply to an anchor ALREADY DOWN, so the water changes shape under
+  // the key press and two radii can be compared without re-throwing.
+  //
+  // NEITHER TOUCHES DETERMINISM. The default is null — meaning "use the
+  // constant" — no replay or checker ever sets them, and the value is read once
+  // at placement into the override's own `r`, so a recorded replay carries the
+  // radius it was recorded with whatever the key was last left on.
+
+  cycleAnchorRadius() {
+    const cur = this.anchorRadius;
+    this.anchorRadius = cur == null ? 1 : (cur >= 4 ? null : cur + 1);
+    this.retuneAnchor();
+    const shown = this.anchorRadius == null ? ANCHOR_RADIUS_TILES + ' (default)' : this.anchorRadius;
+    this.bannerText = 'anchor radius ' + shown;
+    this.bannerTime = BANNER_FRAMES;
+  }
+
+  cycleAnchorShape() {
+    const cur = this.anchorShape || ANCHOR_SHAPE;
+    this.anchorShape = cur === 'square' ? 'disc' : 'square';
+    this.retuneAnchor();
+    this.bannerText = 'anchor ' + this.anchorShape;
+    this.bannerTime = BANNER_FRAMES;
+  }
+
+  retuneAnchor() {
+    for (const o of this.tide.overrides) {
+      if (o.src !== 'anchor') continue;
+      o.r = this.anchorRadius != null ? this.anchorRadius : ANCHOR_RADIUS_TILES;
+      o.shape = this.anchorShape || ANCHOR_SHAPE;
+    }
+    this.tide.touch();
+    if (this.player) this.player.reconcileWithTide(this);
+  }
+
+  /** The local tide under Link, shown in the debug overlay when it differs. */
+  debugTideHere() {
+    if (!this.player || !this.room) return '';
+    const tx = Math.floor(this.player.cx / TILE), ty = Math.floor(this.player.cy / TILE);
+    const here = this.tide.levelAt(tx, ty, this.room);
+    const r = this.anchorRadius != null ? this.anchorRadius : ANCHOR_RADIUS_TILES;
+    const tail = ` r=${r}${this.anchorRadius == null ? '*' : ''}/${this.anchorShape || ANCHOR_SHAPE}`;
+    return (here === this.tide.level ? '' : ` here=${here}`) + tail;
+  }
+
+  /**
+   * Outline the held patch. Debug-only: in normal play the frozen edge has to
+   * read from the water itself, and drawing a ring over the room would be a
+   * confession that it does not.
+   */
+  drawAnchorField(ctx, ox, oy) {
+    const room = this.room;
+    if (!room) return;
+    for (const o of this.tide.overrides) {
+      if (o.mapId !== this.mapId || o.roomKey !== room.key) continue;
+      ctx.fillStyle = 'rgba(120, 220, 255, 0.85)';
+      for (let ty = 0; ty < ROOM_H; ty++) {
+        for (let tx = 0; tx < ROOM_W; tx++) {
+          if (!this.tide.covers(o, tx, ty)) continue;
+          // Only the boundary: a tile inside the patch whose neighbour is not.
+          for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+            if (this.tide.covers(o, tx + dx, ty + dy)) continue;
+            const x = ox + tx * TILE, y = oy + ty * TILE;
+            if (dx) ctx.fillRect(dx > 0 ? x + TILE - 1 : x, y, 1, TILE);
+            else ctx.fillRect(x, dy > 0 ? y + TILE - 1 : y, TILE, 1);
+          }
+        }
+      }
+    }
   }
 
   updateGameOver() {
@@ -7814,12 +8407,12 @@ class Game {
   drawScene(ctx, ox, oy) {
     const room = this.room;
     if (!room) return;
-    const base = room.render(this.tide.level, this.frame);
+    const base = room.render(this.tide, this.frame);
 
     if (this.tide.busy) {
       this.tide.drawSweep(ctx, ox, oy, base, () => {
-        room.drawAnim(ctx, ox, oy, this.tide.level, this.frame);
-        room.drawOver(ctx, ox, oy, this.tide.level, this.frame);
+        room.drawAnim(ctx, ox, oy, this.tide, this.frame);
+        room.drawOver(ctx, ox, oy, this.tide, this.frame);
       });
       // Link keeps standing there while the water changes around him.
       if (this.player) this.player.draw(ctx, this, ox, oy);
@@ -7827,7 +8420,7 @@ class Game {
     }
 
     ctx.drawImage(base, ox, oy);
-    room.drawAnim(ctx, ox, oy, this.tide.level, this.frame);
+    room.drawAnim(ctx, ox, oy, this.tide, this.frame);
 
     const list = this.entities.slice();
     if (this.player && !list.includes(this.player)) list.push(this.player);
@@ -7838,8 +8431,9 @@ class Game {
       e.draw(ctx, this, ox, oy);
     }
 
-    room.drawOver(ctx, ox, oy, this.tide.level, this.frame);
+    room.drawOver(ctx, ox, oy, this.tide, this.frame);
 
+    if (this.debug && this.tide.overrides.length) this.drawAnchorField(ctx, ox, oy);
     if (room.dark && !flag(this.progress, 'lantern')) this.drawDarkness(ctx, ox, oy);
     if (this.itemShow) this.drawItemShow(ctx);
   }
@@ -7850,11 +8444,11 @@ class Game {
     const d = { right: [-1, 0], left: [1, 0], down: [0, -1], up: [0, 1] }[t.dir];
     const sx = Math.round(d[0] * VIEW_W * k), sy = Math.round(d[1] * VIEW_H * k);
     ctx.drawImage(this.roomSnapshot.canvas, ox + sx, oy + sy);
-    const nb = t.to.render(this.tide.level, this.frame);
+    const nb = t.to.render(this.tide, this.frame);
     const nx = ox + sx - d[0] * VIEW_W, ny = oy + sy - d[1] * VIEW_H;
     ctx.drawImage(nb, nx, ny);
-    t.to.drawAnim(ctx, nx, ny, this.tide.level, this.frame);
-    t.to.drawOver(ctx, nx, ny, this.tide.level, this.frame);
+    t.to.drawAnim(ctx, nx, ny, this.tide, this.frame);
+    t.to.drawOver(ctx, nx, ny, this.tide, this.frame);
     if (this.player) this.player.draw(ctx, this, ox + sx, oy + sy);
   }
 
@@ -7891,7 +8485,7 @@ class Game {
   drawDebug(ctx) {
     const p = this.player;
     const lines = [
-      `${this.mapId} ${this.room ? this.room.key : '-'} tide=${this.tide.level}`,
+      `${this.mapId} ${this.room ? this.room.key : '-'} tide=${this.tide.level}${this.debugTideHere()}`,
       p ? `x=${p.x.toFixed(0)} y=${p.y.toFixed(0)} z=${p.z.toFixed(1)} ${p.dir}` : '',
       `ents=${this.entities.length} fps~${this.fps || 0}`,
     ];
@@ -11942,7 +12536,7 @@ __define("game/enemy.js", function (__exports, __require) {
 //
 // Bosses use defineBoss, which adds phase handling and a health bar.
 
-const { Entity, defineEntity, moveEntity, canOccupy, groundFlags, DIRS, DIR_VEC, dirTo } = __require("game/entity.js");
+const { Entity, defineEntity, moveEntity, canOccupy, groundFlags, tideAt, DIRS, DIR_VEC, dirTo } = __require("game/entity.js");
 const { fire } = __require("game/projectile.js");
 const { F } = __require("world/tileset.js");
 const { TILE, VIEW_W, VIEW_H } = __require("core/screen.js");
@@ -12008,7 +12602,7 @@ class Enemy extends Entity {
     if (this.terrain !== 'water') return true;
     const px = Math.floor(x + this.hb.x + this.hb.w / 2);
     const py = Math.floor(y + this.hb.y + this.hb.h / 2);
-    const f = game.room.flagsAt(Math.floor(px / TILE), Math.floor(py / TILE), game.tide.level);
+    const f = game.room.flagsAt(Math.floor(px / TILE), Math.floor(py / TILE), game.tide);
     return !!(f & F.WET);
   }
 
@@ -12017,8 +12611,11 @@ class Enemy extends Entity {
     if (this.invuln > 0) this.invuln--;
     if (this.flicker > 0) this.flicker--;
 
-    // Tide interactions: some enemies only exist at certain tide levels.
-    const lvl = game.tide.level;
+    // Tide interactions: some enemies only exist at certain tide levels — and
+    // at the level where THIS enemy is standing, not the room's base. An
+    // anchor held at LOW is a pocket a tideshade stays dead in while the rest
+    // of the room is drowned.
+    const lvl = tideAt(game, this);
     if (this.spec.tideOnly && !this.spec.tideOnly.includes(lvl)) {
       this.dormant = true;
     } else {
@@ -12106,8 +12703,11 @@ function defineEnemy(name, spec) {
 //     onIntro(e, g) {}, onPhase(e, g, i) {}, onDie(e, g) {},
 //   });
 //
-// A boss that reads the tide should do so via g.tide.level, and may set
-// e.weakOpen = true to become vulnerable for a window.
+// A boss that reads the tide should do so via tideAt(g, e) — the level under
+// the boss's own feet, not g.tide.level, which is the room's BASE and since the
+// Anchor is a different number. A boss standing in held water should fight the
+// water it is standing in. It may set e.weakOpen = true to become vulnerable
+// for a window.
 
 class Boss extends Enemy {
   constructor(x, y, spec, opts = {}) {
@@ -12472,7 +13072,7 @@ function shootRing(e, g, n = 8, o = {}) {
 
 /** Drift with the current while the tide is high (aquatic enemies). */
 function driftWithTide(e, g, o = {}) {
-  const lvl = g.tide.level;
+  const lvl = tideAt(g, e);
   // `perLevel` is px/f when a spec names one; the fallback is already sp/f.
   // Either way it is well under a pixel a frame, and only moves anything at all
   // because the position accumulator keeps the remainder between frames.
@@ -25979,6 +26579,51 @@ const GEAR_ART = {
     ......3333......
     ................
     ................` },
+  // The Tidewright's Anchor. No Oracle sheet has one — neither game has an
+  // anchor item, or an anchor prop on any of the overworld rips — so this is
+  // the "draw to match" half of the rule, measured against the extracted icons
+  // rather than freehand: 10 wide by 15 tall in the cell, 35% fill, two tones
+  // plus pure black, hard 1px outline all the way round.
+  //
+  // Ring, stock, shank, flukes — the four parts that make an anchor read in
+  // silhouette. The stock (the crossbar) is what stops it reading as a plumb
+  // bob, and the flukes are what stop it reading as a key.
+  i_anchor: { pal: 'i_anchor', art: `
+    .....333333.....
+    .....33..33.....
+    ....33....33....
+    ....31333313....
+    .....301113.....
+    .....301113.....
+    ......3113......
+    ....33111133....
+    ....33111133....
+    ......3113......
+    ......3113......
+    ......3113......
+    ...33.3113.33...
+    ...3331111333...
+    .....333333.....
+    ................` },
+  // The same object lying on the ground: squatter, its stock foreshortened,
+  // sat near the bottom of the cell so it reads as resting rather than floating.
+  o_anchor: { pal: 'i_anchor', art: `
+    ......3333......
+    .....33..33.....
+    .....3....3.....
+    .....3....3.....
+    .....333333.....
+    ......3113......
+    ......3113......
+    ...3331111333...
+    ...3001111113...
+    ...3331111333...
+    ......3113......
+    ......3113......
+    ......3113......
+    ...33.3113.33...
+    ....33111133....
+    .....333333.....` },
   i_bomb_lit: { pal: 'i_bomb_lit', art: `
     ................
     .........33.....
@@ -26009,6 +26654,9 @@ const GEAR_PALETTES = {
   i_map: ['#f0e8c0', '#d83820', '#000000', '#000000'],
   i_compass: ['#f0c030', '#e83828', '#000000', '#000000'],
   i_bomb_lit: ['#73adff', '#0000ff', '#000000', '#ffd020'],
+  // Wet iron: a cold highlight and a blue-grey body, so it sits with the
+  // hookshot's steel rather than with the brass of the conch.
+  i_anchor: ['#d8e0f0', '#68789a', '#000000', '#000000'],
 };
 
 

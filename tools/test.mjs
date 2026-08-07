@@ -300,6 +300,139 @@ const main = async () => {
   await frames(4);
   await shot('07-shallows-high');
 
+  console.log('\n--- the tide is a field ---');
+  //
+  // Tide Steps (overworld 0,10,0) has two tide bands with different thresholds:
+  //
+  //   rows 1-2   `8` tideRock  dry rock, dry rock, SHALLOW
+  //   rows 4-5   `6` reefFlat  dry rock, shallow,  DEEP
+  //
+  // So at HIGH the `6` band drowns and the room cannot be crossed straight up
+  // the middle. An anchor laid in it holds it at MID while the rest of the room
+  // goes to HIGH — which is the whole item in one screen.
+  const fieldRep = await G(async () => {
+    const g = window.__game;
+    const F = (await import('/src/world/tileset.js')).F;
+    const prog = await import('/src/game/progress.js');
+    prog.giveItem(g.progress, 'anchor', 1);
+    g.progress.equipB = 'anchor';
+    g.mode = 'play';
+    g.enterMap('overworld', 0, 10, 0, 64, 104, 'up', { instant: true });
+    await new Promise(r => { const s = g.frame; const t = () => (g.frame - s >= 4 ? r() : requestAnimationFrame(t)); t(); });
+    if (g.dialogue) g.dialogue.active = false;
+    g.entities = g.entities.filter(e => e === g.player);
+    g.tide.clearOverrides();
+    g.tide.setLevel(2, { instant: true });
+
+    const out = {};
+    out.stamp0 = g.tide.stamp;
+    out.bandDeepWithout = !!(g.room.flagsAt(4, 5, g.tide) & F.DEEP);
+
+    // Throw one, the way the player does.
+    g.tide.setLevel(1, { instant: true });
+    g.player.x = 64; g.player.y = 104; g.player.dir = 'up';
+    const items = await import('/src/game/items.js');
+    items.ITEMS.anchor.use(g, g.player, 1);
+    for (let i = 0; i < 90; i++) await new Promise(r => requestAnimationFrame(r));
+    const ov = g.tide.overrides.find(o => o.src === 'anchor');
+    out.landed = ov ? { tx: ov.tx, ty: ov.ty, level: ov.level } : null;
+
+    // Raise the sea everywhere the anchor is not.
+    g.tide.setLevel(2, { instant: true });
+    out.here = g.tide.levelAt(4, 5, g.room);
+    out.there = g.tide.levelAt(4, 1, g.room);
+    out.bandWetNotDeep = !(g.room.flagsAt(4, 5, g.tide) & F.DEEP)
+      && !!(g.room.flagsAt(4, 5, g.tide) & F.WATER);
+    out.stampGrew = g.tide.stamp > out.stamp0;
+
+    // THE PIXELS, not just the collision. A stale render cache would keep the
+    // old water on screen while every flag query above answered correctly —
+    // right collision, wrong picture, and no test would notice.
+    //
+    // Sampling room.render() alone is NOT enough and the first draft of this
+    // test proved it: animated tiles (which is every kind of water) are pushed
+    // to animCells and deliberately left out of the cached canvas, so both
+    // bands read as transparent and the assertion passed on nothing. Composite
+    // the way drawScene does — base, then drawAnim, then drawOver — and hold
+    // the animation frame still so the comparison is about the tide and not
+    // about which frame of the wave each band happened to be on.
+    const screen = await import('/src/core/screen.js');
+    const shot = (tide) => {
+      const s = screen.offscreen(screen.VIEW_W, screen.VIEW_H);
+      s.ctx.clearRect(0, 0, screen.VIEW_W, screen.VIEW_H);
+      s.ctx.drawImage(g.room.render(tide, 0), 0, 0);
+      g.room.drawAnim(s.ctx, 0, 0, tide, 0);
+      g.room.drawOver(s.ctx, 0, 0, tide, 0);
+      // A signature of the WHOLE tile, not one pixel. Shallow and deep reef
+      // water share their colour at the tile's centre pixel, so a single-pixel
+      // probe reports them identical and the assertion quietly measures
+      // nothing. 16x16 always differs where the tiles differ.
+      return (tx, ty) => {
+        const d = s.ctx.getImageData(tx * 16, ty * 16, 16, 16).data;
+        let h = 2166136261;
+        for (let i = 0; i < d.length; i++) { h ^= d[i]; h = Math.imul(h, 16777619); }
+        return h >>> 0;
+      };
+    };
+    const field = shot(g.tide), flatMid = shot(1), flatHigh = shot(2);
+    out.pixHeld = field(4, 5);
+    out.pixFree = field(4, 1);
+    // The held band must be drawn as MID water, not as the HIGH the base is on.
+    // Both directions, at both probes: the held band must be drawn as the level
+    // it is HELD at, and the free band as the level the conch is on.
+    out.pixLooksHeld = field(4, 5) === flatMid(4, 5) && field(4, 5) !== flatHigh(4, 5)
+      && field(4, 1) === flatHigh(4, 1) && field(4, 1) !== flatMid(4, 1);
+    out.dbg = { f: field(4, 5), m: flatMid(4, 5), h: flatHigh(4, 5),
+                f1: field(4, 1), m1: flatMid(4, 1), h1: flatHigh(4, 1) };
+
+    // Leaving the room must not lose it, and coming back must redraw it.
+    g.enterMap('overworld', 0, 10, 1, 64, 32, 'down', { instant: true });
+    await new Promise(r => { const s = g.frame; const t = () => (g.frame - s >= 3 ? r() : requestAnimationFrame(t)); t(); });
+    out.survivesLeaving = !!g.tide.overrides.find(o => o.src === 'anchor');
+    g.enterMap('overworld', 0, 10, 0, 64, 104, 'up', { instant: true });
+    await new Promise(r => { const s = g.frame; const t = () => (g.frame - s >= 3 ? r() : requestAnimationFrame(t)); t(); });
+    if (g.dialogue) g.dialogue.active = false;
+    out.spriteBack = g.entities.some(e => e.constructor.name === 'Anchor' && !e.remove);
+    out.stillHeld = g.tide.levelAt(4, 5, g.room) === 1;
+
+    // Recall from the item, and the band drowns again.
+    items.ITEMS.anchor.use(g, g.player, 1);
+    for (let i = 0; i < 60; i++) await new Promise(r => requestAnimationFrame(r));
+    out.recalled = !g.tide.overrides.find(o => o.src === 'anchor');
+    out.deepAgain = !!(g.room.flagsAt(4, 5, g.tide) & F.DEEP);
+
+    // clearOverrides must not wind the stamp back — a reused key would let a
+    // cached canvas survive into a world it does not describe. Lay one first:
+    // clearing an empty list is a no-op and proves nothing, which is what the
+    // first draft of this assertion actually measured.
+    g.tide.addOverride({ mapId: g.mapId, roomKey: g.room.key, tx: 4, ty: 4, r: 2, level: 0 });
+    const beforeClear = g.tide.stamp;
+    g.tide.clearOverrides();
+    out.stampMonotonic = g.tide.stamp > beforeClear;
+    g.tide.setLevel(1, { instant: true });
+    return out;
+  });
+  check('the band is impassable at HIGH without the anchor', fieldRep.bandDeepWithout);
+  check('a thrown anchor registers an override where it lands',
+    !!fieldRep.landed, JSON.stringify(fieldRep.landed));
+  check('the anchor holds its patch at the level it landed on',
+    fieldRep.landed && fieldRep.landed.level === 1, JSON.stringify(fieldRep.landed));
+  check('one room, two tide levels at once',
+    fieldRep.here === 1 && fieldRep.there === 2, `here=${fieldRep.here} there=${fieldRep.there}`);
+  check('the held band is wadeable while the rest is HIGH', fieldRep.bandWetNotDeep);
+  check('the render differs between the two bands',
+    String(fieldRep.pixHeld) !== String(fieldRep.pixFree),
+    `held=${fieldRep.pixHeld} free=${fieldRep.pixFree}`);
+  check('the held band is DRAWN as held water, not as the base',
+    fieldRep.pixLooksHeld, JSON.stringify(fieldRep.dbg));
+  check('the field bumps the render stamp', fieldRep.stampGrew);
+  check('a placed anchor survives leaving the room', fieldRep.survivesLeaving);
+  check('re-entering the room redraws the anchor', fieldRep.spriteBack);
+  check('re-entering the room still finds the patch held', fieldRep.stillHeld);
+  check('recall releases the override', fieldRep.recalled);
+  check('the band drowns again once recalled', fieldRep.deepAgain);
+  check('the render stamp never goes backwards', fieldRep.stampMonotonic);
+
   console.log('\n--- room transitions ---');
   await G(() => {
     const g = window.__game;

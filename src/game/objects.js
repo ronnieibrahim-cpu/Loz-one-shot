@@ -1,7 +1,7 @@
 // World objects: pickups, chests, NPCs, signs, pushable blocks, switches,
 // torches, rafts, essences. All are spawnable from room data via entity tuples.
 
-import { Entity, defineEntity, moveEntity, canOccupy, groundFlags, DIR_VEC } from './entity.js';
+import { Entity, defineEntity, moveEntity, canOccupy, groundFlags, tideAt, DIR_VEC } from './entity.js';
 import { F } from '../world/tileset.js';
 import { TILE } from '../core/screen.js';
 import { FP_ONE, sp } from '../core/fixed.js';
@@ -610,7 +610,9 @@ export class Raft extends Entity {
 
   update(game) {
     this.frame++;
-    const active = game.tide.level >= this.needTide;
+    // The water under the RAFT, not the room's base: an anchor holding this
+    // corner at HIGH floats it while the rest of the room is dry.
+    const active = tideAt(game, this) >= this.needTide;
     if (!active) return;
     const t = Math.sin(this.frame * this.speed * 0.02);
     const nfx = sp(this.axis === 'x' ? this.homeX + t * this.range : this.homeX);
@@ -628,7 +630,7 @@ export class Raft extends Entity {
   }
 
   draw(ctx, game, ox, oy) {
-    if (game.tide.level < this.needTide) return;
+    if (tideAt(game, this) < this.needTide) return;
     sprites.draw(ctx, this.sprite, ox + this.x, oy + this.y, { pal: this.pal });
     sprites.draw(ctx, this.sprite, ox + this.x + 16, oy + this.y, { pal: this.pal, flipX: true });
   }

@@ -174,7 +174,7 @@ export class Player extends Entity {
     // Water currents push you while swimming.
     if (this.inDeep) {
       const { tx, ty } = groundTile(game, this);
-      const def = game.room.tile(tx, ty, game.tide.level);
+      const def = game.room.tile(tx, ty, game.tide);
       // A tile's `push` is data, written in px/f; the mover speaks subpixels.
       if (def.push) moveEntity(game, this, sp(def.push[0]), sp(def.push[1]));
     }
@@ -399,7 +399,7 @@ export class Player extends Entity {
 
   tileDefAt(game, tx, ty) {
     if (tx < 0 || ty < 0 || tx * TILE >= VIEW_W || ty * TILE >= VIEW_H) return null;
-    return game.room.tile(tx, ty, game.tide.level);
+    return game.room.tile(tx, ty, game.tide);
   }
 
   tryPush(game, dx, dy) {
@@ -466,7 +466,7 @@ export class Player extends Entity {
     const tx = this.cx + dx * (SWORD_REACH + SWORD_GAP);
     const ty = this.cy + dy * (SWORD_REACH + SWORD_GAP);
     if (tx < 0 || ty < 0 || tx >= VIEW_W || ty >= VIEW_H) return;
-    if (!game.room.solidAt(tx, ty, game.tide.level, { jumping: false, swim: false })) return;
+    if (!game.room.solidAt(tx, ty, game.tide, { jumping: false, swim: false })) return;
     this.clinkCool = SWORD_CLINK_COOLDOWN;
     game.audio.sfx('block');
     game.spawnEffect('spark', tx - 8, ty - 8);
