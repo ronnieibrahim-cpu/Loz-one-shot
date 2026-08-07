@@ -32,7 +32,8 @@ export function installDungeonsA() {
   //   -> 3,4 -> 2,4 Small Key 1 (clear the room) -> 4,4 Small Key 2 (switches)
   //   -> 3,3 locked door, north half -> west wing 2,3 1,3 1,2 2,2 (Small Key 3)
   //   -> east wing 4,3 5,3 5,2 (miniboss Clawcrab) -> 4,2 big chest: Roc's Feather
-  //   -> 3,2 Boss Key behind the feather gap -> boss door -> 3,1 Gohmaraq
+  //   -> 3,2 Boss Key across the chasm (the hop is base moveset now)
+  //   -> boss door -> 3,1 Gohmaraq
   registerMap({
     id: 'd1',
     kind: 'dungeon',
@@ -44,7 +45,9 @@ export function installDungeonsA() {
     scroll: false,
     dungeon: {
       index: 1,
-      item: 'feather', itemLevel: 1,
+      // P5 owns the Tidewright's Anchor and puts it here. Left empty rather
+      // than stubbed, so the two sessions cannot both define it.
+      item: null,
       essence: 1,
       boss: 'gohmaraq',
       bossRoom: '0,3,1',
@@ -393,7 +396,7 @@ export function installDungeonsA() {
           '##########',
         ],
         entities: [
-          ['chest', 4, 3, { big: true, item: 'feather', level: 1 }],
+          ['chest', 4, 3, { big: true, pickup: 'heartPiece' }],
         ],
       },
       '0,4,3': {

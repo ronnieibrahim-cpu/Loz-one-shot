@@ -758,6 +758,57 @@ check('the D1 boss arena still suppresses the conch', r.found && r.noTide);
 check('...but its floor does move with the tide', r.changes > 0, `${r.changes} tiles differ LOW vs HIGH`);
 
 // ===========================================================================
+section('the roster as a whole');
+
+// Every item any chest, giver, cutscene or dungeon declaration names must be
+// a real entry in ITEMS. Nothing else checks this: giveItem happily records an
+// id nobody defined, itemName returns the raw id and itemIcon falls back to
+// i_unknown, so a chest granting a DELETED item opens, plays its jingle,
+// writes to the save and hands over nothing — with no error anywhere. That is
+// exactly what a removal session produces if it misses one.
+r = await page.evaluate(async () => {
+  const { ITEMS } = await import('/src/game/items.js');
+  const { MAPS } = await import('/src/world/maps.js');
+  const { CUTSCENES } = await import('/src/game/cutscene.js');
+  const bad = [];
+  const seen = new Set();
+  const want = (id, where) => {
+    if (id == null) return;
+    seen.add(id);
+    if (!ITEMS[id]) bad.push(`${where}: '${id}'`);
+  };
+  for (const [id, m] of MAPS) {
+    if (m.dungeon) want(m.dungeon.item, `${id} dungeon.item`);
+    for (const [key, def] of Object.entries(m.roomDefs || {})) {
+      for (const e of def.entities || []) {
+        const o = e[3] || {};
+        want(o.item, `${id} ${key} ${e[0]}`);
+      }
+      const rw = def.puzzle && def.puzzle.reward;
+      for (const sp of (rw && rw.spawn) || []) want((sp[3] || {}).item, `${id} ${key} reward`);
+    }
+  }
+  for (const [name, steps] of Object.entries(CUTSCENES || {})) {
+    for (const st of steps || []) if (st && st.give) want(st.give.item, `cutscene ${name}`);
+  }
+  return { bad, checked: seen.size, registry: Object.keys(ITEMS).sort() };
+});
+check('every item the world hands out actually exists', r.bad.length === 0, r.bad.slice(0, 5).join(' | '));
+
+// And the roster is the one docs/ITEMS.md describes — no more, no less.
+{
+  const expected = [
+    'bellows', 'bombs', 'bottle', 'chartstone', 'cleats', 'coin', 'conch',
+    'dredge', 'lens', 'map', 'reefseed', 'rod', 'shield', 'sword',
+  ];
+  const extra = r.registry.filter(id => !expected.includes(id));
+  const missing = expected.filter(id => !r.registry.includes(id));
+  check('the registry is exactly the roster in docs/ITEMS.md',
+    extra.length === 0 && missing.length === 0,
+    `extra=[${extra}] missing=[${missing}]`);
+}
+
+// ===========================================================================
 check('no page errors', errs.length === 0, errs.slice(0, 3).join(' | '));
 
 console.log(`\n=== ${passed} passed, ${failures.length} failed ===`);
