@@ -278,6 +278,26 @@ export const GEAR_ART = {
     .....300003.....
     ......3333......
     ................` },
+  // Dredge Line: a weighted three-tine grapnel on a coil of line. Tines down,
+  // because that is how it sits in a boat and how it goes into the water — a
+  // grapnel drawn tines-up reads as a crown.
+  i_dredge: { pal: 'i_dredge', art: `
+    ................
+    .......33.......
+    ......3003......
+    ......3113......
+    ......3113......
+    ...3333113333...
+    ..300111111003..
+    ..311111111113..
+    ..3113111113113.
+    .3113.31113.3113
+    .3113..313..3113
+    .3013..313..3103
+    .3013..303..3103
+    .3113..303..3113
+    ..33...333...33.
+    ................` },
   i_bomb_lit: { pal: 'i_bomb_lit', art: `
     ................
     .........33.....
@@ -320,6 +340,8 @@ const GEAR_PALETTES = {
   i_bellows: ['#e8d8a8', '#8a5a2a', '#5a3818', '#000000'],
   // Living coral: a pale rim, a pink body, a deep red throat.
   i_reefseed: ['#ffe0d0', '#e87878', '#a83848', '#000000'],
+  // Wet iron: a bright rim, a grey body, a rust throat.
+  i_dredge: ['#d8dce8', '#7880a0', '#8a5030', '#000000'],
 };
 
 

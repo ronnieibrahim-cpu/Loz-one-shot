@@ -57,6 +57,7 @@ import {
   BOSS_KNOCK_FRAMES, BOSS_KNOCK_SCALE,
   BOSS_DEATH_FRAMES, BOSS_DEATH_BOOM_EVERY,
   SHAKE_MEDIUM, SHAKE_SMALL_FRAMES, TIDE_DRIFT_PER_LEVEL,
+  DREDGE_FLOP_DAMAGE_SCALE,
 } from '../data/feel.js';
 
 const TERRAIN_AVOID = {
@@ -147,6 +148,16 @@ export class Enemy extends Entity {
     }
     if (this.dormant) return;
 
+    // Landed by the Dredge Line. It lies on the bank taking double damage and
+    // doing none, then works its way back to being itself.
+    if (this.dredged > 0) {
+      this.dredged--;
+      this.flicker = this.flicker || 0;
+      if (this.dredged === 0) this.harmless = !!this.spec.harmless;
+      if (this.dredged % 8 === 0) game.spawnEffect('splash', this.x, this.y + 4, { life: 10 });
+      return;
+    }
+
     // Knockback is a scripted displacement: constant speed, fixed distance,
     // fixed frame count. It also throws a ground enemy off the lattice, so the
     // last frame of it puts the enemy back on.
@@ -173,6 +184,12 @@ export class Enemy extends Entity {
   }
 
   hurt(game, dmg, dir, knock) {
+    // A creature flopping on the bank cannot raise its shield and cannot take
+    // a hit lightly. This is the Dredge Line's combat verb, and it is the
+    // whole answer to an aquatic enemy you could otherwise never corner.
+    if (this.dredged > 0) {
+      return super.hurt(game, Math.round(dmg * DREDGE_FLOP_DAMAGE_SCALE), dir, knock);
+    }
     if (this.shield && dir) {
       // A shielded enemy blocks hits arriving at its facing side.
       const opposite = { up: 'down', down: 'up', left: 'right', right: 'left' };

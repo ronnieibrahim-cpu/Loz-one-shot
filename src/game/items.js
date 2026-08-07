@@ -24,6 +24,8 @@ import {
   THROW_ARC_RISE, THROW_ARC_GRAVITY, THROW_SLIDE_DECAY, THROW_SLIDE_STOP,
   REEFSEED_GROW_FRAMES, REEFSEED_SETTLE_FRAMES, REEFSEED_THROW_SPEED,
   REEFSEED_SHUDDER_EVERY,
+  DREDGE_RANGE, DREDGE_CAST_SPEED, DREDGE_HAUL_SPEED, DREDGE_PULL_SPEED,
+  DREDGE_FLOP_FRAMES,
   SHAKE_SMALL, SHAKE_SMALL_FRAMES,
 } from '../data/feel.js';
 import { sprites } from '../gfx/art.js';
@@ -215,7 +217,7 @@ export class Hookshot extends Entity {
       // Latch onto hookable tiles.
       const tx = Math.floor((nx + 5) / TILE), ty = Math.floor((ny + 5) / TILE);
       const f = game.room.flagsAt(tx, ty, game.tide.level);
-      if (f & F.HOOKABLE) {
+      if (f & F.SNAG) {
         this.state = 'pull';
         this.anchorX = tx * TILE; this.anchorY = ty * TILE;
         game.audio.sfx('hookHit');
@@ -280,6 +282,187 @@ export class Hookshot extends Entity {
       // The chain links sit at fractions of the span, which is the one place in
       // the game a draw coordinate is not already whole. It is rounded here
       // rather than in the blitter: art.js draws exactly where it is told.
+      const lx = Math.round(sx + dx * (i / n)), ly = Math.round(sy + dy * (i / n));
+      sprites.draw(ctx, 'i_chain', ox + lx, oy + ly - this.z);
+    }
+    sprites.draw(ctx, 'i_hookhead', ox + this.x, oy + this.y - this.z,
+      { flipX: this.dir === 'left', flipY: this.dir === 'up' });
+  }
+}
+
+// --------------------------------------------------------------------------
+// Dredge Line
+// --------------------------------------------------------------------------
+
+/**
+ * Cast into deep water and drag. What comes up depends on what is down there:
+ *
+ *   * whatever the room buried at that tile — a chest's worth of goods, a key,
+ *     a carryable — which is the same `buried` list the shovel used to read,
+ *     because the world is water and its floor should be searchable
+ *   * an aquatic creature, which is hauled onto the bank and FLOPS there:
+ *     helpless, harmless and taking double damage until it works its way back
+ *   * a FIXED snag, which does not move — so the line pulls YOU instead, and
+ *     that is the crossing verb
+ *
+ * The difference from a hookshot is what it is aimed at. A hookshot latches
+ * onto a post you can see; a Dredge Line is thrown into a volume you cannot,
+ * and finds out afterwards.
+ */
+export class DredgeLine extends Entity {
+  constructor(x, y, o = {}) {
+    super(x, y, o);
+    this.w = 10; this.h = 10;
+    this.hb = { x: 2, y: 2, w: 6, h: 6 };
+    this.pal = null;
+    this.level = o.level || 1;
+    this.owner = o.owner;
+    this.dir = o.dir || 'down';
+    this.originX = this.x; this.originY = this.y;
+    this.state = 'cast';
+    this.harmless = true;
+    this.shadow = false;
+    this.flying = true;
+    this.z = 5;
+    this.depth = 30;
+    this.hooked = null;          // an entity being hauled in
+    this.range = DREDGE_RANGE * (this.level >= 2 ? 1.5 : 1);
+    this.path = [];              // tiles the weight passed over, near to far
+  }
+
+  get length() { return Math.hypot(this.x - this.originX, this.y - this.originY); }
+
+  update(game) {
+    const p = this.owner || game.player;
+    const [dx, dy] = DIR_VEC[this.dir];
+
+    if (this.state === 'cast') {
+      const nfx = this.fx + dx * DREDGE_CAST_SPEED, nfy = this.fy + dy * DREDGE_CAST_SPEED;
+      const tx = Math.floor((toPx(nfx) + 5) / TILE), ty = Math.floor((toPx(nfy) + 5) / TILE);
+      if (!game.room || !game.room.inBounds(tx, ty)) { this.dragBack(game); return; }
+      const f = game.room.flagsAt(tx, ty, game.tideAt(tx, ty));
+
+      // A fixed snag: the line holds and the player travels. This is the half
+      // that absorbs the hookshot, and it is deliberately declared by a tile
+      // rather than found by chance — being yanked somewhere you did not
+      // choose is a bug, not a mechanic.
+      if (f & F.SNAG) {
+        this.state = 'pull';
+        this.anchorX = tx * TILE; this.anchorY = ty * TILE;
+        game.audio.sfx('hookHit');
+        return;
+      }
+      // The line does not pass through walls, but it is happy in water.
+      if (f & (F.SOLID | F.VOID)) {
+        if (game.applyTileAction(tx, ty, 'dredge', this.level)) { this.state = 'haul'; return; }
+        this.dragBack(game);
+        return;
+      }
+      this.fx = nfx; this.fy = nfy;
+      const last = this.path[this.path.length - 1];
+      if (!last || last[0] !== tx || last[1] !== ty) this.path.push([tx, ty]);
+
+      // Something to catch, in the water, in front of the weight.
+      for (const e of game.entities) {
+        if (e.dead || e === this || e === p) continue;
+        if (!this.overlaps(e)) continue;
+        if (e.isEnemy && !e.harmless) { this.snag(game, e); return; }
+        if (e.isDrop || e.liftable) { this.hooked = e; e.attached = this; this.state = 'haul'; return; }
+      }
+
+      if (this.length >= this.range) { this.dragBack(game); return; }
+      return;
+    }
+
+    if (this.state === 'pull') {
+      if (!p) { this.remove = true; return; }
+      p.hookPulling = true;
+      const tdx = this.x - (p.cx - 5), tdy = this.y - (p.cy - 5);
+      const d = Math.hypot(tdx, tdy);
+      if (d < 6) { this.finish(game, p); return; }
+      const before = { fx: p.fx, fy: p.fy };
+      moveEntity(game, p, Math.round(tdx / d * DREDGE_PULL_SPEED), Math.round(tdy / d * DREDGE_PULL_SPEED),
+        { jumping: true, swim: true });
+      if (p.fx === before.fx && p.fy === before.fy) { this.finish(game, p); return; }
+      return;
+    }
+
+    // haul: come home, dragging whatever is on the line.
+    if (!p) { this.remove = true; return; }
+    const tdx = (p.cx - 5) - this.x, tdy = (p.cy - 5) - this.y;
+    const d = Math.hypot(tdx, tdy) || 1;
+    this.fx += Math.round(tdx / d * DREDGE_HAUL_SPEED);
+    this.fy += Math.round(tdy / d * DREDGE_HAUL_SPEED);
+    if (this.hooked && !this.hooked.remove) {
+      this.hooked.x = this.x - 3; this.hooked.y = this.y - 3;
+      if (this.hooked.fz !== undefined) this.hooked.fz = 0;
+    }
+    if (d < 8) this.finish(game, p);
+  }
+
+  /** Hook a creature and haul it ashore. */
+  snag(game, e) {
+    this.hooked = e;
+    this.state = 'haul';
+    e.dredged = DREDGE_FLOP_FRAMES;
+    e.stun = Math.max(e.stun || 0, DREDGE_FLOP_FRAMES);
+    e.harmless = true;
+    game.audio.sfx('hookHit');
+  }
+
+  /**
+   * The cast is over; now DRAG. The weight comes back along the tiles it went
+   * out over and catches on the first searchable one that is hiding something,
+   * far end first — which is what dragging a line is, and it is also why the
+   * item is aimed by standing rather than by precision.
+   *
+   * Water and soft ground are both floor you can search. The second is what
+   * absorbs the shovel: `buried` is the shovel's own list, unchanged.
+   */
+  dragBack(game) {
+    this.state = 'haul';
+    const room = game.room;
+    if (!room) return;
+    let found = false;
+    for (let i = this.path.length - 1; i >= 0 && !found; i--) {
+      const [tx, ty] = this.path[i];
+      const f = room.flagsAt(tx, ty, game.tideAt(tx, ty));
+      if (!(f & (F.WET | F.SLOW))) continue;
+      if (game.applyTileAction(tx, ty, 'dredge', this.level)) { found = true; break; }
+      if (game.dredgeTile(tx, ty, this)) { found = true; break; }
+    }
+    if (found) return;
+    const searched = this.path.some(([tx, ty]) =>
+      room.flagsAt(tx, ty, game.tideAt(tx, ty)) & (F.WET | F.SLOW));
+    if (searched) {
+      game.audio.sfx('splash');
+      const [lx, ly] = this.path[this.path.length - 1] || [0, 0];
+      game.spawnEffect('splash', lx * TILE, ly * TILE);
+    } else {
+      game.audio.sfx('deny');
+    }
+  }
+
+  finish(game, p) {
+    this.remove = true;
+    if (p) { p.hookPulling = false; p.dredge = null; }
+    const h = this.hooked;
+    if (!h) return;
+    h.attached = null;
+    if (h.isEnemy) {
+      // Landed. It flops where the line dropped it, on whatever ground that
+      // is, and `findSafeTile` keeps it out of scenery.
+      game.shoveOffTile(h);
+      game.spawnEffect('splash', h.x, h.y);
+    }
+  }
+
+  draw(ctx, game, ox, oy) {
+    const p = this.owner || game.player;
+    const sx = p ? p.cx - 4 : this.originX, sy = p ? p.cy - 4 - 2 : this.originY;
+    const dx = this.x - sx, dy = this.y - sy;
+    const n = Math.max(1, Math.floor(Math.hypot(dx, dy) / 5));
+    for (let i = 0; i < n; i++) {
       const lx = Math.round(sx + dx * (i / n)), ly = Math.round(sy + dy * (i / n));
       sprites.draw(ctx, 'i_chain', ox + lx, oy + ly - this.z);
     }
@@ -585,6 +768,20 @@ export const ITEMS = {
     hold: true,
     desc: 'Hold to blow. The water ahead of you falls a level while you pump.',
     use(game, p, level) { p.bellowsHeld = true; return true; },
+  },
+  dredge: {
+    names: ['Dredge Line', 'Deepline'],
+    icon: ['i_dredge'],
+    equippable: true,
+    desc: 'Cast it into deep water and drag. The seafloor keeps things.',
+    use(game, p, level) {
+      if (p.dredge && !p.dredge.remove) return true;
+      const d = new DredgeLine(p.cx - 5, p.cy - 5, { dir: p.dir, level, owner: p });
+      p.dredge = d;
+      game.addEntity(d);
+      game.audio.sfx('hookshot');
+      return true;
+    },
   },
   reefseed: {
     names: ['Reefseed'],

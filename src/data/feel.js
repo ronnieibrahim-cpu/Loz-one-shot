@@ -727,3 +727,27 @@ export const REEFSEED_SHUDDER_EVERY = 12;
 
 /** how many Reefseeds a full pouch holds. guessed. */
 export const REEFSEED_CAPACITY = 8;
+
+// --- Dredge Line -----------------------------------------------------------
+
+/** px — how far the line is cast. guessed; four tiles, so it reaches across a
+ *  channel the player is standing on the bank of. */
+export const DREDGE_RANGE = 64;
+
+/** sp/f — how fast the weight travels on the way out. guessed; 3.5 px/f. */
+export const DREDGE_CAST_SPEED = 896;
+
+/** sp/f — how fast the line comes back in, loaded or empty. guessed; a drag is
+ *  slower than a cast, which is what makes hauling something read as work. */
+export const DREDGE_HAUL_SPEED = 512;
+
+/** sp/f — how fast a FIXED snag hauls Link instead. guessed. */
+export const DREDGE_PULL_SPEED = 768;
+
+/** f — how long a dredged-up creature flops on land, helpless. guessed;
+ *  long enough for two sword swings and no more. */
+export const DREDGE_FLOP_FRAMES = 150;
+
+/** x — damage multiplier on a flopping creature. guessed; being landed is
+ *  supposed to be the answer to an aquatic enemy, not a nudge. */
+export const DREDGE_FLOP_DAMAGE_SCALE = 2;

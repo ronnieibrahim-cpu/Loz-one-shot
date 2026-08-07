@@ -1672,7 +1672,7 @@ export function installDungeonsB() {
     scroll: false,
     dungeon: {
       index: 8,
-      item: null,   // Dredge Line — see docs/ITEMS.md
+      item: 'dredge', itemLevel: 1,
       essence: 8,
       boss: 'nereth',
       bossRoom: '1,3,1',
@@ -1871,6 +1871,9 @@ export function installDungeonsB() {
       },
       '0,4,3': {
         name: 'Sunken Crypt',
+        // The Dredge Line's room. The crypt's wells are deep at MID and HIGH
+        // and there is a Small Key on the bottom of the near one — no tide
+        // level exposes it and no sword reaches it. You fish for it.
         map: [
           '##########',
           '##########',
@@ -1881,10 +1884,10 @@ export function installDungeonsB() {
           '####..####',
           '####..####',
         ],
+        buried: [[4, 2, 'key'], [6, 5, 'rupee20']],
         entities: [
           ['siren', 3, 2],
           ['anglerfry', 6, 5],
-          ['pickup', 4, 3, { kind: 'rupee20' }],
         ],
       },
       '0,4,4': {
@@ -2192,7 +2195,7 @@ export function installDungeonsB() {
         },
       },
       '1,5,4': {
-        name: 'Mermaid Vault',
+        name: 'Dredge Vault',
         map: [
           '##########',
           '##########',
@@ -2204,7 +2207,7 @@ export function installDungeonsB() {
           '##########',
         ],
         entities: [
-          ['chest', 4, 3, { big: true, rupees: 100 }],
+          ['chest', 4, 3, { big: true, item: 'dredge', level: 1 }],
         ],
       },
     },

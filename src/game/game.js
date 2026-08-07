@@ -959,6 +959,26 @@ export class Game {
    * occupied tile is the case it exists for. `findSafeTile` already knows how
    * to search; this is the one-line policy on top of it.
    */
+  /**
+   * Search the floor at a tile with the Dredge Line. Reads the room's own
+   * `buried` list — the same one the shovel read, because a world of water
+   * should be searched by dredging it rather than by digging a hole in the
+   * sea. One find per tile, recorded in `secrets` so it stays found.
+   */
+  dredgeTile(tx, ty, line) {
+    const room = this.room;
+    if (!room) return false;
+    const buried = (room.def.buried || []).find(b => b[0] === tx && b[1] === ty);
+    if (!buried) return false;
+    const key = `${this.mapId}:${room.key}:dredge:${tx},${ty}`;
+    if (this.progress.secrets[key]) return false;
+    this.progress.secrets[key] = true;
+    this.spawnPickup(tx * TILE, ty * TILE, buried[2], { grabDelay: 14 });
+    this.audio.jingle('secret');
+    this.roomEvent('dredge', { tx, ty });
+    return true;
+  }
+
   shoveOffTile(e) {
     const safe = findSafeTile(this, e);
     if (!safe) return false;

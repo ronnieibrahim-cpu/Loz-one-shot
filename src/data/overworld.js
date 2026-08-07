@@ -46,6 +46,11 @@ const rooms = {
     entities: [
       ['keese', 2, 3], ['keese', 6, 4],
     ],
+    // `abyssHole` is deep at every tide level. Nothing on this shore has ever
+    // been able to reach what is in them; the Dredge Line reads the same
+    // `buried` list the shovel did, and the world is water, so its floor is
+    // where the caches are. See docs/ITEMS.md.
+    buried: [[3, 3, 'heartPiece'], [6, 3, 'rupee20']],
   },
   '0,1,0': {
     name: 'Gate of the Keep',

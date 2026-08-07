@@ -36,7 +36,11 @@ export const F = {
   JUMPABLE:  1 << 12,  // 1-tile gap that Roc's Feather clears
   WARP:      1 << 13,  // cave mouth / door: triggers the room's warp list
   NOSPAWN:   1 << 14,  // enemies never spawn or wander here
-  HOOKABLE:  1 << 15,  // hookshot can latch
+  // A fixed thing a thrown line catches on: a post, a ring, a mooring. The
+  // Dredge Line hauls Link to it rather than hauling it to Link, which is the
+  // crossing verb it inherits. Declared by a tile rather than discovered,
+  // because being yanked somewhere you did not choose is a bug.
+  SNAG:      1 << 15,
   BOMBABLE:  1 << 16,  // cracked wall
   DOOR:      1 << 17,  // dungeon door (state in room)
   SWITCHF:   1 << 18,  // floor switch

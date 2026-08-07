@@ -432,6 +432,84 @@ check('a pillar will not grow inside a wall', r.canPlantSolid === false, `at ${r
 check('a pillar will not grow on another pillar', r.canPlantTwice === false);
 
 // ===========================================================================
+section('Dredge Line');
+
+// Sunken Crypt: a Small Key on the bottom of a well that is deep at MID and
+// HIGH. No tide level exposes it and no sword reaches it.
+await park({ map: 'd8', rx: 4, ry: 3, tx: 4, ty: 3, dir: 'up', tide: 1, items: { dredge: 1 }, equipB: 'dredge' });
+await step(4);
+r = await read(() => {
+  const g = window.__game;
+  return { buried: (g.room.def.buried || []).length, stand: window.__standable(4, 2) };
+});
+check('the crypt well has something on its floor', r.buried > 0);
+check('...and the floor cannot be walked to', r.stand === false);
+
+r = await page.evaluate(async () => {
+  const g = window.__game;
+  const { DredgeLine } = await import('/src/game/items.js');
+  g.player.x = 4 * 16; g.player.y = 3 * 16; g.player.dir = 'up';
+  const before = g.entities.filter(e => e.isDrop).length;
+  const line = new DredgeLine(g.player.cx - 5, g.player.cy - 5, { dir: 'up', level: 1, owner: g.player });
+  g.player.dredge = line; g.addEntity(line);
+  for (let i = 0; i < 90; i++) g.update();
+  const drops = g.entities.filter(e => e.isDrop);
+  return { before, after: drops.length, kinds: drops.map(d => d.kind || d.type) };
+});
+check('the line brings up what the floor was keeping', r.after > r.before,
+  `drops ${r.before} -> ${r.after} ${JSON.stringify(r.kinds)}`);
+
+// A post is a fixed snag: the line does not move it, it moves you.
+r = await page.evaluate(async () => {
+  const g = window.__game;
+  const { DredgeLine } = await import('/src/game/items.js');
+  const { F } = await import('/src/world/tileset.js');
+  // Stay in the crypt: an open floor with nothing in the way, so a failure is
+  // the item's and not the room's.
+  g.entities = g.entities.filter(e => e === g.player);
+  g.room.setTile(4, 2, 'post');
+  const snagged = !!(g.room.flagsAt(4, 2, g.tide.level) & F.SNAG);
+  g.player.x = 4 * 16; g.player.y = 4 * 16; g.player.dir = 'up';
+  const y0 = g.player.fy;
+  const line = new DredgeLine(g.player.cx - 5, g.player.cy - 5, { dir: 'up', level: 1, owner: g.player });
+  g.player.dredge = line; g.addEntity(line);
+  for (let i = 0; i < 60; i++) g.update();
+  const out = { snagged, moved: y0 - g.player.fy, postStill: g.room.baseName(4, 2) === 'post' };
+  g.room.clearTile(4, 2);
+  return out;
+});
+check('a post is a fixed snag', r.snagged === true);
+check('a fixed snag pulls Link instead', r.moved > 0, `moved ${r.moved} subpixels`);
+check('...and the snag itself does not move', r.postStill === true);
+
+// A landed creature flops: helpless, and it takes double.
+r = await page.evaluate(async () => {
+  const g = window.__game;
+  const { spawnEntity } = await import('/src/game/entity.js');
+  const feel = await import('/src/data/feel.js');
+  g.entities = g.entities.filter(e => e === g.player);
+  const fish = spawnEntity(g, 'anglerfry', 3, 3, {});
+  const hpFull = fish.hp;
+  const wasHarmless = !!fish.harmless;
+  fish.dredged = feel.DREDGE_FLOP_FRAMES;
+  fish.harmless = true;
+  fish.invuln = 0;
+  fish.hurt(g, 1, 'down', 0);
+  const afterFlopHit = hpFull - fish.hp;
+  const fish2 = spawnEntity(g, 'anglerfry', 6, 3, {});
+  fish2.invuln = 0;
+  const hp2 = fish2.hp;
+  fish2.hurt(g, 1, 'down', 0);
+  return {
+    wasHarmless, flopDamage: afterFlopHit, normalDamage: hp2 - fish2.hp,
+    scale: feel.DREDGE_FLOP_DAMAGE_SCALE, harmlessWhileFlopping: !!fish.harmless,
+  };
+});
+check('a landed creature is harmless while it flops', r.harmlessWhileFlopping === true);
+check('...and takes double damage', r.flopDamage === r.normalDamage * r.scale,
+  `flop=${r.flopDamage} normal=${r.normalDamage} scale=${r.scale}`);
+
+// ===========================================================================
 check('no page errors', errs.length === 0, errs.slice(0, 3).join(' | '));
 
 console.log(`\n=== ${passed} passed, ${failures.length} failed ===`);
