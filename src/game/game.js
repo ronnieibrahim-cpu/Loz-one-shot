@@ -48,6 +48,7 @@ import { drawHud, drawAreaBanner, drawBossBar } from './hud.js';
 import { Dialogue, drawBox, drawPanel, getText } from './dialogue.js';
 import { Menu } from './menu.js';
 import { Scrimshaw, CHARMS, giveCharm, ownedCharms } from './scrimshaw.js';
+import { Camera } from './camera.js';
 import { Title } from './title.js';
 import { runCutscene, CUTSCENES } from './cutscene.js';
 import { Stream, seedGlobal, roomStream, noise1, rng as rngGlobal } from '../core/rng.js';
@@ -82,6 +83,9 @@ export class Game {
     this.progress = newProgress();
     this.tide = new Tide(this);
     this.scrim = new Scrimshaw(this);
+    // The window on the room. A no-op in a 1x1 room by arithmetic, not by a
+    // branch — see src/game/camera.js.
+    this.cam = new Camera(this);
     this.dialogue = new Dialogue(this);
     this.menu = new Menu(this);
     this.title = new Title(this);
@@ -187,6 +191,7 @@ export class Game {
       this.player.z = 0; this.player.vz = 0; this.player.jumping = false;
       this.player.lastSafe.x = this.player.x; this.player.lastSafe.y = this.player.y;
       this.player.reconcileWithTide(this);
+      if (this.room) this.cam.snap(this.room, this.player.cx, this.player.cy);
     }
     if (changedMap || o.banner) {
       this.bannerText = m.kind === 'dungeon' ? m.name : (this.room && this.room.name) || m.name;
@@ -210,6 +215,11 @@ export class Game {
     // here and nowhere else. Doing it on tide change instead would make it a
     // charm about the conch, which is a different charm.
     if (this.player) this.player.barnacleUsed = false;
+    // [A7] SNAP, never glide, on a room entry. Placed after the player has
+    // been positioned by enterMap's caller where possible; enterMap snaps
+    // again once it has moved him, because the order differs between a warp
+    // and a room-slide transition.
+    if (this.player) this.cam.snap(r, this.player.cx, this.player.cy);
     this.applyTint(r.tint);
     if (o.spawnEntities !== false) this.spawnRoomEntities();
     this.respawnAnchor();
@@ -1044,8 +1054,16 @@ export class Game {
     this.updatePhaseShift();
 
     if (this.player) this.player.update(this);
+    // [A2 of step 2] The camera follows AFTER the player has moved and BEFORE
+    // anything else reads it. It is not stepped during a tide sweep or a
+    // transition — both return above — so the window a snapshot describes is
+    // still the window when the effect lands.
+    if (this.player && this.room) this.cam.update(this.room, this.player.cx, this.player.cy);
     for (const e of this.entities) {
       if (e === this.player || e.remove) continue;
+      // [A3] Off camera is FROZEN: not updated, not despawned, not culled.
+      // See Camera.isLive for why this is determinism and not performance.
+      if (!this.cam.isLive(e)) continue;
       if (e.update) e.update(this);
     }
     this.flushPending();
