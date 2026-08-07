@@ -50,7 +50,7 @@ export const F = {
   SANDBAR:   1 << 22,  // marks tiles whose walkability depends on tide (for hints)
   TALLGRASS: 1 << 23,  // hides the player's feet, drops rupees when cut
   VANE:      1 << 24,  // salt vane: only the Resonance Rod rings it open
-  MAGNETIC:  1 << 25,  // iron plug: the Magnetic Gloves haul it out of the way
+  MAGNETIC:  1 << 25,  // iron plug: the Dredge Line hauls it out of the way
   // Region-gate markers. These do NOT drive traversal — the engine already
   // knows how to cross each of these tiles, because each one also carries the
   // ordinary flag for what it is (a chasm is JUMPABLE, a channel is DEEP, a

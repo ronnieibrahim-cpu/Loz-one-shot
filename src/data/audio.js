@@ -52,7 +52,6 @@ const SFX = {
   seed: { type: 'blip', freq: 1200, freq2: 1700, dur: 0.07, duty: 0.25, vol: 0.09 },
   shoot: { type: 'blip', freq: 1500, freq2: 900, dur: 0.07, duty: 0.125, vol: 0.1 },
   pegasus: { type: 'arp', notes: ['C5', 'E5', 'G5'], step: 0.04, duty: 0.25, vol: 0.09 },
-  magnet: { type: 'blip', freq: 260, freq2: 620, dur: 0.16, duty: 0.125, vol: 0.09 },
   valve: { type: 'noise', freq: 700, freq2: 260, dur: 0.4, q: 1.4, vol: 0.12 },
 
   // --- combat -------------------------------------------------------------

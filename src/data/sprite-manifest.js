@@ -43,7 +43,7 @@ export const REQUIRED_SPRITES = {
     'i_cleats', 'i_cleats2',
     'i_chain', 'i_hookhead',
     'i_satchel', 'i_slingshot', 'i_hyperslingshot',
-    'i_shovel', 'i_magnet', 'i_ringbox', 'i_ring',
+    'i_shovel', 'i_ringbox', 'i_ring',
     'i_map', 'i_chart', 'i_unknown',
     'i_lens', 'i_lens2', 'i_bellows', 'i_reefseed', 'i_dredge', 'i_rod', 'i_coin', 'i_bottle',
     'i_seed_ember', 'i_seed_scent', 'i_seed_pegasus', 'i_seed_gale', 'i_seed_mystery',

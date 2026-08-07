@@ -1320,8 +1320,10 @@ export function installCoreTiles() {
       ring: 'saltFlat', fx: 'spark', persist: true, sfx: 'break',
       deny: 'The vane is set too far to reach. Something must make it sing.',
     },
+    // The Magnetic Gloves are gone; the Dredge Line hauls iron off the bottom,
+    // which is the same verb and a better fit for a plug sunk in an abyss.
     abyssPlug: {
-      magnet: 'rockFloorDk', fx: 'spark', persist: true, sfx: 'magnet',
+      dredge: 'rockFloorDk', fx: 'spark', persist: true, sfx: 'rumble',
       deny: 'Iron, sunk deep. Nothing here will shift it by hand.',
     },
     dFloorCrack: { bomb: 'dPit', fx: 'boom', persist: true, sfx: 'break' },

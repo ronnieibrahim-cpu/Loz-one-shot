@@ -77,7 +77,6 @@ export class Player extends Entity {
     this.falling = 0;
     this.washing = 0;
     this.conchTime = 0;
-    this.magnet = 1;
     this.hookPulling = false;
     this.lensHeld = false;        // set per-frame by the held-item hook
     this.lensT = 0;               // 0..LENS_FADE_FRAMES, the overlay's fade

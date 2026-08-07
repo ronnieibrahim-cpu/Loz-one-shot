@@ -52,9 +52,6 @@ GRID = {
 # communicated by the HUD's 'L2' badge, exactly as the Oracle bar does it.
 RECTS = {
     'i_ringbox': (394, 126, 11, 16),   # 11 wide: a maroon swatch fills the rest
-    # Magnetic Gloves, the blue S-polarity plate. 8 wide because the 'S' caption
-    # sits beside the glove rather than past LABEL_X, so strip_label misses it.
-    'i_magnet': (610, 96, 8, 16),
     'i_ring': (419, 126, 16, 16),
     'hud_rupee': (345, 100, 8, 8),
     # satchel order matches REQUIRED_SPRITES.ui, which is the satchel's own order

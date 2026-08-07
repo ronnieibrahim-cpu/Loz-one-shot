@@ -19,7 +19,7 @@
 //   Magic Boomerang F.VANE       Salt Pans
 //   Magnetic Gloves F.MAGNETIC   Abyssal approach
 //
-// Usage: node check-overworld.mjs [--bombs] [--items=bombs,boomerang,magnet]
+// Usage: node check-overworld.mjs [--bombs] [--items=bombs,rod,dredge]
 // `--bombs` is kept as an alias for `--items=bombs`.
 
 import { installData } from '../src/data/index.js';
@@ -45,7 +45,7 @@ const GATES = {
     flag: F.VANE, region: 'Salt Pans',
     covers: [[4, 7, 0, 2], [8, 11, 0, 3]],
   },
-  magnet: {
+  dredgePlug: {
     flag: F.MAGNETIC, region: 'Abyssal approach',
     covers: [[0, 3, 0, 1]],
   },

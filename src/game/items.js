@@ -847,23 +847,6 @@ export const ITEMS = {
     desc: 'Dig in soft sand and soil. Who knows what is buried.',
     use(game, p, level) { return p.startDig(game); },
   },
-  magnet: {
-    names: ['Magnetic Gloves'],
-    icon: ['i_magnet'],
-    equippable: true,
-    desc: 'Attract or repel iron. Press to flip polarity.',
-    use(game, p, level) {
-      // Facing an iron plug, the gloves haul it out rather than flip polarity —
-      // otherwise the region gate would need a second button nobody would find.
-      const [dx, dy] = DIR_VEC[p.dir];
-      const tx = Math.floor((p.cx + dx * TILE) / TILE), ty = Math.floor((p.cy + dy * TILE) / TILE);
-      if (game.applyTileAction(tx, ty, 'magnet', level)) return true;
-      p.magnet = p.magnet === 1 ? -1 : 1;
-      game.audio.sfx('magnet');
-      game.spawnEffect('spark', p.cx - 8, p.cy - 8, { pal: p.magnet === 1 ? 'enemyb' : 'enemyr' });
-      return true;
-    },
-  },
   ringbox: {
     names: ['Ring Box', 'Ring Box L2', 'Ring Box L3'],
     icon: ['i_ringbox'],

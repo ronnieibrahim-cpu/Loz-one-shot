@@ -189,17 +189,17 @@ check('...but at HIGH tide the water carries it', vFarHigh !== 'saltVane', vFarH
 // --- the Abyssal plug ------------------------------------------------------
 // Room 0,2,1: plugs along row 6, cols 3-6. The player stands one tile north of
 // one of them, facing it, and presses the gloves.
-const PLUG = { rx: 2, ry: 1, gx: 4, gy: 6, tx: 4, ty: 5, dir: 'down', item: 'magnet', level: 1 };
+const PLUG = { rx: 2, ry: 1, gx: 4, gy: 6, tx: 4, ty: 5, dir: 'down', item: 'dredge', level: 1 };
 const plugBefore = await setup(PLUG);
 check('the abyssal plug starts as a plug', plugBefore === 'abyssPlug', plugBefore);
 await page.keyboard.press('KeyZ');
 await frames(20);
 const plugAfter = await nameAt(PLUG.gx, PLUG.gy);
-check('the Magnetic Gloves pull the abyssal plug', plugAfter !== 'abyssPlug', plugAfter);
+check('the Dredge Line hauls the abyssal plug out', plugAfter !== 'abyssPlug', plugAfter);
 
 // The gloves open the plug in front, not the whole row.
 const neighbour = await nameAt(6, 6);
-check('the gloves only shift the plug in front', neighbour === 'abyssPlug', neighbour);
+check('...and only the plug in front', neighbour === 'abyssPlug', neighbour);
 
 // --- the four terrain-shaped gates -----------------------------------------
 //

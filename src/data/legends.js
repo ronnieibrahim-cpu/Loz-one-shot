@@ -106,7 +106,7 @@ export function installLegends() {
     '.': 'sandRust', ',': 'sandRust',
     '~': 'waterD', '=': 'waterAbyss',
     'T': 'treeDead', 'o': 'rock', '#': 'cliffAbyss', '^': 'cliffAbyss',
-    'V': 'abyssPlug',       // region gate: only the Magnetic Gloves shift it
+    'V': 'abyssPlug',       // region gate: only the Dredge Line shifts it
     '_': 'ledgeAbyss',
     '"': 'ledgeAbyssN', '>': 'ledgeAbyssE', '<': 'ledgeAbyssW',
   }, 'base');
