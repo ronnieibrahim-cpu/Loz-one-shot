@@ -147,6 +147,36 @@ export function installLegends() {
     '9': 'drownWall',
   });
 
+  // ---- dungeon THEMES ----------------------------------------------------
+  //
+  // Each of these is the shared `dungeon` legend with five characters pointed
+  // at a themed tile: floor, cracked floor, wall, bombable wall and block.
+  // Everything else — doors, stairs, pits, spikes, ledges, and every tide
+  // digit — is inherited unchanged, which is the entire point of doing it this
+  // way: A DUNGEON CHANGES ITS LOOK BY CHANGING ONE `legend:` FIELD, and not
+  // one character of one room grid moves.
+  //
+  // That also means a theme cannot alter passability by accident. The five
+  // tiles below carry exactly the flags their shared counterparts carry —
+  // floors none, walls SOLID, the cracked wall SOLID|BOMBABLE, the block SOLID
+  // — so walk-dungeons and solve-switches see the identical world before and
+  // after. If you add a sixth character to a theme, check that first.
+  //
+  // Tiles and palettes come from tools/rip-dungeon-themes.py, off the Seasons
+  // dungeon map. See src/data/tiles-dungeon-themes.js.
+  const theme = (name, floor, alt, wall, cracked, block) => registerLegend(name, {
+    '.': floor, ',': alt, '#': wall, 'X': cracked, '=': block,
+  }, 'dungeon');
+
+  theme('dungeonGrotto',  'dFloorGrotto',  'dFloorGrottoAlt',  'dWallGrotto',  'dWallGrottoX',  'dBlockGrotto');
+  theme('dungeonCoral',   'dFloorCoral',   'dFloorCoralAlt',   'dWallCoral',   'dWallCoralX',   'dBlockCoral');
+  theme('dungeonBog',     'dFloorBog',     'dFloorBogAlt',     'dWallBog',     'dWallBogX',     'dBlockBog');
+  theme('dungeonCistern', 'dFloorCistern', 'dFloorCisternAlt', 'dWallCistern', 'dWallCisternX', 'dBlockCistern');
+  theme('dungeonWood',    'dFloorWood',    'dFloorWoodAlt',    'dWallWood',    'dWallWoodX',    'dBlockWood');
+  theme('dungeonSalt',    'dFloorSalt',    'dFloorSaltAlt',    'dWallSalt',    'dWallSaltX',    'dBlockSalt');
+  theme('dungeonPalace',  'dFloorPalace',  'dFloorPalaceAlt',  'dWallPalace',  'dWallPalaceX',  'dBlockPalace');
+  theme('dungeonAbyss',   'dFloorAbyss',   'dFloorAbyssAlt',   'dWallAbyss',   'dWallAbyssX',   'dBlockAbyss');
+
   // ---- cave / interior ---------------------------------------------------
   registerLegend('cave', {
     ' ': 'void',

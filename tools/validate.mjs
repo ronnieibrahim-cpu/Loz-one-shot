@@ -97,6 +97,29 @@ for (const [name, d] of TILES) {
   if (d.underArt && !TILES.has(d.underArt)) problems.push(`tile ${name}: underArt '${d.underArt}' is not a tile`);
 }
 
+// --- dungeon themes -------------------------------------------------------
+//
+// A theme is a look, never a rule. Each themed tile must carry EXACTLY the
+// flags of the shared dungeon tile it stands in for, or a dungeon that only
+// meant to change colour has quietly changed where the player can walk — and
+// walk-dungeons would report it as a stranded room in a dungeon nobody edited.
+{
+  const THEMES = ['Grotto', 'Coral', 'Bog', 'Cistern', 'Wood', 'Salt', 'Palace', 'Abyss'];
+  const SHARED = [['dFloor', 'dFloor%'], ['dFloorCrack', 'dFloor%Alt'],
+    ['dWall', 'dWall%'], ['dWallCracked', 'dWall%X'], ['dBlock', 'dBlock%']];
+  for (const th of THEMES) {
+    for (const [base, pat] of SHARED) {
+      const name = pat.replace('%', th);
+      const a = TILES.get(base), b = TILES.get(name);
+      if (!b) { problems.push(`theme ${th}: missing tile ${name}`); continue; }
+      if (a.flags !== b.flags) {
+        problems.push(`theme ${th}: ${name} flags ${b.flags} != ${base}'s ${a.flags}`
+          + ' — a theme may change the look, never the rules');
+      }
+    }
+  }
+}
+
 // --- maps -----------------------------------------------------------------
 for (const p of validateMaps()) problems.push('map: ' + p);
 

@@ -15,7 +15,7 @@ regenerate byte-identical output.
 | `oracle-seasons-npcs.png` | Oracle of Seasons | Trailsdegamer | `tools/rip-npcs.py` | `src/data/sprites-npcs.js` — 9 NPC sprites |
 | `oracle-seasons-enemies.png` | Oracle of Seasons | Mister Mike | `tools/rip-enemies.py` | `src/data/sprites-enemies.js` — 56 enemy sprites |
 | `oracle-seasons-hud-gear.png` | Oracle of Seasons | Mister Mike | `tools/rip-hud.py` | `src/data/sprites-hud.js` |
-| `oracle-seasons-dungeon-backgrounds.png` | Oracle of Seasons | Mister Mike | `tools/rip-terrain.py` | `src/data/tiles-terrain.js` — dungeon ground |
+| `oracle-seasons-dungeon-backgrounds.png` | Oracle of Seasons | Mister Mike | `tools/rip-terrain.py`, `tools/rip-dungeon-maps.py`, `tools/rip-dungeon-themes.py` | `src/data/tiles-terrain.js` — dungeon ground; `assets/tilesets/seasons-dungeons.*` — the deduplicated full-floor tileset; `src/data/tiles-dungeon-themes.js` — the eight per-dungeon themes |
 | `custom-oracle-style-overworld.png` | fan-made, Oracle style | community edit | `tools/rip-terrain.py` | `src/data/tiles-terrain.js` — overworld ground |
 | `oracle-ages-overworld.png` | Oracle of Ages | *unattributed — see below* | `tools/rip-terrain.py` | `src/data/tiles-terrain.js` — overworld props |
 | `oracle-seasons-tileset-subrosia.png` | Oracle of Seasons | KOOLKID6789 | `tools/rip-terrain.py` | `src/data/tiles-terrain.js` — the tree |

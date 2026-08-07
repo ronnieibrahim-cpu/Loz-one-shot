@@ -8,6 +8,7 @@
 import { tiles as tileSheet } from '../gfx/art.js';
 import { registerTiles, F, declareAnimArt, registerTransforms } from '../world/tileset.js';
 import { TERRAIN_ART } from './tiles-terrain.js';
+import { DUNGEON_THEME_ART, installDungeonThemePalettes } from './tiles-dungeon-themes.js';
 
 const HAND_ART = {
   // ---- ground -------------------------------------------------------------
@@ -1009,9 +1010,12 @@ const HAND_ART = {
 // the pixels are replaced; every tile keeps the palette its definition below
 // binds, so the palette-swap variants and the region colour schemes are
 // untouched. Regenerate with `python3 tools/rip-terrain.py`.
-const ART = { ...HAND_ART, ...TERRAIN_ART };
+const ART = { ...HAND_ART, ...TERRAIN_ART, ...DUNGEON_THEME_ART };
 
 export function installCoreTiles() {
+  // The themed dungeon tiles bring their own colours off the cartridge, and
+  // the tiledefs below name them. Must run before registerTiles.
+  installDungeonThemePalettes();
   tileSheet.add(ART, 'stone');
   // Animation frames are art without being tiles in their own right.
   declareAnimArt(Object.keys(ART));
@@ -1245,6 +1249,96 @@ export function installCoreTiles() {
     dLedgeE: { art: ART.ledgeE, pal: 'stonedk', flags: F.LEDGE, ledge: 'right', underArt: 'dFloor' },
     dLedgeW: { art: ART.ledgeW, pal: 'stonedk', flags: F.LEDGE, ledge: 'left', underArt: 'dFloor' },
 
+
+    // --- dungeon themes (P7.5) -------------------------------------------
+    //
+    // Eight dungeons shared one legend and therefore one look: `dFloor` and
+    // `dWall` in a different palette, eight times. The source does the
+    // opposite — each of its dungeons has its own masonry and its own floor
+    // pattern, and you know which dungeon a screenshot is from before you
+    // recognise the room. These are the tiles that fix that, extracted from
+    // the Seasons dungeon map by tools/rip-dungeon-themes.py, which cites the
+    // map coordinate and the occurrence count for every one.
+    //
+    // A theme is FLOOR + FLOOR-ALT + WALL + CRACKED WALL + BLOCK, and a
+    // themed legend in legends.js remaps the shared characters onto them, so
+    // NO ROOM GRID CHANGES. A dungeon picks its look with one `legend:` field.
+    //
+    // The cracked wall keeps the hand-drawn `dWallCracked` art in the theme's
+    // wall palette rather than taking the theme's own wall art. A bombable
+    // wall has to be visibly cracked — theming it into invisibility would be a
+    // puzzle regression wearing a coat of paint.
+    //
+    // Where a tile names a palette from palettes.js rather than its own
+    // extracted one, that is a deliberate swap into a colour the game already
+    // uses, so a theme never invents a hue the rest of the world does not have.
+
+    // d1 Tidewash Grotto — pale sea-cave flagstone, hatched walls.
+    dFloorGrotto: { art: ART.paleFloor, pal: 'paleFloor' },
+    dFloorGrottoAlt: { art: ART.paleFloor, pal: 'stonef' },
+    dWallGrotto: { art: ART.brickWallBlue, pal: 'brickWallBlue', flags: F.SOLID },
+    dWallGrottoX: { art: ART.dWallCracked, pal: 'brickWallBlue', flags: F.SOLID | F.BOMBABLE },
+    dBlockGrotto: { art: ART.vaultBlock, pal: 'vaultBlock', flags: F.SOLID },
+
+    // d2 Coral Spire — blue flagstone under coral-pink masonry.
+    dFloorCoral: { art: ART.reefFloor, pal: 'reefFloor' },
+    dFloorCoralAlt: { art: ART.reefFloor, pal: 'coral' },
+    dWallCoral: { art: ART.coralWall, pal: 'coralWall', flags: F.SOLID },
+    dWallCoralX: { art: ART.dWallCracked, pal: 'coral', flags: F.SOLID | F.BOMBABLE },
+    dBlockCoral: { art: ART.vaultBlock, pal: 'coral', flags: F.SOLID },
+
+    // d3 Bogwater Sanctum — a gold lattice sunk into swamp-green stone.
+    dFloorBog: { art: ART.gildFloor, pal: 'gildFloor' },
+    dFloorBogAlt: { art: ART.gildFloor, pal: 'bog' },
+    dWallBog: { art: ART.knurlWall, pal: 'knurlWall', flags: F.SOLID },
+    dWallBogX: { art: ART.dWallCracked, pal: 'knurlWall', flags: F.SOLID | F.BOMBABLE },
+    dBlockBog: { art: ART.cryptBlock, pal: 'bog', flags: F.SOLID },
+
+    // d4 Cliffside Cistern — sunken tan panels, cold studded walls.
+    dFloorCistern: { art: ART.panelFloor, pal: 'panelFloor' },
+    dFloorCisternAlt: { art: ART.panelFloor, pal: 'stonef' },
+    dWallCistern: { art: ART.studWall, pal: 'stonef', flags: F.SOLID },
+    dWallCisternX: { art: ART.dWallCracked, pal: 'stonef', flags: F.SOLID | F.BOMBABLE },
+    dBlockCistern: { art: ART.vaultBlock, pal: 'vaultBlock', flags: F.SOLID },
+
+    // d5 Drowned Wood Shrine — amber lozenge floor under brown brick walls.
+    // The floor was `brickFloor` and the wall `emberWall`, and both are brick
+    // COURSES: the room came out as one continuous texture with no visible
+    // line between what you can walk on and what you cannot. A theme has to
+    // keep floor and wall legible before it is allowed to be atmospheric.
+    dFloorWood: { art: ART.forgeFloor, pal: 'forgeFloor' },
+    dFloorWoodAlt: { art: ART.brickFloor, pal: 'brickFloor' },
+    dWallWood: { art: ART.emberWall, pal: 'emberWall', flags: F.SOLID },
+    dWallWoodX: { art: ART.dWallCracked, pal: 'emberWall', flags: F.SOLID | F.BOMBABLE },
+    dBlockWood: { art: ART.cryptBlock, pal: 'wood', flags: F.SOLID },
+
+    // d6 Salt Pan Vault — the ruin rosette bleached out to salt and bone.
+    dFloorSalt: { art: ART.ruinFloorAlt, pal: 'marble' },
+    dFloorSaltAlt: { art: ART.ruinFloorAlt, pal: 'stonef' },
+    dWallSalt: { art: ART.vaultBlock, pal: 'marble', flags: F.SOLID },
+    dWallSaltX: { art: ART.dWallCracked, pal: 'marble', flags: F.SOLID | F.BOMBABLE },
+    dBlockSalt: { art: ART.vaultBlock, pal: 'marble', flags: F.SOLID },
+
+    // d7 Reef Palace — the rosette in its own colours, walls studded gold.
+    dFloorPalace: { art: ART.ruinFloor, pal: 'ruinFloor' },
+    dFloorPalaceAlt: { art: ART.ruinFloorAlt, pal: 'ruinFloorAlt' },
+    dWallPalace: { art: ART.studWall, pal: 'studWall', flags: F.SOLID },
+    dWallPalaceX: { art: ART.dWallCracked, pal: 'gold', flags: F.SOLID | F.BOMBABLE },
+    dBlockPalace: { art: ART.vaultBlock, pal: 'gold', flags: F.SOLID },
+
+    // d8 Abyssal Keep — studded violet-black tiling, violet masonry.
+    dFloorAbyss: { art: ART.abyssFloor, pal: 'abyssFloor' },
+    dFloorAbyssAlt: { art: ART.abyssFloor, pal: 'abyss' },
+    dWallAbyss: { art: ART.cryptWall, pal: 'cryptWall', flags: F.SOLID },
+    dWallAbyssX: { art: ART.dWallCracked, pal: 'cryptWall', flags: F.SOLID | F.BOMBABLE },
+    dBlockAbyss: { art: ART.cryptBlock, pal: 'cryptBlock', flags: F.SOLID },
+
+    // Themed scenery, for P8 to place. SOLID, so read the traps list in
+    // CLAUDE.md before putting one anywhere: a solid tile can strand a room
+    // while rendering perfectly and validating clean.
+        dLionHead: { art: ART.lionHead, pal: 'lionHead', flags: F.SOLID },
+    dUrn: { art: ART.urn, pal: 'urn', flags: F.SOLID },
+
     // --- dungeon ---
     dFloor: { art: ART.dFloor, pal: 'brickf' },
     dFloorCrack: { art: ART.dFloorCrack, pal: 'brick' },
@@ -1327,7 +1421,7 @@ export function installCoreTiles() {
       deny: 'Iron, sunk deep. Nothing here will shift it by hand.',
     },
     dFloorCrack: { bomb: 'dPit', fx: 'boom', persist: true, sfx: 'break' },
-    digSpot: { dredge: 'sand', drop: 'common', fx: 'puff', sfx: 'splash' },
+    digSpot: { dredge: 'sand', drop: 'dredged', fx: 'puff', sfx: 'splash' },
     // The Rod retracts a grate. `persist: true` so a room stays open once it
     // has been opened, the way a bombed wall does.
     grate: { ring: 'grateOpen', fx: 'spark', persist: true, sfx: 'valve' },

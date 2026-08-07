@@ -856,3 +856,113 @@ export const GAP_HOP_MAX_SPAN = 2;
  *  1) come up and a boulder (`liftLevel` 2) does not. The boulder wants the
  *  Dredge Line now — see docs/ITEMS.md. */
 export const LIFT_STRENGTH = 1;
+
+// --- Scrimshaw (P7) --------------------------------------------------------
+// Every number here is `guessed` and cannot be otherwise: no Oracle system
+// slots a passive by world state, so there is no reference to frame-step. They
+// are stated as multipliers of things that already exist wherever possible, so
+// re-tuning a base constant carries the charm with it.
+
+/** f — how long a case stays awake after the tide leaves it, with the Neap
+ *  Charm in that case. guessed; the plan says three seconds and three seconds
+ *  at 60Hz is what this is. It is the whole width of the transition window
+ *  the charm exists to create, so it is the first number to move if the
+ *  transition play does not read. */
+export const NEAP_GRACE_FRAMES = 180;
+
+/** most charms one case can ever hold. guessed; the late-game case upgrade
+ *  raises progress.charmCase from 1 to this. */
+export const CHARM_CASE_MAX = 2;
+
+/** dimensionless — swim speed multiplier with the Riptide Fin. guessed; the
+ *  plan says +40% and the product is rounded back onto a whole subpixel at the
+ *  call site, the same way the terrain multipliers are. */
+export const RIPTIDE_FIN_FACTOR = 1.4;
+
+/** dimensionless — everywhere-speed multiplier with Deadweight. guessed; the
+ *  plan's 15% slower, and the price of never being pushed again. */
+export const DEADWEIGHT_FACTOR = 0.85;
+
+/** dimensionless — how hard a current pushes with the Kelp Braid. guessed. */
+export const KELP_BRAID_FACTOR = 0.5;
+
+/** px — extra span on the sword's sweep with the Split Fang, added to
+ *  SWORD_SPAN. guessed; one tile's worth of blade split across both sides, so
+ *  a swing catches a foe standing off the axis of the one you meant to hit. */
+export const SPLIT_FANG_SPAN = 8;
+
+/** dimensionless — how far the sword throws with the Sea-Wolf's Tooth,
+ *  against KNOCK_SWORD. guessed. */
+export const SEAWOLF_KNOCK_FACTOR = 2;
+
+/** chance a hit is shrugged off entirely with the Hagstone. guessed; the plan
+ *  had no such charm, and a quarter is high enough to notice inside one room
+ *  and low enough that it is never a plan. Rolled off the ROOM stream. */
+export const HAGSTONE_CHANCE = 0.25;
+
+/** f — interval between Strandwalker's quarter-hearts on dry land. guessed;
+ *  slow enough that it is a charm you leave on rather than a charm you farm. */
+export const STRANDWALKER_EVERY = 300;
+
+/** dimensionless — bomb blast radius multiplier with Dry Kindling. guessed. */
+export const DRY_KINDLING_FACTOR = 1.5;
+
+/** dimensionless — pickup lifetime multiplier with the Gull's Tally. guessed;
+ *  the plan says twice as long and this is that. */
+export const GULLS_TALLY_FACTOR = 2;
+
+/** dimensionless — shop price multiplier with the Chandler's Eye. guessed. */
+export const CHANDLER_FACTOR = 0.75;
+
+/** extra Reefseeds the Quartermaster's Mark carries, on REEFSEED_CAPACITY.
+ *  guessed; the plan says two. */
+export const QUARTERMASTER_BONUS = 2;
+
+/** px — extra reach on the Dredge Line with the Coilrope, on DREDGE_RANGE.
+ *  guessed; the plan says one tile and a tile is 16px. */
+export const COILROPE_RANGE = 16;
+
+/** dimensionless — how much of the dive/surface transition the Pressure Scar
+ *  spends, against SINK_ENTER_FRAMES. guessed. */
+export const PRESSURE_SCAR_FACTOR = 0.5;
+
+/** tide changes a commissioned charm takes to carve. derived from the design,
+ *  not guessed: the plan says one tide cycle, and the Moon Conch's cycle is
+ *  TIDE_COUNT steps round. */
+export const CARVE_TIDE_TURNS = 3;
+
+/** rupees the scrimshander charges to carve a blank. guessed; roughly a good
+ *  dungeon's takings, so a charm is a decision rather than a formality. */
+export const CARVE_PRICE = 60;
+
+/** dimensionless — how much of CONCH_FRAMES the Bosun's Whistle spends.
+ *  guessed; the conch's lock-out is a real cost in a fight, and halving it is
+ *  the most direct way a charm can say "you use the tide more". */
+export const BOSUN_FACTOR = 0.5;
+
+/** px — how far a lit dark room reads, against the unlit 54. guessed; wide
+ *  enough that a lantern charm changes how the room is played rather than how
+ *  it is lit. */
+export const LANTERN_RADIUS = 96;
+
+/** f — how often the Wrecker's Eye winks over a hidden thing. guessed; slow
+ *  enough to read as a glint rather than a blinking marker. */
+export const WRECK_GLIMMER_PERIOD = 90;
+
+/** f — how long each wink lasts, inside WRECK_GLIMMER_PERIOD. guessed. */
+export const WRECK_GLIMMER_ON = 20;
+
+/** peak opacity of the Wrecker's Eye wink. guessed. */
+export const WRECK_GLIMMER_ALPHA = 0.85;
+
+/** essences before the scrimshander cuts you the LOW case. derived from the
+ *  eight-dungeon spine, not guessed: two, four and six spread the three
+ *  scrimshaw unlocks evenly across it and leave the last two dungeons free of
+ *  system-teaching. */
+export const CHARM_LOW_ESSENCES = 2;
+
+/** essences before the HIGH case. derived, as above. */
+export const CHARM_HIGH_ESSENCES = 4;
+
+/** essences before every case takes two charms. derived, as above. */
+export const CHARM_CASE_ESSENCES = 6;

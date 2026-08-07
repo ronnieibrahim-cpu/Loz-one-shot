@@ -6,7 +6,7 @@ import { Entity, defineEntity } from './entity.js';
 import { sp } from '../core/fixed.js';
 import { sprites } from '../gfx/art.js';
 import {
-  EXPLOSION_FRAMES, EXPLOSION_SELF_DAMAGE, KNOCK_EXPLOSION,
+  EXPLOSION_FRAMES, EXPLOSION_SELF_DAMAGE, KNOCK_EXPLOSION, DRY_KINDLING_FACTOR,
   SHAKE_MEDIUM, SHAKE_MEDIUM_FRAMES,
 } from '../data/feel.js';
 
@@ -82,12 +82,26 @@ export class Explosion extends Entity {
     this.hitDone = false;
     this.depth = 50;
     this.power = opts.power || 4;
+    // Dry Kindling: a wider blast, applied to the hitbox rather than to the
+    // sprite, so a charm never changes what an explosion LOOKS like — the
+    // 32x32 boom art is the source game's and stays that size.
+    this.wide = false;
+  }
+
+  /** Grown once, on the first frame, because `game` is not in the ctor. */
+  applyCharms(game) {
+    if (this.wide || !game.charm('dryKindling')) return;
+    this.wide = true;
+    const grow = Math.round(this.w * (DRY_KINDLING_FACTOR - 1) / 2) * 2;
+    this.hb = { x: this.hb.x - grow / 2, y: this.hb.y - grow / 2,
+      w: this.hb.w + grow, h: this.hb.h + grow };
   }
 
   update(game) {
     this.frame++;
     if (!this.hitDone) {
       this.hitDone = true;
+      this.applyCharms(game);
       game.audio.sfx('explode');
       game.shake(SHAKE_MEDIUM, SHAKE_MEDIUM_FRAMES);
       for (const e of game.entities) {

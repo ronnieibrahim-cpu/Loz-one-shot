@@ -619,6 +619,93 @@ red on six separate assertions at once. `window.__game.frame` is the frame
 counter — there is no `tick` or `frameCount`, and a check that reads a field
 which does not exist passes forever.
 
+### Scrimshaw (P7), and the three things it cost
+
+**A pickup that opens a text box freezes the fight that dropped it.** The blank
+had a friendly first-time hint on collection. An open dialogue freezes every
+entity while the mode is still `play` (this is already in the traps list), so
+the hint stopped the game dead in the middle of whatever had just died to drop
+it — and `tools/replay.mjs` showed it as the d1-descent actor standing still
+and then dying. There is now a comment on the pickup saying why it is silent.
+The rule generalises: **a floor drop may play a jingle and must not speak.**
+
+**Adding one NPC to an early room re-phased every enemy in the game.** Entity
+ids are a global counter, `every(e, n)` in `enemy.js` derives an enemy's cycle
+offset from `hash32('phase', e.id, n)`, and the scrimshander spawns in
+Tidewatch — which `newGame` enters before anything else. So every entity
+created afterwards, for the whole run, got a different id and therefore a
+different attack phase. All three replays diverged in rooms the change never
+touched. This is correct behaviour and re-recording is the right answer, but
+budget for it: **any new entity in an early room re-baselines every replay.**
+
+**A new drop must not be a difficulty change.** The blank's weight first came
+out of the `heart` entries in the `good` and `rich` tables, because that is
+where there was room. The d1-descent actor promptly starved and died in a room
+it had always cleared. The weight now comes out of `null` and the small rupees,
+the heart weights are untouched, and there is a comment on the table saying so.
+
+**Also worth knowing.** `game.charm(id)` is the successor to `hasRing` and is a
+pure read of a set recomputed once per frame, so it is safe from a draw path —
+`drawDarkness` and the Wrecker's Eye glimmer both call it at display rate. The
+live case is decided by `tideAt(game, player)`, the level under the player's
+own feet, NOT `tide.level`, so standing in the Anchor's held patch keeps that
+patch's charms alive. That is deliberate and it is the interaction most likely
+to be "fixed" by a future session that has not read this paragraph.
+
+### Dungeon themes, and the four things they cost
+
+**A wall tile must tile with itself in BOTH axes, and a contact sheet cannot
+tell you that.** Four dungeons were themed off single-cell previews with
+`hatchWall` and `forgeWall`, which are wall RUNS — directional art meant for
+the top course of a room. Repeated down a two-tile border they read as a picket
+fence. Render a 4x4 tiling of a candidate and LOOK at it; the tiles that
+survive that test are bevelled block grids and brick courses.
+
+**`registerPalettes` silently ignores any palette that is not exactly four
+colours.** A flat tile can quantise to two or three, so its palette registered
+nothing, its tiledef named a palette that did not exist, and the tile drew in
+the fallback. `validate.mjs` was the only thing that caught it. The ripper pads
+to four now — and note `rip-terrain.py` emits the same short arrays and has
+never noticed, because it does not install its palettes. If a future session
+makes it install them, pad there too.
+
+**A tile sitting on a room boundary in a stitched map carries the boundary.**
+Both copies of one flagstone have a stripe of the stitcher's frame in the right
+edge. The deduplicator cannot know that is not art — different pixels means a
+different tile, and it dedupes to itself perfectly.
+
+**Floor and wall must stay legible before a theme is allowed to be
+atmospheric.** d5's floor and wall were both brick courses and the room read as
+one texture with no line between walkable and not.
+
+**The shape of the solution is worth reusing.** A theme is
+`registerLegend(name, {five characters}, 'dungeon')` — it inherits the shared
+legend and overrides floor, cracked floor, wall, bombable wall and block. No
+room grid changed; a dungeon picks its look with one `legend:` field.
+`validate.mjs` asserts every themed tile carries exactly the flags of the tile
+it stands in for, so a theme can never move a wall.
+
+### P7.5 is blocked on assets, and P7.6 is planned but not built
+
+The four Oracle of Seasons dungeon map rips P7.5 is written against are not in
+`assets/sheets/`. The tool it asks for exists and works
+(`tools/rip-dungeon-maps.py`, proven on the one stitched floor map that IS
+here, byte-identical, checked by `tools/check-tilesets.mjs`), but the
+colour-register decision that governs everything after it cannot be made
+without them — the evidence that CAN be gathered is tabulated in
+`docs/ART-DIRECTION.md` and is not conclusive. See `docs/ART-BACKLOG.md`.
+
+**The alignment trap in that tool cost the most time and will recur:** gridding
+a stitched sheet from the image's global content edge instead of from each
+block's own corner turns one wall tile into a family of sixteen, and reports a
+dedup ratio that looks like success. 4936 unique before, 2181 after.
+
+P7.6 (multi-screen dungeon rooms) says to use plan mode and show the plan
+first, so it was planned and not executed: `docs/briefs/P7.6-PLAN.md`. The
+survey finding that makes it tractable is in there — `ROOM_W/ROOM_H/VIEW_W/
+VIEW_H` appear only 30 times across six files, and every use means one of three
+separable things.
+
 ### Fixed-point movement, and the four things it cost (P3)
 
 All five are things that passed at least one green checker on the way through.

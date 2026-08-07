@@ -143,6 +143,57 @@ source tile's own contrast is not the game's contrast, though: check the result
 in a screenshot, not in `preview.mjs --tiles`, which draws every tile in one
 palette.
 
+## The colour register of the sheets (P7.5, UNRESOLVED — needs a decision)
+
+P7.5 asks which colour register `assets/sheets/` came from, because the dungeon
+map rips it introduces contain the same floor twice: a left half labelled "GBC
+LCD Colors" (corrected to simulate the physical GBC screen) and a right half
+labelled "True Colors" (the raw palette from the ROM). Mixing the two across
+the game would be a fidelity break that no checker can see.
+
+**The decision cannot be made yet, and it is not mine to guess.** The test the
+brief specifies is to sample a tile that appears in BOTH an existing sheet and
+one of the new maps and compare RGB. The four maps it names — Ancient Ruins,
+Explorer's Crypt, Poison Moth's Lair, Dancing Dragon Dungeon — are **not in
+this repo**, so there is no second register to compare against.
+
+What CAN be said now, measured rather than assumed. A GBC colour is five bits
+per channel. The raw ROM register expands it as `v << 3`, so every channel is a
+multiple of 8 and tops out at 248; an LCD-corrected register runs the value
+through a matrix and produces arbitrary channel values and a black that is not
+zero. Sampling every sheet for that signature:
+
+| Sheet | distinct colours | channels multiple of 8 |
+|---|---|---|
+| `oracle-seasons-tileset-subrosia.png` | 138 | **99%** |
+| `oracle-seasons-overworld-spring.png` | 123 | 76% |
+| `oracle-seasons-overworld-winter.png` | 141 | 75% |
+| `oracle-ages-overworld.png` | 115 | 69% |
+| `oracle-seasons-maku-tree.png` | 103 | 42% |
+| `oracle-seasons-dungeon-backgrounds.png` | 177 | 33% |
+| the sprite sheets | 15–126 | 9–28% |
+
+Every sheet contains pure black `(0,0,0)`.
+
+**Read this carefully, because it is suggestive and not conclusive.** The
+terrain sheets look like the raw `v << 3` register. The sprite sheets do not —
+but they are also small palettes dominated by a chroma-key background
+(`(0,128,0)` or `(0,255,255)`) and by pure white, which drag the ratio down
+without saying anything about the art itself. So the honest summary is: the
+terrain sheets are probably True Colors, the sprite sheets are unproven, and
+the two groups have not been shown to agree.
+
+That is precisely the case P7.5 says to stop on rather than resolve
+unilaterally. **A future session must not pick a register from this table.**
+Get the four maps in, run the tile-to-tile RGB comparison the brief describes,
+and record the answer here with the numbers.
+
+`tools/rip-dungeon-maps.py --half left|right|auto` is ready for whichever half
+the answer turns out to be; `auto` detects the two-panel split by looking for a
+tall run of background columns through the middle third of the image, and
+reports `"half": "whole"` in the manifest when there is no split, which is the
+case for every sheet in the repo today.
+
 ## Verifying a new asset
 
 Dimensional validity proves nothing about whether art looks right. Both steps

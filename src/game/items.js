@@ -26,7 +26,7 @@ import {
   THROW_ARC_RISE, THROW_ARC_GRAVITY, THROW_SLIDE_DECAY, THROW_SLIDE_STOP,
   REEFSEED_GROW_FRAMES, REEFSEED_SETTLE_FRAMES, REEFSEED_THROW_SPEED,
   REEFSEED_SHUDDER_EVERY,
-  DREDGE_RANGE, DREDGE_CAST_SPEED, DREDGE_HAUL_SPEED, DREDGE_PULL_SPEED,
+  DREDGE_RANGE, DREDGE_CAST_SPEED, DREDGE_HAUL_SPEED, DREDGE_PULL_SPEED, COILROPE_RANGE,
   DREDGE_FLOP_FRAMES,
   ROD_RANGE, ROD_RANGE_HIGH, ROD_LOCK_FRAMES, ROD_RING_FRAMES, ROD_COOLDOWN_FRAMES,
   COIN_THROW_SPEED, COIN_SETTLE_FRAMES, COIN_GLINT_EVERY, BOTTLE_POUR_FRAMES,
@@ -113,7 +113,8 @@ export class DredgeLine extends Entity {
     this.z = 5;
     this.depth = 30;
     this.hooked = null;          // an entity being hauled in
-    this.range = DREDGE_RANGE * (this.level >= 2 ? 1.5 : 1);
+    this.range = DREDGE_RANGE * (this.level >= 2 ? 1.5 : 1)
+      + (o.coilrope ? COILROPE_RANGE : 0);
     this.path = [];              // tiles the weight passed over, near to far
   }
 
@@ -886,7 +887,8 @@ export const ITEMS = {
     desc: 'Cast it into deep water and drag. The seafloor keeps things.',
     use(game, p, level) {
       if (p.dredge && !p.dredge.remove) return true;
-      const d = new DredgeLine(p.cx - 5, p.cy - 5, { dir: p.dir, level, owner: p });
+      const d = new DredgeLine(p.cx - 5, p.cy - 5,
+        { dir: p.dir, level, owner: p, coilrope: game.charm('coilrope') });
       p.dredge = d;
       game.addEntity(d);
       game.audio.sfx('dredgeCast');

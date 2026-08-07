@@ -10,98 +10,136 @@ maintain and the most expensive thing to not have.
 
 ---
 
-## What the last session did (P6: the item roster)
+## What the last session did (P7: scrimshaw, plus P7.5 and P7.6)
 
-`docs/ITEMS.md` is new and is the authoritative roster. Nine items in, ten out,
-one commit each, every checker run between them.
+### P7 — the ring system is gone and scrimshaw replaced it
 
-**Added.** Brineglass Lens, Kelp-Soled Cleats, Squall Bellows, Reefseed, Dredge
-Line, Resonance Rod, Ferryman's Coin, Chartstone, Bottled Tide. Each has an
-entry in `src/game/items.js`, a hand-drawn icon in `src/data/sprites-gear.js`,
-a HUD icon, a desc, constants in `feel.js` tagged `guessed` with units, and one
-overworld use and one dungeon use. `docs/ITEMS.md` names all three verbs for
-each, and says out loud where one is missing.
+`src/game/scrimshaw.js` is new; `src/game/rings.js` is deleted along with the
+ring shop stock, the menu's ring tab, `hasRing`, and the extracted `i_ring`
+icon — whose cell was removed from `tools/rip-hud.py` and the file re-emitted,
+not hand-edited.
 
-**Removed.** `feather`, `bracelet`, `boomerang`, `hookshot`, `magnet`,
-`shovel`, `satchel` and all five seeds, `slingshot`, `flippers`, `ringbox`. The
-registry is now `sword shield conch bombs map` plus the ten roster items, and
-`tools/check-items.mjs` asserts exactly that.
+**The rule.** Thirty charms slot into three cases named for the tide levels, and
+a charm only works while the water is at its level. One case (MID) at the
+start; LOW and HIGH are cut by the scrimshander at 2 and 4 essences, and at 6
+every case takes two charms.
 
-**`tools/check-items.mjs` is new and is the interesting part.** 78 assertions
-that press each item's button in-engine and check what it did. It exists
-because nothing else could see an item at all: `validate` reads room data,
-`walk-dungeons` walks tiles, and neither runs a button press. It caught six
-real defects during the session, listed in HANDOFF — including a chest that
-went on granting a deleted item in complete silence, and two edits that deleted
-items nobody meant to touch.
+**The load-bearing decision, which a future session will want to "fix":** the
+level that decides is `tideAt(game, player)` — the level under the player's own
+FEET — not `tide.level`. So standing inside the Tidewright's Anchor's held
+patch keeps that patch's charms alive while the rest of the room has moved on.
+That is deliberate, it gives the Anchor a second use, and it is the reading a
+player assumes the first time they try it.
 
-### P5 IS MERGED IN. The tide is a field and the Anchor is obtainable.
+**The two transition charms** are the design payoff and both work: the Neap
+Charm holds a case awake for `NEAP_GRACE_FRAMES` after the tide leaves it
+(resolved off the PREVIOUS frame's live set, so a charm that has already gone
+dark cannot be what keeps itself alive), and the Fisherman's Regret wakes the
+case one level below the water.
 
-`src/game/tidelocal.js` is gone — it existed only to carry the Squall Bellows
-until P5 landed, and it did. What survived the collapse:
+**The scrimshander** works the west side of Tidewatch square. A blank plus
+`CARVE_PRICE` rupees, and she carves what the bone wants to be — the charm is
+chosen AT COMMISSION off the global stream, not on collection, so reloading
+before collecting is not a re-roll button. It is finished by `CARVE_TIDE_TURNS`
+changes of the tide, counted in `onTideChanged`, so a player who never sounds
+the conch never gets one. Blanks come off the seafloor via the Dredge Line (the
+new `dredged` drop table, where they are common) and off the `good` and `rich`
+enemy tables, where they are not.
 
-- The Bellows' cone is an ordinary entry in `tide.overrides`, with a `'cone'`
-  footprint in `Tide.covers` and a `delta` alternative to the absolute `level`
-  in `Tide.levelAt`. **The delta is load-bearing**: the Anchor is absolute
-  because it is holding out against the conch, the Bellows is relative because
-  it holds the water back one step from wherever the conch has it. Do not
-  collapse the two into one number.
-- Because the cone is a real override, `Room.render` draws the drained wedge
-  through the field and the stamp invalidates the cache. There is no second
-  draw path.
-- `Tide.viewAt(base)` is a read-only view of the field at another base level.
-  The Brineglass Lens renders through it so an anchored patch previews as the
-  one part of the room that will NOT change when the tide does.
-- `Room.renderAt` is keyed by `cacheKeyFor`, the same function `render` uses.
-  Keying it on the raw argument would cache a field render under
-  `"[object Object]"` and draw stale water for ever, silently.
+**`tools/check-charms.mjs` is new, 60 assertions, and its last one is the
+interesting part.** A charm is pure data and nothing forces a system to read
+it, so an entry in `CHARMS` with no reader gives you a charm that carves,
+slots, highlights, saves and does nothing — with every other checker green. So
+the harness sweeps `src/` and fails on any charm not named outside
+`scrimshaw.js`. Two charms act on the slotting rule itself and are named as
+explicit exemptions rather than left as a hole. Verified by deleting one
+charm's implementation and watching both the effect assertion and the orphan
+sweep fire.
 
-**The Tidewright's Anchor is in D1's big chest.** P5 built it and left placement
-alone; P6 had reserved the slot for it; the merge closed that.
+### P7.5 — the tool is built; the decision it opens with is BLOCKED
 
-### Two verbs are base moveset now
+`tools/rip-dungeon-maps.py` turns a stitched full-floor map into a
+deduplicated 16x16 tileset plus a JSON manifest carrying each tile's occurrence
+count and one map coordinate. Frequency is the point: on a map it is the only
+signal that separates a wall from a decoration without a human looking.
 
-- **The hop.** Not on a button — walking into a one-tile gap hops it, reusing
-  `ledgeHop`'s arc. `GAP_HOP_MAX_SPAN` decides the width and
-  `check-overworld`'s flood reads that constant.
-- **The lift.** On the context button. **A is context-first**, so standing next
-  to a pot with an item bound to A means the pot comes up; `test.mjs` had to
-  turn Link around before its conch section for exactly this.
+Proven on `oracle-seasons-dungeon-backgrounds.png` — 24389 cells, 18 bands, 157
+blocks, **2181 unique**, byte-identical on re-emission, asserted by
+`tools/check-tilesets.mjs` (6/6).
 
-### The overworld gates moved
+**The four maps the brief was written against — Ancient Ruins, Explorer's
+Crypt, Poison Moth's Lair, Dancing Dragon Dungeon — are NOT in the repo.** So
+steps 1-3 (which colour register the sheets came from) cannot be done: the test
+is to compare a tile appearing in both an existing sheet and a new map, and
+there is no new map. The evidence that CAN be gathered without them is
+tabulated with numbers in `docs/ART-DIRECTION.md` and is genuinely
+inconclusive — the terrain sheets carry the raw ROM register's signature
+(channels in multiples of 8), the sprite sheets do not, and the two groups have
+not been shown to agree. **Do not pick a register from that table.** The brief
+says an inconsistency is the user's call, and it is.
 
-| Gate | Was | Is |
-|---|---|---|
-| Salt Pans | Magic Boomerang | **Resonance Rod**, and its range doubles at HIGH — the only gate whose key is the core mechanic. Both halves asserted in `check-gates`. |
-| Abyssal approach | Magnetic Gloves | **Dredge Line** |
-| Cliffs of Kell | Power Bracelet | **Dredge Line** (the boulder is `liftLevel: 2`, past bare hands) |
-| Coral Reef | Roc's Feather | **nothing**, on purpose. P9 re-gates. |
+Step 8 (tiledefs) is blocked with it. Step 9 said to author no rooms anyway.
 
-### What is weak about it
+### P7.5 step 8 — the eight dungeons no longer look the same
 
-- **Nobody has watched any of this in motion.** Every claim above is from
-  checkers. The Lens overlay, the sink-mode palette, the gust cone's redraw and
-  the coral pillar's growth are all things whose whole point is how they LOOK,
-  and none has been seen on screen.
-- **Every new constant in `feel.js` is `guessed`, and cannot be otherwise** —
-  none of these items exists in the source games, so `measured` is not
-  available even in principle. `BELLOWS_RANGE`, `ROD_LOCK_FRAMES`,
-  `REEFSEED_GROW_FRAMES` and `CLEATS_BREATH_FRAMES` are the four most likely to
-  be wrong, because they are the four the player waits on.
-- **Item placement is minimum-churn, not designed.** Each new item sits where
-  the item it displaced sat, so every dungeon's key economy survived P6
-  untouched. P8 re-authors all six dungeons and will move them.
-- **The Reefseed's coral, the grates and the riptides reuse existing tile art**
-  in new palettes rather than being drawn. That is the `grassDark` pattern and
-  it is deliberate, but it means three mechanics are told apart by their flags
-  and not by their drawing. Worth a screenshot pass.
-- **`src/game/rings.js` and the menu's ring tab are still standing.** The Ring
-  Box is gone from the registry but the system it fed is P7's to delete, because
-  removing it means changing the save format.
-- **The Cleats' sink mode does not change WHERE you can go, only how.** The
-  brief asked for the behavioural difference (speed, currents, knockback, sword,
-  carry, breath) and that is all implemented; a genuinely separate seafloor
-  ROUTE layer — tiles that block the surface and not the floor — is not.
+The tile pack got used. `tools/rip-dungeon-themes.py` extracts 21 themed tiles
+off the Seasons dungeon map into `src/data/tiles-dungeon-themes.js`
+(GENERATED — edit the tool's PICKS and re-emit), each citing its map coordinate
+and occurrence count. Eight themes are wired up, one per dungeon, and every one
+is identifiable from a single screenshot.
+
+**A theme is a legend, not a room edit.** `registerLegend(name, overrides,
+'dungeon')` repoints five characters and inherits the rest, so a dungeon
+changes its look with one `legend:` field and no room grid moves.
+`validate.mjs` asserts each themed tile carries exactly the flags of the shared
+tile it replaces — a theme may change the look, never the rules. Verified by
+adding F.SLOW to a themed floor and watching it fail.
+
+Unlike `rip-terrain.py`, this ripper INSTALLS its palettes: those tiles are new
+and have no game palette to preserve, and the cartridge's own colours are what
+make one dungeon look unlike another. Where a theme names a palette from
+palettes.js instead, that is a deliberate swap into a colour the game already
+uses.
+
+### P7.6 — planned, deliberately not built
+
+The brief says "use plan mode and show me the plan before you touch code", so
+this session wrote `docs/briefs/P7.6-PLAN.md` and stopped. **The plan needs
+approval before the next session executes it.**
+
+The survey finding that makes it tractable: `ROOM_W`/`ROOM_H`/`VIEW_W`/`VIEW_H`
+appear 30 times across six files, and every use means one of three separable
+things — the room's size in tiles, the room's size in pixels, or the size of
+the window on screen. The engine already treats "the room's extent" as one
+concept and has just been spelling it with the viewport constant. The work is
+separating those meanings, not inventing a camera.
+
+### What is weak about all of it
+
+- **Nobody has watched any of it in motion.** Every claim above is from
+  checkers. The CHARM menu screen, the Wrecker's Eye glimmer, the lantern
+  charms' lit radius and the scrimshander's dialogue are all things whose point
+  is how they look, and none has been seen on screen by a person.
+- **Every scrimshaw constant is `guessed` and cannot be otherwise** — no Oracle
+  system slots a passive by world state. `NEAP_GRACE_FRAMES` is the one to
+  settle first, because it is the width of the whole transition window the
+  design payoff depends on.
+- **Charm BALANCE is unexamined.** Thirty charms exist and each does what its
+  line says; no two have been compared for value. The Hagstone (a quarter of
+  hits ignored) is probably the strongest thing in the game and cost nothing to
+  write.
+- **Only one charm is placed in the world.** The shop sells the Ballast Heart.
+  Everything else comes from the scrimshander's random carve, so a run cannot
+  seek a specific charm. That is arguably right for a bone carver and it means
+  the whole roster is un-designed as PLACEMENT — P8 should hand-place some.
+- **The scrimshander reuses `npc_elder`'s sprite**, which the digger also uses.
+  Two different characters share a face.
+- **The case unlocks are keyed on essence count only.** They fire on talking to
+  her, so a player who never returns to Tidewatch never opens the LOW or HIGH
+  case and never learns the system has more to it.
+- **The three replays were re-recorded** because adding one NPC re-phased every
+  enemy in the game (see HANDOFF). They pass to the pixel, but they are not
+  comparable across this commit.
 
 ## What the session before that did (P4: grid-locked enemy motion)
 
@@ -443,11 +481,18 @@ Continue building "Oracle of Tides", a GBC-style Zelda fan game.
 
 Read, in this order:
   CLAUDE.md              - the hard rules. They are hard rules.
-  docs/EXECUTION-PLAN.md - the roadmap. P0-P6 are done and merged. P7
-                           (scrimshaw) is next; PT (towns) and P7.5/P7.6 are
-                           also queued ahead of P8.
+  docs/EXECUTION-PLAN.md - the roadmap. P0-P7 are done. P7.5 is BLOCKED on
+                           four missing dungeon map rips (see ART-BACKLOG.md);
+                           P7.6 is PLANNED and awaiting approval in
+                           docs/briefs/P7.6-PLAN.md. PT (towns) is independent
+                           and can be taken whenever a session wants content.
   docs/ITEMS.md          - the item roster. Authoritative. tools/check-items.mjs
                            asserts the registry is exactly this document.
+  src/game/scrimshaw.js  - the charm roster and the slotting rule. Each charm's
+                           one-line desc IS its specification, and
+                           tools/check-charms.mjs proves each in-engine and
+                           fails on any charm nothing reads.
+  docs/ART-BACKLOG.md    - identified, scoped, not done, and what blocks each.
   docs/EXECUTION-PLAN.md - the roadmap. P0, P1, P3 and P5 are done. P6 (the
                            item roster) is now unblocked and is the big one —
                            P5 existed to unblock it. PT (towns and buildings)
@@ -482,45 +527,38 @@ installed one has been 1194.
 
 Confirm the baseline before changing anything, and keep every line below green:
   node tools/validate.mjs                      clean (two expected warnings
-                                               about fx_slash_d0/fx_slash_d1)
-  node tools/test.mjs                          57/57, 0 unauthored art names
+                                               about fx_slash_d0/fx_slash_d1);
+                                               also asserts no dungeon theme
+                                               changes a tile's flags
+  python3 tools/rip-dungeon-themes.py          regenerates tiles-dungeon-themes.js
+                                               BYTE-IDENTICAL. --sheet writes a
+                                               contact sheet of every pick.
+  node tools/test.mjs                          58/58
   node tools/replay.mjs                        12/12, all three replays to the
-                                               pixel (the third walks a room
-                                               that is MID in one half and HIGH
-                                               in the other)
-  node tools/walk-dungeons.mjs                 28/28, 88 ledge runs
-  node tools/check-overworld.mjs               17/17, three tile gates, the base
-                                               hop modelled against
-                                               GAP_HOP_MAX_SPAN, and the honest
-                                               FIELD flood (a conch sets ONE
-                                               level and you must survive the
-                                               change where you stand)
-  node tools/check-gates.mjs                   15/15, three item gates in-engine
-                                               and the base hop (the ONLY
-                                               harness that hops — see the
-                                               jump-reach note below)
-  node tools/check-items.mjs                   78/78, every item's verbs proved
-                                               in-engine, and the registry
-                                               matched against docs/ITEMS.md
-  node tools/check-motion.mjs                   8/8, enemies on the 8px lattice
-  node tools/test.mjs                          55/55, 0 unauthored art names
-  node tools/replay.mjs                        12/12, all THREE replays to the
                                                pixel
-  node tools/walk-dungeons.mjs                 28/28, 88 ledge runs
-  node tools/check-overworld.mjs               19/19, all gates, plus the field
-                                               flood (~30s of its runtime)
-  node tools/check-gates.mjs                   15/15, both item gates in-engine
-                                               (the ONLY harness that jumps —
-                                               see the jump-reach note below)
+  node tools/walk-dungeons.mjs                 28/28
+  node tools/check-overworld.mjs               17/17 (the field flood is ~30s
+                                               of its runtime)
+  node tools/check-gates.mjs                   15/15
+  node tools/check-items.mjs                   78/78
+  node tools/check-charms.mjs                  60/60, every charm proved
+                                               in-engine and no charm orphaned
+  node tools/check-motion.mjs                   8/8
   node tools/solve-switches.mjs                17 rooms, one push per block
+  node tools/check-tilesets.mjs                 6/6 (needs Pillow; it SKIPS
+                                               with exit 2 rather than passing
+                                               quietly if Pillow is missing)
   python3 tools/rip-terrain.py                 regenerates tiles-terrain.js
                                                BYTE-IDENTICAL; if it does not,
                                                someone hand-edited a generated
-                                               file. --scan <ow|dg> x0 y0 x1 y1
-                                               finds seamless tiles in a region.
+                                               file. Same for rip-hud.py and
+                                               `rip-dungeon-maps.py --verify`.
   node tools/scan-sprites.mjs --strict         0 hard findings
-  npm run build                                48 modules -> one HTML file
+  npm run build                                49 modules -> one HTML file
   node tools/check-build.mjs                   the built file boots from file://
+
+THE CHECKERS TAKE A WHILE. check-overworld, check-items and check-charms are
+minutes each. Run them; do not reason about correctness instead.
 
 EVERY SESSION ENDS BY RUNNING `npm run build` AND COMMITTING
 dist/oracle-of-tides.html. That file is the playable game — one self-contained
@@ -624,11 +662,21 @@ save seed with ?seed=. If you write a new harness, do both — otherwise it is
 measuring the machine, not the game. test.mjs is no longer load-flaky; a
 failure there is now yours.
 
-NEXT UP: P7 (scrimshaw), then P8 (six dungeon sessions) and P9. P1-P4 and P6
-are in.
+NEXT UP, and pick ONE:
+  - P7.6, multi-screen dungeon rooms. The plan is written and needs your
+    approval first: docs/briefs/P7.6-PLAN.md. Highest value of the three,
+    because P8 is much better with it than without it.
+  - PT, towns and buildings. Independent of everything, stated top design
+    priority, and the only one that needs no decision from anybody.
+  - P8, the six dungeon sessions. Better after P7.6.
+  - P7.5's remainder is BLOCKED: it needs four dungeon map rips that are not
+    in this repo. Do not start it by inventing the colour-register decision.
 
-P5 IS MERGED. This branch carries both the tide field and the item roster, and
-every checker is green across the pair. Nothing about the tide is outstanding.
+SCRIMSHAW IS IN AND THE RING SYSTEM IS GONE. `game.charm(id)` replaced
+`hasRing`. A charm is live only while the tide UNDER THE PLAYER'S FEET matches
+its case — `tideAt(game, player)`, never `tide.level` — so an anchored patch
+keeps its charms alive. If you add a charm, something in src/ outside
+scrimshaw.js must READ it, or check-charms fails you.
 
 ANYTHING THAT TOUCHES POSITIONS TOUCHES THE LATTICE. `beginStep`/`advanceStep`
 in src/game/enemy.js must go on landing exactly on multiples of
@@ -676,114 +724,63 @@ Tell me plainly what is done, what is weak, and what you skipped.
 - engine, renderer, tide system, save/load, menus, cutscene runner
 - the 120-screen overworld and all 8 dungeons (303 rooms, all solvable)
 - 56 enemy sprites and a 22-type enemy roster
-- all 16 boss and miniboss fights (`src/data/bosses.js`), verified beatable
+- all 16 boss and miniboss fights, verified beatable
 - every effect, pickup, object, projectile and item icon
 - the whole story: 20 dialogue ids, 15 cutscenes, all verified to terminate
-- all 49 boss and miniboss sprites; `scan-sprites --strict` is 0 hard findings
-- music: 22 tracks (14 looping + 8 jingles), every name resolves
-- one-way ledges in all four cardinals: 88 runs, all verified in-engine
-- all three tile-expressible region gates, proved in both directions
-- **the single-file build.** `npm run build` flattens `index.html` plus every
-  module reachable from `src/main.js` into `dist/oracle-of-tides.html` — one
-  classic `<script>`, playable from a `file://` URL with no server and no
-  network. That file is committed and must be rebuilt at the end of every
-  session. `tools/check-build.mjs` boots it from a real `file://` URL and fails
-  on a console error, an off-document request, a black canvas or a frozen
-  `game.frame`.
+- music: 22 tracks; one-way ledges in all four cardinals; the region gates
+- **the single-file build.** `npm run build` flattens into
+  `dist/oracle-of-tides.html`, playable from a `file://` URL. Rebuild and
+  commit it at the end of EVERY session.
 - **the feel spec, the seeded RNG and the replay harness (P1)**
-- **8.8 fixed-point positions, un-normalised diagonals, a re-derived walk speed
-  and the sword-hold state (P3)**
-- **a deterministic `test.mjs` (P2)** — it takes the clock off the wall-clock
-  loop and pins the save seed, so it no longer flakes under load
+- **a deterministic `test.mjs` (P2)**
+- **8.8 fixed-point positions, un-normalised diagonals, the sword-hold (P3)**
 - **grid-locked enemy motion and scripted knockback (P4)**
-- **the item roster (P6)** — `docs/ITEMS.md`, nine items added and ten removed,
-  plus `tools/check-items.mjs`, which proves each item's verbs in-engine and
-  asserts the registry is exactly that document's roster
-- **the tide as a field and the Tidewright's Anchor (P5)**, merged into P6 —
-  `tide.levelAt(tx, ty, room)`, room-scoped overrides, a render cache keyed on
-  the field's stamp, and the checkers reasoning over the field rather than a
-  scalar
+- **the tide as a field and the Tidewright's Anchor (P5)**
+- **the item roster (P6)** — `docs/ITEMS.md` plus `tools/check-items.mjs`
+- **scrimshaw (P7)** — thirty tide-slotted charms, the scrimshander, the CHARM
+  menu screen, and `tools/check-charms.mjs`. The ring system is deleted.
+- **`tools/rip-dungeon-maps.py` (P7.5, partial)** — stitched floor maps to
+  deduplicated tilesets, byte-identical, checked by `check-tilesets.mjs`
+- **the eight dungeon themes (P7.5 step 8)** — `tools/rip-dungeon-themes.py`
+  plus a themed legend per dungeon. Every dungeon is now identifiable from one
+  screenshot, and no room grid changed to do it.
 
 ## What is left
 
-P5 (if it has not landed in parallel), then P7, P8 and P9 in
-`docs/EXECUTION-PLAN.md`. Plus, carried over:
-- **the tide as a field, and the Tidewright's Anchor (P5).** `tide.levelAt`,
-  room-scoped overrides, the checkers reasoning over the field, and a replay
-  proving one room at two levels at once. The Anchor still needs a chest to
-  come out of — that is D1's job in P8.
+1. **P7.6 — multi-screen dungeon rooms.** PLANNED, NOT BUILT, awaiting your
+   approval: `docs/briefs/P7.6-PLAN.md`. Do the plan, not a fresh design.
 
-## What is left
+2. **PT — towns, buildings and terrain polish.** A stated top design priority,
+   independent of the systems spine, and blocked on nothing. Thalassia's
+   villages are a signpost and a few doors in a cliff. The tileset that fixes
+   it has been in the repo all along —
+   `assets/sheets/oracle-seasons-tileset-subrosia.png`, the only true tileset
+   here, and the one sheet that is 99% raw-register colours. Its town kit is
+   inventoried with cell coordinates in `assets/sheets/README.md`. The first
+   job is generalising the tree's `quad:` machinery, because a building is 3
+   wide and 2-3 tall and cutting one into nine loose tiles is the wrong answer.
 
-P6, then PT, then P7 through P9 in `docs/EXECUTION-PLAN.md`. P2 and P4 are open
-and independent of that spine.
+3. **P7.5's remainder — BLOCKED ON ASSETS.** Four dungeon map rips are missing.
+   See `docs/ART-BACKLOG.md`. The colour-register decision is explicitly yours,
+   not a session's.
 
-**PT (towns, buildings and terrain polish) is a stated top design priority.**
-Thalassia's villages are a name on a signpost and a few doors cut into a cliff;
-the Oracles' towns read as places people live, and that is most of what makes
-their overworld feel like a world. The tileset that does it has been in the repo
-all along — `assets/sheets/oracle-seasons-tileset-subrosia.png`, the only true
-tileset here — and only the tree has ever been taken off it. Its town kit is
-inventoried with cell coordinates in `assets/sheets/README.md`: three roof
-colours, a signed SHOP front, doors, an enterable dark doorway, windows, crates,
-barrels, a stone well, a fence run, stumps, repeated per season. Read PT before
-touching it; the first job is generalising the tree's `quad:` machinery, because
-a building is 3 wide and 2-3 tall and cutting one into nine loose tiles is the
-wrong answer.
+4. **P8 and P9.** Better after P7.6.
 
-Plus, carried over:
+Carried over, and none of it blocking:
 
-   `tree` is the big one and it is a **content** decision, not an art one:
-   Ages trees are 32x32, four cells (worked example at AG 50,936), and the game
-   spends one tile on a tree. Taking them means re-cutting every overworld room
-   grid that has a tree in it.
-2. **Water is still hand-drawn**, and unlike the props this one really is
-   blocked: both terrain sheets are assembled static maps, so there is no
-   second animation frame on them to extract. It needs a sheet that has one.
-3. **A full-D1-clear replay**, per the section above.
-4. **A checker for chests whose pickup lands on a solid tile** — see the
-   Compass bug in HANDOFF. (`tools/check-items.mjs` now proves a chest names a
-   REAL item; it does not yet prove the pickup lands somewhere collectable.)
-5. **Nobody has watched P6's items in motion.** The Lens overlay, sink mode's
-   palette, the gust cone's redraw and the coral pillar's growth are all things
-   whose point is how they look, and all are green from checkers only.
-1. **Settle `ANCHOR_RADIUS_TILES` by playing it.** See the P5 section above and
-   `docs/FEEL-SPEC.md`. Cheap, needs a human, and everything after it is built
-   on the answer.
-
-2. **Give the Anchor a chest.** It exists and works; nothing in the world hands
-   it over. Belongs to D1 in P8.
-
-3. **The overworld terrain that is still hand-drawn** — this is PT's item 5, and
-   the list below is the ranking it refers to. Twelve tiles are
-   extracted now (ten ground, two props). Thirty distinct art blocks are not,
-   though most are palette-swap variants that one extraction would cover. In
-   rough order of value:
-
-   - **the `cliff` family** — one extraction covers eight tiles (`cliff`,
-     `cliffDk`, `cliffSand`, `cliffRust`, `cliffCoral`, `cliffMarble`,
-     `cliffAbyss`, `stairsDown`) and cliffs are on most screens. NOT a simple
-     swap: the Oracles build a cliff from several tiles (face, lit top, corner)
-     and this game spends one tile on all of it, so it is the same shape of
-     content decision the 32x32 trees were. Read the tree QUADS machinery first.
-   - **the `ledge` families** — four directions, nine palette variants each.
-   - `palm`, `pot`, `sign`, `dBlock`, `dStairs`, `spikes`, `caveMouth`.
-
-   `python3 tools/rip-terrain.py --scan <ow|dg|ag|sb|sp> x0 y0 x1 y1` finds
-   seamless ground; `--props <sheet> px py x0 y0 x1 y1 out.png` writes a contact
-   sheet of candidate props. **Open the PNG and look at it** — the flowers pick
-   went through three contact sheets before a cell that was actually floral and
-   actually four colours turned up.
-
-4. **Water is still hand-drawn**, and this one really is blocked: every terrain
-   sheet in the repo is an assembled static map, so there is no second animation
-   frame to extract. It needs a sheet that has one.
-
-5. **A full-D1-clear replay** — see the P1 section above for the three verbs the
-   recording actor is missing.
-
-6. **A checker for chests whose pickup lands on a solid tile** — see the Compass
-   bug in HANDOFF.
+- **Settle `ANCHOR_RADIUS_TILES` and `NEAP_GRACE_FRAMES` by playing them.**
+  Both are design constants with nothing to measure against, both have debug
+  keys or are one edit away, and everything built on top assumes an answer.
+- **Charm balance and charm placement.** Thirty charms work; none has been
+  compared to another, and only one is placed in the world by hand.
+- **The overworld terrain that is still hand-drawn.** Ranked in
+  `docs/ART-BACKLOG.md`; the `cliff` family is the big one and is a content
+  decision, not a swap.
+- **Water is still hand-drawn** and genuinely blocked — every terrain sheet in
+  the repo is a static map with no second animation frame.
+- **A full-D1-clear replay.** The actor needs a push verb, a boss routine, and
+  a jump.
+- **A checker for chests whose pickup lands on a solid tile.**
 
 ## Traps that pass every validator
 
@@ -803,6 +800,12 @@ These are in HANDOFF in full. The short list, because each one cost a session:
 - Digits 0–9 in a room grid are always tide tiles.
 - A chest can hand over an item that does not exist, in total silence.
 - A tiledef field `registerTiles` does not name is silently discarded.
+- A floor drop that speaks freezes the fight that dropped it. Jingle, never
+  `game.say`.
+- Adding an entity to an EARLY room re-phases every enemy in the game — ids are
+  global and `every()` hashes the id — so it re-baselines all three replays.
+- A new pickup weight taken out of the `heart` entries is a difficulty change
+  wearing a costume; take it from `null` or the small rupees.
 - Deleting an entry from `ITEMS` by slicing between banner comments takes its
   neighbours with it. Match the whole entry, brace-counted.
 
