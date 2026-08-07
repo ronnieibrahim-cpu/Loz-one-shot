@@ -1018,16 +1018,6 @@ export const ITEMS = {
       return true;
     },
   },
-  bracelet: {
-    names: ['Power Bracelet', 'Power Gloves'],
-    icon: ['i_bracelet', 'i_gloves'],
-    equippable: true,
-    desc: 'Lift rocks and pots. Press again to throw.',
-    use(game, p, level) {
-      if (p.carrying) return p.throwCarried(game);
-      return p.tryLift(game, level);
-    },
-  },
   cleats: {
     names: ['Kelp-Soled Cleats', 'Mermaid Suit'],
     icon: ['i_cleats', 'i_cleats2'],

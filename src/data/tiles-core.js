@@ -1160,7 +1160,7 @@ export function installCoreTiles() {
     },
     boulder: {
       art: ART.boulder, pal: 'stonedk', flags: F.SOLID | F.ROCK | F.HEAVY,
-      underArt: 'rockFloor', liftLevel: 1,
+      underArt: 'rockFloor', liftLevel: 2,
     },
     cliffCrackedDk: { art: ART.cliffCracked, pal: 'stonedk', flags: F.SOLID | F.BOMBABLE },
     treeDead: { art: ART.tree, pal: 'treeoakdd', flags: F.SOLID, underArt: 'grassBog' },
@@ -1299,8 +1299,15 @@ export function installCoreTiles() {
     sign: { cut: 'sign' },
     dWallCracked: { bomb: 'dFloor', fx: 'boom', persist: true, sfx: 'break' },
     cliffCracked: { bomb: 'sand', fx: 'boom', persist: true, sfx: 'break' },
+    // The Power Bracelet is gone and lifting is base moveset, so a boulder
+    // needs a reason to still be a boulder: `liftLevel: 2` puts it past bare
+    // hands, and the Dredge Line drags it out of the way. That is the same
+    // verb it uses on the abyss plug — a heavy fixed thing on a line — and it
+    // keeps the Cliffs of Kell a real gate rather than losing 25 screens'
+    // worth of gating to a removal. See docs/ITEMS.md.
     boulder: {
       lift: 'rockFloor', drop: 'none', persist: true,
+      dredge: 'rockFloor', fx: 'puff', sfx: 'rumble',
       deny: 'Far too heavy to shift bare-handed.',
     },
     cliffCrackedDk: { bomb: 'mud', fx: 'boom', persist: true, sfx: 'break' },

@@ -59,7 +59,7 @@ export const F = {
   // between "the region is unreachable" and "the region is gated on the
   // Hookshot". Reusing JUMPABLE or DEEP for that would make every gap and
   // every stretch of ocean in the world read as the same gate.
-  HEAVY:     1 << 26,  // boulder: only the Power Bracelet shifts it
+  HEAVY:     1 << 26,  // boulder: only the Dredge Line drags it clear
   SWIMGATE:  1 << 27,  // deep channel: only Zora's Flippers cross it
   GRAPPLE:   1 << 28,  // span crossed by hookshotting a post on the far side
   GAP:       1 << 29,  // chasm: only Roc's Feather clears it
@@ -93,6 +93,19 @@ export function registerTiles(defs) {
       push: def.push || null,
       ledge: def.ledge || null,
       depth: def.depth || 0,
+      // How strong you have to be to pick this up, against LIFT_STRENGTH and
+      // any item that raises it, and what it looks like once lifted.
+      //
+      // THESE TWO WERE MISSING and had been since tiledefs existed. This
+      // function copies field by field rather than spreading, so a tiledef key
+      // it does not name is silently discarded — `boulder` has declared
+      // `liftLevel` the whole time and `Game.liftTile` has read it the whole
+      // time, and the two never met. Nothing validated it, because the boulder
+      // was ALSO gated behind an item the player did not have yet, so the
+      // symptom never showed. Same class as the `giver` options in
+      // docs/HANDOFF.md: data contracts drift from engine contracts silently.
+      liftLevel: def.liftLevel || 0,
+      liftSprite: def.liftSprite || null,
     });
   }
 }
@@ -175,8 +188,8 @@ export function declareAnimArt(names) { for (const n of names) ANIM_ART.add(n); 
 //     torchUnlit:   { fire: 'torchLit', quiet: true },
 //   });
 //
-// Actions: 'cut' (sword), 'bomb', 'fire' (ember seed / flame), 'lift' (bracelet),
-// 'dig' (shovel), 'hook' (hookshot), 'magnet', 'boomerang'.
+// Actions: 'cut' (sword), 'bomb', 'fire' (flame), 'lift' (bare hands, base
+// moveset), 'dredge' (the Dredge Line), 'ring' (the Resonance Rod).
 // `fx` names an effect to spawn, `drop` a drop table to roll, `flagged` a save
 // flag so the change persists.
 //

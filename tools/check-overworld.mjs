@@ -49,7 +49,7 @@ const GATES = {
     flag: F.MAGNETIC, region: 'Abyssal approach',
     covers: [[0, 3, 0, 1]],
   },
-  bracelet: {
+  dredge: {
     flag: F.HEAVY, region: 'Cliffs of Kell',
     // The Cliffs are the only way up to the Abyssal approach, and the Marsh's
     // two northern screens hang off the Bog Stair rather than off the Marsh

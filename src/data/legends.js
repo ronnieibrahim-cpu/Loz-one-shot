@@ -29,7 +29,7 @@ export function installLegends() {
     // char scoped to one region is undefined precisely where it must be placed.
     'K': 'grateOw',      // metal: only the Resonance Rod retracts it
     'J': 'chasm',        // Roc's Feather   — 1 tile, clearable at 2.27 tiles
-    'M': 'boulder',      // Power Bracelet  — lift it out of the way
+    'M': 'boulder',      // Dredge Line     — drag it out of the way
     'C': 'caveMouth', 'c': 'caveMouthSolid', '/': 'stairsDown', '_': 'ledgeS',
     '"': 'ledgeN', '>': 'ledgeE', '<': 'ledgeW',
     // TIDE TILES (digits)

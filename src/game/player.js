@@ -40,7 +40,7 @@ import {
   BELLOWS_RAFT_SCALE,
   SINK_SPEED, SINK_ENTER_FRAMES, CLEATS_BREATH_FRAMES,
   CLEATS_BREATH_WARN_FRAMES, SINK_BUBBLE_EVERY, SINK_DROWN_DAMAGE,
-  CONTEXT_REACH, LIFT_REACH, THROW_SPEED, CARRY_HEIGHT,
+  CONTEXT_REACH, LIFT_REACH, LIFT_STRENGTH, THROW_SPEED, CARRY_HEIGHT,
   ROD_RING_FRAMES,
   SHAKE_SMALL, SHAKE_SMALL_FRAMES, CHARGE_SPARKLE_SPREAD, WADE_FOAM_EVERY,
   PUSH_PROBE_REACH,
@@ -292,8 +292,25 @@ export class Player extends Entity {
   /** 0..1 — how far up the Lens is. */
   get lensAmount() { return this.lensT / LENS_FADE_FRAMES; }
 
-  /** Talk to NPCs, read signs, open chests, grab blocks. */
+  /**
+   * Talk to NPCs, read signs, open chests, and LIFT.
+   *
+   * THE POWER BRACELET IS GONE AND LIFTING IS BASE MOVESET, for the same
+   * reason the hop is: picking a pot up is grammar, not vocabulary, and a
+   * genre verb behind an item is a lock wearing a costume. It is on the
+   * context button, which is where the source games put it once you have the
+   * bracelet — so the button does what it always did, from the first room.
+   *
+   * The order matters and is the source games' order: a person or a chest in
+   * front of you wins over the ground under your hands, and a thing already in
+   * your hands wins over everything, because putting it down has to be
+   * possible from any position.
+   */
   tryContextAction(game) {
+    // Carrying something? A is how you put it down. Checked first so you are
+    // never stuck holding a pot in front of a signpost.
+    if (this.carrying) return this.throwCarried(game);
+
     const [dx, dy] = DIR_VEC[this.dir];
     const px = this.cx + dx * CONTEXT_REACH, py = this.cy + dy * CONTEXT_REACH;
     // entities first
@@ -309,6 +326,9 @@ export class Player extends Entity {
     // then tiles (signs, readable objects, doors needing keys)
     const tx = Math.floor(px / TILE), ty = Math.floor(py / TILE);
     if (game.tileInteract(tx, ty, this)) return true;
+    // then whatever is under your hands. `LIFT_STRENGTH` is what bare hands
+    // are worth: a pot or a loose rock yes, a boulder no.
+    if (!this.inDeep && !this.swinging && this.tryLift(game, LIFT_STRENGTH)) return true;
     return false;
   }
 
@@ -713,6 +733,11 @@ export class Player extends Entity {
 
   // ------------------------------------------------------------------ lift
 
+  /**
+   * Pick up whatever is in front. Returns true only if something was actually
+   * lifted — it is a CONTEXT action now, so a failed lift has to fall through
+   * to the item on the A button rather than swallowing the press.
+   */
   tryLift(game, level) {
     if (this.carrying) return true;
     const [dx, dy] = DIR_VEC[this.dir];
@@ -729,8 +754,7 @@ export class Player extends Entity {
     }
     const got = game.liftTile(tx, ty, level, this);
     if (got) { this.carrying = got; game.audio.sfx('lift'); return true; }
-    game.audio.sfx('deny');
-    return true;
+    return false;
   }
 
   throwCarried(game) {

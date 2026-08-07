@@ -232,7 +232,12 @@ const walkAt = async (key, jump) => {
   }));
 };
 
-// --- Power Bracelet: the Cliffs boulder ------------------------------------
+// --- The Cliffs boulder, which is a Dredge Line gate now -------------------
+// The Power Bracelet is gone and lifting is base moveset, so the boulder needs
+// a reason to still be a boulder: it is `liftLevel: 2`, past bare hands, and
+// the Dredge Line drags it clear. Both directions are asserted, because a gate
+// checked one way is a gate that might not be one.
+//
 // Room 0,2,2: boulders at row 1, cols 3-6, behind the north doorway.
 const BOULDER = { rx: 2, ry: 2, gx: 4, gy: 1, tx: 4, ty: 0, dir: 'down' };
 let b0 = await setup({ ...BOULDER, item: 'sword', level: 1 });
@@ -242,11 +247,17 @@ await frames(20);
 const bSword = await nameAt(BOULDER.gx, BOULDER.gy);
 check('a sword does not shift the boulder', bSword === 'boulder', bSword);
 
-await setup({ ...BOULDER, item: 'bracelet', level: 1 });
+// Bare hands lift a pot and a loose rock; they do not lift this.
+await page.keyboard.press('KeyX');
+await frames(24);
+const bHands = await nameAt(BOULDER.gx, BOULDER.gy);
+check('bare hands do not lift the boulder', bHands === 'boulder', bHands);
+
+await setup({ ...BOULDER, item: 'dredge', level: 1 });
 await page.keyboard.press('KeyZ');
-await frames(20);
+await frames(60);        // a cast flies out and comes back; a lift did not
 const bLift = await nameAt(BOULDER.gx, BOULDER.gy);
-check('the Power Bracelet lifts the boulder', bLift !== 'boulder', bLift);
+check('the Dredge Line drags the boulder clear', bLift !== 'boulder', bLift);
 
 // --- The Coral Reef chasm: no longer a gate --------------------------------
 // Roc's Feather is gone and THE HOP IS BASE MOVESET. A one-tile chasm is

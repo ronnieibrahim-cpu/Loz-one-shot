@@ -805,3 +805,10 @@ export const BOTTLE_POUR_FRAMES = 34;
  *  a two-tile one is not, which is the line every gap in the world is drawn
  *  against now that Roc's Feather is gone and the hop is base moveset. */
 export const GAP_HOP_MAX_SPAN = 2;
+
+/** what bare hands are worth when lifting, against a tile's `liftLevel`.
+ *  derived from the roster, not guessed: the Power Bracelet is gone and
+ *  lifting is base moveset, so ordinary pots and rocks (`liftLevel` unset or
+ *  1) come up and a boulder (`liftLevel` 2) does not. The boulder wants the
+ *  Dredge Line now — see docs/ITEMS.md. */
+export const LIFT_STRENGTH = 1;

@@ -287,9 +287,16 @@ const main = async () => {
   // up, Game.update returns early and every later press feeds the box, not the
   // conch. That is what used to make this section fail at random on a busy
   // machine. The dialogue guard below names the problem if it ever recurs.
+  //
+  // He faces UP, not down. THE POWER BRACELET IS GONE AND LIFTING IS BASE
+  // MOVESET, so lifting joined the context chain — and the tile south of this
+  // spot is one of the village rocks, which now comes up in his hands and eats
+  // the press exactly the way a villager does. That is the design working, not
+  // failing: A has always been context-first. The tile north is a ledge lip,
+  // which is inert to a press.
   await G(() => {
     const g = window.__game;
-    g.enterMap('overworld', 0, 4, 7, 72, 64, 'down', { instant: true });
+    g.enterMap('overworld', 0, 4, 7, 72, 64, 'up', { instant: true });
   });
   await frames(6);
   await G(() => { window.__game.progress.equipA = 'conch'; });
