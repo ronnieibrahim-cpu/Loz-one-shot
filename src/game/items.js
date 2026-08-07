@@ -74,114 +74,6 @@ export class Bomb extends Entity {
 defineEntity('bomb', (x, y, o) => new Bomb(x, y, o));
 
 // --------------------------------------------------------------------------
-// Boomerang
-// --------------------------------------------------------------------------
-
-export class Boomerang extends Entity {
-  constructor(x, y, o = {}) {
-    super(x, y, o);
-    this.w = 10; this.h = 10;
-    this.hb = { x: 1, y: 1, w: 8, h: 8 };
-    this.pal = o.level >= 2 ? 'magic' : 'wood';
-    this.level = o.level || 1;
-    this.speed = this.level >= 2 ? 2.6 : 2.1;
-    this.range = this.level >= 2 ? 108 : 64;
-    this.damage = this.level >= 2 ? 2 : 1;
-    this.owner = o.owner;
-    const [dx, dy] = DIR_VEC[o.dir || 'down'];
-    // `speed` is px/f (item data); velocities are sp/f (the mover's unit).
-    this.vx = sp(dx * this.speed); this.vy = sp(dy * this.speed);
-    this.travelled = 0;
-    this.returning = false;
-    this.harmless = true;
-    this.shadow = false;
-    this.flying = true;
-    this.z = 6;
-    this.depth = 30;
-    this.carried = [];
-  }
-
-  update(game) {
-    this.frame++;
-    const p = this.owner || game.player;
-
-    if (!this.returning) {
-      // The magic boomerang can be steered while it flies out.
-      if (this.level >= 2 && game.input.anyDir()) {
-        const i = game.input;
-        let tx = 0, ty = 0;
-        if (i.down('left')) tx -= 1; if (i.down('right')) tx += 1;
-        if (i.down('up')) ty -= 1; if (i.down('down')) ty += 1;
-        const d = Math.hypot(tx, ty);
-        if (d) {
-          this.vx += Math.round((sp(tx / d * this.speed) - this.vx) * 0.12);
-          this.vy += Math.round((sp(ty / d * this.speed) - this.vy) * 0.12);
-        }
-      }
-      const before = { fx: this.fx, fy: this.fy };
-      const r = moveEntity(game, this, this.vx, this.vy);
-      // Measured in subpixels and converted back, so a slow steer still counts.
-      this.travelled += Math.hypot(this.fx - before.fx, this.fy - before.fy) / FP_ONE;
-      if (r.hitX || r.hitY) {
-        // A region vane is SOLID, so the boomerang bounces off it before its
-        // own rect ever overlaps the tile — probing the rect finds nothing and
-        // the gate reads as ordinary rock. Probe the tile it just struck, the
-        // way the hookshot probes ahead for something to latch onto.
-        this.strikeTile(game);
-        this.returning = true; game.audio.sfx('ricochet');
-      }
-      if (this.travelled >= this.range) this.returning = true;
-      if (this.x < -8 || this.y < -8 || this.x > VIEW_W || this.y > VIEW_H) this.returning = true;
-    } else {
-      if (!p) { this.remove = true; return; }
-      const dx = p.cx - this.cx, dy = p.cy - this.cy;
-      const d = Math.hypot(dx, dy) || 1;
-      const back = sp(this.speed + 0.6);
-      this.fx += Math.round(dx / d * back);
-      this.fy += Math.round(dy / d * back);
-      for (const c of this.carried) { c.x = this.x; c.y = this.y; }
-      if (d < 9) {
-        this.remove = true;
-        game.audio.sfx('catch');
-        for (const c of this.carried) { c.remove = false; c.x = p.cx - 8; c.y = p.cy - 8; c.attached = null; }
-        if (p.onBoomerangReturn) p.onBoomerangReturn(game, this);
-      }
-    }
-
-    // Stun enemies, and sweep up loose drops to bring home.
-    for (const e of game.entities) {
-      if (e.dead || e === this) continue;
-      if (e.isEnemy && this.overlaps(e)) {
-        const dir = Math.abs(this.vx) > Math.abs(this.vy)
-          ? (this.vx < 0 ? 'left' : 'right') : (this.vy < 0 ? 'up' : 'down');
-        if (e.hurt(game, this.damage, dir, KNOCK_TOOL)) e.stun = Math.max(e.stun, 45);
-        this.returning = true;
-      }
-      if (e.isDrop && !e.attached && this.overlaps(e)) {
-        e.attached = this;
-        this.carried.push(e);
-      }
-    }
-    game.checkTileAction(this.rect(), 'cut');
-  }
-
-  /**
-   * Apply the 'boomerang' action to the tile just past the leading edge. The
-   * level is what the gate reads: a salt vane asks for 2, so the plain
-   * boomerang rattles off it and only the Magic one turns it.
-   */
-  strikeTile(game) {
-    const d = Math.hypot(this.vx, this.vy);
-    if (!d) return false;
-    const tx = Math.floor((this.cx + (this.vx / d) * TILE * 0.6) / TILE);
-    const ty = Math.floor((this.cy + (this.vy / d) * TILE * 0.6) / TILE);
-    return game.applyTileAction(tx, ty, 'boomerang', this.level);
-  }
-
-  spriteName() { return 'i_boomerang_' + (Math.floor(this.frame / 3) % 4); }
-}
-
-// --------------------------------------------------------------------------
 // Hookshot
 // --------------------------------------------------------------------------
 
@@ -1024,20 +916,6 @@ export const ITEMS = {
     equippable: true,
     desc: 'Swim the surface, or press to sink and walk the floor beneath it.',
     use(game, p, level) { return p.toggleCleats(game); },
-  },
-  boomerang: {
-    names: ['Boomerang', 'Magic Boomerang'],
-    icon: ['i_boomerang_0', 'i_boomerang_mag'],
-    equippable: true,
-    desc: 'Stuns foes and fetches items. The magic one you can steer.',
-    use(game, p, level) {
-      if (p.boomerang && !p.boomerang.remove) return true;
-      const b = new Boomerang(p.cx - 5, p.cy - 5, { dir: p.dir, level, owner: p });
-      p.boomerang = b;
-      game.addEntity(b);
-      game.audio.sfx('boomerang');
-      return true;
-    },
   },
   hookshot: {
     names: ['Hookshot', 'Long Hook'],

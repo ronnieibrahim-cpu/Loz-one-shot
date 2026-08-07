@@ -13,7 +13,7 @@
 //   Reef Palace   posts over deep water    Hookshot        (as planned)
 //   Sunken Marsh  cracked cliff             Bombs           (as planned)
 //   Salt Pans     a deep gap and boulders (Feather + Bracelet) — the plan
-//                 calls for the Magic Boomerang, which gates nothing here.
+//                 calls for the Resonance Rod, which gates nothing here.
 //   Abyssal app.  deep water and posts (Flippers + Hookshot) — the plan
 //                 calls for the Magnetic Gloves, likewise.
 //

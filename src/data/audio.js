@@ -38,7 +38,6 @@ const SFX = {
       { type: 'noise', freq: 1600, freq2: 500, dur: 0.5, q: 0.6, vol: 0.07, delay: 0.28 },
     ],
   },
-  boomerang: { type: 'blip', freq: 1100, freq2: 700, dur: 0.5, duty: 0.125, vol: 0.07 },
   catch: { type: 'blip', freq: 900, freq2: 1300, dur: 0.06, duty: 0.5, vol: 0.09 },
   hookshot: { type: 'noise', freq: 2600, freq2: 1800, dur: 0.24, q: 3.0, vol: 0.1 },
   hookHit: { type: 'blip', freq: 1600, freq2: 500, dur: 0.09, duty: 0.25, vol: 0.12 },

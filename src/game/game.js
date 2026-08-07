@@ -221,10 +221,10 @@ export class Game {
   /** Wipe entities (except the player) and spawn the current room's list. */
   spawnRoomEntities() {
     // Mark what is being dropped as removed before dropping it. The player
-    // holds direct references to some of its own projectiles (`player.boomerang`
+    // holds direct references to some of its own projectiles (`player.dredge`
     // is the one that bit), and those guards read `.remove` to decide whether
     // the item is still in flight. Filtering the list without setting the flag
-    // leaves a dangling reference that looks live forever — throw the boomerang,
+    // leaves a dangling reference that looks live forever — cast the line,
     // walk through a door, and you can never throw it again for the rest of the
     // run. Nothing validates that; it just quietly stops working.
     for (const e of this.entities) if (e !== this.player) e.remove = true;
@@ -370,7 +370,7 @@ export class Game {
   // ------------------------------------------------------------ tile actions
 
   /**
-   * Apply an action ('cut','bomb','fire','hook','magnet','boomerang') to the
+   * Apply an action ('cut','bomb','fire','dredge','ring') to the
    * tiles under a rect. `level` is the acting item's level; a transform that
    * asks for more is refused, which is how a gate names one specific item.
    */

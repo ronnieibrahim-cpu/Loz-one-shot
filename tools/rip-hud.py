@@ -42,7 +42,6 @@ GRID = {
     'i_bomb': (2, 3),
     'i_shovel': (2, 5),
     'i_satchel': (4, 3),            # Seed Satchel
-    'i_boomerang_0': (1, 3), 'i_boomerang_mag': (1, 5),
     'i_slingshot': (5, 3), 'i_hyperslingshot': (5, 4),
     'i_unknown': (6, 0),            # the red '?'
 }
@@ -219,19 +218,6 @@ def main():
         small = (w == 8 and h == 8)
         art[name] = centre(rows, 8 if small else 16, 8 if small else 16)
         pals[name] = pal
-
-    # The boomerang spins as one sprite rotated, in the original as here, so the
-    # other three frames are turns of the extracted one rather than new drawings.
-    for turn, suffix in ((1, '1'), (2, '2'), (3, '3')):
-        base = art.get('i_boomerang_0')
-        if not base:
-            break
-        rows = base
-        for _ in range(turn):
-            rows = [''.join(rows[len(rows) - 1 - x][y] for x in range(len(rows)))
-                    for y in range(len(rows[0]))]
-        art['i_boomerang_' + suffix] = rows
-        pals['i_boomerang_' + suffix] = pals['i_boomerang_0']
 
     header = '\n'.join([
         '// HUD and item-gear icons extracted from the Oracle of Seasons HUD/Gear sheet.',

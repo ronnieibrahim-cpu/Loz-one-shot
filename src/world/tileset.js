@@ -49,7 +49,7 @@ export const F = {
   VOID:      1 << 21,  // outside the map: solid and never rendered as floor
   SANDBAR:   1 << 22,  // marks tiles whose walkability depends on tide (for hints)
   TALLGRASS: 1 << 23,  // hides the player's feet, drops rupees when cut
-  VANE:      1 << 24,  // salt vane: only the MAGIC boomerang (level 2) turns it
+  VANE:      1 << 24,  // salt vane: only the Resonance Rod rings it open
   MAGNETIC:  1 << 25,  // iron plug: the Magnetic Gloves haul it out of the way
   // Region-gate markers. These do NOT drive traversal — the engine already
   // knows how to cross each of these tiles, because each one also carries the
@@ -195,8 +195,8 @@ export function declareAnimArt(names) { for (const n of names) ANIM_ART.add(n); 
 //
 // `level` is the minimum item level the action must carry. It is what lets a
 // gate name a SPECIFIC item rather than a category: the Salt Pans vane wants
-// `boomerang` at level 2, so the plain boomerang bounces off it and only the
-// Magic Boomerang opens the region. Without it every "needs item X" gate
+// `ring`, so only the Resonance Rod opens the region. Without a named action
+// on the transform, every "needs item X" gate
 // degrades to "needs anything in X's family".
 // --------------------------------------------------------------------------
 

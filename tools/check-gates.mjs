@@ -114,7 +114,17 @@ const setup = (o) => page.evaluate(async (b) => {
   if (g.player.carrying) { g.player.carrying.remove = true; g.player.carrying = null; }
   g.player.ledgeHop = null; g.player.jumping = false; g.player.z = 0;
   g.entities = g.entities.filter(e => { if (e === g.player) return true; e.remove = true; return false; });
-  g.tide.setLevel(1);
+  // INSTANT. A plain setLevel starts a 23-frame sweep, and Game.update returns
+  // early for the whole of it — so a probe that presses a button right after
+  // setup spends its budget inside the wipe and reports the item as broken.
+  // This was harmless while nothing in this file moved the tide; the Resonance
+  // Rod's range check does.
+  g.tide.setLevel(1, { instant: true });
+  // A gate transform with `persist: true` writes into progress.secrets AND
+  // into the Room's own override grid, and rooms are memoised — so re-entering
+  // does not undo either. Every probe here wants the gate shut, so clear both.
+  g.progress.secrets = {};
+  for (let ty = 0; ty < 8; ty++) for (let tx = 0; tx < 10; tx++) g.room.clearTile(tx, ty);
   window.__giveItem(g.progress, b.item, b.level);
   g.progress.equipB = b.item;
   g.player.x = b.tx * 16; g.player.y = b.ty * 16;
@@ -132,43 +142,49 @@ const nameAt = (gx, gy) => page.evaluate((b) =>
   window.__game.room.baseName(b.gx, b.gy), { gx, gy });
 
 // --- the Salt Pans vane ----------------------------------------------------
-// Room 0,7,1: a column of vanes at x=8, rows 2-5. The player stands three tiles
-// west so BOTH boomerang levels are well in range (L1 reaches 64px, L2 108px,
-// the vane is 48px away) — the only thing that may differ between the two runs
-// is the level the gate asks for.
+// Room 0,7,1: a column of vanes at x=8, rows 2-5. A vane is metal, and the
+// Magic Boomerang that used to turn it is gone — the Resonance Rod rings it
+// open now.
 //
-// Row 2, not row 3: row 3 is `gg.qqqq.Vg` and those posts are SOLID, so the
-// boomerang rattles off the first post and never reaches the vane. Both levels
-// then leave it shut and the harness reports a working gate for the wrong
-// reason.
-const VANE = { rx: 7, ry: 1, gx: 8, gy: 2, tx: 5, ty: 2, dir: 'right', item: 'boomerang' };
+// THE INTERESTING PART IS THE RANGE. The Rod carries ROD_RANGE at LOW and MID
+// and ROD_RANGE_HIGH at HIGH, so the same player standing in the same place
+// opens the region at one tide level and not at another. That is the only gate
+// in the game whose key is the core mechanic, and both halves are asserted
+// here because a range that did not actually differ would still look like a
+// working gate from the open direction.
+//
+// Row 2, not row 3: row 3 is `gg.qqqq.Vg` and those posts are SOLID. They do
+// not stop a ring — the Rod is a room effect, not a projectile — but standing
+// clear of them keeps this probe comparable with the boomerang runs it
+// replaced.
+const rodRange = await page.evaluate(async () => {
+  const f = await import('/src/data/feel.js');
+  return { low: f.ROD_RANGE, high: f.ROD_RANGE_HIGH };
+});
+// Far enough that only the HIGH range reaches: between the two radii.
+const farTx = Math.max(0, 8 - Math.floor((rodRange.low + rodRange.high) / 2 / 16));
+const VANE = { rx: 7, ry: 1, gx: 8, gy: 2, dir: 'right', item: 'rod' };
 
-let before = await setup({ ...VANE, level: 1 });
+let before = await setup({ ...VANE, tx: 5, ty: 2, level: 1 });
 check('the salt vane starts as a vane', before === 'saltVane', before);
 await page.keyboard.press('KeyZ');
-await frames(80);
-const afterL1 = await nameAt(VANE.gx, VANE.gy);
-check('the plain boomerang does NOT open the salt vane', afterL1 === 'saltVane', afterL1);
+await frames(20);
+const vNear = await nameAt(VANE.gx, VANE.gy);
+check('the Resonance Rod rings the salt vane open', vNear !== 'saltVane', vNear);
 
-before = await setup({ ...VANE, level: 2 });
-check('the vane is still shut at the start of the magic run', before === 'saltVane', before);
+before = await setup({ ...VANE, tx: farTx, ty: 2, level: 1 });
+check('the vane is shut again for the range run', before === 'saltVane', before);
 await page.keyboard.press('KeyZ');
-await frames(80);
-const afterL2 = await nameAt(VANE.gx, VANE.gy);
-check('the Magic Boomerang opens the salt vane', afterL2 !== 'saltVane', afterL2);
+await frames(20);
+const vFarMid = await nameAt(VANE.gx, VANE.gy);
+check('...out of range at MID the note does not reach', vFarMid === 'saltVane', vFarMid);
 
-// --- the change must survive leaving the room ------------------------------
-await page.evaluate(async () => {
-  const g = window.__game;
-  g.enterMap('overworld', 0, 6, 1, 80, 64, 'down', { instant: true });
-  await new Promise(r => { const s = g.frame; const t = () => (g.frame - s >= 3 ? r() : requestAnimationFrame(t)); t(); });
-  g.enterMap('overworld', 0, 7, 1, 80, 64, 'down', { instant: true });
-  await new Promise(r => { const s = g.frame; const t = () => (g.frame - s >= 3 ? r() : requestAnimationFrame(t)); t(); });
-  if (g.dialogue) g.dialogue.active = false;
-  g.mode = 'play';
-});
-const persisted = await nameAt(VANE.gx, VANE.gy);
-check('the opened vane stays open after leaving the room', persisted !== 'saltVane', persisted);
+await page.evaluate(() => window.__game.tide.setLevel(2, { instant: true }));
+await frames(6);
+await page.keyboard.press('KeyZ');
+await frames(20);
+const vFarHigh = await nameAt(VANE.gx, VANE.gy);
+check('...but at HIGH tide the water carries it', vFarHigh !== 'saltVane', vFarHigh);
 
 // --- the Abyssal plug ------------------------------------------------------
 // Room 0,2,1: plugs along row 6, cols 3-6. The player stands one tile north of

@@ -96,7 +96,7 @@ export function installLegends() {
     'g': 'saltFlat', 'G': 'saltCrust', 'f': 'saltFlat', '.': 'saltCrust', ',': 'saltFlat',
     'T': 'treeDead', 'b': 'bushSand', 'o': 'rockSand',
     '#': 'cliffMarble', '^': 'cliffMarble', '_': 'ledgeSalt',
-    'V': 'saltVane',        // region gate: only the Magic Boomerang turns it
+    'V': 'saltVane',        // region gate: only the Resonance Rod rings it
     '"': 'ledgeSaltN', '>': 'ledgeSaltE', '<': 'ledgeSaltW',
   }, 'base');
 

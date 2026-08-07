@@ -583,7 +583,7 @@ const HAND_ART = {
   // a player who cannot tell a lock from a rock just concludes the region is
   // scenery and stops looking for the way in.
   //
-  // A salt vane: a bladed crossbar on a post, struck by the Magic Boomerang.
+  // A salt vane: a bladed crossbar on a post, rung open by the Resonance Rod.
   // The blade is the widest thing on the tile so a run of them reads as a line
   // of machinery across the pass rather than a fence.
   saltVane: `
@@ -1139,7 +1139,7 @@ export function installCoreTiles() {
     // shape — a solid tile with a flag, plus a transform naming what opens it —
     // and these two only add `level`, so the gate can name the MAGIC boomerang
     // rather than any boomerang.
-    saltVane: { art: ART.saltVane, pal: 'marble', flags: F.SOLID | F.VANE, underArt: 'saltFlat' },
+    saltVane: { art: ART.saltVane, pal: 'marble', flags: F.SOLID | F.VANE | F.RING, underArt: 'saltFlat' },
     abyssPlug: { art: ART.abyssPlug, pal: 'rust', flags: F.SOLID | F.MAGNETIC, underArt: 'rockFloorDk' },
 
     // ---- the four terrain-shaped region gates ------------------------------
@@ -1311,9 +1311,14 @@ export function installCoreTiles() {
       deny: 'Far too heavy to shift bare-handed.',
     },
     cliffCrackedDk: { bomb: 'mud', fx: 'boom', persist: true, sfx: 'break' },
+    // The Magic Boomerang is gone. A vane is metal, and the thing in this game
+    // with an opinion about metal is the Resonance Rod — which also means the
+    // Salt Pans open to an item whose reach depends on the tide, so the vane a
+    // player cannot quite ring at MID is one they can at HIGH. See
+    // docs/ITEMS.md.
     saltVane: {
-      boomerang: 'saltFlat', level: 2, fx: 'cut', persist: true, sfx: 'break',
-      deny: 'The vane is set too far to reach. Something must strike it and come back.',
+      ring: 'saltFlat', fx: 'spark', persist: true, sfx: 'break',
+      deny: 'The vane is set too far to reach. Something must make it sing.',
     },
     abyssPlug: {
       magnet: 'rockFloorDk', fx: 'spark', persist: true, sfx: 'magnet',

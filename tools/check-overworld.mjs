@@ -41,7 +41,7 @@ const GATES = {
     flag: F.BOMBABLE, region: 'Sunken Marsh',
     covers: [[0, 2, 6, 9]],
   },
-  boomerang: {
+  rod: {
     flag: F.VANE, region: 'Salt Pans',
     covers: [[4, 7, 0, 2], [8, 11, 0, 3]],
   },

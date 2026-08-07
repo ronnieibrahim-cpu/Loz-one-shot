@@ -237,7 +237,7 @@ export const KNOCK_EXPLOSION = 9;
 /** px — knockback dealt by a thrown or dropped object. guessed. */
 export const KNOCK_THROWN = 9;
 
-/** px — knockback dealt by a boomerang or another stunning tool. guessed. */
+/** px — knockback dealt by a stunning tool. guessed. */
 export const KNOCK_TOOL = 5;
 
 /** f — invulnerability after a boss takes a hit. guessed; shorter than an
