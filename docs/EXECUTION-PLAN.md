@@ -551,6 +551,16 @@ Constraints:
   through. One Heart Container from the boss room's onEvent('bossDead').
 - Essence index equals the dungeon number.
 
+Rooms may now be 1x1, 2x1, 1x2, 2x2 or 3x1 screens. Use the larger sizes
+deliberately, not decoratively: a multi-screen room should exist because the
+puzzle or the fight needs the space, and a dungeon where every room is 2x2
+reads as flat as one where every room is 1x1. Reference the map rips in
+assets/sheets/ for how Seasons paces this — most rooms are one screen, and
+the large ones land on set pieces.
+
+Use the tilesets from P7.5 for this dungeon's visual identity. Each of the
+six dungeons should be identifiable from a single screenshot.
+
 Run validate.mjs, walk-dungeons.mjs and solve-switches.mjs after every room you
 change, not at the end.
 ```
