@@ -33,6 +33,7 @@ import {
   JUMP_GRAVITY, GLIDE_GRAVITY, LAND_SETTLE_RATE,
   LEDGE_MAX_SPAN, LEDGE_HOP_FRAMES, LEDGE_HOP_HEIGHT, LEDGE_PROBE_REACH,
   FALL_FRAMES, WASH_FRAMES, DIG_FRAMES, CONCH_FRAMES, PUSH_DELAY_FRAMES,
+  LENS_FADE_FRAMES,
   DIVE_FRAMES, CONTEXT_REACH, LIFT_REACH, THROW_SPEED, CARRY_HEIGHT,
   SHAKE_SMALL, SHAKE_SMALL_FRAMES, CHARGE_SPARKLE_SPREAD, WADE_FOAM_EVERY,
   PUSH_PROBE_REACH,
@@ -70,6 +71,8 @@ export class Player extends Entity {
     this.hookshot = null;
     this.boomerang = null;
     this.hookPulling = false;
+    this.lensHeld = false;        // set per-frame by the held-item hook
+    this.lensT = 0;               // 0..LENS_FADE_FRAMES, the overlay's fade
     this.invincible = false;      // debug / cutscene
     this.frozen = 0;              // cutscene lock
     this.animT = 0;
@@ -129,6 +132,7 @@ export class Player extends Entity {
 
     this.handleInput(game);
     this.updateSwordHold(game);
+    this.updateLens(game);
     this.updateMovement(game);
     this.updateJump(game);
     this.updateContactDamage(game);
@@ -194,6 +198,7 @@ export class Player extends Entity {
   handleInput(game) {
     const i = game.input;
     this.shielding = false;
+    this.lensHeld = false;
 
     // A: context action first (talk, read, open, grab), then the A item.
     if (i.pressed('a')) {
@@ -202,10 +207,19 @@ export class Player extends Entity {
     if (i.pressed('b')) {
       useEquipped(game, this, 'B');
     }
-    // Held shield
+    // HELD ITEMS. An item declaring `hold` has its `use` called on EVERY frame
+    // its button is down, so `use` must be idempotent and must set state rather
+    // than start something. The shield had its own branch here for a long time;
+    // the Brineglass Lens is the second held item and there will be more, so
+    // the branch became the rule. The per-frame flags are cleared above, which
+    // is what makes "held" mean held rather than latched.
     for (const slot of ['A', 'B']) {
       const id = slot === 'A' ? game.progress.equipA : game.progress.equipB;
-      if (id === 'shield' && i.down(slot.toLowerCase()) && !this.inDeep) this.shielding = true;
+      const def = id ? ITEMS[id] : null;
+      if (!def || !def.hold || !def.use) continue;
+      if (!i.down(slot.toLowerCase())) continue;
+      if (itemLevel(game.progress, id) <= 0) continue;
+      def.use(game, this, itemLevel(game.progress, id));
     }
     // Sword hold: keeping the button down after the swing keeps the blade out
     // (see updateSwordHold) and, past a threshold, charges a spin.
@@ -232,6 +246,27 @@ export class Player extends Entity {
       game.audio.sfx('dive');
     }
   }
+
+  // ------------------------------------------------------------ the Lens
+  //
+  // The Brineglass Lens is held, not pressed, and it is the only item in the
+  // game that changes nothing about the world — it changes what is DRAWN and
+  // what is hittable. That is deliberate: docs/ITEMS.md and P9's brief both say
+  // the Lens is never a gate, so it must not be able to move anything.
+  //
+  // All this does is ramp a 0..1 fade. `Game.drawLensGhost` reads it for the
+  // overlay and `Game.updatePhaseShift` reads it to decide whether the enemies
+  // that live at the other tide level can be hit.
+
+  updateLens(game) {
+    // The overlay would be meaningless mid-sweep: the room is already showing
+    // two tide levels at once while the wave front crosses.
+    const on = this.lensHeld && !game.tide.busy && this.washing === 0 && this.falling === 0;
+    this.lensT = Math.max(0, Math.min(LENS_FADE_FRAMES, this.lensT + (on ? 1 : -1)));
+  }
+
+  /** 0..1 — how far up the Lens is. */
+  get lensAmount() { return this.lensT / LENS_FADE_FRAMES; }
 
   /** Talk to NPCs, read signs, open chests, grab blocks. */
   tryContextAction(game) {

@@ -521,7 +521,7 @@ export function installDungeonsA() {
     scroll: false,
     dungeon: {
       index: 2,
-      item: 'bombs', itemLevel: 1,
+      item: 'lens', itemLevel: 1,
       essence: 2,
       boss: 'anemos',
       bossRoom: '1,3,1',
@@ -679,6 +679,7 @@ export function installDungeonsA() {
           '####..####',
         ],
         entities: [
+          ['chest', 7, 3, { big: true, item: 'lens', level: 1 }],
           ['pickup', 4, 3, { kind: 'rupee20' }],
           ['urchin', 2, 2],
         ],
@@ -829,6 +830,10 @@ export function installDungeonsA() {
         entities: [
           ['jellyfish', 4, 3],
           ['keese', 2, 2],
+          // Only in the room at HIGH. Invisible and untouchable below it until
+          // the Brineglass Lens is raised — see docs/ITEMS.md.
+          ['urchin', 6, 4, { phase: 2 }],
+          ['urchin', 3, 4, { phase: 2 }],
         ],
       },
       '1,3,5': {

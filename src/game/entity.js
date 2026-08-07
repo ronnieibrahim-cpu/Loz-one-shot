@@ -83,6 +83,11 @@ export class Entity {
     this.hb = { x: 2, y: 4, w: 12, h: 11 };   // hitbox inset within w/h
     this.shadow = true;
     this.depth = 0;          // draw-order tiebreak
+    // The tide level this entity genuinely exists at, or null for "always".
+    // A phased-out entity is not drawn, not dangerous and not hittable until
+    // the Brineglass Lens is raised. See Game.updatePhaseShift and
+    // docs/ITEMS.md.
+    this.phase = opts.phase != null ? opts.phase : null;
     this.opts = opts;
     this.spawnTx = Math.floor(x / TILE);
     this.spawnTy = Math.floor(y / TILE);

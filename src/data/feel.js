@@ -628,3 +628,36 @@ export const ESSENCE_SPARKLE_EVERY = 10;
 
 /** f — interval between foam puffs while wading. guessed. */
 export const WADE_FOAM_EVERY = 14;
+
+// ---------------------------------------------------------------------------
+// The item roster (docs/ITEMS.md)
+//
+// Every number in this section is `guessed`. Not one of these items exists in
+// the source games, so there is nothing to frame-step: `measured` is not
+// available here even in principle, and `derived` only where a value is
+// computed from another constant in this file. Anything that later gets tuned
+// against play is still `guessed` — see the provenance rules at the top.
+// ---------------------------------------------------------------------------
+
+// --- Brineglass Lens -------------------------------------------------------
+
+/** f — how long the ghosted overlay takes to fade in when the Lens is raised,
+ *  and out again when it is released. guessed. */
+export const LENS_FADE_FRAMES = 10;
+
+/** x — peak opacity of the ghosted next-tide terrain drawn over the room.
+ *  guessed; high enough to read the terrain, low enough that the real room
+ *  underneath is never in doubt. */
+export const LENS_GHOST_ALPHA = 0.55;
+
+/** x — opacity of the cold wash laid over the whole screen while the Lens is
+ *  up, so the preview cannot be mistaken for the room actually changing.
+ *  guessed. */
+export const LENS_TINT_ALPHA = 0.16;
+
+/** x — opacity a phase-shifted enemy is drawn at while the Lens reveals it.
+ *  It is solid enough to aim at, because the Lens makes it hittable. guessed. */
+export const LENS_PHASE_ALPHA = 0.8;
+
+/** f — period of the slow shimmer on the ghosted overlay. guessed. */
+export const LENS_SHIMMER_FRAMES = 48;

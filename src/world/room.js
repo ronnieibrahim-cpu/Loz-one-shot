@@ -83,6 +83,7 @@ export class Room {
     this._cache = null;
     this._cacheTide = -1;
     this._cacheDirty = true;
+    this._alt = [];               // parallel caches: the room at other tides
     this.animCells = [];      // [{x,y,def}] refreshed with the cache
     this.overCells = [];      // tiles drawn above entities
     this.visited = false;
@@ -108,13 +109,13 @@ export class Room {
   setTile(tx, ty, name) {
     if (!this.inBounds(tx, ty)) return;
     this.override[ty * ROOM_W + tx] = name;
-    this._cacheDirty = true;
+    this.invalidate();
   }
 
   clearTile(tx, ty) {
     if (!this.inBounds(tx, ty)) return;
     this.override[ty * ROOM_W + tx] = null;
-    this._cacheDirty = true;
+    this.invalidate();
   }
 
   warpAt(tx, ty) {
@@ -122,7 +123,10 @@ export class Room {
     return null;
   }
 
-  invalidate() { this._cacheDirty = true; }
+  invalidate() {
+    this._cacheDirty = true;
+    for (const a of this._alt) if (a) a.dirty = true;
+  }
 
   /** Render (and cache) the static tile layer for a tide level. */
   render(tide, frame) {
@@ -154,6 +158,41 @@ export class Room {
       this._cacheDirty = false;
     }
     return this._cache.canvas;
+  }
+
+  /**
+   * Render the room at a tide level OTHER than the one it is currently being
+   * played at, into a cache of its own.
+   *
+   * The Brineglass Lens and the Squall Bellows both need a second version of
+   * the same room on screen at the same time. Asking `render()` for it would
+   * work exactly once and then thrash: its cache key is the tide level, so two
+   * levels alternating every frame re-render the whole grid twice a frame and
+   * throw the animated-cell lists away in between. This keeps a parallel cache
+   * with the same invalidation, and deliberately does NOT touch `animCells` or
+   * `overCells` — the preview is a still, and the room's own animation belongs
+   * to the level actually being played.
+   */
+  renderAt(tide, frame) {
+    let a = this._alt[tide];
+    if (!a) { a = this._alt[tide] = offscreen(VIEW_W, VIEW_H); a.dirty = true; }
+    if (a.dirty) {
+      const ctx = a.ctx;
+      ctx.clearRect(0, 0, VIEW_W, VIEW_H);
+      for (let y = 0; y < ROOM_H; y++) {
+        for (let x = 0; x < ROOM_W; x++) {
+          const d = this.tile(x, y, tide);
+          if (d.flags & F.VOID) continue;
+          if (d.underArt) {
+            const u = getTileDef(d.underArt);
+            tileSheet.draw(ctx, d.underArt, x * TILE, y * TILE, { pal: u.pal });
+          }
+          tileSheet.draw(ctx, tileArt(d, frame), x * TILE, y * TILE, { pal: d.pal });
+        }
+      }
+      a.dirty = false;
+    }
+    return a.canvas;
   }
 
   /** Draw animated tiles (water, lava, torches) that sit below entities. */

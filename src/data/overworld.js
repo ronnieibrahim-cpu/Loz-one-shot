@@ -152,6 +152,13 @@ const rooms = {
     ],
     entities: [
       ['zol', 4, 3], ['zol', 2, 4],
+      // The Boiling Pan is ringed in `tidePool`, which is walkable wet sand at
+      // LOW and water above it — so the pan is a shortcut exactly once per
+      // cycle, and exactly then it is full of leevers. The Brineglass Lens is
+      // what turns "sound the conch and find out" into a decision: raise it at
+      // MID and the LOW pan is drawn with its ambush already in it.
+      ['leever', 3, 2, { phase: 0 }],
+      ['leever', 6, 4, { phase: 0 }],
     ],
   },
   '0,7,0': {

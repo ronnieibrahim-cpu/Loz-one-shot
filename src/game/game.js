@@ -34,7 +34,7 @@ import { TINTS } from '../gfx/palettes.js';
 import { drawText, drawTextCentered, textWidth } from '../gfx/font.js';
 import { F, transformFor, getTileDef, resolveTile } from '../world/tileset.js';
 import { getMap, getRoom, hasRoom, resetRooms, MAPS } from '../world/maps.js';
-import { Tide } from './tide.js';
+import { Tide, TIDE_COUNT } from './tide.js';
 import { Player } from './player.js';
 import { spawnEntity, ENTITY_TYPES, Entity } from './entity.js';
 import { spawnEffectAt, Explosion } from './effects.js';
@@ -57,6 +57,8 @@ import {
   SHAKE_LARGE, SHAKE_LARGE_FRAMES, BOSS_ESSENCE_DELAY_FRAMES,
   BOSS_MUSIC_RESUME_FRAMES, ITEM_PRESENT_FRAMES, ESSENCE_FREEZE_FRAMES,
   GAMEOVER_WAIT_FRAMES,
+  LENS_FADE_FRAMES, LENS_GHOST_ALPHA, LENS_TINT_ALPHA, LENS_PHASE_ALPHA,
+  LENS_SHIMMER_FRAMES,
 } from '../data/feel.js';
 
 export class Game {
@@ -881,6 +883,8 @@ export class Game {
     if (this.tide.busy) return;
     if (this.fadeDir) return;
 
+    this.updatePhaseShift();
+
     if (this.player) this.player.update(this);
     for (const e of this.entities) {
       if (e === this.player || e.remove) continue;
@@ -892,6 +896,45 @@ export class Game {
     this.checkRoomExit();
     this.checkWarpTile();
     this.checkPuzzle();
+  }
+
+  // ------------------------------------------------------- phase-shifted foes
+  //
+  // An entity authored with `phase: n` only genuinely exists while the tide is
+  // at level n. At any other level it is somewhere adjacent to the room rather
+  // than in it: not drawn, not dangerous, and — this is the part that matters —
+  // NOT HITTABLE, so a sword swing into an empty-looking room does not
+  // silently connect with something the player cannot see.
+  //
+  // The Brineglass Lens is what changes that. While it is up, a phased-out
+  // enemy is drawn as a ghost and can be hit. It still cannot hurt you: it is
+  // not in your tide level, and a preview that could kill you would make the
+  // Lens a risk rather than the thing that removes one.
+  //
+  // Note this pass runs BEFORE the entity updates, so an enemy's own update
+  // sees the flags this sets on the same frame.
+
+  updatePhaseShift() {
+    const lensUp = this.player ? this.player.lensT > 0 : false;
+    for (const e of this.entities) {
+      if (e.phase == null || e.dead) continue;
+      const here = this.tide.level === e.phase;
+      e.phasedOut = !here;
+      if (here) {
+        if (e._phaseWas) { e.hidden = false; e.harmless = !!e._phaseHarmless; e.alpha = null; }
+        e._phaseWas = false;
+        continue;
+      }
+      if (!e._phaseWas) { e._phaseWas = true; e._phaseHarmless = !!e.harmless; }
+      // Never a threat from the other level, Lens or no Lens.
+      e.harmless = true;
+      e.hidden = !lensUp;
+      e.alpha = lensUp ? LENS_PHASE_ALPHA : null;
+      // `Entity.hurt` early-returns on invuln, which is how "not hittable" is
+      // expressed without every damage source needing to learn about phases.
+      // Re-armed every frame so it lapses the instant the Lens comes up.
+      if (!lensUp) e.invuln = Math.max(e.invuln, 2);
+    }
   }
 
   updateGameOver() {
@@ -975,8 +1018,43 @@ export class Game {
 
     room.drawOver(ctx, ox, oy, this.tide.level, this.frame);
 
+    if (this.player && this.player.lensT > 0) this.drawLensGhost(ctx, ox, oy);
+
     if (room.dark && !flag(this.progress, 'lantern')) this.drawDarkness(ctx, ox, oy);
     if (this.itemShow) this.drawItemShow(ctx);
+  }
+
+  /**
+   * The Brineglass Lens: the room as it will be at the NEXT tide level, laid
+   * over the room as it is. Drawn ABOVE the entities and above `drawOver`, so
+   * the preview reads as glass held in front of the scene rather than as part
+   * of it — under them it looked like the room had already changed, which is
+   * the one thing the Lens must never seem to say.
+   *
+   * Nothing here consumes randomness. `draw()` runs at display rate and the
+   * shimmer is a plain function of `frame`, for the same reason the screen
+   * shake uses noise1.
+   */
+  drawLensGhost(ctx, ox, oy) {
+    const room = this.room;
+    if (!room) return;
+    const t = this.player.lensT / LENS_FADE_FRAMES;
+    const lv = itemLevel(this.progress, 'lens');
+    // L1 shows the next level. L2 shows both other levels, nearest first, so
+    // the two ghosts are told apart by how solid they are.
+    const levels = [(this.tide.level + 1) % TIDE_COUNT];
+    if (lv >= 2) levels.push((this.tide.level + 2) % TIDE_COUNT);
+
+    const shimmer = 0.88 + 0.12 * Math.sin(this.frame * (Math.PI * 2 / LENS_SHIMMER_FRAMES));
+    ctx.save();
+    ctx.globalAlpha = LENS_TINT_ALPHA * t;
+    ctx.fillStyle = '#a8f0e8';
+    ctx.fillRect(ox, oy, VIEW_W, VIEW_H);
+    for (let i = 0; i < levels.length; i++) {
+      ctx.globalAlpha = (LENS_GHOST_ALPHA * t * shimmer) / (i + 1);
+      ctx.drawImage(room.renderAt(levels[i], this.frame), ox, oy);
+    }
+    ctx.restore();
   }
 
   drawTransition(ctx, ox, oy) {

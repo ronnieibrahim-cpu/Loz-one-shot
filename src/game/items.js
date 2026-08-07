@@ -416,7 +416,15 @@ export const ITEMS = {
     equippable: true,
     desc: 'Hold to block. Higher tiers block more.',
     hold: true,
-    use(game, p, level) { p.shielding = true; return true; },
+    use(game, p, level) { if (!p.inDeep) p.shielding = true; return true; },
+  },
+  lens: {
+    names: ['Brineglass Lens', 'Deepglass Lens'],
+    icon: ['i_lens', 'i_lens2'],
+    equippable: true,
+    hold: true,
+    desc: 'Hold it up to see the room at the next tide.',
+    use(game, p, level) { p.lensHeld = true; return true; },
   },
   conch: {
     names: ['Moon Conch'],
