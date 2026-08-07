@@ -6,7 +6,10 @@ import { drawText, drawTextCentered, textWidth } from '../gfx/font.js';
 import { sprites } from '../gfx/art.js';
 import { drawPanel, drawBox } from './dialogue.js';
 import { ITEMS, itemIcon, itemName, equippableItems } from './items.js';
-import { RINGS, ownedRings, equipRing } from './rings.js';
+import {
+  CHARMS, CHARM_SLOTS, CHARM_COUNT, ownedCharms, charmsForSlot, slotCharm,
+  caseSize, slotOpen, equippedIn,
+} from './scrimshaw.js';
 import { HEART_UNITS } from './progress.js';
 import { MAPS, getMap, hasRoom, getRoom } from '../world/maps.js';
 import { TIDE_NAMES, TIDE_COUNT } from './tide.js';
@@ -50,7 +53,12 @@ function tideMarks(mapId, floor, rx, ry) {
   return mask;
 }
 
-const TABS = ['ITEMS', 'MAP', 'QUEST', 'SAVE'];
+const TABS = ['ITEMS', 'MAP', 'CHARM', 'QUEST', 'SAVE'];
+
+// The three cases are drawn HIGH at the top and LOW at the bottom, because
+// that is where the water is. Reading the screen top to bottom is reading the
+// tide falling, and the highlighted row is where it is right now.
+const CASE_ROWS = ['high', 'mid', 'low'];
 const COLS = 5;
 
 export class Menu {
@@ -58,7 +66,8 @@ export class Menu {
     this.game = game;
     this.tab = 0;
     this.cursor = 0;
-    this.ringCursor = 0;
+    this.caseRow = 1;        // index into CASE_ROWS; starts on MID, the one you own
+    this.poolCursor = 0;
     this.saveCursor = 0;
     this.message = '';
     this.messageTime = 0;
@@ -86,7 +95,8 @@ export class Menu {
 
     if (this.tab === 0) this.updateItems();
     else if (this.tab === 1) this.updateMap();
-    else if (this.tab === 2) this.updateQuest();
+    else if (this.tab === 2) this.updateCharms();
+    else if (this.tab === 3) this.updateQuest();
     else this.updateSave();
   }
 
@@ -134,15 +144,48 @@ export class Menu {
 
   updateQuest() {
     const g = this.game, i = g.input;
-    const rings = ownedRings(g.progress);
+    if (i.pressed('b')) { this.tab = 0; g.audio.sfx('cursor'); }
+  }
+
+  /** The case currently highlighted, and the charms that could go in it. */
+  get caseSlot() { return CASE_ROWS[this.caseRow]; }
+  get pool() { return charmsForSlot(this.game.progress, this.caseSlot); }
+
+  updateCharms() {
+    const g = this.game, i = g.input, p = g.progress;
     if (i.pressed('b')) { this.tab = 0; g.audio.sfx('cursor'); return; }
-    if (!rings.length) return;
-    if (i.pressed('left')) { this.ringCursor = (this.ringCursor + rings.length - 1) % rings.length; g.audio.sfx('cursor'); }
-    if (i.pressed('right')) { this.ringCursor = (this.ringCursor + 1) % rings.length; g.audio.sfx('cursor'); }
-    if (i.pressed('a')) {
-      equipRing(g.progress, rings[this.ringCursor], 0);
-      g.audio.sfx('confirm');
+    if (i.pressed('up')) { this.caseRow = (this.caseRow + 2) % 3; this.poolCursor = 0; g.audio.sfx('cursor'); }
+    if (i.pressed('down')) { this.caseRow = (this.caseRow + 1) % 3; this.poolCursor = 0; g.audio.sfx('cursor'); }
+
+    const pool = this.pool;
+    if (!pool.length) { this.poolCursor = 0; return; }
+    if (i.pressed('left')) { this.poolCursor = (this.poolCursor + pool.length - 1) % pool.length; g.audio.sfx('cursor'); }
+    if (i.pressed('right')) { this.poolCursor = (this.poolCursor + 1) % pool.length; g.audio.sfx('cursor'); }
+    this.poolCursor = Math.min(this.poolCursor, pool.length - 1);
+
+    if (!i.pressed('a')) return;
+    const slot = this.caseSlot;
+    const id = pool[this.poolCursor];
+    if (!slotOpen(p, slot)) {
+      g.audio.sfx('deny');
+      this.flash('That case is still shut.');
+      return;
     }
+    const inCase = equippedIn(p, slot);
+    if (inCase.includes(id)) {
+      // A press on something already in the case takes it out. One button does
+      // both, because at 160x144 a second one would need a legend nobody reads.
+      slotCharm(p, slot, p.charmSlots[slot].indexOf(id), null);
+      g.audio.sfx('cursor');
+      this.flash(CHARMS[id].name + ' off');
+      return;
+    }
+    const size = caseSize(p);
+    let at = p.charmSlots[slot].slice(0, size).indexOf(null);
+    if (at < 0) at = size - 1;              // full: the newest replaces the last
+    slotCharm(p, slot, at, id);
+    g.audio.sfx('confirm');
+    this.flash(CHARMS[id].name + ' on ' + slot.toUpperCase());
   }
 
   updateSave() {
@@ -183,7 +226,8 @@ export class Menu {
 
     if (this.tab === 0) this.drawItems(ctx);
     else if (this.tab === 1) this.drawMap(ctx);
-    else if (this.tab === 2) this.drawQuest(ctx);
+    else if (this.tab === 2) this.drawCharms(ctx);
+    else if (this.tab === 3) this.drawQuest(ctx);
     else this.drawSave(ctx);
 
     if (this.messageTime > 0) {
@@ -289,25 +333,77 @@ export class Menu {
     y += 11;
     drawText(ctx, `Rupees ${p.rupees}   Deaths ${p.deaths}`, 6, y, '#f8f8e8');
     y += 13;
-    const rings = ownedRings(p);
-    drawText(ctx, 'RINGS ' + rings.length + '/' + Object.keys(RINGS).length, 6, y, '#a8f0f8');
+    drawText(ctx, 'SCRIMSHAW ' + ownedCharms(p).length + '/' + CHARM_COUNT, 6, y, '#a8f0f8');
     y += 10;
-    if (rings.length) {
-      rings.forEach((id, i) => {
-        const on = p.ringsEquipped.includes(id);
-        const cx = 6 + i * 11;
-        sprites.draw(ctx, 'i_ring', cx, y, { pal: RINGS[id].color });
-        if (i === this.ringCursor) { ctx.fillStyle = '#f8f8e8'; ctx.fillRect(cx, y + 10, 8, 1); }
-        if (on) { ctx.fillStyle = '#48c868'; ctx.fillRect(cx, y - 1, 8, 1); }
-      });
-      const sel = RINGS[rings[this.ringCursor]];
-      if (sel) {
-        drawText(ctx, sel.name, 6, y + 13, '#f8f8e8');
-        drawText(ctx, sel.desc.slice(0, 36), 6, y + 22, '#a8b0a0');
+    drawText(ctx, `Blanks ${p.blanks || 0}`
+      + (p.carve ? `   Carving: ${p.carve.turns} tide${p.carve.turns === 1 ? '' : 's'}` : ''),
+      6, y, '#f8f8e8');
+  }
+
+  // ------------------------------------------------------------ scrimshaw
+
+  /**
+   * Three cases stacked as tide levels, HIGH at the top. The live one is
+   * highlighted, which is the entire teaching job this screen has: a charm in
+   * a case that is not lit is a charm doing nothing, and that has to be
+   * obvious at a glance and at 160x144.
+   */
+  drawCharms(ctx) {
+    const g = this.game, p = g.progress;
+    const live = g.scrim.liveSlots;
+    const size = caseSize(p);
+    let y = HUD_H + 16;
+
+    for (let r = 0; r < CASE_ROWS.length; r++) {
+      const slot = CASE_ROWS[r];
+      const lv = CHARM_SLOTS.indexOf(slot);
+      const on = live.has(slot) && slotOpen(p, slot);
+      const here = r === this.caseRow;
+
+      if (on) { ctx.fillStyle = '#203848'; ctx.fillRect(2, y - 2, SCREEN_W - 4, 13); }
+      if (here) { ctx.fillStyle = '#f8f8e8'; ctx.fillRect(2, y - 2, 1, 13); }
+
+      // The tide pip, the same three tones the water itself is drawn in, so
+      // the row needs no key to read as a tide level.
+      ctx.fillStyle = TIDE_PIP[lv];
+      ctx.fillRect(6, y + 1, 5, 5);
+      drawText(ctx, TIDE_NAMES[lv], 14, y, on ? '#f8f8e8' : '#687888');
+
+      if (!slotOpen(p, slot)) {
+        drawText(ctx, 'shut', 48, y, '#485868');
+      } else {
+        for (let i = 0; i < size; i++) {
+          const id = p.charmSlots[slot][i];
+          const cx = 48 + i * 13;
+          if (id) sprites.draw(ctx, 'i_charm', cx, y - 1, { pal: CHARMS[id].color });
+          else { ctx.strokeStyle = '#485868'; ctx.strokeRect(cx + 0.5, y - 0.5, 9, 9); }
+        }
       }
-    } else {
-      drawText(ctx, 'None yet.', 6, y, '#a8b0a0');
+      y += 14;
     }
+
+    // The pool: everything owned that fits the highlighted case.
+    const pool = this.pool;
+    y += 3;
+    drawText(ctx, this.caseSlot.toUpperCase() + ' CASE  ' + pool.length + ' fit', 6, y, '#a8f0f8');
+    y += 10;
+    if (!pool.length) {
+      drawText(ctx, 'Nothing carved for this case.', 6, y, '#a8b0a0');
+      return;
+    }
+    const inCase = equippedIn(p, this.caseSlot);
+    pool.forEach((id, i) => {
+      const cx = 6 + i * 12;
+      if (cx > SCREEN_W - 12) return;
+      sprites.draw(ctx, 'i_charm', cx, y, { pal: CHARMS[id].color });
+      if (inCase.includes(id)) { ctx.fillStyle = '#48c868'; ctx.fillRect(cx, y - 2, 9, 1); }
+      if (i === this.poolCursor) { ctx.fillStyle = '#f8f8e8'; ctx.fillRect(cx, y + 10, 9, 1); }
+    });
+    y += 14;
+    const sel = CHARMS[pool[this.poolCursor]];
+    if (!sel) return;
+    drawText(ctx, sel.name, 6, y, '#f8f8e8');
+    drawText(ctx, sel.desc.slice(0, 38), 6, y + 9, '#a8b0a0');
   }
 
   drawSave(ctx) {

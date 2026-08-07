@@ -5,6 +5,7 @@
 // units, so `damage: 2` is half a heart.
 
 import { hash32 } from '../core/rng.js';
+import { newCharmSlots, CHARM_SLOTS } from './scrimshaw.js';
 
 export const HEART_UNITS = 4;
 export const SAVE_KEY = 'oracleOfTides.save.v1';
@@ -32,8 +33,15 @@ export function newProgress(name = 'LINK', seed = (Date.now() >>> 0)) {
     // items: id -> level (1+). Absent or 0 means not owned.
     items: {},
     equipB: null, equipA: null,
-    // magic rings
-    rings: {}, ringSlots: 1, ringsEquipped: [null, null],
+    // scrimshaw: carved charms, and the three tide-level cases they slot into.
+    // You start with the MID case only; LOW and HIGH open over the game, and
+    // the case upgrade raises charmCase to CHARM_CASE_MAX.
+    charms: {},
+    charmSlots: newCharmSlots(),
+    charmOpen: { low: false, mid: true, high: false },
+    charmCase: 1,
+    blanks: 0,               // uncarved bone, the scrimshander's raw material
+    carve: null,             // { id, turns } — commissioned, tide turns to go
     // quest
     essences: [],            // dungeon indices whose essence has been claimed
     keys: {},                // mapId -> small key count
@@ -107,9 +115,15 @@ export function addHeartPiece(p) {
   return false;
 }
 
-export function addReefseeds(p, n) {
+/**
+ * `cap` overrides the satchel's own capacity, and exists for the
+ * Quartermaster's Mark: the charm raises the CEILING rather than the satchel,
+ * so `maxReefseeds` stays what the item is worth and taking the charm off
+ * never destroys seeds already carried. Callers pass `game.reefseedCap()`.
+ */
+export function addReefseeds(p, n, cap = p.maxReefseeds) {
   const before = p.reefseeds;
-  p.reefseeds = Math.max(0, Math.min(p.maxReefseeds, before + n));
+  p.reefseeds = Math.max(0, Math.min(cap, before + n));
   return p.reefseeds - before;
 }
 
@@ -195,13 +209,23 @@ function migrate(p) {
   const base = newProgress(p.name || 'LINK');
   const out = { ...base, ...p };
   for (const k of ['items', 'keys', 'bossKeys', 'dungeonMaps', 'charts',
-    'beaten', 'flags', 'chests', 'doors', 'secrets', 'rings', 'trade', 'pos', 'respawn']) {
+    'beaten', 'flags', 'chests', 'doors', 'secrets', 'charms', 'charmOpen',
+    'trade', 'pos', 'respawn']) {
     out[k] = { ...base[k], ...(p[k] || {}) };
+  }
+  // The cases are arrays inside an object, so a spread would carry a stale
+  // length through from a save written under a smaller CHARM_CASE_MAX.
+  out.charmSlots = newCharmSlots();
+  for (const s of CHARM_SLOTS) {
+    const was = p.charmSlots && p.charmSlots[s];
+    if (!Array.isArray(was)) continue;
+    for (let i = 0; i < out.charmSlots[s].length && i < was.length; i++) {
+      out.charmSlots[s][i] = was[i] || null;
+    }
   }
   // A save written before seeds existed gets one derived from what it does
   // carry, so it is at least stable across loads rather than fresh each time.
   if (p.seed == null) out.seed = hash32('legacy', p.name || 'LINK', p.createdAt || 0);
   if (!Array.isArray(out.essences)) out.essences = [];
-  if (!Array.isArray(out.ringsEquipped)) out.ringsEquipped = [null, null];
   return out;
 }

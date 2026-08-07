@@ -16,7 +16,7 @@ import {
   Entity, moveEntity, canOccupy, groundFlags, groundTile, findSafeTile, DIR_VEC, DIRS,
 } from './entity.js';
 import { F, transformFor } from '../world/tileset.js';
-import { TILE, VIEW_W, VIEW_H } from '../core/screen.js';
+import { TILE, VIEW_W, VIEW_H, ROOM_W, ROOM_H } from '../core/screen.js';
 import { sp, toPx } from '../core/fixed.js';
 import { sprites } from '../gfx/art.js';
 import { hasItem, itemLevel, HEART_UNITS } from './progress.js';
@@ -43,6 +43,9 @@ import {
   ROD_RING_FRAMES,
   SHAKE_SMALL, SHAKE_SMALL_FRAMES, CHARGE_SPARKLE_SPREAD, WADE_FOAM_EVERY,
   PUSH_PROBE_REACH,
+  RIPTIDE_FIN_FACTOR, DEADWEIGHT_FACTOR, KELP_BRAID_FACTOR, SPLIT_FANG_SPAN,
+  SEAWOLF_KNOCK_FACTOR, HAGSTONE_CHANCE, STRANDWALKER_EVERY,
+  PRESSURE_SCAR_FACTOR, BOSUN_FACTOR,
 } from '../data/feel.js';
 
 export class Player extends Entity {
@@ -155,6 +158,7 @@ export class Player extends Entity {
     this.updateJump(game);
     this.updateContactDamage(game);
     this.updateHazards(game);
+    this.updateStrandwalker(game);
 
     if (this.carrying) {
       this.carrying.x = this.x;
@@ -198,11 +202,12 @@ export class Player extends Entity {
     // Water currents push you while swimming. They do NOT push a walker on the
     // floor: weighted soles are what the Cleats are, and immunity to the
     // current is the whole trade sink mode offers for its pace.
-    if (this.inDeep && !this.underwater) {
+    if (this.inDeep && !this.underwater && !game.charm('deadweight')) {
       const { tx, ty } = groundTile(game, this);
       const def = game.room.tile(tx, ty, game.tide);
       // A tile's `push` is data, written in px/f; the mover speaks subpixels.
-      if (def.push) moveEntity(game, this, sp(def.push[0]), sp(def.push[1]));
+      const k = game.charm('kelpBraid') ? KELP_BRAID_FACTOR : 1;
+      if (def.push) moveEntity(game, this, sp(def.push[0] * k), sp(def.push[1] * k));
     }
   }
 
@@ -210,7 +215,7 @@ export class Player extends Entity {
     const f = groundFlags(game, this);
     if (this.z > 2 || this.jumping) return;
     if (f & F.PIT) { this.beginFall(game); return; }
-    if (f & F.HAZARD) this.takeDamage(game, HAZARD_DAMAGE, null, { noKnockDir: true });
+    if (f & F.HAZARD) this.takeDamage(game, HAZARD_DAMAGE, null, { noKnockDir: true, hazard: true });
     if (f & F.WHIRL) game.enterWhirlpool(this);
   }
 
@@ -360,9 +365,14 @@ export class Player extends Entity {
     else if (this.holding) speed = SWORD_HOLD_SPEED;
     const f = groundFlags(game, this);
     let mult = 1;
-    if ((f & F.SLOW) && this.z <= 2) mult *= SLOW_FACTOR;
+    // Charms are multipliers on the same dimensionless product the terrain
+    // uses, so they compose with it rather than overriding it, and the whole
+    // product still lands on a whole subpixel exactly once at the end.
+    if ((f & F.SLOW) && this.z <= 2 && !game.charm('dunerunner')) mult *= SLOW_FACTOR;
     if (this.inShallow && this.z <= 2) mult *= SHALLOW_FACTOR;
-    if (this.carrying) mult *= CARRY_FACTOR;
+    if (this.carrying && !game.charm('potHauler')) mult *= CARRY_FACTOR;
+    if (this.inDeep && !this.underwater && game.charm('riptideFin')) mult *= RIPTIDE_FIN_FACTOR;
+    if (game.charm('deadweight')) mult *= DEADWEIGHT_FACTOR;
     if (mult !== 1) speed = Math.max(1, Math.round(speed * mult));
 
     // DIAGONALS ARE NOT NORMALISED. `dx` and `dy` stay at ±1 and both axes get
@@ -595,7 +605,7 @@ export class Player extends Entity {
     this.holding = true;
     this.holdT++;
 
-    const box = this.swordBox();
+    const box = this.swordBox(game);
     for (const e of game.entities) {
       if (!e.isEnemy || e.dead || e.dormant || e.hidden) continue;
       if (!rectOverlap(box, e.rect())) continue;
@@ -620,7 +630,12 @@ export class Player extends Entity {
   }
 
   startSwing(game, level) {
-    if (this.swinging > 0 || this.spinning > 0 || this.inDeep || this.carrying) return true;
+    if (this.swinging > 0 || this.spinning > 0 || this.carrying) return true;
+    // Deep water keeps the blade sheathed — unless you are WALKING down there
+    // with a Ballast Lung, which is the whole of what that charm buys. Note it
+    // does not licence swinging while SWIMMING: the charm is about having your
+    // feet on something.
+    if (this.inDeep && !(this.underwater && game.charm('ballastLung'))) return true;
     this.swinging = SWING_FRAMES;
     this.holding = false;
     this.holdT = 0;
@@ -635,24 +650,41 @@ export class Player extends Entity {
     this.swinging--;
     const t = SWING_FRAMES - this.swinging;
     if (t < SWING_HIT_START || t > SWING_HIT_END) return;
-    const box = this.swordBox();
+    const box = this.swordBox(game);
     // enemies
     for (const e of game.entities) {
       if (!e.isEnemy || e.dead || this.swingHit.has(e.id)) continue;
       if (rectOverlap(box, e.rect())) {
         this.swingHit.add(e.id);
-        e.hurt(game, swordDamage(this.swordLevel), this.dir, KNOCK_SWORD);
+        e.hurt(game, this.swordHit(game), this.dir, this.swordKnock(game, KNOCK_SWORD));
       }
     }
     // tiles (bushes, signs)
     game.checkTileAction(box, 'cut');
   }
 
-  swordBox() {
+  /**
+   * What the blade is worth this swing. Salt-Etched and Wrackbone both land
+   * here rather than in swordDamage(), because that function is the SWORD's
+   * table — a charm is not a better sword, it is a better swing.
+   */
+  swordHit(game) {
+    let d = swordDamage(this.swordLevel);
+    if (game.charm('saltEtched') && roomHasDryGround(game)) d += 1;
+    if (game.charm('wrackbone')) d *= 2;
+    return d;
+  }
+
+  swordKnock(game, base) {
+    return game.charm('seawolfsTooth') ? base * SEAWOLF_KNOCK_FACTOR : base;
+  }
+
+  swordBox(game) {
     const [dx, dy] = DIR_VEC[this.dir];
     const reach = SWORD_REACH;
-    const w = dx !== 0 ? reach : SWORD_SPAN;
-    const h = dy !== 0 ? reach : SWORD_SPAN;
+    const span = SWORD_SPAN + (game && game.charm('splitFang') ? SPLIT_FANG_SPAN : 0);
+    const w = dx !== 0 ? reach : span;
+    const h = dy !== 0 ? reach : span;
     return {
       x: this.cx - w / 2 + dx * (reach / 2 + SWORD_GAP),
       y: this.cy - h / 2 + dy * (reach / 2 + SWORD_GAP),
@@ -681,7 +713,7 @@ export class Player extends Entity {
       if (!e.isEnemy || e.dead || this.spinHit.has(e.id)) continue;
       if (rectOverlap(box, e.rect())) {
         this.spinHit.add(e.id);
-        e.hurt(game, swordDamage(this.swordLevel || 1) + 1, this.dir, KNOCK_SPIN);
+        e.hurt(game, this.swordHit(game) + 1, this.dir, this.swordKnock(game, KNOCK_SPIN));
       }
     }
     game.checkTileAction(box, 'cut');
@@ -901,7 +933,9 @@ export class Player extends Entity {
     }
     if (this.sinkT > 0) return true;
     this.cleatMode = next;
-    this.sinkT = SINK_ENTER_FRAMES;
+    this.sinkT = game.charm('pressureScar')
+      ? Math.max(1, Math.round(SINK_ENTER_FRAMES * PRESSURE_SCAR_FACTOR))
+      : SINK_ENTER_FRAMES;
     this.sinkInto = next === 'sink';
     game.audio.sfx('dive');
     game.spawnEffect('splash', this.x, this.y + 2);
@@ -931,6 +965,7 @@ export class Player extends Entity {
     // Left standing on dry ground by a falling tide: come back up on your own.
     if (!this.inDeep) { this.surface(game, false); return; }
     if (this._cleats >= 2) return;            // Mermaid Suit: unlimited
+    if (game.charm('gillcarve')) return;      // and so is a Gillcarve
     this.breath--;
     if (this.breath === CLEATS_BREATH_WARN_FRAMES) game.audio.sfx('deny');
     if (this.breath <= 0) this.surface(game, true);
@@ -960,12 +995,32 @@ export class Player extends Entity {
         : (why === 'forced' ? 'Something holds the water fast.' : ''));
       return true;
     }
-    this.conchTime = CONCH_FRAMES;
-    this.frozen = CONCH_FRAMES;
+    const cf = game.charm('bosunsWhistle')
+      ? Math.max(1, Math.round(CONCH_FRAMES * BOSUN_FACTOR)) : CONCH_FRAMES;
+    this.conchTime = cf;
+    this.frozen = cf;
     game.audio.sfx('conch');
     game.tide.cycle();
     game.onConchPlayed();
     return true;
+  }
+
+  /**
+   * Strandwalker: a quarter-heart every STRANDWALKER_EVERY frames, but only
+   * with both feet on dry ground — not wading, not swimming, not on the floor
+   * of the sea. It is the LOW case's reward for staying out of the water,
+   * which is the only place the LOW case is awake anyway.
+   */
+  updateStrandwalker(game) {
+    if (!game.charm('strandwalker')) { this._strandT = 0; return; }
+    if (this.inShallow || this.inDeep || this.underwater) { this._strandT = 0; return; }
+    const p = game.progress;
+    if (p.hearts >= p.maxHearts) { this._strandT = 0; return; }
+    this._strandT = (this._strandT || 0) + 1;
+    if (this._strandT < STRANDWALKER_EVERY) return;
+    this._strandT = 0;
+    p.hearts = Math.min(p.maxHearts, p.hearts + 1);
+    game.audio.sfx('heart');
   }
 
   // ---------------------------------------------------------------- damage
@@ -977,12 +1032,15 @@ export class Player extends Entity {
       if (e.damage <= 0) continue;
       if (this.z > 6 && !e.flying) continue;      // jumped over it
       if (!this.overlaps(e)) continue;
-      this.takeDamage(game, e.damage, e);
+      // "Sea creature" is the enemy's own terrain field, not where it happens
+      // to be standing: a crab hauled onto dry land by the tide is still what
+      // the Anemone's Gift protects you from.
+      this.takeDamage(game, e.damage, e, { aquatic: e.terrain === 'water' });
       break;
     }
   }
 
-  /** Ring/shield modifiers applied here so every damage source respects them. */
+  /** Charm and shield modifiers applied here so every damage source respects them. */
   takeDamage(game, amount, source, o = {}) {
     if (this.invuln > 0 || this.invincible || this.falling > 0 || this.washing > 0) return false;
     const p = game.progress;
@@ -1002,9 +1060,30 @@ export class Player extends Entity {
       }
     }
 
+    // The Hagstone: a quarter of hits pass straight through. Rolled off the
+    // ROOM stream, not the global one, so a room replays identically — see
+    // src/core/rng.js.
+    if (game.charm('hagstone') && game.rng.float() < HAGSTONE_CHANCE) {
+      game.audio.sfx('block');
+      game.spawnEffect('spark', this.cx - 8, this.cy - 8);
+      this.invuln = PLAYER_INVULN_FRAMES;
+      return false;
+    }
+    // Barnacle Skin eats one hit per room and then cracks. `barnacleUsed` is
+    // reset on room entry, which is what "per room" means here.
+    if (game.charm('barnacleSkin') && !this.barnacleUsed) {
+      this.barnacleUsed = true;
+      game.audio.sfx('block');
+      game.spawnEffect('spark', this.cx - 8, this.cy - 8);
+      this.invuln = PLAYER_INVULN_FRAMES;
+      this.flicker = PLAYER_FLICKER_FRAMES;
+      return false;
+    }
+
     let dmg = amount;
-    if (game.hasRing('armor')) dmg = Math.max(1, Math.round(dmg * 0.5));
-    if (game.hasRing('redJoy')) dmg = Math.round(dmg * 2);
+    if (o.aquatic && game.charm('anemonesGift')) dmg = Math.max(1, Math.round(dmg * 0.5));
+    if (o.hazard && game.charm('brineSkin')) dmg = Math.max(1, Math.round(dmg * 0.5));
+    if (game.charm('wrackbone')) dmg = Math.round(dmg * 2);
 
     p.hearts = Math.max(0, p.hearts - dmg);
     this.invuln = PLAYER_INVULN_FRAMES;
@@ -1017,7 +1096,8 @@ export class Player extends Entity {
       const dx = this.cx - source.cx, dy = this.cy - source.cy;
       const d = Math.hypot(dx, dy) || 1;
       // sp/f: the whole distance divided across the whole window, once.
-      const per = sp(PLAYER_KNOCK_DIST) / PLAYER_KNOCK_FRAMES;
+      const dist = game.charm('ballastHeart') ? PLAYER_KNOCK_DIST / 2 : PLAYER_KNOCK_DIST;
+      const per = sp(dist) / PLAYER_KNOCK_FRAMES;
       this.knockX = Math.round(dx / d * per);
       this.knockY = Math.round(dy / d * per);
       this.knockTime = PLAYER_KNOCK_FRAMES;
@@ -1049,7 +1129,7 @@ export class Player extends Entity {
     if (this.falling === 0) {
       const safe = findSafeTile(game, this) || this.lastSafe;
       this.x = safe.x; this.y = safe.y;
-      this.takeDamage(game, PIT_DAMAGE, null, { noKnockDir: true });
+      this.takeDamage(game, PIT_DAMAGE, null, { noKnockDir: true, hazard: true });
       this.invuln = PLAYER_RECOVER_INVULN_FRAMES;
     }
   }
@@ -1203,6 +1283,34 @@ export class Player extends Entity {
 
 export function swordDamage(level) {
   return level >= 3 ? 6 : (level >= 2 ? 4 : 2);
+}
+
+/**
+ * Does this room have any dry ground in it right now? Salt-Etched's condition,
+ * and the reason it is a LOW-case charm that is nonetheless not "at LOW tide"
+ * — a room that keeps a spit of sand at HIGH still counts, which is what makes
+ * the charm worth reading rather than assuming.
+ *
+ * Asked of the FIELD, so an anchored patch of dry floor counts too. Cached per
+ * room per field stamp: a swing asks it, and eighty tile lookups per swing is
+ * eighty too many.
+ */
+export function roomHasDryGround(game) {
+  const room = game.room;
+  if (!room) return false;
+  const stamp = game.tide.stamp + ':' + game.tide.level;
+  if (room._dryStamp === stamp) return room._dryCached;
+  let dry = false;
+  for (let y = 0; y < ROOM_H && !dry; y++) {
+    for (let x = 0; x < ROOM_W; x++) {
+      const f = room.flagsAt(x, y, game.tide);
+      if (f & (F.WATER | F.DEEP | F.SOLID | F.PIT)) continue;
+      dry = true; break;
+    }
+  }
+  room._dryStamp = stamp;
+  room._dryCached = dry;
+  return dry;
 }
 
 function rectOverlap(a, b) {

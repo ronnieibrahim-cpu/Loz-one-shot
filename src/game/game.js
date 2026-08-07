@@ -38,7 +38,7 @@ import { Tide, TIDE_COUNT } from './tide.js';
 import { Player } from './player.js';
 import { spawnEntity, ENTITY_TYPES, Entity, findSafeTile } from './entity.js';
 import { spawnEffectAt, Explosion } from './effects.js';
-import { Pickup, rollDropTable, PushBlock, Torch, FloorSwitch, Chest } from './objects.js';
+import { Pickup, PICKUPS, rollDropTable, PushBlock, Torch, FloorSwitch, Chest } from './objects.js';
 import { ThrownObject, ITEMS, itemName, itemIcon } from './items.js';
 import {
   newProgress, saveSlot, loadSlot, giveItem, addRupees, addKey, useKey, keyCount,
@@ -47,10 +47,10 @@ import {
 import { drawHud, drawAreaBanner, drawBossBar } from './hud.js';
 import { Dialogue, drawBox, drawPanel, getText } from './dialogue.js';
 import { Menu } from './menu.js';
-import { RINGS } from './rings.js';
+import { Scrimshaw, CHARMS, giveCharm, ownedCharms } from './scrimshaw.js';
 import { Title } from './title.js';
 import { runCutscene, CUTSCENES } from './cutscene.js';
-import { Stream, seedGlobal, roomStream, noise1 } from '../core/rng.js';
+import { Stream, seedGlobal, roomStream, noise1, rng as rngGlobal } from '../core/rng.js';
 import { sp } from '../core/fixed.js';
 import {
   ROOM_TRANSITION_FRAMES, ROOM_EXIT_MARGIN, FADE_RATE, BANNER_FRAMES,
@@ -59,6 +59,9 @@ import {
   GAMEOVER_WAIT_FRAMES, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE,
   LENS_FADE_FRAMES, LENS_GHOST_ALPHA, LENS_TINT_ALPHA, LENS_PHASE_ALPHA,
   LENS_SHIMMER_FRAMES, REEFSEED_CAPACITY, COIN_SWAP_DELAY_FRAMES, BOTTLE_CAPACITY,
+  CARVE_TIDE_TURNS, QUARTERMASTER_BONUS, CHANDLER_FACTOR, LANTERN_RADIUS,
+  GULLS_TALLY_FACTOR, CARVE_PRICE, PICKUP_LIFE_FRAMES,
+  WRECK_GLIMMER_PERIOD, WRECK_GLIMMER_ON, WRECK_GLIMMER_ALPHA,
 } from '../data/feel.js';
 
 export class Game {
@@ -78,6 +81,7 @@ export class Game {
     this.seedOverride = null;
     this.progress = newProgress();
     this.tide = new Tide(this);
+    this.scrim = new Scrimshaw(this);
     this.dialogue = new Dialogue(this);
     this.menu = new Menu(this);
     this.title = new Title(this);
@@ -202,6 +206,10 @@ export class Game {
     r.visited = true;
     this.progress.secrets['seen:' + this.mapId + ':' + r.key] = true;
     this.tide.applyRoomRules(r);
+    // Barnacle Skin is "one free hit per room", so the shell regrows exactly
+    // here and nowhere else. Doing it on tide change instead would make it a
+    // charm about the conch, which is a different charm.
+    if (this.player) this.player.barnacleUsed = false;
     this.applyTint(r.tint);
     if (o.spawnEntities !== false) this.spawnRoomEntities();
     this.respawnAnchor();
@@ -564,6 +572,11 @@ export class Game {
     // is still crossing the screen, and warping the player mid-sweep leaves
     // the sweep drawing a room nobody is standing in.
     if (this.progress.coin) this.coinSwapPending = COIN_SWAP_DELAY_FRAMES;
+    // A carving takes a tide cycle, and this is the only place the tide is
+    // known to have turned. Counting frames instead would let a player who
+    // never sounds the conch collect one anyway, which is the opposite of
+    // what the scrimshander is for.
+    this.tickCarving();
     this.roomEvent('tide', { next, prev });
   }
 
@@ -735,7 +748,7 @@ export class Game {
       if (id === 'bombs') { p.maxBombs = Math.max(p.maxBombs, 10); addBombs(p, 10); }
       if (id === 'reefseed') {
         p.maxReefseeds = Math.max(p.maxReefseeds, REEFSEED_CAPACITY);
-        addReefseeds(p, REEFSEED_CAPACITY);
+        addReefseeds(p, this.reefseedCap(), this.reefseedCap());
       }
       if (id === 'bottle') {
         p.maxBottles = Math.max(p.maxBottles, BOTTLE_CAPACITY);
@@ -789,10 +802,19 @@ export class Game {
     return e;
   }
 
+  /**
+   * An enemy's loot. Two charms land here rather than on the Pickup itself,
+   * because both are about what the DROP was worth at the moment it fell: a
+   * rupee found on the floor is not made bigger by putting a charm on.
+   */
   rollDrop(x, y, table) {
     const kind = rollDropTable(table, this.rng);
     if (!kind) return null;
-    return this.spawnPickup(x, y, kind);
+    const spec = PICKUPS[kind];
+    const o = {};
+    if (spec && spec.worth != null && this.charm('beachcomber')) o.worth = spec.worth * 2;
+    if (this.charm('gullsTally')) o.life = Math.round(PICKUP_LIFE_FRAMES * GULLS_TALLY_FACTOR);
+    return this.spawnPickup(x, y, kind, o);
   }
 
   // -------------------------------------------------------------- utilities
@@ -819,9 +841,62 @@ export class Game {
 
   ask(text, options, onPick) { this.dialogue.show(text, { choices: options, onPick }); }
 
-  hasRing(id) {
+  /**
+   * Is this charm working right now? The one question the rest of the engine
+   * asks the scrimshaw system, and the successor to `hasRing`.
+   *
+   * It is a pure read of state computed once per frame, so it is safe from a
+   * draw path — see `drawDarkness`, which asks it at display rate.
+   */
+  charm(id) { return this.scrim.has(id); }
+
+  /**
+   * Commission a carving. The blank and the rupees go now; the charm arrives
+   * after CARVE_TIDE_TURNS changes of the tide, which is one full turn of the
+   * conch. Which charm it will be is decided HERE rather than on collection,
+   * off the global stream — the scrimshander is reading the bone, not taking
+   * an order, and a run that reloads before collecting must get the same charm
+   * back or the save would be a re-roll button.
+   */
+  commissionCarving() {
     const p = this.progress;
-    return p.ringsEquipped.includes(id);
+    const pool = Object.keys(CHARMS).filter(id => !p.charms[id]);
+    if (!pool.length) return null;
+    const id = pool[Math.floor(rngGlobal.float() * pool.length) % pool.length];
+    p.carve = { id, turns: CARVE_TIDE_TURNS };
+    return id;
+  }
+
+  /**
+   * How many Reefseeds the satchel holds right now. The Quartermaster's Mark
+   * raises the CEILING, so taking the charm off does not destroy seeds you are
+   * already carrying — `addReefseeds` clamps on collection, not per frame.
+   */
+  reefseedCap() {
+    const base = this.progress.maxReefseeds || 0;
+    if (base <= 0) return 0;
+    return base + (this.charm('quartermaster') ? QUARTERMASTER_BONUS : 0);
+  }
+
+  /** What a shopkeeper actually asks, after the Chandler's Eye. */
+  shopPrice(base) {
+    return this.charm('chandlersEye') ? Math.ceil(base * CHANDLER_FACTOR) : base;
+  }
+
+  /** One tide change gone by. Called from the Tide's own listener list. */
+  tickCarving() {
+    const p = this.progress;
+    if (p.carve && p.carve.turns > 0) p.carve.turns--;
+  }
+
+  /** Hand over a finished carving, if there is one. */
+  collectCarving() {
+    const p = this.progress;
+    if (!p.carve || p.carve.turns > 0) return null;
+    const id = p.carve.id;
+    p.carve = null;
+    giveCharm(p, id);
+    return id;
   }
 
   /** Run a callback after n frames (used for beats in scripted moments). */
@@ -937,6 +1012,10 @@ export class Game {
 
     // --- play mode ---
     this.tide.update();
+    // Before anything reads a charm this frame. It has to run above the
+    // dialogue early-return too: a charm going dark while a text box is open
+    // would be a rule the player never sees applied.
+    this.scrim.update();
     if (this.bannerTime > 0) this.bannerTime--;
     if (this.itemShow) { this.itemShow.t--; if (this.itemShow.t <= 0) this.itemShow = null; }
     if (this.lure) { if (--this.lure.life <= 0) this.lure = null; }
@@ -1220,10 +1299,51 @@ export class Game {
 
     room.drawOver(ctx, ox, oy, this.tide, this.frame);
 
+    if (this.charm('wreckersEye')) this.drawWrecksGlimmer(ctx, ox, oy);
     if (this.player && this.player.lensT > 0) this.drawLensGhost(ctx, ox, oy);
     if (this.debug && this.tide.overrides.length) this.drawAnchorField(ctx, ox, oy);
     if (room.dark && !flag(this.progress, 'lantern')) this.drawDarkness(ctx, ox, oy);
     if (this.itemShow) this.drawItemShow(ctx);
+  }
+
+  /**
+   * The Wrecker's Eye: unopened chests and dredgeable ground wink through the
+   * terrain. A glimmer, not an outline — it says "there is something here"
+   * without saying what, which is the difference between a hint and a map.
+   *
+   * NOTHING HERE CONSUMES RANDOMNESS. This is a draw path, and draw runs at
+   * display rate while update runs at a fixed step, so a draw from a stream
+   * would desync the run on a slow machine. The twinkle is a pure function of
+   * `frame` and the tile's own coordinates — the same rule the screen shake
+   * and the Lens shimmer follow.
+   */
+  drawWrecksGlimmer(ctx, ox, oy) {
+    const room = this.room;
+    if (!room) return;
+    ctx.save();
+    for (const e of this.entities) {
+      if (!(e instanceof Chest) || e.opened) continue;
+      this.glimmerAt(ctx, ox + e.x + 8, oy + e.y + 8, e.x + e.y);
+    }
+    for (let ty = 0; ty < ROOM_H; ty++) {
+      for (let tx = 0; tx < ROOM_W; tx++) {
+        const name = room.baseName(tx, ty);
+        if (!transformFor(name, 'dredge')) continue;
+        this.glimmerAt(ctx, ox + tx * TILE + 8, oy + ty * TILE + 8, tx * 7 + ty * 13);
+      }
+    }
+    ctx.restore();
+  }
+
+  glimmerAt(ctx, cx, cy, phase) {
+    const t = (this.frame + phase * 9) % WRECK_GLIMMER_PERIOD;
+    if (t > WRECK_GLIMMER_ON) return;
+    const a = Math.sin(t / WRECK_GLIMMER_ON * Math.PI);
+    ctx.globalAlpha = a * WRECK_GLIMMER_ALPHA;
+    ctx.fillStyle = '#f8f8c0';
+    ctx.fillRect(cx - 1, cy - 4, 2, 8);
+    ctx.fillRect(cx - 4, cy - 1, 8, 2);
+    ctx.globalAlpha = 1;
   }
 
   /**
@@ -1279,10 +1399,16 @@ export class Game {
   drawDarkness(ctx, ox, oy) {
     const p = this.player;
     const cx = ox + (p ? p.cx : VIEW_W / 2), cy = oy + (p ? p.cy : VIEW_H / 2);
-    const g = ctx.createRadialGradient(cx, cy, 10, cx, cy, 54);
+    // Two charms carry a light, one in the MID case and one in the HIGH: the
+    // Lamplighter's Wick and the Drowned Lantern do the same thing at
+    // different tides, on purpose. A dark room you can cross at MID and not at
+    // HIGH is a room the tide has made darker, which is the point.
+    const lit = this.charm('lamplighter') || this.charm('drownedLantern');
+    const r = lit ? LANTERN_RADIUS : 54;
+    const g = ctx.createRadialGradient(cx, cy, 10, cx, cy, r);
     g.addColorStop(0, 'rgba(0,0,0,0)');
-    g.addColorStop(0.7, 'rgba(0,0,0,0.55)');
-    g.addColorStop(1, 'rgba(0,0,0,0.88)');
+    g.addColorStop(0.7, lit ? 'rgba(0,0,0,0.30)' : 'rgba(0,0,0,0.55)');
+    g.addColorStop(1, lit ? 'rgba(0,0,0,0.60)' : 'rgba(0,0,0,0.88)');
     ctx.fillStyle = g;
     ctx.fillRect(0, HUD_H, VIEW_W, VIEW_H);
   }

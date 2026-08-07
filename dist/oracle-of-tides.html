@@ -2960,6 +2960,116 @@ const GAP_HOP_MAX_SPAN = 2;
  *  1) come up and a boulder (`liftLevel` 2) does not. The boulder wants the
  *  Dredge Line now — see docs/ITEMS.md. */
 const LIFT_STRENGTH = 1;
+
+// --- Scrimshaw (P7) --------------------------------------------------------
+// Every number here is `guessed` and cannot be otherwise: no Oracle system
+// slots a passive by world state, so there is no reference to frame-step. They
+// are stated as multipliers of things that already exist wherever possible, so
+// re-tuning a base constant carries the charm with it.
+
+/** f — how long a case stays awake after the tide leaves it, with the Neap
+ *  Charm in that case. guessed; the plan says three seconds and three seconds
+ *  at 60Hz is what this is. It is the whole width of the transition window
+ *  the charm exists to create, so it is the first number to move if the
+ *  transition play does not read. */
+const NEAP_GRACE_FRAMES = 180;
+
+/** most charms one case can ever hold. guessed; the late-game case upgrade
+ *  raises progress.charmCase from 1 to this. */
+const CHARM_CASE_MAX = 2;
+
+/** dimensionless — swim speed multiplier with the Riptide Fin. guessed; the
+ *  plan says +40% and the product is rounded back onto a whole subpixel at the
+ *  call site, the same way the terrain multipliers are. */
+const RIPTIDE_FIN_FACTOR = 1.4;
+
+/** dimensionless — everywhere-speed multiplier with Deadweight. guessed; the
+ *  plan's 15% slower, and the price of never being pushed again. */
+const DEADWEIGHT_FACTOR = 0.85;
+
+/** dimensionless — how hard a current pushes with the Kelp Braid. guessed. */
+const KELP_BRAID_FACTOR = 0.5;
+
+/** px — extra span on the sword's sweep with the Split Fang, added to
+ *  SWORD_SPAN. guessed; one tile's worth of blade split across both sides, so
+ *  a swing catches a foe standing off the axis of the one you meant to hit. */
+const SPLIT_FANG_SPAN = 8;
+
+/** dimensionless — how far the sword throws with the Sea-Wolf's Tooth,
+ *  against KNOCK_SWORD. guessed. */
+const SEAWOLF_KNOCK_FACTOR = 2;
+
+/** chance a hit is shrugged off entirely with the Hagstone. guessed; the plan
+ *  had no such charm, and a quarter is high enough to notice inside one room
+ *  and low enough that it is never a plan. Rolled off the ROOM stream. */
+const HAGSTONE_CHANCE = 0.25;
+
+/** f — interval between Strandwalker's quarter-hearts on dry land. guessed;
+ *  slow enough that it is a charm you leave on rather than a charm you farm. */
+const STRANDWALKER_EVERY = 300;
+
+/** dimensionless — bomb blast radius multiplier with Dry Kindling. guessed. */
+const DRY_KINDLING_FACTOR = 1.5;
+
+/** dimensionless — pickup lifetime multiplier with the Gull's Tally. guessed;
+ *  the plan says twice as long and this is that. */
+const GULLS_TALLY_FACTOR = 2;
+
+/** dimensionless — shop price multiplier with the Chandler's Eye. guessed. */
+const CHANDLER_FACTOR = 0.75;
+
+/** extra Reefseeds the Quartermaster's Mark carries, on REEFSEED_CAPACITY.
+ *  guessed; the plan says two. */
+const QUARTERMASTER_BONUS = 2;
+
+/** px — extra reach on the Dredge Line with the Coilrope, on DREDGE_RANGE.
+ *  guessed; the plan says one tile and a tile is 16px. */
+const COILROPE_RANGE = 16;
+
+/** dimensionless — how much of the dive/surface transition the Pressure Scar
+ *  spends, against SINK_ENTER_FRAMES. guessed. */
+const PRESSURE_SCAR_FACTOR = 0.5;
+
+/** tide changes a commissioned charm takes to carve. derived from the design,
+ *  not guessed: the plan says one tide cycle, and the Moon Conch's cycle is
+ *  TIDE_COUNT steps round. */
+const CARVE_TIDE_TURNS = 3;
+
+/** rupees the scrimshander charges to carve a blank. guessed; roughly a good
+ *  dungeon's takings, so a charm is a decision rather than a formality. */
+const CARVE_PRICE = 60;
+
+/** dimensionless — how much of CONCH_FRAMES the Bosun's Whistle spends.
+ *  guessed; the conch's lock-out is a real cost in a fight, and halving it is
+ *  the most direct way a charm can say "you use the tide more". */
+const BOSUN_FACTOR = 0.5;
+
+/** px — how far a lit dark room reads, against the unlit 54. guessed; wide
+ *  enough that a lantern charm changes how the room is played rather than how
+ *  it is lit. */
+const LANTERN_RADIUS = 96;
+
+/** f — how often the Wrecker's Eye winks over a hidden thing. guessed; slow
+ *  enough to read as a glint rather than a blinking marker. */
+const WRECK_GLIMMER_PERIOD = 90;
+
+/** f — how long each wink lasts, inside WRECK_GLIMMER_PERIOD. guessed. */
+const WRECK_GLIMMER_ON = 20;
+
+/** peak opacity of the Wrecker's Eye wink. guessed. */
+const WRECK_GLIMMER_ALPHA = 0.85;
+
+/** essences before the scrimshander cuts you the LOW case. derived from the
+ *  eight-dungeon spine, not guessed: two, four and six spread the three
+ *  scrimshaw unlocks evenly across it and leave the last two dungeons free of
+ *  system-teaching. */
+const CHARM_LOW_ESSENCES = 2;
+
+/** essences before the HIGH case. derived, as above. */
+const CHARM_HIGH_ESSENCES = 4;
+
+/** essences before every case takes two charms. derived, as above. */
+const CHARM_CASE_ESSENCES = 6;
 __exports["WALK_SPEED"] = WALK_SPEED;
 __exports["SWIM_SPEED"] = SWIM_SPEED;
 __exports["BOOST_SPEED"] = BOOST_SPEED;
@@ -3140,6 +3250,31 @@ __exports["BOTTLE_CAPACITY"] = BOTTLE_CAPACITY;
 __exports["BOTTLE_POUR_FRAMES"] = BOTTLE_POUR_FRAMES;
 __exports["GAP_HOP_MAX_SPAN"] = GAP_HOP_MAX_SPAN;
 __exports["LIFT_STRENGTH"] = LIFT_STRENGTH;
+__exports["NEAP_GRACE_FRAMES"] = NEAP_GRACE_FRAMES;
+__exports["CHARM_CASE_MAX"] = CHARM_CASE_MAX;
+__exports["RIPTIDE_FIN_FACTOR"] = RIPTIDE_FIN_FACTOR;
+__exports["DEADWEIGHT_FACTOR"] = DEADWEIGHT_FACTOR;
+__exports["KELP_BRAID_FACTOR"] = KELP_BRAID_FACTOR;
+__exports["SPLIT_FANG_SPAN"] = SPLIT_FANG_SPAN;
+__exports["SEAWOLF_KNOCK_FACTOR"] = SEAWOLF_KNOCK_FACTOR;
+__exports["HAGSTONE_CHANCE"] = HAGSTONE_CHANCE;
+__exports["STRANDWALKER_EVERY"] = STRANDWALKER_EVERY;
+__exports["DRY_KINDLING_FACTOR"] = DRY_KINDLING_FACTOR;
+__exports["GULLS_TALLY_FACTOR"] = GULLS_TALLY_FACTOR;
+__exports["CHANDLER_FACTOR"] = CHANDLER_FACTOR;
+__exports["QUARTERMASTER_BONUS"] = QUARTERMASTER_BONUS;
+__exports["COILROPE_RANGE"] = COILROPE_RANGE;
+__exports["PRESSURE_SCAR_FACTOR"] = PRESSURE_SCAR_FACTOR;
+__exports["CARVE_TIDE_TURNS"] = CARVE_TIDE_TURNS;
+__exports["CARVE_PRICE"] = CARVE_PRICE;
+__exports["BOSUN_FACTOR"] = BOSUN_FACTOR;
+__exports["LANTERN_RADIUS"] = LANTERN_RADIUS;
+__exports["WRECK_GLIMMER_PERIOD"] = WRECK_GLIMMER_PERIOD;
+__exports["WRECK_GLIMMER_ON"] = WRECK_GLIMMER_ON;
+__exports["WRECK_GLIMMER_ALPHA"] = WRECK_GLIMMER_ALPHA;
+__exports["CHARM_LOW_ESSENCES"] = CHARM_LOW_ESSENCES;
+__exports["CHARM_HIGH_ESSENCES"] = CHARM_HIGH_ESSENCES;
+__exports["CHARM_CASE_ESSENCES"] = CHARM_CASE_ESSENCES;
 });
 
 /* ===== src/game/tide.js ===== */
@@ -3892,6 +4027,276 @@ __exports["tideAt"] = tideAt;
 __exports["findSafeTile"] = findSafeTile;
 });
 
+/* ===== src/game/scrimshaw.js ===== */
+__define("game/scrimshaw.js", function (__exports, __require) {
+// Scrimshaw — carved bone charms, and the passive system that replaced rings.
+//
+// THE RULE THAT MAKES IT OURS: a charm is slotted BY TIDE LEVEL, and it only
+// works while the water is at that level. A charm in the LOW case is dead at
+// HIGH tide. You carry three loadouts, not one, and sounding the conch changes
+// what you are good at as well as where you can walk.
+//
+// Two consequences worth stating out loud, because both are load-bearing:
+//
+//   1. The level that decides is the one UNDER THE PLAYER'S FEET, not the
+//      base. The tide is a field (see CLAUDE.md), so standing inside the
+//      Tidewright's Anchor's held patch keeps that patch's charms alive while
+//      the rest of the room has moved on. That is deliberate: it gives the
+//      Anchor a second, quieter use, and it is the reading a player will
+//      assume the first time they try it.
+//   2. A charm is pure data here. Nothing in this file applies an effect —
+//      the systems affected ask `game.charm(id)` themselves, exactly as they
+//      used to ask `hasRing`. A charm with no reader is a charm that does
+//      nothing, which is what tools/check-charms.mjs exists to catch.
+//
+// Slots: 'low' | 'mid' | 'high' name the case a charm fits, and match tide
+// levels 0/1/2. 'any' fits all three cases — those are the cross-slot charms,
+// and being placeable is the whole of what makes them special.
+
+const { TIDE_COUNT } = __require("game/tide.js");
+const { tideAt } = __require("game/entity.js");
+const { NEAP_GRACE_FRAMES, CHARM_CASE_MAX } = __require("data/feel.js");
+
+/** Case names, indexed by tide level. */
+const CHARM_SLOTS = ['low', 'mid', 'high'];
+
+/**
+ * The roster. Thirty charms; every one of them is read somewhere in src/, and
+ * tools/check-charms.mjs proves each in-engine.
+ *
+ * `slot`  which case it fits ('any' fits all three)
+ * `desc`  one line, and it is the whole specification of the effect
+ * `color` palette for the carved-bone icon, so a case reads at a glance
+ */
+const CHARMS = {
+  // ---- LOW: exposed floor, dry ground ------------------------------------
+  dunerunner: { slot: 'low', name: 'Dunerunner', color: 'sand',
+    desc: 'Sand and salt crust no longer slow you.' },
+  wreckersEye: { slot: 'low', name: "Wrecker's Eye", color: 'gold',
+    desc: 'Chests and buried secrets glimmer through the terrain.' },
+  saltEtched: { slot: 'low', name: 'Salt-Etched', color: 'stone',
+    desc: 'Sword +1 damage while any part of the room is dry.' },
+  beachcomber: { slot: 'low', name: 'Beachcomber', color: 'rupee',
+    desc: 'Enemies drop double rupees.' },
+  strandwalker: { slot: 'low', name: 'Strandwalker', color: 'heart',
+    desc: 'You recover slowly while both feet are on dry ground.' },
+  dryKindling: { slot: 'low', name: 'Dry Kindling', color: 'fire',
+    desc: 'Bombs blast wider.' },
+  gullsTally: { slot: 'low', name: "Gull's Tally", color: 'npc',
+    desc: 'Dropped pickups take twice as long to fade.' },
+  chandlersEye: { slot: 'low', name: "Chandler's Eye", color: 'tree',
+    desc: 'Shopkeepers charge you a quarter less.' },
+
+  // ---- MID: general -------------------------------------------------------
+  splitFang: { slot: 'mid', name: 'Split Fang', color: 'stone',
+    desc: 'Your sword sweeps a wider arc.' },
+  ballastHeart: { slot: 'mid', name: 'Ballast Heart', color: 'enemyb',
+    desc: 'Knockback taken is halved.' },
+  barnacleSkin: { slot: 'mid', name: 'Barnacle Skin', color: 'marble',
+    desc: 'One free hit per room; it cracks until you leave.' },
+  quartermaster: { slot: 'mid', name: "Quartermaster's Mark", color: 'grass',
+    desc: 'Carry two more Reefseeds.' },
+  lamplighter: { slot: 'mid', name: "Lamplighter's Wick", color: 'gold',
+    desc: 'Dark rooms are less dark.' },
+  bosunsWhistle: { slot: 'mid', name: "Bosun's Whistle", color: 'essence',
+    desc: 'The conch sounds faster.' },
+  potHauler: { slot: 'mid', name: 'Pot-Hauler', color: 'brick',
+    desc: 'Carrying something no longer slows you.' },
+  coilrope: { slot: 'mid', name: 'Coilrope', color: 'wood',
+    desc: 'The Dredge Line reaches one tile further.' },
+
+  // ---- HIGH: submerged ----------------------------------------------------
+  gillcarve: { slot: 'high', name: 'Gillcarve', color: 'water',
+    desc: 'Your breath never runs out on the seafloor.' },
+  riptideFin: { slot: 'high', name: 'Riptide Fin', color: 'water',
+    desc: 'You swim half again as fast.' },
+  anemonesGift: { slot: 'high', name: "Anemone's Gift", color: 'enemyg',
+    desc: 'Contact damage from sea creatures is halved.' },
+  drownedLantern: { slot: 'high', name: 'Drowned Lantern', color: 'magic',
+    desc: 'Dark rooms are less dark.' },
+  pressureScar: { slot: 'high', name: 'Pressure Scar', color: 'marble',
+    desc: 'Diving and surfacing take half as long.' },
+  kelpBraid: { slot: 'high', name: 'Kelp Braid', color: 'grass',
+    desc: 'Currents push you half as hard.' },
+  brineSkin: { slot: 'high', name: 'Brine Skin', color: 'enemyb',
+    desc: 'Spikes, lava and other hazards hurt half as much.' },
+  ballastLung: { slot: 'high', name: 'Ballast Lung', color: 'stone',
+    desc: 'You may draw the sword on the seafloor.' },
+
+  // ---- cross-slot: the interesting ones -----------------------------------
+  wrackbone: { slot: 'any', name: 'Wrackbone', color: 'lava',
+    desc: 'Double sword damage, double damage taken.' },
+  neapCharm: { slot: 'any', name: 'Neap Charm', color: 'essence',
+    desc: 'Your charms linger three seconds after the tide leaves them.' },
+  fishermansRegret: { slot: 'any', name: "Fisherman's Regret", color: 'npc',
+    desc: 'The case one level below the tide stays awake too.' },
+  deadweight: { slot: 'any', name: 'Deadweight', color: 'stone',
+    desc: 'No current can move you, and you are slower everywhere.' },
+  hagstone: { slot: 'any', name: 'Hagstone', color: 'magic',
+    desc: 'One hit in four passes straight through you.' },
+  seawolfsTooth: { slot: 'any', name: "Sea-Wolf's Tooth", color: 'enemyr',
+    desc: 'Your sword knocks enemies twice as far.' },
+};
+
+const CHARM_COUNT = Object.keys(CHARMS).length;
+
+/** Fresh, empty case set. Shape matters: migrate() rebuilds it from here. */
+function newCharmSlots() {
+  return { low: [null, null], mid: [null, null], high: [null, null] };
+}
+
+function fitsSlot(id, slot) {
+  const c = CHARMS[id];
+  if (!c) return false;
+  return c.slot === 'any' || c.slot === slot;
+}
+
+function ownedCharms(progress) {
+  return Object.keys(CHARMS).filter(id => progress.charms[id]);
+}
+
+/** Owned charms that could go in this case, in roster order. */
+function charmsForSlot(progress, slot) {
+  return ownedCharms(progress).filter(id => fitsSlot(id, slot));
+}
+
+function giveCharm(progress, id) {
+  if (!CHARMS[id] || progress.charms[id]) return false;
+  progress.charms[id] = true;
+  return true;
+}
+
+/**
+ * Put `id` in case `slot` at `index`, or clear it when `id` is null.
+ * A charm may only be in one place at a time, so it is pulled out of wherever
+ * it already was first — otherwise the second copy would double every effect
+ * that counts rather than tests.
+ */
+function slotCharm(progress, slot, index, id) {
+  const cases = progress.charmSlots;
+  if (!cases || !cases[slot]) return false;
+  if (index < 0 || index >= caseSize(progress)) return false;
+  if (id != null) {
+    if (!progress.charms[id] || !fitsSlot(id, slot)) return false;
+    if (!slotOpen(progress, slot)) return false;
+    for (const s of CHARM_SLOTS) {
+      const at = cases[s].indexOf(id);
+      if (at >= 0) cases[s][at] = null;
+    }
+  }
+  cases[slot][index] = id;
+  return true;
+}
+
+/** How many charms fit in each case. The late-game case upgrade makes it 2. */
+function caseSize(progress) {
+  return Math.max(1, Math.min(CHARM_CASE_MAX, progress.charmCase || 1));
+}
+
+function slotOpen(progress, slot) {
+  return !!(progress.charmOpen && progress.charmOpen[slot]);
+}
+
+/** What is actually in a case, trimmed to the case's current size. */
+function equippedIn(progress, slot) {
+  const cases = progress.charmSlots;
+  if (!cases || !cases[slot]) return [];
+  return cases[slot].slice(0, caseSize(progress)).filter(Boolean);
+}
+
+// ---------------------------------------------------------------- runtime
+
+/**
+ * The live half of the system: which cases are awake this frame.
+ *
+ * Kept on the Game as `game.scrim` and ticked once per update, because two of
+ * the charms are about the TRANSITION between tide states and so need a memory
+ * of the frame before. `game.charm(id)` is the only thing the rest of the
+ * engine should call.
+ */
+class Scrimshaw {
+  constructor(game) {
+    this.game = game;
+    this.liveSlots = new Set(['mid']);
+    this.active = new Set();
+    this.prevSlot = null;
+    this.graceSlot = null;
+    this.graceT = 0;
+    this.wasNeap = false;
+  }
+
+  /** The case the water under the player's feet is asking for. */
+  currentSlot() {
+    const g = this.game;
+    const p = g.player;
+    let lv = g.tide ? g.tide.level : 1;
+    if (p && g.room && g.tide) lv = tideAt(g, p);
+    if (lv < 0) lv = 0;
+    if (lv >= TIDE_COUNT) lv = TIDE_COUNT - 1;
+    return CHARM_SLOTS[lv];
+  }
+
+  update() {
+    const cur = this.currentSlot();
+    if (cur !== this.prevSlot) {
+      // The Neap Charm reads the frame BEFORE the change — a charm that has
+      // already gone dark cannot be what keeps itself alive.
+      if (this.prevSlot != null && this.wasNeap) {
+        this.graceSlot = this.prevSlot;
+        this.graceT = NEAP_GRACE_FRAMES;
+      }
+      this.prevSlot = cur;
+    }
+    if (this.graceT > 0) this.graceT--;
+    this.recompute(cur);
+    this.wasNeap = this.active.has('neapCharm');
+  }
+
+  recompute(cur) {
+    const p = this.game.progress;
+    const live = new Set();
+    if (cur) live.add(cur);
+    if (this.graceT > 0 && this.graceSlot) live.add(this.graceSlot);
+    // Fisherman's Regret has to be live itself before it can wake anything, so
+    // it is resolved in a second pass over the set the first pass produced.
+    if (p && this.inAny(p, live, 'fishermansRegret')) {
+      const i = CHARM_SLOTS.indexOf(cur);
+      if (i > 0) live.add(CHARM_SLOTS[i - 1]);
+    }
+    this.liveSlots = live;
+    this.active = new Set();
+    if (!p) return;
+    for (const slot of live) {
+      if (!slotOpen(p, slot)) continue;
+      for (const id of equippedIn(p, slot)) this.active.add(id);
+    }
+  }
+
+  inAny(progress, slots, id) {
+    for (const slot of slots) {
+      if (!slotOpen(progress, slot)) continue;
+      if (equippedIn(progress, slot).includes(id)) return true;
+    }
+    return false;
+  }
+
+  has(id) { return this.active.has(id); }
+}
+__exports["CHARM_SLOTS"] = CHARM_SLOTS;
+__exports["CHARMS"] = CHARMS;
+__exports["CHARM_COUNT"] = CHARM_COUNT;
+__exports["newCharmSlots"] = newCharmSlots;
+__exports["fitsSlot"] = fitsSlot;
+__exports["ownedCharms"] = ownedCharms;
+__exports["charmsForSlot"] = charmsForSlot;
+__exports["giveCharm"] = giveCharm;
+__exports["slotCharm"] = slotCharm;
+__exports["caseSize"] = caseSize;
+__exports["slotOpen"] = slotOpen;
+__exports["equippedIn"] = equippedIn;
+__exports["Scrimshaw"] = Scrimshaw;
+});
+
 /* ===== src/game/progress.js ===== */
 __define("game/progress.js", function (__exports, __require) {
 // Player progress: the entire saveable state of a game, plus localStorage slots.
@@ -3901,6 +4306,7 @@ __define("game/progress.js", function (__exports, __require) {
 // units, so `damage: 2` is half a heart.
 
 const { hash32 } = __require("core/rng.js");
+const { newCharmSlots, CHARM_SLOTS } = __require("game/scrimshaw.js");
 
 const HEART_UNITS = 4;
 const SAVE_KEY = 'oracleOfTides.save.v1';
@@ -3928,8 +4334,15 @@ function newProgress(name = 'LINK', seed = (Date.now() >>> 0)) {
     // items: id -> level (1+). Absent or 0 means not owned.
     items: {},
     equipB: null, equipA: null,
-    // magic rings
-    rings: {}, ringSlots: 1, ringsEquipped: [null, null],
+    // scrimshaw: carved charms, and the three tide-level cases they slot into.
+    // You start with the MID case only; LOW and HIGH open over the game, and
+    // the case upgrade raises charmCase to CHARM_CASE_MAX.
+    charms: {},
+    charmSlots: newCharmSlots(),
+    charmOpen: { low: false, mid: true, high: false },
+    charmCase: 1,
+    blanks: 0,               // uncarved bone, the scrimshander's raw material
+    carve: null,             // { id, turns } — commissioned, tide turns to go
     // quest
     essences: [],            // dungeon indices whose essence has been claimed
     keys: {},                // mapId -> small key count
@@ -4003,9 +4416,15 @@ function addHeartPiece(p) {
   return false;
 }
 
-function addReefseeds(p, n) {
+/**
+ * `cap` overrides the satchel's own capacity, and exists for the
+ * Quartermaster's Mark: the charm raises the CEILING rather than the satchel,
+ * so `maxReefseeds` stays what the item is worth and taking the charm off
+ * never destroys seeds already carried. Callers pass `game.reefseedCap()`.
+ */
+function addReefseeds(p, n, cap = p.maxReefseeds) {
   const before = p.reefseeds;
-  p.reefseeds = Math.max(0, Math.min(p.maxReefseeds, before + n));
+  p.reefseeds = Math.max(0, Math.min(cap, before + n));
   return p.reefseeds - before;
 }
 
@@ -4091,14 +4510,24 @@ function migrate(p) {
   const base = newProgress(p.name || 'LINK');
   const out = { ...base, ...p };
   for (const k of ['items', 'keys', 'bossKeys', 'dungeonMaps', 'charts',
-    'beaten', 'flags', 'chests', 'doors', 'secrets', 'rings', 'trade', 'pos', 'respawn']) {
+    'beaten', 'flags', 'chests', 'doors', 'secrets', 'charms', 'charmOpen',
+    'trade', 'pos', 'respawn']) {
     out[k] = { ...base[k], ...(p[k] || {}) };
+  }
+  // The cases are arrays inside an object, so a spread would carry a stale
+  // length through from a save written under a smaller CHARM_CASE_MAX.
+  out.charmSlots = newCharmSlots();
+  for (const s of CHARM_SLOTS) {
+    const was = p.charmSlots && p.charmSlots[s];
+    if (!Array.isArray(was)) continue;
+    for (let i = 0; i < out.charmSlots[s].length && i < was.length; i++) {
+      out.charmSlots[s][i] = was[i] || null;
+    }
   }
   // A save written before seeds existed gets one derived from what it does
   // carry, so it is at least stable across loads rather than fresh each time.
   if (p.seed == null) out.seed = hash32('legacy', p.name || 'LINK', p.createdAt || 0);
   if (!Array.isArray(out.essences)) out.essences = [];
-  if (!Array.isArray(out.ringsEquipped)) out.ringsEquipped = [null, null];
   return out;
 }
 __exports["HEART_UNITS"] = HEART_UNITS;
@@ -4276,7 +4705,7 @@ __define("game/effects.js", function (__exports, __require) {
 const { Entity, defineEntity } = __require("game/entity.js");
 const { sp } = __require("core/fixed.js");
 const { sprites } = __require("gfx/art.js");
-const { EXPLOSION_FRAMES, EXPLOSION_SELF_DAMAGE, KNOCK_EXPLOSION, SHAKE_MEDIUM, SHAKE_MEDIUM_FRAMES } = __require("data/feel.js");
+const { EXPLOSION_FRAMES, EXPLOSION_SELF_DAMAGE, KNOCK_EXPLOSION, DRY_KINDLING_FACTOR, SHAKE_MEDIUM, SHAKE_MEDIUM_FRAMES } = __require("data/feel.js");
 
 class Effect extends Entity {
   constructor(x, y, spec, opts = {}) {
@@ -4350,12 +4779,26 @@ class Explosion extends Entity {
     this.hitDone = false;
     this.depth = 50;
     this.power = opts.power || 4;
+    // Dry Kindling: a wider blast, applied to the hitbox rather than to the
+    // sprite, so a charm never changes what an explosion LOOKS like — the
+    // 32x32 boom art is the source game's and stays that size.
+    this.wide = false;
+  }
+
+  /** Grown once, on the first frame, because `game` is not in the ctor. */
+  applyCharms(game) {
+    if (this.wide || !game.charm('dryKindling')) return;
+    this.wide = true;
+    const grow = Math.round(this.w * (DRY_KINDLING_FACTOR - 1) / 2) * 2;
+    this.hb = { x: this.hb.x - grow / 2, y: this.hb.y - grow / 2,
+      w: this.hb.w + grow, h: this.hb.h + grow };
   }
 
   update(game) {
     this.frame++;
     if (!this.hitDone) {
       this.hitDone = true;
+      this.applyCharms(game);
       game.audio.sfx('explode');
       game.shake(SHAKE_MEDIUM, SHAKE_MEDIUM_FRAMES);
       for (const e of game.entities) {
@@ -4411,7 +4854,7 @@ const { TILE, VIEW_W, VIEW_H } = __require("core/screen.js");
 const { hasItem, itemLevel, addBombs, addReefseeds, addBottles } = __require("game/progress.js");
 const { TIDE_COUNT } = __require("game/tide.js");
 const { FP_ONE, sp, toPx } = __require("core/fixed.js");
-const { KNOCK_TOOL, KNOCK_THROWN, THROW_ARC_RISE, THROW_ARC_GRAVITY, THROW_SLIDE_DECAY, THROW_SLIDE_STOP, REEFSEED_GROW_FRAMES, REEFSEED_SETTLE_FRAMES, REEFSEED_THROW_SPEED, REEFSEED_SHUDDER_EVERY, DREDGE_RANGE, DREDGE_CAST_SPEED, DREDGE_HAUL_SPEED, DREDGE_PULL_SPEED, DREDGE_FLOP_FRAMES, ROD_RANGE, ROD_RANGE_HIGH, ROD_LOCK_FRAMES, ROD_RING_FRAMES, ROD_COOLDOWN_FRAMES, COIN_THROW_SPEED, COIN_SETTLE_FRAMES, COIN_GLINT_EVERY, BOTTLE_POUR_FRAMES, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, ANCHOR_THROW_SPEED, ANCHOR_RECALL_SPEED, ANCHOR_SETTLE_FRAMES, ANCHOR_CHAIN_DAMAGE, SHAKE_SMALL, SHAKE_SMALL_FRAMES } = __require("data/feel.js");
+const { KNOCK_TOOL, KNOCK_THROWN, THROW_ARC_RISE, THROW_ARC_GRAVITY, THROW_SLIDE_DECAY, THROW_SLIDE_STOP, REEFSEED_GROW_FRAMES, REEFSEED_SETTLE_FRAMES, REEFSEED_THROW_SPEED, REEFSEED_SHUDDER_EVERY, DREDGE_RANGE, DREDGE_CAST_SPEED, DREDGE_HAUL_SPEED, DREDGE_PULL_SPEED, COILROPE_RANGE, DREDGE_FLOP_FRAMES, ROD_RANGE, ROD_RANGE_HIGH, ROD_LOCK_FRAMES, ROD_RING_FRAMES, ROD_COOLDOWN_FRAMES, COIN_THROW_SPEED, COIN_SETTLE_FRAMES, COIN_GLINT_EVERY, BOTTLE_POUR_FRAMES, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, ANCHOR_THROW_SPEED, ANCHOR_RECALL_SPEED, ANCHOR_SETTLE_FRAMES, ANCHOR_CHAIN_DAMAGE, SHAKE_SMALL, SHAKE_SMALL_FRAMES } = __require("data/feel.js");
 const { sprites } = __require("gfx/art.js");
 
 // --------------------------------------------------------------------------
@@ -4491,7 +4934,8 @@ class DredgeLine extends Entity {
     this.z = 5;
     this.depth = 30;
     this.hooked = null;          // an entity being hauled in
-    this.range = DREDGE_RANGE * (this.level >= 2 ? 1.5 : 1);
+    this.range = DREDGE_RANGE * (this.level >= 2 ? 1.5 : 1)
+      + (o.coilrope ? COILROPE_RANGE : 0);
     this.path = [];              // tiles the weight passed over, near to far
   }
 
@@ -5264,7 +5708,8 @@ const ITEMS = {
     desc: 'Cast it into deep water and drag. The seafloor keeps things.',
     use(game, p, level) {
       if (p.dredge && !p.dredge.remove) return true;
-      const d = new DredgeLine(p.cx - 5, p.cy - 5, { dir: p.dir, level, owner: p });
+      const d = new DredgeLine(p.cx - 5, p.cy - 5,
+        { dir: p.dir, level, owner: p, coilrope: game.charm('coilrope') });
       p.dredge = d;
       game.addEntity(d);
       game.audio.sfx('dredgeCast');
@@ -5429,12 +5874,12 @@ __define("game/player.js", function (__exports, __require) {
 
 const { Entity, moveEntity, canOccupy, groundFlags, groundTile, findSafeTile, DIR_VEC, DIRS } = __require("game/entity.js");
 const { F, transformFor } = __require("world/tileset.js");
-const { TILE, VIEW_W, VIEW_H } = __require("core/screen.js");
+const { TILE, VIEW_W, VIEW_H, ROOM_W, ROOM_H } = __require("core/screen.js");
 const { sp, toPx } = __require("core/fixed.js");
 const { sprites } = __require("gfx/art.js");
 const { hasItem, itemLevel, HEART_UNITS } = __require("game/progress.js");
 const { useEquipped, ITEMS, ThrownObject } = __require("game/items.js");
-const { WALK_SPEED, SWIM_SPEED, BOOST_SPEED, SHIELD_SPEED, SLOW_FACTOR, SHALLOW_FACTOR, CARRY_FACTOR, SPIN_DRIFT_SPEED, SWORD_HOLD_SPEED, SWING_FRAMES, SWING_HIT_START, SWING_HIT_END, CHARGE_FRAMES, CHARGE_SPARKLE_EVERY, SPIN_FRAMES, SWORD_REACH, SWORD_SPAN, SWORD_GAP, SPIN_BOX, SWORD_HOLD_DELAY, SWORD_HOLD_DAMAGE, SWORD_CLINK_COOLDOWN, KNOCK_HOLD, PLAYER_INVULN_FRAMES, PLAYER_FLICKER_FRAMES, PLAYER_RECOVER_INVULN_FRAMES, PLAYER_HURT_FRAMES, PLAYER_KNOCK_DIST, PLAYER_KNOCK_FRAMES, KNOCK_SWORD, KNOCK_SPIN, HAZARD_DAMAGE, PIT_DAMAGE, WASH_DAMAGE, JUMP_GRAVITY, LAND_SETTLE_RATE, LEDGE_MAX_SPAN, LEDGE_HOP_FRAMES, LEDGE_HOP_HEIGHT, LEDGE_PROBE_REACH, GAP_HOP_MAX_SPAN, FALL_FRAMES, WASH_FRAMES, CONCH_FRAMES, PUSH_DELAY_FRAMES, LENS_FADE_FRAMES, BELLOWS_RANGE, BELLOWS_WARMUP_FRAMES, BELLOWS_PUSH, BELLOWS_PUFF_EVERY, BELLOWS_RAFT_SCALE, SINK_SPEED, SINK_ENTER_FRAMES, CLEATS_BREATH_FRAMES, CLEATS_BREATH_WARN_FRAMES, SINK_BUBBLE_EVERY, SINK_DROWN_DAMAGE, CONTEXT_REACH, LIFT_REACH, LIFT_STRENGTH, THROW_SPEED, CARRY_HEIGHT, ROD_RING_FRAMES, SHAKE_SMALL, SHAKE_SMALL_FRAMES, CHARGE_SPARKLE_SPREAD, WADE_FOAM_EVERY, PUSH_PROBE_REACH } = __require("data/feel.js");
+const { WALK_SPEED, SWIM_SPEED, BOOST_SPEED, SHIELD_SPEED, SLOW_FACTOR, SHALLOW_FACTOR, CARRY_FACTOR, SPIN_DRIFT_SPEED, SWORD_HOLD_SPEED, SWING_FRAMES, SWING_HIT_START, SWING_HIT_END, CHARGE_FRAMES, CHARGE_SPARKLE_EVERY, SPIN_FRAMES, SWORD_REACH, SWORD_SPAN, SWORD_GAP, SPIN_BOX, SWORD_HOLD_DELAY, SWORD_HOLD_DAMAGE, SWORD_CLINK_COOLDOWN, KNOCK_HOLD, PLAYER_INVULN_FRAMES, PLAYER_FLICKER_FRAMES, PLAYER_RECOVER_INVULN_FRAMES, PLAYER_HURT_FRAMES, PLAYER_KNOCK_DIST, PLAYER_KNOCK_FRAMES, KNOCK_SWORD, KNOCK_SPIN, HAZARD_DAMAGE, PIT_DAMAGE, WASH_DAMAGE, JUMP_GRAVITY, LAND_SETTLE_RATE, LEDGE_MAX_SPAN, LEDGE_HOP_FRAMES, LEDGE_HOP_HEIGHT, LEDGE_PROBE_REACH, GAP_HOP_MAX_SPAN, FALL_FRAMES, WASH_FRAMES, CONCH_FRAMES, PUSH_DELAY_FRAMES, LENS_FADE_FRAMES, BELLOWS_RANGE, BELLOWS_WARMUP_FRAMES, BELLOWS_PUSH, BELLOWS_PUFF_EVERY, BELLOWS_RAFT_SCALE, SINK_SPEED, SINK_ENTER_FRAMES, CLEATS_BREATH_FRAMES, CLEATS_BREATH_WARN_FRAMES, SINK_BUBBLE_EVERY, SINK_DROWN_DAMAGE, CONTEXT_REACH, LIFT_REACH, LIFT_STRENGTH, THROW_SPEED, CARRY_HEIGHT, ROD_RING_FRAMES, SHAKE_SMALL, SHAKE_SMALL_FRAMES, CHARGE_SPARKLE_SPREAD, WADE_FOAM_EVERY, PUSH_PROBE_REACH, RIPTIDE_FIN_FACTOR, DEADWEIGHT_FACTOR, KELP_BRAID_FACTOR, SPLIT_FANG_SPAN, SEAWOLF_KNOCK_FACTOR, HAGSTONE_CHANCE, STRANDWALKER_EVERY, PRESSURE_SCAR_FACTOR, BOSUN_FACTOR } = __require("data/feel.js");
 
 class Player extends Entity {
   constructor(x, y) {
@@ -5546,6 +5991,7 @@ class Player extends Entity {
     this.updateJump(game);
     this.updateContactDamage(game);
     this.updateHazards(game);
+    this.updateStrandwalker(game);
 
     if (this.carrying) {
       this.carrying.x = this.x;
@@ -5589,11 +6035,12 @@ class Player extends Entity {
     // Water currents push you while swimming. They do NOT push a walker on the
     // floor: weighted soles are what the Cleats are, and immunity to the
     // current is the whole trade sink mode offers for its pace.
-    if (this.inDeep && !this.underwater) {
+    if (this.inDeep && !this.underwater && !game.charm('deadweight')) {
       const { tx, ty } = groundTile(game, this);
       const def = game.room.tile(tx, ty, game.tide);
       // A tile's `push` is data, written in px/f; the mover speaks subpixels.
-      if (def.push) moveEntity(game, this, sp(def.push[0]), sp(def.push[1]));
+      const k = game.charm('kelpBraid') ? KELP_BRAID_FACTOR : 1;
+      if (def.push) moveEntity(game, this, sp(def.push[0] * k), sp(def.push[1] * k));
     }
   }
 
@@ -5601,7 +6048,7 @@ class Player extends Entity {
     const f = groundFlags(game, this);
     if (this.z > 2 || this.jumping) return;
     if (f & F.PIT) { this.beginFall(game); return; }
-    if (f & F.HAZARD) this.takeDamage(game, HAZARD_DAMAGE, null, { noKnockDir: true });
+    if (f & F.HAZARD) this.takeDamage(game, HAZARD_DAMAGE, null, { noKnockDir: true, hazard: true });
     if (f & F.WHIRL) game.enterWhirlpool(this);
   }
 
@@ -5751,9 +6198,14 @@ class Player extends Entity {
     else if (this.holding) speed = SWORD_HOLD_SPEED;
     const f = groundFlags(game, this);
     let mult = 1;
-    if ((f & F.SLOW) && this.z <= 2) mult *= SLOW_FACTOR;
+    // Charms are multipliers on the same dimensionless product the terrain
+    // uses, so they compose with it rather than overriding it, and the whole
+    // product still lands on a whole subpixel exactly once at the end.
+    if ((f & F.SLOW) && this.z <= 2 && !game.charm('dunerunner')) mult *= SLOW_FACTOR;
     if (this.inShallow && this.z <= 2) mult *= SHALLOW_FACTOR;
-    if (this.carrying) mult *= CARRY_FACTOR;
+    if (this.carrying && !game.charm('potHauler')) mult *= CARRY_FACTOR;
+    if (this.inDeep && !this.underwater && game.charm('riptideFin')) mult *= RIPTIDE_FIN_FACTOR;
+    if (game.charm('deadweight')) mult *= DEADWEIGHT_FACTOR;
     if (mult !== 1) speed = Math.max(1, Math.round(speed * mult));
 
     // DIAGONALS ARE NOT NORMALISED. `dx` and `dy` stay at ±1 and both axes get
@@ -5986,7 +6438,7 @@ class Player extends Entity {
     this.holding = true;
     this.holdT++;
 
-    const box = this.swordBox();
+    const box = this.swordBox(game);
     for (const e of game.entities) {
       if (!e.isEnemy || e.dead || e.dormant || e.hidden) continue;
       if (!rectOverlap(box, e.rect())) continue;
@@ -6011,7 +6463,12 @@ class Player extends Entity {
   }
 
   startSwing(game, level) {
-    if (this.swinging > 0 || this.spinning > 0 || this.inDeep || this.carrying) return true;
+    if (this.swinging > 0 || this.spinning > 0 || this.carrying) return true;
+    // Deep water keeps the blade sheathed — unless you are WALKING down there
+    // with a Ballast Lung, which is the whole of what that charm buys. Note it
+    // does not licence swinging while SWIMMING: the charm is about having your
+    // feet on something.
+    if (this.inDeep && !(this.underwater && game.charm('ballastLung'))) return true;
     this.swinging = SWING_FRAMES;
     this.holding = false;
     this.holdT = 0;
@@ -6026,24 +6483,41 @@ class Player extends Entity {
     this.swinging--;
     const t = SWING_FRAMES - this.swinging;
     if (t < SWING_HIT_START || t > SWING_HIT_END) return;
-    const box = this.swordBox();
+    const box = this.swordBox(game);
     // enemies
     for (const e of game.entities) {
       if (!e.isEnemy || e.dead || this.swingHit.has(e.id)) continue;
       if (rectOverlap(box, e.rect())) {
         this.swingHit.add(e.id);
-        e.hurt(game, swordDamage(this.swordLevel), this.dir, KNOCK_SWORD);
+        e.hurt(game, this.swordHit(game), this.dir, this.swordKnock(game, KNOCK_SWORD));
       }
     }
     // tiles (bushes, signs)
     game.checkTileAction(box, 'cut');
   }
 
-  swordBox() {
+  /**
+   * What the blade is worth this swing. Salt-Etched and Wrackbone both land
+   * here rather than in swordDamage(), because that function is the SWORD's
+   * table — a charm is not a better sword, it is a better swing.
+   */
+  swordHit(game) {
+    let d = swordDamage(this.swordLevel);
+    if (game.charm('saltEtched') && roomHasDryGround(game)) d += 1;
+    if (game.charm('wrackbone')) d *= 2;
+    return d;
+  }
+
+  swordKnock(game, base) {
+    return game.charm('seawolfsTooth') ? base * SEAWOLF_KNOCK_FACTOR : base;
+  }
+
+  swordBox(game) {
     const [dx, dy] = DIR_VEC[this.dir];
     const reach = SWORD_REACH;
-    const w = dx !== 0 ? reach : SWORD_SPAN;
-    const h = dy !== 0 ? reach : SWORD_SPAN;
+    const span = SWORD_SPAN + (game && game.charm('splitFang') ? SPLIT_FANG_SPAN : 0);
+    const w = dx !== 0 ? reach : span;
+    const h = dy !== 0 ? reach : span;
     return {
       x: this.cx - w / 2 + dx * (reach / 2 + SWORD_GAP),
       y: this.cy - h / 2 + dy * (reach / 2 + SWORD_GAP),
@@ -6072,7 +6546,7 @@ class Player extends Entity {
       if (!e.isEnemy || e.dead || this.spinHit.has(e.id)) continue;
       if (rectOverlap(box, e.rect())) {
         this.spinHit.add(e.id);
-        e.hurt(game, swordDamage(this.swordLevel || 1) + 1, this.dir, KNOCK_SPIN);
+        e.hurt(game, this.swordHit(game) + 1, this.dir, this.swordKnock(game, KNOCK_SPIN));
       }
     }
     game.checkTileAction(box, 'cut');
@@ -6292,7 +6766,9 @@ class Player extends Entity {
     }
     if (this.sinkT > 0) return true;
     this.cleatMode = next;
-    this.sinkT = SINK_ENTER_FRAMES;
+    this.sinkT = game.charm('pressureScar')
+      ? Math.max(1, Math.round(SINK_ENTER_FRAMES * PRESSURE_SCAR_FACTOR))
+      : SINK_ENTER_FRAMES;
     this.sinkInto = next === 'sink';
     game.audio.sfx('dive');
     game.spawnEffect('splash', this.x, this.y + 2);
@@ -6322,6 +6798,7 @@ class Player extends Entity {
     // Left standing on dry ground by a falling tide: come back up on your own.
     if (!this.inDeep) { this.surface(game, false); return; }
     if (this._cleats >= 2) return;            // Mermaid Suit: unlimited
+    if (game.charm('gillcarve')) return;      // and so is a Gillcarve
     this.breath--;
     if (this.breath === CLEATS_BREATH_WARN_FRAMES) game.audio.sfx('deny');
     if (this.breath <= 0) this.surface(game, true);
@@ -6351,12 +6828,32 @@ class Player extends Entity {
         : (why === 'forced' ? 'Something holds the water fast.' : ''));
       return true;
     }
-    this.conchTime = CONCH_FRAMES;
-    this.frozen = CONCH_FRAMES;
+    const cf = game.charm('bosunsWhistle')
+      ? Math.max(1, Math.round(CONCH_FRAMES * BOSUN_FACTOR)) : CONCH_FRAMES;
+    this.conchTime = cf;
+    this.frozen = cf;
     game.audio.sfx('conch');
     game.tide.cycle();
     game.onConchPlayed();
     return true;
+  }
+
+  /**
+   * Strandwalker: a quarter-heart every STRANDWALKER_EVERY frames, but only
+   * with both feet on dry ground — not wading, not swimming, not on the floor
+   * of the sea. It is the LOW case's reward for staying out of the water,
+   * which is the only place the LOW case is awake anyway.
+   */
+  updateStrandwalker(game) {
+    if (!game.charm('strandwalker')) { this._strandT = 0; return; }
+    if (this.inShallow || this.inDeep || this.underwater) { this._strandT = 0; return; }
+    const p = game.progress;
+    if (p.hearts >= p.maxHearts) { this._strandT = 0; return; }
+    this._strandT = (this._strandT || 0) + 1;
+    if (this._strandT < STRANDWALKER_EVERY) return;
+    this._strandT = 0;
+    p.hearts = Math.min(p.maxHearts, p.hearts + 1);
+    game.audio.sfx('heart');
   }
 
   // ---------------------------------------------------------------- damage
@@ -6368,12 +6865,15 @@ class Player extends Entity {
       if (e.damage <= 0) continue;
       if (this.z > 6 && !e.flying) continue;      // jumped over it
       if (!this.overlaps(e)) continue;
-      this.takeDamage(game, e.damage, e);
+      // "Sea creature" is the enemy's own terrain field, not where it happens
+      // to be standing: a crab hauled onto dry land by the tide is still what
+      // the Anemone's Gift protects you from.
+      this.takeDamage(game, e.damage, e, { aquatic: e.terrain === 'water' });
       break;
     }
   }
 
-  /** Ring/shield modifiers applied here so every damage source respects them. */
+  /** Charm and shield modifiers applied here so every damage source respects them. */
   takeDamage(game, amount, source, o = {}) {
     if (this.invuln > 0 || this.invincible || this.falling > 0 || this.washing > 0) return false;
     const p = game.progress;
@@ -6393,9 +6893,30 @@ class Player extends Entity {
       }
     }
 
+    // The Hagstone: a quarter of hits pass straight through. Rolled off the
+    // ROOM stream, not the global one, so a room replays identically — see
+    // src/core/rng.js.
+    if (game.charm('hagstone') && game.rng.float() < HAGSTONE_CHANCE) {
+      game.audio.sfx('block');
+      game.spawnEffect('spark', this.cx - 8, this.cy - 8);
+      this.invuln = PLAYER_INVULN_FRAMES;
+      return false;
+    }
+    // Barnacle Skin eats one hit per room and then cracks. `barnacleUsed` is
+    // reset on room entry, which is what "per room" means here.
+    if (game.charm('barnacleSkin') && !this.barnacleUsed) {
+      this.barnacleUsed = true;
+      game.audio.sfx('block');
+      game.spawnEffect('spark', this.cx - 8, this.cy - 8);
+      this.invuln = PLAYER_INVULN_FRAMES;
+      this.flicker = PLAYER_FLICKER_FRAMES;
+      return false;
+    }
+
     let dmg = amount;
-    if (game.hasRing('armor')) dmg = Math.max(1, Math.round(dmg * 0.5));
-    if (game.hasRing('redJoy')) dmg = Math.round(dmg * 2);
+    if (o.aquatic && game.charm('anemonesGift')) dmg = Math.max(1, Math.round(dmg * 0.5));
+    if (o.hazard && game.charm('brineSkin')) dmg = Math.max(1, Math.round(dmg * 0.5));
+    if (game.charm('wrackbone')) dmg = Math.round(dmg * 2);
 
     p.hearts = Math.max(0, p.hearts - dmg);
     this.invuln = PLAYER_INVULN_FRAMES;
@@ -6408,7 +6929,8 @@ class Player extends Entity {
       const dx = this.cx - source.cx, dy = this.cy - source.cy;
       const d = Math.hypot(dx, dy) || 1;
       // sp/f: the whole distance divided across the whole window, once.
-      const per = sp(PLAYER_KNOCK_DIST) / PLAYER_KNOCK_FRAMES;
+      const dist = game.charm('ballastHeart') ? PLAYER_KNOCK_DIST / 2 : PLAYER_KNOCK_DIST;
+      const per = sp(dist) / PLAYER_KNOCK_FRAMES;
       this.knockX = Math.round(dx / d * per);
       this.knockY = Math.round(dy / d * per);
       this.knockTime = PLAYER_KNOCK_FRAMES;
@@ -6440,7 +6962,7 @@ class Player extends Entity {
     if (this.falling === 0) {
       const safe = findSafeTile(game, this) || this.lastSafe;
       this.x = safe.x; this.y = safe.y;
-      this.takeDamage(game, PIT_DAMAGE, null, { noKnockDir: true });
+      this.takeDamage(game, PIT_DAMAGE, null, { noKnockDir: true, hazard: true });
       this.invuln = PLAYER_RECOVER_INVULN_FRAMES;
     }
   }
@@ -6596,6 +7118,34 @@ function swordDamage(level) {
   return level >= 3 ? 6 : (level >= 2 ? 4 : 2);
 }
 
+/**
+ * Does this room have any dry ground in it right now? Salt-Etched's condition,
+ * and the reason it is a LOW-case charm that is nonetheless not "at LOW tide"
+ * — a room that keeps a spit of sand at HIGH still counts, which is what makes
+ * the charm worth reading rather than assuming.
+ *
+ * Asked of the FIELD, so an anchored patch of dry floor counts too. Cached per
+ * room per field stamp: a swing asks it, and eighty tile lookups per swing is
+ * eighty too many.
+ */
+function roomHasDryGround(game) {
+  const room = game.room;
+  if (!room) return false;
+  const stamp = game.tide.stamp + ':' + game.tide.level;
+  if (room._dryStamp === stamp) return room._dryCached;
+  let dry = false;
+  for (let y = 0; y < ROOM_H && !dry; y++) {
+    for (let x = 0; x < ROOM_W; x++) {
+      const f = room.flagsAt(x, y, game.tide);
+      if (f & (F.WATER | F.DEEP | F.SOLID | F.PIT)) continue;
+      dry = true; break;
+    }
+  }
+  room._dryStamp = stamp;
+  room._dryCached = dry;
+  return dry;
+}
+
 function rectOverlap(a, b) {
   return a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
 }
@@ -6606,6 +7156,7 @@ function dirFromDelta(dx, dy) {
 }
 __exports["Player"] = Player;
 __exports["swordDamage"] = swordDamage;
+__exports["roomHasDryGround"] = roomHasDryGround;
 });
 
 /* ===== src/game/objects.js ===== */
@@ -6621,28 +7172,47 @@ const { sprites } = __require("gfx/art.js");
 const { drawText } = __require("gfx/font.js");
 const { addRupees, heal, addBombs, addReefseeds, addBottles, addKey, giveItem, addHeartContainer, addHeartPiece, HEART_UNITS, setFlag, flag } = __require("game/progress.js");
 const { itemName, itemIcon, ITEMS } = __require("game/items.js");
-const { PICKUP_LIFE_FRAMES, PICKUP_POP_SPEED, PICKUP_GRAVITY, PICKUP_SETTLE_FRAMES, PICKUP_GRAB_DELAY, FAIRY_DRIFT_TURN, FAIRY_DRIFT_X, FAIRY_DRIFT_Y, NPC_WANDER_PERIOD, NPC_WANDER_SPEED, ESSENCE_SPARKLE_EVERY, ESSENCE_SPARKLE_SPREAD, BELLOWS_PUSH, BELLOWS_RAFT_SCALE, BELLOWS_WHEEL_COAST, BELL_CHIME_FRAMES } = __require("data/feel.js");
+const { CHARMS, giveCharm } = __require("game/scrimshaw.js");
+const { PICKUP_LIFE_FRAMES, PICKUP_POP_SPEED, PICKUP_GRAVITY, PICKUP_SETTLE_FRAMES, PICKUP_GRAB_DELAY, FAIRY_DRIFT_TURN, FAIRY_DRIFT_X, FAIRY_DRIFT_Y, NPC_WANDER_PERIOD, NPC_WANDER_SPEED, ESSENCE_SPARKLE_EVERY, ESSENCE_SPARKLE_SPREAD, BELLOWS_PUSH, BELLOWS_RAFT_SCALE, BELLOWS_WHEEL_COAST, BELL_CHIME_FRAMES, CARVE_PRICE, CHARM_CASE_MAX, CHARM_LOW_ESSENCES, CHARM_HIGH_ESSENCES, CHARM_CASE_ESSENCES } = __require("data/feel.js");
 
 // --------------------------------------------------------------------------
 // Pickups
 // --------------------------------------------------------------------------
 
+/**
+ * `worth` is how many rupees the pickup is carrying. It is a FIELD rather than
+ * a number baked into `get`, because the Beachcomber doubles what an enemy
+ * drops and the doubling has to happen when the drop is rolled — a rupee
+ * already lying on the floor was worth what it was worth when it fell.
+ */
 const PICKUPS = {
-  rupee1: { sprite: 'p_rupee', pal: 'rupee', get(g) { addRupees(g.progress, 1); g.audio.sfx('rupee'); } },
-  rupee5: { sprite: 'p_rupee5', pal: 'enemyr', get(g) { addRupees(g.progress, 5); g.audio.sfx('rupee'); } },
-  rupee20: { sprite: 'p_rupee20', pal: 'enemyp', get(g) { addRupees(g.progress, 20); g.audio.sfx('rupeeBig'); } },
-  rupee100: { sprite: 'p_rupee20', pal: 'gold', get(g) { addRupees(g.progress, 100); g.audio.sfx('rupeeBig'); } },
+  rupee1: { sprite: 'p_rupee', pal: 'rupee', worth: 1, get(g, e) { addRupees(g.progress, worthOf(e, 1)); g.audio.sfx('rupee'); } },
+  rupee5: { sprite: 'p_rupee5', pal: 'enemyr', worth: 5, get(g, e) { addRupees(g.progress, worthOf(e, 5)); g.audio.sfx('rupee'); } },
+  rupee20: { sprite: 'p_rupee20', pal: 'enemyp', worth: 20, get(g, e) { addRupees(g.progress, worthOf(e, 20)); g.audio.sfx('rupeeBig'); } },
+  rupee100: { sprite: 'p_rupee20', pal: 'gold', worth: 100, get(g, e) { addRupees(g.progress, worthOf(e, 100)); g.audio.sfx('rupeeBig'); } },
   heart: { sprite: 'p_heart', pal: 'heart', get(g) { heal(g.progress, HEART_UNITS); g.audio.sfx('heart'); } },
   fairy: {
     sprite: 'p_fairy', pal: 'magic', float: true,
     get(g) { heal(g.progress, HEART_UNITS * 6); g.audio.sfx('fairy'); },
   },
   bomb4: { sprite: 'p_bombs', pal: 'bomb', get(g) { addBombs(g.progress, 4); g.audio.sfx('rupee'); } },
+  // NO TEXT BOX, deliberately. An open dialogue freezes every entity while the
+  // mode is still 'play' (see CLAUDE.md, traps), so a first-time hint on a
+  // FLOOR DROP stops the game dead in the middle of whatever fight dropped it.
+  // The blank count is on the QUEST screen and the scrimshander explains
+  // herself; a pickup jingle is the whole of what this needs to say.
+  blank: {
+    sprite: 'p_blank', pal: null,
+    get(g) {
+      g.progress.blanks = (g.progress.blanks || 0) + 1;
+      g.audio.sfx('key');
+    },
+  },
   seeds5: {
     sprite: 'i_reefseed', pal: null,
     get(g) {
       if (g.progress.maxReefseeds <= 0) { g.audio.sfx('deny'); return; }
-      addReefseeds(g.progress, 3);
+      addReefseeds(g.progress, 3, g.reefseedCap());
       g.audio.sfx('rupee');
     },
   },
@@ -6691,12 +7261,26 @@ const PICKUPS = {
   },
 };
 
+// Blanks come off the `good` and `rich` tables only. A blank from every
+// Octorok would make the scrimshander a vending machine; off the tougher
+// roster it stays something you notice getting.
+//
+// THE HEART WEIGHTS ARE UNCHANGED, deliberately. The first cut of this took
+// blanks out of `heart`, and tools/replay.mjs caught it immediately: the
+// d1-descent actor ran out of healing and died in a room it had always
+// cleared. A new pickup must not quietly become a difficulty change — the
+// weight comes out of `null` and the small rupees instead. Both tables still
+// total 100.
 const DROP_TABLES = {
   none: [],
   common: [[40, null], [26, 'rupee1'], [16, 'heart'], [10, 'rupee5'], [8, 'bomb4']],
-  good: [[16, null], [24, 'rupee5'], [24, 'heart'], [20, 'rupee1'], [12, 'bomb4'], [4, 'bottle']],
-  rich: [[10, null], [28, 'rupee20'], [28, 'heart'], [18, 'rupee5'], [10, 'fairy'], [6, 'bottle']],
+  good: [[14, null], [24, 'rupee5'], [24, 'heart'], [18, 'rupee1'], [12, 'bomb4'], [4, 'bottle'], [4, 'blank']],
+  rich: [[6, null], [26, 'rupee20'], [28, 'heart'], [18, 'rupee5'], [10, 'fairy'], [6, 'bottle'], [6, 'blank']],
   hearts: [[30, null], [70, 'heart']],
+  // What the Dredge Line brings up off the seafloor. Blanks are COMMON here
+  // and rare everywhere else, which is what makes dredging the way you supply
+  // the scrimshander rather than a way you might happen to.
+  dredged: [[20, null], [30, 'blank'], [24, 'rupee5'], [16, 'heart'], [10, 'rupee20']],
 };
 
 /**
@@ -6713,6 +7297,11 @@ function rollDropTable(name, stream) {
   return null;
 }
 
+/** What this pickup is carrying, or the kind's face value if nothing set it. */
+function worthOf(e, base) {
+  return (e && e.worth != null) ? e.worth : base;
+}
+
 class Pickup extends Entity {
   constructor(x, y, o = {}) {
     super(x, y, o);
@@ -6727,6 +7316,8 @@ class Pickup extends Entity {
     this.harmless = true;
     this.shadow = false;
     this.life = spec.persistent ? Infinity : (o.life || PICKUP_LIFE_FRAMES);
+    // Set by rollDrop when the Beachcomber is on. Null means face value.
+    this.worth = o.worth != null ? o.worth : null;
     // `vy` is px/f when a caller names one; the fallback is already sp/f.
     this.vy = o.vy != null ? sp(o.vy) : PICKUP_POP_SPEED;
     this.z = 0;
@@ -6760,7 +7351,7 @@ class Pickup extends Entity {
   collect(game) {
     this.remove = true;
     if (this.saveKey) game.progress.secrets[this.saveKey] = true;
-    this.spec.get(game);
+    this.spec.get(game, this);
     game.spawnEffect('sparkle', this.x, this.y, { life: 14 });
   }
 
@@ -6896,7 +7487,7 @@ defineEntity('sign', (x, y, o) => new Sign(x, y, o));
 //
 //   ['shopItem', 3, 3, { item: 'shield', level: 1, price: 30 }]
 //   ['shopItem', 5, 3, { pickup: 'bomb4', price: 20, name: 'Bombs' }]
-//   ['shopItem', 7, 3, { ring: 'power', price: 80 }]
+//   ['shopItem', 7, 3, { charm: 'ballastHeart', price: 80 }]
 // --------------------------------------------------------------------------
 
 class ShopItem extends Entity {
@@ -6911,7 +7502,7 @@ class ShopItem extends Entity {
     this.item = o.item || null;
     this.level = o.level || 1;
     this.pickup = o.pickup || null;
-    this.ring = o.ring || null;
+    this.charm = o.charm || null;
     this.label = o.name || null;
     this.saveKey = o.saveKey || null;
     this.once = o.once !== false;      // most stock is one-per-save
@@ -6922,39 +7513,42 @@ class ShopItem extends Entity {
   get displayName() {
     if (this.label) return this.label;
     if (this.item) return itemName(this.item, this.level);
-    if (this.ring) return 'a magic ring';
+    if (this.charm) return (CHARMS[this.charm] || {}).name || 'a carved charm';
     return 'something';
   }
 
   get icon() {
     if (this.item) return itemIcon(this.item, this.level);
-    if (this.ring) return 'i_ring';
+    if (this.charm) return 'i_charm';
     return (PICKUPS[this.pickup] || PICKUPS.rupee1).sprite;
   }
 
   interact(game) {
     if (this.sold) { game.say('Sold out, sorry.'); return; }
     const p = game.progress;
-    if (p.rupees < this.price) {
+    // The Chandler's Eye is read here and nowhere else, so the price quoted,
+    // the price checked and the price paid are all one number.
+    const price = game.shopPrice(this.price);
+    if (p.rupees < price) {
       game.audio.sfx('deny');
-      game.say(`${this.displayName} — ${this.price} Rupees.\nYou cannot afford it.`);
+      game.say(`${this.displayName} — ${price} Rupees.\nYou cannot afford it.`);
       return;
     }
-    game.ask(`${this.displayName} — ${this.price} Rupees.\nBuy it?`, ['Yes', 'No'], (pick) => {
+    game.ask(`${this.displayName} — ${price} Rupees.\nBuy it?`, ['Yes', 'No'], (pick) => {
       if (pick !== 0) return;
-      addRupees(p, -this.price);
+      addRupees(p, -price);
       game.audio.sfx('rupee');
       if (this.item) {
         giveItem(p, this.item, this.level);
         game.autoEquip(this.item);
         if (this.item === 'bombs' && !p.maxBombs) { p.maxBombs = 10; addBombs(p, 10); }
         game.presentItem(this.item, this.level);
-      } else if (this.ring) {
-        p.rings[this.ring] = true;
+      } else if (this.charm) {
+        giveCharm(p, this.charm);
         game.audio.jingle('fanfareShort');
-        game.say('You got a magic ring! Check the Quest screen.');
+        game.say('A carved charm! Slot it on the CHARM screen.');
       } else if (this.pickup) {
-        (PICKUPS[this.pickup] || PICKUPS.rupee1).get(game);
+        (PICKUPS[this.pickup] || PICKUPS.rupee1).get(game, null);
       }
       if (this.once) {
         this.sold = true;
@@ -6976,7 +7570,10 @@ class ShopItem extends Entity {
     const bob = Math.round(Math.sin(this.frame * 0.06) * 1);
     sprites.draw(ctx, this.icon, ox + this.x, oy + this.y + bob,
       { pal: (this.item && ITEMS[this.item] && ITEMS[this.item].pal) || 'ui' });
-    drawText(ctx, String(this.price), ox + this.x + 2, oy + this.y + 15, '#f8f8e8', '#181c18');
+    // The tag shows what it will actually cost, so a charm that makes things
+    // cheaper is visible from across the shop rather than at the till.
+    drawText(ctx, String(game.shopPrice(this.price)),
+      ox + this.x + 2, oy + this.y + 15, '#f8f8e8', '#181c18');
   }
 }
 defineEntity('shopItem', (x, y, o) => new ShopItem(x, y, o));
@@ -7001,7 +7598,7 @@ class Giver extends NPC {
     this.item = o.item || null;
     this.level = o.level || 1;
     this.pickup = o.pickup || null;
-    this.ring = o.ring || null;
+    this.charm = o.charm || null;
     this.needEssences = o.needEssences || 0;
     this.needFlag = o.needFlag || null;
     this.giveFlag = o.flag || null;
@@ -7039,12 +7636,12 @@ class Giver extends NPC {
         game.autoEquip(this.item);
         if (this.item === 'bombs' && !p.maxBombs) { p.maxBombs = 10; addBombs(p, 10); }
         game.presentItem(this.item, this.level);
-      } else if (this.ring) {
-        p.rings[this.ring] = true;
+      } else if (this.charm) {
+        giveCharm(p, this.charm);
         game.audio.jingle('fanfareShort');
-        game.say('You got a magic ring!');
+        game.say('A carved charm!');
       } else if (this.pickup) {
-        (PICKUPS[this.pickup] || PICKUPS.rupee1).get(game);
+        (PICKUPS[this.pickup] || PICKUPS.rupee1).get(game, null);
       }
     };
     // Speak first, then hand the item over once the box is dismissed.
@@ -7056,6 +7653,87 @@ class Giver extends NPC {
   }
 }
 defineEntity('giver', (x, y, o) => new Giver(x, y, o));
+
+// --------------------------------------------------------------------------
+// The scrimshander: hand over a blank plus rupees, come back a tide later for
+// a carved charm.
+//
+//   ['scrimshander', 1, 2, { sprite: 'npc_elder' }]
+//
+// She also opens the LOW and HIGH cases, and later widens all three. Those are
+// progression, so they are keyed on ESSENCES rather than on rupees — the cases
+// open because the story moved, not because you shopped. Each opening is a
+// one-shot flag so the line is said once and the state is saved.
+// --------------------------------------------------------------------------
+
+class Scrimshander extends NPC {
+  constructor(x, y, o = {}) {
+    super(x, y, { sprite: 'npc_elder', ...o });
+    this.faceOnTalk = true;
+  }
+
+  /** Cases and case size open on essence count. Returns a line, or null. */
+  checkUnlocks(game) {
+    const p = game.progress;
+    if (p.essences.length >= CHARM_LOW_ESSENCES && !p.charmOpen.low) {
+      p.charmOpen.low = true;
+      return 'I have cut you a second case — for the low water,\nwhen the floor of the sea is a road.';
+    }
+    if (p.essences.length >= CHARM_HIGH_ESSENCES && !p.charmOpen.high) {
+      p.charmOpen.high = true;
+      return 'And a third, for the high water. Bone keeps\nbetter wet than you would think.';
+    }
+    if (p.essences.length >= CHARM_CASE_ESSENCES && p.charmCase < CHARM_CASE_MAX) {
+      p.charmCase = CHARM_CASE_MAX;
+      return 'Every case takes two now. You have earned\nthe room.';
+    }
+    return null;
+  }
+
+  interact(game, player) {
+    const p = game.progress;
+    if (this.faceOnTalk) {
+      const dx = player.cx - this.cx, dy = player.cy - this.cy;
+      this.dir = Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 'left' : 'right') : (dy < 0 ? 'up' : 'down');
+    }
+
+    const unlocked = this.checkUnlocks(game);
+    if (unlocked) { game.audio.jingle('fanfareShort'); game.say(unlocked); return; }
+
+    // A finished carving comes first: nothing else she says matters while
+    // there is one sitting on the bench.
+    if (p.carve && p.carve.turns <= 0) {
+      const id = game.collectCarving();
+      game.audio.jingle('fanfareShort');
+      game.say(`Here. The bone wanted to be a ${CHARMS[id].name}.\n${CHARMS[id].desc}`);
+      return;
+    }
+    if (p.carve) {
+      game.say(`Not yet. ${p.carve.turns} more turn${p.carve.turns === 1 ? '' : 's'} of the tide.\nSound your conch if you are in a hurry.`);
+      return;
+    }
+    if (!p.blanks) {
+      game.say('Bring me a blank. Bone, shell, anything the sea\nhas finished with. Dredge the seafloor for it.');
+      return;
+    }
+    const price = game.shopPrice(CARVE_PRICE);
+    if (p.rupees < price) {
+      game.say(`${price} Rupees and a blank, and I will carve you\nsomething. You are short.`);
+      return;
+    }
+    game.ask(`A blank and ${price} Rupees. I choose what it\nbecomes — the bone does, really. Well?`,
+      ['Yes', 'No'], (pick) => {
+        if (pick !== 0) return;
+        const id = game.commissionCarving();
+        if (!id) { game.say('You have every charm I know. Go and use them.'); return; }
+        p.blanks--;
+        addRupees(p, -price);
+        game.audio.sfx('confirm');
+        game.say('Come back when the tide has turned all the way\nround. It will be ready.');
+      });
+  }
+}
+defineEntity('scrimshander', (x, y, o) => new Scrimshander(x, y, o));
 
 // --------------------------------------------------------------------------
 // Pushable block, floor switch, torch
@@ -7411,6 +8089,7 @@ __exports["NPC"] = NPC;
 __exports["Sign"] = Sign;
 __exports["ShopItem"] = ShopItem;
 __exports["Giver"] = Giver;
+__exports["Scrimshander"] = Scrimshander;
 __exports["PushBlock"] = PushBlock;
 __exports["FloorSwitch"] = FloorSwitch;
 __exports["Torch"] = Torch;
@@ -7841,55 +8520,6 @@ __exports["drawBox"] = drawBox;
 __exports["drawPanel"] = drawPanel;
 });
 
-/* ===== src/game/rings.js ===== */
-__define("game/rings.js", function (__exports, __require) {
-// Magic rings — the Oracle series' collectible modifier system.
-// Effects are read by the systems they affect (see hasRing calls) rather than
-// being applied here, so a ring is pure data.
-
-const RINGS = {
-  power: { name: 'Power Ring', desc: 'Sword damage up, damage taken up.', color: 'enemyr' },
-  armor: { name: 'Armor Ring', desc: 'Damage taken halved, sword weaker.', color: 'enemyb' },
-  swimmer: { name: "Swimmer's Ring", desc: 'Swim faster and resist currents.', color: 'water' },
-  tide: { name: 'Tide Ring', desc: 'The conch sounds faster.', color: 'essence' },
-  pearl: { name: 'Pearl Ring', desc: 'Breathe longer underwater.', color: 'marble' },
-  blast: { name: 'Blast Ring', desc: 'Bombs blast wider.', color: 'fire' },
-  octo: { name: 'Octo Ring', desc: 'Octoroks fear you.', color: 'enemyg' },
-  light: { name: 'Light Ring', desc: 'Dark rooms are less dark.', color: 'gold' },
-  green: { name: 'Green Ring', desc: 'A quarter more rupees from foes.', color: 'grass' },
-  heart: { name: 'Heart Ring', desc: 'Slowly recover health as you walk.', color: 'heart' },
-  redJoy: { name: 'Red Joy Ring', desc: 'Double damage dealt AND taken.', color: 'lava' },
-  whisp: { name: 'Whisp Ring', desc: 'Immune to being cursed.', color: 'magic' },
-  gasha: { name: 'Gasha Ring', desc: 'Buried seeds grow richer.', color: 'tree' },
-  steadfast: { name: 'Steadfast Ring', desc: 'You are knocked back less.', color: 'stone' },
-  discovery: { name: 'Discovery Ring', desc: 'The ground hints at secrets.', color: 'sand' },
-};
-
-function ownedRings(progress) {
-  return Object.keys(RINGS).filter(id => progress.rings[id]);
-}
-
-function giveRing(progress, id) {
-  if (!RINGS[id] || progress.rings[id]) return false;
-  progress.rings[id] = true;
-  return true;
-}
-
-function equipRing(progress, id, slot = 0) {
-  const max = progress.ringSlots || 1;
-  if (slot >= max) return false;
-  const eq = progress.ringsEquipped;
-  const at = eq.indexOf(id);
-  if (at >= 0) { eq[at] = null; return true; }
-  eq[slot] = id;
-  return true;
-}
-__exports["RINGS"] = RINGS;
-__exports["ownedRings"] = ownedRings;
-__exports["giveRing"] = giveRing;
-__exports["equipRing"] = equipRing;
-});
-
 /* ===== src/game/menu.js ===== */
 __define("game/menu.js", function (__exports, __require) {
 // Pause menu: item grid with A/B assignment, dungeon or overworld map, quest
@@ -7900,7 +8530,7 @@ const { drawText, drawTextCentered, textWidth } = __require("gfx/font.js");
 const { sprites } = __require("gfx/art.js");
 const { drawPanel, drawBox } = __require("game/dialogue.js");
 const { ITEMS, itemIcon, itemName, equippableItems } = __require("game/items.js");
-const { RINGS, ownedRings, equipRing } = __require("game/rings.js");
+const { CHARMS, CHARM_SLOTS, CHARM_COUNT, ownedCharms, charmsForSlot, slotCharm, caseSize, slotOpen, equippedIn } = __require("game/scrimshaw.js");
 const { HEART_UNITS } = __require("game/progress.js");
 const { MAPS, getMap, hasRoom, getRoom } = __require("world/maps.js");
 const { TIDE_NAMES, TIDE_COUNT } = __require("game/tide.js");
@@ -7944,7 +8574,12 @@ function tideMarks(mapId, floor, rx, ry) {
   return mask;
 }
 
-const TABS = ['ITEMS', 'MAP', 'QUEST', 'SAVE'];
+const TABS = ['ITEMS', 'MAP', 'CHARM', 'QUEST', 'SAVE'];
+
+// The three cases are drawn HIGH at the top and LOW at the bottom, because
+// that is where the water is. Reading the screen top to bottom is reading the
+// tide falling, and the highlighted row is where it is right now.
+const CASE_ROWS = ['high', 'mid', 'low'];
 const COLS = 5;
 
 class Menu {
@@ -7952,7 +8587,8 @@ class Menu {
     this.game = game;
     this.tab = 0;
     this.cursor = 0;
-    this.ringCursor = 0;
+    this.caseRow = 1;        // index into CASE_ROWS; starts on MID, the one you own
+    this.poolCursor = 0;
     this.saveCursor = 0;
     this.message = '';
     this.messageTime = 0;
@@ -7980,7 +8616,8 @@ class Menu {
 
     if (this.tab === 0) this.updateItems();
     else if (this.tab === 1) this.updateMap();
-    else if (this.tab === 2) this.updateQuest();
+    else if (this.tab === 2) this.updateCharms();
+    else if (this.tab === 3) this.updateQuest();
     else this.updateSave();
   }
 
@@ -8028,15 +8665,48 @@ class Menu {
 
   updateQuest() {
     const g = this.game, i = g.input;
-    const rings = ownedRings(g.progress);
+    if (i.pressed('b')) { this.tab = 0; g.audio.sfx('cursor'); }
+  }
+
+  /** The case currently highlighted, and the charms that could go in it. */
+  get caseSlot() { return CASE_ROWS[this.caseRow]; }
+  get pool() { return charmsForSlot(this.game.progress, this.caseSlot); }
+
+  updateCharms() {
+    const g = this.game, i = g.input, p = g.progress;
     if (i.pressed('b')) { this.tab = 0; g.audio.sfx('cursor'); return; }
-    if (!rings.length) return;
-    if (i.pressed('left')) { this.ringCursor = (this.ringCursor + rings.length - 1) % rings.length; g.audio.sfx('cursor'); }
-    if (i.pressed('right')) { this.ringCursor = (this.ringCursor + 1) % rings.length; g.audio.sfx('cursor'); }
-    if (i.pressed('a')) {
-      equipRing(g.progress, rings[this.ringCursor], 0);
-      g.audio.sfx('confirm');
+    if (i.pressed('up')) { this.caseRow = (this.caseRow + 2) % 3; this.poolCursor = 0; g.audio.sfx('cursor'); }
+    if (i.pressed('down')) { this.caseRow = (this.caseRow + 1) % 3; this.poolCursor = 0; g.audio.sfx('cursor'); }
+
+    const pool = this.pool;
+    if (!pool.length) { this.poolCursor = 0; return; }
+    if (i.pressed('left')) { this.poolCursor = (this.poolCursor + pool.length - 1) % pool.length; g.audio.sfx('cursor'); }
+    if (i.pressed('right')) { this.poolCursor = (this.poolCursor + 1) % pool.length; g.audio.sfx('cursor'); }
+    this.poolCursor = Math.min(this.poolCursor, pool.length - 1);
+
+    if (!i.pressed('a')) return;
+    const slot = this.caseSlot;
+    const id = pool[this.poolCursor];
+    if (!slotOpen(p, slot)) {
+      g.audio.sfx('deny');
+      this.flash('That case is still shut.');
+      return;
     }
+    const inCase = equippedIn(p, slot);
+    if (inCase.includes(id)) {
+      // A press on something already in the case takes it out. One button does
+      // both, because at 160x144 a second one would need a legend nobody reads.
+      slotCharm(p, slot, p.charmSlots[slot].indexOf(id), null);
+      g.audio.sfx('cursor');
+      this.flash(CHARMS[id].name + ' off');
+      return;
+    }
+    const size = caseSize(p);
+    let at = p.charmSlots[slot].slice(0, size).indexOf(null);
+    if (at < 0) at = size - 1;              // full: the newest replaces the last
+    slotCharm(p, slot, at, id);
+    g.audio.sfx('confirm');
+    this.flash(CHARMS[id].name + ' on ' + slot.toUpperCase());
   }
 
   updateSave() {
@@ -8077,7 +8747,8 @@ class Menu {
 
     if (this.tab === 0) this.drawItems(ctx);
     else if (this.tab === 1) this.drawMap(ctx);
-    else if (this.tab === 2) this.drawQuest(ctx);
+    else if (this.tab === 2) this.drawCharms(ctx);
+    else if (this.tab === 3) this.drawQuest(ctx);
     else this.drawSave(ctx);
 
     if (this.messageTime > 0) {
@@ -8183,25 +8854,77 @@ class Menu {
     y += 11;
     drawText(ctx, `Rupees ${p.rupees}   Deaths ${p.deaths}`, 6, y, '#f8f8e8');
     y += 13;
-    const rings = ownedRings(p);
-    drawText(ctx, 'RINGS ' + rings.length + '/' + Object.keys(RINGS).length, 6, y, '#a8f0f8');
+    drawText(ctx, 'SCRIMSHAW ' + ownedCharms(p).length + '/' + CHARM_COUNT, 6, y, '#a8f0f8');
     y += 10;
-    if (rings.length) {
-      rings.forEach((id, i) => {
-        const on = p.ringsEquipped.includes(id);
-        const cx = 6 + i * 11;
-        sprites.draw(ctx, 'i_ring', cx, y, { pal: RINGS[id].color });
-        if (i === this.ringCursor) { ctx.fillStyle = '#f8f8e8'; ctx.fillRect(cx, y + 10, 8, 1); }
-        if (on) { ctx.fillStyle = '#48c868'; ctx.fillRect(cx, y - 1, 8, 1); }
-      });
-      const sel = RINGS[rings[this.ringCursor]];
-      if (sel) {
-        drawText(ctx, sel.name, 6, y + 13, '#f8f8e8');
-        drawText(ctx, sel.desc.slice(0, 36), 6, y + 22, '#a8b0a0');
+    drawText(ctx, `Blanks ${p.blanks || 0}`
+      + (p.carve ? `   Carving: ${p.carve.turns} tide${p.carve.turns === 1 ? '' : 's'}` : ''),
+      6, y, '#f8f8e8');
+  }
+
+  // ------------------------------------------------------------ scrimshaw
+
+  /**
+   * Three cases stacked as tide levels, HIGH at the top. The live one is
+   * highlighted, which is the entire teaching job this screen has: a charm in
+   * a case that is not lit is a charm doing nothing, and that has to be
+   * obvious at a glance and at 160x144.
+   */
+  drawCharms(ctx) {
+    const g = this.game, p = g.progress;
+    const live = g.scrim.liveSlots;
+    const size = caseSize(p);
+    let y = HUD_H + 16;
+
+    for (let r = 0; r < CASE_ROWS.length; r++) {
+      const slot = CASE_ROWS[r];
+      const lv = CHARM_SLOTS.indexOf(slot);
+      const on = live.has(slot) && slotOpen(p, slot);
+      const here = r === this.caseRow;
+
+      if (on) { ctx.fillStyle = '#203848'; ctx.fillRect(2, y - 2, SCREEN_W - 4, 13); }
+      if (here) { ctx.fillStyle = '#f8f8e8'; ctx.fillRect(2, y - 2, 1, 13); }
+
+      // The tide pip, the same three tones the water itself is drawn in, so
+      // the row needs no key to read as a tide level.
+      ctx.fillStyle = TIDE_PIP[lv];
+      ctx.fillRect(6, y + 1, 5, 5);
+      drawText(ctx, TIDE_NAMES[lv], 14, y, on ? '#f8f8e8' : '#687888');
+
+      if (!slotOpen(p, slot)) {
+        drawText(ctx, 'shut', 48, y, '#485868');
+      } else {
+        for (let i = 0; i < size; i++) {
+          const id = p.charmSlots[slot][i];
+          const cx = 48 + i * 13;
+          if (id) sprites.draw(ctx, 'i_charm', cx, y - 1, { pal: CHARMS[id].color });
+          else { ctx.strokeStyle = '#485868'; ctx.strokeRect(cx + 0.5, y - 0.5, 9, 9); }
+        }
       }
-    } else {
-      drawText(ctx, 'None yet.', 6, y, '#a8b0a0');
+      y += 14;
     }
+
+    // The pool: everything owned that fits the highlighted case.
+    const pool = this.pool;
+    y += 3;
+    drawText(ctx, this.caseSlot.toUpperCase() + ' CASE  ' + pool.length + ' fit', 6, y, '#a8f0f8');
+    y += 10;
+    if (!pool.length) {
+      drawText(ctx, 'Nothing carved for this case.', 6, y, '#a8b0a0');
+      return;
+    }
+    const inCase = equippedIn(p, this.caseSlot);
+    pool.forEach((id, i) => {
+      const cx = 6 + i * 12;
+      if (cx > SCREEN_W - 12) return;
+      sprites.draw(ctx, 'i_charm', cx, y, { pal: CHARMS[id].color });
+      if (inCase.includes(id)) { ctx.fillStyle = '#48c868'; ctx.fillRect(cx, y - 2, 9, 1); }
+      if (i === this.poolCursor) { ctx.fillStyle = '#f8f8e8'; ctx.fillRect(cx, y + 10, 9, 1); }
+    });
+    y += 14;
+    const sel = CHARMS[pool[this.poolCursor]];
+    if (!sel) return;
+    drawText(ctx, sel.name, 6, y, '#f8f8e8');
+    drawText(ctx, sel.desc.slice(0, 38), 6, y + 9, '#a8b0a0');
   }
 
   drawSave(ctx) {
@@ -8556,18 +9279,18 @@ const { Tide, TIDE_COUNT } = __require("game/tide.js");
 const { Player } = __require("game/player.js");
 const { spawnEntity, ENTITY_TYPES, Entity, findSafeTile } = __require("game/entity.js");
 const { spawnEffectAt, Explosion } = __require("game/effects.js");
-const { Pickup, rollDropTable, PushBlock, Torch, FloorSwitch, Chest } = __require("game/objects.js");
+const { Pickup, PICKUPS, rollDropTable, PushBlock, Torch, FloorSwitch, Chest } = __require("game/objects.js");
 const { ThrownObject, ITEMS, itemName, itemIcon } = __require("game/items.js");
 const { newProgress, saveSlot, loadSlot, giveItem, addRupees, addKey, useKey, keyCount, itemLevel, hasItem, HEART_UNITS, addBombs, addReefseeds, addBottles, setFlag, flag } = __require("game/progress.js");
 const { drawHud, drawAreaBanner, drawBossBar } = __require("game/hud.js");
 const { Dialogue, drawBox, drawPanel, getText } = __require("game/dialogue.js");
 const { Menu } = __require("game/menu.js");
-const { RINGS } = __require("game/rings.js");
+const { Scrimshaw, CHARMS, giveCharm, ownedCharms } = __require("game/scrimshaw.js");
 const { Title } = __require("game/title.js");
 const { runCutscene, CUTSCENES } = __require("game/cutscene.js");
-const { Stream, seedGlobal, roomStream, noise1 } = __require("core/rng.js");
+const { Stream, seedGlobal, roomStream, noise1, rng: rngGlobal } = __require("core/rng.js");
 const { sp } = __require("core/fixed.js");
-const { ROOM_TRANSITION_FRAMES, ROOM_EXIT_MARGIN, FADE_RATE, BANNER_FRAMES, SHAKE_LARGE, SHAKE_LARGE_FRAMES, BOSS_ESSENCE_DELAY_FRAMES, BOSS_MUSIC_RESUME_FRAMES, ITEM_PRESENT_FRAMES, ESSENCE_FREEZE_FRAMES, GAMEOVER_WAIT_FRAMES, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, LENS_FADE_FRAMES, LENS_GHOST_ALPHA, LENS_TINT_ALPHA, LENS_PHASE_ALPHA, LENS_SHIMMER_FRAMES, REEFSEED_CAPACITY, COIN_SWAP_DELAY_FRAMES, BOTTLE_CAPACITY } = __require("data/feel.js");
+const { ROOM_TRANSITION_FRAMES, ROOM_EXIT_MARGIN, FADE_RATE, BANNER_FRAMES, SHAKE_LARGE, SHAKE_LARGE_FRAMES, BOSS_ESSENCE_DELAY_FRAMES, BOSS_MUSIC_RESUME_FRAMES, ITEM_PRESENT_FRAMES, ESSENCE_FREEZE_FRAMES, GAMEOVER_WAIT_FRAMES, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, LENS_FADE_FRAMES, LENS_GHOST_ALPHA, LENS_TINT_ALPHA, LENS_PHASE_ALPHA, LENS_SHIMMER_FRAMES, REEFSEED_CAPACITY, COIN_SWAP_DELAY_FRAMES, BOTTLE_CAPACITY, CARVE_TIDE_TURNS, QUARTERMASTER_BONUS, CHANDLER_FACTOR, LANTERN_RADIUS, GULLS_TALLY_FACTOR, CARVE_PRICE, PICKUP_LIFE_FRAMES, WRECK_GLIMMER_PERIOD, WRECK_GLIMMER_ON, WRECK_GLIMMER_ALPHA } = __require("data/feel.js");
 
 class Game {
   constructor(screen, input) {
@@ -8586,6 +9309,7 @@ class Game {
     this.seedOverride = null;
     this.progress = newProgress();
     this.tide = new Tide(this);
+    this.scrim = new Scrimshaw(this);
     this.dialogue = new Dialogue(this);
     this.menu = new Menu(this);
     this.title = new Title(this);
@@ -8710,6 +9434,10 @@ class Game {
     r.visited = true;
     this.progress.secrets['seen:' + this.mapId + ':' + r.key] = true;
     this.tide.applyRoomRules(r);
+    // Barnacle Skin is "one free hit per room", so the shell regrows exactly
+    // here and nowhere else. Doing it on tide change instead would make it a
+    // charm about the conch, which is a different charm.
+    if (this.player) this.player.barnacleUsed = false;
     this.applyTint(r.tint);
     if (o.spawnEntities !== false) this.spawnRoomEntities();
     this.respawnAnchor();
@@ -9072,6 +9800,11 @@ class Game {
     // is still crossing the screen, and warping the player mid-sweep leaves
     // the sweep drawing a room nobody is standing in.
     if (this.progress.coin) this.coinSwapPending = COIN_SWAP_DELAY_FRAMES;
+    // A carving takes a tide cycle, and this is the only place the tide is
+    // known to have turned. Counting frames instead would let a player who
+    // never sounds the conch collect one anyway, which is the opposite of
+    // what the scrimshander is for.
+    this.tickCarving();
     this.roomEvent('tide', { next, prev });
   }
 
@@ -9243,7 +9976,7 @@ class Game {
       if (id === 'bombs') { p.maxBombs = Math.max(p.maxBombs, 10); addBombs(p, 10); }
       if (id === 'reefseed') {
         p.maxReefseeds = Math.max(p.maxReefseeds, REEFSEED_CAPACITY);
-        addReefseeds(p, REEFSEED_CAPACITY);
+        addReefseeds(p, this.reefseedCap(), this.reefseedCap());
       }
       if (id === 'bottle') {
         p.maxBottles = Math.max(p.maxBottles, BOTTLE_CAPACITY);
@@ -9297,10 +10030,19 @@ class Game {
     return e;
   }
 
+  /**
+   * An enemy's loot. Two charms land here rather than on the Pickup itself,
+   * because both are about what the DROP was worth at the moment it fell: a
+   * rupee found on the floor is not made bigger by putting a charm on.
+   */
   rollDrop(x, y, table) {
     const kind = rollDropTable(table, this.rng);
     if (!kind) return null;
-    return this.spawnPickup(x, y, kind);
+    const spec = PICKUPS[kind];
+    const o = {};
+    if (spec && spec.worth != null && this.charm('beachcomber')) o.worth = spec.worth * 2;
+    if (this.charm('gullsTally')) o.life = Math.round(PICKUP_LIFE_FRAMES * GULLS_TALLY_FACTOR);
+    return this.spawnPickup(x, y, kind, o);
   }
 
   // -------------------------------------------------------------- utilities
@@ -9327,9 +10069,62 @@ class Game {
 
   ask(text, options, onPick) { this.dialogue.show(text, { choices: options, onPick }); }
 
-  hasRing(id) {
+  /**
+   * Is this charm working right now? The one question the rest of the engine
+   * asks the scrimshaw system, and the successor to `hasRing`.
+   *
+   * It is a pure read of state computed once per frame, so it is safe from a
+   * draw path — see `drawDarkness`, which asks it at display rate.
+   */
+  charm(id) { return this.scrim.has(id); }
+
+  /**
+   * Commission a carving. The blank and the rupees go now; the charm arrives
+   * after CARVE_TIDE_TURNS changes of the tide, which is one full turn of the
+   * conch. Which charm it will be is decided HERE rather than on collection,
+   * off the global stream — the scrimshander is reading the bone, not taking
+   * an order, and a run that reloads before collecting must get the same charm
+   * back or the save would be a re-roll button.
+   */
+  commissionCarving() {
     const p = this.progress;
-    return p.ringsEquipped.includes(id);
+    const pool = Object.keys(CHARMS).filter(id => !p.charms[id]);
+    if (!pool.length) return null;
+    const id = pool[Math.floor(rngGlobal.float() * pool.length) % pool.length];
+    p.carve = { id, turns: CARVE_TIDE_TURNS };
+    return id;
+  }
+
+  /**
+   * How many Reefseeds the satchel holds right now. The Quartermaster's Mark
+   * raises the CEILING, so taking the charm off does not destroy seeds you are
+   * already carrying — `addReefseeds` clamps on collection, not per frame.
+   */
+  reefseedCap() {
+    const base = this.progress.maxReefseeds || 0;
+    if (base <= 0) return 0;
+    return base + (this.charm('quartermaster') ? QUARTERMASTER_BONUS : 0);
+  }
+
+  /** What a shopkeeper actually asks, after the Chandler's Eye. */
+  shopPrice(base) {
+    return this.charm('chandlersEye') ? Math.ceil(base * CHANDLER_FACTOR) : base;
+  }
+
+  /** One tide change gone by. Called from the Tide's own listener list. */
+  tickCarving() {
+    const p = this.progress;
+    if (p.carve && p.carve.turns > 0) p.carve.turns--;
+  }
+
+  /** Hand over a finished carving, if there is one. */
+  collectCarving() {
+    const p = this.progress;
+    if (!p.carve || p.carve.turns > 0) return null;
+    const id = p.carve.id;
+    p.carve = null;
+    giveCharm(p, id);
+    return id;
   }
 
   /** Run a callback after n frames (used for beats in scripted moments). */
@@ -9445,6 +10240,10 @@ class Game {
 
     // --- play mode ---
     this.tide.update();
+    // Before anything reads a charm this frame. It has to run above the
+    // dialogue early-return too: a charm going dark while a text box is open
+    // would be a rule the player never sees applied.
+    this.scrim.update();
     if (this.bannerTime > 0) this.bannerTime--;
     if (this.itemShow) { this.itemShow.t--; if (this.itemShow.t <= 0) this.itemShow = null; }
     if (this.lure) { if (--this.lure.life <= 0) this.lure = null; }
@@ -9728,10 +10527,51 @@ class Game {
 
     room.drawOver(ctx, ox, oy, this.tide, this.frame);
 
+    if (this.charm('wreckersEye')) this.drawWrecksGlimmer(ctx, ox, oy);
     if (this.player && this.player.lensT > 0) this.drawLensGhost(ctx, ox, oy);
     if (this.debug && this.tide.overrides.length) this.drawAnchorField(ctx, ox, oy);
     if (room.dark && !flag(this.progress, 'lantern')) this.drawDarkness(ctx, ox, oy);
     if (this.itemShow) this.drawItemShow(ctx);
+  }
+
+  /**
+   * The Wrecker's Eye: unopened chests and dredgeable ground wink through the
+   * terrain. A glimmer, not an outline — it says "there is something here"
+   * without saying what, which is the difference between a hint and a map.
+   *
+   * NOTHING HERE CONSUMES RANDOMNESS. This is a draw path, and draw runs at
+   * display rate while update runs at a fixed step, so a draw from a stream
+   * would desync the run on a slow machine. The twinkle is a pure function of
+   * `frame` and the tile's own coordinates — the same rule the screen shake
+   * and the Lens shimmer follow.
+   */
+  drawWrecksGlimmer(ctx, ox, oy) {
+    const room = this.room;
+    if (!room) return;
+    ctx.save();
+    for (const e of this.entities) {
+      if (!(e instanceof Chest) || e.opened) continue;
+      this.glimmerAt(ctx, ox + e.x + 8, oy + e.y + 8, e.x + e.y);
+    }
+    for (let ty = 0; ty < ROOM_H; ty++) {
+      for (let tx = 0; tx < ROOM_W; tx++) {
+        const name = room.baseName(tx, ty);
+        if (!transformFor(name, 'dredge')) continue;
+        this.glimmerAt(ctx, ox + tx * TILE + 8, oy + ty * TILE + 8, tx * 7 + ty * 13);
+      }
+    }
+    ctx.restore();
+  }
+
+  glimmerAt(ctx, cx, cy, phase) {
+    const t = (this.frame + phase * 9) % WRECK_GLIMMER_PERIOD;
+    if (t > WRECK_GLIMMER_ON) return;
+    const a = Math.sin(t / WRECK_GLIMMER_ON * Math.PI);
+    ctx.globalAlpha = a * WRECK_GLIMMER_ALPHA;
+    ctx.fillStyle = '#f8f8c0';
+    ctx.fillRect(cx - 1, cy - 4, 2, 8);
+    ctx.fillRect(cx - 4, cy - 1, 8, 2);
+    ctx.globalAlpha = 1;
   }
 
   /**
@@ -9787,10 +10627,16 @@ class Game {
   drawDarkness(ctx, ox, oy) {
     const p = this.player;
     const cx = ox + (p ? p.cx : VIEW_W / 2), cy = oy + (p ? p.cy : VIEW_H / 2);
-    const g = ctx.createRadialGradient(cx, cy, 10, cx, cy, 54);
+    // Two charms carry a light, one in the MID case and one in the HIGH: the
+    // Lamplighter's Wick and the Drowned Lantern do the same thing at
+    // different tides, on purpose. A dark room you can cross at MID and not at
+    // HIGH is a room the tide has made darker, which is the point.
+    const lit = this.charm('lamplighter') || this.charm('drownedLantern');
+    const r = lit ? LANTERN_RADIUS : 54;
+    const g = ctx.createRadialGradient(cx, cy, 10, cx, cy, r);
     g.addColorStop(0, 'rgba(0,0,0,0)');
-    g.addColorStop(0.7, 'rgba(0,0,0,0.55)');
-    g.addColorStop(1, 'rgba(0,0,0,0.88)');
+    g.addColorStop(0.7, lit ? 'rgba(0,0,0,0.30)' : 'rgba(0,0,0,0.55)');
+    g.addColorStop(1, lit ? 'rgba(0,0,0,0.60)' : 'rgba(0,0,0,0.88)');
     ctx.fillStyle = g;
     ctx.fillRect(0, HUD_H, VIEW_W, VIEW_H);
   }
@@ -11425,7 +12271,7 @@ function installCoreTiles() {
       deny: 'Iron, sunk deep. Nothing here will shift it by hand.',
     },
     dFloorCrack: { bomb: 'dPit', fx: 'boom', persist: true, sfx: 'break' },
-    digSpot: { dredge: 'sand', drop: 'common', fx: 'puff', sfx: 'splash' },
+    digSpot: { dredge: 'sand', drop: 'dredged', fx: 'puff', sfx: 'splash' },
     // The Rod retracts a grate. `persist: true` so a room stays open once it
     // has been opened, the way a bombed wall does.
     grate: { ring: 'grateOpen', fx: 'spark', persist: true, sfx: 'valve' },
@@ -13251,6 +14097,10 @@ const rooms = {
     ],
     entities: [
       ['sign', 1, 4, { text: 'TIDEWATCH VILLAGE\nEast: the Shallows. Mind the tide.' }],
+      // The scrimshander works outdoors on the west side of the square, off
+      // the path between the two doors — an NPC is an entity, not a tile, so
+      // she narrows the square without touching its connectivity.
+      ['scrimshander', 1, 2, {}],
       ['npc', 6, 2, { sprite: 'npc_villager', pal: 'npc', wander: true, dialogue: 'villager1' }],
       ['npc', 3, 4, { sprite: 'npc_villager2', wander: true, dialogue: 'villager2' }],
       ['npc', 8, 4, { sprite: 'npc_child', wander: true, dialogue: 'villageChild' }],
@@ -13843,7 +14693,7 @@ function installHouses() {
           ['shopItem', 6, 3, { pickup: 'bomb4', price: 20, name: 'Bombs' }],
           ['shopItem', 8, 3, { pickup: 'heart', price: 10, name: 'Heart' }],
           ['shopItem', 4, 5, { pickup: 'bottle', price: 40, name: 'Bottled Tide' }],
-          ['shopItem', 2, 5, { ring: 'power', price: 80, once: true, saveKey: 'shopRing' }],
+          ['shopItem', 2, 5, { charm: 'ballastHeart', price: 80, once: true, saveKey: 'shopCharm' }],
         ],
         warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 4, ry: 7, px: 48, py: 40, dir: 'down' } }],
       },
@@ -27349,23 +28199,6 @@ const HUD_ART = {
     ......1221......
     ................
     ................` },
-  i_ring: { pal: 'i_ring', art: `
-    ................
-    ................
-    ......2222......
-    ....22221122....
-    ...2211121122...
-    ...2222112112...
-    ..221122121122..
-    ..210012012012..
-    ..210012012012..
-    ..221122121122..
-    ...2222112112...
-    ...2211121122...
-    ....22221122....
-    ......2222......
-    ................
-    ................` },
   i_shield1: { pal: 'i_shield1', art: `
     ................
     ................
@@ -27496,7 +28329,6 @@ const HUD_ART_PALETTES = {
   hud_heart4: ['#ef0819', '#000000', '#000000', '#000000'],
   hud_rupee: ['#ffd68c', '#ef0819', '#000000', '#000000'],
   i_bomb: ['#73adff', '#0000ff', '#000000', '#000000'],
-  i_ring: ['#ffd68c', '#10ad42', '#000000', '#000000'],
   i_shield1: ['#10ad42', '#000000', '#000000', '#000000'],
   i_shield2: ['#ffb531', '#de0000', '#000000', '#000000'],
   i_shield3: ['#73adff', '#0000ff', '#000000', '#000000'],
@@ -27908,9 +28740,57 @@ const GEAR_ART = {
     ......1221......
     ................
     ................` },
+  // ---- scrimshaw (P7) ----------------------------------------------------
+  //
+  // The two halves of the same object. `p_blank` is the raw chip of bone an
+  // enemy drops or the Dredge Line hauls up; `i_charm` is what the
+  // scrimshander hands back. They are deliberately the SAME silhouette family
+  // — a blank is a charm that has not been cut yet — and are told apart by the
+  // scored line across the carved one and by their palettes, which is the
+  // whole visual language of the system.
+  p_blank: { pal: 'p_blank', art: `
+    ................
+    ................
+    .....33333......
+    ....3000003.....
+    ...300000003....
+    ..30011110003...
+    ..30111111003...
+    ..30111111103...
+    ..30011111103...
+    ...300111103....
+    ....3001103.....
+    .....33333......
+    ................
+    ................
+    ................
+    ................` },
+  i_charm: { pal: 'i_charm', art: `
+    ................
+    ......333.......
+    .....30003......
+    .....30003......
+    ....3300033.....
+    ...300000003....
+    ..30011111003...
+    ..30122222103...
+    ..30111111103...
+    ..30122222103...
+    ..30011111003...
+    ...300000003....
+    ....3000003.....
+    .....33333......
+    ................
+    ................` },
 };
 
 const GEAR_PALETTES = {
+  // Raw bone: grey-white, no warmth, nothing cut into it yet.
+  p_blank: ['#f0f0e8', '#b8b8a8', '#787868', '#000000'],
+  // Carved: the same bone warmed by handling, with the scrimshander's ink in
+  // the scored line. The ink is the only thing that separates it from a blank
+  // at a glance, which is correct — that IS what carving it did.
+  i_charm: ['#fff8e0', '#d8c090', '#8a5a2a', '#000000'],
   i_conch: ['#ffe8c8', '#f08858', '#000000', '#000000'],
   // Wet leather over kelp green, weighted with a dark iron sole.
   i_cleats: ['#e8e0b8', '#8a6a3a', '#2e6a4a', '#000000'],

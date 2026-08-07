@@ -550,9 +550,11 @@ const main = async () => {
   check('menu opens', await G(() => window.__game.mode === 'menu'));
   await shot('11-menu-items');
   await tap('Tab'); await shot('12-menu-map');
-  await tap('Tab'); await shot('13-menu-quest');
+  await tap('Tab'); await shot('13-menu-charm');
+  check('reached the charm tab', await G(() => window.__game.menu.tab === 2));
+  await tap('Tab'); await shot('14-menu-quest');
   await tap('Tab');
-  check('reached the save tab', await G(() => window.__game.menu.tab === 3));
+  check('reached the save tab', await G(() => window.__game.menu.tab === 4));
   await tap('x');
   await frames(10);
   check('save wrote to localStorage', await G(() => !!localStorage.getItem('oracleOfTides.save.v1')));

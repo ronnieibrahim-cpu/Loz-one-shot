@@ -1640,6 +1640,10 @@ const rooms = {
     ],
     entities: [
       ['sign', 1, 4, { text: 'TIDEWATCH VILLAGE\nEast: the Shallows. Mind the tide.' }],
+      // The scrimshander works outdoors on the west side of the square, off
+      // the path between the two doors — an NPC is an entity, not a tile, so
+      // she narrows the square without touching its connectivity.
+      ['scrimshander', 1, 2, {}],
       ['npc', 6, 2, { sprite: 'npc_villager', pal: 'npc', wander: true, dialogue: 'villager1' }],
       ['npc', 3, 4, { sprite: 'npc_villager2', wander: true, dialogue: 'villager2' }],
       ['npc', 8, 4, { sprite: 'npc_child', wander: true, dialogue: 'villageChild' }],
@@ -2232,7 +2236,7 @@ function installHouses() {
           ['shopItem', 6, 3, { pickup: 'bomb4', price: 20, name: 'Bombs' }],
           ['shopItem', 8, 3, { pickup: 'heart', price: 10, name: 'Heart' }],
           ['shopItem', 4, 5, { pickup: 'bottle', price: 40, name: 'Bottled Tide' }],
-          ['shopItem', 2, 5, { ring: 'power', price: 80, once: true, saveKey: 'shopRing' }],
+          ['shopItem', 2, 5, { charm: 'ballastHeart', price: 80, once: true, saveKey: 'shopCharm' }],
         ],
         warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 4, ry: 7, px: 48, py: 40, dir: 'down' } }],
       },

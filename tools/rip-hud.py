@@ -45,7 +45,10 @@ GRID = {
 
 # name -> (x, y, w, h) for icons that are not on the 6x7 gear grid.
 RECTS = {
-    'i_ring': (419, 126, 16, 16),
+    # The magic ring icon was removed with the ring system in P7 — scrimshaw
+    # replaced it, and a carved charm is drawn (i_charm in sprites-gear.js)
+    # rather than extracted, because no Oracle sheet has one. Its cell was
+    # (419, 126, 16, 16) on this sheet if it is ever wanted back.
     'hud_rupee': (345, 100, 8, 8),
     # five fill levels, empty through full — exactly hud_heart0..4
     'hud_heart0': (354, 113, 8, 8), 'hud_heart1': (363, 113, 8, 8),

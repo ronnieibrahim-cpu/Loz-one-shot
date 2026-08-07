@@ -47,10 +47,11 @@ export const REQUIRED_SPRITES = {
     'i_bomb', 'i_bomb_lit',
     'i_cleats', 'i_cleats2',
     'i_chain', 'i_hookhead',
-    'i_ring',
     'i_map', 'i_chart', 'i_unknown',
     'i_lens', 'i_lens2', 'i_bellows', 'i_reefseed', 'i_dredge', 'i_rod', 'i_coin', 'i_bottle',
     'i_anchor', 'o_anchor',
+    // scrimshaw (P7): both hand-drawn, since no Oracle sheet has a bone charm
+    'i_charm',
   ],
 
   // ---- pack: sprites-world.js ------------------------------------------
@@ -58,6 +59,7 @@ export const REQUIRED_SPRITES = {
     'p_rupee', 'p_rupee5', 'p_rupee20', 'p_heart', 'p_fairy', 'p_bombs',
     'p_key', 'p_bosskey', 'p_heartpiece', 'p_heartcontainer',
     'p_essence0', 'p_essence1', 'p_essence_dim',
+    'p_blank',
   ],
 
   objects: [
