@@ -20,7 +20,7 @@ import { hasItem, itemLevel, addBombs, addReefseeds, addBottles } from './progre
 import { TIDE_COUNT } from './tide.js';
 import { FP_ONE, sp, toPx } from '../core/fixed.js';
 import {
-  PEGASUS_FRAMES, KNOCK_TOOL, KNOCK_THROWN,
+  KNOCK_TOOL, KNOCK_THROWN,
   THROW_ARC_RISE, THROW_ARC_GRAVITY, THROW_SLIDE_DECAY, THROW_SLIDE_STOP,
   REEFSEED_GROW_FRAMES, REEFSEED_SETTLE_FRAMES, REEFSEED_THROW_SPEED,
   REEFSEED_SHUDDER_EVERY,
@@ -440,67 +440,6 @@ export class Reefseed extends Entity {
 defineEntity('reefseed', (x, y, o) => new Reefseed(x, y, o));
 
 // --------------------------------------------------------------------------
-// Seeds
-// --------------------------------------------------------------------------
-
-export const SEED_KINDS = ['ember', 'scent', 'pegasus', 'gale', 'mystery'];
-export const SEED_INFO = {
-  ember: { name: 'Ember Seed', icon: 'i_seed_ember' },
-  scent: { name: 'Scent Seed', icon: 'i_seed_scent' },
-  pegasus: { name: 'Pegasus Seed', icon: 'i_seed_pegasus' },
-  gale: { name: 'Gale Seed', icon: 'i_seed_gale' },
-  mystery: { name: 'Mystery Seed', icon: 'i_seed_mystery' },
-};
-
-/** Apply a seed's effect at a point (used by both hand-use and the slingshot). */
-export function applySeed(game, kind, x, y, fromPlayer) {
-  const p = game.player;
-  switch (kind) {
-    case 'ember': {
-      game.spawnEffect('flame', x, y, { life: 120 });
-      game.checkTileAction({ x: x + 4, y: y + 4, w: 8, h: 8 }, 'fire');
-      for (const e of game.entities) {
-        if (e.isEnemy && !e.dead && Math.hypot(e.cx - (x + 8), e.cy - (y + 8)) < 14) {
-          e.hurt(game, 2, null, KNOCK_TOOL);
-        }
-      }
-      game.audio.sfx('fire');
-      break;
-    }
-    case 'scent':
-      game.spawnEffect('sparkle', x, y, { life: 180, pal: 'enemyy' });
-      game.lure = { x: x + 8, y: y + 8, life: 180 };
-      game.audio.sfx('seed');
-      break;
-    case 'pegasus':
-      if (p) p.speedBoost = PEGASUS_FRAMES;
-      game.spawnEffect('sparkle', p ? p.x : x, p ? p.y : y, { life: 30 });
-      game.audio.sfx('pegasus');
-      break;
-    case 'gale':
-      game.startGaleWarp();
-      break;
-    case 'mystery': {
-      const roll = game.rng.pick(['ember', 'scent', 'pegasus']);
-      applySeed(game, roll, x, y, fromPlayer);
-      break;
-    }
-  }
-}
-
-export class SeedShot extends Projectile {
-  constructor(x, y, o = {}) {
-    super(x, y, { ...o, sprite: SEED_INFO[o.kind].icon, damage: 1, fromPlayer: true });
-    this.kind = o.kind;
-    this.w = 8; this.h = 8;
-  }
-  expire(game) {
-    this.remove = true;
-    applySeed(game, this.kind, this.cx - 8, this.cy - 8, true);
-  }
-}
-
-// --------------------------------------------------------------------------
 // Ferryman's Coin
 // --------------------------------------------------------------------------
 
@@ -806,46 +745,10 @@ export const ITEMS = {
     desc: 'Swim the surface, or press to sink and walk the floor beneath it.',
     use(game, p, level) { return p.toggleCleats(game); },
   },
-  satchel: {
-    names: ['Seed Satchel'],
-    icon: ['i_satchel'],
-    equippable: true,
-    desc: 'Holds the five kinds of seed. Press to use the selected one.',
-    use(game, p, level) {
-      const kind = game.progress.seedSelected || 'ember';
-      if ((game.progress.seeds[kind] || 0) <= 0) { game.audio.sfx('deny'); return true; }
-      game.progress.seeds[kind]--;
-      const [dx, dy] = DIR_VEC[p.dir];
-      applySeed(game, kind, p.cx + dx * 12 - 8, p.cy + dy * 12 - 8, true);
-      return true;
-    },
-  },
-  slingshot: {
-    names: ['Slingshot', 'Hyper Slingshot'],
-    icon: ['i_slingshot', 'i_hyperslingshot'],
-    equippable: true,
-    desc: 'Fires seeds a long way. The hyper model fires three at once.',
-    use(game, p, level) {
-      const kind = game.progress.seedSelected || 'ember';
-      if ((game.progress.seeds[kind] || 0) <= 0) { game.audio.sfx('deny'); return true; }
-      game.progress.seeds[kind]--;
-      const [dx, dy] = DIR_VEC[p.dir];
-      const spread = level >= 2 ? [-0.35, 0, 0.35] : [0];
-      for (const a of spread) {
-        const ca = Math.cos(a), sa = Math.sin(a);
-        const vx = (dx * ca - dy * sa) * 2.4, vy = (dx * sa + dy * ca) * 2.4;
-        game.addEntity(new SeedShot(p.cx - 4, p.cy - 4, { kind, vx, vy, owner: p, life: 70 }));
-      }
-      game.audio.sfx('shoot');
-      return true;
-    },
-  },
-  ringbox: {
-    names: ['Ring Box', 'Ring Box L2', 'Ring Box L3'],
-    icon: ['i_ringbox'],
-    passive: true,
-    desc: 'Holds magic rings. Bigger boxes let you wear more at once.',
-  },
+  // The Ring Box is gone. P7 replaces rings with scrimshaw wholesale, so the
+  // box that held them has nothing to hold; src/game/rings.js and the menu's
+  // ring tab are still standing and are P7's to remove, because deleting the
+  // system out from under the save format is that session's job, not this one's.
   map: { names: ['Dungeon Map'], icon: ['i_map'], passive: true, desc: 'Reveals the dungeon layout.' },
   // The Chartstone is one verb — information — and the three-verb rule does
   // not apply to it. The rule is for TOOLS, things bound to a button that the

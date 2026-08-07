@@ -40,25 +40,13 @@ GRID = {
     'i_sword1': (0, 0), 'i_sword2': (0, 1), 'i_sword3': (0, 2),
     'i_shield1': (0, 3), 'i_shield2': (0, 4), 'i_shield3': (0, 5),
     'i_bomb': (2, 3),
-    'i_satchel': (4, 3),            # Seed Satchel
-    'i_slingshot': (5, 3), 'i_hyperslingshot': (5, 4),
     'i_unknown': (6, 0),            # the red '?'
 }
 
 # name -> (x, y, w, h) for icons that are not on the 6x7 gear grid.
-# The Slingshot and Hyper Slingshot cells are the same art under different
-# captions in the original too, so both come out identical here — the level is
-# communicated by the HUD's 'L2' badge, exactly as the Oracle bar does it.
 RECTS = {
-    'i_ringbox': (394, 126, 11, 16),   # 11 wide: a maroon swatch fills the rest
     'i_ring': (419, 126, 16, 16),
     'hud_rupee': (345, 100, 8, 8),
-    # satchel order matches REQUIRED_SPRITES.ui, which is the satchel's own order
-    'i_seed_ember': (424, 100, 8, 8),
-    'i_seed_scent': (433, 100, 8, 8),
-    'i_seed_pegasus': (442, 100, 8, 8),
-    'i_seed_gale': (451, 100, 8, 8),
-    'i_seed_mystery': (460, 100, 8, 8),
     # five fill levels, empty through full — exactly hud_heart0..4
     'hud_heart0': (354, 113, 8, 8), 'hud_heart1': (363, 113, 8, 8),
     'hud_heart2': (372, 113, 8, 8), 'hud_heart3': (381, 113, 8, 8),

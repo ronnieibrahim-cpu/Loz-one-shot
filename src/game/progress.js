@@ -29,8 +29,6 @@ export function newProgress(name = 'LINK', seed = (Date.now() >>> 0)) {
     bombs: 0, maxBombs: 0,
     reefseeds: 0, maxReefseeds: 0,
     bottles: 0, maxBottles: 0,
-    seeds: { ember: 0, scent: 0, pegasus: 0, gale: 0, mystery: 0 },
-    maxSeeds: 0,
     // items: id -> level (1+). Absent or 0 means not owned.
     items: {},
     equipB: null, equipA: null,
@@ -107,13 +105,6 @@ export function addHeartPiece(p) {
     return true;
   }
   return false;
-}
-
-export function addSeeds(p, kind, n) {
-  if (!(kind in p.seeds)) return 0;
-  const before = p.seeds[kind];
-  p.seeds[kind] = Math.max(0, Math.min(p.maxSeeds, before + n));
-  return p.seeds[kind] - before;
 }
 
 export function addReefseeds(p, n) {
@@ -203,7 +194,7 @@ export function deleteSlot(slot) {
 function migrate(p) {
   const base = newProgress(p.name || 'LINK');
   const out = { ...base, ...p };
-  for (const k of ['seeds', 'items', 'keys', 'bossKeys', 'dungeonMaps', 'charts',
+  for (const k of ['items', 'keys', 'bossKeys', 'dungeonMaps', 'charts',
     'beaten', 'flags', 'chests', 'doors', 'secrets', 'rings', 'trade', 'pos', 'respawn']) {
     out[k] = { ...base[k], ...(p[k] || {}) };
   }

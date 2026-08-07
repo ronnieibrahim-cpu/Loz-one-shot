@@ -43,7 +43,7 @@ import { Pickup, rollDropTable, PushBlock, Torch, FloorSwitch, Chest } from './o
 import { ThrownObject, ITEMS, itemName, itemIcon } from './items.js';
 import {
   newProgress, saveSlot, loadSlot, giveItem, addRupees, addKey, useKey, keyCount,
-  itemLevel, hasItem, HEART_UNITS, addBombs, addSeeds, addReefseeds, addBottles, setFlag, flag,
+  itemLevel, hasItem, HEART_UNITS, addBombs, addReefseeds, addBottles, setFlag, flag,
 } from './progress.js';
 import { drawHud, drawAreaBanner, drawBossBar } from './hud.js';
 import { Dialogue, drawBox, drawPanel, getText } from './dialogue.js';
@@ -707,7 +707,6 @@ export class Game {
         p.maxBottles = Math.max(p.maxBottles, BOTTLE_CAPACITY);
         addBottles(p, BOTTLE_CAPACITY);
       }
-      if (id === 'satchel') { p.maxSeeds = Math.max(p.maxSeeds, 20); addSeeds(p, 'ember', 20); p.seedSelected = 'ember'; }
       this.presentItem(id, lv);
     } else if (chest.pickup) {
       this.spawnPickup(chest.x, chest.y - 12, chest.pickup, { grabDelay: 10 });

@@ -47,16 +47,14 @@ export const REQUIRED_SPRITES = {
     'i_bomb', 'i_bomb_lit',
     'i_cleats', 'i_cleats2',
     'i_chain', 'i_hookhead',
-    'i_satchel', 'i_slingshot', 'i_hyperslingshot',
-    'i_ringbox', 'i_ring',
+    'i_ring',
     'i_map', 'i_chart', 'i_unknown',
     'i_lens', 'i_lens2', 'i_bellows', 'i_reefseed', 'i_dredge', 'i_rod', 'i_coin', 'i_bottle',
-    'i_seed_ember', 'i_seed_scent', 'i_seed_pegasus', 'i_seed_gale', 'i_seed_mystery',
   ],
 
   // ---- pack: sprites-world.js ------------------------------------------
   pickups: [
-    'p_rupee', 'p_rupee5', 'p_rupee20', 'p_heart', 'p_fairy', 'p_bombs', 'p_seeds',
+    'p_rupee', 'p_rupee5', 'p_rupee20', 'p_heart', 'p_fairy', 'p_bombs',
     'p_key', 'p_bosskey', 'p_heartpiece', 'p_heartcontainer',
     'p_essence0', 'p_essence1', 'p_essence_dim',
   ],
@@ -128,7 +126,6 @@ export function expectedSize(name) {
   if (name === 'i_chain' || name === 'i_hookhead') return [8, 8];
   if (name.startsWith('shot')) return [8, 8];
   if (name.startsWith('hud_')) return [8, 8];
-  if (name.startsWith('i_seed_')) return [8, 8];
   return [16, 16];
 }
 

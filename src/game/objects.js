@@ -8,7 +8,7 @@ import { FP_ONE, sp } from '../core/fixed.js';
 import { sprites } from '../gfx/art.js';
 import { drawText } from '../gfx/font.js';
 import {
-  addRupees, heal, addBombs, addSeeds, addBottles, addKey, giveItem, addHeartContainer,
+  addRupees, heal, addBombs, addReefseeds, addBottles, addKey, giveItem, addHeartContainer,
   addHeartPiece, HEART_UNITS, setFlag, flag,
 } from './progress.js';
 import { itemName, itemIcon, ITEMS } from './items.js';
@@ -36,8 +36,12 @@ export const PICKUPS = {
   },
   bomb4: { sprite: 'p_bombs', pal: 'bomb', get(g) { addBombs(g.progress, 4); g.audio.sfx('rupee'); } },
   seeds5: {
-    sprite: 'p_seeds', pal: 'tree',
-    get(g) { addSeeds(g.progress, g.progress.seedSelected || 'ember', 5); g.audio.sfx('rupee'); },
+    sprite: 'i_reefseed', pal: null,
+    get(g) {
+      if (g.progress.maxReefseeds <= 0) { g.audio.sfx('deny'); return; }
+      addReefseeds(g.progress, 3);
+      g.audio.sfx('rupee');
+    },
   },
   key: {
     sprite: 'p_key', pal: 'key', persistent: true,
@@ -430,9 +434,6 @@ export class Giver extends NPC {
       if (this.item) {
         giveItem(p, this.item, this.level);
         game.autoEquip(this.item);
-        if (this.item === 'satchel' && !p.maxSeeds) {
-          p.maxSeeds = 20; addSeeds(p, 'ember', 20); p.seedSelected = 'ember';
-        }
         if (this.item === 'bombs' && !p.maxBombs) { p.maxBombs = 10; addBombs(p, 10); }
         game.presentItem(this.item, this.level);
       } else if (this.ring) {

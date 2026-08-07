@@ -5,7 +5,7 @@ import { SCREEN_W, SCREEN_H, HUD_H, VIEW_W, VIEW_H, ROOM_W, ROOM_H } from '../co
 import { drawText, drawTextCentered, textWidth } from '../gfx/font.js';
 import { sprites } from '../gfx/art.js';
 import { drawPanel, drawBox } from './dialogue.js';
-import { ITEMS, itemIcon, itemName, equippableItems, SEED_KINDS, SEED_INFO } from './items.js';
+import { ITEMS, itemIcon, itemName, equippableItems } from './items.js';
 import { RINGS, ownedRings, equipRing } from './rings.js';
 import { HEART_UNITS } from './progress.js';
 import { MAPS, getMap, hasRoom, getRoom } from '../world/maps.js';
@@ -107,8 +107,6 @@ export class Menu {
 
     // Seed satchel: cycle which seed is selected with up/down on the item itself.
     if ((sel.id === 'satchel' || sel.id === 'slingshot') && i.pressed('select')) {
-      const cur = SEED_KINDS.indexOf(g.progress.seedSelected || 'ember');
-      g.progress.seedSelected = SEED_KINDS[(cur + 1) % SEED_KINDS.length];
       g.audio.sfx('cursor');
     }
     if (i.pressed('a')) { this.assign(sel.id, 'A'); }
@@ -216,8 +214,6 @@ export class Menu {
       const d = sel.def.desc || '';
       drawText(ctx, d.length > 34 ? d.slice(0, 33) + '…' : d, 8, infoY + 13, '#a8b0a0');
       if (sel.id === 'satchel' || sel.id === 'slingshot') {
-        const k = p.seedSelected || 'ember';
-        drawText(ctx, SEED_INFO[k].name + ' x' + (p.seeds[k] || 0), 8, infoY + 13, '#a8f0f8');
       }
     } else {
       drawText(ctx, 'No items yet.', 8, infoY + 3, '#a8b0a0');

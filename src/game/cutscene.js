@@ -57,7 +57,6 @@ export function runCutscene(game, steps, data = {}) {
       giveItem(game.progress, step.give.item, step.give.level || 1);
       game.autoEquip(step.give.item);
       if (step.give.item === 'bombs') { game.progress.maxBombs = 10; game.progress.bombs = 10; }
-      if (step.give.item === 'satchel') { game.progress.maxSeeds = 20; game.progress.seeds.ember = 20; game.progress.seedSelected = 'ember'; }
     }
     if (step.spawn) spawnEntity(game, step.spawn[0], step.spawn[1], step.spawn[2], step.spawn[3] || {});
     if (step.despawn) {
