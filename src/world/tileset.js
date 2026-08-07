@@ -59,6 +59,9 @@ export const F = {
   SWIMGATE:  1 << 27,  // deep channel: only Zora's Flippers cross it
   GRAPPLE:   1 << 28,  // span crossed by hookshotting a post on the far side
   GAP:       1 << 29,  // chasm: only Roc's Feather clears it
+  // Metal, crystal, or grown coral: the Resonance Rod makes it answer. Not a
+  // traversal flag — a ringable tile also carries whatever it actually is.
+  RING:      1 << 30,
 };
 
 // Convenient composites

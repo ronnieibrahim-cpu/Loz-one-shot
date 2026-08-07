@@ -27,6 +27,7 @@ export function newProgress(name = 'LINK', seed = (Date.now() >>> 0)) {
     // currency & consumables
     rupees: 0,
     bombs: 0, maxBombs: 0,
+    reefseeds: 0, maxReefseeds: 0,
     seeds: { ember: 0, scent: 0, pegasus: 0, gale: 0, mystery: 0 },
     maxSeeds: 0,
     // items: id -> level (1+). Absent or 0 means not owned.
@@ -109,6 +110,12 @@ export function addSeeds(p, kind, n) {
   const before = p.seeds[kind];
   p.seeds[kind] = Math.max(0, Math.min(p.maxSeeds, before + n));
   return p.seeds[kind] - before;
+}
+
+export function addReefseeds(p, n) {
+  const before = p.reefseeds;
+  p.reefseeds = Math.max(0, Math.min(p.maxReefseeds, before + n));
+  return p.reefseeds - before;
 }
 
 export function addBombs(p, n) {

@@ -958,7 +958,7 @@ const rooms = {
       '###gggg###',
     ],
     entities: [
-      ['sign', 2, 2, { text: 'East across the cut: the Drowned Wood.\nSwim it, or blow the raft across.' }],
+      ['sign', 2, 2, { text: 'East across the cut: the Drowned Wood.\nSwim it, blow the raft, or grow a bridge.' }],
       // Moored, not patrolling: `range: 0` and `needTide: 0` make it a raft
       // that sits where it is until something blows it.
       ['raft', 3, 3, { axis: 'x', range: 0, needTide: 0 }],

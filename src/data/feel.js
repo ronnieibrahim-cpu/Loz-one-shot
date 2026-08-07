@@ -706,3 +706,24 @@ export const BELLOWS_RAFT_SCALE = 0.5;
 
 /** f — frames a gusted wheel keeps turning after the gust stops. guessed. */
 export const BELLOWS_WHEEL_COAST = 30;
+
+// --- Reefseed --------------------------------------------------------------
+
+/** f — how long a thrown Reefseed takes to become a coral pillar. guessed;
+ *  two seconds. THE DELAY IS THE DESIGN — see docs/ITEMS.md. Shorten it and
+ *  the item becomes a block placer; lengthen it and nobody waits. */
+export const REEFSEED_GROW_FRAMES = 120;
+
+/** f — how long the seed tumbles before it settles and starts growing.
+ *  guessed. */
+export const REEFSEED_SETTLE_FRAMES = 22;
+
+/** sp/f — how fast a thrown Reefseed travels. guessed; 2 px/f, a lob rather
+ *  than a shot, because you are aiming at a tile and not at a creature. */
+export const REEFSEED_THROW_SPEED = 512;
+
+/** f — interval between the sprout's shudders while it grows. guessed. */
+export const REEFSEED_SHUDDER_EVERY = 12;
+
+/** how many Reefseeds a full pouch holds. guessed. */
+export const REEFSEED_CAPACITY = 8;

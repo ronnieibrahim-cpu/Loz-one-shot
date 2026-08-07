@@ -43,7 +43,7 @@ export function installDungeonsB() {
     scroll: false,
     dungeon: {
       index: 5,
-      item: 'boomerang', itemLevel: 2,
+      item: 'reefseed', itemLevel: 1,
       essence: 5,
       boss: 'rootmaw',
       bossRoom: '1,3,1',
@@ -296,19 +296,23 @@ export function installDungeonsB() {
       },
       '0,5,3': {
         name: 'Deep Root',
+        // The Reefseed's room. The moat is `dWaterD` — deep at LOW, MID and
+        // HIGH alike — so the conch does not open it and never will. A seed
+        // thrown into it grows a pillar, and the pillar is a step at LOW: you
+        // plant, you sound the shell, and then you walk over what you planted.
         map: [
           '##########',
           '##########',
-          '##.3333.##',
-          '...3333.##',
-          '...3333.##',
-          '##......##',
+          '##WWWWW.##',
+          '...WWWWW##',
+          '...WWWWW##',
+          '##WWWWW.##',
           '##########',
           '##########',
         ],
         entities: [
           ['jellyfish', 4, 2],
-          ['pickup', 4, 5, { kind: 'fairy' }],
+          ['pickup', 7, 2, { kind: 'heartPiece' }],
         ],
       },
       '1,2,3': {
@@ -551,7 +555,7 @@ export function installDungeonsB() {
         },
       },
       '1,5,4': {
-        name: 'Boomerang Vault',
+        name: 'Seedbed Vault',
         map: [
           '##########',
           '##########',
@@ -563,7 +567,7 @@ export function installDungeonsB() {
           '##########',
         ],
         entities: [
-          ['chest', 4, 3, { big: true, item: 'boomerang', level: 2 }],
+          ['chest', 4, 3, { big: true, item: 'reefseed', level: 1 }],
         ],
       },
     },

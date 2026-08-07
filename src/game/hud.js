@@ -83,7 +83,9 @@ function drawSlot(ctx, x, itemId, p, label) {
 
   // Counted items show their quantity; levelled ones show the level, both
   // tucked into the icon's bottom-right the way the Oracle bar does.
-  if (def.counted === 'bombs') corner(ctx, String(p.bombs), x + 25);
+  // A counted item shows what is left of it in the corner of its button. The
+  // field name is the item's own, so adding a consumable is a data change.
+  if (def.counted) corner(ctx, String(p[def.counted] || 0), x + 25);
   else if (itemId === 'satchel' || itemId === 'slingshot') {
     corner(ctx, String(p.seeds[p.seedSelected || 'ember'] || 0), x + 25);
   } else if (lv > 1) corner(ctx, 'L' + lv, x + 25);

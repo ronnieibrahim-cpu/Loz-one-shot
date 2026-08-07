@@ -37,13 +37,13 @@ import { getMap, getRoom, hasRoom, resetRooms, MAPS } from '../world/maps.js';
 import { Tide, TIDE_COUNT } from './tide.js';
 import { tideLevelAt, hasTideHolds } from './tidelocal.js';
 import { Player } from './player.js';
-import { spawnEntity, ENTITY_TYPES, Entity } from './entity.js';
+import { spawnEntity, ENTITY_TYPES, Entity, findSafeTile } from './entity.js';
 import { spawnEffectAt, Explosion } from './effects.js';
 import { Pickup, rollDropTable, PushBlock, Torch, FloorSwitch, Chest } from './objects.js';
 import { ThrownObject, ITEMS, itemName, itemIcon } from './items.js';
 import {
   newProgress, saveSlot, loadSlot, giveItem, addRupees, addKey, useKey, keyCount,
-  itemLevel, hasItem, HEART_UNITS, addBombs, addSeeds, setFlag, flag,
+  itemLevel, hasItem, HEART_UNITS, addBombs, addSeeds, addReefseeds, setFlag, flag,
 } from './progress.js';
 import { drawHud, drawAreaBanner, drawBossBar } from './hud.js';
 import { Dialogue, drawBox, drawPanel, getText } from './dialogue.js';
@@ -59,7 +59,7 @@ import {
   BOSS_MUSIC_RESUME_FRAMES, ITEM_PRESENT_FRAMES, ESSENCE_FREEZE_FRAMES,
   GAMEOVER_WAIT_FRAMES,
   LENS_FADE_FRAMES, LENS_GHOST_ALPHA, LENS_TINT_ALPHA, LENS_PHASE_ALPHA,
-  LENS_SHIMMER_FRAMES,
+  LENS_SHIMMER_FRAMES, REEFSEED_CAPACITY,
 } from '../data/feel.js';
 
 export class Game {
@@ -672,6 +672,10 @@ export class Game {
       giveItem(p, id, lv);
       this.autoEquip(id);
       if (id === 'bombs') { p.maxBombs = Math.max(p.maxBombs, 10); addBombs(p, 10); }
+      if (id === 'reefseed') {
+        p.maxReefseeds = Math.max(p.maxReefseeds, REEFSEED_CAPACITY);
+        addReefseeds(p, REEFSEED_CAPACITY);
+      }
       if (id === 'satchel') { p.maxSeeds = Math.max(p.maxSeeds, 20); addSeeds(p, 'ember', 20); p.seedSelected = 'ember'; }
       this.presentItem(id, lv);
     } else if (chest.pickup) {
@@ -948,6 +952,20 @@ export class Game {
    * and says what P5 does to it.
    */
   tideAt(tx, ty) { return tideLevelAt(this, tx, ty); }
+
+  /**
+   * Move an entity to the nearest tile it can legally stand on. Used when
+   * terrain appears underneath something — a Reefseed pillar growing on an
+   * occupied tile is the case it exists for. `findSafeTile` already knows how
+   * to search; this is the one-line policy on top of it.
+   */
+  shoveOffTile(e) {
+    const safe = findSafeTile(this, e);
+    if (!safe) return false;
+    e.x = safe.x; e.y = safe.y;
+    this.spawnEffect('puff', e.x, e.y);
+    return true;
+  }
 
   updateGameOver() {
     this.deathTime++;

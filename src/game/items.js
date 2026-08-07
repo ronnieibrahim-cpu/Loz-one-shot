@@ -16,11 +16,15 @@ import { Projectile, fire } from './projectile.js';
 import { Explosion } from './effects.js';
 import { F } from '../world/tileset.js';
 import { TILE, VIEW_W, VIEW_H } from '../core/screen.js';
-import { hasItem, itemLevel, addBombs } from './progress.js';
+import { hasItem, itemLevel, addBombs, addReefseeds } from './progress.js';
+import { TIDE_COUNT } from './tide.js';
 import { FP_ONE, sp, toPx } from '../core/fixed.js';
 import {
   PEGASUS_FRAMES, JUMP_POWER, JUMP_POWER_CAPE, KNOCK_TOOL, KNOCK_THROWN,
   THROW_ARC_RISE, THROW_ARC_GRAVITY, THROW_SLIDE_DECAY, THROW_SLIDE_STOP,
+  REEFSEED_GROW_FRAMES, REEFSEED_SETTLE_FRAMES, REEFSEED_THROW_SPEED,
+  REEFSEED_SHUDDER_EVERY,
+  SHAKE_SMALL, SHAKE_SMALL_FRAMES,
 } from '../data/feel.js';
 import { sprites } from '../gfx/art.js';
 
@@ -338,6 +342,138 @@ export class ThrownObject extends Entity {
 }
 
 // --------------------------------------------------------------------------
+// Reefseed
+// --------------------------------------------------------------------------
+
+/**
+ * A thrown coral seed. It lobs, it settles, and then — after two whole seconds
+ * — it becomes a pillar on the tile it landed on.
+ *
+ * THE DELAY IS THE DESIGN. It is what makes the Reefseed compose with the
+ * conch instead of competing with it: you plant, you change the tide, and you
+ * use whatever the pillar became. A pillar is a step at LOW, a wall at MID and
+ * a submerged reef at HIGH, so the same throw is a bridge, a barricade or a
+ * thing to swim over depending on when you sound the shell.
+ *
+ * It refuses to plant on a tile it would ruin — a doorway, a warp, a switch,
+ * a chest — because a pillar is permanent for as long as the room is loaded
+ * and a room the player has bricked shut is worse than a wasted seed.
+ */
+export class Reefseed extends Entity {
+  constructor(x, y, o = {}) {
+    super(x, y, o);
+    this.w = 16; this.h = 16;
+    this.hb = { x: 4, y: 5, w: 8, h: 8 };
+    this.pal = null;
+    this.harmless = true;
+    this.shadow = true;
+    this.flying = true;
+    this.depth = 5;
+    const [dx, dy] = DIR_VEC[o.dir || 'down'];
+    this.vx = dx * REEFSEED_THROW_SPEED;
+    this.vy = dy * REEFSEED_THROW_SPEED;
+    this.z = o.z || 10;
+    this.vz = THROW_ARC_RISE;
+    this.settle = REEFSEED_SETTLE_FRAMES;
+    this.grow = 0;
+    this.planted = false;
+  }
+
+  update(game) {
+    this.frame++;
+    if (!this.planted) {
+      this.fz += this.vz;
+      this.vz -= THROW_ARC_GRAVITY;
+      const r = moveEntity(game, this, this.vx, this.vy, { jumping: true, swim: true });
+      // A seed thrown AT a wall plants at its foot, which is what "thrown at
+      // floor or wall" means — the pillar grows out of whatever stopped it.
+      if (r.hitX) this.vx = 0;
+      if (r.hitY) this.vy = 0;
+      if (--this.settle > 0 && this.fz > 0) return;
+      this.plant(game);
+      return;
+    }
+    this.grow++;
+    if (this.grow % REEFSEED_SHUDDER_EVERY === 0) {
+      game.spawnEffect('sparkle', this.x, this.y - 4, { life: 12, pal: 'coral' });
+    }
+    if (this.grow < REEFSEED_GROW_FRAMES) return;
+    this.bloom(game);
+  }
+
+  plant(game) {
+    this.planted = true;
+    this.fz = 0; this.vz = 0; this.vx = 0; this.vy = 0;
+    const { tx, ty } = this.tile();
+    if (!Reefseed.canPlant(game, tx, ty)) {
+      this.remove = true;
+      game.audio.sfx('deny');
+      game.spawnEffect('puff', this.x, this.y);
+      return;
+    }
+    // Snap to the tile it will become, so the bud and the pillar are the same
+    // 16x16 cell and the growth does not appear to jump sideways.
+    this.x = tx * TILE; this.y = ty * TILE;
+    game.audio.sfx('place');
+  }
+
+  bloom(game) {
+    this.remove = true;
+    const { tx, ty } = this.tile();
+    if (!Reefseed.canPlant(game, tx, ty)) { game.audio.sfx('deny'); return; }
+    game.room.setTile(tx, ty, 'coralPillar');
+    game.audio.sfx('rumble');
+    game.spawnEffect('puff', tx * TILE, ty * TILE);
+    game.shake(SHAKE_SMALL, SHAKE_SMALL_FRAMES);
+    // Anything standing where the pillar came up is moved off it rather than
+    // buried in it. A player sealed inside terrain by their own item is the
+    // one outcome this must never produce.
+    for (const e of game.entities) {
+      if (e.remove || e.isEffect) continue;
+      if (Math.floor(e.cx / TILE) === tx && Math.floor(e.cy / TILE) === ty) game.shoveOffTile(e);
+    }
+    const p = game.player;
+    if (p && Math.floor(p.cx / TILE) === tx && Math.floor(p.cy / TILE) === ty) game.shoveOffTile(p);
+  }
+
+  tile() {
+    return { tx: Math.floor(this.cx / TILE), ty: Math.floor(this.cy / TILE) };
+  }
+
+  /** A tile a pillar may be grown on without ruining the room. */
+  static canPlant(game, tx, ty) {
+    const room = game.room;
+    if (!room || !room.inBounds(tx, ty)) return false;
+    if (room.baseName(tx, ty) === 'coralPillar') return false;
+    if (room.warpAt(tx, ty)) return false;
+    // Tested at EVERY tide level, not the current one: a doorway that is only
+    // a doorway at LOW is still a doorway.
+    for (let lv = 0; lv < TIDE_COUNT; lv++) {
+      const f = room.flagsAt(tx, ty, lv);
+      if (f & (F.VOID | F.SOLID | F.DOOR | F.WARP | F.STAIRS | F.SWITCHF | F.PIT)) return false;
+    }
+    for (const e of game.entities) {
+      if (e.remove || e.isEffect || e.isDrop) continue;
+      if (!e.solid && !e.interact && !e.pushable) continue;
+      if (Math.floor(e.cx / TILE) === tx && Math.floor(e.cy / TILE) === ty) return false;
+    }
+    return true;
+  }
+
+  spriteName() { return this.planted ? 'o_coralbud' : 'i_reefseed'; }
+
+  draw(ctx, game, ox, oy) {
+    // The bud shudders as it grows, so a two-second wait reads as a process.
+    let jx = 0;
+    if (this.planted && this.grow > REEFSEED_GROW_FRAMES / 2) {
+      jx = (this.frame >> 1) % 2 ? 1 : -1;
+    }
+    sprites.draw(ctx, this.spriteName(), ox + this.x + jx, oy + this.y - this.z, { pal: this.pal });
+  }
+}
+defineEntity('reefseed', (x, y, o) => new Reefseed(x, y, o));
+
+// --------------------------------------------------------------------------
 // Seeds
 // --------------------------------------------------------------------------
 
@@ -449,6 +585,21 @@ export const ITEMS = {
     hold: true,
     desc: 'Hold to blow. The water ahead of you falls a level while you pump.',
     use(game, p, level) { p.bellowsHeld = true; return true; },
+  },
+  reefseed: {
+    names: ['Reefseed'],
+    icon: ['i_reefseed'],
+    equippable: true, counted: 'reefseeds',
+    desc: 'Throw it. Two seconds later a coral pillar grows where it fell.',
+    use(game, p, level) {
+      if (game.progress.reefseeds <= 0) { game.audio.sfx('deny'); return true; }
+      if (p.carrying) return false;
+      addReefseeds(game.progress, -1);
+      const [dx, dy] = DIR_VEC[p.dir];
+      game.addEntity(new Reefseed(p.cx - 8 + dx * 6, p.cy - 8 + dy * 6, { dir: p.dir }));
+      game.audio.sfx('throw');
+      return true;
+    },
   },
   bombs: {
     names: ['Bombs'],

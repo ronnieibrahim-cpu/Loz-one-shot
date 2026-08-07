@@ -353,6 +353,85 @@ r = await page.evaluate(async () => {
 check('a sustained gust turns a sluice wheel', r.open === true, `open=${r.open} turns=${r.turns}`);
 
 // ===========================================================================
+section('Reefseed');
+
+// Deep Root: a moat of `dWaterD`, deep at every tide level, so the conch never
+// opens it. This is the room the item exists for.
+await park({ map: 'd5', rx: 5, ry: 3, tx: 1, ty: 3, dir: 'right', tide: 1, items: { reefseed: 1 }, equipB: 'reefseed' });
+await page.evaluate(() => { const g = window.__game; g.progress.maxReefseeds = 8; g.progress.reefseeds = 8; });
+await step(4);
+r = await read(() => {
+  const g = window.__game;
+  return {
+    lo: g.room.tile(4, 3, 0).name, mid: g.room.tile(4, 3, 1).name, hi: g.room.tile(4, 3, 2).name,
+    stand: window.__standable(4, 3),
+  };
+});
+check('the moat is deep at every tide level',
+  r.lo === 'dWaterD' && r.mid === 'dWaterD' && r.hi === 'dWaterD', `${r.lo}/${r.mid}/${r.hi}`);
+check('...so nothing stands in it', r.stand === false);
+
+// Plant one and wait it out. The seed is given no velocity so it settles on
+// the tile it was made on: this is a test of what a Reefseed BECOMES, and a
+// lob that lands a tile further on would only be a test of the arc.
+r = await page.evaluate(async () => {
+  const g = window.__game;
+  const { Reefseed } = await import('/src/game/items.js');
+  const feel = await import('/src/data/feel.js');
+  const seed = new Reefseed(5 * 16, 3 * 16, { dir: 'right' });
+  seed.vx = 0; seed.vy = 0;
+  g.addEntity(seed);
+  const before = g.room.baseName(5, 3);
+  const seen = [];
+  for (let i = 0; i < feel.REEFSEED_GROW_FRAMES + feel.REEFSEED_SETTLE_FRAMES + 30; i++) {
+    g.update();
+    seen.push(g.room.baseName(5, 3));
+  }
+  return {
+    before, after: g.room.baseName(5, 3),
+    grewAt: seen.findIndex(n => n === 'coralPillar'),
+    growFrames: feel.REEFSEED_GROW_FRAMES,
+  };
+});
+check('a Reefseed becomes a coral pillar', r.after === 'coralPillar', `tile=${r.after}`);
+check('...and it takes about two seconds', r.grewAt >= r.growFrames, `grew at frame ${r.grewAt}, grow=${r.growFrames}`);
+
+r = await read(() => {
+  const g = window.__game;
+  const names = [0, 1, 2].map(lv => g.room.tile(5, 3, lv).name);
+  const out = { names, stand: [] };
+  for (const lv of [0, 1, 2]) {
+    g.tide.setLevel(lv, { instant: true });
+    out.stand.push(window.__standable(5, 3));
+  }
+  g.tide.setLevel(1, { instant: true });
+  return out;
+});
+check('a pillar is a step at LOW', r.names[0] === 'coralStep' && r.stand[0] === true, `${r.names[0]} stand=${r.stand[0]}`);
+check('a pillar is a wall at MID', r.names[1] === 'coralWall' && r.stand[1] === false, `${r.names[1]} stand=${r.stand[1]}`);
+check('a pillar is submerged at HIGH', r.names[2] === 'coralSunk' && r.stand[2] === false, `${r.names[2]}`);
+
+// It refuses to brick the room shut.
+r = await page.evaluate(async () => {
+  const g = window.__game;
+  const { Reefseed } = await import('/src/game/items.js');
+  const doorRoom = g.room;
+  const wall = [0, 0];
+  // Find a SOLID tile and a warp tile in whatever room we are standing in.
+  let solid = null;
+  for (let y = 0; y < 8 && !solid; y++) {
+    for (let x = 0; x < 10; x++) {
+      const f = doorRoom.flagsAt(x, y, g.tide.level);
+      if (f & 1) { solid = [x, y]; break; }     // F.SOLID is bit 0
+    }
+  }
+  return { solid, canPlantSolid: solid ? Reefseed.canPlant(g, solid[0], solid[1]) : null,
+           canPlantTwice: Reefseed.canPlant(g, 5, 3) };
+});
+check('a pillar will not grow inside a wall', r.canPlantSolid === false, `at ${r.solid}`);
+check('a pillar will not grow on another pillar', r.canPlantTwice === false);
+
+// ===========================================================================
 check('no page errors', errs.length === 0, errs.slice(0, 3).join(' | '));
 
 console.log(`\n=== ${passed} passed, ${failures.length} failed ===`);

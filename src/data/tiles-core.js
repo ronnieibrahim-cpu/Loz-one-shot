@@ -1094,6 +1094,24 @@ export function installCoreTiles() {
     dRaceE: { tide: ['dWaterS', 'riptideE', 'riptideE'] },
     dRaceW: { tide: ['dWaterS', 'riptideW', 'riptideW'] },
 
+    // --- Reefseed coral ---------------------------------------------------
+    // What a Reefseed grows into. One tile, three lives:
+    //
+    //   LOW    a low step you walk over — a pillar grown in water is a bridge
+    //          once the water leaves
+    //   MID    a wall, chest high — it blocks a charge and a line of fire
+    //   HIGH   submerged; you swim over it, and the Resonance Rod can ring it
+    //
+    // No new art. `rock` in the coral palette is the pillar and `waterD` is it
+    // drowned, which is the same trick `grassDark` and `cliffCoral` already
+    // use: ART-DIRECTION says extract rather than draw, and where no sheet has
+    // the thing, reusing art the sheets DID supply beats inventing a look for
+    // it. What tells the three states apart is the flags, not the drawing.
+    coralStep: { art: ART.rockFloor, pal: 'coral' },
+    coralWall: { art: ART.rock, pal: 'coral', flags: F.SOLID | F.RING },
+    coralSunk: { art: ART.waterD0, pal: 'coral', flags: F.DEEP | F.RING, anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 13 },
+    coralPillar: { tide: ['coralStep', 'coralWall', 'coralSunk'] },
+
     // --- barriers ---
     cliff: { art: ART.cliff, pal: 'stone', flags: F.SOLID },
     cliffTop: { art: ART.cliffTop, pal: 'stone', flags: F.SOLID },
