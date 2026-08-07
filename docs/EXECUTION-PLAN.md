@@ -390,7 +390,150 @@ case upgrade gives a second charm per level.
    highlighted. It must be legible at 160x144 with the existing font.
 5. Delete src/game/rings.js and every reference.
 ```
+P7.5 — Dungeon tilesets from the map rips
 
+Effort: medium. Mechanical extraction with one judgement call.
+
+Read CLAUDE.md, docs/ART-DIRECTION.md and docs/EXECUTION-PLAN.md first.
+Branch off main.
+
+I have uploaded four Oracle of Seasons dungeon map rips to assets/sheets/:
+Ancient Ruins, Explorer's Crypt, Poison Moth's Lair, and Dancing Dragon
+Dungeon. These are stitched FULL-FLOOR MAPS, not tilesheets — every 16x16
+cell in them appears many times over. The existing rip tooling expects a
+tilesheet, so it does not apply unchanged.
+
+FIRST, a decision that governs everything after it, and getting it wrong
+poisons every dungeon: each of these images contains the SAME map twice,
+side by side. The left half is labelled "GBC LCD Colors" and the right half
+"True Colors". They are different palettes — the left is corrected to
+simulate how the physical GBC screen displayed the game, the right is the raw
+palette from the ROM.
+
+  1. Determine which register the sheets ALREADY in assets/sheets/ came from,
+     by sampling a tile that appears in both an existing sheet and one of
+     these maps and comparing RGB. Report what you find with the numbers.
+  2. Take the matching half of every new map. Never mix. If the existing
+     sheets turn out to be inconsistent with each other, STOP and tell me —
+     that is a decision for me, not for you.
+  3. Record the choice and the evidence in docs/ART-DIRECTION.md so no future
+     session has to re-derive it.
+
+THEN build tools/rip-dungeon-maps.py alongside the existing rip tooling:
+
+  4. Crop to the chosen half. The maps have a green (0,255,0)-style
+     background between rooms — detect and exclude it rather than
+     hardcoding coordinates.
+  5. Grid the map into 16x16 cells and deduplicate them, hashing on exact
+     pixel content. Emit one deduplicated tileset PNG per dungeon plus a
+     JSON manifest recording, for each unique tile, how many times it
+     occurred and one map coordinate where it appears — frequency is how I
+     will tell a wall from a one-off decoration.
+  6. Discard the appendix strips at the bottom of each map (minimap panels,
+     item icons, enemy sprites) — those are not terrain. Detect them by
+     their position below the last room row, and log what you discarded so I
+     can check nothing useful went with it.
+  7. Byte-identical on a second run, asserted in a checker.
+
+THEN integrate:
+
+  8. For each dungeon tileset, map the recurring tiles into the game's
+     legend/tiledef system with flags — floor, wall, pit, water, block,
+     stairs, door. Do NOT guess a flag from appearance alone where the
+     source map shows the tile in use; cite the map coordinate you inferred
+     it from in the tiledef comment.
+  9. Do NOT author any room with these yet. This session produces tilesets
+     and tiledefs only. P8 uses them.
+
+Frequency-order the work and STOP after the 60 most common tiles per
+dungeon. Log the rest in docs/ART-BACKLOG.md.
+
+Every checker green. npm run build, commit dist/, update NEXT-SESSION.md and
+HANDOFF.md.
+P7.6 — Multi-screen dungeon rooms
+
+Effort: high. Use plan mode. Show me the plan before executing.
+
+Read CLAUDE.md and docs/EXECUTION-PLAN.md first. Branch off main. Use plan
+mode and show me the plan before you touch code.
+
+CONTEXT, and the boundary matters more than the feature:
+
+The GBC Zeldas use 16x16 tiles with a 10x8-tile screen, and the OVERWORLD is
+a grid of exactly those screens with a scroll transition on each seam. That
+is what this engine already does and it is correct. Do not change it.
+
+DUNGEONS are different. Flagship designed many Oracle dungeon rooms LARGER
+than the 160x144 screen, with the camera following Link inside the room and a
+transition firing only at a room boundary — the wide multi-screen halls in
+Poison Moth's Lair and the long lower corridors of Ancient Ruins are the
+clearest examples, and both are in the map rips in assets/sheets/. This
+engine cannot express them: every room is hard-coded to 10x8 and every seam
+is a transition. That is the fidelity gap this session closes.
+
+SCOPE:
+
+  1. A dungeon room gains a size in screens: {sw, sh}, defaulting to 1x1.
+     Support 1x1, 2x1, 1x2, 2x2 and 3x1. Do not support arbitrary sizes —
+     an unbounded room size is a different game and a much larger change.
+     Overworld rooms remain 1x1 and the code path must make that structural,
+     not conventional.
+
+  2. Camera. Inside a multi-screen room the camera follows Link and clamps to
+     the room's bounds. Match the source's behaviour: the camera should not
+     be centred on Link at all times — it should hold still until he
+     approaches an edge, then move. Put the deadzone dimensions in feel.js
+     tagged `guessed` and add a debug key to visualise the deadzone box, for
+     the same reason the anchor radius got one: this is settled by play.
+
+  3. Rendering. The room render cache is currently one screen-sized canvas.
+     A 3x1 room is 480x128 — cache the whole room and blit the camera
+     window, rather than re-rendering per frame. Keep the existing cache-key
+     discipline exactly as P5 left it; the tide field and the camera must not
+     both be able to invalidate it incorrectly.
+
+  4. Transitions. checkRoomExit fires only at the ROOM boundary, not at an
+     internal screen seam. Verify by walking a 2x1 room end to end and
+     asserting exactly one transition fires. This is the single most likely
+     bug in the session.
+
+  5. Every checker must reason over rooms of arbitrary screen size:
+     validate.mjs, walk-dungeons.mjs, solve-switches.mjs, find-ledges.mjs,
+     and the P5 anchor strand-and-gate checks. The anchor's frozen disc does
+     not change size — a radius that split a 10x8 room will split a 20x8
+     room differently, and that is a design consequence I want, not a bug to
+     correct.
+
+  6. Chartstone and the dungeon minimap must render a multi-screen room as
+     one room occupying the right number of grid cells, the way the source's
+     dungeon maps do.
+
+  7. Convert exactly ONE existing room to 2x1 as proof, and add a replay that
+     walks it end to end asserting a single transition. Do not convert any
+     other room — P8 does that with design intent.
+
+CONSTRAINTS:
+
+  - Both existing replays must pass unchanged. Nothing here may alter a
+    single pixel in a 1x1 room.
+  - Room grid data format must stay backward compatible: an existing 10x8
+    grid with no size declared is a 1x1 room.
+  - Overworld behaviour is byte-identical before and after.
+
+npm run build, commit dist/, update NEXT-SESSION.md and HANDOFF.md.
+Amendment to P8
+
+Add to each dungeon session prompt:
+
+Rooms may now be 1x1, 2x1, 1x2, 2x2 or 3x1 screens. Use the larger sizes
+deliberately, not decoratively: a multi-screen room should exist because the
+puzzle or the fight needs the space, and a dungeon where every room is 2x2
+reads as flat as one where every room is 1x1. Reference the map rips in
+assets/sheets/ for how Seasons paces this — most rooms are one screen, and
+the large ones land on set pieces.
+
+Use the tilesets from P7.5 for this dungeon's visual identity. Each of the
+six dungeons should be identifiable from a single screenshot.
 ### P8 — Dungeon re-authoring (six sessions, one per dungeon)
 
 ```
