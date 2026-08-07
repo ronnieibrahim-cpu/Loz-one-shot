@@ -27,6 +27,7 @@
 //   }
 
 import { Room } from './room.js';
+import { ROOM_W, ROOM_H } from '../core/screen.js';
 
 export const MAPS = new Map();
 
@@ -45,6 +46,21 @@ export function registerMap(def) {
     roomDefs: def.rooms || {},
     _rooms: new Map(),
   };
+  // P7.6: MULTI-SCREEN ROOMS ARE A DUNGEON FEATURE, STRUCTURALLY.
+  //
+  // The overworld is a grid of exactly one-screen rooms with a scroll on each
+  // seam, and that is correct and is not changing. This is a throw rather than
+  // a comment saying so, because "overworld rooms are 1x1" has to be a fact the
+  // engine enforces and not a convention an author can forget. `kind` defaults
+  // to 'overworld', so a map that declares no kind is covered too.
+  if (m.kind === 'overworld') {
+    for (const [key, def] of Object.entries(m.roomDefs)) {
+      if (def && def.size) {
+        throw new Error(`[maps] ${m.id}:${key} declares size ${JSON.stringify(def.size)}; `
+          + 'only dungeon and interior rooms may span more than one screen');
+      }
+    }
+  }
   MAPS.set(m.id, m);
   return m;
 }
@@ -92,10 +108,52 @@ export function dungeons() {
     .sort((a, b) => a.dungeon.index - b.dungeon.index);
 }
 
-/** Structural validation: every warp must resolve to a room that exists. */
+/** A room def's span in screens, defaulting to one. Tolerant: validateMaps
+ *  must be able to REPORT a bad size rather than throw on one. */
+export function roomSpan(def) {
+  const size = def && def.size;
+  if (!size) return [1, 1];
+  const [w, h] = Array.isArray(size) ? size : [size.w, size.h];
+  return [Number(w) || 1, Number(h) || 1];
+}
+
+/**
+ * Structural validation: every warp resolves, every grid matches its declared
+ * size, and NO TWO ROOMS CLAIM THE SAME GRID CELL.
+ */
 export function validateMaps() {
   const problems = [];
   for (const m of MAPS.values()) {
+    // P7.6 [A2]: which grid cell belongs to which room. Built per map per
+    // floor BEFORE anything else, because a stranded-room report from a
+    // connectivity checker is meaningless while two rooms are fighting over a
+    // cell — you cannot tell which of them the walker was walking.
+    const owner = new Map();          // "f,x,y" -> room key that covers it
+    for (const [key, def] of Object.entries(m.roomDefs)) {
+      const parts = key.split(',');
+      if (parts.length !== 3 || parts.some(p => p === '' || isNaN(Number(p)))) continue;
+      const [f, x, y] = parts.map(Number);
+      const [sw, sh] = roomSpan(def);
+      if (x + sw > m.w || y + sh > m.h) {
+        problems.push(`${m.id}/${key}: a ${sw}x${sh} room starting there runs off the `
+          + `${m.w}x${m.h} grid`);
+      }
+      for (let dy = 0; dy < sh; dy++) {
+        for (let dx = 0; dx < sw; dx++) {
+          const cell = `${f},${x + dx},${y + dy}`;
+          const prev = owner.get(cell);
+          if (prev !== undefined && prev !== key) {
+            // HARD FAILURE. Two rooms answering to one cell is silent and
+            // awful: getRoom returns whichever the Map happened to store, so
+            // which room a door leads to depends on authoring order.
+            problems.push(`${m.id}: rooms '${prev}' and '${key}' both claim cell ${cell}`);
+          } else {
+            owner.set(cell, key);
+          }
+        }
+      }
+    }
+
     for (const [key, def] of Object.entries(m.roomDefs)) {
       const parts = key.split(',');
       if (parts.length !== 3 || parts.some(p => p === '' || isNaN(Number(p)))) {
@@ -106,11 +164,22 @@ export function validateMaps() {
       if (f < 0 || f >= m.floors || x < 0 || x >= m.w || y < 0 || y >= m.h) {
         problems.push(`${m.id}: room '${key}' is outside the map bounds ${m.w}x${m.h}x${m.floors}`);
       }
+      // The grid must match the DECLARED size exactly. This is what stops a
+      // 3x1 room being authored as three 1x1 grids by accident: without it the
+      // extra columns are silently read as ' ' and become void.
+      const [sw, sh] = roomSpan(def);
+      const wantRows = sh * ROOM_H, wantCols = sw * ROOM_W;
       const rows = def.map || [];
-      if (rows.length !== 8) problems.push(`${m.id}/${key}: map has ${rows.length} rows, expected 8`);
+      if (rows.length !== wantRows) {
+        problems.push(`${m.id}/${key}: map has ${rows.length} rows, expected ${wantRows}`
+          + (sh > 1 ? ` (${sw}x${sh} screens)` : ''));
+      }
       rows.forEach((r, i) => {
         const t = r.replace(/\s+$/, '');
-        if (t.length !== 10) problems.push(`${m.id}/${key}: row ${i} has ${t.length} chars, expected 10`);
+        if (t.length !== wantCols) {
+          problems.push(`${m.id}/${key}: row ${i} has ${t.length} chars, expected ${wantCols}`
+            + (sw > 1 ? ` (${sw}x${sh} screens)` : ''));
+        }
       });
       for (const w of (def.warps || [])) {
         const to = Array.isArray(w) ? { map: w[2], floor: w[3] | 0, rx: w[4], ry: w[5] } : w.to;

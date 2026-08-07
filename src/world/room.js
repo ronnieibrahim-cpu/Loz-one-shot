@@ -44,6 +44,27 @@ export function getLegend(nameOrObj) {
   return LEGENDS.get(nameOrObj) || LEGENDS.get('base') || {};
 }
 
+/**
+ * The sizes a room may be, in screens. DELIBERATELY A CLOSED SET.
+ *
+ * An unbounded room size is a different game: the render cache, the minimap's
+ * span drawing and the camera clamp all have costs that are fine at 3x1 and are
+ * not fine at 20x20. Anything outside this list THROWS at construction rather
+ * than warning, because a room that silently came out the wrong size would
+ * validate, render and walk — and be wrong forever.
+ */
+export const ROOM_SIZES = ['1x1', '2x1', '1x2', '2x2', '3x1'];
+
+function normaliseSize(size, mapId, key) {
+  if (size == null) return [1, 1];
+  const [w, h] = Array.isArray(size) ? size : [size.w, size.h];
+  const name = `${w}x${h}`;
+  if (!ROOM_SIZES.includes(name)) {
+    throw new Error(`[room] ${mapId}:${key} has size ${name}; allowed: ${ROOM_SIZES.join(', ')}`);
+  }
+  return [w, h];
+}
+
 export class Room {
   constructor(def, key, mapDef) {
     this.def = def;
@@ -57,19 +78,37 @@ export class Room {
     const legend = getLegend(def.legend || (mapDef && mapDef.legend));
     this.legend = legend;
 
+    // ---- size, in three units that must never be confused (P7.6) ----------
+    //
+    // A dungeon room may span several screens. THE OVERWORLD MAY NOT, and that
+    // is enforced in maps.js rather than assumed here.
+    //
+    //   sw/sh  screens        the authored size; 1x1 unless `size` says otherwise
+    //   tw/th  tiles          what every grid index and every tile loop wants
+    //   pw/ph  pixels         the room's extent in world space
+    //
+    // VIEW_W/VIEW_H remain the size of the WINDOW ON SCREEN and are now a
+    // different thing from all three. Before this they were numerically equal
+    // to pw/ph, which is why so much of the engine spelled "the room's extent"
+    // with the viewport constant.
+    const [sw, sh] = normaliseSize(def.size, this.mapId, key);
+    this.sw = sw; this.sh = sh;
+    this.tw = sw * ROOM_W; this.th = sh * ROOM_H;
+    this.pw = this.tw * TILE; this.ph = this.th * TILE;
+
     // Base grid of tile *names* as authored (may be virtual tide tiles).
-    this.base = new Array(ROOM_W * ROOM_H);
+    this.base = new Array(this.tw * this.th);
     const rows = (def.map || []);
-    for (let y = 0; y < ROOM_H; y++) {
+    for (let y = 0; y < this.th; y++) {
       const row = (rows[y] || '').replace(/\s+$/, '');
-      for (let x = 0; x < ROOM_W; x++) {
+      for (let x = 0; x < this.tw; x++) {
         const ch = row[x] !== undefined ? row[x] : ' ';
         const t = legend[ch];
-        this.base[y * ROOM_W + x] = t || legend[' '] || 'void';
+        this.base[y * this.tw + x] = t || legend[' '] || 'void';
       }
     }
     // Runtime overrides (opened doors, smashed bushes, lifted rocks).
-    this.override = new Array(ROOM_W * ROOM_H).fill(null);
+    this.override = new Array(this.tw * this.th).fill(null);
 
     this.music = def.music || null;
     this.tint = def.tint || null;
@@ -90,12 +129,15 @@ export class Room {
     this.cleared = false;     // all enemies defeated at least once (for locked rooms)
   }
 
-  inBounds(tx, ty) { return tx >= 0 && ty >= 0 && tx < ROOM_W && ty < ROOM_H; }
+  inBounds(tx, ty) { return tx >= 0 && ty >= 0 && tx < this.tw && ty < this.th; }
+
+  /** Is this a plain one-screen room? The fast path, and the common case. */
+  get isSingleScreen() { return this.sw === 1 && this.sh === 1; }
 
   /** Authored (possibly virtual) tile name. */
   baseName(tx, ty) {
     if (!this.inBounds(tx, ty)) return 'void';
-    return this.override[ty * ROOM_W + tx] || this.base[ty * ROOM_W + tx];
+    return this.override[ty * this.tw + tx] || this.base[ty * this.tw + tx];
   }
 
   /**
@@ -127,13 +169,13 @@ export class Room {
 
   setTile(tx, ty, name) {
     if (!this.inBounds(tx, ty)) return;
-    this.override[ty * ROOM_W + tx] = name;
+    this.override[ty * this.tw + tx] = name;
     this.invalidate();
   }
 
   clearTile(tx, ty) {
     if (!this.inBounds(tx, ty)) return;
-    this.override[ty * ROOM_W + tx] = null;
+    this.override[ty * this.tw + tx] = null;
     this.invalidate();
   }
 
@@ -255,7 +297,7 @@ export class Room {
    */
   solidAt(px, py, tide, caps) {
     const tx = Math.floor(px / TILE), ty = Math.floor(py / TILE);
-    if (tx < 0 || ty < 0 || tx >= ROOM_W || ty >= ROOM_H) return true;
+    if (tx < 0 || ty < 0 || tx >= this.tw || ty >= this.th) return true;
     // The tile is resolved at ITS OWN tide level, so a hitbox spanning the edge
     // of a frozen patch is solid on one side and wadeable on the other.
     const d = this.tile(tx, ty, tide);
