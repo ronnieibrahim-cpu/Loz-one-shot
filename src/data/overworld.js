@@ -944,10 +944,13 @@ const rooms = {
   '0,3,4': {
     name: 'The Deep Cut',
     legend: 'cliffs', music: 'overworld',
+    // The Squall Bellows' overworld room. The raft in the cut goes wherever it
+    // is blown and takes you with it; the long way round the north shelf is
+    // still open, so this is a shortcut you earn rather than a gate.
     map: [
       '###gggg###',
       '#gGGGGGGg#',
-      'gg......Mg',
+      'gg.====.Mg',
       'gg.====.Mg',
       'gg......Mg',
       'gg______Mg',
@@ -955,7 +958,10 @@ const rooms = {
       '###gggg###',
     ],
     entities: [
-      ['sign', 2, 2, { text: 'East across the cut: the Drowned Wood.\nYou will need to swim.' }],
+      ['sign', 2, 2, { text: 'East across the cut: the Drowned Wood.\nSwim it, or blow the raft across.' }],
+      // Moored, not patrolling: `range: 0` and `needTide: 0` make it a raft
+      // that sits where it is until something blows it.
+      ['raft', 3, 3, { axis: 'x', range: 0, needTide: 0 }],
     ],
   },
   // ---- wood --------------------------------------------------------------

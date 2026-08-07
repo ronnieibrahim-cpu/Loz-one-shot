@@ -244,10 +244,14 @@ export function canOccupy(game, e, x, y, caps) {
   for (const py of ys) {
     for (const px of xs) {
       if (px < 0 || py < 0 || px >= VIEW_W || py >= VIEW_H) return false;
-      if (room.solidAt(px, py, game.tide.level, cps)) return false;
+      // The tide is asked for AT THE TILE, not globally: a Squall Bellows cone
+      // holds one part of the room back a level while the rest obeys the
+      // conch. See src/game/tidelocal.js — and read its header before merging
+      // P5, which owns this query.
+      const stx = Math.floor(px / TILE), sty = Math.floor(py / TILE);
+      if (room.solidAt(px, py, game.tideAt(stx, sty), cps)) return false;
       if (avoid) {
-        const tx = Math.floor(px / TILE), ty = Math.floor(py / TILE);
-        if (room.flagsAt(tx, ty, game.tide.level) & avoid) return false;
+        if (room.flagsAt(stx, sty, game.tideAt(stx, sty)) & avoid) return false;
       }
     }
   }
@@ -270,7 +274,7 @@ export function groundFlags(game, e) {
   const px = Math.floor(e.x + e.hb.x + e.hb.w / 2);
   const py = Math.floor(e.y + e.hb.y + e.hb.h - 2);
   const tx = Math.floor(px / TILE), ty = Math.floor(py / TILE);
-  return room.flagsAt(tx, ty, game.tide.level);
+  return room.flagsAt(tx, ty, game.tideAt(tx, ty));
 }
 
 export function groundTile(game, e) {
@@ -289,7 +293,7 @@ export function findSafeTile(game, e, maxRadius = 6) {
         if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
         const nx = tx + dx, ny = ty + dy;
         if (nx < 0 || ny < 0 || nx >= ROOM_W || ny >= ROOM_H) continue;
-        const f = game.room.flagsAt(nx, ny, game.tide.level);
+        const f = game.room.flagsAt(nx, ny, game.tideAt(nx, ny));
         if (f & (F.SOLID | F.VOID | F.DEEP | F.PIT | F.HAZARD | F.JUMPABLE)) continue;
         const px = nx * TILE + (TILE - e.w) / 2;
         const py = ny * TILE + (TILE - e.h) / 2;

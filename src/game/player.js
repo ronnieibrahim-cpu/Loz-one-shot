@@ -16,6 +16,7 @@ import {
   Entity, moveEntity, canOccupy, groundFlags, groundTile, findSafeTile, DIR_VEC, DIRS,
 } from './entity.js';
 import { F, transformFor } from '../world/tileset.js';
+import { ConeHold } from './tidelocal.js';
 import { TILE, VIEW_W, VIEW_H } from '../core/screen.js';
 import { sp, toPx } from '../core/fixed.js';
 import { sprites } from '../gfx/art.js';
@@ -34,6 +35,8 @@ import {
   LEDGE_MAX_SPAN, LEDGE_HOP_FRAMES, LEDGE_HOP_HEIGHT, LEDGE_PROBE_REACH,
   FALL_FRAMES, WASH_FRAMES, DIG_FRAMES, CONCH_FRAMES, PUSH_DELAY_FRAMES,
   LENS_FADE_FRAMES,
+  BELLOWS_RANGE, BELLOWS_WARMUP_FRAMES, BELLOWS_PUSH, BELLOWS_PUFF_EVERY,
+  BELLOWS_RAFT_SCALE,
   SINK_SPEED, SINK_ENTER_FRAMES, CLEATS_BREATH_FRAMES,
   CLEATS_BREATH_WARN_FRAMES, SINK_BUBBLE_EVERY, SINK_DROWN_DAMAGE,
   CONTEXT_REACH, LIFT_REACH, THROW_SPEED, CARRY_HEIGHT,
@@ -78,6 +81,9 @@ export class Player extends Entity {
     this.hookPulling = false;
     this.lensHeld = false;        // set per-frame by the held-item hook
     this.lensT = 0;               // 0..LENS_FADE_FRAMES, the overlay's fade
+    this.bellowsHeld = false;     // ditto
+    this.bellowsT = 0;            // frames spent pumping; the cone opens at warmup
+    this.bellowsHold = null;      // the ConeHold registered in game.tideHolds
     this.invincible = false;      // debug / cutscene
     this.frozen = 0;              // cutscene lock
     this.animT = 0;
@@ -143,6 +149,7 @@ export class Player extends Entity {
     this.handleInput(game);
     this.updateSwordHold(game);
     this.updateLens(game);
+    this.updateBellows(game);
     this.updateBreath(game);
     this.updateMovement(game);
     this.updateJump(game);
@@ -193,7 +200,7 @@ export class Player extends Entity {
     // current is the whole trade sink mode offers for its pace.
     if (this.inDeep && !this.underwater) {
       const { tx, ty } = groundTile(game, this);
-      const def = game.room.tile(tx, ty, game.tide.level);
+      const def = game.room.tile(tx, ty, game.tideAt(tx, ty));
       // A tile's `push` is data, written in px/f; the mover speaks subpixels.
       if (def.push) moveEntity(game, this, sp(def.push[0]), sp(def.push[1]));
     }
@@ -213,6 +220,7 @@ export class Player extends Entity {
     const i = game.input;
     this.shielding = false;
     this.lensHeld = false;
+    this.bellowsHeld = false;
 
     // A: context action first (talk, read, open, grab), then the A item.
     if (i.pressed('a')) {
@@ -342,6 +350,11 @@ export class Player extends Entity {
     // holding one. That is deliberate and it is a signature of the source
     // games; see docs/FEEL-SPEC.md.
 
+    // Pumping costs you your feet. You may still turn — aiming a sustained
+    // gust you cannot re-point would be a puzzle about pre-positioning rather
+    // than about the gust — but you go nowhere while it blows.
+    if (this.bellowsOpen) { this.animT++; return; }
+
     // A hop in progress owns the controls until it lands.
     if (this.ledgeHop) { this.updateLedgeHop(game); this.animT++; return; }
     if ((dx || dy) && this.tryLedgeHop(game, dx, dy)) { this.animT++; return; }
@@ -445,7 +458,7 @@ export class Player extends Entity {
 
   tileDefAt(game, tx, ty) {
     if (tx < 0 || ty < 0 || tx * TILE >= VIEW_W || ty * TILE >= VIEW_H) return null;
-    return game.room.tile(tx, ty, game.tide.level);
+    return game.room.tile(tx, ty, game.tideAt(tx, ty));
   }
 
   tryPush(game, dx, dy) {
@@ -695,6 +708,90 @@ export class Player extends Entity {
     return true;
   }
 
+  // --------------------------------------------------------- Squall Bellows
+  //
+  // Held, like the Lens, and like the Lens it is `use`d every frame the button
+  // is down. Unlike the Lens it changes the world: while the cone is open the
+  // water inside it stands one tide level lower than the rest of the room, and
+  // everything that asks what the tide is doing AT A TILE sees that — the
+  // player's own footing, an enemy's footing, and the renderer.
+  //
+  // Three things make it a tool rather than a second conch:
+  //
+  //   * it costs your movement, so the cone is somewhere you are NOT going
+  //   * it is directional, so you choose which half of a room to drain
+  //   * it lasts exactly as long as you hold it, so anything that has to cross
+  //     the drained water has to be something other than you — a raft, a
+  //     pushed block, a thrown Reefseed
+  //
+  // The cone is registered in `game.tideHolds` and removed the frame the
+  // button comes up. See src/game/tidelocal.js for what P5 does to that.
+
+  updateBellows(game) {
+    const on = this.bellowsHeld && !this.inDeep && !this.underwater
+      && this.swinging === 0 && this.spinning === 0 && !this.carrying
+      && !game.tide.busy;
+    if (!on) { this.stopBellows(game); return; }
+
+    this.bellowsT++;
+    this.bellowsOpen = this.bellowsT >= BELLOWS_WARMUP_FRAMES;
+    if (this.bellowsT === 1) game.audio.sfx('conch');
+    if (!this.bellowsOpen) { this.releaseHold(game); return; }
+
+    const [dx, dy] = DIR_VEC[this.dir];
+    const ox = Math.floor(this.cx / TILE), oy = Math.floor(this.cy / TILE);
+    if (!this.bellowsHold) {
+      this.bellowsHold = new ConeHold({ ox, oy, dx, dy, range: BELLOWS_RANGE, delta: -1 });
+      game.tideHolds.push(this.bellowsHold);
+      if (game.room) game.room.invalidate();
+    } else if (this.bellowsHold.ox !== ox || this.bellowsHold.oy !== oy
+      || this.bellowsHold.dx !== dx || this.bellowsHold.dy !== dy) {
+      // Turning re-aims the cone. The room's cached render has to be told,
+      // because the drained half of it just moved.
+      this.bellowsHold.ox = ox; this.bellowsHold.oy = oy;
+      this.bellowsHold.dx = dx; this.bellowsHold.dy = dy;
+      if (game.room) game.room.invalidate();
+    }
+
+    if (this.bellowsT % BELLOWS_PUFF_EVERY === 0) {
+      game.spawnEffect('foam', this.cx - 8 + dx * 14, this.cy - 8 + dy * 14, { life: 14 });
+      game.audio.sfx('swim');
+    }
+    this.gust(game, dx, dy);
+  }
+
+  /** Shove what the gust can shove: light enemies, rafts, and wheels. */
+  gust(game, dx, dy) {
+    const h = this.bellowsHold;
+    for (const e of game.entities) {
+      if (e === this || e.dead || e.hidden) continue;
+      const tx = Math.floor(e.cx / TILE), ty = Math.floor(e.cy / TILE);
+      if (!h.covers(tx, ty)) continue;
+      if (e.onGust) { e.onGust(game, dx, dy); continue; }
+      if (e.isEnemy && e.light) {
+        moveEntity(game, e, dx * BELLOWS_PUSH, dy * BELLOWS_PUSH, { jumping: true, swim: true });
+        e.stun = Math.max(e.stun, 6);
+      }
+    }
+  }
+
+  stopBellows(game) {
+    if (this.bellowsT === 0 && !this.bellowsHold) { this.bellowsOpen = false; return; }
+    this.bellowsT = 0;
+    this.bellowsOpen = false;
+    this.releaseHold(game);
+  }
+
+  releaseHold(game) {
+    if (!this.bellowsHold) return;
+    const i = game.tideHolds.indexOf(this.bellowsHold);
+    if (i >= 0) game.tideHolds.splice(i, 1);
+    this.bellowsHold = null;
+    if (game.room) game.room.invalidate();
+    // The water comes back, and it may come back on top of you.
+    this.reconcileWithTide(game);
+  }
+
   // ------------------------------------------------------- Kelp-Soled Cleats
   //
   // One item, two modes, one button. Swim is what the flippers were. Sink is
@@ -928,6 +1025,7 @@ export class Player extends Entity {
     if (this.digging > 0) return 'link_dig_' + (this.digging > DIG_FRAMES / 2 ? 0 : 1);
     if (this.spinning > 0) return 'link_spin_' + (Math.floor(this.frame / 3) % 4);
     if (this.conchTime > 0) return 'link_conch_' + key;
+    if (this.bellowsT > 0) return 'link_push_' + key;
     if (this.sinkT > 0) return 'link_dive';
     // Walking the floor is walking: the same frames as on land, in the swim
     // palette, drawn whole rather than cropped at a water line. Reusing them

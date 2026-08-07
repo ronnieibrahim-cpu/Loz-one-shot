@@ -20,6 +20,7 @@
 //     drops: 'common',          // 'none' | 'common' | 'good' | 'rich'
 //     terrain: 'land',          // 'land' | 'water' | 'any' | 'air'
 //     shield: 'front',          // optional: immune to sword from this side
+//     light: true,              // optional: the Squall Bellows can shove it
 //     tideDies: 2,              // optional: dies when tide reaches this level
 //     tideOnly: [0,1],          // optional: only active at these tide levels
 //     init(e, g) {},            // optional one-time setup
@@ -82,6 +83,9 @@ export class Enemy extends Entity {
     this.flying = this.terrain === 'air' || !!spec.flying;
     this.avoidFlags = spec.avoid != null ? spec.avoid : TERRAIN_AVOID[this.terrain];
     this.shield = spec.shield || null;
+    // Light enough for the Squall Bellows to shove. Fliers, floaters and
+    // slimes are; anything armoured or anchored is not. See docs/ITEMS.md.
+    this.light = opts.light != null ? opts.light : !!spec.light;
     this.drops = opts.drops || spec.drops || 'common';
     this.dir = opts.dir || 'down';
     // Lattice motion. `step` is the step in progress, `stepping` mirrors it for

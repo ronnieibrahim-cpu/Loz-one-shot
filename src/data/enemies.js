@@ -66,6 +66,7 @@ export function installEnemies() {
 
   // --- Zol: a slime that splits when struck ------------------------------
   defineEnemy('zol', {
+    light: true,
     hp: 2, damage: 2, pal: 'slime', speed: 0.3, rate: 14,
     frames: ['zol_0', 'zol_1'],
     hb: { x: 3, y: 6, w: 10, h: 9 },
@@ -84,6 +85,7 @@ export function installEnemies() {
   });
 
   defineEnemy('gel', {
+    light: true,
     hp: 1, damage: 1, pal: 'slime', speed: 0.42, rate: 10,
     frames: ['gel_0', 'gel_1'],
     w: 16, h: 16,
@@ -95,6 +97,7 @@ export function installEnemies() {
 
   // --- Keese: erratic flier, ignores terrain -----------------------------
   defineEnemy('keese', {
+    light: true,
     hp: 1, damage: 1, pal: 'shadow', speed: 1.0, rate: 5, terrain: 'air',
     frames: ['keese_0', 'keese_1'],
     hb: { x: 3, y: 4, w: 10, h: 8 },
@@ -121,6 +124,7 @@ export function installEnemies() {
 
   // --- Bubble: invulnerable drifting hazard ------------------------------
   defineEnemy('bubble', {
+    light: true,
     hp: 999, damage: 2, pal: 'spark', speed: 1.0, rate: 6, terrain: 'air',
     frames: ['bubble_0', 'bubble_1'],
     shield: 'all',
@@ -146,6 +150,7 @@ export function installEnemies() {
 
   // --- Spiked Beetle: charges in straight lines -------------------------
   defineEnemy('beetle', {
+    light: true,
     hp: 3, damage: 2, pal: 'enemyk', speed: 0.4, rate: 9,
     frames: {
       down: ['beetle_d0', 'beetle_d1'],
@@ -161,6 +166,7 @@ export function installEnemies() {
 
   // --- Tektite: hops at you across water ---------------------------------
   defineEnemy('tektite', {
+    light: true,
     hp: 2, damage: 2, pal: 'enemyb', speed: 0.6, rate: 8, terrain: 'any',
     frames: ['tektite_0', 'tektite_1'],
     drops: 'common',
@@ -169,6 +175,7 @@ export function installEnemies() {
 
   // --- Wisp: circles a point and shoots rings ---------------------------
   defineEnemy('wisp', {
+    light: true,
     hp: 3, damage: 2, pal: 'magic', speed: 0, rate: 7, terrain: 'air',
     frames: ['wisp_0', 'wisp_1'],
     z: 8,
@@ -271,6 +278,7 @@ export function installEnemies() {
 
   // --- Anglerfry: hangs in deep water, lunges when you swim near --------
   defineEnemy('anglerfry', {
+    light: true,
     hp: 3, damage: 3, pal: 'enemyb', speed: 0.35, rate: 12, terrain: 'water',
     frames: ['anglerfry_0', 'anglerfry_1'],
     drops: 'good',
@@ -298,6 +306,7 @@ export function installEnemies() {
 
   // --- Jellyfish: drifts with the tide, stings on contact ---------------
   defineEnemy('jellyfish', {
+    light: true,
     hp: 2, damage: 3, pal: 'enemyb', speed: 0.4, rate: 14, terrain: 'water',
     frames: ['jellyfish_0', 'jellyfish_1'],
     hb: { x: 3, y: 4, w: 10, h: 10 },

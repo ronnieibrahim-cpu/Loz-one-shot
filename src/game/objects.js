@@ -17,6 +17,7 @@ import {
   PICKUP_GRAB_DELAY, FAIRY_DRIFT_TURN, FAIRY_DRIFT_X, FAIRY_DRIFT_Y,
   NPC_WANDER_PERIOD, NPC_WANDER_SPEED,
   ESSENCE_SPARKLE_EVERY, ESSENCE_SPARKLE_SPREAD,
+  BELLOWS_PUSH, BELLOWS_RAFT_SCALE, BELLOWS_WHEEL_COAST,
 } from '../data/feel.js';
 
 // --------------------------------------------------------------------------
@@ -606,12 +607,38 @@ export class Raft extends Entity {
     this.homeX = x; this.homeY = y;
     this.needTide = o.needTide != null ? o.needTide : 2;
     this.carrying = false;
+    this.drift = 0;              // subpixels of gust-driven travel this frame
+  }
+
+  /**
+   * A raft under the Squall Bellows travels where it is blown, carrying
+   * whoever is aboard. It is heavier than an enemy, so it moves at a fraction
+   * of the gust — the difference has to be legible or the item reads as a
+   * generic push.
+   */
+  onGust(game, dx, dy) {
+    const step = Math.round(BELLOWS_PUSH * BELLOWS_RAFT_SCALE);
+    this.gustX = dx * step; this.gustY = dy * step;
+    this.gusted = 2;
   }
 
   update(game) {
     this.frame++;
     const active = game.tide.level >= this.needTide;
     if (!active) return;
+    if (this.gusted > 0) {
+      // A gusted raft ignores its patrol for as long as the wind holds it, and
+      // carries its passenger by the same subpixel delta the patrol uses.
+      this.gusted--;
+      const p0 = game.player;
+      const aboard = p0 && p0.z <= 2 && p0.cx > this.x && p0.cx < this.x + this.w
+        && p0.cy > this.y - 2 && p0.cy < this.y + this.h + 4;
+      this.fx += this.gustX; this.fy += this.gustY;
+      if (aboard) { p0.fx += this.gustX; p0.fy += this.gustY; p0.lastSafe.x = p0.x; p0.lastSafe.y = p0.y; }
+      this.homeX = this.x; this.homeY = this.y;
+      this.frame = 0;
+      return;
+    }
     const t = Math.sin(this.frame * this.speed * 0.02);
     const nfx = sp(this.axis === 'x' ? this.homeX + t * this.range : this.homeX);
     const nfy = sp(this.axis === 'y' ? this.homeY + t * this.range : this.homeY);
@@ -634,6 +661,7 @@ export class Raft extends Entity {
   }
 }
 defineEntity('raft', (x, y, o) => new Raft(x, y, o));
+
 
 // --------------------------------------------------------------------------
 // Tide valve: a dungeon fixture that unlocks or pins the tide
@@ -661,3 +689,47 @@ export class TideValve extends Entity {
   spriteName() { return this.open ? 'o_valve_open' : 'o_valve'; }
 }
 defineEntity('valve', (x, y, o) => new TideValve(x, y, o));
+
+// --------------------------------------------------------------------------
+// Gust wheel: a sluice wheel too far to reach, turned by the Squall Bellows
+// --------------------------------------------------------------------------
+
+/**
+ * A wheel spun by wind rather than by hand. `needTurns` gusts open it; it
+ * coasts for a moment after the gust stops and then holds where it is, so a
+ * wheel is a thing you have to keep blowing at rather than a thing you tap.
+ *
+ * It opens exactly what a TideValve opens, and for the same reason: the
+ * interesting placement for a wheel is on the far side of the water it
+ * controls, where a hand cannot reach it and a sustained directional gust can.
+ */
+export class GustWheel extends TideValve {
+  constructor(x, y, o = {}) {
+    super(x, y, o);
+    this.needTurns = o.needTurns || 40;
+    this.turns = 0;
+    this.coast = 0;
+    this.spin = 0;
+  }
+
+  /** Called by Player.gust for every entity inside the cone. */
+  onGust(game) {
+    if (this.open) return;
+    this.turns++;
+    this.coast = BELLOWS_WHEEL_COAST;
+    if (this.turns >= this.needTurns) {
+      this.turns = 0;
+      this.interact(game);
+    }
+  }
+
+  update(game) {
+    if (this.coast > 0) { this.coast--; this.spin++; }
+  }
+
+  /** Nothing reaches this by hand — that is the point of putting it here. */
+  interactByHand(game) { game.say('The wheel is too far to reach. Something must blow it.'); }
+
+  spriteName() { return this.open ? 'o_valve_open' : 'o_valve'; }
+}
+defineEntity('wheel', (x, y, o) => new GustWheel(x, y, o));

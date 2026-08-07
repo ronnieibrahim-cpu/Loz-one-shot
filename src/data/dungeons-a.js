@@ -1341,7 +1341,7 @@ export function installDungeonsA() {
     scroll: false,
     dungeon: {
       index: 4,
-      item: null,   // Squall Bellows — see docs/ITEMS.md
+      item: 'bellows', itemLevel: 1,
       essence: 4,
       boss: 'wyverna',
       bossRoom: '0,3,1',
@@ -1514,6 +1514,10 @@ export function installDungeonsA() {
       },
       '0,3,5': {
         name: 'Deep Cistern',
+        // The Squall Bellows' room. The sluice wheel sits behind a drowned
+        // wall: solid at LOW and MID, deep at HIGH, so there is no tide level
+        // at which you can stand next to it and turn it by hand. A sustained
+        // gust crosses the wall and it does not.
         map: [
           '####..####',
           '#..q..q..#',
@@ -1524,7 +1528,15 @@ export function installDungeonsA() {
           '#..q..q..#',
           '####..####',
         ],
+        script: {
+          onEvent(game, name, data) {
+            if (name === 'valve' && data && data.open) {
+              game.spawnPickup(32, 96, 'key', { grabDelay: 14 });
+            }
+          },
+        },
         entities: [
+          ['wheel', 2, 1, { saveKey: 'd4Sluice' }],
           ['tektite', 4, 2],
           ['stalfos', 2, 5],
           ['switch', 1, 2],
@@ -1690,7 +1702,7 @@ export function installDungeonsA() {
         },
       },
       '0,5,3': {
-        name: 'Flipper Vault',
+        name: 'Bellows Vault',
         map: [
           '##########',
           '##########',
@@ -1702,7 +1714,7 @@ export function installDungeonsA() {
           '##########',
         ],
         entities: [
-          ['chest', 4, 3, { big: true, rupees: 100 }],
+          ['chest', 4, 3, { big: true, item: 'bellows', level: 1 }],
         ],
       },
     },

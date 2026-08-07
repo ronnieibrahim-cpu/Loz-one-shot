@@ -442,6 +442,14 @@ export const ITEMS = {
       return p.startJump(game, level >= 2 ? JUMP_POWER_CAPE : JUMP_POWER, level >= 2);
     },
   },
+  bellows: {
+    names: ['Squall Bellows'],
+    icon: ['i_bellows'],
+    equippable: true,
+    hold: true,
+    desc: 'Hold to blow. The water ahead of you falls a level while you pump.',
+    use(game, p, level) { p.bellowsHeld = true; return true; },
+  },
   bombs: {
     names: ['Bombs'],
     icon: ['i_bomb'],

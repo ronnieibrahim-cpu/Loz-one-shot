@@ -681,3 +681,28 @@ export const SINK_BUBBLE_EVERY = 22;
  *  own. guessed; the same as being washed ashore, because it is the same kind
  *  of failure. */
 export const SINK_DROWN_DAMAGE = 2;
+
+// --- Squall Bellows --------------------------------------------------------
+
+/** tiles — how far the gust cone reaches. guessed; three tiles is far enough
+ *  to reach across a channel and short enough that you have to commit a
+ *  position to it. */
+export const BELLOWS_RANGE = 3;
+
+/** f — how long the bellows take to fill before the cone opens. guessed. The
+ *  wind-up is what makes standing still a decision rather than a reflex. */
+export const BELLOWS_WARMUP_FRAMES = 14;
+
+/** sp/f — how hard the gust shoves a light enemy. guessed; 0.75 px/f, a little
+ *  under a walk, so a pushed enemy visibly loses ground rather than flying. */
+export const BELLOWS_PUSH = 192;
+
+/** f — interval between gust puffs drawn in the cone. guessed. */
+export const BELLOWS_PUFF_EVERY = 6;
+
+/** x — a raft under the gust travels this fraction of BELLOWS_PUSH. guessed;
+ *  a raft is heavy and the difference should be legible. */
+export const BELLOWS_RAFT_SCALE = 0.5;
+
+/** f — frames a gusted wheel keeps turning after the gust stops. guessed. */
+export const BELLOWS_WHEEL_COAST = 30;

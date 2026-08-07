@@ -35,6 +35,7 @@ import { drawText, drawTextCentered, textWidth } from '../gfx/font.js';
 import { F, transformFor, getTileDef, resolveTile } from '../world/tileset.js';
 import { getMap, getRoom, hasRoom, resetRooms, MAPS } from '../world/maps.js';
 import { Tide, TIDE_COUNT } from './tide.js';
+import { tideLevelAt, hasTideHolds } from './tidelocal.js';
 import { Player } from './player.js';
 import { spawnEntity, ENTITY_TYPES, Entity } from './entity.js';
 import { spawnEffectAt, Explosion } from './effects.js';
@@ -78,6 +79,9 @@ export class Game {
     this.seedOverride = null;
     this.progress = newProgress();
     this.tide = new Tide(this);
+    // Local tide overrides in force right now — see src/game/tidelocal.js, and
+    // read its header before merging P5, which owns this concept.
+    this.tideHolds = [];
     this.dialogue = new Dialogue(this);
     this.menu = new Menu(this);
     this.title = new Title(this);
@@ -937,6 +941,14 @@ export class Game {
     }
   }
 
+  /**
+   * The tide level at a tile. Everything that asks "what is the water doing
+   * HERE" goes through this; everything that asks "what is the water doing"
+   * still reads `tide.level` and is right to. src/game/tidelocal.js says why,
+   * and says what P5 does to it.
+   */
+  tideAt(tx, ty) { return tideLevelAt(this, tx, ty); }
+
   updateGameOver() {
     this.deathTime++;
     if (this.deathTime < GAMEOVER_WAIT_FRAMES) return;
@@ -1006,6 +1018,7 @@ export class Game {
 
     ctx.drawImage(base, ox, oy);
     room.drawAnim(ctx, ox, oy, this.tide.level, this.frame);
+    if (hasTideHolds(this)) this.drawTideHolds(ctx, ox, oy);
 
     const list = this.entities.slice();
     if (this.player && !list.includes(this.player)) list.push(this.player);
@@ -1055,6 +1068,32 @@ export class Game {
       ctx.drawImage(room.renderAt(levels[i], this.frame), ox, oy);
     }
     ctx.restore();
+  }
+
+  /**
+   * Redraw the tiles a local tide override covers, at the level the override
+   * puts them at. This is what makes a Squall Bellows cone visible: the room
+   * behind it is rendered at the base level and the drained wedge is punched
+   * back in on top of it, tile by tile.
+   *
+   * Tile-at-a-time rather than one clipped blit of the whole alt render,
+   * because a hold's shape is defined in tiles (see tidelocal.js) and the two
+   * have to agree exactly — a wedge whose picture and whose collision disagree
+   * by half a tile is worse than no wedge.
+   */
+  drawTideHolds(ctx, ox, oy) {
+    const room = this.room;
+    if (!room) return;
+    const base = this.tide.level;
+    for (let ty = 0; ty < ROOM_H; ty++) {
+      for (let tx = 0; tx < ROOM_W; tx++) {
+        const lv = this.tideAt(tx, ty);
+        if (lv === base) continue;
+        const src = room.renderAt(lv, this.frame);
+        ctx.drawImage(src, tx * TILE, ty * TILE, TILE, TILE,
+          ox + tx * TILE, oy + ty * TILE, TILE, TILE);
+      }
+    }
   }
 
   drawTransition(ctx, ox, oy) {
