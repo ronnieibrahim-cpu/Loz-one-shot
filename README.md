@@ -111,15 +111,14 @@ a complete spec for each remaining pack.
 
 ## A note on names and art
 
-This is a fan work. It uses Nintendo's character and world names directly
-(Link, Zelda, Farore, the Maku Tree, Rupees, Octoroks), and Link's sprites are
-extracted from a rip of *Oracle of Ages* (ripped by Mister Mike, via
-spriters-resource.com) — that artwork is Nintendo's. The engine, the tide
-mechanic, the land of Thalassia, its bosses and its music are original.
+This is a private fan project. It uses the Oracles' names directly (Link,
+Zelda, Farore, the Maku Tree, Rupees, Octoroks), and its sprites and terrain are
+extracted from rips of *Oracle of Ages* and *Oracle of Seasons* via
+spriters-resource.com — which is the point rather than a shortcut: fidelity to
+how those games look and move is goal one, and an extraction is exact where a
+hand-drawing drifts. The engine, the tide mechanic, the land of Thalassia, its
+items, bosses and music are original.
 
-Fine as a personal project. Publishing or hosting it would be both a trademark
-and a copyright problem, and the extracted sprites make that unambiguous.
-
-`tools/rip-link.py` holds the extraction: point it at the sheet and it
-regenerates `src/data/sprites-player.js`. Swapping in original art means
-replacing that one file.
+Every extraction lands in a generated file whose header names its sheet and its
+ripper, and `tools/rip-*.py` regenerate them from the sheets in
+`assets/sheets/`. See `docs/ART-DIRECTION.md`.

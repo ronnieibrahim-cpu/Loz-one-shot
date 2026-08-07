@@ -71,10 +71,9 @@ ripper credit in the header. The current set:
 negotiable by this rule: mechanics, items, dungeons and story are ours. We
 borrow how the source games *look and move*, never what they are about.
 
-**The sheets are Nintendo's artwork** and the repo is permanently private and
-unpublished, which is the condition this rule depends on. Nothing extracted
-leaves this repo. See the copyright note in `assets/sheets/README.md` for the
-replacement path if that ever changes.
+**Keep the ripper credits** in `assets/sheets/README.md` and in every generated
+file's header. They name the people who pulled this art off the cartridge, and
+they are also how a future session finds which sheet a tile came from.
 
 ---
 

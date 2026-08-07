@@ -56,14 +56,9 @@ All obtained via spriters-resource.com. Most sheets carry two halves: "GBC LCD
 Colors" simulates the handheld screen, "True Colors" is the raw palette. The
 extraction tools read the True Colors half.
 
-## Copyright
+## Credit
 
-**The artwork in these files is Nintendo's.** The rips are redistributed here
-under the ripper credits above, as those rippers request. This is a personal fan
-project; the sheets and everything extracted from them would have to be removed
-and replaced with original art before this could be published or hosted
-anywhere.
-
-Everything extracted lands in a generated file whose header records its source,
-so the replacement path is: redraw the art, regenerate or hand-write that one
-file, delete this directory.
+The per-sheet ripper credits in the table above are the one thing to preserve:
+those people did the work of pulling this art off the cartridge and asked to be
+named for it. Keep the column filled in, and fill in the one that is missing if
+anyone ever identifies it.

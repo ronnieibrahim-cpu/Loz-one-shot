@@ -886,13 +886,14 @@ The reference sheets live in `assets/sheets/` and are committed, so extractions
 are reproducible in any checkout. All three extractors resolve their paths
 relative to the repo root and produce byte-identical output to what is
 committed. See `assets/sheets/README.md` for what each sheet contains, who
-ripped it, and the copyright position.
+ripped it.
 
 Sheets present but not yet used: non-human races and trading characters. The
 HUD/Gear sheet is used by `tools/rip-hud.py`; the icons Seasons does not have
-(Flippers, Mermaid Suit, Hookshot, Moon Conch, Map, Compass) stay hand-drawn.
-The dungeon-background and fan-made overworld sheets are used by
-`tools/rip-terrain.py` for nine ground and wall tiles.
+(Flippers, Mermaid Suit, Hookshot, Moon Conch, Map, Compass, and now the
+Tidewright's Anchor) stay hand-drawn. The dungeon-background, fan-made
+overworld, Ages overworld, Subrosia tileset and Seasons SPRING overworld sheets
+are used by `tools/rip-terrain.py` for ten ground tiles and two props.
 
 ## What is left, highest value first
 
