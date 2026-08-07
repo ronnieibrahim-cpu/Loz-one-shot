@@ -27,6 +27,7 @@ import {
   DREDGE_RANGE, DREDGE_CAST_SPEED, DREDGE_HAUL_SPEED, DREDGE_PULL_SPEED,
   DREDGE_FLOP_FRAMES,
   ROD_RANGE, ROD_RANGE_HIGH, ROD_LOCK_FRAMES, ROD_RING_FRAMES, ROD_COOLDOWN_FRAMES,
+  COIN_THROW_SPEED, COIN_SETTLE_FRAMES, COIN_GLINT_EVERY,
   SHAKE_SMALL, SHAKE_SMALL_FRAMES,
 } from '../data/feel.js';
 import { sprites } from '../gfx/art.js';
@@ -719,6 +720,85 @@ export class SeedShot extends Projectile {
 }
 
 // --------------------------------------------------------------------------
+// Ferryman's Coin
+// --------------------------------------------------------------------------
+
+/**
+ * A coin you throw down and then trade places with — but not when you say so.
+ * The swap fires on the NEXT TIDE CHANGE, whichever one that is and whoever
+ * caused it.
+ *
+ * That is the whole design. A teleport you trigger is a convenience; a
+ * teleport that fires on the mechanic the game is about is a decision, because
+ * the tide is the thing you were already going to change and now it costs
+ * something. You choose where the coin goes and when you sound the shell; you
+ * do not get to choose them independently.
+ *
+ * One coin. Recall it with the same button and it comes back to you from
+ * anywhere, which is what stops a badly-placed coin being a lost item.
+ *
+ * The coin's resting place lives in `progress.coin`, not on the entity, so it
+ * survives leaving the room — a coin that only worked inside one screen would
+ * be a shorter walk, not a teleport.
+ */
+export class FerrymanCoin extends Entity {
+  constructor(x, y, o = {}) {
+    super(x, y, o);
+    this.w = 16; this.h = 16;
+    this.hb = { x: 5, y: 6, w: 6, h: 6 };
+    this.sprite = 'i_coin';
+    this.pal = null;
+    this.harmless = true;
+    this.shadow = true;
+    this.depth = 4;
+    this.settling = o.placed ? 0 : COIN_SETTLE_FRAMES;
+    if (!o.placed) {
+      const [dx, dy] = DIR_VEC[o.dir || 'down'];
+      this.vx = dx * COIN_THROW_SPEED;
+      this.vy = dy * COIN_THROW_SPEED;
+      this.z = 10;
+      this.vz = THROW_ARC_RISE;
+    }
+  }
+
+  update(game) {
+    this.frame++;
+    if (this.settling > 0) {
+      this.settling--;
+      this.fz += this.vz;
+      this.vz -= THROW_ARC_GRAVITY;
+      const r = moveEntity(game, this, this.vx, this.vy, { jumping: true, swim: true });
+      if (r.hitX) this.vx = 0;
+      if (r.hitY) this.vy = 0;
+      if (this.settling > 0 && this.fz > 0) return;
+      this.land(game);
+      return;
+    }
+    if (this.frame % COIN_GLINT_EVERY === 0) {
+      game.spawnEffect('sparkle', this.x, this.y - 2, { life: 14, pal: 'gold' });
+    }
+  }
+
+  land(game) {
+    this.settling = 0;
+    this.fz = 0; this.vz = 0; this.vx = 0; this.vy = 0;
+    // A coin that came to rest somewhere you could not stand would be a swap
+    // that drowns you. findSafeTile already knows where the floor is.
+    if (!canOccupy(game, game.player, this.x, this.y, { jumping: false, swim: false })) {
+      game.shoveOffTile(this);
+    }
+    game.audio.sfx('rupee');
+    const pos = game.progress.pos;
+    game.progress.coin = {
+      map: game.mapId, floor: game.room ? game.room.floor : 0,
+      rx: game.room ? game.room.rx : pos.rx, ry: game.room ? game.room.ry : pos.ry,
+      px: this.x, py: this.y,
+    };
+  }
+}
+defineEntity('coin', (x, y, o) => new FerrymanCoin(x, y, o));
+
+// --------------------------------------------------------------------------
 // Resonance Rod
 // --------------------------------------------------------------------------
 
@@ -834,6 +914,29 @@ export const ITEMS = {
     hold: true,
     desc: 'Hold to blow. The water ahead of you falls a level while you pump.',
     use(game, p, level) { p.bellowsHeld = true; return true; },
+  },
+  coin: {
+    names: ["Ferryman's Coin"],
+    icon: ['i_coin'],
+    equippable: true,
+    desc: 'Throw it down. The next turn of the tide trades your places.',
+    use(game, p, level) {
+      const pr = game.progress;
+      if (pr.coin) {
+        // Recall. It comes back from wherever it is, so a bad throw costs a
+        // tide change and never the item.
+        pr.coin = null;
+        for (const e of game.entities) if (e instanceof FerrymanCoin) e.remove = true;
+        game.audio.sfx('catch');
+        game.say('The coin comes back to your hand.');
+        return true;
+      }
+      if (p.inDeep || p.underwater) { game.audio.sfx('deny'); return true; }
+      const [dx, dy] = DIR_VEC[p.dir];
+      game.addEntity(new FerrymanCoin(p.cx - 8 + dx * 6, p.cy - 8 + dy * 6, { dir: p.dir }));
+      game.audio.sfx('throw');
+      return true;
+    },
   },
   rod: {
     names: ['Resonance Rod'],

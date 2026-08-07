@@ -775,3 +775,19 @@ export const ROD_COOLDOWN_FRAMES = 48;
 /** f — how long a sunken bell hums after the Resonance Rod is sounded near it,
  *  and how long its pointing sparks last. guessed. */
 export const BELL_CHIME_FRAMES = 60;
+
+// --- Ferryman's Coin -------------------------------------------------------
+
+/** sp/f — how fast the coin is pitched. guessed; 2.25 px/f, a coin toss. */
+export const COIN_THROW_SPEED = 576;
+
+/** f — how long the coin is in the air before it settles. guessed. */
+export const COIN_SETTLE_FRAMES = 26;
+
+/** f — the pause between the tide finishing its sweep and the swap firing.
+ *  guessed; long enough to read as a consequence of the tide rather than as
+ *  part of it. */
+export const COIN_SWAP_DELAY_FRAMES = 24;
+
+/** f — interval between the coin's glints while it waits. guessed. */
+export const COIN_GLINT_EVERY = 40;

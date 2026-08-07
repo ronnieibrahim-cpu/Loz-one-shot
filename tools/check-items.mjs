@@ -594,6 +594,57 @@ check('the Rod makes it chime and point', r.chime > 0 && r.sparks > r.before.fx,
   `chime=${r.chime} sparks=${r.before.fx}->${r.sparks}`);
 
 // ===========================================================================
+section("Ferryman's Coin");
+
+await park({ map: 'overworld', rx: 4, ry: 7, tx: 4, ty: 4, dir: 'right', tide: 1, items: { coin: 1 }, equipB: 'coin' });
+await step(4);
+r = await page.evaluate(async () => {
+  const g = window.__game;
+  const { FerrymanCoin } = await import('/src/game/items.js');
+  const c = new FerrymanCoin(7 * 16, 4 * 16, { placed: true });
+  g.addEntity(c); g.flushPending();
+  c.land(g);
+  return { saved: JSON.parse(JSON.stringify(g.progress.coin || null)), px: g.player.x, py: g.player.y };
+});
+check('a thrown coin records where it lies', r.saved && r.saved.map === 'overworld', JSON.stringify(r.saved));
+
+// The swap fires on the tide, not on the button.
+r = await page.evaluate(async () => {
+  const g = window.__game;
+  const before = { px: g.player.x, py: g.player.y, coin: { ...g.progress.coin } };
+  const pending0 = g.coinSwapPending || 0;
+  g.tide.cycle();
+  const pendingAfterCycle = g.coinSwapPending || 0;
+  // Run past the sweep, the delay and the fade.
+  for (let i = 0; i < 240; i++) g.update();
+  return {
+    pending0, pendingAfterCycle,
+    before, after: { px: g.player.x, py: g.player.y, coin: { ...(g.progress.coin || {}) } },
+  };
+});
+check('nothing happens until the tide turns', r.pending0 === 0);
+check('the tide turning arms the swap', r.pendingAfterCycle > 0, `pending=${r.pendingAfterCycle}`);
+check('Link ends up where the coin was',
+  r.after.px === r.before.coin.px && r.after.py === r.before.coin.py,
+  `player ${r.after.px},${r.after.py} vs coin ${r.before.coin.px},${r.before.coin.py}`);
+check('...and the coin ends up where Link was',
+  r.after.coin.px === r.before.px && r.after.coin.py === r.before.py,
+  `coin ${r.after.coin.px},${r.after.coin.py} vs player ${r.before.px},${r.before.py}`);
+
+// One coin, and it is recallable.
+r = await page.evaluate(async () => {
+  const g = window.__game;
+  const { ITEMS, FerrymanCoin } = await import('/src/game/items.js');
+  const had = !!g.progress.coin;
+  ITEMS.coin.use(g, g.player, 1);
+  g.entities = g.entities.filter(e => !e.remove);
+  const onBoard = g.entities.filter(e => e instanceof FerrymanCoin).length;
+  return { had, after: g.progress.coin, onBoard };
+});
+check('the coin can be recalled from anywhere', r.had === true && r.after === null);
+check('...and only one is ever on the board', r.onBoard === 0, `${r.onBoard} coins`);
+
+// ===========================================================================
 check('no page errors', errs.length === 0, errs.slice(0, 3).join(' | '));
 
 console.log(`\n=== ${passed} passed, ${failures.length} failed ===`);

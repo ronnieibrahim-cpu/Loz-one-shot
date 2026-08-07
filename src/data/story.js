@@ -19,10 +19,10 @@ export const DIALOGUE = {
   villageChild: "I can hear a bell under the water.\nGrandad says that is just my ears.\nGrandad has never once been right.",
   shopkeeper: 'Shield, thirty rupees. No haggling.\nA man who argues over a shield is a man\nwho has never been hit by anything.',
 
-  // The village digger: shovel after two Essences.
+  // The village digger: the Ferryman's Coin after three Essences.
   diggerWait: 'I dig where the sea tells me to dig.\nLately it will not shut up, and it will\nnot say anything useful either.',
-  digger: 'Two Essences. The sea talks straighter\nnow. Take the shovel — I am too old to\nchase what it points at.',
-  diggerAfter: 'Soft ground, boy. Look for soft ground.\nThe sea buries things politely and then\nforgets where.',
+  digger: 'Three Essences. Then take the Coin. Throw\nit down and let the water turn. It pays\nthe ferryman, and the ferryman is patient.',
+  diggerAfter: 'One coin, boy. Where you drop it is where\nthe next tide puts you. Choose the drop,\nnot the moment — the moment is not yours.',
 
   // The Maku Tree: Seed Satchel after the first Essence, Master Sword after all eight.
   makuWait: 'Hoo. You are small and the sea is large.\nBring me one Essence of the Tide and I\nwill be awake enough to help.',

@@ -47,6 +47,9 @@ export function newProgress(name = 'LINK', seed = (Date.now() >>> 0)) {
     doors: {},               // "mapId:roomKey:tx,ty" -> 'open'
     secrets: {},             // one-shot world changes
     trade: { stage: 0, item: null },
+    // Where the Ferryman's Coin is lying, or null if it is in your hand.
+    // Saved, because the coin's whole point is that it works across rooms.
+    coin: null,
     // world state
     tide: 1,
     // position

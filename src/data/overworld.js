@@ -1634,8 +1634,8 @@ const rooms = {
       ['npc', 8, 4, { sprite: 'npc_child', wander: true, dialogue: 'villageChild' }],
       ['giver', 7, 2, {
         sprite: 'npc_elder', dialogue: 'digger', waiting: 'diggerWait',
-        after: 'diggerAfter', flag: 'gotShovel', item: 'shovel', level: 1,
-        needEssences: 2,
+        after: 'diggerAfter', flag: 'gotCoin', item: 'coin', level: 1,
+        needEssences: 3,
       }],
     ],
   },

@@ -59,7 +59,7 @@ import {
   BOSS_MUSIC_RESUME_FRAMES, ITEM_PRESENT_FRAMES, ESSENCE_FREEZE_FRAMES,
   GAMEOVER_WAIT_FRAMES,
   LENS_FADE_FRAMES, LENS_GHOST_ALPHA, LENS_TINT_ALPHA, LENS_PHASE_ALPHA,
-  LENS_SHIMMER_FRAMES, REEFSEED_CAPACITY,
+  LENS_SHIMMER_FRAMES, REEFSEED_CAPACITY, COIN_SWAP_DELAY_FRAMES,
 } from '../data/feel.js';
 
 export class Game {
@@ -559,7 +559,59 @@ export class Game {
   onTideChanged(next, prev) {
     if (this.player) this.player.reconcileWithTide(this);
     if (this.room) this.room.invalidate();
+    // The Ferryman's Coin fires on the turn of the tide, not on a button. The
+    // swap is DEFERRED rather than done here: this runs while the wave front
+    // is still crossing the screen, and warping the player mid-sweep leaves
+    // the sweep drawing a room nobody is standing in.
+    if (this.progress.coin) this.coinSwapPending = COIN_SWAP_DELAY_FRAMES;
     this.roomEvent('tide', { next, prev });
+  }
+
+  /**
+   * Trade places with the Ferryman's Coin. Works across rooms and across maps,
+   * which is the whole point — a coin that only worked inside one screen would
+   * be a shorter walk rather than a teleport.
+   */
+  runCoinSwap() {
+    const c = this.progress.coin;
+    const p = this.player;
+    if (!c || !p) { this.progress.coin = null; return; }
+    const from = {
+      map: this.mapId, floor: this.room ? this.room.floor : 0,
+      rx: this.room ? this.room.rx : 0, ry: this.room ? this.room.ry : 0,
+      px: p.x, py: p.y,
+    };
+    for (const e of this.entities) if (e.sprite === 'i_coin') e.remove = true;
+    this.audio.jingle('secret');
+    const sameRoom = from.map === c.map && from.floor === c.floor
+      && from.rx === c.rx && from.ry === c.ry;
+    // A white fade, the same one a whirlpool uses: the swap is a hard cut, and
+    // dressing it as one costs nothing and stops it reading as a glitch.
+    this.fadeOut(() => {
+      if (sameRoom) {
+        p.x = c.px; p.y = c.py;
+        p.lastSafe.x = p.x; p.lastSafe.y = p.y;
+        p.reconcileWithTide(this);
+      } else {
+        this.enterMap(c.map, c.floor, c.rx, c.ry, c.px, c.py, p.dir, { instant: true });
+      }
+      // The coin lands where Link was standing, so the trade is a trade.
+      this.progress.coin = from;
+      this.pendingCoinDrop = true;
+      this.placeCoinIfHere();
+    }, true);
+  }
+
+  /** Put the coin back on the board after a swap, in whatever room it is in. */
+  placeCoinIfHere() {
+    if (!this.pendingCoinDrop) return;
+    const c = this.progress.coin;
+    if (!c) { this.pendingCoinDrop = false; return; }
+    if (this.mapId !== c.map || !this.room) return;
+    if (this.room.floor !== c.floor || this.room.rx !== c.rx || this.room.ry !== c.ry) return;
+    this.pendingCoinDrop = false;
+    const e = spawnEntity(this, 'coin', 0, 0, { placed: true });
+    if (e) { e.x = c.px; e.y = c.py; }
   }
 
   onConchPlayed() {
@@ -890,6 +942,10 @@ export class Game {
     // for its whole length.
     if (this.tide.busy) return;
     if (this.fadeDir) return;
+
+    // The coin's swap waits for the sweep to finish; see onTideChanged.
+    if (this.coinSwapPending > 0 && --this.coinSwapPending === 0) this.runCoinSwap();
+    this.placeCoinIfHere();
 
     this.updatePhaseShift();
 
