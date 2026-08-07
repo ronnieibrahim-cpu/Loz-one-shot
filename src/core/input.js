@@ -33,8 +33,11 @@ export class Input {
       // Convenience: fullscreen + mute handled by the game, not the pad. KeyU
       // and KeyY tune the anchor's held patch in the hand — see
       // Game.cycleAnchorRadius for why that constant is settled by play.
+      // KeyC is the camera's deadzone overlay (P7.6). A debug key that is not
+      // in this list never reaches takeExtra and does nothing at all, silently
+      // — which is exactly what the P7.6 plan's original KeyI would have done.
       if (e.code === 'KeyF' || e.code === 'KeyP' || e.code === 'KeyO' || e.code === 'KeyR'
-        || e.code === 'KeyU' || e.code === 'KeyY') {
+        || e.code === 'KeyU' || e.code === 'KeyY' || e.code === 'KeyC') {
         this.extra = e.code;
       }
     }, { passive: false });

@@ -243,7 +243,9 @@ export function canOccupy(game, e, x, y, caps) {
   const avoid = (!airborne && e.avoidFlags) ? e.avoidFlags : 0;
   for (const py of ys) {
     for (const px of xs) {
-      if (px < 0 || py < 0 || px >= VIEW_W || py >= VIEW_H) return false;
+      // The ROOM's extent, not the viewport's. These were equal until P7.6 and
+      // the constant that was reached for was the wrong one of the two.
+      if (px < 0 || py < 0 || px >= room.pw || py >= room.ph) return false;
       if (room.solidAt(px, py, game.tide, cps)) return false;
       if (avoid) {
         const tx = Math.floor(px / TILE), ty = Math.floor(py / TILE);
@@ -301,7 +303,7 @@ export function findSafeTile(game, e, maxRadius = 6) {
       for (let dx = -r; dx <= r; dx++) {
         if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
         const nx = tx + dx, ny = ty + dy;
-        if (nx < 0 || ny < 0 || nx >= ROOM_W || ny >= ROOM_H) continue;
+        if (nx < 0 || ny < 0 || nx >= game.room.tw || ny >= game.room.th) continue;
         const f = game.room.flagsAt(nx, ny, game.tide);
         if (f & (F.SOLID | F.VOID | F.DEEP | F.PIT | F.HAZARD | F.JUMPABLE)) continue;
         const px = nx * TILE + (TILE - e.w) / 2;

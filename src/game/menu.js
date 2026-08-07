@@ -11,7 +11,7 @@ import {
   caseSize, slotOpen, equippedIn,
 } from './scrimshaw.js';
 import { HEART_UNITS } from './progress.js';
-import { MAPS, getMap, hasRoom, getRoom } from '../world/maps.js';
+import { MAPS, getMap, hasRoom, getRoom, roomSpan } from '../world/maps.js';
 import { TIDE_NAMES, TIDE_COUNT } from './tide.js';
 
 // The Chartstone's pips, LOW to HIGH. Sand, shallow, deep — the same three
@@ -41,8 +41,8 @@ function tideMarks(mapId, floor, rx, ry) {
     for (let lv = 0; lv < TIDE_COUNT; lv++) {
       const prev = (lv + TIDE_COUNT - 1) % TIDE_COUNT;
       let differs = false;
-      for (let y = 0; y < ROOM_H && !differs; y++) {
-        for (let x = 0; x < ROOM_W; x++) {
+      for (let y = 0; y < room.th && !differs; y++) {
+        for (let x = 0; x < room.tw; x++) {
           if (room.tile(x, y, lv).name !== room.tile(x, y, prev).name) { differs = true; break; }
         }
       }
@@ -281,12 +281,19 @@ export class Menu {
 
     for (let y = 0; y < m.h; y++) {
       for (let x = 0; x < m.w; x++) {
+        // P7.6: a multi-screen room is ONE room drawn across the cells it
+        // spans, the way the source's dungeon maps draw them — not one blob
+        // per cell, and not one cell for a room that is plainly bigger. Only
+        // the origin cell draws; the rest are skipped, so nothing is painted
+        // twice and the room reads as a single space.
         if (!hasRoom(m.id, floor, x, y)) continue;
+        const rdef = m.roomDefs[floor + ',' + x + ',' + y];
+        const [rsw, rsh] = roomSpan(rdef);
         const seen = g.progress.secrets['seen:' + m.id + ':' + floor + ',' + x + ',' + y];
         if (!seen && !haveMap) continue;
         const here = g.room && g.room.rx === x && g.room.ry === y && g.room.floor === floor;
         ctx.fillStyle = here ? '#f8f8e8' : (seen ? '#58b0e0' : '#304858');
-        ctx.fillRect(ox + x * cell, oy + y * cell, cell - 1, cell - 1);
+        ctx.fillRect(ox + x * cell, oy + y * cell, rsw * cell - 1, rsh * cell - 1);
 
         // THE CHARTSTONE. A room is marked with one pip per tide level that
         // CHANGES it — which is information the game already computes on every
@@ -299,7 +306,8 @@ export class Menu {
         for (let lv = 0; lv < 3; lv++) {
           if (!(marks & (1 << lv))) continue;
           ctx.fillStyle = TIDE_PIP[lv];
-          ctx.fillRect(ox + x * cell + cell - 3, oy + y * cell + (2 - lv) * 3, 2, 2);
+          // Pips sit at the room's top-right corner whatever its span.
+          ctx.fillRect(ox + (x + rsw) * cell - 3, oy + y * cell + (2 - lv) * 3, 2, 2);
         }
       }
     }

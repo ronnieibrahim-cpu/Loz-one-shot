@@ -27,6 +27,7 @@
 //   }
 
 import { Room } from './room.js';
+import { ROOM_W, ROOM_H } from '../core/screen.js';
 
 export const MAPS = new Map();
 
@@ -45,6 +46,21 @@ export function registerMap(def) {
     roomDefs: def.rooms || {},
     _rooms: new Map(),
   };
+  // P7.6: MULTI-SCREEN ROOMS ARE A DUNGEON FEATURE, STRUCTURALLY.
+  //
+  // The overworld is a grid of exactly one-screen rooms with a scroll on each
+  // seam, and that is correct and is not changing. This is a throw rather than
+  // a comment saying so, because "overworld rooms are 1x1" has to be a fact the
+  // engine enforces and not a convention an author can forget. `kind` defaults
+  // to 'overworld', so a map that declares no kind is covered too.
+  if (m.kind === 'overworld') {
+    for (const [key, def] of Object.entries(m.roomDefs)) {
+      if (def && def.size) {
+        throw new Error(`[maps] ${m.id}:${key} declares size ${JSON.stringify(def.size)}; `
+          + 'only dungeon and interior rooms may span more than one screen');
+      }
+    }
+  }
   MAPS.set(m.id, m);
   return m;
 }
@@ -75,6 +91,50 @@ export function hasRoom(mapId, floor, x, y) {
   return !!(m && m.roomDefs[roomKey(floor, x, y)]);
 }
 
+/**
+ * The ORIGIN key of the room covering this grid cell, or null.
+ *
+ * A multi-screen room is keyed at its top-left cell and occupies several. Its
+ * other cells are not keys, so `hasRoom` answers false for them — and a player
+ * walking east into the far half of a 2x1 room would find no room there and
+ * simply not transition. Every lookup that means "what room is at this cell"
+ * has to go through here rather than through the key.
+ *
+ * The index is built once per map and invalidated by resetRooms, because room
+ * DEFS never change during a run — only room instances do.
+ */
+export function roomOriginAt(mapId, floor, x, y) {
+  const m = MAPS.get(mapId);
+  if (!m) return null;
+  if (!m._cover) {
+    const cover = new Map();
+    for (const [key, def] of Object.entries(m.roomDefs)) {
+      const parts = key.split(',');
+      if (parts.length !== 3) continue;
+      const [f, rx, ry] = parts.map(Number);
+      const [sw, sh] = roomSpan(def);
+      for (let dy = 0; dy < sh; dy++) {
+        for (let dx = 0; dx < sw; dx++) cover.set(roomKey(f, rx + dx, ry + dy), key);
+      }
+    }
+    m._cover = cover;
+  }
+  return m._cover.get(roomKey(floor, x, y)) || null;
+}
+
+/** Does ANY room cover this cell, including a multi-screen room's far half? */
+export function coversRoom(mapId, floor, x, y) {
+  return roomOriginAt(mapId, floor, x, y) !== null;
+}
+
+/** The Room instance covering a cell, resolving through a multi-screen span. */
+export function getRoomCovering(mapId, floor, x, y) {
+  const origin = roomOriginAt(mapId, floor, x, y);
+  if (!origin) return null;
+  const [f, rx, ry] = origin.split(',').map(Number);
+  return getRoom(mapId, f, rx, ry);
+}
+
 /** Every room instance that has been created so far (for save/restore of state). */
 export function liveRooms(mapId) {
   const m = MAPS.get(mapId);
@@ -83,7 +143,7 @@ export function liveRooms(mapId) {
 
 /** Reset all instantiated rooms (used on new game / load). */
 export function resetRooms() {
-  for (const m of MAPS.values()) m._rooms.clear();
+  for (const m of MAPS.values()) { m._rooms.clear(); m._cover = null; }
 }
 
 /** All dungeon maps in index order. */
@@ -92,10 +152,52 @@ export function dungeons() {
     .sort((a, b) => a.dungeon.index - b.dungeon.index);
 }
 
-/** Structural validation: every warp must resolve to a room that exists. */
+/** A room def's span in screens, defaulting to one. Tolerant: validateMaps
+ *  must be able to REPORT a bad size rather than throw on one. */
+export function roomSpan(def) {
+  const size = def && def.size;
+  if (!size) return [1, 1];
+  const [w, h] = Array.isArray(size) ? size : [size.w, size.h];
+  return [Number(w) || 1, Number(h) || 1];
+}
+
+/**
+ * Structural validation: every warp resolves, every grid matches its declared
+ * size, and NO TWO ROOMS CLAIM THE SAME GRID CELL.
+ */
 export function validateMaps() {
   const problems = [];
   for (const m of MAPS.values()) {
+    // P7.6 [A2]: which grid cell belongs to which room. Built per map per
+    // floor BEFORE anything else, because a stranded-room report from a
+    // connectivity checker is meaningless while two rooms are fighting over a
+    // cell — you cannot tell which of them the walker was walking.
+    const owner = new Map();          // "f,x,y" -> room key that covers it
+    for (const [key, def] of Object.entries(m.roomDefs)) {
+      const parts = key.split(',');
+      if (parts.length !== 3 || parts.some(p => p === '' || isNaN(Number(p)))) continue;
+      const [f, x, y] = parts.map(Number);
+      const [sw, sh] = roomSpan(def);
+      if (x + sw > m.w || y + sh > m.h) {
+        problems.push(`${m.id}/${key}: a ${sw}x${sh} room starting there runs off the `
+          + `${m.w}x${m.h} grid`);
+      }
+      for (let dy = 0; dy < sh; dy++) {
+        for (let dx = 0; dx < sw; dx++) {
+          const cell = `${f},${x + dx},${y + dy}`;
+          const prev = owner.get(cell);
+          if (prev !== undefined && prev !== key) {
+            // HARD FAILURE. Two rooms answering to one cell is silent and
+            // awful: getRoom returns whichever the Map happened to store, so
+            // which room a door leads to depends on authoring order.
+            problems.push(`${m.id}: rooms '${prev}' and '${key}' both claim cell ${cell}`);
+          } else {
+            owner.set(cell, key);
+          }
+        }
+      }
+    }
+
     for (const [key, def] of Object.entries(m.roomDefs)) {
       const parts = key.split(',');
       if (parts.length !== 3 || parts.some(p => p === '' || isNaN(Number(p)))) {
@@ -106,11 +208,22 @@ export function validateMaps() {
       if (f < 0 || f >= m.floors || x < 0 || x >= m.w || y < 0 || y >= m.h) {
         problems.push(`${m.id}: room '${key}' is outside the map bounds ${m.w}x${m.h}x${m.floors}`);
       }
+      // The grid must match the DECLARED size exactly. This is what stops a
+      // 3x1 room being authored as three 1x1 grids by accident: without it the
+      // extra columns are silently read as ' ' and become void.
+      const [sw, sh] = roomSpan(def);
+      const wantRows = sh * ROOM_H, wantCols = sw * ROOM_W;
       const rows = def.map || [];
-      if (rows.length !== 8) problems.push(`${m.id}/${key}: map has ${rows.length} rows, expected 8`);
+      if (rows.length !== wantRows) {
+        problems.push(`${m.id}/${key}: map has ${rows.length} rows, expected ${wantRows}`
+          + (sh > 1 ? ` (${sw}x${sh} screens)` : ''));
+      }
       rows.forEach((r, i) => {
         const t = r.replace(/\s+$/, '');
-        if (t.length !== 10) problems.push(`${m.id}/${key}: row ${i} has ${t.length} chars, expected 10`);
+        if (t.length !== wantCols) {
+          problems.push(`${m.id}/${key}: row ${i} has ${t.length} chars, expected ${wantCols}`
+            + (sw > 1 ? ` (${sw}x${sh} screens)` : ''));
+        }
       });
       for (const w of (def.warps || [])) {
         const to = Array.isArray(w) ? { map: w[2], floor: w[3] | 0, rx: w[4], ry: w[5] } : w.to;

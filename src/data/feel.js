@@ -966,3 +966,39 @@ export const CHARM_HIGH_ESSENCES = 4;
 
 /** essences before every case takes two charms. derived, as above. */
 export const CHARM_CASE_ESSENCES = 6;
+
+// --- The camera (P7.6) -----------------------------------------------------
+// Only multi-screen dungeon rooms have a camera at all: in a 1x1 room the
+// clamp pins it at 0 and it is provably a no-op.
+//
+// ALL FOUR ARE `guessed`, AND A REFERENCE EXISTS. That distinction is
+// load-bearing and docs/FEEL-SPEC.md spells it out: the source games contain
+// exactly this camera doing exactly this job, in the wide halls of Poison
+// Moth's Lair and the lower corridors of Ancient Ruins. Nobody has frame-
+// stepped them yet. Never write that there is nothing to measure against —
+// `measured` is earnable here, unlike the scrimshaw constants.
+
+/** px — half-width of the box Link moves in before the camera follows.
+ *  guessed; not yet measured, reference exists — see docs/FEEL-SPEC.md.
+ *  A third of the viewport either side of centre, so the camera is still for
+ *  most of a room crossing and moves when he commits to a direction. */
+export const CAM_DEADZONE_W = 26;
+
+/** px — half-height of the same box. guessed; not yet measured, reference
+ *  exists. Smaller than the width because the viewport is shorter and a
+ *  vertical overshoot costs more of the screen. */
+export const CAM_DEADZONE_H = 20;
+
+/** px/f — the fastest the camera may travel during play. guessed; not yet
+ *  measured, reference exists. Above WALK_SPEED's 1 px/f so the camera can
+ *  catch up after a knockback, and low enough that it never snaps. */
+export const CAM_MAX_SPEED = 3;
+
+/** tiles — how far outside the camera window an entity still updates.
+ *  guessed; not yet measured, reference exists.
+ *
+ *  IN TILES, AND TESTED AGAINST THE ENTITY'S TILE, on purpose. A margin in
+ *  pixels against a camera that moves sub-pixel would make liveness jitter on
+ *  a diagonal, and P4's lattice would step an enemy into and out of the
+ *  simulation on alternate frames. Two tiles is one lattice step plus one. */
+export const CAM_ACTIVATE_MARGIN = 2;

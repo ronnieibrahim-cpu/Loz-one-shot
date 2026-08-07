@@ -1333,6 +1333,46 @@ export function installCoreTiles() {
     dWallAbyssX: { art: ART.dWallCracked, pal: 'cryptWall', flags: F.SOLID | F.BOMBABLE },
     dBlockAbyss: { art: ART.cryptBlock, pal: 'cryptBlock', flags: F.SOLID },
 
+
+    // Doors and stairs per theme. These are PALETTE SWAPS of the shared
+    // hand-drawn art, not new extractions: a door is a door, and its silhouette
+    // is a thing the player has to recognise instantly in all eight dungeons.
+    // Only the stone around it takes the theme's colour, which is what makes a
+    // dungeon read as one built place rather than a corridor with a door in it.
+    //
+    // FOUR THINGS ARE DELIBERATELY NOT THEMED, and P7.5 step 8 named all four:
+    //   pit    a hole is absence, not masonry. It must look identical in every
+    //          dungeon so the player never re-learns what a fall looks like.
+    //   water  BLOCKED, not declined: dWaterS/dWaterD are animated and every
+    //          terrain sheet in the repo is a static map with no second frame.
+    //   locked and boss doors  stay gold in all eight. They are a gameplay
+    //          signal before they are scenery, and a themed lock would make
+    //          "you need a key" a thing you read per dungeon.
+    dDoorClosedGrotto: { art: ART.dDoorClosed, pal: 'brickWallBlue', flags: F.SOLID | F.DOOR },
+    dDoorOpenGrotto: { art: ART.dDoorOpen, pal: 'brickWallBlue', flags: F.WARP | F.DOOR },
+    dStairsGrotto: { art: ART.dStairs, pal: 'brickWallBlue', flags: F.WARP | F.STAIRS },
+    dDoorClosedCoral: { art: ART.dDoorClosed, pal: 'coralWall', flags: F.SOLID | F.DOOR },
+    dDoorOpenCoral: { art: ART.dDoorOpen, pal: 'coralWall', flags: F.WARP | F.DOOR },
+    dStairsCoral: { art: ART.dStairs, pal: 'coralWall', flags: F.WARP | F.STAIRS },
+    dDoorClosedBog: { art: ART.dDoorClosed, pal: 'knurlWall', flags: F.SOLID | F.DOOR },
+    dDoorOpenBog: { art: ART.dDoorOpen, pal: 'knurlWall', flags: F.WARP | F.DOOR },
+    dStairsBog: { art: ART.dStairs, pal: 'knurlWall', flags: F.WARP | F.STAIRS },
+    dDoorClosedCistern: { art: ART.dDoorClosed, pal: 'stonef', flags: F.SOLID | F.DOOR },
+    dDoorOpenCistern: { art: ART.dDoorOpen, pal: 'stonef', flags: F.WARP | F.DOOR },
+    dStairsCistern: { art: ART.dStairs, pal: 'stonef', flags: F.WARP | F.STAIRS },
+    dDoorClosedWood: { art: ART.dDoorClosed, pal: 'emberWall', flags: F.SOLID | F.DOOR },
+    dDoorOpenWood: { art: ART.dDoorOpen, pal: 'emberWall', flags: F.WARP | F.DOOR },
+    dStairsWood: { art: ART.dStairs, pal: 'emberWall', flags: F.WARP | F.STAIRS },
+    dDoorClosedSalt: { art: ART.dDoorClosed, pal: 'marble', flags: F.SOLID | F.DOOR },
+    dDoorOpenSalt: { art: ART.dDoorOpen, pal: 'marble', flags: F.WARP | F.DOOR },
+    dStairsSalt: { art: ART.dStairs, pal: 'marble', flags: F.WARP | F.STAIRS },
+    dDoorClosedPalace: { art: ART.dDoorClosed, pal: 'studWall', flags: F.SOLID | F.DOOR },
+    dDoorOpenPalace: { art: ART.dDoorOpen, pal: 'studWall', flags: F.WARP | F.DOOR },
+    dStairsPalace: { art: ART.dStairs, pal: 'studWall', flags: F.WARP | F.STAIRS },
+    dDoorClosedAbyss: { art: ART.dDoorClosed, pal: 'cryptWall', flags: F.SOLID | F.DOOR },
+    dDoorOpenAbyss: { art: ART.dDoorOpen, pal: 'cryptWall', flags: F.WARP | F.DOOR },
+    dStairsAbyss: { art: ART.dStairs, pal: 'cryptWall', flags: F.WARP | F.STAIRS },
+
     // Themed scenery, for P8 to place. SOLID, so read the traps list in
     // CLAUDE.md before putting one anywhere: a solid tile can strand a room
     // while rendering perfectly and validating clean.

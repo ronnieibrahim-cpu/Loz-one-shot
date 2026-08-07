@@ -106,7 +106,9 @@ for (const [name, d] of TILES) {
 {
   const THEMES = ['Grotto', 'Coral', 'Bog', 'Cistern', 'Wood', 'Salt', 'Palace', 'Abyss'];
   const SHARED = [['dFloor', 'dFloor%'], ['dFloorCrack', 'dFloor%Alt'],
-    ['dWall', 'dWall%'], ['dWallCracked', 'dWall%X'], ['dBlock', 'dBlock%']];
+    ['dWall', 'dWall%'], ['dWallCracked', 'dWall%X'], ['dBlock', 'dBlock%'],
+    ['dDoorClosed', 'dDoorClosed%'], ['dDoorOpen', 'dDoorOpen%'],
+    ['dStairs', 'dStairs%']];
   for (const th of THEMES) {
     for (const [base, pat] of SHARED) {
       const name = pat.replace('%', th);

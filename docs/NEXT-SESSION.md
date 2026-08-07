@@ -746,6 +746,71 @@ Tell me plainly what is done, what is weak, and what you skipped.
   plus a themed legend per dungeon. Every dungeon is now identifiable from one
   screenshot, and no room grid changed to do it.
 
+## P7.6 — where it actually is
+
+**Live and playable.** A room has a size; the camera follows with a deadzone
+and clamps; everything draws through it; exits fire at the room's edge; the
+minimap spans. `d1` room `0,1,3` is a 1x2 and is the first room in the game
+bigger than the screen.
+
+**Not done, in the order the plan wants them:**
+
+1. **The boss/enemy/projectile arena audit (step 8), BEFORE any boss room grows.**
+   Known offenders, found by grep and not yet fixed:
+   `src/game/enemy.js` clamps a repositioning enemy to `VIEW_W/VIEW_H`, and
+   `src/game/projectile.js` removes a shot that leaves `VIEW_W/VIEW_H`. In a
+   wide room both mean "the first screen", so a projectile dies at an invisible
+   line mid-room and a teleporting enemy lands back in the first screen. Neither
+   is reachable today because no converted room has enemies past the seam — the
+   1x2's second crab is inside the first screen's width. **Fix these before
+   converting anything with a fight in the far half.**
+2. **A 2x1 and a 2x2.** `d1` `0,5,3` can grow east into empty (6,3);
+   `0,5,2` (the Clawcrab Den) can too, but it is a miniboss room and belongs
+   after step 8. A D2 2x2 hub has not been surveyed.
+3. **A recorded replay** through the wide room. `check-wide-rooms.mjs` proves
+   the behaviour; a replay would pin the pixels.
+4. **The camera constants want a human.** `CAM_DEADZONE_W/H` and
+   `CAM_MAX_SPEED` are `guessed`. KeyC draws the deadzone box. See FEEL-SPEC —
+   a reference EXISTS, in Poison Moth's Lair and Ancient Ruins.
+
+**One trap this session paid for twice:** a checker that cannot fail reads as
+evidence. Two of `check-wide-rooms.mjs`'s assertions passed against a
+deliberately broken engine on their first cut — one because the camera was
+clamped rather than held by the deadzone, one because nothing lay beyond the
+room's span in either direction. Both were rewritten until breaking the engine
+broke the test. Do that for every assertion here; the camera is exactly the
+kind of feature whose tests pass for the wrong reason.
+
+## OPEN DESIGN QUESTION for P8 — the Anchor in a large room
+
+**Not settled, and deliberately not settled by P7.6.** Recording it so it is
+decided with rooms in front of you rather than in the abstract.
+
+The Tidewright's Anchor freezes a patch of the tide field at a fixed radius.
+`ANCHOR_RADIUS_TILES = 2` makes a disc of 13 tiles. In a 10x8 room that is 16%
+of the floor and it splits the space in two, which is the puzzle. In a 3x1 room
+it is about 5%, and it splits nothing — it becomes a small local convenience
+instead of a decision about the room.
+
+Three options, none chosen:
+
+1. **Large rooms do not use the Anchor.** Cheapest, and honest: not every item
+   has to work in every room. Costs a verb in exactly the rooms with the space
+   to use it.
+2. **The radius scales with room size.** Keeps the item's meaning constant as a
+   FRACTION of the room. But the radius is a number the player has learned by
+   sight, and an item that covers a different amount of ground depending on
+   where you stand is one you cannot plan with.
+3. **Large rooms permit two anchors at once.** The most interesting, and the
+   most expensive: `check-overworld`'s field flood is already 2.9M states and
+   ~30s of its runtime, and NEXT-SESSION has flagged since P5 that it will not
+   survive being asked for two anchors.
+
+**Do not change the engine for this during P7.6.** P7.6's own note records that
+the anchor's disc not growing is a design consequence the brief WANTED, and the
+P5 strand checks must keep asserting "the anchor cannot strand you" over the
+larger room without compensating by scaling the radius.
+
 ## What is left
 
 1. **P7.6 — multi-screen dungeon rooms.** PLANNED, NOT BUILT, awaiting your

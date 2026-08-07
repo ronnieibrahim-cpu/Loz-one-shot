@@ -164,18 +164,21 @@ export function installLegends() {
   //
   // Tiles and palettes come from tools/rip-dungeon-themes.py, off the Seasons
   // dungeon map. See src/data/tiles-dungeon-themes.js.
-  const theme = (name, floor, alt, wall, cracked, block) => registerLegend(name, {
+  // `th` names the theme; every themed tile is <base><Theme> by construction,
+  // which is what lets validate.mjs check the whole set mechanically.
+  const theme = (name, th, floor, alt, wall, cracked, block) => registerLegend(name, {
     '.': floor, ',': alt, '#': wall, 'X': cracked, '=': block,
+    'D': 'dDoorClosed' + th, 'o': 'dDoorOpen' + th, '/': 'dStairs' + th,
   }, 'dungeon');
 
-  theme('dungeonGrotto',  'dFloorGrotto',  'dFloorGrottoAlt',  'dWallGrotto',  'dWallGrottoX',  'dBlockGrotto');
-  theme('dungeonCoral',   'dFloorCoral',   'dFloorCoralAlt',   'dWallCoral',   'dWallCoralX',   'dBlockCoral');
-  theme('dungeonBog',     'dFloorBog',     'dFloorBogAlt',     'dWallBog',     'dWallBogX',     'dBlockBog');
-  theme('dungeonCistern', 'dFloorCistern', 'dFloorCisternAlt', 'dWallCistern', 'dWallCisternX', 'dBlockCistern');
-  theme('dungeonWood',    'dFloorWood',    'dFloorWoodAlt',    'dWallWood',    'dWallWoodX',    'dBlockWood');
-  theme('dungeonSalt',    'dFloorSalt',    'dFloorSaltAlt',    'dWallSalt',    'dWallSaltX',    'dBlockSalt');
-  theme('dungeonPalace',  'dFloorPalace',  'dFloorPalaceAlt',  'dWallPalace',  'dWallPalaceX',  'dBlockPalace');
-  theme('dungeonAbyss',   'dFloorAbyss',   'dFloorAbyssAlt',   'dWallAbyss',   'dWallAbyssX',   'dBlockAbyss');
+  theme('dungeonGrotto',  'Grotto', 'dFloorGrotto',  'dFloorGrottoAlt',  'dWallGrotto',  'dWallGrottoX',  'dBlockGrotto');
+  theme('dungeonCoral',   'Coral', 'dFloorCoral',   'dFloorCoralAlt',   'dWallCoral',   'dWallCoralX',   'dBlockCoral');
+  theme('dungeonBog',     'Bog', 'dFloorBog',     'dFloorBogAlt',     'dWallBog',     'dWallBogX',     'dBlockBog');
+  theme('dungeonCistern', 'Cistern', 'dFloorCistern', 'dFloorCisternAlt', 'dWallCistern', 'dWallCisternX', 'dBlockCistern');
+  theme('dungeonWood',    'Wood', 'dFloorWood',    'dFloorWoodAlt',    'dWallWood',    'dWallWoodX',    'dBlockWood');
+  theme('dungeonSalt',    'Salt', 'dFloorSalt',    'dFloorSaltAlt',    'dWallSalt',    'dWallSaltX',    'dBlockSalt');
+  theme('dungeonPalace',  'Palace', 'dFloorPalace',  'dFloorPalaceAlt',  'dWallPalace',  'dWallPalaceX',  'dBlockPalace');
+  theme('dungeonAbyss',   'Abyss', 'dFloorAbyss',   'dFloorAbyssAlt',   'dWallAbyss',   'dWallAbyssX',   'dBlockAbyss');
 
   // ---- cave / interior ---------------------------------------------------
   registerLegend('cave', {
