@@ -149,15 +149,33 @@ const reach = await page.evaluate((ids) => {
       return d;
     };
     // Passable if walkable at ANY tide level — the player controls the tide.
-    const passable = (ch) => {
-      for (const t of [0, 1, 2]) {
-        const d = defOf(ch, t);
-        if (!d) continue;
-        if (d.flags & F.STAIRS) return true;      // you stand on a stair to use it
-        if (!(d.flags & (F.VOID | F.SOLID | F.PIT | F.DEEP | F.LEDGE | F.HAZARD))) return true;
-      }
-      return false;
+    //
+    // Since the tide became a field this is an UPPER BOUND rather than an
+    // equality, and deliberately so. A tile's walkability depends only on the
+    // level IT resolves at, and the Anchor's only power is to change that level
+    // for a patch of tiles — so no placement can make a tile passable that is
+    // impassable at all three levels. Anything this flood cannot reach, no
+    // arrangement of held water reaches either.
+    //
+    // The direction that bound does not cover is the one the level-aware flood
+    // in check-overworld.mjs measures: this model grants a different level on
+    // every tile at once, which the conch alone cannot do. Here that gap is
+    // narrower than it looks, because the Anchor is recallable from anywhere —
+    // every field it can create is reversible, so the state that has to be
+    // connected is the base state, and the base state is what this walks.
+    const walkableAt = (ch, t) => {
+      const d = defOf(ch, t);
+      if (!d) return false;
+      if (d.flags & F.STAIRS) return true;        // you stand on a stair to use it
+      return !(d.flags & (F.VOID | F.SOLID | F.PIT | F.DEEP | F.LEDGE | F.HAZARD));
     };
+    const passable = (ch) => [0, 1, 2].some(t => walkableAt(ch, t));
+    // The level a tile resolves at under a field: the held level inside the
+    // anchor's patch, the base outside it. Rooms are 10x8 and the patch is a
+    // square of radius ANCHOR_RADIUS_TILES.
+    const R = 2;
+    const levelAt = (x, y, base, a) =>
+      (a && Math.abs(x - a.tx) <= R && Math.abs(y - a.ty) <= R) ? a.level : base;
     // Roc's Feather clears a one-tile gap, and `solidAt` lets a jumping player
     // through DEEP and JUMPABLE alike. Half of d4 is a one-tile drown-wall band
     // that is a wall at LOW/MID and deep water at HIGH — the intended crossing
@@ -278,6 +296,68 @@ for (const r of reach) {
   check(`${r.mapId}: all ${r.total} rooms reachable`, r.missed.length === 0, r.missed.join(','));
   check(`${r.mapId}: boss room reachable`, r.bossReached, r.boss);
 }
+
+// ------------------------------------------- part 2b: the tide-locked rooms
+//
+// `passable` above lets the flood pick whichever tide level suits each tile,
+// on the grounds that the player controls the tide. In a room with `noTide`
+// they do not: the conch is refused, so they are stuck on whatever level they
+// walked in with, and every other room in the dungeon can hand them any of the
+// three. A locked room therefore has to work at ALL THREE levels independently
+// — and nothing checked that, because with a scalar tide there was no way to
+// say "this room, at this level, on its own".
+//
+// This is the check the field makes expressible. It is also the one that will
+// matter most when P8 re-authors these rooms around the Anchor: an anchor laid
+// inside a locked room holds the level you brought, which is the only tide
+// mechanic a boss room has left.
+const locked = await page.evaluate((ids) => {
+  const F = window.__F, getTileDef = window.__getTileDef, getLegend = window.__getLegend;
+  const W = 10, H = 8;
+  const out = [];
+  for (const mapId of ids) {
+    const m = window.__MAPS.get(mapId);
+    for (const [key, def] of Object.entries(m.roomDefs || {})) {
+      if (!def.noTide) continue;
+      const legend = getLegend(def.legend || m.legend);
+      const walk = (ch, t) => {
+        let d = getTileDef(legend[ch]);
+        for (let i = 0; i < 4 && d && d.tide; i++) d = getTileDef(d.tide[t]);
+        if (!d) return false;
+        if (d.flags & F.STAIRS) return true;
+        return !(d.flags & (F.VOID | F.SOLID | F.PIT | F.DEEP | F.LEDGE | F.HAZARD));
+      };
+      for (const t of [0, 1, 2]) {
+        // Flood from every walkable tile on the room's border — the ways in —
+        // and require it to cover every walkable tile in the room. An island
+        // of floor the player cannot get to is the failure being looked for.
+        const walkable = [];
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (walk(def.map[y][x], t)) walkable.push(x + ',' + y);
+        if (!walkable.length) { out.push(`${mapId} ${key} @${t}: no floor at all`); continue; }
+        const seen = new Set(), q = [];
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+          const border = x === 0 || y === 0 || x === W - 1 || y === H - 1;
+          if (border && walk(def.map[y][x], t)) { const k = x + ',' + y; if (!seen.has(k)) { seen.add(k); q.push([x, y]); } }
+        }
+        while (q.length) {
+          const [x, y] = q.pop();
+          for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+            const nx = x + dx, ny = y + dy;
+            if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
+            const k = nx + ',' + ny;
+            if (seen.has(k) || !walk(def.map[ny][nx], t)) continue;
+            seen.add(k); q.push([nx, ny]);
+          }
+        }
+        const stranded = walkable.filter(k => !seen.has(k));
+        if (stranded.length) out.push(`${mapId} ${key} @${t}: ${stranded.length} tiles cut off (${stranded.slice(0, 3)})`);
+      }
+    }
+  }
+  return out;
+}, DUNGEONS);
+check('every tide-locked room works at all three levels on its own',
+  locked.length === 0, locked.slice(0, 4).join(' | '));
 
 // ------------------------------------------------------- part 3: the ledges
 // The four ledge characters, each with the unit vector the player hops along

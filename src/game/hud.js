@@ -147,6 +147,23 @@ function drawTideGauge(ctx, game) {
   ctx.fillRect(x + 8, y + 1, 1, 6);
   const label = TIDE_NAMES[lvl][0];
   drawText(ctx, label, x + Math.round((13 - textWidth(label)) / 2), 8, INK);
+
+  // The gauge shows the BASE — what the conch last set — because that is what
+  // the player pressed a button to choose. Since the Anchor that can disagree
+  // with the water Link is actually standing in, and a gauge that quietly
+  // reports the wrong one is worse than no gauge. When they differ, a pip in
+  // the corner carries the local level, coloured like its own water.
+  const p = game.player;
+  if (p && game.room) {
+    const here = game.tide.levelAt(
+      Math.floor(p.cx / 16), Math.floor(p.cy / 16), game.room);
+    if (here !== lvl) {
+      ctx.fillStyle = INK;
+      ctx.fillRect(x + 9, y, 4, 4);
+      ctx.fillStyle = ['#e0c078', '#58b0e0', '#2878c0'][here];
+      ctx.fillRect(x + 10, y + 1, 2, 2);
+    }
+  }
 }
 
 /** Keys and boss key in dungeons; essence count in the overworld. */

@@ -16,7 +16,6 @@ import {
   Entity, moveEntity, canOccupy, groundFlags, groundTile, findSafeTile, DIR_VEC, DIRS,
 } from './entity.js';
 import { F, transformFor } from '../world/tileset.js';
-import { ConeHold } from './tidelocal.js';
 import { TILE, VIEW_W, VIEW_H } from '../core/screen.js';
 import { sp, toPx } from '../core/fixed.js';
 import { sprites } from '../gfx/art.js';
@@ -81,7 +80,7 @@ export class Player extends Entity {
     this.lensT = 0;               // 0..LENS_FADE_FRAMES, the overlay's fade
     this.bellowsHeld = false;     // ditto
     this.bellowsT = 0;            // frames spent pumping; the cone opens at warmup
-    this.bellowsHold = null;      // the ConeHold registered in game.tideHolds
+    this.bellowsHold = null;      // id of the override this cone laid
     this.rodCool = 0;             // Resonance Rod lock-out
     this.rodRing = 0;             // frames of the ring still expanding
     this.rodRange = 0;            // px the last ring reached, for the draw
@@ -201,7 +200,7 @@ export class Player extends Entity {
     // current is the whole trade sink mode offers for its pace.
     if (this.inDeep && !this.underwater) {
       const { tx, ty } = groundTile(game, this);
-      const def = game.room.tile(tx, ty, game.tideAt(tx, ty));
+      const def = game.room.tile(tx, ty, game.tide);
       // A tile's `push` is data, written in px/f; the mover speaks subpixels.
       if (def.push) moveEntity(game, this, sp(def.push[0]), sp(def.push[1]));
     }
@@ -544,7 +543,7 @@ export class Player extends Entity {
 
   tileDefAt(game, tx, ty) {
     if (tx < 0 || ty < 0 || tx * TILE >= VIEW_W || ty * TILE >= VIEW_H) return null;
-    return game.room.tile(tx, ty, game.tideAt(tx, ty));
+    return game.room.tile(tx, ty, game.tide);
   }
 
   tryPush(game, dx, dy) {
@@ -614,7 +613,7 @@ export class Player extends Entity {
     const tx = this.cx + dx * (SWORD_REACH + SWORD_GAP);
     const ty = this.cy + dy * (SWORD_REACH + SWORD_GAP);
     if (tx < 0 || ty < 0 || tx >= VIEW_W || ty >= VIEW_H) return;
-    if (!game.room.solidAt(tx, ty, game.tide.level, { jumping: false, swim: false })) return;
+    if (!game.room.solidAt(tx, ty, game.tide, { jumping: false, swim: false })) return;
     this.clinkCool = SWORD_CLINK_COOLDOWN;
     game.audio.sfx('block');
     game.spawnEffect('spark', tx - 8, ty - 8);
@@ -797,8 +796,13 @@ export class Player extends Entity {
   //     the drained water has to be something other than you — a raft, a
   //     pushed block, a thrown Reefseed
   //
-  // The cone is registered in `game.tideHolds` and removed the frame the
-  // button comes up. See src/game/tidelocal.js for what P5 does to that.
+  // The cone is an ORDINARY LOCAL OVERRIDE in the tide field — the same list
+  // the Tidewright's Anchor lays into — with two things the Anchor does not
+  // use: a `cone` footprint, and a `delta` rather than an absolute level, so
+  // the cone follows the conch instead of holding out against it. It is
+  // removed the frame the button comes up. Because it is a real override, the
+  // room's own renderer draws the drained wedge through the field and the
+  // field's stamp invalidates the cache; there is no separate draw path.
 
   updateBellows(game) {
     const on = this.bellowsHeld && !this.inDeep && !this.underwater
@@ -813,17 +817,18 @@ export class Player extends Entity {
 
     const [dx, dy] = DIR_VEC[this.dir];
     const ox = Math.floor(this.cx / TILE), oy = Math.floor(this.cy / TILE);
-    if (!this.bellowsHold) {
-      this.bellowsHold = new ConeHold({ ox, oy, dx, dy, range: BELLOWS_RANGE, delta: -1 });
-      game.tideHolds.push(this.bellowsHold);
-      if (game.room) game.room.invalidate();
-    } else if (this.bellowsHold.ox !== ox || this.bellowsHold.oy !== oy
-      || this.bellowsHold.dx !== dx || this.bellowsHold.dy !== dy) {
-      // Turning re-aims the cone. The room's cached render has to be told,
-      // because the drained half of it just moved.
-      this.bellowsHold.ox = ox; this.bellowsHold.oy = oy;
-      this.bellowsHold.dx = dx; this.bellowsHold.dy = dy;
-      if (game.room) game.room.invalidate();
+    const o = this.bellowsHold != null ? game.tide.overrideById(this.bellowsHold) : null;
+    if (!o) {
+      this.bellowsHold = game.tide.addOverride({
+        mapId: game.mapId, roomKey: game.room ? game.room.key : null,
+        tx: ox, ty: oy, r: BELLOWS_RANGE, delta: -1, dx, dy, shape: 'cone', src: 'bellows',
+      });
+    } else if (o.tx !== ox || o.ty !== oy || o.dx !== dx || o.dy !== dy) {
+      // Turning re-aims the cone. `touch()` is what tells the room's cached
+      // render that the drained wedge moved — miss it and the water is drawn
+      // in the old place while collision uses the new one, silently.
+      o.tx = ox; o.ty = oy; o.dx = dx; o.dy = dy;
+      game.tide.touch();
     }
 
     if (this.bellowsT % BELLOWS_PUFF_EVERY === 0) {
@@ -835,11 +840,14 @@ export class Player extends Entity {
 
   /** Shove what the gust can shove: light enemies, rafts, and wheels. */
   gust(game, dx, dy) {
-    const h = this.bellowsHold;
+    const o = this.bellowsHold != null ? game.tide.overrideById(this.bellowsHold) : null;
+    if (!o) return;
     for (const e of game.entities) {
       if (e === this || e.dead || e.hidden) continue;
       const tx = Math.floor(e.cx / TILE), ty = Math.floor(e.cy / TILE);
-      if (!h.covers(tx, ty)) continue;
+      // The same footprint the water uses, asked of the field that owns it —
+      // so what the gust blows and what it drains can never disagree.
+      if (!game.tide.covers(o, tx, ty)) continue;
       if (e.onGust) { e.onGust(game, dx, dy); continue; }
       if (e.isEnemy && e.light) {
         moveEntity(game, e, dx * BELLOWS_PUSH, dy * BELLOWS_PUSH, { jumping: true, swim: true });
@@ -849,18 +857,16 @@ export class Player extends Entity {
   }
 
   stopBellows(game) {
-    if (this.bellowsT === 0 && !this.bellowsHold) { this.bellowsOpen = false; return; }
+    if (this.bellowsT === 0 && this.bellowsHold == null) { this.bellowsOpen = false; return; }
     this.bellowsT = 0;
     this.bellowsOpen = false;
     this.releaseHold(game);
   }
 
   releaseHold(game) {
-    if (!this.bellowsHold) return;
-    const i = game.tideHolds.indexOf(this.bellowsHold);
-    if (i >= 0) game.tideHolds.splice(i, 1);
+    if (this.bellowsHold == null) return;
+    game.tide.removeOverride(this.bellowsHold);
     this.bellowsHold = null;
-    if (game.room) game.room.invalidate();
     // The water comes back, and it may come back on top of you.
     this.reconcileWithTide(game);
   }

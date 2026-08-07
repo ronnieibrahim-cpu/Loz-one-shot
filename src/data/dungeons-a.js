@@ -45,9 +45,7 @@ export function installDungeonsA() {
     scroll: false,
     dungeon: {
       index: 1,
-      // P5 owns the Tidewright's Anchor and puts it here. Left empty rather
-      // than stubbed, so the two sessions cannot both define it.
-      item: null,
+      item: 'anchor', itemLevel: 1,
       essence: 1,
       boss: 'gohmaraq',
       bossRoom: '0,3,1',
@@ -396,7 +394,7 @@ export function installDungeonsA() {
           '##########',
         ],
         entities: [
-          ['chest', 4, 3, { big: true, pickup: 'heartPiece' }],
+          ['chest', 4, 3, { big: true, item: 'anchor', level: 1 }],
         ],
       },
       '0,4,3': {

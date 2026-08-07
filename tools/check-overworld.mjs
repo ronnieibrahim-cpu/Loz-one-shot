@@ -278,6 +278,134 @@ for (const drop of ALL) {
 }
 openMask = HELD.reduce((mask, it) => mask | GATES[it].flag, 0);
 
+// --- 5b. the same flood, over the FIELD rather than the scalar -------------
+//
+// `passable` above says a tile is walkable if it is walkable at ANY tide level,
+// "because the player controls the tide". That is optimistic, and it was
+// optimistic in a way nobody could see until the tide became a field: it grants
+// the player a different tide level on every tile at once, which is not a thing
+// the conch can do. The conch sets ONE level for the whole world, and to change
+// it you have to survive the change where you are standing.
+//
+// So this models it properly. A state is (screen, tile, level). You may step to
+// an adjacent tile walkable at the level you are on, or change the level where
+// you stand — but only onto a level this tile is also walkable at, because a
+// conch press that drowns you is not a move, it is an accident.
+//
+// The Anchor adds exactly one thing to that, and it is the reason it exists:
+// it holds a patch of tiles at the level they were on while the base moves, so
+// you can carry a level across a boundary instead of having to choose one. That
+// is modelled as: from any reachable state, lay a patch of radius R around your
+// own tile, then change the base freely — the patch keeps its level.
+//
+// Both are reported. If the honest model reaches fewer screens than the
+// optimistic one, the difference is real and worth knowing about.
+const R = 2;                     // ANCHOR_RADIUS_TILES; square footprint
+function floodField({ anchor = false } = {}) {
+  const start = '0,4,7';
+  const seen = new Set();
+  const q = [];
+  const push = (rk, x, y, lv, ax, ay, al) => {
+    // The anchor's state is its centre and the level it holds, or -1 for none.
+    // It only matters inside the screen it was laid in, so it is dropped at the
+    // seam — which is exactly what the engine does, since an override names the
+    // room it belongs to.
+    const k = `${rk}:${x},${y},${lv},${ax},${ay},${al}`;
+    if (seen.has(k)) return;
+    seen.add(k); q.push([rk, x, y, lv, ax, ay, al]);
+  };
+  const heldAt = (x, y, lv, ax, ay, al) =>
+    (al >= 0 && Math.abs(x - ax) <= R && Math.abs(y - ay) <= R) ? al : lv;
+  const ok = (rk, x, y, lv, ax, ay, al) => {
+    const def = m.roomDefs[rk];
+    if (!def) return false;
+    const l = legendOf(def);
+    if (walkableAt(l, def.map[y][x], heldAt(x, y, lv, ax, ay, al))) return true;
+    // THE BASE HOP. Roc's Feather is gone and walking into a one-tile gap hops
+    // it, so a gap narrow enough to clear is crossable at every tide level.
+    // `walkableAt` cannot know that — it is told one tile — so the field flood
+    // has to ask the same question the scalar flood does, or the Coral Reef
+    // reads as nine unreachable screens. `hoppable` reads GAP_HOP_MAX_SPAN, so
+    // the Reef's four-tile chasm bands stay walls.
+    return hoppable(l, def, x, y);
+  };
+
+  const sd = m.roomDefs[start], sl = legendOf(sd);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    for (const lv of [0, 1, 2]) if (walkableAt(sl, sd.map[y][x], lv)) push(start, x, y, lv, -1, -1, -1);
+  }
+  while (q.length) {
+    const [rk, x, y, lv, ax, ay, al] = q.pop();
+    const [, rx, ry] = rk.split(',').map(Number);
+    // change the base where you stand — you must survive it standing here
+    for (const nl of [0, 1, 2]) {
+      if (nl !== lv && ok(rk, x, y, nl, ax, ay, al)) push(rk, x, y, nl, ax, ay, al);
+    }
+    // lay or lift the anchor at your feet
+    if (anchor) {
+      if (al < 0) push(rk, x, y, lv, x, y, heldAt(x, y, lv, ax, ay, al));
+      else push(rk, x, y, lv, -1, -1, -1);
+    }
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nx = x + dx, ny = y + dy;
+      if (nx >= 0 && ny >= 0 && nx < W && ny < H) {
+        if (ok(rk, nx, ny, lv, ax, ay, al)) push(rk, nx, ny, lv, ax, ay, al);
+        continue;
+      }
+      // Off the edge: the anchor stays behind in the room it was laid in.
+      const trk = `0,${rx + (nx < 0 ? -1 : nx >= W ? 1 : 0)},${ry + (ny < 0 ? -1 : ny >= H ? 1 : 0)}`;
+      if (!m.roomDefs[trk]) continue;
+      const tx = (nx + W) % W, ty = (ny + H) % H;
+      if (ok(trk, tx, ty, lv, -1, -1, -1)) push(trk, tx, ty, lv, -1, -1, -1);
+    }
+  }
+  const reached = new Set([...seen].map(k => k.split(':')[0]));
+  const unreached = [];
+  for (let y = 0; y < OH; y++) for (let x = 0; x < OW; x++) {
+    if (!reached.has(`0,${x},${y}`)) unreached.push(`0,${x},${y}`);
+  }
+  return { reached, unreached, states: seen.size };
+}
+
+{
+  openMask = ALL.reduce((mask, it) => mask | GATES[it].flag, 0);
+  const plain = floodField();
+  const withAnchor = floodField({ anchor: true });
+  console.log(`  field flood: ${plain.reached.size}/120 screens (${plain.states} states), `
+    + `with the Anchor ${withAnchor.reached.size}/120 (${withAnchor.states} states)`);
+  check('with every gate item, the whole world is reachable under the FIELD model',
+    withAnchor.unreached.length === 0, withAnchor.unreached.join(','));
+  // The Anchor may only ever ADD reach. It is recallable from anywhere, so
+  // nothing it does can be permanent — if it ever subtracted, the item could
+  // lock a player out of a screen and the recall would not be enough to undo it.
+  const lost = [...plain.reached].filter(k => !withAnchor.reached.has(k));
+  check('the Anchor never removes reachability', lost.length === 0, lost.join(','));
+}
+
+// NO ANCHOR PLACEMENT CAN OPEN A GATE, and it is worth being precise about why
+// rather than re-running the search five more times.
+//
+// All the Anchor can do to a tile is change which tide level it resolves at.
+// `passable` above already treats a tile as walkable if it is walkable at ANY
+// of the three levels, so the optimistic flood is an UPPER BOUND on anything
+// any placement could achieve: if a region is sealed under `passable`, no
+// arrangement of held water opens it. The per-gate checks above therefore
+// already cover the Anchor, and running an anchor-aware flood per gate would
+// cost a minute and a half to re-derive an answer that is fixed in advance.
+//
+// What is worth asserting is that the bound really is a bound — that the field
+// model never reaches a screen the optimistic model does not. If that ever
+// fails, the reasoning above is wrong and every gate proof in this file with it.
+{
+  openMask = ALL.reduce((mask, it) => mask | GATES[it].flag, 0);
+  const optimistic = flood();
+  const field = floodField({ anchor: true });
+  const beyond = [...field.reached].filter(k => !optimistic.reached.has(k));
+  check('the optimistic flood really does bound the field flood',
+    beyond.length === 0, beyond.join(','));
+}
+openMask = HELD.reduce((mask, it) => mask | GATES[it].flag, 0);
+
 // --- 6. no ledge is the only way anywhere ----------------------------------
 // A ledge is impassable to the flood above, so if the flood reaches every screen
 // the ledges cannot be load-bearing. Assert the ledge tiles themselves are all

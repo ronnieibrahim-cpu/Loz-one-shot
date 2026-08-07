@@ -163,10 +163,8 @@ For a final check, put it in the game and screenshot it:
 node tools/test.mjs --shots --shot-dir=shots-check
 ```
 
-## Copyright, restated
+## Credit, restated
 
-The sheets are Nintendo's artwork, redistributed here with ripper credit. This
-is a personal fan project. Anything published would need the extracted art
-replaced with original work — which is exactly why every extraction lands in a
-generated file with its source recorded in the header, and why this document
-describes the *style* in enough detail to redraw against without the sheets.
+The sheets carry ripper credits in `assets/sheets/README.md`. Keep them. They
+cost nothing and they name the people who did the extraction work this project
+is built on.

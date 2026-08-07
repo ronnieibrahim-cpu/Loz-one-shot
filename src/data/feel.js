@@ -422,6 +422,53 @@ export const THROW_SLIDE_STOP = 26;
 export const CARRY_HEIGHT = 13;
 
 // ---------------------------------------------------------------------------
+// The Tidewright's Anchor
+//
+// The anchor holds a patch of the room at whatever tide level was current when
+// it landed, while the rest of the room goes on obeying the conch.
+// ---------------------------------------------------------------------------
+
+/**
+ * tiles — how far the held patch reaches from the anchor, in every direction.
+ * guessed, AND EXPLICITLY UNSETTLED — to be decided by play, not by argument.
+ * Press KeyU in game to cycle 1-4 and KeyY to swap the footprint's shape.
+ *
+ * The arithmetic that rules out the larger values, since it is not obvious: a
+ * room is 10 tiles wide and 8 tall, so the radius has to split BOTH axes to be
+ * worth anything. 4 spans 9 tiles and swallows the whole screen — the conch
+ * appears to stop working. 3 spans 7 and covers 7 of the 8 rows, so it splits
+ * horizontally and not vertically. 2 spans 5 and splits both. The execution
+ * plan's original "~8 tiles" predates anyone checking this against a room.
+ */
+export const ANCHOR_RADIUS_TILES = 2;
+
+/**
+ * 'square' | 'disc' — the held patch's footprint. guessed, same debug key.
+ *
+ * At this scale the shape is legible to the player and has to be predictable.
+ * A radius-2 disc is 13 tiles and reads as a fat plus sign whose edge is hard
+ * to eyeball; a radius-2 square is a clean 5x5 whose corners you can see. Hence
+ * square, but it is a feel question and the key exists to settle it.
+ */
+export const ANCHOR_SHAPE = 'square';
+
+/** sp/f — how fast the anchor flies when thrown. guessed; matches THROW_SPEED
+ *  so it reads as the same arm that throws a pot. */
+export const ANCHOR_THROW_SPEED = 640;
+
+/** sp/f — how fast the chain reels the anchor back on recall. guessed; faster
+ *  than the throw, because a recall is a snap and a throw is a lob. */
+export const ANCHOR_RECALL_SPEED = 896;
+
+/** frames — how long the anchor stays visibly settling after it lands, before
+ *  the water changes. guessed; long enough to read as a splash-then-hold. */
+export const ANCHOR_SETTLE_FRAMES = 10;
+
+/** hp — damage the chain does sweeping along its line on throw and recall.
+ *  guessed; one quarter-heart less than a sword tap, since it is incidental. */
+export const ANCHOR_CHAIN_DAMAGE = 1;
+
+// ---------------------------------------------------------------------------
 // Enemy cadence
 // ---------------------------------------------------------------------------
 

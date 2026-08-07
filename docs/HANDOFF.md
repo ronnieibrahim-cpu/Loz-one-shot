@@ -220,6 +220,66 @@ is in the page, and nothing steps until you say so.
 
 ## Hard-won lessons — do not rediscover these
 
+**The tide field (P5), and the four things it cost.**
+
+1. **A dropped field on an options object is invisible.** `Tide.addOverride`
+   destructured `{mapId, roomKey, tx, ty, r, level, shape}` and rebuilt the
+   object from those names — so the `src: 'anchor'` the caller passed was
+   silently thrown away. Everything worked: the anchor landed, the field split,
+   the room rendered correctly, every flag query answered right. The only thing
+   that failed was the item finding its own override again, so the anchor could
+   be thrown and never recalled. Rebuilding an object field-by-field drops
+   whatever you forget, and nothing type-checks it.
+
+2. **A render cache keyed on a scalar silently survives a field.** `Room` cached
+   its tile layer against the tide *level*. With a field the key has to be the
+   field's version stamp, because the level no longer identifies the picture.
+   Get this wrong and collision is right while the pixels are stale — the room
+   draws yesterday's water and every test still passes. The stamp is monotonic
+   and **must never be reset**, including by `clearOverrides` or a new game:
+   Room objects outlive a new game, so a stamp that went back to zero could
+   collide with a key a cached canvas is still holding.
+
+3. **A single-pixel probe is not a pixel test.** The first version of the render
+   assertion sampled one pixel at the centre of each band and passed on nothing,
+   twice, for two different reasons. First: animated tiles — which is every kind
+   of water — are pushed to `animCells` and deliberately left OUT of the cached
+   canvas, so both bands read as transparent. Composite `render` + `drawAnim` +
+   `drawOver` the way `drawScene` does. Second: shallow and deep reef water
+   happen to share their colour at the tile's centre pixel, so even composited,
+   one pixel reported them identical. Hash the whole 16x16 tile.
+
+4. **`levelAt`'s default room is wrong in exactly one place.** It defaults to
+   `game.room`, which is right for game logic and wrong during a room-slide
+   transition, where two rooms are on screen and one of them is not `game.room`.
+   Everything going through `room.tile`/`flagsAt`/`solidAt`/`render` is safe
+   because `Room` passes itself; the rule binds direct callers in draw paths.
+
+**A replay that walks somewhere proves less than it looks.** The two-level
+replay would have passed just as well in a room held uniformly at one level —
+the walk succeeds either way. What makes it a proof is the probe tiles either
+side of the held patch, recorded at every checkpoint, in two independent senses:
+what the engine believes the level is, and a hash of how the tile is actually
+drawn. Also: use held directions, not `goto`. A pathfinder routes around the
+interesting part of the room by the boring columns at its edge.
+
+**The radius had to be checked against a real room before the replay was built.**
+At radius 3 the held patch reaches from the reef flat into the tide-rock band
+three rows away, both bands freeze together, and the replay walks a uniformly
+MID room while claiming to prove a split. The margin between the probes is the
+reason the radius is 2.
+
+**`flowers` and `bush` were the same rosette, and that is why `bush` could not
+be extracted.** Two sessions recorded "bush stays hand-drawn" as a constraint
+when it was a consequence: the Ages shrub at AG 450,920 is authentic, but the
+`flowers` tile was a leafy rosette from the fan-made map and the two cells are
+indistinguishable. The fix was upstream — re-pick `flowers` from Seasons'
+**spring** overworld (a sheet nothing had ever read from; spring is when
+Holodrum is in bloom), and the shrub becomes available immediately. When a
+extraction is blocked by "it would look like X", check whether X is the thing
+that should move.
+
+
 **Sprite-sheet extraction** (`tools/ripkit.py`; worked examples in
 `tools/rip-link.py`, `tools/rip-npcs.py` and `tools/rip-enemies.py`):
 
@@ -761,6 +821,60 @@ out means walking further in, and the extra approach frames cost more health
 than the extra swings win — and raising the patience, which only made the actor
 spend longer failing the same way.
 
+### Merging P5 into P6, and the four things THAT cost
+
+Both sessions ran in parallel against the same base and both were green alone.
+Fifteen textual conflicts across six files, all of them "keep both". The
+expensive part was, as HANDOFF has said twice now, **what merged cleanly**.
+
+**1. The two branches disagreed about who owns the clock, and the merge hung.**
+P5 branched from a commit BELOW the P2 merge, so its `test.mjs` had no
+`takeOver()` and its new field section waited on `g.frame` from inside a
+`page.evaluate`. Merged into a `test.mjs` that does own the clock, nothing ever
+steps the game, so those waits never return: the run hung with **no output at
+all** and no error, which reads as a broken browser rather than a broken test.
+Every wait in that section is `window.__harness.step(n)` now. If you merge a
+branch that predates P2, grep it for `requestAnimationFrame` and `g.frame`
+before you trust a green run.
+
+**2. A stand-in built to be deleted still has to be deleted carefully.**
+`src/game/tidelocal.js` existed only so the Squall Bellows could hold water
+back before P5 landed, and its header said exactly how to remove it. Following
+that header was right, but it named five call sites and the real number was
+nine — four more had appeared in `items.js` (the Dredge Line's drag, the
+Resonance Rod's range and radius) after the header was written. A header that
+lists call sites goes stale the moment someone adds one. `git grep tideAt` is
+what actually finds them.
+
+**3. The two items compose, and the naive merge would have made them lie.**
+The Brineglass Lens draws the room at the next tide level. Rendering that from
+a bare number is correct until a Tidewright's Anchor is down — and then the
+preview shows the held patch changing, when the held patch is the one part of
+the room that will not. `Tide.viewAt(base)` is a read-only view of the field
+with a different base, so the Lens previews the FIELD. Neither branch could
+have found this alone; it only exists in the merge.
+
+**4. A parallel render cache has to be keyed the way the real one is.**
+`Room.renderAt` was an array indexed by tide level, which is fine when the
+argument is a number. P5's `render` takes the field too, keyed on
+`tide.stamp`. Left alone, `renderAt(field)` would have cached under
+`"[object Object]"` forever and drawn water that stopped being true several
+anchors ago — silently, because a stale canvas throws nothing. It uses
+`cacheKeyFor` now, the same function `render` uses.
+
+**What the collapse actually looked like**, for the next person who has to do
+one: the Bellows' cone became an ordinary entry in `tide.overrides` with two
+small extensions to P5's structure — a `'cone'` footprint in `Tide.covers`, and
+a `delta` alternative to the absolute `level` in `Tide.levelAt`. The delta is
+the interesting half: the Anchor is absolute because it is holding out against
+the conch, and the Bellows is relative because it holds the water back one step
+from wherever the conch currently has it. One number could not have served
+both, and collapsing them would have made one item quietly wrong.
+
+Because the cone is a real override, `Room.render` draws the drained wedge
+through the field and the field's stamp invalidates the cache — so
+`Game.drawTideHolds`, the whole second draw path, deleted.
+
 ### The item roster (P6), and the six things it cost
 
 Nine items in, ten out. `docs/ITEMS.md` is the roster and `tools/check-items.mjs`
@@ -1177,13 +1291,14 @@ The reference sheets live in `assets/sheets/` and are committed, so extractions
 are reproducible in any checkout. All three extractors resolve their paths
 relative to the repo root and produce byte-identical output to what is
 committed. See `assets/sheets/README.md` for what each sheet contains, who
-ripped it, and the copyright position.
+ripped it.
 
 Sheets present but not yet used: non-human races and trading characters. The
 HUD/Gear sheet is used by `tools/rip-hud.py`; the icons Seasons does not have
-(Flippers, Mermaid Suit, Hookshot, Moon Conch, Map, Compass) stay hand-drawn.
-The dungeon-background and fan-made overworld sheets are used by
-`tools/rip-terrain.py` for nine ground and wall tiles.
+(Flippers, Mermaid Suit, Hookshot, Moon Conch, Map, Compass, and now the
+Tidewright's Anchor) stay hand-drawn. The dungeon-background, fan-made
+overworld, Ages overworld, Subrosia tileset and Seasons SPRING overworld sheets
+are used by `tools/rip-terrain.py` for ten ground tiles and two props.
 
 ## What is left, highest value first
 

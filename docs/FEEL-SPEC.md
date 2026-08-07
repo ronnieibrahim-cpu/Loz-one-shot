@@ -390,6 +390,51 @@ drifters. No ground enemy reads it.
 
 ---
 
+## The Anchor's radius is settled by play, not by argument
+
+`ANCHOR_RADIUS_TILES` and `ANCHOR_SHAPE` are `guessed`, and unlike most guesses
+in this file they are guesses about *design*, not about the source games. There
+is no Oracle item to frame-step: nothing in Seasons or Ages holds a patch of the
+world at one state while the rest of it changes. So there is nothing to measure
+against, and no amount of reasoning settles it.
+
+What reasoning **does** settle is which values are ruled out, and it is worth
+writing down because it is not obvious from the number alone. A room is 10 tiles
+wide and 8 tall, so the radius has to split **both** axes to be worth anything:
+
+| radius | span | covers |
+|---|---|---|
+| 4 | 9 tiles | the whole screen — the conch appears to stop working |
+| 3 | 7 tiles | 7 of the 8 rows — splits horizontally, never vertically |
+| 2 | 5 tiles | both axes |
+
+The execution plan's original "~8 tiles" predates anyone checking it against a
+room; at 8 the item cannot do the thing it exists to do.
+
+That leaves 2 as the only value that splits a room, and 1 vs 2 vs the footprint
+shape as genuinely open. So they are tunable in the hand:
+
+- **KeyU** cycles the radius 1 → 2 → 3 → 4 → back to the constant.
+- **KeyY** swaps the footprint between a square and a Euclidean disc. At this
+  scale the shape is legible to the player: a radius-2 disc is 13 tiles and
+  reads as a fat plus sign whose edge is hard to eyeball, while a square is a
+  clean 5x5 you can see the corners of. Square is the default for that reason,
+  but it is a feel question.
+- Both re-apply to an anchor **already down**, so the water changes shape under
+  the key press and two settings can be compared without re-throwing.
+- The debug overlay (KeyO) outlines the held patch and prints the current
+  setting beside the base and local tide.
+
+None of this touches determinism: the default is "use the constant", no replay
+or checker sets either, and the value is read once at placement into the
+override itself — so a recorded replay carries the radius it was recorded with
+regardless of where the key was last left.
+
+**Do not promote either to `derived` or `measured` because the game feels fine.**
+`measured` has no meaning for a constant with nothing to measure against. When
+these are settled, the honest tag is still `guessed`, with a comment saying who
+played it and what they chose.
+
 ## Determinism
 
 Feel cannot be measured in an engine that does not replay. If the same inputs

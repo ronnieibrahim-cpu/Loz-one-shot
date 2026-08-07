@@ -50,6 +50,7 @@ export const REQUIRED_SPRITES = {
     'i_ring',
     'i_map', 'i_chart', 'i_unknown',
     'i_lens', 'i_lens2', 'i_bellows', 'i_reefseed', 'i_dredge', 'i_rod', 'i_coin', 'i_bottle',
+    'i_anchor', 'o_anchor',
   ],
 
   // ---- pack: sprites-world.js ------------------------------------------

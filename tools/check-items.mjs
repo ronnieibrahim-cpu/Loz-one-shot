@@ -111,7 +111,7 @@ await page.evaluate(async () => {
     g.mode = 'play';
     if (g.dialogue) g.dialogue.active = false;
     g.entities = g.entities.filter(e => { if (e === g.player) return true; e.remove = true; return false; });
-    g.tideHolds.length = 0;
+    g.tide.clearOverrides();   // no override from a previous probe survives
     g.progress.hearts = g.progress.maxHearts = 40;
     g.player.x = o.tx * 16; g.player.y = o.ty * 16;
     g.player.z = 0; g.player.dir = o.dir || 'down';
@@ -269,10 +269,10 @@ section('Squall Bellows');
 await park({ map: 'overworld', rx: 4, ry: 0, tx: 4, ty: 3, dir: 'up', tide: 2, items: { bellows: 1 }, equipB: 'bellows' });
 await step(4);
 r = await read(() => ({
-  level: window.__game.tideAt(4, 1),
-  name: window.__game.room.tile(4, 1, window.__game.tideAt(4, 1)).name,
+  level: window.__game.tide.levelAt(4, 1),
+  name: window.__game.room.tile(4, 1, window.__game.tide).name,
   stand: window.__standable(4, 1),
-  holds: window.__game.tideHolds.length,
+  holds: window.__game.tide.overrides.length,
 }));
 check('the pan is deep at HIGH', r.stand === false && r.holds === 0, `${r.name} stand=${r.stand}`);
 
@@ -280,10 +280,10 @@ await hold(['b']); await step(40);
 r = await read(() => {
   const g = window.__game;
   return {
-    open: !!g.player.bellowsOpen, holds: g.tideHolds.length,
-    inCone: g.tideAt(4, 1), name: g.room.tile(4, 1, g.tideAt(4, 1)).name,
+    open: !!g.player.bellowsOpen, holds: g.tide.overrides.length,
+    inCone: g.tide.levelAt(4, 1), name: g.room.tile(4, 1, g.tide).name,
     stand: window.__standable(4, 1),
-    outside: g.tideAt(9, 7),
+    outside: g.tide.levelAt(9, 7),
   };
 });
 check('pumping opens a cone', r.open && r.holds === 1, `open=${r.open} holds=${r.holds}`);
@@ -302,8 +302,8 @@ check('pumping costs you your feet', r.moved === 0, `moved ${r.moved} subpixels`
 
 await hold([]); await step(6);
 r = await read(() => ({
-  holds: window.__game.tideHolds.length,
-  level: window.__game.tideAt(4, 1),
+  holds: window.__game.tide.overrides.length,
+  level: window.__game.tide.levelAt(4, 1),
 }));
 check('letting go lets the water back', r.holds === 0 && r.level === 2, `holds=${r.holds} level=${r.level}`);
 
@@ -798,8 +798,8 @@ check('every item the world hands out actually exists', r.bad.length === 0, r.ba
 // And the roster is the one docs/ITEMS.md describes — no more, no less.
 {
   const expected = [
-    'bellows', 'bombs', 'bottle', 'chartstone', 'cleats', 'coin', 'conch',
-    'dredge', 'lens', 'map', 'reefseed', 'rod', 'shield', 'sword',
+    'anchor', 'bellows', 'bombs', 'bottle', 'chartstone', 'cleats', 'coin',
+    'conch', 'dredge', 'lens', 'map', 'reefseed', 'rod', 'shield', 'sword',
   ];
   const extra = r.registry.filter(id => !expected.includes(id));
   const missing = expected.filter(id => !r.registry.includes(id));

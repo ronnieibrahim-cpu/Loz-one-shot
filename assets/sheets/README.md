@@ -33,6 +33,41 @@ cells wide, 163 tall, phase 0, with all four seasons banded down it. Everything
 else is an assembled map you have to find the grid phase in. Reach for the
 tileset first: picking a tile off it is reading a grid reference, not a survey.
 
+### The town kit on that tileset
+
+It carries a complete set of village furniture that this project has barely
+touched — only the tree has been taken off it. Coordinates are (column, row) in
+16px cells, so the pixel address is (col*16, row*16).
+
+| What | Cells | Notes |
+|---|---|---|
+| Blue **SHOP** building | c4-c6, r7-r9 | 3 wide; roof r7-r8, signed wall r9 |
+| Green-roof building | c7-c9, r7-r8 | roof only — build the wall row from below |
+| Red-roof building | c10-c12, r7-r8 | as above |
+| Door | c7, r9 | |
+| Open doorway (enterable) | c8, r9 | the black one — this is the warp tile |
+| Window | c9, r9 | |
+| Twin posts / barrels | c10, r9 | |
+| Crates | c11-c12, r9 | |
+| Stone well | c13-c14, r8-r9 | 2x2 |
+| Stump / table | c5, r10-r11 | |
+| Picket fence | c3-c7, r32 | a run, not one tile |
+| Pots and barrels | c12-c15, r30-r32 | |
+
+**The furniture repeats per season**, same columns, at r7-r9 (spring), r17-r19
+(autumn) and r27-r29 (winter), plus further bands down the sheet. This game has
+no seasons — it has tides — so the bands are a **palette** resource: the same
+building in four moods, which is exactly what a region-tinted village wants.
+
+**A building is not a tile.** Three wide and two-to-three tall, the same problem
+the 32x32 trees had and solved with the `quad:` machinery in `tools/rip-terrain.py`
+and `src/world/tileset.js`. A 3x3 block needs that generalised, not worked
+around by cutting a building into nine unrelated tiles.
+
+`oracle-seasons-nonhuman-races.png` is the other half of a lived-in town: the
+Maku Tree, the Great Fairy, and rows of Subrosian, Goron, Zora and Tokay NPCs.
+Nothing has been extracted from it yet.
+
 `oracle-ages-overworld.png` is the Labrynna Present outdoor background, True
 Colors half, and it is **the real overworld reference** — the one to reach for
 after the tileset. `custom-oracle-style-overworld.png` is a fan-made assembled map and its
@@ -56,14 +91,9 @@ All obtained via spriters-resource.com. Most sheets carry two halves: "GBC LCD
 Colors" simulates the handheld screen, "True Colors" is the raw palette. The
 extraction tools read the True Colors half.
 
-## Copyright
+## Credit
 
-**The artwork in these files is Nintendo's.** The rips are redistributed here
-under the ripper credits above, as those rippers request. This is a personal fan
-project; the sheets and everything extracted from them would have to be removed
-and replaced with original art before this could be published or hosted
-anywhere.
-
-Everything extracted lands in a generated file whose header records its source,
-so the replacement path is: redraw the art, regenerate or hand-write that one
-file, delete this directory.
+The per-sheet ripper credits in the table above are the one thing to preserve:
+those people did the work of pulling this art off the cartridge and asked to be
+named for it. Keep the column filled in, and fill in the one that is missing if
+anyone ever identifies it.

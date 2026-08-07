@@ -49,6 +49,7 @@ OW = os.path.join(ROOT, 'assets/sheets/custom-oracle-style-overworld.png')
 DG = os.path.join(ROOT, 'assets/sheets/oracle-seasons-dungeon-backgrounds.png')
 AG = os.path.join(ROOT, 'assets/sheets/oracle-ages-overworld.png')
 SB = os.path.join(ROOT, 'assets/sheets/oracle-seasons-tileset-subrosia.png')
+SP = os.path.join(ROOT, 'assets/sheets/oracle-seasons-overworld-spring.png')
 OUT = os.path.join(ROOT, 'src/data/tiles-terrain.js')
 
 # art name -> (sheet, x, y, note). The note is what the tile is on the sheet,
@@ -63,6 +64,23 @@ PICKS = [
     ('rockFloor',   OW,  645, 1549, 'cobbled paving'),
     ('dFloor',      DG,  547,   42, 'dungeon floor, mottled flagstone'),
     ('dWall',       DG,  483,   26, 'dungeon wall run, lit top and hatched base'),
+    # FLOWERS THAT ARE ACTUALLY FLOWERS. The previous pick was a leafy rosette
+    # on the fan-made map, and the Ages shrub taken for `bush` below is the SAME
+    # rosette — so the tile the player must cut looked exactly like the tile
+    # that is scenery, and that is why `bush` sat un-extracted for two sessions.
+    # Put the two 16x16 cells side by side and you cannot tell them apart.
+    #
+    # Seasons' spring overworld is the obvious source and had never been read:
+    # spring is when Holodrum is covered in blooms. This is a seamless flower
+    # field, five-petal blooms with dark centres over leaves, and it is ground
+    # rather than a prop because that is what it is on the sheet — the same
+    # reason the trees are 32x32 and not 16x16.
+    #
+    # The game's `grass` palette applies, not the sheet's, so the pink does not
+    # survive and was never the point: what separates scenery from a cuttable
+    # bush at a glance is MASS and SHAPE, and a blossom field shares neither
+    # with a shrub.
+    ('flowers',     SP,   33,  291, 'spring flower field, blooms over leaves'),
 ]
 
 # Props are a different shape of problem from ground, and need their own pass.
@@ -84,7 +102,6 @@ PICKS = [
 # bright body, a dark shade, a near-black outline — which is what makes the
 # shape read against grass.
 PROPS = [
-    ('flowers', OW, 2061, 1469, (0, 2, 3), 'leafy flowering plant, on the forest path'),
 
     # From the Labrynna Present overworld — a real Oracle of Ages background rip
     # rather than the fan-made assembled map, which is why these two exist at
@@ -93,12 +110,10 @@ PROPS = [
     # docs/HANDOFF.md for what else it found and what it could not.
     ('rock', AG, 418, 936, (1, 2, 3), 'liftable boulder, beside the dirt clearing'),
 
-    # NOT extracted, deliberately: the Ages shrub at AG 450,920 is the sheet's
-    # cuttable bush and is authentic, but it is the same four-leaf rosette as
-    # `flowers` above — extracting it makes a tile the player must cut look
-    # identical to one that is scenery. `bush` stays hand-drawn until `flowers`
-    # is re-picked as something actually floral, at which point 450,920 is the
-    # right source for it. See docs/HANDOFF.md.
+    # ...and now that `flowers` is floral, the Ages shrub can finally be taken.
+    # This is the sheet's own cuttable bush, and the reason it was left behind
+    # for two sessions is fixed one line above rather than worked around.
+    ('bush', AG, 450, 920, (0, 1, 3), 'cuttable shrub, beside the dirt clearing'),
 ]
 
 # Objects that are BIGGER THAN A TILE, cut into their four 16x16 quadrants.
@@ -376,14 +391,14 @@ def prop_scan(path, px, py, x0, y0, x1, y1, out_png=None, top=120):
 def main():
     if '--props' in sys.argv:
         a = sys.argv[sys.argv.index('--props') + 1:]
-        sheet = {'ow': OW, 'dg': DG, 'ag': AG, 'sb': SB}[a[0]]
+        sheet = {'ow': OW, 'dg': DG, 'ag': AG, 'sb': SB, 'sp': SP}[a[0]]
         prop_scan(sheet, int(a[1]), int(a[2]), int(a[3]), int(a[4]), int(a[5]), int(a[6]),
                   out_png=a[7] if len(a) > 7 else None)
         return
 
     if '--scan' in sys.argv:
         a = sys.argv[sys.argv.index('--scan') + 1:]
-        sheet = {'ow': OW, 'dg': DG, 'ag': AG, 'sb': SB}[a[0]]
+        sheet = {'ow': OW, 'dg': DG, 'ag': AG, 'sb': SB, 'sp': SP}[a[0]]
         seamless_scan(sheet, int(a[1]), int(a[2]), int(a[3]), int(a[4]))
         return
 

@@ -159,6 +159,79 @@ how it *looks*, and `ENEMY_DECIDE_STEPS = 3` in particular is a taste number
 that has never been seen on screen.
 
 ---
+## What the last session did (P5: the tide became a field, and the Anchor)
+
+All four parts of the P5 brief landed, plus the sprite and documentation work
+asked for alongside it. Reasoning is in `docs/FEEL-SPEC.md` (new section: "The
+Anchor's radius is settled by play") and every mistake it cost is in
+`docs/HANDOFF.md` under "The tide field (P5), and the four things it cost".
+
+1. **`tide.levelAt(tx, ty, room)` is the field.** `tide.level` stays as the
+   base. An override is `{mapId, roomKey, tx, ty, r, shape, level, src}` and is
+   ROOM-SCOPED, which is what makes a room-slide transition correct for free:
+   each room resolves against its own overrides in the same frame. Overlapping
+   overrides are last-placed-wins, defined rather than accidental.
+   `Room.tile/flagsAt/solidAt/render` all take EITHER a plain 0/1/2 or the field
+   — the number is kept working on purpose, because "what would this room be at
+   HIGH everywhere" is a question the checkers need to ask.
+2. **65 call sites audited.** ~12 genuinely want the base (HUD gauge, save,
+   music, the conch's own plumbing, cutscene steps). The rest read the field.
+   `tideAt(game, e)` in `entity.js` is the level under an entity's own feet and
+   is what the 24 boss reads and the raft now use. `puzzle.tide` still reads the
+   base — a room-level clause has no tile to ask about — and gains an optional
+   `tideAt: [tx, ty]` for puzzles that want the local level.
+3. **The Tidewright's Anchor.** Throw it, it bites where it lands and holds its
+   patch at the level the water was on at that moment. Press again from anywhere
+   in the world to recall. The chain damages along its whole line on both throw
+   and recall. It cannot strand you — `findSafeTile` searches the FIELD now, and
+   a placement with nowhere to stand is refused rather than survived. A placed
+   anchor survives leaving the room (the override is the truth, the entity is
+   its picture, and `Game.respawnAnchor` redraws it); one still in the air when
+   the room changes simply returns.
+4. **The checkers reason over the field**, and the interesting part is that the
+   old model was optimistic in a way nobody could see before: "walkable at ANY
+   tide level" grants a different level on every tile at once, which no conch
+   can do. `check-overworld` now also floods properly — a state is a screen, a
+   tile and a level, and you may only change level where you are standing on
+   ground that survives the change. It reaches 120/120 that way too.
+   `walk-dungeons` gained the check that only the field could express: the seven
+   `noTide` rooms (the boss rooms) must work at all three levels independently,
+   because the conch is refused in them.
+5. **A replay proving one room at two levels at once**, `tide-steps-split`.
+   Nine consecutive checkpoints read MID at one probe and HIGH at another in the
+   same frame, with different rendered pixels. See the weakness note below.
+6. **`flowers` re-picked, `bush` extracted at last**, and the publication
+   restrictions removed from the docs.
+
+### What is weak about it
+
+- **`ANCHOR_RADIUS_TILES = 2` and `ANCHOR_SHAPE = 'square'` are guesses about
+  design, not about the source games, and there is nothing to measure them
+  against** — no Oracle item holds part of the world at one state. KeyU cycles
+  the radius 1-4 in game, KeyY swaps square for disc, both re-apply to an anchor
+  already down, and KeyO outlines the patch. **This is the one thing in the
+  session that wants a human**: throw it in Tide Steps (overworld 0,10,0) at
+  each setting and pick. FEEL-SPEC says why 3 and 4 are already ruled out.
+- **The Anchor is not obtainable in play.** It has an ITEMS entry, art, an
+  icon and a manifest entry, but no chest anywhere grants it — D1 is re-authored
+  in P8 and that is where it belongs. Today only a harness or a `giveItem` call
+  puts it in your hands.
+- **There is no in-world signal for where the held patch ends.** The debug key
+  outlines it; normal play has only the water itself, and at a boundary between
+  two shallow tiles the edge is genuinely hard to see. That is an art job — a
+  tide line, foam, something — and it should probably happen before the radius
+  is settled, since it changes what "legible" means.
+- **The anchor's throw distance is not tuned.** It reuses the pot-throwing arc,
+  which puts it about three tiles out. That is a number nobody chose.
+- **The chain sweep damages on a straight line from Link to the anchor**, which
+  is right while it flies and a lie while it is held — the chain would slacken.
+  Nothing draws a slack chain and nothing damages on one.
+- **The overworld field flood is 2.9M states and takes ~30s.** Fine now; it will
+  not survive being asked for two anchors.
+- **The new `flowers` is darker and busier than the grass around it**, so
+  walkable scenery is now more visually prominent than the cuttable bush beside
+  it. That hierarchy is backwards and a lighter re-pick may be wanted; the
+  blocking problem (flowers and bush being the same rosette) is fixed either way.
 
 ## What the session before that did (P3: fixed-point movement and the sword-hold)
 
@@ -363,6 +436,13 @@ Read, in this order:
                            CHECK WHETHER IT HAS LANDED before starting anything.
   docs/ITEMS.md          - the item roster. Authoritative. tools/check-items.mjs
                            asserts the registry is exactly this document.
+  docs/EXECUTION-PLAN.md - the roadmap. P0, P1, P3 and P5 are done. P6 (the
+                           item roster) is now unblocked and is the big one —
+                           P5 existed to unblock it. PT (towns and buildings)
+                           is a stated top design priority and is independent
+                           of the systems spine, so it can be taken whenever a
+                           session wants content. P2 (the intermittent test)
+                           and P4 (grid-lock enemy motion) are still open.
   docs/FEEL-SPEC.md      - what every timing constant means and how sure we are
   docs/HANDOFF.md        - current state, environment setup, and every trap
                            already paid for. Read the environment section
@@ -405,6 +485,15 @@ Confirm the baseline before changing anything, and keep every line below green:
                                                in-engine, and the registry
                                                matched against docs/ITEMS.md
   node tools/check-motion.mjs                   8/8, enemies on the 8px lattice
+  node tools/test.mjs                          55/55, 0 unauthored art names
+  node tools/replay.mjs                        12/12, all THREE replays to the
+                                               pixel
+  node tools/walk-dungeons.mjs                 28/28, 88 ledge runs
+  node tools/check-overworld.mjs               19/19, all gates, plus the field
+                                               flood (~30s of its runtime)
+  node tools/check-gates.mjs                   15/15, both item gates in-engine
+                                               (the ONLY harness that jumps —
+                                               see the jump-reach note below)
   node tools/solve-switches.mjs                17 rooms, one push per block
   python3 tools/rip-terrain.py                 regenerates tiles-terrain.js
                                                BYTE-IDENTICAL; if it does not,
@@ -535,6 +624,31 @@ the step's origin every frame and assign the exact destination on the last one,
 rather than accumulating a velocity, precisely so nothing carries a remainder.
 `node tools/check-motion.mjs` is what tells you if that survived, and it asserts
 on `fx`/`fy` rather than `x`/`y` for the same reason.
+THE TIDE IS A FIELD. `game.tide.level` is the BASE — the HUD gauge, the music,
+the save file and the conch's own plumbing. Everything about the world reads
+`game.tide.levelAt(tx, ty, room)`, or passes `game.tide` straight to a room
+query, which resolves per tile. `tideAt(game, e)` in entity.js is the level
+under an entity's own feet and is what an enemy, a boss or a raft wants. If you
+add a call site that says `tide.level` and means "the water here", it will be
+right until the first anchor lands near it and wrong forever after.
+
+NEXT UP: P6, the item roster, in docs/EXECUTION-PLAN.md. It is unblocked now
+and P5 existed to unblock it — every remaining item assumes `levelAt`. Note the
+Tidewright's Anchor is ALREADY DONE and must not be re-implemented; it does
+need a chest to come out of, which belongs to D1 in P8.
+
+BEFORE P6, IF YOU CAN: settle ANCHOR_RADIUS_TILES by playing it. Give yourself
+the anchor, go to overworld 0,10,0 (Tide Steps), and throw it at each setting
+KeyU offers, with KeyO on to see the patch outlined and KeyY to try the disc.
+It is a design constant with nothing to measure against, so it needs a person,
+and everything in P6 and P8 gets built on top of whatever it ends up being.
+
+P4 (grid-lock enemy motion) and P2 (the intermittent test) are still open and
+independent. P4 is the higher-value of the two and P3 left it set up: enemy
+positions are already on the 8.8 grid, so "a direction change may only happen
+at an 8px boundary" is a test you can write, and moveDir is the single funnel
+every ground AI goes through. P4 also inherits the two knockback decays and
+ENEMY_TURN_CHANCE, which FEEL-SPEC still flags as wrong on purpose.
 
 Do the work yourself rather than spawning subagents - past sessions hit usage
 limits that way and lost the work.
@@ -577,21 +691,30 @@ Tell me plainly what is done, what is weak, and what you skipped.
 
 P5 (if it has not landed in parallel), then P7, P8 and P9 in
 `docs/EXECUTION-PLAN.md`. Plus, carried over:
+- **the tide as a field, and the Tidewright's Anchor (P5).** `tide.levelAt`,
+  room-scoped overrides, the checkers reasoning over the field, and a replay
+  proving one room at two levels at once. The Anchor still needs a chest to
+  come out of — that is D1's job in P8.
 
-1. **Overworld props, now that the real sheet is here.**
-   `assets/sheets/oracle-ages-overworld.png` (Labrynna Present) is the genuine
-   Oracle overworld reference — standalone props on a strict grid at phase
-   (2, 8) — and `rock` is extracted from it. Use it, not the fan-made map.
-   `python3 tools/rip-terrain.py --props ag 2 8 <x0> <y0> <x1> <y1> out.png`
-   writes a contact sheet to pick from.
+## What is left
 
-   HANDOFF records what was checked and what each answer was, so do not redo
-   it: `grass` is deliberately left alone (Ages' base grass is a flat field
-   too), `cliff` is a low ledge on this sheet, and **`bush` was found at
-   AG 450,920 and deliberately not taken** because it is the same four-leaf
-   rosette as `flowers` and a cuttable tile must not look like scenery. The
-   clean fix there is to re-pick `flowers` as something actually floral and
-   then take 450,920 for `bush` — a short job, and the highest-value one left.
+P6, then PT, then P7 through P9 in `docs/EXECUTION-PLAN.md`. P2 and P4 are open
+and independent of that spine.
+
+**PT (towns, buildings and terrain polish) is a stated top design priority.**
+Thalassia's villages are a name on a signpost and a few doors cut into a cliff;
+the Oracles' towns read as places people live, and that is most of what makes
+their overworld feel like a world. The tileset that does it has been in the repo
+all along — `assets/sheets/oracle-seasons-tileset-subrosia.png`, the only true
+tileset here — and only the tree has ever been taken off it. Its town kit is
+inventoried with cell coordinates in `assets/sheets/README.md`: three roof
+colours, a signed SHOP front, doors, an enterable dark doorway, windows, crates,
+barrels, a stone well, a fence run, stumps, repeated per season. Read PT before
+touching it; the first job is generalising the tree's `quad:` machinery, because
+a building is 3 wide and 2-3 tall and cutting one into nine loose tiles is the
+wrong answer.
+
+Plus, carried over:
 
    `tree` is the big one and it is a **content** decision, not an art one:
    Ages trees are 32x32, four cells (worked example at AG 50,936), and the game
@@ -607,6 +730,43 @@ P5 (if it has not landed in parallel), then P7, P8 and P9 in
 5. **Nobody has watched P6's items in motion.** The Lens overlay, sink mode's
    palette, the gust cone's redraw and the coral pillar's growth are all things
    whose point is how they look, and all are green from checkers only.
+1. **Settle `ANCHOR_RADIUS_TILES` by playing it.** See the P5 section above and
+   `docs/FEEL-SPEC.md`. Cheap, needs a human, and everything after it is built
+   on the answer.
+
+2. **Give the Anchor a chest.** It exists and works; nothing in the world hands
+   it over. Belongs to D1 in P8.
+
+3. **The overworld terrain that is still hand-drawn** — this is PT's item 5, and
+   the list below is the ranking it refers to. Twelve tiles are
+   extracted now (ten ground, two props). Thirty distinct art blocks are not,
+   though most are palette-swap variants that one extraction would cover. In
+   rough order of value:
+
+   - **the `cliff` family** — one extraction covers eight tiles (`cliff`,
+     `cliffDk`, `cliffSand`, `cliffRust`, `cliffCoral`, `cliffMarble`,
+     `cliffAbyss`, `stairsDown`) and cliffs are on most screens. NOT a simple
+     swap: the Oracles build a cliff from several tiles (face, lit top, corner)
+     and this game spends one tile on all of it, so it is the same shape of
+     content decision the 32x32 trees were. Read the tree QUADS machinery first.
+   - **the `ledge` families** — four directions, nine palette variants each.
+   - `palm`, `pot`, `sign`, `dBlock`, `dStairs`, `spikes`, `caveMouth`.
+
+   `python3 tools/rip-terrain.py --scan <ow|dg|ag|sb|sp> x0 y0 x1 y1` finds
+   seamless ground; `--props <sheet> px py x0 y0 x1 y1 out.png` writes a contact
+   sheet of candidate props. **Open the PNG and look at it** — the flowers pick
+   went through three contact sheets before a cell that was actually floral and
+   actually four colours turned up.
+
+4. **Water is still hand-drawn**, and this one really is blocked: every terrain
+   sheet in the repo is an assembled static map, so there is no second animation
+   frame to extract. It needs a sheet that has one.
+
+5. **A full-D1-clear replay** — see the P1 section above for the three verbs the
+   recording actor is missing.
+
+6. **A checker for chests whose pickup lands on a solid tile** — see the Compass
+   bug in HANDOFF.
 
 ## Traps that pass every validator
 

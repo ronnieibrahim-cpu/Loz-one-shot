@@ -73,6 +73,77 @@ export const PLANS = {
   },
 
   // -------------------------------------------------------------------------
+  // Tide Steps: one room, two tide levels, walked end to end.
+  //
+  // This is the proof that the tide is a field and not a global. The room
+  // (overworld 0,10,0) has two tide bands with different thresholds:
+  //
+  //     ##########
+  //     #gg8888gg#     rows 1-2   `8` tideRock  dry, dry, SHALLOW
+  //     gg.8888.gg
+  //     gg......gg
+  //     gg.6666.gg     rows 4-5   `6` reefFlat  dry, shallow, DEEP
+  //     ggg6666ggg
+  //     #gggggggg#
+  //     ###gggg###
+  //
+  // At HIGH the `6` band drowns and column 4 is impassable — verified, not
+  // assumed: tools/test.mjs asserts that tile straight up the middle is DEEP at
+  // HIGH with no anchor down. So the run throws the Anchor into the `6` band
+  // while the tide is MID, blows the conch to HIGH, and walks straight north up
+  // column 4 through water the conch has left behind and water it has raised.
+  //
+  // THE WALK IS NOT THE ASSERTION. A successful traversal would also happen in
+  // a room held uniformly at MID, which would prove nothing at all. The setup
+  // names two probe tiles, one inside the held patch and one outside it, and
+  // every checkpoint records both what the engine believes the level is there
+  // AND a hash of how that tile is actually drawn. The claim — two different
+  // levels, in the same frame, in the same room, on screen — is a number the
+  // harness can fail on.
+  //
+  // The probes are chosen either side of the patch edge: the anchor lands at
+  // (4,4) and holds a square of radius 2, so (4,5) is inside it and (4,1) is
+  // two rows clear of it. That margin is the reason the radius is 2 and not 3:
+  // at 3 the patch would reach row 1, both bands would freeze together, and
+  // this replay would pass while proving nothing.
+  // -------------------------------------------------------------------------
+  'tide-steps-split': {
+    note: 'Tide Steps: anchor the reef flat at MID, raise the sea to HIGH, and walk '
+      + 'north through both levels at once',
+    setup: {
+      seed: 20260806,
+      playerName: 'LINK',
+      items: { sword: 1, conch: 1, shield: 1, anchor: 1 },
+      equipB: 'anchor',
+      equipA: 'conch',
+      tide: 1,
+      enter: ['overworld', 0, 10, 0, 64, 104, 'up'],
+      probes: [[4, 5], [4, 1]],
+    },
+    steps: [
+      ['wait', 30],
+      // Throw it north into the reef flat. It lands at (4,4) and bites at MID.
+      ['tap', 'b', 60],
+      ['wait', 30],
+      // Conch: MID -> HIGH. Everything the anchor is not holding floods.
+      ['tap', 'a', 120],
+      ['wait', 40],
+      // Straight up column 4. A `goto` would pathfind around the middle by the
+      // dry columns at the room's edges and the run would prove nothing about
+      // the held band; a held direction has to cross it. 100 frames at 1px/f
+      // covers the 88px from the south row to the north one.
+      ['hold', ['up'], 100],
+      ['wait', 40],
+      // ...and back down through it.
+      ['hold', ['down'], 100],
+      ['wait', 30],
+      // Recall. The band drowns again behind us.
+      ['tap', 'b', 60],
+      ['wait', 60],
+    ],
+  },
+
+  // -------------------------------------------------------------------------
   // Tidewash Grotto, entrance to the north half.
   //
   // The long one: eleven room entries, twenty-one kills, a chest, a pickup, a

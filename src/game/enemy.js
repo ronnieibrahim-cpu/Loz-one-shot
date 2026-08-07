@@ -34,7 +34,7 @@
 // Bosses use defineBoss, which adds phase handling and a health bar.
 
 import {
-  Entity, defineEntity, moveEntity, canOccupy, groundFlags, DIRS, DIR_VEC, dirTo,
+  Entity, defineEntity, moveEntity, canOccupy, groundFlags, tideAt, DIRS, DIR_VEC, dirTo,
 } from './entity.js';
 import { fire } from './projectile.js';
 import { F } from '../world/tileset.js';
@@ -127,7 +127,7 @@ export class Enemy extends Entity {
     if (this.terrain !== 'water') return true;
     const px = Math.floor(x + this.hb.x + this.hb.w / 2);
     const py = Math.floor(y + this.hb.y + this.hb.h / 2);
-    const f = game.room.flagsAt(Math.floor(px / TILE), Math.floor(py / TILE), game.tide.level);
+    const f = game.room.flagsAt(Math.floor(px / TILE), Math.floor(py / TILE), game.tide);
     return !!(f & F.WET);
   }
 
@@ -136,8 +136,11 @@ export class Enemy extends Entity {
     if (this.invuln > 0) this.invuln--;
     if (this.flicker > 0) this.flicker--;
 
-    // Tide interactions: some enemies only exist at certain tide levels.
-    const lvl = game.tide.level;
+    // Tide interactions: some enemies only exist at certain tide levels — and
+    // at the level where THIS enemy is standing, not the room's base. An
+    // anchor held at LOW is a pocket a tideshade stays dead in while the rest
+    // of the room is drowned.
+    const lvl = tideAt(game, this);
     if (this.spec.tideOnly && !this.spec.tideOnly.includes(lvl)) {
       this.dormant = true;
     } else {
@@ -251,8 +254,11 @@ export function defineEnemy(name, spec) {
 //     onIntro(e, g) {}, onPhase(e, g, i) {}, onDie(e, g) {},
 //   });
 //
-// A boss that reads the tide should do so via g.tide.level, and may set
-// e.weakOpen = true to become vulnerable for a window.
+// A boss that reads the tide should do so via tideAt(g, e) — the level under
+// the boss's own feet, not g.tide.level, which is the room's BASE and since the
+// Anchor is a different number. A boss standing in held water should fight the
+// water it is standing in. It may set e.weakOpen = true to become vulnerable
+// for a window.
 
 export class Boss extends Enemy {
   constructor(x, y, spec, opts = {}) {
@@ -898,7 +904,7 @@ export function shootRing(e, g, n = 8, o = {}) {
 
 /** Drift with the current while the tide is high (aquatic enemies). */
 export function driftWithTide(e, g, o = {}) {
-  const lvl = g.tide.level;
+  const lvl = tideAt(g, e);
   // `perLevel` is px/f when a spec names one; the fallback is already sp/f.
   // Either way it is well under a pixel a frame, and only moves anything at all
   // because the position accumulator keeps the remainder between frames.
