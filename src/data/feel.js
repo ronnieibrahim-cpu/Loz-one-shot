@@ -375,9 +375,6 @@ export const FALL_FRAMES = 34;
 /** f — length of being washed back to shore by water. guessed. */
 export const WASH_FRAMES = 30;
 
-/** f — length of a dig. guessed. */
-export const DIG_FRAMES = 18;
-
 /** f — how long Link holds the conch, and is frozen for. guessed. */
 export const CONCH_FRAMES = 46;
 

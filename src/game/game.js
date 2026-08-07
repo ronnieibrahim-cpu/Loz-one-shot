@@ -450,31 +450,6 @@ export class Game {
     return obj;
   }
 
-  digTile(tx, ty, player) {
-    const room = this.room;
-    const name = room.baseName(tx, ty);
-    const tr = transformFor(name, 'dig');
-    this.spawnEffect('dust', tx * TILE, ty * TILE, { life: 14 });
-    if (tr) {
-      room.setTile(tx, ty, tr.to);
-      if (tr.persist) this.persistTile(tx, ty, tr.to);
-      if (tr.drop) this.rollDrop(tx * TILE, ty * TILE, tr.drop);
-      this.roomEvent('dig', { tx, ty });
-      return true;
-    }
-    // Buried secrets are declared per-room.
-    const buried = (room.def.buried || []).find(b => b[0] === tx && b[1] === ty);
-    if (buried) {
-      const key = `${this.mapId}:${room.key}:dig:${tx},${ty}`;
-      if (!this.progress.secrets[key]) {
-        this.progress.secrets[key] = true;
-        this.spawnPickup(tx * TILE, ty * TILE, buried[2], { grabDelay: 14 });
-        this.audio.jingle('secret');
-      }
-      return true;
-    }
-    return false;
-  }
 
   tryPushBlock(tx, ty, dx, dy) {
     for (const e of this.entities) {

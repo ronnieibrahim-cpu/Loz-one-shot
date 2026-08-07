@@ -840,13 +840,6 @@ export const ITEMS = {
       return true;
     },
   },
-  shovel: {
-    names: ['Shovel'],
-    icon: ['i_shovel'],
-    equippable: true,
-    desc: 'Dig in soft sand and soil. Who knows what is buried.',
-    use(game, p, level) { return p.startDig(game); },
-  },
   ringbox: {
     names: ['Ring Box', 'Ring Box L2', 'Ring Box L3'],
     icon: ['i_ringbox'],

@@ -19,6 +19,11 @@ export const REQUIRED_SPRITES = {
     'link_hurt_down', 'link_hurt_up', 'link_hurt_side',
     'link_conch_down', 'link_conch_up', 'link_conch_side',
     'link_shield_down', 'link_shield_up', 'link_shield_side',
+    // link_dig_* are extracted Link frames that nothing draws any more — the
+    // Shovel is gone and the Dredge Line searches the floor instead. They stay
+    // required because they are SOURCE-GAME art already cut from the sheet,
+    // and re-cutting is the expensive half; deleting them would mean editing
+    // tools/rip-link.py to lose art we may well want back.
     ...seq('link_fall_', 3), ...seq('link_dig_', 2), 'link_dive', ...seq('link_spin_', 4),
   ],
 
@@ -43,7 +48,7 @@ export const REQUIRED_SPRITES = {
     'i_cleats', 'i_cleats2',
     'i_chain', 'i_hookhead',
     'i_satchel', 'i_slingshot', 'i_hyperslingshot',
-    'i_shovel', 'i_ringbox', 'i_ring',
+    'i_ringbox', 'i_ring',
     'i_map', 'i_chart', 'i_unknown',
     'i_lens', 'i_lens2', 'i_bellows', 'i_reefseed', 'i_dredge', 'i_rod', 'i_coin', 'i_bottle',
     'i_seed_ember', 'i_seed_scent', 'i_seed_pegasus', 'i_seed_gale', 'i_seed_mystery',

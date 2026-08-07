@@ -1327,13 +1327,11 @@ export function installCoreTiles() {
       deny: 'Iron, sunk deep. Nothing here will shift it by hand.',
     },
     dFloorCrack: { bomb: 'dPit', fx: 'boom', persist: true, sfx: 'break' },
-    digSpot: { dig: 'sand', drop: 'common' },
+    digSpot: { dredge: 'sand', drop: 'common', fx: 'puff', sfx: 'splash' },
     // The Rod retracts a grate. `persist: true` so a room stays open once it
     // has been opened, the way a bombed wall does.
     grate: { ring: 'grateOpen', fx: 'spark', persist: true, sfx: 'valve' },
     grateOw: { ring: 'grateOwOpen', fx: 'spark', persist: true, sfx: 'valve' },
-    sandDeep: { dig: 'sand' },
-    mud: { dig: 'mud' },
   });
 }
 

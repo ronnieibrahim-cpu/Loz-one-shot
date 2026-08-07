@@ -7,7 +7,7 @@
 //   link_swim_down_0/1     link_swim_up_0/1     link_swim_side_0/1
 //   link_carry_down        link_carry_up        link_carry_side
 //   link_push_down         link_push_up         link_push_side
-//   link_hurt              link_fall_0/1/2      link_dig_0/1
+//   link_hurt              link_fall_0/1/2
 //   link_dive              link_spin_0/1/2/3
 //   link_hold_down/up/side (blade held out, walking with it)
 //   fx_slash_down/up/side  (the sword arc, drawn separately from Link)
@@ -34,7 +34,7 @@ import {
   JUMP_GRAVITY, LAND_SETTLE_RATE,
   LEDGE_MAX_SPAN, LEDGE_HOP_FRAMES, LEDGE_HOP_HEIGHT, LEDGE_PROBE_REACH,
   GAP_HOP_MAX_SPAN,
-  FALL_FRAMES, WASH_FRAMES, DIG_FRAMES, CONCH_FRAMES, PUSH_DELAY_FRAMES,
+  FALL_FRAMES, WASH_FRAMES, CONCH_FRAMES, PUSH_DELAY_FRAMES,
   LENS_FADE_FRAMES,
   BELLOWS_RANGE, BELLOWS_WARMUP_FRAMES, BELLOWS_PUSH, BELLOWS_PUFF_EVERY,
   BELLOWS_RAFT_SCALE,
@@ -64,7 +64,6 @@ export class Player extends Entity {
     this.clinkCool = 0;           // sfx debounce for the blade scraping a wall
     this.shielding = false;
     this.jumping = false;
-    this.digging = 0;
     this.carrying = null;
     this.inDeep = false;
     this.inShallow = false;
@@ -144,8 +143,6 @@ export class Player extends Entity {
     }
 
     this.updateTerrain(game);
-
-    if (this.digging > 0) { this.digging--; return; }
 
     if (this.spinning > 0) { this.updateSpin(game); return; }
     if (this.swinging > 0) { this.updateSwing(game); }
@@ -784,22 +781,6 @@ export class Player extends Entity {
     game.spawnEffect('splash', c.x, c.y);
   }
 
-  // ------------------------------------------------------------------- dig
-
-  startDig(game) {
-    if (this.digging > 0 || this.inDeep) return true;
-    const f = groundFlags(game, this);
-    this.digging = DIG_FRAMES;
-    if (f & (F.SLOW)) {
-      game.audio.sfx('dig');
-      const { tx, ty } = groundTile(game, this);
-      game.digTile(tx, ty, this);
-    } else {
-      game.audio.sfx('deny');
-    }
-    return true;
-  }
-
   // --------------------------------------------------------- Squall Bellows
   //
   // Held, like the Lens, and like the Lens it is `use`d every frame the button
@@ -1114,7 +1095,6 @@ export class Player extends Entity {
     const key = side ? 'side' : this.dir;
 
     if (this.falling > 0) return 'link_fall_' + Math.min(2, Math.floor((FALL_FRAMES - this.falling) / 8));
-    if (this.digging > 0) return 'link_dig_' + (this.digging > DIG_FRAMES / 2 ? 0 : 1);
     if (this.spinning > 0) return 'link_spin_' + (Math.floor(this.frame / 3) % 4);
     if (this.conchTime > 0) return 'link_conch_' + key;
     if (this.bellowsT > 0) return 'link_push_' + key;
