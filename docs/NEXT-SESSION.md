@@ -224,9 +224,11 @@ Read, in this order:
   CLAUDE.md              - the hard rules. They are hard rules.
   docs/EXECUTION-PLAN.md - the roadmap. P0, P1, P3 and P5 are done. P6 (the
                            item roster) is now unblocked and is the big one —
-                           P5 existed to unblock it. P2 (the intermittent test)
-                           and P4 (grid-lock enemy motion) are still open and
-                           independent of it.
+                           P5 existed to unblock it. PT (towns and buildings)
+                           is a stated top design priority and is independent
+                           of the systems spine, so it can be taken whenever a
+                           session wants content. P2 (the intermittent test)
+                           and P4 (grid-lock enemy motion) are still open.
   docs/FEEL-SPEC.md      - what every timing constant means and how sure we are
   docs/HANDOFF.md        - current state, environment setup, and every trap
                            already paid for. Read the environment section
@@ -431,8 +433,23 @@ Tell me plainly what is done, what is weak, and what you skipped.
 
 ## What is left
 
-P6, then P7 through P9 in `docs/EXECUTION-PLAN.md`. P2 and P4 are open and
-independent of that spine. Plus, carried over:
+P6, then PT, then P7 through P9 in `docs/EXECUTION-PLAN.md`. P2 and P4 are open
+and independent of that spine.
+
+**PT (towns, buildings and terrain polish) is a stated top design priority.**
+Thalassia's villages are a name on a signpost and a few doors cut into a cliff;
+the Oracles' towns read as places people live, and that is most of what makes
+their overworld feel like a world. The tileset that does it has been in the repo
+all along — `assets/sheets/oracle-seasons-tileset-subrosia.png`, the only true
+tileset here — and only the tree has ever been taken off it. Its town kit is
+inventoried with cell coordinates in `assets/sheets/README.md`: three roof
+colours, a signed SHOP front, doors, an enterable dark doorway, windows, crates,
+barrels, a stone well, a fence run, stumps, repeated per season. Read PT before
+touching it; the first job is generalising the tree's `quad:` machinery, because
+a building is 3 wide and 2-3 tall and cutting one into nine loose tiles is the
+wrong answer.
+
+Plus, carried over:
 
 1. **Settle `ANCHOR_RADIUS_TILES` by playing it.** See the P5 section above and
    `docs/FEEL-SPEC.md`. Cheap, needs a human, and everything after it is built
@@ -441,7 +458,8 @@ independent of that spine. Plus, carried over:
 2. **Give the Anchor a chest.** It exists and works; nothing in the world hands
    it over. Belongs to D1 in P8.
 
-3. **The overworld terrain that is still hand-drawn.** Twelve tiles are
+3. **The overworld terrain that is still hand-drawn** — this is PT's item 5, and
+   the list below is the ranking it refers to. Twelve tiles are
    extracted now (ten ground, two props). Thirty distinct art blocks are not,
    though most are palette-swap variants that one extraction would cover. In
    rough order of value:

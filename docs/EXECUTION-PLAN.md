@@ -363,6 +363,69 @@ node tools/walk-dungeons.mjs after each item and fix grids as you go. Do not
 batch nine items and then untangle 303 rooms at once.
 ```
 
+### PT — Towns, buildings and terrain polish
+
+**This is a top design priority, not a cosmetic pass.** The world currently has
+villages that are a name on a signpost and a few doors cut into a cliff. The
+Oracles' towns read as places people live — roofs, shopfronts, wells, fences,
+crates, washing, NPCs standing around them — and that is most of what makes
+their overworld feel like a world rather than a level. We own the tileset that
+does it and have taken exactly one thing off it.
+
+```
+Give Thalassia towns that look lived in.
+
+THE RESOURCE IS ALREADY IN THE REPO and is the only true tileset we have:
+assets/sheets/oracle-seasons-tileset-subrosia.png — 16 cells wide, 163 rows,
+phase 0. Everything else in assets/sheets/ is an assembled map you have to find
+a grid phase in. The town kit on it is inventoried with cell coordinates in
+assets/sheets/README.md under "The town kit on that tileset": three roof
+colours, a signed SHOP front, doors, an enterable dark doorway, windows,
+crates, barrels, a stone well, a picket fence run, stumps — repeated per season
+down the sheet, which for us is a palette resource rather than a season one.
+
+1. A BUILDING IS NOT A TILE. They are 3 wide and 2-3 tall. This is the same
+   problem the 32x32 trees had, and `quad:` in src/world/tileset.js plus QUADS
+   in tools/rip-terrain.py is the solved half of it — generalise that to an
+   arbitrary w x h block rather than cutting a building into nine unrelated
+   tiles that authors have to reassemble by hand and can place wrong. The tree
+   is the worked example to read first.
+
+2. Extract the kit through tools/rip-terrain.py, into src/data/tiles-terrain.js
+   like everything else. Never hand-edit the generated file. The dark doorway
+   at c8,r9 is the enterable one and wants F.WARP; the rest of a building is
+   SOLID.
+
+3. Re-author the villages. Tidewatch Village (overworld 0,4,7) and its
+   neighbours first, then every settlement named in docs/GAME-PLAN.md. A
+   village screen should have: buildings with fronts you can walk up to, at
+   least one enterable door wired to an interior room, and dressing — a well,
+   crates, a fence, a stump — placed as if someone put them there for a reason.
+   Interiors already exist as a legend (`house`); wire the doors to them.
+
+4. Populate them. assets/sheets/oracle-seasons-nonhuman-races.png has not been
+   extracted from at all and carries the Maku Tree, the Great Fairy and rows of
+   NPC races. Original townsfolk are ours to design; their SPRITES should come
+   off that sheet where it has something that fits, per the extract-first rule.
+
+5. Then the terrain backlog, in the order docs/NEXT-SESSION.md ranks it. The
+   `cliff` family is the big one — one extraction covers eight tiles — and it
+   is a content decision, not a swap: the Oracles build a cliff from several
+   tiles and this game spends one tile on all of it.
+
+CONSTRAINTS
+- A building is SOLID and a town is a maze of them. Run node tools/validate.mjs,
+  node tools/walk-dungeons.mjs and node tools/check-overworld.mjs after EVERY
+  screen you re-author, not at the end — a solid tile can strand a screen while
+  rendering perfectly and validating clean. See CLAUDE.md, traps.
+- Seams are checked at all three tide levels. A building placed on a screen
+  edge changes what the neighbouring screen must have facing it.
+- Do not let a town swallow a region gate. check-overworld proves the gates in
+  both directions; keep it green.
+- Screenshot every town you finish (node tools/test.mjs --shots) and LOOK at
+  it. A village that validates and reads as scattered furniture is not done.
+```
+
 ### P7 — Scrimshaw
 
 ```
@@ -476,9 +539,16 @@ to the hard-won-lessons section of docs/HANDOFF.md.
 | 5 | P4 enemy grid-lock | — |
 | 6 | P5 tide field + Anchor | P6, P8 |
 | 7 | P6 item roster | P8, P9 |
-| 8 | P7 scrimshaw | — |
-| 9–14 | P8 dungeons 1–6 | P9 |
-| 15 | P9 overworld + difficulty | — |
+| 8 | **PT towns, buildings, terrain polish** | P9 |
+| 9 | P7 scrimshaw | — |
+| 10–15 | P8 dungeons 1–6 | P9 |
+| 16 | P9 overworld + difficulty | — |
+
+PT sits before P9 deliberately. A gate is a tile flag dropped into a finished
+screen; a town is the screen itself. Re-gating a finished village is a small
+edit, re-towning a gated screen is not — so build the world, then decide where
+it locks. PT is also independent of P7 and P8 and can be taken whenever a
+session wants content rather than systems.
 
 Use plan mode for P5 and P3. Both touch dozens of call sites and a wrong split
 costs a session.
