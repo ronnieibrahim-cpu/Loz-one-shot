@@ -67,6 +67,11 @@ ripper credit in the header. The current set:
 | `src/data/sprites-hud.js` | `tools/rip-hud.py` |
 | `src/data/tiles-terrain.js` | `tools/rip-terrain.py` |
 
+This cuts both ways: **removing** an extracted icon means removing its entry
+from the ripper's coordinate map and re-emitting, not deleting lines from the
+output. `pip install pillow` first, and run the ripper once before you change
+anything to confirm it reproduces byte-identically.
+
 **This binds the art, not the design.** Goal 2 is unchanged and is not
 negotiable by this rule: mechanics, items, dungeons and story are ours. We
 borrow how the source games *look and move*, never what they are about.
@@ -96,6 +101,14 @@ replacement path if that ever changes.
 - **A test that fails intermittently is a real bug, not load flakiness.** If a
   seeded, deterministic run varies, the non-determinism is in initialisation
   order. Find it. Never add a retry.
+- **A chest can hand over an item that does not exist, silently.** `giveItem`
+  records any id; `itemName` returns the raw id and `itemIcon` falls back to
+  `i_unknown`. The chest opens, the jingle plays, the save records it, and the
+  player gets nothing. `tools/check-items.mjs` is what catches it.
+- **A tiledef field the registrar does not name is discarded.** `registerTiles`
+  copies field by field rather than spreading, so `liftLevel` sat in the data
+  and `liftTile` read it and the two never met — for the whole life of the
+  project. Adding a tiledef field means adding it in `src/world/tileset.js` too.
 
 ---
 
@@ -109,6 +122,7 @@ replacement path if that ever changes.
 | `node tools/check-gates.mjs` | Gates hold in-engine with a live player |
 | `node tools/solve-switches.mjs` | Every switch puzzle has a solution |
 | `node tools/check-motion.mjs` | Ground enemies stay on the 8px lattice; fliers and swimmers stay off it |
+| `node tools/check-items.mjs` | Every item does the verb `docs/ITEMS.md` claims for it, and nothing hands out an item that no longer exists |
 | `node tools/replay.mjs` | Movement and combat are frame-identical to a recorded baseline |
 | `node tools/check-build.mjs` | The shipped single-file build boots and plays from a `file://` URL |
 | `node tools/test.mjs` | Everything else |
@@ -160,7 +174,9 @@ is which.
 the base level and only music, HUD and save should read it.
 
 **Every item needs three verbs** — one for movement, one for combat, one for
-puzzles. An item with fewer than two is a key wearing a costume.
+puzzles. An item with fewer than two is a key wearing a costume. The roster and
+each item's verbs are in `docs/ITEMS.md`; `tools/check-items.mjs` proves each
+verb in-engine, and asserts the registry is exactly that document's roster.
 
 **No item may be a straight port of an Oracle item.** If the design reduces to
 "it's the hookshot but wet," it isn't done.

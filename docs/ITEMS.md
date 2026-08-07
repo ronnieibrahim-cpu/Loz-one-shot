@@ -328,18 +328,49 @@ mechanic's button. The Dungeon Map is the Chartstone's sibling, not its rival.
 
 | Item | Source |
 |---|---|
-| Tidewright's Anchor | d1 Tidewash Grotto — **P5** |
-| Brineglass Lens | d2 Coral Spire, Sealed Cell |
+| Tidewright's Anchor | d1 Tidewash Grotto — **P5**. The big chest holds a Heart Piece in the meantime, so nothing is stubbed and the two sessions cannot both define it. |
+| Brineglass Lens | d2 Coral Spire, Sealed Cell (bombs stay in the Bomb Vault) |
 | Kelp-Soled Cleats L1 | d3 Bogwater Sanctum |
-| Squall Bellows | d4 Cliffside Cistern |
-| Reefseed | d5 Drowned Wood Shrine |
-| Kelp-Soled Cleats L2 | d7 Reef Palace |
-| Dredge Line | d8 Abyssal Keep |
-| Resonance Rod | The Maku Tree, one Essence (trading sequence) |
-| Ferryman's Coin | The village digger's cave, three Essences |
+| Squall Bellows | d4 Cliffside Cistern, the Bellows Vault |
+| Reefseed | d5 Drowned Wood Shrine, the Seedbed Vault |
+| Bottled Tide (the case) | d6 Salt Pan Vault — the case is what lets you carry any; refills come from shops and drops |
+| Kelp-Soled Cleats L2 (Mermaid Suit) | d7 Reef Palace |
+| Dredge Line | d8 Abyssal Keep, the Dredge Vault |
+| Resonance Rod | The Maku Tree, one Essence |
+| Ferryman's Coin | The village digger, three Essences |
 | Chartstone | One per dungeon, where the Compass was |
-| Bottled Tide | Shops and drops |
+
+`tools/check-items.mjs` asserts this registry is exactly the roster above —
+adding or removing an item without moving this document is a test failure.
 
 P8 re-authors the dungeons and P9 re-gates the overworld; these placements are
 the minimum that keeps every dungeon's key economy intact through P6 and are
 expected to move.
+
+---
+
+## What the gates look like now
+
+Removing three gate items would have cost the overworld three gates. Two were
+repointed rather than lost, and one was deliberately given up:
+
+| Gate | Was | Is | Proof |
+|---|---|---|---|
+| Salt Pans (`saltVane`) | Magic Boomerang | **Resonance Rod** | `check-gates` — and it asserts the Rod's range *doubles at HIGH*, so the same player in the same spot opens it at one tide level and not another. The only gate in the game whose key is the core mechanic. |
+| Abyssal approach (`abyssPlug`) | Magnetic Gloves | **Dredge Line** | `check-gates` |
+| Cliffs of Kell (`boulder`) | Power Bracelet | **Dredge Line** | `check-gates`, both directions: bare hands do not lift it, the line drags it clear |
+| Coral Reef (`chasm`) | Roc's Feather | **nothing** | Given up on purpose. The hop is base moveset, so a one-tile chasm is crossed by everyone. `check-overworld`'s flood models the hop against `GAP_HOP_MAX_SPAN` rather than blanket-passing gaps, so the Reef's four-tile decorative chasm bands are still walls. P9 re-gates. |
+
+## What is base moveset now, and why
+
+Two verbs came out from behind items, and both for the same reason: they are
+genre grammar, and this game gates on the tide.
+
+- **The hop.** Walking into a one-tile gap hops it, along the same scripted arc
+  the one-way ledge already used. It is not on a button, because in the source
+  games the hop is what your legs do.
+- **Lifting.** On the context button, which is where the Oracles put it once
+  you have the bracelet. A thing already in your hands wins over everything,
+  because putting it down has to be possible from any position. Note the
+  consequence: A is context-first, so standing next to a pot with an item bound
+  to A means the pot comes up. That was already true of talking to a villager.
