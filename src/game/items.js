@@ -6,7 +6,7 @@
 //     icon:  ['i_sword1', 'i_sword2', 'i_sword3'],              // HUD/menu icons
 //     pal: 'ui',
 //     equippable: true,        // can be assigned to the A or B button
-//     passive: false,          // passive items are never equipped (flippers)
+//     passive: false,          // passive items are never equipped (map, chartstone)
 //     desc: 'A short description shown on pickup.',
 //     use(game, player, level) -> boolean   // true if the press was consumed
 //   }
@@ -470,11 +470,12 @@ export const ITEMS = {
       return p.tryLift(game, level);
     },
   },
-  flippers: {
-    names: ["Zora's Flippers", 'Mermaid Suit'],
-    icon: ['i_flippers', 'i_suit'],
-    passive: true,
-    desc: 'Swim in deep water. The suit lets you dive and fight the current.',
+  cleats: {
+    names: ['Kelp-Soled Cleats', 'Mermaid Suit'],
+    icon: ['i_cleats', 'i_cleats2'],
+    equippable: true,
+    desc: 'Swim the surface, or press to sink and walk the floor beneath it.',
+    use(game, p, level) { return p.toggleCleats(game); },
   },
   boomerang: {
     names: ['Boomerang', 'Magic Boomerang'],

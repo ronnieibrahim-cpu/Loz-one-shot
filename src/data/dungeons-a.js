@@ -957,7 +957,7 @@ export function installDungeonsA() {
     scroll: false,
     dungeon: {
       index: 3,
-      item: 'bracelet', itemLevel: 1,
+      item: 'cleats', itemLevel: 1,
       essence: 3,
       boss: 'gloomtide',
       bossRoom: '0,3,1',
@@ -986,9 +986,9 @@ export function installDungeonsA() {
         map: [
           '##########',
           '##########',
-          '##.3333.##',
-          '##.3333...',
-          '##.3333...',
+          '##.6666.##',
+          '##.6666...',
+          '##.7777...',
           '##......##',
           '####..####',
           '####..####',
@@ -1312,7 +1312,7 @@ export function installDungeonsA() {
           '##########',
         ],
         entities: [
-          ['chest', 4, 3, { big: true, item: 'bracelet', level: 1 }],
+          ['chest', 4, 3, { big: true, item: 'cleats', level: 1 }],
         ],
       },
     },
@@ -1341,7 +1341,7 @@ export function installDungeonsA() {
     scroll: false,
     dungeon: {
       index: 4,
-      item: 'flippers', itemLevel: 1,
+      item: null,   // Squall Bellows — see docs/ITEMS.md
       essence: 4,
       boss: 'wyverna',
       bossRoom: '0,3,1',
@@ -1702,7 +1702,7 @@ export function installDungeonsA() {
           '##########',
         ],
         entities: [
-          ['chest', 4, 3, { big: true, item: 'flippers', level: 1 }],
+          ['chest', 4, 3, { big: true, rupees: 100 }],
         ],
       },
     },

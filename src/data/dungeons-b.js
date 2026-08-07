@@ -1109,7 +1109,7 @@ export function installDungeonsB() {
     scroll: false,
     dungeon: {
       index: 7,
-      item: 'magnet', itemLevel: 1,
+      item: 'cleats', itemLevel: 2,
       essence: 7,
       boss: 'thalassor',
       bossRoom: '1,3,1',
@@ -1638,7 +1638,7 @@ export function installDungeonsB() {
           '##########',
         ],
         entities: [
-          ['chest', 4, 3, { big: true, item: 'magnet', level: 1 }],
+          ['chest', 4, 3, { big: true, item: 'cleats', level: 2 }],
         ],
       },
     },
@@ -1668,7 +1668,7 @@ export function installDungeonsB() {
     scroll: false,
     dungeon: {
       index: 8,
-      item: 'flippers', itemLevel: 2,
+      item: null,   // Dredge Line — see docs/ITEMS.md
       essence: 8,
       boss: 'nereth',
       bossRoom: '1,3,1',
@@ -2200,7 +2200,7 @@ export function installDungeonsB() {
           '##########',
         ],
         entities: [
-          ['chest', 4, 3, { big: true, item: 'flippers', level: 2 }],
+          ['chest', 4, 3, { big: true, rupees: 100 }],
         ],
       },
     },

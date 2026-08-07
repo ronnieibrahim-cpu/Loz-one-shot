@@ -22,7 +22,7 @@ import { sprites } from '../gfx/art.js';
 import { hasItem, itemLevel, HEART_UNITS } from './progress.js';
 import { useEquipped, ITEMS, ThrownObject } from './items.js';
 import {
-  WALK_SPEED, SWIM_SPEED, DIVE_SPEED, BOOST_SPEED, SHIELD_SPEED, SLOW_FACTOR,
+  WALK_SPEED, SWIM_SPEED, BOOST_SPEED, SHIELD_SPEED, SLOW_FACTOR,
   SHALLOW_FACTOR, CARRY_FACTOR, SPIN_DRIFT_SPEED, SWORD_HOLD_SPEED,
   SWING_FRAMES, SWING_HIT_START, SWING_HIT_END, CHARGE_FRAMES, CHARGE_SPARKLE_EVERY,
   SPIN_FRAMES, SWORD_REACH, SWORD_SPAN, SWORD_GAP, SPIN_BOX,
@@ -34,7 +34,9 @@ import {
   LEDGE_MAX_SPAN, LEDGE_HOP_FRAMES, LEDGE_HOP_HEIGHT, LEDGE_PROBE_REACH,
   FALL_FRAMES, WASH_FRAMES, DIG_FRAMES, CONCH_FRAMES, PUSH_DELAY_FRAMES,
   LENS_FADE_FRAMES,
-  DIVE_FRAMES, CONTEXT_REACH, LIFT_REACH, THROW_SPEED, CARRY_HEIGHT,
+  SINK_SPEED, SINK_ENTER_FRAMES, CLEATS_BREATH_FRAMES,
+  CLEATS_BREATH_WARN_FRAMES, SINK_BUBBLE_EVERY, SINK_DROWN_DAMAGE,
+  CONTEXT_REACH, LIFT_REACH, THROW_SPEED, CARRY_HEIGHT,
   SHAKE_SMALL, SHAKE_SMALL_FRAMES, CHARGE_SPARKLE_SPREAD, WADE_FOAM_EVERY,
   PUSH_PROBE_REACH,
 } from '../data/feel.js';
@@ -61,7 +63,10 @@ export class Player extends Entity {
     this.carrying = null;
     this.inDeep = false;
     this.inShallow = false;
-    this.diving = 0;
+    this.cleatMode = 'swim';      // 'swim' on the surface, 'sink' on the floor
+    this.sinkT = 0;               // descent/ascent, counts down; control is off
+    this.breath = 0;              // frames of air left on the seafloor
+    this.underwater = false;      // walking the floor right now
     this.speedBoost = 0;
     this.hurtTime = 0;
     this.falling = 0;
@@ -81,13 +86,17 @@ export class Player extends Entity {
     this.lastSafe = { x, y };
   }
 
-  get hasFlippers() { return this._flippers; }
+  /** Level of the Cleats, or 0. The one thing that lets Link into deep water. */
+  get waterLevel() { return this._cleats; }
 
   syncCaps(game) {
     const p = game.progress;
-    this._flippers = itemLevel(p, 'flippers') > 0;
+    this._cleats = itemLevel(p, 'cleats');
     this.caps.jumping = this.z > 2;
-    this.caps.swim = this._flippers;
+    // Both Cleat modes get you across DEEP; they differ in what it costs. The
+    // solidity query does not care which, so one cap covers both.
+    this.caps.swim = this._cleats > 0;
+    this.caps.sink = this.underwater;
     this.caps.cutting = false;
   }
 
@@ -106,6 +115,7 @@ export class Player extends Entity {
 
     if (this.falling > 0) { this.updateFalling(game); return; }
     if (this.washing > 0) { this.updateWashing(game); return; }
+    if (this.sinkT > 0) { this.updateSinkTransition(game); return; }
     if (this.frozen > 0) { this.frozen--; this.animT++; return; }
 
     // Being reeled in by the hookshot suspends normal control.
@@ -133,6 +143,7 @@ export class Player extends Entity {
     this.handleInput(game);
     this.updateSwordHold(game);
     this.updateLens(game);
+    this.updateBreath(game);
     this.updateMovement(game);
     this.updateJump(game);
     this.updateContactDamage(game);
@@ -155,7 +166,7 @@ export class Player extends Entity {
     this.inShallow = !!(f & F.WATER) && this.z <= 2;
     this.inDeep = !!(f & F.DEEP) && this.z <= 2;
 
-    if (this.inDeep && !this._flippers) {
+    if (this.inDeep && this._cleats <= 0) {
       // Should be unreachable via walking, but a rising tide can strand us.
       this.beginWash(game);
       return;
@@ -163,11 +174,12 @@ export class Player extends Entity {
     if (this.inDeep && !wasDeep) {
       game.audio.sfx('splash');
       game.spawnEffect('splash', this.x, this.y + 2);
-      if (this.carrying) this.dropCarried(game);
+      // On the surface a load goes overboard. On the floor it does not: the
+      // whole reason to walk down there is that you can take things with you.
+      if (this.carrying && !this.underwater) this.dropCarried(game);
     }
     if (!this.inDeep && wasDeep) {
       game.spawnEffect('splash', this.x, this.y + 2);
-      this.diving = 0;
     }
     if (this.inShallow && this.frame % WADE_FOAM_EVERY === 0) {
       game.spawnEffect('foam', this.x, this.y + 4, { life: 16 });
@@ -176,8 +188,10 @@ export class Player extends Entity {
     if (!this.inDeep && !(f & (F.PIT | F.HAZARD))) {
       this.lastSafe.x = this.x; this.lastSafe.y = this.y;
     }
-    // Water currents push you while swimming.
-    if (this.inDeep) {
+    // Water currents push you while swimming. They do NOT push a walker on the
+    // floor: weighted soles are what the Cleats are, and immunity to the
+    // current is the whole trade sink mode offers for its pace.
+    if (this.inDeep && !this.underwater) {
       const { tx, ty } = groundTile(game, this);
       const def = game.room.tile(tx, ty, game.tide.level);
       // A tile's `push` is data, written in px/f; the mover speaks subpixels.
@@ -239,11 +253,6 @@ export class Player extends Entity {
       }
     } else {
       this.charge = 0;
-    }
-    // Mermaid Suit dive
-    if (this.inDeep && itemLevel(game.progress, 'flippers') >= 2 && i.pressed('a')) {
-      this.diving = this.diving > 0 ? 0 : DIVE_FRAMES;
-      game.audio.sfx('dive');
     }
   }
 
@@ -317,7 +326,8 @@ export class Player extends Entity {
     // before it reaches the mover — and never on zero, or slow ground would be
     // a wall.
     let speed = this.speedBoost > 0 ? BOOST_SPEED : WALK_SPEED;
-    if (this.inDeep) speed = this.diving > 0 ? DIVE_SPEED : SWIM_SPEED;
+    if (this.underwater) speed = SINK_SPEED;
+    else if (this.inDeep) speed = SWIM_SPEED;
     else if (this.shielding) speed = SHIELD_SPEED;
     else if (this.holding) speed = SWORD_HOLD_SPEED;
     const f = groundFlags(game, this);
@@ -393,7 +403,7 @@ export class Player extends Entity {
       x: ux ? (tx + ux * n) * TILE : this.x,
       y: uy ? (ty + uy * n) * TILE : this.y,
     };
-    if (!canOccupy(game, this, land.x, land.y, { jumping: false, swim: this._flippers, cutting: false })) {
+    if (!canOccupy(game, this, land.x, land.y, { jumping: false, swim: this._cleats > 0, cutting: false })) {
       return false;
     }
 
@@ -427,7 +437,7 @@ export class Player extends Entity {
     this.ledgeHop = null;
     this.fz = 0; this.vz = 0; this.jumping = false; this.lockDir = false;
     const f = groundFlags(game, this);
-    if ((f & F.DEEP) && !this._flippers) { this.beginWash(game); return; }
+    if ((f & F.DEEP) && this._cleats <= 0) { this.beginWash(game); return; }
     if (f & F.PIT) { this.beginFall(game); return; }
     game.audio.sfx('land');
     game.spawnEffect((f & F.WET) ? 'splash' : 'dust', this.x, this.y + 4, { life: 12 });
@@ -439,6 +449,9 @@ export class Player extends Entity {
   }
 
   tryPush(game, dx, dy) {
+    // Shoving a block along the floor of the sea is Cleats L2 — the Mermaid
+    // Suit. At L1 you can stand next to it down there and get nowhere.
+    if (this.underwater && this._cleats < 2) return;
     this._pushT = (this._pushT || 0) + 1;
     if (this._pushT < PUSH_DELAY_FRAMES) return;
     const [ux, uy] = [Math.sign(dx), Math.sign(dy)];
@@ -606,7 +619,7 @@ export class Player extends Entity {
       this.fz = 0; this.vz = 0; this.jumping = false;
       const f = groundFlags(game, this);
       // Landing in water you can't swim in throws you back.
-      if ((f & F.DEEP) && !this._flippers) { this.beginWash(game); return; }
+      if ((f & F.DEEP) && this._cleats <= 0) { this.beginWash(game); return; }
       if (f & F.PIT) { this.beginFall(game); return; }
       game.audio.sfx('land');
       if (!(f & F.WET)) game.spawnEffect('dust', this.x, this.y + 4, { life: 12 });
@@ -682,6 +695,83 @@ export class Player extends Entity {
     return true;
   }
 
+  // ------------------------------------------------------- Kelp-Soled Cleats
+  //
+  // One item, two modes, one button. Swim is what the flippers were. Sink is
+  // the new half: you walk the floor UNDER the water instead of over it, and
+  // the two fail in different ways, which is the point — every deep room now
+  // has two solutions rather than one.
+  //
+  //   sink   slow, no jump, no sword, no shield, immune to currents and to
+  //          knockback, and you keep hold of whatever you were carrying
+  //   swim   fast, exposed, and everything that swims can reach you
+  //
+  // Breath is the L1 limit. Cleats L2 — the Mermaid Suit — removes it entirely
+  // and adds block pushing on the floor (see tryPush).
+  //
+  // Toggling on dry land just sets which mode the next deep water will be
+  // entered in, and says so: a mode switch with no water to switch in would
+  // otherwise look broken.
+
+  toggleCleats(game) {
+    const next = this.cleatMode === 'sink' ? 'swim' : 'sink';
+    if (!this.inDeep) {
+      this.cleatMode = next;
+      game.audio.sfx('place');
+      game.say(next === 'sink'
+        ? 'The soles drink. You will walk under the next water you meet.'
+        : 'The kelp lifts. You will swim the next water you meet.');
+      return true;
+    }
+    if (this.sinkT > 0) return true;
+    this.cleatMode = next;
+    this.sinkT = SINK_ENTER_FRAMES;
+    this.sinkInto = next === 'sink';
+    game.audio.sfx('dive');
+    game.spawnEffect('splash', this.x, this.y + 2);
+    return true;
+  }
+
+  /** The descent and the ascent. Control is off for the whole of it. */
+  updateSinkTransition(game) {
+    this.sinkT--;
+    this.animT++;
+    if (this.sinkT > 0) return;
+    this.underwater = this.sinkInto;
+    if (this.underwater) {
+      // L2 has no limit; the timer is left at zero and updateBreath ignores it.
+      this.breath = this._cleats >= 2 ? 0 : CLEATS_BREATH_FRAMES;
+    } else {
+      this.breath = 0;
+      game.spawnEffect('splash', this.x, this.y + 2);
+    }
+  }
+
+  updateBreath(game) {
+    if (!this.underwater) return;
+    if (this.frame % SINK_BUBBLE_EVERY === 0) {
+      game.spawnEffect('bubble', this.x, this.y - 2, { life: 30 });
+    }
+    // Left standing on dry ground by a falling tide: come back up on your own.
+    if (!this.inDeep) { this.surface(game, false); return; }
+    if (this._cleats >= 2) return;            // Mermaid Suit: unlimited
+    this.breath--;
+    if (this.breath === CLEATS_BREATH_WARN_FRAMES) game.audio.sfx('deny');
+    if (this.breath <= 0) this.surface(game, true);
+  }
+
+  /** Come up. `forced` means the air ran out and it costs you. */
+  surface(game, forced) {
+    this.underwater = false;
+    this.cleatMode = 'swim';
+    this.breath = 0;
+    game.spawnEffect('splash', this.x, this.y + 2);
+    if (!forced) return;
+    game.audio.sfx('splash');
+    this.takeDamage(game, SINK_DROWN_DAMAGE, null, { noKnockDir: true });
+    game.say('Your air ran out!');
+  }
+
   // ---------------------------------------------------------------- conch
 
   playConch(game) {
@@ -744,7 +834,10 @@ export class Player extends Entity {
     this.invuln = PLAYER_INVULN_FRAMES;
     this.flicker = PLAYER_FLICKER_FRAMES;
     this.hurtTime = PLAYER_HURT_FRAMES;
-    if (!o.noKnockDir && source) {
+    // A walker on the seafloor is not shoved. That is the other half of what
+    // sink mode buys, and it is why a current-swept room can be crossed under
+    // fire at the price of not being able to draw the sword while you do it.
+    if (!o.noKnockDir && source && !this.underwater) {
       const dx = this.cx - source.cx, dy = this.cy - source.cy;
       const d = Math.hypot(dx, dy) || 1;
       // sp/f: the whole distance divided across the whole window, once.
@@ -813,7 +906,7 @@ export class Player extends Entity {
   reconcileWithTide(game) {
     if (canOccupy(game, this, this.x, this.y, this.caps)) {
       const f = groundFlags(game, this);
-      if (!(f & F.DEEP) || this._flippers) return;
+      if (!(f & F.DEEP) || this._cleats > 0) return;
     }
     const safe = findSafeTile(game, this);
     if (safe) {
@@ -835,8 +928,17 @@ export class Player extends Entity {
     if (this.digging > 0) return 'link_dig_' + (this.digging > DIG_FRAMES / 2 ? 0 : 1);
     if (this.spinning > 0) return 'link_spin_' + (Math.floor(this.frame / 3) % 4);
     if (this.conchTime > 0) return 'link_conch_' + key;
+    if (this.sinkT > 0) return 'link_dive';
+    // Walking the floor is walking: the same frames as on land, in the swim
+    // palette, drawn whole rather than cropped at a water line. Reusing them
+    // is deliberate — the source games reuse the swim frames for the Mermaid
+    // Suit, and inventing a sixth Link gait is exactly the kind of hand-drawn
+    // drift ART-DIRECTION exists to stop.
+    if (this.underwater) {
+      const moving = this._lastDx || this._lastDy;
+      return 'link_walk_' + key + '_' + (moving ? (Math.floor(this.animT / 7) % 2) : 0);
+    }
     if (this.inDeep) {
-      if (this.diving > 0) return 'link_dive';
       return 'link_swim_' + key + '_' + (Math.floor(this.animT / 9) % 2);
     }
     if (this.hurtTime > 0) return 'link_hurt_' + key;
@@ -852,12 +954,13 @@ export class Player extends Entity {
   draw(ctx, game, ox, oy) {
     if (this.flicker > 0 && (this.flicker >> 1) % 2 === 0) return;
     const p = game.progress;
-    const pal = this.inDeep ? 'linkswim' : (game.linkPal || 'link');
+    const pal = (this.inDeep || this.underwater) ? 'linkswim' : (game.linkPal || 'link');
     const name = this.spriteName(game);
 
     // Wading and swimming hide the lower part of the sprite behind the water line.
     let cropH = null;
-    if (this.inDeep) cropH = this.diving > 0 ? 6 : 11;
+    if (this.underwater || this.sinkT > 0) cropH = null;   // fully below the surface
+    else if (this.inDeep) cropH = 11;
     else if (this.inShallow && this.z <= 1) cropH = 13;
 
     // The held-blade frames are the source game's own and are NOT 16x16 — the
@@ -902,7 +1005,7 @@ export class Player extends Entity {
       const key = side ? 'side' : this.dir;
       sprites.draw(ctx, 'link_shield_' + key, ox + this.x, dy, { pal: 'ui', flipX: this.flipX });
     }
-    if (this.inDeep) {
+    if (this.inDeep && !this.underwater) {
       sprites.draw(ctx, 'fx_ripple0', ox + this.x, oy + this.y + 6, { pal: 'water' });
     }
   }

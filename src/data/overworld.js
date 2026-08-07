@@ -797,20 +797,27 @@ const rooms = {
     ],
   },
   '0,7,3': {
-    name: 'Still Water',
+    name: 'The Gyre',
     legend: 'wood', music: 'overworld',
+    // A closed circulation: east along the top, south down the right, west
+    // along the bottom, north up the left. Swim it and it carries you round
+    // instead of across; sink and you walk the floor straight through it, which
+    // is the Kelp-Soled Cleats' whole argument in one screen. Passability is
+    // unchanged from the deep ring that was here before — a riptide is `waterD`
+    // that moves — so nothing is sealed by it.
     map: [
       'TTTTTTTTTT',
-      'Tg======fT',
-      'gg=....=gT',
-      'gg."""".gT',
-      'gg=....=gT',
-      'gg======gT',
+      'Tg=EEEE=fT',
+      'ggN....SgT',
+      'ggN."".SgT',
+      'ggN....SgT',
+      'gg=WWWW=gT',
       'TgggffgggT',
       'TTTggggTTT',
     ],
     entities: [
       ['anglerfry', 4, 3],
+      ['sign', 4, 6, { text: 'The water here runs in a ring.\nSwimmers go round. Walkers go through.' }],
     ],
   },
   // ---- reef --------------------------------------------------------------

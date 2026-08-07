@@ -1056,6 +1056,21 @@ export function installCoreTiles() {
     waterAbyss: { art: ART.waterD0, pal: 'abyss', flags: F.DEEP, anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 16 },
     foamN: { art: ART.foamN, pal: 'water', flags: F.WATER },
 
+    // --- riptides ---------------------------------------------------------
+    // Deep water that moves. `push` is px/f and is applied to anything
+    // SWIMMING on it (Player.updateTerrain); a walker on the seafloor in sink
+    // mode is not touched by it, which is the trade the Kelp-Soled Cleats
+    // exist to offer. See docs/ITEMS.md.
+    //
+    // No new art: a riptide is `waterD` running its own animation faster, in
+    // the same palette. The source games signal a current by how the water
+    // moves, not by a different blue, and inventing a "current tile" drawing
+    // would be exactly the hand-drawn drift ART-DIRECTION warns about.
+    riptideN: { art: ART.waterD0, pal: 'deep', flags: F.DEEP, push: [0, -0.55], anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 6 },
+    riptideS: { art: ART.waterD0, pal: 'deep', flags: F.DEEP, push: [0, 0.55], anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 6 },
+    riptideE: { art: ART.waterD0, pal: 'deep', flags: F.DEEP, push: [0.55, 0], anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 6 },
+    riptideW: { art: ART.waterD0, pal: 'deep', flags: F.DEEP, push: [-0.55, 0], anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 6 },
+
     // --- TIDE TILES: the heart of the game -------------------------------
     // A tide tile resolves to a different concrete tile per tide level.
     // low (0)            mid (1)            high (2)
@@ -1071,6 +1086,13 @@ export function installCoreTiles() {
     tideGrass: { tide: ['grass', 'grass', 'waterS'] },
     mudflat: { tide: ['mud', 'waterS', 'waterD'] },
     abyssHole: { tide: ['waterD', 'waterAbyss', 'waterAbyss'] },
+    // A race: wadeable at LOW, and a running current above it. Passability is
+    // identical to `dWell` at every level, so a run of these can be dropped
+    // into an authored room without changing where anything can go — the only
+    // difference is that a SWIMMER on it is carried and a walker on the
+    // seafloor is not. That is the Kelp-Soled Cleats' whole trade.
+    dRaceE: { tide: ['dWaterS', 'riptideE', 'riptideE'] },
+    dRaceW: { tide: ['dWaterS', 'riptideW', 'riptideW'] },
 
     // --- barriers ---
     cliff: { art: ART.cliff, pal: 'stone', flags: F.SOLID },

@@ -44,6 +44,8 @@ export function installLegends() {
     '0': 'tideGrass',  // meadow that floods at high tide
     '!': 'mudflat',
     '?': 'abyssHole',
+    // Riptides: deep water that carries a swimmer. Sink mode ignores them.
+    'N': 'riptideN', 'S': 'riptideS', 'E': 'riptideE', 'W': 'riptideW',
   });
 
   // ---- coast: the default overworld look ---------------------------------
@@ -129,11 +131,16 @@ export function installLegends() {
     'R': 'rockFloor', 'r': 'rockFloorDk', '_': 'dLedge',
     '"': 'dLedgeN', '>': 'dLedgeE', '<': 'dLedgeW',
     // TIDE TILES (digits) — the indoor versions
+    // Riptides. `W` is already dWaterD indoors, so the indoor set is the three
+    // that were free; a westward drain wants `riptideW` written as an inline
+    // legend override on the room that needs it.
+    'N': 'riptideN', 'S': 'riptideS', 'E': 'riptideE',
     '1': 'dSluice',    // dry floor -> shallow -> deep
     '2': 'dBasin',     // dry -> damp -> shallow
     '3': 'dWell',      // shallow -> deep -> deep
     '4': 'dDrain',     // an open pit at low tide, water above it
     '5': 'channel',
+    '6': 'dRaceE', '7': 'dRaceW',   // wadeable at LOW, a current above it
     '8': 'tideRock',
     '9': 'drownWall',
   });

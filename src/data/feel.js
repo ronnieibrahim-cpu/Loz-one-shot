@@ -67,10 +67,6 @@ export const WALK_SPEED = 256;
  *  ratio the old guessed pair (0.95 / 1.35) had, snapped to the grid. */
 export const SWIM_SPEED = 192;
 
-/** sp/f — swimming underwater with the Mermaid Suit. derived: seven eighths of
- *  WALK_SPEED, keeping the old ratio to SWIM_SPEED. */
-export const DIVE_SPEED = 224;
-
 /** sp/f — under the Pegasus Seed. derived: exactly twice WALK_SPEED, so the
  *  dash covers a tile in 8 frames. */
 export const BOOST_SPEED = 512;
@@ -391,9 +387,6 @@ export const CONCH_FRAMES = 46;
 /** f — how long the player must lean on a block before it moves. guessed. */
 export const PUSH_DELAY_FRAMES = 18;
 
-/** f — how long a Mermaid Suit dive lasts before surfacing. guessed. */
-export const DIVE_FRAMES = 180;
-
 /** f — how long a Pegasus Seed's speed boost lasts. guessed. */
 export const PEGASUS_FRAMES = 300;
 
@@ -661,3 +654,30 @@ export const LENS_PHASE_ALPHA = 0.8;
 
 /** f — period of the slow shimmer on the ghosted overlay. guessed. */
 export const LENS_SHIMMER_FRAMES = 48;
+
+// --- Kelp-Soled Cleats -----------------------------------------------------
+
+/** sp/f — walking speed on the seafloor in sink mode. guessed; 0.625 px/f,
+ *  five eighths of WALK_SPEED. Sink mode buys safety with pace, and the number
+ *  has to be slow enough that taking the floor route is a decision. */
+export const SINK_SPEED = 160;
+
+/** f — the descent when sink mode is entered over deep water, and the ascent
+ *  when it is left. Control is suspended for the whole of it. guessed. */
+export const SINK_ENTER_FRAMES = 18;
+
+/** f — breath in sink mode at Cleats L1. Cleats L2 (the Mermaid Suit) has no
+ *  limit at all. guessed; ~13 seconds, long enough to cross a room and short
+ *  enough that a wrong turn costs you. */
+export const CLEATS_BREATH_FRAMES = 800;
+
+/** f — how much breath is left when the warning starts. guessed. */
+export const CLEATS_BREATH_WARN_FRAMES = 180;
+
+/** f — interval between bubbles rising off a walker on the seafloor. guessed. */
+export const SINK_BUBBLE_EVERY = 22;
+
+/** qh — damage taken when breath runs out and the Cleats float you up on their
+ *  own. guessed; the same as being washed ashore, because it is the same kind
+ *  of failure. */
+export const SINK_DROWN_DAMAGE = 2;
