@@ -35,17 +35,29 @@ real defects during the session, listed in HANDOFF — including a chest that
 went on granting a deleted item in complete silence, and two edits that deleted
 items nobody meant to touch.
 
-### THE TIDE IS STILL A SCALAR. P5 was running in parallel and P6 did not fight it.
+### P5 IS MERGED IN. The tide is a field and the Anchor is obtainable.
 
-`tide.levelAt(tx, ty)` does not exist. P5 owns it. One P6 item needed a local
-override, so `src/game/tidelocal.js` exists with a header addressed to whoever
-merges P5: `game.tideAt(tx, ty)` is a one-line method on `Game`, six call sites
-are spatial, and `game.tideHolds` is a stand-in for P5's override list that
-**must not survive alongside it**. Merging P5 is one function body.
+`src/game/tidelocal.js` is gone — it existed only to carry the Squall Bellows
+until P5 landed, and it did. What survived the collapse:
 
-**D1's dungeon item is deliberately empty** (`item: null`, the big chest holds a
-Heart Piece) so that P5 can put the Tidewright's Anchor there without either
-session defining it twice.
+- The Bellows' cone is an ordinary entry in `tide.overrides`, with a `'cone'`
+  footprint in `Tide.covers` and a `delta` alternative to the absolute `level`
+  in `Tide.levelAt`. **The delta is load-bearing**: the Anchor is absolute
+  because it is holding out against the conch, the Bellows is relative because
+  it holds the water back one step from wherever the conch has it. Do not
+  collapse the two into one number.
+- Because the cone is a real override, `Room.render` draws the drained wedge
+  through the field and the stamp invalidates the cache. There is no second
+  draw path.
+- `Tide.viewAt(base)` is a read-only view of the field at another base level.
+  The Brineglass Lens renders through it so an anchored patch previews as the
+  one part of the room that will NOT change when the tide does.
+- `Room.renderAt` is keyed by `cacheKeyFor`, the same function `render` uses.
+  Keying it on the raw argument would cache a field render under
+  `"[object Object]"` and draw stale water for ever, silently.
+
+**The Tidewright's Anchor is in D1's big chest.** P5 built it and left placement
+alone; P6 had reserved the slot for it; the merge closed that.
 
 ### Two verbs are base moveset now
 
@@ -431,9 +443,9 @@ Continue building "Oracle of Tides", a GBC-style Zelda fan game.
 
 Read, in this order:
   CLAUDE.md              - the hard rules. They are hard rules.
-  docs/EXECUTION-PLAN.md - the roadmap. P0-P4 and P6 are done. P5 (the tide
-                           becomes a field) was running in parallel with P6 —
-                           CHECK WHETHER IT HAS LANDED before starting anything.
+  docs/EXECUTION-PLAN.md - the roadmap. P0-P6 are done and merged. P7
+                           (scrimshaw) is next; PT (towns) and P7.5/P7.6 are
+                           also queued ahead of P8.
   docs/ITEMS.md          - the item roster. Authoritative. tools/check-items.mjs
                            asserts the registry is exactly this document.
   docs/EXECUTION-PLAN.md - the roadmap. P0, P1, P3 and P5 are done. P6 (the
@@ -471,12 +483,18 @@ installed one has been 1194.
 Confirm the baseline before changing anything, and keep every line below green:
   node tools/validate.mjs                      clean (two expected warnings
                                                about fx_slash_d0/fx_slash_d1)
-  node tools/test.mjs                          43/43, 0 unauthored art names
-  node tools/replay.mjs                         8/8, both replays to the pixel
-  node tools/walk-dungeons.mjs                 27/27, 88 ledge runs
-  node tools/check-overworld.mjs               14/14, three tile gates + the
-                                               base hop modelled against
-                                               GAP_HOP_MAX_SPAN
+  node tools/test.mjs                          57/57, 0 unauthored art names
+  node tools/replay.mjs                        12/12, all three replays to the
+                                               pixel (the third walks a room
+                                               that is MID in one half and HIGH
+                                               in the other)
+  node tools/walk-dungeons.mjs                 28/28, 88 ledge runs
+  node tools/check-overworld.mjs               17/17, three tile gates, the base
+                                               hop modelled against
+                                               GAP_HOP_MAX_SPAN, and the honest
+                                               FIELD flood (a conch sets ONE
+                                               level and you must survive the
+                                               change where you stand)
   node tools/check-gates.mjs                   15/15, three item gates in-engine
                                                and the base hop (the ONLY
                                                harness that hops — see the
@@ -609,13 +627,8 @@ failure there is now yours.
 NEXT UP: P7 (scrimshaw), then P8 (six dungeon sessions) and P9. P1-P4 and P6
 are in.
 
-P5 (the tide becomes a field) was being implemented in a parallel session while
-P6 ran. BEFORE YOU START ANYTHING, check whether it landed — `git grep levelAt
-src/`. If it has, read the header of src/game/tidelocal.js first: merging P5
-means deleting one function body and one list, and doing it wrong leaves two
-override systems that both look correct. If it has NOT landed, P5 is next and
-the Tidewright's Anchor's slot is waiting for it in d1 (`item: null`, big chest
-holding a Heart Piece).
+P5 IS MERGED. This branch carries both the tide field and the item roster, and
+every checker is green across the pair. Nothing about the tide is outstanding.
 
 ANYTHING THAT TOUCHES POSITIONS TOUCHES THE LATTICE. `beginStep`/`advanceStep`
 in src/game/enemy.js must go on landing exactly on multiples of
@@ -686,6 +699,10 @@ Tell me plainly what is done, what is weak, and what you skipped.
 - **the item roster (P6)** — `docs/ITEMS.md`, nine items added and ten removed,
   plus `tools/check-items.mjs`, which proves each item's verbs in-engine and
   asserts the registry is exactly that document's roster
+- **the tide as a field and the Tidewright's Anchor (P5)**, merged into P6 —
+  `tide.levelAt(tx, ty, room)`, room-scoped overrides, a render cache keyed on
+  the field's stamp, and the checkers reasoning over the field rather than a
+  scalar
 
 ## What is left
 
