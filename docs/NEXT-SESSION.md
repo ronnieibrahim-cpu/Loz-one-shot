@@ -746,6 +746,36 @@ Tell me plainly what is done, what is weak, and what you skipped.
   plus a themed legend per dungeon. Every dungeon is now identifiable from one
   screenshot, and no room grid changed to do it.
 
+## OPEN DESIGN QUESTION for P8 — the Anchor in a large room
+
+**Not settled, and deliberately not settled by P7.6.** Recording it so it is
+decided with rooms in front of you rather than in the abstract.
+
+The Tidewright's Anchor freezes a patch of the tide field at a fixed radius.
+`ANCHOR_RADIUS_TILES = 2` makes a disc of 13 tiles. In a 10x8 room that is 16%
+of the floor and it splits the space in two, which is the puzzle. In a 3x1 room
+it is about 5%, and it splits nothing — it becomes a small local convenience
+instead of a decision about the room.
+
+Three options, none chosen:
+
+1. **Large rooms do not use the Anchor.** Cheapest, and honest: not every item
+   has to work in every room. Costs a verb in exactly the rooms with the space
+   to use it.
+2. **The radius scales with room size.** Keeps the item's meaning constant as a
+   FRACTION of the room. But the radius is a number the player has learned by
+   sight, and an item that covers a different amount of ground depending on
+   where you stand is one you cannot plan with.
+3. **Large rooms permit two anchors at once.** The most interesting, and the
+   most expensive: `check-overworld`'s field flood is already 2.9M states and
+   ~30s of its runtime, and NEXT-SESSION has flagged since P5 that it will not
+   survive being asked for two anchors.
+
+**Do not change the engine for this during P7.6.** P7.6's own note records that
+the anchor's disc not growing is a design consequence the brief WANTED, and the
+P5 strand checks must keep asserting "the anchor cannot strand you" over the
+larger room without compensating by scaling the radius.
+
 ## What is left
 
 1. **P7.6 — multi-screen dungeon rooms.** PLANNED, NOT BUILT, awaiting your

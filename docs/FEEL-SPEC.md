@@ -475,3 +475,30 @@ consumes no state. Any future draw-time jitter must do the same.
    replays in the same change as the constant.
 4. Run the rest: `validate.mjs`, `test.mjs`, `walk-dungeons.mjs`,
    `check-overworld.mjs`, `check-gates.mjs`, `solve-switches.mjs`.
+
+
+## The camera's constants: `guessed`, but a reference EXISTS
+
+P7.6 adds `CAM_DEADZONE_W`, `CAM_DEADZONE_H`, `CAM_MAX_SPEED` and
+`CAM_ACTIVATE_MARGIN`. Every one of them ships tagged `guessed`.
+
+**They are tagged `guessed` because nobody has frame-stepped them yet — NOT
+because there is nothing to frame-step.** The distinction matters and an earlier
+draft of the P7.6 plan got it wrong, so it is written down here to stop the
+error propagating: the source games contain exactly this camera, doing exactly
+this job, in rooms of exactly this shape. The clearest references are **the wide
+halls of Poison Moth's Lair and the lower corridors of Ancient Ruins**, both in
+Oracle of Seasons.
+
+So the comment on each of those constants in `feel.js` must read
+
+    guessed; not yet measured, reference exists — see docs/FEEL-SPEC.md
+
+and must never say that no reference is available. `measured` is earnable for
+all four, unlike the scrimshaw constants in P7, where no Oracle system slots a
+passive by world state and `measured` is genuinely unavailable in principle.
+
+To earn it, follow "How to earn a `measured`" above against one of those two
+rooms: walk Link from the middle of the hall to its edge and count the frames
+between his crossing a given screen column and the background first moving.
+That number is the deadzone half-width in pixels.
