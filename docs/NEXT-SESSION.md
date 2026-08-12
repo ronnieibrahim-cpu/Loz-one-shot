@@ -777,15 +777,23 @@ NEXT UP, and pick ONE:
   - P7.5's remainder is BLOCKED: it needs four dungeon map rips that are not
     in this repo. Do not start it by inventing the colour-register decision.
 
-TWO DECISIONS D1 SURFACED AND DID NOT TAKE, both yours:
-  - The charm cases open when you TALK TO THE SCRIMSHANDER, not when the essence
-    lands, so a player who never returns to Tidewatch never opens the LOW or
-    HIGH case. Open it on the essence, or keep the visit as the beat and signpost
-    it? See the P7 audit in docs/EXECUTION-PLAN.md.
-  - At one essence the MID case is the only case open, and D1's whole design is
-    "take the sea down to LOW" — so the player's one charm is dark for most of
-    the dungeon. Leave it, open LOW at one essence, or place the Neap Charm
-    early? Same section, with the argument for each.
+P7 IS CLOSED. There is no P7 follow-up session. What scrimshaw still owes is
+assigned per dungeon in EXECUTION-PLAN under "P7 is CLOSED" — read that table
+before starting any P8 session, and do the charm-gating audit it asks for.
+
+IF YOU ARE THE D2 SESSION, ONE DECISION CANNOT SLIP. The charm cases open when
+you TALK TO THE SCRIMSHANDER, not when the essence lands (`checkUnlocks` is
+called from `Scrimshander.interact` and nowhere else). Two essences is where the
+LOW case is meant to appear, and D2 is the second essence — so ship D2 without
+deciding and there is a real save in which the player owns charms they can never
+switch on. Open it on the essence and let her line be the acknowledgement, or
+keep the visit as the beat and signpost it. Either is fine; leaving it is not.
+
+ONE MORE THING D1 SURFACED AND LEFT ALONE: at one essence the MID case is the
+only case open, and D1's design is "take the sea down to LOW", so the player's
+one charm is dark for most of the first dungeon. Leave it, open LOW at one
+essence, or place the Neap Charm early — the argument for each is in the same
+section. It is a taste call and it wants play, not analysis.
 
 SCRIMSHAW IS IN AND THE RING SYSTEM IS GONE. `game.charm(id)` replaced
 `hasRing`. A charm is live only while the tide UNDER THE PLAYER'S FEET matches

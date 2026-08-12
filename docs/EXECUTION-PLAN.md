@@ -454,7 +454,31 @@ case upgrade gives a second charm per level.
 5. Delete src/game/rings.js and every reference.
 ```
 
-#### P7 audit (done during P8/D1) — what is built, and what "complete" is missing
+#### P7 is CLOSED. Its leftovers are P8's, one per dungeon session
+
+Decided after the D1 audit below: P7 is done and there will be no P7 follow-up
+session. Everything still owed on scrimshaw is work that only makes sense with a
+dungeon in front of it, so each item is assigned to the P8 session that reaches
+it. **One has a deadline: the case-unlock question must be settled in the D2
+session**, because the LOW case opens at two essences and D2 is the second one.
+Ship D2 without deciding and there is a real save state in which the player owns
+charms they can never switch on.
+
+| Owed | Whose session | Why there |
+|---|---|---|
+| Decide whether the cases open on the essence or on talking to the scrimshander | **D2 — cannot slip** | Two essences is where the second case is meant to appear |
+| Place a charm per dungeon, in a case that dungeon's player has open | every session | D1 did it (Split Fang, `0,2,3`); `check-charms.mjs` prints the running list |
+| Look at the CHARM screen, the carve dialogue and one charm's effect on a real screen | first session that boots the game to play it | It needs eyes, not a harness |
+| Compare charms for value | D4 or later, once the roster has been met in play | Balancing thirty passives against no play data is guessing |
+| Settle `NEAP_GRACE_FRAMES` | whichever session plays the tide transitions | It is the width of the transition window the two cross-slot charms live in |
+
+Add to every remaining P8 prompt: **audit the dungeon against the charm gating
+the way D1 was.** Which cases does the player have open here, does this
+dungeon's tide theme leave them awake or dark, and is the charm you placed one
+they can actually use? That is a five-minute check and it is the thing that
+keeps scrimshaw a system rather than a menu.
+
+#### P7 audit (done during P8/D1) — what is built, and what was still missing
 
 Against the five numbered items of the brief, P7 is **functionally complete**,
 and each claim below has a checker behind it rather than a reading of the code:
@@ -687,6 +711,15 @@ the large ones land on set pieces.
 
 Use the tilesets from P7.5 for this dungeon's visual identity. Each of the
 six dungeons should be identifiable from a single screenshot.
+
+Audit the dungeon against the charm gating, the way D1 was: which cases does
+the player have open at this point in the game, does this dungeon's tide theme
+leave them awake or dark, and is the charm you placed in it one they can
+actually slot? See "P7 is CLOSED" above for what each session owes.
+
+Any room that claims to need the dungeon's item should DECLARE that in its room
+data and be proved by a checker, both ways — impossible without the item,
+possible with it. tools/check-anchor.mjs is the worked example.
 
 Run validate.mjs, walk-dungeons.mjs and solve-switches.mjs after every room you
 change, not at the end.
