@@ -760,8 +760,9 @@ measuring the machine, not the game. test.mjs is no longer load-flaky; a
 failure there is now yours.
 
 NEXT UP, and pick ONE:
-  - P7.6, multi-screen dungeon rooms. The plan is written and needs your
-    approval first: docs/briefs/P7.6-PLAN.md. D1 made the case for it concrete:
+  - P7.6, multi-screen dungeon rooms. APPROVED, and there is a prompt written
+    for it: docs/briefs/P7.6-PROMPT.md, which executes docs/briefs/P7.6-PLAN.md
+    and adds the two things the plan predates. D1 made the case for it concrete:
     the Anchor's held patch is 5x5 and its throw carries two tiles, so ONE gate
     eats a whole 10-tile room row and the rest of the room has to be walled off
     to stop the player walking round it. Every anchor room in D1 is a bare
@@ -769,6 +770,11 @@ NEXT UP, and pick ONE:
   - PT, towns and buildings. Independent of everything, stated top design
     priority, and the only one that needs no decision from anybody.
   - P8 for D2, and then D3-D6. D1 is DONE — see EXECUTION-PLAN's "P8 status"
+    and the D2 decision beneath it: inside D2 the rooms after the Brineglass
+    Lens DO require it, while the Lens is never a gate at region scope. That
+    section says what "require" means for an item that only shows you things,
+    the checker to write for it, and the trap to expect. See EXECUTION-PLAN's
+    "P8 status"
     for the constraint table it was checked against, and read the gate primitive
     at the top of d1 in src/data/dungeons-a.js before designing another one. A
     room that claims to need its dungeon's item should declare it and be proved

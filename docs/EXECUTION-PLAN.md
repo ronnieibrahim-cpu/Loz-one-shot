@@ -756,6 +756,50 @@ weighed against D2-D6, weigh that in: the remaining five dungeons will keep
 hitting the same wall, and D2's item (the Lens) is informational rather than
 spatial, so D3 is where it bites again.
 
+#### D2 decision: the Lens is required INSIDE its own dungeon, and nowhere else
+
+P8 says every room after the item requires the item's verb. P9 says the
+Brineglass Lens is informational and must never be a gate. Those read as a
+contradiction and a session left alone with them would resolve it by quietly
+making the Lens a gate, which is the thing P9 rules out. Settled: **both stand,
+because they are about different scopes.**
+
+- **Inside D2, after the Lens is found, the rooms require it.** That is a
+  dungeon-local design requirement and it is what makes the item's introduction
+  mean something.
+- **Nowhere in the world is the Lens a gate.** No region boundary, no locked
+  route, no `check-overworld` gate keys on it. P9's rule is untouched, and a
+  player who somehow reaches a later region without the Lens is never sealed
+  out of anything by its absence.
+
+**What "requires" means for an item that only shows you things.** The Lens
+cannot make a tile passable, so a Lens room cannot be built like an anchor gate.
+The verb it introduces is *knowing before you commit*, so the room has to make
+you commit. The shape that makes it real:
+
+> A room offers a choice that cannot be taken back — a one-way ledge, a drop
+> through a hole, a current that only runs one way — and the branch you want
+> depends on what the room will be at the NEXT tide level, which is exactly what
+> is invisible while you are standing at this one. Choose blind and you land
+> somewhere that costs you the walk back. Look first and you choose right.
+
+That is provable, and it is provable statically the way the anchor gates are.
+A room declaring `lensRoom: { decide: [x, y], branches: [...] }` should be
+asserted to satisfy all three of: the decision tile is one-way (nothing leads
+back from at least one branch); at least one branch is a dead end or a loss at
+the level it resolves to; and which branch is which is NOT determinable from the
+tiles visible at the level the player decides at. Write `tools/check-lens.mjs`
+for it, modelled on `check-anchor.mjs` — same state-space flood, same
+both-directions discipline, and the same rule that its reaches come out of
+`feel.js`.
+
+**The trap to expect**, stated in advance because it is the same trap D1 fell
+into: a Lens room with a way to scout the branch safely is not a Lens room. If
+the player can peek down a ledge, walk back round, or die cheaply and retry from
+the same side, the information is a convenience and the requirement is a
+decoration. The cost of guessing wrong has to be real and it has to be paid
+before the answer is known.
+
 **Also note for D2-D6:** the game is still eight dungeons in the data. The
 six-dungeon consolidation in the prompt above has not happened, and D1 did not
 need it (D1's item and theme already match the table). Folding d7 and d8 into
@@ -769,7 +813,10 @@ The overworld has eight regions gated on items that no longer exist.
 1. Re-gate for six dungeons. Five gates should be tile-flag-shaped so
    check-overworld.mjs can prove them in both directions; terrain-shaped gates
    are a last resort and must be documented as unprovable.
-2. The Brineglass Lens is informational and must never be a gate.
+2. The Brineglass Lens is informational and must never be a gate. (Region
+   scope only. Inside D2 the rooms after it DO require it — see the D2 decision
+   under P8 for why both rules stand and what "require" means for an item that
+   only shows you things.)
 3. Re-tune to match the source games: 3 hearts at start, half-heart contact
    damage from ordinary enemies. Six Heart Containers plus heart pieces should
    land the cap at 14-16 hearts, so heart pieces need to scale up from the
