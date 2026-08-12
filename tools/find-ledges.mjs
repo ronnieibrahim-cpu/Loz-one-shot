@@ -142,8 +142,11 @@ const out = await page.evaluate(({ ONLY_MAP, ONLY_DIR, MIN_LEN }) => {
           taken.add(`${Math.floor(e.x / 16)},${Math.floor(e.y / 16)}`);
         }
       }
+      // The room's own extent, in tiles: a 2x1 room is 20 wide and a placement
+      // sweep that stopped at column 10 would never offer half of it.
+      const sz = def.size || [1, 1];
+      const W = (sz[0] | 0) * 10, H = (sz[1] | 0) * 8;
       for (const d of DIRS) {
-        const W = 10, H = 8;
         // Sweep every start cell; a run extends along (ax, ay).
         for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
           for (let len = 4; len >= MIN_LEN; len--) {

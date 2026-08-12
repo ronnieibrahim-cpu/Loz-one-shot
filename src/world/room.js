@@ -1,10 +1,11 @@
-// Room: one 10x8 tile screen. Owns its tile grid, collision queries, a cached
-// render of its static layer, and its spawn lists.
+// Room: one or more 10x8 tile screens. Owns its tile grid, collision queries, a
+// cached render of its static layer, and its spawn lists.
 //
 // ROOM DEFINITION FORMAT (contract for map data files):
 //
 //   {
-//     map: [                        // exactly 8 rows of exactly 10 characters
+//     size: [2, 1],                 // OPTIONAL, in SCREENS. Default [1,1].
+//     map: [                        // 8*sh rows of 10*sw characters
 //       'TTTTTTTTTT',
 //       'Tgggggggg T',              // (extra whitespace is stripped)
 //       ...
@@ -23,14 +24,49 @@
 //     name: 'Tidewatch Village',    // optional display name for the map screen
 //   }
 //
-// Coordinates: tileX 0..9, tileY 0..7. Pixel space within a room is
-// tileX*16 .. tileX*16+15 and tileY*16 .. tileY*16+15.
+// Coordinates: tileX 0..room.tw-1, tileY 0..room.th-1. Pixel space within a
+// room is tileX*16 .. tileX*16+15 and tileY*16 .. tileY*16+15.
+//
+// A ROOM'S SIZE IS IN SCREENS, AND ITS GRID IS ONE GRID.
+//
+// A 2x1 room's `map` is eight rows of TWENTY characters — not two 10-wide grids
+// laid side by side. That is deliberate: the parser asserts the grid matches the
+// declared size exactly, which is the thing that stops a 3x1 room being authored
+// as three separate screens by accident and then silently read as one.
+//
+// The internal seams between screens are not boundaries. Nothing in the engine
+// knows where they are; `checkRoomExit` fires on the room's own extent
+// (`room.pw` / `room.ph`) and the camera slides across the seams. The screen
+// grid survives only as the unit the size is counted in.
 
-import { TILE, ROOM_W, ROOM_H, VIEW_W, VIEW_H, offscreen } from '../core/screen.js';
+import { TILE, ROOM_W, ROOM_H, offscreen } from '../core/screen.js';
 import { tiles as tileSheet } from '../gfx/art.js';
 import { F, resolveTile, getTileDef, tileArt } from './tileset.js';
 
 export const LEGENDS = new Map();
+
+/**
+ * The sizes a room may declare, in screens.
+ *
+ * Closed on purpose. An unbounded room size is a different game: the render
+ * cache, the minimap's cell spanning and the camera clamp are all sized against
+ * this list, and "whatever the author typed" is not a size any of them were
+ * designed for. A size outside the set THROWS at construction rather than
+ * warning — a room that is silently the wrong shape strands the dungeon around
+ * it and looks like a tile bug.
+ */
+export const ROOM_SIZES = ['1x1', '2x1', '1x2', '2x2', '3x1'];
+
+/** Validate and normalise a `size` field. Returns [sw, sh]. Throws if illegal. */
+export function normaliseSize(size, where = 'room') {
+  if (!size) return [1, 1];
+  const sw = size[0] | 0, sh = size[1] | 0;
+  if (!ROOM_SIZES.includes(`${sw}x${sh}`)) {
+    throw new Error(`${where}: illegal room size ${size[0]}x${size[1]}`
+      + ` (allowed: ${ROOM_SIZES.join(', ')})`);
+  }
+  return [sw, sh];
+}
 
 /** Register a char->tile legend. `base` names another legend to inherit from. */
 export function registerLegend(name, mapping, base) {
@@ -57,19 +93,27 @@ export class Room {
     const legend = getLegend(def.legend || (mapDef && mapDef.legend));
     this.legend = legend;
 
+    // Size in screens, and the four derived extents everything else asks for.
+    // A room with no `size` is 1x1 and every one of these is the old constant,
+    // which is how an existing grid parses byte-identically.
+    const [sw, sh] = normaliseSize(def.size, `${this.mapId}/${key}`);
+    this.sw = sw; this.sh = sh;
+    this.tw = sw * ROOM_W; this.th = sh * ROOM_H;      // tiles
+    this.pw = this.tw * TILE; this.ph = this.th * TILE; // pixels
+
     // Base grid of tile *names* as authored (may be virtual tide tiles).
-    this.base = new Array(ROOM_W * ROOM_H);
+    this.base = new Array(this.tw * this.th);
     const rows = (def.map || []);
-    for (let y = 0; y < ROOM_H; y++) {
+    for (let y = 0; y < this.th; y++) {
       const row = (rows[y] || '').replace(/\s+$/, '');
-      for (let x = 0; x < ROOM_W; x++) {
+      for (let x = 0; x < this.tw; x++) {
         const ch = row[x] !== undefined ? row[x] : ' ';
         const t = legend[ch];
-        this.base[y * ROOM_W + x] = t || legend[' '] || 'void';
+        this.base[y * this.tw + x] = t || legend[' '] || 'void';
       }
     }
     // Runtime overrides (opened doors, smashed bushes, lifted rocks).
-    this.override = new Array(ROOM_W * ROOM_H).fill(null);
+    this.override = new Array(this.tw * this.th).fill(null);
 
     this.music = def.music || null;
     this.tint = def.tint || null;
@@ -90,12 +134,12 @@ export class Room {
     this.cleared = false;     // all enemies defeated at least once (for locked rooms)
   }
 
-  inBounds(tx, ty) { return tx >= 0 && ty >= 0 && tx < ROOM_W && ty < ROOM_H; }
+  inBounds(tx, ty) { return tx >= 0 && ty >= 0 && tx < this.tw && ty < this.th; }
 
   /** Authored (possibly virtual) tile name. */
   baseName(tx, ty) {
     if (!this.inBounds(tx, ty)) return 'void';
-    return this.override[ty * ROOM_W + tx] || this.base[ty * ROOM_W + tx];
+    return this.override[ty * this.tw + tx] || this.base[ty * this.tw + tx];
   }
 
   /**
@@ -127,13 +171,13 @@ export class Room {
 
   setTile(tx, ty, name) {
     if (!this.inBounds(tx, ty)) return;
-    this.override[ty * ROOM_W + tx] = name;
+    this.override[ty * this.tw + tx] = name;
     this.invalidate();
   }
 
   clearTile(tx, ty) {
     if (!this.inBounds(tx, ty)) return;
-    this.override[ty * ROOM_W + tx] = null;
+    this.override[ty * this.tw + tx] = null;
     this.invalidate();
   }
 
@@ -162,15 +206,15 @@ export class Room {
 
   /** Render (and cache) the static tile layer for a tide level or field. */
   render(tide, frame) {
-    if (!this._cache) this._cache = offscreen(VIEW_W, VIEW_H);
+    if (!this._cache) this._cache = offscreen(this.pw, this.ph);
     const key = this.cacheKeyFor(tide);
     if (this._cacheDirty || this._cacheTide !== key) {
       const ctx = this._cache.ctx;
-      ctx.clearRect(0, 0, VIEW_W, VIEW_H);
+      ctx.clearRect(0, 0, this.pw, this.ph);
       this.animCells.length = 0;
       this.overCells.length = 0;
-      for (let y = 0; y < ROOM_H; y++) {
-        for (let x = 0; x < ROOM_W; x++) {
+      for (let y = 0; y < this.th; y++) {
+        for (let x = 0; x < this.tw; x++) {
           const d = this.tile(x, y, tide);
           if (d.flags & F.VOID) {
             ctx.fillStyle = '#000';
@@ -215,12 +259,12 @@ export class Room {
   renderAt(tide, frame) {
     const key = this.cacheKeyFor(tide);
     let a = this._alt.get(key);
-    if (!a) { a = offscreen(VIEW_W, VIEW_H); a.dirty = true; this._alt.set(key, a); }
+    if (!a) { a = offscreen(this.pw, this.ph); a.dirty = true; this._alt.set(key, a); }
     if (a.dirty) {
       const ctx = a.ctx;
-      ctx.clearRect(0, 0, VIEW_W, VIEW_H);
-      for (let y = 0; y < ROOM_H; y++) {
-        for (let x = 0; x < ROOM_W; x++) {
+      ctx.clearRect(0, 0, this.pw, this.ph);
+      for (let y = 0; y < this.th; y++) {
+        for (let x = 0; x < this.tw; x++) {
           const d = this.tile(x, y, tide);
           if (d.flags & F.VOID) continue;
           if (d.underArt) {
@@ -255,7 +299,7 @@ export class Room {
    */
   solidAt(px, py, tide, caps) {
     const tx = Math.floor(px / TILE), ty = Math.floor(py / TILE);
-    if (tx < 0 || ty < 0 || tx >= ROOM_W || ty >= ROOM_H) return true;
+    if (tx < 0 || ty < 0 || tx >= this.tw || ty >= this.th) return true;
     // The tile is resolved at ITS OWN tide level, so a hitbox spanning the edge
     // of a frozen patch is solid on one side and wadeable on the other.
     const d = this.tile(tx, ty, tide);

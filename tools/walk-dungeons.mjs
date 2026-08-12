@@ -119,7 +119,9 @@ for (const id of DUNGEONS) {
       const room = g.room;
       if (!room) { out.bad.push(`${key}: no room`); continue; }
       let voids = 0, unknown = [];
-      for (let y = 0; y < 8; y++) for (let x = 0; x < 10; x++) {
+      // The ROOM's extent. A 2x1 room is 20x8 and checking the first ten
+      // columns of it would leave half of it unproved.
+      for (let y = 0; y < room.th; y++) for (let x = 0; x < room.tw; x++) {
         for (const tide of [0, 1, 2]) {
           const d = room.tile(x, y, tide);
           if (!d) { unknown.push(`${x},${y}`); continue; }
@@ -138,10 +140,38 @@ for (const id of DUNGEONS) {
 // ------------------------------------------------- part 2: dungeon reachability
 const reach = await page.evaluate((ids) => {
   const F = window.__F, getTileDef = window.__getTileDef, getLegend = window.__getLegend;
-  const W = 10, H = 8;
+  const SW = 10, SH = 8;                    // one SCREEN, in tiles
   const report = [];
   for (const mapId of ids) {
     const m = window.__MAPS.get(mapId);
+    // Every room's size in screens, and which map cell each room owns. A
+    // multi-screen room covers sw x sh cells from its key, so a seam is
+    // resolved by asking which room owns the cell on the other side of it
+    // rather than by adding one to the room's x. For an all-1x1 dungeon —
+    // every dungeon today — `owner` is the identity on room keys and the flood
+    // below walks exactly the graph it always did.
+    const sizeOf = (rk) => {
+      const sz = (m.roomDefs[rk].size) || [1, 1];
+      return [sz[0] | 0, sz[1] | 0];
+    };
+    const dims = new Map();                 // rk -> {rx, ry, sw, sh, W, H}
+    const owner = new Map();                // 'f,cx,cy' -> rk
+    for (const rk of Object.keys(m.roomDefs)) {
+      const [f0, rx0, ry0] = rk.split(',').map(Number);
+      const [sw0, sh0] = sizeOf(rk);
+      dims.set(rk, { f: f0, rx: rx0, ry: ry0, sw: sw0, sh: sh0, W: sw0 * SW, H: sh0 * SH });
+      for (let j = 0; j < sh0; j++) for (let i = 0; i < sw0; i++) owner.set(`${f0},${rx0 + i},${ry0 + j}`, rk);
+    }
+    // A tile step that leaves `rk` lands in whichever room owns the screen cell
+    // it fell into. Returns null off the end of the map.
+    const stepOut = (rk, nx, ny) => {
+      const D = dims.get(rk);
+      const gx = D.rx * SW + nx, gy = D.ry * SH + ny;
+      const nrk = owner.get(`${D.f},${Math.floor(gx / SW)},${Math.floor(gy / SH)}`);
+      if (!nrk) return null;
+      const N = dims.get(nrk);
+      return [nrk, gx - N.rx * SW, gy - N.ry * SH];
+    };
     const legend = getLegend(m.legend);
     const defOf = (ch, tide) => {
       let d = getTileDef(legend[ch]);
@@ -217,10 +247,23 @@ const reach = await page.evaluate((ids) => {
     }
 
     // Count keys available in the whole dungeon, spent as doors are opened.
+    //
+    // A CHEST HANDS OVER A KEY IN TWO DIFFERENT SHAPES and this used to know
+    // only one. `Game.openChest` takes `item:` (grant the item) OR `pickup:`
+    // (spawn the pickup on the floor), and D1's third key is a
+    // `{ pickup: 'key' }` chest — so the dungeon was walked believing it had two
+    // keys for three locks. It stayed invisible because the third lock had a way
+    // round it, so the flood never asked for the key it could not count: two
+    // faults that each concealed the other, and sealing the door is what made
+    // this one fail out loud. The boss-key sweep below already read all three
+    // spellings; this now matches it.
     let keys = 0;
     for (const def of Object.values(m.roomDefs)) {
-      for (const e of def.entities || []) if (e[0] === 'pickup' && e[3] && e[3].kind === 'key') keys++;
-      for (const e of def.entities || []) if (e[0] === 'chest' && e[3] && e[3].item === 'key') keys++;
+      for (const e of def.entities || []) {
+        const o = e[3] || {};
+        if (e[0] === 'pickup' && o.kind === 'key') keys++;
+        if (e[0] === 'chest' && (o.item === 'key' || o.pickup === 'key')) keys++;
+      }
       for (const s of def.puzzle?.reward?.spawn || []) if (s[3] && s[3].kind === 'key') keys++;
     }
     let bossKey = false;
@@ -247,7 +290,8 @@ const reach = await page.evaluate((ids) => {
     };
     // seed anywhere passable in the start room
     const sd = m.roomDefs[seedRoom];
-    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (passable(sd.map[y][x])) { push(seedRoom, x, y); }
+    const sdD = dims.get(seedRoom);
+    for (let y = 0; y < sdD.H; y++) for (let x = 0; x < sdD.W; x++) if (passable(sd.map[y][x])) { push(seedRoom, x, y); }
 
     let progress = true;
     while (progress) {
@@ -257,7 +301,8 @@ const reach = await page.evaluate((ids) => {
         const def = m.roomDefs[rk];
         const w = warpsOut.get(rk + ':' + x + ',' + y);
         if (w) { const [wrk, wxy] = w.split(':'); const [wx, wy] = wxy.split(',').map(Number); push(wrk, wx, wy); }
-        const [f, rx, ry] = rk.split(',').map(Number);
+        const D = dims.get(rk);
+        const W = D.W, H = D.H;
         for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
           const nx = x + dx, ny = y + dy;
           if (nx >= 0 && ny >= 0 && nx < W && ny < H) {
@@ -271,12 +316,11 @@ const reach = await page.evaluate((ids) => {
             else if (isBossDoor(ch) && bossKey) lockedSeen.add(rk + ':' + nx + ',' + ny + ':boss');
             continue;
           }
-          // stepping off the room edge into the neighbouring room
-          const nk = `${f},${rx + (nx < 0 ? -1 : nx >= W ? 1 : 0)},${ry + (ny < 0 ? -1 : ny >= H ? 1 : 0)}`;
-          const nd = m.roomDefs[nk];
-          if (!nd) continue;
-          const tx = (nx + W) % W, ty = (ny + H) % H;
-          if (passable(nd.map[ty][tx])) push(nk, tx, ty);
+          // stepping off the ROOM edge into whichever room owns the cell beyond
+          const out = stepOut(rk, nx, ny);
+          if (!out) continue;
+          const [nk, tx, ty] = out;
+          if (passable(m.roomDefs[nk].map[ty][tx])) push(nk, tx, ty);
         }
       }
       // spend a key on one still-closed lock we can see
@@ -323,12 +367,13 @@ for (const r of reach) {
 // mechanic a boss room has left.
 const locked = await page.evaluate((ids) => {
   const F = window.__F, getTileDef = window.__getTileDef, getLegend = window.__getLegend;
-  const W = 10, H = 8;
   const out = [];
   for (const mapId of ids) {
     const m = window.__MAPS.get(mapId);
     for (const [key, def] of Object.entries(m.roomDefs || {})) {
       if (!def.noTide) continue;
+      const sz = def.size || [1, 1];
+      const W = (sz[0] | 0) * 10, H = (sz[1] | 0) * 8;
       const legend = getLegend(def.legend || m.legend);
       const walk = (ch, t) => {
         let d = getTileDef(legend[ch]);
@@ -368,6 +413,76 @@ const locked = await page.evaluate((ids) => {
 }, DUNGEONS);
 check('every tide-locked room works at all three levels on its own',
   locked.length === 0, locked.slice(0, 4).join(' | '));
+
+// ------------------------------------------- part 2c: locks that lock something
+//
+// NOTHING USED TO CHECK THAT A LOCKED DOOR LOCKS ANYTHING, and the flood above
+// structurally cannot: it spends a key on any lock it can reach and then asks
+// only whether every room came out reachable. A door with a way round it
+// therefore reads exactly like a door that got opened, and the key it charges
+// for reads exactly like a key that got spent. D1's Clawcrab Den shipped with
+// one — row 2 ran clear past the door in the room's west wall, so the Piece of
+// Heart behind it was free and Small Key 3 bought nothing. It survived every
+// checker in the repo and was found by walking the room.
+//
+// The claim here is local and cheap: a `dDoorLocked` or `dDoorBoss` tile must
+// SEPARATE its room. Flood from the tile on one side of it with the door
+// treated as solid, and the tile on the other side must not be reachable.
+//
+// AT ALL THREE TIDE LEVELS, on the same axis. A door that separates at LOW and
+// not at HIGH is not a locked door, it is a locked door and a conch — and the
+// conch is the one tool the player always has.
+//
+// It says nothing about whether the far side is worth anything, or whether the
+// key is reachable first; those are the flood's job and it already does them.
+const leaky = await page.evaluate((ids) => {
+  const F = window.__F, getTileDef = window.__getTileDef, getLegend = window.__getLegend;
+  const out = []; let total = 0;
+  for (const mapId of ids) {
+    const m = window.__MAPS.get(mapId);
+    for (const [key, def] of Object.entries(m.roomDefs || {})) {
+      const sz = def.size || [1, 1];
+      const W = (sz[0] | 0) * 10, H = (sz[1] | 0) * 8;
+      const legend = getLegend(def.legend || m.legend);
+      const walk = (ch, t) => {
+        let d = getTileDef(legend[ch]);
+        for (let i = 0; i < 4 && d && d.tide; i++) d = getTileDef(d.tide[t]);
+        if (!d) return false;
+        if (d.flags & F.STAIRS) return true;
+        return !(d.flags & (F.VOID | F.SOLID | F.PIT | F.DEEP | F.LEDGE | F.HAZARD));
+      };
+      // Does the door at (x,y) cut its two neighbours along (ax,ay) apart?
+      const cuts = (x, y, ax, ay, t) => {
+        const a = [x - ax, y - ay], b = [x + ax, y + ay];
+        if (a[0] < 0 || a[1] < 0 || b[0] >= W || b[1] >= H) return false;
+        if (!walk(def.map[a[1]][a[0]], t) || !walk(def.map[b[1]][b[0]], t)) return false;
+        const seen = new Set([a.join(',')]), q = [a];
+        while (q.length) {
+          const [cx, cy] = q.pop();
+          for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+            const nx = cx + dx, ny = cy + dy;
+            if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
+            if (nx === x && ny === y) continue;              // the door is shut
+            const k = nx + ',' + ny;
+            if (seen.has(k) || !walk(def.map[ny][nx], t)) continue;
+            seen.add(k); q.push([nx, ny]);
+          }
+        }
+        return !seen.has(b.join(','));
+      };
+      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+        const name = legend[def.map[y][x]];
+        if (name !== 'dDoorLocked' && name !== 'dDoorBoss') continue;
+        total++;
+        const held = [[1, 0], [0, 1]].some(([ax, ay]) => [0, 1, 2].every(t => cuts(x, y, ax, ay, t)));
+        if (!held) out.push(`${mapId} ${key} (${def.name || ''}) door at ${x},${y}`);
+      }
+    }
+  }
+  return { out, total };
+}, DUNGEONS);
+check(`every locked door separates its room at all three tide levels (${leaky.total} doors)`,
+  leaky.out.length === 0, leaky.out.slice(0, 4).join(' | ') + ' — there is a way round it');
 
 // ------------------------------------------------------- part 3: the ledges
 // The four ledge characters, each with the unit vector the player hops along

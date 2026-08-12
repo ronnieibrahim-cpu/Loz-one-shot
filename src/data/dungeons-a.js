@@ -456,19 +456,79 @@ export function installDungeonsA() {
         ],
       },
       '0,5,3': {
+        // THE ONE MULTI-SCREEN ROOM IN THE GAME, and the worked example for
+        // P8's remaining five dungeons. It is 2x1: eight rows of TWENTY
+        // characters, one grid, not two screens laid side by side. It owns map
+        // cells 5,3 and 6,3, so nothing else may be keyed to 6,3.
+        //
+        // WHY THIS ROOM AND NOT ANOTHER.
+        //
+        //   * It is the dungeon's set piece. The P8 amendment says the large
+        //     rooms land on set pieces and most rooms stay one screen; a
+        //     miniboss arena is the clearest thing in D1 that a 10-tile room
+        //     was cramping. The Clawcrab now sits at the far end and the walk
+        //     to it is the fight starting.
+        //   * It is NOT an anchor gate. All three of D1's gates and both of its
+        //     gauge rooms are proved impassable-without-the-iron by
+        //     `tools/check-anchor.mjs`, and re-proving one of those at a new
+        //     width is a second job, not this one.
+        //   * Converting it creates no new seam with anything. The cell it
+        //     grows into, 6,3, has no neighbours: 7,3, 6,2 and 6,4 are all
+        //     empty. Its own three doorways — north at x=4,5 into the Drowned
+        //     Chamber, west at rows 3 and 4 into the Two Gauges, and the locked
+        //     door at 2,3 — are all in the western screen and are untouched, so
+        //     every facing wall in every neighbour is the wall it always was.
+        //
+        // The pinch at columns 9-10 on rows 1 and 6 is what keeps it reading as
+        // one den with two lobes rather than as one twenty-tile box.
+        //
+        // THE LOCKED DOOR AT 2,3 IS THE ONLY WAY BETWEEN THE DEN AND THE WEST
+        // ANTECHAMBER, and columns 0-1 of rows 2 and 5 are wall to make that
+        // true. It was not true before — row 2 ran clear from column 1, so a
+        // player standing in the antechamber could step up, round the door and
+        // straight on, and key 3 bought nothing. That was so in the original
+        // 10-wide room too; the widening did not cause it, it only made someone
+        // walk the room and notice. Nothing in the toolchain catches a lock
+        // with a way round it: `walk-dungeons.mjs` spends a key on any lock it
+        // can reach and then asks only whether every room is reachable, so a
+        // bypassable lock reads as a lock that got opened. If you add a locked
+        // door anywhere, wall the four tiles round it yourself.
+        //
+        // The door is load-bearing in one direction that matters: `0,4,3`, the
+        // gauge room with the Piece of Heart, is entered ONLY through it.
+        //
+        // THE FLOOR IS DELIBERATELY PLAIN, AND `,` IS NOT AVAILABLE HERE.
+        //
+        // Twenty tiles of one floor tile is the failure mode a wide room
+        // invites, and the obvious answer is the theme's own variant — `,`,
+        // `dFloorGrottoAlt`, extracted by `tools/rip-dungeon-themes.py` in the
+        // same P7.5 pass that gave this dungeon its walls and floor. It was
+        // laid in as a scoured track under the claw, screenshotted, and taken
+        // straight back out: `dFloorGrottoAlt` and `dFloorWet` — the MID form
+        // of the `dBasin` tide tile this room is dotted with — carry the SAME
+        // PALETTE, `stonef`. So the decoration read as standing water, in a
+        // room whose four real damp patches are the only thing on the floor
+        // that is supposed to. A floor variant that lies about the tide is
+        // worse than a bare floor.
+        //
+        // This is a property of three of the eight themes, not of this room:
+        // Grotto, Cistern and Salt all have an Alt floor in `stonef`. In those
+        // dungeons `,` is a wet-looking tile and must be treated as one. Coral,
+        // Bog, Wood, Palace and Abyss are clear and can use it freely.
         name: 'Clawcrab Den',
+        size: [2, 1],
         map: [
-          '####..####',
-          '#........#',
-          '#.2....2.#',
-          '..L......#',
-          '..#......#',
-          '#.2....2.#',
-          '#........#',
-          '##########',
+          '####..##############',
+          '#........##........#',
+          '##2....2....2....2.#',
+          '..L................#',
+          '..#................#',
+          '##2....2....2....2.#',
+          '#........##........#',
+          '####################',
         ],
         entities: [
-          ['clawcrab', 5, 2],
+          ['clawcrab', 14, 3],
         ],
         puzzle: {
           enemies: true,

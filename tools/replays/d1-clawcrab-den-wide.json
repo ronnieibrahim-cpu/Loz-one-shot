@@ -1,0 +1,316 @@
+{
+ "name": "d1-clawcrab-den-wide",
+ "note": "Clawcrab Den (2x1): east across the internal screen seam to the far wall and back, one transition, camera to both clamps",
+ "engine": 1,
+ "setup": {
+  "seed": 20260806,
+  "playerName": "LINK",
+  "items": {
+   "sword": 1,
+   "conch": 1,
+   "shield": 1
+  },
+  "equipB": "sword",
+  "equipA": "conch",
+  "maxHearts": 20,
+  "hearts": 20,
+  "tide": 1,
+  "enter": [
+   "d1",
+   0,
+   5,
+   2,
+   72,
+   96,
+   "down"
+  ]
+ },
+ "assert": {
+  "roomChanges": 1,
+  "camMaxX": 160,
+  "camEndX": 0,
+  "camMaxY": 0
+ },
+ "span": {
+  "roomChanges": 1,
+  "camMinX": 0,
+  "camMaxX": 160,
+  "camMinY": 0,
+  "camMaxY": 0,
+  "camEndX": 0,
+  "camEndY": 0
+ },
+ "buttons": [
+  "up",
+  "down",
+  "left",
+  "right",
+  "a",
+  "b",
+  "start",
+  "select"
+ ],
+ "frames": 862,
+ "input": [
+  [
+   0,
+   20
+  ],
+  [
+   4,
+   7
+  ],
+  [
+   2,
+   50
+  ],
+  [
+   0,
+   34
+  ],
+  [
+   10,
+   12
+  ],
+  [
+   8,
+   50
+  ],
+  [
+   2,
+   16
+  ],
+  [
+   8,
+   89
+  ],
+  [
+   10,
+   26
+  ],
+  [
+   8,
+   66
+  ],
+  [
+   10,
+   1
+  ],
+  [
+   2,
+   15
+  ],
+  [
+   0,
+   60
+  ],
+  [
+   4,
+   155
+  ],
+  [
+   6,
+   16
+  ],
+  [
+   4,
+   84
+  ],
+  [
+   6,
+   22
+  ],
+  [
+   4,
+   17
+  ],
+  [
+   1,
+   14
+  ],
+  [
+   4,
+   16
+  ],
+  [
+   1,
+   16
+  ],
+  [
+   4,
+   16
+  ],
+  [
+   0,
+   60
+  ]
+ ],
+ "trailEvery": 60,
+ "trail": [
+  {
+   "f": 60,
+   "x": 65,
+   "y": -8,
+   "hp": 20,
+   "e": 1,
+   "d": 0,
+   "r": "0,5,3"
+  },
+  {
+   "f": 120,
+   "x": 74,
+   "y": 12,
+   "hp": 20,
+   "e": 1,
+   "d": 0,
+   "r": "0,5,3"
+  },
+  {
+   "f": 180,
+   "x": 127,
+   "y": 22,
+   "hp": 20,
+   "e": 1,
+   "d": 0,
+   "r": "0,5,3"
+  },
+  {
+   "f": 240,
+   "x": 178,
+   "y": 31,
+   "hp": 20,
+   "e": 2,
+   "d": 0,
+   "r": "0,5,3"
+  },
+  {
+   "f": 300,
+   "x": 216,
+   "y": 27,
+   "hp": 18,
+   "e": 3,
+   "d": 0,
+   "r": "0,5,3"
+  },
+  {
+   "f": 360,
+   "x": 276,
+   "y": 31,
+   "hp": 18,
+   "e": 2,
+   "d": 0,
+   "r": "0,5,3"
+  },
+  {
+   "f": 420,
+   "x": 287,
+   "y": 47,
+   "hp": 18,
+   "e": 4,
+   "d": 0,
+   "r": "0,5,3"
+  },
+  {
+   "f": 480,
+   "x": 283,
+   "y": 47,
+   "hp": 16,
+   "e": 2,
+   "d": 0,
+   "r": "0,5,3"
+  },
+  {
+   "f": 540,
+   "x": 223,
+   "y": 47,
+   "hp": 16,
+   "e": 1,
+   "d": 0,
+   "r": "0,5,3"
+  },
+  {
+   "f": 600,
+   "x": 163,
+   "y": 47,
+   "hp": 14,
+   "e": 3,
+   "d": 0,
+   "r": "0,5,3"
+  },
+  {
+   "f": 660,
+   "x": 132,
+   "y": 47,
+   "hp": 14,
+   "e": 1,
+   "d": 0,
+   "r": "0,5,3"
+  },
+  {
+   "f": 720,
+   "x": 69,
+   "y": 44,
+   "hp": 12,
+   "e": 2,
+   "d": 0,
+   "r": "0,5,3"
+  },
+  {
+   "f": 780,
+   "x": 33,
+   "y": 23,
+   "hp": 12,
+   "e": 1,
+   "d": 0,
+   "r": "0,5,3"
+  },
+  {
+   "f": 840,
+   "x": 17,
+   "y": 17,
+   "hp": 12,
+   "e": 4,
+   "d": 0,
+   "r": "0,5,3"
+  }
+ ],
+ "expect": {
+  "frame": 862,
+  "mapId": "d1",
+  "room": "0,5,3",
+  "floor": 0,
+  "x": 17,
+  "y": 17,
+  "z": 0,
+  "dir": "left",
+  "playerId": 1,
+  "hearts": 12,
+  "maxHearts": 20,
+  "rupees": 0,
+  "kills": 0,
+  "deaths": 0,
+  "keys": 0,
+  "essences": [],
+  "items": [
+   "conch",
+   "shield",
+   "sword"
+  ],
+  "dungeonMap": false,
+  "chartstone": false,
+  "flags": [],
+  "doorsChanged": 0,
+  "secretsSeen": 3,
+  "chestsOpened": 0,
+  "tide": 1,
+  "probeLevels": null,
+  "probePix": null,
+  "mode": "play",
+  "entities": 4,
+  "enemies": 1,
+  "roomSeed": 708401076,
+  "roomDraws": 0,
+  "globalSeed": 781976111,
+  "globalDraws": 0
+ }
+}

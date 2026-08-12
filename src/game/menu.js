@@ -1,7 +1,7 @@
 // Pause menu: item grid with A/B assignment, dungeon or overworld map, quest
 // status, and save. Opened with START, closed with START or B on the first tab.
 
-import { SCREEN_W, SCREEN_H, HUD_H, VIEW_W, VIEW_H, ROOM_W, ROOM_H } from '../core/screen.js';
+import { SCREEN_W, SCREEN_H, HUD_H, VIEW_W, VIEW_H } from '../core/screen.js';
 import { drawText, drawTextCentered, textWidth } from '../gfx/font.js';
 import { sprites } from '../gfx/art.js';
 import { drawPanel, drawBox } from './dialogue.js';
@@ -11,7 +11,7 @@ import {
   caseSize, slotOpen, equippedIn,
 } from './scrimshaw.js';
 import { HEART_UNITS } from './progress.js';
-import { MAPS, getMap, hasRoom, getRoom } from '../world/maps.js';
+import { MAPS, getMap, hasRoom, getRoom, roomKeyAt } from '../world/maps.js';
 import { TIDE_NAMES, TIDE_COUNT } from './tide.js';
 
 // The Chartstone's pips, LOW to HIGH. Sand, shallow, deep — the same three
@@ -41,8 +41,8 @@ function tideMarks(mapId, floor, rx, ry) {
     for (let lv = 0; lv < TIDE_COUNT; lv++) {
       const prev = (lv + TIDE_COUNT - 1) % TIDE_COUNT;
       let differs = false;
-      for (let y = 0; y < ROOM_H && !differs; y++) {
-        for (let x = 0; x < ROOM_W; x++) {
+      for (let y = 0; y < room.th && !differs; y++) {
+        for (let x = 0; x < room.tw; x++) {
           if (room.tile(x, y, lv).name !== room.tile(x, y, prev).name) { differs = true; break; }
         }
       }
@@ -279,14 +279,27 @@ export class Menu {
     const gw = m.w * cell, gh = m.h * cell;
     const ox = Math.round((SCREEN_W - gw) / 2), oy = HUD_H + 28;
 
+    // A MULTI-SCREEN ROOM IS ONE CELL SPANNING SEVERAL, as the source's dungeon
+    // maps draw them. The grid is walked cell by cell, but a cell that is
+    // COVERED by a room keyed further up or left is skipped: only the room's
+    // own top-left cell draws, and it draws sw x sh cells wide. Drawing every
+    // covered cell instead would paint a 2x1 room as two rooms with a seam
+    // between them, which is exactly the lie the whole feature is against.
     for (let y = 0; y < m.h; y++) {
       for (let x = 0; x < m.w; x++) {
         if (!hasRoom(m.id, floor, x, y)) continue;
+        // Read from the DEFINITION, not from a Room: opening the map screen
+        // must not instantiate every room on the floor, because an instantiated
+        // room is one `liveRooms` will then save and restore the state of.
+        const key = floor + ',' + x + ',' + y;
+        if (roomKeyAt(m.id, floor, x, y) !== key) continue;      // a covered cell
+        const sz = m.roomDefs[key].size || [1, 1];
+        const sw = sz[0] | 0, sh = sz[1] | 0;
         const seen = g.progress.secrets['seen:' + m.id + ':' + floor + ',' + x + ',' + y];
         if (!seen && !haveMap) continue;
         const here = g.room && g.room.rx === x && g.room.ry === y && g.room.floor === floor;
         ctx.fillStyle = here ? '#f8f8e8' : (seen ? '#58b0e0' : '#304858');
-        ctx.fillRect(ox + x * cell, oy + y * cell, cell - 1, cell - 1);
+        ctx.fillRect(ox + x * cell, oy + y * cell, sw * cell - 1, sh * cell - 1);
 
         // THE CHARTSTONE. A room is marked with one pip per tide level that
         // CHANGES it — which is information the game already computes on every
@@ -299,7 +312,7 @@ export class Menu {
         for (let lv = 0; lv < 3; lv++) {
           if (!(marks & (1 << lv))) continue;
           ctx.fillStyle = TIDE_PIP[lv];
-          ctx.fillRect(ox + x * cell + cell - 3, oy + y * cell + (2 - lv) * 3, 2, 2);
+          ctx.fillRect(ox + x * cell + sw * cell - 3, oy + y * cell + (2 - lv) * 3, 2, 2);
         }
       }
     }

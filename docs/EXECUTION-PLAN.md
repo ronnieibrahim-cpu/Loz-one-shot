@@ -603,6 +603,11 @@ Every checker green. npm run build, commit dist/, update NEXT-SESSION.md and
 HANDOFF.md.
 P7.6 — Multi-screen dungeon rooms
 
+**DONE.** All seven steps, plus the two additions in `docs/briefs/P7.6-PROMPT.md`.
+The brief below is kept as the record of what was asked for; what was built is
+described in "ROOM SIZE — everything a dungeon session needs, in one place" in
+the P8 section, and that is the section to read, not this one.
+
 Effort: high. Use plan mode. Show me the plan before executing.
 
 Read CLAUDE.md and docs/EXECUTION-PLAN.md first. Branch off main. Use plan
@@ -702,12 +707,11 @@ Constraints:
   through. One Heart Container from the boss room's onEvent('bossDead').
 - Essence index equals the dungeon number.
 
-Rooms may now be 1x1, 2x1, 1x2, 2x2 or 3x1 screens. Use the larger sizes
-deliberately, not decoratively: a multi-screen room should exist because the
-puzzle or the fight needs the space, and a dungeon where every room is 2x2
-reads as flat as one where every room is 1x1. Reference the map rips in
-assets/sheets/ for how Seasons paces this — most rooms are one screen, and
-the large ones land on set pieces.
+Rooms may now be 1x1, 2x1, 1x2, 2x2 or 3x1 screens. Read "ROOM SIZE —
+everything a dungeon session needs, in one place" below before authoring one:
+it has the grid width each size implies, the anchor-gate arithmetic restated
+as a sizing rule, the pacing number (at most one room in six larger than 1x1,
+at most one per dungeon larger than 2x1), and the worked example to copy.
 
 Use the tilesets from P7.5 for this dungeon's visual identity. Each of the
 six dungeons should be identifiable from a single screenshot.
@@ -740,21 +744,122 @@ Tidewright's Anchor. Against the constraint list above:
 | miniboss two thirds through | Clawcrab in `0,5,3`, room 17 of 24 (71%) |
 | Heart Container from `bossDead` | unchanged, `0,3,1` |
 | essence index = dungeon number | 1 |
-| multi-screen rooms | **NOT USED — P7.6 is not built.** Every room is 1x1 |
+| multi-screen rooms | one: the Clawcrab Den `0,5,3` is 2x1 (converted by P7.6 as the worked example). The other 23 are 1x1 |
 
 Two honest exceptions to "every room after it requires the verb": `0,5,2` (the
 anglerfry pool) is a fight the tide is a weapon in, crossable by its dry ring
 with no iron at all; and `0,3,1` is the boss room. Both are *reached* only
 through a gate, so no post-item room can be entered without the Anchor.
 
-**What D1 taught about the item, and it is a P7.6 argument.** The held patch is
-5x5 and the throw carries two tiles, so one gate consumes a whole room row and
-the rest of the room has to be walled off to stop the player walking round it.
-That is why D1's gates are bare corridors and why no room holds two of them. The
-Anchor does not have room to be interesting in a 10x8 screen. If P7.6 is
-weighed against D2-D6, weigh that in: the remaining five dungeons will keep
-hitting the same wall, and D2's item (the Lens) is informational rather than
-spatial, so D3 is where it bites again.
+**What D1 taught about the item.** The held patch is 5x5 and the throw carries
+two tiles, so one gate consumes a whole room row and the rest of the room has to
+be walled off to stop the player walking round it. That is why D1's gates are
+bare corridors and why no room holds two of them. The Anchor did not have room
+to be interesting in a 10x8 screen. **P7.6 is now built**, and the section below
+is the only thing a D2-D6 session needs to read about room size.
+
+#### ROOM SIZE — everything a dungeon session needs, in one place
+
+P7.6 is built and shipped. A dungeon room may be larger than one screen. Nothing
+else in the engine changed: a room with no `size` is 1x1 and behaves exactly as
+it always did, and the overworld is refused a size outright (`registerMap`
+throws, and `validate.mjs` reports it — it is a check, not a convention).
+
+**The five sizes, and the grid each one implies.** The size is in SCREENS, and
+the room's `map` is ONE grid, not several screens laid side by side:
+
+| `size` | tiles | `map` shape | pixels | map cells owned |
+|---|---|---|---|---|
+| omitted / `[1,1]` | 10 x 8 | 8 rows of 10 chars | 160 x 128 | 1 |
+| `[2,1]` | 20 x 8 | **8 rows of 20 chars** | 320 x 128 | `rx..rx+1` |
+| `[1,2]` | 10 x 16 | **16 rows of 10 chars** | 160 x 256 | `ry..ry+1` |
+| `[2,2]` | 20 x 16 | **16 rows of 20 chars** | 320 x 256 | a 2x2 block |
+| `[3,1]` | 30 x 8 | **8 rows of 30 chars** | 480 x 128 | `rx..rx+2` |
+
+Anything outside that set throws at construction. Two consequences that bite:
+
+* A multi-screen room **owns** every cell it spans. Its key is its top-left
+  cell, and no other room may be keyed inside its footprint — `validate.mjs`
+  fails on it. A 2x1 room at `0,4,4` therefore means `0,5,4` does not exist and
+  the room's east neighbour is `0,6,4`.
+* Authoring a 2x1 room as two 10-wide grids gives sixteen rows and fails
+  `validate.mjs` immediately. That is deliberate; it is the mistake the parser
+  exists to catch.
+
+**The sizing rule, stated as anchor-gate arithmetic.** This is the reason the
+feature exists, and it generalises to any spatial item — D3's Kelp-Soled Cleats
+and D4's Bellows will hit exactly the same wall:
+
+* The Anchor holds a 5x5 patch and its throw carries about two tiles. So ONE
+  gate needs a stand tile, a four-tile near band, a three-tile far band and a
+  far side: **ten tiles, the full width of a 1x1 room row.**
+* **What fits in 10 tiles:** exactly one gate, and nothing else. Every other
+  route round it has to be walled off — any route round the gate skips it, and
+  any forgiving tile in the middle of it is somewhere to stand and sound the
+  conch. D1's three gates are therefore bare two-row corridors holding one idea
+  each.
+* **What fits in 20 tiles (2x1):** two gates back to back, or one gate plus the
+  room that makes it a decision — a fork, a fight, a reason to have brought the
+  iron here rather than there. The player can be made to choose WHERE to sink
+  the anchor, which a 10-tile row cannot express because there is only one place
+  it fits.
+* **What a 2x2 buys that a 2x1 does not:** a second axis. A 2x1 is a wider
+  corridor and its puzzles are still read left to right. A 2x2 lets a gate on
+  one axis interact with a gate on the other — one patch that must serve two
+  crossings at right angles, which is a different puzzle and not a longer one.
+  Reach for 2x2 only when the answer genuinely needs two directions; otherwise
+  it is a 2x1 with wasted floor.
+* **The patch does NOT grow with the room.** 5x5 is 5x5 in a 30-tile room. A
+  radius that split a 10x8 room splits a 20x8 room differently, and that is the
+  design consequence the feature was asked for, not a bug to compensate for.
+
+**The pacing rule, with a number attached.** Most rooms are one screen and the
+large ones land on set pieces — a boss, a miniboss, the item, the one puzzle the
+dungeon is named after. The number to check yourself against:
+
+> **At most one room in six is larger than 1x1, and at most one room per dungeon
+> is larger than 2x1.** In a 24-room dungeon that is four large rooms and one of
+> them may be a 2x2 or a 3x1.
+
+A dungeon that overshoots that reads as flat as one where every room is 1x1 —
+which is the failure the P8 amendment is warning about, restated as something a
+session can count.
+
+**The worked example: `0,5,3`, the Clawcrab Den in D1.** It is the only
+multi-screen room in the game and it is there to be copied. Read its header
+comment in `src/data/dungeons-a.js`: it states its size, its grid width, why
+that room and not another, and the three checks that had to hold before it could
+be converted (it is not an anchor gate, so nothing `check-anchor.mjs` proves had
+to be re-proved; the cell it grows into has no neighbours, so no facing wall in
+any other room moved; all of its doorways are in its western screen and are
+untouched).
+
+`tools/replays/d1-clawcrab-den-wide.json` is its proof, and the assertion is the
+part worth copying too: crossing the internal screen seam fires NO transition
+(`roomChanges: 1` for the whole run, the one at the real room boundary), and the
+camera reaches both of its clamps (`camMaxX: 160`, `camEndX: 0`) and never moves
+on the axis the room is one screen tall on (`camMaxY: 0`).
+
+**Two things a wide room will make you want, and one of them is a trap.**
+
+* **Breaking up the floor.** Twenty tiles of one floor tile is the failure mode
+  a large room invites. The theme's own variant `,` is the obvious answer and it
+  is NOT available in every dungeon: Grotto, Cistern and Salt register their Alt
+  floor in the `stonef` palette, which is the palette of `dFloorWet` — the MID
+  form of the `dBasin` tide tile. In those three, `,` reads as standing water.
+  Coral, Bog, Wood, Palace and Abyss are clear. `validate.mjs` proves a theme
+  never changes a tile's FLAGS and is exactly blind to this, so look at the room.
+* **Locked doors.** A large room has more ways round a door in it. Wall the four
+  tiles round any `L` you place; `walk-dungeons.mjs` now asserts every locked
+  and boss door separates its room on one axis at all three tide levels.
+
+**What you do not have to think about.** The camera, the render cache, the
+minimap and the seam arithmetic are all done. The camera clamps to
+`[0, room.pw - VIEW_W]`, which is empty in a 1x1 room, so it is provably a no-op
+there; its three constants (`CAM_DEADZONE_W`, `CAM_DEADZONE_H`, `CAM_MAX_SPEED`)
+are all `guessed` and `KeyI` draws the deadzone box in game if you want to argue
+with them. Every checker reasons over `room.tw`/`room.th`, including
+`check-anchor.mjs`.
 
 #### D2 decision: the Lens is required INSIDE its own dungeon, and nowhere else
 

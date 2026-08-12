@@ -49,7 +49,7 @@ import {
 } from '../game/enemy.js';
 import { spawnEntity, moveEntity } from '../game/entity.js';
 import { fire } from '../game/projectile.js';
-import { VIEW_W, VIEW_H, TILE } from '../core/screen.js';
+import { TILE } from '../core/screen.js';
 import { sp } from '../core/fixed.js';
 
 const LOW = 0, MID = 1, HIGH = 2;
@@ -119,18 +119,20 @@ function spread(e, g, n, arcDeg, o = {}) {
   g.audio.sfx('enemyShoot');
 }
 
-/** Keep a boss inside the arena: orbit and scripted dashes ignore collision. */
-function clampArena(e, m = 12) {
-  e.x = Math.max(m, Math.min(VIEW_W - e.w - m, e.x));
-  e.y = Math.max(m, Math.min(VIEW_H - e.h - m, e.y));
+/** Keep a boss inside the arena: orbit and scripted dashes ignore collision.
+ *  The arena is the ROOM, so a boss in a multi-screen room has the whole of it
+ *  rather than the first screen of it. */
+function clampArena(e, g, m = 12) {
+  e.x = Math.max(m, Math.min(g.room.pw - e.w - m, e.x));
+  e.y = Math.max(m, Math.min(g.room.ph - e.h - m, e.y));
 }
 
 /** Summon minions in a puff, at arm's length from the boss and inside the room. */
 function summon(g, e, type, n = 1) {
   for (let i = 0; i < n; i++) {
     const a = g.rng.angle();
-    const x = Math.max(24, Math.min(VIEW_W - 40, e.cx + Math.cos(a) * 36));
-    const y = Math.max(24, Math.min(VIEW_H - 40, e.cy + Math.sin(a) * 36));
+    const x = Math.max(24, Math.min(g.room.pw - 40, e.cx + Math.cos(a) * 36));
+    const y = Math.max(24, Math.min(g.room.ph - 40, e.cy + Math.sin(a) * 36));
     g.spawnEffect('puff', x - 8, y - 8);
     spawnEntity(g, type, x / TILE, y / TILE, {});
   }
@@ -285,7 +287,7 @@ export function installBosses() {
   // Rooted, but never quite still: the column leans on its stalk.
   function anemosSway(e, g) {
     orbit(e, g, { radius: 9, speed: 0.028 });
-    clampArena(e, 14);
+    clampArena(e, g, 14);
   }
 
   // The feed cycle, and the tide hook: it unfurls for four times as long with
@@ -985,7 +987,7 @@ export function installBosses() {
     phases: [
       { above: 0.50, ai(e, g) {
         runPending(e, g);
-        orbit(e, g, { radius: 7, speed: 0.03 }); clampArena(e, 14);
+        orbit(e, g, { radius: 7, speed: 0.03 }); clampArena(e, g, 14);
         // Drop the water and the vine wilts: slower thorns, longer gaps.
         if (timer(e, 'thorn', g.tide.level === LOW ? 190 : 130)) {
           windUp(e, g, 16, (e2, g2) => shootRing(e2, g2, 6,
@@ -994,7 +996,7 @@ export function installBosses() {
       } },
       { above: 0.00, ai(e, g) {
         runPending(e, g);
-        orbit(e, g, { radius: 10, speed: 0.05 }); clampArena(e, 14);
+        orbit(e, g, { radius: 10, speed: 0.05 }); clampArena(e, g, 14);
         if (timer(e, 'thorn', g.tide.level === LOW ? 150 : 100)) {
           windUp(e, g, 12, (e2, g2) => {
             shootRing(e2, g2, 8, { sprite: 'shot', pal: 'wood', speed: 1.4, damage: 2 });
