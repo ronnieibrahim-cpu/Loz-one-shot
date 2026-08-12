@@ -101,6 +101,24 @@ tileset and manifest carry all 2181 so the cut can be made against real
 frequencies rather than re-ripped. The manifest is already in frequency order,
 so "the top 60" is `doc.tiles.slice(0, 60)`.
 
+## A tide gauge fixture (new, from P8/D1)
+
+D1 has two rooms whose door opens only when one well reads drained and another
+reads drowned (`0,4,3` and `0,1,1`). The rule is legible on paper and half
+legible on screen: the two gauge tiles ARE wells, so their state is visible as
+the water in them, and a plaque beside the door says what the door wants — but
+nothing marks the two tiles as a matched pair, and nothing on the door shows
+which of its two marks is currently satisfied.
+
+What it wants is a small fixture: a carved mark or a float-and-chain that reads
+lit/unlit, one beside each gauge and two on the door. It is a 16x16 with two
+states, and it is the difference between the puzzle being read and being
+stumbled into. Check `assets/sheets/oracle-seasons-tileset-subrosia.png` first —
+it is the one true tileset in the repo and it carries dungeon fixtures.
+
+Until it exists, both rooms lean on the plaque, and a session that plays them
+should say whether the plaque is enough.
+
 ## Carried over from docs/NEXT-SESSION.md
 
 - **The `cliff` family** — one extraction covers eight tiles and cliffs are on

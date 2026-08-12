@@ -453,6 +453,94 @@ case upgrade gives a second charm per level.
    highlighted. It must be legible at 160x144 with the existing font.
 5. Delete src/game/rings.js and every reference.
 ```
+
+#### P7 is CLOSED. Its leftovers are P8's, one per dungeon session
+
+Decided after the D1 audit below: P7 is done and there will be no P7 follow-up
+session. Everything still owed on scrimshaw is work that only makes sense with a
+dungeon in front of it, so each item is assigned to the P8 session that reaches
+it. **One has a deadline: the case-unlock question must be settled in the D2
+session**, because the LOW case opens at two essences and D2 is the second one.
+Ship D2 without deciding and there is a real save state in which the player owns
+charms they can never switch on.
+
+| Owed | Whose session | Why there |
+|---|---|---|
+| Decide whether the cases open on the essence or on talking to the scrimshander | **D2 — cannot slip** | Two essences is where the second case is meant to appear |
+| Place a charm per dungeon, in a case that dungeon's player has open | every session | D1 did it (Split Fang, `0,2,3`); `check-charms.mjs` prints the running list |
+| Look at the CHARM screen, the carve dialogue and one charm's effect on a real screen | first session that boots the game to play it | It needs eyes, not a harness |
+| Compare charms for value | D4 or later, once the roster has been met in play | Balancing thirty passives against no play data is guessing |
+| Settle `NEAP_GRACE_FRAMES` | whichever session plays the tide transitions | It is the width of the transition window the two cross-slot charms live in |
+
+Add to every remaining P8 prompt: **audit the dungeon against the charm gating
+the way D1 was.** Which cases does the player have open here, does this
+dungeon's tide theme leave them awake or dark, and is the charm you placed one
+they can actually use? That is a five-minute check and it is the thing that
+keeps scrimshaw a system rather than a menu.
+
+#### P7 audit (done during P8/D1) — what is built, and what was still missing
+
+Against the five numbered items of the brief, P7 is **functionally complete**,
+and each claim below has a checker behind it rather than a reading of the code:
+
+1. `src/game/scrimshaw.js` exists, `rings.js` is gone, and the slots are save
+   state — `progress.charmSlots/charmOpen/charmCase`, carried through `migrate`.
+2. Thirty charms, every one proved in-engine and none orphaned:
+   `check-charms.mjs`, 63 assertions.
+3. The scrimshander stands in Tidewatch (`overworld 0,4,7`, asserted), takes a
+   blank plus `CARVE_PRICE`, and finishes after `CARVE_TIDE_TURNS` turns of the
+   tide counted in `onTideChanged`.
+4. The CHARM menu screen exists and draws three cases stacked as tide levels.
+5. No reference to a ring survives; `i_ring` came out of `rip-hud.py`'s map.
+
+Three things stand between that and complete **as a played system**, and none of
+them is a code gap:
+
+- **The cases open on TALKING to her, not on the essence.** `checkUnlocks` is
+  called from `Scrimshander.interact` and nowhere else, so a player who never
+  walks back into Tidewatch finishes the game with one case and never learns the
+  system had three. This is the only one of the three that is arguably a defect
+  rather than a missing session, and it is a design call: open the case when the
+  essence lands and let her line be the acknowledgement, or leave the visit as
+  the beat and signpost it somewhere.
+- **Nobody has watched the CHARM screen, the carve dialogue or a single charm's
+  effect on a real screen.** Everything is checker truth.
+- **No two charms have been compared for value.** The Hagstone (one hit in four
+  ignored) is almost certainly the strongest thing in the game.
+
+And one that P8 is closing dungeon by dungeon: **placement**. Before D1 exactly
+one charm was placed by hand in the whole world (the shop's Ballast Heart). D1
+now places Split Fang in `0,2,3`, and `check-charms.mjs` prints the list of
+hand-placed charms every run so the number is visible rather than assumed.
+
+#### How D1 fits the P7 gating, and the one thing that does not
+
+At D1 the player holds 0 essences on the way in and 1 on the way out, so
+`CHARM_LOW_ESSENCES = 2` means **the MID case is the only case open for the whole
+of the first dungeon, and it holds one charm.** Two consequences:
+
+- A charm placed in D1 must be a MID charm. A LOW or HIGH one would be a reward
+  the player cannot switch on until after D2 — which is why D1's chest holds
+  Split Fang and not, say, the Wrecker's Eye. `'any'` does not help: a cross-slot
+  charm is only live in the case it is sitting in.
+- **A charm is dark for most of D1, and D1 is the reason.** A charm is live only
+  while the water under the player's feet matches its case, and this dungeon's
+  whole design is "take the sea down to LOW and walk it". So the player's one
+  passive switches itself off at exactly the moments the dungeon is teaching.
+  Nothing breaks — it is the rule working as written — but it means the charm
+  system reads as unreliable on first contact.
+
+  Three ways out, and it is a decision, not a bug fix: (a) leave it, and let the
+  first dungeon teach that charms are tide-shaped; (b) open the LOW case on the
+  first essence instead of the second, which re-paces the whole game; (c) hand
+  the player the Neap Charm early, since its whole job is holding a case awake
+  across the turn of the tide. (c) is the cheapest and the most in keeping, and
+  it wants `NEAP_GRACE_FRAMES` settled by play first.
+
+  The one place the rule pays off inside D1 is worth knowing: gate `0,2,2` is
+  crossed by holding a patch at MID and dropping the base to LOW, and a player
+  standing in that patch keeps their MID charm awake while the rest of the room
+  is drained. That is the Anchor's second use working exactly as P7 intended.
 P7.5 — Dungeon tilesets from the map rips
 
 Effort: medium. Mechanical extraction with one judgement call.
@@ -624,9 +712,54 @@ the large ones land on set pieces.
 Use the tilesets from P7.5 for this dungeon's visual identity. Each of the
 six dungeons should be identifiable from a single screenshot.
 
+Audit the dungeon against the charm gating, the way D1 was: which cases does
+the player have open at this point in the game, does this dungeon's tide theme
+leave them awake or dark, and is the charm you placed in it one they can
+actually slot? See "P7 is CLOSED" above for what each session owes.
+
+Any room that claims to need the dungeon's item should DECLARE that in its room
+data and be proved by a checker, both ways — impossible without the item,
+possible with it. tools/check-anchor.mjs is the worked example.
+
 Run validate.mjs, walk-dungeons.mjs and solve-switches.mjs after every room you
 change, not at the end.
 ```
+
+#### P8 status: D1 done, D2-D6 outstanding
+
+**D1, Tidewash Grotto — DONE.** 24 rooms, one floor, re-authored around the
+Tidewright's Anchor. Against the constraint list above:
+
+| Constraint | D1 |
+|---|---|
+| 22-32 rooms, 1-3 floors | 24 rooms, 1 floor |
+| item roughly halfway | the Anchor is room 12 of 24, in `0,3,2` |
+| every room after it requires the item's verb | every post-item room is behind at least one anchor gate; 5 of them are anchor rooms in their own right. Two exceptions are stated below |
+| tide theme is the constraint | three gate corridors and two gauge rooms, all proved impassable at every fixed level by `tools/check-anchor.mjs` |
+| Chartstone, 2-4 small keys, boss key | Chartstone in `0,4,5`; 3 keys, 3 locks; Boss Key in `0,2,1` |
+| miniboss two thirds through | Clawcrab in `0,5,3`, room 17 of 24 (71%) |
+| Heart Container from `bossDead` | unchanged, `0,3,1` |
+| essence index = dungeon number | 1 |
+| multi-screen rooms | **NOT USED — P7.6 is not built.** Every room is 1x1 |
+
+Two honest exceptions to "every room after it requires the verb": `0,5,2` (the
+anglerfry pool) is a fight the tide is a weapon in, crossable by its dry ring
+with no iron at all; and `0,3,1` is the boss room. Both are *reached* only
+through a gate, so no post-item room can be entered without the Anchor.
+
+**What D1 taught about the item, and it is a P7.6 argument.** The held patch is
+5x5 and the throw carries two tiles, so one gate consumes a whole room row and
+the rest of the room has to be walled off to stop the player walking round it.
+That is why D1's gates are bare corridors and why no room holds two of them. The
+Anchor does not have room to be interesting in a 10x8 screen. If P7.6 is
+weighed against D2-D6, weigh that in: the remaining five dungeons will keep
+hitting the same wall, and D2's item (the Lens) is informational rather than
+spatial, so D3 is where it bites again.
+
+**Also note for D2-D6:** the game is still eight dungeons in the data. The
+six-dungeon consolidation in the prompt above has not happened, and D1 did not
+need it (D1's item and theme already match the table). Folding d7 and d8 into
+their neighbours is still owed and belongs to whichever session takes those.
 
 ### P9 — Overworld re-gating and difficulty
 

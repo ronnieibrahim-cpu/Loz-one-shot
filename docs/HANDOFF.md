@@ -220,6 +220,47 @@ is in the page, and nothing steps until you say so.
 
 ## Hard-won lessons — do not rediscover these
 
+**Re-authoring D1 for the Anchor (P8), and the five things it cost.**
+
+1. **A FORGIVING TILE IN THE MIDDLE OF A GATE IS THE GATE.** Every anchor gate
+   in the first cut of D1 had one tile of `dSluice` between the LOW-only band
+   and the MID-only band, put there so the five-tile held patch would spill onto
+   something harmless. `dSluice` is dry at LOW and shallow at MID — which makes
+   it somewhere to STAND, and the conch can be sounded anywhere you can stand.
+   So all three gates were crossable by walking to the middle at LOW, pressing
+   the conch once, and walking out at MID: the anchor was decorative and the
+   rooms read as anchor rooms in the data. `tools/check-anchor.mjs` caught all
+   three on its first run, which is the entire argument for writing it.
+   **The rule the gate rests on is: no tile between the two bands may be
+   walkable at both levels.** Everything else is geometry.
+2. **The Anchor barely fits in a 10x8 room, and that is a P7.6 argument.** The
+   patch is 5x5 (`ANCHOR_RADIUS_TILES` 2) and the throw carries about two tiles,
+   so a gate needs `stand + 4 + 3 + far side` = the full width of a room row,
+   with the rest of the room walled off. That is why D1's three gates are bare
+   corridors and why a room cannot hold two of them, or hold one and anything
+   else. A 2x1 room (20 tiles wide) is what makes anchor geometry a design space
+   instead of a fit problem. Anyone estimating P7.6's value should read that as
+   part of it.
+3. **Band widths come out of the hop, not out of taste.** The hop clears two
+   whole tiles, so a two-tile band of anything is not a barrier — it is a hop.
+   Three is the minimum for the far band and four is the minimum for the near
+   band, because the patch has to cover the near band without reaching the far
+   one. `check-anchor.mjs` reads both reaches out of `feel.js` rather than
+   hard-coding them, so retuning `WALK_SPEED` re-proves every gate.
+4. **A door a puzzle opens is a wall to the dungeon walker.** `walk-dungeons`
+   floods the tile grid and knows about locked doors and boss doors, not about
+   `puzzle.reward.openDoors` — so the Boss Key room behind D1's gauge puzzle
+   read as stranded and the dungeon looked broken. It now treats a tile named in
+   any room's `openDoors` as passable, and proving the puzzle is actually
+   solvable is left to the tool that can: `solve-switches.mjs` for switch rooms,
+   `check-anchor.mjs` for the gauge rooms.
+5. **`openChest` had no branch for a charm.** `Chest` accepted `{ charm: ... }`
+   in room data and `openChest` fell through to "Nothing but sand." — an opened
+   chest, a saved flag, and no charm, which is the same silent shape as the
+   chest granting a deleted item. The branch exists now, `check-charms.mjs`
+   proves it grants in-engine, and it also sweeps every room in the game for a
+   `charm:` naming a charm that is not in `CHARMS`.
+
 **The tide field (P5), and the four things it cost.**
 
 1. **A dropped field on an options object is invisible.** `Tide.addOverride`
@@ -849,6 +890,11 @@ for exactly this shape of problem.
 Not fixed here: it is dungeon content, and P8 re-authors D1 anyway. The D1
 replay opens the chest deliberately (an opened chest is persisted save state
 worth asserting on) and its plan comment says the Compass is not collected.
+
+**Update (P8, D1).** That room is re-authored: `0,4,5` holds the Chartstone in a
+chest at (5,3) with plain floor at (5,2), and `d1-descent` now collects it. THE
+ENGINE DEFECT IS UNTOUCHED — `openChest` still spawns into an unvalidated tile,
+and five other dungeons are unaudited for it. The checker is still owed.
 
 ### A dropped pickup pops upward and never comes back down
 

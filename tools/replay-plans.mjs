@@ -144,20 +144,78 @@ export const PLANS = {
   },
 
   // -------------------------------------------------------------------------
+  // The Iron Pipe: a D1 anchor gate, crossed in the engine.
+  //
+  // tools/check-anchor.mjs proves this corridor is impassable with the conch
+  // alone and passable with one anchor placement, but it proves it against a
+  // MODEL of walking, hopping and sounding the conch. This is the same claim
+  // made by the game itself: a live player, the real throw arc, the real patch,
+  // the real sweep of the tide.
+  //
+  // The route is exactly the solution the prover printed. Stand on the dry tile
+  // at the corridor's mouth with the sea at LOW, throw the iron east — its arc
+  // puts it two tiles in, and the patch of radius 2 then covers the mouth and
+  // all four wells and stops one tile short of the first drain. Sound the conch
+  // to MID: the wells stay ankle deep under the iron while the drains ahead
+  // fill. Then hold `right` and walk the whole thing.
+  //
+  // The probes are the point of the assertion: (2,3) is a well inside the patch
+  // and reads LOW, (7,3) is a drain outside it and reads MID, in the same frame
+  // of the same room. Hold `right` rather than `goto` — a pathfinder that found
+  // a way round would make this replay pass while proving nothing, and there is
+  // no way round, which is the whole design of the room.
+  // -------------------------------------------------------------------------
+  'd1-sluicegate': {
+    note: 'The Iron Pipe: freeze the wells at LOW, raise the sea to MID, and walk '
+      + 'a corridor no setting of the conch crosses',
+    setup: {
+      seed: 20260806,
+      playerName: 'LINK',
+      items: { sword: 1, conch: 1, shield: 1, anchor: 1 },
+      equipB: 'anchor',
+      equipA: 'conch',
+      tide: 0,
+      enter: ['d1', 0, 4, 2, 0, 48, 'right'],
+      probes: [[2, 3], [7, 3]],
+    },
+    steps: [
+      ['wait', 30],
+      // Throw it east. It bites two tiles in, at LOW, and holds the wells.
+      ['tap', 'b', 60],
+      ['wait', 40],
+      // Conch: LOW -> MID. Everything the iron is not holding fills up.
+      ['tap', 'a', 120],
+      ['wait', 40],
+      // Straight down the pipe. 130 frames at 1px/f is eight tiles and change,
+      // which clears the drains and stops short of the seam — arriving in the
+      // next room would end the run in a room this plan says nothing about.
+      ['hold', ['right'], 130],
+      ['wait', 40],
+    ],
+  },
+
+  // -------------------------------------------------------------------------
   // Tidewash Grotto, entrance to the north half.
   //
-  // The long one: eleven room entries, twenty-one kills, a chest, a pickup, a
-  // Small Key earned and spent, and the conch taken all the way round. Every
-  // room entry rebuilds the room stream, every kill rolls a drop table, and
-  // every drop walked over changes the save — so one misordered random draw
-  // anywhere in four thousand frames lands as a mismatched rupee count at the
-  // end, and the checkpoint trail says which frame it happened on.
+  // The long one: eleven room entries, a chest, two pickups, a Small Key earned
+  // and spent, and the conch taken round to LOW and back. Every room entry
+  // rebuilds the room stream, every kill rolls a drop table, and every drop
+  // walked over changes the save — so one misordered random draw anywhere in
+  // four thousand frames lands as a mismatched rupee count at the end, and the
+  // checkpoint trail says which frame it happened on.
   //
   // IT IS NOT A FULL CLEAR, and the name says so. It stops at the locked door
-  // in 3,3's north wall. Everything past that point needs verbs this actor
-  // does not have — see docs/NEXT-SESSION.md for what is missing and why the
-  // shortest way to a full-clear replay is a push directive, not a better
-  // pathfinder.
+  // in 3,3's north wall, which is where P8 put the Anchor's own room. Past that
+  // point every room is an anchor room, and an actor with three verbs — walk,
+  // open, swing — cannot aim a throw at a tile and then sound the conch in the
+  // right order. `d1-sluicegate` above is the scripted stand-in for that.
+  //
+  // REWRITTEN FOR THE P8 LAYOUT. The route is the same spine, but the rooms on
+  // it are not the rooms the previous recording walked: 3,6 is now a floor of
+  // wells that has to be taken down to LOW before it can be crossed at all,
+  // the Chartstone is in 4,5 rather than the Compass, and the Small Key falls
+  // in 2,4. The frame counts below are therefore not comparable with the
+  // pre-P8 recording — nothing about movement changed, but the world did.
   // -------------------------------------------------------------------------
   'd1-descent': {
     note: 'Tidewash Grotto: entrance to the north-half door — fighting through, '
@@ -184,15 +242,26 @@ export const PLANS = {
     },
     steps: [
       ['wait', 20],
-      // 3,7 Entrance -> 3,6 Drowned Landing. Two crabs.
+      // 3,7 the mouth. Take the sea down to LOW before going anywhere: the room
+      // north of here is a floor of wells and there is no walking round it. The
+      // conch cycles UP and wraps, so MID -> HIGH -> LOW is two presses, and
+      // both are made from dry stone in the middle of the room rather than from
+      // one of the two pools, which HIGH would turn into deep water underfoot.
+      ['goto', 4, 6, 400],
+      ['tap', 'a', 120],
+      ['tap', 'a', 120],
+      ['dialogue', 200],
       ['goto', 4, 1, 400],
       ['exit', 'up', 400],
-      ['fight', 1200],
+      // 3,6 The Drinking Floor, waded at LOW. Two crabs and a keese.
+      ['fight', 1400],
       ['dialogue', 200],
-      // -> 3,5 the hub. Two more.
-      ['goto', 4, 1, 600],
+      ['goto', 4, 1, 800],
       ['exit', 'up', 400],
-      ['fight', 1200],
+      // 3,5 the hub. A zol, a crab, and a switch puzzle left unsolved — the
+      // actor has no push verb, and a puzzle that stays unsolved is a room whose
+      // reward must NOT appear, which is worth asserting too.
+      ['fight', 1400],
       ['dialogue', 200],
       // West wing: the Dungeon Map is a loose pickup, so walking over it is
       // enough. A keese is in there and gets left alive on purpose — an enemy
@@ -206,39 +275,29 @@ export const PLANS = {
       ['wait', 40],
       ['goto', 8, 3, 400],
       ['exit', 'right', 400],
-      // East wing: the Compass chest needs an A press with the player stood
-      // square below it and facing up. The chest opens; the Compass itself is
-      // NOT collected, and cannot be — the pickup settles onto the solid pot
-      // above the chest and no standable tile in the room overlaps it. That is
-      // a content bug in the room, not a fault in the actor; it is written up
-      // in docs/HANDOFF.md. The chest is still worth opening here, because an
-      // opened chest is persisted save state and this replay asserts on it.
+      // East wing: the Chartstone. It needs an A press with the player stood
+      // square below the chest and facing up. Unlike the Compass this replaced,
+      // the tile the pickup pops onto is floor, so it is actually collectable —
+      // the pre-P8 room dropped it onto a pot and lost it, which is the content
+      // bug written up in docs/HANDOFF.md and fixed by re-authoring the room.
       ['fight', 900],
       ['goto', 8, 3, 500],
       ['exit', 'right', 400],
       ['fight', 900],
-      ['goto', 4, 4, 500],
-      ['hold', ['up'], 6],
+      ['goto', 5, 4, 500],
+      ['hold', ['up'], 24],
       ['tap', 'a', 30],
       ['dialogue', 300],
-      ['goto', 4, 3, 300],
+      ['goto', 5, 2, 300],
       ['wait', 60],
       ['goto', 1, 3, 400],
       ['exit', 'left', 400],
       // Back up the spine into 3,4. The hub respawns its pair every time it is
       // re-entered, so it gets cleared every time too.
-      ['fight', 900],
+      ['fight', 1400],
       ['goto', 4, 1, 600],
       ['exit', 'up', 400],
       ['fight', 1200],
-      ['dialogue', 200],
-      // Cycle the conch all the way round on plain floor: LOW, HIGH and back
-      // to MID. Each press freezes the player, wipes the room and reconciles
-      // them against terrain that has just changed under their feet.
-      ['goto', 4, 3, 400],
-      ['tap', 'a', 110],
-      ['tap', 'a', 110],
-      ['tap', 'a', 110],
       ['dialogue', 200],
       // West into the crab room. Clearing it is the puzzle, and the reward is
       // the first Small Key.
@@ -276,7 +335,7 @@ export const PLANS = {
       ['dialogue', 300],
       ['goto', 4, 1, 500],
       ['exit', 'up', 400],
-      // 3,3, the north half. Two zols.
+      // 3,3, and the Anchor is through the door in this room's north wall.
       ['fight', 1800],
       ['dialogue', 200],
       ['wait', 60],

@@ -7381,6 +7381,7 @@ class Chest extends Entity {
     this.item = o.item || null;         // item id to grant
     this.level = o.level || 1;
     this.pickup = o.pickup || null;     // or a pickup kind
+    this.charm = o.charm || null;       // or a carved charm, by CHARMS id
     this.rupees = o.rupees || 0;
     this.opened = false;
     this.saveKey = o.saveKey || null;
@@ -9983,6 +9984,15 @@ class Game {
         addBottles(p, BOTTLE_CAPACITY);
       }
       this.presentItem(id, lv);
+    } else if (chest.charm) {
+      // Charms in the world came only out of the shop and the scrimshander's
+      // random carve until P8 started placing them by hand, and a chest is the
+      // natural fixture for that. Granted outright rather than dropped: a charm
+      // is not in PICKUPS and a pickup that fell onto the wrong tile would lose
+      // it (see docs/HANDOFF.md on the Compass that landed on a pot).
+      giveCharm(p, chest.charm);
+      this.audio.jingle('fanfareShort');
+      this.say('A carved charm! Slot it on the CHARM screen.');
     } else if (chest.pickup) {
       this.spawnPickup(chest.x, chest.y - 12, chest.pickup, { grabDelay: 10 });
     } else if (chest.rupees) {
@@ -17866,16 +17876,73 @@ const { registerMap } = __require("world/maps.js");
 function installDungeonsA() {
 
   // --- Dungeon 1: Tidewash Grotto -----------------------------------------
-  // Tide theme: the floor is flooded; drop the tide to LOW and walk it.
   //
-  // Intended route:
-  //   3,7 entrance -> 3,6 (learn: the sluice floor is dry at LOW)
-  //   -> 3,5 hub -> 2,5 Dungeon Map -> 4,5 Compass
-  //   -> 3,4 -> 2,4 Small Key 1 (clear the room) -> 4,4 Small Key 2 (switches)
-  //   -> 3,3 locked door, north half -> west wing 2,3 1,3 1,2 2,2 (Small Key 3)
-  //   -> east wing 4,3 5,3 5,2 (miniboss Clawcrab) -> 4,2 big chest: Roc's Feather
-  //   -> 3,2 Boss Key across the chasm (the hop is base moveset now)
-  //   -> boss door -> 3,1 Gohmaraq
+  // TIDE THEME: TWO LEVELS IN ONE ROOM. The grotto is a sluice — a well is
+  // wadeable only when the sea is down, a drain is a hole in the floor until
+  // the sea fills it, and the two are laid end to end with no dry footing
+  // between them. No single setting of the conch crosses that. The Tidewright's
+  // Anchor is the answer and this dungeon is where you are taught it: sink the
+  // iron on the half that wants the water it has now, then sound the conch and
+  // walk the other half.
+  //
+  // THE GATE PRIMITIVE, stated once because three rooms are built out of it.
+  // Written along a row, from the side the player arrives on:
+  //
+  //     .  3 3 3 3  4 4 4  .  .
+  //     ^  near band  far band  far side
+  //   stand
+  //
+  //   `3` dWell   wadeable at LOW, deep above         -> LOW only
+  //   `4` dDrain  an open pit at LOW, water above it  -> MID only
+  //
+  // At LOW the drains are a three-tile pit; at MID the wells are four tiles of
+  // deep water; at HIGH everything drowns. The hop clears two whole tiles, so
+  // neither band is in its range, and NOTHING BETWEEN THE TWO BANDS IS WALKABLE
+  // AT BOTH LEVELS. That last clause is the whole gate, and it is the thing
+  // that is easy to get wrong: the first cut of these rooms had one forgiving
+  // tile of dSluice between the bands, and since dSluice is dry at LOW and
+  // shallow at MID it was somewhere to stand and sound the conch — so all three
+  // gates fell to two button presses and read as anchor rooms in the data.
+  // check-anchor.mjs found that in its first run.
+  //
+  // The near band is FOUR wide, not three, because the held patch is five tiles
+  // across: standing on the tile before it and biting two tiles in, the patch
+  // covers the stand tile and the whole near band and stops exactly short of
+  // the far one. Three would spill one frozen tile into the far band.
+  //
+  // Two orderings, and they are different puzzles to solve:
+  //   wells near  (4,2 and 5,1) sound LOW, sink the iron in the well, conch to
+  //               MID, and the drain ahead fills while your well stays down.
+  //   drains near (2,2)         sound MID, sink the iron in the drain, conch to
+  //               LOW, and the well ahead empties while your drain stays full.
+  //
+  // The other anchor room is the pair of gauges (4,3 and 1,1): a door that only
+  // opens while one well reads drained and another reads drowned. They are five
+  // tiles apart and the held patch is five across, so one of the two must be
+  // the base and the other must be under the iron. `tools/check-anchor.mjs`
+  // proves every one of these rooms is impassable with the conch alone and
+  // passable with one anchor placement, which is the only way the claim is
+  // worth anything.
+  //
+  // Intended route (24 rooms; the Anchor is room 12 of 24):
+  //   3,7 mouth -> 3,6 the drinking floor (learn: conch to LOW and wade)
+  //   -> 2,6 bone cell (a blank for the scrimshander) -> 3,5 hub
+  //   -> 2,5 Dungeon Map -> 4,5 Chartstone
+  //   -> 3,4 gallery [locked, key 1] -> 2,4 Crab Pit (key 1)
+  //   -> 4,4 switches (key 2) -> 3,3 stair [locked, key 2]
+  //   -> 2,3 Weeping Wall (Split Fang, the first charm placed by hand)
+  //   -> 3,2 THE ANCHOR, and the boss door above it
+  //   east: 4,2 [gate] -> 5,2 drowned chamber -> 5,1 [gate] -> 4,1 (key 3)
+  //         -> 5,3 Clawcrab [locked, key 3] -> 4,3 [gauges] Piece of Heart
+  //   west: 2,2 [gate] -> 1,2 -> 1,3 switches -> 1,1 [gauges]
+  //         -> 2,1 Boss Key -> boss door -> 3,1 Gohmaraq
+  //
+  // Both wings end in a one-way return staircase, and that is load-bearing
+  // rather than a courtesy: a gate crossed with the iron still sunk in it can
+  // be walked back through, but an anchor RECALLED from the far side cannot be
+  // re-sunk from that side — the tile it would have to bite is out of reach at
+  // the level you would have to be at. The stairs are what turn that from a
+  // soft lock into a shortcut.
   registerMap({
     id: 'd1',
     kind: 'dungeon',
@@ -17895,240 +17962,69 @@ function installDungeonsA() {
       entrance: { map: 'overworld', floor: 0, rx: 8, ry: 8, px: 64, py: 32 },
     },
     rooms: {
-      '0,1,2': {
-        name: 'Old Sluice',
+      // ---- the south half: no Anchor, and the conch is the only tool -------
+      '0,3,7': {
+        name: 'Grotto Mouth',
         map: [
-          '##########',
-          '##......##',
-          '##......##',
-          '##.4444...',
-          '##.4444...',
-          '##_____.##',
-          '##......##',
           '####..####',
+          '#........#',
+          '#.p....p.#',
+          '#........#',
+          '#..1..1..#',
+          '#..1..1..#',
+          '#........#',
+          '####/#####',
         ],
-        entities: [
-          ['valve', 2, 2, { saveKey: 'd1_valve' }],
-          ['pickup', 6, 4, { kind: 'key' }],
+        warps: [
+          { x: 4, y: 7, to: { map: 'overworld', floor: 0, rx: 8, ry: 8, px: 64, py: 32, dir: 'down' } },
         ],
         readable: [
-          [7, 2, 'A rusted plate: "Shut the sluice, and the grotto drinks."'],
+          [2, 3, 'Carved by the door: "The sea keeps this floor. Take it back."'],
         ],
       },
-      '0,1,3': {
-        name: 'Cistern Corner',
+      '0,3,6': {
+        name: 'The Drinking Floor',
+        // The first lesson, and it is one press long: the whole middle of the
+        // room is well, four rows of it, so there is no walking round and no
+        // hopping it either. Sound the conch to LOW and the wells are ankle
+        // deep. Nothing here needs anything the player does not already have.
         map: [
           '####..####',
-          '##......##',
-          '##.1111.##',
-          '#..1111...',
-          '#..1111...',
-          '##.1111.##',
-          '##......##',
-          '##########',
-        ],
-        entities: [
-          ['crab', 4, 3],
-          ['switch', 2, 2],
-          ['switch', 7, 2],
-          ['block', 2, 3],
-          ['block', 7, 3],
-        ],
-        puzzle: {
-          switches: 'all',
-          flag: 'd1_013_puzzle',
-          reward: {
-            spawn: [['pickup', 4, 1, { kind: 'rupee20' }]],
-            say: 'A catch lets go under the floor.',
-          },
-        },
-      },
-      '0,2,1': {
-        name: 'North Cell',
-        map: [
-          '##########',
-          '##########',
-          '##......##',
-          '##..11....',
-          '##..11....',
-          '##......##',
-          '##########',
-          '##########',
-        ],
-        entities: [
-          ['pickup', 4, 3, { kind: 'rupee20' }],
-          ['crab', 2, 2],
-        ],
-      },
-      '0,2,2': {
-        name: 'Drip Passage',
-        map: [
-          '##########',
-          '##########',
-          '##......##',
-          '...""""...',
-          '..........',
-          '##..pp..##',
-          '####..####',
+          '#........#',
+          '#33333333#',
+          '.33333333#',
+          '.33333333#',
+          '#33333333#',
+          '#........#',
           '####..####',
         ],
         entities: [
-          ['keese', 4, 2],
-          ['zol', 3, 4],
-          ['torch', 2, 2],
-          ['torch', 7, 2],
-          ['torch', 2, 5],
+          ['crab', 2, 1],
+          ['crab', 6, 6],
+          ['keese', 4, 1],
         ],
-        puzzle: {
-          torches: 'all',
-          flag: 'd1_022_puzzle',
-          reward: {
-            spawn: [['pickup', 4, 3, { kind: 'heart' }]],
-            say: 'Water drains out of a niche in the wall.',
-          },
-        },
-      },
-      '0,2,3': {
-        name: 'Weeping Wall',
-        map: [
-          '####..####',
-          '####..####',
-          '##.3333.##',
-          '..........',
-          '..........',
-          '##.3333.##',
-          '####..####',
-          '####..####',
-        ],
-        entities: [
-          ['keese', 3, 2],
-          ['zol', 6, 4],
-        ],
-        puzzle: {
-          enemies: true,
-          flag: 'd1_023_puzzle',
-          reward: {
-            spawn: [['pickup', 4, 3, { kind: 'rupee5' }]],
-            say: 'Loose stone shifts, and something rolls out.',
-          },
-        },
-      },
-      '0,2,4': {
-        name: 'Crab Pit',
-        map: [
-          '####..####',
-          '####..####',
-          '##.1111.##',
-          '##.1111...',
-          '##.1111...',
-          '##.1111.##',
-          '####..####',
-          '####..####',
-        ],
-        entities: [
-          ['crab', 2, 2],
-          ['crab', 5, 4],
-          ['crab', 4, 3],
-        ],
-        puzzle: {
-          enemies: true,
-          flag: 'd1_crabpit',
-          reward: { spawn: [['pickup', 4, 3, { kind: 'key' }]], say: 'Something clatters onto the wet stone.' },
-        },
-      },
-      '0,2,5': {
-        name: 'Map Alcove',
-        map: [
-          '####..####',
-          '####..####',
-          '##......##',
-          '##........',
-          '##_____...',
-          '##......##',
-          '##########',
-          '##########',
-        ],
-        entities: [
-          ['pickup', 4, 3, { kind: 'dungeonMap' }],
-          ['keese', 2, 2],
+        readable: [
+          [7, 6, 'A rusted plate: "Shut the sluice, and the grotto drinks."'],
         ],
       },
-      '0,3,1': {
-        name: 'Gohmaraq, the Tidewash Claw',
-        // A boss room that KEEPS the mechanic instead of switching it off. The
-        // conch is still suppressed — `noTide` — so the arena is whatever it
-        // was when you walked in, and the only thing that moves it is a
-        // Bottled Tide. One step, one bottle, and you brought however many
-        // bottles you brought. See docs/ITEMS.md.
+      '0,2,6': {
+        name: 'Bone Cell',
         map: [
           '##########',
+          '#........#',
           '#..2222..#',
+          '#..2222...',
+          '#..2222...',
           '#..2222..#',
-          '.....>....',
-          '.....>....',
-          '#..2222..#',
-          '#..2222..#',
-          '####..####',
-        ],
-        noTide: true,
-        entities: [
-          ['gohmaraq', 4, 2],
-        ],
-        script: {
-          onEvent(game, name) {
-            if (name === 'bossDead') game.spawnPickup(80, 40, 'heartContainer', { grabDelay: 30 });
-          },
-        },
-      },
-      '0,3,2': {
-        name: 'Bosskey Vault',
-        map: [
-          '####..####',
           '#........#',
-          '####B#####',
-          '.........#',
-          '..44..44.#',
-          '#........#',
-          '#........#',
-          '####..####',
+          '##########',
         ],
         entities: [
-          ['chest', 2, 4, { pickup: 'bossKey' }],
-          ['keese', 6, 4],
+          ['pickup', 4, 3, { kind: 'blank' }],
+          ['keese', 2, 1],
         ],
-      },
-      '0,3,3': {
-        name: 'The Locked Stair',
-        map: [
-          '####..####',
-          '#........#',
-          '####L#####',
-          '..........',
-          '...""""...',
-          '#........#',
-          '#..q..q..#',
-          '####..####',
-        ],
-        entities: [
-          ['zol', 2, 4],
-          ['zol', 6, 5],
-        ],
-      },
-      '0,3,4': {
-        name: 'Tide Gallery',
-        map: [
-          '####..####',
-          '#.33..33.#',
-          '####L#####',
-          '..........',
-          '..........',
-          '#.331133.#',
-          '#.33..33.#',
-          '####..####',
-        ],
-        entities: [
-          ['tektite', 4, 3],
-          ['crab', 2, 4],
+        readable: [
+          [7, 1, 'Scratched deep: "The carver in Tidewatch wants bone, not gold."'],
         ],
       },
       '0,3,5': {
@@ -18160,121 +18056,99 @@ function installDungeonsA() {
           },
         },
       },
-      '0,3,6': {
-        name: 'Drowned Landing',
+      '0,2,5': {
+        name: 'Map Alcove',
+        map: [
+          '##########',
+          '##########',
+          '##......##',
+          '##.....2..',
+          '##.....2..',
+          '##......##',
+          '##########',
+          '##########',
+        ],
+        entities: [
+          ['pickup', 4, 3, { kind: 'dungeonMap' }],
+          ['keese', 3, 2],
+        ],
+      },
+      '0,4,5': {
+        name: 'Chartstone Alcove',
+        map: [
+          '##########',
+          '##########',
+          '##......##',
+          '.........#',
+          '.........#',
+          '##......##',
+          '##########',
+          '##########',
+        ],
+        entities: [
+          ['chest', 5, 3, { pickup: 'chartstone' }],
+          ['keese', 7, 4],
+        ],
+      },
+      '0,3,4': {
+        name: 'Tide Gallery',
         map: [
           '####..####',
-          '#.11..11.#',
-          '#.111111.#',
-          '#..1111..#',
-          '#.111111.#',
-          '#.111111.#',
           '#........#',
+          '####L#####',
+          '..........',
+          '..........',
+          '#.331133.#',
+          '#.33..33.#',
           '####..####',
         ],
         entities: [
-          ['crab', 3, 3],
+          ['tektite', 4, 3],
+          ['crab', 2, 4],
+        ],
+      },
+      '0,2,4': {
+        name: 'Crab Pit',
+        map: [
+          '##########',
+          '##########',
+          '##......##',
+          '##.1111...',
+          '##.1111...',
+          '##......##',
+          '##########',
+          '##########',
+        ],
+        entities: [
+          ['crab', 3, 2],
           ['crab', 6, 4],
-          ['torch', 1, 1],
-          ['torch', 8, 1],
-          ['torch', 1, 6],
-        ],
-        puzzle: {
-          torches: 'all',
-          flag: 'd1_036_puzzle',
-          reward: {
-            spawn: [['pickup', 4, 1, { kind: 'bomb4' }]],
-            say: 'A cache opens in the wall.',
-          },
-        },
-      },
-      '0,3,7': {
-        name: 'Grotto Mouth',
-        map: [
-          '####..####',
-          '#........#',
-          '#.p..<.p.#',
-          '#....<...#',
-          '#.1..<.1.#',
-          '#........#',
-          '#........#',
-          '####/#####',
-        ],
-        warps: [
-          { x: 4, y: 7, to: { map: 'overworld', floor: 0, rx: 8, ry: 8, px: 64, py: 32, dir: 'down' } },
-        ],
-        readable: [
-          [2, 3, 'Carved by the door: "The sea keeps this floor. Take it back."'],
-        ],
-      },
-      '0,4,1': {
-        name: 'East Cell',
-        map: [
-          '##########',
-          '##########',
-          '##......##',
-          '....33..##',
-          '....33..##',
-          '##......##',
-          '##########',
-          '##########',
-        ],
-        entities: [
-          ['pickup', 4, 3, { kind: 'fairy' }],
-        ],
-      },
-      '0,4,2': {
-        name: 'Treasure Cell',
-        map: [
-          '##########',
-          '##########',
-          '##......##',
-          '#.........',
-          '#._____...',
-          '##......##',
-          '##########',
-          '##########',
-        ],
-        entities: [
-          ['chest', 4, 3, { big: true, item: 'anchor', level: 1 }],
-        ],
-      },
-      '0,4,3': {
-        name: 'Shell Corridor',
-        map: [
-          '##########',
-          '##########',
-          '##.1..1.##',
-          '..........',
-          '..........',
-          '##.1..1.##',
-          '####..####',
-          '####..####',
-        ],
-        entities: [
-          ['crab', 3, 3],
-          ['tektite', 6, 4],
+          ['crab', 4, 3],
         ],
         puzzle: {
           enemies: true,
-          flag: 'd1_043_puzzle',
+          flag: 'd1_crabpit',
           reward: {
-            spawn: [['pickup', 4, 3, { kind: 'rupee20' }]],
-            say: 'A catch lets go under the floor.',
+            // (4,3), not (4,2): a dropped pickup pops about five pixels up and
+            // never comes back down, so it comes to rest straddling the tile
+            // ABOVE the one it was spawned on. Spawned on the top row of the
+            // basin it would settle against the wall above and be a Small Key
+            // the player can only just touch. See docs/HANDOFF.md.
+            spawn: [['pickup', 4, 3, { kind: 'key' }]],
+            say: 'Something clatters onto the wet stone.',
           },
         },
       },
       '0,4,4': {
         name: 'Switch Room',
         map: [
-          '####..####',
-          '####..####',
+          '##########',
+          '##########',
           '##......##',
           '...=..=.##',
           '........##',
           '##......##',
-          '####..####',
-          '####..####',
+          '##########',
+          '##########',
         ],
         entities: [
           ['switch', 2, 2],
@@ -18285,40 +18159,168 @@ function installDungeonsA() {
         puzzle: {
           switches: 'all',
           flag: 'd1_switches',
-          reward: { spawn: [['pickup', 4, 4, { kind: 'key' }]], say: 'A catch releases somewhere below.' },
+          reward: {
+            spawn: [['pickup', 4, 4, { kind: 'key' }]],
+            say: 'A catch releases somewhere below.',
+          },
         },
       },
-      '0,4,5': {
-        name: 'Compass Alcove',
+      '0,3,3': {
+        name: 'The Locked Stair',
         map: [
           '####..####',
+          '#........#',
+          '####L#####',
+          '.........#',
+          '.........#',
+          '#..q..q..#',
+          '#..,,,,..#',
           '####..####',
-          '##..pp..##',
-          '........##',
-          '........##',
-          '##..pp..##',
-          '##########',
-          '##########',
         ],
         entities: [
-          ['chest', 4, 3, { pickup: 'chartstone' }],
-          ['keese', 6, 4],
+          ['zol', 2, 4],
+          ['zol', 6, 5],
         ],
       },
-      '0,5,2': {
-        name: 'Clawcrab Den',
+      '0,2,3': {
+        name: 'Weeping Wall',
+        // The first charm in the world that is not shop stock. Split Fang is a
+        // MID charm on purpose: one essence in, the MID case is the only one
+        // the scrimshander has cut, so a LOW or HIGH charm placed here would be
+        // a reward the player could not switch on for two more dungeons. See
+        // docs/NEXT-SESSION.md — charm PLACEMENT is a P8 job and this is it.
         map: [
           '##########',
-          '##..pp..##',
-          '##......##',
-          '........##',
-          '........##',
-          '##......##',
-          '##......##',
+          '#........#',
+          '#..3333..#',
+          '#..3..3...',
+          '#..3..3...',
+          '#..3333..#',
+          '#........#',
+          '##########',
+        ],
+        entities: [
+          ['chest', 4, 3, { charm: 'splitFang' }],
+          ['keese', 2, 1],
+          ['zol', 7, 6],
+        ],
+        puzzle: {
+          enemies: true,
+          flag: 'd1_023_puzzle',
+          reward: {
+            spawn: [['pickup', 4, 6, { kind: 'rupee20' }]],
+            say: 'Loose stone shifts, and something rolls out.',
+          },
+        },
+      },
+
+      // ---- the middle: the Anchor, and the door it does not open -----------
+      '0,3,2': {
+        name: 'The Sluicegate',
+        map: [
+          '####..####',
+          '#........#',
+          '####B#####',
+          '..........',
+          '..........',
+          '#..1111..#',
+          '#..1111..#',
           '####..####',
         ],
         entities: [
-          ['clawcrab', 4, 3],
+          ['chest', 4, 4, { big: true, item: 'anchor', level: 1 }],
+        ],
+        readable: [
+          [2, 3, 'The sluicegate plate: "Iron remembers. Sink it where you want the sea to stay."'],
+        ],
+      },
+
+      // ---- east wing -------------------------------------------------------
+      '0,4,2': {
+        name: 'The Iron Pipe',
+        // Gate, wells near. See the primitive at the top of the dungeon.
+        map: [
+          '##########',
+          '##########',
+          '##########',
+          '.3333444..',
+          '.3333444..',
+          '##########',
+          '##########',
+          '##########',
+        ],
+        anchorGate: { from: [0, 3], to: [9, 3] },
+      },
+      '0,5,2': {
+        name: 'The Drowned Chamber',
+        // Not a gate — a fight the tide is a weapon in. The pool is drain, so
+        // at MID it is shallow water the anglerfry hunt in and at LOW it is a
+        // floor of holes: an aquatic enemy out of water flops and dies
+        // (ENEMY_BEACHED_FRAMES), and `tideOnly` puts it to sleep before that.
+        // The dry ring round the edge is what keeps the room honest — the fight
+        // is optional and the crossing never depends on the iron.
+        map: [
+          '####..####',
+          '#........#',
+          '#.444444.#',
+          '..444444.#',
+          '..444444.#',
+          '#.444444.#',
+          '#........#',
+          '####..####',
+        ],
+        entities: [
+          ['anglerfry', 3, 3],
+          ['anglerfry', 6, 4],
+          ['crab', 1, 6],
+        ],
+      },
+      '0,5,1': {
+        name: 'The Long Race',
+        // Gate, wells near, entered from the east and crossed westward.
+        map: [
+          '##########',
+          '##########',
+          '##########',
+          '..4443333.',
+          '..4443333.',
+          '#########.',
+          '####......',
+          '####..####',
+        ],
+        anchorGate: { from: [9, 3], to: [0, 3] },
+      },
+      '0,4,1': {
+        name: 'The Keyvault',
+        map: [
+          '##########',
+          '#........#',
+          '#.11..11.#',
+          '#.11..11..',
+          '#.11..11..',
+          '#.11..11.#',
+          '#........#',
+          '##########',
+        ],
+        entities: [
+          ['chest', 4, 2, { pickup: 'key' }],
+          ['keese', 7, 1],
+        ],
+      },
+      '0,5,3': {
+        name: 'Clawcrab Den',
+        map: [
+          '####..####',
+          '#........#',
+          '#.2....2.#',
+          '..L......#',
+          '..#......#',
+          '#.2....2.#',
+          '#........#',
+          '##########',
+        ],
+        entities: [
+          ['clawcrab', 5, 2],
         ],
         puzzle: {
           enemies: true,
@@ -18326,23 +18328,188 @@ function installDungeonsA() {
           reward: { say: 'The claw stops moving. The way west is quiet.' },
         },
       },
-      '0,5,3': {
-        name: 'Barnacle Bend',
+      '0,4,3': {
+        name: 'The Two Gauges',
+        // Anchor room, and the one that fits in a room this size without a
+        // corridor: the door reads two wells five tiles apart and wants one
+        // drained and the other drowned. The held patch is five across, so it
+        // cannot cover both — one gauge is the base and the other is under the
+        // iron, whichever way round the player works it out.
         map: [
-          '####..####',
-          '##......##',
-          '####L#####',
-          '...3333..#',
-          '...3333..#',
-          '##.3333.##',
-          '##......##',
+          '##########',
+          '#........#',
+          '#.3....3.#',
+          '#.........',
+          '#.........',
+          '####D#####',
+          '#....../.#',
           '##########',
         ],
         entities: [
-          ['barnacle', 2, 2],
-          ['barnacle', 7, 5],
-          ['crab', 4, 3],
+          ['keese', 6, 1],
+          // Sealed in behind the door the gauges open, and visible from the
+          // moment the player walks in, which is what makes the door worth
+          // solving rather than worth ignoring.
+          ['pickup', 2, 6, { kind: 'heartPiece' }],
         ],
+        warps: [
+          { x: 7, y: 6, to: { map: 'd1', floor: 0, rx: 3, ry: 4, px: 64, py: 48, dir: 'down' } },
+        ],
+        readable: [
+          [4, 4, 'Two marks over the door: one well empty, one well full.'],
+        ],
+        puzzle: {
+          condition: (g, r) => g.tide.levelAt(2, 2, r) === 0 && g.tide.levelAt(7, 2, r) === 2,
+          flag: 'd1_gauges_east',
+          reward: {
+            openDoors: [[4, 5]],
+            say: 'Both marks read at once. The door gives.',
+          },
+        },
+        anchorGauges: { a: [2, 2], aLevel: 0, b: [7, 2], bLevel: 2, door: [4, 5] },
+      },
+
+      // ---- west wing -------------------------------------------------------
+      '0,2,2': {
+        name: 'The Long Sluice',
+        // Gate, DRAINS near: the mirror sequence. Sound MID, sink the iron in
+        // the drain so it keeps its water, then conch to LOW so the well ahead
+        // empties. Entered from the east.
+        map: [
+          '##########',
+          '##########',
+          '##########',
+          '..3334444.',
+          '..3334444.',
+          '##########',
+          '##########',
+          '##########',
+        ],
+        anchorGate: { from: [9, 3], to: [0, 3] },
+      },
+      '0,1,2': {
+        name: 'Cistern Turn',
+        map: [
+          '####..####',
+          '#........#',
+          '#..2222..#',
+          '#..2222...',
+          '#..2222...',
+          '#..2222..#',
+          '#........#',
+          '####..####',
+        ],
+        entities: [
+          ['zol', 2, 1],
+          ['crab', 6, 6],
+        ],
+      },
+      '0,1,3': {
+        name: 'Weeping Cistern',
+        map: [
+          '####..####',
+          '#........#',
+          '#..1111..#',
+          '#..1111..#',
+          '#..1111..#',
+          '#........#',
+          '#........#',
+          '##########',
+        ],
+        entities: [
+          ['crab', 4, 6],
+          ['switch', 1, 1],
+          ['switch', 8, 1],
+          ['block', 1, 2],
+          ['block', 8, 2],
+        ],
+        puzzle: {
+          switches: 'all',
+          flag: 'd1_013_puzzle',
+          reward: {
+            spawn: [['pickup', 4, 6, { kind: 'rupee20' }]],
+            say: 'A catch lets go under the floor.',
+          },
+        },
+      },
+      '0,1,1': {
+        name: 'The Drip Vault',
+        // The second pair of gauges, stacked instead of side by side — five
+        // rows apart, which the patch cannot span either.
+        map: [
+          '##########',
+          '#...3....#',
+          '#........#',
+          '#.......D.',
+          '#........#',
+          '#..pp....#',
+          '#...3....#',
+          '####..####',
+        ],
+        entities: [
+          ['keese', 2, 2],
+        ],
+        readable: [
+          [7, 4, 'Two marks beside the door: the upper well empty, the lower full.'],
+        ],
+        puzzle: {
+          condition: (g, r) => g.tide.levelAt(4, 1, r) === 0 && g.tide.levelAt(4, 6, r) === 2,
+          flag: 'd1_gauges_west',
+          reward: {
+            openDoors: [[8, 3]],
+            say: 'Both marks read at once. The door gives.',
+          },
+        },
+        anchorGauges: { a: [4, 1], aLevel: 0, b: [4, 6], bLevel: 2, door: [8, 3] },
+      },
+      '0,2,1': {
+        name: 'Bosskey Vault',
+        map: [
+          '##########',
+          '#..pp....#',
+          '#........#',
+          '.........#',
+          '.........#',
+          '#..../...#',
+          '#........#',
+          '##########',
+        ],
+        entities: [
+          ['chest', 4, 3, { pickup: 'bossKey' }],
+          ['keese', 7, 6],
+        ],
+        warps: [
+          { x: 5, y: 5, to: { map: 'd1', floor: 0, rx: 3, ry: 3, px: 64, py: 64, dir: 'down' } },
+        ],
+      },
+      '0,3,1': {
+        name: 'Gohmaraq, the Tidewash Claw',
+        // A boss room that KEEPS the mechanic instead of switching it off. The
+        // conch is still suppressed — `noTide` — so the arena is whatever it
+        // was when you walked in, and the only thing that moves it is a
+        // Bottled Tide, or the boss itself: Gohmaraq calls unlockTide on its
+        // intro and hands the conch back for the length of the fight. The floor
+        // is basin, which is walkable at all three levels, because a locked
+        // room has to work at whichever one the player brought.
+        map: [
+          '##########',
+          '#..2222..#',
+          '#..2222..#',
+          '#..2222..#',
+          '#..2222..#',
+          '#..2222..#',
+          '#........#',
+          '####..####',
+        ],
+        noTide: true,
+        entities: [
+          ['gohmaraq', 4, 2],
+        ],
+        script: {
+          onEvent(game, name) {
+            if (name === 'bossDead') game.spawnPickup(80, 40, 'heartContainer', { grabDelay: 30 });
+          },
+        },
       },
     },
   });

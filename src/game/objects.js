@@ -229,6 +229,7 @@ export class Chest extends Entity {
     this.item = o.item || null;         // item id to grant
     this.level = o.level || 1;
     this.pickup = o.pickup || null;     // or a pickup kind
+    this.charm = o.charm || null;       // or a carved charm, by CHARMS id
     this.rupees = o.rupees || 0;
     this.opened = false;
     this.saveKey = o.saveKey || null;
