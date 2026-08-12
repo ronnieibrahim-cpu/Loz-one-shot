@@ -456,19 +456,45 @@ export function installDungeonsA() {
         ],
       },
       '0,5,3': {
+        // THE ONE MULTI-SCREEN ROOM IN THE GAME, and the worked example for
+        // P8's remaining five dungeons. It is 2x1: eight rows of TWENTY
+        // characters, one grid, not two screens laid side by side. It owns map
+        // cells 5,3 and 6,3, so nothing else may be keyed to 6,3.
+        //
+        // WHY THIS ROOM AND NOT ANOTHER.
+        //
+        //   * It is the dungeon's set piece. The P8 amendment says the large
+        //     rooms land on set pieces and most rooms stay one screen; a
+        //     miniboss arena is the clearest thing in D1 that a 10-tile room
+        //     was cramping. The Clawcrab now sits at the far end and the walk
+        //     to it is the fight starting.
+        //   * It is NOT an anchor gate. All three of D1's gates and both of its
+        //     gauge rooms are proved impassable-without-the-iron by
+        //     `tools/check-anchor.mjs`, and re-proving one of those at a new
+        //     width is a second job, not this one.
+        //   * Converting it creates no new seam with anything. The cell it
+        //     grows into, 6,3, has no neighbours: 7,3, 6,2 and 6,4 are all
+        //     empty. Its own three doorways — north at x=4,5 into the Drowned
+        //     Chamber, west at rows 3 and 4 into the Two Gauges, and the locked
+        //     door at 2,3 — are all in the western screen and are untouched, so
+        //     every facing wall in every neighbour is the wall it always was.
+        //
+        // The pinch at columns 9-10 on rows 1 and 6 is what keeps it reading as
+        // one den with two lobes rather than as one twenty-tile box.
         name: 'Clawcrab Den',
+        size: [2, 1],
         map: [
-          '####..####',
-          '#........#',
-          '#.2....2.#',
-          '..L......#',
-          '..#......#',
-          '#.2....2.#',
-          '#........#',
-          '##########',
+          '####..##############',
+          '#........##........#',
+          '#.2....2....2....2.#',
+          '..L................#',
+          '..#................#',
+          '#.2....2....2....2.#',
+          '#........##........#',
+          '####################',
         ],
         entities: [
-          ['clawcrab', 5, 2],
+          ['clawcrab', 14, 3],
         ],
         puzzle: {
           enemies: true,

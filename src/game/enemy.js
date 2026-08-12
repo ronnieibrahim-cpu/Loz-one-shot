@@ -38,7 +38,7 @@ import {
 } from './entity.js';
 import { fire } from './projectile.js';
 import { F } from '../world/tileset.js';
-import { TILE, VIEW_W, VIEW_H } from '../core/screen.js';
+import { TILE } from '../core/screen.js';
 import { hash32 } from '../core/rng.js';
 import { FP_ONE, sp, toPx } from '../core/fixed.js';
 import {
@@ -855,8 +855,8 @@ export function submerge(e, g, o = {}) {
     if (o.reposition !== false && g.player) {
       const a = g.rng.angle();
       const d = ENEMY_SURFACE_MIN_DIST + g.rng.float() * ENEMY_SURFACE_DIST_SPAN;
-      let nx = Math.max(8, Math.min(VIEW_W - 24, g.player.cx + Math.cos(a) * d - 8));
-      let ny = Math.max(8, Math.min(VIEW_H - 24, g.player.cy + Math.sin(a) * d - 8));
+      let nx = Math.max(8, Math.min(g.room.pw - 24, g.player.cx + Math.cos(a) * d - 8));
+      let ny = Math.max(8, Math.min(g.room.ph - 24, g.player.cy + Math.sin(a) * d - 8));
       // A leever that surfaces off the lattice would walk a shifted one for the
       // rest of its life, so it comes up on a lattice point.
       if (gridLocked(e)) {

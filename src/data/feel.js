@@ -334,6 +334,34 @@ export const ROOM_TRANSITION_FRAMES = 34;
  *  boundary without ever landing on it. */
 export const ROOM_EXIT_MARGIN = 1;
 
+// THE CAMERA, inside a multi-screen dungeon room only.
+//
+// All three are `guessed`, in the strongest sense of the word: no reference has
+// been frame-stepped for any of them, and until P7.6 there was no camera at all
+// to have an opinion about. `KeyI` draws the deadzone box in game so they can be
+// settled by play — the same argument that got the anchor radius its debug key.
+//
+// None of them can affect a 1x1 room. The camera clamps to [0, room.pw-VIEW_W]
+// and that range is empty on one screen, so retuning these three numbers cannot
+// move a pixel in any room the game currently has.
+
+/** px — width of the box Link moves inside without the view following. guessed.
+ *  96 of the 160-pixel view, so the camera gives way once he is within two
+ *  tiles of a screen edge. Wider than the height because horizontal motion is
+ *  what a 2x1 room is for and a narrow box there reads as the view chasing him. */
+export const CAM_DEADZONE_W = 96;
+
+/** px — height of that box. guessed. 64 of the 128-pixel view: two tiles of
+ *  slack above and below, which is about where a vertical scroll starts to be
+ *  worth having rather than a twitch. */
+export const CAM_DEADZONE_H = 64;
+
+/** px/f — the fastest the camera may travel. guessed. Two pixels a frame is
+ *  twice WALK_SPEED, so it never lags a walking player and the deadzone rule is
+ *  exact during ordinary movement; it exists only to stop a knockback, a ledge
+ *  hop landing or a warp from snapping the view across the room in one frame. */
+export const CAM_MAX_SPEED = 2;
+
 /** f — length of the tide's wave-front wipe across the screen. guessed.
  *  Was 44 while game.js stepped the sweep twice per frame, so the wipe really
  *  crossed in 23 and the constant described nothing. 23 is what the game has

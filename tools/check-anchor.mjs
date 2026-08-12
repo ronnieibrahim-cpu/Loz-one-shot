@@ -60,7 +60,7 @@ import {
 installData();
 
 const VERBOSE = process.argv.includes('--verbose');
-const W = 10, H = 8, LEVELS = [0, 1, 2];
+const LEVELS = [0, 1, 2];
 
 let passed = 0; const failures = [];
 function check(name, cond, detail) {
@@ -120,7 +120,7 @@ function inPatch(x, y, patch) {
  * puzzle has just opened.
  */
 function flood(room, start, patch, openTiles = new Set()) {
-  const { grid, legend, noTide } = room;
+  const { grid, legend, noTide, W, H } = room;
   const levelAt = (x, y, base) => (inPatch(x, y, patch) ? patch.level : base);
   const walk = (x, y, base) => {
     if (x < 0 || y < 0 || x >= W || y >= H) return false;
@@ -166,7 +166,7 @@ const reaches = (seen, [x, y]) => LEVELS.some(b => seen.has(`${x},${y},${b}`));
  * anchor is the base.
  */
 function placements(room, seen) {
-  const { grid, legend } = room;
+  const { grid, legend, W, H } = room;
   const out = [];
   for (const key of seen) {
     const [sx, sy, base] = key.split(',').map(Number);
@@ -188,8 +188,13 @@ function placements(room, seen) {
 const gates = [], gauges = [];
 for (const [mapId, m] of MAPS) {
   for (const [key, def] of Object.entries(m.roomDefs || {})) {
+    // The room's extent in tiles, from its declared size in screens. A gate
+    // written across a 2x1 room is twenty tiles wide, and a prover that stopped
+    // at ten would call its far side unreachable and pass for the wrong reason.
+    const sz = def.size || [1, 1];
     const room = {
       mapId, key, name: def.name || key,
+      W: (sz[0] | 0) * 10, H: (sz[1] | 0) * 8,
       grid: def.map, legend: getLegend(def.legend || m.legend), noTide: !!def.noTide, def,
     };
     if (def.anchorGate) gates.push({ ...room, gate: def.anchorGate });

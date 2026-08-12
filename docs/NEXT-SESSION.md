@@ -10,7 +10,113 @@ maintain and the most expensive thing to not have.
 
 ---
 
-## What the last session did (P8, dungeon 1: Tidewash Grotto)
+## What the last session did (P7.6, multi-screen dungeon rooms)
+
+**A dungeon room may now be bigger than one screen, and one room in the game
+is.** All seven steps of `docs/briefs/P7.6-PLAN.md` plus both additions from
+`docs/briefs/P7.6-PROMPT.md`. Sizes are `1x1`, `2x1`, `1x2`, `2x2`, `3x1`;
+anything else throws at construction.
+
+**The single most important thing for a future session is not in this file.**
+`docs/EXECUTION-PLAN.md` now has a section in P8 called "ROOM SIZE — everything
+a dungeon session needs, in one place": the grid width each size implies, the
+anchor-gate arithmetic restated as a sizing rule (what fits in 10 tiles, what
+fits in 20, what a 2x2 buys that a 2x1 does not), the pacing number, and the
+worked example. A D2-D6 session should read that and nothing else about room
+size.
+
+### What actually changed in the engine
+
+- **`Room` gained `sw`/`sh` (screens) and the four derived extents `tw`/`th`
+  (tiles) and `pw`/`ph` (pixels).** Every one of the 30 `ROOM_W`/`ROOM_H`/
+  `VIEW_W`/`VIEW_H` uses the P7.6 survey found was one of three things, and they
+  were separated: the room's tile extent, the room's pixel extent, and the size
+  of the window on screen. `VIEW_W`/`VIEW_H` now mean only the third.
+- **`src/game/camera.js` is new.** Deadzone, not centring: a box in view space,
+  and the camera moves only when Link leaves it, capped at `CAM_MAX_SPEED`. It
+  clamps to `[0, room.pw - VIEW_W]`, which is an empty range in a 1x1 room, so
+  it is provably a no-op in all 23 of D1's other rooms and in every overworld
+  screen. It is never part of the render cache key and never calls
+  `invalidate()`. **KeyI** draws the deadzone box, the camera's window position
+  in the room, and the room's size.
+- **The room render cache is now `pw x ph`** and `drawScene` blits the camera
+  window out of it. `cacheKeyFor` is untouched, exactly as P5 left it.
+- **`registerMap` throws on a `size` in an overworld room**, and
+  `validate.mjs` reports it. Structural, not a comment. `check-overworld.mjs`
+  needed no edit at all, which is itself the assertion that the overworld path
+  did not move.
+- **Cell lookups resolve through an occupancy index** (`roomKeyAt`). A
+  multi-screen room owns every cell it spans and only the top-left one has a
+  `roomDef`; `validate.mjs` fails if another room is keyed inside the footprint.
+- **The minimap draws a multi-screen room as one cell spanning `sw x sh`**, and
+  skips the covered cells.
+- **`check-anchor.mjs`, `walk-dungeons.mjs` and `find-ledges.mjs` learned
+  `room.tw`/`room.th`.** check-anchor still passes 14/14 on the unchanged D1
+  rooms. `solve-switches.mjs` needed no change — it works through live `Room`
+  objects rather than raw grids.
+
+### The one converted room, and the replay that proves it
+
+**`d1` `0,5,3`, the Clawcrab Den, is 2x1** — eight rows of twenty characters,
+owning cells `5,3` and `6,3`. Picked with the tools, not by eye: it is the
+dungeon's set piece (the miniboss), it is NOT an anchor gate so nothing
+`check-anchor.mjs` proves had to be re-proved, and the cell it grows into has no
+neighbours at all, so no facing wall in any other room moved. The reasoning is
+in the room's own header comment.
+
+**`d1-clawcrab-den-wide`** (893 frames) walks in from the Two Gauges, crosses to
+the far wall and back, and asserts `roomChanges: 1`, `camMaxX: 160`,
+`camEndX: 0`, `camMaxY: 0`. The first of those is the real claim: the internal
+screen seam is crossed twice and fires nothing, so the one transition in the run
+is the actual room boundary. Note that D1 is `scroll: false`, so a transition
+there is a warp and a fade rather than a sliding `game.transition` — the harness
+counts room-key changes, which is true of both kinds.
+
+`tools/replay.mjs` now records a `span` (transitions fired, camera extremes) and
+a plan may carry an `assert` block against it. Existing replays are unaffected:
+`diffState` iterates the STORED keys, so new fields in the observed state are
+ignored.
+
+### Seen on screen
+
+Shot at both camera clamps and at MID and HIGH with
+`tools/shoot-rooms.mjs --px=N --tide=N`, and driven live with the KeyI overlay.
+At `cam=0` the west lobe reads as an ordinary room; at `cam=160` the east lobe
+is fully drawn with no torn edge; at `cam=88` the window straddles the internal
+seam with no artefact at all — no gap, no doubled column. Holding `right` from
+the west end, Link crosses the deadzone, the box gives way, and he stays pinned
+on its right edge until the camera hits 160 and he walks off the boundary to the
+wall. The deadzone at 96x64 felt right rather than merely working; it is still
+`guessed` and stays that way. `shoot-rooms.mjs` grew `--px`/`--py`/`--cam` for
+this, and its settle went from 8 frames to 30 because a wide room's tide wipe
+takes the full `TIDE_SWEEP_FRAMES` to cross the ROOM.
+
+### What is weak about it
+
+- **The deadzone numbers have been watched by nobody but the session that chose
+  them.** 96x64 and a 2px cap are one person's taste on one room. `KeyI` exists
+  so the next person can argue.
+- **Only one room in the game is multi-screen**, so 1x2, 2x2 and 3x1 are proved
+  by the constructor and the validator and by nothing that has been walked. The
+  vertical camera axis in particular has never moved in a running game — the one
+  wide room is one screen tall.
+- **A transition between rooms of DIFFERENT sizes has never happened.** The
+  entry-position clamp and the global-coordinate seam arithmetic that exist for
+  it are reasoned, and reduce provably to the old code when sizes match, but no
+  test walks them. The first 1x2 room next to a 1x1 is where that gets exercised.
+- **The scroll transition path is untested at width.** Every dungeon is
+  `scroll: false`, and the overworld cannot have a wide room, so the
+  camera-aware slide in `drawTransition` has no room in the game that can reach
+  it.
+- **D1's Clawcrab Den has a locked door that never locked anything.** The door
+  at `(2,3)` is walkable round via row 2, and was in the original 1x1 grid too —
+  verified against the pre-conversion data. Left alone as out of scope; written
+  up in HANDOFF, because the real finding is that **nothing in the toolchain
+  proves a locked door is load-bearing.**
+- **Enlarging the miniboss arena is a balance change nobody has played.** The
+  Clawcrab now has twenty tiles to fight in and sits at the far end.
+
+## What the session before that did (P8, dungeon 1: Tidewash Grotto)
 
 **D1 is re-authored around the Tidewright's Anchor, and the claim is proved
 rather than asserted.** 24 rooms, one floor, the Anchor at room 12 of 24, and
@@ -192,8 +298,8 @@ uses.
 ### P7.6 — planned, deliberately not built
 
 The brief says "use plan mode and show me the plan before you touch code", so
-this session wrote `docs/briefs/P7.6-PLAN.md` and stopped. **The plan needs
-approval before the next session executes it.**
+this session wrote `docs/briefs/P7.6-PLAN.md` and stopped. (It was approved and
+executed later; see the top of this file.)
 
 The survey finding that makes it tractable: `ROOM_W`/`ROOM_H`/`VIEW_W`/`VIEW_H`
 appear 30 times across six files, and every use means one of three separable
@@ -571,11 +677,13 @@ Read, in this order:
   CLAUDE.md              - the hard rules. They are hard rules.
   docs/EXECUTION-PLAN.md - the roadmap. P0-P7 are done and so is P8's first
                            dungeon; read "P8 status" and the P7 audit in it
-                           before touching either. P7.5 is BLOCKED on four
-                           missing dungeon map rips (see ART-BACKLOG.md);
-                           P7.6 is PLANNED and awaiting approval in
-                           docs/briefs/P7.6-PLAN.md. PT (towns) is independent
-                           and can be taken whenever a session wants content.
+                           before touching either. P7.6 is DONE — if you are
+                           authoring rooms, read "ROOM SIZE — everything a
+                           dungeon session needs, in one place" in the P8
+                           section and nothing else about room size. P7.5 is
+                           BLOCKED on four missing dungeon map rips (see
+                           ART-BACKLOG.md). PT (towns) is independent and can be
+                           taken whenever a session wants content.
   docs/ITEMS.md          - the item roster. Authoritative. tools/check-items.mjs
                            asserts the registry is exactly this document.
   src/game/scrimshaw.js  - the charm roster and the slotting rule. Each charm's
@@ -624,8 +732,11 @@ Confirm the baseline before changing anything, and keep every line below green:
                                                BYTE-IDENTICAL. --sheet writes a
                                                contact sheet of every pick.
   node tools/test.mjs                          58/58
-  node tools/replay.mjs                        16/16, all four replays to the
-                                               pixel
+  node tools/replay.mjs                        21/21, all five replays to the
+                                               pixel. d1-clawcrab-den-wide also
+                                               asserts its `span`: one
+                                               transition in the whole run, and
+                                               the camera at both clamps.
   node tools/walk-dungeons.mjs                 28/28 (d1 is 24 rooms now)
   node tools/check-overworld.mjs               17/17 (the field flood is ~30s
                                                of its runtime)
@@ -760,16 +871,12 @@ measuring the machine, not the game. test.mjs is no longer load-flaky; a
 failure there is now yours.
 
 NEXT UP, and pick ONE:
-  - P7.6, multi-screen dungeon rooms. APPROVED, and there is a prompt written
-    for it: docs/briefs/P7.6-PROMPT.md, which executes docs/briefs/P7.6-PLAN.md
-    and adds the two things the plan predates. D1 made the case for it concrete:
-    the Anchor's held patch is 5x5 and its throw carries two tiles, so ONE gate
-    eats a whole 10-tile room row and the rest of the room has to be walled off
-    to stop the player walking round it. Every anchor room in D1 is a bare
-    corridor for that reason. A 2x1 room is 20 tiles wide.
+  - P8 for D2, and then D3-D6. This is the one P7.6 was built for: rooms may
+    now be 2x1, 1x2, 2x2 or 3x1, and the sizing rule, the pacing number and the
+    worked example are all in EXECUTION-PLAN under "ROOM SIZE". Use them.
   - PT, towns and buildings. Independent of everything, stated top design
     priority, and the only one that needs no decision from anybody.
-  - P8 for D2, and then D3-D6. D1 is DONE — see EXECUTION-PLAN's "P8 status"
+  - (D2 detail, whichever session takes it.) D1 is DONE — see EXECUTION-PLAN's "P8 status"
     and the D2 decision beneath it: inside D2 the rooms after the Brineglass
     Lens DO require it, while the Lens is never a gate at region scope. That
     section says what "require" means for an item that only shows you things,
@@ -809,6 +916,16 @@ scrimshaw.js must READ it, or check-charms fails you. A charm PLACED in a
 dungeon must fit a case the player has open at that point in the game: at one
 essence that is MID and nothing else, so a LOW charm in D1 is a reward nobody
 can switch on for two dungeons. check-charms prints every hand-placed charm.
+
+A DUNGEON ROOM MAY BE BIGGER THAN ONE SCREEN. Sizes are 1x1 (the default and
+still most rooms), 2x1, 1x2, 2x2 and 3x1, declared as `size: [2, 1]` in the room
+def. The `map` is ONE grid — a 2x1 room is eight rows of TWENTY characters — and
+a multi-screen room OWNS every map cell it spans, so nothing else may be keyed
+inside its footprint. validate.mjs fails on both mistakes. The overworld may not
+declare a size at all and registerMap throws if it does. Everything else — the
+camera, the render cache, the minimap, the seam arithmetic — is done and every
+checker reasons over room.tw/room.th. `d1` `0,5,3` is the worked example; the
+sizing rule and the pacing number are in EXECUTION-PLAN under "ROOM SIZE".
 
 AN ANCHOR GATE IS ONE RULE PLUS GEOMETRY. No tile between the two bands may be
 walkable at BOTH levels — the conch can be sounded anywhere the player can
@@ -887,13 +1004,18 @@ Tell me plainly what is done, what is weak, and what you skipped.
 - **the eight dungeon themes (P7.5 step 8)** — `tools/rip-dungeon-themes.py`
   plus a themed legend per dungeon. Every dungeon is now identifiable from one
   screenshot, and no room grid changed to do it.
+- **multi-screen dungeon rooms (P7.6)** — a room may declare `size` in screens;
+  a camera with a deadzone follows Link inside one and clamps to zero in a 1x1
+  room, which is why no existing room moved. `d1` `0,5,3` is the one converted
+  room and `d1-clawcrab-den-wide` is its replay.
 
 ## What is left
 
-1. **P7.6 — multi-screen dungeon rooms.** PLANNED, NOT BUILT, awaiting your
-   approval: `docs/briefs/P7.6-PLAN.md`. Do the plan, not a fresh design. D1
-   supplied the hard argument for it: one anchor gate does not leave room for
-   anything else in a 10x8 screen.
+1. **P8 for D2, and then D3-D6.** D1 is done and P7.6 is done, so the thing
+   that was blocking the other five is gone: a room may now be 2x1, 1x2, 2x2 or
+   3x1. Read "ROOM SIZE — everything a dungeon session needs, in one place" in
+   `docs/EXECUTION-PLAN.md` before authoring one. The six-versus-eight dungeon
+   consolidation is still owed.
 
 2. **PT — towns, buildings and terrain polish.** A stated top design priority,
    independent of the systems spine, and blocked on nothing. Thalassia's
@@ -909,8 +1031,7 @@ Tell me plainly what is done, what is weak, and what you skipped.
    See `docs/ART-BACKLOG.md`. The colour-register decision is explicitly yours,
    not a session's.
 
-4. **P8 for D2-D6, and then P9.** D1 is done. The other five are better after
-   P7.6, and the six-versus-eight dungeon consolidation is still owed.
+4. **P9, after the dungeons.**
 
 Carried over, and none of it blocking:
 

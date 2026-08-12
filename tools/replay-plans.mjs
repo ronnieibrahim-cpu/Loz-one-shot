@@ -341,4 +341,68 @@ export const PLANS = {
       ['wait', 60],
     ],
   },
+
+  // -------------------------------------------------------------------------
+  // Clawcrab Den, walked end to end: the multi-screen room proof.
+  //
+  // THE WALK IS NOT THE ASSERTION, the same way it is not in tide-steps-split.
+  // A player crossing a twenty-tile room and arriving somewhere would also
+  // happen if the room were two ordinary rooms with a seam between them — the
+  // route would look the same and the recording would replay the same. What
+  // separates the two is in the `assert` block, and both halves of it matter:
+  //
+  //   roomChanges: 1   Exactly ONE transition fires in the whole run: the one
+  //                    at the boundary between the Two Gauges and the den. The
+  //                    internal screen seam at x=10 is crossed twice and fires
+  //                    nothing. If a seam were still a boundary this would be 3.
+  //   camMaxX: 160     The camera reached the east clamp, `room.pw - VIEW_W`.
+  //                    That is the far half of the room actually being on
+  //                    screen, not merely being in the data.
+  //   camEndX: 0       ...and came back to the west clamp. Reaching one end
+  //                    only would pass with a camera that could not go back.
+  //   camMaxY: 0       The room is one screen tall, so the vertical clamp is
+  //                    empty and the camera never moves on that axis. This is
+  //                    the same property that makes every 1x1 room in the game
+  //                    provably unaffected, asserted on an axis of a room that
+  //                    is not 1x1 — the only place it can be observed at all.
+  //
+  // The route uses `goto` rather than a held direction because the Clawcrab is
+  // in the way and shoves; a held `right` would record whatever the shove did.
+  // Twenty hearts for the reason d1-descent states — the scripted swordsman
+  // eats contact damage a human would step out of, and this replay is about
+  // the camera, not about the fight being survivable on three.
+  // -------------------------------------------------------------------------
+  'd1-clawcrab-den-wide': {
+    note: 'Clawcrab Den (2x1): east across the internal screen seam to the far wall '
+      + 'and back, one transition, camera to both clamps',
+    setup: {
+      seed: 20260806,
+      playerName: 'LINK',
+      items: { sword: 1, conch: 1, shield: 1 },
+      equipB: 'sword',
+      equipA: 'conch',
+      maxHearts: 20,
+      hearts: 20,
+      tide: 1,
+      // Starting in the NEIGHBOUR, so the one transition in the run is a real
+      // room boundary being crossed rather than a `setup.enter`.
+      enter: ['d1', 0, 4, 3, 128, 56, 'right'],
+    },
+    steps: [
+      ['wait', 20],
+      ['exit', 'right', 300],
+      ['wait', 30],
+      // East to the far wall of the second screen. Tile 18 puts Link's centre
+      // at 296, which is past the deadzone's right edge with the camera already
+      // at 160, so the clamp is reached rather than approached.
+      ['goto', 18, 3, 900],
+      ['wait', 60],
+      // Back west along row 2, which is walled at x=0 — so the walk ends
+      // against stone with the camera home, instead of stepping out of the room
+      // and firing a second transition.
+      ['goto', 1, 2, 900],
+      ['wait', 60],
+    ],
+    assert: { roomChanges: 1, camMaxX: 160, camEndX: 0, camMaxY: 0 },
+  },
 };

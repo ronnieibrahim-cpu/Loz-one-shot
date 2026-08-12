@@ -224,8 +224,10 @@ async function installRuntime() {
     const g = window.__game;
     const probes = window.__rp && window.__rp.probes;
     if (!probes || !probes.length || !g.room) return null;
-    const s = screen.offscreen(VIEW_W, VIEW_H);
-    s.ctx.clearRect(0, 0, VIEW_W, VIEW_H);
+    // Room-sized, so a probe tile in the second screen of a wide room is
+    // actually inside the canvas being sampled.
+    const s = screen.offscreen(g.room.pw, g.room.ph);
+    s.ctx.clearRect(0, 0, g.room.pw, g.room.ph);
     s.ctx.drawImage(g.room.render(g.tide, 0), 0, 0);
     g.room.drawAnim(s.ctx, 0, 0, g.tide, 0);
     g.room.drawOver(s.ctx, 0, 0, g.tide, 0);
@@ -263,28 +265,34 @@ async function installRuntime() {
     ty: Math.floor((p.y + p.hb.y + p.hb.h - 2) / TILE),
   });
 
+  // The ROOM's tile extent, so `goto` can path across a multi-screen room
+  // instead of treating column 10 as the end of the world.
+  const RW = (g) => (g.room ? g.room.tw : ROOM_W);
+  const RH = (g) => (g.room ? g.room.th : ROOM_H);
+
   function passable(g, p, tx, ty) {
-    if (tx < 0 || ty < 0 || tx >= ROOM_W || ty >= ROOM_H) return false;
+    if (tx < 0 || ty < 0 || tx >= RW(g) || ty >= RH(g)) return false;
     return ent.canOccupy(g, p, tx * TILE, ty * TILE, p.caps);
   }
 
   /** Breadth-first path over tile centres. Returns a list of tiles, or null. */
   function findPath(g, p, from, to) {
-    const key = (t) => t.ty * ROOM_W + t.tx;
+    const W = RW(g);
+    const key = (t) => t.ty * W + t.tx;
     const start = key(from), goal = key(to);
     if (start === goal) return [to];
     const prev = new Map([[start, -1]]);
     const q = [start];
     for (let head = 0; head < q.length; head++) {
       const cur = q[head];
-      const cx = cur % ROOM_W, cy = (cur / ROOM_W) | 0;
+      const cx = cur % W, cy = (cur / W) | 0;
       for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-        const nx = cx + dx, ny = cy + dy, nk = ny * ROOM_W + nx;
+        const nx = cx + dx, ny = cy + dy, nk = ny * W + nx;
         if (prev.has(nk) || !passable(g, p, nx, ny)) continue;
         prev.set(nk, cur);
         if (nk === goal) {
           const out = [];
-          for (let k = nk; k !== -1; k = prev.get(k)) out.push({ tx: k % ROOM_W, ty: (k / ROOM_W) | 0 });
+          for (let k = nk; k !== -1; k = prev.get(k)) out.push({ tx: k % W, ty: (k / W) | 0 });
           out.reverse();
           return out.slice(1);
         }
@@ -465,9 +473,9 @@ async function installRuntime() {
       const q = g.player;
       if (!q) return m;
       if (q.x < EDGE) m &= ~BIT.left;
-      if (q.x > VIEW_W - 16 - EDGE) m &= ~BIT.right;
+      if (q.x > (g.room ? g.room.pw : VIEW_W) - 16 - EDGE) m &= ~BIT.right;
       if (q.y < EDGE) m &= ~BIT.up;
-      if (q.y > VIEW_H - 16 - EDGE) m &= ~BIT.down;
+      if (q.y > (g.room ? g.room.ph : VIEW_H) - 16 - EDGE) m &= ~BIT.down;
       return m;
     };
     for (let f = 0; f < (maxF || 900);) {
@@ -627,6 +635,7 @@ async function installRuntime() {
       this._done = false;
       this._replay = null;
       this._trace = [];
+      this._resetSpan();
       return snapshot();
     },
 
@@ -638,6 +647,7 @@ async function installRuntime() {
       this._trail = [];
       this._frames = 0;
       this._done = false;
+      this._resetSpan();
       return snapshot();
     },
 
@@ -649,8 +659,46 @@ async function installRuntime() {
       return r.rle[r.i][0];
     },
 
+    /**
+     * What the run did to the room and to the camera, accumulated frame by
+     * frame rather than sampled at the end.
+     *
+     * `roomChanges` is the count of transitions that actually fired — in a
+     * `scroll: false` dungeon a transition is a warp and a fade rather than a
+     * sliding `game.transition`, so counting room-key changes is the reading
+     * that is true of both kinds and is what "exactly one transition fired"
+     * has to mean there. The camera span is the pair of extremes the camera
+     * reached, which is how "it got all the way to its clamp at both ends"
+     * becomes a number a checker can fail on rather than a screenshot.
+     */
+    _observe() {
+      const g = window.__game;
+      const key = g.room ? g.mapId + '/' + g.room.key : null;
+      if (key !== this._lastRoom) {
+        if (this._lastRoom !== null) this._span.roomChanges++;
+        this._lastRoom = key;
+      }
+      const c = g.camera;
+      if (c) {
+        const s = this._span;
+        if (c.x < s.camMinX) s.camMinX = c.x;
+        if (c.x > s.camMaxX) s.camMaxX = c.x;
+        if (c.y < s.camMinY) s.camMinY = c.y;
+        if (c.y > s.camMaxY) s.camMaxY = c.y;
+        s.camEndX = c.x; s.camEndY = c.y;
+      }
+    },
+
+    _resetSpan() {
+      this._span = {
+        roomChanges: 0, camMinX: 0, camMaxX: 0, camMinY: 0, camMaxY: 0, camEndX: 0, camEndY: 0,
+      };
+      this._lastRoom = null;
+    },
+
     _push(mask) {
       this._frames++;
+      this._observe();
       if (this._log) {
         const last = this._log[this._log.length - 1];
         if (last && last[0] === mask) last[1]++;
@@ -682,6 +730,7 @@ async function installRuntime() {
       return {
         input: this._log, frames: this._frames, trail: this._trail,
         trace: this._trace || [], state: snapshot(),
+        span: this._span,
       };
     },
   };
@@ -740,6 +789,12 @@ async function record(browser, port, name) {
     note: plan.note,
     engine: 1,
     setup: plan.setup,
+    // What the run is CLAIMING, over and above replaying identically. Recorded
+    // from the plan rather than from the run, so a recording that fails to make
+    // the claim is caught the moment it is played back rather than baking the
+    // wrong number in as the new truth.
+    assert: plan.assert || null,
+    span: res.span,
     buttons,
     frames: res.frames,
     input: res.input,
@@ -802,6 +857,16 @@ async function replay(browser, port, name) {
 
   const bad = diffState(doc.expect, res.state);
   check(`${name}: final state matches to the pixel`, bad.length === 0, bad.slice(0, 6).join('; '));
+
+  // A plan may claim something about the SHAPE of the run — how many
+  // transitions fired, how far the camera travelled — on top of replaying
+  // identically. Those are the claims a wide-room replay exists to make, and a
+  // state diff cannot express them because the state is only the last frame.
+  if (doc.assert) {
+    const sbad = diffState(doc.assert, res.span);
+    check(`${name}: ${Object.entries(doc.assert).map(([k, v]) => k + '=' + v).join(', ')}`,
+      sbad.length === 0, sbad.join('; '));
+  }
   check(`${name}: no page errors`, page._errs.length === 0, page._errs.slice(0, 3).join(' | '));
 
   if (WANT_SHOTS) {

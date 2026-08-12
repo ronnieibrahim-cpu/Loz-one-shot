@@ -17,7 +17,7 @@ import {
 import { Projectile, fire } from './projectile.js';
 import { Explosion } from './effects.js';
 import { F } from '../world/tileset.js';
-import { TILE, VIEW_W, VIEW_H } from '../core/screen.js';
+import { TILE } from '../core/screen.js';
 import { hasItem, itemLevel, addBombs, addReefseeds, addBottles } from './progress.js';
 import { TIDE_COUNT } from './tide.js';
 import { FP_ONE, sp, toPx } from '../core/fixed.js';

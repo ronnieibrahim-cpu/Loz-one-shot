@@ -220,6 +220,60 @@ is in the page, and nothing steps until you say so.
 
 ## Hard-won lessons — do not rediscover these
 
+**Multi-screen rooms (P7.6), and the five things they cost.**
+
+1. **A ROOM'S KEY IS ITS TOP-LEFT CELL, AND THE CELLS IT SPANS HAVE NO
+   `roomDef`.** This is the thing the plan did not anticipate and it is
+   structural, not cosmetic. `hasRoom(mapId, f, x, y)` used to be
+   `!!roomDefs['f,x,y']`, and with a 2x1 room at `0,5,3` the cell `0,6,3` is
+   part of that room and has no def of its own. Every cell lookup — a seam, a
+   warp destination, the minimap — has to resolve through an OCCUPANCY index
+   (`roomKeyAt` in `world/maps.js`) or a player walking west into the far half
+   of a wide room finds a hole and nothing at all happens. `getRoom` and
+   `hasRoom` now both go through it, so the fix is invisible to callers, and
+   `validate.mjs` fails if a room is keyed inside another room's footprint.
+
+2. **THE SEAM ARITHMETIC IS `rx + sw`, NOT `rx + 1`, AND THE PERPENDICULAR AXIS
+   IS A GLOBAL COORDINATE.** `checkRoomExit` computed the neighbour as
+   `room.rx + d[0]`; a 2x1 room's east neighbour is two cells over, and which
+   room is NORTH of it depends on which of its two screens the player is
+   standing in. Likewise `entryPos` preserved `p.y` across a transition, which
+   is only right when both rooms are keyed to the same row. Both now work in the
+   map's global screen grid (`rx * VIEW_W + p.x`), which reduces to the old
+   expression exactly when the two rooms share a cell — every transition the
+   game has today, which is why no replay moved.
+
+3. **THE TRANSITION SLIDE IS IN SCREEN SPACE AND NEEDS BOTH CAMERAS UP FRONT.**
+   The outgoing room is snapshotted as a screen window with its camera offset
+   baked in; the incoming room is a whole-room canvas that has to be blitted back
+   by the camera it will ARRIVE under. So `camTo` is computed when the transition
+   is created, not discovered when it lands, and the player's room-space target
+   absorbs `camFrom - camTo` because he is drawn relative to the outgoing window
+   for the whole slide. Get one of those three terms wrong and the player jumps a
+   screen's width on the last frame of every transition — in a 1x1 room all three
+   are 0, so nothing catches it until the first wide room.
+
+4. **THE TIDE SWEEP'S SNAPSHOT IS ROOM-SIZED, NOT SCREEN-SIZED.** `Tide.setLevel`
+   captured the room into a 160x128 offscreen and `drawSweep` ran the wave front
+   across `VIEW_W`. In a 320px room that crops the snapshot at the halfway point
+   and the wipe stops halfway. Both are now `room.pw`/`room.ph`, which is
+   byte-identical at 1x1. A side effect worth knowing: the front crosses the
+   whole ROOM in `TIDE_SWEEP_FRAMES`, so in a wide room it moves across the
+   screen faster. That is the right behaviour — the wipe is an event in the
+   room — but it means a screenshot tool has to settle for 23 frames, not 8.
+
+5. **D1's Clawcrab Den has a locked door that never locked anything, and it
+   predates this session.** `0,5,3`'s door at `(2,3)` can be walked round via
+   row 2, in the original 1x1 grid as much as in the 2x1 one — verified against
+   the pre-conversion data before writing this down. `walk-dungeons.mjs` cannot
+   see it: it spends keys on locks it can reach and only asks whether every room
+   is reachable, so a lock with a way round it reads as a lock that got opened.
+   **Nothing in the toolchain proves a locked door is load-bearing.** It was left
+   alone here because fixing it is a D1 design change and this session had a
+   one-room budget, but the next D1 pass should close it, and a checker that
+   asserts "the far side of a lock is unreachable with the lock shut" would be
+   worth more than the fix.
+
 **Re-authoring D1 for the Anchor (P8), and the five things it cost.**
 
 1. **A FORGIVING TILE IN THE MIDDLE OF A GATE IS THE GATE.** Every anchor gate
@@ -754,7 +808,7 @@ room grid changed; a dungeon picks its look with one `legend:` field.
 `validate.mjs` asserts every themed tile carries exactly the flags of the tile
 it stands in for, so a theme can never move a wall.
 
-### P7.5 is blocked on assets, and P7.6 is planned but not built
+### P7.5 is blocked on assets; P7.6 is built
 
 The four Oracle of Seasons dungeon map rips P7.5 is written against are not in
 `assets/sheets/`. The tool it asks for exists and works
@@ -769,11 +823,16 @@ a stitched sheet from the image's global content edge instead of from each
 block's own corner turns one wall tile into a family of sixteen, and reports a
 dedup ratio that looks like success. 4936 unique before, 2181 after.
 
-P7.6 (multi-screen dungeon rooms) says to use plan mode and show the plan
-first, so it was planned and not executed: `docs/briefs/P7.6-PLAN.md`. The
-survey finding that makes it tractable is in there — `ROOM_W/ROOM_H/VIEW_W/
-VIEW_H` appear only 30 times across six files, and every use means one of three
-separable things.
+P7.6 (multi-screen dungeon rooms) is **BUILT**. It was planned in
+`docs/briefs/P7.6-PLAN.md` and executed against that plan. The survey finding
+that made it tractable held up exactly: `ROOM_W/ROOM_H/VIEW_W/VIEW_H` appeared
+30 times across six files and every use meant the room's tile extent
+(`room.tw`/`room.th`), the room's pixel extent (`room.pw`/`room.ph`), or the
+size of the window on screen (still `VIEW_W`/`VIEW_H`) — separating those three
+was most of the work, and the camera was the small part. What a dungeon session
+needs to know is in `docs/EXECUTION-PLAN.md` under "ROOM SIZE — everything a
+dungeon session needs, in one place"; what it cost is at the top of the
+hard-won-lessons section above.
 
 ### Fixed-point movement, and the four things it cost (P3)
 

@@ -435,6 +435,50 @@ regardless of where the key was last left.
 these are settled, the honest tag is still `guessed`, with a comment saying who
 played it and what they chose.
 
+## The camera's three constants, and why they can never move a 1x1 room
+
+`CAM_DEADZONE_W = 96`, `CAM_DEADZONE_H = 64` and `CAM_MAX_SPEED = 2` arrived
+with P7.6 and all three are **`guessed`**, in the strongest sense the word has
+in this file: no reference has been frame-stepped for any of them, and until
+P7.6 there was no camera in this engine at all to have an opinion about. They
+are not `derived` — nothing is computed from a stated constraint — and they must
+not be promoted because the room reads well.
+
+They govern one thing only: which 160x128 window of a room larger than one
+screen is on screen. The camera clamps to `[0, room.pw - VIEW_W]` and
+`[0, room.ph - VIEW_H]`, and in a 1x1 room both ranges are empty, so both
+coordinates are 0 for every frame of that room's life. **That is a mechanism,
+not a convention** — it falls out of the clamp rather than out of an early
+return someone could delete — and it is why retuning these three numbers cannot
+alter a pixel of the twenty-three 1x1 rooms in D1 or of any overworld screen.
+`tools/replay.mjs`'s `d1-clawcrab-den-wide` asserts `camMaxY: 0` in a room that
+is two screens wide and one tall, which is the only place the property can
+actually be observed rather than argued for.
+
+What the numbers mean:
+
+- **The deadzone is a box in view space, not a centring rule.** While Link's
+  centre is inside it the camera does not move at all; when he leaves it the
+  camera moves by exactly enough to put him back on its boundary. The source
+  games hold the view still and let him walk around inside it, and a camera
+  centred on him every frame reads as the room sliding rather than as him
+  moving. 96 of 160 across and 64 of 128 down: the view gives way once he is
+  within two tiles of a screen edge. Wider than it is tall on purpose —
+  horizontal travel is what a 2x1 room is for.
+- **`CAM_MAX_SPEED` is a cap, not a speed.** Two pixels a frame is twice
+  `WALK_SPEED`, so it never lags a walking player and the deadzone rule is
+  exact during ordinary movement. It exists only so a knockback, a ledge hop
+  landing or a warp cannot snap the view across the room in a single frame.
+
+They are settled by play, on the same argument the anchor radius is: **KeyI**
+draws the deadzone box, the camera's position within the room as a bar, and the
+room's size in screens. `tools/shoot-rooms.mjs --px=N --cam` puts that overlay
+in a screenshot at any camera position.
+
+Nothing about them touches determinism. The camera is not an entity, holds no
+subpixel state, is never part of the room render cache key, and never calls
+`invalidate()`.
+
 ## Determinism
 
 Feel cannot be measured in an engine that does not replay. If the same inputs

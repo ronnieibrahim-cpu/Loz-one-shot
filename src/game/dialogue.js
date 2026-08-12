@@ -56,7 +56,9 @@ export class Dialogue {
       ? { options: opts.choices, index: opts.defaultIndex || 0, onPick: opts.onPick || null }
       : null;
     const p = this.game.player;
-    this.top = !!(p && p.y > VIEW_H - 60);
+    // Where he is ON SCREEN, which is where the text box has to avoid being.
+    const cam = this.game.camera;
+    this.top = !!(p && p.y - (cam ? cam.y : 0) > VIEW_H - 60);
     this.holdFrames = 0;
   }
 

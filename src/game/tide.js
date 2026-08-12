@@ -27,7 +27,7 @@
 // its rendered tile layer against it. Miss a bump and the room draws the old
 // water while collision uses the new — it looks wrong and nothing fails.
 
-import { VIEW_W, VIEW_H, offscreen } from '../core/screen.js';
+import { offscreen } from '../core/screen.js';
 import { F } from '../world/tileset.js';
 import { TIDE_SWEEP_FRAMES } from '../data/feel.js';
 
@@ -277,8 +277,15 @@ export class Tide {
       // `this` is the field, and the base has not moved yet, so the snapshot
       // carries the old water everywhere the conch reaches and the held water
       // everywhere an override does.
-      if (!this.snapshot) this.snapshot = offscreen(VIEW_W, VIEW_H);
-      this.snapshot.ctx.clearRect(0, 0, VIEW_W, VIEW_H);
+      // Room-sized, not screen-sized: the wipe runs across the whole room and
+      // the camera window is taken out of it by the caller's ox/oy, the same
+      // way the room's own render cache is. A snapshot cropped to the screen
+      // would leave the unseen half of a wide room un-wiped.
+      if (!this.snapshot || this.snapshot.canvas.width !== g.room.pw
+          || this.snapshot.canvas.height !== g.room.ph) {
+        this.snapshot = offscreen(g.room.pw, g.room.ph);
+      }
+      this.snapshot.ctx.clearRect(0, 0, g.room.pw, g.room.ph);
       const before = g.room.render(this, g.frame);
       this.snapshot.ctx.drawImage(before, 0, 0);
       g.room.drawAnim(this.snapshot.ctx, 0, 0, this, g.frame);
@@ -309,12 +316,14 @@ export class Tide {
    */
   drawSweep(ctx, ox, oy, newCanvas, drawNewExtras) {
     const t = this.sweepT;
-    const front = Math.round(t * (VIEW_W + 40)) - 20;
+    const room = this.game.room;
+    const RW = room ? room.pw : 160, RH = room ? room.ph : 128;
+    const front = Math.round(t * (RW + 40)) - 20;
     // old state on the right of the front
     if (this.snapshot) {
       ctx.save();
       ctx.beginPath();
-      ctx.rect(ox + Math.max(0, front), oy, VIEW_W, VIEW_H);
+      ctx.rect(ox + Math.max(0, front), oy, RW, RH);
       ctx.clip();
       ctx.drawImage(this.snapshot.canvas, ox, oy);
       ctx.restore();
@@ -322,7 +331,7 @@ export class Tide {
     // new state on the left
     ctx.save();
     ctx.beginPath();
-    ctx.rect(ox, oy, Math.max(0, Math.min(VIEW_W, front)), VIEW_H);
+    ctx.rect(ox, oy, Math.max(0, Math.min(RW, front)), RH);
     ctx.clip();
     ctx.drawImage(newCanvas, ox, oy);
     if (drawNewExtras) drawNewExtras();
@@ -333,9 +342,9 @@ export class Tide {
     const pal = rising ? ['#ffffff', '#b0e8f8', '#58b0e0'] : ['#ffffff', '#e0c078', '#a88048'];
     for (let i = 0; i < 3; i++) {
       const x = front - i * 3;
-      if (x < 0 || x >= VIEW_W) continue;
+      if (x < 0 || x >= RW) continue;
       ctx.fillStyle = pal[i];
-      for (let y = 0; y < VIEW_H; y += 2) {
+      for (let y = 0; y < RH; y += 2) {
         const wob = Math.sin((y * 0.35) + this.sweep * 0.5) * 3;
         ctx.fillRect(ox + Math.round(x + wob), oy + y, 2, 2);
       }

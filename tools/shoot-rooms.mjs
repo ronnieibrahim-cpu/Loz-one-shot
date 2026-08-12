@@ -9,6 +9,13 @@
 //   node tools/shoot-rooms.mjs                       # a default sample
 //   node tools/shoot-rooms.mjs overworld,4,7 d1,0,4,2   # explicit rooms
 //   node tools/shoot-rooms.mjs --tide=2 overworld,4,7
+//   node tools/shoot-rooms.mjs --px=280 --cam d1,0,5,3   # camera + deadzone box
+//
+// `--px` / `--py` place Link at a pixel inside the room instead of the default
+// (80, 72), which is the only way to see a multi-screen room anywhere other
+// than at its west end: the camera snaps to wherever he is on entry. `--cam`
+// turns on the KeyI overlay so the deadzone box and the camera's position in
+// the room are in the shot.
 //
 // Room spec is `mapId,rx,ry` for floor 0, or `mapId,floor,rx,ry`. The overworld
 // map id is **'overworld'** — the '0' in a room key like '0,4,7' is the FLOOR,
@@ -34,6 +41,9 @@ const args = process.argv.slice(2);
 const shotDir = (args.find(a => a.startsWith('--shot-dir=')) || '').split('=')[1]
   || join(ROOT, 'tools/shots');
 const tide = Number((args.find(a => a.startsWith('--tide=')) || '=1').split('=')[1]);
+const px = Number((args.find(a => a.startsWith('--px=')) || '=80').split('=')[1]);
+const py = Number((args.find(a => a.startsWith('--py=')) || '=72').split('=')[1]);
+const showCam = args.includes('--cam');
 const specs = args.filter(a => !a.startsWith('--'));
 const ROOMS = specs.length ? specs : [
   'overworld,4,7',                    // Tidewatch Village — plain grass
@@ -81,17 +91,24 @@ for (const spec of ROOMS) {
   const [mapId, floor, rx, ry] = parts.length === 4
     ? [parts[0], +parts[1], +parts[2], +parts[3]]
     : [parts[0], 0, +parts[1], +parts[2]];
-  const got = await page.evaluate(([mapId, floor, rx, ry, tide]) => {
+  const got = await page.evaluate(([mapId, floor, rx, ry, tide, px, py, showCam]) => {
     const g = window.__game;
     // Reset to 'play' first: a probe parked in a room that killed the player
     // leaves the game in 'gameover', where nothing renders or updates.
     g.mode = 'play';
-    g.enterMap(mapId, floor, rx, ry, 80, 72, 'down', { instant: true });
+    g.enterMap(mapId, floor, rx, ry, px, py, 'down', { instant: true });
     if (g.tide && g.tide.setLevel) g.tide.setLevel(tide);
     if (g.room) g.room.invalidate();
-    return g.room ? { name: g.room.name || '?', at: g.mapId + ',' + g.room.key } : null;
-  }, [mapId, floor, rx, ry, tide]);
-  await frames(8);
+    g.debugCam = !!showCam;
+    return g.room
+      ? { name: g.room.name || '?', at: g.mapId + ',' + g.room.key, cam: g.camera.x + ',' + g.camera.y }
+      : null;
+  }, [mapId, floor, rx, ry, tide, px, py, showCam]);
+  // Wait out the tide's wave-front wipe as well as the room settling.
+  // `setLevel` runs a sweep, and a wide room's wipe is drawn across the whole
+  // room rather than across the screen, so eight frames used to be enough only
+  // because a 1x1 room's wipe is 200px long. TIDE_SWEEP_FRAMES is 23.
+  await frames(30);
   // An open dialogue freezes everything while mode is still 'play'. Clear it
   // LAST, after the room has settled — a room script can reopen it during the
   // settle.
@@ -102,7 +119,7 @@ for (const spec of ROOMS) {
     window.__game.bannerTime = 0;
   });
   await frames(2);
-  const name = `room-${spec.replace(/,/g, '_')}-tide${tide}.png`;
+  const name = `room-${spec.replace(/,/g, '_')}-tide${tide}-px${px}.png`;
   const want = `${mapId},${floor},${rx},${ry}`;
   if (!got || got.at !== want) {
     console.log(`  MISS ${spec.padEnd(16)} asked ${want}, landed ${got ? got.at : 'nowhere'}`);
@@ -110,7 +127,7 @@ for (const spec of ROOMS) {
     continue;
   }
   await page.locator('canvas').screenshot({ path: join(shotDir, name) });
-  console.log(`  ok   ${spec.padEnd(16)} ${got.name} -> ${name}`);
+  console.log(`  ok   ${spec.padEnd(16)} ${got.name} cam=${got.cam} -> ${name}`);
 }
 
 await browser.close();

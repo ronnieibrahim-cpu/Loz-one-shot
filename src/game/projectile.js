@@ -1,7 +1,7 @@
 // Projectiles: enemy shots, player shots (seeds, arrows), and thrown objects.
 
 import { Entity, moveEntity, canOccupy, defineEntity, DIR_VEC } from './entity.js';
-import { VIEW_W, VIEW_H, TILE } from '../core/screen.js';
+import { TILE } from '../core/screen.js';
 import { sp, toPx } from '../core/fixed.js';
 import { F } from '../world/tileset.js';
 import { PROJECTILE_LIFE, PROJECTILE_SPEED, PROJECTILE_Z, KNOCK_PROJECTILE } from '../data/feel.js';
@@ -56,7 +56,8 @@ export class Projectile extends Entity {
       this.fx = nfx; this.fy = nfy;
     }
 
-    if (this.x < -12 || this.y < -12 || this.x > VIEW_W + 12 || this.y > VIEW_H + 12) {
+    const rw = game.room ? game.room.pw : 160, rh = game.room ? game.room.ph : 128;
+    if (this.x < -12 || this.y < -12 || this.x > rw + 12 || this.y > rh + 12) {
       this.remove = true;
       return;
     }

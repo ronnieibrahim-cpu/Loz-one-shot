@@ -25,7 +25,7 @@
 //     }
 
 import {
-  Screen, SCREEN_W, SCREEN_H, HUD_H, VIEW_W, VIEW_H, TILE, ROOM_W, ROOM_H, offscreen,
+  Screen, SCREEN_W, SCREEN_H, HUD_H, VIEW_W, VIEW_H, TILE, offscreen,
 } from '../core/screen.js';
 import { Input } from '../core/input.js';
 import { audio } from '../core/audio.js';
@@ -47,6 +47,7 @@ import {
 import { drawHud, drawAreaBanner, drawBossBar } from './hud.js';
 import { Dialogue, drawBox, drawPanel, getText } from './dialogue.js';
 import { Menu } from './menu.js';
+import { Camera } from './camera.js';
 import { Scrimshaw, CHARMS, giveCharm, ownedCharms } from './scrimshaw.js';
 import { Title } from './title.js';
 import { runCutscene, CUTSCENES } from './cutscene.js';
@@ -62,6 +63,7 @@ import {
   CARVE_TIDE_TURNS, QUARTERMASTER_BONUS, CHANDLER_FACTOR, LANTERN_RADIUS,
   GULLS_TALLY_FACTOR, CARVE_PRICE, PICKUP_LIFE_FRAMES,
   WRECK_GLIMMER_PERIOD, WRECK_GLIMMER_ON, WRECK_GLIMMER_ALPHA,
+  CAM_DEADZONE_W, CAM_DEADZONE_H,
 } from '../data/feel.js';
 
 export class Game {
@@ -107,6 +109,13 @@ export class Game {
     this.anchorShape = null;
     this.deathTime = 0;
     this.tintKey = 'none';
+    // Which window of the room is on screen. Clamps to 0 in a 1x1 room, which
+    // is every room the game currently has; see camera.js.
+    this.camera = new Camera();
+    this.debugCam = false;
+    // The OUTGOING SCREEN WINDOW during a scroll transition, not the outgoing
+    // room: the camera offset is baked in when it is captured, so the slide is
+    // one screen wide however large either room is.
     this.roomSnapshot = offscreen(VIEW_W, VIEW_H);
     // The per-room stream. Replaced on every room entry from the save seed and
     // the room's identity, so a room replays identically. Everything that
@@ -188,6 +197,9 @@ export class Game {
       this.player.lastSafe.x = this.player.x; this.player.lastSafe.y = this.player.y;
       this.player.reconcileWithTide(this);
     }
+    // After the player is placed, never before: a room has no camera history to
+    // deadzone against on the frame you arrive in it.
+    this.camera.snap(this.room, this.player);
     if (changedMap || o.banner) {
       this.bannerText = m.kind === 'dungeon' ? m.name : (this.room && this.room.name) || m.name;
       this.bannerTime = BANNER_FRAMES;
@@ -216,6 +228,7 @@ export class Game {
     this.restoreRoomState();
     this.checkPuzzle();
     if (r.def.script && r.def.script.onEnter) r.def.script.onEnter(this, r);
+    this.camera.snap(r, this.player);
     this.updateMusic();
   }
 
@@ -316,39 +329,90 @@ export class Game {
     // at the edge is enough. See ROOM_EXIT_MARGIN in feel.js.
     const M = ROOM_EXIT_MARGIN;
     let dir = null;
-    if (i.down('right') && r.x + r.w >= VIEW_W - M) dir = 'right';
+    // The ROOM's extent, not the screen's. An internal screen seam inside a
+    // multi-screen room is not a boundary and never was — nothing here ever
+    // looked for a seam, only for where the room stops.
+    if (i.down('right') && r.x + r.w >= this.room.pw - M) dir = 'right';
     else if (i.down('left') && r.x <= M) dir = 'left';
-    else if (i.down('down') && r.y + r.h >= VIEW_H - M) dir = 'down';
+    else if (i.down('down') && r.y + r.h >= this.room.ph - M) dir = 'down';
     else if (i.down('up') && r.y <= M) dir = 'up';
     if (!dir) return;
 
-    const d = { right: [1, 0], left: [-1, 0], down: [0, 1], up: [0, -1] }[dir];
-    const nx = this.room.rx + d[0], ny = this.room.ry + d[1];
-    if (!hasRoom(this.mapId, this.room.floor, nx, ny)) return;
+    // WHICH CELL YOU LEAVE FROM, on the map's grid of screens.
+    //
+    // A room's key is its top-left cell and it covers `sw x sh` of them, so a
+    // 2x1 room's east neighbour is at `rx + 2` and its NORTH neighbour depends
+    // on which of its two screens the player is standing in. For a 1x1 room
+    // `sw`/`sh` are 1 and the sub-screen term is 0, so this is `rx + d[0]`
+    // exactly as it always was.
+    const room = this.room;
+    const sub = (v, span, n) => Math.max(0, Math.min(n - 1, Math.floor(v / span)));
+    const sx = sub(p.cx, VIEW_W, room.sw), sy = sub(p.cy, VIEW_H, room.sh);
+    let nx, ny;
+    if (dir === 'right') { nx = room.rx + room.sw; ny = room.ry + sy; }
+    else if (dir === 'left') { nx = room.rx - 1; ny = room.ry + sy; }
+    else if (dir === 'down') { nx = room.rx + sx; ny = room.ry + room.sh; }
+    else { nx = room.rx + sx; ny = room.ry - 1; }
+    if (!hasRoom(this.mapId, room.floor, nx, ny)) return;
 
-    const next = getRoom(this.mapId, this.room.floor, nx, ny);
+    const next = getRoom(this.mapId, room.floor, nx, ny);
+    const endPos = this.entryPos(dir, p, next);
     if (this.map.scroll === false) {
-      this.warpTo(this.mapId, this.room.floor, nx, ny, this.entryPos(dir, p), dir);
+      this.warpTo(this.mapId, this.room.floor, nx, ny, endPos, dir);
       return;
     }
+    // Where the camera will be standing once the slide lands. The transition is
+    // drawn in SCREEN space — one screen out, one screen in — so both rooms'
+    // camera offsets have to be known up front rather than discovered at the
+    // end. In a 1x1 room both are 0 and every term below vanishes.
+    const camTo = Camera.snapped(next, {
+      cx: endPos.x + (p.cx - p.x), cy: endPos.y + (p.cy - p.y),
+    });
     this.transition = {
       dir, t: 0, from: this.room, to: next, nx, ny,
       fromCanvas: this.room.render(this.tide, this.frame),
       startFx: p.fx, startFy: p.fy,
-      endPos: this.entryPos(dir, p),
+      endPos,
+      camFrom: { x: this.camera.x, y: this.camera.y },
+      camTo: { x: camTo.x, y: camTo.y },
     };
     // Snapshot the outgoing room so animated tiles do not tick during the slide.
+    const cox = -this.camera.x, coy = -this.camera.y;
     this.roomSnapshot.ctx.clearRect(0, 0, VIEW_W, VIEW_H);
-    this.roomSnapshot.ctx.drawImage(this.transition.fromCanvas, 0, 0);
-    this.room.drawAnim(this.roomSnapshot.ctx, 0, 0, this.tide, this.frame);
-    this.room.drawOver(this.roomSnapshot.ctx, 0, 0, this.tide, this.frame);
+    this.roomSnapshot.ctx.drawImage(this.transition.fromCanvas, cox, coy);
+    this.room.drawAnim(this.roomSnapshot.ctx, cox, coy, this.tide, this.frame);
+    this.room.drawOver(this.roomSnapshot.ctx, cox, coy, this.tide, this.frame);
   }
 
-  entryPos(dir, p) {
-    if (dir === 'right') return { x: -3, y: p.y };
-    if (dir === 'left') return { x: VIEW_W - 13, y: p.y };
-    if (dir === 'down') return { x: p.x, y: -8 };
-    return { x: p.x, y: VIEW_H - 16 };
+  /**
+   * Where the player lands in the room being entered.
+   *
+   * The coordinate ACROSS the seam is fixed by the direction; the one along it
+   * is preserved in GLOBAL screen-grid space rather than in room space. A room
+   * sits at `rx * VIEW_W` in that space, so walking north out of the right-hand
+   * screen of a 2x1 room and into a 1x1 room above lands you at the same world
+   * column you left from, not one screen west of it. When both rooms are keyed
+   * to the same cell — every transition the game has today — the two origins
+   * cancel and this is `p.y` untouched.
+   *
+   * The clamp then catches a neighbour that is genuinely shorter or narrower
+   * than the room being left, where the preserved coordinate would land outside
+   * its grid: every tile query there answers `void` and the player is wedged in
+   * stone.
+   */
+  entryPos(dir, p, next) {
+    const cur = this.room;
+    const gx = cur.rx * VIEW_W + p.x, gy = cur.ry * VIEW_H + p.y;
+    const rawX = gx - next.rx * VIEW_W, rawY = gy - next.ry * VIEW_H;
+    // Clamped only where the neighbour is strictly the smaller room, so an
+    // equal-sized pair — every transition in the game today — takes the raw
+    // value through untouched and no existing replay can move.
+    const x = next.pw < cur.pw ? Math.max(0, Math.min(rawX, next.pw - 16)) : rawX;
+    const y = next.ph < cur.ph ? Math.max(0, Math.min(rawY, next.ph - 16)) : rawY;
+    if (dir === 'right') return { x: -3, y };
+    if (dir === 'left') return { x: next.pw - 13, y };
+    if (dir === 'down') return { x, y: -8 };
+    return { x, y: next.ph - 16 };
   }
 
   updateTransition() {
@@ -359,8 +423,13 @@ export class Game {
     // Ease the player across the seam while the view slides. The whole slide
     // runs in subpixels: the incoming player sits at a negative x for a third
     // of it, which is exactly the case a truncating floor gets wrong.
-    const endFx = sp(t.endPos.x + (t.dir === 'right' ? VIEW_W : t.dir === 'left' ? -VIEW_W : 0));
-    const endFy = sp(t.endPos.y + (t.dir === 'down' ? VIEW_H : t.dir === 'up' ? -VIEW_H : 0));
+    // The camera terms carry the player across the change of window as well as
+    // the change of room: he is drawn relative to the OUTGOING window all the
+    // way through the slide, so his room-space target has to absorb the
+    // difference between the two cameras. Both are 0 in a 1x1 room.
+    const dcx = t.camFrom.x - t.camTo.x, dcy = t.camFrom.y - t.camTo.y;
+    const endFx = sp(t.endPos.x + (t.dir === 'right' ? VIEW_W : t.dir === 'left' ? -VIEW_W : 0) + dcx);
+    const endFy = sp(t.endPos.y + (t.dir === 'down' ? VIEW_H : t.dir === 'up' ? -VIEW_H : 0) + dcy);
     p.fx = t.startFx + Math.round((endFx - t.startFx) * k);
     p.fy = t.startFy + Math.round((endFy - t.startFy) * k);
     p.animT++;
@@ -369,6 +438,7 @@ export class Game {
       p.x = t.endPos.x; p.y = t.endPos.y;
       p.lastSafe.x = p.x; p.lastSafe.y = p.y;
       p.reconcileWithTide(this);
+      this.camera.snap(this.room, p);
       this.transition = null;
     }
   }
@@ -1005,6 +1075,7 @@ export class Game {
     if (extra === 'KeyO') { this.debug = !this.debug; }
     if (extra === 'KeyU') { this.cycleAnchorRadius(); }
     if (extra === 'KeyY') { this.cycleAnchorShape(); }
+    if (extra === 'KeyI') { this.debugCam = !this.debugCam; }
 
     switch (this.mode) {
       case 'title': this.title.update(); return;
@@ -1059,6 +1130,11 @@ export class Game {
     }
     this.flushPending();
     this.entities = this.entities.filter(e => !e.remove);
+
+    // AFTER the player has moved and before anything draws. Not during a
+    // transition or a tide sweep — both return above this line, and a camera
+    // moving under the sweep's snapshot would smear the wipe.
+    this.camera.update(this.room, this.player);
 
     this.checkRoomExit();
     this.checkWarpTile();
@@ -1212,8 +1288,8 @@ export class Game {
     for (const o of this.tide.overrides) {
       if (o.mapId !== this.mapId || o.roomKey !== room.key) continue;
       ctx.fillStyle = 'rgba(120, 220, 255, 0.85)';
-      for (let ty = 0; ty < ROOM_H; ty++) {
-        for (let tx = 0; tx < ROOM_W; tx++) {
+      for (let ty = 0; ty < room.th; ty++) {
+        for (let tx = 0; tx < room.tw; tx++) {
           if (!this.tide.covers(o, tx, ty)) continue;
           // Only the boundary: a tile inside the patch whose neighbour is not.
           for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
@@ -1225,6 +1301,35 @@ export class Game {
         }
       }
     }
+  }
+
+  /**
+   * KeyI: the deadzone box and where the camera is in the room.
+   *
+   * Debug-only for the same reason the anchor's patch outline is: the three
+   * camera constants are `guessed` and there is no reference to check them
+   * against, so they are settled by watching the box and the player fight over
+   * the view. Drawn in SCREEN space — this is the one thing on the playfield
+   * that is about the window rather than about the room.
+   */
+  drawCameraDebug(ctx) {
+    const room = this.room;
+    if (!room) return;
+    const dx = (VIEW_W - CAM_DEADZONE_W) / 2, dy = (VIEW_H - CAM_DEADZONE_H) / 2;
+    ctx.strokeStyle = 'rgba(255, 216, 96, 0.9)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(dx + 0.5, HUD_H + dy + 0.5, CAM_DEADZONE_W - 1, CAM_DEADZONE_H - 1);
+    // The room, drawn as a bar, with the camera window inside it. A 1x1 room
+    // shows a full bar and a window that fills it, which is the picture of the
+    // camera being a no-op there.
+    const bw = 60, bx = SCREEN_W - bw - 2, by = HUD_H + 2;
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    ctx.fillRect(bx, by, bw, 6);
+    ctx.fillStyle = 'rgba(140, 240, 255, 0.9)';
+    ctx.fillRect(bx + Math.round(this.camera.x / room.pw * bw), by,
+      Math.max(2, Math.round(VIEW_W / room.pw * bw)), 6);
+    drawText(ctx, `cam ${this.camera.x},${this.camera.y} ${room.sw}x${room.sh}`,
+      2, HUD_H + 2, '#ffd860');
   }
 
   updateGameOver() {
@@ -1262,7 +1367,8 @@ export class Game {
     ctx.clip();
 
     if (this.transition) this.drawTransition(ctx, ox, oy);
-    else this.drawScene(ctx, ox, oy);
+    else this.drawScene(ctx, ox - this.camera.x, oy - this.camera.y);
+    if (this.debugCam && !this.transition) this.drawCameraDebug(ctx);
 
     ctx.restore();
 
@@ -1334,8 +1440,8 @@ export class Game {
       if (!(e instanceof Chest) || e.opened) continue;
       this.glimmerAt(ctx, ox + e.x + 8, oy + e.y + 8, e.x + e.y);
     }
-    for (let ty = 0; ty < ROOM_H; ty++) {
-      for (let tx = 0; tx < ROOM_W; tx++) {
+    for (let ty = 0; ty < room.th; ty++) {
+      for (let tx = 0; tx < room.tw; tx++) {
         const name = room.baseName(tx, ty);
         if (!transformFor(name, 'dredge')) continue;
         this.glimmerAt(ctx, ox + tx * TILE + 8, oy + ty * TILE + 8, tx * 7 + ty * 13);
@@ -1380,7 +1486,7 @@ export class Game {
     ctx.save();
     ctx.globalAlpha = LENS_TINT_ALPHA * t;
     ctx.fillStyle = '#a8f0e8';
-    ctx.fillRect(ox, oy, VIEW_W, VIEW_H);
+    ctx.fillRect(ox, oy, room.pw, room.ph);
     for (let i = 0; i < levels.length; i++) {
       ctx.globalAlpha = (LENS_GHOST_ALPHA * t * shimmer) / (i + 1);
       // The FIELD at that base, not the bare level: an anchored patch is the
@@ -1398,11 +1504,13 @@ export class Game {
     const sx = Math.round(d[0] * VIEW_W * k), sy = Math.round(d[1] * VIEW_H * k);
     ctx.drawImage(this.roomSnapshot.canvas, ox + sx, oy + sy);
     const nb = t.to.render(this.tide, this.frame);
-    const nx = ox + sx - d[0] * VIEW_W, ny = oy + sy - d[1] * VIEW_H;
+    // The snapshot is already a screen window; the incoming room is a whole
+    // room canvas, so it is blitted back by the camera it will arrive under.
+    const nx = ox + sx - d[0] * VIEW_W - t.camTo.x, ny = oy + sy - d[1] * VIEW_H - t.camTo.y;
     ctx.drawImage(nb, nx, ny);
     t.to.drawAnim(ctx, nx, ny, this.tide, this.frame);
     t.to.drawOver(ctx, nx, ny, this.tide, this.frame);
-    if (this.player) this.player.draw(ctx, this, ox + sx, oy + sy);
+    if (this.player) this.player.draw(ctx, this, ox + sx - t.camFrom.x, oy + sy - t.camFrom.y);
   }
 
   drawDarkness(ctx, ox, oy) {

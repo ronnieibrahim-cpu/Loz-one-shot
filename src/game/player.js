@@ -16,7 +16,7 @@ import {
   Entity, moveEntity, canOccupy, groundFlags, groundTile, findSafeTile, DIR_VEC, DIRS,
 } from './entity.js';
 import { F, transformFor } from '../world/tileset.js';
-import { TILE, VIEW_W, VIEW_H, ROOM_W, ROOM_H } from '../core/screen.js';
+import { TILE } from '../core/screen.js';
 import { sp, toPx } from '../core/fixed.js';
 import { sprites } from '../gfx/art.js';
 import { hasItem, itemLevel, HEART_UNITS } from './progress.js';
@@ -552,7 +552,7 @@ export class Player extends Entity {
   }
 
   tileDefAt(game, tx, ty) {
-    if (tx < 0 || ty < 0 || tx * TILE >= VIEW_W || ty * TILE >= VIEW_H) return null;
+    if (tx < 0 || ty < 0 || tx * TILE >= game.room.pw || ty * TILE >= game.room.ph) return null;
     return game.room.tile(tx, ty, game.tide);
   }
 
@@ -622,7 +622,7 @@ export class Player extends Entity {
     const [dx, dy] = DIR_VEC[this.dir];
     const tx = this.cx + dx * (SWORD_REACH + SWORD_GAP);
     const ty = this.cy + dy * (SWORD_REACH + SWORD_GAP);
-    if (tx < 0 || ty < 0 || tx >= VIEW_W || ty >= VIEW_H) return;
+    if (tx < 0 || ty < 0 || tx >= game.room.pw || ty >= game.room.ph) return;
     if (!game.room.solidAt(tx, ty, game.tide, { jumping: false, swim: false })) return;
     this.clinkCool = SWORD_CLINK_COOLDOWN;
     game.audio.sfx('block');
@@ -1301,8 +1301,8 @@ export function roomHasDryGround(game) {
   const stamp = game.tide.stamp + ':' + game.tide.level;
   if (room._dryStamp === stamp) return room._dryCached;
   let dry = false;
-  for (let y = 0; y < ROOM_H && !dry; y++) {
-    for (let x = 0; x < ROOM_W; x++) {
+  for (let y = 0; y < room.th && !dry; y++) {
+    for (let x = 0; x < room.tw; x++) {
       const f = room.flagsAt(x, y, game.tide);
       if (f & (F.WATER | F.DEEP | F.SOLID | F.PIT)) continue;
       dry = true; break;

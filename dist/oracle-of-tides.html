@@ -1667,13 +1667,14 @@ __exports["transformFor"] = transformFor;
 
 /* ===== src/world/room.js ===== */
 __define("world/room.js", function (__exports, __require) {
-// Room: one 10x8 tile screen. Owns its tile grid, collision queries, a cached
-// render of its static layer, and its spawn lists.
+// Room: one or more 10x8 tile screens. Owns its tile grid, collision queries, a
+// cached render of its static layer, and its spawn lists.
 //
 // ROOM DEFINITION FORMAT (contract for map data files):
 //
 //   {
-//     map: [                        // exactly 8 rows of exactly 10 characters
+//     size: [2, 1],                 // OPTIONAL, in SCREENS. Default [1,1].
+//     map: [                        // 8*sh rows of 10*sw characters
 //       'TTTTTTTTTT',
 //       'Tgggggggg T',              // (extra whitespace is stripped)
 //       ...
@@ -1692,14 +1693,49 @@ __define("world/room.js", function (__exports, __require) {
 //     name: 'Tidewatch Village',    // optional display name for the map screen
 //   }
 //
-// Coordinates: tileX 0..9, tileY 0..7. Pixel space within a room is
-// tileX*16 .. tileX*16+15 and tileY*16 .. tileY*16+15.
+// Coordinates: tileX 0..room.tw-1, tileY 0..room.th-1. Pixel space within a
+// room is tileX*16 .. tileX*16+15 and tileY*16 .. tileY*16+15.
+//
+// A ROOM'S SIZE IS IN SCREENS, AND ITS GRID IS ONE GRID.
+//
+// A 2x1 room's `map` is eight rows of TWENTY characters — not two 10-wide grids
+// laid side by side. That is deliberate: the parser asserts the grid matches the
+// declared size exactly, which is the thing that stops a 3x1 room being authored
+// as three separate screens by accident and then silently read as one.
+//
+// The internal seams between screens are not boundaries. Nothing in the engine
+// knows where they are; `checkRoomExit` fires on the room's own extent
+// (`room.pw` / `room.ph`) and the camera slides across the seams. The screen
+// grid survives only as the unit the size is counted in.
 
-const { TILE, ROOM_W, ROOM_H, VIEW_W, VIEW_H, offscreen } = __require("core/screen.js");
+const { TILE, ROOM_W, ROOM_H, offscreen } = __require("core/screen.js");
 const { tiles: tileSheet } = __require("gfx/art.js");
 const { F, resolveTile, getTileDef, tileArt } = __require("world/tileset.js");
 
 const LEGENDS = new Map();
+
+/**
+ * The sizes a room may declare, in screens.
+ *
+ * Closed on purpose. An unbounded room size is a different game: the render
+ * cache, the minimap's cell spanning and the camera clamp are all sized against
+ * this list, and "whatever the author typed" is not a size any of them were
+ * designed for. A size outside the set THROWS at construction rather than
+ * warning — a room that is silently the wrong shape strands the dungeon around
+ * it and looks like a tile bug.
+ */
+const ROOM_SIZES = ['1x1', '2x1', '1x2', '2x2', '3x1'];
+
+/** Validate and normalise a `size` field. Returns [sw, sh]. Throws if illegal. */
+function normaliseSize(size, where = 'room') {
+  if (!size) return [1, 1];
+  const sw = size[0] | 0, sh = size[1] | 0;
+  if (!ROOM_SIZES.includes(`${sw}x${sh}`)) {
+    throw new Error(`${where}: illegal room size ${size[0]}x${size[1]}`
+      + ` (allowed: ${ROOM_SIZES.join(', ')})`);
+  }
+  return [sw, sh];
+}
 
 /** Register a char->tile legend. `base` names another legend to inherit from. */
 function registerLegend(name, mapping, base) {
@@ -1726,19 +1762,27 @@ class Room {
     const legend = getLegend(def.legend || (mapDef && mapDef.legend));
     this.legend = legend;
 
+    // Size in screens, and the four derived extents everything else asks for.
+    // A room with no `size` is 1x1 and every one of these is the old constant,
+    // which is how an existing grid parses byte-identically.
+    const [sw, sh] = normaliseSize(def.size, `${this.mapId}/${key}`);
+    this.sw = sw; this.sh = sh;
+    this.tw = sw * ROOM_W; this.th = sh * ROOM_H;      // tiles
+    this.pw = this.tw * TILE; this.ph = this.th * TILE; // pixels
+
     // Base grid of tile *names* as authored (may be virtual tide tiles).
-    this.base = new Array(ROOM_W * ROOM_H);
+    this.base = new Array(this.tw * this.th);
     const rows = (def.map || []);
-    for (let y = 0; y < ROOM_H; y++) {
+    for (let y = 0; y < this.th; y++) {
       const row = (rows[y] || '').replace(/\s+$/, '');
-      for (let x = 0; x < ROOM_W; x++) {
+      for (let x = 0; x < this.tw; x++) {
         const ch = row[x] !== undefined ? row[x] : ' ';
         const t = legend[ch];
-        this.base[y * ROOM_W + x] = t || legend[' '] || 'void';
+        this.base[y * this.tw + x] = t || legend[' '] || 'void';
       }
     }
     // Runtime overrides (opened doors, smashed bushes, lifted rocks).
-    this.override = new Array(ROOM_W * ROOM_H).fill(null);
+    this.override = new Array(this.tw * this.th).fill(null);
 
     this.music = def.music || null;
     this.tint = def.tint || null;
@@ -1759,12 +1803,12 @@ class Room {
     this.cleared = false;     // all enemies defeated at least once (for locked rooms)
   }
 
-  inBounds(tx, ty) { return tx >= 0 && ty >= 0 && tx < ROOM_W && ty < ROOM_H; }
+  inBounds(tx, ty) { return tx >= 0 && ty >= 0 && tx < this.tw && ty < this.th; }
 
   /** Authored (possibly virtual) tile name. */
   baseName(tx, ty) {
     if (!this.inBounds(tx, ty)) return 'void';
-    return this.override[ty * ROOM_W + tx] || this.base[ty * ROOM_W + tx];
+    return this.override[ty * this.tw + tx] || this.base[ty * this.tw + tx];
   }
 
   /**
@@ -1796,13 +1840,13 @@ class Room {
 
   setTile(tx, ty, name) {
     if (!this.inBounds(tx, ty)) return;
-    this.override[ty * ROOM_W + tx] = name;
+    this.override[ty * this.tw + tx] = name;
     this.invalidate();
   }
 
   clearTile(tx, ty) {
     if (!this.inBounds(tx, ty)) return;
-    this.override[ty * ROOM_W + tx] = null;
+    this.override[ty * this.tw + tx] = null;
     this.invalidate();
   }
 
@@ -1831,15 +1875,15 @@ class Room {
 
   /** Render (and cache) the static tile layer for a tide level or field. */
   render(tide, frame) {
-    if (!this._cache) this._cache = offscreen(VIEW_W, VIEW_H);
+    if (!this._cache) this._cache = offscreen(this.pw, this.ph);
     const key = this.cacheKeyFor(tide);
     if (this._cacheDirty || this._cacheTide !== key) {
       const ctx = this._cache.ctx;
-      ctx.clearRect(0, 0, VIEW_W, VIEW_H);
+      ctx.clearRect(0, 0, this.pw, this.ph);
       this.animCells.length = 0;
       this.overCells.length = 0;
-      for (let y = 0; y < ROOM_H; y++) {
-        for (let x = 0; x < ROOM_W; x++) {
+      for (let y = 0; y < this.th; y++) {
+        for (let x = 0; x < this.tw; x++) {
           const d = this.tile(x, y, tide);
           if (d.flags & F.VOID) {
             ctx.fillStyle = '#000';
@@ -1884,12 +1928,12 @@ class Room {
   renderAt(tide, frame) {
     const key = this.cacheKeyFor(tide);
     let a = this._alt.get(key);
-    if (!a) { a = offscreen(VIEW_W, VIEW_H); a.dirty = true; this._alt.set(key, a); }
+    if (!a) { a = offscreen(this.pw, this.ph); a.dirty = true; this._alt.set(key, a); }
     if (a.dirty) {
       const ctx = a.ctx;
-      ctx.clearRect(0, 0, VIEW_W, VIEW_H);
-      for (let y = 0; y < ROOM_H; y++) {
-        for (let x = 0; x < ROOM_W; x++) {
+      ctx.clearRect(0, 0, this.pw, this.ph);
+      for (let y = 0; y < this.th; y++) {
+        for (let x = 0; x < this.tw; x++) {
           const d = this.tile(x, y, tide);
           if (d.flags & F.VOID) continue;
           if (d.underArt) {
@@ -1924,7 +1968,7 @@ class Room {
    */
   solidAt(px, py, tide, caps) {
     const tx = Math.floor(px / TILE), ty = Math.floor(py / TILE);
-    if (tx < 0 || ty < 0 || tx >= ROOM_W || ty >= ROOM_H) return true;
+    if (tx < 0 || ty < 0 || tx >= this.tw || ty >= this.th) return true;
     // The tile is resolved at ITS OWN tide level, so a hitbox spanning the edge
     // of a frozen patch is solid on one side and wadeable on the other.
     const d = this.tile(tx, ty, tide);
@@ -1955,6 +1999,8 @@ class Room {
   }
 }
 __exports["LEGENDS"] = LEGENDS;
+__exports["ROOM_SIZES"] = ROOM_SIZES;
+__exports["normaliseSize"] = normaliseSize;
 __exports["registerLegend"] = registerLegend;
 __exports["getLegend"] = getLegend;
 __exports["Room"] = Room;
@@ -1979,6 +2025,8 @@ __define("world/maps.js", function (__exports, __require) {
 //     scroll: false,              // true = slide between rooms, false = hard cut
 //     rooms: {
 //       '0,3,7': { map: [...], entities: [...], warps: [...] },   // 'floor,x,y'
+//       // A dungeon room may declare a size in SCREENS (see room.js):
+//       '0,4,4': { size: [2, 1], map: [...] },   // 8 rows of 20 chars
 //     },
 //     dungeon: {                  // dungeons only
 //       index: 1,
@@ -1990,14 +2038,31 @@ __define("world/maps.js", function (__exports, __require) {
 //     },
 //   }
 
-const { Room } = __require("world/room.js");
+const { Room, normaliseSize } = __require("world/room.js");
 
 const MAPS = new Map();
 
 function registerMap(def) {
+  const kind = def.kind || 'overworld';
+  // Room size is validated HERE, at registration, not lazily when a room is
+  // first walked into. A bad size in a room nobody visits during a test run
+  // would otherwise sit in the data until a player found it.
+  //
+  // "The overworld is 1x1" is structural rather than conventional: the
+  // overworld is a grid of screens with a scroll transition on every seam, and
+  // a multi-screen overworld room would mean two different meanings for "the
+  // next screen along". So it is refused, loudly, rather than documented.
+  for (const [key, r] of Object.entries(def.rooms || {})) {
+    if (!r || !r.size) continue;
+    if (kind === 'overworld') {
+      throw new Error(`${def.id}/${key}: overworld rooms may not declare a size`
+        + ` (got ${r.size[0]}x${r.size[1]}); the overworld is a grid of 1x1 screens`);
+    }
+    normaliseSize(r.size, `${def.id}/${key}`);
+  }
   const m = {
     id: def.id,
-    kind: def.kind || 'overworld',
+    kind,
     name: def.name || def.id,
     w: def.w || 1, h: def.h || 1, floors: def.floors || 1,
     legend: def.legend || 'base',
@@ -2017,11 +2082,46 @@ function getMap(id) { return MAPS.get(id) || null; }
 
 function roomKey(floor, x, y) { return `${floor | 0},${x | 0},${y | 0}`; }
 
+/**
+ * Which room OCCUPIES a map cell, as opposed to which room is keyed to it.
+ *
+ * A room's key is its top-left cell, and a multi-screen room covers
+ * `sw x sh` cells from there. So the east neighbour of a 2x1 room at `0,4,4` is
+ * whatever sits at `0,6,4`, and walking west into that same room from `0,7,4`
+ * arrives at cell `0,6,4` — which has no `roomDef` of its own and must still
+ * resolve to the room that owns it.
+ *
+ * Every cell lookup goes through this. `getRoom` and `hasRoom` resolve through
+ * it too, so a warp or a seam that names a covered cell finds the room rather
+ * than a hole. Built once per map and memoised; `roomDefs` never changes at
+ * runtime.
+ */
+function occupancy(m) {
+  if (m._occ) return m._occ;
+  const occ = new Map();
+  for (const [key, def] of Object.entries(m.roomDefs)) {
+    const [f, x, y] = key.split(',').map(Number);
+    let sw = 1, sh = 1;
+    try { [sw, sh] = normaliseSize(def.size, `${m.id}/${key}`); } catch (e) { /* validate reports it */ }
+    for (let j = 0; j < sh; j++) for (let i = 0; i < sw; i++) occ.set(roomKey(f, x + i, y + j), key);
+  }
+  m._occ = occ;
+  return occ;
+}
+
+/** The key of the room occupying a cell, or null. */
+function roomKeyAt(mapId, floor, x, y) {
+  const m = MAPS.get(mapId);
+  if (!m) return null;
+  return occupancy(m).get(roomKey(floor, x, y)) || null;
+}
+
 /** Instantiate (and memoise) a Room. Returns null if that cell is empty. */
 function getRoom(mapId, floor, x, y) {
   const m = MAPS.get(mapId);
   if (!m) return null;
-  const key = roomKey(floor, x, y);
+  const key = occupancy(m).get(roomKey(floor, x, y));
+  if (!key) return null;
   let r = m._rooms.get(key);
   if (r) return r;
   const def = m.roomDefs[key];
@@ -2035,8 +2135,7 @@ function getRoom(mapId, floor, x, y) {
 }
 
 function hasRoom(mapId, floor, x, y) {
-  const m = MAPS.get(mapId);
-  return !!(m && m.roomDefs[roomKey(floor, x, y)]);
+  return !!roomKeyAt(mapId, floor, x, y);
 }
 
 /** Every room instance that has been created so far (for save/restore of state). */
@@ -2070,11 +2169,43 @@ function validateMaps() {
       if (f < 0 || f >= m.floors || x < 0 || x >= m.w || y < 0 || y >= m.h) {
         problems.push(`${m.id}: room '${key}' is outside the map bounds ${m.w}x${m.h}x${m.floors}`);
       }
+      // The grid must match the DECLARED size exactly. A 2x1 room is eight rows
+      // of twenty characters; authoring it as two 10-wide grids gives sixteen
+      // rows and is caught here rather than read as a room half full of void.
+      let sw = 1, sh = 1;
+      try {
+        [sw, sh] = normaliseSize(def.size, `${m.id}/${key}`);
+      } catch (e) { problems.push(e.message); }
+      if (def.size && m.kind === 'overworld') {
+        problems.push(`${m.id}/${key}: overworld rooms may not declare a size`);
+      }
+      // A multi-screen room OWNS the cells it spans. Another room keyed inside
+      // them would be unreachable — every seam into those cells resolves to the
+      // large room — and the minimap would draw two rooms in one place.
+      if (sw > 1 || sh > 1) {
+        if (x + sw > m.w || y + sh > m.h) {
+          problems.push(`${m.id}/${key}: a ${sw}x${sh} room here runs off the map (${m.w}x${m.h})`);
+        }
+        for (let j = 0; j < sh; j++) for (let i = 0; i < sw; i++) {
+          if (i === 0 && j === 0) continue;
+          const c = roomKey(f, x + i, y + j);
+          if (m.roomDefs[c]) {
+            problems.push(`${m.id}/${key}: its ${sw}x${sh} footprint covers room '${c}'`);
+          }
+        }
+      }
+      const wantRows = 8 * sh, wantCols = 10 * sw;
       const rows = def.map || [];
-      if (rows.length !== 8) problems.push(`${m.id}/${key}: map has ${rows.length} rows, expected 8`);
+      if (rows.length !== wantRows) {
+        problems.push(`${m.id}/${key}: map has ${rows.length} rows, expected ${wantRows}`
+          + ` (size ${sw}x${sh})`);
+      }
       rows.forEach((r, i) => {
         const t = r.replace(/\s+$/, '');
-        if (t.length !== 10) problems.push(`${m.id}/${key}: row ${i} has ${t.length} chars, expected 10`);
+        if (t.length !== wantCols) {
+          problems.push(`${m.id}/${key}: row ${i} has ${t.length} chars, expected ${wantCols}`
+            + ` (size ${sw}x${sh})`);
+        }
       });
       for (const w of (def.warps || [])) {
         const to = Array.isArray(w) ? { map: w[2], floor: w[3] | 0, rx: w[4], ry: w[5] } : w.to;
@@ -2092,6 +2223,7 @@ __exports["MAPS"] = MAPS;
 __exports["registerMap"] = registerMap;
 __exports["getMap"] = getMap;
 __exports["roomKey"] = roomKey;
+__exports["roomKeyAt"] = roomKeyAt;
 __exports["getRoom"] = getRoom;
 __exports["hasRoom"] = hasRoom;
 __exports["liveRooms"] = liveRooms;
@@ -2437,6 +2569,34 @@ const ROOM_TRANSITION_FRAMES = 34;
  *  a tuning choice but a workaround for a walk speed that could step over the
  *  boundary without ever landing on it. */
 const ROOM_EXIT_MARGIN = 1;
+
+// THE CAMERA, inside a multi-screen dungeon room only.
+//
+// All three are `guessed`, in the strongest sense of the word: no reference has
+// been frame-stepped for any of them, and until P7.6 there was no camera at all
+// to have an opinion about. `KeyI` draws the deadzone box in game so they can be
+// settled by play — the same argument that got the anchor radius its debug key.
+//
+// None of them can affect a 1x1 room. The camera clamps to [0, room.pw-VIEW_W]
+// and that range is empty on one screen, so retuning these three numbers cannot
+// move a pixel in any room the game currently has.
+
+/** px — width of the box Link moves inside without the view following. guessed.
+ *  96 of the 160-pixel view, so the camera gives way once he is within two
+ *  tiles of a screen edge. Wider than the height because horizontal motion is
+ *  what a 2x1 room is for and a narrow box there reads as the view chasing him. */
+const CAM_DEADZONE_W = 96;
+
+/** px — height of that box. guessed. 64 of the 128-pixel view: two tiles of
+ *  slack above and below, which is about where a vertical scroll starts to be
+ *  worth having rather than a twitch. */
+const CAM_DEADZONE_H = 64;
+
+/** px/f — the fastest the camera may travel. guessed. Two pixels a frame is
+ *  twice WALK_SPEED, so it never lags a walking player and the deadzone rule is
+ *  exact during ordinary movement; it exists only to stop a knockback, a ledge
+ *  hop landing or a warp from snapping the view across the room in one frame. */
+const CAM_MAX_SPEED = 2;
 
 /** f — length of the tide's wave-front wipe across the screen. guessed.
  *  Was 44 while game.js stepped the sweep twice per frame, so the wipe really
@@ -3128,6 +3288,9 @@ __exports["LEDGE_PROBE_REACH"] = LEDGE_PROBE_REACH;
 __exports["PUSH_PROBE_REACH"] = PUSH_PROBE_REACH;
 __exports["ROOM_TRANSITION_FRAMES"] = ROOM_TRANSITION_FRAMES;
 __exports["ROOM_EXIT_MARGIN"] = ROOM_EXIT_MARGIN;
+__exports["CAM_DEADZONE_W"] = CAM_DEADZONE_W;
+__exports["CAM_DEADZONE_H"] = CAM_DEADZONE_H;
+__exports["CAM_MAX_SPEED"] = CAM_MAX_SPEED;
 __exports["TIDE_SWEEP_FRAMES"] = TIDE_SWEEP_FRAMES;
 __exports["FADE_RATE"] = FADE_RATE;
 __exports["BANNER_FRAMES"] = BANNER_FRAMES;
@@ -3308,7 +3471,7 @@ __define("game/tide.js", function (__exports, __require) {
 // its rendered tile layer against it. Miss a bump and the room draws the old
 // water while collision uses the new — it looks wrong and nothing fails.
 
-const { VIEW_W, VIEW_H, offscreen } = __require("core/screen.js");
+const { offscreen } = __require("core/screen.js");
 const { F } = __require("world/tileset.js");
 const { TIDE_SWEEP_FRAMES } = __require("data/feel.js");
 
@@ -3558,8 +3721,15 @@ class Tide {
       // `this` is the field, and the base has not moved yet, so the snapshot
       // carries the old water everywhere the conch reaches and the held water
       // everywhere an override does.
-      if (!this.snapshot) this.snapshot = offscreen(VIEW_W, VIEW_H);
-      this.snapshot.ctx.clearRect(0, 0, VIEW_W, VIEW_H);
+      // Room-sized, not screen-sized: the wipe runs across the whole room and
+      // the camera window is taken out of it by the caller's ox/oy, the same
+      // way the room's own render cache is. A snapshot cropped to the screen
+      // would leave the unseen half of a wide room un-wiped.
+      if (!this.snapshot || this.snapshot.canvas.width !== g.room.pw
+          || this.snapshot.canvas.height !== g.room.ph) {
+        this.snapshot = offscreen(g.room.pw, g.room.ph);
+      }
+      this.snapshot.ctx.clearRect(0, 0, g.room.pw, g.room.ph);
       const before = g.room.render(this, g.frame);
       this.snapshot.ctx.drawImage(before, 0, 0);
       g.room.drawAnim(this.snapshot.ctx, 0, 0, this, g.frame);
@@ -3590,12 +3760,14 @@ class Tide {
    */
   drawSweep(ctx, ox, oy, newCanvas, drawNewExtras) {
     const t = this.sweepT;
-    const front = Math.round(t * (VIEW_W + 40)) - 20;
+    const room = this.game.room;
+    const RW = room ? room.pw : 160, RH = room ? room.ph : 128;
+    const front = Math.round(t * (RW + 40)) - 20;
     // old state on the right of the front
     if (this.snapshot) {
       ctx.save();
       ctx.beginPath();
-      ctx.rect(ox + Math.max(0, front), oy, VIEW_W, VIEW_H);
+      ctx.rect(ox + Math.max(0, front), oy, RW, RH);
       ctx.clip();
       ctx.drawImage(this.snapshot.canvas, ox, oy);
       ctx.restore();
@@ -3603,7 +3775,7 @@ class Tide {
     // new state on the left
     ctx.save();
     ctx.beginPath();
-    ctx.rect(ox, oy, Math.max(0, Math.min(VIEW_W, front)), VIEW_H);
+    ctx.rect(ox, oy, Math.max(0, Math.min(RW, front)), RH);
     ctx.clip();
     ctx.drawImage(newCanvas, ox, oy);
     if (drawNewExtras) drawNewExtras();
@@ -3614,9 +3786,9 @@ class Tide {
     const pal = rising ? ['#ffffff', '#b0e8f8', '#58b0e0'] : ['#ffffff', '#e0c078', '#a88048'];
     for (let i = 0; i < 3; i++) {
       const x = front - i * 3;
-      if (x < 0 || x >= VIEW_W) continue;
+      if (x < 0 || x >= RW) continue;
       ctx.fillStyle = pal[i];
-      for (let y = 0; y < VIEW_H; y += 2) {
+      for (let y = 0; y < RH; y += 2) {
         const wob = Math.sin((y * 0.35) + this.sweep * 0.5) * 3;
         ctx.fillRect(ox + Math.round(x + wob), oy + y, 2, 2);
       }
@@ -3716,7 +3888,7 @@ __define("game/entity.js", function (__exports, __require) {
 // pixel rounds away to nothing every frame and the entity never moves. Add to
 // `e.fx` instead, or go through `moveEntity`.
 
-const { TILE, ROOM_W, ROOM_H, VIEW_W, VIEW_H } = __require("core/screen.js");
+const { TILE } = __require("core/screen.js");
 const { sprites } = __require("gfx/art.js");
 const { FP_ONE, sp, toPx } = __require("core/fixed.js");
 const { F } = __require("world/tileset.js");
@@ -3942,7 +4114,7 @@ function canOccupy(game, e, x, y, caps) {
   const avoid = (!airborne && e.avoidFlags) ? e.avoidFlags : 0;
   for (const py of ys) {
     for (const px of xs) {
-      if (px < 0 || py < 0 || px >= VIEW_W || py >= VIEW_H) return false;
+      if (px < 0 || py < 0 || px >= room.pw || py >= room.ph) return false;
       if (room.solidAt(px, py, game.tide, cps)) return false;
       if (avoid) {
         const tx = Math.floor(px / TILE), ty = Math.floor(py / TILE);
@@ -4000,7 +4172,7 @@ function findSafeTile(game, e, maxRadius = 6) {
       for (let dx = -r; dx <= r; dx++) {
         if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
         const nx = tx + dx, ny = ty + dy;
-        if (nx < 0 || ny < 0 || nx >= ROOM_W || ny >= ROOM_H) continue;
+        if (nx < 0 || ny < 0 || nx >= game.room.tw || ny >= game.room.th) continue;
         const f = game.room.flagsAt(nx, ny, game.tide);
         if (f & (F.SOLID | F.VOID | F.DEEP | F.PIT | F.HAZARD | F.JUMPABLE)) continue;
         const px = nx * TILE + (TILE - e.w) / 2;
@@ -4560,7 +4732,7 @@ __define("game/projectile.js", function (__exports, __require) {
 // Projectiles: enemy shots, player shots (seeds, arrows), and thrown objects.
 
 const { Entity, moveEntity, canOccupy, defineEntity, DIR_VEC } = __require("game/entity.js");
-const { VIEW_W, VIEW_H, TILE } = __require("core/screen.js");
+const { TILE } = __require("core/screen.js");
 const { sp, toPx } = __require("core/fixed.js");
 const { F } = __require("world/tileset.js");
 const { PROJECTILE_LIFE, PROJECTILE_SPEED, PROJECTILE_Z, KNOCK_PROJECTILE } = __require("data/feel.js");
@@ -4615,7 +4787,8 @@ class Projectile extends Entity {
       this.fx = nfx; this.fy = nfy;
     }
 
-    if (this.x < -12 || this.y < -12 || this.x > VIEW_W + 12 || this.y > VIEW_H + 12) {
+    const rw = game.room ? game.room.pw : 160, rh = game.room ? game.room.ph : 128;
+    if (this.x < -12 || this.y < -12 || this.x > rw + 12 || this.y > rh + 12) {
       this.remove = true;
       return;
     }
@@ -4850,7 +5023,7 @@ const { Entity, defineEntity, moveEntity, canOccupy, findSafeTile, DIR_VEC, dirF
 const { Projectile, fire } = __require("game/projectile.js");
 const { Explosion } = __require("game/effects.js");
 const { F } = __require("world/tileset.js");
-const { TILE, VIEW_W, VIEW_H } = __require("core/screen.js");
+const { TILE } = __require("core/screen.js");
 const { hasItem, itemLevel, addBombs, addReefseeds, addBottles } = __require("game/progress.js");
 const { TIDE_COUNT } = __require("game/tide.js");
 const { FP_ONE, sp, toPx } = __require("core/fixed.js");
@@ -5874,7 +6047,7 @@ __define("game/player.js", function (__exports, __require) {
 
 const { Entity, moveEntity, canOccupy, groundFlags, groundTile, findSafeTile, DIR_VEC, DIRS } = __require("game/entity.js");
 const { F, transformFor } = __require("world/tileset.js");
-const { TILE, VIEW_W, VIEW_H, ROOM_W, ROOM_H } = __require("core/screen.js");
+const { TILE } = __require("core/screen.js");
 const { sp, toPx } = __require("core/fixed.js");
 const { sprites } = __require("gfx/art.js");
 const { hasItem, itemLevel, HEART_UNITS } = __require("game/progress.js");
@@ -6385,7 +6558,7 @@ class Player extends Entity {
   }
 
   tileDefAt(game, tx, ty) {
-    if (tx < 0 || ty < 0 || tx * TILE >= VIEW_W || ty * TILE >= VIEW_H) return null;
+    if (tx < 0 || ty < 0 || tx * TILE >= game.room.pw || ty * TILE >= game.room.ph) return null;
     return game.room.tile(tx, ty, game.tide);
   }
 
@@ -6455,7 +6628,7 @@ class Player extends Entity {
     const [dx, dy] = DIR_VEC[this.dir];
     const tx = this.cx + dx * (SWORD_REACH + SWORD_GAP);
     const ty = this.cy + dy * (SWORD_REACH + SWORD_GAP);
-    if (tx < 0 || ty < 0 || tx >= VIEW_W || ty >= VIEW_H) return;
+    if (tx < 0 || ty < 0 || tx >= game.room.pw || ty >= game.room.ph) return;
     if (!game.room.solidAt(tx, ty, game.tide, { jumping: false, swim: false })) return;
     this.clinkCool = SWORD_CLINK_COOLDOWN;
     game.audio.sfx('block');
@@ -7134,8 +7307,8 @@ function roomHasDryGround(game) {
   const stamp = game.tide.stamp + ':' + game.tide.level;
   if (room._dryStamp === stamp) return room._dryCached;
   let dry = false;
-  for (let y = 0; y < ROOM_H && !dry; y++) {
-    for (let x = 0; x < ROOM_W; x++) {
+  for (let y = 0; y < room.th && !dry; y++) {
+    for (let x = 0; x < room.tw; x++) {
       const f = room.flagsAt(x, y, game.tide);
       if (f & (F.WATER | F.DEEP | F.SOLID | F.PIT)) continue;
       dry = true; break;
@@ -8386,7 +8559,9 @@ class Dialogue {
       ? { options: opts.choices, index: opts.defaultIndex || 0, onPick: opts.onPick || null }
       : null;
     const p = this.game.player;
-    this.top = !!(p && p.y > VIEW_H - 60);
+    // Where he is ON SCREEN, which is where the text box has to avoid being.
+    const cam = this.game.camera;
+    this.top = !!(p && p.y - (cam ? cam.y : 0) > VIEW_H - 60);
     this.holdFrames = 0;
   }
 
@@ -8526,14 +8701,14 @@ __define("game/menu.js", function (__exports, __require) {
 // Pause menu: item grid with A/B assignment, dungeon or overworld map, quest
 // status, and save. Opened with START, closed with START or B on the first tab.
 
-const { SCREEN_W, SCREEN_H, HUD_H, VIEW_W, VIEW_H, ROOM_W, ROOM_H } = __require("core/screen.js");
+const { SCREEN_W, SCREEN_H, HUD_H, VIEW_W, VIEW_H } = __require("core/screen.js");
 const { drawText, drawTextCentered, textWidth } = __require("gfx/font.js");
 const { sprites } = __require("gfx/art.js");
 const { drawPanel, drawBox } = __require("game/dialogue.js");
 const { ITEMS, itemIcon, itemName, equippableItems } = __require("game/items.js");
 const { CHARMS, CHARM_SLOTS, CHARM_COUNT, ownedCharms, charmsForSlot, slotCharm, caseSize, slotOpen, equippedIn } = __require("game/scrimshaw.js");
 const { HEART_UNITS } = __require("game/progress.js");
-const { MAPS, getMap, hasRoom, getRoom } = __require("world/maps.js");
+const { MAPS, getMap, hasRoom, getRoom, roomKeyAt } = __require("world/maps.js");
 const { TIDE_NAMES, TIDE_COUNT } = __require("game/tide.js");
 
 // The Chartstone's pips, LOW to HIGH. Sand, shallow, deep — the same three
@@ -8563,8 +8738,8 @@ function tideMarks(mapId, floor, rx, ry) {
     for (let lv = 0; lv < TIDE_COUNT; lv++) {
       const prev = (lv + TIDE_COUNT - 1) % TIDE_COUNT;
       let differs = false;
-      for (let y = 0; y < ROOM_H && !differs; y++) {
-        for (let x = 0; x < ROOM_W; x++) {
+      for (let y = 0; y < room.th && !differs; y++) {
+        for (let x = 0; x < room.tw; x++) {
           if (room.tile(x, y, lv).name !== room.tile(x, y, prev).name) { differs = true; break; }
         }
       }
@@ -8801,14 +8976,27 @@ class Menu {
     const gw = m.w * cell, gh = m.h * cell;
     const ox = Math.round((SCREEN_W - gw) / 2), oy = HUD_H + 28;
 
+    // A MULTI-SCREEN ROOM IS ONE CELL SPANNING SEVERAL, as the source's dungeon
+    // maps draw them. The grid is walked cell by cell, but a cell that is
+    // COVERED by a room keyed further up or left is skipped: only the room's
+    // own top-left cell draws, and it draws sw x sh cells wide. Drawing every
+    // covered cell instead would paint a 2x1 room as two rooms with a seam
+    // between them, which is exactly the lie the whole feature is against.
     for (let y = 0; y < m.h; y++) {
       for (let x = 0; x < m.w; x++) {
         if (!hasRoom(m.id, floor, x, y)) continue;
+        // Read from the DEFINITION, not from a Room: opening the map screen
+        // must not instantiate every room on the floor, because an instantiated
+        // room is one `liveRooms` will then save and restore the state of.
+        const key = floor + ',' + x + ',' + y;
+        if (roomKeyAt(m.id, floor, x, y) !== key) continue;      // a covered cell
+        const sz = m.roomDefs[key].size || [1, 1];
+        const sw = sz[0] | 0, sh = sz[1] | 0;
         const seen = g.progress.secrets['seen:' + m.id + ':' + floor + ',' + x + ',' + y];
         if (!seen && !haveMap) continue;
         const here = g.room && g.room.rx === x && g.room.ry === y && g.room.floor === floor;
         ctx.fillStyle = here ? '#f8f8e8' : (seen ? '#58b0e0' : '#304858');
-        ctx.fillRect(ox + x * cell, oy + y * cell, cell - 1, cell - 1);
+        ctx.fillRect(ox + x * cell, oy + y * cell, sw * cell - 1, sh * cell - 1);
 
         // THE CHARTSTONE. A room is marked with one pip per tide level that
         // CHANGES it — which is information the game already computes on every
@@ -8821,7 +9009,7 @@ class Menu {
         for (let lv = 0; lv < 3; lv++) {
           if (!(marks & (1 << lv))) continue;
           ctx.fillStyle = TIDE_PIP[lv];
-          ctx.fillRect(ox + x * cell + cell - 3, oy + y * cell + (2 - lv) * 3, 2, 2);
+          ctx.fillRect(ox + x * cell + sw * cell - 3, oy + y * cell + (2 - lv) * 3, 2, 2);
         }
       }
     }
@@ -8938,6 +9126,115 @@ class Menu {
   }
 }
 __exports["Menu"] = Menu;
+});
+
+/* ===== src/game/camera.js ===== */
+__define("game/camera.js", function (__exports, __require) {
+// Camera: which 160x128 window of the current room is on screen.
+//
+// WHY THIS IS A NO-OP IN EVERY 1x1 ROOM, AND WHY THAT IS THE MECHANISM
+//
+// A 1x1 room is exactly one screen, so `room.pw - VIEW_W` and
+// `room.ph - VIEW_H` are both 0, so the clamp below has a single legal value
+// and `x`/`y` are 0 forever. That is not a convention and it is not an early
+// return that someone could delete: it falls out of the clamp. Every existing
+// room in the game is 1x1, and it is what guarantees that this file cannot
+// alter a single pixel of any of them — the replays prove it, but the clamp is
+// the reason they can.
+//
+// DEADZONE, NOT CENTRING
+//
+// The source games do not keep Link in the middle of a large room. The view
+// holds still while he moves around inside it and only gives way when he
+// pushes at an edge. So: a box in VIEW space; while Link's centre is inside it
+// the camera does not move at all; when he leaves it the camera moves by
+// exactly enough to put him back on the boundary, capped at CAM_MAX_SPEED so a
+// knockback or a warp cannot snap the view.
+//
+// The three constants are in feel.js and all three are `guessed`. Nobody has
+// frame-stepped a reference for them; `KeyI` draws the box so they can be
+// settled by play, which is the same argument the anchor radius got.
+//
+// THE CAMERA IS NOT PART OF THE RENDER CACHE KEY, IN EITHER DIRECTION.
+//
+// Moving the camera does not change what the room looks like — it changes which
+// part of it you can see — so `Room.cacheKeyFor` stays exactly as P5 left it and
+// nothing in this file may ever call `room.invalidate()`. Keying the cache on
+// the camera would re-render the whole room every frame you walk; letting the
+// camera invalidate it would throw away the tide field's stamp discipline. Both
+// are silent, and both are traps.
+
+const { VIEW_W, VIEW_H } = __require("core/screen.js");
+const { CAM_DEADZONE_W, CAM_DEADZONE_H, CAM_MAX_SPEED } = __require("data/feel.js");
+
+const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
+
+class Camera {
+  constructor() {
+    this.x = 0; this.y = 0;
+  }
+
+  maxX(room) { return Math.max(0, room.pw - VIEW_W); }
+  maxY(room) { return Math.max(0, room.ph - VIEW_H); }
+
+  /**
+   * Put the camera where it would sit if the player had always been at `p`.
+   * Used on room entry and on any teleport: the deadzone is a history-dependent
+   * rule and a room you have just arrived in has no history.
+   *
+   * Centred-and-clamped rather than deadzoned, because the entry point of a
+   * wide room is almost always at one end and the clamp resolves it to that end
+   * anyway.
+   */
+  snap(room, p) {
+    if (!room) { this.x = 0; this.y = 0; return this; }
+    const cx = p ? p.cx : room.pw / 2, cy = p ? p.cy : room.ph / 2;
+    this.x = clamp(Math.round(cx - VIEW_W / 2), 0, this.maxX(room));
+    this.y = clamp(Math.round(cy - VIEW_H / 2), 0, this.maxY(room));
+    return this;
+  }
+
+  /** Where `snap` would put a camera, without disturbing this one. */
+  static snapped(room, p) { return new Camera().snap(room, p); }
+
+  /**
+   * One frame of following. Call AFTER the player has moved and BEFORE anything
+   * draws, and never during a tide sweep — the sweep holds a snapshot of the
+   * room and a camera moving under it would smear the wipe.
+   */
+  update(room, p) {
+    if (!room) return;
+    const mx = this.maxX(room), my = this.maxY(room);
+    if (mx === 0 && my === 0) { this.x = 0; this.y = 0; return; }
+    if (!p) { this.x = clamp(this.x, 0, mx); this.y = clamp(this.y, 0, my); return; }
+
+    // The deadzone in ROOM space, i.e. the box slid to where the camera is.
+    const dzx0 = this.x + (VIEW_W - CAM_DEADZONE_W) / 2;
+    const dzx1 = dzx0 + CAM_DEADZONE_W;
+    const dzy0 = this.y + (VIEW_H - CAM_DEADZONE_H) / 2;
+    const dzy1 = dzy0 + CAM_DEADZONE_H;
+
+    let wantX = this.x, wantY = this.y;
+    if (p.cx < dzx0) wantX = this.x - (dzx0 - p.cx);
+    else if (p.cx > dzx1) wantX = this.x + (p.cx - dzx1);
+    if (p.cy < dzy0) wantY = this.y - (dzy0 - p.cy);
+    else if (p.cy > dzy1) wantY = this.y + (p.cy - dzy1);
+
+    wantX = clamp(Math.round(wantX), 0, mx);
+    wantY = clamp(Math.round(wantY), 0, my);
+    this.x = step(this.x, wantX);
+    this.y = step(this.y, wantY);
+  }
+}
+
+/** Move at most CAM_MAX_SPEED whole pixels toward a target. */
+function step(from, to) {
+  const d = to - from;
+  if (d === 0) return from;
+  if (Math.abs(d) <= CAM_MAX_SPEED) return to;
+  return from + Math.sign(d) * CAM_MAX_SPEED;
+}
+__exports["Camera"] = Camera;
 });
 
 /* ===== src/game/title.js ===== */
@@ -9268,7 +9565,7 @@ __define("game/game.js", function (__exports, __require) {
 //                                         // 'tide' | 'valve' | 'puzzle'
 //     }
 
-const { Screen, SCREEN_W, SCREEN_H, HUD_H, VIEW_W, VIEW_H, TILE, ROOM_W, ROOM_H, offscreen } = __require("core/screen.js");
+const { Screen, SCREEN_W, SCREEN_H, HUD_H, VIEW_W, VIEW_H, TILE, offscreen } = __require("core/screen.js");
 const { Input } = __require("core/input.js");
 const { audio } = __require("core/audio.js");
 const { tiles: tileSheet, sprites } = __require("gfx/art.js");
@@ -9286,12 +9583,13 @@ const { newProgress, saveSlot, loadSlot, giveItem, addRupees, addKey, useKey, ke
 const { drawHud, drawAreaBanner, drawBossBar } = __require("game/hud.js");
 const { Dialogue, drawBox, drawPanel, getText } = __require("game/dialogue.js");
 const { Menu } = __require("game/menu.js");
+const { Camera } = __require("game/camera.js");
 const { Scrimshaw, CHARMS, giveCharm, ownedCharms } = __require("game/scrimshaw.js");
 const { Title } = __require("game/title.js");
 const { runCutscene, CUTSCENES } = __require("game/cutscene.js");
 const { Stream, seedGlobal, roomStream, noise1, rng: rngGlobal } = __require("core/rng.js");
 const { sp } = __require("core/fixed.js");
-const { ROOM_TRANSITION_FRAMES, ROOM_EXIT_MARGIN, FADE_RATE, BANNER_FRAMES, SHAKE_LARGE, SHAKE_LARGE_FRAMES, BOSS_ESSENCE_DELAY_FRAMES, BOSS_MUSIC_RESUME_FRAMES, ITEM_PRESENT_FRAMES, ESSENCE_FREEZE_FRAMES, GAMEOVER_WAIT_FRAMES, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, LENS_FADE_FRAMES, LENS_GHOST_ALPHA, LENS_TINT_ALPHA, LENS_PHASE_ALPHA, LENS_SHIMMER_FRAMES, REEFSEED_CAPACITY, COIN_SWAP_DELAY_FRAMES, BOTTLE_CAPACITY, CARVE_TIDE_TURNS, QUARTERMASTER_BONUS, CHANDLER_FACTOR, LANTERN_RADIUS, GULLS_TALLY_FACTOR, CARVE_PRICE, PICKUP_LIFE_FRAMES, WRECK_GLIMMER_PERIOD, WRECK_GLIMMER_ON, WRECK_GLIMMER_ALPHA } = __require("data/feel.js");
+const { ROOM_TRANSITION_FRAMES, ROOM_EXIT_MARGIN, FADE_RATE, BANNER_FRAMES, SHAKE_LARGE, SHAKE_LARGE_FRAMES, BOSS_ESSENCE_DELAY_FRAMES, BOSS_MUSIC_RESUME_FRAMES, ITEM_PRESENT_FRAMES, ESSENCE_FREEZE_FRAMES, GAMEOVER_WAIT_FRAMES, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, LENS_FADE_FRAMES, LENS_GHOST_ALPHA, LENS_TINT_ALPHA, LENS_PHASE_ALPHA, LENS_SHIMMER_FRAMES, REEFSEED_CAPACITY, COIN_SWAP_DELAY_FRAMES, BOTTLE_CAPACITY, CARVE_TIDE_TURNS, QUARTERMASTER_BONUS, CHANDLER_FACTOR, LANTERN_RADIUS, GULLS_TALLY_FACTOR, CARVE_PRICE, PICKUP_LIFE_FRAMES, WRECK_GLIMMER_PERIOD, WRECK_GLIMMER_ON, WRECK_GLIMMER_ALPHA, CAM_DEADZONE_W, CAM_DEADZONE_H } = __require("data/feel.js");
 
 class Game {
   constructor(screen, input) {
@@ -9336,6 +9634,13 @@ class Game {
     this.anchorShape = null;
     this.deathTime = 0;
     this.tintKey = 'none';
+    // Which window of the room is on screen. Clamps to 0 in a 1x1 room, which
+    // is every room the game currently has; see camera.js.
+    this.camera = new Camera();
+    this.debugCam = false;
+    // The OUTGOING SCREEN WINDOW during a scroll transition, not the outgoing
+    // room: the camera offset is baked in when it is captured, so the slide is
+    // one screen wide however large either room is.
     this.roomSnapshot = offscreen(VIEW_W, VIEW_H);
     // The per-room stream. Replaced on every room entry from the save seed and
     // the room's identity, so a room replays identically. Everything that
@@ -9417,6 +9722,9 @@ class Game {
       this.player.lastSafe.x = this.player.x; this.player.lastSafe.y = this.player.y;
       this.player.reconcileWithTide(this);
     }
+    // After the player is placed, never before: a room has no camera history to
+    // deadzone against on the frame you arrive in it.
+    this.camera.snap(this.room, this.player);
     if (changedMap || o.banner) {
       this.bannerText = m.kind === 'dungeon' ? m.name : (this.room && this.room.name) || m.name;
       this.bannerTime = BANNER_FRAMES;
@@ -9445,6 +9753,7 @@ class Game {
     this.restoreRoomState();
     this.checkPuzzle();
     if (r.def.script && r.def.script.onEnter) r.def.script.onEnter(this, r);
+    this.camera.snap(r, this.player);
     this.updateMusic();
   }
 
@@ -9545,39 +9854,90 @@ class Game {
     // at the edge is enough. See ROOM_EXIT_MARGIN in feel.js.
     const M = ROOM_EXIT_MARGIN;
     let dir = null;
-    if (i.down('right') && r.x + r.w >= VIEW_W - M) dir = 'right';
+    // The ROOM's extent, not the screen's. An internal screen seam inside a
+    // multi-screen room is not a boundary and never was — nothing here ever
+    // looked for a seam, only for where the room stops.
+    if (i.down('right') && r.x + r.w >= this.room.pw - M) dir = 'right';
     else if (i.down('left') && r.x <= M) dir = 'left';
-    else if (i.down('down') && r.y + r.h >= VIEW_H - M) dir = 'down';
+    else if (i.down('down') && r.y + r.h >= this.room.ph - M) dir = 'down';
     else if (i.down('up') && r.y <= M) dir = 'up';
     if (!dir) return;
 
-    const d = { right: [1, 0], left: [-1, 0], down: [0, 1], up: [0, -1] }[dir];
-    const nx = this.room.rx + d[0], ny = this.room.ry + d[1];
-    if (!hasRoom(this.mapId, this.room.floor, nx, ny)) return;
+    // WHICH CELL YOU LEAVE FROM, on the map's grid of screens.
+    //
+    // A room's key is its top-left cell and it covers `sw x sh` of them, so a
+    // 2x1 room's east neighbour is at `rx + 2` and its NORTH neighbour depends
+    // on which of its two screens the player is standing in. For a 1x1 room
+    // `sw`/`sh` are 1 and the sub-screen term is 0, so this is `rx + d[0]`
+    // exactly as it always was.
+    const room = this.room;
+    const sub = (v, span, n) => Math.max(0, Math.min(n - 1, Math.floor(v / span)));
+    const sx = sub(p.cx, VIEW_W, room.sw), sy = sub(p.cy, VIEW_H, room.sh);
+    let nx, ny;
+    if (dir === 'right') { nx = room.rx + room.sw; ny = room.ry + sy; }
+    else if (dir === 'left') { nx = room.rx - 1; ny = room.ry + sy; }
+    else if (dir === 'down') { nx = room.rx + sx; ny = room.ry + room.sh; }
+    else { nx = room.rx + sx; ny = room.ry - 1; }
+    if (!hasRoom(this.mapId, room.floor, nx, ny)) return;
 
-    const next = getRoom(this.mapId, this.room.floor, nx, ny);
+    const next = getRoom(this.mapId, room.floor, nx, ny);
+    const endPos = this.entryPos(dir, p, next);
     if (this.map.scroll === false) {
-      this.warpTo(this.mapId, this.room.floor, nx, ny, this.entryPos(dir, p), dir);
+      this.warpTo(this.mapId, this.room.floor, nx, ny, endPos, dir);
       return;
     }
+    // Where the camera will be standing once the slide lands. The transition is
+    // drawn in SCREEN space — one screen out, one screen in — so both rooms'
+    // camera offsets have to be known up front rather than discovered at the
+    // end. In a 1x1 room both are 0 and every term below vanishes.
+    const camTo = Camera.snapped(next, {
+      cx: endPos.x + (p.cx - p.x), cy: endPos.y + (p.cy - p.y),
+    });
     this.transition = {
       dir, t: 0, from: this.room, to: next, nx, ny,
       fromCanvas: this.room.render(this.tide, this.frame),
       startFx: p.fx, startFy: p.fy,
-      endPos: this.entryPos(dir, p),
+      endPos,
+      camFrom: { x: this.camera.x, y: this.camera.y },
+      camTo: { x: camTo.x, y: camTo.y },
     };
     // Snapshot the outgoing room so animated tiles do not tick during the slide.
+    const cox = -this.camera.x, coy = -this.camera.y;
     this.roomSnapshot.ctx.clearRect(0, 0, VIEW_W, VIEW_H);
-    this.roomSnapshot.ctx.drawImage(this.transition.fromCanvas, 0, 0);
-    this.room.drawAnim(this.roomSnapshot.ctx, 0, 0, this.tide, this.frame);
-    this.room.drawOver(this.roomSnapshot.ctx, 0, 0, this.tide, this.frame);
+    this.roomSnapshot.ctx.drawImage(this.transition.fromCanvas, cox, coy);
+    this.room.drawAnim(this.roomSnapshot.ctx, cox, coy, this.tide, this.frame);
+    this.room.drawOver(this.roomSnapshot.ctx, cox, coy, this.tide, this.frame);
   }
 
-  entryPos(dir, p) {
-    if (dir === 'right') return { x: -3, y: p.y };
-    if (dir === 'left') return { x: VIEW_W - 13, y: p.y };
-    if (dir === 'down') return { x: p.x, y: -8 };
-    return { x: p.x, y: VIEW_H - 16 };
+  /**
+   * Where the player lands in the room being entered.
+   *
+   * The coordinate ACROSS the seam is fixed by the direction; the one along it
+   * is preserved in GLOBAL screen-grid space rather than in room space. A room
+   * sits at `rx * VIEW_W` in that space, so walking north out of the right-hand
+   * screen of a 2x1 room and into a 1x1 room above lands you at the same world
+   * column you left from, not one screen west of it. When both rooms are keyed
+   * to the same cell — every transition the game has today — the two origins
+   * cancel and this is `p.y` untouched.
+   *
+   * The clamp then catches a neighbour that is genuinely shorter or narrower
+   * than the room being left, where the preserved coordinate would land outside
+   * its grid: every tile query there answers `void` and the player is wedged in
+   * stone.
+   */
+  entryPos(dir, p, next) {
+    const cur = this.room;
+    const gx = cur.rx * VIEW_W + p.x, gy = cur.ry * VIEW_H + p.y;
+    const rawX = gx - next.rx * VIEW_W, rawY = gy - next.ry * VIEW_H;
+    // Clamped only where the neighbour is strictly the smaller room, so an
+    // equal-sized pair — every transition in the game today — takes the raw
+    // value through untouched and no existing replay can move.
+    const x = next.pw < cur.pw ? Math.max(0, Math.min(rawX, next.pw - 16)) : rawX;
+    const y = next.ph < cur.ph ? Math.max(0, Math.min(rawY, next.ph - 16)) : rawY;
+    if (dir === 'right') return { x: -3, y };
+    if (dir === 'left') return { x: next.pw - 13, y };
+    if (dir === 'down') return { x, y: -8 };
+    return { x, y: next.ph - 16 };
   }
 
   updateTransition() {
@@ -9588,8 +9948,13 @@ class Game {
     // Ease the player across the seam while the view slides. The whole slide
     // runs in subpixels: the incoming player sits at a negative x for a third
     // of it, which is exactly the case a truncating floor gets wrong.
-    const endFx = sp(t.endPos.x + (t.dir === 'right' ? VIEW_W : t.dir === 'left' ? -VIEW_W : 0));
-    const endFy = sp(t.endPos.y + (t.dir === 'down' ? VIEW_H : t.dir === 'up' ? -VIEW_H : 0));
+    // The camera terms carry the player across the change of window as well as
+    // the change of room: he is drawn relative to the OUTGOING window all the
+    // way through the slide, so his room-space target has to absorb the
+    // difference between the two cameras. Both are 0 in a 1x1 room.
+    const dcx = t.camFrom.x - t.camTo.x, dcy = t.camFrom.y - t.camTo.y;
+    const endFx = sp(t.endPos.x + (t.dir === 'right' ? VIEW_W : t.dir === 'left' ? -VIEW_W : 0) + dcx);
+    const endFy = sp(t.endPos.y + (t.dir === 'down' ? VIEW_H : t.dir === 'up' ? -VIEW_H : 0) + dcy);
     p.fx = t.startFx + Math.round((endFx - t.startFx) * k);
     p.fy = t.startFy + Math.round((endFy - t.startFy) * k);
     p.animT++;
@@ -9598,6 +9963,7 @@ class Game {
       p.x = t.endPos.x; p.y = t.endPos.y;
       p.lastSafe.x = p.x; p.lastSafe.y = p.y;
       p.reconcileWithTide(this);
+      this.camera.snap(this.room, p);
       this.transition = null;
     }
   }
@@ -10234,6 +10600,7 @@ class Game {
     if (extra === 'KeyO') { this.debug = !this.debug; }
     if (extra === 'KeyU') { this.cycleAnchorRadius(); }
     if (extra === 'KeyY') { this.cycleAnchorShape(); }
+    if (extra === 'KeyI') { this.debugCam = !this.debugCam; }
 
     switch (this.mode) {
       case 'title': this.title.update(); return;
@@ -10288,6 +10655,11 @@ class Game {
     }
     this.flushPending();
     this.entities = this.entities.filter(e => !e.remove);
+
+    // AFTER the player has moved and before anything draws. Not during a
+    // transition or a tide sweep — both return above this line, and a camera
+    // moving under the sweep's snapshot would smear the wipe.
+    this.camera.update(this.room, this.player);
 
     this.checkRoomExit();
     this.checkWarpTile();
@@ -10441,8 +10813,8 @@ class Game {
     for (const o of this.tide.overrides) {
       if (o.mapId !== this.mapId || o.roomKey !== room.key) continue;
       ctx.fillStyle = 'rgba(120, 220, 255, 0.85)';
-      for (let ty = 0; ty < ROOM_H; ty++) {
-        for (let tx = 0; tx < ROOM_W; tx++) {
+      for (let ty = 0; ty < room.th; ty++) {
+        for (let tx = 0; tx < room.tw; tx++) {
           if (!this.tide.covers(o, tx, ty)) continue;
           // Only the boundary: a tile inside the patch whose neighbour is not.
           for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
@@ -10454,6 +10826,35 @@ class Game {
         }
       }
     }
+  }
+
+  /**
+   * KeyI: the deadzone box and where the camera is in the room.
+   *
+   * Debug-only for the same reason the anchor's patch outline is: the three
+   * camera constants are `guessed` and there is no reference to check them
+   * against, so they are settled by watching the box and the player fight over
+   * the view. Drawn in SCREEN space — this is the one thing on the playfield
+   * that is about the window rather than about the room.
+   */
+  drawCameraDebug(ctx) {
+    const room = this.room;
+    if (!room) return;
+    const dx = (VIEW_W - CAM_DEADZONE_W) / 2, dy = (VIEW_H - CAM_DEADZONE_H) / 2;
+    ctx.strokeStyle = 'rgba(255, 216, 96, 0.9)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(dx + 0.5, HUD_H + dy + 0.5, CAM_DEADZONE_W - 1, CAM_DEADZONE_H - 1);
+    // The room, drawn as a bar, with the camera window inside it. A 1x1 room
+    // shows a full bar and a window that fills it, which is the picture of the
+    // camera being a no-op there.
+    const bw = 60, bx = SCREEN_W - bw - 2, by = HUD_H + 2;
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    ctx.fillRect(bx, by, bw, 6);
+    ctx.fillStyle = 'rgba(140, 240, 255, 0.9)';
+    ctx.fillRect(bx + Math.round(this.camera.x / room.pw * bw), by,
+      Math.max(2, Math.round(VIEW_W / room.pw * bw)), 6);
+    drawText(ctx, `cam ${this.camera.x},${this.camera.y} ${room.sw}x${room.sh}`,
+      2, HUD_H + 2, '#ffd860');
   }
 
   updateGameOver() {
@@ -10491,7 +10892,8 @@ class Game {
     ctx.clip();
 
     if (this.transition) this.drawTransition(ctx, ox, oy);
-    else this.drawScene(ctx, ox, oy);
+    else this.drawScene(ctx, ox - this.camera.x, oy - this.camera.y);
+    if (this.debugCam && !this.transition) this.drawCameraDebug(ctx);
 
     ctx.restore();
 
@@ -10563,8 +10965,8 @@ class Game {
       if (!(e instanceof Chest) || e.opened) continue;
       this.glimmerAt(ctx, ox + e.x + 8, oy + e.y + 8, e.x + e.y);
     }
-    for (let ty = 0; ty < ROOM_H; ty++) {
-      for (let tx = 0; tx < ROOM_W; tx++) {
+    for (let ty = 0; ty < room.th; ty++) {
+      for (let tx = 0; tx < room.tw; tx++) {
         const name = room.baseName(tx, ty);
         if (!transformFor(name, 'dredge')) continue;
         this.glimmerAt(ctx, ox + tx * TILE + 8, oy + ty * TILE + 8, tx * 7 + ty * 13);
@@ -10609,7 +11011,7 @@ class Game {
     ctx.save();
     ctx.globalAlpha = LENS_TINT_ALPHA * t;
     ctx.fillStyle = '#a8f0e8';
-    ctx.fillRect(ox, oy, VIEW_W, VIEW_H);
+    ctx.fillRect(ox, oy, room.pw, room.ph);
     for (let i = 0; i < levels.length; i++) {
       ctx.globalAlpha = (LENS_GHOST_ALPHA * t * shimmer) / (i + 1);
       // The FIELD at that base, not the bare level: an anchored patch is the
@@ -10627,11 +11029,13 @@ class Game {
     const sx = Math.round(d[0] * VIEW_W * k), sy = Math.round(d[1] * VIEW_H * k);
     ctx.drawImage(this.roomSnapshot.canvas, ox + sx, oy + sy);
     const nb = t.to.render(this.tide, this.frame);
-    const nx = ox + sx - d[0] * VIEW_W, ny = oy + sy - d[1] * VIEW_H;
+    // The snapshot is already a screen window; the incoming room is a whole
+    // room canvas, so it is blitted back by the camera it will arrive under.
+    const nx = ox + sx - d[0] * VIEW_W - t.camTo.x, ny = oy + sy - d[1] * VIEW_H - t.camTo.y;
     ctx.drawImage(nb, nx, ny);
     t.to.drawAnim(ctx, nx, ny, this.tide, this.frame);
     t.to.drawOver(ctx, nx, ny, this.tide, this.frame);
-    if (this.player) this.player.draw(ctx, this, ox + sx, oy + sy);
+    if (this.player) this.player.draw(ctx, this, ox + sx - t.camFrom.x, oy + sy - t.camFrom.y);
   }
 
   drawDarkness(ctx, ox, oy) {
@@ -15455,7 +15859,7 @@ __define("game/enemy.js", function (__exports, __require) {
 const { Entity, defineEntity, moveEntity, canOccupy, groundFlags, tideAt, DIRS, DIR_VEC, dirTo } = __require("game/entity.js");
 const { fire } = __require("game/projectile.js");
 const { F } = __require("world/tileset.js");
-const { TILE, VIEW_W, VIEW_H } = __require("core/screen.js");
+const { TILE } = __require("core/screen.js");
 const { hash32 } = __require("core/rng.js");
 const { FP_ONE, sp, toPx } = __require("core/fixed.js");
 const { ENEMY_DEFAULT_SPEED, ENEMY_DEFAULT_RATE, ENEMY_TURN_CHANCE, ENEMY_BEACHED_FRAMES, ENEMY_GRID_STEP, ENEMY_DECIDE_STEPS, ENEMY_TURN_PAUSE_FRAMES, ENEMY_CHARGE_SPEED_MULT, ENEMY_CHARGE_RECOVER_FRAMES, ENEMY_CHARGE_TOLERANCE, ENEMY_CHARGE_RANGE, ENEMY_HOP_WAIT_FRAMES, ENEMY_HOP_DIST, ENEMY_HOP_FRAMES, ENEMY_HOP_HEIGHT, ENEMY_ORBIT_SPEED, ENEMY_ORBIT_RADIUS, ENEMY_SUBMERGE_DOWN_FRAMES, ENEMY_SUBMERGE_UP_FRAMES, ENEMY_SURFACE_MIN_DIST, ENEMY_SURFACE_DIST_SPAN, ENEMY_ALIGN_TOLERANCE, ENEMY_KNOCK_FRAMES, ENEMY_SHOT_SPEED, ENEMY_SHOT_LIFE, RING_SHOT_SPEED, RING_SHOT_LIFE, BOSS_INTRO_FRAMES, BOSS_INVULN_FRAMES, BOSS_PHASE_INVULN_FRAMES, BOSS_KNOCK_FRAMES, BOSS_KNOCK_SCALE, BOSS_DEATH_FRAMES, BOSS_DEATH_BOOM_EVERY, SHAKE_MEDIUM, SHAKE_SMALL_FRAMES, TIDE_DRIFT_PER_LEVEL, DREDGE_FLOP_DAMAGE_SCALE } = __require("data/feel.js");
@@ -16255,8 +16659,8 @@ function submerge(e, g, o = {}) {
     if (o.reposition !== false && g.player) {
       const a = g.rng.angle();
       const d = ENEMY_SURFACE_MIN_DIST + g.rng.float() * ENEMY_SURFACE_DIST_SPAN;
-      let nx = Math.max(8, Math.min(VIEW_W - 24, g.player.cx + Math.cos(a) * d - 8));
-      let ny = Math.max(8, Math.min(VIEW_H - 24, g.player.cy + Math.sin(a) * d - 8));
+      let nx = Math.max(8, Math.min(g.room.pw - 24, g.player.cx + Math.cos(a) * d - 8));
+      let ny = Math.max(8, Math.min(g.room.ph - 24, g.player.cy + Math.sin(a) * d - 8));
       // A leever that surfaces off the lattice would walk a shifted one for the
       // rest of its life, so it comes up on a lattice point.
       if (gridLocked(e)) {
@@ -16775,7 +17179,7 @@ const { defineBoss } = __require("game/enemy.js");
 const { wander, chase, patrol, bounceDiag, charge, orbit, submerge, shoot, shootRing, every, timer, aligned, facePlayer, distToPlayer, moveDir, driftWithTide } = __require("game/enemy.js");
 const { spawnEntity, moveEntity } = __require("game/entity.js");
 const { fire } = __require("game/projectile.js");
-const { VIEW_W, VIEW_H, TILE } = __require("core/screen.js");
+const { TILE } = __require("core/screen.js");
 const { sp } = __require("core/fixed.js");
 
 const LOW = 0, MID = 1, HIGH = 2;
@@ -16845,18 +17249,20 @@ function spread(e, g, n, arcDeg, o = {}) {
   g.audio.sfx('enemyShoot');
 }
 
-/** Keep a boss inside the arena: orbit and scripted dashes ignore collision. */
-function clampArena(e, m = 12) {
-  e.x = Math.max(m, Math.min(VIEW_W - e.w - m, e.x));
-  e.y = Math.max(m, Math.min(VIEW_H - e.h - m, e.y));
+/** Keep a boss inside the arena: orbit and scripted dashes ignore collision.
+ *  The arena is the ROOM, so a boss in a multi-screen room has the whole of it
+ *  rather than the first screen of it. */
+function clampArena(e, g, m = 12) {
+  e.x = Math.max(m, Math.min(g.room.pw - e.w - m, e.x));
+  e.y = Math.max(m, Math.min(g.room.ph - e.h - m, e.y));
 }
 
 /** Summon minions in a puff, at arm's length from the boss and inside the room. */
 function summon(g, e, type, n = 1) {
   for (let i = 0; i < n; i++) {
     const a = g.rng.angle();
-    const x = Math.max(24, Math.min(VIEW_W - 40, e.cx + Math.cos(a) * 36));
-    const y = Math.max(24, Math.min(VIEW_H - 40, e.cy + Math.sin(a) * 36));
+    const x = Math.max(24, Math.min(g.room.pw - 40, e.cx + Math.cos(a) * 36));
+    const y = Math.max(24, Math.min(g.room.ph - 40, e.cy + Math.sin(a) * 36));
     g.spawnEffect('puff', x - 8, y - 8);
     spawnEntity(g, type, x / TILE, y / TILE, {});
   }
@@ -17011,7 +17417,7 @@ function installBosses() {
   // Rooted, but never quite still: the column leans on its stalk.
   function anemosSway(e, g) {
     orbit(e, g, { radius: 9, speed: 0.028 });
-    clampArena(e, 14);
+    clampArena(e, g, 14);
   }
 
   // The feed cycle, and the tide hook: it unfurls for four times as long with
@@ -17711,7 +18117,7 @@ function installBosses() {
     phases: [
       { above: 0.50, ai(e, g) {
         runPending(e, g);
-        orbit(e, g, { radius: 7, speed: 0.03 }); clampArena(e, 14);
+        orbit(e, g, { radius: 7, speed: 0.03 }); clampArena(e, g, 14);
         // Drop the water and the vine wilts: slower thorns, longer gaps.
         if (timer(e, 'thorn', g.tide.level === LOW ? 190 : 130)) {
           windUp(e, g, 16, (e2, g2) => shootRing(e2, g2, 6,
@@ -17720,7 +18126,7 @@ function installBosses() {
       } },
       { above: 0.00, ai(e, g) {
         runPending(e, g);
-        orbit(e, g, { radius: 10, speed: 0.05 }); clampArena(e, 14);
+        orbit(e, g, { radius: 10, speed: 0.05 }); clampArena(e, g, 14);
         if (timer(e, 'thorn', g.tide.level === LOW ? 150 : 100)) {
           windUp(e, g, 12, (e2, g2) => {
             shootRing(e2, g2, 8, { sprite: 'shot', pal: 'wood', speed: 1.4, damage: 2 });
@@ -18308,19 +18714,45 @@ function installDungeonsA() {
         ],
       },
       '0,5,3': {
+        // THE ONE MULTI-SCREEN ROOM IN THE GAME, and the worked example for
+        // P8's remaining five dungeons. It is 2x1: eight rows of TWENTY
+        // characters, one grid, not two screens laid side by side. It owns map
+        // cells 5,3 and 6,3, so nothing else may be keyed to 6,3.
+        //
+        // WHY THIS ROOM AND NOT ANOTHER.
+        //
+        //   * It is the dungeon's set piece. The P8 amendment says the large
+        //     rooms land on set pieces and most rooms stay one screen; a
+        //     miniboss arena is the clearest thing in D1 that a 10-tile room
+        //     was cramping. The Clawcrab now sits at the far end and the walk
+        //     to it is the fight starting.
+        //   * It is NOT an anchor gate. All three of D1's gates and both of its
+        //     gauge rooms are proved impassable-without-the-iron by
+        //     `tools/check-anchor.mjs`, and re-proving one of those at a new
+        //     width is a second job, not this one.
+        //   * Converting it creates no new seam with anything. The cell it
+        //     grows into, 6,3, has no neighbours: 7,3, 6,2 and 6,4 are all
+        //     empty. Its own three doorways — north at x=4,5 into the Drowned
+        //     Chamber, west at rows 3 and 4 into the Two Gauges, and the locked
+        //     door at 2,3 — are all in the western screen and are untouched, so
+        //     every facing wall in every neighbour is the wall it always was.
+        //
+        // The pinch at columns 9-10 on rows 1 and 6 is what keeps it reading as
+        // one den with two lobes rather than as one twenty-tile box.
         name: 'Clawcrab Den',
+        size: [2, 1],
         map: [
-          '####..####',
-          '#........#',
-          '#.2....2.#',
-          '..L......#',
-          '..#......#',
-          '#.2....2.#',
-          '#........#',
-          '##########',
+          '####..##############',
+          '#........##........#',
+          '#.2....2....2....2.#',
+          '..L................#',
+          '..#................#',
+          '#.2....2....2....2.#',
+          '#........##........#',
+          '####################',
         ],
         entities: [
-          ['clawcrab', 5, 2],
+          ['clawcrab', 14, 3],
         ],
         puzzle: {
           enemies: true,
