@@ -912,9 +912,14 @@ measuring the machine, not the game. test.mjs is no longer load-flaky; a
 failure there is now yours.
 
 NEXT UP, and pick ONE:
-  - P8 for D2, and then D3-D6. This is the one P7.6 was built for: rooms may
-    now be 2x1, 1x2, 2x2 or 3x1, and the sizing rule, the pacing number and the
-    worked example are all in EXECUTION-PLAN under "ROOM SIZE". Use them.
+  - P8 for D2, and then D3-D6. THERE IS A PROMPT WRITTEN FOR D2:
+    docs/briefs/P8-D2-PROMPT.md. It carries the four things a D2 session cannot
+    derive for itself — that the Lens must not become a gate and what replaces
+    one, that check-lens.mjs has to be written before the rooms, the charm-case
+    deadline that falls on this session, and the two P7.6 traps that land on
+    room authors. This is also the session P7.6 was built for: rooms may now be
+    2x1, 1x2, 2x2 or 3x1, and the sizing rule, the pacing number and the worked
+    example are in EXECUTION-PLAN under "ROOM SIZE".
   - PT, towns and buildings. Independent of everything, stated top design
     priority, and the only one that needs no decision from anybody.
   - (D2 detail, whichever session takes it.) D1 is DONE — see EXECUTION-PLAN's "P8 status"
@@ -1069,9 +1074,10 @@ Tell me plainly what is done, what is weak, and what you skipped.
 
 1. **P8 for D2, and then D3-D6.** D1 is done and P7.6 is done, so the thing
    that was blocking the other five is gone: a room may now be 2x1, 1x2, 2x2 or
-   3x1. Read "ROOM SIZE — everything a dungeon session needs, in one place" in
-   `docs/EXECUTION-PLAN.md` before authoring one. The six-versus-eight dungeon
-   consolidation is still owed.
+   3x1. **`docs/briefs/P8-D2-PROMPT.md` is written and ready to paste.** Read
+   "ROOM SIZE — everything a dungeon session needs, in one place" in
+   `docs/EXECUTION-PLAN.md` before authoring a large room. The six-versus-eight
+   dungeon consolidation is still owed and is nobody's session yet.
 
 2. **PT — towns, buildings and terrain polish.** A stated top design priority,
    independent of the systems spine, and blocked on nothing. Thalassia's
