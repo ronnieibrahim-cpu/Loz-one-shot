@@ -1389,6 +1389,35 @@ export function installCoreTiles() {
     dBasin: { tide: ['dFloor', 'dFloorWet', 'dWaterS'] },
     dWell: { tide: ['dWaterS', 'dWaterD', 'dWaterD'] },
     dDrain: { tide: ['dPit', 'dWaterS', 'dWaterD'] },
+    // A shaft mouth cut through an upper floor. At LOW and MID it is an open
+    // drop — the water is somewhere below and there is no floor over it at all;
+    // at HIGH the sea has come up level with the lip and you wade across the
+    // mouth as if it were a floor.
+    //
+    // IT IS THE ONLY TILE IN THE GAME THAT IS WALKABLE AT HIGH AND NOWHERE
+    // ELSE, and that is why it exists. The Brineglass Lens's whole verb is
+    // knowing before you commit, and a room built to demand it has to be a room
+    // the player cannot stand in at any level but the one he is deciding at —
+    // otherwise he sounds the conch, looks at the answer, sounds it twice more
+    // and the Lens has saved him three button presses. Every other tide tile in
+    // the set gains footing as the water leaves; this one loses it. See the
+    // Coral Spire's header in src/data/dungeons-a.js.
+    dFlood: { tide: ['dPit', 'dPit', 'dWaterS'] },
+    // A SEALED SILL: this dungeon's own wall at LOW and MID, deep water at
+    // HIGH. `drownWall` already does exactly this and it resolves to `cliff` —
+    // the OUTDOOR grey rock face, which is what d4 is built out of and which
+    // inside the Coral Spire reads as a piece of somewhere else. Worse, next to
+    // `dFloorWet` it is grey against grey, so the one thing the Brineglass Lens
+    // exists to tell the player apart was two shades of the same colour on a
+    // 160x144 screen. Drawn as the room's own wall it says the only thing it
+    // needs to say: there is no passage there.
+    //
+    // Its HIGH form is `dWaterD` BY NAME, which is the same tile the sluice
+    // resolves to — so the two channels of a Lens room are not merely alike at
+    // HIGH, they are one tile. tools/check-lens.mjs compares what a tile looks
+    // like rather than what it is called, and this is the case that made that
+    // the right comparison in the first place.
+    dSillCoral: { tide: ['dWallCoral', 'dWallCoral', 'dWaterD'] },
   };
   registerTiles(TILE_DEFS);
 

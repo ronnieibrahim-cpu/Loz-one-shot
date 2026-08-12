@@ -24,7 +24,10 @@
 
 import { TIDE_COUNT } from './tide.js';
 import { tideAt } from './entity.js';
-import { NEAP_GRACE_FRAMES, CHARM_CASE_MAX } from '../data/feel.js';
+import {
+  NEAP_GRACE_FRAMES, CHARM_CASE_MAX,
+  CHARM_LOW_ESSENCES, CHARM_HIGH_ESSENCES, CHARM_CASE_ESSENCES,
+} from '../data/feel.js';
 
 /** Case names, indexed by tide level. */
 export const CHARM_SLOTS = ['low', 'mid', 'high'];
@@ -108,6 +111,41 @@ export const CHARMS = {
 };
 
 export const CHARM_COUNT = Object.keys(CHARMS).length;
+
+/**
+ * THE CASES OPEN ON THE ESSENCE, NOT ON THE VISIT. Settled in the D2 session,
+ * which was the deadline for it: `CHARM_LOW_ESSENCES` is 2 and D2 is the second
+ * essence, so the alternative reading — that the cases open when you next walk
+ * back into Tidewatch and talk to the scrimshander — meant a real save in which
+ * the player owns charms he can never switch on, having been given no reason to
+ * make the walk. Progression that only exists if you retrace your steps is not
+ * progression, it is a secret.
+ *
+ * So this is called from `Game.claimEssence` the moment the shard lands, and
+ * the scrimshander still calls it too. Hers is now a safety net rather than the
+ * mechanism — it catches a save migrated from before this changed — and her
+ * line, when it fires, is the acknowledgement rather than the event.
+ *
+ * Returns one line per thing that opened, in the order they opened, or an empty
+ * array. Idempotent: everything it does is guarded by the flag it sets.
+ */
+export function openCasesFor(progress) {
+  const said = [];
+  const n = progress.essences.length;
+  if (n >= CHARM_LOW_ESSENCES && !progress.charmOpen.low) {
+    progress.charmOpen.low = true;
+    said.push('A second case has cut itself into the bone at\nyour belt — for the low water, when the floor\nof the sea is a road.');
+  }
+  if (n >= CHARM_HIGH_ESSENCES && !progress.charmOpen.high) {
+    progress.charmOpen.high = true;
+    said.push('And a third, for the high water. Bone keeps\nbetter wet than you would think.');
+  }
+  if (n >= CHARM_CASE_ESSENCES && progress.charmCase < CHARM_CASE_MAX) {
+    progress.charmCase = CHARM_CASE_MAX;
+    said.push('Every case takes two now. You have earned\nthe room.');
+  }
+  return said;
+}
 
 /** Fresh, empty case set. Shape matters: migrate() rebuilds it from here. */
 export function newCharmSlots() {

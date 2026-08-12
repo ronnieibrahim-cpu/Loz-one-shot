@@ -218,6 +218,18 @@ const reach = await page.evaluate((ids) => {
       }
       return false;
     };
+    // A ONE-WAY LEDGE IS A ROUTE, and until D2 nothing here knew that. Every
+    // ledge in the game was decoration, so `passable` excluding F.LEDGE was
+    // both true and free; the Coral Spire's two Lens rooms are entered ONLY by
+    // hopping one, and without this the flood reports the whole of that
+    // dungeon's upper floor stranded. `ledge` is a fixed property of the tile,
+    // not a tide variant, so one level is enough to read it.
+    const ledgeDir = (ch) => {
+      const d = defOf(ch, 1);
+      return d && (d.flags & F.LEDGE) ? (d.ledge || null) : null;
+    };
+    const LEDGE_SPAN = 3;             // LEDGE_MAX_SPAN in src/data/feel.js
+    const DIRNAME = { '1,0': 'right', '-1,0': 'left', '0,1': 'down', '0,-1': 'up' };
     // A door a PUZZLE opens is not a wall. `reward.openDoors` names the tiles a
     // solved room switches to their open form, so those tiles are passable in
     // the connectivity model — the flood cannot solve a puzzle, and asserting
@@ -311,6 +323,18 @@ const reach = await page.evaluate((ids) => {
             else if (jumpable(ch)) {
               const jx = x + dx * 2, jy = y + dy * 2;
               if (jx >= 0 && jy >= 0 && jx < W && jy < H && passable(def.map[jy][jx])) push(rk, jx, jy);
+            }
+            else if (ledgeDir(ch) === DIRNAME[dx + ',' + dy]) {
+              // Walk into the lip's face: clear it and everything else flagged
+              // LEDGE behind it, then land. One way, as Player.tryLedgeHop is.
+              let n = 1;
+              while (n < LEDGE_SPAN) {
+                const c2 = def.map[y + dy * (n + 1)] && def.map[y + dy * (n + 1)][x + dx * (n + 1)];
+                if (!c2 || !ledgeDir(c2)) break;
+                n++;
+              }
+              const lx = x + dx * (n + 1), ly = y + dy * (n + 1);
+              if (lx >= 0 && ly >= 0 && lx < W && ly < H && passable(def.map[ly][lx])) push(rk, lx, ly);
             }
             else if (isLock(ch)) lockedSeen.add(rk + ':' + nx + ',' + ny);
             else if (isBossDoor(ch) && bossKey) lockedSeen.add(rk + ':' + nx + ',' + ny + ':boss');
@@ -495,11 +519,30 @@ const LEDGE_CHARS = {
 };
 
 const placements = await page.evaluate((CHARS) => {
+  const F = window.__F, getTileDef = window.__getTileDef, getLegend = window.__getLegend;
   const out = [];
   for (const [mapId, m] of window.__MAPS) {
     for (const [key, def] of Object.entries(m.roomDefs || {})) {
       const grid = def.map || [];
       const at = (x, y) => (grid[y] || '')[x];
+      // WHICH TIDE LEVEL THE PROBE CAN BE RUN AT.
+      //
+      // This harness used to pin the tide to MID and place the player on the
+      // tile uphill of the lip. That is fine for a ledge cut into dry stone and
+      // it is wrong for a ledge in a tide game: the Coral Spire's two Lens
+      // rooms are entered off a wading floor that only exists at HIGH and off a
+      // shelf that only exists at LOW, so at MID there is nothing to stand on
+      // and every one of those four ledges read as "the hop did not fire".
+      // A ledge is now probed at a level where the tile it is approached from
+      // is actually ground.
+      const legend = getLegend(def.legend || m.legend);
+      const standable = (x, y, t) => {
+        let d = getTileDef(legend[(grid[y] || '')[x]]);
+        for (let i = 0; i < 4 && d && d.tide; i++) d = getTileDef(d.tide[t]);
+        if (!d) return false;
+        if (d.flags & F.STAIRS) return true;
+        return !(d.flags & (F.VOID | F.SOLID | F.PIT | F.DEEP | F.LEDGE | F.HAZARD));
+      };
       const seen = new Set();
       for (let y = 0; y < grid.length; y++) {
         for (let x = 0; x < (grid[y] || '').length; x++) {
@@ -513,7 +556,10 @@ const placements = await page.evaluate((CHARS) => {
             seen.add(`${ch}${cx},${cy}`);
             len++; cx += spec.ax; cy += spec.ay;
           }
-          out.push({ mapId, key, ch, x0: x, y0: y, len, ...spec });
+          const mx = x + spec.ax * (len >> 1), my = y + spec.ay * (len >> 1);
+          const hopLevels = [1, 0, 2].filter(t => standable(mx - spec.ux, my - spec.uy, t));
+          const blockLevels = [1, 0, 2].filter(t => standable(mx + spec.ux, my + spec.uy, t));
+          out.push({ mapId, key, ch, x0: x, y0: y, len, hopLevels, blockLevels, ...spec });
         }
       }
     }
@@ -541,7 +587,7 @@ for (const p of placements) {
   const tileOf = (a) => (p.ux ? a.tx : a.ty);
   const beyond = (t) => (sign > 0 ? t > lipC : t < lipC);
   // --- downhill: walk into the lip from the high side, expect a hop that lands
-  const place = async (a, tx, ty, dir) => page.evaluate(async (b) => {
+  const place = async (a, tx, ty, dir, lv) => page.evaluate(async (b) => {
     const g = window.__game;
     // Rooms are full of live enemies. A parked player dies, the game drops into
     // 'gameover' where nothing updates, and EVERY later probe in the run reads
@@ -556,7 +602,7 @@ for (const p of placements) {
     g.progress.hearts = g.progress.maxHearts;
     g.player.invuln = 100000;               // nothing may interrupt the probe
     g.entities = g.entities.filter(e => e === g.player);
-    g.tide.setLevel(1);
+    g.tide.setLevel(b.lv);
     g.player.z = 0; g.player.vz = 0; g.player.jumping = false; g.player.ledgeHop = null;
     g.player.x = b.tx * 16; g.player.y = b.ty * 16;
     g.player.lastSafe.x = g.player.x; g.player.lastSafe.y = g.player.y;
@@ -572,10 +618,11 @@ for (const p of placements) {
       tx: Math.floor((g.player.x + 8) / 16), ty: Math.floor((g.player.y + 8) / 16),
       rk: g.room.key, mode: g.mode, dlg: !!(g.dialogue && g.dialogue.active),
     };
-  }, { ...a, tx, ty, dir });
+  }, { ...a, tx, ty, dir, lv });
 
   const at = { mapId: p.mapId, f, rx, ry };
-  const down = await place(at, mx - p.ux, my - p.uy, p.dir);
+  const hopLv = p.hopLevels.length ? p.hopLevels[0] : 1;
+  const down = await place(at, mx - p.ux, my - p.uy, p.dir, hopLv);
   // 22 frames is far enough to clear a 1-3 tile lip and short enough that the
   // player never reaches the room edge — walking out of the room and arriving in
   // the next one reads exactly like a failed hop.
@@ -600,7 +647,8 @@ for (const p of placements) {
   else hopFail.push(`${where}: ${down.x0},${down.y0} -> ${after.x},${after.y} (tile ${after.tx},${after.ty}, z ${after.z})`);
 
   // --- uphill: walk into the same lip from the low side, expect to be refused
-  const up0 = await place(at, mx + p.ux, my + p.uy, OPP[p.dir]);
+  const blockLv = p.blockLevels.length ? p.blockLevels[0] : 1;
+  const up0 = await place(at, mx + p.ux, my + p.uy, OPP[p.dir], blockLv);
   await page.keyboard.down(KEY[OPP[p.dir]]);
   await frames(22);
   await page.keyboard.up(KEY[OPP[p.dir]]);

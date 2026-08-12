@@ -10,7 +10,152 @@ maintain and the most expensive thing to not have.
 
 ---
 
-## What the last session did (P7.6, multi-screen dungeon rooms)
+## What the last session did (P8, dungeon 2: the Coral Spire)
+
+**D2 is re-authored around the Brineglass Lens.** 26 rooms over two floors, the
+Lens at room 12 of 26, `tools/check-lens.mjs` is new and proves the two rooms
+that claim to need it, and the scrimshaw case-unlock question — the one the plan
+said could not slip past D2 — is settled.
+
+### The one idea, and the tile that made it possible
+
+The Lens shows the room at the NEXT tide level. It cannot make a tile passable,
+so a Lens room cannot be an anchor gate; the verb is KNOWING BEFORE YOU COMMIT,
+so the room has to make you commit. The shape:
+
+    ...........0000000000..........   the wading floor: `0` dFlood
+    ...........#___##___#..........   two one-way ledges
+    ...........#/22##22/#..........   two mirrored cells, each with a drain
+    ...........##11##99##..........   two channels: at HIGH, one sheet of water
+    ...........##11##99##..........   at LOW, a road and a wall
+
+**The hard part was not the geometry, it was the conch.** Any room where the
+player can stand somewhere and sound the conch is a room where he reads the
+answer off the screen and sounds it back — two presses, and the Lens is a
+convenience. Every tide tile in the game GAINS footing as the water leaves, so
+every floor in the game is somewhere to stand at more than one level.
+
+So D2 adds one tile. **`dFlood`, legend `0`: an open shaft at LOW and MID, waded
+across at HIGH.** It is the only tile in the game walkable at HIGH and at
+neither level below it. A room floored with it is a room the player can only be
+inside of at one tide, and sounding the conch there does not show him the answer
+— it drops him into a cell, which IS the commitment. If you build a room around
+an informational item, the first question is not "what can he see" but "where
+can he stand, and at how many levels".
+
+`dSillCoral` is the second new tile: this dungeon's own wall at LOW and MID,
+deep water at HIGH, on a `dungeonCoralSill` legend used by the two Lens rooms
+only. `9` drownWall would have done the job mechanically and it resolves to the
+OUTDOOR `cliff` face — a piece of grey rock standing in a reef building, and
+grey stone beside the grey wet stone the player's whole job was to tell it apart
+from. That was found by screenshot, not by checker.
+
+### The two Lens rooms
+
+- **`1,3,2` The Wading Gallery** — decides at HIGH. Channels `1` dSluice and `9`
+  dSillCoral: at HIGH both are `dWaterD`, at LOW a wet floor and a wall, and the
+  wall is a wall at MID too so guessing wrong is not a conch press from right.
+- **`1,3,4` The Sounding Shaft** — the same primitive turned over, decides at
+  LOW off a `3` dWell shelf. Channels `4` dDrain and `O` dPit: at LOW both are
+  literally `dPit`, at MID one has filled to a ford and the other is still a
+  hole.
+
+Both cells in both rooms hold a drain stair in a mirrored corner that dumps the
+player into the Spire Well two floors down. That is load-bearing three times: it
+makes a wrong cell a walk back rather than a soft lock, it keeps the two cells
+identical from above, and it is why one-way ledges are affordable at all.
+
+**They are 1x1 and that is the decision.** A Lens room hides its information in
+TIME. Both branches must be on screen, because an off-camera branch is one the
+Lens does not reveal either — it redraws the room the camera is already showing.
+D2's one wide room is the Drowned Concourse `0,4,5` (2x1), which is wide because
+it TEACHES `dFlood`: twenty tiles of wading hall with a coral island in it, and
+at LOW nothing but shaft mouths with the island stranded in the middle. It is
+the only room where the tile is not a bet.
+
+### `tools/check-lens.mjs` is new, and it found things
+
+Modelled on `check-anchor.mjs`. A room declares
+`lensRoom: { at, decide, onward, branches: [{ name, enter, run }] }` and the
+tool derives the rest. Per room it asserts: the decision tile is standable at
+exactly the declared level; **nowhere in the pre-commitment region survives a
+change of the tide**; each branch cannot be walked into and CAN be hopped into;
+no branch leads back to the choice; at least one branch leads on and at least
+one is dead; a dead branch never reaches the room's edge; and the branches
+render IDENTICALLY at the deciding level and differ at the next one. 30
+assertions, plus the vacuous-pass guard `check-anchor.mjs` has.
+
+It passed on its first run, which was suspicious, so each assertion was broken
+on purpose. Three bit. The fourth did not: swapping the sealed channel for `4`
+dDrain (a pit at LOW, a ford at MID) passed because the branch only reached the
+room's south edge and the room BELOW happened to have wall facing it. The
+"never reaches the room's edge" assertion exists because of that.
+
+**The comparison is a fingerprint of art/palette/flags/anim, not a tile name.**
+`waterD` and `dWaterD` are two entries in the registry with byte-identical
+definitions; a checker comparing names would call them a difference the player
+can see, which is exactly backwards. Search the tile table by what a tile LOOKS
+like and there are exactly two usable indistinguishable-then-different pairs.
+
+### The scrimshaw decision, settled
+
+**The charm cases now open ON THE ESSENCE.** `openCasesFor(progress)` in
+`src/game/scrimshaw.js` is the single implementation; `Game.claimEssence` calls
+it and appends the news to the essence's own cutscene (a `say` fired while a
+cutscene runs is swallowed by it). `Scrimshander.checkUnlocks` still calls it as
+a safety net for a save migrated from before the change, so her line is now the
+acknowledgement rather than the event.
+
+Why that way round: `CHARM_LOW_ESSENCES` is 2 and D2 is the second essence, so
+the alternative meant a real save in which the player owns charms he can never
+switch on and has no reason to make the walk that would fix it.
+
+**The charm placed here is Barnacle Skin** (MID case, `0,4,6`), and MID is
+forced: the player walks in holding one essence, so the MID case is the only one
+open for the whole dungeon. One free hit per room is the charm that belongs in
+the dungeon that charges you for guessing wrong. `check-charms.mjs` now prints
+3 hand-placed charms.
+
+### Two harnesses did not know a ledge is a route
+
+Every ledge in the game was decoration until D2 put two rooms behind one.
+`walk-dungeons.mjs` reported the Coral Spire's whole upper floor stranded (its
+flood had no way to cross a lip), and its ledge PROBE pinned the tide to MID and
+stood the player on the tile uphill of the lip — which in a tide game is not
+necessarily a tile. Four ledges read as "the hop did not fire" when there was
+nothing to stand on. Both fixed; the probe now finds a level at which the
+approach is ground.
+
+### Seen on screen
+
+`tools/shoot-rooms.mjs --lens` is new and holds KeyZ for the shot — the ghost is
+only drawn while `player.lensT` is counting, and `lensHeld` is reset at the top
+of every player update, so poking it from outside reads as released about half
+the time and the shot comes back with no overlay and nothing visibly wrong.
+Shots in `tools/shots/d2look/`.
+
+**The Lens works and it is readable.** Both rooms' branches read differently
+through the ghost. What is weak is in HANDOFF's soft-spots list: the overlay
+reads as a tint over the room rather than as a second room, and a player who has
+not been told that holding B shows the next tide will not deduce it from the
+picture. Two cheap things a later session could try are written down there.
+
+### What is weak about it
+
+- The two Lens rooms share their primitive — the same shape turned over. That is
+  on purpose, the way D1's three anchor gates share theirs, but it means D2 has
+  one idea about the Lens rather than two.
+- `dFlood` at LOW is the shared black `dPit`, so the Drowned Concourse drained is
+  twenty tiles of the same near-black square. It reads correctly and it is one
+  of the places a screenshot does not say which dungeon it is.
+- The Lens's combat verb gets one room (`1,3,5`, two `phase: 2` urchins) and
+  nothing is gated on it.
+- `d2-wading-gallery` commits to the WRONG cell, which is the interesting half.
+  Nothing walks the right one.
+
+---
+
+## What the session before that did (P7.6, multi-screen dungeon rooms)
 
 **A dungeon room may now be bigger than one screen, and one room in the game
 is.** All seven steps of `docs/briefs/P7.6-PLAN.md` plus both additions from
@@ -748,9 +893,11 @@ Continue building "Oracle of Tides", a GBC-style Zelda fan game.
 
 Read, in this order:
   CLAUDE.md              - the hard rules. They are hard rules.
-  docs/EXECUTION-PLAN.md - the roadmap. P0-P7 are done and so is P8's first
-                           dungeon; read "P8 status" and the P7 audit in it
-                           before touching either. P7.6 is DONE — if you are
+  docs/EXECUTION-PLAN.md - the roadmap. P0-P7 are done and so are P8's first
+                           TWO dungeons; read "P8 status" and the P7 audit in
+                           it before touching either. The scrimshaw
+                           case-unlock question is SETTLED (cases open on the
+                           essence) — do not reopen it. P7.6 is DONE — if you are
                            authoring rooms, read "ROOM SIZE — everything a
                            dungeon session needs, in one place" in the P8
                            section and nothing else about room size. P7.5 is
@@ -805,14 +952,23 @@ Confirm the baseline before changing anything, and keep every line below green:
                                                BYTE-IDENTICAL. --sheet writes a
                                                contact sheet of every pick.
   node tools/test.mjs                          58/58
-  node tools/replay.mjs                        21/21, all five replays to the
-                                               pixel. d1-clawcrab-den-wide also
+  node tools/replay.mjs                        26/26, all six replays to the
+                                               pixel. d1-clawcrab-den-wide
                                                asserts its `span`: one
                                                transition in the whole run, and
                                                the camera at both clamps.
-  node tools/walk-dungeons.mjs                 29/29 (d1 is 24 rooms now; the
-                                               29th asserts every locked door
-                                               actually separates its room)
+                                               d2-wading-gallery asserts
+                                               roomChanges 0 and carries the
+                                               proof that matters in its two
+                                               probes: the two channels of the
+                                               Lens room hash IDENTICALLY while
+                                               the player is choosing and
+                                               DIFFERENTLY once the sea is out.
+  node tools/walk-dungeons.mjs                 29/29 (d1 is 24 rooms, d2 is 26;
+                                               the 29th asserts every locked
+                                               door actually separates its room,
+                                               and the flood and the ledge probe
+                                               both cross one-way ledges now)
   node tools/check-overworld.mjs               17/17 (the field flood is ~30s
                                                of its runtime)
   node tools/check-gates.mjs                   15/15 (pins ?seed= and owns the
@@ -822,6 +978,12 @@ Confirm the baseline before changing anything, and keep every line below green:
                                                need the Anchor proved impassable
                                                with the conch alone and passable
                                                with one placement
+  node tools/check-lens.mjs                    30/30, both rooms that claim to
+                                               need the Brineglass Lens proved
+                                               one-way, proved to have one
+                                               branch shut at every level, and
+                                               proved undecidable from the tiles
+                                               at the level the choice is made
   node tools/check-charms.mjs                  63/63, every charm proved
                                                in-engine, no charm orphaned, and
                                                no room handing over a charm that
@@ -946,27 +1108,23 @@ measuring the machine, not the game. test.mjs is no longer load-flaky; a
 failure there is now yours.
 
 NEXT UP, and pick ONE:
-  - P8 for D2, and then D3-D6. THERE IS A PROMPT WRITTEN FOR D2:
-    docs/briefs/P8-D2-PROMPT.md. It carries the four things a D2 session cannot
-    derive for itself — that the Lens must not become a gate and what replaces
-    one, that check-lens.mjs has to be written before the rooms, the charm-case
-    deadline that falls on this session, and the two P7.6 traps that land on
-    room authors. This is also the session P7.6 was built for: rooms may now be
-    2x1, 1x2, 2x2 or 3x1, and the sizing rule, the pacing number and the worked
-    example are in EXECUTION-PLAN under "ROOM SIZE".
+  - P8 for D3, and then D4-D6. D1 (Anchor) and D2 (Lens) are DONE. Read
+    EXECUTION-PLAN's "P8 status" for both constraint tables, and read TWO
+    primitives before designing another room: the gate primitive at the top of
+    d1 in src/data/dungeons-a.js, and the Lens primitive at the top of d2 in the
+    same file. They are the two shapes an item can take — one that changes where
+    you can walk, and one that only changes what you know — and D3's Kelp-Soled
+    Cleats are the first kind again.
+    A room that claims to need its dungeon's item must declare it and be proved
+    by a checker in both directions. check-anchor.mjs and check-lens.mjs are the
+    two worked examples, AND BOTH NEED TEACHING TO SWIM BEFORE D3: neither model
+    has swimming in it, and each asserts that every room it covers is in a
+    pre-Cleats dungeon precisely so that it fails loudly the first time a D3+
+    room declares one. Do not delete the guard.
+    Rooms may be 2x1, 1x2, 2x2 or 3x1; the sizing rule, the pacing number and
+    the worked example are in EXECUTION-PLAN under "ROOM SIZE".
   - PT, towns and buildings. Independent of everything, stated top design
     priority, and the only one that needs no decision from anybody.
-  - (D2 detail, whichever session takes it.) D1 is DONE — see EXECUTION-PLAN's "P8 status"
-    and the D2 decision beneath it: inside D2 the rooms after the Brineglass
-    Lens DO require it, while the Lens is never a gate at region scope. That
-    section says what "require" means for an item that only shows you things,
-    the checker to write for it, and the trap to expect. See EXECUTION-PLAN's
-    "P8 status"
-    for the constraint table it was checked against, and read the gate primitive
-    at the top of d1 in src/data/dungeons-a.js before designing another one. A
-    room that claims to need its dungeon's item should declare it and be proved
-    by a checker; check-anchor.mjs is the worked example and it needs teaching
-    to swim before D3.
   - P7.5's remainder is BLOCKED: it needs four dungeon map rips that are not
     in this repo. Do not start it by inventing the colour-register decision.
 
@@ -974,13 +1132,13 @@ P7 IS CLOSED. There is no P7 follow-up session. What scrimshaw still owes is
 assigned per dungeon in EXECUTION-PLAN under "P7 is CLOSED" — read that table
 before starting any P8 session, and do the charm-gating audit it asks for.
 
-IF YOU ARE THE D2 SESSION, ONE DECISION CANNOT SLIP. The charm cases open when
-you TALK TO THE SCRIMSHANDER, not when the essence lands (`checkUnlocks` is
-called from `Scrimshander.interact` and nowhere else). Two essences is where the
-LOW case is meant to appear, and D2 is the second essence — so ship D2 without
-deciding and there is a real save in which the player owns charms they can never
-switch on. Open it on the essence and let her line be the acknowledgement, or
-keep the visit as the beat and signpost it. Either is fine; leaving it is not.
+THE CHARM-CASE DECISION IS MADE, AND IT IS NOT YOURS TO REOPEN. The cases open
+ON THE ESSENCE, in `Game.claimEssence`, via `openCasesFor` in scrimshaw.js. The
+scrimshander still calls the same function as a safety net for a save migrated
+from before D2, so her line is the acknowledgement rather than the event. What
+scrimshaw still owes is placement (one charm per dungeon, in a case that
+dungeon's player has open) and somebody looking at the CHARM screen with their
+eyes.
 
 ONE MORE THING D1 SURFACED AND LEFT ALONE: at one essence the MID case is the
 only case open, and D1's design is "take the sea down to LOW", so the player's
@@ -1099,6 +1257,11 @@ Tell me plainly what is done, what is weak, and what you skipped.
 - **the eight dungeon themes (P7.5 step 8)** — `tools/rip-dungeon-themes.py`
   plus a themed legend per dungeon. Every dungeon is now identifiable from one
   screenshot, and no room grid changed to do it.
+- **D2 re-authored around the Brineglass Lens (P8, dungeon 2 of 6)** — 26 rooms
+  over two floors, two Lens rooms, the `dFlood` shaft-mouth tile that makes an
+  informational item requirable without making it a gate, and
+  `tools/check-lens.mjs` proving both rooms in both directions. The scrimshaw
+  case-unlock question is settled with it: cases open on the essence.
 - **multi-screen dungeon rooms (P7.6)** — a room may declare `size` in screens;
   a camera with a deadzone follows Link inside one and clamps to zero in a 1x1
   room, which is why no existing room moved. `d1` `0,5,3` is the one converted
@@ -1106,12 +1269,18 @@ Tell me plainly what is done, what is weak, and what you skipped.
 
 ## What is left
 
-1. **P8 for D2, and then D3-D6.** D1 is done and P7.6 is done, so the thing
-   that was blocking the other five is gone: a room may now be 2x1, 1x2, 2x2 or
-   3x1. **`docs/briefs/P8-D2-PROMPT.md` is written and ready to paste.** Read
-   "ROOM SIZE — everything a dungeon session needs, in one place" in
-   `docs/EXECUTION-PLAN.md` before authoring a large room. The six-versus-eight
-   dungeon consolidation is still owed and is nobody's session yet.
+1. **P8 for D3-D6.** D1 (Anchor) and D2 (Lens) are done. D3 is the Kelp-Soled
+   Cleats in the Bogwater Sanctum, and it will hit the same wall D1 did — the
+   Cleats are a SPATIAL item, so read "ROOM SIZE — everything a dungeon session
+   needs, in one place" in `docs/EXECUTION-PLAN.md` before authoring a large
+   room, and read the D2 entry in "P8 status" for what an item that is not
+   spatial needed instead. **The Cleats also break `check-anchor.mjs` and
+   `check-lens.mjs`: both models have no swimming in them and both assert that
+   every room they cover is in a pre-Cleats dungeon.** That assertion is there
+   to fail loudly the first time a D3+ room declares an `anchorGate` or a
+   `lensRoom`; teach the tool to swim rather than deleting the guard.
+   The six-versus-eight dungeon consolidation is still owed and is nobody's
+   session yet.
 
 2. **PT — towns, buildings and terrain polish.** A stated top design priority,
    independent of the systems spine, and blocked on nothing. Thalassia's
@@ -1134,8 +1303,11 @@ Carried over, and none of it blocking:
 - **Settle `ANCHOR_RADIUS_TILES` and `NEAP_GRACE_FRAMES` by playing them.**
   Both are design constants with nothing to measure against, both have debug
   keys or are one edit away, and everything built on top assumes an answer.
-- **Charm balance and charm placement.** Thirty charms work; none has been
-  compared to another, and only one is placed in the world by hand.
+- **Charm balance, and looking at the CHARM screen.** Thirty charms work; none
+  has been compared to another. Three are now placed in the world by hand
+  (Ballast Heart in the shop, Split Fang in d1 `0,2,3`, Barnacle Skin in d2
+  `0,4,6`). Nobody has yet watched the CHARM screen, the carve dialogue or a
+  single charm's effect on a real screen — D2 looked at the Lens instead.
 - **The overworld terrain that is still hand-drawn.** Ranked in
   `docs/ART-BACKLOG.md`; the `cliff` family is the big one and is a content
   decision, not a swap.

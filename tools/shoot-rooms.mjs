@@ -10,6 +10,7 @@
 //   node tools/shoot-rooms.mjs overworld,4,7 d1,0,4,2   # explicit rooms
 //   node tools/shoot-rooms.mjs --tide=2 overworld,4,7
 //   node tools/shoot-rooms.mjs --px=280 --cam d1,0,5,3   # camera + deadzone box
+//   node tools/shoot-rooms.mjs --lens --tide=2 d2,1,3,2  # with the Lens held up
 //
 // `--px` / `--py` place Link at a pixel inside the room instead of the default
 // (80, 72), which is the only way to see a multi-screen room anywhere other
@@ -44,6 +45,12 @@ const tide = Number((args.find(a => a.startsWith('--tide=')) || '=1').split('=')
 const px = Number((args.find(a => a.startsWith('--px=')) || '=80').split('=')[1]);
 const py = Number((args.find(a => a.startsWith('--py=')) || '=72').split('=')[1]);
 const showCam = args.includes('--cam');
+// THE BRINEGLASS LENS IS A DRAWING, and it is the one item in the game whose
+// entire value is how legible it is at 160x144. Nothing could look at it: the
+// ghost is only drawn while `player.lensT` is counting, which needs a held
+// button, and every other harness here is a still. `--lens` pins the item into
+// the player's hand and holds it up for the length of the shot.
+const useLens = args.includes('--lens');
 const specs = args.filter(a => !a.startsWith('--'));
 const ROOMS = specs.length ? specs : [
   'overworld,4,7',                    // Tidewatch Village — plain grass
@@ -72,6 +79,7 @@ const misses = [];
 page.on('pageerror', e => errors.push(String(e)));
 await page.goto(`http://localhost:${port}/index.html`);
 await page.waitForFunction(() => !!window.__game, { timeout: 15000 });
+await page.evaluate((v) => { window.__lens = v; }, useLens);
 
 const frames = (n) => page.evaluate((k) => new Promise(res => {
   const start = window.__game.frame;
@@ -100,6 +108,11 @@ for (const spec of ROOMS) {
     if (g.tide && g.tide.setLevel) g.tide.setLevel(tide);
     if (g.room) g.room.invalidate();
     g.debugCam = !!showCam;
+    if (window.__lens && g.player) {
+      g.progress.items.lens = 1;
+      g.progress.equipB = 'lens';
+      g.player.lensHeld = true;
+    }
     return g.room
       ? { name: g.room.name || '?', at: g.mapId + ',' + g.room.key, cam: g.camera.x + ',' + g.camera.y }
       : null;
@@ -118,8 +131,18 @@ for (const spec of ROOMS) {
     // covers the top third of the room, which is terrain we came here to look at.
     window.__game.bannerTime = 0;
   });
+  // The ghost fades in over LENS_FADE_FRAMES and the item has to be re-held
+  // every frame, exactly as a button does.
+  if (useLens) {
+    // The real button, held. `lensHeld` is reset at the top of every player
+    // update and set again by the held-item hook inside it, so poking it from
+    // outside lands at an unpredictable point in the frame and reads as
+    // released about half the time. KeyZ is B.
+    await page.keyboard.down('KeyZ');
+    await frames(20);
+  }
   await frames(2);
-  const name = `room-${spec.replace(/,/g, '_')}-tide${tide}-px${px}.png`;
+  const name = `room-${spec.replace(/,/g, '_')}-tide${tide}-px${px}${useLens ? '-lens' : ''}.png`;
   const want = `${mapId},${floor},${rx},${ry}`;
   if (!got || got.at !== want) {
     console.log(`  MISS ${spec.padEnd(16)} asked ${want}, landed ${got ? got.at : 'nowhere'}`);
@@ -127,6 +150,7 @@ for (const spec of ROOMS) {
     continue;
   }
   await page.locator('canvas').screenshot({ path: join(shotDir, name) });
+  if (useLens) await page.keyboard.up('KeyZ');
   console.log(`  ok   ${spec.padEnd(16)} ${got.name} cam=${got.cam} -> ${name}`);
 }
 

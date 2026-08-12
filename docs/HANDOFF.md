@@ -220,6 +220,83 @@ is in the page, and nothing steps until you say so.
 
 ## Hard-won lessons — do not rediscover these
 
+**Re-authoring D2 for the Brineglass Lens (P8), and the six things it cost.**
+
+1. **THE CONCH IS A SCOUT, AND THAT IS THE WHOLE PROBLEM WITH AN INFORMATION
+   ITEM.** The brief says a Lens room must make you commit before you know. Every
+   design that got there by geometry alone fell over on the same move: stand
+   still, sound the conch, look at the room you were about to bet on, sound it
+   twice more, walk into the right branch. Two presses, and the Lens is a
+   convenience — the exact shape of the trap that turned D1's three anchor gates
+   into two button presses.
+
+   It cannot be closed by terrain that already exists. **Every tide tile in the
+   game gains footing as the water leaves**, so every floor in the game is
+   somewhere to stand at more than one level. It cannot be closed by
+   `noTide`/`tideForce` either: a room that refuses the conch is a room where the
+   branch can never resolve at another level, which is the thing being asked for.
+
+   It is closed by one new tile. `dFlood` (`0`) is an open shaft at LOW and MID
+   and is waded across at HIGH — the only tile in the game walkable at HIGH and
+   at neither level below it. A room floored with it is a room you can only be
+   inside of at one tide, and sounding the conch there drops you into a cell
+   rather than showing you anything. **If you are designing a room around an
+   informational item, the first question is not "what can he see" but "where
+   can he stand, and at how many levels".**
+
+2. **THE MODEL IS ROOM-LOCAL AND A DEAD END THAT TOUCHES A SEAM IS NOT A DEAD
+   END.** `check-lens.mjs` passed all its assertions on its first run, which was
+   suspicious — `check-anchor.mjs` failed all three D1 gates on its first run —
+   so each assertion was broken on purpose to see it bite. Three of the four did.
+   The fourth, swapping the sealed channel for `4` dDrain (a pit at LOW, a
+   wadeable ford at MID — the near-miss the design notes warn about), passed,
+   because the branch could only reach the room's south edge and the room BELOW
+   happened to have wall facing it. The assertion "a dead branch never reaches
+   the room's edge" exists because of that, and the lesson is the general one:
+   **a static prover that reasons about one room must refuse to draw conclusions
+   that depend on a different room.**
+
+3. **A ONE-WAY LEDGE WAS DECORATION UNTIL THIS DUNGEON, AND TWO HARNESSES SAID
+   SO.** `walk-dungeons.mjs` reported the Coral Spire's entire upper floor
+   stranded: its flood excludes `F.LEDGE` from walkable and had no way to cross
+   a lip, which had been both true and free for as long as no route went over
+   one. Its ledge PROBE was wrong in a second, subtler way — it pinned the tide
+   to MID and stood the player on the tile uphill of the lip, and in a tide game
+   that tile is not necessarily a tile. Four ledges read as "the hop did not
+   fire" when what had actually happened is that there was nothing to stand on.
+   Both are fixed; the probe now picks a level at which the approach is ground.
+
+4. **`waterD` AND `dWaterD` ARE TWO NAMES FOR ONE DEFINITION, and that is what
+   makes the whole room possible.** The Lens rooms turn on two channels being
+   indistinguishable at one level and different at the next. A checker comparing
+   tile NAMES would have called `drownWall`-at-HIGH and `dSluice`-at-HIGH a
+   difference the player can see, which is exactly backwards. `check-lens.mjs`
+   compares a fingerprint of art, palette, flags, animation and `underArt`.
+   Search the tile table by what a tile LOOKS like and you find pairs that are
+   invisible by name; there are exactly two usable ones (`1`/`9` at HIGH and
+   `4`/`O` at LOW) and the room designs fall straight out of them.
+
+5. **`9` drownWall RESOLVES TO THE OUTDOOR `cliff` FACE, and it took a
+   screenshot to notice.** It is right for d4, which is built out of it, and
+   inside the Coral Spire it was a piece of outdoor grey rock standing in a reef
+   building — and, worse, grey stone beside the grey `dFloorWet` it was the
+   player's whole job to tell it apart from. The checker was green; the screen
+   was ambiguous. `dSillCoral` (this dungeon's own wall at LOW and MID, deep
+   water at HIGH) is the fix, scoped to a `dungeonCoralSill` legend on the two
+   rooms that need it rather than repointing `9` for all eight themes — `9`
+   means `drownWall` in seventy rooms and quietly changing it is a change to
+   d4's floor plan. **Look at the room. `validate.mjs` proves flags, and a tile
+   saying the wrong thing carries the right flags.**
+
+6. **THE LENS HAD NEVER BEEN LOOKED AT, and looking at it needed a real held
+   button.** The ghost is only drawn while `player.lensT` is counting up, which
+   needs `lensHeld` set by the held-item hook — and `lensHeld` is reset at the
+   top of every player update, so poking it from outside the frame reads as
+   released about half the time and the shot comes back with no overlay at all
+   and nothing wrong with it. `tools/shoot-rooms.mjs --lens` holds KeyZ. The
+   verdict is in "Known soft spots" below.
+
+
 **Multi-screen rooms (P7.6), and the five things they cost.**
 
 1. **A ROOM'S KEY IS ITS TOP-LEFT CELL, AND THE CELLS IT SPANS HAVE NO
@@ -1748,6 +1825,35 @@ Found with `--props` (see below) and checked cell by cell, so nobody repeats it:
    have placed forty of them.
 
 ## Known soft spots in what has been done
+- **THE BRINEGLASS LENS IS READABLE, AND IT IS QUIETER THAN IT SHOULD BE.**
+  D2 is the first session that looked at it (`shoot-rooms.mjs --lens`, shots in
+  `tools/shots/d2look/`). The verdict, plainly: in both Lens rooms the two
+  branches DO read differently through the ghost — in the Wading Gallery one
+  channel goes pale wet stone and the other goes coral wall; in the Sounding
+  Shaft one shaft fills with pale water and the other stays black — and that is
+  the whole job, done, at 160x144.
+
+  What is weak is that the overlay reads as a TINT OVER THE ROOM rather than as
+  a second room. `LENS_GHOST_ALPHA` is 0.55 over a 0.16 teal wash, and on a
+  screen that is already mostly water the ghost of more water is a low-contrast
+  event. A player who has not been told that holding B shows the next tide will
+  not deduce it from the picture. Two cheap things a later session could try
+  before touching the constants: a one-line prompt the first time the Lens is
+  equipped, and drawing the ghost's EDGES (where a tile differs between the two
+  levels) rather than the whole redraw — the difference is what the item is for
+  and it is currently the least emphasised thing on the screen. Neither is a
+  bug; both are the item not being as loud as its job.
+- **`dPit` inside the Coral Spire is the shared black pit tile.** `dFlood` at
+  LOW and MID resolves to it, so the Drowned Concourse at LOW is twenty tiles of
+  the same near-black square. It reads correctly — "the floor was the sea" — and
+  it is not themed, so it is one of the places a screenshot does not say which
+  dungeon it is. A themed pit is a `rip-dungeon-themes.py` pick away if a later
+  session wants one.
+- **The Coral Spire's two Lens rooms share their primitive.** They are the same
+  shape turned over — one decides at HIGH off a wading floor, one decides at LOW
+  off a drowned shelf — and that is on purpose, the way D1's three anchor gates
+  share theirs. It does mean D2 has one idea about the Lens rather than two, and
+  a third Lens room in a later dungeon should not be a third rotation of it.
 - **Four legend characters were declared and never used.** `f` (flowers), `^`
   (cliffTop), `Y` (treeSand) and `P` (palm) appeared in 0 of 303 room grids, so
   their art was never rendered anywhere in the game. `f` is now placed (127

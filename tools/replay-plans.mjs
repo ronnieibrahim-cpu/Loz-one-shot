@@ -412,4 +412,70 @@ export const PLANS = {
     ],
     assert: { roomChanges: 1, camMaxX: 160, camEndX: 0, camMaxY: 0 },
   },
+
+  // -------------------------------------------------------------------------
+  // The Wading Gallery: raise the Lens, then commit to the WRONG cell.
+  //
+  // The pairing this is half of is the same one `d1-sluicegate` is half of.
+  // `tools/check-lens.mjs` proves the room against a model — the two channels
+  // resolve to the same concrete tile at HIGH and to different ones at LOW, and
+  // the cell you drop into is the cell you are in. That is a claim about the
+  // DATA. This is the claim about the ENGINE: that the room the player is
+  // actually standing in behaves the way the model says.
+  //
+  // The two probes are the load-bearing part, exactly as in `tide-steps`. They
+  // are one tile of each channel, sampled at every checkpoint in two
+  // independent senses — the level the field reports, and a hash of how the
+  // tile is actually DRAWN. A run that only walked would pass just as well in a
+  // room where both channels were the same thing all along; what makes this a
+  // proof is that the two hashes are EQUAL while the actor is choosing and
+  // DIFFERENT once the sea has gone out, recorded frame by frame in the
+  // baseline. If a future change makes the wrong cell visibly wrong from the
+  // wading floor, this replay moves.
+  //
+  // The actor commits east, which is the dead cell. It cannot do otherwise: the
+  // ledge is one-way, and the whole point of the room is that nothing it could
+  // have looked at would have told it which way to go.
+  // -------------------------------------------------------------------------
+  'd2-wading-gallery': {
+    note: 'Coral Spire: hold the Lens over the wading floor, hop the one-way ledge '
+      + 'into the sealed cell, and take the sea out to find rock',
+    setup: {
+      seed: 20260806,
+      playerName: 'LINK',
+      items: { sword: 1, conch: 1, shield: 1, lens: 1 },
+      equipB: 'lens',
+      equipA: 'conch',
+      maxHearts: 20,
+      hearts: 20,
+      // HIGH, because the wading floor is the only floor this room has and it
+      // is only there at HIGH. Walk in at any other level and there is nothing
+      // under your feet — which is the room's argument, not a setup detail.
+      tide: 2,
+      enter: ['d2', 1, 3, 2, 144, 48, 'left'],
+      probes: [[2, 6], [6, 6]],
+    },
+    steps: [
+      ['wait', 30],
+      // Out onto the wading floor, in front of the west lip.
+      ['goto', 2, 3, 400],
+      ['wait', 20],
+      // The Lens, held. This is what the room is for: the ghost of LOW laid
+      // over the water, with one channel drawn as floor and the other as rock.
+      ['hold', ['b'], 90],
+      ['wait', 20],
+      // Across to the east lip and over it. One way.
+      ['goto', 7, 3, 400],
+      ['wait', 20],
+      ['hold', ['down'], 40],
+      ['wait', 40],
+      // Conch: HIGH -> LOW. The cell drains and so does everything else.
+      ['tap', 'a', 140],
+      ['wait', 40],
+      // Straight at the channel. It is rock, and it was rock at MID too.
+      ['hold', ['down'], 60],
+      ['wait', 40],
+    ],
+    assert: { roomChanges: 0 },
+  },
 };

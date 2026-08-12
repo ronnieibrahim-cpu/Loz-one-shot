@@ -48,7 +48,7 @@ import { drawHud, drawAreaBanner, drawBossBar } from './hud.js';
 import { Dialogue, drawBox, drawPanel, getText } from './dialogue.js';
 import { Menu } from './menu.js';
 import { Camera } from './camera.js';
-import { Scrimshaw, CHARMS, giveCharm, ownedCharms } from './scrimshaw.js';
+import { Scrimshaw, CHARMS, giveCharm, ownedCharms, openCasesFor } from './scrimshaw.js';
 import { Title } from './title.js';
 import { runCutscene, CUTSCENES } from './cutscene.js';
 import { Stream, seedGlobal, roomStream, noise1, rng as rngGlobal } from '../core/rng.js';
@@ -872,6 +872,17 @@ export class Game {
     p.essences.sort((a, b) => a - b);
     this.audio.jingle('essence');
     this.player.frozen = ESSENCE_FREEZE_FRAMES;
+    // A charm case opens ON THE ESSENCE — see openCasesFor in scrimshaw.js for
+    // why that is the reading and not the scrimshander's door. The news is
+    // appended to the essence's own scene rather than said afterwards, because
+    // a `say` fired while a cutscene is running is swallowed by it.
+    const opened = openCasesFor(p);
+    const cs = CUTSCENES['essence' + index] || CUTSCENES.essenceGeneric;
+    if (opened.length && cs) {
+      this.cutscene = runCutscene(this, cs.concat(opened.map(t => ({ say: t }))), { index });
+      this.mode = 'cutscene';
+      return;
+    }
     this.startCutscene('essence' + index, { fallback: 'essenceGeneric', data: { index } });
   }
 

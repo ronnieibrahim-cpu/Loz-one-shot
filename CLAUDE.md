@@ -115,6 +115,14 @@ they are also how a future session finds which sheet a tile came from.
   `drawAnim` + `drawOver` the way `drawScene` does, and hash a whole 16x16 tile
   rather than one pixel — shallow and deep reef water share their colour at the
   tile's centre.
+- **A one-way ledge is a route, and two harnesses did not know that.** Every
+  ledge in the game was decoration until D2 put two Lens rooms behind one, and
+  `walk-dungeons.mjs` reported the Coral Spire's whole upper floor stranded
+  because its flood had no way to cross a lip. Its ledge PROBE was wrong in a
+  second way: it pinned the tide to MID and stood the player on the tile uphill
+  of the lip, which in a tide game is not necessarily a tile at all. Both are
+  fixed; if you place a ledge whose approach only exists at one level, the probe
+  now finds that level for itself.
 - **Rebuilding an options object field by field drops what you forget.**
   `addOverride` did exactly that and silently discarded the tag the Anchor used
   to find its own override. Everything worked except the one thing.
@@ -131,6 +139,7 @@ they are also how a future session finds which sheet a tile came from.
 | `node tools/check-gates.mjs` | Gates hold in-engine with a live player |
 | `node tools/solve-switches.mjs` | Every switch puzzle has a solution |
 | `node tools/check-anchor.mjs` | A room that claims to need the Tidewright's Anchor cannot be crossed with the conch alone, and can be with one anchor placement |
+| `node tools/check-lens.mjs` | A room that claims to need the Brineglass Lens really makes you commit blind: the choice is one-way, one branch is shut at every level, and the two branches draw as the same tiles at the level the choice is made at |
 | `node tools/check-motion.mjs` | Ground enemies stay on the 8px lattice; fliers and swimmers stay off it |
 | `node tools/check-items.mjs` | Every item does the verb `docs/ITEMS.md` claims for it, and nothing hands out an item that no longer exists |
 | `node tools/replay.mjs` | Movement and combat are frame-identical to a recorded baseline |

@@ -466,9 +466,9 @@ charms they can never switch on.
 
 | Owed | Whose session | Why there |
 |---|---|---|
-| Decide whether the cases open on the essence or on talking to the scrimshander | **D2 — cannot slip** | Two essences is where the second case is meant to appear |
-| Place a charm per dungeon, in a case that dungeon's player has open | every session | D1 did it (Split Fang, `0,2,3`); `check-charms.mjs` prints the running list |
-| Look at the CHARM screen, the carve dialogue and one charm's effect on a real screen | first session that boots the game to play it | It needs eyes, not a harness |
+| ~~Decide whether the cases open on the essence or on talking to the scrimshander~~ | **SETTLED in D2** | **They open ON THE ESSENCE.** `openCasesFor` in `scrimshaw.js` is called from `Game.claimEssence`, and the news is appended to the essence's own cutscene because a `say` fired while a cutscene runs is swallowed by it. The scrimshander still calls it, as a safety net for a save migrated from before the change; her line is now the acknowledgement rather than the event. |
+| Place a charm per dungeon, in a case that dungeon's player has open | every session | D1 did it (Split Fang, `0,2,3`), D2 did it (Barnacle Skin, `0,4,6`); `check-charms.mjs` prints the running list — 3 hand-placed as of D2 |
+| Look at the CHARM screen, the carve dialogue and one charm's effect on a real screen | first session that boots the game to play it | It needs eyes, not a harness. STILL OWED — D2 looked at the Lens, not at scrimshaw |
 | Compare charms for value | D4 or later, once the roster has been met in play | Balancing thirty passives against no play data is guessing |
 | Settle `NEAP_GRACE_FRAMES` | whichever session plays the tide transitions | It is the width of the transition window the two cross-slot charms live in |
 
@@ -496,13 +496,13 @@ and each claim below has a checker behind it rather than a reading of the code:
 Three things stand between that and complete **as a played system**, and none of
 them is a code gap:
 
-- **The cases open on TALKING to her, not on the essence.** `checkUnlocks` is
-  called from `Scrimshander.interact` and nowhere else, so a player who never
-  walks back into Tidewatch finishes the game with one case and never learns the
-  system had three. This is the only one of the three that is arguably a defect
-  rather than a missing session, and it is a design call: open the case when the
-  essence lands and let her line be the acknowledgement, or leave the visit as
-  the beat and signpost it somewhere.
+- ~~**The cases open on TALKING to her, not on the essence.**~~ **CLOSED in the
+  D2 session, in favour of opening on the essence.** The case that decided it is
+  the one this paragraph was written about: `CHARM_LOW_ESSENCES` is 2 and D2 is
+  the second essence, so leaving it meant a real save in which the player owns
+  charms he can never switch on and has been given no reason to make the walk
+  that would fix it. Progression that only exists if you retrace your steps is a
+  secret, not progression.
 - **Nobody has watched the CHARM screen, the carve dialogue or a single charm's
   effect on a real screen.** Everything is checker truth.
 - **No two charms have been compared for value.** The Hagstone (one hit in four
@@ -729,7 +729,7 @@ Run validate.mjs, walk-dungeons.mjs and solve-switches.mjs after every room you
 change, not at the end.
 ```
 
-#### P8 status: D1 done, D2-D6 outstanding
+#### P8 status: D1 and D2 done, D3-D6 outstanding
 
 **D1, Tidewash Grotto — DONE.** 24 rooms, one floor, re-authored around the
 Tidewright's Anchor. Against the constraint list above:
@@ -750,6 +750,63 @@ Two honest exceptions to "every room after it requires the verb": `0,5,2` (the
 anglerfry pool) is a fight the tide is a weapon in, crossable by its dry ring
 with no iron at all; and `0,3,1` is the boss room. Both are *reached* only
 through a gate, so no post-item room can be entered without the Anchor.
+
+**D2, Coral Spire — DONE.** 26 rooms, two floors, re-authored around the
+Brineglass Lens. Against the constraint list above:
+
+| Constraint | D2 |
+|---|---|
+| 22-32 rooms, 1-3 floors | 26 rooms, 2 floors |
+| item roughly halfway | the Lens is room 12 of 26, in `0,4,4` (the Sealed Cell, behind Small Key 1) |
+| every room after it requires the item's verb | floor 1 is the whole of the post-item dungeon and is reached only through the Sealed Cell. Two of its rooms are Lens rooms in their own right and everything past each of them is behind it; a third uses the Lens's combat verb. Two exceptions are stated below |
+| tide theme is the constraint | both Lens rooms are proved by `tools/check-lens.mjs` to be undecidable from the tiles at the level the choice is made at, and to have nowhere before the choice that survives a change of the tide |
+| Chartstone, 2-4 small keys, boss key | Chartstone in `0,2,4`; 3 keys, 3 locks; Boss Key in `1,2,3` |
+| miniboss two thirds through | Reefguard in `1,4,3`, room 17 of 26 (65%) |
+| Heart Container from `bossDead` | `1,2,1` |
+| essence index = dungeon number | 2 |
+| multi-screen rooms | one: the Drowned Concourse `0,4,5` is 2x1. The other 25 are 1x1, and the Lens rooms are 1x1 **deliberately** — see below |
+
+Two honest exceptions to "every room after it requires the verb": `1,4,3` (the
+Reefguard) and `1,5,3` (the Bomb Vault) are a miniboss and its reward, and the
+boss room is a boss room. All are *reached* only through the Wading Gallery.
+
+**What D2 taught about the item, and the one tile it needed.** A Lens room
+cannot be built like an anchor gate, and the reason is sharper than "the Lens
+makes nothing passable". It is that THE CONCH IS A SCOUT. Any room where the
+player can stand somewhere and sound the conch is a room where he can read the
+answer off the screen and sound it back, and the Lens has saved him three button
+presses. Every tide tile in the game GAINS footing as the water leaves, so every
+wading floor in the game is somewhere to stand at more than one level.
+
+So D2 adds `dFlood` (`0` in the dungeon legend): an open shaft at LOW and MID,
+waded across at HIGH. It is the only tile in the game that is walkable at HIGH
+and at neither level below it, and a room floored with it is a room the player
+can only be inside of at one tide. Sounding the conch there does not show him
+the answer — it drops him into a cell, which is the commitment happening. That
+is the sentence in `docs/ITEMS.md` the item was designed against ("the player
+toggles blind and finds out afterwards") turned into terrain.
+
+Three things a D3-D6 session should take from it:
+
+* **The Lens rooms are 1x1 and that is the decision, not the default.** The
+  information a Lens room hides is hidden in TIME. Both branches have to be on
+  the screen at once, because a branch that is off-camera is a branch the Lens
+  does not reveal either — it redraws the room the camera is already showing.
+  Widening a Lens room makes the item mandatory for the wrong reason. D2's one
+  wide room is the Drowned Concourse, which is wide because it TEACHES `dFlood`
+  and is the only room where that tile is not a bet.
+* **The wrong branch has to be wrong at every level.** `4` dDrain is the obvious
+  dead end — an open pit when the water goes — and it is wadeable at MID, so a
+  player who guessed wrong sounds the conch once more and walks out. The two
+  pairs that work are `1`/`9` (identical deep water at HIGH; a road and a wall
+  at LOW and MID) and `4`/`O` (identical open shafts at LOW; a ford and a hole
+  at MID). Those are the only two pairs the tile set offers, and `check-lens.mjs`
+  compares what a tile LOOKS like rather than what it is called, because
+  `waterD` and `dWaterD` are two names for one definition.
+* **A dead branch must not touch the room's edge.** That assertion was added
+  after breaking the room on purpose and watching the checker pass: the model is
+  room-local, so a branch that reaches a seam is only a dead end by the grace of
+  what the neighbour happens to have facing it.
 
 **What D1 taught about the item.** The held patch is 5x5 and the throw carries
 two tiles, so one gate consumes a whole room row and the rest of the room has to

@@ -154,6 +154,11 @@ export function installLegends() {
     '6': 'dRaceE', '7': 'dRaceW',   // wadeable at LOW, a current above it
     '8': 'tideRock',
     '9': 'drownWall',
+    // The shaft mouth: an open drop at LOW and MID, waded across at HIGH. The
+    // only tile that is walkable at HIGH and at neither level below it, which
+    // is what makes a room the player can only be in at one level. See
+    // tiles-core.js and the Coral Spire header.
+    '0': 'dFlood',
   });
 
   // ---- dungeon THEMES ----------------------------------------------------
@@ -190,6 +195,21 @@ export function installLegends() {
   theme('dungeonSalt',    'dFloorSalt',    'dFloorSaltAlt',    'dWallSalt',    'dWallSaltX',    'dBlockSalt',    'dUrnSalt');
   theme('dungeonPalace',  'dFloorPalace',  'dFloorPalaceAlt',  'dWallPalace',  'dWallPalaceX',  'dBlockPalace',  'dUrnPalace');
   theme('dungeonAbyss',   'dFloorAbyss',   'dFloorAbyssAlt',   'dWallAbyss',   'dWallAbyssX',   'dBlockAbyss',   'dUrnAbyss');
+
+  // The Coral Spire's two Lens rooms, and ONLY those. `9` is `drownWall`
+  // everywhere else in the game and resolves to the outdoor `cliff` face, which
+  // is right for d4 — half of the Cliffside Cistern is built out of it — and
+  // wrong here twice over: it is a piece of outdoor rock standing inside a reef
+  // building, and at LOW it is grey stone beside the grey wet stone it has to
+  // be told apart from. In a Lens room that difference is the entire puzzle, so
+  // it gets this dungeon's own wall instead. See dSillCoral in tiles-core.js.
+  //
+  // Scoped to a legend rather than added to the shared `dungeon` one on
+  // purpose: `9` means `drownWall` in seventy rooms and quietly repointing it
+  // for all eight themes is a change to d4's floor plan, not a colour choice.
+  // If a later dungeon wants a sealed sill of its own, give it its own pair
+  // here — do not widen this one.
+  registerLegend('dungeonCoralSill', { '9': 'dSillCoral' }, 'dungeonCoral');
 
   // ---- cave / interior ---------------------------------------------------
   registerLegend('cave', {

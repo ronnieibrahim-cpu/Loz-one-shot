@@ -12,15 +12,14 @@ import {
   addHeartPiece, HEART_UNITS, setFlag, flag,
 } from './progress.js';
 import { itemName, itemIcon, ITEMS } from './items.js';
-import { CHARMS, giveCharm } from './scrimshaw.js';
+import { CHARMS, giveCharm, openCasesFor } from './scrimshaw.js';
 import {
   PICKUP_LIFE_FRAMES, PICKUP_POP_SPEED, PICKUP_GRAVITY, PICKUP_SETTLE_FRAMES,
   PICKUP_GRAB_DELAY, FAIRY_DRIFT_TURN, FAIRY_DRIFT_X, FAIRY_DRIFT_Y,
   NPC_WANDER_PERIOD, NPC_WANDER_SPEED,
   ESSENCE_SPARKLE_EVERY, ESSENCE_SPARKLE_SPREAD,
   BELLOWS_PUSH, BELLOWS_RAFT_SCALE, BELLOWS_WHEEL_COAST, BELL_CHIME_FRAMES,
-  CARVE_PRICE, CHARM_CASE_MAX, CHARM_LOW_ESSENCES, CHARM_HIGH_ESSENCES,
-  CHARM_CASE_ESSENCES,
+  CARVE_PRICE,
 } from '../data/feel.js';
 
 // --------------------------------------------------------------------------
@@ -521,22 +520,20 @@ export class Scrimshander extends NPC {
     this.faceOnTalk = true;
   }
 
-  /** Cases and case size open on essence count. Returns a line, or null. */
+  /**
+   * Cases and case size open on essence count. Returns a line, or null.
+   *
+   * THIS IS NO LONGER THE MECHANISM. As of the D2 session the cases open in
+   * `Game.claimEssence`, the moment the shard lands, because this door was the
+   * only thing that opened them and a player who never walked back to Tidewatch
+   * finished the game with one case and never learned there were three. What is
+   * left here is the safety net: a save carried across from before that change
+   * can arrive with essences in hand and cases still shut, and she opens them.
+   * In an ordinary playthrough it finds nothing to do and she talks shop.
+   */
   checkUnlocks(game) {
-    const p = game.progress;
-    if (p.essences.length >= CHARM_LOW_ESSENCES && !p.charmOpen.low) {
-      p.charmOpen.low = true;
-      return 'I have cut you a second case — for the low water,\nwhen the floor of the sea is a road.';
-    }
-    if (p.essences.length >= CHARM_HIGH_ESSENCES && !p.charmOpen.high) {
-      p.charmOpen.high = true;
-      return 'And a third, for the high water. Bone keeps\nbetter wet than you would think.';
-    }
-    if (p.essences.length >= CHARM_CASE_ESSENCES && p.charmCase < CHARM_CASE_MAX) {
-      p.charmCase = CHARM_CASE_MAX;
-      return 'Every case takes two now. You have earned\nthe room.';
-    }
-    return null;
+    const said = openCasesFor(game.progress);
+    return said.length ? said.join('\n') : null;
   }
 
   interact(game, player) {
