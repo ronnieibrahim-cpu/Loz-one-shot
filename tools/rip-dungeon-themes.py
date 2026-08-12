@@ -110,6 +110,24 @@ PICKS = [
     ('urn',           900,   42, 'x80 a wide-bellied urn'),
 ]
 
+# Picks that are an OBJECT standing on a floor, not a floor or a wall.
+#
+# A 16x16 cell cut out of a room contains whatever the room's floor was behind
+# the object, and the deduplicator has no way to know that is not part of the
+# art — it is different pixels, so it is a different tile, and it dedupes to
+# itself perfectly. `panelFloor` above documents the same hazard for a tile
+# that caught a room's frame. Left alone, `urn` drew a rectangle of one
+# dungeon's floor into every other dungeon's floor.
+#
+# So the background is keyed out to transparency and the tiledef names an
+# `underArt`, which is the engine's own mechanism for a tile with holes in it:
+# the floor is drawn first and the object over it. That also brings these tiles
+# into line with the house art rule — three colours plus transparency.
+#
+# ONLY FOR OBJECTS. Keying a floor or a wall would eat the tile, because the
+# border-connected run IS the tile.
+KEY_BACKGROUND = {'urn'}
+
 
 def lum(c):
     return 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]
@@ -141,6 +159,29 @@ def quantise(block):
     while len(keep) < 4:
         keep.append(keep[-1])
     return grid, keep
+
+
+def key_background(grid):
+    """Flood the border-connected run of the commonest EDGE index to '.'.
+
+    Border-connected rather than "every pixel of that index": an urn with a
+    highlight in the same colour as the floor keeps the highlight, because it
+    does not touch the edge. Anything that reaches the frame is the room behind
+    the object and nothing else can be.
+    """
+    g = [list(r) for r in grid]
+    edge = ([g[0][x] for x in range(16)] + [g[15][x] for x in range(16)]
+            + [g[y][0] for y in range(16)] + [g[y][15] for y in range(16)])
+    bg = Counter(edge).most_common(1)[0][0]
+    stack = [(x, y) for x in range(16) for y in (0, 15)]
+    stack += [(x, y) for y in range(16) for x in (0, 15)]
+    while stack:
+        x, y = stack.pop()
+        if not (0 <= x < 16 and 0 <= y < 16) or g[y][x] != bg:
+            continue
+        g[y][x] = '.'
+        stack += [(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)]
+    return [''.join(r) for r in g]
 
 
 def hexc(c):
@@ -183,6 +224,8 @@ def main():
         block = read(im, x, y)
         before = len({p for row in block for p in row})
         grid, keep = quantise(block)
+        if name in KEY_BACKGROUND:
+            grid = key_background(grid)
         if before > 4:
             lossy.append((name, before))
         arts.append((name, note, x, y, grid))
@@ -208,6 +251,10 @@ def main():
         '// Each pick cites its coordinate on the source sheet and how many times the',
         '// tile occurs on the map — frequency is what separates a wall from a one-off',
         '// decoration. See tools/rip-dungeon-maps.py and assets/tilesets/.',
+        '//',
+        '// A tile in KEY_BACKGROUND is an OBJECT, and the floor the source drew behind',
+        '// it has been keyed to `.` — transparent. Its tiledef must name an `underArt`,',
+        '// or it draws a hole.',
         '',
         "import { registerPalettes } from '../gfx/palettes.js';",
         '',

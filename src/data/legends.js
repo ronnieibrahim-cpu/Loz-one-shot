@@ -130,6 +130,15 @@ export function installLegends() {
     'D': 'dDoorClosed', 'o': 'dDoorOpen', 'L': 'dDoorLocked', 'B': 'dDoorBoss',
     'G': 'grate',      // metal: only the Resonance Rod retracts it
     '/': 'dStairs',
+    // Themed scenery, extracted by tools/rip-dungeon-themes.py. These had
+    // tiledefs and a comment saying "for P8 to place" from the moment P7.5
+    // step 8 landed, and no legend character — so no room grid could name
+    // them and the art sat in the build unreachable. BOTH ARE SOLID: read the
+    // traps list in CLAUDE.md before placing one, and re-run
+    // walk-dungeons.mjs, because a solid tile can strand a room while
+    // rendering perfectly and validating clean.
+    'M': 'dLionHead',  // a gilded lion mask
+    'U': 'dUrn',       // a wide-bellied urn
     'R': 'rockFloor', 'r': 'rockFloorDk', '_': 'dLedge',
     '"': 'dLedgeN', '>': 'dLedgeE', '<': 'dLedgeW',
     // TIDE TILES (digits) — the indoor versions
@@ -149,33 +158,38 @@ export function installLegends() {
 
   // ---- dungeon THEMES ----------------------------------------------------
   //
-  // Each of these is the shared `dungeon` legend with five characters pointed
-  // at a themed tile: floor, cracked floor, wall, bombable wall and block.
-  // Everything else — doors, stairs, pits, spikes, ledges, and every tide
-  // digit — is inherited unchanged, which is the entire point of doing it this
-  // way: A DUNGEON CHANGES ITS LOOK BY CHANGING ONE `legend:` FIELD, and not
-  // one character of one room grid moves.
+  // Each of these is the shared `dungeon` legend with SIX characters pointed
+  // at a themed tile: floor, cracked floor, wall, bombable wall, block and urn.
+  // Everything else — doors, stairs, pits, spikes, ledges, the lion mask, and
+  // every tide digit — is inherited unchanged, which is the entire point of
+  // doing it this way: A DUNGEON CHANGES ITS LOOK BY CHANGING ONE `legend:`
+  // FIELD, and not one character of one room grid moves.
   //
-  // That also means a theme cannot alter passability by accident. The five
+  // That also means a theme cannot alter passability by accident. The six
   // tiles below carry exactly the flags their shared counterparts carry —
-  // floors none, walls SOLID, the cracked wall SOLID|BOMBABLE, the block SOLID
-  // — so walk-dungeons and solve-switches see the identical world before and
-  // after. If you add a sixth character to a theme, check that first.
+  // floors none, walls SOLID, the cracked wall SOLID|BOMBABLE, the block and
+  // the urn SOLID — so walk-dungeons and solve-switches see the identical
+  // world before and after.
+  //
+  // ADDING A SEVENTH CHARACTER, since the sixth is now the worked example:
+  // give every theme a tiledef for it in tiles-core.js, add the parameter
+  // here, and add the pair to SHARED in tools/validate.mjs so the flags are
+  // checked. Miss the last step and a theme is free to change the rules.
   //
   // Tiles and palettes come from tools/rip-dungeon-themes.py, off the Seasons
   // dungeon map. See src/data/tiles-dungeon-themes.js.
-  const theme = (name, floor, alt, wall, cracked, block) => registerLegend(name, {
-    '.': floor, ',': alt, '#': wall, 'X': cracked, '=': block,
+  const theme = (name, floor, alt, wall, cracked, block, urn) => registerLegend(name, {
+    '.': floor, ',': alt, '#': wall, 'X': cracked, '=': block, 'U': urn,
   }, 'dungeon');
 
-  theme('dungeonGrotto',  'dFloorGrotto',  'dFloorGrottoAlt',  'dWallGrotto',  'dWallGrottoX',  'dBlockGrotto');
-  theme('dungeonCoral',   'dFloorCoral',   'dFloorCoralAlt',   'dWallCoral',   'dWallCoralX',   'dBlockCoral');
-  theme('dungeonBog',     'dFloorBog',     'dFloorBogAlt',     'dWallBog',     'dWallBogX',     'dBlockBog');
-  theme('dungeonCistern', 'dFloorCistern', 'dFloorCisternAlt', 'dWallCistern', 'dWallCisternX', 'dBlockCistern');
-  theme('dungeonWood',    'dFloorWood',    'dFloorWoodAlt',    'dWallWood',    'dWallWoodX',    'dBlockWood');
-  theme('dungeonSalt',    'dFloorSalt',    'dFloorSaltAlt',    'dWallSalt',    'dWallSaltX',    'dBlockSalt');
-  theme('dungeonPalace',  'dFloorPalace',  'dFloorPalaceAlt',  'dWallPalace',  'dWallPalaceX',  'dBlockPalace');
-  theme('dungeonAbyss',   'dFloorAbyss',   'dFloorAbyssAlt',   'dWallAbyss',   'dWallAbyssX',   'dBlockAbyss');
+  theme('dungeonGrotto',  'dFloorGrotto',  'dFloorGrottoAlt',  'dWallGrotto',  'dWallGrottoX',  'dBlockGrotto',  'dUrnGrotto');
+  theme('dungeonCoral',   'dFloorCoral',   'dFloorCoralAlt',   'dWallCoral',   'dWallCoralX',   'dBlockCoral',   'dUrnCoral');
+  theme('dungeonBog',     'dFloorBog',     'dFloorBogAlt',     'dWallBog',     'dWallBogX',     'dBlockBog',     'dUrnBog');
+  theme('dungeonCistern', 'dFloorCistern', 'dFloorCisternAlt', 'dWallCistern', 'dWallCisternX', 'dBlockCistern', 'dUrnCistern');
+  theme('dungeonWood',    'dFloorWood',    'dFloorWoodAlt',    'dWallWood',    'dWallWoodX',    'dBlockWood',    'dUrnWood');
+  theme('dungeonSalt',    'dFloorSalt',    'dFloorSaltAlt',    'dWallSalt',    'dWallSaltX',    'dBlockSalt',    'dUrnSalt');
+  theme('dungeonPalace',  'dFloorPalace',  'dFloorPalaceAlt',  'dWallPalace',  'dWallPalaceX',  'dBlockPalace',  'dUrnPalace');
+  theme('dungeonAbyss',   'dFloorAbyss',   'dFloorAbyssAlt',   'dWallAbyss',   'dWallAbyssX',   'dBlockAbyss',   'dUrnAbyss');
 
   // ---- cave / interior ---------------------------------------------------
   registerLegend('cave', {

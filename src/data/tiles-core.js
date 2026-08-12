@@ -1279,6 +1279,7 @@ export function installCoreTiles() {
     dWallGrotto: { art: ART.brickWallBlue, pal: 'brickWallBlue', flags: F.SOLID },
     dWallGrottoX: { art: ART.dWallCracked, pal: 'brickWallBlue', flags: F.SOLID | F.BOMBABLE },
     dBlockGrotto: { art: ART.vaultBlock, pal: 'vaultBlock', flags: F.SOLID },
+    dUrnGrotto: { art: ART.urn, pal: 'urn', flags: F.SOLID, underArt: 'dFloorGrotto' },
 
     // d2 Coral Spire — blue flagstone under coral-pink masonry.
     dFloorCoral: { art: ART.reefFloor, pal: 'reefFloor' },
@@ -1286,6 +1287,7 @@ export function installCoreTiles() {
     dWallCoral: { art: ART.coralWall, pal: 'coralWall', flags: F.SOLID },
     dWallCoralX: { art: ART.dWallCracked, pal: 'coral', flags: F.SOLID | F.BOMBABLE },
     dBlockCoral: { art: ART.vaultBlock, pal: 'coral', flags: F.SOLID },
+    dUrnCoral: { art: ART.urn, pal: 'urn', flags: F.SOLID, underArt: 'dFloorCoral' },
 
     // d3 Bogwater Sanctum — a gold lattice sunk into swamp-green stone.
     dFloorBog: { art: ART.gildFloor, pal: 'gildFloor' },
@@ -1293,6 +1295,7 @@ export function installCoreTiles() {
     dWallBog: { art: ART.knurlWall, pal: 'knurlWall', flags: F.SOLID },
     dWallBogX: { art: ART.dWallCracked, pal: 'knurlWall', flags: F.SOLID | F.BOMBABLE },
     dBlockBog: { art: ART.cryptBlock, pal: 'bog', flags: F.SOLID },
+    dUrnBog: { art: ART.urn, pal: 'urn', flags: F.SOLID, underArt: 'dFloorBog' },
 
     // d4 Cliffside Cistern — sunken tan panels, cold studded walls.
     dFloorCistern: { art: ART.panelFloor, pal: 'panelFloor' },
@@ -1300,6 +1303,7 @@ export function installCoreTiles() {
     dWallCistern: { art: ART.studWall, pal: 'stonef', flags: F.SOLID },
     dWallCisternX: { art: ART.dWallCracked, pal: 'stonef', flags: F.SOLID | F.BOMBABLE },
     dBlockCistern: { art: ART.vaultBlock, pal: 'vaultBlock', flags: F.SOLID },
+    dUrnCistern: { art: ART.urn, pal: 'urn', flags: F.SOLID, underArt: 'dFloorCistern' },
 
     // d5 Drowned Wood Shrine — amber lozenge floor under brown brick walls.
     // The floor was `brickFloor` and the wall `emberWall`, and both are brick
@@ -1311,6 +1315,7 @@ export function installCoreTiles() {
     dWallWood: { art: ART.emberWall, pal: 'emberWall', flags: F.SOLID },
     dWallWoodX: { art: ART.dWallCracked, pal: 'emberWall', flags: F.SOLID | F.BOMBABLE },
     dBlockWood: { art: ART.cryptBlock, pal: 'wood', flags: F.SOLID },
+    dUrnWood: { art: ART.urn, pal: 'urn', flags: F.SOLID, underArt: 'dFloorWood' },
 
     // d6 Salt Pan Vault — the ruin rosette bleached out to salt and bone.
     dFloorSalt: { art: ART.ruinFloorAlt, pal: 'marble' },
@@ -1318,6 +1323,7 @@ export function installCoreTiles() {
     dWallSalt: { art: ART.vaultBlock, pal: 'marble', flags: F.SOLID },
     dWallSaltX: { art: ART.dWallCracked, pal: 'marble', flags: F.SOLID | F.BOMBABLE },
     dBlockSalt: { art: ART.vaultBlock, pal: 'marble', flags: F.SOLID },
+    dUrnSalt: { art: ART.urn, pal: 'urn', flags: F.SOLID, underArt: 'dFloorSalt' },
 
     // d7 Reef Palace — the rosette in its own colours, walls studded gold.
     dFloorPalace: { art: ART.ruinFloor, pal: 'ruinFloor' },
@@ -1325,6 +1331,7 @@ export function installCoreTiles() {
     dWallPalace: { art: ART.studWall, pal: 'studWall', flags: F.SOLID },
     dWallPalaceX: { art: ART.dWallCracked, pal: 'gold', flags: F.SOLID | F.BOMBABLE },
     dBlockPalace: { art: ART.vaultBlock, pal: 'gold', flags: F.SOLID },
+    dUrnPalace: { art: ART.urn, pal: 'urn', flags: F.SOLID, underArt: 'dFloorPalace' },
 
     // d8 Abyssal Keep — studded violet-black tiling, violet masonry.
     dFloorAbyss: { art: ART.abyssFloor, pal: 'abyssFloor' },
@@ -1332,12 +1339,28 @@ export function installCoreTiles() {
     dWallAbyss: { art: ART.cryptWall, pal: 'cryptWall', flags: F.SOLID },
     dWallAbyssX: { art: ART.dWallCracked, pal: 'cryptWall', flags: F.SOLID | F.BOMBABLE },
     dBlockAbyss: { art: ART.cryptBlock, pal: 'cryptBlock', flags: F.SOLID },
+    dUrnAbyss: { art: ART.urn, pal: 'urn', flags: F.SOLID, underArt: 'dFloorAbyss' },
 
-    // Themed scenery, for P8 to place. SOLID, so read the traps list in
-    // CLAUDE.md before putting one anywhere: a solid tile can strand a room
-    // while rendering perfectly and validating clean.
-        dLionHead: { art: ART.lionHead, pal: 'lionHead', flags: F.SOLID },
-    dUrn: { art: ART.urn, pal: 'urn', flags: F.SOLID },
+    // THEMED SCENERY. `M` and `U` in the dungeon legend; the urn is themed per
+    // dungeon just as the floor and wall are, so `U` in a Coral Spire room is a
+    // urn standing on Coral Spire flagstones.
+    //
+    // Both are SOLID, so read the traps list in CLAUDE.md before putting one
+    // anywhere: a solid tile can strand a room while rendering perfectly and
+    // validating clean. Run walk-dungeons.mjs after placing one.
+    //
+    // THE URN NAMES AN `underArt` AND MUST. Its cell is an OBJECT, so the
+    // ripper keys the floor the source drew behind it out to transparency
+    // (KEY_BACKGROUND in rip-dungeon-themes.py) — without a floor drawn under
+    // it, it is a hole. That is also why there is one per theme: `underArt` is
+    // a fixed tile name, so the only way for an urn to stand on the right floor
+    // is for each dungeon to have its own.
+    //
+    // The lion mask is NOT themed and needs no underArt: it is a wall feature
+    // and its art fills the whole cell, so it reads as a decorated block in any
+    // dungeon's masonry. Place it IN A WALL, not on a floor.
+    dLionHead: { art: ART.lionHead, pal: 'lionHead', flags: F.SOLID },
+    dUrn: { art: ART.urn, pal: 'urn', flags: F.SOLID, underArt: 'dFloor' },
 
     // --- dungeon ---
     dFloor: { art: ART.dFloor, pal: 'brickf' },

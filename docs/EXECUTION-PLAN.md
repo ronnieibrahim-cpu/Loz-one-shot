@@ -853,6 +853,81 @@ on the axis the room is one screen tall on (`camMaxY: 0`).
   tiles round any `L` you place; `walk-dungeons.mjs` now asserts every locked
   and boss door separates its room on one axis at all three tide levels.
 
+#### DUNGEON LOOK — what your theme gives you, and what it does not
+
+The companion to ROOM SIZE, and read for the same reason: a session that only
+sees "use the tilesets from P7.5" concludes the work is already done, because
+`legend: 'dungeonCoral'` is already on the map. That is true and it is not the
+whole of it.
+
+**A theme repoints SIX characters** of the shared `dungeon` legend. Everything
+else in a room is the same tile in all eight dungeons:
+
+| char | tile | themed? |
+|---|---|---|
+| `.` | floor | **yes** |
+| `,` | alt floor | **yes** — but read the warning below |
+| `#` | wall | **yes** |
+| `X` | bombable wall | **yes** |
+| `=` | block | **yes** |
+| `U` | urn | **yes** |
+| `M` | lion mask | no — one gilded mask, reads on any masonry |
+| doors, stairs, pits, spikes, pots, grates, ledges, water, every tide digit | | **no** |
+
+So a screenshot is identifiable by its floor, its walls and its scenery, and by
+nothing else. If your dungeon needs a look the other tiles are fighting, say so
+rather than working round it — the answer is a new themed character, and the
+path for adding one now exists and is worked (the urn was the sixth).
+
+**`,` IS NOT A SECOND FLOOR TILE IN MOST DUNGEONS.** In six of the eight themes
+the "alt" floor is the SAME ART recoloured, and in three of those the recolour
+is `stonef` — the palette of `dFloorWet`, the MID form of the `dBasin` tide
+tile. Decorating a floor with `,` in those three says "there is water here".
+
+| theme | `,` is |
+|---|---|
+| Grotto, Cistern, Salt | the same tile in **wet-stone grey** — do not use as decoration |
+| Coral, Bog, Abyss | the same tile in another colour — weak variation, safe |
+| Wood, Palace | **a genuinely different tile** — use it freely |
+
+`validate.mjs` proves a theme never changes a tile's FLAGS, which is the right
+check and is exactly blind to a theme changing what a tile appears to SAY. In a
+tide game the floor palette is vocabulary. Look at the room.
+
+**Scenery: `U` and `M`.** Both are SOLID — read the traps list in CLAUDE.md and
+run `walk-dungeons.mjs` after placing one. Place masks INTO a wall and urns
+standing against one, which is where the source puts them; `d1` `0,5,3`'s east
+lobe is the worked example. The urn's cell is an object, so the ripper keys the
+source's floor out from behind it and each theme's urn names its own floor as
+`underArt` — that is why there is one urn per theme rather than one urn.
+
+**Adding a themed tile**, end to end, because every step has a checker and
+missing one fails silently:
+
+1. Find the pick. `assets/tilesets/seasons-dungeons.json` records every distinct
+   tile on the Seasons dungeon map with its occurrence count and one coordinate.
+   Frequency is what separates a wall from a decoration without a human looking.
+2. Add it to `PICKS` in `tools/rip-dungeon-themes.py`, citing the coordinate and
+   the count. If it is an OBJECT rather than a floor or a wall, add its name to
+   `KEY_BACKGROUND` too, or it will draw the source room's floor behind it.
+3. `python3 tools/rip-dungeon-themes.py --sheet` and **look at the contact
+   sheet**, then re-emit. Run the ripper once BEFORE you change it to confirm it
+   reproduces byte-identically. Never hand-edit the generated file.
+4. A wall must tile with itself in BOTH axes. Render a 4x4 of it. Wall RUNS are
+   directional and read as a picket fence repeated — `hatchWall` and `forgeWall`
+   are both in the file, both unused, and `tools/shots/wallruns.png` is why.
+5. Add the tiledef in `tiles-core.js`, one per theme if it needs an `underArt`.
+6. Add the legend character: `theme()` in `legends.js` for a themed tile, the
+   shared `dungeon` legend for one that is not.
+7. Add the pair to `SHARED` in `tools/validate.mjs`. **Miss this step and a
+   theme is free to change the rules** — a themed tile whose flags differ from
+   its shared counterpart moves where the player can walk, and it surfaces as a
+   stranded room in a dungeon nobody edited.
+
+`validate.mjs` now fails on extracted art no tiledef draws, and on a tiledef no
+legend, tide variant or transform can reach. Both of those were true of the
+scenery for the whole life of P7.5 step 8 and nothing noticed.
+
 **What you do not have to think about.** The camera, the render cache, the
 minimap and the seam arithmetic are all done. The camera clamps to
 `[0, room.pw - VIEW_W]`, which is empty in a 1x1 room, so it is provably a no-op

@@ -17,6 +17,10 @@
 // Each pick cites its coordinate on the source sheet and how many times the
 // tile occurs on the map — frequency is what separates a wall from a one-off
 // decoration. See tools/rip-dungeon-maps.py and assets/tilesets/.
+//
+// A tile in KEY_BACKGROUND is an OBJECT, and the floor the source drew behind
+// it has been keyed to `.` — transparent. Its tiledef must name an `underArt`,
+// or it draws a hole.
 
 import { registerPalettes } from '../gfx/palettes.js';
 
@@ -403,22 +407,22 @@ export const DUNGEON_THEME_ART = {
 
   // x80 a wide-bellied urn — oracle-seasons-dungeon-backgrounds.png @ 900,42
   urn: `
-    0000003333300000
-    0000031111130000
-    0000311222113000
-    0003312333213300
-    0032312333213230
-    0032311333113230
-    0322321111123223
-    0322232111232223
-    0322223333322223
-    0332221111122233
-    0323222111222323
-    0321332222233123
-    0031113333311130
-    0032111111111230
-    0003321111123300
-    0000033333330000`,
+    ......33333.....
+    .....3111113....
+    ....311222113...
+    ...33123332133..
+    ..3231233321323.
+    ..3231133311323.
+    .322321111123223
+    .322232111232223
+    .322223333322223
+    .332221111122233
+    .323222111222323
+    .321332222233123
+    ..3111333331113.
+    ..3211111111123.
+    ...33211111233..
+    .....3333333....`,
 
 };
 

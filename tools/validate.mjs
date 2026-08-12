@@ -4,7 +4,8 @@
 // Checks:
 //   * every art string is rectangular and the expected size
 //   * every tile definition is well formed and tide variants resolve
-//   * every room grid is exactly 8 rows x 10 columns
+//   * every room grid matches its declared size in screens
+//   * every extracted dungeon-theme tile can actually reach the screen
 //   * every legend character used by a room maps to a registered tile
 //   * every warp resolves to a room that exists
 //
@@ -12,10 +13,11 @@
 
 import { parseArt } from '../src/gfx/art.js';
 import { PALETTES } from '../src/gfx/palettes.js';
-import { TILES, validateTiles } from '../src/world/tileset.js';
+import { TILES, TRANSFORMS, validateTiles } from '../src/world/tileset.js';
 import { MAPS, validateMaps } from '../src/world/maps.js';
 import { LEGENDS, getLegend } from '../src/world/room.js';
 import { installData, ART_PACKS, SPRITE_PACKS } from '../src/data/index.js';
+import { DUNGEON_THEME_ART } from '../src/data/tiles-dungeon-themes.js';
 import { REQUIRED_SPRITES, expectedSize, allRequired } from '../src/data/sprite-manifest.js';
 
 const STRICT = process.argv.includes('--strict');
@@ -106,7 +108,8 @@ for (const [name, d] of TILES) {
 {
   const THEMES = ['Grotto', 'Coral', 'Bog', 'Cistern', 'Wood', 'Salt', 'Palace', 'Abyss'];
   const SHARED = [['dFloor', 'dFloor%'], ['dFloorCrack', 'dFloor%Alt'],
-    ['dWall', 'dWall%'], ['dWallCracked', 'dWall%X'], ['dBlock', 'dBlock%']];
+    ['dWall', 'dWall%'], ['dWallCracked', 'dWall%X'], ['dBlock', 'dBlock%'],
+    ['dUrn', 'dUrn%']];
   for (const th of THEMES) {
     for (const [base, pat] of SHARED) {
       const name = pat.replace('%', th);
@@ -116,7 +119,88 @@ for (const [name, d] of TILES) {
         problems.push(`theme ${th}: ${name} flags ${b.flags} != ${base}'s ${a.flags}`
           + ' — a theme may change the look, never the rules');
       }
+      // A tile the ripper keyed to transparency draws a hole without one, and
+      // it has to be THIS theme's floor or the object stands on the wrong
+      // dungeon's flagstones — which is the whole reason there is one per theme.
+      if (base === 'dUrn') {
+        const want = 'dFloor' + th;
+        if (b.underArt !== want) {
+          problems.push(`theme ${th}: ${name} underArt is ${JSON.stringify(b.underArt)},`
+            + ` expected '${want}' — a keyed-out object without its own floor under it is a hole`);
+        }
+      }
     }
+  }
+}
+
+// --- extracted art that nothing can put on screen -------------------------
+//
+// EXTRACTION IS ONLY WORTH ANYTHING IF A ROOM CAN NAME THE TILE, and two
+// separate links in that chain broke silently in P7.5 step 8. `lionHead` and
+// `urn` were extracted, given tiledefs, and commented "for P8 to place" — and
+// no legend ever got a character for them, so no room grid could name them and
+// the art shipped in the build unreachable for the whole life of the feature.
+// Nothing caught it: `validate` checked that themed tiles carry the right
+// FLAGS, `test.mjs` counts unauthored sprite names, and neither asks the
+// question "can anyone actually use this".
+//
+// Two checks, one per link:
+//   1. every entry in DUNGEON_THEME_ART is drawn by some tiledef;
+//   2. every tiledef built on extracted art is REACHABLE — named by a legend,
+//      or by another tile's tide variants, or as a transform target, or as
+//      someone's underArt. The last three matter: `dFloorWet` is the MID form
+//      of `dBasin` and `grateOpen` is what the Resonance Rod turns a grate
+//      into, and neither has or wants a legend character.
+//
+// An entry in UNUSED_ART is a deliberate exemption and must carry the reason,
+// the same discipline check-charms.mjs uses for the two charms that act on the
+// slotting rule itself. An exemption is not a way to silence this — it is a
+// note that the art was looked at and rejected, with what was seen.
+{
+  const UNUSED_ART = {
+    hatchWall: 'a VERTICAL run. Rendered four-wide as a top course and 4x4 as a '
+      + 'fill (tools/shots/wallruns.png): it reads as pale vertical striping both '
+      + 'ways, like railings, never like masonry. No tiledef on purpose.',
+    forgeWall: 'a horizontal run, and it does read as a barrel-vaulted top '
+      + 'course over a floor — but "the top row of a room is a different tile" '
+      + 'is a dungeon-wide authoring convention, not a tile, and no dungeon has '
+      + 'adopted one. Wire it when a P8 session decides to.',
+  };
+
+  // Art is compared by VALUE, not by name: several picks are the same pixels
+  // under different palettes (coralWall and vaultBlock, gildFloor and
+  // ruinFloorAlt), so a name-keyed index silently collapses them.
+  const drawnArt = new Set();
+  for (const [, d] of TILES) if (d.art) drawnArt.add(d.art);
+  for (const [name, art] of Object.entries(DUNGEON_THEME_ART)) {
+    if (drawnArt.has(art)) {
+      if (UNUSED_ART[name]) {
+        problems.push(`theme art '${name}': listed as unused in validate.mjs but a tiledef draws it`
+          + ' — remove the exemption');
+      }
+      continue;
+    }
+    if (UNUSED_ART[name]) continue;
+    problems.push(`theme art '${name}': extracted by rip-dungeon-themes.py and no tiledef draws it`
+      + ' — give it a tiledef, or add it to UNUSED_ART in validate.mjs with the reason');
+  }
+
+  const reachable = new Set();
+  for (const [, map] of LEGENDS) for (const t of Object.values(map)) reachable.add(t);
+  for (const [, d] of TILES) {
+    if (d.tide) for (const t of d.tide) reachable.add(t);
+    if (d.underArt) reachable.add(d.underArt);
+  }
+  for (const [, rules] of TRANSFORMS) {
+    for (const [k, v] of Object.entries(rules)) {
+      if (typeof v === 'string' && !['fx', 'drop', 'sfx', 'deny'].includes(k)) reachable.add(v);
+    }
+  }
+  const themeArt = new Set(Object.values(DUNGEON_THEME_ART));
+  for (const [name, d] of TILES) {
+    if (!d.art || !themeArt.has(d.art) || reachable.has(name)) continue;
+    problems.push(`tile '${name}': built on extracted theme art and no legend, tide variant or`
+      + ' transform can reach it — a room cannot name it, so it can never appear');
   }
 }
 

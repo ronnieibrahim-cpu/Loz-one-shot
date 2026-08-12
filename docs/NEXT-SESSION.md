@@ -155,6 +155,40 @@ Abyss are clear.** `validate.mjs` asserts a theme never changes a tile's flags,
 which is the right check and is precisely blind to a theme changing what a tile
 appears to say. In a tide game the floor palette is vocabulary.
 
+Pulling that thread found a bigger one: **in six of the eight themes `,` is not
+a second tile at all, it is the same art recoloured.** Only Wood and Palace have
+a genuinely different alt floor. So "break the floor up with the variant" is not
+available in most of the game, and it wants a new pick rather than a workaround.
+
+### Extracted art that no room could name, and it had always been so
+
+`lionHead` and `urn` were extracted in P7.5, given tiledefs, and commented in the
+file "Themed scenery, for P8 to place" — and never given a legend character. A
+room grid can only name a tile through its legend, so both shipped in every
+`dist/` drawable by nothing, for the whole life of the feature, with every
+checker green. Extraction is a four-link chain — sheet, ripper, tiledef, legend
+— and everything checked links 1 to 3.
+
+Both are wired now. `M` is a lion mask to set INTO a wall; `U` is an urn to stand
+against one. The urn needed more than wiring: its cell carries 64 pixels of the
+source room's floor, so it drew a rectangle of one dungeon's flagstones into
+every other dungeon's. The ripper now keys the border-connected background out
+to transparency and each theme has its own urn naming its own floor as
+`underArt` — `underArt` is a fixed tile name, which is why there are eight urns
+and not one. That made the urn the SIXTH themed character, so the "adding a
+seventh" path in `legends.js` is worked rather than warned about.
+
+`validate.mjs` now fails on extracted theme art no tiledef draws, and on a
+tiledef built on extracted art that no legend, tide variant or transform can
+reach. Both were verified by breaking them — removing the new legend characters
+reproduces the original bug as a named failure. Two picks are exempt with the
+reason and a screenshot: `hatchWall` and `forgeWall` are wall RUNS and read as
+railings repeated (`tools/shots/wallruns.png`).
+
+`d1` `0,5,3`'s east lobe is the first use, and "DUNGEON LOOK" in
+`docs/EXECUTION-PLAN.md` is what a dungeon session reads: what a theme gives you,
+what it does not, and the seven steps for adding a themed tile.
+
 ## What the session before that did (P8, dungeon 1: Tidewash Grotto)
 
 **D1 is re-authored around the Tidewright's Anchor, and the claim is proved

@@ -309,6 +309,52 @@ is in the page, and nothing steps until you say so.
    a tile appears to SAY. In a tide game the floor palette is vocabulary. Look at
    the room before you trust a variant tile.
 
+   Looking further while writing that down: **in six of the eight themes `,` is
+   not a second tile at all, it is the SAME art recoloured.** Only Wood and
+   Palace have a genuinely different alt floor. So "break the floor up with the
+   variant" is not available in most of the game, and a wide room has nothing to
+   put on twenty tiles of floor. That is a real gap and it wants a new pick, not
+   a workaround.
+
+7. **EXTRACTED ART THAT NO ROOM COULD NAME, FOR THE WHOLE LIFE OF THE FEATURE.**
+   `lionHead` and `urn` were extracted by `rip-dungeon-themes.py` in P7.5, given
+   tiledefs in `tiles-core.js`, and commented — in the file — "Themed scenery,
+   for P8 to place". No legend ever got a character for them. A room grid can
+   only name a tile through its legend, so the art sat in the build, in every
+   shipped `dist/`, drawable by nothing.
+
+   **Every checker was green and none of them was asking the question.**
+   `validate` proved themed tiles carry the right flags; `test.mjs` counts
+   unauthored sprite names; `check-tilesets` proves the ripper re-emits
+   byte-identically. Extraction has a four-link chain — sheet, ripper, tiledef,
+   legend — and everything checked links 1-3.
+
+   `validate.mjs` now fails on extracted theme art that no tiledef draws, and on
+   a tiledef built on extracted art that no legend, tide variant or transform
+   can reach. Both new checks were verified by breaking them: removing the
+   legend characters reproduces the original bug as a named failure.
+
+8. **A SCENERY TILE CUT FROM A ROOM CARRIES THE ROOM'S FLOOR.** Wiring `urn` up
+   was not enough — its 16x16 cell has 64 pixels of the source room's floor
+   around the object, so it drew a rectangle of one dungeon's flagstones into
+   every other dungeon's floor. The ripper now keys the border-connected
+   background out to transparency (`KEY_BACKGROUND`), border-connected rather
+   than by colour so a highlight in the floor's own colour survives, and the
+   tiledef names an `underArt` so the floor is drawn under it.
+
+   **`underArt` is a fixed tile name, which is why there is one urn per theme
+   and not one urn.** That was also the sixth themed character, so the "add a
+   seventh" path in `legends.js` is now worked rather than warned about — and
+   the step that matters is the last one: add the pair to `SHARED` in
+   `validate.mjs`, or a themed tile is free to carry different flags from the
+   tile it stands in for and it surfaces as a stranded room in a dungeon nobody
+   edited.
+
+   `panelFloor` in the ripper's own PICKS documents the same hazard from the
+   other direction (a floor tile that caught a room's frame). ALWAYS look at the
+   contact sheet, and for an object, look at it standing on a floor that is not
+   the one it was cut from.
+
 **Re-authoring D1 for the Anchor (P8), and the five things it cost.**
 
 1. **A FORGIVING TILE IN THE MIDDLE OF A GATE IS THE GATE.** Every anchor gate

@@ -6,7 +6,7 @@ It is the P8 dungeon prompt from `docs/EXECUTION-PLAN.md`, specialised to D2 and
 carrying the four things that are specific to this dungeon and would otherwise
 have to be rediscovered: the Lens cannot be a gate and needs a different kind of
 proof; the charm-case decision has a deadline and this is it; multi-screen rooms
-exist now and there is a rule for using them; and two traps landed in the P7.6
+exist now and there is a rule for using them; and three traps landed in the P7.6
 session that a room author will walk straight into.
 
 ---
@@ -47,8 +47,15 @@ WHERE D2 STANDS TODAY. `d2` is the Coral Spire: 20 rooms over two floors, boss
 `anemos` in `1,3,1`, entrance from overworld `0,10,5`, and the Lens in a chest
 in `0,4,4`. It is PRE-P8 content — it was authored before the item roster meant
 anything and it is not built around the Lens. Treat it the way D1 was treated:
-re-author it, do not decorate it. It already wears the `dungeonCoral` theme from
-P7.5 and that part is fine.
+re-author it, do not decorate it.
+
+It already wears the `dungeonCoral` theme, so its floor, walls, block and urn
+are extracted tiles and you do not have to choose a look. What that gives you
+and what it does NOT is in "DUNGEON LOOK" in EXECUTION-PLAN — read it, because
+a theme repoints six characters and every other tile in the room is shared with
+the other seven dungeons. Coral is one of the six themes where `,` is the same
+floor tile recoloured rather than a second tile, so it is weak variation but it
+is safe; it is not one of the three where `,` reads as standing water.
 
 THE HARD PART, AND IT IS THE WHOLE SESSION.
 
@@ -136,7 +143,7 @@ not need the Lens at all, and two branches on separate screens may make the Lens
 mandatory for the wrong reason - because they are off-camera, not because they
 are at another tide level. Decide that deliberately and write down which it is.
 
-TWO TRAPS FROM THE P7.6 SESSION, both of which land on room authors.
+THREE TRAPS FROM THE P7.6 SESSION, all of which land on room authors.
 
   1. A LOCKED DOOR MUST WALL OFF WHAT IT LOCKS. `walk-dungeons.mjs` now asserts
      every dDoorLocked/dDoorBoss tile separates its room, on one axis, at ALL
@@ -152,6 +159,18 @@ TWO TRAPS FROM THE P7.6 SESSION, both of which land on room authors.
      `{ pickup: 'key' }` drops it on the floor. Both are real. The dungeon
      walker now counts both; it did not, and D1 was walked for months believing
      it had two keys for three locks.
+
+  3. EXTRACTED ART IS ONLY WORTH HAVING IF A ROOM CAN NAME IT. `lionHead` and
+     `urn` were extracted in P7.5, given tiledefs, commented "for P8 to place" -
+     and never given a legend character, so for the whole life of that feature
+     no room grid could reference them and the art shipped in the build
+     unreachable. They are wired now: `M` is a lion mask to set INTO a wall and
+     `U` is an urn to stand against one, themed per dungeon, and `d1` `0,5,3`'s
+     east lobe is the worked example. validate.mjs now fails on extracted art
+     that no tiledef draws and on a tiledef no legend can reach, so it cannot
+     recur - but if you ADD a themed tile, follow all seven steps in "DUNGEON
+     LOOK". The last one (teaching validate.mjs the new pair) is what stops a
+     theme silently changing where the player can walk.
 
   And one that does NOT apply to you, stated so you can use the tile freely:
   three of the eight dungeon themes register their alt floor `,` in the `stonef`
@@ -240,6 +259,6 @@ session cannot derive for itself:
 3. **The charm-case deadline is arbitrary from inside D2** and only makes sense
    from the roadmap: `CHARM_LOW_ESSENCES` is 2, D2 is the second essence, and
    the unlock fires on an NPC conversation the player has no reason to have.
-4. **Multi-screen rooms are new**, and the two P7.6 traps (bypassable locks, the
-   water-coloured alt floor) are both things a room author trips over rather
-   than reads about.
+4. **Multi-screen rooms are new**, and the three traps behind them — bypassable
+   locks, the water-coloured alt floor, and extracted art no room could name —
+   are all things a room author trips over rather than reads about.

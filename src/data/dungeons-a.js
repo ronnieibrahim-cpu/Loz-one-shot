@@ -497,7 +497,20 @@ export function installDungeonsA() {
         // The door is load-bearing in one direction that matters: `0,4,3`, the
         // gauge room with the Piece of Heart, is entered ONLY through it.
         //
-        // THE FLOOR IS DELIBERATELY PLAIN, AND `,` IS NOT AVAILABLE HERE.
+        // THE SCENERY IN THE EAST LOBE IS THE POINT OF THE `M`/`U` WIRING.
+        //
+        // `U` is `dUrnGrotto` and `M` is `dLionHead`, both extracted by
+        // `tools/rip-dungeon-themes.py` in P7.5 and both unreachable from any
+        // room grid until now — they had tiledefs and a comment saying "for P8
+        // to place" and no legend character, so the art shipped in the build
+        // with nothing able to name it. These four tiles are the first use.
+        //
+        // Placed the way the source places them: masks set INTO the far wall,
+        // urns standing against it. Both are SOLID, and they are seated in the
+        // outer row of the lobe where nothing routes through — a solid tile in
+        // the middle of this room would narrow the arena the widening bought.
+        //
+        // THE FLOOR IS STILL DELIBERATELY PLAIN, AND `,` IS NOT AVAILABLE HERE.
         //
         // Twenty tiles of one floor tile is the failure mode a wide room
         // invites, and the obvious answer is the theme's own variant — `,`,
@@ -518,8 +531,8 @@ export function installDungeonsA() {
         name: 'Clawcrab Den',
         size: [2, 1],
         map: [
-          '####..##############',
-          '#........##........#',
+          '####..#######M##M###',
+          '#........##.U....U.#',
           '##2....2....2....2.#',
           '..L................#',
           '..#................#',
