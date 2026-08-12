@@ -18739,15 +18739,49 @@ function installDungeonsA() {
         //
         // The pinch at columns 9-10 on rows 1 and 6 is what keeps it reading as
         // one den with two lobes rather than as one twenty-tile box.
+        //
+        // THE LOCKED DOOR AT 2,3 IS THE ONLY WAY BETWEEN THE DEN AND THE WEST
+        // ANTECHAMBER, and columns 0-1 of rows 2 and 5 are wall to make that
+        // true. It was not true before — row 2 ran clear from column 1, so a
+        // player standing in the antechamber could step up, round the door and
+        // straight on, and key 3 bought nothing. That was so in the original
+        // 10-wide room too; the widening did not cause it, it only made someone
+        // walk the room and notice. Nothing in the toolchain catches a lock
+        // with a way round it: `walk-dungeons.mjs` spends a key on any lock it
+        // can reach and then asks only whether every room is reachable, so a
+        // bypassable lock reads as a lock that got opened. If you add a locked
+        // door anywhere, wall the four tiles round it yourself.
+        //
+        // The door is load-bearing in one direction that matters: `0,4,3`, the
+        // gauge room with the Piece of Heart, is entered ONLY through it.
+        //
+        // THE FLOOR IS DELIBERATELY PLAIN, AND `,` IS NOT AVAILABLE HERE.
+        //
+        // Twenty tiles of one floor tile is the failure mode a wide room
+        // invites, and the obvious answer is the theme's own variant — `,`,
+        // `dFloorGrottoAlt`, extracted by `tools/rip-dungeon-themes.py` in the
+        // same P7.5 pass that gave this dungeon its walls and floor. It was
+        // laid in as a scoured track under the claw, screenshotted, and taken
+        // straight back out: `dFloorGrottoAlt` and `dFloorWet` — the MID form
+        // of the `dBasin` tide tile this room is dotted with — carry the SAME
+        // PALETTE, `stonef`. So the decoration read as standing water, in a
+        // room whose four real damp patches are the only thing on the floor
+        // that is supposed to. A floor variant that lies about the tide is
+        // worse than a bare floor.
+        //
+        // This is a property of three of the eight themes, not of this room:
+        // Grotto, Cistern and Salt all have an Alt floor in `stonef`. In those
+        // dungeons `,` is a wet-looking tile and must be treated as one. Coral,
+        // Bog, Wood, Palace and Abyss are clear and can use it freely.
         name: 'Clawcrab Den',
         size: [2, 1],
         map: [
           '####..##############',
           '#........##........#',
-          '#.2....2....2....2.#',
+          '##2....2....2....2.#',
           '..L................#',
           '..#................#',
-          '#.2....2....2....2.#',
+          '##2....2....2....2.#',
           '#........##........#',
           '####################',
         ],

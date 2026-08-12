@@ -108,13 +108,52 @@ takes the full `TIDE_SWEEP_FRAMES` to cross the ROOM.
   `scroll: false`, and the overworld cannot have a wide room, so the
   camera-aware slide in `drawTransition` has no room in the game that can reach
   it.
-- **D1's Clawcrab Den has a locked door that never locked anything.** The door
-  at `(2,3)` is walkable round via row 2, and was in the original 1x1 grid too —
-  verified against the pre-conversion data. Left alone as out of scope; written
-  up in HANDOFF, because the real finding is that **nothing in the toolchain
-  proves a locked door is load-bearing.**
 - **Enlarging the miniboss arena is a balance change nobody has played.** The
   Clawcrab now has twenty tiles to fight in and sits at the far end.
+- **The east lobe's floor is bare** and has to stay that way: the theme's floor
+  variant is a water-coloured tile in this dungeon (see below). Twenty tiles of
+  one floor tile is the thing a wide room invites and there is currently no
+  answer to it in the Grotto, Cistern or Salt themes.
+
+### Two bugs found by walking the room, and both are fixed
+
+Neither was findable by reading, and each was hiding the other.
+
+**D1's Clawcrab Den had a locked door that locked nothing.** Row 2 ran clear
+past the door in the room's west wall, so Small Key 3 bought nothing and the
+Piece of Heart behind it was free. True of the original 1x1 grid too — verified
+against the pre-conversion data, so the widening did not cause it, it only put
+someone in the room. Columns 0-1 of rows 2 and 5 are now wall and the door is
+the only way between the den and the west antechamber, at all three tide levels.
+
+**Sealing it then failed `walk-dungeons.mjs`** with `0,4,3` unreachable: D1 has
+three locks and the walker could only count two keys, because the third is a
+`{ pickup: 'key' }` chest and the counter knew only `{ item: 'key' }`. Both are
+real forms — `openChest` grants one and spawns the other. The undercount was
+harmless for exactly as long as one lock was bypassable.
+
+**`walk-dungeons.mjs` now asserts every locked door separates its room**, on one
+axis, at all three tide levels — 35 doors, all passing. The three-levels clause
+is the part with teeth: a door that separates at LOW and not at HIGH is a locked
+door plus a conch, and the player always has the conch. If you place a locked
+door in D2-D6, wall the four tiles round it.
+
+### The P7.5 theme tiles, and one that cannot be used here
+
+D1 already wears the Grotto theme from P7.5 step 8 — its floor, wall, bombable
+wall and block are all extracted tiles, so "use the P7.5 tilesets" was already
+true of this room. The one thing left to add was `,`, the theme's floor variant,
+laid as a scoured track to break up twenty tiles of identical floor. It went in,
+was screenshotted, and came straight back out: **`dFloorGrottoAlt` is registered
+in the `stonef` palette, which is the palette of `dFloorWet` — the MID form of
+the `dBasin` tide tile this room is dotted with.** The decoration read as
+standing water in a room whose only other grey tiles are the damp patches that
+are meant to.
+
+**Grotto, Cistern and Salt all have this collision; Coral, Bog, Wood, Palace and
+Abyss are clear.** `validate.mjs` asserts a theme never changes a tile's flags,
+which is the right check and is precisely blind to a theme changing what a tile
+appears to say. In a tide game the floor palette is vocabulary.
 
 ## What the session before that did (P8, dungeon 1: Tidewash Grotto)
 
@@ -737,7 +776,9 @@ Confirm the baseline before changing anything, and keep every line below green:
                                                asserts its `span`: one
                                                transition in the whole run, and
                                                the camera at both clamps.
-  node tools/walk-dungeons.mjs                 28/28 (d1 is 24 rooms now)
+  node tools/walk-dungeons.mjs                 29/29 (d1 is 24 rooms now; the
+                                               29th asserts every locked door
+                                               actually separates its room)
   node tools/check-overworld.mjs               17/17 (the field flood is ~30s
                                                of its runtime)
   node tools/check-gates.mjs                   15/15 (pins ?seed= and owns the
@@ -926,6 +967,21 @@ declare a size at all and registerMap throws if it does. Everything else — the
 camera, the render cache, the minimap, the seam arithmetic — is done and every
 checker reasons over room.tw/room.th. `d1` `0,5,3` is the worked example; the
 sizing rule and the pacing number are in EXECUTION-PLAN under "ROOM SIZE".
+
+A LOCKED DOOR MUST WALL OFF WHAT IT LOCKS. walk-dungeons.mjs now asserts every
+dDoorLocked/dDoorBoss tile separates its room on one axis at ALL THREE tide
+levels. D1 shipped one that did not — you could step round it along the next row
+— and nothing caught it, because the dungeon flood spends a key on any lock it
+can reach and then only asks whether every room came out reachable. Wall the
+four tiles round a door when you place it.
+
+A DUNGEON THEME'S FLOOR VARIANT `,` IS WATER-COLOURED IN THREE OF THE EIGHT
+THEMES. Grotto, Cistern and Salt register their Alt floor in `stonef`, which is
+the palette of dFloorWet — the MID form of the dBasin tide tile. Decorating a
+floor with it in those dungeons says "there is water here". Coral, Bog, Wood,
+Palace and Abyss are clear. validate.mjs checks that a theme never changes a
+tile's FLAGS and is blind to it changing what a tile appears to SAY, so look at
+the room.
 
 AN ANCHOR GATE IS ONE RULE PLUS GEOMETRY. No tile between the two bands may be
 walkable at BOTH levels — the conch can be sounded anywhere the player can

@@ -262,17 +262,52 @@ is in the page, and nothing steps until you say so.
    screen faster. That is the right behaviour — the wipe is an event in the
    room — but it means a screenshot tool has to settle for 23 frames, not 8.
 
-5. **D1's Clawcrab Den has a locked door that never locked anything, and it
-   predates this session.** `0,5,3`'s door at `(2,3)` can be walked round via
-   row 2, in the original 1x1 grid as much as in the 2x1 one — verified against
-   the pre-conversion data before writing this down. `walk-dungeons.mjs` cannot
-   see it: it spends keys on locks it can reach and only asks whether every room
-   is reachable, so a lock with a way round it reads as a lock that got opened.
-   **Nothing in the toolchain proves a locked door is load-bearing.** It was left
-   alone here because fixing it is a D1 design change and this session had a
-   one-room budget, but the next D1 pass should close it, and a checker that
-   asserts "the far side of a lock is unreachable with the lock shut" would be
-   worth more than the fix.
+5. **A LOCKED DOOR THAT NEVER LOCKED ANYTHING, AND THE SECOND FAULT THAT WAS
+   HIDING BEHIND IT.** This is the one to read twice, because two bugs each
+   concealed the other and the pair survived every checker in the repo.
+
+   `0,5,3`'s door at `(2,3)` could be walked round via row 2 — in the original
+   1x1 grid as much as in the 2x1 one, verified against the pre-conversion data.
+   So Small Key 3 bought nothing and the Piece of Heart behind the door was
+   free. `walk-dungeons.mjs` structurally cannot see that: it spends a key on
+   any lock it can reach and then asks only whether every room came out
+   reachable, so **a lock with a way round it is indistinguishable from a lock
+   that got opened.**
+
+   Sealing the door then failed the dungeon walker with `0,4,3` unreachable —
+   because D1 has three locks and the walker could only count TWO keys. The
+   third is a `{ pickup: 'key' }` chest, and the counter knew only
+   `{ item: 'key' }`. Both are real forms: `Game.openChest` grants `item:` and
+   spawns `pickup:`. The undercount had been harmless for as long as one of the
+   three locks was bypassable, so the flood never asked for the key it could not
+   count.
+
+   **The lesson is about the shape of the failure, not the room.** Two defects
+   in different files, each of which made the other invisible, in a dungeon that
+   was green on ten checkers. Neither is findable by reading; the first was
+   found by walking the room with a camera, and the second by fixing the first.
+
+   Both are now closed, and `walk-dungeons.mjs` has a new assertion —
+   **every `dDoorLocked`/`dDoorBoss` tile must separate its room, on one axis,
+   at all three tide levels.** All 35 doors in the game pass. The three-levels
+   clause matters: a door that separates at LOW and not at HIGH is not a locked
+   door, it is a locked door and a conch, and the player always has the conch.
+   **If you place a locked door, wall the four tiles round it**; the checker
+   will tell you if you did not.
+
+6. **THREE OF THE EIGHT DUNGEON THEMES HAVE AN ALT FLOOR THAT LOOKS LIKE
+   WATER.** `,` is the theme's floor variant and the obvious way to break up a
+   wide room's floor. In Grotto, Cistern and Salt it is registered in the
+   `stonef` palette — which is the palette of `dFloorWet`, the MID form of the
+   `dBasin` tide tile. So a decorative scour laid in the Clawcrab Den read as
+   standing water in a room whose only other grey tiles are the damp patches
+   that are supposed to. It was laid in, screenshotted, and taken straight back
+   out. Coral, Bog, Wood, Palace and Abyss are clear.
+
+   `validate.mjs` cannot catch this: it asserts a theme never changes a tile's
+   FLAGS, which is the right check and is exactly blind to a theme changing what
+   a tile appears to SAY. In a tide game the floor palette is vocabulary. Look at
+   the room before you trust a variant tile.
 
 **Re-authoring D1 for the Anchor (P8), and the five things it cost.**
 

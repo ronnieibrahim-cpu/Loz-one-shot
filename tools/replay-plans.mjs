@@ -352,7 +352,8 @@ export const PLANS = {
   // separates the two is in the `assert` block, and both halves of it matter:
   //
   //   roomChanges: 1   Exactly ONE transition fires in the whole run: the one
-  //                    at the boundary between the Two Gauges and the den. The
+  //                    at the boundary between the Drowned Chamber and the den.
+  //                    The
   //                    internal screen seam at x=10 is crossed twice and fires
   //                    nothing. If a seam were still a boundary this would be 3.
   //   camMaxX: 160     The camera reached the east clamp, `room.pw - VIEW_W`.
@@ -386,21 +387,27 @@ export const PLANS = {
       tide: 1,
       // Starting in the NEIGHBOUR, so the one transition in the run is a real
       // room boundary being crossed rather than a `setup.enter`.
-      enter: ['d1', 0, 4, 3, 128, 56, 'right'],
+      //
+      // The Drowned Chamber to the NORTH, not the Two Gauges to the west: the
+      // west way in is through a Small Key door, and this run carries no key.
+      // That door used to be walkable round, which is how the route was written
+      // the first time; sealing it is the other half of this change.
+      enter: ['d1', 0, 5, 2, 72, 96, 'down'],
     },
     steps: [
       ['wait', 20],
-      ['exit', 'right', 300],
+      ['goto', 4, 6, 400],
+      ['exit', 'down', 300],
       ['wait', 30],
       // East to the far wall of the second screen. Tile 18 puts Link's centre
       // at 296, which is past the deadzone's right edge with the camera already
       // at 160, so the clamp is reached rather than approached.
       ['goto', 18, 3, 900],
       ['wait', 60],
-      // Back west along row 2, which is walled at x=0 — so the walk ends
+      // Back west along row 1, which is walled at x=0 — so the walk ends
       // against stone with the camera home, instead of stepping out of the room
       // and firing a second transition.
-      ['goto', 1, 2, 900],
+      ['goto', 1, 1, 900],
       ['wait', 60],
     ],
     assert: { roomChanges: 1, camMaxX: 160, camEndX: 0, camMaxY: 0 },

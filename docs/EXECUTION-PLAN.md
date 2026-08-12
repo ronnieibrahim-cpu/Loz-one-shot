@@ -840,6 +840,19 @@ part worth copying too: crossing the internal screen seam fires NO transition
 camera reaches both of its clamps (`camMaxX: 160`, `camEndX: 0`) and never moves
 on the axis the room is one screen tall on (`camMaxY: 0`).
 
+**Two things a wide room will make you want, and one of them is a trap.**
+
+* **Breaking up the floor.** Twenty tiles of one floor tile is the failure mode
+  a large room invites. The theme's own variant `,` is the obvious answer and it
+  is NOT available in every dungeon: Grotto, Cistern and Salt register their Alt
+  floor in the `stonef` palette, which is the palette of `dFloorWet` — the MID
+  form of the `dBasin` tide tile. In those three, `,` reads as standing water.
+  Coral, Bog, Wood, Palace and Abyss are clear. `validate.mjs` proves a theme
+  never changes a tile's FLAGS and is exactly blind to this, so look at the room.
+* **Locked doors.** A large room has more ways round a door in it. Wall the four
+  tiles round any `L` you place; `walk-dungeons.mjs` now asserts every locked
+  and boss door separates its room on one axis at all three tide levels.
+
 **What you do not have to think about.** The camera, the render cache, the
 minimap and the seam arithmetic are all done. The camera clamps to
 `[0, room.pw - VIEW_W]`, which is empty in a 1x1 room, so it is provably a no-op
