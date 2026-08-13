@@ -220,6 +220,34 @@ is in the page, and nothing steps until you say so.
 
 ## Hard-won lessons — do not rediscover these
 
+**A FINISHED DUNGEON CAN SIT ON AN UNMERGED BRANCH AND BE BUILT A SECOND TIME.**
+This one cost most of a session and it cost it twice over. D2 was re-authored
+around the Lens, proved by a new checker, replayed, documented and committed —
+on `claude/p8-dungeon-generation-faqood`, which was never merged. `main` still
+carried the pre-P8 Coral Spire, and `NEXT-SESSION.md` and `EXECUTION-PLAN.md` on
+`main` still said "D2 outstanding", because the session that finished D2 updated
+them on its own branch. A later session read `main`, believed it, and rebuilt
+the whole dungeon from scratch with a different primitive before anyone noticed.
+
+Nothing was broken. Both dungeons worked and both were proved. The defect is
+that **the record of what exists lived in a branch nobody thought to look at**,
+and every document in the repo is written on the assumption that the last
+session's work is on trunk.
+
+Three things came out of it, and all three are cheap:
+
+- `docs/DUNGEON-STATUS.md` is the board, and a dungeon is done only when that
+  table says so AND NAMES THE COMMIT. A status sentence with no commit behind it
+  is a claim, not a record.
+- `git ls-remote --heads origin` before starting a dungeon. Branch names in this
+  repo carry the work (`p8-dungeon-generation-*`), so the duplicate was visible
+  in one command from the start.
+- When two branches hold the same work, take the more complete one wholesale —
+  `git revert` your own, then cherry-pick theirs — rather than merging two
+  rewrites of the same rooms. Both versions of D2 replaced the entire dungeon;
+  a merge would have produced a conflict in every room and a dungeon that was
+  neither design.
+
 **The Lens forks (P8/D2), and the four things they cost.**
 
 1. **A CHECKER'S FLOOD IS ONLY AS GOOD AS ITS MOVEMENT VERBS, AND

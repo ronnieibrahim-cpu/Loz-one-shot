@@ -18,6 +18,16 @@ dungeon; read their two "P8 status" tables in `docs/EXECUTION-PLAN.md` and the
 header comments at the top of `d1` and `d2` in `src/data/dungeons-a.js`, and
 build the next one.
 
+**`docs/DUNGEON-STATUS.md` is the board and it is what a dungeon session opens
+first.** It carries the same fact in a form that cannot rot: every dungeon with
+its status and the commit it landed in, the checklist that defines "done", and
+each outstanding dungeon written out as a to-do with the problem it has to
+solve. Tick it before you finish — a dungeon session that leaves that file
+unchanged has not reported its work, whatever else it wrote. It also carries the
+reason it exists: D2 was finished on a branch that was never merged, so `main`
+said "outstanding" for a dungeon that was done, and it was nearly built twice.
+Run `git ls-remote --heads origin` before you start.
+
 D2 was verified against the constraint list a second time, on a branch other
 than the one that authored it, before this line was written — content counted
 out of the live map data rather than read off the table: 24 rooms over 2 floors,

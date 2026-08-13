@@ -218,6 +218,14 @@ dungeons' themes can be stated in the same sentence, one of them is wrong.
 - `main` is trunk. Branch from it. One prompt = one session = one branch.
 - Update `docs/NEXT-SESSION.md` before the session ends, losslessly. A future
   session that reads only that file must be able to continue.
+- **A dungeon session starts and ends at `docs/DUNGEON-STATUS.md`.** It is the
+  board: which dungeons are done, which commit each landed in, the checklist
+  that defines "done", and every outstanding one as a to-do with the problem it
+  has to solve written out. Read it before designing anything and tick it before
+  you finish. A dungeon is done when that table says so and names a commit —
+  **and one session's work is invisible to the next until it is merged**, which
+  is how D2 came within a hair of being built twice. Before starting one, run
+  `git ls-remote --heads origin` and look for a branch that has already done it.
 - Record surprises in `docs/HANDOFF.md` under the hard-won-lessons section.
   Cost that was paid once should not be paid twice.
 - Commit messages describe what changed in the game, not what changed in the

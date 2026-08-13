@@ -760,6 +760,11 @@ is the only thing a D2-D6 session needs to read about room size.
 
 #### P8 status: D1 and D2 done, D3-D6 outstanding
 
+**The live board is `docs/DUNGEON-STATUS.md`** — statuses, the commit each
+finished dungeon landed in, the "done" checklist, and every outstanding dungeon
+as a to-do. This section is the reasoning behind the two that are finished; that
+file is the state, and it is the one to update.
+
 Both finished dungeons were checked against the constraint list by counting the
 live map data, not by reading these tables back, and every checker in CLAUDE.md
 was re-run green afterwards. **D3, the Bogwater Sanctum and the Kelp-Soled
