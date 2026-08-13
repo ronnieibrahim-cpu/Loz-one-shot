@@ -747,6 +747,17 @@ export const LENS_SHIMMER_FRAMES = 48;
  *  has to be slow enough that taking the floor route is a decision. */
 export const SINK_SPEED = 160;
 
+/** px/f — a Bogwater torrent, the current the Sanctum is built out of.
+ *  derived, and the derivation is the whole point: it is strictly GREATER than
+ *  SWIM_SPEED (192 sp/f = 0.75 px/f), so a swimmer pressing into it nets
+ *  backwards and can never make headway, while a walker on the floor is not
+ *  touched by a current at all. An ordinary riptide is 0.55 px/f — less than a
+ *  swimmer's own speed — so it is a tax on the surface route and not a barrier,
+ *  which is why D3 needed a second, stronger current rather than reusing it.
+ *  Retune SWIM_SPEED and tools/check-cleats.mjs re-proves every torrent room
+ *  against the new ratio instead of quietly passing. */
+export const TORRENT_PUSH = 0.9;
+
 /** f — the descent when sink mode is entered over deep water, and the ascent
  *  when it is left. Control is suspended for the whole of it. guessed. */
 export const SINK_ENTER_FRAMES = 18;

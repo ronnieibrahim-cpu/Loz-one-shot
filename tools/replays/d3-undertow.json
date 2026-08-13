@@ -1,0 +1,250 @@
+{
+ "name": "d3-undertow",
+ "note": "The Undertow: swim west into the torrent and lose ground, then take the soles down and walk the same channel",
+ "engine": 1,
+ "setup": {
+  "seed": 20260806,
+  "playerName": "LINK",
+  "items": {
+   "sword": 1,
+   "conch": 1,
+   "shield": 1,
+   "cleats": 1
+  },
+  "equipB": "cleats",
+  "equipA": "shield",
+  "maxHearts": 12,
+  "hearts": 12,
+  "tide": 1,
+  "enter": [
+   "d3",
+   0,
+   2,
+   3,
+   144,
+   56,
+   "left"
+  ]
+ },
+ "assert": {
+  "roomChanges": 1
+ },
+ "span": {
+  "roomChanges": 1,
+  "camMinX": 0,
+  "camMaxX": 0,
+  "camMinY": 0,
+  "camMaxY": 0,
+  "camEndX": 0,
+  "camEndY": 0
+ },
+ "buttons": [
+  "up",
+  "down",
+  "left",
+  "right",
+  "a",
+  "b",
+  "start",
+  "select"
+ ],
+ "frames": 561,
+ "input": [
+  [
+   0,
+   30
+  ],
+  [
+   4,
+   90
+  ],
+  [
+   0,
+   20
+  ],
+  [
+   32,
+   1
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   49
+  ],
+  [
+   4,
+   300
+  ],
+  [
+   0,
+   40
+  ]
+ ],
+ "trailEvery": 60,
+ "trail": [
+  {
+   "f": 60,
+   "x": 135,
+   "y": 56,
+   "hp": 12,
+   "e": 4,
+   "d": 0,
+   "r": "0,2,3"
+  },
+  {
+   "f": 120,
+   "x": 135,
+   "y": 56,
+   "hp": 12,
+   "e": 4,
+   "d": 0,
+   "r": "0,2,3"
+  },
+  {
+   "f": 180,
+   "x": 136,
+   "y": 56,
+   "hp": 12,
+   "e": 0,
+   "d": 0,
+   "r": "0,2,3"
+  },
+  {
+   "f": 240,
+   "x": 135,
+   "y": 56,
+   "hp": 12,
+   "e": 0,
+   "d": 0,
+   "r": "0,2,3"
+  },
+  {
+   "f": 300,
+   "x": 98,
+   "y": 56,
+   "hp": 12,
+   "e": 2,
+   "d": 0,
+   "r": "0,2,3"
+  },
+  {
+   "f": 360,
+   "x": 61,
+   "y": 56,
+   "hp": 12,
+   "e": 1,
+   "d": 0,
+   "r": "0,2,3"
+  },
+  {
+   "f": 420,
+   "x": 23,
+   "y": 56,
+   "hp": 12,
+   "e": 1,
+   "d": 0,
+   "r": "0,2,3"
+  },
+  {
+   "f": 480,
+   "x": 145,
+   "y": 56,
+   "hp": 12,
+   "e": 5,
+   "d": 1,
+   "r": "0,1,3"
+  },
+  {
+   "f": 540,
+   "x": 104,
+   "y": 56,
+   "hp": 12,
+   "e": 5,
+   "d": 2,
+   "r": "0,1,3"
+  }
+ ],
+ "expect": {
+  "frame": 561,
+  "mapId": "d3",
+  "room": "0,1,3",
+  "floor": 0,
+  "x": 104,
+  "y": 56,
+  "z": 0,
+  "dir": "left",
+  "playerId": 1,
+  "hearts": 12,
+  "maxHearts": 12,
+  "rupees": 0,
+  "kills": 0,
+  "deaths": 0,
+  "keys": 0,
+  "essences": [],
+  "items": [
+   "cleats",
+   "conch",
+   "shield",
+   "sword"
+  ],
+  "dungeonMap": false,
+  "chartstone": false,
+  "flags": [],
+  "doorsChanged": 0,
+  "secretsSeen": 3,
+  "chestsOpened": 0,
+  "tide": 1,
+  "probeLevels": null,
+  "probePix": null,
+  "mode": "play",
+  "entities": 5,
+  "enemies": 1,
+  "roomSeed": 1737802562,
+  "roomDraws": 2,
+  "globalSeed": 781976111,
+  "globalDraws": 0
+ }
+}

@@ -12,42 +12,94 @@ maintain and the most expensive thing to not have.
 
 ## Where P8 stands, in one line
 
-**D1 and D2 are DONE and COMPLIANT. D3, the Bogwater Sanctum and the
-Kelp-Soled Cleats, is the next action item.** Do not re-author either finished
-dungeon; read their two "P8 status" tables in `docs/EXECUTION-PLAN.md` and the
-header comments at the top of `d1` and `d2` in `src/data/dungeons-a.js`, and
-build the next one.
+**D1, D2 and D3 are DONE and COMPLIANT. D4, the Cliffside Cistern and the
+Squall Bellows, is the next action item.** Do not re-author a finished dungeon.
 
 **`docs/DUNGEON-STATUS.md` is the board and it is what a dungeon session opens
-first.** It carries the same fact in a form that cannot rot: every dungeon with
-its status and the commit it landed in, the checklist that defines "done", and
-each outstanding dungeon written out as a to-do with the problem it has to
-solve. Tick it before you finish — a dungeon session that leaves that file
-unchanged has not reported its work, whatever else it wrote. It also carries the
-reason it exists: D2 was finished on a branch that was never merged, so `main`
-said "outstanding" for a dungeon that was done, and it was nearly built twice.
-Run `git ls-remote --heads origin` before you start.
+first.** Every dungeon with its status and the commit it landed in, the
+checklist that defines "done", and each outstanding dungeon written out as a
+to-do with the problem it has to solve. Tick it before you finish — a dungeon
+session that leaves that file unchanged has not reported its work. It also
+carries the reason it exists: D2 was finished on a branch that was never merged,
+so trunk said "outstanding" for a dungeon that was done and it was nearly built
+twice. **Run `git ls-remote --heads origin` before you start.**
 
-D2 was verified against the constraint list a second time, on a branch other
-than the one that authored it, before this line was written — content counted
-out of the live map data rather than read off the table: 24 rooms over 2 floors,
-the Lens at room 14, 2 small keys against 2 locks plus a Boss Key, the Reefguard
-at 71%, the Heart Container on `bossDead`, essence 2, and two rooms larger than
-1x1 out of 24 (a 2x1 and a 1x2, neither of them a fork). Every checker in
-CLAUDE.md's table was re-run green on that branch, including the ones D2 did not
-touch: validate OK, check-lens 24/24, check-anchor 14/14, walk-dungeons 29/29,
-solve-switches 16 rooms, check-items 78/78, check-charms 63/63, check-motion
-8/8, check-gates 15/15, check-overworld 17/17, test 58/58, replay 26/26,
-check-tilesets 6/6, scan-sprites 0 hard findings. `rip-terrain.py`, `rip-hud.py`
-and `rip-dungeon-themes.py` all re-emitted byte-identically, and `npm run build`
-reproduced the committed `dist/oracle-of-tides.html` exactly — so the shipped
-file is the game, not a stale copy of it.
+### What the last session did (P8/D3, the Bogwater Sanctum and the Cleats)
 
-**The one thing a D3 session must not skip:** the Cleats introduce SWIMMING, and
-both provers say in their own headers that they cannot model it. Teaching one of
-them to swim is part of that session, not an extra — and `check-anchor.mjs`
-already asserts that no room outside `d1`/`d2` declares an anchor gate, so the
-first D3 room that tries will fail out loud rather than quietly prove nothing.
+**D3 is re-authored around the Cleats' two modes, and the hard part was that
+the item gates nothing.** 22 rooms, one floor, the Cleats at room 11, three
+torrent rooms, `tools/check-cleats.mjs` (15 assertions) and the `d3-undertow`
+replay. The constraint table is in `docs/EXECUTION-PLAN.md` under "P8 status",
+and the dungeon's header comment in `src/data/dungeons-a.js` states the torrent
+primitive once and builds three rooms out of it.
+
+**The problem, because D4-D6 will each have their own version of it.** The
+Anchor did not FIT in a room. The Lens could not be REQUIRED by terrain at all.
+The Cleats are required by every deep tile in the game the moment they exist —
+so proving "this room needs the Cleats" proves nothing. What is worth proving is
+the axis inside the item:
+
+> the surface route does not get there, and the floor route does.
+
+That is provable because the difference between the modes is data:
+`Player.updateTerrain` applies a tile's `push` only while `inDeep &&
+!underwater`, so comparing the push to `SWIM_SPEED` settles it in arithmetic.
+`TORRENT_PUSH` (new, in feel.js, `derived`) is deliberately GREATER than swim
+speed; an ordinary riptide at 0.55 px/f is less, which is why the riptides that
+already existed could not carry this dungeon — they are a tax on the surface
+route, not a barrier. check-cleats asserts that inequality globally before it
+looks at a single room.
+
+**`tools/check-cleats.mjs` proves four things per declared room**, and reads
+every number out of feel.js: no route without the item; no route on the surface
+at any tide level; a route on the floor; and the longest unbroken dive fits
+inside `CLEATS_BREATH_FRAMES` at `SINK_SPEED`, printed as a margin (the Kelp
+Locks is 14 tiles, 359f of 800, 55%). It also sweeps every room in the game for
+a torrent outside a declared room — a current nothing proves a way past.
+
+**Three things changed outside D3:**
+
+- **`walk-dungeons.mjs` can swim** in any dungeon of index 3 or higher, because
+  by then the player owns the Cleats. Off for d1/d2, so nothing already proved
+  about those two moved. Without it every room past the Sanctum's item read as
+  stranded.
+- **`Player.updateTerrain` dives on entry** when the soles are already set to
+  sink. `cleatMode` had been a flag that `toggleCleats` set, that the item's own
+  dialogue promised, and that nothing ever read again.
+- **`dTorrentN/S/E/W`** are new tiles built from existing art, and `T`/`t`/`V`/
+  `A` are new characters in the shared dungeon legend. They are LETTERS, not
+  digits: a digit means a tide tile, and a torrent is deep at every level, which
+  is the whole reason no conch answers one.
+
+**Seen on screen, and it is not good news.** `tools/shots/room-d3_0_2_3-tide1-
+px80.png`: the Undertow reads as a handsome flooded drain and gives no hint
+whatever that the water in it is moving. A torrent is drawn as ordinary deep
+water — same art, same palette, same blue — and the only difference is a faster
+ripple. In a still it is invisible; in motion it is nearly so; which way it runs
+is not signalled at all. **The dungeon's whole mechanic is currently learned by
+being swept out of a room once.** Written up as the top entry in
+`docs/ART-BACKLOG.md` with what to draw and in what order to try it.
+
+### What is weak about D3
+
+- **The torrent rooms are bare corridors**, for the same reason D1's anchor
+  gates were: a niche in the wall of a torrent room is somewhere to stand, and
+  somewhere to stand is somewhere the current is not. Lion masks in the walls
+  are the whole of the decoration.
+- **The three torrent rooms are one idea three times.** Two horizontal channels
+  running opposite ways and one long one. The Bogwater Drain's alcove — a thing
+  only the floor route ever sees — is the only variation, and it is optional
+  content rather than a second idea.
+- **Sink mode's other costs are unused.** No sword, no jump, no knockback and
+  carrying-things-underwater are all real differences and D3 builds on none of
+  them. The carry verb in particular (`dropCarried` fires on the surface and not
+  on the floor) is a whole puzzle mechanic nobody has used.
+- **The replay proves the surface half hard and the floor half softly.** The
+  swim phase is pinned at x=136 by the current, which is the assertion with
+  teeth; the sink phase crosses and leaves the room, asserted as
+  `roomChanges: 1`.
+- **`TORRENT_PUSH` is `derived`, not `measured`.** It is derived from
+  SWIM_SPEED, which is itself derived from WALK_SPEED, which is a guess.
 
 ## What the last session did (P8/D2, the Coral Spire and the Brineglass Lens)
 
@@ -1151,7 +1203,14 @@ measuring the machine, not the game. test.mjs is no longer load-flaky; a
 failure there is now yours.
 
 NEXT UP, and pick ONE:
-  - P8 for D3, the Bogwater Sanctum and the Kelp-Soled Cleats, and then D4-D6.
+  - P8 for D4, the Cliffside Cistern and the Squall Bellows, and then D5-D6.
+    READ docs/DUNGEON-STATUS.md FIRST — it is the board, it names the commit
+    each finished dungeon landed in, and it carries D4 written out as a to-do
+    with the problem the Bellows pose. D1, D2 and D3 are done; three provers
+    exist (check-anchor, check-lens, check-cleats) and they are three different
+    shapes on purpose. Write check-bellows.mjs BEFORE the rooms.
+  - (superseded, kept for the reasoning) P8 for D3, the Bogwater Sanctum and
+    the Kelp-Soled Cleats, and then D4-D6.
     D1 and D2 are DONE and each solved a different shape of problem: D1's item
     did not FIT in a room (geometry), D2's item could not be REQUIRED by terrain
     at all (it only shows you things). Read both "P8 status" tables in

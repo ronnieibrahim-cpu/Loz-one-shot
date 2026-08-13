@@ -220,6 +220,40 @@ is in the page, and nothing steps until you say so.
 
 ## Hard-won lessons — do not rediscover these
 
+**The Bogwater Sanctum (P8/D3), and the four things it cost.**
+
+1. **AN ITEM WHOSE POSSESSION IS THE GATE CANNOT BE PROVED BY REACHABILITY.**
+   The Cleats make every deep tile in the game passable, so "this room requires
+   the Cleats" is true of any room with water in it and worth nothing. Two days
+   of dungeon design can be spent before that lands. The way out is to find the
+   axis INSIDE the item — here the two modes — and prove that: *the surface
+   route does not get there and the floor route does.* It is provable only
+   because the difference is DATA (`push` is applied while swimming and not
+   while sunk), which is worth checking for D4-D6 before designing a room.
+
+2. **ONE TILE OF ANYTHING IS NOT A BARRIER.** The base moveset hops 2.29 tiles,
+   so a single pit, a single gap and a single ledge are all crossable — a
+   one-tile drain in a torrent's sill was the first version of D2's fork trap
+   and `check-lens.mjs` failed it immediately. Three tiles is the first width
+   that holds. This is now true in two dungeons and will be true in the next
+   four.
+
+3. **`cleatMode` WAS A DEAD FLAG.** `toggleCleats` on dry land set it, said
+   "you will walk under the next water you meet", and nothing ever read it
+   again: entering deep water always started you swimming. Every deep room
+   before D3 plays the same either way, which is why it survived. A dungeon
+   about choosing your layer before you commit is where a promise the engine
+   does not keep starts costing hearts. `Player.updateTerrain` now dives on
+   entry when the soles are set.
+
+4. **A REPLAY THAT DRIVES AN ITEM MUST KNOW WHETHER THE ITEM SPEAKS.**
+   `toggleCleats` on land opens a text box; in deep water it does not. An open
+   box freezes every entity while `mode` is still `'play'`, so the first cut of
+   `d3-undertow` held LEFT for two hundred and sixty frames with the player
+   standing still behind a dialogue, and read exactly like "the current is
+   stronger than sink mode". Toggling in the water instead avoids the box
+   entirely, and that is what the committed plan does.
+
 **A FINISHED DUNGEON CAN SIT ON AN UNMERGED BRANCH AND BE BUILT A SECOND TIME.**
 This one cost most of a session and it cost it twice over. D2 was re-authored
 around the Lens, proved by a new checker, replayed, documented and committed —

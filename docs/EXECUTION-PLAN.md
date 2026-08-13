@@ -758,7 +758,7 @@ bare corridors and why no room holds two of them. The Anchor did not have room
 to be interesting in a 10x8 screen. **P7.6 is now built**, and the section below
 is the only thing a D2-D6 session needs to read about room size.
 
-#### P8 status: D1 and D2 done, D3-D6 outstanding
+#### P8 status: D1, D2 and D3 done, D4-D6 outstanding
 
 **The live board is `docs/DUNGEON-STATUS.md`** — statuses, the commit each
 finished dungeon landed in, the "done" checklist, and every outstanding dungeon
@@ -771,6 +771,39 @@ was re-run green afterwards. **D3, the Bogwater Sanctum and the Kelp-Soled
 Cleats, is the next action item.** Neither D1 nor D2 wants re-authoring; each
 solved a different shape of problem and the write-ups below are what a D3-D6
 session reads instead of rediscovering them.
+
+**D3, Bogwater Sanctum — DONE.** 22 rooms, one floor, re-authored around the
+Kelp-Soled Cleats. Against the constraint list above:
+
+| Constraint | D3 |
+|---|---|
+| 22-32 rooms, 1-3 floors | 22 rooms, 1 floor |
+| item roughly halfway | the Cleats are room 11 of 22, in `0,3,3` |
+| every room after it requires the item's verb | every post-item room is behind a torrent, and three are torrent rooms in their own right. No exceptions |
+| tide theme is the constraint | the Sanctum is flooded and stays flooded: a torrent is not a tide tile, so no setting of the conch touches one. The choice is which LAYER of the water you travel in |
+| Chartstone, 2-4 small keys, boss key | Chartstone in `0,2,4`; 3 keys, 3 locks; Boss Key in `0,1,2` behind the second |
+| miniboss two thirds through | Bogmaw in `0,2,2`, room 15 of 22 (68%) |
+| Heart Container from `bossDead` | `0,3,1` |
+| essence index = dungeon number | 3 |
+| multi-screen rooms | one: the Kelp Locks `0,4,2` is 2x1, and it is 2x1 for a reason rather than for room — eighteen tiles of channel with no shelf to surface on is what makes the breath number mean something. The other 21 are 1x1 |
+
+**What D3 taught about the item, and it is the opposite of what D2 taught.** The
+Lens could not be required by terrain at all. The Cleats are required by *every
+deep tile in the game* the moment they exist — so "this room needs the Cleats"
+is free, and a dungeon built on it would prove nothing. The claim worth proving
+is about the two MODES rather than the item:
+
+> the surface route does not get there, and the floor route does.
+
+That is provable because the difference between the modes is DATA. A tile's
+`push` is applied in `Player.updateTerrain` only while `inDeep && !underwater`,
+so a current moves a swimmer and never a walker, and comparing the push to
+`SWIM_SPEED` settles the question in arithmetic. An ordinary riptide is 0.55
+px/f against a swimmer's 0.75 — a tax, not a barrier — which is why D3 needed
+`TORRENT_PUSH`, derived to sit on the other side of that line.
+
+**The reusable lesson for D4-D6: when an item's mere possession is the gate,
+find the axis INSIDE the item and prove that instead.**
 
 **D2, Coral Spire — DONE.** 24 rooms, two floors, re-authored around the
 Brineglass Lens. Against the constraint list above:

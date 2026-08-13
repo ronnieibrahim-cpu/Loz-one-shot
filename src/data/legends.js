@@ -146,6 +146,11 @@ export function installLegends() {
     // that were free; a westward drain wants `riptideW` written as an inline
     // legend override on the room that needs it.
     'N': 'riptideN', 'S': 'riptideS', 'E': 'riptideE',
+    // Torrents: the same water running harder than a swimmer can. NOT digits,
+    // because a digit means a tide tile and a torrent is deep at every level —
+    // its whole job is to be the same barrier whatever the conch says, so that
+    // the only answer to it is the Cleats' floor mode.
+    'T': 'dTorrentE', 't': 'dTorrentW', 'V': 'dTorrentS', 'A': 'dTorrentN',
     '0': 'dSump',      // an open pit at low tide, and OVER YOUR HEAD above it
     '1': 'dSluice',    // dry floor -> shallow -> deep
     '2': 'dBasin',     // dry -> damp -> shallow

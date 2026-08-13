@@ -185,6 +185,20 @@ export class Player extends Entity {
     if (this.inDeep && !wasDeep) {
       game.audio.sfx('splash');
       game.spawnEffect('splash', this.x, this.y + 2);
+      // Entering water with the soles already drinking goes straight under.
+      // `toggleCleats` on dry land says "you will walk under the next water you
+      // meet" and then NOTHING READ `cleatMode` AGAIN — the flag was set, the
+      // line was said, and the player surfaced into the current anyway. It went
+      // unnoticed because every deep room before the Bogwater Sanctum plays the
+      // same either way; a dungeon about choosing your layer before you commit
+      // is where a promise the engine does not keep starts costing hearts.
+      if (this.cleatMode === 'sink' && !this.underwater && this.sinkT === 0 && this._cleats > 0) {
+        this.sinkT = game.charm('pressureScar')
+          ? Math.max(1, Math.round(SINK_ENTER_FRAMES * PRESSURE_SCAR_FACTOR))
+          : SINK_ENTER_FRAMES;
+        this.sinkInto = true;
+        game.audio.sfx('dive');
+      }
       // On the surface a load goes overboard. On the floor it does not: the
       // whole reason to walk down there is that you can take things with you.
       if (this.carrying && !this.underwater) this.dropCarried(game);
