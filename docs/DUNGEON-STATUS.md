@@ -25,7 +25,7 @@ whatever a commit message elsewhere claims.
 |---|---|---|---|---|---|
 | 1 | `d1` | Tidewash Grotto | Tidewright's Anchor | **DONE** | `d655d1f`, merged to `main` |
 | 2 | `d2` | Coral Spire | Brineglass Lens | **DONE** | `0a3776f` (authored on `claude/p8-dungeon-generation-faqood`) |
-| 3 | `d3` | Bogwater Sanctum | Kelp-Soled Cleats | **DONE** | `claude/p8-dungeon-generation-muve1i` |
+| 3 | `d3` | Bogwater Sanctum | Kelp-Soled Cleats | **DONE** | `a9eb63e` |
 | 4 | `d4` | Cliffside Cistern | Squall Bellows | **TO DO — next** | — |
 | 5 | `d5` | Drowned Wood Shrine | Reefseed | TO DO | — |
 | 6 | `d6` | Salt Pan Vault | *see the consolidation below* | TO DO | — |
