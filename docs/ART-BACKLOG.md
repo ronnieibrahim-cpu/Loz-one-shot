@@ -119,6 +119,49 @@ it is the one true tileset in the repo and it carries dungeon fixtures.
 Until it exists, both rooms lean on the plaque, and a session that plays them
 should say whether the plaque is enough.
 
+## The Lens shows three dark blues (new, from P8/D2)
+
+**This is the biggest legibility problem the game has, and it was found by
+looking rather than by a checker.** The Brineglass Lens draws the room at the
+next tide level as a ghosted overlay. In D2's forks the player has to read that
+overlay for the only question the dungeon asks: is that shaft going to be
+ankle-deep water, an open hole, or over my head? The three answers are
+`dWaterS`, `dPit` and `dWaterD`, and all three are dark blue. Under a
+half-opacity ghost over a black pit they come out 4-6 units apart in RGB.
+
+Measured, at three ghost opacities (mean RGB of a throat in `d2 1,2,2`; the
+numbers and the command that reproduces them are in `src/data/feel.js` beside
+`LENS_GHOST_ALPHA`):
+
+| ghost | wadeable | a hole | drowning |
+|---|---|---|---|
+| 0.55 | (23, 33, 51) | (17, 21, 38) | (19, 27, 48) |
+| 0.80 | (26, 38, 58) | (17, 21, 38) | (20, 29, 53) |
+| 1.00 | (28, 40, 60) | (17, 20, 38) | (21, 30, 55) |
+
+The opacity was raised from 0.55 to 0.80, which is a real improvement and is
+not the fix. Opacity cannot separate three colours that are already the same
+colour. What is genuinely different between the three on screen is TEXTURE and
+MOTION — shallow water carries horizontal ripple lines and animates at rate 11,
+deep water is speckled and animates at 13, a pit is flat and does not animate
+at all — and a still screenshot throws all of that away. So the honest state is:
+
+* **water vs no water reads.** A player will see which shafts fill.
+* **shallow vs deep reads WEAKLY**, and that is the read D2's second fork turns
+  on. It has not been watched in motion by a person.
+
+Three things could fix it, in ascending cost:
+
+1. **Give the ghost its own palette** rather than drawing the terrain's. The
+   Lens already lays a cyan wash over the room; if the preview drew shallow
+   water in a light tint and deep water in a dark one, the distinction would
+   be carried by the Lens rather than borrowed from the terrain.
+2. **A depth mark on the tile itself** — the source games mark a drop-off with a
+   lighter lip. That is a terrain change, and it would help outside the Lens too.
+3. **Sound.** Nothing in the Lens is audible.
+
+Do not settle this from the table above. It wants a person holding the button.
+
 ## Carried over from docs/NEXT-SESSION.md
 
 - **The `cliff` family** — one extraction covers eight tiles and cliffs are on

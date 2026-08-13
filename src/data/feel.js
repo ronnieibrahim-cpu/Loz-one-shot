@@ -708,9 +708,25 @@ export const WADE_FOAM_EVERY = 14;
 export const LENS_FADE_FRAMES = 10;
 
 /** x — peak opacity of the ghosted next-tide terrain drawn over the room.
- *  guessed; high enough to read the terrain, low enough that the real room
- *  underneath is never in doubt. */
-export const LENS_GHOST_ALPHA = 0.55;
+ *  guessed, but MEASURED AGAINST A ROOM, which is more than it was. D2's forks
+ *  ask the Lens the hardest question in the game — three shafts that are the
+ *  same `dPit` where you stand and shallow water / a pit / deep water one level
+ *  up — and the three previewed tiles were coming out 4-6 units apart in RGB,
+ *  which is not a difference a person reads at 160x144. Sampled over the pit
+ *  in d2 1,2,2 — regenerate the shot with
+ *  `node tools/shoot-rooms.mjs --tide=0 --px=72 --py=88 --lens d2,1,2,2` —
+ *  mean RGB of each throat:
+ *
+ *    ghost   west (wadeable)   middle (pit)   east (drowning)
+ *    0.55    (23, 33, 51)      (17, 21, 38)   (19, 27, 48)
+ *    0.80    (26, 38, 58)      (17, 21, 38)   (20, 29, 53)
+ *    1.00    (28, 40, 60)      (17, 20, 38)   (21, 30, 55)
+ *
+ *  0.80 buys most of what 1.00 buys and keeps the overlay translucent, which
+ *  is what stops it reading as the room having already changed. THE REAL LIMIT
+ *  IS NOT THIS NUMBER: shallow water, deep water and a dungeon pit are three
+ *  dark blues, so no opacity separates them by much. See docs/ART-BACKLOG.md. */
+export const LENS_GHOST_ALPHA = 0.80;
 
 /** x — opacity of the cold wash laid over the whole screen while the Lens is
  *  up, so the preview cannot be mistaken for the room actually changing.

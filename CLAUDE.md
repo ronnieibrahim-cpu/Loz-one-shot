@@ -93,6 +93,11 @@ they are also how a future session finds which sheet a tile came from.
 - **A ledge is solid from three sides.** A ledge run dropped across a corridor
   makes rooms unreachable. Use `node tools/find-ledges.mjs` to pick placements;
   do not place by eye.
+- **A checker's flood only knows the movement verbs somebody taught it.**
+  `walk-dungeons.mjs` treated a one-way ledge as a wall for the whole life of
+  the project, which was harmless until D2 made a ledge the only way into
+  anywhere and eight rooms read as stranded in a dungeon that walks fine. If you
+  give the player a new way to move, add it to the flood in the same commit.
 - **Digits 0–9 in a room grid are always tide tiles.** See
   `src/data/legends.js`. Never reuse a digit for anything else.
 - **Compositing two source tiles into one game tile is authoring, not
@@ -131,6 +136,7 @@ they are also how a future session finds which sheet a tile came from.
 | `node tools/check-gates.mjs` | Gates hold in-engine with a live player |
 | `node tools/solve-switches.mjs` | Every switch puzzle has a solution |
 | `node tools/check-anchor.mjs` | A room that claims to need the Tidewright's Anchor cannot be crossed with the conch alone, and can be with one anchor placement |
+| `node tools/check-lens.mjs` | Every room that claims to need the Brineglass Lens pins its tide, commits the player one way, cannot be answered at the level it is chosen at, and draws every branch as the same tile there |
 | `node tools/check-motion.mjs` | Ground enemies stay on the 8px lattice; fliers and swimmers stay off it |
 | `node tools/check-items.mjs` | Every item does the verb `docs/ITEMS.md` claims for it, and nothing hands out an item that no longer exists |
 | `node tools/replay.mjs` | Movement and combat are frame-identical to a recorded baseline |
@@ -212,6 +218,14 @@ dungeons' themes can be stated in the same sentence, one of them is wrong.
 - `main` is trunk. Branch from it. One prompt = one session = one branch.
 - Update `docs/NEXT-SESSION.md` before the session ends, losslessly. A future
   session that reads only that file must be able to continue.
+- **A dungeon session starts and ends at `docs/DUNGEON-STATUS.md`.** It is the
+  board: which dungeons are done, which commit each landed in, the checklist
+  that defines "done", and every outstanding one as a to-do with the problem it
+  has to solve written out. Read it before designing anything and tick it before
+  you finish. A dungeon is done when that table says so and names a commit —
+  **and one session's work is invisible to the next until it is merged**, which
+  is how D2 came within a hair of being built twice. Before starting one, run
+  `git ls-remote --heads origin` and look for a branch that has already done it.
 - Record surprises in `docs/HANDOFF.md` under the hard-won-lessons section.
   Cost that was paid once should not be paid twice.
 - Commit messages describe what changed in the game, not what changed in the

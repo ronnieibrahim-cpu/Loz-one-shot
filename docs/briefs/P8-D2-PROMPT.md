@@ -1,5 +1,11 @@
 # P8 / D2 — Coral Spire and the Brineglass Lens
 
+> **EXECUTED. Do not run this again.** D2 is built; what it actually did, and
+> the three engine features it turned out to need, are in
+> `docs/EXECUTION-PLAN.md` under "P8 status: D2 done" and in
+> `docs/NEXT-SESSION.md`. Kept for the reasoning below, which is still the
+> clearest statement of why an informational item is hard to require.
+
 Paste the fenced block below into a fresh Claude Code session on this repo.
 
 It is the P8 dungeon prompt from `docs/EXECUTION-PLAN.md`, specialised to D2 and

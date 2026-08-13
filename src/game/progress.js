@@ -39,6 +39,10 @@ export function newProgress(name = 'LINK', seed = (Date.now() >>> 0)) {
     charms: {},
     charmSlots: newCharmSlots(),
     charmOpen: { low: false, mid: true, high: false },
+    // Which case openings the scrimshander has already remarked on. The cases
+    // themselves open on the essence (see openCharmCases); this is only so she
+    // says her line once.
+    charmTold: {},
     charmCase: 1,
     blanks: 0,               // uncarved bone, the scrimshander's raw material
     carve: null,             // { id, turns } — commissioned, tide turns to go
@@ -210,6 +214,7 @@ function migrate(p) {
   const out = { ...base, ...p };
   for (const k of ['items', 'keys', 'bossKeys', 'dungeonMaps', 'charts',
     'beaten', 'flags', 'chests', 'doors', 'secrets', 'charms', 'charmOpen',
+    'charmTold',
     'trade', 'pos', 'respawn']) {
     out[k] = { ...base[k], ...(p[k] || {}) };
   }

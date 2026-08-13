@@ -24,7 +24,10 @@
 
 import { TIDE_COUNT } from './tide.js';
 import { tideAt } from './entity.js';
-import { NEAP_GRACE_FRAMES, CHARM_CASE_MAX } from '../data/feel.js';
+import {
+  NEAP_GRACE_FRAMES, CHARM_CASE_MAX,
+  CHARM_LOW_ESSENCES, CHARM_HIGH_ESSENCES, CHARM_CASE_ESSENCES,
+} from '../data/feel.js';
 
 /** Case names, indexed by tide level. */
 export const CHARM_SLOTS = ['low', 'mid', 'high'];
@@ -164,6 +167,42 @@ export function caseSize(progress) {
 
 export function slotOpen(progress, slot) {
   return !!(progress.charmOpen && progress.charmOpen[slot]);
+}
+
+/**
+ * Open whatever the essence count has earned, and return the line to say — or
+ * null if nothing changed.
+ *
+ * THE CASES OPEN ON THE ESSENCE, NOT ON THE VISIT, and that is a decision D2
+ * had to make rather than inherit. This used to live inside
+ * `Scrimshander.interact` and fire only when the player TALKED to her, which
+ * meant `CHARM_LOW_ESSENCES = 2` — the Coral Spire's own essence — could land
+ * on a player who had no reason to walk back to Tidewatch. That is a real save
+ * in which you own charms you can never switch on, and it is invisible: every
+ * checker stays green because the charm system works perfectly and simply is
+ * not turned on.
+ *
+ * So the shard opens the case. The scrimshander keeps the line — she says it
+ * the first time you see her afterwards — but she is the acknowledgement now
+ * rather than the gate. `told` is what stops her saying it twice.
+ */
+export function openCharmCases(progress) {
+  const p = progress;
+  if (!p.charmOpen) return null;
+  const n = (p.essences || []).length;
+  if (n >= CHARM_LOW_ESSENCES && !p.charmOpen.low) {
+    p.charmOpen.low = true;
+    return 'A second case has cut itself into your kit — for the low\nwater, when the floor of the sea is a road.';
+  }
+  if (n >= CHARM_HIGH_ESSENCES && !p.charmOpen.high) {
+    p.charmOpen.high = true;
+    return 'A third case, for the high water. Bone keeps better wet\nthan you would think.';
+  }
+  if (n >= CHARM_CASE_ESSENCES && (p.charmCase || 1) < CHARM_CASE_MAX) {
+    p.charmCase = CHARM_CASE_MAX;
+    return 'Every case takes two now. You have earned the room.';
+  }
+  return null;
 }
 
 /** What is actually in a case, trimmed to the case's current size. */

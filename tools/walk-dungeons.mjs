@@ -218,6 +218,24 @@ const reach = await page.evaluate((ids) => {
       }
       return false;
     };
+    // A ONE-WAY LEDGE IS TRAVERSAL, and this flood used to treat it as a wall.
+    // That was harmless for as long as no ledge was the ONLY way into
+    // anywhere — true of every dungeon until D2, whose Lens forks are entered
+    // by dropping off a lip you cannot climb back up, and which therefore read
+    // as eight stranded rooms in a dungeon that walks fine in the engine.
+    //
+    // `Player.tryLedgeHop`: walking into the FACE of a ledge (its own `ledge`
+    // direction must equal the direction of travel) clears the lip plus any
+    // further ledge tiles behind it, and lands on the first tile past them if
+    // that tile is standable. Directional, so it adds no route back.
+    const ledgeDir = (ch) => {
+      for (const t of [0, 1, 2]) {
+        const d = defOf(ch, t);
+        if (d && (d.flags & F.LEDGE)) return d.ledge || null;
+      }
+      return null;
+    };
+    const DIR_OF = { '1,0': 'right', '-1,0': 'left', '0,1': 'down', '0,-1': 'up' };
     // A door a PUZZLE opens is not a wall. `reward.openDoors` names the tiles a
     // solved room switches to their open form, so those tiles are passable in
     // the connectivity model — the flood cannot solve a puzzle, and asserting
@@ -311,6 +329,12 @@ const reach = await page.evaluate((ids) => {
             else if (jumpable(ch)) {
               const jx = x + dx * 2, jy = y + dy * 2;
               if (jx >= 0 && jy >= 0 && jx < W && jy < H && passable(def.map[jy][jx])) push(rk, jx, jy);
+            }
+            else if (ledgeDir(ch) === DIR_OF[dx + ',' + dy]) {
+              let n = 1;
+              while (n < 3 && ledgeDir(def.map[ny + dy * n]?.[nx + dx * n] ?? ' ')) n++;
+              const lx = nx + dx * n, ly = ny + dy * n;
+              if (lx >= 0 && ly >= 0 && lx < W && ly < H && passable(def.map[ly][lx])) push(rk, lx, ly);
             }
             else if (isLock(ch)) lockedSeen.add(rk + ':' + nx + ',' + ny);
             else if (isBossDoor(ch) && bossKey) lockedSeen.add(rk + ':' + nx + ',' + ny + ':boss');
