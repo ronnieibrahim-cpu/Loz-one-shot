@@ -81,7 +81,7 @@ export class Tide {
         for (let i = list.length - 1; i >= 0; i--) {
           const o = list[i];
           if (o.roomKey !== key || o.mapId !== mapId) continue;
-          if (!this.covers(o, tx, ty)) continue;
+          if (!this.covers(o, tx, ty, r)) continue;
           // An override holds EITHER an absolute level or a delta from the base.
           //
           // The Anchor is absolute: it froze the water at whatever it was when
@@ -109,7 +109,7 @@ export class Tide {
    * default for that reason; the debug key toggles between them so the choice
    * can be made by throwing the thing. See ANCHOR_SHAPE in feel.js.
    */
-  covers(o, tx, ty) {
+  covers(o, tx, ty, room) {
     // A cone, as the Squall Bellows blows: measured along a facing rather than
     // around a centre, and widening one tile every two out so the near end is
     // a single tile and the far end is a mouth you can aim at something. Tested
@@ -120,11 +120,45 @@ export class Tide {
       const rx = tx - o.tx, ry = ty - o.ty;
       const along = rx * o.dx + ry * o.dy;
       if (along < 0 || along > o.r) return false;
-      return Math.abs(rx * o.dy - ry * o.dx) <= Math.floor(along / 2);
+      if (Math.abs(rx * o.dy - ry * o.dx) > Math.floor(along / 2)) return false;
+      return this.blows(o, tx, ty, room);
     }
     const dx = Math.abs(tx - o.tx), dy = Math.abs(ty - o.ty);
     if (o.shape === 'disc') return dx * dx + dy * dy <= o.r * o.r;
     return dx <= o.r && dy <= o.r;
+  }
+
+  /**
+   * WIND DOES NOT BLOW THROUGH STONE, and for a while it did.
+   *
+   * The cone's footprint is pure geometry, so before this a wheel sealed in an
+   * alcove could be turned — and the water in a walled-off shaft drained — by
+   * a player standing on the far side of two walls facing roughly at it. That
+   * is invisible in play until the one room built on the wheel being out of
+   * reach, and it makes the Cistern unauthorable: every wheel would need a
+   * three-tile exclusion zone in all four directions rather than a mouth.
+   *
+   * So the cone is stopped by anything solid between its origin and the tile
+   * being asked about. Two things to know about the walk:
+   *
+   *   * IT RESOLVES TILES AT THE BASE LEVEL, never through the field. The
+   *     field is what this call is in the middle of computing, and asking it
+   *     again would not terminate. A drown-wall the sea has covered is
+   *     therefore blown over, which is also the right answer.
+   *   * It tests the tiles BETWEEN, not the endpoints. The origin is the
+   *     player's own tile and the far end is the thing being blown at, and
+   *     neither can be a wall in any case that matters.
+   */
+  blows(o, tx, ty, room) {
+    const r = room !== undefined ? room : this.game.room;
+    if (!r) return true;
+    const dx = tx - o.tx, dy = ty - o.ty;
+    const n = Math.max(Math.abs(dx), Math.abs(dy));
+    for (let i = 1; i < n; i++) {
+      const x = o.tx + Math.round(dx * i / n), y = o.ty + Math.round(dy * i / n);
+      if (r.flagsAt(x, y, this.level) & (F.SOLID | F.VOID)) return false;
+    }
+    return true;
   }
 
   /**
@@ -155,7 +189,7 @@ export class Tide {
             for (let i = list.length - 1; i >= 0; i--) {
               const o = list[i];
               if (o.roomKey !== key || o.mapId !== mapId) continue;
-              if (!self.covers(o, tx, ty)) continue;
+              if (!self.covers(o, tx, ty, r)) continue;
               if (o.delta == null) return o.level;
               const lv = base + o.delta;
               return lv < 0 ? 0 : (lv >= TIDE_COUNT ? TIDE_COUNT - 1 : lv);

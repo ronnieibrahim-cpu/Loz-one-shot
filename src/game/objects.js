@@ -856,6 +856,16 @@ defineEntity('valve', (x, y, o) => new TideValve(x, y, o));
  * It opens exactly what a TideValve opens, and for the same reason: the
  * interesting placement for a wheel is on the far side of the water it
  * controls, where a hand cannot reach it and a sustained directional gust can.
+ *
+ * A DROWNED WHEEL DOES NOT TURN, and that one line is the whole of the
+ * Cliffside Cistern. Paddles under deep water never see the wind — the gust
+ * breaks on the surface above them — so a wheel standing in water that is over
+ * its axle is a wheel nothing can move. What frees it is the gust's OTHER
+ * half: the cone holds the water inside it one level lower than the rest of
+ * the room, so the same held breath that turns the wheel is what takes the
+ * water off it. The level asked for is the level AT THE WHEEL'S OWN TILE
+ * (`room.flagsAt` through the live field), never `tide.level`, because the
+ * cone is precisely a place where those two disagree.
  */
 export class GustWheel extends TideValve {
   constructor(x, y, o = {}) {
@@ -864,11 +874,31 @@ export class GustWheel extends TideValve {
     this.turns = 0;
     this.coast = 0;
     this.spin = 0;
+    this.stalled = 0;             // frames spent taking wind while under water
+    this._restored = false;
+  }
+
+  /** Is the water over this wheel deep enough to smother it? */
+  drowned(game) {
+    const room = game.room;
+    if (!room) return false;
+    const tx = Math.floor(this.cx / TILE), ty = Math.floor(this.cy / TILE);
+    return !!(room.flagsAt(tx, ty, game.tide) & F.DEEP);
   }
 
   /** Called by Player.gust for every entity inside the cone. */
   onGust(game) {
     if (this.open) return;
+    if (this.drowned(game)) {
+      // Losing the progress rather than pausing it matters: a wheel that
+      // remembered half a turn could be opened by pumping at it under water
+      // for long enough, which is the exact reading the room is built to deny.
+      this.turns = 0;
+      this.stalled++;
+      if (this.stalled % 10 === 1) game.spawnEffect('bubble', this.x, this.y - 4, { life: 20 });
+      return;
+    }
+    this.stalled = 0;
     this.turns++;
     this.coast = BELLOWS_WHEEL_COAST;
     if (this.turns >= this.needTurns) {
@@ -878,6 +908,14 @@ export class GustWheel extends TideValve {
   }
 
   update(game) {
+    // A wheel you turned and walked away from was shut again when you came
+    // back: `interact` wrote the flag and nothing ever read it. The door it
+    // opened stayed open (that is a persisted tile), so the room was solved
+    // and the fixture in it was lying about how.
+    if (!this._restored) {
+      this._restored = true;
+      if (this.saveKey && game.progress.flags[this.saveKey]) this.open = true;
+    }
     if (this.coast > 0) { this.coast--; this.spin++; }
   }
 

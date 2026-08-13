@@ -220,6 +220,45 @@ is in the page, and nothing steps until you say so.
 
 ## Hard-won lessons — do not rediscover these
 
+**The Cliffside Cistern (P8/D4), and the five things it cost.**
+
+1. **A FOOTPRINT IS NOT A LINE OF SIGHT.** `Tide.covers` was pure geometry, so
+   the Bellows' cone reached through walls: a wheel sealed in an alcove could
+   be turned by a player standing on the far side of two walls facing roughly at
+   it, and the drained wedge was drawn inside masonry. Nothing failed — the room
+   simply had a second answer nobody had authored. `Tide.blows` is the fix, and
+   the thing to know if you touch it is that **the line-of-sight walk must
+   resolve tiles at the BASE level, never through the field**, because the field
+   is what the call is in the middle of computing and asking it again does not
+   terminate.
+
+2. **A CHECKER THAT IS MORE CAPABLE THAN THE PLAYER FAILS HONEST ROOMS.** The
+   first cut of `check-bellows.mjs` modelled the hop as "clear anything that is
+   not solid", which is what `check-cleats.mjs` does. `Player.tryGapHop` clears
+   `F.JUMPABLE` and nothing else, and `dPit` is not JUMPABLE — so the harness
+   hopped the pit trenches that every sill in the dungeon is built on, and three
+   rooms failed for a reason that was entirely in the tool. Copying a flood from
+   another prover copies its approximations with it.
+
+3. **A ROOM SCRIPT'S REWARD IS INVISIBLE TO EVERY SWEEP IN `walk-dungeons.mjs`.**
+   It counts keys from entity tuples and from `puzzle.reward.spawn`, and a key
+   spawned by `script.onEvent` is none of those. Declare it (`bellowsRoom.gives`)
+   and teach the counter, or the dungeon is walked believing it has two keys for
+   three locks — and the failure surfaces as an unrelated room reading stranded.
+
+4. **A PUSHED BLOCK MOVES ONE TILE, EVER.** `solve-switches.mjs` says so in its
+   header and it is easy to design past: a puzzle whose block needs three shoves
+   to reach its plate is unsolvable in the engine and the tool is right to fail
+   it. Seat every block one tile from the plate it is meant to hold down.
+
+5. **A VALVE WROTE ITS SAVE FLAG AND NOTHING EVER READ IT.** `TideValve.interact`
+   has set `progress.flags[saveKey]` since the day it was written, and no code
+   path restored it — so a wheel you turned was shut again when you re-entered
+   the room, while the door it opened stayed open because a persisted TILE is a
+   different mechanism. The room was solved and the fixture in it was lying
+   about how. Same shape as `liftLevel` and the Anchor's dropped `src`: the
+   write end of a pair of features shipped and the read end never did.
+
 **The Bogwater Sanctum (P8/D3), and the four things it cost.**
 
 1. **AN ITEM WHOSE POSSESSION IS THE GATE CANNOT BE PROVED BY REACHABILITY.**

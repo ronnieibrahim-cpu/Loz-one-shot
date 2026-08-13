@@ -2,6 +2,53 @@
 
 Work that is identified, scoped and not done. Each entry says what blocks it.
 
+## A DROWNED WHEEL LOOKS EXACTLY LIKE A WORKING ONE (P8/D4)
+
+The Cliffside Cistern is built on paddle wheels that jam under deep water and
+turn in shallow. The mechanic is proved, the rooms are proved, and **the wheel
+never says which it is.** `o_valve` is one sprite in every state — dry, wading,
+drowned — so the fixture that the whole dungeon turns on carries no information
+about the one property that matters about it.
+
+The water half of the read is good where it works and absent where it does not,
+and both halves were measured off screenshots rather than argued:
+
+| | wheel's tile | how it reads |
+|---|---|---|
+| MID, not pumping | (38, 76, 140) | deep |
+| MID, cone open | (70, 133, 175) | shallow — **and the undrained shaft three tiles away is still (38,76,140), so the difference is on screen side by side** |
+| HIGH, not pumping | (38, 76, 140) | deep |
+| HIGH, cone open | (38, 76, 140) | **identical.** The cone IS working — the water inside it is at MID — but `dWell` draws the same tile at MID and at HIGH |
+
+Reproduce both with:
+
+    node tools/shoot-rooms.mjs --tide=1 --px=68 --py=18 --bellows --dir=left d4,0,1,3
+    node tools/shoot-rooms.mjs --tide=2 --px=68 --py=18 --bellows --dir=left d4,0,1,3
+
+So the successful case teaches itself and the failing case teaches nothing: a
+player pumping at the wrong sea cannot tell "my cone is not reaching that far"
+from "my cone is reaching and one level down is still too deep". Those want
+completely different responses — walk closer, or sound the conch — and the
+screen distinguishes them not at all.
+
+What it wants, in the order it should be tried:
+
+1. **A drowned state for the wheel.** `GustWheel.drowned` already computes it
+   every frame; it needs a second sprite — the same wheel with weed on it, or
+   pale and out of focus the way the source games draw a submerged object — and
+   `spriteName()` returning it. This is the whole fix for the fixture and it is
+   about twenty minutes of pixels.
+2. **Something at the cone's mouth that is not water.** The gust puffs
+   (`BELLOWS_PUFF_EVERY`) are drawn at the near end only, so a cone reaching
+   three tiles is signalled at one of them. Puffs travelling the length of the
+   cone would say "this is where the wind is going" independently of whether
+   the water under it changed.
+3. **Do NOT solve it by making MID and HIGH different blues.** That is a change
+   to the whole game's water for one dungeon's fixture, and it would break the
+   Lens's reads as well.
+
+Blocked on nothing but the drawing.
+
 ## A CURRENT IS INVISIBLE (P8/D3) — the highest-value entry in this file
 
 The Bogwater Sanctum is built on torrents: deep water that runs harder than a

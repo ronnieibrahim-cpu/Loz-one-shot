@@ -26,8 +26,8 @@ whatever a commit message elsewhere claims.
 | 1 | `d1` | Tidewash Grotto | Tidewright's Anchor | **DONE** | `d655d1f`, merged to `main` |
 | 2 | `d2` | Coral Spire | Brineglass Lens | **DONE** | `0a3776f` (authored on `claude/p8-dungeon-generation-faqood`) |
 | 3 | `d3` | Bogwater Sanctum | Kelp-Soled Cleats | **DONE** | `a9eb63e` |
-| 4 | `d4` | Cliffside Cistern | Squall Bellows | **TO DO — next** | — |
-| 5 | `d5` | Drowned Wood Shrine | Reefseed | TO DO | — |
+| 4 | `d4` | Cliffside Cistern | Squall Bellows | **DONE** | `PENDING-D4` |
+| 5 | `d5` | Drowned Wood Shrine | Reefseed | **TO DO — next** | — |
 | 6 | `d6` | Salt Pan Vault | *see the consolidation below* | TO DO | — |
 | — | `d7` | Reef Palace | Kelp-Soled Cleats L2 | TO DO — fold in | — |
 | — | `d8` | Abyssal Keep | Dredge Line | TO DO — fold in | — |
@@ -100,7 +100,7 @@ is nearly so, so a player has no way to know which water is a current or which
 way it runs before swimming into it. The rooms are legible as drains and
 illegible as currents. See `docs/ART-BACKLOG.md`.
 
-## D4-D6, and the consolidation that is still owed
+## D5-D6, and the consolidation that is still owed
 
 **The plan says six dungeons and the data holds eight.** `d7` (Reef Palace) and
 `d8` (Abyssal Keep) are pre-P8 dungeons that the six-dungeon plan folds into
@@ -114,28 +114,91 @@ a session will trip over:
 - **`d7` hands out `cleats` at level 2**, so it is downstream of D3 whatever
   else happens to it.
 
-Neither D1 nor D2 needed the consolidation and neither did it. It belongs to
+None of D1-D4 needed the consolidation and none of them did it. It belongs to
 whichever session reaches D6, and it should be recorded here when it happens.
 
 ---
 
-## D4 — Cliffside Cistern, and the Squall Bellows. The next action item.
+## D4 — Cliffside Cistern. DONE, and what it settled for D5-D6.
 
-**What is there today:** 18 rooms, one floor, pre-P8 content, under the 22-room
-floor, no room declaring it needs the Bellows, no prover.
+24 rooms, one floor, re-authored around the Squall Bellows. Five sill rooms
+holding six wheels, `tools/check-bellows.mjs` (58 assertions), and the
+`d4-drowned-sill` replay.
 
-**The problem to expect.** The Bellows hold the tide back one level, in a cone,
-in front of you, WHILE YOU HOLD THE BUTTON. So it is the Anchor's problem
-turned inside out: the Anchor's held patch persists and can be walked away from,
-and the Bellows' does not — the water comes back the moment you let go, and you
-cannot be in two places at once. A room that is crossed by holding the button
-and walking is not a Bellows room; a room where the thing you free has to act
-while you stand still holding it, is. Write `check-bellows.mjs` before the rooms
-and make it model the cone travelling with the player.
+**The problem it had to solve.** The Bellows are the Anchor inside out: the
+cone lasts exactly as long as the button is down, follows your facing, and
+takes your feet while it blows. So a room you cross by holding the button and
+walking is not a Bellows room — the thing the cone frees has to act while you
+stand still, somewhere you are not.
 
-Note also that `Player` already surfaces the hard part: `bellowsOpen` blocks
-the item while `inDeep || underwater`, so a Bellows room may not be flooded in
-the way a Sanctum room is.
+**The answer, stated once:** a paddle wheel drowned under deep water does not
+catch the wind, and the only thing that takes the water off one tile while
+leaving the room alone is the gust that has to turn it. Two shapes, because one
+would have been the same idea five times:
+
+* **the sump shelf, worked at MID** — `0` is a pit at LOW, deep above; `3` is
+  shallow at LOW, drowned above. Standable from MID up, freeable from MID down.
+* **the drown-wall shelf, worked at HIGH** — `9` is stone until HIGH; `1` is
+  dry, wading, drowned. Both halves meet only at HIGH.
+
+**The reusable part for D5-D6:** when the item is HELD rather than placed, the
+room is somewhere the player is not. Ask what acts while they stand still.
+
+**What it cost elsewhere**, all four worth knowing:
+
+- **`Tide.blows` is new: the cone no longer blows through stone.** It was pure
+  geometry, so a wheel sealed in an alcove could be turned through two walls by
+  someone facing roughly at it. Line of sight resolves at the BASE level, never
+  through the field — the field is what the call is computing.
+- **`GustWheel` restores its open state from the save.** `interact` wrote
+  `progress.flags[saveKey]` from the first day and nothing ever read it back.
+- **`walk-dungeons.mjs` knows two new things**: a door a wheel opens
+  (`bellowsRoom.opens`) is passable to the flood, the same exemption a
+  puzzle-opened door already had, and a wheel that pays out
+  (`bellowsRoom.gives`) is counted in the key and boss-key sweeps. A script
+  spawn is invisible to every sweep in that tool.
+- **`shoot-rooms.mjs --bellows`** pumps the item for a screenshot, because the
+  cone is a held state and nothing about a sill can be seen without it.
+
+**What is weak about it, and it is the same shape as D2's and D3's findings.**
+The successful drain reads and the failed one does not. At MID with the cone
+open the wheel's tile goes from (38,76,140) to (70,133,175) beside an undrained
+tile of the same water — unmissable. At HIGH the cone is working just as hard
+and the tile does not change at all, because `dWell` draws the same tile at MID
+and HIGH, so a player pumping at the wrong sea cannot tell "my cone is not
+reaching" from "my cone is reaching and one level is not enough". The wheel's
+own sprite never says it is drowned. See `docs/ART-BACKLOG.md`.
+
+---
+
+## D5 — Drowned Wood Shrine, and the Reefseed. The next action item.
+
+**What is there today:** the pre-P8 `d5`, unaudited against the constraint list,
+with no room declaring it needs the Reefseed and no prover.
+
+**The problem to expect.** The Reefseed is a thrown consumable that becomes a
+pillar after about two seconds, and what the pillar IS depends on the tide at
+its tile when it grows: a climbable block at LOW, a wall at MID, submerged at
+HIGH. So the item is neither a gate (D1), nor information (D2), nor a mode (D3),
+nor a held state (D4) — **it is a delay.** The claim worth proving is about the
+gap between throwing and growing:
+
+> what you threw it at is not what it becomes.
+
+Which means a Reefseed room has to be one where the player changes the tide
+DURING the two seconds, or where the pillar's own growth changes the level under
+it. Write `check-reefseed.mjs` before the rooms and make it model the delay:
+`REEFSEED_GROW_FRAMES` against `TIDE_SWEEP_FRAMES` is the arithmetic that says
+whether a conch press can land inside the window at all, and if it cannot, the
+whole design is wrong before a room is drawn.
+
+Two things already in the engine that a D5 session should check before
+inventing anything: the seed is a COUNTED consumable, so a room that needs three
+pillars needs a refill the player cannot be locked out of; and D4's
+`Tide.blows` means a cone and a pillar now interact — a grown pillar is solid
+and will stop a gust.
+
+---
 
 ## What no dungeon has yet, and it is the same gap in all of them
 

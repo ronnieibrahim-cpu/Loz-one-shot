@@ -12,8 +12,8 @@ maintain and the most expensive thing to not have.
 
 ## Where P8 stands, in one line
 
-**D1, D2 and D3 are DONE and COMPLIANT. D4, the Cliffside Cistern and the
-Squall Bellows, is the next action item.** Do not re-author a finished dungeon.
+**D1, D2, D3 and D4 are DONE and COMPLIANT. D5, the Drowned Wood Shrine and the
+Reefseed, is the next action item.** Do not re-author a finished dungeon.
 
 **`docs/DUNGEON-STATUS.md` is the board and it is what a dungeon session opens
 first.** Every dungeon with its status and the commit it landed in, the
@@ -23,6 +23,89 @@ session that leaves that file unchanged has not reported its work. It also
 carries the reason it exists: D2 was finished on a branch that was never merged,
 so trunk said "outstanding" for a dungeon that was done and it was nearly built
 twice. **Run `git ls-remote --heads origin` before you start.**
+
+### What the last session did (P8/D4, the Cliffside Cistern and the Squall Bellows)
+
+**D4 is re-authored around the Bellows, and the hard part was that the item
+takes your feet.** 24 rooms, one floor, the Bellows at room 12, five sill rooms
+holding six wheels, `tools/check-bellows.mjs` (58 assertions) and the
+`d4-drowned-sill` replay. The constraint table is in `docs/EXECUTION-PLAN.md`
+under "P8 status", and the dungeon's header comment in `src/data/dungeons-a.js`
+states the primitive once and builds five rooms out of it.
+
+**The problem, because D5 and D6 will each have their own version of it.** The
+Anchor did not FIT. The Lens could not be REQUIRED. The Cleats gated nothing.
+The Bellows' problem is that the cone lasts exactly as long as the button is
+down and `Player.updateBellows` returns before the mover runs — so a room you
+cross by holding the button and walking is not a Bellows room. What the cone
+opens has to be used by something that is not you:
+
+> a drowned wheel does not turn, and the only thing that takes the water off one
+> is the gust that has to turn it.
+
+`GustWheel.drowned` is four new lines: a wheel standing in deep water loses its
+turns rather than banking them, so pumping at it under water for long enough
+cannot open it. The cone's `delta: -1` is what un-drowns it, and the cone is
+also what turns it, and you cannot walk into it to check.
+
+**Two shapes, so that five sills are not one idea five times.** The SUMP SHELF
+is worked at MID (`0` is a pit at LOW and deep above; `3` is shallow at LOW and
+drowned above), the DROWN-WALL SHELF at HIGH (`9` is stone until HIGH covers it;
+`1` is dry, wading, drowned). Every wheel sits across a trench of `O` — pits,
+not water, because the player of this dungeon owns the Cleats and a moat is a
+road. The Crossed Sluices (`0,4,2`) holds one of each and the Boss Key behind
+both, so the room is the dungeon's idea said out loud: you cannot hold two seas.
+
+**`tools/check-bellows.mjs` proves seven things per sill**, and reads the cone's
+reach out of feel.js: no hand reaches the wheel at any level in any mode; it is
+drowned at the sea the room is played at; one level down it is not; **no sea
+level frees it anywhere you could stand and pump** (the load-bearing one — drop
+it and the answer is "sound the conch to LOW and blow"); the declared stand is
+reachable, dry, and has the wheel in its cone; the stand is unreachable at every
+level where the wheel is already clear; and every door a wheel opens is a shut
+door that separates its room at all three levels. It also sweeps the game for a
+wheel outside a declared room.
+
+**Four things changed outside D4:**
+
+- **`Tide.blows` — the cone no longer blows through stone.** `covers` was pure
+  geometry, so a sealed wheel could be turned through two walls. Line of sight
+  resolves at the BASE level, never through the field, or the call does not
+  terminate.
+- **`GustWheel` restores its open state from the save.** The flag was written
+  from day one and never read.
+- **`walk-dungeons.mjs` knows a wheel door (`bellowsRoom.opens`) is passable and
+  a wheel payout (`bellowsRoom.gives`) is countable.** A script spawn is
+  invisible to every sweep in that tool.
+- **`shoot-rooms.mjs --bellows --dir=`** holds the item down through a real key
+  event so a cone can be photographed. Setting `player.bellowsHeld` from outside
+  survives zero frames — `handleInput` clears it at the top of every frame.
+
+**Seen on screen, and it is half good news.** At MID with the cone open the
+wheel's tile goes (38,76,140) -> (70,133,175) while the undrained shaft three
+tiles away stays deep: two water levels in one room in one frame, unmissable. At
+HIGH the cone is working just as hard and the tile does not change at all,
+because `dWell` draws the same tile at MID and HIGH — so pumping at the wrong
+sea looks exactly like pumping out of range. The wheel's sprite never says it is
+drowned either. Top entry in `docs/ART-BACKLOG.md`.
+
+### What is weak about D4
+
+- **The failing case is invisible.** See above. It is the third dungeon in a row
+  whose mechanic is legible when it works and silent when it does not.
+- **Six wheels, two shapes.** The Loft and the Gauge are the same sump shelf
+  with a different approach; the Sill and the Long Race are the same drown-wall
+  shelf on different axes. The Crossed Sluices is the only room that composes
+  them, and it is the last one.
+- **The Cliff Walk is decoration.** Light enemies over pits is the gust's combat
+  verb and nothing in the room requires it, so a player who never blows anything
+  into a hole loses nothing.
+- **Nobody has played it.** The replay proves the engine agrees with the model
+  at one sill. The other five are a checker's word.
+- **The trench is always two pits and the stand is always one tile.** That is
+  the geometry the cone's reach of 3 forces in a 10-tile room, and it means
+  every sill looks like the same fixture. A 2x1 sill room would buy a different
+  shape and none of the five is one.
 
 ### What the last session did (P8/D3, the Bogwater Sanctum and the Cleats)
 
@@ -1056,20 +1139,34 @@ Confirm the baseline before changing anything, and keep every line below green:
                                                BYTE-IDENTICAL. --sheet writes a
                                                contact sheet of every pick.
   node tools/test.mjs                          58/58
-  node tools/replay.mjs                        26/26, all SIX replays to the
-                                               pixel. d1-clawcrab-den-wide and
-                                               d2-fork-wrong also assert their
+  node tools/replay.mjs                        36/36, all EIGHT replays to the
+                                               pixel. d1-clawcrab-den-wide,
+                                               d2-fork-wrong, d3-undertow and
+                                               d4-drowned-sill also assert their
                                                `span` — transitions fired and
                                                the camera's extremes.
-  node tools/walk-dungeons.mjs                 29/29 (d1 and d2 are 24 rooms
-                                               each; the flood hops one-way
-                                               ledges now, and the 29th check
+  node tools/walk-dungeons.mjs                 29/29 (d1, d2 and d4 are 24
+                                               rooms each, d3 is 22; the flood
+                                               hops one-way ledges, swims from
+                                               d3 on, and treats a door a gust
+                                               wheel opens the way it treats a
+                                               puzzle-opened one. One check
                                                asserts every locked door
                                                actually separates its room)
   node tools/check-lens.mjs                    24/24, every Lens fork proved
                                                pinned, one-way, unanswerable at
                                                the level it is chosen at, and
                                                drawn as ONE tile there
+  node tools/check-cleats.mjs                  15/15, every torrent room proved
+                                               unreachable on foot and on the
+                                               surface, reachable on the floor,
+                                               and inside one breath
+  node tools/check-bellows.mjs                 58/58, every Cistern sill proved
+                                               out of reach by hand, drowned at
+                                               the sea it is played at, freed by
+                                               one level of cone and by nothing
+                                               else, and stood in only while it
+                                               is still drowned
   node tools/check-overworld.mjs               17/17 (the field flood is ~30s
                                                of its runtime)
   node tools/check-gates.mjs                   15/15 (pins ?seed= and owns the
@@ -1203,12 +1300,20 @@ measuring the machine, not the game. test.mjs is no longer load-flaky; a
 failure there is now yours.
 
 NEXT UP, and pick ONE:
-  - P8 for D4, the Cliffside Cistern and the Squall Bellows, and then D5-D6.
+  - P8 for D5, the Drowned Wood Shrine and the Reefseed, and then D6.
     READ docs/DUNGEON-STATUS.md FIRST — it is the board, it names the commit
-    each finished dungeon landed in, and it carries D4 written out as a to-do
-    with the problem the Bellows pose. D1, D2 and D3 are done; three provers
-    exist (check-anchor, check-lens, check-cleats) and they are three different
-    shapes on purpose. Write check-bellows.mjs BEFORE the rooms.
+    each finished dungeon landed in, and it carries D5 written out as a to-do
+    with the problem the Reefseed poses. D1-D4 are done; four provers exist
+    (check-anchor, check-lens, check-cleats, check-bellows) and they are four
+    different shapes on purpose, because each item was required for a different
+    reason: geometry, information, a mode, a held state. The Reefseed's is a
+    DELAY — what you threw it at is not what it becomes — so the fifth prover
+    is about a window in time rather than about a region of a room. Write
+    check-reefseed.mjs BEFORE the rooms, and make its first assertion the
+    arithmetic one: REEFSEED_GROW_FRAMES against TIDE_SWEEP_FRAMES decides
+    whether a conch press can land inside the window at all.
+  - (superseded, kept for the reasoning) P8 for D4, the Cliffside Cistern and
+    the Squall Bellows.
   - (superseded, kept for the reasoning) P8 for D3, the Bogwater Sanctum and
     the Kelp-Soled Cleats, and then D4-D6.
     D1 and D2 are DONE and each solved a different shape of problem: D1's item
@@ -1222,11 +1327,16 @@ NEXT UP, and pick ONE:
   - PT, towns and buildings. Independent of everything, stated top design
     priority, and the only one that needs no decision from anybody.
   - A room that claims to need its dungeon's item should DECLARE that in its
-    room data and be proved by a checker, both ways. There are two worked
-    examples now — check-anchor.mjs and check-lens.mjs — and they are different
-    shapes on purpose: the anchor's is a state-space flood over (tile, level),
-    the Lens's is a fixed-level flood plus a tile-identity claim. Write the
-    checker BEFORE the rooms. Neither can swim.
+    room data and be proved by a checker, both ways. There are four worked
+    examples now — check-anchor.mjs, check-lens.mjs, check-cleats.mjs and
+    check-bellows.mjs — and they are different shapes on purpose: the anchor's
+    is a state-space flood over (tile, level), the Lens's is a fixed-level
+    flood plus a tile-identity claim, the Cleats' is an arithmetic comparison
+    of two speeds, and the Bellows' is a reachability claim crossed with a cone
+    footprint. Write the checker BEFORE the rooms. AND DO NOT COPY ANOTHER
+    PROVER'S FLOOD WITHOUT READING IT: check-cleats hops anything that is not
+    solid, which is wrong for pits, and copying it cost D4 three false
+    failures.
   - P7.5's remainder is BLOCKED: it needs four dungeon map rips that are not
     in this repo. Do not start it by inventing the colour-register decision.
 

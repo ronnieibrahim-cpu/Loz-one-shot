@@ -142,6 +142,9 @@ const reach = await page.evaluate((ids) => {
   const F = window.__F, getTileDef = window.__getTileDef, getLegend = window.__getLegend;
   const SW = 10, SH = 8;                    // one SCREEN, in tiles
   const report = [];
+  // A room declares one sill or a list of them; normalise before reading.
+  const sillsOf = (def) => !def.bellowsRoom ? []
+    : (Array.isArray(def.bellowsRoom) ? def.bellowsRoom : [def.bellowsRoom]);
   for (const mapId of ids) {
     const m = window.__MAPS.get(mapId);
     // Every room's size in screens, and which map cell each room owns. A
@@ -254,9 +257,20 @@ const reach = await page.evaluate((ids) => {
     // the puzzle is solvable is a different tool's job (solve-switches.mjs for
     // switch rooms, check-anchor.mjs for the tide-gauge rooms). Without this a
     // room behind a puzzle door reads as stranded and the dungeon looks broken.
+    //
+    // A DOOR A GUST WHEEL OPENS IS THE SAME CASE. The Cliffside Cistern's
+    // sills are shut `dDoorClosed` tiles that a room script opens when its
+    // wheel comes round, and the flood can no more turn a wheel than it can
+    // solve a puzzle. `bellowsRoom.opens` names those tiles, and
+    // check-bellows.mjs is what proves each of them is actually reachable —
+    // in both directions, including that the wheel cannot be turned any other
+    // way. Without this the whole second half of d4 reads as stranded.
     const puzzleDoors = new Set();
     for (const [rk, def] of Object.entries(m.roomDefs)) {
       for (const [dx0, dy0] of def.puzzle?.reward?.openDoors || []) puzzleDoors.add(`${rk}:${dx0},${dy0}`);
+      for (const B of sillsOf(def)) {
+        for (const [dx0, dy0] of B.opens || []) puzzleDoors.add(`${rk}:${dx0},${dy0}`);
+      }
     }
     const isLock = (ch) => legend[ch] === 'dDoorLocked';
     const isBossDoor = (ch) => legend[ch] === 'dDoorBoss';
@@ -295,6 +309,11 @@ const reach = await page.evaluate((ids) => {
         if (e[0] === 'chest' && (o.item === 'key' || o.pickup === 'key')) keys++;
       }
       for (const s of def.puzzle?.reward?.spawn || []) if (s[3] && s[3].kind === 'key') keys++;
+      // A gust wheel pays out in a room script, which is invisible to every
+      // sweep here, so the sill declares what it releases and check-bellows
+      // proves the wheel can be turned. Miss this and d4 is walked believing
+      // it has two keys for three locks.
+      for (const B of sillsOf(def)) if (B.gives === 'key') keys++;
     }
     let bossKey = false;
     for (const def of Object.values(m.roomDefs)) {
@@ -302,6 +321,7 @@ const reach = await page.evaluate((ids) => {
         const o = e[3] || {};
         if (String(o.pickup || o.item || o.kind || '').toLowerCase() === 'bosskey') bossKey = true;
       }
+      for (const B of sillsOf(def)) if (String(B.gives || '').toLowerCase() === 'bosskey') bossKey = true;
     }
 
     const start = m.dungeon.startRoom;

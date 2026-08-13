@@ -302,6 +302,85 @@ export const PLANS = {
   },
 
   // -------------------------------------------------------------------------
+  // The Squall Loft, and the whole of D4 in one run: the wrong sea does
+  // nothing, the right sea turns the wheel.
+  //
+  // check-bellows.mjs proves this room against a model — that nothing reaches
+  // the wheel by hand, that no sea level frees it anywhere you can stand. This
+  // proves the half a model cannot see: that the ENGINE agrees, and in
+  // particular that a wheel under deep water refuses a gust it is standing
+  // inside of.
+  //
+  // The run does the same thing twice and gets two different answers:
+  //
+  //   1. AT HIGH. Swim up the sump shaft onto the shelf, pump, turn to face
+  //      the wheel — the cone is open, and the probes prove it: (1,1) reads MID
+  //      inside the cone while (7,4) reads HIGH outside it, in the same frame.
+  //      The wheel is `dWell`, which is deep at MID as well, so it stays
+  //      smothered and nothing opens. One level of cone is not enough here and
+  //      the run is the demonstration.
+  //   2. AT MID. Two presses of the conch (HIGH -> LOW -> MID, and the LOW step
+  //      is why the actor has to already be standing on the shelf — at LOW the
+  //      sump under it is an open pit). Pump again: (1,1) now reads LOW, the
+  //      wheel is in shallow water, and it turns.
+  //
+  // Then it leaves through the door the wheel opened, and `roomChanges: 1` is
+  // the assertion that it left exactly once and by that route — the room's
+  // other exit is the way it came in, back down to the Bellows Vault.
+  //
+  // Note the shape of the pumping directive: `b` alone first, then `b` and
+  // `left` together. The turn has to happen AFTER the cone opens, because
+  // `Player.updateBellows` only takes your feet once `bellowsOpen` is true —
+  // press left during the warm-up and the actor walks into the pit trench
+  // instead of aiming across it. That is a real cost of the item and the
+  // recording pays it.
+  // -------------------------------------------------------------------------
+  'd4-drowned-sill': {
+    note: 'The Squall Loft: pump at HIGH and the drowned wheel refuses, pump at MID '
+      + 'and it turns',
+    setup: {
+      seed: 20260806,
+      playerName: 'LINK',
+      items: { sword: 1, conch: 1, shield: 1, cleats: 1, bellows: 1 },
+      equipB: 'bellows',
+      equipA: 'conch',
+      maxHearts: 12,
+      hearts: 12,
+      tide: 2,
+      enter: ['d4', 0, 1, 3, 68, 100, 'up'],
+      probes: [[1, 1], [7, 4]],
+    },
+    steps: [
+      ['wait', 30],
+      // North up the shaft: floor, then two squares of sump that are deep at
+      // HIGH, then the shelf. He stops against the wall at the top.
+      ['hold', ['up'], 150],
+      ['wait', 20],
+      // Pump, then turn into the trench. The cone opens west across two pits.
+      ['hold', ['b'], 30],
+      ['hold', ['b', 'left'], 150],
+      ['wait', 30],
+      // HIGH -> LOW -> MID. The shelf is dry at every level, which is the only
+      // reason it is safe to stand here while the sump below turns to a hole.
+      ['tap', 'a', 90],
+      ['tap', 'a', 90],
+      ['wait', 30],
+      // The same stance, one sea lower, and this time the wheel comes round.
+      ['hold', ['b'], 30],
+      ['hold', ['b', 'left'], 150],
+      ['wait', 60],
+      // Down the shaft — deep again at MID. Short of the room's south exit on
+      // purpose: this run must leave by the door it opened and by nothing else.
+      ['hold', ['down'], 100],
+      ['wait', 20],
+      ['goto', 7, 3, 300],
+      ['hold', ['right'], 120],
+      ['wait', 40],
+    ],
+    assert: { roomChanges: 1 },
+  },
+
+  // -------------------------------------------------------------------------
   // Tidewash Grotto, entrance to the north half.
   //
   // The long one: eleven room entries, a chest, two pickups, a Small Key earned
