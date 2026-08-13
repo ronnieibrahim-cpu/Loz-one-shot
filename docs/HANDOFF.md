@@ -220,7 +220,7 @@ is in the page, and nothing steps until you say so.
 
 ## Hard-won lessons — do not rediscover these
 
-**The Cliffside Cistern (P8/D4), and the five things it cost.**
+**The Cliffside Cistern (P8/D4), and the six things it cost.**
 
 1. **A FOOTPRINT IS NOT A LINE OF SIGHT.** `Tide.covers` was pure geometry, so
    the Bellows' cone reached through walls: a wheel sealed in an alcove could
@@ -251,7 +251,21 @@ is in the page, and nothing steps until you say so.
    to reach its plate is unsolvable in the engine and the tool is right to fail
    it. Seat every block one tile from the plate it is meant to hold down.
 
-5. **A VALVE WROTE ITS SAVE FLAG AND NOTHING EVER READ IT.** `TideValve.interact`
+5. **A SCRIPT-SPAWNED REWARD EXISTS ONLY IN THE FRAME IT WAS RELEASED IN.** A
+   room script that spawns a key when its wheel comes round has released that
+   key exactly once, forever: the wheel is open afterwards, so the event never
+   fires again, and walking out without picking it up loses the key with
+   nothing left that can produce another. Every checker in the repo calls that
+   a solved dungeon, because they all reason about a room rather than about
+   leaving one. `checkPuzzle` already handles the puzzle-reward version of this
+   — it re-applies the reward silently when it sees the flag on entry — and a
+   script has to do the same thing by hand, in `onEnter`, guarded by a
+   `saveKey` on the pickup so a collected reward does not come back. Verified
+   live for both of D4's, in all four directions (spawns, survives leaving,
+   does not duplicate, does not return once taken); `check-bellows.mjs` now
+   fails any sill that `gives` something without an `onEnter`.
+
+6. **A VALVE WROTE ITS SAVE FLAG AND NOTHING EVER READ IT.** `TideValve.interact`
    has set `progress.flags[saveKey]` since the day it was written, and no code
    path restored it — so a wheel you turned was shut again when you re-entered
    the room, while the door it opened stayed open because a persisted TILE is a

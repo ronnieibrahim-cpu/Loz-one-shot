@@ -361,6 +361,21 @@ for (const r of rooms) {
       'stand reachable at ' + free.map(l => LEVEL_NAME[l]).join('/') + ' with the wheel already clear');
   }
 
+  // 7a. a wheel that pays out has to put its payout back
+  //
+  // A script-spawned pickup exists only in the frame it was released in, and a
+  // wheel fires once and is open forever afterwards. Leave the room without
+  // collecting and the reward is gone with nothing left that can release it —
+  // a soft lock that every checker here would call a solved dungeon. So a sill
+  // that `gives` anything must have an `onEnter` as well as an `onEvent`, which
+  // is where putting it back has to happen.
+  if (r.B.gives) {
+    const sc = r.def.script;
+    check(`${where}: the ${r.B.gives} it releases survives leaving the room`,
+      !!(sc && sc.onEnter && sc.onEvent),
+      'the room spawns a reward from onEvent and has no onEnter to put it back');
+  }
+
   // 7. the wheel buys something
   for (const [x, y] of r.B.opens || []) {
     const name = r.legend[r.grid[y][x]];

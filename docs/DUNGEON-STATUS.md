@@ -122,7 +122,7 @@ whichever session reaches D6, and it should be recorded here when it happens.
 ## D4 — Cliffside Cistern. DONE, and what it settled for D5-D6.
 
 24 rooms, one floor, re-authored around the Squall Bellows. Five sill rooms
-holding six wheels, `tools/check-bellows.mjs` (58 assertions), and the
+holding six wheels, `tools/check-bellows.mjs` (60 assertions), and the
 `d4-drowned-sill` replay.
 
 **The problem it had to solve.** The Bellows are the Anchor inside out: the

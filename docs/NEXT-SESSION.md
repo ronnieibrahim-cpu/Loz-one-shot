@@ -28,7 +28,7 @@ twice. **Run `git ls-remote --heads origin` before you start.**
 
 **D4 is re-authored around the Bellows, and the hard part was that the item
 takes your feet.** 24 rooms, one floor, the Bellows at room 12, five sill rooms
-holding six wheels, `tools/check-bellows.mjs` (58 assertions) and the
+holding six wheels, `tools/check-bellows.mjs` (60 assertions) and the
 `d4-drowned-sill` replay. The constraint table is in `docs/EXECUTION-PLAN.md`
 under "P8 status", and the dungeon's header comment in `src/data/dungeons-a.js`
 states the primitive once and builds five rooms out of it.
@@ -65,6 +65,14 @@ reachable, dry, and has the wheel in its cone; the stand is unreachable at every
 level where the wheel is already clear; and every door a wheel opens is a shut
 door that separates its room at all three levels. It also sweeps the game for a
 wheel outside a declared room.
+
+**One soft lock found by asking what happens if you walk away.** The Gauge's
+key and the Boss Key are spawned by room scripts, and a wheel fires once and is
+open forever after — so leaving either room without collecting lost the reward
+with nothing left that could release another. Both rooms now put it back in
+`onEnter`, guarded by a `saveKey` so a collected reward does not return, and
+`check-bellows.mjs` fails any sill that `gives` something without an `onEnter`.
+Verified live in all four directions.
 
 **Four things changed outside D4:**
 
@@ -1161,7 +1169,7 @@ Confirm the baseline before changing anything, and keep every line below green:
                                                unreachable on foot and on the
                                                surface, reachable on the floor,
                                                and inside one breath
-  node tools/check-bellows.mjs                 58/58, every Cistern sill proved
+  node tools/check-bellows.mjs                 60/60, every Cistern sill proved
                                                out of reach by hand, drowned at
                                                the sea it is played at, freed by
                                                one level of cone and by nothing

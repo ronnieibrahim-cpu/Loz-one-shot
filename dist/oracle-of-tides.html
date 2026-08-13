@@ -20861,8 +20861,24 @@ function installDungeonsA() {
           ['keese', 6, 6],
         ],
         script: {
+          // A SCRIPT-SPAWNED PICKUP EXISTS ONLY IN THE FRAME IT WAS RELEASED
+          // IN. Swim out without collecting this key and it is gone, with the
+          // wheel still open and nothing left that can ever release it again —
+          // a soft lock three rooms from the Boss Key, invisible to every
+          // checker in the repo because they all reason about the room rather
+          // than about leaving it. So the wheel sets a flag, the key carries a
+          // save key of its own, and entering the room puts it back if it was
+          // released and never picked up.
+          onEnter(game) {
+            if (game.progress.flags.d4GaugeWheel && !game.progress.secrets.d4GaugeKey) {
+              game.spawnPickup(64, 48, 'key', { grabDelay: 14, saveKey: 'd4GaugeKey' });
+            }
+          },
           onEvent(game, name, data) {
-            if (name === 'valve' && data && data.open) game.spawnPickup(64, 48, 'key', { grabDelay: 14 });
+            if (name !== 'valve' || !data || !data.open) return;
+            game.progress.flags.d4GaugeWheel = true;
+            if (game.progress.secrets.d4GaugeKey) return;
+            game.spawnPickup(64, 48, 'key', { grabDelay: 14, saveKey: 'd4GaugeKey' });
           },
         },
       },
@@ -21011,15 +21027,24 @@ function installDungeonsA() {
           ['stalfos', 5, 3],
         ],
         script: {
+          // Put the Boss Key back if it was released and never collected — see
+          // the Cistern Gauge for why. This is the room where getting that
+          // wrong ends the dungeon.
+          onEnter(game) {
+            if (game.progress.flags.d4Sluices && !game.progress.secrets.d4BossKey) {
+              game.spawnPickup(64, 64, 'bossKey', { grabDelay: 14, saveKey: 'd4BossKey' });
+            }
+          },
           onEvent(game, name, data) {
             if (name !== 'valve' || !data || !data.open) return;
             // Both wheels, and the pickup lands in the middle of the room
             // rather than on either shelf: whichever one you turned second, you
             // have to swim out to collect it.
             const wheels = game.entities.filter(e => e.needTurns != null);
-            if (wheels.length === 2 && wheels.every(w => w.open)) {
-              game.spawnPickup(64, 64, 'bossKey', { grabDelay: 14 });
-            }
+            if (wheels.length !== 2 || !wheels.every(w => w.open)) return;
+            game.progress.flags.d4Sluices = true;
+            if (game.progress.secrets.d4BossKey) return;
+            game.spawnPickup(64, 64, 'bossKey', { grabDelay: 14, saveKey: 'd4BossKey' });
           },
         },
       },
