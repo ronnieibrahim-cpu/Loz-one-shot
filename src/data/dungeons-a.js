@@ -736,16 +736,74 @@ export function installDungeonsA() {
   });
 
   // --- Dungeon 2: Coral Spire ----------------------------------------------
-  // Tide theme: raise the water and it carries you up; drop it and you walk the
-  // floor you were just swimming over. Two floors, joined by wells rather than
-  // stairs wherever the tide can do the lifting.
   //
-  // Intended route:
-  //   3,7 entrance -> 3,6 -> 3,5 hub -> 2,5 Dungeon Map -> 4,5 Small Key 1
-  //   -> 3,4 wells -> stairs at 2,4 up to floor 1
-  //   -> 1F: 3,5 -> 2,5 Compass -> 4,5 Small Key 2 -> 3,4 -> 3,3 locked
-  //   -> 4,3 Reefguard (miniboss) -> 2,3 big chest: Bombs
-  //   -> 3,2 Boss Key -> boss door -> 3,1 Anemos
+  // TIDE THEME: COMMIT-BLIND BECOMES PLAN-FIRST. The spire is a tower of dry
+  // shafts, and a dry shaft tells you nothing. When the sea comes in, one of
+  // them is water you can wade, one is water over your head, and one is still
+  // a hole. You cannot tell them apart by looking down them, and by the time
+  // the water arrives you have already chosen which one you are standing over.
+  // The Brineglass Lens is the only thing in the game that draws the room as
+  // it WILL be, and this dungeon is where you are taught to look before you
+  // commit rather than after.
+  //
+  // THE FORK PRIMITIVE, stated once because two rooms are built out of it.
+  // Written up a column, from the shelf the player decides on:
+  //
+  //     .          the way on          <- reachable only after the water moves
+  //     4          the shaft, 2 tiles
+  //     4
+  //     .          the alcove floor    <- where the ledge drops you
+  //     /          a stair back out    <- the cost of being wrong
+  //     "          the ledge           <- ONE WAY. There is no climbing back.
+  //     .          the shelf           <- the decision, and the Lens is read here
+  //
+  //   `4` dDrain   an open shaft at LOW, wading depth at MID
+  //   `0` dSump    an open shaft at LOW, over your head at MID
+  //   `O` dPit     an open shaft at every level, for ever
+  //
+  // AT LOW ALL THREE ARE THE SAME TILE. Not three tiles that resemble each
+  // other — dDrain's LOW form and dSump's LOW form ARE `dPit`, the same art in
+  // the same palette, which is why tools/check-lens.mjs can prove the room
+  // instead of asserting it. One level up they are three different answers.
+  //
+  // THE ROOM PINS THE TIDE, and that is the load-bearing half of the design.
+  // `tideForce: 0` sets the room to LOW on entry and REFUSES the conch, so the
+  // player cannot sound their way to MID, look, and sound their way back. The
+  // only thing that moves the water in here is the coral sluice at the bottom
+  // of each alcove — and by the time you can put a hand on one, you have
+  // already taken a ledge you cannot climb back up. Take the wrong shaft and
+  // the stair beside you puts you back down the spire with the walk to do
+  // again. check-lens.mjs asserts the pin, both the one-way-ness and the
+  // no-way-across, that the room answers nothing at the level it is pinned to,
+  // that exactly the right branches pay off one level up, and that every
+  // branch draws THE SAME TILE where the player is standing when they choose.
+  //
+  // Neither shaft is one tile deep, and that is not decoration: a gap hop
+  // clears exactly one JUMPABLE tile (GAP_HOP_MAX_SPAN), and while a dungeon
+  // pit is not JUMPABLE at all, deep water is not either — two tiles is the
+  // width at which no future retuning of the hop can open a fork by accident.
+  //
+  // WHY EVERY FORK IS ONE SCREEN. A large room was considered for these and
+  // rejected on purpose. The whole of the choice is that all of the branches
+  // are in front of you and none of them can be told apart; a fork spread
+  // across two screens would need the Lens because half of it was off camera,
+  // which is the right requirement for the wrong reason. The two large rooms
+  // in this dungeon are the miniboss arena and the spire's inner stair, where
+  // size is the point and nothing is being hidden.
+  //
+  // Intended route (24 rooms; the Lens is room 14 of 24):
+  //   3,7 mouth -> 3,6 landing -> 2,6 bone cell (a blank) -> 3,5 gallery
+  //   -> 2,5 Dungeon Map -> 4,5 torches (Small Key 1) -> 3,4 rising chamber
+  //   -> 3,3 Barnacle Skin (the charm) -> 2,4 stair coil [locked, key 1]
+  //   -> 1F: 2,4 landing -> 2,5 anemone cell -> 3,4 concourse
+  //   -> 4,4 THE BRINEGLASS LENS -> 4,5 glass cell (phased, learn to look)
+  //   -> 4,3 [FORK 1] -> 4,2 Reefguard (miniboss, Small Key 2)
+  //   -> 5,3 Bombs -> 5,4 whelk cell -> 3,2 spire ascent (boss door)
+  //   -> [locked, key 2] 2,3 drowned cell -> 2,2 [FORK 2] -> 2,1 Boss Key
+  //   -> boss door -> 3,1 Anemos
+  //
+  // Every room after the Lens is behind a fork or needs the Lens in its own
+  // right, with one stated exception: 3,1 is the boss room.
   registerMap({
     id: 'd2',
     kind: 'dungeon',
@@ -765,109 +823,36 @@ export function installDungeonsA() {
       entrance: { map: 'overworld', floor: 0, rx: 10, ry: 5, px: 64, py: 32 },
     },
     rooms: {
-      '0,2,4': {
-        name: 'Stair Coil',
+      // ---- floor 0: the flooded base. The conch is the only tool. ---------
+      '0,3,7': {
+        name: 'Spire Mouth',
         map: [
-          '##########',
-          '##########',
-          '##....../#',
-          '##........',
-          '##........',
-          '##......##',
           '####..####',
-          '####..####',
+          '#........#',
+          '#.p....p.#',
+          '#........#',
+          '#.33..33.#',
+          '#........#',
+          '#U......U#',
+          '####/#####',
         ],
         warps: [
-          { x: 8, y: 2, to: { map: 'd2', floor: 1, rx: 3, ry: 5, px: 72, py: 96 } },
+          { x: 4, y: 7, to: { map: 'overworld', floor: 0, rx: 10, ry: 5, px: 64, py: 32, dir: 'down' } },
         ],
-        entities: [
-          ['crab', 3, 4],
+        readable: [
+          [2, 3, 'Coral script over the door: "What rises, carries.\nWhat falls, reveals. Look before you fall."'],
         ],
-      },
-      '0,2,5': {
-        name: 'Map Nook',
-        map: [
-          '####..####',
-          '####..####',
-          '##......##',
-          '##........',
-          '##........',
-          '##..pp..##',
-          '##########',
-          '##########',
-        ],
-        entities: [
-          ['pickup', 4, 3, { kind: 'dungeonMap' }],
-          ['urchin', 6, 2],
-        ],
-      },
-      '0,3,4': {
-        name: 'Rising Chamber',
-        map: [
-          '##########',
-          '#.444444.#',
-          '#.444444.#',
-          '..........',
-          '..........',
-          '#.444444.#',
-          '#.44..44.#',
-          '####..####',
-        ],
-        entities: [
-          ['jellyfish', 3, 2],
-          ['barnacle', 6, 5],
-          ['switch', 1, 2],
-          ['switch', 8, 2],
-          ['block', 1, 3],
-          ['block', 8, 3],
-        ],
-        puzzle: {
-          switches: 'all',
-          flag: 'd2_034_puzzle',
-          reward: {
-            spawn: [['pickup', 4, 3, { kind: 'heart' }]],
-            say: 'Water drains out of a niche in the wall.',
-          },
-        },
-      },
-      '0,3,5': {
-        name: 'Spire Well',
-        map: [
-          '####..####',
-          '#..q..q..#',
-          '#.333333.#',
-          '..333333..',
-          '..333333..',
-          '#.333333.#',
-          '#..q..q..#',
-          '####..####',
-        ],
-        entities: [
-          ['jellyfish', 4, 3],
-          ['crab', 2, 5],
-          ['torch', 1, 1],
-          ['torch', 8, 1],
-          ['torch', 1, 6],
-        ],
-        puzzle: {
-          torches: 'all',
-          flag: 'd2_035_puzzle',
-          reward: {
-            spawn: [['pickup', 4, 1, { kind: 'rupee5' }]],
-            say: 'Loose stone shifts, and something rolls out.',
-          },
-        },
       },
       '0,3,6': {
         name: 'Coral Landing',
         map: [
           '####..####',
+          '#..q..q..#',
           '#.3....3.#',
+          '..3....3.#',
+          '..3....3.#',
           '#.3....3.#',
-          '#........#',
-          '#........#',
-          '#.3____3.#',
-          '#........#',
+          '#..q..q..#',
           '####..####',
         ],
         entities: [
@@ -883,127 +868,514 @@ export function installDungeonsA() {
           },
         },
       },
-      '0,3,7': {
-        name: 'Spire Mouth',
+      '0,2,6': {
+        name: 'Bone Cell',
         map: [
-          '####..####',
+          '##########',
           '#........#',
-          '#.p....p.#',
+          '#..2222..#',
+          '#..2222...',
+          '#..2222...',
+          '#..2222..#',
           '#........#',
-          '#.33..33.#',
-          '#........#',
-          '#........#',
-          '####/#####',
+          '##########',
         ],
-        warps: [
-          { x: 4, y: 7, to: { map: 'overworld', floor: 0, rx: 10, ry: 5, px: 64, py: 32, dir: 'down' } },
+        entities: [
+          ['pickup', 2, 1, { kind: 'blank' }],
+          ['keese', 7, 6],
         ],
         readable: [
-          [2, 3, 'Coral script: "What rises, carries. What falls, reveals."'],
+          [7, 1, 'Scratched into the shell: "The carver in Tidewatch\nwants bone, not gold."'],
         ],
       },
-      '0,4,4': {
-        name: 'Sealed Cell',
+      '0,3,5': {
+        name: 'Tide Gallery',
+        // The sluice floor is dry at LOW, ankle deep at MID and OVER YOUR HEAD
+        // at HIGH — so the hub itself teaches that the tide takes things away
+        // as well as giving them, and it does it in a room with a dry ring
+        // round the outside where nobody can be stranded.
         map: [
-          '##########',
-          '##########',
-          '##.3333.##',
-          '...3333.##',
-          '...3333.##',
-          '##.3333.##',
           '####..####',
+          '#..q..q..#',
+          '#.111111.#',
+          '..111111..',
+          '..111111..',
+          '#.111111.#',
+          '#..q..q..#',
           '####..####',
         ],
         entities: [
-          ['chest', 7, 3, { big: true, item: 'lens', level: 1 }],
-          ['pickup', 4, 3, { kind: 'rupee20' }],
-          ['urchin', 2, 2],
+          ['jellyfish', 4, 3],
+          ['crab', 2, 5],
+        ],
+      },
+      '0,2,5': {
+        name: 'Map Nook',
+        map: [
+          '##########',
+          '##########',
+          '##......##',
+          '##.....2..',
+          '##.....2..',
+          '##......##',
+          '##########',
+          '##########',
+        ],
+        entities: [
+          ['pickup', 4, 3, { kind: 'dungeonMap' }],
+          ['urchin', 6, 2],
         ],
       },
       '0,4,5': {
         name: 'Torch Cell',
         map: [
-          '####..####',
-          '####..####',
-          '##......##',
-          '........##',
-          '.._____.##',
-          '##......##',
           '##########',
+          '#........#',
+          '#..2222..#',
+          '...2222..#',
+          '...2222..#',
+          '#..2222..#',
+          '#........#',
           '##########',
         ],
         entities: [
-          ['torch', 2, 2],
-          ['torch', 7, 2],
-          ['torch', 4, 5],
-          ['keese', 5, 3],
+          ['torch', 1, 1],
+          ['torch', 8, 1],
+          ['torch', 4, 6],
+          ['keese', 5, 2],
         ],
         puzzle: {
           torches: 'all',
           flag: 'd2_torches',
-          reward: { spawn: [['pickup', 4, 3, { kind: 'key' }]], say: 'The three flames answer each other.' },
+          reward: {
+            spawn: [['pickup', 4, 3, { kind: 'key' }]],
+            say: 'The three flames answer each other.',
+          },
         },
       },
-      '1,2,3': {
-        name: 'Cracked Cell',
+      '0,3,4': {
+        name: 'Rising Chamber',
+        // The drain band splits the room east to west at LOW, so the Chartstone
+        // and the stair coil are both behind a tide change rather than behind a
+        // key. The switch pair opens the door north; both blocks are seated
+        // orthogonally adjacent to their switch with floor behind to push from.
+        map: [
+          '####.#####',
+          '####D#####',
+          '#........#',
+          '..444444..',
+          '..444444..',
+          '#........#',
+          '#........#',
+          '####..####',
+        ],
+        entities: [
+          ['switch', 1, 5],
+          ['block', 2, 5],
+          ['switch', 8, 6],
+          ['block', 7, 6],
+          ['barnacle', 4, 6],
+        ],
+        puzzle: {
+          switches: 'all',
+          flag: 'd2_034_puzzle',
+          reward: {
+            openDoors: [[4, 1]],
+            say: 'Water drains out of a niche, and the door lifts.',
+          },
+        },
+        readable: [
+          [8, 2, 'A rusted plate: "The floor of this room is a door.\nShut the sea out and it is only a hole."'],
+        ],
+      },
+      '0,4,4': {
+        name: 'Chartstone Alcove',
         map: [
           '##########',
           '##########',
-          '##..XX..##',
-          '#.........',
-          '#..""""...',
+          '##......##',
+          '.........#',
+          '.........#',
+          '##......##',
+          '##########',
+          '##########',
+        ],
+        entities: [
+          ['chest', 5, 3, { pickup: 'chartstone' }],
+          ['keese', 7, 4],
+        ],
+      },
+      '0,3,3': {
+        name: 'Cistern Cell',
+        // The hand-placed charm for this dungeon, and it is a MID charm on
+        // purpose: the player walks into the Coral Spire holding one essence,
+        // so the MID case is the only case they own, and a LOW or HIGH charm
+        // here would be a reward nobody could switch on. See docs/ITEMS.md and
+        // tools/check-charms.mjs, which prints every hand-placed charm.
+        map: [
+          '##########',
+          '#........#',
+          '#..2222..#',
+          '#..2222..#',
+          '#..2222..#',
+          '#..2222..#',
+          '#........#',
+          '####.#####',
+        ],
+        entities: [
+          ['chest', 2, 1, { charm: 'barnacleSkin' }],
+          ['jellyfish', 6, 3],
+        ],
+      },
+      '0,2,4': {
+        name: 'Stair Coil',
+        map: [
+          '##########',
+          '##########',
+          '#./..#####',
+          '#....L....',
+          '#....#....',
+          '#....#####',
+          '##########',
+          '##########',
+        ],
+        warps: [
+          { x: 2, y: 2, to: { map: 'd2', floor: 1, rx: 2, ry: 4, px: 64, py: 48 } },
+        ],
+        entities: [
+          ['crab', 7, 4],
+        ],
+      },
+
+      // ---- floor 1: the spire, and the Lens ------------------------------
+      '1,2,4': {
+        name: 'Upper Landing',
+        map: [
+          '##########',
+          '##########',
+          '##....../#',
+          '##........',
+          '##........',
           '##......##',
           '####..####',
           '####..####',
         ],
+        warps: [
+          { x: 8, y: 2, to: { map: 'd2', floor: 0, rx: 2, ry: 4, px: 48, py: 48 } },
+        ],
         entities: [
-          ['pickup', 4, 4, { kind: 'rupee20' }],
-          ['keese', 6, 2],
+          ['keese', 3, 4],
         ],
       },
-      '1,2,4': {
+      '1,2,5': {
         name: 'Anemone Cell',
         map: [
           '####..####',
           '####..####',
           '##......##',
-          '##.3333...',
-          '##.3333...',
+          '#..3333..#',
+          '#..3333..#',
+          '##......##',
+          '##########',
+          '##########',
+        ],
+        entities: [
+          ['urchin', 2, 2],
+          ['pickup', 7, 4, { kind: 'fairy' }],
+        ],
+      },
+      '1,3,4': {
+        name: 'Spire Concourse',
+        map: [
+          '##########',
+          '#..q..q..#',
+          '#........#',
+          '..........',
+          '..........',
+          '#........#',
+          '#..q..q..#',
+          '##########',
+        ],
+        entities: [
+          ['crab', 2, 2],
+          ['keese', 7, 5],
+        ],
+      },
+      '1,4,4': {
+        name: 'Sealed Cell',
+        map: [
+          '####..####',
+          '#........#',
+          '#..3333..#',
+          '...3333..#',
+          '...3333..#',
+          '#..3333..#',
+          '#U......U#',
+          '####..####',
+        ],
+        entities: [
+          ['chest', 2, 1, { big: true, item: 'lens', level: 1 }],
+          ['urchin', 7, 1],
+        ],
+        readable: [
+          [7, 5, 'A pane of green glass set in the wall, and behind it\nthe room stands a hand deeper in water than it is.'],
+        ],
+      },
+      '1,4,5': {
+        name: 'Glass Cell',
+        // The Lens's COMBAT verb, taught in the first room past the chest.
+        // These two belong to the high water and are neither drawn nor
+        // hittable without the Lens up — see updatePhaseShift in game.js.
+        map: [
+          '####..####',
+          '####..####',
+          '##......##',
+          '#.......##',
+          '#.......##',
+          '##......##',
+          '##########',
+          '##########',
+        ],
+        entities: [
+          ['keese', 3, 3, { phase: 2 }],
+          ['keese', 6, 4, { phase: 2 }],
+          ['pickup', 4, 2, { kind: 'heartPiece' }],
+        ],
+        readable: [
+          [1, 4, 'Nothing here. The salt on the floor says otherwise.'],
+        ],
+      },
+      '1,4,3': {
+        name: 'The First Fork',
+        // FORK 1 — the teaching one. Two shafts, and the west one fills.
+        // See the primitive at the top of this dungeon; tools/check-lens.mjs
+        // proves this room in both directions.
+        map: [
+          '#.######.#',
+          '#4######O#',
+          '#4######O#',
+          '#.######.#',
+          '#./####/.#',
+          '#.<....>.#',
+          '#..#..#..#',
+          '####..####',
+        ],
+        tideForce: 0,
+        entities: [
+          ['valve', 2, 6],
+          ['valve', 7, 6],
+        ],
+        warps: [
+          { x: 2, y: 4, to: { map: 'd2', floor: 1, rx: 2, ry: 4, px: 64, py: 64, dir: 'down' } },
+          { x: 7, y: 4, to: { map: 'd2', floor: 1, rx: 2, ry: 4, px: 64, py: 64, dir: 'down' } },
+        ],
+        script: {
+          onEvent(game, name) {
+            // The sluice is the ONLY thing that moves the water in here: the
+            // room pins the tide and refuses the conch, and this is what makes
+            // the fork a commitment rather than a thing to sound at twice.
+            if (name === 'valve') game.forceTideStep();
+          },
+        },
+        readable: [
+          [4, 6, 'Cut into the shelf: "Two throats, one drinks.\nThe dry one keeps its own counsel."'],
+        ],
+        lensRoom: {
+          pin: 0, reveals: 1, decide: [4, 5],
+          branches: [
+            { name: 'the west shaft', land: [1, 5], probe: [1, 2], onward: [1, 0], escape: [2, 4] },
+            { name: 'the east shaft', land: [8, 5], probe: [8, 2], onward: [8, 0], escape: [7, 4] },
+          ],
+        },
+      },
+      '1,4,2': {
+        name: 'Reefguard Hall',
+        // 2x1 — TWENTY characters a row, one grid, and it owns map cell 5,2 as
+        // well as its own, so nothing else may be keyed there. Size is the
+        // point here rather than concealment: the Reefguard is the dungeon's
+        // set piece and it wants room to circle in, which a 10x8 screen does
+        // not give. Both of the First Fork's throats come up into this room's
+        // south wall — one of them is walkable and one of them never is, and
+        // they are the same tile from the shelf below.
+        size: [2, 1],
+        map: [
+          '####################',
+          '#........##........#',
+          '#........##..3333..#',
+          '.............3333..#',
+          '.............3333..#',
+          '#........##..3333..#',
+          '#.U....U.##.U....U.#',
+          '#.######.#####..####',
+        ],
+        entities: [
+          ['reefguard', 4, 3],
+          ['urchin', 15, 4],
+        ],
+        puzzle: {
+          enemies: true,
+          flag: 'd2_reefguard',
+          reward: {
+            spawn: [['pickup', 4, 1, { kind: 'key' }]],
+            say: 'The guard sinks back into the coral, and something\nfalls out of it.',
+          },
+        },
+      },
+      '1,5,3': {
+        name: 'Bomb Vault',
+        map: [
+          '####..####',
+          '####..####',
+          '##......##',
+          '##......##',
+          '##......##',
           '##......##',
           '####..####',
           '####..####',
         ],
         entities: [
-          ['urchin', 3, 3],
-          ['pickup', 6, 4, { kind: 'fairy' }],
+          ['chest', 2, 4, { big: true, item: 'bombs', level: 1 }],
         ],
       },
-      '1,2,5': {
-        name: 'Compass Cell',
+      '1,5,4': {
+        name: 'Whelk Cell',
         map: [
           '####..####',
           '####..####',
           '##......##',
-          '#.........',
-          '#.........',
+          '##......##',
+          '##......##',
           '##..pp..##',
           '##########',
           '##########',
         ],
         entities: [
-          ['chest', 4, 3, { pickup: 'chartstone' }],
-          ['urchin', 6, 2],
+          ['keese', 6, 3, { phase: 2 }],
+          ['pickup', 3, 3, { kind: 'rupee20' }],
         ],
       },
-      '1,3,1': {
-        name: 'Anemos, the Crowned Column',
+      '1,3,2': {
+        name: 'Spire Ascent',
+        // 1x2 — SIXTEEN rows of ten, one grid, owning map cells 3,2 and 3,3.
+        // The spire's inner stair, and the one room in the dungeon where the
+        // camera moves on the vertical axis. Nothing is hidden by the size:
+        // the boss door is at the top and the locked door is at the bottom and
+        // neither is a choice, they are both just a long way apart.
+        size: [1, 2],
+        map: [
+          '####..####',
+          '#........#',
+          '####B#####',
+          '#.3....3..',
+          '#.3....3..',
+          '#........#',
+          '#..q..q..#',
+          '#........#',
+          '#........#',
+          '#..2222..#',
+          '#..2222..#',
+          '.L.2222..#',
+          '#..2222..#',
+          '#..2222..#',
+          '#........#',
+          '##########',
+        ],
+        entities: [
+          ['jellyfish', 4, 10],
+          ['crab', 6, 13],
+          ['keese', 3, 5],
+        ],
+      },
+      '1,2,3': {
+        name: 'Drowned Cell',
+        map: [
+          '####..####',
+          '#........#',
+          '#..1111..#',
+          '#..1111...',
+          '#..1111..#',
+          '#..1111..#',
+          '#........#',
+          '##########',
+        ],
+        entities: [
+          ['urchin', 2, 6],
+          ['pickup', 7, 1, { kind: 'rupee20' }],
+        ],
+      },
+      '1,2,2': {
+        name: 'The Sounding Fork',
+        // FORK 2 — the same primitive with a third answer in it, and the third
+        // answer is the one the first fork could not teach: a shaft that fills
+        // OVER YOUR HEAD. At LOW all three throats are the same `dPit`. One
+        // level up they are wading depth, a hole, and a drowning.
+        map: [
+          '#..#..#..#',
+          '#44#OO#00#',
+          '#44#OO#00#',
+          '#..#..#..#',
+          '#./#./#./#',
+          '#"##"##"##',
+          '#........#',
+          '####..####',
+        ],
+        tideForce: 0,
+        entities: [
+          ['valve', 2, 3],
+          ['valve', 5, 3],
+          ['valve', 8, 3],
+        ],
+        warps: [
+          { x: 2, y: 4, to: { map: 'd2', floor: 1, rx: 3, ry: 3, px: 64, py: 208, dir: 'down' } },
+          { x: 5, y: 4, to: { map: 'd2', floor: 1, rx: 3, ry: 3, px: 64, py: 208, dir: 'down' } },
+          { x: 8, y: 4, to: { map: 'd2', floor: 1, rx: 3, ry: 3, px: 64, py: 208, dir: 'down' } },
+        ],
+        script: {
+          onEvent(game, name) {
+            if (name === 'valve') game.forceTideStep();
+          },
+        },
+        readable: [
+          [4, 6, 'Three marks on the shelf, and beneath them:\n"One wades. One waits. One keeps you."'],
+        ],
+        lensRoom: {
+          pin: 0, reveals: 1, decide: [4, 6],
+          branches: [
+            { name: 'the west throat', land: [1, 4], probe: [1, 1], onward: [1, 0], escape: [2, 4] },
+            { name: 'the middle throat', land: [4, 4], probe: [4, 1], onward: [4, 0], escape: [5, 4] },
+            { name: 'the east throat', land: [7, 4], probe: [7, 1], onward: [7, 0], escape: [8, 4] },
+          ],
+        },
+      },
+      '1,2,1': {
+        name: 'Bosskey Cell',
         map: [
           '##########',
           '#........#',
           '#........#',
-          '#....>...#',
-          '#....>...#',
-          '#....>...#',
+          '#..2222..#',
+          '#..2222..#',
+          '#........#',
+          '#........#',
+          '#..#..#..#',
+        ],
+        entities: [
+          ['chest', 4, 2, { pickup: 'bossKey' }],
+          ['jellyfish', 2, 5],
+        ],
+      },
+      '1,3,1': {
+        name: 'Anemos, the Crowned Column',
+        // The conch is suppressed, so the arena is whatever the player walked
+        // in with — and the floor is basin, which is walkable at all three
+        // levels, because a locked room has to work at whichever one that was.
+        map: [
+          '##########',
+          '#........#',
+          '#........#',
+          '#..2222..#',
+          '#..2222..#',
+          '#..2222..#',
           '#........#',
           '####..####',
         ],
@@ -1016,157 +1388,6 @@ export function installDungeonsA() {
             if (name === 'bossDead') game.spawnPickup(80, 40, 'heartContainer', { grabDelay: 30 });
           },
         },
-      },
-      '1,3,2': {
-        name: 'Bosskey Well',
-        map: [
-          '####..####',
-          '#........#',
-          '####B#####',
-          '#........#',
-          '#.3....3.#',
-          '#........#',
-          '#........#',
-          '####..####',
-        ],
-        entities: [
-          ['chest', 6, 4, { pickup: 'bossKey' }],
-          ['jellyfish', 2, 4],
-        ],
-      },
-      '1,3,3': {
-        name: 'Upper Lock',
-        map: [
-          '####..####',
-          '#........#',
-          '####L#####',
-          '..........',
-          '...""""...',
-          '#........#',
-          '#........#',
-          '####..####',
-        ],
-        entities: [
-          ['crab', 2, 4],
-          ['urchin', 6, 5],
-        ],
-      },
-      '1,3,4': {
-        name: 'Coral Balcony',
-        map: [
-          '####..####',
-          '#.33..33.#',
-          '####L#####',
-          '..........',
-          '..........',
-          '#.3....3.#',
-          '#.33..33.#',
-          '####..####',
-        ],
-        entities: [
-          ['jellyfish', 4, 3],
-          ['keese', 2, 2],
-          // Only in the room at HIGH. Invisible and untouchable below it until
-          // the Brineglass Lens is raised — see docs/ITEMS.md.
-          ['urchin', 6, 4, { phase: 2 }],
-          ['urchin', 3, 4, { phase: 2 }],
-        ],
-      },
-      '1,3,5': {
-        name: 'Upper Landing',
-        map: [
-          '####..####',
-          '##....../#',
-          '##...<..##',
-          '.....<....',
-          '.....<....',
-          '##......##',
-          '#........#',
-          '##########',
-        ],
-        warps: [
-          { x: 8, y: 1, to: { map: 'd2', floor: 0, rx: 2, ry: 4, px: 112, py: 40 } },
-        ],
-        entities: [
-          ['keese', 3, 4],
-        ],
-      },
-      '1,4,3': {
-        name: 'Reefguard Hall',
-        map: [
-          '##########',
-          '##..pp..##',
-          '##......##',
-          '..........',
-          '..........',
-          '##_____.##',
-          '##......##',
-          '####..####',
-        ],
-        entities: [
-          ['reefguard', 4, 3],
-        ],
-        puzzle: {
-          enemies: true,
-          flag: 'd2_reefguard',
-          reward: { say: 'The guard sinks back into the coral.' },
-        },
-      },
-      '1,4,4': {
-        name: 'Whelk Cell',
-        map: [
-          '####..####',
-          '####..####',
-          '##..pp..##',
-          '........##',
-          '........##',
-          '##..pp..##',
-          '####..####',
-          '####..####',
-        ],
-        entities: [
-          ['barnacle', 4, 3],
-          ['pickup', 2, 2, { kind: 'rupee20' }],
-        ],
-      },
-      '1,4,5': {
-        name: 'Block Cell',
-        map: [
-          '####..####',
-          '####..####',
-          '##......##',
-          '.........#',
-          '.........#',
-          '##......##',
-          '##########',
-          '##########',
-        ],
-        entities: [
-          ['block', 4, 4],
-          ['block', 5, 3],
-          ['switch', 4, 5],
-        ],
-        puzzle: {
-          switches: 'all',
-          flag: 'd2_block',
-          reward: { spawn: [['pickup', 4, 2, { kind: 'key' }]], say: 'Stone settles into stone.' },
-        },
-      },
-      '1,5,3': {
-        name: 'Bomb Vault',
-        map: [
-          '##########',
-          '##########',
-          '##......##',
-          '.........#',
-          '........##',
-          '##......##',
-          '##########',
-          '##########',
-        ],
-        entities: [
-          ['chest', 4, 3, { big: true, item: 'bombs', level: 1 }],
-        ],
       },
     },
   });

@@ -195,6 +195,68 @@ export const PLANS = {
   },
 
   // -------------------------------------------------------------------------
+  // Coral Spire, The First Fork: take the WRONG shaft on purpose.
+  //
+  // check-lens.mjs proves this room against a model. This proves the engine
+  // agrees with the model, and it deliberately proves the half that is easy to
+  // get wrong in data and impossible to get wrong in a checker: THE COST.
+  //
+  // Four claims, in order:
+  //   1. the room pins the tide. `tideForce: 0` puts the sea at LOW on entry
+  //      whatever the player walked in with — the setup below says `tide: 1`
+  //      and the first probe reads LOW anyway.
+  //   2. the ledge is one-way. The actor hops EAST off the shelf and from that
+  //      moment the shelf is behind a lip it cannot climb.
+  //   3. the sluice is the only thing that moves the water, and it moves it one
+  //      step. The probes read MID after the valve, at both shafts.
+  //   4. the east shaft does not open. It is `dPit` at LOW and `dPit` at MID
+  //      and the actor is still in the alcove after walking into it.
+  // Then it takes the stair, which is the walk back, and `roomChanges: 1` is
+  // the assertion that it left the room exactly once and by that route.
+  //
+  // The actor cannot read a Lens overlay, so it cannot make this choice for the
+  // right reason. It is scripted into the wrong branch, which is what a player
+  // without the Lens is doing too — that is the whole point of the room.
+  // -------------------------------------------------------------------------
+  'd2-fork-wrong': {
+    note: 'The First Fork: pinned at LOW, hop the east ledge blind, open the sluice, '
+      + 'and find the shaft is still a hole',
+    setup: {
+      seed: 20260806,
+      playerName: 'LINK',
+      items: { sword: 1, conch: 1, shield: 1, lens: 1 },
+      equipB: 'lens',
+      equipA: 'conch',
+      maxHearts: 12,
+      hearts: 12,
+      tide: 1,
+      enter: ['d2', 1, 4, 3, 64, 112, 'up'],
+      probes: [[1, 2], [8, 2]],
+    },
+    steps: [
+      ['wait', 30],
+      // Up the entry corridor onto the shelf, then east along it.
+      ['goto', 6, 5, 300],
+      ['wait', 20],
+      // Into the face of the `>` ledge. One way; the shelf is gone after this.
+      ['hold', ['right'], 60],
+      ['wait', 30],
+      // Down to the sluice and face it.
+      ['goto', 8, 6, 200],
+      ['hold', ['left'], 8],
+      ['tap', 'a', 120],
+      ['wait', 60],
+      // North into the shaft. It is still a hole; the actor stops at its lip.
+      ['hold', ['up'], 80],
+      ['wait', 30],
+      // The stair beside the alcove: the walk back, and the only way out.
+      ['goto', 7, 4, 200],
+      ['wait', 60],
+    ],
+    assert: { roomChanges: 1 },
+  },
+
+  // -------------------------------------------------------------------------
   // Tidewash Grotto, entrance to the north half.
   //
   // The long one: eleven room entries, a chest, two pickups, a Small Key earned

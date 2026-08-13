@@ -729,7 +729,7 @@ Run validate.mjs, walk-dungeons.mjs and solve-switches.mjs after every room you
 change, not at the end.
 ```
 
-#### P8 status: D1 done, D2-D6 outstanding
+#### P8 status: D1 done (D2's table is the section after ROOM SIZE)
 
 **D1, Tidewash Grotto — DONE.** 24 rooms, one floor, re-authored around the
 Tidewright's Anchor. Against the constraint list above:
@@ -757,6 +757,67 @@ be walled off to stop the player walking round it. That is why D1's gates are
 bare corridors and why no room holds two of them. The Anchor did not have room
 to be interesting in a 10x8 screen. **P7.6 is now built**, and the section below
 is the only thing a D2-D6 session needs to read about room size.
+
+#### P8 status: D2 done, D3-D6 outstanding
+
+**D2, Coral Spire — DONE.** 24 rooms, two floors, re-authored around the
+Brineglass Lens. Against the constraint list above:
+
+| Constraint | D2 |
+|---|---|
+| 22-32 rooms, 1-3 floors | 24 rooms, 2 floors |
+| item roughly halfway | the Lens is room 14 of 24, in `1,4,4` |
+| every room after it requires the item's verb | every post-Lens room is behind a Lens fork or needs the Lens in its own right (the two phase-shifted cells). One exception is stated below |
+| tide theme is the constraint | two forks, both pinned so the conch cannot answer them, both proved in five directions by `tools/check-lens.mjs` |
+| Chartstone, 2-4 small keys, boss key | Chartstone in `0,4,4`; 2 keys, 2 locks; Boss Key in `1,2,1` |
+| miniboss two thirds through | the Reefguard in `1,4,2`, room 17 of 24 (71%) |
+| Heart Container from `bossDead` | unchanged, `1,3,1` |
+| essence index = dungeon number | 2 |
+| multi-screen rooms | two: the Reefguard Hall `1,4,2` is 2x1 and the Spire Ascent `1,3,2` is 1x2 — one room in twelve, and neither is a fork. The other 22 are 1x1 |
+
+The one honest exception to "every room after it requires the verb" is `1,3,1`,
+the boss room. It is *reached* only through a fork, so no post-Lens room can be
+entered without the Lens.
+
+**What D2 taught about the item, and it is not what D1 taught.** The Anchor's
+problem was geometry — the patch did not fit in ten tiles. The Lens's problem is
+that **it cannot be required by terrain at all.** No arrangement of tiles is
+passable with the Lens and impassable without it, so a Lens room is not a gate
+and cannot be built like one. What makes it required is that the player has to
+COMMIT before the answer exists, and the three things that make the commitment
+real are all engine features that were sitting unused:
+
+* **`tideForce`** pins a room to a level and refuses the conch. Without it the
+  player previews for free by sounding the conch, looking, and sounding it back,
+  and the Lens is a shortcut rather than the answer. It had never been used by
+  any room in the game.
+* **A one-way ledge** is the commitment. `F.LEDGE` is solid from three sides, so
+  once you have taken it the choice cannot be retaken.
+* **The TideValve plus `game.forceTideStep()`** is the only thing that moves the
+  water inside a pinned room, and it lives at the bottom of each branch — past
+  the point of no return, so turning it can only ever confirm a choice already
+  made.
+
+`tools/check-lens.mjs` asserts all of that, and the assertion with the most
+teeth is the pin. **A later session will be tempted to drop it** — a room that
+refuses the conch feels heavy-handed until you notice it is the only reason the
+Lens is worth carrying.
+
+**And one thing D2 could not solve: the Lens draws three dark blues.** Shallow
+water, deep water and a dungeon pit are the three answers a fork has, and
+through a ghosted overlay they come out within six RGB units of each other. The
+opacity was measured and raised; the underlying problem is a colour problem and
+is written up in `docs/ART-BACKLOG.md`. Shallow-vs-deep is the read D2's second
+fork turns on and it is the weakest thing in the dungeon.
+
+**The charm cases now open on the essence, not on the visit.** `CHARM_LOW_ESSENCES`
+is 2 and D2 is the second essence, so the old behaviour — the case opening only
+when the player next TALKED to the scrimshander — shipped a real save in which
+you own charms you can never switch on. `openCharmCases` in `scrimshaw.js` is
+called from `Game.claimEssence`; the scrimshander keeps her line and says it the
+first time you see her afterwards (`progress.charmTold`). D2 hand-places one
+charm, Barnacle Skin in `0,3,3`, and it is a MID charm because MID is the only
+case the player owns for the whole of this dungeon.
 
 #### ROOM SIZE — everything a dungeon session needs, in one place
 
@@ -937,6 +998,10 @@ with them. Every checker reasons over `room.tw`/`room.th`, including
 `check-anchor.mjs`.
 
 #### D2 decision: the Lens is required INSIDE its own dungeon, and nowhere else
+
+**SETTLED AND BUILT.** This section is kept as the reasoning; what D2 actually
+did with it, and the three engine features it turned out to need, are in "P8
+status: D2 done" above.
 
 P8 says every room after the item requires the item's verb. P9 says the
 Brineglass Lens is informational and must never be a gate. Those read as a

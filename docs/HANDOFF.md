@@ -220,6 +220,58 @@ is in the page, and nothing steps until you say so.
 
 ## Hard-won lessons — do not rediscover these
 
+**The Lens forks (P8/D2), and the four things they cost.**
+
+1. **A CHECKER'S FLOOD IS ONLY AS GOOD AS ITS MOVEMENT VERBS, AND
+   `walk-dungeons.mjs` DID NOT HAVE LEDGE HOPS.** Its flood knows how to walk,
+   how to clear a one-tile gap, how to spend a key and how to take a warp — and
+   treated `F.LEDGE` as a wall, because until D2 no ledge in the game was the
+   ONLY way into anywhere. D2's forks are entered by dropping off a lip you
+   cannot climb back up, and eight rooms came out "stranded" in a dungeon that
+   walks perfectly in the engine. The fix is thirty lines and it is the same
+   model `Player.tryLedgeHop` uses (into the FACE of the ledge only, clearing
+   the run behind it, landing on a standable tile), which is the point: a
+   checker that models the engine's moves catches things, and one that models a
+   subset of them invents failures. **If you add a movement verb to the player,
+   add it to the flood in the same commit.**
+
+2. **`tideForce` HAD NEVER BEEN USED, and it is the reason the Lens can be
+   required at all.** It has been in `Tide.applyRoomRules` and in
+   `docs/briefs/AGENTS.md` from the beginning and no room had ever declared it.
+   Without it there is no way to build a room the Lens is needed in: the player
+   sounds the conch, looks at the room at the next level with their own eyes,
+   sounds it back, and walks in knowing. **An informational item can only be
+   required in a room where the information cannot be bought some other way**,
+   and in this engine that means a room that refuses the conch. A later session
+   that finds a pinned room heavy-handed and unpins it will make both of D2's
+   forks decorative and no checker except `check-lens.mjs` will notice.
+
+3. **THREE TILES THAT ARE THE SAME TILE BEAT THREE TILES THAT LOOK ALIKE.** The
+   forks work because `dDrain` at LOW, `dSump` at LOW and `dPit` at every level
+   all resolve to the SAME tile name — `dPit` — rather than to three similar
+   ones. That is what lets `check-lens.mjs` assert indistinguishability by
+   comparing tile names instead of comparing pixels, and it is what makes the
+   claim true rather than approximately true. A screenshot confirmed it: all
+   three throats sample to exactly (14, 15, 34).
+
+4. **AND THEN THE PREVIEW OF THEM IS ALSO THREE DARK BLUES.** The same property
+   that makes the fork provable makes it hard to read: `dWaterS`, `dWaterD` and
+   `dPit` are three dark blues, so the Lens's ghost separates them by 4-6 RGB
+   units. Raising `LENS_GHOST_ALPHA` from 0.55 to 0.80 helped and did not solve
+   it. **The lesson is the order of operations**: the room was proved by a
+   checker and then LOOKED AT, and the looking is what found the real problem.
+   The full measurement and three candidate fixes are in `docs/ART-BACKLOG.md`.
+
+**The charm cases used to open on a conversation nobody had to have.**
+`checkUnlocks` was called from `Scrimshander.interact` and nowhere else, so
+`CHARM_LOW_ESSENCES = 2` — the Coral Spire's own essence — landed on a player
+with no reason to walk back to Tidewatch. Every checker was green the whole
+time, because the charm system worked perfectly and simply was not switched on.
+`openCharmCases` now fires from `Game.claimEssence` and the scrimshander is the
+acknowledgement rather than the gate. **A progression flag that only a
+conversation can set is a progression flag some saves will never get.**
+
+
 **Multi-screen rooms (P7.6), and the five things they cost.**
 
 1. **A ROOM'S KEY IS ITS TOP-LEFT CELL, AND THE CELLS IT SPANS HAVE NO
