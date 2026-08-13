@@ -10,6 +10,35 @@ maintain and the most expensive thing to not have.
 
 ---
 
+## Where P8 stands, in one line
+
+**D1 and D2 are DONE and COMPLIANT. D3, the Bogwater Sanctum and the
+Kelp-Soled Cleats, is the next action item.** Do not re-author either finished
+dungeon; read their two "P8 status" tables in `docs/EXECUTION-PLAN.md` and the
+header comments at the top of `d1` and `d2` in `src/data/dungeons-a.js`, and
+build the next one.
+
+D2 was verified against the constraint list a second time, on a branch other
+than the one that authored it, before this line was written — content counted
+out of the live map data rather than read off the table: 24 rooms over 2 floors,
+the Lens at room 14, 2 small keys against 2 locks plus a Boss Key, the Reefguard
+at 71%, the Heart Container on `bossDead`, essence 2, and two rooms larger than
+1x1 out of 24 (a 2x1 and a 1x2, neither of them a fork). Every checker in
+CLAUDE.md's table was re-run green on that branch, including the ones D2 did not
+touch: validate OK, check-lens 24/24, check-anchor 14/14, walk-dungeons 29/29,
+solve-switches 16 rooms, check-items 78/78, check-charms 63/63, check-motion
+8/8, check-gates 15/15, check-overworld 17/17, test 58/58, replay 26/26,
+check-tilesets 6/6, scan-sprites 0 hard findings. `rip-terrain.py`, `rip-hud.py`
+and `rip-dungeon-themes.py` all re-emitted byte-identically, and `npm run build`
+reproduced the committed `dist/oracle-of-tides.html` exactly — so the shipped
+file is the game, not a stale copy of it.
+
+**The one thing a D3 session must not skip:** the Cleats introduce SWIMMING, and
+both provers say in their own headers that they cannot model it. Teaching one of
+them to swim is part of that session, not an extra — and `check-anchor.mjs`
+already asserts that no room outside `d1`/`d2` declares an anchor gate, so the
+first D3 room that tries will fail out loud rather than quietly prove nothing.
+
 ## What the last session did (P8/D2, the Coral Spire and the Brineglass Lens)
 
 **D2 is re-authored around the Lens, and the hard part was making an

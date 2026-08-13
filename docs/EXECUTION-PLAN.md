@@ -758,7 +758,14 @@ bare corridors and why no room holds two of them. The Anchor did not have room
 to be interesting in a 10x8 screen. **P7.6 is now built**, and the section below
 is the only thing a D2-D6 session needs to read about room size.
 
-#### P8 status: D2 done, D3-D6 outstanding
+#### P8 status: D1 and D2 done, D3-D6 outstanding
+
+Both finished dungeons were checked against the constraint list by counting the
+live map data, not by reading these tables back, and every checker in CLAUDE.md
+was re-run green afterwards. **D3, the Bogwater Sanctum and the Kelp-Soled
+Cleats, is the next action item.** Neither D1 nor D2 wants re-authoring; each
+solved a different shape of problem and the write-ups below are what a D3-D6
+session reads instead of rediscovering them.
 
 **D2, Coral Spire — DONE.** 24 rooms, two floors, re-authored around the
 Brineglass Lens. Against the constraint list above:
