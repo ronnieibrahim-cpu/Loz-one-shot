@@ -12,7 +12,7 @@ import {
   addHeartPiece, HEART_UNITS, setFlag, flag,
 } from './progress.js';
 import { itemName, itemIcon, ITEMS } from './items.js';
-import { CHARMS, giveCharm } from './scrimshaw.js';
+import { CHARMS, giveCharm, openCharmCases } from './scrimshaw.js';
 import {
   PICKUP_LIFE_FRAMES, PICKUP_POP_SPEED, PICKUP_GRAVITY, PICKUP_SETTLE_FRAMES,
   PICKUP_GRAB_DELAY, FAIRY_DRIFT_TURN, FAIRY_DRIFT_X, FAIRY_DRIFT_Y,
@@ -521,20 +521,28 @@ export class Scrimshander extends NPC {
     this.faceOnTalk = true;
   }
 
-  /** Cases and case size open on essence count. Returns a line, or null. */
+  /**
+   * She ACKNOWLEDGES the cases; she no longer gates them. `openCharmCases` is
+   * called on the essence itself (Game.claimEssence), so by the time the
+   * player gets here the case is already open and slotted-into — see the
+   * write-up on that function for why the visit could not stay the trigger.
+   *
+   * The call is repeated here on purpose, for the one save that reaches her
+   * with essences and an unopened case: a file saved before this change.
+   * Returns a line, or null.
+   */
   checkUnlocks(game) {
     const p = game.progress;
-    if (p.essences.length >= CHARM_LOW_ESSENCES && !p.charmOpen.low) {
-      p.charmOpen.low = true;
-      return 'I have cut you a second case — for the low water,\nwhen the floor of the sea is a road.';
-    }
-    if (p.essences.length >= CHARM_HIGH_ESSENCES && !p.charmOpen.high) {
-      p.charmOpen.high = true;
-      return 'And a third, for the high water. Bone keeps\nbetter wet than you would think.';
-    }
-    if (p.essences.length >= CHARM_CASE_ESSENCES && p.charmCase < CHARM_CASE_MAX) {
-      p.charmCase = CHARM_CASE_MAX;
-      return 'Every case takes two now. You have earned\nthe room.';
+    openCharmCases(p);
+    const owed = [
+      ['low', 'I cut you that second case when the shard landed —\nfor the low water, when the seafloor is a road.'],
+      ['high', 'And the third, for the high water. Bone keeps\nbetter wet than you would think.'],
+      ['size', 'Every case takes two now. You have earned\nthe room.'],
+    ];
+    p.charmTold = p.charmTold || {};
+    for (const [k, line] of owed) {
+      const open = k === 'size' ? p.charmCase >= CHARM_CASE_MAX : !!p.charmOpen[k];
+      if (open && !p.charmTold[k]) { p.charmTold[k] = true; return line; }
     }
     return null;
   }

@@ -146,6 +146,7 @@ export function installLegends() {
     // that were free; a westward drain wants `riptideW` written as an inline
     // legend override on the room that needs it.
     'N': 'riptideN', 'S': 'riptideS', 'E': 'riptideE',
+    '0': 'dSump',      // an open pit at low tide, and OVER YOUR HEAD above it
     '1': 'dSluice',    // dry floor -> shallow -> deep
     '2': 'dBasin',     // dry -> damp -> shallow
     '3': 'dWell',      // shallow -> deep -> deep

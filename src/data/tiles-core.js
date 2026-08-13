@@ -1389,6 +1389,15 @@ export function installCoreTiles() {
     dBasin: { tide: ['dFloor', 'dFloorWet', 'dWaterS'] },
     dWell: { tide: ['dWaterS', 'dWaterD', 'dWaterD'] },
     dDrain: { tide: ['dPit', 'dWaterS', 'dWaterD'] },
+    // A shaft that fills OVER YOUR HEAD. It exists to be indistinguishable
+    // from `dDrain` — and from a plain `dPit` — at LOW, where all three ARE
+    // the same tile, `dPit`, rather than three tiles that resemble each other.
+    // One level up they are three different answers: wading depth, a drop you
+    // cannot climb, and a hole that never fills at all. That is the whole of
+    // dungeon 2: you cannot see the bottom of a dry shaft, and the Brineglass
+    // Lens is the only thing in the game that shows you which one you are
+    // standing over before you are standing in it.
+    dSump: { tide: ['dPit', 'dWaterD', 'dWaterD'] },
   };
   registerTiles(TILE_DEFS);
 

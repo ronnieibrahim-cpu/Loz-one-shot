@@ -44,6 +44,12 @@ const tide = Number((args.find(a => a.startsWith('--tide=')) || '=1').split('=')
 const px = Number((args.find(a => a.startsWith('--px=')) || '=80').split('=')[1]);
 const py = Number((args.find(a => a.startsWith('--py=')) || '=72').split('=')[1]);
 const showCam = args.includes('--cam');
+// --lens holds the Brineglass Lens up. The Lens is a DRAWING — a ghosted
+// overlay of the room at the next tide level — and it is the one item in the
+// game whose whole value is how legible it is at 160x144, so it needs a way to
+// be looked at rather than only asserted. `lensT` is pinned rather than the
+// button held, because the fade is 12 frames and a shot wants it at full.
+const showLens = args.includes('--lens');
 const specs = args.filter(a => !a.startsWith('--'));
 const ROOMS = specs.length ? specs : [
   'overworld,4,7',                    // Tidewatch Village — plain grass
@@ -91,7 +97,7 @@ for (const spec of ROOMS) {
   const [mapId, floor, rx, ry] = parts.length === 4
     ? [parts[0], +parts[1], +parts[2], +parts[3]]
     : [parts[0], 0, +parts[1], +parts[2]];
-  const got = await page.evaluate(([mapId, floor, rx, ry, tide, px, py, showCam]) => {
+  const got = await page.evaluate(([mapId, floor, rx, ry, tide, px, py, showCam, showLens]) => {
     const g = window.__game;
     // Reset to 'play' first: a probe parked in a room that killed the player
     // leaves the game in 'gameover', where nothing renders or updates.
@@ -100,10 +106,16 @@ for (const spec of ROOMS) {
     if (g.tide && g.tide.setLevel) g.tide.setLevel(tide);
     if (g.room) g.room.invalidate();
     g.debugCam = !!showCam;
+    if (showLens && g.player) {
+      g.progress.items.lens = Math.max(1, g.progress.items.lens || 0);
+      g.progress.equipB = 'lens';
+      g.player.lensHeld = true;
+      g._pinLens = true;
+    }
     return g.room
       ? { name: g.room.name || '?', at: g.mapId + ',' + g.room.key, cam: g.camera.x + ',' + g.camera.y }
       : null;
-  }, [mapId, floor, rx, ry, tide, px, py, showCam]);
+  }, [mapId, floor, rx, ry, tide, px, py, showCam, showLens]);
   // Wait out the tide's wave-front wipe as well as the room settling.
   // `setLevel` runs a sweep, and a wide room's wipe is drawn across the whole
   // room rather than across the screen, so eight frames used to be enough only
@@ -117,6 +129,10 @@ for (const spec of ROOMS) {
     // The room-name banner is drawn for 120 frames after every enterMap and
     // covers the top third of the room, which is terrain we came here to look at.
     window.__game.bannerTime = 0;
+    // Player.update lowers the Lens whenever the button is not down, so it has
+    // to be re-raised on the frame the shot is taken rather than once on entry.
+    const g = window.__game;
+    if (g._pinLens && g.player) { g.player.lensHeld = true; g.player.lensT = 10; }
   });
   await frames(2);
   const name = `room-${spec.replace(/,/g, '_')}-tide${tide}-px${px}.png`;

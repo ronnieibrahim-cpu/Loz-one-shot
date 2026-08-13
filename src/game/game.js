@@ -48,7 +48,7 @@ import { drawHud, drawAreaBanner, drawBossBar } from './hud.js';
 import { Dialogue, drawBox, drawPanel, getText } from './dialogue.js';
 import { Menu } from './menu.js';
 import { Camera } from './camera.js';
-import { Scrimshaw, CHARMS, giveCharm, ownedCharms } from './scrimshaw.js';
+import { Scrimshaw, CHARMS, giveCharm, ownedCharms, openCharmCases } from './scrimshaw.js';
 import { Title } from './title.js';
 import { runCutscene, CUTSCENES } from './cutscene.js';
 import { Stream, seedGlobal, roomStream, noise1, rng as rngGlobal } from '../core/rng.js';
@@ -870,6 +870,10 @@ export class Game {
     const p = this.progress;
     if (!p.essences.includes(index)) p.essences.push(index);
     p.essences.sort((a, b) => a - b);
+    // The shard opens the case, not the walk back to Tidewatch. See
+    // openCharmCases. The line is held until the essence scene is over, so it
+    // arrives as the last beat of the moment rather than on top of it.
+    this._charmLine = openCharmCases(p);
     this.audio.jingle('essence');
     this.player.frozen = ESSENCE_FREEZE_FRAMES;
     this.startCutscene('essence' + index, { fallback: 'essenceGeneric', data: { index } });
@@ -1083,7 +1087,11 @@ export class Game {
         this.dialogue.update();
         if (this.cutscene) {
           const done = this.cutscene.update();
-          if (done) { this.cutscene = null; this.mode = 'play'; this.updateMusic(); }
+          if (done) {
+            this.cutscene = null; this.mode = 'play'; this.updateMusic();
+            // A case opened by the shard says so as the scene lets go.
+            if (this._charmLine) { const l = this._charmLine; this._charmLine = null; this.audio.jingle('fanfareShort'); this.say(l); }
+          }
         } else this.mode = 'play';
         return;
       case 'menu': this.menu.update(); return;
