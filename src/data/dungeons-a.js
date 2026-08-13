@@ -1393,16 +1393,69 @@ export function installDungeonsA() {
   });
 
   // --- Dungeon 3: Bogwater Sanctum -----------------------------------------
-  // Tide theme: the drains only run dry at LOW, and the sanctum's sluice valves
-  // decide which half of the floor is water at all. Every locked half of this
-  // dungeon is opened by choosing a tide level, not by finding a switch.
   //
-  // Intended route:
-  //   3,7 entrance -> 3,6 -> 3,5 hub -> 2,5 Dungeon Map -> 4,5 Compass
-  //   -> 3,4 drains (LOW to cross) -> 2,4 Small Key 1 -> 4,4 Small Key 2
-  //   -> 3,3 locked -> 2,3 2,2 valve wing (Small Key 3) -> 4,3 Bogmaw (miniboss)
-  //   -> 5,3 big chest: Power Bracelet -> 4,2 Boss Key -> 3,2 boss door
-  //   -> 3,1 Gloomtide
+  // TIDE THEME: SURFACE ROUTE VS SEAFLOOR ROUTE. The Grotto held the water
+  // still and the Spire made you bet on it. The Sanctum floods and stays
+  // flooded: it is the first dungeon whose rooms are not crossed by choosing a
+  // tide level at all. What you choose here is which LAYER of the water you
+  // travel in, and the Kelp-Soled Cleats are both halves of that choice on one
+  // button.
+  //
+  // THE TORRENT, stated once because three rooms are built out of it. Written
+  // along a row, from the shelf the player arrives on:
+  //
+  //     .  T T T T T T T T  .
+  //     ^  the channel: dTorrentE, running back the way you came
+  //   stand                                                    the way on
+  //
+  // `T` is deep at every tide level and it pushes at TORRENT_PUSH, which
+  // feel.js derives to be STRICTLY GREATER than SWIM_SPEED. So:
+  //
+  //   on the surface  you cannot make headway against it. Not slowly, not with
+  //                   patience — the arithmetic is the wrong side of zero, and
+  //                   the current carries you back to the shelf you left.
+  //   on the floor    nothing pushes you at all. `Player.updateTerrain` applies
+  //                   a tile's push only while `inDeep && !underwater`, and
+  //                   weighted soles are what the Cleats ARE.
+  //
+  // That is the whole dungeon. A channel whose far end is upstream is a wall to
+  // a swimmer and a walk to a diver, and no setting of the conch changes it,
+  // because a torrent is not a tide tile. `tools/check-cleats.mjs` proves each
+  // declared room three ways — no route without the item, no route on the
+  // surface, a route on the floor — and then proves the air lasts, reading the
+  // swim speed, the sink speed and the breath out of feel.js rather than
+  // writing them down.
+  //
+  // WHY A NEW CURRENT AND NOT THE RIPTIDES THAT ALREADY EXISTED. A riptide
+  // pushes at 0.55 px/f and a swimmer moves at 0.75, so a riptide is a TAX on
+  // the surface route — slow, annoying, crossable. Every room built on one
+  // would have read as a Cleats room in the data and fallen to patience. The
+  // torrent is the same water and the same art, running harder, and the
+  // inequality between the two numbers is asserted globally by check-cleats
+  // before any room is looked at.
+  //
+  // WHAT THE FLOOR COSTS, so the choice is a choice: sink mode is slower
+  // (SINK_SPEED), draws no sword, hops nothing, and runs on CLEATS_BREATH_
+  // FRAMES of air. The Kelp Locks is two screens wide precisely so that the
+  // breath number stops being decorative — eighteen tiles of seafloor in one
+  // dive, which check-cleats prints as a margin rather than a pass.
+  //
+  // AND WHAT THE SURFACE IS STILL FOR: the Bogwater Drain's current empties
+  // into a pocket the floor route never sees. Taking the wrong layer there is
+  // not punished, it is paid — the swimmer gets the fairy and comes back.
+  //
+  // Intended route (24 rooms; the Cleats are room 11 of 24):
+  //   3,7 mouth -> 3,6 the drowned nave -> 4,6 bell cell (Wrecker's Eye, and
+  //      the first charm the player can slot in the LOW case — it opened on the
+  //      essence they carried out of the Spire)
+  //   -> 3,5 hub -> 2,5 Dungeon Map -> 4,5 sluice (key 1)
+  //   -> 3,4 the weir [locked, key 1] -> 2,4 Chartstone -> 4,4 reed cell
+  //   -> 3,3 THE KELP-SOLED CLEATS
+  //   west: 2,3 [torrent] -> 1,3 (key 2) -> 1,4 silt vault
+  //         -> 2,2 Bogmaw [locked, key 2] -> 1,2 Boss Key
+  //   east: 4,3 [torrent] -> 5,3 eel hall -> 5,4 (key 3)
+  //         -> 4,2 the Kelp Locks [torrent, 2x1] -> 3,2 [locked, key 3]
+  //         -> boss door -> 3,1 Gloomtide
   registerMap({
     id: 'd3',
     kind: 'dungeon',
@@ -1422,105 +1475,449 @@ export function installDungeonsA() {
       entrance: { map: 'overworld', floor: 0, rx: 1, ry: 8, px: 64, py: 32 },
     },
     rooms: {
-      '0,2,1': {
-        name: 'West Reliquary',
+      '0,3,7': {
+        name: 'Sanctum Mouth',
+        map: [
+          '##M#..#M##',
+          '#U......U#',
+          '#........#',
+          '#..2..2..#',
+          '#..2..2..#',
+          '#........#',
+          '#........#',
+          '####/#####',
+        ],
+        warps: [
+          { x: 4, y: 7, to: { map: 'overworld', floor: 0, rx: 1, ry: 8, px: 64, py: 32, dir: 'down' } },
+        ],
+        readable: [
+          [2, 2, 'Bog script: "The water has two floors. Only one of them drowns you."'],
+        ],
+      },
+      '0,3,6': {
+        name: 'Drowned Nave',
+        map: [
+          '####..####',
+          '#........#',
+          '#.111111.#',
+          '#.111111..',
+          '#.111111..',
+          '#.111111.#',
+          '#........#',
+          '####..####',
+        ],
+        entities: [
+          ['jellyfish', 4, 3],
+          ['crab', 2, 5],
+        ],
+        puzzle: {
+          enemies: true,
+          flag: 'd3_nave',
+          reward: {
+            spawn: [['pickup', 4, 1, { kind: 'fairy' }]],
+            say: 'The bog lets something go.',
+          },
+        },
+      },
+      '0,4,6': {
+        name: 'Bell Cell',
         map: [
           '##########',
-          '##########',
-          '##......##',
-          '##..22....',
-          '##..22....',
-          '##......##',
-          '##########',
+          '#U......U#',
+          '#........#',
+          '.........#',
+          '.........#',
+          '#.,,,,,,.#',
+          '#........#',
           '##########',
         ],
         entities: [
-          ['pickup', 4, 3, { kind: 'fairy' }],
+          // A LOW charm, and the first one in the game that could be placed.
+          // The LOW case opens at two essences and the player walked out of the
+          // Coral Spire with the second, so this dungeon is the first place a
+          // LOW charm is a reward rather than a locked box. It is also the beat
+          // that tells them the case exists.
+          ['chest', 4, 2, { charm: 'wreckersEye' }],
+          ['pickup', 6, 4, { kind: 'blank' }],
+          ['keese', 6, 2],
         ],
       },
-      '0,2,2': {
-        name: 'Flooded Cell',
+      '0,3,5': {
+        name: 'Bog Hub',
         map: [
-          '##########',
-          '##########',
-          '##.6666.##',
-          '##.6666...',
-          '##.7777...',
-          '##......##',
           '####..####',
+          '#..q..q..#',
+          '#.111111.#',
+          '..111111..',
+          '..111111..',
+          '#.111111.#',
+          '#..q..q..#',
           '####..####',
         ],
         entities: [
-          ['pickup', 4, 5, { kind: 'key' }],
-          ['jellyfish', 4, 2],
+          ['jellyfish', 4, 4],
+          ['urchin', 2, 2],
         ],
       },
-      '0,2,3': {
-        name: 'Valve Passage',
+      '0,2,5': {
+        name: 'Map Cell',
         map: [
-          '####..####',
-          '####..####',
-          '##......##',
-          '#._____...',
+          '##########',
+          '#U......U#',
+          '#........#',
           '#.........',
-          '##......##',
+          '#.........',
+          '#..pp....#',
+          '#........#',
+          '##########',
+        ],
+        entities: [
+          ['pickup', 4, 3, { kind: 'dungeonMap' }],
+          ['urchin', 6, 2],
+        ],
+      },
+      '0,4,5': {
+        name: 'Sluice Cell',
+        map: [
+          '##########',
+          '#U......U#',
+          '#........#',
+          '.........#',
+          '.........#',
+          '#........#',
+          '#..,,,,..#',
+          '##########',
+        ],
+        entities: [
+          ['switch', 2, 2],
+          ['switch', 7, 2],
+          ['block', 2, 3],
+          ['block', 7, 3],
+          ['keese', 4, 4],
+        ],
+        puzzle: {
+          switches: 'all',
+          flag: 'd3_sluice',
+          reward: {
+            spawn: [['pickup', 4, 1, { kind: 'key' }]],
+            say: 'A grate lifts somewhere below the floor.',
+          },
+        },
+      },
+      '0,3,4': {
+        name: 'The Weir',
+        map: [
           '####..####',
+          '#........#',
+          '####L#####',
+          '..........',
+          '..........',
+          '#.111111.#',
+          '#........#',
           '####..####',
         ],
         entities: [
-          ['valve', 4, 2, { saveKey: 'd3_valve' }],
-          ['keese', 6, 4],
+          ['crab', 2, 4],
+          ['urchin', 7, 3],
         ],
       },
       '0,2,4': {
         name: 'Silt Cell',
         map: [
-          '####..####',
-          '####..####',
-          '##.2222.##',
-          '##.2222...',
-          '##.2222...',
-          '##.2222.##',
-          '####..####',
-          '####..####',
+          '##########',
+          '#U......U#',
+          '#........#',
+          '#.........',
+          '#.........',
+          '#..3333..#',
+          '#........#',
+          '##########',
         ],
         entities: [
-          ['zol', 2, 2],
-          ['zol', 5, 4],
-          ['leever', 4, 3],
+          ['chest', 4, 2, { pickup: 'chartstone' }],
+          ['urchin', 6, 4],
+        ],
+      },
+      '0,4,4': {
+        name: 'Reed Cell',
+        map: [
+          '##########',
+          '#U......U#',
+          '#..3333..#',
+          '...3333...',
+          '...3333...',
+          '#..3333..#',
+          '#........#',
+          '##########',
+        ],
+        entities: [
+          ['jellyfish', 2, 1],
+          ['crab', 7, 6],
         ],
         puzzle: {
           enemies: true,
-          flag: 'd3_silt',
-          reward: { spawn: [['pickup', 4, 3, { kind: 'key' }]], say: 'The silt gives up a key.' },
+          flag: 'd3_reed',
+          reward: {
+            spawn: [['pickup', 4, 6, { kind: 'heartPiece' }]],
+            say: 'The reeds part over something round and bright.',
+          },
         },
       },
-      '0,2,5': {
-        name: 'Map Cell',
+      '0,5,4': {
+        name: 'Eel Vault',
         map: [
           '####..####',
-          '####..####',
-          '##......##',
-          '##........',
-          '##........',
-          '##..pp..##',
-          '##########',
+          '#U......U#',
+          '#........#',
+          '#........#',
+          '#........#',
+          '#..,,,,..#',
+          '#........#',
           '##########',
         ],
         entities: [
-          ['pickup', 4, 3, { kind: 'dungeonMap' }],
-          ['zol', 6, 2],
+          ['barnacle', 4, 4],
+          ['keese', 2, 2],
+        ],
+        puzzle: {
+          enemies: true,
+          flag: 'd3_eel',
+          reward: {
+            spawn: [['pickup', 4, 2, { kind: 'key' }]],
+            say: 'Something drops out of the weed.',
+          },
+        },
+      },
+      '0,3,3': {
+        name: 'The Cistern Floor',
+        // The item room. The chest stands on the only dry island in it, so the
+        // first thing the Cleats are used for is getting off the rock you
+        // opened them on.
+        map: [
+          '##########',
+          '#WWWWWWWW#',
+          '#WW....WW#',
+          '.WW....WW.',
+          '.WW....WW.',
+          '#WW....WW#',
+          '#WWWWWWWW#',
+          '####..####',
+        ],
+        entities: [
+          ['chest', 4, 3, { big: true, item: 'cleats', level: 1 }],
+        ],
+      },
+      '0,2,3': {
+        name: 'The Undertow',
+        // Torrent room 1. The channel runs east, back toward the shelf you
+        // arrived on, and the way out is at its head. Bare on purpose: a niche
+        // in the wall of a torrent room is somewhere to stand, and somewhere to
+        // stand is somewhere the current is not.
+        map: [
+          '##########',
+          '###M##M###',
+          '##########',
+          '.TTTTTTTT.',
+          '.TTTTTTTT.',
+          '##########',
+          '###M##M###',
+          '##########',
+        ],
+        cleatRoom: { from: [9, 3], to: [0, 3] },
+        readable: [],
+      },
+      '0,1,3': {
+        name: 'Sunken Vestry',
+        map: [
+          '###..#####',
+          '#U......U#',
+          '#........#',
+          '#.........',
+          '#.........',
+          '#..1111..#',
+          '#........#',
+          '####..####',
+        ],
+        entities: [
+          ['switch', 2, 2],
+          ['switch', 7, 2],
+          ['block', 2, 3],
+          ['block', 7, 3],
+          ['urchin', 4, 4],
+        ],
+        puzzle: {
+          switches: 'all',
+          flag: 'd3_vestry',
+          reward: {
+            spawn: [['pickup', 4, 1, { kind: 'key' }]],
+            say: 'Stone settles into stone.',
+          },
+        },
+      },
+      '0,1,4': {
+        name: 'Silt Vault',
+        map: [
+          '####..####',
+          '#U......U#',
+          '#........#',
+          '#..3333..#',
+          '#..3333..#',
+          '#........#',
+          '#........#',
+          '##########',
+        ],
+        entities: [
+          ['pickup', 4, 5, { kind: 'rupee20' }],
+          ['keese', 6, 2],
+        ],
+      },
+      '0,2,2': {
+        name: 'Bogmaw Hall',
+        map: [
+          '####..####',
+          '#........#',
+          '#..,,,,..#',
+          '..........',
+          '..........',
+          '#..,,,,..#',
+          '#........#',
+          '##########',
+        ],
+        entities: [
+          ['bogmaw', 4, 3],
+        ],
+        puzzle: {
+          enemies: true,
+          flag: 'd3_bogmaw',
+          reward: { say: 'The bogmaw sinks back into the silt.' },
+        },
+      },
+      '0,1,2': {
+        name: 'Drain Gallery',
+        map: [
+          '##########',
+          '#U...#...#',
+          '#....#...#',
+          '#....#....',
+          '#....L....',
+          '#....#...#',
+          '#....#..U#',
+          '###..#####',
+        ],
+        entities: [
+          ['chest', 7, 3, { pickup: 'bossKey' }],
+          ['jellyfish', 2, 5],
+        ],
+      },
+      '0,2,1': {
+        name: 'Vestry Roof',
+        map: [
+          '##########',
+          '#U......U#',
+          '#........#',
+          '#..,,,,..#',
+          '#..,,,,..#',
+          '#........#',
+          '#........#',
+          '####..####',
+        ],
+        entities: [
+          ['pickup', 4, 4, { kind: 'heartPiece' }],
+          ['keese', 6, 2],
+        ],
+      },
+      '0,4,3': {
+        name: 'The Bogwater Drain',
+        // Torrent room 2, and the current runs the other way — a player who
+        // learned "swim east" in the Undertow learns nothing here. The alcove
+        // under the channel is the other half of the trade: it opens off the
+        // seafloor and the surface never sees it, so the slow layer is the one
+        // that finds things. Nothing in it is required, which is the point of
+        // putting it there.
+        map: [
+          '##########',
+          '###M##M###',
+          '##########',
+          '.tttttttt.',
+          '.tttttttt.',
+          '####..####',
+          '###....###',
+          '##########',
+        ],
+        cleatRoom: { from: [0, 3], to: [9, 3] },
+        entities: [
+          ['pickup', 4, 6, { kind: 'fairy' }],
+        ],
+      },
+      '0,5,3': {
+        name: 'Eel Hall',
+        map: [
+          '####..####',
+          '#U......U#',
+          '####L#####',
+          '.........#',
+          '.........#',
+          '#..1111..#',
+          '#........#',
+          '####..####',
+        ],
+        entities: [
+          ['urchin', 3, 3],
+          ['crab', 6, 4],
+        ],
+      },
+      '0,4,2': {
+        name: 'The Kelp Locks',
+        // 2x1 — TWENTY tiles of channel, and the only room in the dungeon where
+        // the breath number is not decorative. One dive, eighteen tiles of
+        // seafloor, no shelf in the middle to come up on. check-cleats.mjs
+        // prints the margin every run.
+        //
+        // Picked for the same three reasons d1 0,5,3 and d2 1,3,2 were: the
+        // cells it grows into have no other neighbours, its doorways are all in
+        // its eastern screen, and widening it changed no facing wall anywhere.
+        size: [2, 1],
+        map: [
+          '####################',
+          '###M##M######M##M###',
+          '####################',
+          '.TTTTTTTTTTTTTTTTTT#',
+          '.TTTTTTTTTTTTTTTTTT#',
+          '##############..####',
+          '###M##M#######..####',
+          '##############..####',
+        ],
+        cleatRoom: { from: [14, 7], to: [0, 3] },
+      },
+      '0,3,2': {
+        name: 'The Lock Gallery',
+        map: [
+          '####..####',
+          '#........#',
+          '####B#####',
+          '..........',
+          '..........',
+          '#..,,,,..#',
+          '#........#',
+          '##########',
+        ],
+        entities: [
+          ['crab', 2, 4],
+          ['urchin', 7, 4],
         ],
       },
       '0,3,1': {
-        name: 'Gloomtide, the Lantern Bog',
+        name: 'Gloomtide, the Bogwater Maw',
+        // The boss keeps the mechanic: `noTide` pins the arena at whatever
+        // level was brought in, and the floor is basin, which is walkable at
+        // all three because a locked room has to work at whichever one arrives.
         map: [
           '##########',
-          '#........#',
-          '#........#',
-          '.....<....',
-          '.....<....',
-          '#....<...#',
+          '#..2222..#',
+          '#..2222..#',
+          '#..2222..#',
+          '#..2222..#',
+          '#..2222..#',
           '#........#',
           '####..####',
         ],
@@ -1533,244 +1930,6 @@ export function installDungeonsA() {
             if (name === 'bossDead') game.spawnPickup(80, 40, 'heartContainer', { grabDelay: 30 });
           },
         },
-      },
-      '0,3,2': {
-        name: 'Sanctum Gate',
-        map: [
-          '####..####',
-          '#........#',
-          '####B#####',
-          '.........#',
-          '..22..22.#',
-          '#........#',
-          '#........#',
-          '####..####',
-        ],
-        entities: [
-          ['leever', 6, 4],
-        ],
-      },
-      '0,3,3': {
-        name: 'Bog Lock',
-        map: [
-          '####..####',
-          '#........#',
-          '####L#####',
-          '..........',
-          '...""""...',
-          '#........#',
-          '#..q..q..#',
-          '####..####',
-        ],
-        entities: [
-          ['zol', 2, 4],
-          ['leever', 6, 5],
-        ],
-      },
-      '0,3,4': {
-        name: 'The Drains',
-        map: [
-          '####..####',
-          '#.44..44.#',
-          '####L#####',
-          '..........',
-          '..........',
-          '#.444444.#',
-          '#.44..44.#',
-          '####..####',
-        ],
-        entities: [
-          ['leever', 4, 3],
-          ['zol', 2, 2],
-        ],
-      },
-      '0,3,5': {
-        name: 'Sunken Nave',
-        map: [
-          '####..####',
-          '#..q..q..#',
-          '#.444444.#',
-          '..........',
-          '..........',
-          '#.444444.#',
-          '#..q..q..#',
-          '####..####',
-        ],
-        entities: [
-          ['zol', 4, 2],
-          ['keese', 2, 5],
-          ['barnacle', 7, 3],
-          ['switch', 1, 2],
-          ['switch', 8, 2],
-          ['block', 1, 3],
-          ['block', 8, 3],
-        ],
-        puzzle: {
-          switches: 'all',
-          flag: 'd3_035_puzzle',
-          reward: {
-            spawn: [['pickup', 4, 3, { kind: 'bomb4' }]],
-            say: 'A cache opens in the wall.',
-          },
-        },
-      },
-      '0,3,6': {
-        name: 'Reed Landing',
-        map: [
-          '####..####',
-          '#.4....4.#',
-          '#.4....4.#',
-          '#........#',
-          '#........#',
-          '#.4____4.#',
-          '#........#',
-          '####..####',
-        ],
-        entities: [
-          ['zol', 3, 3],
-          ['leever', 6, 4],
-          ['torch', 1, 1],
-          ['torch', 8, 1],
-          ['torch', 1, 6],
-        ],
-        puzzle: {
-          torches: 'all',
-          flag: 'd3_036_puzzle',
-          reward: {
-            spawn: [['pickup', 4, 3, { kind: 'rupee20' }]],
-            say: 'A catch lets go under the floor.',
-          },
-        },
-      },
-      '0,3,7': {
-        name: 'Sanctum Door',
-        map: [
-          '####..####',
-          '#........#',
-          '#.p....p.#',
-          '#........#',
-          '#.22..22.#',
-          '#........#',
-          '#........#',
-          '####/#####',
-        ],
-        warps: [
-          { x: 4, y: 7, to: { map: 'overworld', floor: 0, rx: 1, ry: 8, px: 64, py: 32, dir: 'down' } },
-        ],
-        readable: [
-          [2, 3, 'Bog-script: "The water runs one way, at one height."'],
-        ],
-      },
-      '0,4,1': {
-        name: 'East Reliquary',
-        map: [
-          '##########',
-          '##########',
-          '##......##',
-          '....44..##',
-          '....44..##',
-          '##......##',
-          '##########',
-          '##########',
-        ],
-        entities: [
-          ['pickup', 4, 3, { kind: 'rupee20' }],
-          ['barnacle', 2, 2],
-        ],
-      },
-      '0,4,2': {
-        name: 'Bosskey Sump',
-        map: [
-          '##########',
-          '##########',
-          '##......##',
-          '#._____..#',
-          '#........#',
-          '##.4444.##',
-          '####..####',
-          '####..####',
-        ],
-        entities: [
-          ['chest', 2, 2, { pickup: 'bossKey' }],
-          ['zol', 6, 4],
-        ],
-      },
-      '0,4,3': {
-        name: 'Bogmaw Hollow',
-        map: [
-          '####..####',
-          '##......##',
-          '####L#####',
-          '..........',
-          '...""""...',
-          '##......##',
-          '##......##',
-          '####..####',
-        ],
-        entities: [
-          ['bogmaw', 4, 3],
-        ],
-        puzzle: {
-          enemies: true,
-          flag: 'd3_bogmaw',
-          reward: { say: 'The bog closes over the maw and is still.' },
-        },
-      },
-      '0,4,4': {
-        name: 'Torchlit Cell',
-        map: [
-          '####..####',
-          '####..####',
-          '##...>..##',
-          '.....>..##',
-          '.....>..##',
-          '##...>..##',
-          '####..####',
-          '####..####',
-        ],
-        entities: [
-          ['torch', 2, 2],
-          ['torch', 7, 5],
-          ['zol', 4, 3],
-        ],
-        puzzle: {
-          torches: 'all',
-          flag: 'd3_torch',
-          reward: { spawn: [['pickup', 4, 4, { kind: 'key' }]], say: 'Light finds the lock.' },
-        },
-      },
-      '0,4,5': {
-        name: 'Compass Cell',
-        map: [
-          '####..####',
-          '####..####',
-          '##..pp..##',
-          '........##',
-          '........##',
-          '##......##',
-          '##########',
-          '##########',
-        ],
-        entities: [
-          ['chest', 4, 3, { pickup: 'chartstone' }],
-          ['keese', 2, 4],
-        ],
-      },
-      '0,5,3': {
-        name: 'Bracelet Vault',
-        map: [
-          '##########',
-          '##########',
-          '##......##',
-          '.........#',
-          '........##',
-          '##......##',
-          '##########',
-          '##########',
-        ],
-        entities: [
-          ['chest', 4, 3, { big: true, item: 'cleats', level: 1 }],
-        ],
       },
     },
   });

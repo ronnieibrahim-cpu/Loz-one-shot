@@ -136,6 +136,7 @@ they are also how a future session finds which sheet a tile came from.
 | `node tools/check-gates.mjs` | Gates hold in-engine with a live player |
 | `node tools/solve-switches.mjs` | Every switch puzzle has a solution |
 | `node tools/check-anchor.mjs` | A room that claims to need the Tidewright's Anchor cannot be crossed with the conch alone, and can be with one anchor placement |
+| `node tools/check-cleats.mjs` | Every room that claims to need the Cleats' floor mode cannot be reached on foot, cannot be reached on the surface against the current, can be reached on the seafloor, and the crossing fits in one breath |
 | `node tools/check-lens.mjs` | Every room that claims to need the Brineglass Lens pins its tide, commits the player one way, cannot be answered at the level it is chosen at, and draws every branch as the same tile there |
 | `node tools/check-motion.mjs` | Ground enemies stay on the 8px lattice; fliers and swimmers stay off it |
 | `node tools/check-items.mjs` | Every item does the verb `docs/ITEMS.md` claims for it, and nothing hands out an item that no longer exists |

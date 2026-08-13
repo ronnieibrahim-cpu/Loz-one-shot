@@ -2,6 +2,41 @@
 
 Work that is identified, scoped and not done. Each entry says what blocks it.
 
+## A CURRENT IS INVISIBLE (P8/D3) — the highest-value entry in this file
+
+The Bogwater Sanctum is built on torrents: deep water that runs harder than a
+swimmer can, so the surface route fails and the seafloor route works. The
+mechanic is proved, the rooms are proved, and **the player cannot see it.**
+
+`dTorrentE/W/N/S` reuse `waterD0` in the `deep` palette, exactly as the
+riptides do, on the argument that the source games signal a current by how the
+water MOVES rather than by a different blue. That argument is right about the
+source games and wrong about what shipped here: the only difference between
+still water and a torrent is `animRate` — 13 against 4 — so in a screenshot they
+are the same pixels, and in motion the tell is a slightly faster ripple that
+nobody has any reason to read as "this will carry you". Which WAY it runs is not
+signalled at all.
+
+Seen in `tools/shots/room-d3_0_2_3-tide1-px80.png`: the Undertow reads as a
+handsome flooded drain and gives no hint that the water in it is moving.
+
+What it wants, in the order it should be tried:
+
+1. **Directional foam.** The Oracles draw moving water as a surface pattern that
+   travels, not as a colour. Two or three frames of foam streaks offset along
+   the push vector, drawn over the water tile, would say both "current" and
+   "this way" in the source games' own vocabulary. It is a new animated overlay
+   rather than a new tile, so it does not disturb the tide-variant machinery.
+2. **A cheaper stopgap** if that is too much: reuse the existing wake/foam
+   effect (`spawnEffect('foam', …)`) spawned along torrent tiles, which is
+   already how wading is signalled.
+3. **Do NOT solve it with a different blue.** That is the hand-drawn drift
+   ART-DIRECTION warns about, and it would make a torrent read as a different
+   substance rather than as the same water moving.
+
+Blocked on nothing but the drawing. Until it lands, every torrent room in the
+game is a room the player learns by being swept out of it once.
+
 ## Dungeon map rips (P7.5) — BLOCKED ON ASSETS
 
 P7.5 is written against four Oracle of Seasons dungeon map rips: **Ancient

@@ -9,6 +9,7 @@ import { tiles as tileSheet } from '../gfx/art.js';
 import { registerTiles, F, declareAnimArt, registerTransforms } from '../world/tileset.js';
 import { TERRAIN_ART } from './tiles-terrain.js';
 import { DUNGEON_THEME_ART, installDungeonThemePalettes } from './tiles-dungeon-themes.js';
+import { TORRENT_PUSH } from './feel.js';
 
 const HAND_ART = {
   // ---- ground -------------------------------------------------------------
@@ -1074,6 +1075,23 @@ export function installCoreTiles() {
     riptideS: { art: ART.waterD0, pal: 'deep', flags: F.DEEP, push: [0, 0.55], anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 6 },
     riptideE: { art: ART.waterD0, pal: 'deep', flags: F.DEEP, push: [0.55, 0], anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 6 },
     riptideW: { art: ART.waterD0, pal: 'deep', flags: F.DEEP, push: [-0.55, 0], anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 6 },
+
+    // A TORRENT. The same water, running harder: `TORRENT_PUSH` is strictly
+    // greater than a swimmer's own speed, so nobody on the surface makes
+    // headway against one — while sink mode, which no current touches, walks
+    // straight through. That inequality is what makes the Bogwater Sanctum's
+    // rooms require the Cleats' floor mode rather than merely the Cleats, and
+    // tools/check-cleats.mjs proves it by reading both numbers out of feel.js.
+    // An ordinary riptide is deliberately weaker than swimming and stays that
+    // way; it is a tax, and this is a wall.
+    //
+    // No new art, for the same reason the riptides have none: the source games
+    // signal a current by how the water moves, not by a different blue. The
+    // faster `animRate` is the tell, and it is the only one.
+    dTorrentN: { art: ART.waterD0, pal: 'deep', flags: F.DEEP, push: [0, -TORRENT_PUSH], anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 4 },
+    dTorrentS: { art: ART.waterD0, pal: 'deep', flags: F.DEEP, push: [0, TORRENT_PUSH], anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 4 },
+    dTorrentE: { art: ART.waterD0, pal: 'deep', flags: F.DEEP, push: [TORRENT_PUSH, 0], anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 4 },
+    dTorrentW: { art: ART.waterD0, pal: 'deep', flags: F.DEEP, push: [-TORRENT_PUSH, 0], anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 4 },
 
     // --- TIDE TILES: the heart of the game -------------------------------
     // A tide tile resolves to a different concrete tile per tide level.

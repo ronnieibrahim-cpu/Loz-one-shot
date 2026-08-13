@@ -25,8 +25,8 @@ whatever a commit message elsewhere claims.
 |---|---|---|---|---|---|
 | 1 | `d1` | Tidewash Grotto | Tidewright's Anchor | **DONE** | `d655d1f`, merged to `main` |
 | 2 | `d2` | Coral Spire | Brineglass Lens | **DONE** | `0a3776f` (authored on `claude/p8-dungeon-generation-faqood`) |
-| 3 | `d3` | Bogwater Sanctum | Kelp-Soled Cleats | **TO DO — next** | — |
-| 4 | `d4` | Cliffside Cistern | Squall Bellows | TO DO | — |
+| 3 | `d3` | Bogwater Sanctum | Kelp-Soled Cleats | **DONE** | `a9eb63e` |
+| 4 | `d4` | Cliffside Cistern | Squall Bellows | **TO DO — next** | — |
 | 5 | `d5` | Drowned Wood Shrine | Reefseed | TO DO | — |
 | 6 | `d6` | Salt Pan Vault | *see the consolidation below* | TO DO | — |
 | — | `d7` | Reef Palace | Kelp-Soled Cleats L2 | TO DO — fold in | — |
@@ -66,33 +66,39 @@ count.
 
 ---
 
-## D3 — Bogwater Sanctum, and the Kelp-Soled Cleats. The next action item.
+## D3 — Bogwater Sanctum. DONE, and what it settled for D4-D6.
 
-**What is there today:** 18 rooms, one floor, pre-P8 content. It is under the
-22-room floor, no room declares that it needs the Cleats, and there is no
-prover. Treat it the way D1 and D2 were treated — re-author it, do not decorate
-it.
+22 rooms, one floor, re-authored around the Cleats' two modes. Three torrent
+rooms, `tools/check-cleats.mjs`, and the `d3-undertow` replay.
 
-**The problem this one has to solve, because each item has had its own.** D1's
-Anchor did not FIT (the patch is 5x5 in a 10x8 room). D2's Lens could not be
-REQUIRED by terrain at all (it only shows you things). D3's Cleats introduce
-**swimming**, and swimming is the first item that makes the world BIGGER rather
-than different: every deep-water tile in the game becomes floor.
+**The problem it had to solve.** D1's Anchor did not FIT. D2's Lens could not
+be REQUIRED by terrain at all. D3's Cleats had the opposite problem: they are
+required by every deep tile in the game the moment they exist, so "this room
+needs the Cleats" is free and means nothing. The claim worth proving is about
+the two MODES, not the item — *the surface route does not get there and the
+floor route does* — and it is provable because the difference between the modes
+is data. A tile's `push` is applied only while swimming, so comparing it to
+SWIM_SPEED decides the question in arithmetic.
 
-- **Both existing provers say in their own headers that they cannot swim.**
-  `check-anchor.mjs` and `check-lens.mjs` each model deep water as a wall, which
-  is sound only before this dungeon. `check-anchor.mjs` already asserts that no
-  room outside `d1`/`d2` declares an anchor gate, so the first D3 room that
-  tries will fail out loud rather than quietly prove nothing. **Teaching a
-  prover to swim is part of the D3 session, not an extra**, and it is the first
-  thing to do, before the rooms.
-- **Every room in the game that is currently gated by deep water stops being
-  gated** the moment the player owns the Cleats. That is a whole-world change,
-  not a dungeon-local one, so `check-overworld.mjs` is part of this session's
-  verification and not a formality.
-- The item table gives D3's tide theme as "surface route vs. seafloor route" —
-  two rooms in one, layered rather than adjacent. If a D3 room's puzzle would
-  work with the water at a fixed level, it is the wrong puzzle.
+**The reusable part for D4-D6:** when an item's mere possession is the gate,
+find the axis INSIDE the item and prove that instead.
+
+**What it cost elsewhere**, both worth knowing before D4:
+
+- `walk-dungeons.mjs` now swims in any dungeon of index 3 or higher, because
+  the Cleats are the third dungeon's item. It stays off for d1/d2, so nothing
+  already proved about those two moved.
+- `Player.updateTerrain` gained four lines: entering water with the soles
+  already set to sink now dives. `toggleCleats` on dry land had been setting
+  `cleatMode`, saying "you will walk under the next water you meet", and then
+  NOTHING EVER READ THE FLAG AGAIN.
+
+**What is weak about it, and it is the same shape as D2's finding.** A torrent
+is drawn as ordinary deep water. Same art, same palette, same blue; the only
+difference is a faster ripple. In a screenshot it is invisible and in motion it
+is nearly so, so a player has no way to know which water is a current or which
+way it runs before swimming into it. The rooms are legible as drains and
+illegible as currents. See `docs/ART-BACKLOG.md`.
 
 ## D4-D6, and the consolidation that is still owed
 
@@ -112,6 +118,24 @@ Neither D1 nor D2 needed the consolidation and neither did it. It belongs to
 whichever session reaches D6, and it should be recorded here when it happens.
 
 ---
+
+## D4 — Cliffside Cistern, and the Squall Bellows. The next action item.
+
+**What is there today:** 18 rooms, one floor, pre-P8 content, under the 22-room
+floor, no room declaring it needs the Bellows, no prover.
+
+**The problem to expect.** The Bellows hold the tide back one level, in a cone,
+in front of you, WHILE YOU HOLD THE BUTTON. So it is the Anchor's problem
+turned inside out: the Anchor's held patch persists and can be walked away from,
+and the Bellows' does not — the water comes back the moment you let go, and you
+cannot be in two places at once. A room that is crossed by holding the button
+and walking is not a Bellows room; a room where the thing you free has to act
+while you stand still holding it, is. Write `check-bellows.mjs` before the rooms
+and make it model the cone travelling with the player.
+
+Note also that `Player` already surfaces the hard part: `bellowsOpen` blocks
+the item while `inDeep || underwater`, so a Bellows room may not be flooded in
+the way a Sanctum room is.
 
 ## What no dungeon has yet, and it is the same gap in all of them
 

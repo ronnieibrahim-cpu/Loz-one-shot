@@ -257,6 +257,51 @@ export const PLANS = {
   },
 
   // -------------------------------------------------------------------------
+  // The Undertow, and the whole of D3 in one run: the surface loses to the
+  // current, the seafloor walks through it.
+  //
+  // check-cleats.mjs proves this against a model of the room. This proves the
+  // GAME agrees with the model, which is a different claim and the one that
+  // catches a push applied in the wrong place. The first half is the assertion
+  // with teeth: sixty frames of holding LEFT while swimming, into a current
+  // that is stronger than swimming, and the player must come out no further
+  // west than he went in.
+  'd3-undertow': {
+    note: 'The Undertow: swim west into the torrent and lose ground, then take '
+      + 'the soles down and walk the same channel',
+    setup: {
+      seed: 20260806,
+      playerName: 'LINK',
+      items: { sword: 1, conch: 1, shield: 1, cleats: 1 },
+      equipB: 'cleats',
+      equipA: 'shield',
+      maxHearts: 12,
+      hearts: 12,
+      tide: 1,
+      enter: ['d3', 0, 2, 3, 144, 56, 'left'],
+    },
+    steps: [
+      ['wait', 30],
+      // Swimming. Into the channel and hold west against it: he gets his head
+      // into the current and it holds him at the lip, which is the claim.
+      ['hold', ['left'], 90],
+      ['wait', 20],
+      // Take the soles down. Toggling while ALREADY in deep water dives at
+      // once and says nothing — the dry-land branch is the one that opens a
+      // text box, and a box freezes the actor for as long as it is up.
+      ['tap', 'b', 40],
+      ['wait', 40],
+      // The same press, the same channel, and now nothing is pushing back.
+      ['hold', ['left'], 300],
+      ['wait', 40],
+    ],
+    // One room change in the whole run, and it is the west door of the
+    // Undertow. The swim half must therefore have crossed nothing: if the
+    // current ever stopped holding him, this run would leave the room twice.
+    assert: { roomChanges: 1 },
+  },
+
+  // -------------------------------------------------------------------------
   // Tidewash Grotto, entrance to the north half.
   //
   // The long one: eleven room entries, a chest, two pickups, a Small Key earned

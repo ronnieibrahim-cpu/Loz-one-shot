@@ -193,10 +193,22 @@ const reach = await page.evaluate((ids) => {
     // narrower than it looks, because the Anchor is recallable from anywhere —
     // every field it can create is reversible, so the state that has to be
     // connected is the base state, and the base state is what this walks.
+    //
+    // AND FROM D3 ONWARD THE PLAYER CAN SWIM. The Kelp-Soled Cleats are the
+    // third dungeon's item, so by the time the Bogwater Sanctum is entered deep
+    // water is floor — in both modes, since swimming and sinking cross exactly
+    // the same tiles and differ only in what the crossing costs. A flood that
+    // still treated DEEP as a wall reported every room past the Sanctum's item
+    // as stranded, which is a harness limitation and not a dungeon bug, the
+    // same shape as the jump exemption below it. It stays OFF for d1 and d2,
+    // where the player provably does not have the Cleats yet, so nothing
+    // already proved about those two moves.
+    const canSwim = (m.dungeon.index | 0) >= 3;
     const walkableAt = (ch, t) => {
       const d = defOf(ch, t);
       if (!d) return false;
       if (d.flags & F.STAIRS) return true;        // you stand on a stair to use it
+      if ((d.flags & F.DEEP) && canSwim) return !(d.flags & (F.VOID | F.SOLID));
       return !(d.flags & (F.VOID | F.SOLID | F.PIT | F.DEEP | F.LEDGE | F.HAZARD));
     };
     const passable = (ch) => [0, 1, 2].some(t => walkableAt(ch, t));
