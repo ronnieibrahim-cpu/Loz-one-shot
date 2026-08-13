@@ -228,6 +228,19 @@ const reach = await page.evaluate((ids) => {
     for (const [rk, def] of Object.entries(m.roomDefs)) {
       for (const [dx0, dy0] of def.puzzle?.reward?.openDoors || []) puzzleDoors.add(`${rk}:${dx0},${dy0}`);
     }
+    // A ONE-WAY LEDGE IS A WAY THROUGH, IN ONE DIRECTION. This flood used to
+    // treat every `F.LEDGE` tile as a wall, which was harmless while no room
+    // depended on a lip for connectivity and silently wrong the moment one did
+    // — d2's commit rooms are entered by hopping a three-tile lip, so without
+    // this every room past the first one reads as stranded. Walking into the
+    // face of a lip clears the whole run of ledge tiles behind it and lands on
+    // the first tile past it, exactly as `Player.tryLedgeHop` does. Nothing
+    // crosses a lip the other way, which is what makes the drop a commit.
+    const ledgeDir = (ch) => {
+      const d = defOf(ch, 0);
+      return d && (d.flags & F.LEDGE) ? d.ledge : null;
+    };
+    const dirOf = (dx, dy) => (dx ? (dx < 0 ? 'left' : 'right') : (dy < 0 ? 'up' : 'down'));
     const isLock = (ch) => legend[ch] === 'dDoorLocked';
     const isBossDoor = (ch) => legend[ch] === 'dDoorBoss';
     // Floors are joined by warps, not by seams. A flood that only crosses room
@@ -308,6 +321,16 @@ const reach = await page.evaluate((ids) => {
           if (nx >= 0 && ny >= 0 && nx < W && ny < H) {
             const ch = def.map[ny][nx];
             if (passable(ch) || puzzleDoors.has(`${rk}:${nx},${ny}`)) push(rk, nx, ny);
+            else if (ledgeDir(ch) === dirOf(dx, dy)) {
+              let n = 1;
+              while (n < 3) {
+                const bx = x + dx * (n + 1), by = y + dy * (n + 1);
+                if (bx < 0 || by < 0 || bx >= W || by >= H || ledgeDir(def.map[by][bx]) == null) break;
+                n++;
+              }
+              const lx = x + dx * (n + 1), ly = y + dy * (n + 1);
+              if (lx >= 0 && ly >= 0 && lx < W && ly < H && passable(def.map[ly][lx])) push(rk, lx, ly);
+            }
             else if (jumpable(ch)) {
               const jx = x + dx * 2, jy = y + dy * 2;
               if (jx >= 0 && jy >= 0 && jx < W && jy < H && passable(def.map[jy][jx])) push(rk, jx, jy);
@@ -382,17 +405,44 @@ const locked = await page.evaluate((ids) => {
         if (d.flags & F.STAIRS) return true;
         return !(d.flags & (F.VOID | F.SOLID | F.PIT | F.DEEP | F.LEDGE | F.HAZARD));
       };
-      for (const t of [0, 1, 2]) {
-        // Flood from every walkable tile on the room's border — the ways in —
-        // and require it to cover every walkable tile in the room. An island
-        // of floor the player cannot get to is the failure being looked for.
-        const walkable = [];
-        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (walk(def.map[y][x], t)) walkable.push(x + ',' + y);
-        if (!walkable.length) { out.push(`${mapId} ${key} @${t}: no floor at all`); continue; }
-        const seen = new Set(), q = [];
+      // The ways IN. A border tile is one; so is the landing of a one-way
+      // ledge, and that half was missing — this check treated a lip as a wall,
+      // so a pocket you drop into read as an island of floor nobody could
+      // reach. d2's commit rooms are exactly that shape on purpose.
+      const ledgeDir = (ch) => {
+        const d = getTileDef(legend[ch]);
+        return d && (d.flags & F.LEDGE) ? d.ledge : null;
+      };
+      const STEP = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
+      const landings = (t) => {
+        const out2 = [];
         for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-          const border = x === 0 || y === 0 || x === W - 1 || y === H - 1;
-          if (border && walk(def.map[y][x], t)) { const k = x + ',' + y; if (!seen.has(k)) { seen.add(k); q.push([x, y]); } }
+          const dir = ledgeDir(def.map[y][x]);
+          if (!dir) continue;
+          const [dx, dy] = STEP[dir];
+          let n = 1;
+          while (n < 3) {
+            const bx = x + dx * n, by = y + dy * n;
+            if (bx < 0 || by < 0 || bx >= W || by >= H || ledgeDir(def.map[by][bx]) == null) break;
+            n++;
+          }
+          const lx = x + dx * n, ly = y + dy * n;
+          if (lx >= 0 && ly >= 0 && lx < W && ly < H && walk(def.map[ly][lx], t)) out2.push([lx, ly]);
+        }
+        return out2;
+      };
+      // A tile the player can leave the room from: the border, or a warp.
+      const isExit = (x, y, t) => {
+        if (x === 0 || y === 0 || x === W - 1 || y === H - 1) return true;
+        let d = getTileDef(legend[def.map[y][x]]);
+        for (let i = 0; i < 4 && d && d.tide; i++) d = getTileDef(d.tide[t]);
+        return !!d && !!(d.flags & (F.WARP | F.STAIRS));
+      };
+      const spread = (seeds, t) => {
+        const seen = new Set(), q = [];
+        for (const [x, y] of seeds) {
+          const k = x + ',' + y;
+          if (!seen.has(k) && walk(def.map[y][x], t)) { seen.add(k); q.push([x, y]); }
         }
         while (q.length) {
           const [x, y] = q.pop();
@@ -404,8 +454,45 @@ const locked = await page.evaluate((ids) => {
             seen.add(k); q.push([nx, ny]);
           }
         }
+        return seen;
+      };
+      for (const t of [0, 1, 2]) {
+        // Flood from every way in and require it to cover every walkable tile
+        // in the room. An island of floor the player cannot get to is the
+        // failure being looked for.
+        const walkable = [];
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (walk(def.map[y][x], t)) walkable.push(x + ',' + y);
+        if (!walkable.length) { out.push(`${mapId} ${key} @${t}: no floor at all`); continue; }
+        const ways = [];
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+          const border = x === 0 || y === 0 || x === W - 1 || y === H - 1;
+          if (border && walk(def.map[y][x], t)) ways.push([x, y]);
+        }
+        for (const l of landings(t)) ways.push(l);
+        const seen = spread(ways, t);
         const stranded = walkable.filter(k => !seen.has(k));
         if (stranded.length) out.push(`${mapId} ${key} @${t}: ${stranded.length} tiles cut off (${stranded.slice(0, 3)})`);
+
+        // AND THE OTHER HALF, which is new: every tile you can get INTO you
+        // must be able to get OUT of. Reaching a pocket by a one-way lip and
+        // finding no border and no warp in it is a softlock, and the check
+        // above cannot see it — it only ever asked the question one way round.
+        // A room whose floor is reachable and inescapable passes everything
+        // else in this repo.
+        const trapped = [];
+        for (const k of seen) {
+          const [x, y] = k.split(',').map(Number);
+          // Walk out from this tile; something in what it reaches must be a
+          // way out of the room.
+          const from = spread([[x, y]], t);
+          let ok = false;
+          for (const j of from) {
+            const [jx, jy] = j.split(',').map(Number);
+            if (isExit(jx, jy, t)) { ok = true; break; }
+          }
+          if (!ok) trapped.push(k);
+        }
+        if (trapped.length) out.push(`${mapId} ${key} @${t}: ${trapped.length} tiles with no way out (${trapped.slice(0, 3)})`);
       }
     }
   }
