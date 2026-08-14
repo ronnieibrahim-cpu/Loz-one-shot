@@ -209,6 +209,18 @@ export function installLegends() {
   theme('dungeonSalt',    'dFloorSalt',    'dFloorSaltAlt',    'dWallSalt',    'dWallSaltX',    'dBlockSalt',    'dUrnSalt');
   theme('dungeonPalace',  'dFloorPalace',  'dFloorPalaceAlt',  'dWallPalace',  'dWallPalaceX',  'dBlockPalace',  'dUrnPalace');
   theme('dungeonAbyss',   'dFloorAbyss',   'dFloorAbyssAlt',   'dWallAbyss',   'dWallAbyssX',   'dBlockAbyss',   'dUrnAbyss');
+  // The Abyssal Keep needs one tile no other dungeon has, and every digit in
+  // the shared vocabulary is already spoken for. `6` is `dRaceE`, one of the
+  // Bogwater Sanctum's current races; no room outside d3 has ever placed it,
+  // and repointing it inside this legend moves nothing outside this dungeon.
+  // It stays a DIGIT because it stays a tide tile, which is the rule the
+  // digits carry.
+  //
+  // `q` is the shared mooring post repointed at the Keep's own floor. The post
+  // is transparent art over an `underArt` floor, and the shared one names the
+  // BRICK floor — the same defect the urn had before every theme got its own.
+  // `7` is `dRaceW`, the Sanctum's westward race, and the same argument applies.
+  registerLegend('dungeonAbyss', { '6': 'dSilt', '7': 'dLintel', 'q': 'dPostAbyss' }, 'dungeonAbyss');
 
   // ---- cave / interior ---------------------------------------------------
   registerLegend('cave', {

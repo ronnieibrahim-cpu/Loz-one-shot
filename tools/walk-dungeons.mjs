@@ -92,6 +92,10 @@ await page.evaluate(async () => {
   window.__getLegend = room.getLegend;
   window.__getTileDef = ts.getTileDef;
   window.__F = ts.F;
+  // The Dredge Line's reach, out of feel.js rather than written down here, so
+  // retuning the line re-walks every dungeon instead of quietly breaking one.
+  const feel = await import('/src/data/feel.js');
+  window.__DREDGE_TILES = Math.floor(feel.DREDGE_RANGE / 16);
 });
 
 // New game, skip the intro.
@@ -102,7 +106,13 @@ for (let i = 0; i < 140 && await page.evaluate(() => window.__game.mode === 'cut
 }
 
 // ---------------------------------------------------------------- part 1: walk
-const DUNGEONS = ['d1', 'd2', 'd3', 'd4', 'd5', 'd6', 'd7', 'd8'];
+// Six dungeons, and six is now what the data holds: the Reef Palace and the
+// Abyssal Keep were folded into d6 by the P8/D6 consolidation. Read out of the
+// map registry rather than listed, so the next fold needs no edit here.
+const DUNGEONS = await page.evaluate(() => [...window.__MAPS.values()]
+  .filter(m => m.dungeon)
+  .sort((a, b) => (a.dungeon.index | 0) - (b.dungeon.index | 0))
+  .map(m => m.id));
 
 for (const id of DUNGEONS) {
   const res = await page.evaluate(async (mapId) => {
@@ -141,6 +151,13 @@ for (const id of DUNGEONS) {
 const reach = await page.evaluate((ids) => {
   const F = window.__F, getTileDef = window.__getTileDef, getLegend = window.__getLegend;
   const SW = 10, SH = 8;                    // one SCREEN, in tiles
+  const DREDGE_TILES = window.__DREDGE_TILES;
+  // The dungeon that hands the Dredge Line over, found rather than written
+  // down, so the consolidation moving it from d8 to d6 needs no edit here.
+  let DREDGE_INDEX = 99;
+  for (const m0 of window.__MAPS.values()) {
+    if (m0.dungeon && m0.dungeon.item === 'dredge') DREDGE_INDEX = Math.min(DREDGE_INDEX, m0.dungeon.index | 0);
+  }
   const report = [];
   // A room declares one sill or a list of them; normalise before reading.
   const sillsOf = (def) => !def.bellowsRoom ? []
@@ -251,6 +268,24 @@ const reach = await page.evaluate((ids) => {
       return null;
     };
     const DIR_OF = { '1,0': 'right', '-1,0': 'left', '0,1': 'down', '0,-1': 'up' };
+    // AND A MOORING IS TRAVERSAL. The Dredge Line snags a fixed post and hauls
+    // the PLAYER to it — `moveEntity` with `{ jumping: true, swim: true }`, so
+    // nothing but a wall stops the pull and a pit under it is simply crossed.
+    // It is the only verb in the game that crosses a chasm wider than a hop,
+    // and the Abyssal Keep is built out of exactly that, so a flood that cannot
+    // do it reports the whole of the Keep's upper floor as stranded.
+    //
+    // The same rule as the Cleats above: on from the dungeon that hands the
+    // line over, off before it, so nothing already proved about d1-d5 moves.
+    // What proves each crossing is really a crossing — and, far more to the
+    // point, that no OTHER sea also crosses it — is check-dredge.mjs. This only
+    // needs to know that the route exists.
+    const canDredge = (m.dungeon.index | 0) >= DREDGE_INDEX;
+    const snagAt = (ch) => [0, 1, 2].some(t => { const d = defOf(ch, t); return d && (d.flags & F.SNAG); });
+    const castStops = (ch) => [0, 1, 2].every(t => {
+      const d = defOf(ch, t);
+      return !d || (d.flags & (F.SOLID | F.VOID));
+    });
     // A door a PUZZLE opens is not a wall. `reward.openDoors` names the tiles a
     // solved room switches to their open form, so those tiles are passable in
     // the connectivity model — the flood cannot solve a puzzle, and asserting
@@ -326,6 +361,12 @@ const reach = await page.evaluate((ids) => {
       // proves the wheel can be turned. Miss this and d4 is walked believing
       // it has two keys for three locks.
       for (const B of sillsOf(def)) if (B.gives === 'key') keys++;
+      // AND SO IS A THING LYING ON THE BOTTOM. `room.buried` is the Dredge
+      // Line's own list — the one the shovel used to read — and it is invisible
+      // to every sweep in this file, so the Keep was walked believing it had
+      // three keys for four locks. check-dredge.mjs is what proves each cache
+      // can actually be fished out.
+      for (const b of def.buried || []) if (b[2] === 'key') keys++;
     }
     let bossKey = false;
     for (const def of Object.values(m.roomDefs)) {
@@ -334,6 +375,7 @@ const reach = await page.evaluate((ids) => {
         if (String(o.pickup || o.item || o.kind || '').toLowerCase() === 'bosskey') bossKey = true;
       }
       for (const B of sillsOf(def)) if (String(B.gives || '').toLowerCase() === 'bosskey') bossKey = true;
+      for (const b of def.buried || []) if (String(b[2] || '').toLowerCase() === 'bosskey') bossKey = true;
     }
 
     const start = m.dungeon.startRoom;
@@ -365,6 +407,24 @@ const reach = await page.evaluate((ids) => {
         if (w) { const [wrk, wxy] = w.split(':'); const [wx, wy] = wxy.split(',').map(Number); push(wrk, wx, wy); }
         const D = dims.get(rk);
         const W = D.W, H = D.H;
+        // A cast, before the ordinary steps: look along each axis for a post
+        // within the line's reach with nothing solid in front of it, and land
+        // on the tile before it.
+        if (canDredge) {
+          for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+            for (let n = 1; n <= DREDGE_TILES; n++) {
+              const cx = x + dx * n, cy = y + dy * n;
+              if (cx < 0 || cy < 0 || cx >= W || cy >= H) break;
+              const ch = def.map[cy][cx];
+              if (snagAt(ch)) {
+                const lx = cx - dx, ly = cy - dy;
+                if (lx !== x || ly !== y) push(rk, lx, ly);
+                break;
+              }
+              if (castStops(ch)) break;
+            }
+          }
+        }
         for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
           const nx = x + dx, ny = y + dy;
           if (nx >= 0 && ny >= 0 && nx < W && ny < H) {

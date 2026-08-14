@@ -5,6 +5,7 @@ import { drawText, drawTextCentered, textWidth } from '../gfx/font.js';
 import { sprites, tiles as tileSheet } from '../gfx/art.js';
 import { drawPanel, drawBox } from './dialogue.js';
 import { listSaves, deleteSlot, HEART_UNITS } from './progress.js';
+import { essenceCount } from '../world/maps.js';
 
 export class Title {
   constructor(game) {
@@ -112,7 +113,7 @@ export class Title {
       const s = this.saves[i];
       if (s) {
         drawText(ctx, s.name, 14, y + 4, '#181c18');
-        drawText(ctx, '\x06' + s.essences + '/8', 60, y + 4, '#181c18');
+        drawText(ctx, '\x06' + s.essences + '/' + essenceCount(), 60, y + 4, '#181c18');
         drawText(ctx, '\x03' + s.rupees, 100, y + 4, '#181c18');
         // heart row
         const total = Math.ceil(s.maxHearts / HEART_UNITS);
@@ -134,7 +135,7 @@ export class Title {
     for (let i = 0; i < 3; i++) {
       const y = 34 + i * 22;
       const s = this.saves[i];
-      drawText(ctx, (this.eraseCursor === i ? '\x02 ' : '  ') + (s ? s.name + '  ' + s.essences + '/8' : '- empty -'),
+      drawText(ctx, (this.eraseCursor === i ? '\x02 ' : '  ') + (s ? s.name + '  ' + s.essences + '/' + essenceCount() : '- empty -'),
         20, y, '#f8f8e8', '#08142c');
     }
     drawTextCentered(ctx, 'B to go back', SCREEN_W / 2, 118, '#78a8c8', '#08142c');

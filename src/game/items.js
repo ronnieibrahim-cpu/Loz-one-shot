@@ -887,6 +887,14 @@ export const ITEMS = {
     desc: 'Cast it into deep water and drag. The seafloor keeps things.',
     use(game, p, level) {
       if (p.dredge && !p.dredge.remove) return true;
+      // BRACE FIRST. A weighted line is thrown from your heels, and a body
+      // floating in the water — or walking the floor of it in the Cleats — has
+      // nothing to throw against. The Squall Bellows and the Reefseed already
+      // refuse on exactly these grounds, and this is the guard that gives the
+      // Dredge Line a geometry at all: without it the answer to every mooring
+      // in the Abyssal Keep is to swim out to the middle of the shaft and cast
+      // from there, and no arrangement of ground can be made to matter.
+      if (p.inDeep || p.underwater) { game.audio.sfx('deny'); return true; }
       const d = new DredgeLine(p.cx - 5, p.cy - 5,
         { dir: p.dir, level, owner: p, coilrope: game.charm('coilrope') });
       p.dredge = d;

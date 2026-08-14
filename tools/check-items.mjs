@@ -435,30 +435,63 @@ check('a pillar will not grow on another pillar', r.canPlantTwice === false);
 // ===========================================================================
 section('Dredge Line');
 
-// Sunken Crypt: a Small Key on the bottom of a well that is deep at MID and
-// HIGH. No tide level exposes it and no sword reaches it.
-await park({ map: 'd8', rx: 4, ry: 3, tx: 4, ty: 3, dir: 'up', tide: 1, items: { dredge: 1 }, equipB: 'dredge' });
+// The Slack Water, the Abyssal Keep's teaching room: one silted ring in the
+// middle of a flat pan, and the SAME cast over the SAME tile from the SAME
+// square answers differently depending only on where the sea is. That is the
+// Dredge Line's whole second half and it is the one thing in the game that
+// wants the water UP, so it is asserted here in both directions rather than
+// once. `dragBack` skips a tile carrying neither F.WET nor F.SLOW.
+await park({ map: 'd6', rx: 5, ry: 3, tx: 4, ty: 6, dir: 'up', tide: 0, items: { dredge: 1 }, equipB: 'dredge' });
 await step(4);
 r = await read(() => {
   const g = window.__game;
-  return { buried: (g.room.def.buried || []).length, stand: window.__standable(4, 2) };
+  return { buried: (g.room.def.buried || []).length, dry: g.room.tile(4, 4, g.tide).name };
 });
-check('the crypt well has something on its floor', r.buried > 0);
-check('...and the floor cannot be walked to', r.stand === false);
+check('the pan has something in its floor', r.buried > 0);
+check('...and at LOW the ring is dry crust', r.dry === 'dSiltDry', r.dry);
 
-r = await page.evaluate(async () => {
+const dragOnce = async () => page.evaluate(async () => {
   const g = window.__game;
   const { DredgeLine } = await import('/src/game/items.js');
-  g.player.x = 4 * 16; g.player.y = 3 * 16; g.player.dir = 'up';
-  const before = g.entities.filter(e => e.isDrop).length;
+  g.entities = g.entities.filter(e => e === g.player);
+  g.player.x = 4 * 16; g.player.y = 6 * 16; g.player.dir = 'up';
   const line = new DredgeLine(g.player.cx - 5, g.player.cy - 5, { dir: 'up', level: 1, owner: g.player });
   g.player.dredge = line; g.addEntity(line);
   for (let i = 0; i < 90; i++) g.update();
   const drops = g.entities.filter(e => e.isDrop);
-  return { before, after: drops.length, kinds: drops.map(d => d.kind || d.type) };
+  return { after: drops.length, kinds: drops.map(d => d.kind || d.type) };
 });
-check('the line brings up what the floor was keeping', r.after > r.before,
-  `drops ${r.before} -> ${r.after} ${JSON.stringify(r.kinds)}`);
+
+r = await dragOnce();
+check('the dry pan gives up nothing', r.after === 0, `drops ${r.after} ${JSON.stringify(r.kinds)}`);
+
+await page.evaluate(() => { window.__game.tide.setLevel(1, { instant: true }); });
+await step(6);
+r = await dragOnce();
+check('the line brings up what the floor was keeping, once the sea is on it',
+  r.after > 0, `drops ${r.after} ${JSON.stringify(r.kinds)}`);
+
+// And it cannot be cast from the water at all: a weighted line is thrown from
+// your heels, the same guard the Bellows and the Reefseed carry. Without it the
+// answer to every mooring in the Keep is to swim out and cast from the middle.
+r = await page.evaluate(async () => {
+  const g = window.__game;
+  const { ITEMS } = await import('/src/game/items.js');
+  g.entities = g.entities.filter(e => e === g.player);
+  g.player.dredge = null;
+  g.player.inDeep = true;
+  ITEMS.dredge.use(g, g.player, 1);
+  const afloat = !!g.player.dredge;
+  g.player.inDeep = false; g.player.underwater = true;
+  ITEMS.dredge.use(g, g.player, 1);
+  const under = !!g.player.dredge;
+  g.player.underwater = false;
+  ITEMS.dredge.use(g, g.player, 1);
+  return { afloat, under, braced: !!g.player.dredge };
+});
+check('the line refuses to cast while swimming', r.afloat === false);
+check('...or from the seafloor', r.under === false);
+check('...and casts with both feet down', r.braced === true);
 
 // A post is a fixed snag: the line does not move it, it moves you.
 r = await page.evaluate(async () => {
@@ -513,8 +546,9 @@ check('...and takes double damage', r.flopDamage === r.normalDamage * r.scale,
 // ===========================================================================
 section('Resonance Rod');
 
-// The Bosskey Crypt's alcove is behind a grate.
-await park({ map: 'd8', floor: 1, rx: 4, ry: 2, tx: 4, ty: 4, dir: 'up', tide: 1, items: { rod: 1 }, equipB: 'rod' });
+// The Colonnade of the Drowned: the Keep's one optional reward, the Coilrope,
+// sits in an alcove behind a grate. Metal, and only the Rod retracts metal.
+await park({ map: 'd6', floor: 1, rx: 2, ry: 4, tx: 4, ty: 4, dir: 'up', tide: 1, items: { rod: 1 }, equipB: 'rod' });
 await step(4);
 r = await read(() => ({
   name: window.__game.room.baseName(4, 3),
@@ -665,7 +699,7 @@ check('the Compass is gone', r.compassGone && r.compasses, 'compass still in the
 r = await page.evaluate(async () => {
   const { getMap, getRoom, hasRoom } = await import('/src/world/maps.js');
   const counts = { none: 0, some: 0, all: 0, total: 0 };
-  for (const id of ['d1', 'd2', 'd3', 'd4', 'd5', 'd6', 'd7', 'd8']) {
+  for (const id of ['d1', 'd2', 'd3', 'd4', 'd5', 'd6']) {
     const m = getMap(id);
     if (!m) continue;
     for (let f = 0; f < m.floors; f++) {

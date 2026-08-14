@@ -71,7 +71,7 @@ const rooms = {
       '###gggg###',
     ],
     warps: [
-      { x: 4, y: 1, to: { map: 'd8', floor: 0, rx: 3, ry: 7, px: 72, py: 96 } },
+      { x: 4, y: 1, to: { map: 'd6', floor: 0, rx: 3, ry: 7, px: 72, py: 96 } },
     ],
     entities: [
       ['sign', 2, 4, { text: 'THE ABYSSAL KEEP\nNereth waits below the water.' }],
@@ -387,10 +387,10 @@ const rooms = {
       '###gggg###',
     ],
     warps: [
-      { x: 3, y: 2, to: { map: 'd6', floor: 0, rx: 3, ry: 7, px: 72, py: 96 } },
+      { x: 3, y: 2, to: { map: 'cave3', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
     ],
     entities: [
-      ['sign', 5, 2, { text: 'SALT PAN VAULT\nWater kills the flame. Draw it off.' }],
+      ['sign', 5, 2, { text: 'SALT PAN VAULT\nThe pan keeps one swallow of the sea.' }],
       ['beetle', 6, 5],
     ],
   },
@@ -460,10 +460,10 @@ const rooms = {
       '###gggg###',
     ],
     warps: [
-      { x: 4, y: 1, to: { map: 'd7', floor: 0, rx: 3, ry: 7, px: 72, py: 96 } },
+      { x: 4, y: 1, to: { map: 'cave4', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
     ],
     entities: [
-      ['sign', 2, 3, { text: 'REEF PALACE\nThe currents only run one way.' }],
+      ['sign', 2, 3, { text: 'REEF PALACE\nDrowned to the arches. The porch is all\nthat is left of it.' }],
       ['siren', 7, 4],
     ],
   },

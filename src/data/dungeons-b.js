@@ -648,1096 +648,72 @@ export function installDungeonsB() {
     },
   });
 
-  // --- Dungeon 6: Salt Pan Vault -------------------------------------------
-  // Tide theme: fire and water take turns. Basins are dry at LOW and hold water
-  // above it, so a torch room is only lightable with the sea drawn off — and the
-  // same basins are the only way across once they fill. Every torch puzzle here
-  // is really a tide puzzle wearing a torch.
+  // --- Dungeon 6: the Abyssal Keep ------------------------------------------
   //
-  // Intended route:
-  //   3,7 entrance -> 3,6 -> 3,5 hub -> 2,5 Dungeon Map -> 4,5 Small Key 1
-  //   -> 3,4 dry the basins -> 2,4 Compass -> 4,4 Small Key 2
-  //   -> 3,3 locked -> stairs at 4,3 up to floor 1
-  //   -> 1F 3,5 -> 2,5 Small Key 3 -> 4,5 Small Key 4 -> 3,4 locked
-  //   -> 2,4 Saltwraith (miniboss) -> 1,4 locked, big chest: Hookshot
-  //   -> 3,3 locked, Boss Key -> 3,2 boss door -> 3,1 Brinehulk
+  // THE PRIMITIVE, STATED ONCE. Everything after the Dredge Line in this
+  // dungeon is one sentence built two different ways:
+  //
+  //     THE LINE CROSSES WHAT THE SEA UNCOVERS, AND THE FLOOR GIVES UP ONLY
+  //     WHAT THE SEA COVERS.
+  //
+  // The Keep is the last dungeon and it is the first one whose problem is what
+  // the player already owns. Since the Bogwater Sanctum, deep water has been a
+  // road: both Cleat modes cross it and no sea level is a wall. So a barrier in
+  // the Abyssal Keep has to be a PIT — the one thing in the game that neither
+  // mode crosses and no conch fills — and every crossing here is a shaft.
+  //
+  // What gets you over one is `F.SNAG`. `DredgeLine.update` snags a fixed post
+  // and hauls the PLAYER to it, with `{ jumping: true, swim: true }`, so nothing
+  // but a wall stops the pull and the shaft under it is simply crossed. Three
+  // tiles decide whether that is possible, and the tide moves all three:
+  //
+  //   THE GROUND YOU BRACE ON. `ITEMS.dredge.use` now refuses while
+  //   `inDeep || underwater`, the same guard the Squall Bellows and the Reefseed
+  //   carry. A `3` (`dWell`) shelf is wading depth at LOW and over your head
+  //   above it, so a mooring reached across one is reached at LOW and nowhere
+  //   else. That is THE DROWNED STAND.
+  //
+  //   EVERYTHING BETWEEN. The cast stops dead on `F.SOLID`. A `7` (`dLintel`)
+  //   is the Keep's own masonry standing across a shaft, and it is stone until
+  //   HIGH covers it — so a post you can see from the moment you walk in is
+  //   unreachable until the sea takes the bar off it. That is THE SUNKEN BAR,
+  //   and it is the Drowned Stand inside out: one crosses at LOW, the other at
+  //   HIGH, and no room holds both at once except the last one.
+  //
+  // THE TIDE THEME, and it is the only one of the six that wants the water ON.
+  // D1 held a patch of sea still. D2 hid what a tile was. D3 gave one body of
+  // water two route layers. D4 needed the sea in two states at one instant. D5
+  // needed it in two states in order. Here:
+  //
+  //   THE DROWNED CACHE (`6`, `dSilt`) is a silted ring in the floor, and
+  //   `DredgeLine.dragBack` searches a tile the weight passed over ONLY if that
+  //   tile carries `F.WET | F.SLOW` at the level it resolves at. Dry crust is
+  //   dragged straight over. Every other item in this game has asked the player
+  //   to take the water off something; the last one asks them to put it back.
+  //
+  // So every room in the Keep's second half is a crossing at one sea and a cache
+  // at another, and the order cannot be reversed: the stand drowns when you
+  // raise the sea to fish, and the bar comes back down when you lower it.
+  //
+  // Proved by tools/check-dredge.mjs, which was written before these rooms and
+  // proves every closure clause TWICE — once at the line's own reach and once
+  // at the Coilrope's, because the charm that lengthens it is hand-placed in
+  // this dungeon. Walked in-engine by the `d6-mooring` replay.
+  //
+  // Intended route (26 rooms, two floors, the Dredge Line at room 13):
+  //   3,7 entrance -> 3,6 landing -> 2,6 Dungeon Map / 4,6 Small Key 1
+  //   -> 3,5 Drowned Hall (hub) -> 2,5 Chartstone -> 4,5 Small Key 2
+  //   -> 3,4 Three Heights (lock 1) -> 2,4 rest / 4,4 Small Key 3
+  //   -> 3,3 Keep Lock (lock 2) -> 4,3 DREDGE LINE -> 5,3 the Slack Water
+  //   -> 2,3 stair up
+  //   -> 1F 3,5 Upper Keep -> 2,5 -> 2,4 the Coilrope
+  //      -> 4,5 Tideshade (miniboss) -> 4,4 the Mermaid Suit
+  //      -> 3,4 the Drowned Stand -> 3,3 Keep Crossing
+  //      -> 2,3 the Sunken Bar (lock 3) -> 4,3 the Drowned Sill (Small Key 4)
+  //      -> 3,2 (lock 4) -> 4,2 the Crossed Shafts (Boss Key)
+  //      -> 3,1 Nereth
   registerMap({
     id: 'd6',
-    kind: 'dungeon',
-    name: 'Salt Pan Vault',
-    w: 8, h: 8, floors: 2,
-    legend: 'dungeonSalt',
-    music: 'dungeon2',
-    tint: 'cave',
-    scroll: false,
-    dungeon: {
-      index: 6,
-      item: 'bottle', itemLevel: 1,
-      essence: 6,
-      boss: 'brinehulk',
-      bossRoom: '1,3,1',
-      startRoom: '3,7',
-      entrance: { map: 'overworld', floor: 0, rx: 6, ry: 1, px: 48, py: 48 },
-    },
-    rooms: {
-      '0,1,3': {
-        name: 'Deep Pan',
-        map: [
-          '##########',
-          '##......##',
-          '##.3333.##',
-          '#..3333...',
-          '#..3333...',
-          '##.3333.##',
-          '##......##',
-          '##########',
-        ],
-        entities: [
-          ['jellyfish', 4, 3],
-          ['pickup', 2, 5, { kind: 'fairy' }],
-        ],
-      },
-      '0,2,3': {
-        name: 'Crust Cell',
-        map: [
-          '##########',
-          '##########',
-          '##.2222.##',
-          '.._____...',
-          '...2222...',
-          '##......##',
-          '####..####',
-          '####..####',
-        ],
-        entities: [
-          ['pickup', 4, 5, { kind: 'rupee20' }],
-          ['zol', 6, 2],
-        ],
-      },
-      '0,2,4': {
-        name: 'Compass Kiln',
-        map: [
-          '####..####',
-          '####..####',
-          '##..22..##',
-          '##........',
-          '##........',
-          '##..22..##',
-          '####..####',
-          '####..####',
-        ],
-        entities: [
-          ['chest', 4, 3, { pickup: 'chartstone' }],
-          ['darknut', 6, 4],
-        ],
-      },
-      '0,2,5': {
-        name: 'Map Vault',
-        map: [
-          '####..####',
-          '####..####',
-          '##......##',
-          '##..22....',
-          '##..22....',
-          '##......##',
-          '##########',
-          '##########',
-        ],
-        entities: [
-          ['pickup', 4, 3, { kind: 'dungeonMap' }],
-          ['beetle', 6, 2],
-        ],
-      },
-      '0,3,2': {
-        name: 'Lower Reliquary',
-        map: [
-          '##########',
-          '##########',
-          '##..22..##',
-          '##......##',
-          '##_____.##',
-          '##..22..##',
-          '####..####',
-          '####..####',
-        ],
-        entities: [
-          ['pickup', 4, 3, { kind: 'rupee20' }],
-          ['wisp', 2, 2],
-        ],
-      },
-      '0,3,3': {
-        name: 'Vault Lock',
-        map: [
-          '####..####',
-          '#........#',
-          '####L#####',
-          '..........',
-          '...""""...',
-          '#........#',
-          '#..q..q..#',
-          '####..####',
-        ],
-        entities: [
-          ['darknut', 2, 4],
-          ['keese', 6, 5],
-        ],
-      },
-      '0,3,4': {
-        name: 'The Basins',
-        map: [
-          '####..####',
-          '#.22..22.#',
-          '#.222222.#',
-          '..........',
-          '..........',
-          '#.______.#',
-          '#.22..22.#',
-          '####..####',
-        ],
-        entities: [
-          ['zol', 4, 3],
-          ['beetle', 2, 2],
-        ],
-        puzzle: {
-          enemies: true,
-          flag: 'd6_034_puzzle',
-          reward: {
-            spawn: [['pickup', 3, 3, { kind: 'rupee5' }]],
-            say: 'Loose stone shifts, and something rolls out.',
-          },
-        },
-      },
-      '0,3,5': {
-        name: 'Brine Hall',
-        map: [
-          '####..####',
-          '#..q..q..#',
-          '#.222222.#',
-          '..........',
-          '..........',
-          '#.222222.#',
-          '#..q..q..#',
-          '####..####',
-        ],
-        entities: [
-          ['darknut', 4, 3],
-          ['keese', 2, 5],
-          ['switch', 1, 2],
-          ['switch', 8, 2],
-          ['block', 1, 3],
-          ['block', 8, 3],
-        ],
-        puzzle: {
-          switches: 'all',
-          flag: 'd6_035_puzzle',
-          reward: {
-            spawn: [['pickup', 3, 3, { kind: 'fairy' }]],
-            say: 'A light comes up out of the water.',
-          },
-        },
-      },
-      '0,3,6': {
-        name: 'Salt Landing',
-        map: [
-          '####..####',
-          '#.2....2.#',
-          '#.2..>.2.#',
-          '#....>...#',
-          '#....>...#',
-          '#.2..>.2.#',
-          '#........#',
-          '####..####',
-        ],
-        entities: [
-          ['beetle', 3, 3],
-          ['zol', 6, 4],
-          ['torch', 1, 1],
-          ['torch', 8, 1],
-          ['torch', 1, 6],
-        ],
-        puzzle: {
-          torches: 'all',
-          flag: 'd6_036_puzzle',
-          reward: {
-            spawn: [['pickup', 4, 3, { kind: 'bomb4' }]],
-            say: 'A cache opens in the wall.',
-          },
-        },
-      },
-      '0,3,7': {
-        name: 'Vault Door',
-        map: [
-          '####..####',
-          '#........#',
-          '#.p....p.#',
-          '#........#',
-          '#.22..22.#',
-          '#........#',
-          '#........#',
-          '####/#####',
-        ],
-        warps: [
-          { x: 4, y: 7, to: { map: 'overworld', floor: 0, rx: 6, ry: 1, px: 48, py: 48, dir: 'down' } },
-        ],
-        readable: [
-          [2, 3, 'Salt-etched: "Draw the sea off and the flame will answer."'],
-        ],
-      },
-      '0,4,3': {
-        name: 'Vault Stair',
-        map: [
-          '##########',
-          '##....../#',
-          '##......##',
-          '.....<...#',
-          '.....<..##',
-          '##...<..##',
-          '####..####',
-          '####..####',
-        ],
-        warps: [
-          { x: 8, y: 1, to: { map: 'd6', floor: 1, rx: 3, ry: 5, px: 72, py: 96 } },
-        ],
-        entities: [
-          ['beetle', 3, 4],
-        ],
-      },
-      '0,4,4': {
-        name: 'Switch Kiln',
-        map: [
-          '####..####',
-          '####..####',
-          '##......##',
-          '...2..2.##',
-          '........##',
-          '##......##',
-          '####..####',
-          '####..####',
-        ],
-        entities: [
-          ['switch', 2, 2],
-          ['switch', 7, 5],
-          ['block', 2, 3],
-          ['wizzrobe', 6, 2],
-        ],
-        puzzle: {
-          switches: 'all',
-          flag: 'd6_switch',
-          reward: { spawn: [['pickup', 4, 4, { kind: 'key' }]], say: 'Salt grinds under a shifting plate.' },
-        },
-      },
-      '0,4,5': {
-        name: 'First Kiln',
-        map: [
-          '####..####',
-          '####..####',
-          '##......##',
-          '...2222.##',
-          '...2222.##',
-          '##......##',
-          '##########',
-          '##########',
-        ],
-        entities: [
-          ['torch', 2, 2],
-          ['torch', 7, 2],
-          ['wisp', 4, 4],
-        ],
-        puzzle: {
-          torches: 'all',
-          flag: 'd6_kiln1',
-          reward: { spawn: [['pickup', 4, 4, { kind: 'key' }]], say: 'Dry salt catches. The flame holds.' },
-        },
-      },
-      '1,1,4': {
-        name: 'Hookshot Vault',
-        // The fourth Small Key spends here. d6 has no corridor above its
-        // miniboss to gate, so the door goes across the vault itself and the
-        // spare key buys the Hookshot instead of nothing.
-        map: [
-          '##########',
-          '##########',
-          '##....#.##',
-          '##....L...',
-          '#.....#...',
-          '##....#.##',
-          '##########',
-          '##########',
-        ],
-        entities: [
-          ['chest', 4, 3, { big: true, item: 'bottle', level: 1 }],
-        ],
-      },
-      '1,2,3': {
-        name: 'West Kiln',
-        map: [
-          '##########',
-          '##########',
-          '##..22..##',
-          '#.........',
-          '##........',
-          '##......##',
-          '##########',
-          '##########',
-        ],
-        entities: [
-          ['pickup', 4, 4, { kind: 'fairy' }],
-          ['keese', 6, 2],
-        ],
-      },
-      '1,2,4': {
-        name: 'Saltwraith Hall',
-        map: [
-          '##########',
-          '##..pp..##',
-          '##......##',
-          '..........',
-          '..........',
-          '##......##',
-          '##......##',
-          '####..####',
-        ],
-        entities: [
-          ['saltwraith', 4, 3],
-        ],
-        puzzle: {
-          enemies: true,
-          flag: 'd6_saltwraith',
-          reward: { say: 'The salt collapses into a heap and stays there.' },
-        },
-      },
-      '1,2,5': {
-        name: 'Second Kiln',
-        map: [
-          '####..####',
-          '####..####',
-          '##......##',
-          '#.........',
-          '#.........',
-          '##......##',
-          '##########',
-          '##########',
-        ],
-        entities: [
-          ['torch', 2, 2],
-          ['torch', 7, 2],
-          ['torch', 4, 5],
-          ['darknut', 4, 3],
-        ],
-        puzzle: {
-          torches: 'all',
-          flag: 'd6_kiln2',
-          reward: { spawn: [['pickup', 4, 4, { kind: 'key' }]], say: 'Three flames. The vault sighs open somewhere.' },
-        },
-      },
-      '1,3,1': {
-        name: 'Brinehulk, the Salt Golem',
-        map: [
-          '##########',
-          '#........#',
-          '#........#',
-          '#....>...#',
-          '#....>...#',
-          '#....>...#',
-          '#........#',
-          '####..####',
-        ],
-        noTide: true,
-        entities: [
-          ['brinehulk', 4, 2],
-        ],
-        script: {
-          onEvent(game, name) {
-            if (name === 'bossDead') game.spawnPickup(80, 40, 'heartContainer', { grabDelay: 30 });
-          },
-        },
-      },
-      '1,3,2': {
-        name: 'Vault Gate',
-        map: [
-          '####..####',
-          '#........#',
-          '####B#####',
-          '#........#',
-          '#.22..22.#',
-          '#........#',
-          '#........#',
-          '####..####',
-        ],
-        entities: [
-          ['wisp', 6, 4],
-        ],
-      },
-      '1,3,3': {
-        name: 'Bosskey Kiln',
-        map: [
-          '####..####',
-          '#........#',
-          '####L#####',
-          '.........#',
-          '.........#',
-          '#........#',
-          '#........#',
-          '####..####',
-        ],
-        entities: [
-          ['chest', 6, 4, { pickup: 'bossKey' }],
-          ['darknut', 2, 4],
-        ],
-      },
-      '1,3,4': {
-        name: 'Upper Lock',
-        map: [
-          '####..####',
-          '#........#',
-          '####L#####',
-          '..........',
-          '..........',
-          '#........#',
-          '#........#',
-          '####..####',
-        ],
-        entities: [
-          ['beetle', 2, 4],
-          ['keese', 6, 5],
-        ],
-      },
-      '1,3,5': {
-        name: 'Upper Vault',
-        map: [
-          '####..####',
-          '##....../#',
-          '##......##',
-          '..........',
-          '..........',
-          '##......##',
-          '#........#',
-          '##########',
-        ],
-        warps: [
-          { x: 8, y: 1, to: { map: 'd6', floor: 0, rx: 4, ry: 3, px: 112, py: 40 } },
-        ],
-        entities: [
-          ['keese', 3, 4],
-        ],
-      },
-      '1,4,4': {
-        name: 'Crystal Cell',
-        map: [
-          '##########',
-          '##########',
-          '##.3333.##',
-          '.........#',
-          '...3333.##',
-          '##......##',
-          '####..####',
-          '####..####',
-        ],
-        entities: [
-          ['pickup', 4, 5, { kind: 'rupee20' }],
-          ['beamos', 4, 2],
-        ],
-      },
-      '1,4,5': {
-        name: 'Wraith Antechamber',
-        map: [
-          '####..####',
-          '####..####',
-          '##..pp..##',
-          '.........#',
-          '.........#',
-          '##..pp..##',
-          '##########',
-          '##########',
-        ],
-        entities: [
-          ['wizzrobe', 3, 3],
-          ['wizzrobe', 6, 4],
-          ['beetle', 4, 2],
-        ],
-        puzzle: {
-          enemies: true,
-          flag: 'd6_ante',
-          reward: { spawn: [['pickup', 4, 3, { kind: 'key' }]], say: 'The robes fall empty.' },
-        },
-      },
-    },
-  });
-
-  // --- Dungeon 7: Reef Palace ----------------------------------------------
-  // Tide theme: the palace is a system of channels, and which way they run is
-  // decided by the tide. Channels wade only at LOW; raise the sea and the same
-  // corridors become deep water that carries you. Wells stay water throughout,
-  // so the Flippers matter as much as the conch.
-  //
-  // Intended route:
-  //   3,7 entrance -> 3,6 -> 3,5 hub -> 2,5 Dungeon Map -> 4,5 Small Key 1
-  //   -> 3,4 currents -> 2,4 Compass -> 4,4 Small Key 2
-  //   -> 3,3 locked -> stairs at 2,3 up to floor 1
-  //   -> 1F 3,5 -> 4,5 Small Key 3 -> 2,5 Small Key 4 -> 3,4 locked
-  //   -> 4,4 Gustharpy (miniboss) -> 5,4 big chest: Magnetic Gloves
-  //   -> 4,3 locked -> 4,2 Boss Key -> 3,2 boss door -> 3,1 Thalassor
-  registerMap({
-    id: 'd7',
-    kind: 'dungeon',
-    name: 'Reef Palace',
-    w: 8, h: 8, floors: 2,
-    legend: 'dungeonPalace',
-    music: 'dungeon',
-    tint: 'cave',
-    scroll: false,
-    dungeon: {
-      index: 7,
-      item: 'cleats', itemLevel: 2,
-      essence: 7,
-      boss: 'thalassor',
-      bossRoom: '1,3,1',
-      startRoom: '3,7',
-      entrance: { map: 'overworld', floor: 0, rx: 10, ry: 1, px: 64, py: 32 },
-    },
-    rooms: {
-      '0,2,3': {
-        name: 'Palace Stair',
-        map: [
-          '##########',
-          '##....../#',
-          '##......##',
-          '#....>....',
-          '##...>....',
-          '##...>..##',
-          '####..####',
-          '####..####',
-        ],
-        warps: [
-          { x: 8, y: 1, to: { map: 'd7', floor: 1, rx: 3, ry: 5, px: 72, py: 96 } },
-        ],
-        entities: [
-          ['crab', 3, 4],
-        ],
-      },
-      '0,2,4': {
-        name: 'Compass Chamber',
-        map: [
-          '####..####',
-          '####..####',
-          '##..33..##',
-          '##........',
-          '##........',
-          '##..33..##',
-          '####..####',
-          '####..####',
-        ],
-        entities: [
-          ['chest', 4, 3, { pickup: 'chartstone' }],
-          ['siren', 6, 4],
-        ],
-      },
-      '0,2,5': {
-        name: 'Map Chamber',
-        map: [
-          '####..####',
-          '####..####',
-          '##......##',
-          '##..55....',
-          '##..55....',
-          '##......##',
-          '##########',
-          '##########',
-        ],
-        entities: [
-          ['pickup', 4, 3, { kind: 'dungeonMap' }],
-          ['urchin', 6, 2],
-        ],
-      },
-      '0,3,2': {
-        name: 'Lower Gallery',
-        map: [
-          '##########',
-          '##########',
-          '##..55..##',
-          '##......##',
-          '##......##',
-          '##..55..##',
-          '####..####',
-          '####..####',
-        ],
-        entities: [
-          ['pickup', 4, 3, { kind: 'rupee20' }],
-          ['siren', 2, 2],
-        ],
-      },
-      '0,3,3': {
-        name: 'Palace Lock',
-        map: [
-          '####..####',
-          '#........#',
-          '####L#####',
-          '..........',
-          '...""""...',
-          '#........#',
-          '#..q..q..#',
-          '####..####',
-        ],
-        entities: [
-          ['darknut', 2, 4],
-          ['keese', 6, 5],
-        ],
-      },
-      '0,3,4': {
-        name: 'The Currents',
-        map: [
-          '####..####',
-          '#.55..55.#',
-          '#.5.33.5.#',
-          '..........',
-          '..........',
-          '#.5.33.5.#',
-          '#.55..55.#',
-          '####..####',
-        ],
-        entities: [
-          ['octorokSea', 4, 3],
-          ['jellyfish', 2, 2],
-        ],
-        puzzle: {
-          enemies: true,
-          flag: 'd7_034_puzzle',
-          reward: {
-            spawn: [['pickup', 3, 3, { kind: 'rupee20' }]],
-            say: 'A catch lets go under the floor.',
-          },
-        },
-      },
-      '0,3,5': {
-        name: 'Current Hall',
-        map: [
-          '####..####',
-          '#..q..q..#',
-          '#.555555.#',
-          '..........',
-          '..........',
-          '#.555555.#',
-          '#..q..q..#',
-          '####..####',
-        ],
-        entities: [
-          ['siren', 4, 2],
-          ['octorokSea', 2, 5],
-          ['jellyfish', 7, 3],
-          ['switch', 1, 2],
-          ['switch', 8, 2],
-          ['block', 1, 3],
-          ['block', 8, 3],
-        ],
-        puzzle: {
-          switches: 'all',
-          flag: 'd7_035_puzzle',
-          reward: {
-            spawn: [['pickup', 4, 3, { kind: 'heart' }]],
-            say: 'Water drains out of a niche in the wall.',
-          },
-        },
-      },
-      '0,3,6': {
-        name: 'Palace Landing',
-        map: [
-          '####..####',
-          '#.5....5.#',
-          '#.5....5.#',
-          '#........#',
-          '#........#',
-          '#.5____5.#',
-          '#........#',
-          '####..####',
-        ],
-        entities: [
-          ['crab', 3, 3],
-          ['jellyfish', 6, 4],
-          ['torch', 1, 1],
-          ['torch', 8, 1],
-          ['torch', 1, 6],
-        ],
-        puzzle: {
-          torches: 'all',
-          flag: 'd7_036_puzzle',
-          reward: {
-            spawn: [['pickup', 4, 3, { kind: 'rupee5' }]],
-            say: 'Loose stone shifts, and something rolls out.',
-          },
-        },
-      },
-      '0,3,7': {
-        name: 'Palace Door',
-        map: [
-          '####..####',
-          '#........#',
-          '#.p....p.#',
-          '#........#',
-          '#.55..55.#',
-          '#........#',
-          '#........#',
-          '####/#####',
-        ],
-        warps: [
-          { x: 4, y: 7, to: { map: 'overworld', floor: 0, rx: 10, ry: 1, px: 64, py: 32, dir: 'down' } },
-        ],
-        readable: [
-          [2, 3, 'Set in shell: "The current obeys the height, not the swimmer."'],
-        ],
-      },
-      '0,4,3': {
-        name: 'Shell Court',
-        map: [
-          '##########',
-          '##########',
-          '##.3333.##',
-          '..........',
-          '..........',
-          '##.3333.##',
-          '####..####',
-          '####..####',
-        ],
-        entities: [
-          ['barnacle', 3, 2],
-          ['barnacle', 6, 5],
-          ['pickup', 4, 3, { kind: 'rupee20' }],
-        ],
-      },
-      '0,4,4': {
-        name: 'Beamos Court',
-        map: [
-          '####..####',
-          '####..####',
-          '##......##',
-          '...5..5.##',
-          '........##',
-          '##......##',
-          '####..####',
-          '####..####',
-        ],
-        entities: [
-          ['beamos', 2, 2],
-          ['beamos', 7, 5],
-          ['switch', 4, 3],
-          ['block', 4, 4],
-        ],
-        puzzle: {
-          switches: 'all',
-          flag: 'd7_beamos',
-          reward: { spawn: [['pickup', 4, 4, { kind: 'key' }]], say: 'The eyes close together.' },
-        },
-      },
-      '0,4,5': {
-        name: 'Whirl Cell',
-        map: [
-          '####..####',
-          '####..####',
-          '##......##',
-          '...3333.##',
-          '...3333.##',
-          '##......##',
-          '##########',
-          '##########',
-        ],
-        entities: [
-          ['siren', 2, 2],
-          ['anglerfry', 7, 5],
-          ['jellyfish', 4, 4],
-        ],
-        puzzle: {
-          enemies: true,
-          flag: 'd7_whirl',
-          reward: { spawn: [['pickup', 4, 3, { kind: 'key' }]], say: 'The whirlpool spits something out.' },
-        },
-      },
-      '0,5,3': {
-        name: 'Deep Court',
-        map: [
-          '##########',
-          '##########',
-          '##.3333.##',
-          '...3333.##',
-          '...3333.##',
-          '##......##',
-          '##########',
-          '##########',
-        ],
-        entities: [
-          ['anglerfry', 4, 2],
-          ['pickup', 4, 5, { kind: 'fairy' }],
-        ],
-      },
-      '1,2,3': {
-        name: 'West Gallery',
-        map: [
-          '##########',
-          '##########',
-          '##..55..##',
-          '#.........',
-          '##........',
-          '##......##',
-          '####..####',
-          '####..####',
-        ],
-        entities: [
-          ['pickup', 4, 4, { kind: 'fairy' }],
-          ['urchin', 6, 2],
-        ],
-      },
-      '1,2,4': {
-        name: 'Colonnade',
-        map: [
-          '####..####',
-          '####..####',
-          '##.q..q.##',
-          '##........',
-          '##........',
-          '##.q..q.##',
-          '####..####',
-          '####..####',
-        ],
-        entities: [
-          ['beamos', 4, 3],
-          ['pickup', 2, 2, { kind: 'rupee20' }],
-        ],
-      },
-      '1,2,5': {
-        name: 'Gale Cell',
-        map: [
-          '####..####',
-          '####..####',
-          '##......##',
-          '#.........',
-          '#.___.....',
-          '##......##',
-          '##########',
-          '##########',
-        ],
-        entities: [
-          ['wizzrobe', 3, 3],
-          ['wizzrobe', 6, 4],
-          ['keese', 4, 2],
-        ],
-        puzzle: {
-          enemies: true,
-          flag: 'd7_gale',
-          reward: { spawn: [['pickup', 4, 3, { kind: 'key' }]], say: 'The wind drops. Something falls with it.' },
-        },
-      },
-      '1,3,1': {
-        name: 'Thalassor, the Coiled Eel',
-        map: [
-          '##########',
-          '#........#',
-          '#........#',
-          '#....<...#',
-          '#....<...#',
-          '#....<...#',
-          '#........#',
-          '####..####',
-        ],
-        noTide: true,
-        entities: [
-          ['thalassor', 4, 2],
-        ],
-        script: {
-          onEvent(game, name) {
-            if (name === 'bossDead') game.spawnPickup(80, 40, 'heartContainer', { grabDelay: 30 });
-          },
-        },
-      },
-      '1,3,2': {
-        name: 'Palace Gate',
-        map: [
-          '####..####',
-          '#........#',
-          '####B#####',
-          '#........#',
-          '#.55..55.#',
-          '#........#',
-          '#........#',
-          '####..####',
-        ],
-        entities: [
-          ['jellyfish', 6, 4],
-        ],
-      },
-      '1,3,3': {
-        name: 'Upper Nave',
-        map: [
-          '####..####',
-          '#........#',
-          '#.3....3.#',
-          '.........#',
-          '.........#',
-          '#.3____3.#',
-          '#........#',
-          '####..####',
-        ],
-        entities: [
-          ['octorokSea', 4, 3],
-          ['darknut', 2, 2],
-        ],
-        puzzle: {
-          enemies: true,
-          flag: 'd7_133_puzzle',
-          reward: {
-            spawn: [['pickup', 4, 2, { kind: 'fairy' }]],
-            say: 'A light comes up out of the water.',
-          },
-        },
-      },
-      '1,3,4': {
-        name: 'Upper Lock',
-        map: [
-          '####..####',
-          '#........#',
-          '####L#####',
-          '..........',
-          '..........',
-          '#........#',
-          '#........#',
-          '####..####',
-        ],
-        entities: [
-          ['urchin', 2, 4],
-          ['keese', 6, 5],
-        ],
-      },
-      '1,3,5': {
-        name: 'Upper Palace',
-        map: [
-          '####..####',
-          '##....../#',
-          '##...>..##',
-          '.....>....',
-          '.....>....',
-          '##......##',
-          '#........#',
-          '##########',
-        ],
-        warps: [
-          { x: 8, y: 1, to: { map: 'd7', floor: 0, rx: 2, ry: 3, px: 112, py: 40 } },
-        ],
-        entities: [
-          ['keese', 3, 4],
-        ],
-      },
-      '1,4,2': {
-        name: 'Bosskey Gallery',
-        map: [
-          '##########',
-          '##########',
-          '##......##',
-          '#........#',
-          '##..33..##',
-          '##......##',
-          '####..####',
-          '####..####',
-        ],
-        entities: [
-          ['chest', 4, 2, { pickup: 'bossKey' }],
-          ['darknut', 6, 4],
-        ],
-      },
-      '1,4,3': {
-        name: 'Upper Current',
-        // The fourth Small Key spends here: this is the only way up to the Boss
-        // Key, so the key the dungeon used to hand out spare now has a door.
-        map: [
-          '####..####',
-          '##......##',
-          '####L#####',
-          '#........#',
-          '#........#',
-          '##......##',
-          '##......##',
-          '####..####',
-        ],
-        entities: [
-          ['siren', 4, 3],
-        ],
-      },
-      '1,4,4': {
-        name: 'Gustharpy Court',
-        map: [
-          '####..####',
-          '##......##',
-          '####L#####',
-          '..........',
-          '..........',
-          '##......##',
-          '##......##',
-          '####..####',
-        ],
-        entities: [
-          ['gustharpy', 4, 4],
-        ],
-        puzzle: {
-          enemies: true,
-          flag: 'd7_gustharpy',
-          reward: { say: 'The wind that carried it is gone.' },
-        },
-      },
-      '1,4,5': {
-        name: 'Torch Gallery',
-        map: [
-          '####..####',
-          '####..####',
-          '##......##',
-          '.........#',
-          '.........#',
-          '##......##',
-          '##########',
-          '##########',
-        ],
-        entities: [
-          ['torch', 2, 2],
-          ['torch', 7, 2],
-          ['torch', 2, 5],
-          ['torch', 7, 5],
-          ['darknut', 4, 3],
-        ],
-        puzzle: {
-          torches: 'all',
-          flag: 'd7_torches',
-          reward: { spawn: [['pickup', 4, 3, { kind: 'key' }]], say: 'Four flames in a drowned palace. Someone is impressed.' },
-        },
-      },
-      '1,5,4': {
-        name: 'Magnet Vault',
-        map: [
-          '##########',
-          '##########',
-          '##......##',
-          '.........#',
-          '........##',
-          '##......##',
-          '##########',
-          '##########',
-        ],
-        entities: [
-          ['chest', 4, 3, { big: true, item: 'cleats', level: 2 }],
-        ],
-      },
-    },
-  });
-
-  // --- Dungeon 8: Abyssal Keep ---------------------------------------------
-  // Tide theme: everything at once. The Keep's rooms mix sluices, basins, wells,
-  // drains and drown-walls in the same grid, so crossing one usually means
-  // cycling the conch through all three heights rather than picking a level and
-  // staying there. The Mermaid Suit inside makes the deepest water yours.
-  //
-  // Intended route:
-  //   3,7 entrance -> 3,6 -> 3,5 hub -> 2,5 Dungeon Map -> 4,5 Small Key 1
-  //   -> 3,4 the three-height gallery -> 2,4 Compass -> 4,4 Small Key 2
-  //   -> 3,3 locked -> stairs at 2,3 up to floor 1
-  //   -> 1F 3,5 -> 4,5 Small Key 3 -> 2,5 Small Key 4 -> 3,4 locked
-  //   -> 4,4 Tideshade (miniboss) -> 5,4 big chest: Mermaid Suit
-  //   -> 4,3 locked -> 4,2 Boss Key -> 3,2 boss door -> 3,1 Nereth
-  registerMap({
-    id: 'd8',
     kind: 'dungeon',
     name: 'Abyssal Keep',
     w: 8, h: 8, floors: 2,
@@ -1746,185 +722,16 @@ export function installDungeonsB() {
     tint: 'cave',
     scroll: false,
     dungeon: {
-      index: 8,
+      index: 6,
       item: 'dredge', itemLevel: 1,
-      essence: 8,
+      essence: 6,
       boss: 'nereth',
       bossRoom: '1,3,1',
       startRoom: '3,7',
       entrance: { map: 'overworld', floor: 0, rx: 1, ry: 0, px: 64, py: 32 },
     },
     rooms: {
-      '0,2,3': {
-        name: 'Keep Stair',
-        map: [
-          '##########',
-          '##....../#',
-          '##......##',
-          '#....<....',
-          '##...<....',
-          '##...<..##',
-          '####..####',
-          '####..####',
-        ],
-        warps: [
-          { x: 8, y: 1, to: { map: 'd8', floor: 1, rx: 3, ry: 5, px: 72, py: 96 } },
-        ],
-        entities: [
-          ['stalfos', 3, 4],
-        ],
-      },
-      '0,2,4': {
-        name: 'Compass Crypt',
-        map: [
-          '####..####',
-          '####..####',
-          '##..99..##',
-          '##........',
-          '##........',
-          '##..99..##',
-          '####..####',
-          '####..####',
-        ],
-        entities: [
-          ['chest', 4, 3, { pickup: 'chartstone' }],
-          ['darknut', 6, 4],
-        ],
-      },
-      '0,2,5': {
-        name: 'Map Crypt',
-        map: [
-          '####..####',
-          '####..####',
-          '##......##',
-          '##..12....',
-          '##..21....',
-          '##......##',
-          '##########',
-          '##########',
-        ],
-        entities: [
-          ['pickup', 4, 3, { kind: 'dungeonMap' }],
-          ['stalfos', 6, 2],
-        ],
-      },
-      '0,3,2': {
-        name: 'Lower Crypt',
-        map: [
-          '##########',
-          '##########',
-          '##..99..##',
-          '##......##',
-          '##......##',
-          '##..99..##',
-          '####..####',
-          '####..####',
-        ],
-        entities: [
-          ['pickup', 4, 3, { kind: 'rupee20' }],
-          ['wizzrobe', 2, 2],
-        ],
-      },
-      '0,3,3': {
-        name: 'Keep Lock',
-        map: [
-          '####..####',
-          '#........#',
-          '####L#####',
-          '..........',
-          '...""""...',
-          '#........#',
-          '#..q..q..#',
-          '####..####',
-        ],
-        entities: [
-          ['darknut', 2, 4],
-          ['wizzrobe', 6, 5],
-        ],
-      },
-      '0,3,4': {
-        name: 'Three Heights',
-        map: [
-          '####..####',
-          '#.11..11.#',
-          '#.9.44.9.#',
-          '..........',
-          '..........',
-          '#.9.44.9.#',
-          '#.22..22.#',
-          '####..####',
-        ],
-        entities: [
-          ['wizzrobe', 4, 3],
-          ['jellyfish', 2, 2],
-          ['switch', 1, 2],
-          ['switch', 8, 2],
-          ['block', 1, 3],
-          ['block', 8, 3],
-        ],
-        puzzle: {
-          switches: 'all',
-          flag: 'd8_034_puzzle',
-          reward: {
-            spawn: [['pickup', 3, 3, { kind: 'bomb4' }]],
-            say: 'A cache opens in the wall.',
-          },
-        },
-      },
-      '0,3,5': {
-        name: 'Drowned Hall',
-        map: [
-          '####..####',
-          '#..q..q..#',
-          '#.191919.#',
-          '..........',
-          '..........',
-          '#.919191.#',
-          '#..q..q..#',
-          '####..####',
-        ],
-        entities: [
-          ['wizzrobe', 4, 2],
-          ['darknut', 2, 5],
-          ['siren', 7, 3],
-          ['torch', 1, 1],
-          ['torch', 8, 1],
-          ['torch', 1, 6],
-        ],
-        puzzle: {
-          torches: 'all',
-          flag: 'd8_035_puzzle',
-          reward: {
-            spawn: [['pickup', 4, 3, { kind: 'rupee20' }]],
-            say: 'A catch lets go under the floor.',
-          },
-        },
-      },
-      '0,3,6': {
-        name: 'Keep Landing',
-        map: [
-          '####..####',
-          '#.1....1.#',
-          '#.9....9.#',
-          '#........#',
-          '#........#',
-          '#.9____9.#',
-          '#........#',
-          '####..####',
-        ],
-        entities: [
-          ['darknut', 3, 3],
-          ['keese', 6, 4],
-        ],
-        puzzle: {
-          enemies: true,
-          flag: 'd8_036_puzzle',
-          reward: {
-            spawn: [['pickup', 4, 3, { kind: 'heart' }]],
-            say: 'Water drains out of a niche in the wall.',
-          },
-        },
-      },
+      // ---------------------------------------------------- the way in
       '0,3,7': {
         name: 'Keep Door',
         map: [
@@ -1941,34 +748,124 @@ export function installDungeonsB() {
           { x: 4, y: 7, to: { map: 'overworld', floor: 0, rx: 1, ry: 0, px: 64, py: 32, dir: 'down' } },
         ],
         readable: [
-          [2, 3, 'Cut in black stone: "Three heights. One way through."'],
+          [2, 3, 'Cut in black stone: "Everything the sea takes, it keeps. Everything it keeps, it puts down."'],
         ],
       },
-      '0,4,3': {
-        name: 'Sunken Crypt',
-        // The Dredge Line's room. The crypt's wells are deep at MID and HIGH
-        // and there is a Small Key on the bottom of the near one — no tide
-        // level exposes it and no sword reaches it. You fish for it.
+      '0,3,6': {
+        name: 'Keep Landing',
         map: [
-          '##########',
-          '##########',
-          '##.3333.##',
-          '..........',
-          '..........',
-          '##.3333.##',
           '####..####',
+          '#.1....1.#',
+          '#.9....9.#',
+          '..........',
+          '..........',
+          '#.9____9.#',
+          '#........#',
           '####..####',
         ],
-        buried: [[4, 2, 'key'], [6, 5, 'rupee20']],
         entities: [
-          ['siren', 3, 2],
-          ['anglerfry', 6, 5],
-          // Rung, it points at the well with the key in it. A direction and
-          // never a distance — see docs/ITEMS.md.
-          ['bell', 8, 4, { points: [4, 2], say: 'The bell hums toward the near well.' }],
+          ['darknut', 3, 3],
+          ['keese', 6, 4],
+        ],
+        puzzle: {
+          enemies: true,
+          flag: 'd6_landing',
+          reward: {
+            spawn: [['pickup', 4, 3, { kind: 'heart' }]],
+            say: 'Water drains out of a niche in the wall.',
+          },
+        },
+      },
+      '0,2,6': {
+        name: 'Map Crypt',
+        map: [
+          '####..####',
+          '####..####',
+          '##......##',
+          '##..12....',
+          '##..21....',
+          '##......##',
+          '##########',
+          '##########',
+        ],
+        entities: [
+          ['pickup', 4, 3, { kind: 'dungeonMap' }],
+          ['stalfos', 6, 2],
         ],
       },
-      '0,4,4': {
+      '0,4,6': {
+        name: 'Bone Cell',
+        map: [
+          '####..####',
+          '####..####',
+          '##......##',
+          '...4444.##',
+          '...4444.##',
+          '##......##',
+          '##########',
+          '##########',
+        ],
+        entities: [
+          ['stalfos', 2, 2],
+          ['stalfos', 7, 2],
+          ['darknut', 4, 4],
+        ],
+        puzzle: {
+          enemies: true,
+          flag: 'd6_bone',
+          reward: { spawn: [['pickup', 4, 3, { kind: 'key' }]], say: 'The bones settle. A key is among them.' },
+        },
+      },
+      '0,3,5': {
+        name: 'Drowned Hall',
+        map: [
+          '####..####',
+          '#..M..M..#',
+          '#.191919.#',
+          '..........',
+          '..........',
+          '#.919191.#',
+          '#..M..M..#',
+          '####..####',
+        ],
+        entities: [
+          ['wizzrobe', 4, 2],
+          ['darknut', 2, 5],
+          ['siren', 7, 3],
+          ['torch', 1, 1],
+          ['torch', 8, 1],
+          ['torch', 1, 6],
+        ],
+        puzzle: {
+          torches: 'all',
+          flag: 'd6_hall',
+          reward: {
+            spawn: [['pickup', 4, 3, { kind: 'rupee20' }]],
+            say: 'A catch lets go under the floor.',
+          },
+        },
+        readable: [
+          [8, 4, 'A mooring plate, worn smooth: "The rings in this house were for hauling. They will haul anything that takes hold."'],
+        ],
+      },
+      '0,2,5': {
+        name: 'Chartstone Crypt',
+        map: [
+          '####..####',
+          '####..####',
+          '##..99..##',
+          '##........',
+          '##........',
+          '##..99..##',
+          '####..####',
+          '####..####',
+        ],
+        entities: [
+          ['chest', 4, 3, { pickup: 'chartstone' }],
+          ['darknut', 6, 4],
+        ],
+      },
+      '0,4,5': {
         name: 'Drain Court',
         map: [
           '####..####',
@@ -1988,51 +885,35 @@ export function installDungeonsB() {
         ],
         puzzle: {
           switches: 'all',
-          flag: 'd8_drain',
+          flag: 'd6_drain',
           reward: { spawn: [['pickup', 4, 4, { kind: 'key' }]], say: 'The drain gutters and something bright goes down it.' },
         },
       },
-      '0,4,5': {
-        name: 'Bone Cell',
+      '0,3,4': {
+        name: 'Three Heights',
+        // The dungeon's own tide vocabulary said once, before anything depends
+        // on it: `1` is dry then wading then over your head, `9` is a wall the
+        // sea swims you over, `4` is a hole the sea fills. Three tiles, three
+        // different answers to the same conch, and the walk round them is free.
         map: [
           '####..####',
+          '#.11..11.#',
+          '####L#####',
+          '..9....9..',
+          '..9.44.9..',
+          '#.9.44.9.#',
+          '#.22..22.#',
           '####..####',
-          '##......##',
-          '...4444.##',
-          '...4444.##',
-          '##......##',
-          '##########',
-          '##########',
         ],
         entities: [
-          ['stalfos', 2, 2],
-          ['stalfos', 7, 2],
-          ['darknut', 4, 4],
+          ['wizzrobe', 4, 4],
+          ['jellyfish', 2, 3],
         ],
-        puzzle: {
-          enemies: true,
-          flag: 'd8_bone',
-          reward: { spawn: [['pickup', 4, 3, { kind: 'key' }]], say: 'The bones settle. A key is among them.' },
-        },
-      },
-      '0,5,3': {
-        name: 'Abyssal Cell',
-        map: [
-          '##########',
-          '##########',
-          '##.3333.##',
-          '...3333.##',
-          '...3333.##',
-          '##......##',
-          '##########',
-          '##########',
-        ],
-        entities: [
-          ['anglerfry', 4, 2],
-          ['pickup', 4, 5, { kind: 'fairy' }],
+        readable: [
+          [1, 6, 'Scratched low, where the water reaches it: "Three heights. One way through."'],
         ],
       },
-      '1,2,3': {
+      '0,2,4': {
         name: 'West Crypt',
         map: [
           '##########',
@@ -2041,29 +922,153 @@ export function installDungeonsB() {
           '#.........',
           '##........',
           '##......##',
-          '####..####',
-          '####..####',
+          '##########',
+          '##########',
         ],
         entities: [
           ['pickup', 4, 4, { kind: 'fairy' }],
           ['stalfos', 6, 2],
         ],
       },
-      '1,2,4': {
-        name: 'Crowned Colonnade',
+      '0,4,4': {
+        name: 'Black Kiln',
         map: [
           '####..####',
           '####..####',
-          '##.q..q.##',
-          '##........',
-          '##........',
-          '##.q..q.##',
-          '####..####',
+          '##......##',
+          '...4444.##',
+          '...4444.##',
+          '##......##',
+          '##########',
+          '##########',
+        ],
+        entities: [
+          ['torch', 2, 2],
+          ['torch', 7, 2],
+          ['torch', 2, 5],
+          ['torch', 7, 5],
+          ['darknut', 4, 4],
+        ],
+        puzzle: {
+          torches: 'all',
+          flag: 'd6_kiln',
+          reward: { spawn: [['pickup', 4, 4, { kind: 'key' }]], say: 'Four flames in the Drowned King\'s house.' },
+        },
+      },
+      '0,3,3': {
+        name: 'Keep Lock',
+        map: [
+          '##########',
+          '#.....#..#',
+          '#.....#..#',
+          '......L...',
+          '#.....#..#',
+          '#.....#..#',
+          '#..M..#..#',
           '####..####',
         ],
         entities: [
-          ['beamos', 4, 3],
-          ['pickup', 2, 2, { kind: 'rupee20' }],
+          ['darknut', 2, 4],
+          ['wizzrobe', 3, 5],
+        ],
+      },
+      '0,2,3': {
+        name: 'Keep Stair',
+        map: [
+          '##########',
+          '##....../#',
+          '##......##',
+          '#.........',
+          '##........',
+          '##...<..##',
+          '####..####',
+          '####..####',
+        ],
+        warps: [
+          { x: 8, y: 1, to: { map: 'd6', floor: 1, rx: 3, ry: 5, px: 72, py: 96 } },
+        ],
+        entities: [
+          ['stalfos', 3, 4],
+        ],
+      },
+      '0,4,3': {
+        name: 'Dredge Vault',
+        map: [
+          '##########',
+          '##########',
+          '##......##',
+          '..........',
+          '..........',
+          '##......##',
+          '##########',
+          '##########',
+        ],
+        entities: [
+          ['chest', 4, 3, { big: true, item: 'dredge', level: 1 }],
+        ],
+      },
+
+      // ---------------------------------------------------- the Slack Water
+      '0,5,3': {
+        name: 'The Slack Water',
+        // THE TEACHING ROOM, and it is here because four dungeons in a row
+        // shipped a mechanic that was legible when it worked and silent when it
+        // did not. This one is a flat pan you can walk all the way round at any
+        // sea, with one silted ring in the middle of it and a bell that hums at
+        // the ring. Drag the line over it on the dry crust and the weight comes
+        // home with nothing. Sound the conch one step and drag the same line
+        // over the same tile and a Piece of Heart comes up out of it.
+        //
+        // Nothing here is needed and nothing here can be lost, which is what
+        // `teaches: true` says to check-dredge.mjs — and what it makes the
+        // checker enforce, so a later session cannot quietly hang a key on it.
+        map: [
+          '##########',
+          '#........#',
+          '#.111111.#',
+          '..111111.#',
+          '..116111.#',
+          '#.111111.#',
+          '#........#',
+          '##########',
+        ],
+        buried: [[4, 4, 'heartPiece']],
+        dredgeRoom: {
+          entry: [0, 4],
+          teaches: true,
+          caches: [
+            { at: [4, 4], from: [4, 6], face: 'up', sea: 1 },
+          ],
+        },
+        entities: [
+          // Rung, it points at the ring in the floor. A direction and never a
+          // distance — see docs/ITEMS.md.
+          ['bell', 8, 6, { points: [4, 4], say: 'The bell hums flat at the middle of the pan.' }],
+          ['anglerfry', 7, 2],
+        ],
+        readable: [
+          [1, 1, 'A dredger\'s tally, half scoured away: "Dry pan, dry line. We only ever worked it with the water in."'],
+        ],
+      },
+
+      // ---------------------------------------------------- upper floor
+      '1,3,5': {
+        name: 'Upper Keep',
+        map: [
+          '####..####',
+          '##....../#',
+          '##......##',
+          '..........',
+          '..........',
+          '##......##',
+          '#........#',
+          '##########',
+        ],
+        warps: [
+          { x: 8, y: 1, to: { map: 'd6', floor: 0, rx: 2, ry: 3, px: 112, py: 40 } },
+        ],
+        entities: [
+          ['keese', 3, 4],
         ],
       },
       '1,2,5': {
@@ -2085,12 +1090,311 @@ export function installDungeonsB() {
         ],
         puzzle: {
           enemies: true,
-          flag: 'd8_shade',
-          reward: { spawn: [['pickup', 4, 3, { kind: 'key' }]], say: 'The shadows thin out.' },
+          flag: 'd6_shade',
+          reward: { spawn: [['pickup', 4, 3, { kind: 'heart' }]], say: 'The shadows thin out.' },
         },
+      },
+      '1,2,4': {
+        name: 'Colonnade of the Drowned',
+        // The hand-placed charm, and it is the one this dungeon is about: the
+        // Coilrope adds a tile to every cast. It is a MID charm and the player
+        // holds five essences here, so all three cases are open and the case is
+        // not the gate — which is why check-dredge.mjs proves every closure
+        // clause at the Coilrope's reach as well as the bare line's. A charm
+        // that makes the item longer is a charm that can answer a room from a
+        // tile the room was built to keep you off.
+        //
+        // It sits behind a GRATE, which is metal, and the only thing in the game
+        // that retracts metal is the Resonance Rod — the trading reward. So the
+        // one optional thing in the Keep is the one thing that asks whether the
+        // player went and did the trade. The grate seals an alcove and nothing
+        // else, because a grate across a corridor would strand the room and
+        // still validate.
+        map: [
+          '##########',
+          '##########',
+          '###....###',
+          '###GGGG###',
+          '##.=..=.##',
+          '##......##',
+          '####..####',
+          '####..####',
+        ],
+        entities: [
+          ['chest', 4, 2, { charm: 'coilrope' }],
+          ['beamos', 2, 5],
+        ],
+        readable: [
+          [7, 4, 'A chandler\'s note nailed to the column: "More rope is more room. It is not more sea."'],
+        ],
+      },
+      '1,4,5': {
+        name: 'Tideshade Hall',
+        // Two screens wide, and the only miniboss arena in the game that is.
+        // The tideshade phases with the water and the room is `1` throughout —
+        // dry at LOW, wading at MID, swimming at HIGH — so the fight is a
+        // different fight at each sea and the player picks which one they want
+        // before they walk in. Its north door opens on the kill.
+        size: [2, 1],
+        map: [
+          '####D###############',
+          '#........##........#',
+          '#.1111....1111....##',
+          '..1111....1111....##',
+          '#.1111....1111....##',
+          '#........##........#',
+          '#........##........#',
+          '####################',
+        ],
+        entities: [
+          ['tideshade', 9, 3],
+        ],
+        puzzle: {
+          enemies: true,
+          flag: 'd6_tideshade',
+          reward: {
+            openDoors: [[4, 0]],
+            say: 'The shade unravels into water and is gone. Something gives above.',
+          },
+        },
+      },
+      '1,4,4': {
+        name: 'Mermaid Vault',
+        map: [
+          '##########',
+          '##########',
+          '##......##',
+          '##......##',
+          '##......##',
+          '##......##',
+          '####.#####',
+          '####.#####',
+        ],
+        entities: [
+          ['chest', 4, 3, { big: true, item: 'cleats', level: 2 }],
+        ],
+      },
+
+      // ---------------------------------------------------- the crossings
+      //
+      // THE FIXTURE, and the three rooms below are it. A shaft of `O` that no
+      // sea fills and no Cleat crosses; a mooring `q` one tile inside the far
+      // bank, so the pull comes to rest on ground rather than in the hole; and
+      // ONE of the two tide tiles deciding whether the cast can happen — a `3`
+      // shelf you brace on, which drowns above LOW, or a `7` lintel in the way,
+      // which is stone below HIGH. Every crossing carries a mooring on the near
+      // side as well, so nothing here is one-way and no room can be walked into
+      // and not out of.
+      //
+      // Read in order: cross at the sea that opens the shaft, then move the sea
+      // to the one that wets the floor, and fish.
+      '1,3,4': {
+        name: 'The Drowned Stand',
+        // CROSSING 1, at LOW, and the fixture at its plainest. The shelf at
+        // 3..6,6 is `dWell` — wading at LOW, over your head above it — so the
+        // only sea you can brace at is the only sea the room is crossed at. The
+        // ledge is walled off at both ends on purpose: a dry tile beside it is a
+        // dry tile the cast could be taken from at any sea, and the doorway at
+        // 4,7 is a whole tile further out than the line reaches even with the
+        // Coilrope on.
+        map: [
+          '####.#####',
+          '#......6.#',
+          '#....q...#',
+          '#........#',
+          '#OOOOOOOO#',
+          '#OOOOOOOO#',
+          '#OO3333OO#',
+          '####.#q###',
+        ],
+        buried: [[7, 1, 'rupee20']],
+        dredgeRoom: {
+          entry: [4, 7],
+          moorings: [
+            { post: [5, 2], from: [5, 6], land: [5, 3], face: 'up', sea: 0 },
+          ],
+          returns: [
+            { post: [6, 7], from: [6, 3], land: [6, 6], face: 'down', sea: 0 },
+          ],
+          caches: [
+            { at: [7, 1], from: [7, 3], face: 'up', sea: 1 },
+          ],
+        },
+        entities: [
+          ['keese', 2, 2],
+          ['anglerfry', 2, 1],
+        ],
+        readable: [
+          [1, 3, 'Cut into the coping: "Stand while you can stand. The ledge is only a ledge at low water."'],
+        ],
+      },
+      '1,3,3': {
+        name: 'Keep Crossing',
+        map: [
+          '####..####',
+          '#........#',
+          '####L#####',
+          '.......#.#',
+          '#......#.#',
+          '#......L..',
+          '#......#.#',
+          '####..####',
+        ],
+        entities: [
+          ['darknut', 6, 5],
+          ['keese', 7, 1],
+        ],
+      },
+      '1,2,3': {
+        name: 'The Sunken Bar',
+        // CROSSING 2, at HIGH, and the Drowned Stand inside out. The mooring at
+        // 3,4 is in plain sight from the doorway and the lintel at 6,4 is what
+        // stops the line — stone at LOW and at MID, open water at HIGH. So the
+        // sea has to come UP to cross, and the cache at 2,1 is fished off a
+        // `1` shelf that is over your head at HIGH, so the sea has to go back
+        // DOWN to collect. Neither half can be bought at the other's sea and
+        // the order cannot be reversed.
+        map: [
+          '##########',
+          '#.66.#...#',
+          '#.11.#...#',
+          '#....#....',
+          '#..q.O9.q#',
+          '#....#...#',
+          '#....#...#',
+          '##########',
+        ],
+        buried: [[2, 1, 'heartPiece'], [3, 1, 'rupee20']],
+        dredgeRoom: {
+          entry: [9, 3],
+          moorings: [
+            { post: [3, 4], from: [7, 4], land: [4, 4], face: 'left', sea: 2 },
+          ],
+          returns: [
+            { post: [8, 4], from: [4, 4], land: [7, 4], face: 'right', sea: 2 },
+          ],
+          caches: [
+            { at: [2, 1], from: [2, 2], face: 'up', sea: 1 },
+            { at: [3, 1], from: [3, 2], face: 'up', sea: 1 },
+          ],
+        },
+        entities: [
+          ['keese', 7, 5],
+        ],
+        readable: [
+          [8, 5, 'A tide board: "The bar is down at slack and up at flood. Everything in this room follows from that."'],
+        ],
+      },
+      '1,4,3': {
+        name: 'The Drowned Sill',
+        // CROSSING 3, at LOW, the Drowned Stand turned through a right angle
+        // and handed the other way — and the first one where what is across the
+        // shaft is a Small Key rather than a corridor. The cache at 8,2 is six
+        // tiles from the nearest tile a body can stand on on this side, and
+        // check-dredge caught it at five: the Coilrope reaches exactly that far,
+        // so the room was answered from the near bank by anyone wearing the bone
+        // this dungeon hands out.
+        map: [
+          '##########',
+          '#..OO....#',
+          '#..OO...6#',
+          '#..OO....#',
+          '#q3OO.q..#',
+          '...OO....#',
+          '#..OO....#',
+          '##########',
+        ],
+        buried: [[8, 2, 'key']],
+        dredgeRoom: {
+          entry: [0, 5],
+          moorings: [
+            { post: [6, 4], from: [2, 4], land: [5, 4], face: 'right', sea: 0 },
+          ],
+          returns: [
+            { post: [1, 4], from: [5, 4], land: [2, 4], face: 'left', sea: 0 },
+          ],
+          caches: [
+            { at: [8, 2], from: [8, 4], face: 'up', sea: 1 },
+          ],
+        },
+        entities: [
+          ['siren', 7, 5],
+        ],
+      },
+
+      // ---------------------------------------------------- the way out
+      '1,3,2': {
+        name: 'Keep Gate',
+        map: [
+          '####..####',
+          '#........#',
+          '####B#####',
+          '#........#',
+          '#.19..9...',
+          '#........#',
+          '#........#',
+          '####..####',
+        ],
+        entities: [
+          ['wizzrobe', 6, 4],
+        ],
+      },
+      '1,4,2': {
+        name: 'The Crossed Shafts',
+        // THE ROOM THAT SAYS IT OUT LOUD, and the only one in the dungeon that
+        // holds both crossings. Two screens wide because it has to be: a lintel
+        // crossing and a shelf crossing are four tiles each and the islands
+        // between them are the room. In at HIGH over the bar, down to LOW to
+        // brace on the shelf, and the Boss Key is on the far island — so the
+        // sea that gets you in is the sea that stops you going on, and there is
+        // no arrangement of the conch that holds both. It owns the cell at 5,2
+        // as well as its own; nothing else may be keyed there.
+        size: [2, 1],
+        map: [
+          '####################',
+          '#....#O.....OO.....#',
+          '#..q.7O.q...OO.....#',
+          '#....#O.....OO.....#',
+          '.....#O.....OO.....#',
+          '#....#O...q3OO.q...#',
+          '#....#O.....OO.....#',
+          '####################',
+        ],
+        dredgeRoom: {
+          entry: [0, 4],
+          moorings: [
+            { post: [8, 2], from: [4, 2], land: [7, 2], face: 'right', sea: 2 },
+            { post: [15, 5], from: [11, 5], land: [14, 5], face: 'right', sea: 0, entry: [7, 2] },
+          ],
+          returns: [
+            { post: [3, 2], from: [7, 2], land: [4, 2], face: 'left', sea: 2 },
+            { post: [10, 5], from: [14, 5], land: [11, 5], face: 'left', sea: 0, entry: [7, 2] },
+          ],
+        },
+        entities: [
+          ['chest', 17, 3, { pickup: 'bossKey' }],
+          // The Brinehulk keeps the Boss Key, and where it stands is the joke
+          // the room is built on. Brine dissolves salt: it is ARMOURED AT LOW
+          // and comes apart at HIGH — and LOW is the only sea the shelf lets
+          // you cross on. So you arrive at the one sea it cannot be hurt at,
+          // and the sea that opens it is the sea that shuts the way you came.
+          //
+          // It is here because the six-dungeon fold left it homeless: the Salt
+          // Pan Vault was its arena and the Vault is a cave now. A hand-drawn
+          // boss with no room in the game is content thrown away, and the
+          // consolidation should not cost the game anything it already had.
+          ['brinehulk', 17, 4],
+          ['beamos', 9, 1],
+          ['keese', 16, 5],
+        ],
+        readable: [
+          [2, 5, 'A king\'s inscription, and the only one in the Keep that is signed: "You cannot hold two seas. Nereth."'],
+        ],
       },
       '1,3,1': {
         name: 'Nereth, the Drowned King',
+        // The boss keeps the mechanic: `noTide` pins the arena at whatever sea
+        // was brought through the door, and Nereth's own phases pin it again.
         map: [
           '##########',
           '#........#',
@@ -2101,6 +1405,7 @@ export function installDungeonsB() {
           '#........#',
           '####..####',
         ],
+        noTide: true,
         entities: [
           ['nereth', 4, 2],
         ],
@@ -2109,188 +1414,6 @@ export function installDungeonsB() {
             if (name === 'bossDead') game.spawnPickup(80, 40, 'heartContainer', { grabDelay: 30 });
           },
         },
-      },
-      '1,3,2': {
-        name: 'Keep Gate',
-        map: [
-          '####..####',
-          '#........#',
-          '####B#####',
-          '#........#',
-          '#.19..91.#',
-          '#........#',
-          '#........#',
-          '####..####',
-        ],
-        entities: [
-          ['wizzrobe', 6, 4],
-        ],
-      },
-      '1,3,3': {
-        name: 'Throne Approach',
-        map: [
-          '####..####',
-          '#........#',
-          '#.9..>.9.#',
-          '.....>...#',
-          '.....>...#',
-          '#.9..>.9.#',
-          '#........#',
-          '####..####',
-        ],
-        entities: [
-          ['darknut', 4, 3],
-          ['darknut', 2, 2],
-          ['switch', 1, 2],
-          ['switch', 8, 2],
-          ['block', 1, 3],
-          ['block', 8, 3],
-        ],
-        puzzle: {
-          switches: 'all',
-          flag: 'd8_133_puzzle',
-          reward: {
-            spawn: [['pickup', 4, 2, { kind: 'rupee5' }]],
-            say: 'Loose stone shifts, and something rolls out.',
-          },
-        },
-      },
-      '1,3,4': {
-        name: 'Upper Lock',
-        map: [
-          '####..####',
-          '#........#',
-          '####L#####',
-          '..........',
-          '..........',
-          '#........#',
-          '#........#',
-          '####..####',
-        ],
-        entities: [
-          ['stalfos', 2, 4],
-          ['keese', 6, 5],
-        ],
-      },
-      '1,3,5': {
-        name: 'Upper Keep',
-        map: [
-          '####..####',
-          '##....../#',
-          '##......##',
-          '..........',
-          '..........',
-          '##......##',
-          '#........#',
-          '##########',
-        ],
-        warps: [
-          { x: 8, y: 1, to: { map: 'd8', floor: 0, rx: 2, ry: 3, px: 112, py: 40 } },
-        ],
-        entities: [
-          ['keese', 3, 4],
-        ],
-      },
-      '1,4,2': {
-        name: 'Bosskey Crypt',
-        // The Boss Key sits behind a grate: metal, and the only thing in the
-        // game that retracts metal is the Resonance Rod. The grate seals the
-        // alcove and nothing else, because a grate across a corridor would
-        // strand the room and still validate.
-        map: [
-          '##########',
-          '##########',
-          '###....###',
-          '###GGGG###',
-          '##..44..##',
-          '##......##',
-          '####..####',
-          '####..####',
-        ],
-        entities: [
-          ['chest', 4, 2, { pickup: 'bossKey' }],
-          ['darknut', 6, 4],
-        ],
-      },
-      '1,4,3': {
-        name: 'Upper Drown',
-        // The fourth Small Key spends here: this is the only way up to the Boss
-        // Key, so the key the dungeon used to hand out spare now has a door.
-        map: [
-          '####..####',
-          '##......##',
-          '####L#####',
-          '#........#',
-          '#........#',
-          '##......##',
-          '##......##',
-          '####..####',
-        ],
-        entities: [
-          ['siren', 4, 3],
-        ],
-      },
-      '1,4,4': {
-        name: 'Tideshade Hall',
-        map: [
-          '####..####',
-          '##......##',
-          '####L#####',
-          '..........',
-          '..........',
-          '##......##',
-          '##......##',
-          '####..####',
-        ],
-        entities: [
-          ['tideshade', 4, 4],
-        ],
-        puzzle: {
-          enemies: true,
-          flag: 'd8_tideshade',
-          reward: { say: 'The shade unravels into water and is gone.' },
-        },
-      },
-      '1,4,5': {
-        name: 'Black Kiln',
-        map: [
-          '####..####',
-          '####..####',
-          '##......##',
-          '.........#',
-          '.._____..#',
-          '##......##',
-          '##########',
-          '##########',
-        ],
-        entities: [
-          ['torch', 2, 2],
-          ['torch', 7, 2],
-          ['torch', 2, 5],
-          ['torch', 7, 5],
-          ['darknut', 4, 3],
-        ],
-        puzzle: {
-          torches: 'all',
-          flag: 'd8_kiln',
-          reward: { spawn: [['pickup', 4, 3, { kind: 'key' }]], say: 'Four flames in the Drowned King\'s house.' },
-        },
-      },
-      '1,5,4': {
-        name: 'Dredge Vault',
-        map: [
-          '##########',
-          '##########',
-          '##......##',
-          '.........#',
-          '........##',
-          '##......##',
-          '##########',
-          '##########',
-        ],
-        entities: [
-          ['chest', 4, 3, { big: true, item: 'dredge', level: 1 }],
-        ],
       },
     },
   });

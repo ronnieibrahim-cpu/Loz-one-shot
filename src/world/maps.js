@@ -145,6 +145,17 @@ export function dungeons() {
     .sort((a, b) => a.dungeon.index - b.dungeon.index);
 }
 
+/**
+ * How many Essences of the Tide the world holds — one per dungeon that grants
+ * one, counted rather than written down. The plan is six and the data carried
+ * eight for the whole life of the project, so the HUD, the quest screen and the
+ * save slots all said "/8" while the story said eight and the dungeons said
+ * whatever they happened to say. Anything that prints a denominator asks here.
+ */
+export function essenceCount() {
+  return dungeons().filter(m => m.dungeon.essence != null).length;
+}
+
 /** Structural validation: every warp must resolve to a room that exists. */
 export function validateMaps() {
   const problems = [];

@@ -11,6 +11,7 @@ import {
   caseSize, slotOpen, equippedIn,
 } from './scrimshaw.js';
 import { HEART_UNITS } from './progress.js';
+import { essenceCount } from '../world/maps.js';
 import { MAPS, getMap, hasRoom, getRoom, roomKeyAt } from '../world/maps.js';
 import { TIDE_NAMES, TIDE_COUNT } from './tide.js';
 
@@ -336,7 +337,7 @@ export class Menu {
     const g = this.game, p = g.progress;
     let y = HUD_H + 16;
     drawText(ctx, 'ESSENCES OF THE TIDE', 6, y, '#a8f0f8'); y += 11;
-    for (let i = 1; i <= 8; i++) {
+    for (let i = 1; i <= essenceCount(); i++) {
       const got = p.essences.includes(i);
       sprites.draw(ctx, got ? 'p_essence0' : 'p_essence_dim', 6 + (i - 1) * 18, y, { pal: got ? 'essence' : 'uidark' });
     }

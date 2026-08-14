@@ -1442,6 +1442,45 @@ export function installCoreTiles() {
     // out beside a snarl is a coral pillar, and a pillar is dry ground at LOW
     // and at LOW only.
     dSnarl: { art: ART.bush, pal: 'treeoakdk', flags: F.SOLID, underArt: 'dWaterD' },
+
+    // --- the Abyssal Keep -------------------------------------------------
+    //
+    // A mooring bollard on the Keep's own floor. The shared `dPost` is the
+    // same art over `dFloor`, which is the BRICK floor — so a post placed in
+    // an abyss room drew a square of somebody else's flagstones round its own
+    // feet, exactly the way the urn did before P7.5 gave every theme its own.
+    // `dungeonAbyss` repoints `q` at this one. Flags are `dPost`'s to the bit:
+    // a theme may change the look and never the rules.
+    dPostAbyss: { art: ART.dPost, pal: 'stone', flags: F.SOLID | F.SNAG, underArt: 'dFloorAbyss' },
+
+    // A silted cache: the ring a heavy thing leaves in the floor when it has
+    // been lying there long enough to settle. Two palettes of ONE extracted
+    // art, which is the whole trick — bleached on the dry pan, blue once the
+    // sea is over it — so the marker is in the same place at every sea and
+    // only its colour says whether the line can work.
+    //
+    // The flags are the entire mechanism and they are worth stating plainly.
+    // `DredgeLine.dragBack` searches a tile it passed over ONLY if that tile
+    // carries `F.WET | F.SLOW` at the level it is resolved at. `dSiltDry`
+    // carries neither. So the floor gives up what it is holding while the sea
+    // is on it and gives up nothing at all while the sea is off it, and that
+    // is the one thing in this game that wants the water UP.
+    dSiltDry: { art: ART.digSpot, pal: 'stonedk' },
+    dSiltWet: { art: ART.digSpot, pal: 'water', flags: F.WATER },
+    dSilt: { tide: ['dSiltDry', 'dSiltWet', 'dSiltWet'] },
+
+    // A lintel of the Keep's own stone, standing across a shaft, that the sea
+    // covers at HIGH and only at HIGH. `drownWall` is the same three states and
+    // is an outdoor CLIFF — it has been drawing a hillside inside four dungeons
+    // for the whole life of the tile — so the Keep gets one in its own wall.
+    //
+    // It is the second half of the crossing, and the half that is legible: a
+    // cast stops dead on F.SOLID, so a mooring behind a standing lintel cannot
+    // be reached however well you are braced, and a whole tile of masonry going
+    // under the water is what says the line will now go over it. The Drowned
+    // Wood Shrine's bole is the argument for building it this way — when the
+    // answer wants to be a shade of blue, reach for a whole tile instead.
+    dLintel: { tide: ['dWallAbyss', 'dWallAbyss', 'dWaterD'] },
   };
   registerTiles(TILE_DEFS);
 

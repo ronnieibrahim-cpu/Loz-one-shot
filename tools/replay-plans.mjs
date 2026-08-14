@@ -417,6 +417,55 @@ export const PLANS = {
     assert: { roomChanges: 0, probeNames: 'coralPillar|dSnarl' },
   },
 
+  'd6-mooring': {
+    note: 'The Drowned Stand: the line hauls Link over a shaft at LOW, and the same '
+      + 'drag over the same floor finds nothing until the sea is put back on it',
+    setup: {
+      seed: 20260806,
+      playerName: 'LINK',
+      items: { sword: 1, conch: 1, shield: 1, cleats: 1, dredge: 1 },
+      equipB: 'dredge',
+      equipA: 'conch',
+      maxHearts: 12,
+      hearts: 12,
+      tide: 0,
+      // On the shelf at 5,6, already facing the mooring. There is no aim button
+      // and a hold long enough to turn him would walk him into the shaft, which
+      // is a pit at every sea — so the facing is set by the entry rather than by
+      // a step, the way d5-overthrow sets it by walking into a tree.
+      enter: ['d6', 1, 3, 4, 80, 96, 'up'],
+      probes: [[5, 3], [7, 1]],
+    },
+    steps: [
+      ['wait', 30],
+      // One cast. The weight goes over two tiles of open shaft, snags the ring
+      // at 5,2, and hauls Link across to 5,3 — `moveEntity` with `jumping` and
+      // `swim` both set, so the hole under him is simply not consulted.
+      ['tap', 'b', 120],
+      ['wait', 30],
+      // LOW -> MID. Now the shelf he braced on is over his head, so the way he
+      // came is shut behind him until he puts the sea back.
+      ['tap', 'a', 100],
+      ['wait', 30],
+      // East along the far bank to the silted ring, and drag.
+      ['goto', 7, 3, 300],
+      ['hold', ['up'], 6],
+      ['wait', 20],
+      ['tap', 'b', 150],
+      // And walk onto what came up. The recorded `rupees` is the assertion that
+      // the drag actually paid — the first cut of this run dragged the right
+      // tile, banked the secret, and finished with an empty purse and every
+      // other field matching, which is precisely the shape of failure this
+      // dungeon's mechanic makes easy.
+      ['hold', ['up'], 24],
+      ['wait', 60],
+    ],
+    // roomChanges: 0 is the claim with teeth. The shaft runs the full width of
+    // the room, so the only ways out are the two doors — and Link ends the run
+    // on the far bank without having touched either. He was carried.
+    assert: { roomChanges: 0, probeNames: 'dFloorAbyss|dSilt' },
+  },
+
   'd4-drowned-sill': {
     note: 'The Squall Loft: pump at HIGH and the drowned wheel refuses, pump at MID '
       + 'and it turns',
