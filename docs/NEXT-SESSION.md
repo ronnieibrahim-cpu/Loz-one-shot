@@ -1542,11 +1542,23 @@ the Salt Pan Vault are one-room ruins now and `d7`/`d8` are gone from the data.
 docs/DUNGEON-STATUS.md is the board and it names the commit each landed in. DO
 NOT RE-AUTHOR A FINISHED DUNGEON.
 
-NEXT UP, and pick ONE:
-  - P9, overworld re-gating and difficulty. It is the next phase in
-    EXECUTION-PLAN and the fold above changed its inputs: two regions that used
-    to be dungeon approaches are now ruins, so the routing through the Salt Pans
-    and the Reef Palace wants a second look before anything is gated.
+NEXT UP, and pick ONE. **Note the plan's own ordering before you pick P9:**
+EXECUTION-PLAN Part 4 puts PT (towns) at step 8 and P9 at step 16, and says so
+deliberately — "a gate is a tile flag dropped into a finished screen; a town is
+the screen itself", so re-gating a finished village is a small edit and
+re-towning a gated screen is not. P9 is UNBLOCKED (its gates were P6 and P8,
+both done) but PT is the step the plan wants first, and PT has never been
+started.
+
+  - PT, towns and buildings. Step 8 of the order, still open, gates P9, and a
+    stated top design priority. The world has villages that are a name on a
+    signpost and a few doors cut into a cliff. It needs no decision from anybody
+    and it is the only remaining item the plan puts before P9.
+  - P9, overworld re-gating and difficulty. Unblocked, and the fold above
+    changed its inputs: two regions that used to be dungeon approaches are now
+    ruins, so the routing through the Salt Pans and the Reef Palace wants a
+    second look before anything is gated. Taking this before PT means re-gating
+    screens PT will then rebuild.
   - PLAY THE GAME. This is the largest open item in the project and no tool in
     the repo can close it. Six dungeons, six different fixtures — a held patch,
     a blind fork, a torrent, a drowned wheel, a bole and a snarl, a mooring and
@@ -1571,8 +1583,6 @@ NEXT UP, and pick ONE:
     necessary anyway. D3's item introduces SWIMMING, which is the thing both
     check-anchor.mjs and check-lens.mjs say in their own headers they cannot
     model — teaching one of them to swim is part of that session, not an extra.
-  - PT, towns and buildings. Independent of everything, stated top design
-    priority, and the only one that needs no decision from anybody.
   - A room that claims to need its dungeon's item should DECLARE that in its
     room data and be proved by a checker, both ways. There are SIX worked
     examples now — check-anchor, check-lens, check-cleats, check-bellows,

@@ -32,9 +32,20 @@ whatever a commit message elsewhere claims.
 | — | `d7` | Reef Palace | — | **FOLDED IN** | `84d14e5` |
 | — | `d8` | Abyssal Keep | — | **FOLDED IN** | `84d14e5` |
 
-**P8 is complete.** All six dungeons are authored against the constraint list,
-each has a prover written before its rooms, each has a replay that walks its own
-idea in-engine, and the six-versus-eight consolidation is done. P9 may start.
+**P8 is complete.** All fourteen boxes of the checklist below tick for all six
+dungeons: each is authored against the constraint list, each has a prover
+written before its rooms, each has a replay that walks its own idea in-engine,
+each has been looked at on screen, and the six-versus-eight consolidation is
+done. Audited by counting the live map data rather than by reading this table
+back.
+
+**What that does NOT mean.** "Nobody has played one" is not a box on the
+checklist and it is still true of all six — see the bottom of this file. And P8
+being finished does not make P9 the next thing by itself: `docs/EXECUTION-PLAN.md`
+Part 4 puts **PT (towns) at step 8 and P9 at step 16**, deliberately, because
+re-gating a finished village is a small edit and re-towning a gated screen is
+not. P9's gates (P6 and P8) are satisfied, so it CAN start; PT is what the plan
+asks for first and it has never been started.
 
 "DONE" means every box in the checklist below is ticked and every checker in
 CLAUDE.md's table was green on the commit named. It does not mean the dungeon
