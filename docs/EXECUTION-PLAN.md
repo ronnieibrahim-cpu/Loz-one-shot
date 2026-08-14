@@ -758,19 +758,94 @@ bare corridors and why no room holds two of them. The Anchor did not have room
 to be interesting in a 10x8 screen. **P7.6 is now built**, and the section below
 is the only thing a D2-D6 session needs to read about room size.
 
-#### P8 status: D1, D2 and D3 done, D4-D6 outstanding
+#### P8 status: D1-D5 done, D6 outstanding
 
 **The live board is `docs/DUNGEON-STATUS.md`** — statuses, the commit each
 finished dungeon landed in, the "done" checklist, and every outstanding dungeon
-as a to-do. This section is the reasoning behind the two that are finished; that
-file is the state, and it is the one to update.
+as a to-do. This section is the reasoning behind the ones that are finished;
+that file is the state, and it is the one to update.
 
-Both finished dungeons were checked against the constraint list by counting the
+Every finished dungeon was checked against the constraint list by counting the
 live map data, not by reading these tables back, and every checker in CLAUDE.md
-was re-run green afterwards. **D3, the Bogwater Sanctum and the Kelp-Soled
-Cleats, is the next action item.** Neither D1 nor D2 wants re-authoring; each
-solved a different shape of problem and the write-ups below are what a D3-D6
-session reads instead of rediscovering them.
+was re-run green afterwards. **D6, the Salt Pan Vault, is the next action item,
+and it is also the session that owes the six-versus-eight consolidation and the
+D6 item reconciliation.** None of D1-D5 wants re-authoring; each solved a
+different shape of problem and the write-ups below are what a D6 session reads
+instead of rediscovering them.
+
+**D5, Drowned Wood Shrine — DONE.** 24 rooms, one floor, re-authored around the
+Reefseed. Against the constraint list above:
+
+| Constraint | D5 |
+|---|---|
+| 22-32 rooms, 1-3 floors | 24 rooms, 1 floor |
+| item roughly halfway | the Reefseed is room 14 of 24, in `0,1,4` |
+| every room after it requires the item's verb | five groves, each gated on a snarl only a stake's blade opens; the exceptions are stated below |
+| tide theme is the constraint | `check-reefseed.mjs` proves per grove that LOW cannot build the room and that a pillar is ground only at LOW, so no fixed sea answers one |
+| Chartstone, 2-4 small keys, boss key | Chartstone in `0,2,5`; 3 keys, 3 locks; Boss Key chest in `0,4,2` |
+| miniboss two thirds through | Thornvine in `0,5,3`, room 21 of 24 |
+| Heart Container from `bossDead` | `0,3,1` |
+| essence index = dungeon number | 5 |
+| multi-screen rooms | one: the Shrine Ford `0,4,2` is 2x1, and it is the only grove that builds the fixture twice over. The other 23 are 1x1 |
+| a charm placed by hand | Gillcarve (`high` case, open at four essences) in `0,1,2`'s neighbour `0,4,5` |
+
+The exceptions to "every room after it requires the verb" are `0,3,3` (a locked
+corridor), `0,5,3` (the miniboss), `0,3,2` (the boss door) and `0,1,2` (a side
+cell) — four rooms, none of them a wing, and every one of them is *reached* only
+through a grove.
+
+**What D5 taught about the item, and it decided the dungeon.** A pillar cannot
+open a path: `canPlant` refuses SOLID, PIT and VOID at every tide level, so a
+seed only grows where the player could already go. What is left is that a pillar
+is ground at LOW alone, and that a stake cannot be planted from the water — which
+makes the two-tile throw range mean something. The fixture is a straight line,
+`bank — bole — STAKE — snarl`, and the reason it must be a line is that a solid
+two squares away catches a seed onto the square between rather than blocking it.
+
+
+**D4, Cliffside Cistern — DONE.** 24 rooms, one floor, re-authored around the
+Squall Bellows. Against the constraint list above:
+
+| Constraint | D4 |
+|---|---|
+| 22-32 rooms, 1-3 floors | 24 rooms, 1 floor |
+| item roughly halfway | the Bellows are room 12 of 24, in `0,1,4` |
+| every room after it requires the item's verb | five rooms hold sills and every other post-item room sits behind one — no room in the second half is enterable without turning a wheel |
+| tide theme is the constraint | every sill needs the sea at one level to be stood in and one level lower to be worked, and the conch can only say one of those. `tools/check-bellows.mjs` proves per sill that no fixed level solves it |
+| Chartstone, 2-4 small keys, boss key | Chartstone in `0,2,5`; 3 keys, 3 locks; Boss Key from the two wheels in `0,4,2` |
+| miniboss two thirds through | the Ironknight in `0,5,3`, room 17 of 24 (71%) |
+| Heart Container from `bossDead` | `0,3,1` |
+| essence index = dungeon number | 4 |
+| multi-screen rooms | two: the Cistern Floor `0,4,4` and the Ironknight Gallery `0,5,3`, both 2x1 — one room in twelve. The other 22 are 1x1 |
+
+**What D4 taught about the item, and it is the Anchor's problem inverted.** The
+Anchor's held patch persists and can be walked away from. The Bellows' cone
+lasts exactly as long as the button is down and it costs you your feet, so
+anything it opens has to be used by something that is not you. The Cistern's
+answer is a paddle wheel that is DROWNED — it does not catch wind under deep
+water — so the one held breath has to blow it and take the water off it at the
+same time, three tiles away.
+
+That is buildable in two shapes and the dungeon uses both, which is what keeps
+five sills from being one idea five times:
+
+* **The sump shelf, worked at MID.** `0` (dSump) is a pit at LOW and deep above
+  it, so the shelf is standable only from MID up; `3` (dWell) is shallow at LOW
+  and drowned above it, so the cone frees the wheel only from MID down.
+* **The drown-wall shelf, worked at HIGH.** `9` is stone until HIGH covers it;
+  `1` (dSluice) is dry, then wading, then drowned. The shelf opens at HIGH and
+  the wheel smothers at HIGH, and one level of cone is exactly the difference.
+
+**The reusable lesson for D5-D6: a held item's room is a room you are not in.**
+Ask what acts while the player stands still, and build the room around that
+rather than around the player's own route.
+
+**And two engine facts D4 needed.** `Tide.blows` stops the cone at anything
+solid — wind does not blow through stone, and without it every wheel needs a
+three-tile exclusion zone in four directions rather than a mouth. And
+`GustWheel` now restores its own open state from the save; it wrote the flag
+from the first day and never read it back, so a wheel you turned was shut again
+when you came back to the room while the door it opened stayed open.
 
 **D3, Bogwater Sanctum — DONE.** 22 rooms, one floor, re-authored around the
 Kelp-Soled Cleats. Against the constraint list above:

@@ -6,6 +6,7 @@
 
 import { hash32 } from '../core/rng.js';
 import { newCharmSlots, CHARM_SLOTS } from './scrimshaw.js';
+import { REEFSEED_CAPACITY, BOTTLE_CAPACITY, BOMB_CAPACITY } from '../data/feel.js';
 
 export const HEART_UNITS = 4;
 export const SAVE_KEY = 'oracleOfTides.save.v1';
@@ -77,10 +78,43 @@ export function newProgress(name = 'LINK', seed = (Date.now() >>> 0)) {
 export function itemLevel(p, id) { return p.items[id] || 0; }
 export function hasItem(p, id) { return (p.items[id] || 0) > 0; }
 
+/**
+ * Grant an item, and — if it is a COUNTED one — the ammunition that makes it an
+ * item rather than an icon.
+ *
+ * The stocking used to live in `Game.openChest` and nowhere else, which meant
+ * every OTHER way of handing an item over produced a working entry in the
+ * inventory attached to an empty pouch: `maxReefseeds` 0, `reefseeds` 0, the
+ * B button playing the deny sound for ever. A giver NPC, a cutscene, a debug
+ * grant and a test harness all took that path. It cost a session here: the
+ * Drowned Wood Shrine's replay threw a seed that did not exist and recorded a
+ * perfectly deterministic run of Link swimming past the tile he was supposed to
+ * have built, and every checker stayed green because the only tool that had
+ * ever needed a seed set the counts by hand on its way past.
+ *
+ * So the rule lives with the grant. `Math.max` throughout: a second grant of an
+ * item you already own must never take ammunition away, and the Quartermaster's
+ * Mark may have raised the cap above the base already.
+ */
 export function giveItem(p, id, level = 1) {
   const cur = p.items[id] || 0;
   p.items[id] = Math.max(cur, level);
-  return p.items[id] > cur;
+  const gained = p.items[id] > cur;
+  if (gained && cur === 0) {
+    if (id === 'bombs') {
+      p.maxBombs = Math.max(p.maxBombs, BOMB_CAPACITY);
+      p.bombs = Math.max(p.bombs, p.maxBombs);
+    }
+    if (id === 'reefseed') {
+      p.maxReefseeds = Math.max(p.maxReefseeds, REEFSEED_CAPACITY);
+      p.reefseeds = Math.max(p.reefseeds, p.maxReefseeds);
+    }
+    if (id === 'bottle') {
+      p.maxBottles = Math.max(p.maxBottles, BOTTLE_CAPACITY);
+      p.bottles = Math.max(p.bottles, p.maxBottles);
+    }
+  }
+  return gained;
 }
 
 export function flag(p, k) { return !!p.flags[k]; }

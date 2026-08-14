@@ -50,6 +50,14 @@ const showCam = args.includes('--cam');
 // be looked at rather than only asserted. `lensT` is pinned rather than the
 // button held, because the fade is 12 frames and a shot wants it at full.
 const showLens = args.includes('--lens');
+// --bellows pumps the Squall Bellows, facing `--dir`, from wherever --px/--py
+// put Link. The cone is a HELD state — the water inside it is one level down
+// only while the button is down — so the one thing a Cistern sill actually
+// looks like cannot be shot without this. Same shape as --lens: pinned on the
+// frame the shot is taken, because Player.update closes the cone the moment
+// the button is not down.
+const showBellows = args.includes('--bellows');
+const faceDir = (args.find(a => a.startsWith('--dir=')) || '=down').split('=')[1];
 const specs = args.filter(a => !a.startsWith('--'));
 const ROOMS = specs.length ? specs : [
   'overworld,4,7',                    // Tidewatch Village — plain grass
@@ -97,7 +105,7 @@ for (const spec of ROOMS) {
   const [mapId, floor, rx, ry] = parts.length === 4
     ? [parts[0], +parts[1], +parts[2], +parts[3]]
     : [parts[0], 0, +parts[1], +parts[2]];
-  const got = await page.evaluate(([mapId, floor, rx, ry, tide, px, py, showCam, showLens]) => {
+  const got = await page.evaluate(([mapId, floor, rx, ry, tide, px, py, showCam, showLens, showBellows, faceDir]) => {
     const g = window.__game;
     // Reset to 'play' first: a probe parked in a room that killed the player
     // leaves the game in 'gameover', where nothing renders or updates.
@@ -112,10 +120,16 @@ for (const spec of ROOMS) {
       g.player.lensHeld = true;
       g._pinLens = true;
     }
+    if (showBellows && g.player) {
+      g.progress.items.bellows = Math.max(1, g.progress.items.bellows || 0);
+      g.progress.equipB = 'bellows';
+      g.player.dir = faceDir;
+      g._pinBellows = true;
+    }
     return g.room
       ? { name: g.room.name || '?', at: g.mapId + ',' + g.room.key, cam: g.camera.x + ',' + g.camera.y }
       : null;
-  }, [mapId, floor, rx, ry, tide, px, py, showCam, showLens]);
+  }, [mapId, floor, rx, ry, tide, px, py, showCam, showLens, showBellows, faceDir]);
   // Wait out the tide's wave-front wipe as well as the room settling.
   // `setLevel` runs a sweep, and a wide room's wipe is drawn across the whole
   // room rather than across the screen, so eight frames used to be enough only
@@ -134,6 +148,20 @@ for (const spec of ROOMS) {
     const g = window.__game;
     if (g._pinLens && g.player) { g.player.lensHeld = true; g.player.lensT = 10; }
   });
+  // The cone has to be OPEN, which takes BELLOWS_WARMUP_FRAMES of holding, and
+  // it has to still be open on the frame the picture is taken. So the BUTTON is
+  // held, through a real key event, rather than the flag being set: `handleInput`
+  // clears `bellowsHeld` at the top of every frame and reads it back off the
+  // input, so a flag poked in from outside survives exactly zero frames. The
+  // first cut of this pinned the flag and produced a shot of a room with no
+  // cone in it that looked entirely plausible.
+  if (showBellows) {
+    await page.evaluate((d) => { window.__game.player.dir = d; }, faceDir);
+    await page.keyboard.down('KeyZ');            // B
+    await frames(40);
+    await page.evaluate((d) => { window.__game.player.dir = d; }, faceDir);
+    await frames(4);
+  }
   await frames(2);
   const name = `room-${spec.replace(/,/g, '_')}-tide${tide}-px${px}.png`;
   const want = `${mapId},${floor},${rx},${ry}`;
@@ -143,6 +171,7 @@ for (const spec of ROOMS) {
     continue;
   }
   await page.locator('canvas').screenshot({ path: join(shotDir, name) });
+  if (showBellows) await page.keyboard.up('KeyZ');
   console.log(`  ok   ${spec.padEnd(16)} ${got.name} cam=${got.cam} -> ${name}`);
 }
 

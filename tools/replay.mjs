@@ -678,6 +678,19 @@ async function installRuntime() {
         if (this._lastRoom !== null) this._span.roomChanges++;
         this._lastRoom = key;
       }
+      // WHAT A TILE BECAME, as a claim a plan can fail on.
+      //
+      // The span is otherwise about the shape of the run — how many rooms, how
+      // far the camera went — and none of that can say "the seed landed here".
+      // The Drowned Wood Shrine's replay exists to check a reproduction of the
+      // Reefseed's flight against the engine's own, and the only evidence that
+      // settles it is the name of the tile the seed came down on. Probes are
+      // already declared per plan for the tide readings, so they name the tiles
+      // to watch; this records what each one currently IS.
+      const probes = window.__rp && window.__rp.probes;
+      if (probes && probes.length && g.room) {
+        this._span.probeNames = probes.map(([tx, ty]) => g.room.baseName(tx, ty)).join('|');
+      }
       const c = g.camera;
       if (c) {
         const s = this._span;
@@ -692,6 +705,7 @@ async function installRuntime() {
     _resetSpan() {
       this._span = {
         roomChanges: 0, camMinX: 0, camMaxX: 0, camMinY: 0, camMaxY: 0, camEndX: 0, camEndY: 0,
+        probeNames: '',
       };
       this._lastRoom = null;
     },

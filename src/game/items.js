@@ -903,6 +903,14 @@ export const ITEMS = {
     use(game, p, level) {
       if (game.progress.reefseeds <= 0) { game.audio.sfx('deny'); return true; }
       if (p.carrying) return false;
+      // BOTH FEET DOWN. A stake is driven, not dropped, and you cannot drive
+      // one while the sea has you — treading water or walking the floor of it.
+      // The Squall Bellows already refuse on the same grounds, and without this
+      // the Reefseed's whole geometry evaporates: throwing range stops meaning
+      // anything the moment a swimmer can paddle to the middle of a trench and
+      // plant from there, and every stake room in the Drowned Wood Shrine is
+      // answered by swimming out to the tile and dropping a seed on it.
+      if (p.inDeep || p.underwater) { game.audio.sfx('deny'); return true; }
       addReefseeds(game.progress, -1);
       const [dx, dy] = DIR_VEC[p.dir];
       game.addEntity(new Reefseed(p.cx - 8 + dx * 6, p.cy - 8 + dy * 6, { dir: p.dir }));

@@ -302,6 +302,167 @@ export const PLANS = {
   },
 
   // -------------------------------------------------------------------------
+  // The Squall Loft, and the whole of D4 in one run: the wrong sea does
+  // nothing, the right sea turns the wheel.
+  //
+  // check-bellows.mjs proves this room against a model — that nothing reaches
+  // the wheel by hand, that no sea level frees it anywhere you can stand. This
+  // proves the half a model cannot see: that the ENGINE agrees, and in
+  // particular that a wheel under deep water refuses a gust it is standing
+  // inside of.
+  //
+  // The run does the same thing twice and gets two different answers:
+  //
+  //   1. AT HIGH. Swim up the sump shaft onto the shelf, pump, turn to face
+  //      the wheel — the cone is open, and the probes prove it: (1,1) reads MID
+  //      inside the cone while (7,4) reads HIGH outside it, in the same frame.
+  //      The wheel is `dWell`, which is deep at MID as well, so it stays
+  //      smothered and nothing opens. One level of cone is not enough here and
+  //      the run is the demonstration.
+  //   2. AT MID. Two presses of the conch (HIGH -> LOW -> MID, and the LOW step
+  //      is why the actor has to already be standing on the shelf — at LOW the
+  //      sump under it is an open pit). Pump again: (1,1) now reads LOW, the
+  //      wheel is in shallow water, and it turns.
+  //
+  // Then it leaves through the door the wheel opened, and `roomChanges: 1` is
+  // the assertion that it left exactly once and by that route — the room's
+  // other exit is the way it came in, back down to the Bellows Vault.
+  //
+  // Note the shape of the pumping directive: `b` alone first, then `b` and
+  // `left` together. The turn has to happen AFTER the cone opens, because
+  // `Player.updateBellows` only takes your feet once `bellowsOpen` is true —
+  // press left during the warm-up and the actor walks into the pit trench
+  // instead of aiming across it. That is a real cost of the item and the
+  // recording pays it.
+  // -------------------------------------------------------------------------
+  // -------------------------------------------------------------------------
+  // The First Stake: throw at HIGH, stand at LOW.
+  //
+  // THIS IS THE ONE THAT CHECKS THE MODEL. `tools/check-reefseed.mjs` proves
+  // every grove in the Drowned Wood Shrine off a REPRODUCTION of the seed's
+  // flight — the arc, the two-pixel carry, and `room.solidAt` with the thrown
+  // seed's own caps — because items.js reaches for a canvas on the way in and
+  // cannot be imported into a plain Node tool. A reproduction is only worth
+  // what its agreement with the engine is worth, so this run makes the engine
+  // do it: one seed, thrown from 4,4 with a drowned bole standing in 5,4, at
+  // HIGH, where the model says it clears the bole and comes down on 6,4.
+  //
+  // Then the conch takes the sea back down two steps and the pillar it left
+  // becomes dry stone, and Link walks round the bole — solid again at LOW — and
+  // climbs out of the pool onto a tile that was open water when he threw at it.
+  // The probes are the stake and the snarl beside it, so the checkpoint trail
+  // carries what those two tiles look like on every frame of the run.
+  //
+  // WHAT IT DOES NOT DO is cut the snarl, and that is a fact about the B and A
+  // buttons rather than about the room: the grove wants the Reefseed, the conch
+  // and the sword, a replay's equipment is fixed in its setup, and there are
+  // two slots. The throw and the sea are the half a reproduction could get
+  // wrong; the swing is `Player.startSwing`'s own `inDeep` guard, which
+  // check-items.mjs exercises directly.
+  // -------------------------------------------------------------------------
+  'd5-overthrow': {
+    note: 'The First Stake: a seed thrown at HIGH clears the drowned bole and grows '
+      + 'a pillar you can only stand on once the sea is back down',
+    setup: {
+      seed: 20260806,
+      playerName: 'LINK',
+      items: { sword: 1, conch: 1, shield: 1, cleats: 1, reefseed: 1 },
+      equipB: 'reefseed',
+      equipA: 'conch',
+      maxHearts: 12,
+      hearts: 12,
+      tide: 1,
+      enter: ['d5', 0, 1, 3, 72, 72, 'right'],
+      probes: [[6, 4], [7, 4]],
+    },
+    steps: [
+      ['wait', 30],
+      // Straight to the bank and hard up against the bole, which at MID is a
+      // tree and will not let him past. Walking into it is how the facing is
+      // set: there is no aim button, and `tap` throws wherever Link is looking.
+      // Nothing is fought on the way, and nothing needs to be — the room's two
+      // enemies are sealed on the far side of the snarl. That is also why the
+      // sword is not on B: the Reefseed is, because a replay's equipment is
+      // fixed in its setup.
+      ['goto', 4, 4, 400],
+      ['hold', ['right'], 60],
+      ['wait', 20],
+      // MID -> HIGH. The conch runs 2 -> 0 -> 1 -> 2, so this is one press.
+      ['tap', 'a', 90],
+      ['wait', 30],
+      // One seed, thrown east. The bole is under water now and the seed goes
+      // straight over it; the long gap is the settle plus the two seconds of
+      // growing, and the probes carry what 6,4 looks like across all of it.
+      ['tap', 'b', 240],
+      ['wait', 20],
+      // HIGH -> LOW. The pillar is dry stone only here, and the bole is a tree
+      // again, so the way to it is round the north rather than straight at it.
+      ['tap', 'a', 100],
+      ['wait', 30],
+      ['goto', 5, 3, 400],
+      ['wait', 20],
+      // East into the pool — deep at every sea, which is why it is a pool and
+      // not a puddle — and then south, out of the water onto what he threw.
+      ['hold', ['right'], 50],
+      ['wait', 20],
+      // Twenty-two frames and not one more: south of the stake is a sump, which
+      // at LOW is an open hole, and a hold long enough to cross the pillar walks
+      // straight off the far edge of it.
+      ['hold', ['down'], 22],
+      ['wait', 60],
+    ],
+    // The claim, and it is the whole reason this run exists: the tile the model
+    // said the seed would come down on IS a coral pillar when the run ends, and
+    // the snarl beside it is still standing.
+    assert: { roomChanges: 0, probeNames: 'coralPillar|dSnarl' },
+  },
+
+  'd4-drowned-sill': {
+    note: 'The Squall Loft: pump at HIGH and the drowned wheel refuses, pump at MID '
+      + 'and it turns',
+    setup: {
+      seed: 20260806,
+      playerName: 'LINK',
+      items: { sword: 1, conch: 1, shield: 1, cleats: 1, bellows: 1 },
+      equipB: 'bellows',
+      equipA: 'conch',
+      maxHearts: 12,
+      hearts: 12,
+      tide: 2,
+      enter: ['d4', 0, 1, 3, 68, 100, 'up'],
+      probes: [[1, 1], [7, 4]],
+    },
+    steps: [
+      ['wait', 30],
+      // North up the shaft: floor, then two squares of sump that are deep at
+      // HIGH, then the shelf. He stops against the wall at the top.
+      ['hold', ['up'], 150],
+      ['wait', 20],
+      // Pump, then turn into the trench. The cone opens west across two pits.
+      ['hold', ['b'], 30],
+      ['hold', ['b', 'left'], 150],
+      ['wait', 30],
+      // HIGH -> LOW -> MID. The shelf is dry at every level, which is the only
+      // reason it is safe to stand here while the sump below turns to a hole.
+      ['tap', 'a', 90],
+      ['tap', 'a', 90],
+      ['wait', 30],
+      // The same stance, one sea lower, and this time the wheel comes round.
+      ['hold', ['b'], 30],
+      ['hold', ['b', 'left'], 150],
+      ['wait', 60],
+      // Down the shaft — deep again at MID. Short of the room's south exit on
+      // purpose: this run must leave by the door it opened and by nothing else.
+      ['hold', ['down'], 100],
+      ['wait', 20],
+      ['goto', 7, 3, 300],
+      ['hold', ['right'], 120],
+      ['wait', 40],
+    ],
+    assert: { roomChanges: 1 },
+  },
+
+  // -------------------------------------------------------------------------
   // Tidewash Grotto, entrance to the north half.
   //
   // The long one: eleven room entries, a chest, two pickups, a Small Key earned

@@ -123,6 +123,13 @@ they are also how a future session finds which sheet a tile came from.
 - **Rebuilding an options object field by field drops what you forget.**
   `addOverride` did exactly that and silently discarded the tag the Anchor used
   to find its own override. Everything worked except the one thing.
+- **A counted item used to arrive with an empty pouch.** The rule that a
+  Reefseed, a bomb or a bottle comes with something in it lived inside
+  `Game.openChest` and nowhere else, so every other way of granting one — a
+  giver, a cutscene, a harness — produced a working inventory entry attached to
+  zero ammunition, and the B button denied for ever. It now lives in
+  `progress.giveItem`, with the grant. If you add a counted item, put its
+  capacity there.
 
 ---
 
@@ -138,6 +145,8 @@ they are also how a future session finds which sheet a tile came from.
 | `node tools/check-anchor.mjs` | A room that claims to need the Tidewright's Anchor cannot be crossed with the conch alone, and can be with one anchor placement |
 | `node tools/check-cleats.mjs` | Every room that claims to need the Cleats' floor mode cannot be reached on foot, cannot be reached on the surface against the current, can be reached on the seafloor, and the crossing fits in one breath |
 | `node tools/check-lens.mjs` | Every room that claims to need the Brineglass Lens pins its tide, commits the player one way, cannot be answered at the level it is chosen at, and draws every branch as the same tile there |
+| `node tools/check-bellows.mjs` | Every room that claims to need the Squall Bellows has a wheel no hand reaches, drowned at the sea the room is played at, freed by one level of cone and by nothing else, from a place you can only stand while it is still drowned |
+| `node tools/check-reefseed.mjs` | Every room that claims to need the Reefseed grows its stakes on open water no seed can reach at LOW, opens on a snarl no blade but a stake's reaches, and cannot be sealed shut by a pillar the player grew in the wrong place |
 | `node tools/check-motion.mjs` | Ground enemies stay on the 8px lattice; fliers and swimmers stay off it |
 | `node tools/check-items.mjs` | Every item does the verb `docs/ITEMS.md` claims for it, and nothing hands out an item that no longer exists |
 | `node tools/replay.mjs` | Movement and combat are frame-identical to a recorded baseline |

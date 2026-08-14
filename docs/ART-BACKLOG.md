@@ -2,6 +2,82 @@
 
 Work that is identified, scoped and not done. Each entry says what blocks it.
 
+## THE ONE THAT WORKED, AND WHY (P8/D5) — not a job, a precedent
+
+Three dungeons in a row shipped with the same finding: the mechanic is legible
+when it works and silent when it does not. D2's fork draws three dark blues four
+RGB units apart. D3's torrents are ordinary deep water with a faster ripple. D4's
+drained wheel is unmissable at MID and invisible at HIGH. All three are the same
+mistake — **the state was carried by a shade of water.**
+
+The Drowned Wood Shrine's bole is not. `dSnag` is `treeDark`'s trunk at LOW and
+MID and `dWaterD` at HIGH: a whole 16x16 tile of art that is there or is not.
+Nothing has to be compared to anything, it survives a still frame, it survives a
+screenshot at 1x, and the Standing Grove at d5 3,5 teaches it with two 2x2 stands
+before any room depends on it.
+
+    node tools/shoot-rooms.mjs --tide=1 --px=72 --py=72 d5,0,3,5
+    node tools/shoot-rooms.mjs --tide=2 --px=72 --py=72 d5,0,3,5
+
+The precedent, and it is the answer to the three entries below as much as to
+anything in D6: **when a tide state has to be readable, spend a tile on it, not
+a shade.** The palette has nowhere near enough room to say four things in blue,
+and every attempt to make it costs a session and lands on the backlog.
+
+One job the Shrine did leave: **`dSnarl` is the extracted bush in the dark-oak
+palette**, which reads correctly as "cut this" and identically to every bush in
+the game that a BOMB also opens. A snarl is sword-only by construction — `cut`
+is its only transform — so the sprite is telling the player something false about
+which of their items to reach for. Wants a kelp/weed frame off the sheets rather
+than a recolour.
+
+## A DROWNED WHEEL LOOKS EXACTLY LIKE A WORKING ONE (P8/D4)
+
+The Cliffside Cistern is built on paddle wheels that jam under deep water and
+turn in shallow. The mechanic is proved, the rooms are proved, and **the wheel
+never says which it is.** `o_valve` is one sprite in every state — dry, wading,
+drowned — so the fixture that the whole dungeon turns on carries no information
+about the one property that matters about it.
+
+The water half of the read is good where it works and absent where it does not,
+and both halves were measured off screenshots rather than argued:
+
+| | wheel's tile | how it reads |
+|---|---|---|
+| MID, not pumping | (38, 76, 140) | deep |
+| MID, cone open | (70, 133, 175) | shallow — **and the undrained shaft three tiles away is still (38,76,140), so the difference is on screen side by side** |
+| HIGH, not pumping | (38, 76, 140) | deep |
+| HIGH, cone open | (38, 76, 140) | **identical.** The cone IS working — the water inside it is at MID — but `dWell` draws the same tile at MID and at HIGH |
+
+Reproduce both with:
+
+    node tools/shoot-rooms.mjs --tide=1 --px=68 --py=18 --bellows --dir=left d4,0,1,3
+    node tools/shoot-rooms.mjs --tide=2 --px=68 --py=18 --bellows --dir=left d4,0,1,3
+
+So the successful case teaches itself and the failing case teaches nothing: a
+player pumping at the wrong sea cannot tell "my cone is not reaching that far"
+from "my cone is reaching and one level down is still too deep". Those want
+completely different responses — walk closer, or sound the conch — and the
+screen distinguishes them not at all.
+
+What it wants, in the order it should be tried:
+
+1. **A drowned state for the wheel.** `GustWheel.drowned` already computes it
+   every frame; it needs a second sprite — the same wheel with weed on it, or
+   pale and out of focus the way the source games draw a submerged object — and
+   `spriteName()` returning it. This is the whole fix for the fixture and it is
+   about twenty minutes of pixels.
+2. **Something at the cone's mouth that is not water.** The gust puffs
+   (`BELLOWS_PUFF_EVERY`) are drawn at the near end only, so a cone reaching
+   three tiles is signalled at one of them. Puffs travelling the length of the
+   cone would say "this is where the wind is going" independently of whether
+   the water under it changed.
+3. **Do NOT solve it by making MID and HIGH different blues.** That is a change
+   to the whole game's water for one dungeon's fixture, and it would break the
+   Lens's reads as well.
+
+Blocked on nothing but the drawing.
+
 ## A CURRENT IS INVISIBLE (P8/D3) — the highest-value entry in this file
 
 The Bogwater Sanctum is built on torrents: deep water that runs harder than a
