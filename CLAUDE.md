@@ -147,6 +147,7 @@ they are also how a future session finds which sheet a tile came from.
 | `node tools/check-lens.mjs` | Every room that claims to need the Brineglass Lens pins its tide, commits the player one way, cannot be answered at the level it is chosen at, and draws every branch as the same tile there |
 | `node tools/check-bellows.mjs` | Every room that claims to need the Squall Bellows has a wheel no hand reaches, drowned at the sea the room is played at, freed by one level of cone and by nothing else, from a place you can only stand while it is still drowned |
 | `node tools/check-reefseed.mjs` | Every room that claims to need the Reefseed grows its stakes on open water no seed can reach at LOW, opens on a snarl no blade but a stake's reaches, and cannot be sealed shut by a pillar the player grew in the wrong place |
+| `node tools/check-dredge.mjs` | Every room that claims to need the Dredge Line puts its far side across a pit nothing walks, its mooring in reach of one sea and no other, and its cache in a floor that only gives up what the sea is covering — each closure clause proved twice, once at the line's reach and once at the Coilrope's |
 | `node tools/check-motion.mjs` | Ground enemies stay on the 8px lattice; fliers and swimmers stay off it |
 | `node tools/check-items.mjs` | Every item does the verb `docs/ITEMS.md` claims for it, and nothing hands out an item that no longer exists |
 | `node tools/replay.mjs` | Movement and combat are frame-identical to a recorded baseline |

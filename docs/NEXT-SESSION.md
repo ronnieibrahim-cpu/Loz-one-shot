@@ -12,10 +12,123 @@ maintain and the most expensive thing to not have.
 
 ## Where P8 stands, in one line
 
-**D1 through D5 are DONE and COMPLIANT. D6, the Salt Pan Vault, is the next
-action item — and it is the session that also owes the six-versus-eight dungeon
-consolidation and the D6 item reconciliation.** Do not re-author a finished
-dungeon.
+**P8 IS COMPLETE. All six dungeons are done and compliant, the six-versus-eight
+consolidation is done, and P9 may start.** Do not re-author a finished dungeon.
+
+### What P9 inherits, and the four things it should look at first
+
+1. **NOBODY HAS PLAYED ANY OF IT.** Six dungeons, six different fixtures, and
+   every claim on the board is a checker's. No session has compared them, so
+   nobody knows whether the difficulty curve across the six goes the right way,
+   or at all. This is the largest open item in the project and it is the one
+   thing no tool in the repo can close.
+2. **Three enemies are registered and unplaced** after the fold: `thalassor`,
+   `saltwraith` and `gustharpy`. Hand-drawn art sitting in the shipped build
+   that nothing in the world draws. Either place them or take them out with
+   their sprites — and if you take them out, remove the cell from the ripper's
+   map and re-emit rather than editing the generated file.
+3. **The overworld is still gated for eight dungeons.** P9's own brief is the
+   re-gate; the fold means the Salt Pans and the Reef Palace are now one-room
+   ruins rather than dungeon approaches, so the routing through those two
+   regions wants a second look.
+4. **`docs/ART-BACKLOG.md` has four legibility findings** from D2, D3 and D4,
+   all the same shape: the mechanic is legible when it works and silent when it
+   does not. D5's bole and D6's lintel are the two that got this right and they
+   are the argument for how to fix the others — when the answer wants to be a
+   shade of water, reach for a whole tile of art instead.
+
+### What the last session did (P8/D6, the Abyssal Keep and the Dredge Line)
+
+**D6 is re-authored around the Dredge Line, it is the last dungeon, and the same
+session did the consolidation.** 26 rooms over two floors, the line at room 13,
+three crossings, three caches, `tools/check-dredge.mjs` (103 assertions) and the
+`d6-mooring` replay. The dungeon's header comment in `src/data/dungeons-b.js`
+states the primitive once and builds the rooms out of it.
+
+**The finding that decided the design, and it is the one the whole game had been
+building toward.** The player of the sixth dungeon owns the Cleats, so deep
+water is a road and no sea level is a wall. A barrier in the Keep has to be a
+PIT — the only thing left that neither Cleat mode crosses and no conch fills. So
+every crossing here is a shaft, and what gets you over one is a mooring ring the
+line hauls you to.
+
+> THE LINE CROSSES WHAT THE SEA UNCOVERS, AND THE FLOOR GIVES UP ONLY WHAT THE
+> SEA COVERS.
+
+**One engine change carries the whole dungeon.** `ITEMS.dredge.use` refuses
+while `inDeep || underwater`, on exactly the grounds the Bellows and the
+Reefseed refuse — a weighted line is thrown from your heels. Without it the
+answer to every mooring is to swim into the middle of the shaft and cast from
+there, and no arrangement of ground can be made to matter.
+
+**Two crossing shapes, so three rooms are not one idea three times.** The
+DROWNED STAND is worked at LOW (`3`/`dWell` is wading depth at LOW and over your
+head above it, so the ground you brace on is the tide decision). The SUNKEN BAR
+is worked at HIGH (`7`/`dLintel` is new: the Keep's own masonry across a shaft,
+stone until HIGH covers it, and a cast stops dead on `F.SOLID`). They are exact
+opposites, and **the Crossed Shafts** — 2x1, the Boss Key — is the only room
+holding both: in at HIGH, on at LOW, and you cannot hold two seas.
+
+**The tide theme, and it is the only one of the six that wants the water ON.**
+`DredgeLine.dragBack` searches a tile the weight passed over only if that tile
+carries `F.WET | F.SLOW` at the level it resolves at. `6`/`dSilt` is new — one
+extracted art in two palettes, bleached on the dry pan and blue once the sea is
+over it — so **the floor gives up what it is holding only while the sea is on
+it.** Every room past the item is therefore a crossing at one sea and a cache at
+another, and the order cannot be reversed.
+
+**`tools/check-dredge.mjs` proves eleven things and it earned itself**, unlike
+`check-lens.mjs`, failing four on its first run. The load-bearing clause is "no
+other sea crosses it", and getting it right took two attempts — see HANDOFF.
+Every closure clause is proved TWICE, once at the line's reach and once at the
+Coilrope's, because the charm that lengthens the line is hand-placed in this
+dungeon and the second pass is what caught a cache one tile inside it.
+
+**Seen on screen, and it is good news for the second dungeon running.**
+`tools/shots/room-d6_1_2_3-tide1-px80.png` and `-tide2-` are the same room one
+conch apart: at MID a slab of grey masonry stands in the shaft, at HIGH it is a
+square of open water, and nothing else in the room has moved. A whole tile of
+art appearing and disappearing, the way D5's bole does. That is the first time a
+CROSSING mechanic in this project has been legible in a still frame.
+
+**Four things changed outside D6:**
+
+- **`walk-dungeons.mjs` can cast**, from the dungeon that hands the line over.
+  A post within reach with nothing solid in front of it makes the tile before it
+  passable. Without it the Keep's whole upper floor reads as stranded.
+- **`walk-dungeons.mjs` counts a `buried` key.** `room.buried` was invisible to
+  every sweep in that file and the Keep's fourth Small Key lives in it, so the
+  dungeon was walked believing it had three keys for four locks.
+- **`essenceCount()` is new in `src/world/maps.js`.** The HUD, the quest screen
+  and the save slots all hard-coded `/8` against a plan that has always said
+  six.
+- **`dPostAbyss`** puts the shared mooring post over the Keep's own floor. The
+  shared `dPost` names the BRICK floor in its `underArt`, so every post in an
+  abyss room had been drawing another dungeon's flagstones round its own feet.
+
+### The consolidation, and how it was settled
+
+`docs/ITEMS.md`'s primary roster gives D6 as the Abyssal Keep holding the Dredge
+Line, and CLAUDE.md says content disagreeing with that file is wrong. So `d6` IS
+the Abyssal Keep. `d7` and `d8` are gone from the data; the Reef Palace and the
+Salt Pan Vault are one-room ruins on the overworld, each keeping the item its
+dungeon used to hand over — the Bottled Tide case in the Vault, and the Mermaid
+Suit moved into the Keep behind its miniboss. The Brinehulk was given a new home
+keeping the Boss Key. The story counts to six now instead of eight. Full table
+in `docs/DUNGEON-STATUS.md`.
+
+### What is weak about D6
+
+- **Three crossings, two shapes.** Two shelf crossings on different axes and one
+  lintel, with the Crossed Shafts composing both. One shape more than D5 had and
+  still not four.
+- **The cache marker reads better dry than wet.** The ring is visible at both
+  seas, which is right, but it is clearer at the sea where it does nothing. What
+  actually tells the player is the whole pan turning blue.
+- **Nothing makes the player walk into the teaching room.** The Slack Water is
+  one room east of the vault and holds only a Piece of Heart.
+- **Nobody has played it.** One crossing and one cache are proved in-engine by
+  the replay. The rest are a checker's word.
 
 **`docs/DUNGEON-STATUS.md` is the board and it is what a dungeon session opens
 first.** Every dungeon with its status and the commit it landed in, the
@@ -26,7 +139,7 @@ carries the reason it exists: D2 was finished on a branch that was never merged,
 so trunk said "outstanding" for a dungeon that was done and it was nearly built
 twice. **Run `git ls-remote --heads origin` before you start.**
 
-### What the last session did (P8/D5, the Drowned Wood Shrine and the Reefseed)
+### What the session before that did (P8/D5, the Drowned Wood Shrine and the Reefseed)
 
 **D5 is re-authored around the Reefseed, and the hard part was that the item
 cannot open a path at all.** 24 rooms, one floor, the Reefseed at room 14, five
@@ -1189,9 +1302,9 @@ Continue building "Oracle of Tides", a GBC-style Zelda fan game.
 
 Read, in this order:
   CLAUDE.md              - the hard rules. They are hard rules.
-  docs/EXECUTION-PLAN.md - the roadmap. P0-P7 are done and so is P8's first
-                           dungeon; read "P8 status" and the P7 audit in it
-                           before touching either. P7.6 is DONE — if you are
+  docs/EXECUTION-PLAN.md - the roadmap. P0-P8 are DONE. P9 (overworld
+                           re-gating and difficulty) is next; read "P8 status"
+                           and the P7 audit in it before touching either. P7.6 is DONE — if you are
                            authoring rooms, read "ROOM SIZE — everything a
                            dungeon session needs, in one place" in the P8
                            section and nothing else about room size. P7.5 is
@@ -1246,20 +1359,24 @@ Confirm the baseline before changing anything, and keep every line below green:
                                                BYTE-IDENTICAL. --sheet writes a
                                                contact sheet of every pick.
   node tools/test.mjs                          58/58
-  node tools/replay.mjs                        36/36, all EIGHT replays to the
-                                               pixel. d1-clawcrab-den-wide,
-                                               d2-fork-wrong, d3-undertow and
-                                               d4-drowned-sill also assert their
-                                               `span` — transitions fired and
-                                               the camera's extremes.
-  node tools/walk-dungeons.mjs                 29/29 (d1, d2 and d4 are 24
-                                               rooms each, d3 is 22; the flood
-                                               hops one-way ledges, swims from
-                                               d3 on, and treats a door a gust
-                                               wheel opens the way it treats a
-                                               puzzle-opened one. One check
-                                               asserts every locked door
-                                               actually separates its room)
+  node tools/replay.mjs                        46/46, all TEN replays to the
+                                               pixel. Six of them also assert a
+                                               `span` — transitions fired, the
+                                               camera's extremes, and what the
+                                               probe TILES became.
+  node tools/walk-dungeons.mjs                 23/23 over SIX dungeons (d1, d2,
+                                               d4 and d5 are 24 rooms each, d3
+                                               is 22, d6 is 26; the dungeon list
+                                               is read out of the map registry
+                                               rather than written down). The
+                                               flood hops one-way ledges, swims
+                                               from d3 on, CASTS A DREDGE LINE
+                                               AT A MOORING from d6 on, and
+                                               treats a door a gust wheel or a
+                                               kelp snarl opens the way it
+                                               treats a puzzle-opened one. One
+                                               check asserts every locked door
+                                               actually separates its room.
   node tools/check-lens.mjs                    24/24, every Lens fork proved
                                                pinned, one-way, unanswerable at
                                                the level it is chosen at, and
@@ -1278,7 +1395,18 @@ Confirm the baseline before changing anything, and keep every line below green:
                                                of its runtime)
   node tools/check-gates.mjs                   15/15 (pins ?seed= and owns the
                                                clock since the flake below)
-  node tools/check-items.mjs                   78/78
+  node tools/check-items.mjs                   82/82
+  node tools/check-reefseed.mjs                87/87, every grove proved
+                                               unbuildable at LOW and unbrickable
+                                               by a stray pillar
+  node tools/check-dredge.mjs                  103/103, every Keep crossing
+                                               proved across a pit nothing walks,
+                                               reachable at one sea and no other,
+                                               and every cache proved to give up
+                                               nothing on a dry pan. Each closure
+                                               clause runs TWICE — once at the
+                                               line's reach and once at the
+                                               Coilrope's.
   node tools/check-anchor.mjs                  14/14, every room that claims to
                                                need the Anchor proved impassable
                                                with the conch alone and passable
@@ -1288,7 +1416,8 @@ Confirm the baseline before changing anything, and keep every line below green:
                                                no room handing over a charm that
                                                does not exist
   node tools/check-motion.mjs                   8/8
-  node tools/solve-switches.mjs                16 rooms, one push per block
+  node tools/solve-switches.mjs                9 switch rooms, one push per
+                                               block
   node tools/check-tilesets.mjs                 6/6 (needs Pillow; it SKIPS
                                                with exit 2 rather than passing
                                                quietly if Pillow is missing)
@@ -1298,7 +1427,7 @@ Confirm the baseline before changing anything, and keep every line below green:
                                                file. Same for rip-hud.py and
                                                `rip-dungeon-maps.py --verify`.
   node tools/scan-sprites.mjs --strict         0 hard findings
-  npm run build                                49 modules -> one HTML file
+  npm run build                                51 modules -> one HTML file
   node tools/check-build.mjs                   the built file boots from file://
 
 THE CHECKERS TAKE A WHILE. check-overworld, check-items and check-charms are
@@ -1406,19 +1535,30 @@ save seed with ?seed=. If you write a new harness, do both — otherwise it is
 measuring the machine, not the game. test.mjs is no longer load-flaky; a
 failure there is now yours.
 
+P8 IS COMPLETE. All six dungeons are authored against the constraint list, each
+has a prover written before its rooms, each has a replay walking its own idea
+in-engine, and the six-versus-eight consolidation is done — the Reef Palace and
+the Salt Pan Vault are one-room ruins now and `d7`/`d8` are gone from the data.
+docs/DUNGEON-STATUS.md is the board and it names the commit each landed in. DO
+NOT RE-AUTHOR A FINISHED DUNGEON.
+
 NEXT UP, and pick ONE:
-  - P8 for D5, the Drowned Wood Shrine and the Reefseed, and then D6.
-    READ docs/DUNGEON-STATUS.md FIRST — it is the board, it names the commit
-    each finished dungeon landed in, and it carries D5 written out as a to-do
-    with the problem the Reefseed poses. D1-D4 are done; four provers exist
-    (check-anchor, check-lens, check-cleats, check-bellows) and they are four
-    different shapes on purpose, because each item was required for a different
-    reason: geometry, information, a mode, a held state. The Reefseed's is a
-    DELAY — what you threw it at is not what it becomes — so the fifth prover
-    is about a window in time rather than about a region of a room. Write
-    check-reefseed.mjs BEFORE the rooms, and make its first assertion the
-    arithmetic one: REEFSEED_GROW_FRAMES against TIDE_SWEEP_FRAMES decides
-    whether a conch press can land inside the window at all.
+  - P9, overworld re-gating and difficulty. It is the next phase in
+    EXECUTION-PLAN and the fold above changed its inputs: two regions that used
+    to be dungeon approaches are now ruins, so the routing through the Salt Pans
+    and the Reef Palace wants a second look before anything is gated.
+  - PLAY THE GAME. This is the largest open item in the project and no tool in
+    the repo can close it. Six dungeons, six different fixtures — a held patch,
+    a blind fork, a torrent, a drowned wheel, a bole and a snarl, a mooring and
+    a drowned cache — and no session has ever compared two of them. Nobody knows
+    whether the difficulty curve across the six goes the right way, or at all.
+  - THREE ENEMIES ARE REGISTERED AND UNPLACED after the fold: thalassor,
+    saltwraith and gustharpy. Hand-drawn art shipping in dist/ that nothing in
+    the world draws. Place them or remove them with their sprites — and if you
+    remove them, take the cell out of the ripper's map and re-emit rather than
+    editing the generated file.
+  - (superseded, kept for the reasoning) P8 for D5, the Drowned Wood Shrine and
+    the Reefseed.
   - (superseded, kept for the reasoning) P8 for D4, the Cliffside Cistern and
     the Squall Bellows.
   - (superseded, kept for the reasoning) P8 for D3, the Bogwater Sanctum and
@@ -1434,13 +1574,18 @@ NEXT UP, and pick ONE:
   - PT, towns and buildings. Independent of everything, stated top design
     priority, and the only one that needs no decision from anybody.
   - A room that claims to need its dungeon's item should DECLARE that in its
-    room data and be proved by a checker, both ways. There are four worked
-    examples now — check-anchor.mjs, check-lens.mjs, check-cleats.mjs and
-    check-bellows.mjs — and they are different shapes on purpose: the anchor's
+    room data and be proved by a checker, both ways. There are SIX worked
+    examples now — check-anchor, check-lens, check-cleats, check-bellows,
+    check-reefseed and check-dredge — and they are different shapes on purpose: the anchor's
     is a state-space flood over (tile, level), the Lens's is a fixed-level
     flood plus a tile-identity claim, the Cleats' is an arithmetic comparison
-    of two speeds, and the Bellows' is a reachability claim crossed with a cone
-    footprint. Write the checker BEFORE the rooms. AND DO NOT COPY ANOTHER
+    of two speeds, the Bellows' is a reachability claim crossed with a cone
+    footprint, the Reefseed's is a fixed-point closure over everything the
+    player could build, and the Dredge Line's is a simulated cast crossed with
+    a flood from where it drops you. Write the checker BEFORE the rooms.
+    AND ASK WHICH CHARM CHANGES THE ANSWER: check-dredge proves every closure
+    clause twice, once at the line's reach and once at the Coilrope's, and the
+    second pass failed on its first run. AND DO NOT COPY ANOTHER
     PROVER'S FLOOD WITHOUT READING IT: check-cleats hops anything that is not
     solid, which is wrong for pits, and copying it cost D4 three false
     failures.
@@ -1529,23 +1674,24 @@ under an entity's own feet and is what an enemy, a boss or a raft wants. If you
 add a call site that says `tide.level` and means "the water here", it will be
 right until the first anchor lands near it and wrong forever after.
 
-NEXT UP: P6, the item roster, in docs/EXECUTION-PLAN.md. It is unblocked now
-and P5 existed to unblock it — every remaining item assumes `levelAt`. Note the
-Tidewright's Anchor is ALREADY DONE and must not be re-implemented; it does
-need a chest to come out of, which belongs to D1 in P8.
+A DUNGEON ITEM'S GUARDS ARE PART OF ITS GEOMETRY. Three items now refuse to be
+used while `inDeep || underwater` — the Squall Bellows, the Reefseed and the
+Dredge Line — and in each case the guard is what makes range and footing mean
+anything. Without it the answer to every mooring in the Abyssal Keep is to swim
+into the middle of the shaft and cast from there, and no arrangement of ground
+can be made to matter. If you add an item that is aimed from where you stand,
+decide whether the water is somewhere you can stand, and write it down.
 
-BEFORE P6, IF YOU CAN: settle ANCHOR_RADIUS_TILES by playing it. Give yourself
-the anchor, go to overworld 0,10,0 (Tide Steps), and throw it at each setting
-KeyU offers, with KeyO on to see the patch outlined and KeyY to try the disc.
-It is a design constant with nothing to measure against, so it needs a person,
-and everything in P6 and P8 gets built on top of whatever it ends up being.
+A PIT IS THE ONLY BARRIER LEFT AFTER D3. The Kelp-Soled Cleats make deep water a
+road in both modes and no sea level fills a hole, so a late-game room that says
+"you cannot get over there" has to mean `dPit`. The Cistern found it, the Keep is
+built on it, and it is the first thing to check when a late room reads as
+crossable and should not be.
 
-P4 (grid-lock enemy motion) and P2 (the intermittent test) are still open and
-independent. P4 is the higher-value of the two and P3 left it set up: enemy
-positions are already on the 8.8 grid, so "a direction change may only happen
-at an 8px boundary" is a test you can write, and moveDir is the single funnel
-every ground AI goes through. P4 also inherits the two knockback decays and
-ENEMY_TURN_CHANCE, which FEEL-SPEC still flags as wrong on purpose.
+THE ESSENCE COUNT IS COMPUTED, NOT WRITTEN DOWN. `essenceCount()` in
+src/world/maps.js counts dungeons that grant one. The HUD, the quest screen and
+the save slots all print `/8` until they ask it — which they had been doing for
+the whole life of the project, against a plan that has always said six.
 
 Do the work yourself rather than spawning subagents - past sessions hit usage
 limits that way and lost the work.
@@ -1558,7 +1704,8 @@ Tell me plainly what is done, what is weak, and what you skipped.
 ## What is already done — do not redo any of this
 
 - engine, renderer, tide system, save/load, menus, cutscene runner
-- the 120-screen overworld and all 8 dungeons (303 rooms, all solvable)
+- the 120-screen overworld and all SIX dungeons (the fold took the room count
+  down; walk-dungeons reports the live figure and it is what to trust)
 - 56 enemy sprites and a 22-type enemy roster
 - all 16 boss and miniboss fights, verified beatable
 - every effect, pickup, object, projectile and item icon

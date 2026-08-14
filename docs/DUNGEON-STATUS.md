@@ -28,9 +28,13 @@ whatever a commit message elsewhere claims.
 | 3 | `d3` | Bogwater Sanctum | Kelp-Soled Cleats | **DONE** | `a9eb63e` |
 | 4 | `d4` | Cliffside Cistern | Squall Bellows | **DONE** | `5fd7301` |
 | 5 | `d5` | Drowned Wood Shrine | Reefseed | **DONE** | `0db0eab` |
-| 6 | `d6` | Salt Pan Vault | *see the consolidation below* | **TO DO — next** | — |
-| — | `d7` | Reef Palace | Kelp-Soled Cleats L2 | TO DO — fold in | — |
-| — | `d8` | Abyssal Keep | Dredge Line | TO DO — fold in | — |
+| 6 | `d6` | Abyssal Keep | Dredge Line | **DONE** | `84d14e5` |
+| — | `d7` | Reef Palace | — | **FOLDED IN** | `84d14e5` |
+| — | `d8` | Abyssal Keep | — | **FOLDED IN** | `84d14e5` |
+
+**P8 is complete.** All six dungeons are authored against the constraint list,
+each has a prover written before its rooms, each has a replay that walks its own
+idea in-engine, and the six-versus-eight consolidation is done. P9 may start.
 
 "DONE" means every box in the checklist below is ticked and every checker in
 CLAUDE.md's table was green on the commit named. It does not mean the dungeon
@@ -100,22 +104,42 @@ is nearly so, so a player has no way to know which water is a current or which
 way it runs before swimming into it. The rooms are legible as drains and
 illegible as currents. See `docs/ART-BACKLOG.md`.
 
-## D6, and the consolidation that is still owed
+## The consolidation, and how it was settled
 
-**The plan says six dungeons and the data holds eight.** `d7` (Reef Palace) and
-`d8` (Abyssal Keep) are pre-P8 dungeons that the six-dungeon plan folds into
-their neighbours — their best rooms move, they are not deleted. Two consequences
-a session will trip over:
+**The plan said six dungeons and the data held eight.** It is six now.
 
-- **`d6`'s item does not match the plan.** `docs/ITEMS.md` gives D6 as the
-  Abyssal Keep holding the Dredge Line; the data has `d6` as the Salt Pan Vault
-  holding the Bottled Tide, and the Dredge Line sitting in `d8`. Whoever takes
-  D6 owns reconciling that, and it is a design decision before it is an edit.
-- **`d7` hands out `cleats` at level 2**, so it is downstream of D3 whatever
-  else happens to it.
+**The item reconciliation, decided rather than papered over.** `docs/ITEMS.md`'s
+primary roster — "The six dungeon items" — gives D6 as the Abyssal Keep holding
+the Dredge Line, and CLAUDE.md says content that disagrees with that file is
+wrong. So `d6` IS the Abyssal Keep: Dredge Line, essence 6, Nereth, entered from
+the Gate of the Keep. The other two items the fold displaced kept their homes:
 
-None of D1-D5 needed the consolidation and none of them did it. **D6 is that
-session**, and it should be recorded here when it happens.
+| Item | Was | Is |
+|---|---|---|
+| Dredge Line | `d8` Abyssal Keep | **`d6`, room 13 of 26** |
+| Kelp-Soled Cleats L2 | `d7` Reef Palace | **`d6`, the Mermaid Vault behind the miniboss** |
+| Bottled Tide (the case) | `d6` Salt Pan Vault | **`cave3`, at the Salt Pans mouth** |
+
+**The two regions stayed on the map.** A region whose door leads nowhere is a
+bug; a region with a sealed ruin on it is a place. The Salt Pans mouth opens on
+the Salt Pan Vault, one room, holding the bottle case. The Reef Palace mouth
+opens on the Palace Porch, one room, holding a Piece of Heart and a notice
+saying the rest of it is under water. Their best rooms moved into the Keep —
+`d8`'s Three Heights is the Keep's tide-vocabulary room and `d7`'s phasing fight
+is the Tideshade Hall.
+
+**The story counted to eight and now counts to five.** Farore breaks the Bell
+into six, the Maku Tree asks for five and the sixth comes off Nereth's crown,
+and `essenceCount()` in `src/world/maps.js` is the one place that knows the
+number — the HUD, the quest screen and the save slots all read it. They had been
+printing `/8` against a plan that said six for the whole life of the project.
+
+**What the fold cost, stated rather than hidden.** Four hand-drawn enemies lost
+their placements. The Brinehulk was given a new one — it keeps the Boss Key on
+the far island of the Crossed Shafts, armoured at the one sea the crossing can
+be made at — but `thalassor`, `saltwraith` and `gustharpy` are now registered
+and unplaced. That is real content sitting in the build that nothing draws, and
+it is a P9 job: either place them or take them out with their sprites.
 
 ---
 
@@ -254,32 +278,97 @@ walked that room knows what a bole is.
 
 ---
 
-## D6 — Salt Pan Vault. The next action item, and it is two jobs.
+## D6 — the Abyssal Keep. DONE, and it closes P8.
 
-**What is there today:** the pre-P8 `d6`, 24 rooms over two floors, unaudited
-against the constraint list, no room declaring it needs its item, no prover.
+26 rooms over two floors, the Dredge Line at room 13, three crossings, three
+caches, `tools/check-dredge.mjs` (103 assertions) and the `d6-mooring` replay.
 
-**Job one is a design decision and it is owed before any room is drawn.**
-`docs/ITEMS.md` gives D6 as the Abyssal Keep holding the Dredge Line; the data
-has `d6` as the Salt Pan Vault holding the Bottled Tide, and the Dredge Line
-sitting in `d8`. Whoever takes D6 owns reconciling that. It is also the session
-that owes the six-versus-eight consolidation above: `d7`'s and `d8`'s best rooms
-move into their neighbours, they are not deleted, and `d7` hands out `cleats` at
-level 2 so it is downstream of D3 whatever happens to it.
+**The problem it had to solve, and it is the one the whole game had been
+building toward: THE PLAYER OF THE SIXTH DUNGEON OWNS THE CLEATS, SO WATER IS A
+ROAD.** Deep water stopped being a barrier in D3. A room here that says "you
+cannot get over there" has to mean a PIT — the only thing left that neither
+Cleat mode crosses and no sea level fills. That is the Cistern's own finding
+restated, and it decided the shape of every crossing before a tile was placed.
 
-**Job two, and the problem to expect.** Whichever item it ends up being, ask the
-same question the last three dungeons each had to answer in their own way: what
-is the axis INSIDE the item, and can it be decided in arithmetic? D3 found it in
-a tile's `push` against `SWIM_SPEED`. D4 found it in the cone's `delta: -1`
-against a wheel's `drowned`. D5 found it in `canPlant`'s refusal of SOLID at
-every level, and in the two tiles a throw carries. Write the prover first, and
-write it against the constant rather than against a number copied out of it.
+**The answer, stated once:**
 
-If it is the Bottled Tide: `Game.bottleTide` fires `roomEvent('bottle', {level})`
-and the bottle stores a sea rather than a place, which is the inverse of the
-Anchor and probably the axis. If it is the Dredge Line: `F.SNAG` and `F.HEAVY`
-are already declared by tiles rather than discovered, so the checker has the
-vocabulary it needs on day one.
+> THE LINE CROSSES WHAT THE SEA UNCOVERS, AND THE FLOOR GIVES UP ONLY WHAT THE
+> SEA COVERS.
+
+Three tiles decide whether a crossing can be made, and the tide moves all three
+independently — the ground you brace on, everything between, and the post
+itself. Two of them are built on:
+
+* **the drowned stand, crossed at LOW** — a `3` (`dWell`) shelf is wading depth
+  at LOW and over your head above it, and `ITEMS.dredge.use` now refuses while
+  `inDeep || underwater`, so the only sea you can brace at is the only sea the
+  room is crossed at.
+* **the sunken bar, crossed at HIGH** — a `7` (`dLintel`) is the Keep's own
+  masonry standing across a shaft, stone until HIGH covers it, and a cast stops
+  dead on `F.SOLID`. The post is in plain sight from the doorway the whole time.
+
+And the tide theme is the second half, which no earlier dungeon could have had:
+**`DredgeLine.dragBack` searches a tile the weight passed over only if it
+carries `F.WET | F.SLOW` at the level it resolves at.** A silted cache (`6`,
+`dSilt`) on a dry pan is dragged straight over. Five dungeons have asked the
+player to take the water OFF something; this is the only place in the game that
+wants it ON.
+
+**The reusable part, if anything ever needs it:** when the item's own guard is
+what makes its geometry mean anything, ADD THE GUARD. The Bellows refuse from
+the water, the Reefseed refuses from the water, and the Dredge Line now does
+too — and without it the answer to every mooring in the Keep is to swim into the
+middle of the shaft and cast from there, with no arrangement of ground able to
+matter.
+
+**What it cost elsewhere**, all five worth knowing:
+
+- **`ITEMS.dredge.use` refuses while `inDeep || underwater`.** The guard above.
+  It is the single change the whole dungeon rests on.
+- **`walk-dungeons.mjs` can cast.** From the dungeon that hands the line over,
+  a post within reach with nothing solid in front of it makes the tile before it
+  passable. Without it the Keep's whole upper floor reads as stranded. The reach
+  comes out of `feel.js`, and the dungeon index comes out of the map registry
+  rather than being written down, so the fold needed no edit there.
+- **`walk-dungeons.mjs` counts a `buried` key.** `room.buried` is the Dredge
+  Line's own list and was invisible to every sweep in that file, so the Keep was
+  walked believing it had three keys for four locks.
+- **`essenceCount()` is new in `src/world/maps.js`**, because the HUD, the quest
+  screen and the save slots all hard-coded `/8`.
+- **`dPostAbyss`** is the shared mooring post over the Keep's own floor. The
+  shared `dPost` names the BRICK floor in its `underArt`, so every post in an
+  abyss room had been drawing a square of another dungeon's flagstones round its
+  own feet — the same defect the urn had before P7.5 gave every theme one.
+
+**What is GOOD about it.** The crossing is legible in a still frame, which is
+the complaint D2, D3 and D4 all shipped with. `tools/shots/room-d6_1_2_3-tide1
+-px80.png` and `-tide2-` are the same room one conch apart: at MID a slab of
+grey masonry stands in the shaft, at HIGH it is a square of open water. Nothing
+else in the room has moved. A player who has seen that knows what a lintel is,
+the way a player who walked D5's Standing Grove knows what a bole is.
+
+The prover also earned itself, unlike `check-lens.mjs`. It failed four things on
+its first run: two decorative `q` posts inherited from the pre-P8 Keep (a `q` is
+a SNAG and a snag is a crossing), a cache exactly within the Coilrope's reach of
+the near bank, and a mooring whose closure clause was asking the wrong question.
+
+**What is weak about it:**
+
+- **Three crossings, two shapes.** The Drowned Stand and the Drowned Sill are
+  the same shelf crossing on different axes; the Sunken Bar is the only lintel
+  before the Crossed Shafts composes both. That is one shape more than D5 had
+  and it is still not four.
+- **The cache marker reads better dry than wet.** `dSiltDry` is dark grey rings
+  on grey flagstone and `dSiltWet` is dark rings on light blue; the ring is
+  visible at both seas, which is right, but it is *clearer* at the sea where it
+  does nothing. What actually tells the player is the whole pan turning blue.
+- **The Slack Water is the only room in the dungeon that teaches for free**, and
+  `check-dredge` enforces that it holds nothing the dungeon needs — but nothing
+  makes the player walk into it. It is one room east of the vault.
+- **Nobody has played it.** The replay proves the engine agrees with the model
+  at one crossing and one cache. The other two crossings and three caches are a
+  checker's word.
+- **Three enemies are registered and unplaced** after the fold. See above.
 
 ---
 

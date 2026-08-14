@@ -758,7 +758,7 @@ bare corridors and why no room holds two of them. The Anchor did not have room
 to be interesting in a 10x8 screen. **P7.6 is now built**, and the section below
 is the only thing a D2-D6 session needs to read about room size.
 
-#### P8 status: D1-D5 done, D6 outstanding
+#### P8 status: DONE — all six dungeons, and the consolidation
 
 **The live board is `docs/DUNGEON-STATUS.md`** — statuses, the commit each
 finished dungeon landed in, the "done" checklist, and every outstanding dungeon
@@ -767,11 +767,41 @@ that file is the state, and it is the one to update.
 
 Every finished dungeon was checked against the constraint list by counting the
 live map data, not by reading these tables back, and every checker in CLAUDE.md
-was re-run green afterwards. **D6, the Salt Pan Vault, is the next action item,
-and it is also the session that owes the six-versus-eight consolidation and the
-D6 item reconciliation.** None of D1-D5 wants re-authoring; each solved a
-different shape of problem and the write-ups below are what a D6 session reads
-instead of rediscovering them.
+was re-run green afterwards. **P8 is complete: six dungeons, six provers, six
+replays, and the six-versus-eight consolidation done in the D6 session.** None
+of them wants re-authoring; each solved a different shape of problem and the
+write-ups below are the record of what each one cost.
+
+**D6, Abyssal Keep — DONE.** 26 rooms, two floors, re-authored around the Dredge
+Line. Against the constraint list above:
+
+| Constraint | D6 |
+|---|---|
+| 22-32 rooms, 1-3 floors | 26 rooms, 2 floors |
+| item roughly halfway | the Dredge Line is room 13 of 26, in `0,4,3` |
+| every room after it requires the item's verb | three crossings, and every room on the upper floor past the Drowned Stand sits behind one; the exceptions are stated below |
+| tide theme is the constraint | `check-dredge.mjs` proves per room that the crossing works at exactly one sea and the cache at a different one, so no fixed sea answers a room |
+| Chartstone, 2-4 small keys, boss key | Chartstone in `0,2,5`; 4 keys, 4 locks, and the fourth key is DREDGED out of a drowned pan; Boss Key in `1,4,2` |
+| miniboss two thirds through | the Tideshade in `1,4,5`, room 18 of 26 (69%) |
+| Heart Container from `bossDead` | `1,3,1` |
+| essence index = dungeon number | 6 |
+| multi-screen rooms | two: the Tideshade Hall `1,4,5` and the Crossed Shafts `1,4,2`, both 2x1 — one room in thirteen. The other 24 are 1x1 |
+| a charm placed by hand | the Coilrope (`mid` case, open from the start) in `1,2,4`, behind a grate only the Resonance Rod retracts |
+
+The exceptions to "every room after it requires the verb" are `1,3,3` (a locked
+hub), `1,3,2` (the boss door), `1,4,4` (the Mermaid Vault behind the miniboss)
+and `1,3,1` (the boss) — four rooms, none of them a wing, and every one of them
+is *reached* only through a crossing.
+
+**What D6 taught about the item, and it is the game's own history catching up.**
+The Cleats made deep water a road in D3, so by D6 no sea level is a wall and the
+only barrier left is a pit. Everything else follows: a crossing is a mooring the
+line hauls you to across a shaft, and which of three tiles the tide has moved —
+the ground you brace on, everything between, the post itself — decides whether
+it can be done. The second half is `dragBack`'s `F.WET | F.SLOW` test, which
+makes the Keep the only place in the game that wants the water ON.
+
+
 
 **D5, Drowned Wood Shrine — DONE.** 24 rooms, one floor, re-authored around the
 Reefseed. Against the constraint list above:

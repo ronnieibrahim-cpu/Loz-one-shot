@@ -2,6 +2,33 @@
 
 Work that is identified, scoped and not done. Each entry says what blocks it.
 
+
+## The Keep's mooring ring reads as a block, and its silt ring reads better dry
+
+Two findings from P8/D6, and they are the small change left in an otherwise good
+result. The Abyssal Keep is the second dungeon running whose mechanic is legible
+in a still frame — `tools/shots/room-d6_1_2_3-tide1-px80.png` and `-tide2-` are
+the same room one conch apart and a whole slab of masonry has gone under the sea
+between them — so this is polish rather than the "silent failure" complaint that
+D2, D3 and D4 all shipped with.
+
+**The mooring is `ART.dPost` in the `stone` palette and it reads as a grey
+block, not as something a line takes hold of.** It is the same art the game uses
+for every post everywhere, which is correct extraction practice and is exactly
+why it says nothing specific. What it wants is a RING or a cleat — a shape whose
+silhouette says "hook this" — and `assets/sheets/` should be checked for one
+before anything is drawn. This matters more here than it did for `dPost`'s old
+decorative use, because in the Keep the post is the answer to the room.
+
+**The silt cache is clearer on the dry pan than under the water.** `dSiltDry` is
+dark rings on grey flagstone and `dSiltWet` is dark rings on light blue; both
+read, but the marker is *sharper* at the sea where dredging it does nothing. The
+thing that actually tells the player is the whole pan turning blue, which works —
+so this is a second-order fix. A brighter or animated glint on the wet variant
+would put the emphasis where the verb is. Compare
+`tools/shots/room-d6_0_5_3-tide0-px80.png` against `-tide1-`.
+
+
 ## THE ONE THAT WORKED, AND WHY (P8/D5) — not a job, a precedent
 
 Three dungeons in a row shipped with the same finding: the mechanic is legible

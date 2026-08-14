@@ -220,6 +220,55 @@ is in the page, and nothing steps until you say so.
 
 ## Hard-won lessons — do not rediscover these
 
+**The Abyssal Keep (P8/D6), and the five things it cost.**
+
+1. **A CHARM CAN ANSWER A PUZZLE THE ROOM WAS BUILT TO KEEP YOU OUT OF, AND
+   NOTHING IN THE TREE WOULD HAVE ASKED.** The Coilrope adds `COILROPE_RANGE` to
+   every Dredge Line cast the moment it is slotted, and the player of the sixth
+   dungeon has all three charm cases open. So every closure clause in
+   `check-dredge.mjs` is proved twice, once at each reach — and the second pass
+   failed on its first run, on a cache sitting exactly one tile inside the longer
+   reach of the near bank. The room was airtight, provably, for a player who had
+   not put on the bone the same dungeon hands out. **If you add a room whose
+   answer is a distance, find the charm that changes that distance and prove the
+   room at both.** `scrimshaw.js` is the list; the reach-changing ones today are
+   Coilrope (Dredge Line), Quartermaster's Mark (Reefseed capacity) and Kelp
+   Braid (current strength).
+
+2. **DECORATIVE SCENERY CAN BE A TRAVERSAL VERB.** `q` is `dPost`, it carries
+   `F.SNAG`, and a snag is a crossing — the Dredge Line hauls the PLAYER to it.
+   The pre-P8 Keep used `q` as colonnade decoration in four rooms, so the moment
+   the dungeon's item became the Dredge Line those were four unproved crossings
+   sitting in the data. `check-dredge.mjs` sweeps the whole dungeon for a SNAG
+   tile no room declares, which is what found them. The general shape: a tile
+   placed as ornament before an item existed becomes that item's vocabulary
+   afterwards, silently.
+
+3. **A CROSSING IS ONE-WAY BY CONSTRUCTION.** The pull is aimed, so the far bank
+   of a shaft has no way back unless somebody put a second ring there. Nothing in
+   the repo could see it: `walk-dungeons.mjs` floods, and a flood does not care
+   which direction an edge runs, so a room the player can be walked into and not
+   out of reads as perfectly connected. `dredgeRoom.returns` is what says the way
+   home exists, and it is asserted as the mirror of a mooring — the cast works
+   from the far bank and lands you on the NEAR side, the one thing a mooring must
+   never do.
+
+4. **"NO OTHER SEA CROSSES IT" IS THE WRONG QUESTION IF YOU ASK IT ABOUT CASTS.**
+   The first cut of the closure clause counted any cast that snagged something
+   and put the player somewhere new. In a room with a mooring on both banks that
+   is most casts, and the Crossed Shafts' second crossing failed against the
+   first crossing's return ring. The question that is actually being asked is
+   "can the player get to the FAR SIDE at this sea" — so take every cast that
+   moves them and flood from where it drops them.
+
+5. **`room.buried` was invisible to every sweep in the tree.** It is the Dredge
+   Line's own list, it is where the Keep's fourth Small Key lives, and
+   `walk-dungeons.mjs` counted keys from pickups, chests, puzzle rewards and
+   gust wheels and not from it — so the dungeon was walked believing it had three
+   keys for four locks. Same class as the `{ pickup: 'key' }` chest D1 hid a lock
+   behind: **every new way to hand out a key needs adding to that counter in the
+   same commit.**
+
 **The Drowned Wood Shrine (P8/D5), and the four things it cost.**
 
 1. **A COUNTED ITEM ARRIVED WITH AN EMPTY POUCH, AND EVERY CHECKER STAYED

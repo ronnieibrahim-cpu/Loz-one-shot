@@ -54,6 +54,15 @@ roster is organised on:
 | 5 | Drowned Wood Shrine | Reefseed | Build now, use after the change |
 | 6 | Abyssal Keep | Dredge Line | The floor of the world opens up |
 
+The Keep's own reading of that last line, worked out when it was built: the line
+is the only thing in the game that crosses a PIT, and a pit is the only barrier
+left once the Cleats have made water a road — so a crossing is a question about
+which of three tiles the tide has moved. And `DredgeLine.dragBack` searches a
+tile only if it carries `F.WET | F.SLOW` at the level it resolves at, so **the
+floor gives up what it is holding only while the sea is on it.** That is the
+inverse of every other item here, all five of which want the water taken off
+something, and it is why the Dredge Line is the last one.
+
 ---
 
 ### 1. Tidewright's Anchor — the keystone
@@ -213,7 +222,7 @@ Oracles do with their last item.
 
 | Verb | What it is |
 |---|---|
-| Movement | A fixed snag pulls Link to it — the crossing verb, and the reason it absorbs the hookshot's job without being the hookshot |
+| Movement | A fixed snag pulls Link to it — the crossing verb, and the reason it absorbs the hookshot's job without being the hookshot. **It cannot be cast while swimming or on the seafloor**, on the same grounds the Bellows and the Reefseed refuse: a weighted line is thrown from your heels. Without that guard the item has no geometry at all |
 | Combat | Drag an aquatic enemy onto land, where it flops and is helpless |
 | Puzzle | The seafloor is searchable: chests, keys and carryables come up out of `DEEP` water |
 
@@ -333,9 +342,9 @@ mechanic's button. The Dungeon Map is the Chartstone's sibling, not its rival.
 | Kelp-Soled Cleats L1 | d3 Bogwater Sanctum |
 | Squall Bellows | d4 Cliffside Cistern, the Bellows Vault |
 | Reefseed | d5 Drowned Wood Shrine, the Seedbed Vault |
-| Bottled Tide (the case) | d6 Salt Pan Vault — the case is what lets you carry any; refills come from shops and drops |
-| Kelp-Soled Cleats L2 (Mermaid Suit) | d7 Reef Palace |
-| Dredge Line | d8 Abyssal Keep, the Dredge Vault |
+| Bottled Tide (the case) | the Salt Pan Vault (`cave3`), off the Salt Pans — the case is what lets you carry any; refills come from shops and drops |
+| Kelp-Soled Cleats L2 (Mermaid Suit) | d6 Abyssal Keep, the Mermaid Vault behind the Tideshade |
+| Dredge Line | d6 Abyssal Keep, the Dredge Vault |
 | Resonance Rod | The Maku Tree, one Essence |
 | Ferryman's Coin | The village digger, three Essences |
 | Chartstone | One per dungeon, where the Compass was |
@@ -343,9 +352,15 @@ mechanic's button. The Dungeon Map is the Chartstone's sibling, not its rival.
 `tools/check-items.mjs` asserts this registry is exactly the roster above —
 adding or removing an item without moving this document is a test failure.
 
-P8 re-authors the dungeons and P9 re-gates the overworld; these placements are
-the minimum that keeps every dungeon's key economy intact through P6 and are
-expected to move.
+**The six-versus-eight fold is done and this table is what it settled.** The
+plan has always named six dungeons and the data carried eight; the Reef Palace
+and the Salt Pan Vault are one-room ruins on the overworld now, and each keeps
+the item its dungeon used to hand over. The reasoning is in
+`docs/DUNGEON-STATUS.md` under "The consolidation, and how it was settled".
+
+P8 re-authored the dungeons and P9 re-gates the overworld; these placements are
+the minimum that keeps every dungeon's key economy intact and P9 may still move
+them.
 
 ---
 
