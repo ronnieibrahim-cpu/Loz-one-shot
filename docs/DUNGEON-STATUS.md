@@ -27,7 +27,7 @@ whatever a commit message elsewhere claims.
 | 2 | `d2` | Coral Spire | Brineglass Lens | **DONE** | `0a3776f` (authored on `claude/p8-dungeon-generation-faqood`) |
 | 3 | `d3` | Bogwater Sanctum | Kelp-Soled Cleats | **DONE** | `a9eb63e` |
 | 4 | `d4` | Cliffside Cistern | Squall Bellows | **DONE** | `5fd7301` |
-| 5 | `d5` | Drowned Wood Shrine | Reefseed | **DONE** | `PENDING-D5` |
+| 5 | `d5` | Drowned Wood Shrine | Reefseed | **DONE** | `0db0eab` |
 | 6 | `d6` | Salt Pan Vault | *see the consolidation below* | **TO DO — next** | — |
 | — | `d7` | Reef Palace | Kelp-Soled Cleats L2 | TO DO — fold in | — |
 | — | `d8` | Abyssal Keep | Dredge Line | TO DO — fold in | — |
