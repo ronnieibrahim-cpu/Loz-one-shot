@@ -12,8 +12,10 @@ maintain and the most expensive thing to not have.
 
 ## Where P8 stands, in one line
 
-**D1, D2, D3 and D4 are DONE and COMPLIANT. D5, the Drowned Wood Shrine and the
-Reefseed, is the next action item.** Do not re-author a finished dungeon.
+**D1 through D5 are DONE and COMPLIANT. D6, the Salt Pan Vault, is the next
+action item — and it is the session that also owes the six-versus-eight dungeon
+consolidation and the D6 item reconciliation.** Do not re-author a finished
+dungeon.
 
 **`docs/DUNGEON-STATUS.md` is the board and it is what a dungeon session opens
 first.** Every dungeon with its status and the commit it landed in, the
@@ -23,6 +25,103 @@ session that leaves that file unchanged has not reported its work. It also
 carries the reason it exists: D2 was finished on a branch that was never merged,
 so trunk said "outstanding" for a dungeon that was done and it was nearly built
 twice. **Run `git ls-remote --heads origin` before you start.**
+
+### What the last session did (P8/D5, the Drowned Wood Shrine and the Reefseed)
+
+**D5 is re-authored around the Reefseed, and the hard part was that the item
+cannot open a path at all.** 24 rooms, one floor, the Reefseed at room 14, five
+groves, `tools/check-reefseed.mjs` (87 assertions) and the `d5-overthrow`
+replay. The dungeon's header comment in `src/data/dungeons-b.js` states the
+primitive once and builds five rooms out of it.
+
+**The finding that decided the whole design, and it took most of the session.**
+`Reefseed.canPlant` refuses SOLID, PIT and VOID at EVERY tide level, not merely
+the current one. So a pillar may only be grown where the player could already
+stand or already swim: the item can never make a route, only close one or dry
+one. What is left are the two things nothing else in the game does —
+
+> A PILLAR IS GROUND AT LOW AND AT LOW ALONE, AND YOU CANNOT PLANT A STAKE FROM
+> THE WATER.
+
+The second half is one new guard in `ITEMS.reefseed.use`, refusing while
+`inDeep || underwater` on the same grounds the Squall Bellows refuse. It is what
+makes throwing range mean anything: a seed carries **exactly two tiles**, so a
+stake more than two tiles from dry footing can only be planted from another
+stake.
+
+**The fixture, and it is a straight line.** `bank — bole — STAKE — snarl`.
+`dSnag` is a drowned tree: solid at LOW and MID, open water at HIGH, and
+`room.solidAt` refuses a SOLID tile to a thrown seed exactly as it does to a
+walking body — so the throw only clears it at HIGH, and the pillar it leaves is
+only ground at LOW. `dSnarl` is a kelp snarl whose ONLY transform is `cut`;
+`Player.startSwing` returns early while `inDeep`, so a swimmer beside one cannot
+touch it and a bomb finds nothing to break. The stake is the only dry square
+next to it.
+
+**Why the line matters, and this is the geometry a later session will break.**
+A bole or a snarl two tiles from a standable tile does not block a seed, it
+CATCHES one — the seed flies over the square between and is stopped by the
+solid, planting on the square between. So the two solids must be opposite each
+other across the stake, with water on one perpendicular side (how you reach the
+stake at LOW) and a `0` sump on the other (neither standable nor plantable, so a
+stray seed can do nothing with it). Any other arrangement gives the room a
+second answer, and `check-reefseed.mjs`'s closure clause is what says so.
+
+**A structural dead end, so nobody spends a session on it twice.** The groves
+were first designed as push-block crossings — a block cannot enter deep water,
+so a pillar is the only road across, and the tide decides whether the road is
+there. It cannot be made to work. The player pushing a block INTO a stake is
+always standing exactly two tiles from that stake with a non-solid square (the
+block's own tile) between them, so they can always throw the seed from the same
+square they push from and the room falls to a fixed LOW. There is no arrangement
+that fixes it.
+
+**`tools/check-reefseed.mjs` proves ten things**, and two of them are new in
+kind. The load-bearing one is that **LOW does not build the room**: fix the sea
+at LOW, plant every seed that can be thrown from dry footing the player can
+reach, do it again with those pillars in place, and keep going up to
+`REEFSEED_CAPACITY` — every landing, not only the declared stakes, because a
+pillar on an ordinary square of water is somewhere new to stand and can be the
+solid a later seed is caught against. The other is that **nothing the player can
+build can brick the room**: a pillar is permanent and SOLID at MID, so for every
+tile a seed can come to rest on, a pillar there must leave the room's doorways
+joined at SOME sea. That is CLAUDE.md's "a solid tile can strand a room" trap
+with the player holding the trowel, and no other tool in the repo can see it.
+
+**Three things changed outside D5:**
+
+- **`progress.giveItem` now stocks a counted item.** The rule that a Reefseed, a
+  bomb or a bottle arrives with something in it lived inside `Game.openChest`
+  and nowhere else, so a giver, a cutscene or a harness handed over a working
+  inventory entry attached to an empty pouch. The replay is what found it: a run
+  that threw a seed which did not exist, recorded perfectly deterministically,
+  with every checker green.
+- **`walk-dungeons.mjs` knows a snarl is a door**, the same exemption a puzzle
+  door and a wheel door already had. Without it two thirds of d5 is stranded.
+- **`replay.mjs` spans carry `probeNames`** — what the probe TILES currently
+  are. `d5-overthrow` exists to check the prover's reproduction of the seed's
+  flight against the engine's own, and the only evidence that settles it is the
+  name of the tile the seed came down on. It reads `coralPillar|dSnarl`.
+
+**Seen on screen, and for once it is good news.** The bole is a whole tile of
+art that appears and disappears: a tree at LOW and MID, open water at HIGH, and
+in the Standing Grove at 3,5 there are two 2x2 stands of them doing it before
+anything depends on it. Unmissable in a still frame, which is the first time in
+four dungeons that the mechanic has been legible at all — D2's three blues, D3's
+invisible torrents and D4's silent failing drain were all the same complaint.
+The argument to carry into D6: when the answer wants to be a shade of water,
+reach for a whole tile instead.
+
+### What is weak about D5
+
+- **Five groves, one fixture.** Four orientations of the line and one double,
+  and the geometry above is why. Honest, and still repetitive.
+- **The snarl is a bush** — the extracted bush in the dark-oak palette. It reads
+  correctly as "cut this" and identically to every bush a bomb DOES open.
+- **The replay does not cut a snarl.** A replay's equipment is fixed in its
+  setup and the grove wants the Reefseed, the conch and the sword in two slots.
+  It proves the throw and the sea; `check-items.mjs` owns the swing.
+- **Nobody has played it.** One grove is proved in-engine. Four are a checker's.
 
 ### What the last session did (P8/D4, the Cliffside Cistern and the Squall Bellows)
 
@@ -1494,13 +1593,13 @@ Tell me plainly what is done, what is weak, and what you skipped.
 
 ## What is left
 
-1. **P8 for D3-D6.** D1 and D2 are done. Read both "P8 status" tables in
-   `docs/EXECUTION-PLAN.md`, and "ROOM SIZE" before authoring a large room. D3
-   is the Kelp-Soled Cleats, which introduce swimming — and swimming is the one
-   thing both `check-anchor.mjs` and `check-lens.mjs` say in their own headers
-   they cannot model, so teaching a prover to swim is part of that session. The
-   six-versus-eight dungeon consolidation is still owed and is nobody's session
-   yet.
+1. **P8 for D6, and it is the last one.** D1 through D5 are done — read
+   `docs/DUNGEON-STATUS.md` first, it is the board. D6 is two jobs in one
+   session: the dungeon itself, and the reconciliation nobody has done. The plan
+   says six dungeons and the data holds eight, `d7` and `d8` fold into their
+   neighbours rather than being deleted, and `docs/ITEMS.md` and the data
+   disagree about what D6's item even is. Read both "P8 status" tables in
+   `docs/EXECUTION-PLAN.md`, and "ROOM SIZE" before authoring a large room.
 
 2. **PT — towns, buildings and terrain polish.** A stated top design priority,
    independent of the systems spine, and blocked on nothing. Thalassia's
@@ -1570,6 +1669,13 @@ These are in HANDOFF in full. The short list, because each one cost a session:
   wearing a costume; take it from `null` or the small rupees.
 - Deleting an entry from `ITEMS` by slicing between banner comments takes its
   neighbours with it. Match the whole entry, brace-counted.
+- A counted item used to arrive with an empty pouch: the capacity rule lived in
+  `Game.openChest` alone. It is in `progress.giveItem` now, with the grant.
+- A solid tile two squares away does not block a thrown Reefseed, it CATCHES it
+  onto the square between. Every grove in d5 is laid out around that fact.
+- A pillar the player grew is a SOLID tile at MID that no room author placed.
+  `check-reefseed.mjs` is the only thing in the repo that can see it strand a
+  room, and it only knows about the rooms that declare a `reefseedRoom`.
 
 ## Engine-API details a harness gets wrong on the first try
 

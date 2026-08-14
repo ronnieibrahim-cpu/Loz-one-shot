@@ -220,6 +220,49 @@ is in the page, and nothing steps until you say so.
 
 ## Hard-won lessons — do not rediscover these
 
+**The Drowned Wood Shrine (P8/D5), and the four things it cost.**
+
+1. **A COUNTED ITEM ARRIVED WITH AN EMPTY POUCH, AND EVERY CHECKER STAYED
+   GREEN.** The rule that a Reefseed, a bomb or a bottle comes with something in
+   it lived inside `Game.openChest` and nowhere else. `progress.giveItem` — the
+   function a giver NPC, a cutscene, a debug grant and every test harness calls
+   — recorded the item and left `maxReefseeds` at 0, so the inventory showed a
+   perfectly good Reefseed and the B button played the deny sound for ever.
+   `check-items.mjs` never saw it because its Reefseed section sets the counts by
+   hand on the way past, which is exactly the shape of workaround that hides a
+   bug for the life of a project. What found it was a REPLAY: a recorded run in
+   which Link threw a seed that did not exist, swam past the tile he was meant to
+   have built, and replayed deterministically and identically for ever. The rule
+   is in `giveItem` now. **If you add a counted item, put its capacity there.**
+
+2. **A SOLID TILE TWO SQUARES AWAY DOES NOT BLOCK A THROW, IT CATCHES IT.** The
+   drowned bole was placed to stop a seed reaching a stake, which it does from
+   distance 1. From distance 2 it does the opposite: the seed flies over the
+   square between, is stopped by the bole, and plants on that square — which was
+   the stake. Every grove in the Shrine is laid out around this. The rule is that
+   the two solids (the bole and the snarl) must be OPPOSITE each other across
+   the stake, with water on one perpendicular side and a `0` sump on the other,
+   and any other arrangement gives the room a second answer.
+
+3. **THE PLAYER CAN PUT A SOLID TILE WHERE NO AUTHOR PUT ONE.** A coral pillar
+   is permanent and is `coralWall` at MID. So CLAUDE.md's "a solid tile can
+   strand a room" trap has a version of itself that no amount of care in a room
+   grid prevents, because the trowel is in the player's hands. `check-reefseed.mjs`
+   enumerates every tile a seed can come to rest on and asserts that a pillar
+   there still leaves the room's doorways joined at SOME sea — some, not all,
+   because the conch is always available and a room that is walled at MID and
+   open at LOW has cost a button press rather than a save.
+
+4. **A WHOLE SESSION'S DESIGN CAN BE STRUCTURALLY IMPOSSIBLE, AND THE PROOF IS
+   TWO SENTENCES.** The groves were first built as push-block crossings: a block
+   cannot enter deep water (`PushBlock.push` asks `canOccupy` with
+   `swim: false`), so a pillar is the only road across, and the pillar is only
+   floor at LOW. It cannot be made tide-bound. The player pushing a block INTO a
+   stake is always standing exactly two tiles from that stake with a non-solid
+   square — the block's own tile — between them, so the seed can always be thrown
+   from the square the push is made from and the room falls to a fixed LOW. No
+   geometry fixes it. Write the two-sentence argument out before drawing rooms.
+
 **The Cliffside Cistern (P8/D4), and the six things it cost.**
 
 1. **A FOOTPRINT IS NOT A LINE OF SIGHT.** `Tide.covers` was pure geometry, so

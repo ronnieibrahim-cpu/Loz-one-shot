@@ -824,6 +824,12 @@ export const REEFSEED_SHUDDER_EVERY = 12;
 /** how many Reefseeds a full pouch holds. guessed. */
 export const REEFSEED_CAPACITY = 8;
 
+/** how many bombs a full bag holds. guessed; it was a bare 10 inside
+ *  `Game.openChest` until the Reefseed's empty-satchel bug moved the whole
+ *  counted-item rule down into `giveItem`, which is not allowed a magic
+ *  number any more than anything else is. */
+export const BOMB_CAPACITY = 10;
+
 // --- Dredge Line -----------------------------------------------------------
 
 /** px — how far the line is cast. guessed; four tiles, so it reaches across a

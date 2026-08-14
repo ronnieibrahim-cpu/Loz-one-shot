@@ -193,6 +193,19 @@ export function installLegends() {
   theme('dungeonBog',     'dFloorBog',     'dFloorBogAlt',     'dWallBog',     'dWallBogX',     'dBlockBog',     'dUrnBog');
   theme('dungeonCistern', 'dFloorCistern', 'dFloorCisternAlt', 'dWallCistern', 'dWallCisternX', 'dBlockCistern', 'dUrnCistern');
   theme('dungeonWood',    'dFloorWood',    'dFloorWoodAlt',    'dWallWood',    'dWallWoodX',    'dBlockWood',    'dUrnWood');
+  // The Drowned Wood Shrine needs one tide tile no other dungeon has, and every
+  // digit in the shared vocabulary is already spoken for. `5` (`channel`) is an
+  // OUTDOOR tile that no indoor room has ever placed — d7 and d8 use the
+  // character, but they are on their own legends, so pointing it at the drowned
+  // bole here moves nothing outside this one dungeon. It stays a DIGIT because
+  // it stays a tide tile, which is the rule the digits carry.
+  //
+  // `k` is the kelp snarl the groves are gated on, and `0` (`dSump`) does a
+  // second job here that it never did in the Cistern: it is the only tile in
+  // the Shrine's vocabulary that is neither standable NOR plantable at any sea,
+  // so it is what a grove is lined with to stop a stray seed growing a pillar
+  // somewhere that would open the room from the wrong side.
+  registerLegend('dungeonWood', { '5': 'dSnag', 'k': 'dSnarl' }, 'dungeonWood');
   theme('dungeonSalt',    'dFloorSalt',    'dFloorSaltAlt',    'dWallSalt',    'dWallSaltX',    'dBlockSalt',    'dUrnSalt');
   theme('dungeonPalace',  'dFloorPalace',  'dFloorPalaceAlt',  'dWallPalace',  'dWallPalaceX',  'dBlockPalace',  'dUrnPalace');
   theme('dungeonAbyss',   'dFloorAbyss',   'dFloorAbyssAlt',   'dWallAbyss',   'dWallAbyssX',   'dBlockAbyss',   'dUrnAbyss');

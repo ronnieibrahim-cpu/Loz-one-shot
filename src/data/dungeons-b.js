@@ -17,26 +17,71 @@
 import { registerMap } from '../world/maps.js';
 
 export function installDungeonsB() {
-
   // --- Dungeon 5: Drowned Wood Shrine --------------------------------------
-  // Tide theme: nothing here is a floor, it is a raft. Tide rocks stand proud at
-  // LOW and MID and vanish at HIGH; wells are water at every level and want a
-  // raft or the Flippers. The shrine is crossed by choosing which surface you
-  // want under you, and the Magic Boomerang inside turns switches you cannot
-  // walk to.
   //
-  // Intended route:
-  //   3,7 entrance -> 3,6 -> 3,5 hub -> 2,5 Dungeon Map -> 4,5 Small Key 1
-  //   -> 3,4 raft crossing -> 2,4 Compass -> 4,4 Small Key 2
-  //   -> 3,3 locked -> stairs at 2,3 up to floor 1
-  //   -> 1F 3,5 -> 4,5 Small Key 3 -> 2,5 Small Key 4 -> 3,4 locked
-  //   -> 4,4 Thornvine (miniboss) -> 5,4 big chest: Magic Boomerang
-  //   -> 4,3 locked -> 4,2 Boss Key -> 3,2 boss door -> 3,1 Rootmaw
+  // THE PRIMITIVE, STATED ONCE. Everything after the Reefseed in this dungeon
+  // is one sentence built five different ways:
+  //
+  //     YOU CANNOT PLANT A STAKE FROM THE WATER, AND A STAKE IS ONLY GROUND
+  //     AT LOW.
+  //
+  // A Reefseed grows a coral pillar, and a pillar is floor at LOW, a wall at
+  // MID and deep water at HIGH. `Reefseed.canPlant` refuses SOLID, PIT and VOID
+  // at EVERY level, so a pillar can only ever go where the player could already
+  // stand or already swim — the item cannot open a path, it can only put ground
+  // where there was sea. That is the whole design, and the Shrine is built on
+  // the two things it is good for that nothing else in the game can do:
+  //
+  //   A BLOCK CROSSES A PILLAR AND ONLY AT LOW. `PushBlock.push` asks
+  //   `canOccupy` with `swim: false`, so a block never enters deep water and
+  //   never enters a wall. The pillar is exactly one of those two at MID and at
+  //   HIGH, and dry stone at LOW. So the sea decides whether the road is there.
+  //
+  //   A STAKE IS DRIVEN, NOT DROPPED. `ITEMS.reefseed.use` refuses while
+  //   `inDeep || underwater`, on the same grounds the Squall Bellows refuse.
+  //   That is what makes THROWING RANGE MEAN ANYTHING — a seed carries exactly
+  //   two tiles — and it is why the first thing you build in a Shrine room is
+  //   somewhere to stand.
+  //
+  // THE TIDE THEME, and it is the one no earlier dungeon has. D1 held a patch
+  // of sea still. D2 hid what a tile was. D3 gave one body of water two route
+  // layers. D4 needed the sea in two states at one instant. Here the sea has to
+  // be in two states IN ORDER, and the order is not reversible, because the
+  // thing you build at the first sea is what you stand on at the second:
+  //
+  //   THE DROWNED BOLE (`5`, `dSnag`) is a tree that stands at LOW and MID and
+  //   is open water at HIGH. `room.solidAt` refuses a SOLID tile to a flying
+  //   body exactly as it does to a walking one, so a seed thrown at a bole
+  //   stops dead at its foot and drops a pillar under your own boots. Sound the
+  //   conch to HIGH and the same throw sails over it. So the PERCH is planted
+  //   at HIGH — and the perch is only ground at LOW, so everything thrown from
+  //   the perch is thrown after the sea has gone back down. Neither half can be
+  //   bought at the other's sea, and no fixed tide answers a single stake room.
+  //
+  // The grove is the fixture: a perch ringed by boles on the sides it must not
+  // be reachable from, a dry islet with the block on it, a crossing stake, and
+  // a plate (`s`, `dSwitchUp`) the block has to end on. The plate carries
+  // F.SWITCHF, which `canPlant` refuses — so a stray seed cannot brick the one
+  // tile the room needs kept clear, and the five rooms vary the axis, the
+  // handedness, the length of the chain and, once, the size of the room.
+  //
+  // Proved by tools/check-reefseed.mjs, which was written before these rooms,
+  // and walked in-engine by the `d5-overthrow` replay.
+  //
+  // Intended route (24 rooms, one floor, the Reefseed at room 14):
+  //   3,7 entrance -> 3,6 landing -> 2,6 Dungeon Map / 4,6 Small Key 1
+  //   -> 3,5 the Standing Grove (lock 1) -> 2,5 Chartstone -> 1,5 heart piece
+  //   -> 4,5 charm -> 5,5 -> 5,4 -> 4,4 Small Key 2 -> 3,4 -> 2,4 (lock 2)
+  //   -> 1,4 REEFSEED -> 1,3 the First Stake (grove 1) -> 2,3 the Bole Walk
+  //      (grove 2) -> 2,2 the Sunken Nave (grove 3, Small Key 3) -> 1,2
+  //   -> 3,3 Grove Crossing (lock 3) -> 4,3 the Long Ford (grove 4)
+  //   -> 5,3 Thornvine (miniboss) -> 4,2 the Shrine Ford (grove 5, two screens,
+  //      Boss Key) -> 3,2 boss door -> 3,1 Rootmaw
   registerMap({
     id: 'd5',
     kind: 'dungeon',
     name: 'Drowned Wood Shrine',
-    w: 8, h: 8, floors: 2,
+    w: 8, h: 8, floors: 1,
     legend: 'dungeonWood',
     music: 'dungeon',
     tint: 'cave',
@@ -46,178 +91,20 @@ export function installDungeonsB() {
       item: 'reefseed', itemLevel: 1,
       essence: 5,
       boss: 'rootmaw',
-      bossRoom: '1,3,1',
+      bossRoom: '0,3,1',
       startRoom: '3,7',
       entrance: { map: 'overworld', floor: 0, rx: 5, ry: 4, px: 64, py: 32 },
     },
     rooms: {
-      '0,2,3': {
-        name: 'Root Stair',
-        map: [
-          '##########',
-          '##....../#',
-          '##......##',
-          '##...>....',
-          '##...>....',
-          '##...>..##',
-          '####..####',
-          '####..####',
-        ],
-        warps: [
-          { x: 8, y: 1, to: { map: 'd5', floor: 1, rx: 3, ry: 5, px: 72, py: 96 } },
-        ],
-        entities: [
-          ['keese', 3, 4],
-        ],
-      },
-      '0,2,4': {
-        name: 'Compass Root',
-        map: [
-          '####..####',
-          '####..####',
-          '##..88..##',
-          '##........',
-          '##___.....',
-          '##..88..##',
-          '####..####',
-          '####..####',
-        ],
-        entities: [
-          ['chest', 4, 3, { pickup: 'chartstone' }],
-          ['wisp', 6, 4],
-        ],
-      },
-      '0,2,5': {
-        name: 'Map Root',
-        map: [
-          '####..####',
-          '####..####',
-          '##......##',
-          '##..33....',
-          '##..33....',
-          '##......##',
-          '##########',
-          '##########',
-        ],
-        entities: [
-          ['pickup', 4, 3, { kind: 'dungeonMap' }],
-          ['keese', 6, 2],
-        ],
-      },
-      '0,3,2': {
-        name: 'Lower Reliquary',
-        map: [
-          '##########',
-          '##########',
-          '##..88..##',
-          '##......##',
-          '##_____.##',
-          '##..88..##',
-          '####..####',
-          '####..####',
-        ],
-        entities: [
-          ['pickup', 4, 3, { kind: 'rupee20' }],
-          ['wisp', 2, 2],
-        ],
-      },
-      '0,3,3': {
-        name: 'Shrine Lock',
-        map: [
-          '####..####',
-          '#........#',
-          '####L#####',
-          '..........',
-          '...""""...',
-          '#........#',
-          '#..q..q..#',
-          '####..####',
-        ],
-        entities: [
-          ['stalfos', 2, 4],
-          ['zol', 6, 5],
-        ],
-      },
-      '0,3,4': {
-        name: 'Raft Crossing',
-        map: [
-          '####..####',
-          '#.33..33.#',
-          '#.3.88.3.#',
-          '..........',
-          '..........',
-          '#.3.88.3.#',
-          '#.33..33.#',
-          '####..####',
-        ],
-        entities: [
-          ['raft', 2, 3],
-          ['anglerfry', 6, 2],
-        ],
-      },
-      '0,3,5': {
-        name: 'Flooded Nave',
-        map: [
-          '####..####',
-          '#..q..q..#',
-          '#.333333.#',
-          '..3.88.3..',
-          '..3.88.3..',
-          '#.333333.#',
-          '#..q..q..#',
-          '####..####',
-        ],
-        entities: [
-          ['jellyfish', 4, 2],
-          ['anglerfry', 2, 5],
-          ['wisp', 7, 3],
-        ],
-        puzzle: {
-          enemies: true,
-          flag: 'd5_035_puzzle',
-          reward: {
-            spawn: [['pickup', 3, 3, { kind: 'bomb4' }]],
-            say: 'A cache opens in the wall.',
-          },
-        },
-      },
-      '0,3,6': {
-        name: 'Root Landing',
-        map: [
-          '####..####',
-          '#.3....3.#',
-          '#.3..>.3.#',
-          '#....>...#',
-          '#....>...#',
-          '#.3..>.3.#',
-          '#........#',
-          '####..####',
-        ],
-        entities: [
-          ['zol', 3, 3],
-          ['keese', 6, 4],
-          ['switch', 1, 2],
-          ['switch', 8, 2],
-          ['block', 1, 3],
-          ['block', 8, 3],
-        ],
-        puzzle: {
-          switches: 'all',
-          flag: 'd5_036_puzzle',
-          reward: {
-            spawn: [['pickup', 4, 3, { kind: 'rupee20' }]],
-            say: 'A catch lets go under the floor.',
-          },
-        },
-      },
+      // ---------------------------------------------------- the way in
       '0,3,7': {
-        name: 'Shrine Door',
+        name: 'Shrine Mouth',
         map: [
           '####..####',
+          '#U......U#',
           '#........#',
-          '#.p....p.#',
-          '#........#',
-          '#.88..88.#',
+          '#..2222..#',
+          '#..2222..#',
           '#........#',
           '#........#',
           '####/#####',
@@ -226,164 +113,527 @@ export function installDungeonsB() {
           { x: 4, y: 7, to: { map: 'overworld', floor: 0, rx: 5, ry: 4, px: 64, py: 32, dir: 'down' } },
         ],
         readable: [
-          [2, 3, 'Bark-cut letters: "Stand on nothing. Trust the water."'],
+          [2, 3, 'Cut into the lintel: "The wood was here before the water. Stand on what you plant, and plant while you can stand."'],
         ],
       },
-      '0,4,3': {
-        name: 'Drift Cell',
+      '0,3,6': {
+        name: 'Rootwater Landing',
         map: [
-          '##########',
-          '##########',
-          '##.3333.##',
+          '####..####',
+          '#........#',
+          '#.8....8.#',
           '..........',
           '..........',
-          '##.3333.##',
-          '####..####',
-          '####..####',
-        ],
-        entities: [
-          ['anglerfry', 4, 2],
-          ['pickup', 6, 4, { kind: 'rupee20' }],
-        ],
-      },
-      '0,4,4': {
-        name: 'Torch Root',
-        map: [
-          '####..####',
-          '####..####',
-          '##......##',
-          '........##',
-          '.._____.##',
-          '##......##',
-          '####..####',
+          '#.8....8.#',
+          '#........#',
           '####..####',
         ],
         entities: [
-          ['torch', 2, 2],
-          ['torch', 7, 2],
-          ['torch', 2, 5],
-          ['torch', 7, 5],
-          ['keese', 4, 3],
+          ['keese', 6, 2],
+          ['tektite', 3, 5],
         ],
-        puzzle: {
-          torches: 'all',
-          flag: 'd5_torches',
-          reward: { spawn: [['pickup', 4, 3, { kind: 'key' }]], say: 'Four flames, and the shrine remembers.' },
-        },
       },
-      '0,4,5': {
-        name: 'Thorn Cell',
+      '0,2,6': {
+        name: 'Silt Gallery',
         map: [
-          '####..####',
-          '####..####',
-          '##......##',
-          '........##',
-          '........##',
-          '##......##',
           '##########',
+          '#U......U#',
+          '#........#',
+          '#..1111...',
+          '#..1111...',
+          '#........#',
+          '#........#',
           '##########',
         ],
         entities: [
-          ['stalfos', 2, 2],
-          ['stalfos', 7, 2],
-          ['zol', 4, 4],
+          ['pickup', 4, 2, { kind: 'dungeonMap' }],
+          ['keese', 7, 5],
+        ],
+      },
+      '0,4,6': {
+        name: 'Bracken Cell',
+        map: [
+          '##########',
+          '#........#',
+          '#..2222..#',
+          '...2222..#',
+          '...2222..#',
+          '#..2222..#',
+          '#........#',
+          '##########',
+        ],
+        entities: [
+          ['stalfos', 2, 1],
+          ['tektite', 7, 4],
+          ['keese', 6, 1],
         ],
         puzzle: {
           enemies: true,
-          flag: 'd5_thorncell',
-          reward: { spawn: [['pickup', 4, 3, { kind: 'key' }]], say: 'The thorns loosen their grip on something bright.' },
+          flag: 'd5_bracken',
+          reward: {
+            spawn: [['pickup', 4, 6, { kind: 'key' }]],
+            say: 'Something drops out of the bracken.',
+          },
         },
       },
-      '0,5,3': {
-        name: 'Deep Root',
-        // The Reefseed's room. The moat is `dWaterD` — deep at LOW, MID and
-        // HIGH alike — so the conch does not open it and never will. A seed
-        // thrown into it grows a pillar, and the pillar is a step at LOW: you
-        // plant, you sound the shell, and then you walk over what you planted.
+      '0,3,5': {
+        name: 'The Standing Grove',
+        // The bole taught before it is ever load-bearing. Four drowned trees in
+        // the middle of the floor: stone at LOW and MID, open water at HIGH,
+        // and the walk round them is free at every level so failing costs
+        // nothing. The tiles above and below the lock are plain floor on
+        // purpose — walk-dungeons asserts a locked door separates its room at
+        // all three levels, and a door standing in water cannot be shown to.
         map: [
-          '##########',
-          '##########',
-          '##WWWWW.##',
-          '...WWWWW##',
-          '...WWWWW##',
-          '##WWWWW.##',
-          '##########',
-          '##########',
+          '####..####',
+          '#........#',
+          '####L#####',
+          '..55..55..',
+          '..55..55..',
+          '#........#',
+          '#........#',
+          '####..####',
         ],
         entities: [
-          ['jellyfish', 4, 2],
-          ['pickup', 7, 2, { kind: 'heartPiece' }],
+          ['tektite', 4, 5],
+          ['keese', 2, 1],
+        ],
+        readable: [
+          [1, 6, 'Scratched into the bark: "At high water the wood is not there. Everything else in this shrine follows from that."'],
         ],
       },
-      '1,2,3': {
-        name: 'West Bough',
+      '0,2,5': {
+        name: 'Chartstone Nave',
         map: [
-          '##########',
-          '##########',
-          '##.8888.##',
-          '#.........',
-          '##........',
-          '##......##',
           '####..####',
-          '####..####',
+          '#U......U#',
+          '#........#',
+          '...3333...',
+          '...3333...',
+          '#........#',
+          '#........#',
+          '##########',
         ],
         entities: [
-          ['pickup', 4, 4, { kind: 'fairy' }],
-          ['keese', 6, 2],
+          ['chest', 4, 2, { pickup: 'chartstone' }],
+          ['urchin', 4, 4],
         ],
       },
-      '1,2,4': {
-        name: 'Windward Bough',
+      '0,1,5': {
+        name: 'Drowned Cloister',
         map: [
-          '####..####',
-          '####..####',
-          '##.8888.##',
-          '##........',
-          '##........',
-          '##.8888.##',
-          '####..####',
-          '####..####',
+          '##########',
+          '#........#',
+          '#.999....#',
+          '#.9.9.....',
+          '#.999.....',
+          '#........#',
+          '#........#',
+          '##########',
         ],
         entities: [
-          ['keese', 4, 3],
-          ['pickup', 2, 2, { kind: 'rupee20' }],
+          ['pickup', 3, 3, { kind: 'heartPiece' }],
+          ['keese', 7, 5],
         ],
       },
-      '1,2,5': {
-        name: 'Bough Cell',
+      '0,4,5': {
+        name: 'Thicket Cell',
         map: [
           '####..####',
-          '####..####',
-          '##......##',
-          '#.........',
-          '#.........',
-          '##......##',
-          '##########',
+          '#U......U#',
+          '#........#',
+          '..........',
+          '..........',
+          '#..,,,,..#',
+          '#........#',
           '##########',
         ],
         entities: [
-          ['block', 2, 3],
-          ['block', 7, 4],
-          ['switch', 2, 2],
-          ['switch', 7, 5],
+          ['chest', 4, 2, { charm: 'gillcarve' }],
+          ['stalfos', 7, 4],
+        ],
+      },
+      '0,5,5': {
+        name: 'Bower Cell',
+        map: [
+          '##########',
+          '#........#',
+          '#..88....#',
+          '...88....#',
+          '.........#',
+          '#........#',
+          '#........#',
+          '##########',
+        ],
+        entities: [
+          ['pickup', 7, 2, { kind: 'rupee20' }],
+          ['tektite', 3, 5],
+        ],
+      },
+      '0,5,4': {
+        name: 'Coppice Cell',
+        map: [
+          '##########',
+          '#........#',
+          '#..3333..#',
+          '...3333..#',
+          '...3333..#',
+          '#..3333..#',
+          '#........#',
+          '##########',
+        ],
+        entities: [
+          ['jellyfish', 4, 3],
+          ['keese', 2, 1],
+        ],
+      },
+      '0,4,4': {
+        name: 'Sunken Bracken',
+        map: [
+          '##########',
+          '#........#',
+          '#..1111..#',
+          '...1111...',
+          '...1111...',
+          '#..1111..#',
+          '#........#',
+          '####..####',
+        ],
+        entities: [
+          ['switch', 2, 1],
+          ['switch', 7, 6],
+          ['block', 3, 1],
+          ['block', 6, 6],
+          ['urchin', 5, 3],
+          ['keese', 2, 6],
         ],
         puzzle: {
           switches: 'all',
-          flag: 'd5_boughs',
-          reward: { spawn: [['pickup', 4, 4, { kind: 'key' }]], say: 'The bough swings aside.' },
+          flag: 'd5_bracken2',
+          reward: {
+            spawn: [['pickup', 4, 6, { kind: 'key' }]],
+            say: 'A grating opens under the far wall.',
+          },
         },
       },
-      '1,3,1': {
-        name: 'Rootmaw, the Drowned Tree',
+      '0,3,4': {
+        name: 'Rootbound Hall',
         map: [
           '##########',
+          '#U......U#',
+          '#..2222..#',
+          '..2222222.',
+          '..2222222.',
+          '#..2222..#',
           '#........#',
-          '#........#',
-          '#........#',
-          '#........#',
+          '####..####',
+        ],
+        entities: [
+          ['barnacle', 4, 3],
+          ['crab', 7, 5],
+          ['keese', 2, 1],
+        ],
+      },
+      '0,2,4': {
+        name: "Warden's Sill",
+        // The lock sits in a one-tile corridor with its pocket sealed on both
+        // sides, so there is no way round it at any level.
+        map: [
+          '##########',
+          '#.pp.....#',
+          '###......#',
+          '..L.......',
+          '###.......',
           '#........#',
           '#........#',
           '####..####',
+        ],
+        entities: [
+          ['stalfos', 6, 4],
+        ],
+        readable: [
+          [5, 5, 'A warden\'s plate: "Past this door the floor is a thing you bring with you."'],
+        ],
+      },
+      '0,1,4': {
+        name: 'Reefseed Vault',
+        map: [
+          '####..####',
+          '#U......U#',
+          '#........#',
+          '#.........',
+          '#........#',
+          '#..2222..#',
+          '#........#',
+          '##########',
+        ],
+        entities: [
+          ['chest', 4, 2, { big: true, item: 'reefseed', level: 1 }],
+        ],
+      },
+
+      // ---------------------------------------------------- the groves
+      //
+      // THE FIXTURE, and all five rooms are it: a snarl set in the one gap of a
+      // solid wall, a coral stake beside the snarl that is the only place a
+      // blade will come out, a drowned bole one tile off the stake on the
+      // opposite side, and a bank two tiles beyond the bole. Everything else in
+      // the pool is `0` — a sump, which is a hole at LOW and over your head
+      // above it, so it is the one tile in the Shrine that is neither standable
+      // nor plantable and a stray seed can do nothing with it.
+      //
+      // Read in order: throw at HIGH, because the bole is only gone at HIGH.
+      // Sound the conch to LOW, because the pillar is only ground at LOW. Climb
+      // out of the water onto what you threw, and cut.
+      '0,1,3': {
+        name: 'The First Stake',
+        // GROVE 1, on the east-west axis and the fixture at its plainest. The
+        // bank is 4,4, the bole 5,4, the stake 6,4 and the snarl 7,4, all in
+        // one line, so the whole idea is legible in a single row of the room.
+        map: [
+          '##########',
+          '#.....##.#',
+          '#.....0#.#',
+          '#.....W#.#',
+          '#....5Wk..',
+          '#.....W#.#',
+          '#.....##.#',
+          '####..####',
+        ],
+        reefseedRoom: {
+          entry: [4, 7],
+          stakes: [
+            { at: [6, 4], from: [4, 4], face: 'right', sea: 2 },
+          ],
+          snarl: [7, 4], cutFrom: [6, 4],
+        },
+        // Both of them are on the FAR side of the snarl, guarding the corridor
+        // out rather than the pool. The near side is deliberately quiet: this is
+        // the room the dungeon teaches itself in, and a keese knocking Link a
+        // tile sideways between facing the bole and letting go of the seed would
+        // make the lesson read as the item being unreliable.
+        entities: [
+          ['keese', 8, 2],
+          ['tektite', 8, 5],
+        ],
+        readable: [
+          [2, 5, 'Cut low, where the water reaches it: "Throw while the wood is gone. Stand once it is back."'],
+        ],
+      },
+      '0,2,3': {
+        name: 'The Bole Walk',
+        // GROVE 2, the fixture turned through a right angle and pointed north,
+        // and a player who has just learned the First Stake has to notice that
+        // the throw which opens it is now the one aimed away from the door.
+        map: [
+          '####.#####',
+          '####.#####',
+          '####k#####',
+          '#.0WWW0..#',
+          '....5.....',
+          '#........#',
+          '#........#',
+          '##########',
+        ],
+        reefseedRoom: {
+          entry: [0, 4],
+          stakes: [
+            { at: [4, 3], from: [4, 5], face: 'up', sea: 2 },
+          ],
+          snarl: [4, 2], cutFrom: [4, 3],
+        },
+        entities: [
+          ['tektite', 7, 5],
+          ['keese', 2, 6],
+        ],
+      },
+      '0,2,2': {
+        name: 'The Sunken Nave',
+        // GROVE 3, and the first one where the stake is not on the way to
+        // anywhere: the snarl is set in the east wall of a cell that holds a
+        // Small Key, so the room can be walked straight through by a player who
+        // never works out what the pool is for. A chest rather than a script,
+        // because a chest is still there when you come back for it.
+        map: [
+          '##########',
+          '#.#......#',
+          '..#0.....#',
+          '#.#W.....#',
+          '#.kW5....#',
+          '#.#W.....#',
+          '#.#0.....#',
+          '####.#####',
+        ],
+        reefseedRoom: {
+          entry: [4, 7],
+          stakes: [
+            { at: [3, 4], from: [5, 4], face: 'left', sea: 2 },
+          ],
+          snarl: [2, 4], cutFrom: [3, 4],
+        },
+        entities: [
+          ['chest', 1, 2, { pickup: 'key' }],
+          ['jellyfish', 7, 2],
+          ['keese', 6, 6],
+        ],
+      },
+      '0,1,2': {
+        name: 'Silt Cell',
+        map: [
+          '##########',
+          '#........#',
+          '#..99.....',
+          '#..99....#',
+          '#........#',
+          '#........#',
+          '#........#',
+          '##########',
+        ],
+        entities: [
+          ['pickup', 7, 5, { kind: 'rupee20' }],
+          ['keese', 3, 5],
+        ],
+      },
+      '0,3,3': {
+        name: 'Grove Crossing',
+        map: [
+          '##########',
+          '#........#',
+          '#.........',
+          '###......#',
+          '..L......#',
+          '###......#',
+          '#........#',
+          '##########',
+        ],
+        entities: [
+          ['stalfos', 6, 2],
+          ['keese', 7, 5],
+        ],
+      },
+      '0,4,3': {
+        name: 'The Long Ford',
+        // GROVE 4, pointed south, and the first with the bank on the far side
+        // of the pool from the door — so the throw has to be set up by walking
+        // round the water rather than by standing where you came in.
+        map: [
+          '##########',
+          '#........#',
+          '....5....#',
+          '#.0WWW0..#',
+          '####k#####',
+          '#........#',
+          '#.........',
+          '##########',
+        ],
+        reefseedRoom: {
+          entry: [0, 2],
+          stakes: [
+            { at: [4, 3], from: [4, 1], face: 'down', sea: 2 },
+          ],
+          snarl: [4, 4], cutFrom: [4, 3],
+        },
+        entities: [
+          ['keese', 7, 2],
+          ['tektite', 2, 2],
+        ],
+      },
+      '0,5,3': {
+        name: 'Thornvine',
+        map: [
+          '####.#####',
+          '####D#####',
+          '#..2222..#',
+          '#.2222222#',
+          '#.2222222#',
+          '#..2222..#',
+          '..2222...#',
+          '##########',
+        ],
+        entities: [
+          ['thornvine', 4, 3],
+        ],
+        puzzle: {
+          enemies: true,
+          flag: 'd5_thornvine',
+          reward: {
+            openDoors: [[4, 1]],
+            say: 'The thorns let go of the north arch.',
+          },
+        },
+      },
+      '0,4,2': {
+        name: 'The Shrine Ford',
+        // GROVE 5, two screens wide, and the only room in the dungeon that is.
+        // It owns the cell at 5,2 as well as its own, so nothing else may be
+        // keyed there.
+        //
+        // The width is the point, and it is the answer to the Cistern's own
+        // complaint that every one of its sills fitted inside ten tiles and so
+        // every one of them was the same three squares in a row. Here the pool
+        // is wide enough that the snarl is out of range of any bank, so the
+        // fixture has to be built twice: the first stake at HIGH from dry
+        // ground, and the second at LOW from the first — which means standing
+        // on something that did not exist when you threw it, and which will not
+        // be there if you let the sea back up.
+        size: [2, 1],
+        map: [
+          '####################',
+          '#........###########',
+          '#........#000000000#',
+          '#........#0WWWW....#',
+          '..........kWWW5....#',
+          '#........#0W0W.....#',
+          '#........#0000.....#',
+          '##############.#####',
+        ],
+        reefseedRoom: {
+          entry: [14, 7],
+          stakes: [
+            { at: [13, 4], from: [15, 4], face: 'left', sea: 2 },
+            { at: [11, 4], from: [13, 4], face: 'left', sea: 0 },
+          ],
+          snarl: [10, 4], cutFrom: [11, 4],
+        },
+        entities: [
+          ['chest', 4, 3, { pickup: 'bossKey' }],
+          ['keese', 16, 5],
+          ['tektite', 3, 5],
+        ],
+        readable: [
+          [16, 2, 'A shrine board, barely legible: "Twice over. The first while the wood is under, the second while it is not."'],
+        ],
+      },
+      '0,3,2': {
+        name: 'Rootmaw Arch',
+        map: [
+          '####.#####',
+          '####B#####',
+          '#........#',
+          '#........#',
+          '#.........',
+          '#..2222..#',
+          '#........#',
+          '##########',
+        ],
+        entities: [
+          ['keese', 7, 2],
+        ],
+      },
+      '0,3,1': {
+        name: 'Rootmaw, the Drowned Wood',
+        // The boss keeps the mechanic: `noTide` pins the arena at whatever
+        // level was brought in, and the floor is basin, which is walkable at
+        // all three because a locked room has to work at whichever one arrives.
+        map: [
+          '##########',
+          '#..2222..#',
+          '#..2222..#',
+          '#..2222..#',
+          '#..2222..#',
+          '#..2222..#',
+          '#........#',
+          '####.#####',
         ],
         noTide: true,
         entities: [
@@ -394,181 +644,6 @@ export function installDungeonsB() {
             if (name === 'bossDead') game.spawnPickup(80, 40, 'heartContainer', { grabDelay: 30 });
           },
         },
-      },
-      '1,3,2': {
-        name: 'Shrine Gate',
-        map: [
-          '####..####',
-          '#........#',
-          '####B#####',
-          '#........#',
-          '#.88..88.#',
-          '#........#',
-          '#........#',
-          '####..####',
-        ],
-        entities: [
-          ['wisp', 6, 4],
-        ],
-      },
-      '1,3,3': {
-        name: 'Upper Nave',
-        map: [
-          '####..####',
-          '#........#',
-          '#.3..<.3.#',
-          '.....<...#',
-          '.....<...#',
-          '#.3..<.3.#',
-          '#........#',
-          '####..####',
-        ],
-        entities: [
-          ['jellyfish', 4, 3],
-          ['stalfos', 2, 2],
-          ['torch', 1, 1],
-          ['torch', 8, 1],
-          ['torch', 1, 6],
-        ],
-        puzzle: {
-          torches: 'all',
-          flag: 'd5_133_puzzle',
-          reward: {
-            spawn: [['pickup', 4, 2, { kind: 'heart' }]],
-            say: 'Water drains out of a niche in the wall.',
-          },
-        },
-      },
-      '1,3,4': {
-        name: 'Canopy Lock',
-        map: [
-          '####..####',
-          '#........#',
-          '####L#####',
-          '..........',
-          '..........',
-          '#........#',
-          '#........#',
-          '####..####',
-        ],
-        entities: [
-          ['keese', 2, 4],
-          ['wisp', 6, 5],
-        ],
-      },
-      '1,3,5': {
-        name: 'Canopy Landing',
-        map: [
-          '####..####',
-          '##....../#',
-          '##......##',
-          '..........',
-          '..........',
-          '##......##',
-          '#........#',
-          '##########',
-        ],
-        warps: [
-          { x: 8, y: 1, to: { map: 'd5', floor: 0, rx: 2, ry: 3, px: 112, py: 40 } },
-        ],
-        entities: [
-          ['keese', 3, 4],
-        ],
-      },
-      '1,4,2': {
-        name: 'Bosskey Bough',
-        map: [
-          '##########',
-          '##########',
-          '##......##',
-          '#........#',
-          '##..33..##',
-          '##......##',
-          '####..####',
-          '####..####',
-        ],
-        entities: [
-          ['chest', 4, 2, { pickup: 'bossKey' }],
-          ['wizzrobe', 6, 4],
-        ],
-      },
-      '1,4,3': {
-        name: 'Upper Drift',
-        // The fourth Small Key spends here: this is the only way up to the Boss
-        // Key, so the key the dungeon used to hand out spare now has a door.
-        map: [
-          '####..####',
-          '##......##',
-          '####L#####',
-          '#........#',
-          '#........#',
-          '##......##',
-          '##......##',
-          '####..####',
-        ],
-        entities: [
-          ['anglerfry', 4, 3],
-        ],
-      },
-      '1,4,4': {
-        name: 'Thornvine Hollow',
-        map: [
-          '####..####',
-          '##......##',
-          '####L#####',
-          '..........',
-          '..........',
-          '##......##',
-          '##......##',
-          '####..####',
-        ],
-        entities: [
-          ['thornvine', 4, 4],
-        ],
-        puzzle: {
-          enemies: true,
-          flag: 'd5_thornvine',
-          reward: { say: 'The vine goes slack and slides into the water.' },
-        },
-      },
-      '1,4,5': {
-        name: 'Hollow Cell',
-        map: [
-          '####..####',
-          '####..####',
-          '##..pp..##',
-          '.........#',
-          '.........#',
-          '##..pp..##',
-          '##########',
-          '##########',
-        ],
-        entities: [
-          ['stalfos', 3, 3],
-          ['stalfos', 6, 4],
-          ['wizzrobe', 4, 2],
-        ],
-        puzzle: {
-          enemies: true,
-          flag: 'd5_hollow',
-          reward: { spawn: [['pickup', 4, 3, { kind: 'key' }]], say: 'Something drops out of the hollow.' },
-        },
-      },
-      '1,5,4': {
-        name: 'Seedbed Vault',
-        map: [
-          '##########',
-          '##########',
-          '##......##',
-          '.........#',
-          '........##',
-          '##......##',
-          '##########',
-          '##########',
-        ],
-        entities: [
-          ['chest', 4, 3, { big: true, item: 'reefseed', level: 1 }],
-        ],
       },
     },
   });

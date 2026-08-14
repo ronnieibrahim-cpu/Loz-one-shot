@@ -758,7 +758,7 @@ bare corridors and why no room holds two of them. The Anchor did not have room
 to be interesting in a 10x8 screen. **P7.6 is now built**, and the section below
 is the only thing a D2-D6 session needs to read about room size.
 
-#### P8 status: D1-D4 done, D5 and D6 outstanding
+#### P8 status: D1-D5 done, D6 outstanding
 
 **The live board is `docs/DUNGEON-STATUS.md`** — statuses, the commit each
 finished dungeon landed in, the "done" checklist, and every outstanding dungeon
@@ -767,10 +767,41 @@ that file is the state, and it is the one to update.
 
 Every finished dungeon was checked against the constraint list by counting the
 live map data, not by reading these tables back, and every checker in CLAUDE.md
-was re-run green afterwards. **D5, the Drowned Wood Shrine and the Reefseed, is
-the next action item.** None of D1-D4 wants re-authoring; each solved a
-different shape of problem and the write-ups below are what a D5-D6 session
-reads instead of rediscovering them.
+was re-run green afterwards. **D6, the Salt Pan Vault, is the next action item,
+and it is also the session that owes the six-versus-eight consolidation and the
+D6 item reconciliation.** None of D1-D5 wants re-authoring; each solved a
+different shape of problem and the write-ups below are what a D6 session reads
+instead of rediscovering them.
+
+**D5, Drowned Wood Shrine — DONE.** 24 rooms, one floor, re-authored around the
+Reefseed. Against the constraint list above:
+
+| Constraint | D5 |
+|---|---|
+| 22-32 rooms, 1-3 floors | 24 rooms, 1 floor |
+| item roughly halfway | the Reefseed is room 14 of 24, in `0,1,4` |
+| every room after it requires the item's verb | five groves, each gated on a snarl only a stake's blade opens; the exceptions are stated below |
+| tide theme is the constraint | `check-reefseed.mjs` proves per grove that LOW cannot build the room and that a pillar is ground only at LOW, so no fixed sea answers one |
+| Chartstone, 2-4 small keys, boss key | Chartstone in `0,2,5`; 3 keys, 3 locks; Boss Key chest in `0,4,2` |
+| miniboss two thirds through | Thornvine in `0,5,3`, room 21 of 24 |
+| Heart Container from `bossDead` | `0,3,1` |
+| essence index = dungeon number | 5 |
+| multi-screen rooms | one: the Shrine Ford `0,4,2` is 2x1, and it is the only grove that builds the fixture twice over. The other 23 are 1x1 |
+| a charm placed by hand | Gillcarve (`high` case, open at four essences) in `0,1,2`'s neighbour `0,4,5` |
+
+The exceptions to "every room after it requires the verb" are `0,3,3` (a locked
+corridor), `0,5,3` (the miniboss), `0,3,2` (the boss door) and `0,1,2` (a side
+cell) — four rooms, none of them a wing, and every one of them is *reached* only
+through a grove.
+
+**What D5 taught about the item, and it decided the dungeon.** A pillar cannot
+open a path: `canPlant` refuses SOLID, PIT and VOID at every tide level, so a
+seed only grows where the player could already go. What is left is that a pillar
+is ground at LOW alone, and that a stake cannot be planted from the water — which
+makes the two-tile throw range mean something. The fixture is a straight line,
+`bank — bole — STAKE — snarl`, and the reason it must be a line is that a solid
+two squares away catches a seed onto the square between rather than blocking it.
+
 
 **D4, Cliffside Cistern — DONE.** 24 rooms, one floor, re-authored around the
 Squall Bellows. Against the constraint list above:

@@ -265,11 +265,23 @@ const reach = await page.evaluate((ids) => {
     // check-bellows.mjs is what proves each of them is actually reachable —
     // in both directions, including that the wheel cannot be turned any other
     // way. Without this the whole second half of d4 reads as stranded.
+    //
+    // AND SO IS A KELP SNARL. The Drowned Wood Shrine's groves are shut by a
+    // `dSnarl` — SOLID at every sea, and opened by one thing, a sword swing
+    // taken from a coral pillar the player grows. The flood can no more grow a
+    // pillar than it can turn a wheel, so without this every grove's far side
+    // reads as stranded and two thirds of d5 disappears. What proves each snarl
+    // is genuinely openable — and that no other blade in the room reaches it —
+    // is check-reefseed.mjs.
     const puzzleDoors = new Set();
     for (const [rk, def] of Object.entries(m.roomDefs)) {
       for (const [dx0, dy0] of def.puzzle?.reward?.openDoors || []) puzzleDoors.add(`${rk}:${dx0},${dy0}`);
       for (const B of sillsOf(def)) {
         for (const [dx0, dy0] of B.opens || []) puzzleDoors.add(`${rk}:${dx0},${dy0}`);
+      }
+      if (def.reefseedRoom && def.reefseedRoom.snarl) {
+        const [sx0, sy0] = def.reefseedRoom.snarl;
+        puzzleDoors.add(`${rk}:${sx0},${sy0}`);
       }
     }
     const isLock = (ch) => legend[ch] === 'dDoorLocked';

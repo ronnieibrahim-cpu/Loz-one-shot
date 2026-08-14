@@ -1416,6 +1416,32 @@ export function installCoreTiles() {
     // Lens is the only thing in the game that shows you which one you are
     // standing over before you are standing in it.
     dSump: { tide: ['dPit', 'dWaterD', 'dWaterD'] },
+
+    // A drowned tree, and the Drowned Wood Shrine is built on it.
+    //
+    // It is the only barrier in the game that a THROW cares about and a WALK
+    // does not, because it is the only one that stops being solid when the sea
+    // comes up. `room.solidAt` refuses a SOLID tile to everything — a jump, a
+    // flying entity, a thrown Reefseed — so a bole standing at LOW and MID
+    // stops a seed dead at its foot, and at HIGH the same tile is open water a
+    // seed sails straight over. Nothing else about the room has changed; only
+    // where the throw ends up has.
+    //
+    // The trunk is `treeDark`'s art, which is the extracted oak in the wood
+    // palette, over the Shrine's own flagstones rather than over grass — an
+    // indoor tile standing on outdoor ground draws a hole around its own feet.
+    dBole: { art: ART.tree, pal: 'treeoakdk', flags: F.SOLID, underArt: 'dFloorWood' },
+    dSnag: { tide: ['dBole', 'dBole', 'dWaterD'] },
+
+    // A snarl of drowned kelp across a gap in a wall, and the ONLY thing that
+    // opens it is a sword swing. That is not a flavour note, it is the whole
+    // reason the Shrine's groves can be proved: `Player.startSwing` returns
+    // early while `inDeep`, so a swimmer floating next to a snarl cannot touch
+    // it, and the only transform below is `cut` — a bomb applies 'bomb' and
+    // finds nothing, so there is no second answer. The one place a blade comes
+    // out beside a snarl is a coral pillar, and a pillar is dry ground at LOW
+    // and at LOW only.
+    dSnarl: { art: ART.bush, pal: 'treeoakdk', flags: F.SOLID, underArt: 'dWaterD' },
   };
   registerTiles(TILE_DEFS);
 
@@ -1437,6 +1463,11 @@ export function installCoreTiles() {
     tallgrass: { cut: 'grass', fire: 'grass', fx: 'cut', drop: 'hearts', sfx: 'cut' },
     flowers: { cut: 'grass', fx: 'cut', sfx: 'cut' },
     flowersDark: { cut: 'grassDark', fx: 'cut', sfx: 'cut' },
+    // `cut` and nothing else, on purpose: see the tiledef. It persists because
+    // a snarl you have already cut through is a door you have already opened,
+    // and a barrier that grows back across the only route out of a room is not
+    // a puzzle, it is a trap.
+    dSnarl: { cut: 'dWaterS', fx: 'cut', sfx: 'cut', persist: true },
     rock: { lift: 'grass', drop: 'common' },
     rockSand: { lift: 'sand', drop: 'common' },
     pot: { lift: 'dFloor', drop: 'common' },
