@@ -15,6 +15,7 @@ import { installAudio } from './audio.js';
 import { installLinkSprites, LINK_ART, FX_ART, FX_BIG_ART, UI_ART } from './sprites-link.js';
 import { installPlayerSprites, PLAYER_ART } from './sprites-player.js';
 import { installNpcSprites, NPC_ART as NPC_RIPPED_ART } from './sprites-npcs.js';
+import { installTownsfolkSprites, TOWNSFOLK_ART } from './sprites-townsfolk.js';
 import { installWorldSprites, PICKUP_ART, OBJECT_ART, SHOT_ART, NPC_ART } from './sprites-world.js';
 import { installEnemySprites, ENEMY_ART } from './sprites-enemies.js';
 import { installBossSprites, BOSS_ART, MINIBOSS_ART } from './sprites-bosses.js';
@@ -31,6 +32,7 @@ export const SPRITE_PACKS = {
   link: LINK_ART,
   player: PLAYER_ART,
   npcsRipped: NPC_RIPPED_ART,
+  townsfolk: TOWNSFOLK_ART,
   fx: FX_ART,
   fxBig: FX_BIG_ART,
   ui: UI_ART,
@@ -59,6 +61,9 @@ export function installData() {
   installWorldSprites();
   // After sprites-world.js, so extracted NPC art overrides the placeholders.
   installNpcSprites();
+  // After sprites-npcs.js: the coast people come off a different sheet and
+  // share no names with it, so the order is only for readability.
+  installTownsfolkSprites();
   installEnemySprites();
   installBossSprites();
   // After sprites-link.js, so the extracted HUD and gear icons override the

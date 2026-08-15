@@ -28,6 +28,20 @@ import { registerMap } from '../world/maps.js';
 export const OVERWORLD_W = 12;
 export const OVERWORLD_H = 10;
 
+// Thalassia's coast people, extracted in src/data/sprites-townsfolk.js.
+//
+// A townsperson gets a DIRECTIONAL set rather than the one front frame every
+// other NPC in the game has, so they turn to face you when you talk and face
+// the way they wander. `_s` faces RIGHT and `NPC.spriteName` mirrors it for
+// left, so there is no left frame and there must never be one.
+const TIDEFOLK = {
+  down: ['npc_tidefolk_d'], up: ['npc_tidefolk_u'], side: ['npc_tidefolk_s'],
+};
+// The lass has a front and a back and no profile, so she is placed where she is
+// spoken to from the front or behind — against a wall or a counter, never in
+// the middle of a road.
+const LASS = { down: ['npc_lass_d'], up: ['npc_lass_u'] };
+
 const rooms = {
   // ---- abyss -------------------------------------------------------------
   '0,0,0': {
@@ -1637,6 +1651,20 @@ const rooms = {
   //
   // The Maku Tree keeps its hollow at 3,1 rather than moving into a house: it
   // is a tree, and a doorway in the wood at the top of the square says so.
+  // THE VILLAGE ANSWERS THE CONCH. The square used to be a dry screen in a game
+  // about water: identical at LOW, MID and HIGH, on the one screen the player
+  // sees most. It now has a drain cut through it — `0` tideGrass down the middle
+  // of the square, widening into `3` shoal at the mouth where it lets out onto
+  // the strand — so at HIGH the whole south side of the square is ankle deep
+  // and running, and at LOW it is a grass gutter and a patch of dry sand.
+  //
+  // NEITHER TILE EVER GOES DEEP: tideGrass is grass, grass, waterS and shoal is
+  // sandRipple, sandWet, waterS. That is the entire reason those two were
+  // chosen out of the eleven tide tiles. The square's row 5 is the ONE row that
+  // crosses this screen (see the traps list in CLAUDE.md — two 3x3 buildings
+  // leave exactly one), so a tide tile there that went deep at HIGH would sever
+  // the village from its own doors at high water, which is precisely the
+  // failure `check-towns.mjs` exists to catch and floods on foot to see.
   '0,4,7': {
     name: 'Tidewatch Village',
     legend: 'town', music: 'overworld',
@@ -1646,9 +1674,9 @@ const rooms = {
       'gjjjgHHHgg',
       'gjjjgHHHgg',
       'gjjjgHHHgg',
-      'gggggggggg',
-      'TzgggggeiT',
-      'TTTggggTTT',
+      'gggg00gggg',
+      'Tzg0000eiT',
+      'TTT333gTTT',
     ],
     warps: [
       // Each door is the middle cell of its building's front row, which is the
@@ -1662,9 +1690,15 @@ const rooms = {
       // The scrimshander works outdoors on the west side of the square, off
       // the path between the doors — an NPC is an entity, not a tile, so she
       // narrows the square without touching its connectivity.
-      ['scrimshander', 2, 6, {}],
-      ['npc', 7, 1, { sprite: 'npc_villager', pal: 'npc', wander: true, dialogue: 'villager1' }],
-      ['npc', 6, 6, { sprite: 'npc_villager2', wander: true, dialogue: 'villager2' }],
+      // She has her own face at last. The scrimshander shared `npc_elder` with
+      // the digger standing eight tiles away — one face on two characters, on
+      // the one screen where both of them are.
+      ['scrimshander', 2, 6, { sprite: 'npc_carver_d' }],
+      ['npc', 7, 1, { sprite: 'npc_tidefolk_d', frames: TIDEFOLK, wander: true, dialogue: 'villager1' }],
+      ['npc', 8, 5, { sprite: 'npc_tidefolk2_d', wander: true, dialogue: 'villager2' }],
+      // Standing at the head of the drain, which is the thing on this screen
+      // that answers the conch: she is the label on it.
+      ['npc', 3, 5, { sprite: 'npc_tidefolk_d', frames: TIDEFOLK, dialogue: 'gutterKeeper' }],
       ['npc', 6, 1, { sprite: 'npc_child', wander: true, dialogue: 'villageChild' }],
       ['giver', 8, 2, {
         sprite: 'npc_elder', dialogue: 'digger', waiting: 'diggerWait',
@@ -1880,9 +1914,9 @@ const rooms = {
     name: 'Village Shore',
     legend: 'town', music: 'overworld',
     map: [
-      'TTTggggTTT',
-      'Tgg...zigT',
-      'gg......gg',
+      'TTT333gTTT',
+      'Tgg333zigT',
+      'gg..33..gg',
       'gghhh222gg',
       'gghhh222gg',
       'gghhhww.gg',
@@ -1894,6 +1928,8 @@ const rooms = {
     ],
     entities: [
       ['npc', 5, 2, { sprite: 'npc_child', dialogue: 'coastChild' }],
+      // At the well, which is the other thing on this screen the tide decides.
+      ['npc', 4, 6, { sprite: 'npc_lass_d', frames: LASS, dialogue: 'shoreWell' }],
       ['crab', 6, 4],
     ],
   },
@@ -1916,6 +1952,9 @@ const rooms = {
     ],
     entities: [
       ['octorok', 4, 4], ['pickup', 7, 3, { kind: 'rupee20' }],
+      // The yard had nobody in it, which made it a still life rather than a
+      // place of work. He stands at the chopping stump.
+      ['npc', 5, 3, { sprite: 'npc_tidefolk_d', frames: TIDEFOLK, dialogue: 'strandCutter' }],
     ],
   },
   '0,6,8': {
@@ -1992,15 +2031,15 @@ const rooms = {
       'gjjjgkkkgg',
       'gjjjgkkkgg',
       'gg......ng',
-      'TizggggenT',
-      'TTTggggTTT',
+      'Tiz3333enT',
+      'TTT333gTTT',
     ],
     warps: [
       { x: 2, y: 4, to: { map: 'houseSandpiper', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
     ],
     entities: [
       ['sign', 8, 1, { text: 'SANDPIPER ROW\nTwo houses, one boat, no harbour.' }],
-      ['npc', 5, 5, { sprite: 'npc_fisher', wander: true, dialogue: 'fisher1' }],
+      ['npc', 5, 5, { sprite: 'npc_tidefolk_d', frames: TIDEFOLK, wander: true, dialogue: 'fisher1' }],
       ['crab', 6, 1],
     ],
   },
@@ -2347,17 +2386,17 @@ function installHouses() {
   });
 
   home('houseHearth', 'A Village House', 'village', [
-    ['npc', 3, 2, { sprite: 'npc_villager2', dialogue: 'hearthWife' }],
+    ['npc', 3, 2, { sprite: 'npc_lass_d', frames: LASS, dialogue: 'hearthWife' }],
     ['npc', 7, 4, { sprite: 'npc_child', wander: true, dialogue: 'hearthChild' }],
     ['pickup', 2, 4, { kind: 'rupee5' }],
   ], { rx: 4, ry: 7, px: 32, py: 88 });
 
   home('houseNets', "The Net-mender's", 'village', [
-    ['npc', 4, 2, { sprite: 'npc_fisher', dialogue: 'netMender' }],
+    ['npc', 4, 2, { sprite: 'npc_tidefolk_d', frames: TIDEFOLK, dialogue: 'netMender' }],
   ], { rx: 4, ry: 8, px: 48, py: 104 });
 
   home('houseSandpiper', 'Sandpiper Cottage', 'village', [
-    ['npc', 5, 2, { sprite: 'npc_villager', dialogue: 'sandpiper' }],
+    ['npc', 5, 2, { sprite: 'npc_tidefolk2_d', dialogue: 'sandpiper' }],
     ['pickup', 7, 4, { kind: 'rupee5' }],
   ], { rx: 9, ry: 8, px: 32, py: 88 });
 }

@@ -15147,6 +15147,20 @@ const { registerMap } = __require("world/maps.js");
 const OVERWORLD_W = 12;
 const OVERWORLD_H = 10;
 
+// Thalassia's coast people, extracted in src/data/sprites-townsfolk.js.
+//
+// A townsperson gets a DIRECTIONAL set rather than the one front frame every
+// other NPC in the game has, so they turn to face you when you talk and face
+// the way they wander. `_s` faces RIGHT and `NPC.spriteName` mirrors it for
+// left, so there is no left frame and there must never be one.
+const TIDEFOLK = {
+  down: ['npc_tidefolk_d'], up: ['npc_tidefolk_u'], side: ['npc_tidefolk_s'],
+};
+// The lass has a front and a back and no profile, so she is placed where she is
+// spoken to from the front or behind — against a wall or a counter, never in
+// the middle of a road.
+const LASS = { down: ['npc_lass_d'], up: ['npc_lass_u'] };
+
 const rooms = {
   // ---- abyss -------------------------------------------------------------
   '0,0,0': {
@@ -16756,6 +16770,20 @@ const rooms = {
   //
   // The Maku Tree keeps its hollow at 3,1 rather than moving into a house: it
   // is a tree, and a doorway in the wood at the top of the square says so.
+  // THE VILLAGE ANSWERS THE CONCH. The square used to be a dry screen in a game
+  // about water: identical at LOW, MID and HIGH, on the one screen the player
+  // sees most. It now has a drain cut through it — `0` tideGrass down the middle
+  // of the square, widening into `3` shoal at the mouth where it lets out onto
+  // the strand — so at HIGH the whole south side of the square is ankle deep
+  // and running, and at LOW it is a grass gutter and a patch of dry sand.
+  //
+  // NEITHER TILE EVER GOES DEEP: tideGrass is grass, grass, waterS and shoal is
+  // sandRipple, sandWet, waterS. That is the entire reason those two were
+  // chosen out of the eleven tide tiles. The square's row 5 is the ONE row that
+  // crosses this screen (see the traps list in CLAUDE.md — two 3x3 buildings
+  // leave exactly one), so a tide tile there that went deep at HIGH would sever
+  // the village from its own doors at high water, which is precisely the
+  // failure `check-towns.mjs` exists to catch and floods on foot to see.
   '0,4,7': {
     name: 'Tidewatch Village',
     legend: 'town', music: 'overworld',
@@ -16765,9 +16793,9 @@ const rooms = {
       'gjjjgHHHgg',
       'gjjjgHHHgg',
       'gjjjgHHHgg',
-      'gggggggggg',
-      'TzgggggeiT',
-      'TTTggggTTT',
+      'gggg00gggg',
+      'Tzg0000eiT',
+      'TTT333gTTT',
     ],
     warps: [
       // Each door is the middle cell of its building's front row, which is the
@@ -16781,9 +16809,15 @@ const rooms = {
       // The scrimshander works outdoors on the west side of the square, off
       // the path between the doors — an NPC is an entity, not a tile, so she
       // narrows the square without touching its connectivity.
-      ['scrimshander', 2, 6, {}],
-      ['npc', 7, 1, { sprite: 'npc_villager', pal: 'npc', wander: true, dialogue: 'villager1' }],
-      ['npc', 6, 6, { sprite: 'npc_villager2', wander: true, dialogue: 'villager2' }],
+      // She has her own face at last. The scrimshander shared `npc_elder` with
+      // the digger standing eight tiles away — one face on two characters, on
+      // the one screen where both of them are.
+      ['scrimshander', 2, 6, { sprite: 'npc_carver_d' }],
+      ['npc', 7, 1, { sprite: 'npc_tidefolk_d', frames: TIDEFOLK, wander: true, dialogue: 'villager1' }],
+      ['npc', 8, 5, { sprite: 'npc_tidefolk2_d', wander: true, dialogue: 'villager2' }],
+      // Standing at the head of the drain, which is the thing on this screen
+      // that answers the conch: she is the label on it.
+      ['npc', 3, 5, { sprite: 'npc_tidefolk_d', frames: TIDEFOLK, dialogue: 'gutterKeeper' }],
       ['npc', 6, 1, { sprite: 'npc_child', wander: true, dialogue: 'villageChild' }],
       ['giver', 8, 2, {
         sprite: 'npc_elder', dialogue: 'digger', waiting: 'diggerWait',
@@ -16999,9 +17033,9 @@ const rooms = {
     name: 'Village Shore',
     legend: 'town', music: 'overworld',
     map: [
-      'TTTggggTTT',
-      'Tgg...zigT',
-      'gg......gg',
+      'TTT333gTTT',
+      'Tgg333zigT',
+      'gg..33..gg',
       'gghhh222gg',
       'gghhh222gg',
       'gghhhww.gg',
@@ -17013,6 +17047,8 @@ const rooms = {
     ],
     entities: [
       ['npc', 5, 2, { sprite: 'npc_child', dialogue: 'coastChild' }],
+      // At the well, which is the other thing on this screen the tide decides.
+      ['npc', 4, 6, { sprite: 'npc_lass_d', frames: LASS, dialogue: 'shoreWell' }],
       ['crab', 6, 4],
     ],
   },
@@ -17035,6 +17071,9 @@ const rooms = {
     ],
     entities: [
       ['octorok', 4, 4], ['pickup', 7, 3, { kind: 'rupee20' }],
+      // The yard had nobody in it, which made it a still life rather than a
+      // place of work. He stands at the chopping stump.
+      ['npc', 5, 3, { sprite: 'npc_tidefolk_d', frames: TIDEFOLK, dialogue: 'strandCutter' }],
     ],
   },
   '0,6,8': {
@@ -17111,15 +17150,15 @@ const rooms = {
       'gjjjgkkkgg',
       'gjjjgkkkgg',
       'gg......ng',
-      'TizggggenT',
-      'TTTggggTTT',
+      'Tiz3333enT',
+      'TTT333gTTT',
     ],
     warps: [
       { x: 2, y: 4, to: { map: 'houseSandpiper', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
     ],
     entities: [
       ['sign', 8, 1, { text: 'SANDPIPER ROW\nTwo houses, one boat, no harbour.' }],
-      ['npc', 5, 5, { sprite: 'npc_fisher', wander: true, dialogue: 'fisher1' }],
+      ['npc', 5, 5, { sprite: 'npc_tidefolk_d', frames: TIDEFOLK, wander: true, dialogue: 'fisher1' }],
       ['crab', 6, 1],
     ],
   },
@@ -17466,17 +17505,17 @@ function installHouses() {
   });
 
   home('houseHearth', 'A Village House', 'village', [
-    ['npc', 3, 2, { sprite: 'npc_villager2', dialogue: 'hearthWife' }],
+    ['npc', 3, 2, { sprite: 'npc_lass_d', frames: LASS, dialogue: 'hearthWife' }],
     ['npc', 7, 4, { sprite: 'npc_child', wander: true, dialogue: 'hearthChild' }],
     ['pickup', 2, 4, { kind: 'rupee5' }],
   ], { rx: 4, ry: 7, px: 32, py: 88 });
 
   home('houseNets', "The Net-mender's", 'village', [
-    ['npc', 4, 2, { sprite: 'npc_fisher', dialogue: 'netMender' }],
+    ['npc', 4, 2, { sprite: 'npc_tidefolk_d', frames: TIDEFOLK, dialogue: 'netMender' }],
   ], { rx: 4, ry: 8, px: 48, py: 104 });
 
   home('houseSandpiper', 'Sandpiper Cottage', 'village', [
-    ['npc', 5, 2, { sprite: 'npc_villager', dialogue: 'sandpiper' }],
+    ['npc', 5, 2, { sprite: 'npc_tidefolk2_d', dialogue: 'sandpiper' }],
     ['pickup', 7, 4, { kind: 'rupee5' }],
   ], { rx: 9, ry: 8, px: 32, py: 88 });
 }
@@ -24141,6 +24180,9 @@ const DIALOGUE = {
   hearthChild: 'When it is low I can walk to the reef.\nWhen it is high I can swim over the wall.\nI like high better. Mum likes low.',
   netMender: 'Nets rot from the top down, boy — from\nthe part that dries. It is the drying that\nkills them, not the sea.',
   sandpiper: 'Two houses on this row and one of them\nis shut. He went out at low water and\ncame back at nobody knows when.',
+  shoreWell: 'The well turns brackish when the tide is\nup. We drink at low and complain at high.\nThat is the whole of village politics.',
+  strandCutter: 'The wood comes in on the high water and\nI cut it on the low. Any fool can chop.\nThe trick is standing here when it lands.',
+  gutterKeeper: 'That channel is not a fault, it is a drain.\nGrandmother cut it so the square empties\nitself. At high water we let it fill.',
 
   // The village digger: the Ferryman's Coin after three Essences.
   diggerWait: 'I dig where the sea tells me to dig.\nLately it will not shut up, and it will\nnot say anything useful either.',
@@ -27713,6 +27755,169 @@ function installNpcSprites() {
 __exports["NPC_ART"] = NPC_ART;
 __exports["NPC_ART_PALETTES"] = NPC_ART_PALETTES;
 __exports["installNpcSprites"] = installNpcSprites;
+});
+
+/* ===== src/data/sprites-townsfolk.js ===== */
+__define("data/sprites-townsfolk.js", function (__exports, __require) {
+// Townsfolk sprites extracted from the Oracle of Seasons non-human
+// races sheet.
+//
+// Generated by tools/rip-townsfolk.py — edit that, not this file.
+// Source sprites ripped by Mister Mike via spriters-resource.com;
+// the original artwork is Nintendo's. This is fan-work art only.
+//
+// These are the people of Thalassia's coast. Who they are, what they
+// keep and what they say is original to this game; only how they look
+// comes off the sheet.
+//
+// Each sprite carries its own colours, quantised light to dark, so the
+// palettes below are registered at load time. The characters on this
+// sheet stand on white boxes rather than on the sheet background, so
+// each pick names WHITE as its background — see the tool.
+
+const { sprites } = __require("gfx/art.js");
+const { registerPalettes } = __require("gfx/palettes.js");
+
+const TOWNSFOLK_ART = {
+  npc_carver_d: { pal: 'npc_carver_d', art: `
+    .......22.......
+    ......2002......
+    .....211112.....
+    ....21111112....
+    ...2111111112...
+    ...2121111212...
+    ..211211112112..
+    ..210012110012..
+    .2212111111212..
+    .21212222221212.
+    .20221111112212.
+    ..2212222222112.
+    ...21111200012..
+    ...2222112002...
+    ..200012222222..
+    ...222222222....` },
+  npc_lass_d: { pal: 'npc_lass_d', art: `
+    ................
+    ....22....22....
+    ....212..212....
+    ....21122112....
+    .....222222.....
+    ....21100112....
+    ...2122222212...
+    ..212000000212..
+    ..220220022022..
+    ..202220022202..
+    ..202210012202..
+    ..200001100002..
+    ...2200000022...
+    ....20200202....
+    .....222222.....
+    ................` },
+  npc_lass_u: { pal: 'npc_lass_u', art: `
+    ................
+    ....22222222....
+    ...2011001102...
+    ..201220022102..
+    ..202220022202..
+    ..202210012202..
+    ..220001100022..
+    ..200220022002..
+    ..211221122112..
+    ...2222222222...
+    ....21222212....
+    ...2122222212...
+    ...2021221202...
+    ...2200000022...
+    ....22222222....
+    ................` },
+  npc_tidefolk2_d: { pal: 'npc_tidefolk2_d', art: `
+    .....222222.....
+    ....21111112....
+    ...2222222212...
+    ...20000000212..
+    ..202200221022..
+    ..202200222002..
+    ..202100122002..
+    ..210020000012..
+    ...20000001222..
+    ..2202002012112.
+    .200222222211222
+    .200212221112002
+    ..22211111002002
+    ...222000012222.
+    ..20002221112...
+    ..22222222222...` },
+  npc_tidefolk_d: { pal: 'npc_tidefolk_d', art: `
+    .....222222.....
+    ....21111112....
+    ...2222222212...
+    ...20000000212..
+    ..202200221022..
+    ..202200222002..
+    ..202100122002..
+    ..210020000012..
+    ...20000001222..
+    ..2202002012112.
+    .200222222211222
+    .200212221112002
+    ..22211111002002
+    ...222000012222.
+    ..20002221112...
+    ..22222222222...` },
+  npc_tidefolk_s: { pal: 'npc_tidefolk_s', art: `
+    ....222222......
+    ...211111122....
+    ..22222222112...
+    ..210000002212..
+    ..222002210022..
+    ..222002220002..
+    ..221001220002..
+    ..200200000012..
+    ..21000000222...
+    ...20202012112..
+    ..222222221222..
+    .2021221112002..
+    .2020110002002..
+    ..22222222222...
+    ....21000012....
+    ...2222222222...` },
+  npc_tidefolk_u: { pal: 'npc_tidefolk_u', art: `
+    .....222222.....
+    ....21100112....
+    ...2111111112...
+    ...21111111112..
+    ..211121112112..
+    ..211112221112..
+    ..221111111112..
+    ...2221222212...
+    ...20022222222..
+    ..2222000022122.
+    .202112222211122
+    .202000011111202
+    ..22111111000202
+    ...222000012222.
+    ..20002221112...
+    ..22222222222...` },
+};
+
+// One palette per sprite, taken from the source artwork.
+const TOWNSFOLK_ART_PALETTES = {
+  npc_carver_d: ['#ffd68c', '#10ad42', '#000000', '#000000'],
+  npc_lass_d: ['#ffd68c', '#ff0829', '#000000', '#000000'],
+  npc_lass_u: ['#ffd68c', '#ff0829', '#000000', '#000000'],
+  npc_tidefolk2_d: ['#ffd68c', '#ff0829', '#000000', '#000000'],
+  npc_tidefolk_d: ['#ffd68c', '#1984ff', '#000000', '#000000'],
+  npc_tidefolk_s: ['#ffd68c', '#1984ff', '#000000', '#000000'],
+  npc_tidefolk_u: ['#ffd68c', '#1984ff', '#000000', '#000000'],
+};
+
+function installTownsfolkSprites() {
+  registerPalettes(TOWNSFOLK_ART_PALETTES);
+  sprites.add(TOWNSFOLK_ART, 'npc');
+}
+__exports["TOWNSFOLK_ART"] = TOWNSFOLK_ART;
+__exports["TOWNSFOLK_ART_PALETTES"] = TOWNSFOLK_ART_PALETTES;
+__exports["installTownsfolkSprites"] = installTownsfolkSprites;
 });
 
 /* ===== src/data/sprites-world.js ===== */
@@ -31744,6 +31949,7 @@ const { installAudio } = __require("data/audio.js");
 const { installLinkSprites, LINK_ART, FX_ART, FX_BIG_ART, UI_ART } = __require("data/sprites-link.js");
 const { installPlayerSprites, PLAYER_ART } = __require("data/sprites-player.js");
 const { installNpcSprites, NPC_ART: NPC_RIPPED_ART } = __require("data/sprites-npcs.js");
+const { installTownsfolkSprites, TOWNSFOLK_ART } = __require("data/sprites-townsfolk.js");
 const { installWorldSprites, PICKUP_ART, OBJECT_ART, SHOT_ART, NPC_ART } = __require("data/sprites-world.js");
 const { installEnemySprites, ENEMY_ART } = __require("data/sprites-enemies.js");
 const { installBossSprites, BOSS_ART, MINIBOSS_ART } = __require("data/sprites-bosses.js");
@@ -31760,6 +31966,7 @@ const SPRITE_PACKS = {
   link: LINK_ART,
   player: PLAYER_ART,
   npcsRipped: NPC_RIPPED_ART,
+  townsfolk: TOWNSFOLK_ART,
   fx: FX_ART,
   fxBig: FX_BIG_ART,
   ui: UI_ART,
@@ -31788,6 +31995,9 @@ function installData() {
   installWorldSprites();
   // After sprites-world.js, so extracted NPC art overrides the placeholders.
   installNpcSprites();
+  // After sprites-npcs.js: the coast people come off a different sheet and
+  // share no names with it, so the order is only for readability.
+  installTownsfolkSprites();
   installEnemySprites();
   installBossSprites();
   // After sprites-link.js, so the extracted HUD and gear icons override the

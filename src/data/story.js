@@ -22,6 +22,9 @@ export const DIALOGUE = {
   hearthChild: 'When it is low I can walk to the reef.\nWhen it is high I can swim over the wall.\nI like high better. Mum likes low.',
   netMender: 'Nets rot from the top down, boy — from\nthe part that dries. It is the drying that\nkills them, not the sea.',
   sandpiper: 'Two houses on this row and one of them\nis shut. He went out at low water and\ncame back at nobody knows when.',
+  shoreWell: 'The well turns brackish when the tide is\nup. We drink at low and complain at high.\nThat is the whole of village politics.',
+  strandCutter: 'The wood comes in on the high water and\nI cut it on the low. Any fool can chop.\nThe trick is standing here when it lands.',
+  gutterKeeper: 'That channel is not a fault, it is a drain.\nGrandmother cut it so the square empties\nitself. At high water we let it fill.',
 
   // The village digger: the Ferryman's Coin after three Essences.
   diggerWait: 'I dig where the sea tells me to dig.\nLately it will not shut up, and it will\nnot say anything useful either.',

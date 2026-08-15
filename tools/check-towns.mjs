@@ -27,6 +27,16 @@
 //      exist, and that room has a warp back to this screen, landing on a tile
 //      you can stand on that is NOT the doorway itself (which would bounce the
 //      player straight back through it);
+//   6. THE SCREEN ANSWERS THE CONCH: at least one of its cells draws a
+//      different tile at HIGH than at LOW, and every cell that does is still
+//      walkable at all three levels or is off every route (which clause 2
+//      settles, since it floods on foot at each level in turn). Tidewatch
+//      shipped as a dry screen — identical at LOW, MID and HIGH, on the screen
+//      the player sees more than any other, in a game whose whole subject is
+//      the water. Nothing caught it because nothing was looking: a town that
+//      ignores the tide validates, walks, renders and reads as a bug only to a
+//      person. This is that person, written down;
+//
 //   5. nothing is standing inside a wall: every entity in the screen is on a
 //      tile it can occupy at some tide level. Rebuilding a screen moves the
 //      ground out from under the NPCs that were on it, and an NPC inside a
@@ -189,6 +199,23 @@ for (const town of TOWNS) {
       stranded.length === 0,
       stranded.map(t => t.join(',')).join(' ') + ` (flooded from ${ways[0]})`);
   }
+
+  // 6. The screen answers the conch.
+  //
+  // Tile NAMES, not pixels: `resolveTile` hands back the concrete tile a cell
+  // becomes at a level, so "this cell is grass at LOW and shallow water at
+  // HIGH" is a string comparison and needs no renderer. Counting the cells
+  // rather than stopping at the first one makes the failure legible — a town
+  // with one changing cell in a corner is technically green and not what this
+  // is for, so the count is printed either way.
+  const moved = [];
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const lo = room.tile(x, y, 0).name, hi = room.tile(x, y, 2).name;
+    if (lo !== hi) moved.push(`${x},${y}`);
+  }
+  check(`${town.name}: answers the conch — the screen is not the same at LOW and HIGH`,
+    moved.length > 0, 'not one cell on this screen changes with the tide');
+  if (moved.length) console.log(`    ${town.name}: ${moved.length} cell(s) change with the tide`);
 
   // 5. Nobody is standing in a wall.
   const buried = [];

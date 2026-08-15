@@ -77,6 +77,14 @@ export const REQUIRED_SPRITES = {
     'npc_nereth',
   ],
 
+  // ---- pack: sprites-townsfolk.js ---------------------------------------
+  // Thalassia's coast people. `_s` faces right and the engine mirrors it, so
+  // there is no left frame here and there must never be one.
+  townsfolk: [
+    'npc_tidefolk_d', 'npc_tidefolk_u', 'npc_tidefolk_s',
+    'npc_tidefolk2_d', 'npc_lass_d', 'npc_lass_u', 'npc_carver_d',
+  ],
+
   // ---- pack: sprites-enemies.js ----------------------------------------
   enemies: [
     ...seq('octorok_d', 2), ...seq('octorok_u', 2), ...seq('octorok_s', 2),
