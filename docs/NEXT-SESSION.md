@@ -229,11 +229,25 @@ This is the next session. PT steps 1-4 are done and written up above; step 5 is
 all that is left of PT, and P9 is what PT was blocking. The general-purpose
 block further down this file is still accurate for anything else.
 
+**Step 5 is started, and the expensive half of the cliff job is already paid
+for.** `caveMouth` is extracted (the Subrosia tileset at 176,1632 — the
+hand-drawn one was a frame with a hole in it, which is why Tidewatch's first
+layout read as holes in the grass). The CLIFF SURVEY is done and written up in
+`docs/ART-BACKLOG.md`: the source is `oracle-ages-overworld.png` at phase
+(2, 8), every piece of a complete family has its cell coordinates listed, and
+the one thing left is a DESIGN decision the survey cannot make — the Ages cliff
+is a plateau edge seen from above and this game's cliff is a wall seen from the
+front. The backlog recommends autotiling the tiles the game already has, because
+it changes no flags and re-authors no screens. **Read that entry before opening
+a sheet.** `palm` is surveyed too and is 32x32 like every Oracle tree, so it is
+a block-and-re-author job rather than a swap.
+
 ```
-Finish PT. Steps 1-4 are done — the block machinery, the town kit, four
-settlements and the four peoples who live in them. Step 5 is the terrain
-backlog, it is the biggest remaining art job in the project, and the `cliff`
-family is the whole of the difficulty.
+Finish PT step 5, the terrain backlog. The `cliff` family is the whole of the
+difficulty and THE SURVEY FOR IT IS ALREADY DONE — docs/ART-BACKLOG.md has the
+sheet, the phase, the cell coordinates of a complete family, and the design
+decision that is all that is left. Read that entry first; do not re-survey a
+sheet somebody already read.
 
 `main` is trunk. Branch from it. One prompt = one session = one branch.
 Run `git ls-remote --heads origin` before you start and look for a branch that
