@@ -3,6 +3,15 @@
 **This is the one document in the repo that cannot be executed by a tool, and
 it exists because that is exactly the gap.**
 
+**Except where it can be.** `tools/play-gates.mjs` is the first slice of Pass A
+turned into a harness: it drives all five region gates the way a player meets
+them and then does the awkward things to each — wrong item, right item, walk
+away and come back, save and reload with every room rebuilt. The list in "the
+ten things only a person triggers" below is not unautomatable, it is merely
+UNCHECKED, and each item on it that gets a harness is one a person no longer
+has to spend a session on. Automate down that list as you go; what is left at
+the bottom is what a person is really for.
+
 Nineteen checkers prove this game is completable, that its dungeons are not
 stranded, that every item does the verb `docs/ITEMS.md` claims for it, that
 movement is frame-identical to a recorded baseline, and that autotiling changed
@@ -197,6 +206,13 @@ deliberately in every dungeon you test.
 2. **Save, quit, reload, and check the room is where you left it.** Persistent
    transforms (`persist: true`) — a bombed wall, a cut snarl — should survive.
    A cut bush should not.
+
+   **A walk-back is NOT this test.** `getRoom` memoises Room instances for the
+   life of the process, so leaving a screen and returning hands you the same
+   object with the same override grid, and a change survives that whether or
+   not it was ever written down. Only quitting to the title and loading proves
+   anything. `tools/play-gates.mjs` automates exactly this for the five region
+   gates and is the worked example of the distinction.
 3. **Die on purpose in the middle of the mechanic.** Where do you respawn, what
    state did the room keep, and can you still finish it?
 4. **Do it in the wrong order.** Take the wrong branch of a D2 fork on purpose.

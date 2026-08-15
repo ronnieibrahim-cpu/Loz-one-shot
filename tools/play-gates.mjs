@@ -219,7 +219,14 @@ for (const g of GATES) {
   const opened = await nameAt(g.gx, g.gy);
   check('the right item opens it', opened !== g.tile, opened);
 
-  // 3. still open after leaving and coming back. THE SOFT-LOCK CHECK.
+  // 3. still open after leaving and coming back.
+  //
+  // WEAKER THAN IT LOOKS, and this is worth knowing before trusting it: rooms
+  // are MEMOISED by `getRoom` for the life of the process, so walking out and
+  // back in hands you the same Room object with the same override grid. This
+  // assertion passes with `persist: true` deleted from the transform — it was
+  // run that way to check. It proves the walk-back path does not CLEAR the
+  // change; only the reload below proves the change was ever written down.
   await leaveAndReturn({ ...g, awayX: g.away[0], awayY: g.away[1] });
   const afterWalk = await nameAt(g.gx, g.gy);
   check('still open after leaving the screen and walking back', afterWalk === opened, afterWalk);

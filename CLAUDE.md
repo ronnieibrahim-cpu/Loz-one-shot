@@ -170,6 +170,7 @@ they are also how a future session finds which sheet a tile came from.
 | `node tools/check-overworld.mjs` | Region gates seal and open correctly |
 | `node tools/check-gates.mjs` | Gates hold in-engine with a live player |
 | `node tools/check-progression.mjs` | The game can be finished from a new game with no items: no dungeon is locked behind an item found inside it, the order never inverts, and the heart economy lands where the plan says |
+| `node tools/play-gates.mjs` | Every region gate survives being played: shut when met, refuses the wrong item, opens for the right one, and is **still open after a save and a reload with every room rebuilt** |
 | `node tools/solve-switches.mjs` | Every switch puzzle has a solution |
 | `node tools/check-anchor.mjs` | A room that claims to need the Tidewright's Anchor cannot be crossed with the conch alone, and can be with one anchor placement |
 | `node tools/check-cleats.mjs` | Every room that claims to need the Cleats' floor mode cannot be reached on foot, cannot be reached on the surface against the current, can be reached on the seafloor, and the crossing fits in one breath |

@@ -224,6 +224,18 @@ is in the page, and nothing steps until you say so.
 
 ## Hard-won lessons — do not rediscover these
 
+**"Leave the room and come back" does not test persistence in this engine.**
+`getRoom` memoises Room instances for the life of the process, so walking out
+of a screen and back in hands you THE SAME OBJECT with the same override grid.
+A bombed wall, a turned sluice or an opened door therefore survives a walk-back
+whether or not its transform carries `persist: true` — the change is still
+sitting in memory. `tools/play-gates.mjs` asserts both and says so in a comment,
+because it was run with `persist: true` deleted from the Kell sluice to find
+out: the walk-back assertion passed and only the save-and-reload one failed.
+The reload is the real test, and it only became one after it was made to go
+through `saveSlot`/`loadSlot` AND clear `map._rooms` first. Any future
+"does this persist?" check has to do both or it is measuring the cache.
+
 **P9's re-gate, and the biggest bug this project has shipped.**
 
 1. **THE WORLD COULD NOT BE FINISHED, AND NINETEEN CHECKERS WERE GREEN.** Two of

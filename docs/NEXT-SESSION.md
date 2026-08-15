@@ -127,10 +127,40 @@ enemy" was a rule about the whole roster that nothing could read. It exports
   five gates are proved by three tools between them and no person has been
   stopped by one.
 
+### The first play-test slice, and the finding it produced
+
+**`tools/play-gates.mjs` is new, 22 assertions, and it is Pass A of
+`docs/PLAYTEST.md` turned into a harness.** It drives all five region gates the
+way a player meets them and then does the awkward things: the wrong item leaves
+it shut, the right one opens it, it is still open after walking away and coming
+back, and it is still open after a SAVE AND A RELOAD with every memoised Room
+dropped. For the Cleats' channel — a traversal gate, where nothing about the
+tile changes — it walks into the water for 90 frames and reports where the
+player ended up, without the item and with it.
+
+**Why the gates were worth the first harness:** a dungeon door that forgets it
+was opened costs a walk back; a REGION gate that forgets is a soft lock, with
+the player on the far side of a wall whose key is behind it.
+
+**The finding, and it changes how any "does this persist?" test has to be
+written.** `getRoom` memoises Room instances for the life of the process, so
+walking out of a screen and back in hands you THE SAME OBJECT with the same
+override grid. Run with `persist: true` deleted from the Kell sluice — which is
+how this was checked, because a checker nobody has seen fail is a checker
+nobody has — **the walk-back assertion still passed** and only the save-and-
+reload one failed. The reload only became a real test after it was made to go
+through `saveSlot`/`loadSlot` rather than a deep copy, AND to clear
+`map._rooms` first. Both halves are needed or the test is measuring the cache.
+Written up in HANDOFF and in PLAYTEST's step 2.
+
+All five gates pass all of it. That is the first thing in this project proved
+by playing rather than by flooding.
+
 ### What P9 has left
 
 1. **PLAY IT.** `docs/PLAYTEST.md` is the protocol. The re-gate changed the
-   shape of the whole game's progression and not one person has walked it.
+   shape of the whole game's progression and not one person has walked it —
+   `play-gates.mjs` covers the gates themselves and nothing between them.
 2. **Gate the Drowned Wood**, or decide out loud that it stays open.
 3. **Three enemies are registered and unplaced**: `thalassor`, `saltwraith`,
    `gustharpy`. Hand-drawn art in the shipped build that nothing draws.
