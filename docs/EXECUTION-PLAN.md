@@ -1299,10 +1299,10 @@ to the hard-won-lessons section of docs/HANDOFF.md.
 | 5 | P4 enemy grid-lock | — |
 | 6 | P5 tide field + Anchor | P6, P8 |
 | 7 | P6 item roster | P8, P9 |
-| 8 | **PT towns, buildings, terrain polish** | P9 | (steps 1-4 done; step 5, the terrain backlog, is all that is left)
+| 8 | PT towns, buildings, terrain polish (done) | P9 | (steps 1–4, and step 5's headline item — the autotiled `cliff` family. The rest of the terrain backlog is ranked in docs/ART-BACKLOG.md and blocks nothing)
 | 9 | P7 scrimshaw (done) | — |
 | 10–15 | P8 dungeons 1–6 (done) | P9 |
-| 16 | P9 overworld + difficulty | — |
+| 16 | **P9 overworld + difficulty** | — | <- next
 
 PT sits before P9 deliberately. A gate is a tile flag dropped into a finished
 screen; a town is the screen itself. Re-gating a finished village is a small

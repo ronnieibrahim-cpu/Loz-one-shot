@@ -10,7 +10,116 @@ maintain and the most expensive thing to not have.
 
 ---
 
-## Where the towns stand (PT), in one line
+## Where PT stands, in one line
+
+**PT IS DONE. Steps 1–4 (the block machinery, the town kit, four settlements,
+the four peoples) landed in earlier sessions; step 5's headline item — the
+`cliff` family — landed in this one.** What is left of step 5 is the rest of the
+terrain backlog, ranked in `docs/ART-BACKLOG.md`, and none of it is blocking
+anything. **P9 is what PT was blocking and it is now clear to start.**
+
+### What the last session did (PT step 5, the cliff family)
+
+**EVERY CLIFF IN THE GAME NOW HAS A TOP, A BASE, A CORNER AND AN OUTLINE, AND
+NOT ONE SCREEN WAS RE-AUTHORED.** A cliff mass was a rectangle of one character
+drawing one repeating course texture — a run of eight was eight copies of one
+16x16 — so it read as wallpaper rather than as a thing standing in the world.
+That was the most obvious place a screen of this game did not read as a screen
+of the source games.
+
+**The piece is derived, not authored.** `Room.autotile` (src/world/room.js) runs
+once at construction and replaces each tile declaring an autotile family with
+the family member matching which of its four orthogonal neighbours share that
+family. `AUTOTILE` / `registerAutotile` are in `src/world/tileset.js`; the mask
+is `1 N, 2 E, 4 S, 8 W` and a bit set means OPEN. **1350 tiles across 66 of 273
+rooms.** Nothing downstream knows: collision, the tide field, the render cache
+and every checker see ordinary tile names.
+
+**Three decisions in that pass, each of which a later session could get wrong:**
+
+- **Off-room counts as SAME.** A cliff run leaving a screen grows no coping
+  against the seam. Treating the void as open draws a bright line down every
+  screen boundary in the game. The cost is that the mass "continues" into a
+  neighbouring screen that may not continue it — see the weaknesses below.
+- **It reads the AUTHORED grid, not the running one**, so the pass is
+  order-independent and a piece never matches against another piece.
+- **A runtime change does not re-cut its neighbours.** A bombed `cliffCracked`
+  leaves a hole in a mass whose edges do not move, which is both what a hole
+  blown in a wall should look like and the only way to avoid invalidating the
+  render cache of the room the player is standing in.
+
+**The pieces are DRAWN, and the survey is why — but the survey was half wrong.**
+`docs/ART-BACKLOG.md` carried eight hand-verified cell coordinates for the Ages
+cliff family. **Six of the eight are contaminated**, and the headline one is
+that the "bright blue-white band, then rock" the survey read as a lit cliff lip
+is A RIVER RUNNING ALONG THE TOP OF A CLIFF. Both sheets were then opened
+properly and neither has this object: the Ages family is a **plateau edge whose
+top is walkable ground** (adopting it is 120 re-authored screens, which is the
+survey's own expensive option wearing a texture swap's clothes), and the
+Subrosia tileset's front-facing wall — a complete family in nine palettes at
+rows 3–6 and its repeats, and much the closer match — **carries a lava vein
+through every piece**. So the cliff fell to CLAUDE.md's second rule, draw it to
+match, with the strongest possible guarantee of register: **the base of all
+sixteen pieces IS `ART.cliff` unmodified**, and a piece adds treatment only on
+the edges the mass exposes. The lit coping spends palette index 0 — the
+lightest colour of every cliff palette, which the old face never used, so it is
+bright in stone, in sand and in abyss with no new colour anywhere.
+
+**`tools/check-autotile.mjs` is new, 10 assertions, and the load-bearing one is
+not about tiledefs.** A cosmetic pass that rewrites solid tiles in 273 rooms is
+CLAUDE.md's most expensive trap with the engine holding the chisel, so the tool
+**builds every room in the game twice — once as the game builds it, once with
+`AUTOTILE` cleared — and asserts every tile has identical flags at all three
+tide levels.** If that holds, autotiling provably cannot have stranded a room,
+opened a gate or changed any answer any other checker gives. It also proves the
+pass never crosses palettes, that no border tile carries an open bit pointing
+out of its room, and that every tile declaring a family is either autotiled or
+on a short named exemption list (`cliffTop`, `cliffCracked`, `cliffCrackedDk`)
+— that last one is what will catch the next session adding a cliff variant and
+forgetting its table. `validate.mjs` carries the static half: every piece has
+exactly its base's flags and family. **Both were confirmed to FAIL against a
+deliberately broken piece before being believed.**
+
+**Seen on screen, and it is good news.** `tools/shots/` is gitignored, so
+reproduce with
+
+    node tools/shoot-rooms.mjs --tide=1 --px=80 \
+      overworld,0,0 overworld,0,2 overworld,4,0 overworld,8,4 \
+      overworld,1,6 overworld,2,7
+
+— six regions in five palettes. `2,7` Bog Causeway and `1,6` Bog Stair are the two
+with interior cliffs and they are the clearest: a spur that used to be a
+rectangle of texture floating in grass is now a wall with a lit brink along its
+top, a shadow where it meets the ground and a hard outline all round — and the
+cracked tile set into it keeps its fault line while the mass closes around it.
+
+### What is weak about the cliffs
+
+- **The seam is a guess.** Off-room counting as SAME is right when the next
+  screen continues the mass and wrong when it does not. Rooms are constructed
+  independently and a neighbour may not exist yet, so reading across is real
+  work. **Nobody has watched a screen transition to see whether it shows.**
+- **The corners are barely exercised.** Mask histogram:
+  `0:266 1:248 2:107 3:90 4:266 5:1 6:87 7:1 8:101 9:91 10:2 12:88 13:1 14:1`.
+  Masks 5, 7, 10, 13 and 14 appear once or twice in the whole game, because
+  almost every cliff in Thalassia is a screen border. The family draws shapes
+  the world does not ask for yet.
+- **`cliffTop` is unreachable content.** It is the one piece an author still
+  places by hand and **no room in the game uses its character**. Either give a
+  screen a reason to look down onto a mass or take the tile out.
+- **`cliffSand` and `cliffRust` are registered and unplaced**, printed as a note
+  by `check-autotile.mjs` rather than failed, on `check-towns.mjs`'s grounds.
+- **Nobody has walked past one.** Every claim above is a checker's or a still
+  frame's. The 51 replays pass untouched, which proves the pass changed no
+  movement, and proves nothing about how it looks in motion.
+- **The Subrosia wall was left on the sheet.** It is a complete front-facing
+  cliff family in nine palettes and it is the closest thing in the repo to what
+  this game's cliff actually is. If a session can get the lava veins off it
+  honestly, these sixteen drawn pieces should be replaced by extracted ones.
+
+---
+
+## Where the towns stand (PT steps 1-4), in one line
 
 **PT steps 1-4 are DONE: the block machinery exists, the Subrosia town kit is
 extracted, four screens are settlements with three working doors, and the people
@@ -223,46 +332,37 @@ because the world moved rather than the movement.
 
 ---
 
-## The prompt to paste — PT step 5, the terrain backlog
+## The prompt to paste — P9, the overworld re-gate
 
-This is the next session. PT steps 1-4 are done and written up above; step 5 is
-all that is left of PT, and P9 is what PT was blocking. The general-purpose
-block further down this file is still accurate for anything else.
-
-**Step 5 is started, and the expensive half of the cliff job is already paid
-for.** `caveMouth` is extracted (the Subrosia tileset at 176,1632 — the
-hand-drawn one was a frame with a hole in it, which is why Tidewatch's first
-layout read as holes in the grass). The CLIFF SURVEY is done and written up in
-`docs/ART-BACKLOG.md`: the source is `oracle-ages-overworld.png` at phase
-(2, 8), every piece of a complete family has its cell coordinates listed, and
-the one thing left is a DESIGN decision the survey cannot make — the Ages cliff
-is a plateau edge seen from above and this game's cliff is a wall seen from the
-front. The backlog recommends autotiling the tiles the game already has, because
-it changes no flags and re-authors no screens. **Read that entry before opening
-a sheet.** `palm` is surveyed too and is 32x32 like every Oracle tree, so it is
-a block-and-re-author job rather than a swap.
+PT is finished. Steps 1–4 (blocks, the town kit, four settlements, the four
+peoples) and step 5's headline item (the `cliff` family, autotiled) have all
+landed; the rest of the terrain backlog is ranked in `docs/ART-BACKLOG.md` and
+blocks nothing. **P9 is what PT was gating and it is clear to start.** Its
+brief is in `docs/EXECUTION-PLAN.md` under "P9 — Overworld re-gating and
+difficulty"; the four things it inherits are written out below this block.
 
 ```
-Finish PT step 5, the terrain backlog. The `cliff` family is the whole of the
-difficulty and THE SURVEY FOR IT IS ALREADY DONE — docs/ART-BACKLOG.md has the
-sheet, the phase, the cell coordinates of a complete family, and the design
-decision that is all that is left. Read that entry first; do not re-survey a
-sheet somebody already read.
+Do P9, the overworld re-gate. Its brief is in docs/EXECUTION-PLAN.md under
+"P9 — Overworld re-gating and difficulty". The overworld is still gated for
+EIGHT dungeons and the game has six, so the routing through the two regions
+that lost their dungeon — the Salt Pans and the Reef Palace, now one-room
+ruins — is the part that needs a design decision rather than an edit.
 
 `main` is trunk. Branch from it. One prompt = one session = one branch.
 Run `git ls-remote --heads origin` before you start and look for a branch that
 has already done this.
 
 READ, IN THIS ORDER:
-  CLAUDE.md               the hard rules, including "if a sheet has it, extract
-                          it" and the traps list. They are hard rules.
-  docs/ART-DIRECTION.md   binding for anything visual. Rule 1 is EXTRACT, NOT
-                          DRAW.
-  docs/ART-BACKLOG.md     the ranked list. "Carried over from NEXT-SESSION" at
-                          the bottom is step 5's actual scope.
-  docs/briefs/AGENTS.md   section J is the extraction workflow.
-  assets/sheets/README.md which sheet has what, and which are still untouched.
+  CLAUDE.md               the hard rules and the traps list. Note the new one:
+                          a terrain tile may not be the tile the author wrote,
+                          because Room.autotile replaces it.
+  docs/EXECUTION-PLAN.md  the P9 brief, and "P8 status" for what each dungeon
+                          hands over and when.
+  docs/ITEMS.md           the roster is binding. check-items.mjs asserts the
+                          registry IS this document.
+  docs/DUNGEON-STATUS.md  the board. All six are done; do not re-author one.
   docs/HANDOFF.md         environment setup FIRST, then the hard-won lessons.
+  docs/ART-BACKLOG.md     if you touch anything visual.
 
 ENVIRONMENT, BEFORE ANYTHING ELSE. Playwright asks for a browser revision the
 pre-installed Chromium does not match, so every headless harness dies with
@@ -270,41 +370,46 @@ pre-installed Chromium does not match, so every headless harness dies with
 under "Environment setup a fresh container needs". `pip install pillow` before
 any rip-*.py tool will run.
 
-WHY THE CLIFF IS NOT A SWAP, and this is the whole job. The Oracles build a
-cliff out of SEVERAL tiles — a face, a top edge, two outside corners, two
-inside corners, and the stair — and this game spends ONE tile on all of it. So
-extracting a cliff face is not enough: every screen that currently draws a
-cliff has to be re-authored to say which PART of a cliff each of its tiles is,
-or the new art will look worse than the impression it replaces. Decide the tile
-vocabulary FIRST, on paper, then extract to it. `node tools/preview.mjs --tiles
---scale=2` shows what the game currently has.
+WHAT P9 ACTUALLY HAS TO DECIDE, in the order it matters:
 
-THE ORDER docs/ART-BACKLOG.md ranks it in:
-  1. the `cliff` family — one extraction covers eight tiles, cliffs are on most
-     screens, and it is a content decision rather than a swap;
-  2. the `ledge` families — four directions, nine palette variants each;
-  3. `palm`, `pot`, `sign`, `dBlock`, `dStairs`, `spikes`, `caveMouth`;
-  4. water is BLOCKED and should not be attempted — every terrain sheet in the
-     repo is an assembled static map, so there is no second animation frame to
-     extract. It needs a sheet that has one.
+  1. FIVE OF THE GATES MUST BE TILE-FLAG-SHAPED so check-overworld.mjs can
+     prove them in BOTH directions — sealed without the item, open with it. A
+     terrain-shaped gate is a last resort and has to be documented as
+     unprovable. The four flag-shaped gates that already exist (HEAVY,
+     SWIMGATE, GRAPPLE, GAP) are the pattern; see the tiledef comments in
+     src/data/tiles-core.js for why width is part of three of them and no flag
+     can say so.
+  2. THE BRINEGLASS LENS MAY NEVER BE A REGION GATE. It is informational. The
+     rooms inside D2 that require it are a different thing and both rules
+     stand — the reasoning is under P8 in EXECUTION-PLAN.
+  3. HEART PIECES STILL SCALE FOR EIGHT DUNGEONS. Six Heart Containers plus
+     pieces should land the cap at 14–16. essenceCount() in src/world/maps.js
+     is the precedent for un-hardcoding a count that was written /8.
+  4. THREE ENEMIES ARE REGISTERED AND UNPLACED — thalassor, saltwraith,
+     gustharpy. Hand-drawn art in the shipped build that nothing draws. Place
+     them or take them out WITH THEIR SPRITES, and if you take them out remove
+     the cell from the ripper's map and re-emit rather than editing the
+     generated file.
 
-CONSTRAINTS, and the first has cost a session before.
-  - A CLIFF IS SOLID AND SOLID TILES SEVER SCREENS. Run node tools/validate.mjs,
-    node tools/check-overworld.mjs and node tools/check-towns.mjs after EVERY
-    screen you re-author, not at the end of a batch.
-  - EXTRACTION LANDS IN A GENERATED FILE. Add the cell to the ripper's
-    coordinate map and re-emit. Removing something means removing its entry and
-    re-emitting, not deleting lines from the output. Run every ripper once
-    before you change anything to confirm each still reproduces byte-identically.
+CONSTRAINTS, and the first two have each cost a session before.
+  - A SOLID TILE CAN STRAND A SCREEN AND STILL VALIDATE CLEAN. Run
+    node tools/check-overworld.mjs, node tools/check-towns.mjs and
+    node tools/check-gates.mjs after EVERY screen you touch, not at the end.
+  - DO NOT ADD AN ENTITY TO A ROOM A REPLAY WALKS THROUGH. `nextId` is one
+    global counter and `every(e, n)` phases enemies off it, so one new entity
+    in the starting room re-phases every enemy in the game and replays that
+    have nothing to do with your change start failing. Re-dress an existing
+    one instead. See HANDOFF, hard-won lessons.
+  - A TILE NAME IN A ROOM GRID IS NOT WHAT ROOM.BASE HOLDS. `Room.autotile`
+    replaces every cliff with a family piece at construction, so anything
+    matching tile names by equality has to match on `family` instead. It is
+    provably cosmetic (tools/check-autotile.mjs) but it will surprise you the
+    first time you read a grid.
   - A TILEDEF FIELD THE REGISTRAR DOES NOT NAME IS DISCARDED. `registerTiles`
     in src/world/tileset.js copies field by field.
-  - DO NOT ADD AN ENTITY TO A ROOM A REPLAY WALKS THROUGH. `nextId` is one
-    global counter and `every(e, n)` phases enemies off it, so one new NPC in
-    the starting room re-phases every enemy in the game. Re-dress an existing
-    one instead. See HANDOFF, hard-won lessons.
   - SCREENSHOT EVERY SCREEN YOU FINISH AND LOOK AT IT.
     `node tools/shoot-rooms.mjs --tide=1 --px=80 overworld,4,7` writes a real
-    in-game frame in the real palette; `tools/preview.mjs` renders one palette
+    in-game frame in the real palette; tools/preview.mjs renders one palette
     and proves silhouette only. Every terrain fault this project has hit
     validated clean and previewed fine.
 
@@ -313,11 +418,12 @@ THE CHECKERS TAKE A WHILE. Run them; do not reason about correctness instead.
 
   node tools/validate.mjs           clean (two expected fx_slash warnings)
   node tools/test.mjs               58/58
-  node tools/replay.mjs             51/51, eleven replays to the pixel
+  node tools/replay.mjs             51/51
   node tools/walk-dungeons.mjs      23/23 over six dungeons
   node tools/check-overworld.mjs    17/17
   node tools/check-gates.mjs        15/15
   node tools/check-towns.mjs        58/58   <- PINCH=1 prints each town's cuts
+  node tools/check-autotile.mjs     10/10   <- builds the world twice
   node tools/check-items.mjs        82/82
   node tools/check-charms.mjs       63/63
   node tools/check-anchor.mjs       14/14
@@ -335,6 +441,11 @@ THE CHECKERS TAKE A WHILE. Run them; do not reason about correctness instead.
                                     hand-edited a generated file.
   npm run build && node tools/check-build.mjs
 
+COMMIT BEFORE YOU SABOTAGE ANYTHING. A checker you have not watched fail is a
+checker you do not have, so do inject a deliberate break and confirm it — but
+on a clean index. `git checkout <file>` restores from HEAD and a session lost
+several hours of work to exactly that this week.
+
 EVERY SESSION ENDS BY RUNNING `npm run build` AND COMMITTING
 dist/oracle-of-tides.html. That file is the playable game. A commit that changes
 src/ and leaves the build stale ships a game that is not the game.
@@ -347,6 +458,22 @@ limits that way and lost the work.
 
 Tell me plainly what is done, what is weak, and what you skipped.
 ```
+
+### The four things P9 inherits, restated
+
+1. **NOBODY HAS PLAYED ANY OF IT.** Six dungeons, six fixtures, every claim a
+   checker's. This is still the largest open item in the project and no tool in
+   the repo can close it.
+2. **Three enemies are registered and unplaced**: `thalassor`, `saltwraith`,
+   `gustharpy`.
+3. **The overworld is gated for eight dungeons.** The fold made the Salt Pans
+   and the Reef Palace one-room ruins, so routing through those two regions
+   wants a second look.
+4. **`docs/ART-BACKLOG.md` has four legibility findings** from D2, D3 and D4,
+   all the same shape: the mechanic is legible when it works and silent when it
+   does not. D5's bole, D6's lintel and now the cliff family are the argument
+   for how to fix them — when the answer wants to be a shade of water, spend a
+   whole tile of art on it.
 
 ---
 

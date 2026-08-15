@@ -120,6 +120,16 @@ they are also how a future session finds which sheet a tile came from.
   records any id; `itemName` returns the raw id and `itemIcon` falls back to
   `i_unknown`. The chest opens, the jingle plays, the save records it, and the
   player gets nothing. `tools/check-items.mjs` is what catches it.
+- **A terrain tile may not be the tile the author wrote.** `Room.autotile` runs
+  once at construction and replaces every tile that declares an autotile family
+  — currently the seven cliffs — with the family member matching its four
+  orthogonal neighbours. So `room.base` holds `cliffDk_6`, not `cliffDk`, and
+  anything matching tile names by equality has to match the family instead. It
+  is provably cosmetic (`tools/check-autotile.mjs` builds the whole world both
+  ways and compares flags at all three seas), but only because every piece
+  copies its base's flags; a piece that declares its own would sever screens
+  while validating clean. Off-room counts as SAME, so a mass leaving a screen
+  grows no edge against the seam.
 - **A tiledef field the registrar does not name is discarded.** `registerTiles`
   copies field by field rather than spreading, so `liftLevel` sat in the data
   and `liftTile` read it and the two never met — for the whole life of the
@@ -159,6 +169,7 @@ they are also how a future session finds which sheet a tile came from.
 | `node tools/check-reefseed.mjs` | Every room that claims to need the Reefseed grows its stakes on open water no seed can reach at LOW, opens on a snarl no blade but a stake's reaches, and cannot be sealed shut by a pillar the player grew in the wrong place |
 | `node tools/check-dredge.mjs` | Every room that claims to need the Dredge Line puts its far side across a pit nothing walks, its mooring in reach of one sea and no other, and its cache in a floor that only gives up what the sea is covering — each closure clause proved twice, once at the line's reach and once at the Coilrope's |
 | `node tools/check-towns.mjs` | Every town screen's ways in and doors all reach each other ON FOOT at all three tide levels, every doorway warps somewhere that warps back, no building is standing on an NPC, and no townsperson is standing on the one tile that severs the screen |
+| `node tools/check-autotile.mjs` | Autotiling changed the look and nothing else: every room built twice, with the autotiler on and off, has identical flags on every tile at all three tide levels |
 | `node tools/check-motion.mjs` | Ground enemies stay on the 8px lattice; fliers and swimmers stay off it |
 | `node tools/check-items.mjs` | Every item does the verb `docs/ITEMS.md` claims for it, and nothing hands out an item that no longer exists |
 | `node tools/replay.mjs` | Movement and combat are frame-identical to a recorded baseline |

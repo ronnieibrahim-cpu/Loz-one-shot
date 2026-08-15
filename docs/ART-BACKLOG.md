@@ -321,7 +321,85 @@ Also still on the races sheet: the Gorons, and several more Zora and Tokay
 poses — including the second walk frames that would let a townsperson stride
 rather than merely turn.
 
-## The cliff family — the survey is done, the decision is not
+## The cliff family — DONE, and the survey below was half wrong
+
+**Landed.** Every cliff in the game is now a sixteen-piece family and the piece
+is derived from the neighbours rather than authored: `Room.autotile` in
+`src/world/room.js`, `AUTOTILE`/`registerAutotile` in `src/world/tileset.js`,
+`cliffPieces()` in `src/data/tiles-core.js`. 1350 tiles across 66 of 273 rooms,
+no screen re-authored, no flag changed. `tools/check-autotile.mjs` proves the
+last clause by building every room in the game twice — once as the game builds
+it, once with the autotiler switched off — and comparing flags at all three
+seas. `tools/shots/` is gitignored, so reproduce the evidence with:
+
+    node tools/shoot-rooms.mjs --tide=1 --px=80 \
+      overworld,0,0 overworld,0,2 overworld,4,0 overworld,8,4 \
+      overworld,1,6 overworld,2,7
+
+`1,6` Bog Stair and `2,7` Bog Causeway are the two screens with INTERIOR cliffs
+and are therefore the clearest: a spur that used to be a rectangle of texture
+floating in grass is now a wall with a lit brink along its top, a shadow where
+it meets the ground and a hard outline all round — and the cracked tile set
+into it keeps its fault line while the mass closes around it. To see the
+before, `git stash` the working tree or check out the commit before
+"Give every cliff in Thalassia a top, a base and a corner" and re-shoot.
+
+**THE DECISION THAT WAS LEFT, AND HOW IT WENT: the cliff stayed a wall seen
+from the front, and the pieces are drawn.** Not for want of trying to extract
+them. Both candidate sheets were opened and neither has *this object*:
+
+- `oracle-ages-overworld.png` does carry a complete cliff family, and it is a
+  **plateau edge** — the survey below is right about that and it is decisive.
+  Its top surface is ordinary walkable ground; Thalassia's cliff is a mass with
+  nothing on top of it. Importing it means giving every cliff in the game a
+  high side and a low side, which is the survey's option 2 — 120 screens
+  re-authored around a solid tile — dressed up as a texture swap.
+- `oracle-seasons-tileset-subrosia.png` carries a **front-facing rock wall in a
+  complete autotile family, in nine palettes** (rows 3–6 and the same block at
+  13–16, 23–26, 36–39, 54–57, 69–72, 79–82, 97–100, 114–117). This is much the
+  closer match and is the thing a future session should look at again — but
+  every piece of it carries a lava vein, because it is Subrosia, and its wall
+  unit is 16x32 rather than 16x16. Cutting the veins out is hand-drawing with
+  extra steps.
+
+**AND THE SURVEY'S COORDINATE TABLE BELOW IS NOT SAFE TO USE.** Six of its
+eight cells were re-cut and checked pixel by pixel: `402,248` ("the bright
+blue-white band, then rock") is a **river running along the top of the cliff**,
+not a lit lip — Ages' Present overworld is full of narrow channels between
+cliff masses and the bright band is water. `386,264` has the red of a ladder in
+it, `450,280` is plain sand, `466,392` is half sea. Only `402,264` and
+`402,280` are clean. The lesson, and it is the general one: a cell picked off a
+grid overlay is a guess until its colour histogram has been printed. Four
+colours means a tile; seven means the window is straddling something.
+
+**What the pieces are instead.** The base of all sixteen IS `ART.cliff`
+unmodified, and each adds treatment only on the edges the mass exposes — a lit
+coping in palette index 0 (which every cliff palette has and the old face never
+used), a base shadow, shadowed side returns, and a 1px black outline. Fifteen
+of the sixteen therefore contain the sixteenth, which is what makes register
+drift impossible.
+
+**What is still open on cliffs:**
+
+- **`cliffSand` and `cliffRust` are registered and unplaced.** Reported as a
+  note by `check-autotile.mjs`, not a failure, on the same grounds
+  `check-towns.mjs` uses for the town ground variants.
+- **The seam is a guess.** Off-room counts as SAME, so a cliff running off a
+  screen grows no edge — right when the neighbouring screen continues the mass
+  and wrong when it does not. Rooms are built independently and a neighbour may
+  not exist yet at construction, so reading across the seam is real work.
+  Nobody has looked at a screen transition to see whether it shows.
+- **`cliffTop` is now nearly redundant.** It is the one piece an author still
+  places by hand and **no room in the game uses its character**, so the plateau
+  top it draws is currently unreachable content. Either give a screen a reason
+  to look down onto a mass, or take it out.
+- **The corners are barely exercised.** The mask histogram is
+  `0:266 1:248 2:107 3:90 4:266 5:1 6:87 7:1 8:101 9:91 10:2 12:88 13:1 14:1`
+  — masks 5, 7, 10, 13 and 14 appear once or twice each in the whole game,
+  because almost every cliff in Thalassia is a screen border. The family can
+  draw shapes the world does not ask for yet.
+
+## The cliff family — the survey (kept for the sheet coordinates, WITH the correction above)
 
 PT step 5's big item, and a session spent the expensive half of it: **finding
 the art.** What follows is the survey, so the session that does the cliffs
@@ -373,8 +451,14 @@ existing screen at once, and option 2 stays available on top of it.
 
 ## Carried over from docs/NEXT-SESSION.md
 
-- **The `cliff` family** — surveyed above; the decision is what is left.
-- **The `ledge` families** — four directions, nine palette variants each.
+- ~~**The `cliff` family**~~ **DONE** — autotiled, see the top of this entry.
+- **The `ledge` families** — four directions, nine palette variants each, and
+  now the obvious next job: a ledge is a run of tiles with no ends, exactly
+  what a cliff was before this session. `registerAutotile` is general and a
+  ledge run wants a four-piece family (start, middle, end, single) per
+  direction rather than the cliff's sixteen. Note that a ledge is `F.LEDGE` and
+  solid from three sides, so `tools/find-ledges.mjs` and `check-autotile.mjs`
+  are both wanted after any change.
 - `pot`, `sign`, `dBlock`, `dStairs`, `spikes`. Not found on a sheet yet; the
   Subrosia tileset is the one to mine, being the only true tileset in the repo.
 - ~~`caveMouth`~~ **DONE** — the Subrosia tileset at 176,1632, a full-cell PICK

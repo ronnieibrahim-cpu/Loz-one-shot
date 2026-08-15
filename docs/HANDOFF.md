@@ -224,6 +224,50 @@ is in the page, and nothing steps until you say so.
 
 ## Hard-won lessons — do not rediscover these
 
+**The cliff family (PT step 5), and the four things it cost.**
+
+1. **A PREVIOUS SESSION'S SURVEY IS EVIDENCE, NOT FACT — CHECK ITS CELLS BEFORE
+   YOU CUT THEM.** `docs/ART-BACKLOG.md` carried a table of eight hand-verified
+   cell coordinates for the Ages cliff family, found off a grid overlay. Six of
+   the eight are wrong, and the headline one is instructive: the "bright
+   blue-white band, then rock" that the survey read as the lit lip of a cliff
+   is **a river running along the top of one**. Ages' Present overworld is a
+   lattice of narrow channels between cliff masses, and at the phase the survey
+   used, the water and the cliff share a cell. The cheap test that settles it in
+   one command is a COLOUR HISTOGRAM: a clean terrain cell has four colours or
+   fewer, and a window with seven is straddling two objects. Print it before you
+   quantise anything.
+
+2. **EXTRACTION CAN COME UP EMPTY, AND THAT IS AN ANSWER.** CLAUDE.md's first
+   rule is that if a sheet has it we extract it, and the honest finding here was
+   that neither sheet has *this object*: the Ages family is a plateau edge whose
+   top is walkable ground (a different world, not a different texture), and the
+   Subrosia family is a front-facing wall in nine palettes with a lava vein
+   through every piece. Recording *which* sheet was opened and *why* it did not
+   fit is what stops the next session spending another day proving the same
+   thing. The Subrosia family is the one worth a second look — rows 3–6 and its
+   repeats — if anyone can get the veins off it honestly.
+
+3. **A COSMETIC PASS THAT REWRITES SOLID TILES NEEDS THE WHOLE WORLD BUILT
+   TWICE.** `Room.autotile` edits terrain in 273 rooms, and CLAUDE.md's most
+   expensive trap is a solid tile that severs a screen while validating clean.
+   Asserting the piece tiledefs carry their base's flags is necessary and it is
+   not sufficient — it says nothing about the pass itself picking the right
+   family, crossing palettes, or reading off the end of a grid. What settles it
+   is `tools/check-autotile.mjs`: clear the `AUTOTILE` registry, rebuild every
+   room from its def, and compare `flagsAt` for every tile at all three seas.
+   Emptying the registry is also why the feature needed no debug flag threaded
+   through the engine for a checker's benefit.
+
+4. **`git checkout <file>` UNDOES THE SESSION, NOT THE EXPERIMENT.** A
+   deliberately broken piece was injected into `src/data/tiles-core.js` with a
+   throwaway script to confirm the new checkers actually fail — they did, which
+   is worth doing — and the cleanup was `git checkout src/data/tiles-core.js`,
+   which restored the file from HEAD and threw away four hours of uncommitted
+   work in it. Commit before you sabotage anything, or make the sabotage a
+   patch you can reverse. A checker you have not seen fail is a checker you do
+   not have, so keep doing the negative test; just do it on a clean index.
+
 **The peoples (PT step 4), and the two things they cost.**
 
 1. **AN NPC IS A SOLID TILE THAT NOBODY CHECKS.** The "one corridor" rule below
