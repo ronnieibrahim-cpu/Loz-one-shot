@@ -65,8 +65,12 @@ export function newProgress(name = 'LINK', seed = (Date.now() >>> 0)) {
     // world state
     tide: 1,
     // position
-    pos: { map: 'overworld', floor: 0, rx: 4, ry: 7, px: 72, py: 64, dir: 'down' },
-    respawn: { map: 'overworld', floor: 0, rx: 4, ry: 7, px: 72, py: 64, dir: 'down' },
+    // The middle of Tidewatch's square, facing the shopfront. It used to be
+    // 72,64 — which is now the alley between the two buildings the village
+    // gained, and a new game opening in an alley is a worse first frame than
+    // one opening in the square with the shop in front of it.
+    pos: { map: 'overworld', floor: 0, rx: 4, ry: 7, px: 72, py: 72, dir: 'down' },
+    respawn: { map: 'overworld', floor: 0, rx: 4, ry: 7, px: 72, py: 72, dir: 'down' },
     // stats
     deaths: 0, frames: 0, rupeesTotal: 0, kills: 0,
     createdAt: Date.now(),

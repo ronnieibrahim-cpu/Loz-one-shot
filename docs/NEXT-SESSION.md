@@ -10,6 +10,137 @@ maintain and the most expensive thing to not have.
 
 ---
 
+## Where the towns stand (PT), in one line
+
+**PT steps 1-4 are DONE: the block machinery exists, the Subrosia town kit is
+extracted, and four screens are settlements with three working doors.** Step 5,
+the terrain backlog and the `cliff` family, is untouched.
+
+### What the last session did (PT, towns and buildings)
+
+**A BUILDING IS NOT A TILE, and now the engine agrees.** `registerBlocks` in
+`src/world/tileset.js` plus `Room.expandBlocks` in `src/world/room.js`: a block
+is registered once as its grid of cell tiles, and a room grid places it as a
+RECTANGLE OF ONE LEGEND CHARACTER —
+
+```
+'gjjjgHHHgg'     one house and one shop, not eighteen tiles that
+'gjjjgHHHgg'     happen to line up
+'gjjjgHHHgg'
+```
+
+The expansion claims each rectangle top-left-first, so six H's in a row are two
+shops rather than an ambiguity, and a footprint that is not exactly the block's
+size THROWS with the room's key. Nothing downstream knows blocks exist: the
+cells are ordinary tiles with ordinary flags, so collision, the tide field and
+every checker are untouched. **The tree's `quad:` machinery that the brief said
+to generalise was never on trunk** — `QUADS` in the ripper is empty and no
+engine code reads a `quad` field. Blocks replace it and cover the 2x2 tree case
+if a session ever wants it.
+
+**The kit is extracted whole off `oracle-seasons-tileset-subrosia.png`** by the
+`TOWN` table in `tools/rip-terrain.py`: the blue SHOP, a green house, a red
+house, a shuttered house, the 2x2 well, the 3x2 stump, the paling fence,
+barrels and two crate stacks. 10 blocks, 51 cells, in two ground variants each.
+Three things about the extraction a later session will need:
+
+- **It installs its palettes**, unlike every other pick in that tool. Those
+  keep the palette their tiledef already binds because the game has been
+  drawing grass for its whole life; a roof has never been drawn at all, so
+  there is no palette to preserve and the cartridge's colours are the point.
+  Six palettes, and cells within one building name different ones — a roof is
+  roof-coloured and a front is timber, which is how the source draws them.
+- **Transparency is flooded from the BLOCK's border, not the cell's.** A roof's
+  rounded corner has to show the region's own grass, and on the green house the
+  roof's yellow trim is the same yellow as the dirt behind it — so colour
+  equality would punch holes in the trim and a per-cell flood would let the sky
+  in between two roofs.
+- **Two coordinates in `assets/sheets/README.md` were wrong** and are corrected
+  there: the stump is 3 cells at c7-c9 r10-r11, and the spring band's fence is
+  the wooden paling at c11 r11-r12 (the r32 picket is the winter band's).
+
+**Four screens are towns**, all in `src/data/overworld.js`, all proved by
+`tools/check-towns.mjs` (54 assertions):
+
+| Screen | What is on it |
+|---|---|
+| `0,4,7` Tidewatch Village | The square: the SHOP, a house you can enter, the Maku Tree's hollow in the treeline, crates and barrels. Three doors |
+| `0,4,8` Village Shore | The net-mender's cottage, the well, the tide pool that was already there |
+| `0,5,8` Driftwood Strand | The timber yard: the chopping stump and a fence. No doors — a settlement is not only its houses |
+| `0,9,8` Sandpiper Row | The Shallows' fishing hamlet, on SAND variants: one cottage open, one shuttered |
+
+Three new one-room interiors (`houseHearth`, `houseNets`, `houseSandpiper`)
+with people in them, and the shop's and Maku's return warps moved to the doors'
+new positions.
+
+**`tools/check-towns.mjs` earned itself on its first run, nine failures deep**,
+and the load-bearing one is that **its flood is ON FOOT**. Written with the
+overworld checker's flood — which grants swimming, because the player
+eventually owns the Cleats — three of the four towns passed while being severed
+at HIGH by a tide pool. Adding `F.DEEP` to the impassable mask turned them all
+red. It also proves each door is a warp and each warp is a door, that every
+interior warps back onto ground that is not the doorway itself, and that no
+entity is standing inside a building.
+
+**The geometry rule that cost four layouts:** a 10x8 screen holding two 3x3
+buildings has exactly ONE row left that crosses it. A 2x2 well or a 3x2 stump
+dropped in that row severs the screen — usually only at HIGH, where the tide
+has already closed the other way round. Only 1x1 dressing goes in the road; the
+well and the stump live on screens with one building. Village East (`0,5,7`) was
+reverted for the same reason: its one-way ledge run leaves it a single corridor,
+and nothing three tiles wide fits in it.
+
+**Two things outside the towns had to change:**
+
+- **`check-overworld.mjs` reads tile NAMES now, not legend characters.** A
+  character used to be enough — one character, one tile, anywhere. Nine H's are
+  nine different tiles, and `getTileDef('block:bShop')` returns the empty tile
+  whose flags are 0, so the flood walked straight through the shop and reported
+  17/17. It builds every screen and reads `room.baseName`. **Any tool that
+  resolves `def.map[y][x]` through a legend has the same hole.**
+- **A new game started in an alley.** `progress.pos` was 72,64, which the
+  rebuilt square turned into the gap between two buildings; three movement
+  probes in `test.mjs` failed honestly. The start is 72,72 now — the middle of
+  the square, facing the shopfront — and the probes moved with it.
+
+**Seen on screen, and for once it is all good news.** `tools/shots/room-
+overworld_{4_7,4_8,5_8,9_8}-tide1-px80.png`, and 4,7 at all three levels. The
+village reads as a village at a glance: a red house and a blue SHOP either side
+of a square, a dark doorway in each front, the Maku hollow as one opening in
+the treeline (three framed cave mouths in a row read as holes in the grass —
+that was the first cut). The well, the stump and the paling fence all read as
+what they are.
+
+**`village-shop-door`** is a new replay: stand in the square, walk north into
+the middle cell of the shopfront, come out again. `roomChanges: 2` is the
+assertion with teeth — the door fires once each way and the return does not
+bounce back through it. `village-walk` was re-recorded for the rebuilt square
+(704 frames); its counts are not comparable with the pre-town recording,
+because the world moved rather than the movement.
+
+### What is weak about the towns
+
+- **Tidewatch does not answer the tide.** There is no tide tile in the square,
+  so the village looks identical at LOW, MID and HIGH. The Shore has the pool
+  and Sandpiper has its bars; the village itself is a dry screen in a game
+  about water, and a slipway or a flooding gutter along one edge is the obvious
+  fix. It was left out because every candidate placement severed the square.
+- **Nobody has walked a town.** The door is proved in-engine by one replay; the
+  other two doors, the fence, the stump and every route are a checker's word.
+- **Four buildings, one plan.** The green, red and shuttered houses are the
+  same 3x3 with a different roof colour and a different middle cell. That is
+  what the sheet gives, and it means a town is legible but not varied.
+- **Step 4 is only half done.** `oracle-seasons-nonhuman-races.png` has still
+  never been extracted from, so every townsperson wears a sprite the game
+  already had, and the scrimshander still shares a face with the digger.
+- **Five ground variants are registered and unplaced** (`bShopSand`,
+  `bHouseGreenSand`, `bHouseShut`, `bWellSand`, `bStumpSand`).
+  `check-towns.mjs` prints them as a note rather than failing: a variant is a
+  ground, not a building, and requiring a sandy shop before there is a sandy
+  town that wants one is a checker commissioning content.
+- **The town legends are `town` and `townDunes` only.** A marsh, cliff or salt
+  settlement needs a third ground variant and a third legend; the pattern is
+  two lines in `tiles-core.js` (`TOWN_GROUNDS`) and two in `legends.js`.
 ## The prompt to paste — PT, towns and buildings
 
 This is the next session. P8 is closed; PT is step 8 of the execution order and
@@ -1943,29 +2074,44 @@ Tell me plainly what is done, what is weak, and what you skipped.
 
 ## What is left
 
-1. **P8 for D6, and it is the last one.** D1 through D5 are done — read
-   `docs/DUNGEON-STATUS.md` first, it is the board. D6 is two jobs in one
-   session: the dungeon itself, and the reconciliation nobody has done. The plan
-   says six dungeons and the data holds eight, `d7` and `d8` fold into their
-   neighbours rather than being deleted, and `docs/ITEMS.md` and the data
-   disagree about what D6's item even is. Read both "P8 status" tables in
-   `docs/EXECUTION-PLAN.md`, and "ROOM SIZE" before authoring a large room.
+**P8 IS COMPLETE and PT steps 1-4 are done.** Six dungeons, six provers, the
+eight-into-six fold, and four town screens built out of extracted buildings.
+Read `docs/DUNGEON-STATUS.md` before touching a dungeon and the PT section at
+the top of this file before touching a town.
 
-2. **PT — towns, buildings and terrain polish.** A stated top design priority,
-   independent of the systems spine, and blocked on nothing. Thalassia's
-   villages are a signpost and a few doors in a cliff. The tileset that fixes
-   it has been in the repo all along —
-   `assets/sheets/oracle-seasons-tileset-subrosia.png`, the only true tileset
-   here, and the one sheet that is 99% raw-register colours. Its town kit is
-   inventoried with cell coordinates in `assets/sheets/README.md`. The first
-   job is generalising the tree's `quad:` machinery, because a building is 3
-   wide and 2-3 tall and cutting one into nine loose tiles is the wrong answer.
+1. **PT step 5 — the terrain backlog, and it is the biggest art job left.**
+   `docs/ART-BACKLOG.md` ranks it. The `cliff` family is the head of it: the
+   Oracles build a cliff out of several tiles and this game spends ONE tile on
+   all of it, so one extraction covers eight tiles and it is a content decision
+   rather than a swap. Water is genuinely blocked (no sheet in the repo has a
+   second animation frame).
 
-3. **P7.5's remainder — BLOCKED ON ASSETS.** Four dungeon map rips are missing.
+2. **PT step 4 — populate the towns properly.** The buildings are extracted and
+   the doors work; the people are not. `assets/sheets/oracle-seasons-nonhuman-races.png`
+   has still never been extracted from and carries the Maku Tree, the Great
+   Fairy and rows of townsfolk, and the scrimshander still shares a face with
+   the digger. This is the half of PT that is one ripper away.
+
+   Two town-shaped follow-ups worth doing in the same session: **Tidewatch does
+   not answer the tide** (no tide tile in the square, so the village looks
+   identical at all three levels — a slipway or a flooding gutter along one edge
+   is the fix, and `check-towns.mjs` will say whether it severs the square), and
+   **a third town legend** for a marsh, cliff or salt settlement, which is two
+   lines in `TOWN_GROUNDS` and two in `legends.js`.
+
+3. **P9 — overworld re-gating and difficulty.** Its inputs are satisfied and it
+   CAN start. It is deliberately not first: `docs/EXECUTION-PLAN.md` Part 4 puts
+   PT at step 8 and P9 at step 16, because a gate is a tile flag dropped into a
+   finished screen and a town is the screen itself — re-gating a village is a
+   small edit, re-towning a gated screen is not.
+
+4. **NOBODY HAS PLAYED ANY OF IT.** Not a dungeon, not a town. Every claim in
+   this repo is a checker's or a replay's. It is not a box on any checklist and
+   it is the largest open item in the project.
+
+5. **P7.5's remainder — BLOCKED ON ASSETS.** Four dungeon map rips are missing.
    See `docs/ART-BACKLOG.md`. The colour-register decision is explicitly yours,
    not a session's.
-
-4. **P9, after the dungeons.**
 
 Carried over, and none of it blocking:
 

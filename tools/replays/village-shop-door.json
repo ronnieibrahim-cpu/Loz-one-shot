@@ -1,0 +1,143 @@
+{
+ "name": "village-shop-door",
+ "note": "Tidewatch Village: in through the shop doorway and back out to the square",
+ "engine": 1,
+ "setup": {
+  "seed": 20260806,
+  "playerName": "LINK",
+  "items": {
+   "sword": 1,
+   "conch": 1
+  },
+  "equipB": "sword",
+  "equipA": "conch",
+  "tide": 1,
+  "enter": [
+   "overworld",
+   0,
+   4,
+   7,
+   96,
+   88,
+   "down"
+  ]
+ },
+ "assert": {
+  "roomChanges": 2
+ },
+ "span": {
+  "roomChanges": 2,
+  "camMinX": 0,
+  "camMaxX": 0,
+  "camMinY": 0,
+  "camMaxY": 0,
+  "camEndX": 0,
+  "camEndY": 0,
+  "probeNames": ""
+ },
+ "buttons": [
+  "up",
+  "down",
+  "left",
+  "right",
+  "a",
+  "b",
+  "start",
+  "select"
+ ],
+ "frames": 211,
+ "input": [
+  [
+   0,
+   20
+  ],
+  [
+   1,
+   60
+  ],
+  [
+   0,
+   40
+  ],
+  [
+   8,
+   7
+  ],
+  [
+   2,
+   24
+  ],
+  [
+   0,
+   60
+  ]
+ ],
+ "trailEvery": 60,
+ "trail": [
+  {
+   "f": 60,
+   "x": 72,
+   "y": 96,
+   "hp": 12,
+   "e": 6,
+   "d": 0,
+   "r": "0,0,0"
+  },
+  {
+   "f": 120,
+   "x": 72,
+   "y": 80,
+   "hp": 12,
+   "e": 6,
+   "d": 0,
+   "r": "0,0,0"
+  },
+  {
+   "f": 180,
+   "x": 96,
+   "y": 88,
+   "hp": 12,
+   "e": 6,
+   "d": 0,
+   "r": "0,4,7"
+  }
+ ],
+ "expect": {
+  "frame": 211,
+  "mapId": "overworld",
+  "room": "0,4,7",
+  "floor": 0,
+  "x": 96,
+  "y": 88,
+  "z": 0,
+  "dir": "down",
+  "playerId": 1,
+  "hearts": 12,
+  "maxHearts": 12,
+  "rupees": 0,
+  "kills": 0,
+  "deaths": 0,
+  "keys": 0,
+  "essences": [],
+  "items": [
+   "conch",
+   "sword"
+  ],
+  "dungeonMap": false,
+  "chartstone": false,
+  "flags": [],
+  "doorsChanged": 0,
+  "secretsSeen": 2,
+  "chestsOpened": 0,
+  "tide": 1,
+  "probeLevels": null,
+  "probePix": null,
+  "mode": "play",
+  "entities": 6,
+  "enemies": 0,
+  "roomSeed": 2982420076,
+  "roomDraws": 0,
+  "globalSeed": 781976111,
+  "globalDraws": 0
+ }
+}

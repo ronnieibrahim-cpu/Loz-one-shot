@@ -23,7 +23,7 @@
 // `--bombs` is kept as an alias for `--items=bombs`.
 
 import { installData } from '../src/data/index.js';
-import { MAPS } from '../src/world/maps.js';
+import { MAPS, getRoom } from '../src/world/maps.js';
 import { getLegend } from '../src/world/room.js';
 import { getTileDef, F } from '../src/world/tileset.js';
 import { GAP_HOP_MAX_SPAN } from '../src/data/feel.js';
@@ -75,14 +75,31 @@ const m = MAPS.get('overworld');
 let pass = 0; const fail = [];
 const check = (n, c, d) => c ? pass++ : (fail.push(n + (d ? ' — ' + d : '')), console.log('  FAIL ' + n + (d ? ' — ' + d : '')));
 
-const legendOf = (def) => getLegend(def.legend || m.legend);
-function defAt(legend, ch, tide) {
-  let d = getTileDef(legend[ch]);
+// A ROOM IS READ AS TILE NAMES, NOT AS CHARACTERS.
+//
+// A legend character used to be enough: one character, one tile, anywhere on
+// any screen. A BLOCK breaks that — the nine H's of a shop are nine different
+// tiles and which one a cell is depends on where in the footprint it sits — so
+// this asks the engine's own expansion (`Room.expandBlocks`) rather than the
+// legend, by building every screen and reading its resolved grid. A checker
+// that kept reading characters would resolve 'block:bShop' through
+// `getTileDef`, get the empty tile back, and flood straight through the shop.
+const NAMES = new Map();
+for (const [k, d] of Object.entries(m.roomDefs)) {
+  const [f, rx, ry] = k.split(',').map(Number);
+  const room = getRoom('overworld', f, rx, ry);
+  NAMES.set(d, Array.from({ length: H }, (_, y) =>
+    Array.from({ length: W }, (_, x) => room.baseName(x, y))));
+}
+/** The screen's grid of resolved tile NAMES. Named `l` at the call sites. */
+const legendOf = (def) => NAMES.get(def);
+function defAt(_grid, name, tide) {
+  let d = getTileDef(name);
   for (let i = 0; i < 4 && d && d.tide; i++) d = getTileDef(d.tide[tide]);
   return d;
 }
-function walkableAt(legend, ch, tide) {
-  const d = defAt(legend, ch, tide);
+function walkableAt(grid, name, tide) {
+  const d = defAt(grid, name, tide);
   if (!d) return false;
   if (openMask && (d.flags & openMask)) return true;
   return !(d.flags & (F.VOID | F.SOLID | F.PIT | F.DEEP | F.LEDGE | F.HAZARD | F.JUMPABLE));
@@ -109,24 +126,24 @@ function runLen(l, def, x, y, dx, dy) {
   let n = 1;
   for (let i = 1; ; i++) {
     const nx = x + dx * i, ny = y + dy * i;
-    if (nx < 0 || ny < 0 || nx >= W || ny >= H || !isGap(l, def.map[ny][nx])) break;
+    if (nx < 0 || ny < 0 || nx >= W || ny >= H || !isGap(l, l[ny][nx])) break;
     n++;
   }
   for (let i = 1; ; i++) {
     const nx = x - dx * i, ny = y - dy * i;
-    if (nx < 0 || ny < 0 || nx >= W || ny >= H || !isGap(l, def.map[ny][nx])) break;
+    if (nx < 0 || ny < 0 || nx >= W || ny >= H || !isGap(l, l[ny][nx])) break;
     n++;
   }
   return n;
 }
 function hoppable(l, def, x, y) {
-  if (!isGap(l, def.map[y][x])) return false;
+  if (!isGap(l, l[y][x])) return false;
   return runLen(l, def, x, y, 1, 0) < GAP_HOP_MAX_SPAN
       || runLen(l, def, x, y, 0, 1) < GAP_HOP_MAX_SPAN;
 }
 /** Flood-passability WITH position, so the hop can be modelled properly. */
 function passableAt(l, def, x, y) {
-  return passable(l, def.map[y][x]) || hoppable(l, def, x, y);
+  return passable(l, l[y][x]) || hoppable(l, def, x, y);
 }
 // The player controls the tide, so a tile is passable if any level allows it.
 const passable = (legend, ch) => [0, 1, 2].some(t => walkableAt(legend, ch, t));
@@ -143,7 +160,7 @@ const passable = (legend, ch) => [0, 1, 2].some(t => walkableAt(legend, ch, t));
     if (!def) continue;
     const l = legendOf(def);
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-      if (!isGap(l, def.map[y][x])) continue;
+      if (!isGap(l, l[y][x])) continue;
       if (hoppable(l, def, x, y)) hop++; else wall++;
     }
   }
@@ -178,8 +195,8 @@ for (let y = 0; y < OH; y++) for (let x = 0; x < OW; x++) {
     const lb = legendOf(b);
     const n = dx ? H : W;
     for (let i = 0; i < n; i++) {
-      const ca = dx ? a.map[i][W - 1] : a.map[H - 1][i];
-      const cb = dx ? b.map[i][0] : b.map[0][i];
+      const ca = dx ? la[i][W - 1] : la[H - 1][i];
+      const cb = dx ? lb[i][0] : lb[0][i];
       for (const t of [0, 1, 2]) {
         if (walkableAt(la, ca, t) !== walkableAt(lb, cb, t)) {
           seams.push(`0,${x},${y}->${dx ? 'E' : 'S'} row ${i} tide ${t}: '${ca}' vs '${cb}'`);
@@ -196,10 +213,10 @@ for (let y = 0; y < OH; y++) for (let x = 0; x < OW; x++) {
   const d = m.roomDefs[`0,${x},${y}`];
   if (!d) continue;
   const l = legendOf(d);
-  if (x === 0) for (let i = 0; i < H; i++) if (passable(l, d.map[i][0])) leaks.push(`0,${x},${y} W row ${i}`);
-  if (x === OW - 1) for (let i = 0; i < H; i++) if (passable(l, d.map[i][W - 1])) leaks.push(`0,${x},${y} E row ${i}`);
-  if (y === 0) for (let i = 0; i < W; i++) if (passable(l, d.map[0][i])) leaks.push(`0,${x},${y} N col ${i}`);
-  if (y === OH - 1) for (let i = 0; i < W; i++) if (passable(l, d.map[H - 1][i])) leaks.push(`0,${x},${y} S col ${i}`);
+  if (x === 0) for (let i = 0; i < H; i++) if (passable(l, l[i][0])) leaks.push(`0,${x},${y} W row ${i}`);
+  if (x === OW - 1) for (let i = 0; i < H; i++) if (passable(l, l[i][W - 1])) leaks.push(`0,${x},${y} E row ${i}`);
+  if (y === 0) for (let i = 0; i < W; i++) if (passable(l, l[0][i])) leaks.push(`0,${x},${y} N col ${i}`);
+  if (y === OH - 1) for (let i = 0; i < W; i++) if (passable(l, l[H - 1][i])) leaks.push(`0,${x},${y} S col ${i}`);
 }
 check('the world border is solid', leaks.length === 0, leaks.slice(0, 4).join(' | '));
 
@@ -320,7 +337,7 @@ function floodField({ anchor = false } = {}) {
     const def = m.roomDefs[rk];
     if (!def) return false;
     const l = legendOf(def);
-    if (walkableAt(l, def.map[y][x], heldAt(x, y, lv, ax, ay, al))) return true;
+    if (walkableAt(l, l[y][x], heldAt(x, y, lv, ax, ay, al))) return true;
     // THE BASE HOP. Roc's Feather is gone and walking into a one-tile gap hops
     // it, so a gap narrow enough to clear is crossable at every tide level.
     // `walkableAt` cannot know that — it is told one tile — so the field flood
@@ -332,7 +349,7 @@ function floodField({ anchor = false } = {}) {
 
   const sd = m.roomDefs[start], sl = legendOf(sd);
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-    for (const lv of [0, 1, 2]) if (walkableAt(sl, sd.map[y][x], lv)) push(start, x, y, lv, -1, -1, -1);
+    for (const lv of [0, 1, 2]) if (walkableAt(sl, sl[y][x], lv)) push(start, x, y, lv, -1, -1, -1);
   }
   while (q.length) {
     const [rk, x, y, lv, ax, ay, al] = q.pop();
@@ -417,9 +434,9 @@ for (const [rk, def] of Object.entries(m.roomDefs)) {
     [...row].forEach((ch, x) => {
       if (ch !== '_') return;
       if (y === 0 || y === H - 1) { ledgeBad.push(`${rk} ${x},${y}: on the border ring`); return; }
-      if (!passable(l, def.map[y - 1][x])) ledgeBad.push(`${rk} ${x},${y}: nothing to approach from`);
+      if (!passable(l, l[y - 1][x])) ledgeBad.push(`${rk} ${x},${y}: nothing to approach from`);
       for (const t of [0, 1, 2]) {
-        if (!walkableAt(l, def.map[y + 1][x], t)) ledgeBad.push(`${rk} ${x},${y}: landing not dry at tide ${t}`);
+        if (!walkableAt(l, l[y + 1][x], t)) ledgeBad.push(`${rk} ${x},${y}: landing not dry at tide ${t}`);
       }
     });
   });

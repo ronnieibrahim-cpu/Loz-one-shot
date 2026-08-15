@@ -41,7 +41,7 @@
 
 import { TILE, ROOM_W, ROOM_H, offscreen } from '../core/screen.js';
 import { tiles as tileSheet } from '../gfx/art.js';
-import { F, resolveTile, getTileDef, tileArt } from './tileset.js';
+import { F, resolveTile, getTileDef, tileArt, blockRef } from './tileset.js';
 
 export const LEGENDS = new Map();
 
@@ -104,14 +104,17 @@ export class Room {
     // Base grid of tile *names* as authored (may be virtual tide tiles).
     this.base = new Array(this.tw * this.th);
     const rows = (def.map || []);
+    const chars = new Array(this.tw * this.th);
     for (let y = 0; y < this.th; y++) {
       const row = (rows[y] || '').replace(/\s+$/, '');
       for (let x = 0; x < this.tw; x++) {
         const ch = row[x] !== undefined ? row[x] : ' ';
         const t = legend[ch];
+        chars[y * this.tw + x] = ch;
         this.base[y * this.tw + x] = t || legend[' '] || 'void';
       }
     }
+    this.expandBlocks(chars, `${this.mapId}/${key}`);
     // Runtime overrides (opened doors, smashed bushes, lifted rocks).
     this.override = new Array(this.tw * this.th).fill(null);
 
@@ -132,6 +135,43 @@ export class Room {
     this.overCells = [];      // tiles drawn above entities
     this.visited = false;
     this.cleared = false;     // all enemies defeated at least once (for locked rooms)
+  }
+
+  /**
+   * Resolve every block footprint in the grid to its cells.
+   *
+   * A block character marks the FOOTPRINT of one object, so a 3x3 shop is nine
+   * of the same character and the loader decides which cell each one is. The
+   * scan runs in reading order and CLAIMS a whole w x h rectangle the first
+   * time it meets an unclaimed cell of that character, which is what makes two
+   * shops side by side — six characters in a row — two shops rather than an
+   * ambiguity. Anything that does not fit throws, naming the room: a building
+   * one row short renders as a roof with no front, strands whatever was behind
+   * it, and validates perfectly.
+   */
+  expandBlocks(chars, where) {
+    const claimed = new Uint8Array(this.tw * this.th);
+    for (let y = 0; y < this.th; y++) {
+      for (let x = 0; x < this.tw; x++) {
+        const i = y * this.tw + x;
+        if (claimed[i]) continue;
+        const b = blockRef(this.base[i]);
+        if (!b) continue;
+        const ch = chars[i];
+        for (let dy = 0; dy < b.h; dy++) {
+          for (let dx = 0; dx < b.w; dx++) {
+            const jx = x + dx, jy = y + dy, j = jy * this.tw + jx;
+            if (jx >= this.tw || jy >= this.th || chars[j] !== ch || claimed[j]) {
+              throw new Error(`${where}: block '${b.name}' at ${x},${y} needs a `
+                + `${b.w}x${b.h} footprint of '${ch}' and does not have one`
+                + ` (fails at ${jx},${jy})`);
+            }
+            claimed[j] = 1;
+            this.base[j] = b.tiles[dy][dx];
+          }
+        }
+      }
+    }
   }
 
   inBounds(tx, ty) { return tx >= 0 && ty >= 0 && tx < this.tw && ty < this.th; }

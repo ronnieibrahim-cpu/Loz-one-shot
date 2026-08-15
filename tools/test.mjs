@@ -265,7 +265,8 @@ const main = async () => {
     const ent = await import('/src/game/entity.js');
     const p = window.__game.player;
     const keep = { fx: p.fx, fy: p.fy };
-    p.fx = 64 * 256; p.fy = 64 * 256;
+    // Row 5 of Tidewatch's square: open ground east of here at every tide.
+    p.fx = 64 * 256; p.fy = 72 * 256;
     const x0 = p.x;
     for (let i = 0; i < 60; i++) ent.moveEntity(window.__game, p, 32, 0);   // 0.125 px/f
     const moved = p.x - x0;
@@ -495,7 +496,7 @@ const main = async () => {
   await G(() => {
     const g = window.__game;
     g.tide.setLevel(1, { instant: true });
-    g.enterMap('overworld', 0, 4, 7, 72, 56, 'down', { instant: true });
+    g.enterMap('overworld', 0, 4, 7, 72, 72, 'down', { instant: true });
   });
   await frames(6);
   const before = await G(() => window.__game.room.key);

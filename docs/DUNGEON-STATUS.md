@@ -44,8 +44,10 @@ checklist and it is still true of all six — see the bottom of this file. And P
 being finished does not make P9 the next thing by itself: `docs/EXECUTION-PLAN.md`
 Part 4 puts **PT (towns) at step 8 and P9 at step 16**, deliberately, because
 re-gating a finished village is a small edit and re-towning a gated screen is
-not. P9's gates (P6 and P8) are satisfied, so it CAN start; PT is what the plan
-asks for first and it has never been started.
+not. P9's gates (P6 and P8) are satisfied, so it CAN start; PT is what the plan asks
+for first, and its steps 1-4 have since landed — the block machinery, the
+extracted town kit and four town screens, proved by `tools/check-towns.mjs`.
+What is left of PT is the terrain backlog and the townsfolk sprites.
 
 "DONE" means every box in the checklist below is ticked and every checker in
 CLAUDE.md's table was green on the commit named. It does not mean the dungeon

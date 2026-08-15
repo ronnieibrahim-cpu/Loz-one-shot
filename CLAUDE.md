@@ -100,6 +100,15 @@ they are also how a future session finds which sheet a tile came from.
   give the player a new way to move, add it to the flood in the same commit.
 - **Digits 0–9 in a room grid are always tide tiles.** See
   `src/data/legends.js`. Never reuse a digit for anything else.
+- **A building is not a tile, and a town screen has one corridor.** The town
+  kit's buildings are 3x3 BLOCKS: one legend character drawn as the building's
+  footprint, expanded by `Room.expandBlocks`, throwing if the rectangle is not
+  exactly the block's size. What no throw catches is that a 10x8 screen holding
+  two 3x3 buildings has exactly one row left that crosses it, so ANY object
+  three tiles wide dropped into that row severs the screen — usually only at
+  HIGH, where the tide has already taken the other way round. Four separate
+  layouts died of this before `check-towns.mjs` existed, and its flood is
+  deliberately ON FOOT: granting swimming hides the failure entirely.
 - **Compositing two source tiles into one game tile is authoring, not
   extraction.** It needs an in-game screenshot across several regions before it
   is believed. `tools/preview.mjs` renders one palette and cannot show it.
@@ -148,6 +157,7 @@ they are also how a future session finds which sheet a tile came from.
 | `node tools/check-bellows.mjs` | Every room that claims to need the Squall Bellows has a wheel no hand reaches, drowned at the sea the room is played at, freed by one level of cone and by nothing else, from a place you can only stand while it is still drowned |
 | `node tools/check-reefseed.mjs` | Every room that claims to need the Reefseed grows its stakes on open water no seed can reach at LOW, opens on a snarl no blade but a stake's reaches, and cannot be sealed shut by a pillar the player grew in the wrong place |
 | `node tools/check-dredge.mjs` | Every room that claims to need the Dredge Line puts its far side across a pit nothing walks, its mooring in reach of one sea and no other, and its cache in a floor that only gives up what the sea is covering — each closure clause proved twice, once at the line's reach and once at the Coilrope's |
+| `node tools/check-towns.mjs` | Every town screen's ways in and doors all reach each other ON FOOT at all three tide levels, every doorway warps somewhere that warps back, and no building is standing on an NPC |
 | `node tools/check-motion.mjs` | Ground enemies stay on the 8px lattice; fliers and swimmers stay off it |
 | `node tools/check-items.mjs` | Every item does the verb `docs/ITEMS.md` claims for it, and nothing hands out an item that no longer exists |
 | `node tools/replay.mjs` | Movement and combat are frame-identical to a recorded baseline |

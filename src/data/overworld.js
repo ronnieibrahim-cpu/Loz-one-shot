@@ -1621,33 +1621,52 @@ const rooms = {
       ['octorok', 6, 4],
     ],
   },
+  // TIDEWATCH VILLAGE, and it is a village now.
+  //
+  // It used to be two cave mouths cut into the tree line with a hedge in the
+  // middle — the whole settlement was a name on a signpost, which is what PT
+  // in docs/EXECUTION-PLAN.md exists to fix. It is now a square with buildings
+  // round it: the blue SHOP on the east side and a house on the west, both
+  // extracted whole off the Subrosia tileset and placed as BLOCKS (one legend
+  // character drawn as the building's footprint — see src/data/legends.js).
+  //
+  // THE SEAM ROWS AND COLUMNS ARE UNTOUCHED. Row 0, row 7 and columns 0 and 9
+  // are character for character what they were, because a building on a screen
+  // edge changes what the neighbouring screen must have facing it, and this
+  // screen has four neighbours. Everything below is interior.
+  //
+  // The Maku Tree keeps its hollow at 3,1 rather than moving into a house: it
+  // is a tree, and a doorway in the wood at the top of the square says so.
   '0,4,7': {
     name: 'Tidewatch Village',
-    legend: 'coast', music: 'overworld',
+    legend: 'town', music: 'overworld',
     map: [
       'TTTTTTTTTT',
-      'TgcCcgcCcT',
-      'gg......fg',
-      'ggG""""Gfg',
-      'gf......gg',
-      'ggb.oo.bgg',
-      'TggggfgggT',
+      'TTTTCTgggT',
+      'gjjjgHHHgg',
+      'gjjjgHHHgg',
+      'gjjjgHHHgg',
+      'gggggggggg',
+      'TzgggggeiT',
       'TTTggggTTT',
     ],
     warps: [
-      { x: 3, y: 1, to: { map: 'houseShop', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
-      { x: 7, y: 1, to: { map: 'houseMaku', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
+      // Each door is the middle cell of its building's front row, which is the
+      // one cell of a block that is not solid. Walk into it from the square.
+      { x: 6, y: 4, to: { map: 'houseShop', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
+      { x: 2, y: 4, to: { map: 'houseHearth', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
+      { x: 4, y: 1, to: { map: 'houseMaku', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
     ],
     entities: [
-      ['sign', 1, 4, { text: 'TIDEWATCH VILLAGE\nEast: the Shallows. Mind the tide.' }],
+      ['sign', 8, 4, { text: 'TIDEWATCH VILLAGE\nEast: the Shallows. Mind the tide.' }],
       // The scrimshander works outdoors on the west side of the square, off
-      // the path between the two doors — an NPC is an entity, not a tile, so
-      // she narrows the square without touching its connectivity.
-      ['scrimshander', 1, 2, {}],
-      ['npc', 6, 2, { sprite: 'npc_villager', pal: 'npc', wander: true, dialogue: 'villager1' }],
-      ['npc', 3, 4, { sprite: 'npc_villager2', wander: true, dialogue: 'villager2' }],
-      ['npc', 8, 4, { sprite: 'npc_child', wander: true, dialogue: 'villageChild' }],
-      ['giver', 7, 2, {
+      // the path between the doors — an NPC is an entity, not a tile, so she
+      // narrows the square without touching its connectivity.
+      ['scrimshander', 2, 6, {}],
+      ['npc', 7, 1, { sprite: 'npc_villager', pal: 'npc', wander: true, dialogue: 'villager1' }],
+      ['npc', 6, 6, { sprite: 'npc_villager2', wander: true, dialogue: 'villager2' }],
+      ['npc', 6, 1, { sprite: 'npc_child', wander: true, dialogue: 'villageChild' }],
+      ['giver', 8, 2, {
         sprite: 'npc_elder', dialogue: 'digger', waiting: 'diggerWait',
         after: 'diggerAfter', flag: 'gotCoin', item: 'coin', level: 1,
         needEssences: 3,
@@ -1853,39 +1872,50 @@ const rooms = {
       ['crab', 4, 4], ['octorok', 2, 2],
     ],
   },
+  // The village's waterfront: the net-mender's cottage, a paling fence and the
+  // tide pool that was already here. The pool is deep at HIGH and the cottage
+  // door is not on it, which is the rule for a town — a building may narrow a
+  // route and may never be the reason a screen has none. See check-towns.mjs.
   '0,4,8': {
     name: 'Village Shore',
-    legend: 'coast', music: 'overworld',
+    legend: 'town', music: 'overworld',
     map: [
       'TTTggggTTT',
-      'Tgg....ggT',
+      'Tgg...zigT',
       'gg......gg',
-      'gg.2222.gg',
-      'gg.2222.gg',
-      'ggg....ggg',
-      'TgggggfggT',
+      'gghhh222gg',
+      'gghhh222gg',
+      'gghhhww.gg',
+      'TggggwwggT',
       'TTTggggTTT',
     ],
+    warps: [
+      { x: 3, y: 5, to: { map: 'houseNets', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
+    ],
     entities: [
-      ['npc', 2, 2, { sprite: 'npc_child', dialogue: 'coastChild' }],
+      ['npc', 5, 2, { sprite: 'npc_child', dialogue: 'coastChild' }],
       ['crab', 6, 4],
     ],
   },
+  // The village's timber yard, on the screen already named for the wood that
+  // washes up on it: the chopping stump and a length of paling fence. No door
+  // and no building — a settlement is not only the houses, and the kit's job
+  // here is to make a screen look worked rather than decorated.
   '0,5,8': {
     name: 'Driftwood Strand',
-    legend: 'coast', music: 'overworld',
+    legend: 'town', music: 'overworld',
     map: [
       'TTTggggTTT',
       'Tgg....fgT',
-      'gg.q..q.gg',
-      'gg......gg',
+      'gguuu.q.gg',
+      'gguuu...gg',
       'gg.1111.gg',
-      'ggg....ggg',
-      'TgggfggfgT',
+      'ggg...nggg',
+      'TgggfgnfgT',
       'TTTggggTTT',
     ],
     entities: [
-      ['octorok', 4, 4], ['pickup', 6, 2, { kind: 'rupee20' }],
+      ['octorok', 4, 4], ['pickup', 7, 3, { kind: 'rupee20' }],
     ],
   },
   '0,6,8': {
@@ -1944,21 +1974,34 @@ const rooms = {
       ['crab', 7, 4],
     ],
   },
+  // SANDPIPER ROW, the Shallows' fishing hamlet — the second settlement, and
+  // the reason the town kit has two sets of tiles for one set of art: these
+  // are the `Sand` variants, so the grass that shows through a roof's rounded
+  // corner in Tidewatch is dune sand here. Same characters, same buildings.
+  //
+  // One cottage opens and one is shuttered. A town needs more buildings than
+  // it has interiors and the source says which is which with the door it draws
+  // — that is why a shut house is a different building and not a flag.
   '0,9,8': {
-    name: 'Salt Bar',
-    legend: 'dunes', music: 'overworld',
+    name: 'Sandpiper Row',
+    legend: 'townDunes', music: 'overworld',
     map: [
       'TTTggggTTT',
       'Tgg....ggT',
-      'gg.1111.gg',
-      'gg......gg',
-      'gg.1111.gg',
-      'ggg....ggg',
-      'TggggggggT',
+      'gjjjgkkkgg',
+      'gjjjgkkkgg',
+      'gjjjgkkkgg',
+      'gg......ng',
+      'TizggggenT',
       'TTTggggTTT',
     ],
+    warps: [
+      { x: 2, y: 4, to: { map: 'houseSandpiper', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
+    ],
     entities: [
-      ['octorokSea', 4, 3], ['crab', 6, 4],
+      ['sign', 8, 1, { text: 'SANDPIPER ROW\nTwo houses, one boat, no harbour.' }],
+      ['npc', 5, 5, { sprite: 'npc_fisher', wander: true, dialogue: 'fisher1' }],
+      ['crab', 6, 1],
     ],
   },
   '0,10,8': {
@@ -2238,7 +2281,10 @@ function installHouses() {
           ['shopItem', 4, 5, { pickup: 'bottle', price: 40, name: 'Bottled Tide' }],
           ['shopItem', 2, 5, { charm: 'ballastHeart', price: 80, once: true, saveKey: 'shopCharm' }],
         ],
-        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 4, ry: 7, px: 48, py: 40, dir: 'down' } }],
+        // Out of the shop's door and back onto the square in front of it. The
+        // door moved when the village was rebuilt — it is the middle cell of
+        // the SHOP's front row now, at 6,5 — so this lands one tile below it.
+        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 4, ry: 7, px: 96, py: 88, dir: 'down' } }],
       },
     },
   });
@@ -2269,10 +2315,51 @@ function installHouses() {
           }],
           ['npc', 7, 4, { sprite: 'npc_farore_0', dialogue: 'faroreHome' }],
         ],
-        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 4, ry: 7, px: 112, py: 40, dir: 'down' } }],
+        // The hollow is at 3,1 in the tree line at the top of the square.
+        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 4, ry: 7, px: 64, py: 40, dir: 'down' } }],
       },
     },
   });
+
+  // The three houses the town kit opened. Each is one room with somebody in
+  // it, because a door that opens onto nothing is worse than a door that does
+  // not open — the shuttered house exists for the buildings we do not furnish.
+  const home = (id, name, music, entities, back) => registerMap({
+    id, kind: 'interior', name,
+    w: 1, h: 1, floors: 1,
+    legend: 'house', music, tint: 'cave', scroll: false,
+    rooms: {
+      '0,0,0': {
+        map: [
+          '##########',
+          '#........#',
+          '#........#',
+          '#........#',
+          '#........#',
+          '#........#',
+          '#....o...#',
+          '##########',
+        ],
+        entities,
+        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, ...back, dir: 'down' } }],
+      },
+    },
+  });
+
+  home('houseHearth', 'A Village House', 'village', [
+    ['npc', 3, 2, { sprite: 'npc_villager2', dialogue: 'hearthWife' }],
+    ['npc', 7, 4, { sprite: 'npc_child', wander: true, dialogue: 'hearthChild' }],
+    ['pickup', 2, 4, { kind: 'rupee5' }],
+  ], { rx: 4, ry: 7, px: 32, py: 88 });
+
+  home('houseNets', "The Net-mender's", 'village', [
+    ['npc', 4, 2, { sprite: 'npc_fisher', dialogue: 'netMender' }],
+  ], { rx: 4, ry: 8, px: 48, py: 104 });
+
+  home('houseSandpiper', 'Sandpiper Cottage', 'village', [
+    ['npc', 5, 2, { sprite: 'npc_villager', dialogue: 'sandpiper' }],
+    ['pickup', 7, 4, { kind: 'rupee5' }],
+  ], { rx: 9, ry: 8, px: 32, py: 88 });
 }
 
 export function installOverworld() {

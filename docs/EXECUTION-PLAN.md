@@ -373,6 +373,26 @@ batch nine items and then untangle 303 rooms at once.
 
 ### PT — Towns, buildings and terrain polish
 
+**STEPS 1-4 ARE DONE.** The block machinery is built, the Subrosia town kit is
+extracted, and four screens are settlements. Step 5 (the terrain backlog, the
+`cliff` family) is untouched and is still the biggest remaining art job.
+
+| Step | State |
+|---|---|
+| 1. A building is not a tile | DONE — `registerBlocks` in `src/world/tileset.js`, `Room.expandBlocks` in `src/world/room.js`. A block is placed as a rectangle of one legend character and throws if the footprint is wrong. Not the tree's `quad:` generalised — that machinery was never on trunk (`QUADS` is empty); blocks are its replacement and cover the 2x2 tree case too |
+| 2. Extract the kit | DONE — the `TOWN` table in `tools/rip-terrain.py`: shop, three houses, well, stump, fence, barrels, two crate stacks. Ten buildings, two ground variants each |
+| 3. Re-author the villages | DONE — `0,4,7` Tidewatch Village, `0,4,8` Village Shore, `0,5,8` Driftwood Strand, `0,9,8` Sandpiper Row (new, in the dunes). Three doors wired to three new interiors |
+| 4. Populate them | PARTLY — the new interiors have people in them and the square keeps its four NPCs, but `oracle-seasons-nonhuman-races.png` is still not extracted from, so every townsperson is still an existing sprite |
+| 5. The terrain backlog | NOT STARTED |
+
+**What a later session must know before touching a town screen:** a 10x8 screen
+holding two 3x3 buildings has exactly ONE row left that crosses it, and any
+object three tiles wide dropped in that row severs the screen — usually only at
+HIGH, where the tide has closed the other way round. `node tools/check-towns.mjs`
+is the only thing that sees it. Its flood is deliberately on foot, because
+granting swimming hides the failure completely.
+
+
 **This is a top design priority, not a cosmetic pass.** The world currently has
 villages that are a name on a signpost and a few doors cut into a cliff. The
 Oracles' towns read as places people live — roofs, shopfronts, wells, fences,
@@ -1275,7 +1295,7 @@ to the hard-won-lessons section of docs/HANDOFF.md.
 | 5 | P4 enemy grid-lock | — |
 | 6 | P5 tide field + Anchor | P6, P8 |
 | 7 | P6 item roster | P8, P9 |
-| 8 | **PT towns, buildings, terrain polish** | P9 |
+| 8 | **PT towns, buildings, terrain polish** | P9 | (steps 1-4 done)
 | 9 | P7 scrimshaw | — |
 | 10–15 | P8 dungeons 1–6 | P9 |
 | 16 | P9 overworld + difficulty | — |

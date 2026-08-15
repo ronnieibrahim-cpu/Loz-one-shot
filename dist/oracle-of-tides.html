@@ -1542,6 +1542,50 @@ function registerTiles(defs) {
   }
 }
 
+// --------------------------------------------------------------------------
+// BLOCKS: objects bigger than a tile.
+//
+// A building is three cells wide and three tall. Cutting one into nine loose
+// tiles gives an author nine characters that mean something in exactly one
+// arrangement, with nothing to catch a wrong one — the roof laid on upside
+// down validates, renders and strands the screen behind it.
+//
+// So a block is registered once, as its grid of cell tiles, and PLACED once. A
+// room grid draws the building's footprint as a rectangle of a single legend
+// character:
+//
+//     'ggHHHggg'          H is 'block:bShop', 3x3, so this is one shop
+//     'ggHHHggg'          with grass either side — not nine tiles that
+//     'ggHHHggg'          happen to line up.
+//
+// `Room` claims each rectangle top-left-first and resolves every cell to the
+// tile named here (see the footprint pass in src/world/room.js). A footprint
+// that is not exactly w x h THROWS at construction, which is the whole point:
+// a mis-drawn building is a typo, and a typo should be an error and not a
+// screen you have to look at to discover is wrong.
+//
+// The cell tiles are ordinary tiles with ordinary flags. Nothing downstream —
+// collision, rendering, the tide field, every checker — knows a block exists.
+const BLOCKS = new Map();
+
+/** Register a batch of block definitions: { name: { w, h, tiles: [[name]] } }. */
+function registerBlocks(defs) {
+  for (const [name, def] of Object.entries(defs)) {
+    const { w, h, tiles } = def;
+    if (!w || !h || tiles.length !== h || tiles.some(r => r.length !== w)) {
+      throw new Error(`block ${name}: declares ${w}x${h} and lists `
+        + `${tiles.length} rows of ${tiles.map(r => r.length).join('/')}`);
+    }
+    BLOCKS.set(name, { name, w, h, tiles: tiles.map(r => r.slice()) });
+  }
+}
+
+/** The block a legend entry names, or null if it names an ordinary tile. */
+function blockRef(tileName) {
+  if (typeof tileName !== 'string' || !tileName.startsWith('block:')) return null;
+  return BLOCKS.get(tileName.slice(6)) || null;
+}
+
 const EMPTY = {
   name: '__missing', pal: 'stone', flags: 0, mask: 0, tide: null,
   anim: null, animRate: 10, over: false, push: null, ledge: null, depth: 0,
@@ -1653,6 +1697,9 @@ function transformFor(tileName, action) {
 __exports["F"] = F;
 __exports["TILES"] = TILES;
 __exports["registerTiles"] = registerTiles;
+__exports["BLOCKS"] = BLOCKS;
+__exports["registerBlocks"] = registerBlocks;
+__exports["blockRef"] = blockRef;
 __exports["getTileDef"] = getTileDef;
 __exports["resolveTile"] = resolveTile;
 __exports["tileArt"] = tileArt;
@@ -1710,7 +1757,7 @@ __define("world/room.js", function (__exports, __require) {
 
 const { TILE, ROOM_W, ROOM_H, offscreen } = __require("core/screen.js");
 const { tiles: tileSheet } = __require("gfx/art.js");
-const { F, resolveTile, getTileDef, tileArt } = __require("world/tileset.js");
+const { F, resolveTile, getTileDef, tileArt, blockRef } = __require("world/tileset.js");
 
 const LEGENDS = new Map();
 
@@ -1773,14 +1820,17 @@ class Room {
     // Base grid of tile *names* as authored (may be virtual tide tiles).
     this.base = new Array(this.tw * this.th);
     const rows = (def.map || []);
+    const chars = new Array(this.tw * this.th);
     for (let y = 0; y < this.th; y++) {
       const row = (rows[y] || '').replace(/\s+$/, '');
       for (let x = 0; x < this.tw; x++) {
         const ch = row[x] !== undefined ? row[x] : ' ';
         const t = legend[ch];
+        chars[y * this.tw + x] = ch;
         this.base[y * this.tw + x] = t || legend[' '] || 'void';
       }
     }
+    this.expandBlocks(chars, `${this.mapId}/${key}`);
     // Runtime overrides (opened doors, smashed bushes, lifted rocks).
     this.override = new Array(this.tw * this.th).fill(null);
 
@@ -1801,6 +1851,43 @@ class Room {
     this.overCells = [];      // tiles drawn above entities
     this.visited = false;
     this.cleared = false;     // all enemies defeated at least once (for locked rooms)
+  }
+
+  /**
+   * Resolve every block footprint in the grid to its cells.
+   *
+   * A block character marks the FOOTPRINT of one object, so a 3x3 shop is nine
+   * of the same character and the loader decides which cell each one is. The
+   * scan runs in reading order and CLAIMS a whole w x h rectangle the first
+   * time it meets an unclaimed cell of that character, which is what makes two
+   * shops side by side — six characters in a row — two shops rather than an
+   * ambiguity. Anything that does not fit throws, naming the room: a building
+   * one row short renders as a roof with no front, strands whatever was behind
+   * it, and validates perfectly.
+   */
+  expandBlocks(chars, where) {
+    const claimed = new Uint8Array(this.tw * this.th);
+    for (let y = 0; y < this.th; y++) {
+      for (let x = 0; x < this.tw; x++) {
+        const i = y * this.tw + x;
+        if (claimed[i]) continue;
+        const b = blockRef(this.base[i]);
+        if (!b) continue;
+        const ch = chars[i];
+        for (let dy = 0; dy < b.h; dy++) {
+          for (let dx = 0; dx < b.w; dx++) {
+            const jx = x + dx, jy = y + dy, j = jy * this.tw + jx;
+            if (jx >= this.tw || jy >= this.th || chars[j] !== ch || claimed[j]) {
+              throw new Error(`${where}: block '${b.name}' at ${x},${y} needs a `
+                + `${b.w}x${b.h} footprint of '${ch}' and does not have one`
+                + ` (fails at ${jx},${jy})`);
+            }
+            claimed[j] = 1;
+            this.base[j] = b.tiles[dy][dx];
+          }
+        }
+      }
+    }
   }
 
   inBounds(tx, ty) { return tx >= 0 && ty >= 0 && tx < this.tw && ty < this.th; }
@@ -4656,8 +4743,12 @@ function newProgress(name = 'LINK', seed = (Date.now() >>> 0)) {
     // world state
     tide: 1,
     // position
-    pos: { map: 'overworld', floor: 0, rx: 4, ry: 7, px: 72, py: 64, dir: 'down' },
-    respawn: { map: 'overworld', floor: 0, rx: 4, ry: 7, px: 72, py: 64, dir: 'down' },
+    // The middle of Tidewatch's square, facing the shopfront. It used to be
+    // 72,64 — which is now the alley between the two buildings the village
+    // gained, and a new game opening in an alley is a worse first frame than
+    // one opening in the square with the shop in front of it.
+    pos: { map: 'overworld', floor: 0, rx: 4, ry: 7, px: 72, py: 72, dir: 'down' },
+    respawn: { map: 'overworld', floor: 0, rx: 4, ry: 7, px: 72, py: 72, dir: 'down' },
     // stats
     deaths: 0, frames: 0, rupeesTotal: 0, kills: 0,
     createdAt: Date.now(),
@@ -11593,8 +11684,1063 @@ const TERRAIN_SRC_PALETTES = {
   rock: ['#c88808', '#805000', '#000000'],
   bush: ['#80e010', '#308800', '#000000'],
 };
+
+// ---- the town kit -------------------------------------------------------
+//
+// A BUILDING IS NOT A TILE. Each entry below is one object several cells
+// across, extracted whole off the Subrosia tileset and reassembled by the
+// block machinery in src/world/tileset.js: a room grid draws the building as
+// a rectangle of one legend character and the loader resolves each cell to
+// the art here. Nine loose tiles an author has to arrange by hand would be
+// nine ways to get one building wrong.
+//
+// UNLIKE THE TERRAIN ABOVE, THESE PALETTES ARE INSTALLED — the cartridge's
+// own colours, because this game has never drawn a roof and so has no
+// palette to preserve. tiles-core.js installs them before it registers the
+// tiledefs that name them.
+const TOWN_PALETTES = {
+  sbRoofBlue: ['#f8f8b0', '#1860f8', '#001888', '#000000'],
+  sbShopFront: ['#f0f838', '#1860f8', '#001888', '#000000'],
+  sbRoofGreen: ['#f0f838', '#08c850', '#086018', '#000000'],
+  sbRoofRed: ['#f8d088', '#e80818', '#680828', '#000000'],
+  sbWood: ['#f0f838', '#c08820', '#704820', '#000000'],
+  sbTimber: ['#f8e878', '#b86038', '#783828', '#000000'],
+};
+
+const TOWN_ART = {
+  // bShop cell (0,0) — tileset c4,r7
+  bShop_0_0: `
+    0003333333333333
+    0032121000000000
+    0311110111111111
+    3121101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111`,
+
+  // bShop cell (1,0) — tileset c5,r7
+  bShop_1_0: `
+    3333333333333333
+    0000000000000000
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111`,
+
+  // bShop cell (2,0) — tileset c6,r7
+  bShop_2_0: `
+    3333333333333000
+    0000000001212300
+    1111111110111130
+    1111111111011213
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111111012213`,
+
+  // bShop cell (0,1) — tileset c4,r8
+  bShop_0_1: `
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122110111111111
+    3122111000000000
+    3121111111111111
+    3121111222222222
+    3111111222222222
+    3211112222222222
+    3321122222222222
+    3332111111111111`,
+
+  // bShop cell (1,1) — tileset c5,r8
+  bShop_1_1: `
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    0000000000000000
+    1111111111111111
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    1111111111111111`,
+
+  // bShop cell (2,1) — tileset c6,r8
+  bShop_2_1: `
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111110112213
+    0000000001112213
+    1111111111111213
+    2222222221111213
+    2222222221111113
+    2222222222111123
+    2222222222211233
+    1111111111112333`,
+
+  // bShop cell (0,2) — tileset c4,r9
+  bShop_0_2: `
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122110103333333
+    3122111030......
+    312111113..03333
+    312111123..33...
+    311111123..33333
+    3211112233....33
+    332112223..33330
+    3332111130......`,
+
+  // bShop cell (1,2) — tileset c5,r9
+  bShop_1_2: `
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    3333333333333333
+    ................
+    .33..33.033330.3
+    .33..33.330033.3
+    .333333.330033.3
+    .33..33.330033.3
+    .33..33.033330.3
+    ................`,
+
+  // bShop cell (2,2) — tileset c6,r9
+  bShop_2_2: `
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    3333333010112213
+    ......0301112213
+    33330..311111213
+    30033..321111213
+    30033.3321111113
+    33330..322111123
+    3......322211233
+    ......0311112333`,
+
+  // bHouseGreen cell (0,0) — tileset c7,r7
+  bHouseGreen_0_0: `
+    ...3333333333333
+    ..32121000000000
+    .311110111111111
+    3121101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111`,
+
+  // bHouseGreen cell (1,0) — tileset c8,r7
+  bHouseGreen_1_0: `
+    3333333333333333
+    0000000000000000
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111`,
+
+  // bHouseGreen cell (2,0) — tileset c9,r7
+  bHouseGreen_2_0: `
+    3333333333333...
+    00000000012123..
+    111111111011113.
+    1111111111011213
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111111012213`,
+
+  // bHouseGreen cell (0,1) — tileset c7,r8
+  bHouseGreen_0_1: `
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122110111111111
+    3122111000000000
+    3121111111111111
+    3121111222222222
+    3111111222222222
+    3211112222222222
+    3321122222222222
+    3332111111111111`,
+
+  // bHouseGreen cell (1,1) — tileset c8,r8
+  bHouseGreen_1_1: `
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    0000000000000000
+    1111111111111111
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    1111111111111111`,
+
+  // bHouseGreen cell (2,1) — tileset c9,r8
+  bHouseGreen_2_1: `
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111110112213
+    0000000001112213
+    1111111111111213
+    2222222221111213
+    2222222221111113
+    2222222222111123
+    2222222222211233
+    1111111111112333`,
+
+  // bHouseGreen cell (0,2) — tileset c9,r9
+  bHouseGreen_0_2: `
+    2333333333333332
+    3211111111111123
+    3111000000001113
+    3113222222223113
+    3113222222223113
+    3113333333333113
+    3113333333333113
+    3113333333333113
+    3112333333332113
+    3011111111111103
+    3200000000000023
+    3322222222222233
+    3333333333333333
+    3233333333333323
+    3332222222222333
+    2333333333333332`,
+
+  // bHouseGreen cell (1,2) — tileset c8,r9
+  bHouseGreen_1_2: `
+    3333333333333333
+    0000000000000000
+    0000000000000000
+    3333333333333333
+    1111111111111111
+    3333333333333333
+    2233333333333322
+    1123333333333211
+    1123333333333211
+    2123333333333212
+    2123333333333212
+    1123333333333211
+    1223333333333221
+    1223333333333221
+    1123222222223211
+    3332111111112333`,
+
+  // bHouseGreen cell (2,2) — tileset c9,r9
+  bHouseGreen_2_2: `
+    2333333333333332
+    3211111111111123
+    3111000000001113
+    3113222222223113
+    3113222222223113
+    3113333333333113
+    3113333333333113
+    3113333333333113
+    3112333333332113
+    3011111111111103
+    3200000000000023
+    3322222222222233
+    3333333333333333
+    3233333333333323
+    3332222222222333
+    2333333333333332`,
+
+  // bHouseRed cell (0,0) — tileset c10,r7
+  bHouseRed_0_0: `
+    ...3333333333333
+    ..32121000000000
+    .311110111111111
+    3121101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111`,
+
+  // bHouseRed cell (1,0) — tileset c11,r7
+  bHouseRed_1_0: `
+    3333333333333333
+    0000000000000000
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111`,
+
+  // bHouseRed cell (2,0) — tileset c12,r7
+  bHouseRed_2_0: `
+    3333333333333...
+    00000000012123..
+    111111111011113.
+    1111111111011213
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111111012213`,
+
+  // bHouseRed cell (0,1) — tileset c10,r8
+  bHouseRed_0_1: `
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122110111111111
+    3122111000000000
+    3121111111111111
+    3121111222222222
+    3111111222222222
+    3211112222222222
+    3321122222222222
+    3332111111111111`,
+
+  // bHouseRed cell (1,1) — tileset c11,r8
+  bHouseRed_1_1: `
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    0000000000000000
+    1111111111111111
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    1111111111111111`,
+
+  // bHouseRed cell (2,1) — tileset c12,r8
+  bHouseRed_2_1: `
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111110112213
+    0000000001112213
+    1111111111111213
+    2222222221111213
+    2222222221111113
+    2222222222111123
+    2222222222211233
+    1111111111112333`,
+
+  // bHouseRed cell (0,2) — tileset c9,r9
+  bHouseRed_0_2: `
+    2333333333333332
+    3211111111111123
+    3111000000001113
+    3113222222223113
+    3113222222223113
+    3113333333333113
+    3113333333333113
+    3113333333333113
+    3112333333332113
+    3011111111111103
+    3200000000000023
+    3322222222222233
+    3333333333333333
+    3233333333333323
+    3332222222222333
+    2333333333333332`,
+
+  // bHouseRed cell (1,2) — tileset c8,r9
+  bHouseRed_1_2: `
+    3333333333333333
+    0000000000000000
+    0000000000000000
+    3333333333333333
+    1111111111111111
+    3333333333333333
+    2233333333333322
+    1123333333333211
+    1123333333333211
+    2123333333333212
+    2123333333333212
+    1123333333333211
+    1223333333333221
+    1223333333333221
+    1123222222223211
+    3332111111112333`,
+
+  // bHouseRed cell (2,2) — tileset c9,r9
+  bHouseRed_2_2: `
+    2333333333333332
+    3211111111111123
+    3111000000001113
+    3113222222223113
+    3113222222223113
+    3113333333333113
+    3113333333333113
+    3113333333333113
+    3112333333332113
+    3011111111111103
+    3200000000000023
+    3322222222222233
+    3333333333333333
+    3233333333333323
+    3332222222222333
+    2333333333333332`,
+
+  // bHouseShut cell (0,0) — tileset c7,r7
+  bHouseShut_0_0: `
+    ...3333333333333
+    ..32121000000000
+    .311110111111111
+    3121101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111`,
+
+  // bHouseShut cell (1,0) — tileset c8,r7
+  bHouseShut_1_0: `
+    3333333333333333
+    0000000000000000
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111`,
+
+  // bHouseShut cell (2,0) — tileset c9,r7
+  bHouseShut_2_0: `
+    3333333333333...
+    00000000012123..
+    111111111011113.
+    1111111111011213
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111111012213`,
+
+  // bHouseShut cell (0,1) — tileset c7,r8
+  bHouseShut_0_1: `
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122101111111111
+    3122110111111111
+    3122111000000000
+    3121111111111111
+    3121111222222222
+    3111111222222222
+    3211112222222222
+    3321122222222222
+    3332111111111111`,
+
+  // bHouseShut cell (1,1) — tileset c8,r8
+  bHouseShut_1_1: `
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    0000000000000000
+    1111111111111111
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    1111111111111111`,
+
+  // bHouseShut cell (2,1) — tileset c9,r8
+  bHouseShut_2_1: `
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111111012213
+    1111111110112213
+    0000000001112213
+    1111111111111213
+    2222222221111213
+    2222222221111113
+    2222222222111123
+    2222222222211233
+    1111111111112333`,
+
+  // bHouseShut cell (0,2) — tileset c9,r9
+  bHouseShut_0_2: `
+    2333333333333332
+    3211111111111123
+    3111000000001113
+    3113222222223113
+    3113222222223113
+    3113333333333113
+    3113333333333113
+    3113333333333113
+    3112333333332113
+    3011111111111103
+    3200000000000023
+    3322222222222233
+    3333333333333333
+    3233333333333323
+    3332222222222333
+    2333333333333332`,
+
+  // bHouseShut cell (1,2) — tileset c7,r9
+  bHouseShut_1_2: `
+    3333333333333333
+    3222222222222223
+    3122111111112213
+    3211122112211123
+    3333333333333333
+    3223133333313223
+    3113133333313113
+    3113133333313113
+    3113133333313113
+    3113100000013113
+    3112333333332113
+    3111111111111113
+    3333333333333333
+    3222322222232223
+    3333333333333333
+    1111111111111111`,
+
+  // bHouseShut cell (2,2) — tileset c9,r9
+  bHouseShut_2_2: `
+    2333333333333332
+    3211111111111123
+    3111000000001113
+    3113222222223113
+    3113222222223113
+    3113333333333113
+    3113333333333113
+    3113333333333113
+    3112333333332113
+    3011111111111103
+    3200000000000023
+    3322222222222233
+    3333333333333333
+    3233333333333323
+    3332222222222333
+    2333333333333332`,
+
+  // bWell cell (0,0) — tileset c13,r8
+  bWell_0_0: `
+    ..0..0..23333333
+    .0....2331000000
+    .....33100000000
+    ....320000123333
+    20.3100013332222
+    ..31000332222222
+    .230003222222222
+    .310032222211111
+    3200132221111111
+    3100322111111111
+    3000321111111111
+    3000321111111111
+    3000311111111133
+    3000311111111320
+    3000311111111321
+    3000311111111322`,
+
+  // bWell cell (1,0) — tileset c14,r8
+  bWell_1_0: `
+    33333332..0..0..
+    0000001332....0.
+    00000000133.....
+    333321000023....
+    2222333100013.02
+    22222223300013..
+    222222222300032.
+    111112222230013.
+    1111111222310023
+    1111111112230013
+    1111111111230003
+    1111111111230003
+    3311111111130003
+    0231111111130003
+    1231111111130003
+    2231111111130003`,
+
+  // bWell cell (0,1) — tileset c13,r9
+  bWell_0_1: `
+    3100231111111133
+    3200131111111111
+    3310013111111111
+    3230001331111111
+    2233000013321111
+    .331310000123333
+    .231332100000000
+    ..32313321000000
+    ...3313122333333
+    .0..333113111211
+    ....333323111211
+    ....333333333333
+    20..232233333333
+    .20..33222222222
+    ..20023332222222
+    ...22..223333333`,
+
+  // bWell cell (1,1) — tileset c14,r9
+  bWell_1_1: `
+    3311111111320013
+    1111111111310023
+    1111111113100133
+    1111111331000323
+    1111233100003322
+    333321000013133.
+    000000001233132.
+    00000012331323..
+    3333332213133...
+    112111311333..0.
+    112111323333....
+    333333333333....
+    333333332232..02
+    22222222233..02.
+    22222223332002..
+    333333322..22...`,
+
+  // bStump cell (0,0) — tileset c7,r10
+  bStump_0_0: `
+    ................
+    ................
+    ................
+    ................
+    ...............1
+    ...............2
+    ...............3
+    ...............3
+    ...............3
+    ............1333
+    ...........23103
+    ...........30003
+    ...........31003
+    ...........23212
+    ...........23221
+    ..........133321`,
+
+  // bStump cell (1,0) — tileset c8,r10
+  bStump_1_0: `
+    ....13333331....
+    ..133211112332..
+    .23122222221233.
+    2312100000122222
+    3120001221001213
+    2210112100110122
+    1201121122211021
+    1201210111221021
+    1210121002211222
+    2120012222112212
+    3012100001222123
+    2210122222211233
+    1232110000122332
+    1123322222333322
+    1122333333333222
+    1122221223333232`,
+
+  // bStump cell (2,0) — tileset c9,r10
+  bStump_2_0: `
+    ................
+    ................
+    ................
+    ................
+    1...............
+    2...............
+    3...............
+    3...............
+    3...............
+    3331............
+    31232...........
+    31123...........
+    322231..........
+    323321..........
+    233321..........
+    132332..........`,
+
+  // bStump cell (0,1) — tileset c7,r11
+  bStump_0_1: `
+    .........1321121
+    ........13100211
+    ........31000111
+    ........31100111
+    ........32111122
+    ........13222233
+    .........1333332
+    ...........11111
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................`,
+
+  // bStump cell (1,1) — tileset c8,r11
+  bStump_1_1: `
+    1122121122323232
+    1232121122323232
+    1232111112323232
+    2323111111223332
+    3333111001223333
+    3333210000123333
+    2223210000123322
+    1113221001233221
+    ...1332222322211
+    ....1233332211..
+    ......111111....
+    ................
+    ................
+    ................
+    ................
+    ................`,
+
+  // bStump cell (2,1) — tileset c9,r11
+  bStump_2_1: `
+    11211331........
+    11221123........
+    11120013........
+    21111023........
+    22211233........
+    33333332........
+    2221111.........
+    111.............
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................`,
+
+  // bFence cell (0,0) — tileset c11,r11
+  bFence_0_0: `
+    21..233321..2333
+    3333320233333202
+    3202310132023101
+    2121212121212121
+    2101210121012101
+    2101210121012101
+    2101210121012101
+    2101210121012101
+    2101210121012101
+    2101210121012101
+    2101210121012101
+    2101210121012101
+    2101210121012101
+    2101210121012101
+    2101210121012101
+    2101210121012101`,
+
+  // bFence cell (0,1) — tileset c11,r12
+  bFence_0_1: `
+    2101210121012101
+    2101210121012101
+    2101210121012101
+    2101210121012101
+    2101210121012101
+    2101210121012101
+    2101210121012101
+    2101210121012101
+    2121212121212121
+    2101210121012101
+    2101213121012131
+    2131332321313323
+    2323322223233222
+    3222332332223323
+    3323333333233333
+    13331...13331...`,
+
+  // bBarrels cell (0,0) — tileset c10,r9
+  bBarrels_0_0: `
+    ................
+    .13331...13331..
+    1310131.1310131.
+    3100013.3100013.
+    3210133.3210133.
+    3122323.3122323.
+    3213223.3213223.
+    3213223.3213223.
+    3213123.3213123.
+    3113123.3113123.
+    3123123131231231
+    3123123131231231
+    3123223231232232
+    1313232113132321
+    .133321..133321.
+    ....11......11..`,
+
+  // bCrate cell (0,0) — tileset c11,r9
+  bCrate_0_0: `
+    .33333333333333.
+    3200000000000023
+    3002222222222003
+    3021111111111203
+    3011110110111103
+    3011211111121103
+    3001111111111003
+    3300000000000033
+    3133333333333313
+    3112112112112113
+    3312112112112133
+    3333333333333333
+    3332222222222333
+    3332222222222333
+    3332222222222333
+    .33333333333333.`,
+
+  // bCrates cell (0,0) — tileset c12,r9
+  bCrates_0_0: `
+    .33333333333333.
+    3200000000000023
+    3002222222222003
+    3021111111111203
+    3011110110111103
+    3011211111121103
+    3001111111111003
+    3300000000000033
+    .33333333333333.
+    3200000000000023
+    3002222222222003
+    3021111111111203
+    3011110110111103
+    3011211111121103
+    3001111111111003
+    3300000000000033`,
+
+};
+
+// Each block: its size in cells, and the art + palette of every cell, in
+// reading order. tiles-core.js turns this into one tiledef per cell and one
+// registerBlock call; what each cell DOES (solid, the doorway that warps) is
+// design and is declared there, not here.
+const TOWN_BLOCKS = {
+  // blue shop: roof, and the signed front
+  bShop: { w: 3, h: 3, cells: [
+    [['bShop_0_0', 'sbRoofBlue'], ['bShop_1_0', 'sbRoofBlue'], ['bShop_2_0', 'sbRoofBlue']],
+    [['bShop_0_1', 'sbRoofBlue'], ['bShop_1_1', 'sbRoofBlue'], ['bShop_2_1', 'sbRoofBlue']],
+    [['bShop_0_2', 'sbShopFront'], ['bShop_1_2', 'sbShopFront'], ['bShop_2_2', 'sbShopFront']],
+  ] },
+  // green-roofed house: window, doorway, window
+  bHouseGreen: { w: 3, h: 3, cells: [
+    [['bHouseGreen_0_0', 'sbRoofGreen'], ['bHouseGreen_1_0', 'sbRoofGreen'], ['bHouseGreen_2_0', 'sbRoofGreen']],
+    [['bHouseGreen_0_1', 'sbRoofGreen'], ['bHouseGreen_1_1', 'sbRoofGreen'], ['bHouseGreen_2_1', 'sbRoofGreen']],
+    [['bHouseGreen_0_2', 'sbWood'], ['bHouseGreen_1_2', 'sbWood'], ['bHouseGreen_2_2', 'sbWood']],
+  ] },
+  // red-roofed house: window, doorway, window
+  bHouseRed: { w: 3, h: 3, cells: [
+    [['bHouseRed_0_0', 'sbRoofRed'], ['bHouseRed_1_0', 'sbRoofRed'], ['bHouseRed_2_0', 'sbRoofRed']],
+    [['bHouseRed_0_1', 'sbRoofRed'], ['bHouseRed_1_1', 'sbRoofRed'], ['bHouseRed_2_1', 'sbRoofRed']],
+    [['bHouseRed_0_2', 'sbWood'], ['bHouseRed_1_2', 'sbWood'], ['bHouseRed_2_2', 'sbWood']],
+  ] },
+  // green-roofed house, door shut
+  bHouseShut: { w: 3, h: 3, cells: [
+    [['bHouseShut_0_0', 'sbRoofGreen'], ['bHouseShut_1_0', 'sbRoofGreen'], ['bHouseShut_2_0', 'sbRoofGreen']],
+    [['bHouseShut_0_1', 'sbRoofGreen'], ['bHouseShut_1_1', 'sbRoofGreen'], ['bHouseShut_2_1', 'sbRoofGreen']],
+    [['bHouseShut_0_2', 'sbWood'], ['bHouseShut_1_2', 'sbWood'], ['bHouseShut_2_2', 'sbWood']],
+  ] },
+  // stone well
+  bWell: { w: 2, h: 2, cells: [
+    [['bWell_0_0', 'sbWood'], ['bWell_1_0', 'sbWood']],
+    [['bWell_0_1', 'sbWood'], ['bWell_1_1', 'sbWood']],
+  ] },
+  // cut stump, the size of a table
+  bStump: { w: 3, h: 2, cells: [
+    [['bStump_0_0', 'sbTimber'], ['bStump_1_0', 'sbTimber'], ['bStump_2_0', 'sbTimber']],
+    [['bStump_0_1', 'sbTimber'], ['bStump_1_1', 'sbTimber'], ['bStump_2_1', 'sbTimber']],
+  ] },
+  // paling fence, one post pair
+  bFence: { w: 1, h: 2, cells: [
+    [['bFence_0_0', 'sbTimber']],
+    [['bFence_0_1', 'sbTimber']],
+  ] },
+  // two barrels
+  bBarrels: { w: 1, h: 1, cells: [
+    [['bBarrels_0_0', 'sbWood']],
+  ] },
+  // a crate and a chest
+  bCrate: { w: 1, h: 1, cells: [
+    [['bCrate_0_0', 'sbWood']],
+  ] },
+  // stacked crates
+  bCrates: { w: 1, h: 1, cells: [
+    [['bCrates_0_0', 'sbWood']],
+  ] },
+};
 __exports["TERRAIN_ART"] = TERRAIN_ART;
 __exports["TERRAIN_SRC_PALETTES"] = TERRAIN_SRC_PALETTES;
+__exports["TOWN_PALETTES"] = TOWN_PALETTES;
+__exports["TOWN_ART"] = TOWN_ART;
+__exports["TOWN_BLOCKS"] = TOWN_BLOCKS;
 });
 
 /* ===== src/data/tiles-dungeon-themes.js ===== */
@@ -12071,8 +13217,9 @@ __define("data/tiles-core.js", function (__exports, __require) {
 // `underArt` so a base tile is drawn beneath them.
 
 const { tiles: tileSheet } = __require("gfx/art.js");
-const { registerTiles, F, declareAnimArt, registerTransforms } = __require("world/tileset.js");
-const { TERRAIN_ART } = __require("data/tiles-terrain.js");
+const { registerTiles, registerBlocks, F, declareAnimArt, registerTransforms } = __require("world/tileset.js");
+const { TERRAIN_ART, TOWN_ART, TOWN_PALETTES, TOWN_BLOCKS } = __require("data/tiles-terrain.js");
+const { registerPalettes } = __require("gfx/palettes.js");
 const { DUNGEON_THEME_ART, installDungeonThemePalettes } = __require("data/tiles-dungeon-themes.js");
 const { TORRENT_PUSH } = __require("data/feel.js");
 
@@ -13076,7 +14223,70 @@ const HAND_ART = {
 // the pixels are replaced; every tile keeps the palette its definition below
 // binds, so the palette-swap variants and the region colour schemes are
 // untouched. Regenerate with `python3 tools/rip-terrain.py`.
-const ART = { ...HAND_ART, ...TERRAIN_ART, ...DUNGEON_THEME_ART };
+const ART = { ...HAND_ART, ...TERRAIN_ART, ...DUNGEON_THEME_ART, ...TOWN_ART };
+
+// --------------------------------------------------------------------------
+// THE TOWN KIT: what each extracted building DOES.
+//
+// The art, the cell layout and the palettes are generated (tools/rip-terrain.py
+// -> tiles-terrain.js). This table is the half that is design rather than
+// extraction, and it is small on purpose:
+//
+//   entrance  the cell that is a doorway. It carries F.WARP and is the tile a
+//             room's `warps` list names; every other cell is SOLID. Exactly
+//             the flags `caveMouth` has carried since the first cave, down to
+//             `mask: 0` — SOLID so nothing spawns or is thrown into a doorway,
+//             mask 0 so the player can walk in.
+//   ground    the tile drawn UNDER the block. Every cell of the kit has
+//             transparency at its edges — that is what makes a roof's rounded
+//             corner show the region's own grass instead of a nub of Subrosian
+//             dirt — so a block placed on grass and the same block placed on
+//             sand are different tiles. Hence the variants: `bShop` stands on
+//             grass, `bShopSand` on sand, `bShopPaved` on the village square.
+//             Their ART is the same art; only what shows through changes.
+//
+// A shuttered house has no entrance and is solid throughout. That is not a
+// flag on an ordinary house — it is a different building with a closed door
+// drawn on it, because the player has to be able to see which doors open.
+const TOWN_ENTRANCE = {
+  bShop: [1, 2],
+  bHouseGreen: [1, 2],
+  bHouseRed: [1, 2],
+};
+const TOWN_GROUNDS = { '': 'grass', Sand: 'sand' };
+
+/** Tiledefs for every cell of every block variant, plus the block registry. */
+function installTownBlocks() {
+  registerPalettes(TOWN_PALETTES);
+  const defs = {}, blocks = {};
+  for (const [name, b] of Object.entries(TOWN_BLOCKS)) {
+    const door = TOWN_ENTRANCE[name] || null;
+    for (const [suffix, ground] of Object.entries(TOWN_GROUNDS)) {
+      const tiles = [];
+      for (let y = 0; y < b.h; y++) {
+        const row = [];
+        for (let x = 0; x < b.w; x++) {
+          const [art, pal] = b.cells[y][x];
+          const isDoor = !!door && door[0] === x && door[1] === y;
+          // `bShop_1_2` on grass, `bShopSand_1_2` on sand — same art, and the
+          // tile named first is the art's own name so nothing has to alias it.
+          const tile = suffix ? `${name}${suffix}_${x}_${y}` : art;
+          defs[tile] = {
+            art: ART[art], pal, underArt: ground,
+            flags: isDoor ? F.SOLID | F.WARP : F.SOLID,
+            ...(isDoor ? { mask: 0 } : {}),
+          };
+          row.push(tile);
+        }
+        tiles.push(row);
+      }
+      blocks[name + suffix] = { w: b.w, h: b.h, tiles };
+    }
+  }
+  registerTiles(defs);
+  registerBlocks(blocks);
+  return defs;
+}
 
 function installCoreTiles() {
   // The themed dungeon tiles bring their own colours off the cartridge, and
@@ -13548,6 +14758,9 @@ function installCoreTiles() {
     dLintel: { tide: ['dWallAbyss', 'dWallAbyss', 'dWaterD'] },
   };
   registerTiles(TILE_DEFS);
+  // After the tiledefs, so a block cell can never be shadowed by one of them.
+  const townDefs = installTownBlocks();
+  Object.assign(TILE_DEFS, townDefs);
 
   // Rooms draw a tile by its *tile* name, but the art above is keyed by art
   // name — so every palette-swap tile (grassDark reusing ART.grass, treeDark
@@ -13741,6 +14954,45 @@ function installLegends() {
     '_': 'ledgeCoral',
     '"': 'ledgeCoralN', '>': 'ledgeCoralE', '<': 'ledgeCoralW',
   }, 'base');
+
+  // ---- towns -------------------------------------------------------------
+  //
+  // A BUILDING IS ONE CHARACTER, DRAWN AS ITS FOOTPRINT. The shop is three
+  // cells wide and three tall, so it is nine H's in a 3x3 rectangle and the
+  // loader resolves which cell each one is (see `expandBlocks` in
+  // src/world/room.js). Two shops side by side are six H's in a row and are
+  // two shops; a footprint that is not exactly the block's size THROWS, naming
+  // the room, which is the whole reason a building is not nine loose tiles.
+  //
+  //     'ggghhhggg'       a house, with grass either side
+  //     'ggghhhggg'
+  //     'gggwwhhhg'       ...and a well tucked against it
+  //
+  // EVERY BUILDING IS SOLID except its doorway, so read the traps list in
+  // CLAUDE.md before laying one out and run check-overworld.mjs after: a solid
+  // tile can strand a screen while rendering perfectly and validating clean.
+  // A town is a maze of solid tiles and is the worst case for it.
+  //
+  // The same characters mean the same buildings in both legends. The only
+  // difference is what shows through the transparent pixels at a roof's
+  // rounded corner — grass in the village, sand on the dunes — which is why
+  // there are two sets of tiles for one set of art. Every character here is a
+  // BLOCK reference: `tools/validate.mjs` fails on a registered block no
+  // legend names, which is the check that `lionHead` and `urn` did not have.
+  const townKit = (grass) => ({
+    'H': 'block:bShop' + grass,          // the blue SHOP front. Enter at its middle.
+    'h': 'block:bHouseGreen' + grass,    // green roof, window / doorway / window
+    'j': 'block:bHouseRed' + grass,      // red roof, the same plan
+    'k': 'block:bHouseShut' + grass,     // a house whose door is shut: no interior
+    'w': 'block:bWell' + grass,          // 2x2 stone well
+    'u': 'block:bStump' + grass,         // 3x2 stump, the size of a table
+    'n': 'block:bFence' + grass,         // 1x2 paling fence; a run is a row of them
+    'i': 'block:bBarrels' + grass,
+    'e': 'block:bCrate' + grass,
+    'z': 'block:bCrates' + grass,
+  });
+  registerLegend('town', townKit(''), 'coast');
+  registerLegend('townDunes', townKit('Sand'), 'dunes');
 
   // ---- dungeon: shared indoor vocabulary ---------------------------------
   registerLegend('dungeon', {
@@ -15488,33 +16740,52 @@ const rooms = {
       ['octorok', 6, 4],
     ],
   },
+  // TIDEWATCH VILLAGE, and it is a village now.
+  //
+  // It used to be two cave mouths cut into the tree line with a hedge in the
+  // middle — the whole settlement was a name on a signpost, which is what PT
+  // in docs/EXECUTION-PLAN.md exists to fix. It is now a square with buildings
+  // round it: the blue SHOP on the east side and a house on the west, both
+  // extracted whole off the Subrosia tileset and placed as BLOCKS (one legend
+  // character drawn as the building's footprint — see src/data/legends.js).
+  //
+  // THE SEAM ROWS AND COLUMNS ARE UNTOUCHED. Row 0, row 7 and columns 0 and 9
+  // are character for character what they were, because a building on a screen
+  // edge changes what the neighbouring screen must have facing it, and this
+  // screen has four neighbours. Everything below is interior.
+  //
+  // The Maku Tree keeps its hollow at 3,1 rather than moving into a house: it
+  // is a tree, and a doorway in the wood at the top of the square says so.
   '0,4,7': {
     name: 'Tidewatch Village',
-    legend: 'coast', music: 'overworld',
+    legend: 'town', music: 'overworld',
     map: [
       'TTTTTTTTTT',
-      'TgcCcgcCcT',
-      'gg......fg',
-      'ggG""""Gfg',
-      'gf......gg',
-      'ggb.oo.bgg',
-      'TggggfgggT',
+      'TTTTCTgggT',
+      'gjjjgHHHgg',
+      'gjjjgHHHgg',
+      'gjjjgHHHgg',
+      'gggggggggg',
+      'TzgggggeiT',
       'TTTggggTTT',
     ],
     warps: [
-      { x: 3, y: 1, to: { map: 'houseShop', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
-      { x: 7, y: 1, to: { map: 'houseMaku', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
+      // Each door is the middle cell of its building's front row, which is the
+      // one cell of a block that is not solid. Walk into it from the square.
+      { x: 6, y: 4, to: { map: 'houseShop', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
+      { x: 2, y: 4, to: { map: 'houseHearth', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
+      { x: 4, y: 1, to: { map: 'houseMaku', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
     ],
     entities: [
-      ['sign', 1, 4, { text: 'TIDEWATCH VILLAGE\nEast: the Shallows. Mind the tide.' }],
+      ['sign', 8, 4, { text: 'TIDEWATCH VILLAGE\nEast: the Shallows. Mind the tide.' }],
       // The scrimshander works outdoors on the west side of the square, off
-      // the path between the two doors — an NPC is an entity, not a tile, so
-      // she narrows the square without touching its connectivity.
-      ['scrimshander', 1, 2, {}],
-      ['npc', 6, 2, { sprite: 'npc_villager', pal: 'npc', wander: true, dialogue: 'villager1' }],
-      ['npc', 3, 4, { sprite: 'npc_villager2', wander: true, dialogue: 'villager2' }],
-      ['npc', 8, 4, { sprite: 'npc_child', wander: true, dialogue: 'villageChild' }],
-      ['giver', 7, 2, {
+      // the path between the doors — an NPC is an entity, not a tile, so she
+      // narrows the square without touching its connectivity.
+      ['scrimshander', 2, 6, {}],
+      ['npc', 7, 1, { sprite: 'npc_villager', pal: 'npc', wander: true, dialogue: 'villager1' }],
+      ['npc', 6, 6, { sprite: 'npc_villager2', wander: true, dialogue: 'villager2' }],
+      ['npc', 6, 1, { sprite: 'npc_child', wander: true, dialogue: 'villageChild' }],
+      ['giver', 8, 2, {
         sprite: 'npc_elder', dialogue: 'digger', waiting: 'diggerWait',
         after: 'diggerAfter', flag: 'gotCoin', item: 'coin', level: 1,
         needEssences: 3,
@@ -15720,39 +16991,50 @@ const rooms = {
       ['crab', 4, 4], ['octorok', 2, 2],
     ],
   },
+  // The village's waterfront: the net-mender's cottage, a paling fence and the
+  // tide pool that was already here. The pool is deep at HIGH and the cottage
+  // door is not on it, which is the rule for a town — a building may narrow a
+  // route and may never be the reason a screen has none. See check-towns.mjs.
   '0,4,8': {
     name: 'Village Shore',
-    legend: 'coast', music: 'overworld',
+    legend: 'town', music: 'overworld',
     map: [
       'TTTggggTTT',
-      'Tgg....ggT',
+      'Tgg...zigT',
       'gg......gg',
-      'gg.2222.gg',
-      'gg.2222.gg',
-      'ggg....ggg',
-      'TgggggfggT',
+      'gghhh222gg',
+      'gghhh222gg',
+      'gghhhww.gg',
+      'TggggwwggT',
       'TTTggggTTT',
     ],
+    warps: [
+      { x: 3, y: 5, to: { map: 'houseNets', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
+    ],
     entities: [
-      ['npc', 2, 2, { sprite: 'npc_child', dialogue: 'coastChild' }],
+      ['npc', 5, 2, { sprite: 'npc_child', dialogue: 'coastChild' }],
       ['crab', 6, 4],
     ],
   },
+  // The village's timber yard, on the screen already named for the wood that
+  // washes up on it: the chopping stump and a length of paling fence. No door
+  // and no building — a settlement is not only the houses, and the kit's job
+  // here is to make a screen look worked rather than decorated.
   '0,5,8': {
     name: 'Driftwood Strand',
-    legend: 'coast', music: 'overworld',
+    legend: 'town', music: 'overworld',
     map: [
       'TTTggggTTT',
       'Tgg....fgT',
-      'gg.q..q.gg',
-      'gg......gg',
+      'gguuu.q.gg',
+      'gguuu...gg',
       'gg.1111.gg',
-      'ggg....ggg',
-      'TgggfggfgT',
+      'ggg...nggg',
+      'TgggfgnfgT',
       'TTTggggTTT',
     ],
     entities: [
-      ['octorok', 4, 4], ['pickup', 6, 2, { kind: 'rupee20' }],
+      ['octorok', 4, 4], ['pickup', 7, 3, { kind: 'rupee20' }],
     ],
   },
   '0,6,8': {
@@ -15811,21 +17093,34 @@ const rooms = {
       ['crab', 7, 4],
     ],
   },
+  // SANDPIPER ROW, the Shallows' fishing hamlet — the second settlement, and
+  // the reason the town kit has two sets of tiles for one set of art: these
+  // are the `Sand` variants, so the grass that shows through a roof's rounded
+  // corner in Tidewatch is dune sand here. Same characters, same buildings.
+  //
+  // One cottage opens and one is shuttered. A town needs more buildings than
+  // it has interiors and the source says which is which with the door it draws
+  // — that is why a shut house is a different building and not a flag.
   '0,9,8': {
-    name: 'Salt Bar',
-    legend: 'dunes', music: 'overworld',
+    name: 'Sandpiper Row',
+    legend: 'townDunes', music: 'overworld',
     map: [
       'TTTggggTTT',
       'Tgg....ggT',
-      'gg.1111.gg',
-      'gg......gg',
-      'gg.1111.gg',
-      'ggg....ggg',
-      'TggggggggT',
+      'gjjjgkkkgg',
+      'gjjjgkkkgg',
+      'gjjjgkkkgg',
+      'gg......ng',
+      'TizggggenT',
       'TTTggggTTT',
     ],
+    warps: [
+      { x: 2, y: 4, to: { map: 'houseSandpiper', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
+    ],
     entities: [
-      ['octorokSea', 4, 3], ['crab', 6, 4],
+      ['sign', 8, 1, { text: 'SANDPIPER ROW\nTwo houses, one boat, no harbour.' }],
+      ['npc', 5, 5, { sprite: 'npc_fisher', wander: true, dialogue: 'fisher1' }],
+      ['crab', 6, 1],
     ],
   },
   '0,10,8': {
@@ -16105,7 +17400,10 @@ function installHouses() {
           ['shopItem', 4, 5, { pickup: 'bottle', price: 40, name: 'Bottled Tide' }],
           ['shopItem', 2, 5, { charm: 'ballastHeart', price: 80, once: true, saveKey: 'shopCharm' }],
         ],
-        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 4, ry: 7, px: 48, py: 40, dir: 'down' } }],
+        // Out of the shop's door and back onto the square in front of it. The
+        // door moved when the village was rebuilt — it is the middle cell of
+        // the SHOP's front row now, at 6,5 — so this lands one tile below it.
+        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 4, ry: 7, px: 96, py: 88, dir: 'down' } }],
       },
     },
   });
@@ -16136,10 +17434,51 @@ function installHouses() {
           }],
           ['npc', 7, 4, { sprite: 'npc_farore_0', dialogue: 'faroreHome' }],
         ],
-        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 4, ry: 7, px: 112, py: 40, dir: 'down' } }],
+        // The hollow is at 3,1 in the tree line at the top of the square.
+        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 4, ry: 7, px: 64, py: 40, dir: 'down' } }],
       },
     },
   });
+
+  // The three houses the town kit opened. Each is one room with somebody in
+  // it, because a door that opens onto nothing is worse than a door that does
+  // not open — the shuttered house exists for the buildings we do not furnish.
+  const home = (id, name, music, entities, back) => registerMap({
+    id, kind: 'interior', name,
+    w: 1, h: 1, floors: 1,
+    legend: 'house', music, tint: 'cave', scroll: false,
+    rooms: {
+      '0,0,0': {
+        map: [
+          '##########',
+          '#........#',
+          '#........#',
+          '#........#',
+          '#........#',
+          '#........#',
+          '#....o...#',
+          '##########',
+        ],
+        entities,
+        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, ...back, dir: 'down' } }],
+      },
+    },
+  });
+
+  home('houseHearth', 'A Village House', 'village', [
+    ['npc', 3, 2, { sprite: 'npc_villager2', dialogue: 'hearthWife' }],
+    ['npc', 7, 4, { sprite: 'npc_child', wander: true, dialogue: 'hearthChild' }],
+    ['pickup', 2, 4, { kind: 'rupee5' }],
+  ], { rx: 4, ry: 7, px: 32, py: 88 });
+
+  home('houseNets', "The Net-mender's", 'village', [
+    ['npc', 4, 2, { sprite: 'npc_fisher', dialogue: 'netMender' }],
+  ], { rx: 4, ry: 8, px: 48, py: 104 });
+
+  home('houseSandpiper', 'Sandpiper Cottage', 'village', [
+    ['npc', 5, 2, { sprite: 'npc_villager', dialogue: 'sandpiper' }],
+    ['pickup', 7, 4, { kind: 'rupee5' }],
+  ], { rx: 9, ry: 8, px: 32, py: 88 });
 }
 
 function installOverworld() {
@@ -22798,6 +24137,10 @@ const DIALOGUE = {
   villager2: 'Farore keeps the shrine on the headland.\nShe is the Oracle of Secrets, though she\ntells plenty of them.',
   villageChild: "I can hear a bell under the water.\nGrandad says that is just my ears.\nGrandad has never once been right.",
   shopkeeper: 'Shield, thirty rupees. No haggling.\nA man who argues over a shield is a man\nwho has never been hit by anything.',
+  hearthWife: 'We built the doorstep three courses high\nafter the spring flood. Now the water\ncomes in through the floor instead.',
+  hearthChild: 'When it is low I can walk to the reef.\nWhen it is high I can swim over the wall.\nI like high better. Mum likes low.',
+  netMender: 'Nets rot from the top down, boy — from\nthe part that dries. It is the drying that\nkills them, not the sea.',
+  sandpiper: 'Two houses on this row and one of them\nis shut. He went out at low water and\ncame back at nobody knows when.',
 
   // The village digger: the Ferryman's Coin after three Essences.
   diggerWait: 'I dig where the sea tells me to dig.\nLately it will not shut up, and it will\nnot say anything useful either.',
