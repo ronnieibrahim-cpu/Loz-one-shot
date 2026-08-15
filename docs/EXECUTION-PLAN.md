@@ -458,7 +458,7 @@ CONSTRAINTS
   it. A village that validates and reads as scattered furniture is not done.
 ```
 
-### P7 — Scrimshaw
+### P7 — Scrimshaw (done — see the P7 audit below)
 
 ```
 Replace the ring system with scrimshaw, per Part 2 of the execution plan.
@@ -1299,9 +1299,9 @@ to the hard-won-lessons section of docs/HANDOFF.md.
 | 5 | P4 enemy grid-lock | — |
 | 6 | P5 tide field + Anchor | P6, P8 |
 | 7 | P6 item roster | P8, P9 |
-| 8 | **PT towns, buildings, terrain polish** | P9 | (steps 1-4 done)
-| 9 | P7 scrimshaw | — |
-| 10–15 | P8 dungeons 1–6 | P9 |
+| 8 | **PT towns, buildings, terrain polish** | P9 | (steps 1-4 done; step 5, the terrain backlog, is all that is left)
+| 9 | P7 scrimshaw (done) | — |
+| 10–15 | P8 dungeons 1–6 (done) | P9 |
 | 16 | P9 overworld + difficulty | — |
 
 PT sits before P9 deliberately. A gate is a tile flag dropped into a finished
