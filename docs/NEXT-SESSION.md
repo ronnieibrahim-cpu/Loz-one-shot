@@ -1,14 +1,37 @@
-# Prompt for the next session
+# Where the project is, and the prompt for the next session
 
-Paste the fenced block below into a fresh Claude Code session on this repo. It
-is written to be self-contained: it names the branch, the remaining jobs, the
-traps that are already paid for, and how to prove the work rather than assert
-it.
+**START HERE, and read this page in the order it is written.** The section
+below says what state the game is in; the fenced block after it is the prompt to
+paste into a fresh Claude Code session. Everything under **`# Archive`** further
+down is a record of sessions that have already finished — it is history, not
+instructions, and no phase named in it is outstanding because it appears there.
 
 Keep this file updated as work lands — it is the cheapest thing in the repo to
 maintain and the most expensive thing to not have.
 
----
+## The phase board, in one table
+
+`docs/EXECUTION-PLAN.md` Part 4 is the authority on order; this is its state.
+
+| Phase | What it was | State |
+|---|---|---|
+| P0–P7 | trunk, feel spec, RNG, fixed-point, enemy grid-lock, the tide field, the item roster, scrimshaw | **done** |
+| P7.5 | dungeon map rips and themes | **done**, except four sheets that are not in the repo |
+| P7.6 | multi-screen dungeon rooms | **done** |
+| PB | the single-file build | **done** |
+| P8 | six dungeons, one per item | **done** — all six, `docs/DUNGEON-STATUS.md` names each commit |
+| PT | towns, buildings, terrain polish | **done** — steps 1–4 and step 5, the cliff family |
+| P9 | overworld re-gating and difficulty | **done** — and it found that the game could not be finished |
+
+**Nothing on that table is outstanding.** The plan's numbered phases are
+finished, so the next session is not "the next phase" — it is one of the four
+jobs the prompt below names, and the first of them is the one no tool in this
+repo can do.
+
+**THE ONE THING TO KNOW BEFORE READING ANYTHING ELSE.** Every claim in this
+repo — six dungeons, four region gates, one heart economy, 708 checker
+assertions across eighteen tools — is a checker's word. **Nobody has ever played this game.** That is
+the largest open item in the project and it has been for five sessions.
 
 ## Where P9 stands, in one line
 
@@ -135,7 +158,166 @@ unable to see.
 
 ---
 
-## Where PT stands, in one line
+## The prompt to paste
+
+Everything below the fence is the whole brief. It names the jobs, the traps that
+are already paid for, and the baseline that proves the work rather than asserts
+it.
+
+```
+THERE IS NO NEXT PHASE. Every numbered phase in docs/EXECUTION-PLAN.md — P0
+through P9, plus PT and PB — is finished, and docs/DUNGEON-STATUS.md's six
+dungeons are all built and all name a commit. If you find a document that reads
+like it is asking for P8, or PT, or P9, you are reading the ARCHIVE half of
+docs/NEXT-SESSION.md: everything under its `# Archive` heading is a record of a
+session that already finished. The board at the TOP of that file is the state.
+
+So do not go looking for a phase to do. Pick one of the four jobs below, or ask
+me which. They are ranked, and the first one is worth more than the other three
+together.
+
+`main` is trunk. Branch from it. One prompt = one session = one branch.
+Run `git ls-remote --heads origin` before you start and look for a branch that
+has already done this — a finished dungeon was very nearly built twice that way.
+
+READ, IN THIS ORDER:
+  docs/NEXT-SESSION.md    the board and the state, at the top of the file. The
+                          `# Archive` half is history; do not take a job from it.
+  CLAUDE.md               the hard rules and the traps list. They are hard
+                          rules, and the traps each cost a session already.
+  docs/DUNGEON-STATUS.md  every dungeon, its status, the commit it landed in.
+  docs/ART-BACKLOG.md     the ranked art list, for jobs 3 and 4.
+  docs/ART-DIRECTION.md   binding for anything visual. Rule 1 is EXTRACT, NOT
+                          DRAW; "Terrain" also covers autotiling now.
+  docs/HANDOFF.md         environment setup FIRST, then the hard-won lessons.
+  docs/EXECUTION-PLAN.md  the phase briefs, all of them now closed. Read it for
+                          the reasoning behind a decision, not for a job.
+
+ENVIRONMENT, BEFORE ANYTHING ELSE. Playwright asks for a browser revision the
+pre-installed Chromium does not match, so every headless harness dies with
+"Executable doesn't exist" until you shim it. Exact commands are in HANDOFF
+under "Environment setup a fresh container needs". `pip install pillow` before
+any rip-*.py tool will run.
+
+THE FOUR JOBS, hardest and most valuable first:
+  1. NOBODY HAS PLAYED ANY OF IT, and this is the top job by a wide margin.
+     Six dungeons, four region gates, one heart economy, ~600 checker
+     assertions, and every claim about all of it is a checker's word. It has
+     been the largest open item for five sessions and no tool in this repo can
+     close it. `tools/shoot-rooms.mjs` takes a still and `tools/replay.mjs`
+     re-runs a recorded input tape; neither is playing.
+     What "doing it" looks like: drive the real game through Playwright the way
+     tools/check-gates.mjs already does — new game, walk out of Tidewatch, and
+     go. Get to D1's essence. Then D2. Record what you had to do that the
+     player is never told, where the difficulty jumps or flattens, and which of
+     the six tide fixtures reads on screen and which does not. Screenshot the
+     moments that are wrong. Say plainly what is fun, what is confusing, and
+     where the curve breaks — a paragraph of honest impressions is worth more
+     here than another green checker.
+  2. Three enemies are registered and unplaced: thalassor, saltwraith,
+     gustharpy. Place them or take them out WITH their sprites — and taking
+     one out means removing its cell from the ripper's map and re-emitting,
+     not deleting lines from a generated file.
+  3. docs/ART-BACKLOG.md's legibility findings from D2, D3 and D4, all the same
+     shape: the mechanic is legible when it works and silent when it does not.
+     D5's bole and D6's lintel are the argument for how to fix them — when the
+     answer wants to be a shade of water, spend a whole tile of art instead.
+  4. The ledge families, the biggest terrain job left. The cliff family is the
+     worked example and the machinery exists (`family` and `pieces` on a
+     tiledef, Room.artAt). The catch: a ledge's DIRECTION is authored data the
+     player's hop reads, so only the ENDS of a run can come off the neighbours.
+
+WHAT P9 LEFT UNDONE, so it is not rediscovered:
+  * The Resonance Rod gates the Salt Pans and nothing states where the Rod is
+    found. check-progression.mjs deliberately leaves it out of the tiers, which
+    means nothing proves the player can get it before the Pans.
+  * The Dredge Line gates nothing on the overworld now — it is the last
+    dungeon's item. `boulder` and `abyssPlug` are registered and unplaced.
+  * The Abyssal Seal has no voice: walking into it just stops you.
+
+IF YOU DO THE LEDGES INSTEAD, the cliff family is the worked example and the
+machinery is already there: a tiledef carries `family` and `pieces`, and
+Room.artAt picks the piece from the orthogonal neighbours. The difference that
+makes a ledge harder is that its DIRECTION is authored data the player's hop
+reads, so a run cannot be autotiled off its neighbours alone — what can come off
+them is the ENDS of a run, which is where the hand-drawn family looks worst.
+`node tools/find-ledges.mjs` lists every placement in the game.
+
+CONSTRAINTS, and the first has cost a session before.
+  - SOLID TILES SEVER SCREENS. Run node tools/validate.mjs,
+    node tools/check-overworld.mjs, node tools/walk-dungeons.mjs and
+    node tools/check-towns.mjs after EVERY screen you touch, not at the end of
+    a batch.
+  - EXTRACTION LANDS IN A GENERATED FILE. Add the cell to the ripper's
+    coordinate map and re-emit. Run every ripper once before you change
+    anything to confirm each still reproduces byte-identically.
+  - A TILEDEF FIELD THE REGISTRAR DOES NOT NAME IS DISCARDED. `registerTiles`
+    in src/world/tileset.js copies field by field.
+  - DO NOT ADD AN ENTITY TO A ROOM A REPLAY WALKS THROUGH. `nextId` is one
+    global counter and `every(e, n)` phases enemies off it, so one new NPC in
+    the starting room re-phases every enemy in the game. Re-dress an existing
+    one instead. See HANDOFF, hard-won lessons.
+  - SCREENSHOT EVERY SCREEN YOU FINISH AND LOOK AT IT.
+    `node tools/shoot-rooms.mjs --tide=1 --px=80 overworld,4,7` writes a real
+    in-game frame in the real palette; `tools/preview.mjs` renders one palette
+    and proves silhouette only. Every terrain fault this project has hit
+    validated clean and previewed fine.
+
+BASELINE — confirm it before changing anything and keep every line green.
+THE CHECKERS TAKE A WHILE. Run them; do not reason about correctness instead.
+
+  node tools/validate.mjs           clean (two expected fx_slash warnings)
+  node tools/test.mjs               58/58
+  node tools/replay.mjs             51/51
+  node tools/walk-dungeons.mjs      29/29 over six dungeons
+  node tools/check-overworld.mjs    17/17
+  node tools/check-gates.mjs        15/15
+  node tools/check-progression.mjs 18/18   <- the dungeons open IN ORDER
+  node tools/check-towns.mjs        58/58   <- PINCH=1 prints each town's cuts
+  node tools/check-items.mjs        82/82
+  node tools/check-charms.mjs       63/63
+  node tools/check-anchor.mjs       14/14
+  node tools/check-lens.mjs         24/24
+  node tools/check-cleats.mjs       15/15
+  node tools/check-bellows.mjs      60/60
+  node tools/check-reefseed.mjs     87/87
+  node tools/check-dredge.mjs       103/103
+  node tools/check-motion.mjs       8/8
+  node tools/solve-switches.mjs     9 switch rooms, one push per block
+  node tools/scan-sprites.mjs --strict   0 hard findings
+  every ripper reproduces its generated file BYTE-IDENTICALLY. All seven:
+    python3 tools/rip-link.py   rip-npcs.py   rip-races.py   rip-enemies.py
+    python3 tools/rip-hud.py    rip-terrain.py   rip-dungeon-themes.py
+  then `git status src/data/` must be EMPTY. If it is not, someone hand-edited
+  a generated file, and re-running the ripper has just thrown their edit away —
+  put it back in the ripper's coordinate map instead.
+  npm run build && node tools/check-build.mjs
+
+EVERY SESSION ENDS BY RUNNING `npm run build` AND COMMITTING
+dist/oracle-of-tides.html. That file is the playable game. A commit that changes
+src/ and leaves the build stale ships a game that is not the game.
+
+Update docs/NEXT-SESSION.md losslessly before you finish, and record any
+surprise in docs/HANDOFF.md under hard-won lessons.
+
+Do the work yourself rather than spawning subagents — past sessions hit usage
+limits that way and lost the work.
+
+Tell me plainly what is done, what is weak, and what you skipped.
+```
+
+
+
+---
+
+# Archive — sessions that have already finished, newest first
+
+**Nothing below this line is a job.** Each section records what one finished
+session did, what it cost and what is weak about the result, so a later session
+can pick the work up without re-deriving it. A phase named here is DONE; see the
+board at the top of this file for what is not.
+
+## PT — towns, buildings and the terrain polish (DONE)
 
 **PT IS DONE. Steps 1-4 landed in earlier sessions and step 5's big item — the
 `cliff` family — is landed now.** What is left of the terrain backlog is the
@@ -144,7 +326,7 @@ unable to see.
 sheet with a second animation frame in it. **P9 is what PT was blocking and is
 what should start next.**
 
-### What the last session did (PT step 5, the cliff family)
+### PT step 5 — the cliff family
 
 **A CLIFF IS AN OBJECT NOW, NOT A TEXTURE — and not one screen was
 re-authored.** Nine pieces extracted off `oracle-ages-overworld.png` through
@@ -214,14 +396,14 @@ and reef palettes each lighting their own cliff tops in their own colours.
 
 ---
 
-## Where the towns stand (PT steps 1-4), in one line
+## PT steps 1-4 — the towns and the peoples (DONE)
 
 **PT steps 1-4 are DONE: the block machinery exists, the Subrosia town kit is
 extracted, four screens are settlements with three working doors, and the people
 standing in them come off the races sheet.** Step 5, the terrain backlog and the
 `cliff` family, is done too — see the section above this one.
 
-### What the last session did (PT step 4, the peoples of Thalassia)
+### PT step 4 — the peoples of Thalassia
 
 **`oracle-seasons-nonhuman-races.png` had never been touched and now supplies
 fourteen frames** through `tools/rip-races.py` -> `src/data/sprites-races.js`.
@@ -300,7 +482,7 @@ same drawing.
 - **Nobody has talked to any of them.** The new lines are proved by `validate`
   and by nothing else.
 
-### What the last session did (PT, towns and buildings)
+### PT steps 1-3 — towns and buildings
 
 **A BUILDING IS NOT A TILE, and now the engine agrees.** `registerBlocks` in
 `src/world/tileset.js` plus `Room.expandBlocks` in `src/world/room.js`: a block
@@ -427,165 +609,41 @@ because the world moved rather than the movement.
 
 ---
 
-## The prompt to paste — what P9 left, and the three jobs behind it
+## P8 — the six dungeons (DONE)
 
-P9's re-gate is landed. What it could not do is the thing no tool can: **play
-it.** That is the top job and it is the largest open item in the project. Behind
-it sit the three that have been on the board since P8 — the unplaced enemies,
-the legibility findings, and the ledge families.
+**P8 IS COMPLETE. All six dungeons are done and compliant and the
+six-versus-eight consolidation is done.** Do not re-author a finished dungeon;
+`docs/DUNGEON-STATUS.md` is the board and it names the commit each one landed
+in.
 
-```
-Read docs/NEXT-SESSION.md first: it is written to be self-contained and the
-section above this prompt says what the last session did and what is weak
-about it.
+### What P8 handed on, and where each of the four went
 
-`main` is trunk. Branch from it. One prompt = one session = one branch.
-Run `git ls-remote --heads origin` before you start and look for a branch that
-has already done this. docs/DUNGEON-STATUS.md is the board for anything that
-touches a dungeon; read it before designing and tick it before you finish.
+Kept because the reasoning is still the reasoning. **Items 3 is DONE** — P9's
+re-gate landed and is written up at the top of this file. **Items 1, 2 and 4 are
+still open and are on the board at the top**, which is where a session should
+take them from rather than from here.
 
-READ, IN THIS ORDER:
-  CLAUDE.md               the hard rules and the traps list. They are hard
-                          rules, and the traps each cost a session already.
-  docs/EXECUTION-PLAN.md  P9's brief.
-  docs/DUNGEON-STATUS.md  the board: every dungeon, its status, its commit.
-  docs/ART-BACKLOG.md     the ranked art list, if you are doing the ledges.
-  docs/ART-DIRECTION.md   binding for anything visual. Rule 1 is EXTRACT, NOT
-                          DRAW; "Terrain" now also covers autotiling.
-  docs/HANDOFF.md         environment setup FIRST, then the hard-won lessons.
-
-ENVIRONMENT, BEFORE ANYTHING ELSE. Playwright asks for a browser revision the
-pre-installed Chromium does not match, so every headless harness dies with
-"Executable doesn't exist" until you shim it. Exact commands are in HANDOFF
-under "Environment setup a fresh container needs". `pip install pillow` before
-any rip-*.py tool will run.
-
-THE FOUR JOBS ON THE BOARD, hardest and most valuable first:
-  1. NOBODY HAS PLAYED ANY OF IT. Six dungeons, four region gates, one heart
-     economy, and every claim about all of it is a checker's. No tool in the
-     repo can close this one, and it has been the top item since P8. If you
-     take it: `node tools/shoot-rooms.mjs` and `tools/replay.mjs` are the two
-     ways this project has ever looked at itself, and neither is playing.
-     Say plainly what is fun, what is confusing, and where the curve breaks.
-  2. Three enemies are registered and unplaced: thalassor, saltwraith,
-     gustharpy. Place them or take them out WITH their sprites — and taking
-     one out means removing its cell from the ripper's map and re-emitting,
-     not deleting lines from a generated file.
-  3. docs/ART-BACKLOG.md's legibility findings from D2, D3 and D4, all the same
-     shape: the mechanic is legible when it works and silent when it does not.
-     D5's bole and D6's lintel are the argument for how to fix them — when the
-     answer wants to be a shade of water, spend a whole tile of art instead.
-  4. The ledge families, the biggest terrain job left. The cliff family is the
-     worked example and the machinery exists (`family` and `pieces` on a
-     tiledef, Room.artAt). The catch: a ledge's DIRECTION is authored data the
-     player's hop reads, so only the ENDS of a run can come off the neighbours.
-
-WHAT P9 LEFT UNDONE, so it is not rediscovered:
-  * The Resonance Rod gates the Salt Pans and nothing states where the Rod is
-    found. check-progression.mjs deliberately leaves it out of the tiers, which
-    means nothing proves the player can get it before the Pans.
-  * The Dredge Line gates nothing on the overworld now — it is the last
-    dungeon's item. `boulder` and `abyssPlug` are registered and unplaced.
-  * The Abyssal Seal has no voice: walking into it just stops you.
-
-IF YOU DO THE LEDGES INSTEAD, the cliff family is the worked example and the
-machinery is already there: a tiledef carries `family` and `pieces`, and
-Room.artAt picks the piece from the orthogonal neighbours. The difference that
-makes a ledge harder is that its DIRECTION is authored data the player's hop
-reads, so a run cannot be autotiled off its neighbours alone — what can come off
-them is the ENDS of a run, which is where the hand-drawn family looks worst.
-`node tools/find-ledges.mjs` lists every placement in the game.
-
-CONSTRAINTS, and the first has cost a session before.
-  - SOLID TILES SEVER SCREENS. Run node tools/validate.mjs,
-    node tools/check-overworld.mjs, node tools/walk-dungeons.mjs and
-    node tools/check-towns.mjs after EVERY screen you touch, not at the end of
-    a batch.
-  - EXTRACTION LANDS IN A GENERATED FILE. Add the cell to the ripper's
-    coordinate map and re-emit. Run every ripper once before you change
-    anything to confirm each still reproduces byte-identically.
-  - A TILEDEF FIELD THE REGISTRAR DOES NOT NAME IS DISCARDED. `registerTiles`
-    in src/world/tileset.js copies field by field.
-  - DO NOT ADD AN ENTITY TO A ROOM A REPLAY WALKS THROUGH. `nextId` is one
-    global counter and `every(e, n)` phases enemies off it, so one new NPC in
-    the starting room re-phases every enemy in the game. Re-dress an existing
-    one instead. See HANDOFF, hard-won lessons.
-  - SCREENSHOT EVERY SCREEN YOU FINISH AND LOOK AT IT.
-    `node tools/shoot-rooms.mjs --tide=1 --px=80 overworld,4,7` writes a real
-    in-game frame in the real palette; `tools/preview.mjs` renders one palette
-    and proves silhouette only. Every terrain fault this project has hit
-    validated clean and previewed fine.
-
-BASELINE — confirm it before changing anything and keep every line green.
-THE CHECKERS TAKE A WHILE. Run them; do not reason about correctness instead.
-
-  node tools/validate.mjs           clean (two expected fx_slash warnings)
-  node tools/test.mjs               58/58
-  node tools/replay.mjs             51/51
-  node tools/walk-dungeons.mjs      23/23 over six dungeons
-  node tools/check-overworld.mjs    17/17
-  node tools/check-gates.mjs        15/15
-  node tools/check-progression.mjs 18/18   <- the dungeons open IN ORDER
-  node tools/check-towns.mjs        58/58   <- PINCH=1 prints each town's cuts
-  node tools/check-items.mjs        82/82
-  node tools/check-charms.mjs       63/63
-  node tools/check-anchor.mjs       14/14
-  node tools/check-lens.mjs         24/24
-  node tools/check-cleats.mjs       15/15
-  node tools/check-bellows.mjs      60/60
-  node tools/check-reefseed.mjs     87/87
-  node tools/check-dredge.mjs       103/103
-  node tools/check-motion.mjs       8/8
-  node tools/solve-switches.mjs     9 switch rooms, one push per block
-  node tools/scan-sprites.mjs --strict   0 hard findings
-  python3 tools/rip-terrain.py      regenerates tiles-terrain.js BYTE-IDENTICAL.
-                                    Same for rip-hud.py, rip-dungeon-themes.py
-                                    and rip-races.py. If one does not, someone
-                                    hand-edited a generated file.
-  npm run build && node tools/check-build.mjs
-
-EVERY SESSION ENDS BY RUNNING `npm run build` AND COMMITTING
-dist/oracle-of-tides.html. That file is the playable game. A commit that changes
-src/ and leaves the build stale ships a game that is not the game.
-
-Update docs/NEXT-SESSION.md losslessly before you finish, and record any
-surprise in docs/HANDOFF.md under hard-won lessons.
-
-Do the work yourself rather than spawning subagents — past sessions hit usage
-limits that way and lost the work.
-
-Tell me plainly what is done, what is weak, and what you skipped.
-```
-
-
-## Where P8 stands, in one line
-
-**P8 IS COMPLETE. All six dungeons are done and compliant, the six-versus-eight
-consolidation is done, and P9 may start.** Do not re-author a finished dungeon.
-
-### What P9 inherits, and the four things it should look at first
-
-1. **NOBODY HAS PLAYED ANY OF IT.** Six dungeons, six different fixtures, and
+1. **NOBODY HAS PLAYED ANY OF IT.** *(still open — the top job)* Six dungeons, six different fixtures, and
    every claim on the board is a checker's. No session has compared them, so
    nobody knows whether the difficulty curve across the six goes the right way,
    or at all. This is the largest open item in the project and it is the one
    thing no tool in the repo can close.
-2. **Three enemies are registered and unplaced** after the fold: `thalassor`,
+2. **Three enemies are registered and unplaced** *(still open)* after the fold: `thalassor`,
    `saltwraith` and `gustharpy`. Hand-drawn art sitting in the shipped build
    that nothing in the world draws. Either place them or take them out with
    their sprites — and if you take them out, remove the cell from the ripper's
    map and re-emit rather than editing the generated file.
-3. **The overworld is still gated for eight dungeons.** P9's own brief is the
-   re-gate; the fold means the Salt Pans and the Reef Palace are now one-room
-   ruins rather than dungeon approaches, so the routing through those two
-   regions wants a second look.
-4. **`docs/ART-BACKLOG.md` has four legibility findings** from D2, D3 and D4,
+3. ~~**The overworld is still gated for eight dungeons.**~~ **DONE.** P9 re-cut
+   it into four tiers and found, in the process, that the game could not be
+   finished at all: four of the six dungeons sat behind the Dredge Line, which
+   is the sixth dungeon's own item. Written up at the top of this file.
+4. **`docs/ART-BACKLOG.md` has four legibility findings** *(still open)* from D2, D3 and D4,
    all the same shape: the mechanic is legible when it works and silent when it
    does not. D5's bole and D6's lintel are the two that got this right and they
    are the argument for how to fix the others — when the answer wants to be a
    shade of water, reach for a whole tile of art instead.
 
-### What the last session did (P8/D6, the Abyssal Keep and the Dredge Line)
+### P8/D6 — the Abyssal Keep and the Dredge Line
 
 **D6 is re-authored around the Dredge Line, it is the last dungeon, and the same
 session did the consolidation.** 26 rooms over two floors, the line at room 13,
@@ -784,7 +842,7 @@ reach for a whole tile instead.
   It proves the throw and the sea; `check-items.mjs` owns the swing.
 - **Nobody has played it.** One grove is proved in-engine. Four are a checker's.
 
-### What the last session did (P8/D4, the Cliffside Cistern and the Squall Bellows)
+### P8/D4 — the Cliffside Cistern and the Squall Bellows
 
 **D4 is re-authored around the Bellows, and the hard part was that the item
 takes your feet.** 24 rooms, one floor, the Bellows at room 12, five sill rooms
@@ -875,7 +933,7 @@ drowned either. Top entry in `docs/ART-BACKLOG.md`.
   every sill looks like the same fixture. A 2x1 sill room would buy a different
   shape and none of the five is one.
 
-### What the last session did (P8/D3, the Bogwater Sanctum and the Cleats)
+### P8/D3 — the Bogwater Sanctum and the Cleats
 
 **D3 is re-authored around the Cleats' two modes, and the hard part was that
 the item gates nothing.** 22 rooms, one floor, the Cleats at room 11, three
@@ -952,7 +1010,7 @@ being swept out of a room once.** Written up as the top entry in
 - **`TORRENT_PUSH` is `derived`, not `measured`.** It is derived from
   SWIM_SPEED, which is itself derived from WALK_SPEED, which is a guess.
 
-## What the last session did (P8/D2, the Coral Spire and the Brineglass Lens)
+## P8/D2 — the Coral Spire and the Brineglass Lens
 
 **D2 is re-authored around the Lens, and the hard part was making an
 informational item required at all.** 24 rooms over two floors, the Lens at room
@@ -1112,7 +1170,7 @@ and `roomChanges: 1` asserts it left the room exactly once and by that route.
 - **The two removed dungeons are still in the data.** Eight dungeons, six in the
   plan. Neither D1 nor D2 needed the consolidation; D7/D8 folding is still owed.
 
-## What the last session did (P7.6, multi-screen dungeon rooms)
+## P7.6 — multi-screen dungeon rooms
 
 **A dungeon room may now be bigger than one screen, and one room in the game
 is.** All seven steps of `docs/briefs/P7.6-PLAN.md` plus both additions from
@@ -2296,7 +2354,11 @@ Tell me plainly what is done, what is weak, and what you skipped.
   room, which is why no existing room moved. `d1` `0,5,3` is the one converted
   room and `d1-clawcrab-den-wide` is its replay.
 
-## What is left
+## What was left, as of the P8 session (SUPERSEDED — see the board at the top)
+
+**Everything in this list has since landed: PT step 5 was the cliff family and
+P9 was the re-gate. It is kept because the reasoning behind each item is still
+the reasoning, not because any of it is outstanding.**
 
 **P8 IS COMPLETE and PT steps 1-4 are done.** Six dungeons, six provers, the
 eight-into-six fold, and four town screens built out of extracted buildings.

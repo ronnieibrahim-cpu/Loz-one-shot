@@ -11,7 +11,8 @@
 //
 // ROC'S FEATHER IS GONE and the hop is base moveset, so F.GAP no longer gates
 // anything: a one-tile chasm is crossed by walking into it. The Coral Reef
-// entry is removed rather than left failing. P9 re-gates the overworld.
+// entry is removed rather than left failing. P9 has since re-gated the
+// overworld; the GATES table below is that re-gate.
 //
 // THREE such gates exist, and this proves each one twice: that the region is
 // sealed without its item, and that it opens with it.

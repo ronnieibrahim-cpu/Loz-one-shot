@@ -327,7 +327,7 @@ check('the Cleats cross it',
 // Roc's Feather is gone and THE HOP IS BASE MOVESET. A one-tile chasm is
 // therefore crossed by everyone, by walking into it — there is no item to be
 // missing and no button to press. That is a deliberate loss of a gate, not an
-// oversight: docs/EXECUTION-PLAN.md P9 re-gates the overworld for the new
+// oversight: docs/EXECUTION-PLAN.md P9 has since re-gated the overworld for the new
 // roster, and this checker's job here is to prove the HOP works, since nothing
 // else in the suite walks into a gap.
 //

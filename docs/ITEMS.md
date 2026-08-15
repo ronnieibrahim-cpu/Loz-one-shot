@@ -358,23 +358,41 @@ and the Salt Pan Vault are one-room ruins on the overworld now, and each keeps
 the item its dungeon used to hand over. The reasoning is in
 `docs/DUNGEON-STATUS.md` under "The consolidation, and how it was settled".
 
-P8 re-authored the dungeons and P9 re-gates the overworld; these placements are
-the minimum that keeps every dungeon's key economy intact and P9 may still move
-them.
+P8 re-authored the dungeons and **P9 has since re-gated the overworld** — see
+the table below, which is the state rather than the plan.
 
 ---
 
-## What the gates look like now
+## What the gates look like now (P9)
 
-Removing three gate items would have cost the overworld three gates. Two were
-repointed rather than lost, and one was deliberately given up:
+Four region gates, and the order they impose is the order the dungeons are meant
+to be played in. `tools/check-progression.mjs` proves the order tier by tier;
+`check-overworld.mjs` proves each gate seals and opens; `check-gates.mjs` proves
+each one in-engine with a live player.
 
-| Gate | Was | Is | Proof |
+| Gate | Key | Opens | Proof |
 |---|---|---|---|
-| Salt Pans (`saltVane`) | Magic Boomerang | **Resonance Rod** | `check-gates` — and it asserts the Rod's range *doubles at HIGH*, so the same player in the same spot opens it at one tide level and not another. The only gate in the game whose key is the core mechanic. |
-| Abyssal approach (`abyssPlug`) | Magnetic Gloves | **Dredge Line** | `check-gates` |
-| Cliffs of Kell (`boulder`) | Power Bracelet | **Dredge Line** | `check-gates`, both directions: bare hands do not lift it, the line drags it clear |
-| Coral Reef (`chasm`) | Roc's Feather | **nothing** | Given up on purpose. The hop is base moveset, so a one-tile chasm is crossed by everyone. `check-overworld`'s flood models the hop against `GAP_HOP_MAX_SPAN` rather than blanket-passing gaps, so the Reef's four-tile decorative chasm bands are still walls. P9 re-gates. |
+| Sunken Marsh (`cliffCracked`) | **Bombs**, from D2 | D3 Bogwater Sanctum | `check-overworld`, both directions |
+| Cliffs of Kell + Drowned Wood (`tideChannel`) | **Kelp-Soled Cleats**, from D3 | D4 Cliffside Cistern, D5 Drowned Wood Shrine | `check-gates`, both directions: a walker does not cross it, the Cleats do |
+| Abyssal approach (`abyssSeal`) | **five Essences** — no item at all | D6 Abyssal Keep | `check-gates`, three ways: sealed with nothing, open with five, still sealed with four |
+| Salt Pans (`saltVane`) | **Resonance Rod** | the Salt Pan Vault, optional | `check-gates` — and it asserts the Rod's range *doubles at HIGH*, so the same player in the same spot opens it at one tide level and not another. The only gate in the game whose key is the core mechanic. |
+| Coral Reef (`chasm`) | — | — | Given up on purpose. The hop is base moveset, so a one-tile chasm is crossed by everyone. `check-overworld`'s flood models the hop against `GAP_HOP_MAX_SPAN` rather than blanket-passing gaps, so the Reef's four-tile decorative chasm bands are still walls. |
+
+**WHY THE LAST GATE IS NOT AN ITEM, and it is a fact about the roster rather
+than a shortcut.** An item can gate a region only if it REMOVES a barrier or
+CHANGES HOW YOU MOVE. Of the six dungeon items: the Anchor and the Chartstone
+move nothing; the Lens is forbidden from gating by this document; the Bellows'
+cone lasts exactly as long as the button is held and you cannot walk while
+pumping, so it opens a wheel but never a route; the Reefseed only ADDS ground;
+and the Dredge Line belongs to the LAST dungeon, so anything it holds shut is a
+lock rather than a gate. That leaves the Cleats. **This was found the hard way:**
+before P9 the Cliffs of Kell and the Abyssal approach were both held by the
+Dredge Line, so four of the six dungeons sat behind a key found inside one of
+them and the game could not be finished.
+
+**`boulder` and `abyssPlug` are still registered and are now unplaced.** They
+are the Dredge Line's two gate tiles and the Dredge Line has nothing left to
+gate on the overworld. Either give them optional pockets or take them out.
 
 ## What is base moveset now, and why
 

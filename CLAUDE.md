@@ -175,6 +175,9 @@ they are also how a future session finds which sheet a tile came from.
 | `node tools/check-dredge.mjs` | Every room that claims to need the Dredge Line puts its far side across a pit nothing walks, its mooring in reach of one sea and no other, and its cache in a floor that only gives up what the sea is covering — each closure clause proved twice, once at the line's reach and once at the Coilrope's |
 | `node tools/check-towns.mjs` | Every town screen's ways in and doors all reach each other ON FOOT at all three tide levels, every doorway warps somewhere that warps back, no building is standing on an NPC, and no townsperson is standing on the one tile that severs the screen |
 | `node tools/check-motion.mjs` | Ground enemies stay on the 8px lattice; fliers and swimmers stay off it |
+| `node tools/check-charms.mjs` | Every scrimshaw charm is live at the tide level its slot names and dead at the others, and every hand-placed charm is reachable |
+| `node tools/check-tilesets.mjs` | The extracted dungeon tileset re-rips byte-identically and its manifest keeps its frequency order |
+| `node tools/scan-sprites.mjs --strict` | No sprite is detached, mis-sized, or missing from the manifest |
 | `node tools/check-items.mjs` | Every item does the verb `docs/ITEMS.md` claims for it, and nothing hands out an item that no longer exists |
 | `node tools/replay.mjs` | Movement and combat are frame-identical to a recorded baseline |
 | `node tools/check-build.mjs` | The shipped single-file build boots and plays from a `file://` URL |

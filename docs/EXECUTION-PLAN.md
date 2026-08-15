@@ -1334,7 +1334,13 @@ to the hard-won-lessons section of docs/HANDOFF.md.
 | 8 | PT towns, buildings, terrain polish (done) | P9 | (step 5 closed with the cliff family; the ledges are backlog, not PT)
 | 9 | P7 scrimshaw (done) | — |
 | 10–15 | P8 dungeons 1–6 (done) | P9 |
-| 16 | P9 overworld + difficulty | — |
+| 16 | P9 overworld + difficulty (done) | — |
+
+**EVERY NUMBERED PHASE IS FINISHED.** There is no "next phase", and a session
+that arrives looking for one should go to `docs/NEXT-SESSION.md`, which opens
+with the board and the prompt. What is left is not phase-shaped: nobody has
+played the game, three enemies are registered and unplaced, the art backlog has
+four legibility findings, and the ledge families are un-extracted.
 
 PT sits before P9 deliberately. A gate is a tile flag dropped into a finished
 screen; a town is the screen itself. Re-gating a finished village is a small

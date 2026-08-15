@@ -1,12 +1,20 @@
 # Oracle of Tides — game plan
 
-The single source of truth for content authoring. Every content pack must agree
-with this document. If something here conflicts with your brief, this wins.
+The world's design: the premise, the region layout, the health economy, the
+naming rules and the hard rules every content pack must satisfy. If something
+here conflicts with your brief, this wins.
+
+**WITH TWO EXCEPTIONS, both of which are newer than this file.** The ITEM
+ROSTER is `docs/ITEMS.md` — CLAUDE.md says so and `tools/check-items.mjs`
+asserts the registry is exactly that document's list. The DUNGEON BOARD is
+`docs/DUNGEON-STATUS.md`. Where this file names an item or a dungeon count that
+those two do not, they win and this file is behind; the P9 pass corrected the
+places that were known to be.
 
 ## Premise
 
 Link washes ashore in **Thalassia**. **Nereth, the Drowned King** has shattered
-the **Tide Bell** into eight **Essences of the Tide** and hidden them in the
+the **Tide Bell** into six **Essences of the Tide** and hidden them in the
 drowned places of the land. Without the Bell the sea rises and falls at his whim.
 **Farore, Oracle of Secrets**, gives Link the **Moon Conch** — a shard of the
 Bell that lets him command the tide himself. The **Maku Tree** in Tidewatch
@@ -33,17 +41,30 @@ each one should lean on a different consequence of it (see the table below).
 12 wide x 10 tall grid of screens, keys `'0,x,y'` (x 0-11 left to right,
 y 0-9 top to bottom). Tidewatch Village is at `0,4,7`.
 
-| Region | Grid area | Legend | Gate to enter |
-|---|---|---|---|
-| Tidewatch Coast (start, village) | x3-6, y7-9 | `coast` | — |
-| The Shallows (dunes, D1) | x7-11, y6-9 | `dunes` | — |
-| Coral Reef (D2) | x8-11, y4-6 | `coral` | Roc's Feather (`chasm`) |
-| Sunken Marsh (D3) | x0-2, y6-9 | `marsh` | Bombs (`cliffCracked`) |
-| Cliffs of Kell (D4) | x0-3, y2-5 | `cliffs` | Power Bracelet (`boulder`) |
-| Drowned Wood (D5) | x4-7, y3-6 | `wood` | Zora's Flippers |
-| Salt Pans (D6) | x4-7, y0-2 | `salt` | Magic Boomerang (`saltVane`) |
-| Reef Palace approach (D7) | x8-11, y0-3 | `reef` | Hookshot |
-| Abyssal approach (D8) | x0-3, y0-1 | `abyss` | Magnetic Gloves (`abyssPlug`) |
+**THIS TABLE IS THE STATE AFTER P9, not the original plan.** The plan named
+eight dungeons and gated them on a Zelda item roster that no longer exists —
+Roc's Feather, the Power Bracelet, Zora's Flippers, the Hookshot, the Magnetic
+Gloves. The six-versus-eight fold removed two dungeons and P6 replaced the
+roster with the tide items, so the gates were re-cut in P9. The old column is
+kept beside the new one because a later session will otherwise wonder what
+happened to it.
+
+| Region | Grid area | Legend | Gate to enter | The plan originally said |
+|---|---|---|---|---|
+| Tidewatch Coast (start, village) | x3-6, y7-9 | `coast` | — | — |
+| The Shallows (dunes, D1) | x7-11, y6-9 | `dunes` | — | — |
+| Coral Reef (D2) | x8-11, y4-6 | `coral` | — (the hop is base moveset) | Roc's Feather (`chasm`) |
+| Sunken Marsh (D3) | x0-2, y6-9 | `marsh` | **Bombs**, from D2 (`cliffCracked`) | Bombs — unchanged |
+| Cliffs of Kell (D4) | x0-3, y2-5 | `cliffs` | **Kelp-Soled Cleats**, from D3 (`tideChannel`) | Power Bracelet (`boulder`) |
+| Drowned Wood (D5) | x4-7, y3-6 | `wood` | **Kelp-Soled Cleats**, from D3 (`tideChannel`) | Zora's Flippers |
+| Salt Pans (now a one-room ruin) | x4-7, y0-2 | `salt` | **Resonance Rod** (`saltVane`) | Magic Boomerang |
+| Reef Palace (now a one-room ruin) | x8-11, y0-3 | `reef` | — | Hookshot |
+| Abyssal approach (D6, the Keep) | x0-3, y0-1 | `abyss` | **five Essences** (`abyssSeal`) — no item at all | Magnetic Gloves (`abyssPlug`) |
+
+The tiers that table implies — nothing, Bombs, Cleats, Essences — are proved
+screen by screen by `tools/check-progression.mjs`, which exists because before
+P9 the Cliffs and the Abyssal approach were BOTH held by the Dredge Line, the
+item the Abyssal Keep hands over. The game could not be finished.
 
 Every screen in the 12x10 grid must exist so the overworld never has holes.
 
@@ -104,31 +125,43 @@ Each dungeon must contain:
 
 ## Item progression
 
+**SUPERSEDED BY `docs/ITEMS.md`, WHICH IS THE AUTHORITY.** The table that used
+to sit here was the pre-P6 Zelda roster — feather, bracelet, flippers,
+boomerang, hookshot, magnet — and none of those items exists. CLAUDE.md makes
+`docs/ITEMS.md` the roster of record and `tools/check-items.mjs` asserts the
+registry is exactly that document's list. What is actually in the game:
+
 | Item | Level | Source |
 |---|---|---|
-| `sword` | 1 | Intro cutscene |
-| `conch` | 1 | Intro cutscene (Farore) |
+| `sword` | 1 | Intro cutscene (Farore) |
+| `conch` | 1 | Intro cutscene (Farore) — the Moon Conch, the tide itself |
 | `shield` | 1 | Tidewatch Village shop, 30 rupees |
-| `satchel` | 1 | Maku Tree, after the first Essence |
-| `feather` | 1 | D1 |
-| `bombs` | 1 | D2 |
-| `bracelet` | 1 | D3 |
-| `flippers` | 1 | D4 |
-| `boomerang` | 2 | D5 |
-| `hookshot` | 1 | D6 |
-| `magnet` | 1 | D7 |
-| `flippers` | 2 | D8 (Mermaid Suit) |
-| `slingshot` | 1 | Trading sidequest |
-| `shovel` | 1 | Village digger, after two Essences |
-| `sword` | 2 | Secret cave, needs four Essences |
-| `sword` | 3 | Maku Tree, after all eight Essences |
-| `shield` | 2/3 | Shops and secrets |
-| `ringbox` | 1 | Village |
+| `anchor` | 1 | D1 Tidewash Grotto — the Tidewright's Anchor |
+| `lens` | 1 | D2 Coral Spire — the Brineglass Lens |
+| `bombs` | 1 | D2 Coral Spire, the Bomb Vault (a side room, not the dungeon's item) |
+| `cleats` | 1 | D3 Bogwater Sanctum — the Kelp-Soled Cleats |
+| `bellows` | 1 | D4 Cliffside Cistern — the Squall Bellows |
+| `reefseed` | 1 | D5 Drowned Wood Shrine |
+| `dredge` | 1 | D6 Abyssal Keep — the Dredge Line |
+| `cleats` | 2 | D6 Abyssal Keep, behind the miniboss (the Mermaid Suit's old slot) |
+| `rod` | 1 | Maku Tree, after the first Essence — the Resonance Rod |
+| `coin` | 1 | The village digger — the Ferryman's Coin |
+| `bottle` | 1 | A cave chest — the Bottled Tide |
+| `chartstone` | — | A chest in each of several dungeons |
+| `map` | — | Dungeon chests |
+
+**The five Essences gate is not an item.** The Abyssal approach opens on the
+Essence count and nothing else; see "What the gates look like now" in
+`docs/ITEMS.md`.
 
 ## Health and difficulty
 
 Health is in quarter-hearts, `HEART_UNITS = 4`. Link starts with 3 hearts (12
-units). Eight Heart Containers plus heart pieces take him to about 16 hearts.
+units). **Six** Heart Containers, one per dungeon, plus 24 Pieces of Heart at
+four to a container, take him to **15**. P9 re-tuned that: the piece count was
+still the eight-dungeon number, eighteen, which is not a multiple of four — so
+two of them bought nothing and the cap sat at 13. `check-progression.mjs`
+asserts both the divisibility and the cap.
 
 - Ordinary enemy contact: `damage: 2` (half a heart)
 - Tougher enemy: `damage: 3`
@@ -142,7 +175,7 @@ Zelda names are used directly: Link, Zelda, Farore, the Maku Tree, Rupees, Heart
 Containers, Octoroks, Moblins, Stalfos, Zol, Gel, Keese, Leever, Tektite,
 Beamos, Darknut, Wizzrobe. Original to this game: Thalassia, Tidewatch Village,
 Nereth the Drowned King, the Tide Bell, the Moon Conch, the Essences of the Tide,
-and the eight boss names in the table above.
+and the six boss names in the table above.
 
 ## Hard rules for every content pack
 

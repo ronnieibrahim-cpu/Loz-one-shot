@@ -1,7 +1,9 @@
 # Dungeon status — the board
 
-**This file is the answer to "which dungeon do I build next?" and it is the
-first thing a P8 session reads.** Every other document describes what was done;
+**This file is the answer to "which dungeon do I build next?", and the answer
+is NONE — all six are built. It is still the first thing any session that
+touches a dungeon reads,** because it is the only record of which commit each
+one landed in. Every other document describes what was done;
 this one describes what is left, and it is the only place the two are kept in
 the same table.
 
@@ -39,15 +41,16 @@ each has been looked at on screen, and the six-versus-eight consolidation is
 done. Audited by counting the live map data rather than by reading this table
 back.
 
-**What that does NOT mean.** "Nobody has played one" is not a box on the
-checklist and it is still true of all six — see the bottom of this file. And P8
-being finished does not make P9 the next thing by itself: `docs/EXECUTION-PLAN.md`
-Part 4 puts **PT (towns) at step 8 and P9 at step 16**, deliberately, because
-re-gating a finished village is a small edit and re-towning a gated screen is
-not. P9's gates (P6 and P8) are satisfied, so it CAN start; PT is what the plan asks
-for first, and its steps 1-4 have since landed — the block machinery, the
-extracted town kit and four town screens, proved by `tools/check-towns.mjs`.
-What is left of PT is the terrain backlog and the townsfolk sprites.
+**PT AND P9 HAVE SINCE LANDED TOO, so the plan's numbered phases are finished.**
+PT built the towns, the peoples and the cliff family; P9 re-cut the overworld
+into four tiers and found that the game could not be finished — four of the six
+dungeons sat behind the Dredge Line, which is what the sixth hands over. A
+session arriving here should NOT go looking for the next phase: there is not
+one. `docs/NEXT-SESSION.md` opens with the board and the prompt.
+
+**What "P8 is complete" does NOT mean.** "Nobody has played one" is not a box on
+the checklist and it is still true of all six — see the bottom of this file. It
+is the largest open item in the project and no tool in this repo can close it.
 
 "DONE" means every box in the checklist below is ticked and every checker in
 CLAUDE.md's table was green on the commit named. It does not mean the dungeon
