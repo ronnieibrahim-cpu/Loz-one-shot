@@ -290,6 +290,102 @@ console.log('\n--- no gate shuts behind the player ---');
   }
 }
 
+// --------------------------------------------------------------------------
+// DUNGEON DOORS, and the one failure in this game that would be UNWINNABLE.
+//
+// A locked door spends the key BEFORE it opens: `useKey` decrements, then
+// `setTile` and `persistTile`. So if the persisted tile does not survive a save
+// and a reload, the player comes back to a shut door with the key already gone
+// — and small keys are finite, one per lock. That is not a walk-back, it is a
+// save file that can never be finished, and it would be invisible to every
+// checker in the repo because all of them read the map rather than play it.
+//
+// Boss doors are the same shape with a worse tail: the boss key is not spent,
+// but a boss door that reverts leaves the dungeon's last room sealed.
+//
+// One locked door and one boss door per dungeon. Positions come from the data
+// rather than being typed here — a door that moves must not silently stop
+// being tested, which is exactly what happened to check-gates.mjs's boulder.
+console.log('\n--- a key spent on a door stays spent, and the door stays open ---');
+{
+  const doors = await page.evaluate(async () => {
+    const maps = await import('/src/world/maps.js');
+    const out = [];
+    for (const [id, m] of maps.MAPS) {
+      if (!/^d[1-6]$/.test(id)) continue;
+      let locked = null, boss = null;
+      for (const key of Object.keys(m.roomDefs || {})) {
+        const [f, x, y] = key.split(',').map(Number);
+        const r = maps.getRoom(id, f, x, y);
+        if (!r) continue;
+        for (let ty = 0; ty < r.th && !(locked && boss); ty++) {
+          for (let tx = 0; tx < r.tw; tx++) {
+            const n = r.baseName(tx, ty);
+            if (!locked && n === 'dDoorLocked') locked = { key, tx, ty };
+            if (!boss && n === 'dDoorBoss') boss = { key, tx, ty };
+          }
+        }
+      }
+      out.push({ id, locked, boss });
+    }
+    return out;
+  });
+
+  for (const d of doors) {
+    for (const [kind, spot] of [['locked', d.locked], ['boss', d.boss]]) {
+      if (!spot) { check(`${d.id} has a ${kind} door to test`, false, 'none found'); continue; }
+      const r = await page.evaluate(async ([id, s, kind]) => {
+        const g = window.__game;
+        const maps = await import('/src/world/maps.js');
+        const prog = await import('/src/game/progress.js');
+        // A clean slate, then exactly enough key to open one door.
+        g.progress.doors = {}; g.progress.secrets = {};
+        g.progress.keys = {}; g.progress.bossKeys = {};
+        if (kind === 'locked') g.progress.keys[id] = 2; else g.progress.bossKeys[id] = true;
+        const [f, x, y] = s.key.split(',').map(Number);
+        g.mode = 'play';
+        g.enterMap(id, f, x, y, 80, 64, 'down', { instant: true });
+        window.__harness.step(3);
+        if (g.dialogue) g.dialogue.active = false;
+        g.mode = 'play';
+        const before = g.room.baseName(s.tx, s.ty);
+        // Open it the way the A button does, through the engine's own path.
+        g.tileInteract(s.tx, s.ty, g.player);
+        window.__harness.step(2);
+        const opened = g.room.baseName(s.tx, s.ty);
+        const keysAfterOpen = kind === 'locked' ? (g.progress.keys[id] || 0) : 1;
+        // Save, drop every memoised Room, load. The player put the game down.
+        prog.saveSlot(7, g.progress);
+        for (const [, m] of maps.MAPS) if (m._rooms) m._rooms.clear();
+        const loaded = prog.loadSlot(7);
+        g.progress = loaded; g.room = null;
+        g.enterMap(id, f, x, y, 80, 64, 'down', { instant: true });
+        window.__harness.step(3);
+        prog.deleteSlot(7);
+        return {
+          before, opened,
+          after: g.room.baseName(s.tx, s.ty),
+          keysAfterOpen,
+          keysAfterLoad: kind === 'locked' ? (g.progress.keys[id] || 0) : 1,
+          bossAfterLoad: !!g.progress.bossKeys[id],
+        };
+      }, [d.id, spot, kind]);
+
+      check(`${d.id} ${kind} door opens`, r.opened === 'dDoorOpen', `${r.before} -> ${r.opened}`);
+      check(`${d.id} ${kind} door is STILL OPEN after a save and a reload`,
+        r.after === 'dDoorOpen', `${r.after} — the key is spent and the door is shut`);
+      if (kind === 'locked') {
+        check(`${d.id} opening a door spends exactly one key`, r.keysAfterOpen === 1,
+          `2 -> ${r.keysAfterOpen}`);
+        check(`${d.id} the spent key does not come back on reload`,
+          r.keysAfterLoad === r.keysAfterOpen, `${r.keysAfterOpen} -> ${r.keysAfterLoad}`);
+      } else {
+        check(`${d.id} the boss key survives the reload`, r.bossAfterLoad);
+      }
+    }
+  }
+}
+
 check('no page errors', errs.length === 0, errs.slice(0, 3).join(' | '));
 
 console.log(`\n=== ${passed} passed, ${failures.length} failed ===`);
