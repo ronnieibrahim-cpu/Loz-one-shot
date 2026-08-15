@@ -85,6 +85,34 @@ Stated because P9 asks for them and a later session should not go looking.
 seals across the Abyss Stair, in the abyss ramp) and
 `room-overworld_3_4-tide1-px112.png` (the Deep Cut's channel).
 
+### The debugging pass that followed, and what it found
+
+The re-gate bug was not a one-off, it was a CLASS: every checker verifies a part
+in isolation and nothing verified the run. So the same question was asked of
+everything that grants itself a capability.
+
+**`walk-dungeons.mjs` had the identical lock, one level down.** Its flood hands
+the player the dungeon's OWN item at the front door — swimming from d3, the
+Dredge Line from d6 — because the rooms past the item genuinely need it and a
+flood without it calls two thirds of the dungeon stranded. Correct workaround,
+and it hides a lock: **if the room holding the Cleats were itself behind deep
+water, d3 could not be started and the checker would still say 23/23.** The
+flood runs twice now — once with the item, which proves the dungeon completes,
+and once without, which has to reach the chest that hands it over. Both dungeons
+were sound; nothing had proved it. Negative-tested by moving d3's Cleats chest
+into a room only a swimmer reaches, which it caught. 23 assertions -> 29.
+
+**Two other candidates were checked and are clean**, recorded so they are not
+re-checked: the Bomb Vault in D2 is an open room with no bombable wall in it, so
+Bombs are gettable inside the dungeon that holds them; and the Moon Conch is
+given in the `intro` cutscene alongside the sword, so "the player controls the
+tide from screen one" — which every overworld flood in the repo assumes — is
+true.
+
+**The rule to carry forward, now in HANDOFF:** every time a checker grants
+itself a capability to get past its own limits, ask what that grant is now
+unable to see.
+
 ### What is weak about the re-gate
 
 - **NOBODY HAS PLAYED ANY OF IT.** Still the largest open item in the project.

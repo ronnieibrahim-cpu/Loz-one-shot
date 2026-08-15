@@ -162,7 +162,7 @@ they are also how a future session finds which sheet a tile came from.
 | Command | Proves |
 |---|---|
 | `node tools/validate.mjs` | Room grids are well-formed |
-| `node tools/walk-dungeons.mjs` | Every dungeon is completable; no room is stranded |
+| `node tools/walk-dungeons.mjs` | Every dungeon is completable, no room is stranded, and the room holding a dungeon's own item is reachable WITHOUT that item |
 | `node tools/check-overworld.mjs` | Region gates seal and open correctly |
 | `node tools/check-gates.mjs` | Gates hold in-engine with a live player |
 | `node tools/check-progression.mjs` | Every dungeon can be REACHED with only the items the dungeons before it hand over, each tier opens ground the one before it could not, and every Piece of Heart can be spent |

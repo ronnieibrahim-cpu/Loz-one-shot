@@ -249,7 +249,19 @@ is in the page, and nothing steps until you say so.
    open a wheel but never a route. The Reefseed only ADDS ground. The Lens is
    informational and forbidden. The Anchor and the Chartstone move nothing.
    That leaves the Cleats out of six dungeon items.
-4. **A GATE PROBE MUST APPROACH OVER GROUND IT CAN STAND ON.** The first cut of
+4. **THE SAME LOCK EXISTS ONE LEVEL DOWN, AND A HARNESS WORKAROUND IS WHERE IT
+   HIDES.** `walk-dungeons.mjs` hands the player the dungeon's OWN item at its
+   front door — swimming from d3, the Dredge Line from d6 — because the rooms
+   past the item genuinely need it and a flood without it reports two thirds of
+   the dungeon stranded. That workaround is correct and it also hides a lock: if
+   the room holding the Cleats were itself behind deep water, the dungeon could
+   not be started and the checker would still say 23/23. The flood runs twice
+   now, and the second run has to reach the chest. Both dungeons turned out to
+   be sound — but nothing had proved it, and the assertion was negative-tested
+   by moving d3's chest behind the water, which it caught.
+   **The general rule: every time a checker grants a capability to get past its
+   own limits, ask what that grant is now unable to see.**
+5. **A GATE PROBE MUST APPROACH OVER GROUND IT CAN STAND ON.** The first cut of
    the Abyssal Seal's harness put the player under a `9` — a tide tile that is
    over your head at the MID the harness pins — so the player drowned in place
    and "the player stops one tile short of the seal" passed without the seal

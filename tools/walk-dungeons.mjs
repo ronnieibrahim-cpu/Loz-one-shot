@@ -148,7 +148,20 @@ for (const id of DUNGEONS) {
 }
 
 // ------------------------------------------------- part 2: dungeon reachability
-const reach = await page.evaluate((ids) => {
+// TWO FLOODS PER DUNGEON, AND THE SECOND ONE IS THE POINT.
+//
+// The flood below hands the player the dungeon's OWN item at its front door —
+// swimming from d3, the Dredge Line from d6 — because the rooms past the item
+// genuinely need it and a flood without it reports two thirds of the dungeon
+// stranded. That is a harness limitation, correctly worked around.
+//
+// It also hides a lock, and it is the same lock P9 found on the overworld one
+// level up: if the room holding the Cleats were itself behind deep water, or
+// the room holding the Dredge Line behind a shaft, the dungeon could not be
+// started and this checker would say 23/23. So the whole flood is run TWICE —
+// once with the item, which proves the dungeon completes, and once WITHOUT it,
+// which has to reach the room that hands it over.
+const floodAll = (deny) => page.evaluate(([ids, denyOwnItem]) => {
   const F = window.__F, getTileDef = window.__getTileDef, getLegend = window.__getLegend;
   const SW = 10, SH = 8;                    // one SCREEN, in tiles
   const DREDGE_TILES = window.__DREDGE_TILES;
@@ -223,7 +236,10 @@ const reach = await page.evaluate((ids) => {
     // same shape as the jump exemption below it. It stays OFF for d1 and d2,
     // where the player provably does not have the Cleats yet, so nothing
     // already proved about those two moves.
-    const canSwim = (m.dungeon.index | 0) >= 3;
+    // `denyOwnItem` takes the dungeon's own item back off it: strictly after
+    // the dungeon that hands it over rather than from it. That is the run that
+    // has to reach the item's own chest.
+    const canSwim = (m.dungeon.index | 0) >= (denyOwnItem ? 4 : 3);
     const walkableAt = (ch, t) => {
       const d = defOf(ch, t);
       if (!d) return false;
@@ -280,7 +296,7 @@ const reach = await page.evaluate((ids) => {
     // What proves each crossing is really a crossing — and, far more to the
     // point, that no OTHER sea also crosses it — is check-dredge.mjs. This only
     // needs to know that the route exists.
-    const canDredge = (m.dungeon.index | 0) >= DREDGE_INDEX;
+    const canDredge = (m.dungeon.index | 0) >= DREDGE_INDEX + (denyOwnItem ? 1 : 0);
     const snagAt = (ch) => [0, 1, 2].some(t => { const d = defOf(ch, t); return d && (d.flags & F.SNAG); });
     const castStops = (ch) => [0, 1, 2].every(t => {
       const d = defOf(ch, t);
@@ -469,14 +485,39 @@ const reach = await page.evaluate((ids) => {
     const reachedRooms = new Set([...seen].map(k => k.split(':')[0]));
     const all = Object.keys(m.roomDefs);
     const missed = all.filter(r => !reachedRooms.has(r));
-    report.push({ mapId, missed, boss: m.dungeon.bossRoom, bossReached: reachedRooms.has(m.dungeon.bossRoom), total: all.length });
+    // Which room hands this dungeon's own item over. Found by looking for the
+    // chest that gives it rather than declared, so moving the chest moves this.
+    let itemRoom = null;
+    for (const [rk, def] of Object.entries(m.roomDefs)) {
+      for (const e of def.entities || []) {
+        if (e[0] === 'chest' && e[3] && e[3].item === m.dungeon.item) itemRoom = rk;
+      }
+    }
+    report.push({
+      mapId, missed, boss: m.dungeon.bossRoom,
+      bossReached: reachedRooms.has(m.dungeon.bossRoom), total: all.length,
+      item: m.dungeon.item, itemRoom, itemReached: !!itemRoom && reachedRooms.has(itemRoom),
+    });
   }
   return report;
-}, DUNGEONS);
+}, [DUNGEONS, deny]);
 
+const reach = await floodAll(false);
 for (const r of reach) {
   check(`${r.mapId}: all ${r.total} rooms reachable`, r.missed.length === 0, r.missed.join(','));
   check(`${r.mapId}: boss room reachable`, r.bossReached, r.boss);
+}
+
+// ...and the same walk with the dungeon's own item taken back off it. Only the
+// dungeons whose item this harness models — the Cleats and the Dredge Line —
+// can fail here; for the rest the two floods are identical and the assertion is
+// free. It is stated for all six anyway, because the cost of stating it is
+// nothing and the cost of a later session moving a chest is a dungeon nobody
+// can enter.
+const reachSelf = await floodAll(true);
+for (const r of reachSelf) {
+  check(`${r.mapId}: the room holding the ${r.item} is reachable WITHOUT it`,
+    !!r.itemRoom && r.itemReached, r.itemRoom ? `${r.itemRoom} is behind its own item` : 'no chest gives it');
 }
 
 // ------------------------------------------- part 2b: the tide-locked rooms
