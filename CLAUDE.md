@@ -120,6 +120,14 @@ they are also how a future session finds which sheet a tile came from.
   records any id; `itemName` returns the raw id and `itemIcon` falls back to
   `i_unknown`. The chest opens, the jingle plays, the save records it, and the
   player gets nothing. `tools/check-items.mjs` is what catches it.
+- **A region gate can be proved in both directions and still be impossible.**
+  `check-overworld.mjs` asks "is this region sealed without its item and open
+  with it", which two of the five gates answered perfectly while being the
+  SIXTH dungeon's item holding shut the regions the fourth and sixth dungeons
+  are in. Both dungeons were unenterable, the world could not be finished, and
+  nineteen checkers were green — because not one of them asked whether a gate's
+  key is obtainable BEFORE the gate. `tools/check-progression.mjs` is that
+  question. Run it after touching a gate tile, a legend, or a dungeon's mouth.
 - **A terrain tile may not be the tile the author wrote.** `Room.autotile` runs
   once at construction and replaces every tile that declares an autotile family
   — currently the seven cliffs — with the family member matching its four
@@ -161,6 +169,7 @@ they are also how a future session finds which sheet a tile came from.
 | `node tools/walk-dungeons.mjs` | Every dungeon is completable; no room is stranded |
 | `node tools/check-overworld.mjs` | Region gates seal and open correctly |
 | `node tools/check-gates.mjs` | Gates hold in-engine with a live player |
+| `node tools/check-progression.mjs` | The game can be finished from a new game with no items: no dungeon is locked behind an item found inside it, the order never inverts, and the heart economy lands where the plan says |
 | `node tools/solve-switches.mjs` | Every switch puzzle has a solution |
 | `node tools/check-anchor.mjs` | A room that claims to need the Tidewright's Anchor cannot be crossed with the conch alone, and can be with one anchor placement |
 | `node tools/check-cleats.mjs` | Every room that claims to need the Cleats' floor mode cannot be reached on foot, cannot be reached on the surface against the current, can be reached on the seafloor, and the crossing fits in one breath |

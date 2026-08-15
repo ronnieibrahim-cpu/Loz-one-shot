@@ -215,9 +215,15 @@ const vFarHigh = await nameAt(VANE.gx, VANE.gy);
 check('...but at HIGH tide the water carries it', vFarHigh !== 'saltVane', vFarHigh);
 
 // --- the Abyssal plug ------------------------------------------------------
-// Room 0,2,1: plugs along row 6, cols 3-6. The player stands one tile north of
-// one of them, facing it, and presses the gloves.
-const PLUG = { rx: 2, ry: 1, gx: 4, gy: 6, tx: 4, ty: 5, dir: 'down', item: 'dredge', level: 1 };
+// MOVED IN P9, for the same reason the boulder did: it stood in the Abyss
+// Stair's one doorway, so the Abyssal Keep was locked with the item the Keep
+// hands over. It is a row of iron across 0,3,1 Iron Watch now — an obstacle
+// over a pocket rather than the lock on a dungeon mouth. What this test is for
+// is unchanged and is worth keeping: the line hauls iron, and nothing else does.
+//
+// Room 0,3,1: plugs along row 4, cols 3-6. The player stands one tile north of
+// one of them, facing it, and casts.
+const PLUG = { rx: 3, ry: 1, gx: 4, gy: 4, tx: 4, ty: 3, dir: 'down', item: 'dredge', level: 1 };
 const plugBefore = await setup(PLUG);
 check('the abyssal plug starts as a plug', plugBefore === 'abyssPlug', plugBefore);
 await tap('KeyZ');
@@ -225,9 +231,42 @@ await frames(20);
 const plugAfter = await nameAt(PLUG.gx, PLUG.gy);
 check('the Dredge Line hauls the abyssal plug out', plugAfter !== 'abyssPlug', plugAfter);
 
-// The gloves open the plug in front, not the whole row.
-const neighbour = await nameAt(6, 6);
+// The line hauls the plug in front, not the whole row. Row 4 now, not row 6:
+// the plug moved screens in P9 and this coordinate has to move with it.
+const neighbour = await nameAt(6, 4);
 check('...and only the plug in front', neighbour === 'abyssPlug', neighbour);
+
+// --- the Kell sluice, which is the Squall Bellows' gate ---------------------
+//
+// P9's new gate, and the one that made the world finishable: the Abyss Stair's
+// one doorway used to be iron the Dredge Line hauls, and the Dredge Line is
+// inside the Abyssal Keep one screen north — so the Keep was locked with its
+// own key. The wheel is the Cistern's item now, which is the dungeon before it.
+//
+// The map side of this is check-overworld.mjs's business and the ORDER side is
+// check-progression.mjs's. What only a live player can say is that the cone
+// actually reaches a tile and fires a transform on it: `Player.gust` sweeps the
+// override's own footprint for F.GUSTGATE, and a sweep that quietly matched
+// nothing would flood correctly in both those tools and be impassable in play.
+//
+// Room 0,2,1: sluices along row 6, cols 3-6. Stand one tile north, face down,
+// and hold the bellows. The cone needs BELLOWS_WARMUP_FRAMES before it opens,
+// so this holds the button rather than tapping it.
+const SLUICE = { rx: 2, ry: 1, gx: 4, gy: 6, tx: 4, ty: 5, dir: 'down', item: 'bellows', level: 1 };
+const sluiceBefore = await setup(SLUICE);
+check('the Kell sluice starts as a sluice', sluiceBefore === 'kellSluice', sluiceBefore);
+
+// A sword is not wind.
+await tap('KeyX');
+await frames(24);
+check('a swing does not turn the sluice', await nameAt(SLUICE.gx, SLUICE.gy) === 'kellSluice');
+
+await page.keyboard.down('KeyZ');
+await frames(90);                  // past the warm-up, with the cone open
+await page.keyboard.up('KeyZ');
+await frames(4);
+const sluiceAfter = await nameAt(SLUICE.gx, SLUICE.gy);
+check('the Squall Bellows turns the Kell sluice', sluiceAfter !== 'kellSluice', sluiceAfter);
 
 // --- the four terrain-shaped gates -----------------------------------------
 //
@@ -276,14 +315,25 @@ const walkAt = async (key, jump) => {
   }));
 };
 
-// --- The Cliffs boulder, which is a Dredge Line gate now -------------------
+// --- The bog boulder, which is a Dredge Line gate --------------------------
 // The Power Bracelet is gone and lifting is base moveset, so the boulder needs
 // a reason to still be a boulder: it is `liftLevel: 2`, past bare hands, and
 // the Dredge Line drags it clear. Both directions are asserted, because a gate
 // checked one way is a gate that might not be one.
 //
-// Room 0,2,2: boulders at row 1, cols 3-6, behind the north doorway.
-const BOULDER = { rx: 2, ry: 2, gx: 4, gy: 1, tx: 4, ty: 0, dir: 'down' };
+// IT MOVED IN P9, and where it moved from is the finding. It used to stand in
+// the north doorway of 0,2,2 Upper Kell, which is the Cliffs' only way up to
+// the Abyss — so the Dredge Line, the SIXTH dungeon's item, was holding shut
+// the region the sixth dungeon is in, and the Cistern below it was behind the
+// same key. Both dungeons were unenterable and every checker in the repo was
+// green; `tools/check-progression.mjs` is the one that now says so.
+//
+// So the boulder keeps its job and loses its position on the critical path. It
+// now stops the two dead ends off 0,1,5 Marsh Stair — pockets you come back
+// for once you own the line, which is what a last-dungeon key should hold.
+//
+// Room 0,1,5: boulders at row 6, cols 1-2 and 7-8, in the two side doorways.
+const BOULDER = { rx: 1, ry: 5, gx: 1, gy: 6, tx: 1, ty: 5, dir: 'down' };
 let b0 = await setup({ ...BOULDER, item: 'sword', level: 1 });
 check('the cliff boulder starts as a boulder', b0 === 'boulder', b0);
 await tap('KeyZ');

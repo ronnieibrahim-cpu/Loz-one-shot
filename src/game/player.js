@@ -884,10 +884,28 @@ export class Player extends Entity {
     this.gust(game, dx, dy);
   }
 
-  /** Shove what the gust can shove: light enemies, rafts, and wheels. */
+  /** Shove what the gust can shove: light enemies, rafts, wheels — and sluices. */
   gust(game, dx, dy) {
     const o = this.bellowsHold != null ? game.tide.overrideById(this.bellowsHold) : null;
     if (!o) return;
+    // A tile the cone turns, swept exactly the way the Resonance Rod sweeps its
+    // radius for F.RING. The footprint is asked of the FIELD that owns the cone
+    // rather than recomputed here, for the same reason the entity sweep below
+    // does it: what the gust turns and what it drains can never disagree, and
+    // `Tide.blows` is what stops a cone reaching through stone.
+    const room = game.room;
+    if (room) {
+      const r = Math.ceil(BELLOWS_RANGE) + 1;
+      const ox = Math.floor(this.cx / TILE), oy = Math.floor(this.cy / TILE);
+      for (let ty = oy - r; ty <= oy + r; ty++) {
+        for (let tx = ox - r; tx <= ox + r; tx++) {
+          if (!room.inBounds(tx, ty)) continue;
+          if (!game.tide.covers(o, tx, ty)) continue;
+          if (!(room.flagsAt(tx, ty, game.tide) & F.GUSTGATE)) continue;
+          game.applyTileAction(tx, ty, 'gust', 1);
+        }
+      }
+    }
     for (const e of game.entities) {
       if (e === this || e.dead || e.hidden) continue;
       const tx = Math.floor(e.cx / TILE), ty = Math.floor(e.cy / TILE);

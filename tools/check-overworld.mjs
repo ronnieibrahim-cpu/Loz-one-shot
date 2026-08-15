@@ -9,17 +9,28 @@
 // player controls the tide — which is also why this cannot prove the swim or
 // terrain-shaped gates, only the ones expressed as a solid tile with a flag.
 //
-// ROC'S FEATHER IS GONE and the hop is base moveset, so F.GAP no longer gates
-// anything: a one-tile chasm is crossed by walking into it. The Coral Reef
-// entry is removed rather than left failing. P9 re-gates the overworld.
+// ROC'S FEATHER IS GONE and the hop is base moveset, so a chasm no longer
+// gates anything: a one-tile chasm is crossed by walking into it, and the
+// marker bit it carried has been retired (see F.GUSTGATE in tileset.js).
 //
-// THREE such gates exist, and this proves each one twice: that the region is
+// P9 RE-GATED THIS WORLD, and the reason is worth keeping: two of the five
+// gates below were the Dredge Line's, which is the SIXTH dungeon's item, and
+// between them they held shut the Cliffs of Kell (where the fourth dungeon is)
+// and the Abyssal approach (where the sixth is). Both dungeons were therefore
+// locked behind items found inside them, and the world could not be finished.
+// Everything in this file passed. Nothing here asks whether a gate's key is
+// obtainable BEFORE the gate, which is why `tools/check-progression.mjs` is
+// now a separate tool and why it is the one that would have caught it.
+//
+// FIVE such gates exist, and this proves each one twice: that the region is
 // sealed without its item, and that it opens with it.
+//   Resonance Rod   F.VANE       Salt Pans and the Reef ruins
 //   Bombs           F.BOMBABLE   Sunken Marsh
-//   Magic Boomerang F.VANE       Salt Pans
-//   Magnetic Gloves F.MAGNETIC   Abyssal approach
+//   Kelp-Soled Cleats F.SWIMGATE Cliffs of Kell
+//   Squall Bellows  F.GUSTGATE   Abyssal approach
+//   Dredge Line     F.MAGNETIC   the Keep's own pocket, past the last dungeon
 //
-// Usage: node check-overworld.mjs [--bombs] [--items=bombs,rod,dredge]
+// Usage: node check-overworld.mjs [--bombs] [--items=bombs,rod,cleats,...]
 // `--bombs` is kept as an alias for `--items=bombs`.
 
 import { installData } from '../src/data/index.js';
@@ -39,22 +50,35 @@ installData();
 const GATES = {
   bombs: {
     flag: F.BOMBABLE, region: 'Sunken Marsh',
-    covers: [[0, 2, 6, 9]],
+    // The Marsh is the only way west and up, so the whole north-west branch —
+    // the Cliffs and the Abyss above them — hangs off this one crack.
+    covers: [[0, 2, 6, 9], [0, 3, 2, 5], [0, 3, 0, 1]],
   },
   rod: {
     flag: F.VANE, region: 'Salt Pans',
     covers: [[4, 7, 0, 2], [8, 11, 0, 3]],
   },
-  dredgePlug: {
-    flag: F.MAGNETIC, region: 'Abyssal approach',
+  cleats: {
+    flag: F.SWIMGATE, region: 'Cliffs of Kell',
+    // The Cliffs are the only way up to the Abyssal approach, so the Abyss sits
+    // behind this gate as well as behind its own — and so do the Marsh's two
+    // northern dead ends, which are entered DOWNWARD off the Marsh Stair and
+    // not from the bog at all.
+    covers: [[0, 3, 2, 5], [0, 3, 0, 1], [0, 2, 6, 6]],
+  },
+  bellows: {
+    flag: F.GUSTGATE, region: 'Abyssal approach',
     covers: [[0, 3, 0, 1]],
   },
   dredge: {
-    flag: F.HEAVY, region: 'Cliffs of Kell',
-    // The Cliffs are the only way up to the Abyssal approach, and the Marsh's
-    // two northern screens hang off the Bog Stair rather than off the Marsh
-    // proper, so both sit behind this gate as well.
-    covers: [[0, 3, 2, 5], [0, 3, 0, 1], [0, 2, 6, 6]],
+    flag: F.MAGNETIC | F.HEAVY, region: "the Keep's pocket and the bog dead-ends",
+    // The last key in the world, and the only one whose gates sit behind the
+    // dungeon that hands it over — which is fine here and was fatal everywhere
+    // else it used to be. What it holds shut now is POCKETS YOU COME BACK FOR:
+    // the plug's alcove above the Abyss Stair, and the two boulder-stopped
+    // dead ends off the Marsh Stair. Not one dungeon mouth.
+    // `tools/check-progression.mjs` is what draws that line and keeps it drawn.
+    covers: [[0, 3, 0, 1], [0, 2, 6, 6]],
   },
 };
 const covered = (g, k) => {

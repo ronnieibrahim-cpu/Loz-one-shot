@@ -611,6 +611,33 @@ const HAND_ART = {
   // Four corner rivets and a square bolt head, all in hard 1px dark, so it
   // reads as worked metal. It takes `rust`, not a grey: the abyss is blue-grey
   // stone throughout, and a grey plate sank into it in the first pass.
+  // A SLUICE WHEEL. The fifth region gate's face, and the Squall Bellows' own.
+  //
+  // It has to be legible against the two gates it sits nearest: `abyssPlug` is
+  // a studded iron slab and `saltVane` is a vane, so this is a SPOKED RING —
+  // a wheel you turn, which is the shape the Cistern already taught the player
+  // to read. Nothing on a sheet is a sluice wheel (the Subrosia tileset's
+  // valves are all lava fixtures), so this is drawn to match under
+  // ART-DIRECTION rule 2: three colours plus a hard 1px outline, no dithering,
+  // and the silhouette identifiable in pure black — a ring on a slab.
+  kellSluice: `
+    3333333333333333
+    3111111111111113
+    3122222222222213
+    3122233333222213
+    3122311111322213
+    3123110001132213
+    3123101110132213
+    3121011111013213
+    3121011111013213
+    3123101110132213
+    3123110001132213
+    3122311111322213
+    3122233333222213
+    3122222222222213
+    3133333333333313
+    3333333333333333`,
+
   abyssPlug: `
     3333333333333333
     3111111111111113
@@ -1324,6 +1351,22 @@ export function installCoreTiles() {
     // rather than any boomerang.
     saltVane: { art: ART.saltVane, pal: 'marble', flags: F.SOLID | F.VANE | F.RING, underArt: 'saltFlat' },
     abyssPlug: { art: ART.abyssPlug, pal: 'rust', flags: F.SOLID | F.MAGNETIC, underArt: 'rockFloorDk' },
+    // The gate on the Keep's own approach, and the last one P9 had to move.
+    // It was a second `abyssPlug` — the Dredge Line, which is the SIXTH
+    // dungeon's item, holding shut the region the sixth dungeon is in. The
+    // Cliffs' gate was the same mistake one screen south; between them the
+    // world shipped with two dungeons that could not be entered at all.
+    //
+    // A sluice wheel is the Squall Bellows', which is the fourth dungeon's, and
+    // "spins wheels" is the verb docs/ITEMS.md has always given it — the
+    // Cliffside Cistern is built on wheels, so the player arriving here has
+    // spent a dungeon learning exactly this fixture. `F.GUSTGATE` is the marker
+    // and `gust` is the transform; `Player.gust` sweeps the cone's own
+    // footprint for it, the same way the Rod sweeps its radius for `F.RING`.
+    kellSluice: {
+      art: ART.kellSluice, pal: 'rust', flags: F.SOLID | F.GUSTGATE,
+      underArt: 'rockFloorDk',
+    },
 
     // ---- the four terrain-shaped region gates ------------------------------
     // Each carries TWO flags: the ordinary one that tells the engine what the
@@ -1339,11 +1382,31 @@ export function installCoreTiles() {
     // `tools/check-gates.mjs` measures the reach in-engine rather than trusting
     // this comment; the widths it proved are recorded there.
     chasm: {
-      art: ART.dPit, pal: 'abyss', flags: F.JUMPABLE | F.GAP,
+      art: ART.dPit, pal: 'abyss', flags: F.JUMPABLE,
     },
     boulder: {
       art: ART.boulder, pal: 'stonedk', flags: F.SOLID | F.ROCK | F.HEAVY,
       underArt: 'rockFloor', liftLevel: 2,
+    },
+    // THE FIFTH REGION GATE, and the one P9 found the world could not do
+    // without. A sea channel that is deep at EVERY tide level, so no conch
+    // answers it — the same argument the torrents make and for the same
+    // reason. `F.DEEP` is what the engine crosses it by; `F.SWIMGATE` is the
+    // marker naming WHICH item, which is the difference between "the Cliffs
+    // are unreachable" and "the Cliffs are behind the Kelp-Soled Cleats".
+    //
+    // The flag has been defined since the gate markers were written and NOTHING
+    // HAS EVER CARRIED IT. It was waiting for exactly this: a gate whose key is
+    // an item earlier than the Dredge Line, because the Dredge Line is the
+    // sixth dungeon's and the Cliffs hold the fourth.
+    //
+    // Width is part of this gate and no flag can say so — a swimmer crosses
+    // DEEP and so does a hopper, so a one-tile channel is not a Cleats gate.
+    // `tools/check-gates.mjs` measures the reach in-engine rather than trusting
+    // this comment.
+    seaChannel: {
+      art: ART.waterD0, pal: 'deep', flags: F.DEEP | F.SWIMGATE,
+      anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 13,
     },
     cliffCrackedDk: {
       art: ART.cliffCracked, pal: 'stonedk', flags: F.SOLID | F.BOMBABLE, family: 'cliff',
@@ -1711,6 +1774,13 @@ export function installCoreTiles() {
       deny: 'Far too heavy to shift bare-handed.',
     },
     cliffCrackedDk: { bomb: 'mud', fx: 'boom', persist: true, sfx: 'break' },
+    // Turned by the gust and by nothing else, and it stays turned: a sluice you
+    // have already opened is a door you have already opened, and a region gate
+    // that shuts behind you is a trap rather than a puzzle.
+    kellSluice: {
+      gust: 'rockFloorDk', fx: 'puff', persist: true, sfx: 'valve',
+      deny: 'The wheel is seized. Something has to turn it.',
+    },
     // The Magic Boomerang is gone. A vane is metal, and the thing in this game
     // with an opinion about metal is the Resonance Rod — which also means the
     // Salt Pans open to an item whose reach depends on the tide, so the vane a

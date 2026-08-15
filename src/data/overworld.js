@@ -125,6 +125,9 @@ const rooms = {
       ['wizzrobe', 4, 3],
       ['sign', 1, 6, { text: 'THE BLACK CAUSEWAY\nThe Keep holds this water. No shell\nsounds here. Bring your own sea.' }],
     ],
+    // The second of P9's two new Pieces of Heart — see Sunless Flat for why
+    // there are exactly two and why they are buried rather than dropped.
+    buried: [[4, 4, 'heartPiece']],
   },
   '0,3,0': {
     name: 'Rustfall',
@@ -305,6 +308,20 @@ const rooms = {
     entities: [
       ['jellyfish', 3, 3],
     ],
+    // P9's heart re-tune, first of two. Eighteen Pieces of Heart were scattered
+    // for EIGHT dungeons and four make a container, so two of them were dead
+    // weight and the cap landed at thirteen — under the fourteen-to-sixteen P9
+    // asks for. Two more make twenty, which is five whole containers and
+    // nothing wasted: three hearts at the start, six from the bosses, five
+    // from the pieces.
+    //
+    // BURIED rather than dropped as a pickup, on purpose. `nextId` is one
+    // global counter and `every(e, n)` phases enemies off it, so an entity
+    // added anywhere a replay walks re-phases every enemy in the game; a
+    // `buried` entry is a list the Dredge Line reads and builds no entity at
+    // all. It also puts the reward where this game's rewards belong — under the
+    // water, in a hole, in the region that taught the player to dredge.
+    buried: [[3, 2, 'heartPiece']],
   },
   '0,1,1': {
     name: 'The Long Drop',
@@ -326,6 +343,16 @@ const rooms = {
   '0,2,1': {
     name: 'Abyss Stair',
     legend: 'abyss', music: 'abyss',
+    // THE LAST GATE P9 HAD TO MOVE, and the one that made the world
+    // uncompletable. This row was four `abyssPlug` — iron the Dredge Line
+    // drags aside — and the Dredge Line is found INSIDE the Abyssal Keep,
+    // one screen north of here. The Keep was locked with its own key.
+    //
+    // It is a sluice wheel now: the Squall Bellows', from the Cliffside
+    // Cistern, which is the dungeon a player reaches immediately before this
+    // point and which is built entirely on wheels. The plug keeps its own job
+    // one screen south, where it is a Dredge Line obstacle on the way back
+    // rather than the lock on the endgame.
     map: [
       '###gggg###',
       '#g......g#',
@@ -333,22 +360,27 @@ const rooms = {
       'gg..gg..gg',
       'ggg____ggg',
       'gg.GGGG.gg',
-      '#ggVVVVgg#',
+      '#ggUUUUgg#',
       '###gggg###',
     ],
     entities: [
-      ['sign', 6, 5, { text: 'Below: the Cliffs of Kell.\nAbove: the end of everything.' }],
+      ['sign', 6, 5, { text: 'Below: the Cliffs of Kell.\nAbove: the end of everything.\nThe wheel wants wind.' }],
     ],
   },
   '0,3,1': {
     name: 'Iron Watch',
+    // The Abyssal plug's home since P9. It used to stand in the Abyss Stair's
+    // one doorway, where it locked the Keep behind the Keep's own item; here it
+    // is a row of iron across the watch floor with nothing behind it but what
+    // the Dredge Line is for. A gate whose key is the last dungeon's may hold a
+    // pocket and must not hold a mouth — see tools/check-progression.mjs.
     legend: 'abyss', music: 'abyss',
     map: [
       '###gggg###',
       '#gGGGGGGg#',
       'gg.qqqq.g#',
       'gg......g#',
-      'gg.oooo.g#',
+      'gg.VVVV.g#',
       'ggGGGGGGg#',
       '#gggggggg#',
       '##########',
@@ -544,7 +576,7 @@ const rooms = {
     legend: 'cliffs', music: 'overworld',
     map: [
       '###gggg###',
-      '#ggMMMMgg#',
+      '#ggLLLLgg#',
       'gg.9999.gg',
       'gg......gg',
       'gg.9999.gg',
@@ -988,13 +1020,25 @@ const rooms = {
     // The Squall Bellows' overworld room. The raft in the cut goes wherever it
     // is blown and takes you with it; the long way round the north shelf is
     // still open, so this is a shortcut you earn rather than a gate.
+    //
+    // THE EAST WALL IS THE CLIFFS' GATE AND IT USED TO BE THE WRONG ITEM'S.
+    // Four boulders stood in this column, and a boulder is the Dredge Line's —
+    // the SIXTH dungeon's item, holding shut the region the FOURTH dungeon is
+    // in. Nothing checked the order, so the world shipped with the Cistern and
+    // the Keep both unreachable in a real playthrough: to open the Cliffs you
+    // needed an item that is inside the Cliffs. See tools/check-progression.mjs,
+    // which is the tool that would have caught it and now does.
+    //
+    // It is a sea channel now, deep at every tide level so no conch answers it,
+    // and the Kelp-Soled Cleats are the third dungeon's. The Cistern is behind
+    // the Sanctum, which is what P8 always said the order was.
     map: [
       '###gggg###',
       '#gGGGGGGg#',
-      'gg.====.Mg',
-      'gg.====.Mg',
-      'gg......Mg',
-      'gg______Mg',
+      'gg.====.Lg',
+      'gg.====.Lg',
+      'gg......Lg',
+      'gg______Lg',
       '#gggggggg#',
       '###gggg###',
     ],

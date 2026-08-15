@@ -1226,6 +1226,16 @@ their neighbours is still owed and belongs to whichever session takes those.
 
 ### P9 — Overworld re-gating and difficulty
 
+**Steps 1–4 are DONE** (`check-progression.mjs`, the five-gate re-gate, the
+heart re-tune, every checker re-run). Step 2's rule held without an edit: no
+gate names the Lens. What is left is written up in `docs/NEXT-SESSION.md` — the
+Drowned Wood is the one region still ungated, and nobody has played any of it.
+
+The finding worth carrying: **the world could not be finished.** Two gates were
+the Dredge Line's, which is D6's item, and they held shut the regions D4 and D6
+are in. Every checker was green because each proves one gate in isolation and
+none asked whether a key is obtainable before its gate.
+
 ```
 The overworld has eight regions gated on items that no longer exist.
 
@@ -1302,7 +1312,7 @@ to the hard-won-lessons section of docs/HANDOFF.md.
 | 8 | PT towns, buildings, terrain polish (done) | P9 | (steps 1–4, and step 5's headline item — the autotiled `cliff` family. The rest of the terrain backlog is ranked in docs/ART-BACKLOG.md and blocks nothing)
 | 9 | P7 scrimshaw (done) | — |
 | 10–15 | P8 dungeons 1–6 (done) | P9 |
-| 16 | **P9 overworld + difficulty** | — | <- next
+| 16 | P9 overworld + difficulty | — | (re-gate, progression prover and heart re-tune done; the Drowned Wood gate and the play-test pass are what remain)
 
 PT sits before P9 deliberately. A gate is a tile flag dropped into a finished
 screen; a town is the screen itself. Re-gating a finished village is a small

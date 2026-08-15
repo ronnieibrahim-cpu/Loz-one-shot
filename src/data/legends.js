@@ -30,6 +30,8 @@ export function installLegends() {
     'K': 'grateOw',      // metal: only the Resonance Rod retracts it
     'J': 'chasm',        // Roc's Feather   — 1 tile, clearable at 2.27 tiles
     'M': 'boulder',      // Dredge Line     — drag it out of the way
+    'L': 'seaChannel',   // Kelp-Soled Cleats — deep at every tide, so no conch
+                         // answers it and only the soles get you across
     'C': 'caveMouth', 'c': 'caveMouthSolid', '/': 'stairsDown', '_': 'ledgeS',
     '"': 'ledgeN', '>': 'ledgeE', '<': 'ledgeW',
     // TIDE TILES (digits)
@@ -107,6 +109,7 @@ export function installLegends() {
     '~': 'waterD', '=': 'waterAbyss',
     'T': 'treeDead', 'o': 'rock', '#': 'cliffAbyss', '^': 'cliffAbyss',
     'V': 'abyssPlug',       // region gate: only the Dredge Line shifts it
+    'U': 'kellSluice',      // region gate: only the Squall Bellows' cone turns it
     '_': 'ledgeAbyss',
     '"': 'ledgeAbyssN', '>': 'ledgeAbyssE', '<': 'ledgeAbyssW',
   }, 'base');

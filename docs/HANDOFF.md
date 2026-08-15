@@ -224,6 +224,54 @@ is in the page, and nothing steps until you say so.
 
 ## Hard-won lessons — do not rediscover these
 
+**P9's re-gate, and the biggest bug this project has shipped.**
+
+1. **THE WORLD COULD NOT BE FINISHED, AND NINETEEN CHECKERS WERE GREEN.** Two of
+   the four region gates were the Dredge Line's — the sixth dungeon's item —
+   and between them they held shut the Cliffs of Kell, where the FOURTH dungeon
+   is, and the Abyssal approach, where the sixth is. Each dungeon was locked
+   behind an item you could only get by entering it. A player starting a new
+   game could reach three of the six dungeon mouths, ever.
+   `check-overworld.mjs` proved every one of those gates in BOTH directions and
+   was right to pass: it asks "is the region sealed without the item and open
+   with it", which is a question about one gate at a time. **Nothing asked
+   whether a gate's key is obtainable before the gate**, and that is a question
+   about the whole world at once. `tools/check-progression.mjs` asks it as a
+   fixed point — start with nothing, flood, take what the reachable dungeons
+   hand over, flood again, repeat — and the step at which each mouth first
+   appears IS the enforced order, so it prints it as well as asserting it.
+   The general lesson: **a property proved locally for every part is not the
+   same property proved globally.** Reachability composes; obtainability does
+   not.
+
+2. **The fix is a tile swap, not a re-authoring, IF the gate seams already
+   work.** Every gate in this world is a four-tile bar across the one corridor
+   of a seam screen, and those corridors are already proven. Swapping which
+   TILE sits in the bar changes the key and cannot change the connectivity, so
+   the whole re-gate was five edited rows and zero new geometry. Look for that
+   shape before re-authoring anything: `node -e` printing every gate-flagged
+   tile's screen and coordinates found all of them in one command.
+
+3. **Moving a gate breaks the harness that points at its coordinates.**
+   `check-gates.mjs` names the boulder's screen and tile, so re-homing the
+   boulder failed three assertions that were testing the RIGHT thing at the
+   WRONG place. That is the harness working. Grep any checker for hardcoded
+   room keys before moving content into or out of them.
+
+4. **A checker that fits itself to the content is worthless; a checker that
+   names its exemptions is not.** The order assertion legitimately fails on the
+   Drowned Wood, which has no region gate at all. Rather than weaken the rule,
+   the exemption is a named entry with the reason and the suggested fix
+   printed on every run — the same idiom as `check-autotile.mjs`'s EXEMPT list.
+   And the exemption itself is asserted to name a real dungeon, because a
+   typo'd skip list silently turns an assertion off.
+
+5. **`defineEnemy` kept no record of its specs.** P9 re-tunes contact damage
+   against a rule about the whole roster — "half a heart from an ordinary
+   enemy" — and the roster was queryable only by constructing one of each. It
+   exports `ENEMY_SPECS` now. A rule nothing can read is a rule nothing can
+   hold you to.
+
 **The cliff family (PT step 5), and the four things it cost.**
 
 1. **A PREVIOUS SESSION'S SURVEY IS EVIDENCE, NOT FACT — CHECK ITS CELLS BEFORE

@@ -60,9 +60,16 @@ export const F = {
   // Dredge Line". Reusing JUMPABLE or DEEP for that would make every gap and
   // every stretch of ocean in the world read as the same gate.
   HEAVY:     1 << 26,  // boulder: only the Dredge Line drags it clear
-  SWIMGATE:  1 << 27,  // deep channel: only Zora's Flippers cross it
+  SWIMGATE:  1 << 27,  // deep channel: only the Kelp-Soled Cleats cross it
   GRAPPLE:   1 << 28,  // span crossed by dredging a fixed snag on the far side
-  GAP:       1 << 29,  // chasm: only Roc's Feather clears it
+  // A sluice wheel: only the Squall Bellows' cone turns it. THIS BIT USED TO BE
+  // `GAP`, the marker for a chasm only Roc's Feather cleared — and Roc's
+  // Feather has been gone since P6, the hop is base moveset, and nothing has
+  // read that bit since. P9's brief is "the overworld has regions gated on
+  // items that no longer exist", so retiring the marker is the same job as
+  // re-pointing the gates. `chasm` keeps F.JUMPABLE, which is what the engine
+  // and every checker actually cross it by.
+  GUSTGATE:  1 << 29,
   // Metal, crystal, or grown coral: the Resonance Rod makes it answer. Not a
   // traversal flag — a ringable tile also carries whatever it actually is.
   RING:      1 << 30,

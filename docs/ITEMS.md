@@ -369,12 +369,39 @@ them.
 Removing three gate items would have cost the overworld three gates. Two were
 repointed rather than lost, and one was deliberately given up:
 
-| Gate | Was | Is | Proof |
-|---|---|---|---|
-| Salt Pans (`saltVane`) | Magic Boomerang | **Resonance Rod** | `check-gates` — and it asserts the Rod's range *doubles at HIGH*, so the same player in the same spot opens it at one tide level and not another. The only gate in the game whose key is the core mechanic. |
-| Abyssal approach (`abyssPlug`) | Magnetic Gloves | **Dredge Line** | `check-gates` |
-| Cliffs of Kell (`boulder`) | Power Bracelet | **Dredge Line** | `check-gates`, both directions: bare hands do not lift it, the line drags it clear |
-| Coral Reef (`chasm`) | Roc's Feather | **nothing** | Given up on purpose. The hop is base moveset, so a one-tile chasm is crossed by everyone. `check-overworld`'s flood models the hop against `GAP_HOP_MAX_SPAN` rather than blanket-passing gaps, so the Reef's four-tile decorative chasm bands are still walls. P9 re-gates. |
+**P9 re-gated this, and the reason is the most expensive bug the project has
+shipped.** Two of the gates below were the Dredge Line's, which is the SIXTH
+dungeon's item — and between them they held shut the Cliffs of Kell, where the
+FOURTH dungeon is, and the Abyssal approach, where the sixth is. Both dungeons
+were locked behind an item found inside them, so **the game could not be
+finished**, and every checker in the repo was green. `tools/check-progression.mjs`
+is the tool that asks the question none of them asked.
+
+Five gates, each proved sealed-without and open-with by `check-overworld`, each
+proved in-engine by `check-gates`, and the whole chain proved walkable in order
+by `check-progression`:
+
+| Gate | Key | Available after | Seals | Proof |
+|---|---|---|---|---|
+| Salt Pans (`saltVane`) | **Resonance Rod** | D1 — the Maku Tree gives it for one essence | the Pans and the Reef ruins | `check-gates` — and it asserts the Rod's range *doubles at HIGH*, so the same player in the same spot opens it at one tide level and not another. The only gate in the game whose key is the core mechanic. |
+| Sunken Marsh (`cliffCrackedDk`) | **Bombs** | D2 — the Coral Spire's Bomb Vault | the Marsh, and the whole north-west branch above it | `check-overworld`, both directions |
+| Cliffs of Kell (`seaChannel`) | **Kelp-Soled Cleats** | D3 — the Bogwater Sanctum | the Cliffs, and the Abyss above them | deep at every tide level, so no conch answers it. Was the Dredge Line's boulder, which is what made D4 unenterable. |
+| Abyssal approach (`kellSluice`) | **Squall Bellows** | D4 — the Cliffside Cistern | the Keep's approach | `check-gates` proves the cone turns the wheel and a sword does not. Was a second `abyssPlug`, which is what made D6 unenterable. |
+| the Keep's pocket and the bog dead ends (`abyssPlug`, `boulder`) | **Dredge Line** | D6 | pockets you come back for — **no dungeon mouth** | `check-gates`, both directions: bare hands do not lift the boulder, the line drags it clear |
+| Coral Reef (`chasm`) | — | — | **nothing** | Given up on purpose. The hop is base moveset, so a one-tile chasm is crossed by everyone. `check-overworld`'s flood models the hop against `GAP_HOP_MAX_SPAN` rather than blanket-passing gaps, so the Reef's four-tile decorative chasm bands are still walls. The marker bit the chasm carried has been retired. |
+
+**The rule the last row of that table is really about:** a gate whose key comes
+from the dungeon behind it may hold a POCKET and must never hold a MOUTH. That
+is the line `check-progression.mjs` draws, and it draws it by flooding the world
+without each dungeon's own key and asserting that dungeon — and every dungeon
+before it — is still reachable.
+
+**One region is still ungated: the Drowned Wood (D5).** It borders the village,
+the Cliffs, the dunes and the salt pans, so gating it is four seams of work;
+`check-progression` prints it as a named exemption on every run rather than
+hiding it. A player may walk into the fifth dungeon first, which is enterable
+early and not finishable early, because the Shrine hands over the Reefseed its
+own later rooms need.
 
 ## What is base moveset now, and why
 

@@ -223,7 +223,16 @@ export class Enemy extends Entity {
   }
 }
 
+// Every spec that has been defined, by name. `defineEnemy` used to hand its
+// spec straight to a closure and keep no record, so the roster's own numbers —
+// hp, contact damage, speed — were queryable only by constructing one of each.
+// P9 re-tunes contact damage against a rule ("half a heart from an ordinary
+// enemy") that is a statement about the whole roster, and a rule nothing can
+// read is a rule nothing can hold you to.
+export const ENEMY_SPECS = new Map();
+
 export function defineEnemy(name, spec) {
+  ENEMY_SPECS.set(name, spec);
   defineEntity(name, (x, y, opts, game) => {
     const e = new Enemy(x, y, spec, opts);
     if (spec.init) spec.init(e, game);
