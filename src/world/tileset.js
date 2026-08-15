@@ -106,8 +106,63 @@ export function registerTiles(defs) {
       // docs/HANDOFF.md: data contracts drift from engine contracts silently.
       liftLevel: def.liftLevel || 0,
       liftSprite: def.liftSprite || null,
+      // Which autotile family this tile counts as a member of when a NEIGHBOUR
+      // asks "is the thing next to me the same mass as me?". Purely cosmetic —
+      // see AUTOTILE below — but it has to be copied here or it is discarded,
+      // which is the `liftLevel` trap two fields up, and this is exactly the
+      // commit CLAUDE.md says to add the field in.
+      family: def.family || null,
     });
   }
+}
+
+// --------------------------------------------------------------------------
+// AUTOTILING: a cliff has edges, and an author should not have to say so.
+//
+// A cliff mass in this game is authored as a rectangle of one character — the
+// border of a screen, a spur across a field — and until now every tile of it
+// drew the identical repeating course texture. A run of eight `#` was eight
+// copies of one 16x16, so the mass had no top, no base, no corner and no
+// outline: it read as wallpaper rather than as a thing standing in the world.
+// The Oracles never draw one that way. Their cliffs are a family of pieces and
+// the map says which piece goes where.
+//
+// Rather than re-author 120 screens into a vocabulary of named pieces, the
+// piece is DERIVED. `registerAutotile(base, pieces)` says: wherever this tile
+// is authored, replace it with `pieces[mask]`, where mask has a bit set for
+// each orthogonal direction in which the neighbour is NOT of the same family.
+//
+//   1 = north open, 2 = east open, 4 = south open, 8 = west open
+//
+// Three properties make this safe, and they are the whole argument for doing
+// it this way:
+//
+//   * Every piece of a family carries EXACTLY the flags of its base. The
+//     substitution therefore cannot move a wall, sever a screen or open one —
+//     `tools/validate.mjs` asserts it, because CLAUDE.md's most expensive trap
+//     is a solid tile that strands a room while validating clean.
+//   * It runs ONCE, in the Room constructor, over the authored grid. Nothing
+//     downstream — collision, the tide field, the render cache, every checker —
+//     knows autotiling happened; they see ordinary tile names.
+//   * OFF-ROOM COUNTS AS SAME, so a cliff running off the edge of a screen
+//     grows no lip against the seam and the mass continues into the next
+//     screen the way it looks like it should.
+export const AUTOTILE = new Map();
+
+/** `pieces` is 16 tile names indexed by the open-neighbour mask above. */
+export function registerAutotile(base, pieces) {
+  if (pieces.length !== 16) {
+    throw new Error(`registerAutotile('${base}'): needs 16 pieces, got ${pieces.length}`);
+  }
+  AUTOTILE.set(base, pieces);
+}
+
+export function autotilePieces(name) { return AUTOTILE.get(name) || null; }
+
+/** The family a tile counts as, for a neighbour's mask. */
+export function tileFamily(name) {
+  const d = TILES.get(name);
+  return d ? d.family : null;
 }
 
 // --------------------------------------------------------------------------

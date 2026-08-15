@@ -6,7 +6,7 @@
 // `underArt` so a base tile is drawn beneath them.
 
 import { tiles as tileSheet } from '../gfx/art.js';
-import { registerTiles, registerBlocks, F, declareAnimArt, registerTransforms } from '../world/tileset.js';
+import { registerTiles, registerBlocks, registerAutotile, F, declareAnimArt, registerTransforms } from '../world/tileset.js';
 import { TERRAIN_ART, TOWN_ART, TOWN_PALETTES, TOWN_BLOCKS } from './tiles-terrain.js';
 import { registerPalettes } from '../gfx/palettes.js';
 import { DUNGEON_THEME_ART, installDungeonThemePalettes } from './tiles-dungeon-themes.js';
@@ -1015,6 +1015,86 @@ const HAND_ART = {
 const ART = { ...HAND_ART, ...TERRAIN_ART, ...DUNGEON_THEME_ART, ...TOWN_ART };
 
 // --------------------------------------------------------------------------
+// THE CLIFF FAMILY: sixteen pieces cut from one face.
+//
+// WHY THIS IS DRAWN AND NOT EXTRACTED, because CLAUDE.md's first rule is that
+// if a sheet has it we extract it, and a session already surveyed the sheets
+// for this. The finding, written up in docs/ART-BACKLOG.md, is that neither
+// sheet has THIS object:
+//
+//   * `oracle-ages-overworld.png` has a complete cliff family, and it is a
+//     PLATEAU EDGE — a drop seen from above whose top surface is ordinary
+//     walkable ground. Thalassia's cliff is a wall seen from the front, with
+//     nothing on top of it and nothing behind it. Adopting the Ages object
+//     means giving every cliff in the game a high side and a low side, which is
+//     120 screens re-authored around a solid tile. That is a different world,
+//     not a different texture.
+//   * `oracle-seasons-tileset-subrosia.png` has a front-facing rock wall in a
+//     complete family and in nine palettes, which is almost exactly right — and
+//     every piece of it carries a lava vein, because it is Subrosia. Cutting
+//     the veins out is hand-drawing with extra steps.
+//
+// So the cliff falls under the second rule, "if no sheet has it, draw it to
+// match", and what it has to match is the face already on screen: the base of
+// every piece below IS `ART.cliff`, unmodified, and a piece adds treatment only
+// on the edges the mass actually exposes. Register cannot drift because fifteen
+// of the sixteen pieces contain the sixteenth.
+//
+// The vocabulary, and each half of it is the game's own:
+//
+//   the top      a black course line, two rows of index 0, then a row of
+//                shadow. Index 0 is the LIGHTEST colour of every one of the
+//                seven cliff palettes and the current face never uses it, so
+//                the coping is bright in stone, in sand and in abyss without a
+//                single new colour. It is also what `ledgeS`/`ledgeE`/`ledgeW`
+//                already spend index 0 on — the lit brink of a drop.
+//   the base     a row of shadow and a black row, which is the mass sitting on
+//                the ground below rather than being pasted over it.
+//   the returns  a shadowed column inside a black outline, so the mass ends
+//                rather than running out of the tile.
+//
+// The 1px black outline on every exposed side is ART-DIRECTION's hard rule for
+// a drawn object, and it is the whole of why a cliff now reads as a thing
+// standing in the world instead of as wallpaper.
+//
+// Which piece goes where is not authored: see `Room.autotile`.
+function cliffPieces(baseArt) {
+  const rows = baseArt.trim().split('\n').map(r => r.trim());
+  const out = [];
+  for (let m = 0; m < 16; m++) {
+    const g = rows.map(r => r.split(''));
+    const n = m & 1, e = m & 2, s = m & 4, w = m & 8;
+    // Returns first, base over them, coping over that, outline last — so the
+    // coping runs unbroken into a corner and the base shadow does too, which
+    // is what stops a corner piece reading as two unrelated edges meeting.
+    if (w) for (let y = 0; y < 16; y++) g[y][1] = '2';
+    if (e) for (let y = 0; y < 16; y++) g[y][14] = '2';
+    if (s) for (let x = 0; x < 16; x++) g[14][x] = '2';
+    if (n) for (let x = 0; x < 16; x++) { g[1][x] = '0'; g[2][x] = '0'; g[3][x] = '2'; }
+    if (n) for (let x = 0; x < 16; x++) g[0][x] = '3';
+    if (s) for (let x = 0; x < 16; x++) g[15][x] = '3';
+    if (w) for (let y = 0; y < 16; y++) g[y][0] = '3';
+    if (e) for (let y = 0; y < 16; y++) g[y][15] = '3';
+    out.push('\n' + g.map(r => '    ' + r.join('')).join('\n'));
+  }
+  return out;
+}
+
+// Every cliff the game has, and the palette it wears. The art is one face in
+// sixteen pieces; a region's colour is still a palette swap, exactly as it was
+// when a cliff was one tile.
+const CLIFF_PALETTES = {
+  cliff: 'stone', cliffDk: 'stonedk', cliffSand: 'sand', cliffRust: 'rust',
+  cliffCoral: 'coral', cliffMarble: 'marble', cliffAbyss: 'abyss',
+};
+// Sixteen arts, not seven times sixteen: a region's cliff is the same face in
+// another palette, which is the swap every `cliffDk`/`cliffSand` already was.
+// The alias pass at the end of installCoreTiles gives each tile NAME an art
+// entry pointing back at the piece it declares here.
+const CLIFF_PIECE_ART = cliffPieces(ART.cliff);
+for (let m = 0; m < 16; m++) ART[`cliffPiece_${m}`] = CLIFF_PIECE_ART[m];
+
+// --------------------------------------------------------------------------
 // THE TOWN KIT: what each extracted building DOES.
 //
 // The art, the cell layout and the palettes are generated (tools/rip-terrain.py
@@ -1209,18 +1289,35 @@ export function installCoreTiles() {
     grateOwOpen: { art: ART.rockFloor, pal: 'stone' },
 
     // --- barriers ---
-    cliff: { art: ART.cliff, pal: 'stone', flags: F.SOLID },
-    cliffTop: { art: ART.cliffTop, pal: 'stone', flags: F.SOLID },
-    cliffDk: { art: ART.cliff, pal: 'stonedk', flags: F.SOLID },
-    cliffSand: { art: ART.cliff, pal: 'sand', flags: F.SOLID },
-    cliffRust: { art: ART.cliff, pal: 'rust', flags: F.SOLID },
-    cliffCoral: { art: ART.cliff, pal: 'coral', flags: F.SOLID },
-    cliffMarble: { art: ART.cliff, pal: 'marble', flags: F.SOLID },
-    cliffAbyss: { art: ART.cliff, pal: 'abyss', flags: F.SOLID },
+    //
+    // Each of these is the tile an AUTHOR places, and each is replaced at room
+    // construction by the member of its family that fits its neighbours (see
+    // `Room.autotile`). `family: 'cliff'` is the other half of that: it is what
+    // one cliff uses to recognise another, so a cracked stretch or a hand-placed
+    // `cliffTop` in the middle of a run does not make the run grow an edge
+    // around it.
+    cliff: { art: ART.cliff, pal: 'stone', flags: F.SOLID, family: 'cliff' },
+    // The one piece an author still places by hand, and the one the autotiler
+    // leaves alone: a plateau top in the middle of a mass, where the mass is
+    // meant to read as something you are looking down onto rather than at.
+    cliffTop: { art: ART.cliffTop, pal: 'stone', flags: F.SOLID, family: 'cliff' },
+    cliffDk: { art: ART.cliff, pal: 'stonedk', flags: F.SOLID, family: 'cliff' },
+    cliffSand: { art: ART.cliff, pal: 'sand', flags: F.SOLID, family: 'cliff' },
+    cliffRust: { art: ART.cliff, pal: 'rust', flags: F.SOLID, family: 'cliff' },
+    cliffCoral: { art: ART.cliff, pal: 'coral', flags: F.SOLID, family: 'cliff' },
+    cliffMarble: { art: ART.cliff, pal: 'marble', flags: F.SOLID, family: 'cliff' },
+    cliffAbyss: { art: ART.cliff, pal: 'abyss', flags: F.SOLID, family: 'cliff' },
     // Outdoor bombable walls. dWallCracked is the indoor equivalent; these let
     // an overworld region be gated on Bombs, which GAME-PLAN.md asks for and
     // nothing outdoors could express before.
-    cliffCracked: { art: ART.cliffCracked, pal: 'stone', flags: F.SOLID | F.BOMBABLE },
+    //
+    // In the family for matching and NOT autotiled: a fault line runs the
+    // height of the tile and a coping drawn over it would hide the one thing
+    // the tile exists to say. A bombable stretch is part of the mass it is set
+    // into, so the mass closes round it and the crack stays legible.
+    cliffCracked: {
+      art: ART.cliffCracked, pal: 'stone', flags: F.SOLID | F.BOMBABLE, family: 'cliff',
+    },
     // The two region gates GAME-PLAN.md asks for. The Marsh gate proved the
     // shape — a solid tile with a flag, plus a transform naming what opens it —
     // and these two only add `level`, so the gate can name the MAGIC boomerang
@@ -1248,7 +1345,9 @@ export function installCoreTiles() {
       art: ART.boulder, pal: 'stonedk', flags: F.SOLID | F.ROCK | F.HEAVY,
       underArt: 'rockFloor', liftLevel: 2,
     },
-    cliffCrackedDk: { art: ART.cliffCracked, pal: 'stonedk', flags: F.SOLID | F.BOMBABLE },
+    cliffCrackedDk: {
+      art: ART.cliffCracked, pal: 'stonedk', flags: F.SOLID | F.BOMBABLE, family: 'cliff',
+    },
     treeDead: { art: ART.tree, pal: 'treeoakdd', flags: F.SOLID, underArt: 'grassBog' },
     treeDark: { art: ART.tree, pal: 'treeoakdk', flags: F.SOLID, underArt: 'grassDark' },
     tree: { art: ART.tree, pal: 'treeoak', flags: F.SOLID, underArt: 'grass' },
@@ -1546,6 +1645,26 @@ export function installCoreTiles() {
     // answer wants to be a shade of blue, reach for a whole tile instead.
     dLintel: { tide: ['dWallAbyss', 'dWallAbyss', 'dWaterD'] },
   };
+  // The cliff family, generated rather than written out: seven palettes times
+  // sixteen pieces is 112 tiledefs, and a hand-written table of 112 is 112
+  // chances to give one piece the wrong flags. THE FLAGS COME FROM THE BASE
+  // TILE, COPIED, which is what makes the substitution provably unable to move
+  // a wall — `tools/validate.mjs` asserts it statically and
+  // `tools/check-autotile.mjs` proves it against every room in the game,
+  // because a solid tile that strands a room is the trap this project has paid
+  // for most often.
+  for (const [base, pal] of Object.entries(CLIFF_PALETTES)) {
+    const pieces = [];
+    for (let m = 0; m < 16; m++) {
+      const name = `${base}_${m}`;
+      TILE_DEFS[name] = {
+        art: ART[`cliffPiece_${m}`], pal,
+        flags: TILE_DEFS[base].flags, family: TILE_DEFS[base].family,
+      };
+      pieces.push(name);
+    }
+    registerAutotile(base, pieces);
+  }
   registerTiles(TILE_DEFS);
   // After the tiledefs, so a block cell can never be shadowed by one of them.
   const townDefs = installTownBlocks();

@@ -41,7 +41,7 @@
 
 import { TILE, ROOM_W, ROOM_H, offscreen } from '../core/screen.js';
 import { tiles as tileSheet } from '../gfx/art.js';
-import { F, resolveTile, getTileDef, tileArt, blockRef } from './tileset.js';
+import { F, resolveTile, getTileDef, tileArt, blockRef, autotilePieces, tileFamily } from './tileset.js';
 
 export const LEGENDS = new Map();
 
@@ -115,6 +115,7 @@ export class Room {
       }
     }
     this.expandBlocks(chars, `${this.mapId}/${key}`);
+    this.autotile();
     // Runtime overrides (opened doors, smashed bushes, lifted rocks).
     this.override = new Array(this.tw * this.th).fill(null);
 
@@ -172,6 +173,57 @@ export class Room {
         }
       }
     }
+  }
+
+  /**
+   * Give every autotiled mass its own outline.
+   *
+   * A cliff is authored as a rectangle of one character and drew one repeating
+   * texture, so it had no top, no base and no corners. Each such tile is
+   * replaced here by the member of its family that matches which of its four
+   * orthogonal neighbours belong to the same family — see AUTOTILE in
+   * src/world/tileset.js for the mask and for why this cannot change where the
+   * player may walk.
+   *
+   * Two decisions live in this loop:
+   *
+   *   OFF-ROOM COUNTS AS SAME. A cliff run that leaves the screen grows no lip
+   *   against the seam, so a mass spanning two screens reads as one mass. The
+   *   alternative — treating the void as open — draws a bright coping down
+   *   every screen boundary in the game.
+   *
+   *   THE READ IS OF THE AUTHORED GRID, not of the running one. It samples
+   *   `base` rather than `baseName`, so the pass is order-independent within
+   *   the room and a piece never matches against another piece. It also means
+   *   a tile changed at RUNTIME — a bombed `cliffCracked` — does not re-cut its
+   *   neighbours' edges. That is deliberate: re-flooding a mass mid-frame would
+   *   invalidate the render cache of a room the player is standing in, and a
+   *   hole blown in a wall is meant to look like a hole blown in a wall.
+   */
+  autotile() {
+    let pieces = null;
+    for (let i = 0; i < this.base.length; i++) {
+      if (autotilePieces(this.base[i])) { pieces = true; break; }
+    }
+    if (!pieces) return;                    // the overwhelming majority of rooms
+    const fam = this.base.map(n => tileFamily(n));
+    const out = this.base.slice();
+    for (let y = 0; y < this.th; y++) {
+      for (let x = 0; x < this.tw; x++) {
+        const i = y * this.tw + x;
+        const table = autotilePieces(this.base[i]);
+        if (!table) continue;
+        const mine = fam[i];
+        let mask = 0;
+        // 1 N, 2 E, 4 S, 8 W — a bit set means "open on that side".
+        if (y > 0 && fam[i - this.tw] !== mine) mask |= 1;
+        if (x < this.tw - 1 && fam[i + 1] !== mine) mask |= 2;
+        if (y < this.th - 1 && fam[i + this.tw] !== mine) mask |= 4;
+        if (x > 0 && fam[i - 1] !== mine) mask |= 8;
+        out[i] = table[mask];
+      }
+    }
+    this.base = out;
   }
 
   inBounds(tx, ty) { return tx >= 0 && ty >= 0 && tx < this.tw && ty < this.th; }

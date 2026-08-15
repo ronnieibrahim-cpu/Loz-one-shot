@@ -14,7 +14,7 @@
 
 import { parseArt } from '../src/gfx/art.js';
 import { PALETTES } from '../src/gfx/palettes.js';
-import { TILES, TRANSFORMS, BLOCKS, validateTiles } from '../src/world/tileset.js';
+import { TILES, TRANSFORMS, BLOCKS, AUTOTILE, validateTiles } from '../src/world/tileset.js';
 import { MAPS, validateMaps, getRoom } from '../src/world/maps.js';
 import { LEGENDS, getLegend } from '../src/world/room.js';
 import { installData, ART_PACKS, SPRITE_PACKS } from '../src/data/index.js';
@@ -99,6 +99,43 @@ for (const p of validateTiles()) problems.push('tile: ' + p);
 for (const [name, d] of TILES) {
   if (!PALETTES[d.pal]) problems.push(`tile ${name}: unknown palette '${d.pal}'`);
   if (d.underArt && !TILES.has(d.underArt)) problems.push(`tile ${name}: underArt '${d.underArt}' is not a tile`);
+}
+
+// --- autotile families ----------------------------------------------------
+//
+// An autotiled tile is REPLACED in every room grid in the game by a family
+// member the author never wrote (see AUTOTILE in src/world/tileset.js). The
+// substitution is only safe because a piece is a look and never a rule, so the
+// same argument the dungeon themes make below applies here with more force:
+// CLAUDE.md's most expensive trap is a solid tile that severs a room while
+// rendering fine and validating clean, and this feature edits the solid tiles
+// of 273 rooms at once.
+//
+// Four things per family, and the flags one is the load-bearing one:
+//   * all sixteen pieces exist;
+//   * every piece carries EXACTLY the base's flags;
+//   * every piece is in the base's family, so a mass of pieces recognises
+//     itself — get this wrong and the second room built from a shared grid
+//     autotiles differently from the first;
+//   * the base itself declares a family, or its own mask is meaningless.
+{
+  for (const [base, pieces] of AUTOTILE) {
+    const b = TILES.get(base);
+    if (!b) { problems.push(`autotile '${base}': no such tile`); continue; }
+    if (!b.family) problems.push(`autotile '${base}': the base declares no family`);
+    for (let m = 0; m < 16; m++) {
+      const p = TILES.get(pieces[m]);
+      if (!p) { problems.push(`autotile ${base}[${m}]: missing tile '${pieces[m]}'`); continue; }
+      if (p.flags !== b.flags) {
+        problems.push(`autotile ${base}[${m}] '${pieces[m]}': flags ${p.flags} != ${b.flags}`
+          + ' — a piece may change the look, never where the player may walk');
+      }
+      if (p.family !== b.family) {
+        problems.push(`autotile ${base}[${m}] '${pieces[m]}': family `
+          + `${JSON.stringify(p.family)} != ${JSON.stringify(b.family)}`);
+      }
+    }
+  }
 }
 
 // --- dungeon themes -------------------------------------------------------
