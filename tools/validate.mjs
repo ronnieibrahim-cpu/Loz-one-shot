@@ -6,6 +6,7 @@
 //   * every tile definition is well formed and tide variants resolve
 //   * every room grid matches its declared size in screens
 //   * every extracted dungeon-theme tile can actually reach the screen
+//   * every extracted town block is drawn, named by a legend, and constructs
 //   * every legend character used by a room maps to a registered tile
 //   * every warp resolves to a room that exists
 //
@@ -13,11 +14,12 @@
 
 import { parseArt } from '../src/gfx/art.js';
 import { PALETTES } from '../src/gfx/palettes.js';
-import { TILES, TRANSFORMS, validateTiles } from '../src/world/tileset.js';
-import { MAPS, validateMaps } from '../src/world/maps.js';
+import { TILES, TRANSFORMS, BLOCKS, validateTiles } from '../src/world/tileset.js';
+import { MAPS, validateMaps, getRoom } from '../src/world/maps.js';
 import { LEGENDS, getLegend } from '../src/world/room.js';
 import { installData, ART_PACKS, SPRITE_PACKS } from '../src/data/index.js';
 import { DUNGEON_THEME_ART } from '../src/data/tiles-dungeon-themes.js';
+import { TOWN_ART } from '../src/data/tiles-terrain.js';
 import { REQUIRED_SPRITES, expectedSize, allRequired } from '../src/data/sprite-manifest.js';
 
 const STRICT = process.argv.includes('--strict');
@@ -204,6 +206,55 @@ for (const [name, d] of TILES) {
   }
 }
 
+// --- the town kit ---------------------------------------------------------
+//
+// The same two links the dungeon-theme check above exists for, for the blocks:
+// art nothing draws, and a block no room can name. The second one is the one
+// that bit before — `lionHead` and `urn` were extracted, given tiledefs and
+// left without a legend character, so they shipped in the build unreachable
+// with every checker green. A block is MORE exposed to it, not less: it needs
+// a legend entry per ground variant, and the variant that has none looks
+// exactly like the variant that has one from anywhere except here.
+{
+  const drawnArt = new Set();
+  for (const [, d] of TILES) if (d.art) drawnArt.add(d.art);
+  for (const [name, art] of Object.entries(TOWN_ART)) {
+    if (!drawnArt.has(art)) {
+      problems.push(`town art '${name}': extracted by rip-terrain.py and no tiledef draws it`);
+    }
+  }
+  const named = new Set();
+  for (const [, map] of LEGENDS) {
+    for (const t of Object.values(map)) {
+      if (typeof t === 'string' && t.startsWith('block:')) named.add(t.slice(6));
+    }
+  }
+  for (const [name, b] of BLOCKS) {
+    if (!named.has(name)) {
+      problems.push(`block '${name}': registered and no legend names it — a room grid`
+        + ' cannot place it, so it can never appear');
+    }
+    for (const row of b.tiles) {
+      for (const t of row) if (!TILES.has(t)) problems.push(`block '${name}': cell tile '${t}' is not registered`);
+    }
+  }
+}
+
+// --- every room actually constructs ---------------------------------------
+//
+// Until blocks there was nothing in the constructor that could fail on data a
+// static read of the grid passes, so this file checked grids rather than
+// rooms. A BLOCK FOOTPRINT IS EXACTLY THAT KIND OF FAULT: a 3x3 shop drawn
+// eight characters wide is a legal grid of legal characters and an illegal
+// building, and the difference is only visible to the expansion pass.
+for (const m of MAPS.values()) {
+  for (const key of Object.keys(m.roomDefs)) {
+    const [floor, x, y] = key.split(',').map(Number);
+    try { getRoom(m.id, floor, x, y); }
+    catch (e) { problems.push(`room ${m.id} ${key}: ${e.message}`); }
+  }
+}
+
 // --- maps -----------------------------------------------------------------
 for (const p of validateMaps()) problems.push('map: ' + p);
 
@@ -217,7 +268,12 @@ for (const m of MAPS.values()) {
         if (ch === ' ') continue;
         const t = legend[ch];
         if (!t) missing.add(ch);
-        else if (!TILES.has(t)) problems.push(`map ${m.id}/${key}: legend '${ch}' -> unregistered tile '${t}'`);
+        // A legend entry is either a tile or a block reference. The block's
+        // own cells are checked against TILES above, and its footprint is
+        // checked when the room constructs.
+        else if (t.startsWith('block:')) {
+          if (!BLOCKS.has(t.slice(6))) problems.push(`map ${m.id}/${key}: legend '${ch}' -> unregistered block '${t}'`);
+        } else if (!TILES.has(t)) problems.push(`map ${m.id}/${key}: legend '${ch}' -> unregistered tile '${t}'`);
       }
     }
     if (missing.size) {

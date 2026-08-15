@@ -6,8 +6,9 @@
 // `underArt` so a base tile is drawn beneath them.
 
 import { tiles as tileSheet } from '../gfx/art.js';
-import { registerTiles, F, declareAnimArt, registerTransforms } from '../world/tileset.js';
-import { TERRAIN_ART } from './tiles-terrain.js';
+import { registerTiles, registerBlocks, F, declareAnimArt, registerTransforms } from '../world/tileset.js';
+import { TERRAIN_ART, TOWN_ART, TOWN_PALETTES, TOWN_BLOCKS } from './tiles-terrain.js';
+import { registerPalettes } from '../gfx/palettes.js';
 import { DUNGEON_THEME_ART, installDungeonThemePalettes } from './tiles-dungeon-themes.js';
 import { TORRENT_PUSH } from './feel.js';
 
@@ -1011,7 +1012,70 @@ const HAND_ART = {
 // the pixels are replaced; every tile keeps the palette its definition below
 // binds, so the palette-swap variants and the region colour schemes are
 // untouched. Regenerate with `python3 tools/rip-terrain.py`.
-const ART = { ...HAND_ART, ...TERRAIN_ART, ...DUNGEON_THEME_ART };
+const ART = { ...HAND_ART, ...TERRAIN_ART, ...DUNGEON_THEME_ART, ...TOWN_ART };
+
+// --------------------------------------------------------------------------
+// THE TOWN KIT: what each extracted building DOES.
+//
+// The art, the cell layout and the palettes are generated (tools/rip-terrain.py
+// -> tiles-terrain.js). This table is the half that is design rather than
+// extraction, and it is small on purpose:
+//
+//   entrance  the cell that is a doorway. It carries F.WARP and is the tile a
+//             room's `warps` list names; every other cell is SOLID. Exactly
+//             the flags `caveMouth` has carried since the first cave, down to
+//             `mask: 0` — SOLID so nothing spawns or is thrown into a doorway,
+//             mask 0 so the player can walk in.
+//   ground    the tile drawn UNDER the block. Every cell of the kit has
+//             transparency at its edges — that is what makes a roof's rounded
+//             corner show the region's own grass instead of a nub of Subrosian
+//             dirt — so a block placed on grass and the same block placed on
+//             sand are different tiles. Hence the variants: `bShop` stands on
+//             grass, `bShopSand` on sand, `bShopPaved` on the village square.
+//             Their ART is the same art; only what shows through changes.
+//
+// A shuttered house has no entrance and is solid throughout. That is not a
+// flag on an ordinary house — it is a different building with a closed door
+// drawn on it, because the player has to be able to see which doors open.
+const TOWN_ENTRANCE = {
+  bShop: [1, 2],
+  bHouseGreen: [1, 2],
+  bHouseRed: [1, 2],
+};
+const TOWN_GROUNDS = { '': 'grass', Sand: 'sand' };
+
+/** Tiledefs for every cell of every block variant, plus the block registry. */
+function installTownBlocks() {
+  registerPalettes(TOWN_PALETTES);
+  const defs = {}, blocks = {};
+  for (const [name, b] of Object.entries(TOWN_BLOCKS)) {
+    const door = TOWN_ENTRANCE[name] || null;
+    for (const [suffix, ground] of Object.entries(TOWN_GROUNDS)) {
+      const tiles = [];
+      for (let y = 0; y < b.h; y++) {
+        const row = [];
+        for (let x = 0; x < b.w; x++) {
+          const [art, pal] = b.cells[y][x];
+          const isDoor = !!door && door[0] === x && door[1] === y;
+          // `bShop_1_2` on grass, `bShopSand_1_2` on sand — same art, and the
+          // tile named first is the art's own name so nothing has to alias it.
+          const tile = suffix ? `${name}${suffix}_${x}_${y}` : art;
+          defs[tile] = {
+            art: ART[art], pal, underArt: ground,
+            flags: isDoor ? F.SOLID | F.WARP : F.SOLID,
+            ...(isDoor ? { mask: 0 } : {}),
+          };
+          row.push(tile);
+        }
+        tiles.push(row);
+      }
+      blocks[name + suffix] = { w: b.w, h: b.h, tiles };
+    }
+  }
+  registerTiles(defs);
+  registerBlocks(blocks);
+  return defs;
+}
 
 export function installCoreTiles() {
   // The themed dungeon tiles bring their own colours off the cartridge, and
@@ -1444,6 +1508,9 @@ export function installCoreTiles() {
     dSnarl: { art: ART.bush, pal: 'treeoakdk', flags: F.SOLID, underArt: 'dWaterD' },
   };
   registerTiles(TILE_DEFS);
+  // After the tiledefs, so a block cell can never be shadowed by one of them.
+  const townDefs = installTownBlocks();
+  Object.assign(TILE_DEFS, townDefs);
 
   // Rooms draw a tile by its *tile* name, but the art above is keyed by art
   // name — so every palette-swap tile (grassDark reusing ART.grass, treeDark

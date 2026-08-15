@@ -220,6 +220,54 @@ is in the page, and nothing steps until you say so.
 
 ## Hard-won lessons — do not rediscover these
 
+**The towns (PT), and the five things they cost.**
+
+1. **A CHECKER THAT GRANTS SWIMMING CANNOT SEE A TOWN BREAK.** `check-towns.mjs`
+   was written with the overworld checker's flood, which treats deep water as
+   passable because the player eventually owns the Cleats. Under it, three of
+   the four town screens passed. They were all severed at HIGH: the tide pool
+   closes the middle of a screen and the buildings close the rest, and the only
+   remaining route was a swim the player of that hour cannot make. One line —
+   adding `F.DEEP` to the impassable mask — turned every one of them red. A
+   town is walked, not swum, and the flood has to say so.
+
+2. **A 10x8 SCREEN WITH TWO 3x3 BUILDINGS HAS EXACTLY ONE CORRIDOR.** Four
+   layouts of Tidewatch died before this was believed. Buildings at rows 2-4
+   leave the west seam column reachable only along row 5; put a 2x2 well or a
+   3x2 stump in row 5-6 and the west half of the village is a pocket, or the
+   east half is, or the door is. Nothing renders wrong. The rule that fell out
+   of it: **the row the buildings do not occupy belongs to the road**, and only
+   1x1 dressing goes in it.
+
+3. **A DOORWAY IS `F.SOLID` WITH `mask: 0`, and a checker that reads the flag
+   calls it a wall.** That is the pattern `caveMouth` has carried since the
+   first cave — solid so nothing spawns in it or is thrown through it, mask 0 so
+   the player's feet may enter — and every flood in the repo tests
+   `flags & F.SOLID`. Read the mask, or every town reports a shop nobody can
+   enter in a village that plays perfectly.
+
+4. **CHECKERS THAT READ A ROOM AS CHARACTERS GO BLIND THE DAY A BLOCK LANDS.**
+   `check-overworld.mjs` resolved a legend character to a tile: one character,
+   one tile, anywhere. A block breaks that — nine H's are nine different tiles —
+   and `getTileDef('block:bShop')` returns the empty tile, whose flags are 0, so
+   the flood walked straight through the shop and reported 17/17. It now builds
+   every screen and reads `room.baseName`, which is the engine's own answer. Any
+   tool that reads `def.map[y][x]` through a legend has the same hole.
+
+5. **AN NPC IS NOT MOVED BY MOVING THE GROUND.** Rebuilding the village put the
+   scrimshander inside a house, the digger inside the shop and a crab inside a
+   well, and all of it validated. `check-towns.mjs` asserts every entity in a
+   town screen stands somewhere it could stand at some tide level. The same pass
+   found a rupee that had been sitting inside a post on Driftwood Strand since
+   long before this session.
+
+   And the same class of thing bit the harness: `progress.pos` put a new game at
+   72,64, which the rebuilt village turned into the alley between two buildings,
+   so three movement tests in `test.mjs` failed for the honest reason that the
+   world had moved under their probes. The start position is 72,72 now — the
+   middle of the square, facing the shopfront — and the probes were moved to
+   match, not the buildings.
+
 **The Drowned Wood Shrine (P8/D5), and the four things it cost.**
 
 1. **A COUNTED ITEM ARRIVED WITH AN EMPTY POUCH, AND EVERY CHECKER STAYED

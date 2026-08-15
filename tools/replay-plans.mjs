@@ -52,14 +52,20 @@ export const PLANS = {
     },
     steps: [
       ['wait', 30],
-      // West along the open row below the ledge run, to the sign.
-      ['goto', 2, 4, 300],
+      // RE-RECORDED FOR THE REBUILT VILLAGE. The old route walked rows 4 and 6
+      // of a square that was open ground and is now a shop and a house; the
+      // frame counts are not comparable with the pre-town recording, because
+      // the world moved and not the movement. The route is the same idea: the
+      // length of the square, the bottom of it, out east and back.
+      //
+      // Row 5 is the square's open row, in front of both shopfronts and clear
+      // of both doorways — a `goto` that ended on a door would warp mid-run.
+      ['goto', 1, 5, 300],
       ['wait', 20],
-      // Down past the bushes and along the bottom of the village.
-      ['goto', 2, 6, 300],
-      ['goto', 7, 6, 400],
+      ['goto', 3, 6, 300],
+      ['goto', 6, 6, 400],
       // Back up into the square and across to the east side.
-      ['goto', 8, 4, 400],
+      ['goto', 8, 5, 400],
       ['wait', 40],
       // Out east into Village East, then straight back. Two seams, two
       // reconcileWithTide calls, two chances to land on a different pixel.
@@ -67,9 +73,51 @@ export const PLANS = {
       ['goto', 3, 4, 400],
       ['wait', 30],
       ['exit', 'left', 300],
-      ['goto', 4, 4, 400],
+      ['goto', 4, 5, 400],
       ['wait', 60],
     ],
+  },
+
+  // -------------------------------------------------------------------------
+  // THE DOOR. A block's doorway, walked through in the engine.
+  //
+  // check-towns.mjs proves the doorway is a warp, that the warp names it, that
+  // the interior warps back and that the return lands on ground. All four are
+  // claims about DATA. What no checker can say is that a player walking north
+  // into the middle cell of a building's front row ends up inside it — that
+  // needs `mask: 0` to actually let him onto a tile whose flags say SOLID, the
+  // warp to fire from the feet tile rather than the body, and the return trip
+  // not to bounce straight back through the door it arrived on.
+  //
+  // The run: stand in the square, walk up into the SHOP, wait, walk down and
+  // out. `roomChanges: 2` is the assertion with teeth — exactly two, so the
+  // door fired once each way and the return did not re-trigger it.
+  // -------------------------------------------------------------------------
+  'village-shop-door': {
+    note: 'Tidewatch Village: in through the shop doorway and back out to the square',
+    setup: {
+      seed: 20260806,
+      playerName: 'LINK',
+      items: { sword: 1, conch: 1 },
+      equipB: 'sword',
+      equipA: 'conch',
+      tide: 1,
+      enter: ['overworld', 0, 4, 7, 96, 88, 'down'],
+    },
+    steps: [
+      ['wait', 20],
+      // Straight up into the doorway at 6,4 from the square below it.
+      ['hold', ['up'], 60],
+      ['wait', 40],
+      // Inside the shop, and out again through its own door on the floor.
+      ['goto', 5, 5, 300],
+      // Twenty-four frames, not sixty: the door lands the player at 96,114,
+      // which is two tiles from the screen's south edge, and a longer hold
+      // walks him out of the village and fires a third transition.
+      ['hold', ['down'], 24],
+      ['wait', 60],
+    ],
+    assert: { roomChanges: 2 },
   },
 
   // -------------------------------------------------------------------------

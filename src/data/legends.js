@@ -121,6 +121,45 @@ export function installLegends() {
     '"': 'ledgeCoralN', '>': 'ledgeCoralE', '<': 'ledgeCoralW',
   }, 'base');
 
+  // ---- towns -------------------------------------------------------------
+  //
+  // A BUILDING IS ONE CHARACTER, DRAWN AS ITS FOOTPRINT. The shop is three
+  // cells wide and three tall, so it is nine H's in a 3x3 rectangle and the
+  // loader resolves which cell each one is (see `expandBlocks` in
+  // src/world/room.js). Two shops side by side are six H's in a row and are
+  // two shops; a footprint that is not exactly the block's size THROWS, naming
+  // the room, which is the whole reason a building is not nine loose tiles.
+  //
+  //     'ggghhhggg'       a house, with grass either side
+  //     'ggghhhggg'
+  //     'gggwwhhhg'       ...and a well tucked against it
+  //
+  // EVERY BUILDING IS SOLID except its doorway, so read the traps list in
+  // CLAUDE.md before laying one out and run check-overworld.mjs after: a solid
+  // tile can strand a screen while rendering perfectly and validating clean.
+  // A town is a maze of solid tiles and is the worst case for it.
+  //
+  // The same characters mean the same buildings in both legends. The only
+  // difference is what shows through the transparent pixels at a roof's
+  // rounded corner — grass in the village, sand on the dunes — which is why
+  // there are two sets of tiles for one set of art. Every character here is a
+  // BLOCK reference: `tools/validate.mjs` fails on a registered block no
+  // legend names, which is the check that `lionHead` and `urn` did not have.
+  const townKit = (grass) => ({
+    'H': 'block:bShop' + grass,          // the blue SHOP front. Enter at its middle.
+    'h': 'block:bHouseGreen' + grass,    // green roof, window / doorway / window
+    'j': 'block:bHouseRed' + grass,      // red roof, the same plan
+    'k': 'block:bHouseShut' + grass,     // a house whose door is shut: no interior
+    'w': 'block:bWell' + grass,          // 2x2 stone well
+    'u': 'block:bStump' + grass,         // 3x2 stump, the size of a table
+    'n': 'block:bFence' + grass,         // 1x2 paling fence; a run is a row of them
+    'i': 'block:bBarrels' + grass,
+    'e': 'block:bCrate' + grass,
+    'z': 'block:bCrates' + grass,
+  });
+  registerLegend('town', townKit(''), 'coast');
+  registerLegend('townDunes', townKit('Sand'), 'dunes');
+
   // ---- dungeon: shared indoor vocabulary ---------------------------------
   registerLegend('dungeon', {
     ' ': 'void',

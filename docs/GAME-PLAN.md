@@ -47,6 +47,19 @@ y 0-9 top to bottom). Tidewatch Village is at `0,4,7`.
 
 Every screen in the 12x10 grid must exist so the overworld never has holes.
 
+### Settlements
+
+| Where | Screen | What is there |
+|---|---|---|
+| Tidewatch Village | `0,4,7` | The square: the shop, a house you can enter, the Maku Tree's hollow in the treeline, the scrimshander |
+| Village Shore | `0,4,8` | The waterfront below it: the net-mender's cottage, the well, the tide pool |
+| Driftwood Strand | `0,5,8` | The village's timber yard — the chopping stump and a paling fence. No doors |
+| Sandpiper Row | `0,9,8` | The Shallows' fishing hamlet: one cottage open, one shuttered |
+
+Sandpiper Row is new with PT and is the only settlement outside the starting
+coast. Every one of them is proved by `node tools/check-towns.mjs`; a screen
+that uses a town legend and is not in that tool's TOWNS list fails it.
+
 **Five** of these gates are expressed as a tile carrying a flag, named in the
 table above, and `node tools/check-overworld.mjs` proves each one in both
 directions — sealed without the item, open with it, and sealing nothing outside

@@ -132,6 +132,115 @@ PROPS = [
 # outline rather than the ground behind it.
 QUADS = []
 
+# --------------------------------------------------------------------------
+# THE TOWN KIT.
+#
+# A BUILDING IS NOT A TILE. The ones on the Subrosia tileset are three cells
+# wide and three tall, which is the same problem the 32x32 trees have and a
+# worse one, because a building is not square and does not repeat: cutting one
+# into nine unrelated tiles hands an author nine characters that only mean
+# anything in one arrangement, and nothing to catch the arrangement being
+# wrong. So a block is extracted, registered and PLACED as one object — see
+# `registerBlocks` in src/world/tileset.js and the footprint expansion in
+# src/world/room.js. A room grid draws the building's outline as a rectangle of
+# one character and the loader resolves each cell.
+#
+# `assets/sheets/oracle-seasons-tileset-subrosia.png` is the source for all of
+# it: the only true TILESET in the repo, 16 cells wide, phase 0, so every pick
+# here is a grid reference rather than a survey. The kit is inventoried in
+# assets/sheets/README.md.
+#
+# UNLIKE THE GROUND PICKS ABOVE, THIS INSTALLS ITS PALETTES. Those tiles keep
+# the palette their tiledef in tiles-core.js already binds, because the game
+# has been drawing grass and sand for its whole life and a swapped ramp moves
+# every region's colour scheme. A roof has never been drawn in this game at
+# all, so there is no palette to preserve and the cartridge's own colours are
+# what make a blue shop read as the source's blue shop. Same argument, and the
+# same conclusion, as tools/rip-dungeon-themes.py.
+#
+# Each cell names its own palette, because a building is not one object in one
+# ramp: the roof is roof-coloured and the front is timber, and the source draws
+# them from two palettes for exactly that reason. Colours map to indices by an
+# EXPLICIT table (the palette's own order, lightest first) rather than by rank
+# — a rank is per cell, and the same green would land on a different index in
+# every cell of the same roof.
+TOWN_PALETTES = {
+    'sbRoofBlue':  ['#f8f8b0', '#1860f8', '#001888', '#000000'],
+    # The shop's front row carries the SHOP plate, and the plate's yellow and
+    # the wall's white trim cannot both be index 0. The plate wins: it is the
+    # one tile in the kit that says what the building IS, and what it costs is
+    # ten pixels of edge highlight per side cell going yellow instead of cream.
+    'sbShopFront': ['#f0f838', '#1860f8', '#001888', '#000000'],
+    'sbRoofGreen': ['#f0f838', '#08c850', '#086018', '#000000'],
+    'sbRoofRed':   ['#f8d088', '#e80818', '#680828', '#000000'],
+    'sbWood':      ['#f0f838', '#c08820', '#704820', '#000000'],
+    'sbTimber':    ['#f8e878', '#b86038', '#783828', '#000000'],
+}
+
+BLUE, SIGN = 'sbRoofBlue', 'sbShopFront'
+GRN, RED = 'sbRoofGreen', 'sbRoofRed'
+WOOD, TIMBER = 'sbWood', 'sbTimber'
+
+# Colours that turn up in a cell without belonging to its palette. Every one is
+# a handful of pixels of one ramp bleeding into a cell drawn in the other —
+# the SHOP plate's gold shading crossing into the wall cells beside it, and the
+# ground's tufts around the stump. Stated per palette rather than merged by
+# nearest luminance, so the choice is a decision somebody made and not an
+# arithmetic accident.
+TOWN_MERGE = {
+    SIGN: {'#f8f8b0': 0, '#c08820': 0, '#704820': 3},
+}
+
+# name, w, h, note, cells. A cell is (col, row, palette) on the tileset.
+#
+# `bg` names the colours the surrounding GROUND is drawn in on the sheet. They
+# are flooded out from the block's border inward and become transparency, so
+# the tile under a building's rounded roof corner is the region's own ground
+# rather than a nub of Subrosian dirt. Flooding from the border rather than
+# testing colour equality is what keeps the roof's yellow trim, which on the
+# green house is the same yellow as the dirt behind it.
+TOWN = [
+    ('bShop', 3, 3, 'blue shop: roof, and the signed front', ['#f0f838'], [
+        [(4, 7, BLUE), (5, 7, BLUE), (6, 7, BLUE)],
+        [(4, 8, BLUE), (5, 8, BLUE), (6, 8, BLUE)],
+        [(4, 9, SIGN), (5, 9, SIGN), (6, 9, SIGN)],
+    ]),
+    ('bHouseGreen', 3, 3, 'green-roofed house: window, doorway, window', ['#f0f838'], [
+        [(7, 7, GRN), (8, 7, GRN), (9, 7, GRN)],
+        [(7, 8, GRN), (8, 8, GRN), (9, 8, GRN)],
+        [(9, 9, WOOD), (8, 9, WOOD), (9, 9, WOOD)],
+    ]),
+    ('bHouseRed', 3, 3, 'red-roofed house: window, doorway, window', ['#f8d088'], [
+        [(10, 7, RED), (11, 7, RED), (12, 7, RED)],
+        [(10, 8, RED), (11, 8, RED), (12, 8, RED)],
+        [(9, 9, WOOD), (8, 9, WOOD), (9, 9, WOOD)],
+    ]),
+    # The same house with the sheet's CLOSED door in the middle instead of its
+    # open one. A town needs more buildings than it has interiors, and a
+    # shuttered door is how the source says so — the affordance is the art,
+    # which is why this is a different building and not a flag on the last one.
+    ('bHouseShut', 3, 3, 'green-roofed house, door shut', ['#f0f838'], [
+        [(7, 7, GRN), (8, 7, GRN), (9, 7, GRN)],
+        [(7, 8, GRN), (8, 8, GRN), (9, 8, GRN)],
+        [(9, 9, WOOD), (7, 9, WOOD), (9, 9, WOOD)],
+    ]),
+    ('bWell', 2, 2, 'stone well', ['#c08820'], [
+        [(13, 8, WOOD), (14, 8, WOOD)],
+        [(13, 9, WOOD), (14, 9, WOOD)],
+    ]),
+    ('bStump', 3, 2, 'cut stump, the size of a table', ['#f8e878', '#e09000', '#a06000', '#c08820', '#704820'], [
+        [(7, 10, TIMBER), (8, 10, TIMBER), (9, 10, TIMBER)],
+        [(7, 11, TIMBER), (8, 11, TIMBER), (9, 11, TIMBER)],
+    ]),
+    ('bFence', 1, 2, 'paling fence, one post pair', ['#f8e878'], [
+        [(11, 11, TIMBER)],
+        [(11, 12, TIMBER)],
+    ]),
+    ('bBarrels', 1, 1, 'two barrels', ['#f0f838'], [[(10, 9, WOOD)]]),
+    ('bCrate', 1, 1, 'a crate and a chest', ['#c08820'], [[(11, 9, WOOD)]]),
+    ('bCrates', 1, 1, 'stacked crates', ['#c08820'], [[(12, 9, WOOD)]]),
+]
+
 
 def lum(c):
     return 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]
@@ -178,6 +287,67 @@ def quantise_quad(block, colmap, bg):
                 raise SystemExit('rip-terrain: quad colour %s not in the map' % key)
             line.append(str(colmap[key]))
         out.append(''.join(line))
+    return out
+
+
+def quantise_town(block, w, h, bgs, cells):
+    """A w x h CELL block of the town kit -> one 16x16 grid of '0-3'/'.' per cell.
+
+    Two things make this neither `quantise_quad` nor `quantise_prop`:
+
+    * The transparency is flooded from the BLOCK's border, not each cell's. A
+      cell in the middle of a building has no ground in it at all, and a cell
+      at its edge has ground on one side only — flooding per cell would let the
+      sky in through the gap between two roofs, and testing colour equality
+      would punch the yellow trim out of a green roof, because on this sheet
+      the trim and the dirt behind it are the same yellow.
+    * Every cell names its own palette and colours map to indices by that
+      palette's own order. A rank-based map is per cell, and a building's roof
+      spans three of them.
+    """
+    W, H = w * 16, h * 16
+    grid = [[None] * W for _ in range(H)]
+    bgset = {tuple(int(c[i:i + 2], 16) for i in (1, 3, 5)) for c in bgs}
+    stack = [(i, e) for i in range(W) for e in (0, H - 1)]
+    stack += [(e, i) for i in range(H) for e in (0, W - 1)]
+    seen = set()
+    while stack:
+        cx, cy = stack.pop()
+        if not (0 <= cx < W and 0 <= cy < H) or (cx, cy) in seen:
+            continue
+        if block[cy][cx] not in bgset:
+            continue
+        seen.add((cx, cy))
+        grid[cy][cx] = '.'
+        stack += [(cx + 1, cy), (cx - 1, cy), (cx, cy + 1), (cx, cy - 1)]
+
+    out = []
+    for cy in range(h):
+        row = []
+        for cx in range(w):
+            pal = cells[cy][cx][2]
+            idx = {tuple(int(c[i:i + 2], 16) for i in (1, 3, 5)): n
+                   for n, c in enumerate(TOWN_PALETTES[pal])}
+            merge = {tuple(int(c[i:i + 2], 16) for i in (1, 3, 5)): n
+                     for c, n in TOWN_MERGE.get(pal, {}).items()}
+            lines = []
+            for y in range(16):
+                line = []
+                for x in range(16):
+                    gx, gy = cx * 16 + x, cy * 16 + y
+                    if grid[gy][gx] == '.':
+                        line.append('.')
+                        continue
+                    p = block[gy][gx]
+                    n = idx.get(p, merge.get(p))
+                    if n is None:
+                        raise SystemExit(
+                            'rip-terrain: colour #%02x%02x%02x at cell (%d,%d) is in '
+                            'neither palette %s nor its merge table' % (p + (cx, cy, pal)))
+                    line.append(str(n))
+                lines.append(''.join(line))
+            row.append(lines)
+        out.append(row)
     return out
 
 
@@ -430,6 +600,33 @@ def main():
                              os.path.basename(path), ox, oy, grid))
                 pals.append((f'{name}_{qx}{qy}', keep))
 
+    town = []
+    im = sheets.get(SB)
+    if im is None:
+        im = sheets[SB] = Image.open(SB).convert('RGB')
+    for name, w, h, note, bgs, cells in TOWN:
+        if len(cells) != h or any(len(r) != w for r in cells):
+            raise SystemExit('rip-terrain: %s declares %dx%d and lists %d rows'
+                             % (name, w, h, len(cells)))
+        # The cells are gathered into one image first, so the flood that makes
+        # the ground transparent can run across the whole building.
+        blk = [[None] * (w * 16) for _ in range(h * 16)]
+        for cy in range(h):
+            for cx in range(w):
+                sc, sr, _ = cells[cy][cx]
+                for y in range(16):
+                    for x in range(16):
+                        blk[cy * 16 + y][cx * 16 + x] = im.getpixel((sc * 16 + x, sr * 16 + y))
+        grids = quantise_town(blk, w, h, bgs, cells)
+        townart = []
+        for cy in range(h):
+            for cx in range(w):
+                sc, sr, pal = cells[cy][cx]
+                townart.append(('%s_%d_%d' % (name, cx, cy),
+                                'cell (%d,%d) — tileset c%d,r%d' % (cx, cy, sc, sr),
+                                grids[cy][cx], pal))
+        town.append((name, w, h, note, cells, townart))
+
     for name, path, x, y, slots, note in PROPS:
         im = sheets.get(path)
         if im is None:
@@ -470,10 +667,64 @@ def main():
     lines.append('};')
     lines.append('')
 
+    lines += [
+        '// ---- the town kit -------------------------------------------------------',
+        '//',
+        '// A BUILDING IS NOT A TILE. Each entry below is one object several cells',
+        '// across, extracted whole off the Subrosia tileset and reassembled by the',
+        '// block machinery in src/world/tileset.js: a room grid draws the building as',
+        '// a rectangle of one legend character and the loader resolves each cell to',
+        '// the art here. Nine loose tiles an author has to arrange by hand would be',
+        '// nine ways to get one building wrong.',
+        '//',
+        '// UNLIKE THE TERRAIN ABOVE, THESE PALETTES ARE INSTALLED — the cartridge\'s',
+        '// own colours, because this game has never drawn a roof and so has no',
+        '// palette to preserve. tiles-core.js installs them before it registers the',
+        '// tiledefs that name them.',
+        'export const TOWN_PALETTES = {',
+    ]
+    for name, cols in TOWN_PALETTES.items():
+        lines.append("  %s: [%s]," % (name, ', '.join("'%s'" % c for c in cols)))
+    lines.append('};')
+    lines.append('')
+    lines.append('export const TOWN_ART = {')
+    for name, w, h, note, cells, townart in town:
+        for art, cnote, grid, pal in townart:
+            lines.append('  // %s %s' % (name, cnote))
+            lines.append('  %s: `' % art)
+            lines.extend('    ' + r for r in grid[:-1])
+            lines.append('    ' + grid[-1] + '`,')
+            lines.append('')
+    lines.append('};')
+    lines.append('')
+    lines += [
+        '// Each block: its size in cells, and the art + palette of every cell, in',
+        '// reading order. tiles-core.js turns this into one tiledef per cell and one',
+        '// registerBlock call; what each cell DOES (solid, the doorway that warps) is',
+        '// design and is declared there, not here.',
+        'export const TOWN_BLOCKS = {',
+    ]
+    for name, w, h, note, cells, townart in town:
+        lines.append('  // %s' % note)
+        lines.append('  %s: { w: %d, h: %d, cells: [' % (name, w, h))
+        i = 0
+        for cy in range(h):
+            row = []
+            for cx in range(w):
+                row.append("['%s', '%s']" % (townart[i][0], townart[i][3]))
+                i += 1
+            lines.append('    [%s],' % ', '.join(row))
+        lines.append('  ] },')
+    lines.append('};')
+    lines.append('')
+
     with open(OUT, 'w') as f:
         f.write('\n'.join(lines))
-    print('emitted %d terrain tiles (%d ground, %d props) -> %s'
-          % (len(arts), len(PICKS), len(PROPS), OUT))
+    ncells = sum(b[1] * b[2] for b in TOWN)
+    print('emitted %d terrain tiles (%d ground, %d props) and %d town blocks '
+          '(%d cells, %d palettes) -> %s'
+          % (len(arts), len(PICKS), len(PROPS), len(TOWN), ncells,
+             len(TOWN_PALETTES), OUT))
     for name, n in dropped:
         print('  note: %s had %d colours on the sheet, merged down to 4' % (name, n))
 

@@ -18,7 +18,7 @@ regenerate byte-identical output.
 | `oracle-seasons-dungeon-backgrounds.png` | Oracle of Seasons | Mister Mike | `tools/rip-terrain.py`, `tools/rip-dungeon-maps.py`, `tools/rip-dungeon-themes.py` | `src/data/tiles-terrain.js` — dungeon ground; `assets/tilesets/seasons-dungeons.*` — the deduplicated full-floor tileset; `src/data/tiles-dungeon-themes.js` — the eight per-dungeon themes |
 | `custom-oracle-style-overworld.png` | fan-made, Oracle style | community edit | `tools/rip-terrain.py` | `src/data/tiles-terrain.js` — overworld ground |
 | `oracle-ages-overworld.png` | Oracle of Ages | *unattributed — see below* | `tools/rip-terrain.py` | `src/data/tiles-terrain.js` — overworld props |
-| `oracle-seasons-tileset-subrosia.png` | Oracle of Seasons | KOOLKID6789 | `tools/rip-terrain.py` | `src/data/tiles-terrain.js` — the tree |
+| `oracle-seasons-tileset-subrosia.png` | Oracle of Seasons | KOOLKID6789 | `tools/rip-terrain.py` | `src/data/tiles-terrain.js` — the whole town kit |
 | `oracle-seasons-overworld-spring.png` | Oracle of Seasons | Mister Mike | — | not yet extracted from — Holodrum, spring |
 | `oracle-seasons-overworld-winter.png` | Oracle of Seasons | Mister Mike | — | not yet extracted from — Holodrum, winter palette |
 | `oracle-seasons-maku-tree.png` | Oracle of Seasons | Mister Mike | — | not yet extracted from |
@@ -44,15 +44,30 @@ touched — only the tree has been taken off it. Coordinates are (column, row) i
 | Blue **SHOP** building | c4-c6, r7-r9 | 3 wide; roof r7-r8, signed wall r9 |
 | Green-roof building | c7-c9, r7-r8 | roof only — build the wall row from below |
 | Red-roof building | c10-c12, r7-r8 | as above |
-| Door | c7, r9 | |
+| Door, shut | c7, r9 | a panelled door in a dark wall |
 | Open doorway (enterable) | c8, r9 | the black one — this is the warp tile |
 | Window | c9, r9 | |
 | Twin posts / barrels | c10, r9 | |
-| Crates | c11-c12, r9 | |
+| Crates | c11-c12, r9 | two different stacks |
 | Stone well | c13-c14, r8-r9 | 2x2 |
-| Stump / table | c5, r10-r11 | |
-| Picket fence | c3-c7, r32 | a run, not one tile |
-| Pots and barrels | c12-c15, r30-r32 | |
+| Stump / table | **c7-c9, r10-r11** | 3x2, cell-aligned; NOT c5 |
+| Paling fence | **c11, r11-r12** | 1x2, repeats side by side |
+| Picket fence | c3-c7, r32 | the WINTER band's fence, in snow colours |
+| Pots and barrels | c12-c15, r30-r32 | also the winter band |
+
+**Two of those coordinates were wrong** and are corrected above: the stump is
+three cells wide at c7-c9 and the spring band's fence is the wooden paling at
+c11, not the snow-topped picket at r32. Both were found by measuring the
+objects' bounding boxes rather than by eye, which is worth doing before adding
+a pick — several of these objects do not sit where a glance at the sheet says.
+
+**All of it is extracted** by `tools/rip-terrain.py` (the `TOWN` table) into
+`src/data/tiles-terrain.js`, which is GENERATED. A building comes out as a
+BLOCK — one object several cells across, placed by a room grid as a rectangle
+of one legend character. Unlike the ground picks in the same tool, the town
+kit INSTALLS its palettes: this game had never drawn a roof, so there was no
+palette to preserve and the cartridge's own colours are what make a blue shop
+read as the source's blue shop.
 
 **The furniture repeats per season**, same columns, at r7-r9 (spring), r17-r19
 (autumn) and r27-r29 (winter), plus further bands down the sheet. This game has

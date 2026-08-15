@@ -110,6 +110,50 @@ export function registerTiles(defs) {
   }
 }
 
+// --------------------------------------------------------------------------
+// BLOCKS: objects bigger than a tile.
+//
+// A building is three cells wide and three tall. Cutting one into nine loose
+// tiles gives an author nine characters that mean something in exactly one
+// arrangement, with nothing to catch a wrong one — the roof laid on upside
+// down validates, renders and strands the screen behind it.
+//
+// So a block is registered once, as its grid of cell tiles, and PLACED once. A
+// room grid draws the building's footprint as a rectangle of a single legend
+// character:
+//
+//     'ggHHHggg'          H is 'block:bShop', 3x3, so this is one shop
+//     'ggHHHggg'          with grass either side — not nine tiles that
+//     'ggHHHggg'          happen to line up.
+//
+// `Room` claims each rectangle top-left-first and resolves every cell to the
+// tile named here (see the footprint pass in src/world/room.js). A footprint
+// that is not exactly w x h THROWS at construction, which is the whole point:
+// a mis-drawn building is a typo, and a typo should be an error and not a
+// screen you have to look at to discover is wrong.
+//
+// The cell tiles are ordinary tiles with ordinary flags. Nothing downstream —
+// collision, rendering, the tide field, every checker — knows a block exists.
+export const BLOCKS = new Map();
+
+/** Register a batch of block definitions: { name: { w, h, tiles: [[name]] } }. */
+export function registerBlocks(defs) {
+  for (const [name, def] of Object.entries(defs)) {
+    const { w, h, tiles } = def;
+    if (!w || !h || tiles.length !== h || tiles.some(r => r.length !== w)) {
+      throw new Error(`block ${name}: declares ${w}x${h} and lists `
+        + `${tiles.length} rows of ${tiles.map(r => r.length).join('/')}`);
+    }
+    BLOCKS.set(name, { name, w, h, tiles: tiles.map(r => r.slice()) });
+  }
+}
+
+/** The block a legend entry names, or null if it names an ordinary tile. */
+export function blockRef(tileName) {
+  if (typeof tileName !== 'string' || !tileName.startsWith('block:')) return null;
+  return BLOCKS.get(tileName.slice(6)) || null;
+}
+
 const EMPTY = {
   name: '__missing', pal: 'stone', flags: 0, mask: 0, tide: null,
   anim: null, animRate: 10, over: false, push: null, ledge: null, depth: 0,
