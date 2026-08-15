@@ -25,7 +25,7 @@ regenerate byte-identical output.
 | `oracle-seasons-fairies.png` | Oracle of Seasons | Mister Mike | — | not yet extracted from |
 | `oracle-seasons-effects.png` | Oracle of Seasons | Darth RPG | — | not yet extracted from |
 | `oracle-seasons-title-screen.gif` | Oracle of Seasons | Tails585 | — | reference only |
-| `oracle-seasons-nonhuman-races.png` | Oracle of Seasons | Mister Mike | — | not yet extracted from |
+| `oracle-seasons-nonhuman-races.png` | Oracle of Seasons | Mister Mike | `tools/rip-townsfolk.py` | `src/data/sprites-townsfolk.js` — the coast people |
 | `oracle-seasons-trading-characters.png` | Oracle of Seasons | Mister Mike | — | not yet extracted from |
 
 **`oracle-seasons-tileset-subrosia.png` is the only true TILESET here** — 16
@@ -81,7 +81,24 @@ around by cutting a building into nine unrelated tiles.
 
 `oracle-seasons-nonhuman-races.png` is the other half of a lived-in town: the
 Maku Tree, the Great Fairy, and rows of Subrosian, Goron, Zora and Tokay NPCs.
-Nothing has been extracted from it yet.
+`tools/rip-townsfolk.py` takes seven characters off it — Thalassia's coast
+people — and **the one thing to know before taking an eighth is that every
+character on this sheet stands on its own WHITE BOX.** The green is the gap
+between boxes, so the usual `find_cells` + `quantise` pass returns a cell that
+is white on white with no transparency in it, and the sprite draws as a white
+square. The tool keys on white instead, and floods it inward from the cell
+border rather than testing colour equality, because the lass's dress is white
+too: colour equality cuts her body out and leaves a face and a bow hanging in
+the air.
+
+The rows are also not on one pitch — 17px across the bandana folk, 16 across
+the hooded ones, and the bearded kings are 16x32 and break both — so the tool
+records a hand-verified origin per pick the way `rip-terrain.py` does. Useful
+origins beyond the seven taken: the second side frame of the walk cycle at
+`866,555`, the red-scarf profile at `1074,555` (24 tall, needs an anchor
+decision), the red and blue hoods at `1036,431` and `1053,431`, the Gorons at
+y=470, the bucket-carrying Tokay at y=618, and the 16x32 kings at x=1186..1252,
+y=539.
 
 `oracle-ages-overworld.png` is the Labrynna Present outdoor background, True
 Colors half, and it is **the real overworld reference** — the one to reach for

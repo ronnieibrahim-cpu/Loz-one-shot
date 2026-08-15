@@ -220,6 +220,53 @@ is in the page, and nothing steps until you say so.
 
 ## Hard-won lessons — do not rediscover these
 
+**ADDING ONE ENTITY TO ONE ROOM RE-PHASES EVERY ENEMY IN THE GAME.** This is the
+expensive one from the townsfolk session and it will happen again to whoever
+next places an NPC.
+
+A wandering villager was added to Tidewatch Village. Four replays went red, and
+only two of them are in Tidewatch: `tide-steps-split` diverged in the Tide Steps
+at the far north-east corner of the map, a screen the run `enter`s directly and
+which the village has nothing to do with, and `d1-descent` diverged 540 frames
+into a dungeon and finished somewhere else entirely, having died on the way.
+
+The chain is short and there is no randomness anywhere in it. `Entity` hands out
+ids from one module-level `nextId` that counts up for the whole session and is
+never reset. `every(e, n)` in `src/game/enemy.js` — the helper that makes a group
+of enemies act out of lockstep — takes its phase from `hash32('phase', e.id, n)`.
+So an enemy's phase depends on **how many entities have ever been spawned before
+it in that session**, and one more NPC in the first room shifts every id after
+it by one. The siren in the Tide Steps then fires its bubbles on a different
+frame, the live entity count at the checkpoint reads 7 instead of 11, and the
+recording is wrong about a room the change never touched.
+
+Two consequences, and the second is the one that matters:
+
+* **Re-record every replay that fails after a content edit, and expect failures
+  in rooms you did not touch.** `node tools/replay.mjs --record <name>`. That is
+  the world moving, not the engine drifting — but you cannot tell the two apart
+  by looking at the diff, so read the `assert` block of each plan you re-record
+  and satisfy yourself it still asserts what it says.
+* **The same room entered twice in one session gives its enemies different
+  phases**, because ids kept counting in between. That contradicts what CLAUDE.md
+  claims about a room replaying identically, and no tool in the repo can see it.
+  The fix is small and was deliberately not taken here, because it changes every
+  enemy's behaviour everywhere and wants a session with its own verification:
+  phase off something stable per spawn — the `saveKey` that
+  `Game.spawnRoomEntities` already computes as `mapId:roomKey:index` — and leave
+  `e.id` for entities that have no saveKey, which is exactly the projectiles and
+  drops that should not be stable anyway.
+
+**A SHEET WHOSE SPRITES STAND ON WHITE BOXES DEFEATS `find_cells`.** On
+`oracle-seasons-nonhuman-races.png` the green is the gap BETWEEN boxes, so the
+detector finds the box, `quantise` sees white as the dominant colour rather than
+as background, and the sprite comes out as a white square with a character
+faintly inside it. Key on white instead — and flood it inward from the cell
+border rather than testing colour equality, because the lass's dress is white
+too and equality cuts her body out and leaves a face and a bow floating in the
+cell. Same rule, same reason, as the flood in `rip-terrain.py`. Full notes and
+the coordinates of what was left on that sheet are in `assets/sheets/README.md`.
+
 **The towns (PT), and the five things they cost.**
 
 1. **A CHECKER THAT GRANTS SWIMMING CANNOT SEE A TOWN BREAK.** `check-towns.mjs`

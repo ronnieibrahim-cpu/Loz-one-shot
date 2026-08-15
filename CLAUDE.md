@@ -67,6 +67,7 @@ ripper credit in the header. The current set:
 | `src/data/sprites-hud.js` | `tools/rip-hud.py` |
 | `src/data/tiles-terrain.js` | `tools/rip-terrain.py` |
 | `src/data/tiles-dungeon-themes.js` | `tools/rip-dungeon-themes.py` |
+| `src/data/sprites-townsfolk.js` | `tools/rip-townsfolk.py` |
 
 This cuts both ways: **removing** an extracted icon means removing its entry
 from the ripper's coordinate map and re-emitting, not deleting lines from the

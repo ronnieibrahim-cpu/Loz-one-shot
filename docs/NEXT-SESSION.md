@@ -13,10 +13,99 @@ maintain and the most expensive thing to not have.
 ## Where the towns stand (PT), in one line
 
 **PT steps 1-4 are DONE: the block machinery exists, the Subrosia town kit is
-extracted, and four screens are settlements with three working doors.** Step 5,
-the terrain backlog and the `cliff` family, is untouched.
+extracted, four screens are settlements with three working doors, and the people
+standing in them are extracted too.** Step 5, the terrain backlog and the `cliff`
+family, is untouched and is the biggest art job left in the project.
 
-### What the last session did (PT, towns and buildings)
+### What the last session did (PT step 4, the coast people and the village drain)
+
+**`oracle-seasons-nonhuman-races.png` is extracted from at last** —
+`tools/rip-townsfolk.py` -> `src/data/sprites-townsfolk.js`, seven sprites, and
+it is a new row in CLAUDE.md's generated-file table. `npc_tidefolk_d/_u/_s` (the
+bandana coast folk, in three directions), `npc_tidefolk2_d` (the red-scarf
+variant), `npc_lass_d/_u` and `npc_carver_d` (a hooded figure). Their DESIGN is
+ours; only how they look comes off the sheet.
+
+Two things about that sheet a later session needs, both also in
+`assets/sheets/README.md` with the coordinates of what was left behind:
+
+- **Every character on it stands on a WHITE BOX**, so the sheet's green is the
+  gap between boxes. `find_cells` finds the box; `quantise` reads white as a
+  colour rather than as background; the sprite draws as a white square. The tool
+  keys on white — and floods it **inward from the cell border** rather than
+  testing colour equality, because the lass's dress is white too and equality
+  cuts her body out and leaves a face and a bow hanging in the air.
+- **The rows are not on one pitch** (17px, then 16, and the 16x32 kings break
+  both), so each pick records a hand-verified origin the way `rip-terrain.py`
+  does rather than an index into a cell list.
+
+**The scrimshander has her own face.** She and the digger both wore `npc_elder`,
+standing eight tiles apart on the same screen. She is `npc_carver_d` now.
+
+**A townsperson turns to face you** — the first NPCs in the game that are not one
+front frame. `NPC.frames` existed and nothing had ever set it; `TIDEFOLK` and
+`LASS` at the top of `src/data/overworld.js` are the two sets. `_s` faces RIGHT
+and the engine mirrors it, so there is no left frame and there must never be one.
+
+**TIDEWATCH ANSWERS THE CONCH.** The square was a dry screen in a game about
+water — identical at LOW, MID and HIGH, on the screen the player sees most. A
+drain runs down the middle of it now, out under the treeline and onto the shore
+as a slipway, and the Village Shore carries it on into its tide pool.
+`tools/shots/room-overworld_4_7-tide0-px72.png` against `-tide2-` is the same
+square one conch apart: dry grass, then a stream running through the village.
+That is D5's precedent applied to a town — **spend a tile on the state, not a
+shade of blue.**
+
+The two tiles it is built from were chosen for one reason: **`0` tideGrass is
+grass/grass/waterS and `3` shoal is sandRipple/sandWet/waterS, so NEITHER EVER
+GOES DEEP.** Row 5 is the one row that crosses that screen (two 3x3 buildings
+leave exactly one), so any tide tile there that went deep at HIGH would cut the
+village off from its own doors at high water. Sandpiper Row got the same
+treatment as a wet foreshore along its bottom edge.
+
+**`check-towns.mjs` asks a sixth question now — does this screen answer the
+conch at all** — and it earned itself again on the first run: Sandpiper Row had
+not one cell that changed with the tide. It compares tile NAMES at LOW against
+HIGH, so it needs no renderer, and it prints the count per town (Tidewatch 9,
+the Shore 14, the Strand 4, Sandpiper 7). 58 assertions.
+
+**Three new people with something to say**: the keeper of the drain in the
+square, the woman at the shore well, and a woodcutter on Driftwood Strand, which
+had nobody in it at all and read as a still life rather than a yard.
+
+**THE EXPENSIVE FINDING, AND IT IS NOT ABOUT TOWNS.** Adding one wandering NPC to
+Tidewatch turned four replays red — and two of them are nowhere near Tidewatch.
+`Entity` ids come from one module-level counter that runs for the whole session,
+and `every(e, n)` in `src/game/enemy.js` phases enemies off `hash32('phase',
+e.id, n)`. So one extra entity in the first room shifts every id after it and
+re-phases every enemy in the game. `tide-steps-split` diverged in the north-east
+corner of the map; `d1-descent` diverged 540 frames into a dungeon and died on
+the way. All four were re-recorded and the suite is 51/51. **Expect this after
+any content edit, and read the plan's `assert` block before you trust a
+re-record.** The same coupling means a room entered twice in one session gives
+its enemies different phases, which contradicts what CLAUDE.md claims about a
+room replaying identically. The fix is written up in `docs/HANDOFF.md` and was
+deliberately left for a session that can verify it.
+
+### What is weak about this pass
+
+- **The carver reads as a hooded blob at 16x16.** It is a Subrosian, and against
+  the human tidefolk beside her she reads as another species rather than as the
+  village's bone-carver. It is unmistakably not the digger, which was the fault
+  being fixed, and it may still be the wrong sprite for her.
+- **The lass has no profile.** Two views, front and back; asked to face left or
+  right the engine mirrors her front frame. She is placed where she is spoken to
+  from the front or behind, which is a placement rule nothing enforces.
+- **Nobody has walked the drain.** `check-towns` proves the square is crossable
+  on foot at all three seas and the screenshots show the water; no replay walks
+  through it at HIGH.
+- **Four of the game's NPCs are directional and the rest are not**, so the towns
+  now move slightly better than everywhere else. `npc_villager`, `npc_villager2`
+  and `npc_fisher` are still one front frame wherever they stand outside a town.
+- **Five ground variants are still registered and unplaced** (`bShopSand`,
+  `bHouseGreenSand`, `bHouseShut`, `bWellSand`, `bStumpSand`), unchanged.
+
+### What the session before that did (PT, towns and buildings)
 
 **A BUILDING IS NOT A TILE, and now the engine agrees.** `registerBlocks` in
 `src/world/tileset.js` plus `Room.expandBlocks` in `src/world/room.js`: a block
@@ -141,46 +230,49 @@ because the world moved rather than the movement.
 - **The town legends are `town` and `townDunes` only.** A marsh, cliff or salt
   settlement needs a third ground variant and a third legend; the pattern is
   two lines in `tiles-core.js` (`TOWN_GROUNDS`) and two in `legends.js`.
-## The prompt to paste — PT, towns and buildings
+## The prompt to paste — PT step 5, the terrain backlog and the cliff family
 
-This is the next session. P8 is closed; PT is step 8 of the execution order and
-has never been started. The general-purpose block further down this file is
-still accurate for anything else.
+This is the next session. PT steps 1-4 are closed: the block machinery, the town
+kit, four settlements and the people in them are all done and on trunk. Step 5
+is the last of PT and after it the plan says P9. The general-purpose block
+further down this file is still accurate for anything else.
 
 ```
-Give Thalassia towns that look lived in. This is PT in docs/EXECUTION-PLAN.md,
-it is a stated top design priority, and it is a fidelity job before it is a
-content job.
+Extract the terrain the game still draws by hand, starting with the cliffs.
+This is PT step 5 in docs/EXECUTION-PLAN.md, the last of PT, and it is the
+biggest remaining art job in the project.
 
 `main` is trunk. Branch from it. One prompt = one session = one branch.
 Run `git ls-remote --heads origin` before you start and look for a branch that
 has already done this.
 
-WHY THIS IS THE FIDELITY JOB. CLAUDE.md's goal 1 is that a screen of this game
-should be hard to tell from a screen of Oracle of Seasons or Ages until you
-notice the items and dungeons are ones the originals never had. Towns are where
-that currently fails hardest and most visibly. Tidewatch Village (overworld
-0,4,7) is a ring of trees with two cave mouths cut into it and a signpost; the
-Oracles' towns are roofs, shopfronts, wells, fences, crates and people standing
-around them, and that is most of what makes their overworld read as a world
-rather than a level. The tileset that does it has been in this repo the whole
-time and exactly one thing has been taken off it.
+WHY IT IS THE FIDELITY JOB. CLAUDE.md goal 1 is that a screen of this game
+should be hard to tell from a screen of Oracle of Seasons or Ages. Cliffs are on
+most screens in the game and this game spends ONE hand-drawn tile on all of a
+cliff, where the Oracles build one out of several: a top edge, a face, an inside
+corner, an outside corner, a base. That is why our cliffs read as a wall with a
+texture on it rather than as land with a height to it. `docs/ART-BACKLOG.md`
+ranks the backlog and puts the cliff family first: one extraction covers eight
+tiles.
+
+IT IS A CONTENT DECISION, NOT A SWAP, and that is the whole difficulty. Every
+`#` in every room grid today means "cliff", and a cliff built out of five tiles
+needs either an author choosing which of the five each `#` is, or a rule that
+derives it from the neighbours at load time. Decide that FIRST and write the
+reasoning down before extracting anything — an autotiler that resolves `#`
+against its four neighbours is the version that does not require re-authoring
+120 overworld screens, and `Room.expandBlocks` is the precedent for a loader
+doing that kind of work.
 
 READ, IN THIS ORDER:
-  CLAUDE.md               the hard rules, including "if a sheet has it, extract
-                          it" and the traps list. They are hard rules.
-  docs/ART-DIRECTION.md   binding for anything visual. Rule 1 is EXTRACT, NOT
-                          DRAW.
-  docs/briefs/AGENTS.md   section J is the extraction workflow. Read it before
-                          touching a ripper. (There is no section for towns;
-                          section D is the overworld.)
-  assets/sheets/README.md "The town kit on that tileset" is an inventory with
-                          cell coordinates. It is the spec for step 2.
-  docs/EXECUTION-PLAN.md  the PT section. Note its claim about `quad:` is STALE
-                          — see the correction below, it is the biggest thing in
-                          this prompt.
+  CLAUDE.md               hard rules. "If a sheet has it, extract it", the
+                          generated-file table, and the traps list.
+  docs/ART-DIRECTION.md   binding for anything visual. Rule 1 is EXTRACT.
+  docs/ART-BACKLOG.md     what is outstanding and in what order.
+  docs/briefs/AGENTS.md   section J is the extraction workflow.
+  assets/sheets/README.md which sheet has what, and the two that are still
+                          untouched.
   docs/HANDOFF.md         environment setup FIRST, then the hard-won lessons.
-  docs/GAME-PLAN.md       which settlements exist and where.
 
 ENVIRONMENT, BEFORE ANYTHING ELSE. Playwright asks for a browser revision the
 pre-installed Chromium does not match, so every headless harness dies with
@@ -188,119 +280,40 @@ pre-installed Chromium does not match, so every headless harness dies with
 under "Environment setup a fresh container needs". `pip install pillow` before
 any rip-*.py tool will run.
 
-THE CORRECTION, AND IT IS WHERE THE SESSION WILL BE LOST IF YOU MISS IT.
-EXECUTION-PLAN and assets/sheets/README.md both say a building is the same
-problem as the 32x32 tree and that `quad:` in src/world/tileset.js "plus QUADS
-in tools/rip-terrain.py is the solved half of it". **THAT IS NOT TRUE TODAY.**
-Verify it yourself in thirty seconds before believing either document:
+THE THREE THINGS THAT WILL COST YOU A SESSION IF YOU MISS THEM.
 
-  grep -rn "quad" src/world/tileset.js   -> only a comment about `mask`
-  grep -rn "treeQ" src/                  -> nothing
-  grep -n "QUADS = " tools/rip-terrain.py -> QUADS = []
+  1. A SOLID TILE CAN STRAND A SCREEN WHILE RENDERING PERFECTLY. If the cliff
+     family changes which tiles are solid anywhere, run node tools/validate.mjs,
+     node tools/check-overworld.mjs, node tools/check-gates.mjs and
+     node tools/walk-dungeons.mjs after EVERY screen, not at the end. Two of the
+     five region gates are cliff tiles (`cliffCracked` on the Marsh).
+  2. ADDING OR REMOVING ONE ENTITY ANYWHERE RE-PHASES EVERY ENEMY IN THE GAME,
+     so replays fail in rooms you never touched. Written up in HANDOFF under the
+     hard-won lessons, with the fix that was deliberately not taken. If you have
+     the appetite, TAKING that fix is a good session in its own right and it is
+     the only thing standing between this project and replays that survive a
+     content edit.
+  3. EXTRACTION LANDS IN A GENERATED FILE. Add the rectangle to the ripper's
+     coordinate map and re-emit; never hand-edit the output. Run every rip-*.py
+     once BEFORE you change anything and confirm each reproduces its file
+     byte-identically. If one does not, somebody hand-edited a generated file.
 
-What actually exists: the RIPPER half is written and unused. `quantise_quad`
-and the QUADS emit loop in rip-terrain.py are real, working code with a real
-comment explaining why an object bigger than a cell needs ONE colour table
-shared by all four quarters. The ENGINE half was never written: `registerTiles`
-does not copy a `quad` field, so a tiledef carrying one would have it silently
-discarded — which is the exact trap CLAUDE.md already lists under `liftLevel`.
-And the tree is still `tree: { art: ART.tree, ... }` in tiles-core.js, a 16x16
-hand-drawn impression of a 32x32 object, which is the thing the ripper comment
-says is why the game's trees never looked like the source's.
-
-So step 1 is not "generalise the solved half". It is "build the engine half,
-prove it on the tree, then use it for buildings".
-
-THE WORK, IN ORDER. Do not reorder it: each step is the thing that makes the
-next one provable.
-
-1. MULTI-CELL OBJECTS IN THE ENGINE. A tiledef may name a block it is one cell
-   of, and the renderer draws the right quarter for its position. Generalise to
-   an arbitrary w x h rather than 2x2 — a building is 3 wide and 2-3 tall and a
-   2x2-only design has to be rewritten immediately. Add the field to
-   `registerTiles` IN THE SAME COMMIT as the tiledef that uses it, or it is
-   discarded in silence. `validate.mjs` should fail on a block tile whose
-   neighbours do not complete the block, because a half-placed building is the
-   authoring mistake this whole mechanism exists to prevent.
-
-2. PROVE IT ON THE TREE FIRST, before a single building. There is no 16x16 tree
-   in any sheet; every Oracle tree is 32x32. Extract one through
-   tools/rip-terrain.py into src/data/tiles-terrain.js, put it in QUADS, and
-   screenshot a stand of them against the current 16x16 tree. That is a
-   contained change with an existing before-picture, it makes the whole
-   mechanism visible, and if it looks wrong you have lost an hour rather than a
-   session. It is also, on its own, a real fidelity win on every wooded screen
-   in the game.
-
-3. EXTRACT THE TOWN KIT. assets/sheets/oracle-seasons-tileset-subrosia.png,
-   16 cells wide, phase 0 — the only true tileset in the repo; everything else
-   is an assembled map you would have to find a grid phase in. Coordinates are
-   inventoried in assets/sheets/README.md: blue SHOP building c4-c6/r7-r9, green
-   roof c7-c9/r7-r8, red roof c10-c12/r7-r8, door c7/r9, ENTERABLE dark doorway
-   c8/r9, window c9/r9, barrels c10/r9, crates c11-c12/r9, stone well
-   c13-c14/r8-r9 (2x2), stump c5/r10-r11, picket fence run c3-c7/r32, pots
-   c12-c15/r30-r32. The furniture repeats down the sheet per SEASON, same
-   columns — this game has tides, not seasons, so those bands are a PALETTE
-   resource: the same building in four moods, which is what a region-tinted
-   village wants. The dark doorway wants F.WARP; the rest of a building is
-   SOLID. Everything lands in the GENERATED file via the ripper's coordinate
-   map; never hand-edit the output, and run the ripper once before you change
-   anything to confirm it still reproduces byte-identically.
-
-4. RE-AUTHOR THE VILLAGES. Tidewatch Village (0,4,7) first, then its
-   neighbours, then every settlement in GAME-PLAN. A village screen wants:
-   buildings with fronts you can walk up to, at least one enterable door wired
-   to an interior, and dressing placed as if someone put it there for a reason.
-   Two interiors exist today (houseShop, houseMaku) on the `house` legend; wire
-   new doors to new ones. THE THING TO BEAT is the current 0,4,7, which is
-   `TgcCcgcCcT` — cave mouths in a tree line standing in for houses.
-
-5. POPULATE THEM. assets/sheets/oracle-seasons-nonhuman-races.png has never
-   been extracted from at all and carries the Maku Tree, the Great Fairy and
-   rows of NPC races; oracle-seasons-npcs.png is already partly used. Townsfolk
-   DESIGN is ours; their sprites come off a sheet where one fits, per the
-   extract-first rule. Note the scrimshander currently reuses `npc_elder`'s
-   sprite and so does the digger — two characters with one face, written up as
-   weak in this file. This is the session that can fix that cheaply.
-
-6. ONLY THEN the terrain backlog, in the order docs/ART-BACKLOG.md ranks it.
-   The `cliff` family is the big one: the Oracles build a cliff out of several
-   tiles and this game spends one tile on all of it, so it is a content
-   decision rather than a swap. Do not start it if steps 1-5 are not finished
-   and committed.
-
-CONSTRAINTS, and the first two have each cost a session before.
-
-  - A BUILDING IS SOLID AND A TOWN IS A MAZE OF THEM. A solid tile can strand a
-    screen while rendering perfectly and validating clean. Run
-    `node tools/validate.mjs` and `node tools/check-overworld.mjs` after EVERY
-    screen you re-author, not at the end of a batch.
-  - SEAMS ARE CHECKED AT ALL THREE TIDE LEVELS. A building on a screen edge
-    changes what the neighbouring screen must have facing it.
-  - DO NOT LET A TOWN SWALLOW A REGION GATE. check-gates proves five gates in
-    both directions; keep it green.
-  - A TILEDEF FIELD THE REGISTRAR DOES NOT NAME IS DISCARDED. `registerTiles`
-    copies field by field. This is how `liftLevel` sat in the data for the whole
-    life of the project while `liftTile` read it and the two never met.
-  - EXTRACTION LANDS IN A GENERATED FILE. Add the cell to the ripper's
-    coordinate map and re-emit. Removing something means removing its entry and
-    re-emitting, not deleting lines from the output.
-  - SCREENSHOT EVERY TOWN YOU FINISH AND LOOK AT IT.
-    `node tools/shoot-rooms.mjs overworld,4,7` writes a real in-game frame in
-    the real palette; `tools/preview.mjs` renders one palette and proves
-    silhouette only. A village that validates and reads as scattered furniture
-    is not done. Every terrain fault this project has hit validated clean and
-    previewed fine.
+SCREENSHOT EVERY REGION YOU TOUCH AND LOOK AT IT.
+`node tools/shoot-rooms.mjs --tide=1 overworld,4,7` writes a real in-game frame
+in the real palette. `tools/preview.mjs` renders one palette and proves
+silhouette only. Every terrain fault this project has hit validated clean and
+previewed fine. A cliff has to be looked at where it MEETS things — a corner, a
+stair, a ledge run, the sea — and not in the middle of a run of five.
 
 BASELINE — confirm it before changing anything and keep every line green.
-THE CHECKERS TAKE A WHILE. Run them; do not reason about correctness instead.
 
   node tools/validate.mjs           clean (two expected fx_slash warnings)
   node tools/test.mjs               58/58
-  node tools/replay.mjs             46/46, ten replays to the pixel
+  node tools/replay.mjs             51/51, ten replays to the pixel
   node tools/walk-dungeons.mjs      23/23 over six dungeons
-  node tools/check-overworld.mjs    17/17   <- the one this session will break
-  node tools/check-gates.mjs        15/15   <- and this one
+  node tools/check-overworld.mjs    17/17
+  node tools/check-gates.mjs        15/15
+  node tools/check-towns.mjs        58/58
   node tools/check-items.mjs        82/82
   node tools/check-charms.mjs       63/63
   node tools/check-anchor.mjs       14/14
@@ -312,19 +325,17 @@ THE CHECKERS TAKE A WHILE. Run them; do not reason about correctness instead.
   node tools/check-motion.mjs       8/8
   node tools/solve-switches.mjs     9 switch rooms, one push per block
   node tools/scan-sprites.mjs --strict   0 hard findings
-  python3 tools/rip-terrain.py      regenerates tiles-terrain.js BYTE-IDENTICAL.
-                                    Same for rip-hud.py and rip-dungeon-themes.py.
-                                    If one does not, someone hand-edited a
-                                    generated file.
+  python3 tools/rip-terrain.py      regenerates BYTE-IDENTICAL. Same for
+                                    rip-hud.py, rip-npcs.py, rip-dungeon-themes.py
+                                    and rip-townsfolk.py.
   npm run build && node tools/check-build.mjs
 
 EVERY SESSION ENDS BY RUNNING `npm run build` AND COMMITTING
 dist/oracle-of-tides.html. That file is the playable game. A commit that changes
 src/ and leaves the build stale ships a game that is not the game.
 
-Update docs/NEXT-SESSION.md losslessly before you finish, record any surprise in
-docs/HANDOFF.md under hard-won lessons, and correct the `quad:` claim in
-EXECUTION-PLAN and assets/sheets/README.md once it is actually true.
+Update docs/NEXT-SESSION.md losslessly before you finish and record any surprise
+in docs/HANDOFF.md under hard-won lessons.
 
 Do the work yourself rather than spawning subagents — past sessions hit usage
 limits that way and lost the work.
@@ -1683,7 +1694,7 @@ Confirm the baseline before changing anything, and keep every line below green:
                                                BYTE-IDENTICAL. --sheet writes a
                                                contact sheet of every pick.
   node tools/test.mjs                          58/58
-  node tools/replay.mjs                        46/46, all TEN replays to the
+  node tools/replay.mjs                        51/51, all TEN replays to the
                                                pixel. Six of them also assert a
                                                `span` — transitions fired, the
                                                camera's extremes, and what the

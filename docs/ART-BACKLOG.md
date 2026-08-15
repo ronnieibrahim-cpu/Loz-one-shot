@@ -3,6 +3,26 @@
 Work that is identified, scoped and not done. Each entry says what blocks it.
 
 
+## The carver reads as a hooded blob, and the lass has no profile (PT step 4)
+
+Two small findings from the townsfolk extraction, and neither blocks anything.
+
+**`npc_carver_d` is a Subrosian**, taken off `oracle-seasons-nonhuman-races.png`
+in the green band. It is the scrimshander now, which fixes the real fault — she
+and the digger wore the same `npc_elder` face on the same screen — but at 16x16
+beside the human tidefolk she reads as another species rather than as the
+village's bone-carver. The sheet has no old woman in it. Either a different pick
+(the red or blue hoods at `1036,431` and `1053,431` are the same figure in other
+colours), a pick off `oracle-seasons-npcs.png` that nothing else uses, or accept
+that Thalassia has hooded folk in it and give her a line that says so.
+
+**`npc_lass_d/_u` is a front and a back and no profile.** Asked to face left or
+right, `NPC.spriteName` falls through to her front frame and mirrors it. She is
+placed where she is spoken to from the front or behind, and nothing enforces
+that. The sheet does have side frames for the bandana folk (`866,555` is the
+second frame of the walk cycle) but none for her.
+
+
 ## The Keep's mooring ring reads as a block, and its silt ring reads better dry
 
 Two findings from P8/D6, and they are the small change left in an otherwise good

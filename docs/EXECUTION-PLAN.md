@@ -374,15 +374,16 @@ batch nine items and then untangle 303 rooms at once.
 ### PT — Towns, buildings and terrain polish
 
 **STEPS 1-4 ARE DONE.** The block machinery is built, the Subrosia town kit is
-extracted, and four screens are settlements. Step 5 (the terrain backlog, the
-`cliff` family) is untouched and is still the biggest remaining art job.
+extracted, four screens are settlements and the people standing in them are
+extracted too. Step 5 (the terrain backlog, the `cliff` family) is untouched
+and is still the biggest remaining art job.
 
 | Step | State |
 |---|---|
 | 1. A building is not a tile | DONE — `registerBlocks` in `src/world/tileset.js`, `Room.expandBlocks` in `src/world/room.js`. A block is placed as a rectangle of one legend character and throws if the footprint is wrong. Not the tree's `quad:` generalised — that machinery was never on trunk (`QUADS` is empty); blocks are its replacement and cover the 2x2 tree case too |
 | 2. Extract the kit | DONE — the `TOWN` table in `tools/rip-terrain.py`: shop, three houses, well, stump, fence, barrels, two crate stacks. Ten buildings, two ground variants each |
 | 3. Re-author the villages | DONE — `0,4,7` Tidewatch Village, `0,4,8` Village Shore, `0,5,8` Driftwood Strand, `0,9,8` Sandpiper Row (new, in the dunes). Three doors wired to three new interiors |
-| 4. Populate them | PARTLY — the new interiors have people in them and the square keeps its four NPCs, but `oracle-seasons-nonhuman-races.png` is still not extracted from, so every townsperson is still an existing sprite |
+| 4. Populate them | DONE — `tools/rip-townsfolk.py` takes seven characters off `oracle-seasons-nonhuman-races.png` into `src/data/sprites-townsfolk.js`: tidefolk in three directions, a red-scarf variant, a lass front and back, and a hooded carver. The scrimshander has her own face rather than the digger's, and the town NPCs are the first in the game that turn to face you |
 | 5. The terrain backlog | NOT STARTED |
 
 **What a later session must know before touching a town screen:** a 10x8 screen
