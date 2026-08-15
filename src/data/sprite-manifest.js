@@ -77,6 +77,18 @@ export const REQUIRED_SPRITES = {
     'npc_nereth',
   ],
 
+  // ---- pack: sprites-races.js ------------------------------------------
+  // The four peoples. The hooded ones walk, so they carry _d/_u/_s; the rest
+  // are front-facing only, which is what the sheet has and what NPC.frames
+  // falls back to.
+  races: [
+    'npc_salter_d', 'npc_salter_u', 'npc_salter_s',
+    'npc_kelper_d', 'npc_kelper_u', 'npc_kelper_s',
+    'npc_hood_red', 'npc_hood_blue',
+    'npc_brine_d', 'npc_brine_u', 'npc_brinewife',
+    'npc_reefkin_d', 'npc_reefkin_u', 'npc_reefkin_r',
+  ],
+
   // ---- pack: sprites-enemies.js ----------------------------------------
   enemies: [
     ...seq('octorok_d', 2), ...seq('octorok_u', 2), ...seq('octorok_s', 2),

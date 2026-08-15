@@ -28,6 +28,7 @@ sprite packs still to be drawn.
 | Player, combat, items, enemy framework, boss framework | Done |
 | Link sprites | Done — extracted from the Oracle of Ages sheet |
 | NPC sprites (9 of 11) | Done — extracted from the Oracle of Seasons sheet |
+| **The four peoples (14 frames)** | **Done** — `tools/rip-races.py`, off the non-human races sheet |
 | Terrain tiles, HUD | Done — hand-drawn |
 | **Enemy sprites (56)** | **Done** — extracted from the Oracle of Seasons enemy sheet |
 | **Enemy roster (22 types)** | **Done** — `src/data/enemies.js` |
@@ -104,6 +105,9 @@ node tools/preview.mjs enemies --scale=6  # contact sheet of a sprite pack
 node tools/scan-sprites.mjs --skip-bosses # rows split or floating off the body
 python3 tools/rip-enemies.py         # regenerate src/data/sprites-enemies.js
 python3 tools/rip-terrain.py         # regenerate src/data/tiles-terrain.js
+python3 tools/rip-races.py           # regenerate src/data/sprites-races.js
+node tools/check-towns.mjs           # towns walk on foot at all three tides
+PINCH=1 node tools/check-towns.mjs   # ...and print each town's cut tiles
 node tools/preview.mjs --tiles --scale=2  # contact sheet of every tile
 node tools/walk-dungeons.mjs         # every dungeon room + every ledge
 node tools/check-overworld.mjs       # seams, border, tile-by-tile flood
@@ -219,6 +223,34 @@ Playwright key events are still fine — `keyboard.down` resolves once the event
 is in the page, and nothing steps until you say so.
 
 ## Hard-won lessons — do not rediscover these
+
+**The peoples (PT step 4), and the two things they cost.**
+
+1. **AN NPC IS A SOLID TILE THAT NOBODY CHECKS.** The "one corridor" rule below
+   is about wells and stumps, and it turns out it never cared what was standing
+   in the row. `check-towns.mjs` grew a cut-tile pass — take each walkable tile
+   out, re-flood, and see whether a way in or a door goes unreachable — and it
+   failed on its first run against content that had shipped: **the coast child
+   on Village Shore stood on 5,2, the only row that crosses that screen, at all
+   three tide levels**, and the Sandpiper Row signpost stood in its top
+   corridor. Both had passed every checker in the repo, because every checker in
+   the repo reads tiles and an NPC is not a tile. A wanderer cannot be proved
+   this way — it walks the whole region and can stand on a cut tile for a few
+   seconds — so those are printed as a note instead, and `PINCH=1` prints every
+   town's cut tiles for whoever is deciding where the next townsperson stands.
+
+2. **ADDING ONE NPC RE-PHASES EVERY ENEMY IN THE GAME.** `nextId` in
+   `src/game/entity.js` is a single global counter, and `every(e, n)` phases an
+   entity off its id rather than off a stream. So an entity added to the
+   STARTING room shifts every id allocated afterwards, every enemy's cycle moves
+   with it, and a replay recorded somewhere else entirely diverges. One extra
+   villager in Tidewatch made the `d1-descent` actor walk into a hit it used to
+   dodge, take two hearts, die three rooms later and finish the run on the
+   overworld — reported as `playerId: expected 1, got 201`, which is the
+   respawn, not a bug in the id. It is deterministic and it is not a desync: the
+   run is simply a different run. **Re-dress an existing NPC rather than adding
+   one to a room a replay walks through**, which is what Tidewatch's Brinekin
+   is; re-recording is the wrong fix when the re-recorded run dies.
 
 **The towns (PT), and the five things they cost.**
 

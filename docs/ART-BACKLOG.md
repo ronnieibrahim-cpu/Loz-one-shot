@@ -300,6 +300,27 @@ Three things could fix it, in ascending cost:
 
 Do not settle this from the table above. It wants a person holding the button.
 
+## The Maku Tree and the Great Fairy are hand-drawn beside their own sheet
+
+New from PT step 4, and cheap. `oracle-seasons-nonhuman-races.png` is extracted
+from now (`tools/rip-races.py`, fourteen frames, the four peoples), and the two
+biggest things on it were left behind: **the Maku Tree's face and the Great
+Fairy, both at full size.** `npc_maku` is a 16x16 hand-drawn impression of an
+object the source draws several cells across — the exact complaint that got the
+trees rebuilt as blocks — and the Maku Tree is the character the player is sent
+back to after every dungeon.
+
+The block machinery that a multi-cell building needs already exists
+(`registerBlocks`, `Room.expandBlocks`), but a Maku Tree is an ENTITY rather than
+terrain, so this wants the sprite manifest's `expectedSize` route instead:
+`link_hold_*` is the worked example of a frame larger than its cell and how it is
+anchored. `assets/sheets/oracle-seasons-maku-tree.png` is a whole sheet of just
+that character and has never been opened either.
+
+Also still on the races sheet: the Gorons, and several more Zora and Tokay
+poses — including the second walk frames that would let a townsperson stride
+rather than merely turn.
+
 ## Carried over from docs/NEXT-SESSION.md
 
 - **The `cliff` family** — one extraction covers eight tiles and cliffs are on

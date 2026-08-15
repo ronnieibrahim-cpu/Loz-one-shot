@@ -8110,7 +8110,7 @@ defineEntity('giver', (x, y, o) => new Giver(x, y, o));
 // The scrimshander: hand over a blank plus rupees, come back a tide later for
 // a carved charm.
 //
-//   ['scrimshander', 1, 2, { sprite: 'npc_elder' }]
+//   ['scrimshander', 1, 2, { sprite: 'npc_brinewife' }]
 //
 // She also opens the LOW and HIGH cases, and later widens all three. Those are
 // progression, so they are keyed on ESSENCES rather than on rupees — the cases
@@ -8120,7 +8120,11 @@ defineEntity('giver', (x, y, o) => new Giver(x, y, o));
 
 class Scrimshander extends NPC {
   constructor(x, y, o = {}) {
-    super(x, y, { sprite: 'npc_elder', ...o });
+    // Her own face. She used to default to `npc_elder`, which the village
+    // digger also wore — two characters standing on one screen with one head
+    // between them, which is the thing extracting from the races sheet was
+    // for. She is Brinekin; the digger is a Salter.
+    super(x, y, { sprite: 'npc_brinewife', ...o });
     this.faceOnTalk = true;
   }
 
@@ -15147,6 +15151,26 @@ const { registerMap } = __require("world/maps.js");
 const OVERWORLD_W = 12;
 const OVERWORLD_H = 10;
 
+// The peoples of Thalassia, as an NPC entity says them. The art is extracted
+// (tools/rip-races.py); who they are is ours.
+//
+//   Salters   hooded in orange oilskin — the salt pans and the working shore
+//   Kelpers   the same hood in green — the Drowned Wood and the Bogwater
+//   Brinekin  blue-capped seafarers — Tidewatch and the fishing hamlets
+//   Reefkin   speckled and web-footed — the Coral Reef
+//
+// `frames` is the NPC's own directional table (game/objects.js spriteName), and
+// it had never been used by anything: every townsperson in the game faced the
+// camera whichever way they walked. A people with a back and a side reads as
+// somebody going about their day rather than a portrait on a post. A missing
+// direction falls back to `down`, which is why the Brinekin — whose sheet has
+// no side view — declare only the two the sheet actually draws.
+const FOLK = {
+  salter: { sprite: 'npc_salter_d', frames: { down: ['npc_salter_d'], up: ['npc_salter_u'], side: ['npc_salter_s'] } },
+  kelper: { sprite: 'npc_kelper_d', frames: { down: ['npc_kelper_d'], up: ['npc_kelper_u'], side: ['npc_kelper_s'] } },
+  brine: { sprite: 'npc_brine_d', frames: { down: ['npc_brine_d'], up: ['npc_brine_u'] } },
+};
+
 const rooms = {
   // ---- abyss -------------------------------------------------------------
   '0,0,0': {
@@ -15488,7 +15512,7 @@ const rooms = {
       '###gggg###',
     ],
     entities: [
-      ['npc', 4, 3, { sprite: 'npc_elder', dialogue: 'salterElder' }],
+      ['npc', 4, 3, { sprite: 'npc_hood_red', dialogue: 'salterElder' }],
       ['sign', 6, 4, { text: 'The pans drink the sea and give back stone.' }],
     ],
   },
@@ -15773,7 +15797,7 @@ const rooms = {
       '###gggg###',
     ],
     entities: [
-      ['npc', 4, 3, { sprite: 'npc_fisher', dialogue: 'reefFisher' }],
+      ['npc', 4, 3, { sprite: 'npc_reefkin_r', dialogue: 'reefFisher' }],
     ],
   },
   '0,10,2': {
@@ -16347,7 +16371,7 @@ const rooms = {
       'TTTggggTTT',
     ],
     entities: [
-      ['wisp', 4, 3], ['npc', 2, 2, { sprite: 'npc_child', dialogue: 'woodChild' }],
+      ['wisp', 4, 3], ['npc', 2, 2, { sprite: 'npc_hood_blue', dialogue: 'woodChild' }],
     ],
   },
   '0,6,5': {
@@ -16416,7 +16440,7 @@ const rooms = {
       '##########',
     ],
     entities: [
-      ['npc', 4, 2, { sprite: 'npc_villager2', dialogue: 'coralDiver' }],
+      ['npc', 4, 2, { sprite: 'npc_reefkin_d', dialogue: 'coralDiver' }],
     ],
   },
   '0,10,5': {
@@ -16782,11 +16806,16 @@ const rooms = {
       // the path between the doors — an NPC is an entity, not a tile, so she
       // narrows the square without touching its connectivity.
       ['scrimshander', 2, 6, {}],
-      ['npc', 7, 1, { sprite: 'npc_villager', pal: 'npc', wander: true, dialogue: 'villager1' }],
+      // Brinekin, and re-dressed rather than joined by one. Adding an entity to
+      // the STARTING room shifts every entity id allocated after it, and
+      // `every(e, n)` phases an enemy off its id — so one extra villager here
+      // re-phases every enemy in the game and the d1-descent replay walks into
+      // a hit it used to dodge. Recorded in docs/HANDOFF.md.
+      ['npc', 7, 1, { ...FOLK.brine, wander: true, dialogue: 'villager1' }],
       ['npc', 6, 6, { sprite: 'npc_villager2', wander: true, dialogue: 'villager2' }],
       ['npc', 6, 1, { sprite: 'npc_child', wander: true, dialogue: 'villageChild' }],
       ['giver', 8, 2, {
-        sprite: 'npc_elder', dialogue: 'digger', waiting: 'diggerWait',
+        ...FOLK.salter, dialogue: 'digger', waiting: 'diggerWait',
         after: 'diggerAfter', flag: 'gotCoin', item: 'coin', level: 1,
         needEssences: 3,
       }],
@@ -17012,7 +17041,8 @@ const rooms = {
       { x: 3, y: 5, to: { map: 'houseNets', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
     ],
     entities: [
-      ['npc', 5, 2, { sprite: 'npc_child', dialogue: 'coastChild' }],
+      ['npc', 3, 2, { sprite: 'npc_child', dialogue: 'coastChild' }],
+      ['npc', 8, 1, { ...FOLK.salter, dialogue: 'shoreSalter' }],
       ['crab', 6, 4],
     ],
   },
@@ -17035,6 +17065,7 @@ const rooms = {
     ],
     entities: [
       ['octorok', 4, 4], ['pickup', 7, 3, { kind: 'rupee20' }],
+      ['npc', 6, 3, { ...FOLK.salter, dir: 'left', dialogue: 'timberSalter' }],
     ],
   },
   '0,6,8': {
@@ -17118,8 +17149,9 @@ const rooms = {
       { x: 2, y: 4, to: { map: 'houseSandpiper', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
     ],
     entities: [
-      ['sign', 8, 1, { text: 'SANDPIPER ROW\nTwo houses, one boat, no harbour.' }],
+      ['sign', 2, 1, { text: 'SANDPIPER ROW\nTwo houses, one boat, no harbour.' }],
       ['npc', 5, 5, { sprite: 'npc_fisher', wander: true, dialogue: 'fisher1' }],
+      ['npc', 4, 6, { sprite: 'npc_hood_blue', dialogue: 'sandpiperKid' }],
       ['crab', 6, 1],
     ],
   },
@@ -17190,7 +17222,7 @@ const rooms = {
       'TTTTTTTTTT',
     ],
     entities: [
-      ['npc', 5, 2, { sprite: 'npc_elder', dialogue: 'bogWitch' }],
+      ['npc', 5, 2, { ...FOLK.kelper, dialogue: 'bogWitch' }],
     ],
     buried: [[3, 4, 'heartPiece']],
   },
@@ -24142,6 +24174,14 @@ const DIALOGUE = {
   netMender: 'Nets rot from the top down, boy — from\nthe part that dries. It is the drying that\nkills them, not the sea.',
   sandpiper: 'Two houses on this row and one of them\nis shut. He went out at low water and\ncame back at nobody knows when.',
 
+  // The peoples of Thalassia. Four hoods, four coasts — the Brinekin hold the
+  // bay, the Salters the pans, the Kelpers the wet wood, the Reefkin the reef.
+  // Nobody says so outright; they say it the way people do, by complaining
+  // about the others.
+  shoreSalter: 'Salter, up from the pans. You people\nlive in your water. We live off what it\nleaves behind when it goes.',
+  timberSalter: 'Wood comes ashore, we cut it, the sea\ntakes the chips back. A tidy arrangement,\nif you do not think about it too long.',
+  sandpiperKid: 'Mum says I am not to go past the fence.\nThe fence is under water twice a day.\nSo I am not to go anywhere, really.',
+
   // The village digger: the Ferryman's Coin after three Essences.
   diggerWait: 'I dig where the sea tells me to dig.\nLately it will not shut up, and it will\nnot say anything useful either.',
   digger: 'Three Essences. Then take the Coin. Throw\nit down and let the water turn. It pays\nthe ferryman, and the ferryman is patient.',
@@ -27713,6 +27753,294 @@ function installNpcSprites() {
 __exports["NPC_ART"] = NPC_ART;
 __exports["NPC_ART_PALETTES"] = NPC_ART_PALETTES;
 __exports["installNpcSprites"] = installNpcSprites;
+});
+
+/* ===== src/data/sprites-races.js ===== */
+__define("data/sprites-races.js", function (__exports, __require) {
+// Thalassia's peoples, extracted from the Oracle of Seasons non-human
+// races sheet.
+//
+// Generated by tools/rip-races.py — edit that, not this file.
+// Source sprites ripped by Mister Mike via spriters-resource.com;
+// the original artwork is Nintendo's. This is fan-work art only.
+//
+// The sheet supplies the silhouettes; who these people are is this
+// game's. One hood in four colours is four peoples — the Oracles' own
+// palette-swap trick, and the reason a town on that cartridge is full
+// of faces without being full of drawings.
+//
+// Each sprite carries its own colours, quantised light to dark, so a
+// draw site that passes no palette gets the cartridge's.
+
+const { sprites } = __require("gfx/art.js");
+const { registerPalettes } = __require("gfx/palettes.js");
+
+const RACE_ART = {
+  npc_brine_d: { pal: 'npc_brine_d', art: `
+    .....222222.....
+    ....21111112....
+    ...2222222212...
+    ...20000000212..
+    ..202200221022..
+    ..202200222002..
+    ..202100122002..
+    ..210020000012..
+    ...20000001222..
+    ..2202002012112.
+    .200222222211222
+    .200212221112002
+    ..22211111002002
+    ...222000012222.
+    ..20002221112...
+    ..22222222222...` },
+  npc_brine_u: { pal: 'npc_brine_u', art: `
+    .......222222...
+    ......21100112..
+    .....21111111122
+    .....21111111221
+    ....211121112211
+    ....211112221212
+    ....221111111221
+    .....22212222122
+    .....20022222222
+    ....222200002212
+    ...2021122222111
+    ...2020000111112
+    ....221111110002
+    .....22200001222
+    ....20002221112.
+    ....22222222222.` },
+  npc_brinewife: { pal: 'npc_brinewife', art: `
+    ................
+    .....22....22...
+    .....212..212...
+    .....21122112...
+    ......222222....
+    .....21100112...
+    ....2122222212..
+    ...212000000212.
+    ...220220022022.
+    ...202220022202.
+    ...202210012202.
+    ...200001100002.
+    ....2200000022..
+    .....20200202...
+    ......222222....
+    ................` },
+  npc_hood_blue: { pal: 'npc_hood_blue', art: `
+    ......222222....
+    ....220001112...
+    ...21001111112..
+    ..211222221112..
+    ..2122222221112.
+    .21121020121112.
+    .212100200121112
+    .212100200121112
+    .212211211221112
+    .211222222211122
+    ..2111111111122.
+    ..221111111222..
+    ..211222211112..
+    .21111221111112.
+    .211111111111112
+    .222222222222222` },
+  npc_hood_red: { pal: 'npc_hood_red', art: `
+    ......222222....
+    ....220001112...
+    ...21001111112..
+    ..211222221112..
+    ..2122222221112.
+    .21121020121112.
+    .212100200121112
+    .212100200121112
+    .212211211221112
+    .211222222211122
+    ..2111111111122.
+    ..221111111222..
+    ..211222211112..
+    .21111221111112.
+    .211111111111112
+    .222222222222222` },
+  npc_kelper_d: { pal: 'npc_kelper_d', art: `
+    ......222222....
+    ....220001112...
+    ...21001111112..
+    ..211222221112..
+    ..2122222221112.
+    .21121020121112.
+    .212100200121112
+    .212100200121112
+    .212211211221112
+    .211222222211122
+    ..2111111111122.
+    ..221111111222..
+    ..211222211112..
+    .21111221111112.
+    .211111111111112
+    .222222222222222` },
+  npc_kelper_s: { pal: 'npc_kelper_s', art: `
+    ......22222222..
+    ....22100000012.
+    ...211110011112.
+    ..2111110122222.
+    ..2111111222222.
+    .21111111210212.
+    .21111112100202.
+    .21111112100202.
+    .22111112211212.
+    ..2211111222222.
+    ...221111111112.
+    ..211111111112..
+    ..21111111222...
+    .211111111122...
+    .211111111112...
+    .222222222222...` },
+  npc_kelper_u: { pal: 'npc_kelper_u', art: `
+    ......222222....
+    ....221100112...
+    ...21111100112..
+    ..211111100112..
+    ..2111111101112.
+    .21111111101112.
+    .211111111111112
+    .211111111111112
+    .211111111111112
+    .211111111111122
+    ..2111111111122.
+    ..221111111122..
+    ..211111222112..
+    .21111111211112.
+    .211111111111112
+    .222222222222222` },
+  npc_reefkin_d: { pal: 'npc_reefkin_d', art: `
+    ......2222222...
+    ....22010101222.
+    ...210101011102.
+    ..21110101111122
+    ..20111111100112
+    ..22011111022012
+    ..2201111102202.
+    ..2011000110012.
+    ...21121211112..
+    ..2121111111212.
+    222022222222012.
+    200220000012012.
+    .2122200012222..
+    ..2211122211212.
+    ..2020112222222.
+    ..222222........` },
+  npc_reefkin_r: { pal: 'npc_reefkin_r', art: `
+    ......2222222...
+    ....22010101222.
+    ...210101011102.
+    ..21110101111122
+    ..20111111100112
+    ..22011111022012
+    ..2201111102202.
+    ..2011000110012.
+    ...21121211112..
+    ..2121111111212.
+    222022222222012.
+    200220000012012.
+    .2122200012222..
+    ..2211122211212.
+    ..2020112222222.
+    ..222222........` },
+  npc_reefkin_u: { pal: 'npc_reefkin_u', art: `
+    ......222222....
+    ....2210220022..
+    ...20102002102..
+    ..2010120021122.
+    ..2111021121102.
+    .21110221121112.
+    .2111022112112..
+    .2001102112112..
+    .212111211212...
+    ..2111121122....
+    ...22222112.....
+    ...200021112....
+    ...2001111022...
+    ....22222110222.
+    ....20111211002.
+    ...22222222222..` },
+  npc_salter_d: { pal: 'npc_salter_d', art: `
+    ......222222....
+    ....220001112...
+    ...21001111112..
+    ..211222221112..
+    ..2122222221112.
+    .21121020121112.
+    .212100200121112
+    .212100200121112
+    .212211211221112
+    .211222222211122
+    ..2111111111122.
+    ..221111111222..
+    ..211222211112..
+    .21111221111112.
+    .211111111111112
+    .222222222222222` },
+  npc_salter_s: { pal: 'npc_salter_s', art: `
+    ......22222222..
+    ....22100000012.
+    ...211110011112.
+    ..2111110122222.
+    ..2111111222222.
+    .21111111210212.
+    .21111112100202.
+    .21111112100202.
+    .22111112211212.
+    ..2211111222222.
+    ...221111111112.
+    ..211111111112..
+    ..21111111222...
+    .211111111122...
+    .211111111112...
+    .222222222222...` },
+  npc_salter_u: { pal: 'npc_salter_u', art: `
+    ......222222....
+    ....221100112...
+    ...21111100112..
+    ..211111100112..
+    ..2111111101112.
+    .21111111101112.
+    .211111111111112
+    .211111111111112
+    .211111111111112
+    .211111111111122
+    ..2111111111122.
+    ..221111111122..
+    ..211111222112..
+    .21111111211112.
+    .211111111111112
+    .222222222222222` },
+};
+
+// One palette per sprite, taken from the source artwork.
+const RACE_ART_PALETTES = {
+  npc_brine_d: ['#ffd68c', '#1984ff', '#000000', '#000000'],
+  npc_brine_u: ['#ffd68c', '#1984ff', '#000000', '#000000'],
+  npc_brinewife: ['#ffd68c', '#ff0829', '#000000', '#000000'],
+  npc_hood_blue: ['#ffd68c', '#1984ff', '#000000', '#000000'],
+  npc_hood_red: ['#ffd68c', '#ff0829', '#000000', '#000000'],
+  npc_kelper_d: ['#ffd68c', '#10ad42', '#000000', '#000000'],
+  npc_kelper_s: ['#ffd68c', '#10ad42', '#000000', '#000000'],
+  npc_kelper_u: ['#ffd68c', '#10ad42', '#000000', '#000000'],
+  npc_reefkin_d: ['#ffd68c', '#10ad42', '#000000', '#000000'],
+  npc_reefkin_r: ['#ffd68c', '#ff0829', '#000000', '#000000'],
+  npc_reefkin_u: ['#ffd68c', '#10ad42', '#000000', '#000000'],
+  npc_salter_d: ['#ffd68c', '#ff7b08', '#000000', '#000000'],
+  npc_salter_s: ['#ffd68c', '#ff7b08', '#000000', '#000000'],
+  npc_salter_u: ['#ffd68c', '#ff7b08', '#000000', '#000000'],
+};
+
+function installRaceSprites() {
+  registerPalettes(RACE_ART_PALETTES);
+  sprites.add(RACE_ART, 'npc');
+}
+__exports["RACE_ART"] = RACE_ART;
+__exports["RACE_ART_PALETTES"] = RACE_ART_PALETTES;
+__exports["installRaceSprites"] = installRaceSprites;
 });
 
 /* ===== src/data/sprites-world.js ===== */
@@ -31744,6 +32072,7 @@ const { installAudio } = __require("data/audio.js");
 const { installLinkSprites, LINK_ART, FX_ART, FX_BIG_ART, UI_ART } = __require("data/sprites-link.js");
 const { installPlayerSprites, PLAYER_ART } = __require("data/sprites-player.js");
 const { installNpcSprites, NPC_ART: NPC_RIPPED_ART } = __require("data/sprites-npcs.js");
+const { installRaceSprites, RACE_ART } = __require("data/sprites-races.js");
 const { installWorldSprites, PICKUP_ART, OBJECT_ART, SHOT_ART, NPC_ART } = __require("data/sprites-world.js");
 const { installEnemySprites, ENEMY_ART } = __require("data/sprites-enemies.js");
 const { installBossSprites, BOSS_ART, MINIBOSS_ART } = __require("data/sprites-bosses.js");
@@ -31760,6 +32089,7 @@ const SPRITE_PACKS = {
   link: LINK_ART,
   player: PLAYER_ART,
   npcsRipped: NPC_RIPPED_ART,
+  races: RACE_ART,
   fx: FX_ART,
   fxBig: FX_BIG_ART,
   ui: UI_ART,
@@ -31788,6 +32118,8 @@ function installData() {
   installWorldSprites();
   // After sprites-world.js, so extracted NPC art overrides the placeholders.
   installNpcSprites();
+  // The peoples of Thalassia, off a sheet nothing else has touched.
+  installRaceSprites();
   installEnemySprites();
   installBossSprites();
   // After sprites-link.js, so the extracted HUD and gear icons override the

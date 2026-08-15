@@ -374,15 +374,16 @@ batch nine items and then untangle 303 rooms at once.
 ### PT — Towns, buildings and terrain polish
 
 **STEPS 1-4 ARE DONE.** The block machinery is built, the Subrosia town kit is
-extracted, and four screens are settlements. Step 5 (the terrain backlog, the
-`cliff` family) is untouched and is still the biggest remaining art job.
+extracted, four screens are settlements, and the peoples who live in them come
+off the races sheet. Step 5 (the terrain backlog, the `cliff` family) is
+untouched and is now the whole of what PT has left.
 
 | Step | State |
 |---|---|
 | 1. A building is not a tile | DONE — `registerBlocks` in `src/world/tileset.js`, `Room.expandBlocks` in `src/world/room.js`. A block is placed as a rectangle of one legend character and throws if the footprint is wrong. Not the tree's `quad:` generalised — that machinery was never on trunk (`QUADS` is empty); blocks are its replacement and cover the 2x2 tree case too |
 | 2. Extract the kit | DONE — the `TOWN` table in `tools/rip-terrain.py`: shop, three houses, well, stump, fence, barrels, two crate stacks. Ten buildings, two ground variants each |
 | 3. Re-author the villages | DONE — `0,4,7` Tidewatch Village, `0,4,8` Village Shore, `0,5,8` Driftwood Strand, `0,9,8` Sandpiper Row (new, in the dunes). Three doors wired to three new interiors |
-| 4. Populate them | PARTLY — the new interiors have people in them and the square keeps its four NPCs, but `oracle-seasons-nonhuman-races.png` is still not extracted from, so every townsperson is still an existing sprite |
+| 4. Populate them | DONE — `tools/rip-races.py` takes 14 frames off `oracle-seasons-nonhuman-races.png` and Thalassia has four peoples: Salters, Kelpers, Brinekin, Reefkin. The scrimshander and the digger no longer share a face, and `NPC.frames` — directional art that had never been used by anything — turns a townsperson to face the way they walk |
 | 5. The terrain backlog | NOT STARTED |
 
 **What a later session must know before touching a town screen:** a 10x8 screen
@@ -431,12 +432,15 @@ down the sheet, which for us is a palette resource rather than a season one.
    crates, a fence, a stump — placed as if someone put them there for a reason.
    Interiors already exist as a legend (`house`); wire the doors to them.
 
-4. Populate them. assets/sheets/oracle-seasons-nonhuman-races.png has not been
-   extracted from at all and carries the Maku Tree, the Great Fairy and rows of
-   NPC races. Original townsfolk are ours to design; their SPRITES should come
-   off that sheet where it has something that fits, per the extract-first rule.
+4. Populate them. [DONE] assets/sheets/oracle-seasons-nonhuman-races.png is
+   extracted by tools/rip-races.py — fourteen frames, four peoples. What is
+   still untouched on it is the Maku Tree, the Great Fairy, the Gorons and
+   several more Zora and Tokay poses. Original townsfolk are ours to design;
+   their SPRITES come off that sheet where it has something that fits, per the
+   extract-first rule.
 
-5. Then the terrain backlog, in the order docs/NEXT-SESSION.md ranks it. The
+5. [THE ONLY STEP LEFT] Then the terrain backlog, in the order
+   docs/ART-BACKLOG.md ranks it. The
    `cliff` family is the big one — one extraction covers eight tiles — and it
    is a content decision, not a swap: the Oracles build a cliff from several
    tiles and this game spends one tile on all of it.
@@ -454,7 +458,7 @@ CONSTRAINTS
   it. A village that validates and reads as scattered furniture is not done.
 ```
 
-### P7 — Scrimshaw
+### P7 — Scrimshaw (done — see the P7 audit below)
 
 ```
 Replace the ring system with scrimshaw, per Part 2 of the execution plan.
@@ -1295,9 +1299,9 @@ to the hard-won-lessons section of docs/HANDOFF.md.
 | 5 | P4 enemy grid-lock | — |
 | 6 | P5 tide field + Anchor | P6, P8 |
 | 7 | P6 item roster | P8, P9 |
-| 8 | **PT towns, buildings, terrain polish** | P9 | (steps 1-4 done)
-| 9 | P7 scrimshaw | — |
-| 10–15 | P8 dungeons 1–6 | P9 |
+| 8 | **PT towns, buildings, terrain polish** | P9 | (steps 1-4 done; step 5, the terrain backlog, is all that is left)
+| 9 | P7 scrimshaw (done) | — |
+| 10–15 | P8 dungeons 1–6 (done) | P9 |
 | 16 | P9 overworld + difficulty | — |
 
 PT sits before P9 deliberately. A gate is a tile flag dropped into a finished

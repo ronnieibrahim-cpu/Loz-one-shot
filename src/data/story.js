@@ -23,6 +23,14 @@ export const DIALOGUE = {
   netMender: 'Nets rot from the top down, boy — from\nthe part that dries. It is the drying that\nkills them, not the sea.',
   sandpiper: 'Two houses on this row and one of them\nis shut. He went out at low water and\ncame back at nobody knows when.',
 
+  // The peoples of Thalassia. Four hoods, four coasts — the Brinekin hold the
+  // bay, the Salters the pans, the Kelpers the wet wood, the Reefkin the reef.
+  // Nobody says so outright; they say it the way people do, by complaining
+  // about the others.
+  shoreSalter: 'Salter, up from the pans. You people\nlive in your water. We live off what it\nleaves behind when it goes.',
+  timberSalter: 'Wood comes ashore, we cut it, the sea\ntakes the chips back. A tidy arrangement,\nif you do not think about it too long.',
+  sandpiperKid: 'Mum says I am not to go past the fence.\nThe fence is under water twice a day.\nSo I am not to go anywhere, really.',
+
   // The village digger: the Ferryman's Coin after three Essences.
   diggerWait: 'I dig where the sea tells me to dig.\nLately it will not shut up, and it will\nnot say anything useful either.',
   digger: 'Three Essences. Then take the Coin. Throw\nit down and let the water turn. It pays\nthe ferryman, and the ferryman is patient.',
