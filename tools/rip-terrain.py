@@ -81,6 +81,21 @@ PICKS = [
     # bush at a glance is MASS and SHAPE, and a blossom field shares neither
     # with a shrub.
     ('flowers',     SP,   33,  291, 'spring flower field, blooms over leaves'),
+
+    # A CAVE MOUTH THAT IS A CAVE MOUTH. The hand-drawn one was a rectangular
+    # frame with a hole in it, and it is on record as the reason three doors in
+    # a row read as holes in the grass rather than as three ways in — see
+    # docs/NEXT-SESSION.md, where a first pass at Tidewatch was cut for it.
+    #
+    # This is a full-cell PICK rather than a PROP even though a cave mouth has
+    # ground around it on the sheet, and the reason is what the tile IS here:
+    # `caveMouth` carries `mask: 0` and F.WARP and fills its cell, in cliffs and
+    # dunes and marsh alike. Flooding the sheet's Subrosian grass out of it
+    # would need an `underArt`, and there is no one ground that is right under
+    # every cave in the game. Ranked whole, the ground becomes the mid tone of
+    # whichever palette the tiledef already binds, so the surround reads as the
+    # rock the mouth is cut into.
+    ('caveMouth',   SB,  176, 1632, 'cave mouth, arched and cut into rock'),
 ]
 
 # Props are a different shape of problem from ground, and need their own pass.
