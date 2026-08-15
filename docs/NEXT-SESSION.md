@@ -446,6 +446,15 @@ checker you do not have, so do inject a deliberate break and confirm it — but
 on a clean index. `git checkout <file>` restores from HEAD and a session lost
 several hours of work to exactly that this week.
 
+THEN PLAY IT. docs/PLAYTEST.md is the protocol and it is written for exactly
+this: two passes, one for functional bugs and one for mechanical faith to the
+source games, with a card per dungeon and per subsystem and a console recipe
+for setting up a scenario without playing five dungeons first. Every feature
+in this repo currently ends its write-up with "nobody has played it", and P9
+re-tunes hearts and contact damage, which is a FEEL change that no checker in
+the repo can evaluate. At minimum: play the two regions you re-gated, and one
+dungeon end to end. Report in the format that file specifies.
+
 EVERY SESSION ENDS BY RUNNING `npm run build` AND COMMITTING
 dist/oracle-of-tides.html. That file is the playable game. A commit that changes
 src/ and leaves the build stale ships a game that is not the game.
@@ -456,14 +465,19 @@ surprise in docs/HANDOFF.md under hard-won lessons.
 Do the work yourself rather than spawning subagents — past sessions hit usage
 limits that way and lost the work.
 
-Tell me plainly what is done, what is weak, and what you skipped.
+Tell me plainly what is done, what is weak, and what you skipped — including
+what you did NOT get to play.
 ```
 
 ### The four things P9 inherits, restated
 
 1. **NOBODY HAS PLAYED ANY OF IT.** Six dungeons, six fixtures, every claim a
    checker's. This is still the largest open item in the project and no tool in
-   the repo can close it.
+   the repo can close it — but it now has a protocol, `docs/PLAYTEST.md`, so it
+   is a job somebody can pick up rather than a standing complaint. The single
+   highest-value thing in it is **the curve**: a ranking of the six dungeons by
+   difficulty from somebody who has played all six. No session has compared
+   them, and each was designed against its own item and nothing else.
 2. **Three enemies are registered and unplaced**: `thalassor`, `saltwraith`,
    `gustharpy`.
 3. **The overworld is gated for eight dungeons.** The fold made the Salt Pans

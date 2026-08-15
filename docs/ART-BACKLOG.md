@@ -2,6 +2,14 @@
 
 Work that is identified, scoped and not done. Each entry says what blocks it.
 
+**Several entries below are blocked on nothing but a person looking**, and say
+so — the Lens's three dark blues in particular "wants a person holding the
+button", because what separates shallow water from deep is texture and motion
+and a screenshot throws both away. `docs/PLAYTEST.md` is the protocol for that
+sitting; its Pass A route names each of these findings at the point in the game
+where you can see it, and it asks for a `shoot-rooms` command with any new one
+so the next session can reproduce what you saw.
+
 
 ## The Keep's mooring ring reads as a block, and its silt ring reads better dry
 

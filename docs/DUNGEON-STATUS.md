@@ -78,6 +78,9 @@ count.
 - [ ] a replay that walks the dungeon's own idea and asserts it in-engine
 - [ ] the rooms looked at on screen, at more than one tide level, and what was
       seen written down — including if it read badly
+- [ ] **a play-test pass against `docs/PLAYTEST.md`'s card for this dungeon**,
+      and what it found written down — including "nothing". This is the only
+      box on the list no tool can tick, and it is unticked on all six.
 - [ ] this file updated, `docs/NEXT-SESSION.md` updated, `npm run build` run and
       `dist/oracle-of-tides.html` committed
 
@@ -390,6 +393,13 @@ the near bank, and a mooring whose closure clause was asking the wrong question.
 - **Nobody has played one.** Every claim on this board is a checker's. The
   checkers prove a dungeon is completable and that its rooms mean what they say;
   they cannot say whether it is any good to walk through.
+  **`docs/PLAYTEST.md` is the protocol for closing this**, and it carries a card
+  per dungeon naming what to watch for in each — including the console recipe
+  for reaching D6 without playing the five before it. The one thing it asks for
+  that nothing else in the repo can supply is the **curve**: a ranking of the
+  six by difficulty from somebody who has played all six. That opinion is worth
+  more than every checker here on that one question, and it belongs in this
+  file.
 - **Five dungeons, five different fixtures, and no session has compared them.**
   D1 is a held patch, D2 a blind fork, D3 a torrent, D4 a drowned wheel, D5 a
   bole and a snarl. Each was designed against its own item and against nothing

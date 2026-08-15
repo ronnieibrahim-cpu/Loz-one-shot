@@ -4,6 +4,7 @@ import { Screen } from './core/screen.js';
 import { Input } from './core/input.js';
 import { audio } from './core/audio.js';
 import { Game } from './game/game.js';
+import { giveItem } from './game/progress.js';
 import { installData } from './data/index.js';
 import { validateTiles } from './world/tileset.js';
 import { validateMaps } from './world/maps.js';
@@ -65,6 +66,26 @@ function boot() {
     /** Advance exactly n fixed updates. Only legal while driven. */
     step(n = 1) { for (let i = 0; i < n; i++) game.update(); return game.frame; },
     game,
+    /**
+     * Grant an item the way the game grants one. FOR PLAY-TESTING — see
+     * docs/PLAYTEST.md, which is written around it.
+     *
+     * A tester who wants to spend an hour on the Abyssal Keep should not have
+     * to play five dungeons first, and the obvious shortcut is to poke
+     * `__game.progress.items` from the console. THAT SHORTCUT IS THE BUG THE
+     * PROJECT ALREADY PAID FOR ONCE: a counted item — a Reefseed, a bomb, a
+     * bottle — arrives with something in it, and that rule lives in
+     * `progress.giveItem` and nowhere else, so an inventory entry written by
+     * hand is attached to an empty pouch and the B button denies for ever.
+     * A play-test run set up that way would report a bug the game does not
+     * have and miss the one it does.
+     *
+     * So the protocol calls this instead. It is the same function
+     * `tools/replay.mjs` boots every recording with, which is the whole point:
+     * a session that finds something by hand can hand the repro straight to a
+     * replay plan without the setup changing meaning on the way.
+     */
+    giveItem(id, n) { return giveItem(game.progress, id, n); },
   };
 
   function loop(now) {

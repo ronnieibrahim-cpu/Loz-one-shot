@@ -179,6 +179,18 @@ they are also how a future session finds which sheet a tile came from.
 Run the cheap deterministic checkers instead of reasoning about correctness.
 They are faster than you are and they do not rationalise.
 
+**And know what they cannot see.** Every table entry above proves the game
+works; not one has an opinion about whether it is good to play or whether it
+feels like Oracle of Seasons — which is goal 1, the whole product.
+`docs/PLAYTEST.md` is the protocol for the half no tool can run: a functional
+pass (the things only a person triggers — leaving a room mid-puzzle, saving,
+dying, doing it in the wrong order) and a mechanical-faith pass against the
+source games. **It is also the only route by which a `guessed` constant in
+`feel.js` may become `measured`**, and it says what a feel finding has to
+contain before it is allowed to move that word. Every dungeon on the board and
+every feature in this repo currently ends its write-up with *nobody has played
+it*; that line is a to-do addressed to that document.
+
 ---
 
 ## Art rules

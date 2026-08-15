@@ -62,6 +62,16 @@ be earned by opinion.
 
 ### How to earn a `measured`
 
+`docs/PLAYTEST.md` is the sitting in which this actually happens — Pass B,
+"mechanical faith". It carries a card per subsystem naming what to watch and
+which constant it belongs to, and it states the same bar as this section in the
+form a play-tester needs it: an impression is not a finding, and a finding
+needs the constant named, the direction and rough size, the reference named,
+and the frame count counted. **Only the fourth of those may move a tag.** With
+the first three, write the finding into this file as an open question and leave
+the tag alone.
+
+
 1. Capture reference footage at a known frame rate.
 2. Frame-step the specific behaviour. Count frames; measure pixels against a
    known 16px tile.
