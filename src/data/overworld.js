@@ -28,6 +28,26 @@ import { registerMap } from '../world/maps.js';
 export const OVERWORLD_W = 12;
 export const OVERWORLD_H = 10;
 
+// The peoples of Thalassia, as an NPC entity says them. The art is extracted
+// (tools/rip-races.py); who they are is ours.
+//
+//   Salters   hooded in orange oilskin — the salt pans and the working shore
+//   Kelpers   the same hood in green — the Drowned Wood and the Bogwater
+//   Brinekin  blue-capped seafarers — Tidewatch and the fishing hamlets
+//   Reefkin   speckled and web-footed — the Coral Reef
+//
+// `frames` is the NPC's own directional table (game/objects.js spriteName), and
+// it had never been used by anything: every townsperson in the game faced the
+// camera whichever way they walked. A people with a back and a side reads as
+// somebody going about their day rather than a portrait on a post. A missing
+// direction falls back to `down`, which is why the Brinekin — whose sheet has
+// no side view — declare only the two the sheet actually draws.
+const FOLK = {
+  salter: { sprite: 'npc_salter_d', frames: { down: ['npc_salter_d'], up: ['npc_salter_u'], side: ['npc_salter_s'] } },
+  kelper: { sprite: 'npc_kelper_d', frames: { down: ['npc_kelper_d'], up: ['npc_kelper_u'], side: ['npc_kelper_s'] } },
+  brine: { sprite: 'npc_brine_d', frames: { down: ['npc_brine_d'], up: ['npc_brine_u'] } },
+};
+
 const rooms = {
   // ---- abyss -------------------------------------------------------------
   '0,0,0': {
@@ -369,7 +389,7 @@ const rooms = {
       '###gggg###',
     ],
     entities: [
-      ['npc', 4, 3, { sprite: 'npc_elder', dialogue: 'salterElder' }],
+      ['npc', 4, 3, { sprite: 'npc_hood_red', dialogue: 'salterElder' }],
       ['sign', 6, 4, { text: 'The pans drink the sea and give back stone.' }],
     ],
   },
@@ -654,7 +674,7 @@ const rooms = {
       '###gggg###',
     ],
     entities: [
-      ['npc', 4, 3, { sprite: 'npc_fisher', dialogue: 'reefFisher' }],
+      ['npc', 4, 3, { sprite: 'npc_reefkin_r', dialogue: 'reefFisher' }],
     ],
   },
   '0,10,2': {
@@ -1228,7 +1248,7 @@ const rooms = {
       'TTTggggTTT',
     ],
     entities: [
-      ['wisp', 4, 3], ['npc', 2, 2, { sprite: 'npc_child', dialogue: 'woodChild' }],
+      ['wisp', 4, 3], ['npc', 2, 2, { sprite: 'npc_hood_blue', dialogue: 'woodChild' }],
     ],
   },
   '0,6,5': {
@@ -1297,7 +1317,7 @@ const rooms = {
       '##########',
     ],
     entities: [
-      ['npc', 4, 2, { sprite: 'npc_villager2', dialogue: 'coralDiver' }],
+      ['npc', 4, 2, { sprite: 'npc_reefkin_d', dialogue: 'coralDiver' }],
     ],
   },
   '0,10,5': {
@@ -1663,11 +1683,16 @@ const rooms = {
       // the path between the doors — an NPC is an entity, not a tile, so she
       // narrows the square without touching its connectivity.
       ['scrimshander', 2, 6, {}],
-      ['npc', 7, 1, { sprite: 'npc_villager', pal: 'npc', wander: true, dialogue: 'villager1' }],
+      // Brinekin, and re-dressed rather than joined by one. Adding an entity to
+      // the STARTING room shifts every entity id allocated after it, and
+      // `every(e, n)` phases an enemy off its id — so one extra villager here
+      // re-phases every enemy in the game and the d1-descent replay walks into
+      // a hit it used to dodge. Recorded in docs/HANDOFF.md.
+      ['npc', 7, 1, { ...FOLK.brine, wander: true, dialogue: 'villager1' }],
       ['npc', 6, 6, { sprite: 'npc_villager2', wander: true, dialogue: 'villager2' }],
       ['npc', 6, 1, { sprite: 'npc_child', wander: true, dialogue: 'villageChild' }],
       ['giver', 8, 2, {
-        sprite: 'npc_elder', dialogue: 'digger', waiting: 'diggerWait',
+        ...FOLK.salter, dialogue: 'digger', waiting: 'diggerWait',
         after: 'diggerAfter', flag: 'gotCoin', item: 'coin', level: 1,
         needEssences: 3,
       }],
@@ -1893,7 +1918,8 @@ const rooms = {
       { x: 3, y: 5, to: { map: 'houseNets', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
     ],
     entities: [
-      ['npc', 5, 2, { sprite: 'npc_child', dialogue: 'coastChild' }],
+      ['npc', 3, 2, { sprite: 'npc_child', dialogue: 'coastChild' }],
+      ['npc', 8, 1, { ...FOLK.salter, dialogue: 'shoreSalter' }],
       ['crab', 6, 4],
     ],
   },
@@ -1916,6 +1942,7 @@ const rooms = {
     ],
     entities: [
       ['octorok', 4, 4], ['pickup', 7, 3, { kind: 'rupee20' }],
+      ['npc', 6, 3, { ...FOLK.salter, dir: 'left', dialogue: 'timberSalter' }],
     ],
   },
   '0,6,8': {
@@ -1999,8 +2026,9 @@ const rooms = {
       { x: 2, y: 4, to: { map: 'houseSandpiper', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
     ],
     entities: [
-      ['sign', 8, 1, { text: 'SANDPIPER ROW\nTwo houses, one boat, no harbour.' }],
+      ['sign', 2, 1, { text: 'SANDPIPER ROW\nTwo houses, one boat, no harbour.' }],
       ['npc', 5, 5, { sprite: 'npc_fisher', wander: true, dialogue: 'fisher1' }],
+      ['npc', 4, 6, { sprite: 'npc_hood_blue', dialogue: 'sandpiperKid' }],
       ['crab', 6, 1],
     ],
   },
@@ -2071,7 +2099,7 @@ const rooms = {
       'TTTTTTTTTT',
     ],
     entities: [
-      ['npc', 5, 2, { sprite: 'npc_elder', dialogue: 'bogWitch' }],
+      ['npc', 5, 2, { ...FOLK.kelper, dialogue: 'bogWitch' }],
     ],
     buried: [[3, 4, 'heartPiece']],
   },

@@ -374,15 +374,16 @@ batch nine items and then untangle 303 rooms at once.
 ### PT — Towns, buildings and terrain polish
 
 **STEPS 1-4 ARE DONE.** The block machinery is built, the Subrosia town kit is
-extracted, and four screens are settlements. Step 5 (the terrain backlog, the
-`cliff` family) is untouched and is still the biggest remaining art job.
+extracted, four screens are settlements, and the peoples who live in them come
+off the races sheet. Step 5 (the terrain backlog, the `cliff` family) is
+untouched and is now the whole of what PT has left.
 
 | Step | State |
 |---|---|
 | 1. A building is not a tile | DONE — `registerBlocks` in `src/world/tileset.js`, `Room.expandBlocks` in `src/world/room.js`. A block is placed as a rectangle of one legend character and throws if the footprint is wrong. Not the tree's `quad:` generalised — that machinery was never on trunk (`QUADS` is empty); blocks are its replacement and cover the 2x2 tree case too |
 | 2. Extract the kit | DONE — the `TOWN` table in `tools/rip-terrain.py`: shop, three houses, well, stump, fence, barrels, two crate stacks. Ten buildings, two ground variants each |
 | 3. Re-author the villages | DONE — `0,4,7` Tidewatch Village, `0,4,8` Village Shore, `0,5,8` Driftwood Strand, `0,9,8` Sandpiper Row (new, in the dunes). Three doors wired to three new interiors |
-| 4. Populate them | PARTLY — the new interiors have people in them and the square keeps its four NPCs, but `oracle-seasons-nonhuman-races.png` is still not extracted from, so every townsperson is still an existing sprite |
+| 4. Populate them | DONE — `tools/rip-races.py` takes 14 frames off `oracle-seasons-nonhuman-races.png` and Thalassia has four peoples: Salters, Kelpers, Brinekin, Reefkin. The scrimshander and the digger no longer share a face, and `NPC.frames` — directional art that had never been used by anything — turns a townsperson to face the way they walk |
 | 5. The terrain backlog | NOT STARTED |
 
 **What a later session must know before touching a town screen:** a 10x8 screen

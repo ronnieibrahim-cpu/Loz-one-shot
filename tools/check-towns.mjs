@@ -87,7 +87,7 @@ function walkable(room, x, y, tide) {
 // screen has a route on foot at every sea".
 const passable = walkable;
 
-function flood(room, tide, from) {
+function flood(room, tide, from, can = passable) {
   const seen = new Set([`${from[0]},${from[1]}`]);
   const q = [from];
   while (q.length) {
@@ -96,11 +96,54 @@ function flood(room, tide, from) {
       const nx = x + dx, ny = y + dy;
       if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
       const k = `${nx},${ny}`;
-      if (seen.has(k) || !passable(room, nx, ny, tide)) continue;
+      if (seen.has(k) || !can(room, nx, ny, tide)) continue;
       seen.add(k); q.push([nx, ny]);
     }
   }
   return seen;
+}
+
+// The entity types that stand in the player's way. Everything else on a town
+// screen — a pickup, a wisp, a crab — is either walked through or walks off.
+const SOLID_ENTITIES = new Set(['npc', 'giver', 'scrimshander', 'sign', 'shopkeeper']);
+
+/**
+ * The tiles whose loss severs the screen, per tide level.
+ *
+ * A cut tile is one that is walkable, is not itself a way in, and whose removal
+ * leaves some way in or doorstep unreachable from the others. Removing one tile
+ * and re-flooding is O(tiles^2) on a 10x8 grid, which is eighty floods of eighty
+ * tiles — cheaper than thinking about it.
+ */
+function cutTiles(room) {
+  const out = [];
+  for (const tide of [0, 1, 2]) {
+    const cuts = new Set();
+    const ways = [];
+    for (let x = 0; x < W; x++) {
+      if (walkable(room, x, 0, tide)) ways.push([x, 0]);
+      if (walkable(room, x, H - 1, tide)) ways.push([x, H - 1]);
+    }
+    for (let y = 0; y < H; y++) {
+      if (walkable(room, 0, y, tide)) ways.push([0, y]);
+      if (walkable(room, W - 1, y, tide)) ways.push([W - 1, y]);
+    }
+    const doors = [];
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      if (room.tile(x, y, tide).flags & F.WARP) doors.push([x, y]);
+    }
+    const targets = [...ways, ...doors];
+    if (!ways.length) { out.push(cuts); continue; }
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      if (!walkable(room, x, y, tide)) continue;
+      if (targets.some(([tx, ty]) => tx === x && ty === y)) continue;
+      const blocked = (r, nx, ny, t) => (nx === x && ny === y) ? false : walkable(r, nx, ny, t);
+      const seen = flood(room, tide, ways[0], blocked);
+      if (targets.some(([tx, ty]) => !seen.has(`${tx},${ty}`))) cuts.add(`${x},${y}`);
+    }
+    out.push(cuts);
+  }
+  return out;
 }
 
 const overworld = MAPS.get('overworld');
@@ -197,6 +240,40 @@ for (const town of TOWNS) {
     if (![0, 1, 2].some(t => walkable(room, x, y, t))) buried.push(`${type}@${x},${y}`);
   }
   check(`${town.name}: every entity is standing on ground`, buried.length === 0, buried.join(' '));
+
+  // 6. NOBODY IS STANDING IN THE ONE ROW THAT CROSSES THE SCREEN.
+  //
+  // A townsperson is SOLID. The geometry rule that cost four layouts — a 10x8
+  // screen holding two 3x3 buildings has exactly one row left that crosses it —
+  // does not care whether the thing blocking that row is a well or a person, and
+  // an NPC is the version of it no tile checker can see. So the cut tiles are
+  // computed the direct way (take each walkable tile out and re-flood) and a
+  // stationary entity standing on one is a failure at that tide level.
+  const cuts = cutTiles(room);
+  const wanderers = [];
+  const onCut = [];
+  for (const e of (def.entities || [])) {
+    const [type, x, y, opts] = e;
+    if (!SOLID_ENTITIES.has(type)) continue;
+    if (opts && opts.wander) { wanderers.push(`${type}@${x},${y}`); continue; }
+    for (const tide of [0, 1, 2]) if (cuts[tide].has(`${x},${y}`)) onCut.push(`${type}@${x},${y} at tide ${tide}`);
+  }
+  check(`${town.name}: no townsperson is standing where the screen pinches`,
+    onCut.length === 0, onCut.join('; '));
+  // A WANDERER CANNOT BE PROVED THIS WAY and is not pretended to be. It walks
+  // the whole region it starts in, so if the screen has a cut tile at all it can
+  // stand on one — for a few seconds, until it moves off again. That is a pause,
+  // not a soft lock, and it is how the source games behave too; failing it would
+  // demand a redesign of screens that play fine. It is printed so an author
+  // deciding where to put the next one can see what they are deciding.
+  const pinch = [...new Set([...cuts[0], ...cuts[1], ...cuts[2]])];
+  // PINCH=1 prints them for every town, wanderers or not — which is what you
+  // want open in another terminal while deciding where a townsperson stands.
+  if (process.env.PINCH) console.log(`  PINCH ${town.name}: ${pinch.join(' ')}`);
+  if (wanderers.length && pinch.length) {
+    console.log(`  note: ${town.name} pinches at ${pinch.join(' ')} and has ` +
+      `${wanderers.length} wandering NPC(s): ${wanderers.join(' ')}`);
+  }
 }
 
 // --- the sweep -------------------------------------------------------------

@@ -220,6 +220,34 @@ is in the page, and nothing steps until you say so.
 
 ## Hard-won lessons — do not rediscover these
 
+**The peoples (PT step 4), and the two things they cost.**
+
+1. **AN NPC IS A SOLID TILE THAT NOBODY CHECKS.** The "one corridor" rule below
+   is about wells and stumps, and it turns out it never cared what was standing
+   in the row. `check-towns.mjs` grew a cut-tile pass — take each walkable tile
+   out, re-flood, and see whether a way in or a door goes unreachable — and it
+   failed on its first run against content that had shipped: **the coast child
+   on Village Shore stood on 5,2, the only row that crosses that screen, at all
+   three tide levels**, and the Sandpiper Row signpost stood in its top
+   corridor. Both had passed every checker in the repo, because every checker in
+   the repo reads tiles and an NPC is not a tile. A wanderer cannot be proved
+   this way — it walks the whole region and can stand on a cut tile for a few
+   seconds — so those are printed as a note instead, and `PINCH=1` prints every
+   town's cut tiles for whoever is deciding where the next townsperson stands.
+
+2. **ADDING ONE NPC RE-PHASES EVERY ENEMY IN THE GAME.** `nextId` in
+   `src/game/entity.js` is a single global counter, and `every(e, n)` phases an
+   entity off its id rather than off a stream. So an entity added to the
+   STARTING room shifts every id allocated afterwards, every enemy's cycle moves
+   with it, and a replay recorded somewhere else entirely diverges. One extra
+   villager in Tidewatch made the `d1-descent` actor walk into a hit it used to
+   dodge, take two hearts, die three rooms later and finish the run on the
+   overworld — reported as `playerId: expected 1, got 201`, which is the
+   respawn, not a bug in the id. It is deterministic and it is not a desync: the
+   run is simply a different run. **Re-dress an existing NPC rather than adding
+   one to a room a replay walks through**, which is what Tidewatch's Brinekin
+   is; re-recording is the wrong fix when the re-recorded run dies.
+
 **The towns (PT), and the five things they cost.**
 
 1. **A CHECKER THAT GRANTS SWIMMING CANNOT SEE A TOWN BREAK.** `check-towns.mjs`

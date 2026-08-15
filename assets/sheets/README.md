@@ -25,7 +25,7 @@ regenerate byte-identical output.
 | `oracle-seasons-fairies.png` | Oracle of Seasons | Mister Mike | — | not yet extracted from |
 | `oracle-seasons-effects.png` | Oracle of Seasons | Darth RPG | — | not yet extracted from |
 | `oracle-seasons-title-screen.gif` | Oracle of Seasons | Tails585 | — | reference only |
-| `oracle-seasons-nonhuman-races.png` | Oracle of Seasons | Mister Mike | — | not yet extracted from |
+| `oracle-seasons-nonhuman-races.png` | Oracle of Seasons | Mister Mike | `tools/rip-races.py` | `src/data/sprites-races.js` — 14 frames, the four peoples |
 | `oracle-seasons-trading-characters.png` | Oracle of Seasons | Mister Mike | — | not yet extracted from |
 
 **`oracle-seasons-tileset-subrosia.png` is the only true TILESET here** — 16
@@ -74,14 +74,37 @@ read as the source's blue shop.
 no seasons — it has tides — so the bands are a **palette** resource: the same
 building in four moods, which is exactly what a region-tinted village wants.
 
-**A building is not a tile.** Three wide and two-to-three tall, the same problem
-the 32x32 trees had and solved with the `quad:` machinery in `tools/rip-terrain.py`
-and `src/world/tileset.js`. A 3x3 block needs that generalised, not worked
-around by cutting a building into nine unrelated tiles.
+**A building is not a tile**, and the engine agrees: `registerBlocks` in
+`src/world/tileset.js` and `Room.expandBlocks` in `src/world/room.js` place a
+building as a RECTANGLE OF ONE LEGEND CHARACTER. The `quad:` machinery this
+paragraph used to point at was never on trunk — blocks replaced it and cover the
+2x2 tree case too.
 
-`oracle-seasons-nonhuman-races.png` is the other half of a lived-in town: the
-Maku Tree, the Great Fairy, and rows of Subrosian, Goron, Zora and Tokay NPCs.
-Nothing has been extracted from it yet.
+### The peoples on the races sheet
+
+`oracle-seasons-nonhuman-races.png` is the other half of a lived-in town, and
+`tools/rip-races.py` now takes fourteen frames off it. **Its geometry is not the
+one the other rippers use:** the sprite area is a grid of 16x16 frames on WHITE
+cell backings laid over the sheet's green, at a pitch of 17. So a frame carries
+two background colours and neither can be sniffed from a corner — both are
+flooded inward from the frame's border, which is also what keeps a colour the
+sprite encloses.
+
+| Frames | Cells (x, y in pixels) | Used for |
+|---|---|---|
+| Hood, front / back / side | (815, 630) (832, 630) (849, 630) | the Salters |
+| The same hood in green | (815, 601) (832, 601) (849, 601) | the Kelpers |
+| The same hood, red and blue | (1215, 635) (1249, 635) | crowd, front only |
+| Capped seafarer, front / back | (815, 555) (985, 555) | the Brinekin |
+| Kerchiefed woman | (917, 555) | the scrimshander |
+| Speckled reptile, three | (815, 653) (900, 653) (951, 653) | the Reefkin |
+
+**The side frames on this sheet face LEFT** and are flipped on the way out; the
+engine mirrors `_s` and never draws a left-facing frame. **One hood in four
+colours is four peoples** — the source games' own palette-swap trick, and the
+reason a town on that cartridge is full of faces without being full of drawings.
+Still untouched on this sheet: the Maku Tree, the Great Fairy, the Gorons, and
+several more Zora and Tokay poses.
 
 `oracle-ages-overworld.png` is the Labrynna Present outdoor background, True
 Colors half, and it is **the real overworld reference** — the one to reach for
@@ -95,7 +118,7 @@ if anyone finds it rather than guessed at.
 **Extract rather than redraw.** If one of these sheets has the thing you need,
 take it from the sheet — fidelity to the source is the point of the project,
 and an extraction is reproducible where a hand-drawing drifts. The two sheets
-marked "not yet extracted from" are opportunities, not exclusions. See
+still marked "not yet extracted from" are opportunities, not exclusions. See
 `docs/ART-DIRECTION.md` for the rule and `docs/briefs/AGENTS.md` section J for
 the workflow.
 

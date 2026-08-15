@@ -507,7 +507,7 @@ defineEntity('giver', (x, y, o) => new Giver(x, y, o));
 // The scrimshander: hand over a blank plus rupees, come back a tide later for
 // a carved charm.
 //
-//   ['scrimshander', 1, 2, { sprite: 'npc_elder' }]
+//   ['scrimshander', 1, 2, { sprite: 'npc_brinewife' }]
 //
 // She also opens the LOW and HIGH cases, and later widens all three. Those are
 // progression, so they are keyed on ESSENCES rather than on rupees — the cases
@@ -517,7 +517,11 @@ defineEntity('giver', (x, y, o) => new Giver(x, y, o));
 
 export class Scrimshander extends NPC {
   constructor(x, y, o = {}) {
-    super(x, y, { sprite: 'npc_elder', ...o });
+    // Her own face. She used to default to `npc_elder`, which the village
+    // digger also wore — two characters standing on one screen with one head
+    // between them, which is the thing extracting from the races sheet was
+    // for. She is Brinekin; the digger is a Salter.
+    super(x, y, { sprite: 'npc_brinewife', ...o });
     this.faceOnTalk = true;
   }
 
