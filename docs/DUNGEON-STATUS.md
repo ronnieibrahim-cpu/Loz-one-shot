@@ -390,6 +390,12 @@ the near bank, and a mooring whose closure clause was asking the wrong question.
 
 ## What no dungeon has yet, and it is the same gap in all of them
 
+- **P9 re-gated the approach to two of them, and the reason is worth knowing
+  here**: the Cliffs of Kell (D4) and the Abyssal approach (D6) were both held
+  shut by the Dredge Line, which D6 hands over — so neither dungeon could be
+  entered at all and this board said DONE for both. The Cliffs are a Cleats
+  gate now and the Keep's approach a Bellows gate.
+  `tools/check-progression.mjs` proves the whole chain walks in order.
 - **Nobody has played one.** Every claim on this board is a checker's. The
   checkers prove a dungeon is completable and that its rooms mean what they say;
   they cannot say whether it is any good to walk through.

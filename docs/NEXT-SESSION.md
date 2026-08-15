@@ -10,6 +10,281 @@ maintain and the most expensive thing to not have.
 
 ---
 
+## Where P9 stands, in one line
+
+**P9's re-gate is DONE and it found that the game could not be finished.** The
+five region gates are re-keyed and each is proved three ways; the heart economy
+is re-tuned; `tools/check-progression.mjs` is new and is the tool that would
+have caught the break. What is left of P9 is one ungated region and the thing no
+tool can do — playing it.
+
+### What the last session did (P9, the overworld re-gate)
+
+**THE WORLD COULD NOT BE FINISHED, AND NINETEEN CHECKERS WERE GREEN.** Two of
+the four region gates were the Dredge Line's, which is the SIXTH dungeon's
+item. Between them they held shut the Cliffs of Kell, where the FOURTH dungeon
+is, and the Abyssal approach, where the sixth is. Both dungeons were locked
+behind an item you could only get by entering them. **A player starting a new
+game could reach three of the six dungeon mouths and no more, ever.**
+
+`check-overworld.mjs` was right to pass. It proves each gate in both directions
+— sealed without its item, open with it — which is a question about one gate at
+a time. Nothing asked whether a gate's key is obtainable BEFORE the gate, which
+is a question about the whole world at once. **Reachability composes;
+obtainability does not.**
+
+**`tools/check-progression.mjs` is new, 27 assertions, and it asks that
+question as a fixed point.** Start with nothing, flood, take whatever the
+reachable dungeons and givers hand over, flood again, repeat until nothing new
+opens. Three things fall out of it:
+
+- if the closure misses a dungeon mouth, **the game cannot be finished**;
+- the step at which each mouth first appears **IS the order the world
+  enforces**, so it prints the order as well as asserting it never inverts;
+- and separately, it floods the world WITHOUT each dungeon's own key and
+  asserts that dungeon — and every dungeon before it — is still reachable. That
+  is the bug stated directly, so it cannot come back through a route the
+  closure happens to avoid.
+
+It shares `check-overworld`'s flood on purpose: this tool exists to ask a
+different question of the same world, not a harder one.
+
+**The re-gate is five rows of tiles.** Every gate in this world is a four-tile
+bar across the one corridor of a seam screen, and those corridors are already
+proven — so swapping which TILE sits in the bar changes the key and cannot
+change the connectivity. Zero new geometry, zero re-authored screens.
+
+| Gate | Key | After | Seals |
+|---|---|---|---|
+| `saltVane` | Resonance Rod | D1 (the Maku Tree, one essence) | Salt Pans + the two ruins |
+| `cliffCrackedDk` | Bombs | D2 (the Spire's Bomb Vault) | Sunken Marsh + the branch above it |
+| **`seaChannel`** (new) | Kelp-Soled Cleats | D3 | Cliffs of Kell + the Abyss above |
+| **`kellSluice`** (new) | Squall Bellows | D4 | the Keep's approach |
+| `abyssPlug` + `boulder` | Dredge Line | D6 | pockets you come back for — **no mouth** |
+
+**The rule the last row is really about, and it is the one to keep:** a gate
+whose key comes from the dungeon behind it may hold a POCKET and must never
+hold a MOUTH.
+
+- **`seaChannel`** is deep at every tide level, so no conch answers it — the
+  same argument the torrents make. `F.SWIMGATE` had been defined since the gate
+  markers were written and **nothing had ever carried it**.
+- **`kellSluice`** is a spoked wheel, and the choice is deliberate: the player
+  arriving there has just spent the Cliffside Cistern learning that fixture.
+  It needed a new flag (`F.GUSTGATE`, which took over the retired `F.GAP` bit —
+  Roc's Feather has been gone since P6 and nothing read it), a `gust` tile
+  action sweeping the cone's own footprint the way the Rod sweeps its radius
+  for `F.RING`, and one drawn 16x16. `check-gates` proves in-engine that the
+  cone turns it and a sword does not.
+- **The boulder and the plug both moved screens**, which broke three
+  `check-gates` assertions that were testing the right thing at the wrong
+  place. That is the harness working.
+
+**The heart economy was scaled for eight dungeons too.** Eighteen Pieces of
+Heart at four to a container is four containers and **two pieces that could
+never complete one**, for a cap of thirteen against P9's fourteen to sixteen.
+Two more make twenty: five whole containers, nothing wasted, cap 14. They are
+`buried` rather than dropped as pickups, because `nextId` is one global counter
+and an entity added anywhere a replay walks re-phases every enemy in the game.
+The other two thirds of P9's item 3 were already true — three hearts at the
+start, and no ordinary enemy taking more than three quarter-hearts on contact —
+and `check-progression` now asserts all of it, reading the piece count out of
+the world rather than writing it down.
+
+`defineEnemy` kept no record of its specs, so "half a heart from an ordinary
+enemy" was a rule about the whole roster that nothing could read. It exports
+`ENEMY_SPECS` now.
+
+**The order the world actually enforces**, printed by the tool on every run:
+
+    step 0: d1 Tidewash Grotto, d2 Coral Spire, d5 Drowned Wood Shrine
+    step 1: d3 Bogwater Sanctum, cave3, cave4
+    step 2: d4 Cliffside Cistern
+    step 3: d6 Abyssal Keep
+
+### What is weak about the re-gate
+
+- **The Drowned Wood is still ungated**, so a player may walk into the fifth
+  dungeon first. It borders the village, the Cliffs, the dunes and the salt
+  pans — four seams — so gating it is the one re-gate this session did not
+  attempt. It is not a break: the Shrine hands over the Reefseed its own later
+  rooms need, so it is enterable early and not finishable early. The obvious
+  key is the Cleats, which already own a tile. `check-progression` prints this
+  as a named exemption with the reason on every run rather than hiding it, and
+  asserts the exemption names a real dungeon so a typo cannot turn the rule off.
+- **D2 is ungated as well** and opens at step 0 beside D1. That passes the
+  non-decreasing rule and is probably right — the Oracles leave regions open —
+  but nobody decided it, it is just what the map does.
+- **The sluice has been seen in a still frame and not in motion.** It reads as
+  a ring on iron and it is legibly not the plug, which was the thing to get
+  right. Whether a player understands *what turns it* is unproven: the sign on
+  that screen says "The wheel wants wind", which is a hint doing work that art
+  should be doing.
+- **`check-progression`'s model has no tide field and no Anchor.**
+  `check-overworld`'s section 5b has both and reaches the same 120 screens; if
+  that stops being true, this tool's answer is the optimistic one.
+- **Nobody has walked the new chain.** Every claim above is a checker's. The
+  five gates are proved by three tools between them and no person has been
+  stopped by one.
+
+### What P9 has left
+
+1. **PLAY IT.** `docs/PLAYTEST.md` is the protocol. The re-gate changed the
+   shape of the whole game's progression and not one person has walked it.
+2. **Gate the Drowned Wood**, or decide out loud that it stays open.
+3. **Three enemies are registered and unplaced**: `thalassor`, `saltwraith`,
+   `gustharpy`. Hand-drawn art in the shipped build that nothing draws.
+4. **The four legibility findings** in `docs/ART-BACKLOG.md`, plus the sluice.
+
+---
+
+## The prompt to paste — play the game
+
+P9's re-gate is done and the world is finishable for the first time. Every
+system this project has built is now proved by a checker and **not one of them
+has been played**. That is the largest open item in the repo, it is the only one
+no tool can close, and it now has a protocol.
+
+```
+Play Oracle of Tides against docs/PLAYTEST.md, and fix what you find.
+
+This is not a feature session. The repo has twenty checkers and every one of
+them is green; what it has never had is a person holding the buttons. Read
+docs/PLAYTEST.md first — it is the protocol, it says what the checkers already
+prove so you do not waste time re-testing it, and it has a card per dungeon and
+per subsystem.
+
+`main` is trunk. Branch from it. One prompt = one session = one branch.
+Run `git ls-remote --heads origin` before you start.
+
+READ, IN THIS ORDER:
+  docs/PLAYTEST.md        the protocol. Pass A is bugs, Pass B is feel. Do not
+                          run both in one sitting.
+  docs/HANDOFF.md         environment setup FIRST, then the hard-won lessons.
+  CLAUDE.md               the hard rules and the traps list.
+  docs/ITEMS.md           what each item is supposed to do — binding.
+  docs/NEXT-SESSION.md    what the last three sessions did and what is weak.
+
+ENVIRONMENT, BEFORE ANYTHING ELSE. Playwright asks for a browser revision the
+pre-installed Chromium does not match, so every headless harness dies with
+"Executable doesn't exist" until you shim it. Exact commands are in HANDOFF
+under "Environment setup a fresh container needs". `pip install pillow` before
+any rip-*.py tool will run.
+
+THE PRIORITY ORDER, because you will not get to all of it:
+
+  1. WALK THE NEW PROGRESSION. P9 just re-keyed five region gates and moved
+     two of them to different screens. The chain is now Rod (D1) -> bombs (D2)
+     -> Cleats (D3) -> Bellows (D4) -> the Keep. Start a fresh game and walk it
+     in order without console shortcuts. Does each gate teach you what it wants?
+     The Kell sluice leans on a signpost saying "The wheel wants wind", which
+     is a hint doing work the art should be doing — say whether it is enough.
+  2. THE CURVE. Play all six dungeons and rank them by difficulty. Each was
+     designed against its own item and against nothing else, and no session has
+     ever compared them. That ranking goes in docs/DUNGEON-STATUS.md and it is
+     worth more than every checker in the repo on that one question.
+  3. THE FOUR LEGIBILITY FINDINGS in docs/ART-BACKLOG.md, each of which says it
+     is blocked on a person looking. The biggest is D2's Lens: shallow water,
+     deep water and a pit come out 4-6 RGB units apart through the ghost, and
+     what actually separates them is texture and motion that a screenshot
+     throws away. Hold the button and say plainly whether you can tell them
+     apart.
+  4. THE CLIFFS' SEAM. Autotiling treats off-room as SAME, so a cliff running
+     off a screen grows no edge — right when the next screen continues the mass
+     and wrong when it does not. Cross every screen boundary with a cliff on it
+     and say whether the join shows.
+
+WHAT TO DO WITH WHAT YOU FIND — docs/PLAYTEST.md specifies a format; use it.
+  - A bug: fix it AND write a replay plan for it in tools/replay-plans.mjs. A
+    bug found by hand and fixed without a recording is a bug that comes back.
+  - A feel finding: docs/FEEL-SPEC.md. NOTHING in feel.js is `measured`, and
+    only a frame count against a named reference may move that word. An
+    impression is not a finding.
+  - A legibility finding: docs/ART-BACKLOG.md with a shoot-rooms command.
+  - A balance finding: docs/DUNGEON-STATUS.md.
+
+CONSTRAINTS, and each has cost a session before.
+  - DO NOT ADD AN ENTITY TO A ROOM A REPLAY WALKS THROUGH. `nextId` is one
+    global counter and `every(e, n)` phases enemies off it, so one new entity
+    in the starting room re-phases every enemy in the game. Re-dress an
+    existing one, or use a `buried` entry, which builds no entity at all.
+  - USE `__harness.giveItem`, NEVER `__game.progress.items.x = 1`. A counted
+    item's pouch is filled in `giveItem` and nowhere else, so a hand-written
+    inventory entry denies for ever and you would report a bug the game does
+    not have.
+  - `warpTo` IS SILENTLY REFUSED WHILE ANY FADE IS RUNNING, which includes the
+    whole of the boot and the opening. Get to `__game.mode === 'play'` first.
+  - COMMIT BEFORE YOU SABOTAGE ANYTHING. `git checkout <file>` restores from
+    HEAD; a session lost hours of uncommitted work to exactly that.
+  - A SOLID TILE CAN STRAND A SCREEN AND STILL VALIDATE CLEAN. If you touch a
+    gate tile or a room grid, run check-overworld, check-towns, check-gates and
+    check-progression after EVERY screen, not at the end.
+
+BASELINE — confirm it before changing anything and keep every line green.
+THE CHECKERS TAKE A WHILE. Run them; do not reason about correctness instead.
+
+  node tools/validate.mjs           clean (two expected fx_slash warnings)
+  node tools/test.mjs               58/58
+  node tools/replay.mjs             51/51
+  node tools/walk-dungeons.mjs      23/23 over six dungeons
+  node tools/check-overworld.mjs    19/19
+  node tools/check-gates.mjs        18/18
+  node tools/check-progression.mjs  27/27  <- prints the enforced order
+  node tools/check-towns.mjs        58/58   (PINCH=1 prints each town's cuts)
+  node tools/check-autotile.mjs     10/10
+  node tools/check-items.mjs        82/82
+  node tools/check-charms.mjs       63/63
+  node tools/check-anchor.mjs       14/14
+  node tools/check-lens.mjs         24/24
+  node tools/check-cleats.mjs       15/15
+  node tools/check-bellows.mjs      60/60
+  node tools/check-reefseed.mjs     87/87
+  node tools/check-dredge.mjs       103/103
+  node tools/check-motion.mjs       8/8
+  node tools/solve-switches.mjs     9 switch rooms, one push per block
+  node tools/scan-sprites.mjs --strict   0 hard findings
+  python3 tools/rip-terrain.py      regenerates tiles-terrain.js BYTE-IDENTICAL.
+                                    Same for rip-hud.py, rip-dungeon-themes.py
+                                    and rip-races.py. If one does not, someone
+                                    hand-edited a generated file.
+  npm run build && node tools/check-build.mjs
+
+EVERY SESSION ENDS BY RUNNING `npm run build` AND COMMITTING
+dist/oracle-of-tides.html. That file is the playable game.
+
+Update docs/NEXT-SESSION.md losslessly before you finish, and record any
+surprise in docs/HANDOFF.md under hard-won lessons.
+
+Do the work yourself rather than spawning subagents — past sessions hit usage
+limits that way and lost the work.
+
+Tell me plainly what is done, what is weak, and what you skipped — including
+what you did NOT get to play. A session that covers two dungeons honestly is
+worth more than one that claims six.
+```
+
+### The four things P9 inherits, restated
+
+1. **NOBODY HAS PLAYED ANY OF IT.** Six dungeons, six fixtures, every claim a
+   checker's. This is still the largest open item in the project and no tool in
+   the repo can close it — but it now has a protocol, `docs/PLAYTEST.md`, so it
+   is a job somebody can pick up rather than a standing complaint. The single
+   highest-value thing in it is **the curve**: a ranking of the six dungeons by
+   difficulty from somebody who has played all six. No session has compared
+   them, and each was designed against its own item and nothing else.
+2. **Three enemies are registered and unplaced**: `thalassor`, `saltwraith`,
+   `gustharpy`.
+3. **The overworld is gated for eight dungeons.** The fold made the Salt Pans
+   and the Reef Palace one-room ruins, so routing through those two regions
+   wants a second look.
+4. **`docs/ART-BACKLOG.md` has four legibility findings** from D2, D3 and D4,
+   all the same shape: the mechanic is legible when it works and silent when it
+   does not. D5's bole, D6's lintel and now the cliff family are the argument
+   for how to fix them — when the answer wants to be a shade of water, spend a
+   whole tile of art on it.
+
+---
+
 ## Where PT stands, in one line
 
 **PT IS DONE. Steps 1–4 (the block machinery, the town kit, four settlements,
@@ -329,165 +604,6 @@ because the world moved rather than the movement.
 - **The town legends are `town` and `townDunes` only.** A marsh, cliff or salt
   settlement needs a third ground variant and a third legend; the pattern is
   two lines in `tiles-core.js` (`TOWN_GROUNDS`) and two in `legends.js`.
-
----
-
-## The prompt to paste — P9, the overworld re-gate
-
-PT is finished. Steps 1–4 (blocks, the town kit, four settlements, the four
-peoples) and step 5's headline item (the `cliff` family, autotiled) have all
-landed; the rest of the terrain backlog is ranked in `docs/ART-BACKLOG.md` and
-blocks nothing. **P9 is what PT was gating and it is clear to start.** Its
-brief is in `docs/EXECUTION-PLAN.md` under "P9 — Overworld re-gating and
-difficulty"; the four things it inherits are written out below this block.
-
-```
-Do P9, the overworld re-gate. Its brief is in docs/EXECUTION-PLAN.md under
-"P9 — Overworld re-gating and difficulty". The overworld is still gated for
-EIGHT dungeons and the game has six, so the routing through the two regions
-that lost their dungeon — the Salt Pans and the Reef Palace, now one-room
-ruins — is the part that needs a design decision rather than an edit.
-
-`main` is trunk. Branch from it. One prompt = one session = one branch.
-Run `git ls-remote --heads origin` before you start and look for a branch that
-has already done this.
-
-READ, IN THIS ORDER:
-  CLAUDE.md               the hard rules and the traps list. Note the new one:
-                          a terrain tile may not be the tile the author wrote,
-                          because Room.autotile replaces it.
-  docs/EXECUTION-PLAN.md  the P9 brief, and "P8 status" for what each dungeon
-                          hands over and when.
-  docs/ITEMS.md           the roster is binding. check-items.mjs asserts the
-                          registry IS this document.
-  docs/DUNGEON-STATUS.md  the board. All six are done; do not re-author one.
-  docs/HANDOFF.md         environment setup FIRST, then the hard-won lessons.
-  docs/ART-BACKLOG.md     if you touch anything visual.
-
-ENVIRONMENT, BEFORE ANYTHING ELSE. Playwright asks for a browser revision the
-pre-installed Chromium does not match, so every headless harness dies with
-"Executable doesn't exist" until you shim it. Exact commands are in HANDOFF
-under "Environment setup a fresh container needs". `pip install pillow` before
-any rip-*.py tool will run.
-
-WHAT P9 ACTUALLY HAS TO DECIDE, in the order it matters:
-
-  1. FIVE OF THE GATES MUST BE TILE-FLAG-SHAPED so check-overworld.mjs can
-     prove them in BOTH directions — sealed without the item, open with it. A
-     terrain-shaped gate is a last resort and has to be documented as
-     unprovable. The four flag-shaped gates that already exist (HEAVY,
-     SWIMGATE, GRAPPLE, GAP) are the pattern; see the tiledef comments in
-     src/data/tiles-core.js for why width is part of three of them and no flag
-     can say so.
-  2. THE BRINEGLASS LENS MAY NEVER BE A REGION GATE. It is informational. The
-     rooms inside D2 that require it are a different thing and both rules
-     stand — the reasoning is under P8 in EXECUTION-PLAN.
-  3. HEART PIECES STILL SCALE FOR EIGHT DUNGEONS. Six Heart Containers plus
-     pieces should land the cap at 14–16. essenceCount() in src/world/maps.js
-     is the precedent for un-hardcoding a count that was written /8.
-  4. THREE ENEMIES ARE REGISTERED AND UNPLACED — thalassor, saltwraith,
-     gustharpy. Hand-drawn art in the shipped build that nothing draws. Place
-     them or take them out WITH THEIR SPRITES, and if you take them out remove
-     the cell from the ripper's map and re-emit rather than editing the
-     generated file.
-
-CONSTRAINTS, and the first two have each cost a session before.
-  - A SOLID TILE CAN STRAND A SCREEN AND STILL VALIDATE CLEAN. Run
-    node tools/check-overworld.mjs, node tools/check-towns.mjs and
-    node tools/check-gates.mjs after EVERY screen you touch, not at the end.
-  - DO NOT ADD AN ENTITY TO A ROOM A REPLAY WALKS THROUGH. `nextId` is one
-    global counter and `every(e, n)` phases enemies off it, so one new entity
-    in the starting room re-phases every enemy in the game and replays that
-    have nothing to do with your change start failing. Re-dress an existing
-    one instead. See HANDOFF, hard-won lessons.
-  - A TILE NAME IN A ROOM GRID IS NOT WHAT ROOM.BASE HOLDS. `Room.autotile`
-    replaces every cliff with a family piece at construction, so anything
-    matching tile names by equality has to match on `family` instead. It is
-    provably cosmetic (tools/check-autotile.mjs) but it will surprise you the
-    first time you read a grid.
-  - A TILEDEF FIELD THE REGISTRAR DOES NOT NAME IS DISCARDED. `registerTiles`
-    in src/world/tileset.js copies field by field.
-  - SCREENSHOT EVERY SCREEN YOU FINISH AND LOOK AT IT.
-    `node tools/shoot-rooms.mjs --tide=1 --px=80 overworld,4,7` writes a real
-    in-game frame in the real palette; tools/preview.mjs renders one palette
-    and proves silhouette only. Every terrain fault this project has hit
-    validated clean and previewed fine.
-
-BASELINE — confirm it before changing anything and keep every line green.
-THE CHECKERS TAKE A WHILE. Run them; do not reason about correctness instead.
-
-  node tools/validate.mjs           clean (two expected fx_slash warnings)
-  node tools/test.mjs               58/58
-  node tools/replay.mjs             51/51
-  node tools/walk-dungeons.mjs      23/23 over six dungeons
-  node tools/check-overworld.mjs    17/17
-  node tools/check-gates.mjs        15/15
-  node tools/check-towns.mjs        58/58   <- PINCH=1 prints each town's cuts
-  node tools/check-autotile.mjs     10/10   <- builds the world twice
-  node tools/check-items.mjs        82/82
-  node tools/check-charms.mjs       63/63
-  node tools/check-anchor.mjs       14/14
-  node tools/check-lens.mjs         24/24
-  node tools/check-cleats.mjs       15/15
-  node tools/check-bellows.mjs      60/60
-  node tools/check-reefseed.mjs     87/87
-  node tools/check-dredge.mjs       103/103
-  node tools/check-motion.mjs       8/8
-  node tools/solve-switches.mjs     9 switch rooms, one push per block
-  node tools/scan-sprites.mjs --strict   0 hard findings
-  python3 tools/rip-terrain.py      regenerates tiles-terrain.js BYTE-IDENTICAL.
-                                    Same for rip-hud.py, rip-dungeon-themes.py
-                                    and rip-races.py. If one does not, someone
-                                    hand-edited a generated file.
-  npm run build && node tools/check-build.mjs
-
-COMMIT BEFORE YOU SABOTAGE ANYTHING. A checker you have not watched fail is a
-checker you do not have, so do inject a deliberate break and confirm it — but
-on a clean index. `git checkout <file>` restores from HEAD and a session lost
-several hours of work to exactly that this week.
-
-THEN PLAY IT. docs/PLAYTEST.md is the protocol and it is written for exactly
-this: two passes, one for functional bugs and one for mechanical faith to the
-source games, with a card per dungeon and per subsystem and a console recipe
-for setting up a scenario without playing five dungeons first. Every feature
-in this repo currently ends its write-up with "nobody has played it", and P9
-re-tunes hearts and contact damage, which is a FEEL change that no checker in
-the repo can evaluate. At minimum: play the two regions you re-gated, and one
-dungeon end to end. Report in the format that file specifies.
-
-EVERY SESSION ENDS BY RUNNING `npm run build` AND COMMITTING
-dist/oracle-of-tides.html. That file is the playable game. A commit that changes
-src/ and leaves the build stale ships a game that is not the game.
-
-Update docs/NEXT-SESSION.md losslessly before you finish, and record any
-surprise in docs/HANDOFF.md under hard-won lessons.
-
-Do the work yourself rather than spawning subagents — past sessions hit usage
-limits that way and lost the work.
-
-Tell me plainly what is done, what is weak, and what you skipped — including
-what you did NOT get to play.
-```
-
-### The four things P9 inherits, restated
-
-1. **NOBODY HAS PLAYED ANY OF IT.** Six dungeons, six fixtures, every claim a
-   checker's. This is still the largest open item in the project and no tool in
-   the repo can close it — but it now has a protocol, `docs/PLAYTEST.md`, so it
-   is a job somebody can pick up rather than a standing complaint. The single
-   highest-value thing in it is **the curve**: a ranking of the six dungeons by
-   difficulty from somebody who has played all six. No session has compared
-   them, and each was designed against its own item and nothing else.
-2. **Three enemies are registered and unplaced**: `thalassor`, `saltwraith`,
-   `gustharpy`.
-3. **The overworld is gated for eight dungeons.** The fold made the Salt Pans
-   and the Reef Palace one-room ruins, so routing through those two regions
-   wants a second look.
-4. **`docs/ART-BACKLOG.md` has four legibility findings** from D2, D3 and D4,
-   all the same shape: the mechanic is legible when it works and silent when it
-   does not. D5's bole, D6's lintel and now the cliff family are the argument
-   for how to fix them — when the answer wants to be a shade of water, spend a
-   whole tile of art on it.
 
 ---
 

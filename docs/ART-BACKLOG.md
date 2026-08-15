@@ -11,6 +11,29 @@ where you can see it, and it asks for a `shoot-rooms` command with any new one
 so the next session can reproduce what you saw.
 
 
+## The Kell sluice leans on a signpost (new, from P9)
+
+P9's new region gate. `kellSluice` is a spoked wheel across the Abyss Stair's
+one doorway, and only the Squall Bellows' cone turns it. It is legibly NOT the
+iron plug it replaced — that was the thing to get right, since the two now sit
+one screen apart — and `tools/check-gates.mjs` proves in-engine that the cone
+turns it and a sword does not.
+
+    node tools/shoot-rooms.mjs --tide=1 --px=80 overworld,2,1 overworld,3,1
+
+**What is unproven is whether a player knows what turns it.** The screen's sign
+says "The wheel wants wind", which is a hint doing work the art should be
+doing. The player arriving there has just finished the Cliffside Cistern, which
+is built entirely on wheels, so the fixture ought to teach itself — but the
+Cistern's wheels are `o_valve`, an ENTITY sprite, and this is a tile drawn from
+scratch. If they do not read as the same kind of object the transfer does not
+happen. Worth a look in the same sitting as D4's drowned-wheel entry below,
+because the answer may be one shape shared by both.
+
+Also drawn rather than extracted: nothing on any sheet in the repo is a sluice
+wheel (the Subrosia tileset's valves are all lava fixtures), so this is under
+ART-DIRECTION rule 2. Three colours plus a hard outline, a ring on a slab.
+
 ## The Keep's mooring ring reads as a block, and its silt ring reads better dry
 
 Two findings from P8/D6, and they are the small change left in an otherwise good
