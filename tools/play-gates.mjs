@@ -148,18 +148,29 @@ const leaveAndReturn = async (o0) => page.evaluate(async (b) => {
 
 // Save, wipe every trace in memory, load. This is the path a player takes when
 // they put the game down, and no tool in the repo has ever walked it.
+//
+// It goes through `saveSlot`/`loadSlot` rather than deep-copying the progress
+// object, because the two are not the same test: the real path serialises to
+// storage and runs `migrate` on the way back, and a field that does not survive
+// that round trip is exactly the kind of thing that only bites a player.
+//
+// It also DROPS EVERY MEMOISED ROOM. `getRoom` caches Room instances for the
+// life of the process, so a gate can appear to persist purely because the
+// object holding its override grid never went away — which is not persistence
+// at all, and is what a fresh boot would expose and nothing here would.
 const saveAndReload = async (o0) => page.evaluate(async (b) => {
   const g = window.__game;
   const prog = await import('/src/game/progress.js');
-  const saved = JSON.parse(JSON.stringify(prog.serialise ? prog.serialise(g.progress) : g.progress));
-  // Drop every memoised Room so the reload rebuilds from the data, exactly as a
-  // fresh boot would. A gate that only "persists" because the Room object never
-  // went away has not persisted at all.
   const maps = await import('/src/world/maps.js');
+  prog.saveSlot(7, g.progress);
   for (const [, m] of maps.MAPS) if (m._rooms) m._rooms.clear();
-  g.progress = prog.deserialise ? prog.deserialise(saved) : saved;
+  const loaded = prog.loadSlot(7);
+  if (!loaded) throw new Error('play-gates: the save slot came back empty');
+  g.progress = loaded;
+  g.room = null;
   g.enterMap('overworld', 0, b.rx, b.ry, b.px, b.py, b.dir, { instant: true });
   window.__harness.step(4);
+  prog.deleteSlot(7);
   return Object.keys(g.progress.doors || {}).length;
 }, plain(o0));
 
