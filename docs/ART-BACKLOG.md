@@ -321,13 +321,71 @@ Also still on the races sheet: the Gorons, and several more Zora and Tokay
 poses — including the second walk frames that would let a townsperson stride
 rather than merely turn.
 
+## The cliff family — the survey is done, the decision is not
+
+PT step 5's big item, and a session spent the expensive half of it: **finding
+the art.** What follows is the survey, so the session that does the cliffs
+starts at the design question rather than at a sprite sheet.
+
+**The source is `assets/sheets/oracle-ages-overworld.png` at phase (2, 8)** —
+the same phase `rock` and `bush` were taken at, verified against them
+(418 mod 16 = 2, 936 mod 16 = 8). Labrynna Present is built almost entirely out
+of cliff edges, so every case appears in situ rather than as a palette a ripper
+has to guess the arrangement of. A complete run, checked against a grid overlay:
+
+| Piece | Cell | What it is |
+|---|---|---|
+| N lip, interior | 402, 248 | the bright blue-white band, then rock |
+| face, interior | 402, 264 | the repeating middle course |
+| S foot, interior | 402, 280 | the base course, meeting ground below |
+| NW corner | 386, 248 | the rounded outside corner |
+| W edge | 386, 264 | |
+| SW corner | 386, 280 | |
+| a W-facing lip | 450, 280 | the vertical band, for a mass whose left side is the drop |
+| an E edge against water | 466, 392 | |
+
+`node tools/preview.mjs --tiles --scale=2` shows what the game has instead: one
+`cliff` art, a texture of stone courses, palette-swapped eight ways
+(`cliffDk`, `cliffSand`, `cliffRust`, `cliffCoral`, `cliffMarble`, `cliffAbyss`,
+`cliffCracked`, plus `cliffTop`, which is the only piece an author places by
+hand and the only one that admits a cliff has a top).
+
+**THE DECISION, and it is the reason this is not a swap.** The Ages cliff is a
+PLATEAU EDGE — a drop seen from above, with its bright lip on the side you would
+fall off. This game's cliff is a WALL seen from the front. Those are different
+objects and no coordinate list settles which one Thalassia has. Two honest
+answers:
+
+1. **Autotile the existing tiles.** A tiledef carries a `family`, the room picks
+   the piece from which orthogonal neighbours share that family (off-room counts
+   as SAME, so a cliff running off a seam grows no lip), and every screen in the
+   game gains lips and corners with **no screen re-authored and no flag
+   changed** — which is what makes it safe, because a cliff is F.SOLID and a
+   solid tile severs screens. Needs the full 16-mask table, so it needs the four
+   corner pieces above plus their mirrors, and `registerTiles` must be taught the
+   new field IN THE SAME COMMIT (the `liftLevel` trap).
+2. **Re-author by hand**, giving authors a vocabulary of named pieces. Truer to
+   how the Oracles' own maps are built, and it is 120 screens of work with a
+   connectivity checker to run after each one.
+
+Option 1 is the recommendation. It is one function, it is testable against every
+existing screen at once, and option 2 stays available on top of it.
+
 ## Carried over from docs/NEXT-SESSION.md
 
-- **The `cliff` family** — one extraction covers eight tiles and cliffs are on
-  most screens. A content decision, not a swap: the Oracles build a cliff from
-  several tiles and this game spends one tile on all of it.
+- **The `cliff` family** — surveyed above; the decision is what is left.
 - **The `ledge` families** — four directions, nine palette variants each.
-- `palm`, `pot`, `sign`, `dBlock`, `dStairs`, `spikes`, `caveMouth`.
+- `pot`, `sign`, `dBlock`, `dStairs`, `spikes`. Not found on a sheet yet; the
+  Subrosia tileset is the one to mine, being the only true tileset in the repo.
+- ~~`caveMouth`~~ **DONE** — the Subrosia tileset at 176,1632, a full-cell PICK
+  in `tools/rip-terrain.py`. The hand-drawn one was a rectangular frame with a
+  hole in it and is on record as the reason three doors in a row once read as
+  holes in the grass.
+- **`palm` is 32x32, like every Oracle tree** — the Subrosia tileset at
+  96,1616 through 127,1647, four cells on sand. It cannot be a straight swap:
+  `palm` is one tile on the `dunes` legend's `T`, so taking the real one means
+  making it a BLOCK (`registerBlocks` exists now) and re-authoring every dunes
+  screen. Same shape of problem as the cliff below.
 - **Water is still hand-drawn** and is genuinely blocked: every terrain sheet
   in the repo is an assembled static map, so there is no second animation frame
   to extract. It needs a sheet that has one.
