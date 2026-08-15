@@ -1299,7 +1299,7 @@ to the hard-won-lessons section of docs/HANDOFF.md.
 | 5 | P4 enemy grid-lock | — |
 | 6 | P5 tide field + Anchor | P6, P8 |
 | 7 | P6 item roster | P8, P9 |
-| 8 | **PT towns, buildings, terrain polish** | P9 | (steps 1-4 done; step 5, the terrain backlog, is all that is left)
+| 8 | PT towns, buildings, terrain polish (done) | P9 | (step 5 closed with the cliff family; the ledges are backlog, not PT)
 | 9 | P7 scrimshaw (done) | — |
 | 10–15 | P8 dungeons 1–6 (done) | P9 |
 | 16 | P9 overworld + difficulty | — |

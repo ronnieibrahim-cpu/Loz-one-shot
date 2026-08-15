@@ -148,6 +148,145 @@ PROPS = [
 QUADS = []
 
 # --------------------------------------------------------------------------
+# THE CLIFF FAMILY: one object, sixteen tiles.
+#
+# A cliff is not a texture. The Oracles build one out of a face, a lit rim
+# along the exposed top, and a rim down whichever side you can see the end of;
+# this game spent ONE palette-swapped texture on all of it, so every cliff in
+# every region read as a flat wall of stone with square corners. What is
+# extracted here is the SHAPE of a cliff, and the engine picks which part of it
+# each tile is from its neighbours (see `pieces` in src/world/tileset.js and
+# the autotile pass in src/world/room.js). No room grid changes and no flag
+# moves: a cliff was solid before and is solid after.
+#
+# THE SOURCE IS LABRYNNA PRESENT, at the same phase `rock` and `bush` were
+# taken at. Three rectangles, each verified against the ASCII dump of the sheet
+# recorded in docs/ART-BACKLOG.md:
+#
+#   face  (500, 259)  two full courses of the drop's front. Seamless in both
+#                     axes by the scan in this file (`--scan ag 500 248 900
+#                     276` ranks it first among the three-colour hits), which
+#                     also settles the stagger: courses alternate by 8px in x,
+#                     so a tile is TWO of them and stacks with itself.
+#   lip   (500, 242)  the lit rim, and the course under it. Taken WHOLE rather
+#                     than as a strip so the course beneath the rim is the one
+#                     the sheet draws there — stacking `face` under `lip` then
+#                     continues the source's own stagger.
+#   rim   (443, 283)  eight columns: the same band seen down the side of a wall
+#                     where the drop turns away from you. Uniform vertically,
+#                     which is what lets one strip serve a wall of any height.
+#   band  (435, 283)  the whole of that wall — its shadowed side, its body and
+#                     its rim — in sixteen columns, because in Labrynna a wall
+#                     running north-south is EXACTLY one tile across. It is
+#                     what a cliff one tile wide has to be: laying the rim
+#                     strip down both sides instead gives two 8px bands with a
+#                     black seam between them, which reads as two pillars, and
+#                     that is what the first cut of this shipped as.
+#
+# WHAT IS ASSEMBLED RATHER THAN EXTRACTED, because CLAUDE.md wants this said
+# out loud: the eight pieces below are cut from those three rectangles, and the
+# only pixels that are placed rather than copied are the fault line on
+# `cliffCracked`. That is compositing, so it is not believed until it has been
+# seen in the game across several regions — see docs/ART-BACKLOG.md for the
+# shots that were taken.
+#
+# THERE IS NO SOUTH PIECE, and that is the sheet's answer rather than an
+# omission: a course ENDS in its own black shadow line, so the bottom row of
+# `face` already is the base of a wall. A cliff's foot needed no art.
+CLIFF_FACE = (500, 259)
+CLIFF_LIP = (500, 242)
+CLIFF_RIM = (443, 283)
+CLIFF_BAND = (435, 283)
+
+# The cliff's six source colours onto the four the game's palettes have. The
+# rim's cream and its pale blue both become index 0 — the lightest tone of
+# whichever ramp the tiledef binds — which is what keeps a sand cliff, a coral
+# cliff and an abyss cliff all lit along their tops in their OWN colours
+# instead of in Labrynna's. Explicit rather than ranked: a rank is per cell and
+# the rim cell and the face cell hold different subsets, so ranking would put
+# the same brown on a different index in each and the pieces would not join.
+CLIFF_COLOURS = {
+    '#f8f8c0': 0, '#20b0f8': 0,     # the rim's cream and its highlight
+    '#c88808': 1,                    # the top of a course, catching the light
+    '#0050b0': 2, '#805000': 2,      # the rim's shadow, and the course body
+    '#000000': 3,                    # every outline, and the shadow under a course
+}
+
+# The fault line down a bombable cliff, one column per row. THIS IS OURS, not
+# the sheet's: the rock has to be the same rock as the wall it sits in or the
+# bombable spot reads as a different material, and no sheet in the repo carries
+# a cracked plateau face. Stamped in index 3, the outline tone, exactly as the
+# hand-drawn `cliffCracked` it replaces did.
+CLIFF_FAULT = [6, 5, 4, 4, 4, 4, 4, 5, 5, 5, 6, 6, 6, 6, 5, 5]
+
+
+def cliff_cell(im, x, y, w=16):
+    """A w x 16 window of the cliff, as rows of palette-index characters."""
+    out = []
+    for cy in range(16):
+        row = []
+        for cx in range(w):
+            p = im.getpixel((x + cx, y + cy))
+            key = '#%02x%02x%02x' % p
+            if key not in CLIFF_COLOURS:
+                raise SystemExit('rip-terrain: cliff colour %s at %d,%d is not in '
+                                 'CLIFF_COLOURS' % (key, x + cx, y + cy))
+            row.append(str(CLIFF_COLOURS[key]))
+        out.append(row)
+    return out
+
+
+def build_cliff(im):
+    """The eight pieces, and the 16-entry table the engine indexes by mask.
+
+    The mask is one bit per orthogonal neighbour, SET when that neighbour is
+    the same family: N=1, E=2, S=4, W=8. A bit CLEAR means that side of the
+    tile is exposed and wants an edge drawn on it.
+
+    South never does (see the header), so the sixteen masks collapse onto eight
+    pieces and the table names each of them twice. Emitting the table rather
+    than making the engine work the collapse out is deliberate: what a mask
+    draws is data, and a later session that gives the south a piece of its own
+    changes this file and not the renderer.
+    """
+    face = cliff_cell(im, *CLIFF_FACE)
+    lip = cliff_cell(im, *CLIFF_LIP)
+    rim = cliff_cell(im, *CLIFF_RIM, w=8)
+    band = cliff_cell(im, *CLIFF_BAND)
+
+    arts, table = [], [None] * 16
+    for mask in range(16):
+        n, e, w = not (mask & 1), not (mask & 2), not (mask & 8)
+        name = 'cliff' + ''.join(s for s, on in (('N', n), ('E', e), ('W', w)) if on)
+        table[mask] = name
+        if any(a[0] == name for a in arts):
+            continue
+        # A tile whose top is exposed is the rim and the course under it;
+        # anything else is two courses of face.
+        grid = [row[:] for row in (lip if n else face)]
+        # The side rim runs the full height of a tile UNLESS the top rim is
+        # already there, in which case it starts below it and the two meet as
+        # the corner. Overwriting the top rim with the side one instead would
+        # take the lit edge off the top of every corner in the game.
+        y0 = 8 if n else 0
+        for y in range(y0, 16):
+            if e and w:
+                # One tile across is not two edges, it is the whole wall.
+                grid[y] = band[y][:]
+            elif e:
+                grid[y][8:] = rim[y]
+            elif w:
+                grid[y][:8] = rim[y][::-1]
+        arts.append((name, grid))
+
+    cracked = [row[:] for row in face]
+    for y, x in enumerate(CLIFF_FAULT):
+        cracked[y][x] = '3'
+    arts.append(('cliffCracked', cracked))
+    return arts, table
+
+
+# --------------------------------------------------------------------------
 # THE TOWN KIT.
 #
 # A BUILDING IS NOT A TILE. The ones on the Subrosia tileset are three cells
@@ -642,6 +781,11 @@ def main():
                                 grids[cy][cx], pal))
         town.append((name, w, h, note, cells, townart))
 
+    im = sheets.get(AG)
+    if im is None:
+        im = sheets[AG] = Image.open(AG).convert('RGB')
+    cliff_arts, cliff_table = build_cliff(im)
+
     for name, path, x, y, slots, note in PROPS:
         im = sheets.get(path)
         if im is None:
@@ -673,7 +817,26 @@ def main():
         lines.extend('    ' + r for r in grid[:-1])
         lines.append('    ' + grid[-1] + '`,')
         lines.append('')
+    for name, grid in cliff_arts:
+        lines.append('  // cliff family — %s' % name)
+        lines.append('  %s: `' % name)
+        lines.extend('    ' + ''.join(r) for r in grid[:-1])
+        lines.append('    ' + ''.join(grid[-1]) + '`,')
+        lines.append('')
     lines.append('};')
+    lines.append('')
+    lines += [
+        '// The cliff piece a tile draws, indexed by its neighbour mask:',
+        '//   N = 1, E = 2, S = 4, W = 8, each bit SET when that neighbour is the',
+        '//   same family. A clear bit is an exposed side and wants an edge on it.',
+        '// The south never does — a course ends in its own shadow line, so the foot',
+        '// of a wall is already drawn — which is why the table names eight pieces',
+        '// sixteen times.',
+        'export const CLIFF_PIECES = [',
+    ]
+    for i in range(0, 16, 4):
+        lines.append('  %s,' % ', '.join("'%s'" % n for n in cliff_table[i:i + 4]))
+    lines.append('];')
     lines.append('')
     lines.append('// The source colours, lightest first — not installed, kept for reference.')
     lines.append('export const TERRAIN_SRC_PALETTES = {')

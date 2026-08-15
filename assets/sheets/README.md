@@ -17,7 +17,7 @@ regenerate byte-identical output.
 | `oracle-seasons-hud-gear.png` | Oracle of Seasons | Mister Mike | `tools/rip-hud.py` | `src/data/sprites-hud.js` |
 | `oracle-seasons-dungeon-backgrounds.png` | Oracle of Seasons | Mister Mike | `tools/rip-terrain.py`, `tools/rip-dungeon-maps.py`, `tools/rip-dungeon-themes.py` | `src/data/tiles-terrain.js` — dungeon ground; `assets/tilesets/seasons-dungeons.*` — the deduplicated full-floor tileset; `src/data/tiles-dungeon-themes.js` — the eight per-dungeon themes |
 | `custom-oracle-style-overworld.png` | fan-made, Oracle style | community edit | `tools/rip-terrain.py` | `src/data/tiles-terrain.js` — overworld ground |
-| `oracle-ages-overworld.png` | Oracle of Ages | *unattributed — see below* | `tools/rip-terrain.py` | `src/data/tiles-terrain.js` — overworld props |
+| `oracle-ages-overworld.png` | Oracle of Ages | *unattributed — see below* | `tools/rip-terrain.py` | `src/data/tiles-terrain.js` — overworld props, and the whole cliff family |
 | `oracle-seasons-tileset-subrosia.png` | Oracle of Seasons | KOOLKID6789 | `tools/rip-terrain.py` | `src/data/tiles-terrain.js` — the whole town kit |
 | `oracle-seasons-overworld-spring.png` | Oracle of Seasons | Mister Mike | — | not yet extracted from — Holodrum, spring |
 | `oracle-seasons-overworld-winter.png` | Oracle of Seasons | Mister Mike | — | not yet extracted from — Holodrum, winter palette |
@@ -114,6 +114,19 @@ props are merged into masses; the Ages sheet has standalone props on a strict
 supplied without a ripper credit in its filename; it is from
 spriters-resource.com like the others, and the credit should be filled in here
 if anyone finds it rather than guessed at.
+
+**It is a stitched MAP, and the stitcher left screen guides in it.** A one-pixel
+green (`#008000`) line sits at every screen boundary, and it is INSERTED rather
+than drawn over: everything below one is shifted a pixel down, so a course that
+runs on an 8px pitch above the line runs on 8px below it and 9px across it. A
+window that straddles a guide takes a green row into the game. `y = 258` is the
+one in the cliff band; the cliff picks in `tools/rip-terrain.py` are all chosen
+clear of it, which is why the face is taken at 259 and not at 258.
+
+**The cliff family comes off it**, at the same phase the props do. The three
+rectangles and the ASCII dump that verified them are documented at "THE CLIFF
+FAMILY" in `tools/rip-terrain.py`; the design decision they answer is in
+`docs/ART-BACKLOG.md`.
 
 **Extract rather than redraw.** If one of these sheets has the thing you need,
 take it from the sheet — fidelity to the source is the point of the project,

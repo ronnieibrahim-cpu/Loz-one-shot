@@ -224,6 +224,35 @@ is in the page, and nothing steps until you say so.
 
 ## Hard-won lessons — do not rediscover these
 
+**The cliff family (PT step 5), and the four things it cost.**
+
+1. **A STITCHED SHEET'S SCREEN GUIDES INSERT A ROW, THEY DO NOT OVERWRITE ONE.**
+   `oracle-ages-overworld.png` carries a 1px `#008000` line at every screen
+   boundary, and everything below one is shifted a pixel down. So a texture on
+   an 8px pitch is on an 8px pitch above the line, an 8px pitch below it, and a
+   9px pitch across it — which looks exactly like a texture that is not
+   periodic, and sends you off measuring the wrong thing. The green row also
+   goes straight into the game if a window straddles it. Find the guides before
+   measuring anything on an assembled map.
+2. **TWO EDGES ARE NOT A NARROW OBJECT.** The autotile's first cut built the
+   one-tile-wide cliff by laying the 8px side rim down BOTH sides. That is a
+   black seam up the middle of the tile, and on screen it reads as two pillars
+   rather than one wall. The source draws a north-south wall as one 16px object
+   and it had to be taken whole. Whenever an autotile case is narrower than two
+   edges, look for the whole thing on the sheet instead of composing it.
+3. **OFF-ROOM MUST COUNT AS THE SAME FAMILY.** It is one line in `Room.artAt`
+   and it is what made switching autotiling on across 120 authored screens
+   safe: a wall that runs off the edge of a screen grows no lit edge at the
+   seam, so the wall continuing on the next screen is the same wall. Counting
+   off-room as "not cliff" instead draws a bright rim down both sides of every
+   screen boundary in the game.
+4. **AN AFFORDANCE TILE MUST BE IN THE FAMILY AND OUT OF THE AUTOTILE.**
+   `cliffCracked` is the bombable spot in a cliff. In the family, so the wall
+   around it does not grow a rim against it and read as a gap. Out of the
+   autotile, so no corner piece is ever drawn over the fault line, which is the
+   only thing on screen that says where the bomb goes. `family` and `pieces`
+   are separate fields for exactly this.
+
 **The peoples (PT step 4), and the two things they cost.**
 
 1. **AN NPC IS A SOLID TILE THAT NOBODY CHECKS.** The "one corridor" rule below

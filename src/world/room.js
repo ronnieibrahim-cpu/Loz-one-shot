@@ -209,6 +209,39 @@ export class Room {
 
   flagsAt(tx, ty, tide) { return this.tile(tx, ty, tide).flags; }
 
+  /**
+   * The art one tile draws, which is not always the tile's own.
+   *
+   * A tile carrying `pieces` is part of an object bigger than itself — a cliff
+   * — and which 16x16 it draws depends on which of its four orthogonal
+   * neighbours are the same `family`. N=1, E=2, S=4, W=8, each bit SET when
+   * that neighbour matches; the tiledef's table says what each of the sixteen
+   * arrangements looks like.
+   *
+   * OFF-ROOM COUNTS AS THE SAME FAMILY, and it is the whole reason this is
+   * safe to switch on for 120 existing screens: a cliff run that leaves the
+   * screen grows no lip at the seam, so a wall crossing a room boundary is one
+   * wall and not two walls with a lit edge between them.
+   *
+   * The neighbour is resolved AT THE SAME TIDE the tile is, so a `drownWall` —
+   * cliff until the sea covers it — stops being part of the cliff above it at
+   * HIGH and the wall above grows a foot. That falls out of asking the field
+   * rather than the base name, and it is why this takes `tide` at all.
+   *
+   * Nothing here reads or writes a flag. The tile is exactly as solid as it was.
+   */
+  artAt(tx, ty, def, tide) {
+    if (!def.pieces) return def.name;
+    const same = (x, y) => {
+      if (!this.inBounds(x, y)) return true;
+      const n = this.tile(x, y, tide);
+      return n.family === def.family;
+    };
+    const mask = (same(tx, ty - 1) ? 1 : 0) | (same(tx + 1, ty) ? 2 : 0)
+      | (same(tx, ty + 1) ? 4 : 0) | (same(tx - 1, ty) ? 8 : 0);
+    return def.pieces[mask] || def.name;
+  }
+
   setTile(tx, ty, name) {
     if (!this.inBounds(tx, ty)) return;
     this.override[ty * this.tw + tx] = name;
@@ -268,7 +301,7 @@ export class Room {
           }
           if (d.over) { this.overCells.push({ x, y, def: d }); continue; }
           if (d.anim) { this.animCells.push({ x, y, def: d }); continue; }
-          tileSheet.draw(ctx, d.name, x * TILE, y * TILE, { pal: d.pal });
+          tileSheet.draw(ctx, this.artAt(x, y, d, tide), x * TILE, y * TILE, { pal: d.pal });
         }
       }
       this._cacheTide = key;
@@ -311,7 +344,8 @@ export class Room {
             const u = getTileDef(d.underArt);
             tileSheet.draw(ctx, d.underArt, x * TILE, y * TILE, { pal: u.pal });
           }
-          tileSheet.draw(ctx, tileArt(d, frame), x * TILE, y * TILE, { pal: d.pal });
+          tileSheet.draw(ctx, d.pieces ? this.artAt(x, y, d, tide) : tileArt(d, frame),
+            x * TILE, y * TILE, { pal: d.pal });
         }
       }
       a.dirty = false;

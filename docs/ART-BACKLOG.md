@@ -321,7 +321,85 @@ Also still on the races sheet: the Gorons, and several more Zora and Tokay
 poses — including the second walk frames that would let a townsperson stride
 rather than merely turn.
 
-## The cliff family — the survey is done, the decision is not
+## The cliff family — DONE, and how it was decided
+
+**Landed.** A cliff is one object now rather than a texture: nine pieces off
+`assets/sheets/oracle-ages-overworld.png`, and the engine works out which piece
+each tile is from its neighbours. **No screen was re-authored and no flag
+moved** — which was the whole reason this shape was chosen, because a cliff is
+`F.SOLID` and a solid tile that moves severs a screen.
+
+**THE DECISION the survey below could not make: Thalassia's cliff stays a WALL
+SEEN FROM THE FRONT.** The Ages cliff is a plateau edge, and its grammar has
+two halves — a course FACE where the drop faces you, and a flat lit BAND where
+the drop turns away. Adopting the plateau reading whole would have meant a
+cliff tile drawing walkable-looking ground on top of itself, in a game where
+cliffs are screen borders and walls. So the face is the wall, the lip is its
+top, the band is its end, and every piece is the source's own art for exactly
+that part of the object.
+
+What is on screen now, per tile, from its four orthogonal neighbours (N=1, E=2,
+S=4, W=8, bit set = same family; off-room counts as SAME so a wall crossing a
+seam is one wall):
+
+| Exposed | Piece | What it is |
+|---|---|---|
+| nothing | `cliff` | two courses of face |
+| N | `cliffN` | the lit rim, and the course under it |
+| E / W | `cliffE` / `cliffW` | face, with the rim down that side |
+| N+E / N+W | `cliffNE` / `cliffNW` | both, the rim starting below the lip |
+| E+W | `cliffEW` | the source's own one-tile-wide wall, WHOLE |
+| N+E+W | `cliffNEW` | the lip, and that wall under it |
+| S | — | nothing: a course ENDS in its own shadow line |
+
+**There is no south piece and that is the sheet's answer, not an omission.**
+Every course is drawn with a black shadow under it, so the bottom row of the
+face already is the foot of a wall. Sixteen masks therefore collapse onto eight
+pieces, and the table in `tiles-terrain.js` names each of them twice.
+
+**The trap, and it cost a re-rip: two edges are not a wall.** The first cut
+built the E+W case by laying the 8px rim strip down both sides. That is 16px of
+rim with a black seam up the middle, and on screen it reads as TWO PILLARS, not
+as one narrow wall. The fix is that Labrynna draws a north-south wall as one
+16px-wide object — shadow side, body, lit rim — so the E+W case is that object
+taken whole rather than assembled. Any later piece that has to fill a whole
+tile wants looking for on the sheet before it is composed out of strips.
+
+**What is authored rather than extracted**, said out loud because CLAUDE.md
+asks for it: the eight pieces are cut from four source rectangles, and the only
+pixels that are placed rather than copied are `cliffCracked`'s fault line. It
+had to be ours — no sheet in the repo carries a cracked plateau face, and the
+bombable spot has to be the same rock as the wall it sits in or it reads as a
+different material. `cliffCracked` is in the family and out of the autotile: in,
+so the wall grows no rim against it; out, so a corner piece never draws over
+the only thing on screen that says where the bomb goes.
+
+**Seen in the game, in four regions**, which is what compositing costs:
+`tools/shots/room-overworld_{1_2,2_7,0_0,4_0,8_0,1_6}-tide1-px80.png` — the
+Cliffs in stone, a one-tile wall in the marsh, and the abyss, salt and reef
+palettes each lighting their own cliff tops in their own colours. `1_6` is the
+Bog Stair, where the cracked tile breaks the lip band and reads as a fissure.
+
+### What is weak about it
+
+- **The rim is bright and it is 6px of a 16px tile.** That is the source's own
+  proportion, and in the pale palettes (`marble`, `sand`) it is close enough to
+  the ground beside it that the edge does less work than it does in `stonedk`.
+  Nobody has played a screen of it.
+- **The corner is square.** The source rounds where its lip turns into its
+  band; the assembly here butts the two bands together at the 8px line. It
+  reads, and it is not what Labrynna draws.
+- **A diagonal neighbour is not consulted**, so there is no inside corner: an
+  L-shaped mass gets a rim along each arm and nothing where they meet. Sixteen
+  masks is the orthogonal set; the full blob set is 47 and would want its own
+  pieces.
+- **`cliffTop` is now a synonym for `cliff`** and every `^` in every room grid
+  is doing nothing. They are harmless and they are a lie about what an author
+  controls; a later pass could sweep them out of the data.
+- **The ledges did not move.** They sit beside cliffs on most of these screens
+  and they are still the hand-drawn family — see below.
+
+## The survey that decided it (kept for the ledge job, which has the same shape)
 
 PT step 5's big item, and a session spent the expensive half of it: **finding
 the art.** What follows is the survey, so the session that does the cliffs
@@ -368,13 +446,21 @@ answers:
    how the Oracles' own maps are built, and it is 120 screens of work with a
    connectivity checker to run after each one.
 
-Option 1 is the recommendation. It is one function, it is testable against every
+Option 1 is what was built. It is one function, it is testable against every
 existing screen at once, and option 2 stays available on top of it.
 
 ## Carried over from docs/NEXT-SESSION.md
 
-- **The `cliff` family** — surveyed above; the decision is what is left.
-- **The `ledge` families** — four directions, nine palette variants each.
+- ~~**The `cliff` family**~~ **DONE** — see the top of this file.
+- **The `ledge` families** — four directions, nine palette variants each. This
+  is now the biggest terrain job, and it is the cliff job again with one
+  difference that makes it harder: a ledge is DIRECTIONAL DATA as well as art
+  (`F.LEDGE` plus a `ledge` field the player's hop reads), so a ledge run
+  cannot be autotiled off its neighbours alone — the direction is authored and
+  must stay authored. What CAN come off the neighbours is the ends of a run,
+  which is where the hand-drawn family looks worst. The machinery is already
+  there: give the ledge tiles a `family` and a `pieces` table and only the art
+  moves. `tools/find-ledges.mjs` lists every placement.
 - `pot`, `sign`, `dBlock`, `dStairs`, `spikes`. Not found on a sheet yet; the
   Subrosia tileset is the one to mine, being the only true tileset in the repo.
 - ~~`caveMouth`~~ **DONE** — the Subrosia tileset at 176,1632, a full-cell PICK

@@ -120,6 +120,13 @@ they are also how a future session finds which sheet a tile came from.
   records any id; `itemName` returns the raw id and `itemIcon` falls back to
   `i_unknown`. The chest opens, the jingle plays, the save records it, and the
   player gets nothing. `tools/check-items.mjs` is what catches it.
+- **A cliff draws itself from its neighbours, and off-room counts as a
+  neighbour.** Tiles carrying `family` and `pieces` pick their art from which
+  orthogonal neighbours share their family (`Room.artAt`). Nothing about this
+  touches a flag — a cliff is as solid as it ever was — but it means the art of
+  a screen changes when a tile next to it does. Off-room resolves as SAME on
+  purpose: a wall running off the edge of a screen is one wall, and counting the
+  void as "not cliff" puts a lit edge down every screen boundary in the game.
 - **A tiledef field the registrar does not name is discarded.** `registerTiles`
   copies field by field rather than spreading, so `liftLevel` sat in the data
   and `liftTile` read it and the two never met — for the whole life of the

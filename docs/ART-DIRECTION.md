@@ -121,10 +121,27 @@ weaker source — it supplied the ground tiles below, but its props are merged
 into masses. Prefer the Ages sheet, whose props are standalone cells on a
 strict grid at phase (2, 8).
 `tools/rip-terrain.py` lifts them and `src/data/tiles-terrain.js` overrides the
-hand-drawn art of the same name. Nine ground tiles, the rock and the tree are
-done. `cliff`, `cliffTop`, `bush`, `stump` and `palm` are not yet, and each is
-a stated reason rather than an omission — see `docs/HANDOFF.md`, which records
-what was searched for and what came back.
+hand-drawn art of the same name. Nine ground tiles, the rock, the tree, the
+cave mouth and the whole cliff family are done. `stump` and `palm` are not yet,
+and each is a stated reason rather than an omission — see `docs/HANDOFF.md`,
+which records what was searched for and what came back.
+
+**Some terrain is an object, not a texture, and is AUTOTILED.** A cliff has a
+lit top, an end where you can see round it, and a foot; the source games spend
+several tiles on one, and spending a single texture on all of it is the reason
+a hand-drawn cliff reads as a wall of wallpaper. A tiledef may therefore carry
+`family` (what a neighbour sees it as) and `pieces` (a sixteen-entry table of
+art names, indexed by which orthogonal neighbours share the family), and
+`Room.artAt` picks the piece. Off-room counts as the SAME family, so a run
+crossing a screen seam is one object.
+
+Three things this binds. **It moves no flags** — autotiling is art and nothing
+else reads it, which is what makes it safe to switch on across screens that are
+already authored and already proved. **It takes the vocabulary off the author**:
+once a cliff knows where its own top is, a legend character for "cliff top" is
+a lie about what an author controls. And **a tile whose art IS its affordance
+stays out of it** — `cliffCracked` is in the cliff family so the wall does not
+edge against it, and has no `pieces` so nothing draws over its fault line.
 
 **Extracted terrain keeps the game's palettes.** Only the pixels are replaced.
 That is what keeps the palette-swap variants (`grassDark`, `saltFlat`,

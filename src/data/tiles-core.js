@@ -7,7 +7,9 @@
 
 import { tiles as tileSheet } from '../gfx/art.js';
 import { registerTiles, registerBlocks, F, declareAnimArt, registerTransforms } from '../world/tileset.js';
-import { TERRAIN_ART, TOWN_ART, TOWN_PALETTES, TOWN_BLOCKS } from './tiles-terrain.js';
+import {
+  TERRAIN_ART, TOWN_ART, TOWN_PALETTES, TOWN_BLOCKS, CLIFF_PIECES,
+} from './tiles-terrain.js';
 import { registerPalettes } from '../gfx/palettes.js';
 import { DUNGEON_THEME_ART, installDungeonThemePalettes } from './tiles-dungeon-themes.js';
 import { TORRENT_PUSH } from './feel.js';
@@ -283,62 +285,18 @@ const HAND_ART = {
     1111111111111111`,
 
   // ---- rock / cliff -------------------------------------------------------
-  cliff: `
-    3333333333333333
-    1111111111111111
-    1111111111111111
-    1211111111111121
-    1111111111111111
-    2222222222222222
-    3333333333333333
-    1111111111111111
-    1111111111111111
-    1111112112111111
-    1111111111111111
-    2222222222222222
-    3333333333333333
-    1111111111111111
-    1111111111111111
-    2222222222222222`,
-
-  // The same courses as `cliff` with a fault line zigzagging down through them,
-  // so a bombable stretch of cliff reads as cracked at a glance without leaving
-  // the terrain register. Dithering is allowed on terrain; this is a hard line.
-  cliffCracked: `
-    3333333333333333
-    1111113111111111
-    1111131111111111
-    1211311111111121
-    1111311111111111
-    2222322222222222
-    3333333333333333
-    1111311111111111
-    1111131111111111
-    1111132112111111
-    1111113111111111
-    2222223222222222
-    3333333333333333
-    1111113111111111
-    1111131111111111
-    2222232222222222`,
-
-  cliffTop: `
-    2222222222222222
-    2111111111111112
-    2111211111121112
-    2111111111111112
-    2112111111111212
-    2111111111111112
-    2111111211111112
-    2222222222222222
-    3333333333333333
-    1111111111111111
-    1111111111111111
-    1211111111111121
-    1111111111111111
-    2222222222222222
-    3333333333333333
-    1111111111111111`,
+  //
+  // THE CLIFF IS EXTRACTED NOW, and its art lives in tiles-terrain.js: nine
+  // pieces of one object rather than one texture, plus the sixteen-entry table
+  // that says which piece a tile is (tools/rip-terrain.py, "THE CLIFF FAMILY").
+  // The three hand-drawn tiles that used to be here — `cliff`, `cliffCracked`
+  // and `cliffTop` — are gone rather than shadowed, because a hand-drawn tile
+  // sitting unused under an extracted one of the same name is how a later
+  // session ends up editing the wrong one.
+  //
+  // `cliffTop` in particular no longer exists as ART at all: which tiles are
+  // the top of a cliff is now worked out from the grid, so it is not something
+  // an author draws or places.
 
   rockFloor: `
     1111211111112111
@@ -1209,18 +1167,43 @@ export function installCoreTiles() {
     grateOwOpen: { art: ART.rockFloor, pal: 'stone' },
 
     // --- barriers ---
-    cliff: { art: ART.cliff, pal: 'stone', flags: F.SOLID },
-    cliffTop: { art: ART.cliffTop, pal: 'stone', flags: F.SOLID },
-    cliffDk: { art: ART.cliff, pal: 'stonedk', flags: F.SOLID },
-    cliffSand: { art: ART.cliff, pal: 'sand', flags: F.SOLID },
-    cliffRust: { art: ART.cliff, pal: 'rust', flags: F.SOLID },
-    cliffCoral: { art: ART.cliff, pal: 'coral', flags: F.SOLID },
-    cliffMarble: { art: ART.cliff, pal: 'marble', flags: F.SOLID },
-    cliffAbyss: { art: ART.cliff, pal: 'abyss', flags: F.SOLID },
+    //
+    // A CLIFF IS ONE OBJECT, NOT A TEXTURE. Every tile below carries the same
+    // `family` and the same `pieces` table, so each one draws the part of a
+    // cliff it actually is — lit along an exposed top, rimmed down an exposed
+    // side, ending on its own shadow line at the foot — worked out from its
+    // neighbours at render time (Room.artAt). No room grid says which part it
+    // is and none had to be re-authored, which is the whole reason this was
+    // safe to switch on across 120 screens at once: a cliff is F.SOLID, and a
+    // solid tile that moves severs a screen.
+    //
+    // `pal` is what still separates them, and it is untouched: one shape in
+    // nine ramps, which is the palette-swap trick the source games run every
+    // cliff in Holodrum on. A sand cliff is lit along its top in SAND.
+    //
+    // `cliffTop` is kept because legends name it and rooms place it, and it is
+    // now the same tile as `cliff`: the mask decides where a top is, so an
+    // author no longer can — and no longer has to.
+    cliff: { art: ART.cliff, pal: 'stone', flags: F.SOLID, family: 'cliff', pieces: CLIFF_PIECES },
+    cliffTop: { art: ART.cliff, pal: 'stone', flags: F.SOLID, family: 'cliff', pieces: CLIFF_PIECES },
+    cliffDk: { art: ART.cliff, pal: 'stonedk', flags: F.SOLID, family: 'cliff', pieces: CLIFF_PIECES },
+    cliffSand: { art: ART.cliff, pal: 'sand', flags: F.SOLID, family: 'cliff', pieces: CLIFF_PIECES },
+    cliffRust: { art: ART.cliff, pal: 'rust', flags: F.SOLID, family: 'cliff', pieces: CLIFF_PIECES },
+    cliffCoral: { art: ART.cliff, pal: 'coral', flags: F.SOLID, family: 'cliff', pieces: CLIFF_PIECES },
+    cliffMarble: { art: ART.cliff, pal: 'marble', flags: F.SOLID, family: 'cliff', pieces: CLIFF_PIECES },
+    cliffAbyss: { art: ART.cliff, pal: 'abyss', flags: F.SOLID, family: 'cliff', pieces: CLIFF_PIECES },
     // Outdoor bombable walls. dWallCracked is the indoor equivalent; these let
     // an overworld region be gated on Bombs, which GAME-PLAN.md asks for and
     // nothing outdoors could express before.
-    cliffCracked: { art: ART.cliffCracked, pal: 'stone', flags: F.SOLID | F.BOMBABLE },
+    //
+    // IN THE FAMILY AND OUT OF THE AUTOTILE. In, so the wall around it does not
+    // grow a rim against it — a bombable spot is part of the cliff, not a gap
+    // in one. Out, because the fault line IS the affordance, and a corner
+    // piece drawn over it would take away the only thing on screen that says
+    // where the bomb goes.
+    cliffCracked: {
+      art: ART.cliffCracked, pal: 'stone', flags: F.SOLID | F.BOMBABLE, family: 'cliff',
+    },
     // The two region gates GAME-PLAN.md asks for. The Marsh gate proved the
     // shape — a solid tile with a flag, plus a transform naming what opens it —
     // and these two only add `level`, so the gate can name the MAGIC boomerang
@@ -1248,7 +1231,9 @@ export function installCoreTiles() {
       art: ART.boulder, pal: 'stonedk', flags: F.SOLID | F.ROCK | F.HEAVY,
       underArt: 'rockFloor', liftLevel: 2,
     },
-    cliffCrackedDk: { art: ART.cliffCracked, pal: 'stonedk', flags: F.SOLID | F.BOMBABLE },
+    cliffCrackedDk: {
+      art: ART.cliffCracked, pal: 'stonedk', flags: F.SOLID | F.BOMBABLE, family: 'cliff',
+    },
     treeDead: { art: ART.tree, pal: 'treeoakdd', flags: F.SOLID, underArt: 'grassBog' },
     treeDark: { art: ART.tree, pal: 'treeoakdk', flags: F.SOLID, underArt: 'grassDark' },
     tree: { art: ART.tree, pal: 'treeoak', flags: F.SOLID, underArt: 'grass' },

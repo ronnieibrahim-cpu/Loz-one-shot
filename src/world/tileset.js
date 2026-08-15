@@ -11,6 +11,8 @@
 //     anim: ['water0','water1','water2','water1'], animRate: 10,
 //     over: true,                          // draw above entities (treetops, arches)
 //     push: [dx, dy],                      // water current, pixels/frame
+//     family: 'cliff',                     // what a neighbour sees this as
+//     pieces: [...16 art names...],        // autotile table, indexed by mask
 //   }
 //
 // TIDE VARIANTS
@@ -106,6 +108,21 @@ export function registerTiles(defs) {
       // docs/HANDOFF.md: data contracts drift from engine contracts silently.
       liftLevel: def.liftLevel || 0,
       liftSprite: def.liftSprite || null,
+      // AUTOTILING. `family` is what this tile counts AS when a neighbour asks
+      // what it is standing next to; `pieces` is the 16-entry table of art
+      // names a tile draws itself from, indexed by which of its four
+      // orthogonal neighbours share its family (see Room.artAt).
+      //
+      // The two are separate on purpose. `cliffCracked` declares a family and
+      // no pieces: it belongs to the wall it sits in, so the wall grows no rim
+      // against it, and it keeps its own art, because the fault line is the
+      // whole affordance and an autotiled corner would draw over it.
+      //
+      // Neither field changes a flag, and neither is read by collision. A
+      // cliff was solid before this existed and is solid after; all that moves
+      // is which 16x16 gets drawn.
+      family: def.family || null,
+      pieces: def.pieces || null,
     });
   }
 }
@@ -157,6 +174,7 @@ export function blockRef(tileName) {
 const EMPTY = {
   name: '__missing', pal: 'stone', flags: 0, mask: 0, tide: null,
   anim: null, animRate: 10, over: false, push: null, ledge: null, depth: 0,
+  family: null, pieces: null,
 };
 
 const warned = new Set();
