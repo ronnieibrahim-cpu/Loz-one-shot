@@ -186,6 +186,19 @@ they are also how a future session finds which sheet a tile came from.
 Run the cheap deterministic checkers instead of reasoning about correctness.
 They are faster than you are and they do not rationalise.
 
+**AND NONE OF THEM PROVES THE GAME IS BEATABLE.** Every tool above proves a
+PART — a room, a gate, an item's verb, a dungeon's graph. 708 assertions were
+green on a world in which four of the six dungeons sat behind an item found
+inside one of them, so the game could not be finished. `check-progression.mjs`
+closed that hole by flooding the map, and a flood is still a model: it does not
+fight a boss, spend a key, survive a room or press a button.
+
+`tools/check-playthrough.mjs` — a headless run from the intro to Nereth with no
+granted items, no warps and no flags set from outside — is the test that would,
+and **it does not exist yet**. It is the last action item behind every content
+job; the full brief is in `docs/NEXT-SESSION.md`. Until it exists, "every
+checker is green" means the parts are right and nobody knows about the whole.
+
 ---
 
 ## Art rules

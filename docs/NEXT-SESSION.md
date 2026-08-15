@@ -24,14 +24,22 @@ maintain and the most expensive thing to not have.
 | P9 | overworld re-gating and difficulty | **done** — and it found that the game could not be finished |
 
 **Nothing on that table is outstanding.** The plan's numbered phases are
-finished, so the next session is not "the next phase" — it is one of the four
-jobs the prompt below names, and the first of them is the one no tool in this
-repo can do.
+finished, so the next session is not "the next phase" — it is one of the five
+jobs the prompt below names. The first is the one no tool in this repo can do,
+and **the fifth is the standing one: the game must still be beatable, and
+nothing in the repo can currently say whether it is.**
 
-**THE ONE THING TO KNOW BEFORE READING ANYTHING ELSE.** Every claim in this
+**THE TWO THINGS TO KNOW BEFORE READING ANYTHING ELSE.** Every claim in this
 repo — six dungeons, four region gates, one heart economy, 708 checker
-assertions across eighteen tools — is a checker's word. **Nobody has ever played this game.** That is
-the largest open item in the project and it has been for five sessions.
+assertions across eighteen tools — is a checker's word about a PART.
+
+1. **Nobody has ever played this game.** Largest open item in the project, and
+   it has been for five sessions. Job 1 in the prompt.
+2. **No test has ever finished it.** There is no run, automated or otherwise,
+   that starts a new game and reaches the ending. Job 5, and it is the reason
+   job 1 keeps mattering: those 708 green assertions were all true of a world
+   in which four of the six dungeons sat behind an item found inside one of
+   them, so the game could not be completed at all.
 
 ## Where P9 stands, in one line
 
@@ -164,6 +172,13 @@ Everything below the fence is the whole brief. It names the jobs, the traps that
 are already paid for, and the baseline that proves the work rather than asserts
 it.
 
+**Job 5 is the standing one and it is deliberately last.** Every content job in
+this repo — the four above it, and whatever a later session adds — is followed
+by "and the game must still be beatable", and nothing in the repo can currently
+say whether it is. `tools/check-playthrough.mjs` is that test and it does not
+exist yet. Once it does, it stops being a job and joins the baseline block that
+every session runs.
+
 ```
 THERE IS NO NEXT PHASE. Every numbered phase in docs/EXECUTION-PLAN.md — P0
 through P9, plus PT and PB — is finished, and docs/DUNGEON-STATUS.md's six
@@ -199,7 +214,10 @@ pre-installed Chromium does not match, so every headless harness dies with
 under "Environment setup a fresh container needs". `pip install pillow` before
 any rip-*.py tool will run.
 
-THE FOUR JOBS, hardest and most valuable first:
+THE JOBS. 1-4 are content and are ranked hardest and most valuable first.
+5 is not ranked with them: it comes AFTER all of them, and after any content
+job a later session invents, because it is what says the game is still a game
+once the content has moved.
   1. NOBODY HAS PLAYED ANY OF IT, and this is the top job by a wide margin.
      Six dungeons, four region gates, one heart economy, ~600 checker
      assertions, and every claim about all of it is a checker's word. It has
@@ -226,6 +244,69 @@ THE FOUR JOBS, hardest and most valuable first:
      worked example and the machinery exists (`family` and `pieces` on a
      tiledef, Room.artAt). The catch: a ledge's DIRECTION is authored data the
      player's hop reads, so only the ENDS of a run can come off the neighbours.
+
+  5. THE BEATABILITY TEST — tools/check-playthrough.mjs, and IT DOES NOT EXIST
+     YET. This is the LAST item on purpose: it comes after every content job
+     above, and after every content job any later session invents, because it
+     is the thing that says the game is still a game once the content has
+     moved. Once it exists it is not a job any more, it is part of the
+     baseline, and every session runs it.
+
+     WHY IT IS NEEDED, and this is not hypothetical. 708 assertions across
+     eighteen tools were green on a world in which four of the six dungeons sat
+     behind an item found inside one of them, so the game could not be
+     finished. check-progression.mjs closed that specific hole by flooding the
+     MAP. It still proves nothing about the game: a flood is a model, and the
+     model does not fight a boss, spend a key, survive a room, or press a
+     button. Every tool in this repo proves a PART. Nothing proves the WHOLE.
+
+     WHAT IT MUST PROVE, in one run, in the real engine, headless:
+       * A new game can be driven from the intro cutscene to Nereth's defeat
+         and the ending, with NO developer shortcuts: no items granted, no
+         warps, no flags set from outside. Everything the run holds must have
+         been picked up in the run.
+       * Every dungeon is entered, its item taken, its boss killed and its
+         Essence claimed, in an order the gates actually permit.
+       * The Abyssal Seal opens because five Essences were EARNED, not set.
+       * Zero console errors and zero unresolved tiles for the whole run.
+       * The player is never soft-locked: no state the run enters cannot be
+         left. The cheapest version of this is to assert the run never has to
+         reload a save, and that health never hits zero from a source the run
+         did not choose to walk into.
+       * It is DETERMINISTIC and seeded, like every other harness here, and it
+         is recorded as an input tape so it can be replayed to the frame.
+
+     WHAT TO BUILD ON, so this is not started from nothing:
+       * tools/check-gates.mjs already boots the real game headless, drives it
+         with real key events through Playwright, and reads the live engine
+         state back out. That is the whole harness pattern; copy it.
+       * tools/replay.mjs already records and replays input tapes frame-exactly
+         and is the right shape for the tape this produces. Eleven of its
+         fifty-one replays already walk single dungeon rooms — a playthrough is
+         those, joined up, without the setup shortcuts each one takes.
+       * tools/walk-dungeons.mjs already knows every dungeon's room graph, key
+         count, locked doors and boss room. Its flood is the ROUTE PLANNER for
+         this: it can hand back a room order that a driver then walks.
+       * tools/check-progression.mjs already knows the tier order the gates
+         permit, so the dungeon sequence does not have to be written down.
+
+     HOW TO SCOPE IT IF IT IS TOO BIG FOR ONE SESSION, in this order, each one
+     landing green and useful on its own:
+       a. New game to D1's Essence, in the real engine, no shortcuts. That is
+          the proof the pattern works end to end and it is worth a session by
+          itself.
+       b. Extend to D2 and D3, which is where the first real gate (Bombs) and
+          the first real item gate (the Cleats) are exercised.
+       c. Extend to D6 and Nereth. This is the one that proves the Seal.
+       d. Add it to CLAUDE.md's verification table and to the BASELINE block in
+          this prompt, and it stops being a job.
+
+     DO NOT FAKE IT. A harness that grants itself the Cleats to get past the
+     channel has proved nothing, and it is the exact mistake walk-dungeons.mjs
+     made — it handed the player each dungeon's own item at the front door,
+     which hid a lock for the whole life of the project until a session went
+     looking. If the run cannot get past something, that is a FINDING, not a
+     thing to work around. Write it down and tell me.
 
 WHAT P9 LEFT UNDONE, so it is not rediscovered:
   * The Resonance Rod gates the Salt Pans and nothing states where the Rod is
@@ -292,6 +373,9 @@ THE CHECKERS TAKE A WHILE. Run them; do not reason about correctness instead.
   a generated file, and re-running the ripper has just thrown their edit away —
   put it back in the ripper's coordinate map instead.
   npm run build && node tools/check-build.mjs
+
+  node tools/check-playthrough.mjs  DOES NOT EXIST YET — job 5. When it does,
+                                    add it here and it stops being a job.
 
 EVERY SESSION ENDS BY RUNNING `npm run build` AND COMMITTING
 dist/oracle-of-tides.html. That file is the playable game. A commit that changes
