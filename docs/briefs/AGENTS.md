@@ -451,6 +451,8 @@ anywhere in `src/data/*.js` resolves to a real track.
 Some art is lifted from the original games rather than drawn. `tools/ripkit.py`
 does the work; `tools/rip-npcs.py` is a complete worked example, and
 `tools/rip-link.py` is a second one using a hand-written coordinate map.
+`tools/rip-races.py` is a third, and it is the one to read when a sheet will not
+cooperate with `find_cells` — see "a sheet with two backgrounds" below.
 
 The workflow:
 
@@ -476,6 +478,19 @@ Three traps that cost real time the first time round:
   installs it. If art renders in the wrong colours, the palette is not bound.
 - **Packed sheets leak neighbours.** Adjacent sprites bleed a pixel or two into
   a cell; `_trim_slivers` drops edge columns that are disconnected from the body.
+
+**A sheet with two backgrounds.** `oracle-seasons-nonhuman-races.png` draws each
+frame on a WHITE cell backing laid over the sheet's own green, at a pitch of 17.
+So `background()` returns one of two backgrounds and `quantise` keeps the other
+as artwork — a white box around every sprite. `find_cells` also mis-splits it,
+because the pitch is not the cell size. `tools/rip-races.py` answers both: a
+hand-written coordinate map instead of `find_cells`, and transparency flooded
+inward from the frame's border across a SET of background colours instead of
+tested by equality, which is also what keeps a colour the sprite encloses. The
+way to build the coordinate map is a one-off scratch script that labels
+connected components of non-background pixels and renders them numbered — the
+ripper's header says so, and it is a twenty-line script, not a tool worth
+committing.
 
 Sizes and names must match `src/data/sprite-manifest.js`. Directional sets use
 `_d` (down), `_u` (up), `_s` (side facing RIGHT — mirror with `flip=True` if the

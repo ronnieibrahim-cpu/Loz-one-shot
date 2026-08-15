@@ -28,6 +28,7 @@ sprite packs still to be drawn.
 | Player, combat, items, enemy framework, boss framework | Done |
 | Link sprites | Done — extracted from the Oracle of Ages sheet |
 | NPC sprites (9 of 11) | Done — extracted from the Oracle of Seasons sheet |
+| **The four peoples (14 frames)** | **Done** — `tools/rip-races.py`, off the non-human races sheet |
 | Terrain tiles, HUD | Done — hand-drawn |
 | **Enemy sprites (56)** | **Done** — extracted from the Oracle of Seasons enemy sheet |
 | **Enemy roster (22 types)** | **Done** — `src/data/enemies.js` |
@@ -104,6 +105,9 @@ node tools/preview.mjs enemies --scale=6  # contact sheet of a sprite pack
 node tools/scan-sprites.mjs --skip-bosses # rows split or floating off the body
 python3 tools/rip-enemies.py         # regenerate src/data/sprites-enemies.js
 python3 tools/rip-terrain.py         # regenerate src/data/tiles-terrain.js
+python3 tools/rip-races.py           # regenerate src/data/sprites-races.js
+node tools/check-towns.mjs           # towns walk on foot at all three tides
+PINCH=1 node tools/check-towns.mjs   # ...and print each town's cut tiles
 node tools/preview.mjs --tiles --scale=2  # contact sheet of every tile
 node tools/walk-dungeons.mjs         # every dungeon room + every ledge
 node tools/check-overworld.mjs       # seams, border, tile-by-tile flood

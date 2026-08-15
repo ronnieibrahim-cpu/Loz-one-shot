@@ -432,12 +432,15 @@ down the sheet, which for us is a palette resource rather than a season one.
    crates, a fence, a stump — placed as if someone put them there for a reason.
    Interiors already exist as a legend (`house`); wire the doors to them.
 
-4. Populate them. assets/sheets/oracle-seasons-nonhuman-races.png has not been
-   extracted from at all and carries the Maku Tree, the Great Fairy and rows of
-   NPC races. Original townsfolk are ours to design; their SPRITES should come
-   off that sheet where it has something that fits, per the extract-first rule.
+4. Populate them. [DONE] assets/sheets/oracle-seasons-nonhuman-races.png is
+   extracted by tools/rip-races.py — fourteen frames, four peoples. What is
+   still untouched on it is the Maku Tree, the Great Fairy, the Gorons and
+   several more Zora and Tokay poses. Original townsfolk are ours to design;
+   their SPRITES come off that sheet where it has something that fits, per the
+   extract-first rule.
 
-5. Then the terrain backlog, in the order docs/NEXT-SESSION.md ranks it. The
+5. [THE ONLY STEP LEFT] Then the terrain backlog, in the order
+   docs/ART-BACKLOG.md ranks it. The
    `cliff` family is the big one — one extraction covers eight tiles — and it
    is a content decision, not a swap: the Oracles build a cliff from several
    tiles and this game spends one tile on all of it.
