@@ -30,6 +30,9 @@ export function installLegends() {
     'K': 'grateOw',      // metal: only the Resonance Rod retracts it
     'J': 'chasm',        // Roc's Feather   — 1 tile, clearable at 2.27 tiles
     'M': 'boulder',      // Dredge Line     — drag it out of the way
+    'I': 'tideChannel',  // Kelp-Soled Cleats — deep at every level, so no conch
+                         //                     answers it and only a swimmer crosses
+    'Z': 'abyssSeal',    // no item at all   — every Essence but the last
     'C': 'caveMouth', 'c': 'caveMouthSolid', '/': 'stairsDown', '_': 'ledgeS',
     '"': 'ledgeN', '>': 'ledgeE', '<': 'ledgeW',
     // TIDE TILES (digits)

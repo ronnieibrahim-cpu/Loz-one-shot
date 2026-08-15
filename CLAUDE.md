@@ -120,6 +120,13 @@ they are also how a future session finds which sheet a tile came from.
   records any id; `itemName` returns the raw id and `itemIcon` falls back to
   `i_unknown`. The chest opens, the jingle plays, the save records it, and the
   player gets nothing. `tools/check-items.mjs` is what catches it.
+- **"The world is reachable with every item" is not "the game can be played."**
+  Both were true of an overworld in which four of the six dungeons sat behind
+  the Dredge Line — which is the item the SIXTH dungeon hands over. Every
+  checker in the repo was green, because every one of them asks whether the
+  world opens and none asked whether it opens IN ORDER.
+  `tools/check-progression.mjs` is the one that asks. Run it after any change
+  to a region gate, a dungeon entrance, or which dungeon holds which item.
 - **A cliff draws itself from its neighbours, and off-room counts as a
   neighbour.** Tiles carrying `family` and `pieces` pick their art from which
   orthogonal neighbours share their family (`Room.artAt`). Nothing about this
@@ -158,6 +165,7 @@ they are also how a future session finds which sheet a tile came from.
 | `node tools/walk-dungeons.mjs` | Every dungeon is completable; no room is stranded |
 | `node tools/check-overworld.mjs` | Region gates seal and open correctly |
 | `node tools/check-gates.mjs` | Gates hold in-engine with a live player |
+| `node tools/check-progression.mjs` | Every dungeon can be REACHED with only the items the dungeons before it hand over, each tier opens ground the one before it could not, and every Piece of Heart can be spent |
 | `node tools/solve-switches.mjs` | Every switch puzzle has a solution |
 | `node tools/check-anchor.mjs` | A room that claims to need the Tidewright's Anchor cannot be crossed with the conch alone, and can be with one anchor placement |
 | `node tools/check-cleats.mjs` | Every room that claims to need the Cleats' floor mode cannot be reached on foot, cannot be reached on the surface against the current, can be reached on the seafloor, and the crossing fits in one breath |

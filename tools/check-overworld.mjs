@@ -39,22 +39,38 @@ installData();
 const GATES = {
   bombs: {
     flag: F.BOMBABLE, region: 'Sunken Marsh',
-    covers: [[0, 2, 6, 9]],
+    covers: [[0, 3, 6, 9]],
+  },
+  // P9 CUT THIS ONE. The Cliffs of Kell used to be held shut by boulders, which
+  // want the Dredge Line — and the Dredge Line is inside the Abyssal Keep,
+  // which is reached THROUGH the Cliffs. That was a lock on the game rather
+  // than a gate in it, and no checker in the repo could see it, because every
+  // one of them asks "is the world reachable with everything" and never "is it
+  // reachable in the order the dungeons hand things over". tools/check-
+  // progression.mjs is the answer to that and this is what it found.
+  //
+  // The Cliffs and the Drowned Wood are now deep channels no conch drains, so
+  // both open on the Kelp-Soled Cleats — D3's item, two dungeons before either
+  // of the dungeons they lead to.
+  cleats: {
+    flag: F.SWIMGATE, swim: true, region: 'Cliffs of Kell and the Drowned Wood',
+    // Nearly the whole north of the world: the Cleats are the hinge item, and
+    // the Salt Pans and the Reef are reached THROUGH the Drowned Wood, so a
+    // run without them loses those too. Stated as the branch rather than
+    // trimmed to the two regions, because "the count went down" also passes
+    // when an unrelated corner falls off the map.
+    covers: [[0, 3, 0, 6], [4, 7, 0, 6], [8, 11, 0, 3]],
+  },
+  // THE ONE GATE NO ITEM OPENS. See F.SEAL in src/world/tileset.js: the last
+  // dungeon cannot be held shut by an item, so it is held shut by the Essences
+  // of the five before it.
+  essences: {
+    flag: F.SEAL, region: 'Abyssal approach',
+    covers: [[0, 3, 0, 1]],
   },
   rod: {
     flag: F.VANE, region: 'Salt Pans',
     covers: [[4, 7, 0, 2], [8, 11, 0, 3]],
-  },
-  dredgePlug: {
-    flag: F.MAGNETIC, region: 'Abyssal approach',
-    covers: [[0, 3, 0, 1]],
-  },
-  dredge: {
-    flag: F.HEAVY, region: 'Cliffs of Kell',
-    // The Cliffs are the only way up to the Abyssal approach, and the Marsh's
-    // two northern screens hang off the Bog Stair rather than off the Marsh
-    // proper, so both sit behind this gate as well.
-    covers: [[0, 3, 2, 5], [0, 3, 0, 1], [0, 2, 6, 6]],
   },
 };
 const covered = (g, k) => {
@@ -69,6 +85,10 @@ for (const it of HELD) if (!GATES[it]) { console.error(`unknown item '${it}'`); 
 const BOMBS = HELD.includes('bombs');
 // The mask of gate flags the current run may walk through.
 let openMask = HELD.reduce((m, it) => m | GATES[it].flag, 0);
+// A gate may also change HOW the player moves, not just which tile opens.
+// The Cleats are the only one: holding them makes every deep tile a road,
+// which is why the flood cannot model them as a flag alone.
+const swimMask = () => ALL.some(it => GATES[it].swim && (openMask & GATES[it].flag));
 const W = 10, H = 8, OW = 12, OH = 10;
 const m = MAPS.get('overworld');
 
@@ -102,7 +122,12 @@ function walkableAt(grid, name, tide) {
   const d = defAt(grid, name, tide);
   if (!d) return false;
   if (openMask && (d.flags & openMask)) return true;
-  return !(d.flags & (F.VOID | F.SOLID | F.PIT | F.DEEP | F.LEDGE | F.HAZARD | F.JUMPABLE));
+  // Deep water is a road once the Cleats are on, and a wall before that.
+  if (swimMask() && (d.flags & F.DEEP) && !(d.flags & (F.SOLID | F.VOID))) return true;
+  // A SEAL is not in the barrier list below because it is not any of those
+  // things — it is its own flag, and leaving it out reads a sealed tile as
+  // walkable, which is the whole world reachable and no gate proved.
+  return !(d.flags & (F.VOID | F.SOLID | F.PIT | F.DEEP | F.LEDGE | F.HAZARD | F.JUMPABLE | F.SEAL));
 }
 
 // --- the base hop ----------------------------------------------------------

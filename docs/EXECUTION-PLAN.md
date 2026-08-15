@@ -1226,6 +1226,38 @@ their neighbours is still owed and belongs to whichever session takes those.
 
 ### P9 — Overworld re-gating and difficulty
 
+**Clauses 1-4 are landed except where noted below; the difficulty half of
+clause 3 was already true.** What shipped, against what was asked:
+
+| Asked | State |
+|---|---|
+| Re-gate for six dungeons | **Done.** Four region gates, all tile-flag-shaped, all proved both ways by `check-overworld.mjs` and in-engine by `check-gates.mjs`. It asked for five; there are four, and the fifth is not missing so much as impossible — see below. |
+| The Lens is never a gate | **Held.** No gate flag is keyed on it and none can be: the flood reads flags, and the Lens has none. |
+| 3 hearts, half-heart contact damage | **Already true.** `progress.js` starts at `3 * HEART_UNITS` and ordinary enemies carry `damage: 2` of four. |
+| Heart pieces scale up | **Done.** Eighteen pieces (the eight-dungeon number, and not a multiple of four — two of them bought nothing) are now twenty-four, and the cap is 15. |
+| Re-run every checker | **Done**, plus a new one. |
+
+**THE BUG P9 FOUND, and it is the largest one this project has had.** The
+Cliffs of Kell were held shut by boulders and the Abyssal approach by an iron
+plug, and both of those want the **Dredge Line** — the item the Abyssal Keep
+hands over, at the far end of the approach. Four of the six dungeons sat behind
+a key found inside one of them, so the game could not be finished, and every
+checker in the repo was green: they all ask whether the world opens with
+everything and none asked whether it opens **in order**.
+`tools/check-progression.mjs` is the checker that asks, and it fails the moment
+a tier stops holding.
+
+**Why there are four region gates and not five.** Of the six dungeon items,
+only one can express a region gate at all. The Anchor and the Chartstone do
+nothing to terrain; the Lens is forbidden; the Bellows' cone lasts exactly as
+long as the button is held and the player cannot walk while pumping, so it can
+never be the route you take yourself (D4's whole finding); the Reefseed only
+adds ground and cannot remove a barrier; and the Dredge Line is the LAST
+dungeon's, so anything it holds shut is a lock rather than a gate. That leaves
+the Cleats. Bombs and the Resonance Rod are found outside the six. So the tiers
+are: nothing, Bombs, Cleats, and — for the last dungeon, where no item is
+left — five Essences.
+
 ```
 The overworld has eight regions gated on items that no longer exist.
 

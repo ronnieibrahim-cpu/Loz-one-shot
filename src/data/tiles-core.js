@@ -1211,6 +1211,36 @@ export function installCoreTiles() {
     saltVane: { art: ART.saltVane, pal: 'marble', flags: F.SOLID | F.VANE | F.RING, underArt: 'saltFlat' },
     abyssPlug: { art: ART.abyssPlug, pal: 'rust', flags: F.SOLID | F.MAGNETIC, underArt: 'rockFloorDk' },
 
+    // ---- the two gates P9 re-cut ------------------------------------------
+    //
+    // A TIDE CHANNEL is deep water that no conch drains: `waterD` at every
+    // level, so the only thing that crosses it is the Kelp-Soled Cleats. It is
+    // what holds the Cliffs of Kell shut, and the reason it is a channel rather
+    // than the boulder run it replaces is that the boulder wanted the Dredge
+    // Line — which is inside the dungeon the Cliffs lead to.
+    //
+    // It carries F.SWIMGATE beside F.DEEP so a checker can tell "the region is
+    // gated on the Cleats" from "the region is unreachable", exactly as the
+    // other markers do. The engine needs neither: F.DEEP already says what the
+    // tile physically is, and the hop cannot start on one (`tryGapHop` fires on
+    // F.JUMPABLE alone), so a channel one tile wide is still a real gate.
+    tideChannel: {
+      art: ART.waterD0, pal: 'deep', flags: F.DEEP | F.SWIMGATE,
+      anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 13,
+    },
+
+    // THE ABYSSAL SEAL: the one gate no item opens. It stands until the player
+    // carries every Essence but the last, which is `sealEssences()` in maps.js
+    // and is derived from the dungeon count rather than written down here.
+    //
+    // The art is the salt vane's carving in the abyss ramp — the same shape the
+    // Salt Pans' gate uses, in the colours of the water it is sunk in. That is
+    // the palette-swap the source games run every gate on, and it is what says
+    // "this is a marked barrier" without a second drawing.
+    abyssSeal: {
+      art: ART.saltVane, pal: 'abyss', flags: F.SEAL, underArt: 'rockFloorDk',
+    },
+
     // ---- the four terrain-shaped region gates ------------------------------
     // Each carries TWO flags: the ordinary one that tells the engine what the
     // tile physically is, and a marker naming the item that gets you past it.

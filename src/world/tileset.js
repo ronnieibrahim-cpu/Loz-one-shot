@@ -63,7 +63,19 @@ export const F = {
   // every stretch of ocean in the world read as the same gate.
   HEAVY:     1 << 26,  // boulder: only the Dredge Line drags it clear
   SWIMGATE:  1 << 27,  // deep channel: only Zora's Flippers cross it
-  GRAPPLE:   1 << 28,  // span crossed by dredging a fixed snag on the far side
+  // A seal that no item opens: it stands until the player carries enough
+  // Essences. It is the ONE gate in the game not held shut by something in the
+  // inventory, and it exists because the LAST dungeon cannot be held shut by an
+  // item — every item that could express a gate is either already spending
+  // itself on an earlier region or is the one that dungeon hands over, and the
+  // second of those is a lock on the game rather than a gate in it. That was
+  // the state of the world before P9: the Abyssal approach was sealed by the
+  // Dredge Line, which is inside the Abyssal Keep.
+  //
+  // This bit used to be GRAPPLE, "a span crossed by dredging a fixed snag",
+  // which no tile ever carried and which the Dredge Line's own boulder and plug
+  // gates said better.
+  SEAL:      1 << 28,
   GAP:       1 << 29,  // chasm: only Roc's Feather clears it
   // Metal, crystal, or grown coral: the Resonance Rod makes it answer. Not a
   // traversal flag — a ringable tile also carries whatever it actually is.

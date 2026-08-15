@@ -380,6 +380,12 @@ export class Room {
     const f = d.flags;
 
     if (f & F.VOID) return true;
+    // A SEAL is answered before SOLID, and carries neither it nor any other
+    // traversal flag. Nothing in the inventory opens one: `caps.sealed` is set
+    // from the player's essence count and from nowhere else, so an enemy, a
+    // thrown pot and a dredged weight all stop at it the way they stop at a
+    // wall. See F.SEAL in tileset.js for why the last dungeon needs this.
+    if (f & F.SEAL) return !(caps && caps.sealed);
     if (f & F.SOLID) {
       if (d.mask === 15) return true;
       if (d.mask === 0) return false;

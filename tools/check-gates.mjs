@@ -214,21 +214,6 @@ await frames(20);
 const vFarHigh = await nameAt(VANE.gx, VANE.gy);
 check('...but at HIGH tide the water carries it', vFarHigh !== 'saltVane', vFarHigh);
 
-// --- the Abyssal plug ------------------------------------------------------
-// Room 0,2,1: plugs along row 6, cols 3-6. The player stands one tile north of
-// one of them, facing it, and presses the gloves.
-const PLUG = { rx: 2, ry: 1, gx: 4, gy: 6, tx: 4, ty: 5, dir: 'down', item: 'dredge', level: 1 };
-const plugBefore = await setup(PLUG);
-check('the abyssal plug starts as a plug', plugBefore === 'abyssPlug', plugBefore);
-await tap('KeyZ');
-await frames(20);
-const plugAfter = await nameAt(PLUG.gx, PLUG.gy);
-check('the Dredge Line hauls the abyssal plug out', plugAfter !== 'abyssPlug', plugAfter);
-
-// The gloves open the plug in front, not the whole row.
-const neighbour = await nameAt(6, 6);
-check('...and only the plug in front', neighbour === 'abyssPlug', neighbour);
-
 // --- the four terrain-shaped gates -----------------------------------------
 //
 // These are traversal gates, not transform gates: nothing about the tile
@@ -276,32 +261,67 @@ const walkAt = async (key, jump) => {
   }));
 };
 
-// --- The Cliffs boulder, which is a Dredge Line gate now -------------------
-// The Power Bracelet is gone and lifting is base moveset, so the boulder needs
-// a reason to still be a boulder: it is `liftLevel: 2`, past bare hands, and
-// the Dredge Line drags it clear. Both directions are asserted, because a gate
-// checked one way is a gate that might not be one.
+// --- the Abyssal Seal ------------------------------------------------------
 //
-// Room 0,2,2: boulders at row 1, cols 3-6, behind the north doorway.
-const BOULDER = { rx: 2, ry: 2, gx: 4, gy: 1, tx: 4, ty: 0, dir: 'down' };
-let b0 = await setup({ ...BOULDER, item: 'sword', level: 1 });
-check('the cliff boulder starts as a boulder', b0 === 'boulder', b0);
-await tap('KeyZ');
-await frames(20);
-const bSword = await nameAt(BOULDER.gx, BOULDER.gy);
-check('a sword does not shift the boulder', bSword === 'boulder', bSword);
+// P9 CUT THIS GATE OPEN AND RE-CUT IT. The Abyssal approach used to be held by
+// an iron plug and a boulder run, both of which want the Dredge Line — which
+// is inside the Abyssal Keep, at the far end of the approach. The game could
+// not be finished. It is held now by the Essences of the five dungeons before
+// it, which is the one key the last dungeon can be locked with.
+//
+// Nothing is pressed here and no tile changes: a seal is a traversal gate, so
+// the proof is a player walking into it and stopping, and the same player
+// walking through it once the count is met. `caps.sealed` is set from the
+// essence list in Player.syncCaps and by nothing else, which is what this
+// asserts from the outside.
+//
+// Room 0,2,2: seals along row 1, cols 3-6, behind the north doorway.
+// Room 0,2,1 rather than 0,2,2, and this is worth saying because the first cut
+// probed the wrong one and passed the SHUT half by accident. Both screens carry
+// the seal — it is one barrier across a two-screen throat — but in 0,2,2 every
+// seal has a `9` under it, a tide tile that is over your head at the MID this
+// harness pins, so a probe there never reaches the seal and "the player stops"
+// is satisfied by the player drowning in place. Here the row below the seal is
+// the plain grass of the doorway.
+const SEAL = { rx: 2, ry: 1, gx: 4, gy: 6, tx: 4, ty: 7, dir: 'up', item: 'sword', level: 1 };
+const seal0 = await setup(SEAL);
+check('the abyssal seal starts sealed', seal0 === 'abyssSeal', seal0);
+const sealShut = await walkAt('ArrowUp', false);
+check('no item opens the seal — the player stops one tile short',
+  sealShut.room === '0,2,1' && sealShut.ty >= 7, `ended ${JSON.stringify(sealShut)}`);
 
-// Bare hands lift a pot and a loose rock; they do not lift this.
-await tap('KeyX');
-await frames(24);
-const bHands = await nameAt(BOULDER.gx, BOULDER.gy);
-check('bare hands do not lift the boulder', bHands === 'boulder', bHands);
+await setup(SEAL);
+await page.evaluate(() => { window.__game.progress.essences = [0, 1, 2, 3, 4]; });
+const sealOpen = await walkAt('ArrowUp', false);
+check('every Essence but the last opens it',
+  sealOpen.room === '0,2,1' && sealOpen.ty <= 5, `ended ${JSON.stringify(sealOpen)}`);
 
-await setup({ ...BOULDER, item: 'dredge', level: 1 });
-await tap('KeyZ');
-await frames(60);        // a cast flies out and comes back; a lift did not
-const bLift = await nameAt(BOULDER.gx, BOULDER.gy);
-check('the Dredge Line drags the boulder clear', bLift !== 'boulder', bLift);
+// One short is still shut. Without this the assertion above is satisfied by a
+// seal that opens on any essence at all, which is a gate on the first dungeon.
+await setup(SEAL);
+await page.evaluate(() => { window.__game.progress.essences = [0, 1, 2, 3]; });
+const sealNearly = await walkAt('ArrowUp', false);
+check('...and one Essence short does not',
+  sealNearly.room === '0,2,1' && sealNearly.ty >= 7, `ended ${JSON.stringify(sealNearly)}`);
+
+// --- the Cliffs of Kell tide channel ---------------------------------------
+//
+// The other half of the P9 re-cut: the boulders that used to hold the Cliffs
+// shut are a channel of water no conch drains, so the region opens on the
+// Kelp-Soled Cleats — two dungeons before the one the Cliffs lead to.
+//
+// Room 0,3,4: the channel is col 8, rows 2-5. Nothing is pressed here either.
+const CHANNEL = { rx: 3, ry: 4, gx: 8, gy: 4, tx: 7, ty: 4, dir: 'right' };
+const ch0 = await setup({ ...CHANNEL, item: 'sword', level: 1 });
+check('the cliff channel is a channel', ch0 === 'tideChannel', ch0);
+const chShut = await walkAt('ArrowRight', false);
+check('a walker does not cross the channel',
+  chShut.room === '0,3,4' && chShut.tx <= 7, `ended ${JSON.stringify(chShut)}`);
+
+await setup({ ...CHANNEL, item: 'cleats', level: 1 });
+const chOpen = await walkAt('ArrowRight', false);
+check('the Cleats cross it',
+  chOpen.room !== '0,3,4' || chOpen.tx >= 8, `ended ${JSON.stringify(chOpen)}`);
 
 // --- The Coral Reef chasm: no longer a gate --------------------------------
 // Roc's Feather is gone and THE HOP IS BASE MOVESET. A one-tile chasm is

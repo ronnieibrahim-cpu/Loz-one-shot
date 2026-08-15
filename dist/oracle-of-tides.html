@@ -1495,7 +1495,19 @@ const F = {
   // every stretch of ocean in the world read as the same gate.
   HEAVY:     1 << 26,  // boulder: only the Dredge Line drags it clear
   SWIMGATE:  1 << 27,  // deep channel: only Zora's Flippers cross it
-  GRAPPLE:   1 << 28,  // span crossed by dredging a fixed snag on the far side
+  // A seal that no item opens: it stands until the player carries enough
+  // Essences. It is the ONE gate in the game not held shut by something in the
+  // inventory, and it exists because the LAST dungeon cannot be held shut by an
+  // item — every item that could express a gate is either already spending
+  // itself on an earlier region or is the one that dungeon hands over, and the
+  // second of those is a lock on the game rather than a gate in it. That was
+  // the state of the world before P9: the Abyssal approach was sealed by the
+  // Dredge Line, which is inside the Abyssal Keep.
+  //
+  // This bit used to be GRAPPLE, "a span crossed by dredging a fixed snag",
+  // which no tile ever carried and which the Dredge Line's own boulder and plug
+  // gates said better.
+  SEAL:      1 << 28,
   GAP:       1 << 29,  // chasm: only Roc's Feather clears it
   // Metal, crystal, or grown coral: the Resonance Rod makes it answer. Not a
   // traversal flag — a ringable tile also carries whatever it actually is.
@@ -2114,6 +2126,12 @@ class Room {
     const f = d.flags;
 
     if (f & F.VOID) return true;
+    // A SEAL is answered before SOLID, and carries neither it nor any other
+    // traversal flag. Nothing in the inventory opens one: `caps.sealed` is set
+    // from the player's essence count and from nowhere else, so an enemy, a
+    // thrown pot and a dredged weight all stop at it the way they stop at a
+    // wall. See F.SEAL in tileset.js for why the last dungeon needs this.
+    if (f & F.SEAL) return !(caps && caps.sealed);
     if (f & F.SOLID) {
       if (d.mask === 15) return true;
       if (d.mask === 0) return false;
@@ -2305,6 +2323,18 @@ function essenceCount() {
   return dungeons().filter(m => m.dungeon.essence != null).length;
 }
 
+/**
+ * How many Essences the Abyssal Seal wants: every one but the last dungeon's.
+ *
+ * DERIVED, not written down, for the same reason `essenceCount` is. The seal
+ * holds the last dungeon shut, so the number it wants is "all of them except
+ * the one behind me" — and a session that adds or folds a dungeon must not have
+ * to remember that a tile somewhere counts to five.
+ */
+function sealEssences() {
+  return Math.max(1, essenceCount() - 1);
+}
+
 /** Structural validation: every warp must resolve to a room that exists. */
 function validateMaps() {
   const problems = [];
@@ -2380,6 +2410,7 @@ __exports["liveRooms"] = liveRooms;
 __exports["resetRooms"] = resetRooms;
 __exports["dungeons"] = dungeons;
 __exports["essenceCount"] = essenceCount;
+__exports["sealEssences"] = sealEssences;
 __exports["validateMaps"] = validateMaps;
 });
 
@@ -6363,6 +6394,7 @@ __define("game/player.js", function (__exports, __require) {
 
 const { Entity, moveEntity, canOccupy, groundFlags, groundTile, findSafeTile, DIR_VEC, DIRS } = __require("game/entity.js");
 const { F, transformFor } = __require("world/tileset.js");
+const { sealEssences } = __require("world/maps.js");
 const { TILE } = __require("core/screen.js");
 const { sp, toPx } = __require("core/fixed.js");
 const { sprites } = __require("gfx/art.js");
@@ -6429,6 +6461,11 @@ class Player extends Entity {
     this.caps.swim = this._cleats > 0;
     this.caps.sink = this.underwater;
     this.caps.cutting = false;
+    // The Abyssal Seal. The ONLY thing in the game that opens on progress
+    // rather than on an item, and the only cap nothing else sets — which is
+    // what makes an enemy, a thrown pot and a dredged weight all stop at a
+    // seal, because they are moved with the default caps.
+    this.caps.sealed = (p.essences || []).length >= sealEssences();
   }
 
   // ------------------------------------------------------------------ update
@@ -14681,6 +14718,36 @@ function installCoreTiles() {
     saltVane: { art: ART.saltVane, pal: 'marble', flags: F.SOLID | F.VANE | F.RING, underArt: 'saltFlat' },
     abyssPlug: { art: ART.abyssPlug, pal: 'rust', flags: F.SOLID | F.MAGNETIC, underArt: 'rockFloorDk' },
 
+    // ---- the two gates P9 re-cut ------------------------------------------
+    //
+    // A TIDE CHANNEL is deep water that no conch drains: `waterD` at every
+    // level, so the only thing that crosses it is the Kelp-Soled Cleats. It is
+    // what holds the Cliffs of Kell shut, and the reason it is a channel rather
+    // than the boulder run it replaces is that the boulder wanted the Dredge
+    // Line — which is inside the dungeon the Cliffs lead to.
+    //
+    // It carries F.SWIMGATE beside F.DEEP so a checker can tell "the region is
+    // gated on the Cleats" from "the region is unreachable", exactly as the
+    // other markers do. The engine needs neither: F.DEEP already says what the
+    // tile physically is, and the hop cannot start on one (`tryGapHop` fires on
+    // F.JUMPABLE alone), so a channel one tile wide is still a real gate.
+    tideChannel: {
+      art: ART.waterD0, pal: 'deep', flags: F.DEEP | F.SWIMGATE,
+      anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 13,
+    },
+
+    // THE ABYSSAL SEAL: the one gate no item opens. It stands until the player
+    // carries every Essence but the last, which is `sealEssences()` in maps.js
+    // and is derived from the dungeon count rather than written down here.
+    //
+    // The art is the salt vane's carving in the abyss ramp — the same shape the
+    // Salt Pans' gate uses, in the colours of the water it is sunk in. That is
+    // the palette-swap the source games run every gate on, and it is what says
+    // "this is a marked barrier" without a second drawing.
+    abyssSeal: {
+      art: ART.saltVane, pal: 'abyss', flags: F.SEAL, underArt: 'rockFloorDk',
+    },
+
     // ---- the four terrain-shaped region gates ------------------------------
     // Each carries TWO flags: the ordinary one that tells the engine what the
     // tile physically is, and a marker naming the item that gets you past it.
@@ -15108,6 +15175,9 @@ function installLegends() {
     'K': 'grateOw',      // metal: only the Resonance Rod retracts it
     'J': 'chasm',        // Roc's Feather   — 1 tile, clearable at 2.27 tiles
     'M': 'boulder',      // Dredge Line     — drag it out of the way
+    'I': 'tideChannel',  // Kelp-Soled Cleats — deep at every level, so no conch
+                         //                     answers it and only a swimmer crosses
+    'Z': 'abyssSeal',    // no item at all   — every Essence but the last
     'C': 'caveMouth', 'c': 'caveMouthSolid', '/': 'stairsDown', '_': 'ledgeS',
     '"': 'ledgeN', '>': 'ledgeE', '<': 'ledgeW',
     // TIDE TILES (digits)
@@ -15369,19 +15439,45 @@ __define("data/overworld.js", function (__exports, __require) {
 // table, so a walkable east edge always has a walkable west edge facing it;
 // every other edge tile is barrier, and the world border is solid all round.
 //
-// Region gates use what the tileset can actually enforce:
-//   Coral Reef   1-tile deep gaps          Roc's Feather   (as planned)
-//   Cliffs of Kell  boulders               Power Bracelet  (as planned)
-//   Drowned Wood  a wide deep channel      Zora's Flippers (as planned)
-//   Reef Palace   posts over deep water    Dredge Line     (as planned)
-//   Sunken Marsh  cracked cliff             Bombs           (as planned)
-//   Salt Pans     a deep gap and boulders (Feather + Bracelet) — the plan
-//                 calls for the Resonance Rod, which gates nothing here.
-//   Abyssal app.  deep water and posts (Flippers + Hookshot) — the plan
-//                 calls for the Magnetic Gloves, likewise.
+// REGION GATES, AS P9 RE-CUT THEM. Four hold a dungeon's region shut, and the
+// order they impose is the order the dungeons are meant to be played in —
+// proved, tier by tier, by tools/check-progression.mjs:
+//
+//   out of Tidewatch with a sword   Tidewash Grotto (D1), Coral Spire (D2)
+//   Bombs, from D2                  cracked cliff     -> Sunken Marsh (D3)
+//   Kelp-Soled Cleats, from D3      tide channel      -> Cliffs of Kell (D4)
+//                                                     -> Drowned Wood (D5)
+//   five Essences                   the Abyssal Seal  -> Abyssal approach (D6)
+//
+// and two hold optional ground:
+//
+//   Resonance Rod                   salt vane         -> Salt Pans
+//   Dredge Line                     (nothing, now)
+//
+// WHAT WAS WRONG BEFORE, because it is the reason three of these moved. The
+// Cliffs of Kell were held by boulders and the Abyssal approach by an iron
+// plug, and both of those want the DREDGE LINE — which is the item the Abyssal
+// Keep hands over, at the far end of the approach. Four of the six dungeons
+// were behind a key found inside one of them. It was a lock on the game rather
+// than a gate in it, and it survived because every checker asked whether the
+// world opens with everything and none asked whether it opens in order.
+//
+// WHY THE LAST GATE IS NOT AN ITEM. By D6 the player owns everything, so any
+// item that could hold the Keep shut is either already spending itself on an
+// earlier region or is the Keep's own. The Essences are the only key left, and
+// they are the key the source games reach for at exactly this point. See
+// F.SEAL in src/world/tileset.js.
+//
+// WHY THE BELLOWS AND THE REEFSEED GATE NOTHING, stated so it is not read as an
+// omission: neither can. The Bellows' cone lasts exactly as long as the button
+// is held and the player cannot walk while pumping, so it can never be the
+// route you take yourself (that is D4's whole finding). The Reefseed only ADDS
+// ground and cannot remove a barrier. The Brineglass Lens is forbidden from
+// gating anything by docs/ITEMS.md. So D4 and D5 share the Cleats' tier and may
+// be played in either order.
 //
 // The Marsh has exactly two ways in — Bog Causeway (2,7) from the Coast and Bog
-// Stair (1,6) down from the Cliffs — and both are now sealed by a `cliffCracked`
+// Stair (1,6) down from the Cliffs — and both are sealed by a `cliffCracked`
 // tile with a solid cliff run beside it, so each entrance is a one-tile pocket
 // you stand in until you have Bombs. Sealing only the Coast side would have
 // gated nothing, because the Cliffs back door reaches the same screens.
@@ -15538,6 +15634,7 @@ const rooms = {
       '###gggg###',
     ],
     entities: [
+      ['pickup', 3, 2, { kind: 'heartPiece' }],
       ['beetle', 4, 3], ['pickup', 6, 4, { kind: 'heartPiece' }],
     ],
   },
@@ -15666,6 +15763,7 @@ const rooms = {
       '##########',
     ],
     entities: [
+      ['pickup', 2, 2, { kind: 'heartPiece' }],
       ['jellyfish', 3, 3],
     ],
   },
@@ -15696,7 +15794,7 @@ const rooms = {
       'gg..gg..gg',
       'ggg____ggg',
       'gg.GGGG.gg',
-      '#ggVVVVgg#',
+      '#ggZZZZgg#',
       '###gggg###',
     ],
     entities: [
@@ -15907,7 +16005,7 @@ const rooms = {
     legend: 'cliffs', music: 'overworld',
     map: [
       '###gggg###',
-      '#ggMMMMgg#',
+      '#ggZZZZgg#',
       'gg.9999.gg',
       'gg......gg',
       'gg.9999.gg',
@@ -16037,6 +16135,7 @@ const rooms = {
       '###gggg###',
     ],
     entities: [
+      ['pickup', 7, 2, { kind: 'heartPiece' }],
       ['npc', 4, 3, { sprite: 'npc_reefkin_r', dialogue: 'reefFisher' }],
     ],
   },
@@ -16089,6 +16188,7 @@ const rooms = {
       '###gggg###',
     ],
     entities: [
+      ['pickup', 5, 2, { kind: 'heartPiece' }],
       ['tektite', 5, 3],
     ],
   },
@@ -16196,6 +16296,7 @@ const rooms = {
       'TTTggggTTT',
     ],
     entities: [
+      ['pickup', 7, 2, { kind: 'heartPiece' }],
       ['sign', 2, 2, { text: 'North, over the gap: the Salt Pans.' }],
       ['moblin', 6, 4],
     ],
@@ -16354,10 +16455,10 @@ const rooms = {
     map: [
       '###gggg###',
       '#gGGGGGGg#',
-      'gg.====.Mg',
-      'gg.====.Mg',
-      'gg......Mg',
-      'gg______Mg',
+      'gg.====.Ig',
+      'gg.====.Ig',
+      'gg......Ig',
+      'gg______Ig',
       '#gggggggg#',
       '###gggg###',
     ],
@@ -16538,7 +16639,7 @@ const rooms = {
       'gg......gg',
       'ggg....ggg',
       'ggg____ggg',
-      '#MM....MM#',
+      '#II....II#',
       '###gggg###',
     ],
     entities: [
@@ -16819,7 +16920,7 @@ const rooms = {
       'gf.====.fg',
       'gf.====.gg',
       'gfg....ggg',
-      'Tfg....ggT',
+      'TfgIIIIggT',
       'TTTggggTTT',
     ],
     entities: [
@@ -17498,6 +17599,7 @@ const rooms = {
       'TTTTTTTTTT',
     ],
     entities: [
+      ['pickup', 7, 2, { kind: 'heartPiece' }],
       ['octorok', 6, 3],
     ],
     buried: [[3, 4, 'rupee20']],

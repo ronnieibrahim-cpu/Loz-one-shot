@@ -6,19 +6,45 @@
 // table, so a walkable east edge always has a walkable west edge facing it;
 // every other edge tile is barrier, and the world border is solid all round.
 //
-// Region gates use what the tileset can actually enforce:
-//   Coral Reef   1-tile deep gaps          Roc's Feather   (as planned)
-//   Cliffs of Kell  boulders               Power Bracelet  (as planned)
-//   Drowned Wood  a wide deep channel      Zora's Flippers (as planned)
-//   Reef Palace   posts over deep water    Dredge Line     (as planned)
-//   Sunken Marsh  cracked cliff             Bombs           (as planned)
-//   Salt Pans     a deep gap and boulders (Feather + Bracelet) — the plan
-//                 calls for the Resonance Rod, which gates nothing here.
-//   Abyssal app.  deep water and posts (Flippers + Hookshot) — the plan
-//                 calls for the Magnetic Gloves, likewise.
+// REGION GATES, AS P9 RE-CUT THEM. Four hold a dungeon's region shut, and the
+// order they impose is the order the dungeons are meant to be played in —
+// proved, tier by tier, by tools/check-progression.mjs:
+//
+//   out of Tidewatch with a sword   Tidewash Grotto (D1), Coral Spire (D2)
+//   Bombs, from D2                  cracked cliff     -> Sunken Marsh (D3)
+//   Kelp-Soled Cleats, from D3      tide channel      -> Cliffs of Kell (D4)
+//                                                     -> Drowned Wood (D5)
+//   five Essences                   the Abyssal Seal  -> Abyssal approach (D6)
+//
+// and two hold optional ground:
+//
+//   Resonance Rod                   salt vane         -> Salt Pans
+//   Dredge Line                     (nothing, now)
+//
+// WHAT WAS WRONG BEFORE, because it is the reason three of these moved. The
+// Cliffs of Kell were held by boulders and the Abyssal approach by an iron
+// plug, and both of those want the DREDGE LINE — which is the item the Abyssal
+// Keep hands over, at the far end of the approach. Four of the six dungeons
+// were behind a key found inside one of them. It was a lock on the game rather
+// than a gate in it, and it survived because every checker asked whether the
+// world opens with everything and none asked whether it opens in order.
+//
+// WHY THE LAST GATE IS NOT AN ITEM. By D6 the player owns everything, so any
+// item that could hold the Keep shut is either already spending itself on an
+// earlier region or is the Keep's own. The Essences are the only key left, and
+// they are the key the source games reach for at exactly this point. See
+// F.SEAL in src/world/tileset.js.
+//
+// WHY THE BELLOWS AND THE REEFSEED GATE NOTHING, stated so it is not read as an
+// omission: neither can. The Bellows' cone lasts exactly as long as the button
+// is held and the player cannot walk while pumping, so it can never be the
+// route you take yourself (that is D4's whole finding). The Reefseed only ADDS
+// ground and cannot remove a barrier. The Brineglass Lens is forbidden from
+// gating anything by docs/ITEMS.md. So D4 and D5 share the Cleats' tier and may
+// be played in either order.
 //
 // The Marsh has exactly two ways in — Bog Causeway (2,7) from the Coast and Bog
-// Stair (1,6) down from the Cliffs — and both are now sealed by a `cliffCracked`
+// Stair (1,6) down from the Cliffs — and both are sealed by a `cliffCracked`
 // tile with a solid cliff run beside it, so each entrance is a one-tile pocket
 // you stand in until you have Bombs. Sealing only the Coast side would have
 // gated nothing, because the Cliffs back door reaches the same screens.
@@ -175,6 +201,7 @@ const rooms = {
       '###gggg###',
     ],
     entities: [
+      ['pickup', 3, 2, { kind: 'heartPiece' }],
       ['beetle', 4, 3], ['pickup', 6, 4, { kind: 'heartPiece' }],
     ],
   },
@@ -303,6 +330,7 @@ const rooms = {
       '##########',
     ],
     entities: [
+      ['pickup', 2, 2, { kind: 'heartPiece' }],
       ['jellyfish', 3, 3],
     ],
   },
@@ -333,7 +361,7 @@ const rooms = {
       'gg..gg..gg',
       'ggg____ggg',
       'gg.GGGG.gg',
-      '#ggVVVVgg#',
+      '#ggZZZZgg#',
       '###gggg###',
     ],
     entities: [
@@ -544,7 +572,7 @@ const rooms = {
     legend: 'cliffs', music: 'overworld',
     map: [
       '###gggg###',
-      '#ggMMMMgg#',
+      '#ggZZZZgg#',
       'gg.9999.gg',
       'gg......gg',
       'gg.9999.gg',
@@ -674,6 +702,7 @@ const rooms = {
       '###gggg###',
     ],
     entities: [
+      ['pickup', 7, 2, { kind: 'heartPiece' }],
       ['npc', 4, 3, { sprite: 'npc_reefkin_r', dialogue: 'reefFisher' }],
     ],
   },
@@ -726,6 +755,7 @@ const rooms = {
       '###gggg###',
     ],
     entities: [
+      ['pickup', 5, 2, { kind: 'heartPiece' }],
       ['tektite', 5, 3],
     ],
   },
@@ -833,6 +863,7 @@ const rooms = {
       'TTTggggTTT',
     ],
     entities: [
+      ['pickup', 7, 2, { kind: 'heartPiece' }],
       ['sign', 2, 2, { text: 'North, over the gap: the Salt Pans.' }],
       ['moblin', 6, 4],
     ],
@@ -991,10 +1022,10 @@ const rooms = {
     map: [
       '###gggg###',
       '#gGGGGGGg#',
-      'gg.====.Mg',
-      'gg.====.Mg',
-      'gg......Mg',
-      'gg______Mg',
+      'gg.====.Ig',
+      'gg.====.Ig',
+      'gg......Ig',
+      'gg______Ig',
       '#gggggggg#',
       '###gggg###',
     ],
@@ -1175,7 +1206,7 @@ const rooms = {
       'gg......gg',
       'ggg....ggg',
       'ggg____ggg',
-      '#MM....MM#',
+      '#II....II#',
       '###gggg###',
     ],
     entities: [
@@ -1456,7 +1487,7 @@ const rooms = {
       'gf.====.fg',
       'gf.====.gg',
       'gfg....ggg',
-      'Tfg....ggT',
+      'TfgIIIIggT',
       'TTTggggTTT',
     ],
     entities: [
@@ -2135,6 +2166,7 @@ const rooms = {
       'TTTTTTTTTT',
     ],
     entities: [
+      ['pickup', 7, 2, { kind: 'heartPiece' }],
       ['octorok', 6, 3],
     ],
     buried: [[3, 4, 'rupee20']],

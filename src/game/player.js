@@ -16,6 +16,7 @@ import {
   Entity, moveEntity, canOccupy, groundFlags, groundTile, findSafeTile, DIR_VEC, DIRS,
 } from './entity.js';
 import { F, transformFor } from '../world/tileset.js';
+import { sealEssences } from '../world/maps.js';
 import { TILE } from '../core/screen.js';
 import { sp, toPx } from '../core/fixed.js';
 import { sprites } from '../gfx/art.js';
@@ -107,6 +108,11 @@ export class Player extends Entity {
     this.caps.swim = this._cleats > 0;
     this.caps.sink = this.underwater;
     this.caps.cutting = false;
+    // The Abyssal Seal. The ONLY thing in the game that opens on progress
+    // rather than on an item, and the only cap nothing else sets — which is
+    // what makes an enemy, a thrown pot and a dredged weight all stop at a
+    // seal, because they are moved with the default caps.
+    this.caps.sealed = (p.essences || []).length >= sealEssences();
   }
 
   // ------------------------------------------------------------------ update

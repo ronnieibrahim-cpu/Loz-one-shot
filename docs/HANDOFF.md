@@ -224,6 +224,38 @@ is in the page, and nothing steps until you say so.
 
 ## Hard-won lessons — do not rediscover these
 
+**P9, and the largest bug this project has had.**
+
+1. **"REACHABLE WITH EVERYTHING" IS NOT "PLAYABLE."** Four of the six dungeons
+   sat behind the Dredge Line, which is the sixth dungeon's own item. The game
+   could not be finished. `check-overworld.mjs` was green, because it asks
+   whether the world opens when the player holds every gate item and whether
+   each gate shuts its own region — and both of those are true of a world
+   locked in a circle. Nothing asked whether the world opens IN THE ORDER the
+   dungeons hand things over. `tools/check-progression.mjs` asks that now, and
+   the first thing to do after touching a gate, a dungeon mouth or an item's
+   home is to run it.
+2. **THE LAST DUNGEON CANNOT BE LOCKED WITH AN ITEM,** and this is structural
+   rather than a fact about this game. By the time the player stands in front
+   of it they own everything, so any item that could hold it shut is either
+   already spending itself on an earlier region or is the one that dungeon
+   hands over. The answer the source games use is progress itself, and that is
+   what `F.SEAL` is: a barrier that opens on the Essence count and on nothing
+   in the inventory.
+3. **MOST ITEMS CANNOT GATE A REGION AT ALL, and the reasons are worth
+   knowing before designing one.** An item gates terrain only if it REMOVES a
+   barrier or CHANGES HOW YOU MOVE. The Bellows does neither — its cone lasts
+   as long as the button is held and you cannot walk while pumping, so it can
+   open a wheel but never a route. The Reefseed only ADDS ground. The Lens is
+   informational and forbidden. The Anchor and the Chartstone move nothing.
+   That leaves the Cleats out of six dungeon items.
+4. **A GATE PROBE MUST APPROACH OVER GROUND IT CAN STAND ON.** The first cut of
+   the Abyssal Seal's harness put the player under a `9` — a tide tile that is
+   over your head at the MID the harness pins — so the player drowned in place
+   and "the player stops one tile short of the seal" passed without the seal
+   being involved at all. A traversal gate asserted from the SHUT side is
+   satisfied by any reason the player did not move.
+
 **The cliff family (PT step 5), and the four things it cost.**
 
 1. **A STITCHED SHEET'S SCREEN GUIDES INSERT A ROW, THEY DO NOT OVERWRITE ONE.**

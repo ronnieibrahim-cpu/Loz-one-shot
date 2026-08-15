@@ -10,6 +10,103 @@ maintain and the most expensive thing to not have.
 
 ---
 
+## Where P9 stands, in one line
+
+**P9's re-gate is landed and it found the largest bug this project has had: the
+game could not be finished.** Four of the six dungeons sat behind the Dredge
+Line, which is the SIXTH dungeon's own item. Every checker in the repo was
+green. The three P9 clauses that are content — the gates, the Lens rule, the
+heart economy — are done; **the one that is not is that nobody has played any of
+it**, which is still the largest open item in the project and the one no tool
+can close.
+
+### What the last session did (P9, the re-gate)
+
+**THE BUG.** The Cliffs of Kell were held shut by boulders and the Abyssal
+approach by an iron plug. Both want the Dredge Line, which is inside the Abyssal
+Keep, at the far end of the approach. So D4, D6 and everything past them were
+behind a key found inside one of them. `check-overworld.mjs` passed throughout,
+because it asks whether the world opens WITH EVERYTHING and whether each gate
+shuts its own region — both true of a world locked in a circle. Nothing asked
+whether it opens IN ORDER.
+
+**`tools/check-progression.mjs` is new and it is the checker that asks.** It
+floods the overworld once per TIER of the run, holding only what the dungeons
+before that tier hand over, and proves three things: every dungeon's mouth is
+reachable with items from dungeons before it (the anti-lock assertion, the one
+that would have failed); no dungeon is reachable one tier early; and each tier
+opens ground the tier before it could not. It also counts the heart economy. It
+was negative-tested — delete the seal and it fails two assertions.
+
+**THE TIERS, and they are proved rather than asserted:**
+
+| With | Opens | Held by |
+|---|---|---|
+| a sword | D1 Tidewash Grotto, D2 Coral Spire | — |
+| Bombs, from D2 | D3 Bogwater Sanctum | cracked cliff, `F.BOMBABLE` |
+| the Cleats, from D3 | D4 Cliffside Cistern, D5 Drowned Wood Shrine | tide channel, `F.SWIMGATE` |
+| five Essences | D6 Abyssal Keep | the Abyssal Seal, `F.SEAL` |
+
+43 -> 52 -> 85 -> 93 screens of 120.
+
+**TWO NEW TILES, AND ONE OF THEM IS A NEW KIND OF GATE.** `tideChannel` is deep
+water at every level, so no conch drains it and only the Cleats cross it; it
+carries `F.SWIMGATE` beside `F.DEEP` so a checker can tell "gated on the Cleats"
+from "unreachable". `abyssSeal` carries `F.SEAL`, which is the one gate in the
+game **no item opens** — it stands until the player carries every Essence but
+the last (`sealEssences()` in maps.js, derived from the dungeon count rather
+than written down). `Room.solidAt` answers SEAL before SOLID and reads
+`caps.sealed`, which `Player.syncCaps` sets from the essence list and nothing
+else sets at all, so an enemy, a thrown pot and a dredged weight all stop at it.
+
+**WHY THERE ARE FOUR REGION GATES AND NOT THE FIVE P9 ASKED FOR.** Of the six
+dungeon items only ONE can gate terrain. An item gates a region only if it
+removes a barrier or changes how you move: the Bellows' cone lasts as long as
+the button is held and you cannot walk while pumping (D4's own finding), so it
+can open a wheel but never a route; the Reefseed only ADDS ground; the Lens is
+forbidden by docs/ITEMS.md; the Anchor and the Chartstone move nothing; and the
+Dredge Line is the last dungeon's, so anything it holds is a lock. That leaves
+the Cleats — which is why D4 and D5 share a tier and may be played either way
+round, and why the last tier is not an item at all.
+
+**The heart economy was still built for eight dungeons.** Eighteen Pieces of
+Heart — not a multiple of four, so two of them bought nothing and the cap sat at
+13. Six more were placed (one each in the abyss, the salt pans, the reef, the
+cliffs, the wood and the south bluff, all in screens no replay walks through, so
+the `nextId` phasing trap did not fire and all 51 replays passed untouched).
+24 pieces, 6 containers, 3 at the start: **a cap of 15**, and every piece can be
+spent. `check-progression.mjs` asserts both.
+
+**Three hearts and half-heart contact damage were already true** — `progress.js`
+starts at `3 * HEART_UNITS` and an ordinary enemy carries `damage: 2` of four.
+Stated because P9 asks for them and a later session should not go looking.
+
+**Seen on screen.** `tools/shots/room-overworld_2_1-tide1-px64.png` (four carved
+seals across the Abyss Stair, in the abyss ramp) and
+`room-overworld_3_4-tide1-px112.png` (the Deep Cut's channel).
+
+### What is weak about the re-gate
+
+- **NOBODY HAS PLAYED ANY OF IT.** Still the largest open item in the project.
+  The tiers are a flood's word; the difficulty curve across the six dungeons has
+  never been felt by anyone.
+- **Four gates, three keys.** Bombs, the Cleats and the Essences. The world's
+  shape is therefore coarse: one item opens half the map.
+- **D4 and D5 share a tier**, so the Cistern and the Shrine can be played in
+  either order. That is honest — neither needs the other's item — but it is not
+  a curve.
+- **The Dredge Line now gates nothing on the overworld.** It is the last
+  dungeon's item and there is nothing after it; its gating work is inside the
+  Keep. The boulder and the plug tiles still exist and are unplaced.
+- **The Resonance Rod's home is still not stated anywhere.** It gates the Salt
+  Pans and it is not one of the six dungeon items; `check-progression.mjs`
+  deliberately does not put it in a tier, which means nothing proves the player
+  can get it before the Pans.
+- **The seal has no voice.** Walking into it just stops you. It wants a line, or
+  a plaque, or the Maku Tree saying what it is waiting for.
+
+---
+
 ## Where PT stands, in one line
 
 **PT IS DONE. Steps 1-4 landed in earlier sessions and step 5's big item — the
@@ -302,14 +399,12 @@ because the world moved rather than the movement.
 
 ---
 
-## The prompt to paste — P9, and the ledges if P9 does not want them
+## The prompt to paste — what P9 left, and the three jobs behind it
 
-PT is finished. **P9 is the phase the plan wants next** and its own brief is the
-re-gate of the overworld; the four things it inherits are listed under "Where P8
-stands" below, and the largest of them is that nobody has played any of the six
-dungeons. The terrain backlog's remaining item — the `ledge` families — is a
-self-contained alternative if a session wants terrain rather than design, and it
-is now much cheaper than the cliff was because the autotile machinery exists.
+P9's re-gate is landed. What it could not do is the thing no tool can: **play
+it.** That is the top job and it is the largest open item in the project. Behind
+it sit the three that have been on the board since P8 — the unplaced enemies,
+the legibility findings, and the ledge families.
 
 ```
 Read docs/NEXT-SESSION.md first: it is written to be self-contained and the
@@ -337,20 +432,33 @@ pre-installed Chromium does not match, so every headless harness dies with
 under "Environment setup a fresh container needs". `pip install pillow` before
 any rip-*.py tool will run.
 
-THE FOUR THINGS P9 INHERITS, and they are written out under "Where P8 stands":
-  1. NOBODY HAS PLAYED ANY OF THE SIX DUNGEONS. Every claim on the board is a
-     checker's. No tool in the repo can close this one.
+THE FOUR JOBS ON THE BOARD, hardest and most valuable first:
+  1. NOBODY HAS PLAYED ANY OF IT. Six dungeons, four region gates, one heart
+     economy, and every claim about all of it is a checker's. No tool in the
+     repo can close this one, and it has been the top item since P8. If you
+     take it: `node tools/shoot-rooms.mjs` and `tools/replay.mjs` are the two
+     ways this project has ever looked at itself, and neither is playing.
+     Say plainly what is fun, what is confusing, and where the curve breaks.
   2. Three enemies are registered and unplaced: thalassor, saltwraith,
      gustharpy. Place them or take them out WITH their sprites — and taking
      one out means removing its cell from the ripper's map and re-emitting,
      not deleting lines from a generated file.
-  3. The overworld is still gated for eight dungeons. The fold made the Salt
-     Pans and the Reef Palace one-room ruins, so the routing through those two
-     regions wants a second look. This is P9's own brief.
-  4. docs/ART-BACKLOG.md's legibility findings from D2, D3 and D4, all the same
+  3. docs/ART-BACKLOG.md's legibility findings from D2, D3 and D4, all the same
      shape: the mechanic is legible when it works and silent when it does not.
      D5's bole and D6's lintel are the argument for how to fix them — when the
      answer wants to be a shade of water, spend a whole tile of art instead.
+  4. The ledge families, the biggest terrain job left. The cliff family is the
+     worked example and the machinery exists (`family` and `pieces` on a
+     tiledef, Room.artAt). The catch: a ledge's DIRECTION is authored data the
+     player's hop reads, so only the ENDS of a run can come off the neighbours.
+
+WHAT P9 LEFT UNDONE, so it is not rediscovered:
+  * The Resonance Rod gates the Salt Pans and nothing states where the Rod is
+    found. check-progression.mjs deliberately leaves it out of the tiers, which
+    means nothing proves the player can get it before the Pans.
+  * The Dredge Line gates nothing on the overworld now — it is the last
+    dungeon's item. `boulder` and `abyssPlug` are registered and unplaced.
+  * The Abyssal Seal has no voice: walking into it just stops you.
 
 IF YOU DO THE LEDGES INSTEAD, the cliff family is the worked example and the
 machinery is already there: a tiledef carries `family` and `pieces`, and
@@ -389,6 +497,7 @@ THE CHECKERS TAKE A WHILE. Run them; do not reason about correctness instead.
   node tools/walk-dungeons.mjs      23/23 over six dungeons
   node tools/check-overworld.mjs    17/17
   node tools/check-gates.mjs        15/15
+  node tools/check-progression.mjs 18/18   <- the dungeons open IN ORDER
   node tools/check-towns.mjs        58/58   <- PINCH=1 prints each town's cuts
   node tools/check-items.mjs        82/82
   node tools/check-charms.mjs       63/63

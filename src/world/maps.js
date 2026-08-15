@@ -156,6 +156,18 @@ export function essenceCount() {
   return dungeons().filter(m => m.dungeon.essence != null).length;
 }
 
+/**
+ * How many Essences the Abyssal Seal wants: every one but the last dungeon's.
+ *
+ * DERIVED, not written down, for the same reason `essenceCount` is. The seal
+ * holds the last dungeon shut, so the number it wants is "all of them except
+ * the one behind me" — and a session that adds or folds a dungeon must not have
+ * to remember that a tile somewhere counts to five.
+ */
+export function sealEssences() {
+  return Math.max(1, essenceCount() - 1);
+}
+
 /** Structural validation: every warp must resolve to a room that exists. */
 export function validateMaps() {
   const problems = [];
