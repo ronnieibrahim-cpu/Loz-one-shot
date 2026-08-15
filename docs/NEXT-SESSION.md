@@ -156,6 +156,23 @@ Written up in HANDOFF and in PLAYTEST's step 2.
 All five gates pass all of it. That is the first thing in this project proved
 by playing rather than by flooding.
 
+**It then went after the one failure in this game that would be UNWINNABLE.** A
+locked door spends the key BEFORE it opens — `useKey` decrements, then
+`setTile`, then `persistTile` — so a door that does not survive a save leaves
+the player with the key gone and the door shut, and small keys are one per
+lock. Not a walk-back: a save file that can never be finished, invisible to
+every checker in the repo because all of them read the map rather than play it.
+One locked door and one boss door per dungeon, positions read out of the data
+rather than typed in (a door that moves must not silently stop being tested —
+that is what happened to `check-gates.mjs`'s boulder). Twelve dungeons' worth
+of assertions: the door opens, it is still open after a save and a reload, the
+key is spent exactly once, and the spent key does not come back.
+
+**All 64 assertions pass, and they were watched failing first.** `persistTile`
+was sabotaged to drop `dDoorOpen` and the run produced twelve legible failures
+across all six dungeons before the tree was restored — on a clean index, which
+is the other half of that lesson.
+
 ### What P9 has left
 
 1. **PLAY IT.** `docs/PLAYTEST.md` is the protocol. The re-gate changed the

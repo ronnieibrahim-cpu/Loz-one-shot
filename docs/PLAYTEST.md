@@ -7,7 +7,7 @@ it exists because that is exactly the gap.**
 turned into a harness: it drives all five region gates the way a player meets
 them and then does the awkward things to each — wrong item, right item, walk
 away and come back, save and reload with every room rebuilt. The list in "the
-ten things only a person triggers" below is not unautomatable, it is merely
+eleven things only a person triggers" below is not unautomatable, it is merely
 UNCHECKED, and each item on it that gets a harness is one a person no longer
 has to spend a session on. Automate down that list as you go; what is left at
 the bottom is what a person is really for.
@@ -193,10 +193,12 @@ Where each kind lands:
 Play to break it. The route below is ordered so that each stage can be reached
 by the previous one; a stage you set up from the console is worth less.
 
-## The ten things only a person triggers
+## The eleven things only a person triggers
 
 Every one of these has bitten this project or is a class that has. Try each
-deliberately in every dungeon you test.
+deliberately in every dungeon you test. Items 2 and 3 now have a harness —
+`tools/play-gates.mjs` — so start below them unless you are changing how
+persistence works.
 
 1. **Walk away mid-puzzle and come back.** A wheel that fires once and is open
    for ever spawned a key in D4, and leaving the room without picking it up lost
@@ -213,28 +215,34 @@ deliberately in every dungeon you test.
    not it was ever written down. Only quitting to the title and loading proves
    anything. `tools/play-gates.mjs` automates exactly this for the five region
    gates and is the worked example of the distinction.
-3. **Die on purpose in the middle of the mechanic.** Where do you respawn, what
+3. **Open a locked door, then save and reload.** `tools/play-gates.mjs` now
+   covers this for one locked door and one boss door per dungeon, and it is the
+   highest-severity class in the game: the key is spent BEFORE the door opens,
+   so a door that forgets leaves you with the key gone and the door shut, and
+   small keys are one per lock. What the harness does not cover is a door
+   opened, then a DIFFERENT door opened, then a reload — go and do that.
+4. **Die on purpose in the middle of the mechanic.** Where do you respawn, what
    state did the room keep, and can you still finish it?
-4. **Do it in the wrong order.** Take the wrong branch of a D2 fork on purpose.
+5. **Do it in the wrong order.** Take the wrong branch of a D2 fork on purpose.
    Grow a Reefseed pillar in the stupidest reachable place — `check-reefseed`
    proves you cannot brick a room that way, so if you can, that is a real find.
    Plant, leave, come back.
-5. **Change the tide at the worst moment.** Sound the conch while swimming,
+6. **Change the tide at the worst moment.** Sound the conch while swimming,
    mid-hop, standing on a tile that is about to become deep, standing on one
    that is about to become solid. Standing inside an Anchor patch at its edge.
-6. **Cross a room seam while something is happening.** Mid-swing, mid-hop,
+7. **Cross a room seam while something is happening.** Mid-swing, mid-hop,
    being knocked back, with a thrown item in the air, carrying something.
    Transitions are where fixed-point rounding bites — `| 0` truncates toward
    zero and misrounds across x=0, which happens on every transition.
-7. **Stand on the seam of two tide levels.** The field resolves per tile, so a
+8. **Stand on the seam of two tide levels.** The field resolves per tile, so a
    hitbox spanning the edge sees two answers. Watch the O overlay's local level.
-8. **Use the wrong item on everything.** A bomb on a kelp snarl (must fail —
+9. **Use the wrong item on everything.** A bomb on a kelp snarl (must fail —
    `cut` is its only transform), the sword while swimming (must fail), the
    Bellows and the Dredge Line while in deep water or underwater (both must
    refuse — a weighted line is thrown from your heels).
-9. **Spam.** Hold every button. Mash A through a cutscene, a chest, a dialogue,
+10. **Spam.** Hold every button. Mash A through a cutscene, a chest, a dialogue,
    an essence claim. Open the menu during a transition, a cutscene, a death.
-10. **Play a 2x1 / 1x2 room.** Only a handful exist (D2's Reefguard Hall and
+11. **Play a 2x1 / 1x2 room.** Only a handful exist (D2's Reefguard Hall and
     Spire Ascent, D6's Crossed Shafts). Watch the camera with **I** on: the
     deadzone constants are `guessed` and this is the only way to settle them.
 

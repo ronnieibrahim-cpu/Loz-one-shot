@@ -19,6 +19,11 @@
 // restored by different code on different paths (`restoreRoomState` on entry,
 // the save file on load). Nothing has ever checked that all three agree.
 //
+// It also plays every dungeon's locked door and boss door, because that is the
+// one failure in this game that would be UNWINNABLE rather than annoying: a
+// locked door spends the key BEFORE it opens, so a door that forgets leaves the
+// player with the key gone and the door shut, and small keys are one per lock.
+//
 // It asserts, per transform gate:
 //   * the gate is shut when you first meet it, and the wrong item leaves it shut
 //   * the right item opens it
