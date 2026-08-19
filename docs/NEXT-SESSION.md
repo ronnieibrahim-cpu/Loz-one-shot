@@ -10,6 +10,115 @@ maintain and the most expensive thing to not have.
 
 ---
 
+## THE BOARD, UPDATED AGAIN — the route retuned past the push-block blocker, D1's health economy instrumented and fixed
+
+**`tools/playthrough-route.mjs` was stale in exactly the way the previous
+board's first job said it was**, and this session did that job: the route now
+drives past both locked doors and the Sluicegate to the Anchor chest
+(`d1/0,3,2`), using `travel` for room-to-room movement instead of hand-picked
+`goto` waypoints (which is what broke — a `goto` aimed at a tile a push block
+now solidly occupies fails to path at all, and the whole rest of the old
+route quietly played out inside the wrong room). `GOAL.blocked` is gone;
+`GOAL.needsVerb` replaces it, naming the real remaining gap honestly: past
+the Sluicegate every room is gated by the Anchor's OWN placement verb (sink
+on a tile, walk, recall), and `actor-runtime.mjs` has no directive for that —
+`dUse` presses whichever button an item is on, which is right for the conch
+and wrong for placing something at a chosen tile. That is real dungeon
+engineering (the Iron Pipe / Long Race gate pair, two anchor-gauge rooms) and
+is the next session's dungeon job, not a bug to route around.
+
+**Two real bugs in the shared actor (`tools/actor-runtime.mjs`) were found
+and fixed getting there, both in `dLoot`, both proven behaviour-preserving
+(all 51 replays still pass unchanged — a well-behaved pickup is still
+collected on the first attempt, so neither fix's code path is exercised by
+any existing recorded tape):**
+
+1. A puzzle-reward pickup spawned mid-sweep (mid-`grabDelay`) read as
+   "nothing here" and was abandoned for good. The Sunken Hall's fairy — D1's
+   only unconditional heal, only reachable at all now that push blocks
+   work — sat uncollected on the floor for the rest of every run this way.
+2. A reward pickup that pops and settles one tile above its logical spawn
+   tile (documented in `dungeons-a.js`'s own comment on the Crab Pit's key —
+   "the player can only just touch it") was approached at the WRONG tile
+   (its centre-Y, one tile too low) and never collected. `dLoot` now retries
+   one tile further north before giving up.
+
+**Health at every room boundary is now instrumented, not guessed.**
+`tools/check-playthrough.mjs` prints a table (room, frame span, hearts
+in/out, trough, damage, healing) plus the three worst stretches computed
+from it. Full writeup, including exactly which enemies' drop odds moved and
+why the trough needed a GUARANTEED heal rather than a probability bump, is
+in `docs/FEEL-SPEC.md` under "Health economy — D1, instrumented rather than
+guessed". The short version:
+
+**Before** (route fixed, looter fixed, no balance changes — seed `20260806`):
+
+```
+   room                    frames      in   out   min   dmg  heal
+   d1/0,3,6 Drinking Floor  1938-2970  12    10     6     6     4
+   d1/0,3,5 Sunken Hall     2970-3954  10    12    10     0     2   <- the fairy, now collectable post-dLoot-fix
+   d1/0,2,4 Crab Pit        5477-6050  10    10     6     4     4
+   d1/0,3,4 Tide Gallery(3) 6763-7298   8     4     4     4     0
+   d1/0,3,3 Locked Stair    7298-8658   4     4     4     0     0
+   d1/0,3,2 Sluicegate      8658-8900   4     4     4     0     0
+worst stretches: 2850-frame drought (Switch Room -> Sluicegate, no heal at
+all); deepest trough 4/12 qh (1 heart) at the Tide Gallery's third pass;
+spikes >1/3 max at the Drinking Floor (6qh), Crab Pit (4qh) and Tide
+Gallery (4qh).
+```
+
+**After** (`drops: 'good'` on the Drinking Floor / Tide Gallery / Locked
+Stair enemies, plus one GUARANTEED heart pickup added to the Switch Room's
+puzzle reward, both in `src/data/dungeons-a.js`):
+
+```
+   room                    frames      in   out   min   dmg  heal
+   d1/0,3,6 Drinking Floor  1938-2970  12     6     6     6     0
+   d1/0,3,5 Sunken Hall     2970-3954   6    12     6     0     6
+   d1/0,2,4 Crab Pit        5477-6050  10    10     6     4     4
+   d1/0,4,4 Switch Room     6256-6771   8    12     8     0     4   <- the guaranteed heal
+   d1/0,3,4 Tide Gallery(3) 6771-7127  12    12    12     0     0
+   d1/0,3,3 Locked Stair    7127-8487  12    12    12     0     0
+   d1/0,3,2 Sluicegate      8487-8729  12    12    12     0     0
+worst stretches: deepest trough now 6/12 qh (half a heart's worth of max —
+i.e. exactly half, at the Drinking Floor, the first fight in the game) and
+the run reaches the Sluicegate at FULL health.
+```
+
+The Drinking Floor's own trough (half health, first fight) was left alone on
+purpose: it is the game's very first combat, the room's odds were already
+raised to `good` and simply did not draw a heart on this seed, and a second
+guaranteed heal there would push the run's floor above half — which the
+brief explicitly ruled out ("a run that never drops below half is as wrong
+as one that dies"). Three hits of half-heart contact damage in the tutorial
+fight of a three-heart-start game is inside P9's curve, not a violation of
+it.
+
+`node tools/check-playthrough.mjs` is 19/19. Every other checker in the
+CLAUDE.md table was re-run after the `dungeons-a.js` edits and is unchanged:
+`validate.mjs` OK, `test.mjs` 58/58, `replay.mjs` 51/51 (unchanged — proof
+the `dLoot` fix is behaviour-preserving), `walk-dungeons.mjs` 23/23,
+`check-overworld.mjs` 17/17, `check-gates.mjs` 15/15, `check-anchor.mjs`
+14/14, `check-items.mjs` 82/82, `solve-switches.mjs` 9/9.
+
+**Next session's job, in order:**
+
+1. **Teach the actor an anchor-placement verb** (sink at a chosen tile, walk
+   away, recall) and extend `playthrough-route.mjs` past the Sluicegate —
+   the Iron Pipe/Long Race gate pair, the two anchor-gauge rooms, the
+   Clawcrab Den miniboss, the Boss Key, and finally Gohmaraq. `GOAL.room`
+   moves to `d1/0,3,1` (or the essence pickup) once it does.
+2. Once the route reaches the boss and beyond, the health-economy
+   instrumentation should be re-read for D1's SECOND half (the Anchor
+   gate rooms, the Clawcrab Den, the boss fight) — nothing here says
+   anything about whether THAT stretch is thin, only about the stretch a
+   route could actually reach.
+3. The 32 stale branches from the branch-audit session are still
+   undeleted (see the archived board section below) — branch deletion was
+   still 403ing from this session's outbound proxy too; try again.
+
+---
+
 ## THE BOARD, UPDATED AGAIN — three branches merged, 32 stale branches classified
 
 **A branch-audit session merged the three branches carrying real unmerged

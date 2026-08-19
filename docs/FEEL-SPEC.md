@@ -519,3 +519,106 @@ consumes no state. Any future draw-time jitter must do the same.
    replays in the same change as the constant.
 4. Run the rest: `validate.mjs`, `test.mjs`, `walk-dungeons.mjs`,
    `check-overworld.mjs`, `check-gates.mjs`, `solve-switches.mjs`.
+
+---
+
+## Health economy — D1, instrumented rather than guessed (`derived`)
+
+`tools/check-playthrough.mjs` now prints a table of health at every room
+boundary (room, frame span, hearts in/out, `minHearts` in the room, damage
+taken, healing found), plus the three worst stretches it can compute from
+that table: the longest run with no heal available, the deepest trough, and
+every room that alone cost more than a third of the cap. See
+`tools/actor-runtime.mjs`'s `_roomHealthTick` for how it is collected — one
+entry per room VISIT, closed the instant the room key changes, so a room
+crossed three times gets three rows rather than one average.
+
+Two bugs in the actor's `dLoot` were found and fixed BEFORE any balance
+number was touched, because a health-economy reading taken through a broken
+looter is not a reading of the game:
+
+- **A puzzle-reward pickup spawned mid-sweep read as "nothing here" and was
+  never retried.** `dLoot` filtered on `grabDelay <= 0` and gave up the
+  instant nothing passed, which is right for "there is genuinely nothing to
+  loot" and wrong for "there is something, it just popped this frame and has
+  `PICKUP_GRAB_DELAY` (8f) left to count down." The Sunken Hall's fairy — the
+  only heal D1 hands out unconditionally, freshly reachable now that push
+  blocks work — was found sitting uncollected for the rest of every run this
+  way. Fixed: something present but not yet grabbable is waited on; only
+  "nothing present at all" gives up.
+- **A reward pickup can rest one tile above the tile it logically spawned
+  on and stay there** (`dungeons-a.js`'s own comment on the Crab Pit's key:
+  "pops about five pixels up and never comes back down… the player can only
+  just touch it"). `dLoot` walked to the tile its centre-Y resolved to, which
+  is the tile BELOW where the sprite actually sits, and stood there forever
+  without touching it. Fixed: a stand that does not collect the item gets one
+  retry a tile further north before it is given up on.
+
+Both are proven behaviour-preserving: all 51 replays in `tools/replays/`
+still pass unchanged (`node tools/replay.mjs`), because a well-behaved pickup
+is still collected on the very first attempt: these two paths only fire when
+the first stand fails, which no existing replay's recorded tape ever hit.
+
+**With the looter fixed, the instrumented D1 run (seed `20260806`, the
+Grotto Mouth to the Sluicegate — see `playthrough-route.mjs`'s `GOAL`) found
+three real spikes, judged against P9's curve (3 hearts at start, half-heart
+contact damage, 14-16 at cap — not against whether the scripted swordsman
+survives):**
+
+| Room | Cost | Note |
+|---|---|---|
+| `d1 0,3,6` Drinking Floor | 6 qh (1.5 hearts) | the FIRST fight in the game — two crabs and a keese, no heal upstream of it at all |
+| `d1 0,2,4` Crab Pit | 4 qh in, 4 qh back | self-answers via its own `common` heart chance; not a true spike, but crosses the 1/3 line |
+| `d1 0,3,4` Tide Gallery | up to 4 qh per pass, 3 passes | the dungeon's crossroads — every route to the Crab Pit, the Switch Room and the Locked Stair crosses it, so a run pays its contact damage two or three times over with nothing to answer it |
+
+The deepest trough, before any change: **4/12 qh (1 heart)**, reached in the
+Tide Gallery's third pass, with a **2850-frame drought** afterward (Switch
+Room through the Sluicegate) offering no heal of any kind before the run's
+end — one more half-heart hit anywhere in that stretch and the run was over.
+
+**Two kinds of fix, and they were kept deliberately separate:**
+
+1. `drops: 'good'` on the Drinking Floor's, the Tide Gallery's and the Locked
+   Stair's enemies (`src/data/dungeons-a.js`), up from the roster's default
+   `common` — a per-placement override (`opts.drops`), so nothing changes for
+   these enemy TYPES anywhere else in the game. This raises the ODDS of a
+   heart at the three rooms the table named, without guaranteeing one.
+2. **One guaranteed heal**, not a roll: the Switch Room's puzzle reward now
+   spawns a `heart` pickup beside the key
+   (`d1 0,4,4`, `src/data/dungeons-a.js`). This is the fix that actually
+   closed the trough. A probabilistic drop cannot be proven against a single
+   deterministic seed the way a fixed placement can — raising three rooms'
+   odds to `good` still depends on the room's own RNG stream actually
+   rolling a heart, and on seed `20260806` the pass that mattered most
+   (the Tide Gallery's third crossing) did not. The Switch Room sits
+   immediately upstream of the whole drought, so a guaranteed heal there is
+   the one heal in the dungeon a run can rely on rather than hope for.
+
+**After both: the deepest trough on this seed is 6/12 qh (half a max, at the
+same first fight) and the run reaches the Sluicegate at full health (12/12).**
+It does not stay comfortable throughout — it is still cut to exactly half in
+the first room, which is deliberately left alone (see below) — but it no
+longer bottoms out at one heart with nothing behind it. Before/after tables
+for the full run are in `docs/NEXT-SESSION.md`.
+
+**What was deliberately NOT touched, and why:**
+
+- **The Drinking Floor's own trough (half health, first fight) was left
+  alone.** Bumping its odds to `good` was tried and, on this seed, drew
+  nothing — the room still cost the same 6 qh. Adding a SECOND guaranteed
+  heal there, on top of the `good` odds already given, would push the run's
+  floor above half in its very first room, which is the thing the brief
+  explicitly warned against: "a run that never drops below half is as wrong
+  as one that dies." A poor player taking three hits (two crabs, one keese,
+  all half-heart) in the tutorial fight of a game whose curve is three
+  hearts and half-heart contact damage is inside the curve, not a violation
+  of it.
+- **Enemy contact damage was not changed anywhere.** Every D1 enemy already
+  deals exactly `2` quarter-hearts (half a heart) on contact, which is P9's
+  own number; the thin economy was a heal-supply problem, not a
+  damage-output problem.
+- **The Crab Pit was left alone.** It crosses the 1/3-of-max line on raw
+  damage taken (4 qh) but answers itself in the same room (4 qh healing,
+  net roughly even) via its own puzzle-reward key drop and combat drops — it
+  reads as a spike only because the instrumentation counts gross damage, not
+  net.

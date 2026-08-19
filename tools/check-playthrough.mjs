@@ -144,6 +144,79 @@ function check(name, cond, detail) {
   else { failures.push(name + (detail ? ' — ' + detail : '')); console.log('  FAIL ' + name + (detail ? ' — ' + detail : '')); }
 }
 
+// ------------------------------------------------------------ health economy
+//
+// The instrument the health-economy session asked for: every room boundary,
+// hearts in and out, damage taken, healing found — plus the three worst
+// stretches, judged against the source games' curve (docs/EXECUTION-PLAN.md
+// P9: 3 hearts at start, half-heart contact damage, 14-16 at cap), not
+// against whether this particular scripted swordsman survives.
+
+const qh = (n) => {
+  const h = n / 4;
+  return Number.isInteger(h) ? String(h) : h.toFixed(2).replace(/0$/, '');
+};
+
+function printHealthTable(rows, maxHearts) {
+  if (!rows || !rows.length) return;
+  console.log(`  --- health at every room boundary (quarter-hearts; ${qh(maxHearts)} hearts max) ---`);
+  console.log('   room                    frames      in   out   min   dmg  heal');
+  for (const r of rows) {
+    console.log(`   ${r.room.padEnd(22)} ${String(r.enterFrame).padStart(6)}-${String(r.exitFrame).padEnd(6)} `
+      + `${String(r.enterHearts).padStart(5)} ${String(r.exitHearts).padStart(5)} ${String(r.minHearts).padStart(5)} `
+      + `${String(r.damage).padStart(5)} ${String(r.healing).padStart(5)}`);
+  }
+  console.log('  ------------------------------------------------------------------\n');
+}
+
+/**
+ * The three worst stretches the brief asks for, computed from the same table
+ * rather than eyeballed: the longest run of rooms with no healing anywhere in
+ * them (a drought, in frames), the deepest trough any single room produced,
+ * and every room that alone cost more than a third of the cap (P9's "half a
+ * heart from an ordinary enemy" means a third of a 12-quarter-heart start is
+ * three ordinary hits without a single one missed — a room that costs that on
+ * its own is a spike, not a curve).
+ */
+function worstStretches(rows, maxHearts) {
+  if (!rows || !rows.length) return null;
+  let droughtFrames = 0, droughtStart = null, bestDrought = { frames: 0, from: null, to: null };
+  for (const r of rows) {
+    if (r.healing === 0) {
+      if (droughtStart === null) droughtStart = r;
+      droughtFrames += (r.exitFrame - r.enterFrame);
+    } else {
+      if (droughtFrames > bestDrought.frames) bestDrought = { frames: droughtFrames, from: droughtStart, to: r };
+      droughtFrames = 0; droughtStart = null;
+    }
+  }
+  if (droughtFrames > bestDrought.frames) bestDrought = { frames: droughtFrames, from: droughtStart, to: rows[rows.length - 1] };
+
+  let trough = rows[0];
+  for (const r of rows) if (r.minHearts < trough.minHearts) trough = r;
+
+  const third = maxHearts / 3;
+  const spikes = rows.filter(r => r.damage >= third).sort((a, b) => b.damage - a.damage);
+
+  return { drought: bestDrought, trough, spikes };
+}
+
+function printWorstStretches(rows, maxHearts, label) {
+  const w = worstStretches(rows, maxHearts);
+  if (!w) return;
+  console.log(`  --- worst stretches${label ? ' (' + label + ')' : ''} ---`);
+  console.log(`  longest run with no heal available: ${w.drought.frames} frames`
+    + (w.drought.from ? `, ${w.drought.from.room} through ${w.drought.to.room}` : ''));
+  console.log(`  deepest trough: ${w.trough.minHearts}/${maxHearts} qh in ${w.trough.room}`);
+  if (w.spikes.length) {
+    console.log(`  room(s) costing >1/3 of max (${qh(maxHearts / 3)} hearts):`);
+    for (const s of w.spikes) console.log(`    ${s.room}: ${s.damage} qh (${qh(s.damage)} hearts)`);
+  } else {
+    console.log('  no single room cost more than a third of max hearts.');
+  }
+  console.log('');
+}
+
 // ---------------------------------------------------------------- the driver
 
 async function newPage(browser) {
@@ -204,44 +277,30 @@ console.log(`  acquired: ${a.gained.map(g => `${g.id}@f${g.frame}`).join(', ') |
 console.log(`  hearts: ended ${s.hearts}/${s.maxHearts}, low-water mark ${a.minHearts}, deaths ${a.deaths}`);
 console.log(`  essences: [${s.essences.join(', ')}]  keys spent on doors: ${s.doorsChanged}  chests: ${s.chestsOpened}\n`);
 
+printHealthTable(a.roomHealth, s.maxHearts);
+printWorstStretches(a.roomHealth, s.maxHearts);
+
 // --- 1. how far a new game gets ---------------------------------------------
 //
-// The target is the Essence, and the run does not reach it, because the game
-// cannot currently be finished — `GOAL.blocked` in the route file names the
-// reason. So this asserts the two things that are both true and both worth
-// keeping: the run gets as far as the world allows, and the blocker is still
-// exactly the blocker. Lowering the target quietly to whatever passes is how a
-// suite ends up green on an unfinishable world, which is the failure this whole
-// harness was written to catch, so the miss is printed every run.
+// The target used to be a game bug — GOAL.blocked named the reason a new game
+// could not be finished — and is now a capability gap in the ACTOR: past the
+// Sluicegate every room is gated by the Anchor's own placement verb, which
+// this harness has no directive for. See GOAL's own comment in
+// playthrough-route.mjs.
 
-if (GOAL.blocked) {
-  console.log('  !! THE GAME CANNOT BE FINISHED. The run stops at ' + GOAL.room + '.');
-  console.log('  !! blocked on: ' + GOAL.blocked.what);
-  console.log('  !! because: ' + GOAL.blocked.why);
-  console.log(`  !! ${GOAL.blocked.keysNeeded} Small Keys stand between a new game and the Anchor; `
-    + `${GOAL.blocked.keysObtainable} can be obtained.\n`);
+if (GOAL.needsVerb) {
+  console.log(`  !! the route stops at ${GOAL.room}: the actor has no directive for `
+    + `"${GOAL.needsVerb}", not a game blocker.\n`);
 }
 
 const ended = `${s.mapId}/${s.room}`;
-check('the run gets as far as the world currently allows (' + GOAL.room + ')',
+check('the run gets as far as the route currently drives it (' + GOAL.room + ')',
   ended === GOAL.room, `stopped in ${ended}`);
-
-if (GOAL.blocked) {
-  // The blocker, proved by the run rather than reasoned about. The route leans
-  // on both of the Switch Room's blocks for 120 frames each; if either ever
-  // moves, the engine has gained entity collision and this harness should be
-  // re-pointed at the boss room.
-  check('...and the blocker is still the blocker: no push block ever moved',
-    a.blocksMoved === 0 && a.blocksTouched >= 2,
-    `${a.blocksMoved} of ${a.blocksTouched} blocks moved`);
-  check('...so the second Small Key never arrives', s.keys === 0 && s.doorsChanged === 1,
-    `keys in hand ${s.keys}, doors opened ${s.doorsChanged}`);
-  check('the Essence is NOT reached, and that is the finding',
-    !s.essences.includes(GOAL.essence), `essences [${s.essences.join(',')}]`);
-} else {
-  check('the run claims the Essence of Tidewash Grotto',
-    s.essences.includes(GOAL.essence), `essences [${s.essences.join(',')}]`);
-}
+check('the run earned both Small Keys and spent them on both locked doors',
+  s.doorsChanged >= GOAL.keysObtainable && a.blocksMoved >= 4,
+  `doors ${s.doorsChanged}, blocks moved ${a.blocksMoved}`);
+check('the Essence is not yet reached — the route does not go that far',
+  !s.essences.includes(GOAL.essence), `essences [${s.essences.join(',')}]`);
 
 // --- 2. nothing was handed to it -------------------------------------------
 //
@@ -259,8 +318,8 @@ check('every item the run ends with was acquired during the run',
 
 // --- 3. the dungeon was actually played ------------------------------------
 
-check('the run earned a Small Key and spent it on a locked door',
-  s.doorsChanged >= 1 && a.gained.length >= 2, `doors ${s.doorsChanged}`);
+check('the run collected the Dungeon Map and Chartstone', s.dungeonMap && s.chartstone,
+  `dungeonMap ${s.dungeonMap}, chartstone ${s.chartstone}`);
 check('the run opened chests', s.chestsOpened >= 1, `chests ${s.chestsOpened}`);
 check('the run killed things', s.kills >= 5, `kills ${s.kills}`);
 check('the run walked the overworld before the dungeon',

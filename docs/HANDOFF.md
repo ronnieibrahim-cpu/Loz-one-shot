@@ -224,6 +224,42 @@ is in the page, and nothing steps until you say so.
 
 ## Hard-won lessons — do not rediscover these
 
+**A health-economy reading is only as honest as the looter taking it, and
+`dLoot` had two bugs that silently starved every run for two sessions.**
+Instrumenting D1's room-by-room health economy (see FEEL-SPEC.md) found the
+Sunken Hall's fairy — reachable at all only since push blocks became solid —
+sitting on the floor uncollected at the end of every run. Root cause: (1)
+`dLoot` samples the moment it's called, filters on `grabDelay <= 0`, and gave
+up FOR GOOD the instant nothing passed that filter — right for "nothing is
+here" and wrong for "something just spawned and has `PICKUP_GRAB_DELAY` (8f)
+left to count down," which is exactly the state a puzzle reward is in the
+frame `dLoot` is called right after it. (2) A reward pickup that pops and
+settles can rest visibly ONE TILE ABOVE the tile its centre-Y resolves to —
+`dungeons-a.js` already documented this on the Crab Pit's key ("the player
+can only just touch it") as a fact about the ROOM, but nobody had noticed it
+was also a fact the actor's approach math got wrong, walking to the tile
+below where the sprite actually sits and standing there forever. Both fixed
+in `tools/actor-runtime.mjs`'s `dLoot`; both proven behaviour-preserving by
+all 51 replays passing unchanged, because a well-behaved pickup is still
+collected on the first attempt and neither new code path fires for one. The
+general lesson: a shared actor-runtime bug does not fail loudly — it reads as
+"the game is stingy" when the game handed over the item and the SCRIPT
+walked past it.
+
+**A probabilistic drop-table bump cannot be proven against one deterministic
+seed.** Raising three rooms' drop odds from `common` to `good` (see
+FEEL-SPEC.md) measurably helped the run's total health picture but did NOT
+fix the specific worst trough, because the one roll that mattered on seed
+`20260806` still drew nothing — better odds are not a guarantee, and this
+whole project's checkers are single-seed by design. The fix that actually
+closed the trough was a GUARANTEED pickup (a `heart` added to an existing
+puzzle reward's `spawn` list, deterministic and free of any RNG draw), placed
+at the one room upstream of the drought that mattered. When a specific,
+provable trough needs fixing — as opposed to a general "the odds feel thin"
+— reach for a fixed placement, not a probability, or the fix cannot be shown
+to have worked on the very seed everything else in this repo is proven
+against.
+
 **The wave channel's floor is not the pulse channels' floor.** Writing
 `check-music.mjs`'s frequency-range check surfaced that a track's bass line
 routinely uses octave-1 notes (`D1`≈36.7Hz, `C1`≈32.7Hz) that sit *below* the
