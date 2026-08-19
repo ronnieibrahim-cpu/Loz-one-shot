@@ -130,7 +130,16 @@ const main = async () => {
   // Random high port: concurrent runs must not fight over a fixed one.
   const PORT = Number(arg('port', 0)) || (20000 + Math.floor(Math.random() * 20000));
   const server = await serve(PORT);
-  const browser = await chromium.launch({ headless: !HEADED });
+  // Prefer Playwright's own download; fall back to a system Chromium when the
+  // installed browser build does not match the installed playwright package
+  // (see check-build.mjs, which has carried this same fallback since before
+  // this file needed it).
+  const browser = await chromium.launch({ headless: !HEADED }).catch(async (err) => {
+    const { existsSync } = await import('node:fs');
+    const fallback = process.env.CHROMIUM_PATH || '/opt/pw-browsers/chromium';
+    if (!existsSync(fallback)) throw err;
+    return chromium.launch({ headless: !HEADED, executablePath: fallback });
+  });
   const page = await browser.newPage({ viewport: { width: 800, height: 720 } });
 
   const logs = [];

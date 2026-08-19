@@ -24507,8 +24507,16 @@ const TRACKS = {
         p2: 'A4 -  -  -  G4 -  -  -  F4 -  -  -  E4 -  -  -  F4 -  -  -  G4 -  -  -  B4 -  -  -  -  -  -  -',
         wav: 'F3 -  -  -  -  -  -  -  G3 -  -  -  -  -  -  -  A3 -  -  -  -  -  -  -  G3 -  -  -  -  -  -  -',
       },
+      // Bridge: the melody thins to one held tone at a time, climbing back
+      // toward the opening, with a single soft tick on the pickup into A.
+      C: {
+        p1: 'E4 -  -  -  -  -  -  -  F4 -  -  -  -  -  -  -  G4 -  -  -  -  -  -  -  B4 .  C5 .  .  .  .  .',
+        p2: '.  .  .  .  .  .  .  .  A3 -  -  -  -  -  -  -  .  .  .  .  .  .  .  .  G3 .  .  .  .  .  .  .',
+        wav: 'C3 -  -  -  -  -  -  -  F2 -  -  -  -  -  -  -  G2 -  -  -  -  -  -  -  C3 -  -  -  -  -  -  -',
+        noi: '.  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  h  .  .  .',
+      },
     },
-    order: ['A', 'B'],
+    order: ['A', 'B', 'A', 'C'],
   },
 
   overworld: {
@@ -24552,20 +24560,51 @@ const TRACKS = {
         wav: 'C3 -  -  -  G2 -  -  -  F2 -  -  -  C3 -  -  -  D3 -  -  -  F2 -  -  -  C3 -  -  -  G2 -  -  -',
         noi: '.  .  h  .  .  .  h  .  .  .  h  .  .  .  h  .  .  .  h  .  .  .  h  .  .  .  h  .  .  .  h  h',
       },
+      // Turns toward F major for a warmer, more legato phrase.
+      B: {
+        p1: 'F5  .  A5 .  C6  -  -  .  Bb5 .  A5 .  G5 .  F5 .  E5 .  G5 .  A5 -  -  .  G5 .  F5 .  E5 -  -  .',
+        p2: 'A4  .  C5 .  .   .  .  .  D5  .  C5 .  Bb4 .  A4 .  C5 .  E5 .  .  .  .  E5 .  D5 .  C5 -  -  .',
+        wav: 'F2  -  -  -  C3  -  -  -  Bb1 -  -  -  F2  -  -  -  C2  -  -  -  G1  -  -  -  C2  -  -  -  G1  -  -  -',
+        noi: '.   .  h  .  .   .  h  .  .   .  h  .  .   .  h  h  .   .  h  .  .  .  h  .  .   .  h  .  .   .  h  h',
+      },
+      // Bridge: the square lead drops out, just a low pulse behind the
+      // bass, before the melody eases back in for the last bar.
+      C: {
+        p1: 'E5  -  -  -  D5  -  -  -  C5  -  -  -  D5  -  -  -  E5 .  G5 .  A5 .  G5 .  F5 .  E5 .  D5 -  -  .',
+        p2: '.   .  .  .  .   .  .  .  .   .  .  .  .   .  .  .  .  .  .  .  C5 .  .  .  A4 .  .  .  G4 .  .  .',
+        wav: 'C3  -  -  -  -  -  -  -  F2  -  -  -  -  -  -  -  C3 -  -  -  -  -  -  -  G2 -  -  -  -  -  -  .',
+        noi: '.   .  .  .  .   .  .  .  .   .  .  .  .   .  .  .  .  .  h  .  .  .  h  .  .  .  h  .  .  .  h  h',
+      },
     },
-    order: ['A'],
+    order: ['A', 'B', 'A', 'C'],
   },
 
   cave: {
     bpm: 88, rowsPerBeat: 4, loop: true,
-    cfg: { p1: { duty: 0.125, vol: 0.1, decay: 0.4 }, wav: { vol: 0.18, decay: 0.5 } },
+    cfg: { p1: { duty: 0.125, vol: 0.1, decay: 0.4 }, p2: { duty: 0.125, vol: 0.05, decay: 0.5 }, wav: { vol: 0.18, decay: 0.5 }, noi: { vol: 0.05 } },
     patterns: {
       A: {
         p1: 'A4 -  -  -  -  -  -  -  C5 -  -  -  -  -  -  -  B4 -  -  -  -  -  -  -  E4 -  -  -  -  -  -  -',
         wav: 'A2 -  -  -  -  -  -  -  F2 -  -  -  -  -  -  -  G2 -  -  -  -  -  -  -  E2 -  -  -  -  -  -  -',
       },
+      // A step down from A, one long tone at a time; a single water-drip
+      // hat marks the turn of each half.
+      B: {
+        p1: 'G4 -  -  -  -  -  -  -  Bb4 -  -  -  -  -  -  -  A4 -  -  -  -  -  -  -  D4 -  -  -  -  -  -  -',
+        p2: '.  .  .  .  .  .  .  .  E4 -  -  -  -  -  -  -  .  .  .  .  .  .  .  .  A3 -  -  -  -  -  -  -',
+        wav: 'G2 -  -  -  -  -  -  -  Eb2 -  -  -  -  -  -  -  F2 -  -  -  -  -  -  -  D2 -  -  -  -  -  -  -',
+        noi: '.  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  h  .  .  .  .  .  .  .  .  .  .  .  .  .  .  h',
+      },
+      // Bridge: one tone held the whole pattern, a single drip breaking the
+      // hush near the end before it opens back into A.
+      C: {
+        p1: 'E4 -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -',
+        p2: '.  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  B4 -  -  -  -  -  -  -  .  .  .  .  .  .  .  .',
+        wav: 'E2 -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -',
+        noi: '.  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  h  .  .  .',
+      },
     },
-    order: ['A'],
+    order: ['A', 'B', 'A', 'C'],
   },
 
   dungeon: {
@@ -24584,8 +24623,16 @@ const TRACKS = {
         wav: 'F2 -  -  -  F2 -  -  -  D2 -  -  -  D2 -  -  -  A2 -  -  -  A2 -  -  -  D2 -  -  -  D2 -  -  -',
         noi: 'x  .  h  h  s  .  h  .  x  .  h  h  s  .  h  .  x  .  h  h  s  .  h  .  x  s  x  s  h  h  h  h',
       },
+      // Bridge: the harmony thins to a drone and the drums pull back to a
+      // bare pulse, tightening back into a full kit for the A repeat.
+      C: {
+        p1: 'A4 -  -  .  Bb4 -  -  .  A4 -  -  .  G4 -  -  .  F4 -  -  .  E4 -  -  .  D4 .  F4 .  A4 .  D5 .',
+        p2: '.  .  .  .  D4  .  .  .  .  .  .  .  C4 .  .  .  .  .  .  .  Bb3 .  .  .  A3 .  .  .  .  .  .  .',
+        wav: 'D2 -  -  -  -  -  -  -  A1  -  -  -  -  -  -  -  F1 -  -  -  -  -  -  -  D2 -  -  -  -  -  -  -',
+        noi: 'x  .  .  .  .  .  h  .  x   .  .  .  .  .  h  .  x  .  .  .  .  .  h  h  x  .  s  .  x  .  s  h',
+      },
     },
-    order: ['A', 'A', 'B'],
+    order: ['A', 'B', 'A', 'C'],
   },
 
   boss: {
@@ -24598,8 +24645,23 @@ const TRACKS = {
         wav: 'C2 C2 -  C2 C2 -  C2 -  Ab1 -  -  -  G1 -  -  -  C2 C2 -  C2 C2 -  C2 -  F1 -  -  -  G1 -  -  -',
         noi: 'x  .  s  .  x  .  s  s  x  .  s  .  x  h  s  h  x  .  s  .  x  .  s  s  x  s  x  s  c  .  .  .',
       },
+      // The fight escalates: the lead climbs instead of circling.
+      B: {
+        p1: 'Eb5 .  Eb5 .  F5  .  G5  .  Ab5 .  G5  .  F5  .  Eb5 .  F5  .  G5  .  Ab5 .  Bb5 .  C6  -  -  .  Bb5 -  Ab5 -',
+        p2: 'G3  .  .  .  Ab3 .  .  .  Bb3 .  .  .  Ab3 .  .  .  C4  .  .  .  Db4 .  .  .  Eb4 .  .  .  C4  .  .  .',
+        wav: 'C2  C2 -  C2 C2  -  C2  -  Ab1 -  -  -  Bb1 -  -  -  F1  F1 -  F1 F1  -  F1  -  G1  -  -  -  Ab1 -  -  -',
+        noi: 'x   .  s  .  x   .  s   s  x   .  s   .  x   h  s   h  x   .  s   .  x   .  s   s  x   s  x   s  c   .  .  .',
+      },
+      // Bridge: the drums drop out first, then the pulses, before both come
+      // back for the final bar leading into the A repeat.
+      C: {
+        p1: 'Ab4 -  -  .  Bb4 -  -  .  C5 -  -  .  Eb5 -  -  -  -  -  -  .  Eb5 .  Db5 .  C5 -  Bb4 -  C5 -  Eb5 .',
+        p2: '.   .  .  .  .   .  .  .  .  .  .  .  .   .  .  Ab3 .  .  .  .  F3  .  Ab3 .  Bb3 -  C4  -  Db4 -  Eb4 .',
+        wav: 'F1  -  -  -  -  -  -  -  Ab1 -  -  -  -  -  -  -  -  -  -  .  F1  -  -  -  G1  -  -  -  Ab1 -  -  -',
+        noi: '.   .  .  .  .   .  .  .  .  .  .  .  .   .  .  .  .  .  .  .  x   .  s   .  x   h  s   h  c   .  .  .',
+      },
     },
-    order: ['A'],
+    order: ['A', 'B', 'A', 'C'],
   },
 
   // A second dungeon theme so 1-8 do not all share one loop. Same tension as
@@ -24732,8 +24794,16 @@ const TRACKS = {
         wav: 'C2 -  -  -  C2 -  -  -  E2 -  -  -  E2 -  -  -  F1 -  -  -  F1 -  -  -  A1 -  -  -  A1 -  -  -',
         noi: 'x  .  .  .  s  .  .  h  x  .  .  .  s  .  .  .  x  .  .  .  s  .  .  h  x  .  s  .  .  .  h  H',
       },
+      // Bridge: the same dry, wide-spaced pentatonic figure, just one call
+      // and one answer per phrase, before the wide A theme returns.
+      C: {
+        p1: 'D5 .  .  .  .  .  .  .  C5 .  .  .  .  .  .  .  A4 .  .  .  .  .  .  .  E5 .  .  .  .  .  .  .',
+        p2: '.  .  .  .  A4 .  .  .  .  .  .  .  G4 .  .  .  .  .  .  .  E4 .  .  .  .  .  .  .  D4 .  .  .',
+        wav: 'A1 -  -  -  -  -  -  -  A1 -  -  -  -  -  -  -  D2 -  -  -  -  -  -  -  A1 -  -  -  -  -  -  -',
+        noi: 'x  .  .  .  s  .  .  .  x  .  .  .  s  .  .  h  x  .  .  .  s  .  .  .  x  .  s  .  .  .  h  .',
+      },
     },
-    order: ['A', 'A', 'B', 'A'],
+    order: ['A', 'B', 'A', 'C'],
   },
 
   // Abyssal approach: C minor, very slow, almost no percussion — the last
@@ -24781,8 +24851,16 @@ const TRACKS = {
         wav: 'A1 -  -  -  A1 -  -  -  D2 -  -  -  D2 -  -  -  G1 -  -  -  G1 -  -  -  C2 -  -  -  C2 -  -  -',
         noi: '.  .  h  h  s  .  h  .  .  .  h  h  s  .  h  .  .  .  h  h  s  .  h  .  .  .  s  .  s  h  h  h',
       },
+      // Bridge: same brushed hats-and-snare kit as A and B, no kick added,
+      // a quieter turn before the counter jumps back in.
+      C: {
+        p1: 'Bb4 .  D5 .  F5 -  -  .  E5 .  D5 .  C5 .  Bb4 .  A4 .  C5 .  F5 -  -  .  E5 .  D5 .  C5 -  -  .',
+        p2: 'D4  .  .  .  F4 .  .  .  G4 .  .  .  A4 .  .  .  F4 .  .  .  A4 .  .  .  G4 .  .  .  E4 .  .  .',
+        wav: 'Bb1 -  -  -  -  -  -  -  F2 -  -  -  -  -  -  -  D2 -  -  -  -  -  -  -  C2 -  -  -  -  -  -  -',
+        noi: '.   .  h  .  s  .  h  .  .  .  h  .  s  .  h  h  .  .  h  .  s  .  h  .  .  .  h  .  s  .  h  h',
+      },
     },
-    order: ['A', 'A', 'B', 'A'],
+    order: ['A', 'B', 'A', 'C'],
   },
 
   // Ending: C major. A and B are the triumphant half, C and D let it settle.

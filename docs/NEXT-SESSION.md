@@ -154,6 +154,52 @@ the board above is the state.
 
 ---
 
+## What this session did (music track structure, not the D1 blocker)
+
+**This session did NOT touch the solid-entity blocker above.** It worked
+`src/data/audio.js` only: `boss`, `village`, `cave`, `title`, `dungeon`,
+`shop` and `salt` were single- or double-pattern loops (a 3.2s-25s loop on
+tracks that play under the longest fights and in the most-revisited room).
+Each now has a new `B` and/or bridge `C` pattern and plays `['A','B','A','C']`,
+every new pattern using all four channels (p1/p2/wav/noi), even where the
+bridge thins the texture on purpose. `overworld`, `dungeon2`, `finalBoss`,
+`reef`, `marsh`, `salt`(was 2, now 3), `abyss`, `ending` already had 3+
+patterns and were **not** touched. The six-note jingles (`fanfare`,
+`fanfareShort`, `essence`, `bossClear`, `gameOver`, `itemGet`, `secret`,
+`heartPiece` — the file actually has eight `loop: false` one-shots, not six;
+worth checking which the prompt meant if it matters) were **not** touched.
+
+`finalBoss` was named as a priority target in the prompt but already had
+`order: ['A','A','B','A','C']` with three patterns — it already meets the
+A-B-A-C-with-bridge bar, so nothing was changed there. Worth a human
+double-check that this wasn't supposed to mean something else (a fourth
+section? a longer bridge?).
+
+New: `tools/check-music.mjs`, added to the CLAUDE.md verification table. It
+proves every track's `order` resolves, every melodic hold (`-`) follows an
+actual sounding note (the closest a monophonic per-row format has to
+"overlapping notes"), every note's frequency is inside real Game Boy hardware
+range for its channel (pulse floor 64 Hz, wave floor 32 Hz — this is *not*
+`measured` against a reference, it is derived from the documented GB APU
+frequency-register formula, `131072/(2048-x)` for pulse and half that for
+wave), and the noise channel never carries a pitched note. All 22 tracks and
+55 SFX defs pass.
+
+**Also fixed, incidentally:** `tools/test.mjs` had no Chromium
+executablePath fallback for a Playwright/browser-build version mismatch that
+`check-build.mjs` already handled; without it `test.mjs` could not launch at
+all in this environment. Same fallback pattern, copied over. `test.mjs` now
+passes 57/58 — the one "failure" is the browser's own automatic
+`/favicon.ico` request 404ing against the dev server, confirmed pre-existing
+and unrelated to this change (reproduces on `main` too, once the fallback
+lets the harness run at all).
+
+**What was not verified: whether any of this sounds good.** Nothing in this
+repo can hear. `check-music.mjs` proves structure, not taste — listen to the
+new patterns (files sent alongside this commit) before trusting them.
+
+---
+
 ## Where the towns stand (PT), in one line
 
 **PT steps 1-4 are DONE: the block machinery exists, the Subrosia town kit is
