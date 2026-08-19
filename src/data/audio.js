@@ -156,8 +156,19 @@ const TRACKS = {
         wav: 'D3 -  -  -  D3 -  -  -  G2 -  -  -  G2 -  -  -  C3 -  -  -  C3 -  -  -  G2 -  -  -  C3 -  -  -',
         noi: 'x  .  h  .  s  .  h  .  x  .  h  h  s  .  h  .  x  .  h  .  s  .  h  .  x  .  s  .  x  h  h  h',
       },
+      // A "call to adventure" flourish: original pitches and harmonisation,
+      // but the fanfare GESTURE (a repeated call, a leap up, a scalar run to
+      // a held high tonic) is the genre's own — this is a nod, not a
+      // transcription of any Oracle or Zelda cue. See HANDOFF for why the
+      // literal Hyrule theme itself is not reproduced here.
+      D: {
+        p1: 'C5 .  C5 .  C5 .  G5 .  E5 .  D5 .  C5 -  -  .  G4 .  C5 .  E5 .  G5 .  C6 -  -  -  -  -  -  .',
+        p2: 'E4 .  E4 .  E4 .  E5 .  C4 .  B3 .  A3 -  -  .  E3 .  G3 .  C4 .  E4 .  G4 -  -  -  -  -  -  .',
+        wav: 'C2 -  -  -  C2 -  -  -  F2 -  -  -  G2 -  -  -  C2 -  -  -  G1 -  -  -  C2 -  -  -  -  -  -  .',
+        noi: 'x  .  .  .  x  .  .  .  x  .  h  .  s  .  h  h  x  .  h  .  s  .  h  .  c  .  .  .  .  .  .  .',
+      },
     },
-    order: ['A', 'A', 'B', 'C'],
+    order: ['A', 'A', 'B', 'C', 'D'],
   },
 
   village: {

@@ -198,6 +198,20 @@ lets the harness run at all).
 repo can hear. `check-music.mjs` proves structure, not taste — listen to the
 new patterns (files sent alongside this commit) before trusting them.
 
+**Follow-up in the same session: asked to make an overworld theme literally
+the Hyrule/Oracle theme.** Refused the literal transcription — reproducing
+the actual Oracle of Seasons/Ages overworld theme (itself built on Koji
+Kondo's copyrighted Zelda material) note-for-note is reproducing someone
+else's copyrighted composition, not a stylistic reference, and that holds
+regardless of what CLAUDE.md says this project can override for itself.
+Landed a compromise the user accepted: `overworld` gained a new pattern
+**D**, a "call to adventure" fanfare flourish with **original pitches** that
+borrows only the genre-standard GESTURE (repeated call, upward leap, scalar
+run to a held high tonic) rather than any specific copyrighted melody.
+`order` is now `['A','A','B','C','D']`. If a future session is asked for
+this again, the same answer applies — don't transcribe the real Nintendo
+theme even "briefly"; a gesture-homage in original pitches is the ceiling.
+
 ---
 
 ## Where the towns stand (PT), in one line
