@@ -264,6 +264,18 @@ room. All 51 replays want re-recording and every checker wants re-verifying
 afterwards, and the playthrough harness's own determinism proof rests on that
 baseline. It is a session, not an edit.
 
+**A session was asked to extend the route past D1 to the final boss room, and
+stopped without touching `tools/playthrough-route.mjs`.** The prompt assumed
+the block-pushing fix above was already in — it is not; nothing on this branch
+had changed since the run described above. The Switch Room at `d1 0,4,4` (see
+`src/data/dungeons-a.js`) still needs both blocks on both `hold` switches at
+once, `Entity.solid` is still unread in `canOccupy`/`moveEntity`, and
+`node tools/check-playthrough.mjs` still stops at `d1/0,3,3` with the same 20
+assertions green. There is nothing past that point to route to yet. Extending
+the route is still exactly one prerequisite away: land the fix above (as its
+own session, replays re-recorded), then delete `GOAL.blocked` and point
+`GOAL.room` at the final boss room.
+
 **Two smaller things the same run turned up.**
 
 - **A new game puts the CONCH on B and the SWORD on A.** The intro cutscene

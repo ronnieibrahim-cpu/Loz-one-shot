@@ -12,6 +12,14 @@ maintain and the most expensive thing to not have.
 
 ## THE BOARD — read this, not the archive below
 
+**A session was asked to extend `tools/playthrough-route.mjs` past D1 to the
+final boss, on the assumption the block-pushing fix below already landed. It
+had not, nothing on trunk had changed, and the session made no code changes.**
+`node tools/check-playthrough.mjs` still stops at `d1/0,3,3`, still 20/20
+green, for the same reason: the Switch Room at `d1 0,4,4` needs both blocks on
+both switches at once and no block in this game can be pushed. Do not attempt
+the route extension again until "THE NEXT SESSION'S FIRST JOB" below is done.
+
 **Somebody has now played it, and the game cannot be finished.**
 `tools/check-playthrough.mjs` is new: it drives a new game from the title screen
 with real button presses, grants nothing, warps nowhere, sets no flag, and plays
