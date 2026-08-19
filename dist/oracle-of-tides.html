@@ -20290,10 +20290,17 @@ function installDungeonsA() {
           '#........#',
           '####..####',
         ],
+        // Drop odds bumped from the roster's default `common` to `good` on all
+        // three — see FEEL-SPEC.md's health-economy instrumentation entry. This
+        // is the first fight in the game, and the playthrough harness measured
+        // it costing 6 quarter-hearts (1.5 of the 3 hearts a new game starts
+        // with) with only `common`'s 16% heart chance to answer it — the
+        // single worst spike the instrumented run found. The room itself is
+        // unchanged; only what these three specific enemies drop.
         entities: [
-          ['crab', 2, 1],
-          ['crab', 6, 6],
-          ['keese', 4, 1],
+          ['crab', 2, 1, { drops: 'good' }],
+          ['crab', 6, 6, { drops: 'good' }],
+          ['keese', 4, 1, { drops: 'good' }],
         ],
         readable: [
           [7, 6, 'A rusted plate: "Shut the sluice, and the grotto drinks."'],
@@ -20394,9 +20401,17 @@ function installDungeonsA() {
           '#.33..33.#',
           '####..####',
         ],
+        // This is the dungeon's crossroads — every route in and out of the
+        // Crab Pit, the Switch Room and the Locked Stair passes through it, so
+        // a real run (and the instrumented playthrough) meets these two
+        // several times over. The instrumented run took contact damage here
+        // on every pass and never once found a heal in it, six quarter-hearts
+        // total across the run with nothing to answer it — see FEEL-SPEC.md.
+        // Bumped from `common` to `good`, same reasoning as the Drinking
+        // Floor's.
         entities: [
-          ['tektite', 4, 3],
-          ['crab', 2, 4],
+          ['tektite', 4, 3, { drops: 'good' }],
+          ['crab', 2, 4, { drops: 'good' }],
         ],
       },
       '0,2,4': {
@@ -20451,8 +20466,22 @@ function installDungeonsA() {
         puzzle: {
           switches: 'all',
           flag: 'd1_switches',
+          // The heart alongside the key is a deliberate, GUARANTEED heal, not
+          // a drop-table roll — see FEEL-SPEC.md's health-economy entry. The
+          // instrumented playthrough found this is the last room before a
+          // long stretch with no heal source of any kind (the Tide Gallery's
+          // third pass, the Locked Stair's fight, and the walk to the
+          // Sluicegate), and a probabilistic drop is not provable against a
+          // single deterministic seed the way a fixed placement is: raising
+          // `common` to `good` on the rooms upstream of here still depends on
+          // the room's own RNG stream actually rolling a heart, and on this
+          // seed the pass that mattered most did not. This is the one heal in
+          // the whole dungeon that a run can rely on rather than hope for.
           reward: {
-            spawn: [['pickup', 4, 4, { kind: 'key' }]],
+            spawn: [
+              ['pickup', 4, 4, { kind: 'key' }],
+              ['pickup', 5, 4, { kind: 'heart' }],
+            ],
             say: 'A catch releases somewhere below.',
           },
         },
@@ -20469,9 +20498,16 @@ function installDungeonsA() {
           '#..,,,,..#',
           '####..####',
         ],
+        // The last fight before the Anchor, and the instrumented run reached
+        // it on a single heart with nothing behind it: past here there is no
+        // combat and no heal until the Anchor's own gates, which need a
+        // placement verb this project's playthrough actor does not have yet
+        // (see playthrough-route.mjs's GOAL). Bumped from `common` to `good`
+        // as the last chance the dungeon gets to hand back some margin before
+        // that stretch — see FEEL-SPEC.md.
         entities: [
-          ['zol', 2, 4],
-          ['zol', 6, 5],
+          ['zol', 2, 4, { drops: 'good' }],
+          ['zol', 6, 5, { drops: 'good' }],
         ],
       },
       '0,2,3': {

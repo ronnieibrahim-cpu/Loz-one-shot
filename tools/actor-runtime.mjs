@@ -359,20 +359,39 @@ export async function installRuntime() {
       const dm = dialogueMask(g, pass);
       if (dm !== null) { yield dm; spent++; continue; }
       // `grabDelay` frames have to elapse before a fresh drop is collectable at
-      // all, so a sweep that started the frame the last enemy died would walk
-      // over it and leave it there.
-      const drops = g.entities.filter(e => e.isDrop && !e.dead && !e.remove && !e.__skip
-        && e.grabDelay <= 0 && e.life > 30);
-      if (!drops.length) return;
+      // all. A sweep called the instant a puzzle reward spawns one — the fairy
+      // in the Sunken Hall's push puzzle is the one that found this — sees a
+      // `grabDelay` still counting down and used to read that as "nothing
+      // here" and give up for good, leaving a full heal sitting on the floor
+      // for the rest of the run. So the two are told apart: something present
+      // but not yet grabbable is waited on; nothing present at all is the only
+      // case that gives up.
+      const pending = g.entities.filter(e => e.isDrop && !e.dead && !e.remove && !e.__skip
+        && e.life > 30);
+      if (!pending.length) return;
+      const drops = pending.filter(e => e.grabDelay <= 0);
+      if (!drops.length) { yield 0; spent++; continue; }
       let best = drops[0], bd = 1e9;
       for (const e of drops) { const d = p.distTo(e); if (d < bd) { bd = d; best = e; } }
       const t = { tx: Math.floor(best.cx / TILE), ty: Math.floor(best.cy / TILE) };
       if (!passable(g, p, t.tx, t.ty)) { yield 0; spent++; continue; }
-      const was = g.entities.length;
       for (const m of dGoto(t.tx, t.ty, 200)) { yield m; spent++; if (spent > budget) break; }
-      // A drop that survived being stood on is one the walk could not actually
+      // A puzzle-reward pickup (the Crab Pit's key, the Sunken Hall's fairy)
+      // pops a few pixels above the tile it logically spawned on and stays
+      // there — see the `pickup, 4, 3` comment in dungeons-a.js: "a dropped
+      // pickup pops about five pixels up and never comes back down". Standing
+      // on the tile its CENTRE resolves to is not always standing on it: the
+      // sprite reads one tile further up than `cy / TILE` says. So a stand
+      // that did not collect it gets one retry a tile north before this drop
+      // is given up on — a real player nudging up when the first step misses
+      // is not a shortcut, it is the marginal reach the room was built with.
+      if (g.entities.includes(best) && !best.dead && !best.remove
+        && passable(g, p, t.tx, t.ty - 1)) {
+        for (const m of dGoto(t.tx, t.ty - 1, 120)) { yield m; spent++; if (spent > budget) break; }
+      }
+      // A drop that survived both stands is one the walk could not actually
       // reach — in water, behind a pot. Give up on it rather than loop.
-      if (g.entities.length >= was && g.entities.includes(best)) { best.__skip = true; }
+      if (g.entities.includes(best) && !best.dead && !best.remove) { best.__skip = true; }
       for (let i = 0; i < 6; i++) { yield 0; spent++; }
     }
   }
@@ -959,11 +978,52 @@ export async function installRuntime() {
         // noticed.
         blocksTouched: 0,
         blocksMoved: 0,
+        // Health at every room boundary — see _roomHealthTick's comment.
+        roomHealth: [],
       };
       this._seenItems = new Set();
       this._seenRooms = new Set();
       this._blockHome = new Map();
       this._lastMode = null;
+      this._curRoomKey = null;
+      this._curRoomEntry = null;
+      this._lastHeartsInRoom = null;
+    },
+
+    /**
+     * One entry per room VISIT (a room entered twice gets two entries — the
+     * health economy question is "what did this pass through the room cost",
+     * not "what is true of the room in general"). Opened the instant the room
+     * key changes and closed the same way.
+     *
+     * `damage` and `healing` are summed deltas, not `enter - exit`: a room
+     * that costs three hearts and hands back two off a drop should not read
+     * as "cost one heart" — the trough is what a player actually felt, and
+     * `minHearts` is what carries that.
+     */
+    _roomHealthTick(g, p, rk) {
+      if (rk !== this._curRoomKey) {
+        if (this._curRoomEntry) {
+          this._curRoomEntry.exitHearts = this._lastHeartsInRoom;
+          this._curRoomEntry.exitFrame = this._frames;
+          this._audit.roomHealth.push(this._curRoomEntry);
+        }
+        this._curRoomKey = rk;
+        this._curRoomEntry = rk ? {
+          room: rk, enterFrame: this._frames, enterHearts: p.hearts,
+          minHearts: p.hearts, maxHearts: p.hearts, damage: 0, healing: 0,
+        } : null;
+        this._lastHeartsInRoom = rk ? p.hearts : null;
+      }
+      if (!this._curRoomEntry) return;
+      const cur = p.hearts;
+      if (this._lastHeartsInRoom != null && cur !== this._lastHeartsInRoom) {
+        const d = cur - this._lastHeartsInRoom;
+        if (d < 0) this._curRoomEntry.damage += -d; else this._curRoomEntry.healing += d;
+      }
+      if (cur < this._curRoomEntry.minHearts) this._curRoomEntry.minHearts = cur;
+      if (cur > this._curRoomEntry.maxHearts) this._curRoomEntry.maxHearts = cur;
+      this._lastHeartsInRoom = cur;
     },
 
     _audit_tick() {
@@ -986,6 +1046,7 @@ export async function installRuntime() {
       if (g.mode !== this._lastMode) { this._lastMode = g.mode; a.modes.push(g.mode); }
       const rk = g.room ? g.mapId + '/' + g.room.key : null;
       if (rk && !this._seenRooms.has(rk)) { this._seenRooms.add(rk); a.rooms.push(rk); }
+      this._roomHealthTick(g, p, rk);
       for (const e of g.entities) {
         if (!e.pushable && e.type !== 'block' && !(e.push && e.solid)) continue;
         const id = rk + '#' + e.id;
@@ -1029,6 +1090,14 @@ export async function installRuntime() {
     },
 
     result() {
+      // Close the still-open room-health entry, so the last room visited
+      // shows up in the table too rather than only in `_curRoomEntry`.
+      if (this._audit && this._curRoomEntry) {
+        this._curRoomEntry.exitHearts = this._lastHeartsInRoom;
+        this._curRoomEntry.exitFrame = this._frames;
+        this._audit.roomHealth.push(this._curRoomEntry);
+        this._curRoomEntry = null;
+      }
       return {
         input: this._log, frames: this._frames, trail: this._trail,
         trace: this._trace || [], state: snapshot(),
