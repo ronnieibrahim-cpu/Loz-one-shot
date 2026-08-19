@@ -224,6 +224,32 @@ is in the page, and nothing steps until you say so.
 
 ## Hard-won lessons — do not rediscover these
 
+**A `goto` whose TARGET TILE is a solid entity cannot ever path there, and
+the directive after it inherits the failure silently.** Now that
+`canOccupy` reads `Entity.solid` (see the trap list in CLAUDE.md),
+`tools/playthrough-route.mjs`'s hand-written `goto 1,3` / `goto 8,3` for
+crossing the Sunken Hall (`d1 0,3,5`, the hub) turned out to target the
+exact tiles that room's OWN push-block puzzle (the optional fairy heal)
+places its two blocks on — row 3 of the west and east doorways. `findPath`
+never explores an impassable tile, so a `goto` aimed AT one returns `null`
+forever and the directive burns its whole frame budget standing still. The
+blind `exit` directive that followed it then walked into the room's
+INTERIOR wall on whatever row the stalled `goto` happened to leave the
+player on, never finding the seam — and every directive after THAT kept
+running, just in the wrong room, silently reinterpreting its `goto`
+targets against a completely different room's geometry. The visible
+symptom was not a clean stop; it was the recorded run ending in a room
+(`d1 0,2,5`) the route's own comments said it should have left dozens of
+steps earlier. **The fix is not "avoid blocks" in general — it's specific:
+any `goto` target that happens to land on a placed block, chest, torch or
+signpost's tile will do this in ANY room, and the tell is a `goto` whose
+trace shows zero movement for its full budget followed by an `exit` that
+does not change rooms.** `tools/actor-runtime.mjs`'s `dTravel` (the
+`travel` directive) is the general-purpose fix — its `edgeTiles` helper
+already tries several candidate crossing tiles along an edge before giving
+up — and is worth reaching for first the next time this bites a different
+room, rather than another one-off coordinate patch.
+
 **The wave channel's floor is not the pulse channels' floor.** Writing
 `check-music.mjs`'s frequency-range check surfaced that a track's bass line
 routinely uses octave-1 notes (`D1`≈36.7Hz, `C1`≈32.7Hz) that sit *below* the
