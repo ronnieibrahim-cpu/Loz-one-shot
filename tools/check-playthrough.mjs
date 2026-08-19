@@ -43,29 +43,23 @@
 //   * zero console errors and zero unresolved tiles for the whole run
 //   * it is deterministic: the tape is replayed blind and lands to the pixel
 //
-// AND WHAT IT FOUND ON ITS FIRST RUN, which is the reason it exists:
+// WHAT IT FOUND ON ITS FIRST RUN, and this is now history rather than the
+// current state — kept because it explains why entity collision exists at
+// all: `Entity.solid` was documented on the field as "blocks the player like
+// a pushable block" and nothing in the movement path read it, so no push
+// block in the game could ever be pushed, and D1's Switch Room key — one of
+// two locked doors between a new game and the Tidewright's Anchor — could
+// never be earned. `solve-switches.mjs` and `walk-dungeons.mjs` both reported
+// it solvable anyway, because both model a push the engine could not perform.
+// That gap between a model and a game is exactly what only this file can see.
 //
-//   THE GAME CANNOT BE FINISHED. D1 puts two locked doors between a new game
-//   and the Tidewright's Anchor, and only one of the two Small Keys that open
-//   them can be obtained. The other is the Switch Room's, behind two `hold`
-//   floor switches that want both blocks pushed onto them at once — and NO
-//   PUSH BLOCK IN THIS GAME CAN BE PUSHED. `Entity.solid` is documented on the
-//   field as "blocks the player like a pushable block" and nothing in the
-//   movement path reads it: `canOccupy` samples tiles only. So the player walks
-//   through the block, `Player.tryPush` never fires (it needs a movement HIT),
-//   and the key never appears.
-//
-//   `solve-switches.mjs` reports all nine switch rooms "solvable by pushing"
-//   and `walk-dungeons.mjs` counts the key as available, because both model a
-//   push that the engine cannot perform. That is precisely the gap between a
-//   model and a game, and it is why a flood cannot close this item.
-//
-//   The fix is small to write and NOT small to land: teaching `canOccupy` about
-//   solid entities was tried on this branch and moves the recorded baseline —
-//   d1-descent ends up dead on the overworld, d2-fork-wrong diverges by frame
-//   240. Every replay would need re-recording and every checker re-verifying,
-//   which is its own session. So this file reports the blocker instead of
-//   working around it, and asserts it is still exactly where it was.
+// THAT BUG IS FIXED (see CLAUDE.md's "a solid entity is not solid" trap).
+// `canOccupy` now rejects a tile a solid entity occupies, every push block in
+// the game can be pushed, and this run earns and spends both Small Keys and
+// carries the Anchor out of the Sluicegate. It still does not reach the
+// Essence, but for an ordinary reason: the rest of the dungeon — both
+// anchor-gated wings, the boss door, Gohmaraq — is simply not written into
+// `ROUTE` yet. See `GOAL.short` in tools/playthrough-route.mjs.
 //
 //   node tools/check-playthrough.mjs            run, verify, and replay the tape
 //   node tools/check-playthrough.mjs --record   re-record the tape from the route
@@ -73,9 +67,10 @@
 //   node tools/check-playthrough.mjs --headed   watch it in a real browser
 //
 // SCOPE. This is step (a) of the brief's staged plan: new game to D1's Essence.
-// The route reaches the Locked Stair and stops there because the world stops
-// there. When the blocker is fixed, `GOAL.blocked` in tools/playthrough-route.mjs
-// comes out and the Essence assertions go live on their own.
+// The route reaches the Sluicegate and stops there because the route stops
+// there. When `ROUTE` is extended through both wings to the boss, delete
+// `GOAL.short` in tools/playthrough-route.mjs and the Essence assertions go
+// live on their own.
 
 import { createServer } from 'node:http';
 import { readFile, stat, mkdir, writeFile } from 'node:fs/promises';
@@ -214,29 +209,29 @@ console.log(`  essences: [${s.essences.join(', ')}]  keys spent on doors: ${s.do
 // suite ends up green on an unfinishable world, which is the failure this whole
 // harness was written to catch, so the miss is printed every run.
 
-if (GOAL.blocked) {
-  console.log('  !! THE GAME CANNOT BE FINISHED. The run stops at ' + GOAL.room + '.');
-  console.log('  !! blocked on: ' + GOAL.blocked.what);
-  console.log('  !! because: ' + GOAL.blocked.why);
-  console.log(`  !! ${GOAL.blocked.keysNeeded} Small Keys stand between a new game and the Anchor; `
-    + `${GOAL.blocked.keysObtainable} can be obtained.\n`);
+if (GOAL.short) {
+  console.log('  !! The run does not reach the Essence. The route stops at ' + GOAL.room + '.');
+  console.log('  !! short of: ' + GOAL.short.what);
+  console.log('  !! why: ' + GOAL.short.why + '\n');
 }
 
 const ended = `${s.mapId}/${s.room}`;
 check('the run gets as far as the world currently allows (' + GOAL.room + ')',
   ended === GOAL.room, `stopped in ${ended}`);
 
-if (GOAL.blocked) {
-  // The blocker, proved by the run rather than reasoned about. The route leans
-  // on both of the Switch Room's blocks for 120 frames each; if either ever
-  // moves, the engine has gained entity collision and this harness should be
-  // re-pointed at the boss room.
-  check('...and the blocker is still the blocker: no push block ever moved',
-    a.blocksMoved === 0 && a.blocksTouched >= 2,
-    `${a.blocksMoved} of ${a.blocksTouched} blocks moved`);
-  check('...so the second Small Key never arrives', s.keys === 0 && s.doorsChanged === 1,
-    `keys in hand ${s.keys}, doors opened ${s.doorsChanged}`);
-  check('the Essence is NOT reached, and that is the finding',
+if (GOAL.short) {
+  // Proved by the run rather than reasoned about: both of the dungeon's push
+  // blocks move (the hub's own pair, and the Switch Room's), both Small Keys
+  // are earned and spent on both locked doors, and the Anchor is carried out
+  // of the Sluicegate. If any of these regresses, something broke entity
+  // collision or the keys/doors bookkeeping, not just the route.
+  check('...every push block the route leans on moved',
+    a.blocksMoved >= 4, `${a.blocksMoved} of ${a.blocksTouched} blocks moved`);
+  check('...both Small Keys were earned and spent on both locked doors',
+    s.doorsChanged === 2, `doors opened ${s.doorsChanged}`);
+  check('...the Anchor was carried out of the Sluicegate',
+    s.items.includes('anchor'), `items [${s.items.join(',')}]`);
+  check('the Essence is NOT reached, and that is expected — the rest of the route is unwritten',
     !s.essences.includes(GOAL.essence), `essences [${s.essences.join(',')}]`);
 } else {
   check('the run claims the Essence of Tidewash Grotto',

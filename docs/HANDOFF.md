@@ -224,6 +224,50 @@ is in the page, and nothing steps until you say so.
 
 ## Hard-won lessons — do not rediscover these
 
+**A `goto` target that names a push block's own tile can never be reached,
+and every room respawns its blocks fresh.** Once `canOccupy` started reading
+`Entity.solid` (see the CLAUDE.md trap of the same name), D1's Sunken Hall —
+the hub, visited three times by the playthrough route — turned out to seat a
+push block directly in each of its west and east corridors, at exactly the
+tile two `goto` calls in `tools/playthrough-route.mjs` had always used as
+their approach waypoint (`(1,3)` and `(8,3)`). `dGoto`'s BFS (in
+`tools/actor-runtime.mjs`) routes around an obstacle fine, but it cannot path
+TO one: a goal tile a solid entity occupies is never `passable`, so the
+search exhausts every reachable tile, finds nothing, and returns null forever
+— the actor then sits yielding 0 for the whole directive's frame budget, in
+the room's open middle rather than at the corridor at all, and every
+directive after it addresses a room the player is not standing in. The fix
+was one tile, not a block-pushing workaround: retarget the waypoint at the
+corridor's OTHER column (`(0,3)`/`(9,3)`), which the block never occupies,
+and BFS finds its own way there. Tried and rejected: pushing the blocks onto
+their switches once to clear the corridor permanently — `spawnRoomEntities`
+(`src/game/game.js`) wipes and respawns every non-player entity from the
+room's static `def.entities` list on EVERY `setRoom`, so a block pushed
+aside during one visit is back at its spawn tile the moment the room is
+re-entered. Any route that revisits a room with a push block in its
+doorway has to dodge that tile every single time, not just the first.
+
+**A checker's "known blocker" struct can go stale exactly like the bug it
+described, and the fix is the same discipline as fixing the bug itself.**
+`tools/playthrough-route.mjs`'s `GOAL.blocked` (what/why/keysNeeded/
+keysObtainable) and `check-playthrough.mjs`'s two assertions built on it
+("no push block ever moved", "the second Small Key never arrives") were
+written to prove a SPECIFIC bug — push blocks were fully inert — with
+specific numbers. Once entity collision landed on a different branch, that
+bug was gone, but a superficial read of `check-playthrough.mjs`'s FAIL lines
+looked identical to the old failure (same room name, same "blocked" framing)
+and would have been easy to mistake for the same unfixed bug rather than a
+new, narrower one (stale route data misrouting through the hub, above). The
+fix was to trace it (`--trace` prints per-directive room/position/frame),
+find the ACTUAL divergence point, and only then decide whether the
+assertions still described reality — they didn't, and hard-coding "0 blocks
+moved" would have silently passed a run where blocks moved for the wrong
+reason just as easily as it would fail one where they still couldn't move at
+all. Renamed to `GOAL.short` (what is left, why it's route data and not an
+engine bug) with assertions that check the NEW invariants (every block the
+route leans on moved, both keys spent, the Anchor collected) rather than the
+old bug's absence.
+
 **The wave channel's floor is not the pulse channels' floor.** Writing
 `check-music.mjs`'s frequency-range check surfaced that a track's bass line
 routinely uses octave-1 notes (`D1`≈36.7Hz, `C1`≈32.7Hz) that sit *below* the

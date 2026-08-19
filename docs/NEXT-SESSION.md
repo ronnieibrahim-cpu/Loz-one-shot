@@ -10,6 +10,111 @@ maintain and the most expensive thing to not have.
 
 ---
 
+## THE BOARD, RETUNED — the D1 route now clears both keys and carries the Anchor
+
+**This session did exactly the first job the board below named: retune
+`tools/playthrough-route.mjs` and `check-playthrough.mjs`'s stale
+assertions now that push blocks work.** It did not touch `src/`. Branch
+`claude/fix-playthrough-blocker-e72n4s`.
+
+**The actual snag was not the Switch Room — it was the hub, and it is worth
+being precise about why, because the failure mode does not look like a
+collision bug from the trace.** `tools/check-playthrough.mjs --trace` showed
+the run ending in `d1/0,2,5` (the Map Alcove), nowhere near either locked
+door, with `goto` and `exit` directives visibly not moving the player at
+all for hundreds of frames at a stretch. The Sunken Hall (the hub, `0,3,5`)
+seats a push block directly in its own west corridor at `(1,3)` and its east
+corridor at `(8,3)` — the SAME tiles two `goto` waypoints in the route had
+always targeted, back when walking through a block cost nothing. Now that
+`canOccupy` (fixed on a prior branch, see CLAUDE.md's "a solid entity is not
+solid" trap) refuses that tile, `dGoto`'s BFS pathfinder can never reach a
+GOAL tile that is itself impassable — it silently returns null forever, the
+directive burns its whole frame budget standing still in the room's open
+middle, and every directive after it addresses a room the player never
+actually reached. That is a materially different bug from "no push block
+ever moved": the Switch Room's blocks moved FINE the whole time; the hub's
+own blocks just poisoned two waypoints upstream of ever getting there. See
+`docs/HANDOFF.md`'s hard-won-lessons entry for the full trace-reading
+argument.
+
+**The fix was two tiles, not a redesign.** `ROUTE`'s two hub waypoints move
+from `(1,3)`/`(8,3)` (the block's own spawn tile) to `(0,3)`/`(9,3)` (the
+corridor's other column, which the block never occupies) — `dGoto`'s BFS
+finds its own way there without further help. Tried and rejected: pushing
+the hub's own blocks onto their switches once, which would also open the
+corridor (and hand over the dungeon's fairy heal) — doesn't work, because
+`spawnRoomEntities` (`src/game/game.js`) wipes and respawns every non-player
+entity from the room's static entity list on every single `setRoom`, so a
+block pushed aside during one visit is back in the doorway the moment the
+hub is re-entered, and the hub is visited three times by this route. Any
+future route through a room with a block in its own doorway has to dodge
+that tile on every pass, not just solve it once.
+
+**With that fixed, the route runs stably to the Sluicegate and picks up the
+Anchor — no more locked-door blocker, at all.** The run now: kills the Crab
+Pit's three shielded crabs and gets its key, kills the Sunken Hall's zol and
+crab twice over (once per hub re-entry), pushes BOTH of the Switch Room's
+blocks onto their `hold` switches and gets the second key, spends both keys
+on both of Tide Gallery's and the Locked Stair's locked doors, and walks
+into the Sluicegate to open the big chest and carry the Tidewright's Anchor
+out. `check-playthrough.mjs` now passes 21/21 (up from 15/20), fully green,
+no more `!!` blocker banner. The tape was re-recorded
+(`tools/playthroughs/playthrough-d1.json`, 584 runs / 9588 frames) and
+replays blind to the pixel.
+
+**`GOAL.blocked` is gone; `GOAL.room` now points at `d1/0,3,2` (the
+Sluicegate) and a new `GOAL.short` names what is left honestly: both
+anchor-gated wings, the gauge rooms, the boss door and Gohmaraq are simply
+not written into `ROUTE` yet — that is unfinished route data, not an engine
+bug.** `check-playthrough.mjs`'s two blocker-specific assertions (which
+hard-coded "0 blocks moved" and "1 door opened", i.e. the shape of the OLD
+bug) are replaced with assertions that prove the NEW state instead: every
+push block the route leans on moved (`a.blocksMoved >= 4`), both Small Keys
+were spent on both locked doors (`s.doorsChanged === 2`), and the Anchor is
+in the run's inventory (`s.items.includes('anchor')`). The header comment
+block naming the old bug is kept but marked as history, not current state.
+
+**Full verification table re-run and unchanged elsewhere, all green:**
+`validate.mjs` OK (310 tiles/23 legends/273 rooms, same two expected
+`fx_slash` warnings) · `test.mjs` 58/58 · `replay.mjs` 51/51 (untouched —
+this session never re-recorded a replay, only the playthrough tape) ·
+`walk-dungeons.mjs` 23/23 · `check-overworld.mjs` 17/17 · `check-gates.mjs`
+15/15 · `solve-switches.mjs` 9/9 · `check-anchor.mjs` 14/14 ·
+`check-cleats.mjs` 15/15 · `check-lens.mjs` 24/24 · `check-bellows.mjs`
+60/60 · `check-reefseed.mjs` 87/87 · `check-dredge.mjs` 103/103 ·
+`check-towns.mjs` 58/58 · `check-motion.mjs` 8/8 · `check-items.mjs` 82/82 ·
+`check-music.mjs` 22 tracks/55 sfx OK · `scan-sprites.mjs --strict` 0/0 ·
+`npm run build` + `check-build.mjs` OK — and `dist/oracle-of-tides.html`
+came out byte-identical to what was already committed, because nothing in
+`src/` changed; only `tools/` did, so there is nothing new to commit there.
+
+**What this session did NOT do, on purpose (scope was "fix that and only
+that").** The route stops at the Anchor, not the Essence. Reaching the boss
+needs the anchor mechanic itself — sink it, sound the conch, cross — worked
+into the route through BOTH wings (east: the Iron Pipe gate, the drowned
+chamber, another gate, Clawcrab's locked room, the gauge Piece of Heart;
+west: another gate, the switches room, the west gauge room, the Boss Key,
+then Gohmaraq) plus a real boss fight. That is a substantially bigger job
+than this one and is next session's, not smuggled in here. The health
+economy note from the earlier board (thin, on 3 starting hearts) is
+unchanged and still true — this run ends the Anchor pickup on 10/12 hearts,
+having dropped as low as 6, with the hub's fairy heal still unclaimed (see
+above, it cannot be grabbed with the route as it stands without redesigning
+around the block-respawn problem). The Weeping Wall is still deliberately
+unwalked, for the reason already on the board. The 32-branch deletion job
+from the section below is also untouched — still blocked on the same
+outbound-proxy write restriction, nothing new to try there.
+
+**Next session's job:** extend `ROUTE` from the Sluicegate through both
+anchor-gated wings to Gohmaraq's boss door, working the Anchor's actual
+mechanic (sink/sound/cross) into the route rather than walking around it —
+then delete `GOAL.short` and check-playthrough.mjs's Essence assertions go
+live on their own. Read `tools/check-anchor.mjs` first: it already proves
+every anchor room in this dungeon is passable with one placement, which is
+the map a route through them should follow.
+
+---
+
 ## THE BOARD, UPDATED AGAIN — three branches merged, 32 stale branches classified
 
 **A branch-audit session merged the three branches carrying real unmerged

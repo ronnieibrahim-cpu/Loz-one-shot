@@ -53,7 +53,19 @@ export const ROUTE = [
   ['loot', 500],
 
   // West wing: the Dungeon Map is a loose pickup, so walking over it is enough.
-  ['goto', 1, 3, 400],
+  //
+  // Column 0, not 1: the hub's own switch puzzle seats a push block at (1,3),
+  // directly in the west corridor's near column, and it is solid now (see
+  // "a solid entity is not solid" in CLAUDE.md's traps list). The corridor is
+  // two tiles wide precisely so the far column stays clear of it; (1,3) is
+  // the block's spawn tile itself, which BFS can never path TO since it is
+  // never passable, so the old target left the actor stuck pressing into a
+  // wall for the rest of the run. `goto` finds its own way around the block
+  // to reach the door — it only needed a door tile the block does not stand
+  // on. Every room re-entry respawns this room's entities fresh (see
+  // `spawnRoomEntities`), so the block is always back at (1,3): this is not a
+  // one-time fix, the target has to dodge it every time.
+  ['goto', 0, 3, 400],
   ['exit', 'left', 400],
   ['goto', 4, 3, 500],
   ['dialogue', 200],
@@ -69,7 +81,10 @@ export const ROUTE = [
   // therefore unobtainable too.
   ['fight', 1400],
   ['loot', 500],
-  ['goto', 8, 3, 500],
+  // Column 9, not 8, for the same reason as the west approach above: the
+  // hub's other push block sits solid at (8,3), the near column of the east
+  // corridor, and respawns there on every re-entry.
+  ['goto', 9, 3, 500],
   ['exit', 'right', 400],
   ['fight', 1200],
   ['loot', 500],
@@ -165,9 +180,9 @@ export const ROUTE = [
   ['dialogue', 200],
   ['loot', 500],
 
-  // Lean on the north door — the second lock, whose key is the one behind the
-  // blocks. Nothing happens, which is the point: this is where a new game
-  // stops.
+  // The second lock, whose key is the Switch Room's. Push blocks move now
+  // (see CLAUDE.md's "a solid entity is not solid" trap, fixed on a prior
+  // branch), so this door opens too, and the Anchor lies past it.
   //
   // The Weeping Wall one room west is deliberately NOT walked. It is optional
   // content (the Split Fang charm and a red rupee), the run arrives at it on
@@ -178,35 +193,52 @@ export const ROUTE = [
   ['hold', ['up'], 30],
   ['tap', 'a', 30],
   ['dialogue', 200],
-  ['wait', 60],
+  ['goto', 4, 1, 500],
+  ['exit', 'up', 400],
+
+  // ---------------------------------------------------------------- d1 0,3,2
+  // The Sluicegate. A big chest in the middle of the room holds the
+  // Tidewright's Anchor — this is the item room, not the boss room, and the
+  // route stops here: the boss lies behind the two wings (an anchor gate to
+  // the east, another to the west, and the gauge rooms guarding both), which
+  // is unwritten route data, not an engine blocker. See GOAL below.
+  ['goto', 4, 5, 500],
+  ['hold', ['up'], 6],
+  ['tap', 'a', 40],
+  ['dialogue', 400],
+  ['loot', 600],
 ];
 
 /**
  * Where the run actually stops, and why.
  *
- * The goal of this harness is the Essence of Tidewash Grotto and it does not
- * reach it, because the game cannot be finished — see the blocker above. Rather
- * than assert a target it is known to miss (a checker that is red for a reason
- * everybody already knows stops being read) or quietly lower the target to what
- * passes (which is how a suite ends up with seven hundred green assertions on
- * an unfinishable world), it asserts BOTH: the furthest point the world
- * currently allows, AND that the blocker is still exactly where it was.
+ * THIS IS NOT THE BUG IT USED TO NAME. Entity collision landed on a prior
+ * branch (see CLAUDE.md's "a solid entity is not solid" trap): every push
+ * block in the dungeon can be pushed now, both the Crab Pit's and the Switch
+ * Room's Small Keys are earned and spent on both locked doors, and the run
+ * carries the Anchor out of the Sluicegate. The route still stops short of
+ * the Essence, but for an ordinary reason — the rest of the dungeon (both
+ * anchor-gated wings, the gauge rooms, the boss door, Gohmaraq) is simply not
+ * written into `ROUTE` yet — not because anything in the engine refuses it.
  *
- * When the blocker is fixed, delete `blocked` and set `room` to the boss room.
- * The Essence assertions in check-playthrough.mjs go live on their own.
+ * The harness still asserts BOTH shapes on purpose: the furthest point the
+ * world currently allows, AND that the reason for stopping there is still the
+ * stated one. A checker that is red for a reason everybody already knows
+ * stops being read; quietly lowering the target to whatever passes is how a
+ * suite ends up green on an unfinishable world. `short` names what is left
+ * and why it is route data, not a blocker — extend `ROUTE` through it and
+ * delete `short`, and the Essence assertions in check-playthrough.mjs go live
+ * on their own.
  */
 export const GOAL = {
   essence: 1,
   // The furthest a new game can get. Failing to REACH this is a regression.
-  room: 'd1/0,3,3',
-  blocked: {
-    what: 'the Switch Room key at d1 0,4,4',
-    why: 'push blocks cannot be pushed: Entity.solid is never read by canOccupy '
-       + 'or moveEntity, so the player walks through a block and tryPush — which '
-       + 'only fires on a movement hit — never runs',
-    // The two locked doors between the Tide Gallery and the Anchor need two
-    // Small Keys, and only the Crab Pit's is obtainable.
-    keysNeeded: 2,
-    keysObtainable: 1,
+  room: 'd1/0,3,2',
+  short: {
+    what: 'the rest of Tidewash Grotto: both anchor gates, the gauge rooms, '
+        + 'the boss door, and Gohmaraq',
+    why: 'unwritten route data. Both Small Keys are obtainable and both locked '
+       + 'doors open; getting further needs the Anchor mechanic itself (sink '
+       + 'it, sound the conch, cross) worked into the route through both wings',
   },
 };
