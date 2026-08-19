@@ -53,14 +53,24 @@ export const ROUTE = [
   ['loot', 500],
 
   // West wing: the Dungeon Map is a loose pickup, so walking over it is enough.
-  ['goto', 1, 3, 400],
+  //
+  // THE HUB HAS ITS OWN PUSH-BLOCK PUZZLE (the fairy heal, optional, not
+  // attempted here) and its two blocks sit RIGHT ON row 3 of the west/east
+  // exits — (1,3) and (8,3), exactly the tiles a hand-written `goto 1,3` /
+  // `goto 8,3` used to walk through before blocks were solid. Now that they
+  // are solid, a `goto` whose TARGET is a block's own tile can never path
+  // there at all (the tile is occupied), so the directive burns its whole
+  // budget standing still and every directive after it runs in the wrong
+  // room. Row 4 has the same doorway with no block on it, so every hub
+  // crossing below targets row 4, not row 3.
+  ['goto', 1, 4, 400],
   ['exit', 'left', 400],
   ['goto', 4, 3, 500],
   ['dialogue', 200],
   ['fight', 1200],
   ['loot', 500],
   ['wait', 40],
-  ['goto', 8, 3, 400],
+  ['goto', 8, 4, 400],
   ['exit', 'right', 400],
 
   // East wing: the Chartstone, in a chest. Taken here rather than on the way
@@ -69,7 +79,7 @@ export const ROUTE = [
   // therefore unobtainable too.
   ['fight', 1400],
   ['loot', 500],
-  ['goto', 8, 3, 500],
+  ['goto', 8, 4, 500],
   ['exit', 'right', 400],
   ['fight', 1200],
   ['loot', 500],
@@ -86,7 +96,7 @@ export const ROUTE = [
   ['tap', 'a', 40],
   ['dialogue', 400],
   ['loot', 600],
-  ['goto', 0, 3, 500],
+  ['goto', 0, 4, 500],
   ['exit', 'left', 400],
 
   // Back through the hub and north up the spine into the Tide Gallery.
@@ -166,47 +176,61 @@ export const ROUTE = [
   ['loot', 500],
 
   // Lean on the north door — the second lock, whose key is the one behind the
-  // blocks. Nothing happens, which is the point: this is where a new game
-  // stops.
+  // blocks. Blocks are solid now, so the Switch Room's key was collected
+  // above and this door opens.
   //
   // The Weeping Wall one room west is deliberately NOT walked. It is optional
-  // content (the Split Fang charm and a red rupee), the run arrives at it on
-  // one heart, and it dies there — which is a fact about how thin the health
-  // economy is by this point rather than about the room, and is written up in
+  // content (the Split Fang charm and a red rupee), the run arrives here on
+  // few hearts, and walking into it spends health this route does not need
+  // to spend — which is a fact about how thin the health economy is by this
+  // point rather than about the room, and is written up in
   // docs/NEXT-SESSION.md rather than smuggled into the route.
   ['goto', 4, 3, 500],
   ['hold', ['up'], 30],
   ['tap', 'a', 30],
   ['dialogue', 200],
+
+  // ---------------------------------------------------------------- d1 0,3,2
+  // Through the now-open door, north through the Locked Stair's own corridor
+  // and out its north exit into the Sluicegate — the Anchor's room. No
+  // enemies stand between the door and the chest.
+  ['goto', 4, 1, 500],
+  ['exit', 'up', 400],
+  ['fight', 800],
+  ['dialogue', 200],
+  ['loot', 400],
+  ['goto', 4, 5, 500],
+  ['hold', ['up'], 24],
+  ['tap', 'a', 40],
+  ['dialogue', 400],
+  ['loot', 600],
   ['wait', 60],
 ];
 
 /**
  * Where the run actually stops, and why.
  *
- * The goal of this harness is the Essence of Tidewash Grotto and it does not
- * reach it, because the game cannot be finished — see the blocker above. Rather
- * than assert a target it is known to miss (a checker that is red for a reason
- * everybody already knows stops being read) or quietly lower the target to what
- * passes (which is how a suite ends up with seven hundred green assertions on
- * an unfinishable world), it asserts BOTH: the furthest point the world
- * currently allows, AND that the blocker is still exactly where it was.
+ * THE PUSH-BLOCK BLOCKER IS FIXED (canOccupy reads Entity.solid now — see
+ * CLAUDE.md's traps list) and this route was retuned to match: it earns both
+ * Small Keys, opens both locked doors, and claims the Anchor from the
+ * Sluicegate. That is as far as this route goes — it stops here because it
+ * has not yet been extended past the Anchor room, not because the world
+ * stops it. Extending it through the gate rooms, the Two Gauges Piece of
+ * Heart, the Boss Key and Gohmaraq is undone work; see docs/NEXT-SESSION.md.
  *
- * When the blocker is fixed, delete `blocked` and set `room` to the boss room.
- * The Essence assertions in check-playthrough.mjs go live on their own.
+ * When the route is extended to the boss, delete `blocked` and set `room` to
+ * the boss room. The Essence assertions in check-playthrough.mjs go live on
+ * their own.
  */
 export const GOAL = {
   essence: 1,
-  // The furthest a new game can get. Failing to REACH this is a regression.
-  room: 'd1/0,3,3',
+  // The furthest this route currently walks. Failing to REACH this is a
+  // regression.
+  room: 'd1/0,3,2',
   blocked: {
-    what: 'the Switch Room key at d1 0,4,4',
-    why: 'push blocks cannot be pushed: Entity.solid is never read by canOccupy '
-       + 'or moveEntity, so the player walks through a block and tryPush — which '
-       + 'only fires on a movement hit — never runs',
-    // The two locked doors between the Tide Gallery and the Anchor need two
-    // Small Keys, and only the Crab Pit's is obtainable.
-    keysNeeded: 2,
-    keysObtainable: 1,
+    what: 'the route ends at the Sluicegate, Anchor in hand',
+    why: 'the route has not been extended past the Anchor room yet — the '
+       + 'gate rooms, the Two Gauges Piece of Heart, the Boss Key and the '
+       + 'boss fight are all still ahead of it',
   },
 };

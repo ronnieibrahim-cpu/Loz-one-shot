@@ -215,11 +215,9 @@ console.log(`  essences: [${s.essences.join(', ')}]  keys spent on doors: ${s.do
 // harness was written to catch, so the miss is printed every run.
 
 if (GOAL.blocked) {
-  console.log('  !! THE GAME CANNOT BE FINISHED. The run stops at ' + GOAL.room + '.');
-  console.log('  !! blocked on: ' + GOAL.blocked.what);
-  console.log('  !! because: ' + GOAL.blocked.why);
-  console.log(`  !! ${GOAL.blocked.keysNeeded} Small Keys stand between a new game and the Anchor; `
-    + `${GOAL.blocked.keysObtainable} can be obtained.\n`);
+  console.log('  !! THE ROUTE STOPS HERE. The run reaches ' + GOAL.room + '.');
+  console.log('  !! stopped on: ' + GOAL.blocked.what);
+  console.log('  !! because: ' + GOAL.blocked.why + '\n');
 }
 
 const ended = `${s.mapId}/${s.room}`;
@@ -227,15 +225,20 @@ check('the run gets as far as the world currently allows (' + GOAL.room + ')',
   ended === GOAL.room, `stopped in ${ended}`);
 
 if (GOAL.blocked) {
-  // The blocker, proved by the run rather than reasoned about. The route leans
-  // on both of the Switch Room's blocks for 120 frames each; if either ever
-  // moves, the engine has gained entity collision and this harness should be
-  // re-pointed at the boss room.
-  check('...and the blocker is still the blocker: no push block ever moved',
-    a.blocksMoved === 0 && a.blocksTouched >= 2,
+  // Push blocks work now (canOccupy reads Entity.solid — see CLAUDE.md's
+  // traps list). The Switch Room's puzzle is solved for real: both blocks
+  // move, both locked doors open, and the Anchor is claimed. What has NOT
+  // happened yet is the rest of the dungeon — this asserts the two things
+  // that are true right now, not the pre-fix blocker (see git history for
+  // the assertions that used to live here, back when no block could move).
+  check('...the Switch Room puzzle is solved: both blocks moved',
+    a.blocksMoved >= 2 && a.blocksTouched >= 2,
     `${a.blocksMoved} of ${a.blocksTouched} blocks moved`);
-  check('...so the second Small Key never arrives', s.keys === 0 && s.doorsChanged === 1,
+  check('...both Small Keys were spent on both locked doors',
+    s.keys === 0 && s.doorsChanged === 2,
     `keys in hand ${s.keys}, doors opened ${s.doorsChanged}`);
+  check('...and the Anchor was claimed from the Sluicegate',
+    s.items.includes('anchor'), `items: ${s.items.join(',')}`);
   check('the Essence is NOT reached, and that is the finding',
     !s.essences.includes(GOAL.essence), `essences [${s.essences.join(',')}]`);
 } else {

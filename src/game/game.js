@@ -862,8 +862,8 @@ export class Game {
     const p = this.progress;
     const def = ITEMS[id];
     if (!def || !def.equippable) return;
-    if (!p.equipB) p.equipB = id;
-    else if (!p.equipA) p.equipA = id;
+    if (!p.equipA) p.equipA = id;
+    else if (!p.equipB) p.equipB = id;
   }
 
   claimEssence(index) {
