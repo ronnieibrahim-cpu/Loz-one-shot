@@ -83,6 +83,63 @@ intro, real presses), `use` (press whichever button an ITEM is on), `travel`
   Tide Gallery. The optional Weeping Wall, one room off the route, kills it.
   Some of that is the actor being a worse player than a human; not all of it.
 
+### THE CONTENT AUDIT — what is actually built, and the four gaps
+
+Done after the harness, by reading the data rather than the notes. Several
+things the old prompts list as missing are in fact built; several things nobody
+listed as missing are not.
+
+**Built and wired:** all six dungeons (item, essence, boss, boss room,
+entrance); all six bosses including Nereth with his tide-pinning phases; the
+scrimshaw carving quest and seven placed charms; 17 Pieces of Heart and a
+container from every boss; the shop's five lines of stock; the Ferryman's Coin;
+the Bottled Tide (a big chest in the Salt Pan Vault, and buyable); 22 talking
+NPCs and 29 signs. **The Resonance Rod IS obtainable** — the Maku Tree gives it
+at `needEssences: 1`, so the old "nothing states where the Rod is found" note is
+stale, as is the one about `boulder` and `abyssPlug` being unplaced.
+
+**Every music track content asks for exists**: abyss, cave, dungeon, dungeon2,
+ending, finalBoss, marsh, overworld, reef, salt, shop, village, plus title, boss
+and eight jingles.
+
+The four gaps, in the order they cost the player something:
+
+1. **THERE IS NO ABYSSAL SEAL.** The story says five Essences open the road to
+   Nereth. There is no essence gate anywhere in the data — no seal tile, no
+   five-essence check. The Keep's gate screen (`0,1,0`) is ordinary floor with a
+   signpost. Worse, `check-overworld` reports the northern region sealed by
+   `dredge`/`dredgePlug` and `0,1,0` is in that set — **the Keep may sit behind
+   the Dredge Line, which is found inside it.** That would be a second circular
+   gate. NOTHING ON TRUNK CAN SETTLE THIS: the flood is an optimistic upper
+   bound and answers no ordering question, and `check-progression.mjs` — named
+   in the old prompts' baseline — does not exist. Settle it before extending the
+   playthrough past D1.
+2. **`makuMaster` never plays.** It is the Maku Tree's five-essence beat, and it
+   does two jobs: it grants the **level-3 sword**, which is otherwise
+   unobtainable, and it sets `flag: 'makuOpenedKeep'`, which **nothing reads**.
+   So the sword never leaves level 1 and the flag meant to open the Keep is
+   written by a scene that never runs.
+3. **`nerethIntro` never plays.** The final boss has a written introduction and
+   it is never triggered. You walk in and fight.
+4. **The trading sequence is dead data.** `progress.trade = {stage, item}` is
+   declared and saved, `tradeStart`/`tradeMid`/`tradeEnd` and a `tradeKettle`
+   cutscene all exist, and nothing in `src/` reads or advances any of it. There
+   is no `trader` entity type. Build it or delete it; half-present is the worst
+   of the three.
+
+**Three sounds are silently missing.** `Audio.sfx` is `if (!d) return;`, so an
+unknown name is a no-op with no error and no warning — which is why nothing has
+ever caught these. `swim` (player.js, every time you swim), `hookshot`
+(items.js, the Dredge Line's cast) and `rumble` (items.js plus two tile
+transforms, hauling a boulder or an abyss plug) are all called and none is
+defined in `src/data/audio.js`. Five spare dialogue lines (`child1`, `elder1`,
+`shopkeeper2`, `signCoast`, `villager3`) are unreferenced ON PURPOSE — story.js
+labels them spares — and are not bugs.
+
+**There is no deployment.** No CI, no GitHub Actions workflow, no Pages setup.
+The playable artefact is `dist/oracle-of-tides.html`, committed, which runs from
+a `file://` URL. "Live" does not exist yet.
+
 ### What this did NOT do
 
 Jobs 2, 3 and 4 from the prompt (the three unplaced enemies, the ART-BACKLOG
