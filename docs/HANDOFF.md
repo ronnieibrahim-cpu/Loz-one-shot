@@ -224,6 +224,64 @@ is in the page, and nothing steps until you say so.
 
 ## Hard-won lessons — do not rediscover these
 
+**THE FIRST THING ANYBODY PLAYED, and what playing it found.**
+
+`tools/check-playthrough.mjs` drives a new game from the title screen with real
+button presses and nothing granted. On its first complete run it found that
+**the game cannot be finished**, and the cause is one line that was never
+written:
+
+> `Entity.solid` is never read by anything in the movement path. `canOccupy`
+> samples TILES only; `moveEntity` asks nothing else.
+
+So the player walks through every push block, chest, torch and signpost in the
+game. And because `Player.tryPush` only fires on a movement HIT, **no block in
+this game has ever been pushed, or can be.** Three things follow, and they are
+all invisible to the rest of the suite:
+
+1. **D1 is unbeatable.** Two locked doors stand between a new game and the
+   Tidewright's Anchor. The two Small Keys that open them are the Crab Pit's and
+   the Switch Room's, and the Switch Room wants both its blocks on both its
+   `hold` switches simultaneously — one body cannot press two. The dungeon's
+   only heal, the hub's fairy, is behind an identical pair.
+2. **`solve-switches.mjs` and `walk-dungeons.mjs` are green because they model
+   the push.** Both are correct about the geometry and both are describing a
+   verb the engine does not have. This is the exact gap the playthrough harness
+   was written to close: a flood is a model, and the model does not press a
+   button.
+3. **`check-towns.mjs`'s cut-tile clause is proving a rule nothing enforces.**
+   The lesson immediately below says "an NPC is a solid tile that nobody
+   checks". It is truer than it was meant to be — an NPC is not solid to the
+   player at all, so a townsperson in the one crossing row does not sever the
+   screen. The clause is still worth keeping (it will be right the moment the
+   engine is fixed), but it is currently insurance, not a proof.
+
+**Do not fix it casually.** Teaching `canOccupy` about solid entities is about
+five lines. It was tried on `claude/playthrough-test-harness-jq9z5o` and the
+recorded baseline moves: `d1-descent` diverges at frame 1620 and ends dead on
+the overworld, `d2-fork-wrong` diverges at frame 240 and never leaves its first
+room. All 51 replays want re-recording and every checker wants re-verifying
+afterwards, and the playthrough harness's own determinism proof rests on that
+baseline. It is a session, not an edit.
+
+**Two smaller things the same run turned up.**
+
+- **A new game puts the CONCH on B and the SWORD on A.** The intro cutscene
+  gives the conch first, `Game.autoEquip` fills B before A, and nothing ever
+  swaps them. Every replay plan pins `equipB: 'sword'` in its setup, so for the
+  whole life of the actor "swing" was spelled `BIT.b` and it was always right —
+  and would have pressed the conch at the first enemy of a real run. The actor
+  reads the slot out of progress now. Whether the DEFAULT is right is a design
+  question nobody has answered: it is the opposite of the convention the source
+  games set.
+- **An actor that does not pick up drops dies.** `dFight` returns the instant
+  the last enemy falls, leaving every heart it dropped on the floor. On the
+  three hearts a new game actually starts with, that is the difference between
+  reaching the Locked Stair on four quarter-hearts and bleeding out in the Tide
+  Gallery six rooms in. `dLoot` is not the harness cheating; it is the actor
+  learning to play. The health economy is still thin enough that the optional
+  Weeping Wall one room off the route kills the run.
+
 **The peoples (PT step 4), and the two things they cost.**
 
 1. **AN NPC IS A SOLID TILE THAT NOBODY CHECKS.** The "one corridor" rule below

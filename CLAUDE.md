@@ -113,6 +113,24 @@ they are also how a future session finds which sheet a tile came from.
 - **Compositing two source tiles into one game tile is authoring, not
   extraction.** It needs an in-game screenshot across several regions before it
   is believed. `tools/preview.mjs` renders one palette and cannot show it.
+- **A SOLID ENTITY IS NOT SOLID, and no push block has ever been pushed.**
+  `Entity.solid` is documented on the field itself as "blocks the player like a
+  pushable block" and NOTHING in the movement path reads it: `canOccupy` samples
+  tiles only and `moveEntity` asks nothing else. So the player walks through
+  every push block, chest, torch and signpost in the game, and because
+  `Player.tryPush` only fires on a movement HIT, a block cannot be pushed at
+  all. Two consequences are load-bearing. **D1 cannot be finished** — its Switch
+  Room key needs two blocks on two `hold` switches at once, one body cannot
+  answer it, and that key is one of the two the Anchor's locked doors need.
+  And **`check-towns.mjs`'s cut-tile clause is proving a rule the engine does
+  not enforce**: a townsperson standing in the one crossing row does not
+  actually sever the screen. `solve-switches.mjs` and `walk-dungeons.mjs` both
+  model a push the engine cannot perform, which is why they are green.
+  Teaching `canOccupy` about solid entities is a five-line change and NOT a
+  small one to land: it was tried on `claude/playthrough-test-harness-jq9z5o`
+  and moves the recorded baseline (d1-descent ends dead on the overworld,
+  d2-fork-wrong diverges by frame 240). Every replay wants re-recording and
+  every checker re-verifying, which is its own session.
 - **A test that fails intermittently is a real bug, not load flakiness.** If a
   seeded, deterministic run varies, the non-determinism is in initialisation
   order. Find it. Never add a retry.
@@ -163,10 +181,19 @@ they are also how a future session finds which sheet a tile came from.
 | `node tools/check-items.mjs` | Every item does the verb `docs/ITEMS.md` claims for it, and nothing hands out an item that no longer exists |
 | `node tools/replay.mjs` | Movement and combat are frame-identical to a recorded baseline |
 | `node tools/check-build.mjs` | The shipped single-file build boots and plays from a `file://` URL |
+| `node tools/check-playthrough.mjs` | A new game, driven in the real engine with no items granted, no warps and no flags set from outside, gets as far through the world as the world allows — and the thing currently stopping it is still the thing that was stopping it |
 | `node tools/test.mjs` | Everything else |
 
 Run the cheap deterministic checkers instead of reasoning about correctness.
 They are faster than you are and they do not rationalise.
+
+**Every one of those tools proves a PART. `check-playthrough.mjs` is the only
+one that plays the game.** The rest are models, and a model does not fight a
+boss, spend a key or press a button — which is how seven hundred green
+assertions once described a world that could not be finished. On its first run
+the playthrough harness found that the world cannot be finished NOW, for a
+different reason, and neither the room flood nor the switch solver could see it.
+See "a solid entity is not solid" below.
 
 ---
 

@@ -10,6 +10,93 @@ maintain and the most expensive thing to not have.
 
 ---
 
+## THE BOARD — read this, not the archive below
+
+**Somebody has now played it, and the game cannot be finished.**
+`tools/check-playthrough.mjs` is new: it drives a new game from the title screen
+with real button presses, grants nothing, warps nowhere, sets no flag, and plays
+on the three hearts a new game actually starts with. It reaches **d1 0,3,3, the
+Locked Stair**, and stops, because the world stops there.
+
+### The blocker, and it is one line that was never written
+
+> `Entity.solid` is never read by anything in the movement path. `canOccupy`
+> samples TILES only; `moveEntity` asks nothing else.
+
+The player walks through every push block, chest, torch and signpost in the
+game. `Player.tryPush` only fires on a movement HIT, so **no block has ever been
+pushed, or can be.** Proved in-engine: a player stood one tile south of a block,
+holding `up` for 120 frames, ends up NORTH of it with the block still on its
+spawn tile.
+
+**D1 therefore cannot be completed.** Two locked doors stand between a new game
+and the Tidewright's Anchor; the two keys that open them are the Crab Pit's and
+the Switch Room's, and the Switch Room wants both blocks on both `hold` switches
+at once. The hub's fairy — the dungeon's only heal — is behind an identical
+pair.
+
+`solve-switches.mjs` reports all nine switch rooms "solvable by pushing" and
+`walk-dungeons.mjs` counts the key as available, because **both model a push the
+engine cannot perform.** That is the gap between a model and a game, and it is
+exactly what no flood in this repo could ever have closed.
+
+### THE NEXT SESSION'S FIRST JOB — make the blocks solid
+
+Five lines in `src/game/entity.js`: after `canOccupy`'s tile loop, reject a
+position overlapping a non-dead entity with `solid` set (skip when `airborne`).
+**It was tried on this branch and reverted, and the reason matters:** the
+recorded baseline MOVES. `d1-descent` diverges at frame 1620 and ends dead on
+the overworld; `d2-fork-wrong` diverges at frame 240 and never leaves its first
+room. So the job is the fix PLUS re-recording all 51 replays PLUS re-verifying
+every checker — and it is worth doing on its own, with nothing else in the
+commit, because the playthrough harness's determinism proof rests on that
+baseline.
+
+When it is done: delete `GOAL.blocked` from `tools/playthrough-route.mjs`, point
+`GOAL.room` at the boss room, and extend the route past the Sluicegate. The
+Essence assertions in `check-playthrough.mjs` go live on their own.
+
+### What the harness is, so it is not rebuilt
+
+| File | What it is |
+|---|---|
+| `tools/check-playthrough.mjs` | The beatability test. 20 assertions. Runs the route, then replays its tape blind and compares to the pixel |
+| `tools/playthrough-route.mjs` | The route as data, plus `GOAL` — the furthest point the world allows and the blocker stopping it |
+| `tools/actor-runtime.mjs` | The page-side actor, EXTRACTED UNCHANGED from replay.mjs so both share one pathfinder and one swordsman. All 51 replays passing to the pixel is the proof the move was behaviour-preserving |
+| `tools/playthroughs/playthrough-d1.json` | The recorded tape. NOT in `tools/replays/` — replay.mjs boots everything in there through `beginReplay(doc.setup, …)` and a playthrough tape has no `setup` |
+
+Four directives are new and are playthrough-only: `newgame` (title screen and
+intro, real presses), `use` (press whichever button an ITEM is on), `travel`
+(screen-level BFS with learned blocked edges — the route planner), and `loot`
+(walk over what the fight dropped).
+
+### Two smaller findings from the same run
+
+- **A new game puts the CONCH on B and the SWORD on A.** The intro gives the
+  conch first and `autoEquip` fills B before A. Every replay pins
+  `equipB: 'sword'`, so the actor's hardcoded `BIT.b` was always right and would
+  have sounded the conch at the first enemy of a real run. Fixed in the actor
+  (it reads the slot). Whether the DEFAULT is right is an unanswered design
+  question — it is the opposite of the convention the source games set.
+- **The health economy is thin.** With drops collected the run reaches the
+  Locked Stair on 4 of 12 quarter-hearts. Without collecting them it dies in the
+  Tide Gallery. The optional Weeping Wall, one room off the route, kills it.
+  Some of that is the actor being a worse player than a human; not all of it.
+
+### What this did NOT do
+
+Jobs 2, 3 and 4 from the prompt (the three unplaced enemies, the ART-BACKLOG
+legibility findings, the ledge families) are untouched. PT step 5 is untouched.
+So is extending the playthrough to D2-D6 — there is no point until a new game
+can leave D1.
+
+**Note on the prompt that started this session:** it described a baseline that
+does not match trunk. `tools/check-progression.mjs` does not exist; P9 is not
+done; `walk-dungeons.mjs` is 23/23, not 29/29. The archive below is accurate and
+the board above is the state.
+
+---
+
 ## Where the towns stand (PT), in one line
 
 **PT steps 1-4 are DONE: the block machinery exists, the Subrosia town kit is
