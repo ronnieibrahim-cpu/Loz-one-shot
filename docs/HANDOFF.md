@@ -282,6 +282,60 @@ baseline. It is a session, not an edit.
   learning to play. The health economy is still thin enough that the optional
   Weeping Wall one room off the route kills the run.
 
+**THE FIX LANDED, and it was still a session, not an edit — exactly as warned
+above.** `canOccupy` (`src/game/entity.js`) now rejects a position overlapping
+a non-dead `solid` entity, skipping the check while airborne. Verified by hand
+before touching a single replay: spawn a block, stand south of it, hold `up`
+120 frames — the block moves one tile north and the player stops flush behind
+it. Then all 51 replays re-verified; 4 changed (`d1-descent`, `d2-fork-wrong`,
+`village-walk`, `village-shop-door`), each for an explainable reason (see
+NEXT-SESSION.md's board), and every checker in the CLAUDE.md table re-run
+green with the counts unchanged except where explained. Two new things this
+pass found that the warning above did not anticipate:
+
+- **`reconcileWithTide` runs on every `enterMap`, and it was written for
+  tide safety but is generic in what `canOccupy` tells it.** It now also
+  catches "the player spawned inside a solid entity" and rescues them via
+  `findSafeTile` — which is correct in general, but on `village-shop-door`'s
+  synthetic test spawn it rescued the player to a tile flush against a solid
+  wall, 8px from the door, stranding a canned `hold up` script that used to
+  walk straight through the 2px of accidental hitbox overlap with a
+  stationary NPC. **Any door's return-warp landing pixel that clips a
+  stationary or home-tile NPC's hitbox will now silently relocate the player
+  on entry.** No checker sweeps the whole map for this — `check-towns.mjs`
+  proves an NPC doesn't sever a screen's flood, not that a warp's landing
+  pixel avoids one. Worth a dedicated pass before trusting the other three
+  towns' return warps.
+- **`actor-runtime.mjs`'s block-move counter has always been wrong, just
+  never visible before.** `_audit_tick` marks a moved block's `_blockHome`
+  entry with a sentinel string, then compares every later frame's position
+  against that same sentinel — which never matches again, so `blocksMoved`
+  increments once per frame after the first move, not once per block. Cosmetic
+  (the pass/fail check is `blocksMoved === 0`, still correct), not fixed here.
+
+**What did NOT move, and why that is informative rather than suspicious.**
+`solve-switches.mjs` and `walk-dungeons.mjs` both stayed at their exact prior
+counts (9/9, 23/23). Both are pure models of the world that already assumed a
+push resolves the way `PushBlock`'s own logic says it does — making the real
+engine agree with a correct model does not change what the model can see. If
+either had moved, that would have meant the model was silently wrong about
+something the flood could reach; it wasn't.
+
+**`check-playthrough.mjs` still does not pass the Locked Stair, and the reason
+is data, not the fix.** The playthrough's own audit shows blocks genuinely
+moving in a full run now. But `tools/playthrough-route.mjs`'s 83 scripted
+directives were tuned against the old walk-through physics, and the run now
+ends early — d1 0,2,5, short of the historic blocker at 0,3,3 — because a
+`goto`/`travel` leg runs into a real obstacle it used to pass through. Compare
+this to the two replays above: those diverged and still finished, because
+their goal was a fixed final state a slightly different path still reaches.
+The playthrough's ROUTE is closer to a replay's canned button-holds than to a
+`goto`'s live pathfinder in the legs that broke, so it has no way to route
+around a new obstacle on its own. Retuning it, deleting `GOAL.blocked`, and
+extending the route past the now-pushable Switch Room and Crab Pit puzzles is
+next-session work — it is real design/tuning across 83 directives, not part
+of this fix.
+
 **The peoples (PT step 4), and the two things they cost.**
 
 1. **AN NPC IS A SOLID TILE THAT NOBODY CHECKS.** The "one corridor" rule below

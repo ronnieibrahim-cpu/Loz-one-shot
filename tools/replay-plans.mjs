@@ -102,7 +102,14 @@ export const PLANS = {
       equipB: 'sword',
       equipA: 'conch',
       tide: 1,
-      enter: ['overworld', 0, 4, 7, 96, 88, 'down'],
+      // y was 88: close enough to the wandering villager's home tile (6,6,
+      // pixel 96,96) that the two hitboxes clip by 2px. That used to be
+      // invisible; now that canOccupy reads solid entities, spawning inside
+      // it fails reconcileWithTide's check and findSafeTile snaps the player
+      // off-route before a single button is pressed. Moved 8px further from
+      // the villager's tile; the scenario (walk up into the doorway from the
+      // square) is unchanged.
+      enter: ['overworld', 0, 4, 7, 96, 80, 'down'],
     },
     steps: [
       ['wait', 20],

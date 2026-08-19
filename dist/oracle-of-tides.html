@@ -4290,6 +4290,13 @@ function canOccupy(game, e, x, y, caps) {
       }
     }
   }
+  if (!airborne) {
+    for (const o of game.entities) {
+      if (o === e || !o.solid || o.dead) continue;
+      const ob = o.rect();
+      if (x0 <= ob.x + ob.w - 1 && ob.x <= x1 && y0 <= ob.y + ob.h - 1 && ob.y <= y1) return false;
+    }
+  }
   return true;
 }
 
