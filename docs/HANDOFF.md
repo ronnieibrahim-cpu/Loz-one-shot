@@ -224,6 +224,44 @@ is in the page, and nothing steps until you say so.
 
 ## Hard-won lessons — do not rediscover these
 
+**The wave channel's floor is not the pulse channels' floor.** Writing
+`check-music.mjs`'s frequency-range check surfaced that a track's bass line
+routinely uses octave-1 notes (`D1`≈36.7Hz, `C1`≈32.7Hz) that sit *below* the
+real Game Boy pulse channel's 64Hz hardware floor. That is not a bug in the
+existing tracks: the wave channel (`wav`) runs its frequency timer at half
+the rate pulse channels do, so its floor is 32Hz, not 64Hz. Check it
+per-channel (`ch === 'wav' ? 32 : 64`), not with one constant, or every
+existing bass line in the game fails a checker that is actually correct.
+
+**A GB tracker format that plays one token per row cannot literally
+"overlap" a note.** Asked to check "no channel has overlapping notes" against
+a format where each channel is monophonic and one row plays exactly one
+token, the only real analogue is a dangling hold: a `-` token with no
+sounding note before it in that pattern (nothing to hold over). Implemented
+that way in `check-music.mjs`, with the reasoning in the file's own header
+comment so the next reader doesn't wonder why it isn't checking something
+that structurally cannot happen.
+
+**A track's `order` array is not required to use every pattern once.**
+`finalBoss` plays `['A','A','B','A','C']` — `A` three times, `B` once,
+`C` once — and that is a legitimate "A-B-A-C shape with a bridge" already. If
+a future session is told to bring a track "under three patterns" up to that
+shape, check `Object.keys(t.patterns).length`, not just eyeball `order`: a
+track can already have three-plus patterns and a repeating order and still
+read, at a glance, like it needs work.
+
+**`tools/test.mjs` was missing a Chromium fallback that `check-build.mjs`
+already had.** Both call `chromium.launch()`; only `check-build.mjs` caught
+the case where the installed `playwright` package (resolved by semver caret
+to a newer minor than whoever wrote the browser-provisioning step expected)
+wants a browser build the pre-provisioned `/opt/pw-browsers` doesn't have,
+and fell back to `executablePath: '/opt/pw-browsers/chromium'`. Without that
+fallback `test.mjs` cannot launch at all — not "some tests fail", the whole
+harness throws before the first assertion. The fix is the same four lines in
+both files now. If another `tools/*.mjs` grows its own `chromium.launch()`
+call independent of `loadPlaywright()`'s shared helper, it will hit the same
+wall the same way.
+
 **THE FIRST THING ANYBODY PLAYED, and what playing it found.**
 
 `tools/check-playthrough.mjs` drives a new game from the title screen with real
@@ -1920,6 +1958,7 @@ node tools/check-gates.mjs       # the two item gates, in-engine, with real item
 node tools/check-motion.mjs      # ground enemies on the 8px lattice, fliers off it
 node tools/find-ledges.mjs       # reports where a ledge may go (not a check)
 node tools/check-build.mjs       # the shipped single-file build boots from file://
+node tools/check-music.mjs       # track order resolves, note range, noise-only percussion
 ```
 
 Run the room checkers after touching any room data, and check-build.mjs after
