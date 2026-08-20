@@ -88,10 +88,19 @@ await page.evaluate(async () => {
   const maps = await import('/src/world/maps.js');
   const room = await import('/src/world/room.js');
   const ts = await import('/src/world/tileset.js');
+  // PASSABILITY IS NEVER RE-DERIVED HERE. `tileWalkable`/`tileSolid` ask the
+  // real `Room.solidAt` — the same function `canOccupy`/`moveEntity` use in
+  // the running game — rather than re-deriving which flags block movement.
+  // See tools/lib/collision.mjs and CLAUDE.md, Hard rules.
+  const col = await import('/tools/lib/collision.mjs');
   window.__MAPS = maps.MAPS;
+  window.__getRoom = maps.getRoom;
   window.__getLegend = room.getLegend;
   window.__getTileDef = ts.getTileDef;
   window.__F = ts.F;
+  window.__tileWalkable = col.tileWalkable;
+  window.__tileSolid = col.tileSolid;
+  window.__ROUTE_AVOID = col.ROUTE_AVOID;
   // The Dredge Line's reach, out of feel.js rather than written down here, so
   // retuning the line re-walks every dungeon instead of quietly breaking one.
   const feel = await import('/src/data/feel.js');
@@ -149,7 +158,8 @@ for (const id of DUNGEONS) {
 
 // ------------------------------------------------- part 2: dungeon reachability
 const reach = await page.evaluate((ids) => {
-  const F = window.__F, getTileDef = window.__getTileDef, getLegend = window.__getLegend;
+  const F = window.__F, getRoom = window.__getRoom;
+  const tileWalkable = window.__tileWalkable, ROUTE_AVOID = window.__ROUTE_AVOID;
   const SW = 10, SH = 8;                    // one SCREEN, in tiles
   const DREDGE_TILES = window.__DREDGE_TILES;
   // The dungeon that hands the Dredge Line over, found rather than written
@@ -192,12 +202,14 @@ const reach = await page.evaluate((ids) => {
       const N = dims.get(nrk);
       return [nrk, gx - N.rx * SW, gy - N.ry * SH];
     };
-    const legend = getLegend(m.legend);
-    const defOf = (ch, tide) => {
-      let d = getTileDef(legend[ch]);
-      for (let i = 0; i < 4 && d && d.tide; i++) d = getTileDef(d.tide[tide]);
-      return d;
-    };
+    // Every room this map declares, as the engine's own `Room` — built by
+    // `getRoom`, the same function the running game calls, rather than a
+    // second resolution of the legend/tide-chain here.
+    const ROOMS = new Map();
+    for (const rk of Object.keys(m.roomDefs)) {
+      const [f0, rx0, ry0] = rk.split(',').map(Number);
+      ROOMS.set(rk, getRoom(mapId, f0, rx0, ry0));
+    }
     // Passable if walkable at ANY tide level — the player controls the tide.
     //
     // Since the tide became a field this is an UPPER BOUND rather than an
@@ -223,15 +235,21 @@ const reach = await page.evaluate((ids) => {
     // same shape as the jump exemption below it. It stays OFF for d1 and d2,
     // where the player provably does not have the Cleats yet, so nothing
     // already proved about those two moves.
+    //
+    // Passability itself is never re-derived here: `walkableAt` asks the real
+    // `Room.solidAt` (via tools/lib/collision.mjs's `tileWalkable`), with the
+    // player's own capability shape as `caps` — exactly how the engine already
+    // expresses "what can this mover cross" — plus one checker-local override
+    // (STAIRS is always a valid flood node, since you stand on a stair to use
+    // it) that is not a collision rule, it is this tool choosing to treat a
+    // warp trigger as passable rather than re-deriving what makes it solid.
     const canSwim = (m.dungeon.index | 0) >= 3;
-    const walkableAt = (ch, t) => {
-      const d = defOf(ch, t);
-      if (!d) return false;
-      if (d.flags & F.STAIRS) return true;        // you stand on a stair to use it
-      if ((d.flags & F.DEEP) && canSwim) return !(d.flags & (F.VOID | F.SOLID));
-      return !(d.flags & (F.VOID | F.SOLID | F.PIT | F.DEEP | F.LEDGE | F.HAZARD));
+    const CAPS = { jumping: false, swim: canSwim, cutting: false };
+    const walkableAt = (room, x, y, t) => {
+      if (room.flagsAt(x, y, t) & F.STAIRS) return true;
+      return tileWalkable(room, x, y, t, CAPS, ROUTE_AVOID);
     };
-    const passable = (ch) => [0, 1, 2].some(t => walkableAt(ch, t));
+    const passable = (room, x, y) => [0, 1, 2].some(t => walkableAt(room, x, y, t));
     // The level a tile resolves at under a field: the held level inside the
     // anchor's patch, the base outside it. Rooms are 10x8 and the patch is a
     // square of radius ANCHOR_RADIUS_TILES.
@@ -243,13 +261,7 @@ const reach = await page.evaluate((ids) => {
     // that is a wall at LOW/MID and deep water at HIGH — the intended crossing
     // is to raise the sea and jump it. A flood that cannot jump reports 15 of
     // d4's 18 rooms stranded, which is a harness limitation, not a dungeon bug.
-    const jumpable = (ch) => {
-      for (const t of [0, 1, 2]) {
-        const d = defOf(ch, t);
-        if (d && (d.flags & (F.DEEP | F.JUMPABLE))) return true;
-      }
-      return false;
-    };
+    const jumpable = (room, x, y) => [0, 1, 2].some(t => room.flagsAt(x, y, t) & (F.DEEP | F.JUMPABLE));
     // A ONE-WAY LEDGE IS TRAVERSAL, and this flood used to treat it as a wall.
     // That was harmless for as long as no ledge was the ONLY way into
     // anywhere — true of every dungeon until D2, whose Lens forks are entered
@@ -260,10 +272,10 @@ const reach = await page.evaluate((ids) => {
     // direction must equal the direction of travel) clears the lip plus any
     // further ledge tiles behind it, and lands on the first tile past them if
     // that tile is standable. Directional, so it adds no route back.
-    const ledgeDir = (ch) => {
+    const ledgeDir = (room, x, y) => {
       for (const t of [0, 1, 2]) {
-        const d = defOf(ch, t);
-        if (d && (d.flags & F.LEDGE)) return d.ledge || null;
+        const d = room.tile(x, y, t);
+        if (d.flags & F.LEDGE) return d.ledge || null;
       }
       return null;
     };
@@ -281,11 +293,13 @@ const reach = await page.evaluate((ids) => {
     // point, that no OTHER sea also crosses it — is check-dredge.mjs. This only
     // needs to know that the route exists.
     const canDredge = (m.dungeon.index | 0) >= DREDGE_INDEX;
-    const snagAt = (ch) => [0, 1, 2].some(t => { const d = defOf(ch, t); return d && (d.flags & F.SNAG); });
-    const castStops = (ch) => [0, 1, 2].every(t => {
-      const d = defOf(ch, t);
-      return !d || (d.flags & (F.SOLID | F.VOID));
-    });
+    const snagAt = (room, x, y) => [0, 1, 2].some(t => room.flagsAt(x, y, t) & F.SNAG);
+    // The line's own cast-stop rule, not a re-derivation of it: `DredgeLine`
+    // (src/game/items.js) stops a cast on exactly `F.SOLID | F.VOID`, ignoring
+    // every other flag (it flies over water, pits and ledges alike), which is
+    // a different question from "can the player stand here" and is why this
+    // does not route through `tileWalkable`.
+    const castStops = (room, x, y) => [0, 1, 2].every(t => room.flagsAt(x, y, t) & (F.SOLID | F.VOID));
     // A door a PUZZLE opens is not a wall. `reward.openDoors` names the tiles a
     // solved room switches to their open form, so those tiles are passable in
     // the connectivity model — the flood cannot solve a puzzle, and asserting
@@ -319,8 +333,8 @@ const reach = await page.evaluate((ids) => {
         puzzleDoors.add(`${rk}:${sx0},${sy0}`);
       }
     }
-    const isLock = (ch) => legend[ch] === 'dDoorLocked';
-    const isBossDoor = (ch) => legend[ch] === 'dDoorBoss';
+    const isLock = (room, x, y) => room.baseName(x, y) === 'dDoorLocked';
+    const isBossDoor = (room, x, y) => room.baseName(x, y) === 'dDoorBoss';
     // Floors are joined by warps, not by seams. A flood that only crosses room
     // edges never leaves floor 0, which reads as "every upper room stranded".
     const warpsOut = new Map();   // 'rk:x,y' -> 'rk:x,y'
@@ -393,16 +407,16 @@ const reach = await page.evaluate((ids) => {
       seen.add(k); q.push([rk, x, y]);
     };
     // seed anywhere passable in the start room
-    const sd = m.roomDefs[seedRoom];
     const sdD = dims.get(seedRoom);
-    for (let y = 0; y < sdD.H; y++) for (let x = 0; x < sdD.W; x++) if (passable(sd.map[y][x])) { push(seedRoom, x, y); }
+    const sdRoom = ROOMS.get(seedRoom);
+    for (let y = 0; y < sdD.H; y++) for (let x = 0; x < sdD.W; x++) if (passable(sdRoom, x, y)) { push(seedRoom, x, y); }
 
     let progress = true;
     while (progress) {
       progress = false;
       while (q.length) {
         const [rk, x, y] = q.pop();
-        const def = m.roomDefs[rk];
+        const room = ROOMS.get(rk);
         const w = warpsOut.get(rk + ':' + x + ',' + y);
         if (w) { const [wrk, wxy] = w.split(':'); const [wx, wy] = wxy.split(',').map(Number); push(wrk, wx, wy); }
         const D = dims.get(rk);
@@ -415,40 +429,42 @@ const reach = await page.evaluate((ids) => {
             for (let n = 1; n <= DREDGE_TILES; n++) {
               const cx = x + dx * n, cy = y + dy * n;
               if (cx < 0 || cy < 0 || cx >= W || cy >= H) break;
-              const ch = def.map[cy][cx];
-              if (snagAt(ch)) {
+              if (snagAt(room, cx, cy)) {
                 const lx = cx - dx, ly = cy - dy;
                 if (lx !== x || ly !== y) push(rk, lx, ly);
                 break;
               }
-              if (castStops(ch)) break;
+              if (castStops(room, cx, cy)) break;
             }
           }
         }
         for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
           const nx = x + dx, ny = y + dy;
           if (nx >= 0 && ny >= 0 && nx < W && ny < H) {
-            const ch = def.map[ny][nx];
-            if (passable(ch) || puzzleDoors.has(`${rk}:${nx},${ny}`)) push(rk, nx, ny);
-            else if (jumpable(ch)) {
+            if (passable(room, nx, ny) || puzzleDoors.has(`${rk}:${nx},${ny}`)) push(rk, nx, ny);
+            else if (jumpable(room, nx, ny)) {
               const jx = x + dx * 2, jy = y + dy * 2;
-              if (jx >= 0 && jy >= 0 && jx < W && jy < H && passable(def.map[jy][jx])) push(rk, jx, jy);
+              if (jx >= 0 && jy >= 0 && jx < W && jy < H && passable(room, jx, jy)) push(rk, jx, jy);
             }
-            else if (ledgeDir(ch) === DIR_OF[dx + ',' + dy]) {
+            else if (ledgeDir(room, nx, ny) === DIR_OF[dx + ',' + dy]) {
               let n = 1;
-              while (n < 3 && ledgeDir(def.map[ny + dy * n]?.[nx + dx * n] ?? ' ')) n++;
+              while (n < 3) {
+                const cx = nx + dx * n, cy = ny + dy * n;
+                if (cx < 0 || cy < 0 || cx >= W || cy >= H || !ledgeDir(room, cx, cy)) break;
+                n++;
+              }
               const lx = nx + dx * n, ly = ny + dy * n;
-              if (lx >= 0 && ly >= 0 && lx < W && ly < H && passable(def.map[ly][lx])) push(rk, lx, ly);
+              if (lx >= 0 && ly >= 0 && lx < W && ly < H && passable(room, lx, ly)) push(rk, lx, ly);
             }
-            else if (isLock(ch)) lockedSeen.add(rk + ':' + nx + ',' + ny);
-            else if (isBossDoor(ch) && bossKey) lockedSeen.add(rk + ':' + nx + ',' + ny + ':boss');
+            else if (isLock(room, nx, ny)) lockedSeen.add(rk + ':' + nx + ',' + ny);
+            else if (isBossDoor(room, nx, ny) && bossKey) lockedSeen.add(rk + ':' + nx + ',' + ny + ':boss');
             continue;
           }
           // stepping off the ROOM edge into whichever room owns the cell beyond
           const out = stepOut(rk, nx, ny);
           if (!out) continue;
           const [nk, tx, ty] = out;
-          if (passable(m.roomDefs[nk].map[ty][tx])) push(nk, tx, ty);
+          if (passable(ROOMS.get(nk), tx, ty)) push(nk, tx, ty);
         }
       }
       // spend a key on one still-closed lock we can see
@@ -494,7 +510,14 @@ for (const r of reach) {
 // inside a locked room holds the level you brought, which is the only tide
 // mechanic a boss room has left.
 const locked = await page.evaluate((ids) => {
-  const F = window.__F, getTileDef = window.__getTileDef, getLegend = window.__getLegend;
+  const F = window.__F, getRoom = window.__getRoom;
+  const tileWalkable = window.__tileWalkable, ROUTE_AVOID = window.__ROUTE_AVOID;
+  // On foot, no items — a locked room's own flood does not vary by dungeon
+  // index the way the main reachability flood's `canSwim` does, because the
+  // whole point of `noTide` is that nothing about the room adapts to what the
+  // player is carrying.
+  const CAPS = { jumping: false, swim: false, cutting: false };
+  const walk = (room, x, y, t) => (room.flagsAt(x, y, t) & F.STAIRS) || tileWalkable(room, x, y, t, CAPS, ROUTE_AVOID);
   const out = [];
   for (const mapId of ids) {
     const m = window.__MAPS.get(mapId);
@@ -502,25 +525,19 @@ const locked = await page.evaluate((ids) => {
       if (!def.noTide) continue;
       const sz = def.size || [1, 1];
       const W = (sz[0] | 0) * 10, H = (sz[1] | 0) * 8;
-      const legend = getLegend(def.legend || m.legend);
-      const walk = (ch, t) => {
-        let d = getTileDef(legend[ch]);
-        for (let i = 0; i < 4 && d && d.tide; i++) d = getTileDef(d.tide[t]);
-        if (!d) return false;
-        if (d.flags & F.STAIRS) return true;
-        return !(d.flags & (F.VOID | F.SOLID | F.PIT | F.DEEP | F.LEDGE | F.HAZARD));
-      };
+      const [f0, rx0, ry0] = key.split(',').map(Number);
+      const room = getRoom(mapId, f0, rx0, ry0);
       for (const t of [0, 1, 2]) {
         // Flood from every walkable tile on the room's border — the ways in —
         // and require it to cover every walkable tile in the room. An island
         // of floor the player cannot get to is the failure being looked for.
         const walkable = [];
-        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (walk(def.map[y][x], t)) walkable.push(x + ',' + y);
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (walk(room, x, y, t)) walkable.push(x + ',' + y);
         if (!walkable.length) { out.push(`${mapId} ${key} @${t}: no floor at all`); continue; }
         const seen = new Set(), q = [];
         for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
           const border = x === 0 || y === 0 || x === W - 1 || y === H - 1;
-          if (border && walk(def.map[y][x], t)) { const k = x + ',' + y; if (!seen.has(k)) { seen.add(k); q.push([x, y]); } }
+          if (border && walk(room, x, y, t)) { const k = x + ',' + y; if (!seen.has(k)) { seen.add(k); q.push([x, y]); } }
         }
         while (q.length) {
           const [x, y] = q.pop();
@@ -528,7 +545,7 @@ const locked = await page.evaluate((ids) => {
             const nx = x + dx, ny = y + dy;
             if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
             const k = nx + ',' + ny;
-            if (seen.has(k) || !walk(def.map[ny][nx], t)) continue;
+            if (seen.has(k) || !walk(room, nx, ny, t)) continue;
             seen.add(k); q.push([nx, ny]);
           }
         }
@@ -564,26 +581,23 @@ check('every tide-locked room works at all three levels on its own',
 // It says nothing about whether the far side is worth anything, or whether the
 // key is reachable first; those are the flood's job and it already does them.
 const leaky = await page.evaluate((ids) => {
-  const F = window.__F, getTileDef = window.__getTileDef, getLegend = window.__getLegend;
+  const F = window.__F, getRoom = window.__getRoom;
+  const tileWalkable = window.__tileWalkable, ROUTE_AVOID = window.__ROUTE_AVOID;
+  const CAPS = { jumping: false, swim: false, cutting: false };
+  const walk = (room, x, y, t) => (room.flagsAt(x, y, t) & F.STAIRS) || tileWalkable(room, x, y, t, CAPS, ROUTE_AVOID);
   const out = []; let total = 0;
   for (const mapId of ids) {
     const m = window.__MAPS.get(mapId);
     for (const [key, def] of Object.entries(m.roomDefs || {})) {
       const sz = def.size || [1, 1];
       const W = (sz[0] | 0) * 10, H = (sz[1] | 0) * 8;
-      const legend = getLegend(def.legend || m.legend);
-      const walk = (ch, t) => {
-        let d = getTileDef(legend[ch]);
-        for (let i = 0; i < 4 && d && d.tide; i++) d = getTileDef(d.tide[t]);
-        if (!d) return false;
-        if (d.flags & F.STAIRS) return true;
-        return !(d.flags & (F.VOID | F.SOLID | F.PIT | F.DEEP | F.LEDGE | F.HAZARD));
-      };
+      const [f0, rx0, ry0] = key.split(',').map(Number);
+      const room = getRoom(mapId, f0, rx0, ry0);
       // Does the door at (x,y) cut its two neighbours along (ax,ay) apart?
       const cuts = (x, y, ax, ay, t) => {
         const a = [x - ax, y - ay], b = [x + ax, y + ay];
         if (a[0] < 0 || a[1] < 0 || b[0] >= W || b[1] >= H) return false;
-        if (!walk(def.map[a[1]][a[0]], t) || !walk(def.map[b[1]][b[0]], t)) return false;
+        if (!walk(room, a[0], a[1], t) || !walk(room, b[0], b[1], t)) return false;
         const seen = new Set([a.join(',')]), q = [a];
         while (q.length) {
           const [cx, cy] = q.pop();
@@ -592,14 +606,14 @@ const leaky = await page.evaluate((ids) => {
             if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
             if (nx === x && ny === y) continue;              // the door is shut
             const k = nx + ',' + ny;
-            if (seen.has(k) || !walk(def.map[ny][nx], t)) continue;
+            if (seen.has(k) || !walk(room, nx, ny, t)) continue;
             seen.add(k); q.push([nx, ny]);
           }
         }
         return !seen.has(b.join(','));
       };
       for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-        const name = legend[def.map[y][x]];
+        const name = room.baseName(x, y);
         if (name !== 'dDoorLocked' && name !== 'dDoorBoss') continue;
         total++;
         const held = [[1, 0], [0, 1]].some(([ax, ay]) => [0, 1, 2].every(t => cuts(x, y, ax, ay, t)));

@@ -41,6 +41,23 @@ zero and misrounds across x=0, which happens on every room transition).
 faster than cardinal. This is deliberate and it is a signature of the source
 games.
 
+**A checker may never define its own collision, passability or push logic; it
+calls the engine's.** `Room.solidAt`/`tileDefSolid` (src/world/room.js,
+src/world/tileset.js) and `canOccupy`/`moveEntity` (src/game/entity.js) are the
+only place a "can something stand here" formula may live. `tools/lib/
+collision.mjs` is the one shim allowed to know which raw tile flags mean
+"solid" — it composes the engine's own functions with an explicit `avoid` flag
+mask or `caps` object, the same way `canOccupy` already composes `solidAt`
+with an enemy's `avoidFlags`, and every other tool imports it (or, inside a
+Playwright page, calls `canOccupy`/`room.solidAt` live) rather than
+re-deriving the rule. `tools/test.mjs` fails if a tool combines three or more
+collision-shaped flags in a bitwise mask outside that file. This is not a
+style preference: 550 assertions were once green while no block in the game
+could actually be pushed, because `solve-switches.mjs` and
+`walk-dungeons.mjs` each modelled movement with a private copy of the rule
+instead of asking the engine, and a private model does not fail when the real
+rule changes under it — it just quietly starts being wrong.
+
 **If a sheet has it, extract it.** Fidelity to the source games is the whole
 product, and extraction is the only way to get it exactly — it is reproducible,
 free of drift, and it cannot slowly wander into someone's own style the way
@@ -189,12 +206,13 @@ Run the cheap deterministic checkers instead of reasoning about correctness.
 They are faster than you are and they do not rationalise.
 
 **Every one of those tools proves a PART. `check-playthrough.mjs` is the only
-one that plays the game.** The rest are models, and a model does not fight a
-boss, spend a key or press a button — which is how seven hundred green
-assertions once described a world that could not be finished. On its first run
-the playthrough harness found that the world cannot be finished NOW, for a
-different reason, and neither the room flood nor the switch solver could see it.
-See "a solid entity is not solid" below.
+one that plays the game, and it is the only one that proves the game is
+finishable — no session ends green without it.** The rest are models, and a
+model does not fight a boss, spend a key or press a button — which is how
+seven hundred green assertions once described a world that could not be
+finished. On its first run the playthrough harness found that the world
+cannot be finished NOW, for a different reason, and neither the room flood
+nor the switch solver could see it. See "a solid entity is not solid" below.
 
 ---
 

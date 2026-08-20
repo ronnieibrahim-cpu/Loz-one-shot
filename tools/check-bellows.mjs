@@ -78,6 +78,7 @@ import { getLegend } from '../src/world/room.js';
 import { F, getTileDef } from '../src/world/tileset.js';
 import { installData } from '../src/data/index.js';
 import { BELLOWS_RANGE, GAP_HOP_MAX_SPAN } from '../src/data/feel.js';
+import { defWalkable, capsForMode, ROUTE_AVOID } from './lib/collision.mjs';
 
 installData();
 
@@ -134,16 +135,18 @@ const isDeep = (d) => !!d && !!(d.flags & F.DEEP);
 function walkableDef(d) {
   if (!d) return false;
   if (d.flags & F.STAIRS) return true;
-  return !(d.flags & (F.VOID | F.SOLID | F.PIT | F.DEEP | F.LEDGE | F.HAZARD));
+  return defWalkable(d, capsForMode('foot'), ROUTE_AVOID);
 }
 
-/** Can a body in this mode occupy the tile at all? Cleats cross deep water. */
+/**
+ * Can a body in this mode occupy the tile at all? Cleats cross deep water.
+ * Asked of the engine's own `tileDefSolid` via `defWalkable`/`capsForMode`
+ * (tools/lib/collision.mjs), not a private re-derivation.
+ */
 function occupiable(d, mode) {
   if (!d) return false;
   if (d.flags & F.STAIRS) return true;
-  if (d.flags & (F.VOID | F.SOLID)) return false;
-  if (d.flags & F.DEEP) return mode !== 'foot';
-  return !(d.flags & (F.PIT | F.LEDGE | F.HAZARD));
+  return defWalkable(d, capsForMode(mode), ROUTE_AVOID);
 }
 
 /**

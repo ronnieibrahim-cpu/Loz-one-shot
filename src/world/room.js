@@ -41,7 +41,7 @@
 
 import { TILE, ROOM_W, ROOM_H, offscreen } from '../core/screen.js';
 import { tiles as tileSheet } from '../gfx/art.js';
-import { F, resolveTile, getTileDef, tileArt, blockRef } from './tileset.js';
+import { F, resolveTile, getTileDef, tileArt, blockRef, tileDefSolid } from './tileset.js';
 
 export const LEGENDS = new Map();
 
@@ -343,29 +343,15 @@ export class Room {
     // The tile is resolved at ITS OWN tide level, so a hitbox spanning the edge
     // of a frozen patch is solid on one side and wadeable on the other.
     const d = this.tile(tx, ty, tide);
-    const f = d.flags;
-
-    if (f & F.VOID) return true;
-    if (f & F.SOLID) {
-      if (d.mask === 15) return true;
-      if (d.mask === 0) return false;
+    let quadSolid;
+    if (d.mask === 15) quadSolid = true;
+    else if (d.mask === 0) quadSolid = false;
+    else {
       const qx = (px % TILE) >= 8 ? 1 : 0;
       const qy = (py % TILE) >= 8 ? 1 : 0;
       const bit = 1 << (qy * 2 + qx);
-      return (d.mask & bit) !== 0;
+      quadSolid = (d.mask & bit) !== 0;
     }
-    // Deep water is impassable on foot but fine while swimming.
-    if (f & F.DEEP) return !(caps && (caps.swim || caps.jumping));
-    // Gaps are crossed by jumping only.
-    if (f & F.JUMPABLE) return !(caps && caps.jumping);
-    // A ledge is the lip of a drop, not a floor. Nothing stands on it: the
-    // player clears it in a hop (Player.tryLedgeHop) and is airborne while it
-    // happens, so caps.jumping is what lets the hop through. Blocking it on
-    // the ground is the half that makes the ledge one-way — otherwise you
-    // could walk back up the drop or stroll along the lip.
-    if (f & F.LEDGE) return !(caps && caps.jumping);
-    if (f & F.BUSH) return !(caps && caps.cutting);
-    if (f & F.ROCK) return true;
-    return false;
+    return tileDefSolid(d, caps, quadSolid);
   }
 }

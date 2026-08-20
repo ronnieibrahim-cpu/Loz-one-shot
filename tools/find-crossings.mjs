@@ -20,6 +20,7 @@ import { installData } from '../src/data/index.js';
 import { MAPS } from '../src/world/maps.js';
 import { getLegend } from '../src/world/room.js';
 import { getTileDef, F } from '../src/world/tileset.js';
+import { defWalkable, capsForMode, ROUTE_AVOID } from './lib/collision.mjs';
 
 installData();
 
@@ -46,9 +47,7 @@ function defAt(legend, ch, tide) {
   return d;
 }
 function walkableAt(legend, ch, tide) {
-  const d = defAt(legend, ch, tide);
-  if (!d) return false;
-  return !(d.flags & (F.VOID | F.SOLID | F.PIT | F.DEEP | F.LEDGE | F.HAZARD));
+  return defWalkable(defAt(legend, ch, tide), capsForMode('foot'), ROUTE_AVOID);
 }
 const passable = (legend, ch) => [0, 1, 2].some(t => walkableAt(legend, ch, t));
 

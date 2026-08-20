@@ -10,6 +10,129 @@ maintain and the most expensive thing to not have.
 
 ---
 
+## THIS SESSION — checkers no longer define their own collision/passability/push logic
+
+**The trigger:** a prior session found that 550 assertions were once green
+while no block in the game could actually be pushed, because
+`solve-switches.mjs` and `walk-dungeons.mjs` each modelled movement with a
+private copy of the collision rule instead of asking the engine. This session
+was scoped to find and eliminate EVERY such private model in `tools/`, not
+just those two.
+
+**Inventory (found by grepping for the `F.VOID | F.SOLID | F.PIT | F.DEEP |
+F.LEDGE | F.HAZARD`-shaped fingerprint and its variants across `tools/*.mjs`,
+then verifying each hit by eye):**
+
+- `tools/walk-dungeons.mjs` — its dungeon-reachability flood (`walkableAt`),
+  the tide-locked-room flood, and the locked-door-separates-its-room check
+  each re-derived walkability from raw tile flags instead of asking a real
+  `Room` (via `getRoom`, already imported in the page) for `solidAt`.
+- `tools/check-overworld.mjs` — same shape, plain Node, already building real
+  `Room` objects via `getRoom` for tile *names* but not asking them for
+  *solidity*.
+- `tools/solve-switches.mjs` — already called the engine's real
+  `game.tryPushBlock` for the push itself (good), but its `notStandable`
+  check (can the player stand behind the block to push it) re-derived
+  standability from raw flags instead of calling `canOccupy`.
+- `tools/find-ledges.mjs` — its `plain()` placement filter re-derived
+  walkability from raw flags on top of legitimate placement-only curation
+  (no warp/door/stairs/bombable-wall as a lip).
+- `tools/check-anchor.mjs`, `check-bellows.mjs`, `check-cleats.mjs`,
+  `check-dredge.mjs`, `check-lens.mjs`, `check-reefseed.mjs`,
+  `find-crossings.mjs`, `check-towns.mjs` — every one of these carried its own
+  `walkableDef`/`occupiable`/`walkable` function reimplementing the exact
+  formula `Room.solidAt` already computes, several of them byte-for-byte
+  identical copies of each other (a mode-aware `occupiable(d, mode)` appears
+  nearly verbatim in four separate files). `check-reefseed.mjs` additionally
+  carried a full second copy of `solidAt`'s body in a `Board.solid` method,
+  and a copy of `Reefseed.canPlant`'s terrain-block mask.
+
+**What was NOT touched, and why:** a handful of sites combine exactly
+`F.SOLID | F.VOID` to ask "does this stop a flying/thrown thing" — the Dredge
+Line's cast-stop rule, a hop's mid-flight clearance check, an Anchor throw's
+flight. That is a genuinely different, narrower, irreducible question from a
+walking body's passability (a projectile crosses DEEP/PIT/HAZARD/LEDGE freely
+and only a wall stops it), it cannot be expressed by composing
+`tileWalkable`'s `caps`/`avoid` parameters, and every instance already matches
+the real engine formula it mirrors (`DredgeLine.update` in
+`src/game/items.js`) — verified by reading the source, not assumed. These are
+left as direct, narrow, single-purpose flag tests. `tools/test.mjs`'s new
+guard (below) is deliberately tuned to leave them alone: it only fires on a
+mask naming three or more collision-shaped flags, and `F.SOLID | F.VOID` is
+two.
+
+**What changed:**
+
+1. New `tools/lib/collision.mjs` — the one place outside `src/` allowed to
+   name a raw tile flag as "solid". It composes `Room.solidAt` (via
+   `tileWalkable`/`tileSolid`) and a small extracted engine function,
+   `tileDefSolid` (new export in `src/world/tileset.js` — the exact body that
+   used to live only inside `Room.solidAt`, pulled out so a checker with a
+   resolved `TileDef` in hand, not a pixel to sample, can ask the SAME
+   function rather than a copy of it; `Room.solidAt` now calls it too). An
+   `avoid` flag mask parameter is how a checker expresses "and also treat
+   this as a wall for route-planning" (F.PIT/F.HAZARD, exported as
+   `ROUTE_AVOID`) — the same composition pattern `canOccupy` already uses for
+   an enemy's `avoidFlags`, not a new rule. `capsForMode('foot'|'swim'|'sink')`
+   gives the Cleats' two modes a name instead of writing the capability object
+   out at every call site.
+2. Every file in the inventory above now calls into `tools/lib/collision.mjs`
+   (or, for `walk-dungeons.mjs`/`find-ledges.mjs`/`solve-switches.mjs`, the
+   real engine's `canOccupy`/`room.solidAt`/`getRoom`, live in the page —
+   these already boot a real headless-Chromium instance of the game and can
+   `await import('/src/game/entity.js')` etc.). `check-reefseed.mjs`'s
+   `plantableTerrain` now imports a new export, `REEFSEED_PLANT_BLOCK`, from
+   `src/game/items.js` (the exact mask `Reefseed.canPlant` uses) instead of
+   retyping it — this checker has no live `game` to call `canPlant` on
+   directly, so importing the same constant is the strongest link available
+   short of running it inside a browser.
+3. `tools/test.mjs` gained a guard, `checkNoPrivateCollisionLogic`: it fails
+   if any `tools/*.mjs` file outside `tools/lib/collision.mjs` combines three
+   or more collision-shaped flags (`SOLID, VOID, PIT, DEEP, LEDGE, HAZARD,
+   JUMPABLE, BUSH, ROCK`) in a bitwise-OR mask. Verified against the
+   pre-refactor tree (via `git show HEAD:...`) that it actually catches the
+   originals, and confirmed silent on the consolidated tree.
+
+**Results, before vs. after — nothing that asserts moved. Two things that
+only REPORT a number did, and both are real, both are explained, and both
+make the checker MORE correct, not less:**
+
+- `check-overworld.mjs`: 17/17 passed, unchanged. Reported tile/state counts
+  rose slightly (2928→2941 tiles in the unheld flood; states similarly) because
+  the private formula treated every `F.SOLID`-flagged tile as fully blocking
+  regardless of `mask`, while `Room.solidAt` correctly reads `mask: 0` (a
+  doorway/cave-mouth cut into a nominally-solid tile) as open. The old
+  checker was silently refusing to walk the flood onto cave mouths and town
+  doors; no screen's reachability verdict depended on it, so no `check()`
+  moved, but the flood's own node count was quietly wrong for the whole life
+  of the checker.
+- `find-ledges.mjs`: reporter only, no assertions. Candidate count dropped
+  942→810 (overworld alone: 322→190) because the private `plain()` filter
+  never excluded `F.BUSH`/`F.ROCK` tiles, so it was offering bush and
+  liftable-rock tiles as valid ledge-lip placements — tiles a player cannot
+  actually stand on as "plain floor" without first clearing them. Confirmed
+  by direct count: the data has 87 BUSH-tide-instances and 414 ROCK-tide-
+  instances across all rooms. This is a bug the private model was hiding,
+  now caught.
+- Every other checker touched (`walk-dungeons.mjs`, `solve-switches.mjs`,
+  `check-anchor.mjs`, `check-bellows.mjs`, `check-cleats.mjs`,
+  `check-dredge.mjs`, `check-lens.mjs`, `check-reefseed.mjs`,
+  `find-crossings.mjs`, `check-towns.mjs`) produced BYTE-IDENTICAL output to
+  its pre-refactor baseline (diffed directly, not eyeballed). `check-gates.mjs`,
+  `check-items.mjs`, `check-motion.mjs` and `check-playthrough.mjs` (19/19,
+  matching the board's documented current state) were re-run as a sanity check
+  on the `src/world/room.js`/`tileset.js` refactor and are also unchanged.
+  `tools/test.mjs` is 59/59 including the new guard.
+
+**Left for later, deliberately not chased this session (out of scope: these
+are verb-specific tile-flag tests, not passability):** `castStops`/`snagAt`
+in `walk-dungeons.mjs` and `check-dredge.mjs`, `hoppableDef`/throw-flight
+stops in `check-anchor.mjs`, `check-items.mjs`'s single `f & 1` scan to find
+a fixture tile. Each was read against its real engine counterpart and
+confirmed to already match it exactly; none reimplements walkability.
+
+---
+
 ## THE BOARD, UPDATED AGAIN — the route retuned past the push-block blocker, D1's health economy instrumented and fixed
 
 **`tools/playthrough-route.mjs` was stale in exactly the way the previous
