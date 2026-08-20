@@ -21,6 +21,7 @@ import { installEnemySprites, ENEMY_ART } from './sprites-enemies.js';
 import { installBossSprites, BOSS_ART, MINIBOSS_ART } from './sprites-bosses.js';
 import { installHudSprites, HUD_ART } from './sprites-hud.js';
 import { installGearSprites, GEAR_ART } from './sprites-gear.js';
+import { installTradeSprites, TRADE_ART } from './sprites-trade.js';
 
 // Background tile art: validated at 16x16.
 export const ART_PACKS = {
@@ -45,6 +46,7 @@ export const SPRITE_PACKS = {
   minibosses: MINIBOSS_ART,
   hudRipped: HUD_ART,
   gear: GEAR_ART,
+  trade: TRADE_ART,
 };
 
 let installed = false;
@@ -70,6 +72,8 @@ export function installData() {
   installHudSprites();
   // Drawn to match the extracted icons, for the gear Seasons does not have.
   installGearSprites();
+  // The Coastwise Chain's eleven objects, drawn to match them.
+  installTradeSprites();
   installEnemies();
   installBosses();
   installOverworld();

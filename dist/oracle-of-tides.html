@@ -8114,6 +8114,118 @@ class Giver extends NPC {
 defineEntity('giver', (x, y, o) => new Giver(x, y, o));
 
 // --------------------------------------------------------------------------
+// Trader: one link of the Coastwise Chain.
+//
+//   ['trader', 4, 2, {
+//     sprite: 'npc_fisher', dialogue: 'ossaWait',   // said when it is not your turn
+//     deals: [
+//       { stage: 1, gives: 'float', text: 'ossaStart' },
+//       { stage: 11, wants: 'kettle', gives: 'bellrope', text: 'ossaEnd',
+//         after: 'ossaAfter' },
+//     ],
+//   }]
+//
+// A trader holds one or more DEALS, and a deal is live when the chain's stage
+// counter is sitting exactly one short of it — `p.trade.stage === stage - 1`.
+// That is what makes the chain a chain and not a set of independent errands:
+// there is exactly one live deal in the whole world at any moment, so a trader
+// two links ahead has nothing to say to you yet even though you are holding
+// something they would love.
+//
+// `wants` is asserted rather than consulted. The stage counter already decides
+// whether the deal is live, so `wants` exists to be WRONG loudly if the two
+// ever disagree — a mis-stated want is a data error, and refusing the trade in
+// the engine is what stops it becoming a silent one. tools/check-trade.mjs
+// proves every `wants` against the previous stage's `gives` offline.
+//
+// A trader may ALSO hand over a real inventory item (`item`/`level`), which is
+// how the chain ends: the Maku Tree takes the bell-rope and gives the
+// Resonance Rod. Everything else in the chain hands over a trade item only.
+// --------------------------------------------------------------------------
+
+class Trader extends NPC {
+  constructor(x, y, o = {}) {
+    super(x, y, o);
+    this.deals = (o.deals || []).map(d => ({
+      stage: d.stage, wants: d.wants || null, gives: d.gives || null,
+      text: d.text || null, item: d.item || null, level: d.level || 1,
+      flag: d.flag || null, needEssences: d.needEssences || 0,
+      needFlag: d.needFlag || null, blocked: d.blocked || null,
+      after: d.after || null,
+    }));
+    // What they say when no deal of theirs is live: before their turn comes
+    // round, and again for ever after it has passed.
+    this.waitingText = o.waiting || o.dialogue || null;
+    this.afterText = o.after || null;
+  }
+
+  /** The deal whose turn it is, or null. At most one trader in the world has one. */
+  liveDeal(game) {
+    const st = game.progress.trade.stage || 0;
+    return this.deals.find(d => d.stage === st + 1) || null;
+  }
+
+  /** Has every deal this trader holds already been done? */
+  spent(game) {
+    const st = game.progress.trade.stage || 0;
+    return this.deals.length > 0 && this.deals.every(d => d.stage <= st);
+  }
+
+  interact(game, player) {
+    const p = game.progress;
+    if (this.faceOnTalk) {
+      const dx = player.cx - this.cx, dy = player.cy - this.cy;
+      this.dir = Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 'left' : 'right') : (dy < 0 ? 'up' : 'down');
+    }
+    const deal = this.liveDeal(game);
+    // Not this trader's turn. Either they are still waiting for the chain to
+    // reach them, or it has gone past and they are done with it.
+    if (!deal) {
+      const done = this.spent(game);
+      const line = (done && this.afterText) || this.waitingText || this.afterText;
+      if (line) game.startDialogue(line, this);
+      return;
+    }
+    // The stage counter says yes; the stated want has to agree with what is
+    // actually in the player's hand, or the data is lying and the trade is off.
+    if ((deal.wants || null) !== (p.trade.item || null)) {
+      console.warn('[trade] stage', deal.stage, 'wants', deal.wants, 'but holding', p.trade.item);
+      if (this.waitingText) game.startDialogue(this.waitingText, this);
+      return;
+    }
+    // Some links ask for something beyond the previous item — the Maku Tree
+    // wants an Essence as well as the rope. A deal that is gated and not yet
+    // open says the trader's waiting line, exactly as if its turn had not come.
+    if (p.essences.length < deal.needEssences
+        || (deal.needFlag && !flag(p, deal.needFlag))) {
+      if (deal.blocked || this.waitingText) game.startDialogue(deal.blocked || this.waitingText, this);
+      return;
+    }
+
+    const close = () => {
+      p.trade.stage = deal.stage;
+      p.trade.item = deal.gives || null;
+      if (deal.flag) setFlag(p, deal.flag);
+      if (deal.item) {
+        giveItem(p, deal.item, deal.level);
+        game.autoEquip(deal.item);
+        game.presentItem(deal.item, deal.level);
+      } else if (deal.gives) {
+        game.presentTrade(deal.gives);
+      }
+    };
+    // Speak first, hand over once the box is dismissed — the same order the
+    // Giver uses, so a trade reads like every other gift in the game.
+    if (deal.text) {
+      game.startDialogue(deal.text, this);
+      if (game.dialogue.active) { game.dialogue.onClose = close; return; }
+    }
+    close();
+  }
+}
+defineEntity('trader', (x, y, o) => new Trader(x, y, o));
+
+// --------------------------------------------------------------------------
 // The scrimshander: hand over a blank plus rupees, come back a tide later for
 // a carved charm.
 //
@@ -8598,6 +8710,7 @@ __exports["NPC"] = NPC;
 __exports["Sign"] = Sign;
 __exports["ShopItem"] = ShopItem;
 __exports["Giver"] = Giver;
+__exports["Trader"] = Trader;
 __exports["Scrimshander"] = Scrimshander;
 __exports["PushBlock"] = PushBlock;
 __exports["FloorSwitch"] = FloorSwitch;
@@ -9031,6 +9144,90 @@ __exports["drawBox"] = drawBox;
 __exports["drawPanel"] = drawPanel;
 });
 
+/* ===== src/data/trade.js ===== */
+__define("data/trade.js", function (__exports, __require) {
+// The Coastwise Chain: the eleven things the coast passes hand to hand, and
+// what each of them is.
+//
+// WHY THERE IS A CHAIN AT ALL. Thalassia's sea takes something off one person
+// twice a day and puts it down in front of another, and nobody on this coast
+// has ever got their own property back except by walking it round. The chain is
+// that circulation done deliberately, by hand, once — which is why it starts
+// and ends with the same woman and the same kettle, and why every object in it
+// is a working tool that is useless to whoever the water left it with.
+//
+// THIS FILE IS NOT THE CHAIN'S ORDER. The order lives in the placed `trader`
+// entities in src/data/overworld.js, one `stage` each, and
+// tools/check-trade.mjs reconstructs the sequence from the placed data and
+// proves it is a total order with no gap, no fork and no cycle. A duplicate
+// ordering table here would be a second thing to keep true; a registry of what
+// the objects ARE is not.
+//
+// A trade item is NOT an inventory item. It never enters `progress.items`, it
+// has no level, no verbs and no B-button behaviour, and docs/ITEMS.md's roster
+// — which tools/check-items.mjs asserts the item registry matches exactly —
+// does not mention any of them. The player holds exactly one at a time, in
+// `progress.trade.item`, and the Quest screen is where you look to see which.
+
+const TRADE_ITEMS = {
+  float: {
+    name: 'Cracked Float', icon: 'i_t_float',
+    got: 'A glass net-float with a crack in it.\nIt holds air. It will not hold a net.',
+  },
+  claw: {
+    name: 'Crab Claw', icon: 'i_t_claw',
+    got: 'A crab claw the size of your hand.\nThe crab is not using it any more.',
+  },
+  brick: {
+    name: 'Salt Brick', icon: 'i_t_brick',
+    got: 'A brick of pan salt, cut and dried.\nHeavier than it looks, like all of it.',
+  },
+  eel: {
+    name: 'Smoked Eel', icon: 'i_t_eel',
+    got: 'A smoked eel, whole and curled.\nIt will keep for a week and smell for two.',
+  },
+  lead: {
+    name: 'Sounding Lead', icon: 'i_t_lead',
+    got: 'A plumb of iron on a knotted line.\nIt measures water. That is all it does.',
+  },
+  whelk: {
+    name: 'Ringing Whelk', icon: 'i_t_whelk',
+    got: 'A whelk shell that rings when it is wet\nand says nothing at all when it is dry.',
+  },
+  pearl: {
+    name: 'Slackwater Pearl', icon: 'i_t_pearl',
+    got: 'A pearl the reef only lets go of at slack\nwater, when the sea forgets to pull.',
+  },
+  cup: {
+    name: 'Bogwood Cup', icon: 'i_t_cup',
+    got: 'A cup cut from a tree that drinks.\nWater kept in it never goes stale.',
+  },
+  jar: {
+    name: 'Jar of Brine-Jelly', icon: 'i_t_jar',
+    got: 'A stoppered jar of something the bog\nmakes. The witch says it is bait.',
+  },
+  kettle: {
+    name: 'Cold Kettle', icon: 'i_t_kettle',
+    got: 'A kettle, full of sea.\nSomebody has been missing this.',
+  },
+  bellrope: {
+    name: 'Bell-Rope', icon: 'i_t_rope',
+    got: 'The rope off the old Tide Bell.\nForty years in a drawer, and still waiting.',
+  },
+};
+
+function tradeName(id) {
+  return (TRADE_ITEMS[id] && TRADE_ITEMS[id].name) || id;
+}
+
+function tradeIcon(id) {
+  return (TRADE_ITEMS[id] && TRADE_ITEMS[id].icon) || 'i_unknown';
+}
+__exports["TRADE_ITEMS"] = TRADE_ITEMS;
+__exports["tradeName"] = tradeName;
+__exports["tradeIcon"] = tradeIcon;
+});
+
 /* ===== src/game/menu.js ===== */
 __define("game/menu.js", function (__exports, __require) {
 // Pause menu: item grid with A/B assignment, dungeon or overworld map, quest
@@ -9046,6 +9243,7 @@ const { HEART_UNITS } = __require("game/progress.js");
 const { essenceCount } = __require("world/maps.js");
 const { MAPS, getMap, hasRoom, getRoom, roomKeyAt } = __require("world/maps.js");
 const { TIDE_NAMES, TIDE_COUNT } = __require("game/tide.js");
+const { tradeName, tradeIcon } = __require("data/trade.js");
 
 // The Chartstone's pips, LOW to HIGH. Sand, shallow, deep — the same three
 // tones the water itself is drawn in, so the mark needs no key to read.
@@ -9384,6 +9582,26 @@ class Menu {
     drawText(ctx, `Blanks ${p.blanks || 0}`
       + (p.carve ? `   Carving: ${p.carve.turns} tide${p.carve.turns === 1 ? '' : 's'}` : ''),
       6, y, '#f8f8e8');
+    // Tighter than the gaps above it: this is the last block on a 144-pixel
+    // screen and the footer sits at SCREEN_H - 11, so a 16-pixel icon on a
+    // 13-pixel step overlaps 'SELECT: tab'.
+    y += 9;
+
+    // The Coastwise Chain. This screen is the ONLY place the player can look up
+    // what they are carrying — a trade item is not in the item grid, because it
+    // is not an item and putting it there would offer to equip it to a button.
+    // The line is drawn only once the chain has started, so a new game's quest
+    // screen does not advertise a quest nobody has met yet.
+    if (p.trade && p.trade.stage) {
+      drawText(ctx, 'COASTWISE CHAIN', 6, y, '#a8f0f8');
+      y += 10;
+      if (p.trade.item) {
+        sprites.draw(ctx, tradeIcon(p.trade.item), 4, y - 4);
+        drawText(ctx, tradeName(p.trade.item), 22, y, '#f8f8e8');
+      } else {
+        drawText(ctx, 'Nothing left to carry.', 6, y, '#687888');
+      }
+    }
   }
 
   // ------------------------------------------------------------ scrimshaw
@@ -9921,6 +10139,7 @@ const { drawHud, drawAreaBanner, drawBossBar } = __require("game/hud.js");
 const { Dialogue, drawBox, drawPanel, getText } = __require("game/dialogue.js");
 const { Menu } = __require("game/menu.js");
 const { Camera } = __require("game/camera.js");
+const { TRADE_ITEMS, tradeName, tradeIcon } = __require("data/trade.js");
 const { Scrimshaw, CHARMS, giveCharm, ownedCharms, openCharmCases } = __require("game/scrimshaw.js");
 const { Title } = __require("game/title.js");
 const { runCutscene, CUTSCENES } = __require("game/cutscene.js");
@@ -10720,6 +10939,22 @@ class Game {
     this.say(`You got the ${name}!\n${def ? def.desc : ''}`);
   }
 
+  /**
+   * The same beat as presentItem, for a thing that is not an item.
+   *
+   * A trade item has no entry in ITEMS and no level, so it cannot go through
+   * presentItem — but the flourish is the whole of what tells the player that
+   * what they are carrying has CHANGED, and a chain of eleven silent swaps is a
+   * chain nobody can follow. `itemShow` takes an explicit sprite for this.
+   */
+  presentTrade(id) {
+    const def = TRADE_ITEMS[id];
+    this.audio.jingle('itemGet');
+    this.player.frozen = ITEM_PRESENT_FRAMES;
+    this.itemShow = { sprite: tradeIcon(id), t: ITEM_PRESENT_FRAMES };
+    this.say(`You got the ${tradeName(id)}!\n${def ? def.got : ''}`);
+  }
+
   autoEquip(id) {
     const p = this.progress;
     const def = ITEMS[id];
@@ -11404,6 +11639,9 @@ class Game {
     const p = this.player;
     if (!p) return;
     const s = this.itemShow;
+    // A trade item carries its own sprite and its own palette; an inventory
+    // item is looked up. Both are held in the same place, over Link's head.
+    if (s.sprite) { sprites.draw(ctx, s.sprite, p.x, HUD_H + p.y - 16); return; }
     sprites.draw(ctx, itemIcon(s.id, s.lv), p.x, HUD_H + p.y - 16,
       { pal: ITEMS[s.id] && ITEMS[s.id].pal });
   }
@@ -16398,7 +16636,12 @@ const rooms = {
       'TTTggggTTT',
     ],
     entities: [
-      ['wisp', 4, 3], ['npc', 2, 2, { sprite: 'npc_hood_blue', dialogue: 'woodChild' }],
+      // Coastwise Chain, link 8.
+      ['wisp', 4, 3],
+      ['trader', 2, 2, {
+        sprite: 'npc_hood_blue', waiting: 'woodChild', after: 'wickAfter',
+        deals: [{ stage: 8, wants: 'pearl', gives: 'cup', text: 'wickTrade' }],
+      }],
     ],
   },
   '0,6,5': {
@@ -16467,7 +16710,11 @@ const rooms = {
       '##########',
     ],
     entities: [
-      ['npc', 4, 2, { sprite: 'npc_reefkin_d', dialogue: 'coralDiver' }],
+      // Coastwise Chain, link 7.
+      ['trader', 4, 2, {
+        sprite: 'npc_reefkin_d', waiting: 'coralDiver', after: 'corriwigAfter',
+        deals: [{ stage: 7, wants: 'whelk', gives: 'pearl', text: 'corriwigTrade' }],
+      }],
     ],
   },
   '0,10,5': {
@@ -16863,7 +17110,11 @@ const rooms = {
     ],
     entities: [
       ['octorok', 4, 3],
-      ['npc', 6, 4, { sprite: 'npc_fisher', dialogue: 'coastFisher' }],
+      // Coastwise Chain, link 4.
+      ['trader', 6, 4, {
+        sprite: 'npc_fisher', waiting: 'coastFisher', after: 'mirrenAfter',
+        deals: [{ stage: 4, wants: 'brick', gives: 'eel', text: 'mirrenTrade' }],
+      }],
     ],
   },
   '0,6,7': {
@@ -17068,7 +17319,13 @@ const rooms = {
       { x: 3, y: 5, to: { map: 'houseNets', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
     ],
     entities: [
-      ['npc', 3, 2, { sprite: 'npc_child', dialogue: 'coastChild' }],
+      // Coastwise Chain, link 2. Pell keeps the line he always had — it is
+      // what he says until the chain reaches him — and a boy who has been
+      // pinched by a crab the size of a dog is exactly who is holding the claw.
+      ['trader', 3, 2, {
+        sprite: 'npc_child', waiting: 'coastChild', after: 'pellAfter',
+        deals: [{ stage: 2, wants: 'float', gives: 'claw', text: 'pellTrade' }],
+      }],
       ['npc', 8, 1, { ...FOLK.salter, dialogue: 'shoreSalter' }],
       ['crab', 6, 4],
     ],
@@ -17092,7 +17349,11 @@ const rooms = {
     ],
     entities: [
       ['octorok', 4, 4], ['pickup', 7, 3, { kind: 'rupee20' }],
-      ['npc', 6, 3, { ...FOLK.salter, dir: 'left', dialogue: 'timberSalter' }],
+      // Coastwise Chain, link 3.
+      ['trader', 6, 3, {
+        ...FOLK.salter, dir: 'left', waiting: 'timberSalter', after: 'hullaAfter',
+        deals: [{ stage: 3, wants: 'claw', gives: 'brick', text: 'hullaTrade' }],
+      }],
     ],
   },
   '0,6,8': {
@@ -17178,7 +17439,11 @@ const rooms = {
     entities: [
       ['sign', 2, 1, { text: 'SANDPIPER ROW\nTwo houses, one boat, no harbour.' }],
       ['npc', 5, 5, { sprite: 'npc_fisher', wander: true, dialogue: 'fisher1' }],
-      ['npc', 4, 6, { sprite: 'npc_hood_blue', dialogue: 'sandpiperKid' }],
+      // Coastwise Chain, link 6.
+      ['trader', 4, 6, {
+        sprite: 'npc_hood_blue', waiting: 'sandpiperKid', after: 'sennitAfter',
+        deals: [{ stage: 6, wants: 'lead', gives: 'whelk', text: 'sennitTrade' }],
+      }],
       ['crab', 6, 1],
     ],
   },
@@ -17249,7 +17514,14 @@ const rooms = {
       'TTTTTTTTTT',
     ],
     entities: [
-      ['npc', 5, 2, { ...FOLK.kelper, dialogue: 'bogWitch' }],
+      // Coastwise Chain, link 9 — and the only link behind a gate: the Marsh
+      // opens to bombs, so the chain cannot be finished before the Coral Spire
+      // hands them over. tools/check-trade.mjs proves the whole chain is
+      // reachable with bombs and nothing else the Rod would have to unlock.
+      ['trader', 5, 2, {
+        ...FOLK.kelper, waiting: 'bogWitch', after: 'yarrowAfter',
+        deals: [{ stage: 9, wants: 'cup', gives: 'jar', text: 'yarrowTrade' }],
+      }],
     ],
     buried: [[3, 4, 'heartPiece']],
   },
@@ -17303,7 +17575,13 @@ const rooms = {
       'TTTTTTTTTT',
     ],
     entities: [
-      ['npc', 2, 2, { sprite: 'npc_fisher', dialogue: 'stoneFisher' }],
+      // Coastwise Chain, link 10. He hooked the kettle off the stones, which is
+      // where a kettle that went out on an ebb from the village shore would end
+      // up — the chain walks the whole coast to bring it back two screens.
+      ['trader', 2, 2, {
+        sprite: 'npc_fisher', waiting: 'stoneFisher', after: 'teelAfter',
+        deals: [{ stage: 10, wants: 'jar', gives: 'kettle', text: 'teelTrade' }],
+      }],
       ['crab', 6, 4],
     ],
   },
@@ -17374,7 +17652,12 @@ const rooms = {
       'TTTTTTTTTT',
     ],
     entities: [
-      ['npc', 2, 2, { sprite: 'npc_villager', dialogue: 'wreckSurvivor' }],
+      // Coastwise Chain, link 5. He has been waiting on his boat since before
+      // the chain existed, and he is still waiting on it afterwards.
+      ['trader', 2, 2, {
+        sprite: 'npc_villager', waiting: 'wreckSurvivor', after: 'dovAfter',
+        deals: [{ stage: 5, wants: 'eel', gives: 'lead', text: 'dovTrade' }],
+      }],
       ['crab', 6, 4],
     ],
   },
@@ -17486,10 +17769,21 @@ function installHouses() {
           '##########',
         ],
         entities: [
-          ['giver', 4, 2, {
-            sprite: 'npc_maku', dialogue: 'makuTree', waiting: 'makuWait',
-            after: 'makuAfter', flag: 'gotRod', item: 'rod', level: 1,
-            needEssences: 1,
+          // The last link of the Coastwise Chain, and the only one that hands
+          // over a real item. She wants the Tide Bell's own rope AND one
+          // Essence: the rope is what the Rod is made of, the Essence is what
+          // wakes her enough to make it. `gotRod` still lands exactly where it
+          // did when she gave the Rod for the Essence alone, so every save and
+          // every reader of that flag — including the Abyssal Keep's grate,
+          // which is the one thing in the game that asks whether the player
+          // went and did the trade — is untouched by the chain being built.
+          ['trader', 4, 2, {
+            sprite: 'npc_maku', waiting: 'makuWait', after: 'makuAfter',
+            deals: [{
+              stage: 12, wants: 'bellrope', item: 'rod', level: 1,
+              text: 'makuTree', flag: 'gotRod',
+              needEssences: 1, blocked: 'makuBlocked',
+            }],
           }],
           ['npc', 7, 4, { sprite: 'npc_farore_0', dialogue: 'faroreHome' }],
         ],
@@ -17530,8 +17824,19 @@ function installHouses() {
     ['pickup', 2, 4, { kind: 'rupee5' }],
   ], { rx: 4, ry: 7, px: 32, py: 88 });
 
+  // Ossa opens the Coastwise Chain and closes it. Both of her deals live on one
+  // entity, which is what the trader's `deals` list is for: the chain's stage
+  // counter picks which of them is live, so she hands over the float on the
+  // first visit and takes the kettle back on the eleventh, and says the same
+  // flat thing about it not being her kettle on every visit in between.
   home('houseNets', "The Net-mender's", 'village', [
-    ['npc', 4, 2, { sprite: 'npc_fisher', dialogue: 'netMender' }],
+    ['trader', 4, 2, {
+      sprite: 'npc_fisher', waiting: 'ossaWait', after: 'ossaAfter',
+      deals: [
+        { stage: 1, gives: 'float', text: 'ossaStart' },
+        { stage: 11, wants: 'kettle', gives: 'bellrope', text: 'ossaEnd' },
+      ],
+    }],
   ], { rx: 4, ry: 8, px: 48, py: 104 });
 
   home('houseSandpiper', 'Sandpiper Cottage', 'village', [
@@ -24234,7 +24539,7 @@ const DIALOGUE = {
   shopkeeper: 'Shield, thirty rupees. No haggling.\nA man who argues over a shield is a man\nwho has never been hit by anything.',
   hearthWife: 'We built the doorstep three courses high\nafter the spring flood. Now the water\ncomes in through the floor instead.',
   hearthChild: 'When it is low I can walk to the reef.\nWhen it is high I can swim over the wall.\nI like high better. Mum likes low.',
-  netMender: 'Nets rot from the top down, boy — from\nthe part that dries. It is the drying that\nkills them, not the sea.',
+
   sandpiper: 'Two houses on this row and one of them\nis shut. He went out at low water and\ncame back at nobody knows when.',
 
   // The peoples of Thalassia. Four hoods, four coasts — the Brinekin hold the
@@ -24250,11 +24555,70 @@ const DIALOGUE = {
   digger: 'Three Essences. Then take the Coin. Throw\nit down and let the water turn. It pays\nthe ferryman, and the ferryman is patient.',
   diggerAfter: 'One coin, boy. Where you drop it is where\nthe next tide puts you. Choose the drop,\nnot the moment — the moment is not yours.',
 
-  // The Maku Tree: the Resonance Rod after the first Essence, Master Sword after
-// all five — the sixth is Nereth's own and there is no coming back to her for it.
-  makuWait: 'Hoo. You are small and the sea is large.\nBring me one Essence of the Tide and I\nwill be awake enough to help.',
-  makuTree: 'Hoo hoo! One Essence, and my roots feel\nthe Bell again. Take the Rod. Strike it and\nevery drowned bell in Tidemere answers.',
+  // The Maku Tree, the last link of the Coastwise Chain: the Resonance Rod for
+  // the Tide Bell's own rope, once one Essence has woken her enough to work.
+  // Master Sword after all five — the sixth is Nereth's own and there is no
+  // coming back to her for it.
+  makuWait: 'Hoo. You are small and the sea is large.\nBring me one Essence of the Tide, and\nbring me something of the Bell\'s.',
+  makuBlocked: 'The Bell\'s rope. I know it by the salt.\nBut my roots are still asleep, child.\nOne Essence of the Tide first. Then this.',
+  makuTree: 'Hoo hoo! The Bell\'s own rope, and the salt\nstill in it. Hold still. — There: the\nResonance Rod. Every drowned bell answers.',
   makuAfter: 'Five Essences, Link. Five. Then the way\nto the Keep opens, and I go back to sleep\nfor a hundred years.',
+
+
+  // ---- the Coastwise Chain -------------------------------------------------
+  //
+  // Eleven links, and every one of them is somebody who was left holding a
+  // thing the sea took off somebody else. Each trader keeps the flavour line
+  // they had before the chain existed — it is what they say when it is not
+  // their turn — so the coast sounds the same to a player who never starts it.
+  //
+  // The register is the source games': dry, short, three lines, and nobody
+  // explains themselves. Nobody says "quest" and nobody thanks you twice.
+
+  // 1 and 11. Ossa, in the net-mender's house. She opens the chain and she
+  // closes it, because the thing the chain is really carrying round the coast
+  // is her kettle.
+  ossaStart: 'My kettle went out with the tide.\nBring it back and I will make it worth\nthe walk. Take that float — it is cracked.',
+  ossaWait: 'That is not my kettle. Keep walking.\nIt is out there in somebody\'s hands and\nthey do not know whose it is.',
+  ossaEnd: 'My kettle! Where — no. Do not tell me.\nTake this. It has been in a drawer for\nforty years waiting for someone like you.',
+  ossaAfter: 'That is the rope off the old Tide Bell.\nMy grandmother rang it. Give it to the\ntree. The tree will know what it is.',
+
+  // 2. Pell, on the village shore. A float that sinks is not a float; it is a
+  // sinker, which is the whole chain in one object.
+  pellTrade: 'A float with a crack in it! That sinks!\nThat is what my crab line has wanted all\nsummer. You have the claw. I have had it.',
+  pellAfter: 'The line goes straight down now.\nI can feel the bottom. There is a lot\nof bottom.',
+
+  // 3. Hulla, cutting driftwood on the strand.
+  hullaTrade: 'A claw? Give it here. A rake tine bends\nand a claw does not. Take a brick of salt\nfor it. We have a shed of them.',
+  hullaAfter: 'The claw rakes better than the rake did.\nDo not tell the man who sold me the rake.',
+
+  // 4. Mirren, working the coast east of the village.
+  mirrenTrade: 'Salt! I have been walking my catch to\nthe reef and losing half of it on the way.\nTake the eel. Smoked. It will keep.',
+  mirrenAfter: 'Salted, boxed, and none of it wasted.\nFirst honest week I have had since the\nBell went.',
+
+  // 5. Dov, beside the wreck he is waiting on.
+  dovTrade: 'Is that an eel? I have eaten sand for\nthree days. Take the sounding lead. It is\nall I got off her and I cannot eat it.',
+  dovAfter: 'She is still down there. But I am not\nhungry, which is a different problem\nfrom the one I had.',
+
+  // 6. Sennit, on Sandpiper Row, who wants to settle an argument.
+  sennitTrade: 'A lead line! Now I can prove how deep\nthe pool is and Mum can stop guessing.\nTake the whelk. It only rings when wet.',
+  sennitAfter: 'Nine feet at high. One at low.\nI wrote it on the fence. The fence will\nbe under water again by supper.',
+
+  // 7. Corriwig, diving the coral hollow.
+  corriwigTrade: 'A shell that rings under water? Tie that\nto my line and I will hear where my line\nis. Take a pearl. The reef gave me three.',
+  corriwigAfter: 'I can hear my own line in the murk now.\nSmall thing. Also the reason I will come\nback up.',
+
+  // 8. Wick, in the heart of the drowned wood. The wood takes payment.
+  wickTrade: 'A slackwater pearl. The wood takes\npayment and it does not take promises.\nHere. A cup, cut from a tree that drinks.',
+  wickAfter: 'The tree has been paid. It is not\ngrateful. It is just not thirsty.',
+
+  // 9. Yarrow, in the witch's hollow.
+  yarrowTrade: 'Bogwood. Nothing dissolves in bogwood,\nwhich is more than my last cup managed.\nTake the jar. It is bait. Keep it shut.',
+  yarrowAfter: 'The cup holds. Forty years of brine and\nit holds. I may live for ever now, which\nwas not the plan.',
+
+  // 10. Teel, fishing off the stones — and the man who hooked the kettle.
+  teelTrade: 'Brine-jelly. Every fish on this coast\nwants it and every one of them is wrong.\nTake the kettle. It came up on my line.',
+  teelAfter: 'Full of sea, that kettle was.\nWhoever lost it has been waiting a while,\nI would say.',
 
   faroreHome: 'The Bell is not a thing, exactly.\nIt is an agreement between the moon and\nthe water. Nereth broke the agreement.',
 
@@ -24277,14 +24641,15 @@ const DIALOGUE = {
   salterElder: 'Salt and water are old enemies who cannot\nleave each other alone. Remember that in\nthe Vault and you will do well enough.',
 
   // ---- signs and spares the maps may reach for ---------------------------
+  // Ossa's old line, from before she opened the Coastwise Chain. Kept because
+  // it is the best thing anyone says about nets and it belongs to whoever gets
+  // a net next; her three chain lines say who she is now.
+  netMender: 'Nets rot from the top down, boy — from\nthe part that dries. It is the drying that\nkills them, not the sea.',
   signCoast: 'TIDEWATCH VILLAGE\nEast: the Shallows.\nMind the tide.',
   villager3: 'Sound the conch twice and you can reach\nanything in Thalassia. Sound it three\ntimes and you are back where you started.',
   elder1: 'I have seen the sea take this village\ntwice and give it back once.\nWe are owed, is what I am saying.',
   child1: 'Are you going to fight the Drowned King?\nCan I have your boots if you lose?',
   shopkeeper2: 'Buy something or stand somewhere else.\nThose are the two options and I am fond\nof both.',
-  tradeStart: 'My kettle went out with the tide.\nBring it back and I will make it worth\nthe walk.',
-  tradeMid: 'That is not my kettle, but I want it.\nTake this instead. Someone down the coast\nwill want that more than I do.',
-  tradeEnd: 'My kettle! Where — no. Do not tell me.\nTake this. It has been in a drawer for\nforty years waiting for someone like you.',
 };
 
 const CUTSCENES = {
@@ -32205,6 +32570,288 @@ __exports["GEAR_ART"] = GEAR_ART;
 __exports["installGearSprites"] = installGearSprites;
 });
 
+/* ===== src/data/sprites-trade.js ===== */
+__define("data/sprites-trade.js", function (__exports, __require) {
+// The eleven things the Coastwise Chain passes from hand to hand.
+//
+// HAND-DRAWN, and deliberately so. `assets/sheets/oracle-seasons-trading-
+// characters.png` carries Seasons' own trade items — the Cuccodex, the Lon Lon
+// Egg, the Ghastly Doll — and every one of them is a thing that game is about.
+// Extracting them would have imported the other game's design, which is the one
+// borrowing CLAUDE.md forbids: the surface is theirs, the subject is ours. The
+// PEOPLE holding these are extracted (see sprites-npcs.js and sprites-races.js);
+// the objects are drawn to match them, at the register docs/ART-DIRECTION.md
+// sets — three colours plus transparency, a hard 1px black outline, no
+// anti-aliasing, and a silhouette that reads in pure black at 16x16.
+//
+// Every one of them is a working object off this coast: a float, a claw, a
+// brick of pan salt. Nothing in the chain is a treasure until the last link,
+// which is the point of the chain.
+
+const { sprites } = __require("gfx/art.js");
+const { registerPalettes } = __require("gfx/palettes.js");
+
+const TRADE_ART = {
+  // A glass net-float with a hairline crack through it. It still holds air,
+  // which is the joke: it is worthless to the woman who needs it to float and
+  // perfect for the boy who needs something to sink.
+  i_t_float: { pal: 'i_t_float', art: `
+    ................
+    .....333333.....
+    ....33111133....
+    ...3001111113...
+    ..300111121113..
+    ..301111121113..
+    .30111111211113.
+    ..301111121113..
+    ..301111211113..
+    ..301112111113..
+    ...30111111113..
+    ....33111133....
+    .....333333.....
+    .......33.......
+    ......3223......
+    .......33.......` },
+
+  // The claw the crab left behind. Pincer open, hinge at the bottom — a closed
+  // claw at 16px is a mitten.
+  i_t_claw: { pal: 'i_t_claw', art: `
+    .....33.........
+    ....3003........
+    ....3013........
+    ....30133.......
+    ....301303......
+    .....3013003....
+    ......301103....
+    ...333301113....
+    ..30011111113...
+    ..30111111113...
+    ..30111111113...
+    ...301111113....
+    ....30111113....
+    .....301113.....
+    ......30113.....
+    .......333......` },
+
+  // A brick of pan salt, cut and dried. Square, because that is what a salt
+  // pan gives you back — the shape is the Salters' whole trade.
+  i_t_brick: { pal: 'i_t_brick', art: `
+    ................
+    ................
+    ....33333333....
+    ...3000000003...
+    ..3001111110003.
+    ..3001111110023.
+    ..3011111111223.
+    ..3011111112223.
+    ..3011111112223.
+    ..3011111122223.
+    ..3011111222223.
+    ..3011112222223.
+    ..3011122222223.
+    ..3333333333333.
+    ................
+    ................` },
+
+  // Smoked eel, hung from a stick through the head. Kept whole and curled,
+  // because a straight eel at this size is a stick.
+  i_t_eel: { pal: 'i_t_eel', art: `
+    ...3333.........
+    ..300003........
+    ..3010013.......
+    ..3011113.......
+    ...301113.......
+    ....301113......
+    .....301113.....
+    ......301113....
+    .......301113...
+    ........301113..
+    ........3011113.
+    .......30111113.
+    ......3011111103
+    .....301111103..
+    ....3011111103..
+    ....33333333....` },
+
+  // A sounding lead: a plumb of iron on a knotted line, the last thing off a
+  // drowned boat and the first thing anyone asks for.
+  i_t_lead: { pal: 'i_t_lead', art: `
+    .......33.......
+    ......3003......
+    ......3113......
+    .......33.......
+    ......3223......
+    .......33.......
+    ......3223......
+    .......33.......
+    .....333333.....
+    ....30011003....
+    ...3001111003...
+    ...3011111103...
+    ...3011111103...
+    ....301111103...
+    ....30111103....
+    .....333333.....` },
+
+  // A whelk shell that rings when it is wet. Drawn as a spiral: the coil is
+  // the only thing that tells a shell from a stone at 16px.
+  i_t_whelk: { pal: 'i_t_whelk', art: `
+    .......33.......
+    ......3003......
+    .....300003.....
+    ....30011003....
+    ...3001331003...
+    ...30130031003..
+    ..3013000330113.
+    ..3013022330113.
+    ..3013022230113.
+    ..3013022230113.
+    ..3013000330113.
+    ..3011133330113.
+    ...30111111003..
+    ....30111103....
+    .....301103.....
+    ......3333......` },
+
+  // A pearl the reef only gives up at slack water, on the half-shell it came
+  // out of. The pearl is index 0 and nothing else on the sprite is, so it is
+  // the brightest thing in the cell.
+  i_t_pearl: { pal: 'i_t_pearl', art: `
+    ................
+    ................
+    .....333333.....
+    ....33000033....
+    ...3300000033...
+    ...3000000013...
+    ...3000000113...
+    ...3000000113...
+    ...3000001113...
+    ...3300111133...
+    .33333111133333.
+    3222222222222223
+    3222222222222223
+    .32222222222223.
+    ..332222222233..
+    ....33333333....` },
+
+  // A cup cut from a tree that drinks. Bogwood: the grain runs round it
+  // because the tree grew round the water, and the Kelpers will tell you so.
+  i_t_cup: { pal: 'i_t_cup', art: `
+    ................
+    ...33333333.....
+    ..3000000003....
+    ..3022222203....
+    ..30111111033...
+    ..301111111303..
+    ..301111111303..
+    ..301111111303..
+    ..301111111303..
+    ...3011111033...
+    ...301111113....
+    ....3011113.....
+    ....3012213.....
+    ....3011113.....
+    ....3333333.....
+    ................` },
+
+  // A stoppered jar of brine-jelly, which is bait, and which the witch of the
+  // bog will not explain any further than that.
+  i_t_jar: { pal: 'i_t_jar', art: `
+    .....3333.......
+    ....302203......
+    ....302203......
+    ....333333......
+    ...30111103.....
+    ..3011111103....
+    ..30111111103...
+    .3011122111103..
+    .3011222211103..
+    .3012222221103..
+    .3012222222103..
+    .3012222222103..
+    .3011222221103..
+    .3011111111113..
+    ..30111111103...
+    ..3333333333....` },
+
+  // The Cold Kettle. It went out with the tide and it comes back full of the
+  // sea, and it is the only object in the chain that anybody has been missing.
+  i_t_kettle: { pal: 'i_t_kettle', art: `
+    ........33......
+    .......3003.....
+    ....33333333....
+    ...30111111103..
+    .33301111111113.
+    3000111111111113
+    3011111111111113
+    .301111111111113
+    .30111111111113.
+    ..301111111113..
+    ..3011111111113.
+    ...3011111113...
+    ...3333333333...
+    ................
+    ................
+    ................` },
+
+  // The bell-rope off the old Tide Bell, forty years in a drawer. A rope with
+  // a bell-ringer's sally on it — the woolly grip. It is the only thing in the
+  // chain the Maku Tree has any interest in.
+  i_t_rope: { pal: 'i_t_rope', art: `
+    .......33.......
+    ......3013......
+    ......3013......
+    .....330133.....
+    ....30011003....
+    ...30112221103..
+    ...30122222103..
+    ...30122222103..
+    ...301222222103.
+    ...30112221103..
+    ....30011003....
+    .....330133.....
+    ......3013......
+    ......3013......
+    ......3013......
+    .......33.......` },
+};
+
+const TRADE_PALETTES = {
+  // Green bottle glass, the same family as the water palettes, with the crack
+  // in the dark tone so it reads as damage rather than as a net cord.
+  i_t_float: ['#d8ffe8', '#58b088', '#1a4a3a', '#000000'],
+  // Boiled shell: a hot orange body over a dark red hinge.
+  i_t_claw: ['#ffd8b0', '#e07850', '#8a3020', '#000000'],
+  // Pan salt. Almost white, because the pans are almost white and the brick
+  // has to read against wet sand.
+  i_t_brick: ['#ffffff', '#e8e8d8', '#a0a090', '#000000'],
+  // Smoke-cured skin over dark flesh.
+  i_t_eel: ['#e8c898', '#8a5a30', '#4a2a18', '#000000'],
+  // Cold iron and a wet line, the Dredge Line's family of greys.
+  i_t_lead: ['#e0e4f0', '#8890a0', '#485060', '#000000'],
+  // Shell: cream over a tan coil, the throat dark.
+  i_t_whelk: ['#fff0d8', '#e0a860', '#8a5028', '#000000'],
+  // Nacre, which is white with the sea in it.
+  i_t_pearl: ['#ffffff', '#c0d0e8', '#8a6a4a', '#000000'],
+  // Bogwood, wet through: it never dries and it never lightens.
+  i_t_cup: ['#c8a870', '#8a6a38', '#4a3418', '#000000'],
+  // Brine-jelly, lit from behind the way jelly is.
+  i_t_jar: ['#d8f8e8', '#68c8a8', '#2a7060', '#000000'],
+  // Tinned iron gone cold and grey. Not black: a black kettle at 16px is a
+  // hole in the screen.
+  i_t_kettle: ['#c8d0d8', '#68727e', '#38404a', '#000000'],
+  // Bell-rope: bleached hemp with the sally dyed the old bell-loft red-brown.
+  i_t_rope: ['#f0e0b0', '#c0a060', '#7a5a28', '#000000'],
+};
+
+function installTradeSprites() {
+  registerPalettes(TRADE_PALETTES);
+  sprites.add(TRADE_ART, 'ui');
+}
+__exports["TRADE_ART"] = TRADE_ART;
+__exports["installTradeSprites"] = installTradeSprites;
+});
+
 /* ===== src/data/index.js ===== */
 __define("data/index.js", function (__exports, __require) {
 // Single entry point that installs every data pack into the engine registries.
@@ -32230,6 +32877,7 @@ const { installEnemySprites, ENEMY_ART } = __require("data/sprites-enemies.js");
 const { installBossSprites, BOSS_ART, MINIBOSS_ART } = __require("data/sprites-bosses.js");
 const { installHudSprites, HUD_ART } = __require("data/sprites-hud.js");
 const { installGearSprites, GEAR_ART } = __require("data/sprites-gear.js");
+const { installTradeSprites, TRADE_ART } = __require("data/sprites-trade.js");
 
 // Background tile art: validated at 16x16.
 const ART_PACKS = {
@@ -32254,6 +32902,7 @@ const SPRITE_PACKS = {
   minibosses: MINIBOSS_ART,
   hudRipped: HUD_ART,
   gear: GEAR_ART,
+  trade: TRADE_ART,
 };
 
 let installed = false;
@@ -32279,6 +32928,8 @@ function installData() {
   installHudSprites();
   // Drawn to match the extracted icons, for the gear Seasons does not have.
   installGearSprites();
+  // The Coastwise Chain's eleven objects, drawn to match them.
+  installTradeSprites();
   installEnemies();
   installBosses();
   installOverworld();

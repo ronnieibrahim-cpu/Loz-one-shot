@@ -224,6 +224,43 @@ is in the page, and nothing steps until you say so.
 
 ## Hard-won lessons — do not rediscover these
 
+**A quest whose reward opens a region can be placed behind its own gate, and
+nothing in the repo would have said so.** The Coastwise Chain (P9.5,
+`docs/TRADING.md`) pays out the Resonance Rod, and the Rod is the key to the
+Salt Pans' vanes. Any one of its eleven links dropped on a Pans screen would
+have been a gate holding its own key — and `check-overworld` would still have
+been green, because its flood proves the WORLD is connected given the items,
+never that a quest's own steps are reachable before the quest's own reward.
+The general shape: every checker in this repo proves a part, and a quest is a
+part nobody had written a checker for, so a new one that hands out a gate item
+brings its own reachability proof or it has none. `check-trade.mjs` floods
+from the village with bombs only and asserts every link can be stood next to.
+
+**A trading sequence is a stage counter, not a set of wants — and the
+difference only shows up on the links you are not standing in front of.** The
+obvious build is "this trader takes item X"; it is wrong, because the player
+holds exactly one trade item and several traders down the line would happily
+take it, skipping half the chain in one conversation. `trader` deals are keyed
+on `p.trade.stage === stage - 1`, so exactly one deal in the whole world is
+live at any moment, and `wants` is asserted against what is in hand rather
+than consulted — a disagreement between the two is a data error that refuses
+the trade and warns, instead of quietly paying out the wrong link.
+
+**Deals live on the trader, which is the only reason the chain can be a
+circle.** Ossa is stage 1 and stage 11 — she hands over the float and takes the
+kettle back — and that is one entity holding two deals, not two NPCs on one
+tile. Anything that models a trading chain as one-NPC-one-trade cannot express
+the shape the whole quest is built on.
+
+**Converting an existing NPC into a trader is free; adding one is not.** All
+ten coast traders were already-placed `npc` entities that changed type in
+place, so no entity id moved, no enemy re-phased, and all 51 replays passed
+unchanged on the first run. Adding an eleventh villager anywhere ahead of them
+in load order would have cost a re-record of every tape (see the warning in
+`overworld.js` on the starting room). Each one also keeps its old flavour line
+as the trader's `waiting` text, so the coast sounds identical to a player who
+never starts the chain.
+
 **A health-economy reading is only as honest as the looter taking it, and
 `dLoot` had two bugs that silently starved every run for two sessions.**
 Instrumenting D1's room-by-room health economy (see FEEL-SPEC.md) found the

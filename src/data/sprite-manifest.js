@@ -54,6 +54,14 @@ export const REQUIRED_SPRITES = {
     'i_charm',
   ],
 
+  // ---- pack: sprites-trade.js ------------------------------------------
+  // The Coastwise Chain's objects. Hand-drawn: the Seasons trading sheet has
+  // trade items on it and every one of them belongs to that game's design.
+  trade: [
+    'i_t_float', 'i_t_claw', 'i_t_brick', 'i_t_eel', 'i_t_lead', 'i_t_whelk',
+    'i_t_pearl', 'i_t_cup', 'i_t_jar', 'i_t_kettle', 'i_t_rope',
+  ],
+
   // ---- pack: sprites-world.js ------------------------------------------
   pickups: [
     'p_rupee', 'p_rupee5', 'p_rupee20', 'p_heart', 'p_fairy', 'p_bombs',

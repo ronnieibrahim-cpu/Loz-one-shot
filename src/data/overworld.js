@@ -1248,7 +1248,12 @@ const rooms = {
       'TTTggggTTT',
     ],
     entities: [
-      ['wisp', 4, 3], ['npc', 2, 2, { sprite: 'npc_hood_blue', dialogue: 'woodChild' }],
+      // Coastwise Chain, link 8.
+      ['wisp', 4, 3],
+      ['trader', 2, 2, {
+        sprite: 'npc_hood_blue', waiting: 'woodChild', after: 'wickAfter',
+        deals: [{ stage: 8, wants: 'pearl', gives: 'cup', text: 'wickTrade' }],
+      }],
     ],
   },
   '0,6,5': {
@@ -1317,7 +1322,11 @@ const rooms = {
       '##########',
     ],
     entities: [
-      ['npc', 4, 2, { sprite: 'npc_reefkin_d', dialogue: 'coralDiver' }],
+      // Coastwise Chain, link 7.
+      ['trader', 4, 2, {
+        sprite: 'npc_reefkin_d', waiting: 'coralDiver', after: 'corriwigAfter',
+        deals: [{ stage: 7, wants: 'whelk', gives: 'pearl', text: 'corriwigTrade' }],
+      }],
     ],
   },
   '0,10,5': {
@@ -1713,7 +1722,11 @@ const rooms = {
     ],
     entities: [
       ['octorok', 4, 3],
-      ['npc', 6, 4, { sprite: 'npc_fisher', dialogue: 'coastFisher' }],
+      // Coastwise Chain, link 4.
+      ['trader', 6, 4, {
+        sprite: 'npc_fisher', waiting: 'coastFisher', after: 'mirrenAfter',
+        deals: [{ stage: 4, wants: 'brick', gives: 'eel', text: 'mirrenTrade' }],
+      }],
     ],
   },
   '0,6,7': {
@@ -1918,7 +1931,13 @@ const rooms = {
       { x: 3, y: 5, to: { map: 'houseNets', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
     ],
     entities: [
-      ['npc', 3, 2, { sprite: 'npc_child', dialogue: 'coastChild' }],
+      // Coastwise Chain, link 2. Pell keeps the line he always had — it is
+      // what he says until the chain reaches him — and a boy who has been
+      // pinched by a crab the size of a dog is exactly who is holding the claw.
+      ['trader', 3, 2, {
+        sprite: 'npc_child', waiting: 'coastChild', after: 'pellAfter',
+        deals: [{ stage: 2, wants: 'float', gives: 'claw', text: 'pellTrade' }],
+      }],
       ['npc', 8, 1, { ...FOLK.salter, dialogue: 'shoreSalter' }],
       ['crab', 6, 4],
     ],
@@ -1942,7 +1961,11 @@ const rooms = {
     ],
     entities: [
       ['octorok', 4, 4], ['pickup', 7, 3, { kind: 'rupee20' }],
-      ['npc', 6, 3, { ...FOLK.salter, dir: 'left', dialogue: 'timberSalter' }],
+      // Coastwise Chain, link 3.
+      ['trader', 6, 3, {
+        ...FOLK.salter, dir: 'left', waiting: 'timberSalter', after: 'hullaAfter',
+        deals: [{ stage: 3, wants: 'claw', gives: 'brick', text: 'hullaTrade' }],
+      }],
     ],
   },
   '0,6,8': {
@@ -2028,7 +2051,11 @@ const rooms = {
     entities: [
       ['sign', 2, 1, { text: 'SANDPIPER ROW\nTwo houses, one boat, no harbour.' }],
       ['npc', 5, 5, { sprite: 'npc_fisher', wander: true, dialogue: 'fisher1' }],
-      ['npc', 4, 6, { sprite: 'npc_hood_blue', dialogue: 'sandpiperKid' }],
+      // Coastwise Chain, link 6.
+      ['trader', 4, 6, {
+        sprite: 'npc_hood_blue', waiting: 'sandpiperKid', after: 'sennitAfter',
+        deals: [{ stage: 6, wants: 'lead', gives: 'whelk', text: 'sennitTrade' }],
+      }],
       ['crab', 6, 1],
     ],
   },
@@ -2099,7 +2126,14 @@ const rooms = {
       'TTTTTTTTTT',
     ],
     entities: [
-      ['npc', 5, 2, { ...FOLK.kelper, dialogue: 'bogWitch' }],
+      // Coastwise Chain, link 9 — and the only link behind a gate: the Marsh
+      // opens to bombs, so the chain cannot be finished before the Coral Spire
+      // hands them over. tools/check-trade.mjs proves the whole chain is
+      // reachable with bombs and nothing else the Rod would have to unlock.
+      ['trader', 5, 2, {
+        ...FOLK.kelper, waiting: 'bogWitch', after: 'yarrowAfter',
+        deals: [{ stage: 9, wants: 'cup', gives: 'jar', text: 'yarrowTrade' }],
+      }],
     ],
     buried: [[3, 4, 'heartPiece']],
   },
@@ -2153,7 +2187,13 @@ const rooms = {
       'TTTTTTTTTT',
     ],
     entities: [
-      ['npc', 2, 2, { sprite: 'npc_fisher', dialogue: 'stoneFisher' }],
+      // Coastwise Chain, link 10. He hooked the kettle off the stones, which is
+      // where a kettle that went out on an ebb from the village shore would end
+      // up — the chain walks the whole coast to bring it back two screens.
+      ['trader', 2, 2, {
+        sprite: 'npc_fisher', waiting: 'stoneFisher', after: 'teelAfter',
+        deals: [{ stage: 10, wants: 'jar', gives: 'kettle', text: 'teelTrade' }],
+      }],
       ['crab', 6, 4],
     ],
   },
@@ -2224,7 +2264,12 @@ const rooms = {
       'TTTTTTTTTT',
     ],
     entities: [
-      ['npc', 2, 2, { sprite: 'npc_villager', dialogue: 'wreckSurvivor' }],
+      // Coastwise Chain, link 5. He has been waiting on his boat since before
+      // the chain existed, and he is still waiting on it afterwards.
+      ['trader', 2, 2, {
+        sprite: 'npc_villager', waiting: 'wreckSurvivor', after: 'dovAfter',
+        deals: [{ stage: 5, wants: 'eel', gives: 'lead', text: 'dovTrade' }],
+      }],
       ['crab', 6, 4],
     ],
   },
@@ -2336,10 +2381,21 @@ function installHouses() {
           '##########',
         ],
         entities: [
-          ['giver', 4, 2, {
-            sprite: 'npc_maku', dialogue: 'makuTree', waiting: 'makuWait',
-            after: 'makuAfter', flag: 'gotRod', item: 'rod', level: 1,
-            needEssences: 1,
+          // The last link of the Coastwise Chain, and the only one that hands
+          // over a real item. She wants the Tide Bell's own rope AND one
+          // Essence: the rope is what the Rod is made of, the Essence is what
+          // wakes her enough to make it. `gotRod` still lands exactly where it
+          // did when she gave the Rod for the Essence alone, so every save and
+          // every reader of that flag — including the Abyssal Keep's grate,
+          // which is the one thing in the game that asks whether the player
+          // went and did the trade — is untouched by the chain being built.
+          ['trader', 4, 2, {
+            sprite: 'npc_maku', waiting: 'makuWait', after: 'makuAfter',
+            deals: [{
+              stage: 12, wants: 'bellrope', item: 'rod', level: 1,
+              text: 'makuTree', flag: 'gotRod',
+              needEssences: 1, blocked: 'makuBlocked',
+            }],
           }],
           ['npc', 7, 4, { sprite: 'npc_farore_0', dialogue: 'faroreHome' }],
         ],
@@ -2380,8 +2436,19 @@ function installHouses() {
     ['pickup', 2, 4, { kind: 'rupee5' }],
   ], { rx: 4, ry: 7, px: 32, py: 88 });
 
+  // Ossa opens the Coastwise Chain and closes it. Both of her deals live on one
+  // entity, which is what the trader's `deals` list is for: the chain's stage
+  // counter picks which of them is live, so she hands over the float on the
+  // first visit and takes the kettle back on the eleventh, and says the same
+  // flat thing about it not being her kettle on every visit in between.
   home('houseNets', "The Net-mender's", 'village', [
-    ['npc', 4, 2, { sprite: 'npc_fisher', dialogue: 'netMender' }],
+    ['trader', 4, 2, {
+      sprite: 'npc_fisher', waiting: 'ossaWait', after: 'ossaAfter',
+      deals: [
+        { stage: 1, gives: 'float', text: 'ossaStart' },
+        { stage: 11, wants: 'kettle', gives: 'bellrope', text: 'ossaEnd' },
+      ],
+    }],
   ], { rx: 4, ry: 8, px: 48, py: 104 });
 
   home('houseSandpiper', 'Sandpiper Cottage', 'village', [

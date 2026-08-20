@@ -10,6 +10,60 @@ maintain and the most expensive thing to not have.
 
 ---
 
+## THE BOARD, P9.5 — the trading sequence exists, and it pays out the Rod
+
+**The fourth gap in the content audit below is closed.** The trading sequence
+was `progress.trade = {stage, item}` declared, saved, and read by nothing, with
+three orphan dialogue lines and no `trader` entity type. It is now the
+**Coastwise Chain**: eleven traders, eleven objects, twelve links, ending at the
+Maku Tree, who takes the Tide Bell's own rope and one Essence and hands back the
+**Resonance Rod**. Full writeup in `docs/TRADING.md`; the short version:
+
+- **One new entity type, `trader`, holding a list of DEALS.** A deal is live
+  when `p.trade.stage === stage - 1`, so exactly one deal in the whole world is
+  live at a time — a trader further along has nothing to say to you yet even
+  while you are holding what they will eventually ask for. Deals live on the
+  trader rather than one-per-NPC, which is the only reason the chain can be a
+  circle: **Ossa the net-mender is stage 1 and stage 11**, handing over the
+  cracked float on the first visit and taking her kettle back on the eleventh.
+- **Ten of the eleven traders were already-placed NPCs that changed type in
+  place.** No entity id moved, nothing re-phased, and all 51 replays passed
+  unchanged on the first run. Each keeps its old flavour line as the trader's
+  `waiting` text, so a player who never starts the chain hears the same coast.
+- **The Maku Tree still sets `gotRod`**, at the same moment it always did, so
+  the Abyssal Keep's Colonnade grate — the one thing in the game that asks
+  whether the player went and did the trade — is untouched. `check-trade.mjs`
+  proves it in-engine anyway: it takes the Rod the chain paid out down to
+  `d6/1,2,4` and rings the grate open.
+- **The Rod now costs the chain AND one Essence.** It used to cost the Essence
+  alone. That is a real gate — the Rod opens the Salt Pans' vanes — which is
+  why `check-trade.mjs` floods the overworld from the village with **bombs
+  only** and asserts every link can be stood next to without it. Bombs (from
+  the un-gated Coral Spire) are the chain's one item gate: Yarrow is in the
+  Marsh.
+- **Eleven hand-drawn 16x16 icons** in `src/data/sprites-trade.js`, and they are
+  hand-drawn on purpose: `assets/sheets/oracle-seasons-trading-characters.png`
+  carries Seasons' own trade items and every one of them is a thing that game
+  is about. The people are extracted; the objects are ours.
+- **A trade item is not an inventory item.** It never enters `progress.items`,
+  is not in `docs/ITEMS.md`'s roster (which `check-items.mjs` asserts the
+  registry matches exactly), and the **Quest screen** is the only place to look
+  up what you are carrying.
+
+**Everything green after it**: validate, walk-dungeons 23, check-overworld 17,
+check-gates 15, solve-switches, check-motion 8, check-music, check-charms 63,
+check-towns 58, check-items 82, anchor 14, cleats 15, lens 24, bellows 60,
+reefseed 87, dredge 103, replay 51, test 58, check-playthrough 19, and
+check-trade 43.
+
+**One thing a future session should know**: the Maku Tree is a `trader` now, not
+a `giver`. Gap 2 below — `makuMaster` never plays, so the level-3 sword is
+unobtainable and `makuOpenedKeep` is written by a scene that never runs — is
+still open, and whoever wires it up should hang it off a second deal or a
+cutscene trigger on that same entity rather than adding a second Maku.
+
+---
+
 ## THE BOARD, UPDATED AGAIN — the route retuned past the push-block blocker, D1's health economy instrumented and fixed
 
 **`tools/playthrough-route.mjs` was stale in exactly the way the previous
@@ -417,11 +471,15 @@ The four gaps, in the order they cost the player something:
    written by a scene that never runs.
 3. **`nerethIntro` never plays.** The final boss has a written introduction and
    it is never triggered. You walk in and fight.
-4. **The trading sequence is dead data.** `progress.trade = {stage, item}` is
-   declared and saved, `tradeStart`/`tradeMid`/`tradeEnd` and a `tradeKettle`
-   cutscene all exist, and nothing in `src/` reads or advances any of it. There
-   is no `trader` entity type. Build it or delete it; half-present is the worst
-   of the three.
+4. ~~**The trading sequence is dead data.**~~ **DONE — P9.5.** It is the
+   Coastwise Chain now: eleven traders, eleven objects, terminating at the Maku
+   Tree, who takes the Tide Bell's own rope plus one Essence and hands back the
+   Resonance Rod. `progress.trade` is read and advanced, there is a `trader`
+   entity type, and `tools/check-trade.mjs` plays the whole thing in-engine.
+   See `docs/TRADING.md` and the P9.5 section at the top of this file. (The
+   `tradeKettle` cutscene is the one piece NOT used — the kettle is handed over
+   by a trader like everything else, and a cutscene for it would stop the game
+   dead in the middle of a conversation.)
 
 **Three sounds are silently missing.** `Audio.sfx` is `if (!d) return;`, so an
 unknown name is a no-op with no error and no warning — which is why nothing has
