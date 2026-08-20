@@ -397,6 +397,70 @@ mode of a duplicate model: it is not wrong in a way anything is watching for.
 combines three or more collision-shaped flags in a bitwise mask, which is the
 guard that would have caught all nine on day one.
 
+**A world can be provably unfinishable while every checker is green, and the
+shape that does it is a CYCLE OF TWO GATES.** `check-overworld.mjs` proves each
+gate twice — the region is sealed without its item, and open with it — by
+dropping ONE gate and holding all the others. That is the right question for
+"is this gate a gate" and it is blind to the only arrangement that actually
+breaks a playthrough: gate A opened by an item behind gate B, gate B opened by
+an item behind gate A. Every single-drop run walks through the other one, so
+both look fine. The world shipped in exactly that state. The Cliffs of Kell
+(holding D4's door) and the road to the Keep (holding D6's door) were both
+sealed by tiles only the Dredge Line opened, and the Dredge Line is the item
+inside D6 — so a real player floods 59 of 120 screens, clears four dungeons and
+stops. Seventeen green assertions, `walk-dungeons` green, `check-gates` green,
+`check-playthrough` green (its recorded route never gets that far).
+
+The fix is not just the data. `tools/check-progression.mjs` floods in
+ACQUISITION ORDER — a new game holding what the intro gives, then exactly what
+each dungeon grants as its door comes into reach, read out of the dungeon's own
+chests rather than written down — and asserts every dungeon's door is reachable
+while its own item is still inside it. Run it against the commit before the fix
+and it reports 4/6 dungeons and 95/120 screens. **If you move a gate, that is
+the tool that has to stay green**; the per-gate ones cannot see this class of
+bug at all, and one of them being green is what made this cost a session.
+
+**A gate that two items open is not a gate on either of them.** The first cut
+of the fix cracked ONE boulder of the Deep Cut's four-tile rockfall, leaving
+three carrying `F.HEAVY`. The Dredge Line drags those three and the player is
+through, so `check-overworld` reported "without Bombs the Cliffs are sealed" as
+seals-10-screens — the Marsh only — and the Cliffs quietly had two keys. Same
+rule one level down: `boulderCracked` carries neither `F.ROCK` nor `F.HEAVY`,
+because a boulder you can also lift or also drag is gated on whichever of the
+three you happen to be holding.
+
+**A CHECKER THAT ARRIVES ON A BRANCH IS AS STALE AS THE BRANCH IT ARRIVED ON,
+and git will not say so, because a new file conflicts with nothing.** Merging
+the progression branch after the collision-consolidation branch landed
+`check-progression.mjs` carrying the TENTH private copy of "is this tile solid"
+— the ninth had just been deleted. Nothing in the merge flagged it: the file is
+new on one side, so there is no conflict to resolve. It surfaced as two
+unrelated-looking reds, `tools/test.mjs`'s new guard naming a file the guard's
+own author had never seen, and a reachability failure. The lesson is not about
+collision: **when a branch adds a tool and another branch changes the RULES all
+tools obey, the merge has to re-audit the new tool against the new rules by
+hand, because every automatic signal you have is silent.**
+
+**Changing what an NPC IS can move an item out of the field a checker reads,
+and the checker stays green while the world breaks.** Making the Maku Tree a
+trader moved the Resonance Rod out of `o.item` and into `o.deals[].item`.
+`check-trade.mjs` was green (it reads deals), `check-overworld.mjs` was green
+(it is told which items exist), and `check-progression.mjs` — the one tool
+whose whole job is "can a real player get this" — silently stopped granting the
+Rod and reported the Salt Pans unreachable by a FINISHED game. A grant that
+changes its shape has to be re-found in every tool that reads grants; grep for
+the field name, not for the item's name.
+
+**Story data that describes a design is not the design being wired.** The
+`makuMaster` cutscene — the Maku Tree opening the road to the Keep and handing
+over the level-3 sword — sat complete in `src/data/story.js` for the whole life
+of the project with NOTHING TRIGGERING IT: no entity referenced it, no flag
+read `makuOpenedKeep`, and the only `giver` on that screen stopped at the Rod.
+So the sword had three damage tiers, three HUD icons and three swing sounds,
+and a real player's sword never left level 1. Grep for a cutscene id before
+believing a scene happens; `check-progression.mjs` now reads a `makuTree`
+entity's scene and asserts the grant is collectable.
+
 **A health-economy reading is only as honest as the looter taking it, and
 `dLoot` had two bugs that silently starved every run for two sessions.**
 Instrumenting D1's room-by-room health economy (see FEEL-SPEC.md) found the

@@ -44,6 +44,10 @@ export const DIALOGUE = {
   makuBlocked: 'The Bell\'s rope. I know it by the salt.\nBut my roots are still asleep, child.\nOne Essence of the Tide first. Then this.',
   makuTree: 'Hoo hoo! The Bell\'s own rope, and the salt\nstill in it. Hold still. — There: the\nResonance Rod. Every drowned bell answers.',
   makuAfter: 'Five Essences, Link. Five. Then the way\nto the Keep opens, and I go back to sleep\nfor a hundred years.',
+  // Said on every visit after the road is open. The tree has done its part and
+  // says so; the seal on the Abyss Stair is already split by the time the
+  // player walks back out to it.
+  makuOpened: 'The road is open and my roots ache.\nGo down, and do not dawdle — I am asleep\nthe moment you are out of sight.',
 
 
   // ---- the Coastwise Chain -------------------------------------------------

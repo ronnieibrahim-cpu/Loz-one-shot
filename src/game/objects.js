@@ -234,12 +234,23 @@ export class Chest extends Entity {
     this.opened = false;
     this.saveKey = o.saveKey || null;
     this.needsBossKey = !!o.bossKey;
+    // A chest the STORY holds shut, the way `giver` already had. Nothing else
+    // in the game could say "this is here, and it is not yours yet" about a
+    // chest: a boss key is a dungeon's own lock, and an item gate is a wall in
+    // front of the room rather than a lock on the box.
+    this.needEssences = o.needEssences || 0;
+    this.needText = o.needText || 'The lid will not lift. Not yet.';
   }
 
   interact(game, player) {
     if (this.opened) { game.say('Empty.'); return; }
     if (this.needsBossKey && !game.progress.bossKeys[game.mapId]) {
       game.say('A great lock. You need the Boss Key.');
+      game.audio.sfx('deny');
+      return;
+    }
+    if (this.needEssences && game.progress.essences.length < this.needEssences) {
+      game.say(this.needText);
       game.audio.sfx('deny');
       return;
     }
@@ -614,6 +625,95 @@ export class Trader extends NPC {
   }
 }
 defineEntity('trader', (x, y, o) => new Trader(x, y, o));
+
+// --------------------------------------------------------------------------
+// MERGE NOTE — why this class extends Trader and not Giver.
+//
+// Two branches each gave the Maku Tree a second life and they disagreed about
+// what she IS. One made her the last link of the Coastwise Chain (a `trader`
+// who takes the Tide Bell's rope and gives the Resonance Rod); the other made
+// her a two-beat `giver` (the Rod at one Essence, then `makuMaster` at five,
+// which opens the road to the Abyssal Keep and grants the level-3 sword).
+//
+// She is BOTH, and the two beats are not in competition: the chain is beat one,
+// the Keep is beat two. So MakuTree keeps its second beat exactly as written
+// and inherits its first from Trader instead of Giver. Nothing about the chain
+// changes — the deal, its stage, and `gotRod` are the trader branch's, intact.
+//
+// The load-bearing part is `makuOpenedKeep`. The Keep's gate reads that flag
+// and NOTHING ELSE sets it; a resolution that kept only the trader half would
+// have left the game uncompletable while every trade checker stayed green.
+// --------------------------------------------------------------------------
+// The Maku Tree: a giver with a SECOND beat that is a cutscene rather than a
+// handover.
+//
+//   ['makuTree', 4, 2, {
+//     ...every `giver` option, which drives the first beat (the Rod),
+//     scene: 'makuMaster',           // played once the second beat is earned
+//     sceneNeed: 5,                  // Essences it waits for
+//     sceneFlag: 'makuOpenedKeep',   // the flag the SCENE sets; also its guard
+//     sceneAfter: 'makuOpened',      // said on later visits
+//   }]
+//
+// `makuMaster` — the tree opening the road to the Keep and handing over the
+// Master Sword — had been written in src/data/story.js for the whole life of
+// the project with NOTHING ANYWHERE TRIGGERING IT. That is why the road to the
+// Keep was sealed by a tile only the Dredge Line opened, and why a real
+// player's sword never left level 1: the level-3 sword is granted here and
+// only here.
+//
+// The scene sets its own flag and hands over its own item, which is why this
+// class does neither. The flag is both the record and the guard: a scene that
+// has run has set it, so the beat cannot fire twice.
+// --------------------------------------------------------------------------
+
+export class MakuTree extends Trader {
+  constructor(x, y, o = {}) {
+    super(x, y, o);
+    this.scene = o.scene || null;
+    this.sceneNeed = o.sceneNeed || 0;
+    this.sceneFlag = o.sceneFlag || null;
+    this.sceneAfter = o.sceneAfter || null;
+  }
+
+  /** Is the second beat owed right now? */
+  sceneReady(game) {
+    const p = game.progress;
+    if (!this.scene || !this.sceneFlag) return false;
+    if (flag(p, this.sceneFlag)) return false;
+    if (p.essences.length < this.sceneNeed) return false;
+    // The first beat comes first. A player who somehow arrives with five
+    // Essences and no Rod gets the Rod on this visit and the road on the next,
+    // rather than skipping a handover because they were late.
+    // BEAT ONE IS NOW A TRADE, so the test for "the Rod has been handed over"
+    // is the chain's, not the Giver's: `spent()` is true once the stage counter
+    // has passed every deal this tree holds.
+    //
+    // The empty-deals clause is not decoration. `spent()` answers FALSE for a
+    // trader holding no deals, so a MakuTree placed without any would wait for
+    // a first beat that can never arrive and seal the road to the Keep for
+    // ever. There is only one such tree today and it has its deal, but this is
+    // exactly the class of bug this file has been bitten by before — a guard
+    // that reads correctly and is unsatisfiable.
+    if (this.deals.length === 0) return true;
+    return this.spent(game);
+  }
+
+  interact(game, player) {
+    const p = game.progress;
+    if (this.sceneReady(game)) {
+      if (this.faceOnTalk) this.dir = 'down';
+      game.startCutscene(this.scene);
+      return;
+    }
+    if (this.sceneFlag && flag(p, this.sceneFlag) && this.sceneAfter) {
+      game.startDialogue(this.sceneAfter, this);
+      return;
+    }
+    super.interact(game, player);
+  }
+}
+defineEntity('makuTree', (x, y, o) => new MakuTree(x, y, o));
 
 // --------------------------------------------------------------------------
 // The scrimshander: hand over a blank plus rupees, come back a tide later for

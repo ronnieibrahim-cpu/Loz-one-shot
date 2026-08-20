@@ -448,6 +448,126 @@ landed by the other two branches merged into this same board). Whether either
 carries its own private collision/push model, unconverted, needs checking the
 next time either is touched.
 
+## THE BOARD, UPDATED AGAIN — the circular progression lock is fixed, and there is now a checker that can see that class of bug
+
+**The world could not be finished, and every checker in the CLAUDE.md table
+was green.** D4's entrance (`0,1,3`) and D6's (`0,1,0`) were both sealed
+behind tiles that only the Dredge Line opened, and the Dredge Line is the item
+inside D6 — the Cliffs of Kell's boulders and the Abyss Stair's iron plug. A
+real player floods **59 of 120 screens**, clears D1, D2, D5 and D3, and stops
+with four Essences and nowhere to go.
+
+`check-overworld.mjs` could not see it and still cannot: it drops ONE gate
+while holding all the others, which is the right question for "is this gate a
+gate" and blind to a CYCLE — gate A opened by an item behind gate B and vice
+versa survives every single-drop run. That is now written down in
+`docs/HANDOFF.md` under hard-won lessons, at length, because it cost a session.
+
+### What changed, in the world
+
+1. **The road to the Keep is a STORY gate now, not an item gate.** `abyssPlug`
+   became `keepSeal`: same art, `F.SOLID` only, and a new tiledef field
+   `openFlag: 'makuOpenedKeep'`. The Maku Tree sets that flag at five Essences
+   and nothing the player carries opens the tile. Upper Kell's four boulders
+   (`0,2,2` row 1) are the seal's second course — the plugs alone were never
+   enough, since nothing lies between the two runs and opening one buys a
+   single screen of dead end.
+2. **`makuMaster` finally has a trigger.** The cutscene — the tree opening the
+   road and handing over the level-3 sword — had sat complete in
+   `src/data/story.js` since it was written with NOTHING referencing it. New
+   entity `makuTree` (`src/game/objects.js`), a `Giver` with a second beat:
+   the Rod at one Essence as before, then `makuMaster` at five. Because the
+   L3 sword was granted only there, **a real player's sword never left level
+   1** until this commit.
+3. **The Noble Sword (L2) is placed rather than collapsed.** It is in the
+   Bluff Grotto (`cave1`), in a big chest that refuses below four Essences —
+   exactly where `docs/GAME-PLAN.md` had said it was all along. Collapsing to
+   two tiers would have thrown away a damage tier, three HUD icons and three
+   swing sounds that all already exist, and the Oracles ship three. `Chest`
+   grew `needEssences` / `needText` for it, mirroring `giver`.
+4. **The Cliffs of Kell open on Bombs (D2), not the Dredge Line.** The gate is
+   the Deep Cut's east-bank rockfall (`0,3,4`, col 8, rows 2-5), now four
+   `boulderCracked` tiles — a new tile, `boulder`'s art with a fault line
+   through it, `F.SOLID | F.BOMBABLE` and nothing else.
+   - **Bombs, not the Cleats**, and the reason is not the verb table: a Cleats
+     gate has to be a DEEP channel at least three tiles wide, because a jumping
+     player crosses `DEEP` as well as `JUMPABLE`, so a narrower one is not a
+     gate at all (`check-gates.mjs` exists because of that class of mistake).
+     Widening the cut to three tiles rewrites the screen's east bank and its
+     seam with the Wood. The order argument for the Cleats — that D3 before D4
+     keeps the essence-numbered cutscenes in sequence — does not survive
+     contact with the data either: **D5's entrance is reachable at zero
+     items**, so the world already permits out-of-order play.
+   - **All four boulders are cracked, not one.** Leaving three carrying
+     `F.HEAVY` gives the gate two keys, and `check-overworld` then reports
+     "without Bombs the Cliffs are sealed" as ten screens (the Marsh only).
+   - The other boulders — the Marsh Stair's four at `0,1,5` — stay on the
+     Dredge Line, so the Line keeps a real overworld verb. It seals two
+     screens (the Bog Stair) and that is optional content on purpose: nothing
+     on the critical path may hang off the last dungeon's item.
+
+### `tools/check-progression.mjs` — new, 19 assertions, in CLAUDE.md's table
+
+It floods the overworld in ACQUISITION ORDER: a new game holding what the
+intro gives (`conch L1`, `sword L1`), then whatever dungeon doors that reaches,
+then EXACTLY the items those dungeons grant — read out of each dungeon's own
+chests, so D2's Bomb Vault and D6's Mermaid Vault are not missed — and floods
+again, to a fixpoint. It asserts every dungeon's door is reachable while its
+own item is still inside it, at the LEVEL it grants (D6 hands over Cleats L2
+while D3's L1 is held, which is not self-gating and an id-only check calls a
+failure). It also reads a `makuTree`'s scene for its grants and flags, so the
+Master Sword and `makuOpenedKeep` are proved collectable.
+
+The order it derives now:
+
+```
+  a new game holds: conch L1, sword L1
+    round 1: D1 Tidewash Grotto at 0,8,8 -> anchor L1
+    round 1: D2 Coral Spire at 0,10,5 -> lens L1, bombs L1
+    round 1: D5 Drowned Wood Shrine at 0,5,4 -> reefseed L1
+    round 2: Thalassia: coin L1 at 3 Essence(s)
+    round 2: The Maku Tree: rod L1 at 1 Essence(s)
+    round 3: D3 Bogwater Sanctum at 0,1,8 -> cleats L1
+    round 3: D4 Cliffside Cistern at 0,1,3 -> bellows L1
+    round 4: The Maku Tree: makuMaster at 5 Essence(s) -> sword L3 + 'makuOpenedKeep'
+    round 4: Bluff Grotto: sword L2 at 4 Essence(s)
+    round 5: D6 Abyssal Keep at 0,1,0 -> dredge L1, cleats L2
+  reached 120/120 screens with 6/6 dungeons cleared
+```
+
+**It was run against the commit before the fix** (a throwaway `git worktree` at
+`HEAD`) and reports 4/6 dungeons, 95/120 screens, and four failures naming D4
+and D6. That is the proof it does what no existing checker does — do not take
+it on trust if you change it; re-run it against a broken tree.
+
+What it does NOT prove: it floods the overworld's tiles, so it says a
+dungeon's DOOR is reachable, not that the dungeon behind it is beatable.
+`walk-dungeons.mjs` owns the inside and `check-playthrough.mjs` plays it.
+
+### Everything else that moved
+
+- `check-overworld.mjs`: `GATES` rewritten — `bombs` (34 screens), `rod` (27),
+  `keep` (8, a story gate keyed on `openFlag` rather than a tile flag),
+  `dredge` (2). `dredgePlug` is gone. The flood understands story gates now.
+- `check-gates.mjs`: 15 -> 20 assertions. The plug probe became the Keep's
+  seal (shut, refuses the Dredge Line, says why, then opens on the flag alone
+  across BOTH courses); the Upper Kell boulder probe moved to the Marsh Stair,
+  since Upper Kell's boulders are the seal now; new probe bombs the Deep Cut
+  rockfall, which is the critical path and the one gate a player cannot route
+  around.
+- `F.MAGNETIC` is deleted. Nothing carried it once the plug became the seal.
+- `docs/GAME-PLAN.md`: the Overworld layout table is REWRITTEN from the data —
+  it named seven gates on six items this game does not have. The Dungeons and
+  Item progression tables below it are stale in the same pre-P8 way and now
+  carry a banner saying so; rewriting them from the data is its own session.
+
+**Next session's job, in order:** unchanged from the board below — the actor's
+anchor-placement verb and extending `playthrough-route.mjs` past the
+Sluicegate is still job 1, and the 32 stale branches are still undeleted. Add
+to it: `check-playthrough.mjs`'s recorded route stops inside D1 and therefore
+never exercised any of this; a route that reaches D2's bombs and walks to the
+Cliffs would put the fix under the harness that actually plays the game.
+
 ---
 
 ## THE BOARD, UPDATED AGAIN — the route retuned past the push-block blocker, D1's health economy instrumented and fixed

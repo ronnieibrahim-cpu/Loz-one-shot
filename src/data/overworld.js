@@ -542,9 +542,15 @@ const rooms = {
   '0,2,2': {
     name: 'Upper Kell',
     legend: 'cliffs', music: 'overworld',
+    // THE SEAL'S UPPER COURSE. These four were boulders, and the four plugs one
+    // screen north on the Abyss Stair were the other half of the same gate:
+    // nothing at all lies between them, so opening one course alone buys the
+    // player a single screen of dead end. Both courses are the Keep's seal now
+    // and both open together, at five Essences, when the Maku Tree opens the
+    // road. See `keepSeal` in src/data/tiles-core.js.
     map: [
       '###gggg###',
-      '#ggMMMMgg#',
+      '#ggVVVVgg#',
       'gg.9999.gg',
       'gg......gg',
       'gg.9999.gg',
@@ -988,13 +994,24 @@ const rooms = {
     // The Squall Bellows' overworld room. The raft in the cut goes wherever it
     // is blown and takes you with it; the long way round the north shelf is
     // still open, so this is a shortcut you earn rather than a gate.
+    //
+    // THE ROCKFALL ON THE EAST BANK IS THE WAY INTO THE CLIFFS OF KELL, and
+    // through them the only way to everything north of here — D4's door, the
+    // Abyss Stair, the Keep. It was four boulders, so it only opened to the
+    // Dredge Line, which is D6's item and sits inside what it sealed.
+    //
+    // All four are cracked, not one. A run where three tiles are still
+    // boulders is not a Bombs gate, it is a Dredge Line gate with a hole in
+    // it: the Line drags the other three and the player is through, so
+    // check-overworld could no longer say which item holds the Cliffs shut and
+    // "without Bombs the Cliffs are sealed" would quietly stop being true.
     map: [
       '###gggg###',
       '#gGGGGGGg#',
-      'gg.====.Mg',
-      'gg.====.Mg',
-      'gg......Mg',
-      'gg______Mg',
+      'gg.====.Xg',
+      'gg.====.Xg',
+      'gg......Xg',
+      'gg______Xg',
       '#gggggggg#',
       '###gggg###',
     ],
@@ -2381,21 +2398,34 @@ function installHouses() {
           '##########',
         ],
         entities: [
-          // The last link of the Coastwise Chain, and the only one that hands
-          // over a real item. She wants the Tide Bell's own rope AND one
+          // THE MAKU TREE HAS TWO BEATS, and they came from two branches that
+          // each thought they were the only one. She is the last link of the
+          // Coastwise Chain AND she is the tree that opens the road to the
+          // Abyssal Keep. Both survive here; see MakuTree in src/game/objects.js
+          // for why that class now extends Trader.
+          //
+          // Beat one — the trade. She wants the Tide Bell's own rope AND one
           // Essence: the rope is what the Rod is made of, the Essence is what
           // wakes her enough to make it. `gotRod` still lands exactly where it
           // did when she gave the Rod for the Essence alone, so every save and
-          // every reader of that flag — including the Abyssal Keep's grate,
-          // which is the one thing in the game that asks whether the player
-          // went and did the trade — is untouched by the chain being built.
-          ['trader', 4, 2, {
+          // every reader of that flag is untouched by the chain being built.
+          //
+          // Beat two — the road. `makuMaster` at five Essences grants the
+          // level-3 sword and sets `makuOpenedKeep`. THIS IS THE LOAD-BEARING
+          // HALF: the Keep's gate reads `makuOpenedKeep` and nothing else in
+          // the game sets it. Drop these four lines to keep the trade tidy and
+          // the world becomes uncompletable while check-trade.mjs stays green —
+          // which is the exact shape of failure CLAUDE.md warns that a model
+          // cannot see and only check-playthrough.mjs can.
+          ['makuTree', 4, 2, {
             sprite: 'npc_maku', waiting: 'makuWait', after: 'makuAfter',
             deals: [{
               stage: 12, wants: 'bellrope', item: 'rod', level: 1,
               text: 'makuTree', flag: 'gotRod',
               needEssences: 1, blocked: 'makuBlocked',
             }],
+            scene: 'makuMaster', sceneNeed: 5, sceneFlag: 'makuOpenedKeep',
+            sceneAfter: 'makuOpened',
           }],
           ['npc', 7, 4, { sprite: 'npc_farore_0', dialogue: 'faroreHome' }],
         ],

@@ -48,11 +48,21 @@ section('the chain, as placed');
 // Every trader in the world, wherever it is: the chain is not allowed to be a
 // list somewhere that the placed data then disagrees with, so this is read off
 // the maps and nothing else.
+//
+// A LINK IS ANY ENTITY THAT HOLDS DEALS, not any entity spelled 'trader'. The
+// Maku Tree is the chain's last link and its entity kind is 'makuTree',
+// because she is a Trader with a second beat bolted on (the road to the Keep
+// at five Essences — see MakuTree in src/game/objects.js). Matching the string
+// 'trader' alone would have dropped stage 12 out of the chain, and the failure
+// would not have read as "the Maku Tree is missing": it would have read as a
+// chain with a gap at the end, sending the next session hunting a data bug in
+// the eleven links that were fine.
+const TRADER_KINDS = new Set(['trader', 'makuTree']);
 const traders = [];
 for (const [mapId, m] of MAPS) {
   for (const [key, def] of Object.entries(m.roomDefs || {})) {
     for (const e of def.entities || []) {
-      if (e[0] !== 'trader') continue;
+      if (!TRADER_KINDS.has(e[0])) continue;
       traders.push({ mapId, key, tx: e[1], ty: e[2], o: e[3] || {} });
     }
   }
