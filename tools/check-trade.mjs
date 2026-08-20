@@ -27,6 +27,7 @@ import { fileURLToPath } from 'node:url';
 import { installData } from '../src/data/index.js';
 import { MAPS, getRoom } from '../src/world/maps.js';
 import { getTileDef, F } from '../src/world/tileset.js';
+import { defWalkable, ROUTE_AVOID } from './lib/collision.mjs';
 import { GAP_HOP_MAX_SPAN } from '../src/data/feel.js';
 import { TRADE_ITEMS } from '../src/data/trade.js';
 import { DIALOGUE } from '../src/data/story.js';
@@ -148,6 +149,9 @@ for (const [k, d] of Object.entries(ow.roomDefs)) {
 const legendOf = def => NAMES.get(def);
 // Bombs only: the Coral Spire hands those over and the Spire is not gated.
 const OPEN = F.BOMBABLE;
+// The intro always hands over the sword before the player can move (see
+// check-playthrough.mjs); no other item is assumed.
+const CAPS = { jumping: false, swim: false, cutting: true };
 function defAt(name, tide) {
   let d = getTileDef(name);
   for (let i = 0; i < 4 && d && d.tide; i++) d = getTileDef(d.tide[tide]);
@@ -157,7 +161,7 @@ function walkableAt(name, tide) {
   const d = defAt(name, tide);
   if (!d) return false;
   if (d.flags & OPEN) return true;
-  return !(d.flags & (F.VOID | F.SOLID | F.PIT | F.DEEP | F.LEDGE | F.HAZARD | F.JUMPABLE));
+  return defWalkable(d, CAPS, ROUTE_AVOID);
 }
 const passable = ch => [0, 1, 2].some(t => walkableAt(ch, t));
 const isGap = ch => { const d = defAt(ch, 1); return !!(d && (d.flags & F.JUMPABLE)); };

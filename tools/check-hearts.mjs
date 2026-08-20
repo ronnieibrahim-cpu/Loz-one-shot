@@ -21,6 +21,7 @@
 import { installData } from '../src/data/index.js';
 import { MAPS, getRoom } from '../src/world/maps.js';
 import { F } from '../src/world/tileset.js';
+import { defWalkable, capsForMode, ROUTE_AVOID } from './lib/collision.mjs';
 import { ENTITY_TYPES } from '../src/game/entity.js';
 import { Boss } from '../src/game/enemy.js';
 import { newProgress, HEART_UNITS } from '../src/game/progress.js';
@@ -206,8 +207,7 @@ function reachable(room, x, y, tide, how) {
   if (how === 'buried') return !!(d.flags & (F.WET | F.SLOW));
   // A liftable rock is a tile you stand on one moment later.
   if (d.flags & F.ROCK) return true;
-  if (d.flags & F.SOLID) return d.mask === 0;
-  return !(d.flags & (F.PIT | F.HAZARD | F.DEEP));
+  return defWalkable(d, capsForMode('foot'), ROUTE_AVOID);
 }
 
 for (const p of pieces) {
