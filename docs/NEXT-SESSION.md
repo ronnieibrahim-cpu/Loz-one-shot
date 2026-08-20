@@ -10,6 +10,96 @@ maintain and the most expensive thing to not have.
 
 ---
 
+## THE BOARD NOW — three parallel branches merged onto main, and one document
+## left deliberately broken
+
+`claude/merge-three-features-conflicts-6ipqpz` merged three branches onto main,
+`--no-ff`, in this order: `claude/merge-four-features-53ql03` (13 commits),
+`claude/circular-progression-lock-rff8nx` (1), `claude/player-walkthrough-guide-74mtr5`
+(1). All three forked from the same main commit (`64af325`) and none had been
+merged. The first went in clean. The third collided only in these docs.
+
+The second needed four decisions, all of them written into the code at the
+point of decision rather than only here:
+
+1. **`src/data/caves.js` — the Bluff Grotto holds both prizes.** The Noble
+   Sword keeps tile 7,2; the Piece of Heart moved to 2,2, the mirror tile.
+   **`check-hearts.mjs` was NOT repinned**, and that is the decision, not an
+   oversight: it pins the piece COUNT (24 -> cap 15), the divide-by-four, and
+   the two-to-a-dungeon split. A piece that moves within one cave changes none
+   of the three. Nothing was edited to make a number agree.
+2. **`src/data/overworld.js` — the Maku Tree is both her selves.** She is the
+   Coastwise Chain's last link (takes the bellrope, gives the Rod, sets
+   `gotRod`) AND the two-beat tree whose `makuMaster` scene at five Essences
+   grants sword L3 and sets `makuOpenedKeep`. `MakuTree` therefore extends
+   `Trader` rather than `Giver` (`src/game/objects.js`), and its "first beat
+   first" guard is the chain's `spent()` rather than the Giver's `giveFlag`.
+3. **`src/game/objects.js` — both classes kept, whole.** They had merely landed
+   textually adjacent; `Trader` and `MakuTree` are now both present in full.
+4. **`tools/check-overworld.mjs` — neither side kept whole.** It is the shared
+   collision lib's implementation carrying the story gate's `openFlag` clause.
+
+**Two things the merge broke that NOTHING flagged, both in
+`tools/check-progression.mjs`.** It is a new file on one side, so git had no
+conflict to report:
+
+  * It arrived carrying its own private collision formula — the tenth copy, cut
+    from a branch where the other nine still existed. It now calls
+    `tools/lib/collision.mjs`. This changed no verdict (exactly as the
+    consolidation found for the other nine) but was required by `test.mjs`.
+  * It read grants from `o.item`, and making the Maku Tree a trader moved the
+    Rod into `o.deals[].item`. It therefore never granted the Rod and reported
+    the **Salt Pans unreachable by a finished game**. It now reads deals, and
+    treats the chain as an offer needing EVERY link's screen reachable
+    (`whereAll`), not just the payout's doorstep. 120/120 screens, 6/6 dungeons.
+
+This is the same shape the four-branch merge hit with `check-hearts.mjs` and
+`check-trade.mjs`, two sections below. It has now happened twice. **When one
+branch adds a tool and another changes the rules all tools obey, the merge must
+re-audit the new tool by hand — every automatic signal is silent.**
+
+### `docs/GUIDE.md` IS STALE ON PURPOSE AND `check-guide.mjs` FAILS 3 OF 4
+
+This is not a regression and must not be "fixed" by editing the guide. The
+guide is GENERATED FROM DATA, and it was generated against main before the
+trading chain, the Noble Sword, the story gating and the 15-heart cap existed.
+It fails exactly here:
+
+  * `every backticked ... id in the guide is real` — `tradeStart`, `tradeMid`,
+    `tradeEnd`. The guide's own line 654 describes those story.js lines as
+    "not referenced by any" — the Coastwise Chain now references them.
+  * `every heartPiece in src/data/ is referenced` — missing `cave1/0,0,0`
+    (the Bluff Grotto piece, moved by decision 1 above), `cave2/0,0,0` and
+    `d4/0,4,1`.
+  * `the guide numbers heart pieces 1..24` — it numbers 18. The cap branch
+    raised the count from 18 to 24.
+
+**Session 5's job is to REGENERATE it**, not to patch it. A guide hand-edited
+until the checker agrees is a guide written by nobody from the data, which is
+the one thing this document is not allowed to be.
+
+### Verified state at the end of this session
+
+Full CLAUDE.md checker table plus the three branch-added checkers, all green
+except the one above. Counts that moved from main's baseline, and why:
+
+  * `check-gates` 15 -> 20: the progression branch rewrote it for the story gate.
+  * `check-progression` 19: new tool, +1 assertion for the chain offer.
+  * `check-hearts` 114, `check-trade` 43: new tools from the four-branch merge.
+  * `test` 58 -> 59: the four-branch merge added the private-collision guard.
+  * `check-build` colours 16 -> 27: the drawn title screen.
+  * Everything else identical to main, `replay` included — all 51 tapes pass
+    unchanged, so no entity id moved and nothing re-phased.
+
+The two-beat Maku Tree was additionally driven in a LIVE ENGINE, not just
+modelled: beat two refuses to fire before the chain completes, beat one grants
+the Rod at stage 12, and beat two then plays `makuMaster`, sets
+`makuOpenedKeep` and grants sword L3. `check-gates.mjs` only ever set that flag
+by hand, so nothing in the suite proves the tree sets it — that gap is still
+open and is worth a real assertion.
+
+---
+
 ## THE BOARD, UPDATED AGAIN — title screen art, P9's health economy, P9.5's trading sequence, and the checker collision-model consolidation all landed
 
 Four branches merged into this board at once: the title screen is drawn art
