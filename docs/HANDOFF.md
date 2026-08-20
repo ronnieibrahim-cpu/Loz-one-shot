@@ -461,6 +461,42 @@ and a real player's sword never left level 1. Grep for a cutscene id before
 believing a scene happens; `check-progression.mjs` now reads a `makuTree`
 entity's scene and asserts the grant is collectable.
 
+**Writing `docs/GUIDE.md` (a data-generated player's walkthrough) found that
+D4 and D6 cannot be reached from the rest of the map, and no existing
+checker says so.** `node tools/check-overworld.mjs` with no items held
+floods only 59/120 overworld screens; the unreached set includes both D4's
+entrance (`overworld/0,1,3`) and D6's (`overworld/0,1,0`), both sealed by
+`F.HEAVY`/`F.MAGNETIC` tiles that only the `dredge` item opens — and the
+Dredge Line is D6's OWN item, found inside D6's Dredge Vault
+(`d6/0,4,3`). The door in is gated by what's behind it. Every other gate in
+this game is provably openable by an item from an earlier, reachable
+dungeon; this one is a cycle. **Why nothing caught it:**
+`check-overworld.mjs`'s per-gate assertions each prove "sealed without ITEM,
+open with ITEM" in isolation — never "and ITEM is obtainable before you have
+to cross this gate to get it" — so a gate whose own key is locked behind
+itself passes every existing assertion cleanly. `check-playthrough.mjs`, the
+one tool that plays rather than models, doesn't reach far enough to notice
+either (its route is still D1-only; see below). Found by chasing the guide's
+"main route" section: writing down a route in prose and then trying to prove
+each dungeon's entrance was reachable in order is what surfaced it — a check
+that models each gate independently, the way `check-overworld.mjs` already
+does well, will not surface an END-TO-END ordering problem no matter how
+many gates it proves individually. If a future session adds a
+"checks the whole progression graph, not just one gate" tool, this is the
+bug it should catch on its first run. Not yet fixed; see
+`docs/NEXT-SESSION.md`'s board for the two candidate fixes.
+
+**The actual Heart Piece count, read out of `src/data/`, is 18 — not the 19
+a task description or a stale doc might assume, and not derivable by
+`grep -c heartPiece` alone.** `src/data/audio.js` defines a jingle literally
+named `heartPiece`; it is not a pickup and grep cannot tell the difference by
+itself. And one of the 18 real placements does not live in a room's
+`entities` array at all — D3's Reed Cell (`d3/0,4,4`) hands its Heart Piece
+over from `puzzle.reward.spawn`, which fires after the room's enemies are
+cleared, a shape none of the other 17 placements use. A script that only
+scans `entities` and `buried` will silently undercount by exactly one and
+have no way to notice.
+
 **A health-economy reading is only as honest as the looter taking it, and
 `dLoot` had two bugs that silently starved every run for two sessions.**
 Instrumenting D1's room-by-room health economy (see FEEL-SPEC.md) found the
