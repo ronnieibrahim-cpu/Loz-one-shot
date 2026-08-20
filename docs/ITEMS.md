@@ -240,7 +240,11 @@ water, not at a thing.
 
 ### 7. Resonance Rod — replaces the slingshot
 
-Trading-sequence reward. Rings all metal and crystal in the room at once:
+Trading-sequence reward, and now actually the reward of one: the Coastwise
+Chain's eleven links end at the Maku Tree, who takes the Tide Bell's own rope
+and hands back the Rod. See `docs/TRADING.md`.
+
+Rings all metal and crystal in the room at once:
 grates retract, submerged bells chime and point toward what they are tuned to,
 and armoured enemies lock rigid for about 90 frames.
 
@@ -345,7 +349,7 @@ mechanic's button. The Dungeon Map is the Chartstone's sibling, not its rival.
 | Bottled Tide (the case) | the Salt Pan Vault (`cave3`), off the Salt Pans — the case is what lets you carry any; refills come from shops and drops |
 | Kelp-Soled Cleats L2 (Mermaid Suit) | d6 Abyssal Keep, the Mermaid Vault behind the Tideshade |
 | Dredge Line | d6 Abyssal Keep, the Dredge Vault |
-| Resonance Rod | The Maku Tree, one Essence |
+| Resonance Rod | The Maku Tree, for the Tide Bell's own rope and one Essence — the end of the Coastwise Chain (`docs/TRADING.md`) |
 | Ferryman's Coin | The village digger, three Essences |
 | Chartstone | One per dungeon, where the Compass was |
 
