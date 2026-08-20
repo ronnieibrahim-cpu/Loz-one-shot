@@ -41,6 +41,7 @@ import { installData } from '../src/data/index.js';
 import { MAPS, getRoom } from '../src/world/maps.js';
 import { F } from '../src/world/tileset.js';
 import { BLOCKS } from '../src/world/tileset.js';
+import { tileWalkable, capsForMode, ROUTE_AVOID } from './lib/collision.mjs';
 
 installData();
 
@@ -60,20 +61,16 @@ let pass = 0; const fail = [];
 const check = (n, c, d) => c ? pass++ : (fail.push(n), console.log(`  FAIL ${n}${d ? ' — ' + d : ''}`));
 
 /**
- * Can the player occupy this tile at this level?
- *
- * `mask: 0` is the whole subtlety. A doorway carries F.SOLID *and* mask 0 —
- * the flags say "a wall" so nothing spawns in it or is thrown through it, and
- * the mask says every quadrant is clear, which is what `Room.solidAt` reads
- * and therefore what the player's feet obey. Reading the flag alone would call
- * every door in every town a wall, and the flood would report a shop nobody
- * can enter in a village that plays fine.
+ * Can the player occupy this tile at this level? Asked of the engine's own
+ * `Room.solidAt` (via `tileWalkable`, tools/lib/collision.mjs), which is what
+ * already knows a doorway carries F.SOLID *and* mask 0 — the flags say "a
+ * wall" so nothing spawns in it or is thrown through it, and the mask says
+ * every quadrant is clear, which is what the player's feet obey. A private
+ * copy of that reasoning is exactly the kind of thing this function used to
+ * be and no longer is.
  */
 function walkable(room, x, y, tide) {
-  const d = room.tile(x, y, tide);
-  if (d.flags & F.VOID) return false;
-  if (d.flags & F.SOLID) return d.mask === 0;
-  return !(d.flags & (F.PIT | F.HAZARD | F.LEDGE | F.JUMPABLE | F.DEEP));
+  return tileWalkable(room, x, y, tide, capsForMode('foot'), ROUTE_AVOID);
 }
 // A TOWN IS WALKED, NOT SWUM, and that is the strong half of the claim below.
 //

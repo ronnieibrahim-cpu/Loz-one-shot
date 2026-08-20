@@ -370,6 +370,33 @@ in load order would have cost a re-record of every tape (see the warning in
 as the trader's `waiting` text, so the coast sounds identical to a player who
 never starts the chain.
 
+**A checker's private collision model does not fail when the real rule
+changes under it — it just quietly starts being wrong, and it can be wrong
+for the WHOLE LIFE of the checker before anything notices.** Nine tools
+(`walk-dungeons.mjs`, `check-overworld.mjs`, `solve-switches.mjs`,
+`find-ledges.mjs`, `check-anchor.mjs`, `check-bellows.mjs`, `check-cleats.mjs`,
+`check-dredge.mjs`, `check-lens.mjs`, `check-reefseed.mjs`,
+`find-crossings.mjs`, `check-towns.mjs`) each carried their own copy of "is
+this tile solid", several of them byte-identical to each other. Consolidating
+them onto the engine's own `Room.solidAt`/`canOccupy` (via a new
+`tools/lib/collision.mjs`, plus a `tileDefSolid` extracted out of `solidAt`
+itself so there is only ever one copy of the formula) changed no check's
+pass/fail verdict, but it silently fixed two real, previously invisible bugs:
+`check-overworld.mjs`'s flood was refusing to walk onto any `mask: 0` doorway
+or cave mouth (its private formula ignored `mask` and treated every
+`F.SOLID`-flagged tile as fully blocking, when the real engine reads `mask: 0`
+as "the flags say wall, the mask says open" — exactly the case a doorway is),
+and `find-ledges.mjs` was offering bush and liftable-rock tiles as valid
+ledge-lip placements (its private formula never excluded `F.BUSH`/`F.ROCK`,
+which nothing stands on as "plain floor" without clearing it first — 87 and
+414 tide-instances of those flags exist in the data). Neither bug tripped a
+single assertion in years of this checker existing, because neither happened
+to matter to any DECLARED room's reachability — which is exactly the failure
+mode of a duplicate model: it is not wrong in a way anything is watching for.
+`tools/test.mjs` now fails if a tool outside `tools/lib/collision.mjs`
+combines three or more collision-shaped flags in a bitwise mask, which is the
+guard that would have caught all nine on day one.
+
 **A health-economy reading is only as honest as the looter taking it, and
 `dLoot` had two bugs that silently starved every run for two sessions.**
 Instrumenting D1's room-by-room health economy (see FEEL-SPEC.md) found the

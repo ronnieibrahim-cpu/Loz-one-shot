@@ -122,9 +122,60 @@ async function checkNoMathRandom() {
   return hits;
 }
 
+// --- no checker may define its own solid/passable/walkable/pushable logic --
+//
+// A checker's job is to ask the engine what it does, not to keep a second copy
+// of what the engine is supposed to do. 550 assertions were once green while
+// no block in the game could actually be pushed, because solve-switches.mjs
+// and walk-dungeons.mjs each modelled collision themselves instead of calling
+// `Room.solidAt`/`canOccupy` — and a private model does not fail when the real
+// rule changes under it, it just quietly starts being wrong. tools/lib/
+// collision.mjs is the one place left allowed to know which raw tile flags
+// mean "solid": everything else composes ITS functions (or the engine's own
+// `canOccupy`/`room.solidAt`, called live in a page) rather than re-deriving
+// the formula.
+//
+// The fingerprint of a private walkability formula is a bitwise-OR mask
+// naming THREE OR MORE of the flags that make a tile impassable to a walking
+// body — that is the "exclusion list" shape every re-derivation in this repo
+// took (`!(d.flags & (F.VOID | F.SOLID | F.PIT | F.DEEP | F.LEDGE |
+// F.HAZARD))`), and it is deliberately not "two or more": a mask of exactly
+// `F.SOLID | F.VOID` is a different, narrower, irreducible question — "is
+// this tile a hard wall to a projectile" (the Dredge Line's own cast-stop
+// rule, a hop's clearance check, an Anchor throw's flight) — which is not a
+// walking body's passability and cannot be expressed by composing
+// `tileWalkable`'s `caps`/`avoid` at all, so it stays a direct, narrow,
+// engine-matching flag test rather than something this guard should chase.
+const COLLISION_FLAGS = ['SOLID', 'VOID', 'PIT', 'DEEP', 'LEDGE', 'HAZARD', 'JUMPABLE', 'BUSH', 'ROCK'];
+const COLLISION_GUARD_ALLOW = new Set(['tools/lib/collision.mjs']);
+
+async function checkNoPrivateCollisionLogic() {
+  const hits = [];
+  for (const file of (await jsFilesUnder(join(ROOT, 'tools'))).sort()) {
+    const rel = relative(ROOT, file);
+    if (COLLISION_GUARD_ALLOW.has(rel)) continue;
+    const code = stripComments(await readFile(file, 'utf8'));
+    const re = /\.\s*flags\s*&\s*\(([^()]*)\)/g;
+    let m;
+    while ((m = re.exec(code))) {
+      const names = new Set((m[1].match(/F\.(\w+)/g) || []).map(s => s.slice(2)));
+      const collisionNames = [...names].filter(n => COLLISION_FLAGS.includes(n));
+      if (collisionNames.length >= 3) {
+        const line = code.slice(0, m.index).split('\n').length;
+        hits.push(`${rel}:${line}: masks ${collisionNames.join('|')} — call tools/lib/collision.mjs instead`);
+      }
+    }
+  }
+  check('no tool re-derives collision/passability from raw tile flags', hits.length === 0,
+    hits.length ? `${hits.length} site(s): ` + hits.slice(0, 6).join(' | ') : '');
+  return hits;
+}
+
 const main = async () => {
   console.log('\n--- determinism ---');
   await checkNoMathRandom();
+  console.log('\n--- consolidation ---');
+  await checkNoPrivateCollisionLogic();
 
   const { chromium } = await loadPlaywright();
   // Random high port: concurrent runs must not fight over a fixed one.

@@ -1612,6 +1612,39 @@ function resolveTile(name, tide) {
   return r.tide ? getTileDef(r.tide[Math.max(0, Math.min(2, tide))]) : r;
 }
 
+/**
+ * Whether a resolved tile definition blocks a mover with the given
+ * capabilities — the same rule `Room.solidAt` applies at a pixel, pulled out
+ * here so anything that already has a concrete `TileDef` (rather than a pixel
+ * to sample) can ask the identical question instead of re-deriving it from
+ * raw flags. `Room.solidAt` calls this; nothing should define its own copy.
+ *
+ * `quadSolid` is the SOLID flag's own verdict for the quadrant being asked
+ * about — `Room.solidAt` passes the correct one for a pixel's sub-tile
+ * position; a caller with no pixel (a tile-granularity checker) passes
+ * `d.mask !== 0`, which is exactly right for every tile in this game today,
+ * since no tile uses a mask other than 0 (a doorway cut into a SOLID tile) or
+ * 15 (uniformly solid) — see docs/ART-DIRECTION.md and CLAUDE.md.
+ */
+function tileDefSolid(d, caps, quadSolid) {
+  const f = d.flags;
+  if (f & F.VOID) return true;
+  if (f & F.SOLID) return quadSolid;
+  // Deep water is impassable on foot but fine while swimming.
+  if (f & F.DEEP) return !(caps && (caps.swim || caps.jumping));
+  // Gaps are crossed by jumping only.
+  if (f & F.JUMPABLE) return !(caps && caps.jumping);
+  // A ledge is the lip of a drop, not a floor. Nothing stands on it: the
+  // player clears it in a hop (Player.tryLedgeHop) and is airborne while it
+  // happens, so caps.jumping is what lets the hop through. Blocking it on
+  // the ground is the half that makes the ledge one-way — otherwise you
+  // could walk back up the drop or stroll along the lip.
+  if (f & F.LEDGE) return !(caps && caps.jumping);
+  if (f & F.BUSH) return !(caps && caps.cutting);
+  if (f & F.ROCK) return true;
+  return false;
+}
+
 /** The art name to draw for a tile at a given tide + frame counter. */
 function tileArt(def, frame) {
   if (def.anim && def.anim.length) {
@@ -1702,6 +1735,7 @@ __exports["registerBlocks"] = registerBlocks;
 __exports["blockRef"] = blockRef;
 __exports["getTileDef"] = getTileDef;
 __exports["resolveTile"] = resolveTile;
+__exports["tileDefSolid"] = tileDefSolid;
 __exports["tileArt"] = tileArt;
 __exports["isTideSensitive"] = isTideSensitive;
 __exports["validateTiles"] = validateTiles;
@@ -1757,7 +1791,7 @@ __define("world/room.js", function (__exports, __require) {
 
 const { TILE, ROOM_W, ROOM_H, offscreen } = __require("core/screen.js");
 const { tiles: tileSheet } = __require("gfx/art.js");
-const { F, resolveTile, getTileDef, tileArt, blockRef } = __require("world/tileset.js");
+const { F, resolveTile, getTileDef, tileArt, blockRef, tileDefSolid } = __require("world/tileset.js");
 
 const LEGENDS = new Map();
 
@@ -2059,30 +2093,16 @@ class Room {
     // The tile is resolved at ITS OWN tide level, so a hitbox spanning the edge
     // of a frozen patch is solid on one side and wadeable on the other.
     const d = this.tile(tx, ty, tide);
-    const f = d.flags;
-
-    if (f & F.VOID) return true;
-    if (f & F.SOLID) {
-      if (d.mask === 15) return true;
-      if (d.mask === 0) return false;
+    let quadSolid;
+    if (d.mask === 15) quadSolid = true;
+    else if (d.mask === 0) quadSolid = false;
+    else {
       const qx = (px % TILE) >= 8 ? 1 : 0;
       const qy = (py % TILE) >= 8 ? 1 : 0;
       const bit = 1 << (qy * 2 + qx);
-      return (d.mask & bit) !== 0;
+      quadSolid = (d.mask & bit) !== 0;
     }
-    // Deep water is impassable on foot but fine while swimming.
-    if (f & F.DEEP) return !(caps && (caps.swim || caps.jumping));
-    // Gaps are crossed by jumping only.
-    if (f & F.JUMPABLE) return !(caps && caps.jumping);
-    // A ledge is the lip of a drop, not a floor. Nothing stands on it: the
-    // player clears it in a hop (Player.tryLedgeHop) and is airborne while it
-    // happens, so caps.jumping is what lets the hop through. Blocking it on
-    // the ground is the half that makes the ledge one-way — otherwise you
-    // could walk back up the drop or stroll along the lip.
-    if (f & F.LEDGE) return !(caps && caps.jumping);
-    if (f & F.BUSH) return !(caps && caps.cutting);
-    if (f & F.ROCK) return true;
-    return false;
+    return tileDefSolid(d, caps, quadSolid);
   }
 }
 __exports["LEGENDS"] = LEGENDS;
@@ -5763,6 +5783,10 @@ defineEntity('anchor', (x, y, o) => new Anchor(x, y, o));
  * a chest — because a pillar is permanent for as long as the room is loaded
  * and a room the player has bricked shut is worse than a wasted seed.
  */
+// Exported so tools/check-reefseed.mjs's `plantableTerrain` — which has no
+// live `game` to call `Reefseed.canPlant` on — asks for the SAME mask rather
+// than keeping its own copy of which tiles a pillar may not stand on.
+const REEFSEED_PLANT_BLOCK = F.VOID | F.SOLID | F.DOOR | F.WARP | F.STAIRS | F.SWITCHF | F.PIT;
 class Reefseed extends Entity {
   constructor(x, y, o = {}) {
     super(x, y, o);
@@ -5854,7 +5878,7 @@ class Reefseed extends Entity {
     // a doorway at LOW is still a doorway.
     for (let lv = 0; lv < TIDE_COUNT; lv++) {
       const f = room.flagsAt(tx, ty, lv);
-      if (f & (F.VOID | F.SOLID | F.DOOR | F.WARP | F.STAIRS | F.SWITCHF | F.PIT)) return false;
+      if (f & REEFSEED_PLANT_BLOCK) return false;
     }
     for (const e of game.entities) {
       if (e.remove || e.isEffect || e.isDrop) continue;
@@ -6290,6 +6314,7 @@ __exports["DredgeLine"] = DredgeLine;
 __exports["ThrownObject"] = ThrownObject;
 __exports["anchorOverride"] = anchorOverride;
 __exports["Anchor"] = Anchor;
+__exports["REEFSEED_PLANT_BLOCK"] = REEFSEED_PLANT_BLOCK;
 __exports["Reefseed"] = Reefseed;
 __exports["FerrymanCoin"] = FerrymanCoin;
 __exports["ringResonance"] = ringResonance;

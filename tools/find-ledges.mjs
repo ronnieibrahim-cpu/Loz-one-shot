@@ -88,8 +88,10 @@ await page.evaluate(async () => {
   const maps = await import('/src/world/maps.js');
   const room = await import('/src/world/room.js');
   const ts = await import('/src/world/tileset.js');
-  window.__MAPS = maps.MAPS; window.__getLegend = room.getLegend;
+  const col = await import('/tools/lib/collision.mjs');
+  window.__MAPS = maps.MAPS; window.__getLegend = room.getLegend; window.__getRoom = maps.getRoom;
   window.__getTileDef = ts.getTileDef; window.__F = ts.F;
+  window.__tileWalkable = col.tileWalkable; window.__ROUTE_AVOID = col.ROUTE_AVOID;
 });
 
 const argv = process.argv.slice(2);
@@ -103,7 +105,8 @@ const MIN_LEN = Number(arg('len', 3));
 const AS_JSON = argv.includes('--json');
 
 const out = await page.evaluate(({ ONLY_MAP, ONLY_DIR, MIN_LEN }) => {
-  const F = window.__F, getTileDef = window.__getTileDef, getLegend = window.__getLegend;
+  const F = window.__F, getRoom = window.__getRoom;
+  const tileWalkable = window.__tileWalkable, ROUTE_AVOID = window.__ROUTE_AVOID;
   const res = [];
   const DIRS = [
     { ch: '_', ux: 0, uy: 1, ax: 1, ay: 0 },
@@ -111,30 +114,35 @@ const out = await page.evaluate(({ ONLY_MAP, ONLY_DIR, MIN_LEN }) => {
     { ch: '>', ux: 1, uy: 0, ax: 0, ay: 1 },
     { ch: '<', ux: -1, uy: 0, ax: 0, ay: 1 },
   ].filter(d => !ONLY_DIR || d.ch === ONLY_DIR);
+  const CAPS = { jumping: false, swim: false, cutting: false };
+  // On top of hard collision (asked of the engine via `tileWalkable`), a lip
+  // candidate also avoids tiles that are walkable but wrong to place a lip on
+  // for reasons that are not about passability at all: a warp, a door, a
+  // stairway, a still-bombable wall. That is placement curation, not a second
+  // collision rule, so it composes as an extra `avoid` mask exactly the way
+  // `tileWalkable`'s own parameter is meant to be used.
+  const PLACEMENT_AVOID = ROUTE_AVOID | F.WET | F.WARP | F.DOOR | F.STAIRS | F.BOMBABLE;
   for (const [mapId, m] of window.__MAPS) {
     if (ONLY_MAP && mapId !== ONLY_MAP) continue;
-    const legend = getLegend(m.legend);
-    const defOf = (ch, tide) => {
-      let d = getTileDef(legend[ch]);
-      for (let i = 0; i < 4 && d && d.tide; i++) d = getTileDef(d.tide[tide]);
-      return d;
-    };
-    // Plain floor at EVERY tide: a lip must not be a tile that is water or a
-    // pit some of the time, and digits are tide tiles by convention.
-    const plain = (ch) => {
-      if (ch === undefined || /[0-9]/.test(ch)) return false;
-      for (const t of [0, 1, 2]) {
-        const d = defOf(ch, t);
-        if (!d) return false;
-        if (d.flags & (F.VOID | F.SOLID | F.PIT | F.DEEP | F.WET | F.LEDGE |
-                       F.HAZARD | F.WARP | F.DOOR | F.STAIRS | F.BOMBABLE)) return false;
-        if (d.push || d.anim) return false;
-      }
-      return true;
-    };
     for (const [key, def] of Object.entries(m.roomDefs || {})) {
       const grid = def.map || [];
       const at = (x, y) => (grid[y] || '')[x];
+      const [f0, rx0, ry0] = key.split(',').map(Number);
+      const room = getRoom(mapId, f0, rx0, ry0);
+      // Plain floor at EVERY tide: a lip must not be a tile that is water or a
+      // pit some of the time, and digits are tide tiles by convention (the
+      // digit check reads the raw legend character, since a resolved tile name
+      // does not carry it).
+      const plain = (x, y) => {
+        const ch = at(x, y);
+        if (ch === undefined || /[0-9]/.test(ch)) return false;
+        for (const t of [0, 1, 2]) {
+          if (!tileWalkable(room, x, y, t, CAPS, PLACEMENT_AVOID)) return false;
+          const d = room.tile(x, y, t);
+          if (d.push || d.anim) return false;
+        }
+        return true;
+      };
       // Tiles an entity or object occupies must stay clear.
       const taken = new Set();
       for (const e of (def.entities || [])) {
@@ -155,9 +163,9 @@ const out = await page.evaluate(({ ONLY_MAP, ONLY_DIR, MIN_LEN }) => {
             for (let i = 0; i < len; i++) {
               const cx = x + d.ax * i, cy = y + d.ay * i;
               if (cx < 0 || cy < 0 || cx >= W || cy >= H) { ok = false; break; }
-              if (!plain(at(cx, cy)) || taken.has(`${cx},${cy}`)) { ok = false; break; }
+              if (!plain(cx, cy) || taken.has(`${cx},${cy}`)) { ok = false; break; }
               // high side and landing must both be walkable plain floor
-              if (!plain(at(cx - d.ux, cy - d.uy)) || !plain(at(cx + d.ux, cy + d.uy))) { ok = false; break; }
+              if (!plain(cx - d.ux, cy - d.uy) || !plain(cx + d.ux, cy + d.uy)) { ok = false; break; }
               cells.push([cx, cy]);
             }
             if (!ok) continue;
@@ -165,8 +173,7 @@ const out = await page.evaluate(({ ONLY_MAP, ONLY_DIR, MIN_LEN }) => {
             // otherwise the lip walls the room off and the flood check fails.
             const bx = x - d.ax, by = y - d.ay;
             const ex = x + d.ax * len, ey = y + d.ay * len;
-            const around = (px, py, sx, sy) =>
-              plain(at(px, py)) && plain(at(px + sx, py + sy));
+            const around = (px, py, sx, sy) => plain(px, py) && plain(px + sx, py + sy);
             if (!around(bx, by, -d.ax, -d.ay) || !around(ex, ey, d.ax, d.ay)) continue;
             res.push({ mapId, key, ch: d.ch, x, y, len });
             break;   // prefer the longest run from this cell

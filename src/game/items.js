@@ -514,6 +514,10 @@ defineEntity('anchor', (x, y, o) => new Anchor(x, y, o));
  * a chest — because a pillar is permanent for as long as the room is loaded
  * and a room the player has bricked shut is worse than a wasted seed.
  */
+// Exported so tools/check-reefseed.mjs's `plantableTerrain` — which has no
+// live `game` to call `Reefseed.canPlant` on — asks for the SAME mask rather
+// than keeping its own copy of which tiles a pillar may not stand on.
+export const REEFSEED_PLANT_BLOCK = F.VOID | F.SOLID | F.DOOR | F.WARP | F.STAIRS | F.SWITCHF | F.PIT;
 export class Reefseed extends Entity {
   constructor(x, y, o = {}) {
     super(x, y, o);
@@ -605,7 +609,7 @@ export class Reefseed extends Entity {
     // a doorway at LOW is still a doorway.
     for (let lv = 0; lv < TIDE_COUNT; lv++) {
       const f = room.flagsAt(tx, ty, lv);
-      if (f & (F.VOID | F.SOLID | F.DOOR | F.WARP | F.STAIRS | F.SWITCHF | F.PIT)) return false;
+      if (f & REEFSEED_PLANT_BLOCK) return false;
     }
     for (const e of game.entities) {
       if (e.remove || e.isEffect || e.isDrop) continue;
