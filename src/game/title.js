@@ -166,14 +166,22 @@ export class Title {
     const L = TITLE_LAYOUT;
     const bob = Math.round(Math.sin(this.t * 0.03) * 2);
     const sx = Math.round((SCREEN_W - L.splash.w) / 2);
-    const sy = 3 + bob;
+    const sy = 2 + bob;
 
-    // Backdrop, series line, wordmark, connector — one anchor, so the four
+    // Backdrop, series line, wordmark, subtitle — one anchor, so the four
     // never drift apart when the block bobs.
     sprites.draw(ctx, 'title_splash', sx, sy);
     sprites.draw(ctx, 'title_caption', sx + L.caption.x, sy + L.caption.y);
     sprites.draw(ctx, 'title_wordmark', sx + L.wordmark.x, sy + L.wordmark.y);
-    sprites.draw(ctx, 'title_of', sx + L.of.x, sy + L.of.y);
+    sprites.draw(ctx, 'title_sub', sx + L.sub.x, sy + L.sub.y);
+
+    // The Moon Conch, overlapping the wordmark's right and hanging off the
+    // backdrop — where the source cards put the Rod of Seasons and the Rod of
+    // Ages. Drawn after the wordmark so it sits in front of the final letter.
+    // Low enough that it crosses the last letter's bottom corner rather than
+    // its middle: at the wordmark's own height the shell buried the A.
+    const conch = sprites.size('title_conch');
+    sprites.draw(ctx, 'title_conch', sx + L.splash.w - conch.w + 8, sy + 30);
 
     // The game's own word, in its own pill, overlapping the backdrop's lower
     // edge the way the source hangs its subtitle off the bottom of the logo.

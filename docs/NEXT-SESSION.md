@@ -20,12 +20,16 @@ grammar (that card was the reference held up for it):
 
 | piece | what it is |
 |---|---|
-| `title_caption` | "A SEA LEGEND", small caps, flat fill + outline |
-| `title_wordmark` | "ORACLE", 111x22, ornate display serif, bevelled |
-| `title_of` | the "of" connector, small caps |
+| `title_caption` | "THE LEGEND OF", small caps, flat fill + outline |
+| `title_wordmark` | "ZELDA", 99x28, ornate display serif, bevelled |
+| `title_sub` | "ORACLE OF", small caps |
 | `title_pill` | "TIDES" in a stadium: pale ring, deep fill, pale letters |
-| `title_splash` | the mottled backdrop the first three sit on |
+| `title_conch` | the Moon Conch emblem, 32x35 |
+| `title_splash` | the mottled backdrop the text sits on |
 | `title_press` | "PRESS START", drawn rather than system text |
+
+Read top to bottom that is **THE LEGEND OF ZELDA / ORACLE OF TIDES**, which
+is the source cards' exact four-tier structure.
 
 **`src/data/sprites-title.js`** holds all of it. No sheet has this game's
 name on it, so per ART-DIRECTION rule 2 this is drawn-to-match, and it is
@@ -40,31 +44,42 @@ index 2 on every bottom/right, index 1 inside) and an outline dilation
 (index 3). The first version of this file generated the letters by upscaling
 a 5x7 sans font, and it read as exactly what it was; no amount of palette
 work fixes letterforms. If you need a new display glyph, draw it into
-`DISPLAY` at 20 rows and let the passes shade it.
+`DISPLAY` at 20 rows and let the passes shade it. `setType` bottom-aligns on
+a common baseline and sizes the block to its tallest glyph, which is what
+lets the 26-row `Z` rise above the 20-row `ELDA` the way the source's does —
+that one oversized leading letter is most of the logo's silhouette.
 
 Design points worth not re-litigating:
 
-- **"A SEA LEGEND" replaced "THE LEGEND OF ZELDA."** The old text was
-  Nintendo's trademark spelled out in the game's hero art — a Goal 2 problem
-  independent of the art-quality one. The *layout* convention is kept whole
-  (small caption, big serif wordmark, small connector, subtitle pill); the
-  borrowed words are not. "Sea" rather than "Tide" because the pill below it
-  already says TIDES.
-- **`ORACLE` is the hero word and `TIDES` is in the pill**, mapping onto the
-  source's ZELDA/AGES split: the shared half of the name is set large, the
-  game-specific half goes in the pill. Hence the lone small "of" between
-  them — it is the connector, not an orphan.
+- **The series line is deliberate and must not be "fixed".** Mid-session a
+  pass replaced "THE LEGEND OF ZELDA" with an invented line, reading Goal 2
+  as a rule about names. It is not — it is a rule about mechanics, items,
+  dungeons and story. This is an openly-labelled personal fan game that
+  stars Link and runs on ripped sheets; the series line belongs on it. The
+  owner reverted that call explicitly and CLAUDE.md now says so at the top.
+  **Do not strip it again.**
+- **`ZELDA` is the hero word, `ORACLE OF` is the subtitle line, `TIDES` is
+  in the pill** — the source's exact split, where the full game title reads
+  across the small line and the pill together.
+- **The Moon Conch is the marquee-item emblem**, overlapping the wordmark's
+  lower right where the source cards put the Rod of Seasons and the Rod of
+  Ages. It fills the same role in this game (it is what moves the tide), and
+  unlike the branding it IS ours, so it is the worked example of where the
+  line actually falls. Its shape follows the 16x16 `i_conch` icon so emblem
+  and inventory icon read as one object. If you redraw it: the stepped left
+  edge is doing the work — a smooth taper read as a striped leaf, and the
+  whorl sutures are what make it a shell.
 - **The tide waterline is the one piece of scenery** (item 3 of the brief;
   a moon was the alternative). It crosses the full screen width, not just
   the logo — a waterline that stopped at the logo's edges read as a
   highlight on the logo rather than as a sea level. It sits at the pill's
-  ankles: an earlier pass ran it through the middle of ORACLE and it cut the
-  hero word in half like a scanline.
+  ankles: an earlier pass ran it through the middle of the hero word and cut
+  it in half like a scanline.
 - **All three stages (logo, file select, erase) share the gold frame** and
   the same sea behind them. File-select and erase kept their exact existing
   layout, per the brief — only the border and background changed.
 
-All six sprite names are registered in `src/data/sprite-manifest.js`
+All seven sprite names are registered in `src/data/sprite-manifest.js`
 (`REQUIRED_SPRITES.title` and `expectedSize`), with the sizes stated by hand
 rather than imported from the module that makes them, so a glyph-table edit
 that changes an assembled size is a `validate.mjs --strict` failure instead

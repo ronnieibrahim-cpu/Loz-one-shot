@@ -7,16 +7,25 @@
 // sheet to re-run it against, and no generated-file rule applies.
 //
 // The look being matched is the Oracle-series title card, whose grammar is:
-//   - a small caps series line, flat-filled, hard dark outline
-//   - a large ornate SERIF wordmark: heavy stems, flared serif feet, a light
-//     bevel along every top/left edge and a dark one along every bottom/right,
-//     inside a hard black outline
+//   - a small caps series line ("THE LEGEND OF"), flat-filled, dark outline
+//   - a large ornate SERIF wordmark ("ZELDA") with ONE oversized leading
+//     letter rising above the rest: heavy stems, flared serif feet, a light
+//     bevel along every top/left edge and a dark one along every
+//     bottom/right, inside a hard black outline
 //   - a pale halo hugging that wordmark, sitting on
 //   - a mottled organic backdrop with a soft dithered edge (no hard outline)
+//   - a small caps subtitle line ("ORACLE OF")
 //   - the game-specific word in a stadium "pill": dark fill, pale ring, pale
 //     letters
-// Every one of those is reproduced below. Borrowed grammar, original words:
-// the series line, the wordmark and the pill word are this game's own.
+//   - the game's marquee item as an emblem overlapping the wordmark's right
+// Every one of those is reproduced below.
+//
+// This is a fan game: it stars Link, it is built on sprite sheets ripped from
+// the cartridges, and it says so. The series line belongs on it for the same
+// reason the rest does. What stays ours is Goal 2's list — mechanics, items,
+// dungeons and story — and the emblem below is the worked example: the source
+// cards feature the Rod of Seasons and the Rod of Ages, so ours features the
+// item that fills that role here, and the Moon Conch is this game's own.
 //
 // HOW THE PIXELS ARE MADE. The letterforms are hand-drawn SILHOUETTES — the
 // `#`/`.` tables below are literal pixel data, drawn stem by stem and serif by
@@ -72,9 +81,64 @@ const SMALL = {
 // flared two-row serif feet, counters cut so the round letters carry more
 // weight on their sides than across their top and bottom — the proportion that
 // makes a heavy serif read as ornate rather than as a fat sans.
+//
+// Z is the exception at 26, because the source's wordmark leads with one
+// oversized letter that the rest of the word tucks under, and that silhouette
+// is most of what makes the logo recognisable at a glance. setType bottom-
+// aligns, so a taller glyph rises above the others rather than dropping below.
 // ---------------------------------------------------------------------------
 
 const DISPLAY = {
+  Z: [
+    '.####################.',
+    '.####################.',
+    '.####################.',
+    '.####################.',
+    '...............#####..',
+    '..............#####...',
+    '.............#####....',
+    '.............#####....',
+    '............#####.....',
+    '...........#####......',
+    '..........#####.......',
+    '..........#####.......',
+    '.........#####........',
+    '........#####.........',
+    '.......#####..........',
+    '.......#####..........',
+    '......#####...........',
+    '.....#####............',
+    '....#####.............',
+    '....#####.............',
+    '...#####..............',
+    '..#####...............',
+    '.####################.',
+    '.####################.',
+    '.####################.',
+    '.####################.',
+  ],
+  D: [
+    '.############.....',
+    '.##############...',
+    '..####.....####...',
+    '..####......####..',
+    '..####.......####.',
+    '..####.......####.',
+    '..####.......####.',
+    '..####.......####.',
+    '..####.......####.',
+    '..####.......####.',
+    '..####.......####.',
+    '..####.......####.',
+    '..####.......####.',
+    '..####.......####.',
+    '..####.......####.',
+    '..####......####..',
+    '..####.....####...',
+    '..###########.....',
+    '.##############...',
+    '.############.....',
+  ],
   O: [
     '.....#######.....',
     '...###########...',
@@ -251,18 +315,28 @@ const PILL_FACE = {
 const grid = (w, h, v) => Array.from({ length: h }, () => new Array(w).fill(v));
 const at = (g, x, y) => (y >= 0 && y < g.length && x >= 0 && x < g[0].length && g[y][x]);
 
-/** Lay a string out in one of the glyph tables, returning its silhouette. */
-function setType(text, table, cellW, cellH, spaceW, tracking) {
+/**
+ * Lay a string out in one of the glyph tables, returning its silhouette.
+ *
+ * Glyphs are BOTTOM-ALIGNED on a common baseline and the block is as tall as
+ * its tallest glyph, so an oversized leading letter rises above the rest of
+ * the word instead of sinking below it. That is the only thing making the
+ * source's dominant Z possible without a second layout pass.
+ */
+function setType(text, table, spaceW, tracking) {
   const chars = [...text.toUpperCase()];
-  const widths = chars.map(c => (c === ' ' ? spaceW : (table[c] ? table[c][0].length : cellW)));
+  const gs = chars.map(c => table[c] || null);
+  const h = Math.max(...gs.map(g => (g ? g.length : 0)));
+  const widths = chars.map((c, i) => (gs[i] ? gs[i][0].length : spaceW));
   const w = widths.reduce((a, b) => a + b, 0) + tracking * (chars.length - 1);
-  const sil = grid(w, cellH, false);
+  const sil = grid(w, h, false);
   let x = 0;
   chars.forEach((c, i) => {
-    const g = table[c];
+    const g = gs[i];
     if (g) {
+      const oy = h - g.length;
       for (let y = 0; y < g.length; y++) {
-        for (let gx = 0; gx < g[y].length; gx++) if (g[y][gx] === '#') sil[y][x + gx] = true;
+        for (let gx = 0; gx < g[y].length; gx++) if (g[y][gx] === '#') sil[oy + y][x + gx] = true;
       }
     }
     x += widths[i] + tracking;
@@ -351,21 +425,18 @@ const toArt = (idx) => idx.map(r => r.map(v => (v === -1 ? '.' : String(v))).joi
 // The pieces.
 // ---------------------------------------------------------------------------
 
-const CAPTION_TEXT = 'A SEA LEGEND';
-const PRESS_TEXT = 'PRESS START';
-
-const captionSil = setType(CAPTION_TEXT, SMALL, SMALL_W, SMALL_H, SMALL_SPACE, 1);
-const pressSil = setType(PRESS_TEXT, SMALL, SMALL_W, SMALL_H, SMALL_SPACE, 1);
-// The connector line. The source sets the shared half of its subtitle small
-// and the game-specific half in the pill; ours splits the same way, so this
-// is the "of" of "Oracle of Tides" and it has to sit between them.
-const ofSil = setType('OF', SMALL, SMALL_W, SMALL_H, SMALL_SPACE, 1);
-const wordSil = setType('ORACLE', DISPLAY, 17, 20, 8, 2);
-const tidesSil = setType('TIDES', PILL_FACE, 11, 12, 6, 2);
+const captionSil = setType('THE LEGEND OF', SMALL, SMALL_SPACE, 1);
+const pressSil = setType('PRESS START', SMALL, SMALL_SPACE, 1);
+// The subtitle's shared half. The source sets "ORACLE OF" small and puts only
+// the game-specific word in the pill, so the full title reads across the two
+// lines; ours splits at exactly the same place.
+const subSil = setType('ORACLE OF', SMALL, SMALL_SPACE, 1);
+const wordSil = setType('ZELDA', DISPLAY, 8, 2);
+const tidesSil = setType('TIDES', PILL_FACE, 6, 2);
 
 const captionArt = outline(shade(captionSil, false));
 const pressArt = outline(shade(pressSil, false));
-const ofArt = outline(shade(ofSil, false));
+const subArt = outline(shade(subSil, false));
 const wordArt = outline(shade(wordSil, true));
 
 // --- the pill --------------------------------------------------------------
@@ -416,6 +487,58 @@ function buildPill() {
 
 const pillArt = buildPill();
 
+// --- the marquee item ------------------------------------------------------
+// The source cards each feature the item their game turns on — the Rod of
+// Seasons, the Rod of Ages — set as an emblem overlapping the wordmark's
+// right. The Moon Conch fills that role here: it is what the player sounds to
+// move the tide, it is granted in the intro, and it is ours.
+//
+// Drawn as an edge profile rather than a character grid: a shell is a solid
+// cone with no interior holes, so two numbers a row IS the silhouette, and
+// authoring it this way keeps the taper smooth where a 30x32 block of `#`
+// would wobble. The growth ridges and the outline are then applied to it. The
+// shape follows the 16x16 `i_conch` icon in sprites-gear.js so the emblem and
+// the inventory icon read as the same object.
+
+const CONCH_W = 30;
+// [left, right] edge of the shell on each row, apex first. The LEFT edge is
+// deliberately stepped rather than smooth: those steps are the whorl
+// shoulders, and they are what makes a shell read as a shell. A smooth taper
+// was tried and the emblem read as a striped leaf.
+const CONCH_PROFILE = [
+  [21, 24], [20, 25], [20, 25],
+  [18, 26], [18, 26], [17, 27], [17, 27],
+  [14, 27], [14, 28], [13, 28], [13, 28],
+  [10, 28], [10, 28], [9, 28], [9, 28],
+  [5, 27], [4, 27], [3, 27], [2, 26], [2, 26], [1, 25], [1, 25], [1, 24],
+  [2, 23], [2, 22], [3, 21], [4, 20], [5, 18], [6, 17], [7, 15], [8, 14],
+  [9, 12], [10, 11],
+];
+
+function buildConch() {
+  const h = CONCH_PROFILE.length;
+  const idx = grid(CONCH_W, h, -1);
+  CONCH_PROFILE.forEach(([l, r], y) => {
+    for (let x = l; x <= r; x++) {
+      // Growth ridges running parallel to the shell's axis — the banding the
+      // i_conch icon already has, and what stops a cone reading as a horn.
+      const ridge = Math.floor((x + y * 0.62) / 3.4) % 2 === 0 ? 0 : 1;
+      // Lit from the upper left like every other sprite in the game, so the
+      // whorl shoulders catch the light and the trailing edge falls away.
+      idx[y][x] = x < l + 2 ? 0 : (x > r - 3 ? 2 : ridge);
+    }
+    // The suture between one whorl and the next: a dark wedge where the
+    // profile steps out. Without these the spire is a smooth cone.
+    const prev = CONCH_PROFILE[y - 1];
+    if (prev && l < prev[0] - 1) {
+      for (let x = l; x <= Math.min(prev[0] + 3, r); x++) idx[y][x] = 2;
+    }
+  });
+  return outline(idx);
+}
+
+const conchArt = buildConch();
+
 // --- the backdrop ----------------------------------------------------------
 // The mottled shape the wordmark sits on. Its edge is dithered rather than
 // outlined, which is what makes the source's equivalent read as painted; a
@@ -433,12 +556,12 @@ function hash2(x, y) {
 function buildSplash() {
   const capW = captionArt[0].length, capH = captionArt.length;
   const wW = wordArt[0].length, wH = wordArt.length;
-  const ofW = ofArt[0].length, ofH = ofArt.length;
+  const subW = subArt[0].length, subH = subArt.length;
   const w = wW + SPLASH_MX * 2;
-  const h = SPLASH_TOP + capH + SPLASH_GAP + wH + SPLASH_GAP2 + ofH + SPLASH_BOT;
+  const h = SPLASH_TOP + capH + SPLASH_GAP + wH + SPLASH_GAP2 + subH + SPLASH_BOT;
   const capX = Math.round((w - capW) / 2), capY = SPLASH_TOP;
   const wX = Math.round((w - wW) / 2), wY = SPLASH_TOP + capH + SPLASH_GAP;
-  const ofX = Math.round((w - ofW) / 2), ofY = wY + wH + SPLASH_GAP2;
+  const subX = Math.round((w - subW) / 2), subY = wY + wH + SPLASH_GAP2;
 
   // Everything the halo should hug, in splash space.
   const marks = grid(w, h, false);
@@ -451,7 +574,7 @@ function buildSplash() {
   };
   stamp(captionArt, capX, capY);
   stamp(wordArt, wX, wY);
-  stamp(ofArt, ofX, ofY);
+  stamp(subArt, subX, subY);
   // ONE pixel, not two. The halo is a fringe hugging the letters, and at two
   // it closes every counter and every gap between lines and the backdrop
   // becomes a pale slab with the mottle only visible around its rim — which
@@ -490,7 +613,7 @@ function buildSplash() {
       idx[y][x] = n < 0.34 ? 3 : (n < 0.62 ? 2 : 1);
     }
   }
-  return { art: idx, capX, capY, wX, wY, ofX, ofY, w, h };
+  return { art: idx, capX, capY, wX, wY, subX, subY, w, h };
 }
 
 const splash = buildSplash();
@@ -502,7 +625,8 @@ const splash = buildSplash();
 export const TITLE_ART = {
   title_splash: { art: toArt(splash.art), pal: 'title_splash' },
   title_caption: { art: toArt(captionArt), pal: 'title_caption' },
-  title_of: { art: toArt(ofArt), pal: 'title_caption' },
+  title_sub: { art: toArt(subArt), pal: 'title_caption' },
+  title_conch: { art: toArt(conchArt), pal: 'title_conch' },
   title_wordmark: { art: toArt(wordArt), pal: 'title_gold' },
   title_pill: { art: toArt(pillArt), pal: 'title_pill' },
   title_press: { art: toArt(pressArt), pal: 'title_press' },
@@ -514,7 +638,7 @@ export const TITLE_LAYOUT = {
   splash: { w: splash.w, h: splash.h },
   caption: { x: splash.capX, y: splash.capY },
   wordmark: { x: splash.wX, y: splash.wY },
-  of: { x: splash.ofX, y: splash.ofY },
+  sub: { x: splash.subX, y: splash.subY },
 };
 
 export const TITLE_PALETTES = {
@@ -533,6 +657,9 @@ export const TITLE_PALETTES = {
   // source gets from white on purple, and hold it under the tide wash.
   title_pill: ['#f4fcff', '#16346c', '#0a1c40', '#000000'],
   title_press: ['#ffffff', '#7ce0e8', '#2888a0', '#001c28'],
+  // The same cream-over-coral the i_conch inventory icon uses, with a real
+  // dark step added so the emblem has form at four times the icon's size.
+  title_conch: ['#fff0d0', '#f09868', '#a04830', '#000000'],
 };
 
 export function installTitleSprites() {
