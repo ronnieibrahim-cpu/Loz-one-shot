@@ -10,6 +10,34 @@ maintain and the most expensive thing to not have.
 
 ---
 
+## MERGED TO MAIN — and the branch list is now DELETE-ONLY
+
+`claude/merge-three-features-conflicts-6ipqpz` is merged into `main`
+(`bbb43e3`) and pushed. Main is green on the full checker table except
+`check-guide.mjs`, which is the deliberate staleness described below.
+
+**Sixteen branches remain unmerged and NOT ONE of them should be merged.**
+Fourteen are on the branch-audit session's STALE/SUPERSEDED list further down
+this file. The two that are not — `playthrough-route-to-end-kxpd28` and
+`fix-playthrough-blocker-e72n4s` — both fork from `aa96491`, the commit
+immediately before main's old head, and both do the same job as
+`claude/health-economy-instrument-s5s5b8`, which won and is already on main.
+They are a third and fourth rival attempt at retuning the D1 route, not
+outstanding work. The whole list is a deletion job, not a merge job.
+
+`fix-playthrough-blocker-e72n4s` is the one worth READING before deleting: it
+mentions `anchor` three times in `tools/playthrough-route.mjs` against main's
+two, so it may already contain the anchor-placement directive the route is
+missing. Cannibalise it; do not merge it.
+
+**CLAUDE.md's solid-entity trap has been corrected** (`013aa97`). It claimed no
+push block had ever been pushed and D1 could not be finished; both stopped
+being true in `0b68e6b`, which was already on main when this session started.
+A session reading the old text would have gone looking for a bug that no longer
+exists.
+
+---
+
 ## THE BOARD NOW — three parallel branches merged onto main, and one document
 ## left deliberately broken
 
