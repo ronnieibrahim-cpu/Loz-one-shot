@@ -56,6 +56,7 @@ import {
   ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, ANCHOR_THROW_SPEED,
   THROW_ARC_RISE, THROW_ARC_GRAVITY, JUMP_POWER, JUMP_GRAVITY, WALK_SPEED,
 } from '../src/data/feel.js';
+import { defWalkable, capsForMode, ROUTE_AVOID } from './lib/collision.mjs';
 
 installData();
 
@@ -96,7 +97,7 @@ function defAt(legend, ch, level) {
 function walkableDef(d) {
   if (!d) return false;
   if (d.flags & F.STAIRS) return true;
-  return !(d.flags & (F.VOID | F.SOLID | F.PIT | F.DEEP | F.LEDGE | F.HAZARD));
+  return defWalkable(d, capsForMode('foot'), ROUTE_AVOID);
 }
 
 /** A hop passes over anything that is not a wall. */

@@ -504,6 +504,118 @@ export class Giver extends NPC {
 defineEntity('giver', (x, y, o) => new Giver(x, y, o));
 
 // --------------------------------------------------------------------------
+// Trader: one link of the Coastwise Chain.
+//
+//   ['trader', 4, 2, {
+//     sprite: 'npc_fisher', dialogue: 'ossaWait',   // said when it is not your turn
+//     deals: [
+//       { stage: 1, gives: 'float', text: 'ossaStart' },
+//       { stage: 11, wants: 'kettle', gives: 'bellrope', text: 'ossaEnd',
+//         after: 'ossaAfter' },
+//     ],
+//   }]
+//
+// A trader holds one or more DEALS, and a deal is live when the chain's stage
+// counter is sitting exactly one short of it — `p.trade.stage === stage - 1`.
+// That is what makes the chain a chain and not a set of independent errands:
+// there is exactly one live deal in the whole world at any moment, so a trader
+// two links ahead has nothing to say to you yet even though you are holding
+// something they would love.
+//
+// `wants` is asserted rather than consulted. The stage counter already decides
+// whether the deal is live, so `wants` exists to be WRONG loudly if the two
+// ever disagree — a mis-stated want is a data error, and refusing the trade in
+// the engine is what stops it becoming a silent one. tools/check-trade.mjs
+// proves every `wants` against the previous stage's `gives` offline.
+//
+// A trader may ALSO hand over a real inventory item (`item`/`level`), which is
+// how the chain ends: the Maku Tree takes the bell-rope and gives the
+// Resonance Rod. Everything else in the chain hands over a trade item only.
+// --------------------------------------------------------------------------
+
+export class Trader extends NPC {
+  constructor(x, y, o = {}) {
+    super(x, y, o);
+    this.deals = (o.deals || []).map(d => ({
+      stage: d.stage, wants: d.wants || null, gives: d.gives || null,
+      text: d.text || null, item: d.item || null, level: d.level || 1,
+      flag: d.flag || null, needEssences: d.needEssences || 0,
+      needFlag: d.needFlag || null, blocked: d.blocked || null,
+      after: d.after || null,
+    }));
+    // What they say when no deal of theirs is live: before their turn comes
+    // round, and again for ever after it has passed.
+    this.waitingText = o.waiting || o.dialogue || null;
+    this.afterText = o.after || null;
+  }
+
+  /** The deal whose turn it is, or null. At most one trader in the world has one. */
+  liveDeal(game) {
+    const st = game.progress.trade.stage || 0;
+    return this.deals.find(d => d.stage === st + 1) || null;
+  }
+
+  /** Has every deal this trader holds already been done? */
+  spent(game) {
+    const st = game.progress.trade.stage || 0;
+    return this.deals.length > 0 && this.deals.every(d => d.stage <= st);
+  }
+
+  interact(game, player) {
+    const p = game.progress;
+    if (this.faceOnTalk) {
+      const dx = player.cx - this.cx, dy = player.cy - this.cy;
+      this.dir = Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 'left' : 'right') : (dy < 0 ? 'up' : 'down');
+    }
+    const deal = this.liveDeal(game);
+    // Not this trader's turn. Either they are still waiting for the chain to
+    // reach them, or it has gone past and they are done with it.
+    if (!deal) {
+      const done = this.spent(game);
+      const line = (done && this.afterText) || this.waitingText || this.afterText;
+      if (line) game.startDialogue(line, this);
+      return;
+    }
+    // The stage counter says yes; the stated want has to agree with what is
+    // actually in the player's hand, or the data is lying and the trade is off.
+    if ((deal.wants || null) !== (p.trade.item || null)) {
+      console.warn('[trade] stage', deal.stage, 'wants', deal.wants, 'but holding', p.trade.item);
+      if (this.waitingText) game.startDialogue(this.waitingText, this);
+      return;
+    }
+    // Some links ask for something beyond the previous item — the Maku Tree
+    // wants an Essence as well as the rope. A deal that is gated and not yet
+    // open says the trader's waiting line, exactly as if its turn had not come.
+    if (p.essences.length < deal.needEssences
+        || (deal.needFlag && !flag(p, deal.needFlag))) {
+      if (deal.blocked || this.waitingText) game.startDialogue(deal.blocked || this.waitingText, this);
+      return;
+    }
+
+    const close = () => {
+      p.trade.stage = deal.stage;
+      p.trade.item = deal.gives || null;
+      if (deal.flag) setFlag(p, deal.flag);
+      if (deal.item) {
+        giveItem(p, deal.item, deal.level);
+        game.autoEquip(deal.item);
+        game.presentItem(deal.item, deal.level);
+      } else if (deal.gives) {
+        game.presentTrade(deal.gives);
+      }
+    };
+    // Speak first, hand over once the box is dismissed — the same order the
+    // Giver uses, so a trade reads like every other gift in the game.
+    if (deal.text) {
+      game.startDialogue(deal.text, this);
+      if (game.dialogue.active) { game.dialogue.onClose = close; return; }
+    }
+    close();
+  }
+}
+defineEntity('trader', (x, y, o) => new Trader(x, y, o));
+
+// --------------------------------------------------------------------------
 // The scrimshander: hand over a blank plus rupees, come back a tide later for
 // a carved charm.
 //

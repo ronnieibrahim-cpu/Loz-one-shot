@@ -90,6 +90,7 @@ import { getLegend } from '../src/world/room.js';
 import { F, getTileDef } from '../src/world/tileset.js';
 import { installData } from '../src/data/index.js';
 import { LEDGE_MAX_SPAN, GAP_HOP_MAX_SPAN } from '../src/data/feel.js';
+import { defWalkable, capsForMode, ROUTE_AVOID } from './lib/collision.mjs';
 
 installData();
 
@@ -128,7 +129,7 @@ function nameAt(legend, ch, level) {
 function walkableDef(d) {
   if (!d) return false;
   if (d.flags & F.STAIRS) return true;
-  return !(d.flags & (F.VOID | F.SOLID | F.PIT | F.DEEP | F.LEDGE | F.HAZARD));
+  return defWalkable(d, capsForMode('foot'), ROUTE_AVOID);
 }
 
 /**

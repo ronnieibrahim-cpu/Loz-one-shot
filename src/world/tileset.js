@@ -180,6 +180,39 @@ export function resolveTile(name, tide) {
   return r.tide ? getTileDef(r.tide[Math.max(0, Math.min(2, tide))]) : r;
 }
 
+/**
+ * Whether a resolved tile definition blocks a mover with the given
+ * capabilities — the same rule `Room.solidAt` applies at a pixel, pulled out
+ * here so anything that already has a concrete `TileDef` (rather than a pixel
+ * to sample) can ask the identical question instead of re-deriving it from
+ * raw flags. `Room.solidAt` calls this; nothing should define its own copy.
+ *
+ * `quadSolid` is the SOLID flag's own verdict for the quadrant being asked
+ * about — `Room.solidAt` passes the correct one for a pixel's sub-tile
+ * position; a caller with no pixel (a tile-granularity checker) passes
+ * `d.mask !== 0`, which is exactly right for every tile in this game today,
+ * since no tile uses a mask other than 0 (a doorway cut into a SOLID tile) or
+ * 15 (uniformly solid) — see docs/ART-DIRECTION.md and CLAUDE.md.
+ */
+export function tileDefSolid(d, caps, quadSolid) {
+  const f = d.flags;
+  if (f & F.VOID) return true;
+  if (f & F.SOLID) return quadSolid;
+  // Deep water is impassable on foot but fine while swimming.
+  if (f & F.DEEP) return !(caps && (caps.swim || caps.jumping));
+  // Gaps are crossed by jumping only.
+  if (f & F.JUMPABLE) return !(caps && caps.jumping);
+  // A ledge is the lip of a drop, not a floor. Nothing stands on it: the
+  // player clears it in a hop (Player.tryLedgeHop) and is airborne while it
+  // happens, so caps.jumping is what lets the hop through. Blocking it on
+  // the ground is the half that makes the ledge one-way — otherwise you
+  // could walk back up the drop or stroll along the lip.
+  if (f & F.LEDGE) return !(caps && caps.jumping);
+  if (f & F.BUSH) return !(caps && caps.cutting);
+  if (f & F.ROCK) return true;
+  return false;
+}
+
 /** The art name to draw for a tile at a given tide + frame counter. */
 export function tileArt(def, frame) {
   if (def.anim && def.anim.length) {

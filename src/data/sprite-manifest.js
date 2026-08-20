@@ -54,6 +54,18 @@ export const REQUIRED_SPRITES = {
     'i_charm',
   ],
 
+  // ---- pack: sprites-title.js --------------------------------------------
+  title: ['title_splash', 'title_caption', 'title_sub', 'title_conch',
+    'title_wordmark', 'title_pill', 'title_press'],
+
+  // ---- pack: sprites-trade.js ------------------------------------------
+  // The Coastwise Chain's objects. Hand-drawn: the Seasons trading sheet has
+  // trade items on it and every one of them belongs to that game's design.
+  trade: [
+    'i_t_float', 'i_t_claw', 'i_t_brick', 'i_t_eel', 'i_t_lead', 'i_t_whelk',
+    'i_t_pearl', 'i_t_cup', 'i_t_jar', 'i_t_kettle', 'i_t_rope',
+  ],
+
   // ---- pack: sprites-world.js ------------------------------------------
   pickups: [
     'p_rupee', 'p_rupee5', 'p_rupee20', 'p_heart', 'p_fairy', 'p_bombs',
@@ -141,6 +153,20 @@ export function expectedSize(name) {
   if (name === 'i_chain' || name === 'i_hookhead') return [8, 8];
   if (name.startsWith('shot')) return [8, 8];
   if (name.startsWith('hud_')) return [8, 8];
+  // The title screen's seven pieces, at the sizes sprites-title.js actually
+  // assembles them to. Stated here rather than imported from that module on
+  // purpose: an edit to a glyph table that changes a piece's size has to be a
+  // build failure, and a number derived from the thing it is checking would
+  // agree with any mistake. If one of these fails, look at the art before you
+  // change the number — and remember the layout in title.js is built from
+  // TITLE_LAYOUT, so the pieces move together but PRESS START does not.
+  if (name === 'title_splash') return [129, 67];
+  if (name === 'title_caption') return [75, 9];
+  if (name === 'title_sub') return [53, 9];
+  if (name === 'title_conch') return [32, 35];
+  if (name === 'title_wordmark') return [99, 28];
+  if (name === 'title_pill') return [86, 24];
+  if (name === 'title_press') return [65, 9];
   return [16, 16];
 }
 

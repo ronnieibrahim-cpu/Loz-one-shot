@@ -27,6 +27,9 @@ export function installCaves() {
         ],
         entities: [
           ['chest', 4, 3, { rupees: 30 }],
+          // A grotto with a rupee chest in it is a room you visit once; a
+          // grotto with a Piece of Heart in it is a room you remember finding.
+          ['pickup', 7, 2, { kind: 'heartPiece' }],
         ],
         warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 3, ry: 7, px: 48, py: 48, dir: 'down' } }],
       },
@@ -56,6 +59,11 @@ export function installCaves() {
         ],
         entities: [
           ['pickup', 3, 3, { kind: 'rupee20' }],
+          // Deeper into the seafloor patch than the rupee, and the room already
+          // explains itself: `4` is seafloor, walkable at LOW and nowhere else,
+          // so the wall carving IS the puzzle. No flag, no gate, no checker
+          // clause — just a tide the player has to be holding when they walk in.
+          ['pickup', 2, 2, { kind: 'heartPiece' }],
         ],
         readable: [[7, 3, 'Scratched into the rock: "When the sea withdraws, walk where fish swam."']],
         warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 6, ry: 7, px: 64, py: 64, dir: 'down' } }],

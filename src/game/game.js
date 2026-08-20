@@ -48,6 +48,7 @@ import { drawHud, drawAreaBanner, drawBossBar } from './hud.js';
 import { Dialogue, drawBox, drawPanel, getText } from './dialogue.js';
 import { Menu } from './menu.js';
 import { Camera } from './camera.js';
+import { TRADE_ITEMS, tradeName, tradeIcon } from '../data/trade.js';
 import { Scrimshaw, CHARMS, giveCharm, ownedCharms, openCharmCases } from './scrimshaw.js';
 import { Title } from './title.js';
 import { runCutscene, CUTSCENES } from './cutscene.js';
@@ -858,6 +859,22 @@ export class Game {
     this.say(`You got the ${name}!\n${def ? def.desc : ''}`);
   }
 
+  /**
+   * The same beat as presentItem, for a thing that is not an item.
+   *
+   * A trade item has no entry in ITEMS and no level, so it cannot go through
+   * presentItem — but the flourish is the whole of what tells the player that
+   * what they are carrying has CHANGED, and a chain of eleven silent swaps is a
+   * chain nobody can follow. `itemShow` takes an explicit sprite for this.
+   */
+  presentTrade(id) {
+    const def = TRADE_ITEMS[id];
+    this.audio.jingle('itemGet');
+    this.player.frozen = ITEM_PRESENT_FRAMES;
+    this.itemShow = { sprite: tradeIcon(id), t: ITEM_PRESENT_FRAMES };
+    this.say(`You got the ${tradeName(id)}!\n${def ? def.got : ''}`);
+  }
+
   autoEquip(id) {
     const p = this.progress;
     const def = ITEMS[id];
@@ -1542,6 +1559,9 @@ export class Game {
     const p = this.player;
     if (!p) return;
     const s = this.itemShow;
+    // A trade item carries its own sprite and its own palette; an inventory
+    // item is looked up. Both are held in the same place, over Link's head.
+    if (s.sprite) { sprites.draw(ctx, s.sprite, p.x, HUD_H + p.y - 16); return; }
     sprites.draw(ctx, itemIcon(s.id, s.lv), p.x, HUD_H + p.y - 16,
       { pal: ITEMS[s.id] && ITEMS[s.id].pal });
   }
