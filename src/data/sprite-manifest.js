@@ -55,7 +55,7 @@ export const REQUIRED_SPRITES = {
   ],
 
   // ---- pack: sprites-title.js --------------------------------------------
-  title: ['title_wordmark', 'title_tagline'],
+  title: ['title_splash', 'title_caption', 'title_of', 'title_wordmark', 'title_pill', 'title_press'],
 
   // ---- pack: sprites-world.js ------------------------------------------
   pickups: [
@@ -144,11 +144,19 @@ export function expectedSize(name) {
   if (name === 'i_chain' || name === 'i_hookhead') return [8, 8];
   if (name.startsWith('shot')) return [8, 8];
   if (name.startsWith('hud_')) return [8, 8];
-  // The title wordmark and tagline: whatever composeLogo() in
-  // sprites-title.js actually produced, so a font edit that changes the
-  // assembled size is a build failure rather than a silent stretch.
-  if (name === 'title_wordmark') return [92, 34];
-  if (name === 'title_tagline') return [75, 9];
+  // The title screen's five pieces, at the sizes sprites-title.js actually
+  // assembles them to. Stated here rather than imported from that module on
+  // purpose: an edit to a glyph table that changes a piece's size has to be a
+  // build failure, and a number derived from the thing it is checking would
+  // agree with any mistake. If one of these fails, look at the art before you
+  // change the number — and remember the layout in title.js is built from
+  // TITLE_LAYOUT, so the pieces move together but PRESS START does not.
+  if (name === 'title_splash') return [141, 61];
+  if (name === 'title_caption') return [69, 9];
+  if (name === 'title_of') return [13, 9];
+  if (name === 'title_wordmark') return [111, 22];
+  if (name === 'title_pill') return [86, 24];
+  if (name === 'title_press') return [65, 9];
   return [16, 16];
 }
 

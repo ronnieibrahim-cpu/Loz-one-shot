@@ -9573,6 +9573,555 @@ function step(from, to) {
 __exports["Camera"] = Camera;
 });
 
+/* ===== src/data/sprites-title.js ===== */
+__define("data/sprites-title.js", function (__exports, __require) {
+// The title screen's drawn art: a display wordmark, a painterly backdrop, a
+// subtitle pill and the small caps lines around them.
+//
+// Nothing in assets/sheets/ has this game's name on it, so per
+// docs/ART-DIRECTION.md rule 2 every glyph here is drawn to match rather than
+// extracted. This is hand-authored source, NOT a ripper output — there is no
+// sheet to re-run it against, and no generated-file rule applies.
+//
+// The look being matched is the Oracle-series title card, whose grammar is:
+//   - a small caps series line, flat-filled, hard dark outline
+//   - a large ornate SERIF wordmark: heavy stems, flared serif feet, a light
+//     bevel along every top/left edge and a dark one along every bottom/right,
+//     inside a hard black outline
+//   - a pale halo hugging that wordmark, sitting on
+//   - a mottled organic backdrop with a soft dithered edge (no hard outline)
+//   - the game-specific word in a stadium "pill": dark fill, pale ring, pale
+//     letters
+// Every one of those is reproduced below. Borrowed grammar, original words:
+// the series line, the wordmark and the pill word are this game's own.
+//
+// HOW THE PIXELS ARE MADE. The letterforms are hand-drawn SILHOUETTES — the
+// `#`/`.` tables below are literal pixel data, drawn stem by stem and serif by
+// serif, not an upscale of a small font (an upscaled 5x7 sans was the first
+// attempt and it read as a placeholder, which is exactly what it was). What is
+// computed from those silhouettes is only the shading: a deterministic bevel
+// pass and a deterministic outline dilation, which is how the source art gets
+// its consistent one-pixel edges. No RNG anywhere — the backdrop's mottle is a
+// pure integer hash of (x, y), so it is byte-identical on every boot.
+
+const { sprites } = __require("gfx/art.js");
+const { registerPalettes } = __require("gfx/palettes.js");
+
+// ---------------------------------------------------------------------------
+// Small caps: the series line and PRESS START. Flat-filled, per the source,
+// where a bevel at 7px tall would turn every pixel into an edge and read as
+// mush.
+// ---------------------------------------------------------------------------
+
+const SMALL_W = 5, SMALL_H = 7, SMALL_SPACE = 3;
+
+const SMALL = {
+  A: ['.###.', '#...#', '#...#', '#####', '#...#', '#...#', '#...#'],
+  B: ['####.', '#...#', '#...#', '####.', '#...#', '#...#', '####.'],
+  C: ['.####', '#....', '#....', '#....', '#....', '#....', '.####'],
+  D: ['####.', '#...#', '#...#', '#...#', '#...#', '#...#', '####.'],
+  E: ['#####', '#....', '#....', '####.', '#....', '#....', '#####'],
+  F: ['#####', '#....', '#....', '####.', '#....', '#....', '#....'],
+  G: ['.####', '#....', '#....', '#.###', '#...#', '#...#', '.####'],
+  H: ['#...#', '#...#', '#...#', '#####', '#...#', '#...#', '#...#'],
+  I: ['#####', '..#..', '..#..', '..#..', '..#..', '..#..', '#####'],
+  J: ['....#', '....#', '....#', '....#', '#...#', '#...#', '.###.'],
+  K: ['#...#', '#..#.', '#.#..', '##...', '#.#..', '#..#.', '#...#'],
+  L: ['#....', '#....', '#....', '#....', '#....', '#....', '#####'],
+  M: ['#...#', '##.##', '#.#.#', '#.#.#', '#...#', '#...#', '#...#'],
+  N: ['#...#', '##..#', '#.#.#', '#.#.#', '#..##', '#...#', '#...#'],
+  O: ['.###.', '#...#', '#...#', '#...#', '#...#', '#...#', '.###.'],
+  P: ['####.', '#...#', '#...#', '####.', '#....', '#....', '#....'],
+  Q: ['.###.', '#...#', '#...#', '#...#', '#.#.#', '#..#.', '.##.#'],
+  R: ['####.', '#...#', '#...#', '####.', '#.#..', '#..#.', '#...#'],
+  S: ['.####', '#....', '#....', '.###.', '....#', '....#', '####.'],
+  T: ['#####', '..#..', '..#..', '..#..', '..#..', '..#..', '..#..'],
+  U: ['#...#', '#...#', '#...#', '#...#', '#...#', '#...#', '.###.'],
+  V: ['#...#', '#...#', '#...#', '#...#', '#...#', '.#.#.', '..#..'],
+  W: ['#...#', '#...#', '#...#', '#.#.#', '#.#.#', '##.##', '#...#'],
+  X: ['#...#', '#...#', '.#.#.', '..#..', '.#.#.', '#...#', '#...#'],
+  Y: ['#...#', '#...#', '.#.#.', '..#..', '..#..', '..#..', '..#..'],
+  Z: ['#####', '....#', '...#.', '..#..', '.#...', '#....', '#####'],
+};
+
+// ---------------------------------------------------------------------------
+// The display serif. 20 rows tall, drawn per letter: 4px stems, 3px bars,
+// flared two-row serif feet, counters cut so the round letters carry more
+// weight on their sides than across their top and bottom — the proportion that
+// makes a heavy serif read as ornate rather than as a fat sans.
+// ---------------------------------------------------------------------------
+
+const DISPLAY = {
+  O: [
+    '.....#######.....',
+    '...###########...',
+    '..####.....####..',
+    '.####.......####.',
+    '.####.......####.',
+    '####.........####',
+    '####.........####',
+    '####.........####',
+    '####.........####',
+    '####.........####',
+    '####.........####',
+    '####.........####',
+    '####.........####',
+    '####.........####',
+    '####.........####',
+    '.####.......####.',
+    '.####.......####.',
+    '..####.....####..',
+    '...###########...',
+    '.....#######.....',
+  ],
+  R: [
+    '.###########....',
+    '.#############..',
+    '..####.....###..',
+    '..####.....####.',
+    '..####.....####.',
+    '..####.....####.',
+    '..####.....####.',
+    '..####.....####.',
+    '..####.....###..',
+    '..###########...',
+    '..##########....',
+    '..####.####.....',
+    '..####.####.....',
+    '..####..####....',
+    '..####..####....',
+    '..####...####...',
+    '..####...####...',
+    '..####....####..',
+    '.######...#####.',
+    '.######..######.',
+  ],
+  A: [
+    '.......####.......',
+    '......######......',
+    '......###.###.....',
+    '.....####.###.....',
+    '.....###..####....',
+    '.....###...###....',
+    '....####...###....',
+    '....###....####...',
+    '....###.....###...',
+    '...####.....###...',
+    '...############...',
+    '...############...',
+    '...###.......###..',
+    '..####.......###..',
+    '..###........####.',
+    '..###.........###.',
+    '.####.........###.',
+    '.###..........####',
+    '#####........#####',
+    '#####........#####',
+  ],
+  C: [
+    '.....#######.....',
+    '...###########...',
+    '..####.....####..',
+    '.####.......####.',
+    '.####.......###..',
+    '####.............',
+    '####.............',
+    '####.............',
+    '####.............',
+    '####.............',
+    '####.............',
+    '####.............',
+    '####.............',
+    '####.............',
+    '####.............',
+    '.####.......###..',
+    '.####.......####.',
+    '..####.....####..',
+    '...###########...',
+    '.....#######.....',
+  ],
+  L: [
+    '.######........',
+    '.######........',
+    '..####.........',
+    '..####.........',
+    '..####.........',
+    '..####.........',
+    '..####.........',
+    '..####.........',
+    '..####.........',
+    '..####.........',
+    '..####.........',
+    '..####.........',
+    '..####.........',
+    '..####.........',
+    '..####.........',
+    '..####.........',
+    '..####.........',
+    '..###########..',
+    '.#############.',
+    '.#############.',
+  ],
+  E: [
+    '.#############..',
+    '.#############..',
+    '..###########...',
+    '..####..........',
+    '..####..........',
+    '..####..........',
+    '..####..........',
+    '..####..........',
+    '..#########.....',
+    '..#########.....',
+    '..#########.....',
+    '..####..........',
+    '..####..........',
+    '..####..........',
+    '..####..........',
+    '..####..........',
+    '..####..........',
+    '..###########...',
+    '.#############..',
+    '.#############..',
+  ],
+};
+
+// ---------------------------------------------------------------------------
+// The pill face: 12 rows, bolder and plainer than the display serif, because
+// in the source the pill word is a solid slab that has to stay legible inside
+// a shape half its height.
+// ---------------------------------------------------------------------------
+
+const PILL_FACE = {
+  T: [
+    '###########', '###########', '...#####...', '...#####...',
+    '...#####...', '...#####...', '...#####...', '...#####...',
+    '...#####...', '...#####...', '..#######..', '..#######..',
+  ],
+  I: [
+    '#########', '#########', '..#####..', '..#####..',
+    '..#####..', '..#####..', '..#####..', '..#####..',
+    '..#####..', '..#####..', '#########', '#########',
+  ],
+  D: [
+    '##########..', '###########.', '..###....###', '..###....###',
+    '..###....###', '..###....###', '..###....###', '..###....###',
+    '..###....###', '..###....###', '###########.', '##########..',
+  ],
+  E: [
+    '##########.', '##########.', '..###......', '..###......',
+    '..#######..', '..#######..', '..###......', '..###......',
+    '..###......', '..###......', '##########.', '##########.',
+  ],
+  S: [
+    '..#######..', '.#########.', '.###...###.', '.###.......',
+    '.####......', '..######...', '...######..', '......####.',
+    '.......###.', '.###...###.', '.#########.', '..#######..',
+  ],
+};
+
+// ---------------------------------------------------------------------------
+// Grid helpers. A "silhouette" is a 2D array of booleans; an "index grid" is a
+// 2D array of -1 (transparent) or 0..3 (palette indices).
+// ---------------------------------------------------------------------------
+
+const grid = (w, h, v) => Array.from({ length: h }, () => new Array(w).fill(v));
+const at = (g, x, y) => (y >= 0 && y < g.length && x >= 0 && x < g[0].length && g[y][x]);
+
+/** Lay a string out in one of the glyph tables, returning its silhouette. */
+function setType(text, table, cellW, cellH, spaceW, tracking) {
+  const chars = [...text.toUpperCase()];
+  const widths = chars.map(c => (c === ' ' ? spaceW : (table[c] ? table[c][0].length : cellW)));
+  const w = widths.reduce((a, b) => a + b, 0) + tracking * (chars.length - 1);
+  const sil = grid(w, cellH, false);
+  let x = 0;
+  chars.forEach((c, i) => {
+    const g = table[c];
+    if (g) {
+      for (let y = 0; y < g.length; y++) {
+        for (let gx = 0; gx < g[y].length; gx++) if (g[y][gx] === '#') sil[y][x + gx] = true;
+      }
+    }
+    x += widths[i] + tracking;
+  });
+  return sil;
+}
+
+/** Grow a silhouette by `n` pixels in all 8 directions. */
+function dilate(sil, n) {
+  let cur = sil;
+  for (let pass = 0; pass < n; pass++) {
+    const h = cur.length, w = cur[0].length;
+    const next = grid(w, h, false);
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        if (cur[y][x]) { next[y][x] = true; continue; }
+        for (let dy = -1; dy <= 1 && !next[y][x]; dy++) {
+          for (let dx = -1; dx <= 1 && !next[y][x]; dx++) {
+            if (at(cur, x + dx, y + dy)) next[y][x] = true;
+          }
+        }
+      }
+    }
+    cur = next;
+  }
+  return cur;
+}
+
+/**
+ * Shade a silhouette. `bevelled` lights every top/left edge (index 0) and
+ * darkens every bottom/right edge (index 2), leaving the interior at index 1 —
+ * which is how the source's display letters get their carved look. Flat art
+ * takes index 1 throughout.
+ */
+function shade(sil, bevelled) {
+  const h = sil.length, w = sil[0].length;
+  const idx = grid(w, h, -1);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (!sil[y][x]) continue;
+      if (!bevelled) { idx[y][x] = 1; continue; }
+      if (!at(sil, x, y - 1) || !at(sil, x - 1, y)) idx[y][x] = 0;
+      else if (!at(sil, x, y + 1) || !at(sil, x + 1, y)) idx[y][x] = 2;
+      else idx[y][x] = 1;
+    }
+  }
+  return idx;
+}
+
+/**
+ * Pad an index grid by one transparent pixel on every side and paint index 3
+ * into every transparent cell touching a drawn one — the hard 1px outline
+ * ART-DIRECTION requires.
+ *
+ * THE PADDING IS LOAD-BEARING. Dilating on a grid sized exactly to the art's
+ * bounding box gives an edge pixel nowhere to put its outline, so the art
+ * silently loses its outline on whichever side it touches — see
+ * docs/HANDOFF.md.
+ */
+function outline(idx) {
+  const ih = idx.length, iw = idx[0].length;
+  const w = iw + 2, h = ih + 2;
+  const out = grid(w, h, -1);
+  for (let y = 0; y < ih; y++) for (let x = 0; x < iw; x++) out[y + 1][x + 1] = idx[y][x];
+  const src = out.map(r => r.slice());
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (src[y][x] !== -1) continue;
+      let touches = false;
+      for (let dy = -1; dy <= 1 && !touches; dy++) {
+        for (let dx = -1; dx <= 1 && !touches; dx++) {
+          if (dy === 0 && dx === 0) continue;
+          const ny = y + dy, nx = x + dx;
+          if (ny >= 0 && ny < h && nx >= 0 && nx < w && src[ny][nx] !== -1) touches = true;
+        }
+      }
+      if (touches) out[y][x] = 3;
+    }
+  }
+  return out;
+}
+
+const toArt = (idx) => idx.map(r => r.map(v => (v === -1 ? '.' : String(v))).join('')).join('\n');
+
+// ---------------------------------------------------------------------------
+// The pieces.
+// ---------------------------------------------------------------------------
+
+const CAPTION_TEXT = 'A SEA LEGEND';
+const PRESS_TEXT = 'PRESS START';
+
+const captionSil = setType(CAPTION_TEXT, SMALL, SMALL_W, SMALL_H, SMALL_SPACE, 1);
+const pressSil = setType(PRESS_TEXT, SMALL, SMALL_W, SMALL_H, SMALL_SPACE, 1);
+// The connector line. The source sets the shared half of its subtitle small
+// and the game-specific half in the pill; ours splits the same way, so this
+// is the "of" of "Oracle of Tides" and it has to sit between them.
+const ofSil = setType('OF', SMALL, SMALL_W, SMALL_H, SMALL_SPACE, 1);
+const wordSil = setType('ORACLE', DISPLAY, 17, 20, 8, 2);
+const tidesSil = setType('TIDES', PILL_FACE, 11, 12, 6, 2);
+
+const captionArt = outline(shade(captionSil, false));
+const pressArt = outline(shade(pressSil, false));
+const ofArt = outline(shade(ofSil, false));
+const wordArt = outline(shade(wordSil, true));
+
+// --- the pill --------------------------------------------------------------
+// A stadium: fully rounded ends, dark fill, a pale ring inside a black
+// outline, pale letters bevelled dark on their lower right.
+
+const PILL_PAD_X = 11, PILL_PAD_Y = 5;
+
+function buildPill() {
+  const lw = tidesSil[0].length, lh = tidesSil.length;
+  const w = lw + PILL_PAD_X * 2, h = lh + PILL_PAD_Y * 2;
+  const r = h / 2;
+  const sil = grid(w, h, false);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      // Stadium = a rectangle with a half-circle cap at each end.
+      const cx = Math.min(Math.max(x + 0.5, r), w - r);
+      const dx = x + 0.5 - cx, dy = y + 0.5 - r;
+      sil[y][x] = dx * dx + dy * dy <= (r - 0.5) * (r - 0.5);
+    }
+  }
+  const ring = sil.map((row, y) => row.map((on, x) =>
+    on && (!at(sil, x - 1, y) || !at(sil, x + 1, y) || !at(sil, x, y - 1) || !at(sil, x, y + 1))));
+  const idx = grid(w, h, -1);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (!sil[y][x]) continue;
+      idx[y][x] = ring[y][x] ? 0 : (y > h * 0.62 ? 2 : 1);
+    }
+  }
+  // Letters, pale with a dark lower-right bevel so they sit in the pill
+  // rather than floating on it.
+  for (let y = 0; y < lh; y++) {
+    for (let x = 0; x < lw; x++) {
+      if (!tidesSil[y][x]) continue;
+      const px = x + PILL_PAD_X, py = y + PILL_PAD_Y;
+      if (!at(tidesSil, x + 1, y) && idx[py][px + 1] !== undefined && sil[py][px + 1]) idx[py][px + 1] = 2;
+      if (!at(tidesSil, x, y + 1) && py + 1 < h && sil[py + 1][px]) idx[py + 1][px] = 2;
+    }
+  }
+  for (let y = 0; y < lh; y++) {
+    for (let x = 0; x < lw; x++) {
+      if (tidesSil[y][x]) idx[y + PILL_PAD_Y][x + PILL_PAD_X] = 0;
+    }
+  }
+  return outline(idx);
+}
+
+const pillArt = buildPill();
+
+// --- the backdrop ----------------------------------------------------------
+// The mottled shape the wordmark sits on. Its edge is dithered rather than
+// outlined, which is what makes the source's equivalent read as painted; a
+// hard outline here would fight the wordmark's own.
+
+const SPLASH_MX = 15, SPLASH_TOP = 9, SPLASH_GAP = 2, SPLASH_GAP2 = 1, SPLASH_BOT = 9;
+
+/** Deterministic integer hash -> [0,1). No RNG: identical on every boot. */
+function hash2(x, y) {
+  let h = Math.imul(x + 1013, 374761393) ^ Math.imul(y + 2027, 668265263);
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+}
+
+function buildSplash() {
+  const capW = captionArt[0].length, capH = captionArt.length;
+  const wW = wordArt[0].length, wH = wordArt.length;
+  const ofW = ofArt[0].length, ofH = ofArt.length;
+  const w = wW + SPLASH_MX * 2;
+  const h = SPLASH_TOP + capH + SPLASH_GAP + wH + SPLASH_GAP2 + ofH + SPLASH_BOT;
+  const capX = Math.round((w - capW) / 2), capY = SPLASH_TOP;
+  const wX = Math.round((w - wW) / 2), wY = SPLASH_TOP + capH + SPLASH_GAP;
+  const ofX = Math.round((w - ofW) / 2), ofY = wY + wH + SPLASH_GAP2;
+
+  // Everything the halo should hug, in splash space.
+  const marks = grid(w, h, false);
+  const stamp = (art, ox, oy) => {
+    for (let y = 0; y < art.length; y++) {
+      for (let x = 0; x < art[0].length; x++) {
+        if (art[y][x] !== -1 && oy + y < h && ox + x < w && oy + y >= 0 && ox + x >= 0) marks[oy + y][ox + x] = true;
+      }
+    }
+  };
+  stamp(captionArt, capX, capY);
+  stamp(wordArt, wX, wY);
+  stamp(ofArt, ofX, ofY);
+  // ONE pixel, not two. The halo is a fringe hugging the letters, and at two
+  // it closes every counter and every gap between lines and the backdrop
+  // becomes a pale slab with the mottle only visible around its rim — which
+  // is the opposite of the source, where the mottle is the dominant texture
+  // and the fringe is a thin bright edge on the letters.
+  const halo = dilate(marks, 1);
+
+  const idx = grid(w, h, -1);
+  const cx = w / 2, cy = h / 2;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const dx = (x + 0.5 - cx) / (w / 2), dy = (y + 0.5 - cy) / (h / 2);
+      const ang = Math.atan2(dy, dx);
+      // Four harmonics: enough to read as a torn patch rather than an oval,
+      // but kept shallow. At larger amplitudes some directions collapsed to
+      // half the radius and the backdrop stopped enclosing its own text.
+      const wob = 0.10 * Math.sin(ang * 3 + 0.7) + 0.07 * Math.sin(ang * 5 + 2.1)
+        + 0.05 * Math.sin(ang * 8 + 4.2) + 0.03 * Math.sin(ang * 13 + 1.3);
+      const d = Math.sqrt(dx * dx + dy * dy) / (1.02 + wob);
+      let inside = d < 1;
+      // Dither only the last stretch of the edge. Starting this at 0.72 ate
+      // most of the shape and left a scatter of dots that read as speckle
+      // rather than as a painted mass.
+      if (inside && d > 0.80) inside = hash2(x, y) > (d - 0.80) / 0.20 * 0.95;
+      if (!inside && !halo[y][x]) continue;
+      if (halo[y][x]) { idx[y][x] = 0; continue; }
+      // Clumped mottle. Two low-frequency fields at different scales do
+      // almost all the work and the hash only breaks up their banding: at a
+      // 40% hash weight (and higher frequencies) this was per-pixel static
+      // that read as TV snow, not as paint. Texture in the source art is
+      // patchy, and patches need a wavelength longer than one pixel.
+      const f = 0.5
+        + 0.34 * Math.sin(x * 0.19 + y * 0.11) * Math.cos(x * 0.09 - y * 0.21)
+        + 0.17 * Math.sin(x * 0.07 - y * 0.05 + 1.9);
+      const n = f * 0.88 + hash2(x, y) * 0.12 - (d > 0.7 ? (d - 0.7) * 0.35 : 0);
+      idx[y][x] = n < 0.34 ? 3 : (n < 0.62 ? 2 : 1);
+    }
+  }
+  return { art: idx, capX, capY, wX, wY, ofX, ofY, w, h };
+}
+
+const splash = buildSplash();
+
+// ---------------------------------------------------------------------------
+// Exports.
+// ---------------------------------------------------------------------------
+
+const TITLE_ART = {
+  title_splash: { art: toArt(splash.art), pal: 'title_splash' },
+  title_caption: { art: toArt(captionArt), pal: 'title_caption' },
+  title_of: { art: toArt(ofArt), pal: 'title_caption' },
+  title_wordmark: { art: toArt(wordArt), pal: 'title_gold' },
+  title_pill: { art: toArt(pillArt), pal: 'title_pill' },
+  title_press: { art: toArt(pressArt), pal: 'title_press' },
+};
+
+/** Where the three text lines sit inside the backdrop, so title.js can place
+ *  them all from one anchor and they stay locked together while it bobs. */
+const TITLE_LAYOUT = {
+  splash: { w: splash.w, h: splash.h },
+  caption: { x: splash.capX, y: splash.capY },
+  wordmark: { x: splash.wX, y: splash.wY },
+  of: { x: splash.ofX, y: splash.ofY },
+};
+
+const TITLE_PALETTES = {
+  // Gold on deep sea is the complementary pairing the source gets from purple
+  // on orange: the wordmark has to be the lightest thing on the screen.
+  title_gold: ['#fff8d8', '#f0c040', '#a05c18', '#000000'],
+  // The backdrop: a dark green-blue mass, three mottle tones, no outline. Its
+  // index 0 is the pale halo hugging the wordmark, not part of the mottle.
+  // Lifted off the background blue: at #1c4c44/#123430 the two darker mottle
+  // tones sat at the sea's own value and the backdrop had no mass at all.
+  // Pulled back toward teal from there, because a greener ramp read as grass
+  // rather than as something the sea left behind.
+  title_splash: ['#cfeee4', '#3f8a80', '#2a6060', '#1c4348'],
+  title_caption: ['#ffffff', '#e8f8ff', '#78b8d8', '#08142c'],
+  // Deep enough that the pale letters inside carry the same contrast the
+  // source gets from white on purple, and hold it under the tide wash.
+  title_pill: ['#f4fcff', '#16346c', '#0a1c40', '#000000'],
+  title_press: ['#ffffff', '#7ce0e8', '#2888a0', '#001c28'],
+};
+
+function installTitleSprites() {
+  registerPalettes(TITLE_PALETTES);
+  sprites.add(TITLE_ART);
+}
+__exports["TITLE_ART"] = TITLE_ART;
+__exports["TITLE_LAYOUT"] = TITLE_LAYOUT;
+__exports["TITLE_PALETTES"] = TITLE_PALETTES;
+__exports["installTitleSprites"] = installTitleSprites;
+});
+
 /* ===== src/game/title.js ===== */
 __define("game/title.js", function (__exports, __require) {
 // Title screen and file select.
@@ -9583,6 +10132,16 @@ const { sprites, tiles: tileSheet } = __require("gfx/art.js");
 const { drawPanel, drawBox } = __require("game/dialogue.js");
 const { listSaves, deleteSlot, HEART_UNITS } = __require("game/progress.js");
 const { essenceCount } = __require("world/maps.js");
+const { TITLE_LAYOUT } = __require("data/sprites-title.js");
+
+// How many phases of the swirling sea get baked. Not a timing constant (the
+// title's own animation rates are inline here, as the bob always was) — it is
+// the length of the cache, and the sea is a loop, so this is how long the loop
+// is before it repeats.
+const SEA_FRAMES = 12;
+// The single colour the tide wash is dithered in. One entry, by design: see
+// drawWaterline.
+const WASH = '#0d2650';
 
 class Title {
   constructor(game) {
@@ -9640,25 +10199,7 @@ class Title {
   }
 
   draw(ctx) {
-    ctx.fillStyle = '#08142c';
-    ctx.fillRect(0, 0, SCREEN_W, SCREEN_H);
-
-    // A moving sea behind the logo, drawn procedurally: it animates, costs
-    // nothing, and needs no art of its own.
-    for (let y = 0; y < SCREEN_H; y += 2) {
-      const depth = y / SCREEN_H;
-      const shade = ['#08142c', '#0c2044', '#183c80', '#2c60b0', '#58a8e0'][
-        Math.min(4, Math.floor(depth * 5))];
-      ctx.fillStyle = shade;
-      ctx.fillRect(0, y, SCREEN_W, 2);
-    }
-    for (let i = 0; i < 26; i++) {
-      const y = 64 + (i * 3) % 80;
-      const w = 6 + (i % 4) * 4;
-      const x = ((i * 37) + Math.sin((this.t + i * 12) * 0.03) * 22 + this.t * 0.25) % (SCREEN_W + 20) - 10;
-      ctx.fillStyle = i % 3 === 0 ? '#b0e8f8' : '#78c8e8';
-      ctx.fillRect(Math.round(x), y, w, 1);
-    }
+    this.drawSea(ctx);
 
     if (this.stage === 'logo') this.drawLogo(ctx);
     else if (this.stage === 'files') this.drawFiles(ctx);
@@ -9667,43 +10208,156 @@ class Title {
     drawTitleFrame(ctx);
   }
 
-  drawLogo(ctx) {
-    const bob = Math.round(Math.sin(this.t * 0.03) * 2);
-    const wSize = sprites.size('title_wordmark');
-    const tSize = sprites.size('title_tagline');
-    const wx = Math.round((SCREEN_W - wSize.w) / 2);
-    const wy = 30 + bob;
-    const tx = Math.round((SCREEN_W - tSize.w) / 2);
-    const ty = wy - tSize.h - 4;
-
-    ctx.fillStyle = 'rgba(8,12,24,0.5)';
-    ctx.fillRect(4, ty - 4, SCREEN_W - 8, wSize.h + tSize.h + 20);
-
-    sprites.draw(ctx, 'title_tagline', tx, ty);
-    sprites.draw(ctx, 'title_wordmark', wx, wy);
-
-    // The tide rises over the bottom of the wordmark: a lightly scalloped
-    // crest line that bobs with the same clock as the sea behind it, and a
-    // translucent wash below it standing in for the water covering the
-    // letters. Ties the logo to the one thing this game is about.
-    const tideY = wy + Math.round(wSize.h * 0.62) + Math.round(Math.sin(this.t * 0.05) * 1.5);
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(wx, wy, wSize.w, wSize.h);
-    ctx.clip();
-    ctx.fillStyle = 'rgba(24,72,144,0.4)';
-    ctx.fillRect(wx, tideY, wSize.w, wy + wSize.h - tideY);
-    for (let x = 0; x < wSize.w; x += 4) {
-      const cy = tideY + Math.round(Math.sin((this.t * 0.08) + x * 0.5) * 1);
-      ctx.fillStyle = '#b0e8f8';
-      ctx.fillRect(wx + x, cy, 2, 1);
+  /**
+   * One phase of the sea, baked to an offscreen canvas.
+   *
+   * THIS IS WRITTEN PER PIXEL ON PURPOSE. The obvious way to draw concentric
+   * wobbled rings is a path per ring, painted largest-first — and that is what
+   * this did first. Canvas 2D anti-aliases every path fill it makes, with no
+   * flag to turn it off, so those rings arrived with soft edges and the title
+   * screen's colour count went from 28 to 231. On a screen whose whole job is
+   * to look like it came off a Game Boy Color, that is a fidelity break
+   * `check-build.mjs` measures and ART-DIRECTION forbids outright. Writing
+   * ImageData puts every pixel on exactly one of three tones.
+   *
+   * Baked rather than recomputed because per-pixel trig for 23,040 pixels
+   * every frame is real work; the phases cycle, so there are only ever
+   * SEA_FRAMES of them, built the first time each is asked for.
+   */
+  seaFrame(i) {
+    if (!this._sea) this._sea = new Array(SEA_FRAMES).fill(null);
+    if (this._sea[i]) return this._sea[i];
+    // Three tones inside a narrow value range. The first pass used five across
+    // a wide range and the contours read as loud concentric stripes that
+    // fought the logo — the source's swirl is a texture you notice second,
+    // not a pattern you read first.
+    const BANDS = [[0x12, 0x31, 0x5a], [0x17, 0x3a, 0x68], [0x1c, 0x44, 0x76]];
+    const c = document.createElement('canvas');
+    c.width = SCREEN_W; c.height = SCREEN_H;
+    const g = c.getContext('2d');
+    const img = g.createImageData(SCREEN_W, SCREEN_H);
+    const phase = i * (Math.PI * 2 / SEA_FRAMES);
+    const cx = SCREEN_W / 2, cy = 64;
+    for (let y = 0; y < SCREEN_H; y++) {
+      for (let x = 0; x < SCREEN_W; x++) {
+        const dx = (x + 0.5 - cx) / 1.35, dy = (y + 0.5 - cy) / 0.9;
+        const r = Math.sqrt(dx * dx + dy * dy), ang = Math.atan2(dy, dx);
+        // Two harmonics, one of them turning with the phase, so the rings
+        // breathe instead of sitting still.
+        const v = r - Math.sin(ang * 3 + phase * 1.7 + r * 0.05) * 4
+          - Math.sin(ang * 5 - phase * 1.1) * 2.5;
+        let b = Math.floor(v / 5 + i) % BANDS.length;
+        if (b < 0) b += BANDS.length;
+        const col = BANDS[b], o = (y * SCREEN_W + x) * 4;
+        img.data[o] = col[0]; img.data[o + 1] = col[1];
+        img.data[o + 2] = col[2]; img.data[o + 3] = 255;
+      }
     }
-    ctx.restore();
+    g.putImageData(img, 0, 0);
+    this._sea[i] = c;
+    return c;
+  }
+
+  /** A 2x2 dither tile, cached. Two densities stand in for the alpha wash the
+   *  console cannot do: every pixel stays one palette colour. */
+  ditherPattern(ctx, dense) {
+    const key = dense ? '_dith2' : '_dith4';
+    if (this[key]) return this[key];
+    const c = document.createElement('canvas');
+    c.width = 2; c.height = 2;
+    const g = c.getContext('2d');
+    g.fillStyle = WASH;
+    g.fillRect(0, 0, 1, 1);
+    if (dense) g.fillRect(1, 1, 1, 1);
+    this[key] = ctx.createPattern(c, 'repeat');
+    return this[key];
+  }
+
+  drawSea(ctx) {
+    ctx.drawImage(this.seaFrame(Math.floor(this.t * 0.12) % SEA_FRAMES), 0, 0);
+
+    // Chop drifting across the surface, kept from the original screen — but
+    // only below the logo block, where it reads as water rather than as
+    // scratches across the wordmark.
+    for (let i = 0; i < 20; i++) {
+      const y = 92 + (i * 7) % 48;
+      const w = 6 + (i % 4) * 4;
+      const x = ((i * 37) + Math.sin((this.t + i * 12) * 0.03) * 22 + this.t * 0.25) % (SCREEN_W + 20) - 10;
+      ctx.fillStyle = i % 3 === 0 ? '#8cc8e4' : '#5c9cc8';
+      ctx.fillRect(Math.round(x), y, w, 1);
+    }
+  }
+
+  drawLogo(ctx) {
+    const L = TITLE_LAYOUT;
+    const bob = Math.round(Math.sin(this.t * 0.03) * 2);
+    const sx = Math.round((SCREEN_W - L.splash.w) / 2);
+    const sy = 3 + bob;
+
+    // Backdrop, series line, wordmark, connector — one anchor, so the four
+    // never drift apart when the block bobs.
+    sprites.draw(ctx, 'title_splash', sx, sy);
+    sprites.draw(ctx, 'title_caption', sx + L.caption.x, sy + L.caption.y);
+    sprites.draw(ctx, 'title_wordmark', sx + L.wordmark.x, sy + L.wordmark.y);
+    sprites.draw(ctx, 'title_of', sx + L.of.x, sy + L.of.y);
+
+    // The game's own word, in its own pill, overlapping the backdrop's lower
+    // edge the way the source hangs its subtitle off the bottom of the logo.
+    const pill = sprites.size('title_pill');
+    const px = Math.round((SCREEN_W - pill.w) / 2);
+    const py = sy + L.splash.h - 4;
+    sprites.draw(ctx, 'title_pill', px, py);
+
+    // Across the pill's lower edge, not across the wordmark. A waterline
+    // through the middle of ORACLE cut the hero word in half and read as a
+    // scanline; here it takes the word the game is named for down to the
+    // ankles without costing a letter of legibility.
+    this.drawWaterline(ctx, py + 16, py + pill.h + 16);
 
     if ((this.t >> 4) % 2 === 0) {
-      drawTextCentered(ctx, 'PRESS START', SCREEN_W / 2, 104, '#f8f8e8', '#08142c');
+      const pr = sprites.size('title_press');
+      sprites.draw(ctx, 'title_press', Math.round((SCREEN_W - pr.w) / 2), 108);
     }
     drawTextCentered(ctx, 'A fan homage', SCREEN_W / 2, 128, '#78a8c8', '#08142c');
+  }
+
+  /**
+   * The one piece of scenery on this screen: a tide line the logo half-sinks
+   * below. It crosses the whole width — a waterline that stopped at the logo's
+   * edges would read as a highlight on the logo instead of as a sea level —
+   * with a bright crest and a wash beneath it, and its bottom two rows
+   * dithered so the band ends without a seam.
+   *
+   * `top` is where the water sits; `bottom` is where the wash stops, kept
+   * above PRESS START so the prompt never reads as submerged.
+   */
+  drawWaterline(ctx, top, bottom) {
+    const base = top + Math.sin(this.t * 0.045) * 2;
+    // The crest is sampled per column so the wash starts exactly under it — a
+    // straight wash edge below a scalloped crest was what made the first pass
+    // read as a ruled line rather than as a surface.
+    const crest = (x) => Math.round(base + Math.sin(this.t * 0.05 + x * 0.09) * 2.5
+      + Math.sin(this.t * 0.031 - x * 0.037) * 1.5);
+    // Dither, not alpha. `rgba()` over a varied background invents a new blend
+    // per underlying colour, which is how this screen first ended up with 231
+    // of them; a 50% tile of ONE colour is what the hardware would have done
+    // and costs exactly one entry. The sparser tile fades the band out at the
+    // bottom so it ends without a seam.
+    const near = this.ditherPattern(ctx, true);
+    const far = this.ditherPattern(ctx, false);
+    const fade = Math.max(top, bottom - 7);
+    for (let x = 0; x < SCREEN_W; x++) {
+      const cy = crest(x) + 1;
+      ctx.fillStyle = near;
+      ctx.fillRect(x, cy, 1, Math.max(0, fade - cy));
+      ctx.fillStyle = far;
+      ctx.fillRect(x, fade, 1, Math.max(0, bottom - fade));
+    }
+    // The crest itself: bright, one pixel, broken up so it glints.
+    for (let x = 0; x < SCREEN_W; x++) {
+      ctx.fillStyle = ((x >> 1) + (this.t >> 3)) % 7 === 0 ? '#eafaff' : '#8ccae8';
+      ctx.fillRect(x, crest(x), 1, 1);
+    }
   }
 
   drawFiles(ctx) {
@@ -32243,154 +32897,6 @@ function installGearSprites() {
 }
 __exports["GEAR_ART"] = GEAR_ART;
 __exports["installGearSprites"] = installGearSprites;
-});
-
-/* ===== src/data/sprites-title.js ===== */
-__define("data/sprites-title.js", function (__exports, __require) {
-// The title wordmark and tagline: hand-drawn pixel art, built from a small
-// bespoke 5x7 caps typeface authored for this logo alone. Nothing in
-// assets/sheets/ has this game's name on it, so per docs/ART-DIRECTION.md
-// rule 2 this is drawn to match the register measured off the source sheets:
-// a light-to-dark ramp with a hard black outline, no anti-aliasing.
-//
-// Not a ripper output — there is no sheet to re-run against — so this file is
-// hand-authored source, not generated. The glyphs are literal pixel data; the
-// only computed step is stacking glyphs into a line, centering lines on each
-// other, and dilating a 1px outline around the assembled silhouette.
-
-const { sprites } = __require("gfx/art.js");
-const { registerPalettes } = __require("gfx/palettes.js");
-
-const GLYPH_W = 5, GLYPH_H = 7;
-const SPACE_W = 3;
-
-// Each glyph is 7 rows of 5 chars, '#' filled / '.' empty. Only the letters
-// this logo and tagline use.
-const GLYPHS = {
-  A: ['.###.', '#...#', '#...#', '#####', '#...#', '#...#', '#...#'],
-  C: ['.####', '#....', '#....', '#....', '#....', '#....', '.####'],
-  D: ['####.', '#...#', '#...#', '#...#', '#...#', '#...#', '####.'],
-  E: ['#####', '#....', '#....', '####.', '#....', '#....', '#####'],
-  F: ['#####', '#....', '#....', '####.', '#....', '#....', '#....'],
-  G: ['.####', '#....', '#....', '#.###', '#...#', '#...#', '.####'],
-  I: ['#####', '..#..', '..#..', '..#..', '..#..', '..#..', '#####'],
-  L: ['#....', '#....', '#....', '#....', '#....', '#....', '#####'],
-  N: ['#...#', '##..#', '#.#.#', '#.#.#', '#..##', '#...#', '#...#'],
-  O: ['.###.', '#...#', '#...#', '#...#', '#...#', '#...#', '.###.'],
-  R: ['####.', '#...#', '#...#', '####.', '#.#..', '#..#.', '#...#'],
-  S: ['.####', '#....', '#....', '.###.', '....#', '....#', '####.'],
-  T: ['#####', '..#..', '..#..', '..#..', '..#..', '..#..', '..#..'],
-};
-
-/** Build one line's silhouette as a { w, h, fill } boolean grid. */
-function buildLine(text) {
-  const chars = [...text.toUpperCase()];
-  let w = 0;
-  for (const c of chars) w += (c === ' ' ? SPACE_W : GLYPH_W) + 1;
-  w = Math.max(0, w - 1);
-  const fill = new Array(GLYPH_H).fill(null).map(() => new Array(w).fill(false));
-  let x = 0;
-  for (const c of chars) {
-    if (c === ' ') { x += SPACE_W + 1; continue; }
-    const g = GLYPHS[c];
-    if (!g) { x += GLYPH_W + 1; continue; }
-    for (let y = 0; y < GLYPH_H; y++) {
-      for (let gx = 0; gx < GLYPH_W; gx++) {
-        if (g[y][gx] === '#') fill[y][x + gx] = true;
-      }
-    }
-    x += GLYPH_W + 1;
-  }
-  return { w, h: GLYPH_H, fill };
-}
-
-/** Nearest-neighbour integer upscale of a boolean grid. */
-function upscale(grid, scale) {
-  const w = grid.w * scale, h = grid.h * scale;
-  const fill = new Array(h).fill(null).map(() => new Array(w).fill(false));
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      fill[y][x] = grid.fill[Math.floor(y / scale)][Math.floor(x / scale)];
-    }
-  }
-  return { w, h, fill };
-}
-
-/**
- * Stack lines centered on each other with a fixed gap, shade each glyph
- * top-to-bottom in three bands (light/mid/dark, index 0/1/2), then dilate a
- * 1px black outline (index 3) around the combined silhouette. Returns an
- * art template string ready for parseArt.
- */
-function composeLogo(lines, scale, gapPx) {
-  const built = lines.map(l => upscale(buildLine(l), scale));
-  const innerW = Math.max(...built.map(b => b.w));
-  const innerH = built.reduce((a, b) => a + b.h, 0) + gapPx * (built.length - 1);
-  // A 1px transparent margin all round so the outline dilation below has
-  // somewhere to paint — without it, a letter touching the array edge would
-  // lose its outline on that side.
-  const w = innerW + 2, h = innerH + 2;
-  // index grid: -1 = transparent, 0/1/2 = shade bands, 3 = outline (added later)
-  const idx = new Array(h).fill(null).map(() => new Array(w).fill(-1));
-  let oy = 1;
-  for (const b of built) {
-    const ox = 1 + Math.floor((innerW - b.w) / 2);
-    for (let y = 0; y < b.h; y++) {
-      const band = y < b.h * 0.3 ? 0 : (y < b.h * 0.65 ? 1 : 2);
-      for (let x = 0; x < b.w; x++) {
-        if (b.fill[y][x]) idx[oy + y][ox + x] = band;
-      }
-    }
-    oy += b.h + gapPx;
-  }
-  // Outline: any transparent cell 8-adjacent to a filled cell becomes index 3.
-  const out = idx.map(row => row.slice());
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      if (idx[y][x] !== -1) continue;
-      let touches = false;
-      for (let dy = -1; dy <= 1 && !touches; dy++) {
-        for (let dx = -1; dx <= 1 && !touches; dx++) {
-          if (dy === 0 && dx === 0) continue;
-          const ny = y + dy, nx = x + dx;
-          if (ny < 0 || ny >= h || nx < 0 || nx >= w) continue;
-          if (idx[ny][nx] !== -1) touches = true;
-        }
-      }
-      if (touches) out[y][x] = 3;
-    }
-  }
-  const rows = out.map(row => row.map(v => (v === -1 ? '.' : String(v))).join(''));
-  return { art: rows.join('\n'), w, h };
-}
-
-// "ORACLE" over "OF TIDES", 2x scale, 4px line gap.
-const wordmark = composeLogo(['ORACLE', 'OF TIDES'], 2, 4);
-// "A TIDE LEGEND" at 1x, the tagline that replaces the borrowed "THE LEGEND
-// OF ZELDA" line — same arched-caption grammar, original words.
-const tagline = composeLogo(['A TIDE LEGEND'], 1, 0);
-
-const TITLE_ART = {
-  title_wordmark: { art: wordmark.art, pal: 'title_gold' },
-  title_tagline: { art: tagline.art, pal: 'title_tag' },
-};
-const TITLE_SIZES = { wordmark: { w: wordmark.w, h: wordmark.h }, tagline: { w: tagline.w, h: tagline.h } };
-
-// Light / mid / dark / outline. Gold ramp for the wordmark, echoing the
-// heart/rupee UI gold; cyan ramp for the tagline, echoing the water palette.
-const TITLE_PALETTES = {
-  title_gold: ['#fff4c0', '#f0c040', '#a86818', '#000000'],
-  title_tag: ['#e8f8ff', '#78c8e8', '#2868b8', '#000000'],
-};
-
-function installTitleSprites() {
-  registerPalettes(TITLE_PALETTES);
-  sprites.add(TITLE_ART);
-}
-__exports["TITLE_ART"] = TITLE_ART;
-__exports["TITLE_SIZES"] = TITLE_SIZES;
-__exports["TITLE_PALETTES"] = TITLE_PALETTES;
-__exports["installTitleSprites"] = installTitleSprites;
 });
 
 /* ===== src/data/index.js ===== */
