@@ -582,7 +582,18 @@ export function installDungeonsA() {
         puzzle: {
           enemies: true,
           flag: 'd1_clawcrab',
-          reward: { say: 'The claw stops moving. The way west is quiet.' },
+          // The Clawcrab is D1's miniboss and until P9 it paid out a sentence
+          // and nothing else — the only fight in the dungeon that cost health
+          // and returned none of it. The Piece of Heart is what it owes.
+          //
+          // (14, 4) and not (14, 3): a dropped pickup pops about five pixels
+          // up and settles straddling the tile ABOVE the one it spawned on, so
+          // this comes to rest mid-arena where the claw died. Same lesson as
+          // the Crab Pit's key — see docs/HANDOFF.md.
+          reward: {
+            spawn: [['pickup', 14, 4, { kind: 'heartPiece' }]],
+            say: 'The claw stops moving. The way west is quiet.',
+          },
         },
       },
       '0,4,3': {
@@ -1288,6 +1299,11 @@ export function installDungeonsA() {
         entities: [
           ['keese', 6, 3, { phase: 2 }],
           ['pickup', 3, 3, { kind: 'rupee20' }],
+          // D2's second Piece of Heart. The Whelk Cell is the Spire's far-east
+          // cul-de-sac — nothing routes through it and nothing else in the
+          // dungeon needs it, which is exactly what a piece should cost:
+          // a detour, not a key.
+          ['pickup', 4, 4, { kind: 'heartPiece' }],
         ],
       },
       '1,3,2': {
@@ -2595,6 +2611,10 @@ export function installDungeonsA() {
         entities: [
           ['pickup', 4, 2, { kind: 'rupee20' }],
           ['stalfos', 6, 5],
+          // D4's second Piece of Heart, in the corner of the overlook furthest
+          // from the door — a room you climb to for the view and leave by the
+          // way you came.
+          ['pickup', 2, 6, { kind: 'heartPiece' }],
         ],
       },
       '0,3,2': {

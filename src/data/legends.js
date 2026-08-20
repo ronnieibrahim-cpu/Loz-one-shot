@@ -79,6 +79,8 @@ export function installLegends() {
   registerLegend('cliffs', {
     'g': 'rockFloor', 'G': 'rockFloorDk', 'f': 'rockFloor',
     'T': 'treeDead', 'b': 'bush', 'o': 'rock',
+    'X': 'boulderCracked',  // region gate: a boulder already split, bombs open it
+    'V': 'keepSeal',        // story gate: the seal's upper course, on Upper Kell
     '#': 'cliffDk', '^': 'cliffTop', '%': 'cliffDk', '_': 'ledgeRock',
     '"': 'ledgeRockN', '>': 'ledgeRockE', '<': 'ledgeRockW',
   }, 'base');
@@ -106,7 +108,7 @@ export function installLegends() {
     '.': 'sandRust', ',': 'sandRust',
     '~': 'waterD', '=': 'waterAbyss',
     'T': 'treeDead', 'o': 'rock', '#': 'cliffAbyss', '^': 'cliffAbyss',
-    'V': 'abyssPlug',       // region gate: only the Dredge Line shifts it
+    'V': 'keepSeal',        // story gate: the Maku Tree opens it at five Essences
     '_': 'ledgeAbyss',
     '"': 'ledgeAbyssN', '>': 'ledgeAbyssE', '<': 'ledgeAbyssW',
   }, 'base');

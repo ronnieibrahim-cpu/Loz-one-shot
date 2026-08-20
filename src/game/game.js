@@ -48,6 +48,7 @@ import { drawHud, drawAreaBanner, drawBossBar } from './hud.js';
 import { Dialogue, drawBox, drawPanel, getText } from './dialogue.js';
 import { Menu } from './menu.js';
 import { Camera } from './camera.js';
+import { TRADE_ITEMS, tradeName, tradeIcon } from '../data/trade.js';
 import { Scrimshaw, CHARMS, giveCharm, ownedCharms, openCharmCases } from './scrimshaw.js';
 import { Title } from './title.js';
 import { runCutscene, CUTSCENES } from './cutscene.js';
@@ -226,6 +227,7 @@ export class Game {
     if (o.spawnEntities !== false) this.spawnRoomEntities();
     this.respawnAnchor();
     this.restoreRoomState();
+    this.applyStoryGates();
     this.checkPuzzle();
     if (r.def.script && r.def.script.onEnter) r.def.script.onEnter(this, r);
     this.camera.snap(r, this.player);
@@ -308,6 +310,32 @@ export class Game {
       if (!k.startsWith(prefix)) continue;
       const [tx, ty] = k.slice(prefix.length).split(',').map(Number);
       if (!isNaN(tx)) room.setTile(tx, ty, v);
+    }
+  }
+
+  /**
+   * Open every story gate in the room the save has earned.
+   *
+   * A story gate is a tile with `openFlag` on its tiledef: it becomes `openTo`
+   * once the save carries that flag, and NO ITEM opens it. See the contract in
+   * src/world/tileset.js. This runs alongside `restoreRoomState` on every room
+   * entry, so the road is open when you walk in rather than when you touch it —
+   * a gate the story opened is not a thing the player is meant to go and find.
+   *
+   * It deliberately does NOT persist. The flag is the record; writing the open
+   * tile into `progress.doors` as well would mean two sources of truth for one
+   * fact, and the room cache is wiped on new game (`resetRooms`) while the
+   * doors list is not.
+   */
+  applyStoryGates() {
+    const room = this.room;
+    if (!room) return;
+    for (let ty = 0; ty < room.th; ty++) {
+      for (let tx = 0; tx < room.tw; tx++) {
+        const def = getTileDef(room.baseName(tx, ty));
+        if (!def || !def.openFlag || !def.openTo) continue;
+        if (flag(this.progress, def.openFlag)) room.setTile(tx, ty, def.openTo);
+      }
     }
   }
 
@@ -594,6 +622,15 @@ export class Game {
       }
       return true;
     }
+    // A story gate the save has not earned yet. `applyStoryGates` would have
+    // opened it on entry if it had, so reaching here means it is still shut —
+    // and a tile that simply ignores you reads as scenery, not as a lock.
+    const gate = getTileDef(name);
+    if (gate && gate.openFlag && gate.openDeny && !flag(this.progress, gate.openFlag)) {
+      this.audio.sfx('deny');
+      this.say(gate.openDeny);
+      return true;
+    }
     const readable = (room.def.readable || []).find(r => r[0] === tx && r[1] === ty);
     if (readable) { this.say(readable[2]); return true; }
     return false;
@@ -856,6 +893,22 @@ export class Game {
     this.itemShow = { id, lv, t: ITEM_PRESENT_FRAMES };
     const name = itemName(id, lv);
     this.say(`You got the ${name}!\n${def ? def.desc : ''}`);
+  }
+
+  /**
+   * The same beat as presentItem, for a thing that is not an item.
+   *
+   * A trade item has no entry in ITEMS and no level, so it cannot go through
+   * presentItem — but the flourish is the whole of what tells the player that
+   * what they are carrying has CHANGED, and a chain of eleven silent swaps is a
+   * chain nobody can follow. `itemShow` takes an explicit sprite for this.
+   */
+  presentTrade(id) {
+    const def = TRADE_ITEMS[id];
+    this.audio.jingle('itemGet');
+    this.player.frozen = ITEM_PRESENT_FRAMES;
+    this.itemShow = { sprite: tradeIcon(id), t: ITEM_PRESENT_FRAMES };
+    this.say(`You got the ${tradeName(id)}!\n${def ? def.got : ''}`);
   }
 
   autoEquip(id) {
@@ -1542,6 +1595,9 @@ export class Game {
     const p = this.player;
     if (!p) return;
     const s = this.itemShow;
+    // A trade item carries its own sprite and its own palette; an inventory
+    // item is looked up. Both are held in the same place, over Link's head.
+    if (s.sprite) { sprites.draw(ctx, s.sprite, p.x, HUD_H + p.y - 16); return; }
     sprites.draw(ctx, itemIcon(s.id, s.lv), p.x, HUD_H + p.y - 16,
       { pal: ITEMS[s.id] && ITEMS[s.id].pal });
   }

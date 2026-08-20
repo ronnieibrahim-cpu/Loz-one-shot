@@ -11,7 +11,24 @@
 //     anim: ['water0','water1','water2','water1'], animRate: 10,
 //     over: true,                          // draw above entities (treetops, arches)
 //     push: [dx, dy],                      // water current, pixels/frame
+//     openFlag: 'makuOpenedKeep',          // story gate: opens when the save
+//     openTo: 'rockFloorDk',               //   carries this flag (see below)
+//     openDeny: 'Iron, sunk deep.',        //   said if you press A on it first
 //   }
+//
+// STORY GATES
+//   `openFlag` is the third kind of gate this game has, next to a flag an item
+//   answers (F.BOMBABLE, F.VANE) and terrain an item crosses (F.DEEP). It is
+//   not answered by an item at all: the tile becomes `openTo` on room entry
+//   once the save carries the named flag, and nothing the player is holding
+//   changes that. `Game.applyStoryGates` is the whole implementation and it
+//   runs alongside `restoreRoomState`, so a story gate opens the moment you
+//   walk in rather than when you touch it.
+//
+//   It exists because a region can be owed to the STORY rather than to an
+//   item, and expressing that as an item flag is how a progression lock gets
+//   built: the Keep's road was sealed by a tile only the Dredge Line opened,
+//   and the Dredge Line is inside the Keep.
 //
 // TIDE VARIANTS
 //   A tile with `tide` is a *virtual* tile: at runtime it resolves to one of three
@@ -50,7 +67,12 @@ export const F = {
   SANDBAR:   1 << 22,  // marks tiles whose walkability depends on tide (for hints)
   TALLGRASS: 1 << 23,  // hides the player's feet, drops rupees when cut
   VANE:      1 << 24,  // salt vane: only the Resonance Rod rings it open
-  MAGNETIC:  1 << 25,  // iron plug: the Dredge Line hauls it out of the way
+  // 1 << 25 was MAGNETIC — "iron plug: the Dredge Line hauls it out of the
+  // way". The Keep's seal is the only thing that ever carried it, and the seal
+  // is now opened by the story rather than by an item (see `openFlag` below),
+  // so nothing carries it and the bit is free. A flag whose comment names a
+  // gate the world no longer has is the same drift as a tiledef field the
+  // registrar drops: it reads as true and is not.
   // Region-gate markers. These do NOT drive traversal — the engine already
   // knows how to cross each of these tiles, because each one also carries the
   // ordinary flag for what it is (a chasm is JUMPABLE, a channel is DEEP, a
@@ -106,6 +128,13 @@ export function registerTiles(defs) {
       // docs/HANDOFF.md: data contracts drift from engine contracts silently.
       liftLevel: def.liftLevel || 0,
       liftSprite: def.liftSprite || null,
+      // A story gate: see the contract at the top of this file. THESE THREE
+      // HAVE TO BE NAMED HERE. This function copies field by field, so a
+      // tiledef key it does not list is silently discarded — which is exactly
+      // how `liftLevel` sat in the data unread for the life of the project.
+      openFlag: def.openFlag || null,
+      openTo: def.openTo || null,
+      openDeny: def.openDeny || null,
     });
   }
 }
@@ -178,6 +207,39 @@ export function resolveTile(name, tide) {
   const r = getTileDef(target);
   // One level of indirection only; a nested tide tile is a data bug.
   return r.tide ? getTileDef(r.tide[Math.max(0, Math.min(2, tide))]) : r;
+}
+
+/**
+ * Whether a resolved tile definition blocks a mover with the given
+ * capabilities — the same rule `Room.solidAt` applies at a pixel, pulled out
+ * here so anything that already has a concrete `TileDef` (rather than a pixel
+ * to sample) can ask the identical question instead of re-deriving it from
+ * raw flags. `Room.solidAt` calls this; nothing should define its own copy.
+ *
+ * `quadSolid` is the SOLID flag's own verdict for the quadrant being asked
+ * about — `Room.solidAt` passes the correct one for a pixel's sub-tile
+ * position; a caller with no pixel (a tile-granularity checker) passes
+ * `d.mask !== 0`, which is exactly right for every tile in this game today,
+ * since no tile uses a mask other than 0 (a doorway cut into a SOLID tile) or
+ * 15 (uniformly solid) — see docs/ART-DIRECTION.md and CLAUDE.md.
+ */
+export function tileDefSolid(d, caps, quadSolid) {
+  const f = d.flags;
+  if (f & F.VOID) return true;
+  if (f & F.SOLID) return quadSolid;
+  // Deep water is impassable on foot but fine while swimming.
+  if (f & F.DEEP) return !(caps && (caps.swim || caps.jumping));
+  // Gaps are crossed by jumping only.
+  if (f & F.JUMPABLE) return !(caps && caps.jumping);
+  // A ledge is the lip of a drop, not a floor. Nothing stands on it: the
+  // player clears it in a hop (Player.tryLedgeHop) and is airborne while it
+  // happens, so caps.jumping is what lets the hop through. Blocking it on
+  // the ground is the half that makes the ledge one-way — otherwise you
+  // could walk back up the drop or stroll along the lip.
+  if (f & F.LEDGE) return !(caps && caps.jumping);
+  if (f & F.BUSH) return !(caps && caps.cutting);
+  if (f & F.ROCK) return true;
+  return false;
 }
 
 /** The art name to draw for a tile at a given tide + frame counter. */

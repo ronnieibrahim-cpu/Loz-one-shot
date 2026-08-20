@@ -27,7 +27,43 @@ export function installCaves() {
         ],
         entities: [
           ['chest', 4, 3, { rupees: 30 }],
+          // BOTH of these landed on 7,2 from opposite branches, and both stay.
+          //
+          // The sword keeps the tile. It is not the senior claim by date, it is
+          // the senior claim by geography: the readable at 6,3 below is the
+          // sword's own inscription — "Four shards, and the second blade is
+          // yours" — and a signpost has to stand next to the thing it is about.
+          // Move the sword and the bluff is lecturing an empty tile.
+          //
+          // The Piece of Heart moves to 2,2, which is 7,2 reflected through the
+          // room's centre line. This grotto is drawn symmetrically (rubble at 3
+          // and 6, pots at 3 and 6), so the mirror tile is the one placement
+          // that does not read as the second prize being squeezed in beside the
+          // first: you come up the middle from the warp and the room offers one
+          // to each hand.
+          //
+          // NOTHING IS REPINNED IN check-hearts.mjs, deliberately. That tool
+          // pins the piece COUNT (24 -> cap 15), the divide-by-four, and the
+          // per-map split of two to a dungeon. A piece that moves from one tile
+          // of the Bluff Grotto to another tile of the Bluff Grotto changes no
+          // count, no map and no split — it is still the caves' piece. Editing a
+          // pin here would have been changing a number so a number agreed.
+          ['pickup', 2, 2, { kind: 'heartPiece' }],
+          // THE NOBLE SWORD. docs/GAME-PLAN.md has named its home — a secret
+          // cave, four Essences — since the plan was written, and nothing ever
+          // placed it: the level-2 sword existed as a damage tier, three HUD
+          // icons and a swing sound with no chest in the world that granted it.
+          //
+          // It is a chest rather than a giver because a sword in a grotto is a
+          // sword in a grotto, and it refuses rather than hides because a
+          // player who finds this room at two Essences should learn that it is
+          // worth the walk back.
+          ['chest', 7, 2, {
+            big: true, item: 'sword', level: 2, needEssences: 4,
+            needText: 'The blade will not come out of the stone.\nFour Essences, says the stone.',
+          }],
         ],
+        readable: [[6, 3, 'Cut into the bluff: "Four shards, and the\nsecond blade is yours. Fewer, and it stays\nthe bluff\'s."']],
         warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 3, ry: 7, px: 48, py: 48, dir: 'down' } }],
       },
     },
@@ -56,6 +92,11 @@ export function installCaves() {
         ],
         entities: [
           ['pickup', 3, 3, { kind: 'rupee20' }],
+          // Deeper into the seafloor patch than the rupee, and the room already
+          // explains itself: `4` is seafloor, walkable at LOW and nowhere else,
+          // so the wall carving IS the puzzle. No flag, no gate, no checker
+          // clause — just a tide the player has to be holding when they walk in.
+          ['pickup', 2, 2, { kind: 'heartPiece' }],
         ],
         readable: [[7, 3, 'Scratched into the rock: "When the sea withdraws, walk where fish swam."']],
         warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 6, ry: 7, px: 64, py: 64, dir: 'down' } }],

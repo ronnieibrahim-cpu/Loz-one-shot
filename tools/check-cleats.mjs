@@ -71,6 +71,7 @@ import { MAPS } from '../src/world/maps.js';
 import { getLegend } from '../src/world/room.js';
 import { F, getTileDef } from '../src/world/tileset.js';
 import { installData } from '../src/data/index.js';
+import { defWalkable, capsForMode, ROUTE_AVOID } from './lib/collision.mjs';
 import {
   SWIM_SPEED, SINK_SPEED, CLEATS_BREATH_FRAMES, TORRENT_PUSH,
   JUMP_POWER, JUMP_GRAVITY, WALK_SPEED,
@@ -119,16 +120,19 @@ const isDeep = (d) => !!d && !!(d.flags & F.DEEP);
 function walkableDef(d) {
   if (!d) return false;
   if (d.flags & F.STAIRS) return true;
-  return !(d.flags & (F.VOID | F.SOLID | F.PIT | F.DEEP | F.LEDGE | F.HAZARD));
+  return defWalkable(d, capsForMode('foot'), ROUTE_AVOID);
 }
 
-/** Can a body of this mode occupy the tile at all? */
+/**
+ * Can a body of this mode occupy the tile at all? Asked of the engine's own
+ * `tileDefSolid` (via `defWalkable`/`capsForMode`, tools/lib/collision.mjs)
+ * rather than a private re-derivation of which flags block a mover — 'swim'
+ * and 'sink' both cross F.DEEP, matching the Cleats' two modes.
+ */
 function occupiable(d, mode) {
   if (!d) return false;
   if (d.flags & F.STAIRS) return true;
-  if (d.flags & (F.VOID | F.SOLID)) return false;
-  if (d.flags & F.DEEP) return mode !== 'foot';     // both Cleat modes are fine
-  return !(d.flags & (F.PIT | F.LEDGE | F.HAZARD));
+  return defWalkable(d, capsForMode(mode), ROUTE_AVOID);
 }
 
 /**

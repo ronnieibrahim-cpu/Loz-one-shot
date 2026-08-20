@@ -116,11 +116,13 @@
 import { MAPS } from '../src/world/maps.js';
 import { getLegend } from '../src/world/room.js';
 import { F, getTileDef, transformFor } from '../src/world/tileset.js';
+import { REEFSEED_PLANT_BLOCK } from '../src/game/items.js';
 import { installData } from '../src/data/index.js';
 import {
   REEFSEED_THROW_SPEED, REEFSEED_SETTLE_FRAMES, REEFSEED_CAPACITY,
   THROW_ARC_RISE, THROW_ARC_GRAVITY, GAP_HOP_MAX_SPAN,
 } from '../src/data/feel.js';
+import { defWalkable, defSolid, capsForMode, ROUTE_AVOID } from './lib/collision.mjs';
 
 installData();
 
@@ -152,16 +154,18 @@ const isDeep = (d) => !!d && !!(d.flags & F.DEEP);
 function walkableDef(d) {
   if (!d) return false;
   if (d.flags & F.STAIRS) return true;
-  return !(d.flags & (F.VOID | F.SOLID | F.PIT | F.DEEP | F.LEDGE | F.HAZARD));
+  return defWalkable(d, capsForMode('foot'), ROUTE_AVOID);
 }
 
-/** Can a body in this mode occupy the tile at all? Cleats cross deep water. */
+/**
+ * Can a body in this mode occupy the tile at all? Cleats cross deep water.
+ * Asked of the engine's own `tileDefSolid` via `defWalkable`/`capsForMode`
+ * (tools/lib/collision.mjs), not a private re-derivation.
+ */
 function occupiable(d, mode) {
   if (!d) return false;
   if (d.flags & F.STAIRS) return true;
-  if (d.flags & (F.VOID | F.SOLID)) return false;
-  if (d.flags & F.DEEP) return mode !== 'foot';
-  return !(d.flags & (F.PIT | F.LEDGE | F.HAZARD));
+  return defWalkable(d, capsForMode(mode), ROUTE_AVOID);
 }
 
 /**
@@ -173,21 +177,22 @@ const canThrowFrom = (d) => walkableDef(d);
 
 /**
  * `PushBlock.push`'s test on the destination tile: `canOccupy` with
- * `{ jumping: false, swim: false }`, which is `room.solidAt` with no caps.
- * Deep water, walls, ledges and gaps all refuse; a pillar at LOW does not.
+ * `{ jumping: false, swim: false }`, which is `room.solidAt` with no caps —
+ * asked of the engine's own `defSolid` (tools/lib/collision.mjs), not a
+ * private copy of the formula. Deep water, walls, ledges and gaps all refuse;
+ * a pillar at LOW does not.
  */
 function blockCanEnter(d) {
-  if (!d) return false;
-  if (d.flags & (F.VOID | F.SOLID | F.DEEP | F.JUMPABLE | F.LEDGE | F.BUSH | F.ROCK)) return false;
-  return true;
+  return !defSolid(d, { jumping: false, swim: false, cutting: false });
 }
 
-/** `Reefseed.canPlant`'s terrain clauses, at every level, as the engine has them. */
+/** `Reefseed.canPlant`'s terrain clauses, at every level — the engine's own
+ * `REEFSEED_PLANT_BLOCK` mask, not a retyped copy of it. */
 function plantableTerrain(nameAt) {
   for (const l of LEVELS) {
     const d = defOf(nameAt, l);
     if (!d) return false;
-    if (d.flags & (F.VOID | F.SOLID | F.DOOR | F.WARP | F.STAIRS | F.SWITCHF | F.PIT)) return false;
+    if (d.flags & REEFSEED_PLANT_BLOCK) return false;
   }
   return getTileDef(nameAt) !== getTileDef('coralPillar');
 }
@@ -208,20 +213,11 @@ class Board {
   name(x, y) { return this.inside(x, y) ? this.names[y][x] : null; }
   def(x, y, l) { return this.inside(x, y) ? defOf(this.names[y][x], l) : null; }
   plant(x, y) { this.names[y][x] = 'coralPillar'; }
-  /** `room.solidAt` for a body with these caps, tile-resolution. */
+  /** `room.solidAt` for a body with these caps, tile-resolution — asked of the
+   * engine's own `defSolid` (tools/lib/collision.mjs), not a private copy. */
   solid(x, y, l, caps) {
     if (!this.inside(x, y)) return true;
-    const d = this.def(x, y, l);
-    if (!d) return true;
-    const f = d.flags;
-    if (f & F.VOID) return true;
-    if (f & F.SOLID) return true;
-    if (f & F.DEEP) return !(caps.swim || caps.jumping);
-    if (f & F.JUMPABLE) return !caps.jumping;
-    if (f & F.LEDGE) return !caps.jumping;
-    if (f & F.BUSH) return !caps.cutting;
-    if (f & F.ROCK) return true;
-    return false;
+    return defSolid(this.def(x, y, l), caps);
   }
 }
 

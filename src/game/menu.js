@@ -14,6 +14,7 @@ import { HEART_UNITS } from './progress.js';
 import { essenceCount } from '../world/maps.js';
 import { MAPS, getMap, hasRoom, getRoom, roomKeyAt } from '../world/maps.js';
 import { TIDE_NAMES, TIDE_COUNT } from './tide.js';
+import { tradeName, tradeIcon } from '../data/trade.js';
 
 // The Chartstone's pips, LOW to HIGH. Sand, shallow, deep — the same three
 // tones the water itself is drawn in, so the mark needs no key to read.
@@ -352,6 +353,26 @@ export class Menu {
     drawText(ctx, `Blanks ${p.blanks || 0}`
       + (p.carve ? `   Carving: ${p.carve.turns} tide${p.carve.turns === 1 ? '' : 's'}` : ''),
       6, y, '#f8f8e8');
+    // Tighter than the gaps above it: this is the last block on a 144-pixel
+    // screen and the footer sits at SCREEN_H - 11, so a 16-pixel icon on a
+    // 13-pixel step overlaps 'SELECT: tab'.
+    y += 9;
+
+    // The Coastwise Chain. This screen is the ONLY place the player can look up
+    // what they are carrying — a trade item is not in the item grid, because it
+    // is not an item and putting it there would offer to equip it to a button.
+    // The line is drawn only once the chain has started, so a new game's quest
+    // screen does not advertise a quest nobody has met yet.
+    if (p.trade && p.trade.stage) {
+      drawText(ctx, 'COASTWISE CHAIN', 6, y, '#a8f0f8');
+      y += 10;
+      if (p.trade.item) {
+        sprites.draw(ctx, tradeIcon(p.trade.item), 4, y - 4);
+        drawText(ctx, tradeName(p.trade.item), 22, y, '#f8f8e8');
+      } else {
+        drawText(ctx, 'Nothing left to carry.', 6, y, '#687888');
+      }
+    }
   }
 
   // ------------------------------------------------------------ scrimshaw

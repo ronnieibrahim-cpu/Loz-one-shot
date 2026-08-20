@@ -10,6 +10,726 @@ maintain and the most expensive thing to not have.
 
 ---
 
+## THE BOARD NOW — three parallel branches merged onto main, and one document
+## left deliberately broken
+
+`claude/merge-three-features-conflicts-6ipqpz` merged three branches onto main,
+`--no-ff`, in this order: `claude/merge-four-features-53ql03` (13 commits),
+`claude/circular-progression-lock-rff8nx` (1), `claude/player-walkthrough-guide-74mtr5`
+(1). All three forked from the same main commit (`64af325`) and none had been
+merged. The first went in clean. The third collided only in these docs.
+
+The second needed four decisions, all of them written into the code at the
+point of decision rather than only here:
+
+1. **`src/data/caves.js` — the Bluff Grotto holds both prizes.** The Noble
+   Sword keeps tile 7,2; the Piece of Heart moved to 2,2, the mirror tile.
+   **`check-hearts.mjs` was NOT repinned**, and that is the decision, not an
+   oversight: it pins the piece COUNT (24 -> cap 15), the divide-by-four, and
+   the two-to-a-dungeon split. A piece that moves within one cave changes none
+   of the three. Nothing was edited to make a number agree.
+2. **`src/data/overworld.js` — the Maku Tree is both her selves.** She is the
+   Coastwise Chain's last link (takes the bellrope, gives the Rod, sets
+   `gotRod`) AND the two-beat tree whose `makuMaster` scene at five Essences
+   grants sword L3 and sets `makuOpenedKeep`. `MakuTree` therefore extends
+   `Trader` rather than `Giver` (`src/game/objects.js`), and its "first beat
+   first" guard is the chain's `spent()` rather than the Giver's `giveFlag`.
+3. **`src/game/objects.js` — both classes kept, whole.** They had merely landed
+   textually adjacent; `Trader` and `MakuTree` are now both present in full.
+4. **`tools/check-overworld.mjs` — neither side kept whole.** It is the shared
+   collision lib's implementation carrying the story gate's `openFlag` clause.
+
+**Two things the merge broke that NOTHING flagged, both in
+`tools/check-progression.mjs`.** It is a new file on one side, so git had no
+conflict to report:
+
+  * It arrived carrying its own private collision formula — the tenth copy, cut
+    from a branch where the other nine still existed. It now calls
+    `tools/lib/collision.mjs`. This changed no verdict (exactly as the
+    consolidation found for the other nine) but was required by `test.mjs`.
+  * It read grants from `o.item`, and making the Maku Tree a trader moved the
+    Rod into `o.deals[].item`. It therefore never granted the Rod and reported
+    the **Salt Pans unreachable by a finished game**. It now reads deals, and
+    treats the chain as an offer needing EVERY link's screen reachable
+    (`whereAll`), not just the payout's doorstep. 120/120 screens, 6/6 dungeons.
+
+This is the same shape the four-branch merge hit with `check-hearts.mjs` and
+`check-trade.mjs`, two sections below. It has now happened twice. **When one
+branch adds a tool and another changes the rules all tools obey, the merge must
+re-audit the new tool by hand — every automatic signal is silent.**
+
+### `docs/GUIDE.md` IS STALE ON PURPOSE AND `check-guide.mjs` FAILS 3 OF 4
+
+This is not a regression and must not be "fixed" by editing the guide. The
+guide is GENERATED FROM DATA, and it was generated against main before the
+trading chain, the Noble Sword, the story gating and the 15-heart cap existed.
+It fails exactly here:
+
+  * `every backticked ... id in the guide is real` — `tradeStart`, `tradeMid`,
+    `tradeEnd`. The guide's own line 654 describes those story.js lines as
+    "not referenced by any" — the Coastwise Chain now references them.
+  * `every heartPiece in src/data/ is referenced` — missing `cave1/0,0,0`
+    (the Bluff Grotto piece, moved by decision 1 above), `cave2/0,0,0` and
+    `d4/0,4,1`.
+  * `the guide numbers heart pieces 1..24` — it numbers 18. The cap branch
+    raised the count from 18 to 24.
+
+**Session 5's job is to REGENERATE it**, not to patch it. A guide hand-edited
+until the checker agrees is a guide written by nobody from the data, which is
+the one thing this document is not allowed to be.
+
+### Verified state at the end of this session
+
+Full CLAUDE.md checker table plus the three branch-added checkers, all green
+except the one above. Counts that moved from main's baseline, and why:
+
+  * `check-gates` 15 -> 20: the progression branch rewrote it for the story gate.
+  * `check-progression` 19: new tool, +1 assertion for the chain offer.
+  * `check-hearts` 114, `check-trade` 43: new tools from the four-branch merge.
+  * `test` 58 -> 59: the four-branch merge added the private-collision guard.
+  * `check-build` colours 16 -> 27: the drawn title screen.
+  * Everything else identical to main, `replay` included — all 51 tapes pass
+    unchanged, so no entity id moved and nothing re-phased.
+
+The two-beat Maku Tree was additionally driven in a LIVE ENGINE, not just
+modelled: beat two refuses to fire before the chain completes, beat one grants
+the Rod at stage 12, and beat two then plays `makuMaster`, sets
+`makuOpenedKeep` and grants sword L3. `check-gates.mjs` only ever set that flag
+by hand, so nothing in the suite proves the tree sets it — that gap is still
+open and is worth a real assertion.
+
+---
+
+## THE BOARD, UPDATED AGAIN — title screen art, P9's health economy, P9.5's trading sequence, and the checker collision-model consolidation all landed
+
+Four branches merged into this board at once: the title screen is drawn art
+now (`claude/title-screen-art-j2lyg9`), P9's health-economy audit found and
+fixed a wrong maximum-health cap (`claude/p9-heart-health-economy-crpqyb`),
+the Coastwise Chain trading sequence now exists and pays out the Resonance
+Rod (`claude/p9-5-trading-sequence-ama7n7`), and every `tools/*.mjs` checker
+that used to carry its own private copy of tile passability now asks the
+engine's own `Room.solidAt`/`canOccupy` via `tools/lib/collision.mjs`
+(`claude/consolidate-movement-models-f1bqez`). Full detail for each follows
+as its own section below.
+
+**The merge itself found one gap the consolidation's own inventory couldn't
+see:** `check-hearts.mjs` and `check-trade.mjs` didn't exist yet on the branch
+the consolidation was cut from, so neither was converted, and both tripped
+`tools/test.mjs`'s new `checkNoPrivateCollisionLogic` guard the moment all
+four branches landed together (`check-hearts.mjs:210` masked
+`PIT|HAZARD|DEEP`, `check-trade.mjs:160` masked seven flags). Both now call
+`defWalkable`/`ROUTE_AVOID` from `tools/lib/collision.mjs` instead; no
+assertion moved in either (114/114, 43/43). Every other `tools/*.mjs` file
+was swept by hand for the same pattern and each remaining raw-flag site is a
+narrow, verb-specific test already documented as intentionally out of scope
+(gap-hop tracing, cast/dredge stop rules, throw-flight stops) — none
+reimplements general passability.
+
+**Also found, not fixed, not blocking:** `node tools/scan-sprites.mjs
+--strict` reports 82 hard findings, all in `title_splash` (holes and
+outdents in the mottled backdrop/rings). This predates the trading and
+consolidation merges — confirmed identical right after the title-screen
+merge alone — and is a pixel-art quality question about the title
+backdrop, not a manifest-resolution problem: `scan-sprites` reports all 308
+sprite names resolved (both the `title` and `trade` packs installed and
+readable, nothing missing). Worth a look next session; not touched here
+since it isn't a merge conflict and this session was scoped to not write
+new game content.
+
+### Title screen is drawn art now — branch `claude/title-screen-art-j2lyg9`
+
+`src/game/title.js` used to draw the game's name as system-font text over a
+procedural sea, with a comment saying it was drawn that way "so the title
+needs no art" — a placeholder that had survived to be the first screen
+anyone sees. It is now a real title card, built to the Oracle-series title
+grammar (that card was the reference held up for it):
+
+| piece | what it is |
+|---|---|
+| `title_caption` | "THE LEGEND OF", small caps, flat fill + outline |
+| `title_wordmark` | "ZELDA", 99x28, ornate display serif, bevelled |
+| `title_sub` | "ORACLE OF", small caps |
+| `title_pill` | "TIDES" in a stadium: pale ring, deep fill, pale letters |
+| `title_conch` | the Moon Conch emblem, 32x35 |
+| `title_splash` | the mottled backdrop the text sits on |
+| `title_press` | "PRESS START", drawn rather than system text |
+
+Read top to bottom that is **THE LEGEND OF ZELDA / ORACLE OF TIDES**, which
+is the source cards' exact four-tier structure.
+
+**`src/data/sprites-title.js`** holds all of it. No sheet has this game's
+name on it, so per ART-DIRECTION rule 2 this is drawn-to-match, and it is
+hand-authored source — NOT a ripper output, so the generated-file rule does
+not apply and there is nothing to re-emit.
+
+The important structural point for whoever edits it next: **the letterforms
+are hand-drawn silhouettes**, literal `#`/`.` tables, one per display glyph,
+drawn stem by stem with 4px stems, 3px bars and flared serif feet. What is
+computed is only the shading — a bevel pass (index 0 on every top/left edge,
+index 2 on every bottom/right, index 1 inside) and an outline dilation
+(index 3). The first version of this file generated the letters by upscaling
+a 5x7 sans font, and it read as exactly what it was; no amount of palette
+work fixes letterforms. If you need a new display glyph, draw it into
+`DISPLAY` at 20 rows and let the passes shade it. `setType` bottom-aligns on
+a common baseline and sizes the block to its tallest glyph, which is what
+lets the 26-row `Z` rise above the 20-row `ELDA` the way the source's does —
+that one oversized leading letter is most of the logo's silhouette.
+
+Design points worth not re-litigating:
+
+- **The series line is deliberate and must not be "fixed".** Mid-session a
+  pass replaced "THE LEGEND OF ZELDA" with an invented line, reading Goal 2
+  as a rule about names. It is not — it is a rule about mechanics, items,
+  dungeons and story. This is an openly-labelled personal fan game that
+  stars Link and runs on ripped sheets; the series line belongs on it. The
+  owner reverted that call explicitly and CLAUDE.md now says so at the top.
+  **Do not strip it again.**
+- **`ZELDA` is the hero word, `ORACLE OF` is the subtitle line, `TIDES` is
+  in the pill** — the source's exact split, where the full game title reads
+  across the small line and the pill together.
+- **The Moon Conch is the marquee-item emblem**, overlapping the wordmark's
+  lower right where the source cards put the Rod of Seasons and the Rod of
+  Ages. It fills the same role in this game (it is what moves the tide), and
+  unlike the branding it IS ours, so it is the worked example of where the
+  line actually falls. Its shape follows the 16x16 `i_conch` icon so emblem
+  and inventory icon read as one object. If you redraw it: the stepped left
+  edge is doing the work — a smooth taper read as a striped leaf, and the
+  whorl sutures are what make it a shell.
+- **The tide waterline is the one piece of scenery** (item 3 of the brief;
+  a moon was the alternative). It crosses the full screen width, not just
+  the logo — a waterline that stopped at the logo's edges read as a
+  highlight on the logo rather than as a sea level. It sits at the pill's
+  ankles: an earlier pass ran it through the middle of the hero word and cut
+  it in half like a scanline.
+- **All three stages (logo, file select, erase) share the gold frame** and
+  the same sea behind them. File-select and erase kept their exact existing
+  layout, per the brief — only the border and background changed.
+
+All seven sprite names are registered in `src/data/sprite-manifest.js`
+(`REQUIRED_SPRITES.title` and `expectedSize`), with the sizes stated by hand
+rather than imported from the module that makes them, so a glyph-table edit
+that changes an assembled size is a `validate.mjs --strict` failure instead
+of a silent stretch.
+
+**Verified by looking at it, which is the only thing that proves a title
+screen.** All three stages were screenshotted in the real palette and read
+correctly; `preview.mjs` is explicitly not enough here and could not have
+caught any of the four problems that took a pass each to find (halo eating
+the backdrop, backdrop reading as TV static, waterline bisecting the hero
+word, pill letters washing out). Shots went to a throwaway dir and are not
+checked in — `node tools/test.mjs --shots` gets the logo and file-select;
+the erase stage needs a one-off script that sets
+`window.__game.title.cursor = 3` before the second Enter, and the logo needs
+`title.t` parked on an even 16-frame boundary or PRESS START is caught
+mid-blink.
+
+Not touched, per the brief: save-file logic, input handling, the intro
+sequence.
+
+### Two environment notes for the next session
+
+1. **`replay.mjs`, `walk-dungeons.mjs`, `solve-switches.mjs` and
+   `check-gates.mjs` cannot launch a browser in this sandbox.** The
+   installed playwright package does not match the installed browser build.
+   `test.mjs` and `check-build.mjs` already carry a fallback to
+   `/opt/pw-browsers/chromium` for exactly this; the other four do not, and
+   die on launch before loading a line of game code. All four were verified
+   green this session by patching that same fallback in temporarily and
+   reverting it — 50/51 replays, 22 walk-dungeons, 14 check-gates, all 9
+   switch rooms. **Giving those four the fallback their siblings already
+   have is a real five-line fix and a good first job**; it was left out of
+   this commit only because a title-screen diff is the wrong place for it.
+2. **Every browser-based checker reports one failure, "no page errors — 404
+   Failed to load resource".** It is pre-existing and unrelated — confirmed
+   by stashing this session's work and re-running. Do not chase it as a
+   regression, but it is worth ten minutes to find and delete the dead
+   reference.
+
+### P9's health economy: the cap was 13 and nothing could see it
+
+**P9 step 3 is done. Steps 1, 2 and 4 — the region re-gating — are NOT, and are
+the next session's job.** See `docs/EXECUTION-PLAN.md`'s P9 block, which now
+says which of its four steps landed.
+
+**The headline: maximum health is a SUM, no file contains it, and it was
+wrong.** `tools/check-hearts.mjs` (new, in CLAUDE.md's verification table)
+computes it from the loaded data. Its first run read:
+
+```
+  start                3 hearts
+  Heart Containers     6   (one per dungeon boss)
+  heart pieces         18  = 4 containers + 2 ORPHANED
+  CAP                  13 hearts
+```
+
+Thirteen, against a brief asking for 14-16 — and **two of the eighteen pieces
+could never complete a container**. Collectable, jingle, counter ticks, paid
+nothing, for ever. (The starting prompt for this session said 19 pieces; the
+real count was 18 — 14 `entities` pickups, 4 `buried`, and one of those
+"placed" is a `puzzle.reward.spawn` in d3. The discrepancy did not change the
+direction of the work, since either number is short.)
+
+**Now 24 pieces, cap 15** — the middle of the window, and a shape worth keeping:
+six containers from the six bosses, six more from exploration, plus the three
+you start with. Half the maximum is fought for, half is searched for. The six
+added:
+
+| Where | Why there |
+|---|---|
+| `d1/0,5,3` Clawcrab Den | its `puzzle.reward` paid out a **sentence and nothing else** — the only fight in D1 that cost health and returned none |
+| `d2/1,5,4` Whelk Cell | the Spire's far-east cul-de-sac |
+| `d4/0,4,1` East Overlook | corner furthest from the door |
+| `d5/0,5,5` Bower Cell | the Shrine's south-east dead end |
+| `cave1` Bluff Grotto | had only a rupee chest |
+| `cave2` Reef Hollow | on the seafloor patch — LOW tide only; the room's own carving ("walk where fish swam") is the puzzle |
+
+**None of the six sits on a recorded route.** All 51 replays and
+`check-playthrough.mjs`'s 19 checks were unchanged, which is the proof they are
+rewards for leaving the path rather than things handed to a passer-by. The
+instrumented D1 health table is byte-identical to the one in the archived board
+below.
+
+**`d3/0,2,2` Bogmaw Hall has the same empty-reward bug as the Clawcrab Den did**
+— miniboss killed, one sentence, nothing dropped. It was left alone only because
+d3 is already at its two-piece quota. It should get *something*.
+
+**The distribution is now pinned by the checker: every dungeon carries exactly
+two.** This is the guard against the way it broke in the first place — a heart
+piece is placed while thinking about a room, and the total it moves lives
+nowhere. A future session that wants a different split has to edit
+`PER_DUNGEON`, which is the point.
+
+**The damage half was re-derived in the same pass, and deliberately not
+applied.** Raising the cap is a difficulty change even when no damage value
+moves, which is exactly why the two could not be tuned in separate sessions. The
+ladder is now pinned in `check-hearts.mjs` — every enemy on a named rung, a new
+enemy fails the checker until someone puts it on one:
+
+```
+  tier      dmg  in hearts  at start    at cap
+  chip       1 qh  0.25 hearts    12        60   2 types
+  ordinary   2 qh  0.5 hearts      6        30   13 types   <- P9's anchor, already correct
+  heavy      3 qh  0.75 hearts     4        20   7 types
+  miniboss   3 qh  0.75 hearts     4        20   8 types
+  boss       4 qh  1 heart         3        15   8 types
+```
+
+A miniboss hits for exactly what a jellyfish hits for, and at the new cap the
+final boss needs fifteen connections to kill a maxed player. The derived fix, on
+the half-heart grid the source games deal on: **heavy 3 -> 4 qh, miniboss 3 -> 6
+qh, boss 4 -> 8 qh.**
+
+**Why it was not landed — measurement, not caution.** Every enemy it touches in
+the only instrumented dungeon (D1's two anglerfry at `0,5,2`, the Clawcrab at
+`0,5,3`, Gohmaraq at `0,3,1`) sits *past the Sluicegate*, in the half of D1 the
+route cannot reach. The instrumented run would have shown **no change at all**
+while the numbers went in looking proven, it would re-open the D1 economy the
+previous session closed by measurement, and it would cost a re-record of all 51
+replays. **Its prerequisite is job 1 below.** Full reasoning in
+`docs/FEEL-SPEC.md`, "The cap and the damage ladder", and in the checker's own
+comment.
+
+Two things the checker found on the way that were NOT bugs, and cost a red each
+before the data was checked by hand — the same lesson `walk-dungeons.mjs` learned
+about one-way ledges: **a buried piece is dredged, not stood on** (the Drowned
+Shore's is under an `abyssHole`, deep water, with a bell NPC leaning at it), and
+**a piece on a liftable rock is reached by lifting the rock** (three independent
+placements use that idiom). The checker was wrong; the data was right.
+
+**Also found and fixed on the way:** two enemies, `brinehulk` (the Abyssal
+Keep's second fight, standing in front of Nereth) and `thalassor` (built,
+placed nowhere at all), are bosses in every respect but are declared by no
+dungeon — so any tool that infers "boss" from `map.dungeon.boss` mis-classifies
+them. `check-hearts.mjs` pins bosses by name and cross-checks the declarations
+against that list rather than deriving it from them.
+
+**Next session's job, in order:**
+
+1. **Teach the actor an anchor-placement verb** (sink at a chosen tile, walk
+   away, recall) and extend `playthrough-route.mjs` past the Sluicegate —
+   unchanged from the previous board, and now blocking the damage ladder as
+   well as D1's second-half health reading.
+2. **P9 steps 1, 2 and 4: the region re-gating.** Eight regions gated on items
+   that no longer exist; five gates should be tile-flag-shaped so
+   `check-overworld.mjs` can prove them both ways; the Brineglass Lens must
+   never be a region gate.
+3. Apply the derived damage ladder once job 1 makes it measurable, and
+   re-record the replays against it.
+4. Give `d3/0,2,2` Bogmaw Hall a real reward.
+5. The 32 stale branches are still undeleted (see the archived board below);
+   branch deletion still 403s from the proxy.
+
+### The trading sequence exists, and it pays out the Rod — P9.5
+
+**The fourth gap in the content audit below is closed.** The trading sequence
+was `progress.trade = {stage, item}` declared, saved, and read by nothing, with
+three orphan dialogue lines and no `trader` entity type. It is now the
+**Coastwise Chain**: eleven traders, eleven objects, twelve links, ending at the
+Maku Tree, who takes the Tide Bell's own rope and one Essence and hands back the
+**Resonance Rod**. Full writeup in `docs/TRADING.md`; the short version:
+
+- **One new entity type, `trader`, holding a list of DEALS.** A deal is live
+  when `p.trade.stage === stage - 1`, so exactly one deal in the whole world is
+  live at a time — a trader further along has nothing to say to you yet even
+  while you are holding what they will eventually ask for. Deals live on the
+  trader rather than one-per-NPC, which is the only reason the chain can be a
+  circle: **Ossa the net-mender is stage 1 and stage 11**, handing over the
+  cracked float on the first visit and taking her kettle back on the eleventh.
+- **Ten of the eleven traders were already-placed NPCs that changed type in
+  place.** No entity id moved, nothing re-phased, and all 51 replays passed
+  unchanged on the first run. Each keeps its old flavour line as the trader's
+  `waiting` text, so a player who never starts the chain hears the same coast.
+- **The Maku Tree still sets `gotRod`**, at the same moment it always did, so
+  the Abyssal Keep's Colonnade grate — the one thing in the game that asks
+  whether the player went and did the trade — is untouched. `check-trade.mjs`
+  proves it in-engine anyway: it takes the Rod the chain paid out down to
+  `d6/1,2,4` and rings the grate open.
+- **The Rod now costs the chain AND one Essence.** It used to cost the Essence
+  alone. That is a real gate — the Rod opens the Salt Pans' vanes — which is
+  why `check-trade.mjs` floods the overworld from the village with **bombs
+  only** and asserts every link can be stood next to without it. Bombs (from
+  the un-gated Coral Spire) are the chain's one item gate: Yarrow is in the
+  Marsh.
+- **Eleven hand-drawn 16x16 icons** in `src/data/sprites-trade.js`, and they are
+  hand-drawn on purpose: `assets/sheets/oracle-seasons-trading-characters.png`
+  carries Seasons' own trade items and every one of them is a thing that game
+  is about. The people are extracted; the objects are ours.
+- **A trade item is not an inventory item.** It never enters `progress.items`,
+  is not in `docs/ITEMS.md`'s roster (which `check-items.mjs` asserts the
+  registry matches exactly), and the **Quest screen** is the only place to look
+  up what you are carrying.
+
+**Everything green after it**: validate, walk-dungeons 23, check-overworld 17,
+check-gates 15, solve-switches, check-motion 8, check-music, check-charms 63,
+check-towns 58, check-items 82, anchor 14, cleats 15, lens 24, bellows 60,
+reefseed 87, dredge 103, replay 51, test 58, check-playthrough 19, and
+check-trade 43.
+
+**One thing a future session should know**: the Maku Tree is a `trader` now, not
+a `giver`. Gap 2 below — `makuMaster` never plays, so the level-3 sword is
+unobtainable and `makuOpenedKeep` is written by a scene that never runs — is
+still open, and whoever wires it up should hang it off a second deal or a
+cutscene trigger on that same entity rather than adding a second Maku.
+
+### Checkers no longer define their own collision/passability/push logic — `claude/consolidate-movement-models-f1bqez`
+
+**The trigger:** a prior session found that 550 assertions were once green
+while no block in the game could actually be pushed, because
+`solve-switches.mjs` and `walk-dungeons.mjs` each modelled movement with a
+private copy of the collision rule instead of asking the engine. This session
+was scoped to find and eliminate EVERY such private model in `tools/`, not
+just those two.
+
+**Inventory (found by grepping for the `F.VOID | F.SOLID | F.PIT | F.DEEP |
+F.LEDGE | F.HAZARD`-shaped fingerprint and its variants across `tools/*.mjs`,
+then verifying each hit by eye):**
+
+- `tools/walk-dungeons.mjs` — its dungeon-reachability flood (`walkableAt`),
+  the tide-locked-room flood, and the locked-door-separates-its-room check
+  each re-derived walkability from raw tile flags instead of asking a real
+  `Room` (via `getRoom`, already imported in the page) for `solidAt`.
+- `tools/check-overworld.mjs` — same shape, plain Node, already building real
+  `Room` objects via `getRoom` for tile *names* but not asking them for
+  *solidity*.
+- `tools/solve-switches.mjs` — already called the engine's real
+  `game.tryPushBlock` for the push itself (good), but its `notStandable`
+  check (can the player stand behind the block to push it) re-derived
+  standability from raw flags instead of calling `canOccupy`.
+- `tools/find-ledges.mjs` — its `plain()` placement filter re-derived
+  walkability from raw flags on top of legitimate placement-only curation
+  (no warp/door/stairs/bombable-wall as a lip).
+- `tools/check-anchor.mjs`, `check-bellows.mjs`, `check-cleats.mjs`,
+  `check-dredge.mjs`, `check-lens.mjs`, `check-reefseed.mjs`,
+  `find-crossings.mjs`, `check-towns.mjs` — every one of these carried its own
+  `walkableDef`/`occupiable`/`walkable` function reimplementing the exact
+  formula `Room.solidAt` already computes, several of them byte-for-byte
+  identical copies of each other (a mode-aware `occupiable(d, mode)` appears
+  nearly verbatim in four separate files). `check-reefseed.mjs` additionally
+  carried a full second copy of `solidAt`'s body in a `Board.solid` method,
+  and a copy of `Reefseed.canPlant`'s terrain-block mask.
+
+**What was NOT touched, and why:** a handful of sites combine exactly
+`F.SOLID | F.VOID` to ask "does this stop a flying/thrown thing" — the Dredge
+Line's cast-stop rule, a hop's mid-flight clearance check, an Anchor throw's
+flight. That is a genuinely different, narrower, irreducible question from a
+walking body's passability (a projectile crosses DEEP/PIT/HAZARD/LEDGE freely
+and only a wall stops it), it cannot be expressed by composing
+`tileWalkable`'s `caps`/`avoid` parameters, and every instance already matches
+the real engine formula it mirrors (`DredgeLine.update` in
+`src/game/items.js`) — verified by reading the source, not assumed. These are
+left as direct, narrow, single-purpose flag tests. `tools/test.mjs`'s new
+guard (below) is deliberately tuned to leave them alone: it only fires on a
+mask naming three or more collision-shaped flags, and `F.SOLID | F.VOID` is
+two.
+
+**What changed:**
+
+1. New `tools/lib/collision.mjs` — the one place outside `src/` allowed to
+   name a raw tile flag as "solid". It composes `Room.solidAt` (via
+   `tileWalkable`/`tileSolid`) and a small extracted engine function,
+   `tileDefSolid` (new export in `src/world/tileset.js` — the exact body that
+   used to live only inside `Room.solidAt`, pulled out so a checker with a
+   resolved `TileDef` in hand, not a pixel to sample, can ask the SAME
+   function rather than a copy of it; `Room.solidAt` now calls it too). An
+   `avoid` flag mask parameter is how a checker expresses "and also treat
+   this as a wall for route-planning" (F.PIT/F.HAZARD, exported as
+   `ROUTE_AVOID`) — the same composition pattern `canOccupy` already uses for
+   an enemy's `avoidFlags`, not a new rule. `capsForMode('foot'|'swim'|'sink')`
+   gives the Cleats' two modes a name instead of writing the capability object
+   out at every call site.
+2. Every file in the inventory above now calls into `tools/lib/collision.mjs`
+   (or, for `walk-dungeons.mjs`/`find-ledges.mjs`/`solve-switches.mjs`, the
+   real engine's `canOccupy`/`room.solidAt`/`getRoom`, live in the page —
+   these already boot a real headless-Chromium instance of the game and can
+   `await import('/src/game/entity.js')` etc.). `check-reefseed.mjs`'s
+   `plantableTerrain` now imports a new export, `REEFSEED_PLANT_BLOCK`, from
+   `src/game/items.js` (the exact mask `Reefseed.canPlant` uses) instead of
+   retyping it — this checker has no live `game` to call `canPlant` on
+   directly, so importing the same constant is the strongest link available
+   short of running it inside a browser.
+3. `tools/test.mjs` gained a guard, `checkNoPrivateCollisionLogic`: it fails
+   if any `tools/*.mjs` file outside `tools/lib/collision.mjs` combines three
+   or more collision-shaped flags (`SOLID, VOID, PIT, DEEP, LEDGE, HAZARD,
+   JUMPABLE, BUSH, ROCK`) in a bitwise-OR mask. Verified against the
+   pre-refactor tree (via `git show HEAD:...`) that it actually catches the
+   originals, and confirmed silent on the consolidated tree.
+
+**Results, before vs. after — nothing that asserts moved. Two things that
+only REPORT a number did, and both are real, both are explained, and both
+make the checker MORE correct, not less:**
+
+- `check-overworld.mjs`: 17/17 passed, unchanged. Reported tile/state counts
+  rose slightly (2928→2941 tiles in the unheld flood; states similarly) because
+  the private formula treated every `F.SOLID`-flagged tile as fully blocking
+  regardless of `mask`, while `Room.solidAt` correctly reads `mask: 0` (a
+  doorway/cave-mouth cut into a nominally-solid tile) as open. The old
+  checker was silently refusing to walk the flood onto cave mouths and town
+  doors; no screen's reachability verdict depended on it, so no `check()`
+  moved, but the flood's own node count was quietly wrong for the whole life
+  of the checker.
+- `find-ledges.mjs`: reporter only, no assertions. Candidate count dropped
+  942→810 (overworld alone: 322→190) because the private `plain()` filter
+  never excluded `F.BUSH`/`F.ROCK` tiles, so it was offering bush and
+  liftable-rock tiles as valid ledge-lip placements — tiles a player cannot
+  actually stand on as "plain floor" without first clearing them. Confirmed
+  by direct count: the data has 87 BUSH-tide-instances and 414 ROCK-tide-
+  instances across all rooms. This is a bug the private model was hiding,
+  now caught.
+- Every other checker touched (`walk-dungeons.mjs`, `solve-switches.mjs`,
+  `check-anchor.mjs`, `check-bellows.mjs`, `check-cleats.mjs`,
+  `check-dredge.mjs`, `check-lens.mjs`, `check-reefseed.mjs`,
+  `find-crossings.mjs`, `check-towns.mjs`) produced BYTE-IDENTICAL output to
+  its pre-refactor baseline (diffed directly, not eyeballed). `check-gates.mjs`,
+  `check-items.mjs`, `check-motion.mjs` and `check-playthrough.mjs` (19/19,
+  matching the board's documented current state) were re-run as a sanity check
+  on the `src/world/room.js`/`tileset.js` refactor and are also unchanged.
+  `tools/test.mjs` is 59/59 including the new guard.
+
+**Left for later, deliberately not chased this session (out of scope: these
+are verb-specific tile-flag tests, not passability):** `castStops`/`snagAt`
+in `walk-dungeons.mjs` and `check-dredge.mjs`, `hoppableDef`/throw-flight
+stops in `check-anchor.mjs`, `check-items.mjs`'s single `f & 1` scan to find
+a fixture tile. Each was read against its real engine counterpart and
+confirmed to already match it exactly; none reimplements walkability.
+
+**Not in this session's inventory, because they did not exist yet on the
+branch this was cut from: `check-hearts.mjs` and `check-trade.mjs`** (both
+landed by the other two branches merged into this same board). Whether either
+carries its own private collision/push model, unconverted, needs checking the
+next time either is touched.
+
+## THE BOARD, UPDATED AGAIN — the circular progression lock is fixed, and there is now a checker that can see that class of bug
+
+**The world could not be finished, and every checker in the CLAUDE.md table
+was green.** D4's entrance (`0,1,3`) and D6's (`0,1,0`) were both sealed
+behind tiles that only the Dredge Line opened, and the Dredge Line is the item
+inside D6 — the Cliffs of Kell's boulders and the Abyss Stair's iron plug. A
+real player floods **59 of 120 screens**, clears D1, D2, D5 and D3, and stops
+with four Essences and nowhere to go.
+
+`check-overworld.mjs` could not see it and still cannot: it drops ONE gate
+while holding all the others, which is the right question for "is this gate a
+gate" and blind to a CYCLE — gate A opened by an item behind gate B and vice
+versa survives every single-drop run. That is now written down in
+`docs/HANDOFF.md` under hard-won lessons, at length, because it cost a session.
+
+### What changed, in the world
+
+1. **The road to the Keep is a STORY gate now, not an item gate.** `abyssPlug`
+   became `keepSeal`: same art, `F.SOLID` only, and a new tiledef field
+   `openFlag: 'makuOpenedKeep'`. The Maku Tree sets that flag at five Essences
+   and nothing the player carries opens the tile. Upper Kell's four boulders
+   (`0,2,2` row 1) are the seal's second course — the plugs alone were never
+   enough, since nothing lies between the two runs and opening one buys a
+   single screen of dead end.
+2. **`makuMaster` finally has a trigger.** The cutscene — the tree opening the
+   road and handing over the level-3 sword — had sat complete in
+   `src/data/story.js` since it was written with NOTHING referencing it. New
+   entity `makuTree` (`src/game/objects.js`), a `Giver` with a second beat:
+   the Rod at one Essence as before, then `makuMaster` at five. Because the
+   L3 sword was granted only there, **a real player's sword never left level
+   1** until this commit.
+3. **The Noble Sword (L2) is placed rather than collapsed.** It is in the
+   Bluff Grotto (`cave1`), in a big chest that refuses below four Essences —
+   exactly where `docs/GAME-PLAN.md` had said it was all along. Collapsing to
+   two tiers would have thrown away a damage tier, three HUD icons and three
+   swing sounds that all already exist, and the Oracles ship three. `Chest`
+   grew `needEssences` / `needText` for it, mirroring `giver`.
+4. **The Cliffs of Kell open on Bombs (D2), not the Dredge Line.** The gate is
+   the Deep Cut's east-bank rockfall (`0,3,4`, col 8, rows 2-5), now four
+   `boulderCracked` tiles — a new tile, `boulder`'s art with a fault line
+   through it, `F.SOLID | F.BOMBABLE` and nothing else.
+   - **Bombs, not the Cleats**, and the reason is not the verb table: a Cleats
+     gate has to be a DEEP channel at least three tiles wide, because a jumping
+     player crosses `DEEP` as well as `JUMPABLE`, so a narrower one is not a
+     gate at all (`check-gates.mjs` exists because of that class of mistake).
+     Widening the cut to three tiles rewrites the screen's east bank and its
+     seam with the Wood. The order argument for the Cleats — that D3 before D4
+     keeps the essence-numbered cutscenes in sequence — does not survive
+     contact with the data either: **D5's entrance is reachable at zero
+     items**, so the world already permits out-of-order play.
+   - **All four boulders are cracked, not one.** Leaving three carrying
+     `F.HEAVY` gives the gate two keys, and `check-overworld` then reports
+     "without Bombs the Cliffs are sealed" as ten screens (the Marsh only).
+   - The other boulders — the Marsh Stair's four at `0,1,5` — stay on the
+     Dredge Line, so the Line keeps a real overworld verb. It seals two
+     screens (the Bog Stair) and that is optional content on purpose: nothing
+     on the critical path may hang off the last dungeon's item.
+
+### `tools/check-progression.mjs` — new, 19 assertions, in CLAUDE.md's table
+
+It floods the overworld in ACQUISITION ORDER: a new game holding what the
+intro gives (`conch L1`, `sword L1`), then whatever dungeon doors that reaches,
+then EXACTLY the items those dungeons grant — read out of each dungeon's own
+chests, so D2's Bomb Vault and D6's Mermaid Vault are not missed — and floods
+again, to a fixpoint. It asserts every dungeon's door is reachable while its
+own item is still inside it, at the LEVEL it grants (D6 hands over Cleats L2
+while D3's L1 is held, which is not self-gating and an id-only check calls a
+failure). It also reads a `makuTree`'s scene for its grants and flags, so the
+Master Sword and `makuOpenedKeep` are proved collectable.
+
+The order it derives now:
+
+```
+  a new game holds: conch L1, sword L1
+    round 1: D1 Tidewash Grotto at 0,8,8 -> anchor L1
+    round 1: D2 Coral Spire at 0,10,5 -> lens L1, bombs L1
+    round 1: D5 Drowned Wood Shrine at 0,5,4 -> reefseed L1
+    round 2: Thalassia: coin L1 at 3 Essence(s)
+    round 2: The Maku Tree: rod L1 at 1 Essence(s)
+    round 3: D3 Bogwater Sanctum at 0,1,8 -> cleats L1
+    round 3: D4 Cliffside Cistern at 0,1,3 -> bellows L1
+    round 4: The Maku Tree: makuMaster at 5 Essence(s) -> sword L3 + 'makuOpenedKeep'
+    round 4: Bluff Grotto: sword L2 at 4 Essence(s)
+    round 5: D6 Abyssal Keep at 0,1,0 -> dredge L1, cleats L2
+  reached 120/120 screens with 6/6 dungeons cleared
+```
+
+**It was run against the commit before the fix** (a throwaway `git worktree` at
+`HEAD`) and reports 4/6 dungeons, 95/120 screens, and four failures naming D4
+and D6. That is the proof it does what no existing checker does — do not take
+it on trust if you change it; re-run it against a broken tree.
+
+What it does NOT prove: it floods the overworld's tiles, so it says a
+dungeon's DOOR is reachable, not that the dungeon behind it is beatable.
+`walk-dungeons.mjs` owns the inside and `check-playthrough.mjs` plays it.
+
+### Everything else that moved
+
+- `check-overworld.mjs`: `GATES` rewritten — `bombs` (34 screens), `rod` (27),
+  `keep` (8, a story gate keyed on `openFlag` rather than a tile flag),
+  `dredge` (2). `dredgePlug` is gone. The flood understands story gates now.
+- `check-gates.mjs`: 15 -> 20 assertions. The plug probe became the Keep's
+  seal (shut, refuses the Dredge Line, says why, then opens on the flag alone
+  across BOTH courses); the Upper Kell boulder probe moved to the Marsh Stair,
+  since Upper Kell's boulders are the seal now; new probe bombs the Deep Cut
+  rockfall, which is the critical path and the one gate a player cannot route
+  around.
+- `F.MAGNETIC` is deleted. Nothing carried it once the plug became the seal.
+- `docs/GAME-PLAN.md`: the Overworld layout table is REWRITTEN from the data —
+  it named seven gates on six items this game does not have. The Dungeons and
+  Item progression tables below it are stale in the same pre-P8 way and now
+  carry a banner saying so; rewriting them from the data is its own session.
+
+**Next session's job, in order:** unchanged from the board below — the actor's
+anchor-placement verb and extending `playthrough-route.mjs` past the
+Sluicegate is still job 1, and the 32 stale branches are still undeleted. Add
+to it: `check-playthrough.mjs`'s recorded route stops inside D1 and therefore
+never exercised any of this; a route that reaches D2's bombs and walks to the
+Cliffs would put the fix under the harness that actually plays the game.
+
+## THE BOARD, UPDATED AGAIN — a player's guide, generated from data, and the progression gap it found
+
+**This session wrote `docs/GUIDE.md`**, a full player's walkthrough (premise
+and controls, all six dungeons room-by-room, every Heart Piece, the trading
+sequence, optional secrets, every charm, and an appendix of items/enemies/
+gates) generated by reading `src/data/` directly — installing the real
+registries in plain Node and cross-checking every claim against them, not
+against `docs/GAME-PLAN.md` or `docs/ITEMS.md` from memory. It also wrote
+`tools/check-guide.mjs`, a plain-Node checker (no browser) that parses the
+guide for every backticked room/item/charm/enemy/boss/map reference and
+proves each one resolves against the live data, and separately proves every
+`heartPiece` placement `src/data/` holds is mentioned in the guide's
+numbered list. Both directions are green as of this session's commit.
+
+**The single most important thing this session found: the game is not
+completable end to end, for a reason nobody had written down.**
+`node tools/check-overworld.mjs` with **zero items held** floods only 59 of
+120 overworld screens — and neither D4's entrance (`overworld/0,1,3`, Cliffs
+of Kell) nor D6's (`overworld/0,1,0`, the Abyssal approach) is reachable.
+Both sit behind `F.HEAVY`/`F.MAGNETIC` tiles that only the **Dredge Line**
+opens (`src/world/tileset.js`: "boulder: only the Dredge Line drags it
+clear") — and the Dredge Line **is D6's own item**, sitting in D6's own
+Dredge Vault (`d6/0,4,3`). The only door into the dungeon that hands the item
+over is gated by the thing it hands over. A `makuOpenedKeep` flag gets set by
+the `makuMaster` cutscene (5 Essences) but nothing anywhere reads it, so
+there is no alternate route hiding behind it either. **No existing checker
+catches this** — `check-overworld.mjs` proves each gate opens with *its own*
+item in isolation, never that the item is obtainable before you need to
+cross the gate it opens; `check-playthrough.mjs`, the only tool that plays
+rather than models, doesn't get far enough to hit it (its route stops inside
+D1, at the Anchor chest, per the actor's missing anchor-placement verb —
+still true, see the board below this one). This is not the D1 push-block
+class of bug (that one is fixed, see below); it's a new, distinct,
+unresolved gap, discovered empirically by running the checker with no items
+rather than by reading data. **Next session: either give D4/D6 a second
+entrance the existing four dungeons' items can open, or move the Dredge Line
+gate off the Cliffs of Kell (it's the odd one out — D4's own tide theme has
+nothing to do with the Dredge Line) so the four early items chain to it
+honestly.** Full detail, plus every other place `docs/GAME-PLAN.md` and
+`docs/ITEMS.md` disagree with the live data (the item roster, the six-vs-
+eight dungeon count, the missing trading sequence, the actual Heart Piece
+count), is in `docs/GUIDE.md`'s closing "Disagreements between docs and
+data" section — read it before touching `docs/GAME-PLAN.md`, which is still
+stale on all of those points and is still marked authoritative at its own
+top.
+
+**The actual Heart Piece count is 18, not 19.** Found by grepping
+`heartPiece` across `src/data/` and checking each hit is a real placement —
+one hit (`src/data/audio.js`) is a jingle name, not a pickup, and does not
+count. 18 pieces, six dungeon Heart Containers (one per boss) and 3 starting
+hearts put the practical maximum at **13.5 hearts**, not the "about 16" that
+`docs/GAME-PLAN.md`'s stale eight-dungeon health table claims.
+
+**A quirk of `check-playthrough.mjs` worth knowing before extending its
+route:** it only proves D1's own route, and only as far as the Anchor chest
+(`d1/0,3,2`) — the harness's scripted actor has no directive for "place an
+item at a chosen tile, walk away, recall it," which is what every room past
+the Sluicegate needs. D2 through D6's room orders in `docs/GUIDE.md` are
+therefore each dungeon's own *stated* intended route (the comment written
+above its `registerMap()` call in `src/data/dungeons-a.js`/`dungeons-b.js`),
+not a played confirmation — the guide says so explicitly, twice, so a future
+reader doesn't mistake "the dungeon's own author's route" for "a played
+route" the way it would be easy to.
+
+Checkers run clean this session: `node tools/validate.mjs`,
+`node tools/test.mjs` (58/58), `node tools/check-overworld.mjs`,
+`node tools/check-guide.mjs` (new), `node tools/check-build.mjs`, and
+`npm run build` (`dist/oracle-of-tides.html` committed). Nothing in `src/`
+changed — this was a documentation and tooling session only.
+
+---
+
 ## THE BOARD, UPDATED AGAIN — the route retuned past the push-block blocker, D1's health economy instrumented and fixed
 
 **`tools/playthrough-route.mjs` was stale in exactly the way the previous
@@ -417,11 +1137,15 @@ The four gaps, in the order they cost the player something:
    written by a scene that never runs.
 3. **`nerethIntro` never plays.** The final boss has a written introduction and
    it is never triggered. You walk in and fight.
-4. **The trading sequence is dead data.** `progress.trade = {stage, item}` is
-   declared and saved, `tradeStart`/`tradeMid`/`tradeEnd` and a `tradeKettle`
-   cutscene all exist, and nothing in `src/` reads or advances any of it. There
-   is no `trader` entity type. Build it or delete it; half-present is the worst
-   of the three.
+4. ~~**The trading sequence is dead data.**~~ **DONE — P9.5.** It is the
+   Coastwise Chain now: eleven traders, eleven objects, terminating at the Maku
+   Tree, who takes the Tide Bell's own rope plus one Essence and hands back the
+   Resonance Rod. `progress.trade` is read and advanced, there is a `trader`
+   entity type, and `tools/check-trade.mjs` plays the whole thing in-engine.
+   See `docs/TRADING.md` and the P9.5 section at the top of this file. (The
+   `tradeKettle` cutscene is the one piece NOT used — the kettle is handed over
+   by a trader like everything else, and a cutscene for it would stop the game
+   dead in the middle of a conversation.)
 
 **Three sounds are silently missing.** `Audio.sfx` is `if (!d) return;`, so an
 unknown name is a no-op with no error and no warning — which is why nothing has

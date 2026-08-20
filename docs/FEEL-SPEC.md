@@ -622,3 +622,122 @@ for the full run are in `docs/NEXT-SESSION.md`.
   net roughly even) via its own puzzle-reward key drop and combat drops — it
   reads as a spike only because the instrumentation counts gross damage, not
   net.
+
+---
+
+## The cap and the damage ladder — P9, derived together (`derived`)
+
+P9 asks for three numbers: three hearts at start, half-heart contact damage
+from ordinary enemies, and a cap of 14-16 hearts built from six Heart
+Containers plus heart pieces. Two of the three were already true. The third was
+not, and nothing in the project could see it, because **the cap is not written
+down anywhere — it is a sum.**
+
+`tools/check-hearts.mjs` is what computes it, and its first run read:
+
+```
+  start                3 hearts
+  Heart Containers     6   (one per dungeon boss)
+  heart pieces         18  = 4 containers + 2 ORPHANED
+  CAP                  13 hearts
+```
+
+**Thirteen, one under P9's floor — and two of the eighteen pieces could never
+become anything.** A player could find them, hear the jingle, watch the counter
+tick, and be paid nothing: four make a container and eighteen is not a multiple
+of four. That had been true through six dungeon builds, because a heart piece is
+placed in a dungeon file, and the total it contributes to lives in no file at
+all.
+
+### The cap
+
+Twenty-four pieces, six containers' worth, landing the cap at **15** — the
+middle of P9's window rather than either edge, and a shape worth stating out
+loud: six containers from the six bosses, six more from exploration, plus the
+three you start with. Half the maximum is fought for and half is searched for.
+
+Six pieces were added to reach it. The distribution is now pinned by the
+checker — **every dungeon carries exactly two**, with nine in the overworld and
+three in the caves — so that a future dungeon session cannot move the game's
+maximum health by accident while thinking about a room:
+
+| Where | Why there |
+|---|---|
+| `d1/0,5,3` Clawcrab Den | the miniboss paid out a sentence and nothing else — the only fight in D1 that cost health and returned none |
+| `d2/1,5,4` Whelk Cell | the Spire's far-east cul-de-sac; nothing routes through it |
+| `d4/0,4,1` East Overlook | the corner of the overlook furthest from the door |
+| `d5/0,5,5` Bower Cell | the Shrine's south-east dead end |
+| `cave1` Bluff Grotto | a grotto with only a rupee chest is a room you visit once |
+| `cave2` Reef Hollow | on the seafloor patch, reachable at LOW and nowhere else — the room's own wall carving ("walk where fish swam") is the whole puzzle |
+
+None of the six sits on a recorded route: all 51 replays and
+`check-playthrough.mjs`'s 19 checks were unchanged by the placements, which is
+the proof that the additions are rewards for leaving the path rather than
+things handed to a player walking down it.
+
+### What the reachability check learned
+
+Its first cut asserted every piece sat on a tile the player could stand on, and
+it immediately called two long-standing, correct placements broken. Both were
+the checker's fault, and both are the CLAUDE.md lesson about floods knowing only
+the verbs somebody taught them:
+
+- **A buried piece is never stood on.** The Drowned Shore's sits under an
+  `abyssHole` — deep water — and comes up when the Dredge Line drags back over
+  it, with a bell NPC in the room leaning toward the tile. The test is the
+  Dredge Line's own predicate from `items.js` (`F.WET | F.SLOW`).
+- **A piece on a liftable rock is reached by lifting the rock.** Three
+  independent placements use this idiom — the heart piece at Kell Ledges, a
+  fairy at `0,11,3`, a rupee at `0,11,6` — so it is the world's grammar, not a
+  slip.
+
+### The damage ladder
+
+P9's one hard damage number — ordinary enemies deal half a heart — was already
+true of thirteen enemy types, and the D1 instrumentation above had already
+established independently that D1's thin stretch was a heal-**supply** problem
+and not a damage-output one. So the re-derivation did not start by moving
+damage; it started by writing the ladder down, which nothing had done:
+
+```
+  tier      dmg  in hearts  at start    at cap
+  chip       1 qh  0.25 hearts    12        60   2 types
+  ordinary   2 qh  0.5 hearts      6        30   13 types
+  heavy      3 qh  0.75 hearts     4        20   7 types
+  miniboss   3 qh  0.75 hearts     4        20   8 types
+  boss       4 qh  1 heart         3        15   8 types
+```
+
+**Raising the cap is a difficulty change even though no damage value moved**,
+which is the whole reason the two had to be derived in one pass instead of
+tuned one after the other. At 15 hearts the final boss needs fifteen
+connections to kill a maxed player, and a miniboss hits for exactly what a
+jellyfish hits for.
+
+The derivation that follows from the half-heart grid the source games deal on:
+
+| tier | now | derived | at the 15-heart cap |
+|---|---|---|---|
+| heavy | 3 qh | **4 qh** (one heart) | 15 hits, not 20 |
+| miniboss | 3 qh | **6 qh** (a heart and a half) | 10 hits, not 20 |
+| boss | 4 qh | **8 qh** (two hearts) | 8 hits, not 15 |
+
+**It is derived and it is NOT applied, and the reason is measurement, not
+caution.** Every enemy the change touches in the one dungeon that has
+instrumentation — D1's two anglerfry (`0,5,2`), the Clawcrab (`0,5,3`) and
+Gohmaraq (`0,3,1`) — sits in the half of D1 that `check-playthrough.mjs` cannot
+reach: the route stops at the Sluicegate (`0,3,2`) for want of an
+anchor-placement directive in the actor. Landing it would move six bosses' and
+eight minibosses' difficulty, re-open the D1 economy the previous session closed
+by measurement, and cost a re-record of all 51 replays — and the instrumented
+run would show **no change at all**, because it never reaches a single enemy
+affected. The numbers would go in as `guessed` while looking proven.
+
+So the ladder is pinned in `check-hearts.mjs` instead: every enemy is on a named
+rung, a new enemy fails the checker until someone puts it on one, and moving any
+damage value means editing the table on purpose. The derived column above is
+recorded there too, in the comment that explains why it has not been taken.
+**The prerequisite is the actor's anchor-placement verb** — the same one
+`docs/NEXT-SESSION.md` already names as the next dungeon job. When the route
+reaches Gohmaraq, this becomes measurable, and it should be measured before it
+is believed.

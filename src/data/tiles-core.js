@@ -379,6 +379,29 @@ const HAND_ART = {
     ....33222233....
     ......3333......`,
 
+  // The same boulder with a fault line zigzagging down through it, so a
+  // bombable boulder reads as cracked at a glance without leaving the terrain
+  // register — the same trick, and the same grammar, as `cliffCracked`. The
+  // silhouette is byte-identical to `boulder`: only interior pixels turn to
+  // outline, so the two sit in one rockfall without either looking redrawn.
+  boulderCracked: `
+    ......3333......
+    ....33113133....
+    ..331111311133..
+    .33111131111133.
+    3311011311111133
+    3110111131111233
+    3101111131112233
+    3011111311122233
+    3011111311222233
+    3011113112222233
+    3011113122222233
+    .30111322222233.
+    .33012322222233.
+    ..332223222233..
+    ....33232233....
+    ......3333......`,
+
   // ---- props (transparent, need underArt) ---------------------------------
   // A whole tree in ONE cell, because the game's rooms place trees one cell at
   // a time — 643 of its vertical tree runs are a single row tall. Every tree in
@@ -607,11 +630,15 @@ const HAND_ART = {
     ....32222223....
     ....33333333....`,
 
-  // An iron plug: a riveted plate the Magnetic Gloves haul out of the socket.
-  // Four corner rivets and a square bolt head, all in hard 1px dark, so it
-  // reads as worked metal. It takes `rust`, not a grey: the abyss is blue-grey
-  // stone throughout, and a grey plate sank into it in the first pass.
-  abyssPlug: `
+  // The Keep's seal: a riveted iron plate bolted across the road down. Four
+  // corner rivets and a square bolt head, all in hard 1px dark, so it reads as
+  // worked metal. It takes `rust`, not a grey: the abyss is blue-grey stone
+  // throughout, and a grey plate sank into it in the first pass.
+  //
+  // It used to be `abyssPlug`, hauled out by the Dredge Line. Nothing hauls it
+  // now — the Maku Tree's roots split it when the fifth Essence lands — so the
+  // name says what it is rather than what used to move it.
+  keepSeal: `
     3333333333333333
     3111111111111113
     3122222222222233
@@ -1226,7 +1253,19 @@ export function installCoreTiles() {
     // and these two only add `level`, so the gate can name the MAGIC boomerang
     // rather than any boomerang.
     saltVane: { art: ART.saltVane, pal: 'marble', flags: F.SOLID | F.VANE | F.RING, underArt: 'saltFlat' },
-    abyssPlug: { art: ART.abyssPlug, pal: 'rust', flags: F.SOLID | F.MAGNETIC, underArt: 'rockFloorDk' },
+    // THE KEEP'S SEAL IS NOT AN ITEM GATE. It is the one story gate in the
+    // world: it opens when the Maku Tree opens the road at five Essences, and
+    // no item in the game touches it.
+    //
+    // It was `abyssPlug`, F.SOLID | F.MAGNETIC, hauled by the Dredge Line —
+    // and the Dredge Line is the Keep's own item, sitting behind this seal, so
+    // the road to it was locked by the thing that unlocked the road. See
+    // `openFlag` in src/world/tileset.js and `Game.applyStoryGates`.
+    keepSeal: {
+      art: ART.keepSeal, pal: 'rust', flags: F.SOLID, underArt: 'rockFloorDk',
+      openFlag: 'makuOpenedKeep', openTo: 'rockFloorDk',
+      openDeny: 'Iron, bolted across the road down.\nNothing you carry will shift it.',
+    },
 
     // ---- the four terrain-shaped region gates ------------------------------
     // Each carries TWO flags: the ordinary one that tells the engine what the
@@ -1249,6 +1288,15 @@ export function installCoreTiles() {
       underArt: 'rockFloor', liftLevel: 2,
     },
     cliffCrackedDk: { art: ART.cliffCracked, pal: 'stonedk', flags: F.SOLID | F.BOMBABLE },
+    // A boulder already split by a fault: bombs open it, and nothing else
+    // does. It carries NEITHER F.ROCK nor F.HEAVY on purpose — a boulder you
+    // can also lift or also drag is not gated on bombs, it is gated on
+    // whichever of the three you happen to have, and check-overworld would
+    // read the gate as open under two different item sets.
+    boulderCracked: {
+      art: ART.boulderCracked, pal: 'stonedk', flags: F.SOLID | F.BOMBABLE,
+      underArt: 'rockFloor',
+    },
     treeDead: { art: ART.tree, pal: 'treeoakdd', flags: F.SOLID, underArt: 'grassBog' },
     treeDark: { art: ART.tree, pal: 'treeoakdk', flags: F.SOLID, underArt: 'grassDark' },
     tree: { art: ART.tree, pal: 'treeoak', flags: F.SOLID, underArt: 'grass' },
@@ -1592,6 +1640,7 @@ export function installCoreTiles() {
       deny: 'Far too heavy to shift bare-handed.',
     },
     cliffCrackedDk: { bomb: 'mud', fx: 'boom', persist: true, sfx: 'break' },
+    boulderCracked: { bomb: 'rockFloor', fx: 'boom', persist: true, sfx: 'break' },
     // The Magic Boomerang is gone. A vane is metal, and the thing in this game
     // with an opinion about metal is the Resonance Rod — which also means the
     // Salt Pans open to an item whose reach depends on the tide, so the vane a
@@ -1601,12 +1650,10 @@ export function installCoreTiles() {
       ring: 'saltFlat', fx: 'spark', persist: true, sfx: 'break',
       deny: 'The vane is set too far to reach. Something must make it sing.',
     },
-    // The Magnetic Gloves are gone; the Dredge Line hauls iron off the bottom,
-    // which is the same verb and a better fit for a plug sunk in an abyss.
-    abyssPlug: {
-      dredge: 'rockFloorDk', fx: 'spark', persist: true, sfx: 'rumble',
-      deny: 'Iron, sunk deep. Nothing here will shift it by hand.',
-    },
+    // `keepSeal` HAS NO TRANSFORM AND MUST NOT GET ONE. It is a story gate:
+    // `openFlag` opens it on room entry once the Maku Tree has opened the road,
+    // and an item that also opened it would put the Keep back behind an item
+    // again. Its refusal line lives on the tiledef as `openDeny`.
     dFloorCrack: { bomb: 'dPit', fx: 'boom', persist: true, sfx: 'break' },
     digSpot: { dredge: 'sand', drop: 'dredged', fx: 'puff', sfx: 'splash' },
     // The Rod retracts a grate. `persist: true` so a room stays open once it

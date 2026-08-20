@@ -20,7 +20,7 @@ export const DIALOGUE = {
   shopkeeper: 'Shield, thirty rupees. No haggling.\nA man who argues over a shield is a man\nwho has never been hit by anything.',
   hearthWife: 'We built the doorstep three courses high\nafter the spring flood. Now the water\ncomes in through the floor instead.',
   hearthChild: 'When it is low I can walk to the reef.\nWhen it is high I can swim over the wall.\nI like high better. Mum likes low.',
-  netMender: 'Nets rot from the top down, boy — from\nthe part that dries. It is the drying that\nkills them, not the sea.',
+
   sandpiper: 'Two houses on this row and one of them\nis shut. He went out at low water and\ncame back at nobody knows when.',
 
   // The peoples of Thalassia. Four hoods, four coasts — the Brinekin hold the
@@ -36,11 +36,74 @@ export const DIALOGUE = {
   digger: 'Three Essences. Then take the Coin. Throw\nit down and let the water turn. It pays\nthe ferryman, and the ferryman is patient.',
   diggerAfter: 'One coin, boy. Where you drop it is where\nthe next tide puts you. Choose the drop,\nnot the moment — the moment is not yours.',
 
-  // The Maku Tree: the Resonance Rod after the first Essence, Master Sword after
-// all five — the sixth is Nereth's own and there is no coming back to her for it.
-  makuWait: 'Hoo. You are small and the sea is large.\nBring me one Essence of the Tide and I\nwill be awake enough to help.',
-  makuTree: 'Hoo hoo! One Essence, and my roots feel\nthe Bell again. Take the Rod. Strike it and\nevery drowned bell in Tidemere answers.',
+  // The Maku Tree, the last link of the Coastwise Chain: the Resonance Rod for
+  // the Tide Bell's own rope, once one Essence has woken her enough to work.
+  // Master Sword after all five — the sixth is Nereth's own and there is no
+  // coming back to her for it.
+  makuWait: 'Hoo. You are small and the sea is large.\nBring me one Essence of the Tide, and\nbring me something of the Bell\'s.',
+  makuBlocked: 'The Bell\'s rope. I know it by the salt.\nBut my roots are still asleep, child.\nOne Essence of the Tide first. Then this.',
+  makuTree: 'Hoo hoo! The Bell\'s own rope, and the salt\nstill in it. Hold still. — There: the\nResonance Rod. Every drowned bell answers.',
   makuAfter: 'Five Essences, Link. Five. Then the way\nto the Keep opens, and I go back to sleep\nfor a hundred years.',
+  // Said on every visit after the road is open. The tree has done its part and
+  // says so; the seal on the Abyss Stair is already split by the time the
+  // player walks back out to it.
+  makuOpened: 'The road is open and my roots ache.\nGo down, and do not dawdle — I am asleep\nthe moment you are out of sight.',
+
+
+  // ---- the Coastwise Chain -------------------------------------------------
+  //
+  // Eleven links, and every one of them is somebody who was left holding a
+  // thing the sea took off somebody else. Each trader keeps the flavour line
+  // they had before the chain existed — it is what they say when it is not
+  // their turn — so the coast sounds the same to a player who never starts it.
+  //
+  // The register is the source games': dry, short, three lines, and nobody
+  // explains themselves. Nobody says "quest" and nobody thanks you twice.
+
+  // 1 and 11. Ossa, in the net-mender's house. She opens the chain and she
+  // closes it, because the thing the chain is really carrying round the coast
+  // is her kettle.
+  ossaStart: 'My kettle went out with the tide.\nBring it back and I will make it worth\nthe walk. Take that float — it is cracked.',
+  ossaWait: 'That is not my kettle. Keep walking.\nIt is out there in somebody\'s hands and\nthey do not know whose it is.',
+  ossaEnd: 'My kettle! Where — no. Do not tell me.\nTake this. It has been in a drawer for\nforty years waiting for someone like you.',
+  ossaAfter: 'That is the rope off the old Tide Bell.\nMy grandmother rang it. Give it to the\ntree. The tree will know what it is.',
+
+  // 2. Pell, on the village shore. A float that sinks is not a float; it is a
+  // sinker, which is the whole chain in one object.
+  pellTrade: 'A float with a crack in it! That sinks!\nThat is what my crab line has wanted all\nsummer. You have the claw. I have had it.',
+  pellAfter: 'The line goes straight down now.\nI can feel the bottom. There is a lot\nof bottom.',
+
+  // 3. Hulla, cutting driftwood on the strand.
+  hullaTrade: 'A claw? Give it here. A rake tine bends\nand a claw does not. Take a brick of salt\nfor it. We have a shed of them.',
+  hullaAfter: 'The claw rakes better than the rake did.\nDo not tell the man who sold me the rake.',
+
+  // 4. Mirren, working the coast east of the village.
+  mirrenTrade: 'Salt! I have been walking my catch to\nthe reef and losing half of it on the way.\nTake the eel. Smoked. It will keep.',
+  mirrenAfter: 'Salted, boxed, and none of it wasted.\nFirst honest week I have had since the\nBell went.',
+
+  // 5. Dov, beside the wreck he is waiting on.
+  dovTrade: 'Is that an eel? I have eaten sand for\nthree days. Take the sounding lead. It is\nall I got off her and I cannot eat it.',
+  dovAfter: 'She is still down there. But I am not\nhungry, which is a different problem\nfrom the one I had.',
+
+  // 6. Sennit, on Sandpiper Row, who wants to settle an argument.
+  sennitTrade: 'A lead line! Now I can prove how deep\nthe pool is and Mum can stop guessing.\nTake the whelk. It only rings when wet.',
+  sennitAfter: 'Nine feet at high. One at low.\nI wrote it on the fence. The fence will\nbe under water again by supper.',
+
+  // 7. Corriwig, diving the coral hollow.
+  corriwigTrade: 'A shell that rings under water? Tie that\nto my line and I will hear where my line\nis. Take a pearl. The reef gave me three.',
+  corriwigAfter: 'I can hear my own line in the murk now.\nSmall thing. Also the reason I will come\nback up.',
+
+  // 8. Wick, in the heart of the drowned wood. The wood takes payment.
+  wickTrade: 'A slackwater pearl. The wood takes\npayment and it does not take promises.\nHere. A cup, cut from a tree that drinks.',
+  wickAfter: 'The tree has been paid. It is not\ngrateful. It is just not thirsty.',
+
+  // 9. Yarrow, in the witch's hollow.
+  yarrowTrade: 'Bogwood. Nothing dissolves in bogwood,\nwhich is more than my last cup managed.\nTake the jar. It is bait. Keep it shut.',
+  yarrowAfter: 'The cup holds. Forty years of brine and\nit holds. I may live for ever now, which\nwas not the plan.',
+
+  // 10. Teel, fishing off the stones — and the man who hooked the kettle.
+  teelTrade: 'Brine-jelly. Every fish on this coast\nwants it and every one of them is wrong.\nTake the kettle. It came up on my line.',
+  teelAfter: 'Full of sea, that kettle was.\nWhoever lost it has been waiting a while,\nI would say.',
 
   faroreHome: 'The Bell is not a thing, exactly.\nIt is an agreement between the moon and\nthe water. Nereth broke the agreement.',
 
@@ -63,14 +126,15 @@ export const DIALOGUE = {
   salterElder: 'Salt and water are old enemies who cannot\nleave each other alone. Remember that in\nthe Vault and you will do well enough.',
 
   // ---- signs and spares the maps may reach for ---------------------------
+  // Ossa's old line, from before she opened the Coastwise Chain. Kept because
+  // it is the best thing anyone says about nets and it belongs to whoever gets
+  // a net next; her three chain lines say who she is now.
+  netMender: 'Nets rot from the top down, boy — from\nthe part that dries. It is the drying that\nkills them, not the sea.',
   signCoast: 'TIDEWATCH VILLAGE\nEast: the Shallows.\nMind the tide.',
   villager3: 'Sound the conch twice and you can reach\nanything in Thalassia. Sound it three\ntimes and you are back where you started.',
   elder1: 'I have seen the sea take this village\ntwice and give it back once.\nWe are owed, is what I am saying.',
   child1: 'Are you going to fight the Drowned King?\nCan I have your boots if you lose?',
   shopkeeper2: 'Buy something or stand somewhere else.\nThose are the two options and I am fond\nof both.',
-  tradeStart: 'My kettle went out with the tide.\nBring it back and I will make it worth\nthe walk.',
-  tradeMid: 'That is not my kettle, but I want it.\nTake this instead. Someone down the coast\nwill want that more than I do.',
-  tradeEnd: 'My kettle! Where — no. Do not tell me.\nTake this. It has been in a drawer for\nforty years waiting for someone like you.',
 };
 
 const CUTSCENES = {

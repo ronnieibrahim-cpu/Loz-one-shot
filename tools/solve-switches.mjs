@@ -93,7 +93,7 @@ for (const r of rooms) {
     g.player.invuln = 1e5;
     const room = g.room;
     const obj = await import('/src/game/objects.js');
-    const ts = await import('/src/world/tileset.js');
+    const ent = await import('/src/game/entity.js');
     const pz = room.def.puzzle;
     // Satisfy the puzzle's other clauses so this run measures the switches only.
     //
@@ -131,10 +131,11 @@ for (const r of rooms) {
       // stand on the tile behind it — at THAT TILE'S OWN level, which since the
       // tide became a field is not necessarily the room's base. A push whose
       // origin is under water is a puzzle that solves in the harness and not in
-      // the hand.
+      // the hand. Asked of the engine's own `canOccupy`, with the player's own
+      // hitbox and capabilities, rather than a private re-derivation of which
+      // flags block a stand.
       const ox = bx - dir[0], oy = by - dir[1];
-      const f = room.flagsAt(ox, oy, g.tide);
-      if (f & (ts.F.SOLID | ts.F.VOID | ts.F.DEEP | ts.F.PIT | ts.F.HAZARD)) {
+      if (!ent.canOccupy(g, g.player, ox * 16, oy * 16, { jumping: false, swim: false, cutting: false })) {
         notStandable.push(`${ox},${oy} behind block ${bx},${by}`);
       }
       g.tryPushBlock(bx, by, dir[0], dir[1]);

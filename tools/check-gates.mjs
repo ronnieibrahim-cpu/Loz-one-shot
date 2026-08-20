@@ -10,8 +10,10 @@
 // So this asserts, in-engine:
 //   * the plain boomerang (level 1) bounces off a salt vane and leaves it shut
 //   * the Magic Boomerang (level 2) turns it, and the tile becomes floor
-//   * the Magnetic Gloves haul an iron plug out of its socket
-//   * the gloves shift the plug in FRONT, not the whole row
+//   * the Dredge Line drags a boulder off the Marsh Stair
+//   * the Line shifts the boulder in FRONT, not the whole row
+//   * Bombs open the cracked rockfall that holds the Cliffs of Kell
+//   * the Keep's seal refuses EVERY item, and opens on a flag instead
 //   * the change persists across leaving and re-entering the room
 //
 // The level check is the whole point of the `level` field on a transform:
@@ -214,20 +216,70 @@ await frames(20);
 const vFarHigh = await nameAt(VANE.gx, VANE.gy);
 check('...but at HIGH tide the water carries it', vFarHigh !== 'saltVane', vFarHigh);
 
-// --- the Abyssal plug ------------------------------------------------------
-// Room 0,2,1: plugs along row 6, cols 3-6. The player stands one tile north of
-// one of them, facing it, and presses the gloves.
-const PLUG = { rx: 2, ry: 1, gx: 4, gy: 6, tx: 4, ty: 5, dir: 'down', item: 'dredge', level: 1 };
-const plugBefore = await setup(PLUG);
-check('the abyssal plug starts as a plug', plugBefore === 'abyssPlug', plugBefore);
+// --- the Deep Cut rockfall: the Cliffs of Kell, on Bombs -------------------
+// Room 0,3,4, col 8, rows 2-5. This is the critical path — the only way into
+// the Cliffs, and through them the only way to D4, the Abyss Stair and the
+// Keep — so it is the one gate in the world whose in-engine behaviour a player
+// cannot route around. It was four boulders and therefore opened only to the
+// Dredge Line, which is D6's item, sitting behind it.
+const FALL = { rx: 3, ry: 4, gx: 8, gy: 4, tx: 6, ty: 4, dir: 'right', item: 'bombs', level: 1 };
+const fallBefore = await setup(FALL);
+check('the Deep Cut rockfall starts cracked and shut', fallBefore === 'boulderCracked', fallBefore);
+// Drop the bomb beside it and let the fuse run all the way down.
+await page.evaluate(() => { window.__game.player.x = 7 * 16; window.__game.player.y = 4 * 16; });
 await tap('KeyZ');
-await frames(20);
-const plugAfter = await nameAt(PLUG.gx, PLUG.gy);
-check('the Dredge Line hauls the abyssal plug out', plugAfter !== 'abyssPlug', plugAfter);
+await frames(240);
+const fallAfter = await nameAt(FALL.gx, FALL.gy);
+check('Bombs open the Deep Cut rockfall', fallAfter !== 'boulderCracked', fallAfter);
 
-// The gloves open the plug in front, not the whole row.
-const neighbour = await nameAt(6, 6);
-check('...and only the plug in front', neighbour === 'abyssPlug', neighbour);
+// --- the Keep's seal: the one gate no item answers -------------------------
+// Room 0,2,1, row 6, cols 3-6, and room 0,2,2, row 1, cols 3-6 — two courses
+// of one seal. It carries `openFlag: 'makuOpenedKeep'`, which the Maku Tree
+// sets at five Essences, and NOTHING else opens it.
+//
+// Both halves are asserted because the failure that shipped was the open half
+// being true of the wrong key: the seal was an iron plug the Dredge Line
+// hauled out, and the Dredge Line is inside what it sealed.
+const SEAL = { rx: 2, ry: 1, gx: 4, gy: 6, tx: 4, ty: 5, dir: 'down', item: 'dredge', level: 1 };
+const sealBefore = await setup(SEAL);
+check("the Keep's seal starts shut", sealBefore === 'keepSeal', sealBefore);
+await tap('KeyZ');
+await frames(30);
+check('...and the Dredge Line does not open it', await nameAt(4, 6) === 'keepSeal',
+  await nameAt(4, 6));
+// Pressing A on it says so rather than ignoring the player.
+await tap('KeyX');
+await frames(4);
+const denied = await page.evaluate(() => {
+  // The box keeps its text as PAGES of lines — there is no `.text`. A probe
+  // that reads a field the class does not have reports "the game said nothing"
+  // for a game that said the right thing.
+  const d = window.__game.dialogue;
+  const said = d && d.pages ? d.pages.flat().join(' ') : '';
+  return { active: !!(d && d.active), said };
+});
+check('...and says why, instead of reading as scenery',
+  denied.active && /bolted/i.test(denied.said), JSON.stringify(denied));
+
+// Now the flag, and only the flag.
+const opened = await page.evaluate(async () => {
+  const g = window.__game;
+  const prog = await import('/src/game/progress.js');
+  if (g.dialogue) g.dialogue.active = false;
+  g.mode = 'play';
+  prog.setFlag(g.progress, 'makuOpenedKeep');
+  g.enterMap('overworld', 0, 2, 1, 80, 64, 'down', { instant: true });
+  window.__harness.step(3);
+  const stair = [3, 4, 5, 6].map(x => g.room.baseName(x, 6));
+  g.enterMap('overworld', 0, 2, 2, 80, 64, 'down', { instant: true });
+  window.__harness.step(3);
+  const kell = [3, 4, 5, 6].map(x => g.room.baseName(x, 1));
+  return { stair, kell };
+});
+check('the Maku Tree opens the Abyss Stair course',
+  opened.stair.every(n => n !== 'keepSeal'), opened.stair.join(','));
+check('...and the Upper Kell course with it',
+  opened.kell.every(n => n !== 'keepSeal'), opened.kell.join(','));
 
 // --- the four terrain-shaped gates -----------------------------------------
 //
@@ -276,16 +328,21 @@ const walkAt = async (key, jump) => {
   }));
 };
 
-// --- The Cliffs boulder, which is a Dredge Line gate now -------------------
+// --- The Marsh Stair boulder, which is the Dredge Line's overworld gate -----
 // The Power Bracelet is gone and lifting is base moveset, so the boulder needs
 // a reason to still be a boulder: it is `liftLevel: 2`, past bare hands, and
 // the Dredge Line drags it clear. Both directions are asserted, because a gate
 // checked one way is a gate that might not be one.
 //
-// Room 0,2,2: boulders at row 1, cols 3-6, behind the north doorway.
-const BOULDER = { rx: 2, ry: 2, gx: 4, gy: 1, tx: 4, ty: 0, dir: 'down' };
+// Room 0,1,5: boulders at row 6, cols 1-2 and 7-8. This probe used to stand on
+// Upper Kell, whose north row was four boulders — those four are the Keep's
+// seal now, and no item opens them. The Line still holds the Bog Stair, and
+// this is the proof that its overworld verb is a real one and not a claim: the
+// critical path moved off the Line entirely, so if nothing out here answered
+// to it, "the Dredge Line opens things on the overworld" would be false.
+const BOULDER = { rx: 1, ry: 5, gx: 1, gy: 6, tx: 1, ty: 5, dir: 'down' };
 let b0 = await setup({ ...BOULDER, item: 'sword', level: 1 });
-check('the cliff boulder starts as a boulder', b0 === 'boulder', b0);
+check('the Marsh Stair boulder starts as a boulder', b0 === 'boulder', b0);
 await tap('KeyZ');
 await frames(20);
 const bSword = await nameAt(BOULDER.gx, BOULDER.gy);
@@ -302,6 +359,10 @@ await tap('KeyZ');
 await frames(60);        // a cast flies out and comes back; a lift did not
 const bLift = await nameAt(BOULDER.gx, BOULDER.gy);
 check('the Dredge Line drags the boulder clear', bLift !== 'boulder', bLift);
+
+// The Line moves the boulder in front, not the whole row.
+const bNext = await nameAt(2, 6);
+check('...and only the boulder in front', bNext === 'boulder', bNext);
 
 // --- The Coral Reef chasm: no longer a gate --------------------------------
 // Roc's Feather is gone and THE HOP IS BASE MOVESET. A one-tile chasm is

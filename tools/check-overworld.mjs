@@ -13,20 +13,38 @@
 // anything: a one-tile chasm is crossed by walking into it. The Coral Reef
 // entry is removed rather than left failing. P9 re-gates the overworld.
 //
-// THREE such gates exist, and this proves each one twice: that the region is
-// sealed without its item, and that it opens with it.
-//   Bombs           F.BOMBABLE   Sunken Marsh
-//   Magic Boomerang F.VANE       Salt Pans
-//   Magnetic Gloves F.MAGNETIC   Abyssal approach
+// FOUR such gates exist, and this proves each one twice: that the region is
+// sealed without it, and that it opens with it.
+//   Bombs          F.BOMBABLE        Sunken Marsh, and the Cliffs of Kell
+//   Resonance Rod  F.VANE            Salt Pans
+//   Dredge Line    F.HEAVY           the Bog Stair
+//   the Maku Tree  'makuOpenedKeep'  Abyssal approach
 //
-// Usage: node check-overworld.mjs [--bombs] [--items=bombs,rod,dredge]
+// THE LAST ONE IS NOT AN ITEM. A gate is one of two things here: a tile flag
+// an item answers, or a tile whose `openFlag` the SAVE carries — a story gate,
+// opened by the Maku Tree at five Essences and by nothing you hold. The Keep's
+// road used to be an item gate and the item was the Dredge Line, which is
+// inside the Keep; see tools/check-progression.mjs, which floods in
+// acquisition order and is the tool that can see that class of bug.
+//
+// THIS TOOL CANNOT SEE IT. Every per-gate run below drops ONE gate while
+// holding all the others, which is the right question for "does this gate seal
+// its own region" and the wrong one for "can a player who has nothing get
+// here" — a cycle of two gates is open under every single-drop run.
+//
+// Usage: node check-overworld.mjs [--bombs] [--items=bombs,rod,dredge,keep]
 // `--bombs` is kept as an alias for `--items=bombs`.
+//
+// PASSABILITY IS NEVER RE-DERIVED HERE. Every "can something stand on this
+// tile" question is asked of tools/lib/collision.mjs, which asks the real
+// `Room.solidAt` — the same function `canOccupy`/`moveEntity` use in the
+// running game. See CLAUDE.md, Hard rules.
 
 import { installData } from '../src/data/index.js';
 import { MAPS, getRoom } from '../src/world/maps.js';
-import { getLegend } from '../src/world/room.js';
-import { getTileDef, F } from '../src/world/tileset.js';
+import { F } from '../src/world/tileset.js';
 import { GAP_HOP_MAX_SPAN } from '../src/data/feel.js';
+import { tileWalkable, ROUTE_AVOID } from './lib/collision.mjs';
 
 installData();
 // Each gate: the flag its tile carries, and the region it holds shut.
@@ -38,23 +56,35 @@ installData();
 // down" also passes when a gate accidentally strands an unrelated corner.
 const GATES = {
   bombs: {
-    flag: F.BOMBABLE, region: 'Sunken Marsh',
-    covers: [[0, 2, 6, 9]],
+    flag: F.BOMBABLE, region: 'Sunken Marsh and the Cliffs of Kell',
+    // Bombs hold two branches now. The Marsh is the cracked cliff on the Bog
+    // road; the Cliffs are the cracked boulder in the Deep Cut's rockfall,
+    // which is the only way into them and therefore the only way to everything
+    // north of them — the Abyssal approach included, since its own gate is
+    // reached through here. The Marsh's two northern screens hang off the Bog
+    // Stair rather than off the Marsh proper, so they sit behind this too.
+    covers: [[0, 2, 6, 9], [0, 3, 2, 5], [0, 3, 0, 1]],
   },
   rod: {
     flag: F.VANE, region: 'Salt Pans',
     covers: [[4, 7, 0, 2], [8, 11, 0, 3]],
   },
-  dredgePlug: {
-    flag: F.MAGNETIC, region: 'Abyssal approach',
+  keep: {
+    // NOT AN ITEM. `openFlag` names a flag on the save; the Maku Tree sets
+    // 'makuOpenedKeep' at five Essences and the seal's two courses — the
+    // boulder line on Upper Kell and the plugs on the Abyss Stair — open
+    // together. Nothing the player carries opens either.
+    openFlag: 'makuOpenedKeep', region: 'Abyssal approach', story: true,
     covers: [[0, 3, 0, 1]],
   },
   dredge: {
-    flag: F.HEAVY, region: 'Cliffs of Kell',
-    // The Cliffs are the only way up to the Abyssal approach, and the Marsh's
-    // two northern screens hang off the Bog Stair rather than off the Marsh
-    // proper, so both sit behind this gate as well.
-    covers: [[0, 3, 2, 5], [0, 3, 0, 1], [0, 2, 6, 6]],
+    flag: F.HEAVY, region: 'Bog Stair',
+    // What is left on the Dredge Line once the Keep's road is the story's and
+    // the Deep Cut's rockfall is the Bombs': the boulders on the Marsh Stair,
+    // which hold the Marsh's two northern screens. That is optional content
+    // and it is meant to be — the Line's overworld verb has to stay real
+    // without any of the critical path hanging off it.
+    covers: [[0, 2, 6, 6]],
   },
 };
 const covered = (g, k) => {
@@ -67,42 +97,72 @@ let HELD = argItems ? argItems.slice(8).split(',').filter(Boolean)
          : process.argv.includes('--bombs') ? ['bombs'] : [];
 for (const it of HELD) if (!GATES[it]) { console.error(`unknown item '${it}'`); process.exit(2); }
 const BOMBS = HELD.includes('bombs');
-// The mask of gate flags the current run may walk through.
-let openMask = HELD.reduce((m, it) => m | GATES[it].flag, 0);
+// What the current run may walk through: a mask of item-answered tile flags,
+// plus the set of story flags the run's save is pretending to carry.
+const maskOf = (held) => held.reduce((m, it) => m | (GATES[it].flag || 0), 0);
+const storyOf = (held) => new Set(held.filter(it => GATES[it].openFlag)
+  .map(it => GATES[it].openFlag));
+let openMask = maskOf(HELD);
+let openStory = storyOf(HELD);
 const W = 10, H = 8, OW = 12, OH = 10;
 const m = MAPS.get('overworld');
 
 let pass = 0; const fail = [];
 const check = (n, c, d) => c ? pass++ : (fail.push(n + (d ? ' — ' + d : '')), console.log('  FAIL ' + n + (d ? ' — ' + d : '')));
 
-// A ROOM IS READ AS TILE NAMES, NOT AS CHARACTERS.
+// A ROOM IS A REAL Room INSTANCE, not a grid of characters.
 //
-// A legend character used to be enough: one character, one tile, anywhere on
-// any screen. A BLOCK breaks that — the nine H's of a shop are nine different
-// tiles and which one a cell is depends on where in the footprint it sits — so
-// this asks the engine's own expansion (`Room.expandBlocks`) rather than the
-// legend, by building every screen and reading its resolved grid. A checker
-// that kept reading characters would resolve 'block:bShop' through
-// `getTileDef`, get the empty tile back, and flood straight through the shop.
-const NAMES = new Map();
-for (const [k, d] of Object.entries(m.roomDefs)) {
+// A legend character used to be enough to ask "what tile is this" — one
+// character, one tile, anywhere on any screen. A BLOCK breaks that (the nine
+// H's of a shop are nine different tiles, and which one a cell is depends on
+// where in the footprint it sits), so this builds the engine's own `Room` for
+// every screen via `getRoom` and asks IT — the same object the running game
+// would build for that screen — rather than re-resolving legend characters or
+// re-deriving what makes a tile solid.
+const ROOMS = new Map();
+for (const k of Object.keys(m.roomDefs)) {
   const [f, rx, ry] = k.split(',').map(Number);
-  const room = getRoom('overworld', f, rx, ry);
-  NAMES.set(d, Array.from({ length: H }, (_, y) =>
-    Array.from({ length: W }, (_, x) => room.baseName(x, y))));
+  ROOMS.set(k, getRoom('overworld', f, rx, ry));
 }
-/** The screen's grid of resolved tile NAMES. Named `l` at the call sites. */
-const legendOf = (def) => NAMES.get(def);
-function defAt(_grid, name, tide) {
-  let d = getTileDef(name);
-  for (let i = 0; i < 4 && d && d.tide; i++) d = getTileDef(d.tide[tide]);
-  return d;
-}
-function walkableAt(grid, name, tide) {
-  const d = defAt(grid, name, tide);
-  if (!d) return false;
-  if (openMask && (d.flags & openMask)) return true;
-  return !(d.flags & (F.VOID | F.SOLID | F.PIT | F.DEEP | F.LEDGE | F.HAZARD | F.JUMPABLE));
+const roomAt = (x, y) => ROOMS.get(`0,${x},${y}`);
+
+// The base player's traversal capabilities: no swim, no jump, no cutting.
+// Only the base hop (handled separately below, as `hoppable`) and the gate
+// items (handled separately too, via `openMask`) extend this.
+const CAPS = { jumping: false, swim: false, cutting: false };
+
+/**
+ * Whether tile (x, y) of `room` is walkable at tide `t`.
+ *
+ * MERGED FROM TWO BRANCHES AND NEITHER SIDE SURVIVED WHOLE. One moved this
+ * function off hand-rolled tile-flag arithmetic and onto tools/lib/collision.mjs
+ * so the checker asks the engine's own `Room.solidAt`; the other added the
+ * story-gate clause below, to a version that still did its own arithmetic.
+ * Taking either side entire would have thrown away the other's only change, so
+ * this is the collision lib's implementation carrying the story gate's clause.
+ *
+ * Two opinions are layered on top of the engine, and they are different kinds
+ * of thing:
+ *
+ *   `openMask` models a gate already triggered (a bombed wall, a rung vane) —
+ *   a persistent tile mutation the engine has no "capability" for, so it can't
+ *   be expressed as a `caps` flag the way swimming or jumping can.
+ *
+ *   `openFlag` is the STORY gate, and it is asked before solidity because the
+ *   tile the player actually walks on is not this one: `Game.applyStoryGates`
+ *   swaps it for `openTo` on room entry once the save carries the flag, rather
+ *   than letting the player past the seal itself. Asking `tileWalkable` here
+ *   would describe the sealed tile, which is never the tile underfoot.
+ *
+ * Everything else is `tileWalkable` from tools/lib/collision.mjs, which asks
+ * the real `Room.solidAt` and treats F.PIT/F.HAZARD as additional route
+ * avoidance, exactly as `canOccupy`'s own `avoid` parameter does for enemies.
+ */
+function walkableAt(room, x, y, t) {
+  if (openMask && (room.flagsAt(x, y, t) & openMask)) return true;
+  const d = room.tile(x, y, t);
+  if (d && d.openFlag) return openStory.has(d.openFlag);
+  return tileWalkable(room, x, y, t, CAPS, ROUTE_AVOID);
 }
 
 // --- the base hop ----------------------------------------------------------
@@ -118,35 +178,34 @@ function walkableAt(grid, name, tide) {
 // axis, is shorter than GAP_HOP_MAX_SPAN. Blanket-passing every F.JUMPABLE
 // would walk the flood straight through the four-tile decorative chasm bands
 // along the bottom of the Coral Reef, which no hop clears.
-function isGap(l, ch) {
-  const d = defAt(l, ch, 1);
-  return !!(d && (d.flags & F.JUMPABLE));
+function isGap(room, x, y) {
+  return !!(room.flagsAt(x, y, 1) & F.JUMPABLE);
 }
-function runLen(l, def, x, y, dx, dy) {
+function runLen(room, x, y, dx, dy) {
   let n = 1;
   for (let i = 1; ; i++) {
     const nx = x + dx * i, ny = y + dy * i;
-    if (nx < 0 || ny < 0 || nx >= W || ny >= H || !isGap(l, l[ny][nx])) break;
+    if (nx < 0 || ny < 0 || nx >= W || ny >= H || !isGap(room, nx, ny)) break;
     n++;
   }
   for (let i = 1; ; i++) {
     const nx = x - dx * i, ny = y - dy * i;
-    if (nx < 0 || ny < 0 || nx >= W || ny >= H || !isGap(l, l[ny][nx])) break;
+    if (nx < 0 || ny < 0 || nx >= W || ny >= H || !isGap(room, nx, ny)) break;
     n++;
   }
   return n;
 }
-function hoppable(l, def, x, y) {
-  if (!isGap(l, l[y][x])) return false;
-  return runLen(l, def, x, y, 1, 0) < GAP_HOP_MAX_SPAN
-      || runLen(l, def, x, y, 0, 1) < GAP_HOP_MAX_SPAN;
+function hoppable(room, x, y) {
+  if (!isGap(room, x, y)) return false;
+  return runLen(room, x, y, 1, 0) < GAP_HOP_MAX_SPAN
+      || runLen(room, x, y, 0, 1) < GAP_HOP_MAX_SPAN;
 }
 /** Flood-passability WITH position, so the hop can be modelled properly. */
-function passableAt(l, def, x, y) {
-  return passable(l, l[y][x]) || hoppable(l, def, x, y);
+function passableAt(room, x, y) {
+  return passable(room, x, y) || hoppable(room, x, y);
 }
 // The player controls the tide, so a tile is passable if any level allows it.
-const passable = (legend, ch) => [0, 1, 2].some(t => walkableAt(legend, ch, t));
+const passable = (room, x, y) => [0, 1, 2].some(t => walkableAt(room, x, y, t));
 
 // --- 0. how many gaps the base hop actually clears --------------------------
 // Reported, not asserted: a wide gap is legitimate level design (the Coral
@@ -156,12 +215,11 @@ const passable = (legend, ch) => [0, 1, 2].some(t => walkableAt(legend, ch, t));
 {
   let hop = 0, wall = 0;
   for (let ry = 0; ry < OH; ry++) for (let rx = 0; rx < OW; rx++) {
-    const def = m.roomDefs[`0,${rx},${ry}`];
-    if (!def) continue;
-    const l = legendOf(def);
+    const room = roomAt(rx, ry);
+    if (!room) continue;
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-      if (!isGap(l, l[y][x])) continue;
-      if (hoppable(l, def, x, y)) hop++; else wall++;
+      if (!isGap(room, x, y)) continue;
+      if (hoppable(room, x, y)) hop++; else wall++;
     }
   }
   console.log(`  gap tiles: ${hop} hoppable, ${wall} too wide (GAP_HOP_MAX_SPAN=${GAP_HOP_MAX_SPAN})`);
@@ -186,20 +244,18 @@ check('every grid is 8 rows of 10', shape.length === 0, shape.join(','));
 // row must be too, or the player walks off the screen into a wall.
 const seams = [];
 for (let y = 0; y < OH; y++) for (let x = 0; x < OW; x++) {
-  const a = m.roomDefs[`0,${x},${y}`];
-  if (!a) continue;
-  const la = legendOf(a);
+  const ra = roomAt(x, y);
+  if (!ra) continue;
   for (const [dx, dy] of [[1, 0], [0, 1]]) {
-    const b = m.roomDefs[`0,${x + dx},${y + dy}`];
-    if (!b) continue;
-    const lb = legendOf(b);
+    const rb = roomAt(x + dx, y + dy);
+    if (!rb) continue;
     const n = dx ? H : W;
     for (let i = 0; i < n; i++) {
-      const ca = dx ? la[i][W - 1] : la[H - 1][i];
-      const cb = dx ? lb[i][0] : lb[0][i];
+      const ax = dx ? W - 1 : i, ay = dx ? i : H - 1;
+      const bx = dx ? 0 : i, by = dx ? i : 0;
       for (const t of [0, 1, 2]) {
-        if (walkableAt(la, ca, t) !== walkableAt(lb, cb, t)) {
-          seams.push(`0,${x},${y}->${dx ? 'E' : 'S'} row ${i} tide ${t}: '${ca}' vs '${cb}'`);
+        if (walkableAt(ra, ax, ay, t) !== walkableAt(rb, bx, by, t)) {
+          seams.push(`0,${x},${y}->${dx ? 'E' : 'S'} row ${i} tide ${t}`);
         }
       }
     }
@@ -210,13 +266,12 @@ check('every seam agrees at all three tide levels', seams.length === 0, seams.sl
 // --- 4. the world border is solid ------------------------------------------
 const leaks = [];
 for (let y = 0; y < OH; y++) for (let x = 0; x < OW; x++) {
-  const d = m.roomDefs[`0,${x},${y}`];
-  if (!d) continue;
-  const l = legendOf(d);
-  if (x === 0) for (let i = 0; i < H; i++) if (passable(l, l[i][0])) leaks.push(`0,${x},${y} W row ${i}`);
-  if (x === OW - 1) for (let i = 0; i < H; i++) if (passable(l, l[i][W - 1])) leaks.push(`0,${x},${y} E row ${i}`);
-  if (y === 0) for (let i = 0; i < W; i++) if (passable(l, l[0][i])) leaks.push(`0,${x},${y} N col ${i}`);
-  if (y === OH - 1) for (let i = 0; i < W; i++) if (passable(l, l[H - 1][i])) leaks.push(`0,${x},${y} S col ${i}`);
+  const room = roomAt(x, y);
+  if (!room) continue;
+  if (x === 0) for (let i = 0; i < H; i++) if (passable(room, 0, i)) leaks.push(`0,${x},${y} W row ${i}`);
+  if (x === OW - 1) for (let i = 0; i < H; i++) if (passable(room, W - 1, i)) leaks.push(`0,${x},${y} E row ${i}`);
+  if (y === 0) for (let i = 0; i < W; i++) if (passable(room, i, 0)) leaks.push(`0,${x},${y} N col ${i}`);
+  if (y === OH - 1) for (let i = 0; i < W; i++) if (passable(room, i, H - 1)) leaks.push(`0,${x},${y} S col ${i}`);
 }
 check('the world border is solid', leaks.length === 0, leaks.slice(0, 4).join(' | '));
 
@@ -229,14 +284,13 @@ check('the world border is solid', leaks.length === 0, leaks.slice(0, 4).join(' 
 function flood() {
   const seen = new Set();
   const start = '0,4,7';
-  const sd = m.roomDefs[start], sl = legendOf(sd);
+  const sr = ROOMS.get(start);
   const q = [];
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-    if (passableAt(sl, sd, x, y)) { const k = `${start}:${x},${y}`; if (!seen.has(k)) { seen.add(k); q.push([start, x, y]); } }
+    if (passableAt(sr, x, y)) { const k = `${start}:${x},${y}`; if (!seen.has(k)) { seen.add(k); q.push([start, x, y]); } }
   }
   while (q.length) {
     const [rk, x, y] = q.pop();
-    const def = m.roomDefs[rk], l = legendOf(def);
     const [, rx, ry] = rk.split(',').map(Number);
     for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
       const nx = x + dx, ny = y + dy;
@@ -248,7 +302,7 @@ function flood() {
       }
       const k = `${trk}:${tx},${ty}`;
       if (seen.has(k)) continue;
-      if (!passableAt(legendOf(m.roomDefs[trk]), m.roomDefs[trk], tx, ty)) continue;
+      if (!passableAt(ROOMS.get(trk), tx, ty)) continue;
       seen.add(k); q.push([trk, tx, ty]);
     }
   }
@@ -270,10 +324,11 @@ function flood() {
 
 // Holding everything must open the whole world. If this fails, some region is
 // walled off by terrain rather than by a gate, which no item will fix.
+const openAll = () => { openMask = maskOf(ALL); openStory = storyOf(ALL); };
 {
-  openMask = ALL.reduce((mask, it) => mask | GATES[it].flag, 0);
+  openAll();
   const { unreached } = flood();
-  check('with every gate item, all 120 screens are reachable',
+  check('with every gate open, all 120 screens are reachable',
     unreached.length === 0, unreached.join(','));
 }
 
@@ -281,7 +336,8 @@ function flood() {
 // Checking that the count goes down is not enough: an unrelated screen falling
 // off the map also makes the count go down.
 for (const drop of ALL) {
-  openMask = ALL.filter(it => it !== drop).reduce((mask, it) => mask | GATES[it].flag, 0);
+  const rest = ALL.filter(it => it !== drop);
+  openMask = maskOf(rest); openStory = storyOf(rest);
   const { unreached } = flood();
   check(`without ${drop}, the ${GATES[drop].region} is sealed`,
     unreached.length > 0, 'nothing was gated');
@@ -290,10 +346,10 @@ for (const drop of ALL) {
   const stray = unreached.filter(k => !covered(drop, k));
   check(`without ${drop}, nothing outside its branch is sealed`,
     stray.length === 0, stray.join(','));
-  openMask = ALL.reduce((mask, it) => mask | GATES[it].flag, 0);
+  openAll();
   console.log(`    ${drop}: seals ${unreached.length} screen(s)`);
 }
-openMask = HELD.reduce((mask, it) => mask | GATES[it].flag, 0);
+openMask = maskOf(HELD); openStory = storyOf(HELD);
 
 // --- 5b. the same flood, over the FIELD rather than the scalar -------------
 //
@@ -334,22 +390,21 @@ function floodField({ anchor = false } = {}) {
   const heldAt = (x, y, lv, ax, ay, al) =>
     (al >= 0 && Math.abs(x - ax) <= R && Math.abs(y - ay) <= R) ? al : lv;
   const ok = (rk, x, y, lv, ax, ay, al) => {
-    const def = m.roomDefs[rk];
-    if (!def) return false;
-    const l = legendOf(def);
-    if (walkableAt(l, l[y][x], heldAt(x, y, lv, ax, ay, al))) return true;
+    const room = ROOMS.get(rk);
+    if (!room) return false;
+    if (walkableAt(room, x, y, heldAt(x, y, lv, ax, ay, al))) return true;
     // THE BASE HOP. Roc's Feather is gone and walking into a one-tile gap hops
     // it, so a gap narrow enough to clear is crossable at every tide level.
     // `walkableAt` cannot know that — it is told one tile — so the field flood
     // has to ask the same question the scalar flood does, or the Coral Reef
     // reads as nine unreachable screens. `hoppable` reads GAP_HOP_MAX_SPAN, so
     // the Reef's four-tile chasm bands stay walls.
-    return hoppable(l, def, x, y);
+    return hoppable(room, x, y);
   };
 
-  const sd = m.roomDefs[start], sl = legendOf(sd);
+  const sr = ROOMS.get(start);
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-    for (const lv of [0, 1, 2]) if (walkableAt(sl, sl[y][x], lv)) push(start, x, y, lv, -1, -1, -1);
+    for (const lv of [0, 1, 2]) if (walkableAt(sr, x, y, lv)) push(start, x, y, lv, -1, -1, -1);
   }
   while (q.length) {
     const [rk, x, y, lv, ax, ay, al] = q.pop();
@@ -385,7 +440,7 @@ function floodField({ anchor = false } = {}) {
 }
 
 {
-  openMask = ALL.reduce((mask, it) => mask | GATES[it].flag, 0);
+  openAll();
   const plain = floodField();
   const withAnchor = floodField({ anchor: true });
   console.log(`  field flood: ${plain.reached.size}/120 screens (${plain.states} states), `
@@ -429,14 +484,14 @@ openMask = HELD.reduce((mask, it) => mask | GATES[it].flag, 0);
 // approachable from the north and land on ground the flood already reached.
 const ledgeBad = [];
 for (const [rk, def] of Object.entries(m.roomDefs)) {
-  const l = legendOf(def);
+  const room = ROOMS.get(rk);
   def.map.forEach((row, y) => {
     [...row].forEach((ch, x) => {
       if (ch !== '_') return;
       if (y === 0 || y === H - 1) { ledgeBad.push(`${rk} ${x},${y}: on the border ring`); return; }
-      if (!passable(l, l[y - 1][x])) ledgeBad.push(`${rk} ${x},${y}: nothing to approach from`);
+      if (!passable(room, x, y - 1)) ledgeBad.push(`${rk} ${x},${y}: nothing to approach from`);
       for (const t of [0, 1, 2]) {
-        if (!walkableAt(l, l[y + 1][x], t)) ledgeBad.push(`${rk} ${x},${y}: landing not dry at tide ${t}`);
+        if (!walkableAt(room, x, y + 1, t)) ledgeBad.push(`${rk} ${x},${y}: landing not dry at tide ${t}`);
       }
     });
   });
