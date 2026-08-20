@@ -10,6 +10,117 @@ maintain and the most expensive thing to not have.
 
 ---
 
+## Title screen is drawn art now — branch `claude/title-screen-art-j2lyg9`
+
+`src/game/title.js` used to draw the game's name as system-font text over a
+procedural sea, with a comment saying it was drawn that way "so the title
+needs no art" — a placeholder that had survived to be the first screen
+anyone sees. It is now a real title card, built to the Oracle-series title
+grammar (that card was the reference held up for it):
+
+| piece | what it is |
+|---|---|
+| `title_caption` | "THE LEGEND OF", small caps, flat fill + outline |
+| `title_wordmark` | "ZELDA", 99x28, ornate display serif, bevelled |
+| `title_sub` | "ORACLE OF", small caps |
+| `title_pill` | "TIDES" in a stadium: pale ring, deep fill, pale letters |
+| `title_conch` | the Moon Conch emblem, 32x35 |
+| `title_splash` | the mottled backdrop the text sits on |
+| `title_press` | "PRESS START", drawn rather than system text |
+
+Read top to bottom that is **THE LEGEND OF ZELDA / ORACLE OF TIDES**, which
+is the source cards' exact four-tier structure.
+
+**`src/data/sprites-title.js`** holds all of it. No sheet has this game's
+name on it, so per ART-DIRECTION rule 2 this is drawn-to-match, and it is
+hand-authored source — NOT a ripper output, so the generated-file rule does
+not apply and there is nothing to re-emit.
+
+The important structural point for whoever edits it next: **the letterforms
+are hand-drawn silhouettes**, literal `#`/`.` tables, one per display glyph,
+drawn stem by stem with 4px stems, 3px bars and flared serif feet. What is
+computed is only the shading — a bevel pass (index 0 on every top/left edge,
+index 2 on every bottom/right, index 1 inside) and an outline dilation
+(index 3). The first version of this file generated the letters by upscaling
+a 5x7 sans font, and it read as exactly what it was; no amount of palette
+work fixes letterforms. If you need a new display glyph, draw it into
+`DISPLAY` at 20 rows and let the passes shade it. `setType` bottom-aligns on
+a common baseline and sizes the block to its tallest glyph, which is what
+lets the 26-row `Z` rise above the 20-row `ELDA` the way the source's does —
+that one oversized leading letter is most of the logo's silhouette.
+
+Design points worth not re-litigating:
+
+- **The series line is deliberate and must not be "fixed".** Mid-session a
+  pass replaced "THE LEGEND OF ZELDA" with an invented line, reading Goal 2
+  as a rule about names. It is not — it is a rule about mechanics, items,
+  dungeons and story. This is an openly-labelled personal fan game that
+  stars Link and runs on ripped sheets; the series line belongs on it. The
+  owner reverted that call explicitly and CLAUDE.md now says so at the top.
+  **Do not strip it again.**
+- **`ZELDA` is the hero word, `ORACLE OF` is the subtitle line, `TIDES` is
+  in the pill** — the source's exact split, where the full game title reads
+  across the small line and the pill together.
+- **The Moon Conch is the marquee-item emblem**, overlapping the wordmark's
+  lower right where the source cards put the Rod of Seasons and the Rod of
+  Ages. It fills the same role in this game (it is what moves the tide), and
+  unlike the branding it IS ours, so it is the worked example of where the
+  line actually falls. Its shape follows the 16x16 `i_conch` icon so emblem
+  and inventory icon read as one object. If you redraw it: the stepped left
+  edge is doing the work — a smooth taper read as a striped leaf, and the
+  whorl sutures are what make it a shell.
+- **The tide waterline is the one piece of scenery** (item 3 of the brief;
+  a moon was the alternative). It crosses the full screen width, not just
+  the logo — a waterline that stopped at the logo's edges read as a
+  highlight on the logo rather than as a sea level. It sits at the pill's
+  ankles: an earlier pass ran it through the middle of the hero word and cut
+  it in half like a scanline.
+- **All three stages (logo, file select, erase) share the gold frame** and
+  the same sea behind them. File-select and erase kept their exact existing
+  layout, per the brief — only the border and background changed.
+
+All seven sprite names are registered in `src/data/sprite-manifest.js`
+(`REQUIRED_SPRITES.title` and `expectedSize`), with the sizes stated by hand
+rather than imported from the module that makes them, so a glyph-table edit
+that changes an assembled size is a `validate.mjs --strict` failure instead
+of a silent stretch.
+
+**Verified by looking at it, which is the only thing that proves a title
+screen.** All three stages were screenshotted in the real palette and read
+correctly; `preview.mjs` is explicitly not enough here and could not have
+caught any of the four problems that took a pass each to find (halo eating
+the backdrop, backdrop reading as TV static, waterline bisecting the hero
+word, pill letters washing out). Shots went to a throwaway dir and are not
+checked in — `node tools/test.mjs --shots` gets the logo and file-select;
+the erase stage needs a one-off script that sets
+`window.__game.title.cursor = 3` before the second Enter, and the logo needs
+`title.t` parked on an even 16-frame boundary or PRESS START is caught
+mid-blink.
+
+Not touched, per the brief: save-file logic, input handling, the intro
+sequence.
+
+### Two environment notes for the next session
+
+1. **`replay.mjs`, `walk-dungeons.mjs`, `solve-switches.mjs` and
+   `check-gates.mjs` cannot launch a browser in this sandbox.** The
+   installed playwright package does not match the installed browser build.
+   `test.mjs` and `check-build.mjs` already carry a fallback to
+   `/opt/pw-browsers/chromium` for exactly this; the other four do not, and
+   die on launch before loading a line of game code. All four were verified
+   green this session by patching that same fallback in temporarily and
+   reverting it — 50/51 replays, 22 walk-dungeons, 14 check-gates, all 9
+   switch rooms. **Giving those four the fallback their siblings already
+   have is a real five-line fix and a good first job**; it was left out of
+   this commit only because a title-screen diff is the wrong place for it.
+2. **Every browser-based checker reports one failure, "no page errors — 404
+   Failed to load resource".** It is pre-existing and unrelated — confirmed
+   by stashing this session's work and re-running. Do not chase it as a
+   regression, but it is worth ten minutes to find and delete the dead
+   reference.
+
+---
+
 ## THE BOARD, UPDATED AGAIN — the route retuned past the push-block blocker, D1's health economy instrumented and fixed
 
 **`tools/playthrough-route.mjs` was stale in exactly the way the previous

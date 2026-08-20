@@ -17,6 +17,16 @@ what the source games already drew. Goal 2 governs *what the game is about*,
 and there nothing is borrowed. Where they do conflict, fidelity wins; we are
 not being different for its own sake.
 
+**Goal 2 is about design, not branding.** This is an openly-labelled personal
+fan game: it stars Link, it is built on sprite sheets ripped from the
+cartridges, and the title screen says THE LEGEND OF ZELDA — ORACLE OF TIDES
+in the Oracle series' own layout, with the Moon Conch set as its marquee item
+the way the source cards set the Rod of Seasons and the Rod of Ages. That is
+deliberate and it is not a Goal 2 violation. **Do not "fix" it.** A session
+once stripped the series line from the title screen reading Goal 2 as a rule
+about names; it is a rule about *mechanics, items, dungeons and story*, and
+those stay ours.
+
 ---
 
 ## Hard rules
