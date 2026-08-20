@@ -22,6 +22,30 @@ engine's own `Room.solidAt`/`canOccupy` via `tools/lib/collision.mjs`
 (`claude/consolidate-movement-models-f1bqez`). Full detail for each follows
 as its own section below.
 
+**The merge itself found one gap the consolidation's own inventory couldn't
+see:** `check-hearts.mjs` and `check-trade.mjs` didn't exist yet on the branch
+the consolidation was cut from, so neither was converted, and both tripped
+`tools/test.mjs`'s new `checkNoPrivateCollisionLogic` guard the moment all
+four branches landed together (`check-hearts.mjs:210` masked
+`PIT|HAZARD|DEEP`, `check-trade.mjs:160` masked seven flags). Both now call
+`defWalkable`/`ROUTE_AVOID` from `tools/lib/collision.mjs` instead; no
+assertion moved in either (114/114, 43/43). Every other `tools/*.mjs` file
+was swept by hand for the same pattern and each remaining raw-flag site is a
+narrow, verb-specific test already documented as intentionally out of scope
+(gap-hop tracing, cast/dredge stop rules, throw-flight stops) — none
+reimplements general passability.
+
+**Also found, not fixed, not blocking:** `node tools/scan-sprites.mjs
+--strict` reports 82 hard findings, all in `title_splash` (holes and
+outdents in the mottled backdrop/rings). This predates the trading and
+consolidation merges — confirmed identical right after the title-screen
+merge alone — and is a pixel-art quality question about the title
+backdrop, not a manifest-resolution problem: `scan-sprites` reports all 308
+sprite names resolved (both the `title` and `trade` packs installed and
+readable, nothing missing). Worth a look next session; not touched here
+since it isn't a merge conflict and this session was scoped to not write
+new game content.
+
 ### Title screen is drawn art now — branch `claude/title-screen-art-j2lyg9`
 
 `src/game/title.js` used to draw the game's name as system-font text over a
