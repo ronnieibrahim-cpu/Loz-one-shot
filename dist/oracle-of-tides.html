@@ -9643,7 +9643,8 @@ class Title {
     ctx.fillStyle = '#08142c';
     ctx.fillRect(0, 0, SCREEN_W, SCREEN_H);
 
-    // A moving sea behind the logo, drawn procedurally so the title needs no art.
+    // A moving sea behind the logo, drawn procedurally: it animates, costs
+    // nothing, and needs no art of its own.
     for (let y = 0; y < SCREEN_H; y += 2) {
       const depth = y / SCREEN_H;
       const shade = ['#08142c', '#0c2044', '#183c80', '#2c60b0', '#58a8e0'][
@@ -9662,18 +9663,42 @@ class Title {
     if (this.stage === 'logo') this.drawLogo(ctx);
     else if (this.stage === 'files') this.drawFiles(ctx);
     else this.drawErase(ctx);
+
+    drawTitleFrame(ctx);
   }
 
   drawLogo(ctx) {
-    // Title block
     const bob = Math.round(Math.sin(this.t * 0.03) * 2);
-    ctx.fillStyle = 'rgba(8,12,24,0.55)';
-    ctx.fillRect(6, 20 + bob, SCREEN_W - 12, 54);
-    drawTextCentered(ctx, 'THE LEGEND OF', SCREEN_W / 2, 26 + bob, '#f8f8e8', '#08142c');
-    drawTextCentered(ctx, 'Z E L D A', SCREEN_W / 2, 38 + bob, '#e8c040', '#50340c');
-    ctx.fillStyle = '#e8c040';
-    ctx.fillRect(34, 50 + bob, SCREEN_W - 68, 1);
-    drawTextCentered(ctx, 'Oracle of Tides', SCREEN_W / 2, 56 + bob, '#b0e8f8', '#08142c');
+    const wSize = sprites.size('title_wordmark');
+    const tSize = sprites.size('title_tagline');
+    const wx = Math.round((SCREEN_W - wSize.w) / 2);
+    const wy = 30 + bob;
+    const tx = Math.round((SCREEN_W - tSize.w) / 2);
+    const ty = wy - tSize.h - 4;
+
+    ctx.fillStyle = 'rgba(8,12,24,0.5)';
+    ctx.fillRect(4, ty - 4, SCREEN_W - 8, wSize.h + tSize.h + 20);
+
+    sprites.draw(ctx, 'title_tagline', tx, ty);
+    sprites.draw(ctx, 'title_wordmark', wx, wy);
+
+    // The tide rises over the bottom of the wordmark: a lightly scalloped
+    // crest line that bobs with the same clock as the sea behind it, and a
+    // translucent wash below it standing in for the water covering the
+    // letters. Ties the logo to the one thing this game is about.
+    const tideY = wy + Math.round(wSize.h * 0.62) + Math.round(Math.sin(this.t * 0.05) * 1.5);
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(wx, wy, wSize.w, wSize.h);
+    ctx.clip();
+    ctx.fillStyle = 'rgba(24,72,144,0.4)';
+    ctx.fillRect(wx, tideY, wSize.w, wy + wSize.h - tideY);
+    for (let x = 0; x < wSize.w; x += 4) {
+      const cy = tideY + Math.round(Math.sin((this.t * 0.08) + x * 0.5) * 1);
+      ctx.fillStyle = '#b0e8f8';
+      ctx.fillRect(wx + x, cy, 2, 1);
+    }
+    ctx.restore();
 
     if ((this.t >> 4) % 2 === 0) {
       drawTextCentered(ctx, 'PRESS START', SCREEN_W / 2, 104, '#f8f8e8', '#08142c');
@@ -9717,6 +9742,21 @@ class Title {
     }
     drawTextCentered(ctx, 'B to go back', SCREEN_W / 2, 118, '#78a8c8', '#08142c');
   }
+}
+
+// Shared border for all three title screens — logo, file select, erase — so
+// they read as one design rather than a text screen bolted onto a menu.
+// Gold outer edge with a darker bevel underneath it, echoing the wordmark's
+// own outline and shading, inset from the screen edge by one pixel.
+function drawTitleFrame(ctx) {
+  ctx.fillStyle = '#e8c040';
+  ctx.fillRect(1, 1, SCREEN_W - 2, 1);
+  ctx.fillRect(1, 1, 1, SCREEN_H - 2);
+  ctx.fillRect(SCREEN_W - 2, 1, 1, SCREEN_H - 2);
+  ctx.fillRect(1, SCREEN_H - 2, SCREEN_W - 2, 1);
+  ctx.fillStyle = '#50340c';
+  ctx.fillRect(2, 2, SCREEN_W - 4, 1);
+  ctx.fillRect(2, 2, 1, SCREEN_H - 4);
 }
 __exports["Title"] = Title;
 });
@@ -32205,6 +32245,154 @@ __exports["GEAR_ART"] = GEAR_ART;
 __exports["installGearSprites"] = installGearSprites;
 });
 
+/* ===== src/data/sprites-title.js ===== */
+__define("data/sprites-title.js", function (__exports, __require) {
+// The title wordmark and tagline: hand-drawn pixel art, built from a small
+// bespoke 5x7 caps typeface authored for this logo alone. Nothing in
+// assets/sheets/ has this game's name on it, so per docs/ART-DIRECTION.md
+// rule 2 this is drawn to match the register measured off the source sheets:
+// a light-to-dark ramp with a hard black outline, no anti-aliasing.
+//
+// Not a ripper output — there is no sheet to re-run against — so this file is
+// hand-authored source, not generated. The glyphs are literal pixel data; the
+// only computed step is stacking glyphs into a line, centering lines on each
+// other, and dilating a 1px outline around the assembled silhouette.
+
+const { sprites } = __require("gfx/art.js");
+const { registerPalettes } = __require("gfx/palettes.js");
+
+const GLYPH_W = 5, GLYPH_H = 7;
+const SPACE_W = 3;
+
+// Each glyph is 7 rows of 5 chars, '#' filled / '.' empty. Only the letters
+// this logo and tagline use.
+const GLYPHS = {
+  A: ['.###.', '#...#', '#...#', '#####', '#...#', '#...#', '#...#'],
+  C: ['.####', '#....', '#....', '#....', '#....', '#....', '.####'],
+  D: ['####.', '#...#', '#...#', '#...#', '#...#', '#...#', '####.'],
+  E: ['#####', '#....', '#....', '####.', '#....', '#....', '#####'],
+  F: ['#####', '#....', '#....', '####.', '#....', '#....', '#....'],
+  G: ['.####', '#....', '#....', '#.###', '#...#', '#...#', '.####'],
+  I: ['#####', '..#..', '..#..', '..#..', '..#..', '..#..', '#####'],
+  L: ['#....', '#....', '#....', '#....', '#....', '#....', '#####'],
+  N: ['#...#', '##..#', '#.#.#', '#.#.#', '#..##', '#...#', '#...#'],
+  O: ['.###.', '#...#', '#...#', '#...#', '#...#', '#...#', '.###.'],
+  R: ['####.', '#...#', '#...#', '####.', '#.#..', '#..#.', '#...#'],
+  S: ['.####', '#....', '#....', '.###.', '....#', '....#', '####.'],
+  T: ['#####', '..#..', '..#..', '..#..', '..#..', '..#..', '..#..'],
+};
+
+/** Build one line's silhouette as a { w, h, fill } boolean grid. */
+function buildLine(text) {
+  const chars = [...text.toUpperCase()];
+  let w = 0;
+  for (const c of chars) w += (c === ' ' ? SPACE_W : GLYPH_W) + 1;
+  w = Math.max(0, w - 1);
+  const fill = new Array(GLYPH_H).fill(null).map(() => new Array(w).fill(false));
+  let x = 0;
+  for (const c of chars) {
+    if (c === ' ') { x += SPACE_W + 1; continue; }
+    const g = GLYPHS[c];
+    if (!g) { x += GLYPH_W + 1; continue; }
+    for (let y = 0; y < GLYPH_H; y++) {
+      for (let gx = 0; gx < GLYPH_W; gx++) {
+        if (g[y][gx] === '#') fill[y][x + gx] = true;
+      }
+    }
+    x += GLYPH_W + 1;
+  }
+  return { w, h: GLYPH_H, fill };
+}
+
+/** Nearest-neighbour integer upscale of a boolean grid. */
+function upscale(grid, scale) {
+  const w = grid.w * scale, h = grid.h * scale;
+  const fill = new Array(h).fill(null).map(() => new Array(w).fill(false));
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      fill[y][x] = grid.fill[Math.floor(y / scale)][Math.floor(x / scale)];
+    }
+  }
+  return { w, h, fill };
+}
+
+/**
+ * Stack lines centered on each other with a fixed gap, shade each glyph
+ * top-to-bottom in three bands (light/mid/dark, index 0/1/2), then dilate a
+ * 1px black outline (index 3) around the combined silhouette. Returns an
+ * art template string ready for parseArt.
+ */
+function composeLogo(lines, scale, gapPx) {
+  const built = lines.map(l => upscale(buildLine(l), scale));
+  const innerW = Math.max(...built.map(b => b.w));
+  const innerH = built.reduce((a, b) => a + b.h, 0) + gapPx * (built.length - 1);
+  // A 1px transparent margin all round so the outline dilation below has
+  // somewhere to paint — without it, a letter touching the array edge would
+  // lose its outline on that side.
+  const w = innerW + 2, h = innerH + 2;
+  // index grid: -1 = transparent, 0/1/2 = shade bands, 3 = outline (added later)
+  const idx = new Array(h).fill(null).map(() => new Array(w).fill(-1));
+  let oy = 1;
+  for (const b of built) {
+    const ox = 1 + Math.floor((innerW - b.w) / 2);
+    for (let y = 0; y < b.h; y++) {
+      const band = y < b.h * 0.3 ? 0 : (y < b.h * 0.65 ? 1 : 2);
+      for (let x = 0; x < b.w; x++) {
+        if (b.fill[y][x]) idx[oy + y][ox + x] = band;
+      }
+    }
+    oy += b.h + gapPx;
+  }
+  // Outline: any transparent cell 8-adjacent to a filled cell becomes index 3.
+  const out = idx.map(row => row.slice());
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (idx[y][x] !== -1) continue;
+      let touches = false;
+      for (let dy = -1; dy <= 1 && !touches; dy++) {
+        for (let dx = -1; dx <= 1 && !touches; dx++) {
+          if (dy === 0 && dx === 0) continue;
+          const ny = y + dy, nx = x + dx;
+          if (ny < 0 || ny >= h || nx < 0 || nx >= w) continue;
+          if (idx[ny][nx] !== -1) touches = true;
+        }
+      }
+      if (touches) out[y][x] = 3;
+    }
+  }
+  const rows = out.map(row => row.map(v => (v === -1 ? '.' : String(v))).join(''));
+  return { art: rows.join('\n'), w, h };
+}
+
+// "ORACLE" over "OF TIDES", 2x scale, 4px line gap.
+const wordmark = composeLogo(['ORACLE', 'OF TIDES'], 2, 4);
+// "A TIDE LEGEND" at 1x, the tagline that replaces the borrowed "THE LEGEND
+// OF ZELDA" line — same arched-caption grammar, original words.
+const tagline = composeLogo(['A TIDE LEGEND'], 1, 0);
+
+const TITLE_ART = {
+  title_wordmark: { art: wordmark.art, pal: 'title_gold' },
+  title_tagline: { art: tagline.art, pal: 'title_tag' },
+};
+const TITLE_SIZES = { wordmark: { w: wordmark.w, h: wordmark.h }, tagline: { w: tagline.w, h: tagline.h } };
+
+// Light / mid / dark / outline. Gold ramp for the wordmark, echoing the
+// heart/rupee UI gold; cyan ramp for the tagline, echoing the water palette.
+const TITLE_PALETTES = {
+  title_gold: ['#fff4c0', '#f0c040', '#a86818', '#000000'],
+  title_tag: ['#e8f8ff', '#78c8e8', '#2868b8', '#000000'],
+};
+
+function installTitleSprites() {
+  registerPalettes(TITLE_PALETTES);
+  sprites.add(TITLE_ART);
+}
+__exports["TITLE_ART"] = TITLE_ART;
+__exports["TITLE_SIZES"] = TITLE_SIZES;
+__exports["TITLE_PALETTES"] = TITLE_PALETTES;
+__exports["installTitleSprites"] = installTitleSprites;
+});
+
 /* ===== src/data/index.js ===== */
 __define("data/index.js", function (__exports, __require) {
 // Single entry point that installs every data pack into the engine registries.
@@ -32230,6 +32418,7 @@ const { installEnemySprites, ENEMY_ART } = __require("data/sprites-enemies.js");
 const { installBossSprites, BOSS_ART, MINIBOSS_ART } = __require("data/sprites-bosses.js");
 const { installHudSprites, HUD_ART } = __require("data/sprites-hud.js");
 const { installGearSprites, GEAR_ART } = __require("data/sprites-gear.js");
+const { installTitleSprites, TITLE_ART } = __require("data/sprites-title.js");
 
 // Background tile art: validated at 16x16.
 const ART_PACKS = {
@@ -32254,6 +32443,7 @@ const SPRITE_PACKS = {
   minibosses: MINIBOSS_ART,
   hudRipped: HUD_ART,
   gear: GEAR_ART,
+  title: TITLE_ART,
 };
 
 let installed = false;
@@ -32279,6 +32469,7 @@ function installData() {
   installHudSprites();
   // Drawn to match the extracted icons, for the gear Seasons does not have.
   installGearSprites();
+  installTitleSprites();
   installEnemies();
   installBosses();
   installOverworld();

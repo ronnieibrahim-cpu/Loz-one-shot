@@ -10,6 +10,75 @@ maintain and the most expensive thing to not have.
 
 ---
 
+## Title screen has drawn art now — branch `claude/title-screen-art-j2lyg9`
+
+`src/game/title.js` used to draw the game's name as system-font text over a
+procedural sea, with a comment saying it was drawn that way "so the title
+needs no art" — a placeholder that had survived to be the first screen
+anyone sees. That's fixed:
+
+- **`src/data/sprites-title.js`** (new) is a bespoke 5x7 caps pixel typeface,
+  hand-authored per docs/ART-DIRECTION.md's measured register (light-to-dark
+  shade bands, hard 1px black outline, no anti-aliasing), used to build two
+  pieces of drawn art: `title_wordmark` ("ORACLE" / "OF TIDES", 2x scale,
+  92x34) and `title_tagline` ("A TIDE LEGEND", 1x scale, 75x9). No sheet has
+  this game's name on it, so this is drawn-to-match rather than extracted,
+  per ART-DIRECTION rule 2. Registered through the normal `sprites.add()` /
+  `registerPalettes()` pipeline like any other sprite pack — `title_gold` and
+  `title_tag` palettes, both new.
+- **"A TIDE LEGEND" replaces "THE LEGEND OF ZELDA"** as the small caption
+  above the wordmark. The old text was Nintendo's trademark spelled out in
+  the game's hero art, which is a CLAUDE.md Goal 2 (original design) problem
+  independent of the art-quality one — the layout convention (small caption
+  arched over a big stylized logo, same as Oracle of Seasons/Ages) is kept,
+  the borrowed words are not. Nothing else about the branding text changed:
+  "Oracle of Tides" is now the wordmark itself instead of a subtitle line,
+  "PRESS START" and "A fan homage" are untouched.
+- **The tide submerges the wordmark.** A translucent wash plus a small
+  animated scalloped crest line, clipped to the wordmark's own bounds, sits
+  over the bottom ~38% of the logo and bobs on the same clock as the
+  procedural sea already behind it (`this.t`). This is the one piece of
+  scenery item 3 of the brief asked for — a moon was the other option, this
+  one actually says what the game is about.
+- **All three title stages (logo, file select, erase) now share a frame**: a
+  1px gold border with a darker bevel line just inside it, drawn once in
+  `Title.draw()` after the stage-specific content so it doesn't have to be
+  repeated per stage. File-select and erase kept their exact existing
+  layout — only the border wraps them now.
+- Screenshotted all three stages for real (not just `preview.mjs`, which
+  ART-DIRECTION is explicit only proves silhouette): logo screen reads
+  clearly, gold wordmark with visible bevel shading, cyan tagline, tide wash
+  visible across "OF TIDES"; files and erase screens read as the same design
+  with the new border. (Shots were taken to a throwaway dir and are not
+  checked in — re-run `node tools/test.mjs --shots` for `01-title.png` /
+  `02-files.png`; the erase screen isn't in the default suite's shot list, a
+  one-off script using `window.__game.title.cursor = 3` before the second
+  Enter gets to it if you need to look again.)
+- Both new sprite names are registered in `src/data/sprite-manifest.js`
+  (`REQUIRED_SPRITES.title`, `expectedSize`) so a font-table edit that
+  changes the assembled logo's pixel dimensions is a `validate.mjs --strict`
+  failure, not a silent stretch.
+
+**One trap paid for this session, worth recording so it isn't rediscovered:**
+the outline-dilation pass in `composeLogo()` (sprites-title.js) walks 8
+neighbours of every transparent cell and paints index 3 where one touches a
+filled cell — but the first version ran that dilation on a grid sized exactly
+to the silhouette's bounding box, so a glyph pixel sitting on the array's own
+edge (which happens on nearly every line, since centering doesn't guarantee
+margin) had nowhere for its outline to go and silently lost it on that side.
+`node tools/validate.mjs --strict` caught the symptom (the emitted art was
+2px narrower/shorter than the manifest's declared size) but not the cause —
+that took reading the function. Fix: pad the index grid by 1px of
+transparency on every side *before* placing glyphs, so dilation always has
+somewhere to paint. Any future generated (not hand-drawn) pixel art that
+computes its own outline needs the same margin.
+
+Not touched, per the brief: save-file logic, input handling, the intro
+sequence. `npm run build` is committed with these changes; `git log` on this
+branch is the record of exactly which commit.
+
+---
+
 ## THE BOARD, UPDATED AGAIN — the route retuned past the push-block blocker, D1's health economy instrumented and fixed
 
 **`tools/playthrough-route.mjs` was stale in exactly the way the previous

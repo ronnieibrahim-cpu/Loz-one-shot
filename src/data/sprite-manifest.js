@@ -54,6 +54,9 @@ export const REQUIRED_SPRITES = {
     'i_charm',
   ],
 
+  // ---- pack: sprites-title.js --------------------------------------------
+  title: ['title_wordmark', 'title_tagline'],
+
   // ---- pack: sprites-world.js ------------------------------------------
   pickups: [
     'p_rupee', 'p_rupee5', 'p_rupee20', 'p_heart', 'p_fairy', 'p_bombs',
@@ -141,6 +144,11 @@ export function expectedSize(name) {
   if (name === 'i_chain' || name === 'i_hookhead') return [8, 8];
   if (name.startsWith('shot')) return [8, 8];
   if (name.startsWith('hud_')) return [8, 8];
+  // The title wordmark and tagline: whatever composeLogo() in
+  // sprites-title.js actually produced, so a font edit that changes the
+  // assembled size is a build failure rather than a silent stretch.
+  if (name === 'title_wordmark') return [92, 34];
+  if (name === 'title_tagline') return [75, 9];
   return [16, 16];
 }
 

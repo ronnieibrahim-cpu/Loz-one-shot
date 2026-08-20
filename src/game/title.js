@@ -66,7 +66,8 @@ export class Title {
     ctx.fillStyle = '#08142c';
     ctx.fillRect(0, 0, SCREEN_W, SCREEN_H);
 
-    // A moving sea behind the logo, drawn procedurally so the title needs no art.
+    // A moving sea behind the logo, drawn procedurally: it animates, costs
+    // nothing, and needs no art of its own.
     for (let y = 0; y < SCREEN_H; y += 2) {
       const depth = y / SCREEN_H;
       const shade = ['#08142c', '#0c2044', '#183c80', '#2c60b0', '#58a8e0'][
@@ -85,18 +86,42 @@ export class Title {
     if (this.stage === 'logo') this.drawLogo(ctx);
     else if (this.stage === 'files') this.drawFiles(ctx);
     else this.drawErase(ctx);
+
+    drawTitleFrame(ctx);
   }
 
   drawLogo(ctx) {
-    // Title block
     const bob = Math.round(Math.sin(this.t * 0.03) * 2);
-    ctx.fillStyle = 'rgba(8,12,24,0.55)';
-    ctx.fillRect(6, 20 + bob, SCREEN_W - 12, 54);
-    drawTextCentered(ctx, 'THE LEGEND OF', SCREEN_W / 2, 26 + bob, '#f8f8e8', '#08142c');
-    drawTextCentered(ctx, 'Z E L D A', SCREEN_W / 2, 38 + bob, '#e8c040', '#50340c');
-    ctx.fillStyle = '#e8c040';
-    ctx.fillRect(34, 50 + bob, SCREEN_W - 68, 1);
-    drawTextCentered(ctx, 'Oracle of Tides', SCREEN_W / 2, 56 + bob, '#b0e8f8', '#08142c');
+    const wSize = sprites.size('title_wordmark');
+    const tSize = sprites.size('title_tagline');
+    const wx = Math.round((SCREEN_W - wSize.w) / 2);
+    const wy = 30 + bob;
+    const tx = Math.round((SCREEN_W - tSize.w) / 2);
+    const ty = wy - tSize.h - 4;
+
+    ctx.fillStyle = 'rgba(8,12,24,0.5)';
+    ctx.fillRect(4, ty - 4, SCREEN_W - 8, wSize.h + tSize.h + 20);
+
+    sprites.draw(ctx, 'title_tagline', tx, ty);
+    sprites.draw(ctx, 'title_wordmark', wx, wy);
+
+    // The tide rises over the bottom of the wordmark: a lightly scalloped
+    // crest line that bobs with the same clock as the sea behind it, and a
+    // translucent wash below it standing in for the water covering the
+    // letters. Ties the logo to the one thing this game is about.
+    const tideY = wy + Math.round(wSize.h * 0.62) + Math.round(Math.sin(this.t * 0.05) * 1.5);
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(wx, wy, wSize.w, wSize.h);
+    ctx.clip();
+    ctx.fillStyle = 'rgba(24,72,144,0.4)';
+    ctx.fillRect(wx, tideY, wSize.w, wy + wSize.h - tideY);
+    for (let x = 0; x < wSize.w; x += 4) {
+      const cy = tideY + Math.round(Math.sin((this.t * 0.08) + x * 0.5) * 1);
+      ctx.fillStyle = '#b0e8f8';
+      ctx.fillRect(wx + x, cy, 2, 1);
+    }
+    ctx.restore();
 
     if ((this.t >> 4) % 2 === 0) {
       drawTextCentered(ctx, 'PRESS START', SCREEN_W / 2, 104, '#f8f8e8', '#08142c');
@@ -140,4 +165,19 @@ export class Title {
     }
     drawTextCentered(ctx, 'B to go back', SCREEN_W / 2, 118, '#78a8c8', '#08142c');
   }
+}
+
+// Shared border for all three title screens — logo, file select, erase — so
+// they read as one design rather than a text screen bolted onto a menu.
+// Gold outer edge with a darker bevel underneath it, echoing the wordmark's
+// own outline and shading, inset from the screen edge by one pixel.
+function drawTitleFrame(ctx) {
+  ctx.fillStyle = '#e8c040';
+  ctx.fillRect(1, 1, SCREEN_W - 2, 1);
+  ctx.fillRect(1, 1, 1, SCREEN_H - 2);
+  ctx.fillRect(SCREEN_W - 2, 1, 1, SCREEN_H - 2);
+  ctx.fillRect(1, SCREEN_H - 2, SCREEN_W - 2, 1);
+  ctx.fillStyle = '#50340c';
+  ctx.fillRect(2, 2, SCREEN_W - 4, 1);
+  ctx.fillRect(2, 2, 1, SCREEN_H - 4);
 }

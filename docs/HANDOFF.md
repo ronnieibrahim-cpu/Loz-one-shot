@@ -224,6 +224,23 @@ is in the page, and nothing steps until you say so.
 
 ## Hard-won lessons — do not rediscover these
 
+**A pixel-art outline dilated on an un-padded grid silently loses its edge
+outline on whichever side touches the array boundary.** Building the title
+wordmark (`src/data/sprites-title.js`) meant computing a 1px black outline
+programmatically: walk every transparent cell, paint it index 3 if any of its
+8 neighbours is filled. Done on a grid sized exactly to the assembled
+silhouette's bounding box, a glyph pixel sitting on the array's own edge (true
+of nearly every line, since centering a shorter line inside a longer one does
+not guarantee margin on the longer one) has no cell beyond the edge to paint,
+so it silently loses its outline on that side only — not a crash, not a
+missing sprite, just a wordmark that is subtly wrong on one edge.
+`tools/validate.mjs --strict` caught the *symptom* (emitted art 2px smaller
+than the manifest's declared `expectedSize`) but the mismatch alone doesn't
+tell you why; that took reading `composeLogo()`. Fix: pad the index grid with
+1px of transparency on every side before placing glyphs, so the dilation pass
+always has somewhere to paint. Any future generated (not hand-drawn) pixel art
+that computes its own outline via dilation needs the same margin.
+
 **A health-economy reading is only as honest as the looter taking it, and
 `dLoot` had two bugs that silently starved every run for two sessions.**
 Instrumenting D1's room-by-room health economy (see FEEL-SPEC.md) found the
