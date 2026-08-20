@@ -140,24 +140,23 @@ they are also how a future session finds which sheet a tile came from.
 - **Compositing two source tiles into one game tile is authoring, not
   extraction.** It needs an in-game screenshot across several regions before it
   is believed. `tools/preview.mjs` renders one palette and cannot show it.
-- **A SOLID ENTITY IS NOT SOLID, and no push block has ever been pushed.**
-  `Entity.solid` is documented on the field itself as "blocks the player like a
-  pushable block" and NOTHING in the movement path reads it: `canOccupy` samples
-  tiles only and `moveEntity` asks nothing else. So the player walks through
-  every push block, chest, torch and signpost in the game, and because
-  `Player.tryPush` only fires on a movement HIT, a block cannot be pushed at
-  all. Two consequences are load-bearing. **D1 cannot be finished** — its Switch
-  Room key needs two blocks on two `hold` switches at once, one body cannot
-  answer it, and that key is one of the two the Anchor's locked doors need.
-  And **`check-towns.mjs`'s cut-tile clause is proving a rule the engine does
-  not enforce**: a townsperson standing in the one crossing row does not
-  actually sever the screen. `solve-switches.mjs` and `walk-dungeons.mjs` both
-  model a push the engine cannot perform, which is why they are green.
-  Teaching `canOccupy` about solid entities is a five-line change and NOT a
-  small one to land: it was tried on `claude/playthrough-test-harness-jq9z5o`
-  and moves the recorded baseline (d1-descent ends dead on the overworld,
-  d2-fork-wrong diverges by frame 240). Every replay wants re-recording and
-  every checker re-verifying, which is its own session.
+- **A SOLID ENTITY IS SOLID NOW — this trap is CLOSED, and the note is kept
+  because the shape of it recurs.** `canOccupy` reads `Entity.solid`
+  (src/game/entity.js), so push blocks, chests, torches and signposts block the
+  player, `Player.tryPush` fires on the movement hit, and blocks push. It landed
+  in `0b68e6b` ("Push blocks, chests, torches and signposts are solid to the
+  player") and `solve-switches.mjs` now reports all nine switch rooms solvable
+  by real pushing rather than by a model of one. **D1 is finishable**: its
+  Switch Room key can be answered by two blocks on two `hold` switches.
+  The cost was exactly as predicted — every replay wanted re-recording — which
+  is the reusable part: **a five-line change to the movement path is never a
+  five-line change**, because the recorded baselines are downstream of it.
+  What is still open is not the engine but the ROUTE: `tools/playthrough-route.mjs`
+  drives the actor, and the actor has no directive for placing the Tidewright's
+  Anchor, so `check-playthrough.mjs` stops partway through D1 at `d1/0,3,2` and
+  says so in its own output. That is a harness gap, not a game blocker — but
+  until it is closed, NOTHING HAS PLAYED THIS GAME TO THE END, and the rule
+  below still stands: every other tool proves a part.
 - **A test that fails intermittently is a real bug, not load flakiness.** If a
   seeded, deterministic run varies, the non-determinism is in initialisation
   order. Find it. Never add a retry.
