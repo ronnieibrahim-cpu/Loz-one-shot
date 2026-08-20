@@ -168,6 +168,7 @@ they are also how a future session finds which sheet a tile came from.
 | `node tools/validate.mjs` | Room grids are well-formed |
 | `node tools/walk-dungeons.mjs` | Every dungeon is completable; no room is stranded |
 | `node tools/check-overworld.mjs` | Region gates seal and open correctly |
+| `node tools/check-progression.mjs` | The world can be finished IN ORDER — flood the overworld from a new game holding nothing, add exactly what each dungeon grants as its door is reached, and prove every dungeon's door is reachable while its own item is still inside it. The only tool that can see a gate CYCLE; check-overworld drops one gate at a time while holding the others, and a cycle survives every such run |
 | `node tools/check-gates.mjs` | Gates hold in-engine with a live player |
 | `node tools/solve-switches.mjs` | Every switch puzzle has a solution |
 | `node tools/check-anchor.mjs` | A room that claims to need the Tidewright's Anchor cannot be crossed with the conch alone, and can be with one anchor placement |

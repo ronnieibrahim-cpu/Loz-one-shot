@@ -542,9 +542,15 @@ const rooms = {
   '0,2,2': {
     name: 'Upper Kell',
     legend: 'cliffs', music: 'overworld',
+    // THE SEAL'S UPPER COURSE. These four were boulders, and the four plugs one
+    // screen north on the Abyss Stair were the other half of the same gate:
+    // nothing at all lies between them, so opening one course alone buys the
+    // player a single screen of dead end. Both courses are the Keep's seal now
+    // and both open together, at five Essences, when the Maku Tree opens the
+    // road. See `keepSeal` in src/data/tiles-core.js.
     map: [
       '###gggg###',
-      '#ggMMMMgg#',
+      '#ggVVVVgg#',
       'gg.9999.gg',
       'gg......gg',
       'gg.9999.gg',
@@ -988,13 +994,24 @@ const rooms = {
     // The Squall Bellows' overworld room. The raft in the cut goes wherever it
     // is blown and takes you with it; the long way round the north shelf is
     // still open, so this is a shortcut you earn rather than a gate.
+    //
+    // THE ROCKFALL ON THE EAST BANK IS THE WAY INTO THE CLIFFS OF KELL, and
+    // through them the only way to everything north of here — D4's door, the
+    // Abyss Stair, the Keep. It was four boulders, so it only opened to the
+    // Dredge Line, which is D6's item and sits inside what it sealed.
+    //
+    // All four are cracked, not one. A run where three tiles are still
+    // boulders is not a Bombs gate, it is a Dredge Line gate with a hole in
+    // it: the Line drags the other three and the player is through, so
+    // check-overworld could no longer say which item holds the Cliffs shut and
+    // "without Bombs the Cliffs are sealed" would quietly stop being true.
     map: [
       '###gggg###',
       '#gGGGGGGg#',
-      'gg.====.Mg',
-      'gg.====.Mg',
-      'gg......Mg',
-      'gg______Mg',
+      'gg.====.Xg',
+      'gg.====.Xg',
+      'gg......Xg',
+      'gg______Xg',
       '#gggggggg#',
       '###gggg###',
     ],
@@ -2336,10 +2353,16 @@ function installHouses() {
           '##########',
         ],
         entities: [
-          ['giver', 4, 2, {
+          // Two beats, not one. The Rod at one Essence is the `giver` half;
+          // the road to the Keep and the Master Sword at five is `makuMaster`,
+          // which src/data/story.js has held ready since it was written and
+          // which nothing triggered until this entity existed.
+          ['makuTree', 4, 2, {
             sprite: 'npc_maku', dialogue: 'makuTree', waiting: 'makuWait',
             after: 'makuAfter', flag: 'gotRod', item: 'rod', level: 1,
             needEssences: 1,
+            scene: 'makuMaster', sceneNeed: 5, sceneFlag: 'makuOpenedKeep',
+            sceneAfter: 'makuOpened',
           }],
           ['npc', 7, 4, { sprite: 'npc_farore_0', dialogue: 'faroreHome' }],
         ],

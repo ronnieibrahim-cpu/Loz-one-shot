@@ -13,13 +13,26 @@
 // anything: a one-tile chasm is crossed by walking into it. The Coral Reef
 // entry is removed rather than left failing. P9 re-gates the overworld.
 //
-// THREE such gates exist, and this proves each one twice: that the region is
-// sealed without its item, and that it opens with it.
-//   Bombs           F.BOMBABLE   Sunken Marsh
-//   Magic Boomerang F.VANE       Salt Pans
-//   Magnetic Gloves F.MAGNETIC   Abyssal approach
+// FOUR such gates exist, and this proves each one twice: that the region is
+// sealed without it, and that it opens with it.
+//   Bombs          F.BOMBABLE        Sunken Marsh, and the Cliffs of Kell
+//   Resonance Rod  F.VANE            Salt Pans
+//   Dredge Line    F.HEAVY           the Bog Stair
+//   the Maku Tree  'makuOpenedKeep'  Abyssal approach
 //
-// Usage: node check-overworld.mjs [--bombs] [--items=bombs,rod,dredge]
+// THE LAST ONE IS NOT AN ITEM. A gate is one of two things here: a tile flag
+// an item answers, or a tile whose `openFlag` the SAVE carries — a story gate,
+// opened by the Maku Tree at five Essences and by nothing you hold. The Keep's
+// road used to be an item gate and the item was the Dredge Line, which is
+// inside the Keep; see tools/check-progression.mjs, which floods in
+// acquisition order and is the tool that can see that class of bug.
+//
+// THIS TOOL CANNOT SEE IT. Every per-gate run below drops ONE gate while
+// holding all the others, which is the right question for "does this gate seal
+// its own region" and the wrong one for "can a player who has nothing get
+// here" — a cycle of two gates is open under every single-drop run.
+//
+// Usage: node check-overworld.mjs [--bombs] [--items=bombs,rod,dredge,keep]
 // `--bombs` is kept as an alias for `--items=bombs`.
 
 import { installData } from '../src/data/index.js';
@@ -38,23 +51,35 @@ installData();
 // down" also passes when a gate accidentally strands an unrelated corner.
 const GATES = {
   bombs: {
-    flag: F.BOMBABLE, region: 'Sunken Marsh',
-    covers: [[0, 2, 6, 9]],
+    flag: F.BOMBABLE, region: 'Sunken Marsh and the Cliffs of Kell',
+    // Bombs hold two branches now. The Marsh is the cracked cliff on the Bog
+    // road; the Cliffs are the cracked boulder in the Deep Cut's rockfall,
+    // which is the only way into them and therefore the only way to everything
+    // north of them — the Abyssal approach included, since its own gate is
+    // reached through here. The Marsh's two northern screens hang off the Bog
+    // Stair rather than off the Marsh proper, so they sit behind this too.
+    covers: [[0, 2, 6, 9], [0, 3, 2, 5], [0, 3, 0, 1]],
   },
   rod: {
     flag: F.VANE, region: 'Salt Pans',
     covers: [[4, 7, 0, 2], [8, 11, 0, 3]],
   },
-  dredgePlug: {
-    flag: F.MAGNETIC, region: 'Abyssal approach',
+  keep: {
+    // NOT AN ITEM. `openFlag` names a flag on the save; the Maku Tree sets
+    // 'makuOpenedKeep' at five Essences and the seal's two courses — the
+    // boulder line on Upper Kell and the plugs on the Abyss Stair — open
+    // together. Nothing the player carries opens either.
+    openFlag: 'makuOpenedKeep', region: 'Abyssal approach', story: true,
     covers: [[0, 3, 0, 1]],
   },
   dredge: {
-    flag: F.HEAVY, region: 'Cliffs of Kell',
-    // The Cliffs are the only way up to the Abyssal approach, and the Marsh's
-    // two northern screens hang off the Bog Stair rather than off the Marsh
-    // proper, so both sit behind this gate as well.
-    covers: [[0, 3, 2, 5], [0, 3, 0, 1], [0, 2, 6, 6]],
+    flag: F.HEAVY, region: 'Bog Stair',
+    // What is left on the Dredge Line once the Keep's road is the story's and
+    // the Deep Cut's rockfall is the Bombs': the boulders on the Marsh Stair,
+    // which hold the Marsh's two northern screens. That is optional content
+    // and it is meant to be — the Line's overworld verb has to stay real
+    // without any of the critical path hanging off it.
+    covers: [[0, 2, 6, 6]],
   },
 };
 const covered = (g, k) => {
@@ -67,8 +92,13 @@ let HELD = argItems ? argItems.slice(8).split(',').filter(Boolean)
          : process.argv.includes('--bombs') ? ['bombs'] : [];
 for (const it of HELD) if (!GATES[it]) { console.error(`unknown item '${it}'`); process.exit(2); }
 const BOMBS = HELD.includes('bombs');
-// The mask of gate flags the current run may walk through.
-let openMask = HELD.reduce((m, it) => m | GATES[it].flag, 0);
+// What the current run may walk through: a mask of item-answered tile flags,
+// plus the set of story flags the run's save is pretending to carry.
+const maskOf = (held) => held.reduce((m, it) => m | (GATES[it].flag || 0), 0);
+const storyOf = (held) => new Set(held.filter(it => GATES[it].openFlag)
+  .map(it => GATES[it].openFlag));
+let openMask = maskOf(HELD);
+let openStory = storyOf(HELD);
 const W = 10, H = 8, OW = 12, OH = 10;
 const m = MAPS.get('overworld');
 
@@ -102,6 +132,11 @@ function walkableAt(grid, name, tide) {
   const d = defAt(grid, name, tide);
   if (!d) return false;
   if (openMask && (d.flags & openMask)) return true;
+  // A story gate is open when the run carries its flag, and is a wall
+  // otherwise. It is asked BEFORE the flags, because the tile it becomes is
+  // what the player actually walks on — `Game.applyStoryGates` swaps it on
+  // room entry rather than letting the player past the seal itself.
+  if (d.openFlag) return openStory.has(d.openFlag);
   return !(d.flags & (F.VOID | F.SOLID | F.PIT | F.DEEP | F.LEDGE | F.HAZARD | F.JUMPABLE));
 }
 
@@ -270,10 +305,11 @@ function flood() {
 
 // Holding everything must open the whole world. If this fails, some region is
 // walled off by terrain rather than by a gate, which no item will fix.
+const openAll = () => { openMask = maskOf(ALL); openStory = storyOf(ALL); };
 {
-  openMask = ALL.reduce((mask, it) => mask | GATES[it].flag, 0);
+  openAll();
   const { unreached } = flood();
-  check('with every gate item, all 120 screens are reachable',
+  check('with every gate open, all 120 screens are reachable',
     unreached.length === 0, unreached.join(','));
 }
 
@@ -281,7 +317,8 @@ function flood() {
 // Checking that the count goes down is not enough: an unrelated screen falling
 // off the map also makes the count go down.
 for (const drop of ALL) {
-  openMask = ALL.filter(it => it !== drop).reduce((mask, it) => mask | GATES[it].flag, 0);
+  const rest = ALL.filter(it => it !== drop);
+  openMask = maskOf(rest); openStory = storyOf(rest);
   const { unreached } = flood();
   check(`without ${drop}, the ${GATES[drop].region} is sealed`,
     unreached.length > 0, 'nothing was gated');
@@ -290,10 +327,10 @@ for (const drop of ALL) {
   const stray = unreached.filter(k => !covered(drop, k));
   check(`without ${drop}, nothing outside its branch is sealed`,
     stray.length === 0, stray.join(','));
-  openMask = ALL.reduce((mask, it) => mask | GATES[it].flag, 0);
+  openAll();
   console.log(`    ${drop}: seals ${unreached.length} screen(s)`);
 }
-openMask = HELD.reduce((mask, it) => mask | GATES[it].flag, 0);
+openMask = maskOf(HELD); openStory = storyOf(HELD);
 
 // --- 5b. the same flood, over the FIELD rather than the scalar -------------
 //
@@ -385,7 +422,7 @@ function floodField({ anchor = false } = {}) {
 }
 
 {
-  openMask = ALL.reduce((mask, it) => mask | GATES[it].flag, 0);
+  openAll();
   const plain = floodField();
   const withAnchor = floodField({ anchor: true });
   console.log(`  field flood: ${plain.reached.size}/120 screens (${plain.states} states), `

@@ -33,17 +33,37 @@ each one should lean on a different consequence of it (see the table below).
 12 wide x 10 tall grid of screens, keys `'0,x,y'` (x 0-11 left to right,
 y 0-9 top to bottom). Tidewatch Village is at `0,4,7`.
 
-| Region | Grid area | Legend | Gate to enter |
-|---|---|---|---|
-| Tidewatch Coast (start, village) | x3-6, y7-9 | `coast` | — |
-| The Shallows (dunes, D1) | x7-11, y6-9 | `dunes` | — |
-| Coral Reef (D2) | x8-11, y4-6 | `coral` | Roc's Feather (`chasm`) |
-| Sunken Marsh (D3) | x0-2, y6-9 | `marsh` | Bombs (`cliffCracked`) |
-| Cliffs of Kell (D4) | x0-3, y2-5 | `cliffs` | Power Bracelet (`boulder`) |
-| Drowned Wood (D5) | x4-7, y3-6 | `wood` | Zora's Flippers |
-| Salt Pans (D6) | x4-7, y0-2 | `salt` | Magic Boomerang (`saltVane`) |
-| Reef Palace approach (D7) | x8-11, y0-3 | `reef` | Hookshot |
-| Abyssal approach (D8) | x0-3, y0-1 | `abyss` | Magnetic Gloves (`abyssPlug`) |
+This table was rewritten from `src/data/overworld.js`, `src/data/legends.js`
+and `src/data/tiles-core.js` rather than patched. **The version before it named
+seven gates on Roc's Feather, the Power Bracelet, Zora's Flippers, the Magic
+Boomerang, the Hookshot and the Magnetic Gloves — six items this game does not
+have**, against eight dungeons it does not have either. Every extent and legend
+below is read out of the room defs; every gate below is a tile that exists.
+
+| Region | Grid area | Screens | Legend | Gate to enter |
+|---|---|---|---|---|
+| Tidewatch Coast (start, village) | x3-6, y6-9 | 10 | `coast` | — |
+| The Shallows (D1) | x7-11, y6-9 | 19 | `dunes` | — |
+| Coral Reef (D2) | x8-11, y4-5 | 8 | `coral` | — |
+| Drowned Wood (D5) | x4-7, y3-6 | 15 | `wood` | — |
+| Sunken Marsh (D3) | x0-2, y6-9 | 12 | `marsh` | Bombs (`cliffCrackedDk`) |
+| Cliffs of Kell (D4) | x0-3, y2-5 | 16 | `cliffs` | Bombs (`boulderCracked`, the Deep Cut rockfall) |
+| Salt Pans | x4-7, y0-2 | 12 | `salt` | Resonance Rod (`saltVane`) |
+| Reef Palace approach | x8-11, y0-3 | 16 | `reef` | Resonance Rod — reached only through the Pans |
+| Abyssal approach (D6) | x0-3, y0-1 | 8 | `abyss` | **the story** (`keepSeal`) — the Maku Tree, at five Essences |
+
+The three settlement screens (`town`, x4-5 y7-8) and Sandpiper Row
+(`townDunes`, `0,9,8`) sit inside the Coast and the Shallows respectively.
+
+**The Abyssal approach is not gated on an item, and that is deliberate.** It
+was — the seal was an iron plug the Dredge Line hauled out, and the Dredge Line
+is the item inside the Abyssal Keep, behind the seal. The Cliffs of Kell were
+sealed by Dredge Line boulders in the same way, with D4's door behind them.
+Both were unreachable in a real playthrough while `check-overworld.mjs` was
+green, because that tool drops one gate at a time while holding all the others
+and a cycle of two gates survives every such run. `tools/check-progression.mjs`
+is what asks the question in acquisition order, and it is the tool that has to
+stay green when any of this moves.
 
 Every screen in the 12x10 grid must exist so the overworld never has holes.
 
@@ -60,24 +80,47 @@ Sandpiper Row is new with PT and is the only settlement outside the starting
 coast. Every one of them is proved by `node tools/check-towns.mjs`; a screen
 that uses a town legend and is not in that tool's TOWNS list fails it.
 
-**Five** of these gates are expressed as a tile carrying a flag, named in the
-table above, and `node tools/check-overworld.mjs` proves each one in both
-directions — sealed without the item, open with it, and sealing nothing outside
-its own branch. Four of the five are also proved in-engine with a live player
-and the real item by `node tools/check-gates.mjs`.
+**Four** gates exist as tiles, and `node tools/check-overworld.mjs` proves each
+one in both directions — sealed without it, open with it, and sealing nothing
+outside its own branch. What each one seals, from that tool's own output:
 
-The remaining two — **Zora's Flippers** (Drowned Wood) and the **Hookshot**
-(Reef Palace) — are enforced by level design only. Both were implemented as
-tiles and reverted: the Wood is the map's central thoroughfare and gating it
-seals 68 of 120 screens, and a Hookshot span wide enough to stop Roc's Feather
-puts the post it must latch beyond the level-1 Hookshot's 64px reach. The
-measurements behind both are in `docs/HANDOFF.md` under "The two gates that
-cannot be tiles"; neither is a placement problem.
+| Gate | Tile | Seals |
+|---|---|---|
+| Bombs | `cliffCrackedDk`, `boulderCracked` | 34 screens: the Marsh, the Cliffs, and the Abyssal approach beyond them |
+| Resonance Rod | `saltVane` | 27 screens: the Salt Pans and the Reef Palace behind them |
+| the Maku Tree, at five Essences | `keepSeal` | 8 screens: the Abyssal approach |
+| Dredge Line | `boulder` | 2 screens: the Bog Stair, which is optional |
 
-Note the Salt Pans gate also holds the Reef Palace shut, since the Palace's
-Hookshot is in D6 inside the Pans.
+All four are also proved in-engine, with a live player and the real item, by
+`node tools/check-gates.mjs`.
+
+The Drowned Wood and the Coral Reef are not gated at all. Both were implemented
+as tiles and reverted: the Wood is the map's central thoroughfare and gating it
+seals 68 of 120 screens, and a chasm wide enough to stop the base hop puts its
+far side beyond anything that crosses it. The measurements are in
+`docs/HANDOFF.md` under "The two gates that cannot be tiles"; neither is a
+placement problem.
+
+**The Dredge Line's gate is small on purpose.** Nothing on the critical path
+may hang off the last dungeon's item, so what is left to it out here is
+optional content — the two Bog Stair screens, and the `buried` caches, which
+are its real overworld reason to exist.
+
+Note the Salt Pans gate also holds the Reef Palace shut, since the Palace is
+reached only through the Pans.
 
 ## Dungeons
+
+> **STALE, and not rewritten here.** This table and the Item progression table
+> below are both pre-P8: they list eight dungeons and stock Zelda items
+> (`feather`, `bracelet`, `flippers`, `boomerang`, `hookshot`, `magnet`) that
+> this game does not have. The world has six dungeons. `docs/ITEMS.md` is the
+> authority on the roster and `docs/DUNGEON-STATUS.md` on the dungeons; the
+> data itself is the authority on both, and `tools/check-items.mjs` and
+> `tools/check-progression.mjs` read it. Rewriting these two from the data is
+> its own session — the Overworld layout table above was rewritten because the
+> progression fix made its gate column actively wrong about how the world is
+> entered.
 
 | # | Map id | Name | Region | Overworld entrance screen | Item | Boss | Miniboss | Tide theme |
 |---|---|---|---|---|---|---|---|---|
@@ -120,8 +163,8 @@ Each dungeon must contain:
 | `flippers` | 2 | D8 (Mermaid Suit) |
 | `slingshot` | 1 | Trading sidequest |
 | `shovel` | 1 | Village digger, after two Essences |
-| `sword` | 2 | Secret cave, needs four Essences |
-| `sword` | 3 | Maku Tree, after all eight Essences |
+| `sword` | 2 | Secret cave, needs four Essences — **placed**: the Bluff Grotto, `cave1` |
+| `sword` | 3 | Maku Tree, after five Essences (`makuMaster`) |
 | `shield` | 2/3 | Shops and secrets |
 | `ringbox` | 1 | Village |
 

@@ -224,6 +224,48 @@ is in the page, and nothing steps until you say so.
 
 ## Hard-won lessons — do not rediscover these
 
+**A world can be provably unfinishable while every checker is green, and the
+shape that does it is a CYCLE OF TWO GATES.** `check-overworld.mjs` proves each
+gate twice — the region is sealed without its item, and open with it — by
+dropping ONE gate and holding all the others. That is the right question for
+"is this gate a gate" and it is blind to the only arrangement that actually
+breaks a playthrough: gate A opened by an item behind gate B, gate B opened by
+an item behind gate A. Every single-drop run walks through the other one, so
+both look fine. The world shipped in exactly that state. The Cliffs of Kell
+(holding D4's door) and the road to the Keep (holding D6's door) were both
+sealed by tiles only the Dredge Line opened, and the Dredge Line is the item
+inside D6 — so a real player floods 59 of 120 screens, clears four dungeons and
+stops. Seventeen green assertions, `walk-dungeons` green, `check-gates` green,
+`check-playthrough` green (its recorded route never gets that far).
+
+The fix is not just the data. `tools/check-progression.mjs` floods in
+ACQUISITION ORDER — a new game holding what the intro gives, then exactly what
+each dungeon grants as its door comes into reach, read out of the dungeon's own
+chests rather than written down — and asserts every dungeon's door is reachable
+while its own item is still inside it. Run it against the commit before the fix
+and it reports 4/6 dungeons and 95/120 screens. **If you move a gate, that is
+the tool that has to stay green**; the per-gate ones cannot see this class of
+bug at all, and one of them being green is what made this cost a session.
+
+**A gate that two items open is not a gate on either of them.** The first cut
+of the fix cracked ONE boulder of the Deep Cut's four-tile rockfall, leaving
+three carrying `F.HEAVY`. The Dredge Line drags those three and the player is
+through, so `check-overworld` reported "without Bombs the Cliffs are sealed" as
+seals-10-screens — the Marsh only — and the Cliffs quietly had two keys. Same
+rule one level down: `boulderCracked` carries neither `F.ROCK` nor `F.HEAVY`,
+because a boulder you can also lift or also drag is gated on whichever of the
+three you happen to be holding.
+
+**Story data that describes a design is not the design being wired.** The
+`makuMaster` cutscene — the Maku Tree opening the road to the Keep and handing
+over the level-3 sword — sat complete in `src/data/story.js` for the whole life
+of the project with NOTHING TRIGGERING IT: no entity referenced it, no flag
+read `makuOpenedKeep`, and the only `giver` on that screen stopped at the Rod.
+So the sword had three damage tiers, three HUD icons and three swing sounds,
+and a real player's sword never left level 1. Grep for a cutscene id before
+believing a scene happens; `check-progression.mjs` now reads a `makuTree`
+entity's scene and asserts the grant is collectable.
+
 **A health-economy reading is only as honest as the looter taking it, and
 `dLoot` had two bugs that silently starved every run for two sessions.**
 Instrumenting D1's room-by-room health economy (see FEEL-SPEC.md) found the

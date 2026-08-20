@@ -27,7 +27,21 @@ export function installCaves() {
         ],
         entities: [
           ['chest', 4, 3, { rupees: 30 }],
+          // THE NOBLE SWORD. docs/GAME-PLAN.md has named its home — a secret
+          // cave, four Essences — since the plan was written, and nothing ever
+          // placed it: the level-2 sword existed as a damage tier, three HUD
+          // icons and a swing sound with no chest in the world that granted it.
+          //
+          // It is a chest rather than a giver because a sword in a grotto is a
+          // sword in a grotto, and it refuses rather than hides because a
+          // player who finds this room at two Essences should learn that it is
+          // worth the walk back.
+          ['chest', 7, 2, {
+            big: true, item: 'sword', level: 2, needEssences: 4,
+            needText: 'The blade will not come out of the stone.\nFour Essences, says the stone.',
+          }],
         ],
+        readable: [[6, 3, 'Cut into the bluff: "Four shards, and the\nsecond blade is yours. Fewer, and it stays\nthe bluff\'s."']],
         warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 3, ry: 7, px: 48, py: 48, dir: 'down' } }],
       },
     },

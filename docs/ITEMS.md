@@ -367,14 +367,32 @@ them.
 ## What the gates look like now
 
 Removing three gate items would have cost the overworld three gates. Two were
-repointed rather than lost, and one was deliberately given up:
+repointed rather than lost, and one was deliberately given up — and then the
+progression fix moved two of them again, because repointing a gate at the LAST
+dungeon's item is how a world becomes unfinishable (see the note below the
+table):
 
 | Gate | Was | Is | Proof |
 |---|---|---|---|
 | Salt Pans (`saltVane`) | Magic Boomerang | **Resonance Rod** | `check-gates` — and it asserts the Rod's range *doubles at HIGH*, so the same player in the same spot opens it at one tide level and not another. The only gate in the game whose key is the core mechanic. |
-| Abyssal approach (`abyssPlug`) | Magnetic Gloves | **Dredge Line** | `check-gates` |
-| Cliffs of Kell (`boulder`) | Power Bracelet | **Dredge Line** | `check-gates`, both directions: bare hands do not lift it, the line drags it clear |
+| Abyssal approach (`keepSeal`) | Magnetic Gloves | **nothing — the Maku Tree opens it at five Essences** | `check-gates`, `check-progression` |
+| Cliffs of Kell (`boulderCracked`) | Power Bracelet, then the Dredge Line | **Bombs** | `check-gates` — the rockfall is cracked and shut, and a bomb opens it |
+| the Bog Stair (`boulder`) | — | **Dredge Line** | `check-gates`, both directions: a sword does not shift it, bare hands do not lift it, the line drags it clear, and only the one in front |
 | Coral Reef (`chasm`) | Roc's Feather | **nothing** | Given up on purpose. The hop is base moveset, so a one-tile chasm is crossed by everyone. `check-overworld`'s flood models the hop against `GAP_HOP_MAX_SPAN` rather than blanket-passing gaps, so the Reef's four-tile decorative chasm bands are still walls. P9 re-gates. |
+
+**Why two of those moved again.** The Cliffs of Kell and the Abyssal approach
+were both repointed onto the Dredge Line, which is the item in the Abyssal
+Keep — and the Keep is inside the Abyssal approach, which is reached through
+the Cliffs. Both regions were sealed by the item they contained. D4's door and
+D6's door were unreachable in any real playthrough while every checker in the
+table was green, because none of them floods in acquisition order.
+
+The Cliffs now open on Bombs (D2). The Keep's road is not an item gate at all:
+the Maku Tree opens it at five Essences, which is what `makuTree` in
+`src/data/story.js` had promised since it was written. The Dredge Line keeps a
+real overworld verb on the Bog Stair boulders and on the `buried` caches, which
+is optional content by design — nothing on the critical path may hang off the
+last dungeon's item. `tools/check-progression.mjs` is the tool that proves it.
 
 ## What is base moveset now, and why
 

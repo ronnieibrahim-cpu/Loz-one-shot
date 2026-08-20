@@ -11,7 +11,24 @@
 //     anim: ['water0','water1','water2','water1'], animRate: 10,
 //     over: true,                          // draw above entities (treetops, arches)
 //     push: [dx, dy],                      // water current, pixels/frame
+//     openFlag: 'makuOpenedKeep',          // story gate: opens when the save
+//     openTo: 'rockFloorDk',               //   carries this flag (see below)
+//     openDeny: 'Iron, sunk deep.',        //   said if you press A on it first
 //   }
+//
+// STORY GATES
+//   `openFlag` is the third kind of gate this game has, next to a flag an item
+//   answers (F.BOMBABLE, F.VANE) and terrain an item crosses (F.DEEP). It is
+//   not answered by an item at all: the tile becomes `openTo` on room entry
+//   once the save carries the named flag, and nothing the player is holding
+//   changes that. `Game.applyStoryGates` is the whole implementation and it
+//   runs alongside `restoreRoomState`, so a story gate opens the moment you
+//   walk in rather than when you touch it.
+//
+//   It exists because a region can be owed to the STORY rather than to an
+//   item, and expressing that as an item flag is how a progression lock gets
+//   built: the Keep's road was sealed by a tile only the Dredge Line opened,
+//   and the Dredge Line is inside the Keep.
 //
 // TIDE VARIANTS
 //   A tile with `tide` is a *virtual* tile: at runtime it resolves to one of three
@@ -50,7 +67,12 @@ export const F = {
   SANDBAR:   1 << 22,  // marks tiles whose walkability depends on tide (for hints)
   TALLGRASS: 1 << 23,  // hides the player's feet, drops rupees when cut
   VANE:      1 << 24,  // salt vane: only the Resonance Rod rings it open
-  MAGNETIC:  1 << 25,  // iron plug: the Dredge Line hauls it out of the way
+  // 1 << 25 was MAGNETIC — "iron plug: the Dredge Line hauls it out of the
+  // way". The Keep's seal is the only thing that ever carried it, and the seal
+  // is now opened by the story rather than by an item (see `openFlag` below),
+  // so nothing carries it and the bit is free. A flag whose comment names a
+  // gate the world no longer has is the same drift as a tiledef field the
+  // registrar drops: it reads as true and is not.
   // Region-gate markers. These do NOT drive traversal — the engine already
   // knows how to cross each of these tiles, because each one also carries the
   // ordinary flag for what it is (a chasm is JUMPABLE, a channel is DEEP, a
@@ -106,6 +128,13 @@ export function registerTiles(defs) {
       // docs/HANDOFF.md: data contracts drift from engine contracts silently.
       liftLevel: def.liftLevel || 0,
       liftSprite: def.liftSprite || null,
+      // A story gate: see the contract at the top of this file. THESE THREE
+      // HAVE TO BE NAMED HERE. This function copies field by field, so a
+      // tiledef key it does not list is silently discarded — which is exactly
+      // how `liftLevel` sat in the data unread for the life of the project.
+      openFlag: def.openFlag || null,
+      openTo: def.openTo || null,
+      openDeny: def.openDeny || null,
     });
   }
 }

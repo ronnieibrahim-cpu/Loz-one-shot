@@ -226,6 +226,7 @@ export class Game {
     if (o.spawnEntities !== false) this.spawnRoomEntities();
     this.respawnAnchor();
     this.restoreRoomState();
+    this.applyStoryGates();
     this.checkPuzzle();
     if (r.def.script && r.def.script.onEnter) r.def.script.onEnter(this, r);
     this.camera.snap(r, this.player);
@@ -308,6 +309,32 @@ export class Game {
       if (!k.startsWith(prefix)) continue;
       const [tx, ty] = k.slice(prefix.length).split(',').map(Number);
       if (!isNaN(tx)) room.setTile(tx, ty, v);
+    }
+  }
+
+  /**
+   * Open every story gate in the room the save has earned.
+   *
+   * A story gate is a tile with `openFlag` on its tiledef: it becomes `openTo`
+   * once the save carries that flag, and NO ITEM opens it. See the contract in
+   * src/world/tileset.js. This runs alongside `restoreRoomState` on every room
+   * entry, so the road is open when you walk in rather than when you touch it —
+   * a gate the story opened is not a thing the player is meant to go and find.
+   *
+   * It deliberately does NOT persist. The flag is the record; writing the open
+   * tile into `progress.doors` as well would mean two sources of truth for one
+   * fact, and the room cache is wiped on new game (`resetRooms`) while the
+   * doors list is not.
+   */
+  applyStoryGates() {
+    const room = this.room;
+    if (!room) return;
+    for (let ty = 0; ty < room.th; ty++) {
+      for (let tx = 0; tx < room.tw; tx++) {
+        const def = getTileDef(room.baseName(tx, ty));
+        if (!def || !def.openFlag || !def.openTo) continue;
+        if (flag(this.progress, def.openFlag)) room.setTile(tx, ty, def.openTo);
+      }
     }
   }
 
@@ -592,6 +619,15 @@ export class Game {
         this.audio.sfx('deny');
         this.say('A great lock seals this door.');
       }
+      return true;
+    }
+    // A story gate the save has not earned yet. `applyStoryGates` would have
+    // opened it on entry if it had, so reaching here means it is still shut —
+    // and a tile that simply ignores you reads as scenery, not as a lock.
+    const gate = getTileDef(name);
+    if (gate && gate.openFlag && gate.openDeny && !flag(this.progress, gate.openFlag)) {
+      this.audio.sfx('deny');
+      this.say(gate.openDeny);
       return true;
     }
     const readable = (room.def.readable || []).find(r => r[0] === tx && r[1] === ty);

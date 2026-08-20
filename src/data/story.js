@@ -41,6 +41,10 @@ export const DIALOGUE = {
   makuWait: 'Hoo. You are small and the sea is large.\nBring me one Essence of the Tide and I\nwill be awake enough to help.',
   makuTree: 'Hoo hoo! One Essence, and my roots feel\nthe Bell again. Take the Rod. Strike it and\nevery drowned bell in Tidemere answers.',
   makuAfter: 'Five Essences, Link. Five. Then the way\nto the Keep opens, and I go back to sleep\nfor a hundred years.',
+  // Said on every visit after the road is open. The tree has done its part and
+  // says so; the seal on the Abyss Stair is already split by the time the
+  // player walks back out to it.
+  makuOpened: 'The road is open and my roots ache.\nGo down, and do not dawdle — I am asleep\nthe moment you are out of sight.',
 
   faroreHome: 'The Bell is not a thing, exactly.\nIt is an agreement between the moon and\nthe water. Nereth broke the agreement.',
 

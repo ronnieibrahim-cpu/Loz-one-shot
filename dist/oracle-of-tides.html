@@ -1443,7 +1443,24 @@ __define("world/tileset.js", function (__exports, __require) {
 //     anim: ['water0','water1','water2','water1'], animRate: 10,
 //     over: true,                          // draw above entities (treetops, arches)
 //     push: [dx, dy],                      // water current, pixels/frame
+//     openFlag: 'makuOpenedKeep',          // story gate: opens when the save
+//     openTo: 'rockFloorDk',               //   carries this flag (see below)
+//     openDeny: 'Iron, sunk deep.',        //   said if you press A on it first
 //   }
+//
+// STORY GATES
+//   `openFlag` is the third kind of gate this game has, next to a flag an item
+//   answers (F.BOMBABLE, F.VANE) and terrain an item crosses (F.DEEP). It is
+//   not answered by an item at all: the tile becomes `openTo` on room entry
+//   once the save carries the named flag, and nothing the player is holding
+//   changes that. `Game.applyStoryGates` is the whole implementation and it
+//   runs alongside `restoreRoomState`, so a story gate opens the moment you
+//   walk in rather than when you touch it.
+//
+//   It exists because a region can be owed to the STORY rather than to an
+//   item, and expressing that as an item flag is how a progression lock gets
+//   built: the Keep's road was sealed by a tile only the Dredge Line opened,
+//   and the Dredge Line is inside the Keep.
 //
 // TIDE VARIANTS
 //   A tile with `tide` is a *virtual* tile: at runtime it resolves to one of three
@@ -1482,7 +1499,12 @@ const F = {
   SANDBAR:   1 << 22,  // marks tiles whose walkability depends on tide (for hints)
   TALLGRASS: 1 << 23,  // hides the player's feet, drops rupees when cut
   VANE:      1 << 24,  // salt vane: only the Resonance Rod rings it open
-  MAGNETIC:  1 << 25,  // iron plug: the Dredge Line hauls it out of the way
+  // 1 << 25 was MAGNETIC — "iron plug: the Dredge Line hauls it out of the
+  // way". The Keep's seal is the only thing that ever carried it, and the seal
+  // is now opened by the story rather than by an item (see `openFlag` below),
+  // so nothing carries it and the bit is free. A flag whose comment names a
+  // gate the world no longer has is the same drift as a tiledef field the
+  // registrar drops: it reads as true and is not.
   // Region-gate markers. These do NOT drive traversal — the engine already
   // knows how to cross each of these tiles, because each one also carries the
   // ordinary flag for what it is (a chasm is JUMPABLE, a channel is DEEP, a
@@ -1538,6 +1560,13 @@ function registerTiles(defs) {
       // docs/HANDOFF.md: data contracts drift from engine contracts silently.
       liftLevel: def.liftLevel || 0,
       liftSprite: def.liftSprite || null,
+      // A story gate: see the contract at the top of this file. THESE THREE
+      // HAVE TO BE NAMED HERE. This function copies field by field, so a
+      // tiledef key it does not list is silently discarded — which is exactly
+      // how `liftLevel` sat in the data unread for the life of the project.
+      openFlag: def.openFlag || null,
+      openTo: def.openTo || null,
+      openDeny: def.openDeny || null,
     });
   }
 }
@@ -7844,12 +7873,23 @@ class Chest extends Entity {
     this.opened = false;
     this.saveKey = o.saveKey || null;
     this.needsBossKey = !!o.bossKey;
+    // A chest the STORY holds shut, the way `giver` already had. Nothing else
+    // in the game could say "this is here, and it is not yours yet" about a
+    // chest: a boss key is a dungeon's own lock, and an item gate is a wall in
+    // front of the room rather than a lock on the box.
+    this.needEssences = o.needEssences || 0;
+    this.needText = o.needText || 'The lid will not lift. Not yet.';
   }
 
   interact(game, player) {
     if (this.opened) { game.say('Empty.'); return; }
     if (this.needsBossKey && !game.progress.bossKeys[game.mapId]) {
       game.say('A great lock. You need the Boss Key.');
+      game.audio.sfx('deny');
+      return;
+    }
+    if (this.needEssences && game.progress.essences.length < this.needEssences) {
+      game.say(this.needText);
       game.audio.sfx('deny');
       return;
     }
@@ -8112,6 +8152,67 @@ class Giver extends NPC {
   }
 }
 defineEntity('giver', (x, y, o) => new Giver(x, y, o));
+
+// --------------------------------------------------------------------------
+// The Maku Tree: a giver with a SECOND beat that is a cutscene rather than a
+// handover.
+//
+//   ['makuTree', 4, 2, {
+//     ...every `giver` option, which drives the first beat (the Rod),
+//     scene: 'makuMaster',           // played once the second beat is earned
+//     sceneNeed: 5,                  // Essences it waits for
+//     sceneFlag: 'makuOpenedKeep',   // the flag the SCENE sets; also its guard
+//     sceneAfter: 'makuOpened',      // said on later visits
+//   }]
+//
+// `makuMaster` — the tree opening the road to the Keep and handing over the
+// Master Sword — had been written in src/data/story.js for the whole life of
+// the project with NOTHING ANYWHERE TRIGGERING IT. That is why the road to the
+// Keep was sealed by a tile only the Dredge Line opened, and why a real
+// player's sword never left level 1: the level-3 sword is granted here and
+// only here.
+//
+// The scene sets its own flag and hands over its own item, which is why this
+// class does neither. The flag is both the record and the guard: a scene that
+// has run has set it, so the beat cannot fire twice.
+// --------------------------------------------------------------------------
+
+class MakuTree extends Giver {
+  constructor(x, y, o = {}) {
+    super(x, y, o);
+    this.scene = o.scene || null;
+    this.sceneNeed = o.sceneNeed || 0;
+    this.sceneFlag = o.sceneFlag || null;
+    this.sceneAfter = o.sceneAfter || null;
+  }
+
+  /** Is the second beat owed right now? */
+  sceneReady(game) {
+    const p = game.progress;
+    if (!this.scene || !this.sceneFlag) return false;
+    if (flag(p, this.sceneFlag)) return false;
+    if (p.essences.length < this.sceneNeed) return false;
+    // The first beat comes first. A player who somehow arrives with five
+    // Essences and no Rod gets the Rod on this visit and the road on the next,
+    // rather than skipping a handover because they were late.
+    return !this.giveFlag || flag(p, this.giveFlag);
+  }
+
+  interact(game, player) {
+    const p = game.progress;
+    if (this.sceneReady(game)) {
+      if (this.faceOnTalk) this.dir = 'down';
+      game.startCutscene(this.scene);
+      return;
+    }
+    if (this.sceneFlag && flag(p, this.sceneFlag) && this.sceneAfter) {
+      game.startDialogue(this.sceneAfter, this);
+      return;
+    }
+    super.interact(game, player);
+  }
+}
+defineEntity('makuTree', (x, y, o) => new MakuTree(x, y, o));
 
 // --------------------------------------------------------------------------
 // The scrimshander: hand over a blank plus rupees, come back a tide later for
@@ -8598,6 +8699,7 @@ __exports["NPC"] = NPC;
 __exports["Sign"] = Sign;
 __exports["ShopItem"] = ShopItem;
 __exports["Giver"] = Giver;
+__exports["MakuTree"] = MakuTree;
 __exports["Scrimshander"] = Scrimshander;
 __exports["PushBlock"] = PushBlock;
 __exports["FloorSwitch"] = FloorSwitch;
@@ -10088,6 +10190,7 @@ class Game {
     if (o.spawnEntities !== false) this.spawnRoomEntities();
     this.respawnAnchor();
     this.restoreRoomState();
+    this.applyStoryGates();
     this.checkPuzzle();
     if (r.def.script && r.def.script.onEnter) r.def.script.onEnter(this, r);
     this.camera.snap(r, this.player);
@@ -10170,6 +10273,32 @@ class Game {
       if (!k.startsWith(prefix)) continue;
       const [tx, ty] = k.slice(prefix.length).split(',').map(Number);
       if (!isNaN(tx)) room.setTile(tx, ty, v);
+    }
+  }
+
+  /**
+   * Open every story gate in the room the save has earned.
+   *
+   * A story gate is a tile with `openFlag` on its tiledef: it becomes `openTo`
+   * once the save carries that flag, and NO ITEM opens it. See the contract in
+   * src/world/tileset.js. This runs alongside `restoreRoomState` on every room
+   * entry, so the road is open when you walk in rather than when you touch it —
+   * a gate the story opened is not a thing the player is meant to go and find.
+   *
+   * It deliberately does NOT persist. The flag is the record; writing the open
+   * tile into `progress.doors` as well would mean two sources of truth for one
+   * fact, and the room cache is wiped on new game (`resetRooms`) while the
+   * doors list is not.
+   */
+  applyStoryGates() {
+    const room = this.room;
+    if (!room) return;
+    for (let ty = 0; ty < room.th; ty++) {
+      for (let tx = 0; tx < room.tw; tx++) {
+        const def = getTileDef(room.baseName(tx, ty));
+        if (!def || !def.openFlag || !def.openTo) continue;
+        if (flag(this.progress, def.openFlag)) room.setTile(tx, ty, def.openTo);
+      }
     }
   }
 
@@ -10454,6 +10583,15 @@ class Game {
         this.audio.sfx('deny');
         this.say('A great lock seals this door.');
       }
+      return true;
+    }
+    // A story gate the save has not earned yet. `applyStoryGates` would have
+    // opened it on entry if it had, so reaching here means it is still shut —
+    // and a tile that simply ignores you reads as scenery, not as a lock.
+    const gate = getTileDef(name);
+    if (gate && gate.openFlag && gate.openDeny && !flag(this.progress, gate.openFlag)) {
+      this.audio.sfx('deny');
+      this.say(gate.openDeny);
       return true;
     }
     const readable = (room.def.readable || []).find(r => r[0] === tx && r[1] === ty);
@@ -13621,6 +13759,29 @@ const HAND_ART = {
     ....33222233....
     ......3333......`,
 
+  // The same boulder with a fault line zigzagging down through it, so a
+  // bombable boulder reads as cracked at a glance without leaving the terrain
+  // register — the same trick, and the same grammar, as `cliffCracked`. The
+  // silhouette is byte-identical to `boulder`: only interior pixels turn to
+  // outline, so the two sit in one rockfall without either looking redrawn.
+  boulderCracked: `
+    ......3333......
+    ....33113133....
+    ..331111311133..
+    .33111131111133.
+    3311011311111133
+    3110111131111233
+    3101111131112233
+    3011111311122233
+    3011111311222233
+    3011113112222233
+    3011113122222233
+    .30111322222233.
+    .33012322222233.
+    ..332223222233..
+    ....33232233....
+    ......3333......`,
+
   // ---- props (transparent, need underArt) ---------------------------------
   // A whole tree in ONE cell, because the game's rooms place trees one cell at
   // a time — 643 of its vertical tree runs are a single row tall. Every tree in
@@ -13849,11 +14010,15 @@ const HAND_ART = {
     ....32222223....
     ....33333333....`,
 
-  // An iron plug: a riveted plate the Magnetic Gloves haul out of the socket.
-  // Four corner rivets and a square bolt head, all in hard 1px dark, so it
-  // reads as worked metal. It takes `rust`, not a grey: the abyss is blue-grey
-  // stone throughout, and a grey plate sank into it in the first pass.
-  abyssPlug: `
+  // The Keep's seal: a riveted iron plate bolted across the road down. Four
+  // corner rivets and a square bolt head, all in hard 1px dark, so it reads as
+  // worked metal. It takes `rust`, not a grey: the abyss is blue-grey stone
+  // throughout, and a grey plate sank into it in the first pass.
+  //
+  // It used to be `abyssPlug`, hauled out by the Dredge Line. Nothing hauls it
+  // now — the Maku Tree's roots split it when the fifth Essence lands — so the
+  // name says what it is rather than what used to move it.
+  keepSeal: `
     3333333333333333
     3111111111111113
     3122222222222233
@@ -14468,7 +14633,19 @@ function installCoreTiles() {
     // and these two only add `level`, so the gate can name the MAGIC boomerang
     // rather than any boomerang.
     saltVane: { art: ART.saltVane, pal: 'marble', flags: F.SOLID | F.VANE | F.RING, underArt: 'saltFlat' },
-    abyssPlug: { art: ART.abyssPlug, pal: 'rust', flags: F.SOLID | F.MAGNETIC, underArt: 'rockFloorDk' },
+    // THE KEEP'S SEAL IS NOT AN ITEM GATE. It is the one story gate in the
+    // world: it opens when the Maku Tree opens the road at five Essences, and
+    // no item in the game touches it.
+    //
+    // It was `abyssPlug`, F.SOLID | F.MAGNETIC, hauled by the Dredge Line —
+    // and the Dredge Line is the Keep's own item, sitting behind this seal, so
+    // the road to it was locked by the thing that unlocked the road. See
+    // `openFlag` in src/world/tileset.js and `Game.applyStoryGates`.
+    keepSeal: {
+      art: ART.keepSeal, pal: 'rust', flags: F.SOLID, underArt: 'rockFloorDk',
+      openFlag: 'makuOpenedKeep', openTo: 'rockFloorDk',
+      openDeny: 'Iron, bolted across the road down.\nNothing you carry will shift it.',
+    },
 
     // ---- the four terrain-shaped region gates ------------------------------
     // Each carries TWO flags: the ordinary one that tells the engine what the
@@ -14491,6 +14668,15 @@ function installCoreTiles() {
       underArt: 'rockFloor', liftLevel: 2,
     },
     cliffCrackedDk: { art: ART.cliffCracked, pal: 'stonedk', flags: F.SOLID | F.BOMBABLE },
+    // A boulder already split by a fault: bombs open it, and nothing else
+    // does. It carries NEITHER F.ROCK nor F.HEAVY on purpose — a boulder you
+    // can also lift or also drag is not gated on bombs, it is gated on
+    // whichever of the three you happen to have, and check-overworld would
+    // read the gate as open under two different item sets.
+    boulderCracked: {
+      art: ART.boulderCracked, pal: 'stonedk', flags: F.SOLID | F.BOMBABLE,
+      underArt: 'rockFloor',
+    },
     treeDead: { art: ART.tree, pal: 'treeoakdd', flags: F.SOLID, underArt: 'grassBog' },
     treeDark: { art: ART.tree, pal: 'treeoakdk', flags: F.SOLID, underArt: 'grassDark' },
     tree: { art: ART.tree, pal: 'treeoak', flags: F.SOLID, underArt: 'grass' },
@@ -14834,6 +15020,7 @@ function installCoreTiles() {
       deny: 'Far too heavy to shift bare-handed.',
     },
     cliffCrackedDk: { bomb: 'mud', fx: 'boom', persist: true, sfx: 'break' },
+    boulderCracked: { bomb: 'rockFloor', fx: 'boom', persist: true, sfx: 'break' },
     // The Magic Boomerang is gone. A vane is metal, and the thing in this game
     // with an opinion about metal is the Resonance Rod — which also means the
     // Salt Pans open to an item whose reach depends on the tide, so the vane a
@@ -14843,12 +15030,10 @@ function installCoreTiles() {
       ring: 'saltFlat', fx: 'spark', persist: true, sfx: 'break',
       deny: 'The vane is set too far to reach. Something must make it sing.',
     },
-    // The Magnetic Gloves are gone; the Dredge Line hauls iron off the bottom,
-    // which is the same verb and a better fit for a plug sunk in an abyss.
-    abyssPlug: {
-      dredge: 'rockFloorDk', fx: 'spark', persist: true, sfx: 'rumble',
-      deny: 'Iron, sunk deep. Nothing here will shift it by hand.',
-    },
+    // `keepSeal` HAS NO TRANSFORM AND MUST NOT GET ONE. It is a story gate:
+    // `openFlag` opens it on room entry once the Maku Tree has opened the road,
+    // and an item that also opened it would put the Keep back behind an item
+    // again. Its refusal line lives on the tiledef as `openDeny`.
     dFloorCrack: { bomb: 'dPit', fx: 'boom', persist: true, sfx: 'break' },
     digSpot: { dredge: 'sand', drop: 'dredged', fx: 'puff', sfx: 'splash' },
     // The Rod retracts a grate. `persist: true` so a room stays open once it
@@ -14944,6 +15129,8 @@ function installLegends() {
   registerLegend('cliffs', {
     'g': 'rockFloor', 'G': 'rockFloorDk', 'f': 'rockFloor',
     'T': 'treeDead', 'b': 'bush', 'o': 'rock',
+    'X': 'boulderCracked',  // region gate: a boulder already split, bombs open it
+    'V': 'keepSeal',        // story gate: the seal's upper course, on Upper Kell
     '#': 'cliffDk', '^': 'cliffTop', '%': 'cliffDk', '_': 'ledgeRock',
     '"': 'ledgeRockN', '>': 'ledgeRockE', '<': 'ledgeRockW',
   }, 'base');
@@ -14971,7 +15158,7 @@ function installLegends() {
     '.': 'sandRust', ',': 'sandRust',
     '~': 'waterD', '=': 'waterAbyss',
     'T': 'treeDead', 'o': 'rock', '#': 'cliffAbyss', '^': 'cliffAbyss',
-    'V': 'abyssPlug',       // region gate: only the Dredge Line shifts it
+    'V': 'keepSeal',        // story gate: the Maku Tree opens it at five Essences
     '_': 'ledgeAbyss',
     '"': 'ledgeAbyssN', '>': 'ledgeAbyssE', '<': 'ledgeAbyssW',
   }, 'base');
@@ -15692,9 +15879,15 @@ const rooms = {
   '0,2,2': {
     name: 'Upper Kell',
     legend: 'cliffs', music: 'overworld',
+    // THE SEAL'S UPPER COURSE. These four were boulders, and the four plugs one
+    // screen north on the Abyss Stair were the other half of the same gate:
+    // nothing at all lies between them, so opening one course alone buys the
+    // player a single screen of dead end. Both courses are the Keep's seal now
+    // and both open together, at five Essences, when the Maku Tree opens the
+    // road. See `keepSeal` in src/data/tiles-core.js.
     map: [
       '###gggg###',
-      '#ggMMMMgg#',
+      '#ggVVVVgg#',
       'gg.9999.gg',
       'gg......gg',
       'gg.9999.gg',
@@ -16138,13 +16331,24 @@ const rooms = {
     // The Squall Bellows' overworld room. The raft in the cut goes wherever it
     // is blown and takes you with it; the long way round the north shelf is
     // still open, so this is a shortcut you earn rather than a gate.
+    //
+    // THE ROCKFALL ON THE EAST BANK IS THE WAY INTO THE CLIFFS OF KELL, and
+    // through them the only way to everything north of here — D4's door, the
+    // Abyss Stair, the Keep. It was four boulders, so it only opened to the
+    // Dredge Line, which is D6's item and sits inside what it sealed.
+    //
+    // All four are cracked, not one. A run where three tiles are still
+    // boulders is not a Bombs gate, it is a Dredge Line gate with a hole in
+    // it: the Line drags the other three and the player is through, so
+    // check-overworld could no longer say which item holds the Cliffs shut and
+    // "without Bombs the Cliffs are sealed" would quietly stop being true.
     map: [
       '###gggg###',
       '#gGGGGGGg#',
-      'gg.====.Mg',
-      'gg.====.Mg',
-      'gg......Mg',
-      'gg______Mg',
+      'gg.====.Xg',
+      'gg.====.Xg',
+      'gg......Xg',
+      'gg______Xg',
       '#gggggggg#',
       '###gggg###',
     ],
@@ -17486,10 +17690,16 @@ function installHouses() {
           '##########',
         ],
         entities: [
-          ['giver', 4, 2, {
+          // Two beats, not one. The Rod at one Essence is the `giver` half;
+          // the road to the Keep and the Master Sword at five is `makuMaster`,
+          // which src/data/story.js has held ready since it was written and
+          // which nothing triggered until this entity existed.
+          ['makuTree', 4, 2, {
             sprite: 'npc_maku', dialogue: 'makuTree', waiting: 'makuWait',
             after: 'makuAfter', flag: 'gotRod', item: 'rod', level: 1,
             needEssences: 1,
+            scene: 'makuMaster', sceneNeed: 5, sceneFlag: 'makuOpenedKeep',
+            sceneAfter: 'makuOpened',
           }],
           ['npc', 7, 4, { sprite: 'npc_farore_0', dialogue: 'faroreHome' }],
         ],
@@ -17590,7 +17800,21 @@ function installCaves() {
         ],
         entities: [
           ['chest', 4, 3, { rupees: 30 }],
+          // THE NOBLE SWORD. docs/GAME-PLAN.md has named its home — a secret
+          // cave, four Essences — since the plan was written, and nothing ever
+          // placed it: the level-2 sword existed as a damage tier, three HUD
+          // icons and a swing sound with no chest in the world that granted it.
+          //
+          // It is a chest rather than a giver because a sword in a grotto is a
+          // sword in a grotto, and it refuses rather than hides because a
+          // player who finds this room at two Essences should learn that it is
+          // worth the walk back.
+          ['chest', 7, 2, {
+            big: true, item: 'sword', level: 2, needEssences: 4,
+            needText: 'The blade will not come out of the stone.\nFour Essences, says the stone.',
+          }],
         ],
+        readable: [[6, 3, 'Cut into the bluff: "Four shards, and the\nsecond blade is yours. Fewer, and it stays\nthe bluff\'s."']],
         warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 3, ry: 7, px: 48, py: 48, dir: 'down' } }],
       },
     },
@@ -24255,6 +24479,10 @@ const DIALOGUE = {
   makuWait: 'Hoo. You are small and the sea is large.\nBring me one Essence of the Tide and I\nwill be awake enough to help.',
   makuTree: 'Hoo hoo! One Essence, and my roots feel\nthe Bell again. Take the Rod. Strike it and\nevery drowned bell in Tidemere answers.',
   makuAfter: 'Five Essences, Link. Five. Then the way\nto the Keep opens, and I go back to sleep\nfor a hundred years.',
+  // Said on every visit after the road is open. The tree has done its part and
+  // says so; the seal on the Abyss Stair is already split by the time the
+  // player walks back out to it.
+  makuOpened: 'The road is open and my roots ache.\nGo down, and do not dawdle — I am asleep\nthe moment you are out of sight.',
 
   faroreHome: 'The Bell is not a thing, exactly.\nIt is an agreement between the moon and\nthe water. Nereth broke the agreement.',
 
