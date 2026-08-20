@@ -10,6 +10,122 @@ maintain and the most expensive thing to not have.
 
 ---
 
+## THE BOARD, UPDATED AGAIN — P9's health economy: the cap was 13 and nothing could see it
+
+**P9 step 3 is done. Steps 1, 2 and 4 — the region re-gating — are NOT, and are
+the next session's job.** See `docs/EXECUTION-PLAN.md`'s P9 block, which now
+says which of its four steps landed.
+
+**The headline: maximum health is a SUM, no file contains it, and it was
+wrong.** `tools/check-hearts.mjs` (new, in CLAUDE.md's verification table)
+computes it from the loaded data. Its first run read:
+
+```
+  start                3 hearts
+  Heart Containers     6   (one per dungeon boss)
+  heart pieces         18  = 4 containers + 2 ORPHANED
+  CAP                  13 hearts
+```
+
+Thirteen, against a brief asking for 14-16 — and **two of the eighteen pieces
+could never complete a container**. Collectable, jingle, counter ticks, paid
+nothing, for ever. (The starting prompt for this session said 19 pieces; the
+real count was 18 — 14 `entities` pickups, 4 `buried`, and one of those
+"placed" is a `puzzle.reward.spawn` in d3. The discrepancy did not change the
+direction of the work, since either number is short.)
+
+**Now 24 pieces, cap 15** — the middle of the window, and a shape worth keeping:
+six containers from the six bosses, six more from exploration, plus the three
+you start with. Half the maximum is fought for, half is searched for. The six
+added:
+
+| Where | Why there |
+|---|---|
+| `d1/0,5,3` Clawcrab Den | its `puzzle.reward` paid out a **sentence and nothing else** — the only fight in D1 that cost health and returned none |
+| `d2/1,5,4` Whelk Cell | the Spire's far-east cul-de-sac |
+| `d4/0,4,1` East Overlook | corner furthest from the door |
+| `d5/0,5,5` Bower Cell | the Shrine's south-east dead end |
+| `cave1` Bluff Grotto | had only a rupee chest |
+| `cave2` Reef Hollow | on the seafloor patch — LOW tide only; the room's own carving ("walk where fish swam") is the puzzle |
+
+**None of the six sits on a recorded route.** All 51 replays and
+`check-playthrough.mjs`'s 19 checks were unchanged, which is the proof they are
+rewards for leaving the path rather than things handed to a passer-by. The
+instrumented D1 health table is byte-identical to the one in the archived board
+below.
+
+**`d3/0,2,2` Bogmaw Hall has the same empty-reward bug as the Clawcrab Den did**
+— miniboss killed, one sentence, nothing dropped. It was left alone only because
+d3 is already at its two-piece quota. It should get *something*.
+
+**The distribution is now pinned by the checker: every dungeon carries exactly
+two.** This is the guard against the way it broke in the first place — a heart
+piece is placed while thinking about a room, and the total it moves lives
+nowhere. A future session that wants a different split has to edit
+`PER_DUNGEON`, which is the point.
+
+**The damage half was re-derived in the same pass, and deliberately not
+applied.** Raising the cap is a difficulty change even when no damage value
+moves, which is exactly why the two could not be tuned in separate sessions. The
+ladder is now pinned in `check-hearts.mjs` — every enemy on a named rung, a new
+enemy fails the checker until someone puts it on one:
+
+```
+  tier      dmg  in hearts  at start    at cap
+  chip       1 qh  0.25 hearts    12        60   2 types
+  ordinary   2 qh  0.5 hearts      6        30   13 types   <- P9's anchor, already correct
+  heavy      3 qh  0.75 hearts     4        20   7 types
+  miniboss   3 qh  0.75 hearts     4        20   8 types
+  boss       4 qh  1 heart         3        15   8 types
+```
+
+A miniboss hits for exactly what a jellyfish hits for, and at the new cap the
+final boss needs fifteen connections to kill a maxed player. The derived fix, on
+the half-heart grid the source games deal on: **heavy 3 -> 4 qh, miniboss 3 -> 6
+qh, boss 4 -> 8 qh.**
+
+**Why it was not landed — measurement, not caution.** Every enemy it touches in
+the only instrumented dungeon (D1's two anglerfry at `0,5,2`, the Clawcrab at
+`0,5,3`, Gohmaraq at `0,3,1`) sits *past the Sluicegate*, in the half of D1 the
+route cannot reach. The instrumented run would have shown **no change at all**
+while the numbers went in looking proven, it would re-open the D1 economy the
+previous session closed by measurement, and it would cost a re-record of all 51
+replays. **Its prerequisite is job 1 below.** Full reasoning in
+`docs/FEEL-SPEC.md`, "The cap and the damage ladder", and in the checker's own
+comment.
+
+Two things the checker found on the way that were NOT bugs, and cost a red each
+before the data was checked by hand — the same lesson `walk-dungeons.mjs` learned
+about one-way ledges: **a buried piece is dredged, not stood on** (the Drowned
+Shore's is under an `abyssHole`, deep water, with a bell NPC leaning at it), and
+**a piece on a liftable rock is reached by lifting the rock** (three independent
+placements use that idiom). The checker was wrong; the data was right.
+
+**Also found and fixed on the way:** two enemies, `brinehulk` (the Abyssal
+Keep's second fight, standing in front of Nereth) and `thalassor` (built,
+placed nowhere at all), are bosses in every respect but are declared by no
+dungeon — so any tool that infers "boss" from `map.dungeon.boss` mis-classifies
+them. `check-hearts.mjs` pins bosses by name and cross-checks the declarations
+against that list rather than deriving it from them.
+
+**Next session's job, in order:**
+
+1. **Teach the actor an anchor-placement verb** (sink at a chosen tile, walk
+   away, recall) and extend `playthrough-route.mjs` past the Sluicegate —
+   unchanged from the previous board, and now blocking the damage ladder as
+   well as D1's second-half health reading.
+2. **P9 steps 1, 2 and 4: the region re-gating.** Eight regions gated on items
+   that no longer exist; five gates should be tile-flag-shaped so
+   `check-overworld.mjs` can prove them both ways; the Brineglass Lens must
+   never be a region gate.
+3. Apply the derived damage ladder once job 1 makes it measurable, and
+   re-record the replays against it.
+4. Give `d3/0,2,2` Bogmaw Hall a real reward.
+5. The 32 stale branches are still undeleted (see the archived board below);
+   branch deletion still 403s from the proxy.
+
+---
+
 ## THE BOARD, UPDATED AGAIN — the route retuned past the push-block blocker, D1's health economy instrumented and fixed
 
 **`tools/playthrough-route.mjs` was stale in exactly the way the previous

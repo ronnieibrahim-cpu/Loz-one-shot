@@ -1226,6 +1226,16 @@ their neighbours is still owed and belongs to whichever session takes those.
 
 ### P9 — Overworld re-gating and difficulty
 
+**Step 3 (the health economy) is DONE** — see `docs/FEEL-SPEC.md`, "The cap and
+the damage ladder". The cap was 13, one under the floor, with two heart pieces
+that could never complete a container; it is now 15, from 24 pieces and the six
+Heart Containers, and `tools/check-hearts.mjs` computes and pins it. The damage
+half was re-derived in the same pass (raising the cap is a difficulty change on
+its own) and the corrected ladder is recorded but deliberately not applied —
+every enemy it touches sits past the point the playthrough harness can reach.
+**Steps 1, 2 and 4 (the region re-gating) are still outstanding.**
+
+
 ```
 The overworld has eight regions gated on items that no longer exist.
 

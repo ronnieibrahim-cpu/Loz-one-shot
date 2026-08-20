@@ -224,6 +224,49 @@ is in the page, and nothing steps until you say so.
 
 ## Hard-won lessons — do not rediscover these
 
+**The health cap is a SUM, so nothing in the project could see it, and it had
+been wrong for six dungeon builds.** Maximum health is three hearts of start
+plus one container per boss plus one container per four heart pieces — and that
+last term is spread across two dungeon files, the overworld and the caves, in
+three different syntaxes (an `entities` pickup, a `buried` triple, a
+`puzzle.reward.spawn`). No file contains the total. P9 went looking for it and
+found **18 pieces: four containers' worth plus two that could never become
+anything.** A player could collect those two, hear the jingle, watch the counter
+tick to 1/4 and 2/4, and be paid nothing, for ever. The cap was 13 against a
+brief asking for 14-16.
+
+The lesson generalises past hearts: **any quantity that is a sum over scattered
+placements needs a tool that computes it, or it is not a designed number, it is
+whatever the last six sessions happened to leave behind.** `check-hearts.mjs`
+now computes it, and pins the distribution (every dungeon exactly two) so the
+next dungeon session cannot move the game's maximum health while thinking about
+a room.
+
+**A reachability checker that only knows how to WALK will call correct data
+broken.** `check-hearts.mjs`'s first cut asserted every piece sat on a standable
+tile and immediately failed two long-standing, correct placements: one buried
+under an `abyssHole` (deep water — it is not stood on, it is dredged up, and the
+room has a bell NPC leaning at the tile) and one on a liftable rock (three
+independent placements use that idiom). Both were the checker's fault. This is
+the same lesson `walk-dungeons.mjs` learned about one-way ledges, arriving from a
+different direction: **the verbs a checker knows are the verbs somebody typed
+into it, and the data is usually right.** Check the data by hand before
+believing a new checker's first red.
+
+**Raising the health cap is a difficulty change even when no damage value
+moves**, which is why P9's cap work and its damage re-derivation had to happen
+in one pass. Do not tune the supply side and the damage side in separate
+sessions; the second one will be tuning against a curve the first one moved.
+
+**A derivation you cannot measure should be written down and left unapplied.**
+P9 derived a corrected damage ladder (heavies to one heart, minibosses to a
+heart and a half, bosses to two) and did not land it, because every enemy it
+touches in the only instrumented dungeon sits past the Sluicegate — the point
+`check-playthrough.mjs` cannot reach for want of an anchor-placement verb in the
+actor. The instrumented run would have shown no change at all while the numbers
+went in looking proven. It is recorded in `check-hearts.mjs`'s own comment and
+in FEEL-SPEC.md, waiting on the route.
+
 **A health-economy reading is only as honest as the looter taking it, and
 `dLoot` had two bugs that silently starved every run for two sessions.**
 Instrumenting D1's room-by-room health economy (see FEEL-SPEC.md) found the
