@@ -388,6 +388,84 @@ check('walking into a one-tile chasm hops it', cWalk.tx >= 2, `ended ${JSON.stri
 // 5 tiles from the player, and the level-1 Hookshot reaches 64px = 4 tiles.
 // Neither is a placement problem; both need a design or engine decision.
 
+// THIS SECTION RUNS LAST ON PURPOSE. It is the only probe in this file that
+// deliberately drives progress a long way forward — five Essences, a walked
+// trading chain, a played cutscene, a level-3 sword — and `setup()` resets the
+// ROOM and the held item but not the save. Run mid-file it left that state
+// lying under every later probe, and the Dredge Line's boulder assertion went
+// red for reasons that had nothing to do with the Dredge Line.
+// --- the tree that sets the flag ------------------------------------------
+//
+// EVERYTHING BELOW THIS POINT USED TO SET `makuOpenedKeep` BY HAND, which
+// proves the SEAL obeys the flag and says nothing at all about whether
+// anything in the game ever sets it. That gap is exactly how `makuMaster` sat
+// complete in story.js for the life of the project with nothing triggering it.
+// It matters more now than it did: the Maku Tree is the Coastwise Chain's last
+// link AND the tree that opens this road, so `MakuTree extends Trader`, and
+// the guard for "beat one has happened" is the chain's `spent()`. If that
+// guard is ever wrong in the sealing direction, the road never opens, the Keep
+// is unreachable and the game is unfinishable — with every other checker green.
+const tree = await page.evaluate(async () => {
+  const g = window.__game;
+  const out = {};
+  if (g.dialogue) g.dialogue.active = false;
+  // A PRISTINE SAVE, because this file's earlier probes are not pristine: one
+  // of them hands over the Resonance Rod to test the vane gate, and the section
+  // above sets `makuOpenedKeep` by hand. Both are invisible to a tree that
+  // reads exactly those two things — she answers "the road is already open",
+  // never trades, and all four of the assertions below go red describing a
+  // tree that is working correctly. `newGame` is the only honest starting
+  // point for a beat-ordering test.
+  g.newGame(0, 'MAKU');
+  g.mode = 'play';
+  g.enterMap('houseMaku', 0, 0, 0, 72, 72, 'down', { instant: true });
+  g.mode = 'play';
+  const t = g.entities.find(e => e.deals);
+  out.found = !!t;
+  if (!t) return out;
+  out.klass = t.constructor.name;
+  const talk = () => {
+    t.interact(g, g.player);
+    for (let i = 0; i < 12 && g.dialogue.active; i++) g.dialogue.close();
+  };
+
+  // Five Essences and the chain never walked: beat two must NOT fire.
+  g.progress.essences = [1, 2, 3, 4, 5];
+  talk();
+  out.earlyFired = !!g.progress.flags.makuOpenedKeep;
+
+  // Beat one: the chain arrives holding the bell-rope.
+  g.progress.trade.stage = 11;
+  g.progress.trade.item = 'bellrope';
+  talk();
+  out.rod = g.progress.items.rod || 0;
+  out.stage = g.progress.trade.stage;
+
+  // Beat two. A CUTSCENE IS NOT A DIALOGUE BOX — it sets its flags as it
+  // PLAYS, so the clock has to be advanced, not just the box closed. A probe
+  // that only closes boxes reports this beat as broken when it is fine.
+  t.interact(g, g.player);
+  out.sceneStarted = g.mode === 'cutscene';
+  for (let i = 0; i < 6000 && g.mode === 'cutscene'; i++) {
+    window.__harness.step(1);
+    if (g.dialogue && g.dialogue.active) g.dialogue.close();
+  }
+  out.opened = !!g.progress.flags.makuOpenedKeep;
+  out.sword = g.progress.items.sword || 0;
+  return out;
+});
+check('the Maku Tree is a trader with a second beat', tree.found && tree.klass === 'MakuTree',
+  JSON.stringify(tree));
+check('she will not open the road before the chain is walked', tree.earlyFired === false,
+  'makuOpenedKeep was set at five Essences with the chain unstarted');
+check('beat one hands over the Resonance Rod', tree.rod === 1 && tree.stage === 12,
+  `rod ${tree.rod}, stage ${tree.stage}`);
+check('beat two plays makuMaster', tree.sceneStarted === true, 'no cutscene started');
+check('...and it is the tree, not the harness, that sets makuOpenedKeep',
+  tree.opened === true, 'the scene ran and the flag never landed');
+check('...and grants the level-3 sword with it', tree.sword === 3, `sword L${tree.sword}`);
+
+
 check('no page errors', errs.length === 0, errs.slice(0, 3).join(' | '));
 
 console.log(`\n=== ${passed} passed, ${failures.length} failed ===`);
