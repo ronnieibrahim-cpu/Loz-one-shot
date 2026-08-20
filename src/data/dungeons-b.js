@@ -268,6 +268,10 @@ export function installDungeonsB() {
         entities: [
           ['pickup', 7, 2, { kind: 'rupee20' }],
           ['tektite', 3, 5],
+          // D5's second Piece of Heart. The Bower Cell is the Shrine's
+          // south-east corner and leads nowhere — the tektite is the whole
+          // price.
+          ['pickup', 5, 1, { kind: 'heartPiece' }],
         ],
       },
       '0,5,4': {

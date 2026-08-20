@@ -189,6 +189,7 @@ they are also how a future session finds which sheet a tile came from.
 | `node tools/check-towns.mjs` | Every town screen's ways in and doors all reach each other ON FOOT at all three tide levels, every doorway warps somewhere that warps back, no building is standing on an NPC, and no townsperson is standing on the one tile that severs the screen |
 | `node tools/check-motion.mjs` | Ground enemies stay on the 8px lattice; fliers and swimmers stay off it |
 | `node tools/check-items.mjs` | Every item does the verb `docs/ITEMS.md` claims for it, and nothing hands out an item that no longer exists |
+| `node tools/check-hearts.mjs` | Every heart piece in the world is counted and reachable by some verb, the six Heart Containers land the cap inside P9's 14-16 window with no piece left over, and every enemy's contact damage still sits on the rung of the damage ladder it was put on |
 | `node tools/check-music.mjs` | Every track's order references only patterns that exist, no melodic channel holds a note that was never struck, every note is inside the Game Boy's real frequency range for its channel, and the noise channel carries only percussion |
 | `node tools/replay.mjs` | Movement and combat are frame-identical to a recorded baseline |
 | `node tools/check-build.mjs` | The shipped single-file build boots and plays from a `file://` URL |
