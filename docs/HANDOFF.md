@@ -429,6 +429,36 @@ rule one level down: `boulderCracked` carries neither `F.ROCK` nor `F.HEAVY`,
 because a boulder you can also lift or also drag is gated on whichever of the
 three you happen to be holding.
 
+**A HARNESS THAT WALKS OUT OF A BOSS ARENA REPORTS A FLAWLESS VICTORY.** The
+first cut of `dBoss` strafed on a fixed up/down cycle whenever the boss was
+shelled. A boss room has exits, and leaving one wipes every non-player entity in
+the room — so `g.boss` went null with the player at full health, and the obvious
+test ("no boss, nobody died, therefore killed") reported **six flawless kills
+against six bosses it had never touched**, at 88 frames each. The tell was the
+frame count: 88 frames is a second and a half, and Gohmaraq has 24 hp.
+
+Two things follow. First, every combat directive has to run its mask through
+`dFight`'s `fence`, which strips whatever direction would leave the room; that
+is why the fence exists and it is not optional for bosses. Second, and general:
+**"the enemy is gone" is not "the enemy is dead."** Assert the positive fact —
+`progress.beaten[mapId]`, or the essence spawning — never the absence of an
+entity, because absence is also what leaving the room looks like.
+
+**A GENERIC BOSS AI LOSES, AND THE NUMBER SAYS SO.** Once fenced, the verb
+fights properly: it waits out the shell, takes the opening and lands real hits
+(Gohmaraq 24 hp -> 18). It still loses, and not narrowly — measured at about
+**one point of damage dealt per five quarter-hearts taken**, tested at both 3
+and 6 hearts. Bosses run 24 to 80 hp, so that trade needs roughly thirty hearts
+against the first boss of the game. Tuning it the other way (evade until a safe
+opening) survives twice as long and deals ZERO damage: it never commits.
+
+The lesson is the scoping one. Every boss is built on one shared rule
+(`shell`/`weakOpen`), and that rule is enough to know WHEN to attack and not
+enough to know HOW: the slam radius, which side is safe, and how long the walk
+in costs are per-boss facts. A generic verb gets the timing gate for free and
+has to earn the positioning. Budget a session for it, and prove it on Gohmaraq
+at three hearts, because that is what a real player brings to D1.
+
 **`check-anchor.mjs` PROVES REACH AND CALLS IT A CROSSING, and for the Iron
 Pipe the two are different tiles.** It reports "d1 0,4,2: one anchor placement
 crosses it — stand 0,3 at LOW, bite 1,3". The throw really does carry two

@@ -714,6 +714,102 @@ export async function installRuntime() {
   }
 
   /**
+   * FIGHT A BOSS.
+   *
+   *   ['boss', 4000]      fight whatever boss is in this room until it dies
+   *
+   * Every boss in this game is built on one rule (`defineBoss`, src/game/enemy.js):
+   * a shelled boss IGNORES EVERY HIT unless `weakOpen` is set, and each boss
+   * opens its own weak point off its own tell — Gohmaraq's eye opens after a
+   * slam, and stays open TWICE AS LONG while the grotto is drained. So the verb
+   * is not a script of one fight, it is the rule all of them share:
+   *
+   *   weak point open  -> close the distance and swing
+   *   shelled          -> break contact, and keep moving off its axis so a
+   *                       charge or a slam has to commit before you do
+   *
+   * This deliberately does NOT encode any single boss's timings. A per-boss
+   * script would be a model of a fight, and a model does not notice when the
+   * fight changes under it — the same reason the checkers here call the
+   * engine's collision instead of copying it. If a boss ever needs more than
+   * this (a tide level, an item), the ROUTE says so in the steps around this
+   * one, where it is readable, rather than hiding inside the verb.
+   */
+  // STATUS: THIS VERB FIGHTS AND DOES NOT YET WIN. It finds the boss, stays in
+  // the arena, waits out the shell and lands real hits — Gohmaraq measured from
+  // 24 hp to 18 — but the trade is about one point of damage per five quarter
+  // hearts, and a boss has 24 to 80 hp. It is committed because the scaffolding
+  // is right and the two traps it already closed are expensive to rediscover;
+  // it is NOT referenced by tools/playthrough-route.mjs, because a route step
+  // that cannot finish is worse than one that is missing.
+  function* dBoss(maxF) {
+    const g = window.__game;
+    for (let i = 0; i < 300 && !g.boss; i++) yield 0;
+    if (!g.boss) throw new Error('boss: nothing to fight in ' + g.mapId + ' ' + (g.room && g.room.key));
+    const sword = () => slotBit('sword') || BIT.b;
+    // The same numbers dFight uses, for the same reasons: strike from the near
+    // band, then break contact. A boss does contact damage like anything else,
+    // and the first cut of this verb held the stick toward the boss while the
+    // eye was open — three touches and a new game does not have a fourth.
+    const NEAR = 18, BACKOFF = 30;
+    const EDGE = 12;
+    // Every mask goes through the fence. A boss arena has exits, and leaving
+    // one wipes the room's entities — the boss with them. That reads exactly
+    // like a kill (no boss, full health) and is a retreat; it is why this verb
+    // reported six flawless victories before it had landed a single hit.
+    const fence = (m) => {
+      const q = g.player;
+      if (!q) return m;
+      if (q.x < EDGE) m &= ~BIT.left;
+      if (q.x > (g.room ? g.room.pw : 160) - 16 - EDGE) m &= ~BIT.right;
+      if (q.y < EDGE) m &= ~BIT.up;
+      if (q.y > (g.room ? g.room.ph : 144) - 16 - EDGE) m &= ~BIT.down;
+      return m;
+    };
+    const budget = maxF || 16000;
+    for (let f = 0; f < budget;) {
+      const b = g.boss;
+      if (!b || b.dead) return;
+      const p = g.player;
+      if (!p) return;
+      const dm = dialogueMask(g, f);
+      if (dm !== null) { yield dm; f++; continue; }
+      if (g.mode !== 'play') { yield (f % 8 === 0) ? BIT.a : 0; f++; continue; }
+      const dx = b.cx - p.cx, dy = b.cy - p.cy;
+      const adx = Math.abs(dx), ady = Math.abs(dy);
+      const axisX = adx > ady;
+      const toward = axisX ? (dx > 0 ? BIT.right : BIT.left) : (dy > 0 ? BIT.down : BIT.up);
+      const backAlong = axisX ? (dx > 0 ? BIT.left : BIT.right) : (dy > 0 ? BIT.up : BIT.down);
+      const backPerp = axisX ? (dy > 0 ? BIT.up : BIT.down) : (dx > 0 ? BIT.left : BIT.right);
+
+      if (b.weakOpen) {
+        // Invulnerability frames are the only free hits in this game, so if we
+        // are still flashing from the last touch, commit regardless of range.
+        if (adx + ady > 64 && !(p.invuln > 0)) { yield fence(backPerp); f++; continue; }
+        if (adx + ady > NEAR + 6) { yield fence(toward); f++; continue; }
+        // In range: face it, swing, then get out before it closes.
+        yield fence(toward); f++;
+        yield fence(toward | sword()); f++;
+        for (let i = 0; i < BACKOFF && f < budget; i++) { yield fence(backAlong | backPerp); f++; }
+        continue;
+      }
+      // Shelled: nothing to hit. Keep off it and wait out the tell.
+      if (adx + ady < 72) { yield fence(backAlong | backPerp); f++; continue; }
+      const room = g.room;
+      const ox = (room ? room.pw : 160) / 2 - p.cx, oy = (room ? room.ph : 144) / 2 - p.cy;
+      if (Math.abs(ox) > 12 || Math.abs(oy) > 12) {
+        yield fence(Math.abs(ox) > Math.abs(oy) ? (ox > 0 ? BIT.right : BIT.left)
+                                                : (oy > 0 ? BIT.down : BIT.up));
+      } else {
+        yield 0;
+      }
+      f++;
+    }
+    const b = g.boss;
+    throw new Error(`boss: still alive after ${budget} frames (hp ${b ? b.hp : '?'})`);
+  }
+
+  /**
    * EQUIP AN ITEM ONTO A BUTTON, through the real pause menu.
    *
    *   ['equip', 'anchor', 'B']
@@ -890,6 +986,7 @@ export async function installRuntime() {
       else if (kind === 'use') yield* dUse(a[0], a[1], a[2]);
       else if (kind === 'travel') yield* dTravel(a[0], a[1], a[2]);
       else if (kind === 'loot') yield* dLoot(a[0]);
+      else if (kind === 'boss') yield* dBoss(a[0]);
       else if (kind === 'equip') yield* dEquip(a[0], a[1], a[2]);
       else if (kind === 'anchor') yield* dAnchor(a[0], a[1], a[2]);
       else if (kind === 'unanchor') yield* dUnanchor(a[0]);

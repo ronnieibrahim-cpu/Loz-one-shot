@@ -24,10 +24,15 @@ game.** Every model says the world is completable — `check-progression` reache
 own rule is that a model does not fight a boss or spend a key, and the run has
 never done either. What 1.0 needs, in dependency order:
 
-1. **A boss-fight verb.** `dFight` trades blows with ordinary enemies. No boss
-   in this game has ever been fought by the harness, and there are six of them
-   (gohmaraq, anemos, gloomtide, wyverna, rootmaw, nereth). This is the single
-   biggest missing capability and every dungeon ends in one.
+1. **A boss-fight verb THAT WINS.** `dBoss` now exists in
+   `tools/actor-runtime.mjs` and is the next session's first job. It finds the
+   boss, holds the arena, waits out the shell and lands real hits (Gohmaraq
+   24 hp -> 18) — and it loses, at about one damage per five quarter-hearts,
+   measured at 3 and 6 hearts. It is deliberately NOT wired into the route.
+   What it is missing is positioning, not timing: `weakOpen` tells every boss
+   when to strike, but the slam radius and the safe side are per-boss. Prove it
+   on Gohmaraq at THREE hearts — that is what a real player brings to D1.
+   See docs/HANDOFF.md for the false-victory trap it already closed.
 2. **A Boss Key / locked-door pass** for the third key behind the Clawcrab door,
    then D1's west wing and `3,1`. That closes ONE dungeon end to end and is the
    right place to prove the pattern before scaling it.
