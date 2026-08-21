@@ -10,6 +10,48 @@ maintain and the most expensive thing to not have.
 
 ---
 
+## WHERE 1.0 ACTUALLY IS — measured, not estimated
+
+The playthrough harness now drives **18 of 144 dungeon rooms**, all in D1, and
+ends in `d1/0,5,2` having crossed the Iron Pipe with the Anchor's own verb. Two
+actor verbs landed to get there (`equip`, `anchor`); the missing capability is
+no longer placement.
+
+**The game is not shippable as 1.0 yet, and the gap is the PROOF, not the
+game.** Every model says the world is completable — `check-progression` reaches
+120/120 screens and 6/6 dungeons, `walk-dungeons` strands nothing,
+`solve-switches` solves all nine switch rooms by real pushing. But CLAUDE.md's
+own rule is that a model does not fight a boss or spend a key, and the run has
+never done either. What 1.0 needs, in dependency order:
+
+1. **A boss-fight verb.** `dFight` trades blows with ordinary enemies. No boss
+   in this game has ever been fought by the harness, and there are six of them
+   (gohmaraq, anemos, gloomtide, wyverna, rootmaw, nereth). This is the single
+   biggest missing capability and every dungeon ends in one.
+2. **A Boss Key / locked-door pass** for the third key behind the Clawcrab door,
+   then D1's west wing and `3,1`. That closes ONE dungeon end to end and is the
+   right place to prove the pattern before scaling it.
+3. **The other five dungeons**, at roughly 24 rooms each. Route authoring is the
+   cost, not engine work — and the Iron Pipe is the warning about what that
+   costs: its correct solution was a different tile from the one the checker
+   named, and only a real run found out.
+4. **Regenerate `docs/GUIDE.md`** and get `check-guide.mjs` green.
+
+Only when `check-playthrough.mjs` runs from the title screen to Nereth is the
+claim "this game is beatable" one this repo is allowed to make. Until then the
+honest statement is: **nothing has played it to the end, and the parts that have
+been played work.**
+
+### The Iron Pipe, and why it is the template for the rest
+
+`check-anchor.mjs` names a placement for that room that does not cross it. It is
+right about reach and wrong about the patch, and the difference is an open pit
+the engine happily walks a player into. See docs/HANDOFF.md. Expect one of these
+per anchor/lens/bellows room, and budget for it: a route step that "should" work
+from reading the checker is the thing to distrust.
+
+---
+
 ## MERGED TO MAIN — and the branch list is now DELETE-ONLY
 
 `claude/merge-three-features-conflicts-6ipqpz` is merged into `main`
