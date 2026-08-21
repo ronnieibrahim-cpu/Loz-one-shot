@@ -33,6 +33,7 @@ import {
   ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, ANCHOR_THROW_SPEED, ANCHOR_RECALL_SPEED,
   ANCHOR_SETTLE_FRAMES, ANCHOR_CHAIN_DAMAGE,
   SHAKE_SMALL, SHAKE_SMALL_FRAMES,
+  KILNSHELL_BURN_DAMAGE,
 } from '../data/feel.js';
 import { sprites } from '../gfx/art.js';
 
@@ -76,6 +77,103 @@ export class Bomb extends Entity {
   }
 }
 defineEntity('bomb', (x, y, o) => new Bomb(x, y, o));
+
+// --------------------------------------------------------------------------
+// Kilnshell
+// --------------------------------------------------------------------------
+//
+// A cockle burnt down to lime. Quicklime slakes when it meets water and the
+// reaction runs hot, so THE SEA IS WHAT LIGHTS IT — set the shell down on
+// ground the tide is coming for, sound the conch, and it catches. Carry it
+// while it burns and it lights whatever it touches. Take it into deep water
+// and it goes out.
+//
+// That is the whole item, and it is the reason it is not a lamp with a
+// seashell drawn on it: THERE IS NO BUTTON THAT MAKES FIRE. Fire is something
+// the tide hands you, somewhere the tide chooses, and the same tide takes it
+// back. Every use is two route problems at once — a wet tile to catch it, and
+// a dry road from there to whatever needs burning — which is exactly the shape
+// the Anchor is for, since one held disc can keep a patch wet beside a road
+// that is drying out.
+// --------------------------------------------------------------------------
+
+export class Kilnshell extends Entity {
+  constructor(x, y, o = {}) {
+    super(x, y, o);
+    this.w = 16; this.h = 16;
+    this.hb = { x: 3, y: 6, w: 10, h: 8 };
+    this.pal = 'stone';
+    this.harmless = true;
+    this.liftable = true;               // the carry is the point; see above
+    this.lit = !!o.lit;
+    this.burn = 0;
+    this.depth = -1;
+  }
+
+  /** The flags under the shell — or under the player, while being carried. */
+  groundFlags(game) {
+    const room = game.room;
+    if (!room) return 0;
+    const p = game.player;
+    const holder = (p && p.carrying === this) ? p : this;
+    const tx = Math.floor(holder.cx / TILE), ty = Math.floor(holder.cy / TILE);
+    if (!room.inBounds(tx, ty)) return 0;
+    return room.flagsAt(tx, ty, game.tide);
+  }
+
+  update(game) {
+    this.frame++;
+    const f = this.groundFlags(game);
+
+    // SHALLOW LIGHTS IT, DEEP DROWNS IT, and the difference is the item.
+    // F.WET is F.WATER|F.DEEP, so testing it alone lit the shell and then
+    // doused it on the very next frame in the same puddle — the first cut of
+    // this did exactly that and read as "the tide does nothing".
+    //
+    // It also gives the shell all three tide levels instead of two, which is
+    // what makes it belong in this roster: a tidePool is DRY at LOW, SHALLOW at
+    // MID and DEEP at HIGH, so the same tile is where you set the shell, where
+    // you light it, and where you must not leave it.
+    const shallow = (f & F.WATER) && !(f & F.DEEP);
+    if (!this.lit && shallow) {
+      this.lit = true;
+      this.burn = 0;
+      game.audio.sfx('fire');
+      game.spawnEffect('flame', this.cx - 8, this.cy - 12);
+      game.shake(1, 6);
+    } else if (this.lit && (f & F.DEEP)) {
+      // Slaking is one reaction; drowning is the end of it.
+      this.lit = false;
+      game.audio.sfx('splash');
+      game.spawnEffect('splash', this.cx - 8, this.cy - 8);
+    }
+
+    if (!this.lit) return;
+    this.burn++;
+    // What a flame touches. Grown by half a tile so a shell set down BESIDE a
+    // torch lights it, rather than having to be standing in the same tile as
+    // one — which, a torch being solid, it cannot be.
+    if (this.burn % 4 === 0) {
+      const r = this.rect();
+      game.checkTileAction({ x: r.x - 8, y: r.y - 8, w: r.w + 16, h: r.h + 16 }, 'fire');
+      for (const e of game.entities) {
+        if (e === this || e.dead || !e.isEnemy) continue;
+        if (this.overlaps(e)) e.hurt(game, KILNSHELL_BURN_DAMAGE, null, 0);
+      }
+    }
+  }
+
+  spriteName() {
+    if (!this.lit) return 'o_kilnshell';
+    return 'o_kilnshell_lit' + (Math.floor(this.frame / 6) % 2);
+  }
+}
+defineEntity('kilnshell', (x, y, o) => new Kilnshell(x, y, o));
+
+/** The one shell in the world, wherever it is. */
+export function placedKilnshell(game) {
+  return game.entities.find(e => e instanceof Kilnshell && !e.remove) || null;
+}
 
 // --------------------------------------------------------------------------
 // Dredge Line
@@ -954,6 +1052,37 @@ export const ITEMS = {
     equippable: true,
     desc: 'Swim the surface, or press to sink and walk the floor beneath it.',
     use(game, p, level) { return p.toggleCleats(game); },
+  },
+  kilnshell: {
+    names: ['Kilnshell'],
+    icon: ['i_kilnshell'],
+    equippable: true,
+    desc: 'Set it down. The sea lights it, and the sea puts it out.',
+    use(game, p, level) {
+      // Being carried: the throw button already owns it, and a second verb on
+      // a held object is how you get a player who cannot put a thing down.
+      if (p.carrying instanceof Kilnshell) return false;
+      const placed = placedKilnshell(game);
+      if (placed) {
+        // Take it back, from anywhere in the world — the same courtesy the
+        // Anchor gets, and for the same reason: nothing the player can set
+        // down may be able to strand them by being somewhere else.
+        placed.remove = true;
+        game.audio.sfx('place');
+        return true;
+      }
+      // Set it on the tile the player is facing, so it can be put against a
+      // torch or into a pool without standing in either.
+      const [dx, dy] = DIR_VEC[p.dir] || [0, 1];
+      const tx = Math.floor(p.cx / TILE) + dx, ty = Math.floor(p.cy / TILE) + dy;
+      const room = game.room;
+      const ok = room && room.inBounds(tx, ty);
+      const x = ok ? tx * TILE : Math.round(p.x);
+      const y = ok ? ty * TILE : Math.round(p.y);
+      game.addEntity(new Kilnshell(x, y));
+      game.audio.sfx('place');
+      return true;
+    },
   },
   anchor: {
     names: ["Tidewright's Anchor"],

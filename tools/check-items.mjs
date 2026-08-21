@@ -134,6 +134,114 @@ const step = (n) => page.evaluate(n => window.__harness.step(n), n);
 const read = (fn) => page.evaluate(fn);
 
 // ===========================================================================
+section('Kilnshell');
+
+// The Reef Hollow: a seafloor patch that is water at MID and dry at LOW, the
+// drift-tangle niche, and the chest the shell comes out of.
+// Stand at 5,5 facing the tide pool, so the shell lands on a tile that is DRY
+// at LOW, SHALLOW at MID and DEEP at HIGH — the three states the item needs.
+await park({ map: 'cave2', rx: 0, ry: 0, tx: 5, ty: 5, dir: 'left', tide: 0,
+  items: { kilnshell: 1, conch: 1 }, equipB: 'kilnshell' });
+await step(4);
+
+// PUZZLE / the core rule: it does not light on dry ground, and it lights when
+// the sea arrives. Nothing the player presses makes fire.
+await page.evaluate(async () => {
+  const g = window.__game;
+  const { ITEMS } = await import('/src/game/items.js');
+  g.entities = g.entities.filter(e => e === g.player);
+  g.player.dir = 'left';
+  ITEMS.kilnshell.use(g, g.player, 1);
+});
+await step(8);
+let k = await read(() => {
+  const g = window.__game;
+  const sh = g.entities.find(e => e.constructor.name === 'Kilnshell');
+  return { there: !!sh, lit: sh ? !!sh.lit : null, tx: sh ? Math.floor(sh.cx / 16) : null };
+});
+check('the Kilnshell can be set down', k.there === true, JSON.stringify(k));
+check('...and it does NOT light on dry ground', k.lit === false, 'it lit itself with no water');
+
+// Now the sea. The shell is standing on the seafloor patch, which is dry at
+// LOW and water above it.
+await page.evaluate(() => { window.__game.tide.setLevel(1, { instant: true }); });
+await step(20);
+k = await read(() => {
+  const sh = window.__game.entities.find(e => e.constructor.name === 'Kilnshell');
+  return { lit: sh ? !!sh.lit : null };
+});
+check('the sea lights it', k.lit === true, 'the tide covered it and it stayed cold');
+
+// The third state, and the one that makes it an item rather than a switch.
+await page.evaluate(() => { window.__game.tide.setLevel(2, { instant: true }); });
+await step(20);
+k = await read(() => {
+  const sh = window.__game.entities.find(e => e.constructor.name === 'Kilnshell');
+  return { lit: sh ? !!sh.lit : null };
+});
+check('...and drowns it at HIGH', k.lit === false, 'deep water did not put it out');
+
+// MOVEMENT: drift-tangle is the one obstacle a blade does nothing to, and the
+// burning shell opens it. Both halves are asserted, because "fire clears it"
+// is only a verb if something else does not.
+let t = await read(() => {
+  const g = window.__game;
+  return { before: g.room.baseName(7, 2) };
+});
+check('the niche is walled with drift-tangle', t.before === 'driftTangleDk', `tile=${t.before}`);
+t = await read(() => {
+  const g = window.__game;
+  const solid = g.room.solidAt(7 * 16 + 8, 2 * 16 + 8, g.tide, { jumping: false, swim: true, cutting: true });
+  g.checkTileAction({ x: 7 * 16, y: 2 * 16, w: 16, h: 16 }, 'cut');
+  return { solidToABlade: solid, afterCut: g.room.baseName(7, 2) };
+});
+check('a blade does nothing to drift-tangle',
+  t.solidToABlade === true && t.afterCut === 'driftTangleDk', JSON.stringify(t));
+t = await read(() => {
+  const g = window.__game;
+  g.checkTileAction({ x: 7 * 16, y: 2 * 16, w: 16, h: 16 }, 'fire');
+  return { after: g.room.baseName(7, 2) };
+});
+check('fire opens it', t.after !== 'driftTangleDk', `still ${t.after}`);
+
+// PUZZLE / torches: a lit shell set beside a torch lights it. This is the verb
+// the Coral Spire's Torch Cell is built on, and before the Kilnshell existed
+// NOTHING IN THE GAME EMITTED 'fire' at all — see tools/check-torches.mjs.
+//
+// The torch is spawned rather than taken from the room: `park` clears every
+// non-player entity, which is right for an isolated probe and does mean the
+// Torch Cell's own three torches are not here. That the ROOM has them, and
+// that its key is not the only one on its floor, is check-torches.mjs's job.
+await park({ map: 'd2', rx: 4, ry: 5, tx: 4, ty: 3, dir: 'up', tide: 0,
+  items: { kilnshell: 1, conch: 1 }, equipB: 'kilnshell' });
+await step(4);
+let tc = await page.evaluate(async () => {
+  const g = window.__game;
+  const { Kilnshell } = await import('/src/game/items.js');
+  const { spawnEntity } = await import('/src/game/entity.js');
+  const torch = spawnEntity(g, 'torch', 4, 1, {});
+  g.addEntity(new Kilnshell(4 * 16, 2 * 16, { lit: true }));
+  const before = !!torch.lit;
+  for (let i = 0; i < 16; i++) window.__harness.step(1);
+  return { before, after: !!torch.lit };
+});
+check('a torch starts unlit', tc.before === false);
+check('a burning Kilnshell lights it', tc.after === true, 'the flame touched it and nothing happened');
+
+// And a COLD shell does not. Otherwise the assertion above is proving that
+// torches light when a shell is nearby, which is a different and useless rule.
+tc = await page.evaluate(async () => {
+  const g = window.__game;
+  const { Kilnshell } = await import('/src/game/items.js');
+  const { spawnEntity } = await import('/src/game/entity.js');
+  g.entities = g.entities.filter(e => e === g.player);
+  const torch = spawnEntity(g, 'torch', 7, 1, {});
+  g.addEntity(new Kilnshell(7 * 16, 2 * 16, { lit: false }));
+  for (let i = 0; i < 16; i++) window.__harness.step(1);
+  return { lit: !!torch.lit };
+});
+check('...and a cold one does not', tc.lit === false, 'an unlit shell lit a torch');
+
 section('Brineglass Lens');
 
 // North Pan: rows of `tidePool`, deep at HIGH and wadeable at MID.
@@ -834,7 +942,8 @@ check('every item the world hands out actually exists', r.bad.length === 0, r.ba
 {
   const expected = [
     'anchor', 'bellows', 'bombs', 'bottle', 'chartstone', 'cleats', 'coin',
-    'conch', 'dredge', 'lens', 'map', 'reefseed', 'rod', 'shield', 'sword',
+    'conch', 'dredge', 'kilnshell', 'lens', 'map', 'reefseed', 'rod', 'shield',
+    'sword',
   ];
   const extra = r.registry.filter(id => !expected.includes(id));
   const missing = expected.filter(id => !r.registry.includes(id));

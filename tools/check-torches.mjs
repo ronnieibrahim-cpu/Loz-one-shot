@@ -83,6 +83,10 @@ for (const f of files) {
 check('something in src/ emits the \'fire\' tile action',
   emitters.length > 0,
   'no call site passes \'fire\' — every torch in the game is unlightable');
+check('and it is not the bomb blast',
+  !emitters.some(e => e.startsWith('src/game/effects.js')),
+  'an explosion lights torches — the Oracle games do not do that, and it puts '
+  + 'the Coral Spire\'s Bombs on the far side of a puzzle they would answer');
 if (emitters.length) console.log('       emitters: ' + emitters.join(', '));
 
 // --------------------------------------------------------------------------
@@ -108,9 +112,17 @@ for (const t of torchRooms) {
 
 // --------------------------------------------------------------------------
 // 3. THE CIRCULAR ONE. A dungeon must not need a torch-gated key to reach the
-//    thing that lights torches. Today the emitter is the bomb blast, so the
-//    test is concrete: in a dungeon whose own item chain runs through Bombs, a
-//    torch-gated key may not be the ONLY key on the floor the player starts on.
+//    thing that lights torches. The emitter is the KILNSHELL, which is why it
+//    had to be placed in the Reef Hollow — a coastal cave two screens from the
+//    village, reachable on foot with nothing. Bombs deliberately do NOT light
+//    torches: they do not in the Oracle games either, and an explosion that
+//    lights things would have made the Coral Spire's own Bombs the answer to a
+//    puzzle standing between the player and those Bombs.
+//
+//    The assertion is kept anyway, and it is not redundant. It is the guard
+//    against the shape rather than against today's item: if a future session
+//    moves the Kilnshell into a dungeon, or adds a second torch room early, a
+//    torch-gated key that is the ONLY key on its floor is a deadlock again.
 // --------------------------------------------------------------------------
 for (const t of torchRooms) {
   const m = MAPS.get(t.mapId);

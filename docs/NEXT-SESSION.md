@@ -10,6 +10,50 @@ maintain and the most expensive thing to not have.
 
 ---
 
+## THE KILNSHELL — the game's fire, and why it is not a bomb
+
+Torches could not be lit at all: `Torch.ignite` is reachable only from
+`checkTileAction(rect, 'fire')` and nothing in `src/` ever passed `'fire'`. That
+deadlocked the Coral Spire and, through it, D3, D4 and the road to the Keep.
+
+The first fix made bomb blasts emit fire. **It was reverted** — the Oracle games
+never light a torch with a bomb, and it put the Spire's own Bombs on the far
+side of the door their key opens.
+
+**The 16th item: the Kilnshell** (`docs/ITEMS.md` §1a). A cockle burnt to lime.
+Set it down; the sea lights it, and the sea puts it out — dry does nothing,
+SHALLOW water slakes it and it catches, DEEP water drowns it. Carry it while it
+burns and it lights what it touches. There is no button that makes fire: fire is
+something the tide hands you, where the tide chooses.
+
+  * **Home:** a chest in the Reef Hollow (`cave2`), two screens east of the
+    village, on foot, with nothing. It has to be outside a dungeon and early,
+    because the Torch Cell is the sixth room of the second dungeon.
+  * **Movement verb:** `driftTangle`, a new tile that burns and ONLY burns — no
+    cut, no bomb, no lift. The Reef Hollow walls a rupee niche with it, which is
+    where the verb is taught.
+  * **Tide states matter:** `tidePool` is dry/shallow/deep across LOW/MID/HIGH,
+    but a dungeon `dBasin` is dry at LOW *and* MID and shallow only at HIGH. The
+    Torch Cell is a dBasin room, so it is solved by taking the sea all the way
+    up. Check `resolveTile` at all three levels before designing a fire puzzle.
+
+**Bombs now come only from the bomb bag.** The shop sold twenty-rupee bombs to a
+player with no bag and delivered zero, because counted pickups clamp to a
+capacity that starts at zero; the bottle refill did the same. The shop refuses
+the sale and says why.
+
+**D2's floor-0 Small Key stays in the switch room** even though the Torch Cell's
+key is now obtainable. It is defence in depth: `check-torches.mjs` asserts a
+torch-gated key is never the only key on its floor, so if a later session moves
+the Kilnshell the deadlock cannot come back silently.
+
+Proved end to end in-engine: shell set down dry, sea to HIGH, it catches, all
+three torches lit, `d2_torches` set, the key spawns. `check-items.mjs` is 92/92
+with ten new Kilnshell assertions; `check-torches.mjs` is 5/5 and now also
+asserts the emitter is NOT the bomb.
+
+---
+
 ## WHERE 1.0 ACTUALLY IS — measured, not estimated
 
 The playthrough harness now drives **18 of 144 dungeon rooms**, all in D1, and

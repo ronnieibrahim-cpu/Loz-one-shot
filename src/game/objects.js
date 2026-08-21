@@ -350,6 +350,15 @@ defineEntity('sign', (x, y, o) => new Sign(x, y, o));
 //   ['shopItem', 7, 3, { charm: 'ballastHeart', price: 80 }]
 // --------------------------------------------------------------------------
 
+// Which counted pickups need a container before they are worth anything, and
+// what the shopkeeper says when you have not got one. Keyed on the PICKUP id
+// because that is what the shop stocks; the capacity field is the one
+// `progress.giveItem` fills when the carrying item is granted.
+const CAPACITY_FOR = {
+  bomb4: { field: 'maxBombs', deny: 'and nothing to carry them in.\nCome back with a bag.' },
+  bottle: { field: 'maxBottles', deny: 'and nowhere to put it.\nCome back with a bottle.' },
+};
+
 export class ShopItem extends Entity {
   constructor(x, y, o = {}) {
     super(x, y, o);
@@ -388,6 +397,22 @@ export class ShopItem extends Entity {
     const p = game.progress;
     // The Chandler's Eye is read here and nowhere else, so the price quoted,
     // the price checked and the price paid are all one number.
+    // AMMUNITION NEEDS SOMETHING TO GO IN. A counted pickup clamps to its
+    // capacity (`addBombs` -> `Math.min(p.maxBombs, …)`), and every capacity
+    // starts at ZERO until the item that carries it is granted. So buying
+    // bombs without the bomb bag took twenty rupees and handed over nothing at
+    // all — the shop's own version of the empty-pouch trap in CLAUDE.md, and
+    // silent, because nothing refuses a sale that pays out zero.
+    //
+    // Refused rather than fixed by granting a bag: bombs come from the BAG,
+    // which is the Coral Spire's to give. The shop restocks it; it does not
+    // replace it.
+    const cap = this.pickup && CAPACITY_FOR[this.pickup];
+    if (cap && !p[cap.field]) {
+      game.audio.sfx('deny');
+      game.say(`${this.displayName} — ${cap.deny}`);
+      return;
+    }
     const price = game.shopPrice(this.price);
     if (p.rupees < price) {
       game.audio.sfx('deny');

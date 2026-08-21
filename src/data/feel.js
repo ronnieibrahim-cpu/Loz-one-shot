@@ -265,6 +265,17 @@ export const WASH_DAMAGE = 2;
 /** qh — damage from standing in your own explosion. guessed. */
 export const EXPLOSION_SELF_DAMAGE = 2;
 
+/**
+ * qh — damage a burning Kilnshell does to an enemy standing over it, per tick.
+ * guessed.
+ *
+ * Deliberately small and repeating rather than one big hit: the shell is a
+ * TRAP you set and the tide springs, so its combat verb should reward putting
+ * it where something will be standing, not swinging it like a sword. It ticks
+ * every fourth frame while alight (see Kilnshell.update).
+ */
+export const KILNSHELL_BURN_DAMAGE = 1;
+
 // ---------------------------------------------------------------------------
 // Jumping and the one-way ledge hop
 // ---------------------------------------------------------------------------

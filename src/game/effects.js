@@ -113,19 +113,6 @@ export class Explosion extends Entity {
         game.player.takeDamage(game, EXPLOSION_SELF_DAMAGE, this, { noKnockDir: true });
       }
       game.breakTilesInRect(this.rect(), 'bomb');
-      // AND THE FIRE. `Torch.ignite` and the tile system's 'fire' action have
-      // both existed since the tiles were written, and NOTHING IN src/ HAS EVER
-      // EMITTED IT — no lamp, no carried flame, no fire projectile — so every
-      // torch in the game was unlightable and three puzzle rooms were dead.
-      // A blast is the emitter: it is the one thing the player carries that is
-      // already fire, `dryKindling` ("Bombs blast wider") is a fire-coloured
-      // BOMB charm, and it costs no new item and no new button.
-      //
-      // The blast rect is used rather than a wider one on purpose: a torch is
-      // lit by a bomb put next to it, not by one somewhere in the room, and the
-      // Dry Kindling growth above therefore extends the reach of a lighting
-      // exactly as it extends everything else.
-      game.checkTileAction(this.rect(), 'fire');
     }
     if (--this.life <= 0) this.remove = true;
   }

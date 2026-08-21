@@ -40,6 +40,7 @@ roster is organised on:
 | Ferryman's Coin | **timed** — the tide change is the trigger, not the effect |
 | Chartstone | **charted** — which rooms change, and at which level |
 | Bottled Tide | **forced** — one step, where the conch is suppressed |
+| Kilnshell | **kindled** — the sea lights it, and the sea puts it out |
 
 ---
 
@@ -86,6 +87,41 @@ be dry here and flooded there; a current can run in one half and not the other.
 
 Requires `tide.levelAt(tx, ty)`. Everything downstream reads the field, never
 the scalar.
+
+---
+
+### 1a. Kilnshell
+
+A cockle burnt down to lime. Quicklime slakes when it meets water and the
+reaction runs hot, so **the sea is what lights it**: set the shell down on
+ground the tide is coming for, sound the Conch, and it catches. Pick it up
+while it burns and it lights whatever it touches. Carry it into deep water and
+it goes out.
+
+**There is no button that makes fire.** That is the whole design, and it is why
+this is not a lamp with a seashell drawn on it. Fire is something the tide
+hands you, in a place the tide chooses, and the same tide takes it back. Every
+use is two route problems at once — a wet tile to catch it, and a dry road from
+there to whatever needs burning — which is exactly what the Anchor is for, since
+one held disc can keep a patch wet beside a road that is drying out.
+
+| Verb | What it is |
+|---|---|
+| Movement | Burn drift-tangle, the one obstacle a blade does nothing to, and open the route behind it |
+| Combat | A set shell is a trap: the tide springs it, and it burns whatever is standing over it |
+| Puzzle | Light torches — by arranging a wet tile to catch and a dry road to carry the flame along |
+
+**Where it comes from:** the Reef Hollow, a coastal cave two screens east of
+Tidewatch, reachable on foot with nothing but the Conch. It has to be early and
+outside a dungeon, because the Coral Spire's Torch Cell is the sixth room of the
+second dungeon and every other fire source in the game would be behind it.
+
+**Why it is not the Lamp and not Ember Seeds.** The Lamp is a button that makes
+fire anywhere; Ember Seeds are ammunition you throw at a thing to set it alight.
+Both let the player decide where fire happens. Here the player decides where the
+*shell* goes and the tide decides whether it lights, so the item composes with
+the Conch and the Anchor instead of replacing a puzzle with a keypress. It is
+also the only item in the roster the tide can take back off you mid-use.
 
 ---
 

@@ -272,6 +272,8 @@ export function installLegends() {
     '"': 'ledgeRockDkN', '>': 'ledgeRockDkE', '<': 'ledgeRockDkW',
     '1': 'sandbar', '2': 'tidePool', '3': 'shoal', '4': 'seafloor',
     '5': 'channel', '8': 'tideRock', '9': 'drownWall',
+    // Drift-tangle: burns, and burns only. See tiles-core.js.
+    'T': 'driftTangleDk',
   });
 
   registerLegend('house', {

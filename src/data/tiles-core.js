@@ -1303,6 +1303,19 @@ export function installCoreTiles() {
     treeSand: { art: ART.tree, pal: 'treeoak', flags: F.SOLID, underArt: 'sand' },
     palm: { art: ART.palmTree, pal: 'tree', flags: F.SOLID, underArt: 'sand' },
     bush: { art: ART.bush, pal: 'tree', flags: F.SOLID | F.BUSH, underArt: 'grass' },
+    // DRIFT-TANGLE. A mat of sun-dried weed packed into a doorway: springy,
+    // salt-stiff, and the one obstacle in the game a blade does nothing to —
+    // a sword parts it and it closes again. It burns, and only burns, which is
+    // what gives the Kilnshell a movement verb instead of two puzzle ones.
+    //
+    // It is the bush SILHOUETTE under the bog palette rather than new terrain
+    // art: CLAUDE.md says extract rather than draw, and a recoloured existing
+    // mass is the honest version of that when no sheet has the thing. It reads
+    // as weed rather than hedge because of the palette, and it is deliberately
+    // NOT given F.BUSH — that flag means "a blade clears this", and this is
+    // the tile that exists to prove a blade does not.
+    driftTangle: { art: ART.bush, pal: 'bog', flags: F.SOLID, underArt: 'grass' },
+    driftTangleDk: { art: ART.bush, pal: 'bog', flags: F.SOLID, underArt: 'rockFloorDk' },
     bushSand: { art: ART.bush, pal: 'tree', flags: F.SOLID | F.BUSH, underArt: 'sand' },
     rock: { art: ART.rock, pal: 'stone', flags: F.SOLID | F.ROCK, underArt: 'grass' },
     rockSand: { art: ART.rock, pal: 'sand', flags: F.SOLID | F.ROCK, underArt: 'sand' },
@@ -1615,6 +1628,10 @@ export function installCoreTiles() {
     bush: { cut: 'grass', bomb: 'grass', fire: 'grass', fx: 'cut', drop: 'common', sfx: 'cut' },
     bushSand: { cut: 'sand', bomb: 'sand', fire: 'sand', fx: 'cut', drop: 'common', sfx: 'cut' },
     tallgrass: { cut: 'grass', fire: 'grass', fx: 'cut', drop: 'hearts', sfx: 'cut' },
+    // FIRE AND NOTHING ELSE. No `cut`, no `bomb`, no `lift`: the whole point of
+    // the tile is that the tools the player already has do not answer it.
+    driftTangle: { fire: 'grass', fx: 'cut', sfx: 'cut', persist: true },
+    driftTangleDk: { fire: 'rockFloorDk', fx: 'cut', sfx: 'cut', persist: true },
     flowers: { cut: 'grass', fx: 'cut', sfx: 'cut' },
     flowersDark: { cut: 'grassDark', fx: 'cut', sfx: 'cut' },
     // `cut` and nothing else, on purpose: see the tiledef. It persists because

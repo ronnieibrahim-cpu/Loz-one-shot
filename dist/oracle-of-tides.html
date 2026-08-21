@@ -2649,6 +2649,17 @@ const WASH_DAMAGE = 2;
 /** qh — damage from standing in your own explosion. guessed. */
 const EXPLOSION_SELF_DAMAGE = 2;
 
+/**
+ * qh — damage a burning Kilnshell does to an enemy standing over it, per tick.
+ * guessed.
+ *
+ * Deliberately small and repeating rather than one big hit: the shell is a
+ * TRAP you set and the tide springs, so its combat verb should reward putting
+ * it where something will be standing, not swinging it like a sword. It ticks
+ * every fourth frame while alight (see Kilnshell.update).
+ */
+const KILNSHELL_BURN_DAMAGE = 1;
+
 // ---------------------------------------------------------------------------
 // Jumping and the one-way ledge hop
 // ---------------------------------------------------------------------------
@@ -3459,6 +3470,7 @@ __exports["HAZARD_DAMAGE"] = HAZARD_DAMAGE;
 __exports["PIT_DAMAGE"] = PIT_DAMAGE;
 __exports["WASH_DAMAGE"] = WASH_DAMAGE;
 __exports["EXPLOSION_SELF_DAMAGE"] = EXPLOSION_SELF_DAMAGE;
+__exports["KILNSHELL_BURN_DAMAGE"] = KILNSHELL_BURN_DAMAGE;
 __exports["JUMP_POWER"] = JUMP_POWER;
 __exports["JUMP_GRAVITY"] = JUMP_GRAVITY;
 __exports["LAND_SETTLE_RATE"] = LAND_SETTLE_RATE;
@@ -5287,19 +5299,6 @@ class Explosion extends Entity {
         game.player.takeDamage(game, EXPLOSION_SELF_DAMAGE, this, { noKnockDir: true });
       }
       game.breakTilesInRect(this.rect(), 'bomb');
-      // AND THE FIRE. `Torch.ignite` and the tile system's 'fire' action have
-      // both existed since the tiles were written, and NOTHING IN src/ HAS EVER
-      // EMITTED IT — no lamp, no carried flame, no fire projectile — so every
-      // torch in the game was unlightable and three puzzle rooms were dead.
-      // A blast is the emitter: it is the one thing the player carries that is
-      // already fire, `dryKindling` ("Bombs blast wider") is a fire-coloured
-      // BOMB charm, and it costs no new item and no new button.
-      //
-      // The blast rect is used rather than a wider one on purpose: a torch is
-      // lit by a bomb put next to it, not by one somewhere in the room, and the
-      // Dry Kindling growth above therefore extends the reach of a lighting
-      // exactly as it extends everything else.
-      game.checkTileAction(this.rect(), 'fire');
     }
     if (--this.life <= 0) this.remove = true;
   }
@@ -5344,7 +5343,7 @@ const { TILE } = __require("core/screen.js");
 const { hasItem, itemLevel, addBombs, addReefseeds, addBottles } = __require("game/progress.js");
 const { TIDE_COUNT } = __require("game/tide.js");
 const { FP_ONE, sp, toPx } = __require("core/fixed.js");
-const { KNOCK_TOOL, KNOCK_THROWN, THROW_ARC_RISE, THROW_ARC_GRAVITY, THROW_SLIDE_DECAY, THROW_SLIDE_STOP, REEFSEED_GROW_FRAMES, REEFSEED_SETTLE_FRAMES, REEFSEED_THROW_SPEED, REEFSEED_SHUDDER_EVERY, DREDGE_RANGE, DREDGE_CAST_SPEED, DREDGE_HAUL_SPEED, DREDGE_PULL_SPEED, COILROPE_RANGE, DREDGE_FLOP_FRAMES, ROD_RANGE, ROD_RANGE_HIGH, ROD_LOCK_FRAMES, ROD_RING_FRAMES, ROD_COOLDOWN_FRAMES, COIN_THROW_SPEED, COIN_SETTLE_FRAMES, COIN_GLINT_EVERY, BOTTLE_POUR_FRAMES, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, ANCHOR_THROW_SPEED, ANCHOR_RECALL_SPEED, ANCHOR_SETTLE_FRAMES, ANCHOR_CHAIN_DAMAGE, SHAKE_SMALL, SHAKE_SMALL_FRAMES } = __require("data/feel.js");
+const { KNOCK_TOOL, KNOCK_THROWN, THROW_ARC_RISE, THROW_ARC_GRAVITY, THROW_SLIDE_DECAY, THROW_SLIDE_STOP, REEFSEED_GROW_FRAMES, REEFSEED_SETTLE_FRAMES, REEFSEED_THROW_SPEED, REEFSEED_SHUDDER_EVERY, DREDGE_RANGE, DREDGE_CAST_SPEED, DREDGE_HAUL_SPEED, DREDGE_PULL_SPEED, COILROPE_RANGE, DREDGE_FLOP_FRAMES, ROD_RANGE, ROD_RANGE_HIGH, ROD_LOCK_FRAMES, ROD_RING_FRAMES, ROD_COOLDOWN_FRAMES, COIN_THROW_SPEED, COIN_SETTLE_FRAMES, COIN_GLINT_EVERY, BOTTLE_POUR_FRAMES, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, ANCHOR_THROW_SPEED, ANCHOR_RECALL_SPEED, ANCHOR_SETTLE_FRAMES, ANCHOR_CHAIN_DAMAGE, SHAKE_SMALL, SHAKE_SMALL_FRAMES, KILNSHELL_BURN_DAMAGE } = __require("data/feel.js");
 const { sprites } = __require("gfx/art.js");
 
 // --------------------------------------------------------------------------
@@ -5387,6 +5386,103 @@ class Bomb extends Entity {
   }
 }
 defineEntity('bomb', (x, y, o) => new Bomb(x, y, o));
+
+// --------------------------------------------------------------------------
+// Kilnshell
+// --------------------------------------------------------------------------
+//
+// A cockle burnt down to lime. Quicklime slakes when it meets water and the
+// reaction runs hot, so THE SEA IS WHAT LIGHTS IT — set the shell down on
+// ground the tide is coming for, sound the conch, and it catches. Carry it
+// while it burns and it lights whatever it touches. Take it into deep water
+// and it goes out.
+//
+// That is the whole item, and it is the reason it is not a lamp with a
+// seashell drawn on it: THERE IS NO BUTTON THAT MAKES FIRE. Fire is something
+// the tide hands you, somewhere the tide chooses, and the same tide takes it
+// back. Every use is two route problems at once — a wet tile to catch it, and
+// a dry road from there to whatever needs burning — which is exactly the shape
+// the Anchor is for, since one held disc can keep a patch wet beside a road
+// that is drying out.
+// --------------------------------------------------------------------------
+
+class Kilnshell extends Entity {
+  constructor(x, y, o = {}) {
+    super(x, y, o);
+    this.w = 16; this.h = 16;
+    this.hb = { x: 3, y: 6, w: 10, h: 8 };
+    this.pal = 'stone';
+    this.harmless = true;
+    this.liftable = true;               // the carry is the point; see above
+    this.lit = !!o.lit;
+    this.burn = 0;
+    this.depth = -1;
+  }
+
+  /** The flags under the shell — or under the player, while being carried. */
+  groundFlags(game) {
+    const room = game.room;
+    if (!room) return 0;
+    const p = game.player;
+    const holder = (p && p.carrying === this) ? p : this;
+    const tx = Math.floor(holder.cx / TILE), ty = Math.floor(holder.cy / TILE);
+    if (!room.inBounds(tx, ty)) return 0;
+    return room.flagsAt(tx, ty, game.tide);
+  }
+
+  update(game) {
+    this.frame++;
+    const f = this.groundFlags(game);
+
+    // SHALLOW LIGHTS IT, DEEP DROWNS IT, and the difference is the item.
+    // F.WET is F.WATER|F.DEEP, so testing it alone lit the shell and then
+    // doused it on the very next frame in the same puddle — the first cut of
+    // this did exactly that and read as "the tide does nothing".
+    //
+    // It also gives the shell all three tide levels instead of two, which is
+    // what makes it belong in this roster: a tidePool is DRY at LOW, SHALLOW at
+    // MID and DEEP at HIGH, so the same tile is where you set the shell, where
+    // you light it, and where you must not leave it.
+    const shallow = (f & F.WATER) && !(f & F.DEEP);
+    if (!this.lit && shallow) {
+      this.lit = true;
+      this.burn = 0;
+      game.audio.sfx('fire');
+      game.spawnEffect('flame', this.cx - 8, this.cy - 12);
+      game.shake(1, 6);
+    } else if (this.lit && (f & F.DEEP)) {
+      // Slaking is one reaction; drowning is the end of it.
+      this.lit = false;
+      game.audio.sfx('splash');
+      game.spawnEffect('splash', this.cx - 8, this.cy - 8);
+    }
+
+    if (!this.lit) return;
+    this.burn++;
+    // What a flame touches. Grown by half a tile so a shell set down BESIDE a
+    // torch lights it, rather than having to be standing in the same tile as
+    // one — which, a torch being solid, it cannot be.
+    if (this.burn % 4 === 0) {
+      const r = this.rect();
+      game.checkTileAction({ x: r.x - 8, y: r.y - 8, w: r.w + 16, h: r.h + 16 }, 'fire');
+      for (const e of game.entities) {
+        if (e === this || e.dead || !e.isEnemy) continue;
+        if (this.overlaps(e)) e.hurt(game, KILNSHELL_BURN_DAMAGE, null, 0);
+      }
+    }
+  }
+
+  spriteName() {
+    if (!this.lit) return 'o_kilnshell';
+    return 'o_kilnshell_lit' + (Math.floor(this.frame / 6) % 2);
+  }
+}
+defineEntity('kilnshell', (x, y, o) => new Kilnshell(x, y, o));
+
+/** The one shell in the world, wherever it is. */
+function placedKilnshell(game) {
+  return game.entities.find(e => e instanceof Kilnshell && !e.remove) || null;
+}
 
 // --------------------------------------------------------------------------
 // Dredge Line
@@ -6266,6 +6362,37 @@ const ITEMS = {
     desc: 'Swim the surface, or press to sink and walk the floor beneath it.',
     use(game, p, level) { return p.toggleCleats(game); },
   },
+  kilnshell: {
+    names: ['Kilnshell'],
+    icon: ['i_kilnshell'],
+    equippable: true,
+    desc: 'Set it down. The sea lights it, and the sea puts it out.',
+    use(game, p, level) {
+      // Being carried: the throw button already owns it, and a second verb on
+      // a held object is how you get a player who cannot put a thing down.
+      if (p.carrying instanceof Kilnshell) return false;
+      const placed = placedKilnshell(game);
+      if (placed) {
+        // Take it back, from anywhere in the world — the same courtesy the
+        // Anchor gets, and for the same reason: nothing the player can set
+        // down may be able to strand them by being somewhere else.
+        placed.remove = true;
+        game.audio.sfx('place');
+        return true;
+      }
+      // Set it on the tile the player is facing, so it can be put against a
+      // torch or into a pool without standing in either.
+      const [dx, dy] = DIR_VEC[p.dir] || [0, 1];
+      const tx = Math.floor(p.cx / TILE) + dx, ty = Math.floor(p.cy / TILE) + dy;
+      const room = game.room;
+      const ok = room && room.inBounds(tx, ty);
+      const x = ok ? tx * TILE : Math.round(p.x);
+      const y = ok ? ty * TILE : Math.round(p.y);
+      game.addEntity(new Kilnshell(x, y));
+      game.audio.sfx('place');
+      return true;
+    },
+  },
   anchor: {
     names: ["Tidewright's Anchor"],
     icon: ['i_anchor'],
@@ -6352,6 +6479,8 @@ function useEquipped(game, player, slot) {
   return !!def.use(game, player, lv);
 }
 __exports["Bomb"] = Bomb;
+__exports["Kilnshell"] = Kilnshell;
+__exports["placedKilnshell"] = placedKilnshell;
 __exports["DredgeLine"] = DredgeLine;
 __exports["ThrownObject"] = ThrownObject;
 __exports["anchorOverride"] = anchorOverride;
@@ -8027,6 +8156,15 @@ defineEntity('sign', (x, y, o) => new Sign(x, y, o));
 //   ['shopItem', 7, 3, { charm: 'ballastHeart', price: 80 }]
 // --------------------------------------------------------------------------
 
+// Which counted pickups need a container before they are worth anything, and
+// what the shopkeeper says when you have not got one. Keyed on the PICKUP id
+// because that is what the shop stocks; the capacity field is the one
+// `progress.giveItem` fills when the carrying item is granted.
+const CAPACITY_FOR = {
+  bomb4: { field: 'maxBombs', deny: 'and nothing to carry them in.\nCome back with a bag.' },
+  bottle: { field: 'maxBottles', deny: 'and nowhere to put it.\nCome back with a bottle.' },
+};
+
 class ShopItem extends Entity {
   constructor(x, y, o = {}) {
     super(x, y, o);
@@ -8065,6 +8203,22 @@ class ShopItem extends Entity {
     const p = game.progress;
     // The Chandler's Eye is read here and nowhere else, so the price quoted,
     // the price checked and the price paid are all one number.
+    // AMMUNITION NEEDS SOMETHING TO GO IN. A counted pickup clamps to its
+    // capacity (`addBombs` -> `Math.min(p.maxBombs, …)`), and every capacity
+    // starts at ZERO until the item that carries it is granted. So buying
+    // bombs without the bomb bag took twenty rupees and handed over nothing at
+    // all — the shop's own version of the empty-pouch trap in CLAUDE.md, and
+    // silent, because nothing refuses a sale that pays out zero.
+    //
+    // Refused rather than fixed by granting a bag: bombs come from the BAG,
+    // which is the Coral Spire's to give. The shop restocks it; it does not
+    // replace it.
+    const cap = this.pickup && CAPACITY_FOR[this.pickup];
+    if (cap && !p[cap.field]) {
+      game.audio.sfx('deny');
+      game.say(`${this.displayName} — ${cap.deny}`);
+      return;
+    }
     const price = game.shopPrice(this.price);
     if (p.rupees < price) {
       game.audio.sfx('deny');
@@ -15816,6 +15970,19 @@ function installCoreTiles() {
     treeSand: { art: ART.tree, pal: 'treeoak', flags: F.SOLID, underArt: 'sand' },
     palm: { art: ART.palmTree, pal: 'tree', flags: F.SOLID, underArt: 'sand' },
     bush: { art: ART.bush, pal: 'tree', flags: F.SOLID | F.BUSH, underArt: 'grass' },
+    // DRIFT-TANGLE. A mat of sun-dried weed packed into a doorway: springy,
+    // salt-stiff, and the one obstacle in the game a blade does nothing to —
+    // a sword parts it and it closes again. It burns, and only burns, which is
+    // what gives the Kilnshell a movement verb instead of two puzzle ones.
+    //
+    // It is the bush SILHOUETTE under the bog palette rather than new terrain
+    // art: CLAUDE.md says extract rather than draw, and a recoloured existing
+    // mass is the honest version of that when no sheet has the thing. It reads
+    // as weed rather than hedge because of the palette, and it is deliberately
+    // NOT given F.BUSH — that flag means "a blade clears this", and this is
+    // the tile that exists to prove a blade does not.
+    driftTangle: { art: ART.bush, pal: 'bog', flags: F.SOLID, underArt: 'grass' },
+    driftTangleDk: { art: ART.bush, pal: 'bog', flags: F.SOLID, underArt: 'rockFloorDk' },
     bushSand: { art: ART.bush, pal: 'tree', flags: F.SOLID | F.BUSH, underArt: 'sand' },
     rock: { art: ART.rock, pal: 'stone', flags: F.SOLID | F.ROCK, underArt: 'grass' },
     rockSand: { art: ART.rock, pal: 'sand', flags: F.SOLID | F.ROCK, underArt: 'sand' },
@@ -16128,6 +16295,10 @@ function installCoreTiles() {
     bush: { cut: 'grass', bomb: 'grass', fire: 'grass', fx: 'cut', drop: 'common', sfx: 'cut' },
     bushSand: { cut: 'sand', bomb: 'sand', fire: 'sand', fx: 'cut', drop: 'common', sfx: 'cut' },
     tallgrass: { cut: 'grass', fire: 'grass', fx: 'cut', drop: 'hearts', sfx: 'cut' },
+    // FIRE AND NOTHING ELSE. No `cut`, no `bomb`, no `lift`: the whole point of
+    // the tile is that the tools the player already has do not answer it.
+    driftTangle: { fire: 'grass', fx: 'cut', sfx: 'cut', persist: true },
+    driftTangleDk: { fire: 'rockFloorDk', fx: 'cut', sfx: 'cut', persist: true },
     flowers: { cut: 'grass', fx: 'cut', sfx: 'cut' },
     flowersDark: { cut: 'grassDark', fx: 'cut', sfx: 'cut' },
     // `cut` and nothing else, on purpose: see the tiledef. It persists because
@@ -16455,6 +16626,8 @@ function installLegends() {
     '"': 'ledgeRockDkN', '>': 'ledgeRockDkE', '<': 'ledgeRockDkW',
     '1': 'sandbar', '2': 'tidePool', '3': 'shoal', '4': 'seafloor',
     '5': 'channel', '8': 'tideRock', '9': 'drownWall',
+    // Drift-tangle: burns, and burns only. See tiles-core.js.
+    'T': 'driftTangleDk',
   });
 
   registerLegend('house', {
@@ -19062,23 +19235,40 @@ function installCaves() {
       '0,0,0': {
         map: [
           '##########',
-          '#........#',
+          '#.....#..#',
+          '#.4444#TT#',
+          '#.4444..o#',
           '#.4444...#',
-          '#.4444.o.#',
-          '#.4444...#',
-          '#........#',
+          '#.222....#',
           '#....C...#',
           '##########',
         ],
         entities: [
           ['pickup', 3, 3, { kind: 'rupee20' }],
+          // THE KILNSHELL, and the niche that shows what it is for.
+          //
+          // The chest sits in the open; the rupees behind the drift-tangle do
+          // not. Tangle is the one obstacle a blade does nothing to, so the
+          // niche is the item's movement verb stated in one screen: the sea
+          // lights the shell in the seafloor patch two tiles away, you carry
+          // it burning, and the weed goes. Nothing else in the room needs it,
+          // which is the point of putting it HERE — the verb is taught where
+          // failing to work it out costs twenty rupees, not a dungeon.
+          ['chest', 7, 5, { big: true, item: 'kilnshell', level: 1 }],
+          ['pickup', 7, 1, { kind: 'rupee20' }],
           // Deeper into the seafloor patch than the rupee, and the room already
           // explains itself: `4` is seafloor, walkable at LOW and nowhere else,
           // so the wall carving IS the puzzle. No flag, no gate, no checker
           // clause — just a tide the player has to be holding when they walk in.
           ['pickup', 2, 2, { kind: 'heartPiece' }],
         ],
-        readable: [[7, 3, 'Scratched into the rock: "When the sea withdraws, walk where fish swam."']],
+        readable: [
+          [8, 3, 'Scratched into the rock: "When the sea withdraws, walk where fish swam."'],
+          // The tide pool at 2..4,5 is the shell's classroom: dry at LOW to set
+          // it down on, shallow at MID to light it, and deep at HIGH to lose it
+          // in. All three states of one tile, which is the item in miniature.
+          [1, 5, 'Older, and lower down: "Lime drinks the sea and spits fire.\nDrown it and it sulks."'],
+        ],
         warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 6, ry: 7, px: 64, py: 64, dir: 'down' } }],
       },
     },
@@ -33655,6 +33845,81 @@ const GEAR_ART = {
     ...33.3113.33...
     ....33111133....
     .....333333.....` },
+  // THE KILNSHELL. A cockle burnt to lime: ribbed fan, hinge at the bottom,
+  // sat low in the cell so it reads as resting rather than floating. The
+  // outline is computed by dilation on a PADDED grid — see the title
+  // wordmark's note in docs/HANDOFF.md for what happens without the pad.
+  i_kilnshell: { pal: 'stone', art: `
+    ................
+    ................
+    ................
+    ...3333333333...
+    ..332000000233..
+    ..321221221223..
+    ..321221221223..
+    ..321221221223..
+    ..331221221233..
+    ...3122122123...
+    ...3322122133...
+    ....33212233....
+    .....331233.....
+    ......3333......
+    ................
+    ................` },
+  o_kilnshell: { pal: 'stone', art: `
+    ................
+    ................
+    ................
+    ................
+    ................
+    ...3333333333...
+    ..332000000233..
+    ..321221221223..
+    ..321221221223..
+    ..321221221223..
+    ..331221221233..
+    ...3122122123...
+    ...3322122133...
+    ....33212233....
+    .....331233.....
+    ......3333......` },
+  // Alight. The flame touches the shell rather than hovering over it: a gap
+  // of one row puts an outline between them and the fire reads as a
+  // separate object. Two frames, differing by well over three pixels.
+  o_kilnshell_lit0: { pal: 'fire', art: `
+    ......3333......
+    .....331133.....
+    .....310013.....
+    .....310013.....
+    .....331133.....
+    ...3333333333...
+    ..332000000233..
+    ..321221221223..
+    ..321221221223..
+    ..321221221223..
+    ..331221221233..
+    ...3122122123...
+    ...3322122133...
+    ....33212233....
+    .....331233.....
+    ......3333......` },
+  o_kilnshell_lit1: { pal: 'fire', art: `
+    ......333.......
+    .....33133......
+    ....3311133.....
+    ....3100113.....
+    ....3310113.....
+    ...3333333333...
+    ..332000000233..
+    ..321221221223..
+    ..321221221223..
+    ..321221221223..
+    ..331221221233..
+    ...3122122123...
+    ...3322122133...
+    ....33212233....
+    .....331233.....
+    ......3333......` },
   i_bomb_lit: { pal: 'i_bomb_lit', art: `
     ................
     .........33.....

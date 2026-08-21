@@ -82,23 +82,40 @@ export function installCaves() {
       '0,0,0': {
         map: [
           '##########',
-          '#........#',
+          '#.....#..#',
+          '#.4444#TT#',
+          '#.4444..o#',
           '#.4444...#',
-          '#.4444.o.#',
-          '#.4444...#',
-          '#........#',
+          '#.222....#',
           '#....C...#',
           '##########',
         ],
         entities: [
           ['pickup', 3, 3, { kind: 'rupee20' }],
+          // THE KILNSHELL, and the niche that shows what it is for.
+          //
+          // The chest sits in the open; the rupees behind the drift-tangle do
+          // not. Tangle is the one obstacle a blade does nothing to, so the
+          // niche is the item's movement verb stated in one screen: the sea
+          // lights the shell in the seafloor patch two tiles away, you carry
+          // it burning, and the weed goes. Nothing else in the room needs it,
+          // which is the point of putting it HERE — the verb is taught where
+          // failing to work it out costs twenty rupees, not a dungeon.
+          ['chest', 7, 5, { big: true, item: 'kilnshell', level: 1 }],
+          ['pickup', 7, 1, { kind: 'rupee20' }],
           // Deeper into the seafloor patch than the rupee, and the room already
           // explains itself: `4` is seafloor, walkable at LOW and nowhere else,
           // so the wall carving IS the puzzle. No flag, no gate, no checker
           // clause — just a tide the player has to be holding when they walk in.
           ['pickup', 2, 2, { kind: 'heartPiece' }],
         ],
-        readable: [[7, 3, 'Scratched into the rock: "When the sea withdraws, walk where fish swam."']],
+        readable: [
+          [8, 3, 'Scratched into the rock: "When the sea withdraws, walk where fish swam."'],
+          // The tide pool at 2..4,5 is the shell's classroom: dry at LOW to set
+          // it down on, shallow at MID to light it, and deep at HIGH to lose it
+          // in. All three states of one tile, which is the item in miniature.
+          [1, 5, 'Older, and lower down: "Lime drinks the sea and spits fire.\nDrown it and it sulks."'],
+        ],
         warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 6, ry: 7, px: 64, py: 64, dir: 'down' } }],
       },
     },

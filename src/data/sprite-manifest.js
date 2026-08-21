@@ -50,6 +50,7 @@ export const REQUIRED_SPRITES = {
     'i_map', 'i_chart', 'i_unknown',
     'i_lens', 'i_lens2', 'i_bellows', 'i_reefseed', 'i_dredge', 'i_rod', 'i_coin', 'i_bottle',
     'i_anchor', 'o_anchor',
+    'i_kilnshell', 'o_kilnshell', 'o_kilnshell_lit0', 'o_kilnshell_lit1',
     // scrimshaw (P7): both hand-drawn, since no Oracle sheet has a bone charm
     'i_charm',
   ],

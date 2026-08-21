@@ -429,6 +429,36 @@ rule one level down: `boulderCracked` carries neither `F.ROCK` nor `F.HEAVY`,
 because a boulder you can also lift or also drag is gated on whichever of the
 three you happen to be holding.
 
+**BOMBS DO NOT LIGHT TORCHES, AND MAKING THEM DO IT WAS A FIDELITY BREAK, NOT A
+FIX.** The first answer to the dead torch action was to have the blast emit
+`'fire'`. It worked, every checker went green, and it was wrong twice over. The
+Oracle games light torches with the Lamp and with Ember Seeds and never with a
+bomb, so Goal 1 rules it out on its own; and it put the answer to the Coral
+Spire's floor-0 puzzle inside the Coral Spire's floor 1, behind the very door
+that puzzle's key opens. **When a missing mechanic has no obvious owner, the
+shape of the fix is a new item, not a new power bolted to an old one** — and the
+tell that you are bolting is that the item you are extending is one the player
+gets LATER than the puzzle you are unblocking.
+
+**F.WET IS F.WATER|F.DEEP, AND AN ITEM THAT CARES ABOUT WATER ALMOST CERTAINLY
+CARES WHICH.** The Kilnshell lights in shallow water and drowns in deep. Written
+against `F.WET` it lit itself and doused itself in the same puddle on
+consecutive frames, and read from outside as "the tide does nothing to it". The
+three-state version — dry, shallow, deep — is also what makes the item belong to
+this game rather than to any game with a lamp in it: one tidePool tile is where
+you set the shell down, where you light it, and where you must not leave it.
+Check the tide table of the tile you are designing against (`resolveTile` at all
+three levels) BEFORE writing the rule; `dBasin` is dry at LOW *and* MID and only
+shallow at HIGH, and a puzzle built on the wrong assumption is unsolvable in a
+way that looks like a broken item.
+
+**AMMUNITION WITH NO CONTAINER IS SOLD HAPPILY AND DELIVERS NOTHING.** Every
+counted pickup clamps to its capacity and every capacity starts at zero, so the
+shop's twenty-rupee bombs took the money and added zero bombs to a player with
+no bag — and the bottle refill did the same, denying only AFTER the sale. The
+shop now refuses the sale and says why. Bombs come from the bag, which is a
+dungeon's to give; a shop restocks a container, it does not replace one.
+
 **A VERB THE TILE SYSTEM UNDERSTANDS AND NOTHING EVER EMITS IS INVISIBLE TO
 EVERY CHECKER IN THE REPO.** `Torch.ignite` is reachable only from
 `checkTileAction(rect, 'fire', …)`. The tile system knew the action, effects.js
