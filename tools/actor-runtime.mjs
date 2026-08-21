@@ -17,6 +17,9 @@
 
 export async function installRuntime() {
   const ent = await import('/src/game/entity.js');
+  // For `anchorOverride`: where the Anchor actually bit, read out of the live
+  // tide field rather than predicted from the throw's arc.
+  const items = await import('/src/game/items.js');
   const prog = await import('/src/game/progress.js');
   const rngMod = await import('/src/core/rng.js');
   const screen = await import('/src/core/screen.js');
@@ -710,6 +713,164 @@ export async function installRuntime() {
     }
   }
 
+  /**
+   * EQUIP AN ITEM ONTO A BUTTON, through the real pause menu.
+   *
+   *   ['equip', 'anchor', 'B']
+   *
+   * `Game.autoEquip` only fills an EMPTY slot (src/game/game.js), so the first
+   * two equippables a new game is given — the sword and the conch — take A and
+   * B, and every item found after that lands on no button at all. That is
+   * correct game behaviour and it is invisible to every replay in the repo,
+   * because replays pin `equipA`/`equipB` in their setup. A playthrough may not:
+   * it was handed nothing, so the Anchor came out of its chest bound to
+   * nothing, and `dAnchor` reported "could not land from any approach" when the
+   * truth was "there is no button to press".
+   *
+   * The cursor is walked rather than computed. `updateItems` moves it with the
+   * usual grid wrap (left at column 0 jumps to the row's end, up/down wrap
+   * vertically), so rather than reimplement that arithmetic — the private-model
+   * mistake this repo keeps paying for — this reads `menu.cursor` back every
+   * frame and steps toward the target until the engine's own cursor agrees.
+   */
+  function* dEquip(id, slot, maxF) {
+    const g = window.__game;
+    const want = (slot || 'B').toUpperCase();
+    const key = want === 'A' ? 'equipA' : 'equipB';
+    if (g.progress[key] === id) return;
+    const COLS = 5;
+    // Open the menu.
+    for (let i = 0; i < 60 && g.mode !== 'menu'; i++) yield (i % 8 === 0) ? BIT.start : 0;
+    if (g.mode !== 'menu') throw new Error('equip: the menu would not open');
+    const m = g.menu;
+    const idx = () => m.items.findIndex(it => it.id === id);
+    if (idx() < 0) throw new Error(`equip: ${id} is not in the item list`);
+    for (let f = 0; f < (maxF || 400); f++) {
+      const t = idx();
+      const c = m.cursor;
+      if (c === t) {
+        yield want === 'A' ? BIT.a : BIT.b;
+        yield 0;
+        break;
+      }
+      const cr = Math.floor(c / COLS), tr = Math.floor(t / COLS);
+      if (cr !== tr) yield (tr > cr) ? BIT.down : BIT.up;
+      else yield (t > c) ? BIT.right : BIT.left;
+      yield 0;                                  // release: `pressed` is an edge
+    }
+    // Close it again and hand control back to the field.
+    for (let i = 0; i < 60 && g.mode === 'menu'; i++) yield (i % 8 === 0) ? BIT.start : 0;
+    yield* dWait(4);
+    if (g.progress[key] !== id) {
+      throw new Error(`equip: ${id} is still not on ${want} (A=${g.progress.equipA}, B=${g.progress.equipB})`);
+    }
+  }
+
+  /**
+   * ANCHOR PLACEMENT — the verb that was missing, and the reason the
+   * playthrough stopped inside D1 for the whole life of this harness.
+   *
+   *   ['anchor', tx, ty]   sink the Tidewright's Anchor on tile (tx, ty)
+   *   ['unanchor']         recall it, from anywhere in the world
+   *
+   * THE ANCHOR IS A THROW, NOT A TILE PICKER. `items.js` spawns it moving in
+   * the player's facing direction on an arc; it bites where it falls, or short
+   * if it hits a wall. So "place it at (tx, ty)" is really "stand a throw's
+   * length away, face it, and press the button", and the throw's length is not
+   * a number this file is allowed to hard-code — ANCHOR_THROW_SPEED and the
+   * arc constants live in src/data/feel.js and are exactly the kind of value
+   * that gets retuned by a feel session that has never heard of this harness.
+   *
+   * So this does not PREDICT the landing tile, it VERIFIES it. Each candidate
+   * standing tile is tried for real, and the result is read back out of the
+   * live tide field via `anchorOverride`. A throw that lands somewhere else is
+   * recalled and the next candidate is tried. That is slower than arithmetic
+   * and it cannot drift when the constants move, which is the trade this repo
+   * makes everywhere else: ask the engine, do not model it.
+   */
+  function* dAnchor(tx, ty, maxF) {
+    const g = window.__game;
+    const held = () => items.anchorOverride(g);
+    // Already sitting exactly where it was asked for: nothing to do.
+    const cur = held();
+    if (cur && cur.tx === tx && cur.ty === ty) return;
+    if (cur) yield* dUnanchor(120);
+
+    // Candidates: every cardinal approach, at every plausible throw length.
+    // Nearest first, because a short throw is the one least likely to be
+    // stopped by scenery between the player and the target.
+    const cands = [];
+    for (const r of [2, 3, 1]) {
+      for (const [dname, dx, dy] of [['up', 0, -1], ['down', 0, 1], ['left', -1, 0], ['right', 1, 0]]) {
+        cands.push({ dname, sx: tx - dx * r, sy: ty - dy * r });
+      }
+    }
+    const budget = maxF || 1600;
+    let spent = 0;
+    // Why each approach was rejected. Without this the directive can only say
+    // "no approach worked", which is true of a flooded room, an unreachable
+    // standing tile and an anchor that is not on a button — three completely
+    // different bugs with one message.
+    const why = [];
+    for (const c of cands) {
+      if (spent >= budget) { why.push('budget'); break; }
+      const p = g.player;
+      if (!p) { why.push('no player'); continue; }
+      if (!passable(g, p, c.sx, c.sy)) { why.push(`${c.sx},${c.sy} ${c.dname}: not standable`); continue; }
+      // Walk there. If the tile cannot be reached this leg, try the next one.
+      let before = g.frame;
+      yield* dGoto(c.sx, c.sy, 300);
+      spent += g.frame - before;
+      const at = playerTile(g.player);
+      if (at.tx !== c.sx || at.ty !== c.sy) {
+        why.push(`${c.sx},${c.sy} ${c.dname}: walk ended at ${at.tx},${at.ty}`); continue;
+      }
+
+      // Face the target. A held direction with nothing in the way turns the
+      // player without moving him off the tile only if he is already against
+      // something, so this faces by tapping and then re-checks the tile.
+      before = g.frame;
+      for (let i = 0; i < 6; i++) yield BIT[c.dname];
+      yield* dWait(2);
+      const b = slotBit('anchor');
+      if (!b) { spent += g.frame - before; why.push('anchor is on no button'); continue; }
+      yield b;
+      // Let it fly and bite. ANCHOR_SETTLE_FRAMES plus the arc is well under
+      // this; the loop exits the moment the override appears.
+      for (let i = 0; i < 90 && !held(); i++) yield 0;
+      spent += g.frame - before;
+      const o = held();
+      if (o && o.tx === tx && o.ty === ty) return;
+      // Wrong tile, or refused outright ("There is nowhere to stand if it bites
+      // here"). Take it back and try the next approach.
+      why.push(`${c.sx},${c.sy} ${c.dname}: bit ${o ? o.tx + ',' + o.ty : 'nothing'}`);
+      if (o) yield* dUnanchor(120);
+      yield* dDialogueClear(30);
+    }
+    const p2 = g.player, at2 = p2 ? playerTile(p2) : null;
+    throw new Error(`anchor: could not land on ${tx},${ty}. room ${g.mapId} ${g.room && g.room.key}`
+      + `, player ${at2 ? at2.tx + ',' + at2.ty : '?'}, tide ${g.tide.level}`
+      + `, anchor slot ${slotBit('anchor') ? 'yes' : 'NO'} :: ${why.join(' | ')}`);
+  }
+
+  function* dUnanchor(maxF) {
+    const g = window.__game;
+    const b = slotBit('anchor');
+    if (!b) return;
+    if (!items.anchorOverride(g)) return;
+    yield b;
+    for (let i = 0; i < (maxF || 120) && items.anchorOverride(g); i++) yield 0;
+  }
+
+  /** Mash through whatever box the last action opened, if any. */
+  function* dDialogueClear(maxF) {
+    const g = window.__game;
+    for (let f = 0; f < (maxF || 60); f++) {
+      if (!g.dialogue.active) return;
+      yield (f % 6 === 0) ? BIT.a : 0;
+    }
+  }
+
   function* runPlan(steps) {
     const g = window.__game;
     for (let si = 0; si < steps.length; si++) {
@@ -729,6 +890,9 @@ export async function installRuntime() {
       else if (kind === 'use') yield* dUse(a[0], a[1], a[2]);
       else if (kind === 'travel') yield* dTravel(a[0], a[1], a[2]);
       else if (kind === 'loot') yield* dLoot(a[0]);
+      else if (kind === 'equip') yield* dEquip(a[0], a[1], a[2]);
+      else if (kind === 'anchor') yield* dAnchor(a[0], a[1], a[2]);
+      else if (kind === 'unanchor') yield* dUnanchor(a[0]);
       else throw new Error('unknown replay directive: ' + kind);
       // A trace of where each directive left the player. Recording prints it;
       // it is how you find out that step 9 never reached the room step 10

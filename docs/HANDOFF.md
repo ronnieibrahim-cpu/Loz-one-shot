@@ -429,6 +429,29 @@ rule one level down: `boulderCracked` carries neither `F.ROCK` nor `F.HEAVY`,
 because a boulder you can also lift or also drag is gated on whichever of the
 three you happen to be holding.
 
+**`check-anchor.mjs` PROVES REACH AND CALLS IT A CROSSING, and for the Iron
+Pipe the two are different tiles.** It reports "d1 0,4,2: one anchor placement
+crosses it — stand 0,3 at LOW, bite 1,3". The throw really does carry two
+tiles, so 1,3 is reachable and that half is right. But the bite holds a
+RADIUS-2 PATCH, and where the patch lands decides the room. Probed in the live
+engine at MID, walkable row then PIT flags:
+
+    bite 1,3 -> walk ....#.....   pit ----------    x=4 is a WALL
+    bite 2,3 -> walk ..........   pit ----------    the only clean crossing
+    bite 3,3 -> walk ..........   pit -----P----    an open pit at x=5
+    bite 4,3 -> walk .#........   pit -----PP---    a wall and two pits
+
+The tool's own named solution does not cross the room. Two lessons, and the
+second is the expensive one. First: a patch-shaped verb has to be proved by
+where the PATCH falls, not by where the throw reaches. Second, and general —
+**F.PIT is not solid, so "walkable" is not "safe".** `canOccupy` answers true
+for a pit because the engine lets the player walk in and then punishes him;
+that is why `tools/lib/collision.mjs` carries ROUTE_AVOID at all. A checker
+that asks only "can something stand here" will happily route a player through
+a hole. The playthrough found this by LOSING SIX QUARTER-HEARTS and spending
+2,139 frames in a corridor it never left, which is exactly the kind of thing no
+model reports and a run cannot hide.
+
 **A CHECKER THAT ARRIVES ON A BRANCH IS AS STALE AS THE BRANCH IT ARRIVED ON,
 and git will not say so, because a new file conflicts with nothing.** Merging
 the progression branch after the collision-consolidation branch landed

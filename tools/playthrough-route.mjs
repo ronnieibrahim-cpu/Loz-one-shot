@@ -183,6 +183,59 @@ export const ROUTE = [
   ['dialogue', 400],
   ['loot', 600],
   ['wait', 60],
+
+  // ---------------------------------------------------------------- d1 0,4,2
+  // THE IRON PIPE — the first gate the Anchor's own verb opens, and the first
+  // thing past this harness's old stopping point.
+  //
+  // The dungeon's primitive, "wells near": sound the sea to LOW, sink the iron
+  // in the well beside you so that well STAYS down, then conch up to MID so the
+  // drain ahead fills. tools/check-anchor.mjs names the placement — stand 0,3
+  // at LOW, bite 1,3 — but it names it from a MODEL of the throw ('throw reach
+  // 2 whole tiles'), and a model is not what lands the anchor. The `anchor`
+  // directive tries every cardinal approach for real and reads the bite back
+  // out of the live tide field, so if the arc will not stop on that tile the
+  // run says so instead of quietly agreeing with the model.
+  // ORDER IS THE PUZZLE. The sea is already at LOW — the Grotto Mouth's two
+  // soundings put it there and nothing since has moved it — so the iron goes
+  // down FIRST, while the well beside you is still drained, and the conch
+  // comes after. Sounding first was this route's own first bug: it took the
+  // sea to MID before the placement, which floods row 3 and leaves nowhere to
+  // stand to make the throw, and the directive correctly reported that it
+  // could not land on 1,3 from any approach.
+  // The Anchor came out of its chest on NO button: autoEquip fills an empty
+  // slot and the sword and the conch took both. So equip it the way a player
+  // does, through the pause menu, onto A — the conch keeps B because the next
+  // three steps alternate between the two.
+  ['equip', 'anchor', 'A', 400],
+  ['exit', 'right', 300],
+  // BITE 2,3, AND ONLY 2,3. Probed tile by tile in the live engine, at MID,
+  // with the iron sunk at each candidate — walkable row, then PIT flags:
+  //
+  //   bite 1,3 -> walk ....#.....   pit ----------   x=4 is a WALL
+  //   bite 2,3 -> walk ..........   pit ----------   clean
+  //   bite 3,3 -> walk ..........   pit -----P----   open pit at x=5
+  //   bite 4,3 -> walk .#........   pit -----PP---   wall and two pits
+  //
+  // The patch is a radius-2 square, so it holds five tiles: centred on 2 it
+  // covers x=0..4, which is exactly the run of wells and stops short of the
+  // first drain. Centre it one tile further in and the patch keeps a DRAIN at
+  // LOW, and a drain at LOW is an open pit — which is not solid, so the engine
+  // lets the player walk into it and then punishes him. That is what cost this
+  // run six quarter-hearts and 2,139 frames in a corridor it never left.
+  //
+  // tools/check-anchor.mjs names 1,3 for this room. It is right about REACH and
+  // wrong about the crossing: see docs/HANDOFF.md.
+  ['anchor', 2, 3, 1600],
+  ['use', 'conch', 1, 120],
+  // Walk the pipe east on foot rather than asking `travel` for the screen.
+  // `travel` re-plans across rooms every leg, and with the iron holding one
+  // half of this corridor at a level the other half is not at, it found a
+  // route out through the WEST wing and left the run in 2,3 — a real path, and
+  // not this one. A gate crossed by a held tide is a corridor, so it is walked
+  // as a corridor.
+  ['goto', 9, 3, 900],
+  ['exit', 'right', 300],
 ];
 
 /**
@@ -211,10 +264,14 @@ export const GOAL = {
   // The furthest this route drives the actor. Failing to REACH this is a
   // regression; reaching further (once the Anchor-placement verb exists) is
   // the next extension, not a discrepancy to paper over.
-  room: 'd1/0,3,2',
+  room: 'd1/0,5,2',
   // Not a game blocker — see the comment above. Named here so a future
   // extension of the route knows exactly what capability it is adding.
-  needsVerb: 'anchor placement: sink at a chosen tile, walk, recall',
+  // ANCHOR PLACEMENT IS NO LONGER THE MISSING VERB — the run sinks the iron,
+  // sounds the conch and walks the Iron Pipe for real. What stops it now is the
+  // east wing's third key and the boss: `dFight` can trade blows with ordinary
+  // enemies, and nothing here has ever fought Gohmaraq or carried a Boss Key.
+  needsVerb: 'a boss fight, and the third Small Key behind the Clawcrab door',
   keysNeeded: 2,
   keysObtainable: 2,
 };
