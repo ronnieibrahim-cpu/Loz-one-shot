@@ -429,6 +429,41 @@ rule one level down: `boulderCracked` carries neither `F.ROCK` nor `F.HEAVY`,
 because a boulder you can also lift or also drag is gated on whichever of the
 three you happen to be holding.
 
+**A VERB THE TILE SYSTEM UNDERSTANDS AND NOTHING EVER EMITS IS INVISIBLE TO
+EVERY CHECKER IN THE REPO.** `Torch.ignite` is reachable only from
+`checkTileAction(rect, 'fire', …)`. The tile system knew the action, effects.js
+had a flame, a charm called Dry Kindling was painted fire-coloured — and no call
+site in `src/` ever passed `'fire'`. Every torch in the game was scenery, and
+three puzzle rooms were dead.
+
+One of them deadlocked the game. The Coral Spire has two keys and two locked
+doors; the torch key's door is the Stair Coil, the ONLY way to floor 1. So the
+Lens, the Bombs, the Boss Key and Anemos sat behind a key that needed a fire
+nothing could make — and the Bombs gate the Sunken Marsh and the Cliffs of Kell,
+so D3, D4 and the Maku Tree's road to the Keep fell with them. A brand new game
+could reach the second dungeon's entrance hall and stop for ever.
+
+Why nothing saw it: `walk-dungeons.mjs` counts a puzzle-reward key as available
+once its ROOM is reachable — deliberately, because proving puzzles solvable is
+another tool's job — and `solve-switches.mjs` covers only the nine push-block
+rooms. The torch equivalent had never been written. **Every puzzle TYPE needs a
+tool that proves it solvable, or the type is unwatched**, and an unwatched type
+is not a missing test, it is a room that silently cannot be finished.
+
+The fix was three lines and one key: the blast now emits `'fire'` (a bomb is the
+one thing the player carries that is already fire), and D2's floor-0 Small Key
+moved to the switch room that was already there, so the Torch Cell becomes a
+room you find early, cannot answer, and come back to — which is the shape it
+always had. `tools/check-torches.mjs` now watches both halves.
+
+**AND THE CHECKER'S OWN FIRST DRAFT WAS FOOLED BY A COMMENT.** It grepped `src/`
+for a call passing `'fire'` and passed happily against a build whose only
+emitter was `// game.checkTileAction(this.rect(), 'fire');`. Found by deleting
+the emitter on purpose and watching the tool stay green. **Test a new checker by
+reintroducing the bug it was written for**; one that has never failed has proved
+nothing, and a source-grepping tool must strip comments before it believes what
+it reads.
+
 **A HARNESS THAT WALKS OUT OF A BOSS ARENA REPORTS A FLAWLESS VICTORY.** The
 first cut of `dBoss` strafed on a fixed up/down cycle whenever the boss was
 shelled. A boss room has exits, and leaving one wipes every non-player entity in

@@ -1028,7 +1028,21 @@ export function installDungeonsA() {
           flag: 'd2_034_puzzle',
           reward: {
             openDoors: [[4, 1]],
-            say: 'Water drains out of a niche, and the door lifts.',
+            // THE FLOOR-0 SMALL KEY LIVES HERE NOW, and this is a completability
+            // fix rather than a design preference. It used to be the only floor-0
+            // key and it sat behind the Torch Cell's flames — but nothing lights a
+            // torch before the Coral Spire's own Bombs, and the Bombs are on floor
+            // 1, behind the Stair Coil's locked door, which is the door this key
+            // opens. Two keys, two doors, and the first one locked behind an item
+            // sealed inside it: the dungeon deadlocked at its own entrance and
+            // took D3, D4 and the road to the Keep down with it, because the
+            // Bombs gate the Marsh and the Cliffs.
+            //
+            // The Torch Cell KEEPS its key. It is simply no longer the only one:
+            // it becomes a room you find early, cannot answer yet, and come back
+            // to with bombs — which is what that room was always shaped like.
+            spawn: [['pickup', 4, 2, { kind: 'key' }]],
+            say: 'Water drains out of a niche, and the door lifts.\nSomething small rattles loose with it.',
           },
         },
         readable: [
