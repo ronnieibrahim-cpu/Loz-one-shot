@@ -1035,6 +1035,7 @@ export async function installRuntime() {
     if (setup.flags) for (const k of setup.flags) g.progress.flags[k] = true;
     if (setup.tide != null) g.tide.setLevel(setup.tide, { instant: true });
     window.__rp.probes = setup.probes || [];
+    window.__rp._god = !!setup.godMode;
     const e = setup.enter;
     g.enterMap(e[0], e[1], e[2], e[3], e[4], e[5], e[6], { instant: true });
     // Start from a settled screen: no fade, no banner, no held item.
@@ -1344,6 +1345,19 @@ export async function installRuntime() {
           if (mask === null) { this._done = true; break; }
         }
         this._input.setMask(mask);
+        // GOD MODE. Off unless a setup asks for it, and it is NOT a proof of
+        // difficulty — a run with this on says nothing about whether the game
+        // is fair, only about whether it is STRUCTURALLY completable: whether
+        // every room, key, gate, boss and essence can actually be reached and
+        // resolved in order. Kept honest by `state().godMode`, which every tool
+        // that consumes a run must report; a green run with this flag set and
+        // unreported would be the most misleading artifact in the repo.
+        if (this._god) {
+          const g = window.__game;
+          const p = g.player;
+          if (p) p.invuln = Math.max(p.invuln || 0, 600);
+          if (g.progress) g.progress.hearts = g.progress.maxHearts;
+        }
         window.__harness.step(1);
         this._push(mask);
       }
@@ -1360,6 +1374,7 @@ export async function installRuntime() {
         this._curRoomEntry = null;
       }
       return {
+        godMode: !!this._god,
         input: this._log, frames: this._frames, trail: this._trail,
         trace: this._trace || [], state: snapshot(),
         span: this._span, audit: this._audit || null,

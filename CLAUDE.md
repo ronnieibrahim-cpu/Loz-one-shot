@@ -211,6 +211,7 @@ they are also how a future session finds which sheet a tile came from.
 | `node tools/check-music.mjs` | Every track's order references only patterns that exist, no melodic channel holds a note that was never struck, every note is inside the Game Boy's real frequency range for its channel, and the noise channel carries only percussion |
 | `node tools/replay.mjs` | Movement and combat are frame-identical to a recorded baseline |
 | `node tools/check-build.mjs` | The shipped single-file build boots and plays from a `file://` URL |
+| `node tools/check-bosses.mjs` | Every dungeon's declared boss actually spawns in its declared boss room, and its weak point OPENS at its design tide — so no boss is unkillable by construction, which no model in this table can see because none of them fights anything. Runs in GOD MODE and says so: it measures the fights, it does not yet claim them |
 | `node tools/check-playthrough.mjs` | A new game, driven in the real engine with no items granted, no warps and no flags set from outside, gets as far through the world as the world allows — and the thing currently stopping it is still the thing that was stopping it |
 | `node tools/test.mjs` | Everything else |
 
