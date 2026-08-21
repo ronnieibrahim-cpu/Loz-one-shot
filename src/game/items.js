@@ -82,19 +82,15 @@ defineEntity('bomb', (x, y, o) => new Bomb(x, y, o));
 // Kilnshell
 // --------------------------------------------------------------------------
 //
-// A cockle burnt down to lime. Quicklime slakes when it meets water and the
-// reaction runs hot, so THE SEA IS WHAT LIGHTS IT — set the shell down on
-// ground the tide is coming for, sound the conch, and it catches. Carry it
-// while it burns and it lights whatever it touches. Take it into deep water
-// and it goes out.
+// A cockle burnt down to lime. Strike it and it takes: set one down and it is
+// already alight, burning what it touches — torches, drift-tangle, and anything
+// standing over it.
 //
-// That is the whole item, and it is the reason it is not a lamp with a
-// seashell drawn on it: THERE IS NO BUTTON THAT MAKES FIRE. Fire is something
-// the tide hands you, somewhere the tide chooses, and the same tide takes it
-// back. Every use is two route problems at once — a wet tile to catch it, and
-// a dry road from there to whatever needs burning — which is exactly the shape
-// the Anchor is for, since one held disc can keep a patch wet beside a road
-// that is drying out.
+// It is a straightforward fire source on a button, which is what a fire item
+// should be. The tide still has one word in it, and only one: DEEP WATER PUTS
+// IT OUT. That keeps it honest with the rest of the roster (the sea is the
+// thing every item here negotiates with) without turning "light a torch" into a
+// route puzzle the player has to solve before they can use their own item.
 // --------------------------------------------------------------------------
 
 export class Kilnshell extends Entity {
@@ -125,24 +121,10 @@ export class Kilnshell extends Entity {
     this.frame++;
     const f = this.groundFlags(game);
 
-    // SHALLOW LIGHTS IT, DEEP DROWNS IT, and the difference is the item.
-    // F.WET is F.WATER|F.DEEP, so testing it alone lit the shell and then
-    // doused it on the very next frame in the same puddle — the first cut of
-    // this did exactly that and read as "the tide does nothing".
-    //
-    // It also gives the shell all three tide levels instead of two, which is
-    // what makes it belong in this roster: a tidePool is DRY at LOW, SHALLOW at
-    // MID and DEEP at HIGH, so the same tile is where you set the shell, where
-    // you light it, and where you must not leave it.
-    const shallow = (f & F.WATER) && !(f & F.DEEP);
-    if (!this.lit && shallow) {
-      this.lit = true;
-      this.burn = 0;
-      game.audio.sfx('fire');
-      game.spawnEffect('flame', this.cx - 8, this.cy - 12);
-      game.shake(1, 6);
-    } else if (this.lit && (f & F.DEEP)) {
-      // Slaking is one reaction; drowning is the end of it.
+    // The one thing the sea still decides. A shell carried into deep water
+    // gutters out and has to be set down and struck again — the tide taking
+    // something back is the one note this item keeps from the roster it joins.
+    if (this.lit && (f & F.DEEP)) {
       this.lit = false;
       game.audio.sfx('splash');
       game.spawnEffect('splash', this.cx - 8, this.cy - 8);
@@ -1079,8 +1061,10 @@ export const ITEMS = {
       const ok = room && room.inBounds(tx, ty);
       const x = ok ? tx * TILE : Math.round(p.x);
       const y = ok ? ty * TILE : Math.round(p.y);
-      game.addEntity(new Kilnshell(x, y));
-      game.audio.sfx('place');
+      // ALIGHT ON ARRIVAL. Pressing the button is striking it.
+      game.addEntity(new Kilnshell(x, y, { lit: true }));
+      game.audio.sfx('fire');
+      game.spawnEffect('flame', x, y - 4);
       return true;
     },
   },

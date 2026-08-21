@@ -136,16 +136,11 @@ const read = (fn) => page.evaluate(fn);
 // ===========================================================================
 section('Kilnshell');
 
-// The Reef Hollow: a seafloor patch that is water at MID and dry at LOW, the
-// drift-tangle niche, and the chest the shell comes out of.
-// Stand at 5,5 facing the tide pool, so the shell lands on a tile that is DRY
-// at LOW, SHALLOW at MID and DEEP at HIGH — the three states the item needs.
 await park({ map: 'cave2', rx: 0, ry: 0, tx: 5, ty: 5, dir: 'left', tide: 0,
   items: { kilnshell: 1, conch: 1 }, equipB: 'kilnshell' });
 await step(4);
 
-// PUZZLE / the core rule: it does not light on dry ground, and it lights when
-// the sea arrives. Nothing the player presses makes fire.
+// PRESSING THE BUTTON MAKES FIRE. That is the item.
 await page.evaluate(async () => {
   const g = window.__game;
   const { ITEMS } = await import('/src/game/items.js');
@@ -157,29 +152,22 @@ await step(8);
 let k = await read(() => {
   const g = window.__game;
   const sh = g.entities.find(e => e.constructor.name === 'Kilnshell');
-  return { there: !!sh, lit: sh ? !!sh.lit : null, tx: sh ? Math.floor(sh.cx / 16) : null };
+  return { there: !!sh, lit: sh ? !!sh.lit : null };
 });
 check('the Kilnshell can be set down', k.there === true, JSON.stringify(k));
-check('...and it does NOT light on dry ground', k.lit === false, 'it lit itself with no water');
+check('...and it arrives alight', k.lit === true, 'pressing the button produced no fire');
 
-// Now the sea. The shell is standing on the seafloor patch, which is dry at
-// LOW and water above it.
-await page.evaluate(() => { window.__game.tide.setLevel(1, { instant: true }); });
-await step(20);
-k = await read(() => {
-  const sh = window.__game.entities.find(e => e.constructor.name === 'Kilnshell');
-  return { lit: sh ? !!sh.lit : null };
-});
-check('the sea lights it', k.lit === true, 'the tide covered it and it stayed cold');
-
-// The third state, and the one that makes it an item rather than a switch.
+// The tide's one word: deep water still takes it.
 await page.evaluate(() => { window.__game.tide.setLevel(2, { instant: true }); });
 await step(20);
 k = await read(() => {
   const sh = window.__game.entities.find(e => e.constructor.name === 'Kilnshell');
   return { lit: sh ? !!sh.lit : null };
 });
-check('...and drowns it at HIGH', k.lit === false, 'deep water did not put it out');
+check('deep water puts it out', k.lit === false, 'it burned on under the sea');
+
+await page.evaluate(() => { window.__game.tide.setLevel(0, { instant: true }); });
+await step(8);
 
 // MOVEMENT: drift-tangle is the one obstacle a blade does nothing to, and the
 // burning shell opens it. Both halves are asserted, because "fire clears it"

@@ -40,7 +40,7 @@ roster is organised on:
 | Ferryman's Coin | **timed** — the tide change is the trigger, not the effect |
 | Chartstone | **charted** — which rooms change, and at which level |
 | Bottled Tide | **forced** — one step, where the conch is suppressed |
-| Kilnshell | **kindled** — the sea lights it, and the sea puts it out |
+| Kilnshell | **kindled** — the one fire in the world, and deep water still takes it |
 
 ---
 
@@ -92,36 +92,36 @@ the scalar.
 
 ### 1a. Kilnshell
 
-A cockle burnt down to lime. Quicklime slakes when it meets water and the
-reaction runs hot, so **the sea is what lights it**: set the shell down on
-ground the tide is coming for, sound the Conch, and it catches. Pick it up
-while it burns and it lights whatever it touches. Carry it into deep water and
-it goes out.
+A cockle burnt down to lime. **Press to set one down, already alight.** It burns
+what it touches — torches, drift-tangle, and anything standing over it. Pick it
+up and carry it; press again to take it back.
 
-**There is no button that makes fire.** That is the whole design, and it is why
-this is not a lamp with a seashell drawn on it. Fire is something the tide
-hands you, in a place the tide chooses, and the same tide takes it back. Every
-use is two route problems at once — a wet tile to catch it, and a dry road from
-there to whatever needs burning — which is exactly what the Anchor is for, since
-one held disc can keep a patch wet beside a road that is drying out.
+It is a plain fire source on a button, deliberately. Fire is the one verb the
+game had no way to perform at all, and the fix for a missing verb is an item
+that performs it, not a puzzle the player has to solve before their own item
+will work.
+
+The tide keeps exactly one word in it: **deep water puts it out.** A shell
+carried into the deep gutters and has to be set down and struck again. That is
+enough to keep it in conversation with the rest of the roster — every item here
+negotiates with the sea — without making "light a torch" a route problem.
 
 | Verb | What it is |
 |---|---|
 | Movement | Burn drift-tangle, the one obstacle a blade does nothing to, and open the route behind it |
-| Combat | A set shell is a trap: the tide springs it, and it burns whatever is standing over it |
-| Puzzle | Light torches — by arranging a wet tile to catch and a dry road to carry the flame along |
+| Combat | Set it in a doorway and it burns what walks over it |
+| Puzzle | Light torches; and choose a route that does not drown it on the way |
 
 **Where it comes from:** the Reef Hollow, a coastal cave two screens east of
 Tidewatch, reachable on foot with nothing but the Conch. It has to be early and
 outside a dungeon, because the Coral Spire's Torch Cell is the sixth room of the
 second dungeon and every other fire source in the game would be behind it.
 
-**Why it is not the Lamp and not Ember Seeds.** The Lamp is a button that makes
-fire anywhere; Ember Seeds are ammunition you throw at a thing to set it alight.
-Both let the player decide where fire happens. Here the player decides where the
-*shell* goes and the tide decides whether it lights, so the item composes with
-the Conch and the Anchor instead of replacing a puzzle with a keypress. It is
-also the only item in the roster the tide can take back off you mid-use.
+**Why it is not the Lamp.** The Lamp is fuel and a lantern you swing; this is a
+consumable-shaped object you put down, walk away from, and can lose to the sea.
+Bombs deliberately do **not** light anything: they do not in the Oracle games,
+and an explosion that lit torches would have put the Coral Spire's own Bombs on
+the far side of a puzzle they would answer.
 
 ---
 

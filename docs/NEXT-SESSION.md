@@ -21,10 +21,12 @@ never light a torch with a bomb, and it put the Spire's own Bombs on the far
 side of the door their key opens.
 
 **The 16th item: the Kilnshell** (`docs/ITEMS.md` §1a). A cockle burnt to lime.
-Set it down; the sea lights it, and the sea puts it out — dry does nothing,
-SHALLOW water slakes it and it catches, DEEP water drowns it. Carry it while it
-burns and it lights what it touches. There is no button that makes fire: fire is
-something the tide hands you, where the tide chooses.
+Press to set one down ALREADY ALIGHT; it burns torches, drift-tangle and
+anything standing over it. A first cut made the sea light it and the sea put it
+out — three tide states, no button that makes fire — and it was simplified on
+purpose: fire was the one verb the game could not perform at all, and the fix
+for a missing verb is an item that performs it, not a puzzle standing between
+the player and their own item. The tide keeps one word: DEEP WATER PUTS IT OUT.
 
   * **Home:** a chest in the Reef Hollow (`cave2`), two screens east of the
     village, on foot, with nothing. It has to be outside a dungeon and early,
