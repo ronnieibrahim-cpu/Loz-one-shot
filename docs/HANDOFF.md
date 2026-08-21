@@ -494,6 +494,37 @@ reintroducing the bug it was written for**; one that has never failed has proved
 nothing, and a source-grepping tool must strip comments before it believes what
 it reads.
 
+**A TILE'S NAME IS NOT ITS TIDE BEHAVIOUR — READ `room.flagsAt`, NOT THE
+LEGEND COMMENT.** The write-up that shipped alongside the Kilnshell claimed the
+Torch Cell needed HIGH tide to solve, on the reasoning that its floor is
+`dBasin` and `dBasin` is "dry at LOW and MID, shallow only at HIGH" — true of
+the tile in the abstract, and irrelevant to whether the room is passable,
+because none of `dBasin`'s three states ever carries `F.DEEP`. Regenerating
+`docs/GUIDE.md` against this fix meant checking `getRoom('d2', 0, 4, 5)
+.flagsAt(x, y, t)` directly for all three tide levels rather than trusting the
+prose, and the room turned out to have **no tide requirement at all** — the
+shell survives the walk to all three torches at any level. The claim was
+corrected in `docs/NEXT-SESSION.md` rather than repeated in the guide. **A tide
+comment describes what the tile usually implies, not what it does in this
+room**; the only source of truth for "can this be crossed, and does anything
+here go out" is the flag, asked of the room the checker or the guide is
+actually about.
+
+**A CHECKER'S "NOTE" IS A TODO WITH NO OWNER, AND IT WILL SIT THERE UNTIL
+SOMEONE READS THE VERBOSE OUTPUT AGAIN.** `check-hearts.mjs --verbose` has
+printed, since before the first `docs/GUIDE.md` rewrite, a short list of Heart
+Pieces reachable at only some tide levels — `cave2/0,0,0`@2,2 (LOW only) and
+`overworld/0,11,4`@5,5 (LOW/MID) among them. They are logged as "Notes (not
+failures)" on purpose, because a heart piece needing a specific tide is a
+design choice, not a bug, and the tool has nothing useful to assert about it.
+But a note nobody is obligated to act on is a note nobody acts on: the first
+guide rewrite listed both pieces as "in the open" / "no requirements" and
+`check-guide.mjs` had no way to catch it, because it checks that references
+resolve, not that prose about them is accurate. Caught only by rereading the
+verbose census by hand against the guide's own claims. **A checker's
+informational output is exactly as easy to leave stale as a comment is** —
+if it is worth printing, it is worth a line item in whatever document reads it.
+
 **A HARNESS THAT WALKS OUT OF A BOSS ARENA REPORTS A FLAWLESS VICTORY.** The
 first cut of `dBoss` strafed on a fixed up/down cycle whenever the boss was
 shelled. A boss room has exits, and leaving one wipes every non-player entity in
