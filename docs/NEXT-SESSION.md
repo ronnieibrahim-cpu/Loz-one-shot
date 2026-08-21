@@ -1,5 +1,58 @@
 # Prompt for the next session
 
+## `docs/GUIDE.md` IS REGENERATED AND `check-guide.mjs` IS GREEN
+
+The staleness the previous board flagged is fixed. The guide was re-derived
+from `src/data/` as it stands now (not patched line-by-line against the old
+one), covering everything that moved since the last generation:
+
+- **24 Heart Pieces, not 18** (Part 3, fully renumbered 1-24, 2 per dungeon +
+  9 overworld + 3 caves). Cap is 15 hearts (3 start + 6 containers + 24/4).
+- **Part 4 is now the Coastwise Chain** — the real 12-stage trade (11
+  traders + the Maku Tree, Ossa holding both stage 1 and stage 11) — instead
+  of the old "there isn't one" writeup. `tradeStart`/`tradeMid`/`tradeEnd`,
+  which the old guide backticked as evidence of nothing existing, don't even
+  exist in `src/data/story.js` any more (renamed per-trader); `tradeKettle`
+  is still there and still genuinely orphaned.
+- **D4 and D6's entrance gates are correct**: Cliffs of Kell on Bombs (via
+  the Deep Cut's rockfall, same gate as the Sunken Marsh), Abyssal approach
+  on the story flag `makuOpenedKeep` (Maku Tree, 5 Essences) — not the Dredge
+  Line, which used to seal both regions behind the dungeon sitting inside
+  them. Appendix C and the Disagreements section were rewritten to match; the
+  old "progression gap" disagreement is now recorded as fixed, with
+  `check-progression.mjs`'s 120/120-screens/6/6-dungeons result quoted as the
+  proof.
+- **D1's played-route section now reflects the actor's `equip`/`anchor`
+  verbs**: the harness crosses the Sluicegate, gets the Anchor, and crosses
+  the Iron Pipe for real, stopping at `d1/0,5,2` (needs a boss-fight verb and
+  the Clawcrab door's third key, not an Anchor-placement verb — that gap
+  closed since the guide was last written).
+- **cave1 (Bluff Grotto) and cave2 (Reef Hollow) now list their heart pieces
+  and cave1 lists the Noble Sword** (sword L2, tile 7,2, 4 Essences) — the
+  old guide's Part 5 said cave1 was "a chest with 30 rupees, nothing else,"
+  which stopped being true when the sword-and-heart-cap merge landed.
+- **Appendix A's sword row** no longer says "L2 is never granted" — it is,
+  from the Bluff Grotto.
+
+Full verification run this session: `check-guide.mjs` 4/4,  `check-hearts.mjs`
+114/114, `check-progression.mjs` 19/19 (matches Part 4's stage table exactly),
+`check-trade.mjs` 42/42 with one pre-existing unrelated browser-404 failure
+(verified with the `/opt/pw-browsers/chromium` fallback patched in
+temporarily and reverted before commit — see `docs/HANDOFF.md`), `test.mjs`
+58/59 (same pre-existing 404), `npm run build` + `check-build.mjs` green.
+Nothing in `src/` changed this session, so `dist/oracle-of-tides.html` is
+byte-identical to before and was not re-committed.
+
+**Worth doing, not done here (out of scope for a docs session):** give
+`check-trade.mjs`, `replay.mjs`, `walk-dungeons.mjs`, `solve-switches.mjs`
+and `check-gates.mjs` the same `/opt/pw-browsers/chromium` fallback
+`test.mjs`/`check-build.mjs` already have — five browser-based checkers now
+confirmed to die on launch in this sandbox without it, one more than the
+four the title-screen session counted.
+
+---
+
+
 Paste the fenced block below into a fresh Claude Code session on this repo. It
 is written to be self-contained: it names the branch, the remaining jobs, the
 traps that are already paid for, and how to prove the work rather than assert

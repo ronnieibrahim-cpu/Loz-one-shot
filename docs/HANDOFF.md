@@ -2109,6 +2109,48 @@ means the pot comes up instead.** That was already true of talking to a
 villager — `tools/test.mjs` had to turn Link around before the conch section,
 because the tile he was facing is one of the village rocks and it ate the press.
 
+**`docs/GUIDE.md` regenerated against the current `main` — 24 heart pieces,
+not 18; the Coastwise Chain, not "there isn't one"; D4/D6 gated on Bombs and
+`makuOpenedKeep`, not the Dredge Line.** The previous version of the guide was
+generated correctly against an older `main` and then three separate sessions'
+worth of world changes landed under it (P9's heart cap, the trading sequence,
+the progression-gap fix) without anyone re-running the generation. The fix was
+the same as the first time this guide was written: read `src/data/` again,
+by tool, not by diffing prose. Two things worth knowing before the next
+regeneration:
+
+- **A dungeon's own route comment can be stale about its own room count.**
+  D3's comment says "24 rooms" and the room registry holds 22 — confirmed by
+  counting `Object.keys(map.roomDefs).length` directly rather than trusting
+  the comment. The room-by-room route text *in* that comment was actually
+  right (22 rooms enumerated); only the parenthetical count was wrong. Trust
+  the registry over any comment, even one written by the dungeon's own author.
+- **`tools/check-guide.mjs`'s bare-backtick check flags ANY unrecognised
+  lowercase identifier, including plain engine vocabulary quoted in prose**
+  (`gotRod`, `stage`, `trader` all tripped it here). The fix is almost always
+  to just drop the backticks — a word doesn't need to look like code to be
+  readable — rather than growing `REMOVED_OR_ENGINE_VOCAB`/`PROSE_ALLOW` for
+  every one-off mention. Grow those lists only for words the guide is making
+  a *deliberate point* about (a removed id, a real API name a reader would
+  want to grep for), not for incidental prose.
+- **Two ids named in the guide's stale trading section, `tradeStart` and
+  `tradeMid`, don't just have a referrer now — they don't exist in
+  `src/data/story.js` at all any more.** The chain's dialogue lines were
+  renamed per-trader (`pellTrade`, `hullaTrade`, ...) rather than reusing
+  three generic slots. `tradeKettle` is still there and still genuinely
+  unreferenced — an orphan flavour cutscene, not a bug, just not part of the
+  chain that got built. Check what a doc claims is unreferenced by grepping
+  the CURRENT file, not by trusting the doc's own memory of an older one.
+- **`node tools/check-trade.mjs`'s in-engine half needs the same
+  `/opt/pw-browsers/chromium` executablePath fallback `test.mjs` and
+  `check-build.mjs` already carry** — it dies on browser launch in this
+  sandbox without it, same as `replay.mjs`/`walk-dungeons.mjs`/
+  `solve-switches.mjs`/`check-gates.mjs` already documented above. Verified
+  green (42/42, one pre-existing unrelated 404 failure) by patching the
+  fallback in temporarily and reverting before commit — not landed as a
+  real fix here because a docs session is the wrong place for it, same
+  reasoning as the title-screen session gave for the other four.
+
 ## The two gates that cannot be tiles
 
 Roc's Feather and the Power Bracelet became real tile gates this session. The
