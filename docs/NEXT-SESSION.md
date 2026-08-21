@@ -34,10 +34,17 @@ the player and their own item. The tide keeps one word: DEEP WATER PUTS IT OUT.
   * **Movement verb:** `driftTangle`, a new tile that burns and ONLY burns — no
     cut, no bomb, no lift. The Reef Hollow walls a rupee niche with it, which is
     where the verb is taught.
-  * **Tide states matter:** `tidePool` is dry/shallow/deep across LOW/MID/HIGH,
-    but a dungeon `dBasin` is dry at LOW *and* MID and shallow only at HIGH. The
-    Torch Cell is a dBasin room, so it is solved by taking the sea all the way
-    up. Check `resolveTile` at all three levels before designing a fire puzzle.
+  * **Tide states matter, and this one is worth checking rather than assuming:**
+    `tidePool` (Reef Hollow) is dry/shallow/deep across LOW/MID/HIGH, so the
+    Kilnshell lights on the sand and drowns in the pool there. The Torch Cell's
+    `dBasin`, by contrast, is **dry at LOW and MID and only shallow (never
+    deep) at HIGH** — `room.flagsAt` confirms no tile in that room ever carries
+    `F.DEEP`. So the Torch Cell has **no tide requirement at all**: the shell
+    survives the walk to all three torches at any level. A previous draft of
+    this note claimed HIGH tide was needed to solve it; that was wrong, and
+    `docs/GUIDE.md`'s Torch Cell writeup does not repeat it. Check
+    `room.flagsAt(x, y, tide)` directly, not the tile's name, before writing
+    down a tide requirement for a new fire puzzle.
 
 **Bombs now come only from the bomb bag.** The shop sold twenty-rupee bombs to a
 player with no bag and delivered zero, because counted pickups clamp to a
@@ -50,9 +57,29 @@ torch-gated key is never the only key on its floor, so if a later session moves
 the Kilnshell the deadlock cannot come back silently.
 
 Proved end to end in-engine: shell set down dry, sea to HIGH, it catches, all
-three torches lit, `d2_torches` set, the key spawns. `check-items.mjs` is 92/92
-with ten new Kilnshell assertions; `check-torches.mjs` is 5/5 and now also
+three torches lit, `d2_torches` set, the key spawns. `check-items.mjs` is 91/91
+with nine new Kilnshell assertions; `check-torches.mjs` is 5/5 and now also
 asserts the emitter is NOT the bomb.
+
+**`docs/GUIDE.md` has been re-derived against this fix** (branch
+`claude/guide-walkthrough-revision-jgs0uf`, continuing the guide work rather
+than forking a new branch for it — see CLAUDE.md on checking for one before
+starting one). Its own top-of-file "the game cannot be finished" banner and
+the whole "torch problem" appendix are gone; the Reef Hollow's Kilnshell chest
+now gets the same room-card treatment a dungeon item gets, D2's chapter is
+rewritten around Rising Chamber giving the mandatory Small Key with the Torch
+Cell's key correctly demoted to a bonus, D6's Drowned Hall and Black Kiln are
+rewritten as solvable (the Black Kiln's key is still mandatory — the Keep
+needs all four), the item table gained a Kilnshell row (16 items now), the
+shop table and Part I both note bombs and Bottled Tide are refused without
+their bag/case, and two heart pieces (`cave2/0,0,0`@2,2 and
+`overworld/0,11,4`@5,5) got the tide requirements `check-hearts.mjs --verbose`
+had been quietly flagging as notes since the previous rewrite and nobody had
+gone back to fix. `node tools/check-guide.mjs` is 4/4; the full checker table
+(`validate`, `check-hearts`, `check-progression`, `check-overworld`,
+`check-torches`, `check-items`, `check-trade`, `walk-dungeons`,
+`solve-switches`, `check-bosses`, `test.mjs`, `check-build`) is green. Not yet
+merged — read it before writing a third copy of this guide.
 
 ---
 
@@ -86,7 +113,9 @@ never done either. What 1.0 needs, in dependency order:
    cost, not engine work — and the Iron Pipe is the warning about what that
    costs: its correct solution was a different tile from the one the checker
    named, and only a real run found out.
-4. **Regenerate `docs/GUIDE.md`** and get `check-guide.mjs` green.
+4. ~~**Regenerate `docs/GUIDE.md`** and get `check-guide.mjs` green.~~ **DONE,
+   twice now** — see "THE KILNSHELL" above for the second pass. First
+   regeneration found the dead torch action; this pass updated it for the fix.
 
 Only when `check-playthrough.mjs` runs from the title screen to Nereth is the
 claim "this game is beatable" one this repo is allowed to make. Until then the

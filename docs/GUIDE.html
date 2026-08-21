@@ -1,0 +1,3048 @@
+<title>Oracle of Tides Walkthrough</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Public+Sans:ital,wght@0,400;0,500;0,700;1,400&family=JetBrains+Mono:wght@500;700&display=swap">
+
+<style>
+:root{
+  --ground:#EAEFF0; --surface:#FFFFFF; --surface-2:#F3F7F7; --sunk:#DFE8E9;
+  --ink:#0F2229; --ink-2:#3E585F; --ink-3:#6C868D;
+  --line:#CEDCDE; --line-2:#B7CACD;
+  --accent:#0C6E78; --accent-bg:#D8ECEE;
+  --low:#8F5620;  --low-bg:#F5E7D6;
+  --mid:#125F6C;  --mid-bg:#D7EBED;
+  --high:#33469B; --high-bg:#DFE4F7;
+  --alarm:#9A2F1E; --alarm-bg:#F8E4DF; --alarm-line:#E4B3A8;
+  --shadow:0 1px 2px rgba(15,34,41,.06), 0 6px 18px rgba(15,34,41,.05);
+  --r:12px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#08151A; --surface:#0E1F26; --surface-2:#132A33; --sunk:#0A1A20;
+    --ink:#DEEAEC; --ink-2:#9DB4BA; --ink-3:#72898F;
+    --line:#1E3A44; --line-2:#2A4B57;
+    --accent:#4FBAC4; --accent-bg:#10313A;
+    --low:#E3A868;  --low-bg:#2C2013;
+    --mid:#5CC0CC;  --mid-bg:#0E2F35;
+    --high:#94A3EE; --high-bg:#1A203E;
+    --alarm:#F1907B; --alarm-bg:#331611; --alarm-line:#5C2A20;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 6px 18px rgba(0,0,0,.3);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#08151A; --surface:#0E1F26; --surface-2:#132A33; --sunk:#0A1A20;
+  --ink:#DEEAEC; --ink-2:#9DB4BA; --ink-3:#72898F;
+  --line:#1E3A44; --line-2:#2A4B57;
+  --accent:#4FBAC4; --accent-bg:#10313A;
+  --low:#E3A868;  --low-bg:#2C2013;
+  --mid:#5CC0CC;  --mid-bg:#0E2F35;
+  --high:#94A3EE; --high-bg:#1A203E;
+  --alarm:#F1907B; --alarm-bg:#331611; --alarm-line:#5C2A20;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 6px 18px rgba(0,0,0,.3);
+}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%; scroll-behavior:smooth; scroll-padding-top:4.25rem}
+@media (prefers-reduced-motion: reduce){ html{scroll-behavior:auto} *{animation:none !important; transition:none !important} }
+
+body{
+  margin:0; background:var(--ground); color:var(--ink);
+  font-family:"Public Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size:16px; line-height:1.6; overflow-x:hidden;
+}
+
+/* ---------- sticky bar ---------- */
+.bar{
+  position:sticky; top:0; z-index:40;
+  /* Solid, not frosted: a translucent bar lets the previous paragraph bleed
+     through the top edge wherever backdrop-filter is unsupported or throttled. */
+  background:var(--ground);
+  border-bottom:1px solid var(--line);
+}
+.bar-in{
+  max-width:40rem; margin:0 auto; padding:.55rem .9rem;
+  display:flex; align-items:center; gap:.7rem; min-height:3.1rem;
+}
+.bar-where{flex:1; min-width:0}
+.bar-eyebrow{
+  font-family:"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size:.6rem; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--ink-3); display:block; line-height:1.4;
+}
+.bar-title{
+  font-weight:700; font-size:.92rem; line-height:1.25; color:var(--ink);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block;
+}
+.btn{
+  font:inherit; font-weight:700; font-size:.8rem; cursor:pointer;
+  background:var(--surface); color:var(--ink); border:1px solid var(--line-2);
+  border-radius:999px; padding:.55rem .95rem; min-height:2.6rem;
+  display:inline-flex; align-items:center; gap:.4rem; white-space:nowrap;
+}
+.btn:hover{border-color:var(--accent); color:var(--accent)}
+.btn:focus-visible, a:focus-visible, summary:focus-visible, input:focus-visible{
+  outline:2px solid var(--accent); outline-offset:2px; border-radius:6px;
+}
+.prog{height:2px; background:var(--accent); width:0; transition:width .12s linear}
+
+/* ---------- contents drawer ---------- */
+.drawer{
+  position:fixed; inset:0; z-index:60; display:none;
+  background:var(--ground); overflow-y:auto; overscroll-behavior:contain;
+}
+.drawer[open]{display:block}
+.drawer-head{
+  position:sticky; top:0; background:var(--ground);
+  border-bottom:1px solid var(--line); padding:.55rem .9rem;
+  display:flex; align-items:center; justify-content:space-between; gap:1rem;
+}
+.drawer-head h2{
+  margin:0; font-family:"Fraunces",Georgia,serif; font-size:1.1rem; font-weight:600;
+}
+.drawer-body{max-width:40rem; margin:0 auto; padding:.5rem .9rem 3rem}
+.toc-part{
+  font-family:"JetBrains Mono", ui-monospace, monospace;
+  font-size:.62rem; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--ink-3); margin:1.35rem 0 .5rem; padding-bottom:.35rem;
+  border-bottom:1px solid var(--line);
+}
+.toc-part:first-child{margin-top:.5rem}
+.toc a{
+  display:flex; gap:.7rem; align-items:baseline;
+  padding:.7rem .25rem; min-height:2.75rem;
+  border-bottom:1px solid var(--line); color:var(--ink);
+  text-decoration:none; font-size:.95rem; line-height:1.35;
+}
+.toc a:hover{color:var(--accent)}
+.toc .n{
+  font-family:"JetBrains Mono", ui-monospace, monospace; font-size:.72rem;
+  color:var(--ink-3); min-width:1.5rem; font-variant-numeric:tabular-nums;
+}
+
+/* ---------- page shell ---------- */
+main{max-width:40rem; margin:0 auto; padding:0 .9rem 5rem}
+section{scroll-margin-top:4.25rem}
+
+/* ---------- masthead ---------- */
+.mast{padding:2.5rem 0 1.5rem; border-bottom:1px solid var(--line)}
+.mast .kicker{
+  font-family:"JetBrains Mono", ui-monospace, monospace;
+  font-size:.62rem; letter-spacing:.2em; text-transform:uppercase; color:var(--accent);
+}
+.mast h1{
+  font-family:"Fraunces",Georgia,serif; font-weight:700;
+  font-size:clamp(2.1rem,10vw,3.1rem); line-height:1.02; letter-spacing:-.02em;
+  margin:.5rem 0 .1rem; text-wrap:balance;
+}
+.mast .sub{
+  font-family:"Fraunces",Georgia,serif; font-style:italic; font-weight:600;
+  font-size:clamp(1.1rem,5vw,1.5rem); color:var(--accent); margin:0 0 .9rem;
+}
+.mast p{color:var(--ink-2); margin:.7rem 0}
+.tidebar{display:flex; gap:.3rem; margin:1.2rem 0 .2rem}
+.tidebar div{
+  flex:1; height:.4rem; border-radius:2px;
+}
+.tidebar .t-low{background:var(--low)} .tidebar .t-mid{background:var(--mid)} .tidebar .t-high{background:var(--high)}
+.tidebar-l{
+  display:flex; gap:.3rem;
+  font-family:"JetBrains Mono", ui-monospace, monospace;
+  font-size:.58rem; letter-spacing:.14em; color:var(--ink-3);
+}
+.tidebar-l span{flex:1}
+
+/* ---------- typography ---------- */
+h2.chap{
+  font-family:"Fraunces",Georgia,serif; font-weight:700;
+  font-size:clamp(1.5rem,6.5vw,2rem); line-height:1.1; letter-spacing:-.015em;
+  margin:0 0 .1rem; text-wrap:balance;
+}
+.chap-n{
+  font-family:"JetBrains Mono", ui-monospace, monospace;
+  font-size:.62rem; letter-spacing:.18em; text-transform:uppercase;
+  color:var(--accent); display:block; margin-bottom:.45rem;
+}
+.chap-head{padding:2.6rem 0 .9rem; border-top:2px solid var(--ink); margin-top:2.2rem}
+.chap-head:first-of-type{margin-top:1rem}
+h3{
+  font-family:"Public Sans",sans-serif; font-weight:700; font-size:1.06rem;
+  line-height:1.3; margin:2rem 0 .6rem; text-wrap:balance;
+}
+h4{
+  font-family:"JetBrains Mono", ui-monospace, monospace; font-weight:700;
+  font-size:.65rem; letter-spacing:.15em; text-transform:uppercase;
+  color:var(--ink-3); margin:1.8rem 0 .55rem;
+  padding-bottom:.3rem; border-bottom:1px solid var(--line);
+}
+p{margin:.85rem 0}
+strong{font-weight:700}
+em{font-style:italic}
+a{color:var(--accent); text-underline-offset:2px}
+ul,ol{margin:.85rem 0; padding-left:1.15rem}
+li{margin:.4rem 0}
+li::marker{color:var(--ink-3)}
+
+/* ---------- key / chips ---------- */
+code, .key{
+  font-family:"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size:.8em; background:var(--sunk); color:var(--ink-2);
+  padding:.1em .4em; border-radius:5px; word-break:break-word;
+}
+.tide{
+  display:inline-block; font-family:"JetBrains Mono", ui-monospace, monospace;
+  font-size:.62rem; font-weight:700; letter-spacing:.1em;
+  padding:.18em .5em .2em; border-radius:4px; vertical-align:.08em;
+  white-space:nowrap;
+}
+.t-low{background:var(--low-bg); color:var(--low)}
+.t-mid{background:var(--mid-bg); color:var(--mid)}
+.t-high{background:var(--high-bg); color:var(--high)}
+.t-off{background:var(--accent-bg); color:var(--accent)}
+
+/* ---------- cards ---------- */
+.room{
+  background:var(--surface); border:1px solid var(--line); border-radius:var(--r);
+  padding:.85rem .95rem; margin:.7rem 0; box-shadow:var(--shadow);
+}
+.room > :first-child{margin-top:0}
+.room > :last-child{margin-bottom:0}
+.room-h{
+  display:flex; flex-wrap:wrap; align-items:baseline; gap:.45rem .6rem;
+  margin-bottom:.45rem;
+}
+.room-h b{font-size:1rem; line-height:1.25}
+.room-h .key{font-size:.68rem; background:var(--accent-bg); color:var(--accent)}
+
+.facts{
+  background:var(--surface-2); border:1px solid var(--line); border-radius:var(--r);
+  padding:.8rem .95rem; margin:1rem 0;
+  display:grid; grid-template-columns:auto 1fr; gap:.35rem .9rem;
+  font-size:.88rem;
+}
+.facts dt{
+  font-family:"JetBrains Mono", ui-monospace, monospace;
+  font-size:.6rem; letter-spacing:.11em; text-transform:uppercase;
+  color:var(--ink-3); padding-top:.28em;
+}
+.facts dd{margin:0}
+
+.note{
+  border-left:3px solid var(--accent); background:var(--accent-bg);
+  border-radius:0 var(--r) var(--r) 0; padding:.75rem .9rem; margin:1.1rem 0;
+  font-size:.94rem;
+}
+.note > :first-child{margin-top:0} .note > :last-child{margin-bottom:0}
+
+.alarm{
+  border:1px solid var(--alarm-line); background:var(--alarm-bg);
+  border-left:4px solid var(--alarm);
+  border-radius:0 var(--r) var(--r) 0; padding:.85rem .95rem; margin:1.2rem 0;
+}
+.alarm > :first-child{margin-top:0} .alarm > :last-child{margin-bottom:0}
+.alarm b, .alarm strong{color:var(--alarm)}
+.alarm-tag{
+  font-family:"JetBrains Mono", ui-monospace, monospace;
+  font-size:.6rem; letter-spacing:.15em; text-transform:uppercase;
+  color:var(--alarm); display:block; margin-bottom:.35rem; font-weight:700;
+}
+
+.plaque{
+  font-family:"Fraunces",Georgia,serif; font-style:italic; font-size:.95rem;
+  color:var(--ink-2); border-left:2px solid var(--line-2);
+  padding:.15rem 0 .15rem .8rem; margin:.7rem 0;
+}
+
+/* ---------- boss ---------- */
+.boss{
+  background:var(--surface); border:1px solid var(--line-2); border-radius:var(--r);
+  margin:1.4rem 0; overflow:hidden; box-shadow:var(--shadow);
+}
+.boss-h{
+  background:var(--surface-2); border-bottom:1px solid var(--line);
+  padding:.85rem .95rem;
+}
+.boss-h .role{
+  font-family:"JetBrains Mono", ui-monospace, monospace;
+  font-size:.6rem; letter-spacing:.15em; text-transform:uppercase; color:var(--ink-3);
+}
+.boss-h b{
+  display:block; font-family:"Fraunces",Georgia,serif; font-weight:600;
+  font-size:1.25rem; line-height:1.2; margin:.15rem 0 .4rem;
+}
+.boss-meta{display:flex; flex-wrap:wrap; gap:.4rem; align-items:center}
+.hp{
+  font-family:"JetBrains Mono", ui-monospace, monospace; font-size:.68rem;
+  font-weight:700; background:var(--sunk); color:var(--ink-2);
+  padding:.2em .5em; border-radius:4px; font-variant-numeric:tabular-nums;
+}
+.boss-b{padding:.2rem .95rem .95rem}
+.phase{
+  display:grid; grid-template-columns:auto 1fr; gap:.3rem .75rem;
+  padding:.7rem 0; border-bottom:1px solid var(--line);
+}
+.phase:last-child{border-bottom:0; padding-bottom:.2rem}
+.phase .pn{
+  font-family:"JetBrains Mono", ui-monospace, monospace; font-size:.62rem;
+  font-weight:700; color:var(--accent); letter-spacing:.08em; padding-top:.3em;
+  font-variant-numeric:tabular-nums; white-space:nowrap;
+}
+.phase p{margin:0; font-size:.93rem}
+.phase .hpct{
+  font-family:"JetBrains Mono", ui-monospace, monospace; font-size:.6rem;
+  color:var(--ink-3); display:block;
+}
+
+/* ---------- tables ---------- */
+.tw{overflow-x:auto; margin:1.1rem -.9rem; padding:0 .9rem; -webkit-overflow-scrolling:touch}
+table{border-collapse:collapse; width:100%; min-width:22rem; font-size:.86rem}
+th,td{text-align:left; padding:.5rem .6rem; border-bottom:1px solid var(--line); vertical-align:top}
+th{
+  font-family:"JetBrains Mono", ui-monospace, monospace; font-weight:700;
+  font-size:.58rem; letter-spacing:.11em; text-transform:uppercase; color:var(--ink-3);
+  border-bottom:1px solid var(--line-2); white-space:nowrap;
+}
+td:first-child{white-space:nowrap}
+td.wrap, th.wrap{white-space:normal}
+tbody tr:last-child td{border-bottom:0}
+.num{font-variant-numeric:tabular-nums; font-family:"JetBrains Mono",ui-monospace,monospace; font-size:.8rem}
+
+/* ---------- checklist ---------- */
+.check{list-style:none; padding:0; margin:1rem 0}
+.check li{margin:0; border-bottom:1px solid var(--line)}
+.check label{
+  display:flex; gap:.75rem; align-items:flex-start;
+  padding:.75rem .2rem; min-height:2.75rem; cursor:pointer;
+  font-size:.93rem; line-height:1.45;
+}
+.check input{
+  appearance:none; -webkit-appearance:none; flex:none;
+  width:1.35rem; height:1.35rem; margin:.1rem 0 0; border-radius:5px;
+  border:1.5px solid var(--line-2); background:var(--surface); cursor:pointer;
+  position:relative;
+}
+.check input:checked{background:var(--accent); border-color:var(--accent)}
+.check input:checked::after{
+  content:""; position:absolute; left:.42rem; top:.16rem;
+  width:.3rem; height:.62rem; border:solid #fff; border-width:0 2px 2px 0;
+  transform:rotate(42deg);
+}
+.check input:checked ~ .ctext{color:var(--ink-3); text-decoration:line-through}
+.ctext .cn{
+  font-family:"JetBrains Mono", ui-monospace, monospace; font-size:.68rem;
+  color:var(--accent); font-weight:700; margin-right:.35rem;
+  font-variant-numeric:tabular-nums;
+}
+.tally{
+  display:flex; align-items:baseline; gap:.5rem; margin:.9rem 0 0;
+  font-family:"JetBrains Mono", ui-monospace, monospace; font-size:.72rem;
+  color:var(--ink-3); letter-spacing:.06em;
+}
+.tally b{color:var(--accent); font-size:1.1rem; font-variant-numeric:tabular-nums}
+.reset{
+  font:inherit; font-family:"JetBrains Mono",ui-monospace,monospace; font-size:.62rem;
+  letter-spacing:.1em; text-transform:uppercase; background:none; border:0;
+  color:var(--ink-3); cursor:pointer; padding:.5rem .3rem; margin-left:auto;
+  text-decoration:underline; text-underline-offset:3px;
+}
+.reset:hover{color:var(--alarm)}
+
+/* ---------- misc ---------- */
+.totop{
+  position:fixed; right:.9rem; bottom:.9rem; z-index:30;
+  width:2.9rem; height:2.9rem; border-radius:50%; display:none;
+  align-items:center; justify-content:center; font-size:1rem;
+  background:var(--surface); color:var(--accent);
+  border:1px solid var(--line-2); box-shadow:var(--shadow); cursor:pointer;
+}
+.totop.on{display:flex}
+footer{
+  border-top:1px solid var(--line); margin-top:3rem; padding:1.5rem 0 0;
+  font-size:.82rem; color:var(--ink-3);
+}
+footer code{font-size:.75rem}
+.sr{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap}
+</style>
+
+<div class="bar">
+  <div class="bar-in">
+    <span class="bar-where">
+      <span class="bar-eyebrow" id="barEyebrow">Oracle of Tides</span>
+      <span class="bar-title" id="barTitle">Complete Walkthrough</span>
+    </span>
+    <button class="btn" id="tocBtn" aria-expanded="false" aria-controls="drawer">☰ Contents</button>
+  </div>
+  <div class="prog" id="prog"></div>
+</div>
+
+<div class="drawer" id="drawer" role="dialog" aria-modal="true" aria-label="Contents">
+  <div class="drawer-head">
+    <h2>Contents</h2>
+    <button class="btn" id="tocClose">Close ✕</button>
+  </div>
+  <div class="drawer-body">
+    <nav class="toc">
+      <p class="toc-part">Part I — Before you start</p>
+      <a href="#basics"><span class="n">·</span><span>Controls, tide, health, charms</span></a>
+      <a href="#route"><span class="n">·</span><span>The route at a glance</span></a>
+      <p class="toc-part">Part II — The walkthrough</p>
+      <a href="#c1"><span class="n">01</span><span>Tidewatch Village</span></a>
+      <a href="#c2"><span class="n">02</span><span>The Shallows</span></a>
+      <a href="#c3"><span class="n">03</span><span>D1 · Tidewash Grotto</span></a>
+      <a href="#c4"><span class="n">04</span><span>The Maku Tree, the shop</span></a>
+      <a href="#c5"><span class="n">05</span><span>The Coral Reef</span></a>
+      <a href="#c6"><span class="n">06</span><span>D2 · Coral Spire</span></a>
+      <a href="#c7"><span class="n">07</span><span>Bombs open two regions</span></a>
+      <a href="#c8"><span class="n">08</span><span>D3 · Bogwater Sanctum</span></a>
+      <a href="#c9"><span class="n">09</span><span>The Cliffs of Kell</span></a>
+      <a href="#c10"><span class="n">10</span><span>D4 · Cliffside Cistern</span></a>
+      <a href="#c11"><span class="n">11</span><span>The Drowned Wood</span></a>
+      <a href="#c12"><span class="n">12</span><span>D5 · Drowned Wood Shrine</span></a>
+      <a href="#c13"><span class="n">13</span><span>The Coastwise Chain</span></a>
+      <a href="#c14"><span class="n">14</span><span>Salt Pans &amp; Reef Palace</span></a>
+      <a href="#c15"><span class="n">15</span><span>The road to the Keep</span></a>
+      <a href="#c16"><span class="n">16</span><span>D6 · the Abyssal Keep</span></a>
+      <a href="#c17"><span class="n">17</span><span>Nereth, the Drowned King</span></a>
+      <a href="#c18"><span class="n">18</span><span>Mopping up</span></a>
+      <p class="toc-part">Part III — 100%</p>
+      <a href="#hearts"><span class="n">·</span><span>All 24 Heart Pieces</span></a>
+      <a href="#chain"><span class="n">·</span><span>The Coastwise Chain</span></a>
+      <a href="#items"><span class="n">·</span><span>Every item</span></a>
+      <a href="#charms"><span class="n">·</span><span>Charms &amp; the scrimshander</span></a>
+      <a href="#caves"><span class="n">·</span><span>Caves, shop, gates</span></a>
+      <p class="toc-part">Part IV — Appendices</p>
+      <a href="#enemies"><span class="n">·</span><span>Enemies</span></a>
+      <a href="#bossindex"><span class="n">·</span><span>Boss index</span></a>
+      <a href="#tiles"><span class="n">·</span><span>Tide tile reference</span></a>
+      <a href="#verify"><span class="n">·</span><span>How this was verified</span></a>
+    </nav>
+  </div>
+</div>
+
+<main>
+
+<header class="mast">
+  <span class="kicker">The Legend of Zelda</span>
+  <h1>Oracle of Tides</h1>
+  <p class="sub">Complete Walkthrough</p>
+  <p>Title screen to the Drowned King, in eighteen chapters. Every dungeon room
+  by room, every boss phase by phase, all 24 Heart Pieces, the eleven-link
+  Coastwise Chain, and the exact tile to stand on for every puzzle in the game.</p>
+  <div class="tidebar"><div class="t-low"></div><div class="t-mid"></div><div class="t-high"></div></div>
+  <div class="tidebar-l"><span>LOW</span><span>MID</span><span>HIGH</span></div>
+</header>
+
+<div class="note">
+  <p><strong>How to read a room key.</strong> <code>d1/0,3,2</code> is the engine's
+  own name for a screen — map, floor, x, y, with x running east and y running
+  south. Tile coordinates inside a room are <code>(x, y)</code>, x from 0–9 left
+  to right and y from 0–7 top to bottom. Every fact here is read out of the
+  game's data, so any of it can be checked against the source with those keys.</p>
+</div>
+
+<!-- ============================ PART I ============================ -->
+<section id="basics">
+  <div class="chap-head">
+    <span class="chap-n">Part I · Before you start</span>
+    <h2 class="chap">The basics</h2>
+  </div>
+
+  <h4>Controls</h4>
+  <div class="tw"><table>
+    <thead><tr><th>Input</th><th class="wrap">Does</th></tr></thead>
+    <tbody>
+      <tr><td>Arrows / D-pad</td><td class="wrap">Move. Diagonals are <strong>faster</strong> than cardinals — deliberate.</td></tr>
+      <tr><td><code>X</code> / <code>K</code></td><td class="wrap"><strong>A</strong> button</td></tr>
+      <tr><td><code>Z</code> / <code>J</code></td><td class="wrap"><strong>B</strong> button</td></tr>
+      <tr><td>Enter</td><td class="wrap">Start — pause, items, quest screen</td></tr>
+      <tr><td>Shift / Tab</td><td class="wrap">Select — save and quit</td></tr>
+    </tbody>
+  </table></div>
+
+  <p>A and B are <strong>assignable slots</strong>, not fixed roles. Whatever you
+  pick up first goes to B, the second to A, and you rearrange them from the pause
+  menu. A fresh game starts with the Moon Conch on B and the sword on A.</p>
+
+  <p>Two verbs are not items and never will be. <strong>The hop</strong> —
+  walk into a one-tile gap and Link hops it automatically; there is no feather in
+  this game, and a gap two tiles wide is a wall. <strong>Lifting</strong> — on the
+  A button, context first, so standing next to a pot with an item bound to A means
+  the pot comes up.</p>
+
+  <h4>The tide, and why it is not a switch</h4>
+  <p>Sound the Moon Conch and the tide cycles
+  <span class="tide t-low">LOW</span> →
+  <span class="tide t-mid">MID</span> →
+  <span class="tide t-high">HIGH</span> → LOW. Two presses reach any level from
+  any other. That is the whole interface, and almost everything else in the game
+  is about the fact that the tide is a <strong>field</strong>, not a global: the
+  level that matters is the one under whatever you are asking about — your feet,
+  an enemy's feet, a tile's. Once you own the Tidewright's Anchor you can hold one
+  patch of a room at the level it had while the rest of the room moves, and your
+  charms read that field too.</p>
+
+  <div class="tw"><table>
+    <thead><tr><th>Level</th><th class="wrap">What the world does</th></tr></thead>
+    <tbody>
+      <tr><td><span class="tide t-low">LOW</span></td><td class="wrap">Sandbars, reef flats and seafloor exposed. Sunken cave mouths open, channels wadeable. Drains become open pits. Water wheels stop.</td></tr>
+      <tr><td><span class="tide t-mid">MID</span></td><td class="wrap">The default. Wells are over your head, sluices ankle deep.</td></tr>
+      <tr><td><span class="tide t-high">HIGH</span></td><td class="wrap">Shallows become deep water. Low walls drown and can be swum over. Rafts float up to high ledges. Drowned boles vanish.</td></tr>
+    </tbody>
+  </table></div>
+
+  <p>In a room's text grid the digits <strong>0–9 are always tide tiles</strong>.
+  Anything that is not a digit does not move with the water — a rule with no
+  exceptions anywhere in the game.</p>
+
+  <h4>Health, damage and money</h4>
+  <p>You start with <strong>3 hearts</strong>. Health is quarter-hearts, four to
+  a heart. There are <strong>24 Heart Pieces</strong>, four to a container, and
+  <strong>six Heart Containers</strong> — one per boss. Collect everything and you
+  finish on <strong>15 hearts</strong>.</p>
+
+  <div class="tw"><table>
+    <thead><tr><th>Tier</th><th>Damage</th><th>At 3 hearts</th></tr></thead>
+    <tbody>
+      <tr><td>Chip <span class="key">2 types</span></td><td class="num">¼ heart</td><td class="num">12 hits</td></tr>
+      <tr><td>Ordinary <span class="key">13</span></td><td class="num">½ heart</td><td class="num">6 hits</td></tr>
+      <tr><td>Heavy <span class="key">7</span></td><td class="num">¾ heart</td><td class="num">4 hits</td></tr>
+      <tr><td>Miniboss <span class="key">8</span></td><td class="num">¾ heart</td><td class="num">4 hits</td></tr>
+      <tr><td>Boss <span class="key">8</span></td><td class="num">1 heart</td><td class="num">3 hits</td></tr>
+    </tbody>
+  </table></div>
+
+  <p>You need, at minimum: <strong>30</strong> for the shield, <strong>60</strong>
+  per carving at the scrimshander, <strong>80</strong> for the Ballast Heart charm,
+  <strong>20</strong> a time for bombs, <strong>40</strong> for a Bottled Tide refill.</p>
+
+  <h4>Charms, in one paragraph</h4>
+  <p>Charms are carved bone, slotted <strong>by tide level</strong>. You carry three
+  cases and a charm only works while the water under your feet is at its case's
+  level. You start with the MID case; the LOW case cuts itself at
+  <strong>2 Essences</strong>, the HIGH case at <strong>4</strong>, and at
+  <strong>6</strong> every case holds two. Seven charms are placed by hand; the
+  other twenty-three come from the scrimshander, who takes a blank and 60 rupees
+  and gives back whichever charm the bone wanted to be.</p>
+</section>
+
+<section id="route">
+  <div class="chap-head">
+    <span class="chap-n">Part I</span>
+    <h2 class="chap">The route at a glance</h2>
+  </div>
+
+  <p>The dungeons are numbered 1–6 and the recommended order is the numbered one:
+  each boss is meaningfully harder than the last (24 → 30 → 36 → 44 → 52 → 80 HP)
+  and each dungeon's puzzle grammar assumes the last one's item.</p>
+
+  <div class="note">
+    <p><strong>The Drowned Wood Shrine's door is open from the first minute.</strong>
+    Nothing gates it — you can walk in with three hearts and a wooden sword, and
+    Rootmaw has 52 HP. <strong>Dungeons 3 and 4 both need bombs</strong>, which come
+    out of Dungeon 2.</p>
+  </div>
+
+  <div class="note">
+    <p><strong>The shop will take your rupees for ammunition it cannot give
+    you.</strong> Bombs and Bottled Tide are both counted pickups that clamp to a
+    capacity, and that capacity starts at zero. The shop refuses the sale
+    outright until you own the bag (Dungeon 2's Bomb Vault) or the case (the
+    Salt Pan Vault) — it says so rather than taking your money for nothing, but
+    there is no point walking in early hoping to stock up.</p>
+  </div>
+
+  <div class="tw"><table>
+    <thead><tr><th>#</th><th class="wrap">Dungeon</th><th>Door</th><th class="wrap">Item</th><th>Boss</th></tr></thead>
+    <tbody>
+      <tr><td class="num">1</td><td class="wrap">Tidewash Grotto</td><td><code>0,8,8</code></td><td class="wrap">Anchor</td><td>Gohmaraq</td></tr>
+      <tr><td class="num">2</td><td class="wrap">Coral Spire</td><td><code>0,10,5</code></td><td class="wrap">Lens + Bombs</td><td>Anemos</td></tr>
+      <tr><td class="num">3</td><td class="wrap">Bogwater Sanctum</td><td><code>0,1,8</code></td><td class="wrap">Cleats</td><td>Gloomtide</td></tr>
+      <tr><td class="num">4</td><td class="wrap">Cliffside Cistern</td><td><code>0,1,3</code></td><td class="wrap">Bellows</td><td>Wyverna</td></tr>
+      <tr><td class="num">5</td><td class="wrap">Drowned Wood Shrine</td><td><code>0,5,4</code></td><td class="wrap">Reefseed</td><td>Rootmaw</td></tr>
+      <tr><td class="num">6</td><td class="wrap">Abyssal Keep</td><td><code>0,1,0</code></td><td class="wrap">Dredge + Suit</td><td>Nereth</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ============================ PART II ============================ -->
+<section id="c1">
+  <div class="chap-head">
+    <span class="chap-n">Chapter 01 · Part II</span>
+    <h2 class="chap">Tidewatch Village</h2>
+  </div>
+
+  <p>The opening cutscene puts you on the shore in Tidewatch Village
+  (<code>overworld/0,4,7</code>). Farore explains that Nereth the Drowned King has
+  broken the Tide Bell into six Essences, hands you the <strong>Moon Conch</strong>
+  and then the <strong>Wooden Sword</strong>, and tells you to go east.</p>
+
+  <p><strong>Do not go east yet.</strong> The village is four buildings and a
+  square, and there is a lot in it.</p>
+
+  <div class="room">
+    <div class="room-h"><b>The square</b><span class="key">overworld/0,4,7</span></div>
+    <ul>
+      <li><strong>The Maku Tree</strong> — tile (4,1) → <code>houseMaku/0,0,0</code>.
+      Asleep. She wants one Essence <em>and</em> something of the Bell's. Farore is
+      in here at (7,4).</li>
+      <li><strong>The shop</strong> — tile (6,4) → <code>houseShop/0,0,0</code>.
+      <strong>Buy the shield for 30 rupees</strong> the moment you can; the first
+      dungeon opens with a room full of frontal shots. Skip the bomb and Bottled
+      Tide stock for now — both are refused until you own the bag they fill, and
+      the shopkeeper says so rather than taking your money.</li>
+      <li><strong>A village house</strong> — tile (2,4) → <code>houseHearth/0,0,0</code>.
+      A small rupee pickup and two people who explain the tide better than the sign does.</li>
+      <li><strong>The scrimshander</strong>, (2,6) — carves blanks into charms. Your
+      first blank is in Dungeon 1.</li>
+      <li><strong>The village digger</strong>, (8,2) — wants <strong>3 Essences</strong>,
+      then hands over the Ferryman's Coin. Remember him.</li>
+    </ul>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Village Shore</b><span class="key">overworld/0,4,8</span></div>
+    <p>One screen south. The net-mender's house at tile (3,5) →
+    <code>houseNets/0,0,0</code>. Inside is <strong>Ossa</strong>, and talking to
+    her starts the <a href="#chain">Coastwise Chain</a> — she hands you a Cracked
+    Float for nothing. The first four links are all within two screens:</p>
+    <ol>
+      <li><strong>Ossa</strong>, <code>houseNets/0,0,0</code> — gives the Cracked Float</li>
+      <li><strong>Pell</strong>, <code>0,4,8</code> at (3,2) — Float → Crab Claw</li>
+      <li><strong>Hulla</strong>, <code>0,5,8</code> at (6,3) — Claw → Salt Brick</li>
+      <li><strong>Mirren</strong>, <code>0,5,7</code> at (6,4) — Brick → Smoked Eel</li>
+    </ol>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>West Bluff → Bluff Grotto</b><span class="key">overworld/0,3,7</span></div>
+    <p>One screen west of the square. A cave mouth at tile (3,2) leads to
+    <code>cave1/0,0,0</code>. Inside:</p>
+    <ul>
+      <li>A chest with <strong>30 rupees</strong> at (4,3) — your shield money.</li>
+      <li><strong>Heart Piece 1</strong> at (2,2), in the open.</li>
+      <li>A big chest at (7,2) with the <strong>Noble Sword</strong>, which will not
+      open until you hold <strong>four Essences</strong>. Come back.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="c2">
+  <div class="chap-head">
+    <span class="chap-n">Chapter 02</span>
+    <h2 class="chap">The Shallows, and the road to the Grotto</h2>
+  </div>
+
+  <p>From the square: east to Village East (<code>0,5,7</code>), south to Driftwood
+  Strand (<code>0,5,8</code>), then east along the strand — East Strand
+  (<code>0,6,8</code>), Dune Crossing (<code>0,7,8</code>), <strong>Grotto Mouth</strong>
+  (<code>overworld/0,8,8</code>). Dungeon 1's door is at tile (4,1).</p>
+
+  <h4>Detours, all reachable with nothing but the conch</h4>
+
+  <div class="room">
+    <div class="room-h"><b>Sunken Reef → Reef Hollow</b><span class="key">overworld/0,6,7</span></div>
+    <p>East from Village East. A cave mouth at tile (4,3) leads to
+    <code>cave2/0,0,0</code> — go there now, not later. Full writeup below.</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Sandpiper Row</b><span class="key">overworld/0,9,8</span></div>
+    <p>East past the Grotto. Two houses, one shut; <code>houseSandpiper/0,0,0</code>
+    is the open one, with a small rupee pickup. <strong>Sennit</strong>, the chain's
+    sixth link, lives out here.</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Shell Flats</b><span class="key">overworld/0,10,8</span></div>
+    <p><strong>Heart Piece 3</strong> in the open at (6,4), guarded by an urchin.
+    Urchins are harmless until the tide covers them — take it at
+    <span class="tide t-low">LOW</span>.</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Wrecked Hull</b><span class="key">overworld/0,8,9</span></div>
+    <p>South of Dune Crossing. <strong>Dov</strong>, the chain's fifth link. Hand
+    him the Smoked Eel for a Sounding Lead, then carry it to Sennit for the Ringing
+    Whelk. That is the chain as far as it goes until you reach the Coral Reef.</p>
+  </div>
+
+  <p><code>overworld/0,11,8</code> Dune Corner has a buried rupee cache — note it
+  and come back with the Dredge Line.</p>
+
+  <h4>The Reef Hollow — the Kilnshell</h4>
+
+  <p>A dry column of sand runs up to the cave mouth on Sunken Reef from the south,
+  so you can reach the mouth at any tide; the reef flats around it are sandbar —
+  dry at LOW, wadeable at MID, deep at HIGH — so drop the water first if you want
+  to explore the rest of that screen rather than walk straight in.</p>
+
+  <div class="room">
+    <div class="room-h"><b>Reef Hollow</b><span class="key">cave2/0,0,0</span></div>
+    <ul>
+      <li>A rupee cache at (3,3), inside the seafloor patch — walkable only at
+      <span class="tide t-low">LOW</span>. A readable at (8,3), across the room, is
+      the whole puzzle: <em>"When the sea withdraws, walk where fish swam."</em></li>
+      <li><strong>Heart Piece 2</strong> at (2,2), deeper in the same patch. Same
+      requirement: <span class="tide t-low">LOW</span> tide only.</li>
+      <li>A big chest at (7,5), in the open, no requirements — the
+      <strong>Kilnshell</strong>.</li>
+      <li>A second rupee cache at (7,1), in a niche walled off by two tiles of
+      <strong>drift-tangle</strong> (7,2 and 8,2) — nothing else in the game opens
+      it. This is where the item's movement verb is taught, for twenty rupees
+      rather than a dungeon.</li>
+      <li>A readable at (1,5), low on the wall by the tide pool: <em>"Lime drinks
+      the sea and spits fire. Drown it and it sulks."</em></li>
+    </ul>
+  </div>
+
+  <div class="note">
+    <p><strong>How the Kilnshell works.</strong> Press the button and it sets one
+    down, already lit, on the tile you're facing. Press again, from anywhere, to
+    take it back. It burns everything it touches — torches, drift-tangle, and any
+    enemy standing over it, a little damage per tick rather than one big hit,
+    because it is a trap you place and the tide springs rather than a weapon you
+    swing. Set it beside a torch (not on top of one — torches are solid) and it
+    catches on its own.</p>
+    <p>The one thing the sea still has a say in: <strong>carry it into deep water
+    and it goes out.</strong> Set it down and strike it again — the one note this
+    item keeps from the rest of the roster. You can also pick it up the ordinary
+    way, like a pot or a rock, and carry it further before throwing it back down.</p>
+    <p>It has to live here rather than in a dungeon: fire is the one verb nothing
+    else in the game can perform, and the Coral Spire's Torch Cell — the first
+    puzzle that needs it — is the sixth room of the second dungeon.</p>
+  </div>
+</section>
+
+<section id="c3">
+  <div class="chap-head">
+    <span class="chap-n">Chapter 03 · Dungeon 1</span>
+    <h2 class="chap">Tidewash Grotto</h2>
+  </div>
+
+  <dl class="facts">
+    <dt>Door</dt><dd><code>overworld/0,8,8</code>, tile (4,1)</dd>
+    <dt>Item</dt><dd>Tidewright's Anchor</dd>
+    <dt>Keys</dt><dd>3 Small Keys, 3 locked doors</dd>
+    <dt>Boss</dt><dd>Gohmaraq, in <code>d1/0,3,1</code></dd>
+    <dt>Theme</dt><dd>Two tide levels in one room</dd>
+  </dl>
+
+  <p>The Grotto is a sluice. A <strong>well</strong> is wadeable only when the sea
+  is down; a <strong>drain</strong> is a hole in the floor until the sea fills it;
+  and the dungeon lays the two end to end with no dry footing between them. No
+  single setting of the conch crosses that. The Anchor is the answer.</p>
+
+  <h4>The southern half — no Anchor yet</h4>
+
+  <div class="room">
+    <div class="room-h"><b>Grotto Mouth</b><span class="key">d1/0,3,7</span></div>
+    <p class="plaque">"The sea keeps this floor. Take it back."</p>
+    <p>Two pots. North.</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>The Drinking Floor</b><span class="key">d1/0,3,6</span><span class="tide t-low">LOW</span></div>
+    <p>Four rows of well fill the middle and there is no walking round them.
+    <strong>Sound the conch to LOW</strong> and the whole floor is ankle deep. Two
+    crabs and a keese; crabs are shielded from the front, so hit them from the side
+    or behind. These three drop generously — the game knows this is your first fight.</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Bone Cell</b><span class="key">d1/0,2,6</span></div>
+    <p>West. A <strong>blank</strong> on the floor at (4,3) — the scrimshander's
+    raw material. One charm commission banked.</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Sunken Hall — the hub</b><span class="key">d1/0,3,5</span></div>
+    <p>Switches at (1,2) and (8,2), push blocks directly beneath at (1,3) and (8,3).
+    Push each block <strong>up one tile</strong> onto its switch. A fairy rises.</p>
+    <div class="note"><p><strong>A push block moves exactly one tile, ever.</strong>
+    Shove one the wrong way and it is gone — but every block in the game is seated
+    adjacent to the switch it belongs on, so "push it one square toward the switch"
+    is always the answer.</p></div>
+    <ul>
+      <li><strong>West</strong> — Map Alcove <code>d1/0,2,5</code>: the Dungeon Map.</li>
+      <li><strong>East</strong> — Chartstone Alcove <code>d1/0,4,5</code>: the
+      <strong>Chartstone</strong>, which marks which rooms change with the tide and
+      at which level. This game's Compass, and worth more than one.</li>
+    </ul>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Tide Gallery</b><span class="key">d1/0,3,4</span></div>
+    <p>A locked door north. You have no key yet; the two rooms either side hold both.</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Crab Pit</b><span class="key">d1/0,2,4</span></div>
+    <p>West. Three crabs, all shielded frontally. Clear the room and
+    <strong>Small Key 1</strong> clatters onto the stone.</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Switch Room</b><span class="key">d1/0,4,4</span></div>
+    <p>East. Switches at (2,2) and (7,2), blocks directly below at (2,3) and (7,3).
+    Push both up. <strong>Small Key 2</strong> and a heart drop.</p>
+  </div>
+
+  <p>Spend Key 1 on the Tide Gallery door and go north.</p>
+
+  <div class="room">
+    <div class="room-h"><b>The Locked Stair</b><span class="key">d1/0,3,3</span></div>
+    <p>Two zol — they split into gel when struck, so kill the halves too. Another
+    locked door north; spend <strong>Small Key 2</strong>.</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Weeping Wall</b><span class="key">d1/0,2,3</span></div>
+    <p>West. A chest at (4,3) holds <strong>Split Fang</strong> — a wider sword arc,
+    and a <span class="tide t-mid">MID</span> charm, which is the only case you have.
+    Slot it. Clearing the room also shakes a rupee cache out of the wall.</p>
+  </div>
+
+  <h4>The Sluicegate — the Anchor</h4>
+
+  <div class="room">
+    <div class="room-h"><b>The Sluicegate</b><span class="key">d1/0,3,2</span></div>
+    <p>The big chest at (4,4) is the <strong>Tidewright's Anchor</strong>.</p>
+    <p class="plaque">"Iron remembers. Sink it where you want the sea to stay."</p>
+    <p><strong>How it works.</strong> Throw it and it sinks: within roughly eight
+    tiles the tide <strong>stays at whatever level it was when the iron landed</strong>,
+    while the rest of the room obeys the conch. Press again to recall. The chain
+    sweeps for damage on both throw and recall. Two things follow that are not
+    obvious: the held patch is <strong>five tiles across</strong>, which is why the
+    gate rooms are the width they are; and <strong>your charms read the field too</strong>,
+    so standing inside a held patch keeps that patch's charms awake.</p>
+    <p>The boss door is directly above you in this room. The Boss Key is in the west wing.</p>
+  </div>
+
+  <div class="note">
+    <p><strong>The gate primitive</strong>, stated once because three rooms are built
+    from it. Written along a row from the side you arrive on:</p>
+    <p><code>. &nbsp;3 3 3 3&nbsp; 4 4 4 &nbsp;.</code><br>
+    <span class="key">3</span> a <strong>well</strong> — wadeable at LOW, over your head above.
+    <span class="key">4</span> a <strong>drain</strong> — an open pit at LOW, water above it.</p>
+    <p>Nothing between the two bands is walkable at both levels, and the hop clears
+    two tiles, so neither band is in range. The answer:</p>
+    <ul>
+      <li><strong>Wells near you</strong> — sound <span class="tide t-low">LOW</span>,
+      sink the iron in the well, sound to <span class="tide t-mid">MID</span>. The
+      drain ahead fills while your well stays walkable.</li>
+      <li><strong>Drains near you</strong> — sound <span class="tide t-mid">MID</span>,
+      sink the iron in the drain, sound to <span class="tide t-low">LOW</span>. The
+      well ahead empties while your drain keeps its water.</li>
+    </ul>
+  </div>
+
+  <h4>The east wing</h4>
+
+  <div class="room">
+    <div class="room-h"><b>The Iron Pipe</b><span class="key">d1/0,4,2</span><span class="tide t-low">LOW→MID</span></div>
+    <p>Entered from the west at (0,3). Wells near, drains far. LOW, sink the iron in
+    the well, conch to MID, walk across.</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>The Drowned Chamber</b><span class="key">d1/0,5,2</span></div>
+    <p>Not a gate — a fight, and the tide is the weapon. The pool is drain, so at MID
+    it is shallow water two anglerfry hunt in, and at LOW it is a floor of holes with
+    the fish flopping on it. A beached aquatic enemy dies. There is a dry ring round
+    the edge, so the room is optional.</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>The Long Race</b><span class="key">d1/0,5,1</span><span class="tide t-low">LOW→MID</span></div>
+    <p>Entered from the east at (9,3), crossed westward. Wells near again — same
+    solution, mirrored.</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>The Keyvault</b><span class="key">d1/0,4,1</span></div>
+    <p>A chest with <strong>Small Key 3</strong>.</p>
+  </div>
+
+  <div class="boss">
+    <div class="boss-h">
+      <span class="role">Miniboss · behind the last locked door</span>
+      <b>Clawcrab</b>
+      <div class="boss-meta">
+        <span class="hp">14 HP</span>
+        <span class="key">d1/0,5,3</span>
+        <span class="tide t-mid">FIGHT AT MID OR HIGH</span>
+      </div>
+    </div>
+    <div class="boss-b">
+      <p style="font-size:.93rem">A Gohmaraq that never grew a shell. Dry ground
+      suits it — at LOW it patrols and charges noticeably faster, so keep the water up.</p>
+      <div class="phase"><span class="pn">1</span><p><span class="hpct">above 50%</span>
+      Patrols across the room and snips a spread of rock. Stand off its patrol line
+      and punish each snip's recovery.</p></div>
+      <div class="phase"><span class="pn">2</span><p><span class="hpct">below 50%</span>
+      Adds a <strong>charge</strong> with a short tell. Sidestep it.</p></div>
+      <p style="font-size:.93rem; margin-top:.7rem"><strong>Reward:</strong>
+      <strong>Heart Piece 4</strong> rises at (14,4).</p>
+    </div>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>The Two Gauges</b><span class="key">d1/0,4,3</span><span class="tide t-high">HIGH→LOW</span></div>
+    <p>The other kind of Anchor room. The door at (4,5) opens only while the well at
+    <strong>(2,2) reads drained</strong> and the well at <strong>(7,2) reads drowned</strong>
+    — at the same instant. They are five tiles apart and the patch is five across, so
+    it cannot cover both.</p>
+    <p><strong>Solution.</strong> Conch to <span class="tide t-high">HIGH</span> so both
+    wells are drowned. Stand near the east well and throw the iron so the patch covers
+    (7,2) and not (2,2). Now conch to <span class="tide t-low">LOW</span>: the west well
+    drains with the room, the east keeps its water inside the patch. The door gives.</p>
+    <p>Behind it, <strong>Heart Piece 5</strong> at (2,6), and a one-way staircase at
+    (7,6) back down. That staircase is not a courtesy — an anchor recalled from the far
+    side of a gate cannot be re-sunk from that side.</p>
+  </div>
+
+  <h4>The west wing</h4>
+
+  <div class="room">
+    <div class="room-h"><b>The Long Sluice</b><span class="key">d1/0,2,2</span><span class="tide t-mid">MID→LOW</span></div>
+    <p>Entered from the east at (9,3). <strong>Drains near</strong> this time: MID,
+    sink the iron in the drain, conch to LOW, walk out over the emptied well.</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Cistern Turn</b><span class="key">d1/0,1,2</span></div>
+    <p>A zol and a crab, nothing else.</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Weeping Cistern</b><span class="key">d1/0,1,3</span></div>
+    <p>Switches at (1,1) and (8,1), blocks below at (1,2) and (8,2). Push both up for
+    a rupee cache.</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>The Drip Vault</b><span class="key">d1/0,1,1</span><span class="tide t-high">HIGH→LOW</span></div>
+    <p>The second gauge room, arranged vertically: the door at (8,3) wants the
+    <strong>upper well (4,1) drained</strong> and the <strong>lower well (4,6) drowned</strong>.
+    Same trick, one axis rotated.</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Bosskey Vault</b><span class="key">d1/0,2,1</span></div>
+    <p>A chest with the <strong>Boss Key</strong>, and a one-way staircase at (5,5)
+    back to the Locked Stair. Take the key to the Sluicegate.</p>
+  </div>
+
+  <div class="boss">
+    <div class="boss-h">
+      <span class="role">Boss · Dungeon 1</span>
+      <b>Gohmaraq, the Tidewash Claw</b>
+      <div class="boss-meta">
+        <span class="hp">24 HP</span>
+        <span class="key">d1/0,3,1</span>
+        <span class="tide t-low">DRAIN THE GROTTO</span>
+      </div>
+    </div>
+    <div class="boss-b">
+      <p style="font-size:.93rem">A crab that keeps its one eye behind a claw the size
+      of a door. <strong>The claw has to come down to attack, and while it is buried in
+      the floor the eye is exposed. That window is the only way in.</strong></p>
+      <div class="note" style="margin:.8rem 0">
+        <p>At <span class="tide t-low">LOW</span> the shell dries out, cracks, and the
+        claw <strong>sticks for twice as long</strong> after every slam. That single fact
+        roughly halves the fight. Sound the conch to LOW before the intro is over.</p>
+      </div>
+      <div class="phase"><span class="pn">1</span><p><span class="hpct">above 62%</span>
+      Scuttles the width of the arena and slams when you line up. Long frozen wind-up,
+      three rocks on landing. Stand off the line, let it land, get on the eye.</p></div>
+      <div class="phase"><span class="pn">2</span><p><span class="hpct">62–30%</span>
+      Faster, and it <strong>charges the length of the room</strong>. A charge that ends
+      in a wall leaves it dazed with the eye open — bait it into a wall on purpose.
+      Slams now throw five rocks.</p></div>
+      <div class="phase"><span class="pn">3</span><p><span class="hpct">below 30%</span>
+      Constant slams plus a <strong>ring of eight bubbles</strong> in every direction.
+      Two crabs are summoned; kill them or they hem you into the ring. Circle, never
+      back into a corner.</p></div>
+      <p style="font-size:.93rem; margin-top:.7rem"><strong>Reward:</strong> Heart
+      Container, then <strong>Essence I — the Shallow Bell</strong>.</p>
+    </div>
+  </div>
+</section>
+
+<section id="c4">
+  <div class="chap-head">
+    <span class="chap-n">Chapter 04 · Interlude</span>
+    <h2 class="chap">The Maku Tree, the shop, the Chain begins</h2>
+  </div>
+
+  <p>Go to <code>houseMaku/0,0,0</code>. With one Essence the Maku Tree is awake
+  enough to work — but she wants <em>something of the Bell's</em> as well, and that
+  is the <strong>Bell-Rope</strong> at the end of the Coastwise Chain.</p>
+
+  <div class="alarm">
+    <span class="alarm-tag">Do not skip this</span>
+    <p>The <strong>Resonance Rod is the Chain's reward, and the Rod is what opens the
+    Salt Pans.</strong> You cannot finish the game without going into the Pans — the
+    Bottled Tide case, two Heart Pieces and the Reef Palace are all in there. Run the Chain.</p>
+  </div>
+
+  <ul>
+    <li><strong>Buy the shield</strong> (30 rupees) if you have not.</li>
+    <li><strong>Commission a charm.</strong> The scrimshander takes your blank and 60
+    rupees. It is ready after <strong>three turns of the tide</strong> — sound the conch
+    three times and go back. The charm is rolled from every charm you do not own; you
+    cannot choose.</li>
+    <li><strong>Bombs</strong> are 20 rupees for four — but you have nothing to carry
+    them in yet. The pouch is in Dungeon 2. Wait.</li>
+  </ul>
+</section>
+
+<section id="c5">
+  <div class="chap-head">
+    <span class="chap-n">Chapter 05</span>
+    <h2 class="chap">The Coral Reef</h2>
+  </div>
+
+  <p>From Tidewatch: east to Village East (<code>0,5,7</code>), east to Sunken Reef
+  (<code>0,6,7</code>), east through Shallows Gate (<code>0,7,7</code>), Grotto
+  Approach (<code>0,8,7</code>), Dune Bowl (<code>0,9,7</code>), then <strong>north</strong>
+  to Sandbar Run (<code>0,9,6</code>), east to Feather Gap (<code>0,10,6</code>), north
+  to <strong>Spire Mouth</strong> (<code>overworld/0,10,5</code>).</p>
+
+  <p>The dune screens are laced with one-tile chasms — walk into them, the hop is
+  automatic. The four-tile bands along the reef's southern edge are walls and always
+  will be.</p>
+
+  <div class="room">
+    <div class="room-h"><b>Outer Coral</b><span class="key">overworld/0,11,4</span></div>
+    <p>Via Coral Foot (<code>0,11,5</code>). <strong>Heart Piece 6</strong> in the open
+    at (5,5), sitting on reef flat that is exposed at <span class="tide t-low">LOW</span>,
+    wadeable at <span class="tide t-mid">MID</span> and underwater at
+    <span class="tide t-high">HIGH</span> — take it at either of the first two.</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Reef Edge</b><span class="key">overworld/0,11,3</span></div>
+    <p>A fairy sitting in the open — a free full heal, worth remembering as a checkpoint.</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Coral Hollow</b><span class="key">overworld/0,9,5</span></div>
+    <p>One screen west of Spire Mouth. <strong>Corriwig</strong>, the Chain's seventh
+    link — Ringing Whelk → Slackwater Pearl.</p>
+  </div>
+
+  <p>Reef Market (<code>overworld/0,9,2</code>) and the northern reef sit behind the
+  Salt Pans' vane gate. Later.</p>
+</section>
+
+<section id="c6">
+  <div class="chap-head">
+    <span class="chap-n">Chapter 06 · Dungeon 2</span>
+    <h2 class="chap">Coral Spire</h2>
+  </div>
+
+  <dl class="facts">
+    <dt>Door</dt><dd><code>overworld/0,10,5</code>, tile (4,1)</dd>
+    <dt>Items</dt><dd>Brineglass Lens <em>and</em> Bombs</dd>
+    <dt>Keys</dt><dd>2 required for 2 locked doors, plus a bonus third</dd>
+    <dt>Boss</dt><dd>Anemos, in <code>d2/1,3,1</code></dd>
+    <dt>Theme</dt><dd>Commit-blind becomes plan-first</dd>
+  </dl>
+
+  <p>The Spire is a tower of dry shafts, and a dry shaft tells you nothing. When the
+  water comes in, one is wadeable, one is over your head, and one is still a hole —
+  and by the time it arrives you have already chosen which one you are standing over.
+  The Lens is the only thing in the game that draws a room <strong>as it will be</strong>.</p>
+
+  <h4>Ground floor</h4>
+
+  <div class="room">
+    <div class="room-h"><b>Spire Mouth</b><span class="key">d2/0,3,7</span></div>
+    <p class="plaque">"What rises, carries. What falls, reveals. Look before you fall."</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Coral Landing</b><span class="key">d2/0,3,6</span></div>
+    <p>An urchin and a crab; clear them for a fairy.</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Bone Cell</b><span class="key">d2/0,2,6</span></div>
+    <p>West. A <strong>blank</strong> at (2,1). Second charm banked.</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Tide Gallery</b><span class="key">d2/0,3,5</span></div>
+    <p>A jellyfish and a crab. Jellyfish drift with the water and sting on contact;
+    they are easier at <span class="tide t-low">LOW</span>, with less water to drift in.</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Map Nook</b><span class="key">d2/0,2,5</span></div>
+    <p>West — the Dungeon Map.</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Torch Cell</b><span class="key">d2/0,4,5</span></div>
+    <p>East. Three torches at (1,1), (8,1) and (4,6), and a keese. Light all three
+    with the <strong>Kilnshell</strong> — set it down beside each in turn — and a
+    Small Key drops.</p>
+    <div class="note">
+      <p><strong>Optional.</strong> Nothing later in the dungeon needs this key;
+      walk past it without the Kilnshell and come back for it once you own one,
+      or skip it outright.</p>
+    </div>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Rising Chamber</b><span class="key">d2/0,3,4</span></div>
+    <p>Switches at (1,5) and (8,6) with blocks beside them at (2,5) and (7,6), plus a
+    barnacle at (4,6) that opens to spit and is shielded while shut. Push both blocks
+    onto their switches; the door at (4,1) lifts, and <strong>the mandatory Small
+    Key 1</strong> rattles loose with it — this is the room the Spire's route
+    actually runs through, not the Torch Cell.</p>
+    <p class="plaque">"The floor of this room is a door. Shut the sea out and it is only a hole."</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Cistern Cell</b><span class="key">d2/0,3,3</span></div>
+    <p>Through that door. A chest at (2,1) holds <strong>Barnacle Skin</strong> — one
+    free hit per room, and it cracks until you leave. Another
+    <span class="tide t-mid">MID</span> charm; if you already carved one for that case
+    you have a choice to make until 6 Essences opens the second slot.</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Stair Coil</b><span class="key">d2/0,2,4</span></div>
+    <p>Locked — spend <strong>Small Key 1</strong>. The stairs at (2,2) go up to floor 1.
+    The lock stands at tile (5,3), between the eastern entrance and the staircase, and
+    it is the only staircase in the dungeon.</p>
+  </div>
+
+  <h4>Upper floor: the Lens</h4>
+
+  <p>Upper Landing (<code>d2/1,2,4</code>) → Anemone Cell (<code>d2/1,2,5</code>) for a
+  fairy → back east to Spire Concourse (<code>d2/1,3,4</code>) → east again to
+  <strong>Sealed Cell</strong> (<code>d2/1,4,4</code>).</p>
+
+  <div class="room">
+    <div class="room-h"><b>Sealed Cell — the Brineglass Lens</b><span class="key">d2/1,4,4</span></div>
+    <p>The big chest at (2,1). The pane of green glass in the wall shows the room
+    standing a hand deeper in water than it is — which is exactly what the item does.</p>
+    <p><strong>How it works.</strong> <em>Hold</em> the button and the room re-renders as
+    a ghosted overlay at the <strong>next</strong> tide level: terrain, platforms,
+    currents, and the enemies that only exist there. Release and it snaps back. It has
+    no movement verb and that is deliberate — <strong>the Lens is never required to make
+    a room passable</strong>, only to make it survivable first time.</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Glass Cell</b><span class="key">d2/1,4,5</span></div>
+    <p>South. Two keese in here are <strong>phase-shifted</strong>: neither drawn nor
+    hittable unless the Lens is up. Hold the Lens, kill them, take
+    <strong>Heart Piece 7</strong> at (4,2).</p>
+    <p class="plaque">"Nothing here. The salt on the floor says otherwise."</p>
+  </div>
+
+  <h4>The forks</h4>
+
+  <div class="room">
+    <div class="room-h"><b>The First Fork</b><span class="key">d2/1,4,3</span><span class="tide t-low">PINNED LOW</span></div>
+    <p>The room <strong>pins the tide to LOW and refuses the conch</strong>. The only
+    thing that moves water in here is the coral sluice at the bottom of each alcove —
+    and by the time you can reach one you have taken a one-way ledge you cannot climb
+    back up. Read the shelf at (4,5), then commit.</p>
+    <p>At LOW <strong>both shafts draw the same tile</strong>. That is the point. Hold
+    the Lens on the shelf and you see the room one level up:</p>
+    <ul>
+      <li><strong>West shaft</strong> (x=1) is a <strong>drain</strong> — wading depth at
+      MID. <strong>This is the way on.</strong></li>
+      <li><strong>East shaft</strong> (x=8) is a <strong>pit</strong> — a hole at every
+      level, forever.</li>
+    </ul>
+    <p>Take the west ledge down to (1,5), hit the sluice at (2,6) to step the water up,
+    and wade up the shaft and out the top at (1,0). The east side's stair at (7,4) puts
+    you back down the spire with the walk to do again — being wrong is a
+    <strong>cost</strong>, not a lock.</p>
+  </div>
+
+  <div class="boss">
+    <div class="boss-h">
+      <span class="role">Miniboss · north of the fork, two screens wide</span>
+      <b>Reefguard</b>
+      <div class="boss-meta">
+        <span class="hp">16 HP</span>
+        <span class="key">d2/1,4,2</span>
+        <span class="tide t-high">FLOOD THE ROOM</span>
+      </div>
+    </div>
+    <div class="boss-b">
+      <p style="font-size:.93rem">A coral plate that has to lift to strike, and that is
+      the whole fight. It closes on you and winds up: the plate opens, three orbs come
+      out, and it stays open afterwards. <strong>At HIGH tide it stays open far
+      longer</strong> — about 130 frames against 80.</p>
+      <div class="phase"><span class="pn">1</span><p><span class="hpct">above 50%</span>
+      Chases slowly, strikes every 140 frames. Punish each open plate.</p></div>
+      <div class="phase"><span class="pn">2</span><p><span class="hpct">below 50%</span>
+      Charges, and fires rings of six instead of spreads of three.</p></div>
+      <p style="font-size:.93rem; margin-top:.7rem"><strong>Reward:</strong> <strong>Small Key 2</strong>.</p>
+    </div>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Bomb Vault</b><span class="key">d2/1,5,3</span></div>
+    <p>East of the fork. A big chest with <strong>Bombs</strong> — the pouch. From here
+    bombs refill from grass, pots, drops and the shop, and, far more importantly,
+    <strong>the Sunken Marsh and the Cliffs of Kell are now open</strong>.</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Whelk Cell</b><span class="key">d2/1,5,4</span></div>
+    <p>South of the Bomb Vault. A rupee cache at (3,3), <strong>Heart Piece 8</strong>
+    at (4,4), and another phased keese — Lens up.</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Spire Ascent</b><span class="key">d2/1,3,2</span></div>
+    <p>The inner stair, one screen wide and two tall, with a jellyfish, a crab and a
+    keese spread up it. The <strong>boss door</strong> is in this room, and so is the
+    last locked door. Spend <strong>Small Key 2</strong> to go west.</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Drowned Cell</b><span class="key">d2/1,2,3</span></div>
+    <p>An urchin and a rupee cache.</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>The Sounding Fork</b><span class="key">d2/1,2,2</span><span class="tide t-low">PINNED LOW</span></div>
+    <p>The same primitive with a third answer, and it is the one the first fork could
+    not teach: a shaft that fills <strong>over your head</strong>. Three throats at x=1,
+    x=4 and x=7. The shelf is at (4,6).</p>
+    <p class="plaque">"One wades. One waits. One keeps you."</p>
+    <p>Hold the Lens. One level up:</p>
+    <ul>
+      <li><strong>West</strong> (x=1) — a <strong>drain</strong>, wading depth.
+      <strong>Take this one.</strong></li>
+      <li><strong>Middle</strong> (x=4) — a <strong>pit</strong>. It waits, and it will
+      keep waiting.</li>
+      <li><strong>East</strong> (x=7) — a <strong>sump</strong>. It fills over your head.
+      That is the one that keeps you.</li>
+    </ul>
+    <p>Down the west ledge to (1,4), sluice at (2,3), up and out at (1,0).</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Bosskey Cell</b><span class="key">d2/1,2,1</span></div>
+    <p>A chest with the <strong>Boss Key</strong>. Back to Spire Ascent.</p>
+  </div>
+
+  <div class="boss">
+    <div class="boss-h">
+      <span class="role">Boss · Dungeon 2</span>
+      <b>Anemos, the Crowned Column</b>
+      <div class="boss-meta">
+        <span class="hp">30 HP</span>
+        <span class="key">d2/1,3,1</span>
+        <span class="tide t-high">FLOOD THE SPIRE</span>
+      </div>
+    </div>
+    <div class="boss-b">
+      <p style="font-size:.93rem">Rooted to the floor, so this is a fight about position
+      rather than pursuit. It fills the room with shots and lashes anything that stands
+      next to it.</p>
+      <div class="note" style="margin:.8rem 0">
+        <p>Anemos has to <strong>unfurl to feed</strong>, and it feeds on what the water
+        brings. Its open window is <strong>40 frames at LOW, 80 at MID, 160 at HIGH</strong>.
+        The feed cycle runs every 250 frames regardless, so at HIGH you get roughly two
+        and a half seconds of open target every four seconds.</p>
+      </div>
+      <div class="phase"><span class="pn">1</span><p><span class="hpct">above 62%</span>
+      Sways and puffs rings of six spore-bubbles — walk the gaps, they are evenly spaced
+      and slow. Stand within ~44px and it <strong>lashes</strong>: wind-up, then five fast
+      spines. Do not linger in melee outside a feed window.</p></div>
+      <div class="phase"><span class="pn">2</span><p><span class="hpct">62–32%</span>
+      A <strong>rotating sweep</strong> — three orbs every 26 frames, each volley rotated,
+      so the pattern rakes the room like a lighthouse. Walk <em>with</em> the rotation,
+      not across it. Two jellyfish summoned.</p></div>
+      <div class="phase"><span class="pn">3</span><p><span class="hpct">below 32%</span>
+      Aimed five-shot volleys between ten-shot rings, and it feeds constantly — so it is
+      open constantly. Two urchins summoned; clear them.</p></div>
+      <p style="font-size:.93rem; margin-top:.7rem"><strong>Reward:</strong> Heart
+      Container, <strong>Essence II — the Coral Bell</strong>, and at two Essences your
+      <span class="tide t-low">LOW</span> charm case cuts itself.</p>
+    </div>
+  </div>
+</section>
+
+<section id="c7">
+  <div class="chap-head">
+    <span class="chap-n">Chapter 07 · Interlude</span>
+    <h2 class="chap">Bombs open two regions</h2>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>The Sunken Marsh</b><span class="tide t-low">CAUSEWAY WADES AT LOW</span></div>
+    <p>Two entrances, both sealed by cracked cliff, and sealing only one would have
+    gated nothing since both reach the same screens.</p>
+    <ul>
+      <li><strong>Bog Causeway</strong> <code>overworld/0,2,7</code> — west from West
+      Bluff. Bomb the cracked cliff.</li>
+      <li><strong>Bog Stair</strong> <code>overworld/0,1,6</code> — the back door down
+      from the Cliffs. Also bombed.</li>
+    </ul>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>The Cliffs of Kell</b><span class="key">overworld/0,3,4</span></div>
+    <p><strong>The Deep Cut</strong> is a rockfall with one already-split boulder in it.
+    Bomb it. That single boulder is the only way into the Cliffs, and therefore the only
+    way to everything north of them — the Salt Pans and the Abyssal approach included.</p>
+    <p>The Deep Cut also has a raft at (3,3) and a sign listing the three ways across:
+    <em>"Swim it, blow the raft, or grow a bridge."</em> All three work, once you own the things.</p>
+  </div>
+
+  <p><strong>Into the Marsh.</strong> From Tidewatch: west to West Bluff
+  (<code>0,3,7</code>), west to Bog Causeway (<code>0,2,7</code>), west to Sanctum Path
+  (<code>0,1,7</code>) — a rupee cache in the open at (2,2) — and south to
+  <strong>Sanctum Mouth</strong> (<code>overworld/0,1,8</code>). One screen further south
+  is Witch's Hollow (<code>0,1,9</code>) with <strong>Yarrow</strong>, the Chain's ninth
+  link, and a buried Heart Piece you cannot reach yet.</p>
+</section>
+
+<section id="c8">
+  <div class="chap-head">
+    <span class="chap-n">Chapter 08 · Dungeon 3</span>
+    <h2 class="chap">Bogwater Sanctum</h2>
+  </div>
+
+  <dl class="facts">
+    <dt>Door</dt><dd><code>overworld/0,1,8</code>, tile (4,1)</dd>
+    <dt>Item</dt><dd>Kelp-Soled Cleats</dd>
+    <dt>Keys</dt><dd>3 Small Keys, 3 locked doors</dd>
+    <dt>Boss</dt><dd>Gloomtide, in <code>d3/0,3,1</code></dd>
+    <dt>Theme</dt><dd>Surface route vs. seafloor route</dd>
+  </dl>
+
+  <p>The Grotto held the water still; the Spire made you bet on it. The Sanctum floods
+  and <strong>stays</strong> flooded. What you choose here is not a tide level but which
+  <strong>layer</strong> of the water you travel in.</p>
+
+  <div class="room">
+    <div class="room-h"><b>Sanctum Mouth</b><span class="key">d3/0,3,7</span></div>
+    <p class="plaque">"The water has two floors. Only one of them drowns you."</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Drowned Nave</b><span class="key">d3/0,3,6</span></div>
+    <p>A jellyfish and a crab; clear them for a fairy.</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Bell Cell</b><span class="key">d3/0,4,6</span></div>
+    <p>East. A chest at (4,2) with <strong>Wrecker's Eye</strong> — chests and buried
+    secrets glimmer through the terrain — and a <strong>blank</strong> at (6,4).
+    Wrecker's Eye is a <span class="tide t-low">LOW</span> charm and your LOW case opened
+    on the Spire's essence, so this is the first thing you can put in it.
+    <strong>Slot it and leave it there</strong>; it makes every buried cache in the back
+    half of the game visible.</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Bog Hub → Map Cell → Sluice Cell</b><span class="key">d3/0,3,5</span></div>
+    <p>West is Map Cell (<code>d3/0,2,5</code>) for the Dungeon Map. East is Sluice Cell
+    (<code>d3/0,4,5</code>): switches at (2,2) and (7,2), blocks at (2,3) and (7,3), push
+    both up — <strong>Small Key 1</strong>.</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>The Weir</b><span class="key">d3/0,3,4</span></div>
+    <p>Locked; spend <strong>Small Key 1</strong>. West is Silt Cell
+    (<code>d3/0,2,4</code>) with the <strong>Chartstone</strong>.</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Reed Cell</b><span class="key">d3/0,4,4</span></div>
+    <p>East. Clear the jellyfish and the crab and <strong>Heart Piece 9</strong> rises
+    out of the reeds at (4,6).</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>The Cistern Floor — the Cleats</b><span class="key">d3/0,3,3</span></div>
+    <p>The chest stands on the only dry island in the room, so the first thing the Cleats
+    are used for is getting off the rock you opened them on.</p>
+    <p><strong>How they work.</strong> Two modes on one button. <strong>Swim</strong> —
+    surface movement over deep water; fast, and exposed to everything that swims.
+    <strong>Sink</strong> — press again and you walk on the <strong>floor beneath</strong>
+    the water: slow, no hop, <strong>no sword</strong>, immune to knockback and immune to
+    currents, and you can carry heavy things down there. You run on a fixed amount of
+    <strong>breath</strong>.</p>
+  </div>
+
+  <div class="note">
+    <p><strong>The torrent</strong>, stated once because three rooms are built on it.
+    A torrent is deep at every tide level and pushes <strong>harder than you can swim</strong>
+    — not slightly harder; the arithmetic is the wrong side of zero, so on the surface you
+    make <em>no headway at all</em> and get carried back to the shelf you left. A torrent
+    is not a tide tile, so no setting of the conch touches it.</p>
+    <p>On the floor, nothing pushes you: a tile's current applies only while you are in deep
+    water and <em>not</em> underwater, and weighted soles are exactly what the Cleats are.
+    <strong>Sink and walk.</strong></p>
+  </div>
+
+  <h4>The west wing</h4>
+
+  <div class="room">
+    <div class="room-h"><b>The Undertow</b><span class="key">d3/0,2,3</span><span class="tide t-off">SINK</span></div>
+    <p>West of the item room. Enter at (9,3), sink, walk the floor west to (0,3). Bare on
+    purpose — there is nowhere to stand in a torrent room.</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Sunken Vestry</b><span class="key">d3/0,1,3</span></div>
+    <p>Switches at (2,2) and (7,2), blocks below. <strong>Small Key 2</strong>. South is
+    Silt Vault (<code>d3/0,1,4</code>) with a rupee cache.</p>
+  </div>
+
+  <div class="boss">
+    <div class="boss-h">
+      <span class="role">Miniboss</span>
+      <b>Bogmaw</b>
+      <div class="boss-meta">
+        <span class="hp">15 HP</span>
+        <span class="key">d3/0,2,2</span>
+        <span class="tide t-off">TAKE THE TIDE OFF MID</span>
+      </div>
+    </div>
+    <div class="boss-b">
+      <p style="font-size:.93rem">A mouth in the floor. It <strong>submerges and
+      resurfaces beside you</strong>, chasing while up and spitting ink on a timer.
+      <strong>It rides the sanctum's current, which only runs at MID</strong> — 0.85 at
+      MID, 0.5 off it.</p>
+      <div class="phase"><span class="pn">1</span><p><span class="hpct">above 50%</span>
+      Down 60 frames, up 110. Three-shot ink spreads while up.</p></div>
+      <div class="phase"><span class="pn">2</span><p><span class="hpct">below 50%</span>
+      Stops hiding entirely and fires six-shot rings. Permanently on the surface — this
+      is the phase to burn it down in.</p></div>
+      <p style="font-size:.93rem; margin-top:.7rem">No lock on this room. West is Drain
+      Gallery.</p>
+    </div>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Drain Gallery</b><span class="key">d3/0,1,2</span></div>
+    <p>West of Bogmaw Hall. The chest at (7,3) with the <strong>Boss Key</strong> is on
+    the side you arrive on — take it first. The room's <strong>locked door at (5,4)</strong>
+    separates the chest's half from the western half and the way back down to the Vestry;
+    spend <strong>Small Key 2</strong> on it, or walk back the way you came.</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Vestry Roof</b><span class="key">d3/0,2,1</span></div>
+    <p>North of Bogmaw Hall. <strong>Heart Piece 10</strong> at (4,4).</p>
+  </div>
+
+  <h4>The east wing</h4>
+
+  <div class="room">
+    <div class="room-h"><b>The Bogwater Drain</b><span class="key">d3/0,4,3</span><span class="tide t-off">SINK</span></div>
+    <p>Torrent room 2, and <strong>the current runs the other way</strong> — a player who
+    learned "swim east" in the Undertow learns nothing here. Enter at (0,3), sink, walk
+    east to (9,3).</p>
+    <p>There is an alcove under the channel that only opens off the <strong>seafloor</strong>;
+    the surface route never sees it, and there is a fairy in it at (4,6). Nothing in it is
+    required — that is the trade the whole dungeon is about: the slow layer is the one that
+    finds things.</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Eel Hall</b><span class="key">d3/0,5,3</span></div>
+    <p>An urchin and a crab, and a <strong>locked door at (4,2)</strong> across the middle
+    of the room. Behind it is the north exit, and the north exit is the Kelp Locks. You need
+    the third key first, and it is one room south.</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Eel Vault</b><span class="key">d3/0,5,4</span></div>
+    <p>A barnacle at (4,4) and a keese. Clear them for <strong>Small Key 3</strong>, then go
+    back up to Eel Hall and spend it.</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>The Kelp Locks</b><span class="key">d3/0,4,2</span><span class="tide t-off">SINK · ONE BREATH</span></div>
+    <p>Two screens wide, and the only room in the dungeon where your breath is not
+    decorative: <strong>eighteen tiles of seafloor in one dive</strong>, with no shelf in
+    the middle to surface on. Enter at (14,7), sink immediately, walk west to (0,3) without
+    stopping.</p>
+    <p>The <strong>Gillcarve</strong> charm makes this free — but it is in Dungeon 5, so
+    you cannot have it yet. Go straight across.</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>The Lock Gallery</b><span class="key">d3/0,3,2</span></div>
+    <p>At the western end of the Kelp Locks. No lock despite the name — the boss door is
+    here, and the Boss Key is already in your pocket.</p>
+  </div>
+
+  <div class="boss">
+    <div class="boss-h">
+      <span class="role">Boss · Dungeon 3</span>
+      <b>Gloomtide, the Bogwater Maw</b>
+      <div class="boss-meta">
+        <span class="hp">36 HP</span>
+        <span class="key">d3/0,3,1</span>
+        <span class="tide t-off">KEEP THE TIDE OFF MID</span>
+      </div>
+    </div>
+    <div class="boss-b">
+      <p style="font-size:.93rem">A dripping mass with two lantern eyes that sinks into the
+      bog to close distance and comes up somewhere behind you.</p>
+      <div class="note" style="margin:.8rem 0">
+        <p>The sanctum's current only runs at MID, and riding it makes Gloomtide
+        <strong>1.7× its speed</strong> and drags it toward you. Off MID it is a sack of
+        water at <strong>0.65×</strong>. From phase 2 it <strong>keeps shoving the tide back
+        to MID</strong> — every 420 frames, then every 360. That tug of war <em>is</em> the fight.</p>
+      </div>
+      <div class="phase"><span class="pn">1</span><p><span class="hpct">above 62%</span>
+      Wallows toward you and spits three-shot spreads after a wind-up. Straightforward — do
+      your damage here.</p></div>
+      <div class="phase"><span class="pn">2</span><p><span class="hpct">62–32%</span>
+      <strong>Submerges</strong> — down ~70 frames, up 130 — and <strong>sheds a gel most
+      times it surfaces</strong>. Five-shot spreads while up. Watch for the surfacing tell
+      and be somewhere else. Clear the gels.</p></div>
+      <div class="phase"><span class="pn">3</span><p><span class="hpct">below 32%</span>
+      Stops hiding. Faster, heavier, <strong>eight-way ink rings</strong>. Two zol at the
+      phase change. Keep the tide off MID, keep circling, hit it between rings.</p></div>
+      <p style="font-size:.93rem; margin-top:.7rem"><strong>Reward:</strong> Heart Container,
+      <strong>Essence III — the Bog Bell</strong>.</p>
+    </div>
+  </div>
+</section>
+
+<section id="c9">
+  <div class="chap-head">
+    <span class="chap-n">Chapter 09</span>
+    <h2 class="chap">The Cliffs of Kell</h2>
+  </div>
+
+  <p>From Tidewatch: east to Village East (<code>0,5,7</code>), north to The Wading
+  (<code>0,5,6</code>), west to South Wood (<code>0,4,6</code>), north through Bog Trees
+  (<code>0,4,5</code>) and Shrine Path (<code>0,4,4</code>) to <strong>The Deep Cut</strong>
+  (<code>overworld/0,3,4</code>) — the bombed rockfall. Then north to Cliff Face
+  (<code>0,3,3</code>) and west to <strong>Kell Ledges</strong> (<code>overworld/0,2,3</code>),
+  where <strong>Heart Piece 11</strong> sits in the open at (6,2). West again is
+  <strong>Cistern Mouth</strong> (<code>overworld/0,1,3</code>).</p>
+
+  <p>The Cliffs are a high stone shelf over deep water. The sign on Upper Kell
+  (<code>overworld/0,2,2</code>) gives the region's rule:</p>
+  <p class="plaque">"The low walls drown at HIGH tide. Swim what you cannot climb."</p>
+
+  <p>The iron seal above that screen is the Keep's, and nothing you carry opens it.
+  <strong>Marsh Stair</strong> (<code>overworld/0,1,5</code>) is a run of four boulders —
+  Dredge Line work. They hold the Marsh's two northern screens and nothing on the critical
+  path, so leave them for the endgame.</p>
+</section>
+
+<section id="c10">
+  <div class="chap-head">
+    <span class="chap-n">Chapter 10 · Dungeon 4</span>
+    <h2 class="chap">Cliffside Cistern</h2>
+  </div>
+
+  <dl class="facts">
+    <dt>Door</dt><dd><code>overworld/0,1,3</code>, tile (4,1)</dd>
+    <dt>Item</dt><dd>Squall Bellows</dd>
+    <dt>Keys</dt><dd>3 — two from puzzles, the third out of a wheel</dd>
+    <dt>Boss</dt><dd>Wyverna, in <code>d4/0,3,1</code></dd>
+    <dt>Theme</dt><dd>The sea in two states at the same instant</dd>
+  </dl>
+
+  <p>The whole dungeon after the Bellows is one sentence built five different ways:</p>
+  <p class="plaque">A drowned wheel does not turn, and the only thing that takes the water
+  off one is the gust that turns it.</p>
+  <p>You own the Cleats now, so deep water is a road. Every wheel in here therefore sits
+  behind a trench of <strong>pit</strong>, which neither Cleat mode crosses.</p>
+
+  <h4>Before the Bellows</h4>
+
+  <div class="room">
+    <div class="room-h"><b>Cistern Head</b><span class="key">d4/0,3,7</span></div>
+    <p class="plaque">"This cistern is worked from the far bank. Nothing here is meant to be reached."</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Rainwater Landing → Map → Cracked Basin</b><span class="key">d4/0,3,6</span></div>
+    <p>West is Overflow Sluice (<code>d4/0,2,6</code>) for the Dungeon Map. East is Cracked
+    Basin (<code>d4/0,4,6</code>): a stalfos, a tektite and a keese. <strong>Stalfos are
+    skittish and hop away from your sword</strong> — corner them or meet them where they
+    land. Clear the room for <strong>Small Key 1</strong>.</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>The Weir</b><span class="key">d4/0,3,5</span></div>
+    <p>The sump band, taught before it is ever load-bearing: at LOW those four squares have
+    <strong>no floor at all</strong>, and at MID they are over your head. Locked door at
+    (4,2); spend <strong>Small Key 1</strong>.</p>
+    <p class="plaque">"At low water the sluices have no floor. Mind your feet."</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Drowned Stair</b><span class="key">d4/0,2,5</span></div>
+    <p>West — a chest with the <strong>Chartstone</strong>.</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Rung Gallery</b><span class="key">d4/0,4,5</span><span class="tide t-high">HIGH</span></div>
+    <p>East — <strong>Heart Piece 12</strong> at (3,3), inside a drown-wall box with one
+    square of floor in it. The walls are stone at LOW and MID and deep at HIGH:
+    <strong>sound the conch to HIGH and swim in over them</strong>.</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Cliffside Cell</b><span class="key">d4/0,5,5</span></div>
+    <p>East again. A chest at (4,2) with <strong>Bosun's Whistle</strong> — the conch sounds
+    faster. A <span class="tide t-mid">MID</span> charm, and in a dungeon that has you
+    sounding the conch between every wheel and every shelf, worth wearing for the rest of
+    the game.</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>The Cistern Floor</b><span class="key">d4/0,4,4</span></div>
+    <p>Two screens wide. Switches at (3,1) and (16,6), one block at (4,1). Push the block
+    onto the near switch and <strong>stand on the far one yourself</strong> — where a room
+    has fewer blocks than switches, you are the second weight. <strong>Small Key 2</strong>.</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Barnacle Cell → Winch Room</b><span class="key">d4/0,2,4</span></div>
+    <p class="plaque">"The wheels are set where no hand goes. Bring wind."</p>
+    <p>Locked door at (2,3); spend <strong>Small Key 2</strong>.</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Bellows Vault</b><span class="key">d4/0,1,4</span></div>
+    <p>The big chest holds the <strong>Squall Bellows</strong>.</p>
+    <p><strong>How they work.</strong> <em>Hold</em> the button to blow. Three things happen
+    at once and only while the button is down: a directional gust that
+    <strong>pushes light enemies</strong>; it <strong>spins wheels</strong>; and
+    <strong>the water inside the cone falls one level</strong> below the rest of the room.
+    And you cannot move while you pump. That is the design — the cone is a thing you open
+    for something <em>else</em>, because the moment you walk into it, it closes. The gust
+    does not blow through stone.</p>
+  </div>
+
+  <h4>The six sills</h4>
+  <p>Every sill is a place to stand plus a wheel to blow at. Stand exactly here, face
+  exactly this way, at exactly this tide.</p>
+
+  <div class="tw"><table>
+    <thead><tr><th>Sill</th><th class="wrap">Room</th><th>Wheel</th><th>Stand</th><th>Face</th><th>Tide</th><th class="wrap">Gives</th></tr></thead>
+    <tbody>
+      <tr><td class="num">1</td><td class="wrap">Squall Loft <code>d4/0,1,3</code></td><td class="num">(1,1)</td><td class="num">(4,1)</td><td>left</td><td><span class="tide t-mid">MID</span></td><td class="wrap">door (8,3)</td></tr>
+      <tr><td class="num">2</td><td class="wrap">The Drowned Sill <code>d4/0,2,3</code></td><td class="num">(8,6)</td><td class="num">(5,6)</td><td>right</td><td><span class="tide t-high">HIGH</span></td><td class="wrap">door (4,1)</td></tr>
+      <tr><td class="num">3</td><td class="wrap">Cistern Gauge <code>d4/0,2,2</code></td><td class="num">(1,3)</td><td class="num">(4,3)</td><td>left</td><td><span class="tide t-mid">MID</span></td><td class="wrap"><strong>Small Key 3</strong></td></tr>
+      <tr><td class="num">4</td><td class="wrap">The Long Race <code>d4/0,4,3</code></td><td class="num">(2,1)</td><td class="num">(2,4)</td><td>up</td><td><span class="tide t-high">HIGH</span></td><td class="wrap">grating (8,6)</td></tr>
+      <tr><td class="num">5</td><td class="wrap">Crossed Sluices <code>d4/0,4,2</code></td><td class="num">(1,1)</td><td class="num">(1,4)</td><td>up</td><td><span class="tide t-mid">MID</span></td><td class="wrap">—</td></tr>
+      <tr><td class="num">6</td><td class="wrap">Crossed Sluices <code>d4/0,4,2</code></td><td class="num">(8,1)</td><td class="num">(8,4)</td><td>up</td><td><span class="tide t-high">HIGH</span></td><td class="wrap"><strong>Boss Key</strong></td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="alarm">
+    <span class="alarm-tag">Sill 3 — do not walk out</span>
+    <p>The Cistern Gauge key is <strong>released by the wheel</strong> and the wheel has
+    already done its work. Pick it up before you leave the room.</p>
+  </div>
+
+  <div class="note">
+    <p><strong>Why those tide levels</strong>, if you want to understand rather than follow:</p>
+    <p><strong>The sump shelf, worked at MID.</strong> The shelf is cut off by sump — an open
+    pit at LOW that nothing crosses, deep water at MID and above that the Cleats cross. The
+    wheel stands on a well: shallow at LOW, drowned at MID and HIGH. So the shelf is standable
+    only from MID up and the cone frees the wheel only from MID down. They meet at MID and
+    nowhere else.</p>
+    <p><strong>The drown-wall shelf, worked at HIGH.</strong> The shelf is ringed by drown-wall
+    — stone at LOW and MID, deep at HIGH. The wheel stands on sluice: dry at LOW, wading at
+    MID, drowned at HIGH. The shelf is reachable only at HIGH and the wheel is smothered only
+    at HIGH, and one level of cone is exactly the difference.</p>
+    <p>The Crossed Sluices puts one of each in one room with the Boss Key behind both.
+    <strong>You cannot hold two seas</strong> — work one side, walk out, sound the conch, work
+    the other.</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>West Overlook</b><span class="key">d4/0,2,1</span></div>
+    <p>North of Cistern Gauge — a fairy.</p>
+  </div>
+
+  <div class="boss">
+    <div class="boss-h">
+      <span class="role">Miniboss · two screens wide</span>
+      <b>Ironknight</b>
+      <div class="boss-meta">
+        <span class="hp">18 HP</span>
+        <span class="key">d4/0,5,3</span>
+        <span class="tide t-high">FLOOD IT</span>
+      </div>
+    </div>
+    <div class="boss-b">
+      <p style="font-size:.93rem">A darknut with a cistern's worth of armour. The shield
+      holds against everything until <strong>a charge ends in a wall</strong>, and then it
+      is wide open for ~90 frames. Bait the charge — 20-frame tell — and step aside so it
+      eats the wall.</p>
+      <div class="note" style="margin:.8rem 0">
+        <p><strong>Flood the cistern and all that plate seizes.</strong> At HIGH tide the
+        Ironknight is <strong>permanently open</strong>, bubbles coming off the joints. The
+        charge-into-wall route is what you use if the water is somewhere else and you do not
+        want to spend the conch.</p>
+      </div>
+      <div class="phase"><span class="pn">2</span><p><span class="hpct">below 50%</span>
+      Charges harder and faster, and adds three-spear throws.</p></div>
+      <p style="font-size:.93rem; margin-top:.7rem"><strong>Reward:</strong> grinds open the
+      door at (4,1).</p>
+    </div>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Cliff Walk</b><span class="key">d4/0,5,2</span></div>
+    <p>Four pits and three keese over them — the one room where the Bellows are a weapon.
+    Blow the keese into the pits; nothing here is required. Locked door at (1,6); spend
+    <strong>Small Key 3</strong>.</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>East Overlook</b><span class="key">d4/0,4,1</span></div>
+    <p>A rupee cache at (4,2), a stalfos, and <strong>Heart Piece 13</strong> at (2,6).
+    Cistern Gate (<code>d4/0,3,2</code>) holds the boss door.</p>
+  </div>
+
+  <div class="boss">
+    <div class="boss-h">
+      <span class="role">Boss · Dungeon 4</span>
+      <b>Wyverna, the Sea Wyvern</b>
+      <div class="boss-meta">
+        <span class="hp">44 HP</span>
+        <span class="key">d4/0,3,1</span>
+        <span class="tide t-low">DRAIN THE CISTERN</span>
+      </div>
+    </div>
+    <div class="boss-b">
+      <p style="font-size:.93rem">A winged serpent who owns the air while the cistern is
+      full. The water level sets her altitude, her speed and how much of her you can reach.</p>
+      <div class="tw" style="margin:.8rem -.95rem"><table style="min-width:0">
+        <thead><tr><th>Tide</th><th>Altitude</th><th>Speed</th><th class="wrap">Weak point</th></tr></thead>
+        <tbody>
+          <tr><td><span class="tide t-low">LOW</span></td><td>on the floor</td><td class="num">0.5</td><td class="wrap"><strong>permanently open</strong></td></tr>
+          <tr><td><span class="tide t-mid">MID</span></td><td>low</td><td class="num">0.95</td><td class="wrap">open in bursts</td></tr>
+          <tr><td><span class="tide t-high">HIGH</span></td><td>ceiling</td><td class="num">1.35</td><td class="wrap">closed except during dives</td></tr>
+        </tbody>
+      </table></div>
+      <p style="font-size:.93rem">She knows it, and <strong>from phase 2 she refloods on a
+      timer</strong> — every 400 frames, then every 320. The fight is about
+      <strong>spending the conch faster than she does</strong>.</p>
+      <div class="phase"><span class="pn">1</span><p><span class="hpct">above 62%</span>
+      Wheels the ceiling on a diagonal bounce and <strong>stoops</strong> every 170 frames:
+      24-frame hang-and-flash tell, then a straight dive — and <strong>she is open for the
+      whole dive</strong>. Even at HIGH, the dive is a window. Sidestep and swing as she passes.</p></div>
+      <div class="phase"><span class="pn">2</span><p><span class="hpct">62–32%</span>
+      Adds a <strong>breath</strong>: 20-frame wind-up, three beams raked across the room.
+      Dives come faster. The flood timer starts.</p></div>
+      <div class="phase"><span class="pn">3</span><p><span class="hpct">below 32%</span>
+      Dives every 100 frames in a rhythm, plus an <strong>eight-beam ring</strong> every 200
+      to punish standing still. Two keese summoned.</p></div>
+      <p style="font-size:.93rem; margin-top:.7rem"><strong>Reward:</strong> Heart Container,
+      <strong>Essence IV — the Cliff Bell</strong>. Half the Bell.</p>
+    </div>
+  </div>
+
+  <div class="note">
+    <p><strong>Four Essences cuts your <span class="tide t-high">HIGH</span> charm case</strong>
+    — and opens the <strong>Noble Sword</strong>. Go back to <code>cave1/0,0,0</code> under
+    West Bluff and open the big chest at (7,2). Double the sword you have used since the intro.</p>
+  </div>
+</section>
+
+<section id="c11">
+  <div class="chap-head">
+    <span class="chap-n">Chapter 11</span>
+    <h2 class="chap">The Drowned Wood</h2>
+  </div>
+
+  <p>From Tidewatch: east to Village East (<code>0,5,7</code>), north to The Wading
+  (<code>0,5,6</code>) — <em>"Only a swimmer goes north from here,"</em> which is true at MID
+  and not at LOW — then north to <strong>Wood Heart</strong> (<code>0,5,5</code>) and north
+  again to <strong>Shrine Mouth</strong> (<code>overworld/0,5,4</code>).</p>
+
+  <ul>
+    <li><strong>Wood Heart</strong> <code>overworld/0,5,5</code> — <strong>Wick</strong>, the
+    Chain's eighth link. Slackwater Pearl → Bogwood Cup.</li>
+    <li><strong>Log Drift</strong> <code>overworld/0,6,4</code>, east of Shrine Mouth via Wood
+    Foot and Sunken Glade — <strong>Heart Piece 14</strong> in the open at (2,5), with an
+    anglerfry in the water beside it. Take it at <span class="tide t-low">LOW</span>, when the
+    water is not theirs.</li>
+    <li><strong>Wood Foot</strong> <code>overworld/0,6,6</code> — a rupee cache in the open at (6,4).</li>
+    <li><strong>The Gyre</strong> <code>overworld/0,7,3</code> — a ring current.
+    <em>"Swimmers go round. Walkers go through."</em> Sink, or wait for LOW.</li>
+  </ul>
+</section>
+
+<section id="c12">
+  <div class="chap-head">
+    <span class="chap-n">Chapter 12 · Dungeon 5</span>
+    <h2 class="chap">Drowned Wood Shrine</h2>
+  </div>
+
+  <dl class="facts">
+    <dt>Door</dt><dd><code>overworld/0,5,4</code>, tile (4,1)</dd>
+    <dt>Item</dt><dd>Reefseed</dd>
+    <dt>Keys</dt><dd>3 Small Keys, 3 locked doors</dd>
+    <dt>Boss</dt><dd>Rootmaw, in <code>d5/0,3,1</code></dd>
+    <dt>Theme</dt><dd>The sea in two states <em>in order</em></dd>
+  </dl>
+
+  <p>Everything after the Reefseed is one sentence built five different ways:</p>
+  <p class="plaque">You cannot plant a stake from the water, and a stake is only ground at LOW.</p>
+
+  <h4>Before the Reefseed</h4>
+
+  <div class="room">
+    <div class="room-h"><b>Shrine Mouth</b><span class="key">d5/0,3,7</span></div>
+    <p class="plaque">"The wood was here before the water. Stand on what you plant, and plant while you can stand."</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Rootwater Landing → Map → Bracken Cell</b><span class="key">d5/0,3,6</span></div>
+    <p>West is Silt Gallery (<code>d5/0,2,6</code>) for the Dungeon Map. East is Bracken Cell
+    (<code>d5/0,4,6</code>): a stalfos, a tektite and a keese — clear them for
+    <strong>Small Key 1</strong>.</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>The Standing Grove</b><span class="key">d5/0,3,5</span></div>
+    <p class="plaque">"At high water the wood is not there. Everything else in this shrine follows from that."</p>
+    <p>Locked; spend <strong>Small Key 1</strong>.</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Chartstone Nave → Drowned Cloister</b><span class="key">d5/0,2,5</span></div>
+    <p>West is a chest with the <strong>Chartstone</strong>. West again is Drowned Cloister
+    (<code>d5/0,1,5</code>) — <strong>Heart Piece 15</strong> in the open at (3,3).</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Thicket Cell</b><span class="key">d5/0,4,5</span></div>
+    <p>East. A chest at (4,2) with <strong>Gillcarve</strong> — <strong>your breath never
+    runs out on the seafloor</strong>. A <span class="tide t-high">HIGH</span> charm, and your
+    HIGH case opened on the fourth Essence. Slot it now: it retroactively trivialises the Kelp
+    Locks and makes every dredging room in Dungeon 6 comfortable.</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Bower Cell</b><span class="key">d5/0,5,5</span></div>
+    <p>East again — a rupee cache at (7,2) and <strong>Heart Piece 16</strong> at (5,1).</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Coppice Cell → Sunken Bracken</b><span class="key">d5/0,4,4</span></div>
+    <p>Switches at (2,1) and (7,6), blocks beside them at (3,1) and (6,6). Push each one square
+    onto its switch. <strong>Small Key 2</strong>.</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Rootbound Hall → Warden's Sill</b><span class="key">d5/0,2,4</span></div>
+    <p class="plaque">"Past this door the floor is a thing you bring with you."</p>
+    <p>Locked; spend <strong>Small Key 2</strong>.</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Reefseed Vault</b><span class="key">d5/0,1,4</span></div>
+    <p>The big chest holds the <strong>Reefseed</strong>.</p>
+    <p><strong>How it works.</strong> Throw it; a coral pillar grows where it lands after about
+    two seconds. What it <em>becomes</em> depends on the tide <strong>when it finishes
+    growing</strong>, not when you threw it:</p>
+    <div class="tw" style="margin:.8rem -.95rem"><table style="min-width:0">
+      <tbody>
+        <tr><td><span class="tide t-low">LOW</span></td><td class="wrap">A climbable block — a step</td></tr>
+        <tr><td><span class="tide t-mid">MID</span></td><td class="wrap">A wall — solid, and it blocks line of fire</td></tr>
+        <tr><td><span class="tide t-high">HIGH</span></td><td class="wrap">Submerged — swim over it</td></tr>
+      </tbody>
+    </table></div>
+    <p>Three hard rules that are the whole geometry of the dungeon:</p>
+    <ol>
+      <li><strong>A seed carries exactly two tiles.</strong> Range means something.</li>
+      <li><strong>You cannot throw one while in deep water or on the seafloor.</strong> A stake
+      is driven, not dropped. So the first thing you build in any Shrine room is somewhere to stand.</li>
+      <li><strong>A pillar can only go where you could already stand or already swim.</strong> It
+      refuses solid, pit and void at every level — the item cannot open a path, only put ground
+      where there was sea.</li>
+    </ol>
+    <p>Seeds are a counted consumable and refill from grass, pots and drops. The
+    <strong>Quartermaster's Mark</strong> charm carries two more.</p>
+  </div>
+
+  <h4>The five stake groves</h4>
+
+  <div class="note">
+    <p>Each grove is the same fixture: a perch ringed by <strong>drowned boles</strong> on the
+    sides it must not be reachable from, a dry islet with a push block, a crossing stake, and a
+    plate the block has to end on.</p>
+    <p><strong>A drowned bole stands at LOW and MID and is open water at HIGH.</strong> A seed
+    thrown at one stops dead at its foot; at HIGH the same throw sails over it. That is why
+    every perch is planted at <span class="tide t-high">HIGH</span> and everything thrown
+    <em>from</em> the perch is thrown after the sea has gone back down. Neither half can be
+    bought at the other's sea.</p>
+  </div>
+
+  <div class="tw"><table>
+    <thead><tr><th>Grove</th><th class="wrap">Room</th><th>Stand</th><th>Face</th><th>Tide</th><th class="wrap">Stake lands</th></tr></thead>
+    <tbody>
+      <tr><td class="num">1</td><td class="wrap">The First Stake <code>d5/0,1,3</code></td><td class="num">(4,4)</td><td>right</td><td><span class="tide t-high">HIGH</span></td><td class="num">(6,4)</td></tr>
+      <tr><td class="num">2</td><td class="wrap">The Bole Walk <code>d5/0,2,3</code></td><td class="num">(4,5)</td><td>up</td><td><span class="tide t-high">HIGH</span></td><td class="num">(4,3)</td></tr>
+      <tr><td class="num">3</td><td class="wrap">The Sunken Nave <code>d5/0,2,2</code></td><td class="num">(5,4)</td><td>left</td><td><span class="tide t-high">HIGH</span></td><td class="num">(3,4)</td></tr>
+      <tr><td class="num">4</td><td class="wrap">The Long Ford <code>d5/0,4,3</code></td><td class="num">(4,1)</td><td>down</td><td><span class="tide t-high">HIGH</span></td><td class="num">(4,3)</td></tr>
+      <tr><td class="num">5a</td><td class="wrap">The Shrine Ford <code>d5/0,4,2</code></td><td class="num">(15,4)</td><td>left</td><td><span class="tide t-high">HIGH</span></td><td class="num">(13,4)</td></tr>
+      <tr><td class="num">5b</td><td class="wrap">The Shrine Ford <code>d5/0,4,2</code></td><td class="num">(13,4)</td><td>left</td><td><span class="tide t-low">LOW</span></td><td class="num">(11,4)</td></tr>
+    </tbody>
+  </table></div>
+
+  <p>In each case: stand where the table says, sound the conch to the sea it says, face the way
+  it says, throw. Then drop to <span class="tide t-low">LOW</span> so the pillar is ground, walk
+  onto it, and cut the snarl from there.</p>
+
+  <div class="room">
+    <div class="room-h"><b>The Sunken Nave</b><span class="key">d5/0,2,2</span></div>
+    <p>Grove 3. There is also a chest at (1,2) with <strong>Small Key 3</strong>, plus a
+    jellyfish and a keese. West is Silt Cell (<code>d5/0,1,2</code>) with a rupee cache.</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Grove Crossing</b><span class="key">d5/0,3,3</span></div>
+    <p>Locked; spend <strong>Small Key 3</strong>. East is grove 4.</p>
+  </div>
+
+  <div class="boss">
+    <div class="boss-h">
+      <span class="role">Miniboss</span>
+      <b>Thornvine</b>
+      <div class="boss-meta">
+        <span class="hp">16 HP</span>
+        <span class="key">d5/0,5,3</span>
+        <span class="tide t-low">DROP THE WATER</span>
+      </div>
+    </div>
+    <div class="boss-b">
+      <p style="font-size:.93rem">Rooted, and it fills the room with thorns. It orbits a fixed
+      point and fires six-shot rings at a random rotation.</p>
+      <div class="note" style="margin:.8rem 0">
+        <p><strong>Drop the water and the vine wilts.</strong> At LOW its ring timer stretches
+        from 130 frames to 190 — and from 100 to 150 in phase 2. A third longer between every volley.</p>
+      </div>
+      <div class="phase"><span class="pn">2</span><p><span class="hpct">below 50%</span>
+      Orbits wider and faster, and adds a three-spear aimed volley to each ring.</p></div>
+      <p style="font-size:.93rem; margin-top:.7rem"><strong>Reward:</strong> the thorns let go
+      of the north arch.</p>
+    </div>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>The Shrine Ford</b><span class="key">d5/0,4,2</span></div>
+    <p>Two screens wide, and the only grove that needs <strong>two stakes at two different
+    seas</strong>.</p>
+    <p class="plaque">"Twice over. The first while the wood is under, the second while it is not."</p>
+    <ol>
+      <li>Enter at (14,7). Stand at <strong>(15,4)</strong>, face <strong>left</strong>, at
+      <span class="tide t-high">HIGH</span>. Stake lands at (13,4).</li>
+      <li>Sound the conch to <span class="tide t-low">LOW</span> so that pillar becomes ground.
+      Walk onto it, and from <strong>(13,4)</strong>, facing <strong>left</strong>, at LOW,
+      throw the second stake. It lands at (11,4).</li>
+      <li>The snarl at (10,4) is cut from (11,4).</li>
+    </ol>
+    <p>The <strong>Boss Key</strong> is in a chest at (4,3) in the western screen. Rootmaw Arch
+    (<code>d5/0,3,2</code>) holds the boss door.</p>
+  </div>
+
+  <div class="boss">
+    <div class="boss-h">
+      <span class="role">Boss · Dungeon 5</span>
+      <b>Rootmaw, the Drowned Wood</b>
+      <div class="boss-meta">
+        <span class="hp">52 HP</span>
+        <span class="key">d5/0,3,1</span>
+        <span class="tide t-low">DRAIN AND KEEP IT DRAINED</span>
+      </div>
+    </div>
+    <div class="boss-b">
+      <p style="font-size:.93rem">A flooded tree whose trunk splits open into a mouth. Its roots
+      are in the water.</p>
+      <div class="tw" style="margin:.8rem -.95rem"><table style="min-width:0">
+        <tbody>
+          <tr><td><span class="tide t-high">HIGH</span></td><td class="wrap">Bark <strong>shut</strong> — untouchable — and it <strong>heals 1 HP every 110 frames</strong></td></tr>
+          <tr><td><span class="tide t-mid">MID</span></td><td class="wrap">Breathes open ~80 frames every 220</td></tr>
+          <tr><td><span class="tide t-low">LOW</span></td><td class="wrap">Roots bare and soft: <strong>the mouth cannot close</strong></td></tr>
+        </tbody>
+      </table></div>
+      <p style="font-size:.93rem">The heal is capped so it can never win a stalemate outright,
+      but it can undo a lot of work — and <strong>from phase 2 it drinks</strong>, forcing HIGH
+      every 380 frames, then every 300.</p>
+      <div class="phase"><span class="pn">1</span><p><span class="hpct">above 62%</span>
+      Rooted. A 20-frame wind-up, then four wooden spears fired outward on a slow cycle. Get in,
+      hit the open mouth, get out.</p></div>
+      <div class="phase"><span class="pn">2</span><p><span class="hpct">62–32%</span>
+      <strong>Seed clusters</strong>: a five-shot spread <em>and</em> a slow eight-shot ring on
+      one wind-up, so the fast shots arrive while you are still walking out of the slow ones.
+      Saplings come up around it, capped at three.</p></div>
+      <div class="phase"><span class="pn">3</span><p><span class="hpct">below 32%</span>
+      It <strong>tears itself out of the floor and walks</strong>, mouth open, still spitting —
+      seven spears in a wide spread every 105 frames. Slow (0.38) so you can outpace it, but the
+      arena is not large. Every frame at LOW is a frame you can hit it.</p></div>
+      <p style="font-size:.93rem; margin-top:.7rem"><strong>Reward:</strong> Heart Container,
+      <strong>Essence V — the Drowned Bell</strong>.</p>
+    </div>
+  </div>
+</section>
+
+<section id="c13">
+  <div class="chap-head">
+    <span class="chap-n">Chapter 13 · Interlude</span>
+    <h2 class="chap">The Coastwise Chain, end to end</h2>
+  </div>
+
+  <p>Eleven links, eleven objects, one reward. There is <strong>exactly one live deal in the
+  world at any moment</strong>: a trader two links ahead has nothing to say to you yet even if
+  you are already holding what they will eventually want. Everyone keeps a flavour line for when
+  it is not their turn.</p>
+
+  <p>The only item gate on the whole chain is <strong>bombs</strong>, because Yarrow is in the
+  Marsh. You have had bombs since Dungeon 2. You carry one object at a time, and the
+  <strong>Quest screen</strong> is the only place to see which.</p>
+
+  <p>Take the <strong>Bell-Rope</strong> to the Maku Tree and she hands over the
+  <strong>Resonance Rod</strong>.</p>
+
+  <div class="note">
+    <p><strong>How the Rod works.</strong> Strike it and <strong>every metal and crystal thing
+    in earshot answers at once</strong>: grates retract, submerged bells chime and lean toward
+    what they are tuned to, and armoured enemies lock rigid for about 90 frames.
+    <strong>Its range roughly doubles at <span class="tide t-high">HIGH</span> tide</strong>,
+    because water carries the note. It is the one item whose own power is tide-dependent, and
+    that is why it is the trading reward rather than a dungeon item: it sends you back to rooms
+    you had written off, at a level you never tried them at.</p>
+  </div>
+
+  <p>Full link table and a tickable checklist are in <a href="#chain">Part III</a>.</p>
+</section>
+
+<section id="c14">
+  <div class="chap-head">
+    <span class="chap-n">Chapter 14</span>
+    <h2 class="chap">The Salt Pans and the Reef Palace</h2>
+  </div>
+
+  <p>The Rod's overworld verb is the <strong>salt vane</strong> — the only gate in the game whose
+  key is the core mechanic. Vanes seal the Salt Pans, and because the Reef Palace's approach can
+  only be entered through the Pans, they seal that too: <strong>27 screens behind four vane
+  tiles</strong>.</p>
+
+  <p><strong>Route.</strong> From Tidewatch: east to Village East (<code>0,5,7</code>), north to
+  The Wading (<code>0,5,6</code>), east to Wood Foot (<code>0,6,6</code>), north through Sunken
+  Glade (<code>0,6,5</code>), Log Drift (<code>0,6,4</code>) and Wood Gate (<code>0,6,3</code>)
+  to <strong>Vault Steps</strong> (<code>overworld/0,6,2</code>). Ring the Rod at the vanes.</p>
+
+  <h4>North, into the Pans</h4>
+
+  <div class="room">
+    <div class="room-h"><b>Vault Approach → Salt Pan Vault</b><span class="key">overworld/0,6,1</span></div>
+    <p>A cave mouth at tile (3,2) leads to <code>cave3/0,0,0</code> — the ruined mouth of what
+    used to be a whole dungeon. The big chest holds the <strong>Bottled Tide</strong> case.
+    Refills are 40 rupees at the Tidewatch shop.</p>
+    <p><strong>What a Bottled Tide does:</strong> forces <strong>one tide step</strong> in a room
+    where the conch is suppressed, and it flatly refuses to work anywhere the conch already
+    works. That means boss rooms and the Black Causeway, and nothing else.
+    <strong>Carry at least one into the Keep.</strong></p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Salt Terraces</b><span class="key">overworld/0,5,0</span></div>
+    <p>Via Boiling Pan (<code>0,6,0</code>). <strong>Heart Piece 17</strong> in the open at (6,4),
+    with a beetle patrolling — beetles charge in straight lines, so stand off the line.</p>
+  </div>
+
+  <h4>East, to the Palace</h4>
+
+  <div class="room">
+    <div class="room-h"><b>Palace Mouth → Palace Porch</b><span class="key">overworld/0,10,1</span></div>
+    <p>From Vault Steps east to Pan Corner (<code>0,7,2</code>), north to Windward Pan
+    (<code>0,7,1</code>) — more vanes, ring the Rod — then east through Reefway
+    (<code>0,8,1</code>) and Hooked Channel (<code>0,9,1</code>). A cave mouth at tile (4,1)
+    leads to <code>cave4/0,0,0</code>: <strong>Heart Piece 18</strong> at (4,1), and a notice
+    from someone who gave up halfway.</p>
+    <p class="plaque">"The rest of it is under. Do not go and look."</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Palace Wall</b><span class="key">overworld/0,9,0</span></div>
+    <p>North from Reefway to Coral Gate (<code>0,8,0</code>), then east.
+    <strong>Heart Piece 19</strong> in the open at (2,5).</p>
+  </div>
+
+  <div class="note">
+    <p><strong>Also do this now.</strong> The village digger (<code>overworld/0,4,7</code>, tile
+    (8,2)) has been waiting for <strong>3 Essences</strong> and you have five. He hands over the
+    <strong>Ferryman's Coin</strong>: throw it down, and <strong>on the next tide change you and
+    the coin swap places</strong>. One coin, recallable. Its real use is getting the coin
+    somewhere you cannot walk to and then changing the tide.</p>
+  </div>
+</section>
+
+<section id="c15">
+  <div class="chap-head">
+    <span class="chap-n">Chapter 15</span>
+    <h2 class="chap">The Maku Tree opens the road</h2>
+  </div>
+
+  <p>Go back to <code>houseMaku/0,0,0</code> holding <strong>five Essences</strong>:</p>
+  <ul>
+    <li>She tells you the roots under Tidewatch go all the way down to the Keep, and that she has
+    been growing them for a century waiting for a reason.</li>
+    <li>She hands you the <strong>Master Sword</strong>. There is no level 2 from her — the Noble
+    Sword was the chest in the Bluff Grotto.</li>
+    <li>She <strong>splits the Keep's seal</strong>. This is the one story gate in the world: the
+    iron on Upper Kell (<code>overworld/0,2,2</code>) and the plugs on the Abyss Stair
+    (<code>overworld/0,2,1</code>) open together, and <strong>nothing you carry opens
+    either</strong>.</li>
+  </ul>
+
+  <p><strong>The road to the Keep.</strong> From The Deep Cut (<code>overworld/0,3,4</code>):
+  north to Cliff Face (<code>0,3,3</code>), west to Kell Ledges (<code>0,2,3</code>), north to
+  <strong>Upper Kell</strong> (<code>overworld/0,2,2</code>) — now passable — north to
+  <strong>Abyss Stair</strong> (<code>overworld/0,2,1</code>), west to The Long Drop
+  (<code>0,1,1</code>), north to <strong>Gate of the Keep</strong> (<code>overworld/0,1,0</code>).</p>
+
+  <div class="room">
+    <div class="room-h"><b>The Black Causeway</b><span class="key">overworld/0,2,0</span></div>
+    <p>The one screen on the map where <strong>the conch does not reach</strong>. The Keep holds
+    the water there, so the causeway is whatever it was when you arrived — and a
+    <strong>Bottled Tide</strong> is the only thing that moves it. A shortcut, never a gate: the
+    rows either side of each drowned wall run the full width of the screen at every level.</p>
+  </div>
+
+  <p>Iron Watch (<code>overworld/0,3,1</code>) and the abyss screens are patrolled by darknuts
+  and wizzrobes. <strong>Darknuts are only vulnerable from behind</strong>, or rigid for 90
+  frames if you ring the Rod at them. Wizzrobes blink in, fire, blink out — hit them in the window.</p>
+</section>
+
+<section id="c16">
+  <div class="chap-head">
+    <span class="chap-n">Chapter 16 · Dungeon 6</span>
+    <h2 class="chap">The Abyssal Keep</h2>
+  </div>
+
+  <dl class="facts">
+    <dt>Door</dt><dd><code>overworld/0,1,0</code>, tile (4,1)</dd>
+    <dt>Items</dt><dd>Dredge Line <em>and</em> the Mermaid Suit</dd>
+    <dt>Keys</dt><dd>4 Small Keys, 4 locked doors — one key is buried</dd>
+    <dt>Boss</dt><dd>Nereth, in <code>d6/1,3,1</code></dd>
+    <dt>Theme</dt><dd>The only one of the six that wants the water <em>on</em></dd>
+  </dl>
+
+  <p>The Keep is the last dungeon and its problem is what you already own. Since the Bogwater
+  Sanctum, deep water has been a road — both Cleat modes cross it and no sea level is a wall. So
+  a barrier here has to be a <strong>pit</strong>, the one thing neither mode crosses and no
+  conch fills, and every crossing in the second half of this dungeon is a shaft.</p>
+
+  <h4>Ground floor</h4>
+
+  <div class="room">
+    <div class="room-h"><b>Keep Door</b><span class="key">d6/0,3,7</span></div>
+    <p class="plaque">"Everything the sea takes, it keeps. Everything it keeps, it puts down."</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Keep Landing → Map Crypt → Bone Cell</b><span class="key">d6/0,3,6</span></div>
+    <p>A darknut and a keese; clear them for a heart. West is Map Crypt (<code>d6/0,2,6</code>)
+    for the Dungeon Map. East is Bone Cell (<code>d6/0,4,6</code>): two stalfos and a darknut —
+    ring the Rod to lock the darknut and go round behind it. <strong>Small Key 1</strong>.</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Drowned Hall — the hub</b><span class="key">d6/0,3,5</span></div>
+    <p>A wizzrobe, a darknut, a siren, and three torches at (1,1), (8,1) and (1,6). Set the
+    <strong>Kilnshell</strong> beside each and light all three for a rupee cache —
+    money only, so it costs you nothing to skip.</p>
+    <p class="plaque">"The rings in this house were for hauling. They will haul anything that takes hold."</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Chartstone Crypt → Drain Court</b><span class="key">d6/0,2,5</span></div>
+    <p>West is a chest with the <strong>Chartstone</strong>. East is Drain Court
+    (<code>d6/0,4,5</code>): switches at (2,2) and (7,5), one block at (2,3), and a beamos at
+    (6,2) that fires whenever you line up with it. Push the block onto the near switch and stand
+    on the far one. <strong>Small Key 2</strong>.</p>
+  </div>
+
+  <div class="note">
+    <p><strong>The Keep's key economy, stated once</strong>, because it is the only dungeon with
+    four of each and one key is hidden.</p>
+    <div class="tw" style="margin:.8rem -.9rem"><table>
+      <thead><tr><th>Key</th><th class="wrap">Where</th><th class="wrap">Opens</th></tr></thead>
+      <tbody>
+        <tr><td class="num">1</td><td class="wrap">Bone Cell <code>d6/0,4,6</code> — clear the room</td><td class="wrap">Three Heights <code>d6/0,3,4</code></td></tr>
+        <tr><td class="num">2</td><td class="wrap">Drain Court <code>d6/0,4,5</code> — block + stand</td><td class="wrap">Keep Lock <code>d6/0,3,3</code></td></tr>
+        <tr><td class="num">3</td><td class="wrap">Black Kiln <code>d6/0,4,4</code> — four torches</td><td class="wrap">Keep Crossing (7,5), <strong>east</strong></td></tr>
+        <tr><td class="num">4</td><td class="wrap"><strong>Buried</strong> in The Drowned Sill <code>d6/1,4,3</code></td><td class="wrap">Keep Crossing (4,2), <strong>north</strong> to the boss</td></tr>
+      </tbody>
+    </table></div>
+    <p>The west way out of Keep Crossing, toward the Sunken Bar, is <strong>not</strong> locked.
+    And note rows 3 and 4: <strong>the key behind the east door is the key to the north
+    door</strong>, so there is no point standing at the boss door wondering what you missed.</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Three Heights</b><span class="key">d6/0,3,4</span></div>
+    <p class="plaque">"Three heights. One way through."</p>
+    <p>Locked — spend a key. West is West Crypt (<code>d6/0,2,4</code>) with a fairy.</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Black Kiln</b><span class="key">d6/0,4,4</span></div>
+    <p>East. Four torches at (2,2), (7,2), (2,5) and (7,5), with a darknut in the middle. Set
+    the <strong>Kilnshell</strong> beside each in turn and light all four for
+    <strong>Small Key 3</strong>.</p>
+    <div class="note">
+      <p><strong>Not optional</strong>, unlike the Torch Cell — the Keep needs all four of its
+      keys for all four of its doors. Bring the Kilnshell into the Abyssal Keep with you.</p>
+    </div>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Keep Lock → Dredge Vault</b><span class="key">d6/0,3,3</span></div>
+    <p>Locked; a darknut and a wizzrobe behind it. East is the <strong>Dredge Vault</strong>
+    (<code>d6/0,4,3</code>) — the big chest holds the <strong>Dredge Line</strong>.</p>
+    <p><strong>How it works.</strong> <em>Cast</em> it into deep water and drag. Three separate
+    behaviours, all of which matter:</p>
+    <ul>
+      <li><strong>A fixed snag pulls you.</strong> Cast at a mooring post and the Line hauls
+      <em>you</em> to it, over anything — a pit included. This is the crossing verb.</li>
+      <li><strong>The floor is searchable.</strong> Dragged back across silted ground it brings
+      up what the floor is holding — and <strong>blanks are common in dredged loot</strong> and
+      rare everywhere else, which is how you supply the scrimshander.</li>
+      <li><strong>It drags aquatic enemies onto land</strong>, where they flop and are helpless.</li>
+    </ul>
+    <p>Two guards define its geometry: <strong>you cannot cast while swimming or on the
+    seafloor</strong> (a weighted line is thrown from your heels), and <strong>the cast stops
+    dead on solid tiles</strong> — a lintel of the Keep's masonry across a shaft blocks the line
+    until the sea covers it.</p>
+    <p>And the rule that makes the Keep the Keep: <strong>the floor gives up what it is holding
+    only while the sea is on it.</strong> A silted cache is searchable only at the level where
+    its tile reads wet. Dry crust is dragged straight over. Every other item in this game asks
+    you to take the water off something; the last one asks you to put it back.</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>The Slack Water</b><span class="key">d6/0,5,3</span><span class="tide t-mid">MID</span></div>
+    <p>East — the teaching room.</p>
+    <p class="plaque">"Dry pan, dry line. We only ever worked it with the water in."</p>
+    <p>There is a bell at (8,6): <strong>ring the Rod</strong> and it leans toward (4,4). Stand
+    at <strong>(4,6)</strong>, face <strong>up</strong>, at <span class="tide t-mid">MID</span>,
+    and cast. <strong>Heart Piece 20</strong> comes up out of the pan.</p>
+  </div>
+
+  <p>Keep Stair (<code>d6/0,2,3</code>), west of Keep Lock — the stairs at (8,1) go up.</p>
+
+  <h4>Upper floor</h4>
+
+  <div class="room">
+    <div class="room-h"><b>Upper Keep → Shade Cell</b><span class="key">d6/1,3,5</span></div>
+    <p>West is Shade Cell (<code>d6/1,2,5</code>): a wizzrobe, a darknut and a keese; clear them
+    for a heart.</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Colonnade of the Drowned</b><span class="key">d6/1,2,4</span></div>
+    <p>North. Four <strong>grates</strong> seal an alcove, and the only thing in the game that
+    retracts metal is the <strong>Resonance Rod</strong> — so this alcove is the one place in
+    the Keep that asks whether you walked the Coastwise Chain. Ring the Rod and they go up.</p>
+    <p>Inside, a chest at (4,2) holds <strong>Coilrope</strong> — the Dredge Line reaches one
+    tile further. A <span class="tide t-mid">MID</span> charm, and at 6 Essences you will have
+    two MID slots. A beamos watches from (2,5).</p>
+    <p class="plaque">"More rope is more room. It is not more sea."</p>
+  </div>
+
+  <div class="boss">
+    <div class="boss-h">
+      <span class="role">Miniboss · two screens wide</span>
+      <b>Tideshade</b>
+      <div class="boss-meta">
+        <span class="hp">20 HP</span>
+        <span class="key">d6/1,4,5</span>
+        <span class="tide t-off">FIGHT IT BELOW HIGH</span>
+      </div>
+    </div>
+    <div class="boss-b">
+      <p style="font-size:.93rem">Nereth's shadow, thrown ahead of him, and a preview of the
+      boss's own trick.</p>
+      <div class="phase"><span class="pn">1</span><p><span class="hpct">above 55%</span>
+      Chases at 0.7 and casts three-shot ink spreads after an 18-frame wind-up.</p></div>
+      <div class="phase"><span class="pn">2</span><p><span class="hpct">below 55%</span>
+      <strong>Thins out and reappears</strong> — down 50 frames, up 130 — chasing at 0.95 and
+      firing ink rings. Its rings are <strong>eight shots at HIGH and six otherwise</strong>, so
+      keep the water down: a third fewer shots to walk through, for nothing.</p></div>
+      <p style="font-size:.93rem; margin-top:.7rem"><strong>Reward:</strong> opens the door above
+      — <strong>Mermaid Vault</strong> (<code>d6/1,4,4</code>), whose big chest holds the
+      <strong>Mermaid Suit</strong>: unlimited breath in sink mode, and you can push blocks
+      underwater. Everything you avoided doing on the seafloor is now free.</p>
+    </div>
+  </div>
+
+  <h4>The four crossings</h4>
+  <p>Each is a crossing at one sea and a cache at another, and the order cannot be reversed: the
+  stand drowns when you raise the sea to fish, and the bar comes back down when you lower it.</p>
+
+  <div class="room">
+    <div class="room-h"><b>The Drowned Stand</b><span class="key">d6/1,3,4</span></div>
+    <p class="plaque">"Stand while you can stand. The ledge is only a ledge at low water."</p>
+    <ul>
+      <li><strong>Cross:</strong> stand <strong>(5,6)</strong>, face <strong>up</strong>, at
+      <span class="tide t-low">LOW</span> — cast at the post at (5,2), land at (5,3).</li>
+      <li><strong>Return:</strong> <strong>(6,3)</strong>, face <strong>down</strong>, at
+      <span class="tide t-low">LOW</span> — post (6,7), land (6,6).</li>
+      <li><strong>Cache:</strong> <strong>(7,3)</strong>, face <strong>up</strong>, at
+      <span class="tide t-mid">MID</span> — cast at (7,1) for a rupee cache.</li>
+    </ul>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Keep Crossing</b><span class="key">d6/1,3,3</span></div>
+    <p>A darknut and a keese, and the dungeon's last two locked doors — at <strong>(4,2)</strong>
+    going north to the boss and at <strong>(7,5)</strong> going east.
+    <strong>West, at (0,3), is open</strong>: go there first.</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>The Sunken Bar</b><span class="key">d6/1,2,3</span><span class="tide t-high">CROSS AT HIGH</span></div>
+    <p>The Drowned Stand inside out — this one crosses at HIGH, because the bar of masonry across
+    the shaft is stone until HIGH covers it.</p>
+    <p class="plaque">"The bar is down at slack and up at flood."</p>
+    <ul>
+      <li><strong>Cross:</strong> <strong>(7,4)</strong>, face <strong>left</strong>, at
+      <span class="tide t-high">HIGH</span> — post (3,4), land (4,4).</li>
+      <li><strong>Return:</strong> <strong>(4,4)</strong>, face <strong>right</strong>, at
+      <span class="tide t-high">HIGH</span> — post (8,4), land (7,4).</li>
+      <li><strong>Caches:</strong> <strong>(2,2)</strong> face <strong>up</strong> at
+      <span class="tide t-mid">MID</span> → <strong>Heart Piece 21</strong> at (2,1).
+      <strong>(3,2)</strong> face <strong>up</strong> at MID → a rupee cache at (3,1).</li>
+    </ul>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>The Drowned Sill</b><span class="key">d6/1,4,3</span><span class="tide t-low">CROSS AT LOW</span></div>
+    <ul>
+      <li><strong>Cross:</strong> <strong>(2,4)</strong>, face <strong>right</strong>, at
+      <span class="tide t-low">LOW</span> — post (6,4), land (5,4).</li>
+      <li><strong>Return:</strong> <strong>(5,4)</strong>, face <strong>left</strong>, at
+      <span class="tide t-low">LOW</span> — post (1,4), land (2,4).</li>
+      <li><strong>Cache:</strong> <strong>(8,4)</strong>, face <strong>up</strong>, at
+      <span class="tide t-mid">MID</span> — cast at (8,2) for <strong>Small Key 4</strong>. This
+      is the easiest thing in the dungeon to walk past; Wrecker's Eye makes it glimmer.</li>
+    </ul>
+    <p>A siren at (7,5) surfaces to sing a shot and submerges to dodge — hit it while it is up,
+    or drag it out with the Line.</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>The Crossed Shafts</b><span class="key">d6/1,4,2</span></div>
+    <p>Two screens wide, two crossings at two different seas, and the Boss Key at the end.</p>
+    <p class="plaque">"You cannot hold two seas. — Nereth"</p>
+    <ol>
+      <li>Enter at (0,4). Stand <strong>(4,2)</strong>, face <strong>right</strong>, at
+      <span class="tide t-high">HIGH</span> — cast at (8,2), land at (7,2).</li>
+      <li>From (7,2), sound the conch down to <span class="tide t-low">LOW</span>. Stand
+      <strong>(11,5)</strong>, face <strong>right</strong>, at LOW — cast at (15,5), land at (14,5).</li>
+      <li>To come back: (14,5) face left at LOW → (11,5); (7,2) face left at HIGH → (4,2).</li>
+    </ol>
+    <p>A beamos covers the first shaft from (9,1). The chest at (17,3) holds the
+    <strong>Boss Key</strong> — and it is guarded.</p>
+  </div>
+
+  <div class="boss">
+    <div class="boss-h">
+      <span class="role">Guardian · the Boss Key</span>
+      <b>Brinehulk, the Salt Colossus</b>
+      <div class="boss-meta">
+        <span class="hp">60 HP</span>
+        <span class="key">d6/1,4,2</span>
+        <span class="tide t-mid">MID IS THE HONEST ANSWER</span>
+      </div>
+    </div>
+    <div class="boss-b">
+      <p style="font-size:.93rem">A golem of packed salt, and the hardest thing in the game that
+      is not Nereth. Water dissolves it, and that cuts both ways.</p>
+      <div class="tw" style="margin:.8rem -.95rem"><table style="min-width:0">
+        <thead><tr><th>Tide</th><th class="wrap">Crust</th><th>Speed</th></tr></thead>
+        <tbody>
+          <tr><td><span class="tide t-high">HIGH</span></td><td class="wrap"><strong>soft and hittable the whole time</strong></td><td class="num">×1.55</td></tr>
+          <tr><td><span class="tide t-mid">MID</span></td><td class="wrap">flakes open 70 frames every 240</td><td class="num">×1.0</td></tr>
+          <tr><td><span class="tide t-low">LOW</span></td><td class="wrap"><strong>re-crystallised into armour</strong></td><td class="num">×0.8</td></tr>
+        </tbody>
+      </table></div>
+      <p style="font-size:.93rem">It <strong>keeps draining the vault to set itself again</strong>
+      — forcing LOW every 400 frames in phase 2, every 320 in phase 3.</p>
+      <div class="phase"><span class="pn">1</span><p><span class="hpct">above 62%</span>
+      Walks you down and <strong>pounds the floor</strong>: 26-frame two-armed tell, then a ring
+      of eight salt shards along the ground. The shards are slow and live a long time —
+      <em>walk the gaps</em>, do not try to outrun them.</p></div>
+      <div class="phase"><span class="pn">2</span><p><span class="hpct">62–32%</span>
+      <strong>Hurls</strong> three boulders at range and <strong>charges</strong> when you line
+      up, 22-frame tell.</p></div>
+      <div class="phase"><span class="pn">3</span><p><span class="hpct">below 32%</span>
+      Cracked apart: pounds every 110 frames with a twelve-shard ring, and summons two beetles.</p></div>
+      <div class="note" style="margin-top:.8rem">
+        <p><strong>The choice is real.</strong> At HIGH you get a permanently open target and a
+        golem half again as fast; at LOW a slow golem you cannot hurt. <strong>MID</strong> gives
+        a 70-frame window every four seconds against base speed. Go HIGH only if you have the
+        health to trade.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="c17">
+  <div class="chap-head">
+    <span class="chap-n">Chapter 17 · The final fight</span>
+    <h2 class="chap">Nereth, the Drowned King</h2>
+  </div>
+
+  <p class="plaque">"I did not break the Bell to be cruel, wader. I broke it because the sea was
+  told what to do for a thousand years and never once asked."</p>
+
+  <div class="boss">
+    <div class="boss-h">
+      <span class="role">Boss · Dungeon 6</span>
+      <b>Nereth, the Drowned King</b>
+      <div class="boss-meta">
+        <span class="hp">80 HP</span>
+        <span class="key">d6/1,3,1</span>
+        <span class="tide t-off">BREAK THE PIN</span>
+      </div>
+    </div>
+    <div class="boss-b">
+      <p style="font-size:.93rem"><strong>The fight is about the conch, entirely.</strong> Each of
+      the first three phases Nereth <strong>pins the tide to one level, and while it sits where he
+      put it he is sealed inside his own water and nothing touches him.</strong> Sound the conch
+      off his level and he is <strong>open until he can shove it back</strong> — on a timer you
+      can hear coming, since the re-pin has a 26-frame wind-up.</p>
+      <p style="font-size:.93rem">He is never <em>only</em> breakable by the conch:
+      <strong>every attack in his first three phases ends with a recovery window</strong> of about
+      55 frames. So you can fight him badly and still win, slowly. Fight him with the conch and
+      you win three times as fast.</p>
+      <div class="note" style="margin:.8rem 0">
+        <p><strong>Bring Bottled Tides.</strong> He is the one thing in the game that fights you
+        for the tide continuously, and a bottle is a free step when he has just re-pinned and you
+        are out of position.</p>
+      </div>
+      <div class="phase"><span class="pn">1</span><p><span class="hpct">above 75% · pinned MID</span>
+      Chases at 0.5 and throws <strong>three-trident spreads</strong> every 130 frames after a
+      22-frame wind-up. Sound the conch to LOW or HIGH and he opens. If you are stuck in the pin,
+      punish the trident recovery.</p></div>
+      <div class="phase"><span class="pn">2</span><p><span class="hpct">75–50% · pinned HIGH</span>
+      <strong>Floods the keep and swims it</strong>, fast (1.05), ringing the room with
+      <strong>ten-bubble rings</strong> every 150 frames. A wizzrobe at the phase change, topped
+      up to two. Think about which single press you actually want.</p></div>
+      <div class="phase"><span class="pn">3</span><p><span class="hpct">50–25% · pinned LOW</span>
+      Drains the keep to bare rock, plants the trident, and <strong>sweeps beams
+      continuously</strong> — three beams every 22 frames, each volley rotated, raking the whole
+      room. The sweep never stops, so the opening is when he <strong>re-seats the trident</strong>
+      every 190 frames, with a 20-frame tell. Two stalfos, topped up to three.</p></div>
+      <div class="phase"><span class="pn">4</span><p><span class="hpct">below 25% · no pin</span>
+      He works the sea through all three states <strong>himself</strong>, cycling every 200 frames
+      — and <strong>the moment the water is moving, so is he: open for 150 frames after every
+      cycle.</strong> Five-trident spreads every 100 frames, twelve-bubble rings every 170, keese
+      in pairs up to four. This is the phase that kills people. The windows are enormous; so is
+      the ordnance in the air. Stay at range, walk the ring gaps, go in hard every time the sea
+      turns over.</p></div>
+      <p style="font-size:.93rem; margin-top:.7rem"><strong>Reward:</strong> Heart Container, then
+      the last shard comes away from his crown — <strong>Essence VI — the Drowned King's
+      Bell</strong>. The six find each other in your hands and the Tide Bell is whole.
+      <em>It is much smaller than the stories, and much heavier.</em></p>
+    </div>
+  </div>
+
+  <div class="note">
+    <p><strong>Six Essences upgrades every charm case to hold two.</strong> If you are completing
+    the game rather than finishing it, this is the moment to go back and rebuild all three loadouts.</p>
+  </div>
+</section>
+
+<section id="c18">
+  <div class="chap-head">
+    <span class="chap-n">Chapter 18</span>
+    <h2 class="chap">Mopping up: the Abyssal approach</h2>
+  </div>
+
+  <p>The Dredge Line reopens the whole map. Four things are left, and all of them are buried or
+  boulder-locked.</p>
+
+  <div class="room">
+    <div class="room-h"><b>Drowned Shore</b><span class="key">overworld/0,0,0</span></div>
+    <p>West of Gate of the Keep. A bell at (1,5): <strong>ring the Resonance Rod</strong> and it
+    leans toward the near hole. That is (3,3), and <strong>Heart Piece 22</strong> is buried in
+    it. A second hole at (6,3) has a rupee cache. The holes are deep at every tide level and
+    nothing on this shore could ever reach into them before.</p>
+    <p>The Rod's note <strong>carries twice as far at <span class="tide t-high">HIGH</span></strong>,
+    which is what makes this shore worth revisiting rather than solving from the doorway.</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Rustfall</b><span class="key">overworld/0,3,0</span></div>
+    <p>East from Abyss Stair via Iron Watch (<code>0,3,1</code>). <strong>Heart Piece 23</strong>
+    in the open at (2,5), with a darknut patrolling.</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Witch's Hollow</b><span class="key">overworld/0,1,9</span></div>
+    <p>Back in the Marsh. <strong>Heart Piece 24</strong> buried at (3,4), a few steps from Yarrow.</p>
+  </div>
+
+  <div class="room">
+    <div class="room-h"><b>Marsh Stair</b><span class="key">overworld/0,1,5</span></div>
+    <p>Four boulders. Drag them clear with the Dredge Line — one at a time, and only the one
+    directly in front of you — to open the Marsh's two northern screens. Optional content by
+    design: nothing on the critical path hangs off the last dungeon's item.</p>
+  </div>
+
+  <h4>Remaining buried rupee caches</h4>
+  <div class="tw"><table>
+    <thead><tr><th>Screen</th><th>Tile</th><th class="wrap">Note</th></tr></thead>
+    <tbody>
+      <tr><td><code>overworld/0,3,6</code></td><td class="num">(3,4)</td><td class="wrap">Bluff Hollow — the sign says someone has been digging</td></tr>
+      <tr><td><code>overworld/0,3,9</code></td><td class="num">(3,4)</td><td class="wrap">South Bluff</td></tr>
+      <tr><td><code>overworld/0,11,8</code></td><td class="num">(2,2)</td><td class="wrap">Dune Corner</td></tr>
+      <tr><td><code>d6/1,3,4</code></td><td class="num">(7,1)</td><td class="wrap">The Drowned Stand</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ============================ PART III ============================ -->
+<section id="hearts">
+  <div class="chap-head">
+    <span class="chap-n">Part III · 100% completion</span>
+    <h2 class="chap">All 24 Heart Pieces</h2>
+  </div>
+
+  <p>Four to a container; six containers from the six bosses; three hearts to start.
+  <strong>24 + 6 + 3 = 15 hearts.</strong> Listed in the order this walkthrough passes them.
+  Tap to tick — your ticks are saved on this device.</p>
+
+  <ul class="check" data-store="hearts">
+    <li><label><input type="checkbox"><span class="ctext"><span class="cn">01</span><code>cave1/0,0,0</code> Bluff Grotto (2,2) — cave mouth on West Bluff <code>overworld/0,3,7</code> at (3,2). No requirements.</span></label></li>
+    <li><label><input type="checkbox"><span class="ctext"><span class="cn">02</span><code>cave2/0,0,0</code> Reef Hollow (2,2) — cave mouth on Sunken Reef <code>overworld/0,6,7</code> at (4,3), no requirements, but the piece itself sits in the seafloor patch and needs LOW tide.</span></label></li>
+    <li><label><input type="checkbox"><span class="ctext"><span class="cn">03</span><code>overworld/0,10,8</code> Shell Flats (6,4) — in the open.</span></label></li>
+    <li><label><input type="checkbox"><span class="ctext"><span class="cn">04</span><code>d1/0,4,3</code> The Two Gauges (2,6) — behind the gauge door. <strong>Anchor</strong>: one gauge drained, one drowned, at once.</span></label></li>
+    <li><label><input type="checkbox"><span class="ctext"><span class="cn">05</span><code>d1/0,5,3</code> Clawcrab Den — puzzle reward, kill the Clawcrab.</span></label></li>
+    <li><label><input type="checkbox"><span class="ctext"><span class="cn">06</span><code>overworld/0,11,4</code> Outer Coral (5,5) — in the open, on reef flat: needs LOW or MID tide, underwater at HIGH.</span></label></li>
+    <li><label><input type="checkbox"><span class="ctext"><span class="cn">07</span><code>d2/1,4,5</code> Glass Cell (4,2) — the keese are phased; hold the <strong>Lens</strong>.</span></label></li>
+    <li><label><input type="checkbox"><span class="ctext"><span class="cn">08</span><code>d2/1,5,4</code> Whelk Cell (4,4) — behind Fork 1, east branch off the Bomb Vault.</span></label></li>
+    <li><label><input type="checkbox"><span class="ctext"><span class="cn">09</span><code>d3/0,4,4</code> Reed Cell (4,6) — puzzle reward, clear the room.</span></label></li>
+    <li><label><input type="checkbox"><span class="ctext"><span class="cn">10</span><code>d3/0,2,1</code> Vestry Roof (4,4) — north of Bogmaw Hall.</span></label></li>
+    <li><label><input type="checkbox"><span class="ctext"><span class="cn">11</span><code>overworld/0,2,3</code> Kell Ledges (6,2) — needs <strong>bombs</strong> for the Deep Cut.</span></label></li>
+    <li><label><input type="checkbox"><span class="ctext"><span class="cn">12</span><code>d4/0,4,5</code> Rung Gallery (3,3) — inside a drown-wall box; swim in at <span class="tide t-high">HIGH</span>.</span></label></li>
+    <li><label><input type="checkbox"><span class="ctext"><span class="cn">13</span><code>d4/0,4,1</code> East Overlook (2,6).</span></label></li>
+    <li><label><input type="checkbox"><span class="ctext"><span class="cn">14</span><code>overworld/0,6,4</code> Log Drift (2,5) — in the open.</span></label></li>
+    <li><label><input type="checkbox"><span class="ctext"><span class="cn">15</span><code>d5/0,1,5</code> Drowned Cloister (3,3).</span></label></li>
+    <li><label><input type="checkbox"><span class="ctext"><span class="cn">16</span><code>d5/0,5,5</code> Bower Cell (5,1).</span></label></li>
+    <li><label><input type="checkbox"><span class="ctext"><span class="cn">17</span><code>overworld/0,5,0</code> Salt Terraces (6,4) — behind the <strong>Rod</strong>'s vane gate.</span></label></li>
+    <li><label><input type="checkbox"><span class="ctext"><span class="cn">18</span><code>cave4/0,0,0</code> Palace Porch (4,1) — cave mouth on <code>overworld/0,10,1</code> at (4,1), same vane gate.</span></label></li>
+    <li><label><input type="checkbox"><span class="ctext"><span class="cn">19</span><code>overworld/0,9,0</code> Palace Wall (2,5) — behind the vane gate.</span></label></li>
+    <li><label><input type="checkbox"><span class="ctext"><span class="cn">20</span><code>d6/0,5,3</code> The Slack Water — buried at (4,4). <strong>Dredge</strong> from (4,6) facing up at <span class="tide t-mid">MID</span>.</span></label></li>
+    <li><label><input type="checkbox"><span class="ctext"><span class="cn">21</span><code>d6/1,2,3</code> The Sunken Bar — buried at (2,1). <strong>Dredge</strong> from (2,2) facing up at <span class="tide t-mid">MID</span>.</span></label></li>
+    <li><label><input type="checkbox"><span class="ctext"><span class="cn">22</span><code>overworld/0,0,0</code> Drowned Shore — buried at (3,3). <strong>Dredge</strong>; ring the Rod at the bell to be pointed at it.</span></label></li>
+    <li><label><input type="checkbox"><span class="ctext"><span class="cn">23</span><code>overworld/0,3,0</code> Rustfall (2,5) — behind the Maku Tree's five-Essence seal.</span></label></li>
+    <li><label><input type="checkbox"><span class="ctext"><span class="cn">24</span><code>overworld/0,1,9</code> Witch's Hollow — buried at (3,4). <strong>Dredge</strong>.</span></label></li>
+  </ul>
+  <p class="tally"><b><span data-count="hearts">0</span>/24</b> collected
+    <button class="reset" data-reset="hearts">Reset</button></p>
+
+  <h4>Heart Containers</h4>
+  <p>One from each boss: <code>d1/0,3,1</code>, <code>d2/1,3,1</code>, <code>d3/0,3,1</code>,
+  <code>d4/0,3,1</code>, <code>d5/0,3,1</code>, <code>d6/1,3,1</code>.</p>
+</section>
+
+<section id="chain">
+  <div class="chap-head">
+    <span class="chap-n">Part III</span>
+    <h2 class="chap">The Coastwise Chain</h2>
+  </div>
+
+  <ul class="check" data-store="chain">
+    <li><label><input type="checkbox"><span class="ctext"><span class="cn">01</span><strong>Ossa</strong>, the net-mender · <code>houseNets/0,0,0</code> — gives the <strong>Cracked Float</strong></span></label></li>
+    <li><label><input type="checkbox"><span class="ctext"><span class="cn">02</span><strong>Pell</strong> · <code>overworld/0,4,8</code> (3,2) — Float → <strong>Crab Claw</strong></span></label></li>
+    <li><label><input type="checkbox"><span class="ctext"><span class="cn">03</span><strong>Hulla</strong>, a Salter · <code>overworld/0,5,8</code> (6,3) — Claw → <strong>Salt Brick</strong></span></label></li>
+    <li><label><input type="checkbox"><span class="ctext"><span class="cn">04</span><strong>Mirren</strong>, a fisher · <code>overworld/0,5,7</code> (6,4) — Brick → <strong>Smoked Eel</strong></span></label></li>
+    <li><label><input type="checkbox"><span class="ctext"><span class="cn">05</span><strong>Dov</strong>, off the wreck · <code>overworld/0,8,9</code> (2,2) — Eel → <strong>Sounding Lead</strong></span></label></li>
+    <li><label><input type="checkbox"><span class="ctext"><span class="cn">06</span><strong>Sennit</strong> · <code>overworld/0,9,8</code> (4,6) — Lead → <strong>Ringing Whelk</strong></span></label></li>
+    <li><label><input type="checkbox"><span class="ctext"><span class="cn">07</span><strong>Corriwig</strong>, a diver · <code>overworld/0,9,5</code> (4,2) — Whelk → <strong>Slackwater Pearl</strong></span></label></li>
+    <li><label><input type="checkbox"><span class="ctext"><span class="cn">08</span><strong>Wick</strong>, a Kelper · <code>overworld/0,5,5</code> (2,2) — Pearl → <strong>Bogwood Cup</strong></span></label></li>
+    <li><label><input type="checkbox"><span class="ctext"><span class="cn">09</span><strong>Yarrow</strong>, the bog witch · <code>overworld/0,1,9</code> (5,2) — Cup → <strong>Jar of Brine-Jelly</strong>. Needs <strong>bombs</strong> to reach the Marsh.</span></label></li>
+    <li><label><input type="checkbox"><span class="ctext"><span class="cn">10</span><strong>Teel</strong>, off the stones · <code>overworld/0,4,9</code> (2,2) — Jar → <strong>Cold Kettle</strong></span></label></li>
+    <li><label><input type="checkbox"><span class="ctext"><span class="cn">11</span><strong>Ossa again</strong> · <code>houseNets/0,0,0</code> — Kettle → <strong>Bell-Rope</strong></span></label></li>
+    <li><label><input type="checkbox"><span class="ctext"><span class="cn">12</span><strong>The Maku Tree</strong> · <code>houseMaku/0,0,0</code> — Bell-Rope <em>and one Essence</em> → <strong>Resonance Rod</strong></span></label></li>
+  </ul>
+  <p class="tally"><b><span data-count="chain">0</span>/12</b> traded
+    <button class="reset" data-reset="chain">Reset</button></p>
+
+  <p>A spent link cannot be run twice, and a link whose turn has not come trades nothing but
+  still speaks. The kettle goes out with the tide from the village shore and comes back up on a
+  line two screens away, and the chain walks the entire coast to carry it that distance. Nobody
+  involved finds this strange.</p>
+</section>
+
+<section id="items">
+  <div class="chap-head">
+    <span class="chap-n">Part III</span>
+    <h2 class="chap">Every item, and where it is</h2>
+  </div>
+
+  <p>Every item in this game has <strong>three verbs</strong> — one for movement, one for combat,
+  one for puzzles. An item with fewer than two is a key wearing a costume.</p>
+
+  <div class="tw"><table>
+    <thead><tr><th class="wrap">Item</th><th class="wrap">Where</th><th class="wrap">Movement</th><th class="wrap">Combat</th><th class="wrap">Puzzle</th></tr></thead>
+    <tbody>
+      <tr><td class="wrap"><strong>Sword</strong><br>Wooden / Noble / Master</td><td class="wrap">L1 intro · L2 big chest in <code>cave1/0,0,0</code> at 4 Essences · L3 Maku Tree at 5</td><td>—</td><td class="wrap">The base weapon</td><td>—</td></tr>
+      <tr><td class="wrap"><strong>Wooden Shield</strong></td><td class="wrap">Village shop, 30 rupees</td><td>—</td><td class="wrap">Blocks frontal shots</td><td>—</td></tr>
+      <tr><td class="wrap"><strong>Moon Conch</strong></td><td class="wrap">Intro</td><td class="wrap">Opens and closes routes as the sea moves</td><td>—</td><td class="wrap">Cycles the tide field</td></tr>
+      <tr><td class="wrap"><strong>Tidewright's Anchor</strong></td><td class="wrap"><code>d1/0,3,2</code></td><td class="wrap">Freeze a sandbar underfoot while the room floods</td><td class="wrap">Chain sweeps on throw and recall</td><td class="wrap">Choose <em>where</em> the tide holds, not only when</td></tr>
+      <tr><td class="wrap"><strong>Brineglass Lens</strong></td><td class="wrap"><code>d2/1,4,4</code></td><td class="wrap"><em>Deliberately absent</em></td><td class="wrap">Phased enemies become hittable while held</td><td class="wrap">Preview the next tide level before committing</td></tr>
+      <tr><td class="wrap"><strong>Bombs</strong></td><td class="wrap"><code>d2/1,5,3</code></td><td class="wrap">Opens the Marsh and Cliffs gates</td><td class="wrap">Radius damage</td><td class="wrap">Opens cracked walls</td></tr>
+      <tr><td class="wrap"><strong>Kilnshell</strong></td><td class="wrap"><code>cave2/0,0,0</code>, big chest</td><td class="wrap">Burns drift-tangle — the one obstacle nothing else touches</td><td class="wrap">Sets a doorway alight; a little damage per tick to anything standing on it</td><td class="wrap">Lights torches; deep water puts it out, so route around it</td></tr>
+      <tr><td class="wrap"><strong>Kelp-Soled Cleats</strong><br>/ Mermaid Suit</td><td class="wrap">L1 <code>d3/0,3,3</code> · L2 <code>d6/1,4,4</code></td><td class="wrap">Swim the surface, or sink and walk the floor</td><td class="wrap">Sink mode takes no knockback, ignores currents</td><td class="wrap">Carry heavy things under surface-only barriers; L2 pushes blocks underwater</td></tr>
+      <tr><td class="wrap"><strong>Squall Bellows</strong></td><td class="wrap"><code>d4/0,1,4</code></td><td class="wrap">Drives rafts and floating platforms</td><td class="wrap">Shoves light enemies into pits</td><td class="wrap">Spins wheels; holds the tide back one level in a cone</td></tr>
+      <tr><td class="wrap"><strong>Reefseed</strong></td><td class="wrap"><code>d5/0,1,4</code></td><td class="wrap">A LOW pillar is a step</td><td class="wrap">Wall off a charging enemy; grow one under a flier</td><td class="wrap">What it becomes depends on the tide when it <em>finishes growing</em></td></tr>
+      <tr><td class="wrap"><strong>Dredge Line</strong></td><td class="wrap"><code>d6/0,4,3</code></td><td class="wrap">A fixed snag hauls you across a pit</td><td class="wrap">Drags an aquatic enemy onto land, helpless</td><td class="wrap">The seafloor — and buried land — is searchable</td></tr>
+      <tr><td class="wrap"><strong>Resonance Rod</strong></td><td class="wrap">Maku Tree, end of the Coastwise Chain, 1 Essence</td><td class="wrap">Retracts grates; bells point the way</td><td class="wrap">Locks armoured enemies rigid ~90 frames</td><td class="wrap">Rings all metal and crystal at once; range doubles at HIGH</td></tr>
+      <tr><td class="wrap"><strong>Ferryman's Coin</strong></td><td class="wrap">Village digger, 3 Essences</td><td class="wrap">Teleport-swap with the thrown coin, priced in one tide change</td><td class="wrap">An escape from a corner, or a boss re-entry</td><td class="wrap">Get the coin somewhere you cannot walk, then change the tide</td></tr>
+      <tr><td class="wrap"><strong>Bottled Tide</strong></td><td class="wrap">Case: <code>cave3/0,0,0</code> · refills: shop, 40</td><td class="wrap">Opens a route where the conch is suppressed</td><td class="wrap">Changes a boss arena mid-fight</td><td class="wrap">The single step is the resource</td></tr>
+      <tr><td class="wrap"><strong>Chartstone</strong></td><td class="wrap">One per dungeon</td><td>—</td><td>—</td><td class="wrap">Marks which rooms change, and at which level</td></tr>
+      <tr><td class="wrap"><strong>Dungeon Map</strong></td><td class="wrap">One per dungeon</td><td>—</td><td>—</td><td class="wrap">Reveals the layout</td></tr>
+    </tbody>
+  </table></div>
+
+  <h4>Map and Chartstone locations</h4>
+  <div class="tw"><table>
+    <thead><tr><th>Dungeon</th><th>Dungeon Map</th><th>Chartstone</th></tr></thead>
+    <tbody>
+      <tr><td>D1</td><td><code>d1/0,2,5</code></td><td><code>d1/0,4,5</code></td></tr>
+      <tr><td>D2</td><td><code>d2/0,2,5</code></td><td><code>d2/0,4,4</code></td></tr>
+      <tr><td>D3</td><td><code>d3/0,2,5</code></td><td><code>d3/0,2,4</code></td></tr>
+      <tr><td>D4</td><td><code>d4/0,2,6</code></td><td><code>d4/0,2,5</code></td></tr>
+      <tr><td>D5</td><td><code>d5/0,2,6</code></td><td><code>d5/0,2,5</code></td></tr>
+      <tr><td>D6</td><td><code>d6/0,2,6</code></td><td><code>d6/0,2,5</code></td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="charms">
+  <div class="chap-head">
+    <span class="chap-n">Part III</span>
+    <h2 class="chap">Charms and the scrimshander</h2>
+  </div>
+
+  <p>Thirty charms exist. Seven are placed by hand; the other twenty-three come out of the
+  scrimshander's bench.</p>
+
+  <p><strong>How to get one carved.</strong> Bring her a <strong>blank</strong> — raw bone, shell,
+  anything the sea has finished with — and 60 rupees. She chooses what it becomes. Ready after
+  <strong>three turns of the tide</strong>: sound the conch three times and come back.</p>
+
+  <p><strong>Where blanks come from.</strong> Three are placed in the world —
+  <code>d1/0,2,6</code>, <code>d2/0,2,6</code>, <code>d3/0,4,6</code>. After that they are a rare
+  drop from tougher enemies, and a <strong>common</strong> one in dredged loot, which is what the
+  Dredge Line is really for if you want all thirty.</p>
+
+  <h4>The seven hand-placed charms</h4>
+  <ul class="check" data-store="charms">
+    <li><label><input type="checkbox"><span class="ctext"><span class="tide t-mid">MID</span> <strong>Split Fang</strong> — a wider sword arc · <code>d1/0,2,3</code> Weeping Wall</span></label></li>
+    <li><label><input type="checkbox"><span class="ctext"><span class="tide t-mid">MID</span> <strong>Barnacle Skin</strong> — one free hit per room · <code>d2/0,3,3</code> Cistern Cell</span></label></li>
+    <li><label><input type="checkbox"><span class="ctext"><span class="tide t-low">LOW</span> <strong>Wrecker's Eye</strong> — chests and buried things glimmer · <code>d3/0,4,6</code> Bell Cell</span></label></li>
+    <li><label><input type="checkbox"><span class="ctext"><span class="tide t-mid">MID</span> <strong>Bosun's Whistle</strong> — the conch sounds faster · <code>d4/0,5,5</code> Cliffside Cell</span></label></li>
+    <li><label><input type="checkbox"><span class="ctext"><span class="tide t-high">HIGH</span> <strong>Gillcarve</strong> — unlimited seafloor breath · <code>d5/0,4,5</code> Thicket Cell</span></label></li>
+    <li><label><input type="checkbox"><span class="ctext"><span class="tide t-mid">MID</span> <strong>Coilrope</strong> — the Dredge Line reaches one tile further · <code>d6/1,2,4</code> Colonnade of the Drowned</span></label></li>
+    <li><label><input type="checkbox"><span class="ctext"><span class="tide t-mid">MID</span> <strong>Ballast Heart</strong> — knockback halved · Village shop, 80 rupees</span></label></li>
+  </ul>
+  <p class="tally"><b><span data-count="charms">0</span>/7</b> found
+    <button class="reset" data-reset="charms">Reset</button></p>
+
+  <h4>Case unlocks</h4>
+  <div class="tw"><table>
+    <thead><tr><th>Essences</th><th class="wrap">What opens</th></tr></thead>
+    <tbody>
+      <tr><td class="num">2</td><td class="wrap">The <span class="tide t-low">LOW</span> case</td></tr>
+      <tr><td class="num">4</td><td class="wrap">The <span class="tide t-high">HIGH</span> case</td></tr>
+      <tr><td class="num">6</td><td class="wrap">Every case holds <strong>two</strong> charms</td></tr>
+    </tbody>
+  </table></div>
+  <p>These open <strong>on the essence itself</strong>, not on visiting the scrimshander — she is
+  the acknowledgement, not the gate.</p>
+
+  <h4>The full roster</h4>
+
+  <p><strong><span class="tide t-low">LOW</span> — dry ground, exposed floor.</strong>
+  <em>Dunerunner</em> (sand and salt no longer slow you) · <em>Wrecker's Eye</em> ·
+  <em>Salt-Etched</em> (+1 sword damage while any part of the room is dry) · <em>Beachcomber</em>
+  (double rupee drops) · <em>Strandwalker</em> (slow regen on dry ground) · <em>Dry Kindling</em>
+  (bombs blast wider) · <em>Gull's Tally</em> (dropped pickups last twice as long) ·
+  <em>Chandler's Eye</em> (shops charge a quarter less).</p>
+
+  <p><strong><span class="tide t-mid">MID</span> — general.</strong> <em>Split Fang</em> ·
+  <em>Ballast Heart</em> · <em>Barnacle Skin</em> · <em>Quartermaster's Mark</em> (+2 Reefseed
+  capacity) · <em>Lamplighter's Wick</em> (dark rooms less dark) · <em>Bosun's Whistle</em> ·
+  <em>Pot-Hauler</em> (carrying no longer slows you) · <em>Coilrope</em>.</p>
+
+  <p><strong><span class="tide t-high">HIGH</span> — submerged.</strong> <em>Gillcarve</em> ·
+  <em>Riptide Fin</em> (swim half again as fast) · <em>Anemone's Gift</em> (contact damage from
+  sea creatures halved) · <em>Drowned Lantern</em> (dark rooms less dark) · <em>Pressure Scar</em>
+  (diving and surfacing take half as long) · <em>Kelp Braid</em> (currents push half as hard) ·
+  <em>Brine Skin</em> (hazard damage halved) · <em>Ballast Lung</em> (draw the sword on the
+  seafloor).</p>
+
+  <p><strong>Any case — the interesting ones.</strong> <em>Wrackbone</em> (double sword damage,
+  double damage taken) · <em>Neap Charm</em> (charms linger three seconds after the tide leaves
+  them) · <em>Fisherman's Regret</em> (the case one level below the tide stays awake too) ·
+  <em>Deadweight</em> (no current can move you, and you are slower everywhere) · <em>Hagstone</em>
+  (one hit in four passes straight through you) · <em>Sea-Wolf's Tooth</em> (your sword knocks
+  enemies twice as far).</p>
+
+  <div class="note">
+    <p><strong>Two worth building a loadout around.</strong> <em>Fisherman's Regret</em>
+    effectively doubles your live charms at MID and HIGH. <em>Neap Charm</em> covers the three
+    seconds after you sound the conch — exactly the window in which most tide puzzles get you hit.</p>
+  </div>
+</section>
+
+<section id="caves">
+  <div class="chap-head">
+    <span class="chap-n">Part III</span>
+    <h2 class="chap">Caves, shop and gates</h2>
+  </div>
+
+  <h4>The four caves</h4>
+  <div class="tw"><table>
+    <thead><tr><th class="wrap">Place</th><th class="wrap">Entrance</th><th class="wrap">Holds</th></tr></thead>
+    <tbody>
+      <tr><td class="wrap"><code>cave1</code> Bluff Grotto</td><td class="wrap"><code>overworld/0,3,7</code> (3,2)</td><td class="wrap">30-rupee chest · <strong>Heart Piece 1</strong> · big chest with the <strong>Noble Sword</strong> at 4 Essences</td></tr>
+      <tr><td class="wrap"><code>cave2</code> Reef Hollow</td><td class="wrap"><code>overworld/0,6,7</code> (4,3)</td><td class="wrap">Big chest with the <strong>Kilnshell</strong> · a rupee cache behind drift-tangle · a rupee cache and <strong>Heart Piece 2</strong>, both needing LOW tide</td></tr>
+      <tr><td class="wrap"><code>cave3</code> Salt Pan Vault</td><td class="wrap"><code>overworld/0,6,1</code> (3,2), behind the vanes</td><td class="wrap">Big chest with the <strong>Bottled Tide</strong> case</td></tr>
+      <tr><td class="wrap"><code>cave4</code> Palace Porch</td><td class="wrap"><code>overworld/0,10,1</code> (4,1), behind the vanes</td><td class="wrap"><strong>Heart Piece 18</strong></td></tr>
+    </tbody>
+  </table></div>
+  <p>The Salt Pan Vault and the Palace Porch are the one-room ruins of what used to be two more
+  dungeons. Each kept the item its dungeon used to hand over.</p>
+
+  <h4>The Tidewatch Shop</h4>
+  <p><code>houseShop/0,0,0</code>, from <code>overworld/0,4,7</code> at (6,4).</p>
+  <div class="tw"><table>
+    <thead><tr><th class="wrap">Stock</th><th>Price</th><th class="wrap">Notes</th></tr></thead>
+    <tbody>
+      <tr><td class="wrap">Wooden Shield</td><td class="num">30</td><td class="wrap">One time only</td></tr>
+      <tr><td class="wrap">Bombs, 4</td><td class="num">20</td><td class="wrap"><strong>Refused</strong> until you own the bag from <code>d2/1,5,3</code></td></tr>
+      <tr><td class="wrap">Heart</td><td class="num">10</td><td class="wrap">—</td></tr>
+      <tr><td class="wrap">Bottled Tide</td><td class="num">40</td><td class="wrap"><strong>Refused</strong> until you own the case from <code>cave3/0,0,0</code></td></tr>
+      <tr><td class="wrap">Ballast Heart charm</td><td class="num">80</td><td class="wrap">One time only</td></tr>
+    </tbody>
+  </table></div>
+  <p>The <strong>Chandler's Eye</strong> charm takes a quarter off all of those, including the
+  scrimshander's 60. Other interiors: <code>houseHearth/0,0,0</code> and
+  <code>houseSandpiper/0,0,0</code> each hold a small rupee pickup;
+  <code>houseMaku/0,0,0</code> holds the Maku Tree and Farore; <code>houseNets/0,0,0</code> holds Ossa.</p>
+
+  <h4>Region gates</h4>
+  <div class="tw"><table>
+    <thead><tr><th class="wrap">Region</th><th class="wrap">Sealed by</th><th class="wrap">Opened by</th><th class="wrap">Where</th></tr></thead>
+    <tbody>
+      <tr><td class="wrap">Sunken Marsh</td><td class="wrap">Cracked cliff</td><td class="wrap"><strong>Bombs</strong></td><td class="wrap"><code>overworld/0,2,7</code> and <code>overworld/0,1,6</code> — both entrances</td></tr>
+      <tr><td class="wrap">Cliffs of Kell, and everything north</td><td class="wrap">Cracked boulder</td><td class="wrap"><strong>Bombs</strong></td><td class="wrap"><code>overworld/0,3,4</code> The Deep Cut</td></tr>
+      <tr><td class="wrap">Salt Pans, and the Reef Palace behind them</td><td class="wrap">Salt vanes</td><td class="wrap"><strong>Resonance Rod</strong></td><td class="wrap"><code>overworld/0,6,2</code>, <code>overworld/0,7,1</code></td></tr>
+      <tr><td class="wrap">Abyssal approach</td><td class="wrap">The Keep's iron seal</td><td class="wrap"><strong>The Maku Tree at 5 Essences.</strong> No item touches it</td><td class="wrap"><code>overworld/0,2,2</code>, <code>overworld/0,2,1</code></td></tr>
+      <tr><td class="wrap">Bog Stair, two northern Marsh screens</td><td class="wrap">Boulders</td><td class="wrap"><strong>Dredge Line</strong></td><td class="wrap"><code>overworld/0,1,5</code> Marsh Stair</td></tr>
+      <tr><td class="wrap">Coral Reef</td><td class="wrap"><em>nothing</em></td><td class="wrap">—</td><td class="wrap">The hop is base moveset; a one-tile chasm stops nobody</td></tr>
+      <tr><td class="wrap">Drowned Wood</td><td class="wrap"><em>nothing by tile</em></td><td class="wrap">—</td><td class="wrap">Level design only</td></tr>
+    </tbody>
+  </table></div>
+  <p>The Keep's road being a <strong>story</strong> gate rather than an item gate is not
+  decoration. It used to be a Dredge Line gate — and the Dredge Line is inside the Keep, so the
+  road was locked by the thing that unlocked it.</p>
+</section>
+
+<!-- ============================ PART IV ============================ -->
+<section id="enemies">
+  <div class="chap-head">
+    <span class="chap-n">Part IV · Appendices</span>
+    <h2 class="chap">Enemies</h2>
+  </div>
+  <div class="tw"><table>
+    <thead><tr><th class="wrap">Enemy</th><th class="wrap">Behaviour, and how to deal with it</th></tr></thead>
+    <tbody>
+      <tr><td class="wrap">Octorok</td><td class="wrap">Wanders and spits rocks along its facing axis. Approach off-axis.</td></tr>
+      <tr><td class="wrap">Sea Octorok</td><td class="wrap">The aquatic cousin; only present at higher tides. Drop the water.</td></tr>
+      <tr><td class="wrap">Crab</td><td class="wrap">Scuttles sideways, <strong>shielded from the front</strong>. Hit from the side or behind.</td></tr>
+      <tr><td class="wrap">Zol</td><td class="wrap">A slime that <strong>splits</strong> when struck. Kill both halves.</td></tr>
+      <tr><td class="wrap">Gel</td><td class="wrap">The small half. Fast, fragile.</td></tr>
+      <tr><td class="wrap">Keese</td><td class="wrap">Erratic flier; ignores terrain. Wait for it to come to you.</td></tr>
+      <tr><td class="wrap">Leever</td><td class="wrap">Burrows and surfaces near you. Keep moving.</td></tr>
+      <tr><td class="wrap">Bubble</td><td class="wrap"><strong>Invulnerable</strong> drifting hazard. Go round it.</td></tr>
+      <tr><td class="wrap">Beamos</td><td class="wrap">Static; fires whenever you are in line with it. Never cross its axis.</td></tr>
+      <tr><td class="wrap">Beetle</td><td class="wrap">Charges in straight lines. Stand off the line.</td></tr>
+      <tr><td class="wrap">Tektite</td><td class="wrap">Hops at you across water.</td></tr>
+      <tr><td class="wrap">Wisp</td><td class="wrap">Circles a point and shoots rings.</td></tr>
+      <tr><td class="wrap">Urchin</td><td class="wrap">Harmless until the tide covers it, then it drifts. Deal with it at LOW.</td></tr>
+      <tr><td class="wrap">Moblin</td><td class="wrap">Throws spears; retreats when you close. Close anyway.</td></tr>
+      <tr><td class="wrap">Stalfos</td><td class="wrap">Skittish skeleton — <strong>hops away from your sword</strong>. Corner it.</td></tr>
+      <tr><td class="wrap">Darknut</td><td class="wrap">Armoured knight, <strong>only vulnerable from behind</strong>. Or ring the Rod.</td></tr>
+      <tr><td class="wrap">Wizzrobe</td><td class="wrap">Blinks in, fires, blinks out. Hit it in the window.</td></tr>
+      <tr><td class="wrap">Anglerfry</td><td class="wrap">Hangs in deep water; lunges when you swim near. Drain, or dredge it out.</td></tr>
+      <tr><td class="wrap">Barnacle</td><td class="wrap">Fixed; opens to spit, shielded while shut.</td></tr>
+      <tr><td class="wrap">Jellyfish</td><td class="wrap">Drifts with the tide, stings on contact. Less water, less drift.</td></tr>
+      <tr><td class="wrap">Siren</td><td class="wrap">Surfaces to sing a shot, submerges to dodge.</td></tr>
+      <tr><td class="wrap">Pincer</td><td class="wrap">An eel head on a tether, lunging out of its burrow.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="bossindex">
+  <div class="chap-head">
+    <span class="chap-n">Part IV</span>
+    <h2 class="chap">Boss index</h2>
+  </div>
+  <div class="tw"><table>
+    <thead><tr><th class="wrap">Boss</th><th>HP</th><th>Where</th><th class="wrap">Tide hook</th></tr></thead>
+    <tbody>
+      <tr><td class="wrap">Gohmaraq, the Tidewash Claw</td><td class="num">24</td><td><code>d1/0,3,1</code></td><td class="wrap"><span class="tide t-low">LOW</span> dries the shell — the eye stays open twice as long</td></tr>
+      <tr><td class="wrap">Anemos, the Crowned Column</td><td class="num">30</td><td><code>d2/1,3,1</code></td><td class="wrap"><span class="tide t-high">HIGH</span> — it feeds four times as long as at LOW</td></tr>
+      <tr><td class="wrap">Gloomtide, the Bogwater Maw</td><td class="num">36</td><td><code>d3/0,3,1</code></td><td class="wrap"><span class="tide t-off">OFF MID</span> — the current only runs at MID and it rides it. It keeps forcing MID back</td></tr>
+      <tr><td class="wrap">Wyverna, the Sea Wyvern</td><td class="num">44</td><td><code>d4/0,3,1</code></td><td class="wrap"><span class="tide t-low">LOW</span> — beached and permanently open. She refloods on a timer</td></tr>
+      <tr><td class="wrap">Rootmaw, the Drowned Wood</td><td class="num">52</td><td><code>d5/0,3,1</code></td><td class="wrap"><span class="tide t-low">LOW</span> — roots bare and the mouth cannot shut. At HIGH it heals</td></tr>
+      <tr><td class="wrap">Brinehulk, the Salt Colossus</td><td class="num">60</td><td><code>d6/1,4,2</code></td><td class="wrap"><span class="tide t-high">HIGH</span> softens the crust but enrages it; <span class="tide t-mid">MID</span> is the honest answer</td></tr>
+      <tr><td class="wrap">Nereth, the Drowned King</td><td class="num">80</td><td><code>d6/1,3,1</code></td><td class="wrap"><strong>Break his pin.</strong> Three phases, three pins; phase 4 he cycles the sea himself</td></tr>
+    </tbody>
+  </table></div>
+
+  <h4>Minibosses</h4>
+  <div class="tw"><table>
+    <thead><tr><th class="wrap">Miniboss</th><th>HP</th><th>Where</th><th class="wrap">Tide hook</th></tr></thead>
+    <tbody>
+      <tr><td class="wrap">Clawcrab</td><td class="num">14</td><td><code>d1/0,5,3</code></td><td class="wrap">Faster at LOW — fight it wet</td></tr>
+      <tr><td class="wrap">Reefguard</td><td class="num">16</td><td><code>d2/1,4,2</code></td><td class="wrap"><span class="tide t-high">HIGH</span> holds its plate open far longer</td></tr>
+      <tr><td class="wrap">Bogmaw</td><td class="num">15</td><td><code>d3/0,2,2</code></td><td class="wrap"><span class="tide t-off">OFF MID</span> and it wallows</td></tr>
+      <tr><td class="wrap">Ironknight</td><td class="num">18</td><td><code>d4/0,5,3</code></td><td class="wrap"><span class="tide t-high">HIGH</span> seizes its joints — permanently open</td></tr>
+      <tr><td class="wrap">Thornvine</td><td class="num">16</td><td><code>d5/0,5,3</code></td><td class="wrap"><span class="tide t-low">LOW</span> wilts it; a third longer between volleys</td></tr>
+      <tr><td class="wrap">Tideshade</td><td class="num">20</td><td><code>d6/1,4,5</code></td><td class="wrap">Below HIGH — its rings are eight shots at HIGH, six otherwise</td></tr>
+    </tbody>
+  </table></div>
+
+  <p>Three more are defined in the data and <strong>placed in no room</strong>: Thalassor, the
+  Palace Eel, and the minibosses Saltwraith and Gustharpy. They are the leftovers of the
+  eight-dungeon layout this game was consolidated down from — the Reef Palace and the Salt Pan
+  Vault, which survive as the one-room ruins <code>cave4/0,0,0</code> and <code>cave3/0,0,0</code>.
+  You cannot fight them, and nothing in the game asks you to.</p>
+</section>
+
+<section id="tiles">
+  <div class="chap-head">
+    <span class="chap-n">Part IV</span>
+    <h2 class="chap">Tide tile reference</h2>
+  </div>
+
+  <h4>Outdoors</h4>
+  <div class="tw"><table>
+    <thead><tr><th>#</th><th class="wrap">Tile</th><th>LOW</th><th>MID</th><th>HIGH</th></tr></thead>
+    <tbody>
+      <tr><td class="num">1</td><td class="wrap">sandbar</td><td>dry</td><td>wadeable</td><td>deep</td></tr>
+      <tr><td class="num">2</td><td class="wrap">tide pool</td><td>wet sand</td><td>wadeable</td><td>deep</td></tr>
+      <tr><td class="num">3</td><td class="wrap">shoal</td><td>dry</td><td>dry</td><td>covered</td></tr>
+      <tr><td class="num">4</td><td class="wrap">seafloor</td><td>walkable</td><td>—</td><td>—</td></tr>
+      <tr><td class="num">5</td><td class="wrap">channel</td><td>wadeable</td><td>—</td><td>—</td></tr>
+      <tr><td class="num">6</td><td class="wrap">reef flat</td><td>exposed</td><td>—</td><td>—</td></tr>
+      <tr><td class="num">7</td><td class="wrap">reef deep</td><td>wadeable</td><td>deep</td><td>deep</td></tr>
+      <tr><td class="num">8</td><td class="wrap">tide rock</td><td>stone</td><td>stone</td><td>drowned</td></tr>
+      <tr><td class="num">9</td><td class="wrap">drown wall</td><td>wall</td><td>wall</td><td><strong>swim over</strong></td></tr>
+      <tr><td class="num">0</td><td class="wrap">tide grass</td><td>meadow</td><td>meadow</td><td>flooded</td></tr>
+    </tbody>
+  </table></div>
+
+  <h4>Indoors</h4>
+  <div class="tw"><table>
+    <thead><tr><th>#</th><th class="wrap">Tile</th><th class="wrap">LOW</th><th class="wrap">MID</th><th class="wrap">HIGH</th></tr></thead>
+    <tbody>
+      <tr><td class="num">0</td><td class="wrap">sump</td><td class="wrap"><strong>open pit</strong></td><td class="wrap">over your head</td><td class="wrap">over your head</td></tr>
+      <tr><td class="num">1</td><td class="wrap">sluice</td><td>dry</td><td>shallow</td><td>deep</td></tr>
+      <tr><td class="num">2</td><td class="wrap">basin</td><td>dry</td><td>damp</td><td>shallow</td></tr>
+      <tr><td class="num">3</td><td class="wrap">well</td><td>shallow</td><td>deep</td><td>deep</td></tr>
+      <tr><td class="num">4</td><td class="wrap">drain</td><td class="wrap"><strong>open pit</strong></td><td>water</td><td>water</td></tr>
+      <tr><td class="num">5</td><td class="wrap">drowned channel</td><td>wadeable</td><td>—</td><td>—</td></tr>
+      <tr><td class="num">6/7</td><td class="wrap">race</td><td>wadeable</td><td>current</td><td>current</td></tr>
+      <tr><td class="num">8</td><td class="wrap">tide rock</td><td>stone</td><td>stone</td><td>drowned</td></tr>
+      <tr><td class="num">9</td><td class="wrap">drown wall</td><td>wall</td><td>wall</td><td>swim over</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="note">
+    <p>Two indoor tiles are <strong>not</strong> digits, and that is the point of them.
+    <strong>Torrent</strong> — deep at every level, running harder than you can swim; the only
+    answer is the Cleats' floor mode. <strong>Drowned bole</strong> — a tree that stands at LOW
+    and MID and is open water at HIGH; a thrown Reefseed stops at its foot, or sails over it.</p>
+  </div>
+</section>
+
+<section id="verify">
+  <div class="chap-head">
+    <span class="chap-n">Part IV</span>
+    <h2 class="chap">How this was verified</h2>
+  </div>
+
+  <p>Everything above is read out of the shipped data. The room keys, chest contents, enemy
+  placements, key counts, puzzle coordinates, boss HP totals, phase thresholds, attack timers and
+  tide hooks are all taken from the game's source, not from the design documents.</p>
+
+  <p>The route claims are backed by the project's own checkers: the progression flood reaches
+  120/120 screens with 6/6 dungeons cleared in acquisition order; the overworld checker proves
+  each gate seals its region and opens with its key; six per-item checkers prove that the puzzle
+  rooms in their dungeon cannot be crossed without that dungeon's item and can be with it — which
+  is where the exact <em>stand here, face this way, at this tide</em> solutions come from; the
+  heart census counts the pieces and the cap; the trade checker plays the Coastwise Chain end
+  to end in-engine, then rings the Colonnade's grate with the Rod that comes out of it; and the
+  torch checker confirms something in the engine actually emits the fire action the Kilnshell
+  relies on, and that no torch-gated key is ever the only key standing between a player and the
+  room it opens — the Coral Spire's Torch Cell key is deliberately redundant with Rising
+  Chamber's for exactly that reason.</p>
+
+  <h4>Two honest caveats</h4>
+  <ol>
+    <li><strong>No automated run has yet played this game from the title screen to Nereth.</strong>
+    The playthrough harness is the only tool that plays rather than models, and it currently drives
+    18 of the game's 144 dungeon rooms, all in Dungeon 1, ending in <code>d1/0,5,2</code> after
+    crossing the Iron Pipe with the Anchor. Every model says the world is completable and none of
+    them fights a boss or spends a key. This walkthrough is therefore <em>derived correctly from
+    the data</em> and, past that point, not yet <em>walked</em> — treat it as a confident route,
+    not as a claim that anyone has taken it end to end.</li>
+    <li><strong>The ending cutscene is written and is not wired up.</strong> It exists in full —
+    the Bell rings, the sea goes back where it belongs, Farore signs off, the credits roll — and
+    nothing starts it. What actually happens when Nereth dies is the Heart Container, then the
+    sixth Essence scene, and then you are standing in the arena with a whole Tide Bell and no
+    curtain.</li>
+  </ol>
+
+  <p>Neither is a fault in the <em>world</em> this guide describes — the rooms, the items, the
+  puzzles and the bosses are all there and all consistent, structurally verified end to end. They
+  are things you should know before you set out to see the end of it.</p>
+</section>
+
+<footer>
+  <p><strong>Oracle of Tides — Complete Walkthrough.</strong> Generated from the game's own data
+  (<code>src/data/</code>, <code>src/game/</code>), and cross-checked by
+  <code>tools/check-guide.mjs</code>: every room reference resolves, every item and charm named is
+  real, and every Heart Piece in the data is accounted for.</p>
+  <p>A Markdown copy of this guide lives at <code>docs/GUIDE.md</code>. Tick marks on this page
+  are stored in your own browser and go nowhere else.</p>
+</footer>
+
+</main>
+
+<button class="totop" id="totop" aria-label="Back to top">↑</button>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---- storage that never throws (private mode, blocked site data) ---- */
+  var store = {
+    get: function(k){ try { return window.localStorage.getItem(k); } catch(e){ return null; } },
+    set: function(k,v){ try { window.localStorage.setItem(k,v); } catch(e){} },
+    del: function(k){ try { window.localStorage.removeItem(k); } catch(e){} }
+  };
+
+  /* ---- contents drawer ---- */
+  var drawer = document.getElementById('drawer');
+  var tocBtn = document.getElementById('tocBtn');
+  function openDrawer(){
+    drawer.setAttribute('open','');
+    tocBtn.setAttribute('aria-expanded','true');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeDrawer(){
+    drawer.removeAttribute('open');
+    tocBtn.setAttribute('aria-expanded','false');
+    document.body.style.overflow = '';
+  }
+  tocBtn.addEventListener('click', openDrawer);
+  document.getElementById('tocClose').addEventListener('click', closeDrawer);
+  drawer.addEventListener('click', function(e){
+    if (e.target.closest('a')) closeDrawer();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && drawer.hasAttribute('open')) closeDrawer();
+  });
+
+  /* ---- scroll progress + which chapter you are in ---- */
+  var sections = Array.prototype.slice.call(document.querySelectorAll('main section'));
+  var eyebrow = document.getElementById('barEyebrow');
+  var title   = document.getElementById('barTitle');
+  var prog    = document.getElementById('prog');
+  var totop   = document.getElementById('totop');
+  var ticking = false;
+
+  function onScroll(){
+    var y = window.scrollY || window.pageYOffset;
+    var h = document.documentElement.scrollHeight - window.innerHeight;
+    prog.style.width = (h > 0 ? Math.min(100, (y / h) * 100) : 0) + '%';
+    totop.classList.toggle('on', y > 900);
+
+    var cur = null;
+    for (var i = 0; i < sections.length; i++){
+      if (sections[i].getBoundingClientRect().top <= 90) cur = sections[i]; else break;
+    }
+    if (cur){
+      var n = cur.querySelector('.chap-n');
+      var t = cur.querySelector('.chap');
+      eyebrow.textContent = n ? n.textContent : 'Oracle of Tides';
+      title.textContent   = t ? t.textContent : 'Complete Walkthrough';
+    } else {
+      eyebrow.textContent = 'Oracle of Tides';
+      title.textContent   = 'Complete Walkthrough';
+    }
+    ticking = false;
+  }
+  window.addEventListener('scroll', function(){
+    if (!ticking){ ticking = true; window.requestAnimationFrame(onScroll); }
+  }, { passive: true });
+
+  totop.addEventListener('click', function(){ window.scrollTo({ top: 0, behavior: 'smooth' }); });
+
+  /* ---- checklists, saved per device ---- */
+  Array.prototype.forEach.call(document.querySelectorAll('.check[data-store]'), function(list){
+    var name  = list.getAttribute('data-store');
+    var key   = 'oot-guide:' + name;
+    var boxes = Array.prototype.slice.call(list.querySelectorAll('input[type=checkbox]'));
+    var out   = document.querySelector('[data-count="' + name + '"]');
+
+    var saved = (store.get(key) || '').split(',');
+    boxes.forEach(function(b, i){ b.checked = saved.indexOf(String(i)) !== -1; });
+
+    function sync(){
+      var on = [];
+      boxes.forEach(function(b, i){ if (b.checked) on.push(i); });
+      store.set(key, on.join(','));
+      if (out) out.textContent = on.length;
+    }
+    boxes.forEach(function(b){ b.addEventListener('change', sync); });
+    sync();
+
+    var reset = document.querySelector('[data-reset="' + name + '"]');
+    if (reset) reset.addEventListener('click', function(){
+      boxes.forEach(function(b){ b.checked = false; });
+      store.del(key);
+      sync();
+    });
+  });
+
+  onScroll();
+})();
+</script>
