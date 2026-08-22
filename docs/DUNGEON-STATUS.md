@@ -390,6 +390,18 @@ the near bank, and a mooring whose closure clause was asking the wrong question.
 - **Nobody has played one.** Every claim on this board is a checker's. The
   checkers prove a dungeon is completable and that its rooms mean what they say;
   they cannot say whether it is any good to walk through.
+  **Update (boss-verb session, see `docs/NEXT-SESSION.md`'s top entry):** D1's
+  boss fight specifically is no longer just a checker's claim — a real,
+  non-god-mode, in-engine run now beats Gohmaraq outright at 6 starting
+  hearts (loses narrowly at 3). That's still not the same as "the dungeon has
+  been played," since `tools/check-playthrough.mjs` doesn't drive that far
+  yet (it stops at `d1/0,5,2`, before the boss room), but it is the first
+  time any boss fight in this repo has been won by anything other than god
+  mode, and the session that ran it found a real engine bug
+  (`Boss.phase`/`Entity.phase` field collision, see `docs/HANDOFF.md`) that
+  had been silently capping every earlier measurement of "how hard is this
+  fight." Worth knowing before assuming a `check-bosses.mjs` damage number
+  from before that fix landed still means what it said.
 - **Five dungeons, five different fixtures, and no session has compared them.**
   D1 is a held patch, D2 a blind fork, D3 a torrent, D4 a drowned wheel, D5 a
   bole and a snarl. Each was designed against its own item and against nothing

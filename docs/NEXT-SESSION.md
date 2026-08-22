@@ -1,4 +1,174 @@
-## iPad publishing (this session)
+## The boss verb wins now, and the reason it didn't was not positioning (this session)
+
+Two independent fixes, plus a small infra cleanup. Order matters: the second
+fix (positioning) looked complete on its own until the first one (an engine
+bug) turned out to be silently capping every measurement made of it.
+
+**1. `Boss.phase` and `Entity.phase` were the same field, by accident, and it
+made every multi-phase boss unhittable partway through its own fight.**
+`Entity.phase` (`src/game/entity.js`) is the Lens's tide-lock: null unless an
+entity is pinned to one tide level, and `Game.updatePhaseShift`
+(`src/game/game.js`) re-arms `invuln:2`, `harmless:true` and `hidden` on it
+EVERY FRAME for anything whose `.phase` doesn't match the room's current
+tide. `Boss` (`src/game/enemy.js`) reused the same name for something
+unrelated — its own combat-phase index (0, 1, 2, picked by remaining hp).
+Every boss starts at phase 0, which happens to equal tide LOW, so nothing
+looked wrong for a fight's first phase. The moment any boss crossed into
+phase 1 while the tide was anything but MID — which is most of every fight,
+since each boss pins the tide to whatever level its own design wants —
+`updatePhaseShift` started reading it as belonging to a different tide and
+permanently blocked every future `hurt()` call. Not a crash: the boss kept
+visibly taking swings, kept looking `weakOpen`, and simply never lost
+another point of hp. This is almost certainly the real explanation for the
+"one point of damage per five quarter-hearts" figure the previous two
+sessions measured and attributed entirely to the fighting verb's
+positioning — the boss going invulnerable partway through was doing far more
+damage to that number than any approach angle. Fixed by giving `Boss` its
+own name, `this.aiPhase` (nothing else in the repo ever read `boss.phase`,
+so the rename left nothing dangling). Full writeup in `docs/HANDOFF.md`'s
+hard-won-lessons, first entry — **any future feature reaching for a
+generic-sounding name on `Entity` (`phase`, `state`, `mode`, ...) needs to
+grep for every existing reader of that name first.**
+
+**2. `dBoss` (`tools/actor-runtime.mjs`) now lines up on the boss's OTHER
+axis before closing, and refuses to commit a swing while the boss is still
+moving fast.** Two real, separate positioning bugs, found by literally
+plotting the sword's hitbox against the boss's hurtbox frame by frame:
+  - It used to close on the dominant axis alone and swing the instant the
+    combined (dx+dy) distance was small enough — which, against a boss on
+    the move, is "diagonally near" far more often than it is "actually lined
+    up," so most swings connected with nothing. Now it lines up on the
+    perpendicular axis first (the same standoff `dFight` already uses
+    against a shielded enemy) before closing on the other one.
+  - A swing locks the player in place for its whole duration
+    (`SWING_FRAMES` — `src/game/player.js` ignores movement input while
+    `swinging`), so a boss that is still moving when the swing is thrown is
+    routinely gone from the blade's box by the time the hit-active frames
+    arrive. `dBoss` now tracks the boss's own frame-to-frame speed and will
+    not commit to a swing above a small threshold — which, for a change,
+    reads a charge's own wind-up freeze (the boss is genuinely stationary
+    for ~18-22 frames before it moves) as the SAFEST moment to swing, not a
+    reason to hold off.
+
+**Together: `tools/check-bosses.mjs` (still god-mode, still proving
+structure rather than difficulty) now reports outright KILLS with no
+AI-limitation error for four of six bosses — Gohmaraq, Anemos, Gloomtide,
+Wyverna — where every previous run of that file reported partial damage and
+an "AI limitation" note on all six.** Rootmaw and Nereth still don't finish;
+both are open per-boss tactics problems (Rootmaw heals at HIGH and only
+softens at LOW per its own design; Nereth pins the tide itself and is the
+final boss), not the same class of bug as the four that now fall.
+
+**Verified for real, not just in god mode — the actual ask from the last two
+boards, "prove it on Gohmaraq at three hearts."** A non-god-mode run of the
+Tidewash Grotto boss room, deterministic, seed `20260806`, `sword:1,
+conch:1, anchor:1`, tide LOW:
+  - **At 6 starting hearts, D1 is won for real.** `progress.beaten.d1`
+    becomes true, the fight ends with 2 hearts (8 quarter-hearts) still in
+    hand. This is the first time anything in this repo has driven a boss
+    fight to a real kill without god mode.
+  - **At 3 starting hearts — what a new game actually brings — it is close
+    and it still loses.** Five damage events land over the whole fight:
+    three 2-quarter-heart rock-spray chips from the slam's AoE (`shot_rock`,
+    `gohmaraqSlam` in `src/data/bosses.js`) and two 4-quarter-heart contact
+    touches, for 16 quarter-hearts taken against a 12-quarter-heart pool.
+    Both contact touches happen while the actor is retreating and the boss
+    is mid-CHARGE on a straight line that happens to cross the retreat path
+    — the verb's retreat direction is derived from the player's offset from
+    the boss's CURRENT position, not from the boss's actual velocity vector,
+    so a fast mover committed to a line can still catch a slower reactive
+    dodger. A velocity-aware "step off the charge's lane" dodge was tried
+    (tracking `bvx`/`bvy` frame to frame, stepping perpendicular to the
+    boss's own heading rather than to the player's offset) and made the
+    3-heart result WORSE, not better (died a full 180 frames earlier, with
+    two contact hits instead of one) — reverted rather than kept on the
+    strength of the idea alone. **This is the honest state to hand off: D1
+    is provably beatable by the harness at a realistic but not minimum
+    health total, and the specific three-heart case is a real, still-open,
+    measured gap — not a rounding error and not yet closed.**
+
+**Also fixed, unrelated but found along the way: game audio could go
+permanently silent on a repeat visit.** `Audio.init()`
+(`src/core/audio.js`) constructed the `AudioContext` inside the required
+user-gesture handler but never checked whether the BROWSER handed it back
+already `suspended` — which some browsers do on a repeat visit to the same
+origin, even from inside a real gesture. `init()` reported success either
+way (`ok = true`), so the caller (`src/main.js`) removed its gesture
+listeners on the belief that audio was live, and nothing was ever left to
+retry the resume. Fixed: call `.resume()` immediately if the freshly
+constructed context comes back suspended, in the same gesture that made it.
+
+**Infra: every `tools/*.mjs` that launches a browser now carries the same
+Playwright-version-mismatch fallback `check-build.mjs` and
+`check-bosses.mjs` already had** (`chromium.launch(...).catch(() =>
+chromium.launch({ executablePath: process.env.CHROMIUM_PATH ||
+'/opt/pw-browsers/chromium' }))`). Ten more files got it this session —
+`replay.mjs`, `check-playthrough.mjs`, `walk-dungeons.mjs`,
+`check-gates.mjs`, `solve-switches.mjs`, `check-trade.mjs`,
+`check-motion.mjs`, `check-items.mjs`, `find-ledges.mjs`, `preview.mjs`,
+`check-charms.mjs` — so the full CLAUDE.md checker table now runs clean in a
+stock copy of this sandbox with no manual symlink surgery first. See
+`docs/HANDOFF.md` for the one-line version.
+
+**One replay tape needed re-recording, and only one.** `d1-clawcrab-den-wide`
+diverged at frame 720 — not a combat tape, a room-transition/camera-clamp
+tape that happens to walk through a room holding the Clawcrab miniboss at
+tide MID. The OLD tape encoded the OLD bug: the crab's `aiPhase` (then still
+named `.phase`) started at 0, tide was MID (1), 0≠1, so the crab was
+harmless and hidden for the whole traversal in the recording. Fixed, the
+crab is a real, visible, dangerous obstacle during that same walk, so the
+player takes real hits passing it (20 hearts down to 11 by the end) — a
+correct behavior change, not a bug, and the only tape in the whole 51-tape
+suite this touched. All 51 replays pass again on the re-recording.
+
+**Full CLAUDE.md checker table run this session and green:** `test.mjs`
+59/59, `check-hearts.mjs` 114/114 (damage ladder and boss roster untouched),
+`check-lens.mjs` 24/24 (the OTHER user of `Entity.phase`, unaffected by the
+rename — proof the fix didn't regress the feature it shares a field name
+with), `check-motion.mjs` 8/8, `check-charms.mjs` 63/63, `check-items.mjs`
+91/91, `check-trade.mjs` 43/43, `walk-dungeons.mjs` 23/23,
+`solve-switches.mjs` (9/9 switch rooms), `check-gates.mjs` 26/26,
+`check-bosses.mjs` 13/13 (structural assertions; see the kill counts above
+for what actually changed), `check-playthrough.mjs` 19/19 unchanged (`dBoss`
+is still deliberately not wired into `playthrough-route.mjs` — see below),
+`replay.mjs` 51/51, `check-build.mjs` clean, `npm run build` committed.
+
+**What this does NOT do: `dBoss` is still not referenced by
+`tools/playthrough-route.mjs`.** The route still stops at `d1/0,5,2` for
+exactly the reason the last two boards named — no actor directive yet for
+"a boss fight, and the third Small Key behind the Clawcrab door." That is
+unchanged and is still the next real step toward `check-playthrough.mjs`
+reaching the end of D1.
+
+### Next session's job, in order
+
+1. **Wire the boss fight into the route.** `playthrough-route.mjs` needs a
+   `['boss', N]` step for D1's Gohmaraq fight (now genuinely winnable at 6
+   hearts — check what health the route actually has in hand by that point,
+   since it may already be above 3) and an actor directive for the Boss Key
+   / third Clawcrab-door key, then extend the route past `d1/0,5,2` to the
+   Essence and the dungeon's actual end. This is what finally lets
+   `check-playthrough.mjs` prove D1 beaten by a real run rather than modeled.
+2. **If the route health check above shows D1 is only realistically won at
+   6 hearts and not 3, decide whether that's a tuning problem (the damage
+   ladder's still-unapplied heavy/miniboss/boss bump, `docs/FEEL-SPEC.md`)
+   or a verb problem (the two avoidable contact hits during the charge,
+   above) before spending more time on either — the 3-heart gap is measured
+   now, not guessed, so this decision can be made from data.**
+3. **Rootmaw and Nereth still don't finish even in god mode.** Rootmaw
+   heals at HIGH and only softens at LOW per its own design (`src/data/
+   bosses.js`) — `dBoss` has no notion of "this boss wants a specific tide
+   held, go set it," which is a route-level concern per the verb's own
+   design comment, not something to hardcode into the generic verb. Nereth
+   pins the tide itself as his own mechanic and is the final boss — expect
+   him to need the same treatment last.
+4. **The other five dungeons' route authoring** — unchanged from every
+   earlier board, still the largest remaining cost, still ~24 rooms each.
+5. **Regenerate `docs/GUIDE.md`** and get `check-guide.mjs` green — unchanged.
+
+---
+
+## iPad publishing (previous session)
 
 Shipped: `.github/workflows/deploy-pages.yml` (builds, runs
 `check-build.mjs` as a hard gate, publishes `dist/oracle-of-tides.html` as

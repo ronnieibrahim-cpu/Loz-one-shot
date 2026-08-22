@@ -266,7 +266,19 @@ export class Boss extends Enemy {
     this.isBoss = true;
     this.oncePerGame = spec.oncePerGame !== false;
     this.intro = spec.intro != null ? spec.intro : BOSS_INTRO_FRAMES;
-    this.phase = -1;
+    // NOT `this.phase` — that field is Entity's own tide-lock (opts.phase,
+    // read by Game.updatePhaseShift to hide/soften an enemy that belongs to
+    // a different tide level). A boss's combat phase (0, 1, 2, picked by
+    // remaining health) used to be stored there too, under the same name,
+    // and every boss in the game starts phase 0 at spawn, which happens to
+    // equal tide LOW — so nothing looked wrong until the fight advanced to
+    // phase 1 at any OTHER tide. From that frame on, updatePhaseShift reads
+    // this boss as "belongs to tide MID, but the room is at LOW", and marks
+    // it phased out: harmless, hidden without the Lens, and re-armed
+    // invuln:2 every single frame — permanently unhittable, silently, for
+    // the rest of the fight. Its own name, `aiPhase`, so the two can never
+    // collide again.
+    this.aiPhase = -1;
     this.weakOpen = !spec.shell;
     this.deathTime = 0;
     this.dying = false;
@@ -317,8 +329,8 @@ export class Boss extends Enemy {
     if (this.stun > 0) { this.stun--; return; }
 
     const p = this.currentPhase();
-    if (p !== this.phase) {
-      this.phase = p;
+    if (p !== this.aiPhase) {
+      this.aiPhase = p;
       this.invuln = Math.max(this.invuln, BOSS_PHASE_INVULN_FRAMES);
       if (this.spec.onPhase) this.spec.onPhase(this, game, p);
       game.audio.sfx('charged');

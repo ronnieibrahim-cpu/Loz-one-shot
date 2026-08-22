@@ -140,6 +140,14 @@ export class Audio {
       this.tone.frequency.value = 9000;
       this.tone.connect(this.master);
       this._noise = noiseBuffer(this.ctx);
+      // Some browsers hand back a context in 'suspended' state even when it
+      // is constructed inside a user-gesture handler — most often on a
+      // repeat visit where the site's autoplay permission is already
+      // remembered. If that happens here, this is the only gesture we get:
+      // resume it now, or the context never makes a sound and there is no
+      // later listener left to try again (the caller drops the gesture
+      // listeners once init() reports success).
+      if (this.ctx.state === 'suspended') this.ctx.resume();
       this.ok = true;
     } catch (e) {
       console.warn('[audio] unavailable', e);

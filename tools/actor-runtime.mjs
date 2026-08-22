@@ -735,13 +735,27 @@ export async function installRuntime() {
    * this (a tide level, an item), the ROUTE says so in the steps around this
    * one, where it is readable, rather than hiding inside the verb.
    */
-  // STATUS: THIS VERB FIGHTS AND DOES NOT YET WIN. It finds the boss, stays in
-  // the arena, waits out the shell and lands real hits — Gohmaraq measured from
-  // 24 hp to 18 — but the trade is about one point of damage per five quarter
-  // hearts, and a boss has 24 to 80 hp. It is committed because the scaffolding
-  // is right and the two traps it already closed are expensive to rediscover;
-  // it is NOT referenced by tools/playthrough-route.mjs, because a route step
-  // that cannot finish is worse than one that is missing.
+  // STATUS: THIS VERB WINS, SOMETIMES. In god mode (tools/check-bosses.mjs)
+  // it now kills Gohmaraq, Anemos, Gloomtide and Wyverna outright — the four
+  // that fell were never really a positioning problem: `Boss.aiPhase` used to
+  // collide with `Entity.phase` (the Lens's tide-lock field, see
+  // docs/HANDOFF.md) and every boss went silently invulnerable the moment it
+  // crossed into its own second combat phase at any tide but the one that
+  // happened to match the phase's index. Fixed, this verb's own lining-up
+  // and speed-gating (below) were enough to close the rest of the gap.
+  // Rootmaw and Nereth still don't finish, and both are real per-boss tide
+  // tactics this generic verb deliberately does not encode (see the header
+  // above) rather than a further instance of the same bug.
+  //
+  // Played for real, no god mode, against Gohmaraq (seed 20260806, tide LOW,
+  // sword+conch+anchor, D1's boss room): WINS outright at 6 starting hearts,
+  // with 2 hearts to spare. At 3 starting hearts — a new game's actual total —
+  // it loses, narrowly: five damage events (three 2-quarter-heart rock-spray
+  // chips, two 4-quarter-heart contact touches during a charge) add up to 16
+  // quarter-hearts against a 12-quarter-heart pool. It is still NOT referenced
+  // by tools/playthrough-route.mjs — a route step that cannot finish at the
+  // health the route actually has in hand by D1's boss room is worse than one
+  // that is missing, and nobody has yet checked what that health total is.
   function* dBoss(maxF) {
     const g = window.__game;
     for (let i = 0; i < 300 && !g.boss; i++) yield 0;
@@ -751,7 +765,7 @@ export async function installRuntime() {
     // band, then break contact. A boss does contact damage like anything else,
     // and the first cut of this verb held the stick toward the boss while the
     // eye was open — three touches and a new game does not have a fourth.
-    const NEAR = 18, BACKOFF = 30;
+    const NEAR = 18, LINED = 8, BACKOFF = 30;
     const EDGE = 12;
     // Every mask goes through the fence. A boss arena has exits, and leaving
     // one wipes the room's entities — the boss with them. That reads exactly
@@ -766,12 +780,23 @@ export async function installRuntime() {
       if (q.y > (g.room ? g.room.ph : 144) - 16 - EDGE) m &= ~BIT.down;
       return m;
     };
+    // A swing locks the player in place for its whole duration (SWING_FRAMES,
+    // see src/game/player.js — movement input is ignored while `swinging`),
+    // so once it is thrown the boss is free to walk, scuttle or charge out
+    // from under the blade before the hit-active frames even arrive. Track
+    // its own speed frame to frame — the same number every boss's `charge()`
+    // (src/game/enemy.js) already produces, not a Gohmaraq-specific read —
+    // and only commit to a swing once it has actually settled.
+    let prevBX = null, prevBY = null, bSpeed = 0;
+    const SETTLE_SPEED = 1.1;
     const budget = maxF || 16000;
     for (let f = 0; f < budget;) {
       const b = g.boss;
       if (!b || b.dead) return;
       const p = g.player;
       if (!p) return;
+      bSpeed = prevBX === null ? 0 : Math.abs(b.cx - prevBX) + Math.abs(b.cy - prevBY);
+      prevBX = b.cx; prevBY = b.cy;
       const dm = dialogueMask(g, f);
       if (dm !== null) { yield dm; f++; continue; }
       if (g.mode !== 'play') { yield (f % 8 === 0) ? BIT.a : 0; f++; continue; }
@@ -783,11 +808,35 @@ export async function installRuntime() {
       const backPerp = axisX ? (dy > 0 ? BIT.up : BIT.down) : (dx > 0 ? BIT.left : BIT.right);
 
       if (b.weakOpen) {
-        // Invulnerability frames are the only free hits in this game, so if we
-        // are still flashing from the last touch, commit regardless of range.
-        if (adx + ady > 64 && !(p.invuln > 0)) { yield fence(backPerp); f++; continue; }
-        if (adx + ady > NEAR + 6) { yield fence(toward); f++; continue; }
-        // In range: face it, swing, then get out before it closes.
+        // A boss's hurtbox is no wider than any other enemy's, and a boss
+        // MOVES while the window is open — Gohmaraq scuttles or charges
+        // through its whole open phase. Closing on the dominant axis alone
+        // (as this used to) drifts diagonally past the hurtbox instead of
+        // into it: the earlier cut measured "sword swung" on almost every
+        // window here and "hp unchanged" all the same, because the swing
+        // landed a few pixels off the boss's row or column. Line up on the
+        // OTHER axis first, the same standoff dFight already uses for a
+        // shielded enemy, before closing the distance on this one.
+        const perp = axisX ? dy : dx;
+        if (Math.abs(perp) > LINED) {
+          yield fence(axisX ? (dy < 0 ? BIT.up : BIT.down) : (dx < 0 ? BIT.left : BIT.right));
+          f++; continue;
+        }
+        const along = Math.abs(axisX ? dx : dy);
+        if (along > NEAR + 6) { yield fence(toward); f++; continue; }
+        // Lined up and in range, but the boss is still moving fast (mid
+        // charge, mid scuttle) — a swing thrown now is frozen in place while
+        // it keeps going and is gone by the time the blade is live, and
+        // standing this close to a fast-moving boss is standing in its path.
+        // Measured speed (not a `charging` flag) is what actually matters: a
+        // charge's own wind-up freezes the boss in place first, and that
+        // freeze reads as settled and is the safest moment to swing, not a
+        // reason to back off it.
+        if (bSpeed > SETTLE_SPEED) {
+          yield fence(backAlong | backPerp); f++; continue;
+        }
+        // Settled, in range and lined up: face it, swing, then get out before
+        // it closes.
         yield fence(toward); f++;
         yield fence(toward | sword()); f++;
         for (let i = 0; i < BACKOFF && f < budget; i++) { yield fence(backAlong | backPerp); f++; }

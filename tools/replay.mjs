@@ -247,7 +247,15 @@ async function replay(browser, port, name) {
 const { chromium } = await loadPlaywright();
 const PORT = 20000 + Math.floor(Math.random() * 20000);
 const server = await serve(PORT);
-const browser = await chromium.launch({ headless: !HEADED });
+// Sandboxes here can carry a Playwright package newer than the installed
+// browser revision; the sibling tools already fall back to the prefetched
+// build at this path (see check-build.mjs) rather than failing to launch.
+const browser = await chromium.launch({ headless: !HEADED }).catch(async (err) => {
+  const { existsSync } = await import('node:fs');
+  const fallback = process.env.CHROMIUM_PATH || '/opt/pw-browsers/chromium';
+  if (!existsSync(fallback)) throw err;
+  return chromium.launch({ headless: !HEADED, executablePath: fallback });
+});
 
 if (RECORD || RECORD_ALL) {
   const names = RECORD_ALL ? Object.keys(PLANS) : [RECORD];

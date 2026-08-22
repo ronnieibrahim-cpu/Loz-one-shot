@@ -72,7 +72,15 @@ const { chromium } = await loadPlaywright();
 // Random high port: concurrent runs must not fight over a fixed one.
 const PORT = 20000 + Math.floor(Math.random() * 20000);
 const server = await serve(PORT);
-const browser = await chromium.launch({ headless: true });
+// Sandboxes here can carry a Playwright package newer than the installed
+// browser revision; the sibling tools already fall back to the prefetched
+// build at this path (see check-build.mjs) rather than failing to launch.
+const browser = await chromium.launch({ headless: true }).catch(async (err) => {
+  const { existsSync } = await import('node:fs');
+  const fallback = process.env.CHROMIUM_PATH || '/opt/pw-browsers/chromium';
+  if (!existsSync(fallback)) throw err;
+  return chromium.launch({ headless: true, executablePath: fallback });
+});
 const page = await browser.newPage({ viewport: { width: 800, height: 720 } });
 const errs = [];
 page.on('pageerror', e => errs.push('PAGEERROR: ' + (e.stack || e.message)));

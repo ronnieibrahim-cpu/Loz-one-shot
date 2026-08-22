@@ -224,31 +224,57 @@ is in the page, and nothing steps until you say so.
 
 ## Hard-won lessons — do not rediscover these
 
+**A boss's own combat-phase counter and the Lens's tide-phase-lock field
+were the same JavaScript property, and every multi-phase boss in the game
+was silently unhittable past its own phase 0 unless fought at the exact tide
+level matching its phase INDEX.** `Entity.phase` (`src/game/entity.js`) is
+the Lens mechanic's field: null unless `opts.phase` pins an entity to one
+tide level, and `Game.updatePhaseShift` (`src/game/game.js`) re-arms
+`invuln:2` on it EVERY FRAME plus `harmless:true` plus `hidden` (unless the
+Lens is up) for any entity whose `.phase` doesn't match the room's current
+tide. `Boss` (`src/game/enemy.js`) used the exact same name, `this.phase`,
+for something unrelated: which of `spec.phases[]` it is currently running
+(0, 1, 2, picked by remaining hp fraction). Every boss starts at phase 0,
+and 0 happens to equal tide LOW — so a boss fought at LOW read as "on the
+right level" for its whole first phase and nothing looked wrong. The instant
+any boss crossed into phase 1 while the tide was anything but MID (which is
+most of every fight, since each boss pins the tide to the one level its own
+design wants), `updatePhaseShift` started reading it as "belongs to a
+different tide" and permanently blocked every future `hurt()` call — not a
+crash, not a console warning, just a boss that visibly took hits (block sfx
+suppressed by nothing, since `weakOpen` was still true) and never lost
+another point of hp for the rest of the fight. This is almost certainly what
+made `tools/check-bosses.mjs`'s own damage figures look like "one point of
+damage per five quarter-hearts" in every earlier session that measured a
+boss fight — the harness's positioning was never the main problem being
+measured; the boss going invulnerable partway through was. Fixed by giving
+`Boss` its own name, `this.aiPhase`, so the two features can never collide
+again — nothing else in `src/` or `tools/` ever read `boss.phase`, so the
+rename was a pure win with nothing left dangling. **If a future feature adds
+a THIRD thing that wants to live on a generic-sounding `Entity` field name,
+grep for every existing reader of that name first** — `phase`, `state`,
+`mode` and similar single-word properties are exactly the ones a subclass
+reaches for without checking what the base class already means by it.
+
 **This container's Playwright package and its pre-installed Chromium are off
-by one revision, and only some tools have a fallback for it.** `node_modules`
-expects browser revision 1234; `/opt/pw-browsers/` only has 1194 installed.
-`check-build.mjs` and `check-bosses.mjs` already catch the launch failure and
-retry with an explicit `executablePath`; `walk-dungeons.mjs`, `check-gates.mjs`,
-`solve-switches.mjs`, `check-trade.mjs`, `check-motion.mjs`, `check-items.mjs`,
-`find-ledges.mjs`, `preview.mjs` and `check-charms.mjs` do not, and die with
-Playwright's "please run playwright install" message before printing a single
-assertion. The fix that got the full checker table green in this container
-without touching any of those tool files: symlink the mismatched revision
-directory into existence, pointing at what's actually installed —
-```
-mkdir -p /opt/pw-browsers/chromium_headless_shell-1234/chrome-headless-shell-linux64
-ln -sf /opt/pw-browsers/chromium_headless_shell-1194/chrome-linux/headless_shell \
-       /opt/pw-browsers/chromium_headless_shell-1234/chrome-headless-shell-linux64/chrome-headless-shell
-touch /opt/pw-browsers/chromium_headless_shell-1234/{DEPENDENCIES_VALIDATED,INSTALLATION_COMPLETE}
-```
-That's an environment fix, not a repo one — it doesn't survive a fresh
-container, and a future session hitting the same "please run playwright
-install" wall on one of the tools above should reach for this rather than
-assume the game itself is broken. The more durable fix would be teaching
-every tool the same `chromium.launch().catch(() => chromium.launch({
-executablePath: ... }))` fallback `check-build.mjs` already has, in one
-shared `tools/lib/launch.mjs` — not done here, to keep this session's diff to
-what the iPad-publishing task actually asked for.
+by one revision.** `node_modules` expects browser revision 1234;
+`/opt/pw-browsers/` only has 1194 installed. Every `tools/*.mjs` that
+launches a browser now carries the same `chromium.launch(...).catch(async
+err => { ... fall back to `process.env.CHROMIUM_PATH || '/opt/pw-browsers/
+chromium'` ... })` guard — `check-build.mjs` and `check-bosses.mjs` had it
+first; `replay.mjs`, `check-playthrough.mjs`, `walk-dungeons.mjs`,
+`check-gates.mjs`, `solve-switches.mjs`, `check-trade.mjs`,
+`check-motion.mjs`, `check-items.mjs`, `find-ledges.mjs`, `preview.mjs` and
+`check-charms.mjs` got it in this session, so the whole CLAUDE.md checker
+table now launches cleanly in a stock copy of this container with no
+environment surgery first. (An OS-level fix also works and does not survive
+a fresh container — symlink the mismatched revision directory at
+`/opt/pw-browsers/chromium_headless_shell-1234/...` to what's actually
+installed at `-1194` and touch its two marker files — but the per-tool
+fallback is the one that ships with the repo.) There is still no shared
+`tools/lib/launch.mjs`; the fallback is duplicated verbatim in each file
+rather than imported, which is a small, safe follow-up if a future session
+wants it.
 
 **`window.innerWidth`/`innerHeight` are CSS pixels; an "integer scale" counted
 in them is not necessarily an integer number of physical pixels.** `screen.js`

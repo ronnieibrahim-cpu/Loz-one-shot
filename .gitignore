@@ -4,3 +4,4 @@ tools/shots-*/
 __pycache__/
 dist/*
 !dist/oracle-of-tides.html
+.claude/worktrees/
