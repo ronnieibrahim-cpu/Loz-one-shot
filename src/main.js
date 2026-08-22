@@ -52,6 +52,24 @@ function boot() {
   let acc = 0, last = performance.now(), fpsT = last, frames = 0;
   let driven = false;
 
+  // iPad backgrounds this app constantly (switching apps, the app switcher,
+  // the lock button) and an AudioContext left running behind the scenes is
+  // the usual reason audio never comes back: some engines suspend it
+  // automatically on hide but never resume it, or keep spending CPU on a
+  // context nobody can hear. requestAnimationFrame already stops firing while
+  // hidden, so the loop needs no explicit pause — only the audio graph does,
+  // and `acc`/`last` are reset on return so the frame-skip guard above never
+  // has to eat a multi-minute backgrounded gap.
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      if (audio.ctx && audio.ctx.state === 'running') audio.ctx.suspend();
+    } else {
+      if (audio.ctx && audio.ctx.state === 'suspended') audio.ctx.resume();
+      acc = 0;
+      last = performance.now();
+    }
+  });
+
   // Stepping hook for tools/replay.mjs. A replay has to advance the game one
   // fixed step at a time with scripted input; the wall-clock loop below cannot
   // do that, because how many times it steps depends on how busy the machine

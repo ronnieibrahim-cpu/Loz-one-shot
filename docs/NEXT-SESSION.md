@@ -1,3 +1,41 @@
+## iPad publishing (this session)
+
+Shipped: `.github/workflows/deploy-pages.yml` (builds, runs
+`check-build.mjs` as a hard gate, publishes `dist/oracle-of-tides.html` as
+`index.html` on GitHub Pages on every push to `main` — Pages must be enabled
+once in repo Settings → Pages → Source: GitHub Actions); home-screen app
+meta/manifest/apple-touch-icon (`tools/gen-app-icon.mjs`, procedural, no
+external asset, folded into `index.html` as data: URIs between
+`<!-- APP-ICON:BEGIN/END -->` markers — re-run the script, don't hand-edit
+between them); integer-device-pixel canvas scaling in `src/core/screen.js`
+(see HANDOFF.md's hard-won-lessons for why CSS-pixel integers weren't
+enough); iOS gesture kills (rubber-band, pinch, double-tap-zoom, long-press
+callout) in `index.html`; `storageAvailable()` + `exportCode`/`importCode` in
+`src/game/progress.js` with a UI on the title file-select screen (SELECT on a
+slot); AudioContext suspend/resume on `visibilitychange` in `src/main.js`.
+
+**Not verifiable without a real iPad** — check these by hand:
+- Whether iOS Safari actually offers/behaves as a home-screen app (standalone
+  mode, status bar style, the apple-touch-icon rendering) — Playwright/Chromium
+  has no iOS Safari engine to test this against.
+- Whether the gesture-kill JS (pinch, double-tap, pull-to-refresh,
+  rubber-band, long-press callout) actually stops each gesture on real iOS
+  Safari; the CSS/JS is the standard pattern for this but Chromium doesn't
+  reproduce Safari's overscroll/zoom behavior to test against.
+- Whether `window.prompt()`/`window.alert()` (used for the save export/import
+  codes) behave acceptably on iOS Safari inside a fullscreen home-screen app —
+  some standalone-mode contexts restrict or style these differently.
+- Real-device audio resume after backgrounding — the visibilitychange handler
+  is straightforward WebAudio API usage, but only a real device backgrounding
+  cycle proves the context actually comes back audible.
+- Actual GitHub Pages URL behavior once Pages is enabled for the repo (the
+  workflow itself was proven by running its two gating steps,
+  `npm run build` and `node tools/check-build.mjs`, locally — not by an actual
+  Pages deploy, since that requires the repo's Pages setting and a push to
+  `main`).
+
+---
+
 # Prompt for the next session
 
 Paste the fenced block below into a fresh Claude Code session on this repo. It

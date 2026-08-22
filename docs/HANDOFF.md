@@ -224,6 +224,46 @@ is in the page, and nothing steps until you say so.
 
 ## Hard-won lessons — do not rediscover these
 
+**This container's Playwright package and its pre-installed Chromium are off
+by one revision, and only some tools have a fallback for it.** `node_modules`
+expects browser revision 1234; `/opt/pw-browsers/` only has 1194 installed.
+`check-build.mjs` and `check-bosses.mjs` already catch the launch failure and
+retry with an explicit `executablePath`; `walk-dungeons.mjs`, `check-gates.mjs`,
+`solve-switches.mjs`, `check-trade.mjs`, `check-motion.mjs`, `check-items.mjs`,
+`find-ledges.mjs`, `preview.mjs` and `check-charms.mjs` do not, and die with
+Playwright's "please run playwright install" message before printing a single
+assertion. The fix that got the full checker table green in this container
+without touching any of those tool files: symlink the mismatched revision
+directory into existence, pointing at what's actually installed —
+```
+mkdir -p /opt/pw-browsers/chromium_headless_shell-1234/chrome-headless-shell-linux64
+ln -sf /opt/pw-browsers/chromium_headless_shell-1194/chrome-linux/headless_shell \
+       /opt/pw-browsers/chromium_headless_shell-1234/chrome-headless-shell-linux64/chrome-headless-shell
+touch /opt/pw-browsers/chromium_headless_shell-1234/{DEPENDENCIES_VALIDATED,INSTALLATION_COMPLETE}
+```
+That's an environment fix, not a repo one — it doesn't survive a fresh
+container, and a future session hitting the same "please run playwright
+install" wall on one of the tools above should reach for this rather than
+assume the game itself is broken. The more durable fix would be teaching
+every tool the same `chromium.launch().catch(() => chromium.launch({
+executablePath: ... }))` fallback `check-build.mjs` already has, in one
+shared `tools/lib/launch.mjs` — not done here, to keep this session's diff to
+what the iPad-publishing task actually asked for.
+
+**`window.innerWidth`/`innerHeight` are CSS pixels; an "integer scale" counted
+in them is not necessarily an integer number of physical pixels.** `screen.js`
+used to floor `window.innerWidth / SCREEN_W` and call that the scale — which
+*is* an integer in CSS pixels, but the canvas's 160x144 backing store still
+gets resampled onto the device's actual pixel grid, and CSS pixels only equal
+device pixels at `devicePixelRatio === 1`. The fix multiplies by `dpr` first,
+floors *that*, then divides back down for the CSS size (`this.scale = devScale
+/ dpr`) — so the ratio between the 160x144 buffer and the physical screen is
+always a whole number, regardless of what `dpr` itself is, and
+`image-rendering: pixelated` has an exact grid to snap to instead of one it
+has to guess at. Proved with `tools/shoot-rooms.mjs --vw= --vh= --dpr=`
+(flags added this session) rather than by eye at the one desktop size the
+tool defaulted to.
+
 **Canvas 2D anti-aliases every path fill, and there is no flag to stop it —
 so a procedural background drawn with `beginPath`/`lineTo`/`fill` is a
 fidelity break this project's own checker measures.** The title screen's sea

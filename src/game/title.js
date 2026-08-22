@@ -4,7 +4,7 @@ import { SCREEN_W, SCREEN_H } from '../core/screen.js';
 import { drawText, drawTextCentered, textWidth } from '../gfx/font.js';
 import { sprites, tiles as tileSheet } from '../gfx/art.js';
 import { drawPanel, drawBox } from './dialogue.js';
-import { listSaves, deleteSlot, HEART_UNITS } from './progress.js';
+import { listSaves, deleteSlot, HEART_UNITS, storageAvailable, exportCode, importCode, saveSlot } from './progress.js';
 import { essenceCount } from '../world/maps.js';
 import { TITLE_LAYOUT } from '../data/sprites-title.js';
 
@@ -28,6 +28,7 @@ export class Title {
     this.t = 0;
     this.cursor = 0;
     this.saves = listSaves();
+    this.storageOk = storageAvailable();
   }
 
   update() {
@@ -48,6 +49,28 @@ export class Title {
       if (i.pressed('up')) { this.cursor = (this.cursor + n - 1) % n; g.audio.sfx('cursor'); }
       if (i.pressed('down')) { this.cursor = (this.cursor + 1) % n; g.audio.sfx('cursor'); }
       if (i.pressed('b')) { this.stage = 'logo'; g.audio.sfx('cursor'); return; }
+      // SELECT on a file slot copies or pastes a save code — the escape hatch
+      // for storage Safari can evict on its own schedule (see progress.js).
+      // A slot with a save exports it; an empty slot offers to import into it.
+      if (i.pressed('select') && this.cursor < 3) {
+        const s = this.saves[this.cursor];
+        if (s) {
+          window.prompt('Save code — copy it somewhere safe:', exportCode(s.raw));
+        } else {
+          const code = window.prompt('Paste a save code to load it into this slot:', '');
+          if (code) {
+            const imported = importCode(code);
+            if (imported) {
+              saveSlot(this.cursor, imported);
+              this.saves = listSaves();
+              g.audio.sfx('confirm');
+            } else {
+              window.alert('That save code could not be read.');
+            }
+          }
+        }
+        return;
+      }
       if (i.pressed('a') || i.pressed('start')) {
         if (this.cursor === 3) { this.stage = 'confirmErase'; this.eraseCursor = 0; g.audio.sfx('cursor'); return; }
         g.audio.sfx('confirm');
@@ -243,7 +266,11 @@ export class Title {
   }
 
   drawFiles(ctx) {
-    drawTextCentered(ctx, 'SELECT A FILE', SCREEN_W / 2, 6, '#f8f8e8', '#08142c');
+    if (!this.storageOk) {
+      drawTextCentered(ctx, 'NO STORAGE — WON\'T SAVE', SCREEN_W / 2, 6, '#ff9090', '#08142c');
+    } else {
+      drawTextCentered(ctx, 'SELECT A FILE', SCREEN_W / 2, 6, '#f8f8e8', '#08142c');
+    }
     for (let i = 0; i < 3; i++) {
       const y = 20 + i * 30;
       const sel = this.cursor === i;
@@ -266,6 +293,9 @@ export class Title {
     }
     const sel = this.cursor === 3;
     drawText(ctx, (sel ? '\x02 ' : '  ') + 'ERASE A FILE', 8, 116, '#f8f8e8', '#08142c');
+    if (this.cursor < 3) {
+      drawText(ctx, 'SELECT: save code', 8, 128, '#78a8c8', '#08142c');
+    }
   }
 
   drawErase(ctx) {

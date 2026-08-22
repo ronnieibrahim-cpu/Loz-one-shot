@@ -90,9 +90,14 @@ function assertNoRuntimeAssets(modules, html) {
     }
   }
   // In the HTML only markup that pulls a resource matters; the inline error
-  // shim and the touch layer are pure DOM.
-  const tag = /<(img|audio|video|source|link|object|embed)\b[^>]*\b(src|href)\s*=/i.exec(html);
-  if (tag) offences.push(`index.html: <${tag[1]}> loads a resource`);
+  // shim, the touch layer and a data: URI (the manifest link, the
+  // apple-touch-icon — see tools/gen-app-icon.mjs) are pure DOM, not a
+  // network load.
+  const tagRe = /<(img|audio|video|source|link|object|embed)\b[^>]*\b(src|href)\s*=\s*(["'])([^"']*)\3/gi;
+  let tag;
+  while ((tag = tagRe.exec(html))) {
+    if (!tag[4].startsWith('data:')) offences.push(`index.html: <${tag[1]}> loads a resource (${tag[4]})`);
+  }
 
   if (offences.length) {
     die(
