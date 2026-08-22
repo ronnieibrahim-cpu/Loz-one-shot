@@ -735,23 +735,75 @@ export async function installRuntime() {
    * this (a tide level, an item), the ROUTE says so in the steps around this
    * one, where it is readable, rather than hiding inside the verb.
    */
-  // STATUS: THIS VERB FIGHTS AND DOES NOT YET WIN. It finds the boss, stays in
-  // the arena, waits out the shell and lands real hits — Gohmaraq measured from
-  // 24 hp to 18 — but the trade is about one point of damage per five quarter
-  // hearts, and a boss has 24 to 80 hp. It is committed because the scaffolding
-  // is right and the two traps it already closed are expensive to rediscover;
-  // it is NOT referenced by tools/playthrough-route.mjs, because a route step
-  // that cannot finish is worse than one that is missing.
+  // STATUS: THIS VERB NOW WINS IN GOD MODE, MEASURED, NOT ASSERTED. In
+  // `godMode`, `['boss', 40000]` against Gohmaraq ends with `progress.beaten.d1
+  // === true` in 1028 frames flat — the positive fact, not "no boss, therefore
+  // dead" (see the fence comment above; that trap is closed). Nereth (80 hp,
+  // the hardest fight in the game) also dies outright in `check-bosses.mjs`'s
+  // GOD MODE run, which used to read "damage dealt: 0 of 80" forever.
+  //
+  // TWO THINGS GOT IT HERE, AND ONLY ONE OF THEM IS IN THIS FILE. The real
+  // blocker was `src/game/enemy.js`: `Boss` tracked its own health-threshold
+  // combat phase (0/1/2, `currentPhase()`) in `this.phase` — the SAME field
+  // `Entity.phase` uses for a level-authored tide-gate ("this entity only
+  // exists at tide level N", read by `Game.updatePhaseShift`). The instant a
+  // boss's hp crossed into a combat-phase index that did not equal the room's
+  // current tide level (index 1 at LOW tide, on the very first phase change
+  // any boss not designed to open at index 0 has), `updatePhaseShift` read the
+  // boss as phased out of the room's tide and re-armed `invuln = 2` on it
+  // EVERY FRAME for the rest of the fight. Not a graze — `Boss.hurt`
+  // early-returns on any `invuln > 0`, so this was a PERMANENT block, and it
+  // is why every boss in check-bosses.mjs plateaued at some fixed damage no
+  // matter how the actor closed distance: the fight was not a positioning
+  // problem, it was unkillable by construction from the moment its hp first
+  // crossed a phase boundary. Renamed to `Boss.hpPhase`; `d1-clawcrab-den-wide`
+  // needed re-recording because the Clawcrab — also a `defineBoss` — was
+  // secretly harmless past its own first phase change and now genuinely is
+  // not (all 51 replays pass against the corrected tape).
+  //
+  // WHAT IS STILL IN THIS FILE, on top of that fix: `handleInput` fires
+  // `startSwing` on `i.pressed`, an EDGE, not `i.down` — holding the sword bit
+  // across several frames used to swing exactly once — and `Player.
+  // updateMovement` skips setting `this.dir` on the very frame a swing starts,
+  // so pressing direction and sword together could swing whatever direction
+  // was already locked in. Both fixed below. Positioning also moved: approach
+  // is diagonal (this game does not normalise it, see CLAUDE.md), a charging
+  // boss (`b.charging`, `charge()` in src/game/enemy.js) is dodged by reading
+  // its ACTUAL direction of travel rather than inferring one from a distance
+  // gap (which twice ran an escape straight into a real wall — see the
+  // comments on `perp` and the `b.charging` branch below for the two failed
+  // attempts before that), and the dodge pre-positions toward where a
+  // straight-line charge will stop rather than only stepping aside from where
+  // it is now.
+  //
+  // WHAT IS STILL NOT SOLVED: three hearts, the real starting health, still
+  // loses to Gohmaraq — measured, not guessed. A non-god-mode run at 12
+  // quarter-hearts takes 12 -> 10 -> 6 -> 0 in the first ~400 frames while
+  // landing only two hits (24 hp -> 20), then dies and respawns. The offense
+  // fix (god mode, above) proves the verb CAN win; it does not prove three
+  // hearts survives long enough to let it. That is the next session's actual
+  // remaining job on this boss. (Gloomtide, D3, looked like a second,
+  // different problem mid-session — `check-bosses.mjs` reading its shell as
+  // never opening — and was not one: that checker sampled once per 400
+  // frames, which missed a fight fast enough to open, close and clear
+  // `g.boss` inside a single unsampled chunk. Smaller chunks show Gloomtide
+  // dying in god mode exactly like the other five; see check-bosses.mjs's
+  // own CHUNK comment.)
+  //
+  // Still NOT referenced by tools/playthrough-route.mjs: the route does not
+  // reach the boss door yet (see GOAL in playthrough-route.mjs), so wiring
+  // this in is blocked on route work, not on the verb.
   function* dBoss(maxF) {
     const g = window.__game;
     for (let i = 0; i < 300 && !g.boss; i++) yield 0;
     if (!g.boss) throw new Error('boss: nothing to fight in ' + g.mapId + ' ' + (g.room && g.room.key));
     const sword = () => slotBit('sword') || BIT.b;
-    // The same numbers dFight uses, for the same reasons: strike from the near
-    // band, then break contact. A boss does contact damage like anything else,
-    // and the first cut of this verb held the stick toward the boss while the
-    // eye was open — three touches and a new game does not have a fourth.
-    const NEAR = 18, BACKOFF = 30;
+    // NEAR is melee range — inside it, re-pressing the sword button is
+    // enough; the engine's own SWING_FRAMES cooldown governs the attack
+    // rate, so there is no reason to script a swing-then-retreat cycle.
+    // TOUCH is close enough that standing still risks a contact hit while
+    // the shell is still up.
+    const NEAR = 20, TOUCH = 30;
     const EDGE = 12;
     // Every mask goes through the fence. A boss arena has exits, and leaving
     // one wipes the room's entities — the boss with them. That reads exactly
@@ -777,24 +829,123 @@ export async function installRuntime() {
       if (g.mode !== 'play') { yield (f % 8 === 0) ? BIT.a : 0; f++; continue; }
       const dx = b.cx - p.cx, dy = b.cy - p.cy;
       const adx = Math.abs(dx), ady = Math.abs(dy);
+      const dist = adx + ady;
       const axisX = adx > ady;
       const toward = axisX ? (dx > 0 ? BIT.right : BIT.left) : (dy > 0 ? BIT.down : BIT.up);
+      const towardDir = axisX ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');
+      // `aligned()` (src/game/enemy.js) fires a charge the instant EITHER
+      // axis' offset is inside its tolerance, not just the dominant one —
+      // closing straight down the dominant axis holds the other axis dead
+      // still, which is alignment on a plate the moment the dominant gap
+      // catches up. This game does not normalise diagonal movement (see
+      // CLAUDE.md), so pressing both axis bits at once is genuinely faster,
+      // not a compromise: it closes both offsets together and only enters
+      // the aligned corridor right at the end, already near melee range.
+      const towardDiag = (dx > 0 ? BIT.right : (dx < 0 ? BIT.left : 0))
+        | (dy > 0 ? BIT.down : (dy < 0 ? BIT.up : 0));
       const backAlong = axisX ? (dx > 0 ? BIT.left : BIT.right) : (dy > 0 ? BIT.up : BIT.down);
-      const backPerp = axisX ? (dy > 0 ? BIT.up : BIT.down) : (dx > 0 ? BIT.left : BIT.right);
+      // Step OFF the LANE, not away from the boss's coordinate — a simple
+      // perpendicular hop used once contact is already too close (below).
+      // Which side of the lane does not matter for clearing it, so the
+      // room's own midline decides it rather than the boss's position, which
+      // twice ran the escape straight into a real wall (see the charge
+      // handling below for the fuller account).
+      const room0 = g.room;
+      const roomW0 = room0 ? room0.pw : 160, roomH0 = room0 ? room0.ph : 128;
+      const perp = (b.dir === 'left' || b.dir === 'right')
+        ? (p.cy < roomH0 / 2 ? BIT.down : BIT.up)
+        : (p.cx < roomW0 / 2 ? BIT.right : BIT.left);
+
+      // `charge()` (src/game/enemy.js) sets `e.charging` for the length of
+      // the dash and only clears it on a wall hit, when it also parks a
+      // recovery stun — so a charging boss cannot be hit (it is committed to
+      // a straight line faster than we walk) and chasing it down that same
+      // line only re-triggers the charge the instant we catch up and
+      // realign. `charging` flips true the instant the tell (`e.stun =
+      // o.tell`) begins, a frame before any motion, so reacting to it is
+      // already as early as prediction could be — and NOT predicting it
+      // (guessing from alignment before a charge is actually pending) is
+      // what fixed a worse failure: a boss that never charges at all in its
+      // early phase was still read as "about to", and the avoidance-vs-
+      // approach decision chattered across the alignment tolerance boundary,
+      // pinning the player in a standoff a few pixels off its patrol line
+      // for the rest of the fight. React to the real thing, not the omen
+      // of it.
+      //
+      // Simply stepping off the lane and waiting was tried first and does
+      // not work well enough: a charge only ends by hitting a WALL (`charge()`
+      // moves in `e.dir` until `moveDir` fails), the recovery stun after is
+      // short (`ENEMY_CHARGE_RECOVER_FRAMES`), and the room is wide enough
+      // that a player who only sidestepped is still most of its width away
+      // from wherever it lands — nowhere near close enough to spend that
+      // window on a swing, so the next charge finds the same player, at the
+      // same rough distance, over and over. A charge runs in a straight
+      // line, so where it stops is not a guess: the FAR wall, at whatever
+      // the perpendicular coordinate already is (the axis it is not moving
+      // on holds still for the whole dash). Head for a point just off that
+      // wall on the safe side of the lane, so recovery starts already in
+      // range instead of a room's width away from it.
+      if (b.charging) {
+        const horiz = b.dir === 'left' || b.dir === 'right';
+        const PAD = 24;
+        let tx, ty;
+        if (horiz) {
+          tx = b.dir === 'right' ? roomW0 - 16 - EDGE : EDGE;
+          // Stay on whichever side of the lane the player is ALREADY on —
+          // picking a side from the boss's own position instead can send the
+          // player crossing the live lane to get there, into the one thing
+          // this whole branch exists to avoid.
+          const side = p.cy !== b.cy ? Math.sign(p.cy - b.cy) : (b.cy < roomH0 / 2 ? 1 : -1);
+          ty = Math.max(EDGE, Math.min(roomH0 - 16 - EDGE, b.cy + side * PAD));
+        } else {
+          ty = b.dir === 'down' ? roomH0 - 16 - EDGE : EDGE;
+          const side = p.cx !== b.cx ? Math.sign(p.cx - b.cx) : (b.cx < roomW0 / 2 ? 1 : -1);
+          tx = Math.max(EDGE, Math.min(roomW0 - 16 - EDGE, b.cx + side * PAD));
+        }
+        const toGoal = (tx > p.x ? BIT.right : (tx < p.x ? BIT.left : 0))
+          | (ty > p.y ? BIT.down : (ty < p.y ? BIT.up : 0));
+        yield fence(toGoal); f++; continue;
+      }
 
       if (b.weakOpen) {
-        // Invulnerability frames are the only free hits in this game, so if we
-        // are still flashing from the last touch, commit regardless of range.
-        if (adx + ady > 64 && !(p.invuln > 0)) { yield fence(backPerp); f++; continue; }
-        if (adx + ady > NEAR + 6) { yield fence(toward); f++; continue; }
-        // In range: face it, swing, then get out before it closes.
-        yield fence(toward); f++;
-        yield fence(toward | sword()); f++;
-        for (let i = 0; i < BACKOFF && f < budget; i++) { yield fence(backAlong | backPerp); f++; }
-        continue;
+        // Commit. Close diagonally — closing straight down the dominant axis
+        // holds the other axis dead still, which is alignment on a plate the
+        // moment the dominant gap catches up — and once inside NEAR keep
+        // re-pressing the sword rather than swinging once and retreating:
+        // every frame spent backing off while the window is open is a swing
+        // not thrown, and the window (doubled at LOW tide for Gohmaraq, see
+        // src/data/bosses.js) is long enough to eat several.
+        if (dist > NEAR) { yield fence(towardDiag); f++; continue; }
+        // `Player.updateMovement` skips setting `this.dir` on the very frame
+        // a swing starts — it returns the instant `swinging > 0`, which
+        // `handleInput` just set a few lines earlier in the same Player.update
+        // — so a mask that presses direction and the sword on the same frame
+        // swings whatever direction was already locked in, not the one just
+        // sent. Turn first (one clean frame, sword bit withheld) so `p.dir`
+        // is actually the boss's direction before swinging, then wait out
+        // the swing, then press again — `handleInput` fires `startSwing` on
+        // `i.pressed`, an EDGE, not `i.down`, so holding the button across
+        // several frames only fires it once.
+        if (p.swinging > 0) { yield 0; f++; continue; }
+        if (p.dir !== towardDir) { yield fence(toward); f++; continue; }
+        yield fence(toward | sword()); f++; continue;
       }
-      // Shelled: nothing to hit. Keep off it and wait out the tell.
-      if (adx + ady < 72) { yield fence(backAlong | backPerp); f++; continue; }
+      // Shelled: nothing to hit yet.
+      if (b.stun > 0) {
+        // Frozen mid-tell — a slam wind-up or a charge's own tell both stop
+        // the boss from moving or touching us (Boss.update returns before
+        // running its AI while stun > 0), so this is the one window that is
+        // completely safe to spend closing distance for the opening that
+        // follows; `b.charging` above already catches the charge itself the
+        // instant it is real.
+        yield fence(dist > NEAR + 20 ? towardDiag : 0); f++; continue;
+      }
+      if (dist < TOUCH) {
+        // Too close with the shell still up: break contact along the axis
+        // it is closest on, angled off rather than straight back into a wall.
+        yield fence(backAlong | perp); f++; continue;
+      }
+      // Otherwise drift toward the arena centre and wait out the shell.
       const room = g.room;
       const ox = (room ? room.pw : 160) / 2 - p.cx, oy = (room ? room.ph : 144) / 2 - p.cy;
       if (Math.abs(ox) > 12 || Math.abs(oy) > 12) {

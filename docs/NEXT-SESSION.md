@@ -10,6 +10,103 @@ maintain and the most expensive thing to not have.
 
 ---
 
+## EVERY BOSS WAS UNKILLABLE, AND IT WAS NOT A POSITIONING PROBLEM
+
+Job 1 from the board below — "budget a session for it, prove it on Gohmaraq
+at three hearts" — turned out to have the wrong diagnosis. `dBoss` (the
+generic boss-fight verb in `tools/actor-runtime.mjs`) landed real hits on
+some bosses and stalled at a fixed hp on every one of them, and the previous
+board read that as an AI-positioning gap. It was a genuine engine bug, and it
+is now fixed: **`CLAUDE.md`'s traps list has the full account** ("EVERY BOSS
+IN THE GAME WAS UNKILLABLE PAST ITS FIRST HEALTH-PHASE CHANGE"). One line:
+`Boss` tracked its own health-threshold combat phase in `this.phase`, the
+same field `Entity.phase` uses for a level-authored tide-gate, and the first
+time a boss's phase index stopped matching the room's tide level
+`Game.updatePhaseShift` re-armed `invuln = 2` on it every frame for the rest
+of the fight — permanently, since `Boss.hurt` early-returns on any
+`invuln > 0`. Renamed to `Boss.hpPhase` (`src/game/enemy.js`).
+
+**Measured after the fix, in GOD MODE (`node tools/check-bosses.mjs`, now
+25/25):** all SIX bosses die outright, Gloomtide included — a fresh page per
+fight plus a smaller polling chunk (`CHUNK = 40`, was 400) so a kill fast
+enough to open, close and clear `g.boss` inside one old chunk cannot read as
+"shell never opened" the way Gloomtide's briefly did mid-session. Nereth (80
+hp, the hardest fight) dies too; that used to read "damage dealt: 0 of 80"
+forever.
+
+`dBoss` itself also picked up real fixes on top of the engine bug, all
+documented in its own STATUS comment in `tools/actor-runtime.mjs`:
+`handleInput` fires a swing on `i.pressed` (an edge), so holding the sword
+bit across frames used to swing exactly once; `Player.updateMovement` skips
+setting `this.dir` on the frame a swing starts, so direction and sword
+pressed together could swing whatever direction was already locked in;
+approach is now diagonal (this game does not normalise it — CLAUDE.md); and
+a charging boss is dodged by reading its actual `b.dir` and pre-positioning
+toward where a straight-line charge will stop, not by inferring a direction
+from a distance gap, which twice ran an escape straight into a real wall
+before landing on that (both failed attempts are in the comment, because the
+shape of the mistake — "away from the boss" is not "away from the wall" —
+will recur).
+
+**What is NOT solved: three hearts, the real starting health, still loses to
+Gohmaraq.** A non-god-mode run at 12 quarter-hearts goes 12 -> 10 -> 6 -> 0 in
+the first ~400 frames, landing only two hits (24 hp -> 20), then dies and
+respawns. Killability and fairness are different claims and only the first
+one is proven. That is still real per-boss tuning work (contact-damage
+exposure during the shelled phases, most likely) and is the actual next job
+on this specific boss.
+
+**The route still does not reach the boss door.** `GOAL.needsVerb` in
+`tools/playthrough-route.mjs` is unchanged: "a boss fight, and the third
+Small Key behind the Clawcrab door." `dBoss` winning in isolation does not
+wire itself into the route — that needs the rest of D1 authored as directives
+first: east wing (Keyvault's key 3, the Clawcrab Den miniboss fight, the
+locked door it opens, the Two Gauges puzzle behind it) and west wing (Long
+Sluice gate, the Weeping Cistern switch puzzle, the Drip Vault's second gauge
+pair, the Bosskey Vault), landing at the boss door with the Boss Key, THEN
+the `boss` directive. Read the room-by-room map at the top of `d1`'s entry in
+`src/data/dungeons-a.js` before starting — it is already worked out there,
+room by room, including which side of the Clawcrab Den's locked door is which.
+Every room transition in that route needs the same "run it, read the real
+position, don't trust the room comment's stated tile" discipline the Iron
+Pipe cost a whole board entry to learn (below).
+
+**Two small things fixed on the way, both worth keeping:**
+
+- `tools/replay.mjs`, `walk-dungeons.mjs`, `solve-switches.mjs`,
+  `check-gates.mjs` and `check-playthrough.mjs` now carry the same
+  Chromium-executable fallback `test.mjs` and `check-build.mjs` already had —
+  the item the board two entries back flagged as "a good first job" and left
+  undone. `check-bosses.mjs` already had it.
+- The long-standing "no page errors — 404 Failed to load resource" that
+  every browser-based checker carried (documented as pre-existing, never
+  chased) was the browser auto-requesting `/favicon.ico`. Fixed with one
+  `<link rel="icon" href="data:,">` in `index.html`. `tools/build.mjs`'s
+  runtime-asset check flagged that `<link>` as a resource load — it was
+  right to ask, and the fix was to teach it that a `data:` href never leaves
+  the document, not to remove the tag. `node tools/test.mjs` is 59/59 clean
+  for the first time; `check-bosses.mjs`'s own "no page errors" now passes
+  too.
+
+**One new finding, not investigated, from `walk-dungeons.mjs` running for
+what may be the first time in this sandbox:** the fallback above let it
+launch, and it reports a real failure that was invisible before —
+`every ledge run hops downhill (40/41) — overworld 0,0,0 '_' down @3,5: 80,64
+-> 77,65 (tile 5,4, z 0)`. Confirmed pre-existing (reproduces identically with
+every change in this session's diff stashed out). Not a regression from
+anything above; a real ledge in the overworld may be placed backwards. Worth
+ten minutes to look at, per the same instinct that found the favicon.
+
+**Verified clean after all of the above:** `node tools/test.mjs` 59/59,
+`node tools/check-bosses.mjs` 25/25, `node tools/replay.mjs` 51/51 (one tape,
+`d1-clawcrab-den-wide`, needed re-recording — the Clawcrab is a `defineBoss`
+too and was secretly harmless past its own first phase change; it is not
+harmless now), `node tools/check-playthrough.mjs` 19/19 unchanged,
+`node tools/solve-switches.mjs` and `node tools/check-gates.mjs` clean,
+`npm run build` + `node tools/check-build.mjs` clean.
+
+---
+
 ## THE KILNSHELL — the game's fire, and why it is not a bomb
 
 Torches could not be lit at all: `Torch.ignite` is reachable only from

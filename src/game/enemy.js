@@ -266,7 +266,23 @@ export class Boss extends Enemy {
     this.isBoss = true;
     this.oncePerGame = spec.oncePerGame !== false;
     this.intro = spec.intro != null ? spec.intro : BOSS_INTRO_FRAMES;
-    this.phase = -1;
+    // NOT `this.phase` — that field is `Entity.phase` (src/game/entity.js), a
+    // level-authored tide-gate ("this entity only exists at tide level N",
+    // read by `Game.updatePhaseShift`) unrelated to and pre-dating this
+    // health-threshold combat phase. They collided under one name for the
+    // whole life of the boss fights: the instant a boss's hp crossed into a
+    // phase index that did not equal the room's current tide level (index 1
+    // at LOW tide, trivially, on the very first phase change any boss not
+    // designed to open at index 0 ever has), `updatePhaseShift` read the
+    // boss as phased out of the current tide and re-armed `invuln = 2` on
+    // it EVERY FRAME for the rest of the fight — not a graze, a permanent
+    // block, since `Boss.hurt` early-returns on any `invuln > 0`. Every boss
+    // in the game was unkillable past its first phase transition, harmless
+    // and invisible-to-the-Lens-check besides, and nothing caught it: no
+    // checker fights, and `check-bosses.mjs`'s own GOD MODE run only ever
+    // measured "damage dealt so far", which a bug that caps it silently
+    // looks exactly like a hard fight.
+    this.hpPhase = -1;
     this.weakOpen = !spec.shell;
     this.deathTime = 0;
     this.dying = false;
@@ -317,8 +333,8 @@ export class Boss extends Enemy {
     if (this.stun > 0) { this.stun--; return; }
 
     const p = this.currentPhase();
-    if (p !== this.phase) {
-      this.phase = p;
+    if (p !== this.hpPhase) {
+      this.hpPhase = p;
       this.invuln = Math.max(this.invuln, BOSS_PHASE_INVULN_FRAMES);
       if (this.spec.onPhase) this.spec.onPhase(this, game, p);
       game.audio.sfx('charged');

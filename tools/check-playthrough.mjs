@@ -250,7 +250,12 @@ async function drain(page, label) {
 const { chromium } = await loadPlaywright();
 const PORT = 20000 + Math.floor(Math.random() * 20000);
 const server = await serve(PORT);
-const browser = await chromium.launch({ headless: !HEADED });
+const browser = await chromium.launch({ headless: !HEADED }).catch(async (err) => {
+  const { existsSync } = await import('node:fs');
+  const fallback = process.env.CHROMIUM_PATH || '/opt/pw-browsers/chromium';
+  if (!existsSync(fallback)) throw err;
+  return chromium.launch({ headless: !HEADED, executablePath: fallback });
+});
 
 console.log(`playthrough: seed ${SEED}, ${ROUTE.length} directives, target: the Essence of Tidewash Grotto\n`);
 

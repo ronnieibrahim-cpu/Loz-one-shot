@@ -11,10 +11,11 @@
 // the repo proved before:
 //
 //   * the boss spawns in the room the dungeon says it does;
-//   * its shell can actually be opened and its hp can actually be driven to 0
-//     by a player holding the items that dungeon hands out — a shelled boss
-//     whose `weakOpen` never fires would be UNKILLABLE and every other checker
-//     in the repo would stay green;
+//   * its shell can actually be opened;
+//   * its hp can actually be driven to 0 by a player holding the items that
+//     dungeon hands out — true for all six as of this session (see the
+//     per-fight comment below for the engine bug that made every one of them
+//     unkillable past its first health-phase change);
 //   * killing it marks the dungeon beaten and spawns the Essence;
 //   * the Essence can be walked onto and claimed, and lands in the save.
 //
@@ -96,18 +97,25 @@ const server = await serve(PORT);
 let browser;
 try { browser = await chromium.launch({ headless: true }); }
 catch (e) { browser = await chromium.launch({ headless: true, executablePath: process.env.CHROMIUM_PATH || '/opt/pw-browsers/chromium' }); }
-const page = await browser.newPage({ viewport: { width: 800, height: 720 } });
 const errs = [];
-page.on('pageerror', e => errs.push('PAGEERROR: ' + (e.stack || e.message)));
-page.on('console', m => { if (m.type() === 'error') errs.push('console: ' + m.text()); });
-
-await page.goto(`http://localhost:${PORT}/index.html?seed=${SEED}`, { waitUntil: 'load' });
-await page.waitForFunction(() => !!window.__game && !!window.__harness, { timeout: 20000 });
-await page.evaluate(installRuntime);
 
 console.log(`boss checker: seed ${SEED}, GOD MODE ON (structure, not difficulty)\n`);
 
 for (const f of FIGHTS) {
+  // A FRESH PAGE PER FIGHT, not one page reused for all six — cheap
+  // insurance against the six fights leaking any state into each other now
+  // that they actually run to completion instead of all six alike timing
+  // out at 9000 frames. Tried first as the fix for a fast, sample-starved
+  // Gloomtide read; it was not that (see the CHUNK comment below for the
+  // real cause), but isolating each `beginRecord` in its own page is still
+  // the more honest way to run six independent fights, so it stayed.
+  const page = await browser.newPage({ viewport: { width: 800, height: 720 } });
+  page.on('pageerror', e => errs.push('PAGEERROR: ' + (e.stack || e.message)));
+  page.on('console', m => { if (m.type() === 'error') errs.push('console: ' + m.text()); });
+  await page.goto(`http://localhost:${PORT}/index.html?seed=${SEED}`, { waitUntil: 'load' });
+  await page.waitForFunction(() => !!window.__game && !!window.__harness, { timeout: 20000 });
+  await page.evaluate(installRuntime);
+
   const info = await page.evaluate(async (id) => {
     const { dungeons } = await import('/src/world/maps.js');
     const d = dungeons().find(x => x.id === id);
@@ -138,9 +146,19 @@ for (const f of FIGHTS) {
   const maxHp = await page.evaluate(() => (window.__game.boss ? window.__game.boss.hp : 0));
   let done = false, err = null, guard = 0;
   let opened = 0, minHp = 1e9, samples = 0, reach = 0;
-  while (!done && guard++ < 4000) {
+  // A 400-frame chunk with one sample taken at the end of it was fine while
+  // every fight timed out at 9000 frames — it could not miss a fight that
+  // never finished. It went blind the moment the invuln/hpPhase fix (see the
+  // comment below) let a boss actually win: Gloomtide now dies inside 400
+  // frames of engaging, its death animation clears within another ~70, and a
+  // sample taken only once per 400-frame block can land after `g.boss` is
+  // already gone — reading zero opens, zero reach, on a fight the very next
+  // check down (`beaten`) reports won. Sampling in smaller chunks keeps at
+  // least one sample inside the window a fast kill is still visibly fighting.
+  const CHUNK = 40;
+  while (!done && guard++ < 40000) {
     let r;
-    try { r = await page.evaluate(n => window.__rp.pump(n), 400); }
+    try { r = await page.evaluate(n => window.__rp.pump(n), CHUNK); }
     catch (e) { err = String(e.message || e).replace(/^page\.evaluate: /, '').split('\n')[0]; break; }
     done = r.done;
     if (r.error) { err = String(r.error); break; }
@@ -166,9 +184,7 @@ for (const f of FIGHTS) {
     };
   }, f.id);
 
-  // WHAT IS ASSERTED, AND WHY IT STOPS HERE.
-  //
-  // Two things, and they are the two that nothing else in the repo proved:
+  // WHAT IS ASSERTED.
   //
   //   1. The boss the dungeon DECLARES actually spawns in the room it declares.
   //   2. Its weak point OPENS during a real fight at its design tide. A shelled
@@ -176,27 +192,48 @@ for (const f of FIGHTS) {
   //      never opened would be unkillable — the game would be uncompletable —
   //      and every model in this repo would stay green, because none of them
   //      fights anything.
+  //   3. The kill itself. This used to be deliberately NOT asserted, because
+  //      `dBoss` landed real hits on some bosses and stalled at a fixed hp on
+  //      every one of them past its first health-phase change — not a
+  //      positioning gap, a genuine engine bug: `Boss` tracked its own combat
+  //      phase in `this.phase`, the exact field `Entity.phase` uses for a
+  //      level-authored tide-gate, and the moment a boss's phase index
+  //      stopped matching the room's tide level `Game.updatePhaseShift`
+  //      re-armed `invuln = 2` on it every single frame for the rest of the
+  //      fight. Renamed to `Boss.hpPhase` in src/game/enemy.js. Every one of
+  //      the six now dies outright in GOD MODE, Gloomtide included: an
+  //      earlier pass here read its own "never opens" fail as a swimming
+  //      problem ("at MID the player is SWIMMING and `Player.startSwing`
+  //      refuses while `inDeep`, fighting it needs the Cleats' sink mode")
+  //      and that diagnosis was wrong — it was the SAME invuln bug plus a
+  //      second, harness-only artifact: sampling this loop once per 400
+  //      frames was fine while every fight timed out at 9000 and could
+  //      never be missed, and went blind the moment a fight got fast enough
+  //      to start AND finish (kill, death animation, `g.boss` cleared)
+  //      inside one un-sampled chunk — see the CHUNK comment above. Smaller
+  //      chunks catch it: Gloomtide dies in god mode exactly like the rest.
+  //   4. Killing it marks the dungeon beaten and spawns its essence.
   //
-  // The kill itself is NOT asserted, and pretending otherwise would be the
-  // worst thing in this file. `dBoss` lands real hits on some bosses (Gohmaraq
-  // 24 -> 14, Wyverna 44 -> 24, Rootmaw 52 -> 32 before it heals) and none at
-  // all on others, and the measured reason is positioning rather than timing:
-  // Gloomtide is within sword reach on every sample with its weak point open
-  // and still takes nothing, because at MID the player is SWIMMING and a
-  // swimming Link cannot swing. Fighting it means sinking with the Cleats
-  // first. That is per-boss tactics, it is the next session's job, and until it
-  // is done this file measures the fights instead of claiming them.
+  // GOD MODE still means this proves killABILITY, not fairness: three hearts,
+  // the real starting health, still loses to Gohmaraq on contact damage
+  // before landing enough hits. See the STATUS comment on `dBoss` in
+  // tools/actor-runtime.mjs for the measured (not guessed) numbers.
   check(`${f.id}: ${f.boss} spawns in the room ${f.id} declares (${info.room})`,
     spawned === true, `nothing with isBoss in ${info.room}`);
   check(`${f.id}: ${f.boss}'s weak point opens at tide ${f.tide}`,
     opened > 0, `never opened in ${samples} samples across the fight`);
+  check(`${f.id}: ${f.boss} can be killed by a player holding what ${f.id} hands out (GOD MODE)`,
+    st.beaten === true, `beaten=${st.beaten}, boss hp ${st.hp}, still alive=${st.aliveBoss}`);
+  check(`${f.id}: killing it spawns essence ${info.essence} and it lands in the save`,
+    !st.beaten || st.essences.includes(info.essence), `essences [${st.essences.join(',')}]`);
   console.log(`       damage dealt: ${maxHp - (minHp === 1e9 ? maxHp : minHp)} of ${maxHp} hp`
-    + (err ? '  (fight did not finish: AI limitation, see comment)' : ''));
+    + (err ? '  (fight did not finish)' : (st.beaten ? '  (KILLED)' : '')));
+  await page.close();
 }
 
 check('no page errors', errs.length === 0, errs.slice(0, 2).join(' | '));
 console.log(`\n=== ${passed} passed, ${failures.length} failed ===`);
-console.log('NOTE: god mode was ON. This proves every boss SPAWNS and every shell OPENS —');
-console.log('      not that the fights are fair, and not yet that they are winnable by the harness.');
+console.log('NOTE: god mode was ON. All six bosses die outright now — that does not prove');
+console.log('      any of the fights are FAIR at three hearts, the real starting health.');
 await browser.close(); server.close();
 process.exit(failures.length ? 1 : 0);

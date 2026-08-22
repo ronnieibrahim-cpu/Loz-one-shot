@@ -184,6 +184,29 @@ they are also how a future session finds which sheet a tile came from.
   zero ammunition, and the B button denied for ever. It now lives in
   `progress.giveItem`, with the grant. If you add a counted item, put its
   capacity there.
+- **EVERY BOSS IN THE GAME WAS UNKILLABLE PAST ITS FIRST HEALTH-PHASE CHANGE,
+  AND NOTHING SAID SO — this trap is CLOSED, and the note is kept because the
+  shape of it recurs.** `Boss` (src/game/enemy.js) tracked its own
+  health-threshold combat phase (0/1/2, from `currentPhase()`) in
+  `this.phase`. `Entity.phase` is a DIFFERENT, older, still-live field: a
+  level-authored tide-gate ("this entity only exists at tide level N"), read
+  every frame by `Game.updatePhaseShift` for enemies placed with `{ phase: n }`
+  in room data (see the keese in `dungeons-a.js` and the leevers in
+  `overworld.js`). Two features, developed independently, sharing one name.
+  The instant a boss's hp crossed into a combat-phase index that did not equal
+  the room's current tide level — trivially true the first time any boss not
+  designed to open at phase 0 changes phase — `updatePhaseShift` read it as
+  phased out of the room's own tide and re-armed `invuln = 2` on it EVERY
+  FRAME for the rest of the fight. Not a graze: `Boss.hurt` early-returns on
+  any `invuln > 0`, so this was a permanent block, invisible to every checker
+  in this table because none of them fought anything — `check-bosses.mjs`'s
+  own GOD MODE run had been reporting a fixed "damage dealt" number per boss
+  for its entire life and reading it as an AI-positioning limit. Renamed to
+  `Boss.hpPhase`. Fixing it moved real, correct gameplay: the D1 Clawcrab
+  miniboss was secretly harmless past its own first phase change, so
+  `d1-clawcrab-den-wide` needed re-recording once it stopped being. **If a
+  boss or miniboss (`defineBoss`) ever reads or sets `this.phase` for
+  anything, that is this bug come back** — the field it means is `hpPhase`.
 
 ---
 

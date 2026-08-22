@@ -90,9 +90,16 @@ function assertNoRuntimeAssets(modules, html) {
     }
   }
   // In the HTML only markup that pulls a resource matters; the inline error
-  // shim and the touch layer are pure DOM.
-  const tag = /<(img|audio|video|source|link|object|embed)\b[^>]*\b(src|href)\s*=/i.exec(html);
-  if (tag) offences.push(`index.html: <${tag[1]}> loads a resource`);
+  // shim and the touch layer are pure DOM. A `data:` URI is not a runtime
+  // load — it never leaves the document — so it does not belong on this
+  // list; a real `src`/`href` on the same tag types still does.
+  const tagRe = /<(img|audio|video|source|link|object|embed)\b[^>]*\b(?:src|href)\s*=\s*["']([^"']*)["']/gi;
+  let tag;
+  while ((tag = tagRe.exec(html))) {
+    if (/^data:/i.test(tag[2])) continue;
+    offences.push(`index.html: <${tag[1]}> loads a resource`);
+    break;
+  }
 
   if (offences.length) {
     die(

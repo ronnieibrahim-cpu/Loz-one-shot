@@ -224,6 +224,26 @@ is in the page, and nothing steps until you say so.
 
 ## Hard-won lessons — do not rediscover these
 
+**Two unrelated features sharing one property name on the same class hierarchy
+is a bug that measures as "the AI is bad at this fight."** `Boss.phase`
+(health-threshold combat phase, `src/game/enemy.js`) and `Entity.phase`
+(a level-authored tide-gate, read every frame by `Game.updatePhaseShift`)
+collided under one name, and the collision looked EXACTLY like a positioning
+problem: `dBoss` landed real hits and every boss stalled at a fixed hp
+forever past its first phase change, because `updatePhaseShift` was reading
+the boss as phased out of the room's own tide and re-arming `invuln = 2` on
+it every frame. A whole session's first hypothesis (the boss verb needs
+per-boss positioning tuning to win) was wrong; the actual fix was a one-line
+rename (`Boss.hpPhase`), and once it landed the SAME generic verb that used
+to plateau at a fixed hp on every boss started killing all six outright in
+GOD MODE, Gloomtide included. Full account in CLAUDE.md's traps list. The
+generalisable lesson: when a measured number plateaus at a value that looks
+like "the actor gave up" (a damage cap, a fixed hp, a stuck sample count),
+check whether something is silently re-arming a guard condition every frame
+before assuming the actor's own decisions are the problem — a `grep` for
+every writer of the field in question would have found this in minutes,
+and reaching for actor-side tuning first cost most of a session.
+
 **Canvas 2D anti-aliases every path fill, and there is no flag to stop it —
 so a procedural background drawn with `beginPath`/`lineTo`/`fill` is a
 fidelity break this project's own checker measures.** The title screen's sea
