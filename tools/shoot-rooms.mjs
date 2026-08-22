@@ -30,7 +30,7 @@
 import { chromium } from 'playwright';
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, existsSync } from 'node:fs';
 import { extname, join, resolve } from 'node:path';
 
 const ROOT = resolve(import.meta.dirname, '..');
@@ -58,6 +58,13 @@ const showLens = args.includes('--lens');
 // the button is not down.
 const showBellows = args.includes('--bellows');
 const faceDir = (args.find(a => a.startsWith('--dir=')) || '=down').split('=')[1];
+// --vw/--vh/--dpr: override the viewport used to take the shot, so the
+// integer-scale/letterbox fix in src/core/screen.js can be looked at on an
+// iPad-shaped viewport at a real devicePixelRatio, not just the default
+// desktop-ish 480x432@1x.
+const vw = Number((args.find(a => a.startsWith('--vw=')) || '=480').split('=')[1]);
+const vh = Number((args.find(a => a.startsWith('--vh=')) || '=432').split('=')[1]);
+const dpr = Number((args.find(a => a.startsWith('--dpr=')) || '=1').split('=')[1]);
 const specs = args.filter(a => !a.startsWith('--'));
 const ROOMS = specs.length ? specs : [
   'overworld,4,7',                    // Tidewatch Village — plain grass
@@ -79,8 +86,19 @@ await new Promise(r => server.listen(0, r));
 const port = server.address().port;
 
 mkdirSync(shotDir, { recursive: true });
-const browser = await chromium.launch();
-const page = await browser.newPage({ viewport: { width: 480, height: 432 } });
+// Prefer Playwright's own download; fall back to a system Chromium when the
+// installed browser build doesn't match the installed playwright package —
+// see tools/check-build.mjs, which has the same fallback for the same reason.
+async function launchChromium() {
+  try { return await chromium.launch(); }
+  catch (err) {
+    const fallback = process.env.CHROMIUM_PATH || '/opt/pw-browsers/chromium';
+    if (!existsSync(fallback)) throw err;
+    return await chromium.launch({ executablePath: fallback });
+  }
+}
+const browser = await launchChromium();
+const page = await browser.newPage({ viewport: { width: vw, height: vh }, deviceScaleFactor: dpr });
 const errors = [];
 const misses = [];
 page.on('pageerror', e => errors.push(String(e)));

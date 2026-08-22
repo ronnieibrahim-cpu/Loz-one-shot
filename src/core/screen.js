@@ -23,16 +23,33 @@ export class Screen {
     this.fit();
   }
 
-  // Largest integer scale that fits the viewport, with a small margin on desktop.
+  /**
+   * Largest integer scale that fits the viewport, with a small margin on
+   * desktop — but the integer has to be counted in DEVICE pixels, not CSS
+   * pixels. `window.innerWidth`/`innerHeight` are CSS pixels; on a 2x panel
+   * (every iPad) each CSS pixel is 2 physical pixels, so an integer CSS-pixel
+   * scale times a fractional-in-context DPR can still land the 160x144
+   * backing store on a device-pixel boundary the browser has to resample —
+   * `image-rendering: pixelated` cannot rescue a blit that isn't already
+   * pixel-aligned. Working in device pixels first and dividing back down by
+   * `dpr` for the CSS size keeps `scale` an exact multiple of the backing
+   * store at the hardware level regardless of what `dpr` itself is.
+   *
+   * The backing store (`canvas.width`/`height`) stays 160x144: that is the
+   * native GBC resolution the whole game draws at, not a texture to be
+   * upsampled ahead of time, and `tools/check-build.mjs` asserts it directly.
+   * Letterboxing is `#wrap`'s flex centering plus the fixed black background.
+   */
   fit() {
+    const dpr = window.devicePixelRatio || 1;
     const margin = window.innerWidth < 700 ? 0 : 16;
-    const sx = (window.innerWidth - margin) / SCREEN_W;
-    const sy = (window.innerHeight - margin) / SCREEN_H;
-    let s = Math.floor(Math.min(sx, sy));
-    if (s < 1) s = Math.min(sx, sy);           // sub-integer only if we truly can't fit 1x
-    this.scale = s;
-    this.canvas.style.width = (SCREEN_W * s) + 'px';
-    this.canvas.style.height = (SCREEN_H * s) + 'px';
+    const devW = (window.innerWidth - margin) * dpr;
+    const devH = (window.innerHeight - margin) * dpr;
+    let devScale = Math.floor(Math.min(devW / SCREEN_W, devH / SCREEN_H));
+    if (devScale < 1) devScale = 1;            // never shrink below native size
+    this.scale = devScale / dpr;
+    this.canvas.style.width = (SCREEN_W * this.scale) + 'px';
+    this.canvas.style.height = (SCREEN_H * this.scale) + 'px';
   }
 
   clear(color = '#000') {

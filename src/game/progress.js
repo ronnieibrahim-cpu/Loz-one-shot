@@ -183,6 +183,24 @@ export function addBombs(p, n) {
 
 // --- persistence -----------------------------------------------------------
 
+/**
+ * Safari's Intelligent Tracking Prevention evicts localStorage for a site
+ * that hasn't been opened in ~7 days, and Private Browsing throws on every
+ * access rather than just refusing to persist. Either way `localStorage`
+ * itself can be present but unusable, so the only reliable test is a real
+ * write-then-remove — reading `typeof localStorage` proves nothing.
+ */
+export function storageAvailable() {
+  try {
+    const k = '__oot_probe__';
+    localStorage.setItem(k, '1');
+    localStorage.removeItem(k);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
 function readAll() {
   try {
     const raw = localStorage.getItem(SAVE_KEY);
@@ -202,6 +220,34 @@ function writeAll(all) {
   } catch (e) {
     console.warn('[save] write failed', e);
     return false;
+  }
+}
+
+// --- export / import as a copyable text code --------------------------------
+//
+// A save that lives only in localStorage is a save iOS can evict on its own
+// schedule with nothing the player did wrong. The code is the escape hatch:
+// paste it somewhere durable, or onto another device, independent of this
+// browser's storage at all.
+
+const CODE_PREFIX = 'OOT1:';
+
+export function exportCode(progress) {
+  const json = JSON.stringify(progress);
+  return CODE_PREFIX + btoa(unescape(encodeURIComponent(json)));
+}
+
+/** Returns a migrated progress object, or null if the code cannot be read. */
+export function importCode(code) {
+  try {
+    const s = String(code).trim();
+    const body = s.startsWith(CODE_PREFIX) ? s.slice(CODE_PREFIX.length) : s;
+    const json = decodeURIComponent(escape(atob(body)));
+    const obj = JSON.parse(json);
+    if (!obj || typeof obj !== 'object') return null;
+    return migrate(obj);
+  } catch (e) {
+    return null;
   }
 }
 
