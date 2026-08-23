@@ -89,9 +89,12 @@ down from 17. What is left is polish — boss art and music — not structure.
 - **`docs/briefs/AGENTS.md`** — a complete authoring spec per work area,
   sections A through J. Each section names the one file to edit and how to
   verify. Section J documents the sprite-sheet extraction workflow.
-- **`docs/NEXT-SESSION.md`** — a ready-to-paste prompt for a fresh session,
-  naming the branch, the two remaining jobs and how to prove them. Start there
-  if you are picking this up cold, and keep it current as work lands.
+- **`docs/NEXT-SESSION.md`** — the forward-looking punch list: current state
+  and what's left, in priority order, with pointers rather than duplicated
+  narrative. Start there if you are picking this up cold. Keep it that way as
+  work lands — fold a finished item into "Current state," move a real lesson
+  to this file's own hard-won-lessons section, and let `git log` carry the
+  session-by-session history rather than piling it back up there.
 
 ## Tooling
 

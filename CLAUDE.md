@@ -299,7 +299,13 @@ dungeons' themes can be stated in the same sentence, one of them is wrong.
 
 - `main` is trunk. Branch from it. One prompt = one session = one branch.
 - Update `docs/NEXT-SESSION.md` before the session ends, losslessly. A future
-  session that reads only that file must be able to continue.
+  session that reads only that file must be able to continue. "Losslessly"
+  means no open item quietly disappears — it does not mean appending another
+  session's narrative to the top forever. Fold what's finished into a short
+  current-state summary, move a real lesson to `docs/HANDOFF.md`, and trust
+  `git log` to keep the play-by-play. The file grew past 3700 lines this way
+  once already and had to be cut back to current state and open work only —
+  don't let it happen again.
 - **A dungeon session starts and ends at `docs/DUNGEON-STATUS.md`.** It is the
   board: which dungeons are done, which commit each landed in, the checklist
   that defines "done", and every outstanding one as a to-do with the problem it
