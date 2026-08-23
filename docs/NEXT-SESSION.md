@@ -53,20 +53,25 @@ the charge-chain itself.
    exhausted at this effort level; the proof above (5th data point: doubling
    health changes nothing) is why it isn't worth a sixth attempt in the same
    shape.
-2. **Consider whether phase 2 needs a different verb behaviour entirely,
-   not a different path to the SAME behaviour** — e.g., deliberately holding
-   at mid-range (neither retreating to the shelled-style room centre nor
-   trying to close in) so slams are dodgeable in the open rather than mid
-   approach; or accepting phase 2 cannot be fought and instead maximising
-   phase-1 damage output before the transition (currently only 10/24 hp is
-   dealt before hp crosses the 62%/30% phase boundaries — if phase 1 alone
-   could be made to deal enough, phase 2 might never need fighting through
-   at all, though at sword L1 against 24 hp this is arithmetic worth doing
-   honestly before assuming it's possible).
+2. **Consider whether phase 2 needs a different verb behaviour entirely, not
+   a different path to the SAME behaviour.** "Just deal enough damage before
+   reaching phase 2" is NOT an escape hatch, and it is worth writing down why
+   so nobody re-derives it under pressure: phase 2 begins at hp<=14 (58% of
+   24) and phase 3 at hp<=7 (30%), and every hit is -2, so the damage
+   sequence from full health is 24,22,...,16,14,12,...,8,6,... — reaching 0
+   hp is only possible by passing THROUGH every hp value on that ladder,
+   which means passing through the phase-2 band unconditionally. There is no
+   version of this fight that kills Gohmaraq without spending time in phase
+   2; the only question is whether hits can land while in it. So the real
+   next idea is a phase-2-specific behaviour, not an avoidance strategy — e.g.
+   deliberately holding at mid-range (neither retreating to the shelled-style
+   room centre nor trying to close in) so slams are dodgeable in the open
+   rather than mid-approach, buying a genuine opening once a slam's own
+   `openFor` window lands the boss stationary nearby.
 3. **Or reconsider the target itself.** This file's "prove it at three
    hearts" framing assumed phase 2 was just harder, not impossible. With
    phase 2 now shown to be a hard lockout regardless of hearts, the honest
-   options are: fix phase 2's structure (job 1 above), redesign Gohmaraq's
+   options are: fix phase 2's structure (item 2 above), redesign Gohmaraq's
    phase 2 itself (a content change, not a verb change — outside this file's
    usual scope but worth naming since the verb has now failed against it
    four ways), or escalate this finding rather than keep spending sessions
