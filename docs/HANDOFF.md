@@ -2244,6 +2244,43 @@ means the pot comes up instead.** That was already true of talking to a
 villager — `tools/test.mjs` had to turn Link around before the conch section,
 because the tile he was facing is one of the village rocks and it ate the press.
 
+### A carried object's height had two owners, and they both wrote to it
+
+Reported by the game's actual player, not found by a checker: a lifted rock
+rendered floating well above Link's head instead of held near it. The cause
+was two independent mechanisms for "how high is this thing off the ground",
+both live at once.
+
+`Player.updateMovement` has always kept a carried object's screen position in
+sync with Link's own: `this.carrying.y = this.y - CARRY_HEIGHT`
+(`src/game/player.js`, `CARRY_HEIGHT = 13` in `src/data/feel.js`, `guessed`).
+Separately, `Entity.draw` (`src/game/entity.js`) draws every entity at
+`y - z` — `z` is the general "height off the ground" field every airborne or
+thrown thing already uses. `Game.liftTile` (`src/game/game.js`) constructed
+the lifted rock/pot with `z: 13` on top of that, so the two mechanisms
+stacked: final screen height was `y - 13 (CARRY_HEIGHT) - 13 (z)` = 26px
+above Link, not 13. Verified by screenshot (`window.__harness`, a forced
+`liftTile` call, `#screen.screenshot()`) before and after — the fix
+(`obj.z = 0` after construction, since `CARRY_HEIGHT` already owns the held
+height every frame) took the combined offset from 26px back to 13px, and
+`node tools/test.mjs` stayed 59/59.
+
+**Entity-liftable objects (pots/bombs placed as entities, picked up via the
+first branch of `Player.tryLift`) never had this bug** — that path never sets
+`z` at pickup, so only `CARRY_HEIGHT` applied. Only the tile-lift path
+(`liftTile`, used for rocks and similar terrain) doubled up. When an object
+can be "held" by more than one code path, check that every path agrees on
+which single field owns a given visual property — a second writer to the same
+effect does not error, it just silently doubles it.
+
+**Not chased in the same pass, and worth a look with real reference
+footage:** even at the corrected 13px, a held object still reads with a
+visible gap above Link's head in a screenshot taken at `src/data/feel.js`'s
+declared `CARRY_HEIGHT`. That constant is marked `guessed`; it was not
+retuned further here because CLAUDE.md is explicit that `guessed` only
+becomes `measured` by frame-stepping an actual reference, not by eyeballing
+one more screenshot.
+
 ## The two gates that cannot be tiles
 
 Roc's Feather and the Power Bracelet became real tile gates this session. The

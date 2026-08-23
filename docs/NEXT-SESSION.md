@@ -1,3 +1,117 @@
+## Player feedback — five items, one fixed this session
+
+The player played the game and reported five things. One was root-caused and
+fixed in-engine, verified by screenshot; the other four are diagnosed enough
+to hand to a session but were not attempted here — each needs either
+pixel-art/ripper work, a specific repro, music composition, or an overworld
+redesign, none of which fit alongside the others in one pass.
+
+### FIXED: the lifted/carried object floated far above Link's head
+
+Root cause, the fix, and how it was verified are written up in full in
+`docs/HANDOFF.md` under "A carried object's height had two owners, and they
+both wrote to it" — read that before touching lift/carry code again. Short
+version: `Player.updateMovement`'s `carrying.y = this.y - CARRY_HEIGHT` and
+`Entity.draw`'s `y - z` were BOTH applying a height offset to a lifted rock
+(`Game.liftTile` set the new `ThrownObject`'s `z` to 13, the same value as
+`CARRY_HEIGHT`), so the combined lift was 26px, not 13. Fixed by zeroing the
+object's `z` in `liftTile` (`src/game/game.js`) — `CARRY_HEIGHT` is now the
+sole owner of held height, matching how entity-liftables (pots/bombs already
+placed as entities) already worked. `node tools/test.mjs` is 59/59 after.
+
+**Left open:** even at the corrected 13px, a screenshot still shows a visible
+gap between Link's head and the held object — `CARRY_HEIGHT` is marked
+`guessed` in `src/data/feel.js` and was not retuned further, per CLAUDE.md's
+rule that `guessed` only becomes `measured` by frame-stepping a real
+reference. Worth a look with actual Oracle-series footage of the lift pose.
+
+### NOT FIXED: the sword swing and spin attack don't show a blade
+
+Root-caused, screenshotted, not fixed. `Player.spriteName()` (`src/game/
+player.js`) returns `link_sword_<dir>` while swinging and `link_spin_<0-3>`
+while spinning; both pull from `tools/rip-link.py`'s `ACT_Y` band
+(`link_sword_down/up/side` at `(1086/1103/1069, 69)`, `link_spin_0..3` reusing
+the same four coordinates) at a plain 16x16 crop. Screenshotted both in-engine
+(forced `player.swinging`/`.spinning`, `#screen.screenshot()`): Link's body
+shows a crouched pose with **no blade at all** in either state, confirmed by
+eye, not just by reading the crop code.
+
+The engine does layer a separate directional slash arc (`fx_slash_down/up/
+side_0/1`, drawn in `Player.draw` at `src/game/player.js:1258-1269`) on top
+during `swinging` — but it did not read as a sword in the screenshot either
+(the "thin frame" variant is only a few pixels of arc). **There is no
+equivalent overlay for `spinning` at all** — spin has nothing drawn but the
+bare body pose, which is the more clear-cut half of this bug.
+
+Compare to `link_hold_*` (the charge-up pose), which got the correct
+treatment: `sprite-manifest.js`'s `expectedSize` gives it a non-16x16 crop
+(`[16,30]`/`[16,28]`/`[28,16]`) specifically because — per that file's own
+comment — "the source game draws the extended sword past the edge of his
+cell, and cropping it back to 16x16 would remove the sword." `link_sword_*`
+and `link_spin_*` never got that treatment; whether the sheet's `ACT_Y` band
+actually contains a fuller swing frame outside the current 16x16 crop (the
+same way the `hold` band's blade runs past its cell) has not been checked —
+that is the first thing to look at with `python3 tools/rip-link.py --dump`
+against a wider crop, before assuming new art is needed. If the sheet has it,
+extract it per CLAUDE.md's hard rule; only draw a blade by hand if the sheet
+genuinely doesn't have one at this pose.
+
+One more concrete lead, found running `node tools/validate.mjs` while
+diagnosing this: it warns `sprite 'fx_slash_d0'/'fx_slash_d1' is registered
+but not in the manifest`. Those two back the radial (non-directional) slash
+`game.spawnEffect('slashD', ...)` fires on every single swing
+(`startSwing`, `src/game/player.js:659` — the comment there, "replaced
+per-direction below", suggests this call is vestigial next to the directional
+`fx_slash_<dir>` draw already in `Player.draw`). `sprites-link.js`'s own
+comment on `fx_slash_d0` says this exact gap used to make the effect draw as
+a placeholder box before someone added the sprite data without registering it
+in `sprite-manifest.js`. Worth checking whether this stray unregistered
+effect is still firing, and whether it's worth deleting now that the
+per-direction arc exists, as part of the same pass.
+
+### NOT DIAGNOSED: some enemies can't be hit / have no collision box
+
+Reported by the player, not yet reproduced. No specific enemy type or room
+was named, so this needs a repro before it can be root-caused — general
+sweep of `src/data/enemies.js`/`bosses.js` didn't turn up an obvious
+systemic bug (most entries either declare an explicit `hb` or fall back to
+`Enemy`'s default in `src/game/enemy.js`). One real lead worth checking
+first: `Player.swordBox()`/`updateSwing()` build the hit rect from `this.cx/
+cy` (ground position) with no `z` term, so a flying/hovering enemy whose
+sprite draws elevated (`Entity.draw`'s `y - z`) could have its collision
+`rect()` sitting somewhere the blade's box doesn't reach even though the
+sprite looks adjacent on screen — worth checking against `flying`-tagged
+enemies specifically. Next session: get the specific enemy name(s)/room from
+the player, or sweep `check-motion.mjs`'s enemy roster against a live sword
+swing for each type.
+
+### NOT ATTEMPTED: the overworld has one music track
+
+`grep -c "music: 'overworld'"` across `src/data/overworld.js` and `story.js`
+turns up every overworld room and every music-setting story beat pointing at
+the same single track. This is a straightforward "needs more tracks and a
+per-region assignment" job (`src/data/audio.js` owns the track data; rooms
+already carry `legend: 'cliffs'/'wood'/'dunes'/'coast'/'town'/...`, which is
+a ready-made axis to key a second or third overworld theme off of) —
+composition work, not a bug, and out of scope for this pass.
+
+### NOT ATTEMPTED: no dungeon is gated behind another — progression reads non-linear
+
+`check-progression.mjs`'s own printed order (see "THE BOARD, UPDATED AGAIN —
+the circular progression lock is fixed" below) shows **D1, D2 and D5 are all
+reachable at zero items, from a brand new game** — three of six dungeon doors
+are open with nothing but the starting sword and conch, and D3/D4 open with
+items from those first three in no particular forced order either. That is
+current, working, intentional-per-the-checker behaviour (Oracle-series games
+are semi-open too), but it reads to a player as "nothing is gated," which is
+what was reported. This is a design question, not a bug: whether the game
+wants a firmer critical path (à la the original Zelda dungeon numbering) or
+is fine staying semi-open needs a decision before anyone touches
+`check-overworld.mjs`'s `GATES` table or `docs/GAME-PLAN.md`'s progression
+section — don't regate blind.
+
+---
+
 ## iPad publishing (this session)
 
 Shipped: `.github/workflows/deploy-pages.yml` (builds, runs
