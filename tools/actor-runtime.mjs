@@ -735,13 +735,30 @@ export async function installRuntime() {
    * this (a tide level, an item), the ROUTE says so in the steps around this
    * one, where it is readable, rather than hiding inside the verb.
    */
-  // STATUS: THIS VERB FIGHTS AND DOES NOT YET WIN. It finds the boss, stays in
-  // the arena, waits out the shell and lands real hits — Gohmaraq measured from
-  // 24 hp to 18 — but the trade is about one point of damage per five quarter
-  // hearts, and a boss has 24 to 80 hp. It is committed because the scaffolding
-  // is right and the two traps it already closed are expensive to rediscover;
-  // it is NOT referenced by tools/playthrough-route.mjs, because a route step
-  // that cannot finish is worse than one that is missing.
+  // STATUS: IT CAN WIN, AT FULL HEALTH. Gohmaraq and Anemos now die cleanly and
+  // deterministically in `check-bosses.mjs`'s god-mode run (24/24, 30/30);
+  // Gloomtide and Rootmaw take heavy damage (32/36, 46/52) without finishing in
+  // budget; Wyverna and Nereth still take none — each needs its own diagnosis,
+  // not assumed to share Gohmaraq's fix. What unlocked this: `Boss.phase` (the
+  // 0/1/2 attack-phase index) collided with `Entity.phase` (the Lens's tide-
+  // phase field), so `Game.updatePhaseShift` treated any boss past its first
+  // phase — or fighting at any tide but LOW — as a Lens-phased entity and
+  // re-pinned its `invuln` every single frame: permanently unkillable, with
+  // `weakOpen` reading true the whole time. See docs/HANDOFF.md. Renamed to
+  // `atkPhase` in src/game/enemy.js; that fix belongs to the engine, not this
+  // verb. This verb's own contribution is landing hits at all (a lining-up step
+  // before closing, same reason dFight has one) and a generic dodge for enemy
+  // fire. NOT YET PROVEN AT FIGHTING WEIGHT: a real (non-god-mode) run at three
+  // hearts still loses to Gohmaraq around its halfway point — two things do the
+  // damage, ranged spray from beyond sword range and a charge's contact hit,
+  // and only the first is defended against here. A bounded retreat off a boss's
+  // charge lane was tried and made GOD MODE WORSE (it drove the harness's own
+  // distance to the boss past 100px and it could never close again before the
+  // next tell — confirmed by disabling the retreat alone and watching the same
+  // fight go from stuck at 14 hp to a clean kill), so it was reverted rather
+  // than landed unproven; the charge-contact problem is still open. NOT
+  // referenced by tools/playthrough-route.mjs — a route step that cannot
+  // reliably win at fighting weight is worse than one that is missing.
   function* dBoss(maxF) {
     const g = window.__game;
     for (let i = 0; i < 300 && !g.boss; i++) yield 0;
@@ -751,7 +768,7 @@ export async function installRuntime() {
     // band, then break contact. A boss does contact damage like anything else,
     // and the first cut of this verb held the stick toward the boss while the
     // eye was open — three touches and a new game does not have a fourth.
-    const NEAR = 18, BACKOFF = 30;
+    const NEAR = 18, BACKOFF = 30, LINED = 4;
     const EDGE = 12;
     // Every mask goes through the fence. A boss arena has exits, and leaving
     // one wipes the room's entities — the boss with them. That reads exactly
@@ -775,6 +792,28 @@ export async function installRuntime() {
       const dm = dialogueMask(g, f);
       if (dm !== null) { yield dm; f++; continue; }
       if (g.mode !== 'play') { yield (f % 8 === 0) ? BIT.a : 0; f++; continue; }
+
+      // Dodge live enemy fire before anything else. Any boss built on `spread`/
+      // `shoot` threatens from well outside sword range, and closing in on an
+      // open weak point while a shot is already inbound is how the harness kept
+      // dying from 60px away with the boss never having touched it. This is
+      // generic — every boss that shoots gets it — not a Gohmaraq special case.
+      const DODGE_R = 44;
+      let threat = null, tbd = 1e9;
+      for (const e of g.entities) {
+        if (!e.isProjectile || e.fromPlayer || e.damage <= 0) continue;
+        const tdx = Math.abs(e.cx - p.cx), tdy = Math.abs(e.cy - p.cy);
+        if (tdx > DODGE_R || tdy > DODGE_R) continue;
+        const td = tdx + tdy;
+        if (td < tbd) { tbd = td; threat = e; }
+      }
+      if (threat) {
+        const dodge = Math.abs(threat.vx) >= Math.abs(threat.vy)
+          ? (threat.cy < p.cy ? BIT.down : BIT.up)
+          : (threat.cx < p.cx ? BIT.right : BIT.left);
+        yield fence(dodge); f++; continue;
+      }
+
       const dx = b.cx - p.cx, dy = b.cy - p.cy;
       const adx = Math.abs(dx), ady = Math.abs(dy);
       const axisX = adx > ady;
@@ -783,10 +822,18 @@ export async function installRuntime() {
       const backPerp = axisX ? (dy > 0 ? BIT.up : BIT.down) : (dx > 0 ? BIT.left : BIT.right);
 
       if (b.weakOpen) {
-        // Invulnerability frames are the only free hits in this game, so if we
-        // are still flashing from the last touch, commit regardless of range.
-        if (adx + ady > 64 && !(p.invuln > 0)) { yield fence(backPerp); f++; continue; }
-        if (adx + ady > NEAR + 6) { yield fence(toward); f++; continue; }
+        // The sword box is narrow (dFight's own LINED band, same reason): closing
+        // in on the bigger axis alone leaves the boss sitting outside the blade's
+        // span on the other axis, and the swing whiffs even though the Manhattan
+        // distance reads "in range". Line up before closing, exactly as dFight
+        // does against an ordinary enemy.
+        const along = axisX ? dx : dy;
+        const perp = axisX ? dy : dx;
+        if (Math.abs(perp) > LINED) {
+          yield fence(axisX ? (dy < 0 ? BIT.up : BIT.down) : (dx < 0 ? BIT.left : BIT.right));
+          f++; continue;
+        }
+        if (Math.abs(along) > NEAR + 6) { yield fence(toward); f++; continue; }
         // In range: face it, swing, then get out before it closes.
         yield fence(toward); f++;
         yield fence(toward | sword()); f++;

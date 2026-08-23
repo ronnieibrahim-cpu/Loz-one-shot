@@ -56,7 +56,9 @@ function check(name, cond, detail) {
 const PORT = 20000 + Math.floor(Math.random() * 20000);
 const server = await serve(PORT);
 const { chromium } = await loadPlaywright();
-const b = await chromium.launch({ headless: true });
+let b;
+try { b = await chromium.launch({ headless: true }); }
+catch (e) { b = await chromium.launch({ headless: true, executablePath: process.env.CHROMIUM_PATH || '/opt/pw-browsers/chromium' }); }
 const page = await b.newPage({ viewport: { width: 800, height: 720 } });
 const errs = [];
 page.on('pageerror', e => errs.push(e.message));

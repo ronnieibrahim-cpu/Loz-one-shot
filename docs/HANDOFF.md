@@ -587,6 +587,105 @@ a hole. The playthrough found this by LOSING SIX QUARTER-HEARTS and spending
 2,139 frames in a corridor it never left, which is exactly the kind of thing no
 model reports and a run cannot hide.
 
+**"A GENERIC BOSS AI LOSES" WAS THE WRONG DIAGNOSIS. `Boss.phase` COLLIDED WITH
+`Entity.phase`, AND EVERY BOSS WAS SECRETLY UNKILLABLE PAST ITS FIRST HEALTH
+THRESHOLD.** The note directly above this one (kept for the reasoning it still
+gets right about positioning) blamed the trade ratio on tactics. The real cause
+was a field name reused for two unrelated systems: `Entity.phase` (set in the
+constructor, `entity.js`) is the Lens's TIDE-phase field — null unless an
+entity belongs to one tide level, and `Game.updatePhaseShift` (`game.js`) walks
+every entity once a frame and re-arms `invuln = Math.max(invuln, 2)` on any
+entity whose `.phase` disagrees with the room's live tide, for as long as the
+Lens is not held up, so it stays "not hittable" without every damage source
+needing to learn about phases. `Boss` (`enemy.js`) ALSO wrote `this.phase`, for
+something completely different — its own attack-phase index, 0/1/2 by
+remaining health fraction — and never told `updatePhaseShift` apart. The two
+enums even share their range, which is what hid it: phase index 0 equals tide
+LOW, so a boss fought at LOW tide (Gohmaraq, Wyverna, Rootmaw) looked fine
+until it crossed into its SECOND health phase, at which point `updatePhaseShift`
+started treating a fully alive boss as a decoration belonging to a tide level
+the room wasn't at, and pinned `invuln` back up every single frame forever —
+`weakOpen` kept reading true, the shell kept "opening" on schedule, and
+`Boss.hurt` kept returning false at the very first line that checks it. A boss
+fought anywhere but LOW (Anemos at HIGH, Gloomtide and Nereth at MID) hit this
+the moment its FIRST phase began, i.e. immediately, and took no damage at all —
+which `check-bosses.mjs` had been reporting for two sessions running, correctly,
+as "damage dealt: 0", and nobody asked why a boss that a swordsman could clearly
+reach was taking nothing. The tell that finally found it: `boss.invuln` sampled
+mid-fight read exactly `1`, frame after frame, never `0` — decremented by
+`Boss.update` every frame like it should, and re-armed to 2 by
+`updatePhaseShift` on the very same frame, net one, forever. A property-set
+trap on the instance (`Object.defineProperty` with a logging setter, dropped in
+live via `page.evaluate` mid-fight) caught the second write and named its
+caller in one step. Renamed the boss's own field to `atkPhase`
+(`src/game/enemy.js`) — it is not read anywhere outside the class, so nothing
+else needed to change. With the rename alone, Gohmaraq and Anemos die cleanly
+and deterministically in `check-bosses.mjs`'s god-mode run (24/24, 30/30, was
+10/24 and 0/30); Gloomtide and Rootmaw land heavy damage without finishing in
+budget (32/36, 46/52, was 0/36 and 20/52). Wyverna and Nereth still take zero —
+read their own design comments before assuming they share this bug: Wyverna's
+is "the fight is about spending the conch faster than she can refill the
+cistern," which needs the actor to operate an ITEM mid-fight, something no
+version of `dBoss` has ever done, and Nereth's own line is literally "pins the
+tide to one level per phase; break the pin to hurt him" — a mechanic, not a
+bug. **The general lesson: two systems sharing a plain field name on a shared
+base class is not a style nit, it is a live collision waiting for whichever
+value range the two systems happen to overlap on** — and the overlap here was
+wide enough (three small integers, both meaningfully 0/1/2) that "it happened
+to work" covered every boss fight staged at the one tide level that matched by
+coincidence, for the entire life of the boss-fight harness.
+
+**`dBoss`'S OWN MISS RATE WAS A SEPARATE, SMALLER BUG: NOTHING LINED UP BEFORE
+SWINGING.** Once bosses could actually be hit, they still mostly weren't:
+closing distance on whichever axis had the larger delta (the only axis `dBoss`
+checked) left the boss sitting outside the sword's narrow SPAN on the OTHER
+axis, so a "distance in range" swing still went past it. `dFight`, the ordinary-
+enemy fight verb right above `dBoss` in the same file, already carries exactly
+this fix (`LINED`, a perpendicular-alignment band walked before the approach
+axis) for the identical reason, documented in ITS OWN comment as the fix for
+three shielded crabs in the D1 Crab Pit — and `dBoss` was written without it.
+Copy the fix that already exists in the file before inventing a new one.
+
+**CAUTION ADDED TO A BOSS FIGHT CAN COST MORE THAN IT SAVES, AND GOD MODE IS
+WHAT PROVES IT.** A bounded retreat off a charging boss's lane (move away for
+up to 10 frames whenever `b.charging` and close) was tried against Gohmaraq
+and made the GOD-MODE fight WORSE — stuck at 14/24 hp instead of a clean kill —
+because charges recur often enough in Gohmaraq's later phases that the retreat
+fired almost every attempt, drove the tracked distance to the boss out past
+100px, and the approach could never close it again before the next tell. Since
+god mode cannot die, there is nothing FOR that caution to buy there, which is
+exactly what makes god mode the right place to notice a caution addition is net
+negative: disabling the retreat alone took the same seeded fight from stuck to
+a clean, deterministic kill. It was reverted rather than kept "because it should
+help in theory." A plain dodge for INCOMING PROJECTILES (no retreat, just a
+sidestep off an inbound shot's line, generic to any boss built on `spread`/
+`shoot`) had no such cost and was kept. The charge-contact problem itself is
+still open — a real (non-god-mode) run at three hearts still loses to Gohmaraq
+around its halfway point, split between chip damage from ranged spray (now
+defended against) and one or two full contact hits from a charge (not yet).
+
+**A DETERMINISTIC-LOOKING TEST CAN STILL BE MEASURING THE MACHINE.** Editing
+`src/game/enemy.js` and `tools/actor-runtime.mjs` alone — no overworld data
+touched — turned one line of `walk-dungeons.mjs`'s ledge-hop check red,
+reproducibly, 5 times in a row, and reproducibly green with those two files
+reverted. The suspect line is real: `frames(22)` polls `window.__game.frame`
+across real `requestAnimationFrame` callbacks while `page.keyboard.down`/`up`
+bracket the wait, rather than going through `window.__harness.takeOver()` +
+`step(n)` the way `test.mjs`, `replay.mjs` and this file's OWN other checks do.
+A larger `enemy.js` shifts how much real wall-clock time module parsing costs
+before the first `requestAnimationFrame` fires, which can shift which real
+frame the keyup lands on relative to the game's own fixed-step counter — a
+one-frame loss right at one marginal ledge, not a collision regression. Proved
+by replaying the identical crossing through `window.__harness.step()` instead
+(installRuntime's `['hold', ['down'], 22]` directive): the player clears the
+lip cleanly. **The general form of the trap, stated once already in this file
+for a different tool and worth restating: a harness that does not own the
+clock is measuring the machine, not the game** — and a file can get away with
+that for a long time if nothing before it happens to change the machine's
+timing enough to notice. Not fixed here (this file's placement/keyboard
+probes are wall-clock throughout, not just this one check, and rewriting that
+is a session of its own) — noted so nobody chases it as a ledge bug.
+
 **A CHECKER THAT ARRIVES ON A BRANCH IS AS STALE AS THE BRANCH IT ARRIVED ON,
 and git will not say so, because a new file conflicts with nothing.** Merging
 the progression branch after the collision-consolidation branch landed

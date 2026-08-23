@@ -1,4 +1,123 @@
-## iPad publishing (this session)
+## Bosses were secretly unkillable, and this session found why (this session)
+
+**Job 1 from the board below — "a boss-fight verb that wins" — turned out to be
+an engine bug, not a tactics problem.** `Boss.phase` (the attack-phase index,
+0/1/2 by remaining health) and `Entity.phase` (the Lens's tide-phase field,
+read by `Game.updatePhaseShift`) are the same JavaScript property on the same
+object, and always have been. `updatePhaseShift` re-arms `invuln` on any entity
+whose `.phase` disagrees with the room's live tide, once a frame, for as long
+as the Lens isn't up — so the instant a boss's own combat phase stopped
+matching the room's actual tide (every boss not fought at LOW, and every LOW
+fight past its first health threshold, since phase index 0 happens to equal
+tide LOW) it became permanently unkillable, with `weakOpen` reading true and
+`Boss.hurt` returning false at its very first check, forever. This is why
+`check-bosses.mjs` had been reporting Anemos/Gloomtide/Nereth at 0 damage and
+Gohmaraq/Wyverna/Rootmaw stalling partway for two sessions running — read as
+"positioning," it was actually this. Renamed the boss's own field to
+`atkPhase` (`src/game/enemy.js`) — full writeup, including how it was found
+(a `Boss.invuln` setter trap dropped in live, mid-fight), in `docs/HANDOFF.md`.
+
+**Result, in `check-bosses.mjs`'s god-mode run (deterministic, re-checked 3x):**
+Gohmaraq 24/24 (was 10/24) and Anemos 30/30 (was 0/30) now die CLEANLY — the
+first two boss kills this harness has ever recorded. Gloomtide 32/36 (was
+0/36) and Rootmaw 46/52 (was 20/52) take heavy damage without finishing inside
+the fight's frame budget. Wyverna and Nereth still take zero — **not the same
+bug**: Wyverna's own design comment says the fight is "spending the conch
+faster than she refills the cistern," which needs the actor to operate an item
+mid-fight (`dBoss` has never done this); Nereth's is "pins the tide to one
+level per phase; break the pin to hurt him" — read each boss's own comment in
+`src/data/bosses.js` before assuming a shared fix applies.
+
+**`dBoss` also gained two contained improvements**, both in
+`tools/actor-runtime.mjs`: a lining-up step before closing to attack (copied
+from `dFight`'s own `LINED` band — the boss verb was written without it, and
+without lining up, a "distance in range" swing routinely lands outside the
+sword's span on the perpendicular axis and just misses), and a generic dodge
+for incoming enemy fire (sidestep off an inbound shot's line within 44px — any
+boss built on `spread`/`shoot`, not a Gohmaraq special case). A THIRD addition —
+a bounded retreat off a charging boss's lane — was tried, found to make the
+GOD-MODE Gohmaraq fight WORSE (stuck at 14/24 instead of a clean kill, because
+the retreat fires often enough in later phases to drive the tracked distance
+out past 100px and never let the approach close it again), and reverted rather
+than kept on faith. See HANDOFF for the full reasoning — it is the kind of
+finding worth not re-discovering.
+
+**STILL NOT PROVEN AT FIGHTING WEIGHT.** A real (non-god-mode) run at three
+hearts — "what a real player brings to D1," per the board below — still loses
+to Gohmaraq around its halfway point (boss reaches ~12/24 hp before the player
+dies). Two damage sources measured directly: chip damage from ranged rock
+spray at 40-90px (now mitigated by the dodge above) and one or two full
+contact hits from a charge (not yet defended against — the bounded-retreat
+attempt above made things worse, not better). **This is now a real, bounded
+difficulty-tuning problem, not a masked engine bug** — the next session's job 1
+is proving Gohmaraq winnable at three hearts, and the charge-contact case is
+where to start.
+
+**One unrelated, real thing found on the way and worth its own line: four
+`tools/*.mjs` files (`replay.mjs`, `walk-dungeons.mjs`, `check-gates.mjs`,
+`solve-switches.mjs`, `check-motion.mjs`, `check-playthrough.mjs` — six, not
+four; the board below undercounted it) were missing the
+`/opt/pw-browsers/chromium` executablePath fallback that `test.mjs` and
+`check-build.mjs` already carry, and none of them could launch a browser in
+this session's sandbox until patched. All six now have it, matching the
+pattern already established. This was flagged as "a good first job" two
+sessions ago and had not been picked up.**
+
+**And one that cost real time to run down and is worth flagging so nobody re-
+chases it: with the two files above changed and NOTHING ELSE, `walk-dungeons.mjs`
+started failing one ledge-hop check reproducibly (5/5 runs), and passed
+reproducibly (2/2) with those two files reverted.** Root cause is in
+`walk-dungeons.mjs` itself, not a collision regression: its downhill-hop probe
+polls `window.__game.frame` across real `requestAnimationFrame` callbacks while
+bracketing a real `page.keyboard.down`/`up`, instead of using
+`window.__harness.takeOver()` + `step(n)` the way this file's OTHER checks (and
+every other harness in the repo) do — so it is sensitive to real wall-clock
+timing, and a bigger `enemy.js` was enough to shift it by one frame at exactly
+one marginal ledge. Proved innocent by replaying the identical crossing through
+`window.__harness.step()` directly: it clears the lip cleanly. Not fixed here —
+this file's placement/keyboard probes are wall-clock throughout, not just this
+one check, and making them all frame-locked is a session of its own — but
+worth knowing before trusting `walk-dungeons.mjs`'s ledge numbers to the pixel
+on a session that changes unrelated files.
+
+**`tools/replays/d1-clawcrab-den-wide.json` was re-recorded** — the Clawcrab
+is a `defineBoss` miniboss with two health phases too, so the phase-collision
+fix changed exactly when its hits land, which is expected and correct per
+CLAUDE.md's own replay workflow ("after any change to movement/combat, expect
+replay.mjs to fail, then re-record"). All 51 replays pass; no other replay
+moved, because no other recorded fight crosses a boss/miniboss health-phase
+boundary at a tide that does not match the phase index.
+
+**Verified this session:** `node tools/test.mjs` (59/59), `node tools/replay.mjs`
+(51/51), `node tools/check-bosses.mjs` (13/13, plus the god-mode damage numbers
+above, re-run 3x for determinism), `node tools/check-playthrough.mjs` (19/19,
+still stops exactly at `d1/0,5,2` — unchanged, since `dBoss` is still not wired
+into the route), `node tools/check-gates.mjs` (26/26), `node tools/check-motion.mjs`
+(8/8), `node tools/solve-switches.mjs` (9/9 switch rooms). `npm run build` and
+`node tools/check-build.mjs` both green; `dist/oracle-of-tides.html` rebuilt
+and committed.
+
+**Next session's job, in order — unchanged in shape from the board below, now
+with a truer starting point:**
+
+1. **Prove Gohmaraq winnable at three hearts.** The engine bug that made this
+   unmeasurable is fixed; what is left is real tuning. Start with the
+   charge-contact case named above — the bounded-retreat idea that was tried
+   and reverted is a documented dead end, not a starting point.
+2. **Wyverna and Nereth each need their own diagnosis**, not Gohmaraq's fix
+   assumed to carry over — see their design comments in `src/data/bosses.js`.
+3. **Gloomtide and Rootmaw are close** (32/36, 46/52 in god mode) — likely just
+   need a larger frame budget or a small positioning nudge, worth checking
+   before assuming they need real design work.
+4. Once a boss verb reliably wins at fighting weight, wire it into
+   `tools/playthrough-route.mjs` and extend the D1 route past the boss room —
+   this is what unblocks job 2 from the board below (the Boss Key / locked-door
+   pass) and, eventually, `check-playthrough.mjs` reaching an Essence for the
+   first time.
+
+---
+
+## iPad publishing
 
 Shipped: `.github/workflows/deploy-pages.yml` (builds, runs
 `check-build.mjs` as a hard gate, publishes `dist/oracle-of-tides.html` as

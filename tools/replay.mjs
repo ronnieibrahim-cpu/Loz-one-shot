@@ -247,7 +247,9 @@ async function replay(browser, port, name) {
 const { chromium } = await loadPlaywright();
 const PORT = 20000 + Math.floor(Math.random() * 20000);
 const server = await serve(PORT);
-const browser = await chromium.launch({ headless: !HEADED });
+let browser;
+try { browser = await chromium.launch({ headless: !HEADED }); }
+catch (e) { browser = await chromium.launch({ headless: !HEADED, executablePath: process.env.CHROMIUM_PATH || '/opt/pw-browsers/chromium' }); }
 
 if (RECORD || RECORD_ALL) {
   const names = RECORD_ALL ? Object.keys(PLANS) : [RECORD];

@@ -67,7 +67,9 @@ const { chromium } = await loadPlaywright();
 // Random high port: concurrent runs must not fight over a fixed one.
 const PORT = 20000 + Math.floor(Math.random() * 20000);
 const server = await serve(PORT);
-const browser = await chromium.launch({ headless: true });
+let browser;
+try { browser = await chromium.launch({ headless: true }); }
+catch (e) { browser = await chromium.launch({ headless: true, executablePath: process.env.CHROMIUM_PATH || '/opt/pw-browsers/chromium' }); }
 const page = await browser.newPage({ viewport: { width: 800, height: 720 } });
 const errs = [];
 page.on('pageerror', e => errs.push('PAGEERROR: ' + (e.stack || e.message)));

@@ -266,7 +266,16 @@ export class Boss extends Enemy {
     this.isBoss = true;
     this.oncePerGame = spec.oncePerGame !== false;
     this.intro = spec.intro != null ? spec.intro : BOSS_INTRO_FRAMES;
-    this.phase = -1;
+    // NOT `this.phase` — Entity already owns that name for the Lens's tide-phase
+    // system (null unless the entity belongs to one tide level). A boss's phase
+    // index (0/1/2 by remaining health) collided with it here for the whole life
+    // of the boss fights: `Game.updatePhaseShift` treats ANY entity with a
+    // non-null `.phase` as Lens-phased, and the moment a boss's own combat phase
+    // stopped matching the room's actual tide level (i.e. every fight not staged
+    // at tide LOW, and every LOW fight past its first health threshold) it pinned
+    // the boss's `invuln` back up every single frame — permanently unkillable,
+    // with `weakOpen` reading true throughout. See docs/HANDOFF.md.
+    this.atkPhase = -1;
     this.weakOpen = !spec.shell;
     this.deathTime = 0;
     this.dying = false;
@@ -317,8 +326,8 @@ export class Boss extends Enemy {
     if (this.stun > 0) { this.stun--; return; }
 
     const p = this.currentPhase();
-    if (p !== this.phase) {
-      this.phase = p;
+    if (p !== this.atkPhase) {
+      this.atkPhase = p;
       this.invuln = Math.max(this.invuln, BOSS_PHASE_INVULN_FRAMES);
       if (this.spec.onPhase) this.spec.onPhase(this, game, p);
       game.audio.sfx('charged');
