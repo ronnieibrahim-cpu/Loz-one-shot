@@ -737,15 +737,18 @@ export async function installRuntime() {
    */
   // STATUS: THIS VERB FIGHTS AND DOES NOT YET WIN. It finds the boss, stays in
   // the arena, waits out the shell, chains swings through a landed hit's own
-  // invulnerability window, and lands real hits — Gohmaraq measured in REAL
-  // combat (12 quarter-hearts, no god mode, seed 20260806) from 24 hp to 14,
-  // five hits landed, the player surviving to its last half-heart before a
-  // final graze. The melee trade is close to breakeven; what still kills a
-  // 3-heart player is ranged chip damage nobody is trying to dodge. See
-  // docs/NEXT-SESSION.md's boss-verb section for the measurement and what's
-  // still open. It is committed because the scaffolding is right and the
-  // traps it already closed are expensive to rediscover; it is NOT referenced
-  // by tools/playthrough-route.mjs, because a route step that cannot reliably
+  // invulnerability window, sidesteps a charge, and lands real hits —
+  // Gohmaraq measured in REAL combat (12 quarter-hearts, no god mode, seed
+  // 20260806) from 24 hp to 14, five hits landed, the player surviving to its
+  // last half-heart before a final graze. The melee trade is close to
+  // breakeven; what still kills a 3-heart player is ranged chip damage. A
+  // reactive per-shot dodge was tried and measured NET NEGATIVE (it landed
+  // fewer melee hits than leaving it alone, for no reliable safety in
+  // return — see docs/NEXT-SESSION.md's boss-verb section for the measured
+  // numbers and the wall-cornering failure mode before attempting it again).
+  // It is committed because the scaffolding is right and the traps it
+  // already closed are expensive to rediscover; it is NOT referenced by
+  // tools/playthrough-route.mjs, because a route step that cannot reliably
   // finish is worse than one that is missing.
   function* dBoss(maxF) {
     const g = window.__game;
@@ -757,6 +760,14 @@ export async function installRuntime() {
     // and the first cut of this verb held the stick toward the boss while the
     // eye was open — three touches and a new game does not have a fourth.
     const NEAR = 18, BACKOFF = 30;
+    // A charge (src/game/enemy.js `charge()`) commits to a straight dash at
+    // 1.9 px/f down whichever axis it last saw the player on — far outrunning
+    // every other move in this verb (1.0 px/f walking, ~1.4 diagonal). The
+    // fix is not "outrun it", it's "step off the one axis it can hit on
+    // before it starts moving" — the 18f `tell` freezes the boss in place
+    // first (windUp/stun), so there is always a warning. Latched per charge
+    // so the side doesn't reconsider mid-dash off a sign that's gone noisy.
+    let chargeSide = 0;
     // CLAUDE.md: diagonal movement is not normalised, full speed both axes —
     // so a single-axis chase leaves real ground speed on the table. Measured
     // directly: closing on the far side of a knockback with one axis at a
@@ -796,6 +807,17 @@ export async function installRuntime() {
       const dm = dialogueMask(g, f);
       if (dm !== null) { yield dm; f++; continue; }
       if (g.mode !== 'play') { yield (f % 8 === 0) ? BIT.a : 0; f++; continue; }
+      if (b.charging) {
+        if (chargeSide === 0) {
+          chargeSide = (b.dir === 'up' || b.dir === 'down')
+            ? (p.cx >= b.cx ? 1 : -1) : (p.cy >= b.cy ? 1 : -1);
+        }
+        const perp = (b.dir === 'up' || b.dir === 'down')
+          ? (chargeSide > 0 ? BIT.right : BIT.left)
+          : (chargeSide > 0 ? BIT.down : BIT.up);
+        yield fence(perp); f++; continue;
+      }
+      chargeSide = 0;
       const dx = b.cx - p.cx, dy = b.cy - p.cy;
       const adx = Math.abs(dx), ady = Math.abs(dy);
       const axisX = adx > ady;

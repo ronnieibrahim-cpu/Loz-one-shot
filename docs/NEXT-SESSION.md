@@ -1,4 +1,89 @@
-## The boss verb now chains hits and actually lands them — Gohmaraq measured at 10/24, real combat, not god mode (this session)
+## Charge dodge lands, ranged dodge doesn't — the boss verb, continued (this session)
+
+**Still not a win.** Gohmaraq measured in real combat (12 quarter-hearts, no
+god mode, seed 20260806): five hits landed (24 -> 14 hp), same as last
+session, surviving 25 frames longer before the same fatal graze. One small
+positive change shipped; one larger one was tried, measured, and reverted —
+both are worth reading before touching this verb again.
+
+**Shipped: dodge a charge.** `charge()` (`src/game/enemy.js`) commits Gohmaraq
+to a straight dash at 1.9 px/f down whichever axis it last saw the player
+on — far outrunning everything else in this verb (1.0 px/f walking, ~1.4
+diagonal). `dBoss` now reads `b.charging` at the top of every frame and steps
+off that axis, latching the side for the dash's duration the same way the
+invuln-chase latches its retreat (a side re-read every frame off a position
+that's crossing the charge's own line is exactly the noise that broke the
+attempt below). It is unconditional — highest priority, above the weakOpen/
+shelled state machine — because a charge is the one attack in this fight
+that can out-run a normal retreat. `check-bosses.mjs` is unaffected (13/13,
+identical numbers: god mode never needs to dodge anything).
+
+**Tried and reverted: dodge the ranged spray.** The obvious next lever — read
+`game.entities` for live projectiles each frame and sidestep their line
+before they arrive — was built, and building it surfaced two real
+implementation bugs worth knowing about if anyone tries this again:
+
+1. **A direction is not a distance.** The first cut reused `towardDiag`
+   (built for the chase, with a 3px deadzone so it doesn't twitch over a
+   couple of stray pixels) to turn a dodge vector into button bits. Every
+   shot's velocity in this game is ~0.5-2 px/f — smaller than the deadzone —
+   so `towardDiag` silently returned 0 every single time. The dodge branch
+   ran, computed a real threat, and pressed nothing. Caught by instrumenting
+   `Player.takeDamage`/`Boss.hurt` directly rather than trusting the outside
+   behavior — the damage log was BYTE-IDENTICAL before and after the change,
+   which is what gave it away.
+2. **"Which side am I already on" is unstable exactly when it matters.**
+   Gohmaraq's spray (`spread()`, `src/data/bosses.js`) is aimed AT the
+   player's exact position the frame it fires, so at spawn the player sits
+   almost exactly ON the shot's line — the cross-product sign that was
+   supposed to pick a dodge side is reading sub-pixel noise right when the
+   signal is most needed. Recomputed fresh every frame, it flipped sign on
+   roughly half the frames of a single approaching shot, so the "dodge"
+   cancelled itself frame over frame and the player gained no real
+   separation. A latch (pick the side once per threat, hold it) fixed the
+   oscillation but exposed a THIRD problem: the arena has walls, and the
+   latched side can dead-end into one mid-dodge, pinning the player against
+   the fence with only one axis of the dodge still live — not enough
+   separation to clear a shot whose line isn't aligned with that wall. A
+   fence-openness tiebreak on the initial pick did not fix this, because the
+   pick is only checked ONCE, not continuously as the player is walked
+   toward the wall over the following ~15 frames.
+
+None of that is disqualifying on its own, but the net measured result across
+several parameter attempts (`PROJ_SAFE` 12, 16, 24) was 1-4 melee hits landed
+against a plain-retreat baseline of 5 — the dodge was disrupting the chase
+more than it was preventing damage, on the one seed this repo can currently
+measure. **Shipping a "safety" feature that measurably lands fewer hits is
+worse than not having it**, so it was reverted rather than kept as an
+unproven complication. If someone picks this back up: the wall-cornering
+problem is the one still open, and the fix likely needs to track separation
+continuously (not just at the moment a threat is first detected), or pick a
+dodge target relative to the room's open space rather than purely
+perpendicular to the shot.
+
+**Next session, in order — unchanged in substance from last time:**
+
+1. The melee trade itself is close to breakeven (10 hp dealt for ~10 qh
+   taken over the course of the fight); what's still open is REDUCING chip
+   damage without the disruption cost the reverted attempt paid. Also worth
+   trying: is there a cheaper win in NOT engaging every eye-open window —
+   Gohmaraq's eye stays open almost the whole fight at LOW tide, so the verb
+   doesn't have to press every opening if a fresh one is coming anyway.
+2. The same-speed patrol problem (phase 3 speed 1.0 == WALK_SPEED, so a
+   patrol that isn't reversing is never caught) is still unmeasured in real
+   combat — only seen in godmode's unlimited-aggression run, which may not
+   be the same failure a 3-heart fight ever reaches.
+3. Once Gohmaraq is a measured win at 3 hearts, wire `dBoss` into
+   `playthrough-route.mjs` past `d1/0,3,2`, and only then look at the other
+   five bosses — Gloomtide's swimming-blocks-swinging finding in particular
+   needs a real tactic (sink with the Cleats first), not this generic verb.
+4. The Boss Key / third-key pass behind the Clawcrab door and the other five
+   dungeons' routes are both still undone and both still blocked on job 1
+   actually finishing.
+
+---
+
+## The boss verb now chains hits and actually lands them — Gohmaraq measured at 10/24, real combat, not god mode (previous session)
 
 **Job 1 from the board below** was "a boss-fight verb that WINS... prove it on
 Gohmaraq at THREE hearts." It does not win yet. What changed is measured, not
