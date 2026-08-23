@@ -1,4 +1,104 @@
-## Charge dodge lands, ranged dodge doesn't — the boss verb, continued (this session)
+## The two free contact hits are gone — Gohmaraq reaches phase 2 for the first time, and phase 2 is a new dead end (this session)
+
+**Still not a win, but the failure mode moved, and moving it uncovered a
+problem nothing had ever measured because nothing had survived long enough
+to reach it.** Two things this session, both measured against the same
+seed (20260806, 12 quarter-hearts, no god mode) the last three sessions have
+used, so the numbers are directly comparable to the board below.
+
+**Tried and reverted first: gating the weakOpen engage on `b.stun`.** The
+hypothesis was "don't approach when the boss is about to erupt (`stun>0` from
+`windUp`'s freeze or `charge`'s tell)". Measured: it made things WORSE, not
+better — 4 hits landed for 8 hp dealt, against the baseline's 5 for 10, same
+12 hp lost, same death. Diagnosed why before reverting: `stun` is also set by
+`charge`'s POST-dash recovery (src/game/enemy.js:812), which is exactly when
+Gohmaraq is a frozen, safe target — the blanket check was throwing away real
+free hits to guard against a danger (an imminent windUp) it couldn't
+distinguish from a safety (a finished one). Reverted outright; not worth
+re-attempting without a way to tell the two `stun` sources apart, and even
+then the *actual* mechanism below turned out to be unrelated to `stun`.
+
+**Shipped: `nearContact()` replaces a Manhattan-distance guess with the
+engine's own rectangles.** Found by logging every frame around both of the
+session-before-last's two 4-hp "contact" hits (not just their hp deltas —
+position, too): at frame 445, the verb read `dx=-16 dy=-11` (Manhattan sum
+27) and judged that "still far, keep closing" against its `NEAR+6` (24px)
+threshold — on the *exact frame* `b.rect()` and `p.rect()` already
+overlapped. A Manhattan sum is not a safe stand-in for AABB contact: two
+axes can each be individually close (16px and 11px here) while summing past
+a single flat threshold. The boss was never stunned, never charging — it was
+just patrolling (phase 1 always calls `patrol()` regardless of `weakOpen`),
+and the verb walked the player face-first into a moving target it had no way
+to see coming because it was measuring the wrong shape. `nearContact(bb, pp)`
+in `tools/actor-runtime.mjs` calls `bb.rect()`/`pp.rect()` directly (the same
+method `Entity.overlaps()` uses) and checks per-axis clearance instead of a
+guessed radius — it works for any boss's `hb` size, not a Gohmaraq constant,
+and `SWORD_REACH` (13px) comfortably covers the gap it stops at, so no swing
+that used to land stopped landing.
+
+**Measured effect: the two 4-hp contact hits are gone, completely** — the
+6-loss-event tally that used to be `[-2,-4,-4,-2]` (12 total, dying at frame
+795 in phase 1) is now six `-2` ranged/spray hits (still 12 total, still
+fatal, now at frame 1549). Hits landed and hp dealt to the boss are
+UNCHANGED (5 hits, 10 hp) — this is not the win, but it is not the
+"landed fewer hits for no benefit" shape that sank the `stun` attempt and the
+previous session's ranged dodge either. `check-bosses.mjs` is unaffected,
+13/13, identical godmode numbers (contact avoidance only matters when
+contact is costly, and godmode never lets it cost anything). `tools/test.mjs`
+59/59.
+
+**What surviving twice as long exposed: Gohmaraq reaches phase 2 in real
+combat for the first time ever measured, and phase 2 is a charge-chain
+lockout.** Every previous real-combat measurement (this board, going back two
+sessions) died in phase 1 — hp never dropped low enough (<62%) to switch
+phases before the player did. With the free contact hits gone, this run's
+boss reaches 14/24 hp (58%, phase 2) at frame 637, and then: `weakOpen` stays
+`true` continuously for the ENTIRE REMAINING ~900 FRAMES (phase 2's shell
+apparently never re-closes at LOW tide, or closes for less than one sampled
+frame), while `b.charging` flips true/false in a tight loop — charge, brief
+recovery stun, charge again — because the player and boss keep re-aligning on
+one axis the instant recovery ends. The verb's own `if (b.charging)` branch
+takes over unconditionally every time this is true, so the ENTIRE phase 2 is
+spent dodging a chained charge and the verb never gets a single swing in: 0
+hits landed in ~900 frames, ending in death by ranged chip attrition (five
+more `-2` events) rather than by the melee trade at all. This is NOT the
+"phase 3, speed 1.0 == WALK_SPEED" problem the board below named — that is
+still real and still unmeasured (phase 3 needs hp ≤30%, never reached here
+either) — it is a DIFFERENT, earlier problem in phase 2 that nothing before
+this session could see, because nothing had survived into phase 2 at all.
+
+**Next session, in order:**
+
+1. **The phase 2 charge-chain lockout is now the single biggest lever.**
+   0 hits in ~900 frames is a bigger loss than anything chip damage costs.
+   The likely fix is in what the verb does right after a charge ends: it
+   currently drifts back toward whatever axis the boss is aligned on (nothing
+   deliberately re-aligns, but nothing deliberately BREAKS alignment either),
+   which is exactly `charge()`'s own re-trigger condition
+   (`aligned() && distToPlayer < range`, src/game/enemy.js:818). A dodge that
+   moves diagonally away after a charge — off BOTH axes, not just the one the
+   charge ran on — rather than only perpendicular, is the next thing to try
+   and measure, not assume.
+2. The `stun`-gating idea is closed as reverted; do not retry it verbatim.
+   If a future session wants to distinguish "about to erupt" from "just
+   finished," `windUp` sets `e._pending` and `charge`'s tell/recovery do not —
+   that field, not `stun` alone, is the generic signal that separates them,
+   should anyone want it.
+3. The same-speed phase-3 patrol problem (speed 1.0 == WALK_SPEED) is STILL
+   unmeasured in real combat — this session's run still died in phase 2,
+   short of the ≤30% hp threshold that opens phase 3. It needs the phase 2
+   lockout solved first before it can be measured at all.
+4. Once Gohmaraq is a measured win at 3 hearts, wire `dBoss` into
+   `playthrough-route.mjs` past `d1/0,3,2`, and only then look at the other
+   five bosses — Gloomtide's swimming-blocks-swinging finding in particular
+   needs a real tactic (sink with the Cleats first), not this generic verb.
+5. The Boss Key / third-key pass behind the Clawcrab door and the other five
+   dungeons' routes are both still undone and both still blocked on job 1
+   actually finishing.
+
+---
+
+## Charge dodge lands, ranged dodge doesn't — the boss verb, continued (previous session)
 
 **Still not a win.** Gohmaraq measured in real combat (12 quarter-hearts, no
 god mode, seed 20260806): five hits landed (24 -> 14 hp), same as last

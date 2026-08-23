@@ -759,7 +759,26 @@ export async function installRuntime() {
     // band, then break contact. A boss does contact damage like anything else,
     // and the first cut of this verb held the stick toward the boss while the
     // eye was open — three touches and a new game does not have a fourth.
-    const NEAR = 18, BACKOFF = 30;
+    const BACKOFF = 30;
+    // The "still far, keep closing" checks below used to compare a Manhattan
+    // sum of centre-to-centre distance against a flat 24px radius. Measured
+    // directly against a real fight (frame 445, seed 20260806): the verb read
+    // dx=-16 dy=-11 (sum 27, "still far") on the exact frame Gohmaraq's own
+    // hurtbox (`b.rect()`) already overlapped the player's (`p.rect()`) —
+    // Manhattan sum is not a safe proxy for AABB contact because two axes can
+    // each be individually close while summing past a single threshold. This
+    // asks the engine's own rectangles instead of guessing a radius, so it
+    // works for any boss's hb size, not just Gohmaraq's 32x32 body. CONTACT
+    // is a clearance in pixels, not a hit chance — SWORD_REACH (13px, see
+    // src/data/feel.js) is comfortably more than the gap this stops at, so a
+    // swing thrown the instant this goes true still reaches.
+    const CONTACT_CLEAR = 8;
+    const nearContact = (bb, pp) => {
+      const rb = bb.rect(), rp = pp.rect();
+      const gapX = Math.max(rb.x - (rp.x + rp.w), rp.x - (rb.x + rb.w));
+      const gapY = Math.max(rb.y - (rp.y + rp.h), rp.y - (rb.y + rb.h));
+      return gapX < CONTACT_CLEAR && gapY < CONTACT_CLEAR;
+    };
     // A charge (src/game/enemy.js `charge()`) commits to a straight dash at
     // 1.9 px/f down whichever axis it last saw the player on — far outrunning
     // every other move in this verb (1.0 px/f walking, ~1.4 diagonal). The
@@ -843,7 +862,7 @@ export async function installRuntime() {
           const dx2 = b.cx - p.cx, dy2 = b.cy - p.cy;
           const ax2 = Math.abs(dx2), ay2 = Math.abs(dy2);
           const toward2 = towardDiag(dx2, dy2);
-          if (ax2 + ay2 > NEAR + 6) { yield fence(toward2); f++; continue; }
+          if (!nearContact(b, p)) { yield fence(toward2); f++; continue; }
           const faceOnly = ax2 >= ay2 ? (dx2 > 0 ? BIT.right : BIT.left) : (dy2 > 0 ? BIT.down : BIT.up);
           yield fence(faceOnly); f++;
           yield fence(faceOnly | sword()); f++;
@@ -865,7 +884,7 @@ export async function installRuntime() {
         // Gohmaraq's phase-1 tell is a stationary spray, not a charge closing
         // on us, so there is nothing here worth backing away from before the
         // swing.
-        if (adx + ady > NEAR + 6) { yield fence(towardDiag(dx, dy)); f++; continue; }
+        if (!nearContact(b, p)) { yield fence(towardDiag(dx, dy)); f++; continue; }
         // In range: face it, swing, then get out before it closes.
         yield fence(toward); f++;
         yield fence(toward | sword()); f++;
