@@ -1,4 +1,90 @@
-## Phase 2's charge-chain lockout: three fixes tried, all reverted, and the real reason it's hard (this session)
+## Phase 2 is a TOTAL lockout, proven with double health, not just a hard fight — a fourth fix tried and reverted (this session)
+
+**The one measurement that changes what "next" should mean: giving the
+player DOUBLE health does not land a single additional hit.** Picked up
+this file's own recommendation from last session — "design a genuinely
+different approach path" — tried it, and it landed exactly where the three
+prior attempts did: 5 hits, 10/24 hp dealt, unchanged. But rather than write
+a fifth variant blind, this session asked a sharper question first: is phase
+2 a HARD fight the verb sometimes loses, or a fight it can NEVER win? Ran the
+same seed at 24 quarter-hearts (6 hearts, double the 3-heart target) with the
+otherwise-unmodified committed verb. Result: **still exactly 5 hits, 10 hp
+dealt, boss hp permanently stuck at 14 for the entire fight** — the extra 12
+quarter-hearts bought nothing but a longer death, chip damage arriving every
+~250-280 frames like clockwork until frame 3231. This is decisive: phase 2 is
+not a low-probability fight the verb occasionally loses, it is a
+**deterministic 0% lockout** on this seed. No amount of survivable health
+changes that, which means job 1 as scored so far ("prove it at three hearts")
+was never the binding constraint — the verb cannot win at ANY heart count
+once it reaches phase 2, so tuning health, damage, or dodge timing around the
+edges of phase 2 is not going to produce a win. The fix has to be structural.
+
+**Fourth attempt, tried and reverted anyway, because it was worth ruling
+out:** `approachSafe()` — hold the nearer axis's distance above a safety
+margin (20px, just past `ENEMY_CHARGE_TOLERANCE`) while closing only the
+farther axis, so the approach itself doesn't create the "aligned on one axis,
+still deep in charge range on the other" frame that lets `charge()`
+re-trigger from a room-spanning distance. Reasoned from the same mechanism
+diagnosed last session, and it changed WHEN the phase-1 hits landed (the
+frame numbers shifted) but not phase 2's outcome. Diagnosed why: the guard
+only fires when the player's OWN approach is what's closing the near axis,
+but the diagnostic logs show the near axis is very often already inside the
+safety margin from the state the boss's own patrol/charge motion left it in —
+the danger isn't created by the approach path alone, so a path that avoids
+creating it doesn't remove it. Reverted; `tools/actor-runtime.mjs` is back to
+the two-sessions-ago committed state (contact-clearance fix only).
+
+**What the 6-heart run also incidentally shows, worth carrying forward
+precisely:** every point of damage taken during the phase-2 stretch is a
+`-2`, never a `-4` — meaning it is ALL ranged (Gohmaraq's slam-triggered rock
+spray, `gohmaraqSlam`'s `spread()` call, which fires from every phase
+including phase 2's charge phase, not just the phase-3-only `spray` ring),
+never contact. The charge itself, when correctly dodged, currently costs
+nothing — the attrition that eventually kills the player is coming from
+slams landing during the charge-chain confusion, a second attack this verb
+isn't managing AT ALL while busy with the charge dance, not a byproduct of
+the charge-chain itself.
+
+**Next session, in order — reframed by the double-health result:**
+
+1. **Stop tuning phase-2 dodge/approach timing.** Four variants (the
+   cooldown pair last session, the free-recovery-swing, and this session's
+   `approachSafe`) all measured identically. That line of attack is
+   exhausted at this effort level; the proof above (5th data point: doubling
+   health changes nothing) is why it isn't worth a sixth attempt in the same
+   shape.
+2. **Consider whether phase 2 needs a different verb behaviour entirely,
+   not a different path to the SAME behaviour** — e.g., deliberately holding
+   at mid-range (neither retreating to the shelled-style room centre nor
+   trying to close in) so slams are dodgeable in the open rather than mid
+   approach; or accepting phase 2 cannot be fought and instead maximising
+   phase-1 damage output before the transition (currently only 10/24 hp is
+   dealt before hp crosses the 62%/30% phase boundaries — if phase 1 alone
+   could be made to deal enough, phase 2 might never need fighting through
+   at all, though at sword L1 against 24 hp this is arithmetic worth doing
+   honestly before assuming it's possible).
+3. **Or reconsider the target itself.** This file's "prove it at three
+   hearts" framing assumed phase 2 was just harder, not impossible. With
+   phase 2 now shown to be a hard lockout regardless of hearts, the honest
+   options are: fix phase 2's structure (job 1 above), redesign Gohmaraq's
+   phase 2 itself (a content change, not a verb change — outside this file's
+   usual scope but worth naming since the verb has now failed against it
+   four ways), or escalate this finding rather than keep spending sessions
+   on verb-side patches against an unwinnable state.
+4. The same-speed phase-3 patrol problem (speed 1.0 == WALK_SPEED) remains
+   unmeasured in real combat and unreachable until phase 2 is solved or
+   bypassed — hp never crosses 30% in any run this session or last.
+5. Once Gohmaraq is a measured win at 3 hearts, wire `dBoss` into
+   `playthrough-route.mjs` past `d1/0,3,2`, and only then look at the other
+   five bosses — Gloomtide's swimming-blocks-swinging finding in particular
+   needs a real tactic (sink with the Cleats first), not this generic verb.
+6. The Boss Key / third-key pass behind the Clawcrab door and the other five
+   dungeons' routes are both still undone and both still blocked on job 1
+   actually finishing.
+
+---
+
+## Phase 2's charge-chain lockout: three fixes tried, all reverted, and the real reason it's hard (previous session)
 
 **Zero progress on the number, and that number is worth reporting precisely
 so nobody re-spends this budget re-discovering it.** Picked up job 1 from the
