@@ -250,7 +250,17 @@ async function drain(page, label) {
 const { chromium } = await loadPlaywright();
 const PORT = 20000 + Math.floor(Math.random() * 20000);
 const server = await serve(PORT);
-const browser = await chromium.launch({ headless: !HEADED });
+// Prefer Playwright's own download; fall back to a system Chromium when the
+// installed browser build does not match the installed playwright package
+// (see check-build.mjs / test.mjs, which have carried this fallback for a
+// while — this file didn't, and died on launch before loading a line of
+// game code in exactly that environment).
+const browser = await chromium.launch({ headless: !HEADED }).catch(async (err) => {
+  const { existsSync } = await import('node:fs');
+  const fallback = process.env.CHROMIUM_PATH || '/opt/pw-browsers/chromium';
+  if (!existsSync(fallback)) throw err;
+  return chromium.launch({ headless: !HEADED, executablePath: fallback });
+});
 
 console.log(`playthrough: seed ${SEED}, ${ROUTE.length} directives, target: the Essence of Tidewash Grotto\n`);
 

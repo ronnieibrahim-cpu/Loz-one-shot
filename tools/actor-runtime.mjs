@@ -736,12 +736,17 @@ export async function installRuntime() {
    * one, where it is readable, rather than hiding inside the verb.
    */
   // STATUS: THIS VERB FIGHTS AND DOES NOT YET WIN. It finds the boss, stays in
-  // the arena, waits out the shell and lands real hits — Gohmaraq measured from
-  // 24 hp to 18 — but the trade is about one point of damage per five quarter
-  // hearts, and a boss has 24 to 80 hp. It is committed because the scaffolding
-  // is right and the two traps it already closed are expensive to rediscover;
-  // it is NOT referenced by tools/playthrough-route.mjs, because a route step
-  // that cannot finish is worse than one that is missing.
+  // the arena, waits out the shell, chains swings through a landed hit's own
+  // invulnerability window, and lands real hits — Gohmaraq measured in REAL
+  // combat (12 quarter-hearts, no god mode, seed 20260806) from 24 hp to 14,
+  // five hits landed, the player surviving to its last half-heart before a
+  // final graze. The melee trade is close to breakeven; what still kills a
+  // 3-heart player is ranged chip damage nobody is trying to dodge. See
+  // docs/NEXT-SESSION.md's boss-verb section for the measurement and what's
+  // still open. It is committed because the scaffolding is right and the
+  // traps it already closed are expensive to rediscover; it is NOT referenced
+  // by tools/playthrough-route.mjs, because a route step that cannot reliably
+  // finish is worse than one that is missing.
   function* dBoss(maxF) {
     const g = window.__game;
     for (let i = 0; i < 300 && !g.boss; i++) yield 0;
@@ -752,7 +757,23 @@ export async function installRuntime() {
     // and the first cut of this verb held the stick toward the boss while the
     // eye was open — three touches and a new game does not have a fourth.
     const NEAR = 18, BACKOFF = 30;
+    // CLAUDE.md: diagonal movement is not normalised, full speed both axes —
+    // so a single-axis chase leaves real ground speed on the table. Measured
+    // directly: closing on the far side of a knockback with one axis at a
+    // time closed the gap at roughly half the rate a diagonal one does, which
+    // is the difference between reaching swing range inside an invuln window
+    // and not.
+    const DIAG_SLACK = 3;
+    const towardDiag = (ddx, ddy) => {
+      let m = 0;
+      if (Math.abs(ddx) > DIAG_SLACK) m |= (ddx > 0 ? BIT.right : BIT.left);
+      if (Math.abs(ddy) > DIAG_SLACK) m |= (ddy > 0 ? BIT.down : BIT.up);
+      return m;
+    };
     const EDGE = 12;
+    // Frames of invuln to leave unspent as a retreat allowance — see the
+    // comment on RETREAT_MARGIN's use, below.
+    const RETREAT_MARGIN = 20;
     // Every mask goes through the fence. A boss arena has exits, and leaving
     // one wipes the room's entities — the boss with them. That reads exactly
     // like a kill (no boss, full health) and is a retreat; it is why this verb
@@ -783,10 +804,46 @@ export async function installRuntime() {
       const backPerp = axisX ? (dy > 0 ? BIT.up : BIT.down) : (dx > 0 ? BIT.left : BIT.right);
 
       if (b.weakOpen) {
-        // Invulnerability frames are the only free hits in this game, so if we
-        // are still flashing from the last touch, commit regardless of range.
-        if (adx + ady > 64 && !(p.invuln > 0)) { yield fence(backPerp); f++; continue; }
-        if (adx + ady > NEAR + 6) { yield fence(toward); f++; continue; }
+        // Invulnerability frames are the only free hits in this game. A touch
+        // costs a quarter of a new game's hearts and buys PLAYER_INVULN_FRAMES
+        // (46f) of contact immunity, minus the 12f knockback lock that opens
+        // it — call it 34 usable frames, enough for two 14f swings. The first
+        // cut of this verb spent that window on one swing and a mandatory
+        // 30-frame retreat, so a touch that had already been paid for went
+        // half-used.
+        //
+        // RETREAT_MARGIN is the trap in doing better: invuln counts down
+        // whether or not it is spent, so chaining swings until it hits zero
+        // leaves the player adjacent to the boss at the exact frame contact
+        // damage comes back live — a second touch for free, immediately. Bank
+        // enough invuln to clear to a safe range before it lapses instead.
+        if (p.invuln > RETREAT_MARGIN && p.hurtTime === 0) {
+          const dx2 = b.cx - p.cx, dy2 = b.cy - p.cy;
+          const ax2 = Math.abs(dx2), ay2 = Math.abs(dy2);
+          const toward2 = towardDiag(dx2, dy2);
+          if (ax2 + ay2 > NEAR + 6) { yield fence(toward2); f++; continue; }
+          const faceOnly = ax2 >= ay2 ? (dx2 > 0 ? BIT.right : BIT.left) : (dy2 > 0 ? BIT.down : BIT.up);
+          yield fence(faceOnly); f++;
+          yield fence(faceOnly | sword()); f++;
+          continue;
+        }
+        if (p.invuln > 0 && p.hurtTime === 0) {
+          // Spending down the banked margin: break contact and hold clear
+          // until invuln itself runs out, then re-approach it as a stranger.
+          const dx2 = b.cx - p.cx, dy2 = b.cy - p.cy;
+          const axisX2 = Math.abs(dx2) > Math.abs(dy2);
+          const backAlong2 = axisX2 ? (dx2 > 0 ? BIT.left : BIT.right) : (dy2 > 0 ? BIT.up : BIT.down);
+          const backPerp2 = axisX2 ? (dy2 > 0 ? BIT.up : BIT.down) : (dx2 > 0 ? BIT.left : BIT.right);
+          yield fence(backAlong2 | backPerp2); f++;
+          continue;
+        }
+        // No invuln banked: close the distance and take the shot. Retreating
+        // first because the eye-open range READS as far is what pinned this
+        // verb against a room wall for an entire fight, measured directly —
+        // Gohmaraq's phase-1 tell is a stationary spray, not a charge closing
+        // on us, so there is nothing here worth backing away from before the
+        // swing.
+        if (adx + ady > NEAR + 6) { yield fence(towardDiag(dx, dy)); f++; continue; }
         // In range: face it, swing, then get out before it closes.
         yield fence(toward); f++;
         yield fence(toward | sword()); f++;

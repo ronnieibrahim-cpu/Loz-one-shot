@@ -1,4 +1,115 @@
-## iPad publishing (this session)
+## The boss verb now chains hits and actually lands them — Gohmaraq measured at 10/24, real combat, not god mode (this session)
+
+**Job 1 from the board below** was "a boss-fight verb that WINS... prove it on
+Gohmaraq at THREE hearts." It does not win yet. What changed is measured, not
+estimated, and the measurement is real: a fresh `d1` boss fight, sword L1,
+**12 quarter-hearts of real health (3 hearts), no god mode**, went from
+landing one sword hit (2 of 24 hp) before dying to landing **five hits — 10 of
+24 hp — and surviving to the last half-heart** before a final graze killed it.
+Reproducible: seed 20260806, deterministic, same result on repeat runs.
+
+**What was wrong, found by instrumenting every `hurt()` call rather than
+guessing from the outside.** `dBoss` (`tools/actor-runtime.mjs`) had two bugs,
+both invisible from god-mode testing because god mode makes them harmless:
+
+1. **The eye-open "if far, back off" check pinned the verb against a wall for
+   an entire fight.** Gohmaraq's phase-1 tell is a stationary spray, not a
+   pursuit — there is nothing to back away from — but the verb treated "the
+   eye is open and the boss is far" as a reason to retreat regardless, and
+   because the boss patrols the room while the player retreats toward a
+   corner, the two conditions can hold simultaneously forever. Measured
+   directly: an entire recorded fight with the player standing still at a
+   room-edge clamp, taking periodic ranged chip damage, landing zero hits.
+2. **A landed hit's invulnerability window (`PLAYER_INVULN_FRAMES`, 46f, minus
+   the 12f knockback lock that opens it — 34f usable) was spent on one swing
+   and a mandatory 30-frame retreat.** The touch that bought the window is the
+   same cost either way, so ending it with 20+ frames unspent is a discount
+   the boss doesn't offer twice. `dBoss` now chains swings for as long as
+   invuln lasts, holding back `RETREAT_MARGIN` (20f) as a reserve to clear
+   contact range before it lapses — measured empirically: spending the whole
+   window (`RETREAT_MARGIN` near 0) walks the player back into contact the
+   instant invuln expires, a free hit for the boss; too large a margin
+   (tried 26) gives up hits without buying more safety. 20 is measured, not
+   derived — a different boss's geometry may want a different number.
+3. **Diagonal movement was left on the table mid-chase.** CLAUDE.md is
+   explicit that diagonal is full speed on both axes, not normalised, but the
+   chase-and-retreat code picked a single dominant axis per frame. Closing a
+   knockback-opened gap on one axis at a time measured at roughly half the
+   rate a diagonal close does — the difference, directly, between reaching
+   swing range inside the invuln window and not. `towardDiag` fixes this for
+   both the openers-first approach and the invuln-chase.
+
+**This is a generic engine-level fix, not a Gohmaraq special case** — deliberately, matching the file's own stated philosophy ("this does NOT encode
+any single boss's timings"). It changes nothing about god mode's own
+numbers (`check-bosses.mjs` is still 13/13, and every boss's godmode damage
+tally is byte-identical to before this session's edit — godmode's bottleneck
+turns out to be a different thing entirely, see below) — it only changes what
+happens when contact damage is real.
+
+**What is STILL open, measured rather than assumed:**
+
+- The final death was a ranged graze at 0.5 hearts remaining, not a melee
+  error — at that health total, literally any unavoidable chip damage is
+  lethal, and Gohmaraq's periodic spray is not currently dodged at all, only
+  out-ranged by luck of position.
+- Even with unlimited aggression (god mode pins `p.invuln` at 600 every
+  frame, so the checker's godmode run is ALWAYS in the free-chase branch,
+  never retreating), Gohmaraq only takes 10/24 hp in a 9000-frame (150s)
+  budget — identical to the real-combat tally, which says the godmode
+  ceiling isn't contact-avoidance at all, it's **catching a patrolling boss
+  whose phase-3 speed (1.0 px/f) matches the player's own WALK_SPEED**: once
+  aligned on one axis, a same-speed target that isn't turning back toward you
+  is never caught, only waited out. That's a distinct problem from the one
+  this session fixed and is worth its own measurement before assuming a fix.
+- Only Gohmaraq (D1) was measured in real combat. `check-bosses.mjs`'s godmode
+  numbers for D4 Wyverna (20/44) and D5 Rootmaw (20/52) are unchanged by this
+  session's edit — same reasoning: the retreat-margin/diagonal fixes only
+  bite when contact is costly, and godmode never lets contact cost anything.
+  D2, D3, D6 still take 0 damage even in godmode — D3's is the already-diagnosed
+  swimming-blocks-swinging finding (see `check-bosses.mjs`'s own comment); D2
+  and D6 are unmeasured.
+- **`dBoss` is still not referenced by `tools/playthrough-route.mjs`.** A
+  route step that cannot reliably finish is worse than a missing one, and it
+  still cannot reliably finish — five hits of twenty-four is progress, not a
+  win. Do not wire it in until a fresh-game 3-heart Gohmaraq fight actually
+  reaches 0 hp.
+
+**Also fixed, unrelated but found on the way and blocking verification:**
+`replay.mjs`, `walk-dungeons.mjs`, `solve-switches.mjs`, `check-gates.mjs` and
+`check-playthrough.mjs` were missing the `CHROMIUM_PATH` fallback that
+`test.mjs`/`check-bosses.mjs`/`check-build.mjs` already carry, and died on
+launch in this sandbox before loading a line of game code — flagged as "a
+good first job" two boards down and left undone until now. All five now carry
+the same fallback (copied verbatim from `test.mjs`'s pattern) and all five run
+green in this environment: `replay` 51/51, `walk-dungeons` 23/23,
+`solve-switches` 9/9 rooms, `check-gates` 26/26, `check-playthrough` 19/19 —
+all unchanged from their last recorded numbers, confirming this session's
+`dBoss` edit touches nothing any of them exercise.
+
+**Next session, in order:**
+
+1. **Dodge the periodic ranged attacks.** The melee trade is now close to
+   breakeven (10 hp dealt for 10 qh taken, in a fight that needs 12 hits for
+   24 hp); the thing that actually kills a 3-heart player is chip damage
+   nobody is trying to avoid. A shot has a position and a velocity readable
+   the same frame it spawns — a dodge verb that reads `game.entities` for
+   live projectiles and sidesteps their line, rather than reacting only to
+   the boss's own position, is the next lever.
+2. **Solve the same-speed patrol problem** (phase 3 speed 1.0 == WALK_SPEED)
+   separately from the contact problem this session fixed — waiting for a
+   patrol reversal rather than a straight chase may be the honest answer, and
+   it wants its own measurement before it's assumed.
+3. Once Gohmaraq is a measured win at 3 hearts, wire `dBoss` into
+   `playthrough-route.mjs` past `d1/0,3,2`, and only then look at the other
+   five bosses — Gloomtide's swimming-blocks-swinging finding in particular
+   needs a real tactic (sink with the Cleats first), not this generic fix.
+4. The Boss Key / third-key pass behind the Clawcrab door (job 2 on the older
+   board below) and the other five dungeons' routes are both still undone and
+   both still blocked on job 1 actually finishing.
+
+---
+
+## iPad publishing (previous session)
 
 Shipped: `.github/workflows/deploy-pages.yml` (builds, runs
 `check-build.mjs` as a hard gate, publishes `dist/oracle-of-tides.html` as
