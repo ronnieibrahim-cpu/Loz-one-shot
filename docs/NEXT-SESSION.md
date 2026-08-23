@@ -1,4 +1,91 @@
-## The two free contact hits are gone — Gohmaraq reaches phase 2 for the first time, and phase 2 is a new dead end (this session)
+## Phase 2's charge-chain lockout: three fixes tried, all reverted, and the real reason it's hard (this session)
+
+**Zero progress on the number, and that number is worth reporting precisely
+so nobody re-spends this budget re-discovering it.** Picked up job 1 from the
+board below — "the phase 2 charge-chain lockout is now the single biggest
+lever" — and tried three targeted fixes, each measured against the same seed
+(20260806, 12 quarter-hearts, no god mode) the board already uses. All three
+left the fight EXACTLY where it was: 5 hits landed, 10/24 hp dealt, dead at
+12 hp lost. None regressed it either — this is not the "landed fewer hits"
+shape that sank earlier attempts — but "no measured change" is not a keep,
+per this file's own standard two sections down, so all three are reverted
+and `tools/actor-runtime.mjs` is back to last session's committed state.
+
+1. **A cooldown after a charge ends, retreating away from the boss on both
+   axes before re-approaching** (the plan named at the end of last session).
+   Rationale: `charge()`'s own re-trigger condition
+   (src/game/enemy.js:818, "aligned within tol AND within range") is exactly
+   what closing straight back toward the boss recreates. Result: 5 hits, 10
+   hp, unchanged — AND it walked the player into the SAME wall-cornering trap
+   the ranged-dodge attempt (two sessions ago) already found and documented:
+   retreating "away from the boss" with no regard for the arena's walls
+   pinned the player against one, at which point the boss could charge the
+   one open axis forever (`dx` logged as a literal constant 14 for 500+
+   frames straight — the exact alignment tolerance, never breaking).
+2. **The same cooldown, retreating toward the room's centre instead** (reusing
+   the "shelled: seek the middle" logic the verb already has for the no-target
+   case). Fixed the wall-cornering — `dx`/`dy` varied normally afterward, no
+   more pinning — but STILL 5 hits, 10 hp, unchanged. The boss's own charge
+   RANGE (130px, `range: 130` in src/data/bosses.js) is roughly six times the
+   verb's swing/contact distance (`CONTACT_CLEAR`, 8px). Any straight-line or
+   diagonal approach from outside 130px passes through a moment where one axis
+   is within the 14px alignment tolerance while the other is still tens of
+   pixels away — well inside charge range, nowhere near swing range — and
+   `charge()` only needs ONE such frame to re-trigger. Retreating to the
+   centre first does not fix this; it only resets the clock before the same
+   geometry repeats on the next approach.
+3. **A free swing the instant a charge ends, if the boss is already in
+   contact range** (on the theory that a charge that dashes AT the player
+   often ends adjacent to them, frozen in its own recovery `stun` — a safe,
+   free hit that doesn't need to wait out any cooldown). Result: 5 hits, 10
+   hp, unchanged AGAIN — the condition (`b.stun > 0 && nearContact(b, p)`)
+   apparently never actually holds on this seed's charges; Gohmaraq's dashes
+   stop short of contact more often than they land, at least here.
+
+**The generalisable finding, worth more than any one of the three patches:**
+charge RANGE is not swing RANGE, and the gap between them (130px vs. ~8-20px
+here) is large enough that a boss with this attack can re-trigger a charge
+from well outside the distance any dodge-then-approach sequence can close in
+one uninterrupted pass. Beating this may need a genuinely different shape of
+approach — not closing straight or diagonally, but along a path that only
+crosses the boss's row/column once, at the very end, at already-close range —
+rather than another tweak to when the verb retreats. That is a real geometry
+problem, not a tuning knob, and deserves being treated as one before another
+session spends a cycle guessing at cooldown numbers.
+
+**What did NOT need re-discovering, because it's carried forward from last
+session's commit:** the `nearContact()` fix (asking `b.rect()`/`p.rect()`
+instead of a Manhattan-distance guess) is still in place and still doing its
+job — no free contact damage in this session's runs either. `check-bosses.mjs`
+untouched, 13/13; `tools/test.mjs` untouched, 59/59 (neither was re-run
+against reverted code changes since the net diff this session is zero).
+
+**Next session, in order:**
+
+1. **Design a genuinely different approach path**, not another retreat
+   variant. One concrete idea worth trying: approach along whichever axis is
+   currently NOT aligned first (closing the far axis while holding the near
+   one's distance roughly constant with small corrective taps), so the
+   player only crosses into alignment on the second axis once already inside
+   swing range on the first. Untested — the point is this needs a different
+   SHAPE of solution, not a fourth number to tune on the existing shape.
+2. Do not re-try: a post-charge retreat cooldown (either away-from-boss or
+   toward-centre), or a stun-gated free swing. All three are measured, both
+   in this session and the one before it, and none moved hits landed.
+3. The same-speed phase-3 patrol problem (speed 1.0 == WALK_SPEED) is still
+   unmeasured in real combat — this session's runs still died in phase 2,
+   short of the ≤30% hp threshold that opens phase 3.
+4. Once Gohmaraq is a measured win at 3 hearts, wire `dBoss` into
+   `playthrough-route.mjs` past `d1/0,3,2`, and only then look at the other
+   five bosses — Gloomtide's swimming-blocks-swinging finding in particular
+   needs a real tactic (sink with the Cleats first), not this generic verb.
+5. The Boss Key / third-key pass behind the Clawcrab door and the other five
+   dungeons' routes are both still undone and both still blocked on job 1
+   actually finishing.
+
+---
+
+## The two free contact hits are gone — Gohmaraq reaches phase 2 for the first time, and phase 2 is a new dead end (previous session)
 
 **Still not a win, but the failure mode moved, and moving it uncovered a
 problem nothing had ever measured because nothing had survived long enough
