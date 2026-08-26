@@ -833,7 +833,21 @@ export async function installRuntime() {
         const perp = (b.dir === 'up' || b.dir === 'down')
           ? (chargeSide > 0 ? BIT.right : BIT.left)
           : (chargeSide > 0 ? BIT.down : BIT.up);
-        yield fence(perp); f++; continue;
+        // Also retreat along the DASH's own axis, away from the boss's
+        // current position. Free (diagonal isn't speed-limited here, CLAUDE.
+        // md), and it fixes a bug the perpendicular dodge alone can't:
+        // frame-logged, a vertical dash landed at a y the player happened to
+        // already be standing at, and — because the dodge only ever moves
+        // the PERPENDICULAR axis — that row alignment sat untouched through
+        // the entire recovery window and re-triggered a fresh (this time
+        // horizontal) charge the instant recovery ended. Back to back, with
+        // no window to close in. `aligned()` (src/game/enemy.js) checks
+        // ROW-or-COLUMN, either one; a dodge that only ever clears the
+        // dash's axis leaves the other one exactly where chance left it.
+        const along = (b.dir === 'up' || b.dir === 'down')
+          ? (p.cy >= b.cy ? BIT.down : BIT.up)
+          : (p.cx >= b.cx ? BIT.right : BIT.left);
+        yield fence(perp | along); f++; continue;
       }
       chargeSide = 0;
       const dx = b.cx - p.cx, dy = b.cy - p.cy;

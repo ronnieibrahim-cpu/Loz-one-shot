@@ -1,4 +1,83 @@
-## Contact damage during the approach is fixed — Gohmaraq survives 2.6x longer, but the fight stalls on a charge lockout in phase 2 (this session)
+## The charge-dodge only cleared one axis; fixed, survival up again, but the dash itself can still outrun and graze it (this session)
+
+**Continuation of the same session's job 1, same seed, same fight.** The
+previous entry in this file (below) fixed unpaid contact during the
+"closing the distance" walk. With that gone, the fight ran long enough to
+show a SECOND, distinct bug, found the same way: frame-exact logging, not
+guessing.
+
+**The bug: `dBoss`'s charge dodge only ever clears the axis PERPENDICULAR to
+the dash, and leaves the other axis exactly where chance left it.** A charge
+travels along one axis (`b.dir`); the dodge sidesteps the other. Logged
+directly: a vertical dash (boss's y running 40 -> 97) ended with the boss's
+y landing on the exact y the player already happened to occupy — the dodge,
+which only ever presses the perpendicular (x) bit, never touched y at all,
+so that row-alignment (`dy=0`) sat there UNCHANGED through the entire 24-frame
+recovery window and re-triggered a fresh (this time horizontal) charge the
+instant recovery ended. Back to back, with `dBoss` never getting a clean
+window to close in — this is what the previous entry's "phase-2 charge
+lockout" finding actually was.
+
+**Fix:** the charge-dodge branch in `dBoss` now also presses a movement bit
+along the DASH's own axis, away from the boss's current position — free,
+since CLAUDE.md's diagonal-movement rule means it costs nothing on top of
+the existing perpendicular dodge. This directly targets the residual
+alignment: by the time a dash ends, the player has also moved on the axis
+the dash travels along, so it can't land exactly back on the player's
+existing coordinate by chance the way the logged case did.
+
+**Measured, same fight (seed 20260806, 12 quarter-hearts, no god mode):**
+death moved from frame ~1485 (previous fix alone) to frame **~1740** — same
+5 sword hits landed (24 -> 14 hp, unchanged, boss still stalls there), no
+regression. `check-bosses.mjs` 13/13 (godmode routes through the OTHER
+charge-immune branch, `p.invuln` pinned at 600, so this code path is
+untouched in that checker — expected and confirmed). `tools/test.mjs`
+59/59.
+
+**Still not a win, and a THIRD distinct issue surfaced, not yet fixed:**
+logging frames 850-1050 of this same run caught a genuine contact hit
+(hearts 6 -> 4, frame ~1013) landing DURING an active charge, not during
+approach or recovery. The dash itself (1.9 px/f) can be faster than the
+combined dodge-plus-flee motion when the player happens to be fleeing in
+roughly the same direction the dash is travelling (observed: `b.cx` crossed
+`p.cx` mid-dash — the dash caught up and passed clean through the player's
+x-coordinate while the player was still fleeing that way). This is a
+different failure mode from both fixes above: it isn't about residual
+alignment or unpaid approach contact, it's the dodge's own perpendicular
+clearance being insufficient at dash speed under certain relative
+geometries (likely when the player starts the dodge already near a wall —
+the sample logged shows `p.y` pinned near the room's bottom edge for
+several frames right before this hit, which may have limited how much
+perpendicular clearance the dodge could actually take). **Not yet
+diagnosed to a root cause** — this needs the same frame-exact treatment
+(log `chargeSide`, the actual perpendicular bit pressed, and the fence's
+clamp state every frame of one such hit) before attempting a fix; a blind
+guess here risks repeating the wall-cornering trap the reverted
+ranged-dodge attempt hit twice already (see two sessions ago's entry,
+further down this file).
+
+**Next session, in order:**
+
+1. **Diagnose the mid-charge graze.** Frame-exact log (not sampled) around
+   one such hit: `chargeSide`, `b.dir`, the actual perpendicular+along bits
+   pressed, `p.x/y` vs the fence's `EDGE` clamp, and `b.cx/cy` vs `p.cx/cy`
+   every single frame from charge start to the hit. The wall-proximity
+   coincidence noted above is a lead, not a conclusion.
+2. Once that's fixed (or ruled out as rare/low-cost), re-measure the full
+   fight — the boss has stalled at 14/24 hp since frame 645 in every run
+   this session; whether more sword hits land once the charge chaos settles
+   is still unmeasured.
+3. Once Gohmaraq is a measured win at 3 hearts, wire `dBoss` into
+   `playthrough-route.mjs` past `d1/0,3,2`, and only then look at the other
+   five bosses — Gloomtide's swimming-blocks-swinging finding in particular
+   needs a real tactic (sink with the Cleats first), not this generic verb.
+4. The Boss Key / third-key pass behind the Clawcrab door and the other five
+   dungeons' routes are both still undone and both still blocked on job 1
+   actually finishing.
+
+---
+
+## Contact damage during the approach is fixed — Gohmaraq survives 2.6x longer, but the fight stalls on a charge lockout in phase 2 (earlier this same session)
 
 **Still not a win, but a real, verified fix landed** — not a comment, this
 time. Last session's frame log found that the actual damage source in a real
