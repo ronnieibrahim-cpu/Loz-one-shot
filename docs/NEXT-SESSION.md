@@ -1,4 +1,117 @@
-## Charge dodge lands, ranged dodge doesn't — the boss verb, continued (this session)
+## Contact damage during the approach is GONE — a real geometry bug, not a tuning knob (this session)
+
+**Still not a win, and the boss verb still is not wired into the route.** But
+this session found and fixed an actual bug in `dBoss` (`tools/actor-
+runtime.mjs`), not another tuning attempt, and it changes what kills the
+player in real combat. Measured on the same fixture every prior session has
+used — 12 quarter-hearts (3 hearts), no god mode, seed 20260806 — with a new
+scratch harness that hooks `Player.prototype.takeDamage` and
+`Boss.prototype.hurt` directly (not polling `boss.hp`/`progress.hearts` every
+few frames, which undercounts two hits that land in the same poll window):
+**baseline before this session's edit measured 5 hits landed (24 -> 14 hp,
+unchanged from every prior session's number), 4 hits taken (2+4+4+2 = 12qh:
+one ranged graze, two heavy CONTACT touches 51 frames apart, one final ranged
+graze), dead at frame 796.**
+
+**The bug: the "close the distance and swing" trigger compares `adx + ady`
+(Manhattan/L1 sum) to a threshold, but contact is a RECTANGLE overlap on each
+axis independently** — roughly `|dx| < 19` and `|dy| < 15` for Gohmaraq
+(half the player's hitbox plus half the boss's, both roughly centred on
+`cx`/`cy` — read straight out of `Entity.rect()`/`overlaps()` in
+`src/game/entity.js` and the two hb's in `src/data/bosses.js`/default
+`Entity`, not guessed). An L1 sum of 24 can be split very unevenly between
+the axes — e.g. `(15, 9)` — and BOTH of those numbers can already be inside
+the contact box even though their sum still reads "safe" to the check. Both
+of the baseline's two heavy contact hits (frames 446 and 497) landed exactly
+on an approach the old check called safe the frame before contact happened —
+confirmed with a frame-by-frame trace (`d`, `weakOpen`, `stun`, `invuln` every
+single frame around both hits), not inferred.
+
+**The fix is one line**: the "no invuln banked, closing distance" trigger now
+reads `Math.max(adx, ady) > NEAR + 6` instead of `adx + ady > NEAR + 6` —
+requiring BOTH axes to be within the threshold before it stops approaching
+and swings, which is a much closer match to the box the game actually
+collides against. This is not a projectile model and does not have the
+reverted ranged-dodge attempt's failure modes (no velocity math, no
+per-frame side-latching): it is a correctness fix to a distance check that
+was already there, using geometry the engine already exposes.
+
+**Measured effect, precise (same hooked harness, before/after):**
+
+| | before | after |
+|---|---|---|
+| hits landed on boss | 5 (24 -> 14 hp) | 5 (24 -> 14 hp) — **identical**, same frames within ~15f |
+| hits taken | 4 (12qh: 2 ranged + **2 contact**) | 6 (12qh: **all 6 ranged**, zero contact) |
+| frame of death | 796 | 1560 |
+
+Landing the exact same 5 hits, at the exact same point in the fight, while
+taking ZERO contact damage instead of two 4qh touches, is a strict
+improvement by CLAUDE.md's own standard ("shipping a safety feature that
+measurably lands fewer hits is worse than not having it" — this one lands the
+SAME hits) and `check-bosses.mjs` is unaffected (13/13, every number
+byte-identical to its documented baseline) because god mode pins
+`p.invuln` at 600, permanently above `RETREAT_MARGIN`, so a god-mode run never
+reaches the branch this session touched at all.
+
+**What the extra ~760 frames of survival exposed, and it is the SAME problem
+this file already flagged as unmeasured.** The old verb died to contact
+before ever surviving long enough to see phase 2 in real combat. The fixed
+verb survives into it — and then never lands a 6th hit. Traced frame-by-frame
+(`trace-gohmaraq.mjs`, not committed): from ~frame 640 on, `b.charging` is
+true a large fraction of the time (phase 2's charge, `speed: 1.9`, firing
+roughly every 130 frames) and each charge flings the distance back out to
+40-90+ px; the dodge-a-charge logic (last session) handles the charge itself
+safely, but nothing in the verb tries to CLOSE distance faster after one ends,
+so between two charges there is rarely enough clear time to walk all the way
+back into a tightened `Math.max`-based range before the next one fires. The
+player survives the rest of the fight on chip damage from the recurring slam
+spray alone (2qh roughly every 240 frames) until the quarter-hearts run out.
+This is exactly the "same-speed patrol / phase-3 speed matches WALK_SPEED"
+problem this file's board has flagged as unmeasured for two sessions running
+— now it IS measured, in real combat, and it is the next real blocker, not a
+hypothesis from a god-mode run.
+
+**Tried and reverted again, briefly, and it is worth knowing so nobody
+re-spends the time:** reading `b.stun` (the freeze `windUp` sets before every
+slam/lash/volley fires, shared with the charge tell) and holding back
+whenever it is nonzero, on the theory named in last session's board ("the eye
+stays open almost the whole fight, so don't press every opening"). Measured
+byte-identical to baseline in every number (5 landed, same 4 hits taken, same
+death frame, down to the frame) — instrumented with a counter on the branch
+itself, which fired 0 times gated one way and 28 times gated another, and
+BOTH produced the identical outcome. The reason, traced: the frames where
+`b.stun > 0` overlap `weakOpen` plenty (65 of 87 stun-frames in one run), but
+essentially never overlap "already in melee range with no invuln banked" —
+by the time the verb is close enough to swing, the tell that mattered has
+already resolved one way or the other. It is not disqualifying of the idea
+forever, but it is not where this fight's actual damage comes from, and the
+real culprits (contact-range overshoot, above) were sitting in the same
+instrumentation run once the takeDamage hook was added.
+
+**Next session, in order:**
+
+1. **Close distance faster, or hold ground better, between two phase-2/3
+   charges.** This is the new measured blocker, replacing "reduce chip
+   damage" as the most valuable single lever — the player now survives to see
+   it. Candidates worth trying, per the reverted-attempts list above:
+   position relative to the room's open space rather than purely toward the
+   boss (so a charge doesn't reset as much distance), or accept fewer,
+   better-timed approaches instead of always beelining the shortest path.
+2. The phase-3 same-speed patrol question (this file's board, prior two
+   sessions) is now partially answered — the charge is the bigger interrupter
+   in the measured run, not the plain patrol — but phase 3 itself (speed 1.0,
+   spray every 210f) was never reached in this run either. Still open.
+3. Once Gohmaraq is a measured win at 3 hearts, wire `dBoss` into
+   `playthrough-route.mjs` past `d1/0,3,2`, and only then look at the other
+   five bosses — Gloomtide's swimming-blocks-swinging finding in particular
+   needs a real tactic (sink with the Cleats first), not this generic verb.
+4. The Boss Key / third-key pass behind the Clawcrab door and the other five
+   dungeons' routes are both still undone and both still blocked on job 1
+   actually finishing.
+
+---
+
+## Charge dodge lands, ranged dodge doesn't — the boss verb, continued (previous session)
 
 **Still not a win.** Gohmaraq measured in real combat (12 quarter-hearts, no
 god mode, seed 20260806): five hits landed (24 -> 14 hp), same as last

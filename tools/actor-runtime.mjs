@@ -865,7 +865,17 @@ export async function installRuntime() {
         // Gohmaraq's phase-1 tell is a stationary spray, not a charge closing
         // on us, so there is nothing here worth backing away from before the
         // swing.
-        if (adx + ady > NEAR + 6) { yield fence(towardDiag(dx, dy)); f++; continue; }
+        //
+        // The trigger below reads Math.max(adx, ady), not adx+ady. Contact is
+        // a RECTANGLE overlap on both axes (roughly |dx|<19, |dy|<15 for this
+        // boss — half the player's hb plus half the boss's), so an L1 sum can
+        // read "still 24 away" while one axis is already inside the contact
+        // box and the other is doing all the padding — measured directly:
+        // both of a fresh game's two contact touches (frames 446 and 497,
+        // seed 20260806) landed exactly on an approach the L1 check still
+        // called safe. Max-of-axes is a closer match to the box the game
+        // actually collides against.
+        if (Math.max(adx, ady) > NEAR + 6) { yield fence(towardDiag(dx, dy)); f++; continue; }
         // In range: face it, swing, then get out before it closes.
         yield fence(toward); f++;
         yield fence(toward | sword()); f++;
