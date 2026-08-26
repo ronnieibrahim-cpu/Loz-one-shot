@@ -865,6 +865,15 @@ export async function installRuntime() {
         // Gohmaraq's phase-1 tell is a stationary spray, not a charge closing
         // on us, so there is nothing here worth backing away from before the
         // swing.
+        //
+        // A "don't chase a distant eye-open window, wait for the boss to
+        // patrol close instead" gate (hold room centre past ~90px) was tried
+        // here and measured BYTE-IDENTICAL to not having it — Gohmaraq's
+        // arena is small enough, and the eye stays open long enough, that the
+        // gate essentially never triggers in the room that matters. Reverted
+        // rather than kept as unproven complexity; see docs/NEXT-SESSION.md
+        // for the frame-by-frame damage log this session actually measured
+        // (it says the killer is CONTACT damage, not ranged chip).
         if (adx + ady > NEAR + 6) { yield fence(towardDiag(dx, dy)); f++; continue; }
         // In range: face it, swing, then get out before it closes.
         yield fence(toward); f++;

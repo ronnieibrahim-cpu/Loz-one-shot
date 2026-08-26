@@ -1,4 +1,87 @@
-## Charge dodge lands, ranged dodge doesn't — the boss verb, continued (this session)
+## The eye-open gate was a dead end; the real damage source is CONTACT, not the ranged spray (this session)
+
+**Still not a win, and still no functional change shipped** — `tools/actor-runtime.mjs`
+carries one new comment and is otherwise byte-identical to last session; see
+below for why the change it documents was reverted rather than kept.
+
+**Tried: don't chase a distant eye-open window, wait for the boss to patrol
+close instead.** This was next-session job 1's suggested cheap win ("Gohmaraq's
+eye stays open almost the whole fight at LOW tide, so the verb doesn't have to
+press every opening if a fresh one is coming anyway"). Implemented as an
+`ENGAGE_MAX` gate (90px) in the "no invuln banked" branch of `dBoss`: past that
+distance, hold the room's centre (the same wait the `shelled` branch already
+does) instead of closing in. **Measured BYTE-IDENTICAL to not having it** — a
+fresh real-combat run (12 quarter-hearts, no god mode, seed 20260806, same
+setup as `check-bosses.mjs`'s D1 fight) landed the same 5 sword hits (24 -> 14
+hp) and died at the same frame, ±8. Gohmaraq's arena is small enough, and the
+eye stays open long enough, that the gate almost never triggers where it
+matters. Reverted — an unproven gate that changes nothing is still
+complexity, and CLAUDE.md's own standing rule here (see the reverted
+ranged-dodge attempt, next section) is not to keep one.
+
+**What the frame-by-frame damage log actually says, measured with a tighter
+harness (15-frame polling instead of check-bosses.mjs's 400, logging boss hp,
+player hearts, weakOpen, charging, both positions and player invuln at every
+sample — see the throwaway script pattern below if repeating this):**
+
+| frame | event | hearts/hp after | dist at sample | read |
+|---|---|---|---|---|
+| 315 | player hit | 10 (-2) | ~46px | ranged rock (dmg 2), boss far |
+| 420 | boss hit | 22 | — | first sword landed |
+| ~446 | player hit | 6 (-4) | ~24px (sampled +4f later) | **contact** (dmg 4) mid-chain |
+| 480 | boss hit | 20 | — | chained swing |
+| ~497 | player hit | 2 (-4) | ~22px (sampled +13f later) | **contact** (dmg 4) mid-chain |
+| 525-615 | boss hit x3 | 18, 16, 14 | — | more chained swings |
+| ~800 | player hit | 0 (-2, death) | ~74px | ranged rock (dmg 2), boss far |
+
+**This overturns last session's framing.** The fatal blow (frame ~800) is a
+ranged graze exactly as documented before, but it only costs half a heart —
+it is fatal only because the fight is already down to its last quarter-heart.
+The two hits that actually spend the fight's health (frames ~446 and ~497,
+4 quarter-hearts = one full heart each, half the total damage taken across
+the whole encounter) are **contact damage landed inside the chained-swing
+window** the RETREAT_MARGIN logic exists to prevent. Chasing the ranged spray
+(this session's reverted attempt, and last session's reverted per-shot dodge)
+was chasing the smaller of the two problems.
+
+**Working hypothesis for why RETREAT_MARGIN isn't preventing these, not yet
+verified:** the D1 boss room is small (~144x160px) and `fence()` zeroes any
+movement bit that would cross `EDGE` (12px) of a wall. `BACKOFF`/the banked-
+margin retreat push the player diagonally away at up to ~1.4 px/f, but a
+patrolling or repositioning boss can be moving toward the same corner at up
+to 0.85-1.0 px/f (more during a charge), and a corridor-width arena gives the
+retreat nowhere to go once the fence clamps one axis — exactly the
+wall-cornering failure mode the reverted ranged-dodge attempt hit from a
+different angle. **Not yet measured directly** — the frame log above shows
+position only at 15-frame sample points, not at the actual moment of
+contact, so this is a hypothesis to verify (log `b.cx/cy`, `p.cx/cy` and the
+fence's clamp state every single frame around frames 440-450 and 490-500 of
+this exact seed/setup) before trying a fix, not something to patch blind.
+
+**Next session, in order:**
+
+1. **Verify the cornering hypothesis with frame-exact logging** (not 15-frame
+   samples) around the two contact hits above, then fix the actual mechanism
+   — likely either giving the retreat a wall-aware fallback direction (slide
+   along the wall rather than pressing straight into it), or shrinking
+   `BACKOFF`/enlarging `RETREAT_MARGIN` so the chain ends before the retreat
+   needs more room than the arena has.
+2. Once contact damage during the chain is under control, the ranged graze
+   at low health becomes the tail risk worth revisiting — but it is provably
+   the smaller lever (half a heart of twelve), not the first one to pull.
+3. The same-speed patrol problem (phase 3 speed 1.0 == WALK_SPEED) is still
+   unmeasured in real combat, unchanged from prior sessions.
+4. Once Gohmaraq is a measured win at 3 hearts, wire `dBoss` into
+   `playthrough-route.mjs` past `d1/0,3,2`, and only then look at the other
+   five bosses — Gloomtide's swimming-blocks-swinging finding in particular
+   needs a real tactic (sink with the Cleats first), not this generic verb.
+5. The Boss Key / third-key pass behind the Clawcrab door and the other five
+   dungeons' routes are both still undone and both still blocked on job 1
+   actually finishing.
+
+---
+
+## Charge dodge lands, ranged dodge doesn't — the boss verb, continued (previous session)
 
 **Still not a win.** Gohmaraq measured in real combat (12 quarter-hearts, no
 god mode, seed 20260806): five hits landed (24 -> 14 hp), same as last
