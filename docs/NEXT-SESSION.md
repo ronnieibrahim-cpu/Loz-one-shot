@@ -1,4 +1,111 @@
-## Wasted movement during a charge is fixed and ruled out as the bottleneck — the real one is rhythm (this session)
+## Five hits is a WALL, not a slow race — proven with health and sword level, not guessed (this session)
+
+**The single most useful result of this session is negative, and it is
+decisive.** Every prior session (including the one right before this one)
+treated "the fight is close, keep tuning the approach" as the working
+hypothesis. This session tested that hypothesis directly, by removing the
+two variables it depends on, and it does not survive either test:
+
+**Health does not matter.** `node tools/measure-boss.mjs d1 <hearts>` at 12qh
+(3 hearts, the honest new-game number), 20qh (5 hearts) and 40qh (10 hearts)
+all land **exactly 5 hits, at the exact same frames (425, 463, 528, 575,
+631), boss stuck at 14/24 hp, and then NEVER land a 6th** — not "eventually,
+slowly," literally zero more landed hits across 4740 more frames (79 more
+seconds) at 10 hearts. If this were a slow-but-winnable race, more health
+would eventually let it finish; it doesn't move the needle AT ALL. This is
+the test that overturns last session's board, which speculated the fight
+might need more hearts than a new game brings to D1 — it does not, because
+more hearts changes nothing.
+
+**Sword level does not matter either, and shows WHY 5 is the ceiling.**
+Sword L2 (4hp/swing) lands exactly 3 hits before the same lock (24 hp ->
+12); L3 (6hp/swing) lands exactly 2 (24 -> 12). In every case the lock
+engages the instant boss hp crosses roughly 62% (14.88 of 24) — Gohmaraq's
+own phase-1-to-phase-2 threshold in `src/data/bosses.js` — regardless of how
+many swings it took to get there or how much health the player is carrying.
+**The lock is the phase-2 charge behaviour itself, not a resource shortfall
+on either side of the fight.**
+
+**Traced why, precisely** (`trace-gohmaraq.mjs`, not committed, same shape
+as last session's): in one 1000-frame window inside phase 2, Gohmaraq's
+`charge()` re-triggered **8 times**. The gap between one charge's recovery
+ending and the next one's tell starting is often only 25-50 frames — a
+maximally efficient diagonal approach only closes ~35-70px in that window,
+and post-charge gaps run 28-58px even with last session's clearance cap.
+The player is repeatedly caught within a few pixels of the swing threshold
+(distances of 25-30 were observed multiple times, just outside the 24px
+cutoff) when the next charge fires and resets progress. It is a genuine
+race the verb loses on point margins, over and over, in what behaves like a
+stable limit cycle rather than a slow convergence.
+
+**Four different movement-side fixes were tried this session to break that
+cycle, and ALL FOUR reproduce the identical 5-hits-then-lock result** (down
+to the same frames landed, in three of the four cases) — each is a real,
+defensible idea, each was measured with `tools/measure-boss.mjs d1 40` (the
+10-heart fixture, to give 4700+ frames of budget to prove "never" rather
+than "not yet"), and none of them moved the ceiling by even one hit:
+
+1. **A "dogleg" approach** that holds the smaller-offset axis fixed and
+   closes only the larger one, to avoid satisfying `aligned()` (either axis
+   within `charge()`'s `tol:14`) before getting close — on the theory that a
+   beeline approach self-triggers charges from far away. Reverted: charges
+   still fired just as often, because `patrol()` moves the boss along its
+   OWN axis independent of the player, so the boss's own motion crosses the
+   tolerance band on its own schedule regardless of what the player holds.
+2. **A tighter charge-recovery clearance** (`NEAR` instead of last session's
+   `NEAR+6`) — smaller peak gaps should mean less ground to make up.
+   Reverted: identical result.
+3. **Using the charge's frozen TELL (before the dash starts) as a free,
+   guaranteed-safe approach window** — `charge()` sets `e.stun` and
+   `e.charging` in the same frame, and `Boss.update` skips its own `ai()`
+   entirely while `stun > 0`, so the boss cannot move OR attack for the
+   whole tell. Closing distance freely during exactly that window, instead
+   of only once the dash starts, introduced zero new contact damage (the
+   geometry stayed safe) but changed nothing downstream. Reverted.
+4. **Widening the swing-acceptance threshold** from `NEAR+6` (24) to
+   `NEAR+12` (30), on the theory that the near-misses at 25-30px were real
+   swings the verb was refusing to take. Reverted: still exactly 5 hits (at
+   slightly different frames this time, since the wider net changes phase-1
+   timing too, but the SAME ceiling).
+
+**None of these are committed** — each was measured, ruled out, and reverted
+in the same session, the same discipline last session applied to the
+stun-tell idea. The two fixes that ARE committed (contact-geometry, two
+sessions ago; charge-clearance cap, last session) remain — both are real,
+proven-safe improvements on their own terms, they just are not this ceiling.
+
+**What this means for whoever picks this up next: stop tuning the chase.**
+Five parameter-level ideas across two sessions (last session's charge-dodge
+cap, plus this session's four) have now converged on the same wall. That is
+strong evidence the reactive per-frame chase-and-retreat STRATEGY has a
+structural ceiling against a boss whose phase-2 behaviour re-triggers this
+often, not that the next parameter will be the one that works. The honest
+options, in order of how much they change:
+
+1. **A qualitatively different tactic for phase 2**, not a tuned version of
+   the current one — e.g., stop chasing point-to-point entirely once
+   charges start and instead hold a position (room center, or wherever
+   gives the most fence-clear reaction room) and let the boss's own
+   patrol/charge pattern bring it into range, swinging opportunistically
+   rather than pursuing. This is a real strategy change, not a constant
+   tweak, and it has not been tried.
+2. **Reconsider Gohmaraq's phase-2 charge frequency itself** (`timer(e,
+   'slam', 130)` interacting with `charge()`'s own `aligned()`+`range:130`
+   retrigger, `src/data/bosses.js`) as a design question rather than an AI
+   question — this session's evidence says a competent, unhurried, patient
+   player-shaped verb still cannot get through it at ANY health total tried,
+   which is a claim about the fight's tuning, not about this verb's skill.
+3. Once Gohmaraq is a measured win at 3 hearts, wire `dBoss` into
+   `playthrough-route.mjs` past `d1/0,3,2`, and only then look at the other
+   five bosses — Gloomtide's swimming-blocks-swinging finding in particular
+   needs a real tactic (sink with the Cleats first), not this generic verb.
+4. The Boss Key / third-key pass behind the Clawcrab door and the other five
+   dungeons' routes are both still undone and both still blocked on job 1
+   actually finishing.
+
+---
+
+## Wasted movement during a charge is fixed and ruled out as the bottleneck — the real one is rhythm (previous session)
 
 **Job 1 from last session's board** was "close distance faster, or hold ground
 better, between two phase-2/3 charges" — the newly-measured blocker once
