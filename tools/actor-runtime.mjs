@@ -755,6 +755,27 @@ export async function installRuntime() {
     for (let i = 0; i < 300 && !g.boss; i++) yield 0;
     if (!g.boss) throw new Error('boss: nothing to fight in ' + g.mapId + ' ' + (g.room && g.room.key));
     const sword = () => slotBit('sword') || BIT.b;
+    // Some bosses fight the tide back: Wyverna and Rootmaw both call
+    // `forceTide(e, g, HIGH)` partway through their fight (src/data/bosses.js)
+    // and are only vulnerable at LOW — "flies at HIGH, beached and
+    // defenceless at LOW" / "drinks and heals at HIGH; roots bared and soft
+    // at LOW" are the bosses' own design notes. A route already set the
+    // fight up at the tide it needs; `homeTide` remembers that so this verb
+    // can play the conch back to it whenever a boss's own attack moves it,
+    // rather than staying silent and fighting a boss it can no longer reach.
+    // `Tide.cycle()` only advances (LOW->MID->HIGH->LOW,
+    // src/game/tide.js:281-286), so getting back to `homeTide` is at most
+    // two presses, and `conchTime`/`sweep` block a second press mid-cycle —
+    // the loop below just keeps asking until the level matches. Verified in
+    // real combat (seed 20260806): Wyverna's altitude (`b.z`) now returns to
+    // 0 and her shell stays open continuously after a flood, where it used
+    // to stay airborne and closed for the rest of the fight. It does not by
+    // itself make either fight winnable — see docs/NEXT-SESSION.md, both
+    // still stall on a separate problem (closing distance on a fast,
+    // erratically-moving target) — but it is a real capability this verb was
+    // missing outright (it never touched the conch before) and it is a no-op
+    // for every boss that doesn't move the tide.
+    const homeTide = g.tide.level;
     // The same numbers dFight uses, for the same reasons: strike from the near
     // band, then break contact. A boss does contact damage like anything else,
     // and the first cut of this verb held the stick toward the boss while the
@@ -826,6 +847,10 @@ export async function installRuntime() {
       const dm = dialogueMask(g, f);
       if (dm !== null) { yield dm; f++; continue; }
       if (g.mode !== 'play') { yield (f % 8 === 0) ? BIT.a : 0; f++; continue; }
+      if (g.tide.level !== homeTide && !g.tide.busy && !g.tide.locked && !g.tide.forced) {
+        const cb = slotBit('conch');
+        if (cb && p.conchTime <= 0) { yield fence(cb); f++; continue; }
+      }
       if (b.charging) {
         if (chargeSide === 0) {
           chargeSide = (b.dir === 'up' || b.dir === 'down')

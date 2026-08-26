@@ -1,4 +1,194 @@
-## Phase 2 is a TOTAL lockout, proven with double health, not just a hard fight — a fourth fix tried and reverted (this session)
+## The pivot: real combat measured on Wyverna and Rootmaw too, a real capability gap found and fixed (conch use), and the actual shared bottleneck named (this session)
+
+**Followed the previous session's own recommendation** — stop guessing a
+sixth Gohmaraq position/timing variant, measure the OTHER bosses in real
+combat instead, since `check-bosses.mjs`'s godmode numbers showed Wyverna and
+Rootmaw taking real damage too and nothing had ever measured them
+outside god mode. Built a generic real-combat single-boss harness
+(parameterised on dungeon/tide/hearts/items, same shape as the Gohmaraq one)
+and ran both at 12 quarter-hearts, seed 20260806, each dungeon's own item
+loadout from `check-bosses.mjs`'s `FIGHTS` table:
+
+- **D4 Wyverna:** 5 hits landed, 20/44 hp dealt (45%) — a CLEANER opening
+  than Gohmaraq's (all 5 hits landed back-to-back, frames 121-324, ZERO
+  damage taken during that stretch) — then total lockout, dying to chip
+  damage over the next ~1000 frames with boss hp never moving again.
+- **D5 Rootmaw:** 5 hits landed, 20/52 hp dealt (38%), same shape, dies
+  faster (frame 881, chip damage arriving every ~60-80 frames).
+
+**Same "5 hits, then total lockout" shape as Gohmaraq, but NOT the same
+cause — this is the actual finding, not the number.** Diagnosed Wyverna's
+lockout precisely: `forceTide(e, g, HIGH)` (src/data/bosses.js, both
+Wyverna's and Rootmaw's phase-1+ ai) floods the room once the boss is
+wounded enough, and Wyverna is only grounded/vulnerable at LOW tide (her own
+design note: "flies at HIGH, beached and defenceless at LOW") — she was
+flying out of melee reach and this verb had **no code path that ever touched
+the conch**, so once flooded she stayed permanently airborne and closed for
+the rest of every fight. That's a real, generic capability gap, not a
+positioning problem, and it doesn't require guessing at retreat geometry to
+fix.
+
+**Shipped:** `dBoss` now remembers the tide the fight was set up at
+(`homeTide`) and plays the conch to cycle back to it whenever a boss's own
+attack moves it away, as long as the room permits (`!busy && !locked &&
+!forced`). `Tide.cycle()` only advances (LOW→MID→HIGH→LOW,
+src/game/tide.js:281), so this is at most two presses, and `conchTime`/
+`sweep` naturally block a second press mid-cycle. **Verified working, not
+just plausible:** re-ran the diagnostic and Wyverna's altitude (`b.z`) now
+returns to 0 and her shell (`weakOpen`) stays continuously true after a
+flood, where before the fix it stayed airborne (`z=11`) and closed
+(`weakOpen` flickering false) for the remaining ~500 frames of the fight.
+
+**It does not make either fight winnable by itself, and that is the honest
+second half of this finding.** Even fully grounded and permanently open,
+Wyverna still lands exactly 5 hits and 0 more — hp dealt unchanged at 20/44.
+Rootmaw (which shares the exact same `forceTide` mechanic — its own design
+note is "drinks and heals at HIGH; roots bared and soft at LOW") is
+similarly unchanged at 20/52. **This proves the tide-fight was never the
+sole or even primary bottleneck for either boss** — something else caps
+both fights at 5 hits regardless. The likely candidate, visible in the
+per-frame logs but not yet isolated: both bosses move continuously and
+non-lattice (`bounceDiag` for Wyverna, a periodic dash/chase for Rootmaw's
+later phases) rather than Gohmaraq's mostly-predictable x-axis patrol, and
+`dx`/`dy` in the post-lockout logs hover in the 15-40px range — close, but
+never closing to `nearContact` — suggesting the verb's closing speed simply
+can't catch a continuously-erratic target the way it catches a
+periodically-patrolling one. Unconfirmed; the next session's first job.
+
+**Kept, not reverted, unlike every prior attempt this board records** — the
+first change in five sessions of boss-verb work that measurably improved
+fight STRUCTURE (shell state, tide state) even though it didn't move hits
+landed on the two fights tested. The bar for keeping a change on this board
+has been "moves hits landed" for every prior entry; this one is kept on a
+different, still-honest basis: it is independently verified correct (the
+tide-response gap is real and now demonstrably fixed), it regresses nothing
+(`check-bosses.mjs` 13/13 unchanged, `tools/test.mjs` 59/59 unchanged,
+Gohmaraq's real-combat numbers byte-identical since she never moves the
+tide), and it is a capability the verb was flatly missing (it never used the
+conch at all before this session) rather than a retuned guess at movement
+geometry.
+
+**Next session, in order:**
+
+1. **Isolate the real bottleneck for Wyverna/Rootmaw: closing speed against
+   an erratically-moving target, not tide or alignment.** Both stall at
+   `dx`/`dy` in the 15-40px range post-lockout — close, never closing. Worth
+   measuring directly: log the DISTANCE trend frame-by-frame (not just
+   snapshots) during a stalled stretch to see whether the gap is shrinking
+   slowly, oscillating, or genuinely stuck, before designing a fix for
+   whichever it turns out to be.
+2. **Do not retry a Gohmaraq-specific position/timing variant** — five were
+   measured across two sessions with zero movement on hits landed, and this
+   session's pivot shows the SAME symptom recurs on two more bosses for a
+   DIFFERENT reason, which is itself evidence that chasing Gohmaraq's charge
+   specifically was the wrong level of the problem.
+3. Once any one boss is a measured real-combat win, wire `dBoss` into
+   `playthrough-route.mjs` for that dungeon and treat it as the template for
+   the rest, rather than insisting on Gohmaraq/D1 first.
+4. The same-speed phase-3 patrol problem (Gohmaraq, speed 1.0 ==
+   WALK_SPEED) remains unmeasured in real combat and unreachable until some
+   boss's lockout is solved.
+5. The Boss Key / third-key pass behind the Clawcrab door and the other five
+   dungeons' routes are both still undone and both still blocked on some
+   boss fight actually finishing.
+
+---
+
+## A fifth fix, also reverted — and a recommendation to stop trying verb-side patches (previous session)
+
+**Tried last session's own item-2 idea and it failed in a NEW, informative
+way, which is why this is worth five paragraphs instead of "reverted,
+nothing new."** The idea: stop approaching on the verb's own initiative
+outside of a provably safe window, and let the boss's patrol or its own
+charge-recovery close the gap instead — since (per last session's diagnosis)
+it's the verb's OWN closing movement that keeps creating the "aligned near,
+still far" frame `charge()` re-triggers on.
+
+**Implementation, in two cuts.** First cut: "hold" (do nothing) whenever not
+already in swing range and not in a provably safe window
+(`!b.charging && b.stun > 0 && !b._pending` — charge's post-dash recovery,
+distinguished from its pre-dash tell because `charge()` keeps `b.charging`
+true through the whole tell, src/game/enemy.js:807-824, so the tell is
+already handled by the existing charge-dodge, and distinguished from a
+`windUp` freeze because only `windUp` sets `_pending`, bosses.js). Measured:
+**0 hits landed, boss hp never left 24.** The hold logic doesn't distinguish
+Gohmaraq's non-charging phase 1 from its charging phase 2, so it also
+suppressed phase 1's approach, where nothing this file has ever measured
+needed suppressing. Second cut added `everCharged` — a per-fight flag set the
+first time `b.charging` is ever seen true, gating the hold behaviour so
+phase 1 approaches normally and only phase 2 holds. That restored phase 1's
+5 hits exactly (frames matched the established baseline through hp=14) —
+and then landed **zero more** in phase 2, same as every attempt before it.
+
+**The informative part: WHY holding failed is different from why closing
+failed, and it rules out an entire family of ideas, not just this one.**
+Diagnosed with the per-frame logger: holding pins `dx` at a literal constant
+14 (`ENEMY_CHARGE_TOLERANCE`) for hundreds of frames, same shape as the very
+first reverted attempt's wall-cornering — but this time there's no wall
+involved. A stationary player is exactly what a charge homes in on: the dash
+travels toward wherever the player was when it triggered and tends to stop
+near them, so a target that never moves gets re-approached to tolerance
+distance and re-triggers on nearly every recovery. **Standing still is not
+neutral against this attack — it is the single worst thing to do**, which
+means "reduce how much the verb moves" is not a safer fallback when the
+active ideas run out; it is its own, separately bad idea, now also ruled out
+by measurement rather than assumption.
+
+**Tally after two sessions: five fixes tried (post-charge cooldown away from
+boss, the same toward room centre, a stun-gated free swing, a far-axis-first
+approach path, and now hold-until-safe), five identical or worse outcomes on
+phase-2 hits landed (zero, every time).** This is no longer "try a sixth
+idea" territory at reasonable session effort — five independently-reasoned,
+differently-shaped attempts converging on the same zero is a strong signal
+that the fix is not in this verb's decision logic at all, at least not one
+findable by a session working alone from the existing state machine. Two
+honest paths forward, and picking between them is a call worth surfacing to
+whoever reads this next rather than guessing a sixth variant:
+
+- **Escalate, don't re-attempt.** Flag to the project owner that Gohmaraq's
+  phase 2, as designed, may not be fair to a generic reactive verb — worth a
+  human decision on whether phase 2's OWN numbers (charge range 130px vs.
+  swing range ~20px, tolerance 14px, a boss with no cooldown between charges
+  beyond `ENEMY_CHARGE_RECOVER_FRAMES`=24f) need retuning as a content
+  change, separate from anything this file can fix in `tools/`.
+- **Route around it.** Work the other jobs this board has queued behind job
+  1 (the Boss Key pass, the other five dungeons' routes, `check-guide.mjs`)
+  using a different measurement posture for Gohmaraq specifically — e.g.
+  measuring the OTHER five bosses' real-combat winnability now, since
+  `check-bosses.mjs`'s godmode numbers suggest at least Wyverna and Rootmaw
+  take real damage too and may not share Gohmaraq's exact lockout shape.
+  That directly answers whether this is a Gohmaraq problem or a `dBoss`
+  problem, which nothing has measured yet — every real-combat number on this
+  board, all five sessions of it, is Gohmaraq alone.
+
+**Next session, in order:**
+
+1. **Do not attempt a sixth phase-2 position/timing variant without a new
+   idea that isn't a reshuffling of retreat/approach/hold.** Five have been
+   measured. Either escalate the design question above, or pivot to
+   measuring a different boss in real combat first (Wyverna and Rootmaw both
+   take real hits in godmode — that's the one lead nothing has followed yet).
+2. If pivoting: build the same real-combat harness this file's last two
+   sessions used (godMode: false, 12 quarter-hearts, `dBoss` driving the
+   fight) against Wyverna (D4) and Rootmaw (D5) instead of Gohmaraq, using
+   each dungeon's own item loadout from `check-bosses.mjs`'s `FIGHTS` table.
+   If either wins or comes close, that's real evidence the verb works and
+   Gohmaraq specifically is the outlier — valuable either way.
+3. The same-speed phase-3 patrol problem (speed 1.0 == WALK_SPEED) remains
+   unmeasured in real combat and unreachable until Gohmaraq's phase 2 is
+   solved or bypassed.
+4. Once Gohmaraq is a measured win at 3 hearts, wire `dBoss` into
+   `playthrough-route.mjs` past `d1/0,3,2`, and only then look at the
+   remaining bosses — Gloomtide's swimming-blocks-swinging finding in
+   particular needs a real tactic (sink with the Cleats first), not this
+   generic verb.
+5. The Boss Key / third-key pass behind the Clawcrab door and the other five
+   dungeons' routes are both still undone and both still blocked on job 1
+   actually finishing (or on the pivot in item 2 landing one of them first).
+
+---
+
+## Phase 2 is a TOTAL lockout, proven with double health, not just a hard fight — a fourth fix tried and reverted (previous session)
 
 **The one measurement that changes what "next" should mean: giving the
 player DOUBLE health does not land a single additional hit.** Picked up
