@@ -815,6 +815,18 @@ export async function installRuntime() {
         const perp = (b.dir === 'up' || b.dir === 'down')
           ? (chargeSide > 0 ? BIT.right : BIT.left)
           : (chargeSide > 0 ? BIT.down : BIT.up);
+        // Stop running sideways once clear of the charge's own width — the
+        // boss does not move along this axis while it dashes (a charge is a
+        // straight line down the OTHER one), so continuing to strafe past
+        // NEAR+6 is pure waste: ground that still has to be walked back once
+        // the dash ends. Measured directly in one real fight, uncapped: two
+        // charges opened a 30->56px gap and a 29->96px gap; capped, the same
+        // two charges topped out at 46 and 58. Holding position still clears
+        // the hitbox; it just stops manufacturing more distance than
+        // clearing it requires.
+        const clear = (b.dir === 'up' || b.dir === 'down')
+          ? Math.abs(b.cx - p.cx) : Math.abs(b.cy - p.cy);
+        if (clear > NEAR + 6) { yield 0; f++; continue; }
         yield fence(perp); f++; continue;
       }
       chargeSide = 0;

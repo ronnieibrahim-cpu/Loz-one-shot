@@ -1,4 +1,106 @@
-## Contact damage during the approach is GONE — a real geometry bug, not a tuning knob (this session)
+## Wasted movement during a charge is fixed and ruled out as the bottleneck — the real one is rhythm (this session)
+
+**Job 1 from last session's board** was "close distance faster, or hold ground
+better, between two phase-2/3 charges" — the newly-measured blocker once
+contact damage stopped killing the fight early. This session fixed a real
+inefficiency in that exact spot, measured its effect precisely, and the
+honest result is: **it doesn't help, and now there's evidence for why.**
+
+**The bug.** While `b.charging` is true, `dBoss` (`tools/actor-runtime.mjs`)
+sidesteps perpendicular to the charge's axis for the ENTIRE charge — both the
+freeze (`tell`) and the dash — with no cap. But the boss doesn't move along
+the perpendicular axis while it charges (a charge is a straight line down the
+OTHER axis), so once the player is clear of the charge's own width
+(`Math.abs` of the perpendicular coordinate difference), every further step
+sideways is pure waste: distance manufactured for no safety, that then has to
+be walked all the way back. Traced frame-by-frame across two real charges in
+one fight (`trace-gohmaraq.mjs`, not committed): the first carried the
+distance from 30 to 56px, the second from 29 to 96px, with the player still
+retreating sideways for most of both dashes long after clearing the hitbox.
+
+**The fix**, four lines: once the perpendicular gap exceeds `NEAR + 6` (the
+same "close enough" constant used elsewhere in this verb), hold position
+instead of continuing to strafe. Re-traced the same two charges after the
+fix: peak gaps dropped to 46 and 58 — roughly half. `check-bosses.mjs` still
+13/13, every damage number byte-identical to its documented baseline (the
+charge branch runs unconditionally, ahead of the god-mode-only invuln logic,
+so this DOES execute in god mode too — it just changes a reporter-only
+metric, "within sword reach," not an assertion). The fast suite is 59/59.
+
+**Measured against the same hooked real-combat harness as last session (12
+quarter-hearts, no god mode, seed 20260806):** identical 5 hits landed at the
+identical frames (24 -> 14 hp, unchanged down to the frame), identical 6 hits
+taken, all ranged, zero contact (unchanged from last session's fix). Death
+frame moved from 1560 to 1500 — a 4% difference, inside the noise a
+deterministic sim produces from slightly different pixel-by-pixel paths, not
+a real signal either direction.
+
+**Why this is worth keeping despite moving nothing on the scoreboard: it
+converts a guess into a ruled-out hypothesis.** "The verb wastes ground during
+a charge" was a real, confirmed bug (halving peak separation proves it), and
+now it is fixed, and NOTHING downstream changed. That means the reason the
+fight stalls at 5 hits is not wasted movement — it is the RATE at which
+charges recur relative to how much distance even an efficient approach can
+close between them. Kept because it costs nothing (no hits lost, no new
+damage category, god mode untouched) and because a future session
+re-discovering "the charge dodge wastes distance" would otherwise re-spend
+this exact session finding out it isn't the answer.
+
+**`tools/measure-boss.mjs` is new** — a real-combat measurement tool
+(`node tools/measure-boss.mjs [id] [hearts] [seed]`, defaults `d1 12
+20260806`), promoted from a scratch script two sessions running had to
+rebuild by hand. It is deliberately NOT in CLAUDE.md's verification table:
+like `find-ledges.mjs`, it asserts nothing and proves nothing, it only
+reports — the hooked-`takeDamage`/`hurt` instrumentation this and last
+session both needed to tell "5 hits" from "4 hits that look the same," now
+written once. `check-bosses.mjs` remains the only asserting boss checker and
+still runs in god mode on purpose; this is the tool for the question god mode
+cannot answer.
+
+**What the ruled-out hypothesis leaves standing, traced directly:** in the
+270-frame window this session traced (frames 630-900), Gohmaraq's phase 2
+fires two charges back to back with barely 20-30 frames of clear chase time
+between the end of one recovery and the start of the next tell — nowhere
+near enough for even a maximally efficient diagonal approach to close a
+40-90px gap. The charge's OWN range/alignment check (`range: 130, tol: 14`,
+`src/data/bosses.js`) re-fires as soon as the player re-aligns on an axis
+while approaching, which a beeline approach does almost immediately. That is
+the actual next lever, not the dodge's efficiency:
+
+**Next session, in order:**
+
+1. **Don't let the approach re-trigger the charge's alignment check.**
+   `charge()`'s trigger is `aligned(e, g, tol) && distToPlayer(e, g) < range`
+   — a beeline diagonal approach satisfies `aligned` (tol 14) almost as soon
+   as it starts closing, at almost any distance under 130. An approach that
+   deliberately holds OFF the charge axis until much closer (only aligning in
+   the final short stretch, inside contact-decision range) may get far fewer
+   charges triggered per unit of ground covered. This is a real, testable
+   hypothesis, not a guess — measure it with `node tools/measure-boss.mjs d1
+   12`, new this session (see below): it hooks `Player.prototype.takeDamage`
+   and `Boss.prototype.hurt` directly rather than polling, which is what told
+   apart "5 hits landed, identical to the frame" from "4 hits, close enough
+   to look the same" across two sessions of tuning before it existed.
+2. If (1) doesn't move the number either, the honest next question is
+   whether THIS FIGHT is winnable at 3 hearts at all without a damage-ladder
+   or item change — five sessions running have now measured the melee trade
+   at "close to breakeven, not ahead," and ruled out two separate hypotheses
+   (contact-range overshoot, wasted charge-dodge distance) without closing
+   the gap. Before a sixth session tries a third movement-only lever, it may
+   be worth asking whether 3 hearts vs 24 hp with a level-1 sword is
+   actually the intended difficulty, or whether the fight assumes more
+   hearts/sword level than a brand-new game brings to D1.
+3. Once Gohmaraq is a measured win at 3 hearts, wire `dBoss` into
+   `playthrough-route.mjs` past `d1/0,3,2`, and only then look at the other
+   five bosses — Gloomtide's swimming-blocks-swinging finding in particular
+   needs a real tactic (sink with the Cleats first), not this generic verb.
+4. The Boss Key / third-key pass behind the Clawcrab door and the other five
+   dungeons' routes are both still undone and both still blocked on job 1
+   actually finishing.
+
+---
+
+## Contact damage during the approach is GONE — a real geometry bug, not a tuning knob (previous session)
 
 **Still not a win, and the boss verb still is not wired into the route.** But
 this session found and fixed an actual bug in `dBoss` (`tools/actor-
