@@ -37,6 +37,7 @@ import { getMap, getRoom, hasRoom, resetRooms, MAPS } from '../world/maps.js';
 import { Tide, TIDE_COUNT } from './tide.js';
 import { Player } from './player.js';
 import { spawnEntity, ENTITY_TYPES, Entity, findSafeTile } from './entity.js';
+import { Boss } from './enemy.js';
 import { spawnEffectAt, Explosion } from './effects.js';
 import { Pickup, PICKUPS, rollDropTable, PushBlock, Torch, FloorSwitch, Chest } from './objects.js';
 import { ThrownObject, ITEMS, itemName, itemIcon } from './items.js';
@@ -1221,7 +1222,22 @@ export class Game {
   updatePhaseShift() {
     const lensUp = this.player ? this.player.lensT > 0 : false;
     for (const e of this.entities) {
-      if (e.phase == null || e.dead) continue;
+      // `Boss` also owns a field called `phase` (its own health-fraction
+      // combat stage, 0-2 — see `Boss.update`/`currentPhase`, src/game/
+      // enemy.js), a name collision with THIS phase — a tide level an
+      // entity belongs to. Both range over 0-2, so a boss whose combat
+      // phase happened not to equal the room's tide level read as
+      // "phased out" here: hidden, harmless, and re-armed un-hittable
+      // every single frame (`e.invuln = Math.max(e.invuln, 2)` below) the
+      // instant it took enough damage to advance past its first combat
+      // phase. Measured directly across three bosses (Gohmaraq, Wyverna,
+      // Rootmaw, real combat, seed 20260806): every one of them landed
+      // exactly 5 hits and then went permanently unhittable, always at the
+      // hp fraction where `currentPhase()` first returns something other
+      // than 0 while the fight's tide sat at LOW (0) — this is why, not a
+      // dBoss tactic. No boss in the game was ever beatable past its first
+      // combat phase by ANY player, not just the actor harness.
+      if (e.phase == null || e.dead || e instanceof Boss) continue;
       // The BASE level, deliberately: a phased enemy belongs to a tide state
       // of the world, not to the patch of floor it happens to stand on. An
       // anchor holding one corner of the room at MID must not summon half a

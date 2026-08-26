@@ -184,6 +184,34 @@ they are also how a future session finds which sheet a tile came from.
   zero ammunition, and the B button denied for ever. It now lives in
   `progress.giveItem`, with the grant. If you add a counted item, put its
   capacity there.
+- **NO BOSS WAS EVER HITTABLE PAST ITS FIRST COMBAT PHASE — this trap is
+  CLOSED, and the note is kept because a field name collided by pure
+  coincidence and cost five sessions before anyone found it.** `Boss.update`
+  sets `this.phase` every frame to its own 0/1/2 health-fraction combat stage
+  (`currentPhase()`, src/game/enemy.js). `Game.updatePhaseShift()` ALSO reads
+  a field called `phase` on every entity — completely unrelated: it is the
+  tide LEVEL an entity belongs to, 0/1/2, used to make a phased enemy (e.g. a
+  `keese` spawned `{phase: 2}`) invisible and un-hittable while the room's
+  tide doesn't match. Same field name, same numeric range, two unrelated
+  systems. The instant any boss's COMBAT phase advanced away from 0 while the
+  room's TIDE was still at LOW (0 — the level every boss fight in the game is
+  set up at), the boss read as "phased out": hidden, harmless, and re-armed
+  un-hittable EVERY FRAME for the rest of the fight. Five sessions of boss-verb
+  work read this as "the fight is hard" or "the AI can't chase it" — reactive
+  dodges, retreat cooldowns, tide corrections, approach-path redesigns, all
+  measured against a boss that could not physically be hit past that point no
+  matter what the player did. Fixed by excluding Boss entities from the tide
+  phase-out sweep (`e.phase == null || e.dead || e instanceof Boss`,
+  `instanceof` and not `e.isBoss` — minibosses clear `isBoss` in their own
+  `init()` while still being built on the same `Boss` class and carrying the
+  same colliding field). Measured directly: five of six bosses went from
+  stalling partway (some at ZERO damage ever) to a full godmode kill, and
+  Wyverna is now a confirmed clean real-combat win at 3 hearts, taking zero
+  damage. If you ever add a field to `Boss` or to an entity-wide system like
+  `updatePhaseShift`, ask whether the name already means something else on a
+  different class — `instanceof`, not a bare property read, is how you ask
+  "is this really the same kind of thing" when two systems could plausibly
+  both want the same short name.
 
 ---
 

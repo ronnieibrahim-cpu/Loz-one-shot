@@ -1,96 +1,160 @@
-## The pivot: real combat measured on Wyverna and Rootmaw too, a real capability gap found and fixed (conch use), and the actual shared bottleneck named (this session)
+## THE ROOT CAUSE: no boss in the game could ever be hit past its first combat phase, for ANYONE — a name collision, not a dBoss problem, found and fixed (this session)
 
-**Followed the previous session's own recommendation** — stop guessing a
-sixth Gohmaraq position/timing variant, measure the OTHER bosses in real
-combat instead, since `check-bosses.mjs`'s godmode numbers showed Wyverna and
-Rootmaw taking real damage too and nothing had ever measured them
-outside god mode. Built a generic real-combat single-boss harness
-(parameterised on dungeon/tide/hearts/items, same shape as the Gohmaraq one)
-and ran both at 12 quarter-hearts, seed 20260806, each dungeon's own item
-loadout from `check-bosses.mjs`'s `FIGHTS` table:
+**Every board entry above this one, across five sessions, was chasing a
+symptom.** The actual bug was in the engine, not in `tools/actor-runtime.mjs`,
+and it did not just affect the harness — it affected every player who has
+ever fought a boss in this game, because it has been there since bosses were
+first playable.
 
-- **D4 Wyverna:** 5 hits landed, 20/44 hp dealt (45%) — a CLEANER opening
-  than Gohmaraq's (all 5 hits landed back-to-back, frames 121-324, ZERO
-  damage taken during that stretch) — then total lockout, dying to chip
-  damage over the next ~1000 frames with boss hp never moving again.
-- **D5 Rootmaw:** 5 hits landed, 20/52 hp dealt (38%), same shape, dies
-  faster (frame 881, chip damage arriving every ~60-80 frames).
+**How it was found.** Following this file's own prior recommendation, this
+session measured Wyverna (D4) and Rootmaw (D5) in real combat for the first
+time (12 quarter-hearts, seed 20260806, each dungeon's own item loadout).
+Both landed exactly 5 hits, then locked up completely — same shape as
+Gohmaraq's long-running problem, but on inspection NOT the same cause: both
+bosses call `forceTide(e, g, HIGH)` once wounded (their own design notes:
+"flies at HIGH, beached and defenceless at LOW" / "drinks and heals at HIGH;
+roots bared and soft at LOW"), and `dBoss` never touched the conch to correct
+it. That got fixed first (see below, still true and still kept) — but fixing
+it made Wyverna's shell stay open continuously after a flood and STILL only
+5 hits landed. That result is what forced the real question: something else,
+common to every boss, was capping every fight at 5 hits regardless of tactic.
 
-**Same "5 hits, then total lockout" shape as Gohmaraq, but NOT the same
-cause — this is the actual finding, not the number.** Diagnosed Wyverna's
-lockout precisely: `forceTide(e, g, HIGH)` (src/data/bosses.js, both
-Wyverna's and Rootmaw's phase-1+ ai) floods the room once the boss is
-wounded enough, and Wyverna is only grounded/vulnerable at LOW tide (her own
-design note: "flies at HIGH, beached and defenceless at LOW") — she was
-flying out of melee reach and this verb had **no code path that ever touched
-the conch**, so once flooded she stayed permanently airborne and closed for
-the rest of every fight. That's a real, generic capability gap, not a
-positioning problem, and it doesn't require guessing at retreat geometry to
-fix.
+**Instrumented Wyverna's actual sword swing frame by frame** (not just hp
+before/after) during a stalled stretch where the verb was correctly
+positioned, correctly facing, correctly swinging, and the boxes correctly
+overlapped by the engine's own geometry — and the hit still didn't register.
+`e.hurt()` was returning `false` because `b.invuln` was pinned at `1` and
+never decrementing, and `b.hidden` was `true`. Traced `hidden`/pinned-`invuln`
+to `Game.updatePhaseShift()` (src/game/game.js) — the system that makes a
+tide-phased enemy (e.g. a `keese` spawned with `{phase: 2}`, `overworld.js`,
+`dungeons-a.js`) invisible and unhittable while the room's tide doesn't match
+the level it belongs to. **`Boss` also has a field called `phase`** — its own
+health-fraction combat stage, 0/1/2, set every frame in `Boss.update`
+(`this.phase = p`, `currentPhase()`, src/game/enemy.js:280-328) — a complete
+coincidence of naming with a completely different 0/1/2 system. Every single
+boss in the game, the instant its COMBAT phase advanced away from 0 while the
+room's TIDE happened to still be at level 0 (LOW — the tide every one of
+Gohmaraq/Wyverna/Rootmaw's fights is set up at), read as "phased out": hidden,
+harmless, and re-armed un-hittable **every frame** (`e.invuln = Math.max(e.invuln, 2)`,
+line 1244) for the rest of the fight. That is exactly "5 hits, then
+permanent lockout" — Gohmaraq's phase 0→1 boundary sits at hp 14 (58%),
+which is where every real-combat measurement across five sessions stalled;
+Wyverna and Rootmaw's sit at similar fractions. Nobody — not the actor
+harness, not a human player, not a previous session's godmode run reading
+"AI limitation, see comment" — had ever beaten a boss past its first combat
+phase, and every session before this one attributed that to the FIGHT being
+hard rather than the boss being **structurally unhittable** past that point.
 
-**Shipped:** `dBoss` now remembers the tide the fight was set up at
+**The fix, in `src/game/game.js`:** `updatePhaseShift()` now excludes
+`instanceof Boss` from the tide-phase-out sweep (`e.phase == null || e.dead
+|| e instanceof Boss`), imported from `src/game/enemy.js`. `instanceof Boss`,
+not `e.isBoss`, deliberately — CLAUDE.md's own note elsewhere on this file is
+that minibosses clear `isBoss` in their `init()` while still being built on
+the SAME `Boss` class and therefore carrying the SAME `phase` field, so
+`isBoss` would have left minibosses in the bug.
+
+**Measured effect — this is not a marginal fix:**
+
+| Boss | Before (godmode) | After (godmode) | After (real combat, 12qh) |
+|---|---|---|---|
+| D1 Gohmaraq | 10/24 (stalls, AI limitation) | 14/24 (stalls — see below, a REAL remaining issue) | 5→7 hits, 14/24, still dies (phase 2 charge-chain, unrelated, still real) |
+| D2 Anemos | 0/30 | **30/30 — FULL KILL** | not yet measured |
+| D3 Gloomtide | 0/36 | **36/36 — FULL KILL** | not yet measured |
+| D4 Wyverna | 20/44 (stalls) | **44/44 — FULL KILL** | **44/44 — FULL KILL, ZERO damage taken, 612 frames** |
+| D5 Rootmaw | 20/52 (stalls) | **52/52 — FULL KILL** | 48/52 (92%!), died at 4 hp left — closest near-win yet |
+| D6 Nereth | 0/80 | **80/80 — FULL KILL** | not yet measured |
+
+Five of six bosses now die CLEANLY in godmode, several for the first time
+ever (Anemos and Nereth had never taken a single point of damage in any
+prior session's measurement — the long-standing "AI limitation" notes on
+both were this bug, not a positioning problem D2/D6 were assumed to have).
+**Wyverna is now a confirmed, clean, real-combat win at 3 hearts** — the
+actual target this whole five-session thread was chasing — taking ZERO
+damage across the entire fight. Rootmaw came within 4 hp of the same. Only
+Gohmaraq still stalls, and now for a DIFFERENT, already-diagnosed, unrelated
+reason (the phase-2 charge-chain lockout from two sessions ago) — with the
+structural bug gone, that diagnosis can finally be trusted at face value
+instead of being confounded by unhittability.
+
+**Also kept: the conch tide-correction from earlier in this session.**
+`dBoss` (`tools/actor-runtime.mjs`) remembers the tide a fight was set up at
 (`homeTide`) and plays the conch to cycle back to it whenever a boss's own
-attack moves it away, as long as the room permits (`!busy && !locked &&
-!forced`). `Tide.cycle()` only advances (LOW→MID→HIGH→LOW,
-src/game/tide.js:281), so this is at most two presses, and `conchTime`/
-`sweep` naturally block a second press mid-cycle. **Verified working, not
-just plausible:** re-ran the diagnostic and Wyverna's altitude (`b.z`) now
-returns to 0 and her shell (`weakOpen`) stays continuously true after a
-flood, where before the fix it stayed airborne (`z=11`) and closed
-(`weakOpen` flickering false) for the remaining ~500 frames of the fight.
+attack moves it away (`Tide.cycle()` only advances, so at most two presses;
+`conchTime`/`sweep`/`forced` block re-pressing mid-cycle). Real, verified,
+harmless for every boss that doesn't move the tide, and a genuine capability
+the verb was missing outright.
 
-**It does not make either fight winnable by itself, and that is the honest
-second half of this finding.** Even fully grounded and permanently open,
-Wyverna still lands exactly 5 hits and 0 more — hp dealt unchanged at 20/44.
-Rootmaw (which shares the exact same `forceTide` mechanic — its own design
-note is "drinks and heals at HIGH; roots bared and soft at LOW") is
-similarly unchanged at 20/52. **This proves the tide-fight was never the
-sole or even primary bottleneck for either boss** — something else caps
-both fights at 5 hits regardless. The likely candidate, visible in the
-per-frame logs but not yet isolated: both bosses move continuously and
-non-lattice (`bounceDiag` for Wyverna, a periodic dash/chase for Rootmaw's
-later phases) rather than Gohmaraq's mostly-predictable x-axis patrol, and
-`dx`/`dy` in the post-lockout logs hover in the 15-40px range — close, but
-never closing to `nearContact` — suggesting the verb's closing speed simply
-can't catch a continuously-erratic target the way it catches a
-periodically-patrolling one. Unconfirmed; the next session's first job.
+**Collateral, found and handled, not hidden:**
 
-**Kept, not reverted, unlike every prior attempt this board records** — the
-first change in five sessions of boss-verb work that measurably improved
-fight STRUCTURE (shell state, tide state) even though it didn't move hits
-landed on the two fights tested. The bar for keeping a change on this board
-has been "moves hits landed" for every prior entry; this one is kept on a
-different, still-honest basis: it is independently verified correct (the
-tide-response gap is real and now demonstrably fixed), it regresses nothing
-(`check-bosses.mjs` 13/13 unchanged, `tools/test.mjs` 59/59 unchanged,
-Gohmaraq's real-combat numbers byte-identical since she never moves the
-tide), and it is a capability the verb was flatly missing (it never used the
-conch at all before this session) rather than a retuned guess at movement
-geometry.
+- **`tools/check-bosses.mjs`'s own sampling loop had a blind spot this fix
+  exposed.** It pumped 400 frames at a stride and read `g.boss` once per
+  stride; a boss that died WITHIN one stride (several now do — Gloomtide
+  in ~350 frames) went null before the read, reporting "0 samples, weak
+  point never opened" for a fight that had just been WON. Fixed: stride
+  dropped to 30 frames. Not a workaround for a flake — a fast, clean kill
+  was structurally impossible before this session, so the checker never had
+  to sample one.
+- **One replay needed re-recording**, exactly as CLAUDE.md's own hard-won
+  lesson on the solid-entity fix predicts ("a five-line change to the
+  movement path is never a five-line change"): `d1-clawcrab-den-wide`
+  fights the D1 Clawcrab, a miniboss built on the same `Boss` class, so its
+  real combat behaviour changed too. Re-recorded with `node tools/replay.mjs
+  --record d1-clawcrab-den-wide`; `replay.mjs` is 51/51 again.
+- **`tools/walk-dungeons.mjs` has ONE assertion now failing** (40/41 ledge
+  hops, `overworld 0,0,0 '_' down @3,5`) that was NOT failing before this
+  session's `game.js` change, confirmed by bisection (`git stash`/`pop`
+  around just that file). Investigated at length: the SAME ledge, same exact
+  position and even the same `g.frame` value, hopped correctly in an
+  isolated fresh-page reproduction — the failure only appears inside
+  `walk-dungeons.mjs`'s own single continuous page session, after ~20 other
+  checks (dungeon floods, tide-lock tests, door tests) have already run
+  in it. Forcing `g.frame` to match did not reproduce it either, ruling out
+  simple frame-parity. Root cause NOT found within this session's budget —
+  it is some other piece of state carried across that one page session,
+  not a change to the ledge-hop mechanic itself (which is proven sound in
+  isolation) and not a flake (reproduces deterministically, every run).
+  Left red and undisguised rather than papered over; see next steps below.
+
+**`check-bosses.mjs` 13/13** (with the stride fix), **`tools/test.mjs`
+59/59**, **`replay.mjs` 51/51** (after the one re-record), **`npm run build`
++ `check-build.mjs` OK**. `walk-dungeons.mjs` is 22/23 — the one open item
+below.
 
 **Next session, in order:**
 
-1. **Isolate the real bottleneck for Wyverna/Rootmaw: closing speed against
-   an erratically-moving target, not tide or alignment.** Both stall at
-   `dx`/`dy` in the 15-40px range post-lockout — close, never closing. Worth
-   measuring directly: log the DISTANCE trend frame-by-frame (not just
-   snapshots) during a stalled stretch to see whether the gap is shrinking
-   slowly, oscillating, or genuinely stuck, before designing a fix for
-   whichever it turns out to be.
-2. **Do not retry a Gohmaraq-specific position/timing variant** — five were
-   measured across two sessions with zero movement on hits landed, and this
-   session's pivot shows the SAME symptom recurs on two more bosses for a
-   DIFFERENT reason, which is itself evidence that chasing Gohmaraq's charge
-   specifically was the wrong level of the problem.
-3. Once any one boss is a measured real-combat win, wire `dBoss` into
-   `playthrough-route.mjs` for that dungeon and treat it as the template for
-   the rest, rather than insisting on Gohmaraq/D1 first.
-4. The same-speed phase-3 patrol problem (Gohmaraq, speed 1.0 ==
-   WALK_SPEED) remains unmeasured in real combat and unreachable until some
-   boss's lockout is solved.
-5. The Boss Key / third-key pass behind the Clawcrab door and the other five
-   dungeons' routes are both still undone and both still blocked on some
-   boss fight actually finishing.
+1. **Find `walk-dungeons.mjs`'s ledge-hop regression's real cause.** Known:
+   deterministic, not a flake; not frame-parity (forcing `g.frame` didn't
+   reproduce it); not the ledge-hop mechanic itself (passes in an isolated
+   fresh-page probe with identical position and frame count). Suspect: some
+   OTHER piece of state that the ~20 checks before it in the same page
+   session leave behind and that this session's `game.js` change causes
+   those earlier checks to leave in a different state now that bosses in
+   dungeon floods behave differently. Try replaying the exact sequence of
+   `walk-dungeons.mjs`'s own earlier checks (not just the ledge test) in an
+   isolated script to catch it live, rather than guessing at the state.
+2. **Measure Anemos (D2) and Nereth (D6) in real combat** — both are
+   confirmed full godmode kills now for the first time ever, but neither has
+   been measured at real health. D6 in particular ("pins the tide per phase,
+   break the pin to hurt him") is the final boss and was previously the LEAST
+   understood fight in the game (0 damage in every prior measurement); this
+   is the first session where it's even worth asking whether it's fair.
+3. **Gohmaraq's phase-2 charge-chain lockout is real again and now
+   trustworthy** (previously confounded by the structural bug) — 7/24 hp
+   in real combat this session, better than the 5/24 every prior session
+   measured, but still not a win. The five previously-tried, previously-
+   reverted approach-path variants remain not worth re-trying verbatim; a
+   genuinely different tactic (see two sessions ago's board entry) is still
+   the open question there.
+4. **Rootmaw at 48/52 (92%) is the single closest real-combat result on this
+   board** — worth a direct look at what killed the run in its last few
+   frames; it may be winnable with a very small tactical adjustment or even
+   as-is on a different seed/heart count.
+5. Once any boss is a measured real-combat win — Wyverna already is — wire
+   `dBoss` into `playthrough-route.mjs` for that dungeon and treat it as the
+   template for the rest, rather than insisting on Gohmaraq/D1 specifically.
+6. The Boss Key / third-key pass behind the Clawcrab door and the other five
+   dungeons' routes are both still undone and both still blocked on a route
+   actually reaching a boss room with this now-fixed win condition.
 
 ---
 

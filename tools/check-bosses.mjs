@@ -138,9 +138,21 @@ for (const f of FIGHTS) {
   const maxHp = await page.evaluate(() => (window.__game.boss ? window.__game.boss.hp : 0));
   let done = false, err = null, guard = 0;
   let opened = 0, minHp = 1e9, samples = 0, reach = 0;
-  while (!done && guard++ < 4000) {
+  // Pumped and sampled in small chunks, not one big 400-frame stride. A boss
+  // that dies within the first stride used to be impossible — every fight in
+  // this file's history has stalled on something well short of 400 frames —
+  // but the engine's own updatePhaseShift/Boss.phase name collision (fixed
+  // in src/game/game.js) meant NO boss could be hit past its first combat
+  // phase, so a fast, clean kill was never something this loop had to see.
+  // A 400-frame stride reads `g.boss` only once every 400 frames, and once
+  // it dies the reference goes null — so a kill that lands inside one stride
+  // (some now do, in well under 400 frames) skipped every sample entirely
+  // and reported "0 samples, never opened" for a fight that had just been
+  // WON. 30 is small enough that any real fight's structure gets sampled.
+  const STRIDE = 30;
+  while (!done && guard++ < 40000) {
     let r;
-    try { r = await page.evaluate(n => window.__rp.pump(n), 400); }
+    try { r = await page.evaluate(n => window.__rp.pump(n), STRIDE); }
     catch (e) { err = String(e.message || e).replace(/^page\.evaluate: /, '').split('\n')[0]; break; }
     done = r.done;
     if (r.error) { err = String(r.error); break; }
