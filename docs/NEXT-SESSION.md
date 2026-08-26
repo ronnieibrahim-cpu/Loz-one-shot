@@ -1,4 +1,101 @@
-## The eye-open gate was a dead end; the real damage source is CONTACT, not the ranged spray (this session)
+## Contact damage during the approach is fixed — Gohmaraq survives 2.6x longer, but the fight stalls on a charge lockout in phase 2 (this session)
+
+**Still not a win, but a real, verified fix landed** — not a comment, this
+time. Last session's frame log found that the actual damage source in a real
+Gohmaraq fight was CONTACT taken while `dBoss` was still walking toward the
+boss to close distance, not the ranged spray both this and the prior session
+had been chasing. This session found and fixed the mechanism.
+
+**The bug: a Manhattan-sum distance check is the wrong shape for an
+off-centre, oblong hitbox.** The "no invuln banked: close the distance" branch
+in `dBoss` (`tools/actor-runtime.mjs`) used to keep walking straight at the
+boss (`towardDiag`) as long as `adx+ady > NEAR+6` (24) — a flat radius. But
+Gohmaraq's real hurtbox is `{x:3,y:10,w:26,h:20}` on a 32x32 frame: 26px wide
+and DOWN-SHIFTED, not a circle centred on `cx,cy`. The frame log showed a full
+contact hit landing at `dx=-18, dy=-12` — Manhattan sum 30, comfortably
+outside the old gate — because the two actual rectangles already overlapped.
+The verb's own distance math said "far, keep closing" the same frame the
+engine's real collision said "touching."
+
+**The fix asks the engine instead of guessing a number**, matching the
+project's own standing rule for tile collision (`tools/lib/collision.mjs`)
+extended to entity contact: a new `nearlyTouching(a, b, margin)` helper reads
+`Entity.rect()` (`src/game/entity.js`, already exported, already what the
+game itself uses for `Entity.overlaps`) on both the player and the boss and
+does a real inflated-AABB test. The old Manhattan gate is replaced with
+`!nearlyTouching(p, b, CONTACT_SOON)` (margin 4px — roughly one frame's
+motion, small enough that `SWORD_REACH+SWORD_GAP` still connects from there).
+The effect: the verb now closes distance until a touch is ONE FRAME away,
+then immediately faces and swings — turning an unavoidable graze into a
+traded hit instead of a free one.
+
+**Measured, seed 20260806, 12 quarter-hearts, no god mode, same D1 Gohmaraq
+fight as every prior session's number:**
+
+| | before this session | after |
+|---|---|---|
+| sword hits landed | 5 (24 -> 14 hp) | 5 (24 -> 14 hp), same hits, same frames |
+| unpaid contact hits (4 qh each) | 2 | **0** |
+| death frame | ~810 | ~1485 |
+| cause of death | ranged chip at 0 buffer | ranged chip, same as before |
+
+Total damage taken to reach 0 hearts is still exactly 12 (the starting cap,
+same as before) in both cases, since the player always dies at 0 by
+construction, but it now takes **83% longer** to get there because two of
+the four hits along the way stopped being free. `check-bosses.mjs` is
+unaffected (13/13, identical damage numbers to every prior session) because
+godmode pins `p.invuln` at 600, which routes every frame through the
+OTHER branch (`p.invuln > RETREAT_MARGIN` chain-swing) — the branch this fix
+touches is only ever reached when invuln is genuinely spent, i.e. only in a
+real fight. `tools/test.mjs` 59/59.
+
+Margins 4, 6 and 8px were all tried and all fully eliminated the contact
+hits — 4 was kept as the more principled (smallest sufficient) choice rather
+than 6, which measured a longer survival in this one seed but is one data
+point, easy to mistake for real tuning signal when it is more likely
+downstream position-chaos from a few pixels' difference in exactly where the
+player stood on any given frame. Don't re-litigate this number without a
+second seed to check it against — this repo currently has exactly one.
+
+**What's still open, and it's a NEW finding, not the old "same-speed patrol"
+note:** with contact fixed, the fight now survives long enough to show what
+actually happens in phase 2 (below 62% hp, i.e. from hp 14 onward) — and it
+is not what the old "phase 3 speed matches WALK_SPEED" note describes.
+Logging position and `b.charging` from frame 700 to 1600 (after the 5th sword
+hit, hp already stalled at 14 for the rest of the fight) shows `charging` is
+true on more than half the sampled frames, back-to-back, at distances of
+40-120px — the boss is re-triggering `charge()` (src/game/enemy.js: fires
+whenever `aligned(tol=14)` and `distToPlayer < range(130)`) again and again
+before `dBoss` ever gets a clean window to close in, because `dBoss`'s charge
+response (unconditional top-priority sidestep, no re-engagement logic) never
+lets go long enough for the player and boss to fall out of alignment for
+good. The eye stays open the whole time (`weakOpen` true throughout the
+sample) — this is not a weak-point problem, it's that `dBoss` has no plan for
+"the boss won't stop charging."
+
+**Next session, in order:**
+
+1. **Solve the phase-2 charge lockout.** This is the actual remaining blocker
+   to a win, now that contact damage isn't burning the health bar for free.
+   Ideas worth measuring rather than assuming: dodge perpendicular far enough
+   to break `aligned(tol=14)` rather than just clearing the dash's line (the
+   current sidestep may be satisfying "not hit" while staying within the
+   realign tolerance); or treat the recovery stun right after a charge ends
+   (`ENEMY_CHARGE_RECOVER_FRAMES`, ends with `realign()`) as a priority
+   engage window, since the boss is frozen and defenceless there and
+   `gohmaraqSlam`'s counterpart already opens the eye on exactly this
+   transition (`wasCharging && !e.charging`).
+2. Once Gohmaraq is a measured win at 3 hearts, wire `dBoss` into
+   `playthrough-route.mjs` past `d1/0,3,2`, and only then look at the other
+   five bosses — Gloomtide's swimming-blocks-swinging finding in particular
+   needs a real tactic (sink with the Cleats first), not this generic verb.
+3. The Boss Key / third-key pass behind the Clawcrab door and the other five
+   dungeons' routes are both still undone and both still blocked on job 1
+   actually finishing.
+
+---
+
+## The eye-open gate was a dead end; the real damage source is CONTACT, not the ranged spray (previous session)
 
 **Still not a win, and still no functional change shipped** — `tools/actor-runtime.mjs`
 carries one new comment and is otherwise byte-identical to last session; see

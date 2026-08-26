@@ -785,6 +785,24 @@ export async function installRuntime() {
     // Frames of invuln to leave unspent as a retreat allowance — see the
     // comment on RETREAT_MARGIN's use, below.
     const RETREAT_MARGIN = 20;
+    // Is `a` within `margin` px of actually touching `b`, by their REAL
+    // hitboxes (`Entity.rect()`, src/game/entity.js)? Measured this session:
+    // Gohmaraq's hb is `{x:3,y:10,w:26,h:20}` on a 32x32 frame — off-centre
+    // and far larger than the flat `NEAR`-vs-Manhattan-sum test below used to
+    // assume. A frame-exact log of a real fight found the player taking a
+    // full contact hit (4 quarter-hearts, boss's own `damage`) while the
+    // verb's own distance math still read "far, keep closing" — dx=-18,
+    // dy=-12 is Manhattan-sum 30, comfortably outside the old `NEAR+6`(24)
+    // gate, and yet the two hitboxes already overlapped. A Manhattan sum is
+    // the wrong shape for an oblong, off-centre box; this checks the actual
+    // rectangles instead of guessing a radius, same reason `tools/lib/
+    // collision.mjs` composes the engine's own tile checks rather than
+    // re-deriving them.
+    const nearlyTouching = (a, b, margin) => {
+      const ra = a.rect(), rb = b.rect();
+      return ra.x - margin < rb.x + rb.w && rb.x - margin < ra.x + ra.w &&
+             ra.y - margin < rb.y + rb.h && rb.y - margin < ra.y + ra.h;
+    };
     // Every mask goes through the fence. A boss arena has exits, and leaving
     // one wipes the room's entities — the boss with them. That reads exactly
     // like a kill (no boss, full health) and is a retreat; it is why this verb
@@ -871,10 +889,25 @@ export async function installRuntime() {
         // here and measured BYTE-IDENTICAL to not having it — Gohmaraq's
         // arena is small enough, and the eye stays open long enough, that the
         // gate essentially never triggers in the room that matters. Reverted
-        // rather than kept as unproven complexity; see docs/NEXT-SESSION.md
-        // for the frame-by-frame damage log this session actually measured
-        // (it says the killer is CONTACT damage, not ranged chip).
-        if (adx + ady > NEAR + 6) { yield fence(towardDiag(dx, dy)); f++; continue; }
+        // rather than kept as unproven complexity.
+        //
+        // What DOES matter, found by frame-exact logging (docs/NEXT-SESSION.md
+        // has the trace): the old gate here compared `adx+ady` (a Manhattan
+        // sum) against `NEAR+6` (24) to decide "still safely approaching".
+        // Gohmaraq's hurtbox is a 26x20 rectangle, off-centre on a 32x32
+        // frame — a real fight took a full unpaid contact hit at dx=-18,
+        // dy=-12 (Manhattan sum 30, comfortably outside that gate) because
+        // the two hitboxes were already overlapping; a Manhattan radius is
+        // the wrong shape for an oblong, off-centre box. `nearlyTouching`
+        // (above) asks the two entities' own `rect()`s instead of guessing a
+        // number, so it says "contact is imminent" exactly when the geometry
+        // says so, for any boss's hitbox shape. CONTACT_SOON is small enough
+        // that the sword (`SWORD_REACH`+`SWORD_GAP`, src/data/feel.js) still
+        // connects from here — the point isn't to stay further out, it's to
+        // be SWINGING by the time a touch is unavoidable, so an unpaid graze
+        // becomes a traded hit instead.
+        const CONTACT_SOON = 4;
+        if (!nearlyTouching(p, b, CONTACT_SOON)) { yield fence(towardDiag(dx, dy)); f++; continue; }
         // In range: face it, swing, then get out before it closes.
         yield fence(toward); f++;
         yield fence(toward | sword()); f++;
