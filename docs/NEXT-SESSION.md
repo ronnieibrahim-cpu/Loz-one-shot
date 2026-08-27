@@ -96,13 +96,26 @@ reaches a boss room).
    ENEMY_CHARGE_TOLERANCE`-ish, without hardcoding a per-boss `tol` — before
    resuming the approach) rather than another positioning trick aimed at the
    boss's raw or predicted position.
-3. **The 6 remaining ranged hits are now the whole of the damage taken** —
-   distances in the current log range 37-102px, several while ANOTHER
-   windup is already counting down (`stun` 1-15). Once (1)/(2) stop burning
-   sessions without progress, re-examine whether these are dodgeable; the
-   previous session's four reactive-dodge attempts were all measured
-   against the OLD contact-heavy baseline and may read differently now
-   that contact is out of the picture.
+3. **Re-checked this session against the new contact-free baseline: the
+   reactive `stun` 1->0 sidestep (the least-bad of the four previous
+   attempts) is STILL a wash, not a fix — do not try it a third time
+   without a different mechanism.** Re-implemented exactly as before
+   (10-frame perpendicular sidestep off the boss-player line, triggered off
+   `stun` counting down to 0 while `_pending` is set, polled every frame
+   including inside the swing/backoff loop) and measured with
+   `tools/measure-boss-combat.mjs d1`: still 5 melee hits / 10 of 24 boss
+   hp (unchanged), still 12 total quarter-hearts taken, still dies — just
+   ~120 frames later (1640 vs 1520). All 6 ranged hits still land regardless.
+   The 6 remaining ranged hits (distances 11-102px in the current log,
+   several while ANOTHER windup is already counting down) are real and
+   still unaddressed, but three different reactive-dodge shapes across two
+   sessions have now failed against them — a per-shot velocity-aware dodge
+   (tracking `game.entities` directly rather than reacting to the boss's
+   own tell) is the one class of fix not yet tried on the CURRENT baseline;
+   the previous session's attempt at that specific approach predates even
+   the contact fix and was abandoned on implementation bugs before it was
+   ever cleanly measured (see the archived section below, "Tried and
+   reverted: dodge the ranged spray").
 4. Once Gohmaraq is a measured win at 3 hearts, wire `dBoss` into
    `playthrough-route.mjs` past `d1/0,3,2`, and only then look at the other
    five bosses — Gloomtide's swimming-blocks-swinging finding in particular
