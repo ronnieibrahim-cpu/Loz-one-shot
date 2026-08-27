@@ -814,6 +814,20 @@ export async function installRuntime() {
       if (q.x > (g.room ? g.room.pw : 160) - 16 - EDGE) m &= ~BIT.right;
       if (q.y < EDGE) m &= ~BIT.up;
       if (q.y > (g.room ? g.room.ph : 144) - 16 - EDGE) m &= ~BIT.down;
+      // RE-TEST (see docs/NEXT-SESSION.md): a "retreat away from the boss"
+      // command can point straight into an actual wall, well inside the
+      // room-edge margin above, once the player is already pinned against
+      // one — traced directly during this session's god-mode investigation.
+      // `passable` (already used by `dGoto`/`dFight` for pathing, itself
+      // the engine's own `canOccupy`) drops a component that would step
+      // onto a solid tile, so a blocked retreat slides along the wall on
+      // its remaining free axis instead of pressing uselessly into stone.
+      const tx = Math.floor((q.x + q.hb.x + q.hb.w / 2) / TILE);
+      const ty = Math.floor((q.y + q.hb.y + q.hb.h - 2) / TILE);
+      if ((m & BIT.left) && !passable(g, q, tx - 1, ty)) m &= ~BIT.left;
+      if ((m & BIT.right) && !passable(g, q, tx + 1, ty)) m &= ~BIT.right;
+      if ((m & BIT.up) && !passable(g, q, tx, ty - 1)) m &= ~BIT.up;
+      if ((m & BIT.down) && !passable(g, q, tx, ty + 1)) m &= ~BIT.down;
       return m;
     };
     const budget = maxF || 16000;

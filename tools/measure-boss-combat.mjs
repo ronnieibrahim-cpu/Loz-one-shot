@@ -15,7 +15,15 @@
 // from state alone, not from anything the actor exposes, so this measures the
 // fight without changing what it measures.
 //
-// Usage: node tools/measure-boss-combat.mjs [dungeonId]   (default d1)
+// Usage: node tools/measure-boss-combat.mjs [dungeonId] [--god] [--budget=N]
+//   --god       god mode (unlimited health) instead of the real 3-heart
+//               fight — use this to ask "does more health/time help?"
+//               separately from "does the player survive?". Answered once
+//               already: a 60000-frame god-mode Gohmaraq run never lands a
+//               hit past 14 hp, proving that fight's ceiling is the verb's
+//               positioning, not the player's survivability.
+//   --budget=N  frames to give the ['boss', N] step (default 9000; a
+//               god-mode run asking "does it EVER win" wants far more).
 import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
 import { extname, join, normalize, resolve, dirname } from 'node:path';
@@ -38,7 +46,11 @@ const FIGHTS = {
   d6: { boss: 'nereth', tide: MID, items: { sword: 3, conch: 1, anchor: 1, lens: 1, bombs: 1, cleats: 2, bellows: 1, reefseed: 1, rod: 1, dredge: 1 } },
 };
 
-const dungeonId = process.argv[2] || 'd1';
+const args = process.argv.slice(2);
+const dungeonId = args.find(a => !a.startsWith('--')) || 'd1';
+const godMode = args.includes('--god');
+const budgetArg = args.find(a => a.startsWith('--budget='));
+const BUDGET = budgetArg ? Number(budgetArg.slice('--budget='.length)) : 9000;
 const fight = FIGHTS[dungeonId];
 if (!fight) { console.error(`unknown dungeon '${dungeonId}' — one of ${Object.keys(FIGHTS).join(', ')}`); process.exit(1); }
 
@@ -118,22 +130,24 @@ const info = await page.evaluate(async (id) => {
 const [fl, rx, ry] = info.room.split(',').map(Number);
 
 console.log(`${dungeonId.toUpperCase()} ${info.name}: ${fight.boss} at ${info.room}, tide ${fight.tide}`);
-console.log(`REAL COMBAT — no god mode, 3 hearts (12 quarter-hearts), seed ${SEED}\n`);
+console.log(godMode
+  ? `GOD MODE — unlimited health, budget ${BUDGET} frames, seed ${SEED} — asks "does more time/health help?", not "is this fair"\n`
+  : `REAL COMBAT — no god mode, 3 hearts (12 quarter-hearts), budget ${BUDGET} frames, seed ${SEED}\n`);
 
 await page.evaluate(([setup, steps]) => window.__rp.beginRecord(setup, steps), [{
-  seed: SEED, godMode: false, items: fight.items, equipA: 'sword', equipB: 'conch',
+  seed: SEED, godMode, items: fight.items, equipA: 'sword', equipB: 'conch',
   maxHearts: 12, hearts: 12, tide: fight.tide,
   enter: [dungeonId, fl, rx, ry, 72, 80, 'up'],
 }, [
   ['wait', 30],
-  ['boss', 9000],
+  ['boss', BUDGET],
   ['wait', 240],
 ]]);
 
 let done = false, err = null, guard = 0;
 let lastHp = null, lastQh = null;
 const timeline = [];
-while (!done && guard++ < 4000) {
+while (!done && guard++ < Math.ceil(BUDGET / 20) + 400) {
   let r;
   try { r = await page.evaluate(n => window.__rp.pump(n), 20); }
   catch (e) { err = String(e.message || e).replace(/^page\.evaluate: /, '').split('\n')[0]; break; }
@@ -144,7 +158,7 @@ while (!done && guard++ < 4000) {
     return { hp: b ? b.hp : null, dead: b ? b.dead : null, qh: g.progress ? g.progress.hearts : null, frame: g.frame };
   });
   if (m.hp !== lastHp || m.qh !== lastQh) { timeline.push(m); lastHp = m.hp; lastQh = m.qh; }
-  if (m.qh === 0) break;
+  if (m.qh === 0 || m.dead) break;
 }
 
 console.log('timeline (boss.hp / player quarter-hearts, on change):');
@@ -158,7 +172,7 @@ for (const d of dmgLog) console.log('  ' + JSON.stringify(d));
 const final = timeline[timeline.length - 1] || {};
 const startHp = timeline[0] ? timeline[0].hp : null;
 console.log('\n=== SUMMARY ===');
-console.log(`outcome: ${final.qh === 0 ? 'PLAYER DIED' : final.dead ? 'BOSS DIED' : 'timed out'}`);
+console.log(`outcome: ${final.dead ? 'BOSS DIED' : final.qh === 0 ? 'PLAYER DIED' : `still alive after ${BUDGET} frames (never finished)`}`);
 console.log(`boss damage dealt: ${startHp != null && final.hp != null ? startHp - final.hp : '?'} of ${startHp}`);
 console.log(`player damage taken: ${dmgLog.reduce((s, d) => s + d.lost, 0)} quarter-hearts, in ${dmgLog.length} hits`
   + ` (${dmgLog.filter(d => d.isProjectile).length} projectile, ${dmgLog.filter(d => !d.isProjectile).length} contact)`);

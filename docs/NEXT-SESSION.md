@@ -1,4 +1,153 @@
-## Contact damage during the approach is FIXED — real per-axis hitbox gap replaces the Manhattan-sum cutoff (this session)
+## God mode proves it's a logic ceiling, not a health problem — and the ceiling is Gohmaraq's own charge trigger, not this verb's positioning (this session)
+
+**Asked and answered: does more health, or god mode, let this verb win?
+No.** A 60000-frame (1000s of game time) god-mode run — unlimited player
+health, so zero survival pressure at all — still leaves Gohmaraq stuck at
+14 hp FOREVER (`boss: still alive after 60000 frames (hp 14)`). Every prior
+session's framing ("what kills a 3-heart player is chip damage") was
+answering the wrong question: the verb's melee output plateaus at exactly 5
+hits regardless of the player's own survivability. This is the headline
+finding, and it redirects the whole job: **the ceiling is not defensive —
+it's that `dBoss` structurally cannot land a swing once Gohmaraq's phase 2
+starts charging, no matter how much time or health it's given.**
+
+**Root cause, traced frame-by-frame with a 1-frame-resolution trace (poll
+`b.charging`/`b.stun`/distance every single engine frame — coarser
+sampling hides an 18-frame tell entirely, which is what made this
+invisible until now):**
+
+1. `charge()` (`src/game/enemy.js`) triggers the INSTANT `aligned(e,g,tol)
+   && distToPlayer(e,g)<range` is true, every single frame the boss isn't
+   already frozen — there is no cooldown or reaction buffer separate from
+   the charge's own tell/dash/recover cycle. Gohmaraq's phase 2 range is
+   130px, covering nearly the whole room, and `aligned()` accepts EITHER
+   row OR column alignment — an easy bar in an open arena.
+2. Landing a swing REQUIRES being well inside that same 130px range and,
+   for a melee hit to connect at all, roughly aligned with the boss (facing
+   it). **Melee range is a strict subset of charge range, and reaching it
+   is essentially the same condition that fires a charge.** So the instant
+   an approach gets close enough to swing, it has also — necessarily —
+   satisfied the charge trigger, and `charge()`'s own per-frame check fires
+   before the swing can land.
+3. Traced directly: once phase 2 begins, the boss transitions from one
+   charge's full cycle (18f tell + dash + 24f recover) STRAIGHT into the
+   next with no gap at all (`f=1163 charging:false, stun:0` immediately
+   followed by `f=1164 charging:true, stun:18` — zero idle frames between).
+   There is no window in which `dBoss`'s normal "close in and swing" logic
+   ever gets to run for more than a frame or two.
+4. The one real opening is the tell itself: `Enemy.update` returns early
+   without running `spec.ai` at all while `stun>0` (`src/game/enemy.js:178`
+   — the same mechanism `windUp` uses), so for the ENTIRE 18-frame tell the
+   boss cannot move, attack, or retaliate. `dBoss` used to spend that whole
+   window on preemptive perpendicular dodging regardless, even though
+   there's nothing to dodge yet. But measured directly: charges in this
+   fight trigger from **60-130px out**, and 18 frames of closing (~1.4px/f
+   diagonal) only covers ~25px — nowhere near enough to turn a fresh tell
+   into a swing on its own.
+
+**Four fixes were built on this diagnosis and measured, three reverted:**
+
+- **A free swing if already close when a charge's tell starts** (`b.stun>0
+  && weakOpen && closeEnough`) — logically sound but almost never fires,
+  because charges just don't trigger from swing range (see point 4 above).
+- **Close the distance during a fresh tell instead of dodging nothing** —
+  fires often, does make real progress (traced: Manhattan distance dropping
+  25px→29px→...→21px over an 18-frame tell), but 21px still isn't
+  `closeEnough`'s real per-axis gap, so the tell runs out before it
+  connects, most of the time.
+- **Distinguishing a fresh charge tell from a slam interrupting an
+  already-running dash** — a genuinely new engine finding worth keeping in
+  mind even though the fix built on it didn't move the needle:
+  `gohmaraqSlam`'s timer is checked in the SAME per-frame `ai()` as
+  `charge()`, regardless of `e.charging`, so a slam's 22-frame windUp can
+  freeze the boss MID-DASH — `b.charging` stays true while `b.stun` jumps
+  to a fresh nonzero value, which looks identical to a brand-new charge
+  tell from the outside but is not safe the same way (the interrupted dash
+  resumes the instant it clears). `dashStarted` (added, then reverted with
+  the rest) tracked whether the real dash had already been observed for the
+  current charging episode, so a later stun window wasn't mistaken for a
+  fresh, safe tell.
+- All three of the above, together, were measured against BOTH the
+  60000-frame god-mode run (still stuck at 14 forever, no change) and the
+  real 3-heart fight (still 5 hits / 10 of 24 hp / 12 qh taken / dies,
+  frame 1500 vs the baseline's 1520 — noise, not a result). Reverted in
+  full.
+- **Kept: wall-aware `fence()`.** A `passable(g,q,tx,ty)` check
+  (`tools/actor-runtime.mjs` already had this helper for `dGoto`/`dFight`
+  pathing, itself the engine's own `canOccupy` — the same discipline
+  CLAUDE.md's collision rule asks of checkers, applied here to an actor's
+  own movement) now drops any component of a commanded mask that would
+  step onto a solid tile. Traced directly this session: "retreat away from
+  the boss" commands, computed without any notion of the room's actual
+  walls, were pinning the player against whichever wall they'd drifted
+  near and then repeatedly commanding a press further into it. This alone
+  doesn't break the charge ceiling (measured: still stuck at 14 in god
+  mode, still 5 hits/12 qh in real combat — a true wash, not a regression),
+  but it is a real, generically-useful bug fix in its own right and
+  `check-bosses.mjs` stays 13/13 with all six bosses' god-mode damage
+  numbers unchanged, so it's shipped on its own merits.
+
+**What real combat's damage log adds on top of all this:** even where
+`closeEnough` blocked every contact hit this session (0 contact in every
+run since the previous fix), 6 ranged hits still land regardless of which
+of the above variants was active, at highly variable distances (14-134px)
+and boss states (mid-charge, mid-tell, at rest) — consistent with a
+fight that is simply going to run a certain number of frames (chasing an
+uncatchable, mostly-charging boss) before the fixed rate of incoming fire
+adds up to 12 quarter-hearts, REGARDLESS of what `dBoss` does. This closes
+the loop on the "total damage invariant" observation from earlier in this
+same session: it isn't coincidence, it's the charge ceiling expressing
+itself as a time-based damage total once defense is otherwise solid.
+
+**What this means for the job, stated plainly:** `dBoss`'s "close in and
+swing" paradigm cannot, by construction, beat a boss whose primary phase
+-2/3 behavior charges on sight at 130px range with no cooldown. Landing
+MORE than 5 hits needs the verb to either (a) shadow the boss much more
+tightly at all times — not just react to specific triggers — so that
+WHENEVER a charge's tell does start, the player is already inside the ~25px
+the tell can close, or (b) find and exploit some OTHER mechanism this
+session didn't try (e.g., does luring a charge into a wall — the existing
+comment mentions dashes ending in a wall leave the eye open longer, `open(e,
+g, 70)` on `wasCharging && !e.charging` — create a LONGER, more exploitable
+opening than a fresh tell does? Untested this session). This is a
+fundamentally different kind of fix than anything tried across nine
+measured attempts now (four last session, five this one) — all of which
+worked WITHIN the existing "far away, wait for an opening, close in"
+paradigm and all of which hit the same ceiling.
+
+**Next session, in order:**
+
+1. **Try (a) above: proactive close-shadowing.** Instead of only closing
+   distance reactively (in response to weakOpen or a charge tell), keep the
+   player within some small band of the boss's position AT ALL TIMES
+   phase 2+ is active (even while it patrols/idles), so a charge's tell —
+   whenever it fires — starts from a position the 18-frame window can
+   actually close. This is a genuinely different algorithm shape, not a
+   parameter tweak, and needs the same rigor as everything above: measure
+   with `tools/measure-boss-combat.mjs d1` AND the god-mode long-run script
+   (ad hoc this session, worth committing alongside if it's reused) before
+   trusting any result.
+2. **Or try (b): does a wall-ended charge's extended `open()` window (70f
+   at MID/HIGH, 140f at LOW) offer a bigger, more reliable target than a
+   fresh tell?** Untested. If Gohmaraq is regularly driving itself into
+   walls anyway (it does, per `wasCharging && !e.charging → open(e,g,70)`
+   in phase 2), a verb that WAITS for that specific transition rather than
+   trying to intercept every tell might find a cleaner opening.
+3. Only once one of these actually raises "melee hits landed" past 5 (proof
+   required: `tools/measure-boss-combat.mjs d1`, boss hp below 14) is there
+   a reason to return to the ranged-hit-dodging question — six hits' worth
+   of chip damage doesn't matter if the fight ends before they can all land.
+4. Once Gohmaraq is a measured win at 3 hearts, wire `dBoss` into
+   `playthrough-route.mjs` past `d1/0,3,2`, and only then look at the other
+   five bosses — Gloomtide's swimming-blocks-swinging finding in particular
+   needs a real tactic (sink with the Cleats first), not this generic verb.
+5. The Boss Key / third-key pass behind the Clawcrab door and the other five
+   dungeons' routes are both still undone and both still blocked on job 1
+   actually finishing.
+
+---
+
+## Contact damage during the approach is FIXED — real per-axis hitbox gap replaces the Manhattan-sum cutoff (previous session)
 
 **Shipped.** The previous session's own finding (below) said all four hits in
 a real 3-heart Gohmaraq fight landed during `dBoss`'s approach branch, and

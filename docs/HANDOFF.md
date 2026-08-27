@@ -224,6 +224,43 @@ is in the page, and nothing steps until you say so.
 
 ## Hard-won lessons — do not rediscover these
 
+**When a boss's melee range is a strict subset of its charge range, "close
+in and swing" cannot beat it — no amount of health or dodging fixes that,
+only a different approach shape can.** Proved by god mode, not guessed: a
+60000-frame (1000s of game time) unlimited-health run of Gohmaraq still
+gets stuck at 14 hp FOREVER. `charge()` (`src/game/enemy.js`) fires the
+INSTANT `aligned() && distToPlayer()<range` is true, every frame the boss
+isn't already frozen, with Gohmaraq's phase-2 range (130px) covering nearly
+the whole arena — so reaching melee distance (far inside 130px, and
+necessarily aligned to face the boss) ALSO satisfies the charge trigger,
+which fires first. Once phase 2 starts, the boss chains one charge's full
+cycle straight into the next with zero idle frames between (traced
+directly), so `dBoss`'s normal "close in, wait for an opening, swing" logic
+never gets a window longer than a couple of frames. The one exploitable
+gap — the charge's own 18-frame tell, during which `Enemy.update` won't run
+`spec.ai` at all so the boss is 100% inert — isn't enough on its own,
+because charges measured this session triggered from 60-130px out and 18
+frames of closing only covers ~25px. Five variants built on this diagnosis
+(free swing during a fresh tell, closing distance during the tell, and
+distinguishing a fresh tell from a slam interrupting an active dash — a
+real, separate engine finding: `gohmaraqSlam`'s timer is checked in the
+SAME `ai()` call as `charge()` regardless of `e.charging`, so a slam can
+freeze the boss mid-dash with `charging` still true and a fresh `stun`,
+which looks identical to a new tell from the outside but isn't safe the
+same way) were all measured against the god-mode long-run AND real combat
+and NONE moved the needle. See docs/NEXT-SESSION.md's current top section
+for the full trace and what's actually untried (proactive close-shadowing,
+or exploiting the longer `open()` window a wall-ended charge grants).
+
+**A "retreat away from the boss" command can point straight into a wall,
+and nothing in `dBoss` used to know that.** `fence()` now drops any
+direction component that would step onto a solid tile (`passable`, the
+engine's own `canOccupy`, already used elsewhere in this file for pathing)
+before it goes out — a blocked retreat slides along the wall on its
+remaining free axis instead of repeatedly pressing into stone. Doesn't fix
+the charge ceiling above on its own (measured neutral against it), but is
+a real, generically-useful fix and stays shipped.
+
 **FIXED — but keep the shape of the bug in mind, it will recur. A
 Manhattan-sum distance is not a hitbox, and gating an approach on one reads
 as "close enough" well after contact already happened.** `dBoss`
