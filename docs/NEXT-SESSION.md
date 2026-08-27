@@ -1,4 +1,148 @@
-## Charge dodge lands, ranged dodge doesn't — the boss verb, continued (this session)
+## The contact hits are mid-approach, not the ranged spray — two more dead ends closed, measured (this session)
+
+**Still not a win, and the melee-trade numbers are unchanged: 24 -> 14 hp, same
+seed 20260806, same death.** This session built a proper instrumented
+harness (hooking `Player.prototype.takeDamage` and `Boss.prototype.hurt`
+directly, plus a per-frame ring buffer of player/boss position and boss
+state) rather than inferring the fight from sampled hp deltas, and used it to
+re-examine the two open questions from last session's board. Both are now
+closed with real numbers instead of a guess.
+
+**Finding 1: the fight never leaves phase 1, so idea #2 (the same-speed
+phase-3 patrol) is confirmed moot for a real 3-heart fight.** Boss hp only
+reaches 14/24 (58%) before the player dies — phase 1 runs from 100% to 62%,
+phase 2 from 62% to 30%. The player is dead well before hp could fall far
+enough to reach phase 3's 1.0 px/f patrol (which only matters below 30%).
+Deprioritise that item until a run with more health or a better trade
+actually survives to see it.
+
+**Finding 2: of the 14 qh taken, 8 came from TWO boss-contact hits, not the
+ranged spray, and the ranged spray from `shootRing` (phase 3) never fires at
+all in this fight for the same phase-1-only reason above.** The instrumented
+log for the second contact hit (`docs/HANDOFF.md`-worthy detail, kept here
+since it's this verb's own trap): the player takes a contact hit at f446,
+which — by design — grants `PLAYER_INVULN_FRAMES` and the verb spends it
+chaining swings (the RETREAT_MARGIN logic, previous session). At f492 invuln
+hits exactly 0. The verb was still only ~23-15px (dx,dy) from the boss at
+that instant — nowhere close to a safe distance — and because the boss was
+still `weakOpen`, it immediately re-entered the COLD "close the distance and
+take the shot" branch and started closing again. Five frames later, at f497,
+contact fired again. **The root cause is geometric, not a timing bug**:
+Gohmaraq's contact hurtbox (`hb: {w:26,h:20}`, offset (3,10) in a 32x32
+frame) is nearly as wide as the sword's total effective reach from the
+player's center (`playerHalf + SWORD_REACH(13)` ≈ 21px). The "safe to swing,
+unsafe to stand" band this leaves is only a few pixels wide, especially on
+the y-axis (boss half-height ~10 + player half ~8 = 18px contact threshold
+vs ~21px swing reach) — there is very little room for a Manhattan-distance
+approach (`NEAR=18`) to land in it reliably, whichever direction it's
+approached from. This is a real, generic finding, not a Gohmaraq special
+case: any boss whose hurtbox approaches sword-reach size will have the same
+narrow band.
+
+**Tried and reverted, measured net negative: "one bite per weak-open
+window."** The obvious lever from last session's board — "is there a cheaper
+win in NOT engaging every eye-open window" — was built: an `openBiteUsed`
+flag that lets the cold-approach-and-swing sequence fire once per
+`weakOpen` bout, then holds at a safe shelled-style distance until the shell
+closes and reopens, rather than repeatedly re-approaching. Measured result:
+**damage dealt collapsed from 10 hp (5 hits) to 2 hp (1 hit)**, and the fight
+took *longer* to kill the player (1322 frames vs 796) while landing far
+fewer hits — worse on both axes. The mechanism: holding at range doesn't
+avoid the slam's rock-spread projectiles (`spread()`, damage 2 each, fired
+on every `gohmaraqSlam`), which are what actually killed the player in this
+run (all 6 hits in the modified run were `Projectile`, zero `Boss` contact) —
+so refusing to re-engage removes the damage-dealing upside without removing
+the standing chip-damage downside. Reverted in full (`tools/actor-runtime.mjs`
+is back to the previous session's committed state); the idea is closed, not
+open, unless someone finds a way to also dodge the slam spread while
+holding position.
+
+**What is actually still open, and it is a genuinely different kind of
+problem than the last two sessions attempted.** Both closed ideas were
+timing/behavior tweaks to the existing generic verb. The finding above says
+the ceiling might be geometric: `NEAR=18` (Manhattan) doesn't reliably land
+inside the narrow safe-swing/unsafe-contact band for a boss this size. Two
+directions worth trying, neither attempted yet:
+
+1. **Use the engine's own boxes instead of a flat Manhattan constant.**
+   `dBoss` runs inside the page (it's evaluated into the browser by
+   `installRuntime`), so it has live access to `b.hb`, `p.rect()`,
+   `b.rect()` and even `p.overlaps(b)` — the exact functions
+   `updateContactDamage` and `swordBox` use. A per-boss-agnostic "would this
+   position land a swing / would this position take contact" check built
+   from those real boxes, rather than a guessed Manhattan number, would
+   generalize the way `tools/lib/collision.mjs` generalizes tile passability
+   — worth doing for the same reason that consolidation was worth doing.
+2. **Line up on-axis before closing, the way `dFight` already does for
+   ordinary enemies** (see its `LINED` check, ~30 lines above `dBoss` in
+   `tools/actor-runtime.mjs`). `dBoss`'s diagonal approach (deliberately, per
+   CLAUDE.md's non-normalised-diagonal rule) never straightens onto the
+   boss's exact row/column before swinging, so at the moment it commits it
+   may be carrying real off-axis offset into a hitbox check that has no
+   slack for one. This was not measured this session — it's a hypothesis
+   from reading the code, not a finding — but it's a small, testable change
+   and the log's contact positions (`bx=50,by=48` vs `px=74,py=66` at the
+   contact-adjacent frame) do show a real perpendicular offset at the time
+   of the hit.
+
+**Shipped, unrelated to the boss verb but found and fixed on the way:**
+
+- `d3/0,2,2` Bogmaw Hall's miniboss reward was empty (`reward: { say: '...' }`
+  with no `spawn`) — the same bug the Clawcrab Den had before P9. D3 is
+  already at its two-heart-piece quota (`check-hearts.mjs` pins the split),
+  so this is not a heart piece: it now drops a `fairy` pickup, the same kind
+  two other miniboss/puzzle rooms already use as a post-fight refill. No
+  assertion moved (`check-hearts.mjs` 114/114, `check-items.mjs` 91/91,
+  `walk-dungeons.mjs` 23/23, `check-playthrough.mjs` 19/19, all identical to
+  their pre-change baselines — verified by stashing the data change and
+  re-running).
+- **The `CHROMIUM_PATH` fallback finally reached every remaining checker.**
+  `check-items.mjs`, `check-charms.mjs`, `check-motion.mjs`,
+  `check-trade.mjs`, `find-ledges.mjs` and `preview.mjs` were still dying on
+  launch in this sandbox before loading a line of game code, the same defect
+  five other tools already had a fix for (see the older board entry below).
+  All six now carry the same fallback and all run green here:
+  `check-items` 91/91 (a pre-existing count, confirmed by running it against
+  an unmodified `dungeons-a.js` via `git stash` first — not something this
+  session's edits changed), `check-charms` 63/63, `check-motion` 8/8,
+  `check-trade` 43/43, `find-ledges` 810 candidates (unchanged from the
+  documented baseline). Every other file in `tools/` now carries this
+  fallback; if a future session finds one that doesn't, that's the last one.
+
+**Full suite re-verified after both the revert and the shipped fixes:**
+`validate` OK, `walk-dungeons` 23/23, `check-hearts` 114/114, `check-items`
+91/91, `test.mjs` 59/59, `check-playthrough` 19/19, `replay` 51/51,
+`check-gates` 26/26, `solve-switches` 9/9, `check-build` OK. `npm run build`
+run and `dist/oracle-of-tides.html` committed.
+
+**Next session, in order:**
+
+1. Job 1 is still the boss verb, and it has now cost three sessions without
+   a win. Before trying a fourth timing tweak, try one of the two geometric
+   directions above — they are different in kind from everything tried so
+   far, not a variation on it. If neither moves the needle within one
+   session, it may be worth asking whether Gohmaraq's hurtbox itself (not
+   the AI) is the thing to change, which is a design question for the human
+   maintainer, not something to decide unilaterally.
+2. The same-speed phase-3 patrol problem is confirmed NOT the current
+   bottleneck (finding 1 above) — leave it until a fight actually survives
+   into phase 3.
+3. Once Gohmaraq is a measured win at 3 hearts, wire `dBoss` into
+   `playthrough-route.mjs` past `d1/0,3,2`, and only then look at the other
+   five bosses — Gloomtide's swimming-blocks-swinging finding in particular
+   needs a real tactic (sink with the Cleats first), not this generic verb.
+4. The Boss Key / third-key pass behind the Clawcrab door and the other five
+   dungeons' routes are both still undone and both still blocked on job 1
+   actually finishing.
+5. Lower priority, background debt, not currently on the critical path:
+   `thalassor`, `saltwraith` and `gustharpy` are fully built (AI + sprites)
+   and placed nowhere — see "The consolidation, and how it was settled" in
+   `docs/DUNGEON-STATUS.md`. Either design an encounter for each or strip
+   them out with their sprite data.
+
+---
+
+## Charge dodge lands, ranged dodge doesn't — the boss verb, continued (previous session)
 
 **Still not a win.** Gohmaraq measured in real combat (12 quarter-hearts, no
 god mode, seed 20260806): five hits landed (24 -> 14 hp), same as last

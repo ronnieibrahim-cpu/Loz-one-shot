@@ -51,7 +51,9 @@ const main = async () => {
   const { chromium } = await loadPlaywright();
   const PORT = 20000 + Math.floor(Math.random() * 20000);
   const server = await serve(PORT);
-  const browser = await chromium.launch({ headless: true });
+  let browser;
+  try { browser = await chromium.launch({ headless: true }); }
+  catch (e) { browser = await chromium.launch({ headless: true, executablePath: process.env.CHROMIUM_PATH || '/opt/pw-browsers/chromium' }); }
   const page = await browser.newPage({ viewport: { width: 1400, height: 1000 } });
   page.on('pageerror', e => console.error('PAGEERROR', e.message));
   await mkdir(OUT, { recursive: true });

@@ -1855,7 +1855,10 @@ export function installDungeonsA() {
         puzzle: {
           enemies: true,
           flag: 'd3_bogmaw',
-          reward: { say: 'The bogmaw sinks back into the silt.' },
+          reward: {
+            spawn: [['pickup', 4, 4, { kind: 'fairy' }]],
+            say: 'The bogmaw sinks back into the silt, and something bright rises out of the mud.',
+          },
         },
       },
       '0,1,2': {
