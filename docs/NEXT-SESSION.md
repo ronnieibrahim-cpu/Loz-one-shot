@@ -116,11 +116,44 @@ reaches a boss room).
    the contact fix and was abandoned on implementation bugs before it was
    ever cleanly measured (see the archived section below, "Tried and
    reverted: dodge the ranged spray").
-4. Once Gohmaraq is a measured win at 3 hearts, wire `dBoss` into
+4. **Also tried and reverted this session: chaining a SECOND swing onto the
+   same opening**, exploiting the boss's own post-hit lock (`Boss.hurt`,
+   BOSS_INVULN_FRAMES 20f + BOSS_KNOCK_FRAMES 6f — the boss cannot act at
+   all during its own knockback, the same `Enemy.update` early-return
+   `stun` uses) instead of the mandatory 30-frame backoff, matching this
+   branch's own long-standing comment ("34 usable frames, enough for two
+   14f swings", previously only true of the OTHER, banked-invuln branch).
+   Measured net NEGATIVE, not neutral: the second swing never actually
+   connects (boss hp stayed at 10/24, unchanged) because by the time the
+   20-frame wait clears, the boss has patrolled or the window has moved
+   enough that `closeEnough` no longer holds — AND standing still that long
+   let the boss's own patrol walk into the player, reintroducing a contact
+   hit (1 of 5, back from 0) that job (1) in the section above had just
+   eliminated. If tried again, the wait-for-the-boss's-own-lock idea needs
+   to track the boss's actual position during the wait (like `closeEnough`
+   already does) rather than standing still, or it just re-opens the
+   contact bug for no offensive return.
+
+**Where this leaves job 1, after seven measured attempts across two
+sessions (four last session, three this one) that all converge on the same
+outcome:** every variant — reactive/proactive dodges of three shapes, a
+selective-engagement skip, a lead-the-patrol chase, and a chained second
+swing — lands exactly 5 melee hits and exactly 12 total quarter-hearts
+taken, give or take which frame death happens on. That consistency is
+itself informative: the ceiling may not be inside `dBoss`'s decision tree
+at all. Before a fourth wave of AI tweaks, it may be worth asking whether
+Gohmaraq's own numbers (24 hp, 4 qh contact damage) are the honest target
+for a fresh 3-heart (12 qh) player, or whether this is a P9-style
+health-economy question — CLAUDE.md's damage ladder was itself derived and
+deliberately NOT applied pending exactly this kind of measurement (see
+"The cap and the damage ladder" in docs/FEEL-SPEC.md). That is a design
+call, not an actor-code one, and needs the user's sign-off before touching
+any boss's stated hp or damage.
+5. Once Gohmaraq is a measured win at 3 hearts, wire `dBoss` into
    `playthrough-route.mjs` past `d1/0,3,2`, and only then look at the other
    five bosses — Gloomtide's swimming-blocks-swinging finding in particular
    needs a real tactic (sink with the Cleats first), not this generic verb.
-5. The Boss Key / third-key pass behind the Clawcrab door and the other five
+6. The Boss Key / third-key pass behind the Clawcrab door and the other five
    dungeons' routes are both still undone and both still blocked on job 1
    actually finishing.
 
