@@ -81,22 +81,42 @@ the approach on a live-threat signal costs more hits landed than the chip
 damage it prevents, on this seed. Two different-axis ideas worth trying
 instead, neither touched this session:
 
-1. **Test "don't engage every eye-open window" in isolation** — it was
-   proposed last session and never tried; this session went straight for
-   the shot-level fix instead. Untested combination, genuinely different
-   lever (fewer approaches, not smarter ones).
-2. **Check whether "3 hearts" is even the honest starting condition for a
-   real D1 fight.** `check-bosses.mjs` and this session's harness both start
-   the boss room at exactly 12 quarter-hearts because that's what a brand
-   new save has — but `check-hearts.mjs`'s own board added six heart pieces
-   this project's history, two of them in overworld caves and one in D1's
-   own Clawcrab Den, and none of the three has been confirmed unreachable
-   before the D1 boss door. If a real playthrough route would pick up even
-   one heart piece first (4 quarter-hearts, a fourth heart), the fight this
-   session keeps measuring at exactly 12 qh might not be the fight a real
-   player brings to Gohmaraq at all. Worth answering with the route/map data
-   before spending another session tuning the verb against a health total
-   nobody has confirmed is right.
+1. **Test "don't engage every eye-open window" in isolation, but budget for
+   it to fail the same way.** Checked the arithmetic before writing this
+   down: shot `life` is 150 frames; the slam interval that both fires shots
+   AND opens the window is 170f in phase 1 (a 20-frame gap where the arena
+   can actually go clear), but 130f in phase 2 and 105f in phase 3 — SHORTER
+   than the shots' own lifetime. In the two phases where the fatal damage
+   in this session's fight actually landed, a fresh wave of shots is airborne
+   before the previous wave has expired, so the arena structurally never
+   clears at all — there is no "wait for it to be safe" window to skip to.
+   Worth trying anyway since phase 1's 20-frame gap is real and untested, but
+   go in expecting it to help phase 1 only, not the phase-2/3 chip damage
+   that has actually been the measured cause of death twice now.
+2. **Checked this session, and it turned out to be a false lead — recorded
+   so nobody re-chases it.** The instinct was: `check-bosses.mjs` and this
+   session's harness both start the boss room at exactly 12 quarter-hearts,
+   but `src/data/overworld.js` puts two of `check-hearts.mjs`'s heart pieces
+   one screen from the village with no item requirement at all — `cave1`
+   (Bluff Grotto, through the warp at `0,3,7`, one screen west of the
+   village) and `cave2` (Reef Hollow, through `0,6,7`, which sits directly on
+   the straight-line route east from the village to `0,8,8` Grotto Mouth,
+   D1's own door — village `4,7` -> `5,7` -> `6,7` Sunken Reef -> `7,7`
+   Shallows Gate -> `8,8`, and `cave2`'s piece needs only LOW tide, which the
+   intro cutscene's conch already covers). A player exploring minimally
+   before D1 picks up both without leaving the direct route. **But it
+   doesn't matter**: `src/game/progress.js` only turns a heart PIECE into
+   extra health at exactly **four** collected (`p.heartPieces >= 4`) — two
+   pieces bank silently and change nothing about `hearts` or `maxHearts`
+   until a third and fourth arrive. `check-hearts.mjs`'s own "every dungeon
+   carries exactly two" split means the other two of any four are gated
+   behind dungeon items a pre-D1 player does not have, unless a fourth
+   ungated piece exists somewhere this session did not check. So: 12
+   quarter-hearts is very likely the honest number after all, and this
+   session's harness (seed 20260806, 3 hearts, no god mode) was measuring
+   the real fight, not an artificially harsh one. Do not re-open this angle
+   without first finding a FOURTH pre-D1, item-free heart piece — two is
+   provably not enough by the game's own arithmetic.
 
 ---
 
