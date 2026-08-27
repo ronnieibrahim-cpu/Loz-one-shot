@@ -1,4 +1,106 @@
-## Charge dodge lands, ranged dodge doesn't — the boss verb, continued (this session)
+## A third ranged-dodge attempt, reverted — the failure mode was new, and the axis is probably tapped out (this session)
+
+**Still not a win, and no code changed.** This session built a measurement
+harness (scratch, not committed — recipe below) to reproduce last session's
+real-combat numbers exactly, used it to find precisely which shot kills the
+player, tried one more targeted fix guided by that finding, measured it net
+negative by a wider margin than either of the two previous attempts, and
+reverted. `tools/actor-runtime.mjs` is byte-identical to how last session
+left it.
+
+**Reproduced the documented baseline exactly**, which is worth stating
+because it means the harness below can be trusted: seed 20260806, 12
+quarter-hearts, no god mode, tide LOW, d1 boss room — five hits landed
+(24 hp -> 14), player dies at frame 840 on a graze at 0 hearts while
+`weakOpen` is still true. Matches last session's numbers to the frame.
+
+**What the fine-grained trace found, that the coarse one couldn't:** the
+fatal shot at f796 is not a fresh attack — it's a leftover arm of the SAME
+five-way `spread()` fan that opened the phase-2 window the player is in the
+middle of trying to capitalize on. `gohmaraqSlam` fires `spread()` and
+`open()` from the same `windUp` callback (`src/data/bosses.js`), so the
+instant any opening begins, the arena already contains that opening's own
+shots — cause and opportunity share a frame. The player, mid-approach after
+dodging a charge, walked through the descending arm of a fan fired roughly
+35 frames earlier and took a 2-quarter-heart graze that emptied its last
+half heart.
+
+**Ruled out analytically before writing code, and worth recording so nobody
+re-tries it:** a blanket "don't close the distance while ANY shot is live"
+gate. Shot `life` is 150 frames; the open window at LOW tide is 140-180
+frames per phase (`openFor * 2`). Because the two are fired together and are
+comparable in length, shots are live for something like 80-90% of every
+opening by construction — a live/not-live gate would recreate the exact
+"pinned against a wall, never engages" bug from two sessions ago in a new
+disguise, just triggered by shot-presence instead of boss-distance.
+
+**What was tried instead: continuous nearest-shot avoidance, no latch, no
+line.** Deliberately smaller than the reverted line-dodge from last session
+— every frame, independently, find the single nearest live projectile; if
+it's within 20px, step directly away from where ITS OWN velocity says it
+will be next frame, instead of toward the boss. No stored side, no cross
+product, no deadzone on the threat's velocity (only on the resulting
+move — the same `towardDiag` the chase already uses). Applied only in the
+one branch that is actually exposed while moving (`weakOpen`, no invuln
+banked, closing the distance) — the two other approach branches already run
+under `p.invuln > 0`, which `Player.takeDamage` blocks everything on,
+projectiles included, so avoidance there would be dead code.
+
+**Measured net negative, worse than either previous attempt: 3 hits landed
+(24 -> 18) instead of 5, dead at frame 600 instead of 840.** The failure
+mode is NEW, not a repeat of the two bugs already on record (deadzone
+zeroing the vector; a cross-product sign noisy near zero). With three shots
+in flight from one fan, "which one is nearest" flips between two candidates
+approaching from different sides frame to frame, and the resulting
+avoid-direction alternated finely enough that the player's actual pixel
+position sat frozen at the same integer coordinate for roughly ten straight
+frames — while a shot closed in anyway and hit for chip damage during the
+stall. The avoidance produced LESS separation than doing nothing at all,
+the same shape of result as both earlier attempts by a different mechanism:
+a per-frame, no-memory design still isn't enough on its own when several
+threats are live at once and "nearest" is unstable between them, not just
+noisy within one.
+
+**The measurement harness, since it isn't committed:** boot with the exact
+setup `check-bosses.mjs` uses for its `d1` fixture (`sword:1, conch:1,
+anchor:1`, `equipA:'sword', equipB:'conch'`, `maxHearts:12, hearts:12,
+tide:LOW`, entering the boss room), but with `godMode:false`, run
+`['boss', N]`, and instead of sampling every 400 frames the way
+`check-bosses.mjs` does, `pump(1)` in a loop and read `g.boss.hp` /
+`g.progress.hearts` / live `isProjectile` entities every single frame,
+logging only on a delta. That granularity is what found the freeze — a
+400-frame-resolution sample would have shown the same final tallies and
+nothing about why.
+
+**Next session: this axis has now failed three independent, carefully-
+measured ways** (latched line-dodge; an analytically-ruled-out blanket gate;
+continuous no-memory nearest-shot avoidance). Recommend NOT trying a fourth
+variant of "read projectiles, react to them" without a genuinely different
+mechanism — the pattern across all three is that anything which perturbs
+the approach on a live-threat signal costs more hits landed than the chip
+damage it prevents, on this seed. Two different-axis ideas worth trying
+instead, neither touched this session:
+
+1. **Test "don't engage every eye-open window" in isolation** — it was
+   proposed last session and never tried; this session went straight for
+   the shot-level fix instead. Untested combination, genuinely different
+   lever (fewer approaches, not smarter ones).
+2. **Check whether "3 hearts" is even the honest starting condition for a
+   real D1 fight.** `check-bosses.mjs` and this session's harness both start
+   the boss room at exactly 12 quarter-hearts because that's what a brand
+   new save has — but `check-hearts.mjs`'s own board added six heart pieces
+   this project's history, two of them in overworld caves and one in D1's
+   own Clawcrab Den, and none of the three has been confirmed unreachable
+   before the D1 boss door. If a real playthrough route would pick up even
+   one heart piece first (4 quarter-hearts, a fourth heart), the fight this
+   session keeps measuring at exactly 12 qh might not be the fight a real
+   player brings to Gohmaraq at all. Worth answering with the route/map data
+   before spending another session tuning the verb against a health total
+   nobody has confirmed is right.
+
+---
+
+## Charge dodge lands, ranged dodge doesn't — the boss verb, continued (previous session)
 
 **Still not a win.** Gohmaraq measured in real combat (12 quarter-hearts, no
 god mode, seed 20260806): five hits landed (24 -> 14 hp), same as last
