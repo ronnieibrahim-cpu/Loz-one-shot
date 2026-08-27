@@ -755,11 +755,26 @@ export async function installRuntime() {
     for (let i = 0; i < 300 && !g.boss; i++) yield 0;
     if (!g.boss) throw new Error('boss: nothing to fight in ' + g.mapId + ' ' + (g.room && g.room.key));
     const sword = () => slotBit('sword') || BIT.b;
-    // The same numbers dFight uses, for the same reasons: strike from the near
-    // band, then break contact. A boss does contact damage like anything else,
-    // and the first cut of this verb held the stick toward the boss while the
+    // The first cut of this verb held the stick toward the boss while the
     // eye was open — three touches and a new game does not have a fourth.
-    const NEAR = 18, BACKOFF = 30;
+    const BACKOFF = 30;
+    // The distance gates below (`inSwingRange`) used to be a Manhattan-sum
+    // ("adx+ady > NEAR+6", NEAR=18) threshold, which is the wrong shape for
+    // a 32x32 boss with a wide hurtbox: a diagonal approach can already
+    // overlap the boss's actual hb on BOTH axes while adx+ady still reads
+    // comfortably "far", because a sum hides how close each axis
+    // individually is. Measured directly in real 3-heart combat (seed
+    // 20260806): two of Gohmaraq's four contact hits (8 of the 12
+    // quarter-hearts the fight cost) landed while the verb was still in its
+    // "closing the distance" branch, at adx+ady 28-30 — inside the box on
+    // both axes (hb reach ~18x13) but outside the old adx+ady>24 gate.
+    // `inSwingRange` reads the live hitboxes instead of guessing a
+    // boss-shaped number, so this stays a generic reach test rather than a
+    // Gohmaraq special case. Re-measured after the fix: the same fight now
+    // takes ZERO contact hits (was two, worth 8 of the 12 quarter-hearts) —
+    // every remaining hit is the ranged spray, a separate, already-known
+    // problem (see docs/NEXT-SESSION.md).
+    const reachOf = (ent) => ent.hb || { x: 0, y: 0, w: ent.w, h: ent.h };
     // A charge (src/game/enemy.js `charge()`) commits to a straight dash at
     // 1.9 px/f down whichever axis it last saw the player on — far outrunning
     // every other move in this verb (1.0 px/f walking, ~1.4 diagonal). The
@@ -804,6 +819,17 @@ export async function installRuntime() {
       if (!b || b.dead) return;
       const p = g.player;
       if (!p) return;
+      const inSwingRange = (ddx, ddy) => {
+        const bh = reachOf(b), ph = reachOf(p);
+        const rx = (bh.w + ph.w) / 2, ry = (bh.h + ph.h) / 2;
+        // The stop-approaching gate has to fire BEFORE the hitboxes touch,
+        // not once already inside them — a positive margin here, added to
+        // the real contact reach, not subtracted from it. (An earlier cut of
+        // this got the sign backwards: shrinking the box only made the
+        // approach walk deeper into contact before switching to face+swing.)
+        const SAFE = 6;
+        return Math.abs(ddx) < rx + SAFE && Math.abs(ddy) < ry + SAFE;
+      };
       const dm = dialogueMask(g, f);
       if (dm !== null) { yield dm; f++; continue; }
       if (g.mode !== 'play') { yield (f % 8 === 0) ? BIT.a : 0; f++; continue; }
@@ -843,7 +869,7 @@ export async function installRuntime() {
           const dx2 = b.cx - p.cx, dy2 = b.cy - p.cy;
           const ax2 = Math.abs(dx2), ay2 = Math.abs(dy2);
           const toward2 = towardDiag(dx2, dy2);
-          if (ax2 + ay2 > NEAR + 6) { yield fence(toward2); f++; continue; }
+          if (!inSwingRange(dx2, dy2)) { yield fence(toward2); f++; continue; }
           const faceOnly = ax2 >= ay2 ? (dx2 > 0 ? BIT.right : BIT.left) : (dy2 > 0 ? BIT.down : BIT.up);
           yield fence(faceOnly); f++;
           yield fence(faceOnly | sword()); f++;
@@ -865,7 +891,7 @@ export async function installRuntime() {
         // Gohmaraq's phase-1 tell is a stationary spray, not a charge closing
         // on us, so there is nothing here worth backing away from before the
         // swing.
-        if (adx + ady > NEAR + 6) { yield fence(towardDiag(dx, dy)); f++; continue; }
+        if (!inSwingRange(dx, dy)) { yield fence(towardDiag(dx, dy)); f++; continue; }
         // In range: face it, swing, then get out before it closes.
         yield fence(toward); f++;
         yield fence(toward | sword()); f++;
