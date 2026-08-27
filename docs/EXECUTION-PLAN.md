@@ -1219,39 +1219,40 @@ the same side, the information is a convenience and the requirement is a
 decoration. The cost of guessing wrong has to be real and it has to be paid
 before the answer is known.
 
-**Also note for D2-D6:** the game is still eight dungeons in the data. The
-six-dungeon consolidation in the prompt above has not happened, and D1 did not
-need it (D1's item and theme already match the table). Folding d7 and d8 into
-their neighbours is still owed and belongs to whichever session takes those.
+**The six-dungeon consolidation is done.** This note used to say the game
+was still eight dungeons in the data and the fold was owed — stale by the
+time it was read; see `docs/DUNGEON-STATUS.md`, "The consolidation, and how
+it was settled" for what `d7`/`d8` became and where their content landed.
 
-### P9 — Overworld re-gating and difficulty
+### P9 — Overworld re-gating and difficulty (DONE, all four steps)
 
-**Step 3 (the health economy) is DONE** — see `docs/FEEL-SPEC.md`, "The cap and
-the damage ladder". The cap was 13, one under the floor, with two heart pieces
-that could never complete a container; it is now 15, from 24 pieces and the six
-Heart Containers, and `tools/check-hearts.mjs` computes and pins it. The damage
-half was re-derived in the same pass (raising the cap is a difficulty change on
-its own) and the corrected ladder is recorded but deliberately not applied —
-every enemy it touches sits past the point the playthrough harness can reach.
-**Steps 1, 2 and 4 (the region re-gating) are still outstanding.**
+**Step 3 (the health economy)** — see `docs/FEEL-SPEC.md`, "The cap and the
+damage ladder". The cap was 13, one under the floor, with two heart pieces
+that could never complete a container; it is now 15, from 24 pieces and the
+six Heart Containers, and `tools/check-hearts.mjs` computes and pins it
+(114/114). The damage half was re-derived in the same pass (raising the cap
+is a difficulty change on its own) and the corrected ladder is recorded but
+deliberately not applied — every enemy it touches sits past the point the
+playthrough harness can reach.
 
-
-```
-The overworld has eight regions gated on items that no longer exist.
-
-1. Re-gate for six dungeons. Five gates should be tile-flag-shaped so
-   check-overworld.mjs can prove them in both directions; terrain-shaped gates
-   are a last resort and must be documented as unprovable.
-2. The Brineglass Lens is informational and must never be a gate. (Region
-   scope only. Inside D2 the rooms after it DO require it — see the D2 decision
-   under P8 for why both rules stand and what "require" means for an item that
-   only shows you things.)
-3. Re-tune to match the source games: 3 hearts at start, half-heart contact
-   damage from ordinary enemies. Six Heart Containers plus heart pieces should
-   land the cap at 14-16 hearts, so heart pieces need to scale up from the
-   eight-dungeon assumption.
-4. Re-run every checker and both replays.
-```
+**Steps 1, 2 and 4 (the region re-gating) were marked outstanding here for a
+long time after they'd actually landed.** `a608eb4` ("Open the road to the
+Keep with the story, and the Cliffs with a bomb") did the actual re-gating
+the same day as the step-3 commit above, but this file was never touched
+again to say so — exactly the documentation-drift CLAUDE.md's own workflow
+section warns about. Confirmed done, not just claimed: `tools/check-overworld.mjs`
+is 17/17 (four gates — `bombs`, `rod`, `keep` [a story flag, not an item],
+`dredge` — each tile-flag- or story-flag-shaped and provable in both
+directions, no terrain-shaped gate anywhere, and no `lens` gate at all, which
+is P9 step 2's rule satisfied by omission); `tools/check-progression.mjs` is
+19/19 and reaches 120/120 screens with 6/6 dungeons cleared, granting
+exactly the items a real player would have at each round — proof nothing is
+gated on a dead item; both replays (`tools/replay.mjs`, 51/51) are green.
+The original plan called for "eight regions" and "five gates"; the shipped
+design converged on four gates that fully cover the same ground (`bombs`
+alone covers two branches — the Marsh and the Cliffs of Kell) rather than
+literally five, and that's fine — the requirement was a working, provable
+scheme with no dead items and the Lens never a gate, not a specific count.
 
 ### PB — Single-file build (done)
 
@@ -1312,7 +1313,7 @@ to the hard-won-lessons section of docs/HANDOFF.md.
 | 8 | **PT towns, buildings, terrain polish** | P9 | (steps 1-4 done; step 5, the terrain backlog, is all that is left)
 | 9 | P7 scrimshaw (done) | — |
 | 10–15 | P8 dungeons 1–6 (done) | P9 |
-| 16 | P9 overworld + difficulty | — |
+| 16 | P9 overworld + difficulty (done, all four steps) | — |
 
 PT sits before P9 deliberately. A gate is a tile flag dropped into a finished
 screen; a town is the screen itself. Re-gating a finished village is a small

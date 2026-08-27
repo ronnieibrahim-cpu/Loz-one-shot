@@ -40,12 +40,10 @@ done. Audited by counting the live map data rather than by reading this table
 back.
 
 **What that does NOT mean.** "Nobody has played one" is not a box on the
-checklist and it is still true of all six — see the bottom of this file. And P8
-being finished does not make P9 the next thing by itself: `docs/EXECUTION-PLAN.md`
-Part 4 puts **PT (towns) at step 8 and P9 at step 16**, deliberately, because
-re-gating a finished village is a small edit and re-towning a gated screen is
-not. P9's gates (P6 and P8) are satisfied, so it CAN start; PT is what the plan asks
-for first, and its steps 1-4 have since landed — the block machinery, the
+checklist and it is still true of all six — see the bottom of this file.
+**P9 (overworld re-gating and difficulty) is now done too** — all four
+steps, see `docs/EXECUTION-PLAN.md`'s P9 section for the checkers that
+prove it. **PT (towns)'s steps 1-4 have landed** — the block machinery, the
 extracted town kit and four town screens, proved by `tools/check-towns.mjs`.
 What is left of PT is the terrain backlog and the townsfolk sprites.
 

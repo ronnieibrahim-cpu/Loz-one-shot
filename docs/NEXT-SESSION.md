@@ -225,14 +225,19 @@ can't tell contact from ranged.
 - **PT (towns) steps 1-4**: block machinery, extracted town kit, four town
   screens, `tools/check-towns.mjs`. Step 5 (terrain backlog) and populating
   the towns with people are still open — see "What's left" below.
-- **P9 step 3 (heart economy)**: cap raised from a broken 13 to 15 (24
-  pieces, six Heart Containers), `tools/check-hearts.mjs` pins it and the
-  damage ladder. **P9 steps 1, 2, 4 (region re-gating) are still open** —
-  eight overworld regions gated on items that no longer exist. Full spec:
-  `docs/EXECUTION-PLAN.md`, "P9 — Overworld re-gating and difficulty".
-  **The Brineglass Lens must never be a region gate** (informational item;
-  it IS required inside D2's own rooms, a different, narrower rule — see the
-  D2 decision in EXECUTION-PLAN for why both stand).
+- **P9, all four steps, including region re-gating.** Cap raised from a
+  broken 13 to 15 (24 pieces, six Heart Containers), `tools/check-hearts.mjs`
+  pins it and the damage ladder. The region re-gating (four gates — bombs,
+  the Rod, a story flag for the road to the Keep, the Dredge Line — no dead
+  items, no Lens gate) had actually landed too, in `a608eb4`, but
+  `docs/EXECUTION-PLAN.md` was never updated to say so and kept describing
+  it as outstanding — found and corrected this session (see `git log
+  --oneline -- docs/EXECUTION-PLAN.md` if you want the paper trail). Proven
+  by `tools/check-overworld.mjs` (17/17) and `tools/check-progression.mjs`
+  (19/19, 120/120 screens, 6/6 dungeons, granting only items a real player
+  would have at each point). **The Brineglass Lens is not a region gate**
+  (it IS required inside D2's own rooms, a different, narrower rule — see
+  the D2 decision in `docs/EXECUTION-PLAN.md` for why both stand).
 - **The trading sequence (P9.5)**: the Coastwise Chain, eleven traders,
   pays out the Resonance Rod. `docs/TRADING.md`, `tools/check-trade.mjs`.
 - **Title screen is drawn art**, matched to the Oracle series' title-card
@@ -270,20 +275,17 @@ can't tell contact from ranged.
    town-shaped follow-ups worth doing alongside it: Tidewatch doesn't answer
    the tide visually (looks identical at all three levels), and there's no
    third town legend (marsh/cliff/salt) yet — both are ART-BACKLOG.md items.
-4. **P9 steps 1, 2, 4** — the region re-gating (see "Where things stand"
-   above). Can start any time; deliberately not first because re-gating a
-   finished screen is a small edit and re-towning a gated one is not.
-5. **Apply the derived damage ladder** once the boss-verb work makes it
+4. **Apply the derived damage ladder** once the boss-verb work makes it
    measurable in a real fight (raising the heart cap was a difficulty change
    even though no enemy damage value moved yet — see `docs/FEEL-SPEC.md`,
    "The cap and the damage ladder"), then re-record the replays against it.
-6. **59 stale branches remain on `origin`, none of them should be merged**
+5. **59 stale branches remain on `origin`, none of them should be merged**
    (all superseded by work already on `main` — see `git ls-remote --heads
    origin` for the live list). Deleting one was blocked by the auto-mode
    permission classifier this session (destructive remote-git-op — needs a
    human to approve or to pre-allow it), and by a proxy 403 in an earlier
    one. Ask the user directly rather than retrying blind.
-7. Known soft spots that are real but not urgent: charm balance (30 charms
+6. Known soft spots that are real but not urgent: charm balance (30 charms
    exist, none compared to another), `ANCHOR_RADIUS_TILES`/
    `NEAP_GRACE_FRAMES` need someone to actually play them rather than guess,
    and the art-legibility findings recorded per-dungeon in
