@@ -1,4 +1,90 @@
-## Every hit in the measured fight lands during the APPROACH, not the swing — and a real-combat harness is now committed (this session)
+## Contact damage during the approach is FIXED — real per-axis hitbox gap replaces the Manhattan-sum cutoff (this session)
+
+**Shipped.** The previous session's own finding (below) said all four hits in
+a real 3-heart Gohmaraq fight landed during `dBoss`'s approach branch, and
+two of those four were body contact at a Manhattan distance (`adx+ady` 28,
+30) the approach's own `> NEAR+6` (24) cutoff still called "still safe to
+keep closing." That cutoff summed centre-to-centre distance on both axes,
+which is not the shape of the boss's actual 26x20 hitbox (`hb` in
+`defineBoss('gohmaraq', ...)`) — a diagonal close can already be touching on
+the SHORT axis while the summed distance still reads "far" on the long one.
+
+**The fix, in `tools/actor-runtime.mjs`'s `dBoss`:** a new `closeEnough(ea,
+eb)` reads BOTH entities' real `.rect()` (`Entity.rect()`,
+src/game/entity.js — `x+hb.x, y+hb.y, w:hb.w, h:hb.h`, the same rectangle
+`overlaps()`/contact damage itself uses) and computes the true per-axis gap
+between them, not a summed distance from centres. It replaces both
+Manhattan-sum cutoffs that gated "keep closing vs. stop and swing" (the
+banked-invuln approach and the no-invuln approach — both had the identical
+shape of bug). This is the same principle CLAUDE.md's collision rule
+already states for checkers — ask the engine's own geometry rather than
+reinvent a formula for it — applied to an actor's own positioning instead
+of a tile check.
+
+**Measured with `tools/measure-boss-combat.mjs d1`** (real combat, 3
+hearts, no god mode, seed 20260806), before vs. after, `CONTACT_BUFFER`
+swept 2/4/6/8/10 (settled on 6 — 4 through 10 all gave the identical result,
+2 was too tight and let one contact hit back in):
+
+| | before | after |
+|---|---|---|
+| melee hits landed / boss damage | 5 hits, 10/24 hp | 5 hits, 10/24 hp — unchanged |
+| contact hits taken | 2 (4 qh each) | **0** |
+| projectile hits taken | 2 (2 qh each) | 6 (2 qh each) |
+| total damage taken | 12 qh (fatal) | 12 qh (fatal) |
+| frame of death | 800 | 1520 |
+
+**Contact damage during the approach is eliminated outright** — every one of
+the six hits in the "after" run is a projectile, none is a body touch — and
+melee output is byte-identical to before (still exactly 5 hits, still 14 hp
+left on the boss), so this is not a tradeoff against the thing that was
+working. **It is not yet a win.** The player still takes exactly 12 total
+quarter-hearts and still dies, just twice as slowly: with contact removed,
+the fight simply runs twice as long before the SAME total of ranged chip
+damage accumulates, and no additional melee hits land in all that extra
+time — the boss reaches 14 hp once (frame 640) and never again for the
+remaining 880 frames the fight survives. That is the same-speed-patrol
+problem this file already flagged as unmeasured in real combat: once the
+boss is loose in its faster/patrol phases, apparently nothing about the
+current approach logic catches it again, contact damage or not.
+
+Verified clean: `node tools/test.mjs` 59/59, `node tools/check-bosses.mjs`
+13/13 with the god-mode damage numbers for D1/D4/D5 byte-identical to
+before (10/24, 20/44, 20/52) and D2/D3/D6 still 0 — this touches only the
+approach-distance decision, not anything a shelled/god-mode run exercises
+differently. `node tools/replay.mjs` 51/51 and `node
+tools/check-playthrough.mjs` 19/19, both unaffected as expected (neither
+reaches a boss room).
+
+**Next session, in order:**
+
+1. **The same-speed patrol problem, now clearly the remaining blocker, not a
+   side theory.** Phase 3's patrol speed (1.0 px/f) equals the player's own
+   `WALK_SPEED`, so once the fight is past its first opening the boss is
+   never caught by a straight chase — `closeEnough` can only stop a bad
+   approach, it cannot manufacture one that wasn't going to close in the
+   first place. Try waiting for a patrol reversal, or cutting the corner
+   instead of chasing in a straight line, and measure with
+   `tools/measure-boss-combat.mjs d1` before and after — a fix here should
+   raise "melee hits landed" past 5, which nothing has done yet.
+2. **The 6 remaining ranged hits are now the whole of the damage taken** —
+   distances in the current log range 37-102px, several while ANOTHER
+   windup is already counting down (`stun` 1-15). Once (1) stops burning
+   frames without progress, re-examine whether these are dodgeable; the
+   previous session's four reactive-dodge attempts were all measured
+   against the OLD contact-heavy baseline and may read differently now
+   that contact is out of the picture.
+3. Once Gohmaraq is a measured win at 3 hearts, wire `dBoss` into
+   `playthrough-route.mjs` past `d1/0,3,2`, and only then look at the other
+   five bosses — Gloomtide's swimming-blocks-swinging finding in particular
+   needs a real tactic (sink with the Cleats first), not this generic verb.
+4. The Boss Key / third-key pass behind the Clawcrab door and the other five
+   dungeons' routes are both still undone and both still blocked on job 1
+   actually finishing.
+
+---
+
+## Every hit in the measured fight lands during the APPROACH, not the swing — and a real-combat harness is now committed (previous session)
 
 **No code shipped this session.** Four more attempts at reducing Gohmaraq's
 chip damage were built, measured, and reverted, all net neutral or negative —

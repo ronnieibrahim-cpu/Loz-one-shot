@@ -755,11 +755,13 @@ export async function installRuntime() {
     for (let i = 0; i < 300 && !g.boss; i++) yield 0;
     if (!g.boss) throw new Error('boss: nothing to fight in ' + g.mapId + ' ' + (g.room && g.room.key));
     const sword = () => slotBit('sword') || BIT.b;
-    // The same numbers dFight uses, for the same reasons: strike from the near
-    // band, then break contact. A boss does contact damage like anything else,
-    // and the first cut of this verb held the stick toward the boss while the
-    // eye was open — three touches and a new game does not have a fourth.
-    const NEAR = 18, BACKOFF = 30;
+    // Strike from close range, then break contact — the same idea `dFight`
+    // uses, though "close" here is decided against the boss's real hitbox
+    // (`closeEnough`, below) rather than a flat distance. A boss does
+    // contact damage like anything else, and the first cut of this verb
+    // held the stick toward the boss while the eye was open — three
+    // touches and a new game does not have a fourth.
+    const BACKOFF = 30;
     // A charge (src/game/enemy.js `charge()`) commits to a straight dash at
     // 1.9 px/f down whichever axis it last saw the player on — far outrunning
     // every other move in this verb (1.0 px/f walking, ~1.4 diagonal). The
@@ -780,6 +782,22 @@ export async function installRuntime() {
       if (Math.abs(ddx) > DIAG_SLACK) m |= (ddx > 0 ? BIT.right : BIT.left);
       if (Math.abs(ddy) > DIAG_SLACK) m |= (ddy > 0 ? BIT.down : BIT.up);
       return m;
+    };
+    // Real per-axis gap between two hitboxes (`Entity.rect()`,
+    // src/game/entity.js — `x + hb.x, y + hb.y, w: hb.w, h: hb.h`, not the
+    // sprite's own w/h), not a Manhattan sum of centre distances. Measured:
+    // two of four hits in a real 3-heart fight were body contact at a
+    // Manhattan distance (28, 30) the old "adx+ady > NEAR+6" cutoff still
+    // called safe to keep closing, because Gohmaraq's 26x20 hitbox is
+    // asymmetric — a diagonal close can already be touching on the SHORT
+    // axis while the summed distance still reads "far" on the long one. A
+    // per-axis gap against the real hitboxes doesn't have that blind spot.
+    const CONTACT_BUFFER = 6;
+    const closeEnough = (ea, eb) => {
+      const ra = ea.rect(), rb = eb.rect();
+      const gapX = Math.max(ra.x - (rb.x + rb.w), rb.x - (ra.x + ra.w));
+      const gapY = Math.max(ra.y - (rb.y + rb.h), rb.y - (ra.y + ra.h));
+      return gapX <= CONTACT_BUFFER && gapY <= CONTACT_BUFFER;
     };
     const EDGE = 12;
     // Frames of invuln to leave unspent as a retreat allowance — see the
@@ -843,7 +861,7 @@ export async function installRuntime() {
           const dx2 = b.cx - p.cx, dy2 = b.cy - p.cy;
           const ax2 = Math.abs(dx2), ay2 = Math.abs(dy2);
           const toward2 = towardDiag(dx2, dy2);
-          if (ax2 + ay2 > NEAR + 6) { yield fence(toward2); f++; continue; }
+          if (!closeEnough(b, p)) { yield fence(toward2); f++; continue; }
           const faceOnly = ax2 >= ay2 ? (dx2 > 0 ? BIT.right : BIT.left) : (dy2 > 0 ? BIT.down : BIT.up);
           yield fence(faceOnly); f++;
           yield fence(faceOnly | sword()); f++;
@@ -865,7 +883,7 @@ export async function installRuntime() {
         // Gohmaraq's phase-1 tell is a stationary spray, not a charge closing
         // on us, so there is nothing here worth backing away from before the
         // swing.
-        if (adx + ady > NEAR + 6) { yield fence(towardDiag(dx, dy)); f++; continue; }
+        if (!closeEnough(b, p)) { yield fence(towardDiag(dx, dy)); f++; continue; }
         // In range: face it, swing, then get out before it closes.
         yield fence(toward); f++;
         yield fence(toward | sword()); f++;

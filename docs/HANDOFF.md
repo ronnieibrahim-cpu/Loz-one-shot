@@ -224,20 +224,24 @@ is in the page, and nothing steps until you say so.
 
 ## Hard-won lessons — do not rediscover these
 
-**A Manhattan-sum distance is not a hitbox, and gating an approach on one
-reads as "close enough" well after contact already happened.** `dBoss`
-(`tools/actor-runtime.mjs`) decides "still approaching, keep closing" by
-comparing `|dx|+|dy|` (Manhattan) against a flat threshold. Gohmaraq's own
-hitbox is 26x20, asymmetric per axis, so a diagonal close can already be
-touching it on the SHORT axis while the summed distance still reads as
-"far" on the long one — measured directly: two of four hits in a real
-3-heart fight were body contact at Manhattan distance 28 and 30, both past
-the 24px cutoff `dBoss` uses to decide it's still safe to keep closing. A
-per-axis (Chebyshev-shaped) check against the boss's real half-extents is
-the fix; a flat Manhattan number is the trap. See docs/NEXT-SESSION.md's
-current top section for the full measurement and the four dodge-timing
-variants that were tried against it and did NOT help, because none of them
-touched the actual mechanism.
+**FIXED — but keep the shape of the bug in mind, it will recur. A
+Manhattan-sum distance is not a hitbox, and gating an approach on one reads
+as "close enough" well after contact already happened.** `dBoss`
+(`tools/actor-runtime.mjs`) used to decide "still approaching, keep
+closing" by comparing `|dx|+|dy|` (Manhattan) against a flat threshold.
+Gohmaraq's own hitbox is 26x20, asymmetric per axis, so a diagonal close
+could already be touching it on the SHORT axis while the summed distance
+still read as "far" on the long one — measured directly: two of four hits
+in a real 3-heart fight were body contact at Manhattan distance 28 and 30,
+both past the 24px cutoff `dBoss` used to decide it was still safe to keep
+closing. Fixed by reading BOTH entities' real `.rect()` and comparing the
+true per-axis gap instead (`closeEnough`, now in `dBoss`) — contact hits
+during the approach went from 2 of 4 to 0 of 6 in the same measured fight,
+melee output unchanged. Any future actor verb that gates movement on a
+centre-to-centre distance against another entity has the same blind spot;
+reach for `.rect()` instead. See docs/NEXT-SESSION.md's current top section
+for the full before/after and what's still open (the same-speed patrol
+problem is now the clear remaining blocker, not a side theory).
 
 **"Measured in real combat, seed 20260806" was never a committed tool —
 three separate write-ups describe rebuilding the same harness by hand.**
