@@ -1,12 +1,14 @@
-## The contact hits are mid-approach, not the ranged spray — two more dead ends closed, measured (this session)
+## The contact hits are mid-approach, not the ranged spray — one real improvement shipped, two dead ends closed, all measured (this session)
 
-**Still not a win, and the melee-trade numbers are unchanged: 24 -> 14 hp, same
-seed 20260806, same death.** This session built a proper instrumented
-harness (hooking `Player.prototype.takeDamage` and `Boss.prototype.hurt`
-directly, plus a per-frame ring buffer of player/boss position and boss
-state) rather than inferring the fight from sampled hp deltas, and used it to
-re-examine the two open questions from last session's board. Both are now
-closed with real numbers instead of a guess.
+**Still not a win, but real, measured progress: Gohmaraq still goes 24 -> 14
+hp (five hits landed, unchanged), and the player now takes 12 of its 12
+quarter-hearts instead of 14 — dying exactly AT the cap rather than
+overkilled by 2.** Same seed throughout, 20260806. This session built a
+proper instrumented harness (hooking `Player.prototype.takeDamage` and
+`Boss.prototype.hurt` directly, plus a per-frame ring buffer of player/boss
+position and boss state) rather than inferring the fight from sampled hp
+deltas, used it to re-examine the two open questions from last session's
+board, and used what it found to fix one real bug.
 
 **Finding 1: the fight never leaves phase 1, so idea #2 (the same-speed
 phase-3 patrol) is confirmed moot for a real 3-heart fight.** Boss hp only
@@ -16,28 +18,24 @@ enough to reach phase 3's 1.0 px/f patrol (which only matters below 30%).
 Deprioritise that item until a run with more health or a better trade
 actually survives to see it.
 
-**Finding 2: of the 14 qh taken, 8 came from TWO boss-contact hits, not the
-ranged spray, and the ranged spray from `shootRing` (phase 3) never fires at
-all in this fight for the same phase-1-only reason above.** The instrumented
-log for the second contact hit (`docs/HANDOFF.md`-worthy detail, kept here
-since it's this verb's own trap): the player takes a contact hit at f446,
-which — by design — grants `PLAYER_INVULN_FRAMES` and the verb spends it
-chaining swings (the RETREAT_MARGIN logic, previous session). At f492 invuln
-hits exactly 0. The verb was still only ~23-15px (dx,dy) from the boss at
-that instant — nowhere close to a safe distance — and because the boss was
-still `weakOpen`, it immediately re-entered the COLD "close the distance and
-take the shot" branch and started closing again. Five frames later, at f497,
-contact fired again. **The root cause is geometric, not a timing bug**:
-Gohmaraq's contact hurtbox (`hb: {w:26,h:20}`, offset (3,10) in a 32x32
-frame) is nearly as wide as the sword's total effective reach from the
-player's center (`playerHalf + SWORD_REACH(13)` ≈ 21px). The "safe to swing,
-unsafe to stand" band this leaves is only a few pixels wide, especially on
-the y-axis (boss half-height ~10 + player half ~8 = 18px contact threshold
-vs ~21px swing reach) — there is very little room for a Manhattan-distance
-approach (`NEAR=18`) to land in it reliably, whichever direction it's
-approached from. This is a real, generic finding, not a Gohmaraq special
-case: any boss whose hurtbox approaches sword-reach size will have the same
-narrow band.
+**Finding 2: in the ORIGINAL (pre-this-session) baseline, of the 14 qh taken,
+8 came from TWO boss-contact hits, not the ranged spray — and the ranged
+spray from `shootRing` (phase 3) never fires at all in this fight, for the
+same phase-1-only reason above.** The first of those two contact hits (f446)
+is unavoidable-by-construction with the current approach logic and is not
+what this session fixed (see below for the one that was fixable). **The
+deeper root cause is geometric, not a timing bug**: Gohmaraq's contact
+hurtbox (`hb: {w:26,h:20}`, offset (3,10) in a 32x32 frame) is nearly as wide
+as the sword's total effective reach from the player's center (`playerHalf +
+SWORD_REACH(13)` ≈ 21px). The "safe to swing, unsafe to stand" band this
+leaves is only a few pixels wide, especially on the y-axis (boss half-height
+~10 + player half ~8 = 18px contact threshold vs ~21px swing reach) — there
+is very little room for a Manhattan-distance approach (`NEAR=18`) to land in
+it reliably, whichever direction it's approached from. This is a real,
+generic finding, not a Gohmaraq special case: any boss whose hurtbox
+approaches sword-reach size will have the same narrow band, and it is why
+one contact hit per fight (the first one, on the initial cold approach) is
+still expected even after this session's fix.
 
 **Tried and reverted, measured net negative: "one bite per weak-open
 window."** The obvious lever from last session's board — "is there a cheaper
@@ -57,12 +55,49 @@ is back to the previous session's committed state); the idea is closed, not
 open, unless someone finds a way to also dodge the slam spread while
 holding position.
 
+**Shipped, and this is a real fix, not another revert: `clearedSinceHit`.**
+The instrumented log for the second contact hit shows exactly what was
+wrong: the player takes a contact hit at f446, which — by design — grants
+`PLAYER_INVULN_FRAMES` and the verb spends it chaining swings (the
+RETREAT_MARGIN logic, previous session). At f492 invuln hits exactly 0. The
+verb was still only ~23-15px (dx,dy) from the boss at that instant — nowhere
+close to a safe distance — and because the boss was still `weakOpen`, it
+immediately fell into the COLD "close the distance and take the shot"
+branch and started closing again. Five frames later, at f497, contact fired
+a second time. **The bug is that "invuln has decayed to 0" and "real
+separation has been achieved" are different conditions, and the verb was
+only checking the first.** The `spend it, break contact` branch only runs
+`while p.invuln > 0`, so the instant invuln hits 0 the verb falls straight
+through to the cold approach with no guarantee it ever got clear.
+
+The fix: a `clearedSinceHit` flag, set false whenever `p.invuln` is observed
+to rise (a fresh hit landed — checked every frame against the previous
+frame's value, since invuln only ever counts down on its own), and set true
+only once real Manhattan distance from the boss exceeds `MIN_SAFE_DIST`.
+The cold-approach branch now checks it: if a hit was taken and the player
+hasn't yet put real distance between itself and the boss, it keeps backing
+off instead of re-engaging, however long that takes. `MIN_SAFE_DIST` is
+**measured, not derived** — swept 35/50/55/60/65/70/75/80/90 against the
+same seed; 35-65 were no better than baseline or worse (55-65 landed only 3
+hits for 6 hp — too eager to re-engage before real separation), 70-90
+plateaued at the reported result (5 hits, 10 hp, 12 qh taken). 70 is the
+committed value, picked as the low end of the plateau rather than the
+furthest point tested. This does **not** turn off the banked-invuln combo
+branch above it (that spends a hit already paid for, not a new gamble), and
+in god mode it never fires at all — god mode pins `p.invuln` at 600 every
+frame, so the banked-invuln branch always wins first and `clearedSinceHit`
+is never consulted. `check-bosses.mjs`'s godmode numbers are confirmed
+BYTE-IDENTICAL across all six fights (13/13, same per-boss damage-dealt
+figures as previously documented), which is the expected result of a change
+that only bites when `p.invuln` is finite.
+
 **What is actually still open, and it is a genuinely different kind of
-problem than the last two sessions attempted.** Both closed ideas were
-timing/behavior tweaks to the existing generic verb. The finding above says
-the ceiling might be geometric: `NEAR=18` (Manhattan) doesn't reliably land
-inside the narrow safe-swing/unsafe-contact band for a boss this size. Two
-directions worth trying, neither attempted yet:
+problem than a further timing tweak on this same branch.** The finding above
+says the remaining ceiling is likely geometric: `NEAR=18` (Manhattan)
+doesn't reliably land inside the narrow safe-swing/unsafe-contact band for a
+boss this size (see the detail two paragraphs up — Gohmaraq's contact
+hurtbox is nearly as wide as the sword's total effective reach from the
+player's center). Two directions worth trying, neither attempted yet:
 
 1. **Use the engine's own boxes instead of a flat Manhattan constant.**
    `dBoss` runs inside the page (it's evaluated into the browser by
@@ -85,7 +120,7 @@ directions worth trying, neither attempted yet:
    contact-adjacent frame) do show a real perpendicular offset at the time
    of the hit.
 
-**Shipped, unrelated to the boss verb but found and fixed on the way:**
+**Also shipped this session, unrelated to the boss verb:**
 
 - `d3/0,2,2` Bogmaw Hall's miniboss reward was empty (`reward: { say: '...' }`
   with no `spawn`) — the same bug the Clawcrab Den had before P9. D3 is
@@ -109,16 +144,23 @@ directions worth trying, neither attempted yet:
   documented baseline). Every other file in `tools/` now carries this
   fallback; if a future session finds one that doesn't, that's the last one.
 
-**Full suite re-verified after both the revert and the shipped fixes:**
-`validate` OK, `walk-dungeons` 23/23, `check-hearts` 114/114, `check-items`
-91/91, `test.mjs` 59/59, `check-playthrough` 19/19, `replay` 51/51,
-`check-gates` 26/26, `solve-switches` 9/9, `check-build` OK. `npm run build`
-run and `dist/oracle-of-tides.html` committed.
+**Full suite re-verified after every change this session, revert and ships
+alike:** `validate` OK, `walk-dungeons` 23/23, `check-hearts` 114/114,
+`check-items` 91/91, `check-charms` 63/63, `check-motion` 8/8, `check-trade`
+43/43, `find-ledges` 810 candidates, `test.mjs` 59/59, `check-playthrough`
+19/19, `replay` 51/51, `check-gates` 26/26, `solve-switches` 9/9,
+`check-bosses` 13/13 (godmode numbers byte-identical), `check-build` OK.
+`npm run build` run and `dist/oracle-of-tides.html` committed (the
+`clearedSinceHit` fix lives in `tools/`, not `src/`, so it does not change
+the shipped build; the Bogmaw Hall data fix does, and is in this build).
 
 **Next session, in order:**
 
 1. Job 1 is still the boss verb, and it has now cost three sessions without
-   a win. Before trying a fourth timing tweak, try one of the two geometric
+   a win, though this one leaves it measurably closer (12 qh taken at 3
+   hearts, down from 14, with the same 10 hp dealt — a fresh game with even
+   one extra heart piece would now survive this exact fight). Before trying
+   a fourth timing tweak on the same branch, try one of the two geometric
    directions above — they are different in kind from everything tried so
    far, not a variation on it. If neither moves the needle within one
    session, it may be worth asking whether Gohmaraq's hurtbox itself (not

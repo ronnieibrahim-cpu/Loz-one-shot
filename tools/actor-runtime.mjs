@@ -739,13 +739,17 @@ export async function installRuntime() {
   // the arena, waits out the shell, chains swings through a landed hit's own
   // invulnerability window, sidesteps a charge, and lands real hits —
   // Gohmaraq measured in REAL combat (12 quarter-hearts, no god mode, seed
-  // 20260806) from 24 hp to 14, five hits landed, the player surviving to its
-  // last half-heart before a final graze. The melee trade is close to
-  // breakeven; what still kills a 3-heart player is ranged chip damage. A
-  // reactive per-shot dodge was tried and measured NET NEGATIVE (it landed
-  // fewer melee hits than leaving it alone, for no reliable safety in
-  // return — see docs/NEXT-SESSION.md's boss-verb section for the measured
-  // numbers and the wall-cornering failure mode before attempting it again).
+  // 20260806) from 24 hp to 14, five hits landed, and the player now takes 12
+  // of its 12 quarter-hearts rather than 14 (dying exactly at the cap rather
+  // than overkilled) — `clearedSinceHit` (below) closes the specific bug
+  // where the verb re-engaged cold the instant a landed hit's invuln decayed
+  // to 0, even when that left no real separation from the boss's own contact
+  // hurtbox. Two other attempts at reducing chip damage were tried and
+  // measured NET NEGATIVE and reverted — a reactive per-shot dodge of the
+  // ranged spray, and a "one bite per weak-open window" cooldown — see
+  // docs/NEXT-SESSION.md's boss-verb section for both, and for two untried
+  // geometric directions (using the engine's own hitboxes live rather than a
+  // Manhattan-distance constant) before attempting a fourth timing tweak.
   // It is committed because the scaffolding is right and the traps it
   // already closed are expensive to rediscover; it is NOT referenced by
   // tools/playthrough-route.mjs, because a route step that cannot reliably
@@ -798,6 +802,21 @@ export async function installRuntime() {
       if (q.y > (g.room ? g.room.ph : 144) - 16 - EDGE) m &= ~BIT.down;
       return m;
     };
+    // Measured directly (real combat, 12qh, seed 20260806, instrumented on
+    // Player.takeDamage): the second of two contact hits in that fight landed
+    // 5 frames after the FIRST hit's invuln expired, because invuln reaching
+    // 0 and real separation being achieved are different things — the "spend
+    // it, break contact" branch below only runs WHILE invuln>0, so the moment
+    // it hits exactly 0 the verb falls straight to the cold approach branch
+    // even if it never got far. `clearedSinceHit` requires actual distance
+    // (not just invuln decay) before a fresh cold approach is allowed again.
+    // A "one bite per weakOpen window" attempt at the same underlying problem
+    // was tried and measured net negative (it also suppressed hits during a
+    // SAFE re-engagement, not just an unsafe one) — see docs/NEXT-SESSION.md.
+    // This is narrower: it only holds back the specific unsafe case.
+    const MIN_SAFE_DIST = 70;
+    let clearedSinceHit = true;
+    let prevInvulnSeen = 0;
     const budget = maxF || 16000;
     for (let f = 0; f < budget;) {
       const b = g.boss;
@@ -818,8 +837,11 @@ export async function installRuntime() {
         yield fence(perp); f++; continue;
       }
       chargeSide = 0;
+      if (p.invuln > prevInvulnSeen) clearedSinceHit = false;
+      prevInvulnSeen = p.invuln;
       const dx = b.cx - p.cx, dy = b.cy - p.cy;
       const adx = Math.abs(dx), ady = Math.abs(dy);
+      if (adx + ady > MIN_SAFE_DIST) clearedSinceHit = true;
       const axisX = adx > ady;
       const toward = axisX ? (dx > 0 ? BIT.right : BIT.left) : (dy > 0 ? BIT.down : BIT.up);
       const backAlong = axisX ? (dx > 0 ? BIT.left : BIT.right) : (dy > 0 ? BIT.up : BIT.down);
@@ -858,6 +880,13 @@ export async function installRuntime() {
           const backPerp2 = axisX2 ? (dy2 > 0 ? BIT.up : BIT.down) : (dx2 > 0 ? BIT.left : BIT.right);
           yield fence(backAlong2 | backPerp2); f++;
           continue;
+        }
+        if (!clearedSinceHit) {
+          // Invuln from the last hit is gone, but we never actually reached a
+          // safe distance while it lasted — finish the retreat before trying
+          // another cold approach, rather than snapping straight back to
+          // closing the instant invuln (not distance) reaches zero.
+          yield fence(backAlong | backPerp); f++; continue;
         }
         // No invuln banked: close the distance and take the shot. Retreating
         // first because the eye-open range READS as far is what pinned this
