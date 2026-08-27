@@ -224,6 +224,34 @@ is in the page, and nothing steps until you say so.
 
 ## Hard-won lessons — do not rediscover these
 
+**A boss verb that "closes to manhattan distance N, then swings" can walk
+straight through body-contact range before N is ever reached — manhattan
+distance is not a safe proxy for AABB overlap against an asymmetric
+hitbox.** `tools/actor-runtime.mjs`'s `dBoss` closed to `adx+ady <= NEAR+6`
+(18+6=24) before facing and swinging. Instrumenting `Player.takeDamage`'s own
+`source` argument (not just watching hearts drop) in a real, non-god-mode
+Gohmaraq fight showed the two costliest hits (4 of 24 max hp each, two-thirds
+of all damage taken) were `source.isBoss` — body contact, not the ranged
+spray earlier sessions had assumed was the killer — and they landed *while
+still approaching*, at manhattan distances of 27-30, comfortably outside what
+`NEAR+6=24` should have permitted. The reason: `Entity.overlaps` is a real
+rectangle-vs-rectangle test against `hb` (Gohmaraq's is 26x20 in a 32x32
+frame, offset and non-square), and a diagonal approach's manhattan sum
+overstates the true separation whenever the hitboxes are wide relative to how
+close together the two centers are — a small per-axis gap on one side and a
+larger one on the other still sum to a "safe-looking" total. The sword's own
+reach (`SWORD_REACH+SWORD_GAP`, src/game/player.js) is generous enough (~16px
+from center) that none of this was necessary: raising `NEAR` to 26 stopped
+the approach before overlap and cost nothing — the checker's godmode numbers
+(`check-bosses.mjs`) were unchanged (unlimited invuln already made contact
+free there), and in real combat the same fight went from 5 melee hits landed
+/ dead at frame 796 to 5 hits landed / **zero contact damage** / alive to
+frame 2512. **If you tune an engagement-distance constant against a boss (or
+any large/asymmetric enemy), verify a real fight's actual damage sources
+first** — `takeDamage`'s `source` argument tells you in one line what a
+hearts-only trace cannot: whether you're fixing the thing that's actually
+killing the player.
+
 **This container's Playwright package and its pre-installed Chromium are off
 by one revision, and only some tools have a fallback for it.** `node_modules`
 expects browser revision 1234; `/opt/pw-browsers/` only has 1194 installed.

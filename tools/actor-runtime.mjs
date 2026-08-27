@@ -737,17 +737,21 @@ export async function installRuntime() {
    */
   // STATUS: THIS VERB FIGHTS AND DOES NOT YET WIN. It finds the boss, stays in
   // the arena, waits out the shell, chains swings through a landed hit's own
-  // invulnerability window, sidesteps a charge, and lands real hits —
-  // Gohmaraq measured in REAL combat (12 quarter-hearts, no god mode, seed
-  // 20260806) from 24 hp to 14, five hits landed, the player surviving to its
-  // last half-heart before a final graze. The melee trade is close to
-  // breakeven; what still kills a 3-heart player is ranged chip damage. A
-  // reactive per-shot dodge was tried and measured NET NEGATIVE (it landed
-  // fewer melee hits than leaving it alone, for no reliable safety in
-  // return — see docs/NEXT-SESSION.md's boss-verb section for the measured
-  // numbers and the wall-cornering failure mode before attempting it again).
-  // It is committed because the scaffolding is right and the traps it
-  // already closed are expensive to rediscover; it is NOT referenced by
+  // invulnerability window, sidesteps a charge, and lands real hits without
+  // taking a single body-contact touch to do it — Gohmaraq measured in REAL
+  // combat (12 quarter-hearts, no god mode, seed 20260806) from 24 hp to 14,
+  // five hits landed, zero contact damage, surviving to frame 2512 (up from
+  // 796 before this session's fix — see NEAR below). What still kills a
+  // 3-heart player is ranged chip damage plus a phase-2/3 stall: once
+  // Gohmaraq crosses ~62% hp it starts charging almost continuously, and
+  // `dBoss`'s charge-dodge (unconditionally correct — see the `b.charging`
+  // block below) leaves no opening to close in, so the fight goes to a very
+  // long war of attrition the player's own chip damage eventually loses. A
+  // reactive per-shot ranged dodge was tried in an earlier session and
+  // measured NET NEGATIVE (see docs/HANDOFF.md's hard-won-lessons for the
+  // wall-cornering failure mode before attempting it again). It is committed
+  // because the scaffolding is right and the traps it already closed are
+  // expensive to rediscover; it is NOT referenced by
   // tools/playthrough-route.mjs, because a route step that cannot reliably
   // finish is worse than one that is missing.
   function* dBoss(maxF) {
@@ -755,11 +759,26 @@ export async function installRuntime() {
     for (let i = 0; i < 300 && !g.boss; i++) yield 0;
     if (!g.boss) throw new Error('boss: nothing to fight in ' + g.mapId + ' ' + (g.room && g.room.key));
     const sword = () => slotBit('sword') || BIT.b;
-    // The same numbers dFight uses, for the same reasons: strike from the near
-    // band, then break contact. A boss does contact damage like anything else,
-    // and the first cut of this verb held the stick toward the boss while the
-    // eye was open — three touches and a new game does not have a fourth.
-    const NEAR = 18, BACKOFF = 30;
+    // NEAR gates "stop closing, face and swing" on raw manhattan distance
+    // (adx+ady), same as dFight. It was 18 (dFight's own number) and it was
+    // wrong for a boss: measured directly (instrumenting Player.takeDamage's
+    // own `source`), the two costliest hits in a 3-heart Gohmaraq fight were
+    // not ranged at all — they were body contact, 4 of 24 hp of health lost
+    // to just TOUCHING the boss while still mid-approach, before the verb's
+    // own distance check had decided it was close enough to swing. The sword
+    // doesn't need that: SWORD_REACH+SWORD_GAP (src/game/player.js) puts the
+    // hit box a good 16px out from the player's center, well beyond the
+    // ~5-8px margin a boss's own (much larger) contact hitbox needs to clear.
+    // Gohmaraq's hb is 26x20 in a 32x32 frame — asymmetric enough that a
+    // diagonal manhattan sum of 27-30 can already be a real AABB overlap
+    // (`Entity.overlaps`, rectangle-vs-rectangle, not a circle) even though
+    // it reads as "still 6-12px short of NEAR+6". Raised to 26: contact
+    // damage measured at zero across the same fight, and the checker's own
+    // godmode numbers (tools/check-bosses.mjs) are unchanged, because god
+    // mode's unlimited invuln already made contact free either way. A
+    // different boss's hitbox may want a different number — this one is
+    // measured against Gohmaraq specifically, not derived from a formula.
+    const NEAR = 26, BACKOFF = 30;
     // A charge (src/game/enemy.js `charge()`) commits to a straight dash at
     // 1.9 px/f down whichever axis it last saw the player on — far outrunning
     // every other move in this verb (1.0 px/f walking, ~1.4 diagonal). The
