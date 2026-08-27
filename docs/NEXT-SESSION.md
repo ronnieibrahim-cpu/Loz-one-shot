@@ -12,7 +12,68 @@ own history.
 
 ---
 
-## Boss verb: contact damage fixed, ranged chip damage is what's left (this session)
+## Small fixes this session, and one real finding on the boss-verb stall
+
+**D3's Bogmaw Hall miniboss now pays out something** (`src/data/dungeons-a.js`,
+`0,2,2`): it used to cost health and return a sentence, same bug the Clawcrab
+Den had. D3 is already at its two-heart-piece quota
+(`tools/check-hearts.mjs` pins exactly two per dungeon), so this is a
+`fairy` pickup rather than a piece of heart — verified `check-hearts.mjs`
+(114/114) and `check-items.mjs` (91/91) both unchanged.
+
+**Six more `tools/*.mjs` files were missing the `CHROMIUM_PATH` fallback**
+this sandbox needs to launch a browser (`check-charms.mjs`, `check-items.mjs`,
+`check-motion.mjs`, `check-trade.mjs`, `find-ledges.mjs`, `preview.mjs`) —
+the same gap a previous session closed in five other tools. All six now
+carry the same fallback and all six run green here (63/63, 91/91, 8/8,
+43/43, 810 ledge candidates, and a clean sprite-sheet preview render).
+**Grepped the whole `tools/` directory for `chromium.launch` without
+`CHROMIUM_PATH` this time — zero remain.** If a browser-driving tool is
+added later without this pattern, it'll fail to launch here on the first
+run; copy the two-line try/catch from any file above rather than guessing.
+
+**Boss verb: tried a telegraph-based retreat, measured it, reverted it —
+and found the real reason the fight stalls at 5 hits.** Flagged last
+session as the next thing to try: react to `b.stun` (a boss frozen mid
+windUp, e.g. Gohmaraq's slam) by opening distance, instead of reading live
+projectiles. Implemented it, re-ran the same real-combat measurement (seed
+20260806, 12 quarter-hearts, no god mode):
+
+- Zero contact hits either way (last session's fix holds).
+- **Identical total damage taken — the same 6 ranged hits landed, just
+  spread over roughly twice as many frames** (player died at frame ~4044
+  instead of ~2093). The retreat delayed the loss without preventing any of
+  it, and worse, it produced a ~3000-frame span (f1186-f4044) where the boss
+  sat frozen at 14/24 hp near a room corner while `charging`/`stun` cycled
+  repeatedly without a single additional hit landing — a stall, not
+  progress. **Reverted** (`tools/actor-runtime.mjs`, back to last session's
+  gate); re-measured to confirm the revert reproduces last session's exact
+  numbers (5 hits, death at f2093) before moving on.
+
+**While diagnosing that stall, found something sharper than the old "same-
+speed patrol" note.** Periodic state sampling (every 60 frames) through the
+stalled span showed **`b.weakOpen` stays continuously `true` from frame ~300
+onward — the eye never closes once phase 1 exits** — yet the boss holds at
+14 hp for over a thousand frames regardless. The boss enters `phase1` (the
+`above: 0.30` charge phase — "faster, and it now charges the length of the
+room") at frame ~720 and never leaves it in this fight (14/24 = 0.58 hp
+never drops enough to reach phase 3, so the OLD "phase 3 same-speed patrol"
+concern is moot for THIS fight — phase 3 is never reached). Once in phase 1,
+`charging` toggles true/false roughly every 60-120 frames for the rest of
+the fight. The working theory, not yet confirmed: Gohmaraq's `charge()`
+recurs often enough in this phase that it keeps interrupting `dBoss`'s
+approach-and-swing sequence before it completes, over and over — a
+same-shape problem to the old phase-3 note (a boss whose own attack cadence
+outpaces how fast the verb can close and swing) but hitting in the phase
+EVERY fight actually reaches, not the one only god mode ever saw. This is
+the highest-value next thing to instrument: log `dBoss`'s own branch choice
+(charging-dodge / approach / swing / retreat) alongside the periodic sample
+above and see whether swings are actually being attempted and missing, or
+never attempted at all because a new charge keeps preempting the approach.
+
+---
+
+## Boss verb: contact damage fixed, ranged chip damage is what's left (previous session)
 
 **Not a win yet, but a real bug found and fixed, measured in real 3-heart
 combat (seed 20260806, no god mode).** Re-ran the exact fight the last two
@@ -94,27 +155,23 @@ at the player's position at that exact frame), reading the boss's OWN telegraph
 state (`b.stun > 0` before a slam) may be a more robust signal than reading
 live projectiles — untried this session, flagged for next time.
 
-**Next, in order:**
+**Next, in order — see the session above this one for the current front
+line (the phase-1 charge-lock finding supersedes item 2 below for THIS
+fight, since phase 3 is never reached here):**
 
-1. **Try the telegraph-based approach to the ranged spray** (react to
-   `b.stun`/windUp rather than live projectiles) if picking the dodge back
-   up, or look for a cheaper win first: Gohmaraq's eye stays open almost the
-   entire fight at LOW tide, so the verb doesn't have to press every single
-   opening if a fresh one is coming anyway — unexplored this session.
-2. **The same-speed patrol problem is still unmeasured in real combat.**
-   Phase 3's patrol speed (1.0 px/f) equals the player's own `WALK_SPEED`, so
-   a patrol that isn't reversing is never caught by a straight chase. Only
-   ever seen in godmode's unlimited-aggression run (which may not be the
-   failure a real 3-heart fight reaches) — worth its own measurement.
-3. **Once Gohmaraq is a measured WIN at 3 hearts** (0 hp reached, player
-   still alive), wire `dBoss` into `tools/playthrough-route.mjs` past
-   `d1/0,3,2` — the actor has no directive for placing the Tidewright's
-   Anchor either, so `check-playthrough.mjs` also needs an anchor-placement
-   verb before the route can pass this point. Until then, `check-playthrough`
-   stops at `d1/0,3,2` and NOTHING HAS PLAYED THIS GAME TO THE END.
-4. **The Boss Key / third-key pass** behind the Clawcrab door (D1's west
-   wing and `3,1`) and **the other five dungeons' routes** are both still
-   undone and both blocked on job 3 above actually finishing.
+1. Instrument `dBoss`'s own branch choice during the phase-1 stall (see the
+   section above) to find out whether swings are being attempted and
+   missed, or never attempted because a charge keeps preempting the
+   approach.
+2. Once Gohmaraq is a measured WIN at 3 hearts (0 hp reached, player still
+   alive), wire `dBoss` into `tools/playthrough-route.mjs` past `d1/0,3,2`
+   — the actor also has no directive for placing the Tidewright's Anchor,
+   so `check-playthrough.mjs` needs an anchor-placement verb too before the
+   route can pass this point. Until then, `check-playthrough` stops at
+   `d1/0,3,2` and NOTHING HAS PLAYED THIS GAME TO THE END.
+3. The Boss Key / third-key pass behind the Clawcrab door (D1's west wing
+   and `3,1`) and the other five dungeons' routes are both still undone and
+   both blocked on step 2 actually finishing.
 
 To reproduce the measurement above: it's not a committed tool (deliberately
 scratch — see `check-bosses.mjs`'s own note that the kill itself is not
@@ -191,15 +248,13 @@ can't tell contact from ranged.
    measurable in a real fight (raising the heart cap was a difficulty change
    even though no enemy damage value moved yet — see `docs/FEEL-SPEC.md`,
    "The cap and the damage ladder"), then re-record the replays against it.
-6. Give `d3/0,2,2` Bogmaw Hall a real reward (miniboss currently pays out a
-   sentence and nothing else — same bug the Clawcrab Den had, already fixed
-   there).
-7. **58 stale branches remain on `origin`, none of them should be merged**
+6. **59 stale branches remain on `origin`, none of them should be merged**
    (all superseded by work already on `main` — see `git ls-remote --heads
-   origin` for the live list). Branch deletion was blocked by a proxy 403 in
-   at least one prior session; worth a five-minute retry, not worth a whole
-   session.
-8. Known soft spots that are real but not urgent: charm balance (30 charms
+   origin` for the live list). Deleting one was blocked by the auto-mode
+   permission classifier this session (destructive remote-git-op — needs a
+   human to approve or to pre-allow it), and by a proxy 403 in an earlier
+   one. Ask the user directly rather than retrying blind.
+7. Known soft spots that are real but not urgent: charm balance (30 charms
    exist, none compared to another), `ANCHOR_RADIUS_TILES`/
    `NEAP_GRACE_FRAMES` need someone to actually play them rather than guess,
    and the art-legibility findings recorded per-dungeon in

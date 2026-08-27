@@ -1855,7 +1855,16 @@ export function installDungeonsA() {
         puzzle: {
           enemies: true,
           flag: 'd3_bogmaw',
-          reward: { say: 'The bogmaw sinks back into the silt.' },
+          // Same bug the Clawcrab Den had (see docs/NEXT-SESSION.md): a
+          // miniboss that costs health and paid out a sentence. D3 is
+          // already at its two-heart-piece quota (check-hearts.mjs pins
+          // exactly two per dungeon), so this is a fairy rather than a
+          // piece of heart — it still answers "the fight cost me
+          // something, give some back" without moving that count.
+          reward: {
+            spawn: [['pickup', 4, 4, { kind: 'fairy' }]],
+            say: 'The bogmaw sinks back into the silt.',
+          },
         },
       },
       '0,1,2': {
