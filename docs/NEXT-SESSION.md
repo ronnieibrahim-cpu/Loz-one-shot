@@ -1,4 +1,98 @@
-## Charge dodge lands, ranged dodge doesn't — the boss verb, continued (this session)
+## Contact damage during the approach is gone — melee is a clean win, ranged chip is the only thing left killing Gohmaraq (this session)
+
+**Still not a win, but the failure mode changed for the better.** Gohmaraq
+measured in real combat (12 quarter-hearts, no god mode, seed 20260806):
+same five melee hits landed (24 hp -> 14, unchanged from the last two
+sessions), but the player now survives to **f1500 instead of f840** before
+dying, and every point of damage taken in that longer fight is a **ranged
+projectile hit** — the two melee/contact hits that used to land alongside
+the five sword hits are gone entirely. The melee trade is no longer "close
+to breakeven," it is clean: 10 hp dealt for 0 hp taken in return. What kills
+a 3-heart player now is exclusively the periodic ranged spray, which job 1
+on every board back to the boss-verb's first session has already tried and
+reverted once (see the archived section below — do not re-attempt a
+per-shot dodge without reading it first).
+
+**What was actually wrong, found by tracing every frame around the two
+contact hits rather than reasoning about it from outside.** `dBoss`'s
+weak-open "close the distance and swing" branch (`tools/actor-runtime.mjs`)
+used a Manhattan-sum distance (`adx + ady <= NEAR + 6`, NEAR=18) to decide
+"close enough, stop closing and swing." That number was never checked
+against the boss's own hitbox — it was tuned for `dFight`'s ordinary
+enemies, which are smaller (16-24px) than a boss (32px, hb up to 26x20). A
+first attempt added an exact AABB contact check (`contactAt`) and reach
+check (`reachAt`, mirroring `Player.swordBox`) but only ran them AFTER the
+Manhattan gate passed — and measured **no change at all**. Tracing every
+frame around the two contact hits showed why: they landed **while the
+Manhattan gate still read "far"** (sum 27-30, still above the 24 threshold),
+because a diagonal close can have one axis already inside the boss's own
+body while the perpendicular axis keeps the sum high. The fix was moving the
+contact check to run on every step of the close, not just at the swing
+decision — `contactAt` now gates the approach itself, and only once it's
+clear does the Manhattan/reach logic decide whether to keep closing or swing.
+
+**`contactAt`/`reachAt` are computed from the live hitboxes
+(`p.hb`/`p.w`/`p.h`, `b.hb`/`b.w`/`b.h`) and `SWORD_REACH`/`SWORD_SPAN`/
+`SWORD_GAP` from `src/data/feel.js`, not from a number measured against
+Gohmaraq and hardcoded** — the same reason this repo's checkers call
+`Room.solidAt` instead of copying it: a private model of "how close is
+touching" would silently be wrong the day a different boss's hb is fought,
+and every main boss's hb varies (22-26px wide) even though they're all
+32x32 sprites. `MOVE_PAD` (3px) pads the contact test by one frame of the
+worst realistic close-in movement, because `yield fence(toward)` is a WALK
+as much as a face — pressing the direction bit to face the boss also steps
+the player 1px toward it, and that extra frame of movement (plus the boss's
+own patrol, ~1px) is exactly what was closing the last couple of pixels
+into contact after the distance check had already read "safe."
+
+**Verified:** `check-bosses.mjs` unchanged (13/13, godmode numbers
+byte-identical: Gohmaraq 10/24, Wyverna 20/44, Rootmaw 20/52 — expected,
+since godmode's `p.invuln` pin means contact damage was never live there to
+begin with). `tools/test.mjs` 59/59, `replay.mjs` 51/51,
+`check-playthrough.mjs` 19/19, all unaffected (none of them fight a boss in
+real combat except the ad hoc measurement script this session used, which
+is not committed — see the next-session job below if it's worth
+formalising into a checker).
+
+**Next session, in order:**
+
+1. **The remaining death is 100% ranged chip damage** — `gohmaraqSlam`'s
+   aimed fan and phase-3's `shootRing`. The reverted per-shot dodge attempt
+   (below) is the only thing tried so far and it made things worse. Two
+   untried angles: (a) the "don't engage every eye-open window" idea from
+   the last two boards — Gohmaraq's eye stays open long at LOW tide, so
+   skipping an approach when the player's own health is low and a fresh
+   window is coming anyway might trade fewer melee hits for far less
+   ranged exposure; (b) a per-shot dodge that reads `game.entities` for
+   live projectiles the way the reverted attempt did, but re-examine
+   whether the SAME kind of "the check runs too late" bug that this
+   session found in the melee approach is present in the reverted dodge
+   code too — it was never traced frame-by-frame the way this session
+   traced the contact hits, only measured from the outside (final hit
+   counts), which is exactly the blind spot that hid this session's bug
+   for two prior sessions.
+2. **No committed checker measures REAL combat.** `check-bosses.mjs` is
+   explicitly god mode only. This session used an uncommitted scratch
+   script (`page.evaluate`-based, godMode:false, hearts:12, hooking
+   `Player.takeDamage`/`Boss.hurt` to log every damage event with the
+   attacker and the distance) to find and verify this fix. If boss tuning
+   continues to be a multi-session job, formalising that harness as a
+   committed tool (not asserting a win — CLAUDE.md's playthrough-harness
+   rule about not claiming what isn't proven applies here too) would save
+   every future session from re-deriving it from scratch.
+3. The same-speed patrol problem (phase 3 speed 1.0 == WALK_SPEED) is still
+   unmeasured in real combat — unchanged from prior boards.
+4. Once Gohmaraq is a measured win at 3 hearts, wire `dBoss` into
+   `playthrough-route.mjs` past `d1/0,3,2`, and only then look at the other
+   five bosses — Gloomtide's swimming-blocks-swinging finding in particular
+   needs a real tactic (sink with the Cleats first), not this generic verb.
+5. The Boss Key / third-key pass behind the Clawcrab door and the other five
+   dungeons' routes are both still undone and both still blocked on job 1
+   actually finishing.
+
+---
+
+## Charge dodge lands, ranged dodge doesn't — the boss verb, continued (previous session)
 
 **Still not a win.** Gohmaraq measured in real combat (12 quarter-hearts, no
 god mode, seed 20260806): five hits landed (24 -> 14 hp), same as last

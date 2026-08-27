@@ -28,6 +28,10 @@ export async function installRuntime() {
   // coordinate that lands INSIDE a multi-screen room; a raw key lookup does not.
   const mapsMod = await import('/src/world/maps.js');
   window.__hasRoom = mapsMod.hasRoom;
+  // For dBoss's contact/reach geometry, below: the same three constants
+  // Player.swordBox swings by, so a boss's actual hb size (which varies boss
+  // to boss) drives the answer instead of a guessed pixel radius.
+  const feel = await import('/src/data/feel.js');
 
   const TILE = screen.TILE, ROOM_W = screen.ROOM_W, ROOM_H = screen.ROOM_H;
   const VIEW_W = screen.VIEW_W, VIEW_H = screen.VIEW_H;
@@ -737,19 +741,26 @@ export async function installRuntime() {
    */
   // STATUS: THIS VERB FIGHTS AND DOES NOT YET WIN. It finds the boss, stays in
   // the arena, waits out the shell, chains swings through a landed hit's own
-  // invulnerability window, sidesteps a charge, and lands real hits —
-  // Gohmaraq measured in REAL combat (12 quarter-hearts, no god mode, seed
-  // 20260806) from 24 hp to 14, five hits landed, the player surviving to its
-  // last half-heart before a final graze. The melee trade is close to
-  // breakeven; what still kills a 3-heart player is ranged chip damage. A
-  // reactive per-shot dodge was tried and measured NET NEGATIVE (it landed
-  // fewer melee hits than leaving it alone, for no reliable safety in
-  // return — see docs/NEXT-SESSION.md's boss-verb section for the measured
-  // numbers and the wall-cornering failure mode before attempting it again).
-  // It is committed because the scaffolding is right and the traps it
-  // already closed are expensive to rediscover; it is NOT referenced by
-  // tools/playthrough-route.mjs, because a route step that cannot reliably
-  // finish is worse than one that is missing.
+  // invulnerability window, sidesteps a charge, and lands real hits without
+  // taking a melee hit doing it — the close-in/swing decision now checks the
+  // real hitboxes (contactAt/reachAt, above) rather than a Manhattan-distance
+  // guess, closed after tracing exactly how the guess failed: it let the
+  // player walk into the boss's own body while a diagonal close still read as
+  // "far" by Manhattan sum. Gohmaraq measured in REAL combat (12 quarter-
+  // hearts, no god mode, seed 20260806): 24 hp to 14, five hits landed (same
+  // as before — melee output is unchanged), but the two contact hits that
+  // used to land alongside those five are GONE, and the player survives to
+  // f1500 instead of f840 before dying — entirely to ranged chip damage now,
+  // never to a melee graze. The melee trade is a clean win; what kills a
+  // 3-heart player is exclusively the ranged spray. A reactive per-shot dodge
+  // was tried and measured NET NEGATIVE (it landed fewer melee hits than
+  // leaving it alone, for no reliable safety in return — see
+  // docs/NEXT-SESSION.md's boss-verb section for the measured numbers and the
+  // wall-cornering failure mode before attempting it again). It is committed
+  // because the scaffolding is right and the traps it already closed are
+  // expensive to rediscover; it is NOT referenced by tools/playthrough-
+  // route.mjs, because a route step that cannot reliably finish is worse than
+  // one that is missing.
   function* dBoss(maxF) {
     const g = window.__game;
     for (let i = 0; i < 300 && !g.boss; i++) yield 0;
@@ -865,8 +876,50 @@ export async function installRuntime() {
         // Gohmaraq's phase-1 tell is a stationary spray, not a charge closing
         // on us, so there is nothing here worth backing away from before the
         // swing.
+        //
+        // `contactAt`/`reachAt` are the exact AABB tests `Entity.overlaps`/
+        // `Player.swordBox` use, generic to whichever boss is in the room
+        // rather than tuned to one boss's own hb. A first cut only ran them at
+        // the swing decision, gated behind the Manhattan-sum "close enough"
+        // check below — and measured no different at all: the trace showed
+        // real contact landing WHILE STILL CLOSING, Manhattan sum 27-30 (still
+        // "far" by that gate) because a diagonal close can already have one
+        // axis inside the boss's own hurtbox while the sum stays high on the
+        // other. Contact has to be checked on every step of the approach, not
+        // only once the sum gate opens. `MOVE_PAD` pads the test by one frame
+        // of the worst realistic close (1px for the facing-step `toward` also
+        // being a walk, ~1px for patrol; charges are dodged separately above
+        // and excluded) so the decision is made against where the two of them
+        // will actually be a frame later, not where they are now.
+        const MOVE_PAD = 3;
+        const contactAt = (ddx, ddy, pad = 0) => {
+          const aL = p.hb.x - p.w / 2 - pad, aR = aL + p.hb.w + 2 * pad;
+          const aT = p.hb.y - p.h / 2 - pad, aB = aT + p.hb.h + 2 * pad;
+          const bL = b.hb.x - b.w / 2 + ddx, bR = bL + b.hb.w;
+          const bT = b.hb.y - b.h / 2 + ddy, bB = bT + b.hb.h;
+          return aL < bR && bL < aR && aT < bB && bT < aB;
+        };
+        const reachAt = (ddx, ddy, axX) => {
+          const fdx = axX ? (ddx > 0 ? 1 : -1) : 0;
+          const fdy = axX ? 0 : (ddy > 0 ? 1 : -1);
+          const rw = fdx !== 0 ? feel.SWORD_REACH : feel.SWORD_SPAN;
+          const rh = fdy !== 0 ? feel.SWORD_REACH : feel.SWORD_SPAN;
+          const boxL = -rw / 2 + fdx * (feel.SWORD_REACH / 2 + feel.SWORD_GAP), boxR = boxL + rw;
+          const boxT = -rh / 2 + fdy * (feel.SWORD_REACH / 2 + feel.SWORD_GAP), boxB = boxT + rh;
+          const bL = b.hb.x - b.w / 2 + ddx, bR = bL + b.hb.w;
+          const bT = b.hb.y - b.h / 2 + ddy, bB = bT + b.hb.h;
+          return boxL < bR && bL < boxR && boxT < bB && bT < boxB;
+        };
+        if (contactAt(dx, dy, MOVE_PAD)) {
+          // Already touching, or one frame from it, at any distance by the
+          // Manhattan gate below: swinging (or closing further) from here
+          // trades the hit either way. Clear it before committing rather than
+          // after.
+          yield fence(backAlong | backPerp); f++; continue;
+        }
         if (adx + ady > NEAR + 6) { yield fence(towardDiag(dx, dy)); f++; continue; }
-        // In range: face it, swing, then get out before it closes.
+        if (!reachAt(dx, dy, axisX)) { yield fence(towardDiag(dx, dy)); f++; continue; }
+        // In range, clear of contact: face it, swing, then get out before it closes.
         yield fence(toward); f++;
         yield fence(toward | sword()); f++;
         for (let i = 0; i < BACKOFF && f < budget; i++) { yield fence(backAlong | backPerp); f++; }

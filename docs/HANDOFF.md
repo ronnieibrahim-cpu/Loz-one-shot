@@ -224,6 +224,42 @@ is in the page, and nothing steps until you say so.
 
 ## Hard-won lessons — do not rediscover these
 
+**A safety check gated behind a distance threshold has to run on every step
+of the approach, not just once the threshold is crossed.** `dBoss`'s
+weak-open branch (`tools/actor-runtime.mjs`) added an exact AABB contact
+check before swinging a boss — but ran it only after a Manhattan-sum "close
+enough" gate had already passed, and measured **no change at all** against
+the real-combat baseline it was meant to fix. Two contact hits kept landing.
+Tracing every frame (not just the hit events) showed they landed **while
+still closing**, Manhattan sum 27-30, well above the gate's 24 threshold —
+a diagonal approach can have one axis already inside the target's hurtbox
+while the other keeps the sum high enough to read as "still far." The fix
+was moving the contact check ahead of the distance gate so it runs on every
+frame of the close, not only at the swing decision. The general shape: a
+threshold on a COMBINED quantity (a sum, a Euclidean radius) does not bound
+either individual axis, and a diagonal move can spend that budget unevenly.
+
+**A directional input in this engine is a WALK, not just a face — an actor
+script that presses a direction "only to face" something also moves 1px
+toward it.** The same `dBoss` fix above needed a small forward-looking pad
+(`MOVE_PAD`, 3px) on the contact test, because the very frame that read as
+"safe, now face and swing" issued `yield fence(toward)` — which both faces
+AND steps the player 1px closer, and the boss's own patrol closes another
+~1px in the same frame. A check made against the CURRENT position doesn't
+see the position after the input it's about to issue takes effect.
+
+**Compute contact/reach geometry from the entities' own hb/w/h and the
+sword's own feel.js constants, not from numbers measured against one
+specific enemy.** The first draft of the fix above hardcoded Gohmaraq's own
+contact boundary (~18px) after measuring it by hand. Every main boss shares
+roughly the same 32x32 sprite but NOT the same hb (22-26px wide, varying per
+boss) — a Gohmaraq-tuned number would silently be wrong the moment a
+different boss's fight is measured. `contactAt`/`reachAt` derive the
+boundary from `p.hb`/`p.w`/`p.h`, `b.hb`/`b.w`/`b.h` and
+`SWORD_REACH`/`SWORD_SPAN`/`SWORD_GAP` live, the same data
+`Entity.overlaps`/`Player.swordBox` use, so the check is automatically right
+for whichever boss is in the room.
+
 **This container's Playwright package and its pre-installed Chromium are off
 by one revision, and only some tools have a fallback for it.** `node_modules`
 expects browser revision 1234; `/opt/pw-browsers/` only has 1194 installed.
