@@ -45,7 +45,10 @@ checklist and it is still true of all six — see the bottom of this file.
 steps, see `docs/EXECUTION-PLAN.md`'s P9 section for the checkers that
 prove it. **PT (towns)'s steps 1-4 have landed** — the block machinery, the
 extracted town kit and four town screens, proved by `tools/check-towns.mjs`.
-What is left of PT is the terrain backlog and the townsfolk sprites.
+Townsfolk are extracted and done (four peoples, `tools/rip-races.py`). What
+is left of PT is the terrain backlog and two hand-drawn holdouts (the Maku
+Tree and the Great Fairy, both still 16x16 impressions of characters their
+own sheets draw at full size) — see `docs/ART-BACKLOG.md`.
 
 "DONE" means every box in the checklist below is ticked and every checker in
 CLAUDE.md's table was green on the commit named. It does not mean the dungeon

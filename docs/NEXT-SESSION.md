@@ -223,8 +223,12 @@ can't tell contact from ranged.
   except by the boss-verb work above). Detail and per-dungeon design notes:
   `docs/DUNGEON-STATUS.md`.
 - **PT (towns) steps 1-4**: block machinery, extracted town kit, four town
-  screens, `tools/check-towns.mjs`. Step 5 (terrain backlog) and populating
-  the towns with people are still open — see "What's left" below.
+  screens, townsfolk with real (extracted) faces across four peoples who
+  turn to face their walking direction, `tools/check-towns.mjs` (58/58).
+  Only step 5 (terrain backlog) plus two small leftovers from step 4 — the
+  Maku Tree and Great Fairy are still hand-drawn at 16x16 instead of
+  extracted at their real multi-cell size — are still open. See "What's
+  left" below.
 - **P9, all four steps, including region re-gating.** Cap raised from a
   broken 13 to 15 (24 pieces, six Heart Containers), `tools/check-hearts.mjs`
   pins it and the damage ladder. The region re-gating (four gates — bombs,
@@ -268,13 +272,21 @@ can't tell contact from ranged.
    several tiles; this game spends one tile on all of it — a content
    decision, not a swap). Water animation is genuinely blocked: no terrain
    sheet in the repo has a second frame.
-3. **PT step 4 — populate the towns.**
-   `assets/sheets/oracle-seasons-nonhuman-races.png` has never been
-   extracted from and holds the Maku Tree, the Great Fairy and townsfolk;
-   the scrimshander currently shares a face with the digger. Two small
-   town-shaped follow-ups worth doing alongside it: Tidewatch doesn't answer
-   the tide visually (looks identical at all three levels), and there's no
-   third town legend (marsh/cliff/salt) yet — both are ART-BACKLOG.md items.
+3. **PT step 4's last two items: the Maku Tree and the Great Fairy.**
+   Townsfolk are done (four extracted peoples, `tools/rip-races.py` —
+   don't redo this). What's left: `npc_maku` is still a 16x16 hand-drawn
+   impression of a character the source draws several cells across (the
+   exact complaint that got the trees rebuilt as blocks), and
+   `assets/sheets/oracle-seasons-maku-tree.png` — a whole sheet of just that
+   character — has never been opened. The Maku Tree is an ENTITY, not
+   terrain, so this wants the sprite manifest's `expectedSize` route
+   (`link_hold_*` is the worked example of a frame bigger than its cell).
+   `docs/ART-BACKLOG.md`, "The Maku Tree and the Great Fairy are hand-drawn
+   beside their own sheet", has the full writeup, plus two small optional
+   town follow-ups (Tidewatch doesn't answer the tide visually; no third
+   town legend for marsh/cliff/salt yet) and unused extras already sitting
+   on the races sheet (Gorons, more walk frames for a stride rather than a
+   turn-in-place).
 4. **Apply the derived damage ladder** once the boss-verb work makes it
    measurable in a real fight (raising the heart cap was a difficulty change
    even though no enemy damage value moved yet — see `docs/FEEL-SPEC.md`,
