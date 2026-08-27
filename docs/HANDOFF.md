@@ -2244,6 +2244,40 @@ means the pot comes up instead.** That was already true of talking to a
 villager — `tools/test.mjs` had to turn Link around before the conch section,
 because the tile he was facing is one of the village rocks and it ate the press.
 
+**A shared field name silently opted every boss into a system it was never
+meant to be part of, and it cost every boss-fighting session before the one
+that found it.** `Boss` (`src/game/enemy.js`) tracked its own hp-driven
+combat phase (0, 1, 2 — which tell/attack pattern it's currently running) in
+`this.phase`. `Game.updatePhaseShift` (`src/game/game.js`) uses that EXACT
+field name for something unrelated: an entity that should exist at only one
+tide level sets `this.phase` to that level via `Entity`'s own constructor
+(`opts.phase`, defaulting to `null` for anything that never asked to be
+tide-gated), and any frame the world's tide doesn't match it, the entity is
+made harmless, hidden, and has `invuln` re-armed to at least 2 — EVERY
+FRAME, forever, until the tide matches again. A boss's combat phase only
+ever goes up, so the instant it advanced past 0 to a value that didn't
+happen to equal the tide the fight was being played at, the boss became
+permanently, silently unhittable. Every "0 damage in godmode" result and
+every "damage caps at exactly the hp crossing the first phase boundary"
+result recorded across this project's entire boss-fighting history — for
+EVERY boss, not just one — was this bug, not a positioning or timing
+problem: Anemos (HIGH tide), Gloomtide (MID) and Nereth (MID) never dealt
+any damage in any session because phase 0 never matched their tide even
+once; Gohmaraq, Wyverna and Rootmaw (all LOW tide, where phase 0 happened to
+equal tide 0 by pure coincidence) worked until their first phase change and
+then locked up, every single time, regardless of what the boss verb did.
+Found by giving the player absurd health (200 quarter-hearts) and watching
+hp freeze at a fixed number forever with 19,000+ frames still on the clock —
+the tell that something structural, not tactical, was capping the fight.
+Fixed by renaming the boss's own field to `fightPhase`; `Entity`'s own
+`this.phase` now stays `null` for every boss, same as it does for anything
+else nobody asked to be tide-gated. Five of six bosses now die outright in
+godmode where before only one had ever taken any damage at all. **If a
+future session finds "boss takes 0 damage" or "damage caps at a suspiciously
+round number" again, check for a field name silently doing two jobs before
+reaching for AI/positioning tuning — that is the shape this bug takes, and
+it looks exactly like a difficulty or timing problem from the outside.**
+
 ## The two gates that cannot be tiles
 
 Roc's Feather and the Power Bracelet became real tile gates this session. The
