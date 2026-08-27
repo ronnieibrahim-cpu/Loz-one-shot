@@ -74,27 +74,72 @@ stun-tell idea. The two fixes that ARE committed (contact-geometry, two
 sessions ago; charge-clearance cap, last session) remain — both are real,
 proven-safe improvements on their own terms, they just are not this ceiling.
 
-**What this means for whoever picks this up next: stop tuning the chase.**
-Five parameter-level ideas across two sessions (last session's charge-dodge
-cap, plus this session's four) have now converged on the same wall. That is
-strong evidence the reactive per-frame chase-and-retreat STRATEGY has a
-structural ceiling against a boss whose phase-2 behaviour re-triggers this
-often, not that the next parameter will be the one that works. The honest
-options, in order of how much they change:
+**A fifth, genuinely different STRATEGY was tried in the same session, not
+just a sixth tuned chase — and it hit the identical wall too.** "Stop
+chasing point-to-point once phase 2 starts; hold room centre and let the
+boss's own patrol/charge cross it" (exactly the idea proposed below as the
+next real lever) was implemented — gated on a `seenCharge` flag set the
+first time `b.charging` fires — and measured the same way: `node
+tools/measure-boss.mjs d1 40`. **Identical result: 5 hits, 24 -> 14 hp,
+never a 6th across 4860 frames.** Reverted, not committed. This raises the
+bar on what "ruled out" means here: it is no longer just chase PARAMETERS
+that fail to move this number, it is a chase-shaped strategy in general, at
+least in the form tried (hold centre, react to whatever crosses it).
 
-1. **A qualitatively different tactic for phase 2**, not a tuned version of
-   the current one — e.g., stop chasing point-to-point entirely once
-   charges start and instead hold a position (room center, or wherever
-   gives the most fence-clear reaction room) and let the boss's own
-   patrol/charge pattern bring it into range, swinging opportunistically
-   rather than pursuing. This is a real strategy change, not a constant
-   tweak, and it has not been tried.
+**Chasing that thread further found a real, separate bug — proven
+in a landed-hit trace, and it STILL didn't move the number.** The
+banked-invuln "chase and swing" branch (used while `p.invuln >
+RETREAT_MARGIN`, a separate code path from the one fixed two sessions ago)
+still compared `ax2 + ay2` — the exact L1-sum mistake fixed elsewhere —
+instead of `Math.max(ax2, ay2)`. Traced directly: at one point in a 40qh
+fight the player sat at max-axis 19 (comfortably in range) for 20+
+consecutive frames with invuln banked, and this branch kept approaching
+instead of swinging because the SUMMED distance was still over threshold.
+Fixed it the same way as the other branch, instrumented a counter to see
+whether the corrected condition actually fires differently in a real run —
+**it does, 6 times in one 40qh fight — and boss hp still stopped at
+exactly 14, zero additional landed hits.** The 6 divergent swing attempts
+evidently all still missed: `Math.max(ax2,ay2) <= NEAR+6` bounds BOTH axes
+to <=24, but the sword's actual hit-box tolerance on the perpendicular axis
+is asymmetric and narrower than that in one direction (worked out from
+`Player.swordBox` and Gohmaraq's `hb` directly: roughly -21..+13 px, not a
+uniform ±24) — so the fix is directionally correct and still not a precise
+"would this swing connect" test. Reverted rather than kept on faith,
+per this repo's own standard (a change that measurably does nothing is an
+unproven complication, the same reasoning that reverted last session's
+stun-tell idea) — but the inconsistency between the two branches is real
+and unfixed, and a future session chasing hit accuracy rather than the
+charge-cadence problem should know it's there and already measured as
+low-yield (6 events in ~4700 frames) rather than assume it is untried.
+
+**What this means for whoever picks this up next: stop tuning the chase,
+and stop assuming a smarter reactive verb is the answer.** Six
+independently-reasoned ideas now converge on an identical 5-hit ceiling: a
+parameter-tuned chase (5 variants, two sessions) and a genuinely different
+hold-and-react strategy (this session). That is no longer "the next
+parameter might work" evidence — it is evidence that no purely REACTIVE,
+per-frame, engine-level verb of this shape gets through Gohmaraq's phase 2
+at all, regardless of how it reacts. The honest options, in order of how
+much they change:
+
+1. **A tactic with FORESIGHT, not just reaction** — the only category not
+   yet tried. Every version so far decides what to do from the CURRENT
+   frame's state only. `charge()`'s trigger (`aligned()` + `range:130`) and
+   `timer(e,'slam',130)` are both fully deterministic given the boss's
+   position and elapsed time, which means a verb that tracks the boss's
+   patrol phase and PREDICTS the next charge/slam window, instead of
+   reacting to `b.charging`/`b.stun` only once they flip, could time an
+   approach to arrive exactly when a window opens rather than racing a
+   charge that already started. This is a materially bigger lift than
+   anything tried so far (it needs to reconstruct or track the timer state,
+   not just read booleans) and has not been attempted.
 2. **Reconsider Gohmaraq's phase-2 charge frequency itself** (`timer(e,
    'slam', 130)` interacting with `charge()`'s own `aligned()`+`range:130`
    retrigger, `src/data/bosses.js`) as a design question rather than an AI
-   question — this session's evidence says a competent, unhurried, patient
-   player-shaped verb still cannot get through it at ANY health total tried,
-   which is a claim about the fight's tuning, not about this verb's skill.
+   question — six ruled-out approaches now say a competent, unhurried,
+   patient player-shaped verb cannot get through it at ANY health total
+   tried, in ANY of the reactive shapes tried, which is a claim about the
+   fight's tuning, not about this verb's skill.
 3. Once Gohmaraq is a measured win at 3 hearts, wire `dBoss` into
    `playthrough-route.mjs` past `d1/0,3,2`, and only then look at the other
    five bosses — Gloomtide's swimming-blocks-swinging finding in particular
