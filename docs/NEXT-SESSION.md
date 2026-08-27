@@ -105,10 +105,18 @@ both with per-frame instrumentation the same way Wyverna was:
    real-order playthrough (D1→D2→D3→D4) would very plausibly carry MORE
    than the conservative 6-heart floor tested here (heart pieces are not
    counted above at all, and there are 24 of them in the world), which
-   would turn a 1-quarter-heart coin-flip into a comfortable win. This is
-   the closest this project has ever been to `dBoss` actually winning a
-   fight for real — worth chasing to a wired playthrough step before
-   touching anything else.
+   would turn a 1-quarter-heart coin-flip into a comfortable win. The
+   arithmetic lines up almost too neatly to ignore: `check-hearts.mjs` pins
+   `PER_DUNGEON = 2`, so D1-D3 hold 6 heart pieces between them, plus the
+   2 in the overworld caves (`cave1`, `cave2`) that need no items at all —
+   8 pieces, worth exactly +2 hearts (4 pieces per heart). Added to the
+   6-heart container floor, that's 8 hearts / 32 qh — the EXACT number that
+   won by one quarter-heart in this session's binary search. **Not verified
+   this session**: whether all six dungeon pieces actually sit before their
+   own dungeon's boss room (a piece placed past the boss wouldn't count, and
+   this wasn't checked point-by-point for D1-D3). Worth confirming before
+   trusting the arithmetic, but if it holds, a real player following the
+   obvious order already has enough health, with nothing to build.
 2. **Do NOT spend a session trying to fix Wyverna's late-phase reachability
    stall with a generic change.** The pattern this whole document already
    shows, repeatedly, is that generic "read the world and react" changes to
