@@ -1,4 +1,148 @@
-## A third ranged-dodge attempt, reverted — the failure mode was new, and the axis is probably tapped out (this session)
+## A second swing per opening, SHIPPED — the first genuine improvement on this fight since the invuln-chain (this session, continued again)
+
+**Still not a win, but this one is real and it's in the tree.** Picked up
+the one untried lever the previous entry named: the swing/backoff cycle once
+already in range, not the long-range approach every earlier attempt this
+session touched.
+
+**What changed, in `dBoss` (`tools/actor-runtime.mjs`):** in the "no invuln
+banked, in range: face it, swing, then get out" branch, after the first
+swing's root (`SWING_FRAMES`, `src/data/feel.js`) ends, check whether the
+boss is STILL `weakOpen` and still within `NEAR + 6` — if it hasn't moved
+away and its eye hasn't shut, that opening is still live, so take a second
+swing before the mandatory `BACKOFF` retreat, instead of always retreating
+after exactly one. `feel.js` is now imported into the actor runtime (a new
+top-of-file import, `const feel = await import('/src/data/feel.js')`) rather
+than hand-copying `SWING_FRAMES` — CLAUDE.md's rule that a timing constant
+lives in exactly one place applies here same as anywhere in `src/`.
+
+**Measured against the same real-combat baseline this whole session has
+used (seed 20260806, 12 qh, no god mode, tide LOW): same 5 hits landed
+(24 -> 14 hp, byte-identical total damage to every previous run), but the
+player survives 52 frames longer before the same kind of fatal graze — dead
+at frame 892 instead of 840.** Reproduced twice, identical both times
+(deterministic, as it has to be). This is a different shape of result from
+every attempt earlier in this session: those all traded hits for survival
+(or lost both). This one is a strict improvement on the metric that
+actually matters — not fewer hits for more safety, the SAME hits with less
+wasted approach-cycle time, which is margin toward eventually affording a
+sixth.
+
+**One tuning attempt on top of this was tried and reverted, worth recording
+so nobody retries it blind:** waiting `SWING_FRAMES + BOSS_INVULN_FRAMES`
+frames before the second swing, to guarantee the boss's own post-hit
+invulnerability (`BOSS_INVULN_FRAMES`, 20f, set in `Enemy.hurt` from
+whenever in the first swing's `SWING_HIT_START..SWING_HIT_END` window it
+actually connected) has fully cleared before the second swing's hit window
+opens. Measured MUCH worse: 2 hits instead of 5, dead at frame 540 instead
+of 892. Standing still that much longer next to a live boss costs far more
+to its OTHER attacks than a guaranteed second hit is worth. The shipped
+version's `SWING_FRAMES - 1` wait sometimes swings into the boss's own
+invuln window and whiffs the second hit for free — and that is cheaper than
+waiting long enough to avoid it. Do not "fix" the whiff without measuring;
+it already lost once.
+
+**Verification, all green, all unchanged elsewhere:** `check-bosses.mjs`
+13/13, godmode numbers on every boss byte-identical to before (this branch
+never runs under god mode — `p.invuln` is pinned at 600, so the "no invuln
+banked" branch this session touched is dead code there, exactly as
+expected). `tools/test.mjs` 59/59. `tools/replay.mjs` 51/51. `tools/
+check-playthrough.mjs` 19/19, still stopping at `d1/0,5,2` exactly as
+before — `dBoss` remains unwired from the route, unchanged from every prior
+session's stated position that it should not be wired in until it wins.
+
+**Next session: still not a win, and the honest gap is now smaller and
+better characterized than it was.** Player still loses 12 qh for 10 dealt —
+5 hits is not a win at 12 hp of hp remaining on the boss. What's genuinely
+new: the in-range cycle (this session's lever) has headroom the long-range
+approach (four prior attempts, all sessions) does not. Worth trying next,
+in order:
+
+1. Does the same "try a second swing if still in range and open" trick help
+   the OTHER branch too — the invuln-chase (`p.invuln > RETREAT_MARGIN`)
+   already tries to chain swings, but check whether it's leaving a similar
+   whiffed-window gap of its own.
+2. `BACKOFF` (30 frames) has never been retuned — tighter might return to
+   range for a THIRD swing attempt sooner, at the cost of less separation;
+   looser gives more margin per cycle but fewer cycles overall. Untested in
+   either direction.
+3. The same-speed patrol problem (phase 3 speed 1.0 == WALK_SPEED) is still
+   unmeasured in real combat, unchanged from every previous board.
+
+---
+
+## Two more reverted attempts, and a correction to this file's own arithmetic (this session, continued)
+
+**Still not a win.** Continuing straight from the "don't engage every
+eye-open window" idea this file left as untried, and correcting a mistake
+this file itself made in the process.
+
+**The arithmetic in the previous entry was wrong, and a real per-frame trace
+of a full fight proved it.** That entry claimed shot lifetime (150f) exceeds
+the slam interval in phases 2 and 3 (130f, 105f), so the arena would
+"structurally never clear." It doesn't work that way: `timer(e,'slam',N)`
+only starts the clock, and the phase-1 comment says the slam actually fires
+"when you line up with it" — alignment-gated, not a bare periodic timer. A
+full-fight trace of live `isProjectile` count (seed 20260806, real combat,
+unchanged verb) showed three shot waves total, each clearing to zero
+**well under 100 frames** after firing, with **150-270 frame gaps** of a
+totally clear arena between them. The previous entry's "no window to skip
+to" conclusion does not hold; recorded here so the correction is visible
+next to the mistake rather than replacing it silently.
+
+**Given that, tried the obvious thing anyway: gate the far-approach on shot
+presence.** In the `weakOpen`, no-invuln-banked, closing-the-distance
+branch, hold instead of advancing while any projectile is live; resume once
+the arena reads clear. Two variants, both measured against the same
+baseline (5 hits landed, 24 -> 14 hp, dies at frame 840):
+
+- **Hold position** (`yield fence(0)` while shots are live): 4 hits landed
+  (24 -> 16), dies at frame 809 — worse on both counts.
+- **Retreat while waiting** (back off along the existing `backAlong |
+  backPerp`, in case standing still was the problem rather than waiting
+  itself): 4 hits landed (24 -> 16), dies at frame 865 — one fewer hit,
+  survives 25 frames longer.
+
+**Both reverted; `tools/actor-runtime.mjs` is unchanged.** Neither beats the
+baseline's hit count, which is the metric that actually matters toward a
+win (surviving longer while landing fewer hits does not get the fight
+closer to 12 successful swings). The mechanism is worth naming since the
+raw wave-clearing numbers looked so favorable: the boss's own timing —
+*when* it next aligns to slam — depends on the player's real-time position,
+so a wait that looks free in isolation (there really is a 150-270 frame
+gap!) reshuffles everything downstream of it. Holding back at frame 460
+does not just cost the frames spent waiting; it changes where the player is
+when the boss would otherwise have aligned, which changes when the next
+slam fires, which changes the next wave's timing, compounding over the
+whole rest of the fight. A locally-safe decision is not free once the boss
+AI reacts to the player's position on every frame that follows it.
+
+**This closes out both of the previous entry's proposed leads, one
+correctly (the heart-piece math) and one after actually running it despite
+a wrong analytical prediction (this one).** Four independent attempts on
+the chip-damage axis now — latched line-dodge, an analytically-motivated
+blanket gate that turned out to be based on a wrong model, continuous
+nearest-shot avoidance, and shot-presence gating with two variants — have
+each been measured and each has landed fewer or equal hits than simply
+closing the distance unconditionally the moment `weakOpen` is true and no
+invuln is banked. That baseline behavior — written up two sessions ago as
+"No invuln banked: close the distance and take the shot" — is, empirically,
+the best-performing policy this project has tried for that branch. Recommend
+treating it as the floor rather than a placeholder: the next improvement to
+this fight most likely has to come from somewhere other than "react
+differently to projectiles in the closing branch," since that branch itself
+has now been the target of every attempt and never won.
+
+Not yet tried, and a genuinely different lever: the swing/backoff cycle
+once IN range (`NEAR`/`BACKOFF`/the invuln-chase constants) has not been
+touched by any of the four attempts — every one of them only changed the
+long-range approach. Whether a tighter or looser `BACKOFF`, or chaining a
+second swing before retreating when there's still banked invuln margin left
+over, lands more hits per opening once contact is made is unmeasured.
+
+---
+
+## A third ranged-dodge attempt, reverted — the failure mode was new, and the axis is probably tapped out (previous session)
 
 **Still not a win, and no code changed.** This session built a measurement
 harness (scratch, not committed — recipe below) to reproduce last session's

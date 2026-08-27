@@ -28,6 +28,7 @@ export async function installRuntime() {
   // coordinate that lands INSIDE a multi-screen room; a raw key lookup does not.
   const mapsMod = await import('/src/world/maps.js');
   window.__hasRoom = mapsMod.hasRoom;
+  const feel = await import('/src/data/feel.js');
 
   const TILE = screen.TILE, ROOM_W = screen.ROOM_W, ROOM_H = screen.ROOM_H;
   const VIEW_W = screen.VIEW_W, VIEW_H = screen.VIEW_H;
@@ -869,6 +870,34 @@ export async function installRuntime() {
         // In range: face it, swing, then get out before it closes.
         yield fence(toward); f++;
         yield fence(toward | sword()); f++;
+        // The player is rooted for the whole swing (SWING_FRAMES,
+        // src/data/feel.js) regardless of what's pressed, so holding the
+        // facing direction through it costs nothing extra. If the boss is
+        // STILL weakOpen and still in range the moment the root lets go — it
+        // hasn't moved away and hasn't shut its eye — that's a second swing
+        // already paid for by the approach that bought the first one, not a
+        // new risk sought out: the mandatory BACKOFF below still runs after,
+        // unchanged either way.
+        //
+        // Tried waiting SWING_FRAMES + BOSS_INVULN_FRAMES here instead, to
+        // guarantee the boss's own post-hit invuln (`Enemy.hurt`,
+        // src/game/enemy.js) had cleared before the second swing's hit
+        // window opens. Measured MUCH worse (2 hits instead of 5, dead at
+        // frame 540 instead of 892) — holding position that much longer next
+        // to an active boss costs far more to other attacks than the
+        // guaranteed second hit is worth. SWING_FRAMES alone is the measured
+        // number: the second swing sometimes whiffs into the boss's own
+        // invuln window, and that is cheaper than standing still long enough
+        // to avoid it.
+        for (let i = 0; i < feel.SWING_FRAMES - 1 && f < budget; i++) { yield fence(toward); f++; }
+        const dx3 = b.cx - p.cx, dy3 = b.cy - p.cy;
+        if (b.weakOpen && !b.dead && Math.abs(dx3) + Math.abs(dy3) <= NEAR + 6) {
+          const toward3 = Math.abs(dx3) >= Math.abs(dy3) ? (dx3 > 0 ? BIT.right : BIT.left)
+                                                          : (dy3 > 0 ? BIT.down : BIT.up);
+          yield fence(toward3); f++;
+          yield fence(toward3 | sword()); f++;
+          for (let i = 0; i < feel.SWING_FRAMES - 1 && f < budget; i++) { yield fence(toward3); f++; }
+        }
         for (let i = 0; i < BACKOFF && f < budget; i++) { yield fence(backAlong | backPerp); f++; }
         continue;
       }
