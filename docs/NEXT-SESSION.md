@@ -64,29 +64,73 @@ different lever than "pause the chase to sidestep" — that lever has now
 failed three separate times, two different trigger signals in this session
 plus the live-projectile read in the last one.**
 
-**What might still be worth trying, unmeasured:** the two ideas already on
-the board below that are NOT "pause and dodge" — (a) skipping some eye-open
-windows rather than engaging every one (Gohmaraq's eye stays open almost the
-whole fight at LOW, so a fresh opening is usually coming anyway, and the
-chip damage is being taken while chasing opens the verb doesn't need), and
-(b) solving the same-speed patrol problem separately. Neither was attempted
-this session — this session's budget went to closing off the dodge-trigger
-question definitively instead, which is worth having settled.
+**A third thing was tried after the two dodge variants: hand-tuning
+`BACKOFF` (the fixed 30-frame full retreat after a "cold" swing, thrown when
+the player has no banked invuln to chain off).** This is a different lever
+from dodging — it doesn't try to avoid a shot, it changes how long the verb
+stays clear of the boss between swings — and it looked promising at first:
+sweeping `BACKOFF` from 10 to 45 on the same seed, `18` landed **6 of 24 hp**,
+the best count anyone has measured on this fight (previous best was 5).
 
-**No code shipped.** Both variants were built, measured, and reverted in
-this session; `tools/actor-runtime.mjs` is unchanged from the previous
-session's commit. `git diff` against `cf56059` is empty.
+**It was not shipped, and should not be picked up as "the answer" by a future
+session without more work first.** The sweep is chaotic, not a curve with a
+peak at 18: `16`, `17`, `19` and `21` — the values immediately either side —
+landed 3, 5, 5 and 4 hits respectively, and `20` (5 hits, but survived to
+frame 1265 against baseline's 796) looked like a different kind of
+improvement again. One value out of a dense, non-monotonic sweep outscoring
+its own neighbors by 20-100% is the signature of a chaotic two-AI feedback
+loop being sampled at one lucky point, not a real effect — the same trap the
+reverted ranged-dodge attempts fell into, restated: **a number that only
+wins on one seed's exact frame-by-frame history is not measured, it is
+fitted.** Shipping `BACKOFF=18` on the strength of this single seed would be
+exactly the mistake CLAUDE.md's own hard-won-lessons section warns about
+elsewhere in this file, just with a knob instead of a boolean.
+
+**What this means for the next session, and what it does NOT mean.** The
+first instinct here was "measure against more seeds" — tried, and worth
+recording as a dead end so nobody re-tries it: **the fight is bit-for-bit
+identical regardless of `seed`.** Rerunning the exact `BACKOFF=30` baseline
+with `SEED=99999` instead of `20260806` produced the identical hit list,
+same frames, same damage, to the frame. The reason is structural, not
+lucky — nothing in Gohmaraq's phase-1/phase-2 AI touches `g.rng` at all
+(`patrol`, `charge`, `windUp`, `spread`, `shootRing`, `timer` are all pure
+functions of frame count and position); the one RNG call in its whole spec
+is `summon`'s minion placement, gated to phase 3 (hp <= 30%, i.e. <= 7.2 of
+24), and no fight measured so far — this session's included — ever gets the
+boss that low. So `game.rng`'s seed is not the axis of uncertainty here at
+all, and a multi-seed harness would just run the same fight ten times.
+
+The chaos is real, it is just deterministic chaos in the PARAMETER, not
+sampling noise in the RNG: two AIs in a tight feedback loop (the verb reacts
+to the boss's position every frame, the boss reacts to the player's) are
+exactly the kind of system where a 1-frame change in `BACKOFF` reshuffles
+every subsequent frame's positions, which is enough on its own to flip
+whether a swing lands. What would actually test whether `BACKOFF=18`
+generalizes is varying something OTHER than `seed` — the frame the fight is
+entered on (pad the `['wait', N]` before `['boss', ...]` in the setup steps),
+the equipment loadout, or the boss fought (does 18 help against Wyverna or
+Rootmaw, or is it purely a Gohmaraq accident) — and comparing the resulting
+distribution, not a single number, before trusting any one value.
+
+**No code shipped.** The two dodge variants and the `BACKOFF` sweep were all
+built, measured, and reverted in this session; `tools/actor-runtime.mjs` is
+unchanged from the previous session's commit. `git diff` against `cf56059`
+is empty.
 
 **Next session, in order — unchanged from last time except item 1's framing:**
 
-1. Stop trying to dodge Gohmaraq's ranged attacks with a pause-and-sidestep
-   verb; three attempts across two sessions all cost more hits than they
-   saved. Try instead: skip some eye-open engagements at LOW tide (the eye
-   reopens faster than the verb can exploit every window), or measure
-   whether NOT retreating the full `BACKOFF` (30f) after a swing — trading
-   some of that margin for one more swing instead — nets a better
-   hits-for-hits-taken ratio than either dodging or the current fixed
-   retreat.
+1. Stop hand-tuning a single `dBoss` parameter against one exact
+   deterministic trajectory and trusting the first good number (this
+   session's `BACKOFF=18` included — do not ship it as-is). `seed` does not
+   perturb Gohmaraq's phase-1/phase-2 fight at all (verified — see above), so
+   the next attempt at any of this needs a DIFFERENT axis of variation to
+   test robustness: vary the entry timing (pad the setup's `['wait', N]`
+   before `['boss', ...]`), the loadout, or run the same idea against another
+   boss's fight, and look at the resulting spread rather than one number.
+   Stop trying to dodge Gohmaraq's ranged attacks with a pause-and-sidestep
+   verb specifically (three attempts across two sessions all cost more hits
+   than they saved); try instead skipping some eye-open engagements at LOW
+   tide (the eye reopens faster than the verb can exploit every window).
 2. The same-speed patrol problem (phase 3 speed 1.0 == WALK_SPEED, so a
    patrol that isn't reversing is never caught) is still unmeasured in real
    combat — only seen in godmode's unlimited-aggression run, which may not
