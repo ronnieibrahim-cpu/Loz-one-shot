@@ -2244,6 +2244,30 @@ means the pot comes up instead.** That was already true of talking to a
 villager — `tools/test.mjs` had to turn Link around before the conch section,
 because the tile he was facing is one of the village rocks and it ate the press.
 
+### "Invuln has decayed to 0" is not "I am safe now" — the boss verb's own trap
+
+`tools/actor-runtime.mjs`'s `dBoss` chains sword swings through a landed
+hit's invulnerability window (`PLAYER_INVULN_FRAMES`), then is supposed to
+break contact and hold off until the window lapses before trying again. The
+"break contact" branch was gated on `p.invuln > 0` alone. The instant invuln
+decayed to exactly 0, the verb fell straight through to its COLD
+approach-and-swing branch — even when the retreat had barely started and the
+player was still standing right next to the boss. Instrumenting
+`Player.takeDamage` directly (rather than sampling hp at a stride) caught it:
+a second contact hit landed five frames after the first hit's invuln
+expired, because the verb re-engaged the moment the TIMER ran out without
+checking whether it had achieved any actual SEPARATION.
+
+The fix is a second, independent condition: a `clearedSinceHit` flag that
+only goes true once real distance from the boss is measured, separate from
+whatever the invuln counter says. Two counters that happen to both gate the
+same behavior are not the same signal just because they're usually
+correlated — invuln measures TIME elapsed since a hit, not distance covered,
+and a verb standing still for the entire window (pinned by a wall, or simply
+unlucky) satisfies the first without ever satisfying the second. Watch for
+this pattern anywhere a "cooldown" is inferred from a timer when what is
+actually being protected against is a spatial condition.
+
 ## The two gates that cannot be tiles
 
 Roc's Feather and the Power Bracelet became real tile gates this session. The
