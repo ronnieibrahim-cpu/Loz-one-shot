@@ -63,15 +63,41 @@ landing, just much more slowly (roughly one per 150-250 frames instead of
 one per 70) — which is exactly why more health closes the gap instead of
 making no difference.
 
-**D2 Anemos and D6 Nereth are the two that look like they need real,
-boss-specific tactics, not just more health — this is now the honest place
-to look, not the presumed one.** Anemos barely improves with 4 extra
-quarter-hearts (2 hits either way); Nereth lands ZERO hits even at 8
-hearts and 1860 frames, matching its own design note ("pins the tide per
-phase; break the pin to hurt him") — `dBoss` has no verb for "sound the
-conch to break the pin," so it is very plausibly waiting out a shell that
-never opens under its own steam. Worth checking directly next session
-rather than assumed.
+**D2 Anemos and D6 Nereth were checked directly, not left as guesses — and
+Nereth's "check for a required conch verb" hypothesis is WRONG.** Traced
+both with per-frame instrumentation the same way Wyverna was:
+
+- **Nereth never needs the conch to open at all — the design note is about
+  making the window LONGER, not about being the only way in**, exactly as
+  `nerethPin`'s own comment says ("he must never be *only* breakable by the
+  conch… a pure tide gate would mean an invulnerable boss and no way to
+  learn otherwise"). Every attack in phases 1-3 ends in a real, ~55-frame
+  `nerethOpening()` window regardless of tide. The actual reason `dBoss`
+  lands zero hits in 1860 frames, caught red-handed with `p.invuln`/
+  `hearts` in the trace: the trident throw (`spread(...,damage:3)`) that
+  OPENS the window fires from the same `windUp` callback as the opening
+  itself — so the instant a window starts, the player (who has been closing
+  distance during the closed phase) walks straight into the trident volley
+  at ~40px out, WAY outside sword range, takes a graze, and the resulting
+  `p.invuln>0` branch immediately retreats for the rest of the window. Every
+  single opening, all 1860 frames, without exception. **This is the exact
+  same "shots fired the instant the window opens" pattern already diagnosed
+  and reverted three times this session for Gohmaraq** — just severe enough
+  here that it eats the ENTIRE window instead of some of it, so the hit
+  count is 0 instead of a few. Do not go looking for a missing conch verb;
+  go looking at this if anyone touches Nereth.
+- **Anemos has a proximity counterattack that is designed, not a bug**:
+  `anemosLash` fires "if `distToPlayer(e,g) < range`" (range 44/48/52 across
+  its three phases — literally the function's own comment is "anything that
+  stands next to it gets whipped"). That range is LARGER than the ~24px
+  `dBoss` needs to reach before it tries to swing, so every single approach
+  risks a 3-damage lash roughly every 70 frames spent in range, before a
+  swing is even thrown. `anemosFeed`'s open window is actually generous at
+  HIGH tide (160 of every 250 frames) — vulnerability isn't the bottleneck,
+  the melee trade ratio is. This is closer to Gohmaraq's own "close the
+  distance and take the shot" trade-off than to Nereth's problem: a
+  legitimate risk/reward the boss was designed around, that `dBoss`'s
+  generic approach just isn't winning often enough.
 
 **Next session, in order:**
 
@@ -91,11 +117,17 @@ rather than assumed.
    is unreachable, hold central position and wait for a dive" as a
    dedicated case), not a change to the shared approach logic every other
    boss also runs through.
-3. **Check Nereth and Anemos for a required non-melee verb before assuming
-   they need better positioning.** Nereth's own design note says its
-   vulnerability requires breaking a tide pin — if that literally means
-   "sound the conch at the right moment," `dBoss` doing nothing but melee
-   would explain zero hits far better than a positioning problem does.
+3. **Nereth and Anemos are both instances of the SAME chip-damage-on-
+   approach problem this session already spent four attempts on for
+   Gohmaraq, and all four were net negative.** Do not open a fifth generic
+   attempt. If either is tackled, it should be with fresh eyes on a
+   NARROWER, boss-specific idea (e.g. for Nereth specifically: since the
+   trident fires in a 36-degree fan aimed at the player's position at the
+   moment the window opens, and the player is ALWAYS approaching from a
+   predictable direction during the preceding closed phase, a boss-specific
+   verb could aim to arrive already off that exact fan's centerline rather
+   than trying to react to the shots in flight — genuinely different from
+   the reactive dodges already tried and failed).
 4. **Gohmaraq's own remaining issue is unchanged**: the same-speed patrol
    problem (phase 3 speed 1.0 == WALK_SPEED) is still the honest bottleneck
    for D1 specifically, separate from everything above.
