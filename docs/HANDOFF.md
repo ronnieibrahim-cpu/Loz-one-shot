@@ -1535,7 +1535,13 @@ for, all of which produce a boss that *validates* and is *unwinnable*:
    tide to MID in phase 1 — which is the level the player walks in at — so an
    unconditional "sealed while the tide sits at my level" made him invulnerable
    from the first frame with no way to learn otherwise. Every boss now has a
-   timed window that does not depend on the conch; the tide widens it.
+   timed window that does not depend on the conch; the tide widens it. **This
+   is a `weakOpen`-design fix and it is NOT the same issue as the
+   `Boss.phase`/tide-visibility field collision found much later** (see the
+   "hard-won lessons" entry below titled "A shared field name silently opted
+   every boss into a system it was never meant to be part of") — that one is
+   an accidental engine-level bug unrelated to `weakOpen`, and this fix here
+   did nothing to prevent it.
 
 Boss rooms are authored `noTide: true`, which only sets `tide.locked` and only
 stops the *conch* — `tide.setLevel` still works. Each boss calls `unlockTide` on
@@ -2246,7 +2252,16 @@ because the tile he was facing is one of the village rocks and it ate the press.
 
 **A shared field name silently opted every boss into a system it was never
 meant to be part of, and it cost every boss-fighting session before the one
-that found it.** `Boss` (`src/game/enemy.js`) tracked its own hp-driven
+that found it. This is NOT the same bug as item 4 above ("a tide gate must
+never be a boss's only vulnerability" / Nereth's timed window) — read that
+one first if the two start to blur.** Item 4 is a DESIGN fix: it stops a
+boss's own `weakOpen` mechanic from being gated on tide level alone, so a
+boss can't be vulnerable ONLY while the tide happens to sit where it wants
+it. That fix was already in place and working correctly for every boss
+before this bug was ever found, and it did nothing to prevent this one,
+because this one has nothing to do with `weakOpen` at all — it's a
+completely separate, accidental channel that overrides `hurt()`'s outcome
+regardless of whether `weakOpen` is true. `Boss` (`src/game/enemy.js`) tracked its own hp-driven
 combat phase (0, 1, 2 — which tell/attack pattern it's currently running) in
 `this.phase`. `Game.updatePhaseShift` (`src/game/game.js`) uses that EXACT
 field name for something unrelated: an entity that should exist at only one
