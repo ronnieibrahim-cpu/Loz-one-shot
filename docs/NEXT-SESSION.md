@@ -192,15 +192,22 @@ fight, since phase 3 is never reached here):**
    rather than a fixed side — measure against the real-combat harness
    before trusting any change here, the same way this session's stun-retreat
    attempt looked reasonable and measured net-neutral.
-2. Once Gohmaraq is a measured WIN at 3 hearts (0 hp reached, player still
-   alive), wire `dBoss` into `tools/playthrough-route.mjs` past `d1/0,3,2`
-   — the actor also has no directive for placing the Tidewright's Anchor,
-   so `check-playthrough.mjs` needs an anchor-placement verb too before the
-   route can pass this point. Until then, `check-playthrough` stops at
-   `d1/0,3,2` and NOTHING HAS PLAYED THIS GAME TO THE END.
-3. The Boss Key / third-key pass behind the Clawcrab door (D1's west wing
-   and `3,1`) and the other five dungeons' routes are both still undone and
-   both blocked on step 2 actually finishing.
+2. **Corrected while re-checking this section — the route is further along
+   than it used to be, and the anchor-placement verb this item used to ask
+   for already exists.** `tools/playthrough-route.mjs`'s own `GOAL` comment
+   says so explicitly: "ANCHOR PLACEMENT IS NO LONGER THE MISSING VERB — the
+   run sinks the iron, sounds the conch and walks the Iron Pipe for real."
+   Confirmed with a fresh `check-playthrough.mjs` run (still 19/19): the
+   route now reaches `d1/0,5,2`, not the `d1/0,3,2` this file used to say,
+   and stops there for exactly one reason — `needsVerb: 'a boss fight, and
+   the third Small Key behind the Clawcrab door'`. So there is only ONE
+   remaining blocker, not two: once Gohmaraq is a measured WIN at 3 hearts,
+   wire `dBoss` into the route AND give the actor a Boss Key / locked-door
+   pass for the Clawcrab door's third key, together, and `d1/0,5,2` should
+   fall. Until then, `check-playthrough` stops there and NOTHING HAS PLAYED
+   THIS GAME TO THE END.
+3. The other five dungeons' routes are still undone and blocked on step 2
+   actually finishing.
 
 To reproduce the measurement above: it's not a committed tool (deliberately
 scratch — see `check-bosses.mjs`'s own note that the kill itself is not
