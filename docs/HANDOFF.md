@@ -224,6 +224,37 @@ is in the page, and nothing steps until you say so.
 
 ## Hard-won lessons — do not rediscover these
 
+**A coarse-interval trace of a boss's state can read as a different bug
+than the one that's actually there — sample state transitions, not fixed
+frame intervals, before designing a fix around what a trace "shows."**
+Investigating why Gohmaraq's `dBoss` fight stalls after phase 2, a first
+pass sampled `b.charging`/`b.weakOpen` every 40 frames and saw `charging`
+true on most samples, which read as "the boss charges almost
+continuously and never gives an opening." The fix that followed from that
+reading — gate `charge()` behind `e.weakOpen` so a fresh charge can't
+cut a daze window short — was built, and instrumenting `open()` itself
+(`src/data/bosses.js`) to log every call showed the premise was already
+wrong: `gohmaraqSlam` doubles its open-window at LOW tide (80 -> 160
+frames, this fight's own tide), and phase 2's slam re-triggers every
+~130 ai-ticks, so consecutive slams already overlap and keep the weak
+point open almost continuously *without* any charging even happening —
+the "charging=true most samples" reading was a 40-frame sampling
+artifact, not the true state. The gate was applied anyway to see if it
+helped: it didn't. Even with the charge fully suppressed and the window
+open nearly the whole fight, `dBoss` still landed zero further hits, and
+a real-combat measurement got WORSE with the change in (death at frame
+1176 vs. 2512 without it) — reverted in full
+(`git checkout -- src/data/bosses.js`). The real remaining bug is
+apparently that `dBoss` has no perpendicular-alignment (`LINED`) check
+the way `dFight` does, so it swings whenever raw manhattan distance is
+small even against a boss that's still moving and not actually inside
+the sword's narrow hit box — see `docs/NEXT-SESSION.md`'s top entry for
+the next concrete test. The reusable lesson: **before trusting a trace
+that "shows" a boss behavior, log the actual state-CHANGE events (or the
+function calls that drive them) rather than a fixed sampling interval** —
+periodic sampling of a fast-changing boolean will alias into whatever
+story is easiest to read into it.
+
 **A boss verb that "closes to manhattan distance N, then swings" can walk
 straight through body-contact range before N is ever reached — manhattan
 distance is not a safe proxy for AABB overlap against an asymmetric

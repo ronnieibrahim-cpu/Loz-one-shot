@@ -31,30 +31,63 @@ HANDOFF's hard-won-lessons — read the HANDOFF entry before tuning any other
 boss's engagement distance, since the fix is measured against Gohmaraq's
 specific hitbox, not derived from a general formula.
 
-**Still not a win, and the new bottleneck is now clearly a different
-problem than either earlier session chased.** Once Gohmaraq drops below
-~62% hp (phase 2), it starts charging almost continuously — a 2000+ frame
-trace of the same fight shows `b.charging` true on the large majority of
-samples, boss-to-player distance swinging 50-140px as it dashes corner to
-corner. `dBoss`'s charge-dodge is unconditionally correct (sidesteps every
-charge, no more contact taken), but it never gets an opening to close in
-either, so no further melee hits land after the phase-2 transition and the
-fight becomes a long war of attrition that the player's own residual
+**Still not a win, and the new bottleneck is a different problem than
+either earlier session chased — but it took a second, reverted attempt
+this session to find out it ISN'T simply "the boss charges too much."**
+A first coarse trace (40-frame sampling) of phase 2 showed `b.charging`
+true on most samples and looked like a perpetual-charge lockout; a
+follow-up with fine-grained transition logging showed that reading was
+an artifact (see job 1 below for the full story and what the real
+remaining bug looks like) — `dBoss`'s charge-dodge is unconditionally
+correct (sidesteps every charge, no more contact taken) and the boss's
+own weak-point window is open far more than the first trace suggested,
+but hits still don't land, so the actual blocker is somewhere in how
+`dBoss` swings at a moving target, not in how often it gets a chance to.
+The fight becomes a long war of attrition that the player's own residual
 ranged chip damage (the spray, still ~2qh per unblocked hit) eventually
 wins. **Next session's job, in order:**
 
-1. **Solve the phase-2/3 near-perpetual-charging problem.** This is the
-   actual remaining barrier to a 3-heart win, not ranged chip damage and
-   not body contact (both now handled). Options worth measuring before
-   picking one: extend the "eye stays open" window logic so an opening
-   between charges is actually usable before the next charge starts; check
-   whether the charge's own cooldown/range in `charge()`
-   (`src/game/enemy.js`) is simply too aggressive for a room this boss's
-   size, which would be a design tuning question, not an actor-verb one;
-   or accept that phase 2/3 wants a different tactic than phase 1's
-   "approach and swing" (e.g. bait a charge into a wall for the dazed
-   window the phase-2 comment already promises, then punish that instead
-   of chasing).
+1. **Solve the phase-2/3 stall — it is a structural block, not a
+   probability (measured with god mode ON, unlimited aggression, boss
+   step budget stretched to 20000 frames: Gohmaraq's hp never moves past
+   14/24, zero further hits in over five real-time minutes), and the
+   obvious-looking cause is a dead end — proven and reverted this
+   session, so don't re-spend time on it:**
+   - **Tried: gate `charge()` behind `e.weakOpen`** (only let Gohmaraq
+     charge again once its eye has shut), on the theory that the charge
+     re-arming mid-approach was cutting every opening short. Instrumenting
+     `open()` itself (`src/data/bosses.js`) showed the theory's premise
+     was already wrong: `gohmaraqSlam` doubles its open-window at LOW
+     tide (this fight's own tide), 80 -> 160 frames, and phase 2's slam
+     re-triggers every ~130 ai-ticks — so consecutive slams overlap and
+     the window was ALREADY staying open almost continuously without any
+     charge-gating; the "charging=true on most samples" reading from the
+     first pass of this investigation was a coarse-sampling artifact, not
+     the real state. Gating charge on top of that made the boss patrol
+     forever without ever charging again — and hits still didn't land,
+     even in windows where boss-to-player distance measured 5-18px,
+     comfortably inside swing range. **Reverted in full** (`git checkout
+     -- src/data/bosses.js` undid it cleanly); real-combat survival
+     actually got WORSE with it in (frame 1176 vs. 2512 without).
+   - **What that failure actually points at:** since a small
+     boss-to-player distance during an open window still doesn't produce
+     a landed hit, the remaining bug is probably not about WHEN the
+     window opens at all — it's that `dBoss` has no perpendicular
+     alignment check the way `dFight` (the ordinary-enemy verb, same
+     file) does (`LINED`, a few lines above `dBoss`). `dBoss` swings
+     whenever raw manhattan distance is small, regardless of whether the
+     sword's narrow box (`SWORD_SPAN`, ~14px wide) is actually lined up
+     with a boss that's still patrolling on its own X axis while
+     "dazed." A diagonal approach can read as "close" in manhattan terms
+     while the sword box passes right past the boss. **Test this
+     specifically next**: instrument `Player.updateSwing`'s own
+     `rectOverlap(box, e.rect())` check (src/game/player.js) — does the
+     swing box actually intersect the boss's rect on the frames `dBoss`
+     presses the sword button during phase 2? If it's consistently
+     missing on the perpendicular axis, porting `dFight`'s LINED
+     face-first-then-swing logic into `dBoss`'s weakOpen branch is the
+     next thing to try — measured before and after, the same way this
+     session's two changes were, not assumed.
 2. Once Gohmaraq is a measured win at 3 hearts, wire `dBoss` into
    `tools/playthrough-route.mjs` past `d1/0,3,2`, then look at the other
    five bosses — Gloomtide's swimming-blocks-swinging finding in particular
