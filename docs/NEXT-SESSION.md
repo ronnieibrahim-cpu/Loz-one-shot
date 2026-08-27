@@ -1,4 +1,107 @@
-## Charge dodge lands, ranged dodge doesn't — the boss verb, continued (this session)
+## Two more ranged-dodge triggers tried on Gohmaraq, both measured, neither shipped (this session)
+
+**Still not a win, and still 5 hits landed (24 -> 14) is the best number
+anyone has produced.** This session picked up job 1 from the board below —
+"reduce chip damage without the disruption cost the reverted attempt paid" —
+with a different idea: instead of reading live projectiles each frame (the
+approach already tried and reverted, see the section below this one), trigger
+the dodge off the boss's own **`stun`** field, since every `windUp` attack in
+`src/data/bosses.js` (`spread`/`shootRing`) fires on the exact frame
+`e.stun` counts down to 0 — `Boss.update` (`src/game/enemy.js:317`) skips
+`ai` (so skips `runPending`, which is what actually calls `spread`) for as
+long as `stun` is positive. That is a clean, noise-free signal: no shot
+velocity to read, no per-frame cross product to flicker. Two variants were
+built and measured in real combat, same harness setup as the section below
+(seed 20260806, 12 quarter-hearts, no god mode, `d1` Gohmaraq, sword L1) —
+a throwaway instrumented script hooking `Player.takeDamage` and `Boss.hurt`
+directly, not trusted from the outside, same discipline as last session.
+
+**Baseline, reconfirmed with this session's own instrumentation before
+touching anything:** 5 hits landed (24 -> 14), player takes 4 hits (4+4+2+2
+quarter-hearts), dies at frame 796.
+
+1. **Trigger on `weakOpen` flipping false-to-true.** This was the first cut,
+   reasoning that `open()` and the shots that precede it run in the same
+   callback. **Result: a no-op.** It fired exactly ONCE across the whole
+   fight (frame 282) and produced numbers indistinguishable from the
+   baseline — same 5 hits, same 24 -> 14, death one frame later (796 -> the
+   run's own baseline was 796, the dodge run was 798, inside the harness's
+   own frame-to-frame jitter). The reason it only fired once: `open()` only
+   EXTENDS `e._open`, it does not re-set a boolean that is already true — so
+   a *second* slam landing inside an already-open window (which is exactly
+   what happens: Gohmaraq's shell stays open for 70-180 frames, long enough
+   to eat 2-3 more slam timers) produces no rising edge at all, and the
+   dodge silently stopped covering every volley after the first one it saw.
+   A trigger that only catches the first attack of a multi-attack fight is
+   not the fix.
+2. **Trigger on the `stun` transition itself** (`prevStun > 0 && b.stun ===
+   0`), which does not have that blind spot — it re-fires on every windUp
+   cycle, slam after slam, because `stun` genuinely returns to 0 between
+   each one. It correctly caught 2 volleys in the same fight (frames 282 and
+   486) instead of 1. **Result: measurably WORSE**, the same shape the
+   previous session's reverted attempt found: fewer boss hits landed (4 of
+   24 -> 16, one run; 3 of 24 -> 18 at a shorter `DODGE_FRAMES=8`), and the
+   player died FASTER (frame 633, or 648 at the shorter window) rather than
+   surviving to 796. Better attack coverage made the outcome worse, not
+   better — every dodge spends 8-16 frames not chasing an eye that may
+   already be open, and Gohmaraq's shell does not wait.
+
+**What this closes, not just what it tried.** The prior session's write-up
+(below) left open the possibility that the reactive dodge failed because its
+*detection* was bad (the `towardDiag` deadzone bug, the noisy cross product).
+This session removed both of those specific bugs — the stun-edge trigger has
+no deadzone and no per-frame noise, it fires off a boolean field, once,
+cleanly, on every real attack — and the result was still net negative, worse
+in fact than the neutral no-op version. That reframes the finding: **the cost
+is not detection quality, it is inherent to interrupting the invuln-chase
+window at all.** `dBoss`'s whole edge over the pre-session version comes from
+spending every frame of a landed hit's invulnerability on more swings
+(`RETREAT_MARGIN`, see below); any dodge that takes frames away from that
+window to avoid a *possible* future hit is trading a certain, already-banked
+opportunity for an uncertain one. **Do not re-attempt a reactive or
+anticipatory per-attack dodge for Gohmaraq's ranged volleys without a
+different lever than "pause the chase to sidestep" — that lever has now
+failed three separate times, two different trigger signals in this session
+plus the live-projectile read in the last one.**
+
+**What might still be worth trying, unmeasured:** the two ideas already on
+the board below that are NOT "pause and dodge" — (a) skipping some eye-open
+windows rather than engaging every one (Gohmaraq's eye stays open almost the
+whole fight at LOW, so a fresh opening is usually coming anyway, and the
+chip damage is being taken while chasing opens the verb doesn't need), and
+(b) solving the same-speed patrol problem separately. Neither was attempted
+this session — this session's budget went to closing off the dodge-trigger
+question definitively instead, which is worth having settled.
+
+**No code shipped.** Both variants were built, measured, and reverted in
+this session; `tools/actor-runtime.mjs` is unchanged from the previous
+session's commit. `git diff` against `cf56059` is empty.
+
+**Next session, in order — unchanged from last time except item 1's framing:**
+
+1. Stop trying to dodge Gohmaraq's ranged attacks with a pause-and-sidestep
+   verb; three attempts across two sessions all cost more hits than they
+   saved. Try instead: skip some eye-open engagements at LOW tide (the eye
+   reopens faster than the verb can exploit every window), or measure
+   whether NOT retreating the full `BACKOFF` (30f) after a swing — trading
+   some of that margin for one more swing instead — nets a better
+   hits-for-hits-taken ratio than either dodging or the current fixed
+   retreat.
+2. The same-speed patrol problem (phase 3 speed 1.0 == WALK_SPEED, so a
+   patrol that isn't reversing is never caught) is still unmeasured in real
+   combat — only seen in godmode's unlimited-aggression run, which may not
+   be the same failure a 3-heart fight ever reaches.
+3. Once Gohmaraq is a measured win at 3 hearts, wire `dBoss` into
+   `playthrough-route.mjs` past `d1/0,3,2`, and only then look at the other
+   five bosses — Gloomtide's swimming-blocks-swinging finding in particular
+   needs a real tactic (sink with the Cleats first), not this generic verb.
+4. The Boss Key / third-key pass behind the Clawcrab door and the other five
+   dungeons' routes are both still undone and both still blocked on job 1
+   actually finishing.
+
+---
+
+## Charge dodge lands, ranged dodge doesn't — the boss verb, continued (previous session)
 
 **Still not a win.** Gohmaraq measured in real combat (12 quarter-hearts, no
 god mode, seed 20260806): five hits landed (24 -> 14 hp), same as last
