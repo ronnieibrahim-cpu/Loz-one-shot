@@ -117,16 +117,35 @@ paradigm and all of which hit the same ceiling.
 
 **Next session, in order:**
 
-1. **Try (a) above: proactive close-shadowing.** Instead of only closing
-   distance reactively (in response to weakOpen or a charge tell), keep the
-   player within some small band of the boss's position AT ALL TIMES
-   phase 2+ is active (even while it patrols/idles), so a charge's tell —
-   whenever it fires — starts from a position the 18-frame window can
-   actually close. This is a genuinely different algorithm shape, not a
-   parameter tweak, and needs the same rigor as everything above: measure
-   with `tools/measure-boss-combat.mjs d1` AND the god-mode long-run script
-   (ad hoc this session, worth committing alongside if it's reused) before
-   trusting any result.
+1. **(a) above — proactive close-shadowing — was tried this session too,
+   confirmed dead for the specific "swing mid-dash" shape; do not retry
+   that shape, but the underlying idea (stay close between charges) is
+   still open.** Chasing along the dash's own direction during the
+   charge-dodge (full diagonal: perpendicular clearance AND closing on
+   where the dash is headed) measurably works — traced directly, the real
+   per-axis gap (not just Manhattan distance) went solidly negative on both
+   axes (`gapX:-18, gapY:-5`, both well past `closeEnough`'s
+   `CONTACT_BUFFER` of 6) for about a dozen consecutive frames while the
+   dash was still live. Confirmed this is not a measurement artifact:
+   instrumented the swing attempt directly and it fired ~2822 times over an
+   8000-frame window — `closeEnough` really was true, repeatedly. **And it
+   still never landed a single hit, root cause confirmed, not guessed:**
+   `Player.updateMovement` roots the player in place the instant a swing
+   starts (`if (this.swinging>0){this.animT++; return;}` —
+   `src/game/player.js`, the comment there says so explicitly: "Attacking
+   roots you in place, as in the GBC games"). The boss is still dashing at
+   1.9px/f through this window; by the time the swing's own hit-active
+   frames arrive, it has already moved through and past the sword's fixed
+   hitbox. **Swinging at a target still moving 1.9px/f, from a stationary
+   start, structurally cannot connect — this isn't a tuning problem, it's
+   what "rooted while attacking" means against a target that fast.** The
+   only way to land a hit inside a dash is to already be so far INSIDE the
+   dash's line that the boss is guaranteed to sweep across the sword's
+   fixed hitbox before it can pass through — untested exactly how close
+   that needs to be, and may not be reliably achievable given the dash's
+   own speed advantage (1.9 vs the player's 1.4 diagonal). The tell (a
+   FROZEN, not moving, boss) remains the only realistic place to land a
+   hit; (2) below is the better next lever, not another dash-adjacent trick.
 2. **Or try (b): does a wall-ended charge's extended `open()` window (70f
    at MID/HIGH, 140f at LOW) offer a bigger, more reliable target than a
    fresh tell?** Untested. If Gohmaraq is regularly driving itself into

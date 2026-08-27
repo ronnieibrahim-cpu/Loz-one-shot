@@ -249,8 +249,27 @@ freeze the boss mid-dash with `charging` still true and a fresh `stun`,
 which looks identical to a new tell from the outside but isn't safe the
 same way) were all measured against the god-mode long-run AND real combat
 and NONE moved the needle. See docs/NEXT-SESSION.md's current top section
-for the full trace and what's actually untried (proactive close-shadowing,
-or exploiting the longer `open()` window a wall-ended charge grants).
+for the full trace and what's actually still untried (exploiting the
+longer `open()` window a wall-ended charge grants).
+
+**`Player.updateMovement` roots the player in place for the whole swing
+animation — "Attacking roots you in place, as in the GBC games" — which
+means a sword swing structurally cannot connect against a target still
+moving fast when the swing starts.** Chasing a dash's own direction during
+`dBoss`'s charge-dodge DOES close real distance (confirmed with the true
+per-axis gap, not Manhattan sum: `gapX`/`gapY` both solidly negative,
+`closeEnough` true, for a dozen-odd consecutive frames while the dash was
+still live) and a swing gated on that condition really does fire — traced
+directly, ~2822 attempts over 8000 frames — and STILL never lands, because
+the instant `startSwing` runs the player stops moving entirely
+(`src/game/player.js:358`) while Gohmaraq's dash keeps covering 1.9px/f
+clean through the fixed sword hitbox before its active frames arrive. Any
+future combat verb that wants to hit a boss while it's still in motion
+needs to either land the swing well before the target arrives (lead it) or
+wait for a moment the target is ALSO stationary (a tell, a wall-stop) —
+"get close enough, mid-motion, and swing" is not a real strategy against
+anything that outruns the player, because the player's own attack removes
+their ability to keep pace at the exact moment it matters.
 
 **A "retreat away from the boss" command can point straight into a wall,
 and nothing in `dBoss` used to know that.** `fence()` now drops any
