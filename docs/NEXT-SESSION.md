@@ -58,18 +58,44 @@ onward — the eye never closes once phase 1 exits** — yet the boss holds at
 `above: 0.30` charge phase — "faster, and it now charges the length of the
 room") at frame ~720 and never leaves it in this fight (14/24 = 0.58 hp
 never drops enough to reach phase 3, so the OLD "phase 3 same-speed patrol"
-concern is moot for THIS fight — phase 3 is never reached). Once in phase 1,
-`charging` toggles true/false roughly every 60-120 frames for the rest of
-the fight. The working theory, not yet confirmed: Gohmaraq's `charge()`
-recurs often enough in this phase that it keeps interrupting `dBoss`'s
-approach-and-swing sequence before it completes, over and over — a
-same-shape problem to the old phase-3 note (a boss whose own attack cadence
-outpaces how fast the verb can close and swing) but hitting in the phase
-EVERY fight actually reaches, not the one only god mode ever saw. This is
-the highest-value next thing to instrument: log `dBoss`'s own branch choice
-(charging-dodge / approach / swing / retreat) alongside the periodic sample
-above and see whether swings are actually being attempted and missing, or
-never attempted at all because a new charge keeps preempting the approach.
+concern is moot for THIS fight — phase 3 is never reached). Once in phase 1, `charging` toggles true/false roughly every 60-120 frames
+for the rest of the fight. **Confirmed with a one-line, temporary trace**
+(pushed `{f, charging, weakOpen, stun, invuln}` into a `window.__dbossTrace`
+array from inside `dBoss`'s loop when present, bucketed after the fact,
+reverted before committing — not left in the file): of the 1373 frames in
+the stall window (f720-f2093), **917 (67%) are spent in the
+`b.charging` dodge branch** — the boss is charging, or in its charge's own
+tell (`charge()` sets `e.charging = true` at the START of the 18f tell, not
+just during the dash), for two thirds of the entire stall. Only 389 frames
+(28%) are in the "approach and swing" branch, and even those never landed a
+hit (boss stayed at 14 hp the whole window) — so this phase isn't a case of
+swings whiffing, it's a case of the approach almost never getting the
+chance to finish.
+
+**Working theory for WHY charges recur this often, not yet tested:**
+Gohmaraq's `charge()` (`src/game/enemy.js`) re-triggers on `aligned(e, g,
+tol=14) && distToPlayer < range(130)` — a 14px band on EITHER axis, which is
+wide relative to the arena. `dBoss`'s only response to a charge is to hold
+perpendicular movement for its entire duration via the room `fence`
+(`EDGE=12` wall margin) — nothing pushes the player away from a wall once
+pinned there, and Gohmaraq's own charges repeatedly end near the arena's
+edges (the periodic sample above shows it charging between corners like
+`(29,23)`, `(30,23)`, `(127,23)`, `(29,97)`). If the perpendicular dodge
+pins the player against a wall near one of those same corners, the next
+`aligned()` check can pass again almost immediately on the SAME axis pair,
+before the player has moved far enough to break it — a wall-cornering
+oscillation, structurally similar to (but a different branch than) the
+"pinned against a wall for an entire fight" bug this verb's very first cut
+already had. **Untested**: instrument `aligned()`'s two conditions
+(`|dcy|<=14`, `|dcx|<=14`) at the moment each new charge starts and check
+whether the player is near a wall (`fence` clamping a component to 0) at
+that instant. If confirmed, the fix is likely to make the perpendicular
+dodge continue away from the NEAREST wall rather than a fixed side, or to
+add a brief post-charge repositioning step toward room-center before
+`dBoss` lets a new charge start uncontested — untried, and worth measuring
+against the same real-combat harness before trusting it (this session's
+reverted stun-retreat attempt is proof a plausible-sounding fix can still
+measure net-neutral or worse).
 
 ---
 
@@ -159,10 +185,13 @@ live projectiles — untried this session, flagged for next time.
 line (the phase-1 charge-lock finding supersedes item 2 below for THIS
 fight, since phase 3 is never reached here):**
 
-1. Instrument `dBoss`'s own branch choice during the phase-1 stall (see the
-   section above) to find out whether swings are being attempted and
-   missed, or never attempted because a charge keeps preempting the
-   approach.
+1. **Test the wall-cornering hypothesis above**: is the player near a wall
+   (the `fence` clamping a movement component to 0) at the moment each new
+   charge's `aligned()` check passes, during the phase-1 stall? If yes,
+   try making the perpendicular dodge continue away from the nearest wall
+   rather than a fixed side — measure against the real-combat harness
+   before trusting any change here, the same way this session's stun-retreat
+   attempt looked reasonable and measured net-neutral.
 2. Once Gohmaraq is a measured WIN at 3 hearts (0 hp reached, player still
    alive), wire `dBoss` into `tools/playthrough-route.mjs` past `d1/0,3,2`
    — the actor also has no directive for placing the Tidewright's Anchor,
