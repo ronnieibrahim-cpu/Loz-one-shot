@@ -224,6 +224,53 @@ is in the page, and nothing steps until you say so.
 
 ## Hard-won lessons — do not rediscover these
 
+**Two unrelated mechanics sharing a property name silently disabled every
+multi-phase boss past its first phase, for the whole life of the project, and
+no checker caught it because none of them fought anything.** `Boss`
+(src/game/enemy.js) stored its own combat-phase index (0/1/2, which entry of
+`spec.phases` is active) on `this.phase`. `Entity` (src/game/entity.js)
+already uses `this.phase` for something else entirely — which TIDE LEVEL a
+D2-style phase-shift creature belongs to, read every frame by
+`Game.updatePhaseShift` (src/game/game.js) to decide whether the creature
+even exists right now. A boss's `phase` is never `null` (constructor sets
+-1, then update() advances it to 0/1/2), so `updatePhaseShift`'s own
+`if (e.phase == null) continue` never exempted it — every boss in the game
+was being evaluated as a phase-shift creature the whole time. The moment a
+boss's combat phase differs from the room's current tide level — which is
+the common case past phase 0, and the GUARANTEED case for any boss designed
+to pin the tide per phase, like D6's Nereth — `updatePhaseShift` decides the
+boss is "phased out" and re-arms `e.invuln = Math.max(e.invuln, 2)` EVERY
+FRAME, forever, for as long as the mismatch holds. `Boss.hurt`'s own
+`if (this.invuln > 0) return false` then rejects every hit. Nothing about the
+swing, the shell, or `weakOpen` is wrong; the damage call is correct and
+still does nothing, because the invuln gate it has to pass is being held shut
+by a mechanic that was never supposed to apply to it. Confirmed by adding a
+check using the engine's own `Player.swordBox`/`Enemy.overlaps` (not a
+re-derived reach guess) immediately before the swing button: it reported a
+genuinely connecting hit twenty-plus times in a row against a boss whose hp
+never moved. **The tell, if this shape recurs: a value that is read
+correctly, decremented correctly, and STILL effectively frozen — check
+whether something ELSE with the same field name is re-arming it on a
+schedule of its own.** Fixed by giving `Boss` its own `combatPhase` field
+instead of sharing `phase` with `Entity`; no boss is ever spawned with a
+`phase` spawn option, so it now simply inherits `Entity`'s own default
+(`null`), which is what makes `updatePhaseShift` skip it correctly. Every
+multi-phase boss's godmode damage number in `check-bosses.mjs` moved when
+this landed — D6 Nereth went from 0 damage taken, ever, in any run this repo
+has recorded, to a full 80/80 kill — and Gohmaraq went from a real-combat
+ceiling of 10/24 (unmovable no matter how the fight verb was retuned, across
+two prior sessions) to a genuine kill at a health buffer, and 20/24 at an
+actual new game's 3 hearts. **A collision this narrow — same name, adjacent
+classes, both plausible uses of the word "phase" — will not show up in a
+type check or a lint pass; it shows up as a fight that quietly stops
+progressing and every model of it staying green, because no model in this
+repo's table fights anything.** Full writeup, including the three smaller
+verb-tuning fixes it took to even SEE this clearly (an approach distance
+that sat inside the boss's own contact box, a swing button fired on
+proximity rather than the engine's own hitbox overlap, and a charge-dodge
+that fled for a whole charge's duration instead of just clearing its line),
+in `docs/NEXT-SESSION.md`'s top section.
+
 **This container's Playwright package and its pre-installed Chromium are off
 by one revision, and only some tools have a fallback for it.** `node_modules`
 expects browser revision 1234; `/opt/pw-browsers/` only has 1194 installed.

@@ -704,6 +704,18 @@ for (const p of placements) {
     g.mode = 'play';
     g.progress.hearts = g.progress.maxHearts;
     g.player.invuln = 100000;               // nothing may interrupt the probe
+    // A hit taken in an EARLIER probe — the boss-reachability flood above
+    // walks a scripted player through every boss room, live, and a boss can
+    // land a contact hit on it — leaves `hurtTime`/`knockTime` counting down
+    // and a name banner (`g.bannerTime`) on screen. None of that is cleared
+    // by resetting hearts/invuln/position alone, and `Player.update` returns
+    // early every frame `hurtTime > 0`, so a probe that inherits it reads as
+    // "the hop did not fire" for as many frames as the stun has left — up to
+    // ~20 real frames, which is most of this probe's own 22-frame window.
+    // Zero all three so no earlier room's fight can freeze a later probe.
+    g.player.hurtTime = 0;
+    g.player.knockTime = 0;
+    g.bannerTime = 0;
     g.entities = g.entities.filter(e => e === g.player);
     g.tide.setLevel(1);
     g.player.z = 0; g.player.vz = 0; g.player.jumping = false; g.player.ledgeHop = null;

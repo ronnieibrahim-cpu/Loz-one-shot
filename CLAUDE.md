@@ -184,6 +184,28 @@ they are also how a future session finds which sheet a tile came from.
   zero ammunition, and the B button denied for ever. It now lives in
   `progress.giveItem`, with the grant. If you add a counted item, put its
   capacity there.
+- **A BOSS'S OWN PHASE COUNTER WAS SHADOWING A DIFFERENT FIELD OF THE SAME
+  NAME — this trap is CLOSED, and the note is kept because the shape of it
+  recurs.** `Boss` (src/game/enemy.js) tracked its combat phase (0/1/2, which
+  entry of `spec.phases` is active) on `this.phase` — the same field `Entity`
+  uses for a D2-style phase-shift creature's TIDE LEVEL, read every frame by
+  `Game.updatePhaseShift`. A boss's phase is never `null`, so
+  `updatePhaseShift` never exempted it: the instant a boss's combat phase
+  differed from the room's tide level — the common case past phase 0, the
+  guaranteed case for a boss designed to pin the tide per phase — it was read
+  as phased out and had `invuln` re-armed to at least 2 EVERY FRAME, forever.
+  `Boss.hurt`'s own invuln check then rejected every further hit with nothing
+  else wrong: not the swing, not the shell, not `weakOpen`. Fixed by giving
+  `Boss` its own `combatPhase` field. Landed this session; `check-bosses.mjs`
+  moved on every multi-phase boss — D6 Nereth went from 0 damage taken ever to
+  a full 80/80 godmode kill, and Gohmaraq's real-combat ceiling (stuck at
+  10/24 across two prior sessions of verb retuning) became a genuine kill at
+  a health buffer, 20/24 at an actual 3-heart new game. **The tell, if this
+  shape recurs anywhere else: a value that is read correctly, decremented
+  correctly, and still effectively frozen — check whether something ELSE with
+  the same field name is re-arming it on a schedule of its own.** Full
+  writeup in `docs/HANDOFF.md`'s hard-won lessons and `docs/NEXT-SESSION.md`'s
+  top section.
 
 ---
 

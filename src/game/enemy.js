@@ -266,7 +266,25 @@ export class Boss extends Enemy {
     this.isBoss = true;
     this.oncePerGame = spec.oncePerGame !== false;
     this.intro = spec.intro != null ? spec.intro : BOSS_INTRO_FRAMES;
-    this.phase = -1;
+    // NOT `this.phase` — that name belongs to Entity's tide-phase-shift field
+    // (src/game/entity.js, read by Game.updatePhaseShift for D2-style
+    // creatures that only exist at one tide level). A boss's own combat-phase
+    // index (0, 1, 2 - which entry of `spec.phases` is active) used to be
+    // stored there too, under the same name, which is a silent collision:
+    // once a boss's combat phase differs from the room's current tide level,
+    // updatePhaseShift reads the boss as "phased out" of a tide state it was
+    // never phased on at all, and marks it e.harmless = true and re-arms
+    // e.invuln = 2 EVERY FRAME (never letting it lapse) for as long as that
+    // mismatch holds. Measured: Gohmaraq (LOW-tide fight) took its first five
+    // hits fine while combat phase 0 happened to equal tide level 0, then
+    // stopped taking damage AT ALL — hp frozen at 14/24 — the instant its
+    // combat phase advanced to 1, for the rest of a 9000-frame budget, with a
+    // 60-heart player buffer and a swing that was demonstrably connecting
+    // (Player.swordBox literally overlapping Boss.rect()) every single
+    // attempt. Boss.hurt's own `if (this.invuln > 0) return false` was
+    // rejecting every one of them. This field name keeps the two concepts
+    // apart so a boss is never accidentally readable as a phase-shift enemy.
+    this.combatPhase = -1;
     this.weakOpen = !spec.shell;
     this.deathTime = 0;
     this.dying = false;
@@ -317,8 +335,8 @@ export class Boss extends Enemy {
     if (this.stun > 0) { this.stun--; return; }
 
     const p = this.currentPhase();
-    if (p !== this.phase) {
-      this.phase = p;
+    if (p !== this.combatPhase) {
+      this.combatPhase = p;
       this.invuln = Math.max(this.invuln, BOSS_PHASE_INVULN_FRAMES);
       if (this.spec.onPhase) this.spec.onPhase(this, game, p);
       game.audio.sfx('charged');

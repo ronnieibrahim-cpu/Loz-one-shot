@@ -1,4 +1,191 @@
-## Charge dodge lands, ranged dodge doesn't — the boss verb, continued (this session)
+## The boss verb WINS — and the reason it couldn't was an engine bug, not a tuning gap (this session)
+
+**Job 1 from every board since the boss verb began is now genuinely true for
+one boss:** Gohmaraq is a measured, real-combat kill. Seed 20260806, godMode
+off, sword L1: at a 60-quarter-heart buffer (enough to see the fight through)
+the verb drives Gohmaraq from 24 hp to **0** at frame 1900, player left at
+40/60. At an actual new game's 12 quarter-hearts (3 hearts) it gets to 4/24
+before dying — 20 of 24 hp dealt, the best either the engine or this verb has
+ever done, and about 8 quarter-hearts (2 hearts) short of a 3-heart win, not
+a structural wall.
+
+**The reason it could never do better than 10/24, however much the verb was
+retuned, was not the verb. It was a field-name collision that made every
+multi-phase boss quietly unkillable once its fight moved past its first
+phase.** `Boss` (src/game/enemy.js) tracked its own combat-phase index — which
+entry of `spec.phases` is active, 0/1/2, advanced by hp fraction — on
+`this.phase`. `Entity` (src/game/entity.js) already uses `this.phase` for a
+completely different mechanic: which TIDE LEVEL a D2-style phase-shift
+creature belongs to (`{phase: 0}` on a leever, `{phase: 2}` on a keese, read
+by `Game.updatePhaseShift` every frame). A boss's `phase` is never `null`
+(-1, then 0/1/2), so `updatePhaseShift`'s `if (e.phase == null) continue`
+never skipped it — every boss, the whole time, was being read as a
+phase-shift creature. The moment a boss's combat phase differs from the
+room's current tide level (which is most of the time, past phase 0, unless
+the fight happens to be balanced so every phase transition lands on the
+current tide — it never is by design), `updatePhaseShift` decides the boss is
+"phased out" and does two things every single frame for as long as the
+mismatch holds: `e.harmless = true`, and — the one that actually mattered —
+`e.invuln = Math.max(e.invuln, 2)`, re-armed every frame so it can never
+count down to 0. `Boss.hurt`'s own `if (this.invuln > 0) return false` then
+rejects every hit, forever, and there is nothing wrong with the swing landing
+it, the boss's shell, or `weakOpen` — the damage call simply never gets
+through the invuln gate. Confirmed directly before assuming: added a
+`swingConnects()` check using the engine's own `Player.swordBox`/
+`Enemy.overlaps` (not a re-derived reach guess), and watched it report
+`true` — a real, connecting swing — twenty-plus times against a boss whose hp
+never moved, `b.invuln` reading `1` on every single one of them, `b.stun`
+counting down normally around it. That is what a name collision looks like
+from outside: everything about the hit is correct except that it does
+nothing, on a schedule matching nothing in the fight itself.
+
+**Fixed by giving `Boss` its own field**, `combatPhase`, instead of sharing
+`phase` with `Entity` (`src/game/enemy.js`, `Boss` constructor and `update`).
+No boss is ever spawned with a `phase` option (checked: every dungeon places
+one as `['gohmaraq', 4, 2]`, no fourth argument), so `Boss` now simply
+inherits `Entity`'s own default `phase: null`, which is what lets
+`updatePhaseShift` correctly skip it — a boss was never supposed to be
+readable as a phase-shift creature at all, not even accidentally.
+
+**This was not a Gohmaraq-only bug and `check-bosses.mjs`'s own godmode
+numbers prove it once the fix lands** (same command, same seed, structure
+only, not difficulty):
+
+| Boss | Before (this session's start) | After |
+|---|---|---|
+| D1 Gohmaraq | 24 -> 14 (10/24) | 24 -> 6 (18/24) |
+| D2 Anemos | unspecified, low | 30 -> 6 (24/30) |
+| D3 Gloomtide | 0 damage (documented: swimming blocks swinging) | 0 damage — unchanged, different bug |
+| D4 Wyverna | 44 -> 24 (20/44) | 44 -> 4 (40/44) |
+| D5 Rootmaw | 52 -> 32 (20/52) | 52 -> 8 (44/52) |
+| D6 Nereth | 0 damage, undocumented why | **80 -> 0, full kill** |
+
+D6 Nereth going from *zero damage in godmode, ever* to a full kill is the
+clearest confirmation: Nereth's own design note is "pins the tide to one
+level per phase" — a boss built to guarantee its own combat phase and the
+room's tide diverge on purpose, which is exactly the condition that
+triggered the bug on every single phase change from the first one. It was
+being read as permanently phased out from the moment its first phase began.
+
+**Three smaller, real fixes in `tools/actor-runtime.mjs`'s `dBoss` verb, kept
+because each is independently measured, not just because the phase fix
+subsumed them:**
+
+1. **`NEAR` (the "stop approaching, face and swing" distance) was 18**,
+   copied from `dFight`'s number for an ordinary enemy, and measured to sit
+   *inside* a boss's own contact box: a boss's hb is `{w:26,h:20}` against a
+   player's `{w:10,h:7}`, so the two half-widths alone sum to 18, and the
+   Manhattan-sum gate (`NEAR+6=24`) could fire the "face and swing" sequence
+   while both axis separations were already inside the overlap box (e.g.
+   dx=dy=12) — then pressed toward the boss for one more frame before
+   swinging. Two of four player-damage events in the first real-combat
+   measurement this session were exactly this: 4 quarter-hearts of contact
+   at dist 34-41, boss motionless mid-windup, the verb walking into it on its
+   own approach. Raised to 26 — still well inside real sword reach (see the
+   constant's own comment for the arithmetic) — and both contact hits were
+   gone on the next measurement, survival more than tripling (frame 800 to
+   2520) before the phase-collision fix was even found.
+2. **`swingConnects()`** gates the swing button on the engine's own
+   `Player.swordBox`/`Enemy.overlaps` rather than trusting the approach
+   distance. `NEAR` is a Manhattan-distance gate around a target that is not
+   a circle (the sword box is 3-16px in front of the player's centre, 14px
+   wide), so widening it to fix contact (above) measurably let the verb
+   swing from just outside real reach — 23 swings thrown in one 3000-frame
+   window with a health buffer, zero connecting, before this was added. This
+   is also what surfaced the phase-collision bug: once swings were
+   confirmed to genuinely connect and hp *still* didn't move, the only
+   remaining place to look was the hit itself, not the geometry that led to
+   it.
+3. **A charge dodge used to flee perpendicular for the charge's whole
+   duration.** A charge runs until it hits a wall, often most of the room, so
+   holding the dodge that whole time stranded the player far from wherever
+   the dash ended — measured directly, seed 20260806, frames 700-1000+ spent
+   in an unbroken charge/re-approach/re-align/charge-again loop landing
+   nothing. It now stops fleeing once clear of the dash's own hitbox width
+   (`CLEAR = 28`, same arithmetic as `NEAR`) and holds position rather than
+   continuing to open ground the fight only has to close again.
+
+**A fourth thing this session's fix exposed, in a TEST HARNESS rather than the
+game: `tools/walk-dungeons.mjs`'s ledge-hop probe didn't fully reset the
+player between placements.** Its "boss room reachable" check walks a scripted
+player through every boss room live, and with bosses now able to land contact
+damage past their first phase (the same fix, cutting the other way — the bug
+had also been making bosses `harmless` during that mismatch, so the flood
+walker had never been hit by one before), a probe could inherit a live
+`hurtTime`/`knockTime`/`bannerTime` from that hit into a LATER, unrelated
+ledge test — `Player.update` returns early every frame `hurtTime > 0`, so a
+probe starting with six frames of it froze for most of its own 22-frame
+window and read as "the hop did not fire." `place()` (in `walk-dungeons.mjs`)
+now zeroes all three explicitly, matching its own stated intent ("nothing may
+interrupt the probe") — found by tracing the one flaky-looking failure frame
+by frame rather than assuming timing noise, per CLAUDE.md's own rule that an
+intermittent-looking failure is a real bug. 23/23 after the fix, confirmed
+stable across repeated runs.
+
+**One replay needed re-recording**, `tools/replays/d1-clawcrab-den-wide.json`
+(the Clawcrab miniboss, which is a `Boss` — "a Gohmaraq that never grew a
+shell" — and so was subject to the exact same phase-collision bug). Its
+recorded outcome encoded the buggy behaviour as ground truth; re-recorded
+from its own plan with `node tools/replay.mjs --record d1-clawcrab-den-wide`,
+which is the intended way to update a tape whose *plan* is unchanged but
+whose *engine* now behaves differently — not a hand edit. 51/51 replays green
+after.
+
+**Full verification this session, all green:** `test.mjs` 59/59,
+`check-bosses.mjs` 12/13 (D3 Gloomtide's pre-existing, documented, unrelated
+gap), `replay.mjs` 51/51, `walk-dungeons.mjs` 23/23, `check-gates.mjs` 26/26,
+`solve-switches.mjs` all 9 rooms, `check-motion.mjs` 8/8, `check-charms.mjs`
+63/63, `check-items.mjs` 91/91, `check-playthrough.mjs` 19/19 (unchanged —
+the route still stops at `d1/0,3,2`, a harness gap, not a game blocker; this
+session did not touch the route), `check-build.mjs` OK. Environment note:
+this container's Playwright/Chromium mismatch (documented in HANDOFF.md's
+hard-won lessons) blocked `check-motion.mjs`, `check-charms.mjs` and
+`check-items.mjs` until the documented symlink workaround was applied — it
+does not survive a fresh container, so a future session hitting the same
+"please run playwright install" wall should reach for that fix rather than
+assume the game is broken.
+
+**Next session, in order:**
+
+1. **Close the last ~2 hearts on Gohmaraq at exactly 3 hearts.** The gap is
+   ranged chip damage from the slam's `spread()` (not the phase-3 `shootRing`
+   — this run never reached phase 3), landing regardless of engagement
+   distance because its shots have very long life/range. A reactive per-shot
+   dodge was already tried in an earlier session and measured NET NEGATIVE
+   (see the archived board below for the wall-cornering failure mode) —
+   don't re-attempt that shape blind. Worth trying instead: something tied to
+   the ranged attack's own `windUp`/`_pending` tell (generic across every
+   boss's heavy attack, unlike reading live shot vectors) was tried THIS
+   session for the melee-engagement windows and measured a wash (see the
+   reverted `centerMove`-during-windup comment in `dBoss`) — but that was
+   tested only against the SLAM's tell, never isolated from the melee cycle
+   it was layered onto. A cleaner test: does retreating specifically while
+   `_pending` is queued, decoupled from the invuln-banking state machine,
+   change anything on its own.
+2. **Measure the other four multi-phase bosses (Anemos, Wyverna, Rootmaw,
+   Nereth) in REAL combat**, not just godmode. Only Gohmaraq has been driven
+   with real health this session; the godmode table above says the phase
+   bug's fix helps all of them, not what real 3-heart (or higher-tier)
+   combat looks like for any of them. Nereth in particular pins the tide per
+   phase and needs its own tactic, not just the generic verb.
+3. **Wire `dBoss` into `tools/playthrough-route.mjs`** — still not done,
+   deliberately: "wins at 5+ hearts, not yet reliably at 3" is not the same
+   claim as "wins," and a route step that cannot reliably finish is worse
+   than one that is missing. Once job 1 above closes the gap, or once the
+   route can guarantee more than 3 hearts of health by the time it reaches
+   Gohmaraq, this is the next real step toward `check-playthrough.mjs`
+   reaching D1's Essence.
+4. The Boss Key / third-key pass behind the Clawcrab door and the other five
+   dungeons' routes are both still undone and both still blocked on job 3.
+5. Sweep `tools/*.mjs` for the same Playwright/Chromium mismatch that hit
+   `check-motion.mjs`/`check-charms.mjs`/`check-items.mjs` this session —
+   HANDOFF.md's hard-won lessons names the full list still missing the
+   `executablePath` fallback and the one-line environment workaround; the
+   durable fix (a shared `tools/lib/launch.mjs`) is still not done.
+
+---
+
+## Charge dodge lands, ranged dodge doesn't — the boss verb, continued (previous session)
 
 **Still not a win.** Gohmaraq measured in real combat (12 quarter-hearts, no
 god mode, seed 20260806): five hits landed (24 -> 14 hp), same as last

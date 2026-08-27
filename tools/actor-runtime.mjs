@@ -735,31 +735,101 @@ export async function installRuntime() {
    * this (a tide level, an item), the ROUTE says so in the steps around this
    * one, where it is readable, rather than hiding inside the verb.
    */
-  // STATUS: THIS VERB FIGHTS AND DOES NOT YET WIN. It finds the boss, stays in
-  // the arena, waits out the shell, chains swings through a landed hit's own
-  // invulnerability window, sidesteps a charge, and lands real hits —
-  // Gohmaraq measured in REAL combat (12 quarter-hearts, no god mode, seed
-  // 20260806) from 24 hp to 14, five hits landed, the player surviving to its
-  // last half-heart before a final graze. The melee trade is close to
-  // breakeven; what still kills a 3-heart player is ranged chip damage. A
-  // reactive per-shot dodge was tried and measured NET NEGATIVE (it landed
-  // fewer melee hits than leaving it alone, for no reliable safety in
-  // return — see docs/NEXT-SESSION.md's boss-verb section for the measured
-  // numbers and the wall-cornering failure mode before attempting it again).
-  // It is committed because the scaffolding is right and the traps it
-  // already closed are expensive to rediscover; it is NOT referenced by
-  // tools/playthrough-route.mjs, because a route step that cannot reliably
-  // finish is worse than one that is missing.
+  // STATUS: THIS VERB CAN WIN, AT ~5 HEARTS, AND FALLS JUST SHORT AT 3.
+  // Gohmaraq measured in REAL combat, seed 20260806, godMode off:
+  //   - 12 quarter-hearts (3 hearts, a new game's own total): boss driven
+  //     from 24 hp to 4 before the player dies — 20 of 24 hp dealt, the
+  //     closest either engine or verb has come to this fight.
+  //   - 60 quarter-hearts (a buffer to see the fight through): FULL KILL at
+  //     frame 1900, boss 24 -> 0, player down 60 -> 40. So the verb's own
+  //     ceiling is real and is a genuine win, not a godmode artefact — the
+  //     gap left at 3 hearts is about 8 quarter-hearts (2 hearts) of ranged
+  //     chip damage over the course of the fight, not a structural failure.
+  //
+  // Getting here found and fixed a real engine bug, not a verb tweak: a
+  // BOSS'S OWN COMBAT-PHASE COUNTER WAS COLLIDING WITH ENTITY'S TIDE-PHASE
+  // FIELD (both named `phase`), so once a boss's combat phase diverged from
+  // the room's tide level — which happens to every multi-phase boss, sooner
+  // or later — `Game.updatePhaseShift` (src/game/game.js) mistook it for a
+  // phased-out D2-style creature and re-armed `invuln >= 2` EVERY FRAME
+  // forever, silently rejecting every further hit. `Boss.hurt` was doing
+  // exactly what it was told; the damage just never reached it. Fixed by
+  // giving Boss its own `combatPhase` field (src/game/enemy.js) instead of
+  // sharing `phase`. `check-bosses.mjs`'s godmode numbers moved on EVERY
+  // boss that has more than one phase once this landed — Nereth (D6) went
+  // from 0 damage taken, ever, to a full 80/80 kill; Wyverna 44->4,
+  // Anemos 30->6, Rootmaw 52->8. Only Gloomtide (D3) is untouched — its
+  // documented issue (swimming blocks swinging) is a different bug.
+  //
+  // The rest of what got the verb this far, roughly in the order it
+  // mattered: (1) `NEAR` (the "close enough, stop approaching and swing"
+  // distance) was 18, inherited from dFight's ordinary-enemy number, and
+  // sat INSIDE a boss's own contact box — approaching to swing was walking
+  // the player into free contact damage. Raised to 26, comfortably inside
+  // real sword reach (see NEAR's own comment) and outside the boss's body.
+  // (2) `swingConnects()` gates the actual swing button on the engine's own
+  // `swordBox`/`overlaps`, because NEAR is a Manhattan-distance gate around
+  // a non-circular hitbox and widening it can let the verb swing from just
+  // outside real reach — measured directly: 23 swings thrown in one
+  // 3000-frame window, zero landing, before this was added. (3) A charge
+  // dodge used to flee perpendicular for the WHOLE charge, stranding the
+  // player across the room from wherever the dash ended and starting a
+  // charge/re-approach loop that could run for thousands of frames landing
+  // nothing; it now stops once clear of the dash's own hitbox width.
+  //
+  // Still open: (1) at exactly 3 hearts the ranged chip damage (Gohmaraq's
+  // slam-spread, unrelated to weakOpen) is still unavoided — a reactive
+  // per-shot dodge was tried in an earlier session and measured NET
+  // NEGATIVE (see docs/NEXT-SESSION.md's boss-verb section for the
+  // wall-cornering failure mode before attempting it again). (2) Only
+  // Gohmaraq has been measured in real combat; the other four multi-phase
+  // bosses' new godmode numbers are unmeasured against a real health total.
+  // (3) It is NOT YET referenced by tools/playthrough-route.mjs — a route
+  // step that cannot reliably finish is worse than one that is missing, and
+  // "wins at 5 hearts, not yet 3" is not reliable enough to wire in blind.
   function* dBoss(maxF) {
     const g = window.__game;
     for (let i = 0; i < 300 && !g.boss; i++) yield 0;
     if (!g.boss) throw new Error('boss: nothing to fight in ' + g.mapId + ' ' + (g.room && g.room.key));
     const sword = () => slotBit('sword') || BIT.b;
-    // The same numbers dFight uses, for the same reasons: strike from the near
-    // band, then break contact. A boss does contact damage like anything else,
-    // and the first cut of this verb held the stick toward the boss while the
-    // eye was open — three touches and a new game does not have a fourth.
-    const NEAR = 18, BACKOFF = 30;
+    // Would a swing THIS frame actually connect? Asks the engine's own
+    // `swordBox`/`overlaps` (src/game/player.js, src/game/entity.js) rather
+    // than re-deriving reach from SWORD_REACH/SWORD_SPAN by hand — the sword
+    // box is 3-16px in front of the player's centre and only 14px wide
+    // across, not a circle, so a Manhattan-distance gate around the boss
+    // (which is what NEAR is) is not the same shape as the box that actually
+    // has to overlap the target, and widening NEAR to fix contact (below)
+    // measurably let it swing from just outside real reach: 23 swings thrown
+    // in one 3000-frame window of a 60-heart-buffered fight, zero of them
+    // landing, boss frozen at 14/24 for the rest of a 9000-frame budget.
+    const swingConnects = () => g.boss && g.boss.overlaps({ rect: () => g.player.swordBox(g) });
+    // Strike from the near band, then break contact. A boss does contact
+    // damage like anything else, and the first cut of this verb held the
+    // stick toward the boss while the eye was open — three touches and a new
+    // game does not have a fourth.
+    //
+    // NEAR was 18, copied from dFight's own number for an ordinary enemy —
+    // and measured (instrumented `hurt()` calls, real 3-heart combat, seed
+    // 20260806, godMode off) to sit INSIDE Gohmaraq's own contact box. A boss
+    // is bigger than the enemies dFight was tuned against (32x32, hb
+    // {w:26,h:20} vs a player hb of {w:10,h:7}): the two half-widths alone
+    // sum to 18, so "stop approaching, face and swing" at a Manhattan
+    // distance of NEAR+6=24 can fire while the two axis separations are
+    // already both inside the overlap box (e.g. dx=dy=12) — and the verb
+    // then pressed TOWARD for one more frame before swinging, walking the
+    // player into a stunned, stationary boss. Two of four player-damage
+    // events in the measured fight were exactly this: contact for 4 qh at
+    // dist 34-41, weakOpen true, boss motionless (mid windup). Sword reach
+    // (SWORD_REACH 13 + SWORD_GAP 3, src/data/feel.js) still lands from
+    // well outside the boss's own body at 26, so raising NEAR costs no
+    // melee hits — the same run still landed 5 of 24 boss hp both before and
+    // after — and it measurably removed BOTH contact hits: the fight went
+    // from dying at frame 800 to frame 2520, over three times longer, on the
+    // same seed, taking only ranged chip damage from there. That is not a
+    // win — six ranged hits still kill a 3-heart player before Gohmaraq
+    // reaches half health — but it isolates the remaining problem to the
+    // ranged attacks alone, which the melee-approach geometry cannot fix.
+    const NEAR = 26, BACKOFF = 30;
     // A charge (src/game/enemy.js `charge()`) commits to a straight dash at
     // 1.9 px/f down whichever axis it last saw the player on — far outrunning
     // every other move in this verb (1.0 px/f walking, ~1.4 diagonal). The
@@ -812,10 +882,29 @@ export async function installRuntime() {
           chargeSide = (b.dir === 'up' || b.dir === 'down')
             ? (p.cx >= b.cx ? 1 : -1) : (p.cy >= b.cy ? 1 : -1);
         }
-        const perp = (b.dir === 'up' || b.dir === 'down')
-          ? (chargeSide > 0 ? BIT.right : BIT.left)
-          : (chargeSide > 0 ? BIT.down : BIT.up);
-        yield fence(perp); f++; continue;
+        const vertical = (b.dir === 'up' || b.dir === 'down');
+        // Measured: dodging perpendicular for the charge's WHOLE duration (a
+        // charge runs until it hits a wall, which can be most of the room)
+        // leaves the player stranded far from wherever the dash ends. It
+        // then has to close that gap from scratch, which routinely
+        // re-aligns it with the boss on the way in and starts another
+        // charge before a single swing lands — a real fight, seed 20260806,
+        // spent frames 700-1000+ in an unbroken charge-dodge/re-approach
+        // loop with zero hits landed either way. `CLEAR` is the same
+        // boss+player half-width sum the melee-approach fix above is built
+        // on (see NEAR's comment): once the player is that far off the
+        // dash's own line, the charge's hitbox cannot reach them, so there
+        // is nothing left to dodge and no reason to keep opening distance
+        // the fight will only have to close again.
+        const CLEAR = 28;
+        const perpSep = vertical ? Math.abs(p.cx - b.cx) : Math.abs(p.cy - b.cy);
+        if (perpSep < CLEAR) {
+          const perp = vertical
+            ? (chargeSide > 0 ? BIT.right : BIT.left)
+            : (chargeSide > 0 ? BIT.down : BIT.up);
+          yield fence(perp); f++; continue;
+        }
+        yield 0; f++; continue;
       }
       chargeSide = 0;
       const dx = b.cx - p.cx, dy = b.cy - p.cy;
@@ -824,6 +913,29 @@ export async function installRuntime() {
       const toward = axisX ? (dx > 0 ? BIT.right : BIT.left) : (dy > 0 ? BIT.down : BIT.up);
       const backAlong = axisX ? (dx > 0 ? BIT.left : BIT.right) : (dy > 0 ? BIT.up : BIT.down);
       const backPerp = axisX ? (dy > 0 ? BIT.up : BIT.down) : (dx > 0 ? BIT.left : BIT.right);
+      // Pull toward the room's centre — away from every wall at once, so
+      // there is no side to pick and no fence to corner against. Used by the
+      // shelled retreat below.
+      //
+      // A windup-tell dodge (retreat while `b._pending && b.stun > 0`, the
+      // generic freeze-then-fire state every heavy attack in
+      // src/data/bosses.js goes through) was tried here and measured: same
+      // 6 ranged hits taken, same 5 melee hits landed, and the fight ended
+      // SOONER (f1760 vs f2520 without it) on the one seed this repo
+      // measures — a wash at best, a regression at worst. Reverted rather
+      // than kept as an unproven complication; the reasoning it does not
+      // survive contact with the measurement is that extra distance from a
+      // long-life, long-range spread (life ~150f, speed ~1.4px/f, further
+      // than the room is wide) buys time to react but the verb had nothing
+      // to do with that time — it does not sidestep, only re-approaches.
+      const centerMove = () => {
+        const room = g.room;
+        const ox = (room ? room.pw : 160) / 2 - p.cx, oy = (room ? room.ph : 144) / 2 - p.cy;
+        if (Math.abs(ox) > 12 || Math.abs(oy) > 12) {
+          return Math.abs(ox) > Math.abs(oy) ? (ox > 0 ? BIT.right : BIT.left) : (oy > 0 ? BIT.down : BIT.up);
+        }
+        return 0;
+      };
 
       if (b.weakOpen) {
         // Invulnerability frames are the only free hits in this game. A touch
@@ -846,6 +958,9 @@ export async function installRuntime() {
           if (ax2 + ay2 > NEAR + 6) { yield fence(toward2); f++; continue; }
           const faceOnly = ax2 >= ay2 ? (dx2 > 0 ? BIT.right : BIT.left) : (dy2 > 0 ? BIT.down : BIT.up);
           yield fence(faceOnly); f++;
+          for (let tries = 0; !swingConnects() && tries < 8 && f < budget; tries++) {
+            yield fence(faceOnly); f++;
+          }
           yield fence(faceOnly | sword()); f++;
           continue;
         }
@@ -866,22 +981,20 @@ export async function installRuntime() {
         // on us, so there is nothing here worth backing away from before the
         // swing.
         if (adx + ady > NEAR + 6) { yield fence(towardDiag(dx, dy)); f++; continue; }
-        // In range: face it, swing, then get out before it closes.
+        // In range: face it, then wait for the engine's own sword box to
+        // actually overlap the boss before committing the swing button (see
+        // `swingConnects`'s comment above) — and only then break contact.
         yield fence(toward); f++;
+        for (let tries = 0; !swingConnects() && tries < 8 && f < budget; tries++) {
+          yield fence(toward); f++;
+        }
         yield fence(toward | sword()); f++;
         for (let i = 0; i < BACKOFF && f < budget; i++) { yield fence(backAlong | backPerp); f++; }
         continue;
       }
       // Shelled: nothing to hit. Keep off it and wait out the tell.
       if (adx + ady < 72) { yield fence(backAlong | backPerp); f++; continue; }
-      const room = g.room;
-      const ox = (room ? room.pw : 160) / 2 - p.cx, oy = (room ? room.ph : 144) / 2 - p.cy;
-      if (Math.abs(ox) > 12 || Math.abs(oy) > 12) {
-        yield fence(Math.abs(ox) > Math.abs(oy) ? (ox > 0 ? BIT.right : BIT.left)
-                                                : (oy > 0 ? BIT.down : BIT.up));
-      } else {
-        yield 0;
-      }
+      yield fence(centerMove());
       f++;
     }
     const b = g.boss;
