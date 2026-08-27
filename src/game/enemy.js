@@ -266,7 +266,23 @@ export class Boss extends Enemy {
     this.isBoss = true;
     this.oncePerGame = spec.oncePerGame !== false;
     this.intro = spec.intro != null ? spec.intro : BOSS_INTRO_FRAMES;
-    this.phase = -1;
+    // NOT `this.phase` — that field is `Entity`'s tide-phase opt-in
+    // (`Game.updatePhaseShift`, src/game/game.js): an entity with a non-null
+    // `.phase` is treated as existing at exactly one tide level and made
+    // harmless, hidden and re-pinned to `invuln >= 2` every single frame the
+    // tide sits elsewhere. A boss that used that name for its own hp-driven
+    // combat phase (0, 1, 2...) opted itself into that system by accident
+    // the moment it left phase 0 — silently unkillable for any hp band whose
+    // phase INDEX doesn't happen to equal the fight's own tide LEVEL. This
+    // is why every boss fought at MID or HIGH tide measured 0 damage in
+    // every session's godmode run, and why the LOW-tide bosses (Gohmaraq,
+    // Wyverna, Rootmaw) always capped at exactly the damage that carries hp
+    // across the phase-0/phase-1 boundary and no further, in every session
+    // regardless of AI tuning. `fightPhase` is a distinct field so a boss
+    // never opts into tide-phasing at all — `Entity`'s own `this.phase`
+    // stays `null` for a boss exactly as it does for anything else nobody
+    // asked to be tide-gated.
+    this.fightPhase = -1;
     this.weakOpen = !spec.shell;
     this.deathTime = 0;
     this.dying = false;
@@ -317,8 +333,8 @@ export class Boss extends Enemy {
     if (this.stun > 0) { this.stun--; return; }
 
     const p = this.currentPhase();
-    if (p !== this.phase) {
-      this.phase = p;
+    if (p !== this.fightPhase) {
+      this.fightPhase = p;
       this.invuln = Math.max(this.invuln, BOSS_PHASE_INVULN_FRAMES);
       if (this.spec.onPhase) this.spec.onPhase(this, game, p);
       game.audio.sfx('charged');

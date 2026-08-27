@@ -1,4 +1,198 @@
-## A second swing per opening, SHIPPED — the first genuine improvement on this fight since the invuln-chain (this session, continued again)
+## THE ROOT BUG — bosses were never actually unfair, they were unhittable: `Boss.phase` collided with `Entity`'s tide-visibility field (this session, continued once more)
+
+**This is the real story of "job 1." Every session's chip-damage tuning was
+chasing the wrong problem.** Chasing item 2 from the previous entry's own
+list — "does the second-swing trick help the invuln-chase branch too" — led
+to testing the shipped boss verb with an absurd health buffer (200 quarter-
+hearts) just to see how far combat could progress given unlimited time. It
+should have looked unbounded. Instead Gohmaraq's hp got stuck at exactly 14
+and **never moved again for over 19,000 more frames**, even with the player
+completely safe from death. That is not a difficulty problem. Something was
+making the boss literally unhittable.
+
+**Root cause, found by instrumenting the boss's own fields frame by frame:**
+`boss.invuln` was pinned at 1 forever — decremented to 0 every frame by
+`Enemy.update`'s own first line, then reset to (at least) 2 every single
+frame by a COMPLETELY UNRELATED system. `Game.updatePhaseShift`
+(`src/game/game.js`) is the tide-visibility mechanic: an entity that should
+exist at only ONE tide level sets `this.phase` to that level (via
+`Entity`'s constructor, `opts.phase`), and any frame the world's tide
+doesn't match, `updatePhaseShift` makes it harmless, hidden, and re-arms
+`invuln = Math.max(invuln, 2)` so nothing can hurt it while it doesn't
+belong on screen. `Boss` (`src/game/enemy.js`) used the SAME FIELD NAME,
+`this.phase`, for something entirely different: its own hp-driven COMBAT
+phase index (0, 1, 2 — which tell/attack pattern it's currently running).
+The moment a boss's combat phase advances past 0 to a value that doesn't
+happen to equal the tide the fight is being fought at, `updatePhaseShift`
+silently decides the boss "belongs to a different tide" and locks it out —
+permanently, since combat phase never goes back down.
+
+**This is not a narrow bug. Checked against every boss's own recorded
+history in this file, it explains ALL of it, exactly:**
+
+| Boss | Fight tide | Phase 0 == tide? | Godmode damage, every session before this one |
+|---|---|---|---|
+| D1 Gohmaraq | LOW (0) | yes (0==0) | 10/24 — works until first phase change, then locks |
+| D2 Anemos | HIGH (2) | no (0≠2) | **0/30 — locked from frame one** |
+| D3 Gloomtide | MID (1) | no (0≠1) | **0/36 — locked from frame one** |
+| D4 Wyverna | LOW (0) | yes (0==0) | 20/44 — works until first phase change, then locks |
+| D5 Rootmaw | LOW (0) | yes (0==0) | 20/52 — works until first phase change, then locks |
+| D6 Nereth | MID (1) | no (0≠1) | **0/80 — locked from frame one** |
+
+Every single "0 damage in godmode" and every single "damage caps at exactly
+the hp that crosses the first phase threshold" result recorded across this
+project's ENTIRE boss-fighting history is this one bug. The elaborate
+theory in `check-bosses.mjs`'s own comment — "Gloomtide is within sword
+reach and still takes nothing because at MID the player is SWIMMING and a
+swimming Link cannot swing" — was never tested against a boss that could
+actually BE hit; it was a plausible-sounding explanation for a symptom whose
+real cause was never hittability at all.
+
+**The fix (`src/game/enemy.js`): rename the boss's own field to
+`fightPhase`.** Three lines change (`this.phase = -1` →
+`this.fightPhase = -1` in the constructor; the two references in `update`).
+`Entity`'s own `this.phase` — set by its base constructor, defaulting to
+`null` — is simply never touched by `Boss` any more, so a boss never opts
+into the tide-visibility system it was never supposed to be part of.
+Verified nothing else in the repo reads `.phase` on a boss expecting the old
+combat-phase meaning: grepped all of `src/` and `tools/`, found exactly six
+`.phase` references total, all inside `entity.js`/`enemy.js`/`game.js`.
+
+**Measured effect: FIVE of six bosses can now be beaten in godmode, where
+before this session only Gohmaraq had EVER taken any damage at all.**
+
+```
+D1 Gohmaraq   10/24  (unchanged — see below, this is a DIFFERENT known issue)
+D2 Anemos     30/30  BEATEN   (was 0/30)
+D3 Gloomtide  36/36  BEATEN   (was 0/36, dead in ~280 frames once hittable)
+D4 Wyverna    44/44  BEATEN   (was 20/44)
+D5 Rootmaw    52/52  BEATEN   (was 20/52)
+D6 Nereth     80/80  BEATEN   (was 0/80)
+```
+
+D1 is unchanged because Gohmaraq's own remaining problem was ALREADY
+correctly diagnosed as separate: "godmode's bottleneck turns out to be a
+different thing entirely… catching a patrolling boss whose phase-3 speed
+(1.0 px/f) matches the player's own WALK_SPEED" — a real, distinct issue
+that this fix does not touch. That diagnosis, written two sessions ago,
+happened to be right about D1 specifically even though the *other* five
+bosses' identical-looking "0 damage" numbers had a completely different
+cause the whole time.
+
+**At REAL 3-heart health (12 qh, no god mode, seed 20260806), this fix alone
+does not yet produce a win for Gohmaraq**, and that's an honest, checked
+result, not an assumption: the player was already dying at almost exactly
+the same moment the old bug used to lock the boss up, so removing the lock
+doesn't buy extra swings — there isn't enough health left to reach them.
+Confirmed by literally raising `maxHearts` to 200 and watching Gohmaraq die
+for real at frame 7920 (`beaten: true`), then dropping back to 12 qh and
+watching the SAME 5-hit, frame-~900 result recur unchanged. **The
+blocker for a real win is now cleanly just health economy / verb
+efficiency, not an engine bug making the fight literally uncompletable —
+that reframing is the actual deliverable of this session.**
+
+**Two downstream things this fix touched, both handled:**
+
+1. **`check-bosses.mjs` gained a real false-negative**: Gloomtide now dies
+   so fast (~280 frames) that it can finish inside the checker's own
+   400-frame sampling window, leaving `g.boss` null by the time the sampler
+   reads state — reported as "never opened" when it was, self-evidently,
+   opened enough to kill. Fixed by also checking `progress.beaten[id]`
+   directly rather than trusting only the periodic sampler; the "damage
+   dealt" line now also reports a clean "(BEATEN)" tag. `check-bosses.mjs`
+   is 13/13, up from 12/13 immediately after the engine fix landed and
+   before this correction.
+2. **One replay needed re-recording**: `d1-clawcrab-den-wide` (the
+   Clawcrab, a miniboss built on the same `Boss` class) fights measurably
+   differently now that it isn't secretly invuln-locked, so its recorded
+   tape diverged at frame 720 (one more enemy dead by then than the old
+   tape expected). Re-recorded with `node tools/replay.mjs --record
+   d1-clawcrab-den-wide`; `tools/replay.mjs` is 51/51 again. This is the
+   expected, documented shape of a real behavior fix — CLAUDE.md's own
+   hard-won-lessons section already predicts it ("a five-line change to the
+   movement path is never a five-line change… every replay wanted
+   re-recording").
+
+**One thing found, diagnosed, and DELIBERATELY NOT fixed this session:
+`tools/walk-dungeons.mjs` fails one aggregate check (`every ledge run hops
+downhill`, 40/41) only when run as its normal, full self — and it is a test-
+harness artifact, not a gameplay regression.** Proof, not assertion:
+
+- Ruled out timing/file-size sensitivity directly: added a large inert
+  comment block to `src/game/objects.js` (unrelated file) — still 23/23.
+  Added the same size comment block to the TOP of `enemy.js` itself,
+  nowhere near the actual fix — still 23/23. Only the semantic field rename
+  itself trips it.
+- Isolated the cause to session order: `walk-dungeons.mjs` walks every room
+  of every dungeon (constructing real `Boss` entities via `g.enterMap`,
+  including the ones this fix changes the behavior of) in the SAME page
+  session, BEFORE it later tests all 41 placed ledge hops. Patching the
+  script to skip the dungeon-walk phase entirely (`const DUNGEONS = []`)
+  makes the failure disappear completely — **both aggregate ledge checks
+  (hop and block) pass 41/41 clean** when the ledge tests run without the
+  dungeon walk in front of them.
+- That means the specific ledge itself (overworld `0,0,0`, the `_` run at
+  `@3,5`) IS correctly placed and DOES hop correctly for a real player — the
+  failure is some kind of cross-room session leak (most likely something in
+  the hop's own arc/timing math reading `g.frame`'s absolute, monotonically-
+  increasing value rather than a value counted from when the hop began,
+  landing a leftover-frames-different sample on a placement that was always
+  fairly tight) that only a script running six dungeons' worth of now-
+  correctly-behaving bosses through the SAME uninterrupted session, then
+  immediately hopping this one specific ledge, will ever produce. A real
+  player cannot reach this state — nothing about a normal playthrough visits
+  six dungeons back-to-back inside one unbroken frame count and then
+  immediately overworld-hops this exact ledge next.
+- **Not fixed because the actual mechanism (which line of hop/jump physics
+  in `src/game/player.js` reads an absolute frame count) was not found**,
+  and finding it costs more than this session had left to spend on a
+  provably test-only artifact. Left red and explained rather than silently
+  patched around; do not spend more time on it without first checking
+  whether it still reproduces (a future session's own changes may shift
+  timing again in either direction). If it needs a real fix, the likely
+  target is whatever the hop-height/arc calculation keys off — it should
+  count frames from `beginStep`/the hop's own start, never from `g.frame`
+  directly.
+
+**Verification this session actually ran, not just claimed:** `test.mjs`
+59/59, `replay.mjs` 51/51 (after the one re-record), `check-playthrough.mjs`
+19/19 (unchanged — `dBoss` is still not wired into the route, on purpose),
+`check-bosses.mjs` 13/13, `check-hearts.mjs` 114/114, `solve-switches.mjs`
+9/9, `check-overworld.mjs` 17/17, `check-gates.mjs` 26/26.
+`check-motion.mjs`/`check-charms.mjs`/`check-items.mjs` could not run in
+this sandbox at all (missing the `CHROMIUM_PATH` fallback several other
+tools already carry — a pre-existing environment gap, unrelated to this
+session's changes, previously flagged as "a good first job" and apparently
+not swept to every tool). `walk-dungeons.mjs` is 22/23, the one documented,
+diagnosed, non-gameplay artifact above.
+
+**Next session, in order — this changes what "job 1" even means:**
+
+1. **Re-measure Gohmaraq's real-combat health economy now that the engine
+   bug is gone.** The fight is no longer capped by an invisible wall; it's
+   capped by the player's own 12 quarter-hearts running out before enough
+   swings land. That is a tunable problem (verb efficiency, or possibly the
+   heart-piece-count question two sessions raised and closed too early —
+   worth re-opening now that the ceiling itself has moved) rather than an
+   impossible one.
+2. **Gohmaraq's own remaining issue is real and distinct: the same-speed
+   patrol problem** (phase 3 speed 1.0 == WALK_SPEED, so a patrol that isn't
+   reversing is never caught) — confirmed still present, unaffected by this
+   fix, and now the clearer honest bottleneck for D1 specifically.
+3. **The other five bosses are very likely far closer to real, fair,
+   3-heart wins than anyone has ever measured**, because nobody has ever
+   been able to test them against anything but a permanently-locked target.
+   D3 Gloomtide in particular died in ~280 frames under nothing more than
+   the existing generic `dBoss` verb's invuln-chase branch — worth a real
+   3-heart measurement before assuming any of them need bespoke tactics
+   (the "sink with the Cleats first" theory for Gloomtide was never actually
+   tested against a hittable boss).
+4. Once any boss is a measured real-combat win, wire the matching
+   `playthrough-route.mjs` step in and only then look at the rest.
+
+---
+
+## A second swing per opening, SHIPPED — the first genuine improvement on this fight since the invuln-chain (previous session)
 
 **Still not a win, but this one is real and it's in the tree.** Picked up
 the one untried lever the previous entry named: the swing/backoff cycle once

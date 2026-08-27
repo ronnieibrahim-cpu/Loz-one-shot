@@ -177,21 +177,36 @@ for (const f of FIGHTS) {
   //      and every model in this repo would stay green, because none of them
   //      fights anything.
   //
-  // The kill itself is NOT asserted, and pretending otherwise would be the
-  // worst thing in this file. `dBoss` lands real hits on some bosses (Gohmaraq
-  // 24 -> 14, Wyverna 44 -> 24, Rootmaw 52 -> 32 before it heals) and none at
-  // all on others, and the measured reason is positioning rather than timing:
-  // Gloomtide is within sword reach on every sample with its weak point open
-  // and still takes nothing, because at MID the player is SWIMMING and a
-  // swimming Link cannot swing. Fighting it means sinking with the Cleats
-  // first. That is per-boss tactics, it is the next session's job, and until it
-  // is done this file measures the fights instead of claiming them.
+  // The kill itself is still NOT REQUIRED to pass this check — only that a
+  // weak point opened, per the two items above — but as of the phase-field
+  // fix in src/game/enemy.js (see docs/NEXT-SESSION.md) it usually happens
+  // anyway: five of six bosses beat their god-mode fight outright (Anemos,
+  // Gloomtide, Wyverna, Rootmaw, Nereth all reach 0 hp; the "damage dealt"
+  // line above reports the real number each run and tags a full kill
+  // `(BEATEN)`). Only Gohmaraq still caps short, and for a DIFFERENT, still
+  // real reason nothing here fixed: its own patrol speed matches the
+  // player's walk speed in its later phases, so a chase that doesn't force a
+  // reversal never lands. God mode still says nothing about whether any of
+  // these fights are FAIR at three hearts — that is check-hearts.mjs's job,
+  // still deliberately not asked here, and the next thing worth measuring
+  // now that every boss can actually be hit.
   check(`${f.id}: ${f.boss} spawns in the room ${f.id} declares (${info.room})`,
     spawned === true, `nothing with isBoss in ${info.room}`);
+  // A weak point that never shows up in a 400-frame-resolution sample is
+  // still evidence it never opened — UNLESS the fight ended (killed or beaten)
+  // before the first sample landed at all. `dBoss` now actually wins some of
+  // these fights fast enough that the whole fight can finish inside that
+  // first 400-frame chunk (Gloomtide dead in ~280 frames under god mode's
+  // rapid invuln-chase, once it could be hit at all — see the phase-field fix
+  // in src/game/enemy.js), and `samples` stays exactly 0 for a fight that was
+  // won as completely as a fight can be. `st.beaten` is checked directly
+  // against the save rather than trusted from the periodic sampler, so a fast
+  // win cannot read as "never opened" just because nothing was polling yet.
   check(`${f.id}: ${f.boss}'s weak point opens at tide ${f.tide}`,
-    opened > 0, `never opened in ${samples} samples across the fight`);
-  console.log(`       damage dealt: ${maxHp - (minHp === 1e9 ? maxHp : minHp)} of ${maxHp} hp`
-    + (err ? '  (fight did not finish: AI limitation, see comment)' : ''));
+    opened > 0 || st.beaten, `never opened in ${samples} samples across the fight`);
+  const dealt = st.beaten ? maxHp : maxHp - (minHp === 1e9 ? maxHp : minHp);
+  console.log(`       damage dealt: ${dealt} of ${maxHp} hp`
+    + (st.beaten ? '  (BEATEN)' : err ? '  (fight did not finish: AI limitation, see comment)' : ''));
 }
 
 check('no page errors', errs.length === 0, errs.slice(0, 2).join(' | '));
