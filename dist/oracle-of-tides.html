@@ -19737,7 +19737,23 @@ class Boss extends Enemy {
     this.isBoss = true;
     this.oncePerGame = spec.oncePerGame !== false;
     this.intro = spec.intro != null ? spec.intro : BOSS_INTRO_FRAMES;
-    this.phase = -1;
+    // NOT `this.phase` — that field belongs to Entity (the Lens's tide-phase
+    // lock, opts.phase, defaulting to null) and `updatePhaseShift` (game.js)
+    // reads it on EVERY entity every frame: `e.phase == null` is its only
+    // opt-out. A boss's own fight-phase index (0, 1, 2 by remaining hp) had
+    // been written into that same field, so the moment a boss's phase index
+    // stopped matching the room's live tide level — which is most of any
+    // fight, since a boss has up to three AI phases and the world has only
+    // three tide levels, and only ONE of the three can coincide by chance —
+    // updatePhaseShift treated it as a Lens-phased creature from a different
+    // tide: `e.hidden = true`, `e.harmless = true`, and worst of all
+    // `e.invuln = Math.max(e.invuln, 2)` RE-ARMED EVERY FRAME, so
+    // `Boss.hurt`'s own `if (this.invuln > 0) return false` never lapses.
+    // That is not a positioning or timing problem in any boss fight verb —
+    // it is the shell of every boss in the game, closed by a name collision,
+    // the instant its own hp crosses its first phase threshold at any tide
+    // other than the one the phase index happens to equal.
+    this.aiPhase = -1;
     this.weakOpen = !spec.shell;
     this.deathTime = 0;
     this.dying = false;
@@ -19788,8 +19804,8 @@ class Boss extends Enemy {
     if (this.stun > 0) { this.stun--; return; }
 
     const p = this.currentPhase();
-    if (p !== this.phase) {
-      this.phase = p;
+    if (p !== this.aiPhase) {
+      this.aiPhase = p;
       this.invuln = Math.max(this.invuln, BOSS_PHASE_INVULN_FRAMES);
       if (this.spec.onPhase) this.spec.onPhase(this, game, p);
       game.audio.sfx('charged');

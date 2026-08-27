@@ -224,6 +224,77 @@ is in the page, and nothing steps until you say so.
 
 ## Hard-won lessons — do not rediscover these
 
+**Every boss in the game was nearly invulnerable for most of its own fight,
+and NOTHING in the checker table could see it, because `Boss` and `Entity`
+silently shared one field name.** `Entity.phase` (src/game/entity.js) is the
+Brineglass Lens's tide-phase lock — `opts.phase`, defaulting to `null`, read
+by `updatePhaseShift` (src/game/game.js) on EVERY entity EVERY frame, whose
+only opt-out is `e.phase == null`. `Boss`'s constructor (src/game/enemy.js)
+wrote its own, unrelated fight-phase index (0, 1, 2 by remaining hp) into
+that exact same field, so from the moment a boss's phase index stopped
+matching the room's live tide level — which is most of any fight, since a
+boss has up to three AI phases and the world has only three tide levels, and
+only ONE of the three can coincide by chance — `updatePhaseShift` treated it
+as a Lens-phased creature from a different tide: `hidden = true`, `harmless
+= true`, and worst of all `invuln = Math.max(invuln, 2)` RE-ARMED EVERY
+FRAME, so `Boss.hurt`'s own `if (this.invuln > 0) return false` never
+lapsed. Every prior session's boss-verb notes ("Gohmaraq caps out at 10-14 of
+24 hp", "D2/D3/D6 take 0 damage even in godmode", "the same-speed patrol
+problem") were describing the SYMPTOM of this one bug from several different
+angles, and no positioning or timing fix to the fight verb could ever have
+addressed it, because the boss was going nearly invulnerable regardless of
+what the verb did. The fix: rename `Boss`'s own field to `aiPhase`, leaving
+`Entity.phase` alone. Measured on `check-bosses.mjs` (still GOD MODE, so
+this is the STRUCTURAL ceiling, not the fair-fight one): D2 Anemos 0/30 ->
+**30/30 (full kill)**, D6 Nereth 0/80 -> **80/80 (full kill)**, D4 Wyverna
+20/44 -> 40/44, D5 Rootmaw 20/52 -> 44/52. D1 Gohmaraq's checker number
+barely moved (10/24 -> 12/24) only because `check-bosses.mjs`'s own fixed
+9000-frame budget runs out before the verb's slow phase-1 reconnection
+finishes — a real fight with unlimited time (proven with a 400-heart
+scratch run, not committed) kills it in full, all three phases, same seed.
+D3 Gloomtide is UNCHANGED (still 0/36) — that one is the already-diagnosed,
+unrelated "swimming Link cannot swing" finding, not this bug.
+
+**A `git checkout -- <file>` mid-session to isolate a change is a real revert
+— re-diff before trusting `git status` says what you think it does.** While
+bisecting the walk-dungeons.mjs regression below, a `git checkout --
+tools/actor-runtime.mjs` used to isolate the enemy.js change silently
+dropped that file's own (unrelated, good) fixes for the rest of the session
+until `git status` was checked again and they were reapplied from a saved
+patch. Save a patch (`git diff file > /tmp/x.patch`) before checking a file
+out for isolation, not after.
+
+**A fixed-frame test budget after `tide.setLevel()` is gambling on the tide
+already being where you're setting it to.** `walk-dungeons.mjs`'s ledge-hop
+probe called `g.tide.setLevel(1)` (no `{ instant: true }`) to pin the tide
+for a physics check, then gave the player a fixed 22-frame window to hop a
+lip. `setLevel` without `instant` is a no-op ONLY if the room's live tide is
+already the target level; otherwise it starts a real `TIDE_SWEEP_FRAMES`
+(23-frame) visual sweep, and `Game.update`'s own `if (this.tide.busy)
+return;` — by design, so a player's timers don't advance mid-sweep — freezes
+the ENTIRE game, player included, for the sweep's whole length. Whether that
+no-op held depended on whatever tide level an EARLIER phase of the same
+script happened to leave the live `g.tide.level` at, which the placements
+loop never resets. This had apparently always been fragile — nothing forced
+the earlier phases to leave the tide at MID — and it took the boss-phase fix
+above to disturb that (Boss entities behaving correctly during the earlier
+"every tide-locked room" checks, rather than being incorrectly invulnerable/
+hidden, changed what those checks did) and expose it: `overworld 0,0,0`'s
+downhill ledge started failing, deterministically, 100% reproducible, with
+the hop only firing at frame ~21-26 of a 22-frame budget — not a stranded
+room (a real player has unlimited time and the hop completes fine, confirmed
+by extending the probe's own window to 60 frames), just a test that assumed
+`setLevel` always settles same-frame. Fixed by passing `{ instant: true }`,
+matching how `enterMap` itself already sets the room's tide on entry — the
+harness wants the tide PINNED for a probe, not animated. Chased for a long
+time down blind alleys first (RNG streams are proven per-room-deterministic
+in `src/core/rng.js`'s own doc comment, so cross-room/cross-seed
+contamination was correctly ruled out before finding the real, much
+simpler, mechanism) — if a browser-driven checker fails in a way that
+"shouldn't be possible" after an unrelated engine fix, check for a fixed
+frame budget racing an animated, `busy`-gating transition before assuming
+the failure is inexplicable.
+
 **This container's Playwright package and its pre-installed Chromium are off
 by one revision, and only some tools have a fallback for it.** `node_modules`
 expects browser revision 1234; `/opt/pw-browsers/` only has 1194 installed.

@@ -843,7 +843,15 @@ export async function installRuntime() {
           const dx2 = b.cx - p.cx, dy2 = b.cy - p.cy;
           const ax2 = Math.abs(dx2), ay2 = Math.abs(dy2);
           const toward2 = towardDiag(dx2, dy2);
-          if (ax2 + ay2 > NEAR + 6) { yield fence(toward2); f++; continue; }
+          // Chebyshev (the WORSE of the two axes), not Manhattan (their sum).
+          // A diagonal approach closes both axes at once — full speed, not
+          // normalised, per CLAUDE.md — so a Manhattan sum reads two axes
+          // each at 16px (well inside a 32px boss's hitbox on either alone)
+          // as "30px away, still far" and walks straight through the corner
+          // of the hurtbox into a free contact hit before this check ever
+          // says "near enough, stop and swing". Measured: two contact hits
+          // in one fight landed while this branch still reported "far".
+          if (Math.max(ax2, ay2) > NEAR + 6) { yield fence(toward2); f++; continue; }
           const faceOnly = ax2 >= ay2 ? (dx2 > 0 ? BIT.right : BIT.left) : (dy2 > 0 ? BIT.down : BIT.up);
           yield fence(faceOnly); f++;
           yield fence(faceOnly | sword()); f++;
@@ -865,11 +873,27 @@ export async function installRuntime() {
         // Gohmaraq's phase-1 tell is a stationary spray, not a charge closing
         // on us, so there is nothing here worth backing away from before the
         // swing.
-        if (adx + ady > NEAR + 6) { yield fence(towardDiag(dx, dy)); f++; continue; }
-        // In range: face it, swing, then get out before it closes.
+        if (Math.max(adx, ady) > NEAR + 6) { yield fence(towardDiag(dx, dy)); f++; continue; }
+        // In range: face it, swing, then get out before it closes. The
+        // retreat direction is recomputed every frame from the boss's LIVE
+        // position, not frozen at the moment of the swing — a boss that is
+        // still patrolling or turning during the backoff makes a frozen
+        // vector stale, and retreating along a stale line can walk straight
+        // back into a boss that has since curved onto it. Measured: two
+        // contact hits in the same fight landed ~30 frames after a swing,
+        // the exact width of this backoff, with the player barely
+        // displaced — a frozen retreat losing ground to a boss it never
+        // re-checked.
         yield fence(toward); f++;
         yield fence(toward | sword()); f++;
-        for (let i = 0; i < BACKOFF && f < budget; i++) { yield fence(backAlong | backPerp); f++; }
+        for (let i = 0; i < BACKOFF && f < budget; i++) {
+          if (b.dead || b.charging) break;
+          const bdx = b.cx - p.cx, bdy = b.cy - p.cy;
+          const bAxisX = Math.abs(bdx) > Math.abs(bdy);
+          const bBackAlong = bAxisX ? (bdx > 0 ? BIT.left : BIT.right) : (bdy > 0 ? BIT.up : BIT.down);
+          const bBackPerp = bAxisX ? (bdy > 0 ? BIT.up : BIT.down) : (bdx > 0 ? BIT.left : BIT.right);
+          yield fence(bBackAlong | bBackPerp); f++;
+        }
         continue;
       }
       // Shelled: nothing to hit. Keep off it and wait out the tell.

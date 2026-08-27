@@ -705,7 +705,14 @@ for (const p of placements) {
     g.progress.hearts = g.progress.maxHearts;
     g.player.invuln = 100000;               // nothing may interrupt the probe
     g.entities = g.entities.filter(e => e === g.player);
-    g.tide.setLevel(1);
+    // `{ instant: true }`, matching enterMap's own tide handling above: a
+    // plain `setLevel(1)` starts a real TIDE_SWEEP_FRAMES-long visual sweep
+    // whenever the room's live tide isn't already MID, and `game.js`'s own
+    // update loop freezes EVERYTHING (`if (this.tide.busy) return;`, by
+    // design) for the sweep's whole length — eating most of this probe's
+    // fixed 22-frame hop window before the player is ever allowed to move.
+    // This harness wants the tide PINNED for a physics probe, not animated.
+    g.tide.setLevel(1, { instant: true });
     g.player.z = 0; g.player.vz = 0; g.player.jumping = false; g.player.ledgeHop = null;
     g.player.x = b.tx * 16; g.player.y = b.ty * 16;
     g.player.lastSafe.x = g.player.x; g.player.lastSafe.y = g.player.y;

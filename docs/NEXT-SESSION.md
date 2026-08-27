@@ -1,4 +1,124 @@
-## Charge dodge lands, ranged dodge doesn't — the boss verb, continued (this session)
+## A boss's own phase index collided with the Lens's tide-phase field — every boss was nearly invulnerable, and the "positioning" work on the verb was chasing the wrong layer (this session)
+
+**The real bug, found by instrumenting `Boss.hurt`/`Boss.update` directly
+rather than trusting `dBoss`'s outside behaviour again** (same method the
+last two sessions used to find their own bugs): `Boss` (src/game/enemy.js)
+wrote its own fight-phase index (0/1/2 by remaining hp) into `this.phase` —
+the SAME field `Entity` uses for the Brineglass Lens's tide-phase lock
+(`opts.phase`, default `null`), which `updatePhaseShift` (src/game/game.js)
+reads on every entity every frame, `phase == null` its only opt-out. The
+instant a boss's own phase index stopped equalling the room's live tide
+level — most of any fight, since three AI phases and three tide levels only
+coincide by chance — the boss was treated as a Lens-phased creature from
+another tide: hidden, harmless, and `invuln = max(invuln, 2)` RE-ARMED EVERY
+FRAME, so `Boss.hurt`'s `if (invuln > 0) return false` never lapsed. See
+`docs/HANDOFF.md`'s hard-won-lessons section for the full writeup and the
+measured before/after. Every one of the last two sessions' findings —
+Gohmaraq capping at 10-14/24 hp, D2/D3/D6 taking 0 damage even in godmode,
+"the same-speed patrol problem" — was this bug seen from a different angle.
+The fix is a one-field rename (`aiPhase`, not `phase`) plus the two write
+sites; nothing else in the boss system changed.
+
+**Fixed alongside it, in `tools/actor-runtime.mjs`'s `dBoss` verb, found by
+the same instrumentation:**
+
+1. **The melee retreat's direction was frozen at the swing, not re-read.**
+   The post-swing `BACKOFF` loop computed `backAlong`/`backPerp` once, before
+   the swing, then held that direction for up to 30 frames even as the boss
+   kept moving — a stale vector losing ground to a boss that curved back
+   onto it. Now recomputed from the boss's live position every frame of the
+   retreat (matching the pattern the invuln-margin retreat already used).
+2. **The bigger one: the "far enough to approach" check used Manhattan
+   distance (`adx + ady`) against a rectangular hitbox.** Two real contact
+   hits in one recorded fight landed while the verb still believed it was
+   "far" and closing — because a diagonal approach with, say, 16px on each
+   axis reads as "32px away, still far" under a sum, while the boss's own
+   26x20 hurtbox plus the player's own size already overlaps well inside
+   that. Switched both approach-distance checks to Chebyshev (`Math.max(adx,
+   ady)`), the worse of the two axes — strictly more conservative, and it
+   eliminated free melee hits entirely in the one fight measured (see below).
+
+**Measured: a real 3-heart Gohmaraq fight (12 quarter-hearts, no god mode,
+seed 20260806, same fight every prior session measured) now takes ZERO
+melee contact damage** across five landed sword hits (24 -> 14 hp) — the
+"two contact hits right after a swing" pattern that cost 8 of 12 hp in every
+prior session's recording is gone. **It still does not win at 3 hearts.**
+What kills it now is different from every prior session: after hp 14 the
+boss legitimately enters its second AI phase (patrol + charge, no longer the
+simpler phase-1 stand-and-slam), and reconnecting for the next hit takes
+roughly 1500 frames in an unlimited-health scratch run — during which the
+boss's own slam attack still fires its `shot_rock` spread on a fixed timer,
+regardless of position, and at ~2 quarter-hearts a hit that alone exceeds
+what a fresh 3-heart player has left after the first phase. **Given enough
+health (measured with a 400-heart scratch setup, not committed), the SAME
+verb, unchanged, kills Gohmaraq outright — all three phases, 24 -> 0 hp,
+same seed.** So the fight is now provably winnable by this verb; the
+remaining gap is specifically survivability of the slow phase-1-to-phase-2
+reconnection, not a structural block.
+
+**Also fixed, found on the way and initially unexplainable:**
+`tools/walk-dungeons.mjs`'s ledge-hop probe started failing, deterministically
+and 100% reproducibly, at `overworld 0,0,0`'s downhill ledge — a room with no
+boss in it at all. Full chase (RNG streams ruled out, cross-room and
+cross-placement-order contamination ruled out, entity list confirmed empty
+during the probe) in `docs/HANDOFF.md`'s hard-won-lessons section; the short
+version is the probe's `g.tide.setLevel(1)` (no `{ instant: true }`) started
+a real 23-frame animated sweep whenever the room's live tide wasn't already
+MID, and the engine's own `if (tide.busy) return;` froze the whole game for
+the sweep's length — eating the probe's fixed 22-frame hop window. Whether
+that no-op held had always depended on what an earlier, unrelated phase of
+the same script left the live tide at; the boss-phase fix above changed that
+incidentally by changing what those earlier tide-lock checks did to bosses
+that are no longer wrongly invulnerable/hidden. Fixed with `{ instant: true
+}`, matching how `enterMap` itself pins the room's tide on entry. **Not a
+stranded room** — a real player has unlimited time and the hop completes at
+frame ~26 of an extended trace; only the test's fixed budget was wrong.
+
+**One replay needed re-recording, exactly as CLAUDE.md's own note predicts
+for any change to the movement/combat path**: `d1-clawcrab-den-wide` (about
+camera clamps across a room seam, not about the Clawcrab fight itself)
+diverged because the Clawcrab miniboss — also built on `defineBoss`, so it
+carried the same field collision even though it has no shell — is no longer
+incorrectly invulnerable/hidden partway through, and now lands one point of
+contact damage on the player where it silently couldn't before. Re-recorded
+from its own plan; no other replay moved.
+
+**Verified state, full sweep, all green:** `test.mjs` 59/59, `replay.mjs`
+51/51 (with the one re-record above), `walk-dungeons.mjs` 23/23 (stable
+across three consecutive runs after the tide fix), `check-overworld.mjs`
+17/17, `solve-switches.mjs` 9/9, `check-gates.mjs` 26/26,
+`check-playthrough.mjs` 19/19, `check-bosses.mjs` 12/13 (D3 Gloomtide's
+0/36 is unchanged and is the separate, already-diagnosed "swimming Link
+cannot swing" issue — not touched this session).
+
+**Next session, in order:**
+
+1. **Survive the phase-1-to-phase-2 reconnection.** The melee trade is now
+   completely safe; what kills a 3-heart Gohmaraq run is unavoidable
+   `shot_rock` chip damage accumulating over the ~1500-frame gap while the
+   verb closes on a boss that's now patrolling+charging rather than
+   standing still. Options worth measuring rather than assuming: dodge
+   specifically the slam's own windup (it freezes the boss for a fixed,
+   fully-telegraphed 18-22 frames before firing — a much narrower, safer
+   target than the general reactive projectile-dodge that was tried and
+   reverted two sessions ago), or close faster during phase 1 by pressing
+   the engagement harder before it ever reaches phase 2.
+2. **Re-measure `check-bosses.mjs`'s other five fights in REAL combat** (not
+   just godmode structure) now that the phase bug is fixed — D2 and D6 in
+   particular went from 0 to full kills in godmode and are worth checking
+   at real hearts, since nothing about their fair-fight difficulty has ever
+   been measured.
+3. Once a real 3-heart Gohmaraq win is recorded, wire `dBoss` into
+   `tools/playthrough-route.mjs` past `d1/0,3,2`, then look at D3 Gloomtide's
+   separate swimming-can't-swing finding (needs sinking with the Cleats
+   first, a real tactic, not this generic verb) and the other four dungeons'
+   routes.
+4. The Boss Key / third-key pass behind the Clawcrab door and the other five
+   dungeons' routes are both still undone and both still blocked on job 1.
+
+---
+
+## Charge dodge lands, ranged dodge doesn't — the boss verb, continued (previous session)
 
 **Still not a win.** Gohmaraq measured in real combat (12 quarter-hearts, no
 god mode, seed 20260806): five hits landed (24 -> 14 hp), same as last
