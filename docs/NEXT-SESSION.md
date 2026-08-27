@@ -146,12 +146,33 @@ paradigm and all of which hit the same ceiling.
    own speed advantage (1.9 vs the player's 1.4 diagonal). The tell (a
    FROZEN, not moving, boss) remains the only realistic place to land a
    hit; (2) below is the better next lever, not another dash-adjacent trick.
-2. **Or try (b): does a wall-ended charge's extended `open()` window (70f
-   at MID/HIGH, 140f at LOW) offer a bigger, more reliable target than a
-   fresh tell?** Untested. If Gohmaraq is regularly driving itself into
-   walls anyway (it does, per `wasCharging && !e.charging → open(e,g,70)`
-   in phase 2), a verb that WAITS for that specific transition rather than
-   trying to intercept every tell might find a cleaner opening.
+2. **Tried this session too — SO close it's worth finishing, not
+   restarting.** Every charge dash ends by hitting a wall (`charge()`'s
+   dash branch has no distance/frame cap, only a blocked `moveDir` stops
+   it — `src/game/enemy.js`), which freezes the boss completely for
+   `ENEMY_CHARGE_RECOVER_FRAMES` (24f) and — confirmed in the same trace —
+   the weak point really was open the whole time (`weakOpen:true`
+   throughout). Combining the along-the-dash chase from (1) with waiting
+   to swing until `b.charging` goes false (genuinely stationary, not the
+   failed mid-dash attempt) gets remarkably close: traced one full cycle,
+   the real per-axis gap (`gapX`) closes from 31 to 8 over the 24-frame
+   recovery — needs about 31 frames at the ~1px/f single-axis rate it was
+   actually closing at, has 24. Cut off 7 frames early by a FRESH charge
+   retriggering the instant recovery's stun hit 0, at `gapX:8` — one
+   frame's worth of closing from succeeding. A second cycle immediately
+   after started from a MUCH smaller gap (7), suggesting a die-away
+   convergence across repeated cycles, but the full 60000-frame god-mode
+   run still never broke through, so it doesn't reliably compound. Two
+   concrete places to push from here rather than starting over: (i) close
+   MORE ground during the dash itself so recovery starts from a smaller
+   gap than 31 — measured this session that the chase gets to gapX
+   deeply negative (-18) mid-dash before the boss outruns it again over a
+   long dash, so the timing/duration of when to lean into the chase vs.
+   hold position may matter, not just direction; (ii) LOW tide doubles
+   Gohmaraq's `open()` duration to 140f but does NOT extend the 24f
+   recovery stun itself — the recovery, not the open window, is the
+   binding constraint here, so a bigger `open()` window doesn't directly
+   help this specific shortfall.
 3. Only once one of these actually raises "melee hits landed" past 5 (proof
    required: `tools/measure-boss-combat.mjs d1`, boss hp below 14) is there
    a reason to return to the ranged-hit-dodging question — six hits' worth
