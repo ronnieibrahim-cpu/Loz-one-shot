@@ -224,6 +224,59 @@ is in the page, and nothing steps until you say so.
 
 ## Hard-won lessons — do not rediscover these
 
+**Every boss in the game was permanently unkillable past its first fight
+phase, for the whole life of the project, because `Boss` reused `Entity`'s
+`phase` field name for something completely different — and nothing in
+the CLAUDE.md checker table could see it, because none of them fight
+anything.** `Entity.phase` (`src/game/entity.js`) is the Lens's tide-phase
+membership marker: an entity built with `opts.phase` set belongs to one
+tide level and `Game.updatePhaseShift` (`src/game/game.js:1221`) makes it
+harmless and re-pins its `invuln` to at least 2 **every single frame**
+whenever the room's current tide doesn't match. `Boss` (`src/game/enemy.js`)
+independently used the exact same field name, `this.phase`, for its OWN
+completely unrelated bookkeeping — which fight-phase (0/1/2, by hp
+fraction) it's currently in — set in its constructor (`this.phase = -1`)
+and advanced on every hp-threshold crossing. Because a boss's design tide
+and its fight-phase index are both small integers in the same 0-2 range,
+the very first phase usually happened to satisfy `tide.level === e.phase`
+by pure coincidence — which is exactly why a boss could always be hit
+during its OPENING phase — and the moment `this.phase` advanced past that
+coincidence, `updatePhaseShift` started treating the boss as a phased-out
+ghost of the Lens system: harmless, and invulnerable forever, with no way
+out, because it re-applies every frame with no expiry. Found by
+instrumenting a real 3-heart Gohmaraq fight, watching hp freeze at the
+exact hp value where its second fight-phase begins, then shadowing
+`Boss.prototype.invuln` with a getter/setter to catch the actual call
+site resetting it every frame — plain reasoning from the source wasn't
+enough to catch this because the two `phase` fields look, individually,
+completely reasonable; only watching the live value across a phase
+transition exposed the collision.
+
+**Fix: renamed `Boss`'s internal field to `_fightPhase`**, leaving
+`Entity.phase` solely owned by the Lens system, so a boss (which never
+sets `opts.phase`) now correctly reads `phase === null` and
+`updatePhaseShift` skips it entirely, same as every other ordinary enemy.
+Verified with `tools/check-bosses.mjs` (still god-mode, structure only):
+every single boss's damage-dealt number went up, and two of six — D3
+Gloomtide and D6 Nereth, both previously **0 damage in the whole checker
+table's history** — now die completely (36/36 and 80/80) inside the
+checker's existing frame budget. D3's damage had been explained away in
+an earlier session as "you're swimming at MID, a swimming Link can't
+swing" — plausible-sounding, and WRONG: it was this bug the whole time,
+another instance of trusting a story that fit the symptom without
+verifying it against the actual blocking condition. `tools/test.mjs`
+(59/59), `tools/replay.mjs` (51/51 after re-recording `d1-clawcrab-den-wide`
+— minibosses use the same `Boss` class and phase mechanism, so a scripted
+fight against one legitimately plays out differently now and needs a
+fresh recording, the expected cost CLAUDE.md already documents for a
+combat-path change), `walk-dungeons.mjs`, `check-gates.mjs`,
+`solve-switches.mjs`, `check-lens.mjs` and `check-playthrough.mjs` are all
+unaffected (none of their routes reach a boss yet). **This is very
+likely the actual root cause of "no boss has ever been beaten" that
+motivated the last two sessions' boss-verb work** — read
+`docs/NEXT-SESSION.md`'s top entry for what's now worth re-measuring on a
+correct foundation before chasing any more AI-tuning theories.
+
 **A coarse-interval trace of a boss's state can read as a different bug
 than the one that's actually there — sample state transitions, not fixed
 frame intervals, before designing a fix around what a trace "shows."**

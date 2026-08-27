@@ -19737,7 +19737,23 @@ class Boss extends Enemy {
     this.isBoss = true;
     this.oncePerGame = spec.oncePerGame !== false;
     this.intro = spec.intro != null ? spec.intro : BOSS_INTRO_FRAMES;
-    this.phase = -1;
+    // NOT `this.phase` — Entity already owns that name for the Lens's
+    // tide-phase-shift system (`opts.phase`, read by `Game.updatePhaseShift`).
+    // A boss that reused it was silently swept into that system the instant
+    // its OWN fight-phase index stopped matching the room's tide level: an
+    // "off-phase" entity there is made harmless AND re-pinned invulnerable
+    // every single frame (`e.invuln = Math.max(e.invuln, 2)`), forever, with
+    // no way out. Every boss's fight-phase index starts at -1 and becomes
+    // 0/1/2 as hp drops — values that only coincidentally equal the boss's
+    // own DESIGN tide (also 0/1/2) for the FIRST phase, which is exactly why
+    // every boss in this game could be hit during its opening phase and none
+    // could ever be hit again after its first transition: the moment
+    // `this.phase` changed, `tide.level === e.phase` stopped holding (unless
+    // the boss's tide happened to equal its new phase index by luck) and the
+    // boss went permanently invulnerable. This was found by instrumenting a
+    // real 3-heart Gohmaraq fight and asking why hp froze at exactly the
+    // hp-threshold where phase 1 begins, tide LOW(0) != fight-phase 1.
+    this._fightPhase = -1;
     this.weakOpen = !spec.shell;
     this.deathTime = 0;
     this.dying = false;
@@ -19788,8 +19804,8 @@ class Boss extends Enemy {
     if (this.stun > 0) { this.stun--; return; }
 
     const p = this.currentPhase();
-    if (p !== this.phase) {
-      this.phase = p;
+    if (p !== this._fightPhase) {
+      this._fightPhase = p;
       this.invuln = Math.max(this.invuln, BOSS_PHASE_INVULN_FRAMES);
       if (this.spec.onPhase) this.spec.onPhase(this, game, p);
       game.audio.sfx('charged');

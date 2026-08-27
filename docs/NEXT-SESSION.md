@@ -31,71 +31,98 @@ HANDOFF's hard-won-lessons — read the HANDOFF entry before tuning any other
 boss's engagement distance, since the fix is measured against Gohmaraq's
 specific hitbox, not derived from a general formula.
 
-**Still not a win, and the new bottleneck is a different problem than
-either earlier session chased — but it took a second, reverted attempt
-this session to find out it ISN'T simply "the boss charges too much."**
-A first coarse trace (40-frame sampling) of phase 2 showed `b.charging`
-true on most samples and looked like a perpetual-charge lockout; a
-follow-up with fine-grained transition logging showed that reading was
-an artifact (see job 1 below for the full story and what the real
-remaining bug looks like) — `dBoss`'s charge-dodge is unconditionally
-correct (sidesteps every charge, no more contact taken) and the boss's
-own weak-point window is open far more than the first trace suggested,
-but hits still don't land, so the actual blocker is somewhere in how
-`dBoss` swings at a moving target, not in how often it gets a chance to.
-The fight becomes a long war of attrition that the player's own residual
-ranged chip damage (the spray, still ~2qh per unblocked hit) eventually
-wins. **Next session's job, in order:**
+**Chasing that phase-2 stall found something much bigger: every boss in
+the game has been unkillable past its first fight-phase for the whole
+life of the project, and it had nothing to do with `dBoss` at all.**
+`Boss` (`src/game/enemy.js`) tracked its own fight-phase (0/1/2, by hp
+fraction) in `this.phase` — the exact field name `Entity` already uses
+for the Lens's tide-phase membership system, which re-pins ANY entity
+with a non-null `.phase` to `invuln >= 2` **every single frame** whenever
+the room's tide doesn't match that phase number
+(`Game.updatePhaseShift`, `src/game/game.js:1221`). A boss's first
+fight-phase usually happens to equal its design tide by coincidence
+(both are small integers, 0-2) — which is exactly why every boss could
+always be hit during its OPENING phase and never again after — and the
+instant a boss's `this.phase` advanced past that coincidence, it got
+silently swept into the Lens system as a permanently harmless,
+permanently invulnerable "phased-out ghost." Found by shadowing
+`Boss.prototype.invuln` with a getter/setter and watching it get reset to
+2 by `updatePhaseShift` on literally every frame from the moment
+Gohmaraq's hp crossed into phase 2, for 2600+ frames straight, in a
+godmode run with unlimited aggression — nothing else could explain hp
+freezing exactly at that threshold no matter how well-positioned the
+swings were. **Fixed: renamed `Boss`'s field to `_fightPhase`** so
+`Entity.phase` stays solely the Lens's (bosses never set `opts.phase`,
+so they now correctly read `phase === null` and skip
+`updatePhaseShift` entirely, like every ordinary enemy). Full writeup,
+including the two `dBoss`-tuning theories this ruled out along the way
+(a charge/weakOpen-gating attempt, tried and reverted, and a `dFight`-
+style alignment check that looked promising but turned out not to be
+the blocker), is in HANDOFF's hard-won-lessons top entry — read it
+before touching boss AI again.
 
-1. **Solve the phase-2/3 stall — it is a structural block, not a
-   probability (measured with god mode ON, unlimited aggression, boss
-   step budget stretched to 20000 frames: Gohmaraq's hp never moves past
-   14/24, zero further hits in over five real-time minutes), and the
-   obvious-looking cause is a dead end — proven and reverted this
-   session, so don't re-spend time on it:**
-   - **Tried: gate `charge()` behind `e.weakOpen`** (only let Gohmaraq
-     charge again once its eye has shut), on the theory that the charge
-     re-arming mid-approach was cutting every opening short. Instrumenting
-     `open()` itself (`src/data/bosses.js`) showed the theory's premise
-     was already wrong: `gohmaraqSlam` doubles its open-window at LOW
-     tide (this fight's own tide), 80 -> 160 frames, and phase 2's slam
-     re-triggers every ~130 ai-ticks — so consecutive slams overlap and
-     the window was ALREADY staying open almost continuously without any
-     charge-gating; the "charging=true on most samples" reading from the
-     first pass of this investigation was a coarse-sampling artifact, not
-     the real state. Gating charge on top of that made the boss patrol
-     forever without ever charging again — and hits still didn't land,
-     even in windows where boss-to-player distance measured 5-18px,
-     comfortably inside swing range. **Reverted in full** (`git checkout
-     -- src/data/bosses.js` undid it cleanly); real-combat survival
-     actually got WORSE with it in (frame 1176 vs. 2512 without).
-   - **What that failure actually points at:** since a small
-     boss-to-player distance during an open window still doesn't produce
-     a landed hit, the remaining bug is probably not about WHEN the
-     window opens at all — it's that `dBoss` has no perpendicular
-     alignment check the way `dFight` (the ordinary-enemy verb, same
-     file) does (`LINED`, a few lines above `dBoss`). `dBoss` swings
-     whenever raw manhattan distance is small, regardless of whether the
-     sword's narrow box (`SWORD_SPAN`, ~14px wide) is actually lined up
-     with a boss that's still patrolling on its own X axis while
-     "dazed." A diagonal approach can read as "close" in manhattan terms
-     while the sword box passes right past the boss. **Test this
-     specifically next**: instrument `Player.updateSwing`'s own
-     `rectOverlap(box, e.rect())` check (src/game/player.js) — does the
-     swing box actually intersect the boss's rect on the frames `dBoss`
-     presses the sword button during phase 2? If it's consistently
-     missing on the perpendicular axis, porting `dFight`'s LINED
-     face-first-then-swing logic into `dBoss`'s weakOpen branch is the
-     next thing to try — measured before and after, the same way this
-     session's two changes were, not assumed.
-2. Once Gohmaraq is a measured win at 3 hearts, wire `dBoss` into
+**The result, `tools/check-bosses.mjs` (still god mode, structure only —
+not a difficulty claim): every boss's damage number went up, and two of
+six now die completely inside the checker's own frame budget for the
+first time ever** — D3 Gloomtide 36/36 (was 0/36) and D6 Nereth 80/80
+(was 0/80). D3's zero had an earlier "explanation" on record — "you're
+swimming at MID, a swimming Link can't swing" — that was plausible and
+wrong; it was this bug the whole time, and nobody had verified the
+story against the actual blocking condition. Full table:
+
+| Boss | Before | After |
+|---|---|---|
+| D1 Gohmaraq | 10/24 | 18/24 |
+| D2 Anemos | 0/30 | 24/30 |
+| D3 Gloomtide | 0/36 | **36/36 (dead)** |
+| D4 Wyverna | 20/44 | 40/44 |
+| D5 Rootmaw | 20/52 | 44/52 |
+| D6 Nereth | 0/80 | **80/80 (dead)** |
+
+`tools/test.mjs` 59/59, `tools/replay.mjs` 51/51 (after re-recording
+`d1-clawcrab-den-wide` — minibosses use the same `Boss` class and
+phase machinery, so a scripted fight against one legitimately plays
+out differently now; this is the expected replay-baseline cost CLAUDE.md
+already documents for a combat-path change, not a regression),
+`walk-dungeons.mjs` 23/23, `check-gates.mjs` 26/26, `solve-switches.mjs`
+9/9, `check-lens.mjs` 24/24, `check-playthrough.mjs` 19/19 — none of
+these routes reach a boss yet, so all unchanged as expected.
+
+**Real 3-heart Gohmaraq combat (no god mode) did NOT improve in this
+exact seeded fight** — still dies at frame 2512, boss still stuck at
+14/24 — because `dBoss` itself doesn't get a second clean swing
+opportunity before the player dies to chip damage in this particular
+run; the invuln-freeze bug being fixed removes a hp CEILING, it doesn't
+by itself make `dBoss` land more swings. That's now a fair, honest
+`dBoss`-tuning problem on a correct foundation, which it wasn't before.
+**Next session's job, in order:**
+
+1. **Re-measure every boss's real-combat behavior (not god mode) now
+   that the invuln-freeze ceiling is gone**, starting with Gohmaraq at 3
+   hearts — the melee/chip-damage trade this session already measured
+   (`docs/HANDOFF.md`) is still the right lens, but do it fresh: the old
+   numbers were measured against a boss that could never take a second
+   phase's worth of damage no matter what `dBoss` did, so any tuning
+   conclusion drawn against them (including this session's own reverted
+   charge-gate attempt, see HANDOFF) needs re-checking against a boss
+   that can now actually be beaten. D3 and D6 dying outright in godmode's
+   structural check is a strong sign the remaining gap is smaller than it
+   looked.
+2. Only if a real fight still stalls after re-measuring: the two
+   `dBoss`-side theories this session explored and set aside (not
+   disproven, just no longer the first thing to reach for) are in
+   HANDOFF's hard-won-lessons — the charge/weakOpen interaction, and
+   whether `dBoss` needs `dFight`'s `LINED` perpendicular-alignment check
+   for a moving target.
+3. Once Gohmaraq is a measured win at 3 hearts, wire `dBoss` into
    `tools/playthrough-route.mjs` past `d1/0,3,2`, then look at the other
-   five bosses — Gloomtide's swimming-blocks-swinging finding in particular
-   needs a real tactic (sink with the Cleats first), not this generic verb.
-3. The Boss Key / third-key pass behind the Clawcrab door and the other
+   five bosses — Gloomtide dying outright in godmode makes the earlier
+   "sink with the Cleats first" tactic worth re-checking rather than
+   assuming it's still needed.
+4. The Boss Key / third-key pass behind the Clawcrab door and the other
    five dungeons' routes (see "Where 1.0 actually is" below) are both
    still undone and both still blocked on job 1 actually finishing.
-4. **The remote has ~60 stale `claude/*` branches** (`git ls-remote --heads
+5. **The remote has ~60 stale `claude/*` branches** (`git ls-remote --heads
    origin`), none of them outstanding work — every one here that matters is
    already on `main`. Branch deletion has 403'd from the proxy every time
    it's been tried; if a session gets write access to prune them, it's

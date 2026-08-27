@@ -741,15 +741,24 @@ export async function installRuntime() {
   // taking a single body-contact touch to do it — Gohmaraq measured in REAL
   // combat (12 quarter-hearts, no god mode, seed 20260806) from 24 hp to 14,
   // five hits landed, zero contact damage, surviving to frame 2512 (up from
-  // 796 before this session's fix — see NEAR below). What still kills a
-  // 3-heart player is ranged chip damage plus a phase-2/3 stall: once
-  // Gohmaraq crosses ~62% hp it starts charging almost continuously, and
-  // `dBoss`'s charge-dodge (unconditionally correct — see the `b.charging`
-  // block below) leaves no opening to close in, so the fight goes to a very
-  // long war of attrition the player's own chip damage eventually loses. A
-  // reactive per-shot ranged dodge was tried in an earlier session and
-  // measured NET NEGATIVE (see docs/HANDOFF.md's hard-won-lessons for the
-  // wall-cornering failure mode before attempting it again). It is committed
+  // 796 before this session's fix — see NEAR below).
+  //
+  // A SEPARATE, MUCH BIGGER bug was also fixed this session, in the engine
+  // rather than in this verb: every boss was silently unkillable past its
+  // first fight-phase because `Boss` (src/game/enemy.js) reused `Entity`'s
+  // `phase` field — the Lens's tide-phase marker — for its own fight-phase
+  // bookkeeping, so `Game.updatePhaseShift` was re-pinning every boss's
+  // `invuln` every single frame the instant its fight-phase advanced. Fixed
+  // (renamed to `_fightPhase`); see docs/HANDOFF.md's hard-won-lessons top
+  // entry. `tools/check-bosses.mjs`'s godmode numbers for EVERY boss moved
+  // after that fix (two now die outright), so the "ranged chip damage plus a
+  // phase-2/3 charging stall" read on THIS verb below predates it and has
+  // not been re-measured against a boss that can actually take phase-2
+  // damage — that re-measurement is the next session's first job
+  // (docs/NEXT-SESSION.md). A reactive per-shot ranged dodge, and separately
+  // a charge/weakOpen-gating attempt, were both tried in earlier sessions and
+  // measured NET NEGATIVE (see docs/HANDOFF.md's hard-won-lessons for both
+  // failure modes before attempting either again). This verb is committed
   // because the scaffolding is right and the traps it already closed are
   // expensive to rediscover; it is NOT referenced by
   // tools/playthrough-route.mjs, because a route step that cannot reliably
