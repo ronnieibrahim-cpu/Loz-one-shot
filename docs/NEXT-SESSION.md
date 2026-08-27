@@ -298,12 +298,13 @@ can't tell contact from ranged.
    measurable in a real fight (raising the heart cap was a difficulty change
    even though no enemy damage value moved yet — see `docs/FEEL-SPEC.md`,
    "The cap and the damage ladder"), then re-record the replays against it.
-5. **59 stale branches remain on `origin`, none of them should be merged**
-   (all superseded by work already on `main` — see `git ls-remote --heads
-   origin` for the live list). Deleting one was blocked by the auto-mode
-   permission classifier this session (destructive remote-git-op — needs a
-   human to approve or to pre-allow it), and by a proxy 403 in an earlier
-   one. Ask the user directly rather than retrying blind.
+5. **58 stale branches remain on `origin`** (not counting `main` or this
+   session's own `claude/next-session-cleanup-wtwg3g`), **and none of them
+   should be merged** — all superseded by work already on `main` (see `git
+   ls-remote --heads origin` for the live list). Deleting one was blocked by
+   the auto-mode permission classifier this session (destructive remote-git
+   op — needs a human to approve or to pre-allow it), and by a proxy 403 in
+   an earlier one. Ask the user directly rather than retrying blind.
 6. Known soft spots that are real but not urgent: charm balance (30 charms
    exist, none compared to another), `ANCHOR_RADIUS_TILES`/
    `NEAP_GRACE_FRAMES` need someone to actually play them rather than guess,
