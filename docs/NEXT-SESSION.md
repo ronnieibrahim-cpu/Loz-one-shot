@@ -1,4 +1,108 @@
-## THE ROOT BUG — bosses were never actually unfair, they were unhittable: `Boss.phase` collided with `Entity`'s tide-visibility field (this session, continued once more)
+## First real-combat measurement of all six bosses, ever — and Wyverna is winnable RIGHT NOW at 8 hearts, with zero code changes (this session, continued again)
+
+**Nobody has ever measured a real (non-godmode) fight against anything but
+Gohmaraq, because nothing else could be hit until the phase-field fix two
+commits ago. This entry is that measurement, for all six, plus a deep dive
+on the one that came closest.**
+
+**First pass — every boss at a flat 12 quarter-hearts (the literal starting
+health, same number every session has tested Gohmaraq at):**
+
+```
+d1 gohmaraq   5 hits, 10/24 dmg, dies f900,  boss hp 14
+d2 anemos     2 hits,  4/30 dmg, dies f780,  boss hp 26
+d3 gloomtide  2 hits,  8/32 dmg, dies f240,  boss hp 24  (very fast death)
+d4 wyverna    8 hits, 32/44 dmg, dies f1020, boss hp 12  (73% dealt — closest by far)
+d5 rootmaw    5 hits, 20/52 dmg, dies f660,  boss hp 32
+d6 nereth     0 hits,  0/80 dmg, dies f780,  boss hp 80  (never lands a single hit)
+```
+
+**Then it became obvious 12 qh is the wrong number for anything past D1.**
+`check-hearts.mjs`'s own board says a Heart Container comes from EACH
+dungeon boss. A player who cleared D1-D3 in order carries 3 starting hearts
+plus 3 containers into D4 — 6 hearts, not 3. Re-ran all six at the health a
+same-order player would actually carry (3 hearts + 1 per prior dungeon
+boss, deliberately not counting any heart pieces — still a conservative
+floor):
+
+```
+d1 gohmaraq   3 hearts (12qh):  5 hits, 10/24, dies f900,  boss hp 14
+d2 anemos     4 hearts (16qh):  2 hits,  4/30, dies f900,  boss hp 26
+d3 gloomtide  5 hearts (20qh):  3 hits, 12/32, dies f360,  boss hp 20
+d4 wyverna    6 hearts (24qh): 10 hits, 40/44, dies f1800, boss hp 4   <- ONE HIT SHORT
+d5 rootmaw    7 hearts (28qh):  6 hits, 24/52, dies f1440, boss hp 31
+d6 nereth     8 hearts (32qh):  0 hits,  0/80, dies f1860, boss hp 80
+```
+
+**Wyverna is the story. Binary-searched the health threshold by hand
+(`godMode:false`, no verb changes, same seed): loses at 28 qh (dies with
+the boss at 4/44 remaining — one hit short, again), WINS at 32 qh (7-8
+hearts) with exactly 1 quarter-heart to spare, WINS comfortably at 36 qh.**
+The margin at the winning threshold is a single quarter-heart — this is not
+a safe win, it's a coin-flip at the edge, but it IS a real one: `beaten:
+true`, boss dead, essence dungeon marked cleared, with the existing,
+unmodified `dBoss` verb and zero further tuning.
+
+**What makes Wyverna's fight structurally different from Gohmaraq's,
+diagnosed with a terrain probe:** the first 660 frames are flawless — 8
+clean hits, ZERO damage taken (she's `terrain: 'air'`, and `wyvernaAltitude`
+correctly reads the LOW tide and sets `e.z = 0`, "beached and defenceless,"
+exactly as designed). Then her final phase (hp fraction < 0.32) starts, and
+hits nearly stop while chip damage starts landing steadily. Probed her
+ground position directly (`entity.canOccupy` swept around her tile): at one
+sampled moment her (x,y) sat in room row 0, which is **entirely solid**
+(`########` — the room's own north wall). Because she's `terrain: 'air'`
+she can occupy that tile fine; a grounded player cannot stand next to it.
+Her later-phase movement (`bounceDiag` at 1.15x speed, frequent
+`wyvernaDive`/`shootRing`) apparently drifts her into positions the player
+can approach only sometimes, and `dBoss`'s generic "close the distance"
+logic has no notion of "wait for the dive that brings her to you" — it just
+walks toward wherever she currently is, including toward a wall. The fight
+does NOT fully stall the way Gohmaraq's phase-1 bug did — hits do keep
+landing, just much more slowly (roughly one per 150-250 frames instead of
+one per 70) — which is exactly why more health closes the gap instead of
+making no difference.
+
+**D2 Anemos and D6 Nereth are the two that look like they need real,
+boss-specific tactics, not just more health — this is now the honest place
+to look, not the presumed one.** Anemos barely improves with 4 extra
+quarter-hearts (2 hits either way); Nereth lands ZERO hits even at 8
+hearts and 1860 frames, matching its own design note ("pins the tide per
+phase; break the pin to hurt him") — `dBoss` has no verb for "sound the
+conch to break the pin," so it is very plausibly waiting out a shell that
+never opens under its own steam. Worth checking directly next session
+rather than assumed.
+
+**Next session, in order:**
+
+1. **Wyverna is winnable now and worth confirming with a route.** A
+   real-order playthrough (D1→D2→D3→D4) would very plausibly carry MORE
+   than the conservative 6-heart floor tested here (heart pieces are not
+   counted above at all, and there are 24 of them in the world), which
+   would turn a 1-quarter-heart coin-flip into a comfortable win. This is
+   the closest this project has ever been to `dBoss` actually winning a
+   fight for real — worth chasing to a wired playthrough step before
+   touching anything else.
+2. **Do NOT spend a session trying to fix Wyverna's late-phase reachability
+   stall with a generic change.** The pattern this whole document already
+   shows, repeatedly, is that generic "read the world and react" changes to
+   `dBoss` net negative more often than not. If it's tackled, it should be
+   narrow and Wyverna-specific (e.g., recognizing "the boss's ground tile
+   is unreachable, hold central position and wait for a dive" as a
+   dedicated case), not a change to the shared approach logic every other
+   boss also runs through.
+3. **Check Nereth and Anemos for a required non-melee verb before assuming
+   they need better positioning.** Nereth's own design note says its
+   vulnerability requires breaking a tide pin — if that literally means
+   "sound the conch at the right moment," `dBoss` doing nothing but melee
+   would explain zero hits far better than a positioning problem does.
+4. **Gohmaraq's own remaining issue is unchanged**: the same-speed patrol
+   problem (phase 3 speed 1.0 == WALK_SPEED) is still the honest bottleneck
+   for D1 specifically, separate from everything above.
+
+---
+
+## THE ROOT BUG — bosses were never actually unfair, they were unhittable: `Boss.phase` collided with `Entity`'s tide-visibility field (previous session)
 
 **This is the real story of "job 1." Every session's chip-damage tuning was
 chasing the wrong problem.** Chasing item 2 from the previous entry's own
