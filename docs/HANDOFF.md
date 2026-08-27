@@ -224,6 +224,30 @@ is in the page, and nothing steps until you say so.
 
 ## Hard-won lessons — do not rediscover these
 
+**A Manhattan-sum distance is not a hitbox, and gating an approach on one
+reads as "close enough" well after contact already happened.** `dBoss`
+(`tools/actor-runtime.mjs`) decides "still approaching, keep closing" by
+comparing `|dx|+|dy|` (Manhattan) against a flat threshold. Gohmaraq's own
+hitbox is 26x20, asymmetric per axis, so a diagonal close can already be
+touching it on the SHORT axis while the summed distance still reads as
+"far" on the long one — measured directly: two of four hits in a real
+3-heart fight were body contact at Manhattan distance 28 and 30, both past
+the 24px cutoff `dBoss` uses to decide it's still safe to keep closing. A
+per-axis (Chebyshev-shaped) check against the boss's real half-extents is
+the fix; a flat Manhattan number is the trap. See docs/NEXT-SESSION.md's
+current top section for the full measurement and the four dodge-timing
+variants that were tried against it and did NOT help, because none of them
+touched the actual mechanism.
+
+**"Measured in real combat, seed 20260806" was never a committed tool —
+three separate write-ups describe rebuilding the same harness by hand.**
+`git log -S` on that exact phrase turns up doc sentences, nothing under
+`tools/`. It is now `tools/measure-boss-combat.mjs`: real combat (no god
+mode, 3 hearts), any of the six `check-bosses.mjs` fights by dungeon id,
+and a damage log with frame/amount/projectile-or-contact/distance/boss-tell-
+state for every hit the player takes. Use it instead of re-deriving the
+setup from `check-bosses.mjs`'s godmode table by hand again.
+
 **This container's Playwright package and its pre-installed Chromium are off
 by one revision, and only some tools have a fallback for it.** `node_modules`
 expects browser revision 1234; `/opt/pw-browsers/` only has 1194 installed.

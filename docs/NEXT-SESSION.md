@@ -1,4 +1,132 @@
-## Charge dodge lands, ranged dodge doesn't — the boss verb, continued (this session)
+## Every hit in the measured fight lands during the APPROACH, not the swing — and a real-combat harness is now committed (this session)
+
+**No code shipped this session.** Four more attempts at reducing Gohmaraq's
+chip damage were built, measured, and reverted, all net neutral or negative —
+this is a record of what was ruled out and, more usefully, of WHERE in the
+fight the damage actually happens, which none of the last two sessions'
+notes narrowed down. Read this before trying another dodge variant.
+
+**Committed: `tools/measure-boss-combat.mjs`.** The last two sessions'
+"measured in real combat (12 quarter-hearts, no god mode, seed 20260806)"
+numbers came from a harness built by hand each time and never checked in —
+confirmed by `git log -S` on that exact phrase, which turns up the doc
+sentences and nothing under `tools/`. This is that harness, committed once:
+`node tools/measure-boss-combat.mjs [d1..d6]` plays `['boss', 9000]` at THREE
+HEARTS with no god mode (`check-bosses.mjs`'s own fight table, reused, but
+with `godMode:false` — that file is explicit that god mode "says NOTHING
+about whether a fight is fair"), and logs every point of damage the player
+takes: frame, amount, projectile-or-contact, distance to the boss, and the
+boss's `weakOpen`/`stun`/`charging` state at that instant — all read from
+state `dBoss` already exposes, so running it changes nothing about what it
+measures. Verified against d1 first: byte-identical to both this session's
+own reproduction and the numbers written up two sections down (5 melee hits,
+24→14 boss hp, player dies at frame 800, `check-bosses.mjs` unaffected,
+13/13, unchanged god-mode numbers for all six bosses).
+
+**The finding the damage log gives that neither prior write-up had: EVERY
+hit in this fight — all four, two ranged and two contact — landed while
+`dBoss` was in its `towardDiag` approach branch (`adx+ady > NEAR+6`,
+closing distance, not yet in swing range).** None landed during the swing
+itself, the post-swing backoff, or the shelled retreat. That contradicts the
+framing the last two sessions' notes used ("the melee trade is close to
+breakeven; what still kills a 3-heart player is ranged chip damage") — of
+the four hits, **two were body contact** (`isProjectile:false,
+src:"gohmaraq"`, 4 qh each) landing at Manhattan distance 28 and 30, i.e.
+*outside* the `NEAR+6` (24) threshold `dBoss` uses to decide "still
+approaching, keep closing." A Manhattan-sum distance is not the shape of
+the boss's actual 26×20 hitbox, so a diagonal close can already be touching
+it on one axis while the summed distance still reads as "far" on the
+other — the threshold that gates the approach is measuring the wrong thing,
+not merely set to the wrong number. The other two hits were ranged
+(2 qh each): one at distance 40 with the boss at rest (`stun:0`), one at
+distance **95** while ANOTHER windup was already 9 frames into its tell
+(`stun:9`) — a shot fired much earlier still catching the player mid-close.
+
+**Four things were tried against this, all measured, none kept:**
+
+1. **Reactive sidestep on the `stun` 1→0 transition.** `windUp()`
+   (`src/data/bosses.js`) parks its closure on `e._pending` and fires it the
+   instant `e.stun` counts to 0 — `Enemy.update` (`src/game/enemy.js:178`)
+   returns early without running `spec.ai` at all while `stun>0`, so polling
+   `stun`/`_pending` each frame gives a clean, boss-agnostic "an attack is
+   about to resolve at my current position" signal, independent of
+   `weakOpen` (which stays open almost the whole fight at LOW tide — its own
+   rising edge fires ONCE for the whole fight, not once per slam, because
+   the next slam refreshes `_open` before the previous window lapses; this
+   is why a `weakOpen`-rising-edge dodge, tried first, only ever fired once
+   and changed nothing). Gated on `_pending` specifically so a charge's own
+   post-dash recovery stun — no attack attached — doesn't trigger a
+   needless dodge. A ONE-TIME perpendicular sidestep on this transition,
+   biased toward room centre to avoid the previous session's wall-cornering
+   failure, correctly fired on all three real slam events in the fight
+   (confirmed by direct count) but changed the total damage taken NOT AT
+   ALL at 10 frames of sidestep (still 12 qh, death merely moved from frame
+   800 to 1080) and made it WORSE at 30 frames (14 qh). Tried 10/16/24/30;
+   none beat baseline.
+2. **Proactive retreat for the whole `stun>0 && _pending` tell**, mirroring
+   how a charge's own tell is already dodged (checked at the same priority,
+   above the `weakOpen` state machine). Measured WORSE on both axes: boss hp
+   only to 18 (3 hits instead of 5) and the player still died, one frame
+   sample earlier (800 vs 800, same frame — but three fewer hits landed on
+   the way).
+3. **Skip every other slam-triggered opening**, the "cheaper win" this
+   file's previous version suggested — hold a mid-range stand-off on
+   alternating openings instead of closing in. Also worse: boss hp only to
+   18, player still died at exactly frame 800, same total 12 qh taken.
+4. **Stop pressing `toward` during the swing's own two frames** (face,
+   then swing in place rather than still walking forward while swinging) —
+   directly targeted at the newly-found contact-during-close finding above.
+   Measured with the damage-log harness: BYTE-IDENTICAL timeline and damage
+   log to the unmodified baseline. This confirms the contact hits happen
+   during the approach itself (before swing range, as the log already
+   said), not during the swing frames — so this specific fix could not
+   have touched them, which is exactly what the distance figures (28, 30 —
+   both past the swing-range cutoff) already implied.
+
+**What is actually left to try, now narrower than either prior write-up
+had it:** the approach needs to be aware of the boss's real footprint and
+its own independent movement (patrol/charge idle drift), not just a
+Manhattan-distance cutoff — something closer to a real collision check
+during the close (e.g. stop advancing on WHICHEVER axis is already inside
+the boss's hitbox half-extent, rather than requiring the summed distance to
+clear a flat number), or route the approach around the boss's current
+position rather than straight at its centre. This is the same "positioning,
+not timing" gap the boss-verb board has already named twice; it is now
+tied to a specific, reproduced mechanism (axis-blind distance gating a
+diagonal close against a large, independently-moving hitbox) rather than a
+general impression. The long-range catch-up hit (distance 95, mid-flight
+from an earlier volley) is a second, smaller problem and likely wants
+nothing more than a larger stand-off distance while ANY boss stun is
+counting down, once the contact-distance shape is fixed — untested in
+isolation because attempt 2 above bundled both together and the result
+doesn't separate them.
+
+**Next session, in order:**
+
+1. Fix the approach's distance model — per-axis (Chebyshev-shaped) rather
+   than Manhattan-sum, and sized to the boss's actual `hb` half-extents
+   plus the player's own — before trying another dodge timing variant.
+   Re-measure with `node tools/measure-boss-combat.mjs d1` (committed this
+   session) rather than rebuilding the harness again; the damage log's
+   `dist`/`isProjectile`/`weakOpen`/`stun` fields are exactly what answered
+   the question this time.
+2. Once that's demonstrably better (fewer total quarter-hearts lost across
+   at least this one seed, not just a later death frame), retry a targeted
+   dodge for the long-range catch-up hit — it may already be moot once
+   contact stops being the majority of the damage.
+3. The same-speed patrol problem (phase 3 speed 1.0 == WALK_SPEED) is still
+   unmeasured in real combat, unchanged from prior sessions.
+4. Once Gohmaraq is a measured win at 3 hearts, wire `dBoss` into
+   `playthrough-route.mjs` past `d1/0,3,2`, and only then look at the other
+   five bosses — Gloomtide's swimming-blocks-swinging finding in particular
+   needs a real tactic (sink with the Cleats first), not this generic verb.
+5. The Boss Key / third-key pass behind the Clawcrab door and the other five
+   dungeons' routes are both still undone and both still blocked on job 1
+   actually finishing.
+
+---
+
+## Charge dodge lands, ranged dodge doesn't — the boss verb, continued (previous session)
 
 **Still not a win.** Gohmaraq measured in real combat (12 quarter-hearts, no
 god mode, seed 20260806): five hits landed (24 -> 14 hp), same as last
