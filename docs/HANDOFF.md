@@ -240,8 +240,25 @@ during the approach went from 2 of 4 to 0 of 6 in the same measured fight,
 melee output unchanged. Any future actor verb that gates movement on a
 centre-to-centre distance against another entity has the same blind spot;
 reach for `.rect()` instead. See docs/NEXT-SESSION.md's current top section
-for the full before/after and what's still open (the same-speed patrol
-problem is now the clear remaining blocker, not a side theory).
+for the full before/after.
+
+**"Same-speed patrol" was the wrong theory, checked and ruled out this
+session — and "lead the target toward where it's headed" is a trap for a
+CHARGING boss, not a fix.** A frame trace of the actual measured fight
+showed Gohmaraq never even reaches phase 3 (the phase with the
+same-speed-as-player patrol) before the player dies — it stalls in phase 2,
+where idle patrol is 0.85, slower than the player. A fix built on that
+theory anyway (`chaseTarget`: read the boss's `_pdir` and head for the wall
+it's patrolling toward, so a reversal walks it into you) was measured and
+is a genuine trap: heading for the wall the boss patrols toward is heading
+for the SAME wall its `charge()` also dashes toward, so the player ends up
+standing almost exactly where a charge lands — which is precisely
+`charge()`'s own retrigger condition (`aligned(e,g,tol) &&
+distToPlayer(e,g)<range`, `src/game/enemy.js:818`). Traced directly: `_pdir`
+froze at one value and distance locked to 13-14px for THOUSANDS of frames —
+charge, recover, instantly realigned, charge again, forever. Any future
+"predict where the boss is going" fix for a charging enemy must NOT aim for
+the charge's own landing spot.
 
 **"Measured in real combat, seed 20260806" was never a committed tool —
 three separate write-ups describe rebuilding the same harness by hand.**

@@ -58,27 +58,56 @@ reaches a boss room).
 
 **Next session, in order:**
 
-1. **The same-speed patrol problem, now clearly the remaining blocker, not a
-   side theory.** Phase 3's patrol speed (1.0 px/f) equals the player's own
-   `WALK_SPEED`, so once the fight is past its first opening the boss is
-   never caught by a straight chase — `closeEnough` can only stop a bad
-   approach, it cannot manufacture one that wasn't going to close in the
-   first place. Try waiting for a patrol reversal, or cutting the corner
-   instead of chasing in a straight line, and measure with
-   `tools/measure-boss-combat.mjs d1` before and after — a fix here should
-   raise "melee hits landed" past 5, which nothing has done yet.
-2. **The 6 remaining ranged hits are now the whole of the damage taken** —
+1. **The "same-speed patrol" theory above was checked directly this session
+   and is NOT what's actually stalling this fight — read this before
+   reaching for it again.** A frame-by-frame trace (`b._pdir`, `b.stun`,
+   `b.charging`, distance, sampled every 100 frames) of the exact measured
+   fight shows the boss is stuck at 14 hp because it's PAST phase 1 by then
+   (14/24 = 0.58, inside phase 2's `above:0.30` band) and phase 2's idle
+   speed is 0.85, not phase 3's 1.0 — it never reaches phase 3 in this run
+   at all. What actually happens for the next ~900 frames: the boss
+   alternates patrol and charge normally, `_pdir` DOES flip, distance
+   varies widely (32-133px) — there is no stall, the verb is just not
+   landing more hits in the time it has.
+   **A "lead the patrol, head for the wall it's moving toward" fix (`chaseTarget`,
+   reading `b._pdir` to aim at the far wall) was built and measured, and it
+   is a trap, not a win: it makes the fight measurably WORSE** (still
+   exactly 5 melee hits / 12 qh taken / player dies, but frames-to-death
+   roughly tripled, 4300 vs 1520, all of it dead time). The mechanism, found
+   by re-running the same trace WITH the change: heading for the wall the
+   boss patrols toward is heading for the SAME wall a charge also dashes
+   toward, so the player ends up standing almost exactly where a charge
+   ends — which is precisely `charge()`'s own retrigger condition
+   (`aligned(e,g,tol) && distToPlayer(e,g)<range`, `src/game/enemy.js:818`).
+   The trace with this change showed `_pdir` frozen at `right` and distance
+   locked at 13-14px for THOUSANDS of frames: the boss recovers from one
+   charge, is instantly aligned and in range again, charges again, dBoss
+   dodges it, recovers, repeats — an real, reproducible deadlock, not a
+   near-miss. Reverted in full; the committed state has none of this. If
+   trying a "predict where it's going" approach again, it must not aim for
+   the charge's own end point.
+2. **What the trade actually looks like once (1) above is accepted as a
+   dead end**: 5 melee hits is the measured ceiling for this verb on this
+   seed, full stop — nothing tried across two sessions (six dodge/engagement
+   variants plus this session's lead-the-patrol attempt) has raised it.
+   Getting a 6th hit likely needs the verb to notice when charge/recovery
+   cycles are about to retrigger (perhaps: after a charge ends, hold off the
+   axis it just recovered near — `Math.abs(perpendicular offset) >
+   ENEMY_CHARGE_TOLERANCE`-ish, without hardcoding a per-boss `tol` — before
+   resuming the approach) rather than another positioning trick aimed at the
+   boss's raw or predicted position.
+3. **The 6 remaining ranged hits are now the whole of the damage taken** —
    distances in the current log range 37-102px, several while ANOTHER
-   windup is already counting down (`stun` 1-15). Once (1) stops burning
-   frames without progress, re-examine whether these are dodgeable; the
+   windup is already counting down (`stun` 1-15). Once (1)/(2) stop burning
+   sessions without progress, re-examine whether these are dodgeable; the
    previous session's four reactive-dodge attempts were all measured
    against the OLD contact-heavy baseline and may read differently now
    that contact is out of the picture.
-3. Once Gohmaraq is a measured win at 3 hearts, wire `dBoss` into
+4. Once Gohmaraq is a measured win at 3 hearts, wire `dBoss` into
    `playthrough-route.mjs` past `d1/0,3,2`, and only then look at the other
    five bosses — Gloomtide's swimming-blocks-swinging finding in particular
    needs a real tactic (sink with the Cleats first), not this generic verb.
-4. The Boss Key / third-key pass behind the Clawcrab door and the other five
+5. The Boss Key / third-key pass behind the Clawcrab door and the other five
    dungeons' routes are both still undone and both still blocked on job 1
    actually finishing.
 
