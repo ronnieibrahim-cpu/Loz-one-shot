@@ -87,19 +87,55 @@ are already a local optimum for this shape of fix. That is why this session
 went looking for a different SHAPE of fix instead of another knob, and found
 the charge-lock above. **Working tree is clean — none of the six were kept.**
 
+**A seventh, tried after the charge-lock was found and understood: take a
+free swing during a charge's own 18-frame `tell` if already at swing range
+when the charge triggers.** `Boss.update` (`src/game/enemy.js:317`) gates its
+ENTIRE `ai()` call — including `charge()`'s own re-trigger check — behind
+`if (this.stun > 0) { this.stun--; return; }`, and a charge sets `e.stun =
+o.tell` (18) the same frame it sets `e.charging = true`, which is also what
+freezes the boss in place before the dash (`moveDir` only runs once `ai()`
+resumes, i.e. once `stun` hits 0) — so for those 18 frames the boss is
+inert and provably cannot start moving. If the eye is already open and we
+were already within swing range the instant charging flipped true, that
+window is a free hit the old code was throwing away by jumping straight to
+the dodge. Implemented (a weakOpen + `b.stun>0` + in-range check ahead of
+the dodge branch, swing then fall through to the same dodge afterward) and
+measured at both 3 and 6 hearts: **byte-identical to baseline in both runs —
+the scenario it targets never actually occurred in this seed's fight.**
+Not disproven, just unexercised; reverted rather than shipped unverified,
+per the same rule the ranged-dodge attempt was reverted under two sessions
+ago. Worth trying again with a seed (or a scripted approach) that puts the
+actor at swing range at the moment a charge triggers, since this run's
+charges all seem to start while still mid-approach.
+
 **What is worth trying next, in order, none of it attempted this session:**
 
-1. **Break alignment deliberately after a charge ends**, rather than
-   approaching straight back into the condition that caused it. The dodge
-   already reads `b.charging`; the missing piece is remembering that a
-   charge JUST ended (a `wasCharging` edge, the same shape as the
-   `chargeSide` latch already in the verb) and, for a short window after,
-   biasing the approach to keep the perpendicular offset above `tol=14` —
-   closing the ALONG axis while holding the across one — until the along
-   distance is already near swing range, THEN closing the last few pixels
-   fast for the swing. This is speculative and NOT the same as fix #1 above
-   (which slowed every close-in, not just the post-charge window) — it
-   should be measured on its own, not assumed to share #1's result.
+1. **"Stay unaligned while closing" is a dead end — checked by reading
+   `aligned()` (`src/game/enemy.js:423`), not by testing it, so it costs
+   nothing to rule out here.** It fires if EITHER `|dy|<=tol` OR `|dx|<=tol`
+   (an OR, not both), so staying unaligned on both axes needs
+   `|dx|>14 AND |dy|>14`, i.e. Manhattan distance > 28 — bigger than the
+   swing threshold itself (`NEAR+6` = 24). **Being close enough to swing
+   already guarantees alignment on at least one axis.** There is no
+   approach path that reaches melee range without becoming a valid charge
+   target; do not spend a session re-discovering this the hard way.
+   What IS real and unexploited: `charge()`'s `tell` (frozen, `b.charging`
+   true but not moving, safe to approach or even swing right through — see
+   the seventh attempt above, untested because it never triggered this
+   seed) is only half the story. The RECOVERY after a charge ends
+   (`e.stun = o.recover`, 24 frames, set when a dash hits a wall) gates
+   `Boss.update`'s entire `ai()` call the same way the tell does — for
+   those 24 frames the boss cannot patrol, cannot re-align, cannot
+   re-trigger a charge, full stop, readable directly as `b.stun > 0 &&
+   !b.charging`. The current verb already closes at full speed whenever
+   `!b.charging`, so it likely already benefits from this window some of
+   the time, but it does not KNOW it is in a guaranteed-safe window versus
+   an ordinary idle-and-could-charge-any-moment window, and cannot
+   therefore choose to, say, accept a swing it would otherwise treat as
+   too close for comfort. Measuring how much of the current close-in
+   already lands inside `b.stun>0` recovery, and whether treating that
+   window specially (versus identical-looking idle time) buys anything,
+   is the concrete next step — not "avoid alignment," which cannot work.
 2. **The held-blade continuous poke is unexplored.** `Player.updateSwordHold`
    (`src/game/player.js:611`) extends the blade after just `SWORD_HOLD_DELAY`
    (2 frames, not the full 42-frame `CHARGE_FRAMES` spin threshold) and deals
