@@ -224,6 +224,39 @@ is in the page, and nothing steps until you say so.
 
 ## Hard-won lessons — do not rediscover these
 
+**`Player` has no `.hearts` — health lives on `game.progress.hearts`, and a
+damage hook that reads the wrong one fails silently rather than loudly.**
+Instrumenting `Player.prototype.takeDamage` to log every hit (the boss-verb
+session's method for finding real damage sources instead of guessing) is easy
+to get wrong in exactly one way: `takeDamage(game, amount, source, o)` reads
+and writes `game.progress.hearts` internally, not `this.hearts`. A hook that
+compares `this.hearts` before/after compares `undefined` to `undefined`,
+which is never less-than, so the log stays empty forever while the player
+still takes real damage, dies, and respawns in the overworld with hearts
+silently reset to max. Nothing throws — the run just reports zero hits taken
+on a player who is visibly dead. Log `game.progress.hearts`, not the entity.
+
+**A "close enough, swing" distance borrowed from a different verb can put the
+trigger INSIDE the target's own hurtbox.** `tools/actor-runtime.mjs`'s `dBoss`
+reused `dFight`'s NEAR=18, tuned against ordinary enemies whose hurtboxes are
+much smaller than a boss's. Gohmaraq's hb is 26x20 (half-extent 13) against
+the player's 10x7 (half-extent 5) — the two bodies already touch at a
+Manhattan distance around 18-21, so the old branch was walking the player's
+own hurtbox into the boss's before the sword ever connected, taking a full
+"boss" tier contact hit (4 qh, a third of a new game's pool) as the cost of
+approaching to attack. Found by instrumenting `Boss.hurt`/`Player.takeDamage`
+directly, not by reasoning about the AI: the log showed `src=gohmaraq,
+proj=false` hits landing while `weakOpen` was true, which only makes sense as
+contact damage taken WHILE attacking. The fix computes the close-enough
+distance from the actual entity a verb is fighting (half its hurtbox, plus the
+attacker's own, plus clearance) rather than borrowing a constant tuned for a
+different, smaller kind of target. The clearance had to be measured rather
+than derived: +4px over the geometric contact boundary still let one hit
+through, because "face, then swing" is itself two frames of closing movement
+in an engine with no separate "face only" input, and the target can be
+closing from its own side at the same time; +8 closed it on the one seed this
+repo can measure.
+
 **This container's Playwright package and its pre-installed Chromium are off
 by one revision, and only some tools have a fallback for it.** `node_modules`
 expects browser revision 1234; `/opt/pw-browsers/` only has 1194 installed.

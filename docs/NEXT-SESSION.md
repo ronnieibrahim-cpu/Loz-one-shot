@@ -1,4 +1,144 @@
-## Charge dodge lands, ranged dodge doesn't — the boss verb, continued (this session)
+## Contact damage is gone; the shot burst is the whole problem now — the boss verb, continued (this session)
+
+**Still not a win.** Gohmaraq measured in real combat (12 quarter-hearts, no
+god mode, seed 20260806): five hits landed, 24 -> 14 hp, same number as the
+last two sessions. What changed is what KILLS the player, not how many hits
+land — and it was found the same way every real bug in this verb has been
+found: instrumenting `Boss.prototype.hurt` and `Player.prototype.takeDamage`
+directly (a scratch harness, not committed — see "how this was measured"
+below) rather than reasoning about the AI from outside.
+
+**The bug: `NEAR` (the "close enough, swing" distance) was borrowed from
+`dFight`, and was too close for a boss's body.** `dFight`'s NEAR=18 is tuned
+against ordinary enemies. Gohmaraq's hurtbox is 26x20 (half-extent 13) against
+the player's own 10x7 (half-extent 5) — bodies already touch at a Manhattan
+distance of about 18-21. So the old "close the distance, then swing" branch
+was walking the player's hurtbox INSIDE the boss's own before the sword ever
+swung, and a boss's contact damage is the "boss" tier of the damage ladder — 4
+qh, a third of a new game's whole pool, per touch. The very first real-combat
+run this session traced it exactly: two of the four hits taken (`f446 -4qh`,
+`f497 -4qh` in the pre-fix log) were `src=gohmaraq, proj=false` — contact, not
+a graze — landed while `weakOpen` was true, i.e. while the verb was doing
+exactly what it was supposed to be doing.
+
+**The fix, in `tools/actor-runtime.mjs`'s `dBoss`, three pieces, all boss-agnostic (computed from
+whichever boss is live, not a Gohmaraq special case):**
+
+1. **`NEAR` is now derived from the boss's own hurtbox**, not borrowed from
+   `dFight`: half the larger of the boss's `hb` dimensions, plus the player's
+   own half-extent, plus an 8px clearance. For Gohmaraq that's 18 -> 26; for
+   the four 24x24 minibosses (hb ~18x15) it computes to the same 18 `dFight`
+   already used, so nothing changes for them. The +8 (not derived, measured:
+   +4 still let one contact hit through, because the "face, then swing" pair
+   is itself two frames of closing movement — there is no separate "face
+   only" input in this engine, holding a direction always moves you — and the
+   boss can be closing from its own side at the same time) is the smallest
+   margin that closed it on this seed.
+2. **`OPEN_FLINCH`**: every slam-style opener in `src/data/bosses.js` (`spread`
+   called from inside a `windUp` callback) fires its shot burst AIMED AT THE
+   PLAYER in the exact same call that opens the weak point. The old "close the
+   distance" branch beelined toward the boss the instant it read `weakOpen`
+   true — straight back up the line those shots just travelled, since they're
+   aimed at wherever the player was standing when they fired. On the RISING
+   EDGE of `weakOpen` only (latched via `wasWeakOpen`, so this cannot fire more
+   than once per opening), if the player is still far, it holds off 16 frames
+   before approaching. Edge-triggered, not per-frame, is the important
+   distinction: an unconditional "if far, back off" is the exact bug a
+   previous session found and fixed (a patrolling boss can hold "far" true
+   forever while the player retreats toward a corner) — a fixed count on the
+   rising edge only cannot loop.
+3. **The fresh-engagement swing is no longer "one swing, then a mandatory
+   30-frame retreat."** It chains (bounded by `MAX_FREE_SWINGS = 6`) as long as
+   the weak point is still open, the player hasn't just been hit, and — this is
+   the part that took two passes to get right — the distance is RE-CHECKED
+   live before every single press, not just during the recovery wait between
+   swings. Gohmaraq keeps patrolling with its eye open (only the slam's own
+   windUp freezes it), so standing still while it patrols into you is the same
+   contact hit either way; the first cut of this only checked distance during
+   the wait and still let one contact hit through at the top of a repeated
+   swing attempt. This is real, if modest: one fight this session landed two
+   swings 66 frames apart with no retreat between them, which the old code
+   could never do without an already-banked invuln window.
+
+**Net result, measured over several re-runs at the final NEAR value: the fight
+now ends on six 2-qh projectile grazes and ZERO contact touches, instead of a
+mix of two 4-qh contact touches and two 2-qh grazes.** Same five hits landed,
+same 24 -> 14 hp, same eventual death — this did not win the fight. What it
+did is delete an entire CLASS of damage from the fight and leave exactly one
+kind standing: **the periodic slam-triggered shot burst is now the SOLE
+source of chip damage.** A previous session already tried a reactive per-shot
+dodge for exactly this and measured it NET NEGATIVE (see the archived section
+below for the numbers and the wall-cornering failure mode) — don't re-attempt
+that same mechanism without a new idea; the geometry that broke it (a
+dodge-side sign that flips on sub-pixel noise right at the moment the shot is
+aimed at your exact position) hasn't changed.
+
+**How this was measured:** a scratch script (not committed — every previous
+session's "real combat" numbers were produced the same way, and none of them
+committed one either, so this keeps that precedent), same shape as
+`tools/check-bosses.mjs`'s fixture (`beginRecord` with `enter: ['d1', 0, 3, 1,
+72, 80, 'up']`, `items: {sword:1, conch:1, anchor:1}`, `equipA:'sword',
+equipB:'conch'`, tide LOW) but with `godMode: false` and `hearts:
+12/maxHearts: 12`, then patching `Boss.prototype.hurt` and
+`Player.prototype.takeDamage` on the live class BEFORE `beginRecord` boots the
+game, so every instance created by entering the room is already instrumented.
+One trap worth recording so the next session doesn't re-pay it: **`Player`
+does NOT carry `.hearts`** — health lives on `game.progress.hearts`. An early
+version of this harness read `this.hearts` inside the `takeDamage` patch,
+which is `undefined` on every entity, so `undefined < undefined` is always
+false and the whole damage log stayed empty while the player quietly died and
+respawned in the overworld with hearts silently reset to max — exactly the
+kind of instrumentation bug this project's own culture warns about (measure
+the real thing, not a plausible-looking proxy).
+
+**Full regression, all unaffected by this change:** `test.mjs` 59/59,
+`check-bosses.mjs` 13/13 (byte-identical damage numbers to before this
+session — see why below), `replay.mjs` 51/51, `check-playthrough.mjs` 19/19,
+`walk-dungeons.mjs` 23/23, `solve-switches.mjs` 9/9, `check-gates.mjs` 26/26.
+**Why `check-bosses.mjs`'s numbers didn't move even though `dBoss` did:** its
+fixture runs in GOD MODE, which pins `p.invuln >= 600` every single frame —
+so the `p.invuln > RETREAT_MARGIN` branch is ALWAYS true under god mode, and
+the new fresh-engagement chain-swing code (which only runs when NO invuln is
+banked) is simply never reached there. The NEW code is exercised only in real
+combat, which is exactly why a godmode-only checker could never have found
+the contact-damage bug in the first place.
+
+**Next session, in order:**
+
+1. The periodic slam-triggered shot burst (`gohmaraqSlam` -> `spread`, 3 shots
+   over 70deg, aimed at the player's position when it fires) is now the ENTIRE
+   remaining problem — isolate it further before trying to fix it. Worth
+   knowing before the next attempt: this session's `OPEN_FLINCH` (retreat 16
+   frames on a fresh opening, once) already absorbs some of these, and the
+   grazes that still land happen on LATER re-engagements within the same long
+   LOW-tide window, not the first one — so the fix may need to trigger on every
+   slam's own windUp (which is entirely predictable: `timer(e,'slam',N)` fires
+   on a fixed schedule the verb can read directly off `b.stun`/`e._pending`
+   rather than reacting to a projectile after the fact) rather than only on
+   the weak-point's rising edge.
+2. Also unexplored: is there a cheaper win in NOT engaging every eye-open
+   window? Gohmaraq's eye stays open almost the whole fight at LOW tide
+   (`openFor * 2` on every slam, and slams overlap), so the verb could in
+   principle let a slam's own burst clear, then engage the SAME still-open
+   window a beat later, rather than engaging the instant it reads `weakOpen`.
+   This session's `OPEN_FLINCH` is a first cut at exactly this idea but is
+   deliberately generic (16 frames, every boss); a Gohmaraq-shaped version
+   that reads the slam timer directly might do better.
+3. The same-speed patrol problem (phase 3 speed 1.0 == WALK_SPEED, so a
+   patrol that isn't reversing is never caught) is still unmeasured in real
+   combat — only seen in godmode's unlimited-aggression run, which may not
+   be the same failure a 3-heart fight ever reaches.
+4. Once Gohmaraq is a measured win at 3 hearts, wire `dBoss` into
+   `playthrough-route.mjs` past `d1/0,3,2`, and only then look at the other
+   five bosses — Gloomtide's swimming-blocks-swinging finding in particular
+   needs a real tactic (sink with the Cleats first), not this generic verb.
+5. The Boss Key / third-key pass behind the Clawcrab door and the other five
+   dungeons' routes are both still undone and both still blocked on job 1
+   actually finishing.
+
+---
+
+## Charge dodge lands, ranged dodge doesn't — the boss verb, continued (previous session)
 
 **Still not a win.** Gohmaraq measured in real combat (12 quarter-hearts, no
 god mode, seed 20260806): five hits landed (24 -> 14 hp), same as last

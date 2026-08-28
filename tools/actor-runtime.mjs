@@ -28,6 +28,11 @@ export async function installRuntime() {
   // coordinate that lands INSIDE a multi-screen room; a raw key lookup does not.
   const mapsMod = await import('/src/world/maps.js');
   window.__hasRoom = mapsMod.hasRoom;
+  // For dBoss's chain-swing recovery wait: a swing already in flight cannot be
+  // restarted (Player.startSwing no-ops while `swinging > 0`), so the verb has
+  // to know how long one actually takes rather than guess a number that would
+  // silently drift the moment a feel-tuning session retimes the swing.
+  const feel = await import('/src/data/feel.js');
 
   const TILE = screen.TILE, ROOM_W = screen.ROOM_W, ROOM_H = screen.ROOM_H;
   const VIEW_W = screen.VIEW_W, VIEW_H = screen.VIEW_H;
@@ -737,15 +742,31 @@ export async function installRuntime() {
    */
   // STATUS: THIS VERB FIGHTS AND DOES NOT YET WIN. It finds the boss, stays in
   // the arena, waits out the shell, chains swings through a landed hit's own
-  // invulnerability window, sidesteps a charge, and lands real hits —
+  // invulnerability window (or, for a fresh engagement with none banked yet,
+  // through its own live safety checks — see MAX_FREE_SWINGS below), sidesteps
+  // a charge, holds off one beat rather than beelining into a fresh opener's
+  // own shot burst, and lands real hits.
+  //
   // Gohmaraq measured in REAL combat (12 quarter-hearts, no god mode, seed
-  // 20260806) from 24 hp to 14, five hits landed, the player surviving to its
-  // last half-heart before a final graze. The melee trade is close to
-  // breakeven; what still kills a 3-heart player is ranged chip damage. A
-  // reactive per-shot dodge was tried and measured NET NEGATIVE (it landed
-  // fewer melee hits than leaving it alone, for no reliable safety in
-  // return — see docs/NEXT-SESSION.md's boss-verb section for the measured
-  // numbers and the wall-cornering failure mode before attempting it again).
+  // 20260806): STILL five hits landed, 24 hp -> 14, before dying — this
+  // session's changes did not move that number. What DID change, measured the
+  // same way (instrumenting every hurt() call rather than guessing from
+  // outside): the fight used to end on a mix of two heavy CONTACT touches
+  // (4 qh apiece, a third of the whole pool, taken while closing in to swing —
+  // NEAR was borrowed from dFight's ordinary-enemy tuning and put the "close
+  // enough, swing" trigger INSIDE Gohmaraq's own hurtbox) and two projectile
+  // grazes. With NEAR now derived from the boss's own hurtbox size, a one-beat
+  // flinch on a fresh opening (see OPEN_FLINCH below), and the chain-swing loop
+  // re-checking distance before every press rather than only after, the same
+  // fight now ends on SIX 2 qh projectile grazes and zero contact touches —
+  // contact damage during the engage-and-swing maneuver is gone, confirmed
+  // over several re-runs at this NEAR value. That NARROWS the remaining
+  // problem rather than solving it: the periodic slam-triggered
+  // shot burst is now the SOLE source of chip damage, and a reactive per-shot
+  // dodge for it was already tried in a previous session and measured NET
+  // NEGATIVE (see docs/NEXT-SESSION.md's boss-verb section for the numbers and
+  // the wall-cornering failure mode before attempting it again).
+  //
   // It is committed because the scaffolding is right and the traps it
   // already closed are expensive to rediscover; it is NOT referenced by
   // tools/playthrough-route.mjs, because a route step that cannot reliably
@@ -755,11 +776,31 @@ export async function installRuntime() {
     for (let i = 0; i < 300 && !g.boss; i++) yield 0;
     if (!g.boss) throw new Error('boss: nothing to fight in ' + g.mapId + ' ' + (g.room && g.room.key));
     const sword = () => slotBit('sword') || BIT.b;
-    // The same numbers dFight uses, for the same reasons: strike from the near
-    // band, then break contact. A boss does contact damage like anything else,
-    // and the first cut of this verb held the stick toward the boss while the
-    // eye was open — three touches and a new game does not have a fourth.
-    const NEAR = 18, BACKOFF = 30;
+    // dFight's NEAR (18) is tuned for ordinary enemies, whose hurtboxes are far
+    // smaller than a boss's. Measured directly, instrumenting every hurt() call
+    // in a real 3-heart Gohmaraq fight (seed 20260806, no god mode): of the four
+    // hits the player took, TWO were CONTACT touches — 4 qh apiece, a third of
+    // the whole health pool each — landed while `weakOpen` was true, not a graze
+    // from a projectile. dFight's 18 puts the "close enough, swing" trigger
+    // INSIDE Gohmaraq's own hurtbox (hb 26x20, half-extent 13, against the
+    // player's own 10x7 hurtbox, half-extent 5 — bodies already touch by 18)
+    // rather than in the band further out where the sword (reach 13 + gap 3 =
+    // 16 past the player's own edge) can still land a hit without the two
+    // bodies overlapping. So this NEAR is derived from the boss's own size
+    // instead of borrowed from dFight's: half the larger of the boss's hurtbox
+    // dimensions, plus the player's own hurtbox half-extent, plus a small
+    // clearance — generic across every boss's `hb`, not a Gohmaraq special case.
+    const bossHb0 = g.boss.hb || { w: g.boss.w, h: g.boss.h };
+    const playerHb0 = (g.player && g.player.hb) || { w: 10, h: 7 };
+    // +8, not +4: the "face, then swing" pair below is two frames of closing
+    // movement in its own right (holding a direction always moves the player
+    // in this engine — there is no separate "face only" input), and the boss
+    // can be closing from its own side at the same time. Measured directly: a
+    // +4 clearance still let one contact hit through per fight (the boss
+    // patrolling toward the player during those two frames was enough to
+    // close the gap); +8 was the smallest margin that closed it in this seed.
+    const NEAR = Math.round(Math.max(bossHb0.w, bossHb0.h) / 2 + Math.max(playerHb0.w, playerHb0.h) / 2) + 8;
+    const BACKOFF = 30;
     // A charge (src/game/enemy.js `charge()`) commits to a straight dash at
     // 1.9 px/f down whichever axis it last saw the player on — far outrunning
     // every other move in this verb (1.0 px/f walking, ~1.4 diagonal). The
@@ -768,6 +809,30 @@ export async function installRuntime() {
     // first (windUp/stun), so there is always a warning. Latched per charge
     // so the side doesn't reconsider mid-dash off a sign that's gone noisy.
     let chargeSide = 0;
+    // Every slam-style opener in this file (`gohmaraqSlam` and its siblings)
+    // fires its shot burst AIMED AT THE PLAYER in the exact same call that
+    // opens the weak point — so the instant `weakOpen` flips true, there is
+    // often a spread already in flight toward wherever the player was
+    // standing. The old "close the distance" branch below beelines the player
+    // straight at the boss the moment it reads `weakOpen`, which is straight
+    // BACK UP the line those shots just travelled — the two are on a collision
+    // course by construction. Measured directly (seed 20260806, real combat,
+    // instrumenting every hurt() call): most of the chip damage taken landed
+    // as `proj=true` hits on the frames right after an opening, not during the
+    // chase or the melee trade itself.
+    // `wasWeakOpen` latches so this fires ONCE per opening, not every frame —
+    // an unconditional "if far, back off" rather than an edge-triggered one is
+    // the bug a previous session already found and fixed (see the comment
+    // below on the no-invuln-banked branch): a boss that keeps patrolling while
+    // the player retreats toward a corner can hold "far" true forever. A fixed
+    // handful of frames on the RISING EDGE only cannot loop, so it cannot
+    // reintroduce that failure.
+    let wasWeakOpen = false;
+    const OPEN_FLINCH = 16;
+    // Safety valve on the fresh-engagement chain below: a boss whose weak
+    // point happens to stay open a very long time should not pin the player
+    // in melee forever on the strength of one favourable read.
+    const MAX_FREE_SWINGS = 6;
     // CLAUDE.md: diagonal movement is not normalised, full speed both axes —
     // so a single-axis chase leaves real ground speed on the table. Measured
     // directly: closing on the far side of a knockback with one axis at a
@@ -826,6 +891,16 @@ export async function installRuntime() {
       const backPerp = axisX ? (dy > 0 ? BIT.up : BIT.down) : (dx > 0 ? BIT.left : BIT.right);
 
       if (b.weakOpen) {
+        if (!wasWeakOpen) {
+          wasWeakOpen = true;
+          // A fresh opening, read from far away: hold off one beat rather than
+          // beelining into whatever the opener just fired, then re-read the
+          // situation from scratch (invuln, distance, all of it) next frame.
+          if (adx + ady > NEAR + 6) {
+            for (let i = 0; i < OPEN_FLINCH && f < budget; i++) { yield fence(backAlong | backPerp); f++; }
+            continue;
+          }
+        }
         // Invulnerability frames are the only free hits in this game. A touch
         // costs a quarter of a new game's hearts and buys PLAYER_INVULN_FRAMES
         // (46f) of contact immunity, minus the 12f knockback lock that opens
@@ -866,13 +941,56 @@ export async function installRuntime() {
         // on us, so there is nothing here worth backing away from before the
         // swing.
         if (adx + ady > NEAR + 6) { yield fence(towardDiag(dx, dy)); f++; continue; }
-        // In range: face it, swing, then get out before it closes.
-        yield fence(toward); f++;
-        yield fence(toward | sword()); f++;
+        // In range: chain swings for as long as the window and the player's
+        // own safety hold, instead of retreating after exactly one. A
+        // slam-doubled LOW-tide window is often open for well over a hundred
+        // frames (see gohmaraqSlam's `openFor * 2`), and one swing spends only
+        // 14 of them — the invuln-banked branch above already knows this
+        // (it chains off a hit's own invuln clock); this is the same idea for
+        // a FRESH engagement that has not been touched yet, so there is no
+        // clock to chain off and the loop has to check its own safety instead:
+        // still open, still in range, and the player has not just been hit.
+        // No `toward` press during the recovery wait — holding it would creep
+        // the player closer every one of those 12 frames with nothing to show
+        // for it, since another swing cannot start until this one's done, and
+        // that creep is exactly what used to walk the player into contact.
+        // Gohmaraq keeps patrolling even with its eye open (only the slam's
+        // own windUp freezes it), so the recovery wait has to watch distance
+        // live too — standing put while a patrolling boss walks itself into
+        // the player is the same contact hit either way.
+        for (let s = 0; s < MAX_FREE_SWINGS && f < budget; s++) {
+          const dx3 = b.cx - p.cx, dy3 = b.cy - p.cy;
+          const ax3 = Math.abs(dx3), ay3 = Math.abs(dy3);
+          // The patrol may have closed the gap since the last swing's recovery
+          // check (that one only watches the wait between presses, not the
+          // instant before the next press). Re-verify here too rather than
+          // assume nothing moved: a repeated `face3` press is itself a step
+          // toward the boss, and stepping toward it from inside contact range
+          // is the same bug this whole rewrite exists to close.
+          if (ax3 + ay3 < NEAR) break;
+          const face3 = ax3 >= ay3 ? (dx3 > 0 ? BIT.right : BIT.left)
+                                    : (dy3 > 0 ? BIT.down : BIT.up);
+          yield fence(face3); f++;
+          yield fence(face3 | sword()); f++;
+          for (let i = 0; i < feel.SWING_FRAMES - 2 && f < budget; i++) {
+            const dx5 = b.cx - p.cx, dy5 = b.cy - p.cy;
+            const ax5 = Math.abs(dx5), ay5 = Math.abs(dy5);
+            if (ax5 + ay5 < NEAR) {
+              yield fence(ax5 > ay5 ? (dx5 > 0 ? BIT.left : BIT.right) : (dy5 > 0 ? BIT.up : BIT.down));
+            } else {
+              yield 0;
+            }
+            f++;
+          }
+          if (!b.weakOpen || b.dead || p.hurtTime > 0 || p.invuln > 0) break;
+          const dx4 = b.cx - p.cx, dy4 = b.cy - p.cy;
+          if (Math.abs(dx4) + Math.abs(dy4) > NEAR + 6) break;
+        }
         for (let i = 0; i < BACKOFF && f < budget; i++) { yield fence(backAlong | backPerp); f++; }
         continue;
       }
       // Shelled: nothing to hit. Keep off it and wait out the tell.
+      wasWeakOpen = false;
       if (adx + ady < 72) { yield fence(backAlong | backPerp); f++; continue; }
       const room = g.room;
       const ox = (room ? room.pw : 160) / 2 - p.cx, oy = (room ? room.ph : 144) / 2 - p.cy;
