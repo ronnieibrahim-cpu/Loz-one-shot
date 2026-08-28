@@ -590,6 +590,79 @@ class of enemy does not travel to a differently-shaped one for free — ask
 the entity's own hitbox, the same way `canOccupy` asks the tile's own flags,
 rather than reusing a number that happened to work elsewhere.**
 
+**A FIELD NAME REUSED ACROSS TWO UNRELATED SYSTEMS MADE EVERY MULTI-PHASE
+BOSS IN THE GAME PERMANENTLY INVULNERABLE PARTWAY THROUGH ITS OWN FIGHT, AND
+IT LOOKED EXACTLY LIKE A VERB PROBLEM.** `Boss.phase` (`src/game/enemy.js`) —
+the boss's own combat-phase index, 0/1/2, advanced as its hp crosses each
+phase's `above` threshold — and `Entity.phase` (`src/game/entity.js`, read
+every frame by `Game.updatePhaseShift`, `src/game/game.js`) are the SAME
+property on the SAME object, and they mean two completely unrelated things.
+`Entity.phase` is which TIDE LEVEL a D2-style phasing enemy belongs to;
+`null` for everything else. `updatePhaseShift` reads it on every entity every
+frame: if `e.phase != null` and it does not equal the room's current tide,
+the entity goes `hidden = true`, `harmless = true`, and has `invuln`
+RE-ARMED TO AT LEAST 2 EVERY SINGLE FRAME for as long as the mismatch holds.
+Every `Boss` used to write its own phase index straight into `this.phase`,
+which is exactly the field that check reads — so the instant a boss's
+combat-phase index stopped matching the room's tide level, it became
+permanently hidden, harmless, and un-hittable (`Enemy.hurt`'s `if
+(this.invuln > 0) return false` never has a chance to see invuln reach 0).
+
+**Why nothing caught this for as many sessions as it did: phase index and
+tide level are both small integers starting near 0, so they coincide during
+a boss's FIRST phase whenever that boss's own design tide is LOW (0).**
+Gohmaraq (fought at LOW) landed five real sword hits with nothing wrong
+visible, then went permanently untouchable the instant it left phase 0 —
+which looked, from every angle tried, like a POSITIONING problem: the boss
+kept charging, the player kept dodging, no hit landed, so three separate
+sessions (and three reverted fixes in this one alone — see
+`docs/NEXT-SESSION.md`) went looking for a movement/tactics answer. The
+actual proof came from doing the opposite of what the symptom suggested:
+deliberately NEARLY DISABLING the thing that looked like the cause (cutting
+the boss's charge `range` from 130 to 20) and getting the EXACT SAME lock
+at the exact same hp — which is only possible if the charge was never the
+mechanism. That result is what sent the search into `Enemy.hurt`/
+`Boss.hurt` instead of back into the movement code for a fourth time.
+**When a "fix the obvious cause" experiment changes NOTHING about the
+symptom, that is not a failed experiment — it is proof the obvious cause
+is not the cause, and the more valuable result of the two.**
+
+**The fix is a rename: `Boss.combatPhase` instead of `Boss.phase`.** Nothing
+else in the engine reads `boss.phase` for the combat-index meaning, so this
+is the whole fix. `Entity.phase` now stays `null` for every boss, exactly
+like every other non-phasing entity, and `updatePhaseShift` correctly skips
+it. Measured in godmode (`check-bosses.mjs`, same seed, same setup): D2
+Anemos and D6 Nereth go from **0 damage across the whole life of this
+checker** to full kills (30/30, 80/80); D3 Gloomtide the same (36/36) but
+now finishes so fast the checker's own 400-frame sampling window can miss
+the entire fight and needed its own fix (accept `progress.beaten[id]` as
+proof the shell opened, since a kill cannot happen through a shell that
+never did); D4 Wyverna and D5 Rootmaw roughly double (20->40/44, 20->44/52).
+Real combat (no god mode), Gohmaraq only: 5 sword hits -> 6 at three hearts,
+and "5 then permanently stuck" -> 8 (sporadic, not continuous — the
+charge-lock from the sessions before this one is real and is now the WHOLE
+remaining problem, not one of two) at six hearts.
+
+**A second, narrower bug was hiding behind the first, and only became
+visible once bosses could land hits again:** `tools/walk-dungeons.mjs`'s
+ledge-hop probe reuses one player object across all 41 placements and
+resets its position, z-state, invuln, and hearts between them, but not
+`hurtTime`/`knockTime`/`knockX`/`knockY`. `Player.update` early-returns the
+ENTIRE input pipeline while `hurtTime > 0`, and drives a fixed knockback
+step via `moveEntity` for as long as `knockTime > 0` inside that same early
+return. The D1 Clawcrab Den miniboss (itself a `Boss` instance, so itself
+carrying the phase bug above) had never landed a hit with knockback in this
+harness before; once it could, the very next, completely unrelated,
+overworld ledge probe silently inherited a live knockback and read as "the
+hop did not fire" for a room it had nothing to do with. **A live-engine test
+harness that reuses one entity across many probes has to reset every field
+a hit can set, not just the ones the probe itself is about — half a reset
+is a state leak with a very long fuse.** `tools/replays/
+d1-clawcrab-den-wide.json` needed re-recording for the same reason every
+prior movement fix needed one: its own camera invariants
+(`roomChanges=1, camMaxX=160, camEndX=0, camMaxY=0`) are unchanged, only the
+incidental miniboss-fight timing inside the tape moved.
+
 **`check-anchor.mjs` PROVES REACH AND CALLS IT A CROSSING, and for the Iron
 Pipe the two are different tiles.** It reports "d1 0,4,2: one anchor placement
 crosses it — stand 0,3 at LOW, bite 1,3". The throw really does carry two

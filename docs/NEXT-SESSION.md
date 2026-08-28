@@ -1,4 +1,259 @@
-## The two big contact hits are gone, and the real bottleneck is now visible: a charge-range that covers the arena (this session)
+## THE REAL BUG: every boss in the game went permanently invulnerable partway through its own fight, and it was never the verb (this session, after the section below)
+
+**Read this before touching `dBoss` again.** Everything in the section below
+— three reverted approach-path fixes, the "charge range covers the arena"
+hypothesis — was investigation into a symptom. The actual disease was an
+engine bug that had nothing to do with positioning, and fixing it changes
+the boss-fight picture for the whole game, not just Gohmaraq.
+
+**The bug, found by testing the "shrink the charge range" hypothesis from
+the section below and getting a nonsense result.** Cutting Gohmaraq's
+phase-2 charge `range` from 130 down to 20 (nearly disabling it) and re-
+measuring in real combat produced the EXACT SAME stuck-at-hp-14 lock as
+before — proof the charge mechanic was never the cause. Tracing frame-by-
+frame with the real engine's own `swordBox()`/`rect()` overlap math (not a
+hand model of it) found a landed swing whose hit box genuinely overlapped
+the boss and still did nothing, because `game.boss.hidden` and
+`game.boss.harmless` were both `true` — permanently, from that point in the
+fight on.
+
+**Root cause: `Boss.phase` (0/1/2..., the boss's own combat-phase index,
+`src/game/enemy.js`) and `Entity.phase` (a completely different field —
+which TIDE LEVEL a D2-style phasing enemy belongs to, read every frame by
+`Game.updatePhaseShift`, `src/game/game.js`) are the same field name on the
+same object.** Every `Boss` used to write its combat-phase index straight
+into `this.phase`, which is the exact field `updatePhaseShift` reads to
+decide "is this entity affiliated with a tide level other than the current
+one, and if so, hide it, make it harmless, and refuse it invuln > 0 every
+single frame." A boss's own combat-phase index and a room's tide level are
+both small integers starting near 0, so the two coincide during a boss's
+FIRST combat phase whenever that boss's own design tide is LOW (index 0 ==
+tide 0) — which is why this went unnoticed for as many sessions as it did:
+Gohmaraq (fought at LOW) landed its first five hits completely normally,
+and became **hidden, harmless, and re-invulnerable every frame** the
+instant it left phase 0, because phase index 1 no longer equalled tide 0.
+Every multi-phase boss in the game has the same defect; which phase
+transition breaks it depends only on whether that boss's OWN tide happens
+to equal that phase's index.
+
+**The fix is a rename, not a new feature: `Boss.combatPhase` instead of
+`Boss.phase`, throughout `src/game/enemy.js`; nothing else in the engine
+reads `boss.phase` for the old meaning.** `Entity.phase` now stays `null`
+for every boss, exactly like every other entity that isn't a D2 phasing
+enemy, and `updatePhaseShift` correctly skips it.
+
+**Measured, godmode (`check-bosses.mjs`, unchanged setup, same seed) —
+before this fix only Gohmaraq/Wyverna/Rootmaw took ANY damage and D2/D3/D6
+took ZERO:**
+
+| Boss | Before | After |
+|---|---|---|
+| D1 Gohmaraq | 10/24 | 12/24 (still not a kill — see below) |
+| D2 Anemos | **0**/30 | **30/30 — FULL KILL** |
+| D3 Gloomtide | **0**/36 | **36/36 — FULL KILL** (see checker note below) |
+| D4 Wyverna | 20/44 | 40/44 |
+| D5 Rootmaw | 20/52 | 44/52 |
+| D6 Nereth | **0**/80 | **80/80 — FULL KILL** |
+
+Three of six bosses go from "the harness has never dealt a point of damage"
+to "dead," in godmode, with the exact same generic `dBoss` verb that was
+already there — because they were never actually being fought, they were
+being hidden from partway through. D3's own godmode fight is now so fast
+(dead by frame ~300) that `check-bosses.mjs`'s 400-frame sampling window
+can finish the WHOLE fight before its first checkpoint, reading as "0
+samples, never opened" — a checker instrumentation gap, not a real
+failure. Fixed in the same commit: the "weak point opens" assertion now
+also accepts `progress.beaten[id]` as proof (a beaten dungeon cannot happen
+through a shell that never opened), and the damage line prints `(BEATEN)`
+when that's what actually happened.
+
+**Measured, REAL combat (12 qh / 24 qh, no god mode, seed 20260806,
+Gohmaraq only — the only boss this repo has real-combat infra for) — and
+report these numbers exactly, not the inflated ones from mid-session,
+which were run against an accidentally-uncommitted `range: 20` experiment
+on `bosses.js` and are wrong:**
+
+- **3 hearts (12 qh): 6 sword hits land (24 -> 12 hp), up from 5 (24 -> 14)
+  before this fix.** The player still dies at frame 1540 (was 1520). One
+  more real hit, not a win.
+- **6 hearts (24 qh): 8 sword hits land (24 -> 8 hp), up from "5 then
+  permanently stuck at 14" before this fix.** Player still dies, frame
+  3080. The extra hits (at 1500, 3020, 3060) land SPORADICALLY rather than
+  never — the charge-lock from the section below is real, still unsolved,
+  and still the thing standing between this boss and a win. It is just no
+  longer compounded by total invulnerability, and the two are now
+  separable problems.
+
+**So: the charge-lock investigation below was not wasted and is not
+obsolete — it is now the WHOLE remaining problem, instead of one of two.**
+Everything that section found (the lock is real, three approach-path fixes
+didn't touch it, the charge's `range: 130` covers most of the arena) still
+holds. What changed is the ceiling: Gohmaraq at 6 hearts now gets FOUR
+hits past where it used to be permanently capped, purely from removing the
+false invulnerability, with zero verb changes.
+
+**Also found, while diagnosing this in `tools/walk-dungeons.mjs`'s own
+ledge-hop harness, and fixed in the same session — a real, if narrow, test-
+isolation gap that this bug fix exposed rather than caused:** the ledge
+probe reuses ONE player object across all 41 placements and resets its
+position/z/invuln/hearts between them, but not `hurtTime`/`knockTime`/
+`knockX`/`knockY`. `Player.update` early-returns the entire input pipeline
+while `hurtTime > 0`, driving a fixed `knockX/knockY` step via `moveEntity`
+for as long as `knockTime > 0` inside that same early return. This was
+invisible for the whole life of the checker because the D1 Clawcrab Den
+miniboss fight earlier in the walk — itself a `Boss` instance, so itself
+hit by the SAME `phase` collision — never used to land a hit with
+knockback; now that it can, the very next unrelated overworld ledge probe
+inherited a live knockback and read as "the hop did not fire" for a reason
+that had nothing to do with that ledge. Fixed by clearing all four fields
+in `place()`, in both places player state gets reset. `tools/replays/
+d1-clawcrab-den-wide.json` also needed re-recording — its own camera
+invariants (`roomChanges=1, camMaxX=160, camEndX=0, camMaxY=0`) are
+unchanged, only the incidental combat timing inside it moved, exactly the
+shape CLAUDE.md's own hard-won-lessons describe for every prior movement
+fix.
+
+**Verified clean**, beyond the boss-specific checks above: `test.mjs`
+(59/59), `walk-dungeons.mjs` (23/23, stable across repeats), `replay.mjs`
+(51/51, one re-recorded tape), `solve-switches.mjs` (9/9), `check-gates.mjs`
+(26/26), `check-motion.mjs` (8/8), `check-playthrough.mjs` (19/19,
+unaffected — the route doesn't reach a boss yet), `check-hearts.mjs`
+(114/114), `check-items.mjs` (91/91), `check-overworld.mjs` (17/17),
+`check-progression.mjs` (19/19), `check-build.mjs`. Not re-run this
+session, lower risk given the change's scope (only `Boss`'s own class):
+`check-charms`, `check-towns`, `check-music`, `check-torches`,
+`check-anchor/cleats/lens/bellows/reefseed/dredge/trade`, `validate`.
+
+**Next session, in order:**
+
+1. **The charge-lock is now the ONLY thing between Gohmaraq and a win, and
+   it is worth another real attempt now that the trade isn't being eaten by
+   a phantom invulnerability.** Re-read the section below for what's
+   already ruled out (single-axis approach, tell-phase advance,
+   backoff-interrupt — all measured neutral-to-negative) before trying a
+   fourth idea. The still-untried lever from that section: check by hand
+   whether a human can beat this fight in its current tuning before
+   assuming the verb is the thing to fix again.
+2. **Wyverna and Rootmaw are worth a real-combat harness now too** — 40/44
+   and 44/52 in godmode is close enough to a kill that they may already be
+   winnable, or very nearly, with the existing generic verb. Nobody has
+   built the non-godmode measurement rig for them yet (see this session's
+   `tools/actor-runtime.mjs`-adjacent scratch scripts, not committed —
+   rebuild from `check-bosses.mjs`'s own boilerplate with `godMode: false`,
+   the same way this session and the last two did for Gohmaraq).
+3. **Gloomtide and the "swimming-blocks-swinging" finding may need
+   revisiting.** It is a genuine full kill in godmode now (36/36), which
+   means the OLD "0 damage, per-boss tactics needed" diagnosis was at least
+   partly this bug, not purely the swim-block issue `check-bosses.mjs`'s own
+   comment describes. Whether the swim-block problem is still real on its
+   own, once fought without the phase-collision masking it, is now an open
+   question rather than a settled one.
+4. Once Gohmaraq is a measured win at 3 hearts, wire `dBoss` into
+   `playthrough-route.mjs` past `d1/0,3,2`.
+5. The Boss Key / third-key pass behind the Clawcrab door and the other five
+   dungeons' routes are both still undone and both still blocked on job 1.
+
+---
+
+## Three attempts at the charge-lock, three reverts — the lock survives every approach-path fix (previous session, before the fix above)
+
+**Still stuck at exactly 5 hits, hp 14, at ANY heart count.** Last session's
+finding (below) was that once Gohmaraq's hp crosses into phase 2 (<=14.88,
+i.e. right after the 5th sword hit lands), the fight gets stuck in a
+charge/dodge loop and the verb never lands a 6th hit — measured even with a
+6-heart (24 qh) health budget, so it is not a health problem, it is a
+positioning one. This session tried three different fixes to the closing
+path, all against the same real-combat harness (12 qh and 24 qh, no god
+mode, seed 20260806), and reverted all three: each was neutral-to-negative
+on survival time and NONE of them ever landed a 6th hit. Recording all
+three so nobody re-tries them blind:
+
+1. **Single-axis approach instead of diagonal** (`towardAxis`, close only the
+   dominant axis, applied to the whole "no invuln banked" closing branch).
+   Reasoning: a pure diagonal approach shrinks both axes at once, walking
+   straight into the boss's alignment tolerance long before swing range.
+   Measured: no more hits landed (still 5), and WORSE survival on both
+   heart counts (12 qh: died at frame 1420 vs the 1520 baseline; 24 qh:
+   2340 vs 3340) — a slower approach is pure loss when applied to the
+   uncontested opening approach too, which doesn't have an alignment problem
+   yet.
+2. **Advance during the charge's frozen `tell`** (18 frames where
+   `charging=true` but `Boss.update`'s own `if (stun>0) return` means the
+   boss hasn't actually started moving yet — confirmed by reading the code,
+   not assumed). Idea: since the boss can't hit you yet, use those 18 frames
+   to close ground diagonally instead of spending them on a pure sidestep.
+   Measured: still exactly 5 hits, still permanently stuck, and slightly
+   WORSE survival on both heart counts (12 qh: 1480 vs 1520; 24 qh: 3140 vs
+   3340).
+3. **`justDodged`: hold the axis a dodge just bought, closing only the
+   farther axis until in range, but ONLY right after a charge** (not on the
+   opening approach, unlike attempt 1 — scoped specifically to the
+   re-approach that was measured re-triggering the next charge almost
+   immediately). This one is worth reading closely if picked back up: traced
+   frame-by-frame, it DID lengthen some individual gaps between charges (one
+   window went from the usual ~25 frames to 120), so the underlying idea —
+   that `towardDiag`'s straight-line re-approach undoes the dodge's own
+   separation and re-triggers alignment — is confirmed correct by the trace.
+   It still never produced a 6th hit (other windows reverted to the usual
+   ~25-frame immediate re-trigger), and overall survival was still worse (12
+   qh: 1480 vs 1520; 24 qh: 3160 vs 3340), likely because `towardAxis` is
+   slower in the frames it doesn't help, and that cost outweighs the
+   occasional longer window.
+
+**A fourth thing, tried and also reverted, that changed NOTHING measurable at
+12 qh and made 24 qh slightly worse for reasons that look like RNG-adjacent
+timing drift rather than a real mechanism**: cutting the post-swing 30-frame
+`BACKOFF` retreat short the instant `b.charging` goes true mid-retreat
+(currently that inner loop is blind to charging — it cannot dodge a charge
+that starts while it's already retreating). At 12 qh the two runs were
+BYTE-IDENTICAL, meaning charging never actually interrupted a backoff on
+that seed at that heart count. At 24 qh the two runs were identical through
+11 of 12 chip hits and only diverged in the final ~240 frames — so this
+really did change behaviour exactly once, late in the fight, and it came
+out negative. Not obviously wrong, just unproven; reverted on the same
+"measurably worse, so out" rule as the other three.
+
+**The pattern across all four: nothing that only reshapes the approach OR
+retreat PATH breaks the lock.** That's worth taking as a real result, not
+just bad luck four times over. A new hypothesis for whoever picks this up
+next, NOT yet tried: **Gohmaraq's phase-2 `charge()` call passes `range:
+130`, which is close to the whole arena** (`src/data/bosses.js`) — so
+almost anywhere the player can stand after a dodge is still "in range," and
+the lock may not be a verb bug at all so much as a fight that is barely
+answerable by ANY positioning once phase 2 begins. Before trying a fifth
+approach-path fix, it may be worth checking whether the fight is winnable
+by a human at all in its current tuning (a manual playtest, keyboard input,
+not the actor) — if a person can't beat it either, this is a
+`docs/DUNGEON-STATUS.md`-style balance finding (the charge range is
+over-tuned for the arena), not another verb bug, and the fix belongs in
+`bosses.js`, not `actor-runtime.mjs`.
+
+**Next session, in order:**
+
+1. **Before another verb attempt: find out by hand whether this fight is
+   fair.** Load `dist/oracle-of-tides.html` (or run the dev build) and fight
+   Gohmaraq with a keyboard, 3 hearts, no god mode. If a human also can't get
+   a 6th hit in past hp 14 without taking unavoidable damage, the charge
+   range is the thing to retune, not the verb. If a human CAN do it, watch
+   what the verb is missing (does a human wait for the slam's periodic
+   window rather than the charge's? sprint diagonally past the charge line
+   rather than sidestepping? that's the tactic to encode).
+2. If it's a balance issue: retune `range` (and/or `tol`) on Gohmaraq's
+   phase-2 `charge()` call in `src/data/bosses.js`, re-measure with the same
+   harness, and only then does `dBoss` get another attempt at the
+   re-approach path — there is no point tuning a verb against a fight that
+   may not be winnable by design.
+3. Once Gohmaraq is a measured win at 3 hearts, wire `dBoss` into
+   `playthrough-route.mjs` past `d1/0,3,2`, and only then look at the other
+   five bosses — Gloomtide's swimming-blocks-swinging finding in particular
+   needs a real tactic (sink with the Cleats first), not this generic verb.
+4. The Boss Key / third-key pass behind the Clawcrab door and the other five
+   dungeons' routes are both still undone and both still blocked on job 1
+   actually finishing.
+
+---
+
+## The two big contact hits are gone, and the real bottleneck is now visible: a charge-range that covers the arena (previous session)
 
 **Still not a win, and the bottleneck has moved — for the better.** This
 session built a real, repeatable, real-combat measurement (12 quarter-hearts,

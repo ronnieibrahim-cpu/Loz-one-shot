@@ -19737,7 +19737,21 @@ class Boss extends Enemy {
     this.isBoss = true;
     this.oncePerGame = spec.oncePerGame !== false;
     this.intro = spec.intro != null ? spec.intro : BOSS_INTRO_FRAMES;
-    this.phase = -1;
+    // NOT `this.phase` — `Entity.phase` (set in `Entity`'s own constructor,
+    // always `null` unless an entity is spawned with a `phase:` option) is a
+    // completely different thing: which TIDE LEVEL a D2-style phasing enemy
+    // belongs to. `Game.updatePhaseShift` reads `e.phase` on every entity to
+    // decide whether it is "not in this tide" and should go hidden, harmless,
+    // and permanently re-armed at `invuln >= 2` — and every Boss used to set
+    // `this.phase` to its own 0/1/2 combat-phase index, a number of exactly
+    // the same shape. The two happened to agree during a boss's very first
+    // combat phase whenever that boss's own fight tide is LOW (index 0 ==
+    // tide 0), which is why this went unnoticed: Gohmaraq (LOW) landed its
+    // first five hits fine and then went permanently untouchable — hidden,
+    // harmless, re-invulnerable every single frame — the instant it left
+    // phase 0, because index 1 no longer equalled tide 0. `combatPhase` is
+    // the same counter, under a name nothing else in the engine reads.
+    this.combatPhase = -1;
     this.weakOpen = !spec.shell;
     this.deathTime = 0;
     this.dying = false;
@@ -19788,8 +19802,8 @@ class Boss extends Enemy {
     if (this.stun > 0) { this.stun--; return; }
 
     const p = this.currentPhase();
-    if (p !== this.phase) {
-      this.phase = p;
+    if (p !== this.combatPhase) {
+      this.combatPhase = p;
       this.invuln = Math.max(this.invuln, BOSS_PHASE_INVULN_FRAMES);
       if (this.spec.onPhase) this.spec.onPhase(this, game, p);
       game.audio.sfx('charged');

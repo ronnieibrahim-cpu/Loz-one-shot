@@ -704,6 +704,19 @@ for (const p of placements) {
     g.mode = 'play';
     g.progress.hearts = g.progress.maxHearts;
     g.player.invuln = 100000;               // nothing may interrupt the probe
+    // A hit taken in whatever room this SAME player object last stood in
+    // (never recreated between placements) does not stop mattering just
+    // because a new room started. `Player.update` early-returns the whole
+    // input/movement pipeline while `hurtTime > 0`, and drives a fixed
+    // `knockX/knockY` step via `moveEntity` for as long as `knockTime > 0`
+    // inside that same early return — so a stale hit from two placements ago
+    // can silently swallow this probe's entire input (hurtTime) or shove it
+    // sideways mid-hop (knockTime) for a reason that has nothing to do with
+    // this room's ledge. Found the hard way: a miniboss fight earlier in the
+    // walk started landing hits it never used to, and the very next
+    // unrelated overworld ledge probe first drifted off its own input, then
+    // (once knockback alone was cleared) stopped responding to it entirely.
+    g.player.hurtTime = 0; g.player.knockTime = 0; g.player.knockX = 0; g.player.knockY = 0;
     g.entities = g.entities.filter(e => e === g.player);
     g.tide.setLevel(1);
     g.player.z = 0; g.player.vz = 0; g.player.jumping = false; g.player.ledgeHop = null;
@@ -716,6 +729,10 @@ for (const p of placements) {
     // as "the hop did not fire".
     if (g.dialogue) g.dialogue.active = false;
     g.mode = 'play';
+    // A hit from THIS room's own 3-frame settle (unlikely with entities about
+    // to be filtered, but the filter runs before the settle above) is
+    // cleared a second time so nothing from these frames survives either.
+    g.player.hurtTime = 0; g.player.knockTime = 0; g.player.knockX = 0; g.player.knockY = 0;
     return {
       x0: g.player.x, y0: g.player.y,
       tx: Math.floor((g.player.x + 8) / 16), ty: Math.floor((g.player.y + 8) / 16),
