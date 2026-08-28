@@ -1221,7 +1221,35 @@ export class Game {
   updatePhaseShift() {
     const lensUp = this.player ? this.player.lensT > 0 : false;
     for (const e of this.entities) {
-      if (e.phase == null || e.dead) continue;
+      // A name collision, not a design choice: `Boss` (enemy.js) writes its
+      // own attack-stage index into `this.phase` — -1 before the intro ends,
+      // then 0/1/2... as the fight advances — and this loop's `e.phase` is a
+      // completely different field, which TIDE LEVEL a Lens-shifted enemy
+      // belongs to. No boss ever sets `opts.phase` on spawn, so a boss's
+      // `phase` was always meant to read as null here; instead, from the
+      // instant a boss is constructed (`phase` starts at -1, not null) this
+      // pass has been treating every boss as a Lens-phased enemy whose home
+      // tide level is whatever its CURRENT ATTACK STAGE happens to number.
+      // Off that level — which is guaranteed during the intro (-1 is never a
+      // real tide level) and guaranteed for good the moment the fight
+      // advances past whichever stage numbers the same as the room's tide
+      // (Gohmaraq fights at LOW=0, so this held only for attack stage 0) —
+      // the boss was marked harmless, hidden from the screen unless the
+      // player happens to be holding up the Lens, and, the one with no
+      // visible symptom, RE-PINNED TO invuln>=2 EVERY SINGLE FRAME before its
+      // own `Boss.update` had a chance to count it down. `Entity.hurt`
+      // rejects any hit while invuln>0, so a real swing that connected still
+      // did nothing: not a positioning problem, the hit was silently
+      // discarded by the engine. Found by instrumenting `b.invuln` frame by
+      // frame after multiple sessions of tuning the actor's approach came up
+      // empty — the boss stopped taking damage at the exact frame its attack
+      // stage advanced, independent of stance or distance. Confirmed at the
+      // other end too: godmode `check-bosses.mjs` damage jumped on this fix
+      // alone, no positioning change — Gloomtide 0/36 -> a full kill, Nereth
+      // 0/80 -> a full kill, Anemos 0/30 -> 22/30 — bosses this repo's own
+      // history blamed on per-boss tactics ("swimming Link cannot swing")
+      // that were never the real blocker.
+      if (e.phase == null || e.dead || e.isBoss) continue;
       // The BASE level, deliberately: a phased enemy belongs to a tide state
       // of the world, not to the patch of floor it happens to stand on. An
       // anchor holding one corner of the room at MID must not summon half a

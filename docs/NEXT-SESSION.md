@@ -1,4 +1,89 @@
-## The boss verb's real ceiling found: a charge-lock, not chip damage — six tried fixes, all reverted (this session)
+## A real engine bug fixed: every boss was invisible during its own intro and unhittable for most of every fight (this session)
+
+**Landed, not just measured — a one-line fix in `src/game/game.js`, full
+writeup in `docs/HANDOFF.md`'s hard-won-lessons section (top entry).**
+Picked back up the boss-verb thread from the session below and, instead of
+another positioning tweak, instrumented `boss.invuln` frame by frame in real
+combat. It was frozen at `1` for the whole rest of the fight the instant
+Gohmaraq left its first attack stage — not a `dBoss` bug at all: `Boss`
+(`src/game/enemy.js`) writes its own attack-stage number into `this.phase`,
+and `Game.updatePhaseShift` (`src/game/game.js`) reads a completely
+different `e.phase` — which tide level a Lens-shifted enemy belongs to —
+with no guard against the two colliding. Every boss in the game has been
+treated as a Lens-phased enemy of whatever tide level its CURRENT ATTACK
+STAGE happens to number, since the moment it spawns (`phase` starts at `-1`,
+not `null`). Off that level: `harmless`, `hidden` unless the Lens is up, and
+**re-pinned to `invuln >= 2` every single frame**, silently voiding real
+hits.
+
+**Two consequences, one invisible until this session, one visible in every
+screenshot anyone would have thought to take:**
+
+1. Every godmode boss fight in `check-bosses.mjs` was being capped by this,
+   misdiagnosed for sessions as per-boss tactics. Fixed with NO positioning
+   change: Gloomtide 0/36 -> a full kill, Nereth 0/80 -> a full kill, Anemos
+   0/30 -> 22/30. `check-bosses.mjs` needed one companion fix (trust
+   `st.beaten` as well as a live sample, since a fight that finishes inside
+   one sampling chunk can finish before the loop ever reads `weakOpen`) —
+   otherwise unchanged, 13/13.
+2. **Every boss's 80-90 frame intro rendered as an empty room with a health
+   bar and no boss in it**, for the whole life of this project, because
+   `hidden` was true unless the player happened to be holding up the Lens.
+   Confirmed by screenshot, not assumed — before/after images exist for
+   Gohmaraq's intro and the difference is total (empty tide-drained room vs.
+   the crab standing in it). This is squarely the kind of fidelity break
+   Goal 1 exists to catch, and nothing in the checker table could have:
+   every assertion about a boss only ever proved it *existed*, never that it
+   was *visible*.
+
+**What this does NOT do: it does not make Gohmaraq's 3-heart fight winnable.**
+Gohmaraq's own design tide (LOW=`0`) equals its first attack stage's index,
+so the specific measurements from the session below were never touched by
+this bug — re-ran the exact same harness before and after, byte-identical.
+The boss verb's actual ceiling (the approach never reaching swing range a
+second time, documented below) is untouched by this fix and is still the
+open problem for "job 1."
+
+**One more real fix landed alongside it, found while validating this one
+rather than assumed safe:** `tools/walk-dungeons.mjs`'s ledge-hop probes
+drive the game with real keypresses against its wall-clock loop rather than
+the frame-perfect scripted pad every other checker uses, and the phase-shift
+fix — by making boss code do strictly more real work (rendering a boss that
+used to be wrongly hidden) — shifted per-dungeon `page.evaluate` wall-clock
+cost just enough to let a different number of stray background frames tick
+between round trips, landing `game.frame` on a different absolute value by
+the time the ledge probes started caring about it (91 vs. 92, one frame,
+confirmed by printing it directly). Not a logic regression — bisected to
+prove it — but a real, pre-existing fragility of testing with real time at
+all, which `main.js`'s own comment on `__harness.driven` already names.
+Fixed by parking the game in `driven` mode for every frame-insensitive pass
+before the ledge probes and only releasing it (with a clean `acc`/`last`)
+right before the first real keypress, rather than touching the tuned
+`frames(22)` hop-detection constant. Stable across repeated runs both ways.
+Full mechanism in `docs/HANDOFF.md` — read it before touching this file's
+timing again.
+
+**Verification, all green:** `test.mjs` 59/59, `replay.mjs` 51/51 (byte
+identical — this fix changes no recorded gameplay), `check-bosses.mjs`
+13/13 (numbers above), `check-playthrough.mjs` 19/19, `walk-dungeons.mjs`
+23/23, `check-overworld.mjs` 17/17, `solve-switches.mjs` 9/9, `check-gates.mjs`
+26/26, `check-hearts.mjs` 114/114, `check-lens.mjs` 24/24 (the Lens-phased
+KEESE this mechanic actually exists for, unaffected). `npm run build` run,
+`check-build.mjs` passes, `dist/oracle-of-tides.html` committed.
+
+**Next session:** the boss verb's real ceiling (below) is still open and
+this fix does not change it. Worth a fresh look now that every boss's
+godmode numbers are real rather than bug-suppressed: re-measure the OTHER
+five bosses' real-combat trade ratios (not just godmode), since several of
+them may turn out much closer to winnable than "0 damage, needs a special
+tactic" suggested. Gloomtide in particular — its whole "swimming Link cannot
+swing" blocker was a misdiagnosis of this exact bug; whether it also needs
+the sink-first tactic once the bug is gone is now an open question again,
+not a settled one.
+
+---
+
+## The boss verb's real ceiling found: a charge-lock, not chip damage — six tried fixes, all reverted (previous session)
 
 **Still not a win, and this session's finding changes what "win" needs.**
 Every prior session read the 3-heart death (24->14 boss hp, player dead) as a

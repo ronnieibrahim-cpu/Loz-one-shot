@@ -121,6 +121,21 @@ for (let i = 0; i < 140 && await page.evaluate(() => window.__game.mode === 'cut
   await page.keyboard.press(i % 2 ? 'Enter' : 'x'); await frames(4);
 }
 
+// Everything from here to the ledge probes below inspects room/entity state
+// synchronously and never calls `frames()` — it does not need real gameplay
+// simulation at all. Left in real-time mode, `main.js`'s own wall-clock loop
+// (see its comment: "how many times it steps depends on how busy the
+// machine is") keeps ticking `game.frame` in the background during every
+// `await page.evaluate(...)` round trip below, by however many frames the
+// machine happens to fit in the gap — a real, if usually invisible, source
+// of `game.frame` drift by the time the ledge probes start caring about
+// frame-relative timing again. `driven` mode is exactly what `__harness`
+// exists to give a caller instead (its own comment says so); parking the
+// game there for this whole stretch and only releasing it — with a clean
+// `acc`/`last` — right before the first real keypress removes the drift
+// instead of hoping the machine stays fast enough not to matter.
+await page.evaluate(() => window.__harness.takeOver());
+
 // ---------------------------------------------------------------- part 1: walk
 // Six dungeons, and six is now what the data holds: the Reef Palace and the
 // Abyssal Keep were folded into d6 by the P8/D6 consolidation. Read out of the
@@ -674,6 +689,12 @@ const byDir = {};
 for (const p of placements) byDir[p.dir] = (byDir[p.dir] || 0) + 1;
 console.log(`  ${placements.length} ledge runs placed (${
   Object.entries(byDir).map(([d, n]) => `${d} ${n}`).join(', ') || 'none'})`);
+
+// Back to real time for the probes below, which drive the player with
+// actual keypresses — `release()` also zeroes `acc` and restamps `last`
+// (src/main.js), so the drift the comment above `takeOver()` describes
+// cannot have accumulated across the switch.
+await page.evaluate(() => window.__harness.release());
 
 const KEY = { down: 'ArrowDown', up: 'ArrowUp', left: 'ArrowLeft', right: 'ArrowRight' };
 const OPP = { down: 'up', up: 'down', left: 'right', right: 'left' };

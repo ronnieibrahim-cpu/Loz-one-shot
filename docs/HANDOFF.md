@@ -224,6 +224,131 @@ is in the page, and nothing steps until you say so.
 
 ## Hard-won lessons — do not rediscover these
 
+**Two fields named `.phase` on the same class hierarchy silently made every
+boss in the game invisible during its own intro, and unhittable for most of
+every real fight — for the whole life of the project, invisible to every
+checker because none of them fights anything at real health.** `Boss`
+(`src/game/enemy.js`) writes its own attack-stage number into `this.phase` —
+`-1` before the intro ends, then `0`, `1`, `2`... as the fight advances.
+`Game.updatePhaseShift` (`src/game/game.js`) reads a COMPLETELY DIFFERENT
+`e.phase` on every entity in the room — which TIDE LEVEL a Lens-shifted
+enemy belongs to (set via `opts.phase` on spawn, e.g. `['keese', 3, 3,
+{ phase: 2 }]` in `src/data/dungeons-a.js`) — and its skip condition was
+`if (e.phase == null || e.dead) continue;`. No boss ever sets `opts.phase`,
+so a boss's `phase` was always meant to read as `null` there. It never did,
+because `-1` and `0`/`1`/`2` are not `null`: from the instant a boss is
+constructed, `updatePhaseShift` treated it as a Lens-phased enemy whose home
+tide level is whatever its CURRENT ATTACK STAGE happens to number. Off that
+level — guaranteed during the intro (`-1` is never a real tide level) and
+guaranteed for good once the fight advances past whichever stage happens to
+match the room's own tide (Gohmaraq fights at LOW=`0`, so this held only for
+attack stage `0`) — the boss got marked `harmless`, `hidden` unless the
+player is holding up the Lens, and, the one with no visible symptom at all,
+**re-pinned to `invuln >= 2` every single frame**, overwriting whatever
+`Boss.update`'s own `this.invuln--` had just counted down to. `Entity.hurt`
+rejects any hit while `invuln > 0`, so a real, correctly-aimed swing that
+connected still dealt nothing — not a positioning failure, the hit was
+silently discarded by the engine, every time, for as long as the fight
+stayed off-phase.
+
+Found three sessions into chasing "why can't the boss-fight actor land more
+hits," by instrumenting `boss.invuln` frame by frame rather than trusting
+distance/positioning as the only suspect — it froze at exactly `1` (one
+frame of `Boss.update`'s own decrement short of the `>=2` re-pin, since
+`updatePhaseShift` runs before entity updates each frame) for the entire
+remainder of the fight the instant Gohmaraq left its first attack stage.
+The fix is one line, `if (e.phase == null || e.dead || e.isBoss) continue;`
+— bosses were never meant to participate in this system at all, and no boss
+spec anywhere sets `opts.phase`, so excluding `isBoss` costs nothing for the
+mechanic's real users (the Lens-phased overworld/dungeon enemies it exists
+for, unaffected — confirmed via `check-lens.mjs`, 24/24, and all 51 recorded
+replays staying byte-identical).
+
+**The bug turned out to be much bigger than the session chasing it:**
+`check-bosses.mjs` runs in GOD MODE, where the player can't be hurt but the
+BOSS still needs its own `invuln` at `0` to take damage — so this bug was
+silently capping every godmode fight too, and every prior session's
+"Gloomtide is within sword reach and still takes nothing, because at MID the
+player is SWIMMING and a swimming Link cannot swing" (this file and
+`docs/NEXT-SESSION.md`, repeated across several boards) was a plausible
+story for a real phenomenon with the wrong cause. Fixing this ONE line, with
+NO positioning or tactics change: Gloomtide went from 0/36 to a full kill,
+Nereth from 0/80 to a full kill, Anemos from 0/30 to 22/30 — all measured in
+the same godmode harness, same seed, same actor script. `check-bosses.mjs`
+needed one small adjustment alongside it: a fight fast enough to finish
+inside its first 400-frame sampling chunk can finish before the loop takes a
+single live sample (`samples: 0` is not the same claim as "never opened");
+trust `st.beaten` — the same signal the dungeon itself uses to mark a fight
+won — as a fallback for that case, don't demand a live sample when a kill
+already proves the shell opened.
+
+**A visual bug nobody had looked closely enough to catch — see it for
+yourself, `tools/shots/` or reproduce with a godmode fight paused mid-intro:
+every boss's dramatic reveal, the whole 80-90 frame intro, rendered as an
+EMPTY ROOM with a health bar and no boss in it**, because `e.hidden = true`
+whenever the Lens isn't up — which is every first encounter a player will
+ever have. This is exactly the kind of thing `docs/ART-DIRECTION.md`'s whole
+premise is built to catch and nothing in this repo's checker table can, in
+the terms this project already uses to explain why some findings need a
+screenshot: *"Compositing two source tiles into one game tile is authoring,
+not extraction... it needs an in-game screenshot... before it is believed."*
+The same is true of "is the boss on screen" — headless assertions proved the
+boss *existed* the entire time this bug shipped; nothing proved it was
+*visible*.
+
+**What this fix does NOT do: it does not make the D1 boss verb win at three
+hearts.** Gohmaraq's own design tide (LOW=`0`) happens to equal its first
+attack stage's index, so the specific 3/6-heart Gohmaraq measurements from
+the two sessions before this one were never touched by this bug in the first
+place — confirmed by re-running the exact same measurement harness before
+and after: byte-identical frame-by-frame outcome, because the actor's
+approach still never reaches swing range a second time in that fight (see
+`docs/NEXT-SESSION.md`'s boss-verb section). The two problems are real,
+independent, and this fix only closes one of them — but for every OTHER
+boss's godmode numbers, and for what a real player's screen looks like
+during six dramatic reveals this game has always shipped, it is the larger
+of the two by a wide margin.
+
+**`tools/walk-dungeons.mjs`'s ledge-hop probes are driven by real keypresses
+against the game's own wall-clock loop, not by the frame-perfect scripted
+pad every other checker uses — and `main.js`'s own comment already says why
+that is fragile: "the wall-clock loop below cannot [step exactly], because
+how many times it steps depends on how busy the machine is."** Applying the
+`updatePhaseShift` fix alone made one specific overworld ledge fail
+`walk-dungeons.mjs`, 100% reproducibly, with no code path touching that
+room, that ledge, or any boss anywhere near it — the room's own entities are
+two ordinary `Enemy`s and a `SunkenBell`, none phased, none bosses, and
+`e.isBoss` is `false`/`undefined` for all three, so the changed line is
+LOGICALLY INERT for this room. Bisected it anyway (isolating the single
+failing placement, then binary-searching which of the six dungeons' "walk
+every room" pass had to run first to reproduce it) down to this: "part 1:
+walk" and "part 2: reachability" call `page.evaluate` once PER DUNGEON with
+no frame-waiting in between, and while Playwright is off doing that round
+trip, the PAGE'S OWN background `requestAnimationFrame` loop — untouched,
+still running — keeps ticking `game.frame` for however many real
+milliseconds the round trip happens to take. A fix that makes boss code do
+strictly more real work (more sprites drawn, per the bug above) shifts that
+per-dungeon wall-clock cost by a hair, which shifts how many stray frames
+sneak in between round trips, which — sometime after four dungeons' worth of
+this drift, confirmed by bisecting which combination of `['d1','d2','d3',
+'d4']` reproduced it and which of the shorter combinations didn't —
+landed `game.frame` on a different absolute value by the time the ledge
+probes started caring about it again, one frame doing it (91 vs. 92, printed
+directly). The `frames(n)` helper waits for `n` REAL logic-frame increments,
+so this is not `page.keyboard`/rendering noise in the usual sense; it is
+`game.frame`'s absolute value, not just its delta, quietly mattering to
+whatever the hop's own timing does. **The fix is not a bigger margin on the
+tuned `frames(22)` constant** (risky to touch blind, per this file's other
+entries on ledge placement) **but removing the drift's source entirely**:
+`window.__harness.takeOver()` right after the intro-skip, before any of the
+frame-insensitive inspection passes run, and `window.__harness.release()`
+(which zeroes `acc` and restamps `last`, per `main.js`) right before the
+first real keypress. Confirmed stable across three repeated full runs both
+before this fix was needed and after it was added. If a future session
+sees a walk-dungeons.mjs ledge failure that looks unrelated to whatever it
+just changed, this class of bug — and this fix shape — is the first thing
+to suspect, not the ledge data.
+
 **This container's Playwright package and its pre-installed Chromium are off
 by one revision, and only some tools have a fallback for it.** `node_modules`
 expects browser revision 1234; `/opt/pw-browsers/` only has 1194 installed.
