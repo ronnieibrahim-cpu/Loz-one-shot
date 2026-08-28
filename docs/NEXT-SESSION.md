@@ -161,6 +161,21 @@ charges all seem to start while still mid-approach.
    `charge` per `src/data/bosses.js`) for the same stall once Gohmaraq is
    past it, rather than fixing it once and assuming it generalises.
 
+**One diagnostic run after the corrected lead #1, to size the opportunity
+before spending a session on it:** across a full 6-heart fight (296 sampled
+frames where `weakOpen && !charging`), the guaranteed-safe recovery window
+(`b.stun>0`) and plain idle time (could charge any moment) split almost
+exactly 50/50 — but in EITHER kind of window the player was already at
+swing range on fewer than 5 samples total out of 296. That is the real
+number behind why the seventh attempt above measured no difference: the
+verb essentially never reaches swing range without a charge interrupting
+the approach first, safe-window or not, so a fix that only changes what
+happens ONCE close has very little to work with. The lever most likely to
+move that number is upstream of anything on this list — something about
+the approach itself (not the swing decision at the end of it) is what
+needs to survive an interruption more often, and no attempt this session
+targeted that.
+
 **Measurement harness used, not committed (ask for it or rebuild in five
 minutes from `tools/check-bosses.mjs`'s own setup):** a scratch script that
 runs `dBoss` against `d1`'s Gohmaraq with `godMode: false` and a chosen
