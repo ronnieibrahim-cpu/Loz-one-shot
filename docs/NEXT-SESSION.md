@@ -1,4 +1,218 @@
-## Contact damage was half the problem, and it's fixed — the charge-chain is the new, precisely-diagnosed blocker (this session)
+## THE REAL BLOCKER WAS AN ENGINE BUG, NOT THE AI — every boss but Gohmaraq now dies in godmode, and Gohmaraq itself improved for the first time past 14/24 (this session)
+
+**Every session on this verb, across this whole thread, was tuning an AI
+against a boss that was silently unkillable past its own second attack
+phase — at ANY skill level, godmode included.** That is now fixed, in
+`src/game/game.js`, one line, and it is why `check-bosses.mjs` in GOD MODE
+now reads:
+
+```
+D1 Gohmaraq   18 of 24 hp   (was 10/24)
+D2 Anemos     30 of 30 hp   KILLED   (was 0/30)
+D3 Gloomtide  36 of 36 hp   KILLED   (was 0/36)
+D4 Wyverna    44 of 44 hp   KILLED   (was 20/44)
+D5 Rootmaw    52 of 52 hp   KILLED   (was 20/52)
+D6 Nereth     80 of 80 hp   KILLED   (was 0/80)
+```
+
+Five of six bosses go from a hard ceiling — some of them at ZERO damage no
+matter what — to a full kill, with no change to `dBoss`'s tactics at all.
+Only Gohmaraq is still short, and that has its own separate, still-open
+reason (below).
+
+### The bug, and how it was found
+
+Real-combat instrumentation (hooking `Player.takeDamage` directly, logging
+the actual `source` of every hit instead of inferring it from distance —
+see the entry below this one) reproduced the documented Gohmaraq baseline
+exactly, then went looking for why boss hp got stuck at 14/24 for 900+
+frames despite `weakOpen` reading true nearly the whole time. Direct
+per-frame instrumentation of `b.invuln` during one of those stuck stretches
+showed it PINNED AT EXACTLY 1, every single frame, never reaching 0 — which
+is impossible from `Boss.update()`'s own decrement (`if (invuln>0) invuln
+--`) alone. Something outside it was re-arming the value every frame.
+
+It was `Game.updatePhaseShift()` (`src/game/game.js`), a function that has
+nothing to do with bosses: it is the Brineglass Lens' mechanic, for
+enemies authored with `phase: n` (e.g. `['leever', 3, 2, {phase: 0}]`,
+`src/data/overworld.js`) that only genuinely exist while the tide is at
+level `n`. Its guard was `if (e.phase == null || e.dead) continue;` —
+skip anything without an authored phase. **`Boss` (`src/game/enemy.js`)
+also has a field called `.phase`, for a completely different reason: its
+own attack-phase index (0, 1, 2…), set every frame by `currentPhase()`.**
+`Entity`'s base constructor defaults `.phase` to `null`, but `Boss`'s own
+constructor overwrites that with `-1`, then `Boss.update()` sets it to 0,
+1, 2 as the fight progresses — never `null` again once the intro ends. So
+`updatePhaseShift()`'s guard never once skips a boss past its intro, and
+the moment a boss's OWN attack-phase number stops matching the CURRENT
+TIDE LEVEL — which for a fight fixed at one design tide (every boss room
+is) is most of the fight from the second attack-phase on — the function
+treats it as a phase-shifted foe belonging to a tide the player isn't at:
+`harmless = true`, `hidden = !lensUp` (no boss room grants the Lens), and,
+the one that actually caused the stall, **`e.invuln = Math.max(e.invuln,
+2)`, re-armed every frame**. `Boss.hurt()`'s very first real check is
+`if (this.invuln > 0) return false;` — so from that frame on, nothing
+lands, forever, regardless of how good the AI driving the swing is.
+
+Gohmaraq's own case: LOW tide is 0. It enters attack-phase 1 at 58% hp.
+`1 !== 0`. Stuck, permanently, from that exact frame — which lines up
+exactly with every session's independent finding that hp freezes right
+around 14/24 no matter what was tried.
+
+**The fix is one added condition**: `isBoss` is already the existing,
+reliable marker this codebase uses everywhere else to mean "this entity's
+own fields mean something different from an ordinary enemy's" (minibosses
+clear it deliberately for the same kind of reason — see CLAUDE.md's own
+solid-entity note). `if (e.isBoss || e.phase == null || e.dead) continue;`
+excludes every boss from a mechanic that was never meant to apply to it.
+
+**Why this took four sessions to find.** Every one of them measured the
+SYMPTOM correctly (hp plateaus once a boss is a few hits in) and reached
+for the wrong CLASS of explanation — dodge geometry, backoff timing,
+alignment — because the plateau looks exactly like a positioning problem
+from the outside: hits stop landing. Nothing about "hits stop landing"
+points at a stray `invuln` write in an unrelated Lens mechanic. It was
+found this session only by refusing to trust distance-based inference
+("this was probably a whiff") and instrumenting the actual return value
+and actual blocking condition of the actual call that failed.
+
+**Two more real bugs found on the way, both fixed and both unrelated to
+this one — write them down so a future session doesn't have to re-find
+them:**
+
+1. **`check-bosses.mjs`'s own reporting had a blind spot this bug never
+   exercised before now.** A boss that dies WITHIN the first 400-frame
+   poll batch leaves `samples` at 0 — no poll ever caught it alive — which
+   the checker mis-read as "never opened" and "0 damage dealt," the exact
+   same numbers a boss that is HARD STUCK would show. `st.beaten` (already
+   computed, just unused for this) is the ground truth `opened` was only
+   ever a proxy for: nothing reaches 0 hp without every hit along the way
+   having connected. Fixed to treat `st.beaten` as conclusive for both the
+   assertion and the printed damage figure (now says `(KILLED)`).
+2. **A real, pre-existing, load-sensitive race in `walk-dungeons.mjs`'s
+   ledge-hop prober**, found only because this session's otherwise-inert
+   `game.js` comment-vs-logic isolation test (see below) needed an
+   innocent-looking control to come back clean and instead came back
+   flaky. Root-caused by direct instrumentation, not assumed: `place()`
+   waits a fixed 3 `g.frame` ticks after `enterMap()` before doing
+   `g.entities = g.entities.filter(e => e === g.player)` — but room entry
+   respawns entities on its own schedule, occasionally still in flight at
+   frame 3, which leaves `g.player` itself momentarily absent from
+   `g.entities`. The filter then produces an EMPTY array with the player
+   filtered out along with everything else, and nothing ever adds it back
+   — every held-key frame after reads as a dropped input, which is why the
+   failure signature was "the hop barely moved," not a crash. This is the
+   exact shape of bug CLAUDE.md already names once (a parked, dead player
+   silently eating every later probe in the run) with a different cause.
+   Fixed by waiting for `g.entities.includes(g.player)` directly instead
+   of assuming a fixed frame count always outruns the respawn. Verified
+   5/5 clean afterward, having reproduced 5/6 red immediately before the
+   fix, on the identical seed and room — **confirmed to be caused by
+   `game.js`'s change specifically** by isolating it down to the single
+   line: the same diff with only a 14-line COMMENT (no logic change)
+   passed 3/3, and restoring the one added `e.isBoss ||` failed 2/2 again.
+   Comment-only wasn't the control I was trying to rule out when I started
+   — the race was already there; this session's edit just made it land
+   often enough in this sandbox to notice. `check-motion.mjs` was also
+   missing the `CHROMIUM_PATH` fallback its siblings already carry (the
+   same "good first job" flagged twice already in this file) — fixed
+   while it was blocking verification of this same diff, five-line copy of
+   the existing pattern.
+
+**Full verification, everything green**: `tools/test.mjs` 59/59,
+`tools/check-bosses.mjs` 13/13 (five kills, see above),
+`tools/check-lens.mjs` 24/24 (the Lens mechanic itself, which this fix
+touches directly, is unaffected — it was never bosses' to begin with),
+`tools/replay.mjs` 51/51, `tools/walk-dungeons.mjs` 23/23 (5/5 clean after
+the race fix, 5/6 red before it — see above),
+`tools/solve-switches.mjs` 9/9, `tools/check-gates.mjs` 26/26,
+`tools/check-motion.mjs` 8/8, `tools/check-hearts.mjs` 114/114,
+`tools/check-playthrough.mjs` 19/19.
+
+### Gohmaraq itself, real combat, re-measured after the fix
+
+**Not a win yet, but past the wall for the first time**: 6 melee hits now
+land (24 -> 12 hp) against every previous session's hard ceiling of 5
+hits (24 -> 14) — the fix let phase 1 actually be fought instead of
+silently no-opping every swing. Same seed (20260806), same setup (12qh, no
+god mode, sword L1, tide LOW):
+
+```
+f305   PLAYER HIT 12->10  (ranged, shot_rock)
+f409   BOSS   HIT 24->22
+f446   BOSS   HIT 22->20
+f492   BOSS   HIT 20->18
+f522   PLAYER HIT 10->8   (ranged)
+f600   BOSS   HIT 18->16
+f675   BOSS   HIT 16->14                    (phase 1 begins — this is where every previous run got stuck)
+f746   PLAYER HIT 8->6    (ranged, mid-charge)
+f1085  PLAYER HIT 6->4    (ranged)
+f1154  BOSS   HIT 14->12                    <- NEW: unreachable before this session
+f1251  PLAYER HIT 4->2    (ranged)
+f1338  PLAYER HIT 2->0    (boss-contact, mid-charge)  DEATH
+```
+
+**Two `dBoss` changes rode along with the earlier ones already committed
+this session** (contact-avoidance via `nearContact`, the charge-recovery
+rush — both kept, both still correct and still needed once the engine bug
+stopped masking their effects):
+
+1. **A "chase along the charge's own axis" addition, tried, measured, and
+   REVERTED.** With the engine bug fixed, the boss is no longer
+   accidentally harmless — so a tweak that was safe against a harmless
+   boss (closing the post-charge gap by moving toward where a long charge
+   was going to end, alongside the existing perpendicular dodge) turned
+   out to reintroduce real contact risk: measured, it traded fewer hits
+   for a shorter fight (24->16 across ~1600 frames vs 24->12 across
+   ~1440), and the FINAL death in the kept version above is still a
+   `boss-contact` hit taken mid-charge — the plain perpendicular-only
+   dodge (proven safe two sessions ago) is what's committed now.
+2. **The charge-recovery-rush branch had an alignment bug of its own**,
+   found by the same corner-deadlock this session found and fixed in the
+   main approach branch: it used a bare tie-break (`ax2>=ay2`) and no
+   `nearContact`/`LINED_TOL` gate at all, so it could commit to a swing
+   from a diagonal stop neither axis' `SWORD_SPAN` covered — measured
+   directly, 18 consecutive identical whiffs (`dx=8, dy=-8`) against a
+   stunned, non-moving boss before the fix. Now shares the same gating the
+   main branch uses.
+
+**What's still open, precisely**: the final death is `boss-contact` while
+`charging=true` — the existing, previously-proven perpendicular-only
+charge dodge isn't fully clearing Gohmaraq's large hitbox (26x20 inside a
+32x32 sprite) in every geometry, and multiple traces this session found
+the fight recurrently pulling both entities toward the SAME corner near
+one wall of the arena (`boss≈(14,7..81)` appeared across several
+independent traces). Whether that's a genuine arena-geometry attractor
+(both entities' boundary-clamping converging there) or coincidence on this
+one seed is not yet established — worth checking on a different seed
+before chasing it further.
+
+**Next session, in order:**
+
+1. Job 1 is close, not closed: 6 of the ~12 hits Gohmaraq needs land, real
+   combat, no god mode. The remaining death is a charge-adjacent contact
+   hit, not a ranged/positioning problem — check whether the corner the
+   fight keeps converging on is real arena geometry before tuning the
+   dodge further.
+2. **Every OTHER boss now dies in godmode** (D2, D3, D4, D5, D6 all
+   100%). None of them have been measured in REAL combat yet (12qh, no
+   god mode) — that is likely far more tractable to reach a real win on
+   than Gohmaraq, and previous sessions' per-boss notes (Gloomtide needs
+   sinking with the Cleats first, per `check-bosses.mjs`'s own comment)
+   may now simply be correct and sufficient rather than blocked on this
+   same engine bug too. Worth trying BEFORE sinking a fifth session into
+   Gohmaraq specifically — job 1 only needs ONE boss won at its
+   appropriate item/heart budget, not necessarily this one first.
+3. Once any boss is a measured real-combat win, wire `dBoss` into
+   `playthrough-route.mjs` past `d1/0,3,2` (if Gohmaraq is the one that
+   won) or the corresponding blocker for whichever boss did.
+4. The Boss Key / third-key pass behind the Clawcrab door and the other
+   five dungeons' routes are both still undone and both still blocked on
+   job 1 actually finishing.
+
+---
+
+## Contact damage was half the problem, and it's fixed — the charge-chain is the new, precisely-diagnosed blocker (previous session)
 
 **Still not a win, but two real, kept, verified fixes landed** — the first
 code from this whole thread of sessions that measured better and stayed.

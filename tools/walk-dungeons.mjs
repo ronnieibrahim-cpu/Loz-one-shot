@@ -699,6 +699,19 @@ for (const p of placements) {
     g.progress.hearts = g.progress.maxHearts;
     g.enterMap(b.mapId, b.f, b.rx, b.ry, 80, 64, b.dir, { instant: true });
     await new Promise(r => { const s = g.frame; const t = () => (g.frame - s >= 3 ? r() : requestAnimationFrame(t)); t(); });
+    // The 3-frame wait above is timed off `g.frame`, but room entry re-spawns
+    // entities on its own schedule — occasionally still in flight when frame
+    // 3 arrives, which leaves `g.player` momentarily absent from `g.entities`.
+    // The filter below would then produce an EMPTY array with the player
+    // filtered out along with everything else, and nothing ever adds it back:
+    // every frame after reads a dropped hold of the direction key, the same
+    // shape of failure as a parked, dead player. Wait for the invariant
+    // directly rather than assuming a fixed frame count always outruns it.
+    await new Promise(r => {
+      let n = 0;
+      const t = () => (g.entities.includes(g.player) || ++n > 30) ? r() : requestAnimationFrame(t);
+      t();
+    });
     // An open dialogue freezes every entity while mode is still 'play'.
     if (g.dialogue) g.dialogue.active = false;
     g.mode = 'play';

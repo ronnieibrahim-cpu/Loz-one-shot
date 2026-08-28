@@ -895,8 +895,24 @@ export async function installRuntime() {
           if (b.stun > 0 && !b.charging) {
             const dx2 = b.cx - p.cx, dy2 = b.cy - p.cy;
             const ax2 = Math.abs(dx2), ay2 = Math.abs(dy2);
-            if (ax2 + ay2 > NEAR + 6 && !nearContact(p, b)) { yield fence(towardDiag(dx2, dy2)); f++; continue; }
-            const faceOnly = ax2 >= ay2 ? (dx2 > 0 ? BIT.right : BIT.left) : (dy2 > 0 ? BIT.down : BIT.up);
+            const axisX2 = ax2 > ay2;
+            const faceOnly = axisX2 ? (dx2 > 0 ? BIT.right : BIT.left) : (dy2 > 0 ? BIT.down : BIT.up);
+            // Same nearContact/LINED_TOL gating as the "no invuln banked"
+            // approach below — this branch used a plain tie-break (`ax2>=ay2`,
+            // vs. `adx>ady` elsewhere) and no alignment check at all, which
+            // could commit to a swing from a diagonal stop neither axis
+            // covered. Measured: it whiffed the same repeated diagonal offset
+            // (dx=8,dy=-8) 18 times running against a stunned, non-moving
+            // boss before this fix.
+            if (!nearContact(p, b)) {
+              if (ax2 + ay2 > NEAR + 6) { yield fence(towardDiag(dx2, dy2)); f++; continue; }
+              const LINED_TOL = 8;
+              const perp2 = axisX2 ? dy2 : dx2;
+              if (Math.abs(perp2) > LINED_TOL) {
+                yield fence(axisX2 ? (dy2 < 0 ? BIT.up : BIT.down) : (dx2 < 0 ? BIT.left : BIT.right));
+                f++; continue;
+              }
+            }
             yield fence(faceOnly); f++;
             yield fence(faceOnly | sword()); f++;
             continue;

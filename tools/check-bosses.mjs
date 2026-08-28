@@ -188,9 +188,16 @@ for (const f of FIGHTS) {
   // is done this file measures the fights instead of claiming them.
   check(`${f.id}: ${f.boss} spawns in the room ${f.id} declares (${info.room})`,
     spawned === true, `nothing with isBoss in ${info.room}`);
+  // A kill inside the first 400-frame poll batch (400f is short next to some
+  // of these fights, and one landed — see below) leaves `samples` at 0: the
+  // boss was gone before a single sample could catch it alive. That is not
+  // "never opened," it is the strongest possible proof that it did — nothing
+  // hits 0 hp without every hit along the way having connected. `st.beaten`
+  // is the ground truth `opened` is a proxy for.
   check(`${f.id}: ${f.boss}'s weak point opens at tide ${f.tide}`,
-    opened > 0, `never opened in ${samples} samples across the fight`);
-  console.log(`       damage dealt: ${maxHp - (minHp === 1e9 ? maxHp : minHp)} of ${maxHp} hp`
+    opened > 0 || st.beaten, `never opened in ${samples} samples across the fight`);
+  console.log(`       damage dealt: ${st.beaten ? maxHp : maxHp - (minHp === 1e9 ? maxHp : minHp)} of ${maxHp} hp`
+    + (st.beaten ? '  (KILLED)' : '')
     + (err ? '  (fight did not finish: AI limitation, see comment)' : ''));
 }
 

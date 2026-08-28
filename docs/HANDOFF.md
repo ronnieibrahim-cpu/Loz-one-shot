@@ -224,6 +224,70 @@ is in the page, and nothing steps until you say so.
 
 ## Hard-won lessons — do not rediscover these
 
+**`Boss.phase` and `Entity.phase` are the same field name for two unrelated
+things, and it made every boss past its second attack-phase silently
+unhittable for the whole life of the project.** `Entity.phase` (`entity.js`)
+is the Brineglass Lens' tide-phase-shift field — `null` unless an enemy is
+spawned with `{phase: n}`, meaning "only real at tide level n." `Boss.phase`
+(`enemy.js`) is a totally different thing on the same object: the boss's own
+attack-phase index (0, 1, 2…), written by `currentPhase()` every frame and
+never `null` once the intro ends. `Game.updatePhaseShift()` skipped on
+`e.phase == null` and nothing else, so it treated every boss past its intro
+as a phase-shifted foe belonging to whatever tide level its OWN attack-phase
+number happened to be — and the instant that number stopped matching the
+tide the fight is actually fought at (which, since every boss room is fixed
+at one design tide, is most of the fight from the second attack-phase on),
+it re-armed `e.invuln = Math.max(e.invuln, 2)` EVERY FRAME. `Boss.hurt()`'s
+first real check is `if (this.invuln > 0) return false` — so from that frame
+on nothing landed, ever, in god mode or otherwise. **Four sessions across
+this project tuned a boss-fight AI verb against bosses that were, past their
+second attack-phase, unkillable by construction**, and every one of them
+correctly measured the symptom (hp plateaus a few hits in) and reasoned
+about the wrong layer (dodge geometry, timing, positioning) because a stuck
+hp counter looks exactly like a positioning failure from the outside. Found
+only by refusing to infer a hit's source from distance and instrumenting the
+actual `invuln` value across the stuck stretch — it read a constant 1, every
+single frame, which `Boss.update()`'s own `if(invuln>0)invuln--` cannot
+produce on its own. The fix is one added clause,
+`if (e.isBoss || e.phase == null || e.dead) continue;` — `isBoss` is the
+existing, already-established marker this codebase uses everywhere else for
+"this entity's fields mean something else" (minibosses clear it for exactly
+this class of reason). Godmode result before/after, `check-bosses.mjs`:
+Gohmaraq 10->18/24, Anemos 0->30/30 (killed), Gloomtide 0->36/36 (killed),
+Wyverna 20->44/44 (killed), Rootmaw 20->52/52 (killed), Nereth 0->80/80
+(killed). Full writeup with the real-combat numbers in `docs/NEXT-SESSION.md`.
+
+**A checker's own "no samples yet" and "genuinely stuck" can print the exact
+same numbers, and one of them means the opposite of what it looks like.**
+`check-bosses.mjs` polls in 400-frame batches; a boss that dies WITHIN the
+first batch leaves zero samples taken — indistinguishable, by the numbers
+alone, from a boss whose weak point never opened. The fix above turned five
+of six god-mode fights into fast kills, and the checker read every one of
+them as "weak point never opened, 0 damage dealt" until it was taught to
+check `progress.beaten` as the ground truth `samples>0` was only ever a
+proxy for — nothing reaches 0 hp without every hit along the way having
+connected.
+
+**A fixed frame-count wait is not the same guarantee as waiting for the
+state you actually need**, and this cost a false regression signal before
+it was found to be a real, pre-existing bug. `walk-dungeons.mjs`'s
+ledge-hop prober waits exactly 3 `g.frame` ticks after `enterMap()` before
+filtering `g.entities` down to the player — but room entry respawns
+entities on ITS OWN schedule, occasionally still mid-flight at tick 3,
+which leaves `g.player` itself momentarily absent from `g.entities`. The
+filter then produces an EMPTY array with the player filtered out along
+with everything else, and nothing ever adds it back — every held-key frame
+after reads as a dropped input, the same failure shape CLAUDE.md already
+names once for a parked, dead player, with a different cause. This is the
+same trap as the entry above it, restated: hitting it looked exactly like
+an unrelated logic change had broken something (isolated down to one
+line — an inert 14-line COMMENT with no logic change passed 3/3, restoring
+one added boolean failed 2/2), when the race was pre-existing and the
+change had only shifted timing enough to make it land far more often in
+this sandbox. Fixed by waiting for `g.entities.includes(g.player)`
+directly instead of a fixed count. Verified 5/5 clean after, having
+reproduced the failure 5/6 immediately before, same seed and room.
+
 **This container's Playwright package and its pre-installed Chromium are off
 by one revision, and only some tools have a fallback for it.** `node_modules`
 expects browser revision 1234; `/opt/pw-browsers/` only has 1194 installed.

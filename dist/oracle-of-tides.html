@@ -12585,7 +12585,20 @@ class Game {
   updatePhaseShift() {
     const lensUp = this.player ? this.player.lensT > 0 : false;
     for (const e of this.entities) {
-      if (e.phase == null || e.dead) continue;
+      // `Boss.phase` (src/game/enemy.js) is an unrelated field: the boss's
+      // own attack-phase index (0, 1, 2...), reused on the same `phase` name
+      // by coincidence. Left unguarded, every boss becomes a "phase-shifted
+      // foe" by this function's own definition the moment its attack-phase
+      // index stops matching the tide level it's being fought at — which,
+      // for a fight fixed at one design tide (every boss room is), is most
+      // of the fight from its second attack-phase on. Measured: Gohmaraq at
+      // LOW tide enters attack-phase 1 at 58% hp, `1 !== LOW(0)`, and
+      // `e.invuln = Math.max(e.invuln, 2)` re-arms every single frame from
+      // then on — permanently unhittable, independent of any AI quality,
+      // which is why no session's boss verb has ever gotten it below 14/24
+      // hp (`docs/NEXT-SESSION.md`). `isBoss` is the existing, reliable
+      // marker for "this `phase` means something else."
+      if (e.isBoss || e.phase == null || e.dead) continue;
       // The BASE level, deliberately: a phased enemy belongs to a tide state
       // of the world, not to the patch of floor it happens to stand on. An
       // anchor holding one corner of the room at MID must not summon half a
