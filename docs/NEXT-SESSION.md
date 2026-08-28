@@ -1,4 +1,120 @@
-## Charge dodge lands, ranged dodge doesn't — the boss verb, continued (this session)
+## The eye-open window is nearly permanent, phase 3 is currently unreachable, and two more dodge shapes measured net negative (this session)
+
+**Still not a win, and no code changed.** Every experiment this session was
+measured against the exact committed baseline and reverted when it came back
+worse; `tools/actor-runtime.mjs` is byte-identical to the last session's
+commit. What changed is what is now KNOWN about why this fight resists the
+dodge approach, which the last two sessions' write-ups did not have.
+
+**Baseline re-measured at 1-frame granularity (previous sessions only had
+20-frame-poll precision).** Same seed (20260806), same setup (12 quarter-hearts,
+no god mode, sword L1, tide LOW), same result as documented — 5 melee hits
+landed (24 -> 14 boss hp), player dies at the last graze — but now with an
+exact frame trace:
+
+```
+f305  PLAYER HIT 12->10  dist=40
+f409  BOSS   HIT 24->22  dist=23
+f446  PLAYER HIT 10->6   dist=27
+f473  BOSS   HIT 22->20  dist=24
+f497  PLAYER HIT 6->2    dist=30
+f523  BOSS   HIT 20->18  dist=23
+f554  BOSS   HIT 18->16  dist=24
+f611  BOSS   HIT 16->14  dist=26           (boss enters phase 1: 14/24 = 58%)
+f796  PLAYER HIT 2->0    dist=95  DEATH    (phase 1, weakOpen true, charging false)
+```
+
+**Finding 1 — the eye-open window is nearly permanent at LOW tide, which
+answers last session's open question ("is there a cheaper win in not
+engaging every window") with no: there is effectively only one window.**
+Instrumented `b.weakOpen` every frame across the whole fight: **68.7% of all
+902 sampled frames** had the eye open (63.5% in phase 0, and **100% of the
+286 phase-1 samples** — once phase 1's first slam opens the eye, the fight
+ends before it closes again). This falls straight out of the numbers already
+in `src/data/bosses.js`: phase 0's slam interval is 170f against an
+open-for-90f-doubled-to-180f-at-LOW window; phase 1 is 130f against
+160f-at-LOW. The window is longer than the gap between the attacks that open
+it, so a fresh one is already live before the old one would have lapsed. The
+"skip some windows" idea from the last board therefore has nothing to act
+on — confirmed directly, not just inferred: a dodge scoped to fire *only* in
+the SHELLED "wait out the tell" branch (the one place "skip this window"
+could mean anything) never fired once in the whole fight. Zero effect,
+positive or negative — the branch it lived in is essentially dead code at
+this tide. Built, measured, and removed rather than left in as inert
+complexity.
+
+**Finding 2 — phase 2 (the same-speed-patrol phase, `above: 0.00`, speed
+1.0 == WALK_SPEED) is currently UNREACHABLE in real 3-heart combat**, which
+reprioritises last session's item 2. It needs boss hp <= 30% (7.2 of 24);
+the best this repo's harness gets the boss to before the player dies is
+14/24 (58%), comfortably inside phase 1. **Item 2 is blocked on item 1, not
+parallel to it** — there is nothing to measure about phase 3's patrol
+problem until the melee trade improves enough to actually put the boss
+there. Next session should stop treating these as two independent jobs.
+
+**Finding 3 — two more dodge shapes, both scoped narrower than last
+session's reverted attempt, both still net negative.** `Player.takeDamage`'s
+`invuln > 0` early return blocks ALL damage uniformly (contact and
+projectile alike), which means the chase-in and margin-retreat branches of
+`dBoss` (both run only while `p.invuln` is still banked) are already immune
+to everything that could hit the player — a shot can only actually land
+during the two frames-ranges where `p.invuln` has hit zero: the pre-swing
+approach and the post-swing `BACKOFF` retreat. That is a much narrower,
+better-justified target than "the whole weakOpen state", so it was tried:
+
+1. **A dodge confined to exactly those two invuln-zero windows**, with the
+   two specific bugs the previous attempt's write-up diagnosed fixed
+   properly this time — side picked perpendicular to the **shot's own
+   velocity** (stable for the shot's whole life, not the boss-player line,
+   which is unstable exactly at the moment a shot spawns aimed at the
+   player) and fence-openness rechecked **every frame the dodge is held**,
+   not once at pick time (the fix the previous write-up said the
+   wall-cornering failure needed). Measured: **3 hits landed (24 -> 18)
+   against the 5-hit baseline**, dying earlier (f839 vs f903). Reverted.
+2. **`BACKOFF` widened 30 -> 45** (retreat farther after each swing, on the
+   theory that a slower-arriving re-approach lets more of a slam's spray
+   expire first, `life: 150`). Measured: **4 hits landed (24 -> 16)**, still
+   died (f999). Reverted.
+
+**What this adds up to.** Counting this session, four independently-reasoned
+attempts across three sessions — a reactive per-shot dodge, a scoped
+invuln-zero-only dodge with both of that attempt's own diagnosed bugs fixed,
+and a backoff-distance widen — have all traded landed hits for a safety that
+did not reliably pay for itself, on the one seed this repo can measure. That
+is a pattern, not noise: this fight's real constraint is not "the player
+doesn't notice danger," it is that **any deviation from the scripted
+close-swing-retreat cycle costs a cycle**, and losing cycles matters more
+than the chip damage those cycles were spent avoiding, because dealing 24
+damage at 2 per swing already needs every cycle the fight's length affords.
+A structurally different lever — not reactive movement — is probably what
+job 1 actually needs next; this session did not find one. One honestly
+untried idea: the fight is currently played with a level-1 sword because
+that is what a fresh D1 run carries, and nothing measures whether the
+Piece-of-Heart-adjacent economy (extra hearts before D1, if any exist on a
+legitimate route) would matter more than any AI change — worth ruling in or
+out before spending a fifth session on the verb itself.
+
+**Next session, in order:**
+
+1. Job 1 is still open: **a boss-fight verb that WINS Gohmaraq at 3 hearts.**
+   Four dodge/positioning attempts are now reverted and documented — don't
+   re-attempt reactive per-shot or per-cycle dodging without a genuinely
+   different mechanism than "notice a threat, move." Consider whether the
+   lever is on the OTHER side of the trade (more damage per cycle, more
+   cycles per invuln bank) rather than damage avoidance.
+2. Phase 2's same-speed-patrol problem cannot be measured until job 1 makes
+   it reachable — stop scheduling it as parallel work.
+3. Once Gohmaraq is a measured win at 3 hearts, wire `dBoss` into
+   `playthrough-route.mjs` past `d1/0,3,2`, and only then look at the other
+   five bosses — Gloomtide's swimming-blocks-swinging finding in particular
+   needs a real tactic (sink with the Cleats first), not this generic verb.
+4. The Boss Key / third-key pass behind the Clawcrab door and the other five
+   dungeons' routes are both still undone and both still blocked on job 1
+   actually finishing.
+
+---
+
+## Charge dodge lands, ranged dodge doesn't — the boss verb, continued (previous session)
 
 **Still not a win.** Gohmaraq measured in real combat (12 quarter-hearts, no
 god mode, seed 20260806): five hits landed (24 -> 14 hp), same as last
