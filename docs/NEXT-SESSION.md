@@ -1,4 +1,127 @@
-## The eye-open window is nearly permanent, phase 3 is currently unreachable, and two more dodge shapes measured net negative (this session)
+## Contact damage was half the problem, and it's fixed — the charge-chain is the new, precisely-diagnosed blocker (this session)
+
+**Still not a win, but two real, kept, verified fixes landed** — the first
+code from this whole thread of sessions that measured better and stayed.
+`tools/actor-runtime.mjs`'s `dBoss` changed; nothing else did.
+
+**Finding 0, and it's the one that unlocked the rest: half the damage in
+the documented baseline was never ranged at all.** Every previous session
+(including the one right above this) treated the death as "ranged chip
+damage nobody is trying to avoid." Instrumenting `Player.takeDamage` itself
+— logging the real `source` of every hit instead of inferring it from
+distance — says otherwise. The exact baseline (seed 20260806, 12qh, no god
+mode) takes four hits before dying: `2qh shot_rock`, **`4qh boss-contact`**,
+**`4qh boss-contact`**, `2qh shot_rock`. Two of four hits, 8 of the 12qh
+lost, are the player's OWN hitbox touching the boss's body during the
+approach — not a shot at all.
+
+**Root cause, found by comparing real geometry, not by guessing another
+constant.** Gohmaraq's hb is 26x20 inside a 32x32 sprite — most of the
+sprite is hitbox. The old "keep closing until Manhattan distance <= NEAR+6
+(24)" check summed both axes, but `towardDiag` closes both axes at once
+(CLAUDE.md: diagonal is not normalised), so a genuinely diagonal approach
+can have `dx=dy=12` — Manhattan sum 24, "far enough" by the old check — while
+BOTH axes are already inside the real AABB overlap (boss hb half-extents
+13x10, player hb half-extents 5x3.5: true contact needs `|dx|<18` AND
+`|dy|<13.5`, not their sum). The fix asks the engine's own geometry instead
+of a guessed number: `gapTo`/`nearContact` call `rect()` — the exact method
+`Entity.overlaps` and `updateContactDamage` already use — and stop the
+diagonal close one step before both axes would read as touching.
+
+**That stop can now land off-axis, so a second fix rides with it.** Stopping
+earlier than the old check did means the stop can be far enough off the
+dominant axis that a swing (`SWORD_REACH` along the facing axis, only
+`SWORD_SPAN`=14 across it) whiffs. `dFight`, the ordinary-enemy verb earlier
+in the same file, already squares up on a foe before closing for exactly
+this reason; the final stretch of `dBoss`'s approach now does the same
+(`LINED_TOL`=8) rather than trusting the diagonal stop to be aimed right.
+Diagonal closing is kept for the bulk of the approach — only the last
+stretch, where an off-axis stop actually matters, checks alignment.
+
+**Measured result: contact damage is now ZERO across the whole fight.**
+Re-run on the same seed, same setup: every hit taken is `projectile:
+shot_rock`, none `boss-contact`. Because a chip hit only costs 2qh against
+a contact hit's 4qh, it now takes **six** hits to kill the player instead of
+four, and the player survives roughly **2x longer** (dies at frame 1522
+instead of 796). Boss damage dealt is unchanged (10/24, five swings) — this
+is a real safety improvement, not a route to more damage dealt, and it is
+kept because it is measured better on every axis and regresses nothing:
+`check-bosses.mjs` 13/13 (unaffected — god mode pins `p.invuln` at 600
+every frame, so the branches this touched never run under it, exactly the
+existing documented pattern), `tools/test.mjs` 59/59, `tools/replay.mjs`
+51/51 (dBoss isn't exercised by any recorded replay).
+
+**Finding 2, from watching what happens after: a second real bug, also
+fixed, also kept.** Gohmaraq's charge (`src/data/enemy.js` `charge()`) ends
+in a 24-frame recovery stun (`ENEMY_CHARGE_RECOVER_FRAMES`) with the eye
+already open — a window the boss is GUARANTEED not to move or attack in.
+The banked-invuln "spend the margin down: retreat" branch didn't know that:
+it retreats unconditionally until `p.invuln` reaches 0, and the leftover
+invuln from an earlier hit routinely straddled exactly this recovery
+window, burning the one safe approach on a pointless retreat from a boss
+that could not have followed, then having to close a now-larger gap from
+scratch once both invuln and stun had expired — often losing the reopened
+window to a fresh charge before landing a single swing. Fixed the same way
+as finding 0: `b.stun>0 && !b.charging` presses the approach instead of
+retreating (`nearContact` still guards contact throughout). Measured:
+charging-fraction of phase 1 dropped from 62.6% to 33.5% — a real reduction
+in wasted frames — kept because, again, it regresses nothing measured.
+
+**Finding 3, and it's why neither fix is a win: the charge-chain owns phase
+1, and it is now precisely characterised rather than hand-waved.** Even
+with both fixes, the boss is still stuck at 14/24 hp for the rest of a
+1500+ frame fight — **zero additional hits land after entering phase 1**,
+despite `weakOpen` measuring 90%+ true throughout it. Traced directly
+(`boss=(x,y) player=(x,y)` every frame around several charge cycles): a
+charge's trigger condition (`aligned(tol=14) && distToPlayer<range(130)`,
+`src/game/enemy.js`) is satisfied almost continuously in phase 1 — including
+by the player's OWN necessary approach behaviour, since closing in to swing
+is itself "aligned and in range." Gohmaraq's phase-1 charge dashes the full
+width or height of the arena (measured: 50-100px in a single dash) at 1.9
+px/f, so by the time a charge ends, the boss is often 60-130px from wherever
+the dodge left the player — far more than the 24-frame recovery window
+affords to close (≈34px at full diagonal speed), so the freshly-opened
+window frequently expires, or a new charge retriggers, before the player is
+back in range. This is not the same claim as the earlier "eye stays open
+nearly permanently" finding — the eye genuinely is open; the boss is
+genuinely reachable in principle; the problem is that CLOSING the gap a
+long charge just created, within the short window the recovery affords, is
+often geometrically impossible regardless of how the approach is tuned.
+
+**What this rules out, and what it doesn't.** It rules out "chase harder" —
+the gap a long charge creates is often simply too large for 24 frames at any
+reasonable approach speed, so tuning `NEAR`/`BACKOFF`/alignment further is
+very unlikely to close it. It does NOT rule out a structurally different
+idea: whether there is a way to bait or position for a SHORTER charge (stand
+nearer one end of the boss's patrol so a triggered charge travels less
+distance before hitting a wall), or whether phase 1 is simply not meant to
+be fully cleared at 3 hearts and the honest target is surviving it while
+banking damage from phase 0 and the openings phase 1 does offer. Both are
+untried and are the next honest places to look — not another dodge/backoff
+parameter.
+
+**Next session, in order:**
+
+1. Job 1 is still open. Two real fixes are now in and kept — don't revert
+   them; contact damage is a solved problem for this fight. The remaining
+   gap is the phase-1 charge-chain (finding 3 above). Try baiting a shorter
+   charge (positioning near a wall/end of the patrol before it triggers)
+   before trying anything reactive again — four reactive/backoff attempts
+   across four sessions have now converged on "this isn't the lever."
+2. Phase 2 (the same-speed-patrol phase) is still unreached in real combat
+   (boss tops out at 14/24, phase 2 needs <=30% = 7.2). Still blocked on
+   job 1, not parallel to it.
+3. Once Gohmaraq is a measured win at 3 hearts, wire `dBoss` into
+   `playthrough-route.mjs` past `d1/0,3,2`, and only then look at the other
+   five bosses — Gloomtide's swimming-blocks-swinging finding in particular
+   needs a real tactic (sink with the Cleats first), not this generic verb.
+4. The Boss Key / third-key pass behind the Clawcrab door and the other five
+   dungeons' routes are both still undone and both still blocked on job 1
+   actually finishing.
+
+---
+
+## The eye-open window is nearly permanent, phase 3 is currently unreachable, and two more dodge shapes measured net negative (previous session)
 
 **Still not a win, and no code changed.** Every experiment this session was
 measured against the exact committed baseline and reverted when it came back

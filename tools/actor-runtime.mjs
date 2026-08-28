@@ -798,6 +798,32 @@ export async function installRuntime() {
       if (q.y > (g.room ? g.room.ph : 144) - 16 - EDGE) m &= ~BIT.down;
       return m;
     };
+    // Gohmaraq's hb (26x20 inside a 32x32 sprite) is close enough to the whole
+    // sprite that the old "keep closing until Manhattan distance <= NEAR+6"
+    // check let a DIAGONAL approach (towardDiag moves both axes at once, per
+    // CLAUDE.md — diagonal is not normalised) walk the player's own hitbox
+    // into contact before the Manhattan sum ever crossed the threshold: at
+    // dx=dy=12 the sum is already 24 (<= NEAR+6) but both axes are still well
+    // inside the real AABB overlap (measured: boss hb half-extents 13x10,
+    // player hb half-extents 5x3.5, so true contact needs BOTH |dx|<18 and
+    // |dy|<13.5, not their sum). Two of the four hits taken in the real-combat
+    // baseline (`docs/NEXT-SESSION.md`) are exactly this: `boss-contact`
+    // (source.isBoss, 4qh each) landed mid-approach, not from a shot. `gapTo`
+    // asks the entities' own `rect()` — the same AABB `Entity.overlaps` and
+    // `updateContactDamage` already use — rather than re-deriving the box
+    // from `cx`/`cy` and a guessed offset.
+    const gapTo = (a, c) => {
+      const ra = a.rect(), rb = c.rect();
+      return {
+        gapX: Math.max(rb.x - (ra.x + ra.w), ra.x - (rb.x + rb.w)),
+        gapY: Math.max(rb.y - (ra.y + ra.h), ra.y - (rb.y + rb.h)),
+      };
+    };
+    const CONTACT_SAFETY = 4;
+    const nearContact = (a, c) => {
+      const { gapX, gapY } = gapTo(a, c);
+      return gapX <= CONTACT_SAFETY && gapY <= CONTACT_SAFETY;
+    };
     const budget = maxF || 16000;
     for (let f = 0; f < budget;) {
       const b = g.boss;
@@ -850,6 +876,31 @@ export async function installRuntime() {
           continue;
         }
         if (p.invuln > 0 && p.hurtTime === 0) {
+          // Gohmaraq's charge ends in a 24f recovery stun (`ENEMY_CHARGE_
+          // RECOVER_FRAMES`, src/data/feel.js) with the eye already open from
+          // the charge's own `open()` call — a guaranteed-safe window the
+          // boss cannot move or attack in for as long as `stun` counts down.
+          // Measured directly: a real fight's phase 1 spends 62.6% of its
+          // frames with the boss charging (`docs/NEXT-SESSION.md`), and the
+          // leftover invuln from an earlier hit frequently straddles exactly
+          // this window — the retreat below, unconditional until this fix,
+          // burned the entire recovery retreating from a boss that could not
+          // have followed, then had to close the resulting larger gap from
+          // scratch once both invuln and stun had expired, often losing the
+          // window to a fresh charge before a single swing landed. `b.stun`
+          // guards contact (`updateContactDamage` doesn't check it, so
+          // `nearContact` below still applies) but not the boss's ability to
+          // move or attack, so pressing in here costs nothing a retreat was
+          // ever protecting against.
+          if (b.stun > 0 && !b.charging) {
+            const dx2 = b.cx - p.cx, dy2 = b.cy - p.cy;
+            const ax2 = Math.abs(dx2), ay2 = Math.abs(dy2);
+            if (ax2 + ay2 > NEAR + 6 && !nearContact(p, b)) { yield fence(towardDiag(dx2, dy2)); f++; continue; }
+            const faceOnly = ax2 >= ay2 ? (dx2 > 0 ? BIT.right : BIT.left) : (dy2 > 0 ? BIT.down : BIT.up);
+            yield fence(faceOnly); f++;
+            yield fence(faceOnly | sword()); f++;
+            continue;
+          }
           // Spending down the banked margin: break contact and hold clear
           // until invuln itself runs out, then re-approach it as a stranger.
           const dx2 = b.cx - p.cx, dy2 = b.cy - p.cy;
@@ -865,8 +916,34 @@ export async function installRuntime() {
         // Gohmaraq's phase-1 tell is a stationary spray, not a charge closing
         // on us, so there is nothing here worth backing away from before the
         // swing.
-        if (adx + ady > NEAR + 6) { yield fence(towardDiag(dx, dy)); f++; continue; }
-        // In range: face it, swing, then get out before it closes.
+        //
+        // This is the ONE branch a hit can actually land in (`invuln` guards
+        // everything uniformly, so the two branches above are already immune
+        // while they run) — so it is the one place `nearContact` matters:
+        // stop the diagonal close a step early rather than take the one step
+        // that would put both axes inside the boss's hitbox at once.
+        //
+        // Stopping earlier than the old Manhattan-sum check did (see above)
+        // means the stop can land off-axis enough that a swing along only
+        // the dominant axis whiffs — `swordBox` extends `SWORD_REACH` along
+        // one axis and only `SWORD_SPAN` (14px) across the other, so a
+        // diagonal stop with a wide cross-axis gap needs squaring up first,
+        // the way `dFight` above already lines up on a foe before closing.
+        // Diagonal closing (`towardDiag`) is still used for the bulk of the
+        // approach — full speed both axes, per CLAUDE.md — and alignment is
+        // only checked in the final stretch, where an off-axis stop actually
+        // matters.
+        if (!nearContact(p, b)) {
+          if (adx + ady > NEAR + 6) { yield fence(towardDiag(dx, dy)); f++; continue; }
+          const LINED_TOL = 8;
+          const perp = axisX ? dy : dx;
+          if (Math.abs(perp) > LINED_TOL) {
+            yield fence(axisX ? (dy < 0 ? BIT.up : BIT.down) : (dx < 0 ? BIT.left : BIT.right));
+            f++; continue;
+          }
+          yield fence(toward); f++; continue;
+        }
+        // In range and lined up: face it, swing, then get out before it closes.
         yield fence(toward); f++;
         yield fence(toward | sword()); f++;
         for (let i = 0; i < BACKOFF && f < budget; i++) { yield fence(backAlong | backPerp); f++; }
