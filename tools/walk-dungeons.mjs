@@ -83,11 +83,26 @@ page.on('console', m => { if (m.type() === 'error') errs.push('console: ' + m.te
 await page.goto(`http://localhost:${PORT}/index.html`, { waitUntil: 'load' });
 await page.waitForFunction(() => !!window.__game, { timeout: 15000 });
 
-const frames = (n) => page.evaluate((k) => new Promise(res => {
-  const start = window.__game.frame;
-  const tick = () => (window.__game.frame - start >= k) ? res(window.__game.frame) : requestAnimationFrame(tick);
-  tick();
-}), n);
+// Every wait from here on is measured in exact game frames, not wall clock —
+// `window.__harness.takeOver()` (src/main.js) stops the real-time loop from
+// calling `game.update()` on its own, and `step(n)` calls it exactly n times.
+// The intro-skip below used to wait on wall-clock `requestAnimationFrame`
+// polling instead, which measures a FIXED NUMBER OF GAME UPDATES against
+// however much real time the browser actually took to deliver that many
+// animation-frame callbacks — usually the same thing, but not exactly, and
+// this loop's own exit condition (`mode === 'cutscene'`) means a one-frame
+// difference in when a press lands can cost or save a WHOLE extra iteration,
+// leaving the player object with different residual state (`frozen`, from
+// the intro's own conch-grant) for the rest of the run. Proved this mattered
+// directly: a change with NO functional effect on this file at all (padding
+// an unrelated module with two comment lines) was enough to shift the real
+// time/game-frame ratio here and change how many iterations the intro-skip
+// loop took, which in turn changed a completely unrelated overworld ledge
+// hop's outcome many rooms later — `page.keyboard` still drives which keys
+// are HELD (that's real DOM key state, not timing), only the frame
+// advancement itself is no longer at the mercy of the clock.
+await page.evaluate(() => window.__harness.takeOver());
+const step = (n) => page.evaluate(n => window.__harness.step(n), n);
 
 // main.js only publishes window.__game; everything else comes out of the live
 // module graph, which returns the same instances the game is using.
@@ -115,10 +130,10 @@ await page.evaluate(async () => {
 });
 
 // New game, skip the intro.
-await page.keyboard.press('Enter'); await frames(6);
-await page.keyboard.press('Enter'); await frames(20);
+await page.keyboard.press('Enter'); await step(6);
+await page.keyboard.press('Enter'); await step(20);
 for (let i = 0; i < 140 && await page.evaluate(() => window.__game.mode === 'cutscene'); i++) {
-  await page.keyboard.press(i % 2 ? 'Enter' : 'x'); await frames(4);
+  await page.keyboard.press(i % 2 ? 'Enter' : 'x'); await step(4);
 }
 
 // ---------------------------------------------------------------- part 1: walk
@@ -698,7 +713,7 @@ for (const p of placements) {
     g.mode = 'play';
     g.progress.hearts = g.progress.maxHearts;
     g.enterMap(b.mapId, b.f, b.rx, b.ry, 80, 64, b.dir, { instant: true });
-    await new Promise(r => { const s = g.frame; const t = () => (g.frame - s >= 3 ? r() : requestAnimationFrame(t)); t(); });
+    window.__harness.step(3);
     // An open dialogue freezes every entity while mode is still 'play'.
     if (g.dialogue) g.dialogue.active = false;
     g.mode = 'play';
@@ -709,7 +724,7 @@ for (const p of placements) {
     g.player.z = 0; g.player.vz = 0; g.player.jumping = false; g.player.ledgeHop = null;
     g.player.x = b.tx * 16; g.player.y = b.ty * 16;
     g.player.lastSafe.x = g.player.x; g.player.lastSafe.y = g.player.y;
-    await new Promise(r => { const s = g.frame; const t = () => (g.frame - s >= 2 ? r() : requestAnimationFrame(t)); t(); });
+    window.__harness.step(2);
     // Clear the text box LAST. A room script or a reward `say` can reopen it
     // during the settle, and an open dialogue freezes every entity while `mode`
     // is still 'play' — the player simply ignores the key and the probe reads
@@ -729,14 +744,15 @@ for (const p of placements) {
   // player never reaches the room edge — walking out of the room and arriving in
   // the next one reads exactly like a failed hop.
   await page.keyboard.down(KEY[p.dir]);
-  await frames(22);
+  await step(22);
   await page.keyboard.up(KEY[p.dir]);
   // The hop drives z along a scripted arc; measuring mid-arc reads as a fail.
-  await page.evaluate(() => new Promise(res => {
-    let n = 0;
-    const t = () => (++n > 60 || (!window.__game.player.ledgeHop && window.__game.player.z === 0)) ? res() : requestAnimationFrame(t);
-    t();
-  }));
+  await page.evaluate(() => {
+    for (let n = 0; n < 60; n++) {
+      if (!window.__game.player.ledgeHop && window.__game.player.z === 0) break;
+      window.__harness.step(1);
+    }
+  });
   const after = await page.evaluate(() => ({
     x: window.__game.player.x, y: window.__game.player.y, z: window.__game.player.z,
     tx: Math.floor((window.__game.player.x + 8) / 16),
@@ -751,9 +767,9 @@ for (const p of placements) {
   // --- uphill: walk into the same lip from the low side, expect to be refused
   const up0 = await place(at, mx + p.ux, my + p.uy, OPP[p.dir]);
   await page.keyboard.down(KEY[OPP[p.dir]]);
-  await frames(22);
+  await step(22);
   await page.keyboard.up(KEY[OPP[p.dir]]);
-  await frames(4);
+  await step(4);
   const up = await page.evaluate(() => ({
     tx: Math.floor((window.__game.player.x + 8) / 16),
     ty: Math.floor((window.__game.player.y + 8) / 16),

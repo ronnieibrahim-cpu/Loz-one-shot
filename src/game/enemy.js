@@ -266,7 +266,20 @@ export class Boss extends Enemy {
     this.isBoss = true;
     this.oncePerGame = spec.oncePerGame !== false;
     this.intro = spec.intro != null ? spec.intro : BOSS_INTRO_FRAMES;
-    this.phase = -1;
+    // NOT `this.phase` — that field already belongs to `Entity` (opts.phase,
+    // read by `Game.updatePhaseShift`) and means "the tide level this entity
+    // belongs to," entirely unrelated to a boss's own fight-phase index. A
+    // boss writing `this.phase` here shadowed that field with its own combat
+    // phase (0, 1, 2, ...), and the moment those two numbers diverged from the
+    // room's actual tide level, `updatePhaseShift` read the boss as "phased
+    // out" of the current tide and pinned `invuln = Math.max(invuln, 2)` on it
+    // EVERY FRAME from then on — permanently unhittable, and harmless to the
+    // player too. This is why every multi-phase boss fought at LOW tide (index
+    // 0) took damage cleanly right up until its FIRST phase change (to index
+    // 1, which never equals tide level 0) and then could never be hit again,
+    // in god mode and in real combat alike — a bug in the boss/tide
+    // interaction, not a limitation of any fighting verb.
+    this.fightPhase = -1;
     this.weakOpen = !spec.shell;
     this.deathTime = 0;
     this.dying = false;
@@ -317,8 +330,18 @@ export class Boss extends Enemy {
     if (this.stun > 0) { this.stun--; return; }
 
     const p = this.currentPhase();
-    if (p !== this.phase) {
-      this.phase = p;
+    if (p !== this.fightPhase) {
+      this.fightPhase = p;
+      // `charge()` (below) is the only thing that ever clears `this.charging`
+      // — it does so by being CALLED AGAIN on a later frame and finding the
+      // dash has hit a wall. A phase whose own `ai` never calls `charge()`
+      // (Gohmaraq's final phase, among others) has no way to notice or clear
+      // a charge already in flight, so a boss whose hp crosses a phase
+      // threshold mid-dash carries `charging: true` into a phase that will
+      // never touch it again — permanently, since nothing else ever sets it
+      // false. Every verb that reads `.charging` (dBoss's dodge branch is the
+      // one this was found from) then believes a charge is forever imminent.
+      this.charging = false;
       this.invuln = Math.max(this.invuln, BOSS_PHASE_INVULN_FRAMES);
       if (this.spec.onPhase) this.spec.onPhase(this, game, p);
       game.audio.sfx('charged');

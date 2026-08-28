@@ -224,6 +224,105 @@ is in the page, and nothing steps until you say so.
 
 ## Hard-won lessons — do not rediscover these
 
+**`Boss` reused `Entity`'s own `.phase` field for something completely
+unrelated, and every multi-phase boss in the game paid for it.** `Entity`
+(`src/game/entity.js`) already owns `.phase`, set from `opts.phase` and read
+by `Game.updatePhaseShift()` (`src/game/game.js`) to mean "the tide level
+this entity belongs to" (a Leever that only exists at LOW, say). `Boss`
+(`src/game/enemy.js`) set `this.phase = -1` in its own constructor and bumped
+it to the current fight-phase index on every phase change — a second,
+unrelated meaning stuffed into the same name. The instant a boss's fight
+phase stopped matching the tide it was being fought at (which happens to
+EVERY multi-phase boss the first time it changes phase, since phase 0 is the
+only one that can start out matching), `updatePhaseShift` read it as "phased
+out of this tide" and pinned `invuln = Math.max(invuln, 2)` on it every frame
+from then on, permanently — unhittable, and harmless to the player too. This
+had been live for the whole life of the boss-verb work across multiple
+sessions and was blamed on other things each time: "AI limitation" for
+Gohmaraq (it looks exactly like a verb that can't finish a fight), "the
+player is swimming and a swimming Link cannot swing, needs the Cleats first"
+for Gloomtide (it looks exactly like a positioning problem when the boss
+takes zero damage from frame one). Both explanations were reasonable given
+what was visible from outside and both were wrong. Found by instrumenting
+`Boss.prototype.update` frame-by-frame and noticing `invuln` read 2 forever
+instead of decaying to 0 — the giveaway was that `invuln` was ALWAYS 2 one
+frame after `Boss.hurt`'s own real invuln (20) should have run out, not
+counting down through the values in between. Fixed by renaming Boss's own
+field to `fightPhase`; grep the whole repo for a field rename like this
+before trusting it — `bosses.js`'s own phase callbacks all take the index as
+a parameter and never read it off the entity, which is why nothing else
+needed to change. If you are chasing a boss that "just doesn't take damage"
+or "stops taking damage partway through," check `Boss.fightPhase` against
+`Entity.phase`/the room's tide level before assuming the fighting verb is at
+fault — a verb cannot land a hit `hurt()` has already decided to refuse.
+
+**A boss's `charging` flag can only ever be cleared by `charge()` running
+again and finding a wall — a phase that stops calling `charge()` leaves it
+stuck `true` forever.** `charge()` (`src/game/enemy.js`) sets `e.charging =
+true` when a dash starts and clears it only inside its OWN `if (e.charging)`
+branch, on a LATER call, once `moveDir` reports the dash has hit something.
+Nothing else in the file ever sets it false. Gohmaraq's final phase never
+calls `charge()` (only the phase before it does), so a boss whose hp crosses
+that phase threshold WHILE mid-dash carries `charging: true` into a phase
+that will never touch it again. Every verb that reads `.charging` to decide
+"dodge a charge" (`tools/actor-runtime.mjs`'s `dBoss`) then believes a charge
+is forever imminent and does nothing else for the rest of the fight — found
+by tracing an actor that was permanently pinned against one wall in a boss
+room, patrol and slams continuing normally around it, for the rest of a
+30000-frame budget. Fixed generically, not per-boss: `Boss.update()`'s
+phase-transition block now sets `this.charging = false` on every phase
+change, the one place that already knows "this boss just moved to a phase
+that may manage its own transient state differently."
+
+**A per-frame liveness check beats a one-time geometric pick for "which side
+should I dodge to" — and neither one solves a genuine corner.** `dBoss`'s
+charge-dodge used to choose a side once (from which side of the boss's own
+axis the player was standing on) and hold it for the whole dash. A player
+standing near an arena wall when the charge began could pick the wall side,
+press into it doing nothing, and get run over — the SAME "wall-cornering"
+failure a previous session's reverted ranged-projectile dodge hit and
+documented as unsolved. The fix that worked: don't try to compute a smarter
+one-time pick (a fixed arena has no side that's reliably open — it depends
+entirely on where the player already is) — instead compare the player's raw
+position frame-to-frame, and flip the side the moment a press proves it did
+nothing. This is a stronger, less fragile signal than a recomputed
+cross-product sign (which is what broke the reverted ranged-dodge — it flips
+on sub-pixel noise near the target). Still not a full fix: a genuine CORNER,
+where both perpendicular directions are blocked, defeats a single flip just
+as surely as it defeated the one-time pick. Measured directly in real combat:
+this got a 3-heart Gohmaraq fight from 5 landed hits to 7 before dying to
+exactly that corner case.
+
+**A checker's own timing methodology can fail a test that the game did not
+break — real wall-clock waits (`requestAnimationFrame` polling) are not the
+same measurement as a fixed number of game frames, and the gap between them
+can flip a result that has near-zero margin.** `tools/walk-dungeons.mjs`'s
+ledge-hop section used `page.keyboard.down/up` plus "wait until `g.frame` has
+advanced by N" polled via `requestAnimationFrame` — which measures N game
+updates against however much REAL TIME the browser took to deliver N
+callbacks, not a controlled step count. Its own intro-cutscene-skip loop
+(same file, earlier) has an exit condition (`mode === 'cutscene'`) sensitive
+to exactly when a keypress registers, so a one-frame real-time shift there
+can cost or save a whole loop iteration, leaving the player object with
+different residual state (`frozen`, from the intro's conch-grant) for the
+rest of that page's life — including a ledge check running many rooms later
+that has essentially no margin (it was later found to hold a direction for
+22 frames and only start moving on frame 21). Proved this was a timing
+artifact and not a real bug with a control experiment: padding an UNRELATED
+file with two comment lines — no functional change anywhere — was enough to
+shift the ratio and flip the SAME check from pass to fail. The fix is not to
+retune the margin but to stop measuring wall-clock time at all:
+`window.__harness.takeOver()` (`src/main.js`, the same hook `replay.mjs` and
+`actor-runtime.mjs` already use) stops the real-time loop from calling
+`game.update()` on its own, and `step(n)` calls it exactly n times with
+nothing about it depending on the clock. `page.keyboard.down/up` still work
+fine after `takeOver()` — real DOM key state, not timing — only the frame
+ADVANCEMENT needs to stop trusting `requestAnimationFrame`. If a browser-based
+checker's result seems to depend on what else changed in the codebase, or
+flips between runs of the exact same code, check whether it is measuring
+frames via wall-clock polling instead of `window.__harness.step()` before
+assuming the game itself is at fault.
+
 **`Player` has no `.hearts` — health lives on `game.progress.hearts`, and a
 damage hook that reads the wrong one fails silently rather than loudly.**
 Instrumenting `Player.prototype.takeDamage` to log every hit (the boss-verb

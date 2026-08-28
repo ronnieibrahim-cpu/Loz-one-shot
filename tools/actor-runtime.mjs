@@ -809,6 +809,21 @@ export async function installRuntime() {
     // first (windUp/stun), so there is always a warning. Latched per charge
     // so the side doesn't reconsider mid-dash off a sign that's gone noisy.
     let chargeSide = 0;
+    // The wall-cornering failure a previous session's reverted ranged-dodge
+    // hit, and could not fix with a one-time pick, turns out to hit this
+    // dodge too: `chargeSide` is chosen once from which side of the boss's
+    // axis the player happened to be standing on, with no idea whether that
+    // side has a wall two tiles away. Measured directly (seed 20260806, real
+    // combat): a player standing near the arena's edge when a charge began
+    // picked the wall side, pressed into it for the whole dash doing nothing,
+    // and was run over. The fix is not a smarter one-time pick (a fixed-size
+    // arena has no single "always open" side — every side is a wall for a
+    // player already standing near it) but a LIVE one: if the last frame's
+    // press did not actually move the player, the side is blocked, so flip
+    // it. Comparing raw position is a stronger signal than a recomputed
+    // cross-product sign (the failure mode the ranged-dodge attempt hit) —
+    // it only ever flips after PROVING the current side is doing nothing.
+    let chargeStuckX = null, chargeStuckY = null;
     // Every slam-style opener in this file (`gohmaraqSlam` and its siblings)
     // fires its shot burst AIMED AT THE PLAYER in the exact same call that
     // opens the weak point — so the instant `weakOpen` flips true, there is
@@ -876,12 +891,16 @@ export async function installRuntime() {
         if (chargeSide === 0) {
           chargeSide = (b.dir === 'up' || b.dir === 'down')
             ? (p.cx >= b.cx ? 1 : -1) : (p.cy >= b.cy ? 1 : -1);
+        } else if (chargeStuckX === p.x && chargeStuckY === p.y) {
+          chargeSide = -chargeSide;
         }
+        chargeStuckX = p.x; chargeStuckY = p.y;
         const perp = (b.dir === 'up' || b.dir === 'down')
           ? (chargeSide > 0 ? BIT.right : BIT.left)
           : (chargeSide > 0 ? BIT.down : BIT.up);
         yield fence(perp); f++; continue;
       }
+      chargeStuckX = null; chargeStuckY = null;
       chargeSide = 0;
       const dx = b.cx - p.cx, dy = b.cy - p.cy;
       const adx = Math.abs(dx), ady = Math.abs(dy);

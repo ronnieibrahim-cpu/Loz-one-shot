@@ -138,9 +138,21 @@ for (const f of FIGHTS) {
   const maxHp = await page.evaluate(() => (window.__game.boss ? window.__game.boss.hp : 0));
   let done = false, err = null, guard = 0;
   let opened = 0, minHp = 1e9, samples = 0, reach = 0;
-  while (!done && guard++ < 4000) {
+  // A 400-frame chunk used to be far shorter than any real fight, because
+  // every multi-phase boss went permanently unhittable the moment its own
+  // fight-phase index stopped matching the room's tide level (the
+  // `Boss.phase`/`Entity.phase` collision fixed this session — see
+  // docs/HANDOFF.md). Now that a boss can actually be killed, some fights
+  // (Gloomtide's, measured at ~300 frames total) finish inside a SINGLE
+  // 400-frame chunk, so the one sample taken after that chunk already reads
+  // a dead, cleared boss and reports "eye never opened" — true of the
+  // sample, false of the fight. 40 frames is short enough that even the
+  // fastest fight measured takes several chunks, so at least one sample
+  // lands while the boss is still alive and mid-fight.
+  const CHUNK = 40;
+  while (!done && guard++ < 40000) {
     let r;
-    try { r = await page.evaluate(n => window.__rp.pump(n), 400); }
+    try { r = await page.evaluate(n => window.__rp.pump(n), CHUNK); }
     catch (e) { err = String(e.message || e).replace(/^page\.evaluate: /, '').split('\n')[0]; break; }
     done = r.done;
     if (r.error) { err = String(r.error); break; }
@@ -178,20 +190,29 @@ for (const f of FIGHTS) {
   //      fights anything.
   //
   // The kill itself is NOT asserted, and pretending otherwise would be the
-  // worst thing in this file. `dBoss` lands real hits on some bosses (Gohmaraq
-  // 24 -> 14, Wyverna 44 -> 24, Rootmaw 52 -> 32 before it heals) and none at
-  // all on others, and the measured reason is positioning rather than timing:
-  // Gloomtide is within sword reach on every sample with its weak point open
-  // and still takes nothing, because at MID the player is SWIMMING and a
-  // swimming Link cannot swing. Fighting it means sinking with the Cleats
-  // first. That is per-boss tactics, it is the next session's job, and until it
-  // is done this file measures the fights instead of claiming them.
+  // worst thing in this file. As of this session `dBoss` fully kills FIVE of
+  // the six bosses in god mode (Gohmaraq, Anemos, Gloomtide, Rootmaw, Nereth
+  // all reach 0 hp; Wyverna needs a bigger `['boss', N]` budget than this
+  // checker's default 9000 frames to get there but is confirmed capable of it
+  // — see docs/NEXT-SESSION.md). Gloomtide's zero-damage numbers from every
+  // earlier session were NOT a swimming/positioning problem — that diagnosis
+  // was this checker's own guess and it was wrong. The real cause: `Boss` was
+  // shadowing `Entity.phase` (a tide-affinity field) with its own unrelated
+  // fight-phase index, so a boss whose phase 0 didn't happen to equal its
+  // fight tide (Gloomtide fights at MID; its own phase 0 is not MID) went
+  // permanently unhittable and harmless from the very first frame. Fixed in
+  // `src/game/enemy.js` — see docs/HANDOFF.md's hard-won-lessons. God mode
+  // proving a kill is still not real-combat fairness (that is
+  // check-hearts.mjs's job, and this file still deliberately does not ask
+  // it) — but "needs the Cleats first" is no longer the standing explanation
+  // for anything here, and should not be re-asserted without fighting it in
+  // real combat first.
   check(`${f.id}: ${f.boss} spawns in the room ${f.id} declares (${info.room})`,
     spawned === true, `nothing with isBoss in ${info.room}`);
   check(`${f.id}: ${f.boss}'s weak point opens at tide ${f.tide}`,
     opened > 0, `never opened in ${samples} samples across the fight`);
   console.log(`       damage dealt: ${maxHp - (minHp === 1e9 ? maxHp : minHp)} of ${maxHp} hp`
-    + (err ? '  (fight did not finish: AI limitation, see comment)' : ''));
+    + (err ? '  (fight did not finish in this budget — not necessarily unwinnable, see comment)' : ''));
 }
 
 check('no page errors', errs.length === 0, errs.slice(0, 2).join(' | '));
