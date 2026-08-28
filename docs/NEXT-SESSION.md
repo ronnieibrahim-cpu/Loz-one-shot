@@ -154,12 +154,20 @@ charges all seem to start while still mid-approach.
    gets past it — a real fight that reaches phase 3 has free health sitting
    in the room if the verb is taught to spend a swing on a crab instead of
    only ever targeting `g.boss`.
-4. **Measure whether the charge-lock is Gohmaraq-specific or general.** It
-   comes from `aligned()` + closing-to-swing-range being nearly the same
-   condition, which is true of any boss using `charge()` while `dBoss`'s
-   generic approach logic is active — check Wyverna and Rootmaw (both use
-   `charge` per `src/data/bosses.js`) for the same stall once Gohmaraq is
-   past it, rather than fixing it once and assuming it generalises.
+4. **Checked, not assumed — the charge-lock cannot generalise to the other
+   five main bosses, because none of them uses `charge()` at all.** Grepped
+   every `charge(e, g` call site in `src/data/bosses.js` against
+   `defineBoss` blocks: **Gohmaraq is the only one of the six dungeon
+   bosses that calls it.** (`brinehulk`, `clawcrab`, `reefguard`,
+   `ironknight` also call it, but those are MINIBOSSES, not in
+   `check-bosses.mjs`'s six-fight roster.) Wyverna dives on a custom
+   velocity burst (`wyvernaDive`, line 455 — windUp then a straight-line
+   `_bvx`/`_bvy` burst at the player's position, no `aligned()`/`range`
+   gate at all) and Rootmaw is rooted for two phases and merely `chase`s at
+   0.38 px/f in its third — neither has anything shaped like Gohmaraq's
+   charge. So this problem does not need re-measuring per boss; it is
+   Gohmaraq-specific by construction, which argues harder for the content
+   fix below than the AI fix above.
 
 **One diagnostic run after the corrected lead #1, to size the opportunity
 before spending a session on it:** across a full 6-heart fight (296 sampled
@@ -175,6 +183,41 @@ move that number is upstream of anything on this list — something about
 the approach itself (not the swing decision at the end of it) is what
 needs to survive an interruption more often, and no attempt this session
 targeted that.
+
+**One more spatial data point, likely the actual explanation for the 50/50
+split above.** Logged player/boss position every 24 frames through the stall
+(f600-1080, 6-heart run): the arena is **160x128 px** (10x8 tiles) and
+`charge()`'s own `range: 130` (Gohmaraq's phase-2 override, `src/data/bosses.js`)
+is close to the room's own diagonal (~205px) — in a room this size, "in
+charge range" is close to "anywhere in the room." The logged boss position
+swings wall-to-wall repeatedly inside the same 30-60 frame windows
+(`bx`: 103->26->51->96->98, `by` similarly), i.e. it is not lingering near
+the player, it is dashing across the whole arena and back on a cadence
+close to its own `tell`+dash+`recover` cycle, over and over. This reframes
+the charge-lock as possibly a CONTENT/BALANCE fact about this arena rather
+than a pure AI bug: a charge whose range covers nearly the whole room, in a
+room too small to ever fully clear that range during the 24-frame recovery,
+may not have a purely-positional AI answer at all. Two different next
+sessions' worth of investigation follow from this, and they are NOT the same
+job — pick one, don't conflate them:
+  * **AI fix**: teach `dBoss` to spend a charge's recovery window
+    RETREATING toward the corner of the room farthest from the boss's likely
+    next patrol/dash line, rather than continuing to approach — accepting
+    fewer swing attempts per unit time in exchange for the charges that
+    happen actually being escapable, rather than trying to out-position a
+    charge whose range covers the whole arena.
+  * **Content fix, and the stronger-supported of the two given lead #4
+    below**: checked all six boss rooms' `pw`/`ph` directly (`getRoom` via
+    `maps.js`) rather than assuming — **every one of them is 160x128, the
+    standard single-screen arena.** Gohmaraq is not in a smaller room than
+    its peers; it is the only one of the six with a `charge` at all, let
+    alone one (`range: 130`, `speed: 1.9`) sized close to that shared
+    room's own diagonal (~205px). Nothing to compare against on the AI
+    side — see lead #4 — so the room isn't the outlier, Gohmaraq's numbers
+    are. A smaller `range` (say 90-100, closer to what the minibosses in
+    the same file use — `reefguard` 100, `ironknight` 110) or a lower
+    `speed` would shrink how much of the arena a single charge can lock
+    down, without touching `dBoss` at all.
 
 **Measurement harness used, not committed (ask for it or rebuild in five
 minutes from `tools/check-bosses.mjs`'s own setup):** a scratch script that
