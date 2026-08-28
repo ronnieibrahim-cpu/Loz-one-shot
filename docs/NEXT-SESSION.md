@@ -1,4 +1,97 @@
-## Charge dodge lands, ranged dodge doesn't — the boss verb, continued (this session)
+## The two big contact hits are gone, and the real bottleneck is now visible: a charge-range that covers the arena (this session)
+
+**Still not a win, and the bottleneck has moved — for the better.** This
+session built a real, repeatable, real-combat measurement (12 quarter-hearts,
+no god mode, seed 20260806, `dBoss` fighting Gohmaraq from `d1`'s boss room)
+and used it to find and fix one bug, then used the same harness to find the
+NEXT one. Neither script is committed — recreate from `check-bosses.mjs`'s
+own page-serving/Playwright boilerplate with `godMode: false` and `hearts`/
+`maxHearts` set to the heart count you want to test, same as this session and
+the one before it did.
+
+**Fixed: full-contact hits during the approach.** `dBoss`'s "keep closing
+until in range" gate compared the boss to the player with a single Manhattan
+number (`NEAR = 18`, dFight's own constant, measured on ordinary enemies
+whose hitbox is roughly a tile). Gohmaraq's `hb` is 26x20 — nearly the whole
+32x32 sprite — and a diagonal approach can push one axis well inside that
+box while the other axis is still "far" by the Manhattan sum, so the verb
+kept pressing "toward" the boss past the point the boxes actually touched.
+Measured directly: two FULL-CONTACT hits (4 qh each, matching Gohmaraq's own
+`damage: 4` field) landed on the player mid-approach, at Manhattan distance
+27-30 — outside the gate's own 24px "still closing" threshold. The fix reads
+the boss's actual `hb` and asks the same axis-separated question a real AABB
+overlap test asks (`|dx| <= bossHalfW + playerHalfW + margin`, same for Y —
+see `closeEnough` in `tools/actor-runtime.mjs`) instead of reusing a scalar
+tuned for a smaller foe. Result, same seed, same items, same fight: the two
+full-contact hits are gone entirely, every remaining hit is 2 qh ranged chip
+from the slam's own rock spread, and the player survives to frame 1520
+instead of 800 — nearly double — before the same eventual death. The melee
+trade itself is UNCHANGED (still 5 sword hits, still 24 -> 14 hp), and
+`check-bosses.mjs`'s godmode damage tallies for all six bosses are
+byte-identical to before this change (13/13, still Gohmaraq 10/24, D2 0/30,
+D3 0/36, D4 20/44, D5 20/52, D6 0/80) — this is a generic engine-level fix,
+not a Gohmaraq special case, and it changes nothing about what god mode
+measures for the same reason the retreat-margin/diagonal fix from two
+sessions ago didn't: it only bites when contact is actually costly, and god
+mode never lets contact cost anything. `tools/test.mjs` is 59/59.
+Full writeup, with the measured frame-by-frame trace that found it, in
+`docs/HANDOFF.md`'s hard-won-lessons section.
+
+**Found, NOT fixed, and it reframes job 2 below with a sharper measurement:
+Gohmaraq gets permanently stuck in a charge-dodge loop once phase 2 begins,
+at ANY heart count.** Re-ran the same fight at 6 hearts (24 qh, everything
+else identical) specifically to see whether removing the two contact hits
+was enough to let the verb actually win with more health to spend. It
+wasn't: boss hp reaches 14 by frame ~640 (the same five hits as the 3-heart
+run) and then **never drops again for the rest of the fight** — the player
+survives to frame 3340 on the extra hearts, taking nothing but 2 qh ranged
+chip the whole way, and dies without ever landing a sixth hit. Traced with a
+coarse (every-40-frame) sample across the whole fight: from frame ~800 on,
+`b.charging` is `true` on almost every single sample through frame 3200.
+The cause is arithmetic, not a bug in the dodge itself: Gohmaraq's phase-2
+`charge()` call (`src/data/bosses.js`) passes `range: 130` and `tol: 14` —
+it charges any time the player is within 130px AND roughly axis-aligned
+within 14px, and 130px is close to the whole arena. `dBoss`'s own approach
+logic (`towardDiag`) walks the player straight at the boss on both axes at
+once, which is exactly what puts it back inside that 14px alignment band the
+moment the charge-dodge's perpendicular sidestep clears the boss's `tell`
+window — so the cycle is charge -> dodge -> re-approach dead-on -> re-align
+-> charge again, and the player never accumulates the few unbroken frames
+of closing distance a sixth swing needs. **This is a different, more
+fundamental finding than the "phase 3 speed 1.0 == WALK_SPEED" note two
+sessions ago** (that was about phase 3, below 30% hp; this is phase 2,
+above it, and it now looks like the dominant blocker at any heart count,
+since even 24 qh of margin couldn't outlast it). See job 1 below for where
+to take this.
+
+**Next session, in order:**
+
+1. **The charge-alignment loop, not the ranged spray, is now the measured
+   bottleneck.** The previous session's reactive per-shot dodge attempt (see
+   the section below this one) was reverted because it measured net negative
+   against the OLD baseline, where two free contact hits were eating most of
+   the health budget; that trade may look different now that the melee
+   approach itself doesn't bleed contact damage. But the more direct lever,
+   per this session's charge-loop finding, is the re-approach path itself:
+   after a charge ends, bias the closing path to stay slightly off the
+   charge's 14px alignment tolerance until within actual swing range, rather
+   than walking dead-on and re-triggering another charge before a hit lands.
+   Do not guess the bias amount — measure it the way this session measured
+   `closeEnough`, against the same real-combat harness, and revert if it
+   lands fewer hits than leaving it alone (the standing rule since the
+   ranged-dodge attempt: a "safety" feature that measurably lands fewer hits
+   is worse than not having it).
+2. Once Gohmaraq is a measured win at 3 hearts, wire `dBoss` into
+   `playthrough-route.mjs` past `d1/0,3,2`, and only then look at the other
+   five bosses — Gloomtide's swimming-blocks-swinging finding in particular
+   needs a real tactic (sink with the Cleats first), not this generic verb.
+3. The Boss Key / third-key pass behind the Clawcrab door and the other five
+   dungeons' routes are both still undone and both still blocked on job 1
+   actually finishing.
+
+---
+
+## Charge dodge lands, ranged dodge doesn't — the boss verb, continued (previous session)
 
 **Still not a win.** Gohmaraq measured in real combat (12 quarter-hearts, no
 god mode, seed 20260806): five hits landed (24 -> 14 hp), same as last

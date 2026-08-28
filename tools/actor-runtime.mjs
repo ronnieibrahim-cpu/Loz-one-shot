@@ -737,19 +737,23 @@ export async function installRuntime() {
    */
   // STATUS: THIS VERB FIGHTS AND DOES NOT YET WIN. It finds the boss, stays in
   // the arena, waits out the shell, chains swings through a landed hit's own
-  // invulnerability window, sidesteps a charge, and lands real hits —
-  // Gohmaraq measured in REAL combat (12 quarter-hearts, no god mode, seed
-  // 20260806) from 24 hp to 14, five hits landed, the player surviving to its
-  // last half-heart before a final graze. The melee trade is close to
-  // breakeven; what still kills a 3-heart player is ranged chip damage. A
-  // reactive per-shot dodge was tried and measured NET NEGATIVE (it landed
-  // fewer melee hits than leaving it alone, for no reliable safety in
-  // return — see docs/NEXT-SESSION.md's boss-verb section for the measured
-  // numbers and the wall-cornering failure mode before attempting it again).
-  // It is committed because the scaffolding is right and the traps it
-  // already closed are expensive to rediscover; it is NOT referenced by
-  // tools/playthrough-route.mjs, because a route step that cannot reliably
-  // finish is worse than one that is missing.
+  // invulnerability window, sidesteps a charge, closes distance using the
+  // boss's own hitbox rather than a fixed reach so it stops BEFORE walking
+  // into contact, and lands real hits — Gohmaraq measured in REAL combat (12
+  // quarter-hearts, no god mode, seed 20260806) from 24 hp to 14, five hits
+  // landed, same melee trade as before the contact-avoidance fix (see
+  // `closeEnough`, below) but zero free full-contact touches now: every point
+  // of chip damage taken is a 2 qh ranged hit from the slam's own rock
+  // spread, and the player survives to frame 1520 instead of 800 before the
+  // same eventual chip death. What still kills a 3-heart player is that
+  // ranged spray. A reactive per-shot dodge was tried and measured NET
+  // NEGATIVE (it landed fewer melee hits than leaving it alone, for no
+  // reliable safety in return — see docs/NEXT-SESSION.md's boss-verb section
+  // for the measured numbers and the wall-cornering failure mode before
+  // attempting it again). It is committed because the scaffolding is right
+  // and the traps it already closed are expensive to rediscover; it is NOT
+  // referenced by tools/playthrough-route.mjs, because a route step that
+  // cannot reliably finish is worse than one that is missing.
   function* dBoss(maxF) {
     const g = window.__game;
     for (let i = 0; i < 300 && !g.boss; i++) yield 0;
@@ -785,6 +789,29 @@ export async function installRuntime() {
     // Frames of invuln to leave unspent as a retreat allowance — see the
     // comment on RETREAT_MARGIN's use, below.
     const RETREAT_MARGIN = 20;
+    // NEAR (18px, Manhattan) is dFight's number, measured against ordinary
+    // enemies whose hitboxes are roughly a tile across. Gohmaraq's own hb is
+    // 26x20 — a boss can be much bigger than the thing this constant was
+    // measured on, and a fixed Manhattan sum does not know that. Two real
+    // contact hits (4 qh each, matching the boss's own `damage` field) landed
+    // on the player mid-approach at Manhattan distance 27-30 — OUTSIDE
+    // NEAR+6's own "still closing" threshold — because Manhattan distance is
+    // the wrong shape for an AABB overlap test: a diagonal approach can close
+    // past the boss's real half-width on one axis while the other axis is
+    // still open, and the sum of the two still reads "far" while the boxes
+    // already touch. `closeEnough` asks the same shape of question the
+    // engine's own contact check does — per axis, from the boss's actual
+    // `hb`, not a single scalar tuned for a smaller foe.
+    const PLAYER_HALF = { hw: 5, hh: 4 };     // Player hb (w:10,h:7), halved
+    const CONTACT_MARGIN = 6;                 // stop a step BEFORE touching
+    const closeEnough = (dx2, dy2) => {
+      const b = g.boss;
+      const bh = (b && b.hb) ? { hw: b.hb.w / 2, hh: b.hb.h / 2 } : { hw: 8, hh: 8 };
+      const mx = bh.hw + PLAYER_HALF.hw + CONTACT_MARGIN;
+      const my = bh.hh + PLAYER_HALF.hh + CONTACT_MARGIN;
+      if (Math.abs(dx2) <= mx && Math.abs(dy2) <= my) return true;
+      return Math.abs(dx2) + Math.abs(dy2) <= NEAR + 6;
+    };
     // Every mask goes through the fence. A boss arena has exits, and leaving
     // one wipes the room's entities — the boss with them. That reads exactly
     // like a kill (no boss, full health) and is a retreat; it is why this verb
@@ -843,7 +870,7 @@ export async function installRuntime() {
           const dx2 = b.cx - p.cx, dy2 = b.cy - p.cy;
           const ax2 = Math.abs(dx2), ay2 = Math.abs(dy2);
           const toward2 = towardDiag(dx2, dy2);
-          if (ax2 + ay2 > NEAR + 6) { yield fence(toward2); f++; continue; }
+          if (!closeEnough(dx2, dy2)) { yield fence(toward2); f++; continue; }
           const faceOnly = ax2 >= ay2 ? (dx2 > 0 ? BIT.right : BIT.left) : (dy2 > 0 ? BIT.down : BIT.up);
           yield fence(faceOnly); f++;
           yield fence(faceOnly | sword()); f++;
@@ -865,7 +892,7 @@ export async function installRuntime() {
         // Gohmaraq's phase-1 tell is a stationary spray, not a charge closing
         // on us, so there is nothing here worth backing away from before the
         // swing.
-        if (adx + ady > NEAR + 6) { yield fence(towardDiag(dx, dy)); f++; continue; }
+        if (!closeEnough(dx, dy)) { yield fence(towardDiag(dx, dy)); f++; continue; }
         // In range: face it, swing, then get out before it closes.
         yield fence(toward); f++;
         yield fence(toward | sword()); f++;

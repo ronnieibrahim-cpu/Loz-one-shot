@@ -564,6 +564,32 @@ in costs are per-boss facts. A generic verb gets the timing gate for free and
 has to earn the positioning. Budget a session for it, and prove it on Gohmaraq
 at three hearts, because that is what a real player brings to D1.
 
+**MANHATTAN DISTANCE IS THE WRONG SHAPE FOR "AM I TOUCHING IT", AND A BOSS'S
+OWN HITBOX CAN BE BIGGER THAN THE CONSTANT MEASURED ON ORDINARY ENEMIES.**
+`dBoss`'s "keep closing until in range" gate reused `NEAR = 18` (dFight's own
+number, Manhattan `|dx|+|dy|`) to decide when to stop approaching and swing.
+Measured in real combat (12 qh, no god mode, seed 20260806): the player took
+two FULL-CONTACT hits (4 qh each, matching Gohmaraq's own `damage: 4` field)
+mid-approach, at Manhattan distance 27-30 — outside the 24px "still closing"
+threshold the verb was using, so by its own accounting it should still have
+been safe. It wasn't, because Manhattan distance sums both axes and an AABB
+overlap test does not: closing in diagonally can push one axis well inside
+the boss's real half-width (Gohmaraq's `hb` is 26x20, nearly the whole
+32x32 sprite) while the other axis is still open, and the SUM of the two
+still reads "far" right up to the frame the boxes actually touch. The fix
+reads the boss's own `hb` and asks the axis-separated question the real
+contact check asks (`|dx| <= bossHalfW + playerHalfW + margin` AND same for
+Y) instead of a single scalar tuned for a smaller foe. Result, same seed,
+same items, same fight: the two full-contact hits are gone entirely — every
+remaining hit is 2 qh ranged chip from the slam's rock spread, not a free
+body touch — the player survives to frame 1520 instead of 800 (nearly
+double), and the melee trade is UNCHANGED (still 5 sword hits, still 24 ->
+14 hp; `check-bosses.mjs`'s godmode damage tallies for all six bosses are
+byte-identical to before this change). **A constant measured against one
+class of enemy does not travel to a differently-shaped one for free — ask
+the entity's own hitbox, the same way `canOccupy` asks the tile's own flags,
+rather than reusing a number that happened to work elsewhere.**
+
 **`check-anchor.mjs` PROVES REACH AND CALLS IT A CROSSING, and for the Iron
 Pipe the two are different tiles.** It reports "d1 0,4,2: one anchor placement
 crosses it — stand 0,3 at LOW, bite 1,3". The throw really does carry two
