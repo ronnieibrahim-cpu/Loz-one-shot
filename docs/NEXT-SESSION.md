@@ -1,4 +1,146 @@
-## Charge dodge lands, ranged dodge doesn't — the boss verb, continued (this session)
+## The boss verb's real ceiling found: a charge-lock, not chip damage — six tried fixes, all reverted (this session)
+
+**Still not a win, and this session's finding changes what "win" needs.**
+Every prior session read the 3-heart death (24->14 boss hp, player dead) as a
+chip-damage problem — not enough margin to survive the last graze. That is
+true but it is not the ceiling. **At 6 hearts (24 qh, seed 20260806, real
+combat, no god mode) the fight still stops dead at exactly 24->14 hp and
+never lands a sixth hit before eventually bleeding out at frame 3048** —
+tripling the health budget bought roughly 2400 more frames of survival and
+zero more damage dealt. That rules out "not enough hearts" as the actual
+blocker: something stops the verb from ever landing another hit past 14 hp,
+independent of how much health it has to spend finding out.
+
+**What it is, measured directly, not guessed.** Instrumented every frame of
+the stall window (612-1044, the 6-heart run): the boss's weak point (`b.weakOpen`)
+is open for **100% of those 432 frames** — there is no shortage of openings —
+but `b.charging` is true for **72% of them, across 5 separate charge
+episodes**. Gohmaraq's phase-2 `charge()` (`src/game/enemy.js`) retriggers
+whenever the player is `aligned` (within `tol: 14` px on the perpendicular
+axis) and in range (130px) — and closing distance to swing range NEAR=18 on
+BOTH axes, which is exactly what `dBoss`'s approach does, drives the
+perpendicular offset well under 14px as a side effect. **The same movement
+that gets the verb close enough to swing is the movement that re-triggers
+the charge**, and `dBoss`'s charge dodge (rightly) treats every charge as
+the top-priority interrupt — so the loop spends most of its time dodging a
+charge it keeps re-causing, and the two or three frames of clean approach
+between recoveries are rarely enough to close, face, and swing before the
+next one fires. This is a different bug from anything the last two sessions
+chased (contact-overshoot, ranged chip damage) and it was invisible to both:
+neither shows up until you ask "why does hp stop moving," which nobody had
+measured before because every prior real-combat run died before reaching
+this hp band.
+
+**Six things were tried against the ORIGINAL problem (chip damage /
+contact-overshoot) before this stall was found, all measured, all reverted —
+recorded so nobody re-spends the session finding the same dead ends:**
+
+Baseline (unmodified `dBoss`, seed 20260806, 12 qh): **5 hits landed (24->14
+hp), 4 damage events (-2,-4,-4,-2 = exactly 12 qh), dead at frame 804.**
+Contact hits traced to exact frames: at f446 the player closed from Manhattan
+distance 30 to 27 in ONE frame (combined ~2px/f closing rate: player's own
+~1.4px/f diagonal approach plus the boss's own ~0.55-1px/f patrol
+happening to drift the same direction) and 27 was already inside the boss's
+actual hitbox overlap despite being outside the `NEAR+6=24` Manhattan
+"still safe" threshold — the two zones overlap because the check is a
+Manhattan sum and the boss's `hb` is a wide rectangle, not a point.
+
+1. **Slow to single-axis approach once inside a wider "final approach"
+   band** (`APPROACH_SLOW = NEAR+24`, single-axis `toward` instead of
+   `towardDiag` between there and the swing threshold). **Worse: 1 hit
+   landed, dead at frame 552.** Slowing the close-in extends the time spent
+   at medium range, which costs more than the overshoot it prevents — the
+   same lesson `dFight`'s own comment already recorded for widening its
+   standoff band ("standing further out means walking further in").
+2. **Widen the safe-approach margin without slowing down** (`NEAR+6` ->
+   `NEAR+10`, still full-speed `towardDiag`). **No better: still 5 hits,
+   24->14 hp, but 5 damage events instead of 4** (two of the extra events
+   were ranged, not contact) — dead at frame 996 instead of 804. A wider
+   Manhattan buffer doesn't fix a Manhattan-vs-rectangle mismatch; it just
+   delays the same outcome.
+3. **`BACKOFF` 30 -> 16** (retreat less after a clean swing, re-engage
+   sooner). **Worse: 3 hits, dead at frame 564.** Fewer retreat frames means
+   more re-approach cycles, and each cycle is where the risk lives.
+4. **`BACKOFF` 30 -> 45** (retreat more). **Worse: 4 hits, dead at frame
+   900.** More retreat time didn't buy more safety either — matches the
+   already-recorded finding that `RETREAT_MARGIN` 26 (a related knob, tried
+   two sessions ago) was also strictly worse than the current values.
+5. **Distance-based backoff** (retreat until Manhattan distance clears a
+   `SAFE` threshold instead of a fixed frame count, capped at `BACKOFF` as a
+   fallback). **A wash: statistically identical to baseline at `SAFE=46`**
+   (5 hits, dead at 792 vs 804) **and EXACTLY identical at `SAFE=64`**
+   (degenerates to the same fixed-`BACKOFF` behaviour because the boss keeps
+   pace and the distance never actually clears within the frame cap).
+6. **Hold position instead of closing when the boss's own drift is already
+   moving toward the player** (tracked via a one-frame-delayed
+   `prevBx`/`prevBy` velocity read, a real signal rather than a model).
+   **Worse: 1 hit, dead at frame 600**, and the damage that did land came in
+   at Manhattan distance 35 — outside contact range entirely, meaning
+   holding still let a slam's rock-spray tag the player instead of the
+   trade it was meant to prevent. Standing still is not free in a room this
+   boss is still attacking in.
+
+**The pattern across all six: every attempt that changed the pace of
+engagement (slower, more cautious, more patient) measured WORSE or flat,
+never better.** The existing `NEAR+6`/`BACKOFF=30`/`RETREAT_MARGIN=20` values
+are already a local optimum for this shape of fix. That is why this session
+went looking for a different SHAPE of fix instead of another knob, and found
+the charge-lock above. **Working tree is clean — none of the six were kept.**
+
+**What is worth trying next, in order, none of it attempted this session:**
+
+1. **Break alignment deliberately after a charge ends**, rather than
+   approaching straight back into the condition that caused it. The dodge
+   already reads `b.charging`; the missing piece is remembering that a
+   charge JUST ended (a `wasCharging` edge, the same shape as the
+   `chargeSide` latch already in the verb) and, for a short window after,
+   biasing the approach to keep the perpendicular offset above `tol=14` —
+   closing the ALONG axis while holding the across one — until the along
+   distance is already near swing range, THEN closing the last few pixels
+   fast for the swing. This is speculative and NOT the same as fix #1 above
+   (which slowed every close-in, not just the post-charge window) — it
+   should be measured on its own, not assumed to share #1's result.
+2. **The held-blade continuous poke is unexplored.** `Player.updateSwordHold`
+   (`src/game/player.js:611`) extends the blade after just `SWORD_HOLD_DELAY`
+   (2 frames, not the full 42-frame `CHARGE_FRAMES` spin threshold) and deals
+   `SWORD_HOLD_DAMAGE` (1, half a normal swing) on ANY contact, unrate-limited,
+   for as long as the box overlaps — spaced only by the boss's own
+   invulnerability. Walking in with the blade already out (rather than a
+   discrete face+swing) turns a contact-range mistake from a pure loss into
+   a partial trade. Untested: movement drops to `SWORD_HOLD_SPEED` (0.75x)
+   while holding, which is exactly the kind of slowdown #1-6 above all
+   measured as costly — so this needs its own measurement, not an assumption
+   either way.
+3. **Farm the phase-3 crab summons for hearts.** `crab` drops `'common'`
+   (`DROP_TABLES.common` in `src/game/objects.js`: 16% heart), and Gohmaraq's
+   phase-3 `onPhase` summons two on entry. Irrelevant to the 14-hp stall
+   above (phase 3 needs hp<=7.2, never reached), but relevant once #1 or #2
+   gets past it — a real fight that reaches phase 3 has free health sitting
+   in the room if the verb is taught to spend a swing on a crab instead of
+   only ever targeting `g.boss`.
+4. **Measure whether the charge-lock is Gohmaraq-specific or general.** It
+   comes from `aligned()` + closing-to-swing-range being nearly the same
+   condition, which is true of any boss using `charge()` while `dBoss`'s
+   generic approach logic is active — check Wyverna and Rootmaw (both use
+   `charge` per `src/data/bosses.js`) for the same stall once Gohmaraq is
+   past it, rather than fixing it once and assuming it generalises.
+
+**Measurement harness used, not committed (ask for it or rebuild in five
+minutes from `tools/check-bosses.mjs`'s own setup):** a scratch script that
+runs `dBoss` against `d1`'s Gohmaraq with `godMode: false` and a chosen
+`hearts`/`maxHearts`, sampling `g.boss.hp`, `g.progress.hearts`,
+`b.weakOpen`, `b.charging` every 1-12 frames over `window.__rp.pump`. The
+existing `tools/check-bosses.mjs` cannot see any of this — it runs in GOD
+MODE by design (see its own header comment) and asserts only that the shell
+opens, never that a hit lands or that hp keeps moving. A future session
+wanting to re-run this measurement should write it fresh against
+`check-bosses.mjs`'s own boilerplate (server/playwright bootstrap, the
+`beginRecord`/`pump` pattern) rather than hunting for a throwaway file that
+was never committed.
+
+---
+
+## Charge dodge lands, ranged dodge doesn't — the boss verb, continued (previous session)
 
 **Still not a win.** Gohmaraq measured in real combat (12 quarter-hearts, no
 god mode, seed 20260806): five hits landed (24 -> 14 hp), same as last
