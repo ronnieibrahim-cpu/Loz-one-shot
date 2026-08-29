@@ -1115,3 +1115,81 @@ is not a scheduling flaw — it is what "would this read as a shipped Oracle gam
 actually means. The judgment sessions are front-loaded on purpose: S1, S2 and S5
 are the three that most need your eye, and they are first, second and fifth.
 
+
+---
+
+## Appendix — the branch reconcile of 2026-08-29
+
+72 branches existed on `origin` besides `main`. Every one was assessed. The
+decisions are below; the harvest is in `docs/HANDOFF.md` → "Negative results —
+the boss-verb corpus" and in `docs/GUIDE.md` / `docs/GUIDE.html`.
+
+**Deletion could not be executed from the session** — this environment's git
+proxy refuses delete refspecs with HTTP 403, and the GitHub MCP server exposes
+no delete-branch tool. Pushes work; only deletes are blocked. **The command is
+below for you to run.** Nothing in this appendix depends on the deletion having
+happened; the value was harvested first, on purpose.
+
+### MERGED — taken onto `main` in commit `db48311`
+
+| Branch | Why |
+|---|---|
+| `claude/guide-walkthrough-revision-jgs0uf` | **Real unmerged work.** `check-guide.mjs` was failing 3/4 on `main` — the guide had drifted six heart pieces behind the world and never mentioned the Kilnshell. Its `GUIDE.md` passes 4/4 against `main`'s current data. Took `GUIDE.md`, its mobile `GUIDE.html` build (which `main` lacked entirely), and its two HANDOFF lessons. |
+
+### HARVESTED, THEN DELETE — the boss-verb pile (16 branches)
+
+All of these duplicate a code fix already on `main`. Their **negative results**
+are now consolidated in HANDOFF and are the only reason they were read.
+
+| Branch | Decision |
+|---|---|
+| `next-session-iteration-x60p79` | Harvest → delete. The god-mode ceiling measurement and the "attacking roots the player" finding — the two most valuable results in the pile. Code (AABB contact, `measure-boss-combat.mjs`) already on `main`. |
+| `next-session-iteration-i9v66l` | Harvest → delete. The first real-combat measurement of all six bosses, the Wyverna heart-piece arithmetic, and the direct Nereth/Anemos diagnoses. |
+| `next-session-cleanup-wtwg3g` | Harvest → delete. The "67% of the stall is spent dodging charges" trace. Its doc-staleness fixes are superseded. |
+| `iterate-next-session-t0pdp7` | Harvest → delete. The `walk-dungeons.mjs` wall-clock drift diagnosis and its `takeOver`/`release` fix, recorded verbatim in HANDOFF. |
+| `next-session-iteration-xxmx25` | Harvest → delete. The ledge-hop player-drop race, recorded verbatim. Phase-fix code already on `main`. |
+| `next-session-iteration-v4k2d6` | Harvest → delete. The `e.charging` sticks-true-forever bug — still live on `main`, now written down and assigned to S5. |
+| `next-session-iteration-ny0ax7` | Harvest → delete. "Invuln has decayed to 0 is not I am safe now" — a timer is not a spatial condition. |
+| `next-session-iteration-qbdwl5` | Harvest → delete. A directional input is a walk, not a face; derive contact geometry from `hb`, not a tuned constant. |
+| `next-session-iteration-sx8679` | Harvest → delete. Phase-2 total-lockout proof. |
+| `next-session-iteration-hw3pr3` | Harvest → delete. The 5-hit ceiling is a wall, not a slow race. |
+| `iterate-next-session-mx0zs1` | Harvest → delete. The `BACKOFF` sweep is a mirage; two more ranged-dodge triggers ruled out. |
+| `session-continuation-nextmd-kwm12k` | Harvest → delete. The `git checkout --` mid-session revert trap. |
+| `next-session-iteration-w0iomi` | Delete. Duplicate of the contact-damage fix on `main`. |
+| `next-session-iteration-b3hawy` | Delete. Sixth independent copy of the phase fix. |
+| `next-session-iteration-90qt3z` | Delete. Duplicate; its Manhattan-vs-AABB writeup is superseded by x60p79's. |
+| `next-session-iteration-jnyt1s` | Delete. Duplicate of the phase fix. |
+
+### DELETE — superseded by later work on `main`
+
+| Branch | Why |
+|---|---|
+| `next-session-iteration-erdixn`, `-b2tuo7`, `-6cyssw` | Progression checkers, cliff edges and townsfolk — all landed on `main` in better form (`check-progression.mjs` ships). |
+| `playthrough-route-to-end-kxpd28`, `fix-playthrough-blocker-e72n4s` | The D1 Anchor route work is on `main`; `check-playthrough.mjs` passes 19/19. |
+| `p8-execution-plan-jh6exl`, `p8-dungeon-generation-faqood`, `coral-spire-reauth-s93w9t` | Dungeon authoring superseded by the shipped D1–D6. |
+| `link-sprite-progression-issues-rq48b6` | The lifted-rock fix is on `main` as `2b057ef`. |
+| `oracle-tides-guide-7ak0mw` | An older guide regeneration, superseded by `jgs0uf` above. |
+| `nextsession-iteration-c3zfhk`, `next-prompt-md-iterate-aaq0aj`, `game-playability-iteration-hju9b9` | Three more independent copies of the phase fix. |
+| 13 branches dated 2026-07-31 → 08-07 (`gbc-zelda-movement-sword-r1vxqv`, `enemy-grid-aligned-movement-n2xv16`, `tide-levels-test-flakiness-73jc39`, `engine-feel-determinism-lel1me`, `oracle-build-script-coklp7`, `audit-consolidate-branches-5knfli`, `oracle-tides-continued-ebfuit`, the three `oracle-tides-polish-*`, `oracle-tides-boss-music-4c24tm`, `zelda-style-game-piqt8v`, `zelda-boss-behavior-jgbfwo`) | **Pre-rewrite archaeology.** Each carries its own "Initial commit" ahead of `main` — a different root — and each is 111–112 commits behind. The tide field, the Anchor, the towns, D1–D6 and the trade chain all landed after them. |
+| 27 branches with zero commits ahead of `main` | Fully merged. Nothing to lose. |
+| `zzz-delete-test-temp` | Scratch. |
+
+### KEEP — one branch, deliberately
+
+| Branch | Why |
+|---|---|
+| `claude/p7-6-camera` | **The only branch holding code that is not on `main` and was not recoverable into it.** It carries `tools/check-camera.mjs` (170 lines) and `tools/check-wide-rooms.mjs` (320 lines) — the two checkers for multi-screen rooms, a feature that shipped to `main` *without* them. The branch is 90 commits behind, so the files almost certainly do not run against the current engine and porting them blind would be worse than rewriting. **S11 rewrites them from scratch.** Keep this branch until S11 lands, as a reference for what they were meant to assert, then delete it. |
+
+### The deletion command
+
+Run from a checkout with push rights (this session's proxy blocks it):
+
+```sh
+git fetch origin --prune
+git ls-remote --heads origin | awk '{print $2}' | sed 's|refs/heads/||' \
+  | grep -v -x -e main -e claude/p7-6-camera -e claude/roadmap-branch-reconcile-0o24l8 \
+  | xargs -n 20 git push origin --delete
+```
+
+That leaves `main`, `claude/p7-6-camera` (until S11) and this branch. Drop the
+last exclusion once this branch is merged.
