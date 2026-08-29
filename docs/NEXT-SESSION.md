@@ -1,3 +1,66 @@
+## READ docs/ROADMAP.md FIRST (session of 2026-08-29 — reconcile + roadmap)
+
+**This session wrote no game code.** It reconciled 72 branches and produced
+`docs/ROADMAP.md`: eleven sequenced sessions, each with a goal, the one thing
+that would make it a failure, a model choice, dependencies, a paste-ready
+prompt, and an explicit statement of what no checker can settle.
+
+**The roadmap is void if its sessions are run in parallel.** One at a time,
+merged to `main` before the next starts. The reconcile found sixteen
+`next-session-iteration-*` branches from a three-day window; five independently
+fixed the same `Boss.phase`/`Entity.phase` collision and eight independently
+swept and reverted the same dodge variants. That pile is what parallelism costs.
+
+**What landed on `main` this session:**
+
+1. `docs/HANDOFF.md` gains **"Negative results — the boss-verb corpus"**. Read it
+   before touching a boss. It holds the god-mode ceiling measurement (an
+   *unlimited-health* Gohmaraq run still sticks at 14 hp forever, because its
+   melee-vulnerable range is a strict subset of its 130px charge-trigger range),
+   the eight ruled-out dodge strategies, the charge-lock diagnosis, the 67%
+   stall trace, the first real-combat measurement of all six bosses, the
+   heart-piece arithmetic behind the Wyverna estimate, and the direct diagnoses
+   of Nereth's trident volley and Anemos's lash range.
+2. **Two live bugs are written down with their fixes, unlanded**: `e.charging`
+   sticks true forever once a phase stops calling `charge()` (assigned to S5),
+   and two races in `walk-dungeons.mjs`'s ledge probes (recorded verbatim).
+3. `docs/GUIDE.md` + `docs/GUIDE.html` recovered from an unmerged branch.
+   **`check-guide.mjs` was failing 3/4 on `main`** — the guide had drifted six
+   heart pieces behind the world and never mentioned the Kilnshell. Now 4/4.
+
+**The audit's headline findings, all verified against the data, not the docs:**
+
+- **There is no hitstop anywhere in `src/`.** The concept does not exist. This
+  is S1 and it is the session to run if you run only one.
+- **The base terrain is hand-drawn, not extracted** — `tiles-core.js` is 1,683
+  lines of authored ASCII art, only 13 terrain tiles are ripped, and there is
+  **exactly one grass tile**. That is the visible grid. Violates CLAUDE.md's own
+  extraction rule. S2/S3.
+- **The overworld map screen is a grid of coloured rectangles** (`menu.js:270`),
+  sharing its loop with the dungeon map. The dungeon map is genuinely good and
+  must not regress. S8.
+- **Four sfx call sites are silent no-ops**: `swim`, `hookshot` (x2), `rumble`,
+  and `secret` (which is a wrong-function bug — the jingle exists). Three
+  defined sfx are dead. There are **55** sfx, not 77. S4.
+- **`Dialogue.speed = 1.6` is hardcoded** at `dialogue.js:33` — a violation of
+  the rule that every timing constant lives in `feel.js`. S1 moves it.
+- **`check-camera.mjs` and `check-wide-rooms.mjs` were written and never
+  merged.** Multi-screen rooms shipped without their checkers. S11 rewrites
+  them; `claude/p7-6-camera` is kept alive until then as the only branch holding
+  unrecovered code.
+
+**Two things are closer to done than the brief assumed, and the roadmap argues
+against spending full sessions on them:** NPC dialogue coverage is 51 of 57 ids
+wired across 43 talkables with the reactive machinery already built and used by
+every quest-giver (the real gap is ~21 townspeople with one static line — half a
+session, S9); and the music already has bridges, so the genuine gap is intros
+plus the missing channel techniques, not structure (S6/S7).
+
+**Branch deletion could not be executed here** — this environment's git proxy
+refuses delete refspecs with 403. The command is in ROADMAP's appendix.
+
+---
+
 ## Branch consolidation: a real-AABB contact fix cut Gohmaraq's win threshold from ~50 hearts to ~9 (this session, continued)
 
 **Many parallel sessions converged on the same discovery.** After the phase-
