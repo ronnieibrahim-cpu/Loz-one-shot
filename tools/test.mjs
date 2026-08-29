@@ -192,6 +192,23 @@ const main = async () => {
       r.status === 0, 'see tools/check-sfx.mjs');
   }
 
+  // S6: the music engine grew vibrato/echo/arpeggio, and the failure mode is
+  // silent — a track that never asks for any of them has to schedule the
+  // exact same Web Audio calls it always did. check-audio-render.mjs owns
+  // that proof (and owns why it traces instructions rather than hashing
+  // rendered samples); this runs it as a subprocess for the same reason the
+  // sfx check above does.
+  console.log('\n--- music engine render ---');
+  {
+    const { spawnSync } = await import('node:child_process');
+    const r = spawnSync(process.execPath, [new URL('check-audio-render.mjs', import.meta.url).pathname],
+      { encoding: 'utf8' });
+    const out = (r.stdout || '') + (r.stderr || '');
+    for (const line of out.trim().split('\n')) console.log('  ' + line);
+    check('every track schedules the same Web Audio calls as its recorded baseline',
+      r.status === 0, 'see tools/check-audio-render.mjs');
+  }
+
   const { chromium } = await loadPlaywright();
   // Random high port: concurrent runs must not fight over a fixed one.
   const PORT = Number(arg('port', 0)) || (20000 + Math.floor(Math.random() * 20000));
@@ -733,6 +750,166 @@ const main = async () => {
   check('the three freezes are ordered lightest to heaviest',
     stop.want < stop.hurtHz && stop.hurtHz < stop.bossHz,
     `hit ${stop.want}, hurt ${stop.hurtHz}, boss death ${stop.bossHz}`);
+
+  // --- music engine: vibrato, echo, arpeggio (S6) --------------------------
+  //
+  // check-audio-render.mjs proves the SHARED scheduling path is unchanged for
+  // a track that asks for none of this. This proves the three new techniques
+  // actually do what their names say, against synthetic tracks built just for
+  // this, so the assertions don't ride on the tuning of any real track.
+  console.log('\n--- music engine: vibrato, echo, arpeggio ---');
+  const music = await G(async () => {
+    const { Audio } = await import('/src/core/audio.js');
+    const feel = await import('/src/data/feel.js');
+
+    function mockCtx() {
+      let id = 0;
+      const trace = [];
+      function param(tag) {
+        return {
+          value: 0,
+          setValueAtTime(v, t) { trace.push([tag, 'set', v, t]); return this; },
+          linearRampToValueAtTime(v, t) { trace.push([tag, 'lin', v, t]); return this; },
+          exponentialRampToValueAtTime() { return this; },
+          setTargetAtTime() { return this; },
+          cancelScheduledValues() { return this; },
+        };
+      }
+      const ctx = {
+        sampleRate: 44100, currentTime: 0, destination: {},
+        createGain() { return { gain: param('gain' + id++), connect() {} }; },
+        createBiquadFilter() { return { type: '', frequency: param('bqf' + id++), Q: param('bqq' + id++), connect() {} }; },
+        createOscillator() {
+          const tag = 'osc' + id++;
+          return {
+            type: '', frequency: param(tag), setPeriodicWave() {}, connect() {},
+            start() {}, stop() {},
+          };
+        },
+        createBufferSource() { return { buffer: null, loop: false, connect() {}, start() {}, stop() {} }; },
+        createBuffer(ch, len) { return { getChannelData: () => new Float32Array(len) }; },
+        createPeriodicWave() { return {}; },
+      };
+      return { ctx, trace };
+    }
+
+    function freqSets(trace, tagPrefix) {
+      return trace.filter(e => e[0].startsWith(tagPrefix) && e[1] === 'set').map(e => ({ v: e[2], t: e[3] }));
+    }
+
+    const out = {};
+
+    // --- vibrato: a long-held note, checked before and after the delay -----
+    {
+      const { ctx, trace } = mockCtx();
+      const a = new Audio();
+      a.init(ctx);
+      const depth = 1; // 1 semitone — exact enough to check against Math.pow by hand
+      const stepFrames = 4, delayFrames = 8;
+      a.addTracks({
+        t: {
+          bpm: 60, rowsPerBeat: 4, loop: true,
+          cfg: { p1: { vibrato: { depth, stepFrames, delayFrames } } },
+          patterns: { A: { p1: 'C4 -  -  -  -  -  -  -  -  -  -  -  -  -  -  -' } },
+          order: ['A'],
+        },
+      });
+      a.play('t');
+      const rowDur = 60 / 60 / 4; // 0.25s
+      let time = a._nextRowTime;
+      for (let i = 0; i < 16 && a.track; i++) { a._scheduleRow(time, rowDur); time += rowDur; }
+      const sets = freqSets(trace, 'osc');
+      const base = sets[0].v;
+      const onsetTime = sets[0].t;
+      const delaySec = delayFrames / 60, stepSec = stepFrames / 60;
+      const beforeDelay = sets.filter(s => s.t > onsetTime && s.t < onsetTime + delaySec);
+      const afterDelay = sets.filter(s => s.t >= onsetTime + delaySec);
+      const wobbleOK = afterDelay.length >= 3 && afterDelay.every((s, i) => {
+        const want = base * Math.pow(2, ((i % 2 === 0 ? 1 : -1) * depth) / 12);
+        return Math.abs(s.v - want) < 1e-6;
+      });
+      const gridOK = afterDelay.length >= 2 &&
+        Math.abs((afterDelay[1].t - afterDelay[0].t) - stepSec) < 1e-9;
+      out.vibrato = { base, stepsBeforeDelay: beforeDelay.length, stepsAfterDelay: afterDelay.length, wobbleOK, gridOK };
+    }
+
+    // --- echo: p2 omits its pattern entirely and mirrors p1 -----------------
+    {
+      const { ctx, trace } = mockCtx();
+      const a = new Audio();
+      a.init(ctx);
+      const rows = 3, volMul = 0.4;
+      a.addTracks({
+        t: {
+          bpm: 60, rowsPerBeat: 4, loop: true,
+          cfg: { p1: { vol: 0.2 }, p2: { vol: 0.1, echo: { of: 'p1', rows, volMul } } },
+          patterns: { A: { p1: 'C4 .  E4 .  .  .  .  .  .  .  .  .' } }, // no p2 key at all
+          order: ['A'],
+        },
+      });
+      a.play('t');
+      const rowDur = 60 / 60 / 4;
+      let time = a._nextRowTime;
+      for (let i = 0; i < 12 && a.track; i++) { a._scheduleRow(time, rowDur); time += rowDur; }
+      // p1 note-ons happen at rows 0 and 2; p2 (echo) should repeat them at
+      // rows (0+rows) and (2+rows), at volMul of the ECHO channel's own
+      // configured vol (its pre-attenuation level — see the `echo` comment
+      // in src/core/audio.js), not the lead's.
+      const p1Sets = freqSets(trace, 'osc').filter((_, i) => i < 2); // C4 then E4, both from p1
+      const gainPeaks = trace.filter(e => e[0].startsWith('gain') && e[1] === 'lin').map(e => e[2]);
+      out.echo = {
+        p1Freqs: p1Sets.map(s => Math.round(s.v)),
+        rowDur, rows,
+        delaySec: rows * rowDur,
+        // both an original (p1's vol 0.2) and an echoed (p2's 0.1*0.4=0.04) peak should appear
+        hasOriginalPeak: gainPeaks.some(v => Math.abs(v - 0.2) < 1e-6),
+        hasEchoPeak: gainPeaks.some(v => Math.abs(v - 0.1 * volMul) < 1e-6),
+      };
+    }
+
+    // --- arpeggio: a chord token cycles on one channel ----------------------
+    {
+      const { ctx, trace } = mockCtx();
+      const a = new Audio();
+      a.init(ctx);
+      a.addTracks({
+        t: {
+          bpm: 60, rowsPerBeat: 4, loop: true,
+          patterns: { A: { wav: 'C3+E3+G3 -  -  -  -  -  -  -' } },
+          order: ['A'],
+        },
+      });
+      a.play('t');
+      const rowDur = 60 / 60 / 4;
+      let time = a._nextRowTime;
+      for (let i = 0; i < 8 && a.track; i++) { a._scheduleRow(time, rowDur); time += rowDur; }
+      // sets[0] is _noteOn's own attack setValueAtTime (always the chord's
+      // first note, by construction) — drop it and look only at the steps
+      // _scheduleArp itself issued.
+      const steps = freqSets(trace, 'osc').slice(1);
+      const stepSec = feel.ARPEGGIO_STEP_FRAMES / 60;
+      const gridOK = steps.length >= 6 && steps.slice(1).every((s, i) =>
+        Math.abs((s.t - steps[i].t) - stepSec) < 1e-9);
+      const cycleOK = steps.length >= 6 &&
+        Math.round(steps[0].v) === Math.round(steps[3].v) &&
+        Math.round(steps[1].v) === Math.round(steps[4].v) &&
+        Math.round(steps[2].v) === Math.round(steps[5].v) &&
+        Math.round(steps[0].v) !== Math.round(steps[1].v);
+      out.arpeggio = { steps: steps.length, gridOK, cycleOK };
+    }
+
+    return out;
+  });
+  check('vibrato does not wobble before its delay', music.vibrato.stepsBeforeDelay === 0,
+    JSON.stringify(music.vibrato));
+  check('vibrato steps on the frame grid, alternating up/down by the configured depth',
+    music.vibrato.wobbleOK && music.vibrato.gridOK, JSON.stringify(music.vibrato));
+  check('echo channel repeats the lead\'s pitches', JSON.stringify(music.echo.p1Freqs) === JSON.stringify([262, 330]),
+    JSON.stringify(music.echo));
+  check('echo channel plays both the original and a quieter echoed peak',
+    music.echo.hasOriginalPeak && music.echo.hasEchoPeak, JSON.stringify(music.echo));
+  check('arpeggio cycles a chord token on a frame grid', music.arpeggio.gridOK, JSON.stringify(music.arpeggio));
+  check('arpeggio repeats the chord in order', music.arpeggio.cycleOK, JSON.stringify(music.arpeggio));
 
   console.log('\n--- HUD, menu, save ---');
   await tap('Enter');

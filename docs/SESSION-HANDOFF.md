@@ -13,7 +13,9 @@ Every id in this document (`R1`, `T14`, `V6`, `A3`) is stable. Prompts cite them
 **If you add a trap, append a new number — never renumber, and never reuse a
 retired one.**
 
-Last verified against the tree: **2026-08-29**, commit `0d435fc`; `§1`, `A1` and
+Last verified against the tree: **2026-08-29**, commit `64a6561`; `§1`, `A5` and
+`§3`/`§4.1` re-verified by S6 (music engine: vibrato, echo, arpeggio).
+Previously re-verified against `0d435fc`; `§1`, `A1` and
 `§3` re-verified by S1 (hitstop).
 
 ---
@@ -65,7 +67,7 @@ produced most of §2.
 |---|---|
 | `node tools/test.mjs` | **71 passed, 0 failed** (S1 +6 hitstop, S3 +5 cliff-edge, S4 +1 sfx coverage) |
 | `node tools/check-hearts.mjs` | 114/114 |
-| `node tools/check-music.mjs` | OK — **22 tracks, 55 sfx** |
+| `node tools/check-music.mjs` | OK — **23 tracks, 59 sfx** (S6 added `engineDemo`, an audition-only track) |
 | `node tools/check-playthrough.mjs` | 19 passed, 0 failed |
 | `node tools/check-items.mjs` | 91 passed, 0 failed *(could not launch at all before S1 — see `T60`)* |
 | `node tools/check-charms.mjs` | 63 passed, 0 failed *(same)* |
@@ -265,13 +267,30 @@ bridge. `overworld` runs `['A','A','B','C','D']` with a call-to-adventure
 flourish in D (whose comment explains it is a gesture, not a transcription —
 follow that distinction, see `R8`).
 
-**What is genuinely missing is narrower:**
+**S6 is DONE.** `src/core/audio.js` now supports vibrato, echo and arpeggio,
+all as data-driven `cfg`/pattern-token options that the engine's `_scheduleRow`
+turns into Web Audio automation — see the file's own header comment for the
+exact contract of each. None of the 22 tracks written before S6 were rewritten
+or asked to use any of them; `tools/check-audio-render.mjs` (`V20`) proves
+every one of them still schedules byte-for-byte the same Web Audio calls it
+did before (`T71` explains why that tool traces instructions rather than
+hashing rendered samples). A 23rd track, `engineDemo`, exists ONLY to audition
+the three techniques in isolation (`game.audio.init(); game.audio.play
+('engineDemo')` from the dev console) — it is not wired to any room or map and
+is not "the game's music"; S7 owns actually composing with these. **Whether the
+vibrato reads as a Game Boy or a synthesiser is unjudged (`§4.2`)** — that is
+the whole point of the session per its own prompt.
+
+**What was genuinely missing, before S6:**
 
 1. **No intro.** No track has a non-looping lead-in; the engine's `order`/`loop`
-   model has no concept of one.
-2. **No channel technique.** `src/core/audio.js` supports per-channel `duty`,
-   `decay` and `glide` and **nothing else**. No vibrato, no echo, no arpeggio —
-   the three things the source games lean on constantly.
+   model has no concept of one. **Still missing — this is S7's job, not S6's**
+   (S6's prompt scoped intros out explicitly).
+2. ~~**No channel technique.**~~ **DONE.** `src/core/audio.js` used to support
+   only per-channel `duty`, `decay` and `glide` (and `glide` itself was, and
+   still is, dead — declared in `DEFAULT_CFG` and never read anywhere; S6 did
+   not touch it because removing a dead field it did not add was out of
+   scope). Vibrato, echo and arpeggio are real now.
 3. **Loop length.** ~8 bars before repeat, against considerably longer in the
    source.
 
@@ -620,6 +639,18 @@ by number.
 - **T46 — The noise channel takes percussion only**, and every note must sit
   inside the Game Boy's real frequency range for its channel. `check-music.mjs`
   asserts both.
+- **T71 — Web Audio's own rendering is NOT bit-reproducible across script
+  contexts, even for identical code.** Rendering real PCM through an
+  `OfflineAudioContext` in headless Chromium and hashing the samples produced a
+  DIFFERENT stable hash for the same track between two separate
+  `browser.newPage()` calls in the same browser process — an exact-byte
+  regression check built this way would flag unrelated commits as breaking the
+  music. **Trace the Web Audio INSTRUCTIONS instead** (`setValueAtTime`,
+  `start`, `stop` calls, via a tiny mock context whose nodes just record what
+  was called on them) and compare those — that part is pure deterministic
+  arithmetic on the track data with no browser DSP involved at all, and it is
+  what actually determines the sound. `Audio.init(ctxOverride)` exists for
+  exactly this. See `tools/check-audio-render.mjs` and `docs/HANDOFF.md`.
 
 ### Story and dialogue
 
@@ -800,7 +831,8 @@ are faster than you are and they do not rationalise.
 | V8 | `node tools/check-items.mjs` | Every item does the verb `docs/ITEMS.md` claims; nothing hands out a nonexistent item |
 | V9 | `node tools/check-hearts.mjs` | Heart economy and the contact-damage ladder |
 | V19 | `node tools/check-sfx.mjs` | Every sfx name reachable from a call site or a data table is defined (`T45`), and nothing is defined and never played. Wired into `V16` |
-| V10 | `node tools/check-music.mjs` | Track orders, note ranges per channel, noise = percussion only |
+| V10 | `node tools/check-music.mjs` | Track orders, note ranges per channel including vibrato's swung extreme and every note of a '+' arpeggio chord, noise = percussion only |
+| V20 | `node tools/check-audio-render.mjs` | A track using none of vibrato/echo/arpeggio schedules the exact same Web Audio instructions it always did (`T71`). Wired into `V16` |
 | V11 | `node tools/replay.mjs` | Movement and combat are frame-identical to 51 recorded baselines |
 | V12 | `node tools/check-bosses.mjs` | Every boss spawns and its weak point opens — **in GOD MODE, see T37** |
 | V13 | `node tools/check-playthrough.mjs` | **The only tool that plays the game.** A new game, no items granted, no warps, no flags set from outside |

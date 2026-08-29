@@ -515,6 +515,1488 @@ __exports["noise1"] = noise1;
 __exports["noise2"] = noise2;
 });
 
+/* ===== src/data/feel.js ===== */
+__define("data/feel.js", function (__exports, __require) {
+// FEEL. Every timing and speed constant in the game lives in this file.
+//
+// Read docs/FEEL-SPEC.md before changing a number in here. The short version:
+//
+//   * No module under src/ may declare its own timing or speed constant. If
+//     you need a number that governs how the game moves, it goes here and is
+//     imported. A magic number in a game module is the bug this file exists
+//     to stop.
+//
+//   * Every export carries a UNIT and a PROVENANCE tag:
+//
+//       measured  someone frame-stepped a reference recording of Oracle of
+//                 Seasons or Ages and wrote the number down. The comment says
+//                 what was measured and how.
+//       derived   computed from another constant in this file. The comment
+//                 names its ancestor. A derived value is only as good as what
+//                 it derives from.
+//       guessed   somebody typed a plausible number and it shipped.
+//
+//   * NOTHING IN THIS FILE IS `measured`. Every value below was carried over
+//     from the code as it stood before this file existed, which means every
+//     one of them is a guess that happened to feel acceptable to whoever
+//     wrote it. They are labelled honestly. Do not upgrade a `guessed` to a
+//     `measured` because the game feels fine — that word means a reference
+//     was frame-stepped, and until someone does that, the engine has no
+//     ground truth and we should keep saying so.
+//
+// Units used below:
+//   sp/f    SUBPIXELS per frame at 60 Hz. 256 sp = 1 px; positions are 8.8
+//           fixed-point, so this is the engine's native speed unit and the one
+//           anything that moves a position is written in. See src/core/fixed.js.
+//   sp/f^2  subpixels per frame squared — an acceleration on the same grid
+//   sp      subpixels
+//   px/f    pixels per frame at 60 Hz. Kept for the constants that feed the
+//           DATA-facing helpers — an enemy spec says `speed: 0.45` and the AI
+//           toolkit converts it with `sp()` at its edge — so enemy and
+//           projectile data does not have to be rewritten in 256ths.
+//   f       frames at 60 Hz
+//   px      pixels
+//   x       dimensionless multiplier
+//   p       probability per frame, 0..1
+//   rad/f   radians per frame
+//   qh      quarter-hearts (see progress.js: HEART_UNITS = 4)
+
+// ---------------------------------------------------------------------------
+// Player movement
+// ---------------------------------------------------------------------------
+
+/** sp/f — Link's ground speed. derived from the 8.8 grid and the 16px tile.
+ *
+ *  256 sp/f is exactly 1 px/f, so a tile takes exactly 16 frames to cross and
+ *  the player lands on every tile boundary he passes. That is the property the
+ *  old 1.35 px/f did not have, and ROOM_EXIT_MARGIN was three pixels wide to
+ *  paper over it.
+ *
+ *  The choice is not free-form. A speed must be exactly representable in 8.8
+ *  AND divide 16px evenly, which means 4096/s must be a whole number of frames
+ *  with s a whole number of subpixels — so s has to divide 4096, i.e. be a
+ *  power of two. Between 128 sp/f (a crawl) and 512 sp/f (the Pegasus dash),
+ *  256 is the only candidate left. It is `derived`, not `measured`: nobody has
+ *  frame-stepped a reference. It is worth noting anyway that 1 px/f walking and
+ *  2 px/f dashing is the granularity the GB Zeldas are built on, so this is at
+ *  least the right shape. */
+const WALK_SPEED = 256;
+
+/** sp/f — surface swimming. derived: three quarters of WALK_SPEED, the same
+ *  ratio the old guessed pair (0.95 / 1.35) had, snapped to the grid. */
+const SWIM_SPEED = 192;
+
+/** sp/f — under the Pegasus Seed. derived: exactly twice WALK_SPEED, so the
+ *  dash covers a tile in 8 frames. */
+const BOOST_SPEED = 512;
+
+/** sp/f — walking with the shield raised. derived: three quarters of
+ *  WALK_SPEED. */
+const SHIELD_SPEED = 192;
+
+/** sp/f — walking with the sword held out. derived: kept equal to
+ *  SHIELD_SPEED, because both are "you are committed to something and cannot
+ *  move at full pace". guessed insofar as its ancestor is. */
+const SWORD_HOLD_SPEED = 192;
+
+/** x — multiplier on F.SLOW terrain (sand, deep grass). guessed. */
+const SLOW_FACTOR = 0.6;
+
+/** x — multiplier while wading in shallow water. guessed. */
+const SHALLOW_FACTOR = 0.86;
+
+/** x — multiplier while carrying something. guessed. */
+const CARRY_FACTOR = 0.9;
+
+/** sp/f — drift in the facing direction during a spin attack. guessed. */
+const SPIN_DRIFT_SPEED = 96;
+
+/** sp/f — sideways push from a current tile while swimming is the tile's own
+ *  `push` vector; this scales the aquatic-enemy drift per tide level. guessed.
+ *  Below one pixel per frame, which only moves anything at all because
+ *  positions accumulate in subpixels. */
+const TIDE_DRIFT_PER_LEVEL = 32;
+
+// DIAGONALS ARE NOT NORMALISED, and there is deliberately no constant here to
+// scale them with. Holding two directions applies the full per-axis speed to
+// both axes, so a diagonal covers sqrt(2) times what a cardinal does. That
+// asymmetry is a signature of the GB Zeldas — it is why cutting the corner of a
+// room feels quicker than walking the two edges, and why players who grew up on
+// them route diagonally without thinking about it. `DIAGONAL_FACTOR` used to
+// live here at 1/sqrt(2) and is gone; re-introducing one would make movement
+// "correct" and make the game feel like something else. See docs/FEEL-SPEC.md.
+
+// ---------------------------------------------------------------------------
+// Sword
+// ---------------------------------------------------------------------------
+
+/** f — total length of a sword swing; the player is rooted for all of it. guessed. */
+const SWING_FRAMES = 14;
+
+/** f — first frame of the swing on which the blade can hit. guessed. */
+const SWING_HIT_START = 2;
+
+/** f — last frame of the swing on which the blade can hit. guessed.
+ *  The active window is therefore 8 frames out of 14. */
+const SWING_HIT_END = 9;
+
+/** f — how long the sword button must be held before a spin is charged. guessed. */
+const CHARGE_FRAMES = 42;
+
+/** f — interval between charge sparkles once charged. guessed. */
+const CHARGE_SPARKLE_EVERY = 6;
+
+/** f — length of a spin attack. guessed. */
+const SPIN_FRAMES = 26;
+
+/** px — how far in front of Link the blade reaches. guessed. */
+const SWORD_REACH = 13;
+
+/** px — the blade's extent across the facing axis. guessed. */
+const SWORD_SPAN = 14;
+
+/** px — gap between Link's centre and the near edge of the sword box. guessed. */
+const SWORD_GAP = 3;
+
+/** px — side of the square hitbox swept by a spin attack. guessed. */
+const SPIN_BOX = 30;
+
+/** f — frames after a swing ends before the still-held button becomes a hold
+ *  rather than the tail of the swing. guessed; small enough that the blade
+ *  never visibly drops between the two poses. */
+const SWORD_HOLD_DELAY = 2;
+
+/** qh — damage the extended blade deals on contact. guessed; half a swing's,
+ *  because walking into something with the sword out is meant to be worth less
+ *  than choosing to swing at it. The enemy's own invulnerability window is what
+ *  rate-limits it, so this is damage per enemy-invuln period, not per frame. */
+const SWORD_HOLD_DAMAGE = 1;
+
+/** px — knockback dealt by the extended blade. guessed; weaker than
+ *  KNOCK_SWORD so a held blade shoves rather than launches. A distance, like
+ *  every other KNOCK_* — see the note above them. */
+const KNOCK_HOLD = 9;
+
+/** f — how long after a clink off a wall the blade may clink again. guessed;
+ *  without it the sfx retriggers every frame you lean on the wall. */
+const SWORD_CLINK_COOLDOWN = 20;
+
+// ---------------------------------------------------------------------------
+// Damage, invulnerability and knockback
+// ---------------------------------------------------------------------------
+
+/** f — invulnerability after Link takes a hit. guessed. */
+const PLAYER_INVULN_FRAMES = 46;
+
+/** f — how long Link flickers after a hit. guessed; kept equal to the invuln
+ *  window so the flicker reads as "you cannot be hit right now". */
+const PLAYER_FLICKER_FRAMES = 46;
+
+/** f — invulnerability after a pit fall or a wash-out, which is longer than an
+ *  ordinary hit because the player has just been teleported. guessed. */
+const PLAYER_RECOVER_INVULN_FRAMES = 60;
+
+/** f — how long Link is shoved and unable to act after a hit. guessed. */
+const PLAYER_HURT_FRAMES = 12;
+
+/** px — how far Link is shoved by a hit, in total. guessed.
+ *  A GB Zelda's knockback is a scripted displacement, not a physics impulse:
+ *  a fixed distance over a fixed frame count, at a constant speed, so it always
+ *  ends the same distance from the thing that hit you and you can plan around
+ *  it. This number and PLAYER_KNOCK_FRAMES are the whole of it. Chosen to match
+ *  the total travel of the exponential decay it replaces (3.2 px/f decaying by
+ *  0.84 over 12 frames covers ~17.6px), so the change is a change of shape
+ *  rather than of reach. See docs/FEEL-SPEC.md. */
+const PLAYER_KNOCK_DIST = 18;
+
+/** f — how long that shove takes. guessed; kept equal to PLAYER_HURT_FRAMES so
+ *  Link regains control on the frame he stops sliding. */
+const PLAYER_KNOCK_FRAMES = 12;
+
+/** f — invulnerability after an ordinary enemy takes a hit. guessed. */
+const ENEMY_INVULN_FRAMES = 24;
+
+/** f — how long an ordinary enemy flickers after a hit. guessed. */
+const ENEMY_FLICKER_FRAMES = 24;
+
+/** f — how long an ordinary enemy is shoved after a hit. guessed. Together with
+ *  the KNOCK_* distances below this is the fixed frame count half of the
+ *  fixed-distance-over-fixed-frames rule; nothing decays.
+ *
+ *  Worth knowing when tuning it: contact damage does not care that an enemy is
+ *  mid-knockback, so these are frames the enemy is travelling away and can
+ *  still hurt you. The exponential decay this replaces covered most of its
+ *  distance in the first two frames, so shortening this is the lever that
+ *  restores that snap. Trying 5 instead of 8 changed nothing measurable in
+ *  either committed replay, so it is left where it was. */
+const ENEMY_KNOCK_FRAMES = 8;
+
+// The KNOCK_* values below are DISTANCES IN PIXELS, not speeds. A hit shoves
+// its target KNOCK_x pixels over ENEMY_KNOCK_FRAMES frames at a constant
+// speed. They were speeds until P4; the numbers are the total travel the old
+// exponential decay produced from the old speeds, so a sword still throws an
+// enemy about as far as it used to, in a straight predictable line instead of
+// an asymptote. All guessed.
+
+/** px — default knockback dealt when a hit does not name its own. guessed. */
+const KNOCK_DEFAULT = 13;
+
+/** px — knockback dealt by a sword swing. guessed. */
+const KNOCK_SWORD = 18;
+
+/** px — knockback dealt by a spin attack. guessed. */
+const KNOCK_SPIN = 22;
+
+/** px — knockback dealt by a projectile. guessed. */
+const KNOCK_PROJECTILE = 13;
+
+/** px — knockback dealt by an explosion. guessed. */
+const KNOCK_EXPLOSION = 9;
+
+/** px — knockback dealt by a thrown or dropped object. guessed. */
+const KNOCK_THROWN = 9;
+
+/** px — knockback dealt by a stunning tool. guessed. */
+const KNOCK_TOOL = 5;
+
+/** f — invulnerability after a boss takes a hit. guessed; shorter than an
+ *  ordinary enemy's so a boss can be combo'd. */
+const BOSS_INVULN_FRAMES = 20;
+
+/** f — invulnerability granted to a boss when it changes phase. guessed. */
+const BOSS_PHASE_INVULN_FRAMES = 20;
+
+/** f — how long a boss is shoved after a hit. guessed. */
+const BOSS_KNOCK_FRAMES = 6;
+
+/** x — bosses travel this fraction of the distance an enemy would. guessed. */
+const BOSS_KNOCK_SCALE = 0.4;
+
+/** qh — damage from standing on a hazard tile (lava, spikes). guessed. */
+const HAZARD_DAMAGE = 2;
+
+/** qh — damage from falling into a pit. guessed. */
+const PIT_DAMAGE = 2;
+
+/** qh — damage from being washed out by water you cannot swim in. guessed. */
+const WASH_DAMAGE = 2;
+
+/** qh — damage from standing in your own explosion. guessed. */
+const EXPLOSION_SELF_DAMAGE = 2;
+
+/**
+ * qh — damage a burning Kilnshell does to an enemy standing over it, per tick.
+ * guessed.
+ *
+ * Deliberately small and repeating rather than one big hit: the shell is a
+ * TRAP you set and the tide springs, so its combat verb should reward putting
+ * it where something will be standing, not swinging it like a sword. It ticks
+ * every fourth frame while alight (see Kilnshell.update).
+ */
+const KILNSHELL_BURN_DAMAGE = 1;
+
+// ---------------------------------------------------------------------------
+// Jumping and the one-way ledge hop
+// ---------------------------------------------------------------------------
+
+// A JUMP'S REACH IS NOT A PROPERTY OF THE JUMP.
+//
+// The player keeps walking while airborne, so how far a hop carries is
+// (airtime x WALK_SPEED) — and airtime is 2 * power / gravity. Re-deriving the
+// walk speed therefore silently re-derives the length of every gap in the game.
+// It did: dropping 1.35 px/f to 1.0 px/f cut the Feather's reach from 2.3 tiles
+// to 1.7 and made the Coral Reef chasm uncrossable, which
+// `node tools/check-gates.mjs` caught and nothing else would have. The three
+// constants below are re-derived to put the reach back where it was.
+//
+//   reach  = 2 * power / gravity * WALK_SPEED
+//   apex   = power^2 / (2 * gravity)
+//
+// 2*512/28 = 36.6 frames aloft, 36.6 px of ground covered (2.3 tiles), apex
+// 18.3 px. The old pair covered 36.9 px and peaked at 17.8 px.
+//
+// ROC'S FEATHER IS GONE. Nothing launches a free-standing jump any more: the
+// hop is base moveset and fires by walking into a gap or a ledge, along a
+// SCRIPTED arc (`ledgeHop`) rather than a ballistic one. These two constants
+// still govern that arc's height and settle, and the reach formula above is
+// still what decides how wide a gap may be, so they stay — but the numbers no
+// longer describe an item anyone can be missing.
+
+/** sp/f — upward velocity of a hop. derived from WALK_SPEED and JUMP_GRAVITY
+ *  to preserve a 2.3-tile reach; 2 px/f exactly. */
+const JUMP_POWER = 512;
+
+/** sp/f^2 — downward acceleration during a jump. derived: chosen with
+ *  JUMP_POWER so that reach and apex both survive the new WALK_SPEED. */
+const JUMP_GRAVITY = 28;
+
+/** sp/f — rate `z` bleeds back to the ground when not jumping. guessed. */
+const LAND_SETTLE_RATE = 128;
+
+/** tiles — widest ledge run cleared in a single hop. guessed.
+ *  A run is cleared in one hop so a two-tile drop reads as one movement. */
+const LEDGE_MAX_SPAN = 3;
+
+/** f — duration of a one-way ledge hop, start to landing. guessed. */
+const LEDGE_HOP_FRAMES = 18;
+
+/** px — peak height of the ledge-hop arc. guessed. */
+const LEDGE_HOP_HEIGHT = 7;
+
+/** px — how far in front of Link the ledge lip is probed for. guessed. */
+const LEDGE_PROBE_REACH = 10;
+
+/** px — how far in front of Link a push block is probed for. guessed. */
+const PUSH_PROBE_REACH = 10;
+
+// ---------------------------------------------------------------------------
+// Room transitions and screen effects
+// ---------------------------------------------------------------------------
+
+/** f — length of a scrolling room-to-room transition. guessed. */
+const ROOM_TRANSITION_FRAMES = 34;
+
+/** px — how close to the room edge the player's hitbox must be for an exit to
+ *  fire. derived from WALK_SPEED. At 256 sp/f the player advances exactly one
+ *  pixel per frame and stops flush against the last legal column, so the exit
+ *  test can be a one-pixel band at the edge. It used to be three, which was not
+ *  a tuning choice but a workaround for a walk speed that could step over the
+ *  boundary without ever landing on it. */
+const ROOM_EXIT_MARGIN = 1;
+
+// THE CAMERA, inside a multi-screen dungeon room only.
+//
+// All three are `guessed`, in the strongest sense of the word: no reference has
+// been frame-stepped for any of them, and until P7.6 there was no camera at all
+// to have an opinion about. `KeyI` draws the deadzone box in game so they can be
+// settled by play — the same argument that got the anchor radius its debug key.
+//
+// None of them can affect a 1x1 room. The camera clamps to [0, room.pw-VIEW_W]
+// and that range is empty on one screen, so retuning these three numbers cannot
+// move a pixel in any room the game currently has.
+
+/** px — width of the box Link moves inside without the view following. guessed.
+ *  96 of the 160-pixel view, so the camera gives way once he is within two
+ *  tiles of a screen edge. Wider than the height because horizontal motion is
+ *  what a 2x1 room is for and a narrow box there reads as the view chasing him. */
+const CAM_DEADZONE_W = 96;
+
+/** px — height of that box. guessed. 64 of the 128-pixel view: two tiles of
+ *  slack above and below, which is about where a vertical scroll starts to be
+ *  worth having rather than a twitch. */
+const CAM_DEADZONE_H = 64;
+
+/** px/f — the fastest the camera may travel. guessed. Two pixels a frame is
+ *  twice WALK_SPEED, so it never lags a walking player and the deadzone rule is
+ *  exact during ordinary movement; it exists only to stop a knockback, a ledge
+ *  hop landing or a warp from snapping the view across the room in one frame. */
+const CAM_MAX_SPEED = 2;
+
+/** f — length of the tide's wave-front wipe across the screen. guessed.
+ *  Was 44 while game.js stepped the sweep twice per frame, so the wipe really
+ *  crossed in 23 and the constant described nothing. 23 is what the game has
+ *  always looked like: the number moved to match the screen, not the other way
+ *  round, so the wipe and the replays are unchanged. */
+const TIDE_SWEEP_FRAMES = 23;
+
+/** x — fade opacity change per frame; a full fade is 1/FADE_RATE frames. guessed. */
+const FADE_RATE = 0.09;
+
+/** f — how long an area-name banner stays up. guessed. */
+const BANNER_FRAMES = 120;
+
+// IMPACT.
+//
+// A connecting hit in both source games freezes the SIMULATION for a few
+// frames — not the frame, not the music, not the HUD. `Game.hitstop` is that
+// pause: entities stop stepping and everything else keeps running. See the
+// comment above `Game.freeze` for what is deliberately left running and why.
+//
+// All three are `guessed`. They are the first numbers to settle by eye, and
+// the reason the shake constants below them were re-tuned at the same time: a
+// freeze in front of a shake changes what the shake reads as.
+
+/** f — freeze when the player's own attack connects with an enemy. guessed.
+ *  Short: this is the most-repeated interaction in the game and anything long
+ *  enough to notice as a pause becomes a stutter over a hundred swings. It
+ *  wants to read as weight in the swing, not as a hitch. */
+const HITSTOP_HIT_FRAMES = 3;
+
+/** f — freeze when something lands a hit on the player. guessed. Longer than
+ *  the one above: taking damage is rare and is meant to be felt, and the
+ *  knockback that follows reads harder out of a longer hold. */
+const HITSTOP_HURT_FRAMES = 6;
+
+/** f — freeze on the killing blow to a boss, before the death animation.
+ *  guessed. Long enough to be a beat rather than a hitch, and it lands under
+ *  the same moment `Game.bossDefeated` cuts the music. */
+const HITSTOP_BOSS_DEATH_FRAMES = 18;
+
+// SCREEN SHAKE.
+//
+// Re-tuned once hitstop existed. Every one of these was previously chosen with
+// nothing in front of it, so a shake had to carry the whole impact by itself
+// and had grown long to do it. With a freeze in front, the shake's job is only
+// to release the freeze — so amplitudes stay and DURATIONS COME DOWN. A shake
+// that outlasts its own freeze by more than about its own length again stops
+// reading as impact and starts reading as noise.
+//
+// Still `guessed`: nothing here has been frame-stepped against a reference.
+
+/** px — screen shake amplitude for a small impact (a hit landing). guessed. */
+const SHAKE_SMALL = 2;
+
+/** px — screen shake amplitude for an explosion or a boss stomp. guessed. */
+const SHAKE_MEDIUM = 3;
+
+/** px — screen shake amplitude for a boss dying. guessed. */
+const SHAKE_LARGE = 4;
+
+/** f — shake duration for a small impact. guessed. Was 8, with no freeze in
+ *  front of it. HITSTOP_HIT_FRAMES now carries the first 3 frames of the hit,
+ *  so 6 puts the whole event at 9 frames instead of 8 and spends more of it
+ *  frozen than wobbling. */
+const SHAKE_SMALL_FRAMES = 6;
+
+/** f — shake duration for an explosion or a boss stomp. guessed. Was 10. */
+const SHAKE_MEDIUM_FRAMES = 8;
+
+/** f — shake duration for a boss dying. guessed. Was 40, which was two thirds
+ *  of a second of continuous camera wobble and read as a rumble rather than a
+ *  blow. HITSTOP_BOSS_DEATH_FRAMES now supplies the weight; 24 is what is left
+ *  to release it, and the two together are still shorter than the old 40. */
+const SHAKE_LARGE_FRAMES = 24;
+
+/** px, f — a boss landing, summoning or slamming the floor. guessed. Heavier
+ *  than MEDIUM and lighter than a death; it exists because `src/data/bosses.js`
+ *  spelled this weight out as bare literals at fourteen call sites, which is
+ *  exactly what R3 forbids and what made re-tuning the six constants above a
+ *  cosmetic change for every boss in the game. */
+const SHAKE_BOSS_SLAM = 4;
+const SHAKE_BOSS_SLAM_FRAMES = 14;
+
+/** px, f — a sustained world rumble rather than a blow: the tide being forced
+ *  to a level, ground giving way. guessed. Small amplitude, but the longest
+ *  duration of any shake that is not a boss dying — a rumble is defined by
+ *  lasting, and it is the one shake that is NOT preceded by a freeze, because
+ *  nothing has been hit. */
+const SHAKE_RUMBLE = 2;
+const SHAKE_RUMBLE_FRAMES = 12;
+
+/** px, f — a boss's armour or a wall shattering: the sharpest short shake in
+ *  the game, and the only one that goes above SHAKE_LARGE's amplitude. guessed. */
+const SHAKE_BOSS_BREAK = 5;
+const SHAKE_BOSS_BREAK_FRAMES = 16;
+
+// ---------------------------------------------------------------------------
+// Player states other than walking
+// ---------------------------------------------------------------------------
+
+/** f — length of a pit fall before the player is replaced on solid ground. guessed. */
+const FALL_FRAMES = 34;
+
+/** f — length of being washed back to shore by water. guessed. */
+const WASH_FRAMES = 30;
+
+/** f — how long Link holds the conch, and is frozen for. guessed. */
+const CONCH_FRAMES = 46;
+
+/** f — how long the player must lean on a block before it moves. guessed. */
+const PUSH_DELAY_FRAMES = 18;
+
+/** f — how long a Pegasus Seed's speed boost lasts. guessed. */
+const PEGASUS_FRAMES = 300;
+
+/** f — how long Link holds a new item overhead. derived from the `itemGet`
+ *  jingle, which is what the pose exists to sit under: 20 rows at bpm 132 and
+ *  rowsPerBeat 4 is 6.82 f/row, and its last struck note stops ringing at row
+ *  17 — 116 frames. It was 90, so Link put the item down a full 26 frames
+ *  before his own fanfare finished, every time. The pose now outlasts the
+ *  phrase instead of being cut off by it. */
+const ITEM_PRESENT_FRAMES = 116;
+
+/** f — how long Link is frozen when claiming an essence. guessed. */
+const ESSENCE_FREEZE_FRAMES = 150;
+
+/** f — how long the game-over screen holds before it accepts a button. guessed. */
+const GAMEOVER_WAIT_FRAMES = 100;
+
+// THE LOW-HEALTH PULSE.
+//
+// The game had no low-health warning at all — the one piece of feedback in
+// every Zelda that tells a player to stop and heal, and this game's hearts sat
+// silent all the way to zero.
+
+/** qh — quarter-hearts at or below which the pulse starts. guessed. Two full
+ *  hearts. Chosen against this game's damage ladder rather than the source's:
+ *  a boss's heavy hit is 3-4 qh here, so 8 is "one more mistake". */
+const LOW_HEART_THRESHOLD = 8;
+
+/** f — frames between pulses. guessed. Slow enough not to be a rattle and fast
+ *  enough to feel like a heartbeat; it is the tempo that makes this a warning
+ *  rather than an alarm, and it is the number to move first if it nags. */
+const LOW_HEART_EVERY = 40;
+
+// TEXT.
+//
+// These lived inside `src/game/dialogue.js` as bare literals for the whole life
+// of the project, which is the R3 violation the file's own header warns about:
+// text cadence is the timing constant a player is exposed to more often than
+// any other except walking, and it was not in this file.
+
+/** chars/f — how fast a dialogue page reveals itself. guessed, and the single
+ *  most-felt number in the game after WALK_SPEED. 1.6 is what the game has
+ *  always read at; it is preserved here rather than re-guessed.
+ *
+ *  WRITTEN DOWN AND DELIBERATELY NOT APPLIED: both source games look closer to
+ *  one character every other frame in ordinary dialogue — around 0.5 here,
+ *  which would be roughly three times slower. That is an impression, not a
+ *  measurement, and per R3/T4 a number nobody has frame-stepped does not get to
+ *  move the whole game's dialogue pacing. Now that it is one named constant it
+ *  is a one-line experiment for whoever does step a reference. */
+const TEXT_SPEED = 1.6;
+
+/** x — multiplier on TEXT_SPEED while A or B is held. guessed. Held-button
+ *  fast-forward is a source-game behaviour; 3x makes a long page skimmable
+ *  without skipping it outright. */
+const TEXT_FAST_SCALE = 3;
+
+/** chars — one text blip per this many revealed characters. guessed. It used
+ *  to be `floor(chars) % 3 === 0`, tested against the running total rather than
+ *  counting characters, so at a non-integer TEXT_SPEED the blip fired on an
+ *  irregular beat that changed with the speed — the click was not a rhythm, it
+ *  was an artefact. Counting revealed characters makes the cadence a rhythm
+ *  again and keeps it one at any speed. */
+const TEXT_BEEP_EVERY = 3;
+
+/** px — how far in front of Link an A-button context action reaches. guessed. */
+const CONTEXT_REACH = 12;
+
+/** px — how far in front of Link a lift reaches. guessed. */
+const LIFT_REACH = 12;
+
+/** sp/f — speed of an object thrown by the player. guessed; 2.5 px/f, snapped
+ *  to the grid from 2.6. */
+const THROW_SPEED = 640;
+
+/** sp/f — upward velocity a thrown object leaves the hand with. guessed;
+ *  0.625 px/f, snapped from the 0.6 that used to sit inline in items.js. */
+const THROW_ARC_RISE = 160;
+
+/** sp/f^2 — downward acceleration on a thrown object's arc. guessed; snapped
+ *  from the 0.22 that used to sit inline in items.js. */
+const THROW_ARC_GRAVITY = 56;
+
+/** x — per-frame decay on a thrown bomb's ground slide. guessed; it used to
+ *  sit inline in items.js. */
+const THROW_SLIDE_DECAY = 0.9;
+
+/** sp/f — below this a thrown bomb's slide is called finished. guessed. */
+const THROW_SLIDE_STOP = 26;
+
+/** px — height an object is held at while carried. guessed. */
+const CARRY_HEIGHT = 13;
+
+// ---------------------------------------------------------------------------
+// The Tidewright's Anchor
+//
+// The anchor holds a patch of the room at whatever tide level was current when
+// it landed, while the rest of the room goes on obeying the conch.
+// ---------------------------------------------------------------------------
+
+/**
+ * tiles — how far the held patch reaches from the anchor, in every direction.
+ * guessed, AND EXPLICITLY UNSETTLED — to be decided by play, not by argument.
+ * Press KeyU in game to cycle 1-4 and KeyY to swap the footprint's shape.
+ *
+ * The arithmetic that rules out the larger values, since it is not obvious: a
+ * room is 10 tiles wide and 8 tall, so the radius has to split BOTH axes to be
+ * worth anything. 4 spans 9 tiles and swallows the whole screen — the conch
+ * appears to stop working. 3 spans 7 and covers 7 of the 8 rows, so it splits
+ * horizontally and not vertically. 2 spans 5 and splits both. The execution
+ * plan's original "~8 tiles" predates anyone checking this against a room.
+ */
+const ANCHOR_RADIUS_TILES = 2;
+
+/**
+ * 'square' | 'disc' — the held patch's footprint. guessed, same debug key.
+ *
+ * At this scale the shape is legible to the player and has to be predictable.
+ * A radius-2 disc is 13 tiles and reads as a fat plus sign whose edge is hard
+ * to eyeball; a radius-2 square is a clean 5x5 whose corners you can see. Hence
+ * square, but it is a feel question and the key exists to settle it.
+ */
+const ANCHOR_SHAPE = 'square';
+
+/** sp/f — how fast the anchor flies when thrown. guessed; matches THROW_SPEED
+ *  so it reads as the same arm that throws a pot. */
+const ANCHOR_THROW_SPEED = 640;
+
+/** sp/f — how fast the chain reels the anchor back on recall. guessed; faster
+ *  than the throw, because a recall is a snap and a throw is a lob. */
+const ANCHOR_RECALL_SPEED = 896;
+
+/** frames — how long the anchor stays visibly settling after it lands, before
+ *  the water changes. guessed; long enough to read as a splash-then-hold. */
+const ANCHOR_SETTLE_FRAMES = 10;
+
+/** hp — damage the chain does sweeping along its line on throw and recall.
+ *  guessed; one quarter-heart less than a sword tap, since it is incidental. */
+const ANCHOR_CHAIN_DAMAGE = 1;
+
+// ---------------------------------------------------------------------------
+// Enemy cadence
+// ---------------------------------------------------------------------------
+
+// --- The lattice ---------------------------------------------------------
+//
+// Ground enemies do not have velocities. They take whole steps along an 8px
+// lattice, and a step, once begun, runs to its end. Every decision an enemy
+// makes about where to go is made standing on a lattice point. That is what
+// makes an octorok's shot dodgeable and a room of them read as patterned
+// rather than noisy. See docs/FEEL-SPEC.md, "The lattice".
+
+/** px — the increment a ground enemy moves in. guessed, but constrained: it
+ *  has to divide the 16px tile, and half a tile is the coarsest value that
+ *  still lets an enemy stand in a doorway's centre. */
+const ENEMY_GRID_STEP = 8;
+
+/** steps — how many lattice steps a wandering enemy commits to before it draws
+ *  a new direction from the room's stream. guessed. This is the cadence that
+ *  replaces the old per-frame turn probability: three steps is 24px, about a
+ *  tile and a half, which is long enough to read as a decision and short
+ *  enough that the enemy still feels loose. */
+const ENEMY_DECIDE_STEPS = 3;
+
+/** f — how long an enemy hesitates after walking into something before it
+ *  picks a new direction. guessed. Also bounds how often a cornered enemy can
+ *  draw from the room stream. */
+const ENEMY_TURN_PAUSE_FRAMES = 6;
+
+/** p — per-frame chance a wandering enemy changes direction. guessed.
+ *  This now governs only the CONTINUOUS wander fallback — bosses and aquatic
+ *  drifters, which are deliberately not on the lattice. A ground enemy never
+ *  reads it. */
+const ENEMY_TURN_CHANCE = 0.012;
+
+/** px/f — fallback speed for an enemy whose spec does not name one. guessed. */
+const ENEMY_DEFAULT_SPEED = 0.5;
+
+/** f — frames per animation step for an enemy whose spec does not name one. guessed. */
+const ENEMY_DEFAULT_RATE = 10;
+
+/** x — multiplier on an enemy's speed while charging. guessed. */
+const ENEMY_CHARGE_SPEED_MULT = 3;
+
+/** f — recovery stun after a charge hits a wall. guessed. */
+const ENEMY_CHARGE_RECOVER_FRAMES = 24;
+
+/** px — how closely the player must line up for a charge to trigger. guessed. */
+const ENEMY_CHARGE_TOLERANCE = 10;
+
+/** px — how near the player must be for a charge to trigger. guessed. */
+const ENEMY_CHARGE_RANGE = 90;
+
+/** f — how long after one of Nereth's attacks his weak point opens. guessed.
+ *  His volley leaves at 2.0 px/f, so 34 frames carries it ~68px — past a player
+ *  standing at the ~40px they were being hit at. See `nerethOpening`. */
+const NERETH_OPENING_DELAY = 34;
+
+/** f — how long that opening lasts once it arrives. guessed; unchanged at 55,
+ *  because the window was never the problem — WHEN it started was. */
+const NERETH_OPEN_FRAMES = 55;
+
+/** px — how close the player has to get for Anemos's lash to stop reaching
+ *  them. guessed. Same rule as ENEMY_CHARGE_MIN_RANGE and the same reason: the
+ *  lash fired on `distToPlayer < 44/48/52`, which INCLUDES the ~24-30px a
+ *  player stands at to swing, so attacking was itself the trigger for five
+ *  damage-3 spears in a 40-degree fan — at point-blank a fan that tight has no
+ *  gap to step into, and `T35` says the player is rooted for the whole swing
+ *  and cannot leave anyway.
+ *
+ *  32 is outside sword reach, so the lash becomes a mid-range punish for
+ *  standing in the open rather than a tax on closing. Anemos is ROOTED, so a
+ *  player who gets inside that ring has genuinely earned the position — and it
+ *  still costs them, because the rings and volleys fire regardless of distance
+ *  and its jellyfish and urchins do not care where anyone is standing. */
+const ANEMOS_LASH_MIN_RANGE = 32;
+
+/** f — Nereth's final-phase window, on a 200-frame cycle. guessed. Shorter than
+ *  the 150 it was, because it now means something: he holds fire while it is
+ *  open, so 90 of every 200 frames is a real invitation rather than a nominal
+ *  one taken under five spears and twelve bubbles. */
+const NERETH_FINAL_OPEN_FRAMES = 90;
+
+/** px — how CLOSE the player has to be for a charge to stop being available.
+ *  guessed. A charge is a gap-closer, and a charge that fires when the player
+ *  is already in sword reach is not a charge, it is a shove that cannot be
+ *  answered.
+ *
+ *  This number is the fix for the boss ceiling documented as `T33`. Gohmaraq's
+ *  phase-2 charge had a 130px range over an arena barely larger than that, so
+ *  its melee-vulnerable range was a STRICT SUBSET of its charge-trigger range:
+ *  walking into sword reach necessarily satisfied the trigger, which fires
+ *  first, and charges chained with zero idle frames between. A 60,000-frame
+ *  UNLIMITED-HEALTH run still stuck at 14 hp forever, which is what proved the
+ *  ceiling structural rather than tactical and ended eight sessions of trying
+ *  to dodge past it.
+ *
+ *  40px is outside sword reach and outside the distance a player stands at to
+ *  swing (~26-30px centre to centre against a 32x32 boss), so a player who has
+ *  closed the gap gets real melee frames — while a player at range still faces
+ *  the charge the fight is built around. The close-range punish already exists
+ *  and did not need adding: every charging boss in this game also runs a
+ *  timed slam that sprays regardless of distance. */
+const ENEMY_CHARGE_MIN_RANGE = 40;
+
+/** f — pause between hops. guessed. */
+const ENEMY_HOP_WAIT_FRAMES = 40;
+
+/** px — how far a hop carries, if the enemy does not name its own. guessed.
+ *  Must be a multiple of ENEMY_GRID_STEP: a hop is a lattice step with an arc
+ *  on it, so it has to land the hopper back on the lattice. */
+const ENEMY_HOP_DIST = 16;
+
+/** f — how long a hop is in the air, if the enemy does not name its own.
+ *  guessed. Fixed, not derived from gravity: the arc is a curve fitted between
+ *  two known endpoints rather than an integration, so the landing frame and the
+ *  landing pixel are both known when the hop starts. */
+const ENEMY_HOP_FRAMES = 22;
+
+/** px — peak height of a hop's arc. guessed. */
+const ENEMY_HOP_HEIGHT = 10;
+
+/** rad/f — default angular speed of an orbiting enemy. guessed. */
+const ENEMY_ORBIT_SPEED = 0.045;
+
+/** px — default orbit radius. guessed. */
+const ENEMY_ORBIT_RADIUS = 24;
+
+/** f — how long a submerging enemy stays under. guessed. */
+const ENEMY_SUBMERGE_DOWN_FRAMES = 90;
+
+/** f — how long a submerging enemy stays up. guessed. */
+const ENEMY_SUBMERGE_UP_FRAMES = 120;
+
+/** px — nearest a resurfacing enemy will appear to the player. guessed. */
+const ENEMY_SURFACE_MIN_DIST = 32;
+
+/** px — extra range beyond ENEMY_SURFACE_MIN_DIST it may appear at. guessed. */
+const ENEMY_SURFACE_DIST_SPAN = 24;
+
+/** px — how close to a row or column counts as "the player is lined up". guessed. */
+const ENEMY_ALIGN_TOLERANCE = 12;
+
+/** f — how long an aquatic enemy survives on dry land after the tide drops. guessed. */
+const ENEMY_BEACHED_FRAMES = 90;
+
+/** f — a boss's held pose before it starts acting, if its spec omits one. guessed. */
+const BOSS_INTRO_FRAMES = 80;
+
+/** f — length of a boss's death throes before the room clears. guessed. */
+const BOSS_DEATH_FRAMES = 72;
+
+/** f — interval between explosions during a boss's death. guessed. */
+const BOSS_DEATH_BOOM_EVERY = 9;
+
+/** f — delay between a boss dying and its essence appearing. guessed. */
+const BOSS_ESSENCE_DELAY_FRAMES = 70;
+
+/** f — delay between a boss dying and room music resuming. guessed. */
+const BOSS_MUSIC_RESUME_FRAMES = 220;
+
+// ---------------------------------------------------------------------------
+// NPCs
+// ---------------------------------------------------------------------------
+
+/** f — how often a wandering NPC picks a new direction. guessed. */
+const NPC_WANDER_PERIOD = 90;
+
+/** sp/f — how fast a wandering NPC ambles. guessed; 0.3125 px/f, snapped to
+ *  the grid from 0.3. Under a pixel a frame, so it exists only because
+ *  positions accumulate in subpixels. */
+const NPC_WANDER_SPEED = 80;
+
+// ---------------------------------------------------------------------------
+// Projectiles
+// ---------------------------------------------------------------------------
+
+/** px/f — speed of a shot fired by `shoot()` with no speed named. guessed. */
+const ENEMY_SHOT_SPEED = 1.5;
+
+/** px/f — speed used by `fire()` when neither caller nor shot names one. guessed. */
+const PROJECTILE_SPEED = 1.6;
+
+/** px/f — speed of a shot in a `shootRing` volley. guessed. */
+const RING_SHOT_SPEED = 1.2;
+
+/** f — life of a projectile that does not name its own. guessed. */
+const PROJECTILE_LIFE = 150;
+
+/** f — life of a shot from `shoot()`. guessed. */
+const ENEMY_SHOT_LIFE = 140;
+
+/** f — life of a shot in a `shootRing` volley. guessed. */
+const RING_SHOT_LIFE = 130;
+
+/** px — height a projectile flies at, so it clears shadows and low scenery. guessed. */
+const PROJECTILE_Z = 4;
+
+// ---------------------------------------------------------------------------
+// Pickups and drops
+// ---------------------------------------------------------------------------
+
+/** f — how long a dropped pickup lingers before vanishing. guessed. */
+const PICKUP_LIFE_FRAMES = 460;
+
+/** sp/f — the little upward pop a drop makes when it appears. guessed;
+ *  -1.25 px/f, snapped to the grid from -1.2. */
+const PICKUP_POP_SPEED = -320;
+
+/** sp/f^2 — gravity on that pop. guessed. */
+const PICKUP_GRAVITY = 40;
+
+/** f — how long the pop lasts before the drop settles. guessed. */
+const PICKUP_SETTLE_FRAMES = 12;
+
+/** f — delay before a drop can be collected, so it is not grabbed mid-pop. guessed. */
+const PICKUP_GRAB_DELAY = 8;
+
+/** rad/f — how fast a fairy's drift angle turns. guessed. */
+const FAIRY_DRIFT_TURN = 0.06;
+
+/** sp/f — amplitude of a fairy's drift on x. guessed; 0.6875 px/f. */
+const FAIRY_DRIFT_X = 176;
+
+/** sp/f — amplitude of a fairy's drift on y. guessed; 0.625 px/f. */
+const FAIRY_DRIFT_Y = 160;
+
+// ---------------------------------------------------------------------------
+// Effects
+// ---------------------------------------------------------------------------
+
+/** f — life of a bomb before it detonates is set per-item; this is how long the
+ *  explosion entity itself lives. guessed. */
+const EXPLOSION_FRAMES = 24;
+
+/** px — radius Link's charge sparkles scatter over. guessed. */
+const CHARGE_SPARKLE_SPREAD = 12;
+
+/** px — radius an essence's sparkles scatter over. guessed. */
+const ESSENCE_SPARKLE_SPREAD = 10;
+
+/** f — interval between an essence's sparkles. guessed. */
+const ESSENCE_SPARKLE_EVERY = 10;
+
+/** f — interval between foam puffs while wading. guessed. */
+const WADE_FOAM_EVERY = 14;
+
+// ---------------------------------------------------------------------------
+// The item roster (docs/ITEMS.md)
+//
+// Every number in this section is `guessed`. Not one of these items exists in
+// the source games, so there is nothing to frame-step: `measured` is not
+// available here even in principle, and `derived` only where a value is
+// computed from another constant in this file. Anything that later gets tuned
+// against play is still `guessed` — see the provenance rules at the top.
+// ---------------------------------------------------------------------------
+
+// --- Brineglass Lens -------------------------------------------------------
+
+/** f — how long the ghosted overlay takes to fade in when the Lens is raised,
+ *  and out again when it is released. guessed. */
+const LENS_FADE_FRAMES = 10;
+
+/** x — peak opacity of the ghosted next-tide terrain drawn over the room.
+ *  guessed, but MEASURED AGAINST A ROOM, which is more than it was. D2's forks
+ *  ask the Lens the hardest question in the game — three shafts that are the
+ *  same `dPit` where you stand and shallow water / a pit / deep water one level
+ *  up — and the three previewed tiles were coming out 4-6 units apart in RGB,
+ *  which is not a difference a person reads at 160x144. Sampled over the pit
+ *  in d2 1,2,2 — regenerate the shot with
+ *  `node tools/shoot-rooms.mjs --tide=0 --px=72 --py=88 --lens d2,1,2,2` —
+ *  mean RGB of each throat:
+ *
+ *    ghost   west (wadeable)   middle (pit)   east (drowning)
+ *    0.55    (23, 33, 51)      (17, 21, 38)   (19, 27, 48)
+ *    0.80    (26, 38, 58)      (17, 21, 38)   (20, 29, 53)
+ *    1.00    (28, 40, 60)      (17, 20, 38)   (21, 30, 55)
+ *
+ *  0.80 buys most of what 1.00 buys and keeps the overlay translucent, which
+ *  is what stops it reading as the room having already changed. THE REAL LIMIT
+ *  IS NOT THIS NUMBER: shallow water, deep water and a dungeon pit are three
+ *  dark blues, so no opacity separates them by much. See docs/ART-BACKLOG.md. */
+const LENS_GHOST_ALPHA = 0.80;
+
+/** x — opacity of the cold wash laid over the whole screen while the Lens is
+ *  up, so the preview cannot be mistaken for the room actually changing.
+ *  guessed. */
+const LENS_TINT_ALPHA = 0.16;
+
+/** x — opacity a phase-shifted enemy is drawn at while the Lens reveals it.
+ *  It is solid enough to aim at, because the Lens makes it hittable. guessed. */
+const LENS_PHASE_ALPHA = 0.8;
+
+/** f — period of the slow shimmer on the ghosted overlay. guessed. */
+const LENS_SHIMMER_FRAMES = 48;
+
+// --- Kelp-Soled Cleats -----------------------------------------------------
+
+/** sp/f — walking speed on the seafloor in sink mode. guessed; 0.625 px/f,
+ *  five eighths of WALK_SPEED. Sink mode buys safety with pace, and the number
+ *  has to be slow enough that taking the floor route is a decision. */
+const SINK_SPEED = 160;
+
+/** px/f — a Bogwater torrent, the current the Sanctum is built out of.
+ *  derived, and the derivation is the whole point: it is strictly GREATER than
+ *  SWIM_SPEED (192 sp/f = 0.75 px/f), so a swimmer pressing into it nets
+ *  backwards and can never make headway, while a walker on the floor is not
+ *  touched by a current at all. An ordinary riptide is 0.55 px/f — less than a
+ *  swimmer's own speed — so it is a tax on the surface route and not a barrier,
+ *  which is why D3 needed a second, stronger current rather than reusing it.
+ *  Retune SWIM_SPEED and tools/check-cleats.mjs re-proves every torrent room
+ *  against the new ratio instead of quietly passing. */
+const TORRENT_PUSH = 0.9;
+
+/** f — the descent when sink mode is entered over deep water, and the ascent
+ *  when it is left. Control is suspended for the whole of it. guessed. */
+const SINK_ENTER_FRAMES = 18;
+
+/** f — breath in sink mode at Cleats L1. Cleats L2 (the Mermaid Suit) has no
+ *  limit at all. guessed; ~13 seconds, long enough to cross a room and short
+ *  enough that a wrong turn costs you. */
+const CLEATS_BREATH_FRAMES = 800;
+
+/** f — how much breath is left when the warning starts. guessed. */
+const CLEATS_BREATH_WARN_FRAMES = 180;
+
+/** f — interval between bubbles rising off a walker on the seafloor. guessed. */
+const SINK_BUBBLE_EVERY = 22;
+
+/** qh — damage taken when breath runs out and the Cleats float you up on their
+ *  own. guessed; the same as being washed ashore, because it is the same kind
+ *  of failure. */
+const SINK_DROWN_DAMAGE = 2;
+
+// --- Squall Bellows --------------------------------------------------------
+
+/** tiles — how far the gust cone reaches. guessed; three tiles is far enough
+ *  to reach across a channel and short enough that you have to commit a
+ *  position to it. */
+const BELLOWS_RANGE = 3;
+
+/** f — how long the bellows take to fill before the cone opens. guessed. The
+ *  wind-up is what makes standing still a decision rather than a reflex. */
+const BELLOWS_WARMUP_FRAMES = 14;
+
+/** sp/f — how hard the gust shoves a light enemy. guessed; 0.75 px/f, a little
+ *  under a walk, so a pushed enemy visibly loses ground rather than flying. */
+const BELLOWS_PUSH = 192;
+
+/** f — interval between gust puffs drawn in the cone. guessed. */
+const BELLOWS_PUFF_EVERY = 6;
+
+/** x — a raft under the gust travels this fraction of BELLOWS_PUSH. guessed;
+ *  a raft is heavy and the difference should be legible. */
+const BELLOWS_RAFT_SCALE = 0.5;
+
+/** f — frames a gusted wheel keeps turning after the gust stops. guessed. */
+const BELLOWS_WHEEL_COAST = 30;
+
+// --- Reefseed --------------------------------------------------------------
+
+/** f — how long a thrown Reefseed takes to become a coral pillar. guessed;
+ *  two seconds. THE DELAY IS THE DESIGN — see docs/ITEMS.md. Shorten it and
+ *  the item becomes a block placer; lengthen it and nobody waits. */
+const REEFSEED_GROW_FRAMES = 120;
+
+/** f — how long the seed tumbles before it settles and starts growing.
+ *  guessed. */
+const REEFSEED_SETTLE_FRAMES = 22;
+
+/** sp/f — how fast a thrown Reefseed travels. guessed; 2 px/f, a lob rather
+ *  than a shot, because you are aiming at a tile and not at a creature. */
+const REEFSEED_THROW_SPEED = 512;
+
+/** f — interval between the sprout's shudders while it grows. guessed. */
+const REEFSEED_SHUDDER_EVERY = 12;
+
+/** how many Reefseeds a full pouch holds. guessed. */
+const REEFSEED_CAPACITY = 8;
+
+/** how many bombs a full bag holds. guessed; it was a bare 10 inside
+ *  `Game.openChest` until the Reefseed's empty-satchel bug moved the whole
+ *  counted-item rule down into `giveItem`, which is not allowed a magic
+ *  number any more than anything else is. */
+const BOMB_CAPACITY = 10;
+
+// --- Dredge Line -----------------------------------------------------------
+
+/** px — how far the line is cast. guessed; four tiles, so it reaches across a
+ *  channel the player is standing on the bank of. */
+const DREDGE_RANGE = 64;
+
+/** sp/f — how fast the weight travels on the way out. guessed; 3.5 px/f. */
+const DREDGE_CAST_SPEED = 896;
+
+/** sp/f — how fast the line comes back in, loaded or empty. guessed; a drag is
+ *  slower than a cast, which is what makes hauling something read as work. */
+const DREDGE_HAUL_SPEED = 512;
+
+/** sp/f — how fast a FIXED snag hauls Link instead. guessed. */
+const DREDGE_PULL_SPEED = 768;
+
+/** f — how long a dredged-up creature flops on land, helpless. guessed;
+ *  long enough for two sword swings and no more. */
+const DREDGE_FLOP_FRAMES = 150;
+
+/** x — damage multiplier on a flopping creature. guessed; being landed is
+ *  supposed to be the answer to an aquatic enemy, not a nudge. */
+const DREDGE_FLOP_DAMAGE_SCALE = 2;
+
+// --- Resonance Rod ---------------------------------------------------------
+
+/** px — how far the note carries at LOW and MID tide. guessed; three tiles. */
+const ROD_RANGE = 48;
+
+/** px — how far it carries at HIGH. guessed; water carries a note, and this is
+ *  the one item whose own power depends on the tide. Roughly double. */
+const ROD_RANGE_HIGH = 96;
+
+/** f — how long armoured metal locks rigid when it is rung. guessed; the brief
+ *  says about 90 frames and this is that number until someone plays it. */
+const ROD_LOCK_FRAMES = 90;
+
+/** f — how long the ring itself lasts on screen. guessed. */
+const ROD_RING_FRAMES = 26;
+
+/** f — how long the rod cannot be sounded again. guessed; long enough that
+ *  holding the button is not a stun-lock. */
+const ROD_COOLDOWN_FRAMES = 48;
+
+/** f — how long a sunken bell hums after the Resonance Rod is sounded near it,
+ *  and how long its pointing sparks last. guessed. */
+const BELL_CHIME_FRAMES = 60;
+
+// --- Ferryman's Coin -------------------------------------------------------
+
+/** sp/f — how fast the coin is pitched. guessed; 2.25 px/f, a coin toss. */
+const COIN_THROW_SPEED = 576;
+
+/** f — how long the coin is in the air before it settles. guessed. */
+const COIN_SETTLE_FRAMES = 26;
+
+/** f — the pause between the tide finishing its sweep and the swap firing.
+ *  guessed; long enough to read as a consequence of the tide rather than as
+ *  part of it. */
+const COIN_SWAP_DELAY_FRAMES = 24;
+
+/** f — interval between the coin's glints while it waits. guessed. */
+const COIN_GLINT_EVERY = 40;
+
+// --- Bottled Tide ----------------------------------------------------------
+
+/** how many Bottled Tides you can carry at once. guessed; the number is the
+ *  difficulty dial on every boss room that keeps the mechanic switched on. */
+const BOTTLE_CAPACITY = 4;
+
+/** f — Link is held while the bottle is poured out. guessed; long enough that
+ *  using one in a boss fight is a window you have to make. */
+const BOTTLE_POUR_FRAMES = 34;
+
+/** tiles — the widest gap the base hop clears. derived, not guessed: the hop
+ *  reuses the one-way ledge arc, whose span is LEDGE_MAX_SPAN, and a gap is
+ *  cleared the same way a ledge lip is. Two means a one-tile chasm is free and
+ *  a two-tile one is not, which is the line every gap in the world is drawn
+ *  against now that Roc's Feather is gone and the hop is base moveset. */
+const GAP_HOP_MAX_SPAN = 2;
+
+/** what bare hands are worth when lifting, against a tile's `liftLevel`.
+ *  derived from the roster, not guessed: the Power Bracelet is gone and
+ *  lifting is base moveset, so ordinary pots and rocks (`liftLevel` unset or
+ *  1) come up and a boulder (`liftLevel` 2) does not. The boulder wants the
+ *  Dredge Line now — see docs/ITEMS.md. */
+const LIFT_STRENGTH = 1;
+
+// --- Scrimshaw (P7) --------------------------------------------------------
+// Every number here is `guessed` and cannot be otherwise: no Oracle system
+// slots a passive by world state, so there is no reference to frame-step. They
+// are stated as multipliers of things that already exist wherever possible, so
+// re-tuning a base constant carries the charm with it.
+
+/** f — how long a case stays awake after the tide leaves it, with the Neap
+ *  Charm in that case. guessed; the plan says three seconds and three seconds
+ *  at 60Hz is what this is. It is the whole width of the transition window
+ *  the charm exists to create, so it is the first number to move if the
+ *  transition play does not read. */
+const NEAP_GRACE_FRAMES = 180;
+
+/** most charms one case can ever hold. guessed; the late-game case upgrade
+ *  raises progress.charmCase from 1 to this. */
+const CHARM_CASE_MAX = 2;
+
+/** dimensionless — swim speed multiplier with the Riptide Fin. guessed; the
+ *  plan says +40% and the product is rounded back onto a whole subpixel at the
+ *  call site, the same way the terrain multipliers are. */
+const RIPTIDE_FIN_FACTOR = 1.4;
+
+/** dimensionless — everywhere-speed multiplier with Deadweight. guessed; the
+ *  plan's 15% slower, and the price of never being pushed again. */
+const DEADWEIGHT_FACTOR = 0.85;
+
+/** dimensionless — how hard a current pushes with the Kelp Braid. guessed. */
+const KELP_BRAID_FACTOR = 0.5;
+
+/** px — extra span on the sword's sweep with the Split Fang, added to
+ *  SWORD_SPAN. guessed; one tile's worth of blade split across both sides, so
+ *  a swing catches a foe standing off the axis of the one you meant to hit. */
+const SPLIT_FANG_SPAN = 8;
+
+/** dimensionless — how far the sword throws with the Sea-Wolf's Tooth,
+ *  against KNOCK_SWORD. guessed. */
+const SEAWOLF_KNOCK_FACTOR = 2;
+
+/** chance a hit is shrugged off entirely with the Hagstone. guessed; the plan
+ *  had no such charm, and a quarter is high enough to notice inside one room
+ *  and low enough that it is never a plan. Rolled off the ROOM stream. */
+const HAGSTONE_CHANCE = 0.25;
+
+/** f — interval between Strandwalker's quarter-hearts on dry land. guessed;
+ *  slow enough that it is a charm you leave on rather than a charm you farm. */
+const STRANDWALKER_EVERY = 300;
+
+/** dimensionless — bomb blast radius multiplier with Dry Kindling. guessed. */
+const DRY_KINDLING_FACTOR = 1.5;
+
+/** dimensionless — pickup lifetime multiplier with the Gull's Tally. guessed;
+ *  the plan says twice as long and this is that. */
+const GULLS_TALLY_FACTOR = 2;
+
+/** dimensionless — shop price multiplier with the Chandler's Eye. guessed. */
+const CHANDLER_FACTOR = 0.75;
+
+/** extra Reefseeds the Quartermaster's Mark carries, on REEFSEED_CAPACITY.
+ *  guessed; the plan says two. */
+const QUARTERMASTER_BONUS = 2;
+
+/** px — extra reach on the Dredge Line with the Coilrope, on DREDGE_RANGE.
+ *  guessed; the plan says one tile and a tile is 16px. */
+const COILROPE_RANGE = 16;
+
+/** dimensionless — how much of the dive/surface transition the Pressure Scar
+ *  spends, against SINK_ENTER_FRAMES. guessed. */
+const PRESSURE_SCAR_FACTOR = 0.5;
+
+/** tide changes a commissioned charm takes to carve. derived from the design,
+ *  not guessed: the plan says one tide cycle, and the Moon Conch's cycle is
+ *  TIDE_COUNT steps round. */
+const CARVE_TIDE_TURNS = 3;
+
+/** rupees the scrimshander charges to carve a blank. guessed; roughly a good
+ *  dungeon's takings, so a charm is a decision rather than a formality. */
+const CARVE_PRICE = 60;
+
+/** dimensionless — how much of CONCH_FRAMES the Bosun's Whistle spends.
+ *  guessed; the conch's lock-out is a real cost in a fight, and halving it is
+ *  the most direct way a charm can say "you use the tide more". */
+const BOSUN_FACTOR = 0.5;
+
+/** px — how far a lit dark room reads, against the unlit 54. guessed; wide
+ *  enough that a lantern charm changes how the room is played rather than how
+ *  it is lit. */
+const LANTERN_RADIUS = 96;
+
+/** f — how often the Wrecker's Eye winks over a hidden thing. guessed; slow
+ *  enough to read as a glint rather than a blinking marker. */
+const WRECK_GLIMMER_PERIOD = 90;
+
+/** f — how long each wink lasts, inside WRECK_GLIMMER_PERIOD. guessed. */
+const WRECK_GLIMMER_ON = 20;
+
+/** peak opacity of the Wrecker's Eye wink. guessed. */
+const WRECK_GLIMMER_ALPHA = 0.85;
+
+/** essences before the scrimshander cuts you the LOW case. derived from the
+ *  eight-dungeon spine, not guessed: two, four and six spread the three
+ *  scrimshaw unlocks evenly across it and leave the last two dungeons free of
+ *  system-teaching. */
+const CHARM_LOW_ESSENCES = 2;
+
+/** essences before the HIGH case. derived, as above. */
+const CHARM_HIGH_ESSENCES = 4;
+
+/** essences before every case takes two charms. derived, as above. */
+const CHARM_CASE_ESSENCES = 6;
+
+// ---------------------------------------------------------------------------
+// Music engine — vibrato and arpeggio (S6)
+// ---------------------------------------------------------------------------
+//
+// Echo's own delay is deliberately NOT here — it is expressed in ROWS, not
+// frames, because it has to track each track's own tempo (see the comment on
+// `echo` in src/core/audio.js). These two techniques wobble or cycle a pitch
+// in real time regardless of tempo, so frames are the right unit and R3 says
+// they belong in this file like any other timing constant.
+
+/** f — frames a held note rings before vibrato engages. guessed. The source
+ *  games almost never wobble a note from the moment it is struck; the wobble
+ *  is something a SUSTAINED note earns, not an attack transient. */
+const VIBRATO_DELAY_FRAMES = 10;
+
+/** f — frames per vibrato pitch step. guessed. This is a STEP interval, not a
+ *  smoothing time: the hardware retriggers pitch on a frame grid rather than
+ *  gliding, so the engine re-issues `setValueAtTime` on this grid instead of
+ *  ramping — see `_scheduleVibrato`. Do not "fix" this into a ramp; that is
+ *  this session's own failure condition. */
+const VIBRATO_STEP_FRAMES = 4;
+
+/** semitones — how far a vibrato step swings above and below the written
+ *  pitch. guessed. `check-music.mjs` validates the SWUNG extreme (written
+ *  pitch times this depth) against each channel's real frequency range, not
+ *  just the written note, because depth can push a high note out of range at
+ *  the top of its swing even when the note itself is legal. */
+const VIBRATO_DEPTH_SEMITONES = 0.18;
+
+/** f — frames per arpeggio step, cycling a chord token's notes on one
+ *  channel to stand in for polyphony the hardware does not have. guessed;
+ *  fast enough to read as one chord rather than a scale run. */
+const ARPEGGIO_STEP_FRAMES = 3;
+__exports["WALK_SPEED"] = WALK_SPEED;
+__exports["SWIM_SPEED"] = SWIM_SPEED;
+__exports["BOOST_SPEED"] = BOOST_SPEED;
+__exports["SHIELD_SPEED"] = SHIELD_SPEED;
+__exports["SWORD_HOLD_SPEED"] = SWORD_HOLD_SPEED;
+__exports["SLOW_FACTOR"] = SLOW_FACTOR;
+__exports["SHALLOW_FACTOR"] = SHALLOW_FACTOR;
+__exports["CARRY_FACTOR"] = CARRY_FACTOR;
+__exports["SPIN_DRIFT_SPEED"] = SPIN_DRIFT_SPEED;
+__exports["TIDE_DRIFT_PER_LEVEL"] = TIDE_DRIFT_PER_LEVEL;
+__exports["SWING_FRAMES"] = SWING_FRAMES;
+__exports["SWING_HIT_START"] = SWING_HIT_START;
+__exports["SWING_HIT_END"] = SWING_HIT_END;
+__exports["CHARGE_FRAMES"] = CHARGE_FRAMES;
+__exports["CHARGE_SPARKLE_EVERY"] = CHARGE_SPARKLE_EVERY;
+__exports["SPIN_FRAMES"] = SPIN_FRAMES;
+__exports["SWORD_REACH"] = SWORD_REACH;
+__exports["SWORD_SPAN"] = SWORD_SPAN;
+__exports["SWORD_GAP"] = SWORD_GAP;
+__exports["SPIN_BOX"] = SPIN_BOX;
+__exports["SWORD_HOLD_DELAY"] = SWORD_HOLD_DELAY;
+__exports["SWORD_HOLD_DAMAGE"] = SWORD_HOLD_DAMAGE;
+__exports["KNOCK_HOLD"] = KNOCK_HOLD;
+__exports["SWORD_CLINK_COOLDOWN"] = SWORD_CLINK_COOLDOWN;
+__exports["PLAYER_INVULN_FRAMES"] = PLAYER_INVULN_FRAMES;
+__exports["PLAYER_FLICKER_FRAMES"] = PLAYER_FLICKER_FRAMES;
+__exports["PLAYER_RECOVER_INVULN_FRAMES"] = PLAYER_RECOVER_INVULN_FRAMES;
+__exports["PLAYER_HURT_FRAMES"] = PLAYER_HURT_FRAMES;
+__exports["PLAYER_KNOCK_DIST"] = PLAYER_KNOCK_DIST;
+__exports["PLAYER_KNOCK_FRAMES"] = PLAYER_KNOCK_FRAMES;
+__exports["ENEMY_INVULN_FRAMES"] = ENEMY_INVULN_FRAMES;
+__exports["ENEMY_FLICKER_FRAMES"] = ENEMY_FLICKER_FRAMES;
+__exports["ENEMY_KNOCK_FRAMES"] = ENEMY_KNOCK_FRAMES;
+__exports["KNOCK_DEFAULT"] = KNOCK_DEFAULT;
+__exports["KNOCK_SWORD"] = KNOCK_SWORD;
+__exports["KNOCK_SPIN"] = KNOCK_SPIN;
+__exports["KNOCK_PROJECTILE"] = KNOCK_PROJECTILE;
+__exports["KNOCK_EXPLOSION"] = KNOCK_EXPLOSION;
+__exports["KNOCK_THROWN"] = KNOCK_THROWN;
+__exports["KNOCK_TOOL"] = KNOCK_TOOL;
+__exports["BOSS_INVULN_FRAMES"] = BOSS_INVULN_FRAMES;
+__exports["BOSS_PHASE_INVULN_FRAMES"] = BOSS_PHASE_INVULN_FRAMES;
+__exports["BOSS_KNOCK_FRAMES"] = BOSS_KNOCK_FRAMES;
+__exports["BOSS_KNOCK_SCALE"] = BOSS_KNOCK_SCALE;
+__exports["HAZARD_DAMAGE"] = HAZARD_DAMAGE;
+__exports["PIT_DAMAGE"] = PIT_DAMAGE;
+__exports["WASH_DAMAGE"] = WASH_DAMAGE;
+__exports["EXPLOSION_SELF_DAMAGE"] = EXPLOSION_SELF_DAMAGE;
+__exports["KILNSHELL_BURN_DAMAGE"] = KILNSHELL_BURN_DAMAGE;
+__exports["JUMP_POWER"] = JUMP_POWER;
+__exports["JUMP_GRAVITY"] = JUMP_GRAVITY;
+__exports["LAND_SETTLE_RATE"] = LAND_SETTLE_RATE;
+__exports["LEDGE_MAX_SPAN"] = LEDGE_MAX_SPAN;
+__exports["LEDGE_HOP_FRAMES"] = LEDGE_HOP_FRAMES;
+__exports["LEDGE_HOP_HEIGHT"] = LEDGE_HOP_HEIGHT;
+__exports["LEDGE_PROBE_REACH"] = LEDGE_PROBE_REACH;
+__exports["PUSH_PROBE_REACH"] = PUSH_PROBE_REACH;
+__exports["ROOM_TRANSITION_FRAMES"] = ROOM_TRANSITION_FRAMES;
+__exports["ROOM_EXIT_MARGIN"] = ROOM_EXIT_MARGIN;
+__exports["CAM_DEADZONE_W"] = CAM_DEADZONE_W;
+__exports["CAM_DEADZONE_H"] = CAM_DEADZONE_H;
+__exports["CAM_MAX_SPEED"] = CAM_MAX_SPEED;
+__exports["TIDE_SWEEP_FRAMES"] = TIDE_SWEEP_FRAMES;
+__exports["FADE_RATE"] = FADE_RATE;
+__exports["BANNER_FRAMES"] = BANNER_FRAMES;
+__exports["HITSTOP_HIT_FRAMES"] = HITSTOP_HIT_FRAMES;
+__exports["HITSTOP_HURT_FRAMES"] = HITSTOP_HURT_FRAMES;
+__exports["HITSTOP_BOSS_DEATH_FRAMES"] = HITSTOP_BOSS_DEATH_FRAMES;
+__exports["SHAKE_SMALL"] = SHAKE_SMALL;
+__exports["SHAKE_MEDIUM"] = SHAKE_MEDIUM;
+__exports["SHAKE_LARGE"] = SHAKE_LARGE;
+__exports["SHAKE_SMALL_FRAMES"] = SHAKE_SMALL_FRAMES;
+__exports["SHAKE_MEDIUM_FRAMES"] = SHAKE_MEDIUM_FRAMES;
+__exports["SHAKE_LARGE_FRAMES"] = SHAKE_LARGE_FRAMES;
+__exports["SHAKE_BOSS_SLAM"] = SHAKE_BOSS_SLAM;
+__exports["SHAKE_BOSS_SLAM_FRAMES"] = SHAKE_BOSS_SLAM_FRAMES;
+__exports["SHAKE_RUMBLE"] = SHAKE_RUMBLE;
+__exports["SHAKE_RUMBLE_FRAMES"] = SHAKE_RUMBLE_FRAMES;
+__exports["SHAKE_BOSS_BREAK"] = SHAKE_BOSS_BREAK;
+__exports["SHAKE_BOSS_BREAK_FRAMES"] = SHAKE_BOSS_BREAK_FRAMES;
+__exports["FALL_FRAMES"] = FALL_FRAMES;
+__exports["WASH_FRAMES"] = WASH_FRAMES;
+__exports["CONCH_FRAMES"] = CONCH_FRAMES;
+__exports["PUSH_DELAY_FRAMES"] = PUSH_DELAY_FRAMES;
+__exports["PEGASUS_FRAMES"] = PEGASUS_FRAMES;
+__exports["ITEM_PRESENT_FRAMES"] = ITEM_PRESENT_FRAMES;
+__exports["ESSENCE_FREEZE_FRAMES"] = ESSENCE_FREEZE_FRAMES;
+__exports["GAMEOVER_WAIT_FRAMES"] = GAMEOVER_WAIT_FRAMES;
+__exports["LOW_HEART_THRESHOLD"] = LOW_HEART_THRESHOLD;
+__exports["LOW_HEART_EVERY"] = LOW_HEART_EVERY;
+__exports["TEXT_SPEED"] = TEXT_SPEED;
+__exports["TEXT_FAST_SCALE"] = TEXT_FAST_SCALE;
+__exports["TEXT_BEEP_EVERY"] = TEXT_BEEP_EVERY;
+__exports["CONTEXT_REACH"] = CONTEXT_REACH;
+__exports["LIFT_REACH"] = LIFT_REACH;
+__exports["THROW_SPEED"] = THROW_SPEED;
+__exports["THROW_ARC_RISE"] = THROW_ARC_RISE;
+__exports["THROW_ARC_GRAVITY"] = THROW_ARC_GRAVITY;
+__exports["THROW_SLIDE_DECAY"] = THROW_SLIDE_DECAY;
+__exports["THROW_SLIDE_STOP"] = THROW_SLIDE_STOP;
+__exports["CARRY_HEIGHT"] = CARRY_HEIGHT;
+__exports["ANCHOR_RADIUS_TILES"] = ANCHOR_RADIUS_TILES;
+__exports["ANCHOR_SHAPE"] = ANCHOR_SHAPE;
+__exports["ANCHOR_THROW_SPEED"] = ANCHOR_THROW_SPEED;
+__exports["ANCHOR_RECALL_SPEED"] = ANCHOR_RECALL_SPEED;
+__exports["ANCHOR_SETTLE_FRAMES"] = ANCHOR_SETTLE_FRAMES;
+__exports["ANCHOR_CHAIN_DAMAGE"] = ANCHOR_CHAIN_DAMAGE;
+__exports["ENEMY_GRID_STEP"] = ENEMY_GRID_STEP;
+__exports["ENEMY_DECIDE_STEPS"] = ENEMY_DECIDE_STEPS;
+__exports["ENEMY_TURN_PAUSE_FRAMES"] = ENEMY_TURN_PAUSE_FRAMES;
+__exports["ENEMY_TURN_CHANCE"] = ENEMY_TURN_CHANCE;
+__exports["ENEMY_DEFAULT_SPEED"] = ENEMY_DEFAULT_SPEED;
+__exports["ENEMY_DEFAULT_RATE"] = ENEMY_DEFAULT_RATE;
+__exports["ENEMY_CHARGE_SPEED_MULT"] = ENEMY_CHARGE_SPEED_MULT;
+__exports["ENEMY_CHARGE_RECOVER_FRAMES"] = ENEMY_CHARGE_RECOVER_FRAMES;
+__exports["ENEMY_CHARGE_TOLERANCE"] = ENEMY_CHARGE_TOLERANCE;
+__exports["ENEMY_CHARGE_RANGE"] = ENEMY_CHARGE_RANGE;
+__exports["NERETH_OPENING_DELAY"] = NERETH_OPENING_DELAY;
+__exports["NERETH_OPEN_FRAMES"] = NERETH_OPEN_FRAMES;
+__exports["ANEMOS_LASH_MIN_RANGE"] = ANEMOS_LASH_MIN_RANGE;
+__exports["NERETH_FINAL_OPEN_FRAMES"] = NERETH_FINAL_OPEN_FRAMES;
+__exports["ENEMY_CHARGE_MIN_RANGE"] = ENEMY_CHARGE_MIN_RANGE;
+__exports["ENEMY_HOP_WAIT_FRAMES"] = ENEMY_HOP_WAIT_FRAMES;
+__exports["ENEMY_HOP_DIST"] = ENEMY_HOP_DIST;
+__exports["ENEMY_HOP_FRAMES"] = ENEMY_HOP_FRAMES;
+__exports["ENEMY_HOP_HEIGHT"] = ENEMY_HOP_HEIGHT;
+__exports["ENEMY_ORBIT_SPEED"] = ENEMY_ORBIT_SPEED;
+__exports["ENEMY_ORBIT_RADIUS"] = ENEMY_ORBIT_RADIUS;
+__exports["ENEMY_SUBMERGE_DOWN_FRAMES"] = ENEMY_SUBMERGE_DOWN_FRAMES;
+__exports["ENEMY_SUBMERGE_UP_FRAMES"] = ENEMY_SUBMERGE_UP_FRAMES;
+__exports["ENEMY_SURFACE_MIN_DIST"] = ENEMY_SURFACE_MIN_DIST;
+__exports["ENEMY_SURFACE_DIST_SPAN"] = ENEMY_SURFACE_DIST_SPAN;
+__exports["ENEMY_ALIGN_TOLERANCE"] = ENEMY_ALIGN_TOLERANCE;
+__exports["ENEMY_BEACHED_FRAMES"] = ENEMY_BEACHED_FRAMES;
+__exports["BOSS_INTRO_FRAMES"] = BOSS_INTRO_FRAMES;
+__exports["BOSS_DEATH_FRAMES"] = BOSS_DEATH_FRAMES;
+__exports["BOSS_DEATH_BOOM_EVERY"] = BOSS_DEATH_BOOM_EVERY;
+__exports["BOSS_ESSENCE_DELAY_FRAMES"] = BOSS_ESSENCE_DELAY_FRAMES;
+__exports["BOSS_MUSIC_RESUME_FRAMES"] = BOSS_MUSIC_RESUME_FRAMES;
+__exports["NPC_WANDER_PERIOD"] = NPC_WANDER_PERIOD;
+__exports["NPC_WANDER_SPEED"] = NPC_WANDER_SPEED;
+__exports["ENEMY_SHOT_SPEED"] = ENEMY_SHOT_SPEED;
+__exports["PROJECTILE_SPEED"] = PROJECTILE_SPEED;
+__exports["RING_SHOT_SPEED"] = RING_SHOT_SPEED;
+__exports["PROJECTILE_LIFE"] = PROJECTILE_LIFE;
+__exports["ENEMY_SHOT_LIFE"] = ENEMY_SHOT_LIFE;
+__exports["RING_SHOT_LIFE"] = RING_SHOT_LIFE;
+__exports["PROJECTILE_Z"] = PROJECTILE_Z;
+__exports["PICKUP_LIFE_FRAMES"] = PICKUP_LIFE_FRAMES;
+__exports["PICKUP_POP_SPEED"] = PICKUP_POP_SPEED;
+__exports["PICKUP_GRAVITY"] = PICKUP_GRAVITY;
+__exports["PICKUP_SETTLE_FRAMES"] = PICKUP_SETTLE_FRAMES;
+__exports["PICKUP_GRAB_DELAY"] = PICKUP_GRAB_DELAY;
+__exports["FAIRY_DRIFT_TURN"] = FAIRY_DRIFT_TURN;
+__exports["FAIRY_DRIFT_X"] = FAIRY_DRIFT_X;
+__exports["FAIRY_DRIFT_Y"] = FAIRY_DRIFT_Y;
+__exports["EXPLOSION_FRAMES"] = EXPLOSION_FRAMES;
+__exports["CHARGE_SPARKLE_SPREAD"] = CHARGE_SPARKLE_SPREAD;
+__exports["ESSENCE_SPARKLE_SPREAD"] = ESSENCE_SPARKLE_SPREAD;
+__exports["ESSENCE_SPARKLE_EVERY"] = ESSENCE_SPARKLE_EVERY;
+__exports["WADE_FOAM_EVERY"] = WADE_FOAM_EVERY;
+__exports["LENS_FADE_FRAMES"] = LENS_FADE_FRAMES;
+__exports["LENS_GHOST_ALPHA"] = LENS_GHOST_ALPHA;
+__exports["LENS_TINT_ALPHA"] = LENS_TINT_ALPHA;
+__exports["LENS_PHASE_ALPHA"] = LENS_PHASE_ALPHA;
+__exports["LENS_SHIMMER_FRAMES"] = LENS_SHIMMER_FRAMES;
+__exports["SINK_SPEED"] = SINK_SPEED;
+__exports["TORRENT_PUSH"] = TORRENT_PUSH;
+__exports["SINK_ENTER_FRAMES"] = SINK_ENTER_FRAMES;
+__exports["CLEATS_BREATH_FRAMES"] = CLEATS_BREATH_FRAMES;
+__exports["CLEATS_BREATH_WARN_FRAMES"] = CLEATS_BREATH_WARN_FRAMES;
+__exports["SINK_BUBBLE_EVERY"] = SINK_BUBBLE_EVERY;
+__exports["SINK_DROWN_DAMAGE"] = SINK_DROWN_DAMAGE;
+__exports["BELLOWS_RANGE"] = BELLOWS_RANGE;
+__exports["BELLOWS_WARMUP_FRAMES"] = BELLOWS_WARMUP_FRAMES;
+__exports["BELLOWS_PUSH"] = BELLOWS_PUSH;
+__exports["BELLOWS_PUFF_EVERY"] = BELLOWS_PUFF_EVERY;
+__exports["BELLOWS_RAFT_SCALE"] = BELLOWS_RAFT_SCALE;
+__exports["BELLOWS_WHEEL_COAST"] = BELLOWS_WHEEL_COAST;
+__exports["REEFSEED_GROW_FRAMES"] = REEFSEED_GROW_FRAMES;
+__exports["REEFSEED_SETTLE_FRAMES"] = REEFSEED_SETTLE_FRAMES;
+__exports["REEFSEED_THROW_SPEED"] = REEFSEED_THROW_SPEED;
+__exports["REEFSEED_SHUDDER_EVERY"] = REEFSEED_SHUDDER_EVERY;
+__exports["REEFSEED_CAPACITY"] = REEFSEED_CAPACITY;
+__exports["BOMB_CAPACITY"] = BOMB_CAPACITY;
+__exports["DREDGE_RANGE"] = DREDGE_RANGE;
+__exports["DREDGE_CAST_SPEED"] = DREDGE_CAST_SPEED;
+__exports["DREDGE_HAUL_SPEED"] = DREDGE_HAUL_SPEED;
+__exports["DREDGE_PULL_SPEED"] = DREDGE_PULL_SPEED;
+__exports["DREDGE_FLOP_FRAMES"] = DREDGE_FLOP_FRAMES;
+__exports["DREDGE_FLOP_DAMAGE_SCALE"] = DREDGE_FLOP_DAMAGE_SCALE;
+__exports["ROD_RANGE"] = ROD_RANGE;
+__exports["ROD_RANGE_HIGH"] = ROD_RANGE_HIGH;
+__exports["ROD_LOCK_FRAMES"] = ROD_LOCK_FRAMES;
+__exports["ROD_RING_FRAMES"] = ROD_RING_FRAMES;
+__exports["ROD_COOLDOWN_FRAMES"] = ROD_COOLDOWN_FRAMES;
+__exports["BELL_CHIME_FRAMES"] = BELL_CHIME_FRAMES;
+__exports["COIN_THROW_SPEED"] = COIN_THROW_SPEED;
+__exports["COIN_SETTLE_FRAMES"] = COIN_SETTLE_FRAMES;
+__exports["COIN_SWAP_DELAY_FRAMES"] = COIN_SWAP_DELAY_FRAMES;
+__exports["COIN_GLINT_EVERY"] = COIN_GLINT_EVERY;
+__exports["BOTTLE_CAPACITY"] = BOTTLE_CAPACITY;
+__exports["BOTTLE_POUR_FRAMES"] = BOTTLE_POUR_FRAMES;
+__exports["GAP_HOP_MAX_SPAN"] = GAP_HOP_MAX_SPAN;
+__exports["LIFT_STRENGTH"] = LIFT_STRENGTH;
+__exports["NEAP_GRACE_FRAMES"] = NEAP_GRACE_FRAMES;
+__exports["CHARM_CASE_MAX"] = CHARM_CASE_MAX;
+__exports["RIPTIDE_FIN_FACTOR"] = RIPTIDE_FIN_FACTOR;
+__exports["DEADWEIGHT_FACTOR"] = DEADWEIGHT_FACTOR;
+__exports["KELP_BRAID_FACTOR"] = KELP_BRAID_FACTOR;
+__exports["SPLIT_FANG_SPAN"] = SPLIT_FANG_SPAN;
+__exports["SEAWOLF_KNOCK_FACTOR"] = SEAWOLF_KNOCK_FACTOR;
+__exports["HAGSTONE_CHANCE"] = HAGSTONE_CHANCE;
+__exports["STRANDWALKER_EVERY"] = STRANDWALKER_EVERY;
+__exports["DRY_KINDLING_FACTOR"] = DRY_KINDLING_FACTOR;
+__exports["GULLS_TALLY_FACTOR"] = GULLS_TALLY_FACTOR;
+__exports["CHANDLER_FACTOR"] = CHANDLER_FACTOR;
+__exports["QUARTERMASTER_BONUS"] = QUARTERMASTER_BONUS;
+__exports["COILROPE_RANGE"] = COILROPE_RANGE;
+__exports["PRESSURE_SCAR_FACTOR"] = PRESSURE_SCAR_FACTOR;
+__exports["CARVE_TIDE_TURNS"] = CARVE_TIDE_TURNS;
+__exports["CARVE_PRICE"] = CARVE_PRICE;
+__exports["BOSUN_FACTOR"] = BOSUN_FACTOR;
+__exports["LANTERN_RADIUS"] = LANTERN_RADIUS;
+__exports["WRECK_GLIMMER_PERIOD"] = WRECK_GLIMMER_PERIOD;
+__exports["WRECK_GLIMMER_ON"] = WRECK_GLIMMER_ON;
+__exports["WRECK_GLIMMER_ALPHA"] = WRECK_GLIMMER_ALPHA;
+__exports["CHARM_LOW_ESSENCES"] = CHARM_LOW_ESSENCES;
+__exports["CHARM_HIGH_ESSENCES"] = CHARM_HIGH_ESSENCES;
+__exports["CHARM_CASE_ESSENCES"] = CHARM_CASE_ESSENCES;
+__exports["VIBRATO_DELAY_FRAMES"] = VIBRATO_DELAY_FRAMES;
+__exports["VIBRATO_STEP_FRAMES"] = VIBRATO_STEP_FRAMES;
+__exports["VIBRATO_DEPTH_SEMITONES"] = VIBRATO_DEPTH_SEMITONES;
+__exports["ARPEGGIO_STEP_FRAMES"] = ARPEGGIO_STEP_FRAMES;
+});
+
 /* ===== src/core/audio.js ===== */
 __define("core/audio.js", function (__exports, __require) {
 // Game Boy style 4-channel synthesiser: two pulse channels with selectable duty,
@@ -545,14 +2027,51 @@ __define("core/audio.js", function (__exports, __require) {
 //
 // Token grammar (whitespace separated):
 //   'C4' 'C#4' 'Db4'  start a note at that pitch
-//   '-'               hold the previous note through this row
+//   'C4+E4+G4'        a CHORD token: arpeggiate through the notes on this one
+//                      channel, cycling at ARPEGGIO_STEP_FRAMES. Real hardware
+//                      has no polyphony; this is how the source games fake a
+//                      chord on a single channel, and it is why this is the
+//                      per-NOTE technique — plain notes on the same channel are
+//                      unaffected, only a token you write with '+' arpeggiates.
+//   '-'               hold the previous note (or arpeggio) through this row
 //   '.'               silence from this row
 //   noise channel:    'x' kick, 's' snare, 'h' closed hat, 'H' open hat, 'c' crash
 //
 // Rows are looked up per-pattern; a channel may be omitted or shorter than the
 // pattern's longest channel, in which case it is silent for the remainder.
+//
+// cfg per channel also takes two more (optional, S6) techniques, both
+// PER-CHANNEL rather than per-note:
+//
+//   vibrato: { delayFrames, stepFrames, depth }
+//     A pitch wobble on notes the channel holds long enough to reach
+//     `delayFrames` (the source almost never wobbles from the attack). It
+//     STEPS on a `stepFrames` grid via repeated `setValueAtTime` calls, never
+//     a continuous ramp — real hardware retriggers pitch on a frame grid, and
+//     a smooth LFO reads as a synth pad, not a Game Boy. `depth` is in
+//     semitones above/below the written pitch. Defaults come from feel.js
+//     (VIBRATO_DELAY_FRAMES/STEP_FRAMES/DEPTH_SEMITONES) — it is a timing
+//     constant (R3). It is "per-note" in effect anyway: the delay is measured
+//     from each note's own onset, so a channel with vibrato configured only
+//     ever wobbles the notes actually held long enough, never a passing stab.
+//
+//   echo: { of: 'p1', rows: 2, volMul: 0.45 }
+//     The classic quieter, delayed repeat of another channel's line — usually
+//     the lead on the second pulse channel. This is a CHANNEL CONFIG, not a
+//     pattern-authoring convention: hand-copying the lead line into p2's
+//     pattern text with a row offset would double the pattern data and let
+//     the two drift the moment either is edited, and `rows` is expressed in
+//     ROWS (not a feel.js frame count) because the delay has to track the
+//     track's own tempo — an eighth-note echo is a different frame count at
+//     88bpm than at 132bpm, and rows are already the track's native clock.
+//     Only usable on a channel whose PATTERN OMITS that channel entirely for
+//     the pattern in question (an authored token always wins) — see
+//     `_echoEvent` in this file.
+//
+// The noise channel is percussion only and takes none of the above.
 
 const { Stream } = __require("core/rng.js");
+const { VIBRATO_DELAY_FRAMES, VIBRATO_STEP_FRAMES, VIBRATO_DEPTH_SEMITONES, ARPEGGIO_STEP_FRAMES } = __require("data/feel.js");
 
 const NOTE_BASE = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
 
@@ -604,6 +2123,10 @@ const DRUMS = {
   c: { freq: 3400, sweep: 2600, dur: 0.34, q: 0.7, gain: 0.5 },          // crash
 };
 
+// Exported so tools/check-music.mjs merges channel cfg the same way the
+// engine does, instead of keeping a second copy of the defaults that could
+// drift from these (the same reason a checker must call the engine's own
+// collision code rather than re-deriving it).
 const DEFAULT_CFG = {
   p1: { duty: 0.5, vol: 0.20, decay: 0.10, glide: 0 },
   p2: { duty: 0.25, vol: 0.13, decay: 0.14, glide: 0 },
@@ -611,8 +2134,46 @@ const DEFAULT_CFG = {
   noi: { vol: 0.15 },
 };
 
+// `rows`/`volMul` defaults for an echo channel. Deliberately not in feel.js —
+// see the `echo` comment in the header above.
+const ECHO_DEFAULT = { rows: 2, volMul: 0.45 };
+
+/** The frequency range a vibrato-configured note swings across, so a checker
+ *  can validate the SWUNG extreme rather than just the written pitch. */
+function vibratoRange(freq, vcfg) {
+  const depth = (vcfg && vcfg.depth) ?? VIBRATO_DEPTH_SEMITONES;
+  return { min: freq * Math.pow(2, -depth / 12), max: freq * Math.pow(2, depth / 12) };
+}
+
 function tokens(s) {
   return s ? s.trim().split(/\s+/) : [];
+}
+
+// Parses one pattern-row token into a scheduling event. Shared by the normal
+// per-channel path and, indirectly, by check-music.mjs's chord validation —
+// see the '+' case, the arpeggio's per-NOTE token (S6's MUSIC FORMAT comment).
+function parseToken(tok) {
+  if (tok === undefined) return { kind: 'undef' };
+  if (tok === '.') return { kind: 'off' };
+  if (tok === '-') return { kind: 'hold' };
+  if (tok.indexOf('+') !== -1) {
+    const freqs = tok.split('+').map(noteFreq);
+    if (freqs.length > 1 && freqs.every(f => f > 0)) return { kind: 'on', freq: freqs[0], chord: freqs };
+    return { kind: 'hold' };
+  }
+  const f = noteFreq(tok);
+  return f > 0 ? { kind: 'on', freq: f } : { kind: 'hold' };
+}
+
+// A pattern's channel key can be entirely absent from a shorter channel, or
+// past its own token count — both cases used to be an inline `undefined ||
+// '.'` check. `parseToken` returns 'undef' for a missing token; this turns
+// that into the ORIGINAL rule for what happens next: cut the voice only on
+// row 0 (matches a channel that never had anything to say this pattern),
+// otherwise leave a still-ringing note alone instead of a channel that ran
+// out of authored rows early.
+function resolveEvent(raw, row) {
+  return raw.kind === 'undef' ? { kind: row === 0 ? 'off' : 'hold' } : raw;
 }
 
 class Audio {
@@ -632,18 +2193,29 @@ class Audio {
     this._orderIdx = 0;
     this._held = { p1: null, p2: null, wav: null };
     this._voices = { p1: null, p2: null, wav: null };
+    // Recent per-channel row events (kind + freq), pruned to a small window.
+    // This is the only thing an echo channel reads — see `_echoEvent`.
+    this._rowLog = { p1: [], p2: [], wav: [] };
+    this._globalRow = 0;
     this._jingle = null;
     this._pendingTrack = undefined;
     this._fade = 1;
   }
 
-  /** Must be called from a user gesture (browser autoplay policy). */
-  init() {
+  /** Must be called from a user gesture (browser autoplay policy) for real
+   *  playback. `ctxOverride` lets a render/test harness pass in an
+   *  OfflineAudioContext instead, so it exercises this exact setup path
+   *  rather than a second copy of it. */
+  init(ctxOverride) {
     if (this.ctx) { if (this.ctx.state === 'suspended') this.ctx.resume(); return this.ok; }
     try {
-      const AC = window.AudioContext || window.webkitAudioContext;
-      if (!AC) return false;
-      this.ctx = new AC();
+      let ctx = ctxOverride;
+      if (!ctx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return false;
+        ctx = new AC();
+      }
+      this.ctx = ctx;
       this.master = this.ctx.createGain();
       this.master.gain.value = 0.9;
       this.master.connect(this.ctx.destination);
@@ -721,6 +2293,10 @@ class Audio {
       if (v) { this._endVoice(v); this._voices[ch] = null; }
       this._held[ch] = null;
     }
+    // A fresh track start is a fresh echo phase — an echo channel reading
+    // stale rows from whatever last played would repeat the wrong lead.
+    this._rowLog = { p1: [], p2: [], wav: [] };
+    this._globalRow = 0;
   }
 
   _endVoice(v) {
@@ -791,15 +2367,24 @@ class Audio {
 
     const cfg = t.cfg || {};
     for (const ch of ['p1', 'p2', 'wav']) {
-      const toks = tokens(pat[ch]);
-      const tok = toks[this._row];
-      if (tok === undefined || tok === '.') {
-        if (tok !== undefined || this._row === 0) this._noteOff(ch, time);
-        continue;
+      const chCfg = { ...DEFAULT_CFG[ch], ...(cfg[ch] || {}) };
+      // An echo channel has NO pattern text of its own for this pattern — an
+      // authored token always wins, even a lone rest, which is why this only
+      // triggers when the whole channel key is absent (see the `echo`
+      // comment in this file's header).
+      const ev = (pat[ch] === undefined && chCfg.echo)
+        ? this._echoEvent({ ...ECHO_DEFAULT, ...chCfg.echo })
+        : resolveEvent(parseToken(tokens(pat[ch])[this._row]), this._row);
+      this._logRow(ch, ev);
+      if (ev.kind === 'off') this._noteOff(ch, time);
+      else if (ev.kind === 'on') {
+        // A quieter repeat, per the `echo` comment: the echo channel's own
+        // vol is its pre-attenuation level, and volMul is the "quieter" in
+        // "quieter, delayed repeat".
+        const onCfg = ev.echoVolMul ? { ...chCfg, vol: (chCfg.vol ?? 0.18) * ev.echoVolMul } : chCfg;
+        this._noteOn(ch, ev.freq, time, rowDur, onCfg, ev.chord);
       }
-      if (tok === '-') continue;               // hold
-      const f = noteFreq(tok);
-      if (f > 0) this._noteOn(ch, f, time, rowDur, { ...DEFAULT_CFG[ch], ...(cfg[ch] || {}) });
+      else this._sustainRow(ch, time, rowDur);  // hold: keep vibrato/arpeggio ticking, otherwise no-op
     }
     const ntoks = tokens(pat.noi);
     const nt = ntoks[this._row];
@@ -807,6 +2392,39 @@ class Audio {
       this._drum(nt, time, { ...DEFAULT_CFG.noi, ...(cfg.noi || {}) });
     }
     this._row++;
+    this._globalRow++;
+  }
+
+  /** What an echo channel plays this row: whatever its source channel did
+   *  `rows` rows ago. Reads `_rowLog` only — it never re-derives note
+   *  scheduling, it replays what actually happened. */
+  _echoEvent(echoCfg) {
+    const log = this._rowLog[echoCfg.of];
+    if (!log) return { kind: 'hold' };
+    const targetRow = this._globalRow - echoCfg.rows;
+    const hit = log.find(e => e.row === targetRow);
+    if (!hit) return { kind: 'hold' };
+    return hit.kind === 'on'
+      ? { kind: 'on', freq: hit.freq, echoVolMul: echoCfg.volMul }
+      : { kind: hit.kind };
+  }
+
+  _logRow(ch, ev) {
+    const log = this._rowLog[ch];
+    log.push({ row: this._globalRow, kind: ev.kind, freq: ev.freq || 0 });
+    if (log.length > 64) log.shift();
+  }
+
+  /** A row where a channel neither starts nor stops a note (a '-' hold, or a
+   *  pattern that has simply run out of tokens for it). The original engine
+   *  did nothing at all here; this is the hook that lets a still-ringing
+   *  voice keep stepping its vibrato or arpeggio — it is a no-op for any
+   *  voice that has neither. */
+  _sustainRow(ch, time, rowDur) {
+    const v = this._voices[ch];
+    if (!v) return;
+    if (v.vibrato) this._scheduleVibrato(ch, time, rowDur);
+    if (v.arp) this._scheduleArp(ch, time, rowDur);
   }
 
   _noteOff(ch, time) {
@@ -820,7 +2438,7 @@ class Audio {
     this._voices[ch] = null;
   }
 
-  _noteOn(ch, freq, time, rowDur, c) {
+  _noteOn(ch, freq, time, rowDur, c, chord) {
     this._noteOff(ch, time);
     const ctx = this.ctx;
     const osc = ctx.createOscillator();
@@ -840,7 +2458,59 @@ class Audio {
     gain.connect(this.musicBus);
     osc.start(time);
     osc.stop(time + rowDur * 64);           // safety stop; normally cut by _noteOff
-    this._voices[ch] = { osc, gain };
+    const voice = {
+      osc, gain, baseFreq: freq, onsetTime: time,
+      vibrato: c.vibrato || null,
+      arp: (chord && chord.length > 1) ? { notes: chord } : null,
+    };
+    this._voices[ch] = voice;
+    // Neither of these does anything unless the channel's cfg actually asked
+    // for it, so a track that never sets `vibrato`/a chord token never pays
+    // for this — see the byte-identical-render proof in tools/test.mjs.
+    if (voice.vibrato) this._scheduleVibrato(ch, time, rowDur);
+    if (voice.arp) this._scheduleArp(ch, time, rowDur);
+  }
+
+  /** Steps a held note's pitch up/down on a frame grid — never a smooth ramp,
+   *  which is this session's whole failure condition (see the header
+   *  comment). Stateless: it recomputes the step phase from `onsetTime` on
+   *  every call, so calling it once per row from both `_noteOn` and
+   *  `_sustainRow` cannot drift or double-schedule a step. */
+  _scheduleVibrato(ch, time, rowDur) {
+    const v = this._voices[ch];
+    const cfg = v.vibrato;
+    const stepSec = (cfg.stepFrames ?? VIBRATO_STEP_FRAMES) / 60;
+    const delaySec = (cfg.delayFrames ?? VIBRATO_DELAY_FRAMES) / 60;
+    const depth = cfg.depth ?? VIBRATO_DEPTH_SEMITONES;
+    const start = v.onsetTime + delaySec;
+    const rowEnd = time + rowDur;
+    if (start >= rowEnd) return;    // hasn't earned the wobble yet this row
+    const from = Math.max(time, start);
+    let n = Math.max(0, Math.ceil((from - start) / stepSec - 1e-9));
+    let stepTime = start + n * stepSec;
+    let guard = 0;
+    while (stepTime < rowEnd && guard++ < 32) {
+      const dir = (n % 2 === 0) ? 1 : -1;
+      v.osc.frequency.setValueAtTime(v.baseFreq * Math.pow(2, (dir * depth) / 12), Math.max(stepTime, time));
+      n++; stepTime = start + n * stepSec;
+    }
+  }
+
+  /** Cycles a chord token's notes on one channel — the per-NOTE technique,
+   *  since only a token written with '+' ever reaches this. Stateless in the
+   *  same way as vibrato, phased from the note's own onset. */
+  _scheduleArp(ch, time, rowDur) {
+    const v = this._voices[ch];
+    const notes = v.arp.notes;
+    const stepSec = ARPEGGIO_STEP_FRAMES / 60;
+    const rowEnd = time + rowDur;
+    let n = Math.max(0, Math.ceil((time - v.onsetTime) / stepSec - 1e-9));
+    let stepTime = v.onsetTime + n * stepSec;
+    let guard = 0;
+    while (stepTime < rowEnd && guard++ < 32) {
+      v.osc.frequency.setValueAtTime(notes[n % notes.length], Math.max(stepTime, time));
+      n++; stepTime = v.onsetTime + n * stepSec;
+    }
   }
 
   _drum(kind, time, c) {
@@ -879,7 +2549,7 @@ class Audio {
   //
   // SFX FORMAT: { type, ... }
   //   { type:'blip',  freq, freq2, dur, duty, vol }        pitch sweep pulse
-  //   { type:'arp',   notes:['C5','E5','G5'], step, dur, duty, vol }
+  //   { type:'arp',   notes:['C5', 'E5', 'G5'], step, dur, duty, vol }
   //   { type:'noise', freq, freq2, dur, q, vol, lp }       filtered noise burst
   //   { type:'chord', notes:[...], dur, duty, vol }
   //   { type:'multi', parts:[ {delay, ...sfx} ] }
@@ -953,6 +2623,8 @@ class Audio {
 
 const audio = new Audio();
 __exports["noteFreq"] = noteFreq;
+__exports["DEFAULT_CFG"] = DEFAULT_CFG;
+__exports["vibratoRange"] = vibratoRange;
 __exports["Audio"] = Audio;
 __exports["audio"] = audio;
 });
@@ -2595,1450 +4267,6 @@ __exports["resetRooms"] = resetRooms;
 __exports["dungeons"] = dungeons;
 __exports["essenceCount"] = essenceCount;
 __exports["validateMaps"] = validateMaps;
-});
-
-/* ===== src/data/feel.js ===== */
-__define("data/feel.js", function (__exports, __require) {
-// FEEL. Every timing and speed constant in the game lives in this file.
-//
-// Read docs/FEEL-SPEC.md before changing a number in here. The short version:
-//
-//   * No module under src/ may declare its own timing or speed constant. If
-//     you need a number that governs how the game moves, it goes here and is
-//     imported. A magic number in a game module is the bug this file exists
-//     to stop.
-//
-//   * Every export carries a UNIT and a PROVENANCE tag:
-//
-//       measured  someone frame-stepped a reference recording of Oracle of
-//                 Seasons or Ages and wrote the number down. The comment says
-//                 what was measured and how.
-//       derived   computed from another constant in this file. The comment
-//                 names its ancestor. A derived value is only as good as what
-//                 it derives from.
-//       guessed   somebody typed a plausible number and it shipped.
-//
-//   * NOTHING IN THIS FILE IS `measured`. Every value below was carried over
-//     from the code as it stood before this file existed, which means every
-//     one of them is a guess that happened to feel acceptable to whoever
-//     wrote it. They are labelled honestly. Do not upgrade a `guessed` to a
-//     `measured` because the game feels fine — that word means a reference
-//     was frame-stepped, and until someone does that, the engine has no
-//     ground truth and we should keep saying so.
-//
-// Units used below:
-//   sp/f    SUBPIXELS per frame at 60 Hz. 256 sp = 1 px; positions are 8.8
-//           fixed-point, so this is the engine's native speed unit and the one
-//           anything that moves a position is written in. See src/core/fixed.js.
-//   sp/f^2  subpixels per frame squared — an acceleration on the same grid
-//   sp      subpixels
-//   px/f    pixels per frame at 60 Hz. Kept for the constants that feed the
-//           DATA-facing helpers — an enemy spec says `speed: 0.45` and the AI
-//           toolkit converts it with `sp()` at its edge — so enemy and
-//           projectile data does not have to be rewritten in 256ths.
-//   f       frames at 60 Hz
-//   px      pixels
-//   x       dimensionless multiplier
-//   p       probability per frame, 0..1
-//   rad/f   radians per frame
-//   qh      quarter-hearts (see progress.js: HEART_UNITS = 4)
-
-// ---------------------------------------------------------------------------
-// Player movement
-// ---------------------------------------------------------------------------
-
-/** sp/f — Link's ground speed. derived from the 8.8 grid and the 16px tile.
- *
- *  256 sp/f is exactly 1 px/f, so a tile takes exactly 16 frames to cross and
- *  the player lands on every tile boundary he passes. That is the property the
- *  old 1.35 px/f did not have, and ROOM_EXIT_MARGIN was three pixels wide to
- *  paper over it.
- *
- *  The choice is not free-form. A speed must be exactly representable in 8.8
- *  AND divide 16px evenly, which means 4096/s must be a whole number of frames
- *  with s a whole number of subpixels — so s has to divide 4096, i.e. be a
- *  power of two. Between 128 sp/f (a crawl) and 512 sp/f (the Pegasus dash),
- *  256 is the only candidate left. It is `derived`, not `measured`: nobody has
- *  frame-stepped a reference. It is worth noting anyway that 1 px/f walking and
- *  2 px/f dashing is the granularity the GB Zeldas are built on, so this is at
- *  least the right shape. */
-const WALK_SPEED = 256;
-
-/** sp/f — surface swimming. derived: three quarters of WALK_SPEED, the same
- *  ratio the old guessed pair (0.95 / 1.35) had, snapped to the grid. */
-const SWIM_SPEED = 192;
-
-/** sp/f — under the Pegasus Seed. derived: exactly twice WALK_SPEED, so the
- *  dash covers a tile in 8 frames. */
-const BOOST_SPEED = 512;
-
-/** sp/f — walking with the shield raised. derived: three quarters of
- *  WALK_SPEED. */
-const SHIELD_SPEED = 192;
-
-/** sp/f — walking with the sword held out. derived: kept equal to
- *  SHIELD_SPEED, because both are "you are committed to something and cannot
- *  move at full pace". guessed insofar as its ancestor is. */
-const SWORD_HOLD_SPEED = 192;
-
-/** x — multiplier on F.SLOW terrain (sand, deep grass). guessed. */
-const SLOW_FACTOR = 0.6;
-
-/** x — multiplier while wading in shallow water. guessed. */
-const SHALLOW_FACTOR = 0.86;
-
-/** x — multiplier while carrying something. guessed. */
-const CARRY_FACTOR = 0.9;
-
-/** sp/f — drift in the facing direction during a spin attack. guessed. */
-const SPIN_DRIFT_SPEED = 96;
-
-/** sp/f — sideways push from a current tile while swimming is the tile's own
- *  `push` vector; this scales the aquatic-enemy drift per tide level. guessed.
- *  Below one pixel per frame, which only moves anything at all because
- *  positions accumulate in subpixels. */
-const TIDE_DRIFT_PER_LEVEL = 32;
-
-// DIAGONALS ARE NOT NORMALISED, and there is deliberately no constant here to
-// scale them with. Holding two directions applies the full per-axis speed to
-// both axes, so a diagonal covers sqrt(2) times what a cardinal does. That
-// asymmetry is a signature of the GB Zeldas — it is why cutting the corner of a
-// room feels quicker than walking the two edges, and why players who grew up on
-// them route diagonally without thinking about it. `DIAGONAL_FACTOR` used to
-// live here at 1/sqrt(2) and is gone; re-introducing one would make movement
-// "correct" and make the game feel like something else. See docs/FEEL-SPEC.md.
-
-// ---------------------------------------------------------------------------
-// Sword
-// ---------------------------------------------------------------------------
-
-/** f — total length of a sword swing; the player is rooted for all of it. guessed. */
-const SWING_FRAMES = 14;
-
-/** f — first frame of the swing on which the blade can hit. guessed. */
-const SWING_HIT_START = 2;
-
-/** f — last frame of the swing on which the blade can hit. guessed.
- *  The active window is therefore 8 frames out of 14. */
-const SWING_HIT_END = 9;
-
-/** f — how long the sword button must be held before a spin is charged. guessed. */
-const CHARGE_FRAMES = 42;
-
-/** f — interval between charge sparkles once charged. guessed. */
-const CHARGE_SPARKLE_EVERY = 6;
-
-/** f — length of a spin attack. guessed. */
-const SPIN_FRAMES = 26;
-
-/** px — how far in front of Link the blade reaches. guessed. */
-const SWORD_REACH = 13;
-
-/** px — the blade's extent across the facing axis. guessed. */
-const SWORD_SPAN = 14;
-
-/** px — gap between Link's centre and the near edge of the sword box. guessed. */
-const SWORD_GAP = 3;
-
-/** px — side of the square hitbox swept by a spin attack. guessed. */
-const SPIN_BOX = 30;
-
-/** f — frames after a swing ends before the still-held button becomes a hold
- *  rather than the tail of the swing. guessed; small enough that the blade
- *  never visibly drops between the two poses. */
-const SWORD_HOLD_DELAY = 2;
-
-/** qh — damage the extended blade deals on contact. guessed; half a swing's,
- *  because walking into something with the sword out is meant to be worth less
- *  than choosing to swing at it. The enemy's own invulnerability window is what
- *  rate-limits it, so this is damage per enemy-invuln period, not per frame. */
-const SWORD_HOLD_DAMAGE = 1;
-
-/** px — knockback dealt by the extended blade. guessed; weaker than
- *  KNOCK_SWORD so a held blade shoves rather than launches. A distance, like
- *  every other KNOCK_* — see the note above them. */
-const KNOCK_HOLD = 9;
-
-/** f — how long after a clink off a wall the blade may clink again. guessed;
- *  without it the sfx retriggers every frame you lean on the wall. */
-const SWORD_CLINK_COOLDOWN = 20;
-
-// ---------------------------------------------------------------------------
-// Damage, invulnerability and knockback
-// ---------------------------------------------------------------------------
-
-/** f — invulnerability after Link takes a hit. guessed. */
-const PLAYER_INVULN_FRAMES = 46;
-
-/** f — how long Link flickers after a hit. guessed; kept equal to the invuln
- *  window so the flicker reads as "you cannot be hit right now". */
-const PLAYER_FLICKER_FRAMES = 46;
-
-/** f — invulnerability after a pit fall or a wash-out, which is longer than an
- *  ordinary hit because the player has just been teleported. guessed. */
-const PLAYER_RECOVER_INVULN_FRAMES = 60;
-
-/** f — how long Link is shoved and unable to act after a hit. guessed. */
-const PLAYER_HURT_FRAMES = 12;
-
-/** px — how far Link is shoved by a hit, in total. guessed.
- *  A GB Zelda's knockback is a scripted displacement, not a physics impulse:
- *  a fixed distance over a fixed frame count, at a constant speed, so it always
- *  ends the same distance from the thing that hit you and you can plan around
- *  it. This number and PLAYER_KNOCK_FRAMES are the whole of it. Chosen to match
- *  the total travel of the exponential decay it replaces (3.2 px/f decaying by
- *  0.84 over 12 frames covers ~17.6px), so the change is a change of shape
- *  rather than of reach. See docs/FEEL-SPEC.md. */
-const PLAYER_KNOCK_DIST = 18;
-
-/** f — how long that shove takes. guessed; kept equal to PLAYER_HURT_FRAMES so
- *  Link regains control on the frame he stops sliding. */
-const PLAYER_KNOCK_FRAMES = 12;
-
-/** f — invulnerability after an ordinary enemy takes a hit. guessed. */
-const ENEMY_INVULN_FRAMES = 24;
-
-/** f — how long an ordinary enemy flickers after a hit. guessed. */
-const ENEMY_FLICKER_FRAMES = 24;
-
-/** f — how long an ordinary enemy is shoved after a hit. guessed. Together with
- *  the KNOCK_* distances below this is the fixed frame count half of the
- *  fixed-distance-over-fixed-frames rule; nothing decays.
- *
- *  Worth knowing when tuning it: contact damage does not care that an enemy is
- *  mid-knockback, so these are frames the enemy is travelling away and can
- *  still hurt you. The exponential decay this replaces covered most of its
- *  distance in the first two frames, so shortening this is the lever that
- *  restores that snap. Trying 5 instead of 8 changed nothing measurable in
- *  either committed replay, so it is left where it was. */
-const ENEMY_KNOCK_FRAMES = 8;
-
-// The KNOCK_* values below are DISTANCES IN PIXELS, not speeds. A hit shoves
-// its target KNOCK_x pixels over ENEMY_KNOCK_FRAMES frames at a constant
-// speed. They were speeds until P4; the numbers are the total travel the old
-// exponential decay produced from the old speeds, so a sword still throws an
-// enemy about as far as it used to, in a straight predictable line instead of
-// an asymptote. All guessed.
-
-/** px — default knockback dealt when a hit does not name its own. guessed. */
-const KNOCK_DEFAULT = 13;
-
-/** px — knockback dealt by a sword swing. guessed. */
-const KNOCK_SWORD = 18;
-
-/** px — knockback dealt by a spin attack. guessed. */
-const KNOCK_SPIN = 22;
-
-/** px — knockback dealt by a projectile. guessed. */
-const KNOCK_PROJECTILE = 13;
-
-/** px — knockback dealt by an explosion. guessed. */
-const KNOCK_EXPLOSION = 9;
-
-/** px — knockback dealt by a thrown or dropped object. guessed. */
-const KNOCK_THROWN = 9;
-
-/** px — knockback dealt by a stunning tool. guessed. */
-const KNOCK_TOOL = 5;
-
-/** f — invulnerability after a boss takes a hit. guessed; shorter than an
- *  ordinary enemy's so a boss can be combo'd. */
-const BOSS_INVULN_FRAMES = 20;
-
-/** f — invulnerability granted to a boss when it changes phase. guessed. */
-const BOSS_PHASE_INVULN_FRAMES = 20;
-
-/** f — how long a boss is shoved after a hit. guessed. */
-const BOSS_KNOCK_FRAMES = 6;
-
-/** x — bosses travel this fraction of the distance an enemy would. guessed. */
-const BOSS_KNOCK_SCALE = 0.4;
-
-/** qh — damage from standing on a hazard tile (lava, spikes). guessed. */
-const HAZARD_DAMAGE = 2;
-
-/** qh — damage from falling into a pit. guessed. */
-const PIT_DAMAGE = 2;
-
-/** qh — damage from being washed out by water you cannot swim in. guessed. */
-const WASH_DAMAGE = 2;
-
-/** qh — damage from standing in your own explosion. guessed. */
-const EXPLOSION_SELF_DAMAGE = 2;
-
-/**
- * qh — damage a burning Kilnshell does to an enemy standing over it, per tick.
- * guessed.
- *
- * Deliberately small and repeating rather than one big hit: the shell is a
- * TRAP you set and the tide springs, so its combat verb should reward putting
- * it where something will be standing, not swinging it like a sword. It ticks
- * every fourth frame while alight (see Kilnshell.update).
- */
-const KILNSHELL_BURN_DAMAGE = 1;
-
-// ---------------------------------------------------------------------------
-// Jumping and the one-way ledge hop
-// ---------------------------------------------------------------------------
-
-// A JUMP'S REACH IS NOT A PROPERTY OF THE JUMP.
-//
-// The player keeps walking while airborne, so how far a hop carries is
-// (airtime x WALK_SPEED) — and airtime is 2 * power / gravity. Re-deriving the
-// walk speed therefore silently re-derives the length of every gap in the game.
-// It did: dropping 1.35 px/f to 1.0 px/f cut the Feather's reach from 2.3 tiles
-// to 1.7 and made the Coral Reef chasm uncrossable, which
-// `node tools/check-gates.mjs` caught and nothing else would have. The three
-// constants below are re-derived to put the reach back where it was.
-//
-//   reach  = 2 * power / gravity * WALK_SPEED
-//   apex   = power^2 / (2 * gravity)
-//
-// 2*512/28 = 36.6 frames aloft, 36.6 px of ground covered (2.3 tiles), apex
-// 18.3 px. The old pair covered 36.9 px and peaked at 17.8 px.
-//
-// ROC'S FEATHER IS GONE. Nothing launches a free-standing jump any more: the
-// hop is base moveset and fires by walking into a gap or a ledge, along a
-// SCRIPTED arc (`ledgeHop`) rather than a ballistic one. These two constants
-// still govern that arc's height and settle, and the reach formula above is
-// still what decides how wide a gap may be, so they stay — but the numbers no
-// longer describe an item anyone can be missing.
-
-/** sp/f — upward velocity of a hop. derived from WALK_SPEED and JUMP_GRAVITY
- *  to preserve a 2.3-tile reach; 2 px/f exactly. */
-const JUMP_POWER = 512;
-
-/** sp/f^2 — downward acceleration during a jump. derived: chosen with
- *  JUMP_POWER so that reach and apex both survive the new WALK_SPEED. */
-const JUMP_GRAVITY = 28;
-
-/** sp/f — rate `z` bleeds back to the ground when not jumping. guessed. */
-const LAND_SETTLE_RATE = 128;
-
-/** tiles — widest ledge run cleared in a single hop. guessed.
- *  A run is cleared in one hop so a two-tile drop reads as one movement. */
-const LEDGE_MAX_SPAN = 3;
-
-/** f — duration of a one-way ledge hop, start to landing. guessed. */
-const LEDGE_HOP_FRAMES = 18;
-
-/** px — peak height of the ledge-hop arc. guessed. */
-const LEDGE_HOP_HEIGHT = 7;
-
-/** px — how far in front of Link the ledge lip is probed for. guessed. */
-const LEDGE_PROBE_REACH = 10;
-
-/** px — how far in front of Link a push block is probed for. guessed. */
-const PUSH_PROBE_REACH = 10;
-
-// ---------------------------------------------------------------------------
-// Room transitions and screen effects
-// ---------------------------------------------------------------------------
-
-/** f — length of a scrolling room-to-room transition. guessed. */
-const ROOM_TRANSITION_FRAMES = 34;
-
-/** px — how close to the room edge the player's hitbox must be for an exit to
- *  fire. derived from WALK_SPEED. At 256 sp/f the player advances exactly one
- *  pixel per frame and stops flush against the last legal column, so the exit
- *  test can be a one-pixel band at the edge. It used to be three, which was not
- *  a tuning choice but a workaround for a walk speed that could step over the
- *  boundary without ever landing on it. */
-const ROOM_EXIT_MARGIN = 1;
-
-// THE CAMERA, inside a multi-screen dungeon room only.
-//
-// All three are `guessed`, in the strongest sense of the word: no reference has
-// been frame-stepped for any of them, and until P7.6 there was no camera at all
-// to have an opinion about. `KeyI` draws the deadzone box in game so they can be
-// settled by play — the same argument that got the anchor radius its debug key.
-//
-// None of them can affect a 1x1 room. The camera clamps to [0, room.pw-VIEW_W]
-// and that range is empty on one screen, so retuning these three numbers cannot
-// move a pixel in any room the game currently has.
-
-/** px — width of the box Link moves inside without the view following. guessed.
- *  96 of the 160-pixel view, so the camera gives way once he is within two
- *  tiles of a screen edge. Wider than the height because horizontal motion is
- *  what a 2x1 room is for and a narrow box there reads as the view chasing him. */
-const CAM_DEADZONE_W = 96;
-
-/** px — height of that box. guessed. 64 of the 128-pixel view: two tiles of
- *  slack above and below, which is about where a vertical scroll starts to be
- *  worth having rather than a twitch. */
-const CAM_DEADZONE_H = 64;
-
-/** px/f — the fastest the camera may travel. guessed. Two pixels a frame is
- *  twice WALK_SPEED, so it never lags a walking player and the deadzone rule is
- *  exact during ordinary movement; it exists only to stop a knockback, a ledge
- *  hop landing or a warp from snapping the view across the room in one frame. */
-const CAM_MAX_SPEED = 2;
-
-/** f — length of the tide's wave-front wipe across the screen. guessed.
- *  Was 44 while game.js stepped the sweep twice per frame, so the wipe really
- *  crossed in 23 and the constant described nothing. 23 is what the game has
- *  always looked like: the number moved to match the screen, not the other way
- *  round, so the wipe and the replays are unchanged. */
-const TIDE_SWEEP_FRAMES = 23;
-
-/** x — fade opacity change per frame; a full fade is 1/FADE_RATE frames. guessed. */
-const FADE_RATE = 0.09;
-
-/** f — how long an area-name banner stays up. guessed. */
-const BANNER_FRAMES = 120;
-
-// IMPACT.
-//
-// A connecting hit in both source games freezes the SIMULATION for a few
-// frames — not the frame, not the music, not the HUD. `Game.hitstop` is that
-// pause: entities stop stepping and everything else keeps running. See the
-// comment above `Game.freeze` for what is deliberately left running and why.
-//
-// All three are `guessed`. They are the first numbers to settle by eye, and
-// the reason the shake constants below them were re-tuned at the same time: a
-// freeze in front of a shake changes what the shake reads as.
-
-/** f — freeze when the player's own attack connects with an enemy. guessed.
- *  Short: this is the most-repeated interaction in the game and anything long
- *  enough to notice as a pause becomes a stutter over a hundred swings. It
- *  wants to read as weight in the swing, not as a hitch. */
-const HITSTOP_HIT_FRAMES = 3;
-
-/** f — freeze when something lands a hit on the player. guessed. Longer than
- *  the one above: taking damage is rare and is meant to be felt, and the
- *  knockback that follows reads harder out of a longer hold. */
-const HITSTOP_HURT_FRAMES = 6;
-
-/** f — freeze on the killing blow to a boss, before the death animation.
- *  guessed. Long enough to be a beat rather than a hitch, and it lands under
- *  the same moment `Game.bossDefeated` cuts the music. */
-const HITSTOP_BOSS_DEATH_FRAMES = 18;
-
-// SCREEN SHAKE.
-//
-// Re-tuned once hitstop existed. Every one of these was previously chosen with
-// nothing in front of it, so a shake had to carry the whole impact by itself
-// and had grown long to do it. With a freeze in front, the shake's job is only
-// to release the freeze — so amplitudes stay and DURATIONS COME DOWN. A shake
-// that outlasts its own freeze by more than about its own length again stops
-// reading as impact and starts reading as noise.
-//
-// Still `guessed`: nothing here has been frame-stepped against a reference.
-
-/** px — screen shake amplitude for a small impact (a hit landing). guessed. */
-const SHAKE_SMALL = 2;
-
-/** px — screen shake amplitude for an explosion or a boss stomp. guessed. */
-const SHAKE_MEDIUM = 3;
-
-/** px — screen shake amplitude for a boss dying. guessed. */
-const SHAKE_LARGE = 4;
-
-/** f — shake duration for a small impact. guessed. Was 8, with no freeze in
- *  front of it. HITSTOP_HIT_FRAMES now carries the first 3 frames of the hit,
- *  so 6 puts the whole event at 9 frames instead of 8 and spends more of it
- *  frozen than wobbling. */
-const SHAKE_SMALL_FRAMES = 6;
-
-/** f — shake duration for an explosion or a boss stomp. guessed. Was 10. */
-const SHAKE_MEDIUM_FRAMES = 8;
-
-/** f — shake duration for a boss dying. guessed. Was 40, which was two thirds
- *  of a second of continuous camera wobble and read as a rumble rather than a
- *  blow. HITSTOP_BOSS_DEATH_FRAMES now supplies the weight; 24 is what is left
- *  to release it, and the two together are still shorter than the old 40. */
-const SHAKE_LARGE_FRAMES = 24;
-
-/** px, f — a boss landing, summoning or slamming the floor. guessed. Heavier
- *  than MEDIUM and lighter than a death; it exists because `src/data/bosses.js`
- *  spelled this weight out as bare literals at fourteen call sites, which is
- *  exactly what R3 forbids and what made re-tuning the six constants above a
- *  cosmetic change for every boss in the game. */
-const SHAKE_BOSS_SLAM = 4;
-const SHAKE_BOSS_SLAM_FRAMES = 14;
-
-/** px, f — a sustained world rumble rather than a blow: the tide being forced
- *  to a level, ground giving way. guessed. Small amplitude, but the longest
- *  duration of any shake that is not a boss dying — a rumble is defined by
- *  lasting, and it is the one shake that is NOT preceded by a freeze, because
- *  nothing has been hit. */
-const SHAKE_RUMBLE = 2;
-const SHAKE_RUMBLE_FRAMES = 12;
-
-/** px, f — a boss's armour or a wall shattering: the sharpest short shake in
- *  the game, and the only one that goes above SHAKE_LARGE's amplitude. guessed. */
-const SHAKE_BOSS_BREAK = 5;
-const SHAKE_BOSS_BREAK_FRAMES = 16;
-
-// ---------------------------------------------------------------------------
-// Player states other than walking
-// ---------------------------------------------------------------------------
-
-/** f — length of a pit fall before the player is replaced on solid ground. guessed. */
-const FALL_FRAMES = 34;
-
-/** f — length of being washed back to shore by water. guessed. */
-const WASH_FRAMES = 30;
-
-/** f — how long Link holds the conch, and is frozen for. guessed. */
-const CONCH_FRAMES = 46;
-
-/** f — how long the player must lean on a block before it moves. guessed. */
-const PUSH_DELAY_FRAMES = 18;
-
-/** f — how long a Pegasus Seed's speed boost lasts. guessed. */
-const PEGASUS_FRAMES = 300;
-
-/** f — how long Link holds a new item overhead. derived from the `itemGet`
- *  jingle, which is what the pose exists to sit under: 20 rows at bpm 132 and
- *  rowsPerBeat 4 is 6.82 f/row, and its last struck note stops ringing at row
- *  17 — 116 frames. It was 90, so Link put the item down a full 26 frames
- *  before his own fanfare finished, every time. The pose now outlasts the
- *  phrase instead of being cut off by it. */
-const ITEM_PRESENT_FRAMES = 116;
-
-/** f — how long Link is frozen when claiming an essence. guessed. */
-const ESSENCE_FREEZE_FRAMES = 150;
-
-/** f — how long the game-over screen holds before it accepts a button. guessed. */
-const GAMEOVER_WAIT_FRAMES = 100;
-
-// THE LOW-HEALTH PULSE.
-//
-// The game had no low-health warning at all — the one piece of feedback in
-// every Zelda that tells a player to stop and heal, and this game's hearts sat
-// silent all the way to zero.
-
-/** qh — quarter-hearts at or below which the pulse starts. guessed. Two full
- *  hearts. Chosen against this game's damage ladder rather than the source's:
- *  a boss's heavy hit is 3-4 qh here, so 8 is "one more mistake". */
-const LOW_HEART_THRESHOLD = 8;
-
-/** f — frames between pulses. guessed. Slow enough not to be a rattle and fast
- *  enough to feel like a heartbeat; it is the tempo that makes this a warning
- *  rather than an alarm, and it is the number to move first if it nags. */
-const LOW_HEART_EVERY = 40;
-
-// TEXT.
-//
-// These lived inside `src/game/dialogue.js` as bare literals for the whole life
-// of the project, which is the R3 violation the file's own header warns about:
-// text cadence is the timing constant a player is exposed to more often than
-// any other except walking, and it was not in this file.
-
-/** chars/f — how fast a dialogue page reveals itself. guessed, and the single
- *  most-felt number in the game after WALK_SPEED. 1.6 is what the game has
- *  always read at; it is preserved here rather than re-guessed.
- *
- *  WRITTEN DOWN AND DELIBERATELY NOT APPLIED: both source games look closer to
- *  one character every other frame in ordinary dialogue — around 0.5 here,
- *  which would be roughly three times slower. That is an impression, not a
- *  measurement, and per R3/T4 a number nobody has frame-stepped does not get to
- *  move the whole game's dialogue pacing. Now that it is one named constant it
- *  is a one-line experiment for whoever does step a reference. */
-const TEXT_SPEED = 1.6;
-
-/** x — multiplier on TEXT_SPEED while A or B is held. guessed. Held-button
- *  fast-forward is a source-game behaviour; 3x makes a long page skimmable
- *  without skipping it outright. */
-const TEXT_FAST_SCALE = 3;
-
-/** chars — one text blip per this many revealed characters. guessed. It used
- *  to be `floor(chars) % 3 === 0`, tested against the running total rather than
- *  counting characters, so at a non-integer TEXT_SPEED the blip fired on an
- *  irregular beat that changed with the speed — the click was not a rhythm, it
- *  was an artefact. Counting revealed characters makes the cadence a rhythm
- *  again and keeps it one at any speed. */
-const TEXT_BEEP_EVERY = 3;
-
-/** px — how far in front of Link an A-button context action reaches. guessed. */
-const CONTEXT_REACH = 12;
-
-/** px — how far in front of Link a lift reaches. guessed. */
-const LIFT_REACH = 12;
-
-/** sp/f — speed of an object thrown by the player. guessed; 2.5 px/f, snapped
- *  to the grid from 2.6. */
-const THROW_SPEED = 640;
-
-/** sp/f — upward velocity a thrown object leaves the hand with. guessed;
- *  0.625 px/f, snapped from the 0.6 that used to sit inline in items.js. */
-const THROW_ARC_RISE = 160;
-
-/** sp/f^2 — downward acceleration on a thrown object's arc. guessed; snapped
- *  from the 0.22 that used to sit inline in items.js. */
-const THROW_ARC_GRAVITY = 56;
-
-/** x — per-frame decay on a thrown bomb's ground slide. guessed; it used to
- *  sit inline in items.js. */
-const THROW_SLIDE_DECAY = 0.9;
-
-/** sp/f — below this a thrown bomb's slide is called finished. guessed. */
-const THROW_SLIDE_STOP = 26;
-
-/** px — height an object is held at while carried. guessed. */
-const CARRY_HEIGHT = 13;
-
-// ---------------------------------------------------------------------------
-// The Tidewright's Anchor
-//
-// The anchor holds a patch of the room at whatever tide level was current when
-// it landed, while the rest of the room goes on obeying the conch.
-// ---------------------------------------------------------------------------
-
-/**
- * tiles — how far the held patch reaches from the anchor, in every direction.
- * guessed, AND EXPLICITLY UNSETTLED — to be decided by play, not by argument.
- * Press KeyU in game to cycle 1-4 and KeyY to swap the footprint's shape.
- *
- * The arithmetic that rules out the larger values, since it is not obvious: a
- * room is 10 tiles wide and 8 tall, so the radius has to split BOTH axes to be
- * worth anything. 4 spans 9 tiles and swallows the whole screen — the conch
- * appears to stop working. 3 spans 7 and covers 7 of the 8 rows, so it splits
- * horizontally and not vertically. 2 spans 5 and splits both. The execution
- * plan's original "~8 tiles" predates anyone checking this against a room.
- */
-const ANCHOR_RADIUS_TILES = 2;
-
-/**
- * 'square' | 'disc' — the held patch's footprint. guessed, same debug key.
- *
- * At this scale the shape is legible to the player and has to be predictable.
- * A radius-2 disc is 13 tiles and reads as a fat plus sign whose edge is hard
- * to eyeball; a radius-2 square is a clean 5x5 whose corners you can see. Hence
- * square, but it is a feel question and the key exists to settle it.
- */
-const ANCHOR_SHAPE = 'square';
-
-/** sp/f — how fast the anchor flies when thrown. guessed; matches THROW_SPEED
- *  so it reads as the same arm that throws a pot. */
-const ANCHOR_THROW_SPEED = 640;
-
-/** sp/f — how fast the chain reels the anchor back on recall. guessed; faster
- *  than the throw, because a recall is a snap and a throw is a lob. */
-const ANCHOR_RECALL_SPEED = 896;
-
-/** frames — how long the anchor stays visibly settling after it lands, before
- *  the water changes. guessed; long enough to read as a splash-then-hold. */
-const ANCHOR_SETTLE_FRAMES = 10;
-
-/** hp — damage the chain does sweeping along its line on throw and recall.
- *  guessed; one quarter-heart less than a sword tap, since it is incidental. */
-const ANCHOR_CHAIN_DAMAGE = 1;
-
-// ---------------------------------------------------------------------------
-// Enemy cadence
-// ---------------------------------------------------------------------------
-
-// --- The lattice ---------------------------------------------------------
-//
-// Ground enemies do not have velocities. They take whole steps along an 8px
-// lattice, and a step, once begun, runs to its end. Every decision an enemy
-// makes about where to go is made standing on a lattice point. That is what
-// makes an octorok's shot dodgeable and a room of them read as patterned
-// rather than noisy. See docs/FEEL-SPEC.md, "The lattice".
-
-/** px — the increment a ground enemy moves in. guessed, but constrained: it
- *  has to divide the 16px tile, and half a tile is the coarsest value that
- *  still lets an enemy stand in a doorway's centre. */
-const ENEMY_GRID_STEP = 8;
-
-/** steps — how many lattice steps a wandering enemy commits to before it draws
- *  a new direction from the room's stream. guessed. This is the cadence that
- *  replaces the old per-frame turn probability: three steps is 24px, about a
- *  tile and a half, which is long enough to read as a decision and short
- *  enough that the enemy still feels loose. */
-const ENEMY_DECIDE_STEPS = 3;
-
-/** f — how long an enemy hesitates after walking into something before it
- *  picks a new direction. guessed. Also bounds how often a cornered enemy can
- *  draw from the room stream. */
-const ENEMY_TURN_PAUSE_FRAMES = 6;
-
-/** p — per-frame chance a wandering enemy changes direction. guessed.
- *  This now governs only the CONTINUOUS wander fallback — bosses and aquatic
- *  drifters, which are deliberately not on the lattice. A ground enemy never
- *  reads it. */
-const ENEMY_TURN_CHANCE = 0.012;
-
-/** px/f — fallback speed for an enemy whose spec does not name one. guessed. */
-const ENEMY_DEFAULT_SPEED = 0.5;
-
-/** f — frames per animation step for an enemy whose spec does not name one. guessed. */
-const ENEMY_DEFAULT_RATE = 10;
-
-/** x — multiplier on an enemy's speed while charging. guessed. */
-const ENEMY_CHARGE_SPEED_MULT = 3;
-
-/** f — recovery stun after a charge hits a wall. guessed. */
-const ENEMY_CHARGE_RECOVER_FRAMES = 24;
-
-/** px — how closely the player must line up for a charge to trigger. guessed. */
-const ENEMY_CHARGE_TOLERANCE = 10;
-
-/** px — how near the player must be for a charge to trigger. guessed. */
-const ENEMY_CHARGE_RANGE = 90;
-
-/** f — how long after one of Nereth's attacks his weak point opens. guessed.
- *  His volley leaves at 2.0 px/f, so 34 frames carries it ~68px — past a player
- *  standing at the ~40px they were being hit at. See `nerethOpening`. */
-const NERETH_OPENING_DELAY = 34;
-
-/** f — how long that opening lasts once it arrives. guessed; unchanged at 55,
- *  because the window was never the problem — WHEN it started was. */
-const NERETH_OPEN_FRAMES = 55;
-
-/** px — how close the player has to get for Anemos's lash to stop reaching
- *  them. guessed. Same rule as ENEMY_CHARGE_MIN_RANGE and the same reason: the
- *  lash fired on `distToPlayer < 44/48/52`, which INCLUDES the ~24-30px a
- *  player stands at to swing, so attacking was itself the trigger for five
- *  damage-3 spears in a 40-degree fan — at point-blank a fan that tight has no
- *  gap to step into, and `T35` says the player is rooted for the whole swing
- *  and cannot leave anyway.
- *
- *  32 is outside sword reach, so the lash becomes a mid-range punish for
- *  standing in the open rather than a tax on closing. Anemos is ROOTED, so a
- *  player who gets inside that ring has genuinely earned the position — and it
- *  still costs them, because the rings and volleys fire regardless of distance
- *  and its jellyfish and urchins do not care where anyone is standing. */
-const ANEMOS_LASH_MIN_RANGE = 32;
-
-/** f — Nereth's final-phase window, on a 200-frame cycle. guessed. Shorter than
- *  the 150 it was, because it now means something: he holds fire while it is
- *  open, so 90 of every 200 frames is a real invitation rather than a nominal
- *  one taken under five spears and twelve bubbles. */
-const NERETH_FINAL_OPEN_FRAMES = 90;
-
-/** px — how CLOSE the player has to be for a charge to stop being available.
- *  guessed. A charge is a gap-closer, and a charge that fires when the player
- *  is already in sword reach is not a charge, it is a shove that cannot be
- *  answered.
- *
- *  This number is the fix for the boss ceiling documented as `T33`. Gohmaraq's
- *  phase-2 charge had a 130px range over an arena barely larger than that, so
- *  its melee-vulnerable range was a STRICT SUBSET of its charge-trigger range:
- *  walking into sword reach necessarily satisfied the trigger, which fires
- *  first, and charges chained with zero idle frames between. A 60,000-frame
- *  UNLIMITED-HEALTH run still stuck at 14 hp forever, which is what proved the
- *  ceiling structural rather than tactical and ended eight sessions of trying
- *  to dodge past it.
- *
- *  40px is outside sword reach and outside the distance a player stands at to
- *  swing (~26-30px centre to centre against a 32x32 boss), so a player who has
- *  closed the gap gets real melee frames — while a player at range still faces
- *  the charge the fight is built around. The close-range punish already exists
- *  and did not need adding: every charging boss in this game also runs a
- *  timed slam that sprays regardless of distance. */
-const ENEMY_CHARGE_MIN_RANGE = 40;
-
-/** f — pause between hops. guessed. */
-const ENEMY_HOP_WAIT_FRAMES = 40;
-
-/** px — how far a hop carries, if the enemy does not name its own. guessed.
- *  Must be a multiple of ENEMY_GRID_STEP: a hop is a lattice step with an arc
- *  on it, so it has to land the hopper back on the lattice. */
-const ENEMY_HOP_DIST = 16;
-
-/** f — how long a hop is in the air, if the enemy does not name its own.
- *  guessed. Fixed, not derived from gravity: the arc is a curve fitted between
- *  two known endpoints rather than an integration, so the landing frame and the
- *  landing pixel are both known when the hop starts. */
-const ENEMY_HOP_FRAMES = 22;
-
-/** px — peak height of a hop's arc. guessed. */
-const ENEMY_HOP_HEIGHT = 10;
-
-/** rad/f — default angular speed of an orbiting enemy. guessed. */
-const ENEMY_ORBIT_SPEED = 0.045;
-
-/** px — default orbit radius. guessed. */
-const ENEMY_ORBIT_RADIUS = 24;
-
-/** f — how long a submerging enemy stays under. guessed. */
-const ENEMY_SUBMERGE_DOWN_FRAMES = 90;
-
-/** f — how long a submerging enemy stays up. guessed. */
-const ENEMY_SUBMERGE_UP_FRAMES = 120;
-
-/** px — nearest a resurfacing enemy will appear to the player. guessed. */
-const ENEMY_SURFACE_MIN_DIST = 32;
-
-/** px — extra range beyond ENEMY_SURFACE_MIN_DIST it may appear at. guessed. */
-const ENEMY_SURFACE_DIST_SPAN = 24;
-
-/** px — how close to a row or column counts as "the player is lined up". guessed. */
-const ENEMY_ALIGN_TOLERANCE = 12;
-
-/** f — how long an aquatic enemy survives on dry land after the tide drops. guessed. */
-const ENEMY_BEACHED_FRAMES = 90;
-
-/** f — a boss's held pose before it starts acting, if its spec omits one. guessed. */
-const BOSS_INTRO_FRAMES = 80;
-
-/** f — length of a boss's death throes before the room clears. guessed. */
-const BOSS_DEATH_FRAMES = 72;
-
-/** f — interval between explosions during a boss's death. guessed. */
-const BOSS_DEATH_BOOM_EVERY = 9;
-
-/** f — delay between a boss dying and its essence appearing. guessed. */
-const BOSS_ESSENCE_DELAY_FRAMES = 70;
-
-/** f — delay between a boss dying and room music resuming. guessed. */
-const BOSS_MUSIC_RESUME_FRAMES = 220;
-
-// ---------------------------------------------------------------------------
-// NPCs
-// ---------------------------------------------------------------------------
-
-/** f — how often a wandering NPC picks a new direction. guessed. */
-const NPC_WANDER_PERIOD = 90;
-
-/** sp/f — how fast a wandering NPC ambles. guessed; 0.3125 px/f, snapped to
- *  the grid from 0.3. Under a pixel a frame, so it exists only because
- *  positions accumulate in subpixels. */
-const NPC_WANDER_SPEED = 80;
-
-// ---------------------------------------------------------------------------
-// Projectiles
-// ---------------------------------------------------------------------------
-
-/** px/f — speed of a shot fired by `shoot()` with no speed named. guessed. */
-const ENEMY_SHOT_SPEED = 1.5;
-
-/** px/f — speed used by `fire()` when neither caller nor shot names one. guessed. */
-const PROJECTILE_SPEED = 1.6;
-
-/** px/f — speed of a shot in a `shootRing` volley. guessed. */
-const RING_SHOT_SPEED = 1.2;
-
-/** f — life of a projectile that does not name its own. guessed. */
-const PROJECTILE_LIFE = 150;
-
-/** f — life of a shot from `shoot()`. guessed. */
-const ENEMY_SHOT_LIFE = 140;
-
-/** f — life of a shot in a `shootRing` volley. guessed. */
-const RING_SHOT_LIFE = 130;
-
-/** px — height a projectile flies at, so it clears shadows and low scenery. guessed. */
-const PROJECTILE_Z = 4;
-
-// ---------------------------------------------------------------------------
-// Pickups and drops
-// ---------------------------------------------------------------------------
-
-/** f — how long a dropped pickup lingers before vanishing. guessed. */
-const PICKUP_LIFE_FRAMES = 460;
-
-/** sp/f — the little upward pop a drop makes when it appears. guessed;
- *  -1.25 px/f, snapped to the grid from -1.2. */
-const PICKUP_POP_SPEED = -320;
-
-/** sp/f^2 — gravity on that pop. guessed. */
-const PICKUP_GRAVITY = 40;
-
-/** f — how long the pop lasts before the drop settles. guessed. */
-const PICKUP_SETTLE_FRAMES = 12;
-
-/** f — delay before a drop can be collected, so it is not grabbed mid-pop. guessed. */
-const PICKUP_GRAB_DELAY = 8;
-
-/** rad/f — how fast a fairy's drift angle turns. guessed. */
-const FAIRY_DRIFT_TURN = 0.06;
-
-/** sp/f — amplitude of a fairy's drift on x. guessed; 0.6875 px/f. */
-const FAIRY_DRIFT_X = 176;
-
-/** sp/f — amplitude of a fairy's drift on y. guessed; 0.625 px/f. */
-const FAIRY_DRIFT_Y = 160;
-
-// ---------------------------------------------------------------------------
-// Effects
-// ---------------------------------------------------------------------------
-
-/** f — life of a bomb before it detonates is set per-item; this is how long the
- *  explosion entity itself lives. guessed. */
-const EXPLOSION_FRAMES = 24;
-
-/** px — radius Link's charge sparkles scatter over. guessed. */
-const CHARGE_SPARKLE_SPREAD = 12;
-
-/** px — radius an essence's sparkles scatter over. guessed. */
-const ESSENCE_SPARKLE_SPREAD = 10;
-
-/** f — interval between an essence's sparkles. guessed. */
-const ESSENCE_SPARKLE_EVERY = 10;
-
-/** f — interval between foam puffs while wading. guessed. */
-const WADE_FOAM_EVERY = 14;
-
-// ---------------------------------------------------------------------------
-// The item roster (docs/ITEMS.md)
-//
-// Every number in this section is `guessed`. Not one of these items exists in
-// the source games, so there is nothing to frame-step: `measured` is not
-// available here even in principle, and `derived` only where a value is
-// computed from another constant in this file. Anything that later gets tuned
-// against play is still `guessed` — see the provenance rules at the top.
-// ---------------------------------------------------------------------------
-
-// --- Brineglass Lens -------------------------------------------------------
-
-/** f — how long the ghosted overlay takes to fade in when the Lens is raised,
- *  and out again when it is released. guessed. */
-const LENS_FADE_FRAMES = 10;
-
-/** x — peak opacity of the ghosted next-tide terrain drawn over the room.
- *  guessed, but MEASURED AGAINST A ROOM, which is more than it was. D2's forks
- *  ask the Lens the hardest question in the game — three shafts that are the
- *  same `dPit` where you stand and shallow water / a pit / deep water one level
- *  up — and the three previewed tiles were coming out 4-6 units apart in RGB,
- *  which is not a difference a person reads at 160x144. Sampled over the pit
- *  in d2 1,2,2 — regenerate the shot with
- *  `node tools/shoot-rooms.mjs --tide=0 --px=72 --py=88 --lens d2,1,2,2` —
- *  mean RGB of each throat:
- *
- *    ghost   west (wadeable)   middle (pit)   east (drowning)
- *    0.55    (23, 33, 51)      (17, 21, 38)   (19, 27, 48)
- *    0.80    (26, 38, 58)      (17, 21, 38)   (20, 29, 53)
- *    1.00    (28, 40, 60)      (17, 20, 38)   (21, 30, 55)
- *
- *  0.80 buys most of what 1.00 buys and keeps the overlay translucent, which
- *  is what stops it reading as the room having already changed. THE REAL LIMIT
- *  IS NOT THIS NUMBER: shallow water, deep water and a dungeon pit are three
- *  dark blues, so no opacity separates them by much. See docs/ART-BACKLOG.md. */
-const LENS_GHOST_ALPHA = 0.80;
-
-/** x — opacity of the cold wash laid over the whole screen while the Lens is
- *  up, so the preview cannot be mistaken for the room actually changing.
- *  guessed. */
-const LENS_TINT_ALPHA = 0.16;
-
-/** x — opacity a phase-shifted enemy is drawn at while the Lens reveals it.
- *  It is solid enough to aim at, because the Lens makes it hittable. guessed. */
-const LENS_PHASE_ALPHA = 0.8;
-
-/** f — period of the slow shimmer on the ghosted overlay. guessed. */
-const LENS_SHIMMER_FRAMES = 48;
-
-// --- Kelp-Soled Cleats -----------------------------------------------------
-
-/** sp/f — walking speed on the seafloor in sink mode. guessed; 0.625 px/f,
- *  five eighths of WALK_SPEED. Sink mode buys safety with pace, and the number
- *  has to be slow enough that taking the floor route is a decision. */
-const SINK_SPEED = 160;
-
-/** px/f — a Bogwater torrent, the current the Sanctum is built out of.
- *  derived, and the derivation is the whole point: it is strictly GREATER than
- *  SWIM_SPEED (192 sp/f = 0.75 px/f), so a swimmer pressing into it nets
- *  backwards and can never make headway, while a walker on the floor is not
- *  touched by a current at all. An ordinary riptide is 0.55 px/f — less than a
- *  swimmer's own speed — so it is a tax on the surface route and not a barrier,
- *  which is why D3 needed a second, stronger current rather than reusing it.
- *  Retune SWIM_SPEED and tools/check-cleats.mjs re-proves every torrent room
- *  against the new ratio instead of quietly passing. */
-const TORRENT_PUSH = 0.9;
-
-/** f — the descent when sink mode is entered over deep water, and the ascent
- *  when it is left. Control is suspended for the whole of it. guessed. */
-const SINK_ENTER_FRAMES = 18;
-
-/** f — breath in sink mode at Cleats L1. Cleats L2 (the Mermaid Suit) has no
- *  limit at all. guessed; ~13 seconds, long enough to cross a room and short
- *  enough that a wrong turn costs you. */
-const CLEATS_BREATH_FRAMES = 800;
-
-/** f — how much breath is left when the warning starts. guessed. */
-const CLEATS_BREATH_WARN_FRAMES = 180;
-
-/** f — interval between bubbles rising off a walker on the seafloor. guessed. */
-const SINK_BUBBLE_EVERY = 22;
-
-/** qh — damage taken when breath runs out and the Cleats float you up on their
- *  own. guessed; the same as being washed ashore, because it is the same kind
- *  of failure. */
-const SINK_DROWN_DAMAGE = 2;
-
-// --- Squall Bellows --------------------------------------------------------
-
-/** tiles — how far the gust cone reaches. guessed; three tiles is far enough
- *  to reach across a channel and short enough that you have to commit a
- *  position to it. */
-const BELLOWS_RANGE = 3;
-
-/** f — how long the bellows take to fill before the cone opens. guessed. The
- *  wind-up is what makes standing still a decision rather than a reflex. */
-const BELLOWS_WARMUP_FRAMES = 14;
-
-/** sp/f — how hard the gust shoves a light enemy. guessed; 0.75 px/f, a little
- *  under a walk, so a pushed enemy visibly loses ground rather than flying. */
-const BELLOWS_PUSH = 192;
-
-/** f — interval between gust puffs drawn in the cone. guessed. */
-const BELLOWS_PUFF_EVERY = 6;
-
-/** x — a raft under the gust travels this fraction of BELLOWS_PUSH. guessed;
- *  a raft is heavy and the difference should be legible. */
-const BELLOWS_RAFT_SCALE = 0.5;
-
-/** f — frames a gusted wheel keeps turning after the gust stops. guessed. */
-const BELLOWS_WHEEL_COAST = 30;
-
-// --- Reefseed --------------------------------------------------------------
-
-/** f — how long a thrown Reefseed takes to become a coral pillar. guessed;
- *  two seconds. THE DELAY IS THE DESIGN — see docs/ITEMS.md. Shorten it and
- *  the item becomes a block placer; lengthen it and nobody waits. */
-const REEFSEED_GROW_FRAMES = 120;
-
-/** f — how long the seed tumbles before it settles and starts growing.
- *  guessed. */
-const REEFSEED_SETTLE_FRAMES = 22;
-
-/** sp/f — how fast a thrown Reefseed travels. guessed; 2 px/f, a lob rather
- *  than a shot, because you are aiming at a tile and not at a creature. */
-const REEFSEED_THROW_SPEED = 512;
-
-/** f — interval between the sprout's shudders while it grows. guessed. */
-const REEFSEED_SHUDDER_EVERY = 12;
-
-/** how many Reefseeds a full pouch holds. guessed. */
-const REEFSEED_CAPACITY = 8;
-
-/** how many bombs a full bag holds. guessed; it was a bare 10 inside
- *  `Game.openChest` until the Reefseed's empty-satchel bug moved the whole
- *  counted-item rule down into `giveItem`, which is not allowed a magic
- *  number any more than anything else is. */
-const BOMB_CAPACITY = 10;
-
-// --- Dredge Line -----------------------------------------------------------
-
-/** px — how far the line is cast. guessed; four tiles, so it reaches across a
- *  channel the player is standing on the bank of. */
-const DREDGE_RANGE = 64;
-
-/** sp/f — how fast the weight travels on the way out. guessed; 3.5 px/f. */
-const DREDGE_CAST_SPEED = 896;
-
-/** sp/f — how fast the line comes back in, loaded or empty. guessed; a drag is
- *  slower than a cast, which is what makes hauling something read as work. */
-const DREDGE_HAUL_SPEED = 512;
-
-/** sp/f — how fast a FIXED snag hauls Link instead. guessed. */
-const DREDGE_PULL_SPEED = 768;
-
-/** f — how long a dredged-up creature flops on land, helpless. guessed;
- *  long enough for two sword swings and no more. */
-const DREDGE_FLOP_FRAMES = 150;
-
-/** x — damage multiplier on a flopping creature. guessed; being landed is
- *  supposed to be the answer to an aquatic enemy, not a nudge. */
-const DREDGE_FLOP_DAMAGE_SCALE = 2;
-
-// --- Resonance Rod ---------------------------------------------------------
-
-/** px — how far the note carries at LOW and MID tide. guessed; three tiles. */
-const ROD_RANGE = 48;
-
-/** px — how far it carries at HIGH. guessed; water carries a note, and this is
- *  the one item whose own power depends on the tide. Roughly double. */
-const ROD_RANGE_HIGH = 96;
-
-/** f — how long armoured metal locks rigid when it is rung. guessed; the brief
- *  says about 90 frames and this is that number until someone plays it. */
-const ROD_LOCK_FRAMES = 90;
-
-/** f — how long the ring itself lasts on screen. guessed. */
-const ROD_RING_FRAMES = 26;
-
-/** f — how long the rod cannot be sounded again. guessed; long enough that
- *  holding the button is not a stun-lock. */
-const ROD_COOLDOWN_FRAMES = 48;
-
-/** f — how long a sunken bell hums after the Resonance Rod is sounded near it,
- *  and how long its pointing sparks last. guessed. */
-const BELL_CHIME_FRAMES = 60;
-
-// --- Ferryman's Coin -------------------------------------------------------
-
-/** sp/f — how fast the coin is pitched. guessed; 2.25 px/f, a coin toss. */
-const COIN_THROW_SPEED = 576;
-
-/** f — how long the coin is in the air before it settles. guessed. */
-const COIN_SETTLE_FRAMES = 26;
-
-/** f — the pause between the tide finishing its sweep and the swap firing.
- *  guessed; long enough to read as a consequence of the tide rather than as
- *  part of it. */
-const COIN_SWAP_DELAY_FRAMES = 24;
-
-/** f — interval between the coin's glints while it waits. guessed. */
-const COIN_GLINT_EVERY = 40;
-
-// --- Bottled Tide ----------------------------------------------------------
-
-/** how many Bottled Tides you can carry at once. guessed; the number is the
- *  difficulty dial on every boss room that keeps the mechanic switched on. */
-const BOTTLE_CAPACITY = 4;
-
-/** f — Link is held while the bottle is poured out. guessed; long enough that
- *  using one in a boss fight is a window you have to make. */
-const BOTTLE_POUR_FRAMES = 34;
-
-/** tiles — the widest gap the base hop clears. derived, not guessed: the hop
- *  reuses the one-way ledge arc, whose span is LEDGE_MAX_SPAN, and a gap is
- *  cleared the same way a ledge lip is. Two means a one-tile chasm is free and
- *  a two-tile one is not, which is the line every gap in the world is drawn
- *  against now that Roc's Feather is gone and the hop is base moveset. */
-const GAP_HOP_MAX_SPAN = 2;
-
-/** what bare hands are worth when lifting, against a tile's `liftLevel`.
- *  derived from the roster, not guessed: the Power Bracelet is gone and
- *  lifting is base moveset, so ordinary pots and rocks (`liftLevel` unset or
- *  1) come up and a boulder (`liftLevel` 2) does not. The boulder wants the
- *  Dredge Line now — see docs/ITEMS.md. */
-const LIFT_STRENGTH = 1;
-
-// --- Scrimshaw (P7) --------------------------------------------------------
-// Every number here is `guessed` and cannot be otherwise: no Oracle system
-// slots a passive by world state, so there is no reference to frame-step. They
-// are stated as multipliers of things that already exist wherever possible, so
-// re-tuning a base constant carries the charm with it.
-
-/** f — how long a case stays awake after the tide leaves it, with the Neap
- *  Charm in that case. guessed; the plan says three seconds and three seconds
- *  at 60Hz is what this is. It is the whole width of the transition window
- *  the charm exists to create, so it is the first number to move if the
- *  transition play does not read. */
-const NEAP_GRACE_FRAMES = 180;
-
-/** most charms one case can ever hold. guessed; the late-game case upgrade
- *  raises progress.charmCase from 1 to this. */
-const CHARM_CASE_MAX = 2;
-
-/** dimensionless — swim speed multiplier with the Riptide Fin. guessed; the
- *  plan says +40% and the product is rounded back onto a whole subpixel at the
- *  call site, the same way the terrain multipliers are. */
-const RIPTIDE_FIN_FACTOR = 1.4;
-
-/** dimensionless — everywhere-speed multiplier with Deadweight. guessed; the
- *  plan's 15% slower, and the price of never being pushed again. */
-const DEADWEIGHT_FACTOR = 0.85;
-
-/** dimensionless — how hard a current pushes with the Kelp Braid. guessed. */
-const KELP_BRAID_FACTOR = 0.5;
-
-/** px — extra span on the sword's sweep with the Split Fang, added to
- *  SWORD_SPAN. guessed; one tile's worth of blade split across both sides, so
- *  a swing catches a foe standing off the axis of the one you meant to hit. */
-const SPLIT_FANG_SPAN = 8;
-
-/** dimensionless — how far the sword throws with the Sea-Wolf's Tooth,
- *  against KNOCK_SWORD. guessed. */
-const SEAWOLF_KNOCK_FACTOR = 2;
-
-/** chance a hit is shrugged off entirely with the Hagstone. guessed; the plan
- *  had no such charm, and a quarter is high enough to notice inside one room
- *  and low enough that it is never a plan. Rolled off the ROOM stream. */
-const HAGSTONE_CHANCE = 0.25;
-
-/** f — interval between Strandwalker's quarter-hearts on dry land. guessed;
- *  slow enough that it is a charm you leave on rather than a charm you farm. */
-const STRANDWALKER_EVERY = 300;
-
-/** dimensionless — bomb blast radius multiplier with Dry Kindling. guessed. */
-const DRY_KINDLING_FACTOR = 1.5;
-
-/** dimensionless — pickup lifetime multiplier with the Gull's Tally. guessed;
- *  the plan says twice as long and this is that. */
-const GULLS_TALLY_FACTOR = 2;
-
-/** dimensionless — shop price multiplier with the Chandler's Eye. guessed. */
-const CHANDLER_FACTOR = 0.75;
-
-/** extra Reefseeds the Quartermaster's Mark carries, on REEFSEED_CAPACITY.
- *  guessed; the plan says two. */
-const QUARTERMASTER_BONUS = 2;
-
-/** px — extra reach on the Dredge Line with the Coilrope, on DREDGE_RANGE.
- *  guessed; the plan says one tile and a tile is 16px. */
-const COILROPE_RANGE = 16;
-
-/** dimensionless — how much of the dive/surface transition the Pressure Scar
- *  spends, against SINK_ENTER_FRAMES. guessed. */
-const PRESSURE_SCAR_FACTOR = 0.5;
-
-/** tide changes a commissioned charm takes to carve. derived from the design,
- *  not guessed: the plan says one tide cycle, and the Moon Conch's cycle is
- *  TIDE_COUNT steps round. */
-const CARVE_TIDE_TURNS = 3;
-
-/** rupees the scrimshander charges to carve a blank. guessed; roughly a good
- *  dungeon's takings, so a charm is a decision rather than a formality. */
-const CARVE_PRICE = 60;
-
-/** dimensionless — how much of CONCH_FRAMES the Bosun's Whistle spends.
- *  guessed; the conch's lock-out is a real cost in a fight, and halving it is
- *  the most direct way a charm can say "you use the tide more". */
-const BOSUN_FACTOR = 0.5;
-
-/** px — how far a lit dark room reads, against the unlit 54. guessed; wide
- *  enough that a lantern charm changes how the room is played rather than how
- *  it is lit. */
-const LANTERN_RADIUS = 96;
-
-/** f — how often the Wrecker's Eye winks over a hidden thing. guessed; slow
- *  enough to read as a glint rather than a blinking marker. */
-const WRECK_GLIMMER_PERIOD = 90;
-
-/** f — how long each wink lasts, inside WRECK_GLIMMER_PERIOD. guessed. */
-const WRECK_GLIMMER_ON = 20;
-
-/** peak opacity of the Wrecker's Eye wink. guessed. */
-const WRECK_GLIMMER_ALPHA = 0.85;
-
-/** essences before the scrimshander cuts you the LOW case. derived from the
- *  eight-dungeon spine, not guessed: two, four and six spread the three
- *  scrimshaw unlocks evenly across it and leave the last two dungeons free of
- *  system-teaching. */
-const CHARM_LOW_ESSENCES = 2;
-
-/** essences before the HIGH case. derived, as above. */
-const CHARM_HIGH_ESSENCES = 4;
-
-/** essences before every case takes two charms. derived, as above. */
-const CHARM_CASE_ESSENCES = 6;
-__exports["WALK_SPEED"] = WALK_SPEED;
-__exports["SWIM_SPEED"] = SWIM_SPEED;
-__exports["BOOST_SPEED"] = BOOST_SPEED;
-__exports["SHIELD_SPEED"] = SHIELD_SPEED;
-__exports["SWORD_HOLD_SPEED"] = SWORD_HOLD_SPEED;
-__exports["SLOW_FACTOR"] = SLOW_FACTOR;
-__exports["SHALLOW_FACTOR"] = SHALLOW_FACTOR;
-__exports["CARRY_FACTOR"] = CARRY_FACTOR;
-__exports["SPIN_DRIFT_SPEED"] = SPIN_DRIFT_SPEED;
-__exports["TIDE_DRIFT_PER_LEVEL"] = TIDE_DRIFT_PER_LEVEL;
-__exports["SWING_FRAMES"] = SWING_FRAMES;
-__exports["SWING_HIT_START"] = SWING_HIT_START;
-__exports["SWING_HIT_END"] = SWING_HIT_END;
-__exports["CHARGE_FRAMES"] = CHARGE_FRAMES;
-__exports["CHARGE_SPARKLE_EVERY"] = CHARGE_SPARKLE_EVERY;
-__exports["SPIN_FRAMES"] = SPIN_FRAMES;
-__exports["SWORD_REACH"] = SWORD_REACH;
-__exports["SWORD_SPAN"] = SWORD_SPAN;
-__exports["SWORD_GAP"] = SWORD_GAP;
-__exports["SPIN_BOX"] = SPIN_BOX;
-__exports["SWORD_HOLD_DELAY"] = SWORD_HOLD_DELAY;
-__exports["SWORD_HOLD_DAMAGE"] = SWORD_HOLD_DAMAGE;
-__exports["KNOCK_HOLD"] = KNOCK_HOLD;
-__exports["SWORD_CLINK_COOLDOWN"] = SWORD_CLINK_COOLDOWN;
-__exports["PLAYER_INVULN_FRAMES"] = PLAYER_INVULN_FRAMES;
-__exports["PLAYER_FLICKER_FRAMES"] = PLAYER_FLICKER_FRAMES;
-__exports["PLAYER_RECOVER_INVULN_FRAMES"] = PLAYER_RECOVER_INVULN_FRAMES;
-__exports["PLAYER_HURT_FRAMES"] = PLAYER_HURT_FRAMES;
-__exports["PLAYER_KNOCK_DIST"] = PLAYER_KNOCK_DIST;
-__exports["PLAYER_KNOCK_FRAMES"] = PLAYER_KNOCK_FRAMES;
-__exports["ENEMY_INVULN_FRAMES"] = ENEMY_INVULN_FRAMES;
-__exports["ENEMY_FLICKER_FRAMES"] = ENEMY_FLICKER_FRAMES;
-__exports["ENEMY_KNOCK_FRAMES"] = ENEMY_KNOCK_FRAMES;
-__exports["KNOCK_DEFAULT"] = KNOCK_DEFAULT;
-__exports["KNOCK_SWORD"] = KNOCK_SWORD;
-__exports["KNOCK_SPIN"] = KNOCK_SPIN;
-__exports["KNOCK_PROJECTILE"] = KNOCK_PROJECTILE;
-__exports["KNOCK_EXPLOSION"] = KNOCK_EXPLOSION;
-__exports["KNOCK_THROWN"] = KNOCK_THROWN;
-__exports["KNOCK_TOOL"] = KNOCK_TOOL;
-__exports["BOSS_INVULN_FRAMES"] = BOSS_INVULN_FRAMES;
-__exports["BOSS_PHASE_INVULN_FRAMES"] = BOSS_PHASE_INVULN_FRAMES;
-__exports["BOSS_KNOCK_FRAMES"] = BOSS_KNOCK_FRAMES;
-__exports["BOSS_KNOCK_SCALE"] = BOSS_KNOCK_SCALE;
-__exports["HAZARD_DAMAGE"] = HAZARD_DAMAGE;
-__exports["PIT_DAMAGE"] = PIT_DAMAGE;
-__exports["WASH_DAMAGE"] = WASH_DAMAGE;
-__exports["EXPLOSION_SELF_DAMAGE"] = EXPLOSION_SELF_DAMAGE;
-__exports["KILNSHELL_BURN_DAMAGE"] = KILNSHELL_BURN_DAMAGE;
-__exports["JUMP_POWER"] = JUMP_POWER;
-__exports["JUMP_GRAVITY"] = JUMP_GRAVITY;
-__exports["LAND_SETTLE_RATE"] = LAND_SETTLE_RATE;
-__exports["LEDGE_MAX_SPAN"] = LEDGE_MAX_SPAN;
-__exports["LEDGE_HOP_FRAMES"] = LEDGE_HOP_FRAMES;
-__exports["LEDGE_HOP_HEIGHT"] = LEDGE_HOP_HEIGHT;
-__exports["LEDGE_PROBE_REACH"] = LEDGE_PROBE_REACH;
-__exports["PUSH_PROBE_REACH"] = PUSH_PROBE_REACH;
-__exports["ROOM_TRANSITION_FRAMES"] = ROOM_TRANSITION_FRAMES;
-__exports["ROOM_EXIT_MARGIN"] = ROOM_EXIT_MARGIN;
-__exports["CAM_DEADZONE_W"] = CAM_DEADZONE_W;
-__exports["CAM_DEADZONE_H"] = CAM_DEADZONE_H;
-__exports["CAM_MAX_SPEED"] = CAM_MAX_SPEED;
-__exports["TIDE_SWEEP_FRAMES"] = TIDE_SWEEP_FRAMES;
-__exports["FADE_RATE"] = FADE_RATE;
-__exports["BANNER_FRAMES"] = BANNER_FRAMES;
-__exports["HITSTOP_HIT_FRAMES"] = HITSTOP_HIT_FRAMES;
-__exports["HITSTOP_HURT_FRAMES"] = HITSTOP_HURT_FRAMES;
-__exports["HITSTOP_BOSS_DEATH_FRAMES"] = HITSTOP_BOSS_DEATH_FRAMES;
-__exports["SHAKE_SMALL"] = SHAKE_SMALL;
-__exports["SHAKE_MEDIUM"] = SHAKE_MEDIUM;
-__exports["SHAKE_LARGE"] = SHAKE_LARGE;
-__exports["SHAKE_SMALL_FRAMES"] = SHAKE_SMALL_FRAMES;
-__exports["SHAKE_MEDIUM_FRAMES"] = SHAKE_MEDIUM_FRAMES;
-__exports["SHAKE_LARGE_FRAMES"] = SHAKE_LARGE_FRAMES;
-__exports["SHAKE_BOSS_SLAM"] = SHAKE_BOSS_SLAM;
-__exports["SHAKE_BOSS_SLAM_FRAMES"] = SHAKE_BOSS_SLAM_FRAMES;
-__exports["SHAKE_RUMBLE"] = SHAKE_RUMBLE;
-__exports["SHAKE_RUMBLE_FRAMES"] = SHAKE_RUMBLE_FRAMES;
-__exports["SHAKE_BOSS_BREAK"] = SHAKE_BOSS_BREAK;
-__exports["SHAKE_BOSS_BREAK_FRAMES"] = SHAKE_BOSS_BREAK_FRAMES;
-__exports["FALL_FRAMES"] = FALL_FRAMES;
-__exports["WASH_FRAMES"] = WASH_FRAMES;
-__exports["CONCH_FRAMES"] = CONCH_FRAMES;
-__exports["PUSH_DELAY_FRAMES"] = PUSH_DELAY_FRAMES;
-__exports["PEGASUS_FRAMES"] = PEGASUS_FRAMES;
-__exports["ITEM_PRESENT_FRAMES"] = ITEM_PRESENT_FRAMES;
-__exports["ESSENCE_FREEZE_FRAMES"] = ESSENCE_FREEZE_FRAMES;
-__exports["GAMEOVER_WAIT_FRAMES"] = GAMEOVER_WAIT_FRAMES;
-__exports["LOW_HEART_THRESHOLD"] = LOW_HEART_THRESHOLD;
-__exports["LOW_HEART_EVERY"] = LOW_HEART_EVERY;
-__exports["TEXT_SPEED"] = TEXT_SPEED;
-__exports["TEXT_FAST_SCALE"] = TEXT_FAST_SCALE;
-__exports["TEXT_BEEP_EVERY"] = TEXT_BEEP_EVERY;
-__exports["CONTEXT_REACH"] = CONTEXT_REACH;
-__exports["LIFT_REACH"] = LIFT_REACH;
-__exports["THROW_SPEED"] = THROW_SPEED;
-__exports["THROW_ARC_RISE"] = THROW_ARC_RISE;
-__exports["THROW_ARC_GRAVITY"] = THROW_ARC_GRAVITY;
-__exports["THROW_SLIDE_DECAY"] = THROW_SLIDE_DECAY;
-__exports["THROW_SLIDE_STOP"] = THROW_SLIDE_STOP;
-__exports["CARRY_HEIGHT"] = CARRY_HEIGHT;
-__exports["ANCHOR_RADIUS_TILES"] = ANCHOR_RADIUS_TILES;
-__exports["ANCHOR_SHAPE"] = ANCHOR_SHAPE;
-__exports["ANCHOR_THROW_SPEED"] = ANCHOR_THROW_SPEED;
-__exports["ANCHOR_RECALL_SPEED"] = ANCHOR_RECALL_SPEED;
-__exports["ANCHOR_SETTLE_FRAMES"] = ANCHOR_SETTLE_FRAMES;
-__exports["ANCHOR_CHAIN_DAMAGE"] = ANCHOR_CHAIN_DAMAGE;
-__exports["ENEMY_GRID_STEP"] = ENEMY_GRID_STEP;
-__exports["ENEMY_DECIDE_STEPS"] = ENEMY_DECIDE_STEPS;
-__exports["ENEMY_TURN_PAUSE_FRAMES"] = ENEMY_TURN_PAUSE_FRAMES;
-__exports["ENEMY_TURN_CHANCE"] = ENEMY_TURN_CHANCE;
-__exports["ENEMY_DEFAULT_SPEED"] = ENEMY_DEFAULT_SPEED;
-__exports["ENEMY_DEFAULT_RATE"] = ENEMY_DEFAULT_RATE;
-__exports["ENEMY_CHARGE_SPEED_MULT"] = ENEMY_CHARGE_SPEED_MULT;
-__exports["ENEMY_CHARGE_RECOVER_FRAMES"] = ENEMY_CHARGE_RECOVER_FRAMES;
-__exports["ENEMY_CHARGE_TOLERANCE"] = ENEMY_CHARGE_TOLERANCE;
-__exports["ENEMY_CHARGE_RANGE"] = ENEMY_CHARGE_RANGE;
-__exports["NERETH_OPENING_DELAY"] = NERETH_OPENING_DELAY;
-__exports["NERETH_OPEN_FRAMES"] = NERETH_OPEN_FRAMES;
-__exports["ANEMOS_LASH_MIN_RANGE"] = ANEMOS_LASH_MIN_RANGE;
-__exports["NERETH_FINAL_OPEN_FRAMES"] = NERETH_FINAL_OPEN_FRAMES;
-__exports["ENEMY_CHARGE_MIN_RANGE"] = ENEMY_CHARGE_MIN_RANGE;
-__exports["ENEMY_HOP_WAIT_FRAMES"] = ENEMY_HOP_WAIT_FRAMES;
-__exports["ENEMY_HOP_DIST"] = ENEMY_HOP_DIST;
-__exports["ENEMY_HOP_FRAMES"] = ENEMY_HOP_FRAMES;
-__exports["ENEMY_HOP_HEIGHT"] = ENEMY_HOP_HEIGHT;
-__exports["ENEMY_ORBIT_SPEED"] = ENEMY_ORBIT_SPEED;
-__exports["ENEMY_ORBIT_RADIUS"] = ENEMY_ORBIT_RADIUS;
-__exports["ENEMY_SUBMERGE_DOWN_FRAMES"] = ENEMY_SUBMERGE_DOWN_FRAMES;
-__exports["ENEMY_SUBMERGE_UP_FRAMES"] = ENEMY_SUBMERGE_UP_FRAMES;
-__exports["ENEMY_SURFACE_MIN_DIST"] = ENEMY_SURFACE_MIN_DIST;
-__exports["ENEMY_SURFACE_DIST_SPAN"] = ENEMY_SURFACE_DIST_SPAN;
-__exports["ENEMY_ALIGN_TOLERANCE"] = ENEMY_ALIGN_TOLERANCE;
-__exports["ENEMY_BEACHED_FRAMES"] = ENEMY_BEACHED_FRAMES;
-__exports["BOSS_INTRO_FRAMES"] = BOSS_INTRO_FRAMES;
-__exports["BOSS_DEATH_FRAMES"] = BOSS_DEATH_FRAMES;
-__exports["BOSS_DEATH_BOOM_EVERY"] = BOSS_DEATH_BOOM_EVERY;
-__exports["BOSS_ESSENCE_DELAY_FRAMES"] = BOSS_ESSENCE_DELAY_FRAMES;
-__exports["BOSS_MUSIC_RESUME_FRAMES"] = BOSS_MUSIC_RESUME_FRAMES;
-__exports["NPC_WANDER_PERIOD"] = NPC_WANDER_PERIOD;
-__exports["NPC_WANDER_SPEED"] = NPC_WANDER_SPEED;
-__exports["ENEMY_SHOT_SPEED"] = ENEMY_SHOT_SPEED;
-__exports["PROJECTILE_SPEED"] = PROJECTILE_SPEED;
-__exports["RING_SHOT_SPEED"] = RING_SHOT_SPEED;
-__exports["PROJECTILE_LIFE"] = PROJECTILE_LIFE;
-__exports["ENEMY_SHOT_LIFE"] = ENEMY_SHOT_LIFE;
-__exports["RING_SHOT_LIFE"] = RING_SHOT_LIFE;
-__exports["PROJECTILE_Z"] = PROJECTILE_Z;
-__exports["PICKUP_LIFE_FRAMES"] = PICKUP_LIFE_FRAMES;
-__exports["PICKUP_POP_SPEED"] = PICKUP_POP_SPEED;
-__exports["PICKUP_GRAVITY"] = PICKUP_GRAVITY;
-__exports["PICKUP_SETTLE_FRAMES"] = PICKUP_SETTLE_FRAMES;
-__exports["PICKUP_GRAB_DELAY"] = PICKUP_GRAB_DELAY;
-__exports["FAIRY_DRIFT_TURN"] = FAIRY_DRIFT_TURN;
-__exports["FAIRY_DRIFT_X"] = FAIRY_DRIFT_X;
-__exports["FAIRY_DRIFT_Y"] = FAIRY_DRIFT_Y;
-__exports["EXPLOSION_FRAMES"] = EXPLOSION_FRAMES;
-__exports["CHARGE_SPARKLE_SPREAD"] = CHARGE_SPARKLE_SPREAD;
-__exports["ESSENCE_SPARKLE_SPREAD"] = ESSENCE_SPARKLE_SPREAD;
-__exports["ESSENCE_SPARKLE_EVERY"] = ESSENCE_SPARKLE_EVERY;
-__exports["WADE_FOAM_EVERY"] = WADE_FOAM_EVERY;
-__exports["LENS_FADE_FRAMES"] = LENS_FADE_FRAMES;
-__exports["LENS_GHOST_ALPHA"] = LENS_GHOST_ALPHA;
-__exports["LENS_TINT_ALPHA"] = LENS_TINT_ALPHA;
-__exports["LENS_PHASE_ALPHA"] = LENS_PHASE_ALPHA;
-__exports["LENS_SHIMMER_FRAMES"] = LENS_SHIMMER_FRAMES;
-__exports["SINK_SPEED"] = SINK_SPEED;
-__exports["TORRENT_PUSH"] = TORRENT_PUSH;
-__exports["SINK_ENTER_FRAMES"] = SINK_ENTER_FRAMES;
-__exports["CLEATS_BREATH_FRAMES"] = CLEATS_BREATH_FRAMES;
-__exports["CLEATS_BREATH_WARN_FRAMES"] = CLEATS_BREATH_WARN_FRAMES;
-__exports["SINK_BUBBLE_EVERY"] = SINK_BUBBLE_EVERY;
-__exports["SINK_DROWN_DAMAGE"] = SINK_DROWN_DAMAGE;
-__exports["BELLOWS_RANGE"] = BELLOWS_RANGE;
-__exports["BELLOWS_WARMUP_FRAMES"] = BELLOWS_WARMUP_FRAMES;
-__exports["BELLOWS_PUSH"] = BELLOWS_PUSH;
-__exports["BELLOWS_PUFF_EVERY"] = BELLOWS_PUFF_EVERY;
-__exports["BELLOWS_RAFT_SCALE"] = BELLOWS_RAFT_SCALE;
-__exports["BELLOWS_WHEEL_COAST"] = BELLOWS_WHEEL_COAST;
-__exports["REEFSEED_GROW_FRAMES"] = REEFSEED_GROW_FRAMES;
-__exports["REEFSEED_SETTLE_FRAMES"] = REEFSEED_SETTLE_FRAMES;
-__exports["REEFSEED_THROW_SPEED"] = REEFSEED_THROW_SPEED;
-__exports["REEFSEED_SHUDDER_EVERY"] = REEFSEED_SHUDDER_EVERY;
-__exports["REEFSEED_CAPACITY"] = REEFSEED_CAPACITY;
-__exports["BOMB_CAPACITY"] = BOMB_CAPACITY;
-__exports["DREDGE_RANGE"] = DREDGE_RANGE;
-__exports["DREDGE_CAST_SPEED"] = DREDGE_CAST_SPEED;
-__exports["DREDGE_HAUL_SPEED"] = DREDGE_HAUL_SPEED;
-__exports["DREDGE_PULL_SPEED"] = DREDGE_PULL_SPEED;
-__exports["DREDGE_FLOP_FRAMES"] = DREDGE_FLOP_FRAMES;
-__exports["DREDGE_FLOP_DAMAGE_SCALE"] = DREDGE_FLOP_DAMAGE_SCALE;
-__exports["ROD_RANGE"] = ROD_RANGE;
-__exports["ROD_RANGE_HIGH"] = ROD_RANGE_HIGH;
-__exports["ROD_LOCK_FRAMES"] = ROD_LOCK_FRAMES;
-__exports["ROD_RING_FRAMES"] = ROD_RING_FRAMES;
-__exports["ROD_COOLDOWN_FRAMES"] = ROD_COOLDOWN_FRAMES;
-__exports["BELL_CHIME_FRAMES"] = BELL_CHIME_FRAMES;
-__exports["COIN_THROW_SPEED"] = COIN_THROW_SPEED;
-__exports["COIN_SETTLE_FRAMES"] = COIN_SETTLE_FRAMES;
-__exports["COIN_SWAP_DELAY_FRAMES"] = COIN_SWAP_DELAY_FRAMES;
-__exports["COIN_GLINT_EVERY"] = COIN_GLINT_EVERY;
-__exports["BOTTLE_CAPACITY"] = BOTTLE_CAPACITY;
-__exports["BOTTLE_POUR_FRAMES"] = BOTTLE_POUR_FRAMES;
-__exports["GAP_HOP_MAX_SPAN"] = GAP_HOP_MAX_SPAN;
-__exports["LIFT_STRENGTH"] = LIFT_STRENGTH;
-__exports["NEAP_GRACE_FRAMES"] = NEAP_GRACE_FRAMES;
-__exports["CHARM_CASE_MAX"] = CHARM_CASE_MAX;
-__exports["RIPTIDE_FIN_FACTOR"] = RIPTIDE_FIN_FACTOR;
-__exports["DEADWEIGHT_FACTOR"] = DEADWEIGHT_FACTOR;
-__exports["KELP_BRAID_FACTOR"] = KELP_BRAID_FACTOR;
-__exports["SPLIT_FANG_SPAN"] = SPLIT_FANG_SPAN;
-__exports["SEAWOLF_KNOCK_FACTOR"] = SEAWOLF_KNOCK_FACTOR;
-__exports["HAGSTONE_CHANCE"] = HAGSTONE_CHANCE;
-__exports["STRANDWALKER_EVERY"] = STRANDWALKER_EVERY;
-__exports["DRY_KINDLING_FACTOR"] = DRY_KINDLING_FACTOR;
-__exports["GULLS_TALLY_FACTOR"] = GULLS_TALLY_FACTOR;
-__exports["CHANDLER_FACTOR"] = CHANDLER_FACTOR;
-__exports["QUARTERMASTER_BONUS"] = QUARTERMASTER_BONUS;
-__exports["COILROPE_RANGE"] = COILROPE_RANGE;
-__exports["PRESSURE_SCAR_FACTOR"] = PRESSURE_SCAR_FACTOR;
-__exports["CARVE_TIDE_TURNS"] = CARVE_TIDE_TURNS;
-__exports["CARVE_PRICE"] = CARVE_PRICE;
-__exports["BOSUN_FACTOR"] = BOSUN_FACTOR;
-__exports["LANTERN_RADIUS"] = LANTERN_RADIUS;
-__exports["WRECK_GLIMMER_PERIOD"] = WRECK_GLIMMER_PERIOD;
-__exports["WRECK_GLIMMER_ON"] = WRECK_GLIMMER_ON;
-__exports["WRECK_GLIMMER_ALPHA"] = WRECK_GLIMMER_ALPHA;
-__exports["CHARM_LOW_ESSENCES"] = CHARM_LOW_ESSENCES;
-__exports["CHARM_HIGH_ESSENCES"] = CHARM_HIGH_ESSENCES;
-__exports["CHARM_CASE_ESSENCES"] = CHARM_CASE_ESSENCES;
 });
 
 /* ===== src/game/tide.js ===== */
@@ -27687,6 +27915,35 @@ const TRACKS = {
       A: {
         p1: 'E5 .  G5 .  B5 .  E6 -  -  -  -  -  .  .  .  .',
         p2: 'G4 .  B4 .  E5 .  G5 -  -  -  -  -  .  .  .  .',
+      },
+    },
+    order: ['A'],
+  },
+
+  // S6 AUDITION TRACK — not part of the game, and nothing wires it to a
+  // room or map. It exists only so the three new engine techniques can be
+  // heard in isolation, one at a time, without recomposing any of the 22
+  // tracks above: `game.audio.init(); game.audio.play('engineDemo')` from
+  // the dev console. S7 owns actual composition and may delete this once the
+  // techniques are in real use elsewhere.
+  //
+  //   p1  a held lead: listen for the wobble settling in partway through
+  //       each 2-beat note, never gliding — that is vibrato.
+  //   p2  writes NO pattern text at all here, so the engine fills it from
+  //       cfg.p2.echo: the same line, two rows behind and quieter — echo.
+  //   wav a held chord token ('C3+E3+G3'): one oscillator cycling through
+  //       three pitches fast enough to read as a chord — arpeggio.
+  engineDemo: {
+    bpm: 100, rowsPerBeat: 4, loop: true,
+    cfg: {
+      p1: { duty: 0.5, vol: 0.18, decay: 0.3, vibrato: { depth: 0.35 } },
+      p2: { duty: 0.25, vol: 0.12, decay: 0.2, echo: { of: 'p1' } },
+      wav: { vol: 0.22, decay: 0.15 },
+    },
+    patterns: {
+      A: {
+        p1:  'C4 -  -  -  -  -  -  -  E4 -  -  -  -  -  -  -  G4 -  -  -  -  -  -  -  C5 -  -  -  -  -  -  -',
+        wav: 'C3+E3+G3 -  -  -  -  -  -  -  .  .  .  .  .  .  .  .  A2+C3+E3 -  -  -  -  -  -  -  .  .  .  .  .  .  .  .',
       },
     },
     order: ['A'],

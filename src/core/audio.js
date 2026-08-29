@@ -26,14 +26,51 @@
 //
 // Token grammar (whitespace separated):
 //   'C4' 'C#4' 'Db4'  start a note at that pitch
-//   '-'               hold the previous note through this row
+//   'C4+E4+G4'        a CHORD token: arpeggiate through the notes on this one
+//                      channel, cycling at ARPEGGIO_STEP_FRAMES. Real hardware
+//                      has no polyphony; this is how the source games fake a
+//                      chord on a single channel, and it is why this is the
+//                      per-NOTE technique — plain notes on the same channel are
+//                      unaffected, only a token you write with '+' arpeggiates.
+//   '-'               hold the previous note (or arpeggio) through this row
 //   '.'               silence from this row
 //   noise channel:    'x' kick, 's' snare, 'h' closed hat, 'H' open hat, 'c' crash
 //
 // Rows are looked up per-pattern; a channel may be omitted or shorter than the
 // pattern's longest channel, in which case it is silent for the remainder.
+//
+// cfg per channel also takes two more (optional, S6) techniques, both
+// PER-CHANNEL rather than per-note:
+//
+//   vibrato: { delayFrames, stepFrames, depth }
+//     A pitch wobble on notes the channel holds long enough to reach
+//     `delayFrames` (the source almost never wobbles from the attack). It
+//     STEPS on a `stepFrames` grid via repeated `setValueAtTime` calls, never
+//     a continuous ramp — real hardware retriggers pitch on a frame grid, and
+//     a smooth LFO reads as a synth pad, not a Game Boy. `depth` is in
+//     semitones above/below the written pitch. Defaults come from feel.js
+//     (VIBRATO_DELAY_FRAMES/STEP_FRAMES/DEPTH_SEMITONES) — it is a timing
+//     constant (R3). It is "per-note" in effect anyway: the delay is measured
+//     from each note's own onset, so a channel with vibrato configured only
+//     ever wobbles the notes actually held long enough, never a passing stab.
+//
+//   echo: { of: 'p1', rows: 2, volMul: 0.45 }
+//     The classic quieter, delayed repeat of another channel's line — usually
+//     the lead on the second pulse channel. This is a CHANNEL CONFIG, not a
+//     pattern-authoring convention: hand-copying the lead line into p2's
+//     pattern text with a row offset would double the pattern data and let
+//     the two drift the moment either is edited, and `rows` is expressed in
+//     ROWS (not a feel.js frame count) because the delay has to track the
+//     track's own tempo — an eighth-note echo is a different frame count at
+//     88bpm than at 132bpm, and rows are already the track's native clock.
+//     Only usable on a channel whose PATTERN OMITS that channel entirely for
+//     the pattern in question (an authored token always wins) — see
+//     `_echoEvent` in this file.
+//
+// The noise channel is percussion only and takes none of the above.
 
 import { Stream } from './rng.js';
+import { VIBRATO_DELAY_FRAMES, VIBRATO_STEP_FRAMES, VIBRATO_DEPTH_SEMITONES, ARPEGGIO_STEP_FRAMES } from '../data/feel.js';
 
 const NOTE_BASE = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
 
@@ -85,15 +122,57 @@ const DRUMS = {
   c: { freq: 3400, sweep: 2600, dur: 0.34, q: 0.7, gain: 0.5 },          // crash
 };
 
-const DEFAULT_CFG = {
+// Exported so tools/check-music.mjs merges channel cfg the same way the
+// engine does, instead of keeping a second copy of the defaults that could
+// drift from these (the same reason a checker must call the engine's own
+// collision code rather than re-deriving it).
+export const DEFAULT_CFG = {
   p1: { duty: 0.5, vol: 0.20, decay: 0.10, glide: 0 },
   p2: { duty: 0.25, vol: 0.13, decay: 0.14, glide: 0 },
   wav: { vol: 0.24, decay: 0.05, glide: 0 },
   noi: { vol: 0.15 },
 };
 
+// `rows`/`volMul` defaults for an echo channel. Deliberately not in feel.js —
+// see the `echo` comment in the header above.
+const ECHO_DEFAULT = { rows: 2, volMul: 0.45 };
+
+/** The frequency range a vibrato-configured note swings across, so a checker
+ *  can validate the SWUNG extreme rather than just the written pitch. */
+export function vibratoRange(freq, vcfg) {
+  const depth = (vcfg && vcfg.depth) ?? VIBRATO_DEPTH_SEMITONES;
+  return { min: freq * Math.pow(2, -depth / 12), max: freq * Math.pow(2, depth / 12) };
+}
+
 function tokens(s) {
   return s ? s.trim().split(/\s+/) : [];
+}
+
+// Parses one pattern-row token into a scheduling event. Shared by the normal
+// per-channel path and, indirectly, by check-music.mjs's chord validation —
+// see the '+' case, the arpeggio's per-NOTE token (S6's MUSIC FORMAT comment).
+function parseToken(tok) {
+  if (tok === undefined) return { kind: 'undef' };
+  if (tok === '.') return { kind: 'off' };
+  if (tok === '-') return { kind: 'hold' };
+  if (tok.indexOf('+') !== -1) {
+    const freqs = tok.split('+').map(noteFreq);
+    if (freqs.length > 1 && freqs.every(f => f > 0)) return { kind: 'on', freq: freqs[0], chord: freqs };
+    return { kind: 'hold' };
+  }
+  const f = noteFreq(tok);
+  return f > 0 ? { kind: 'on', freq: f } : { kind: 'hold' };
+}
+
+// A pattern's channel key can be entirely absent from a shorter channel, or
+// past its own token count — both cases used to be an inline `undefined ||
+// '.'` check. `parseToken` returns 'undef' for a missing token; this turns
+// that into the ORIGINAL rule for what happens next: cut the voice only on
+// row 0 (matches a channel that never had anything to say this pattern),
+// otherwise leave a still-ringing note alone instead of a channel that ran
+// out of authored rows early.
+function resolveEvent(raw, row) {
+  return raw.kind === 'undef' ? { kind: row === 0 ? 'off' : 'hold' } : raw;
 }
 
 export class Audio {
@@ -113,18 +192,29 @@ export class Audio {
     this._orderIdx = 0;
     this._held = { p1: null, p2: null, wav: null };
     this._voices = { p1: null, p2: null, wav: null };
+    // Recent per-channel row events (kind + freq), pruned to a small window.
+    // This is the only thing an echo channel reads — see `_echoEvent`.
+    this._rowLog = { p1: [], p2: [], wav: [] };
+    this._globalRow = 0;
     this._jingle = null;
     this._pendingTrack = undefined;
     this._fade = 1;
   }
 
-  /** Must be called from a user gesture (browser autoplay policy). */
-  init() {
+  /** Must be called from a user gesture (browser autoplay policy) for real
+   *  playback. `ctxOverride` lets a render/test harness pass in an
+   *  OfflineAudioContext instead, so it exercises this exact setup path
+   *  rather than a second copy of it. */
+  init(ctxOverride) {
     if (this.ctx) { if (this.ctx.state === 'suspended') this.ctx.resume(); return this.ok; }
     try {
-      const AC = window.AudioContext || window.webkitAudioContext;
-      if (!AC) return false;
-      this.ctx = new AC();
+      let ctx = ctxOverride;
+      if (!ctx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return false;
+        ctx = new AC();
+      }
+      this.ctx = ctx;
       this.master = this.ctx.createGain();
       this.master.gain.value = 0.9;
       this.master.connect(this.ctx.destination);
@@ -202,6 +292,10 @@ export class Audio {
       if (v) { this._endVoice(v); this._voices[ch] = null; }
       this._held[ch] = null;
     }
+    // A fresh track start is a fresh echo phase — an echo channel reading
+    // stale rows from whatever last played would repeat the wrong lead.
+    this._rowLog = { p1: [], p2: [], wav: [] };
+    this._globalRow = 0;
   }
 
   _endVoice(v) {
@@ -272,15 +366,24 @@ export class Audio {
 
     const cfg = t.cfg || {};
     for (const ch of ['p1', 'p2', 'wav']) {
-      const toks = tokens(pat[ch]);
-      const tok = toks[this._row];
-      if (tok === undefined || tok === '.') {
-        if (tok !== undefined || this._row === 0) this._noteOff(ch, time);
-        continue;
+      const chCfg = { ...DEFAULT_CFG[ch], ...(cfg[ch] || {}) };
+      // An echo channel has NO pattern text of its own for this pattern — an
+      // authored token always wins, even a lone rest, which is why this only
+      // triggers when the whole channel key is absent (see the `echo`
+      // comment in this file's header).
+      const ev = (pat[ch] === undefined && chCfg.echo)
+        ? this._echoEvent({ ...ECHO_DEFAULT, ...chCfg.echo })
+        : resolveEvent(parseToken(tokens(pat[ch])[this._row]), this._row);
+      this._logRow(ch, ev);
+      if (ev.kind === 'off') this._noteOff(ch, time);
+      else if (ev.kind === 'on') {
+        // A quieter repeat, per the `echo` comment: the echo channel's own
+        // vol is its pre-attenuation level, and volMul is the "quieter" in
+        // "quieter, delayed repeat".
+        const onCfg = ev.echoVolMul ? { ...chCfg, vol: (chCfg.vol ?? 0.18) * ev.echoVolMul } : chCfg;
+        this._noteOn(ch, ev.freq, time, rowDur, onCfg, ev.chord);
       }
-      if (tok === '-') continue;               // hold
-      const f = noteFreq(tok);
-      if (f > 0) this._noteOn(ch, f, time, rowDur, { ...DEFAULT_CFG[ch], ...(cfg[ch] || {}) });
+      else this._sustainRow(ch, time, rowDur);  // hold: keep vibrato/arpeggio ticking, otherwise no-op
     }
     const ntoks = tokens(pat.noi);
     const nt = ntoks[this._row];
@@ -288,6 +391,39 @@ export class Audio {
       this._drum(nt, time, { ...DEFAULT_CFG.noi, ...(cfg.noi || {}) });
     }
     this._row++;
+    this._globalRow++;
+  }
+
+  /** What an echo channel plays this row: whatever its source channel did
+   *  `rows` rows ago. Reads `_rowLog` only — it never re-derives note
+   *  scheduling, it replays what actually happened. */
+  _echoEvent(echoCfg) {
+    const log = this._rowLog[echoCfg.of];
+    if (!log) return { kind: 'hold' };
+    const targetRow = this._globalRow - echoCfg.rows;
+    const hit = log.find(e => e.row === targetRow);
+    if (!hit) return { kind: 'hold' };
+    return hit.kind === 'on'
+      ? { kind: 'on', freq: hit.freq, echoVolMul: echoCfg.volMul }
+      : { kind: hit.kind };
+  }
+
+  _logRow(ch, ev) {
+    const log = this._rowLog[ch];
+    log.push({ row: this._globalRow, kind: ev.kind, freq: ev.freq || 0 });
+    if (log.length > 64) log.shift();
+  }
+
+  /** A row where a channel neither starts nor stops a note (a '-' hold, or a
+   *  pattern that has simply run out of tokens for it). The original engine
+   *  did nothing at all here; this is the hook that lets a still-ringing
+   *  voice keep stepping its vibrato or arpeggio — it is a no-op for any
+   *  voice that has neither. */
+  _sustainRow(ch, time, rowDur) {
+    const v = this._voices[ch];
+    if (!v) return;
+    if (v.vibrato) this._scheduleVibrato(ch, time, rowDur);
+    if (v.arp) this._scheduleArp(ch, time, rowDur);
   }
 
   _noteOff(ch, time) {
@@ -301,7 +437,7 @@ export class Audio {
     this._voices[ch] = null;
   }
 
-  _noteOn(ch, freq, time, rowDur, c) {
+  _noteOn(ch, freq, time, rowDur, c, chord) {
     this._noteOff(ch, time);
     const ctx = this.ctx;
     const osc = ctx.createOscillator();
@@ -321,7 +457,59 @@ export class Audio {
     gain.connect(this.musicBus);
     osc.start(time);
     osc.stop(time + rowDur * 64);           // safety stop; normally cut by _noteOff
-    this._voices[ch] = { osc, gain };
+    const voice = {
+      osc, gain, baseFreq: freq, onsetTime: time,
+      vibrato: c.vibrato || null,
+      arp: (chord && chord.length > 1) ? { notes: chord } : null,
+    };
+    this._voices[ch] = voice;
+    // Neither of these does anything unless the channel's cfg actually asked
+    // for it, so a track that never sets `vibrato`/a chord token never pays
+    // for this — see the byte-identical-render proof in tools/test.mjs.
+    if (voice.vibrato) this._scheduleVibrato(ch, time, rowDur);
+    if (voice.arp) this._scheduleArp(ch, time, rowDur);
+  }
+
+  /** Steps a held note's pitch up/down on a frame grid — never a smooth ramp,
+   *  which is this session's whole failure condition (see the header
+   *  comment). Stateless: it recomputes the step phase from `onsetTime` on
+   *  every call, so calling it once per row from both `_noteOn` and
+   *  `_sustainRow` cannot drift or double-schedule a step. */
+  _scheduleVibrato(ch, time, rowDur) {
+    const v = this._voices[ch];
+    const cfg = v.vibrato;
+    const stepSec = (cfg.stepFrames ?? VIBRATO_STEP_FRAMES) / 60;
+    const delaySec = (cfg.delayFrames ?? VIBRATO_DELAY_FRAMES) / 60;
+    const depth = cfg.depth ?? VIBRATO_DEPTH_SEMITONES;
+    const start = v.onsetTime + delaySec;
+    const rowEnd = time + rowDur;
+    if (start >= rowEnd) return;    // hasn't earned the wobble yet this row
+    const from = Math.max(time, start);
+    let n = Math.max(0, Math.ceil((from - start) / stepSec - 1e-9));
+    let stepTime = start + n * stepSec;
+    let guard = 0;
+    while (stepTime < rowEnd && guard++ < 32) {
+      const dir = (n % 2 === 0) ? 1 : -1;
+      v.osc.frequency.setValueAtTime(v.baseFreq * Math.pow(2, (dir * depth) / 12), Math.max(stepTime, time));
+      n++; stepTime = start + n * stepSec;
+    }
+  }
+
+  /** Cycles a chord token's notes on one channel — the per-NOTE technique,
+   *  since only a token written with '+' ever reaches this. Stateless in the
+   *  same way as vibrato, phased from the note's own onset. */
+  _scheduleArp(ch, time, rowDur) {
+    const v = this._voices[ch];
+    const notes = v.arp.notes;
+    const stepSec = ARPEGGIO_STEP_FRAMES / 60;
+    const rowEnd = time + rowDur;
+    let n = Math.max(0, Math.ceil((time - v.onsetTime) / stepSec - 1e-9));
+    let stepTime = v.onsetTime + n * stepSec;
+    let guard = 0;
+    while (stepTime < rowEnd && guard++ < 32) {
+      v.osc.frequency.setValueAtTime(notes[n % notes.length], Math.max(stepTime, time));
+      n++; stepTime = v.onsetTime + n * stepSec;
+    }
   }
 
   _drum(kind, time, c) {
@@ -360,7 +548,7 @@ export class Audio {
   //
   // SFX FORMAT: { type, ... }
   //   { type:'blip',  freq, freq2, dur, duty, vol }        pitch sweep pulse
-  //   { type:'arp',   notes:['C5','E5','G5'], step, dur, duty, vol }
+  //   { type:'arp',   notes:['C5', 'E5', 'G5'], step, dur, duty, vol }
   //   { type:'noise', freq, freq2, dur, q, vol, lp }       filtered noise burst
   //   { type:'chord', notes:[...], dur, duty, vol }
   //   { type:'multi', parts:[ {delay, ...sfx} ] }

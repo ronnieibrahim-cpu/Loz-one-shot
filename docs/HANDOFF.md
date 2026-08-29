@@ -447,6 +447,42 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+**WEB AUDIO'S OWN RENDERING IS NOT BIT-REPRODUCIBLE ACROSS SCRIPT CONTEXTS —
+HASH THE INSTRUCTIONS, NOT THE SAMPLES.** S6 needed to prove that a track using
+none of the new vibrato/echo/arpeggio options renders byte-identically after
+the engine change. The obvious approach — render real PCM through an
+`OfflineAudioContext` in headless Chromium and hash the samples — FAILED even
+for two runs of the exact same unmodified code: the same track hashed
+differently between two separate `browser.newPage()` calls in the same
+browser process, while a coarser "sum of absolute sample values" stayed stable
+to about six significant digits. The browser's own DSP internals (float
+rounding order inside oscillator/periodic-wave synthesis) are not specified to
+be reproducible across page/script contexts, so a sample hash flags a false
+regression on completely unrelated code — a checker that cries wolf on
+unrelated commits gets ignored, which is worse than not having it. The fix:
+`Audio.init()` now takes an optional `ctxOverride`, so a checker can hand it a
+tiny **mock** context (createGain/createOscillator/etc. return objects that
+just record what was called on them) and run entirely in plain Node — no
+browser, no DSP, pure deterministic arithmetic. Comparing the SEQUENCE of
+`setValueAtTime`/`start`/`stop` calls a track schedules is what actually
+determines the sound; the browser's contribution from there on was never what
+changed. See `tools/check-audio-render.mjs`. Cross-checked once by hand against
+the pre-S6 commit: with this instruction-trace method, all 22 pre-S6 tracks
+matched byte-for-byte; with the sample-hash method, every single one of them
+falsely "differed", including tracks with zero relevant code changes.
+
+**A `git checkout -- <file>` MID-SESSION IS A REAL REVERT, EVEN WHEN YOU MEANT
+TO UNDO ONE LINE.** `T54` already says this and S6 paid for it again: a
+one-line `sed` edit was made to `src/core/audio.js` to verify the new
+render-trace checker actually detects a regression, and `git checkout --
+src/core/audio.js` was used to "undo" it — which discarded the ENTIRE file back
+to its pre-session state, silently deleting every S6 engine change (vibrato,
+echo, arpeggio, the whole `_scheduleRow` restructuring) along with the one
+line that was actually meant to go. It was recoverable only because the full
+file content had just been read into context moments earlier and could be
+reconstructed exactly. **Save a patch or just re-apply the one line with Edit;
+never reach for `git checkout` to undo a change smaller than the whole file.**
+
 **A MEASUREMENT TOOL THAT MISREPORTS A WIN AS A LOSS COSTS MORE THAN NO TOOL.**
 S5 opened by re-measuring all six bosses and found that **two of them were
 already being won** while `measure-boss-combat.mjs` reported

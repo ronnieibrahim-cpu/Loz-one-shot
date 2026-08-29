@@ -674,6 +674,35 @@ const TRACKS = {
     },
     order: ['A'],
   },
+
+  // S6 AUDITION TRACK — not part of the game, and nothing wires it to a
+  // room or map. It exists only so the three new engine techniques can be
+  // heard in isolation, one at a time, without recomposing any of the 22
+  // tracks above: `game.audio.init(); game.audio.play('engineDemo')` from
+  // the dev console. S7 owns actual composition and may delete this once the
+  // techniques are in real use elsewhere.
+  //
+  //   p1  a held lead: listen for the wobble settling in partway through
+  //       each 2-beat note, never gliding — that is vibrato.
+  //   p2  writes NO pattern text at all here, so the engine fills it from
+  //       cfg.p2.echo: the same line, two rows behind and quieter — echo.
+  //   wav a held chord token ('C3+E3+G3'): one oscillator cycling through
+  //       three pitches fast enough to read as a chord — arpeggio.
+  engineDemo: {
+    bpm: 100, rowsPerBeat: 4, loop: true,
+    cfg: {
+      p1: { duty: 0.5, vol: 0.18, decay: 0.3, vibrato: { depth: 0.35 } },
+      p2: { duty: 0.25, vol: 0.12, decay: 0.2, echo: { of: 'p1' } },
+      wav: { vol: 0.22, decay: 0.15 },
+    },
+    patterns: {
+      A: {
+        p1:  'C4 -  -  -  -  -  -  -  E4 -  -  -  -  -  -  -  G4 -  -  -  -  -  -  -  C5 -  -  -  -  -  -  -',
+        wav: 'C3+E3+G3 -  -  -  -  -  -  -  .  .  .  .  .  .  .  .  A2+C3+E3 -  -  -  -  -  -  -  .  .  .  .  .  .  .  .',
+      },
+    },
+    order: ['A'],
+  },
 };
 
 export function installAudio() {

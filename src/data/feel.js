@@ -1208,3 +1208,37 @@ export const CHARM_HIGH_ESSENCES = 4;
 
 /** essences before every case takes two charms. derived, as above. */
 export const CHARM_CASE_ESSENCES = 6;
+
+// ---------------------------------------------------------------------------
+// Music engine — vibrato and arpeggio (S6)
+// ---------------------------------------------------------------------------
+//
+// Echo's own delay is deliberately NOT here — it is expressed in ROWS, not
+// frames, because it has to track each track's own tempo (see the comment on
+// `echo` in src/core/audio.js). These two techniques wobble or cycle a pitch
+// in real time regardless of tempo, so frames are the right unit and R3 says
+// they belong in this file like any other timing constant.
+
+/** f — frames a held note rings before vibrato engages. guessed. The source
+ *  games almost never wobble a note from the moment it is struck; the wobble
+ *  is something a SUSTAINED note earns, not an attack transient. */
+export const VIBRATO_DELAY_FRAMES = 10;
+
+/** f — frames per vibrato pitch step. guessed. This is a STEP interval, not a
+ *  smoothing time: the hardware retriggers pitch on a frame grid rather than
+ *  gliding, so the engine re-issues `setValueAtTime` on this grid instead of
+ *  ramping — see `_scheduleVibrato`. Do not "fix" this into a ramp; that is
+ *  this session's own failure condition. */
+export const VIBRATO_STEP_FRAMES = 4;
+
+/** semitones — how far a vibrato step swings above and below the written
+ *  pitch. guessed. `check-music.mjs` validates the SWUNG extreme (written
+ *  pitch times this depth) against each channel's real frequency range, not
+ *  just the written note, because depth can push a high note out of range at
+ *  the top of its swing even when the note itself is legal. */
+export const VIBRATO_DEPTH_SEMITONES = 0.18;
+
+/** f — frames per arpeggio step, cycling a chord token's notes on one
+ *  channel to stand in for polyphony the hardware does not have. guessed;
+ *  fast enough to read as one chord rather than a scale run. */
+export const ARPEGGIO_STEP_FRAMES = 3;

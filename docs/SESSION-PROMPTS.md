@@ -29,7 +29,7 @@ doing the session.
 | ~~S3~~ | ~~Terrain extraction: edges and towns~~ | Opus | S2 | **PARTLY DONE — 2 of 4 jobs; see `docs/NEXT-SESSION.md`** |
 | ~~S4~~ | ~~Sound coverage and the sfx checker~~ | Sonnet | S1 | **DONE — awaiting your ear.** See `docs/NEXT-SESSION.md` |
 | ~~S5~~ | ~~Bosses winnable by design~~ | Opus | S1 | **DONE — awaiting your play.** See `docs/NEXT-SESSION.md` |
-| S6 | Music engine: vibrato, echo, arpeggio | Sonnet | S4 | Yes (listen) |
+| ~~S6~~ | ~~Music engine: vibrato, echo, arpeggio~~ | Sonnet | S4 | **DONE — awaiting your ear.** See `docs/NEXT-SESSION.md` |
 | S7 | Music composition: intros and forms | Opus | S6 | **Critical** |
 | S8 | Overworld map becomes a picture | Opus | S2, S3 | Yes |
 | S9 | Townspeople react (half session) | Opus | S5 | Yes (read) |
@@ -355,6 +355,31 @@ prove a fight is finishable *by a robot*, which is a different claim.
 ---
 
 ## S6 — Music engine: vibrato, echo and arpeggio
+
+> **DONE.** All three techniques are in `src/core/audio.js`, data-driven per
+> the file's own header comment: vibrato (`cfg.<ch>.vibrato`) steps pitch on a
+> frame grid via repeated `setValueAtTime`, never a ramp; echo
+> (`cfg.<ch>.echo`) is a channel config that replays another channel's line
+> `rows` rows later and quieter, reading only what actually played
+> (`_rowLog`/`_echoEvent`) rather than re-deriving it; arpeggio is a per-note
+> `'C4+E4+G4'` chord token that cycles on one channel. All three defaults
+> (`VIBRATO_DELAY_FRAMES`/`STEP_FRAMES`/`DEPTH_SEMITONES`,
+> `ARPEGGIO_STEP_FRAMES`) live in `feel.js` per `R3`. None of the 22 existing
+> tracks were touched or asked to use any of it — a new `engineDemo` track
+> exists purely to audition the three techniques
+> (`game.audio.init(); game.audio.play('engineDemo')` from the dev console).
+> `check-music.mjs` now validates a vibrato note's SWUNG extreme and every
+> note of a chord token, and a new checker, `check-audio-render.mjs` (`V20`),
+> proves the shared scheduling path is byte-identical for every track that
+> asks for none of the new options — cross-checked once by hand against the
+> pre-S6 commit. **That checker traces Web Audio INSTRUCTIONS in a mock
+> context rather than hashing rendered samples, because real
+> `OfflineAudioContext` rendering turned out not to be bit-reproducible
+> across script contexts even for identical code (`T71`)** — the first
+> approach tried here, and it would have flagged unrelated future commits as
+> breaking the music. **Whether the vibrato sounds like a Game Boy or a
+> synthesiser is unjudged (`§4.2`)** — see `docs/NEXT-SESSION.md` for what to
+> listen for.
 
 **Goal:** `src/core/audio.js` grows the three channel techniques the source games
 lean on, so S7 has something to compose with.

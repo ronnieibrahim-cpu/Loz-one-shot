@@ -1,3 +1,105 @@
+## S6 — Music engine: vibrato, echo, arpeggio (this session)
+
+**Run per `docs/SESSION-PROMPTS.md` S6, on top of S4.** `src/core/audio.js`
+grew the three channel techniques the source games lean on constantly.
+Nothing in `dBoss`, `bosses.js`, room data or item logic was touched — this is
+purely the audio engine plus `feel.js` constants plus two checkers.
+
+### What was built
+
+- **Vibrato** — `cfg.<channel>.vibrato = { delayFrames, stepFrames, depth }`.
+  A held note's pitch steps up/down by `depth` semitones on a `stepFrames`
+  grid via repeated `osc.frequency.setValueAtTime` calls (never a ramp —
+  that was the session's stated failure condition), starting only once
+  `delayFrames` have passed since the note's own onset. Defaults
+  (`VIBRATO_DELAY_FRAMES` 10f, `VIBRATO_STEP_FRAMES` 4f,
+  `VIBRATO_DEPTH_SEMITONES` 0.18) are in `feel.js`, all `guessed`.
+- **Echo** — `cfg.<channel>.echo = { of: 'p1', rows, volMul }`. A CHANNEL
+  CONFIG, not hand-copied pattern text: the echoing channel must omit its own
+  pattern text for that pattern entirely, and the engine replays whatever the
+  source channel actually did `rows` rows earlier (default 2), at the echo
+  channel's own configured volume times `volMul` (default 0.45). It reads a
+  small `_rowLog` of what already happened rather than re-deriving anything.
+- **Arpeggio** — a chord token written `'C4+E4+G4'` in ANY pattern string
+  cycles through those notes on that one channel at `ARPEGGIO_STEP_FRAMES`
+  (3f, `feel.js`, `guessed`). This is the one PER-NOTE technique: a plain
+  note on the same channel is unaffected, only a token with `+` arpeggiates.
+- **`check-music.mjs`** now also validates a vibrato-configured note's SWUNG
+  extreme (not just its written pitch) against the channel's real frequency
+  range, and validates every note inside a `+` chord token the same way a
+  plain note is checked.
+- **`check-audio-render.mjs` (new, `V20`)** proves the shared scheduling path
+  is unchanged: it traces the exact sequence of Web Audio calls
+  (`setValueAtTime`/`start`/`stop`) a track schedules, against a recorded
+  baseline (`tools/audio-render-baseline.json`), using a tiny mock
+  `AudioContext` in plain Node — no browser. `Audio.init()` now takes an
+  optional context override for exactly this. **Why not just render real
+  audio and hash the samples:** that was tried first and failed even for two
+  runs of identical code — real `OfflineAudioContext` rendering is not
+  bit-reproducible across separate script/page contexts in the same browser.
+  See `T71` and `docs/HANDOFF.md`. This tool is wired into `tools/test.mjs`
+  (`V16`) the same way `check-sfx.mjs` is.
+- A new in-browser test block in `tools/test.mjs` (`--- music engine: vibrato,
+  echo, arpeggio ---`) builds three tiny synthetic tracks (one per technique)
+  and asserts the actual scheduled frequencies/timings/gains are correct —
+  not just "unchanged", but "does what it says": no wobble before the delay,
+  alternating up/down steps at the exact configured depth and frame spacing,
+  the echo channel repeating the lead's exact pitches at the exact delay and
+  a quieter (but present) gain peak, and the arpeggio cycling the chord in
+  order on the exact frame grid.
+- **None of the 22 pre-S6 tracks were touched.** A 23rd track, `engineDemo`,
+  was added purely to audition the three techniques — it is NOT wired to any
+  room or map and does not count as "the game's music"; S7 (composition)
+  should feel free to delete or repurpose it once real tracks use these
+  techniques.
+
+### Cross-check performed this session (not a permanent tool, just a proof)
+
+Checked out commit `64a6561` (pre-S6) into a git worktree and traced all 22
+pre-S6 tracks with the SAME mock-context instruction-tracer against both the
+old and new `src/core/audio.js`. **Every one matched byte-for-byte.** The
+naive sample-hash approach, tried first, reported all 22 as "different" —
+which is exactly the false-positive `T71` describes, not a real difference
+(confirmed by the instruction trace matching exactly).
+
+### What to listen for (`§4.2` — this is your call, not a checker's)
+
+Build is committed. Open `dist/oracle-of-tides.html`, open the browser dev
+console, and run:
+
+```js
+__game.audio.init();
+__game.audio.play('engineDemo');
+```
+
+It loops a ~4-second phrase. Listen for:
+
+1. **The lead (p1, a held triangle-ish pulse tone)** — does the wobble that
+   kicks in partway through each note read as a Game Boy vibrato (a stepped,
+   slightly buzzy waver) or as a smooth synth-pad LFO? If it sounds smooth,
+   `VIBRATO_STEP_FRAMES` (4f) is too fast relative to the ear's ability to
+   hear the steps — try doubling it first.
+2. **The echoed voice (p2)**, which should sound like a quieter, slightly
+   delayed shadow of the lead, not a separate harmony line.
+3. **The bass (wav channel)** holding a chord — does the arpeggio read as one
+   chord, or as an audibly separate scale run? If the latter,
+   `ARPEGGIO_STEP_FRAMES` (3f) needs to come down.
+
+Also worth a quick sanity pass through the actual game (any town, any
+dungeon, the title screen) to confirm nothing sounds different there — it
+shouldn't, and `check-audio-render.mjs` says it doesn't, but your ear is the
+`§4.2` check a tool can't do.
+
+### Verification run this session
+
+`node tools/check-music.mjs` (23 tracks, 59 sfx, OK), `node
+tools/check-audio-render.mjs` (23 tracks traced, OK — and shown FAILING
+against a deliberately broken build first), `node tools/test.mjs` (78
+passed, 0 failed, including six new music-engine assertions), `node
+tools/replay.mjs` (51/51, **zero re-recording needed** — this change is
+audio-only and never touched simulation timing), `node
+tools/check-playthrough.mjs` (19/19), `node tools/check-build.mjs` (OK).
+
 ## S5 — Bosses: winnable by design, not by AI (this session)
 
 **Run per `docs/SESSION-PROMPTS.md` S5, on top of S4.** `dBoss` was not touched
