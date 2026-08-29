@@ -568,8 +568,17 @@ export class Game {
     if (tr.persist) this.persistTile(tx, ty, tr.to);
     const obj = new ThrownObject(tx * TILE, ty * TILE, {
       sprite: def.liftSprite || (name.startsWith('pot') ? 'o_pot' : 'rock16'),
-      pal: def.pal, vx: 0, vy: 0, z: 13, drops: tr.drop || 'none',
+      pal: def.pal, vx: 0, vy: 0, drops: tr.drop || 'none',
     });
+    // Player.updateMovement already lifts the held sprite by CARRY_HEIGHT via
+    // its y each frame (`this.carrying.y = this.y - CARRY_HEIGHT`).
+    // Entity.draw ALSO subtracts `z`, so leaving a nonzero z here stacked a
+    // second lift on top of the first and drew the object ~26px above Link
+    // instead of 13 — visibly detached over his head. Held height has
+    // exactly one owner: CARRY_HEIGHT. z comes back at throw time
+    // (Player.throwCarried sets z: CARRY_HEIGHT explicitly), where it starts
+    // the arc at carry height.
+    obj.z = 0;
     obj.vz = 0;
     obj.carried = true;
     obj.update = function (game) {
