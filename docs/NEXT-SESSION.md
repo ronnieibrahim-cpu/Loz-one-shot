@@ -1,4 +1,93 @@
-## Charge dodge lands, ranged dodge doesn't — the boss verb, continued (this session)
+## Opening-edge grace tried and reverted — same instability, new mechanism (this session)
+
+**Still not a win, and nothing shipped.** This session tested the first item
+on the previous board — "reduce chip damage without the disruption cost" —
+from a different angle than the reverted per-shot dodge, and found the same
+instability under a different name.
+
+**The idea.** `open()` and a windUp attack's own shot spread fire out of the
+same pending callback (`gohmaraqSlam`, `src/data/bosses.js`): the eye reads
+open on the exact frame the rock spray leaves the claw. `dBoss`'s "no invuln
+banked: close the distance" branch reads `weakOpen` and immediately beelines
+toward the boss — which, on the frame the eye just opened, can walk the
+player straight back through a shot that is still in flight and aimed at
+wherever they were standing a frame earlier. The fix tried: hold clear
+(retreat) for `OPEN_GRACE` frames on the RISING EDGE of `weakOpen` only (not
+the whole open window — that would just give up hits), tracked generically
+off `weakOpen`'s own transition rather than any one boss's attack, matching
+the file's stated rule against per-boss scripting.
+
+**Measured, swept over `OPEN_GRACE` on the one seed this repo can currently
+measure (20260806, 12 quarter-hearts, no god mode):**
+
+| `OPEN_GRACE` | boss dmg dealt | frame of death |
+|---|---|---|
+| 0 (baseline, unchanged) | 10/24 | 796 |
+| 10 | **4/24** | 636 |
+| 20 | 10/24 | 1475 |
+| 30 | 10/24 | 727 |
+| 40 | **8/24** | 624 |
+
+Only `20` ties the baseline's offensive output; `10`, `30` and `40` all deal
+*less* damage AND die faster than doing nothing. This is the same shape the
+previous session's `PROJ_SAFE` sweep (12/16/24) already found and reverted
+for (1-4 hits landed against a plain-retreat baseline of 5) — a small,
+deterministic combat sim where adding any reactive movement reshuffles the
+whole fight's timing, so one parameter value scoring best among five samples
+on a single seed is the sweep finding its own noise, not a real fix.
+**Picking 20 because it happened to win here would be exactly the mistake
+CLAUDE.md's own damage-ladder section warns against** ("shipping a 'safety'
+feature that measurably lands fewer hits is worse than not having it" — true
+here even though 20 *ties* rather than loses, because 10/30/40 show the
+mechanism itself is not reliably safe). Reverted; `tools/actor-runtime.mjs`
+is byte-identical to before this session (verified with `git diff`), and
+`check-bosses.mjs` is still 13/13 with unchanged numbers.
+
+**What this rules out, so it doesn't get retried blind:** any *generic*
+reactive hold/dodge keyed off a boss-state transition (`charging` worked
+because it's a clean latched boolean with nothing else touching it in the
+same frame; `weakOpen`'s rising edge is not clean the same way — it shares a
+frame with a shot spawn whose own trajectory is fixed at fire time, so
+"holding clear" changes WHEN the player re-enters range more than WHETHER
+they get hit, and the fight's determinism means that shift cascades). The
+next lever, if anyone returns to chip damage specifically, is probably not a
+movement change at all — see item 1 below for what's left unexplored.
+
+**Also confirmed while instrumenting:** direct `Boss.hurt`/`Player.
+takeDamage` hooks (rather than reading `g.progress.hearts`/`g.boss.hp` from
+outside) reproduce the documented baseline exactly — 5 sword hits, 24→14 hp,
+death to a ranged graze — which is worth keeping as the instrumentation
+pattern for whoever measures this fight next; it was rebuilt from scratch
+this session because no committed script does it (the previous session's
+numbers were produced by a scratch file, same as this session's).
+
+**Next session, in order — mostly unchanged, item 1 narrowed:**
+
+1. The melee trade is close to breakeven (10 hp dealt for 12 qh taken); two
+   generic reactive fixes (per-shot dodge, opening-edge grace) have now both
+   failed the same way — noise-sensitive, not a reliable win. Worth trying
+   instead: something that isn't a movement change at all, e.g. banking
+   MORE invuln margin specifically after taking a hit (chain fewer swings,
+   retreat further) rather than reacting to the boss's state pre-emptively;
+   or accept the melee trade as-is and look at whether 3 hearts is simply
+   short of what this fight needs (a design question CLAUDE.md's damage
+   ladder section already flags as coupled to this).
+2. The same-speed patrol problem (phase 3 speed 1.0 == WALK_SPEED) is STILL
+   unmeasured in real combat — every real-combat run so far (this session
+   included, boss dealt at most 10/24 = 42%) dies before reaching phase 3
+   (below 30% hp), so there has never been a real-combat sample of it. It
+   remains visible only in god mode's unlimited-aggression run.
+3. Once Gohmaraq is a measured win at 3 hearts, wire `dBoss` into
+   `playthrough-route.mjs` past `d1/0,3,2`, and only then look at the other
+   five bosses — Gloomtide's swimming-blocks-swinging finding in particular
+   needs a real tactic (sink with the Cleats first), not this generic verb.
+4. The Boss Key / third-key pass behind the Clawcrab door and the other five
+   dungeons' routes are both still undone and both still blocked on job 1
+   actually finishing.
+
+---
+
+## Charge dodge lands, ranged dodge doesn't — the boss verb, continued (previous session)
 
 **Still not a win.** Gohmaraq measured in real combat (12 quarter-hearts, no
 god mode, seed 20260806): five hits landed (24 -> 14 hp), same as last
