@@ -513,7 +513,7 @@ export class Anchor extends Entity {
     this.state = 'recall';
     this.flying = true;
     this.hit.clear();
-    game.audio.sfx('hookshot');
+    game.audio.sfx('reel');
     const p = game.player;
     if (p) p.reconcileWithTide(game);
   }
@@ -653,7 +653,10 @@ export class Reefseed extends Entity {
     // Snap to the tile it will become, so the bud and the pillar are the same
     // 16x16 cell and the growth does not appear to jump sideways.
     this.x = tx * TILE; this.y = ty * TILE;
-    game.audio.sfx('place');
+    // `seed` was defined and played by nothing, while the one verb in the game
+    // that plants a seed used the generic 'put it down'. The sound and the verb
+    // were both here the whole time and had never met.
+    game.audio.sfx('seed');
   }
 
   bloom(game) {
@@ -1088,7 +1091,7 @@ export const ITEMS = {
         } else {
           // Held in a room we are not standing in. It simply comes back.
           game.tide.removeOverride(held.id);
-          game.audio.sfx('hookshot');
+          game.audio.sfx('reel');
           p.reconcileWithTide(game);
         }
         return true;

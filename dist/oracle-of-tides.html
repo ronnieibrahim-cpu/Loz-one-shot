@@ -3103,6 +3103,22 @@ const ESSENCE_FREEZE_FRAMES = 150;
 /** f — how long the game-over screen holds before it accepts a button. guessed. */
 const GAMEOVER_WAIT_FRAMES = 100;
 
+// THE LOW-HEALTH PULSE.
+//
+// The game had no low-health warning at all — the one piece of feedback in
+// every Zelda that tells a player to stop and heal, and this game's hearts sat
+// silent all the way to zero.
+
+/** qh — quarter-hearts at or below which the pulse starts. guessed. Two full
+ *  hearts. Chosen against this game's damage ladder rather than the source's:
+ *  a boss's heavy hit is 3-4 qh here, so 8 is "one more mistake". */
+const LOW_HEART_THRESHOLD = 8;
+
+/** f — frames between pulses. guessed. Slow enough not to be a rattle and fast
+ *  enough to feel like a heartbeat; it is the tempo that makes this a warning
+ *  rather than an alarm, and it is the number to move first if it nags. */
+const LOW_HEART_EVERY = 40;
+
 // TEXT.
 //
 // These lived inside `src/game/dialogue.js` as bare literals for the whole life
@@ -3829,6 +3845,8 @@ __exports["PEGASUS_FRAMES"] = PEGASUS_FRAMES;
 __exports["ITEM_PRESENT_FRAMES"] = ITEM_PRESENT_FRAMES;
 __exports["ESSENCE_FREEZE_FRAMES"] = ESSENCE_FREEZE_FRAMES;
 __exports["GAMEOVER_WAIT_FRAMES"] = GAMEOVER_WAIT_FRAMES;
+__exports["LOW_HEART_THRESHOLD"] = LOW_HEART_THRESHOLD;
+__exports["LOW_HEART_EVERY"] = LOW_HEART_EVERY;
 __exports["TEXT_SPEED"] = TEXT_SPEED;
 __exports["TEXT_FAST_SCALE"] = TEXT_FAST_SCALE;
 __exports["TEXT_BEEP_EVERY"] = TEXT_BEEP_EVERY;
@@ -4295,6 +4313,13 @@ class Tide {
       g.room.drawAnim(this.snapshot.ctx, 0, 0, this, g.frame);
       g.room.drawOver(this.snapshot.ctx, 0, 0, this, g.frame);
       this.sweep = 1;
+      // THE SEA MAKES A NOISE. This file had zero audio calls of any kind, so
+      // the one mechanic the whole game is built on reshaped the world in
+      // silence — the conch sounded, and then the water moved without a sound.
+      // Only on a real sweep: `instant: true` is how a save is restored and how
+      // a boss pins the tide between phases, and neither of those is the sea
+      // visibly crossing the screen.
+      if (g.audio) g.audio.sfx('tideSweep');
     }
 
     this.level = next;
@@ -6207,7 +6232,7 @@ class Anchor extends Entity {
     this.state = 'recall';
     this.flying = true;
     this.hit.clear();
-    game.audio.sfx('hookshot');
+    game.audio.sfx('reel');
     const p = game.player;
     if (p) p.reconcileWithTide(game);
   }
@@ -6347,7 +6372,10 @@ class Reefseed extends Entity {
     // Snap to the tile it will become, so the bud and the pillar are the same
     // 16x16 cell and the growth does not appear to jump sideways.
     this.x = tx * TILE; this.y = ty * TILE;
-    game.audio.sfx('place');
+    // `seed` was defined and played by nothing, while the one verb in the game
+    // that plants a seed used the generic 'put it down'. The sound and the verb
+    // were both here the whole time and had never met.
+    game.audio.sfx('seed');
   }
 
   bloom(game) {
@@ -6782,7 +6810,7 @@ const ITEMS = {
         } else {
           // Held in a room we are not standing in. It simply comes back.
           game.tide.removeOverride(held.id);
-          game.audio.sfx('hookshot');
+          game.audio.sfx('reel');
           p.reconcileWithTide(game);
         }
         return true;
@@ -7047,6 +7075,9 @@ class Player extends Entity {
     }
     if (!this.inDeep && wasDeep) {
       game.spawnEffect('splash', this.x, this.y + 2);
+      // Entering the water was audible and leaving it was not, which made the
+      // sea sound like something you could only fall into.
+      game.audio.sfx('splash', { pitch: 1.2, vol: 0.8 });
     }
     if (this.inShallow && this.frame % WADE_FOAM_EVERY === 0) {
       game.spawnEffect('foam', this.x, this.y + 4, { life: 16 });
@@ -7312,6 +7343,12 @@ class Player extends Entity {
       toFx: sp(land.x), toFy: sp(land.y),
       t: 0, n: LEDGE_HOP_FRAMES,
     };
+    // Taking a ledge was silent going off it and only sounded on landing, so a
+    // drop had a thump with no push behind it. `jump` already exists and is the
+    // right voice, pitched down because this is a drop rather than a hop up.
+    // BOTH launch paths need it — there are two, and only one of them is the
+    // one you find by grepping for the function name.
+    game.audio.sfx('jump', { pitch: 0.85 });
     this.jumping = true;
     this.vz = 0;
     this.gliding = false;
@@ -7376,6 +7413,12 @@ class Player extends Entity {
       toFx: sp(land.x), toFy: sp(land.y),
       t: 0, n: LEDGE_HOP_FRAMES,
     };
+    // Taking a ledge was silent going off it and only sounded on landing, so a
+    // drop had a thump with no push behind it. `jump` already exists and is the
+    // right voice, pitched down because this is a drop rather than a hop up.
+    // BOTH launch paths need it — there are two, and only one of them is the
+    // one you find by grepping for the function name.
+    game.audio.sfx('jump', { pitch: 0.85 });
     this.jumping = true;
     this.vz = 0;
     this.gliding = false;
@@ -7721,7 +7764,7 @@ class Player extends Entity {
 
     if (this.bellowsT % BELLOWS_PUFF_EVERY === 0) {
       game.spawnEffect('foam', this.cx - 8 + dx * 14, this.cy - 8 + dy * 14, { life: 14 });
-      game.audio.sfx('swim');
+      game.audio.sfx('gust');
     }
     this.gust(game, dx, dy);
   }
@@ -9374,7 +9417,7 @@ class SunkenBell extends Entity {
   /** Called by ringResonance for every entity in earshot. */
   onRing(game) {
     this.chime = BELL_CHIME_FRAMES;
-    game.audio.sfx('secret');
+    game.audio.sfx('chime');
     if (!this.points) { game.say(this.say); return; }
     const tx = this.points[0] * TILE + 8, ty = this.points[1] * TILE + 8;
     const dx = tx - this.cx, dy = ty - this.cy;
@@ -11705,7 +11748,7 @@ const { Title } = __require("game/title.js");
 const { runCutscene, CUTSCENES } = __require("game/cutscene.js");
 const { Stream, seedGlobal, roomStream, noise1, rng: rngGlobal } = __require("core/rng.js");
 const { sp } = __require("core/fixed.js");
-const { ROOM_TRANSITION_FRAMES, ROOM_EXIT_MARGIN, FADE_RATE, BANNER_FRAMES, SHAKE_LARGE, SHAKE_LARGE_FRAMES, BOSS_ESSENCE_DELAY_FRAMES, HITSTOP_HIT_FRAMES, HITSTOP_HURT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES, BOSS_MUSIC_RESUME_FRAMES, ITEM_PRESENT_FRAMES, ESSENCE_FREEZE_FRAMES, GAMEOVER_WAIT_FRAMES, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, LENS_FADE_FRAMES, LENS_GHOST_ALPHA, LENS_TINT_ALPHA, LENS_PHASE_ALPHA, LENS_SHIMMER_FRAMES, REEFSEED_CAPACITY, COIN_SWAP_DELAY_FRAMES, BOTTLE_CAPACITY, CARVE_TIDE_TURNS, QUARTERMASTER_BONUS, CHANDLER_FACTOR, LANTERN_RADIUS, GULLS_TALLY_FACTOR, CARVE_PRICE, PICKUP_LIFE_FRAMES, WRECK_GLIMMER_PERIOD, WRECK_GLIMMER_ON, WRECK_GLIMMER_ALPHA, CAM_DEADZONE_W, CAM_DEADZONE_H } = __require("data/feel.js");
+const { ROOM_TRANSITION_FRAMES, ROOM_EXIT_MARGIN, FADE_RATE, BANNER_FRAMES, SHAKE_LARGE, SHAKE_LARGE_FRAMES, BOSS_ESSENCE_DELAY_FRAMES, HITSTOP_HIT_FRAMES, HITSTOP_HURT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES, LOW_HEART_THRESHOLD, LOW_HEART_EVERY, BOSS_MUSIC_RESUME_FRAMES, ITEM_PRESENT_FRAMES, ESSENCE_FREEZE_FRAMES, GAMEOVER_WAIT_FRAMES, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, LENS_FADE_FRAMES, LENS_GHOST_ALPHA, LENS_TINT_ALPHA, LENS_PHASE_ALPHA, LENS_SHIMMER_FRAMES, REEFSEED_CAPACITY, COIN_SWAP_DELAY_FRAMES, BOTTLE_CAPACITY, CARVE_TIDE_TURNS, QUARTERMASTER_BONUS, CHANDLER_FACTOR, LANTERN_RADIUS, GULLS_TALLY_FACTOR, CARVE_PRICE, PICKUP_LIFE_FRAMES, WRECK_GLIMMER_PERIOD, WRECK_GLIMMER_ON, WRECK_GLIMMER_ALPHA, CAM_DEADZONE_W, CAM_DEADZONE_H } = __require("data/feel.js");
 
 class Game {
   constructor(screen, input) {
@@ -12833,6 +12876,15 @@ class Game {
     }
 
     // --- play mode ---
+    // THE LOW-HEALTH PULSE. Above the dialogue and hitstop returns on purpose:
+    // a player who is one hit from death is still one hit from death while a
+    // text box is open, and a freeze is exactly when they most want telling.
+    // Off `this.frame` rather than a countdown so it cannot drift, and gated on
+    // being alive so the game-over screen is not scored by it.
+    if (this.player && this.progress.hearts > 0 && this.progress.hearts <= LOW_HEART_THRESHOLD
+        && this.frame % LOW_HEART_EVERY === 0) {
+      this.audio.sfx('lowHeart');
+    }
     this.tide.update();
     // Before anything reads a charm this frame. It has to run above the
     // dialogue early-return too: a charm going dark while a text box is open
@@ -20243,7 +20295,11 @@ class Boss extends Enemy {
       this.phase = p;
       this.invuln = Math.max(this.invuln, BOSS_PHASE_INVULN_FRAMES);
       if (this.spec.onPhase) this.spec.onPhase(this, game, p);
-      game.audio.sfx('charged');
+      // Was `charged` — the wind-up sound a boss makes before EVERY heavy
+      // attack, so the one moment that means "this fight has changed" sounded
+      // exactly like the twenty moments that mean "dodge". Not a silent no-op,
+      // which is why no checker could find it: a wrong sound is still a sound.
+      game.audio.sfx('bossPhase');
     }
     const ph = (this.spec.phases || [])[p];
     if (ph && ph.ai) ph.ai(this, game);
@@ -26807,7 +26863,6 @@ const SFX = {
   lift: { type: 'blip', freq: 380, freq2: 720, dur: 0.1, duty: 0.5, vol: 0.1 },
   throw: { type: 'blip', freq: 800, freq2: 340, dur: 0.09, duty: 0.25, vol: 0.1 },
   shatter: { type: 'noise', freq: 4200, freq2: 1100, dur: 0.14, q: 2.0, vol: 0.14 },
-  dig: { type: 'noise', freq: 900, freq2: 300, dur: 0.14, q: 0.7, vol: 0.12, lp: true },
   fall: { type: 'blip', freq: 900, freq2: 90, dur: 0.55, duty: 0.5, wave: 'tri', vol: 0.13 },
 
   // --- items --------------------------------------------------------------
@@ -26829,9 +26884,78 @@ const SFX = {
     ],
   },
   fire: { type: 'noise', freq: 1800, freq2: 700, dur: 0.28, q: 0.8, vol: 0.11 },
+  // THREE DEFINITIONS WERE REMOVED FROM HERE, and the removal is the point.
+  // `dig`, `shoot` and `pegasus` were defined, correct, and played by nothing:
+  // this game has no shovel, no player projectile and no Pegasus Seed, and a
+  // Pegasus Seed would be a straight Oracle port anyway (`R11`). A sound with
+  // no verb is not harmless — it reads as a verb somebody forgot to wire, and
+  // the next session spends its time deciding that again. `seed` below was in
+  // the same state and was the opposite case: the verb existed and had been
+  // given the wrong sound. It is wired now.
   seed: { type: 'blip', freq: 1200, freq2: 1700, dur: 0.07, duty: 0.25, vol: 0.09 },
-  shoot: { type: 'blip', freq: 1500, freq2: 900, dur: 0.07, duty: 0.125, vol: 0.1 },
-  pegasus: { type: 'arp', notes: ['C5', 'E5', 'G5'], step: 0.04, duty: 0.25, vol: 0.09 },
+
+  // The Squall Bellows' cone of air, once per puff while the button is held.
+  // The call site asked for 'swim' and there has never been a `swim` — and it
+  // is not swimming, it is the bellows, so the name was wrong twice over.
+  // Breathy and quiet: it fires every few frames for as long as the button is
+  // down, so anything with a pitch in it becomes a drone.
+  gust: { type: 'noise', freq: 1800, freq2: 900, dur: 0.13, q: 0.5, vol: 0.055, lp: true },
+
+  // The Tidewright's Anchor's chain coming back. The call sites asked for
+  // 'hookshot', which was never defined and is also the name of the Oracle item
+  // this one must not be (`R11`) — a chain hauling itself in, not a spring.
+  reel: {
+    type: 'multi', parts: [
+      { type: 'noise', freq: 2600, freq2: 1500, dur: 0.16, q: 2.2, vol: 0.1 },
+      { type: 'blip', freq: 900, freq2: 420, dur: 0.12, duty: 0.125, vol: 0.07, delay: 0.02 },
+    ],
+  },
+
+  // Stone moving that does not break: a coral pillar coming up out of the
+  // seabed, a boulder dragged aside by the Dredge Line. Low, long and dry, so
+  // it does not read as an explosion — `explode` and `break` already own that.
+  rumble: {
+    type: 'multi', parts: [
+      { type: 'noise', freq: 260, freq2: 90, dur: 0.42, q: 0.6, vol: 0.15, lp: true },
+      { type: 'noise', freq: 700, freq2: 200, dur: 0.2, q: 1.1, vol: 0.07, delay: 0.06 },
+    ],
+  },
+
+  // A resonance bell answering the Rod. The call site played `secret`, which is
+  // a JINGLE and not an sfx (`T44`), so it made no sound at all — and the fix
+  // is not to call the jingle: `secret` is the discovery fanfare and it is
+  // already used correctly for finding things. A bell that rings every time
+  // something is in earshot needs its own voice, not the reward flourish.
+  chime: {
+    type: 'multi', parts: [
+      { type: 'blip', freq: 1568, freq2: 1568, dur: 0.5, duty: 0.5, wave: 'tri', vol: 0.1 },
+      { type: 'blip', freq: 2093, freq2: 2093, dur: 0.42, duty: 0.5, wave: 'tri', vol: 0.055, delay: 0.02 },
+      { type: 'blip', freq: 1046, freq2: 1046, dur: 0.6, duty: 0.5, wave: 'tri', vol: 0.05, delay: 0.04 },
+    ],
+  },
+
+  // The sea itself moving, under the whole tide sweep. src/game/tide.js had
+  // ZERO audio calls of any kind: the game's one mechanic reshaped the world in
+  // silence. Long, soft and low so it sits under the conch that started it
+  // rather than competing with it.
+  tideSweep: {
+    type: 'multi', parts: [
+      { type: 'noise', freq: 900, freq2: 300, dur: 0.55, q: 0.5, vol: 0.1, lp: true },
+      { type: 'noise', freq: 420, freq2: 1100, dur: 0.45, q: 0.7, vol: 0.06, delay: 0.12 },
+    ],
+  },
+
+  // A boss turning over into its next phase. Not a fanfare — a warning.
+  bossPhase: {
+    type: 'multi', parts: [
+      { type: 'blip', freq: 330, freq2: 165, dur: 0.3, duty: 0.5, wave: 'saw', vol: 0.13 },
+      { type: 'noise', freq: 1400, freq2: 400, dur: 0.35, q: 0.8, vol: 0.1, delay: 0.03 },
+    ],
+  },
+
+  // The low-health pulse. Quiet and short by design: it repeats for as long as
+  // the player is in danger, so a loud one becomes the reason to stop playing.
+  lowHeart: { type: 'blip', freq: 1046, freq2: 1046, dur: 0.05, duty: 0.5, vol: 0.055 },
   valve: { type: 'noise', freq: 700, freq2: 260, dur: 0.4, q: 1.4, vol: 0.12 },
 
   // --- combat -------------------------------------------------------------

@@ -502,6 +502,22 @@ export const ESSENCE_FREEZE_FRAMES = 150;
 /** f — how long the game-over screen holds before it accepts a button. guessed. */
 export const GAMEOVER_WAIT_FRAMES = 100;
 
+// THE LOW-HEALTH PULSE.
+//
+// The game had no low-health warning at all — the one piece of feedback in
+// every Zelda that tells a player to stop and heal, and this game's hearts sat
+// silent all the way to zero.
+
+/** qh — quarter-hearts at or below which the pulse starts. guessed. Two full
+ *  hearts. Chosen against this game's damage ladder rather than the source's:
+ *  a boss's heavy hit is 3-4 qh here, so 8 is "one more mistake". */
+export const LOW_HEART_THRESHOLD = 8;
+
+/** f — frames between pulses. guessed. Slow enough not to be a rattle and fast
+ *  enough to feel like a heartbeat; it is the tempo that makes this a warning
+ *  rather than an alarm, and it is the number to move first if it nags. */
+export const LOW_HEART_EVERY = 40;
+
 // TEXT.
 //
 // These lived inside `src/game/dialogue.js` as bare literals for the whole life

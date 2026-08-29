@@ -206,6 +206,9 @@ export class Player extends Entity {
     }
     if (!this.inDeep && wasDeep) {
       game.spawnEffect('splash', this.x, this.y + 2);
+      // Entering the water was audible and leaving it was not, which made the
+      // sea sound like something you could only fall into.
+      game.audio.sfx('splash', { pitch: 1.2, vol: 0.8 });
     }
     if (this.inShallow && this.frame % WADE_FOAM_EVERY === 0) {
       game.spawnEffect('foam', this.x, this.y + 4, { life: 16 });
@@ -471,6 +474,12 @@ export class Player extends Entity {
       toFx: sp(land.x), toFy: sp(land.y),
       t: 0, n: LEDGE_HOP_FRAMES,
     };
+    // Taking a ledge was silent going off it and only sounded on landing, so a
+    // drop had a thump with no push behind it. `jump` already exists and is the
+    // right voice, pitched down because this is a drop rather than a hop up.
+    // BOTH launch paths need it — there are two, and only one of them is the
+    // one you find by grepping for the function name.
+    game.audio.sfx('jump', { pitch: 0.85 });
     this.jumping = true;
     this.vz = 0;
     this.gliding = false;
@@ -535,6 +544,12 @@ export class Player extends Entity {
       toFx: sp(land.x), toFy: sp(land.y),
       t: 0, n: LEDGE_HOP_FRAMES,
     };
+    // Taking a ledge was silent going off it and only sounded on landing, so a
+    // drop had a thump with no push behind it. `jump` already exists and is the
+    // right voice, pitched down because this is a drop rather than a hop up.
+    // BOTH launch paths need it — there are two, and only one of them is the
+    // one you find by grepping for the function name.
+    game.audio.sfx('jump', { pitch: 0.85 });
     this.jumping = true;
     this.vz = 0;
     this.gliding = false;
@@ -880,7 +895,7 @@ export class Player extends Entity {
 
     if (this.bellowsT % BELLOWS_PUFF_EVERY === 0) {
       game.spawnEffect('foam', this.cx - 8 + dx * 14, this.cy - 8 + dy * 14, { life: 14 });
-      game.audio.sfx('swim');
+      game.audio.sfx('gust');
     }
     this.gust(game, dx, dy);
   }

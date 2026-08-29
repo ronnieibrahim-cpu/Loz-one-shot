@@ -1197,7 +1197,7 @@ export class SunkenBell extends Entity {
   /** Called by ringResonance for every entity in earshot. */
   onRing(game) {
     this.chime = BELL_CHIME_FRAMES;
-    game.audio.sfx('secret');
+    game.audio.sfx('chime');
     if (!this.points) { game.say(this.say); return; }
     const tx = this.points[0] * TILE + 8, ty = this.points[1] * TILE + 8;
     const dx = tx - this.cx, dy = ty - this.cy;

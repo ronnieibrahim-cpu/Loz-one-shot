@@ -27,7 +27,7 @@ doing the session.
 | ~~S1~~ | ~~Impact: hitstop and the feel constants~~ | Opus | — | **DONE — awaiting your ear.** See `docs/NEXT-SESSION.md` |
 | ~~S2~~ | ~~Terrain extraction: the ground~~ | Opus | S1 | **DONE — awaiting your eye.** See `docs/NEXT-SESSION.md` |
 | ~~S3~~ | ~~Terrain extraction: edges and towns~~ | Opus | S2 | **PARTLY DONE — 2 of 4 jobs; see `docs/NEXT-SESSION.md`** |
-| S4 | Sound coverage and the sfx checker | Sonnet | S1 | Yes (listen) |
+| ~~S4~~ | ~~Sound coverage and the sfx checker~~ | Sonnet | S1 | **DONE — awaiting your ear.** See `docs/NEXT-SESSION.md` |
 | S5 | Bosses winnable by design | Opus | S1 | **Critical** |
 | S6 | Music engine: vibrato, echo, arpeggio | Sonnet | S4 | Yes (listen) |
 | S7 | Music composition: intros and forms | Opus | S6 | **Critical** |
@@ -222,6 +222,19 @@ of this before `check-towns.mjs` existed.
 ---
 
 ## S4 — Sound: close the silent gaps
+
+> **DONE.** There were **six** silent no-ops, not the four the handoff listed —
+> the two extras were `sfx: 'rumble'` sitting in a tile transform (data, not
+> code) and the second `hookshot` site. All six are closed, and two of the three
+> were also MISNAMED: `swim` was the Squall Bellows, `hookshot` was the Anchor's
+> chain named after the Oracle item it must not be (`R11`). **Four** sfx were
+> dead, not three: `dig`/`shoot`/`pegasus` removed, and `seed` turned out to be
+> the opposite bug — the Reefseed's own plant verb was playing the generic
+> `place`. Coverage audit filled five gaps, the largest being that
+> `src/game/tide.js` had **zero audio calls of any kind**. `tools/check-sfx.mjs`
+> (`V19`) is committed and wired into `V16`; it was **RED on `main` with six
+> failures and is green now**. The eight new sounds are unjudged (`§4.2`) —
+> `docs/NEXT-SESSION.md` names the action to perform to hear each one.
 
 **Goal:** every player action and world event makes a sound, and no call site is
 a silent no-op.

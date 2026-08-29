@@ -447,6 +447,47 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+**A CHECKER THAT ONLY READS CODE WILL MISS THE BUG THAT LIVES IN DATA.** S4's
+brief listed four silent sound calls; the checker found six. One of the two
+extras was `sfx: 'rumble'` sitting in a tile transform — the `boulder` the
+Dredge Line hauls — reached at runtime through `if (tr.sfx) audio.sfx(tr.sfx)`.
+No grep of `src/game/` can see that name, and neither could six sessions of
+people looking. **Whenever a call site takes its argument from a table, the
+table is part of the surface being checked**, and a tool that scans only call
+sites will look thorough while missing exactly the cases nobody could find by
+hand. The same shape applies to `reward.sfx`, `step.sfx` and `w.sfx`.
+
+**A MISSING THING HAS A TWIN THAT NO CHECKER CAN FIND: A WRONG ONE.** S4 closed
+the class where `sfx()` is handed a name that does not exist. It cannot see a
+call that plays a *defined* sound which is the wrong one — and the worst bug of
+the session was exactly that: a boss turning over into its next phase played
+`charged`, the wind-up before every heavy attack, so the one moment meaning
+"this fight has changed" was indistinguishable from the twenty meaning "dodge".
+Two of the six "missing" sounds also turned out to be **misnamed** rather than
+missing (`swim` was the Squall Bellows; `hookshot` was the Anchor's chain, named
+after the Oracle item it exists not to be). **Write the checker, then audit by
+VERB anyway** — walk what the player and the world can do and ask what each one
+sounds like. The checker buys you the floor, not the ceiling.
+
+**A DEAD DEFINITION IS USUALLY A VERB THAT LOST ITS SOUND, NOT A SOUND NOBODY
+WANTED.** Four sfx were defined and played by nothing. Three (`dig`, `shoot`,
+`pegasus`) were genuinely orphaned by design decisions — no shovel, no player
+projectile, no Pegasus Seed — and deleting them is right, because a sound with
+no verb reads as a wiring job somebody forgot and costs the next session the
+same ten minutes. But the fourth, `seed`, was the **opposite** bug: the
+Reefseed's own plant verb existed and was playing the generic `place`. The sound
+and the verb had both been in the tree the whole time and had never met. **Check
+which kind you have before deleting.**
+
+**PROVE A NEW CHECKER RED BEFORE YOU TRUST IT GREEN — AGAINST THE REAL TREE, NOT
+A MUTATION.** S4's prompt demanded the checker be shown failing on `main` before
+the fix, and it is the cheapest possible validation: stash the fix, copy the
+tool back in, run it, read the six failures. A checker written after the bugs
+are already fixed has never been red about anything, and there is no way to tell
+it apart from one that passes because its matcher is broken. (Watch the
+mechanics: the tool is an untracked file, so `git stash` will not carry it and a
+careless `rm` after the run deletes it.)
+
 **BEFORE BLAMING A TILE'S ART, COUNT HOW MANY TIMES IT IS PLACED.** S3 was
 briefed to extract better cliffs because the hand-drawn ones betray a hand. They
 do — but the reason cliffs never read as cliffs is that `cliffTop` was placed

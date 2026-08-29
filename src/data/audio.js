@@ -27,7 +27,6 @@ const SFX = {
   lift: { type: 'blip', freq: 380, freq2: 720, dur: 0.1, duty: 0.5, vol: 0.1 },
   throw: { type: 'blip', freq: 800, freq2: 340, dur: 0.09, duty: 0.25, vol: 0.1 },
   shatter: { type: 'noise', freq: 4200, freq2: 1100, dur: 0.14, q: 2.0, vol: 0.14 },
-  dig: { type: 'noise', freq: 900, freq2: 300, dur: 0.14, q: 0.7, vol: 0.12, lp: true },
   fall: { type: 'blip', freq: 900, freq2: 90, dur: 0.55, duty: 0.5, wave: 'tri', vol: 0.13 },
 
   // --- items --------------------------------------------------------------
@@ -49,9 +48,78 @@ const SFX = {
     ],
   },
   fire: { type: 'noise', freq: 1800, freq2: 700, dur: 0.28, q: 0.8, vol: 0.11 },
+  // THREE DEFINITIONS WERE REMOVED FROM HERE, and the removal is the point.
+  // `dig`, `shoot` and `pegasus` were defined, correct, and played by nothing:
+  // this game has no shovel, no player projectile and no Pegasus Seed, and a
+  // Pegasus Seed would be a straight Oracle port anyway (`R11`). A sound with
+  // no verb is not harmless — it reads as a verb somebody forgot to wire, and
+  // the next session spends its time deciding that again. `seed` below was in
+  // the same state and was the opposite case: the verb existed and had been
+  // given the wrong sound. It is wired now.
   seed: { type: 'blip', freq: 1200, freq2: 1700, dur: 0.07, duty: 0.25, vol: 0.09 },
-  shoot: { type: 'blip', freq: 1500, freq2: 900, dur: 0.07, duty: 0.125, vol: 0.1 },
-  pegasus: { type: 'arp', notes: ['C5', 'E5', 'G5'], step: 0.04, duty: 0.25, vol: 0.09 },
+
+  // The Squall Bellows' cone of air, once per puff while the button is held.
+  // The call site asked for 'swim' and there has never been a `swim` — and it
+  // is not swimming, it is the bellows, so the name was wrong twice over.
+  // Breathy and quiet: it fires every few frames for as long as the button is
+  // down, so anything with a pitch in it becomes a drone.
+  gust: { type: 'noise', freq: 1800, freq2: 900, dur: 0.13, q: 0.5, vol: 0.055, lp: true },
+
+  // The Tidewright's Anchor's chain coming back. The call sites asked for
+  // 'hookshot', which was never defined and is also the name of the Oracle item
+  // this one must not be (`R11`) — a chain hauling itself in, not a spring.
+  reel: {
+    type: 'multi', parts: [
+      { type: 'noise', freq: 2600, freq2: 1500, dur: 0.16, q: 2.2, vol: 0.1 },
+      { type: 'blip', freq: 900, freq2: 420, dur: 0.12, duty: 0.125, vol: 0.07, delay: 0.02 },
+    ],
+  },
+
+  // Stone moving that does not break: a coral pillar coming up out of the
+  // seabed, a boulder dragged aside by the Dredge Line. Low, long and dry, so
+  // it does not read as an explosion — `explode` and `break` already own that.
+  rumble: {
+    type: 'multi', parts: [
+      { type: 'noise', freq: 260, freq2: 90, dur: 0.42, q: 0.6, vol: 0.15, lp: true },
+      { type: 'noise', freq: 700, freq2: 200, dur: 0.2, q: 1.1, vol: 0.07, delay: 0.06 },
+    ],
+  },
+
+  // A resonance bell answering the Rod. The call site played `secret`, which is
+  // a JINGLE and not an sfx (`T44`), so it made no sound at all — and the fix
+  // is not to call the jingle: `secret` is the discovery fanfare and it is
+  // already used correctly for finding things. A bell that rings every time
+  // something is in earshot needs its own voice, not the reward flourish.
+  chime: {
+    type: 'multi', parts: [
+      { type: 'blip', freq: 1568, freq2: 1568, dur: 0.5, duty: 0.5, wave: 'tri', vol: 0.1 },
+      { type: 'blip', freq: 2093, freq2: 2093, dur: 0.42, duty: 0.5, wave: 'tri', vol: 0.055, delay: 0.02 },
+      { type: 'blip', freq: 1046, freq2: 1046, dur: 0.6, duty: 0.5, wave: 'tri', vol: 0.05, delay: 0.04 },
+    ],
+  },
+
+  // The sea itself moving, under the whole tide sweep. src/game/tide.js had
+  // ZERO audio calls of any kind: the game's one mechanic reshaped the world in
+  // silence. Long, soft and low so it sits under the conch that started it
+  // rather than competing with it.
+  tideSweep: {
+    type: 'multi', parts: [
+      { type: 'noise', freq: 900, freq2: 300, dur: 0.55, q: 0.5, vol: 0.1, lp: true },
+      { type: 'noise', freq: 420, freq2: 1100, dur: 0.45, q: 0.7, vol: 0.06, delay: 0.12 },
+    ],
+  },
+
+  // A boss turning over into its next phase. Not a fanfare — a warning.
+  bossPhase: {
+    type: 'multi', parts: [
+      { type: 'blip', freq: 330, freq2: 165, dur: 0.3, duty: 0.5, wave: 'saw', vol: 0.13 },
+      { type: 'noise', freq: 1400, freq2: 400, dur: 0.35, q: 0.8, vol: 0.1, delay: 0.03 },
+    ],
+  },
+
+  // The low-health pulse. Quiet and short by design: it repeats for as long as
+  // the player is in danger, so a loud one becomes the reason to stop playing.
+  lowHeart: { type: 'blip', freq: 1046, freq2: 1046, dur: 0.05, duty: 0.5, vol: 0.055 },
   valve: { type: 'noise', freq: 700, freq2: 260, dur: 0.4, q: 1.4, vol: 0.12 },
 
   // --- combat -------------------------------------------------------------

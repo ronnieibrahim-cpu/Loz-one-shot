@@ -327,7 +327,11 @@ export class Boss extends Enemy {
       this.phase = p;
       this.invuln = Math.max(this.invuln, BOSS_PHASE_INVULN_FRAMES);
       if (this.spec.onPhase) this.spec.onPhase(this, game, p);
-      game.audio.sfx('charged');
+      // Was `charged` — the wind-up sound a boss makes before EVERY heavy
+      // attack, so the one moment that means "this fight has changed" sounded
+      // exactly like the twenty moments that mean "dodge". Not a silent no-op,
+      // which is why no checker could find it: a wrong sound is still a sound.
+      game.audio.sfx('bossPhase');
     }
     const ph = (this.spec.phases || [])[p];
     if (ph && ph.ai) ph.ai(this, game);

@@ -1,3 +1,158 @@
+## S4 — Sound: close the silent gaps (this session)
+
+**Run per `docs/SESSION-PROMPTS.md` S4, on top of S3.** Bugs first, as the
+prompt insisted. The checker found more than the handoff knew about.
+
+### There were SIX silent no-ops, not four
+
+`A4` listed four. The checker found six, and the two extras are exactly the two
+a hand-audit structurally cannot see:
+
+- **`sfx: 'rumble'` at `tiles-core.js:1680`** — in DATA, not code. It is the
+  `boulder` transform, the tile the Dredge Line hauls out of the way, and the
+  call site is `if (tr.sfx) this.audio.sfx(tr.sfx)`. No grep of `src/game/` can
+  see that name. **This is why the checker's second pass reads the data tables**
+  rather than only scanning call sites; without it the tool would have looked
+  thorough and missed a real bug.
+- **The second `sfx('hookshot')`** at `items.js:1091`. The handoff did list both
+  line numbers, but a fix driven by the prose rather than the tool would have
+  taken the first.
+
+### Two of the three were also MISNAMED, which is a bigger finding than missing
+
+- **`sfx('swim')` at `player.js:883` is not swimming.** It is the **Squall
+  Bellows** puffing while the button is held. There has never been a `swim`
+  sound and there did not need to be one — the name was wrong twice over. Now
+  `gust`: breathy, quiet, low-pitched, because it fires every few frames for as
+  long as the button is down and anything with a pitch in it becomes a drone.
+- **`sfx('hookshot')` is the Tidewright's Anchor's chain reeling in.** Named
+  after the Oracle item this one exists specifically not to be (`R11`). Now
+  `reel` — a chain hauling itself in, not a spring.
+- **`sfx('secret')` is `T44` exactly**: `secret` is a JINGLE, and `jingle()` and
+  `sfx()` read different tables. The fix is NOT to call the jingle. `secret` is
+  the discovery fanfare and is already used correctly in three places; a
+  resonance bell that rings every time something is in earshot needs its own
+  voice, not the reward flourish. Now `chime`.
+
+### Four dead definitions, not three — and one of them was the opposite bug
+
+`dig`, `shoot` and `pegasus` were **removed**: this game has no shovel, no
+player projectile, and a Pegasus Seed would be a straight Oracle port (`R11`). A
+sound with no verb is not harmless — it reads as a verb somebody forgot to wire,
+and the next session spends its time deciding that again.
+
+**`seed` was the reverse.** The verb existed and had been given the wrong sound:
+the Reefseed's `plant()` played the generic `place`. The sound and the verb had
+both been in the tree the whole time and had never met.
+
+### The coverage audit: five gaps, none of them findable by any checker
+
+These are calls that do not exist, not calls that fail. **`§4.2` territory** —
+the only way to find them is to walk the verbs.
+
+| Gap | Was | Now |
+|---|---|---|
+| **The tide sweep** | `src/game/tide.js` had **zero audio calls of any kind**. The game's one mechanic reshaped the world in silence | `tideSweep`, on a real sweep only — `instant: true` is a save restore or a boss pinning the tide, neither of which is the sea crossing the screen |
+| **Leaving the water** | entering played `splash`, leaving spawned the effect and no sound — the sea sounded like something you could only fall into | `splash`, pitched up |
+| **Taking a ledge** | silent off the edge, `land` on arrival: a thump with no push behind it | `jump` pitched down, at **both** launch paths |
+| **Low health** | did not exist at all | `lowHeart`, every `LOW_HEART_EVERY` frames at or below `LOW_HEART_THRESHOLD` |
+| **A boss phase change** | played `charged` — the wind-up before EVERY heavy attack | `bossPhase` |
+
+**The boss one is the finding worth keeping.** It was never a no-op, so nothing
+in the verification table could ever have flagged it: a *wrong* sound is still a
+sound. That is now `T66`. And the ledge hop is `T67` — half of a symmetric verb
+is where a missing sound hides, and it has **two** launch paths, only one of
+which is findable by grepping the obvious function name.
+
+`LOW_HEART_THRESHOLD` (8 qh) and `LOW_HEART_EVERY` (40 f) are in `feel.js` with
+units and `guessed` provenance, per `R3`. The threshold is set against **this
+game's** damage ladder rather than the source's: a boss's heavy hit is 3-4 qh
+here, so 8 is "one more mistake".
+
+### The checker, and the proof it earns its place
+
+`tools/check-sfx.mjs` — `V19`, wired into `V16`, row added to `CLAUDE.md` and to
+`§4.1`. Three passes:
+
+1. **Literals**, resolved through ternaries and `||` fallbacks, so
+   `sfx(lv >= 3 ? 'sword3' : 'sword2')` and `sfx(o.sfx || 'charge')` are both
+   covered. Those are the six the handoff warns "look dead to a naive grep" —
+   the tool sees all of them and does not false-positive on one.
+2. **Data tables**, for the names a static scan cannot reach (`tr.sfx`,
+   `reward.sfx`, `step.sfx`, `w.sfx`). **This pass is what found the sixth bug.**
+3. **Dead definitions**, as a warning rather than a failure — a sound nobody
+   plays is not something a player can hear, but it is nearly always a verb that
+   lost its sound.
+
+It deliberately does **not** compare against track names: `play()`/`jingle()`
+read a different table (`T44`), and `boss`/`title` are tracks. When an sfx name
+collides with a track name it says so, which is how the `secret` bug reports.
+
+**Proved red before green**, as the prompt demanded — this exact checker, run
+against `main`:
+
+```
+check-sfx: 55 sfx defined, 55 referenced (18 of them from data tables)
+  warn: 'dig' / 'seed' / 'shoot' / 'pegasus' defined and never played
+  FAIL src/game/items.js:516   sfx('hookshot') is not defined
+  FAIL src/game/items.js:664   sfx('rumble') is not defined
+  FAIL src/game/items.js:1091  sfx('hookshot') is not defined
+  FAIL src/game/objects.js:1200 sfx('secret') is not defined
+       — 'secret' IS a music track; jingle()/play() read a different table (T44)
+  FAIL src/game/player.js:883  sfx('swim') is not defined
+  FAIL src/data/tiles-core.js:1680  data field sfx: 'rumble' is not defined
+check-sfx: 6 silent no-op(s)                                       exit=1
+```
+
+and now: `59 sfx defined, 59 referenced` — **no silent call, no dead
+definition**, exit 0.
+
+### Verified
+
+```
+check-sfx           OK (59/59)      check-music       OK
+test                71 passed, 0    replay            51/0
+validate            OK              walk-dungeons     23/0
+check-overworld     17/0            check-progression 19/0
+check-towns         58/0            check-gates       26/0
+check-items         91/0            check-charms      63/0
+check-trade         43/0            check-hearts   114/114
+check-motion         8/0            check-torches      5/0
+check-playthrough   19/0            check-bosses      18/0 (god mode)
+check-guide          4/0            solve-switches    all 9 solvable
+check-build         OK — boots from file://
+```
+
+`V11` green with no re-recording: sound does not touch the simulation.
+
+### Hand it back: how to hear each one
+
+Per `§4.2` a checker proves a sound exists, not that it is right. **Eight new
+sounds, all unjudged.** In `dist/oracle-of-tides.html`:
+
+1. **`tideSweep`** — press the conch anywhere outdoors. This is the most
+   important one to get right: it plays on every tide change for the whole game.
+   **Does it sit under the conch or fight it?**
+2. **`lowHeart`** — take damage down to two hearts or fewer and stand still.
+   It repeats forever while you are in danger, so **if it nags, it is wrong**;
+   `LOW_HEART_EVERY` in `feel.js` is the first number to move.
+3. **`gust`** — hold the Squall Bellows. It fires every few frames; listen for
+   whether it becomes a drone.
+4. **`reel`** — throw the Tidewright's Anchor and press B again to recall it.
+5. **`rumble`** — plant a Reefseed on open water (pillar erupting), and haul a
+   boulder with the Dredge Line on the Cliffs of Kell.
+6. **`chime`** — ring a resonance bell with the Rod. Compare against the
+   `secret` fanfare, which it used to try to play: **it should not sound like a
+   reward.**
+7. **`seed`** — throw a Reefseed and let it land.
+8. **`bossPhase`** — fight Gohmaraq in D1 to its second phase. **Compare it
+   against the wind-up before a charge**, which is what it used to be; the two
+   must not be confusable.
+
+Plus two moved sounds: **leaving deep water**, and **dropping off a ledge**.
+
+---
+
 ## S3 — Terrain extraction, pass 2: edges, cliffs and town fronts (this session)
 
 **Run per `docs/SESSION-PROMPTS.md` S3, on top of S2.** Two of the four jobs

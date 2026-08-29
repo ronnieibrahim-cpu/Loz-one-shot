@@ -63,7 +63,7 @@ produced most of §2.
 
 | Command | Result |
 |---|---|
-| `node tools/test.mjs` | **70 passed, 0 failed** (S1 added six hitstop assertions, S3 five cliff-edge ones) |
+| `node tools/test.mjs` | **71 passed, 0 failed** (S1 +6 hitstop, S3 +5 cliff-edge, S4 +1 sfx coverage) |
 | `node tools/check-hearts.mjs` | 114/114 |
 | `node tools/check-music.mjs` | OK — **22 tracks, 55 sfx** |
 | `node tools/check-playthrough.mjs` | 19 passed, 0 failed |
@@ -88,9 +88,9 @@ These have all been miscounted in prior briefs. Measured out of the data:
 | Thing | Real number | Notes |
 |---|---|---|
 | Music tracks | 22 | ~8-bar loops, 3–4 patterns of 32 rows at `rowsPerBeat: 4` |
-| Sound effects | **55** | not 77 — `check-music.mjs` prints the true count |
-| Silent sfx no-ops | **4** | not 3 — see `A4` |
-| Dead sfx definitions | 3 | `dig`, `pegasus`, `shoot` |
+| Sound effects | **59** | was 55. S4 removed 3 dead and added 7; `check-sfx.mjs` prints the true count |
+| Silent sfx no-ops | **0** | there were SIX, not the four once listed — see `A4`. `V19` keeps it at zero |
+| Dead sfx definitions | **0** | there were four (`seed` too); three removed, `seed` wired to the Reefseed |
 | Dialogue ids written | **57** | in `src/data/story.js` |
 | Dialogue ids wired to map data | **51** | coverage is *not* the problem — see `A6` |
 | Placed talkable entities | **43** | 12 `npc`, 29 `sign`, 1 `giver`, 1 `shop` |
@@ -205,30 +205,57 @@ the heart row and the rupee counter are all right.
 
 ### A4 — Sound
 
-**Four call sites are silent no-ops.** An `sfx()` call with an undefined name
-does nothing, silently (`T34`):
+**Every silent no-op is closed as of S4, and `tools/check-sfx.mjs` (`V19`) now
+makes the class impossible to reintroduce.** It was RED on the tree before the
+fix with six failures and green after; it is wired into `V16`.
 
-| Call | Site |
-|---|---|
-| `sfx('swim')` | `src/game/player.js:882` |
-| `sfx('hookshot')` | `src/game/items.js:516` **and** `src/game/items.js:1091` |
-| `sfx('rumble')` | `src/game/items.js:664` |
-| `sfx('secret')` | `src/game/objects.js:1200` |
+**There were SIX, not the four this document listed.** The two the old list
+missed are exactly the two a hand-audit cannot see:
 
-**`secret` is a wrong-function bug, not a missing asset** — a `secret` *jingle*
-exists and is called correctly as `audio.jingle('secret')` at `game.js:714`,
-`game.js:850` and `game.js:1304`. See `T33`.
+| Call | Site | Was | Now |
+|---|---|---|---|
+| `sfx('swim')` | `player.js:883` | undefined — and it is not swimming, it is the **Squall Bellows** puffing, so the name was wrong twice | `gust` |
+| `sfx('hookshot')` ×2 | `items.js:516`, `items.js:1091` | undefined — and it is the Anchor's chain, named after the Oracle item it must not be (`R11`) | `reel` |
+| `sfx('rumble')` | `items.js:664` | undefined | `rumble` (new) |
+| **`sfx: 'rumble'`** | **`tiles-core.js:1680`** | **undefined, IN DATA** — the `boulder` transform the Dredge Line hauls. Invisible to a grep of `src/game/`, which is why it was missed | `rumble` |
+| `sfx('secret')` | `objects.js:1200` | a JINGLE name played through `sfx()` (`T44`) | `chime` (its own voice — `secret` is the discovery fanfare and stays that) |
 
-**`boss` and `title` are music tracks** played via `audio.play()`, not sfx. They
-are correct — do not "fix" them.
+**Four sfx were dead, not three.** `dig`, `shoot` and `pegasus` were **removed**
+(no shovel, no player projectile, and a Pegasus Seed would be a straight Oracle
+port — `R11`). **`seed` was the opposite case**: the verb existed and had the
+wrong sound. The Reefseed's `plant()` played the generic `place`; it plays
+`seed` now.
 
-**Three defined sfx are genuinely dead**: `dig`, `pegasus`, `shoot`.
+**Six sfx that LOOK dead to a naive grep are called dynamically** — `sword1/2/3`,
+`switchOn`/`switchOff`, `cut`/`break`, `stairs`, `enemyDie`. `check-sfx.mjs`
+resolves literals through ternaries and `|| ` fallbacks, so it sees all of them
+and does not false-positive. Fully data-driven sites (`tr.sfx`, `reward.sfx`,
+`step.sfx`, `w.sfx`) are covered by its second pass over the data tables.
 
-**Six sfx LOOK dead to a naive grep but are called dynamically** — leave them
-alone: `sword1/2/3` (`player.js:658`), `switchOn`/`switchOff` (`objects.js:909`),
-`cut`/`break` (`game.js:553`), `stairs` (`game.js:663`), `enemyDie`
-(`entity.js:158`). Other dynamic sites: `o.sfx || 'charge'`, `tr.sfx`,
-`reward.sfx`, `step.sfx`, `w.sfx`.
+**`boss` and `title` are music tracks** played via `audio.play()`, not sfx. The
+checker knows, and says so when an sfx name collides with a track name.
+
+**Coverage gaps S4 found and filled** (none of these was a no-op — they were
+verbs with no call at all, which no checker can find):
+
+- **The tide sweep.** `src/game/tide.js` had **zero audio calls of any kind** —
+  the game's one mechanic reshaped the world in silence. Now `tideSweep`, on a
+  real sweep only (not `instant: true`, which is a save restore or a boss pin).
+- **Leaving the water.** Entering played `splash`; leaving spawned the effect
+  and no sound, so the sea sounded like something you could only fall into.
+- **Taking a ledge.** Silent on the way off, `land` on arrival. Both launch
+  paths now play `jump` pitched down — **there are two, and only one of them is
+  findable by grepping the obvious function name.**
+- **The low-health warning.** Did not exist. `lowHeart` pulses every
+  `LOW_HEART_EVERY` frames at or below `LOW_HEART_THRESHOLD` (both in
+  `feel.js`, `guessed`), above the dialogue and hitstop returns on purpose.
+- **A boss phase change played `charged`** — the wind-up sound before EVERY
+  heavy attack, so the one moment meaning "this fight changed" sounded like the
+  twenty meaning "dodge". Now `bossPhase`. **A wrong sound is still a sound, so
+  no checker in this document can find one of these** (`§4.2`).
+
+**Still unjudged (`§4.2`): whether any of the eight new sounds is RIGHT.** A
+checker proves a sound exists.
 
 ### A5 — Music
 
@@ -663,6 +690,19 @@ by number.
   Seasons spring sheet yields 9, and the Ages sheet yields **zero**. Oracle's
   ground fields are genuinely single-cell repeats; variety comes from a person
   placing detail cells. Do not spend another session looking for this.
+- **T66 — A silent sound has a twin that no checker can find: a WRONG sound.**
+  `check-sfx.mjs` (`V19`) closes the class where `sfx()` is handed a name that
+  does not exist. It cannot see a call that plays a defined sound which is the
+  wrong one — a boss phase change played `charged`, the wind-up before every
+  heavy attack, so the one moment meaning "this fight has changed" sounded
+  exactly like the twenty meaning "dodge". **Audit by VERB, not by grep**: walk
+  what the player and the world can do and ask what each one sounds like.
+- **T67 — Half of a symmetric verb is where a missing sound hides.** Entering
+  the water played `splash`; leaving it spawned the effect and played nothing.
+  A ledge hop sounded on landing and not on the drop — **and it has TWO launch
+  paths, only one of which is findable by grepping the obvious function name**.
+  When you add a sound to one half of an enter/leave, up/down or start/finish
+  pair, grep for the other half and count the call sites.
 - **T64 — A sheet's tile grid phase must be measured LOCALLY, over the region
   you are picking from.** These sheets are assembled maps with large non-map
   margins, so a whole-sheet average is dominated by content that is not on the
@@ -712,6 +752,7 @@ are faster than you are and they do not rationalise.
 | V7 | `node tools/check-towns.mjs` | Every town screen's ways in and doors reach each other **on foot** at all three tides |
 | V8 | `node tools/check-items.mjs` | Every item does the verb `docs/ITEMS.md` claims; nothing hands out a nonexistent item |
 | V9 | `node tools/check-hearts.mjs` | Heart economy and the contact-damage ladder |
+| V19 | `node tools/check-sfx.mjs` | Every sfx name reachable from a call site or a data table is defined (`T45`), and nothing is defined and never played. Wired into `V16` |
 | V10 | `node tools/check-music.mjs` | Track orders, note ranges per channel, noise = percussion only |
 | V11 | `node tools/replay.mjs` | Movement and combat are frame-identical to 51 recorded baselines |
 | V12 | `node tools/check-bosses.mjs` | Every boss spawns and its weak point opens — **in GOD MODE, see T37** |

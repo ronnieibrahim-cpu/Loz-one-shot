@@ -177,6 +177,21 @@ const main = async () => {
   console.log('\n--- consolidation ---');
   await checkNoPrivateCollisionLogic();
 
+  // An sfx() call with an undefined name plays nothing and reports nothing
+  // (T45), so this one runs as a subprocess rather than being reimplemented:
+  // check-sfx.mjs owns the rule, and a second copy of it here would be exactly
+  // the private-model problem the check above exists to prevent (R4's shape).
+  console.log('\n--- sound coverage ---');
+  {
+    const { spawnSync } = await import('node:child_process');
+    const r = spawnSync(process.execPath, [new URL('check-sfx.mjs', import.meta.url).pathname],
+      { encoding: 'utf8' });
+    const out = (r.stdout || '') + (r.stderr || '');
+    for (const line of out.trim().split('\n')) console.log('  ' + line);
+    check('every sfx name a call site or data table can reach is defined',
+      r.status === 0, 'see tools/check-sfx.mjs');
+  }
+
   const { chromium } = await loadPlaywright();
   // Random high port: concurrent runs must not fight over a fixed one.
   const PORT = Number(arg('port', 0)) || (20000 + Math.floor(Math.random() * 20000));

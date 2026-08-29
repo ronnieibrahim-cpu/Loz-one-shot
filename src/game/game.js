@@ -58,6 +58,7 @@ import {
   ROOM_TRANSITION_FRAMES, ROOM_EXIT_MARGIN, FADE_RATE, BANNER_FRAMES,
   SHAKE_LARGE, SHAKE_LARGE_FRAMES, BOSS_ESSENCE_DELAY_FRAMES,
   HITSTOP_HIT_FRAMES, HITSTOP_HURT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES,
+  LOW_HEART_THRESHOLD, LOW_HEART_EVERY,
   BOSS_MUSIC_RESUME_FRAMES, ITEM_PRESENT_FRAMES, ESSENCE_FREEZE_FRAMES,
   GAMEOVER_WAIT_FRAMES, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE,
   LENS_FADE_FRAMES, LENS_GHOST_ALPHA, LENS_TINT_ALPHA, LENS_PHASE_ALPHA,
@@ -1194,6 +1195,15 @@ export class Game {
     }
 
     // --- play mode ---
+    // THE LOW-HEALTH PULSE. Above the dialogue and hitstop returns on purpose:
+    // a player who is one hit from death is still one hit from death while a
+    // text box is open, and a freeze is exactly when they most want telling.
+    // Off `this.frame` rather than a countdown so it cannot drift, and gated on
+    // being alive so the game-over screen is not scored by it.
+    if (this.player && this.progress.hearts > 0 && this.progress.hearts <= LOW_HEART_THRESHOLD
+        && this.frame % LOW_HEART_EVERY === 0) {
+      this.audio.sfx('lowHeart');
+    }
     this.tide.update();
     // Before anything reads a charm this frame. It has to run above the
     // dialogue early-return too: a charm going dark while a text box is open

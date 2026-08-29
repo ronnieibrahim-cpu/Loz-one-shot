@@ -325,6 +325,13 @@ export class Tide {
       g.room.drawAnim(this.snapshot.ctx, 0, 0, this, g.frame);
       g.room.drawOver(this.snapshot.ctx, 0, 0, this, g.frame);
       this.sweep = 1;
+      // THE SEA MAKES A NOISE. This file had zero audio calls of any kind, so
+      // the one mechanic the whole game is built on reshaped the world in
+      // silence — the conch sounded, and then the water moved without a sound.
+      // Only on a real sweep: `instant: true` is how a save is restored and how
+      // a boss pins the tide between phases, and neither of those is the sea
+      // visibly crossing the screen.
+      if (g.audio) g.audio.sfx('tideSweep');
     }
 
     this.level = next;
