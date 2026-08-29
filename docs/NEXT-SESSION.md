@@ -1,4 +1,16 @@
-## READ docs/ROADMAP.md FIRST (session of 2026-08-29 — reconcile + roadmap)
+## START HERE (session of 2026-08-29 — reconcile, roadmap, prompt series)
+
+**Three documents drive the work from here. Read them in this order:**
+
+| File | What it is |
+|---|---|
+| **`docs/SESSION-PROMPTS.md`** | **Eleven paste-ready session prompts, S1–S11.** Pick one, paste it, run it. Start with S1. |
+| **`docs/SESSION-HANDOFF.md`** | **The reference every prompt cites by id** — verified state (`§1`,`§2`/`A…`), 57 numbered traps (`§3`/`T…`), the verification protocol (`§4`/`V…`), house rules (`§5`/`R…`), close-out checklist. |
+| **`docs/ROADMAP.md`** | The sequencing reasoning, the audit, and what is argued against doing at all. |
+
+**Each session must leave `SESSION-HANDOFF.md` true**: update `§1`/`§2` if a fact
+changed, append new traps to `§3` with the next free number. Eleven prompts point
+at it, so a stale handoff is worse than none.
 
 **This session wrote no game code.** It reconciled 72 branches and produced
 `docs/ROADMAP.md`: eleven sequenced sessions, each with a goal, the one thing
