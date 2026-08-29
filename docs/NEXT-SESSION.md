@@ -1,4 +1,93 @@
-## THE REAL BLOCKER WAS AN ENGINE BUG, NOT THE BOSS VERB — every boss's damage plateau explained and fixed (this session)
+## Branch consolidation: a real-AABB contact fix cut Gohmaraq's win threshold from ~50 hearts to ~9 (this session, continued)
+
+**Many parallel sessions converged on the same discovery.** After the phase-
+collision fix below landed on `main`, a branch audit found roughly forty
+unmerged branches, several of which — independently, working from the same
+fork point — had found and fixed the exact same `Boss.phase`/`Entity.phase`
+collision, in some cases with nearly identical reasoning and even similar
+prose. Raw-merging all of them was not viable: they all touch the same lines
+of `updatePhaseShift`/`dBoss` with slightly different, overlapping
+implementations of the same ideas, which is conflict hell, not consolidation.
+Instead, each candidate branch was diffed against the shared fork point
+(`cf56059`) to isolate what it added BEYOND the now-merged core fix, and only
+genuinely new, verified value was pulled forward.
+
+**One clean win pulled in this pass:** `claude/next-session-iteration-xxmx25`
+found that `dBoss`'s old "keep closing until Manhattan distance <= NEAR+6"
+approach check was not the same question as "am I about to touch the boss."
+Gohmaraq's hitbox (26x20 inside a 32x32 sprite) is close enough to the whole
+sprite that a DIAGONAL approach (full speed both axes, correctly per
+CLAUDE.md) could walk the player's own AABB into contact — both axes already
+inside the boss's real hitbox — while the Manhattan SUM of the two axis
+distances was still comfortably above the old threshold. Two of the four
+hits in the documented real-combat baseline were exactly this: a `boss-
+contact` hit (4qh) landed mid-approach, not from a shot the player had no way
+to see coming. Fixed with `gapTo`/`nearContact`, which ask the entities' own
+`rect()` — the same AABB `Entity.overlaps`/`updateContactDamage` already use
+— instead of re-deriving a box from `cx`/`cy` and a guessed offset. The same
+branch also noticed Gohmaraq's charge ends in a 24-frame recovery stun
+(`ENEMY_CHARGE_RECOVER_FRAMES`) with the eye already open and the boss unable
+to move or attack — a guaranteed-safe window the old verb spent retreating
+from a boss that could not follow, then had to re-close the gap from
+scratch. Both fixes applied cleanly to `tools/actor-runtime.mjs` on top of
+the merged phase fix (verified: the file was byte-identical to the shared
+fork point before applying, so this was a pure additive patch, not a manual
+reconciliation).
+
+**Measured, real combat, seed 20260806, this session's instrumented
+`Boss.hurt`/`Player.takeDamage` hooks — before (phase fix alone) vs after
+(+ this fix), win threshold in hearts:**
+
+| hearts (qh) | boss dmg dealt, phase fix alone | boss dmg dealt, + contact fix |
+|---|---|---|
+| 3 (12) | 10/24 | 12/24 (6 hits landed, all remaining damage taken was ranged — the melee free-hit problem is gone) |
+| 8 (32) | — | 20/24 (dies with the boss nearly dead) |
+| 10 (40) | — | **24/24 — KILLED, 8 qh (2 hearts) to spare** |
+| 12 (48) | 16/24 | **24/24 — KILLED, 16 qh (4 hearts) to spare** |
+| 50 (200) | **24/24 — KILLED** (this was the previous session's win threshold) | KILLED, comfortably |
+
+**The win threshold dropped from ~50 hearts to somewhere between 8 and 10** —
+a real, verified, order-of-magnitude improvement, and the fight is no longer
+losing free melee hits to its own approach geometry. It is still short of
+the 3-heart target a real player brings to D1. `check-bosses.mjs` (god mode)
+unaffected: still 18/18, same five kills.
+
+**What was deliberately NOT pulled forward, and why:** the other ~35
+branches. Most contain either (a) the same core phase fix, now redundant, or
+(b) further reactive-dodge experiments on Gohmaraq's remaining chip damage
+that were measured and reverted in their own branch (matching this repo's
+own prior two reverted attempts) — pulling those forward would mean
+re-litigating already-settled negative results. A few branches (`x60p79`,
+`i9v66l`, `t0pdp7`, `hw3pr3`, `sx8679`, `w0iomi`, and others) contain
+extensive `docs/NEXT-SESSION.md` write-ups of further dead ends on the
+charge-lock/recovery-window problem specifically — worth reading before
+attempting another reactive-movement fix on Gohmaraq, since several converge
+on "the charge-chain in phase 1 is the wall now, not chip damage," which
+lines up with this session's own remaining gap (8 vs 10 hearts). These
+branches are now safe to delete: their unique value (the phase fix, the
+contact fix) is on `main`; what's left in them is either redundant or
+already-negative results.
+
+**Next session, in order:**
+
+1. **Read the charge-lock/recovery-window analyses in the branches named
+   above before attempting a new fix** — several sessions in parallel spent
+   real effort narrowing this down and their negative results are worth
+   inheriting rather than re-discovering.
+2. Bisect the exact win threshold between 8 and 10 hearts precisely (this
+   session stopped at a coarse bisection), and decide whether closing the
+   last 5-7 hearts of gap is an AI problem or a design one (3 hearts may
+   still be short even with a further-improved verb).
+3. Delete the now-superseded branches (`git push origin --delete <branch>`)
+   once a maintainer confirms — this session did not delete anything,
+   only merged forward what had unique value.
+4. Once Gohmaraq wins at 3 hearts, wire `dBoss` into `playthrough-route.mjs`
+   and look at whether the other five bosses are winnable in REAL combat
+   (not just god mode) at their own dungeons' starting health.
+
+---
+
+## THE REAL BLOCKER WAS AN ENGINE BUG, NOT THE BOSS VERB — every boss's damage plateau explained and fixed (previous session)
 
 **This changes the framing of every "boss verb" session before it.** The
 previous board's whole narrative — "the melee trade is close to breakeven,
