@@ -45,7 +45,7 @@ import { TRACKS } from '../src/data/audio.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const BASELINE = resolve(HERE, 'audio-render-baseline.json');
-const ROWS = 128; // generous: covers a full loop (or several) of every track
+const ROWS = 48; // covers a full pattern plus wraparound into the next for every track
 const RECORD = process.argv.includes('--record');
 
 function mockCtx() {
@@ -112,7 +112,11 @@ for (const name of names) current[name] = renderTrace(name);
 
 if (RECORD) {
   await mkdir(dirname(BASELINE), { recursive: true });
-  await writeFile(BASELINE, JSON.stringify(current, null, 1) + '\n');
+  // Compact, not pretty-printed: this is machine-compared, never hand-read,
+  // and a trace over even a modest number of rows is thousands of small
+  // arrays — pretty-printing one per line bloated an earlier version of this
+  // file to nearly 2MB for no reader's benefit.
+  await writeFile(BASELINE, JSON.stringify(current) + '\n');
   console.log(`check-audio-render: recorded baseline for ${names.length} tracks`);
   process.exit(0);
 }
