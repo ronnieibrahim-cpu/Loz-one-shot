@@ -222,7 +222,261 @@ exists for exactly this and both `replay.mjs` and `test.mjs` now use it. Real
 Playwright key events are still fine — `keyboard.down` resolves once the event
 is in the page, and nothing steps until you say so.
 
+## Negative results — the boss-verb corpus, consolidated (2026-08-29)
+
+**Read this section before touching `dBoss` in `tools/actor-runtime.mjs` or any
+boss AI in `src/game/enemy.js`.** Between 2026-08-22 and 2026-08-28 SIXTEEN
+parallel sessions branched from `main`, never merged, and re-ran each other's
+experiments. Five independently found and fixed the same `Boss.phase` /
+`Entity.phase` collision. Eight independently swept and reverted the same
+dodge variants. Everything below was PAID FOR — in most cases three or more
+times over. It is consolidated here so it is bought once.
+
+The reconcile that produced this section deleted those branches. Their code is
+either already on `main` or recorded verbatim below; nothing else on them was
+unique. **The lesson of the pile itself: sessions branching from `main` in
+parallel and never merging do not add up, they repeat. One session at a time,
+merged before the next starts.**
+
+### The ceiling is structural, not tactical — measured in god mode
+
+**A 60,000-frame (1,000s of game time) UNLIMITED-HEALTH run of Gohmaraq still
+sticks at 14 hp forever.** That is the finding that ends the dodge-tuning
+programme: if infinite health does not win the fight, no dodge, no backoff and
+no health buffer will, because survival was never the binding constraint.
+
+The mechanism: `charge()` (`src/game/enemy.js`) fires the instant
+`aligned() && distToPlayer() < range` holds, every frame the boss is not already
+frozen. Gohmaraq's phase-2 `range` is **130px, which covers nearly the whole
+arena**. So reaching melee distance — necessarily far inside 130px, and
+necessarily aligned, because you walked at it — *also* satisfies the charge
+trigger, which fires first. **The boss's melee-vulnerable range is a strict
+subset of its charge-trigger range.** Once phase 2 begins, one charge's full
+cycle chains straight into the next with zero idle frames between (traced
+directly), so a "close in, wait for an opening, swing" verb never gets a window
+longer than a couple of frames.
+
+The one real gap is the charge's own **18-frame tell**, during which
+`Enemy.update` does not run `spec.ai` at all, so the boss is 100% inert. It is
+not enough on its own: measured charges triggered from **60–130px** out, and 18
+frames of closing covers only **~25px**.
+
+Supporting measurement (`next-session-cleanup-wtwg3g`), from a temporary
+`window.__dbossTrace` bucketed after the fact and reverted before commit: of the
+1,373 frames in the stall window (f720–f2093), **917 (67%) are spent in the
+`b.charging` dodge branch**. Only 389 (28%) are in the approach-and-swing
+branch, and those never landed a hit. **This is not swings whiffing — it is the
+approach almost never getting to finish.**
+
+### Eight dodge/approach strategies, ruled out by measurement
+
+Every one of these was implemented, measured against a real-combat baseline, and
+reverted. Do not re-derive them.
+
+| # | Strategy | Result |
+|---|---|---|
+| 1 | Reactive ranged dodge (dodge when a shot is inbound) | A wash — no better than the plain chase |
+| 2 | Two further ranged-dodge triggers | Neither beats the plain chase |
+| 3 | `BACKOFF` distance sweep | Best value is a **mirage** — noise, not signal |
+| 4 | Chaining a second sword swing per opening | **Net negative** — fewer hits than doing nothing |
+| 5 | Opening-edge grace (widen the window's start) | Same instability as the dodge; reverted |
+| 6 | Eye-open gating (swing only while the weak point is open) | Dead end — the eye is *already* open 69–100% of the fight |
+| 7 | Free swing during a fresh charge tell / closing during the tell | No movement on the needle (the ~25px problem above) |
+| 8 | Chase-then-wait-for-recovery after a dash | Gets to **7 frames short** of landing a hit, and no closer |
+
+**Seven attempts now converge on the same ceiling.** Treat a ninth variant of
+"dodge better" as disproven unless it changes the *shape* of the approach.
+
+### Three traps inside those attempts, each a real engine finding
+
+**Attacking roots the player, so a swing structurally cannot connect against a
+target still moving fast.** `Player.updateMovement` freezes the player for the
+whole swing animation ("attacking roots you in place, as in the GBC games").
+Chasing a dash's own direction *does* close real distance — confirmed with the
+true per-axis gap, both axes solidly negative, for a dozen consecutive frames
+while the dash was live — and a swing gated on that really does fire: **~2,822
+attempts over 8,000 frames, none landed.** The instant `startSwing` runs
+(`src/game/player.js:358`) the player stops dead while Gohmaraq's dash keeps
+covering 1.9px/f clean through the fixed sword hitbox before its active frames
+arrive. **Any future verb must either lead the swing well before the target
+arrives, or wait for a moment the target is ALSO stationary (a tell, a
+wall-stop). "Get close mid-motion and swing" is not a strategy against anything
+that outruns the player.**
+
+**"Lead the target toward where it's headed" is a trap for a CHARGING boss.**
+The same-speed-patrol theory was checked and ruled out first — a frame trace
+showed Gohmaraq never reaches phase 3 (the same-speed phase) before the player
+dies; it stalls in phase 2, where idle patrol is 0.85, *slower* than the player.
+A fix built on the theory anyway (`chaseTarget`: read the boss's `_pdir`, head
+for the wall it patrols toward) is actively harmful: **the wall the boss patrols
+toward is the same wall its `charge()` dashes toward**, so the player ends up
+standing exactly where the charge lands — which is `charge()`'s own retrigger
+condition. Traced: `_pdir` froze at one value and distance locked to 13–14px for
+*thousands* of frames. Charge, recover, instantly realign, charge, forever.
+
+**A "retreat" command can point straight into a wall.** `dBoss`'s `fence()` on
+`main` only clips against the *arena edge*. It does not know about solid tiles,
+so a blocked retreat presses into stone repeatedly instead of sliding along it.
+The branch fix ran every retreat direction through `passable()` (the engine's
+own `canOccupy`, already used for pathing in that same file) and dropped any
+component stepping onto a solid tile. **Measured neutral against the charge
+ceiling, but generically correct and NOT currently on `main`** — worth
+reapplying with any real `dBoss` work.
+
+### Two boss-fight bugs still live on `main`
+
+**`e.charging` can stick `true` forever.** `charge()` sets `e.charging = true`
+when a dash starts and clears it only inside its own `if (e.charging)` branch,
+on a *later* call, once `moveDir` reports the dash hit something. Nothing else
+in `src/game/enemy.js` ever sets it false. **A phase that stops calling
+`charge()` leaves the flag stuck true permanently** — Gohmaraq's final phase
+never calls `charge()` (only the phase before it does). Any verb branching on
+`b.charging` will dodge a charge that is not happening, for the rest of the
+fight.
+
+**`tools/walk-dungeons.mjs` has two harness races, both diagnosed and fixed on
+deleted branches, neither on `main`.** Recorded verbatim so they are not
+re-diagnosed:
+
+1. *The ledge-hop prober can drop the player.* The probe waits exactly 3
+   `g.frame` ticks after `enterMap()`, then filters `g.entities` down to the
+   player — but room entry respawns entities on its own schedule and is
+   occasionally still in flight at tick 3, leaving `g.player` momentarily absent
+   from `g.entities`. The filter then yields an **empty array with the player
+   filtered out too**, and nothing adds it back; every held-key frame after
+   reads as a dropped input. Fix: after the 3-frame wait, also
+   `await new Promise(r => { let n = 0; const t = () => (g.entities.includes(g.player) || ++n > 30) ? r() : requestAnimationFrame(t); t(); });`
+   Reproduced 5/6 before, 5/5 clean after, same seed and room.
+
+2. *`game.frame`'s absolute value drifts with machine load.* Parts 1 and 2 call
+   `page.evaluate` once per dungeon with no frame-waiting between, while the
+   page's own `requestAnimationFrame` loop keeps ticking `game.frame` for
+   however many real milliseconds each round trip takes. A change that makes
+   boss code do *strictly more drawing* shifted that cost enough to land the
+   ledge probes on a different absolute frame (91 vs 92, printed directly) and
+   fail one specific overworld ledge 100% reproducibly, **in a room containing
+   no boss, no phased entity, and no code path that was touched**. The fix is
+   NOT a bigger margin on the tuned `frames(22)` constant — it is removing the
+   drift: `await page.evaluate(() => window.__harness.takeOver());` right after
+   the intro-skip, and `window.__harness.release()` (which zeroes `acc` and
+   restamps `last`) immediately before the first real keypress. Stable across
+   three repeated full runs. **If a `walk-dungeons.mjs` ledge failure looks
+   unrelated to what you just changed, suspect this before the ledge data.**
+
+### The first real-combat measurement of all six bosses
+
+Before the `Boss.phase` fix nothing but Gohmaraq could be hit at all, so this
+table had never existed. Measured with `godMode: false`, unmodified `dBoss`,
+seed 20260806, at the health a player clearing dungeons **in order** actually
+carries (3 starting hearts + 1 Heart Container per prior boss, deliberately
+counting **no heart pieces** — a conservative floor):
+
+```
+        boss        hearts        hits   damage    player dies   boss hp left
+  d1  gohmaraq    3 (12 qh)         5    10/24        f900           14
+  d2  anemos      4 (16 qh)         2     4/30        f900           26
+  d3  gloomtide   5 (20 qh)         3    12/32        f360           20
+  d4  wyverna     6 (24 qh)        10    40/44        f1800            4   <- one hit short
+  d5  rootmaw     7 (28 qh)         6    24/52        f1440           31
+  d6  nereth      8 (32 qh)         0     0/80        f1860           80
+```
+
+**Wyverna is the one that is nearly winnable right now, with zero code
+changes.** Binary-searched by hand, same seed, no verb changes: **loses at 28 qh**
+(boss at 4/44 — one hit short), **wins at 32 qh (8 hearts) with exactly one
+quarter-heart to spare**, wins comfortably at 36 qh. The heart-piece arithmetic
+says a real player is above that line: `check-hearts.mjs` pins `PER_DUNGEON = 2`,
+so D1–D3 hold **6 pieces**, plus **2 in the overworld caves** (`cave1`, `cave2`,
+needing no items) — **8 pieces = exactly +2 hearts** (4 per heart) on top of the
+6-heart floor. **A route-driven D1→D4 run should reach Wyverna at ~8 hearts and
+kill her.** That is the cheapest boss win available and it is worth confirming
+before any AI work.
+
+Why Wyverna is different: her first 660 frames are *flawless* — 8 clean hits,
+**zero** damage taken (she is `terrain: 'air'` and `wyvernaAltitude` correctly
+beaches her at LOW, exactly as designed). Her final phase (hp < 0.32) starts and
+hits slow to one per 150–250 frames instead of one per 70. Probed directly with
+`entity.canOccupy`: at one sampled moment she sat in **room row 0, which is
+entirely solid** — the room's own north wall. Being `terrain: 'air'` she occupies
+it fine; a grounded player cannot stand next to it. `dBoss` has no notion of
+"wait for the dive that brings her to you" — it walks toward wherever she is,
+including into a wall. **The fight does not stall the way Gohmaraq's does, which
+is exactly why more health closes the gap.**
+
+### Nereth and Anemos — diagnosed directly, not guessed
+
+**Nereth does NOT need a conch verb. That hypothesis is WRONG — do not chase
+it.** `nerethPin`'s own comment already says the conch only *widens* the window
+("he must never be *only* breakable by the conch"). Every attack in phases 1–3
+ends in a real ~55-frame `nerethOpening()` regardless of tide. The actual reason
+`dBoss` lands **zero** hits in 1,860 frames, caught with `p.invuln`/`hearts` in
+the trace: the trident throw (`spread(..., damage: 3)`) that *opens* the window
+fires **from the same `windUp` callback as the opening itself**. So the instant a
+window starts, the player — who has been closing during the closed phase — walks
+into the volley at ~40px, way outside sword range, takes a graze, and the
+resulting `p.invuln > 0` branch retreats for the rest of the window. Every
+opening, all 1,860 frames, without exception. **This is the same "shots fired the
+instant the window opens" pattern already reverted three times for Gohmaraq —
+just severe enough here to eat the entire window.**
+
+**Anemos's proximity counterattack is designed, not a bug.** `anemosLash` fires
+on `distToPlayer(e, g) < range`, with range 44/48/52 across its three phases —
+the function's own comment is "anything that stands next to it gets whipped."
+That range is **larger** than the ~24px `dBoss` must reach to swing, so every
+approach risks a 3-damage lash roughly every 70 frames before a swing is even
+thrown. `anemosFeed`'s window is generous at HIGH (160 of every 250 frames) —
+**vulnerability is not the bottleneck, the melee trade ratio is.** This is a
+legitimate risk/reward the boss was designed around, not a defect.
+
+### Two process lessons from the pile
+
+**Every boss's dramatic reveal rendered as an EMPTY ROOM** — a health bar and no
+boss — for the whole life of the project, because the `Boss.phase` collision set
+`hidden = true` whenever the Lens was not up, which is every first encounter a
+player will ever have. **Headless assertions proved the boss EXISTED the entire
+time this shipped; nothing proved it was VISIBLE.** No checker in the CLAUDE.md
+table can see this class of bug. It is the same argument that file already makes
+about compositing tiles needing a screenshot — **"is it on screen" needs an eye,
+not an assertion.**
+
+**A `git checkout -- <file>` mid-session to isolate a change is a real revert.**
+While bisecting, a `git checkout -- tools/actor-runtime.mjs` used to isolate an
+`enemy.js` change silently discarded that file's own unrelated good fixes for
+the rest of the session. **Save a patch (`git diff <file> > /tmp/x.patch`)
+BEFORE checking a file out for isolation, not after.**
+
 ## Hard-won lessons — do not rediscover these
+
+**A TILE'S NAME IS NOT ITS TIDE BEHAVIOUR — READ `room.flagsAt`, NOT THE
+LEGEND COMMENT.** The write-up that shipped alongside the Kilnshell claimed the
+Torch Cell needed HIGH tide to solve, on the reasoning that its floor is
+`dBasin` and `dBasin` is "dry at LOW and MID, shallow only at HIGH" — true of
+the tile in the abstract, and irrelevant to whether the room is passable,
+because none of `dBasin`'s three states ever carries `F.DEEP`. Regenerating
+`docs/GUIDE.md` against this fix meant checking `getRoom('d2', 0, 4, 5)
+.flagsAt(x, y, t)` directly for all three tide levels rather than trusting the
+prose, and the room turned out to have **no tide requirement at all** — the
+shell survives the walk to all three torches at any level. The claim was
+corrected in `docs/NEXT-SESSION.md` rather than repeated in the guide. **A tide
+comment describes what the tile usually implies, not what it does in this
+room**; the only source of truth for "can this be crossed, and does anything
+here go out" is the flag, asked of the room the checker or the guide is
+actually about.
+
+**A CHECKER'S "NOTE" IS A TODO WITH NO OWNER, AND IT WILL SIT THERE UNTIL
+SOMEONE READS THE VERBOSE OUTPUT AGAIN.** `check-hearts.mjs --verbose` has
+printed, since before the first `docs/GUIDE.md` rewrite, a short list of Heart
+Pieces reachable at only some tide levels — `cave2/0,0,0`@2,2 (LOW only) and
+`overworld/0,11,4`@5,5 (LOW/MID) among them. They are logged as "Notes (not
+failures)" on purpose, because a heart piece needing a specific tide is a
+design choice, not a bug, and the tool has nothing useful to assert about it.
+But a note nobody is obligated to act on is a note nobody acts on: the first
+guide rewrite listed both pieces as "in the open" / "no requirements" and
+`check-guide.mjs` had no way to catch it, because it checks that references
+resolve, not that prose about them is accurate. Caught only by rereading the
+verbose census by hand against the guide's own claims. **A checker's
+informational output is exactly as easy to leave stale as a comment is** —
+if it is worth printing, it is worth a line item in whatever document reads it.
 
 **Two unrelated concepts sharing a field name on the same class hierarchy
 made every boss in the game unkillable past its first phase, for the whole
