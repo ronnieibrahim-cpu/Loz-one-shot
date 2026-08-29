@@ -1,3 +1,206 @@
+## S1 — Impact: hitstop, shake weight, and the missing feel constants (this session)
+
+**Run per `docs/SESSION-PROMPTS.md` S1.** Branched from
+`claude/roadmap-branch-reconcile-0o24l8` rather than `main`, because
+`SESSION-PROMPTS.md`, `SESSION-HANDOFF.md` and `ROADMAP.md` — the three
+documents S1 is defined by — exist only on that branch and are not yet merged.
+`R0` says one session at a time merged before the next starts; that branch is
+still unmerged, so **this session's work sits on top of it and both need to go
+to `main` together.**
+
+### Oracle of Tides now freezes on a hit
+
+There was no hitstop anywhere in `src/` — not mistuned, absent. There is now.
+
+`Game.freeze(frames)` raises `Game.hitstop` (longest wins, like `shake`, so a
+bomb catching four enemies is one impact rather than four), and `Game.update`
+returns early on it. **Where that return sits is the entire feature.** It is
+below `frame++`, `input.update()`, `audio.update()`, `progress.frames++`,
+`updateTimers()`, `updateFade()`, the shake countdown, `tide.update()`,
+`scrim.update()` and the banner/itemShow/lure timers — and above
+`updatePhaseShift()`, `player.update`, the entity loop, `camera.update` and the
+room-exit/warp/puzzle checks. So the entity simulation stops and the music, the
+HUD, the animated water, the tide sweep and the shake keep running. **A hitstop
+that stopped the audio pump would stutter the music on every sword swing and is
+the documented way to ship this feature broken; it is now `T58`, and
+`tools/test.mjs` asserts both halves of it.**
+
+Three weights, all `guessed`, all in `feel.js`:
+
+| constant | frames | fires at |
+|---|---|---|
+| `HITSTOP_HIT_FRAMES` | 3 | `Entity.hurt` (every damage source funnels here) and `Boss.hurt` |
+| `HITSTOP_HURT_FRAMES` | 6 | `Player.takeDamage`, past every shield, charm and invuln check |
+| `HITSTOP_BOSS_DEATH_FRAMES` | 18 | `Boss.beginDeath`, under the same beat that cuts the music |
+
+`Boss.hurt` needed its own call because it **overrides** `Entity.hurt` rather
+than extending it — the shell block and the invuln early-return are the reason
+the override exists, and neither should freeze anything. A boss taking a
+non-lethal hit would otherwise have been the only hit in the game with no
+weight. `setRoom` clears `hitstop` (`T59`).
+
+### The six shake constants were re-tuned, and fourteen bare literals came home
+
+The six were tuned with nothing in front of them, so a shake had to carry the
+whole impact alone and had grown long doing it. With a freeze in front, the
+shake's job is only to release the freeze. **Amplitudes held; durations came
+down:** `SHAKE_SMALL_FRAMES` 8→6, `SHAKE_MEDIUM_FRAMES` 10→8,
+`SHAKE_LARGE_FRAMES` **40→24** (two thirds of a second of continuous wobble read
+as a rumble, not a blow; 18 frames of freeze plus 24 of shake is still shorter
+than the old 40 alone).
+
+Re-tuning them was going to be **cosmetic for every boss in the game**, because
+`src/data/bosses.js` spelled its shakes out as fourteen bare literals — a live
+`R3` violation, and the reason the six named constants described the shake of
+everything except the bosses. Four constants were added to give those literals
+honest names (`SHAKE_RUMBLE`/`_FRAMES` 2/12 for the tide being forced,
+`SHAKE_BOSS_SLAM`/`_FRAMES` 4/14 for a landing, pound or summon,
+`SHAKE_BOSS_BREAK`/`_FRAMES` 5/16 for armour shattering) and all fourteen call
+sites now use them. Shake is a draw-time offset from a hash of `frame`, so none
+of this moves a replay.
+
+### Text cadence is in feel.js, and the text blip was not a rhythm
+
+`dialogue.js:33` hardcoded `this.speed = 1.6` and line 86 hardcoded `fast ? 3 : 1`
+— `R3` violations on the timing constant a player meets more often than any
+except walking. Both are now `TEXT_SPEED` and `TEXT_FAST_SCALE`.
+
+**`TEXT_SPEED` deliberately keeps its historical 1.6 ch/f.** Both source games
+look closer to one character every other frame (≈0.5 here, three times slower),
+but that is an impression and `R3`/`T4` do not let an unmeasured number move the
+whole game's dialogue pacing. The suspicion is **written down in the constant's
+own comment and left unapplied**, which is what S11's Job 2 is for. It is now a
+one-line experiment for whoever steps a reference.
+
+The blip did change. `Math.floor(this.chars) % 3 === 0` tested the *running
+total*, not the characters revealed, so at a non-integer speed it fired on an
+irregular beat that changed with the speed — the click was an artefact, not a
+cadence. It now counts revealed characters (`TEXT_BEEP_EVERY`), which makes it a
+rhythm at any speed. `beeped` resets everywhere `chars` does, or page two is
+silent.
+
+### Death poof: right already, changed nothing
+
+Per the prompt's instruction not to rewrite things to look busy. `puff` is 4
+frames at `rate: 4` = **16 frames**, which is the source's enemy-death poof, and
+`Effect.spriteName` holds the last frame rather than looping. Left alone.
+
+### Item-get pose: measurably wrong, and now derived
+
+`ITEM_PRESENT_FRAMES` was 90. The `itemGet` jingle it exists to sit under is
+20 rows at bpm 132 / rowsPerBeat 4 = 6.82 f/row, and its last struck note stops
+ringing at row 17 — **116 frames**. Link put every new item in the game down 26
+frames before his own fanfare finished. Now 116, and marked `derived` (from the
+jingle's own tempo, which is checkable in `src/data/audio.js`) rather than
+`measured`, which would be a lie.
+
+### Replay churn: expected, deliberate, and diagnosed before re-recording
+
+`T5` landed exactly as written: 9 of 51 assertions failed. **The diagnosis came
+before the re-record** — every failure was in a replay that lands a hit, and
+every replay that never fights (`village-walk`, `village-shop-door`,
+`tide-steps-split`, `d5-overthrow`, `d1-sluicegate`, `d3-undertow`,
+`d6-mooring`) passed untouched. That pattern is what makes it churn rather than
+breakage.
+
+Re-recorded with `--record-all`; 51/51 green. Outcomes compared old vs new:
+
+| replay | outcome change |
+|---|---|
+| `d1-sluicegate`, `d3-undertow`, `d5-overthrow`, `d6-mooring`, `tide-steps-split`, `village-shop-door`, `village-walk` | **identical** |
+| `d1-clawcrab-den-wide` | +17 frames, same end state |
+| `d2-fork-wrong` | +3 frames, same end state |
+| `d4-drowned-sill` | ends 8px further up the same room |
+| `d1-descent` | 19→16 kills, 12→10 hearts, same frame budget |
+
+`d1-descent` is the only one worth a sentence: the recording actor is a fixed
+robot on a frame budget, and freezing it 3 frames per hit it lands and 6 per hit
+it takes costs it about three kills' worth of time. That is the freeze being
+real, not the actor getting worse.
+
+### Hitstop is a small NET GAIN in real combat, not a tax
+
+Measured with `V17` (`measure-boss-combat.mjs d1`, real combat, no god mode,
+3 hearts, seed 20260806), before vs after:
+
+| | boss damage dealt | player damage taken |
+|---|---|---|
+| before | 12 of 24 | 12 qh in 6 hits (5 projectile, **1 contact**) |
+| after | **16 of 24** | 12 qh in 6 hits (6 projectile, **0 contact**) |
+
+Both runs still end PLAYER DIED at 3 hearts, which is the known open problem the
+previous session left (win threshold 8–10 hearts, see below). But the freeze on
+a landed hit gives the player 3 frames of separation at the moment of contact,
+and the one `boss-contact` hit is gone. **Nothing about the boss fights got
+worse; do not spend S5's budget re-litigating this.**
+
+### Three checkers could not run at all, and now do (`T60`)
+
+`check-items` (V8) threw a Playwright install banner instead of running, in a
+container where `test.mjs` and `solve-switches.mjs` were fine: five tools
+(`check-items`, `check-charms`, `check-trade`, `find-ledges`, `preview`) called
+`chromium.launch()` without the system-Chromium `.catch` fallback the others
+already had. All five now carry it. **A checker that cannot launch is not a
+passing checker** — V8, the tool that proves every item does the verb
+`docs/ITEMS.md` claims, had been silently unrunnable here.
+
+### What was verified, and what was NOT
+
+Everything cited by the prompt, plus the full battery:
+
+```
+test.mjs            65 passed, 0 failed      (was 59; +6 hitstop)
+replay.mjs          51 passed, 0 failed      (re-recorded)
+check-playthrough   19 passed, 0 failed
+check-bosses        18 passed, 0 failed      (god mode, says so itself)
+validate            OK          walk-dungeons     23/0
+check-overworld     17/0        check-progression 19/0
+check-gates         26/0        check-towns       58/0
+check-motion         8/0        check-torches      5/0
+check-hearts     114/114        check-music       OK
+check-items         91/0        check-charms      63/0
+check-trade         43/0        check-guide        4/0
+check-anchor        14/0        check-cleats      15/0
+check-lens          24/0        check-bellows     60/0
+check-reefseed      87/0        check-dredge     103/0
+solve-switches      all 9 switch rooms solvable by pushing
+check-build         OK — boots from file://
+```
+
+The six new hitstop assertions were **proved to fail in both directions** before
+being believed: with `freeze()` stubbed to a no-op, three fail (including "the
+player or the enemy moved while frozen"); with the hitstop return moved above
+`frame++` — the exact frame-halt bug the prompt names as the failure condition —
+the other two fail. Neither half is vacuous.
+
+**NOT verified, and per `§4.2` not verifiable by any checker here: whether any
+of it FEELS right.** Three frames may be too few to register or enough to read
+as a hitch; 18 frames on a boss death may be a beat or a stall; 24 frames of
+large shake may now be too short. Those are the point of the session and they
+are the user's call. See the hand-off below.
+
+### Hand it back: what to compare in `dist/oracle-of-tides.html`
+
+1. **The sword hit.** New game, walk out of Tidewatch Village to the **overworld
+   room at (4,6)** — `test.mjs`'s own combat room, which spawns enemies on
+   arrival. Swing at an Octorok and watch the moment of contact. Compare against
+   the same swing with `HITSTOP_HIT_FRAMES` set to 0 in `src/data/feel.js` (one
+   line, then `npm run build`). **The two things to compare are the moment of
+   contact and the frame the enemy starts moving again.**
+2. **Taking a hit.** Same room, let one touch you. `HITSTOP_HURT_FRAMES` is 6 —
+   twice the sword's. **Compare how hard the knockback reads out of the freeze**
+   against 0.
+3. **A boss dying.** D1's Gohmaraq. 18 frames of freeze land under the music
+   cut. **Compare the death against `SHAKE_LARGE_FRAMES` at the old 40 with the
+   freeze at 0** — that is the old feel, and it is the A/B that matters most.
+4. **The text.** Any signpost. The blip is a rhythm now rather than an
+   artefact. **And say whether 1.6 ch/f is too fast** — the 0.5 experiment is
+   one line, documented in the constant, and deliberately left for you.
+5. **The item-get pose.** Open any chest. Link should now hold the item until
+   the fanfare actually finishes rather than 26 frames early.
+
+---
+
 ## START HERE (session of 2026-08-29 — reconcile, roadmap, prompt series)
 
 **Three documents drive the work from here. Read them in this order:**

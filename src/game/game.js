@@ -57,6 +57,7 @@ import { sp } from '../core/fixed.js';
 import {
   ROOM_TRANSITION_FRAMES, ROOM_EXIT_MARGIN, FADE_RATE, BANNER_FRAMES,
   SHAKE_LARGE, SHAKE_LARGE_FRAMES, BOSS_ESSENCE_DELAY_FRAMES,
+  HITSTOP_HIT_FRAMES, HITSTOP_HURT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES,
   BOSS_MUSIC_RESUME_FRAMES, ITEM_PRESENT_FRAMES, ESSENCE_FREEZE_FRAMES,
   GAMEOVER_WAIT_FRAMES, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE,
   LENS_FADE_FRAMES, LENS_GHOST_ALPHA, LENS_TINT_ALPHA, LENS_PHASE_ALPHA,
@@ -96,6 +97,7 @@ export class Game {
     this.mapId = null;
     this.boss = null;
     this.shakeAmp = 0; this.shakeTime = 0;
+    this.hitstop = 0;
     this.fadeAmount = 0; this.fadeDir = 0; this.fadeThen = null; this.fadeWhite = false;
     this.transition = null;
     this.bannerText = null; this.bannerTime = 0;
@@ -213,6 +215,10 @@ export class Game {
     const r = getRoom(this.mapId, floor, rx, ry);
     if (!r) { console.warn('[game] missing room', this.mapId, floor, rx, ry); return; }
     this.room = r;
+    // A freeze belongs to the hit that caused it and to the room it happened
+    // in. Carrying one across a room change would spend it stalling a room the
+    // player has only just walked into.
+    this.hitstop = 0;
     // Rebuild the room's stream before anything in the room can roll: the room
     // script, the puzzle check and every entity spawned below all read it.
     this.rng = roomStream(this.progress.seed, this.mapId, r.key);
@@ -975,6 +981,33 @@ export class Game {
 
   shake(amp, frames) { this.shakeAmp = Math.max(this.shakeAmp, amp); this.shakeTime = Math.max(this.shakeTime, frames); }
 
+  /**
+   * Hitstop: freeze the ENTITY SIMULATION for `frames` frames.
+   *
+   * This is not a frame halt and must never become one. Both source games
+   * freeze the world on a connecting hit while everything that is not the
+   * world keeps going, and the difference is audible: a hitstop that stopped
+   * `audio.update()` would stutter the music on every single sword swing, a
+   * hundred times a dungeon. What keeps running during a freeze, and why:
+   *
+   *   - `audio.update()` — the music and the hit's own sfx. Non-negotiable.
+   *   - `this.frame` — animated water, torches, the item shimmer and the
+   *     shake's own noise are all pure functions of it. Stopping it would
+   *     freeze the picture as well as the simulation.
+   *   - `shakeTime` — the shake starts UNDER the freeze and outlives it, which
+   *     is the whole reason the freeze reads as impact rather than as a hitch.
+   *   - `tide.update()` — the sweep is a scripted world event, not an entity.
+   *     A hit landing mid-sweep must not stall the wave front.
+   *   - `progress.frames`, the HUD, the banner and the fade.
+   *
+   * What stops is exactly `player.update`, the entity loop, the camera and the
+   * room-exit/warp/puzzle checks — the same block a tide sweep already pauses.
+   *
+   * Longest wins, like `shake`: a bomb catching four enemies is one impact,
+   * not four stacked ones.
+   */
+  freeze(frames) { this.hitstop = Math.max(this.hitstop, frames); }
+
   say(text, opts) { if (text) this.dialogue.show(text, opts); }
 
   /** Show a named dialogue script. Falls back to the id so gaps are visible. */
@@ -1186,6 +1219,12 @@ export class Game {
     // for its whole length.
     if (this.tide.busy) return;
     if (this.fadeDir) return;
+
+    // Hitstop. Everything above this line has already run for the frame —
+    // audio, the tide sweep, the shake, the HUD timers — and everything below
+    // it is the entity simulation. That is the whole of the mechanism; see
+    // `freeze`.
+    if (this.hitstop > 0) { this.hitstop--; return; }
 
     // The coin's swap waits for the sweep to finish; see onTideChanged.
     if (this.coinSwapPending > 0 && --this.coinSwapPending === 0) this.runCoinSwap();

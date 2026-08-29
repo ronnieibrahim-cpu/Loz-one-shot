@@ -13,7 +13,8 @@ Every id in this document (`R1`, `T14`, `V6`, `A3`) is stable. Prompts cite them
 **If you add a trap, append a new number — never renumber, and never reuse a
 retired one.**
 
-Last verified against the tree: **2026-08-29**, commit `0d435fc`.
+Last verified against the tree: **2026-08-29**, commit `0d435fc`; `§1`, `A1` and
+`§3` re-verified by S1 (hitstop).
 
 ---
 
@@ -62,10 +63,13 @@ produced most of §2.
 
 | Command | Result |
 |---|---|
-| `node tools/test.mjs` | 59 passed, 0 failed |
+| `node tools/test.mjs` | **65 passed, 0 failed** (S1 added six hitstop assertions) |
 | `node tools/check-hearts.mjs` | 114/114 |
 | `node tools/check-music.mjs` | OK — **22 tracks, 55 sfx** |
 | `node tools/check-playthrough.mjs` | 19 passed, 0 failed |
+| `node tools/check-items.mjs` | 91 passed, 0 failed *(could not launch at all before S1 — see `T60`)* |
+| `node tools/check-charms.mjs` | 63 passed, 0 failed *(same)* |
+| `node tools/check-trade.mjs` | 43 passed, 0 failed *(same)* |
 | `node tools/check-guide.mjs` | 4 passed, 0 failed *(was 3 of 4 FAILING before `db48311`)* |
 
 **The engine is in good shape and is not the problem.** Y-sorting is correct
@@ -104,18 +108,38 @@ from commit `0d435fc`** — verify before relying on one.
 
 ### A1 — Game feel and impact
 
-**There is no hitstop anywhere in `src/`.** Not mistuned — the concept does not
-exist. `grep -rn "hitstop\|hitStop\|freezeFrame" src/` returns nothing. Both
-source games freeze on a connecting hit. This is the most-repeated interaction
-in the game and it has no weight.
+**Hitstop exists as of S1.** `Game.freeze(frames)` holds `Game.hitstop`, and
+`Game.update` returns early on it — below `frame++`, `audio.update()`,
+`updateTimers`, `updateFade`, the shake countdown and `tide.update()`, and above
+`player.update` and the entity loop. So the entity simulation stops and the
+music, the HUD, the animated water and the shake do not. Three weights, all
+`guessed`: `HITSTOP_HIT_FRAMES` 3 (an attack connecting with an enemy),
+`HITSTOP_HURT_FRAMES` 6 (something hitting the player), `HITSTOP_BOSS_DEATH_FRAMES`
+18 (the killing blow on a boss). Wired at the three funnels every damage source
+already passes through: `Entity.hurt`, `Boss.hurt` (which overrides rather than
+extends it), `Player.takeDamage` and `Boss.beginDeath`. See `T58`, `T59`.
 
-- Screen shake exists and is wired (`game.shake()`), six constants in
-  `src/data/feel.js:389-405`, **all marked `guessed`**.
-- **`docs/HANDOFF.md:181`: "Nothing in `feel.js` is `measured`."** Every value in
-  the file is a guess, in a project whose stated first goal is fidelity.
-- **`src/game/dialogue.js:33` hardcodes `this.speed = 1.6`** characters per
-  frame, and line 86 hardcodes the `fast ? 3 : 1` multiplier. **This violates
-  `R3`.** It is also exactly the constant that sets text cadence.
+- Screen shake exists and is wired (`game.shake()`). S1 re-tuned the six
+  constants around the new freeze — **durations came down, amplitudes did not**
+  — and added four more (`SHAKE_RUMBLE`, `SHAKE_BOSS_SLAM`, `SHAKE_BOSS_BREAK`
+  and their frame counts) so that `src/data/bosses.js`'s **fourteen bare shake
+  literals** could stop being an `R3` violation. Before that, re-tuning the six
+  named constants changed the shake of everything in the game except the bosses.
+  All ten are still `guessed`.
+- **Nothing in `feel.js` is `measured`.** Every value is a guess, in a project
+  whose stated first goal is fidelity. `ITEM_PRESENT_FRAMES` is the one
+  exception to being a bare guess: it is now `derived` from the `itemGet`
+  jingle's own tempo (20 rows at bpm 132 / rowsPerBeat 4), because at 90 frames
+  Link put every new item down 26 frames before his own fanfare finished.
+  **This is still not `measured`** — see `R3`/`T4` and S11's Job 2.
+- **Text cadence is in `feel.js` as of S1**: `TEXT_SPEED`, `TEXT_FAST_SCALE`
+  and `TEXT_BEEP_EVERY`. `TEXT_SPEED` keeps its historical 1.6 ch/f rather than
+  being re-guessed; the suspicion that both source games are nearer 0.5 is
+  **written down in the constant's own comment and deliberately not applied**,
+  because nobody has frame-stepped it. The text blip did change: it was
+  `floor(chars) % 3 === 0`, tested against the running total, so at a
+  non-integer speed the click was an artefact rather than a rhythm. It now
+  counts revealed characters.
 
 ### A2 — Terrain and tiles
 
@@ -576,6 +600,30 @@ by number.
   on.**
 - **T57 — One session's work is invisible to the next until it is merged.** This
   is how D2 came within a hair of being built twice. See `R0`.
+- **T58 — A hitstop is one line away from being a frame halt, and the difference
+  is inaudible in a screenshot.** `Game.update` freezes by returning early, and
+  where that return sits is the whole feature: below `frame++`, `audio.update()`,
+  `updateTimers`, `updateFade`, the shake countdown and `tide.update()` it is a
+  simulation pause; above any of them it stutters the music on every sword
+  swing, a hundred times a dungeon, while looking completely correct in every
+  still. `tools/test.mjs`'s `--- hitstop ---` block asserts BOTH directions —
+  that the entities stop and that `g.frame` and `progress.frames` do not — and
+  both halves were proved to fail against a deliberately broken `freeze()`
+  before being believed. **If you move that return, run those six assertions.**
+- **T59 — A freeze belongs to the room it happened in.** `setRoom` clears
+  `hitstop` for the same reason it rebuilds the room stream: an 18-frame boss
+  death freeze carried through a warp would spend itself stalling a room the
+  player has only just walked into, and nothing would look wrong — the room
+  would just feel like it took a moment to start.
+- **T60 — Five checkers could not run at all in a clean container, and said so
+  in a stack trace rather than a failure.** `check-items`, `check-charms`,
+  `check-trade`, `find-ledges` and `preview` called `chromium.launch()` without
+  the system-Chromium fallback that `test.mjs` and `solve-switches.mjs` already
+  had, so V8 — the checker that proves every item does the verb `docs/ITEMS.md`
+  claims — threw a Playwright install banner instead of running. **A checker
+  that cannot launch is not a passing checker.** All five now carry the same
+  `.catch` fallback; all five pass (91, 63 and 43 assertions respectively for
+  the three that assert).
 
 ---
 
@@ -603,7 +651,7 @@ are faster than you are and they do not rationalise.
 | V13 | `node tools/check-playthrough.mjs` | **The only tool that plays the game.** A new game, no items granted, no warps, no flags set from outside |
 | V14 | `node tools/check-guide.mjs` | `docs/GUIDE.md` matches the world |
 | V15 | `node tools/check-build.mjs` | The shipped single-file build boots and plays from a `file://` URL |
-| V16 | `node tools/test.mjs` | Everything else |
+| V16 | `node tools/test.mjs` | Everything else — including, since S1, that hitstop freezes the entity simulation and NOT the frame counter, the audio pump or the play clock (`T58`) |
 | V17 | `node tools/measure-boss-combat.mjs` | Real combat, no god mode, with a per-hit damage log |
 | V18 | `node tools/shoot-rooms.mjs` | Renders in-game screenshots — the only way to check anything visual |
 

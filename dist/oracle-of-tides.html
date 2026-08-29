@@ -2840,6 +2840,44 @@ const FADE_RATE = 0.09;
 /** f — how long an area-name banner stays up. guessed. */
 const BANNER_FRAMES = 120;
 
+// IMPACT.
+//
+// A connecting hit in both source games freezes the SIMULATION for a few
+// frames — not the frame, not the music, not the HUD. `Game.hitstop` is that
+// pause: entities stop stepping and everything else keeps running. See the
+// comment above `Game.freeze` for what is deliberately left running and why.
+//
+// All three are `guessed`. They are the first numbers to settle by eye, and
+// the reason the shake constants below them were re-tuned at the same time: a
+// freeze in front of a shake changes what the shake reads as.
+
+/** f — freeze when the player's own attack connects with an enemy. guessed.
+ *  Short: this is the most-repeated interaction in the game and anything long
+ *  enough to notice as a pause becomes a stutter over a hundred swings. It
+ *  wants to read as weight in the swing, not as a hitch. */
+const HITSTOP_HIT_FRAMES = 3;
+
+/** f — freeze when something lands a hit on the player. guessed. Longer than
+ *  the one above: taking damage is rare and is meant to be felt, and the
+ *  knockback that follows reads harder out of a longer hold. */
+const HITSTOP_HURT_FRAMES = 6;
+
+/** f — freeze on the killing blow to a boss, before the death animation.
+ *  guessed. Long enough to be a beat rather than a hitch, and it lands under
+ *  the same moment `Game.bossDefeated` cuts the music. */
+const HITSTOP_BOSS_DEATH_FRAMES = 18;
+
+// SCREEN SHAKE.
+//
+// Re-tuned once hitstop existed. Every one of these was previously chosen with
+// nothing in front of it, so a shake had to carry the whole impact by itself
+// and had grown long to do it. With a freeze in front, the shake's job is only
+// to release the freeze — so amplitudes stay and DURATIONS COME DOWN. A shake
+// that outlasts its own freeze by more than about its own length again stops
+// reading as impact and starts reading as noise.
+//
+// Still `guessed`: nothing here has been frame-stepped against a reference.
+
 /** px — screen shake amplitude for a small impact (a hit landing). guessed. */
 const SHAKE_SMALL = 2;
 
@@ -2849,14 +2887,41 @@ const SHAKE_MEDIUM = 3;
 /** px — screen shake amplitude for a boss dying. guessed. */
 const SHAKE_LARGE = 4;
 
-/** f — shake duration for a small impact. guessed. */
-const SHAKE_SMALL_FRAMES = 8;
+/** f — shake duration for a small impact. guessed. Was 8, with no freeze in
+ *  front of it. HITSTOP_HIT_FRAMES now carries the first 3 frames of the hit,
+ *  so 6 puts the whole event at 9 frames instead of 8 and spends more of it
+ *  frozen than wobbling. */
+const SHAKE_SMALL_FRAMES = 6;
 
-/** f — shake duration for an explosion. guessed. */
-const SHAKE_MEDIUM_FRAMES = 10;
+/** f — shake duration for an explosion or a boss stomp. guessed. Was 10. */
+const SHAKE_MEDIUM_FRAMES = 8;
 
-/** f — shake duration for a boss dying. guessed. */
-const SHAKE_LARGE_FRAMES = 40;
+/** f — shake duration for a boss dying. guessed. Was 40, which was two thirds
+ *  of a second of continuous camera wobble and read as a rumble rather than a
+ *  blow. HITSTOP_BOSS_DEATH_FRAMES now supplies the weight; 24 is what is left
+ *  to release it, and the two together are still shorter than the old 40. */
+const SHAKE_LARGE_FRAMES = 24;
+
+/** px, f — a boss landing, summoning or slamming the floor. guessed. Heavier
+ *  than MEDIUM and lighter than a death; it exists because `src/data/bosses.js`
+ *  spelled this weight out as bare literals at fourteen call sites, which is
+ *  exactly what R3 forbids and what made re-tuning the six constants above a
+ *  cosmetic change for every boss in the game. */
+const SHAKE_BOSS_SLAM = 4;
+const SHAKE_BOSS_SLAM_FRAMES = 14;
+
+/** px, f — a sustained world rumble rather than a blow: the tide being forced
+ *  to a level, ground giving way. guessed. Small amplitude, but the longest
+ *  duration of any shake that is not a boss dying — a rumble is defined by
+ *  lasting, and it is the one shake that is NOT preceded by a freeze, because
+ *  nothing has been hit. */
+const SHAKE_RUMBLE = 2;
+const SHAKE_RUMBLE_FRAMES = 12;
+
+/** px, f — a boss's armour or a wall shattering: the sharpest short shake in
+ *  the game, and the only one that goes above SHAKE_LARGE's amplitude. guessed. */
+const SHAKE_BOSS_BREAK = 5;
+const SHAKE_BOSS_BREAK_FRAMES = 16;
 
 // ---------------------------------------------------------------------------
 // Player states other than walking
@@ -2877,14 +2942,51 @@ const PUSH_DELAY_FRAMES = 18;
 /** f — how long a Pegasus Seed's speed boost lasts. guessed. */
 const PEGASUS_FRAMES = 300;
 
-/** f — how long Link holds a new item overhead. guessed. */
-const ITEM_PRESENT_FRAMES = 90;
+/** f — how long Link holds a new item overhead. derived from the `itemGet`
+ *  jingle, which is what the pose exists to sit under: 20 rows at bpm 132 and
+ *  rowsPerBeat 4 is 6.82 f/row, and its last struck note stops ringing at row
+ *  17 — 116 frames. It was 90, so Link put the item down a full 26 frames
+ *  before his own fanfare finished, every time. The pose now outlasts the
+ *  phrase instead of being cut off by it. */
+const ITEM_PRESENT_FRAMES = 116;
 
 /** f — how long Link is frozen when claiming an essence. guessed. */
 const ESSENCE_FREEZE_FRAMES = 150;
 
 /** f — how long the game-over screen holds before it accepts a button. guessed. */
 const GAMEOVER_WAIT_FRAMES = 100;
+
+// TEXT.
+//
+// These lived inside `src/game/dialogue.js` as bare literals for the whole life
+// of the project, which is the R3 violation the file's own header warns about:
+// text cadence is the timing constant a player is exposed to more often than
+// any other except walking, and it was not in this file.
+
+/** chars/f — how fast a dialogue page reveals itself. guessed, and the single
+ *  most-felt number in the game after WALK_SPEED. 1.6 is what the game has
+ *  always read at; it is preserved here rather than re-guessed.
+ *
+ *  WRITTEN DOWN AND DELIBERATELY NOT APPLIED: both source games look closer to
+ *  one character every other frame in ordinary dialogue — around 0.5 here,
+ *  which would be roughly three times slower. That is an impression, not a
+ *  measurement, and per R3/T4 a number nobody has frame-stepped does not get to
+ *  move the whole game's dialogue pacing. Now that it is one named constant it
+ *  is a one-line experiment for whoever does step a reference. */
+const TEXT_SPEED = 1.6;
+
+/** x — multiplier on TEXT_SPEED while A or B is held. guessed. Held-button
+ *  fast-forward is a source-game behaviour; 3x makes a long page skimmable
+ *  without skipping it outright. */
+const TEXT_FAST_SCALE = 3;
+
+/** chars — one text blip per this many revealed characters. guessed. It used
+ *  to be `floor(chars) % 3 === 0`, tested against the running total rather than
+ *  counting characters, so at a non-integer TEXT_SPEED the blip fired on an
+ *  irregular beat that changed with the speed — the click was not a rhythm, it
+ *  was an artefact. Counting revealed characters makes the cadence a rhythm
+ *  again and keeps it one at any speed. */
+const TEXT_BEEP_EVERY = 3;
 
 /** px — how far in front of Link an A-button context action reaches. guessed. */
 const CONTEXT_REACH = 12;
@@ -3557,12 +3659,21 @@ __exports["CAM_MAX_SPEED"] = CAM_MAX_SPEED;
 __exports["TIDE_SWEEP_FRAMES"] = TIDE_SWEEP_FRAMES;
 __exports["FADE_RATE"] = FADE_RATE;
 __exports["BANNER_FRAMES"] = BANNER_FRAMES;
+__exports["HITSTOP_HIT_FRAMES"] = HITSTOP_HIT_FRAMES;
+__exports["HITSTOP_HURT_FRAMES"] = HITSTOP_HURT_FRAMES;
+__exports["HITSTOP_BOSS_DEATH_FRAMES"] = HITSTOP_BOSS_DEATH_FRAMES;
 __exports["SHAKE_SMALL"] = SHAKE_SMALL;
 __exports["SHAKE_MEDIUM"] = SHAKE_MEDIUM;
 __exports["SHAKE_LARGE"] = SHAKE_LARGE;
 __exports["SHAKE_SMALL_FRAMES"] = SHAKE_SMALL_FRAMES;
 __exports["SHAKE_MEDIUM_FRAMES"] = SHAKE_MEDIUM_FRAMES;
 __exports["SHAKE_LARGE_FRAMES"] = SHAKE_LARGE_FRAMES;
+__exports["SHAKE_BOSS_SLAM"] = SHAKE_BOSS_SLAM;
+__exports["SHAKE_BOSS_SLAM_FRAMES"] = SHAKE_BOSS_SLAM_FRAMES;
+__exports["SHAKE_RUMBLE"] = SHAKE_RUMBLE;
+__exports["SHAKE_RUMBLE_FRAMES"] = SHAKE_RUMBLE_FRAMES;
+__exports["SHAKE_BOSS_BREAK"] = SHAKE_BOSS_BREAK;
+__exports["SHAKE_BOSS_BREAK_FRAMES"] = SHAKE_BOSS_BREAK_FRAMES;
 __exports["FALL_FRAMES"] = FALL_FRAMES;
 __exports["WASH_FRAMES"] = WASH_FRAMES;
 __exports["CONCH_FRAMES"] = CONCH_FRAMES;
@@ -3571,6 +3682,9 @@ __exports["PEGASUS_FRAMES"] = PEGASUS_FRAMES;
 __exports["ITEM_PRESENT_FRAMES"] = ITEM_PRESENT_FRAMES;
 __exports["ESSENCE_FREEZE_FRAMES"] = ESSENCE_FREEZE_FRAMES;
 __exports["GAMEOVER_WAIT_FRAMES"] = GAMEOVER_WAIT_FRAMES;
+__exports["TEXT_SPEED"] = TEXT_SPEED;
+__exports["TEXT_FAST_SCALE"] = TEXT_FAST_SCALE;
+__exports["TEXT_BEEP_EVERY"] = TEXT_BEEP_EVERY;
 __exports["CONTEXT_REACH"] = CONTEXT_REACH;
 __exports["LIFT_REACH"] = LIFT_REACH;
 __exports["THROW_SPEED"] = THROW_SPEED;
@@ -4191,7 +4305,7 @@ const { TILE } = __require("core/screen.js");
 const { sprites } = __require("gfx/art.js");
 const { FP_ONE, sp, toPx } = __require("core/fixed.js");
 const { F } = __require("world/tileset.js");
-const { ENEMY_INVULN_FRAMES, ENEMY_FLICKER_FRAMES, ENEMY_KNOCK_FRAMES, KNOCK_DEFAULT } = __require("data/feel.js");
+const { ENEMY_INVULN_FRAMES, ENEMY_FLICKER_FRAMES, ENEMY_KNOCK_FRAMES, KNOCK_DEFAULT, HITSTOP_HIT_FRAMES } = __require("data/feel.js");
 
 const ENTITY_TYPES = new Map();
 
@@ -4313,6 +4427,11 @@ class Entity {
       this.knockX = Math.round(dx * per); this.knockY = Math.round(dy * per);
       this.knockTime = ENEMY_KNOCK_FRAMES;
     }
+    // The freeze goes on the hit CONNECTING, not on the sword specifically:
+    // this is the one funnel every damage source in the game passes through,
+    // so a bomb, a thrown pot and a swing all land with the same weight.
+    // Longest-wins inside `freeze` keeps a four-enemy explosion to one impact.
+    if (this.isEnemy) game.freeze(HITSTOP_HIT_FRAMES);
     if (this.hp <= 0) { this.die(game); return true; }
     game.audio.sfx('enemyHit');
     if (this.onHurt) this.onHurt(game);
@@ -6622,7 +6741,7 @@ const { sp, toPx } = __require("core/fixed.js");
 const { sprites } = __require("gfx/art.js");
 const { hasItem, itemLevel, HEART_UNITS } = __require("game/progress.js");
 const { useEquipped, ITEMS, ThrownObject } = __require("game/items.js");
-const { WALK_SPEED, SWIM_SPEED, BOOST_SPEED, SHIELD_SPEED, SLOW_FACTOR, SHALLOW_FACTOR, CARRY_FACTOR, SPIN_DRIFT_SPEED, SWORD_HOLD_SPEED, SWING_FRAMES, SWING_HIT_START, SWING_HIT_END, CHARGE_FRAMES, CHARGE_SPARKLE_EVERY, SPIN_FRAMES, SWORD_REACH, SWORD_SPAN, SWORD_GAP, SPIN_BOX, SWORD_HOLD_DELAY, SWORD_HOLD_DAMAGE, SWORD_CLINK_COOLDOWN, KNOCK_HOLD, PLAYER_INVULN_FRAMES, PLAYER_FLICKER_FRAMES, PLAYER_RECOVER_INVULN_FRAMES, PLAYER_HURT_FRAMES, PLAYER_KNOCK_DIST, PLAYER_KNOCK_FRAMES, KNOCK_SWORD, KNOCK_SPIN, HAZARD_DAMAGE, PIT_DAMAGE, WASH_DAMAGE, JUMP_GRAVITY, LAND_SETTLE_RATE, LEDGE_MAX_SPAN, LEDGE_HOP_FRAMES, LEDGE_HOP_HEIGHT, LEDGE_PROBE_REACH, GAP_HOP_MAX_SPAN, FALL_FRAMES, WASH_FRAMES, CONCH_FRAMES, PUSH_DELAY_FRAMES, LENS_FADE_FRAMES, BELLOWS_RANGE, BELLOWS_WARMUP_FRAMES, BELLOWS_PUSH, BELLOWS_PUFF_EVERY, BELLOWS_RAFT_SCALE, SINK_SPEED, SINK_ENTER_FRAMES, CLEATS_BREATH_FRAMES, CLEATS_BREATH_WARN_FRAMES, SINK_BUBBLE_EVERY, SINK_DROWN_DAMAGE, CONTEXT_REACH, LIFT_REACH, LIFT_STRENGTH, THROW_SPEED, CARRY_HEIGHT, ROD_RING_FRAMES, SHAKE_SMALL, SHAKE_SMALL_FRAMES, CHARGE_SPARKLE_SPREAD, WADE_FOAM_EVERY, PUSH_PROBE_REACH, RIPTIDE_FIN_FACTOR, DEADWEIGHT_FACTOR, KELP_BRAID_FACTOR, SPLIT_FANG_SPAN, SEAWOLF_KNOCK_FACTOR, HAGSTONE_CHANCE, STRANDWALKER_EVERY, PRESSURE_SCAR_FACTOR, BOSUN_FACTOR } = __require("data/feel.js");
+const { WALK_SPEED, SWIM_SPEED, BOOST_SPEED, SHIELD_SPEED, SLOW_FACTOR, SHALLOW_FACTOR, CARRY_FACTOR, SPIN_DRIFT_SPEED, SWORD_HOLD_SPEED, SWING_FRAMES, SWING_HIT_START, SWING_HIT_END, CHARGE_FRAMES, CHARGE_SPARKLE_EVERY, SPIN_FRAMES, SWORD_REACH, SWORD_SPAN, SWORD_GAP, SPIN_BOX, SWORD_HOLD_DELAY, SWORD_HOLD_DAMAGE, SWORD_CLINK_COOLDOWN, KNOCK_HOLD, PLAYER_INVULN_FRAMES, PLAYER_FLICKER_FRAMES, PLAYER_RECOVER_INVULN_FRAMES, PLAYER_HURT_FRAMES, PLAYER_KNOCK_DIST, PLAYER_KNOCK_FRAMES, KNOCK_SWORD, KNOCK_SPIN, HAZARD_DAMAGE, PIT_DAMAGE, WASH_DAMAGE, JUMP_GRAVITY, LAND_SETTLE_RATE, LEDGE_MAX_SPAN, LEDGE_HOP_FRAMES, LEDGE_HOP_HEIGHT, LEDGE_PROBE_REACH, GAP_HOP_MAX_SPAN, FALL_FRAMES, WASH_FRAMES, CONCH_FRAMES, PUSH_DELAY_FRAMES, LENS_FADE_FRAMES, BELLOWS_RANGE, BELLOWS_WARMUP_FRAMES, BELLOWS_PUSH, BELLOWS_PUFF_EVERY, BELLOWS_RAFT_SCALE, SINK_SPEED, SINK_ENTER_FRAMES, CLEATS_BREATH_FRAMES, CLEATS_BREATH_WARN_FRAMES, SINK_BUBBLE_EVERY, SINK_DROWN_DAMAGE, CONTEXT_REACH, LIFT_REACH, LIFT_STRENGTH, THROW_SPEED, CARRY_HEIGHT, ROD_RING_FRAMES, SHAKE_SMALL, SHAKE_SMALL_FRAMES, CHARGE_SPARKLE_SPREAD, WADE_FOAM_EVERY, PUSH_PROBE_REACH, RIPTIDE_FIN_FACTOR, DEADWEIGHT_FACTOR, KELP_BRAID_FACTOR, SPLIT_FANG_SPAN, SEAWOLF_KNOCK_FACTOR, HAGSTONE_CHANCE, STRANDWALKER_EVERY, PRESSURE_SCAR_FACTOR, BOSUN_FACTOR, HITSTOP_HURT_FRAMES } = __require("data/feel.js");
 
 class Player extends Entity {
   constructor(x, y) {
@@ -7675,6 +7794,8 @@ class Player extends Entity {
     if (o.hazard && game.charm('brineSkin')) dmg = Math.max(1, Math.round(dmg * 0.5));
     if (game.charm('wrackbone')) dmg = Math.round(dmg * 2);
 
+    // Past every block, charm and shield: something has actually hit Link.
+    game.freeze(HITSTOP_HURT_FRAMES);
     p.hearts = Math.max(0, p.hearts - dmg);
     this.invuln = PLAYER_INVULN_FRAMES;
     this.flicker = PLAYER_FLICKER_FRAMES;
@@ -9379,6 +9500,7 @@ __define("game/dialogue.js", function (__exports, __require) {
 const { SCREEN_W, SCREEN_H, HUD_H, VIEW_H } = __require("core/screen.js");
 const { drawText, textWidth, paginate } = __require("gfx/font.js");
 const { sprites } = __require("gfx/art.js");
+const { TEXT_SPEED, TEXT_FAST_SCALE, TEXT_BEEP_EVERY } = __require("data/feel.js");
 
 const BOX_X = 4;
 const BOX_W = SCREEN_W - 8;
@@ -9405,8 +9527,8 @@ class Dialogue {
     this.active = false;
     this.pages = [];
     this.page = 0;
-    this.chars = 0;
-    this.speed = 1.6;          // characters per frame
+    this.chars = 0; this.beeped = 0;
+    this.speed = TEXT_SPEED;   // chars/f; see src/data/feel.js
     this.done = false;
     this.onClose = null;
     this.choices = null;       // { options:[...], index, onPick }
@@ -9424,7 +9546,7 @@ class Dialogue {
     if (this.active) { this.queue.push([text, opts]); return; }
     this.pages = paginate(String(text), BOX_W - PAD * 2 - 2, LINES);
     this.page = 0;
-    this.chars = 0;
+    this.chars = 0; this.beeped = 0;
     this.active = true;
     this.done = false;
     this.onClose = opts.onClose || null;
@@ -9459,9 +9581,16 @@ class Dialogue {
 
     if (this.chars < this.pageLen) {
       const fast = i.down('a') || i.down('b');
-      this.chars = Math.min(this.pageLen, this.chars + this.speed * (fast ? 3 : 1));
-      // Click as characters appear, but not on every single one.
-      if (Math.floor(this.chars) % 3 === 0) this.game.audio.sfx('text', { vol: 0.4 });
+      this.chars = Math.min(this.pageLen, this.chars + this.speed * (fast ? TEXT_FAST_SCALE : 1));
+      // Click as characters appear, but not on every single one. Counted off
+      // the characters actually revealed, not off the running total: testing
+      // `floor(chars) % N` made the blip's beat an artefact of a non-integer
+      // TEXT_SPEED rather than a rhythm.
+      const shown = Math.floor(this.chars);
+      if (shown - this.beeped >= TEXT_BEEP_EVERY) {
+        this.beeped = shown - (shown % TEXT_BEEP_EVERY);
+        this.game.audio.sfx('text', { vol: 0.4 });
+      }
       return;
     }
 
@@ -9493,7 +9622,7 @@ class Dialogue {
     if (i.pressed('a') || i.pressed('b')) {
       if (this.page < this.pages.length - 1) {
         this.page++;
-        this.chars = 0;
+        this.chars = 0; this.beeped = 0;
         this.game.audio.sfx('textNext');
       } else {
         this.game.audio.sfx('textNext');
@@ -11429,7 +11558,7 @@ const { Title } = __require("game/title.js");
 const { runCutscene, CUTSCENES } = __require("game/cutscene.js");
 const { Stream, seedGlobal, roomStream, noise1, rng: rngGlobal } = __require("core/rng.js");
 const { sp } = __require("core/fixed.js");
-const { ROOM_TRANSITION_FRAMES, ROOM_EXIT_MARGIN, FADE_RATE, BANNER_FRAMES, SHAKE_LARGE, SHAKE_LARGE_FRAMES, BOSS_ESSENCE_DELAY_FRAMES, BOSS_MUSIC_RESUME_FRAMES, ITEM_PRESENT_FRAMES, ESSENCE_FREEZE_FRAMES, GAMEOVER_WAIT_FRAMES, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, LENS_FADE_FRAMES, LENS_GHOST_ALPHA, LENS_TINT_ALPHA, LENS_PHASE_ALPHA, LENS_SHIMMER_FRAMES, REEFSEED_CAPACITY, COIN_SWAP_DELAY_FRAMES, BOTTLE_CAPACITY, CARVE_TIDE_TURNS, QUARTERMASTER_BONUS, CHANDLER_FACTOR, LANTERN_RADIUS, GULLS_TALLY_FACTOR, CARVE_PRICE, PICKUP_LIFE_FRAMES, WRECK_GLIMMER_PERIOD, WRECK_GLIMMER_ON, WRECK_GLIMMER_ALPHA, CAM_DEADZONE_W, CAM_DEADZONE_H } = __require("data/feel.js");
+const { ROOM_TRANSITION_FRAMES, ROOM_EXIT_MARGIN, FADE_RATE, BANNER_FRAMES, SHAKE_LARGE, SHAKE_LARGE_FRAMES, BOSS_ESSENCE_DELAY_FRAMES, HITSTOP_HIT_FRAMES, HITSTOP_HURT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES, BOSS_MUSIC_RESUME_FRAMES, ITEM_PRESENT_FRAMES, ESSENCE_FREEZE_FRAMES, GAMEOVER_WAIT_FRAMES, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, LENS_FADE_FRAMES, LENS_GHOST_ALPHA, LENS_TINT_ALPHA, LENS_PHASE_ALPHA, LENS_SHIMMER_FRAMES, REEFSEED_CAPACITY, COIN_SWAP_DELAY_FRAMES, BOTTLE_CAPACITY, CARVE_TIDE_TURNS, QUARTERMASTER_BONUS, CHANDLER_FACTOR, LANTERN_RADIUS, GULLS_TALLY_FACTOR, CARVE_PRICE, PICKUP_LIFE_FRAMES, WRECK_GLIMMER_PERIOD, WRECK_GLIMMER_ON, WRECK_GLIMMER_ALPHA, CAM_DEADZONE_W, CAM_DEADZONE_H } = __require("data/feel.js");
 
 class Game {
   constructor(screen, input) {
@@ -11460,6 +11589,7 @@ class Game {
     this.mapId = null;
     this.boss = null;
     this.shakeAmp = 0; this.shakeTime = 0;
+    this.hitstop = 0;
     this.fadeAmount = 0; this.fadeDir = 0; this.fadeThen = null; this.fadeWhite = false;
     this.transition = null;
     this.bannerText = null; this.bannerTime = 0;
@@ -11577,6 +11707,10 @@ class Game {
     const r = getRoom(this.mapId, floor, rx, ry);
     if (!r) { console.warn('[game] missing room', this.mapId, floor, rx, ry); return; }
     this.room = r;
+    // A freeze belongs to the hit that caused it and to the room it happened
+    // in. Carrying one across a room change would spend it stalling a room the
+    // player has only just walked into.
+    this.hitstop = 0;
     // Rebuild the room's stream before anything in the room can roll: the room
     // script, the puzzle check and every entity spawned below all read it.
     this.rng = roomStream(this.progress.seed, this.mapId, r.key);
@@ -12339,6 +12473,33 @@ class Game {
 
   shake(amp, frames) { this.shakeAmp = Math.max(this.shakeAmp, amp); this.shakeTime = Math.max(this.shakeTime, frames); }
 
+  /**
+   * Hitstop: freeze the ENTITY SIMULATION for `frames` frames.
+   *
+   * This is not a frame halt and must never become one. Both source games
+   * freeze the world on a connecting hit while everything that is not the
+   * world keeps going, and the difference is audible: a hitstop that stopped
+   * `audio.update()` would stutter the music on every single sword swing, a
+   * hundred times a dungeon. What keeps running during a freeze, and why:
+   *
+   *   - `audio.update()` — the music and the hit's own sfx. Non-negotiable.
+   *   - `this.frame` — animated water, torches, the item shimmer and the
+   *     shake's own noise are all pure functions of it. Stopping it would
+   *     freeze the picture as well as the simulation.
+   *   - `shakeTime` — the shake starts UNDER the freeze and outlives it, which
+   *     is the whole reason the freeze reads as impact rather than as a hitch.
+   *   - `tide.update()` — the sweep is a scripted world event, not an entity.
+   *     A hit landing mid-sweep must not stall the wave front.
+   *   - `progress.frames`, the HUD, the banner and the fade.
+   *
+   * What stops is exactly `player.update`, the entity loop, the camera and the
+   * room-exit/warp/puzzle checks — the same block a tide sweep already pauses.
+   *
+   * Longest wins, like `shake`: a bomb catching four enemies is one impact,
+   * not four stacked ones.
+   */
+  freeze(frames) { this.hitstop = Math.max(this.hitstop, frames); }
+
   say(text, opts) { if (text) this.dialogue.show(text, opts); }
 
   /** Show a named dialogue script. Falls back to the id so gaps are visible. */
@@ -12550,6 +12711,12 @@ class Game {
     // for its whole length.
     if (this.tide.busy) return;
     if (this.fadeDir) return;
+
+    // Hitstop. Everything above this line has already run for the frame —
+    // audio, the tide sweep, the shake, the HUD timers — and everything below
+    // it is the entity simulation. That is the whole of the mechanism; see
+    // `freeze`.
+    if (this.hitstop > 0) { this.hitstop--; return; }
 
     // The coin's swap waits for the sweep to finish; see onTideChanged.
     if (this.coinSwapPending > 0 && --this.coinSwapPending === 0) this.runCoinSwap();
@@ -19557,7 +19724,7 @@ const { F } = __require("world/tileset.js");
 const { TILE } = __require("core/screen.js");
 const { hash32 } = __require("core/rng.js");
 const { FP_ONE, sp, toPx } = __require("core/fixed.js");
-const { ENEMY_DEFAULT_SPEED, ENEMY_DEFAULT_RATE, ENEMY_TURN_CHANCE, ENEMY_BEACHED_FRAMES, ENEMY_GRID_STEP, ENEMY_DECIDE_STEPS, ENEMY_TURN_PAUSE_FRAMES, ENEMY_CHARGE_SPEED_MULT, ENEMY_CHARGE_RECOVER_FRAMES, ENEMY_CHARGE_TOLERANCE, ENEMY_CHARGE_RANGE, ENEMY_HOP_WAIT_FRAMES, ENEMY_HOP_DIST, ENEMY_HOP_FRAMES, ENEMY_HOP_HEIGHT, ENEMY_ORBIT_SPEED, ENEMY_ORBIT_RADIUS, ENEMY_SUBMERGE_DOWN_FRAMES, ENEMY_SUBMERGE_UP_FRAMES, ENEMY_SURFACE_MIN_DIST, ENEMY_SURFACE_DIST_SPAN, ENEMY_ALIGN_TOLERANCE, ENEMY_KNOCK_FRAMES, ENEMY_SHOT_SPEED, ENEMY_SHOT_LIFE, RING_SHOT_SPEED, RING_SHOT_LIFE, BOSS_INTRO_FRAMES, BOSS_INVULN_FRAMES, BOSS_PHASE_INVULN_FRAMES, BOSS_KNOCK_FRAMES, BOSS_KNOCK_SCALE, BOSS_DEATH_FRAMES, BOSS_DEATH_BOOM_EVERY, SHAKE_MEDIUM, SHAKE_SMALL_FRAMES, TIDE_DRIFT_PER_LEVEL, DREDGE_FLOP_DAMAGE_SCALE } = __require("data/feel.js");
+const { ENEMY_DEFAULT_SPEED, ENEMY_DEFAULT_RATE, ENEMY_TURN_CHANCE, ENEMY_BEACHED_FRAMES, ENEMY_GRID_STEP, ENEMY_DECIDE_STEPS, ENEMY_TURN_PAUSE_FRAMES, ENEMY_CHARGE_SPEED_MULT, ENEMY_CHARGE_RECOVER_FRAMES, ENEMY_CHARGE_TOLERANCE, ENEMY_CHARGE_RANGE, ENEMY_HOP_WAIT_FRAMES, ENEMY_HOP_DIST, ENEMY_HOP_FRAMES, ENEMY_HOP_HEIGHT, ENEMY_ORBIT_SPEED, ENEMY_ORBIT_RADIUS, ENEMY_SUBMERGE_DOWN_FRAMES, ENEMY_SUBMERGE_UP_FRAMES, ENEMY_SURFACE_MIN_DIST, ENEMY_SURFACE_DIST_SPAN, ENEMY_ALIGN_TOLERANCE, ENEMY_KNOCK_FRAMES, ENEMY_SHOT_SPEED, ENEMY_SHOT_LIFE, RING_SHOT_SPEED, RING_SHOT_LIFE, BOSS_INTRO_FRAMES, BOSS_INVULN_FRAMES, BOSS_PHASE_INVULN_FRAMES, BOSS_KNOCK_FRAMES, BOSS_KNOCK_SCALE, BOSS_DEATH_FRAMES, BOSS_DEATH_BOOM_EVERY, SHAKE_MEDIUM, SHAKE_SMALL_FRAMES, TIDE_DRIFT_PER_LEVEL, DREDGE_FLOP_DAMAGE_SCALE, HITSTOP_HIT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES } = __require("data/feel.js");
 
 const TERRAIN_AVOID = {
   land: F.WATER | F.DEEP | F.PIT | F.HAZARD | F.JUMPABLE,
@@ -19852,6 +20019,11 @@ class Boss extends Enemy {
       this.knockTime = BOSS_KNOCK_FRAMES;
     }
     if (this.spec.onHurt) this.spec.onHurt(this, game, dmg);
+    // `Boss.hurt` overrides `Entity.hurt` rather than extending it, so the
+    // freeze that every other enemy gets from the base class has to be spelled
+    // out again here — the shell block and the invuln return above are the
+    // whole reason the override exists, and neither should freeze anything.
+    game.freeze(HITSTOP_HIT_FRAMES);
     if (this.hp <= 0) { this.beginDeath(game); return true; }
     game.audio.sfx('enemyHit');
     return true;
@@ -19861,6 +20033,10 @@ class Boss extends Enemy {
     this.dying = true;
     this.deathTime = 0;
     this.hp = 0;
+    // The heaviest freeze in the game, on the one hit it is worth spending it
+    // on. The music has just been cut on the line below, so what the player
+    // hears under the hold is the death sfx alone — which is the point.
+    game.freeze(HITSTOP_BOSS_DEATH_FRAMES);
     game.audio.stop();
     game.audio.sfx('bossDie');
   }
@@ -20878,6 +21054,10 @@ __define("data/bosses.js", function (__exports, __require) {
 const { defineBoss } = __require("game/enemy.js");
 const { wander, chase, patrol, bounceDiag, charge, orbit, submerge, shoot, shootRing, every, timer, aligned, facePlayer, distToPlayer, moveDir, driftWithTide } = __require("game/enemy.js");
 const { spawnEntity, moveEntity } = __require("game/entity.js");
+// Shake weights are timing/feel constants and belong in feel.js (R3). They were
+// fourteen bare literals in this file, which meant the six named constants next
+// door described the shake of everything in the game EXCEPT the bosses.
+const { SHAKE_SMALL, SHAKE_MEDIUM, SHAKE_MEDIUM_FRAMES, SHAKE_RUMBLE, SHAKE_RUMBLE_FRAMES, SHAKE_BOSS_SLAM, SHAKE_BOSS_SLAM_FRAMES, SHAKE_BOSS_BREAK, SHAKE_BOSS_BREAK_FRAMES } = __require("data/feel.js");
 const { fire } = __require("game/projectile.js");
 const { TILE } = __require("core/screen.js");
 const { sp } = __require("core/fixed.js");
@@ -20979,7 +21159,7 @@ function unlockTide(g) { g.tide.locked = false; }
 function forceTide(e, g, level) {
   if (g.tide.level === level || g.tide.busy) return false;
   g.audio.sfx('conch');
-  g.shake(2, 12);
+  g.shake(SHAKE_RUMBLE, SHAKE_RUMBLE_FRAMES);
   g.tide.setLevel(level);
   return true;
 }
@@ -21022,7 +21202,7 @@ function installBosses() {
     init(e) { e._pdir = 'right'; e._open = 0; },
     onIntro(e, g) { unlockTide(g); },
     onPhase(e, g, i) {
-      if (i === 2) { summon(g, e, 'crab', 2); g.shake(3, 16); }
+      if (i === 2) { summon(g, e, 'crab', 2); g.shake(SHAKE_BOSS_SLAM, SHAKE_BOSS_SLAM_FRAMES); }
     },
     phases: [
       // Scuttles the width of the arena and slams when you line up with it.
@@ -21057,7 +21237,7 @@ function installBosses() {
   // buried — leaving the eye open. Drained, the shell cracks and it sticks.
   function gohmaraqSlam(e, g, shots, openFor) {
     windUp(e, g, 22, (e2, g2) => {
-      g2.shake(4, 14);
+      g2.shake(SHAKE_BOSS_SLAM, SHAKE_BOSS_SLAM_FRAMES);
       g2.audio.sfx('explode');
       spread(e2, g2, shots, 70, { sprite: 'shot_rock', speed: 1.5, damage: 2 });
       open(e2, g2, g2.tide.level === LOW ? openFor * 2 : openFor);
@@ -21154,7 +21334,7 @@ function installBosses() {
     onPhase(e, g, i) {
       surface(e);                       // phase 3 does not submerge
       if (i === 1) summon(g, e, 'gel', 2);
-      if (i === 2) { summon(g, e, 'zol', 2); g.shake(3, 18); }
+      if (i === 2) { summon(g, e, 'zol', 2); g.shake(SHAKE_BOSS_SLAM, SHAKE_BOSS_SLAM_FRAMES); }
     },
     phases: [
       // Wallows toward you and spits bog water.
@@ -21224,7 +21404,7 @@ function installBosses() {
     init(e) { e._open = 0; e.shadow = true; },
     onIntro(e, g) { unlockTide(g); },
     onPhase(e, g, i) {
-      if (i === 2) { summon(g, e, 'keese', 2); g.shake(3, 16); }
+      if (i === 2) { summon(g, e, 'keese', 2); g.shake(SHAKE_BOSS_SLAM, SHAKE_BOSS_SLAM_FRAMES); }
     },
     phases: [
       // Wheels around the ceiling and stoops at you.
@@ -21293,7 +21473,7 @@ function installBosses() {
         const dx = p.cx - e2.cx, dy = p.cy - e2.cy, d = Math.hypot(dx, dy) || 1;
         e2._bvx = (dx / d) * 2.6; e2._bvy = (dy / d) * 2.6;
       }
-      g2.shake(2, 10);
+      g2.shake(SHAKE_SMALL, SHAKE_MEDIUM_FRAMES);
     }, 'sparkle');
   }
 
@@ -21314,7 +21494,7 @@ function installBosses() {
     onIntro(e, g) { unlockTide(g); },
     onPhase(e, g, i) {
       if (i === 1) summon(g, e, 'zol', 2);
-      if (i === 2) { g.shake(4, 24); g.audio.sfx('shatter'); }
+      if (i === 2) { g.shake(SHAKE_BOSS_BREAK, SHAKE_BOSS_BREAK_FRAMES); g.audio.sfx('shatter'); }
     },
     phases: [
       // Rooted. Lashes along the floor and breathes open on a slow cycle.
@@ -21323,7 +21503,7 @@ function installBosses() {
         if (timer(e, 'lash', 150)) {
           windUp(e, g, 20, (e2, g2) => {
             shootRing(e2, g2, 4, { sprite: 'shot_spear', pal: 'wood', speed: 1.7, damage: 3 });
-            g2.shake(2, 10);
+            g2.shake(SHAKE_SMALL, SHAKE_MEDIUM_FRAMES);
           });
         }
       } },
@@ -21387,7 +21567,7 @@ function installBosses() {
     init(e) { e._open = 0; },
     onIntro(e, g) { unlockTide(g); },
     onPhase(e, g, i) {
-      if (i === 2) { summon(g, e, 'beetle', 2); g.shake(4, 22); }
+      if (i === 2) { summon(g, e, 'beetle', 2); g.shake(SHAKE_BOSS_SLAM, SHAKE_BOSS_SLAM_FRAMES); }
     },
     phases: [
       // Walks you down and pounds the floor.
@@ -21438,7 +21618,7 @@ function installBosses() {
   // goes out along it.
   function brinehulkPound(e, g, shards, speed) {
     windUp(e, g, 26, (e2, g2) => {
-      g2.shake(5, 20);
+      g2.shake(SHAKE_BOSS_BREAK, SHAKE_BOSS_BREAK_FRAMES);
       g2.audio.sfx('explode');
       shootRing(e2, g2, shards, { sprite: 'shot_rock', pal: 'marble', speed, damage: 3, life: 90 });
     });
@@ -21461,7 +21641,7 @@ function installBosses() {
     onPhase(e, g, i) {
       surface(e);                       // phase 3 leaves the reef for good
       if (i === 1) summon(g, e, 'pincer', 2);
-      if (i === 2) { g.shake(4, 24); g.audio.sfx('shatter'); }
+      if (i === 2) { g.shake(SHAKE_BOSS_BREAK, SHAKE_BOSS_BREAK_FRAMES); g.audio.sfx('shatter'); }
     },
     phases: [
       // In and out of the reef, lunging along whichever line you share with it.
@@ -21540,7 +21720,7 @@ function installBosses() {
     if (!moveDir(e, g, e.dir, e._lungeSpeed || 2.4)) {
       e._lunge = 0;                     // hit the reef wall: recoil
       e.stun = 20;
-      g.shake(3, 10);
+      g.shake(SHAKE_MEDIUM, SHAKE_MEDIUM_FRAMES);
     }
     return true;
   }
@@ -21563,7 +21743,7 @@ function installBosses() {
     init(e) { e._open = 0; e._sweep = 0; },
     onIntro(e, g) { unlockTide(g); },
     onPhase(e, g, i) {
-      g.shake(4, 22);
+      g.shake(SHAKE_BOSS_SLAM, SHAKE_BOSS_SLAM_FRAMES);
       if (i === 1) summon(g, e, 'wizzrobe', 1);
       if (i === 2) summon(g, e, 'stalfos', 2);
       // Phase 4 opens on its own cycle timer; give the player a window at once
@@ -21607,7 +21787,7 @@ function installBosses() {
         // The sweep runs continuously, so the opening is when he re-seats the
         // planted trident between passes.
         if (timer(e, 'reseat', 190)) {
-          windUp(e, g, 20, (e2, g2) => { g2.shake(2, 10); nerethOpening(e2, g2); });
+          windUp(e, g, 20, (e2, g2) => { g2.shake(SHAKE_SMALL, SHAKE_MEDIUM_FRAMES); nerethOpening(e2, g2); });
         }
         if (timer(e, 'summon', 460) && countType(g, 'stalfos') < 3) summon(g, e, 'stalfos', 1);
       } },

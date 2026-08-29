@@ -48,6 +48,15 @@ import {
   driftWithTide,
 } from '../game/enemy.js';
 import { spawnEntity, moveEntity } from '../game/entity.js';
+// Shake weights are timing/feel constants and belong in feel.js (R3). They were
+// fourteen bare literals in this file, which meant the six named constants next
+// door described the shake of everything in the game EXCEPT the bosses.
+import {
+  SHAKE_SMALL, SHAKE_MEDIUM, SHAKE_MEDIUM_FRAMES,
+  SHAKE_RUMBLE, SHAKE_RUMBLE_FRAMES,
+  SHAKE_BOSS_SLAM, SHAKE_BOSS_SLAM_FRAMES,
+  SHAKE_BOSS_BREAK, SHAKE_BOSS_BREAK_FRAMES,
+} from './feel.js';
 import { fire } from '../game/projectile.js';
 import { TILE } from '../core/screen.js';
 import { sp } from '../core/fixed.js';
@@ -149,7 +158,7 @@ function unlockTide(g) { g.tide.locked = false; }
 function forceTide(e, g, level) {
   if (g.tide.level === level || g.tide.busy) return false;
   g.audio.sfx('conch');
-  g.shake(2, 12);
+  g.shake(SHAKE_RUMBLE, SHAKE_RUMBLE_FRAMES);
   g.tide.setLevel(level);
   return true;
 }
@@ -192,7 +201,7 @@ export function installBosses() {
     init(e) { e._pdir = 'right'; e._open = 0; },
     onIntro(e, g) { unlockTide(g); },
     onPhase(e, g, i) {
-      if (i === 2) { summon(g, e, 'crab', 2); g.shake(3, 16); }
+      if (i === 2) { summon(g, e, 'crab', 2); g.shake(SHAKE_BOSS_SLAM, SHAKE_BOSS_SLAM_FRAMES); }
     },
     phases: [
       // Scuttles the width of the arena and slams when you line up with it.
@@ -227,7 +236,7 @@ export function installBosses() {
   // buried — leaving the eye open. Drained, the shell cracks and it sticks.
   function gohmaraqSlam(e, g, shots, openFor) {
     windUp(e, g, 22, (e2, g2) => {
-      g2.shake(4, 14);
+      g2.shake(SHAKE_BOSS_SLAM, SHAKE_BOSS_SLAM_FRAMES);
       g2.audio.sfx('explode');
       spread(e2, g2, shots, 70, { sprite: 'shot_rock', speed: 1.5, damage: 2 });
       open(e2, g2, g2.tide.level === LOW ? openFor * 2 : openFor);
@@ -324,7 +333,7 @@ export function installBosses() {
     onPhase(e, g, i) {
       surface(e);                       // phase 3 does not submerge
       if (i === 1) summon(g, e, 'gel', 2);
-      if (i === 2) { summon(g, e, 'zol', 2); g.shake(3, 18); }
+      if (i === 2) { summon(g, e, 'zol', 2); g.shake(SHAKE_BOSS_SLAM, SHAKE_BOSS_SLAM_FRAMES); }
     },
     phases: [
       // Wallows toward you and spits bog water.
@@ -394,7 +403,7 @@ export function installBosses() {
     init(e) { e._open = 0; e.shadow = true; },
     onIntro(e, g) { unlockTide(g); },
     onPhase(e, g, i) {
-      if (i === 2) { summon(g, e, 'keese', 2); g.shake(3, 16); }
+      if (i === 2) { summon(g, e, 'keese', 2); g.shake(SHAKE_BOSS_SLAM, SHAKE_BOSS_SLAM_FRAMES); }
     },
     phases: [
       // Wheels around the ceiling and stoops at you.
@@ -463,7 +472,7 @@ export function installBosses() {
         const dx = p.cx - e2.cx, dy = p.cy - e2.cy, d = Math.hypot(dx, dy) || 1;
         e2._bvx = (dx / d) * 2.6; e2._bvy = (dy / d) * 2.6;
       }
-      g2.shake(2, 10);
+      g2.shake(SHAKE_SMALL, SHAKE_MEDIUM_FRAMES);
     }, 'sparkle');
   }
 
@@ -484,7 +493,7 @@ export function installBosses() {
     onIntro(e, g) { unlockTide(g); },
     onPhase(e, g, i) {
       if (i === 1) summon(g, e, 'zol', 2);
-      if (i === 2) { g.shake(4, 24); g.audio.sfx('shatter'); }
+      if (i === 2) { g.shake(SHAKE_BOSS_BREAK, SHAKE_BOSS_BREAK_FRAMES); g.audio.sfx('shatter'); }
     },
     phases: [
       // Rooted. Lashes along the floor and breathes open on a slow cycle.
@@ -493,7 +502,7 @@ export function installBosses() {
         if (timer(e, 'lash', 150)) {
           windUp(e, g, 20, (e2, g2) => {
             shootRing(e2, g2, 4, { sprite: 'shot_spear', pal: 'wood', speed: 1.7, damage: 3 });
-            g2.shake(2, 10);
+            g2.shake(SHAKE_SMALL, SHAKE_MEDIUM_FRAMES);
           });
         }
       } },
@@ -557,7 +566,7 @@ export function installBosses() {
     init(e) { e._open = 0; },
     onIntro(e, g) { unlockTide(g); },
     onPhase(e, g, i) {
-      if (i === 2) { summon(g, e, 'beetle', 2); g.shake(4, 22); }
+      if (i === 2) { summon(g, e, 'beetle', 2); g.shake(SHAKE_BOSS_SLAM, SHAKE_BOSS_SLAM_FRAMES); }
     },
     phases: [
       // Walks you down and pounds the floor.
@@ -608,7 +617,7 @@ export function installBosses() {
   // goes out along it.
   function brinehulkPound(e, g, shards, speed) {
     windUp(e, g, 26, (e2, g2) => {
-      g2.shake(5, 20);
+      g2.shake(SHAKE_BOSS_BREAK, SHAKE_BOSS_BREAK_FRAMES);
       g2.audio.sfx('explode');
       shootRing(e2, g2, shards, { sprite: 'shot_rock', pal: 'marble', speed, damage: 3, life: 90 });
     });
@@ -631,7 +640,7 @@ export function installBosses() {
     onPhase(e, g, i) {
       surface(e);                       // phase 3 leaves the reef for good
       if (i === 1) summon(g, e, 'pincer', 2);
-      if (i === 2) { g.shake(4, 24); g.audio.sfx('shatter'); }
+      if (i === 2) { g.shake(SHAKE_BOSS_BREAK, SHAKE_BOSS_BREAK_FRAMES); g.audio.sfx('shatter'); }
     },
     phases: [
       // In and out of the reef, lunging along whichever line you share with it.
@@ -710,7 +719,7 @@ export function installBosses() {
     if (!moveDir(e, g, e.dir, e._lungeSpeed || 2.4)) {
       e._lunge = 0;                     // hit the reef wall: recoil
       e.stun = 20;
-      g.shake(3, 10);
+      g.shake(SHAKE_MEDIUM, SHAKE_MEDIUM_FRAMES);
     }
     return true;
   }
@@ -733,7 +742,7 @@ export function installBosses() {
     init(e) { e._open = 0; e._sweep = 0; },
     onIntro(e, g) { unlockTide(g); },
     onPhase(e, g, i) {
-      g.shake(4, 22);
+      g.shake(SHAKE_BOSS_SLAM, SHAKE_BOSS_SLAM_FRAMES);
       if (i === 1) summon(g, e, 'wizzrobe', 1);
       if (i === 2) summon(g, e, 'stalfos', 2);
       // Phase 4 opens on its own cycle timer; give the player a window at once
@@ -777,7 +786,7 @@ export function installBosses() {
         // The sweep runs continuously, so the opening is when he re-seats the
         // planted trident between passes.
         if (timer(e, 'reseat', 190)) {
-          windUp(e, g, 20, (e2, g2) => { g2.shake(2, 10); nerethOpening(e2, g2); });
+          windUp(e, g, 20, (e2, g2) => { g2.shake(SHAKE_SMALL, SHAKE_MEDIUM_FRAMES); nerethOpening(e2, g2); });
         }
         if (timer(e, 'summon', 460) && countType(g, 'stalfos') < 3) summon(g, e, 'stalfos', 1);
       } },

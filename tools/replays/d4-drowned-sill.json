@@ -47,7 +47,8 @@
   "camMinY": 0,
   "camMaxY": 0,
   "camEndX": 0,
-  "camEndY": 0
+  "camEndY": 0,
+  "probeNames": "dWallCistern|dFloorCistern"
  },
  "buttons": [
   "up",
@@ -473,7 +474,7 @@
   },
   {
    "f": 1200,
-   "x": 29,
+   "x": 23,
    "y": 50,
    "hp": 10,
    "e": 3,
@@ -495,7 +496,7 @@
   "room": "0,2,3",
   "floor": 0,
   "x": 14,
-  "y": 60,
+  "y": 52,
   "z": 0,
   "dir": "right",
   "playerId": 1,

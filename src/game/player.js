@@ -46,6 +46,7 @@ import {
   RIPTIDE_FIN_FACTOR, DEADWEIGHT_FACTOR, KELP_BRAID_FACTOR, SPLIT_FANG_SPAN,
   SEAWOLF_KNOCK_FACTOR, HAGSTONE_CHANCE, STRANDWALKER_EVERY,
   PRESSURE_SCAR_FACTOR, BOSUN_FACTOR,
+  HITSTOP_HURT_FRAMES,
 } from '../data/feel.js';
 
 export class Player extends Entity {
@@ -1099,6 +1100,8 @@ export class Player extends Entity {
     if (o.hazard && game.charm('brineSkin')) dmg = Math.max(1, Math.round(dmg * 0.5));
     if (game.charm('wrackbone')) dmg = Math.round(dmg * 2);
 
+    // Past every block, charm and shield: something has actually hit Link.
+    game.freeze(HITSTOP_HURT_FRAMES);
     p.hearts = Math.max(0, p.hearts - dmg);
     this.invuln = PLAYER_INVULN_FRAMES;
     this.flicker = PLAYER_FLICKER_FRAMES;

@@ -58,6 +58,7 @@ import {
   BOSS_DEATH_FRAMES, BOSS_DEATH_BOOM_EVERY,
   SHAKE_MEDIUM, SHAKE_SMALL_FRAMES, TIDE_DRIFT_PER_LEVEL,
   DREDGE_FLOP_DAMAGE_SCALE,
+  HITSTOP_HIT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES,
 } from '../data/feel.js';
 
 const TERRAIN_AVOID = {
@@ -353,6 +354,11 @@ export class Boss extends Enemy {
       this.knockTime = BOSS_KNOCK_FRAMES;
     }
     if (this.spec.onHurt) this.spec.onHurt(this, game, dmg);
+    // `Boss.hurt` overrides `Entity.hurt` rather than extending it, so the
+    // freeze that every other enemy gets from the base class has to be spelled
+    // out again here — the shell block and the invuln return above are the
+    // whole reason the override exists, and neither should freeze anything.
+    game.freeze(HITSTOP_HIT_FRAMES);
     if (this.hp <= 0) { this.beginDeath(game); return true; }
     game.audio.sfx('enemyHit');
     return true;
@@ -362,6 +368,10 @@ export class Boss extends Enemy {
     this.dying = true;
     this.deathTime = 0;
     this.hp = 0;
+    // The heaviest freeze in the game, on the one hit it is worth spending it
+    // on. The music has just been cut on the line below, so what the player
+    // hears under the hold is the death sfx alone — which is the point.
+    game.freeze(HITSTOP_BOSS_DEATH_FRAMES);
     game.audio.stop();
     game.audio.sfx('bossDie');
   }

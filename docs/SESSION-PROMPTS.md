@@ -24,7 +24,7 @@ doing the session.
 
 | # | Session | Model | Needs | Your eye/ear |
 |---|---|---|---|---|
-| S1 | Impact: hitstop and the feel constants | Opus | — | **Critical** |
+| ~~S1~~ | ~~Impact: hitstop and the feel constants~~ | Opus | — | **DONE — awaiting your ear.** See `docs/NEXT-SESSION.md` |
 | S2 | Terrain extraction: the ground | Opus | S1 | Yes |
 | S3 | Terrain extraction: edges and towns | Opus | S2 | Yes |
 | S4 | Sound coverage and the sfx checker | Sonnet | S1 | Yes (listen) |
@@ -47,6 +47,18 @@ whether a hit feels good.
 ---
 
 ## S1 — Impact: hitstop, shake weight, and the missing feel constants
+
+> **DONE.** Hitstop exists (`Game.freeze`/`Game.hitstop`), the six shake
+> constants were re-tuned and `bosses.js`'s fourteen bare shake literals came
+> into `feel.js` with them, the text speed and fast-forward multiplier moved out
+> of `dialogue.js`, the death poof was checked and deliberately left alone, and
+> `ITEM_PRESENT_FRAMES` went 90 → 116 (`derived` from the `itemGet` jingle's own
+> tempo). All 51 replays re-recorded; 65/65 in `test.mjs`, including six new
+> assertions that the freeze stops the entity simulation and NOT the frame
+> counter, the audio pump or the play clock — proved to fail in both directions.
+> **The weight itself is unjudged and is the user's call (`§4.2`);
+> `docs/NEXT-SESSION.md` names the five things to compare in the build.**
+
 
 **Goal:** a sword hit, an enemy death and a player hit land with the weight they
 have in the source games.

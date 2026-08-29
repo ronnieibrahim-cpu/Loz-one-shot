@@ -21,6 +21,7 @@ import { FP_ONE, sp, toPx } from '../core/fixed.js';
 import { F } from '../world/tileset.js';
 import {
   ENEMY_INVULN_FRAMES, ENEMY_FLICKER_FRAMES, ENEMY_KNOCK_FRAMES, KNOCK_DEFAULT,
+  HITSTOP_HIT_FRAMES,
 } from '../data/feel.js';
 
 export const ENTITY_TYPES = new Map();
@@ -143,6 +144,11 @@ export class Entity {
       this.knockX = Math.round(dx * per); this.knockY = Math.round(dy * per);
       this.knockTime = ENEMY_KNOCK_FRAMES;
     }
+    // The freeze goes on the hit CONNECTING, not on the sword specifically:
+    // this is the one funnel every damage source in the game passes through,
+    // so a bomb, a thrown pot and a swing all land with the same weight.
+    // Longest-wins inside `freeze` keeps a four-enemy explosion to one impact.
+    if (this.isEnemy) game.freeze(HITSTOP_HIT_FRAMES);
     if (this.hp <= 0) { this.die(game); return true; }
     game.audio.sfx('enemyHit');
     if (this.onHurt) this.onHurt(game);

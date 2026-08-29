@@ -34,6 +34,17 @@
    ]
   ]
  },
+ "assert": null,
+ "span": {
+  "roomChanges": 0,
+  "camMinX": 0,
+  "camMaxX": 0,
+  "camMinY": 0,
+  "camMaxY": 0,
+  "camEndX": 0,
+  "camEndY": 0,
+  "probeNames": "reefFlat|tideRock"
+ },
  "buttons": [
   "up",
   "down",

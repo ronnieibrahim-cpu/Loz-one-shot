@@ -606,6 +606,74 @@ const main = async () => {
   check('enemies can be killed', await G(() => window.__game.progress.kills) > kills0);
   await shot('10-combat');
 
+  // --- hitstop ------------------------------------------------------------
+  //
+  // The freeze on a connecting hit must pause the ENTITY SIMULATION and
+  // NOTHING ELSE. A hitstop that stopped the frame counter or the audio pump
+  // would stutter the music on every sword swing, a hundred times a dungeon —
+  // that is the one way this feature can be shipped broken and still look
+  // right in a screenshot, so it is asserted rather than eyeballed.
+  console.log('\n--- hitstop ---');
+  const stop = await G(async () => {
+    const g = window.__game;
+    const feel = await import('/src/data/feel.js');
+    g.enterMap('overworld', 0, 4, 6, 72, 56, 'down', { instant: true });
+    window.__harness.step(10);
+    g.hitstop = 0;
+    g.player.invuln = 999;          // keep the player out of the measurement
+    // An enemy parked well away from the player, so nothing but the freeze
+    // itself can stop it moving.
+    const e = g.entities.find(x => x.isEnemy);
+    if (!e) return { noEnemy: true };
+    e.x = 24; e.y = 24; e.invuln = 0; e.hp = 99;
+
+    const before = {
+      frame: g.frame, playFrames: g.progress.frames, tideStamp: g.tide.stamp,
+    };
+    const ex0 = e.x, ey0 = e.y, px0 = g.player.x;
+
+    // Land a hit. `Entity.hurt` is the one funnel every damage source uses.
+    e.hurt(g, 1, 'down', 0);
+    const armed = g.hitstop;
+
+    // Step strictly fewer frames than the freeze lasts, holding right the
+    // whole time: if the simulation were running, the player would move.
+    const held = Math.max(1, armed - 1);
+    g.input._raw.right = true;
+    window.__harness.step(held);
+    const during = {
+      frame: g.frame, playFrames: g.progress.frames,
+      moved: g.player.x !== px0 || e.x !== ex0 || e.y !== ey0,
+      left: g.hitstop,
+    };
+    g.input._raw.right = false;
+    g.player.invuln = 0;
+    g.hitstop = 0;
+    return {
+      armedIs: armed, want: feel.HITSTOP_HIT_FRAMES, held,
+      frameAdvanced: during.frame - before.frame,
+      playAdvanced: during.playFrames - before.playFrames,
+      simMoved: during.moved, left: during.left,
+      hurtHz: feel.HITSTOP_HURT_FRAMES, bossHz: feel.HITSTOP_BOSS_DEATH_FRAMES,
+    };
+  });
+  check('a landed hit arms a freeze', !stop.noEnemy && stop.armedIs === stop.want,
+    `armed ${stop.armedIs}, HITSTOP_HIT_FRAMES ${stop.want}`);
+  check('the freeze stops the entity simulation', stop.simMoved === false,
+    'the player or the enemy moved while frozen');
+  check('the freeze does NOT stop the frame counter', stop.frameAdvanced === stop.held,
+    `frame advanced ${stop.frameAdvanced} over ${stop.held} frozen frames`);
+  check('the freeze does NOT stop the play clock', stop.playAdvanced === stop.held,
+    `progress.frames advanced ${stop.playAdvanced} over ${stop.held} frozen frames`);
+  check('the freeze counts itself down', stop.left === stop.armedIs - stop.held,
+    `${stop.armedIs} - ${stop.held} should leave ${stop.armedIs - stop.held}, left ${stop.left}`);
+  // A hit on the player must weigh more than a hit on an enemy, and a boss
+  // dying more than either. If that ordering ever inverts, the three weights
+  // have stopped being three weights.
+  check('the three freezes are ordered lightest to heaviest',
+    stop.want < stop.hurtHz && stop.hurtHz < stop.bossHz,
+    `hit ${stop.want}, hurt ${stop.hurtHz}, boss death ${stop.bossHz}`);
+
   console.log('\n--- HUD, menu, save ---');
   await tap('Enter');
   check('menu opens', await G(() => window.__game.mode === 'menu'));

@@ -447,6 +447,64 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+**A CONSTANT THAT ISN'T IN `feel.js` MAKES RETUNING THE ONES THAT ARE A
+COSMETIC EXERCISE.** S1 set out to retune the six screen-shake constants around
+the new hitstop and found that `src/data/bosses.js` spelled its own shakes out
+as **fourteen bare literals** — `g.shake(4, 24)`, `g2.shake(5, 20)` and so on.
+So the six named constants in `feel.js` had, for the whole life of the project,
+described the shake of everything in the game *except the eight bosses*, which
+is to say except every moment the shake exists for. The same session found the
+same shape twice more in an hour: `dialogue.js` hardcoded the text speed and the
+fast-forward multiplier, and those are the timing constants a player is exposed
+to more often than any except walking. **The `R3` rule is not bookkeeping.** Its
+value is that a number in `feel.js` can be changed once and be believed; a
+number outside it silently exempts whatever it governs from every retune that
+follows, and nothing fails.
+
+**A NEGATIVE RESULT THAT IS WRITTEN DOWN AND NOT APPLIED IS WORTH MORE THAN A
+BLIND CHANGE.** S1's prompt said to tune the text cadence against the source.
+Both source games look nearer one character every other frame, which would be
+about a third of this game's 1.6 ch/f — a three-times change to the pacing of
+every line of dialogue in the game, made on an impression, by a session with no
+reference to frame-step. That is exactly the "silently upgrade a `guessed`"
+failure in a different costume. The value was preserved, the suspicion was
+written into the constant's own comment as explicitly not applied, and the
+experiment is now one line for whoever does step a reference. **"I believe this
+is wrong and here is why I did not change it" is a legitimate and often the
+correct deliverable.**
+
+**REPLAY CHURN IS DIAGNOSED BEFORE IT IS RE-RECORDED, NOT AFTER.** `T5`
+promises that a movement/combat change moves all 51 replays, and the temptation
+on seeing 9 failures is to reach straight for `--record-all`, which would make a
+real regression indistinguishable from expected churn. What made it safe was
+cheap and took one look: **every failure was in a replay that lands a hit, and
+every replay that never fights passed untouched.** That pattern is a prediction
+the change makes about itself. Afterwards, comparing each recording's *outcome*
+old vs new (7 of 11 byte-identical in end state, two longer by exactly a few
+frames) confirmed it a second time. Re-record after the diagnosis, never as one.
+
+**A CHECKER THAT CANNOT LAUNCH IS NOT A PASSING CHECKER.** `check-items` — the
+tool that proves every item does the verb `docs/ITEMS.md` claims for it — did
+not fail in a clean container. It threw a Playwright install banner, which reads
+like an environment problem rather than a result, and the natural response is to
+skip it and move on. Five tools were in this state (`check-items`,
+`check-charms`, `check-trade`, `find-ledges`, `preview`), all missing the
+system-Chromium `.catch` fallback that `test.mjs` and `solve-switches.mjs`
+already carried. Once added, the three that assert produced 91, 63 and 43
+passing assertions — none of which anything had been running. **Read a
+checker's exit, not its last line, and treat "could not start" as red.**
+
+**PROVE A NEW ASSERTION FAILS BEFORE BELIEVING IT PASSES — IN BOTH
+DIRECTIONS.** S1's failure condition was a hitstop that freezes the whole game
+rather than the entity simulation, which is inaudible in a screenshot and
+invisible to every other checker. Six assertions were written for it, and then
+the feature was deliberately broken twice: `freeze()` stubbed to a no-op (three
+assertions failed, including "the player or the enemy moved while frozen"), and
+the hitstop return moved above `frame++` — the exact frame-halt bug (the other
+two failed). Neither half is vacuous, and that is now known rather than hoped.
+A one-directional test would have passed happily against a game that stuttered
+its music on every sword swing.
+
 **A TILE'S NAME IS NOT ITS TIDE BEHAVIOUR — READ `room.flagsAt`, NOT THE
 LEGEND COMMENT.** The write-up that shipped alongside the Kilnshell claimed the
 Torch Cell needed HIGH tide to solve, on the reasoning that its floor is

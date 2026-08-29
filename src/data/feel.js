@@ -386,6 +386,44 @@ export const FADE_RATE = 0.09;
 /** f — how long an area-name banner stays up. guessed. */
 export const BANNER_FRAMES = 120;
 
+// IMPACT.
+//
+// A connecting hit in both source games freezes the SIMULATION for a few
+// frames — not the frame, not the music, not the HUD. `Game.hitstop` is that
+// pause: entities stop stepping and everything else keeps running. See the
+// comment above `Game.freeze` for what is deliberately left running and why.
+//
+// All three are `guessed`. They are the first numbers to settle by eye, and
+// the reason the shake constants below them were re-tuned at the same time: a
+// freeze in front of a shake changes what the shake reads as.
+
+/** f — freeze when the player's own attack connects with an enemy. guessed.
+ *  Short: this is the most-repeated interaction in the game and anything long
+ *  enough to notice as a pause becomes a stutter over a hundred swings. It
+ *  wants to read as weight in the swing, not as a hitch. */
+export const HITSTOP_HIT_FRAMES = 3;
+
+/** f — freeze when something lands a hit on the player. guessed. Longer than
+ *  the one above: taking damage is rare and is meant to be felt, and the
+ *  knockback that follows reads harder out of a longer hold. */
+export const HITSTOP_HURT_FRAMES = 6;
+
+/** f — freeze on the killing blow to a boss, before the death animation.
+ *  guessed. Long enough to be a beat rather than a hitch, and it lands under
+ *  the same moment `Game.bossDefeated` cuts the music. */
+export const HITSTOP_BOSS_DEATH_FRAMES = 18;
+
+// SCREEN SHAKE.
+//
+// Re-tuned once hitstop existed. Every one of these was previously chosen with
+// nothing in front of it, so a shake had to carry the whole impact by itself
+// and had grown long to do it. With a freeze in front, the shake's job is only
+// to release the freeze — so amplitudes stay and DURATIONS COME DOWN. A shake
+// that outlasts its own freeze by more than about its own length again stops
+// reading as impact and starts reading as noise.
+//
+// Still `guessed`: nothing here has been frame-stepped against a reference.
+
 /** px — screen shake amplitude for a small impact (a hit landing). guessed. */
 export const SHAKE_SMALL = 2;
 
@@ -395,14 +433,41 @@ export const SHAKE_MEDIUM = 3;
 /** px — screen shake amplitude for a boss dying. guessed. */
 export const SHAKE_LARGE = 4;
 
-/** f — shake duration for a small impact. guessed. */
-export const SHAKE_SMALL_FRAMES = 8;
+/** f — shake duration for a small impact. guessed. Was 8, with no freeze in
+ *  front of it. HITSTOP_HIT_FRAMES now carries the first 3 frames of the hit,
+ *  so 6 puts the whole event at 9 frames instead of 8 and spends more of it
+ *  frozen than wobbling. */
+export const SHAKE_SMALL_FRAMES = 6;
 
-/** f — shake duration for an explosion. guessed. */
-export const SHAKE_MEDIUM_FRAMES = 10;
+/** f — shake duration for an explosion or a boss stomp. guessed. Was 10. */
+export const SHAKE_MEDIUM_FRAMES = 8;
 
-/** f — shake duration for a boss dying. guessed. */
-export const SHAKE_LARGE_FRAMES = 40;
+/** f — shake duration for a boss dying. guessed. Was 40, which was two thirds
+ *  of a second of continuous camera wobble and read as a rumble rather than a
+ *  blow. HITSTOP_BOSS_DEATH_FRAMES now supplies the weight; 24 is what is left
+ *  to release it, and the two together are still shorter than the old 40. */
+export const SHAKE_LARGE_FRAMES = 24;
+
+/** px, f — a boss landing, summoning or slamming the floor. guessed. Heavier
+ *  than MEDIUM and lighter than a death; it exists because `src/data/bosses.js`
+ *  spelled this weight out as bare literals at fourteen call sites, which is
+ *  exactly what R3 forbids and what made re-tuning the six constants above a
+ *  cosmetic change for every boss in the game. */
+export const SHAKE_BOSS_SLAM = 4;
+export const SHAKE_BOSS_SLAM_FRAMES = 14;
+
+/** px, f — a sustained world rumble rather than a blow: the tide being forced
+ *  to a level, ground giving way. guessed. Small amplitude, but the longest
+ *  duration of any shake that is not a boss dying — a rumble is defined by
+ *  lasting, and it is the one shake that is NOT preceded by a freeze, because
+ *  nothing has been hit. */
+export const SHAKE_RUMBLE = 2;
+export const SHAKE_RUMBLE_FRAMES = 12;
+
+/** px, f — a boss's armour or a wall shattering: the sharpest short shake in
+ *  the game, and the only one that goes above SHAKE_LARGE's amplitude. guessed. */
+export const SHAKE_BOSS_BREAK = 5;
+export const SHAKE_BOSS_BREAK_FRAMES = 16;
 
 // ---------------------------------------------------------------------------
 // Player states other than walking
@@ -423,14 +488,51 @@ export const PUSH_DELAY_FRAMES = 18;
 /** f — how long a Pegasus Seed's speed boost lasts. guessed. */
 export const PEGASUS_FRAMES = 300;
 
-/** f — how long Link holds a new item overhead. guessed. */
-export const ITEM_PRESENT_FRAMES = 90;
+/** f — how long Link holds a new item overhead. derived from the `itemGet`
+ *  jingle, which is what the pose exists to sit under: 20 rows at bpm 132 and
+ *  rowsPerBeat 4 is 6.82 f/row, and its last struck note stops ringing at row
+ *  17 — 116 frames. It was 90, so Link put the item down a full 26 frames
+ *  before his own fanfare finished, every time. The pose now outlasts the
+ *  phrase instead of being cut off by it. */
+export const ITEM_PRESENT_FRAMES = 116;
 
 /** f — how long Link is frozen when claiming an essence. guessed. */
 export const ESSENCE_FREEZE_FRAMES = 150;
 
 /** f — how long the game-over screen holds before it accepts a button. guessed. */
 export const GAMEOVER_WAIT_FRAMES = 100;
+
+// TEXT.
+//
+// These lived inside `src/game/dialogue.js` as bare literals for the whole life
+// of the project, which is the R3 violation the file's own header warns about:
+// text cadence is the timing constant a player is exposed to more often than
+// any other except walking, and it was not in this file.
+
+/** chars/f — how fast a dialogue page reveals itself. guessed, and the single
+ *  most-felt number in the game after WALK_SPEED. 1.6 is what the game has
+ *  always read at; it is preserved here rather than re-guessed.
+ *
+ *  WRITTEN DOWN AND DELIBERATELY NOT APPLIED: both source games look closer to
+ *  one character every other frame in ordinary dialogue — around 0.5 here,
+ *  which would be roughly three times slower. That is an impression, not a
+ *  measurement, and per R3/T4 a number nobody has frame-stepped does not get to
+ *  move the whole game's dialogue pacing. Now that it is one named constant it
+ *  is a one-line experiment for whoever does step a reference. */
+export const TEXT_SPEED = 1.6;
+
+/** x — multiplier on TEXT_SPEED while A or B is held. guessed. Held-button
+ *  fast-forward is a source-game behaviour; 3x makes a long page skimmable
+ *  without skipping it outright. */
+export const TEXT_FAST_SCALE = 3;
+
+/** chars — one text blip per this many revealed characters. guessed. It used
+ *  to be `floor(chars) % 3 === 0`, tested against the running total rather than
+ *  counting characters, so at a non-integer TEXT_SPEED the blip fired on an
+ *  irregular beat that changed with the speed — the click was not a rhythm, it
+ *  was an artefact. Counting revealed characters makes the cadence a rhythm
+ *  again and keeps it one at any speed. */
+export const TEXT_BEEP_EVERY = 3;
 
 /** px — how far in front of Link an A-button context action reaches. guessed. */
 export const CONTEXT_REACH = 12;

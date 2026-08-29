@@ -3,6 +3,7 @@
 import { SCREEN_W, SCREEN_H, HUD_H, VIEW_H } from '../core/screen.js';
 import { drawText, textWidth, paginate } from '../gfx/font.js';
 import { sprites } from '../gfx/art.js';
+import { TEXT_SPEED, TEXT_FAST_SCALE, TEXT_BEEP_EVERY } from '../data/feel.js';
 
 const BOX_X = 4;
 const BOX_W = SCREEN_W - 8;
@@ -29,8 +30,8 @@ export class Dialogue {
     this.active = false;
     this.pages = [];
     this.page = 0;
-    this.chars = 0;
-    this.speed = 1.6;          // characters per frame
+    this.chars = 0; this.beeped = 0;
+    this.speed = TEXT_SPEED;   // chars/f; see src/data/feel.js
     this.done = false;
     this.onClose = null;
     this.choices = null;       // { options:[...], index, onPick }
@@ -48,7 +49,7 @@ export class Dialogue {
     if (this.active) { this.queue.push([text, opts]); return; }
     this.pages = paginate(String(text), BOX_W - PAD * 2 - 2, LINES);
     this.page = 0;
-    this.chars = 0;
+    this.chars = 0; this.beeped = 0;
     this.active = true;
     this.done = false;
     this.onClose = opts.onClose || null;
@@ -83,9 +84,16 @@ export class Dialogue {
 
     if (this.chars < this.pageLen) {
       const fast = i.down('a') || i.down('b');
-      this.chars = Math.min(this.pageLen, this.chars + this.speed * (fast ? 3 : 1));
-      // Click as characters appear, but not on every single one.
-      if (Math.floor(this.chars) % 3 === 0) this.game.audio.sfx('text', { vol: 0.4 });
+      this.chars = Math.min(this.pageLen, this.chars + this.speed * (fast ? TEXT_FAST_SCALE : 1));
+      // Click as characters appear, but not on every single one. Counted off
+      // the characters actually revealed, not off the running total: testing
+      // `floor(chars) % N` made the blip's beat an artefact of a non-integer
+      // TEXT_SPEED rather than a rhythm.
+      const shown = Math.floor(this.chars);
+      if (shown - this.beeped >= TEXT_BEEP_EVERY) {
+        this.beeped = shown - (shown % TEXT_BEEP_EVERY);
+        this.game.audio.sfx('text', { vol: 0.4 });
+      }
       return;
     }
 
@@ -117,7 +125,7 @@ export class Dialogue {
     if (i.pressed('a') || i.pressed('b')) {
       if (this.page < this.pages.length - 1) {
         this.page++;
-        this.chars = 0;
+        this.chars = 0; this.beeped = 0;
         this.game.audio.sfx('textNext');
       } else {
         this.game.audio.sfx('textNext');

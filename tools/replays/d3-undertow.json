@@ -36,7 +36,8 @@
   "camMinY": 0,
   "camMaxY": 0,
   "camEndX": 0,
-  "camEndY": 0
+  "camEndY": 0,
+  "probeNames": ""
  },
  "buttons": [
   "up",
