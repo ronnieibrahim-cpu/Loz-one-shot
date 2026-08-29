@@ -14,23 +14,14 @@ import { TORRENT_PUSH } from './feel.js';
 
 const HAND_ART = {
   // ---- ground -------------------------------------------------------------
-  grass: `
-    1111111111111111
-    1111111111111111
-    1112111111111111
-    1111111111112111
-    1111111111111111
-    1211111111111111
-    1111111111111121
-    1111111111111111
-    1111111111111111
-    1111211111111111
-    1111111111121111
-    1111111111111111
-    1111111111111111
-    1211111111111111
-    1111111111111121
-    1111111111111111`,
+  //
+  // `grass` USED TO BE HERE and is gone: it is extracted now, from Seasons'
+  // own field grass, by tools/rip-terrain.py. It was a flat field of one tone
+  // with fourteen dark speckles in a fixed constellation, and repeated across a
+  // screen that constellation was the visible grid — a regular lattice of dots
+  // on a 16-pixel pitch. It is retired rather than kept as a fallback because
+  // `R5` says extract what a sheet has, and a hand-drawn tile left next to the
+  // extracted one that replaced it is how the two slowly diverge.
 
   grassTuft: `
     1111111111111111
@@ -1116,9 +1107,21 @@ export function installCoreTiles() {
     void: { art: ART.void, pal: 'abyss', flags: F.VOID | F.SOLID },
 
     // --- walkable ground ---
-    grass: { art: ART.grass, pal: 'grass' },
+    // GROUND VARIANTS. `variants` names other art this tile may be drawn as;
+    // `Room.render` picks with `tileVariant`, a pure hash of the room and the
+    // cell (never the RNG stream — see `T2`). Nothing the simulation can see
+    // changes: same flags, same palette, same tile.
+    //
+    // One cell in seven, not an even mix. An even mix of four good candidates
+    // was rendered as a whole room and read as a patchwork quilt — worse than
+    // the grid it replaced, because each tile is quantised against its own four
+    // colours and a tonal seam appears wherever two of them meet. The rate was
+    // settled by looking at 1-in-4 (busy), 1-in-7 (a meadow) and 1-in-12
+    // (accidental) side by side at room scale.
+    grass: { art: ART.grass, pal: 'grass', variants: ['grassClump', 'grassTuft'], variantOdds: 7 },
     grassTuft: { art: ART.grassTuft, pal: 'grass' },
-    grassDark: { art: ART.grass, pal: 'grassdk' },
+    grassClump: { art: ART.grassClump, pal: 'grass' },
+    grassDark: { art: ART.grass, pal: 'grassdk', variants: ['grassClump', 'grassTuft'], variantOdds: 7 },
     // The extracted `flowers` is a transparent prop rather than a filled ground
     // tile, so it needs a base drawn under it like `bush` and `rock` do. Still
     // walkable, and still cuts down to plain grass (see TRANSFORMS below).
@@ -1136,7 +1139,7 @@ export function installCoreTiles() {
     // GBC games gave each region its own look without redrawing every tile.
     rockFloorRust: { art: ART.rockFloor, pal: 'rust' },
     rockFloorCoral: { art: ART.rockFloor, pal: 'coral' },
-    grassBog: { art: ART.grass, pal: 'bog' },
+    grassBog: { art: ART.grass, pal: 'bog', variants: ['grassClump', 'grassTuft'], variantOdds: 7 },
     grassTuftBog: { art: ART.grassTuft, pal: 'bog' },
     saltFlat: { art: ART.sandRipple, pal: 'marble' },
     saltCrust: { art: ART.sand, pal: 'marble' },
@@ -1506,6 +1509,12 @@ export function installCoreTiles() {
     dUrn: { art: ART.urn, pal: 'urn', flags: F.SOLID, underArt: 'dFloor' },
 
     // --- dungeon ---
+    // NO VARIANTS, DELIBERATELY. `dg 258,42` is the one tile on any sheet whose
+    // tonal profile matches this one (34/50/14 against 27/53/18) and it was
+    // extracted, wired and then reverted: it is a DIAGONAL STREAK against this
+    // tile's SCALLOP, so scattered through a floor it read as random patches
+    // rather than as masonry. Tone compatibility is necessary and not
+    // sufficient — the motif has to match too. See docs/ART-BACKLOG.md.
     dFloor: { art: ART.dFloor, pal: 'brickf' },
     dFloorCrack: { art: ART.dFloorCrack, pal: 'brick' },
     dFloorWet: { art: ART.dFloor, pal: 'stonef' },

@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Extract background terrain tiles from the reference sheets.
 
-  python3 tools/rip-terrain.py          # rewrite src/data/tiles-terrain.js
+  python3 tools/rip-terrain.py                  # rewrite src/data/tiles-terrain.js
+  python3 tools/rip-terrain.py --scan ow X0 Y0 X1 Y1     # rank a region's tiles
+  python3 tools/rip-terrain.py --supercells ow [N]       # multi-cell ground?
 
 `docs/ART-DIRECTION.md` names `assets/sheets/custom-oracle-style-overworld.png`
 and `assets/sheets/oracle-seasons-dungeon-backgrounds.png` the references for
@@ -55,7 +57,27 @@ OUT = os.path.join(ROOT, 'src/data/tiles-terrain.js')
 # art name -> (sheet, x, y, note). The note is what the tile is on the sheet,
 # which is worth recording because the coordinates alone say nothing.
 PICKS = [
+    # THE GROUND YOU STAND ON. `grass` had never been extracted: it was a
+    # hand-drawn field of one tone with about fourteen dark speckles in a fixed
+    # constellation, and repeated across a screen those speckles ARE the visible
+    # grid docs/SESSION-HANDOFF.md `A2` describes. Rendered as a whole 10x8 room
+    # it reads as a regular lattice of dots, because the eye locks onto sparse
+    # marks that recur on a 16-pixel pitch.
+    #
+    # This is Seasons' own field grass: a fine, dense, irregular speckle of the
+    # LIGHT tone over the mid one, at a density where no individual mark is a
+    # landmark, so there is nothing for the eye to line up. Tiled across a room
+    # it has no grid at all — not because it is varied, but because it has no
+    # feature large enough to repeat.
+    ('grass',       SP, 1095,  420, 'field grass, fine even speckle'),
     ('grassTuft',   OW, 1611,  307, 'grass with scattered tufts'),
+
+    # A SECOND TUFT CELL, so `grass` has something to scatter that is not the
+    # tile an author placed deliberately with `G`. Same tonal family as
+    # grassTuft to three significant figures (78% mid, 17% dark, 3% light),
+    # which is the property that matters: a variant whose dominant index
+    # differs from its base does not read as variation, it reads as a patch.
+    ('grassClump',  OW, 2367,  847, 'grass with low clumps, sparser than grassTuft'),
     ('tallgrass',   OW,  886, 1049, 'tall blades, the cuttable kind'),
     ('sand',        OW, 1788,   65, 'dry sand, sparse grain'),
     ('sandWet',     OW, 1933,   81, 'damp sand, denser grain'),
@@ -513,6 +535,71 @@ def seamless_scan(path, x0, y0, x1, y1, top=24):
     return ranked
 
 
+def supercell_scan(path, n=32, step=2, top=24):
+    """Rank the NxN ground SUPERCELLS in a sheet — a field built from more than
+    one alternating cell.
+
+    Committed because the question it answers is one a session will otherwise
+    ask again, and the answer is a negative result that is expensive to
+    reproduce.
+
+    `seamless_scan` tests for a repeat at +16 in both axes, so a field made of a
+    2x2 set of alternating cells is INVISIBLE to it — and that is exactly where
+    multi-cell ground variation would live. This scan tests for a repeat at +N
+    instead and rejects any hit whose N/16-by-N/16 sub-cells are all identical,
+    which is the 16x16 case already covered.
+
+    THE ANSWER, measured 2026-08-29 across every sheet in assets/sheets/:
+
+      custom-oracle-style-overworld   758 supercell windows   (4,129 at 16x16
+                                                               in ONE region)
+      oracle-seasons-overworld-spring   9 supercell windows
+      oracle-ages-overworld             0 supercell windows
+
+    **The source games do not build ground out of multi-cell patterns.** Their
+    fields are single-cell repeats, and the variety on screen comes from a
+    person placing detail cells by hand. That is why this game scatters variants
+    with a hash instead of hunting for supercells: see `tileVariant` in
+    src/world/tileset.js, and `T63` in docs/SESSION-HANDOFF.md.
+    """
+    im = Image.open(path).convert('RGB')
+    W, H = im.size
+    px = im.load()
+    rows = {}
+
+    def row(x, y, w):
+        k = (x, y, w)
+        r = rows.get(k)
+        if r is None:
+            r = rows[k] = bytes(b for i in range(w) for b in px[x + i, y])
+        return r
+
+    def block(x, y, w, h):
+        return b''.join(row(x, y + j, w) for j in range(h))
+
+    hits = Counter()
+    origin = {}
+    c = n // 16
+    for y in range(0, H - 2 * n, step):
+        rows.clear()
+        for x in range(0, W - 2 * n, step):
+            b = block(x, y, n, n)
+            if block(x + n, y, n, n) != b or block(x, y + n, n, n) != b:
+                continue
+            if len({block(x + i * 16, y + j * 16, 16, 16)
+                    for i in range(c) for j in range(c)}) < 2:
+                continue          # really a 16x16 tile; seamless_scan has it
+            hits[b] += 1
+            origin.setdefault(b, (x, y))
+    print(f'{path}  {n}x{n} supercells')
+    print(f'  {sum(hits.values())} windows, {len(hits)} distinct\n')
+    for i, (raw, k) in enumerate(sorted(hits.items(), key=lambda kv: -kv[1])[:top]):
+        ox, oy = origin[raw]
+        cols = len({raw[j:j + 3] for j in range(0, len(raw), 3)})
+        print(f'  [{i:2}] {k:6} windows  origin {ox},{oy}  {cols} colours')
+    return hits
+
+
 def prop_scan(path, px, py, x0, y0, x1, y1, out_png=None, top=120):
     """Find candidate PROPS on a sheet whose tile grid has phase (px, py).
 
@@ -579,6 +666,12 @@ def main():
         sheet = {'ow': OW, 'dg': DG, 'ag': AG, 'sb': SB, 'sp': SP}[a[0]]
         prop_scan(sheet, int(a[1]), int(a[2]), int(a[3]), int(a[4]), int(a[5]), int(a[6]),
                   out_png=a[7] if len(a) > 7 else None)
+        return
+
+    if '--supercells' in sys.argv:
+        a = sys.argv[sys.argv.index('--supercells') + 1:]
+        sheet = {'ow': OW, 'dg': DG, 'ag': AG, 'sb': SB, 'sp': SP}[a[0]]
+        supercell_scan(sheet, int(a[1]) if len(a) > 1 else 32)
         return
 
     if '--scan' in sys.argv:

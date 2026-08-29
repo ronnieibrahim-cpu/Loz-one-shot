@@ -95,8 +95,8 @@ These have all been miscounted in prior briefs. Measured out of the data:
 | Dialogue ids wired to map data | **51** | coverage is *not* the problem — see `A6` |
 | Placed talkable entities | **43** | 12 `npc`, 29 `sign`, 1 `giver`, 1 `shop` |
 | Cutscenes defined | 13 | one (`nerethIntro`) has no trigger |
-| Extracted terrain tiles | **13** | plus 51 town pieces — see `A2` |
-| Grass tiles | **1** | this is the visible grid |
+| Extracted terrain tiles | **15** | plus 51 town pieces — see `A2`. Was 13 before S2 |
+| Grass tiles | **3** | `grass` (extracted since S2), `grassTuft`, `grassClump`. The grid is gone |
 | Recorded replay baselines | 51 | every one is downstream of movement/combat timing |
 
 ---
@@ -143,15 +143,29 @@ extends it), `Player.takeDamage` and `Boss.beginDeath`. See `T58`, `T59`.
 
 ### A2 — Terrain and tiles
 
-**The base terrain is hand-drawn, not extracted, and this violates `R5`.**
+**Most of the base terrain is still hand-drawn, and this violates `R5`.** S2
+did the ground; cliffs, water edges and town fronts are S3.
 
-`src/data/tiles-core.js` is **1,683 lines of hand-authored ASCII pixel art**,
-including `grass`, `grassTuft`, `tallgrass`, `cliff`, `cliffTop`,
-`cliffCracked`, `waterS0..2`, `waterD0..2` and the trees. `src/data/tiles-terrain.js`
-(the generated, extracted file) holds **13** terrain tiles plus 51 town pieces.
+`src/data/tiles-core.js` still holds hand-authored ASCII pixel art for `cliff`,
+`cliffTop`, `cliffCracked`, `waterS0..2`, `waterD0..2`, `tallgrass` and the
+trees. `src/data/tiles-terrain.js` (the generated, extracted file) holds **15**
+terrain tiles plus 51 town pieces.
 
-**There is exactly one `grass` tile.** A grass field is one 16×16 cell repeated
-with zero variation. That is the visible grid.
+**`grass` is extracted as of S2 and the grid it caused is gone.** It was one
+hand-drawn 16×16 cell — a flat field with about fourteen dark speckles in a
+FIXED constellation — repeated with zero variation, and at room scale those
+speckles read as a regular lattice on a 16-pixel pitch. It is now Seasons' own
+field grass (`oracle-seasons-overworld-spring.png @ 1095,420`), whose speckle is
+fine and irregular enough that no mark is a landmark. The hand-drawn original
+was deleted rather than kept.
+
+**Ground tiles can now declare `variants`.** A tiledef names other art it may be
+drawn as; `tileVariant` (src/world/tileset.js) picks with a pure hash of room
+key and tile coordinates — never the RNG stream (`T2`) — and `validateTiles`
+asserts a variant matches its base's flags, mask and `over`, so a variant can
+never change what the simulation sees. `grass`, `grassDark` and `grassBog`
+scatter `grassClump` and `grassTuft` at one cell in seven. **It is a SCATTER,
+not an even mix — see `T61`.**
 
 `CLAUDE.md` is explicit that this is in scope: *"Terrain and scenery are covered
 by this too. Rocks, trees, bushes, stumps, cliffs and ground textures are exactly
@@ -615,6 +629,29 @@ by number.
   death freeze carried through a warp would spend itself stalling a room the
   player has only just walked into, and nothing would look wrong — the room
   would just feel like it took a moment to start.
+- **T61 — An even mix of ground variants is WORSE than the grid it replaces.**
+  `rip-terrain.py` quantises each tile against its OWN four colours, so two
+  tiles that look alike on a sheet can land on different palette indices, and
+  their shared edge becomes a hard tonal seam. Four good grass candidates mixed
+  at equal weight, rendered as a full 10x8 room, read as a **chessboard**. One
+  variant in seven read as a meadow. **Render a whole room before believing a
+  terrain change** — a tile judged alone, or as a 3x3 swatch, tells you nothing
+  about this.
+- **T62 — Matching tone is necessary and NOT sufficient; the motif has to match
+  too.** The one tile on any sheet whose index distribution matched `dFloor`
+  (34/50/14 against 27/53/18) was a diagonal streak against `dFloor`'s scallop,
+  and scattered through a floor it read as random patches rather than masonry.
+  It was extracted, wired and reverted. **No number catches this** — compare the
+  two tiles as pictures, side by side, in the palette the game will use.
+- **T63 — The seamless-window scan cannot see a multi-cell ground pattern, and
+  it does not need to.** `rip-terrain.py --scan` finds 16x16 windows that repeat
+  at +16 in both axes, so a field built from a 2x2 set of alternating cells is
+  invisible to it. S2 wrote the 32x32 supercell scan to check, and the answer is
+  that **the source games do not do this**: the whole overworld sheet yields 758
+  supercell windows against 4,129 in one grass region alone at 16x16, the
+  Seasons spring sheet yields 9, and the Ages sheet yields **zero**. Oracle's
+  ground fields are genuinely single-cell repeats; variety comes from a person
+  placing detail cells. Do not spend another session looking for this.
 - **T60 — Five checkers could not run at all in a clean container, and said so
   in a stack trace rather than a failure.** `check-items`, `check-charms`,
   `check-trade`, `find-ledges` and `preview` called `chromium.launch()` without

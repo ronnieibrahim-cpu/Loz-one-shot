@@ -12,6 +12,25 @@
 // four colours each tile actually has on the sheet, for reference.
 
 export const TERRAIN_ART = {
+  // field grass, fine even speckle — oracle-seasons-overworld-spring.png @ 1095,420
+  grass: `
+    1110111011101110
+    0211101102111011
+    1100111111001111
+    0111101001111010
+    1110111211101112
+    1011111110111111
+    1111010111110101
+    0101121101011211
+    1110111011101110
+    0211101102111011
+    1100111111001111
+    0111101001111010
+    1110111211101112
+    1011111110111111
+    1111010111110101
+    0101121101011211`,
+
   // grass with scattered tufts — custom-oracle-style-overworld.png @ 1611,307
   grassTuft: `
     1111111111111011
@@ -30,6 +49,25 @@ export const TERRAIN_ART = {
     1222122111111111
     1212121111111111
     1111121111111111`,
+
+  // grass with low clumps, sparser than grassTuft — custom-oracle-style-overworld.png @ 2367,847
+  grassClump: `
+    1101111111111111
+    1220111111111111
+    0122121011111111
+    2112210211111111
+    2212212111111111
+    1222122111111111
+    1212121111111111
+    1111121111111111
+    1111111111111011
+    1111111111110221
+    1111111101212210
+    1111111120122112
+    1111111112122122
+    1111111112212221
+    1111111111212121
+    1111111111211111`,
 
   // tall blades, the cuttable kind — custom-oracle-style-overworld.png @ 886,1049
   tallgrass: `
@@ -263,7 +301,9 @@ export const TERRAIN_ART = {
 
 // The source colours, lightest first — not installed, kept for reference.
 export const TERRAIN_SRC_PALETTES = {
+  grass: ['#f8f870', '#c08018', '#603800'],
   grassTuft: ['#fce8b1', '#d3d35d', '#54ac36'],
+  grassClump: ['#d3c8d3', '#95b19d', '#6a7a61'],
   tallgrass: ['#fce8b1', '#d3d35d', '#54ac36'],
   sand: ['#fce8b1', '#e3a14d'],
   sandWet: ['#fce8b1', '#e3a14d', '#8c5527'],

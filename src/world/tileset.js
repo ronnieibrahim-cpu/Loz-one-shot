@@ -37,6 +37,8 @@
 //   This is how the whole world reshapes: authors place one char and the tide
 //   system decides whether it is dry sand, wadeable shallows, or deep sea.
 
+import { hash32 } from '../core/rng.js';
+
 export const F = {
   SOLID:     1 << 0,   // blocks movement
   WATER:     1 << 1,   // shallow: walkable, wading animation, slight slowdown
@@ -112,6 +114,16 @@ export function registerTiles(defs) {
       anim: def.anim || null,
       animRate: def.animRate || 10,
       over: !!def.over,
+      // GROUND VARIANTS: other art names this tile may be drawn as. Purely a
+      // draw-time substitution — same flags, same palette, same everything the
+      // simulation can see — so a field of grass stops being one 16x16 cell
+      // repeated across the screen. `tileVariant` picks one, and it MUST be
+      // named here or `registerTiles` would discard it silently, the way it
+      // discarded `liftLevel` for the life of the project (see below).
+      variants: def.variants || null,
+      // 1 in `variantOdds` cells shows a variant. See `tileVariant` for why
+      // this is a SCATTER and not an even mix.
+      variantOdds: def.variantOdds || 8,
       push: def.push || null,
       ledge: def.ledge || null,
       depth: def.depth || 0,
@@ -252,6 +264,41 @@ export function tileArt(def, frame) {
 }
 
 
+/**
+ * Which art to draw for a tile at (tx, ty) in a room, when the tile declares
+ * interchangeable ground variants.
+ *
+ * A PURE HASH OF THE TILE'S ADDRESS, never a draw from an RNG stream. This is
+ * `T2` exactly: `Room.render` runs at display rate, so a variant drawn from a
+ * stream would desync every replay AND make the ground flicker as the cache
+ * rebuilt. `every(e, n)` is the existing precedent for hashing instead.
+ *
+ * The room key is part of the hash so the same coordinates in two rooms do not
+ * pick the same variant, which would put an identical pattern of tufts in the
+ * same place on every screen — a subtler grid than the one this replaces.
+ *
+ * A SCATTER, NOT A MIX, and this is the part that was measured rather than
+ * assumed. Picking evenly among a base and three variants does not remove the
+ * grid; it replaces it with a patchwork quilt, and a quilt is WORSE, because
+ * `rip-terrain.py` quantises each tile against its own four colours, so two
+ * tiles that look alike on the sheet can land on different palette indices and
+ * their shared edge becomes a hard tonal seam. Rendered as a full 10x8 room,
+ * an even four-way mix of good candidates read as a chessboard. One variant in
+ * seven read as a meadow. So: most cells are the base, and the variants are
+ * occasional detail — which is also what the source games do, except that
+ * there a person places each tuft by hand.
+ *
+ * Two independent hashes, not one divided: the gate decides WHETHER this cell
+ * is a variant and the pick decides WHICH, and deriving the second from the
+ * quotient of the first correlates them.
+ */
+export function tileVariant(def, roomKey, tx, ty) {
+  const v = def.variants;
+  if (!v || !v.length) return def.name;
+  if (hash32('tilevar', roomKey, tx, ty) % def.variantOdds !== 0) return def.name;
+  return v[hash32('tilepick', roomKey, tx, ty) % v.length];
+}
+
 /** True if any tile in the set changes appearance with the tide. */
 export function isTideSensitive(name) {
   return !!getTileDef(name).tide;
@@ -268,12 +315,31 @@ export function validateTiles() {
         if (TILES.get(t).tide) problems.push(`${name}: tide variant '${t}' is itself a tide tile (nesting not allowed)`);
       }
       if (d.art) problems.push(`${name}: tide tiles must not define art`);
+      if (d.variants) problems.push(`${name}: tide tiles must not declare variants`);
     } else if (!d.art && !d.anim) {
       problems.push(`${name}: concrete tile has neither art nor anim`);
     }
     if (d.anim) {
       for (const a of d.anim) {
         if (!TILES.has(a) && !ANIM_ART.has(a)) problems.push(`${name}: anim frame '${a}' has no art`);
+      }
+    }
+    // GROUND VARIANTS ARE A DRAW-TIME SUBSTITUTION AND NOTHING ELSE. A variant
+    // whose flags differed from its base would make a patch of a field solid,
+    // or wet, or a pit, in a pattern nobody authored and no room grid shows —
+    // a bug that would render perfectly and be nearly impossible to find from
+    // the symptom. So the invariant is asserted here rather than trusted.
+    if (d.variants) {
+      if (d.anim) problems.push(`${name}: animated tiles cannot have variants`);
+      if (!(d.variantOdds >= 1)) problems.push(`${name}: variantOdds must be >= 1`);
+      for (const v of d.variants) {
+        const t = TILES.get(v);
+        if (!t) { problems.push(`${name}: variant '${v}' is not a registered tile`); continue; }
+        if (t.variants) problems.push(`${name}: variant '${v}' declares variants of its own (no nesting)`);
+        if (t.flags !== d.flags) problems.push(`${name}: variant '${v}' has different flags`);
+        if (t.mask !== d.mask) problems.push(`${name}: variant '${v}' has a different solid mask`);
+        if (t.anim) problems.push(`${name}: variant '${v}' is animated`);
+        if (t.over !== d.over) problems.push(`${name}: variant '${v}' disagrees about 'over'`);
       }
     }
   }

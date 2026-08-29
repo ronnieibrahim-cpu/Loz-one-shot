@@ -3,6 +3,47 @@
 Work that is identified, scoped and not done. Each entry says what blocks it.
 
 
+## S2 left these: what the sheets could NOT cover for the ground pass
+
+S2 extracted `grass` (Seasons' own field grass) and `grassClump`, retired the
+hand-drawn `grass`, and gave `grass`/`grassDark`/`grassBog` a one-in-seven
+scatter. What it looked for and did not find:
+
+**`rockFloor` has no partner on any sheet, and it grids.** It is `g` in the
+reef, cliffs and abyss legends, so it is a large-area ground, and rendered as a
+whole room its cobble motif repeats visibly (see the ground montage in S2's
+`docs/NEXT-SESSION.md` entry). It is a full four-tone tile — 23/26/24/25 across
+the palette indices — and **nothing on any sheet in `assets/sheets/` shares that
+profile**; every floor candidate found is three-tone. Either a fourth tone has
+to be found, or `rockFloor` needs a second cell drawn to match (`T24`), which is
+`R5`'s "if no sheet has it" branch and wants a person's eye. This is the biggest
+remaining piece of the grid.
+
+**`dFloor` has a tonal match that is a MOTIF mismatch, and it was reverted.**
+`oracle-seasons-dungeon-backgrounds.png @ 258,42` profiles at 34/50/14 against
+`dFloor`'s 27/53/18 — the closest partner found anywhere. It was extracted,
+wired at one-in-nine and **backed out**: `dFloor` is a scallop and 258,42 is a
+diagonal streak, so scattered through a floor it read as random patches rather
+than as masonry. Recorded here with its coordinates so the next session does not
+re-hunt it. **The lesson generalises: matching tone is necessary and not
+sufficient — the motif has to match too**, and no number catches that.
+
+**A pale grass and a dark grass exist and are not variants of ours.** The scans
+found two more coherent grass families the game does not use: an index-0
+dominant *pale tuft* field (`sp 2374,1378`, `sp 1289,400`, `ow 854,549`, `sp
+1450,1` — all 81/13/5) and an index-2 dominant *dense blade* field (`sp
+1047,565`, `sp 1321,936`, `ow 1820,1194` — all 5/45/49). Neither can be
+scattered into our `grass`, whose dominant index is 1: a variant with a
+different dominant tone reads as a patch, not as variation. They are whole
+REGIONAL grasses — a bright meadow and a dark wood floor — and that is an S3
+question about what regions should look like, not an S2 one.
+
+**Sand, `sandWet`, `sandRipple` and `mud` were measured and deliberately left
+alone.** Rendered at room scale they are fine-grained enough that no lattice
+appears; they are already extracted, and there was nothing to fix. Changing them
+would have been churn.
+
+
 ## The Keep's mooring ring reads as a block, and its silt ring reads better dry
 
 Two findings from P8/D6, and they are the small change left in an otherwise good

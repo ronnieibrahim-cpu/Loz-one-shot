@@ -1539,6 +1539,8 @@ __define("world/tileset.js", function (__exports, __require) {
 //   This is how the whole world reshapes: authors place one char and the tide
 //   system decides whether it is dry sand, wadeable shallows, or deep sea.
 
+const { hash32 } = __require("core/rng.js");
+
 const F = {
   SOLID:     1 << 0,   // blocks movement
   WATER:     1 << 1,   // shallow: walkable, wading animation, slight slowdown
@@ -1614,6 +1616,16 @@ function registerTiles(defs) {
       anim: def.anim || null,
       animRate: def.animRate || 10,
       over: !!def.over,
+      // GROUND VARIANTS: other art names this tile may be drawn as. Purely a
+      // draw-time substitution — same flags, same palette, same everything the
+      // simulation can see — so a field of grass stops being one 16x16 cell
+      // repeated across the screen. `tileVariant` picks one, and it MUST be
+      // named here or `registerTiles` would discard it silently, the way it
+      // discarded `liftLevel` for the life of the project (see below).
+      variants: def.variants || null,
+      // 1 in `variantOdds` cells shows a variant. See `tileVariant` for why
+      // this is a SCATTER and not an even mix.
+      variantOdds: def.variantOdds || 8,
       push: def.push || null,
       ledge: def.ledge || null,
       depth: def.depth || 0,
@@ -1754,6 +1766,41 @@ function tileArt(def, frame) {
 }
 
 
+/**
+ * Which art to draw for a tile at (tx, ty) in a room, when the tile declares
+ * interchangeable ground variants.
+ *
+ * A PURE HASH OF THE TILE'S ADDRESS, never a draw from an RNG stream. This is
+ * `T2` exactly: `Room.render` runs at display rate, so a variant drawn from a
+ * stream would desync every replay AND make the ground flicker as the cache
+ * rebuilt. `every(e, n)` is the existing precedent for hashing instead.
+ *
+ * The room key is part of the hash so the same coordinates in two rooms do not
+ * pick the same variant, which would put an identical pattern of tufts in the
+ * same place on every screen — a subtler grid than the one this replaces.
+ *
+ * A SCATTER, NOT A MIX, and this is the part that was measured rather than
+ * assumed. Picking evenly among a base and three variants does not remove the
+ * grid; it replaces it with a patchwork quilt, and a quilt is WORSE, because
+ * `rip-terrain.py` quantises each tile against its own four colours, so two
+ * tiles that look alike on the sheet can land on different palette indices and
+ * their shared edge becomes a hard tonal seam. Rendered as a full 10x8 room,
+ * an even four-way mix of good candidates read as a chessboard. One variant in
+ * seven read as a meadow. So: most cells are the base, and the variants are
+ * occasional detail — which is also what the source games do, except that
+ * there a person places each tuft by hand.
+ *
+ * Two independent hashes, not one divided: the gate decides WHETHER this cell
+ * is a variant and the pick decides WHICH, and deriving the second from the
+ * quotient of the first correlates them.
+ */
+function tileVariant(def, roomKey, tx, ty) {
+  const v = def.variants;
+  if (!v || !v.length) return def.name;
+  if (hash32('tilevar', roomKey, tx, ty) % def.variantOdds !== 0) return def.name;
+  return v[hash32('tilepick', roomKey, tx, ty) % v.length];
+}
+
 /** True if any tile in the set changes appearance with the tide. */
 function isTideSensitive(name) {
   return !!getTileDef(name).tide;
@@ -1770,12 +1817,31 @@ function validateTiles() {
         if (TILES.get(t).tide) problems.push(`${name}: tide variant '${t}' is itself a tide tile (nesting not allowed)`);
       }
       if (d.art) problems.push(`${name}: tide tiles must not define art`);
+      if (d.variants) problems.push(`${name}: tide tiles must not declare variants`);
     } else if (!d.art && !d.anim) {
       problems.push(`${name}: concrete tile has neither art nor anim`);
     }
     if (d.anim) {
       for (const a of d.anim) {
         if (!TILES.has(a) && !ANIM_ART.has(a)) problems.push(`${name}: anim frame '${a}' has no art`);
+      }
+    }
+    // GROUND VARIANTS ARE A DRAW-TIME SUBSTITUTION AND NOTHING ELSE. A variant
+    // whose flags differed from its base would make a patch of a field solid,
+    // or wet, or a pit, in a pattern nobody authored and no room grid shows —
+    // a bug that would render perfectly and be nearly impossible to find from
+    // the symptom. So the invariant is asserted here rather than trusted.
+    if (d.variants) {
+      if (d.anim) problems.push(`${name}: animated tiles cannot have variants`);
+      if (!(d.variantOdds >= 1)) problems.push(`${name}: variantOdds must be >= 1`);
+      for (const v of d.variants) {
+        const t = TILES.get(v);
+        if (!t) { problems.push(`${name}: variant '${v}' is not a registered tile`); continue; }
+        if (t.variants) problems.push(`${name}: variant '${v}' declares variants of its own (no nesting)`);
+        if (t.flags !== d.flags) problems.push(`${name}: variant '${v}' has different flags`);
+        if (t.mask !== d.mask) problems.push(`${name}: variant '${v}' has a different solid mask`);
+        if (t.anim) problems.push(`${name}: variant '${v}' is animated`);
+        if (t.over !== d.over) problems.push(`${name}: variant '${v}' disagrees about 'over'`);
       }
     }
   }
@@ -1836,6 +1902,7 @@ __exports["getTileDef"] = getTileDef;
 __exports["resolveTile"] = resolveTile;
 __exports["tileDefSolid"] = tileDefSolid;
 __exports["tileArt"] = tileArt;
+__exports["tileVariant"] = tileVariant;
 __exports["isTideSensitive"] = isTideSensitive;
 __exports["validateTiles"] = validateTiles;
 __exports["ANIM_ART"] = ANIM_ART;
@@ -1890,7 +1957,7 @@ __define("world/room.js", function (__exports, __require) {
 
 const { TILE, ROOM_W, ROOM_H, offscreen } = __require("core/screen.js");
 const { tiles: tileSheet } = __require("gfx/art.js");
-const { F, resolveTile, getTileDef, tileArt, blockRef, tileDefSolid } = __require("world/tileset.js");
+const { F, resolveTile, getTileDef, tileArt, tileVariant, blockRef, tileDefSolid } = __require("world/tileset.js");
 
 const LEGENDS = new Map();
 
@@ -2113,11 +2180,17 @@ class Room {
           // Tiles with transparent pixels sit on top of a base tile.
           if (d.underArt) {
             const u = getTileDef(d.underArt);
-            tileSheet.draw(ctx, d.underArt, x * TILE, y * TILE, { pal: u.pal });
+            // The ground under a tree or a bush varies too, or every prop in
+            // the game would stand on the one unvaried cell and re-draw the
+            // grid this exists to remove.
+            tileSheet.draw(ctx, tileVariant(u, this.key, x, y), x * TILE, y * TILE, { pal: u.pal });
           }
           if (d.over) { this.overCells.push({ x, y, def: d }); continue; }
           if (d.anim) { this.animCells.push({ x, y, def: d }); continue; }
-          tileSheet.draw(ctx, d.name, x * TILE, y * TILE, { pal: d.pal });
+          // A ground tile may declare interchangeable art. The choice is a pure
+          // hash of this room and this cell, so it is stable across every cache
+          // rebuild and consumes nothing — see `tileVariant` and `T2`.
+          tileSheet.draw(ctx, tileVariant(d, this.key, x, y), x * TILE, y * TILE, { pal: d.pal });
         }
       }
       this._cacheTide = key;
@@ -2158,9 +2231,12 @@ class Room {
           if (d.flags & F.VOID) continue;
           if (d.underArt) {
             const u = getTileDef(d.underArt);
-            tileSheet.draw(ctx, d.underArt, x * TILE, y * TILE, { pal: u.pal });
+            tileSheet.draw(ctx, tileVariant(u, this.key, x, y), x * TILE, y * TILE, { pal: u.pal });
           }
-          tileSheet.draw(ctx, tileArt(d, frame), x * TILE, y * TILE, { pal: d.pal });
+          // Same hash as `render`, or the Lens's preview of the room would
+          // draw a DIFFERENT field of grass from the room behind it.
+          tileSheet.draw(ctx, d.anim ? tileArt(d, frame) : tileVariant(d, this.key, x, y),
+            x * TILE, y * TILE, { pal: d.pal });
         }
       }
       a.dirty = false;
@@ -13203,6 +13279,25 @@ __define("data/tiles-terrain.js", function (__exports, __require) {
 // four colours each tile actually has on the sheet, for reference.
 
 const TERRAIN_ART = {
+  // field grass, fine even speckle — oracle-seasons-overworld-spring.png @ 1095,420
+  grass: `
+    1110111011101110
+    0211101102111011
+    1100111111001111
+    0111101001111010
+    1110111211101112
+    1011111110111111
+    1111010111110101
+    0101121101011211
+    1110111011101110
+    0211101102111011
+    1100111111001111
+    0111101001111010
+    1110111211101112
+    1011111110111111
+    1111010111110101
+    0101121101011211`,
+
   // grass with scattered tufts — custom-oracle-style-overworld.png @ 1611,307
   grassTuft: `
     1111111111111011
@@ -13221,6 +13316,25 @@ const TERRAIN_ART = {
     1222122111111111
     1212121111111111
     1111121111111111`,
+
+  // grass with low clumps, sparser than grassTuft — custom-oracle-style-overworld.png @ 2367,847
+  grassClump: `
+    1101111111111111
+    1220111111111111
+    0122121011111111
+    2112210211111111
+    2212212111111111
+    1222122111111111
+    1212121111111111
+    1111121111111111
+    1111111111111011
+    1111111111110221
+    1111111101212210
+    1111111120122112
+    1111111112122122
+    1111111112212221
+    1111111111212121
+    1111111111211111`,
 
   // tall blades, the cuttable kind — custom-oracle-style-overworld.png @ 886,1049
   tallgrass: `
@@ -13454,7 +13568,9 @@ const TERRAIN_ART = {
 
 // The source colours, lightest first — not installed, kept for reference.
 const TERRAIN_SRC_PALETTES = {
+  grass: ['#f8f870', '#c08018', '#603800'],
   grassTuft: ['#fce8b1', '#d3d35d', '#54ac36'],
+  grassClump: ['#d3c8d3', '#95b19d', '#6a7a61'],
   tallgrass: ['#fce8b1', '#d3d35d', '#54ac36'],
   sand: ['#fce8b1', '#e3a14d'],
   sandWet: ['#fce8b1', '#e3a14d', '#8c5527'],
@@ -15009,23 +15125,14 @@ const { TORRENT_PUSH } = __require("data/feel.js");
 
 const HAND_ART = {
   // ---- ground -------------------------------------------------------------
-  grass: `
-    1111111111111111
-    1111111111111111
-    1112111111111111
-    1111111111112111
-    1111111111111111
-    1211111111111111
-    1111111111111121
-    1111111111111111
-    1111111111111111
-    1111211111111111
-    1111111111121111
-    1111111111111111
-    1111111111111111
-    1211111111111111
-    1111111111111121
-    1111111111111111`,
+  //
+  // `grass` USED TO BE HERE and is gone: it is extracted now, from Seasons'
+  // own field grass, by tools/rip-terrain.py. It was a flat field of one tone
+  // with fourteen dark speckles in a fixed constellation, and repeated across a
+  // screen that constellation was the visible grid — a regular lattice of dots
+  // on a 16-pixel pitch. It is retired rather than kept as a fallback because
+  // `R5` says extract what a sheet has, and a hand-drawn tile left next to the
+  // extracted one that replaced it is how the two slowly diverge.
 
   grassTuft: `
     1111111111111111
@@ -16111,9 +16218,21 @@ function installCoreTiles() {
     void: { art: ART.void, pal: 'abyss', flags: F.VOID | F.SOLID },
 
     // --- walkable ground ---
-    grass: { art: ART.grass, pal: 'grass' },
+    // GROUND VARIANTS. `variants` names other art this tile may be drawn as;
+    // `Room.render` picks with `tileVariant`, a pure hash of the room and the
+    // cell (never the RNG stream — see `T2`). Nothing the simulation can see
+    // changes: same flags, same palette, same tile.
+    //
+    // One cell in seven, not an even mix. An even mix of four good candidates
+    // was rendered as a whole room and read as a patchwork quilt — worse than
+    // the grid it replaced, because each tile is quantised against its own four
+    // colours and a tonal seam appears wherever two of them meet. The rate was
+    // settled by looking at 1-in-4 (busy), 1-in-7 (a meadow) and 1-in-12
+    // (accidental) side by side at room scale.
+    grass: { art: ART.grass, pal: 'grass', variants: ['grassClump', 'grassTuft'], variantOdds: 7 },
     grassTuft: { art: ART.grassTuft, pal: 'grass' },
-    grassDark: { art: ART.grass, pal: 'grassdk' },
+    grassClump: { art: ART.grassClump, pal: 'grass' },
+    grassDark: { art: ART.grass, pal: 'grassdk', variants: ['grassClump', 'grassTuft'], variantOdds: 7 },
     // The extracted `flowers` is a transparent prop rather than a filled ground
     // tile, so it needs a base drawn under it like `bush` and `rock` do. Still
     // walkable, and still cuts down to plain grass (see TRANSFORMS below).
@@ -16131,7 +16250,7 @@ function installCoreTiles() {
     // GBC games gave each region its own look without redrawing every tile.
     rockFloorRust: { art: ART.rockFloor, pal: 'rust' },
     rockFloorCoral: { art: ART.rockFloor, pal: 'coral' },
-    grassBog: { art: ART.grass, pal: 'bog' },
+    grassBog: { art: ART.grass, pal: 'bog', variants: ['grassClump', 'grassTuft'], variantOdds: 7 },
     grassTuftBog: { art: ART.grassTuft, pal: 'bog' },
     saltFlat: { art: ART.sandRipple, pal: 'marble' },
     saltCrust: { art: ART.sand, pal: 'marble' },
@@ -16501,6 +16620,12 @@ function installCoreTiles() {
     dUrn: { art: ART.urn, pal: 'urn', flags: F.SOLID, underArt: 'dFloor' },
 
     // --- dungeon ---
+    // NO VARIANTS, DELIBERATELY. `dg 258,42` is the one tile on any sheet whose
+    // tonal profile matches this one (34/50/14 against 27/53/18) and it was
+    // extracted, wired and then reverted: it is a DIAGONAL STREAK against this
+    // tile's SCALLOP, so scattered through a floor it read as random patches
+    // rather than as masonry. Tone compatibility is necessary and not
+    // sufficient — the motif has to match too. See docs/ART-BACKLOG.md.
     dFloor: { art: ART.dFloor, pal: 'brickf' },
     dFloorCrack: { art: ART.dFloorCrack, pal: 'brick' },
     dFloorWet: { art: ART.dFloor, pal: 'stonef' },

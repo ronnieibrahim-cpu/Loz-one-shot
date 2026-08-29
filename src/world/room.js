@@ -41,7 +41,7 @@
 
 import { TILE, ROOM_W, ROOM_H, offscreen } from '../core/screen.js';
 import { tiles as tileSheet } from '../gfx/art.js';
-import { F, resolveTile, getTileDef, tileArt, blockRef, tileDefSolid } from './tileset.js';
+import { F, resolveTile, getTileDef, tileArt, tileVariant, blockRef, tileDefSolid } from './tileset.js';
 
 export const LEGENDS = new Map();
 
@@ -264,11 +264,17 @@ export class Room {
           // Tiles with transparent pixels sit on top of a base tile.
           if (d.underArt) {
             const u = getTileDef(d.underArt);
-            tileSheet.draw(ctx, d.underArt, x * TILE, y * TILE, { pal: u.pal });
+            // The ground under a tree or a bush varies too, or every prop in
+            // the game would stand on the one unvaried cell and re-draw the
+            // grid this exists to remove.
+            tileSheet.draw(ctx, tileVariant(u, this.key, x, y), x * TILE, y * TILE, { pal: u.pal });
           }
           if (d.over) { this.overCells.push({ x, y, def: d }); continue; }
           if (d.anim) { this.animCells.push({ x, y, def: d }); continue; }
-          tileSheet.draw(ctx, d.name, x * TILE, y * TILE, { pal: d.pal });
+          // A ground tile may declare interchangeable art. The choice is a pure
+          // hash of this room and this cell, so it is stable across every cache
+          // rebuild and consumes nothing — see `tileVariant` and `T2`.
+          tileSheet.draw(ctx, tileVariant(d, this.key, x, y), x * TILE, y * TILE, { pal: d.pal });
         }
       }
       this._cacheTide = key;
@@ -309,9 +315,12 @@ export class Room {
           if (d.flags & F.VOID) continue;
           if (d.underArt) {
             const u = getTileDef(d.underArt);
-            tileSheet.draw(ctx, d.underArt, x * TILE, y * TILE, { pal: u.pal });
+            tileSheet.draw(ctx, tileVariant(u, this.key, x, y), x * TILE, y * TILE, { pal: u.pal });
           }
-          tileSheet.draw(ctx, tileArt(d, frame), x * TILE, y * TILE, { pal: d.pal });
+          // Same hash as `render`, or the Lens's preview of the room would
+          // draw a DIFFERENT field of grass from the room behind it.
+          tileSheet.draw(ctx, d.anim ? tileArt(d, frame) : tileVariant(d, this.key, x, y),
+            x * TILE, y * TILE, { pal: d.pal });
         }
       }
       a.dirty = false;

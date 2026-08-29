@@ -25,7 +25,7 @@ doing the session.
 | # | Session | Model | Needs | Your eye/ear |
 |---|---|---|---|---|
 | ~~S1~~ | ~~Impact: hitstop and the feel constants~~ | Opus | — | **DONE — awaiting your ear.** See `docs/NEXT-SESSION.md` |
-| S2 | Terrain extraction: the ground | Opus | S1 | Yes |
+| ~~S2~~ | ~~Terrain extraction: the ground~~ | Opus | S1 | **DONE — awaiting your eye.** See `docs/NEXT-SESSION.md` |
 | S3 | Terrain extraction: edges and towns | Opus | S2 | Yes |
 | S4 | Sound coverage and the sfx checker | Sonnet | S1 | Yes (listen) |
 | S5 | Bosses winnable by design | Opus | S1 | **Critical** |
@@ -105,6 +105,18 @@ on every sword swing, the session failed.**
 ---
 
 ## S2 — Terrain extraction, pass 1: the ground you stand on
+
+> **DONE.** `grass` is extracted (Seasons' own field grass) and the hand-drawn
+> original is deleted; `grassClump` joins it; ground tiles can declare
+> `variants`, picked by a pure hash of room and cell, and `grass`/`grassDark`/
+> `grassBog` scatter one cell in seven. **The rate was measured by rendering
+> whole rooms, and an even mix — the obvious implementation — is a chessboard
+> (`T61`).** The source has no multi-cell ground patterns and the scan that
+> proves it is committed as `--supercells` (`T63`). `dFloor`'s one tonal match
+> was a motif mismatch and was reverted (`T62`). `rockFloor` needs a tile no
+> sheet has and is backlogged. **All 51 replays stayed green with no
+> re-recording, which is the proof the change is draw-only.** Whether the grid
+> is gone is the user's call (`§4.2`); `docs/NEXT-SESSION.md` names the shots.
 
 **Goal:** grass, sand and ground textures come off the sheets with enough
 variants that a field stops reading as one repeated cell.

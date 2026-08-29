@@ -447,6 +447,53 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+**THE OBVIOUS IMPLEMENTATION OF "MIX SOME VARIANTS IN" MAKES THE PROBLEM
+WORSE.** S2's job was to stop a grass field reading as one repeated cell. The
+natural move — extract four good grass tiles and pick among them evenly — was
+built, rendered as a whole room, and is a **chessboard**. `rip-terrain.py`
+quantises every tile against its OWN four colours, so two tiles that look alike
+on a sheet can land on different palette indices, and every edge where two of
+them meet becomes a hard tonal seam. A regular grid of dots is subtle next to a
+quilt. What works is a SCATTER: one cell in seven, on tiles whose palette-index
+distribution already matches the base's. **Neither the failure nor the rate is
+visible in a single tile, or in a 3x3 swatch. Render a whole room.**
+
+**MATCHING TONE IS NECESSARY AND NOT SUFFICIENT — THE MOTIF HAS TO MATCH TOO,
+AND NO NUMBER CATCHES IT.** Having learned the tone rule above, S2 applied it to
+the dungeon floor and found `dg 258,42` at 34/50/14 against `dFloor`'s 27/53/18
+— the closest partner on any sheet, by the metric that had just been validated.
+It was extracted, wired, screenshotted and reverted: `dFloor` is a **scallop**
+and 258,42 is a **diagonal streak**, so scattered through a floor it read as
+random patches rather than as masonry. A metric that worked once is not a
+substitute for looking at the two tiles side by side in the palette the game
+will actually use.
+
+**A NEGATIVE RESULT THAT COST AN HOUR SHOULD BE COMMITTED AS A TOOL, NOT
+WRITTEN UP AS PROSE.** `rip-terrain.py --scan` finds 16x16 windows that repeat
+at +16, which structurally cannot see a field built from a 2x2 set of
+alternating cells — exactly where multi-cell ground variation would live. The
+only way to know whether the source games do that is to write the supercell scan
+and run it, which S2 did: 758 windows on the whole overworld sheet against 4,129
+at 16x16 in one grass region, 9 on the Seasons spring sheet, **zero on the Ages
+sheet**. The source's ground fields are single-cell repeats and their variety is
+hand-placed. That answer is now `--supercells`, a committed subcommand with the
+measurements in its docstring, for the same reason `--scan` itself was committed
+one session earlier: **the header of that function already said "the scratch
+script that does it is not committed", and recovering it was a session's work
+for something that fits on a screen.**
+
+**AN ART CHANGE THAT MOVES A REPLAY IS AN ART CHANGE THAT IS NOT AN ART
+CHANGE.** S2's prompt named this as its own test — `V11` must stay green, and if
+it does not, the variant choice is leaking into simulation. It stayed green,
+across all 51 assertions, with no re-recording at all. That is worth
+generalising: for any change that claims to be draw-only, the replay suite is
+not a formality to re-record afterwards, it is the assertion that the claim is
+true. Pair it with a structural invariant — `validateTiles` now rejects a
+variant whose flags, mask or `over` differ from its base — so the property is
+checked at boot as well as at replay time. **A variant that quietly made a patch
+of grass solid would render perfectly and be nearly impossible to trace from the
+symptom.**
+
 **A CONSTANT THAT ISN'T IN `feel.js` MAKES RETUNING THE ONES THAT ARE A
 COSMETIC EXERCISE.** S1 set out to retune the six screen-shake constants around
 the new hitstop and found that `src/data/bosses.js` spelled its own shakes out

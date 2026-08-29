@@ -1,3 +1,181 @@
+## S2 — Terrain extraction, pass 1: the ground you stand on (this session)
+
+**Run per `docs/SESSION-PROMPTS.md` S2, on top of S1.** Scope held: the ground
+only. Cliffs, water edges and town fronts are S3 and were not started.
+
+### `T19` first: the ripper reproduces byte-identically
+
+Run before anything was changed, per the prompt. `md5sum` of
+`src/data/tiles-terrain.js` was identical before and after
+`python3 tools/rip-terrain.py`, so the generated file had **not** been
+hand-edited and the extraction path was safe to build on.
+
+### The grid was one hand-drawn tile, and it is extracted now
+
+`A2` said "there is exactly one `grass` tile... that is the visible grid," and
+that was exactly right. The hand-drawn `grass` was a flat field of one tone with
+about fourteen dark speckles in a FIXED constellation. Rendered as a whole 10x8
+room it is a regular lattice of dots on a 16-pixel pitch — you can count the
+pitch. The speckle density was the problem: sparse enough that each mark is a
+landmark, regular enough that the eye lines them up.
+
+`grass` is now **Seasons' own field grass**
+(`oracle-seasons-overworld-spring.png @ 1095,420`) — a fine, dense, irregular
+speckle of the light tone over the mid one, at a density where no single mark is
+a landmark, so there is nothing to line up. **The hand-drawn original was
+deleted from `tiles-core.js`**, per the prompt's job 4 and `R5`: an extracted
+tile and the hand-drawn tile it replaced, left side by side, is how the two
+slowly diverge.
+
+A second tuft cell, `grassClump` (`custom-oracle-style-overworld.png @
+2367,847`), was extracted to give `grass` something to scatter that is not the
+tile an author places deliberately with `G`.
+
+### Ground variants: a hash, and a SCATTER rather than a mix
+
+A tiledef may now declare `variants` (other art names it may be drawn as) and
+`variantOdds`. `tileVariant` in `src/world/tileset.js` picks:
+
+```js
+if (hash32('tilevar', roomKey, tx, ty) % def.variantOdds !== 0) return def.name;
+return v[hash32('tilepick', roomKey, tx, ty) % v.length];
+```
+
+Two independent hashes, not one divided — deriving the pick from the quotient of
+the gate correlates them. The room key is in the hash so the same coordinates in
+two rooms do not choose alike, which would put identical tufts in the same place
+on every screen: a subtler grid than the one being removed. Per `T2` it is a
+pure hash and consumes nothing, so `Room.render` running at display rate cannot
+desync a replay or make the ground flicker.
+
+**`variants` had to be named in `registerTiles`** or it would have been silently
+discarded, exactly as `liftLevel` was for the life of the project.
+
+`grass`, `grassDark` and `grassBog` scatter `grassClump` and `grassTuft` at
+**one cell in seven**.
+
+### The rate was measured, not guessed — and the obvious design is wrong
+
+**An even mix of variants is WORSE than the grid.** Four good grass candidates
+mixed at equal weight, rendered as a full room, read as a **chessboard**:
+`rip-terrain.py` quantises each tile against its own four colours, so two tiles
+that look alike on a sheet land on different palette indices and their shared
+edge becomes a hard tonal seam. This is now `T61`, and it is why the rate was
+settled by rendering whole rooms:
+
+| rate | reads as |
+|---|---|
+| every cell (even mix) | a chessboard — worse than the grid |
+| 1 in 4 | busy; starts to read as a pattern |
+| **1 in 7** | **a meadow** |
+| 1 in 12 | accidental; the tufts look like mistakes |
+| base only | clean, no grid, but dead |
+
+The companion rule is `T62`: a candidate's palette-index distribution must match
+its base's, or the variant reads as a patch rather than as variation. Our
+`grass` is index-1 dominant (78/17/3 for `grassTuft`, and `grassClump` matches
+it to three significant figures). The pale grasses on the sheets are 81/13/5 and
+the dark ones are 5/45/49 — those are whole different grasses, not variants of
+ours, and they are written up for S3 rather than forced in here.
+
+### A negative result worth more than the tiles: the source has no supercells
+
+`--scan` only finds windows that repeat at +16 in both axes, so a field built
+from a 2x2 set of alternating cells is invisible to it — and that is exactly
+where multi-cell ground variation would live. **So the scan was written.**
+`python3 tools/rip-terrain.py --supercells <sheet> [N]` is committed, and the
+answer across every sheet is:
+
+| sheet | 32x32 supercell windows |
+|---|---|
+| `custom-oracle-style-overworld` | 758 *(against 4,129 at 16x16 in ONE grass region)* |
+| `oracle-seasons-overworld-spring` | 9 |
+| `oracle-ages-overworld` | **0** |
+| `oracle-seasons-tileset-subrosia` | **0** |
+
+**Oracle's ground fields are genuinely single-cell repeats.** Their variety comes
+from a person placing detail cells by hand, which is precisely what our hash
+scatter approximates. This is `T63` and it is committed as a tool so nobody
+spends another session asking.
+
+### `dFloor` got a variant, and it was reverted
+
+`oracle-seasons-dungeon-backgrounds.png @ 258,42` profiles at 34/50/14 against
+`dFloor`'s 27/53/18 — the closest tonal partner on any sheet. It was extracted,
+wired at one-in-nine, screenshotted, and **backed out**: `dFloor` is a scallop
+and 258,42 is a diagonal streak, so scattered through a floor it read as random
+patches, not masonry. Removing it meant deleting its entry from the ripper's
+`PICKS` and re-emitting, not deleting lines from the output (`T19` cuts both
+ways). Its coordinates are in `docs/ART-BACKLOG.md` so the next session does not
+re-hunt it.
+
+### `rockFloor` is the biggest piece of grid left, and no sheet can fix it
+
+It is `g` in the reef, cliffs and abyss legends — a large-area ground — and its
+cobble motif repeats visibly at room scale. It is a full four-tone tile
+(23/26/24/25) and **nothing on any sheet shares that profile**; every floor
+candidate found is three-tone. That is `R5`'s "if no sheet has it, draw it to
+match" branch, which wants a person's eye. Backlogged.
+
+Sand, `sandWet`, `sandRipple` and `mud` were rendered at room scale, found
+fine-grained enough that no lattice appears, and **deliberately left alone**.
+
+### The invariant is asserted, not trusted
+
+`validateTiles` now rejects a variant whose flags, solid mask or `over` differ
+from its base, a variant that is animated, a variant that nests variants, and a
+tide tile that declares variants at all. **A variant that changed passability
+would make a patch of a field solid in a pattern nobody authored and no room
+grid shows — it would render perfectly and be nearly impossible to trace from
+the symptom.** Proved by giving `grassClump` `F.SOLID`: `validate.mjs` reports
+`grass: variant 'grassClump' has different flags` for all three bases.
+
+### Verified
+
+```
+validate            OK                replay            51/0   <-- see below
+test                65 passed, 0      walk-dungeons     23/0
+check-overworld     17/0              check-progression 19/0
+check-gates         26/0              check-towns       58/0
+check-items         91/0              check-charms      63/0
+check-trade         43/0              check-hearts   114/114
+check-motion         8/0              check-torches      5/0
+check-playthrough   19/0              check-bosses      18/0 (god mode)
+check-guide          4/0              solve-switches    all 9 solvable
+check-build         OK — boots from file://
+```
+
+**`V11` stayed green and that is the point.** The prompt said a terrain change
+should NOT move a replay, and that if it does the variant choice is leaking into
+simulation. All 51 replay assertions passed untouched — no re-recording, no
+churn. Combined with the `validateTiles` invariant, the variant mechanism is
+provably draw-only.
+
+### Hand it back: what to look at
+
+Screenshots in `tools/shots/`. Per `§4.2`, **whether the grid is actually gone
+is your call, not mine.**
+
+1. **The A/B that matters.** `room-overworld_4_6-tide1-px80.png` (South Wood)
+   and `room-overworld_5_6-tide1-px80.png` (The Wading). To see the old ground,
+   `git stash` this branch's changes and re-run
+   `node tools/shoot-rooms.mjs overworld,4,6 overworld,5,6`. **Compare the
+   grass in the corners of the screen** — that is where the lattice was easiest
+   to count.
+2. **Is 1 in 7 right?** `src/data/tiles-core.js`, the `variantOdds: 7` on
+   `grass`. One line, then `npm run build`. Try 5 and 10.
+3. **Every region at once.** `overworld,4,3` (wood), `3,6` (coast), `7,6`
+   (dunes), `4,0` (salt), `8,4` (coral), `3,1` (cliffs), `0,6` (marsh). Only
+   the grass regions should have changed.
+4. **Does the new grass hurt sprite legibility?** It is busier than the flat
+   field it replaced. Look at Link and an Octorok standing on it in
+   `overworld,4,6` — this is the one way the change could be a regression, and
+   a still frame is a fair test of it.
+5. **`rockFloor` in `overworld,3,1`** — this is the grid that is still there,
+   and it is the S3 question.
+
+---
+
 ## S1 — Impact: hitstop, shake weight, and the missing feel constants (this session)
 
 **Run per `docs/SESSION-PROMPTS.md` S1.** Branched from
