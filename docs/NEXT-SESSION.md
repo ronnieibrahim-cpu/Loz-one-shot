@@ -68,20 +68,66 @@ branches are now safe to delete: their unique value (the phase fix, the
 contact fix) is on `main`; what's left in them is either redundant or
 already-negative results.
 
+**Two more pulled in from the same audit, and one more tried and reverted:**
+
+- **`tools/measure-boss-combat.mjs` is now committed**, from
+  `x60p79`: the real-combat (no god mode, 3 hearts, seed 20260806) boss
+  harness that this session and at least two before it had each rebuilt by
+  hand in a scratchpad and never checked in — `node
+  tools/measure-boss-combat.mjs [dungeonId] [--god] [--budget=N]`.
+- **`x60p79`'s wall-aware `fence()` (a retreat command dropping a component
+  that would step into a solid tile) was tried on top of the contact fix
+  above and MEASURED AS A REGRESSION when stacked** — boss damage dropped
+  from a reliable 12/24 (three consecutive runs) to 14/24 remaining, not
+  noise. The source branch measured it as a wash against a different, less
+  refined contact fix in isolation; combined with this session's more
+  complete version it is a net negative. Not shipped. If revisited, measure
+  it against the CURRENT committed `dBoss`, not in isolation.
+- **This session's own attempt: running WITH the charge's own direction
+  during the dodge (not just perpendicular to it), to close the gap before
+  the recovery-stun window per `x60p79`'s "chase along the dash" lead
+  below — tried, and measured WORSE**: contact hits came back (0 -> 2),
+  boss damage dropped to 10/24, and the player died in 900 frames instead
+  of 1300+. Reverted. The naive "add an along-axis component to the
+  existing perpendicular dodge" shape does not work; whatever `x60p79`
+  actually implemented (their own diff for this specific idea was not
+  isolated and re-tried here — only their general description was) may
+  differ in a load-bearing detail. Read their branch's own commits
+  (`ac2ab5c`, `0b498bb`) directly before trying this shape a third time,
+  rather than reimplementing from the prose description.
+
+**Also pulled in, unrelated to the boss verb:** a real visual bug from
+`link-sprite-progression-issues-rq48b6` — a lifted rock/pot rendered ~26px
+above Link's head instead of 13, because `Game.liftTile` set the object's
+own `z` on top of the y-offset `Player.updateMovement` already applies via
+`CARRY_HEIGHT`. Fixed by zeroing the object's `z` at lift time (throw time
+already resets it via `Player.throwCarried`). That branch also logged, root-
+caused but NOT fixed, three more issues worth a look next session (not
+independently re-verified this session, so treat as a lead, not a confirmed
+bug): the sword swing and spin attack may draw no visible blade
+(`link_sword_*`/`link_spin_*` never got the oversized `expectedSize` crop
+`link_hold_*` has in `src/data/sprite-manifest.js` — worth a screenshot
+check), a report of enemies with no working hitbox (no repro yet), and the
+overworld running on a single music track regardless of region.
+
 **Next session, in order:**
 
 1. **Read the charge-lock/recovery-window analyses in the branches named
    above before attempting a new fix** — several sessions in parallel spent
    real effort narrowing this down and their negative results are worth
-   inheriting rather than re-discovering.
+   inheriting rather than re-discovering. In particular, read `x60p79`'s
+   own diff for "chase along the dash" (commits `ac2ab5c`/`0b498bb`) rather
+   than this session's reimplementation-from-prose, which measured worse.
 2. Bisect the exact win threshold between 8 and 10 hearts precisely (this
    session stopped at a coarse bisection), and decide whether closing the
    last 5-7 hearts of gap is an AI problem or a design one (3 hearts may
    still be short even with a further-improved verb).
-3. Delete the now-superseded branches (`git push origin --delete <branch>`)
+3. Screenshot-check the sword-blade claim above; it would be a real fidelity
+   bug (Goal 1) if true and nobody has looked since it was logged.
+4. Delete the now-superseded branches (`git push origin --delete <branch>`)
    once a maintainer confirms — this session did not delete anything,
    only merged forward what had unique value.
-4. Once Gohmaraq wins at 3 hearts, wire `dBoss` into `playthrough-route.mjs`
+5. Once Gohmaraq wins at 3 hearts, wire `dBoss` into `playthrough-route.mjs`
    and look at whether the other five bosses are winnable in REAL combat
    (not just god mode) at their own dungeons' starting health.
 
