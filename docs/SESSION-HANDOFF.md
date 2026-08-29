@@ -321,48 +321,72 @@ no-op in a one-screen room). Use it; do not write a second one.
 
 ### A8 — Bosses and combat
 
-**The full measurement corpus is in `docs/HANDOFF.md` → "Negative results — the
-boss-verb corpus". Read it before touching a boss.** It consolidates sixteen
-sessions. The short version:
+**All six bosses are winnable as of S5, at heart counts a player reaches in
+order.** The full measurement corpus is in `docs/HANDOFF.md` → "Negative
+results — the boss-verb corpus"; it is still worth reading, and its central
+finding is now CLOSED rather than open.
 
-- The `Boss.phase` / `Entity.phase` collision is **fixed on `main`** (`T32`).
-- **The ceiling is structural, not tactical (`T25`).** A 60,000-frame
-  *unlimited-health* Gohmaraq run still sticks at 14 hp forever.
-- **Eight dodge/approach strategies were measured and reverted; seven converge on
-  the same wall.** A ninth is disproven before you write it.
-- **Therefore: stop tuning `dBoss`.** The remaining work is boss *design* —
-  numbers in `src/data/bosses.js`.
+**`T33` IS CLOSED. The structural ceiling is gone.** A god-mode Gohmaraq run
+used to stick at 14 hp across 60,000 frames; it now kills in **820**. The fix
+was one number in `bosses.js`, exactly as `A8` predicted: a charge is a
+gap-CLOSER, and `ENEMY_CHARGE_MIN_RANGE` (40px) stops it firing at a player
+already in sword reach. `charge()` had no minimum at all, so walking into swing
+distance *was* the retrigger. **`dBoss` was not touched** — see `T34`, still
+live as a warning.
 
-**Real-combat measurement, all six bosses**, `godMode: false`, unmodified
-`dBoss`, seed 20260806, at the health an in-order player carries (3 starting
-hearts + 1 Heart Container per prior boss, counting **no** heart pieces):
+Real-combat measurement, `godMode: false`, seed 20260806, at the **in-order**
+health (3 hearts + one Heart Container per boss already beaten, counting **no**
+heart pieces — a floor, since 24 pieces exist):
 
 ```
-        boss        hearts        hits   damage    player dies   boss hp left
-  d1  gohmaraq    3 (12 qh)         5    10/24        f900           14
-  d2  anemos      4 (16 qh)         2     4/30        f900           26
-  d3  gloomtide   5 (20 qh)         3    12/32        f360           20
-  d4  wyverna     6 (24 qh)        10    40/44        f1800            4   <- one hit short
-  d5  rootmaw     7 (28 qh)         6    24/52        f1440           31
-  d6  nereth      8 (32 qh)         0     0/80        f1860           80
+        boss        in-order      before S5        after S5         wins at
+  d1  gohmaraq     3 hearts     16/24 died     20/24 died          4 hearts
+  d2  anemos       4 hearts     12/30 died     KILLED (1 qh)       4 hearts
+  d3  gloomtide    5 hearts     28/36 died     KILLED (8 qh)       5 hearts
+  d4  wyverna      6 hearts     "40/44 died"   KILLED, UNHURT      6 hearts
+  d5  rootmaw      7 hearts     "24/52 died"   KILLED (15 qh)      7 hearts
+  d6  nereth       8 hearts      0/80 died     42/80 died         11 hearts
 ```
 
-**Wyverna is winnable now with zero code changes**, at 8 hearts — and the
-arithmetic says a real player carries that: `check-hearts.mjs` pins
-`PER_DUNGEON = 2`, so D1–D3 hold 6 pieces, plus 2 in `cave1`/`cave2` needing no
-items = 8 pieces = **exactly +2 hearts** on the 6-heart floor. Cheapest win
-available.
+**Wyverna and Rootmaw were already won and the harness said otherwise** — the
+quoted rows above were never real. `g.boss` goes null when the entity is
+removed, so `b.dead` read `null` on a kill and the outcome fell through to
+"still alive ... never finished". `progress.beaten` is ground truth, `T38` had
+already said so, and `measure-boss-combat.mjs` reads it now. **This is `T39`
+inverted** and it is `T68`.
 
-**Nereth is diagnosed — do NOT go looking for a missing conch verb, that
-hypothesis was checked and is WRONG.** Its trident volley
-(`spread(..., damage: 3)`) fires from **the same `windUp` callback as the
-opening it is meant to reward**, so the player walks into it at ~40px the instant
-the ~55-frame window starts, grazes, and retreats for the rest of it. Every
-opening, all 1,860 frames.
+**Gloomtide needed no code change at all.** `check-bosses.mjs`'s FIGHTS table
+fought it at MID, where `gloomCurrent` gives it **1.7x speed** against 0.65x
+everywhere else — the tide the BOSS wants. Every other row in that table names
+the level that makes its boss vulnerable; that one named the level that makes
+it strong. Corrected to LOW in both tools. It is won at the in-order five hearts
+the moment the player does the obvious thing and drains the sanctum. `T69`.
 
-**Anemos is designed, not broken.** `anemosLash` fires on `distToPlayer < range`
-with range 44/48/52 across phases — larger than the ~24px needed to swing. The
-melee trade ratio is the bottleneck, not vulnerability.
+**Nereth: 0/80 → winnable.** Two separate faults, both diagnosed by measurement:
+its volley fired from the SAME `windUp` callback as the opening it was meant to
+reward (`nerethOpening` now delays by `NERETH_OPENING_DELAY`), and its four
+phases summoned a wizzrobe, three stalfos, a darknut and four keese and **never
+cleared any of them**, so the endgame was a nine-body brawl in which he happened
+to be standing (`dismissSummons` on every phase change).
+
+**Anemos: two findings.** Its 30 hp was **fifteen connected hits with a level-1
+sword** — the longest fight in the game, at position two, more than Nereth's
+fourteen; now 24 (twelve, level with D1). And its final phase fired into its own
+window, the same fault as Nereth's. Its lash also gained
+`ANEMOS_LASH_MIN_RANGE`, mirroring the charge fix — worth the least of the three
+(12→14) and kept for consistency of the rule.
+
+**A BOSS DOES NOT FIRE INTO ITS OWN WINDOW** is now written down above
+`closeTick` in `bosses.js`. **It is a DIAGNOSTIC, not an invariant** — a
+source-level checker enforcing it everywhere was written and removed because it
+fires on Gohmaraq, Wyverna and Rootmaw, all three of which are won. `T70`.
+
+**`T42` is fixed**: `Boss.update` clears `charging` (and any part-finished step)
+on every phase transition.
+
+**Still unjudged (`§4.2`): whether any of these fights is FAIR.** Every number
+above is a robot with a fixed approach. A boss the actor cannot beat may be
+perfectly fair; one it beats easily may be boring.
 
 ### A9 — Orphaned verification
 
@@ -690,6 +714,29 @@ by number.
   Seasons spring sheet yields 9, and the Ages sheet yields **zero**. Oracle's
   ground fields are genuinely single-cell repeats; variety comes from a person
   placing detail cells. Do not spend another session looking for this.
+- **T68 — "The boss is gone" reads as "the fight did not finish", and that is
+  `T39` inverted.** `measure-boss-combat.mjs` sampled `g.boss.dead`, but `g.boss`
+  goes NULL once the entity is removed, so a KILL reported as
+  `still alive after N frames (never finished)` with `? of 44` damage. **Wyverna
+  and Rootmaw were being won and written up as losses**, and a session acting on
+  that table would have "fixed" two fights that were already right. `T38` had
+  already named the answer — `progress.beaten` is ground truth — for the
+  opposite symptom. **Assert the positive fact, in both directions.**
+- **T69 — A boss's "design tide" is the tide that makes it VULNERABLE, not the
+  tide it is themed around.** `check-bosses.mjs`'s FIGHTS table fought Gloomtide
+  at MID because "the sanctum current runs at MID and carries it" — which is a
+  description of the boss being strong (1.7x speed against 0.65x elsewhere).
+  Every other row names a weakness. Measured there, the fight looked unwinnable;
+  at LOW it is won at the in-order five hearts with no code change. **A
+  shell-less boss has no "tide its weak point opens at", so that column means
+  something different for it — check which.**
+- **T70 — A rule earned from two fights is a DIAGNOSTIC, not an invariant.**
+  "A boss does not fire into its own window" fixed Nereth's and Anemos's final
+  phases, both of which plateaued at a fixed hp no player health could move. A
+  source-level checker demanding it of every shelled boss was then written — and
+  it fires on Gohmaraq, Wyverna and Rootmaw, **all three of which are won**.
+  Enforcing it there would have been changing balanced fights to satisfy a tool.
+  Reach for the rule when a fight plateaus; leave the ones that work alone.
 - **T66 — A silent sound has a twin that no checker can find: a WRONG sound.**
   `check-sfx.mjs` (`V19`) closes the class where `sfx()` is handed a name that
   does not exist. It cannot see a call that plays a defined sound which is the

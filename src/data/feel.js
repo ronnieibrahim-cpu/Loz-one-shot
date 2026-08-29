@@ -678,6 +678,58 @@ export const ENEMY_CHARGE_TOLERANCE = 10;
 /** px — how near the player must be for a charge to trigger. guessed. */
 export const ENEMY_CHARGE_RANGE = 90;
 
+/** f — how long after one of Nereth's attacks his weak point opens. guessed.
+ *  His volley leaves at 2.0 px/f, so 34 frames carries it ~68px — past a player
+ *  standing at the ~40px they were being hit at. See `nerethOpening`. */
+export const NERETH_OPENING_DELAY = 34;
+
+/** f — how long that opening lasts once it arrives. guessed; unchanged at 55,
+ *  because the window was never the problem — WHEN it started was. */
+export const NERETH_OPEN_FRAMES = 55;
+
+/** px — how close the player has to get for Anemos's lash to stop reaching
+ *  them. guessed. Same rule as ENEMY_CHARGE_MIN_RANGE and the same reason: the
+ *  lash fired on `distToPlayer < 44/48/52`, which INCLUDES the ~24-30px a
+ *  player stands at to swing, so attacking was itself the trigger for five
+ *  damage-3 spears in a 40-degree fan — at point-blank a fan that tight has no
+ *  gap to step into, and `T35` says the player is rooted for the whole swing
+ *  and cannot leave anyway.
+ *
+ *  32 is outside sword reach, so the lash becomes a mid-range punish for
+ *  standing in the open rather than a tax on closing. Anemos is ROOTED, so a
+ *  player who gets inside that ring has genuinely earned the position — and it
+ *  still costs them, because the rings and volleys fire regardless of distance
+ *  and its jellyfish and urchins do not care where anyone is standing. */
+export const ANEMOS_LASH_MIN_RANGE = 32;
+
+/** f — Nereth's final-phase window, on a 200-frame cycle. guessed. Shorter than
+ *  the 150 it was, because it now means something: he holds fire while it is
+ *  open, so 90 of every 200 frames is a real invitation rather than a nominal
+ *  one taken under five spears and twelve bubbles. */
+export const NERETH_FINAL_OPEN_FRAMES = 90;
+
+/** px — how CLOSE the player has to be for a charge to stop being available.
+ *  guessed. A charge is a gap-closer, and a charge that fires when the player
+ *  is already in sword reach is not a charge, it is a shove that cannot be
+ *  answered.
+ *
+ *  This number is the fix for the boss ceiling documented as `T33`. Gohmaraq's
+ *  phase-2 charge had a 130px range over an arena barely larger than that, so
+ *  its melee-vulnerable range was a STRICT SUBSET of its charge-trigger range:
+ *  walking into sword reach necessarily satisfied the trigger, which fires
+ *  first, and charges chained with zero idle frames between. A 60,000-frame
+ *  UNLIMITED-HEALTH run still stuck at 14 hp forever, which is what proved the
+ *  ceiling structural rather than tactical and ended eight sessions of trying
+ *  to dodge past it.
+ *
+ *  40px is outside sword reach and outside the distance a player stands at to
+ *  swing (~26-30px centre to centre against a 32x32 boss), so a player who has
+ *  closed the gap gets real melee frames — while a player at range still faces
+ *  the charge the fight is built around. The close-range punish already exists
+ *  and did not need adding: every charging boss in this game also runs a
+ *  timed slam that sprays regardless of distance. */
+export const ENEMY_CHARGE_MIN_RANGE = 40;
+
 /** f — pause between hops. guessed. */
 export const ENEMY_HOP_WAIT_FRAMES = 40;
 

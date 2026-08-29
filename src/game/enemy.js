@@ -46,7 +46,7 @@ import {
   ENEMY_BEACHED_FRAMES, ENEMY_GRID_STEP, ENEMY_DECIDE_STEPS,
   ENEMY_TURN_PAUSE_FRAMES,
   ENEMY_CHARGE_SPEED_MULT, ENEMY_CHARGE_RECOVER_FRAMES,
-  ENEMY_CHARGE_TOLERANCE, ENEMY_CHARGE_RANGE, ENEMY_HOP_WAIT_FRAMES,
+  ENEMY_CHARGE_TOLERANCE, ENEMY_CHARGE_RANGE, ENEMY_CHARGE_MIN_RANGE, ENEMY_HOP_WAIT_FRAMES,
   ENEMY_HOP_DIST, ENEMY_HOP_FRAMES, ENEMY_HOP_HEIGHT,
   ENEMY_ORBIT_SPEED, ENEMY_ORBIT_RADIUS,
   ENEMY_SUBMERGE_DOWN_FRAMES, ENEMY_SUBMERGE_UP_FRAMES,
@@ -326,6 +326,16 @@ export class Boss extends Enemy {
     if (p !== this.phase) {
       this.phase = p;
       this.invuln = Math.max(this.invuln, BOSS_PHASE_INVULN_FRAMES);
+      // T42. `charge()` sets `charging` true when a dash starts and clears it
+      // only inside its own `if (e.charging)` branch, on a LATER call — so a
+      // phase that stops calling `charge()` leaves the flag stuck true for the
+      // rest of the fight, and Gohmaraq's final phase does exactly that. Any
+      // verb that branches on it then dodges a charge that is not happening,
+      // forever. Same class as `surface()` in bosses.js: state a previous phase
+      // owned, leaking into one that does not manage it. Cleared here because
+      // this is the one place every phase transition passes through.
+      this.charging = false;
+      this.step = null; this.stepping = false;
       if (this.spec.onPhase) this.spec.onPhase(this, game, p);
       // Was `charged` — the wind-up sound a boss makes before EVERY heavy
       // attack, so the one moment that means "this fight has changed" sounded
@@ -834,7 +844,14 @@ export function charge(e, g, o = {}) {
     }
     return true;
   }
-  if (aligned(e, g, o.tol || ENEMY_CHARGE_TOLERANCE) && distToPlayer(e, g) < (o.range || ENEMY_CHARGE_RANGE)) {
+  // A charge is a GAP-CLOSER. Firing it at a player who is already in sword
+  // reach is what made Gohmaraq's melee-vulnerable range a strict subset of its
+  // charge-trigger range (`T33`) — reaching swing distance was itself the
+  // retrigger. `min` is the floor; a boss that genuinely wants to shove at
+  // point-blank range can pass `min: 0` and say so.
+  const d = distToPlayer(e, g);
+  const min = o.min != null ? o.min : ENEMY_CHARGE_MIN_RANGE;
+  if (aligned(e, g, o.tol || ENEMY_CHARGE_TOLERANCE) && d < (o.range || ENEMY_CHARGE_RANGE) && d >= min) {
     // Abandon any step in progress: the charge is the decision now.
     e.step = null; e.stepping = false;
     e.charging = true;

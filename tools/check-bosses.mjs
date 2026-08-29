@@ -45,7 +45,16 @@ const FIGHTS = [
     items: { sword: 1, conch: 1, anchor: 1 } },
   { id: 'd2', boss: 'anemos',    tide: HIGH, why: 'it blooms open to feed only while the water is up',
     items: { sword: 1, conch: 1, anchor: 1, lens: 1, bombs: 1 } },
-  { id: 'd3', boss: 'gloomtide', tide: MID,  why: 'the sanctum current runs at MID and carries it',
+  // WAS MID, WHICH IS THE TIDE THE BOSS WANTS. Every other row here names the
+  // level that makes its boss VULNERABLE — "its drying shell holds the eye
+  // open", "beached and defenceless at LOW", "roots bared and soft at LOW" —
+  // and this one named the level at which Gloomtide moves at 1.7x instead of
+  // 0.65x. Measuring it there measured it at its strongest and reported an
+  // unwinnable fight that is won, at the in-order five hearts, with no code
+  // change at all, the moment the player does the obvious thing and drains the
+  // sanctum. Gloomtide has no shell, so "the tide its weak point opens at" does
+  // not apply to it; the tide the FIGHT is meant to be played at does.
+  { id: 'd3', boss: 'gloomtide', tide: LOW,  why: 'the current carries it at MID; drain the sanctum and it wallows',
     items: { sword: 2, conch: 1, anchor: 1, lens: 1, bombs: 1, cleats: 1 } },
   { id: 'd4', boss: 'wyverna',   tide: LOW,  why: 'flies at HIGH, beached and defenceless at LOW',
     items: { sword: 2, conch: 1, anchor: 1, lens: 1, bombs: 1, cleats: 1, bellows: 1 } },

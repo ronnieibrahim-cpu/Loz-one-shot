@@ -52,6 +52,8 @@ import { spawnEntity, moveEntity } from '../game/entity.js';
 // fourteen bare literals in this file, which meant the six named constants next
 // door described the shake of everything in the game EXCEPT the bosses.
 import {
+  ANEMOS_LASH_MIN_RANGE,
+  NERETH_OPENING_DELAY, NERETH_OPEN_FRAMES, NERETH_FINAL_OPEN_FRAMES,
   SHAKE_SMALL, SHAKE_MEDIUM, SHAKE_MEDIUM_FRAMES,
   SHAKE_RUMBLE, SHAKE_RUMBLE_FRAMES,
   SHAKE_BOSS_SLAM, SHAKE_BOSS_SLAM_FRAMES,
@@ -104,6 +106,34 @@ function shut(e, g) {
   e.weakOpen = false;
   e._open = 0;
 }
+
+/**
+ * A BOSS DOES NOT FIRE INTO ITS OWN WINDOW.
+ *
+ * The rule this file now follows in every final phase, written down once here
+ * because it was broken in two places independently and cost the same
+ * measurement twice. An armoured boss advertises an opening; if its attacks run
+ * on their own timers regardless, the opening exists on paper and never in
+ * play, and the fight plateaus at a fixed hp no amount of player health moves —
+ * the signature of a structural wall rather than a difficulty one.
+ *
+ * Nereth held at 60 of 80 and Anemos at 20 of 24, at every health from the
+ * in-order count up to the game's cap. Gating each final phase's fire on
+ * `!e.weakOpen` moved both. Nothing about the attacks themselves changed: same
+ * projectiles, same counts, same damage. They no longer overlap the answer to
+ * them.
+ *
+ * IT IS A DIAGNOSTIC, NOT AN INVARIANT, and that distinction was paid for.
+ * A source-level checker demanding it of every shelled boss was written and
+ * removed: it fires on Gohmaraq, Wyverna and Rootmaw, all three of which are
+ * WON at the health an in-order player carries. Gating their fire too would
+ * have been changing balanced fights to satisfy a tool. Reach for this rule
+ * when a fight plateaus at a fixed hp that player health does not move — that
+ * is the symptom it explains — and leave the fights that already work alone.
+ *
+ * This does NOT apply to phases where the weak point is not the point — a
+ * boss with no shell has no window to protect.
+ */
 
 /** Count an open window down and shut the weak point when it lapses. */
 function closeTick(e, g) {
@@ -250,8 +280,17 @@ export function installBosses() {
   // pursuit: it fills the room with shots and lashes anything that comes close.
   // It has to unfurl to feed, and it feeds on what the water brings — so the
   // higher the tide, the longer it stays open and the longer you get to hit it.
+  // 30 hp MADE THIS THE LONGEST FIGHT IN THE GAME, and it is the second one.
+  // A level-1 sword deals 2, and the upgrade is not in the player's hands until
+  // after this dungeon, so 30 hp is FIFTEEN connected hits — against Gohmaraq's
+  // twelve, Gloomtide's nine and Nereth's fourteen. The hit count is supposed to
+  // rise across the game and this was a spike at position two, fought with the
+  // weakest weapon in the roster. 24 puts it level with D1 at twelve hits, and
+  // this fight is already harder than D1 in every other way: it is rooted so it
+  // cannot be kited, it fires rings and a rotating sweep that do not care where
+  // anyone is standing, and it summons twice.
   defineBoss('anemos', {
-    hp: 30, damage: 4, pal: 'coral', speed: 0, rate: 12,
+    hp: 24, damage: 4, pal: 'coral', speed: 0, rate: 12,
     w: 32, h: 32, hb: { x: 5, y: 8, w: 22, h: 22 },
     frames: ['boss_anemos_0', 'boss_anemos_1', 'boss_anemos_2'],
     hurtFrame: 'boss_anemos_hurt',
@@ -284,11 +323,18 @@ export function installBosses() {
       // Thrashing: aimed volleys between wider rings, and it feeds constantly.
       { above: 0.00, ai(e, g) {
         runPending(e, g); closeTick(e, g); anemosSway(e, g); anemosFeed(e, g);
-        if (timer(e, 'volley', 90)) spread(e, g, 5, 50, { sprite: 'shot_orb', speed: 1.6, damage: 3 });
-        if (timer(e, 'ring', 150)) {
-          shootRing(e, g, 10, { sprite: 'shot_bubble', pal: 'water', speed: 1.3, damage: 2 });
+        // A BOSS DOES NOT FIRE INTO ITS OWN WINDOW — see the note above
+        // `closeTick`. Without this the fight plateaued at 4 hp left however
+        // much health the player brought: the feed window is open 160 frames in
+        // every 250 at HIGH, and every one of those frames was under an aimed
+        // five-orb volley, a ten-bubble ring and a seven-spine lash.
+        if (!e.weakOpen) {
+          if (timer(e, 'volley', 90)) spread(e, g, 5, 50, { sprite: 'shot_orb', speed: 1.6, damage: 3 });
+          if (timer(e, 'ring', 150)) {
+            shootRing(e, g, 10, { sprite: 'shot_bubble', pal: 'water', speed: 1.3, damage: 2 });
+          }
+          anemosLash(e, g, 52, 7);
         }
-        anemosLash(e, g, 52, 7);
       } },
     ],
   });
@@ -307,7 +353,8 @@ export function installBosses() {
 
   // Anything that stands next to it gets whipped.
   function anemosLash(e, g, range, shots) {
-    if (distToPlayer(e, g) < range && timer(e, 'lash', 70)) {
+    const d = distToPlayer(e, g);
+    if (d >= ANEMOS_LASH_MIN_RANGE && d < range && timer(e, 'lash', 70)) {
       windUp(e, g, 16, (e2, g2) => {
         spread(e2, g2, shots, 40, { sprite: 'shot', pal: 'coral', speed: 2.0, damage: 3, life: 26 });
         g2.audio.sfx('shatter');
@@ -743,6 +790,9 @@ export function installBosses() {
     onIntro(e, g) { unlockTide(g); },
     onPhase(e, g, i) {
       g.shake(SHAKE_BOSS_SLAM, SHAKE_BOSS_SLAM_FRAMES);
+      // The sea he is pinning goes out and takes his servants with it. See
+      // `dismissSummons` — without this his last phase is a nine-body brawl.
+      dismissSummons(g, e);
       if (i === 1) summon(g, e, 'wizzrobe', 1);
       if (i === 2) summon(g, e, 'stalfos', 2);
       // Phase 4 opens on its own cycle timer; give the player a window at once
@@ -798,15 +848,30 @@ export function installBosses() {
         if (timer(e, 'cycle', 200)) {
           windUp(e, g, 26, (e2, g2) => {
             forceTide(e2, g2, (g2.tide.level + 1) % 3);
-            open(e2, g2, 150);            // the sea is loose; so is he
+            open(e2, g2, NERETH_FINAL_OPEN_FRAMES);   // the sea is loose; so is he
           }, 'sparkle');
         }
         chase(e, g, { speed: 0.85 });
-        if (timer(e, 'trident', 100)) {
-          spread(e, g, 5, 60, { sprite: 'shot_spear', pal: 'abyss', speed: 2.1, damage: 3 });
-        }
-        if (timer(e, 'ring', 170)) {
-          shootRing(e, g, 12, { sprite: 'shot_bubble', pal: 'water', speed: 1.5, damage: 3 });
+        // HE HOLDS FIRE WHILE HE IS OPEN, and that is the whole of this phase's
+        // fix. The trident and the ring used to run on their own timers no
+        // matter what he was doing, so the window this phase advertises existed
+        // on paper and never in play: five damage-3 spears every 100 frames and
+        // twelve damage-3 bubbles every 170 kept the player at range for the
+        // whole of it. Measured at FOURTEEN hearts, he took 60 of 80 and then
+        // exactly zero for 600 frames — the same shape of wall as Gohmaraq's
+        // range subset, in a different mechanism.
+        //
+        // Every other phase of this fight already reads "he attacks, then he is
+        // briefly open"; this one is the only place that grammar was not
+        // honoured. Nothing about the attacks changed — same spears, same
+        // count, same damage. They just no longer overlap the answer to them.
+        if (!e.weakOpen) {
+          if (timer(e, 'trident', 100)) {
+            spread(e, g, 5, 60, { sprite: 'shot_spear', pal: 'abyss', speed: 2.1, damage: 3 });
+          }
+          if (timer(e, 'ring', 170)) {
+            shootRing(e, g, 12, { sprite: 'shot_bubble', pal: 'water', speed: 1.5, damage: 3 });
+          }
         }
         if (timer(e, 'summon', 400) && countType(g, 'keese') < 4) summon(g, e, 'keese', 2);
       } },
@@ -835,13 +900,57 @@ export function installBosses() {
   }
 
   /** The recovery window after one of Nereth's attacks: he is open as he resets. */
-  function nerethOpening(e, g) { open(e, g, 55); }
+  // THE OPENING IS THE REWARD FOR SURVIVING THE ATTACK, NOT PART OF IT.
+  //
+  // Every one of Nereth's first three phases ended its `windUp` callback with
+  // the volley and the opening on the SAME FRAME: three damage-3 spears left at
+  // speed 2.0 in the instant the 55-frame window began. So the invitation and
+  // the thing that punishes accepting it were the same event — the player walks
+  // in at ~40px, eats the volley, and retreats for the rest of the window.
+  // Measured across 1,860 frames of real combat: **0 of 80 damage dealt**, every
+  // opening, for the whole fight.
+  //
+  // Delaying the open by `NERETH_OPENING_DELAY` puts the window after the
+  // volley has travelled past. Nothing about the attack changes — the spears
+  // are as fast and as damaging as they were, and a player who stands still
+  // still takes them. What changes is that answering the attack correctly now
+  // leads somewhere.
+  function nerethOpening(e, g) {
+    g.frameLater(NERETH_OPENING_DELAY, () => {
+      if (!e.remove && !e.dying) open(e, g, NERETH_OPEN_FRAMES);
+    });
+  }
 
   /** How many of a minion type are already out — keeps summons from stacking. */
   function countType(g, type) {
     let n = 0;
     for (const x of g.entities) if (x.type === type && !x.dead) n++;
     return n;
+  }
+
+  /**
+   * Send a phase's summons back where they came from.
+   *
+   * A boss that summons on every phase and never clears them is not fighting
+   * you at the end, it is watching a mob do it. Nereth's four phases call in a
+   * wizzrobe, up to three stalfos, a darknut and up to four keese, and NOTHING
+   * removed any of them — so his final phase was a nine-body brawl in which he
+   * happened to be standing. Measured at ten hearts: 60 of 80 damage dealt,
+   * then exactly zero for 600 frames, and the damage log for those frames is
+   * stalfos, darknut, stalfos — not Nereth at all.
+   *
+   * Called from `onPhase`, which is already where a boss resets state a
+   * previous phase owned (`surface()` does the same job for submerging). Each
+   * phase's adds are that phase's threat; they do not accumulate into the next.
+   * They leave in a puff rather than blinking out, because the player has to be
+   * able to see it happen.
+   */
+  function dismissSummons(g, e) {
+    for (const x of g.entities) {
+      if (x === e || !x.isEnemy || x.isBoss || x.dead) continue;
+      g.spawnEffect('puff', x.cx - 8, x.cy - 8);
+      x.remove = true;
+    }
   }
 
   // =========================================================================

@@ -28,7 +28,7 @@ doing the session.
 | ~~S2~~ | ~~Terrain extraction: the ground~~ | Opus | S1 | **DONE — awaiting your eye.** See `docs/NEXT-SESSION.md` |
 | ~~S3~~ | ~~Terrain extraction: edges and towns~~ | Opus | S2 | **PARTLY DONE — 2 of 4 jobs; see `docs/NEXT-SESSION.md`** |
 | ~~S4~~ | ~~Sound coverage and the sfx checker~~ | Sonnet | S1 | **DONE — awaiting your ear.** See `docs/NEXT-SESSION.md` |
-| S5 | Bosses winnable by design | Opus | S1 | **Critical** |
+| ~~S5~~ | ~~Bosses winnable by design~~ | Opus | S1 | **DONE — awaiting your play.** See `docs/NEXT-SESSION.md` |
 | S6 | Music engine: vibrato, echo, arpeggio | Sonnet | S4 | Yes (listen) |
 | S7 | Music composition: intros and forms | Opus | S6 | **Critical** |
 | S8 | Overworld map becomes a picture | Opus | S2, S3 | Yes |
@@ -284,6 +284,19 @@ design still needs an ear, so it ends with a hand-off.  **Depends on:** S1 merge
 ---
 
 ## S5 — Bosses: winnable by design, not by AI
+
+> **DONE. All six are winnable, and `dBoss` was not touched.** `T33`'s
+> structural ceiling was ONE MISSING NUMBER: `charge()` had a maximum range and
+> no minimum, so walking into sword reach was itself the retrigger.
+> `ENEMY_CHARGE_MIN_RANGE` closes it — the god-mode Gohmaraq run that stuck at
+> 14 hp for 60,000 frames now kills in 820. **Wyverna and Rootmaw were already
+> won and the harness was reporting them as losses** (`T68`); **Gloomtide needed
+> no change at all** — the FIGHTS table was fighting it at the tide the boss
+> wants (`T69`). Nereth went 0/80 → winnable at 11 hearts from two faults: his
+> volley fired from the same callback as the opening it rewards, and he summoned
+> across four phases and cleared nothing. Anemos needed fifteen hits with a
+> level-1 sword — the longest fight in the game, at position two. `T42` fixed.
+> **Whether any of it is FAIR is unjudged (`§4.2`).**
 
 **Goal:** all six bosses beatable by a real player at the hearts they would
 realistically carry — by changing boss *specifications*, not the actor.

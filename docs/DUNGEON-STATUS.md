@@ -32,6 +32,36 @@ whatever a commit message elsewhere claims.
 | — | `d7` | Reef Palace | — | **FOLDED IN** | `84d14e5` |
 | — | `d8` | Abyssal Keep | — | **FOLDED IN** | `84d14e5` |
 
+### Boss winnability, measured (S5)
+
+`node tools/measure-boss-combat.mjs <id>` — real combat, no god mode, seed
+20260806, at the **in-order** health a player carries (3 hearts + one Heart
+Container per boss already beaten, counting **no heart pieces**: a deliberate
+floor, since 24 pieces exist in the world).
+
+| D | boss | in-order | before S5 | after S5 | wins at |
+|---|---|---|---|---|---|
+| 1 | Gohmaraq | 3 hearts | 16/24, died | **20/24**, died | **4 hearts** |
+| 2 | Anemos | 4 hearts | 12/30, died | **KILLED**, 1 qh left | **4 hearts** |
+| 3 | Gloomtide | 5 hearts | 28/36, died | **KILLED**, 8 qh left | **5 hearts** |
+| 4 | Wyverna | 6 hearts | *reported* 40/44, died | **KILLED, unhurt** | **6 hearts** |
+| 5 | Rootmaw | 7 hearts | *reported* 24/52, died | **KILLED**, 15 qh left | **7 hearts** |
+| 6 | Nereth | 8 hearts | 0/80, died | **42/80**, died | **11 hearts** |
+
+**Four of six are won at a floor that counts zero heart pieces.** D1 needs one
+heart's worth of pieces (4 of the 24) and D6 needs three hearts' worth (12 of
+24) — both comfortably inside the route; 9 pieces sit in the overworld and 3 in
+the caves before any dungeon is counted.
+
+Wyverna and Rootmaw were **already being won before this session** and the
+harness was reporting them as unfinished fights: `g.boss` goes null when the
+entity is removed, so `b.dead` read null on a kill. `progress.beaten` is the
+ground truth (`T38` said so already) and the tool reads it now.
+
+**A robot beating a boss is not a player beating a boss** (`§4.2`). These
+numbers say the fights are *finishable*; whether they are *fair* is not a claim
+any tool here can make.
+
 **P8 is complete.** All fourteen boxes of the checklist below tick for all six
 dungeons: each is authored against the constraint list, each has a prover
 written before its rooms, each has a replay that walks its own idea in-engine,

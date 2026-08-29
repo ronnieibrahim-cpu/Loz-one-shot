@@ -447,6 +447,58 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+**A MEASUREMENT TOOL THAT MISREPORTS A WIN AS A LOSS COSTS MORE THAN NO TOOL.**
+S5 opened by re-measuring all six bosses and found that **two of them were
+already being won** while `measure-boss-combat.mjs` reported
+`still alive after 9000 frames (never finished)` with `? of 44` damage dealt.
+The cause is one line: it sampled `g.boss.dead`, and `g.boss` goes NULL the
+moment the entity is removed, so a kill reads as `dead: null` and falls through
+to the "unfinished" branch. Wyverna kills flawlessly at six hearts taking zero
+damage; the table in the handoff said she died with 4 hp left. **Had that table
+been trusted, the session would have spent itself "fixing" two fights that were
+already right.** `T38` had already named the answer — `progress.beaten` is
+ground truth — for the *opposite* symptom (`T39`: a harness that walks out of
+the arena reporting a flawless victory). Both directions of the same mistake,
+two sessions apart. **Assert the positive fact.**
+
+**MEASURING A BOSS AT THE TIDE IT WANTS MEASURES THE WRONG FIGHT.**
+`check-bosses.mjs`'s FIGHTS table fought Gloomtide at MID with the note "the
+sanctum current runs at MID and carries it" — a description of the boss being
+*strong*: it moves at 1.7x there and 0.65x everywhere else. Every other row in
+the table names the level that makes its boss *vulnerable*. At LOW, the fight is
+won at the in-order five hearts with **no change to the boss at all**. The
+general shape: a shell-less boss has no "tide its weak point opens at", so a
+column that means "design tide" for the armoured ones means something else for
+it, and nothing in the table's structure catches the difference.
+
+**A RULE EARNED FROM TWO CASES IS A DIAGNOSTIC, NOT AN INVARIANT — AND WRITING
+THE CHECKER IS HOW YOU FIND OUT.** "A boss does not fire into its own window"
+explained two fights that plateaued at a fixed hp no player health could move
+(Nereth at 60/80 from ten hearts to fourteen, Anemos at 20/24). It is a good
+rule and it fixed both. So a source-level checker was written to enforce it on
+every shelled boss — and it immediately fired on three more, **all of which are
+won at in-order health**. Gating their fire would have been changing balanced
+fights to satisfy a tool. The checker was deleted and the rule written down as
+what it is: the thing to reach for when a fight plateaus. **The cheapest way to
+discover that a rule is narrower than it feels is to try to enforce it.**
+
+**A PLATEAU IS A STRUCTURAL BUG; A SLOPE IS A DIFFICULTY SETTING.** The single
+most useful diagnostic in S5 was sweeping player health and watching the damage
+dealt. A fight whose damage rises with health is merely hard and the balance
+knobs work on it. A fight that returns *the same number* at ten hearts and at
+fourteen has a wall in it, and no amount of health, dodging or verb tuning will
+move it — that is what `T33`'s unlimited-health Gohmaraq run proved once, at
+great expense, and the same signature identified Nereth's phase 4 and Anemos's
+phase 3 in minutes. **Sweep the health before theorising.**
+
+**THE HIT COUNT IS A DESIGN NUMBER AND NOBODY WAS LOOKING AT IT.** Anemos had 30
+hp and is fought with the level-1 sword, which deals 2 — **fifteen connected
+hits, the longest fight in the game, at the second boss**, against Nereth's
+fourteen with a level-3 sword. The health values had been chosen one boss at a
+time and never compared as a series. Divide each boss's hp by the damage of the
+sword the player actually holds there, and the progression is legible in one
+line; it was not monotonic and one entry was an outlier by 25%.
+
 **A CHECKER THAT ONLY READS CODE WILL MISS THE BUG THAT LIVES IN DATA.** S4's
 brief listed four silent sound calls; the checker found six. One of the two
 extras was `sfx: 'rumble'` sitting in a tile transform — the `boulder` the

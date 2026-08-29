@@ -1,3 +1,174 @@
+## S5 — Bosses: winnable by design, not by AI (this session)
+
+**Run per `docs/SESSION-PROMPTS.md` S5, on top of S4.** `dBoss` was not touched
+(`T34`). Every change is a number or a gate in `src/data/bosses.js`, plus one
+number in `enemy.js` and two harness bugs.
+
+### All six bosses are winnable now. `T33` is closed.
+
+| D | boss | in-order | before | after | wins at |
+|---|---|---|---|---|---|
+| 1 | Gohmaraq | 3 hearts | 16/24 died | **20/24** died | **4 hearts** |
+| 2 | Anemos | 4 hearts | 12/30 died | **KILLED**, 1 qh left | **4 hearts** |
+| 3 | Gloomtide | 5 hearts | 28/36 died | **KILLED**, 8 qh left | **5 hearts** |
+| 4 | Wyverna | 6 hearts | *"40/44 died"* | **KILLED, UNHURT** | **6 hearts** |
+| 5 | Rootmaw | 7 hearts | *"24/52 died"* | **KILLED**, 15 qh left | **7 hearts** |
+| 6 | Nereth | 8 hearts | 0/80 died | **42/80** died | **11 hearts** |
+
+"In-order" counts **no heart pieces** — 3 hearts plus one Container per boss
+already beaten. **Four of six win at that floor.** D1 wants one heart's worth of
+pieces (4 of the 24 in the world) and D6 three hearts' worth (12 of 24); 9 sit
+in the overworld and 3 in the caves before any dungeon is counted, so both are
+comfortably inside the route.
+
+### The structural ceiling was one missing number
+
+`charge()` had a maximum range and **no minimum**. Gohmaraq's phase-2 range is
+130px over an arena barely larger, so its melee-vulnerable range was a strict
+subset of its charge-trigger range: walking into sword reach *was* the retrigger,
+and charges chained with no idle frames. That is `T33`, and it is why an
+unlimited-health run stuck at 14 hp across 60,000 frames.
+
+**A charge is a gap-CLOSER.** `ENEMY_CHARGE_MIN_RANGE = 40` (feel.js, `guessed`,
+outside sword reach) stops it firing at a player who has already closed. The
+god-mode run that used to stall forever now **kills in 820 frames**. Real
+combat: 16/24 → 20/24 at three hearts, and a win at four.
+
+It is not trivial: at 14 qh the actor deals 24/24 and *still dies* — a mutual
+kill, one quarter-heart either side of the line. The close-range punish did not
+need adding; every charging boss here already runs a timed slam that sprays
+regardless of distance.
+
+### Two bosses were already won and the harness said they were not
+
+`measure-boss-combat.mjs` sampled `g.boss.dead` — but `g.boss` goes **null** when
+the entity is removed, so a kill reported as `still alive after 9000 frames
+(never finished)` with `? of 44` damage. **Wyverna kills flawlessly at six
+hearts taking zero damage**, and Rootmaw at seven. The rows quoted in `A8` for
+both were never real.
+
+`T38` had already named the answer for the opposite symptom — `progress.beaten`
+is ground truth — and this is `T39` inverted: there, "the enemy is gone" was
+wrongly read as a victory; here it was wrongly read as a failure. Now `T68`.
+**Had I trusted the table, I would have spent the session "fixing" two fights
+that were already right.**
+
+### Gloomtide needed no code change — the harness was fighting it wrong
+
+`check-bosses.mjs`'s FIGHTS table fought it at MID, because "the sanctum current
+runs at MID and carries it". That is a description of the boss being **strong**:
+`gloomCurrent` returns **1.7x** speed at MID and **0.65x** everywhere else.
+Every other row in that table names the level that makes its boss *vulnerable*
+("its drying shell holds the eye open", "beached and defenceless at LOW").
+
+Corrected to LOW in both tools. **It is won at the in-order five hearts, with no
+change to the boss at all**, the moment the player does the obvious thing and
+drains the sanctum. `T69`. A shell-less boss has no "tide its weak point opens
+at", so that column means something different for it.
+
+### Nereth: 0/80 → winnable at 11 hearts, from two separate faults
+
+1. **The volley and the opening fired on the same frame.** Every one of his
+   first three phases ended its `windUp` callback with `spread(...)` *and*
+   `nerethOpening()` — three damage-3 spears leaving at speed 2.0 in the instant
+   the 55-frame window began. The invitation and the punishment for accepting it
+   were the same event. `nerethOpening` now delays by `NERETH_OPENING_DELAY`
+   (34f, enough to carry the volley ~68px past a player standing at 40).
+   **0/80 → 42/80 on its own.**
+2. **He summoned across four phases and cleared nothing.** A wizzrobe, up to
+   three stalfos, a darknut and up to four keese, all still alive in phase 4 —
+   the endgame was a nine-body brawl he happened to be standing in. The damage
+   log for the stalled 600 frames is *stalfos, darknut, stalfos*, not Nereth.
+   `dismissSummons` on every phase change. **60/80 → 78/80 at ten hearts.**
+
+He also stopped firing into his own window (below). Wins at 11 hearts finishing
+on **3 quarter-hearts** — a knife-edge, which is right for a final boss.
+
+### Anemos: the longest fight in the game, at position two
+
+30 hp against a **level-1 sword's 2 damage** is **fifteen connected hits** —
+more than Nereth's fourteen, more than Gohmaraq's twelve, and the sword upgrade
+does not arrive until after this dungeon. The hit count is meant to rise across
+the game and this was a spike at the second boss with the weakest weapon. Now 24
+hp = twelve hits, level with D1; the fight is already harder than D1 in every
+other way (rooted, so it cannot be kited; rings and a rotating sweep that ignore
+position; two summon waves).
+
+Its lash also got `ANEMOS_LASH_MIN_RANGE` (32px), mirroring the charge fix — it
+triggered on `dist < 44/48/52`, which includes the 24-30px a player stands at to
+swing, so attacking was the trigger for five damage-3 spears in a 40° fan with
+no gap to step into at that range. Honest accounting: this was worth the least
+of the three changes (12→14) and is kept for consistency of the rule.
+
+### The rule both final phases broke — and why it is not a checker
+
+**A boss does not fire into its own window.** Nereth's phase 4 and Anemos's
+phase 3 both ran their attacks on independent timers regardless of the weak
+point, so the window each advertises existed on paper and never in play. The
+signature is unmistakable once seen: **the fight plateaus at a fixed hp that no
+amount of player health moves** — Nereth at 60/80 from 10 to 14 hearts, Anemos
+at 20/24. Gating each on `!e.weakOpen` moved both immediately. No attack
+changed: same projectiles, same counts, same damage.
+
+**I wrote a source-level checker for this and removed it.** It fires on
+Gohmaraq, Wyverna and Rootmaw — all three of which are won at in-order health.
+Gating their fire would have been changing balanced fights to satisfy a tool.
+The rule is a **diagnostic for a plateau**, not an invariant, and it is written
+down as such above `closeTick`. `T70`.
+
+### `T42` fixed, and a harness that can now ask the right questions
+
+`Boss.update` clears `charging` (and any part-finished step) on every phase
+transition. It was set true by `charge()` and cleared only inside `charge()`'s
+own branch on a later call, so Gohmaraq's final phase — which never calls
+`charge()` — left it stuck true for the rest of the fight.
+
+`measure-boss-combat.mjs` gained three things it needed and lacked:
+`--qh=N` plus an **in-order default per dungeon** (fighting D6 at 12 qh asks a
+question no player is ever in), `--tide=N` (how the Gloomtide finding was
+made), and the `beaten` ground truth above.
+
+### Verified
+
+```
+check-bosses      19/0 (GOD MODE — see below)   test            71/0
+replay            51/0 (untouched)              check-playthrough 19/0
+check-hearts   114/114                          walk-dungeons   23/0
+check-progression 19/0                          check-overworld 17/0
+check-gates       26/0                          check-towns     58/0
+check-items       91/0                          check-trade     43/0
+check-motion       8/0                          check-sfx       OK
+check-guide        4/0                          validate        OK
+check-build       OK — boots from file://
+```
+
+**`check-bosses` runs in GOD MODE and proves only that every boss spawns and
+every shell opens** (`T37`). The winnability numbers above come from `V17`, and
+`V17` is a robot.
+
+### Hand it back: per `§4.2`, whether these fights are FAIR is yours
+
+**A robot beating a boss is not a player beating a boss, and a boss the actor
+cannot beat may be perfectly fair.** Every number here is one fixed approach.
+
+1. **Gohmaraq (D1)** — the one to check hardest. `ENEMY_CHARGE_MIN_RANGE` is a
+   global: it changed *every* charging enemy in the game, not just this boss.
+   **Does the charge still read as dangerous?** If it now feels safe to stand
+   next to anything that charges, that number is too high.
+2. **Anemos (D2)** — I cut its health by a fifth. **Does it still feel like a
+   step up from D1?** The hit-count argument says yes; only playing it settles
+   it.
+3. **Nereth (D6)** — fight to phase 4 and see whether clearing his summons on
+   each phase change reads as him losing his grip, or as the game helping you.
+   That is the change I am least sure of.
+4. **Gloomtide (D3)** — blow the conch to LOW and confirm the fight transforms.
+   If it does not, the tide correction is wrong and the old MID row was right.
+5. **Wyverna (D4)** — she is killed *without taking a hit*. That may now be too
+   easy; nothing was changed for her, so if she is boring the cause is S1's
+   hitstop.
+
+---
+
 ## S4 — Sound: close the silent gaps (this session)
 
 **Run per `docs/SESSION-PROMPTS.md` S4, on top of S3.** Bugs first, as the
