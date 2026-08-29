@@ -224,6 +224,112 @@ is in the page, and nothing steps until you say so.
 
 ## Hard-won lessons — do not rediscover these
 
+**Two unrelated concepts sharing a field name on the same class hierarchy
+made every boss in the game unkillable past its first phase, for the whole
+life of the project, and nothing caught it because nothing had ever asserted
+a boss's actual death.** `Boss.phase` (`src/game/enemy.js`) is that class's
+own combat-phase index — 0, 1, 2 as a fight escalates through its tell/attack
+patterns. `Entity.phase` (`src/game/entity.js`) is a completely different
+thing: an option on a normal enemy's spawn (`{ phase: 0 }` on a `keese` or
+`leever`) meaning "this enemy belongs to one tide level and doesn't exist at
+the others" — the Brineglass Lens's phased-enemy mechanic.
+`Game.updatePhaseShift` (`src/game/game.js`) decides whether an entity is
+Lens-phased by checking only `e.phase == null` — and since a `Boss`'s own
+phase index and the tide-level enum (LOW=0/MID=1/HIGH=2) both live in the
+same tiny integer range, nothing ever threw a type error to flag the
+collision. The instant any boss's fight-phase stopped numerically matching
+its room's own tide level — which is every fight, past its first phase,
+unless that phase's index happens to equal its own design tide by luck —
+`updatePhaseShift` decided the boss was phased out: hidden, harmless, and
+with `invuln` re-armed to at least 2 every single frame, one frame before
+`Boss.update`'s own decrement could ever bring it to 0. That permanently pins
+`hurt()`'s `if (this.invuln > 0) return false` open. Every boss's godmode
+damage total in this repo's history — and every miniboss's, `Boss` being
+their shared base too — plateaued at whatever it happened to deal during its
+FIRST phase alone, and every session that measured a fight read that
+plateau as an AI-tuning problem (chip damage, positioning, "swimming Link
+cannot swing") because nothing had ever checked whether the boss actually
+reached 0 hp. Two sessions' worth of reactive-movement tuning attempts on
+Gohmaraq (a per-shot dodge, a hold-on-the-opening-edge delay — both tried,
+measured, and correctly reverted as noise-sensitive) were tuning a symptom of
+this. **The generalizable lesson: when a subclass reuses a field name its
+base class's OWN generic systems already read for a different purpose, and
+the two domains' value ranges overlap, the collision is invisible until
+something asserts the actual end state (a kill, not "did damage go down"),
+and it will look exactly like a difficulty or AI problem from the outside.**
+Fixed by excluding `Boss` instances from `updatePhaseShift` via a permanent
+constructor-set marker (`_bossClass`) rather than the existing `isBoss` flag,
+which minibosses deliberately clear (see the "miniboss is not `isBoss`"
+lesson below — same class-vs-flag distinction, independently rediscovered
+here). Full writeup, the before/after damage table, and what it does and
+does not fix: `docs/NEXT-SESSION.md`'s top entry.
+
+**A checker that samples periodic state stops proving anything the instant
+the thing it's watching gets fast enough to finish between two samples.**
+`check-bosses.mjs` proved a boss's weak point opens by polling `boss.
+weakOpen` once every 400 simulated frames — safe for years because no fight
+had ever been able to finish that quickly, so there was always at least one
+sample mid-fight. Fixing the bug above let Gloomtide die in about 300 frames,
+comfortably inside one poll interval: the boss was dead and cleared from the
+room before the first sample ever ran, and the checker reported "the weak
+point never opened, 0 samples" for a shell that plainly had opened — a false
+negative caused directly by the fix making the game MORE correct. The fix is
+to instrument the actual state transition (a `Boss.prototype.weakOpen`
+accessor that latches a global flag on any write of `true`) rather than
+infer it from a poll, whenever the polled thing's own duration is not
+bounded well below the poll interval by construction.
+
+**A recorded replay can enshrine a bug as the expected baseline, and the fix
+that corrects the bug reads as the replay "regressing."** `d1-clawcrab-den-
+wide` recorded a walk past the Clawcrab Den miniboss with the crab
+permanently hidden and harmless — a direct casualty of the bug above, since
+minibosses share `Boss`. The room's own dev comment already said the crab is
+supposed to shove the player ("The route uses `goto` rather than a held
+direction because the Clawcrab is in the way and shoves"); the old recording
+just never exercised that, because the bug had silently turned the crab
+off. When a replay fails after a genuine engine fix, the right first
+question is not "how do I restore the old numbers" but "does the old
+recording describe the bug or the feature" — checked here by `git stash`-ing
+the engine files and re-running the failing replay against the OLD code to
+see whether the divergence traces to the bug being fixed, before
+re-recording anything.
+
+**Fixing one thing can perturb the timing of a totally unrelated,
+already-broken test just enough to flip it from "passes by luck" to "fails
+reliably" — and that is a gift, not a new problem, if the newly-reliable
+failure gets root-caused instead of reverted around.** This session's engine
+fix (above) made more boss AI actually run instead of sitting frozen, which
+shifted incidental timing enough in `tools/walk-dungeons.mjs`'s very long,
+single-continuous-session ledge-hop harness to turn one specific overworld
+ledge probe from an intermittent pass into a reliable fail. Chasing it found
+three real, independent, pre-existing bugs in that one harness function that
+had nothing to do with the engine fix itself:
+1. The file's own "New Game" boot never pinned `?seed=`, unlike every other
+   tool's `SEED = 20260806` convention, so it played out a different random
+   world — and put enemies in different places relative to every fixed probe
+   spawn point — on every single run.
+2. The probe resets a repositioned player's `z`/`vz`/`jumping`/`ledgeHop` but
+   not `knockTime`/`knockX`/`knockY`, and filters every other entity out of
+   the room only AFTER an initial 3-frame settle during which a room's own
+   enemy can still land a contact hit — so a stray knockback could silently
+   override the probe's own scripted key press for whatever frames of it
+   were still counting down.
+3. The probe's own `g.tide.setLevel(1)` call was missing `{instant: true}`,
+   the one option every OTHER tide-setting call in every harness in this
+   repo passes for exactly this reason — without it, `tide.busy` stayed true
+   for the whole probe, and the SAME tile's resolved `ledge` direction read
+   two different answers (`'down'` then `'up'`) from two `Room.tile()` calls
+   made moments apart while the sweep was in that state.
+None of the three would have been found by reverting the engine fix and
+calling the test flaky again — they were found by treating "this now fails
+every time" as strictly more informative than "this failed once," tracing
+frame-by-frame with direct instrumentation (`console.log` inside the actual
+refusal branches of `Player.tryLedgeHop`, not guessed from outside behaviour)
+until the exact mismatched value was caught in the act, and only then asking
+which upstream call was responsible. **A test whose determinism depends on
+being lucky about unrelated timing is already broken; a change that removes
+the luck is doing you a favour.**
+
 **This container's Playwright package and its pre-installed Chromium are off
 by one revision, and only some tools have a fallback for it.** `node_modules`
 expects browser revision 1234; `/opt/pw-browsers/` only has 1194 installed.

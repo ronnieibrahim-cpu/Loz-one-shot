@@ -1,4 +1,209 @@
-## Opening-edge grace tried and reverted — same instability, new mechanism (this session)
+## THE REAL BLOCKER WAS AN ENGINE BUG, NOT THE BOSS VERB — every boss's damage plateau explained and fixed (this session)
+
+**This changes the framing of every "boss verb" session before it.** The
+previous board's whole narrative — "the melee trade is close to breakeven,
+chip damage is what kills a 3-heart player, two reactive-dodge mechanisms
+were tried and reverted as noise-sensitive" — was analysis of a SYMPTOM. The
+actual reason Gohmaraq's godmode damage plateaued at exactly 10/24 hp in
+EVERY prior measurement in this repo's history, and the reason Anemos,
+Gloomtide, Wyverna, Rootmaw and Nereth all plateaued too (`check-bosses.mjs`
+never asserted the kill itself, so nobody had looked), was a single engine
+bug: **`Boss.phase` (that class's own combat-phase index, 0/1/2 as a fight
+escalates) collides with `Entity.phase`**, an unrelated field the Brineglass
+Lens's phased-enemy mechanic uses (`{phase: 0}` on a `keese`/`leever` spawn,
+meaning "this enemy only exists at tide level 0"). `Game.updatePhaseShift`
+(`src/game/game.js`) only checked `e.phase == null` to decide an entity was
+Lens-phased — and phase indices happen to alias the tide enum (LOW=0/MID=1/
+HIGH=2) closely enough that nothing ever threw. The instant any boss's fight
+advanced to a phase index that didn't equal the room's own tide level — which
+is EVERY fight, past its first phase, unless that phase's index happens to
+match its own design tide by coincidence — this loop treated the boss as
+phased out: hidden, harmless, and, critically, **`invuln` re-armed to at
+least 2 every single frame, one frame before `Boss.update`'s own decrement
+could ever reach 0.** That pins `Boss.hurt`'s `if (this.invuln > 0) return
+false` open forever. Every boss in the game became permanently unkillable the
+moment its second combat phase began, silently, in god mode and real combat
+alike, for the whole life of this project.
+
+**Found by refusing to accept "AI limitation" as an answer twice.** This
+session started by re-measuring Gohmaraq's chip-damage problem with fresh
+instrumentation (direct `Boss.hurt`/`Player.takeDamage` hooks, not inferred
+from outside behaviour — worth keeping as the pattern for next time, no
+committed script does this yet). Then, instead of trying another AI tweak,
+it asked a different question: does the CURRENT, UNMODIFIED `dBoss` verb win
+if given more health margin? At 12 qh (3 hearts) the trade plateaued at
+10/24 exactly as documented. At 48 qh it should have gone further — and
+instead it hit the SAME wall at 14/24 and then sat there, `Boss.hurt`
+returning false on every subsequent landed swing, for the rest of a
+60,000-frame budget, while chip damage from ranged shots (unaffected by the
+bug) kept draining the player until it eventually died anyway despite having
+24 hearts of margin. That "stuck exactly at 14, forever, regardless of how
+much health the player has" shape is not what an AI-timing problem looks
+like. Tracing `boss.invuln` frame by frame found it pinned at 1 forever,
+which is what led to `updatePhaseShift`.
+
+**The fix (`src/game/game.js`, `src/game/enemy.js`):** `updatePhaseShift`'s
+loop now also skips any entity carrying `_bossClass`, a permanent marker set
+once in the `Boss` constructor — not `isBoss`, which minibosses deliberately
+clear (see `gridLocked`'s comment for the same class-vs-flag distinction),
+and not an `instanceof Boss` check, which would need importing the class into
+`game.js` and turned out to have its own cost (see the walk-dungeons.mjs
+section below — not a correctness bug, but reason enough to prefer the
+marker).
+
+**Measured, before -> after, real combat, 12 qh, seed 20260806 (unmodified
+`dBoss`, no AI changes):** identical — the fix only bites once a fight
+reaches its second phase, and Gohmaraq's own chip-damage problem still kills
+a 3-heart player before that ever matters. The fix's effect only shows with
+health margin to spare:
+
+| hearts (qh) | boss dmg dealt, BEFORE | boss dmg dealt, AFTER |
+|---|---|---|
+| 3 (12) | 10/24 | 10/24 (dies too soon to matter) |
+| 12 (48) | 10/24 (stuck forever) | 16/24 |
+| 25 (100) | 10/24 (stuck forever) | 22/24 |
+| 50 (200) | 10/24 (stuck forever) | **24/24 — KILLED, `beaten: true`** |
+
+**The same unmodified `dBoss` verb wins the fight outright, given room.** No
+AI change. The engine was the wall the whole time.
+
+**`check-bosses.mjs` (god mode) confirms it at scale — five of six bosses now
+die completely within budget, not just Gohmaraq's partial improvement:**
+Anemos 30/30, Gloomtide 36/36, Wyverna 44/44, Rootmaw 52/52, Nereth 80/80 —
+all **KILLED**. Only Gohmaraq doesn't finish in god mode's 9000-frame budget
+(still 10/24, an unrelated, already-tracked AI-verb limitation — see below).
+Before this fix, EVERY one of those five plateaued at a fixed low number
+exactly like Gohmaraq still does, and the checker's own comment blamed
+per-boss tactics for it — specifically, a claim that **Gloomtide's weak point
+opened and still took no damage because a swimming Link cannot swing.
+That claim was wrong.** Gloomtide dies in ~300 frames flat once the bug is
+gone. The checker's comment now says so; do not resurrect the swimming
+theory without re-measuring it first.
+
+**A second, narrower bug the fix's own verification surfaced in the
+checker itself, fixed alongside it:** `check-bosses.mjs` proved "the weak
+point opens" by polling `boss.weakOpen` once per 400-frame pump. That was
+safe only because no fight had ever finished fast enough to slip between two
+polls — Gloomtide now dies in ~300 frames, well inside one poll interval, so
+the boss was dead and cleared from the room before the first sample ever
+ran, and the checker reported "never opened, 0 samples" for a shell that
+plainly opened. Fixed by instrumenting the actual state change (a
+`Boss.prototype.weakOpen` accessor that latches a global flag on any `true`
+write) instead of inferring it from a poll — see the checker's own comment
+for why sampling is fundamentally the wrong tool once a fight can finish
+between two samples. Also added: two real assertions the file's own header
+had claimed since its first version but never checked — that killing a boss
+marks the dungeon beaten and grants its essence — now proven for every fight
+that actually reaches 0 this run (5 of 6), rather than hard-coded.
+
+**`d1-clawcrab-den-wide` (the one replay this session had to re-record, and
+why that's correct, not a regression):** the Clawcrab Den miniboss shares
+`Boss`, so it was ALSO permanently phased-out (hidden AND harmless) for the
+old recorded baseline's entire fight — invisible and unable to shove the
+player, contradicting the room comment's own stated intent ("The route uses
+`goto` rather than a held direction because the Clawcrab is in the way and
+shoves"). Traced and confirmed directly: old engine, this room, `crabHarmless:
+true` from frame 90 onward, permanently; new engine, `false` throughout, as
+designed. The old baseline was recording a bug as if it were correct
+behaviour. Re-recorded; all 51 replays pass. If anyone else needs to
+re-verify: `git stash` the two `src/game/*.js` files, re-run
+`tools/replay.mjs`, diff against the fixed engine's run — the position/hp
+divergence at frame 720 is the crab's contact shove firing for the first
+time in the game's history.
+
+**Two pre-existing, unrelated bugs in `tools/walk-dungeons.mjs`'s own
+ledge-hop harness, found only because this session's fix perturbed the
+timing enough to expose them — both fixed, both real, neither caused by the
+engine fix itself:**
+
+1. **No seed was ever pinned for this file's "New Game" boot.** Unlike every
+   other tool in this repo (`SEED = 20260806` is the standing convention),
+   `walk-dungeons.mjs` pressed through the title screen with no `?seed=`
+   query param, so `newProgress()` fell back to `Date.now()` — a different
+   random world, and different enemy placements relative to every probe's
+   fixed spawn point, on every single run. Fixed: pinned `SEED = 20260806`
+   in the `page.goto` URL, matching the convention. This alone makes the
+   file's ledge tests reproducible for the first time; previously a failure
+   here would have read as one-off flakiness because it usually was.
+2. **The ledge-probe harness left a landed enemy's knockback on the player
+   when repositioning it for the next probe.** `place()` (in the ledge-hop
+   test) resets `z`/`vz`/`jumping`/`ledgeHop` when it teleports the player to
+   a fixed spawn point, but not `knockTime`/`knockX`/`knockY` — and the
+   entity filter that strips every enemy but the player out of the room runs
+   AFTER an initial 3-frame settle, during which a room's own enemy (a keese,
+   in the one case this cost a session) can still land a contact hit on a
+   player parked at a fixed point. The resulting knockback silently
+   overrode the probe's own scripted key press for however many frames of it
+   were still in flight. Fixed: explicit `knockTime = 0; knockX = 0; knockY
+   = 0;` alongside the existing resets.
+3. **`place()`'s own `g.tide.setLevel(1)` call was missing `{instant:
+   true}`** — every other tide-setting call in every harness in this repo
+   passes it, because a scripted probe never wants the real sweep-transition
+   animation a conch press triggers. Without it, `tide.busy` stayed true for
+   the probe's entire duration whenever the tide wasn't already at MID when
+   the probe began, and — the actual, deep symptom this produced — the
+   overworld's `0,0,0` ledge tile's OWN resolved `ledge` facing read
+   differently between two `Room.tile(5,5,g.tide)` calls made moments apart
+   during that stuck-busy window: `'down'` (correct) from one call site,
+   `'up'` from another, inside the same handful of frames. That is very
+   likely the render/tile-resolution-during-a-live-sweep hazard CLAUDE.md's
+   own hard-won-lessons section already warns about for a DIFFERENT reason
+   ("a room's render cache is keyed on the field's stamp") — this session
+   did not chase it further than confirming `{instant: true}` makes it
+   disappear, and whether `Room.tile()`'s tide-branch resolution can
+   genuinely return two different answers for the same tile while
+   `tide.busy` is true is worth a dedicated look if it recurs anywhere else.
+
+None of these three bugs are new; all three were latent in this file before
+this session touched anything. What changed is that fixing the phase/tide
+collision altered enough incidental timing elsewhere in the same long-running
+browser session (more boss AI now actually running its update methods
+instead of being frozen) to tip an already-marginal, already-broken test from
+"passes by luck" to "fails reliably" — and reliably failing is what let it
+get root-caused instead of shrugged off. `walk-dungeons.mjs` is 23/23 again,
+now for real reasons rather than accidental ones.
+
+**Full verification this session, all green:** `test.mjs` 59/59,
+`check-bosses.mjs` 18/18 (13 structural + 5 new kill-grants-essence
+assertions), `replay.mjs` 51/51 (one re-recorded, for the reason above),
+`check-motion.mjs` 8/8 (plus its own missing `CHROMIUM_PATH` fallback added
+— same pattern as `test.mjs`'s, a "good first job" gap from an older board,
+closed in passing), `check-gates.mjs` 26/26, `solve-switches.mjs` 9/9,
+`walk-dungeons.mjs` 23/23, `check-playthrough.mjs` 19/19 (byte-identical —
+nothing about the recorded route touches a boss's second phase), `npm run
+build` + `check-build.mjs` clean.
+
+**What is still open, unchanged by this fix, and now the honest state of the
+board:**
+
+1. **Gohmaraq (D1) still doesn't win at 3 hearts, and the reason is now
+   isolated for real: chip damage, not an engine bug and not (as far as this
+   session found) a fixable-by-tuning AI problem** — see the archived board
+   below for the two reactive-dodge attempts already tried and reverted.
+   Whether 3 hearts is simply short for this fight, given the melee trade is
+   now KNOWN to be capable of a full kill with room to spare, is a sharper
+   question than it was — worth revisiting with fresh eyes rather than a
+   third reactive-movement attempt.
+2. **`dBoss` still is not referenced by `tools/playthrough-route.mjs`.** Five
+   of six bosses can now be killed by the unmodified verb in god mode; that
+   is progress toward "provably winnable," but the route still needs a real
+   3-heart Gohmaraq win before wiring anything in, per the standing rule.
+3. **Whether the OTHER five bosses are winnable in REAL combat (not god
+   mode) is still unmeasured.** God mode proves the fix unblocks them
+   structurally; it says nothing about whether their own chip-damage
+   economics are fair at a real starting heart count. That is the next
+   natural measurement, and it is now possible for the first time.
+4. **The `_bossClass` marker is new public-ish surface on `Boss` instances.**
+   If a future session adds a second class that also needs `updatePhaseShift`
+   to leave it alone (a new boss-like set piece that is not literally a
+   `Boss` subclass), it needs the same marker, not a copy of the exclusion
+   logic.
+5. The Boss Key / third-key pass and the other five dungeons' routes remain
+   undone, per every prior board.
+
+---
+
+## Opening-edge grace tried and reverted — same instability, new mechanism (previous session)
 
 **Still not a win, and nothing shipped.** This session tested the first item
 on the previous board — "reduce chip damage without the disruption cost" —

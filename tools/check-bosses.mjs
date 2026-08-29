@@ -105,6 +105,25 @@ await page.goto(`http://localhost:${PORT}/index.html?seed=${SEED}`, { waitUntil:
 await page.waitForFunction(() => !!window.__game && !!window.__harness, { timeout: 20000 });
 await page.evaluate(installRuntime);
 
+// `opened` below is sampled once per 400-frame pump, which used to be safe
+// because every fight in this game was slow — a boss's shell could never be
+// forced past a fixed, low damage total (see the phase/tide-alias bug this
+// checker's own numbers exposed, fixed alongside this file). A fight that
+// now finishes in a few hundred frames can start, open, and get its boss
+// killed and cleared from the room inside ONE pump, so the first sample
+// taken afterward finds no boss at all and reports zero opens for a shell
+// that plainly opened. Instrument the actual state change instead of
+// inferring it from a poll: every Boss instance funnels through the same
+// `weakOpen` field, so watching writes to it on the shared prototype catches
+// every boss's every opening regardless of how fast the fight resolves.
+await page.evaluate(async () => {
+  const { Boss } = await import('/src/game/enemy.js');
+  Object.defineProperty(Boss.prototype, 'weakOpen', {
+    get() { return this._weakOpenReal; },
+    set(v) { this._weakOpenReal = v; if (v) window.__everOpened = true; },
+  });
+});
+
 console.log(`boss checker: seed ${SEED}, GOD MODE ON (structure, not difficulty)\n`);
 
 for (const f of FIGHTS) {
@@ -117,6 +136,7 @@ for (const f of FIGHTS) {
   const [fl, rx, ry] = info.room.split(',').map(Number);
   console.log(`--- ${f.id.toUpperCase()} ${info.name}: ${f.boss} at ${info.room} (tide ${f.tide}: ${f.why})`);
 
+  await page.evaluate(() => { window.__everOpened = false; });
   await page.evaluate(([setup, steps]) => window.__rp.beginRecord(setup, steps), [{
     seed: SEED, godMode: true, items: f.items, equipA: 'sword', equipB: 'conch',
     maxHearts: 12, hearts: 12, tide: f.tide,
@@ -152,7 +172,9 @@ for (const f of FIGHTS) {
     });
     if (m) { samples++; if (m.wo) opened++; if (m.d <= 24) reach++; if (m.hp < minHp) minHp = m.hp; }
   }
-  console.log(`       samples ${samples}: eye open ${opened}, within sword reach ${reach}, lowest hp ${minHp === 1e9 ? '-' : minHp}`);
+  if (err) console.log('       (fight loop error:', err, ')');
+  const everOpened = await page.evaluate(() => window.__everOpened);
+  console.log(`       samples ${samples}: eye open ${opened} of those samples, weak point opened at least once: ${everOpened}, within sword reach ${reach}, lowest hp ${minHp === 1e9 ? '-' : minHp}`);
 
   const st = await page.evaluate((id) => {
     const g = window.__game;
@@ -178,20 +200,58 @@ for (const f of FIGHTS) {
   //      fights anything.
   //
   // The kill itself is NOT asserted, and pretending otherwise would be the
-  // worst thing in this file. `dBoss` lands real hits on some bosses (Gohmaraq
-  // 24 -> 14, Wyverna 44 -> 24, Rootmaw 52 -> 32 before it heals) and none at
-  // all on others, and the measured reason is positioning rather than timing:
-  // Gloomtide is within sword reach on every sample with its weak point open
-  // and still takes nothing, because at MID the player is SWIMMING and a
-  // swimming Link cannot swing. Fighting it means sinking with the Cleats
-  // first. That is per-boss tactics, it is the next session's job, and until it
-  // is done this file measures the fights instead of claiming them.
+  // worst thing in this file. `dBoss` now drives FIVE of six bosses all the
+  // way to 0 in godmode within budget (Anemos, Gloomtide, Wyverna, Rootmaw,
+  // Nereth) — only Gohmaraq (D1) doesn't finish, at 24->14, which is a
+  // separate, already-tracked AI-verb limitation (see docs/NEXT-SESSION.md),
+  // not this bug. Before the fix below, every one of the five now-killed
+  // bosses plateaued at a fixed, low damage total exactly like Gohmaraq still
+  // does — a whole different-looking set of "AI limitations" that were in
+  // fact one engine bug wearing five faces. That gap used to be blamed
+  // entirely on per-boss tactics —
+  // this file's own comment once claimed Gloomtide's weak point opened and
+  // still took no damage because a swimming Link cannot swing — and that
+  // claim was WRONG. The real cause, found and fixed alongside this file: a
+  // Boss's own combat-phase index (`Boss.phase`, 0/1/2 as a fight escalates)
+  // collided with `Entity.phase`, an unrelated field the Lens's phased-enemy
+  // mechanic uses, in `Game.updatePhaseShift`. Phase indices alias the tide
+  // enum (LOW=0/MID=1/HIGH=2) closely enough that nothing ever threw, so any
+  // boss whose fight-phase didn't numerically match its room's tide level
+  // was silently treated as "phased out" — hidden, harmless, and with
+  // `invuln` re-armed above 0 every single frame, permanently blocking
+  // `hurt()`. Every boss in the game was capped by this the moment its
+  // second phase began, in EVERY prior measurement in this repo's history,
+  // godmode included. Fixed in `src/game/game.js` (`updatePhaseShift` now
+  // excludes `instanceof Boss`, matching `gridLocked`'s existing precedent
+  // for the same class-vs-flag distinction). What's left after the fix is
+  // real per-boss tactics again (Gohmaraq's own AI-verb limitation is
+  // unrelated and still open, see docs/NEXT-SESSION.md) — it is the next
+  // session's job, and until every boss dies this file measures the fights
+  // instead of claiming them.
   check(`${f.id}: ${f.boss} spawns in the room ${f.id} declares (${info.room})`,
     spawned === true, `nothing with isBoss in ${info.room}`);
   check(`${f.id}: ${f.boss}'s weak point opens at tide ${f.tide}`,
-    opened > 0, `never opened in ${samples} samples across the fight`);
-  console.log(`       damage dealt: ${maxHp - (minHp === 1e9 ? maxHp : minHp)} of ${maxHp} hp`
-    + (err ? '  (fight did not finish: AI limitation, see comment)' : ''));
+    everOpened === true, `never opened (instrumented) across the fight`);
+  // The header above has claimed since this file's first version that a kill
+  // "marks the dungeon beaten and spawns the Essence" and that "the Essence
+  // can be walked onto and claimed" — nothing ever asserted it, because no
+  // fight had ever finished to check it against. Five now do (see the boss
+  // total above); assert it for whichever fights actually reach 0 this run
+  // rather than hard-coding which those are, so a future change to the AI
+  // that lets Gohmaraq finish too picks this assertion up for free.
+  if (st.beaten) {
+    check(`${f.id}: killing ${f.boss} marks the dungeon beaten and grants essence ${info.index}`,
+      st.essences.includes(info.index),
+      `beaten=true but claimed essences [${st.essences}] do not include ${info.index}`);
+  }
+  // A fight that finishes inside one 400-frame pump leaves the boss dead and
+  // cleared before `minHp` ever samples it — `st.beaten` is ground truth for
+  // that case; `minHp`'s coarse sampling is still the right source for a
+  // fight that DIDN'T finish, since there `st.hp` reads the boss's live hp
+  // at whatever frame the loop happened to stop, not its lowest point.
+  const dealt = st.beaten ? maxHp : maxHp - (minHp === 1e9 ? maxHp : minHp);
+  console.log(`       damage dealt: ${dealt} of ${maxHp} hp` + (st.beaten ? '  (KILLED)' : '')
+    + (err && !st.beaten ? '  (fight did not finish: AI limitation, see comment)' : ''));
 }
 
 check('no page errors', errs.length === 0, errs.slice(0, 2).join(' | '));

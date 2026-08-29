@@ -1221,7 +1221,26 @@ export class Game {
   updatePhaseShift() {
     const lensUp = this.player ? this.player.lensT > 0 : false;
     for (const e of this.entities) {
-      if (e.phase == null || e.dead) continue;
+      // `Boss.phase` is that class's own combat-phase index (0, 1, 2 as the
+      // fight escalates), not a Lens tide-affinity marker — but it lands in
+      // the same `.phase` field a phased enemy's spawn option sets
+      // (`Entity`'s constructor), and phase indices alias the tide-level
+      // enum (LOW=0/MID=1/HIGH=2) closely enough that nothing here ever
+      // threw. The result: the instant any boss's fight advanced to a phase
+      // index that didn't equal the room's own tide level, this loop treated
+      // it as phased out — hidden, harmless, and with `invuln` re-armed to
+      // at least 2 every frame, one frame before `Boss.update` could ever
+      // decrement it to 0. That pins `hurt()`'s `if (this.invuln > 0) return
+      // false` open forever: every boss in the game became unkillable the
+      // moment its second combat phase began, unless that phase's index
+      // happened to match its fight's tide level by coincidence. Minibosses
+      // share `Boss`, so the exclusion reads a permanent instance marker
+      // (`_bossClass`, set once in the `Boss` constructor) rather than the
+      // `isBoss` flag, which minibosses deliberately clear (see
+      // `gridLocked`'s comment) — and rather than an `instanceof Boss` check,
+      // which would need importing the class here for no other reason this
+      // loop needs.
+      if (e.phase == null || e.dead || e._bossClass) continue;
       // The BASE level, deliberately: a phased enemy belongs to a tide state
       // of the world, not to the patch of floor it happens to stand on. An
       // anchor holding one corner of the room at MID must not summon half a

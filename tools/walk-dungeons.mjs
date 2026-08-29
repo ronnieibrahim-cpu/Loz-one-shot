@@ -80,7 +80,16 @@ const errs = [];
 page.on('pageerror', e => errs.push('PAGEERROR: ' + (e.stack || e.message)));
 page.on('console', m => { if (m.type() === 'error') errs.push('console: ' + m.text()); });
 
-await page.goto(`http://localhost:${PORT}/index.html`, { waitUntil: 'load' });
+// `?seed=` pins the save seed a "New Game" started through the title screen
+// below picks up (see main.js). Leaving it off — as this file always had —
+// means `newProgress()` falls back to `Date.now()`, so the ledge probes
+// later in this file share a session with entities (keese included) placed
+// from a DIFFERENT random world every run. Most of the time no probe spawn
+// point lands next to one; the run where it does reads as an unrelated,
+// non-reproducible ledge-hop failure days apart from the actual cause. Same
+// seed every other checker in this repo already pins.
+const SEED = 20260806;
+await page.goto(`http://localhost:${PORT}/index.html?seed=${SEED}`, { waitUntil: 'load' });
 await page.waitForFunction(() => !!window.__game, { timeout: 15000 });
 
 const frames = (n) => page.evaluate((k) => new Promise(res => {
@@ -114,12 +123,25 @@ await page.evaluate(async () => {
   window.__DREDGE_TILES = Math.floor(feel.DREDGE_RANGE / 16);
 });
 
-// New game, skip the intro.
-await page.keyboard.press('Enter'); await frames(6);
-await page.keyboard.press('Enter'); await frames(20);
-for (let i = 0; i < 140 && await page.evaluate(() => window.__game.mode === 'cutscene'); i++) {
-  await page.keyboard.press(i % 2 ? 'Enter' : 'x'); await frames(4);
-}
+// New game, skip the intro. Booted directly rather than by pressing Enter
+// through the title screen and mashing buttons through the cutscene — every
+// other tool in this repo boots this way (see `boot()` in
+// tools/actor-runtime.mjs) for exactly this reason: a real DOM keydown/keyup
+// pair's delivery time relative to the render loop is not perfectly
+// reproducible even in headless Chromium, so "press a key, wait N real
+// frames, check whether the cutscene ended yet" is a race whose outcome can
+// vary run to run by a frame or two. That was invisible for as long as every
+// downstream probe happened to be insensitive to it; it stopped being
+// invisible the day a probe's spawn point landed pixel-adjacent to a live
+// enemy and a one-frame difference in when the room was entered decided
+// whether that enemy's very first contact check landed before or after.
+await page.evaluate((seed) => {
+  const g = window.__game;
+  g.newGame(0, 'LINK', seed);
+  g.cutscene = null;
+  g.mode = 'play';
+  g.dialogue.active = false;
+}, SEED);
 
 // ---------------------------------------------------------------- part 1: walk
 // Six dungeons, and six is now what the data holds: the Reef Palace and the
@@ -705,8 +727,21 @@ for (const p of placements) {
     g.progress.hearts = g.progress.maxHearts;
     g.player.invuln = 100000;               // nothing may interrupt the probe
     g.entities = g.entities.filter(e => e === g.player);
-    g.tide.setLevel(1);
+    // Every other tide-setting call in this repo's harnesses passes
+    // `{instant: true}` — a scripted probe never wants the sweep transition a
+    // real conch press triggers. This one didn't, so `tide.busy` stayed true
+    // (a fresh sweep) for the whole probe whenever the room the PREVIOUS
+    // probe left behind wasn't already at MID.
+    g.tide.setLevel(1, { instant: true });
     g.player.z = 0; g.player.vz = 0; g.player.jumping = false; g.player.ledgeHop = null;
+    // A live enemy still shares this room for the 3-frame settle above (the
+    // entity filter hasn't run yet, on purpose — see below), so a keese
+    // parked next to a probe's fixed spawn point can land a contact hit
+    // before this line ever executes. `knockTime`/`knockX`/`knockY` are the
+    // one piece of that hit's state z/vz/jumping/ledgeHop above don't clear,
+    // and left alone they silently override the probe's own key press for
+    // however many frames of knockback were still in flight.
+    g.player.knockTime = 0; g.player.knockX = 0; g.player.knockY = 0;
     g.player.x = b.tx * 16; g.player.y = b.ty * 16;
     g.player.lastSafe.x = g.player.x; g.player.lastSafe.y = g.player.y;
     await new Promise(r => { const s = g.frame; const t = () => (g.frame - s >= 2 ? r() : requestAnimationFrame(t)); t(); });

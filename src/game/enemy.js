@@ -264,6 +264,11 @@ export class Boss extends Enemy {
   constructor(x, y, spec, opts = {}) {
     super(x, y, spec, opts);
     this.isBoss = true;
+    // Permanent, unlike `isBoss`: a miniboss clears that flag in its own
+    // `init` (see the comment on `gridLocked`), but `Game.updatePhaseShift`
+    // needs to know "this entity's own `.phase` is a combat-phase index, not
+    // a Lens tide-affinity marker" for every `Boss` instance regardless.
+    this._bossClass = true;
     this.oncePerGame = spec.oncePerGame !== false;
     this.intro = spec.intro != null ? spec.intro : BOSS_INTRO_FRAMES;
     this.phase = -1;
