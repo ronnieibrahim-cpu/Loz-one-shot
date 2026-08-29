@@ -26,7 +26,7 @@ doing the session.
 |---|---|---|---|---|
 | ~~S1~~ | ~~Impact: hitstop and the feel constants~~ | Opus | — | **DONE — awaiting your ear.** See `docs/NEXT-SESSION.md` |
 | ~~S2~~ | ~~Terrain extraction: the ground~~ | Opus | S1 | **DONE — awaiting your eye.** See `docs/NEXT-SESSION.md` |
-| S3 | Terrain extraction: edges and towns | Opus | S2 | Yes |
+| ~~S3~~ | ~~Terrain extraction: edges and towns~~ | Opus | S2 | **PARTLY DONE — 2 of 4 jobs; see `docs/NEXT-SESSION.md`** |
 | S4 | Sound coverage and the sfx checker | Sonnet | S1 | Yes (listen) |
 | S5 | Bosses winnable by design | Opus | S1 | **Critical** |
 | S6 | Music engine: vibrato, echo, arpeggio | Sonnet | S4 | Yes (listen) |
@@ -163,6 +163,22 @@ will catch it.**
 ---
 
 ## S3 — Terrain extraction, pass 2: edges, cliffs and town fronts
+
+> **PARTLY DONE. Jobs 1 and 4 landed; jobs 2 and 3 are answered, not skipped.**
+> **Job 1 (cliffs):** `cliff` and `cliffTop` extracted from Seasons' terraced
+> cliffs, and an autotiler (`family` + `edgeArt`) now draws the lip on the top
+> row of every cliff mass with ZERO room-grid changes. The real finding is
+> `T65`: `cliffTop` was placed zero times in 1,307 cliff cells, so the game had
+> one piece where the source has a set. Corner set still missing — backlogged
+> with the reason. **Job 4 (town fronts):** audited, all 51 cells and 10 blocks
+> already extracted, no gap, nothing changed. **Job 2 (water edges): BLOCKED** —
+> the mechanism fits exactly and would be correct at all three tides for free,
+> but water is animated and every sheet here is a static map, so foam cannot be
+> extracted. **Job 3 (tree borders): NOT DONE ON PURPOSE** — the source's own
+> tree borders repeat identically, so breaking the period is a deviation and
+> `R9` says fidelity wins; the real difference is room data, not art.
+> All 51 replays stayed green. See `docs/ART-BACKLOG.md` and
+> `docs/NEXT-SESSION.md`.
 
 **Goal:** cliff edges, water edges and town-building fronts stop betraying a
 hand, and the tree borders stop repeating on a visible period.

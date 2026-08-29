@@ -447,6 +447,52 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+**BEFORE BLAMING A TILE'S ART, COUNT HOW MANY TIMES IT IS PLACED.** S3 was
+briefed to extract better cliffs because the hand-drawn ones betray a hand. They
+do — but the reason cliffs never read as cliffs is that `cliffTop` was placed
+**zero times in the whole overworld**: 1,307 cells of `#` and not one `^`. Every
+cliff in the game was a solid mass of body tile with no edge anywhere, so
+swapping the art would have produced a better-drawn wall of bricks and nothing
+else. The game had ONE PIECE where the source has a set. `foamN` is registered,
+drawn, and in no legend at all today, and 50 of the overworld's 52 static water
+cells touch land with no foam on them — same shape, still open. **A grep for how
+often a tile appears in the room data is a thirty-second check that reframed a
+whole session.**
+
+**A JOB'S PREMISE IS WORTH CHECKING AGAINST THE SOURCE BEFORE DOING THE JOB.**
+S3's tree job was "the tree borders repeat on a visible period — extract
+variants and break the period." The period is real. But cropping Seasons' own
+forests shows **every tree identical and repeating**, so breaking the period
+would be a deviation from the source, and `R9` says fidelity wins. What is
+actually different is that our rooms pack trees shoulder to shoulder into a wall
+where the source spaces them — a room-data question, not an extraction one, with
+full `T10` stranding risk. **Fifteen minutes of looking at the reference turned
+a wrong job into a correctly-scoped different one.** The same instinct is what
+found the supercell answer in S2.
+
+**GROUND CAN BE FOUND WITHOUT THE SHEET'S GRID; NOTHING ELSE CAN.** The seamless
+scan works on ground because a window that repeats at +16 in both axes is
+correctly phased by construction — the test finds the phase as a side effect. A
+cliff face, a shoreline or a building front is one or two cells tall and never
+repeats, so it can only be read off the grid, and the grid has to be found
+first. **And the phase must be measured LOCALLY**: these sheets are assembled
+maps with large non-map margins, and the Seasons spring sheet reports (0, 12)
+whole-sheet against (8, 6) over its cliffs. Three attempts at picking cliff
+cells were thrown away on the whole-sheet figure before this was noticed.
+`rip-terrain.py --phase` is committed for it.
+
+**AN AUTOTILER IS THE CHEAPEST WAY TO ADD A TILE GRAMMAR, BECAUSE IT TOUCHES NO
+ROOM DATA.** Giving every cliff mass a top lip could have been done by editing
+1,307 cells across a hundred rooms — which is exactly the change `T10` and `T13`
+warn about, where a misplaced solid strands a screen and nothing fails. Deriving
+the edge from the neighbours at draw time instead changed zero room grids,
+zero replays, and could not affect passability by construction. **When a
+fidelity problem looks like a data-entry problem, check whether the renderer can
+work it out instead.** The one decision that needed care was what an
+out-of-bounds neighbour counts as; getting it wrong draws a lip along the top of
+every screen in the game, so it is asserted in `tools/test.mjs` in both
+directions.
+
 **THE OBVIOUS IMPLEMENTATION OF "MIX SOME VARIANTS IN" MAKES THE PROBLEM
 WORSE.** S2's job was to stop a grass field reading as one repeated cell. The
 natural move — extract four good grass tiles and pick among them evenly — was

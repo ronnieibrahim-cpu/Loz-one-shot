@@ -1623,6 +1623,15 @@ function registerTiles(defs) {
       // named here or `registerTiles` would discard it silently, the way it
       // discarded `liftLevel` for the life of the project (see below).
       variants: def.variants || null,
+      // AUTOTILING. `family` groups tiles that are the same MASS — every
+      // palette-swap of a cliff is still cliff, so a `cliffDk` beside a `cliff`
+      // is not an edge. `edgeArt` names the art to draw instead of this tile's
+      // own when the neighbour in that direction is a DIFFERENT family:
+      // `{ up: 'cliffTop' }` puts a lip on the top row of every cliff mass in
+      // the game without a single room grid changing. Draw-time only, like
+      // `variants` — nothing the simulation can see moves.
+      family: def.family || null,
+      edgeArt: def.edgeArt || null,
       // 1 in `variantOdds` cells shows a variant. See `tileVariant` for why
       // this is a SCATTER and not an even mix.
       variantOdds: def.variantOdds || 8,
@@ -1801,6 +1810,37 @@ function tileVariant(def, roomKey, tx, ty) {
   return v[hash32('tilepick', roomKey, tx, ty) % v.length];
 }
 
+/**
+ * Which art to draw for a tile whose look depends on its neighbours.
+ *
+ * `neighbourFamily(dir)` is supplied by the caller — `Room` owns the grid, and
+ * a checker may never re-derive a rule the engine already owns (`R4`).
+ *
+ * OUT OF BOUNDS COUNTS AS THE SAME MASS, and this is the decision that makes
+ * the feature usable rather than a disaster. A cliff running along the top row
+ * of a screen continues into the screen above it in every source game, and the
+ * room has no way to see that room's grid — so treating "off the edge" as a
+ * different family would draw a lip along the top of every screen in the game,
+ * on cliff that visibly carries on. The caller returns the tile's own family
+ * for a neighbour it cannot see.
+ *
+ * Only ONE edge wins, in the order the directions are listed. A cliff cell that
+ * is both the top of its mass and the left of it draws the top lip: this game
+ * has no corner pieces (see docs/ART-BACKLOG.md) and picking two edges would
+ * need one.
+ */
+function tileEdgeArt(def, neighbourFamily) {
+  const e = def.edgeArt;
+  if (!e || !def.family) return null;
+  for (const dir of EDGE_DIRS) {
+    const art = e[dir];
+    if (art && neighbourFamily(dir) !== def.family) return art;
+  }
+  return null;
+}
+
+const EDGE_DIRS = ['up', 'down', 'left', 'right'];
+
 /** True if any tile in the set changes appearance with the tide. */
 function isTideSensitive(name) {
   return !!getTileDef(name).tide;
@@ -1831,6 +1871,13 @@ function validateTiles() {
     // or wet, or a pit, in a pattern nobody authored and no room grid shows —
     // a bug that would render perfectly and be nearly impossible to find from
     // the symptom. So the invariant is asserted here rather than trusted.
+    if (d.edgeArt) {
+      if (!d.family) problems.push(`${name}: edgeArt needs a family to compare against`);
+      for (const [dir, art] of Object.entries(d.edgeArt)) {
+        if (!EDGE_DIRS.includes(dir)) problems.push(`${name}: edgeArt direction '${dir}' is not up/down/left/right`);
+        if (!TILES.has(art) && !ANIM_ART.has(art)) problems.push(`${name}: edgeArt '${art}' has no art`);
+      }
+    }
     if (d.variants) {
       if (d.anim) problems.push(`${name}: animated tiles cannot have variants`);
       if (!(d.variantOdds >= 1)) problems.push(`${name}: variantOdds must be >= 1`);
@@ -1903,6 +1950,7 @@ __exports["resolveTile"] = resolveTile;
 __exports["tileDefSolid"] = tileDefSolid;
 __exports["tileArt"] = tileArt;
 __exports["tileVariant"] = tileVariant;
+__exports["tileEdgeArt"] = tileEdgeArt;
 __exports["isTideSensitive"] = isTideSensitive;
 __exports["validateTiles"] = validateTiles;
 __exports["ANIM_ART"] = ANIM_ART;
@@ -1957,7 +2005,7 @@ __define("world/room.js", function (__exports, __require) {
 
 const { TILE, ROOM_W, ROOM_H, offscreen } = __require("core/screen.js");
 const { tiles: tileSheet } = __require("gfx/art.js");
-const { F, resolveTile, getTileDef, tileArt, tileVariant, blockRef, tileDefSolid } = __require("world/tileset.js");
+const { F, resolveTile, getTileDef, tileArt, tileVariant, tileEdgeArt, blockRef, tileDefSolid } = __require("world/tileset.js");
 
 const LEGENDS = new Map();
 
@@ -2160,6 +2208,29 @@ class Room {
     return typeof tide === 'number' ? tide : 'f' + tide.stamp;
   }
 
+  /**
+   * The art to draw for the cell at (x, y): its edge piece if it is on the
+   * boundary of its own mass, otherwise one of its ground variants.
+   *
+   * The neighbour lookup is HERE rather than in `tileset.js` because the room
+   * owns the grid — the same reason `solidAt` lives here. Off the edge of the
+   * room reports the tile's OWN family, so a cliff running along a screen
+   * boundary does not sprout a lip on cliff that carries on into the next
+   * screen; see `tileEdgeArt`.
+   */
+  artAt(d, x, y, tide) {
+    if (d.edgeArt) {
+      const edge = tileEdgeArt(d, (dir) => {
+        const nx = x + (dir === 'left' ? -1 : dir === 'right' ? 1 : 0);
+        const ny = y + (dir === 'up' ? -1 : dir === 'down' ? 1 : 0);
+        if (nx < 0 || ny < 0 || nx >= this.tw || ny >= this.th) return d.family;
+        return this.tile(nx, ny, tide).family;
+      });
+      if (edge) return edge;
+    }
+    return tileVariant(d, this.key, x, y);
+  }
+
   /** Render (and cache) the static tile layer for a tide level or field. */
   render(tide, frame) {
     if (!this._cache) this._cache = offscreen(this.pw, this.ph);
@@ -2190,7 +2261,7 @@ class Room {
           // A ground tile may declare interchangeable art. The choice is a pure
           // hash of this room and this cell, so it is stable across every cache
           // rebuild and consumes nothing — see `tileVariant` and `T2`.
-          tileSheet.draw(ctx, tileVariant(d, this.key, x, y), x * TILE, y * TILE, { pal: d.pal });
+          tileSheet.draw(ctx, this.artAt(d, x, y, tide), x * TILE, y * TILE, { pal: d.pal });
         }
       }
       this._cacheTide = key;
@@ -2235,7 +2306,7 @@ class Room {
           }
           // Same hash as `render`, or the Lens's preview of the room would
           // draw a DIFFERENT field of grass from the room behind it.
-          tileSheet.draw(ctx, d.anim ? tileArt(d, frame) : tileVariant(d, this.key, x, y),
+          tileSheet.draw(ctx, d.anim ? tileArt(d, frame) : this.artAt(d, x, y, tide),
             x * TILE, y * TILE, { pal: d.pal });
         }
       }
@@ -13450,6 +13521,44 @@ const TERRAIN_ART = {
     0312233323323321
     1033313333211101`,
 
+  // cliff lip: overhang band over the first course — oracle-seasons-overworld-spring.png @ 1224,726
+  cliffTop: `
+    3333333333333333
+    2222222222222222
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    2222222222222222
+    3333333333333333
+    0000011111100000
+    1110000000000111
+    1331100000011111
+    1331111111111111
+    1001111111131111
+    1111131111101111
+    3331111111111333
+    3333333333333333`,
+
+  // cliff face, two masonry courses, tiles in y — oracle-seasons-overworld-spring.png @ 1224,742
+  cliff: `
+    1110000000000111
+    0000011111100000
+    0001111112211000
+    1111111112211111
+    1112111110011111
+    1110111111111211
+    1111122222211111
+    2222222222222222
+    0000011111100000
+    1110000000000111
+    1221100000011111
+    1221111111111111
+    1001111111121111
+    1111121111101111
+    2221111111111222
+    2222222222222222`,
+
   // dungeon floor, mottled flagstone — oracle-seasons-dungeon-backgrounds.png @ 547,42
   dFloor: `
     0011111120010021
@@ -13577,6 +13686,8 @@ const TERRAIN_SRC_PALETTES = {
   sandRipple: ['#fce8b1', '#e3a14d'],
   mud: ['#e3a14d', '#8c5527', '#000000'],
   rockFloor: ['#fce8b1', '#e3a14d', '#8c5527', '#000000'],
+  cliffTop: ['#e80818', '#702800', '#680828', '#000000'],
+  cliff: ['#c87818', '#702800', '#000000'],
   dFloor: ['#abcfe6', '#85b2cf', '#5c8eb0'],
   dWall: ['#d3f9fd', '#aaccdc', '#7996b2', '#000000'],
   flowers: ['#b0c078', '#80c030', '#e840a0', '#000000'],
@@ -16350,18 +16461,33 @@ function installCoreTiles() {
     grateOwOpen: { art: ART.rockFloor, pal: 'stone' },
 
     // --- barriers ---
-    cliff: { art: ART.cliff, pal: 'stone', flags: F.SOLID },
-    cliffTop: { art: ART.cliffTop, pal: 'stone', flags: F.SOLID },
-    cliffDk: { art: ART.cliff, pal: 'stonedk', flags: F.SOLID },
-    cliffSand: { art: ART.cliff, pal: 'sand', flags: F.SOLID },
-    cliffRust: { art: ART.cliff, pal: 'rust', flags: F.SOLID },
-    cliffCoral: { art: ART.cliff, pal: 'coral', flags: F.SOLID },
-    cliffMarble: { art: ART.cliff, pal: 'marble', flags: F.SOLID },
-    cliffAbyss: { art: ART.cliff, pal: 'abyss', flags: F.SOLID },
+    // EVERY CLIFF IN THE GAME IS THE SAME MASS, whatever palette it wears, and
+    // that is what `family` says. A region boundary where `cliffDk` meets
+    // `cliff` is one hillside in two lights, not two hillsides, and without the
+    // shared family a lip would be drawn down the seam between them.
+    //
+    // `edgeArt` is what makes a cliff read as a cliff. `cliffTop` was placed
+    // ZERO times in the whole overworld — 1,307 cells of `#` and not one `^` —
+    // so every cliff in the game was a solid mass of body tile with no edge
+    // anywhere, which is why they read as brickwork rather than as terrain. The
+    // renderer now puts the lip on the top row of every mass by looking at the
+    // neighbours, so no room grid changes and no author has to remember. See
+    // `Room.artAt` for why off the edge of the screen counts as the same mass.
+    cliff: { art: ART.cliff, pal: 'stone', flags: F.SOLID, family: 'cliff', edgeArt: { up: 'cliffTop' } },
+    cliffTop: { art: ART.cliffTop, pal: 'stone', flags: F.SOLID, family: 'cliff' },
+    cliffDk: { art: ART.cliff, pal: 'stonedk', flags: F.SOLID, family: 'cliff', edgeArt: { up: 'cliffTop' } },
+    cliffSand: { art: ART.cliff, pal: 'sand', flags: F.SOLID, family: 'cliff', edgeArt: { up: 'cliffTop' } },
+    cliffRust: { art: ART.cliff, pal: 'rust', flags: F.SOLID, family: 'cliff', edgeArt: { up: 'cliffTop' } },
+    cliffCoral: { art: ART.cliff, pal: 'coral', flags: F.SOLID, family: 'cliff', edgeArt: { up: 'cliffTop' } },
+    cliffMarble: { art: ART.cliff, pal: 'marble', flags: F.SOLID, family: 'cliff', edgeArt: { up: 'cliffTop' } },
+    cliffAbyss: { art: ART.cliff, pal: 'abyss', flags: F.SOLID, family: 'cliff', edgeArt: { up: 'cliffTop' } },
     // Outdoor bombable walls. dWallCracked is the indoor equivalent; these let
     // an overworld region be gated on Bombs, which GAME-PLAN.md asks for and
     // nothing outdoors could express before.
-    cliffCracked: { art: ART.cliffCracked, pal: 'stone', flags: F.SOLID | F.BOMBABLE },
+    // Part of the same mass — a cracked cliff is a cliff — but it keeps its own
+    // art at the top row rather than the lip, because the crack IS the tell and
+    // a lip drawn over it would hide the one thing the player has to see.
+    cliffCracked: { art: ART.cliffCracked, pal: 'stone', flags: F.SOLID | F.BOMBABLE, family: 'cliff' },
     // The two region gates GAME-PLAN.md asks for. The Marsh gate proved the
     // shape — a solid tile with a flag, plus a transform naming what opens it —
     // and these two only add `level`, so the gate can name the MAGIC boomerang
@@ -16401,7 +16527,7 @@ function installCoreTiles() {
       art: ART.boulder, pal: 'stonedk', flags: F.SOLID | F.ROCK | F.HEAVY,
       underArt: 'rockFloor', liftLevel: 2,
     },
-    cliffCrackedDk: { art: ART.cliffCracked, pal: 'stonedk', flags: F.SOLID | F.BOMBABLE },
+    cliffCrackedDk: { art: ART.cliffCracked, pal: 'stonedk', flags: F.SOLID | F.BOMBABLE, family: 'cliff' },
     // A boulder already split by a fault: bombs open it, and nothing else
     // does. It carries NEITHER F.ROCK nor F.HEAVY on purpose — a boulder you
     // can also lift or also drag is not gated on bombs, it is gated on

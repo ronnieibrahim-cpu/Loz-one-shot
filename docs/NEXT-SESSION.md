@@ -1,3 +1,154 @@
+## S3 — Terrain extraction, pass 2: edges, cliffs and town fronts (this session)
+
+**Run per `docs/SESSION-PROMPTS.md` S3, on top of S2.** Two of the four jobs
+landed, one was already done, and one is blocked by the sheets themselves. All
+four are written up; nothing was left silently undone.
+
+### The cliffs were not a drawing problem, they were a MISSING PIECE problem
+
+`cliffTop` was registered, had art, and was **placed zero times in the whole
+overworld** — 1,307 cells of `#` and not one `^`. So every cliff in the game was
+a solid mass of body tile with no edge anywhere. Swapping the art alone would
+have produced a better-drawn wall of bricks; the reason cliffs never read as
+cliffs is that the game had ONE PIECE where the source has a set. This is now
+`T65`, and `foamN` is in exactly the same state today.
+
+**So the fix is an autotiler, and it needs no room data at all.** A tiledef may
+now declare:
+
+- **`family`** — tiles that are the same MASS. Every palette-swap of a cliff
+  (`cliffDk`, `cliffSand`, `cliffCoral`, `cliffMarble`, `cliffAbyss`,
+  `cliffRust`, `cliffCracked`) declares `family: 'cliff'`, so a region seam
+  where `cliffDk` meets `cliff` is one hillside in two lights and does not grow
+  a lip down the middle of it.
+- **`edgeArt`** — `{ up: 'cliffTop' }`: the art to draw instead of this tile's
+  own when the neighbour that way is a different family.
+
+`Room.artAt` does the neighbour lookup, because the room owns the grid — the
+same reason `solidAt` lives there (`R4`). **Off the edge of the screen counts as
+the SAME mass**, and that is the decision that makes the feature usable: a cliff
+running along the top row of a screen continues into the screen above it in
+every source game, and the room cannot see that room's grid, so the other choice
+draws a lip along the top of every screen in the game. Proved: flipping it to
+`null` fails two assertions and reports `6 of 6 top-row cliff cells drew a lip`.
+
+`cliffCracked` joins the family but keeps its own art at the top row — the crack
+IS the tell, and a lip drawn over it would hide the one thing the player has to
+see.
+
+### The art, and the tool that unblocked picking it
+
+`cliff` and `cliffTop` come off Seasons' own terraced cliffs
+(`oracle-seasons-overworld-spring.png @ 1224,742` and `@ 1224,726`). `cliffTop`
+is the overhang lip — a light band with a hard dark line under it, over the
+first masonry course. `cliff` is two more courses and is **vertically seamless
+with itself**, which is what lets a cliff mass be any depth.
+
+**Neither could be found by the seamless scan, and that is structural.** A cliff
+face is one or two cells tall on a sheet, so it never repeats at +16 in y, which
+the scan requires. Ground can be found without knowing the sheet's grid phase —
+a window repeating at +16 in both axes is correctly phased by construction — but
+a cliff, a shoreline or a building front can only be read off the grid, so the
+grid has to be found first. `rip-terrain.py --phase <sheet> X0 Y0 X1 Y1` is
+committed for it.
+
+**Measure the phase LOCALLY** (`T64`). These sheets are assembled maps with large
+non-map margins: the Seasons spring sheet reports phase (0, 12) whole-sheet and
+**(8, 6) over its cliffs**, and only the second produces cells containing whole
+tiles. Three attempts at picking cliff cells failed on the whole-sheet figure
+before this was noticed.
+
+### Town fronts (job 4): audited, and there was no gap
+
+All **51** `TOWN_ART` cells and all **10** `TOWN_BLOCKS` are already extracted
+from the Subrosia tileset; none of them is in `HAND_ART`. The job is complete
+and nothing was changed. Screenshots of all four town screens at all three tide
+levels are in `tools/shots/` (`4,7` Tidewatch Village, `4,8` Village Shore,
+`5,8` Driftwood Strand, `9,8` Sandpiper Row) — `check-towns` is 58/0, so no
+screen is severed at any level (`T13`).
+
+### Water edges (job 2): blocked by the sheets, and the mechanism is ready
+
+**The autotiler fits this job exactly.** `Room.artAt` resolves the tide before it
+compares families, so a derived shoreline would be correct at all three tide
+levels automatically — which is the property the job demands, and the reason
+`foamN` has never been placed in a single legend: a foam tile placed by hand is
+wrong at two levels out of three.
+
+**The blocker is that water is ANIMATED and every sheet here is a static map.**
+`rip-terrain.py`'s header has said so since it was written: "The sheets are
+static maps and hold no second frame, so water stays hand-drawn." Foam for four
+directions at three frames each cannot be extracted from them. That is `R5`'s
+second branch — draw it to match — and it wants a person. **A one-sided foam
+edge must not be shipped**: 50 of the overworld's 52 static water cells touch
+land, and foam on the north side only is the same "reads wrong immediately"
+failure the prompt warns about for cliffs without inside corners.
+
+### Tree borders (job 3): the premise does not survive checking the source
+
+The job is to "break the period", so the first thing done was to look at whether
+the source has one. **It does.** Crops of Seasons' own forests show every tree
+**identical and repeating** — see `tree1.png` in this session's scratch, or crop
+`oracle-seasons-overworld-spring.png` at (1600,1200). Giving our trees varied
+crowns would be a deviation from the source, and `R9` says fidelity wins, so it
+was not done.
+
+What IS different is real but is not an extraction problem: **our rooms pack
+identical trees shoulder to shoulder into an unbroken wall, and the source
+spaces them across the ground and mixes other objects in.** That is a room-data
+change across 1,000+ cells carrying the full `T10` stranding risk, and it wants
+its own session with `V2`/`V3` after every batch. Backlogged with that framing.
+
+Also found: **the `quad` field the ripper's header describes does not exist in
+the engine.** `QUADS = []`, `registerTiles` never named `quad`, and `Room` has
+no quad logic — `T15` again, in documentation rather than in data. The 32x32
+constraint it was written for is real and confirmed (every tree on every sheet
+is 32x32; 643 of this game's vertical tree runs are one row tall, so a quad tree
+cannot serve them). Either implement it or delete the comment.
+
+### Verified
+
+```
+validate            OK              test              70 passed, 0 (+5 cliff edge)
+replay              51/0  <-- unchanged, no re-recording
+walk-dungeons       23/0            check-overworld   17/0
+check-progression   19/0            check-gates       26/0
+check-towns         58/0            check-items       91/0
+check-charms        63/0            check-trade       43/0
+check-hearts     114/114            check-motion       8/0
+check-torches        5/0            check-playthrough 19/0
+check-bosses        18/0 (god)      check-guide        4/0
+solve-switches      all 9 solvable
+check-build         OK — boots from file://
+```
+
+**`V11` green again with no re-recording**, which is the same proof S2 relied on:
+the cliffs look different and the game plays identically. The five new
+`--- cliff edges ---` assertions were proved to fail against a deliberately
+wrong boundary rule before being believed.
+
+### Hand it back: what to look at
+
+Per `§4.2` the read is yours.
+
+1. **The cliff A/B.** `overworld,1,1` (The Long Drop) and `overworld,5,2`
+   (Cracked Basin) — the two rooms where the most cliff cells have open ground
+   above them. `git stash` and re-shoot to see the old ones. **Compare the top
+   row of each cliff mass**: that is where the lip now is.
+2. **Every town at all three tides** — the twelve shots listed above.
+3. **`overworld,2,2` (Upper Kell) and `overworld,3,1` (Iron Watch)** for cliffs
+   in the stone and sand palettes.
+4. **The thing I could not judge: does the lip read as an overhang or as a
+   highlight?** `cliffTop` had six colours on the sheet and was merged down to
+   four, which is where a lip would lose its shape. If it reads flat, the pick
+   is `oracle-seasons-overworld-spring.png @ 1224,726` and neighbours at
+   ±16 are alternatives.
+5. **Whether cliffs now want their sides too.** `tileEdgeArt` already takes
+   `left`/`right`/`down`; what stops it is the corner piece, which is written up
+   in `docs/ART-BACKLOG.md`.
+
+---
+
 ## S2 — Terrain extraction, pass 1: the ground you stand on (this session)
 
 **Run per `docs/SESSION-PROMPTS.md` S2, on top of S1.** Scope held: the ground

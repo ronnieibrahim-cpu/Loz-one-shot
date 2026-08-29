@@ -4,6 +4,7 @@
   python3 tools/rip-terrain.py                  # rewrite src/data/tiles-terrain.js
   python3 tools/rip-terrain.py --scan ow X0 Y0 X1 Y1     # rank a region's tiles
   python3 tools/rip-terrain.py --supercells ow [N]       # multi-cell ground?
+  python3 tools/rip-terrain.py --phase sp X0 Y0 X1 Y1     # where is the grid?
 
 `docs/ART-DIRECTION.md` names `assets/sheets/custom-oracle-style-overworld.png`
 and `assets/sheets/oracle-seasons-dungeon-backgrounds.png` the references for
@@ -84,6 +85,30 @@ PICKS = [
     ('sandRipple',  OW,  484,    1, 'wind-rippled dune'),
     ('mud',         OW, 2206,  154, 'churned bog'),
     ('rockFloor',   OW,  645, 1549, 'cobbled paving'),
+
+    # THE CLIFFS, and the reason they never read as cliffs.
+    #
+    # `cliffTop` is placed ZERO times in the whole overworld — 1,307 cells of
+    # `#` and not one `^` — so every cliff in the game is a solid mass of body
+    # tile with no edge anywhere. The art being hand-drawn was the smaller half
+    # of the problem; the larger half is that the game had one piece where the
+    # source has a SET, so a cliff could only ever read as a wall of bricks.
+    #
+    # These two come off Seasons' own terraced cliffs. `cliffTop` is the lip:
+    # a light overhang band with a hard dark line under it, over the first
+    # masonry course. `cliff` is two more courses, and it is VERTICALLY SEAMLESS
+    # with itself, which is what lets a cliff mass be any depth. The engine now
+    # picks between them from the neighbours (see `edgeArt` in
+    # src/world/tileset.js), so no room grid changes and no author has to
+    # remember to place a lip.
+    #
+    # Found by grid reference, not by the seamless scan: a cliff face is one or
+    # two cells tall on the sheet and so never repeats at +16 in y, which the
+    # scan requires. The phase came from `--phase`, measured LOCALLY over the
+    # cliff region — the whole-sheet average is wrong, because these map rips
+    # are mostly not map.
+    ('cliffTop',    SP, 1224,  726, "cliff lip: overhang band over the first course"),
+    ('cliff',       SP, 1224,  742, 'cliff face, two masonry courses, tiles in y'),
     ('dFloor',      DG,  547,   42, 'dungeon floor, mottled flagstone'),
     ('dWall',       DG,  483,   26, 'dungeon wall run, lit top and hatched base'),
     # FLOWERS THAT ARE ACTUALLY FLOWERS. The previous pick was a leafy rosette
@@ -535,6 +560,50 @@ def seamless_scan(path, x0, y0, x1, y1, top=24):
     return ranked
 
 
+def phase_scan(path, box=None):
+    """Where is this sheet's 16x16 tile grid?
+
+    Committed because it is the thing that blocks picking any tile that is not
+    ground. `seamless_scan` finds ground WITHOUT knowing the phase — a window
+    that repeats at +16 in both axes is correctly phased by construction — but
+    a cliff face, a shoreline or a building front is one or two cells tall and
+    never repeats, so the only way to pick one is to read it off the grid, and
+    for that the grid has to be found first.
+
+    Hard edges in pixel art land ON cell boundaries far more often than inside
+    cells, so the phase is the offset whose columns (and rows) carry the most
+    gradient. Sum |difference| between adjacent columns, fold onto 16, take the
+    peak.
+
+    **MEASURE LOCALLY, OVER THE REGION YOU ARE PICKING FROM.** These sheets are
+    assembled maps with large non-map margins, and the whole-sheet average is
+    dominated by content that is not on the map's grid: the Seasons spring sheet
+    reports (0, 12) whole-sheet and (8, 6) over its cliffs, and only the second
+    one produces cells that contain whole tiles. Pass a box.
+    """
+    im = Image.open(path).convert('RGB')
+    W, H = im.size
+    x0, y0, x1, y1 = box if box else (0, 0, W, H)
+    px = im.load()
+    cols = [0] * 16
+    rows = [0] * 16
+    for y in range(y0, min(y1, H)):
+        for x in range(x0, min(x1, W) - 1):
+            a, b = px[x, y], px[x + 1, y]
+            cols[(x + 1) % 16] += abs(a[0] - b[0]) + abs(a[1] - b[1]) + abs(a[2] - b[2])
+    for y in range(y0, min(y1, H) - 1):
+        for x in range(x0, min(x1, W)):
+            a, b = px[x, y], px[x, y + 1]
+            rows[(y + 1) % 16] += abs(a[0] - b[0]) + abs(a[1] - b[1]) + abs(a[2] - b[2])
+    pxp = max(range(16), key=lambda i: cols[i])
+    pyp = max(range(16), key=lambda i: rows[i])
+    print(f'{path}')
+    print(f'  region ({x0},{y0})-({x1},{y1})')
+    print(f'  x-phase = {pxp}   y-phase = {pyp}')
+    print(f'  so cells start at x = {pxp} + 16n, y = {pyp} + 16n')
+    return pxp, pyp
+
+
 def supercell_scan(path, n=32, step=2, top=24):
     """Rank the NxN ground SUPERCELLS in a sheet — a field built from more than
     one alternating cell.
@@ -666,6 +735,13 @@ def main():
         sheet = {'ow': OW, 'dg': DG, 'ag': AG, 'sb': SB, 'sp': SP}[a[0]]
         prop_scan(sheet, int(a[1]), int(a[2]), int(a[3]), int(a[4]), int(a[5]), int(a[6]),
                   out_png=a[7] if len(a) > 7 else None)
+        return
+
+    if '--phase' in sys.argv:
+        a = sys.argv[sys.argv.index('--phase') + 1:]
+        sheet = {'ow': OW, 'dg': DG, 'ag': AG, 'sb': SB, 'sp': SP}[a[0]]
+        box = tuple(int(v) for v in a[1:5]) if len(a) >= 5 else None
+        phase_scan(sheet, box)
         return
 
     if '--supercells' in sys.argv:

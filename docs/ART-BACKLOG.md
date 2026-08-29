@@ -3,6 +3,55 @@
 Work that is identified, scoped and not done. Each entry says what blocks it.
 
 
+## S3 left these: water edges, tree borders, and the cliff corner set
+
+S3 extracted `cliff` and `cliffTop` from Seasons' terraced cliffs and built the
+autotiler (`family` + `edgeArt`) that draws the lip from the neighbours. What it
+found and did not do:
+
+**Water edges (S3 job 2) are BLOCKED by the sheets, not by effort.** The
+mechanism is now in place and would fit exactly — `Room.artAt` resolves the tide
+before it compares families, so a derived shoreline would be correct at all
+three tide levels automatically, which is the property the job asks for and the
+reason the existing `foamN` was never placed in a single legend (a foam tile
+placed by hand is wrong at two levels out of three). **The blocker is that the
+water is ANIMATED and every sheet in `assets/sheets/` is a static map** —
+`rip-terrain.py`'s header has said so since it was written: "The sheets are
+static maps and hold no second frame, so water stays hand-drawn." Foam for four
+directions at three frames each cannot be extracted from them. Either a sheet
+with animation frames has to be found, or the foam has to be drawn to match
+(`T24`), which is `R5`'s second branch. **Do not ship a one-sided foam edge**:
+50 of the 52 static water cells in the overworld touch land, and foam on the
+north side only is the same "reads wrong immediately" failure the prompt warns
+about for cliffs without inside corners.
+
+**Tree borders (S3 job 3): the premise does not survive checking the source.**
+The job is to "break the period", and the source games do not. Crops of Seasons'
+own forests show **every tree identical and repeating**, spaced across the
+ground rather than packed. So giving our trees varied crowns would be a
+deviation from the source, and `R9` says fidelity wins. What IS different is
+that our rooms pack identical trees shoulder to shoulder into an unbroken wall
+while the source spaces them and mixes other objects in — **that is a room-data
+question across 1,000+ cells, not an extraction one**, and it carries the full
+`T10` stranding risk, so it wants its own session with the floods run after
+every batch. The 32x32 constraint recorded at `tiles-core.js` is real and
+confirmed: every tree on every sheet is 32x32, and 643 of this game's vertical
+tree runs are one row tall, so a quad tree cannot be used for them. (The `QUADS`
+machinery in the ripper is empty and **the `quad` field it describes does not
+exist in the engine at all** — `registerTiles` never named it, which is `T15`
+again. Either implement it or delete the comment.)
+
+**The cliff corner set is still missing, and now it shows more.** S3 added the
+top lip only. `tileEdgeArt` takes any of up/down/left/right and returns the
+first that matches, so sides are a data change away — but a cliff with a top and
+sides and no CORNER piece reads wrong at every turn, and the corners on the
+Seasons sheet are structural (they include the map's own void beyond the
+cliff) rather than clean reusable cells. Picking them needs a region where a
+cliff turns a corner against ordinary ground on both sides. Use
+`rip-terrain.py --phase` over that region first: the whole-sheet phase is wrong
+(`T64`).
+
+
 ## S2 left these: what the sheets could NOT cover for the ground pass
 
 S2 extracted `grass` (Seasons' own field grass) and `grassClump`, retired the

@@ -606,6 +606,51 @@ const main = async () => {
   check('enemies can be killed', await G(() => window.__game.progress.kills) > kills0);
   await shot('10-combat');
 
+  // --- cliff edges autotile ------------------------------------------------
+  //
+  // `cliffTop` is placed ZERO times in the whole overworld, so before this the
+  // game's 1,307 cliff cells were one body tile with no edge anywhere. The
+  // renderer now derives the lip from the neighbours. Two things are asserted
+  // that a screenshot cannot settle: that the lip lands on the top row of a
+  // mass and nowhere else, and that OFF THE EDGE OF THE SCREEN counts as the
+  // same mass — otherwise every screen in the game grows a lip along its top
+  // row, on cliff that visibly carries on into the room above.
+  console.log('\n--- cliff edges ---');
+  const edges = await G(async () => {
+    const ts = await import('/src/world/tileset.js');
+    const g = window.__game;
+    g.enterMap('overworld', 0, 1, 1, 72, 56, 'down', { instant: true });
+    window.__harness.step(4);
+    const room = g.room;
+    const out = { lipRows: [], bodyBelow: 0, topRowLip: 0, topRowCells: 0, family: null };
+    const def = ts.getTileDef('cliff');
+    out.family = def.family;
+    out.hasEdge = !!(def.edgeArt && def.edgeArt.up);
+    for (let y = 0; y < room.th; y++) {
+      for (let x = 0; x < room.tw; x++) {
+        const d = room.tile(x, y, g.tide);
+        if (d.family !== 'cliff') continue;
+        const art = room.artAt(d, x, y, g.tide);
+        const above = y > 0 ? room.tile(x, y - 1, g.tide) : null;
+        const openAbove = above ? above.family !== 'cliff' : null;
+        if (art === 'cliffTop' && d.name !== 'cliffTop') out.lipRows.push([x, y, openAbove]);
+        // a cliff with cliff above it must NOT be a lip
+        if (above && !openAbove && art === 'cliffTop' && d.name !== 'cliffTop') out.bodyBelow++;
+        if (y === 0) { out.topRowCells++; if (art === 'cliffTop' && d.name !== 'cliffTop') out.topRowLip++; }
+      }
+    }
+    out.lipsWithOpenAbove = out.lipRows.filter(r => r[2] === true).length;
+    out.lipCount = out.lipRows.length;
+    return out;
+  });
+  check('cliff declares a family and an up edge', edges.family === 'cliff' && edges.hasEdge);
+  check('the lip lands somewhere in a cliff-heavy room', edges.lipCount > 0, `${edges.lipCount} lips`);
+  check('every lip has open ground above it', edges.lipsWithOpenAbove === edges.lipCount,
+    `${edges.lipCount} lips, ${edges.lipsWithOpenAbove} with open ground above`);
+  check('a cliff under a cliff is never a lip', edges.bodyBelow === 0, `${edges.bodyBelow} bad`);
+  check('the screen boundary does NOT grow a lip', edges.topRowLip === 0,
+    `${edges.topRowLip} of ${edges.topRowCells} top-row cliff cells drew a lip`);
+
   // --- hitstop ------------------------------------------------------------
   //
   // The freeze on a connecting hit must pause the ENTITY SIMULATION and

@@ -63,7 +63,7 @@ produced most of §2.
 
 | Command | Result |
 |---|---|
-| `node tools/test.mjs` | **65 passed, 0 failed** (S1 added six hitstop assertions) |
+| `node tools/test.mjs` | **70 passed, 0 failed** (S1 added six hitstop assertions, S3 five cliff-edge ones) |
 | `node tools/check-hearts.mjs` | 114/114 |
 | `node tools/check-music.mjs` | OK — **22 tracks, 55 sfx** |
 | `node tools/check-playthrough.mjs` | 19 passed, 0 failed |
@@ -95,7 +95,7 @@ These have all been miscounted in prior briefs. Measured out of the data:
 | Dialogue ids wired to map data | **51** | coverage is *not* the problem — see `A6` |
 | Placed talkable entities | **43** | 12 `npc`, 29 `sign`, 1 `giver`, 1 `shop` |
 | Cutscenes defined | 13 | one (`nerethIntro`) has no trigger |
-| Extracted terrain tiles | **15** | plus 51 town pieces — see `A2`. Was 13 before S2 |
+| Extracted terrain tiles | **17** | plus 51 town pieces — see `A2`. Was 13 before S2, 15 before S3 |
 | Grass tiles | **3** | `grass` (extracted since S2), `grassTuft`, `grassClump`. The grid is gone |
 | Recorded replay baselines | 51 | every one is downstream of movement/combat timing |
 
@@ -146,9 +146,10 @@ extends it), `Player.takeDamage` and `Boss.beginDeath`. See `T58`, `T59`.
 **Most of the base terrain is still hand-drawn, and this violates `R5`.** S2
 did the ground; cliffs, water edges and town fronts are S3.
 
-`src/data/tiles-core.js` still holds hand-authored ASCII pixel art for `cliff`,
-`cliffTop`, `cliffCracked`, `waterS0..2`, `waterD0..2`, `tallgrass` and the
-trees. `src/data/tiles-terrain.js` (the generated, extracted file) holds **15**
+`src/data/tiles-core.js` still holds hand-authored ASCII pixel art for
+`cliffCracked`, `waterS0..2`, `waterD0..2`, `foamN`, `tallgrass` and the trees.
+**The town kit needs nothing: all 51 `TOWN_ART` cells and all 10 blocks are
+already extracted** — S3 audited it and there was no gap to close. `src/data/tiles-terrain.js` (the generated, extracted file) holds **15**
 terrain tiles plus 51 town pieces.
 
 **`grass` is extracted as of S2 and the grid it caused is gone.** It was one
@@ -158,6 +159,16 @@ speckles read as a regular lattice on a 16-pixel pitch. It is now Seasons' own
 field grass (`oracle-seasons-overworld-spring.png @ 1095,420`), whose speckle is
 fine and irregular enough that no mark is a landmark. The hand-drawn original
 was deleted rather than kept.
+
+**`cliff` and `cliffTop` are extracted as of S3, and cliffs autotile.** A
+tiledef may declare `family` (tiles that are the same MASS — every palette-swap
+of a cliff still counts as cliff, so a region seam does not grow a lip) and
+`edgeArt` (`{ up: 'cliffTop' }` — the art to draw when the neighbour that way is
+a different family). `Room.artAt` does the neighbour lookup and **treats off the
+edge of the screen as the same mass**, or every screen in the game would sprout
+a lip along its top row on cliff that carries on into the room above.
+`validateTiles` checks the directions and the art exist. Zero room grids
+changed. See `T65` for why this mattered more than the art did.
 
 **Ground tiles can now declare `variants`.** A tiledef names other art it may be
 drawn as; `tileVariant` (src/world/tileset.js) picks with a pure hash of room
@@ -652,6 +663,25 @@ by number.
   Seasons spring sheet yields 9, and the Ages sheet yields **zero**. Oracle's
   ground fields are genuinely single-cell repeats; variety comes from a person
   placing detail cells. Do not spend another session looking for this.
+- **T64 — A sheet's tile grid phase must be measured LOCALLY, over the region
+  you are picking from.** These sheets are assembled maps with large non-map
+  margins, so a whole-sheet average is dominated by content that is not on the
+  grid: `oracle-seasons-overworld-spring.png` reports phase (0, 12) whole-sheet
+  and (8, 6) over its cliffs, and only the second produces cells containing
+  whole tiles. `rip-terrain.py --phase <sheet> X0 Y0 X1 Y1`. **This blocks every
+  pick that is not ground** — the seamless scan finds ground without knowing the
+  phase, because a window repeating at +16 in both axes is correctly phased by
+  construction, but a cliff face, a shoreline or a building front is one or two
+  cells tall and never repeats, so it can only be read off the grid.
+- **T65 — A tile can be dead data, and dead data is why a thing looks wrong.**
+  `cliffTop` was registered, had art, and was placed **zero times** in the whole
+  overworld: 1,307 cells of `#` and not one `^`. So every cliff in the game was
+  a solid mass of body tile with no edge anywhere, and the reason cliffs read as
+  brickwork was not only that the art was hand-drawn — it was that the game had
+  ONE PIECE where the source has a set. `foamN` is in exactly the same state
+  today (registered, no legend references it, 50 of 52 static water cells touch
+  land with no foam). **Before blaming a tile's art, count how many times it is
+  actually placed.**
 - **T60 — Five checkers could not run at all in a clean container, and said so
   in a stack trace rather than a failure.** `check-items`, `check-charms`,
   `check-trade`, `find-ledges` and `preview` called `chromium.launch()` without

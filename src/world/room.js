@@ -41,7 +41,7 @@
 
 import { TILE, ROOM_W, ROOM_H, offscreen } from '../core/screen.js';
 import { tiles as tileSheet } from '../gfx/art.js';
-import { F, resolveTile, getTileDef, tileArt, tileVariant, blockRef, tileDefSolid } from './tileset.js';
+import { F, resolveTile, getTileDef, tileArt, tileVariant, tileEdgeArt, blockRef, tileDefSolid } from './tileset.js';
 
 export const LEGENDS = new Map();
 
@@ -244,6 +244,29 @@ export class Room {
     return typeof tide === 'number' ? tide : 'f' + tide.stamp;
   }
 
+  /**
+   * The art to draw for the cell at (x, y): its edge piece if it is on the
+   * boundary of its own mass, otherwise one of its ground variants.
+   *
+   * The neighbour lookup is HERE rather than in `tileset.js` because the room
+   * owns the grid — the same reason `solidAt` lives here. Off the edge of the
+   * room reports the tile's OWN family, so a cliff running along a screen
+   * boundary does not sprout a lip on cliff that carries on into the next
+   * screen; see `tileEdgeArt`.
+   */
+  artAt(d, x, y, tide) {
+    if (d.edgeArt) {
+      const edge = tileEdgeArt(d, (dir) => {
+        const nx = x + (dir === 'left' ? -1 : dir === 'right' ? 1 : 0);
+        const ny = y + (dir === 'up' ? -1 : dir === 'down' ? 1 : 0);
+        if (nx < 0 || ny < 0 || nx >= this.tw || ny >= this.th) return d.family;
+        return this.tile(nx, ny, tide).family;
+      });
+      if (edge) return edge;
+    }
+    return tileVariant(d, this.key, x, y);
+  }
+
   /** Render (and cache) the static tile layer for a tide level or field. */
   render(tide, frame) {
     if (!this._cache) this._cache = offscreen(this.pw, this.ph);
@@ -274,7 +297,7 @@ export class Room {
           // A ground tile may declare interchangeable art. The choice is a pure
           // hash of this room and this cell, so it is stable across every cache
           // rebuild and consumes nothing — see `tileVariant` and `T2`.
-          tileSheet.draw(ctx, tileVariant(d, this.key, x, y), x * TILE, y * TILE, { pal: d.pal });
+          tileSheet.draw(ctx, this.artAt(d, x, y, tide), x * TILE, y * TILE, { pal: d.pal });
         }
       }
       this._cacheTide = key;
@@ -319,7 +342,7 @@ export class Room {
           }
           // Same hash as `render`, or the Lens's preview of the room would
           // draw a DIFFERENT field of grass from the room behind it.
-          tileSheet.draw(ctx, d.anim ? tileArt(d, frame) : tileVariant(d, this.key, x, y),
+          tileSheet.draw(ctx, d.anim ? tileArt(d, frame) : this.artAt(d, x, y, tide),
             x * TILE, y * TILE, { pal: d.pal });
         }
       }

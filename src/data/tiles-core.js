@@ -1239,18 +1239,33 @@ export function installCoreTiles() {
     grateOwOpen: { art: ART.rockFloor, pal: 'stone' },
 
     // --- barriers ---
-    cliff: { art: ART.cliff, pal: 'stone', flags: F.SOLID },
-    cliffTop: { art: ART.cliffTop, pal: 'stone', flags: F.SOLID },
-    cliffDk: { art: ART.cliff, pal: 'stonedk', flags: F.SOLID },
-    cliffSand: { art: ART.cliff, pal: 'sand', flags: F.SOLID },
-    cliffRust: { art: ART.cliff, pal: 'rust', flags: F.SOLID },
-    cliffCoral: { art: ART.cliff, pal: 'coral', flags: F.SOLID },
-    cliffMarble: { art: ART.cliff, pal: 'marble', flags: F.SOLID },
-    cliffAbyss: { art: ART.cliff, pal: 'abyss', flags: F.SOLID },
+    // EVERY CLIFF IN THE GAME IS THE SAME MASS, whatever palette it wears, and
+    // that is what `family` says. A region boundary where `cliffDk` meets
+    // `cliff` is one hillside in two lights, not two hillsides, and without the
+    // shared family a lip would be drawn down the seam between them.
+    //
+    // `edgeArt` is what makes a cliff read as a cliff. `cliffTop` was placed
+    // ZERO times in the whole overworld — 1,307 cells of `#` and not one `^` —
+    // so every cliff in the game was a solid mass of body tile with no edge
+    // anywhere, which is why they read as brickwork rather than as terrain. The
+    // renderer now puts the lip on the top row of every mass by looking at the
+    // neighbours, so no room grid changes and no author has to remember. See
+    // `Room.artAt` for why off the edge of the screen counts as the same mass.
+    cliff: { art: ART.cliff, pal: 'stone', flags: F.SOLID, family: 'cliff', edgeArt: { up: 'cliffTop' } },
+    cliffTop: { art: ART.cliffTop, pal: 'stone', flags: F.SOLID, family: 'cliff' },
+    cliffDk: { art: ART.cliff, pal: 'stonedk', flags: F.SOLID, family: 'cliff', edgeArt: { up: 'cliffTop' } },
+    cliffSand: { art: ART.cliff, pal: 'sand', flags: F.SOLID, family: 'cliff', edgeArt: { up: 'cliffTop' } },
+    cliffRust: { art: ART.cliff, pal: 'rust', flags: F.SOLID, family: 'cliff', edgeArt: { up: 'cliffTop' } },
+    cliffCoral: { art: ART.cliff, pal: 'coral', flags: F.SOLID, family: 'cliff', edgeArt: { up: 'cliffTop' } },
+    cliffMarble: { art: ART.cliff, pal: 'marble', flags: F.SOLID, family: 'cliff', edgeArt: { up: 'cliffTop' } },
+    cliffAbyss: { art: ART.cliff, pal: 'abyss', flags: F.SOLID, family: 'cliff', edgeArt: { up: 'cliffTop' } },
     // Outdoor bombable walls. dWallCracked is the indoor equivalent; these let
     // an overworld region be gated on Bombs, which GAME-PLAN.md asks for and
     // nothing outdoors could express before.
-    cliffCracked: { art: ART.cliffCracked, pal: 'stone', flags: F.SOLID | F.BOMBABLE },
+    // Part of the same mass — a cracked cliff is a cliff — but it keeps its own
+    // art at the top row rather than the lip, because the crack IS the tell and
+    // a lip drawn over it would hide the one thing the player has to see.
+    cliffCracked: { art: ART.cliffCracked, pal: 'stone', flags: F.SOLID | F.BOMBABLE, family: 'cliff' },
     // The two region gates GAME-PLAN.md asks for. The Marsh gate proved the
     // shape — a solid tile with a flag, plus a transform naming what opens it —
     // and these two only add `level`, so the gate can name the MAGIC boomerang
@@ -1290,7 +1305,7 @@ export function installCoreTiles() {
       art: ART.boulder, pal: 'stonedk', flags: F.SOLID | F.ROCK | F.HEAVY,
       underArt: 'rockFloor', liftLevel: 2,
     },
-    cliffCrackedDk: { art: ART.cliffCracked, pal: 'stonedk', flags: F.SOLID | F.BOMBABLE },
+    cliffCrackedDk: { art: ART.cliffCracked, pal: 'stonedk', flags: F.SOLID | F.BOMBABLE, family: 'cliff' },
     // A boulder already split by a fault: bombs open it, and nothing else
     // does. It carries NEITHER F.ROCK nor F.HEAVY on purpose — a boulder you
     // can also lift or also drag is not gated on bombs, it is gated on

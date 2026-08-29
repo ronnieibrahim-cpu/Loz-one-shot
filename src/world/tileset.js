@@ -121,6 +121,15 @@ export function registerTiles(defs) {
       // named here or `registerTiles` would discard it silently, the way it
       // discarded `liftLevel` for the life of the project (see below).
       variants: def.variants || null,
+      // AUTOTILING. `family` groups tiles that are the same MASS — every
+      // palette-swap of a cliff is still cliff, so a `cliffDk` beside a `cliff`
+      // is not an edge. `edgeArt` names the art to draw instead of this tile's
+      // own when the neighbour in that direction is a DIFFERENT family:
+      // `{ up: 'cliffTop' }` puts a lip on the top row of every cliff mass in
+      // the game without a single room grid changing. Draw-time only, like
+      // `variants` — nothing the simulation can see moves.
+      family: def.family || null,
+      edgeArt: def.edgeArt || null,
       // 1 in `variantOdds` cells shows a variant. See `tileVariant` for why
       // this is a SCATTER and not an even mix.
       variantOdds: def.variantOdds || 8,
@@ -299,6 +308,37 @@ export function tileVariant(def, roomKey, tx, ty) {
   return v[hash32('tilepick', roomKey, tx, ty) % v.length];
 }
 
+/**
+ * Which art to draw for a tile whose look depends on its neighbours.
+ *
+ * `neighbourFamily(dir)` is supplied by the caller — `Room` owns the grid, and
+ * a checker may never re-derive a rule the engine already owns (`R4`).
+ *
+ * OUT OF BOUNDS COUNTS AS THE SAME MASS, and this is the decision that makes
+ * the feature usable rather than a disaster. A cliff running along the top row
+ * of a screen continues into the screen above it in every source game, and the
+ * room has no way to see that room's grid — so treating "off the edge" as a
+ * different family would draw a lip along the top of every screen in the game,
+ * on cliff that visibly carries on. The caller returns the tile's own family
+ * for a neighbour it cannot see.
+ *
+ * Only ONE edge wins, in the order the directions are listed. A cliff cell that
+ * is both the top of its mass and the left of it draws the top lip: this game
+ * has no corner pieces (see docs/ART-BACKLOG.md) and picking two edges would
+ * need one.
+ */
+export function tileEdgeArt(def, neighbourFamily) {
+  const e = def.edgeArt;
+  if (!e || !def.family) return null;
+  for (const dir of EDGE_DIRS) {
+    const art = e[dir];
+    if (art && neighbourFamily(dir) !== def.family) return art;
+  }
+  return null;
+}
+
+const EDGE_DIRS = ['up', 'down', 'left', 'right'];
+
 /** True if any tile in the set changes appearance with the tide. */
 export function isTideSensitive(name) {
   return !!getTileDef(name).tide;
@@ -329,6 +369,13 @@ export function validateTiles() {
     // or wet, or a pit, in a pattern nobody authored and no room grid shows —
     // a bug that would render perfectly and be nearly impossible to find from
     // the symptom. So the invariant is asserted here rather than trusted.
+    if (d.edgeArt) {
+      if (!d.family) problems.push(`${name}: edgeArt needs a family to compare against`);
+      for (const [dir, art] of Object.entries(d.edgeArt)) {
+        if (!EDGE_DIRS.includes(dir)) problems.push(`${name}: edgeArt direction '${dir}' is not up/down/left/right`);
+        if (!TILES.has(art) && !ANIM_ART.has(art)) problems.push(`${name}: edgeArt '${art}' has no art`);
+      }
+    }
     if (d.variants) {
       if (d.anim) problems.push(`${name}: animated tiles cannot have variants`);
       if (!(d.variantOdds >= 1)) problems.push(`${name}: variantOdds must be >= 1`);
