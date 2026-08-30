@@ -1,3 +1,101 @@
+## S10 — Cutscenes draw pictures, and Nereth gets an entrance (this session)
+
+**Run per `docs/SESSION-PROMPTS.md` S10, on top of S9.** `cutscene.js` gained
+exactly one drawing step, `nerethIntro` fires for the first time, and two bugs
+that only a screenshot could find were fixed.
+
+### The vocabulary: one step, not two
+
+**`{ show: ... }`** — hold a sprite (or a two-frame cycle) over the scene.
+`{ show: 'name' }` or `{ show: { art, frames, scale, x, y, rise, dim, pal } }`.
+A step may carry both `show` and `text`; it ends when the longer finishes.
+
+**The prompt's first suggestion — a camera pan — was NOT built, deliberately.**
+`Camera.update` pins x/y to 0 when a room is no bigger than the view, and **all
+six boss rooms are exactly 160x128**. The nine rooms in the game a camera can
+move in are all mid-dungeon and none runs a cutscene. A pan step would have had
+zero call sites. See `T81` before reviving it.
+
+Layout is **computed, not hand-tuned**: when a sprite is up the caption drops to
+the bottom and the sprite centres in the band between the HUD and the card. The
+first cut centred the sprite and lost two thirds of it behind the caption
+(`T83`).
+
+Timings are in `feel.js` (`R3`): `CUTSCENE_SHOW_FRAMES` 110f,
+`CUTSCENE_SHOW_ANIM_FRAMES` 10f, `CUTSCENE_SHOW_RISE_PX` 6px, all `guessed`.
+
+### Where it is used
+
+Ten scenes now hold a picture: the six Essence cards and `essenceGeneric` show
+the shard (`p_essence0`/`p_essence1`), the opening shows the conch as Farore
+hands it over, `nerethIntro` holds Nereth in his own `abyss` palette, and the
+ending holds the Bell whole at scale 4.
+
+### `nerethIntro` fires — and `finalBoss` had been unreachable TWICE
+
+The scene had no trigger anywhere in `src/`. It now runs from nereth's
+`onIntro`, at the end of the held entrance pose, guarded by a `heardNereth`
+progress flag so a death and retry does not replay it.
+
+That alone was not enough. **`updateMusic()` recomputes the track from
+`dungeon.bossMusic || 'boss'` the moment a cutscene ends, and NO dungeon had
+ever set `bossMusic`** — a field the engine has always read. So every boss in
+the game fought to the generic `boss` track and `finalBoss` (whose intro S7
+wrote) had never been heard. Fixed both ways:
+
+- d6 sets `bossMusic: 'finalBoss'`.
+- `enemy.js` calls `game.updateMusic()` at the half-way point of the entrance
+  pose instead of naming `'boss'` itself, so one source of truth decides.
+
+`shoot-cutscene.mjs --nereth` asserts `track === 'finalBoss'` both during and
+after the scene.
+
+### The em-dash bug — the best `T53` example in the repo
+
+`decode` ends `GLYPHS[ch] || GLYPHS['?']`, so a character with no glyph prints a
+QUESTION MARK. The em-dash (U+2014) has never had a glyph and appears 13 times,
+so six Essence title cards have read **"I ? the Shallow Bell"** since the day
+they were written, with every assertion passing. Fixed by adding the glyph
+(5px of ink against the hyphen's 3 — they are different marks, and the writing
+was right). `tools/check-text.mjs` (`V23`) now scans every displayable string —
+dialogue, cutscene captions and says, map and room names, item, charm and trade
+names — and fails on any character the font cannot draw. Negative-tested.
+
+### New tools
+
+- **`tools/shoot-cutscene.mjs` (`V24`)** — photographs each scene on a frame
+  where its picture is actually up. It advances by CLOSING dialogue boxes, not
+  by pressing A, because A dismisses a held sprite by design. `--nereth`
+  reaches the throne room and proves the scene fires.
+- **`tools/check-text.mjs` (`V23`)** — above. Wired into `V16`.
+- `cutscene.js` exposes `shownArt()` purely as a seam for the shot tool, the
+  same way `Audio.init` takes a context override. Nothing in the game reads it.
+
+### Verified
+
+`V2` 23/23 · `V4` 19/19 · `V11` replay 51/51 · `V12` bosses 19/19 · `V13`
+playthrough 19/19 · `V16` **80/80** · `V10` music OK · check-text 497 strings /
+17740 chars / 0 missing · build OK. All ten picture scenes shot and looked at.
+
+### What S10 did NOT do
+
+- **Pacing is not assertable** (`§4.2`). The scenes have been photographed, not
+  watched end to end. Hold durations are `guessed`.
+- `speaker:` is still a dead engine field — all 13 scenes inline `"Name: "` into
+  the say text. Left alone: converting them is churn on writing that works.
+- Signs are still literal-only; the S8 water finding still stands.
+
+### Where to stand
+
+`dist/oracle-of-tides.html`. The opening now holds the conch up when Farore
+gives it. Any Essence get shows the shard over a dimmed world with its title
+card beneath. **The one to judge is Nereth**: reach the Abyssal Keep throne
+room and he now speaks before he fights, in his own palette, and the fight runs
+to a theme no player has ever heard. Watch all 13 end to end for pacing — that
+is the half no checker can do.
+
+---
+
 ## S9 — Townspeople react to the plot (this session)
 
 **Run per `docs/SESSION-PROMPTS.md` S9, on top of S8.** Twelve townspeople now

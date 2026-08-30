@@ -209,6 +209,18 @@ const main = async () => {
       r.status === 0, 'see tools/check-audio-render.mjs');
   }
 
+  // A character with no glyph renders as '?', silently — six Essence title
+  // cards read "I ? the Shallow Bell" for the project's whole life.
+  console.log('\n--- displayable text ---');
+  {
+    const { spawnSync } = await import('node:child_process');
+    const r = spawnSync(process.execPath, [new URL('check-text.mjs', import.meta.url).pathname],
+      { encoding: 'utf8' });
+    const out = (r.stdout || '') + (r.stderr || '');
+    for (const line of out.trim().split('\n')) console.log('  ' + line);
+    check('every character the game can display has a glyph', r.status === 0, 'see tools/check-text.mjs');
+  }
+
   // T47: a dialogue id the world asks for and story.js does not define shows
   // the player an EMPTY BOX, silently — and an id nobody references is a line
   // nobody will read. Also proves each two-state townsperson's second line is

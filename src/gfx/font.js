@@ -39,6 +39,13 @@ const GLYPHS = {
   'y': '0000888888780870', 'z': '0000f8102040f800',
   '{': '3040408040403000', '|': '2020202020202000', '}': '6020201020206000',
   '~': '000068b000000000',
+  // An em-dash, wider than the hyphen above it (5px of ink against 3), because
+  // the writing uses both and they are not the same mark. It was missing for
+  // the whole life of the project, and because `decode` falls back to '?' the
+  // symptom was six Essence title cards reading "I ? the Shallow Bell" rather
+  // than a gap or a crash. `tools/check-text.mjs` now fails on any character
+  // the game can display and the font cannot draw.
+  '\u2014': '000000f800000000',
   // control glyphs
   '\x02': '0000f87020000000',   // down arrow: "press A to continue"
   '\x03': '2070f8f870200000',   // rupee
@@ -50,6 +57,20 @@ const GLYPHS = {
 const SPACE_ADVANCE = 4;
 
 const decoded = new Map();   // char -> { rows:Uint8Array(8), w:number }
+
+/**
+ * Does this character have a glyph, or will it silently render as '?'.
+ *
+ * `decode` falls back to `GLYPHS['?']` for anything it does not know, which
+ * means a character with no glyph does not crash, does not warn, and does not
+ * leave a gap — it prints a question mark that reads as authored punctuation.
+ * Six Essence title cards said "I ? the Shallow Bell" for the whole life of
+ * the project because the em-dash in them has never had a glyph.
+ *
+ * Exported so `tools/check-text.mjs` can ask this table rather than keeping a
+ * second copy of the alphabet.
+ */
+export function hasGlyph(ch) { return Object.prototype.hasOwnProperty.call(GLYPHS, ch); }
 
 function decode(ch) {
   let d = decoded.get(ch);

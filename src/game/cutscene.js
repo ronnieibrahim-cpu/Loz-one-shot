@@ -20,12 +20,33 @@
 //   { flag: 'sawIntro' }                     set a progress flag
 //   { give: { item: 'sword', level: 1 } }
 //   { text: 'Big centred caption', frames: 120 }
+//   { show: 'p_essence0' }                   hold a sprite up on screen
+//   { show: { art: ['p_essence0','p_essence1'], frames: 150, scale: 3,
+//             rise: true, dim: false, pal: 'tide' } }
+//
+// `show` is the one drawing step, and it is the only one this file has ever
+// had beyond a caption box. It holds a sprite (or a two-frame cycle) over the
+// scene for `frames`, optionally drifting upward as it goes. A step may carry
+// BOTH `show` and `text` — the six Essence scenes all want the orb and its
+// title card at the same time — and the step ends when the longer of the two
+// is done.
+//
+// THERE IS DELIBERATELY NO CAMERA-PAN STEP. It was the obvious second thing to
+// add and it would have been dead code: every room a cutscene plays in is
+// exactly one screen (all six boss rooms are 160x128), and `Camera.update`
+// pins x and y to 0 when the room is not bigger than the view. The nine rooms
+// in the game a camera CAN move in are all mid-dungeon and none of them runs a
+// cutscene. Do not add one without first checking that number has changed.
 //   { do(game, data) {} }                    arbitrary hook
 //
 // Steps that need to wait return control until their condition clears.
 
 import { SCREEN_W, SCREEN_H, HUD_H } from '../core/screen.js';
 import { drawTextCentered, wrapText } from '../gfx/font.js';
+import { sprites } from '../gfx/art.js';
+import {
+  CUTSCENE_SHOW_FRAMES, CUTSCENE_SHOW_ANIM_FRAMES, CUTSCENE_SHOW_RISE_PX,
+} from '../data/feel.js';
 import { spawnEntity } from './entity.js';
 import { giveItem, setFlag } from './progress.js';
 import { DIR_VEC } from './entity.js';
@@ -44,6 +65,7 @@ export function runCutscene(game, steps, data = {}) {
   let waiting = 0;
   let walking = null;
   let caption = null;
+  let shown = null;
   let waitingDialogue = false;
 
   function begin(step) {
@@ -69,6 +91,16 @@ export function runCutscene(game, steps, data = {}) {
     if (step.tide != null) game.tide.setLevel(step.tide);
     if (step.do) step.do(game, data);
     if (step.text) { caption = { text: step.text, t: step.frames || 120 }; }
+    if (step.show) {
+      const o = typeof step.show === 'string' ? { art: step.show } : step.show;
+      const art = Array.isArray(o.art) ? o.art : [o.art];
+      const total = o.frames || step.frames || CUTSCENE_SHOW_FRAMES;
+      shown = {
+        art, pal: o.pal || null, scale: Math.max(1, o.scale || 1),
+        x: o.x, y: o.y, rise: o.rise !== false, dim: o.dim !== false,
+        total, t: total,
+      };
+    }
     if (step.fade) {
       if (step.fade === 'out') game.fadeOut(null, !!step.white);
       else game.fadeIn();
@@ -87,6 +119,7 @@ export function runCutscene(game, steps, data = {}) {
     if (waiting > 0) return false;
     if (walking) return false;
     if (caption && caption.t > 0) return false;
+    if (shown && shown.t > 0) return false;
     if (step.fade && game.fadeDir) return false;
     if (step.tide != null && game.tide.busy) return false;
     return true;
@@ -95,6 +128,13 @@ export function runCutscene(game, steps, data = {}) {
   let started = false;
 
   return {
+    /** What the scene is currently holding up, or null. A seam for
+     *  `tools/shoot-cutscene.mjs`: a shot of a `show` step has to be taken on
+     *  a frame where the sprite is actually up, and pressing A to advance
+     *  there would skip the very thing being photographed. Same reason
+     *  `Audio.init` takes a context override. Nothing in the game reads it. */
+    shownArt() { return shown && shown.t > 0 ? shown.art[0] : null; },
+
     update() {
       if (!started) { started = true; if (steps.length) begin(steps[0]); }
 
@@ -102,8 +142,10 @@ export function runCutscene(game, steps, data = {}) {
       // by collapsing every wait. Side effects still run, so nothing is lost.
       const i2 = game.input;
       if (caption && caption.t > 0 && (i2.pressed('a') || i2.pressed('b'))) caption.t = 0;
+      if (shown && shown.t > 0 && (i2.pressed('a') || i2.pressed('b'))) shown.t = 0;
       if (i2.pressed('start')) {
         waiting = 0;
+        if (shown) shown.t = 0;
         if (caption) caption.t = 0;
         if (walking) walking.t = 0;
         if (waitingDialogue) game.dialogue.close();
@@ -111,6 +153,7 @@ export function runCutscene(game, steps, data = {}) {
 
       if (waiting > 0) waiting--;
       if (caption && caption.t > 0) caption.t--;
+      if (shown && shown.t > 0) shown.t--;
       if (walking) {
         const p = game.player;
         if (p) {
@@ -133,13 +176,58 @@ export function runCutscene(game, steps, data = {}) {
     },
 
     draw(ctx) {
-      if (caption && caption.t > 0) {
-        const lines = wrapText(caption.text, SCREEN_W - 20);
-        const h = lines.length * 10 + 8;
-        const y = Math.round((SCREEN_H - h) / 2);
+      // PICTURE ON TOP, CARD BENEATH IT — and the layout is computed, not
+      // hand-tuned per scene. A centred caption box sits across the middle of
+      // the screen, so the first cut of this drew the Essence orb straight
+      // behind it and two thirds of the sprite were never visible. Nothing
+      // asserted otherwise; it took a screenshot to see (`T53`).
+      //
+      // So when a scene holds a sprite AND a caption at once, the caption
+      // drops to the bottom and the sprite centres in whatever room is left
+      // between the HUD and the top of the card. A scene may still pass an
+      // explicit x/y, but none of them needs to.
+      const capLines = (caption && caption.t > 0) ? wrapText(caption.text, SCREEN_W - 20) : null;
+      const capH = capLines ? capLines.length * 10 + 8 : 0;
+      const showing = shown && shown.t > 0;
+      const capY = capLines
+        ? Math.round(showing ? SCREEN_H - capH - 16 : (SCREEN_H - capH) / 2)
+        : 0;
+
+      if (showing) {
+        // Dim the world behind a held picture, unless the scene says not to.
+        // The caption box has always drawn its own scrim for exactly this
+        // reason; a sprite held over open terrain without one competes with
+        // every tuft of grass behind it and loses. Same alpha as the card, so
+        // the two read as one presentation rather than two overlays.
+        if (shown.dim) {
+          ctx.fillStyle = 'rgba(8,12,16,0.62)';
+          ctx.fillRect(0, HUD_H, SCREEN_W, SCREEN_H - HUD_H);
+        }
+        const elapsed = shown.total - shown.t;
+        const name = shown.art[Math.floor(elapsed / CUTSCENE_SHOW_ANIM_FRAMES) % shown.art.length];
+        const c = sprites.bake(name, shown.pal);
+        if (c) {
+          const w = c.width * shown.scale, h = c.height * shown.scale;
+          const drift = shown.rise
+            ? Math.round(CUTSCENE_SHOW_RISE_PX * (elapsed / Math.max(1, shown.total)))
+            : 0;
+          // The band the picture gets: below the HUD, above the card.
+          const top = HUD_H, bottom = capLines ? capY : SCREEN_H;
+          const x = Math.round(shown.x != null ? shown.x : (SCREEN_W - w) / 2);
+          const y = Math.round((shown.y != null ? shown.y : top + (bottom - top - h) / 2) - drift);
+          // Integer-scaled blit with smoothing off. `T23` is about PATHS being
+          // anti-aliased; a nearest-neighbour drawImage at an integer scale
+          // stays hard-edged, and the scale is forced to an integer above.
+          const prev = ctx.imageSmoothingEnabled;
+          ctx.imageSmoothingEnabled = false;
+          ctx.drawImage(c, x, y, w, h);
+          ctx.imageSmoothingEnabled = prev;
+        }
+      }
+      if (capLines) {
         ctx.fillStyle = 'rgba(8,12,16,0.78)';
-        ctx.fillRect(0, y, SCREEN_W, h);
-        lines.forEach((l, n) => drawTextCentered(ctx, l, SCREEN_W / 2, y + 4 + n * 10, '#f8f8e8'));
+        ctx.fillRect(0, capY, SCREEN_W, capH);
+        capLines.forEach((l, n) => drawTextCentered(ctx, l, SCREEN_W / 2, capY + 4 + n * 10, '#f8f8e8'));
       }
     },
   };

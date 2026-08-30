@@ -730,6 +730,12 @@ export function installDungeonsB() {
       item: 'dredge', itemLevel: 1,
       essence: 6,
       boss: 'nereth',
+      // The Drowned King gets his own theme. `updateMusic` has always read a
+      // per-dungeon `bossMusic` and NO dungeon has ever set one, so every boss
+      // in the game — Nereth included — fought to the generic `boss` track and
+      // `finalBoss` was played by nothing. (It was unreachable twice over: the
+      // `nerethIntro` cutscene that ends on it had no trigger either.)
+      bossMusic: 'finalBoss',
       bossRoom: '1,3,1',
       startRoom: '3,7',
       entrance: { map: 'overworld', floor: 0, rx: 1, ry: 0, px: 64, py: 32 },

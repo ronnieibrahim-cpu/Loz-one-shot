@@ -48,6 +48,7 @@ import {
   driftWithTide,
 } from '../game/enemy.js';
 import { spawnEntity, moveEntity } from '../game/entity.js';
+import { flag, setFlag } from '../game/progress.js';
 // Shake weights are timing/feel constants and belong in feel.js (R3). They were
 // fourteen bare literals in this file, which meant the six named constants next
 // door described the shake of everything in the game EXCEPT the bosses.
@@ -787,7 +788,28 @@ export function installBosses() {
     hurtFrame: 'boss_nereth_hurt',
     intro: 120, shell: true, terrain: 'any', drops: 'none',
     init(e) { e._open = 0; e._sweep = 0; },
-    onIntro(e, g) { unlockTide(g); },
+    // NERETH SPEAKS BEFORE HE FIGHTS. `nerethIntro` was written into story.js
+    // and had no trigger anywhere in `src/` — it had never once played, and
+    // because its LAST step is `{ music: 'finalBoss' }`, and nothing else in
+    // the game plays that track, the final boss theme had never been heard
+    // either. Both were reachable only from here.
+    //
+    // It fires at the END of the held intro pose, which is where a boss's
+    // first line belongs: the room has had its beat of him standing there,
+    // then he talks, then the tide unlocks and the fight is on. Firing it any
+    // earlier would talk over the entrance; any later and it interrupts a
+    // fight already in progress.
+    //
+    // Guarded by a flag so a death and retry does not replay the speech —
+    // `once` is set on the boss instance, which a respawn rebuilds, so the
+    // progress flag is what actually holds across a game over.
+    onIntro(e, g) {
+      if (!flag(g.progress, 'heardNereth')) {
+        setFlag(g.progress, 'heardNereth');
+        g.startCutscene('nerethIntro');
+      }
+      unlockTide(g);
+    },
     onPhase(e, g, i) {
       g.shake(SHAKE_BOSS_SLAM, SHAKE_BOSS_SLAM_FRAMES);
       // The sea he is pinning goes out and takes his servants with it. See

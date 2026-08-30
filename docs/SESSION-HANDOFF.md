@@ -16,7 +16,8 @@ retired one.**
 Last verified against the tree: **2026-08-30**; `A5`, `§3` and `§4.1`
 re-verified by S7 (music: intros, loop length, the S6 techniques in use), then
 by S8 (the overworld map becomes a picture; `A3`, `§3`, `§4.1`), then by S9
-(townspeople react; `A6`, `§3`, `§4.1`).
+(townspeople react; `A6`, `§3`, `§4.1`), then by S10 (cutscenes draw; `A7`,
+`§3`, `§4.1`).
 Previously **2026-08-29**, commit `64a6561`; `§1`, `A5` and
 `§3`/`§4.1` re-verified by S6 (music engine: vibrato, echo, arpeggio).
 Previously re-verified against `0d435fc`; `§1`, `A1` and
@@ -405,6 +406,20 @@ exposition. A new line that explains the plot is wrong for this game.
 
 ### A7 — Cutscenes
 
+**S10 IS DONE.** `cutscene.js` gained ONE drawing step, `show` (hold a sprite,
+optionally a two-frame cycle, over the scene), and `nerethIntro` fires. **The
+prompt's suggested camera-pan step was NOT built and must not be** — see `T81`.
+Two bugs surfaced that only a screenshot could find: the em-dash had no glyph
+(`T82`) and the first cut drew the sprite behind the caption box.
+
+**`finalBoss` had never been heard, for two independent reasons.** Its only
+player is the last step of `nerethIntro`, which had no trigger; and even once
+fired, `updateMusic()` overrides the track from `dungeon.bossMusic || 'boss'`
+the moment the scene ends — and **no dungeon has ever set `bossMusic`**, so
+every boss in the game fought to the generic track. d6 now sets it, and
+`enemy.js` calls `game.updateMusic()` instead of naming `'boss'` itself.
+
+**The old text, still true of the step vocabulary it describes:**
 `src/game/cutscene.js` is **146 lines** with a rich step vocabulary — `music`,
 `jingle`, `sfx`, `flag`, `shake`, `face`, `give`, `spawn`, `despawn`, `warp`,
 `tide`, `do`, `text`, `fade`, `say`, `wait`, `walk` — and **not one step that
@@ -824,6 +839,29 @@ by number.
   has a separate `conditional()` test for this and `check-dialogue.mjs` fails on
   it, along with a threshold above the six Essences that exist.
 
+- **T81 — A CAMERA PAN STEP IN A CUTSCENE WOULD BE DEAD CODE. Do not build
+  one.** `Camera.update` pins x and y to 0 when the room is no bigger than the
+  view, and **all six boss rooms are exactly 160x128**. The nine rooms in the
+  entire game a camera can move in (`d1/0,5,3`, `d2/1,4,2`, `d2/1,3,2`,
+  `d3/0,4,2`, `d4/0,4,4`, `d4/0,5,3`, `d5/0,4,2`, `d6/1,4,5`, `d6/1,4,2`) are
+  all mid-dungeon and none of them runs a cutscene. S10's prompt listed a pan
+  as the FIRST step to add; it was dropped after counting, which is the whole
+  reason that prompt also says to read the scenes before designing the
+  vocabulary. Re-check the number before reviving the idea.
+- **T82 — A CHARACTER WITH NO GLYPH RENDERS AS '?', SILENTLY.** `decode` in
+  `src/gfx/font.js` ends `GLYPHS[ch] || GLYPHS['?']`. No crash, no warning, no
+  gap — a question mark, which reads as authored punctuation and is invisible
+  in a diff and in a grep. The em-dash (U+2014) had no glyph and appears 13
+  times, so six Essence title cards read **"I ? the Shallow Bell"** for the
+  project's whole life. `check-text.mjs` (`V23`) now fails on any displayable
+  character the font cannot draw. **If you add a font, add the checker's new
+  text source with it.**
+- **T83 — The caption box is centred, so a picture drawn at the centre is
+  behind it.** The first cut of the `show` step lost two thirds of every
+  Essence orb this way and the tool still reported success, because the sprite
+  WAS being drawn. Layout is now computed — caption drops to the bottom
+  whenever a sprite is up, and the sprite centres in the band that leaves.
+
 ### Harness and process
 
 - **T51 — LIVE BUG: the ledge-hop prober can drop the player.**
@@ -991,6 +1029,8 @@ are faster than you are and they do not rationalise.
 | V7 | `node tools/check-towns.mjs` | Every town screen's ways in and doors reach each other **on foot** at all three tides |
 | V8 | `node tools/check-items.mjs` | Every item does the verb `docs/ITEMS.md` claims; nothing hands out a nonexistent item |
 | V9 | `node tools/check-hearts.mjs` | Heart economy and the contact-damage ladder |
+| V23 | `node tools/check-text.mjs` | Every character the game can display has a glyph (`T82` — a miss is a silent '?'). Wired into `V16` |
+| V24 | `node tools/shoot-cutscene.mjs` | Photographs each cutscene on a frame where its picture is actually up; `--nereth` reaches the throne room and proves `nerethIntro` fires and hands over to `finalBoss` |
 | V22 | `node tools/check-dialogue.mjs` | Every dialogue id is both written and referenced (`T47` — a miss is a silent EMPTY BOX), and every two-state townsperson's second line is proved reachable by driving the real `NPC.interact` either side of its threshold. Wired into `V16` |
 | V19 | `node tools/check-sfx.mjs` | Every sfx name reachable from a call site or a data table is defined (`T45`), and nothing is defined and never played. Wired into `V16` |
 | V10 | `node tools/check-music.mjs` | Track orders, note ranges per channel including vibrato's swung extreme and every note of a '+' arpeggio chord, noise = percussion only. Since S7 also: a track's `intro` is a real, non-empty, loop-disjoint pattern list absent from jingles; no pattern is defined and never played; and — by DRIVING `Audio._scheduleRow` for two loops — the engine actually spends the lead-in exactly once (`T72`) |

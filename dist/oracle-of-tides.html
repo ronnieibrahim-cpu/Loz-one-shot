@@ -1729,6 +1729,31 @@ const CHARM_HIGH_ESSENCES = 4;
 const CHARM_CASE_ESSENCES = 6;
 
 // ---------------------------------------------------------------------------
+// Cutscenes — the `show` step (S10)
+//
+// A cutscene can now hold a sprite up on screen. These are its timings. There
+// is deliberately no camera-pan constant here: every room a cutscene plays in
+// is exactly one screen (all six boss rooms are 160x128), so `Camera.update`
+// pins x/y to 0 and a pan step would be a no-op everywhere it was used. See
+// S10's notes in docs/NEXT-SESSION.md.
+
+/** f — how long a shown sprite is held when the step does not say. guessed;
+ *  long enough to read as a beat rather than a flash, short enough that a
+ *  player who has seen it five times is not waiting on it. */
+const CUTSCENE_SHOW_FRAMES = 110;
+
+/** f — frames per frame of a shown sprite's two-frame cycle. guessed; this is
+ *  the same cadence the world's own two-frame idles run at, so an Essence held
+ *  up in a cutscene pulses at the rate it pulses at on the floor. */
+const CUTSCENE_SHOW_ANIM_FRAMES = 10;
+
+/** px — how far a shown sprite drifts upward across its whole hold. guessed.
+ *  The drift is what makes it read as presented rather than pasted; it is
+ *  small on purpose, and it is integer-stepped like everything else that
+ *  moves. */
+const CUTSCENE_SHOW_RISE_PX = 6;
+
+// ---------------------------------------------------------------------------
 // Music engine — vibrato and arpeggio (S6)
 // ---------------------------------------------------------------------------
 //
@@ -1991,6 +2016,9 @@ __exports["WRECK_GLIMMER_ALPHA"] = WRECK_GLIMMER_ALPHA;
 __exports["CHARM_LOW_ESSENCES"] = CHARM_LOW_ESSENCES;
 __exports["CHARM_HIGH_ESSENCES"] = CHARM_HIGH_ESSENCES;
 __exports["CHARM_CASE_ESSENCES"] = CHARM_CASE_ESSENCES;
+__exports["CUTSCENE_SHOW_FRAMES"] = CUTSCENE_SHOW_FRAMES;
+__exports["CUTSCENE_SHOW_ANIM_FRAMES"] = CUTSCENE_SHOW_ANIM_FRAMES;
+__exports["CUTSCENE_SHOW_RISE_PX"] = CUTSCENE_SHOW_RISE_PX;
 __exports["VIBRATO_DELAY_FRAMES"] = VIBRATO_DELAY_FRAMES;
 __exports["VIBRATO_STEP_FRAMES"] = VIBRATO_STEP_FRAMES;
 __exports["VIBRATO_DEPTH_SEMITONES"] = VIBRATO_DEPTH_SEMITONES;
@@ -3082,6 +3110,13 @@ const GLYPHS = {
   'y': '0000888888780870', 'z': '0000f8102040f800',
   '{': '3040408040403000', '|': '2020202020202000', '}': '6020201020206000',
   '~': '000068b000000000',
+  // An em-dash, wider than the hyphen above it (5px of ink against 3), because
+  // the writing uses both and they are not the same mark. It was missing for
+  // the whole life of the project, and because `decode` falls back to '?' the
+  // symptom was six Essence title cards reading "I ? the Shallow Bell" rather
+  // than a gap or a crash. `tools/check-text.mjs` now fails on any character
+  // the game can display and the font cannot draw.
+  '\u2014': '000000f800000000',
   // control glyphs
   '\x02': '0000f87020000000',   // down arrow: "press A to continue"
   '\x03': '2070f8f870200000',   // rupee
@@ -3093,6 +3128,20 @@ const GLYPHS = {
 const SPACE_ADVANCE = 4;
 
 const decoded = new Map();   // char -> { rows:Uint8Array(8), w:number }
+
+/**
+ * Does this character have a glyph, or will it silently render as '?'.
+ *
+ * `decode` falls back to `GLYPHS['?']` for anything it does not know, which
+ * means a character with no glyph does not crash, does not warn, and does not
+ * leave a gap — it prints a question mark that reads as authored punctuation.
+ * Six Essence title cards said "I ? the Shallow Bell" for the whole life of
+ * the project because the em-dash in them has never had a glyph.
+ *
+ * Exported so `tools/check-text.mjs` can ask this table rather than keeping a
+ * second copy of the alphabet.
+ */
+function hasGlyph(ch) { return Object.prototype.hasOwnProperty.call(GLYPHS, ch); }
 
 function decode(ch) {
   let d = decoded.get(ch);
@@ -3200,6 +3249,7 @@ function paginate(s, maxW, linesPerPage) {
   }
   return pages.length ? pages : [['']];
 }
+__exports["hasGlyph"] = hasGlyph;
 __exports["charWidth"] = charWidth;
 __exports["textWidth"] = textWidth;
 __exports["drawText"] = drawText;
@@ -12126,12 +12176,31 @@ __define("game/cutscene.js", function (__exports, __require) {
 //   { flag: 'sawIntro' }                     set a progress flag
 //   { give: { item: 'sword', level: 1 } }
 //   { text: 'Big centred caption', frames: 120 }
+//   { show: 'p_essence0' }                   hold a sprite up on screen
+//   { show: { art: ['p_essence0','p_essence1'], frames: 150, scale: 3,
+//             rise: true, dim: false, pal: 'tide' } }
+//
+// `show` is the one drawing step, and it is the only one this file has ever
+// had beyond a caption box. It holds a sprite (or a two-frame cycle) over the
+// scene for `frames`, optionally drifting upward as it goes. A step may carry
+// BOTH `show` and `text` — the six Essence scenes all want the orb and its
+// title card at the same time — and the step ends when the longer of the two
+// is done.
+//
+// THERE IS DELIBERATELY NO CAMERA-PAN STEP. It was the obvious second thing to
+// add and it would have been dead code: every room a cutscene plays in is
+// exactly one screen (all six boss rooms are 160x128), and `Camera.update`
+// pins x and y to 0 when the room is not bigger than the view. The nine rooms
+// in the game a camera CAN move in are all mid-dungeon and none of them runs a
+// cutscene. Do not add one without first checking that number has changed.
 //   { do(game, data) {} }                    arbitrary hook
 //
 // Steps that need to wait return control until their condition clears.
 
 const { SCREEN_W, SCREEN_H, HUD_H } = __require("core/screen.js");
 const { drawTextCentered, wrapText } = __require("gfx/font.js");
+const { sprites } = __require("gfx/art.js");
+const { CUTSCENE_SHOW_FRAMES, CUTSCENE_SHOW_ANIM_FRAMES, CUTSCENE_SHOW_RISE_PX } = __require("data/feel.js");
 const { spawnEntity } = __require("game/entity.js");
 const { giveItem, setFlag } = __require("game/progress.js");
 const { DIR_VEC } = __require("game/entity.js");
@@ -12150,6 +12219,7 @@ function runCutscene(game, steps, data = {}) {
   let waiting = 0;
   let walking = null;
   let caption = null;
+  let shown = null;
   let waitingDialogue = false;
 
   function begin(step) {
@@ -12175,6 +12245,16 @@ function runCutscene(game, steps, data = {}) {
     if (step.tide != null) game.tide.setLevel(step.tide);
     if (step.do) step.do(game, data);
     if (step.text) { caption = { text: step.text, t: step.frames || 120 }; }
+    if (step.show) {
+      const o = typeof step.show === 'string' ? { art: step.show } : step.show;
+      const art = Array.isArray(o.art) ? o.art : [o.art];
+      const total = o.frames || step.frames || CUTSCENE_SHOW_FRAMES;
+      shown = {
+        art, pal: o.pal || null, scale: Math.max(1, o.scale || 1),
+        x: o.x, y: o.y, rise: o.rise !== false, dim: o.dim !== false,
+        total, t: total,
+      };
+    }
     if (step.fade) {
       if (step.fade === 'out') game.fadeOut(null, !!step.white);
       else game.fadeIn();
@@ -12193,6 +12273,7 @@ function runCutscene(game, steps, data = {}) {
     if (waiting > 0) return false;
     if (walking) return false;
     if (caption && caption.t > 0) return false;
+    if (shown && shown.t > 0) return false;
     if (step.fade && game.fadeDir) return false;
     if (step.tide != null && game.tide.busy) return false;
     return true;
@@ -12201,6 +12282,13 @@ function runCutscene(game, steps, data = {}) {
   let started = false;
 
   return {
+    /** What the scene is currently holding up, or null. A seam for
+     *  `tools/shoot-cutscene.mjs`: a shot of a `show` step has to be taken on
+     *  a frame where the sprite is actually up, and pressing A to advance
+     *  there would skip the very thing being photographed. Same reason
+     *  `Audio.init` takes a context override. Nothing in the game reads it. */
+    shownArt() { return shown && shown.t > 0 ? shown.art[0] : null; },
+
     update() {
       if (!started) { started = true; if (steps.length) begin(steps[0]); }
 
@@ -12208,8 +12296,10 @@ function runCutscene(game, steps, data = {}) {
       // by collapsing every wait. Side effects still run, so nothing is lost.
       const i2 = game.input;
       if (caption && caption.t > 0 && (i2.pressed('a') || i2.pressed('b'))) caption.t = 0;
+      if (shown && shown.t > 0 && (i2.pressed('a') || i2.pressed('b'))) shown.t = 0;
       if (i2.pressed('start')) {
         waiting = 0;
+        if (shown) shown.t = 0;
         if (caption) caption.t = 0;
         if (walking) walking.t = 0;
         if (waitingDialogue) game.dialogue.close();
@@ -12217,6 +12307,7 @@ function runCutscene(game, steps, data = {}) {
 
       if (waiting > 0) waiting--;
       if (caption && caption.t > 0) caption.t--;
+      if (shown && shown.t > 0) shown.t--;
       if (walking) {
         const p = game.player;
         if (p) {
@@ -12239,13 +12330,58 @@ function runCutscene(game, steps, data = {}) {
     },
 
     draw(ctx) {
-      if (caption && caption.t > 0) {
-        const lines = wrapText(caption.text, SCREEN_W - 20);
-        const h = lines.length * 10 + 8;
-        const y = Math.round((SCREEN_H - h) / 2);
+      // PICTURE ON TOP, CARD BENEATH IT — and the layout is computed, not
+      // hand-tuned per scene. A centred caption box sits across the middle of
+      // the screen, so the first cut of this drew the Essence orb straight
+      // behind it and two thirds of the sprite were never visible. Nothing
+      // asserted otherwise; it took a screenshot to see (`T53`).
+      //
+      // So when a scene holds a sprite AND a caption at once, the caption
+      // drops to the bottom and the sprite centres in whatever room is left
+      // between the HUD and the top of the card. A scene may still pass an
+      // explicit x/y, but none of them needs to.
+      const capLines = (caption && caption.t > 0) ? wrapText(caption.text, SCREEN_W - 20) : null;
+      const capH = capLines ? capLines.length * 10 + 8 : 0;
+      const showing = shown && shown.t > 0;
+      const capY = capLines
+        ? Math.round(showing ? SCREEN_H - capH - 16 : (SCREEN_H - capH) / 2)
+        : 0;
+
+      if (showing) {
+        // Dim the world behind a held picture, unless the scene says not to.
+        // The caption box has always drawn its own scrim for exactly this
+        // reason; a sprite held over open terrain without one competes with
+        // every tuft of grass behind it and loses. Same alpha as the card, so
+        // the two read as one presentation rather than two overlays.
+        if (shown.dim) {
+          ctx.fillStyle = 'rgba(8,12,16,0.62)';
+          ctx.fillRect(0, HUD_H, SCREEN_W, SCREEN_H - HUD_H);
+        }
+        const elapsed = shown.total - shown.t;
+        const name = shown.art[Math.floor(elapsed / CUTSCENE_SHOW_ANIM_FRAMES) % shown.art.length];
+        const c = sprites.bake(name, shown.pal);
+        if (c) {
+          const w = c.width * shown.scale, h = c.height * shown.scale;
+          const drift = shown.rise
+            ? Math.round(CUTSCENE_SHOW_RISE_PX * (elapsed / Math.max(1, shown.total)))
+            : 0;
+          // The band the picture gets: below the HUD, above the card.
+          const top = HUD_H, bottom = capLines ? capY : SCREEN_H;
+          const x = Math.round(shown.x != null ? shown.x : (SCREEN_W - w) / 2);
+          const y = Math.round((shown.y != null ? shown.y : top + (bottom - top - h) / 2) - drift);
+          // Integer-scaled blit with smoothing off. `T23` is about PATHS being
+          // anti-aliased; a nearest-neighbour drawImage at an integer scale
+          // stays hard-edged, and the scale is forced to an integer above.
+          const prev = ctx.imageSmoothingEnabled;
+          ctx.imageSmoothingEnabled = false;
+          ctx.drawImage(c, x, y, w, h);
+          ctx.imageSmoothingEnabled = prev;
+        }
+      }
+      if (capLines) {
         ctx.fillStyle = 'rgba(8,12,16,0.78)';
-        ctx.fillRect(0, y, SCREEN_W, h);
-        lines.forEach((l, n) => drawTextCentered(ctx, l, SCREEN_W / 2, y + 4 + n * 10, '#f8f8e8'));
+        ctx.fillRect(0, capY, SCREEN_W, capH);
+        capLines.forEach((l, n) => drawTextCentered(ctx, l, SCREEN_W / 2, capY + 4 + n * 10, '#f8f8e8'));
       }
     },
   };
@@ -20841,7 +20977,12 @@ class Boss extends Enemy {
     if (this.intro > 0) {
       this.intro--;
       if (this.intro === 0 && this.spec.onIntro) this.spec.onIntro(this, game);
-      if (this.intro === Math.floor((this.spec.intro || BOSS_INTRO_FRAMES) / 2)) game.audio.play('boss');
+      // Ask the game which track this fight wants rather than naming one:
+      // `updateMusic` reads the dungeon's own `bossMusic` and falls back to
+      // 'boss'. Hardcoding 'boss' here meant a dungeon that named its own boss
+      // theme still got the generic one for the whole entrance pose, and then
+      // switched — audibly — the moment anything else called updateMusic.
+      if (this.intro === Math.floor((this.spec.intro || BOSS_INTRO_FRAMES) / 2)) game.updateMusic();
       return;
     }
 
@@ -21940,6 +22081,7 @@ __define("data/bosses.js", function (__exports, __require) {
 const { defineBoss } = __require("game/enemy.js");
 const { wander, chase, patrol, bounceDiag, charge, orbit, submerge, shoot, shootRing, every, timer, aligned, facePlayer, distToPlayer, moveDir, driftWithTide } = __require("game/enemy.js");
 const { spawnEntity, moveEntity } = __require("game/entity.js");
+const { flag, setFlag } = __require("game/progress.js");
 // Shake weights are timing/feel constants and belong in feel.js (R3). They were
 // fourteen bare literals in this file, which meant the six named constants next
 // door described the shake of everything in the game EXCEPT the bosses.
@@ -22672,7 +22814,28 @@ function installBosses() {
     hurtFrame: 'boss_nereth_hurt',
     intro: 120, shell: true, terrain: 'any', drops: 'none',
     init(e) { e._open = 0; e._sweep = 0; },
-    onIntro(e, g) { unlockTide(g); },
+    // NERETH SPEAKS BEFORE HE FIGHTS. `nerethIntro` was written into story.js
+    // and had no trigger anywhere in `src/` — it had never once played, and
+    // because its LAST step is `{ music: 'finalBoss' }`, and nothing else in
+    // the game plays that track, the final boss theme had never been heard
+    // either. Both were reachable only from here.
+    //
+    // It fires at the END of the held intro pose, which is where a boss's
+    // first line belongs: the room has had its beat of him standing there,
+    // then he talks, then the tide unlocks and the fight is on. Firing it any
+    // earlier would talk over the entrance; any later and it interrupts a
+    // fight already in progress.
+    //
+    // Guarded by a flag so a death and retry does not replay the speech —
+    // `once` is set on the boss instance, which a respawn rebuilds, so the
+    // progress flag is what actually holds across a game over.
+    onIntro(e, g) {
+      if (!flag(g.progress, 'heardNereth')) {
+        setFlag(g.progress, 'heardNereth');
+        g.startCutscene('nerethIntro');
+      }
+      unlockTide(g);
+    },
     onPhase(e, g, i) {
       g.shake(SHAKE_BOSS_SLAM, SHAKE_BOSS_SLAM_FRAMES);
       // The sea he is pinning goes out and takes his servants with it. See
@@ -26540,6 +26703,12 @@ function installDungeonsB() {
       item: 'dredge', itemLevel: 1,
       essence: 6,
       boss: 'nereth',
+      // The Drowned King gets his own theme. `updateMusic` has always read a
+      // per-dungeon `bossMusic` and NO dungeon has ever set one, so every boss
+      // in the game — Nereth included — fought to the generic `boss` track and
+      // `finalBoss` was played by nothing. (It was unreachable twice over: the
+      // `nerethIntro` cutscene that ends on it had no trigger either.)
+      bossMusic: 'finalBoss',
       bossRoom: '1,3,1',
       startRoom: '3,7',
       entrance: { map: 'overworld', floor: 0, rx: 1, ry: 0, px: 64, py: 32 },
@@ -27408,6 +27577,7 @@ const CUTSCENES = {
     { say: 'Farore: Nereth the Drowned King has broken the Tide Bell into six Essences and scattered them through the drowned places of this land.' },
     { say: 'Farore: Without the Bell the sea rises and falls at his whim. Take this. It is a shard of the Bell itself.' },
     { give: { item: 'conch', level: 1 }, jingle: 'fanfare' },
+    { show: { art: 'title_conch', scale: 2 }, frames: 130 },
     { say: 'Farore: The Moon Conch. Sound it and the tide will answer: LOW, then MID, then HIGH, and around again.' },
     { say: 'Farore: You will need a blade too. There is one in the village chest, and the village will be glad to be rid of it.' },
     { give: { item: 'sword', level: 1 } },
@@ -27419,7 +27589,8 @@ const CUTSCENES = {
   // Fallback for any essence index without its own scene.
   essenceGeneric: [
     { music: null },
-    { text: 'An Essence of the Tide joins the Bell.', frames: 160 },
+    { show: { art: ['p_essence0', 'p_essence1'], scale: 3 },
+      text: 'An Essence of the Tide joins the Bell.', frames: 160 },
     { say: 'The water in your ears goes quiet for a moment. One more piece of the Bell remembers its shape.' },
     { music: 'overworld' },
   ],
@@ -27427,7 +27598,7 @@ const CUTSCENES = {
   // ---- one scene per Essence, each moving the story on --------------------
   essence1: [
     { music: null },
-    { text: 'Essence of the Tide\nI — the Shallow Bell', frames: 150 },
+    { show: { art: ['p_essence0', 'p_essence1'], scale: 3 }, text: 'Essence of the Tide\nI — the Shallow Bell', frames: 150 },
     { say: 'The shard settles against the conch and the two of them hum at each other like old friends.' },
     { say: 'Somewhere inland, a tree that has been asleep for a hundred years opens one eye.' },
     { say: 'Farore: One. Go and see the Maku Tree — it will have felt that, and it will want to give you something.' },
@@ -27435,7 +27606,7 @@ const CUTSCENES = {
   ],
   essence2: [
     { music: null },
-    { text: 'Essence of the Tide\nII — the Coral Bell', frames: 150 },
+    { show: { art: ['p_essence0', 'p_essence1'], scale: 3 }, text: 'Essence of the Tide\nII — the Coral Bell', frames: 150 },
     { say: 'The reef goes quiet. Every fish in the spire turns to face the same direction at once, and holds it.' },
     { shake: [2, 30] },
     { say: 'Far out past the shelf, something very large notices that it is being taken apart.' },
@@ -27444,14 +27615,14 @@ const CUTSCENES = {
   ],
   essence3: [
     { music: null },
-    { text: 'Essence of the Tide\nIII — the Bog Bell', frames: 150 },
+    { show: { art: ['p_essence0', 'p_essence1'], scale: 3 }, text: 'Essence of the Tide\nIII — the Bog Bell', frames: 150 },
     { say: 'The marsh drains a finger\'s width and stays there. It has not held still in a year.' },
     { say: 'Farore: Three. The sea is starting to remember which way is down. Keep going.' },
     { music: 'overworld' },
   ],
   essence4: [
     { music: null },
-    { text: 'Essence of the Tide\nIV — the Cliff Bell', frames: 150 },
+    { show: { art: ['p_essence0', 'p_essence1'], scale: 3 }, text: 'Essence of the Tide\nIV — the Cliff Bell', frames: 150 },
     { say: 'Half the Bell now. The conch has gone warm and it does not cool down again.' },
     { shake: [3, 40] },
     { say: 'Nereth: Half. HALF. Come to the Keep, then, and bring my Bell with you. I will take it back at the door.' },
@@ -27460,7 +27631,7 @@ const CUTSCENES = {
   ],
   essence5: [
     { music: null },
-    { text: 'Essence of the Tide\nV — the Drowned Bell', frames: 150 },
+    { show: { art: ['p_essence0', 'p_essence1'], scale: 3 }, text: 'Essence of the Tide\nV — the Drowned Bell', frames: 150 },
     { say: 'The flooded wood lets out a breath it has been holding since before the village had a name.' },
     { shake: [4, 60] },
     { say: 'Every whirlpool between here and the abyss turns over and begins to spin the other way.' },
@@ -27469,7 +27640,7 @@ const CUTSCENES = {
   ],
   essence6: [
     { music: null },
-    { text: 'Essence of the Tide\nVI — the Drowned King\'s Bell', frames: 170 },
+    { show: { art: ['p_essence0', 'p_essence1'], scale: 3 }, text: 'Essence of the Tide\nVI — the Drowned King\'s Bell', frames: 170 },
     { say: 'The last shard comes away from Nereth\'s crown and the six of them find each other in your hands.' },
     { say: 'The Tide Bell is whole. It is much smaller than the stories, and much heavier.' },
     { music: 'overworld' },
@@ -27499,7 +27670,8 @@ const CUTSCENES = {
     { music: null },
     { fade: 'out' },
     { fade: 'in' },
-    { text: 'The Abyssal Keep\nthe throne under the sea', frames: 160 },
+    { show: { art: 'boss_nereth_0', scale: 2, rise: false, pal: 'abyss' },
+      text: 'The Abyssal Keep\nthe throne under the sea', frames: 160 },
     { say: 'Nereth: You came down. Everything comes down eventually. That is the only law I have ever needed.' },
     { say: 'Nereth: I did not break the Bell to be cruel, wader. I broke it because the sea was told what to do for a thousand years and never once asked.' },
     { say: 'Nereth: Now it does as it likes. Now it does as I like. The difference is small and it is mine.' },
@@ -27510,7 +27682,8 @@ const CUTSCENES = {
   ending: [
     { music: null },
     { fade: 'out' },
-    { text: 'The Tide Bell is whole.', frames: 170 },
+    { show: { art: ['p_essence0', 'p_essence1'], scale: 4 },
+      text: 'The Tide Bell is whole.', frames: 170 },
     { fade: 'in' },
     { music: 'ending' },
     { say: 'The Bell rings once, under the water, in a note too low to hear and too large to miss.' },

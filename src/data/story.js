@@ -169,6 +169,7 @@ const CUTSCENES = {
     { say: 'Farore: Nereth the Drowned King has broken the Tide Bell into six Essences and scattered them through the drowned places of this land.' },
     { say: 'Farore: Without the Bell the sea rises and falls at his whim. Take this. It is a shard of the Bell itself.' },
     { give: { item: 'conch', level: 1 }, jingle: 'fanfare' },
+    { show: { art: 'title_conch', scale: 2 }, frames: 130 },
     { say: 'Farore: The Moon Conch. Sound it and the tide will answer: LOW, then MID, then HIGH, and around again.' },
     { say: 'Farore: You will need a blade too. There is one in the village chest, and the village will be glad to be rid of it.' },
     { give: { item: 'sword', level: 1 } },
@@ -180,7 +181,8 @@ const CUTSCENES = {
   // Fallback for any essence index without its own scene.
   essenceGeneric: [
     { music: null },
-    { text: 'An Essence of the Tide joins the Bell.', frames: 160 },
+    { show: { art: ['p_essence0', 'p_essence1'], scale: 3 },
+      text: 'An Essence of the Tide joins the Bell.', frames: 160 },
     { say: 'The water in your ears goes quiet for a moment. One more piece of the Bell remembers its shape.' },
     { music: 'overworld' },
   ],
@@ -188,7 +190,7 @@ const CUTSCENES = {
   // ---- one scene per Essence, each moving the story on --------------------
   essence1: [
     { music: null },
-    { text: 'Essence of the Tide\nI — the Shallow Bell', frames: 150 },
+    { show: { art: ['p_essence0', 'p_essence1'], scale: 3 }, text: 'Essence of the Tide\nI — the Shallow Bell', frames: 150 },
     { say: 'The shard settles against the conch and the two of them hum at each other like old friends.' },
     { say: 'Somewhere inland, a tree that has been asleep for a hundred years opens one eye.' },
     { say: 'Farore: One. Go and see the Maku Tree — it will have felt that, and it will want to give you something.' },
@@ -196,7 +198,7 @@ const CUTSCENES = {
   ],
   essence2: [
     { music: null },
-    { text: 'Essence of the Tide\nII — the Coral Bell', frames: 150 },
+    { show: { art: ['p_essence0', 'p_essence1'], scale: 3 }, text: 'Essence of the Tide\nII — the Coral Bell', frames: 150 },
     { say: 'The reef goes quiet. Every fish in the spire turns to face the same direction at once, and holds it.' },
     { shake: [2, 30] },
     { say: 'Far out past the shelf, something very large notices that it is being taken apart.' },
@@ -205,14 +207,14 @@ const CUTSCENES = {
   ],
   essence3: [
     { music: null },
-    { text: 'Essence of the Tide\nIII — the Bog Bell', frames: 150 },
+    { show: { art: ['p_essence0', 'p_essence1'], scale: 3 }, text: 'Essence of the Tide\nIII — the Bog Bell', frames: 150 },
     { say: 'The marsh drains a finger\'s width and stays there. It has not held still in a year.' },
     { say: 'Farore: Three. The sea is starting to remember which way is down. Keep going.' },
     { music: 'overworld' },
   ],
   essence4: [
     { music: null },
-    { text: 'Essence of the Tide\nIV — the Cliff Bell', frames: 150 },
+    { show: { art: ['p_essence0', 'p_essence1'], scale: 3 }, text: 'Essence of the Tide\nIV — the Cliff Bell', frames: 150 },
     { say: 'Half the Bell now. The conch has gone warm and it does not cool down again.' },
     { shake: [3, 40] },
     { say: 'Nereth: Half. HALF. Come to the Keep, then, and bring my Bell with you. I will take it back at the door.' },
@@ -221,7 +223,7 @@ const CUTSCENES = {
   ],
   essence5: [
     { music: null },
-    { text: 'Essence of the Tide\nV — the Drowned Bell', frames: 150 },
+    { show: { art: ['p_essence0', 'p_essence1'], scale: 3 }, text: 'Essence of the Tide\nV — the Drowned Bell', frames: 150 },
     { say: 'The flooded wood lets out a breath it has been holding since before the village had a name.' },
     { shake: [4, 60] },
     { say: 'Every whirlpool between here and the abyss turns over and begins to spin the other way.' },
@@ -230,7 +232,7 @@ const CUTSCENES = {
   ],
   essence6: [
     { music: null },
-    { text: 'Essence of the Tide\nVI — the Drowned King\'s Bell', frames: 170 },
+    { show: { art: ['p_essence0', 'p_essence1'], scale: 3 }, text: 'Essence of the Tide\nVI — the Drowned King\'s Bell', frames: 170 },
     { say: 'The last shard comes away from Nereth\'s crown and the six of them find each other in your hands.' },
     { say: 'The Tide Bell is whole. It is much smaller than the stories, and much heavier.' },
     { music: 'overworld' },
@@ -260,7 +262,8 @@ const CUTSCENES = {
     { music: null },
     { fade: 'out' },
     { fade: 'in' },
-    { text: 'The Abyssal Keep\nthe throne under the sea', frames: 160 },
+    { show: { art: 'boss_nereth_0', scale: 2, rise: false, pal: 'abyss' },
+      text: 'The Abyssal Keep\nthe throne under the sea', frames: 160 },
     { say: 'Nereth: You came down. Everything comes down eventually. That is the only law I have ever needed.' },
     { say: 'Nereth: I did not break the Bell to be cruel, wader. I broke it because the sea was told what to do for a thousand years and never once asked.' },
     { say: 'Nereth: Now it does as it likes. Now it does as I like. The difference is small and it is mine.' },
@@ -271,7 +274,8 @@ const CUTSCENES = {
   ending: [
     { music: null },
     { fade: 'out' },
-    { text: 'The Tide Bell is whole.', frames: 170 },
+    { show: { art: ['p_essence0', 'p_essence1'], scale: 4 },
+      text: 'The Tide Bell is whole.', frames: 170 },
     { fade: 'in' },
     { music: 'ending' },
     { say: 'The Bell rings once, under the water, in a note too low to hear and too large to miss.' },

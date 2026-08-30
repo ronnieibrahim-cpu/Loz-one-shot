@@ -447,6 +447,51 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+**COUNT BEFORE YOU BUILD THE STEP THE PROMPT ASKED FOR.** S10's prompt listed a
+camera pan/hold/return as the first thing to add — "the source uses this
+constantly". In THIS game it would have been dead code on delivery:
+`Camera.update` pins x and y to 0 when a room is no bigger than the view, and
+**all six boss rooms are exactly 160x128**. Nine rooms in the whole game can
+pan and not one of them runs a cutscene. Five minutes of counting replaced a
+day of building a feature with zero call sites. The same prompt said to read
+the thirteen scenes and let them tell you what is missing — that instruction is
+what licensed dropping its own suggestion, and prompts should be written that
+way for exactly this reason.
+
+**A MISSING GLYPH IS A QUESTION MARK, NOT A GAP.** `decode` in
+`src/gfx/font.js` ends `GLYPHS[ch] || GLYPHS['?']`. So a character the font
+cannot draw does not crash, does not warn, and does not leave a hole — it
+prints `?`, which reads as authored punctuation. The em-dash has never had a
+glyph, and appears 13 times, so six Essence title cards have read
+
+    Essence of the Tide
+    I ? the Shallow Bell
+
+since the day they were written. Every assertion in the table passed the whole
+time. **It took a screenshot.** This is `T53` in its purest form and it is the
+best argument in the repo for shooting anything whose bug would be visual.
+`check-text.mjs` closes it.
+
+**ONE FEATURE, TWO INDEPENDENT REASONS IT WAS UNREACHABLE.** The `finalBoss`
+track had never been heard. Reason one: its only player is the last step of
+`nerethIntro`, a cutscene with no trigger anywhere in `src/`. Reason two: even
+once fired, `updateMusic()` recomputes the track from
+`dungeon.bossMusic || 'boss'` as soon as the scene ends — and **no dungeon has
+ever set `bossMusic`**, a field the engine has always read. Fixing either alone
+would have proved nothing and looked like success. **When a feature is dead,
+keep looking after you find the reason** — the second one is what makes the fix
+hold, and the harness that asserted `track === 'finalBoss'` after the scene is
+what caught it.
+
+**THE CAPTION BOX IS CENTRED, SO A PICTURE AT THE CENTRE IS BEHIND IT.** The
+first cut of the `show` step drew the Essence orb at screen centre, where the
+caption's own scrim covers it; two thirds of every orb was invisible and the
+shot tool still reported success, because the sprite WAS being drawn and
+`shownArt()` WAS returning its name. A tool that asks "did it draw" cannot
+answer "was it visible". Layout is computed now — the card drops to the bottom
+whenever a sprite is up — but the lesson is the assertion gap, not the pixels.
+
+
 **A HANDOFF NOTE THAT NAMES A MECHANISM IS STILL A CLAIM ABOUT THE TREE.** `A6`
 said `npc`, `sign` and `giver` "each accept `dialogue`, `waiting` and `after`",
 and the S9 prompt built on it: no engine work needed, just write lines. `NPC`

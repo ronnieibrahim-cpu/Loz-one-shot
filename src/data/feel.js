@@ -1210,6 +1210,31 @@ export const CHARM_HIGH_ESSENCES = 4;
 export const CHARM_CASE_ESSENCES = 6;
 
 // ---------------------------------------------------------------------------
+// Cutscenes — the `show` step (S10)
+//
+// A cutscene can now hold a sprite up on screen. These are its timings. There
+// is deliberately no camera-pan constant here: every room a cutscene plays in
+// is exactly one screen (all six boss rooms are 160x128), so `Camera.update`
+// pins x/y to 0 and a pan step would be a no-op everywhere it was used. See
+// S10's notes in docs/NEXT-SESSION.md.
+
+/** f — how long a shown sprite is held when the step does not say. guessed;
+ *  long enough to read as a beat rather than a flash, short enough that a
+ *  player who has seen it five times is not waiting on it. */
+export const CUTSCENE_SHOW_FRAMES = 110;
+
+/** f — frames per frame of a shown sprite's two-frame cycle. guessed; this is
+ *  the same cadence the world's own two-frame idles run at, so an Essence held
+ *  up in a cutscene pulses at the rate it pulses at on the floor. */
+export const CUTSCENE_SHOW_ANIM_FRAMES = 10;
+
+/** px — how far a shown sprite drifts upward across its whole hold. guessed.
+ *  The drift is what makes it read as presented rather than pasted; it is
+ *  small on purpose, and it is integer-stepped like everything else that
+ *  moves. */
+export const CUTSCENE_SHOW_RISE_PX = 6;
+
+// ---------------------------------------------------------------------------
 // Music engine — vibrato and arpeggio (S6)
 // ---------------------------------------------------------------------------
 //
