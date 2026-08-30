@@ -21,8 +21,21 @@
 //         noi: "x  .  h  .  s  .  h  .   x  .  h  .  s  .  h  h"
 //       }
 //     },
-//     order: ['A','A','B','A']
+//     order: ['A','A','B','A'],
+//     intro: ['I']            // optional, see below
 //   }
+//
+// `intro` is a sequence of pattern names played ONCE, as a non-looping
+// lead-in, before `order` begins — the flourish a source track opens on and
+// never returns to. It is deliberately NOT expressible as `order` plus a
+// loop point: `order` is the loop, and a track that wants a lead-in wants
+// exactly one pattern list that is left behind and one that repeats forever.
+// The intro is left behind on the first wrap and is never scheduled again for
+// the life of that playback; restarting the track (`play(name,{restart:true})`,
+// or resuming after a jingle) plays it again from the top, because that IS a
+// fresh playback. A one-shot track (`loop:false`, i.e. a jingle) has no loop
+// for an intro to lead into, so it must not declare one — check-music.mjs
+// enforces that.
 //
 // Token grammar (whitespace separated):
 //   'C4' 'C#4' 'Db4'  start a note at that pitch
@@ -190,6 +203,10 @@ export class Audio {
     this._nextRowTime = 0;
     this._row = 0;
     this._orderIdx = 0;
+    // Whether this playback has already spent the track's `intro`. The
+    // sequence being stepped is intro+order until it wraps once, order after.
+    this._introDone = false;
+    this._seq = null;
     this._held = { p1: null, p2: null, wav: null };
     this._voices = { p1: null, p2: null, wav: null };
     // Recent per-channel row events (kind + freq), pruned to a small window.
@@ -296,6 +313,11 @@ export class Audio {
     // stale rows from whatever last played would repeat the wrong lead.
     this._rowLog = { p1: [], p2: [], wav: [] };
     this._globalRow = 0;
+    // Every call site of this is a track boundary (start, stop, or a
+    // one-shot finishing), and every track boundary owes the next playback
+    // its intro back — the same reasoning as the echo phase above.
+    this._introDone = false;
+    this._seq = null;
   }
 
   _endVoice(v) {
@@ -322,12 +344,25 @@ export class Audio {
     }
   }
 
-  _currentPattern() {
+  /** The pattern sequence for the pass currently playing: `intro` prepended
+   *  to `order` until the first wrap, `order` alone from then on. Cached
+   *  because this is consulted on every scheduled row, and a track with no
+   *  intro returns the track's own `order` array untouched — the no-intro
+   *  path allocates nothing and behaves exactly as it did before intros
+   *  existed, which is what check-audio-render.mjs is holding it to. */
+  _sequence() {
     const t = this.track;
     const order = t.order || Object.keys(t.patterns || {});
-    if (!order.length) return null;
-    const name = order[this._orderIdx % order.length];
-    return t.patterns[name] || null;
+    if (this._introDone || !t.intro || !t.intro.length) return order;
+    if (!this._seq) this._seq = t.intro.concat(order);
+    return this._seq;
+  }
+
+  _currentPattern() {
+    const seq = this._sequence();
+    if (!seq.length) return null;
+    const name = seq[this._orderIdx % seq.length];
+    return this.track.patterns[name] || null;
   }
 
   _patternLength(p) {
@@ -347,8 +382,7 @@ export class Audio {
     if (this._row >= len) {
       this._row = 0;
       this._orderIdx++;
-      const order = t.order || Object.keys(t.patterns || {});
-      if (this._orderIdx >= order.length) {
+      if (this._orderIdx >= this._sequence().length) {
         if (t.loop === false) {
           // jingle or one-shot finished
           const j = this._jingle;
@@ -357,6 +391,10 @@ export class Audio {
           if (j && j.resume) { this._jingle = null; this.play(j.resume, { restart: true }); }
           return;
         }
+        // The lead-in has now had its one pass; from here the loop is
+        // `order` alone. Setting this AFTER the length test above is what
+        // makes the intro count toward the first wrap and no other.
+        this._introDone = true;
         this._orderIdx = 0;
       }
       pat = this._currentPattern();

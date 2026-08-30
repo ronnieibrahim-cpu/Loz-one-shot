@@ -173,8 +173,26 @@ const SFX = {
 const TRACKS = {
   title: {
     bpm: 96, rowsPerBeat: 4, loop: true,
-    cfg: { p1: { duty: 0.5, vol: 0.15, decay: 0.3 }, p2: { duty: 0.25, vol: 0.09, decay: 0.35 }, wav: { vol: 0.2, decay: 0.4 } },
+    // Every note in this track is held for at least half a bar, which is
+    // precisely the note vibrato exists for — the wobble is something a
+    // sustained tone earns (see VIBRATO_DELAY_FRAMES). Nothing here is short
+    // enough to be wobbled by accident.
+    cfg: {
+      p1: { duty: 0.5, vol: 0.15, decay: 0.3, vibrato: {} },
+      p2: { duty: 0.25, vol: 0.09, decay: 0.35 },
+      wav: { vol: 0.2, decay: 0.4 },
+    },
     patterns: {
+      // Intro: three struck tones under one crash, the wave channel holding
+      // the tonic triad as a single arpeggiated chord, ending on a held
+      // dominant that A resolves. Played once and never returned to — the
+      // card is struck, then the theme begins.
+      I: {
+        p1: 'G4 .  .  .  C5 .  .  .  E5 -  -  -  -  -  -  .  .  .  .  .  G5 -  -  -  -  -  -  -  -  -  -  -',
+        p2: 'E4 .  .  .  G4 .  .  .  C5 -  -  -  -  -  -  .  .  .  .  .  D5 -  -  -  -  -  -  -  -  -  -  -',
+        wav: 'C3+E3+G3 -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  G2+B2+D3 -  -  -  -  -  -  -  -  -  -  -  -  -  -  -',
+        noi: 'c  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .',
+      },
       A: {
         p1: 'C5 -  -  -  -  -  -  -  G4 -  -  -  -  -  -  -  A4 -  -  -  -  -  -  -  E4 -  -  -  -  -  -  -',
         p2: 'E4 -  -  -  -  -  -  -  C4 -  -  -  -  -  -  -  F4 -  -  -  -  -  -  -  C4 -  -  -  -  -  -  -',
@@ -194,18 +212,31 @@ const TRACKS = {
         noi: '.  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  h  .  .  .',
       },
     },
+    intro: ['I'],
     order: ['A', 'B', 'A', 'C'],
   },
 
   overworld: {
     bpm: 132, rowsPerBeat: 4, loop: true,
     cfg: {
-      p1: { duty: 0.5, vol: 0.17, decay: 0.12 },
+      // The lead is written in sixteenths with a held note at the end of
+      // almost every phrase; vibrato reaches only those, which is where an
+      // overworld tune wants it and nowhere else.
+      p1: { duty: 0.5, vol: 0.17, decay: 0.12, vibrato: {} },
       p2: { duty: 0.25, vol: 0.11, decay: 0.16 },
       wav: { vol: 0.22, decay: 0.08 },
       noi: { vol: 0.12 },
     },
     patterns: {
+      // Intro: stepping outside. An ascending call over an arpeggiated tonic
+      // chord on the wave channel, answered by a scalar fall, with the kit
+      // held back until the last beat so the loop arrives on a full kick.
+      I: {
+        p1: 'C5 .  .  .  E5 .  .  .  G5 -  -  -  -  -  -  .  A5 .  G5 .  E5 .  D5 .  C5 -  -  -  -  -  -  .',
+        p2: 'E4 .  .  .  G4 .  .  .  C5 -  -  -  -  -  -  .  F4 .  E4 .  C4 .  B3 .  A3 -  -  -  -  -  -  .',
+        wav: 'C2+E2+G2 -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  F1+A1+C2 -  -  -  -  -  -  -  G1 -  -  -  G1 -  -  -',
+        noi: 'c  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  x  .  h  .  s  .  h  h',
+      },
       A: {
         p1: 'G4 .  C5 .  E5 .  C5 .  D5 .  G4 .  B4 .  .  .  A4 .  C5 .  F5 .  C5 .  E5 -  -  .  .  .  .  .',
         p2: 'C4 .  .  .  G3 .  .  .  B3 .  .  .  G3 .  .  .  A3 .  .  .  F3 .  .  .  C4 .  .  .  G3 .  .  .',
@@ -235,14 +266,49 @@ const TRACKS = {
         wav: 'C2 -  -  -  C2 -  -  -  F2 -  -  -  G2 -  -  -  C2 -  -  -  G1 -  -  -  C2 -  -  -  -  -  -  .',
         noi: 'x  .  .  .  x  .  .  .  x  .  h  .  s  .  h  h  x  .  h  .  s  .  h  .  c  .  .  .  .  .  .  .',
       },
+      // E hands the tune to the WAVE channel and parks both pulses on a held
+      // chord above it, so for two bars the melody arrives from underneath —
+      // the one texture A-D never have, since the wave channel is a bass
+      // ostinato in every one of them.
+      E: {
+        p1: 'E5 -  -  -  -  -  -  -  D5 -  -  -  -  -  -  -  C5 -  -  -  -  -  -  -  D5 -  -  -  -  -  -  -',
+        p2: 'C4 -  -  -  -  -  -  -  B3 -  -  -  -  -  -  -  A3 -  -  -  -  -  -  -  B3 -  -  -  -  -  -  -',
+        wav: 'C3 .  E3 .  G3 .  E3 .  D3 .  G2 .  B2 .  D3 .  C3 .  A2 .  F2 .  A2 .  G2 .  B2 .  D3 -  -  .',
+        noi: 'x  .  .  h  .  .  s  .  x  .  .  h  .  .  s  .  x  .  .  h  .  .  s  .  x  .  s  .  .  .  h  h',
+      },
+      // F is A's opening contour moved down a third through the same scale,
+      // which lands it in the relative minor: the same walk, the colour gone
+      // out of it. It sits immediately before D so the fanfare arrives out
+      // of the minor rather than out of more of the major.
+      F: {
+        p1: 'E4 .  A4 .  C5 .  A4 .  B4 .  E4 .  G4 .  .  .  F4 .  A4 .  D5 .  A4 .  C5 -  -  .  .  .  .  .',
+        p2: 'A3 .  .  .  E3 .  .  .  G3 .  .  .  E3 .  .  .  F3 .  .  .  D3 .  .  .  A3 .  .  .  E3 .  .  .',
+        wav: 'A2 -  -  -  A2 -  -  -  E2 -  -  -  E2 -  -  -  D2 -  -  -  D2 -  -  -  A2 -  -  -  E2 -  -  -',
+        noi: 'x  .  h  .  s  .  h  .  x  .  h  .  s  .  h  h  x  .  h  .  s  .  h  .  x  .  s  .  x  .  s  h',
+      },
     },
-    order: ['A', 'A', 'B', 'C', 'D'],
+    intro: ['I'],
+    order: ['A', 'A', 'B', 'C', 'E', 'F', 'D'],
   },
 
   village: {
     bpm: 112, rowsPerBeat: 4, loop: true,
-    cfg: { p1: { duty: 0.5, vol: 0.15, decay: 0.2 }, p2: { duty: 0.125, vol: 0.09, decay: 0.24 }, wav: { vol: 0.2, decay: 0.1 }, noi: { vol: 0.08 } },
+    cfg: {
+      p1: { duty: 0.5, vol: 0.15, decay: 0.2, vibrato: {} },
+      p2: { duty: 0.125, vol: 0.09, decay: 0.24 },
+      wav: { vol: 0.2, decay: 0.1 },
+      noi: { vol: 0.08 },
+    },
     patterns: {
+      // Intro: arriving in town. A rising greeting over two arpeggiated
+      // chords, no percussion until the last beat, where two hats hand over
+      // to the loop.
+      I: {
+        p1: 'G4 .  C5 .  E5 -  -  .  D5 .  E5 .  F5 -  -  -  -  -  -  .  .  .  .  .  G5 -  -  -  -  -  -  .',
+        p2: 'E4 .  G4 .  C5 -  -  .  B4 .  C5 .  A4 -  -  -  -  -  -  .  .  .  .  .  B4 -  -  -  -  -  -  .',
+        wav: 'C2+E2+G2 -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  F2+A2+C3 -  -  -  -  -  -  -  G2 -  -  -  G2 -  -  -',
+        noi: '.  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  h  .  .  .  h  h',
+      },
       A: {
         p1: 'C5 .  E5 .  G5 .  E5 .  F5 .  D5 .  C5 -  -  .  D5 .  F5 .  A5 .  F5 .  G5 -  -  -  -  -  -  .',
         p2: 'C4 .  .  .  E4 .  .  .  F4 .  .  .  E4 .  .  .  D4 .  .  .  F4 .  .  .  E4 .  .  .  G4 .  .  .',
@@ -252,7 +318,11 @@ const TRACKS = {
       // Turns toward F major for a warmer, more legato phrase.
       B: {
         p1: 'F5  .  A5 .  C6  -  -  .  Bb5 .  A5 .  G5 .  F5 .  E5 .  G5 .  A5 -  -  .  G5 .  F5 .  E5 -  -  .',
-        p2: 'A4  .  C5 .  .   .  .  .  D5  .  C5 .  Bb4 .  A4 .  C5 .  E5 .  .  .  .  E5 .  D5 .  C5 -  -  .',
+        // NOTE: this line was one token short of the pattern's 32 rows for the
+        // whole life of the track, so its last C5 rang on into the next
+        // pattern's downbeat instead of releasing with p1. The trailing rest
+        // is the whole fix — no note here moved.
+        p2: 'A4  .  C5 .  .   .  .  .  D5  .  C5 .  Bb4 .  A4 .  C5 .  E5 .  .  .  .  E5 .  D5 .  C5 -  -  .  .',
         wav: 'F2  -  -  -  C3  -  -  -  Bb1 -  -  -  F2  -  -  -  C2  -  -  -  G1  -  -  -  C2  -  -  -  G1  -  -  -',
         noi: '.   .  h  .  .   .  h  .  .   .  h  .  .   .  h  h  .   .  h  .  .  .  h  .  .   .  h  .  .   .  h  h',
       },
@@ -264,31 +334,63 @@ const TRACKS = {
         wav: 'C3  -  -  -  -  -  -  -  F2  -  -  -  -  -  -  -  C3 -  -  -  -  -  -  -  G2 -  -  -  -  -  -  .',
         noi: '.   .  .  .  .   .  .  .  .   .  .  .  .   .  .  .  .  .  h  .  .  .  h  .  .  .  h  .  .  .  h  h',
       },
+      // D is the only pattern where the two pulses take turns: p1 states a
+      // phrase and stops dead, and p2 answers into the hole it leaves. In
+      // A, B and C the second pulse is always sounding at the same time as
+      // the first, so this is the theme's only call and response.
+      D: {
+        p1: 'C5 .  D5 .  E5 -  -  .  .  .  .  .  .  .  .  .  F5 .  E5 .  D5 -  -  .  .  .  .  .  .  .  .  .',
+        p2: '.  .  .  .  .  .  .  .  G4 .  A4 .  C5 -  -  .  .  .  .  .  .  .  .  .  A4 .  G4 .  F4 -  -  .',
+        wav: 'C3 -  -  -  C3 -  -  -  E2 -  -  -  E2 -  -  -  F2 -  -  -  F2 -  -  -  G2 -  -  -  G2 -  -  -',
+        noi: '.  .  h  .  .  .  h  .  .  .  h  .  .  .  h  .  .  .  h  .  .  .  h  .  .  .  h  .  .  .  h  h',
+      },
+      // E is the only pattern in the town theme with a kick in it: the
+      // pulses drop to offbeat stabs and the kit carries the two bars.
+      E: {
+        p1: '.  .  C5 .  .  .  E5 .  .  .  D5 .  .  .  .  .  .  .  C5 .  .  .  F5 .  .  .  E5 .  .  .  .  .',
+        p2: '.  .  E4 .  .  .  G4 .  .  .  F4 .  .  .  .  .  .  .  A4 .  .  .  C5 .  .  .  G4 .  .  .  .  .',
+        wav: 'C3 -  -  -  -  -  -  -  G2 -  -  -  -  -  -  -  F2 -  -  -  -  -  -  -  C3 -  -  -  -  -  -  -',
+        noi: 'x  .  h  h  s  h  .  h  x  h  .  h  s  .  h  h  x  .  h  h  s  h  .  h  x  h  s  .  s  h  h  H',
+      },
     },
-    order: ['A', 'B', 'A', 'C'],
+    intro: ['I'],
+    order: ['A', 'B', 'A', 'D', 'E', 'C'],
   },
 
   cave: {
     bpm: 88, rowsPerBeat: 4, loop: true,
-    cfg: { p1: { duty: 0.125, vol: 0.1, decay: 0.4 }, p2: { duty: 0.125, vol: 0.05, decay: 0.5 }, wav: { vol: 0.18, decay: 0.5 }, noi: { vol: 0.05 } },
+    // The second pulse has no line of its own here any more: it is the first
+    // one arriving back off the rock a beat later and quieter. That is what
+    // the echo config is for, and it is a better cave than the two sparse
+    // doubling lines it replaces — every note the lead plays now comes back.
+    // Note this is why NO pattern below writes p2: an authored token always
+    // beats the echo, so a single p2 string anywhere in this track would
+    // silently switch the effect off for that pattern.
+    cfg: {
+      p1: { duty: 0.125, vol: 0.1, decay: 0.4, vibrato: {} },
+      p2: { duty: 0.125, vol: 0.09, decay: 0.5, echo: { of: 'p1', rows: 4, volMul: 0.4 } },
+      wav: { vol: 0.18, decay: 0.5 },
+      noi: { vol: 0.05 },
+    },
     patterns: {
       A: {
         p1: 'A4 -  -  -  -  -  -  -  C5 -  -  -  -  -  -  -  B4 -  -  -  -  -  -  -  E4 -  -  -  -  -  -  -',
         wav: 'A2 -  -  -  -  -  -  -  F2 -  -  -  -  -  -  -  G2 -  -  -  -  -  -  -  E2 -  -  -  -  -  -  -',
       },
       // A step down from A, one long tone at a time; a single water-drip
-      // hat marks the turn of each half.
+      // hat marks the turn of each half. The answering line that used to be
+      // written on p2 here is gone — the echo now supplies it, and supplies
+      // it for every note rather than two of them.
       B: {
         p1: 'G4 -  -  -  -  -  -  -  Bb4 -  -  -  -  -  -  -  A4 -  -  -  -  -  -  -  D4 -  -  -  -  -  -  -',
-        p2: '.  .  .  .  .  .  .  .  E4 -  -  -  -  -  -  -  .  .  .  .  .  .  .  .  A3 -  -  -  -  -  -  -',
         wav: 'G2 -  -  -  -  -  -  -  Eb2 -  -  -  -  -  -  -  F2 -  -  -  -  -  -  -  D2 -  -  -  -  -  -  -',
         noi: '.  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  h  .  .  .  .  .  .  .  .  .  .  .  .  .  .  h',
       },
       // Bridge: one tone held the whole pattern, a single drip breaking the
-      // hush near the end before it opens back into A.
+      // hush near the end before it opens back into A. The echo answers the
+      // held tone once, a beat in, and then there is nothing else at all.
       C: {
         p1: 'E4 -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -',
-        p2: '.  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  B4 -  -  -  -  -  -  -  .  .  .  .  .  .  .  .',
         wav: 'E2 -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -',
         noi: '.  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  h  .  .  .',
       },
@@ -298,8 +400,22 @@ const TRACKS = {
 
   dungeon: {
     bpm: 124, rowsPerBeat: 4, loop: true,
-    cfg: { p1: { duty: 0.25, vol: 0.14, decay: 0.14 }, p2: { duty: 0.125, vol: 0.1, decay: 0.18 }, wav: { vol: 0.22, decay: 0.08 }, noi: { vol: 0.13 } },
+    cfg: {
+      p1: { duty: 0.25, vol: 0.14, decay: 0.14, vibrato: {} },
+      p2: { duty: 0.125, vol: 0.1, decay: 0.18 },
+      wav: { vol: 0.22, decay: 0.08 },
+      noi: { vol: 0.13 },
+    },
     patterns: {
+      // Intro: the door closing behind you. One crash, a descent through the
+      // D minor triad over an arpeggiated chord, and a rising four-note
+      // pickup that walks straight into A. No kit until that pickup.
+      I: {
+        p1: 'D5 -  -  -  -  -  -  -  A4 -  -  -  -  -  -  -  F4 -  -  -  -  -  -  -  E4 .  F4 .  A4 .  D5 .',
+        p2: 'A4 -  -  -  -  -  -  -  F4 -  -  -  -  -  -  -  D4 -  -  -  -  -  -  -  .  .  .  .  .  .  .  .',
+        wav: 'D2+F2+A2 -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  Bb1 -  -  -  -  -  -  -  A1 -  -  -  A1 -  -  -',
+        noi: 'c  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  x  .  h  .  s  .  h  h',
+      },
       A: {
         p1: 'D5 .  D5 .  F5 .  D5 .  C5 .  D5 .  A4 -  -  .  D5 .  D5 .  G5 .  F5 .  E5 -  -  .  .  .  .  .',
         p2: 'D4 .  .  .  A3 .  .  .  F3 .  .  .  A3 .  .  .  D4 .  .  .  B3 .  .  .  G3 .  .  .  A3 .  .  .',
@@ -320,14 +436,48 @@ const TRACKS = {
         wav: 'D2 -  -  -  -  -  -  -  A1  -  -  -  -  -  -  -  F1 -  -  -  -  -  -  -  D2 -  -  -  -  -  -  -',
         noi: 'x  .  .  .  .  .  h  .  x   .  .  .  .  .  h  .  x  .  .  .  .  .  h  h  x  .  s  .  x  .  s  h',
       },
+      // D is the theme's only call and response, and it is one across
+      // octaves: p1 asks a rising figure up top and p2 gives it back a full
+      // octave down in the silence after it.
+      D: {
+        p1: 'D5 .  F5 .  A5 -  -  .  .  .  .  .  .  .  .  .  C6 .  A5 .  F5 -  -  .  .  .  .  .  .  .  .  .',
+        p2: '.  .  .  .  .  .  .  .  D4 .  F4 .  A4 -  -  .  .  .  .  .  .  .  .  .  C5 .  A4 .  F4 -  -  .',
+        wav: 'D2 -  -  -  D2 -  -  -  D2 -  -  -  D2 -  -  -  F2 -  -  -  F2 -  -  -  F2 -  -  -  F2 -  -  -',
+        noi: 'x  .  .  .  .  .  s  .  x  .  .  .  .  .  s  .  x  .  .  .  .  .  s  .  x  .  .  .  .  .  s  h',
+      },
+      // E is the one pattern where the wave channel stops walking the bass
+      // and just holds a chord: the harmony arrives all at once instead of
+      // an octave at a time, and the kit is alone with it for a whole bar
+      // before the lead comes back in over the top.
+      E: {
+        p1: '.  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  A4 -  -  -  -  -  -  -  -  -  -  -  -  -  -  .',
+        wav: 'D3+F3+A3 -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  D3+F3+Bb3 -  -  -  -  -  -  -  -  -  -  -  -  -  -  -',
+        noi: 'x  .  h  h  x  .  h  h  x  .  h  h  x  h  h  h  x  .  h  h  x  .  h  h  x  s  x  s  c  .  .  .',
+      },
     },
-    order: ['A', 'B', 'A', 'C'],
+    intro: ['I'],
+    order: ['A', 'B', 'A', 'D', 'E', 'C'],
   },
 
   boss: {
     bpm: 150, rowsPerBeat: 4, loop: true,
-    cfg: { p1: { duty: 0.5, vol: 0.17, decay: 0.1 }, p2: { duty: 0.25, vol: 0.12, decay: 0.12 }, wav: { vol: 0.24, decay: 0.06 }, noi: { vol: 0.16 } },
+    cfg: {
+      p1: { duty: 0.5, vol: 0.17, decay: 0.1, vibrato: {} },
+      p2: { duty: 0.25, vol: 0.12, decay: 0.12 },
+      wav: { vol: 0.24, decay: 0.06 },
+      noi: { vol: 0.16 },
+    },
     patterns: {
+      // Intro: the stinger. A crash, a climb up the C minor triad to a held
+      // high tonic, then a stepwise fall onto the dominant that A answers.
+      // The kit builds from bare kicks to the full pattern underneath it, so
+      // the loop starts already at speed.
+      I: {
+        p1: 'C5 .  Eb5 .  G5 .  C6 -  -  -  -  -  -  -  -  .  Ab5 .  G5 .  F5 .  Eb5 .  D5 -  -  -  -  -  -  .',
+        p2: 'C4 .  Eb4 .  G4 .  C5 -  -  -  -  -  -  -  -  .  F4 .  Eb4 .  D4 .  C4 .  B3 -  -  -  -  -  -  .',
+        wav: 'C2 -  -  -  C2 -  -  -  C2 -  -  -  C2 -  -  -  Ab1 -  -  -  Ab1 -  -  -  G1 -  -  -  G1 -  -  -',
+        noi: 'c  .  .  .  .  .  .  .  x  .  x  .  x  .  x  x  x  .  s  .  x  .  s  s  x  s  x  s  c  .  .  .',
+      },
       A: {
         p1: 'C5 C5 .  C5 Eb5 .  C5 .  F5 .  Eb5 .  C5 .  .  .  C5 C5 .  C5 G5 .  F5 .  Eb5 -  -  .  .  .  .  .',
         p2: 'C4 .  .  .  G3 .  .  .  Ab3 .  .  .  G3 .  .  .  C4 .  .  .  Bb3 .  .  .  Ab3 .  .  .  G3 .  .  .',
@@ -350,6 +500,7 @@ const TRACKS = {
         noi: '.   .  .  .  .   .  .  .  .  .  .  .  .   .  .  .  .  .  .  .  x   .  s   .  x   h  s   h  c   .  .  .',
       },
     },
+    intro: ['I'],
     order: ['A', 'B', 'A', 'C'],
   },
 
@@ -357,36 +508,76 @@ const TRACKS = {
   // `dungeon` but in E minor, with a chromatic climb in C instead of a chorus.
   dungeon2: {
     bpm: 116, rowsPerBeat: 4, loop: true,
-    cfg: { p1: { duty: 0.25, vol: 0.14, decay: 0.15 }, p2: { duty: 0.125, vol: 0.1, decay: 0.2 }, wav: { vol: 0.22, decay: 0.08 }, noi: { vol: 0.12 } },
+    // This is the ECHOING dungeon, and that is now the whole difference in
+    // texture between it and `dungeon`: the second pulse has no line of its
+    // own, it is the lead coming back off a flooded corridor a beat later
+    // and much quieter. No pattern below writes p2 — an authored token beats
+    // the echo, so one p2 string anywhere here would switch the corridor off
+    // for that pattern.
+    cfg: {
+      p1: { duty: 0.25, vol: 0.14, decay: 0.15, vibrato: {} },
+      p2: { duty: 0.125, vol: 0.11, decay: 0.2, echo: { of: 'p1', rows: 4, volMul: 0.42 } },
+      wav: { vol: 0.22, decay: 0.08 },
+      noi: { vol: 0.12 },
+    },
     patterns: {
+      // Intro: going under. A crash, a held descent over two arpeggiated
+      // chords, and a four-note climb into A — by which point the corridor
+      // is already repeating the descent behind it.
+      I: {
+        p1: 'B4 -  -  -  -  -  -  -  E5 -  -  -  -  -  -  -  D5 -  -  -  -  -  -  -  B4 .  C5 .  D5 .  E5 .',
+        wav: 'E1+G1+B1 -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  C2+E2+G2 -  -  -  -  -  -  -  B1 -  -  -  B1 -  -  -',
+        noi: 'c  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  x  .  h  .  s  .  h  h',
+      },
       A: {
         p1: 'E5 .  E5 .  G5 .  E5 .  D5 .  E5 .  B4 -  -  .  E5 .  G5 .  B5 .  A5 .  G5 -  -  .  .  .  .  .',
-        p2: 'B3 .  .  .  E4 .  .  .  G3 .  .  .  B3 .  .  .  E4 .  .  .  G4 .  .  .  D4 .  .  .  B3 .  .  .',
         wav: 'E2 -  -  -  E2 -  -  -  B1 -  -  -  B1 -  -  -  C2 -  -  -  C2 -  -  -  D2 -  -  -  B1 -  -  -',
         noi: 'x  .  .  h  s  .  .  h  x  .  .  h  s  .  h  h  x  .  .  h  s  .  .  h  x  h  s  .  s  .  h  h',
       },
       B: {
         p1: 'C6 -  -  .  B5 .  A5 .  G5 .  F#5 .  E5 -  -  .  A5 .  G5 .  F#5 .  E5 .  D5 -  -  -  -  -  -  .',
-        p2: 'A4 .  .  .  G4 .  .  .  E4 .  .  .  C4 .  .  .  F#4 .  .  .  E4 .  .  .  B3 -  -  -  -  -  -  .',
         wav: 'A1 -  -  -  A1 -  -  -  C2 -  -  -  C2 -  -  -  D2 -  -  -  D2 -  -  -  B1 -  -  -  B1 -  -  -',
         noi: 'x  .  h  h  s  .  h  .  x  .  h  h  s  .  h  .  x  .  h  h  s  .  h  .  x  s  x  s  h  h  h  h',
       },
       C: {
         p1: 'E4 .  F4 .  F#4 .  G4 .  G#4 .  A4 .  Bb4 .  B4 .  C5 -  -  .  B4 -  -  .  E5 -  -  -  -  -  -  .',
-        p2: 'B3 -  -  -  -  -  -  -  C4 -  -  -  -  -  -  -  E4 -  -  -  D4 -  -  -  B3 -  -  -  -  -  -  .',
         wav: 'E1 -  -  -  E1 -  -  -  E1 -  -  -  E1 -  -  -  C2 -  -  -  D2 -  -  -  E2 -  -  -  E2 -  -  -',
         noi: 'x  .  .  .  s  .  .  .  x  .  .  .  s  .  .  h  x  .  .  h  s  .  .  h  x  s  x  s  c  .  .  .',
       },
+      // D is the only pattern in the game where the delay IS the melody
+      // rather than a shadow behind one: the lead states half a bar and then
+      // leaves a five-row hole, and what fills the hole is the corridor
+      // giving the phrase back. It only works because p2 is an echo.
+      D: {
+        p1: 'E5 .  G5 .  B5 .  E6 -  -  -  -  .  .  .  .  .  D6 .  B5 .  G5 .  E5 -  -  -  -  .  .  .  .  .',
+        wav: 'E2 -  -  -  E2 -  -  -  G1 -  -  -  G1 -  -  -  B1 -  -  -  B1 -  -  -  E2 -  -  -  E2 -  -  -',
+        noi: 'x  .  .  h  s  .  .  h  x  .  .  h  s  .  h  h  x  .  .  h  s  .  .  h  x  s  x  s  c  .  .  .',
+      },
     },
-    order: ['A', 'A', 'B', 'C'],
+    intro: ['I'],
+    order: ['A', 'A', 'B', 'D', 'C'],
   },
 
   // Nereth. Faster and darker than `boss`: D Phrygian, tritone-heavy, with a
   // full chromatic descent in C for the last phase.
   finalBoss: {
     bpm: 158, rowsPerBeat: 4, loop: true,
-    cfg: { p1: { duty: 0.5, vol: 0.17, decay: 0.09 }, p2: { duty: 0.25, vol: 0.12, decay: 0.11 }, wav: { vol: 0.25, decay: 0.05 }, noi: { vol: 0.17 } },
+    cfg: {
+      p1: { duty: 0.5, vol: 0.17, decay: 0.09, vibrato: {} },
+      p2: { duty: 0.25, vol: 0.12, decay: 0.11 },
+      wav: { vol: 0.25, decay: 0.05 },
+      noi: { vol: 0.17 },
+    },
     patterns: {
+      // Intro: Nereth. Two crashes over two held tones a tritone apart —
+      // the interval the whole fight is built on, struck bare before
+      // anything else happens — then the kit arrives all at once.
+      I: {
+        p1: 'D5 -  -  -  -  -  -  -  Ab5 -  -  -  -  -  -  -  D5 .  Eb5 .  D5 .  Ab5 .  A5 -  -  -  -  -  -  .',
+        p2: 'A4 -  -  -  -  -  -  -  Eb5 -  -  -  -  -  -  -  A4 .  Bb4 .  A4 .  Eb5 .  E5 -  -  -  -  -  -  .',
+        wav: 'D1 -  -  -  -  -  -  -  Ab1 -  -  -  -  -  -  -  D1 -  -  -  D1 -  -  -  A1 -  -  -  A1 -  -  -',
+        noi: 'c  .  .  .  .  .  .  .  c  .  .  .  .  .  .  .  x  .  s  .  x  .  s  s  x  s  x  s  c  .  .  .',
+      },
       A: {
         p1: 'D5 D5 .  D5 Eb5 .  D5 .  A5 .  Ab5 .  G5 .  .  .  D5 D5 .  D5 F5 .  Eb5 .  D5 -  -  .  .  .  .  .',
         p2: 'D4 .  .  .  A3 .  .  .  Bb3 .  .  .  A3 .  .  .  D4 .  .  .  C4 .  .  .  Bb3 .  .  .  A3 .  .  .',
@@ -406,6 +597,7 @@ const TRACKS = {
         noi: 'x  .  s  s  x  .  s  s  x  .  s  s  x  .  s  s  x  .  s  s  x  .  s  s  x  s  x  s  c  .  .  .',
       },
     },
+    intro: ['I'],
     order: ['A', 'A', 'B', 'A', 'C'],
   },
 
@@ -499,8 +691,23 @@ const TRACKS = {
   // stretch before the Keep should feel like held breath.
   abyss: {
     bpm: 80, rowsPerBeat: 4, loop: true,
-    cfg: { p1: { duty: 0.125, vol: 0.11, decay: 0.45 }, p2: { duty: 0.5, vol: 0.07, decay: 0.5 }, wav: { vol: 0.2, decay: 0.4 }, noi: { vol: 0.07 } },
+    cfg: {
+      p1: { duty: 0.125, vol: 0.11, decay: 0.45, vibrato: {} },
+      p2: { duty: 0.5, vol: 0.07, decay: 0.5 },
+      wav: { vol: 0.2, decay: 0.4 },
+      noi: { vol: 0.07 },
+    },
     patterns: {
+      // Intro: two bars in which almost nothing happens. One arpeggiated C
+      // minor chord holds the whole width of it, a single tone enters
+      // halfway, its fifth a bar later, and one open hat closes it. The
+      // Keep's approach is the one place in the game that can afford this.
+      I: {
+        p1: '.  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  C5 -  -  -  -  -  -  -  -  -  -  -  -  -  -  -',
+        p2: '.  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  G4 -  -  -  -  -  -  -',
+        wav: 'C2+Eb2+G2 -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -',
+        noi: '.  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  H',
+      },
       A: {
         p1: 'C5 -  -  -  -  -  -  -  Eb5 -  -  -  -  -  -  -  D5 -  -  -  -  -  -  -  G4 -  -  -  -  -  -  -',
         p2: '.  .  .  .  G4 -  -  -  .  .  .  .  Bb4 -  -  -  .  .  .  .  F4 -  -  -  .  .  .  .  D4 -  -  -',
@@ -520,6 +727,7 @@ const TRACKS = {
         noi: 'x  .  .  .  .  .  .  .  x  .  .  .  .  .  .  .  x  .  .  .  .  .  .  .  x  .  .  .  c  .  .  .',
       },
     },
+    intro: ['I'],
     order: ['A', 'A', 'B', 'C'],
   },
 
@@ -555,8 +763,21 @@ const TRACKS = {
   // Ending: C major. A and B are the triumphant half, C and D let it settle.
   ending: {
     bpm: 108, rowsPerBeat: 4, loop: true,
-    cfg: { p1: { duty: 0.5, vol: 0.16, decay: 0.22 }, p2: { duty: 0.25, vol: 0.1, decay: 0.26 }, wav: { vol: 0.22, decay: 0.12 }, noi: { vol: 0.1 } },
+    cfg: {
+      p1: { duty: 0.5, vol: 0.16, decay: 0.22, vibrato: {} },
+      p2: { duty: 0.25, vol: 0.1, decay: 0.26 },
+      wav: { vol: 0.22, decay: 0.12 },
+      noi: { vol: 0.1 },
+    },
     patterns: {
+      // Intro: the curtain. A crash, a climb to a held high tonic over an
+      // arpeggiated chord, then a three-note lift into the theme.
+      I: {
+        p1: 'G4 .  C5 .  E5 .  G5 -  -  .  C6 -  -  -  -  -  -  -  -  -  -  .  .  .  G5 .  A5 .  B5 .  .  .',
+        p2: 'E4 .  G4 .  C5 .  E5 -  -  .  G5 -  -  -  -  -  -  -  -  -  -  .  .  .  D5 .  F5 .  G5 .  .  .',
+        wav: 'C2+E2+G2 -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  G1 -  -  -  G1 -  -  -',
+        noi: 'c  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  x  .  h  .  s  .  h  h',
+      },
       A: {
         p1: 'C5 .  E5 .  G5 .  C6 -  -  .  B5 .  C6 -  -  .  A5 .  F5 .  G5 -  -  .  E5 -  -  -  -  -  -  .',
         p2: 'E4 .  G4 .  C5 .  E5 .  .  .  D5 .  E5 .  .  .  F4 .  A4 .  B4 .  .  .  C5 -  -  -  -  -  -  .',
@@ -582,6 +803,7 @@ const TRACKS = {
         noi: '.  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  c  .  .  .  .  .  .  .',
       },
     },
+    intro: ['I'],
     order: ['A', 'A', 'B', 'A', 'C', 'D'],
   },
 

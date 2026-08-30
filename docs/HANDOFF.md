@@ -447,6 +447,53 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+**PROVE AN ENGINE CHANGE INERT BEFORE YOU CHANGE THE DATA THAT WOULD MASK IT.**
+`tools/check-audio-render.mjs` compares every track's Web Audio instruction
+trace against a recorded baseline, and its own failure message tells you to
+re-record when a divergence is intended. S7 added `intro` support to the music
+engine AND rewrote ten tracks. Doing both and then re-recording would have
+proved nothing at all — a real regression in the shared scheduling path would
+have been baked straight into the new baseline, invisibly, because ten tracks
+were expected to move anyway. The order that keeps the proof alive:
+
+1. Make the ENGINE change alone. Run the checker against the OLD baseline. It
+   must pass — that is the proof the new code path is inert for everything
+   that does not opt into it, and it is only available in this one window.
+2. Then change the data. Re-record.
+3. Then DIFF the two baselines by track and confirm that exactly the tracks you
+   edited moved. S7's read: 10 changed (the ten edited), 13 byte-identical.
+
+Step 3 is the part that is easy to skip and the part that catches you having
+touched a track you did not mean to. A re-recorded baseline is worth exactly
+as much as the run you did before re-recording it.
+
+**A CHECKER YOU HAVE NEVER SEEN GO RED IS NOT A CHECKER.** S7's new intro rules
+were written, run, and printed OK on the first try — which proves nothing,
+because a rule with a typo in its condition also prints OK. Every one of the
+six new failure modes was then deliberately induced (an intro naming a
+pattern that does not exist; an intro pattern also in `order`; an intro on a
+`loop:false` jingle; an orphan pattern; and TWO one-line engine sabotages —
+dropping the `_introDone = true` so the lead-in replays every loop, and an
+off-by-one at the wrap that eats a bar of the body). The four data rules and
+the two engine rules each went red with a readable message. The two engine
+ones are the point: no amount of reading the track data can see a wrap
+off-by-one, which is why `check-music.mjs` now DRIVES `Audio._scheduleRow`
+against a mock context and asks the engine which pattern it played, instead of
+modelling where the wrap ought to fall. Same rule as a collision checker
+calling `solidAt` — a private model does not fail when the real rule moves.
+
+**A SHORT CHANNEL HOLDS, IT DOES NOT REST — AND THE FORMAT COMMENT SAYS
+OTHERWISE.** `src/core/audio.js`'s MUSIC FORMAT header says a channel "shorter
+than the pattern's longest channel ... is silent for the remainder". It is not:
+`resolveEvent` returns `off` only on row 0 and `hold` on every later row, so a
+channel that runs out of tokens leaves its last note RINGING into the next
+pattern. `village`/B's `p2` was one token short of 32 for the whole life of the
+track and nobody noticed, because the symptom is a note that releases a
+sixteenth late rather than a note that vanishes. Ragged channel lengths are
+legal by design (an omitted channel is a real authoring tool), so a checker
+rule would be wrong — but if you author a pattern, count your tokens.
+
+
 **WEB AUDIO'S OWN RENDERING IS NOT BIT-REPRODUCIBLE ACROSS SCRIPT CONTEXTS —
 HASH THE INSTRUCTIONS, NOT THE SAMPLES.** S6 needed to prove that a track using
 none of the new vibrato/echo/arpeggio options renders byte-identically after

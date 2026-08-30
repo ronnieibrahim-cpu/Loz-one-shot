@@ -13,7 +13,9 @@ Every id in this document (`R1`, `T14`, `V6`, `A3`) is stable. Prompts cite them
 **If you add a trap, append a new number — never renumber, and never reuse a
 retired one.**
 
-Last verified against the tree: **2026-08-29**, commit `64a6561`; `§1`, `A5` and
+Last verified against the tree: **2026-08-30**; `A5`, `§3` and `§4.1`
+re-verified by S7 (music: intros, loop length, the S6 techniques in use).
+Previously **2026-08-29**, commit `64a6561`; `§1`, `A5` and
 `§3`/`§4.1` re-verified by S6 (music engine: vibrato, echo, arpeggio).
 Previously re-verified against `0d435fc`; `§1`, `A1` and
 `§3` re-verified by S1 (hitstop).
@@ -281,18 +283,34 @@ is not "the game's music"; S7 owns actually composing with these. **Whether the
 vibrato reads as a Game Boy or a synthesiser is unjudged (`§4.2`)** — that is
 the whole point of the session per its own prompt.
 
+**S7 IS DONE.** All three of the gaps below are closed. `intro:` is real
+(`Audio._sequence()`), nine tracks have one, ten tracks were extended or
+reworked, and the S6 techniques are in actual use rather than only in
+`engineDemo`. `check-music.mjs` covers intros both statically and by DRIVING
+the engine for two loops. **None of it has been listened to** (`§4.2`) — the
+listening notes are at the end of S7's section in `docs/NEXT-SESSION.md`.
+
+**The framing "the region themes should get intros too" is wrong — do not act
+on it.** `Audio.play()` restarts on a name change, so a track you re-enter
+constantly re-plays its lead-in constantly. Intros went to the nine tracks you
+ARRIVE at (`title`, `overworld`, `village`, `dungeon`, `dungeon2`, `boss`,
+`finalBoss`, `abyss`, `ending`) and deliberately not to `cave`, `reef`,
+`marsh`, `salt`, `shop` or any jingle.
+
 **What was genuinely missing, before S6:**
 
-1. **No intro.** No track has a non-looping lead-in; the engine's `order`/`loop`
-   model has no concept of one. **Still missing — this is S7's job, not S6's**
-   (S6's prompt scoped intros out explicitly).
+1. ~~**No intro.**~~ **DONE (S7).** A track may declare `intro: ['I']` —
+   patterns played once as a non-looping lead-in, then left behind for the
+   life of that playback. See `T72`.
 2. ~~**No channel technique.**~~ **DONE.** `src/core/audio.js` used to support
    only per-channel `duty`, `decay` and `glide` (and `glide` itself was, and
    still is, dead — declared in `DEFAULT_CFG` and never read anywhere; S6 did
    not touch it because removing a dead field it did not add was out of
    scope). Vibrato, echo and arpeggio are real now.
-3. **Loop length.** ~8 bars before repeat, against considerably longer in the
-   source.
+3. ~~**Loop length.**~~ **DONE for the four long-heard tracks (S7).**
+   `overworld` 10->14 bars, `village` 8->12, `dungeon` 8->12, `dungeon2` 8->10,
+   plus a 2-bar intro on each. `reef`, `marsh`, `salt` and `shop` are still at
+   ~8 bars and are the obvious next music session.
 
 ### A6 — NPC dialogue
 
@@ -652,6 +670,32 @@ by number.
   what actually determines the sound. `Audio.init(ctxOverride)` exists for
   exactly this. See `tools/check-audio-render.mjs` and `docs/HANDOFF.md`.
 
+- **T72 — An intro is spent at the WRAP, and both ways of getting that wrong
+  are silent.** `Audio._sequence()` returns `intro.concat(order)` until the
+  first wrap and `order` after; `_introDone` is set AFTER the length test in
+  `_scheduleRow`, which is the only ordering that makes the lead-in count
+  toward the first wrap and no other. Drop the assignment and the intro
+  replays every loop; move the test and the seam eats a bar of the body.
+  **Neither is visible in the track data**, which is why `check-music.mjs`
+  drives `Audio._scheduleRow` for two loops against the mock context in
+  `tools/lib/mock-audio-ctx.mjs` and asks the engine which pattern it played,
+  instead of modelling where the wrap ought to fall. Both sabotages were
+  induced and both go red.
+- **T73 — Echo is a CHANNEL config, so one authored token anywhere in the track
+  disables it for that pattern**, silently and only there. A track whose `p2`
+  is an echo must omit `p2` from EVERY pattern, intros included.
+  `check-music.mjs` rejects a track carrying both — but the failure it is
+  guarding against is a track that plays correctly in three patterns out of
+  four.
+- **T74 — A channel shorter than its pattern HOLDS, it does not rest, and the
+  format comment says otherwise.** `src/core/audio.js`'s header claims a short
+  channel is "silent for the remainder"; `resolveEvent` returns `off` only on
+  row 0 and `hold` on every later row, so the last note rings on into the next
+  pattern. `village`/B's `p2` was one token short of 32 for the whole life of
+  the track and the symptom was a note releasing a sixteenth late, not a note
+  vanishing. Ragged lengths are legal by design, so this is not checkable —
+  count your tokens when you author a pattern.
+
 ### Story and dialogue
 
 - **T47 — A dialogue id the map asks for and `story.js` does not define shows an
@@ -831,7 +875,7 @@ are faster than you are and they do not rationalise.
 | V8 | `node tools/check-items.mjs` | Every item does the verb `docs/ITEMS.md` claims; nothing hands out a nonexistent item |
 | V9 | `node tools/check-hearts.mjs` | Heart economy and the contact-damage ladder |
 | V19 | `node tools/check-sfx.mjs` | Every sfx name reachable from a call site or a data table is defined (`T45`), and nothing is defined and never played. Wired into `V16` |
-| V10 | `node tools/check-music.mjs` | Track orders, note ranges per channel including vibrato's swung extreme and every note of a '+' arpeggio chord, noise = percussion only |
+| V10 | `node tools/check-music.mjs` | Track orders, note ranges per channel including vibrato's swung extreme and every note of a '+' arpeggio chord, noise = percussion only. Since S7 also: a track's `intro` is a real, non-empty, loop-disjoint pattern list absent from jingles; no pattern is defined and never played; and — by DRIVING `Audio._scheduleRow` for two loops — the engine actually spends the lead-in exactly once (`T72`) |
 | V20 | `node tools/check-audio-render.mjs` | A track using none of vibrato/echo/arpeggio schedules the exact same Web Audio instructions it always did (`T71`). Wired into `V16` |
 | V11 | `node tools/replay.mjs` | Movement and combat are frame-identical to 51 recorded baselines |
 | V12 | `node tools/check-bosses.mjs` | Every boss spawns and its weak point opens — **in GOD MODE, see T37** |

@@ -19,6 +19,20 @@
 //   * the noise channel only ever carries the five drum tokens (x s h H c)
 //     or rest/hold — never a pitched note, which would be a channel mix-up —
 //     and never a melodic-channel option (vibrato/echo), because it has none
+//   * a track's `intro` (the non-looping lead-in, S7) is a non-empty list of
+//     patterns that exist, shares no pattern with `order` (a pattern in both
+//     is heard again on every loop, which is the one thing a lead-in is
+//     defined by not doing), and is absent from one-shot `loop:false` tracks,
+//     which have no loop for it to lead into
+//   * every pattern a track defines is reached by `intro` or `order` — an
+//     authored pattern nothing plays is silent work, and an intro makes that
+//     easy to write by accident
+//   * IN THE ENGINE, not just in the data: each intro'd track is actually
+//     driven through enough rows for two full loops, and the patterns it
+//     schedules must be exactly `intro` once followed by `order` repeating.
+//     A structural check cannot see an off-by-one in the wrap that replays
+//     the lead-in every loop or drops the first bar of the body — and that
+//     failure is inaudible in any check that only reads the data
 //   * an `echo` channel config names a real, different melodic channel to
 //     echo, and refuses to co-exist with authored pattern text on the same
 //     channel in the same pattern — an authored token always wins in the
@@ -28,7 +42,8 @@
 // Usage: node tools/check-music.mjs
 
 import { TRACKS, SFX } from '../src/data/audio.js';
-import { noteFreq, DEFAULT_CFG, vibratoRange } from '../src/core/audio.js';
+import { Audio, noteFreq, DEFAULT_CFG, vibratoRange } from '../src/core/audio.js';
+import { mockCtx } from './lib/mock-audio-ctx.mjs';
 
 const PULSE_MIN = 64, PULSE_MAX = 131072;
 const WAVE_MIN = 32, WAVE_MAX = 65536;
@@ -50,6 +65,35 @@ for (const [name, t] of Object.entries(TRACKS)) {
   if (!order.length) problems.push(`${name}: empty order`);
   for (const pname of order) {
     if (!t.patterns[pname]) problems.push(`${name}: order references pattern '${pname}', which does not exist`);
+  }
+
+  // --- the non-looping lead-in ---------------------------------------------
+  const intro = t.intro;
+  if (intro !== undefined) {
+    if (!Array.isArray(intro) || !intro.length) {
+      problems.push(`${name}: intro must be a non-empty array of pattern names`);
+    } else {
+      if (t.loop === false) {
+        problems.push(`${name}: has an intro but loop:false — a one-shot track has no loop for a ` +
+          `lead-in to lead into, so put the lead-in at the front of order instead`);
+      }
+      for (const pname of intro) {
+        if (!t.patterns[pname]) problems.push(`${name}: intro references pattern '${pname}', which does not exist`);
+        if (order.includes(pname)) {
+          problems.push(`${name}: pattern '${pname}' is in BOTH intro and order — it would be heard again on ` +
+            `every loop, which is exactly what a lead-in is not`);
+        }
+      }
+    }
+  }
+
+  // A pattern nothing plays. Cheap here, and an intro makes it easy to write
+  // one by renaming half a sequence.
+  const reached = new Set([...order, ...(Array.isArray(intro) ? intro : [])]);
+  for (const pname of Object.keys(t.patterns)) {
+    if (!reached.has(pname)) {
+      problems.push(`${name}: pattern '${pname}' is defined but neither intro nor order ever plays it`);
+    }
   }
 
   const cfg = t.cfg || {};
@@ -123,6 +167,69 @@ for (const [name, t] of Object.entries(TRACKS)) {
   }
 }
 
+// --------------------------------------------------------------------------
+// The intro, in the engine
+// --------------------------------------------------------------------------
+//
+// Everything above reads the data. This DRIVES `Audio._scheduleRow` — the
+// same code path a real browser runs, against the mock context from
+// tools/lib/mock-audio-ctx.mjs — and asks the engine itself which pattern it
+// played on each row, rather than re-deriving where the wrap ought to fall.
+// (Same rule as a collision checker calling `solidAt` instead of modelling
+// it: a private model of the wrap would not fail when the real wrap changed.)
+
+/** The exact sequence of patterns `name` schedules over `passes` loops of its
+ *  body, read out of the engine as it plays. */
+function playedPatterns(name, passes) {
+  const t = TRACKS[name];
+  const { ctx } = mockCtx();
+  const a = new Audio();
+  a.init(ctx);
+  a.addTracks(TRACKS);
+  a.play(name);
+
+  // Ask the engine which pattern is current; never guess. Keeping only the
+  // LAST value per row matters because `_scheduleRow` may consult this twice
+  // on a row that wraps into the next pattern.
+  const byPattern = new Map(Object.entries(t.patterns).map(([k, v]) => [v, k]));
+  const orig = a._currentPattern.bind(a);
+  let lastName = null;
+  a._currentPattern = () => { const p = orig(); if (p) lastName = byPattern.get(p) ?? '?'; return p; };
+
+  const order = t.order || Object.keys(t.patterns);
+  const intro = Array.isArray(t.intro) ? t.intro : [];
+  const rowsOf = pname => a._patternLength(t.patterns[pname]);
+  const total = [...intro, ...order].reduce((n, p) => n + rowsOf(p), 0)
+    + (passes - 1) * order.reduce((n, p) => n + rowsOf(p), 0);
+
+  const rowDur = 60 / (t.bpm || 120) / (t.rowsPerBeat || 4);
+  const played = [];
+  let prevIdx = null;
+  let time = a._nextRowTime;
+  for (let i = 0; i < total && a.track; i++) {
+    a._scheduleRow(time, rowDur);
+    time += rowDur;
+    // After the call, `_orderIdx` is the index of the pattern that row
+    // belonged to — the wrap happens at the top of `_scheduleRow`.
+    if (prevIdx === null || a._orderIdx !== prevIdx) played.push(lastName);
+    prevIdx = a._orderIdx;
+  }
+  return played;
+}
+
+const PASSES = 2;
+for (const [name, t] of Object.entries(TRACKS)) {
+  if (!Array.isArray(t.intro) || !t.intro.length) continue;
+  if (t.intro.some(p => !t.patterns[p])) continue;   // already reported above
+  const order = t.order || Object.keys(t.patterns);
+  const want = [...t.intro, ...order, ...order];
+  const got = playedPatterns(name, PASSES);
+  if (JSON.stringify(got) !== JSON.stringify(want)) {
+    problems.push(`${name}: over ${PASSES} loops the engine played [${got.join(' ')}] but the ` +
+      `track says intro+order+order = [${want.join(' ')}] — the lead-in is not being spent exactly once`);
+  }
+}
+
 // SFX defs are not tracker patterns, but a 'noise'-typed effect's freq/freq2
 // should also sit in range, and this is cheap to check while we're here.
 function checkSfxFreqs(name, d) {
@@ -137,7 +244,9 @@ function checkSfxFreqs(name, d) {
 }
 for (const [name, d] of Object.entries(SFX)) checkSfxFreqs(name, d);
 
-console.log(`check-music: ${Object.keys(TRACKS).length} tracks, ${Object.keys(SFX).length} sfx`);
+const introCount = Object.values(TRACKS).filter(t => Array.isArray(t.intro) && t.intro.length).length;
+console.log(`check-music: ${Object.keys(TRACKS).length} tracks (${introCount} with an intro), ` +
+  `${Object.keys(SFX).length} sfx`);
 if (problems.length) {
   console.error(`\n${problems.length} problem(s):`);
   for (const p of problems) console.error('  ' + p);

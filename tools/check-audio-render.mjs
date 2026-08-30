@@ -42,56 +42,12 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Audio } from '../src/core/audio.js';
 import { TRACKS } from '../src/data/audio.js';
+import { mockCtx } from './lib/mock-audio-ctx.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const BASELINE = resolve(HERE, 'audio-render-baseline.json');
 const ROWS = 48; // covers a full pattern plus wraparound into the next for every track
 const RECORD = process.argv.includes('--record');
-
-function mockCtx() {
-  let nodeId = 0;
-  const trace = [];
-  function param(tag) {
-    return {
-      value: 0,
-      setValueAtTime(v, t) { trace.push([tag, 'set', v, t]); return this; },
-      linearRampToValueAtTime(v, t) { trace.push([tag, 'lin', v, t]); return this; },
-      exponentialRampToValueAtTime(v, t) { trace.push([tag, 'exp', v, t]); return this; },
-      setTargetAtTime(v, t, c) { trace.push([tag, 'tgt', v, t, c]); return this; },
-      cancelScheduledValues(t) { trace.push([tag, 'cancel', t]); return this; },
-    };
-  }
-  const ctx = {
-    sampleRate: 44100, currentTime: 0, destination: {},
-    createGain() { const id = nodeId++; return { gain: param('gain' + id), connect() {} }; },
-    createBiquadFilter() {
-      const id = nodeId++;
-      return { type: '', frequency: param('bqf' + id), Q: param('bqq' + id), connect() {} };
-    },
-    createOscillator() {
-      const id = nodeId++;
-      return {
-        type: '', frequency: param('osc' + id),
-        setPeriodicWave(w) { trace.push(['osc' + id, 'wave', w.imag]); },
-        connect() {}, start(t) { trace.push(['osc' + id, 'start', t]); }, stop(t) { trace.push(['osc' + id, 'stop', t]); },
-      };
-    },
-    createBufferSource() {
-      const id = nodeId++;
-      return {
-        buffer: null, loop: false, connect() {},
-        start(t) { trace.push(['src' + id, 'start', t]); }, stop(t) { trace.push(['src' + id, 'stop', t]); },
-      };
-    },
-    createBuffer(ch, len) { return { getChannelData: () => new Float32Array(len) }; },
-    // The real wave() caches a PeriodicWave per duty, derived from `imag` by
-    // pure arithmetic on the duty value — carrying the coefficients forward
-    // lets the trace tell two timbres apart without needing to know "duty"
-    // is the thing that produced them.
-    createPeriodicWave(real, imag) { return { imag: Array.from(imag) }; },
-  };
-  return { ctx, trace };
-}
 
 function renderTrace(trackName) {
   const { ctx, trace } = mockCtx();

@@ -1,3 +1,164 @@
+## S7 — Music: intros, loop length, and the S6 techniques in use (this session)
+
+**Run per `docs/SESSION-PROMPTS.md` S7, on top of S6.** The music engine grew
+the one structural thing it lacked, ten tracks were extended or reworked to use
+it and the S6 techniques, and `check-music.mjs` grew to cover both. Nothing
+outside `src/core/audio.js`, `src/data/audio.js` and the two music checkers was
+touched.
+
+### 1. The engine: `intro`
+
+A track may now declare `intro: ['I']` — a list of patterns played ONCE as a
+non-looping lead-in, before `order` begins, and never returned to.
+
+- `Audio._sequence()` is the whole mechanism: it returns `intro.concat(order)`
+  until the first wrap and the track's own `order` array from then on. The
+  no-intro path returns `order` untouched and allocates nothing, which is what
+  keeps every pre-S7 track byte-identical.
+- `_introDone` is set at the wrap, AFTER the length test — that ordering is
+  what makes the intro count toward the first wrap and no other. Both ways of
+  getting it wrong are covered by a checker (see below); do not "simplify" it.
+- `_releaseAll()` clears it, so every track boundary owes the next playback its
+  intro back. A restart, and a resume after a jingle, both replay the lead-in,
+  because both are a fresh playback.
+- `loop: false` (jingles) plus `intro` is rejected: a one-shot has no loop for a
+  lead-in to lead into.
+
+### 2. Where intros went, and where they deliberately did not
+
+**Nine tracks have one**: `title`, `overworld`, `village`, `dungeon`,
+`dungeon2`, `boss`, `finalBoss`, `abyss`, `ending`.
+
+**Not `cave`, `reef`, `marsh`, `salt`, `shop`, or any jingle — and that is a
+decision, not an omission.** `Audio.play()` restarts the track whenever the
+name changes, so a track you re-enter constantly would re-play its lead-in
+constantly. Crossing a region border back and forth, or walking in and out of
+the shop, would fire a fanfare every time. Intros went only to tracks you
+arrive at, not tracks you pass through. If you add an intro to a region theme,
+that is the thing that will be wrong with it.
+
+One that fell out for free: `enemy.js:314` starts the `boss` track halfway
+through a boss's held-pose entrance, so the new boss stinger now runs under the
+pose and lands the loop about when the fight starts. Nothing was wired to make
+that happen.
+
+### 3. Loop length — the four long-heard tracks
+
+| Track | Was | Now | Added |
+|---|---|---|---|
+| `overworld` | 5 patterns, ~18s | intro + 7, ~29s | E, F |
+| `village` | 4 patterns, ~17s | intro + 6, ~30s | D, E |
+| `dungeon` | 4 patterns, ~15s | intro + 6, ~27s | D, E |
+| `dungeon2` | 4 patterns, ~17s | intro + 5, ~26s | D |
+
+Every new pattern was held to the prompt's bar: one sentence saying what it
+does that no existing pattern in that track does.
+
+- **`overworld`/E** — hands the tune to the WAVE channel and parks both pulses
+  on a held chord above it, so the melody arrives from underneath. A-D all use
+  the wave channel as a bass ostinato; this is the only place it sings.
+- **`overworld`/F** — A's opening contour moved down a third through the same
+  scale, which lands it in the relative minor. Placed immediately before D so
+  the call-to-adventure fanfare arrives out of the minor.
+- **`village`/D** — the theme's only call and response: p1 states a phrase and
+  stops dead, p2 answers into the hole. In A/B/C both pulses always sound
+  together.
+- **`village`/E** — the only pattern in the town theme with a kick in it; the
+  pulses drop to offbeat stabs and the kit carries the two bars.
+- **`dungeon`/D** — call and response across octaves: p1 asks up top, p2 gives
+  it back a full octave down in the silence after it.
+- **`dungeon`/E** — the one pattern where the wave channel stops walking the
+  bass and holds an arpeggiated chord instead, with the kit alone under it for
+  a bar.
+- **`dungeon2`/D** — the only pattern in the game where the delay IS the melody:
+  the lead states half a bar and leaves a five-row hole, and the echo fills it.
+
+### 4. The S6 techniques, now actually in use
+
+- **Vibrato** — on `p1` of `title`, `overworld`, `village`, `dungeon`,
+  `dungeon2`, `cave`, `boss`, `finalBoss`, `abyss`, `ending`, all at the
+  `feel.js` default depth (0.18 semitones). It is self-limiting: it only
+  reaches a note held past `VIBRATO_DELAY_FRAMES` (10f), which in every one of
+  these tracks means the held note at the end of a phrase and nothing else. No
+  per-track depth was invented — the default is the guess we have.
+- **Echo** — `cave` and `dungeon2`. Both had a `p2` that was doing thin
+  doubling work; both now have no authored `p2` at all and get the lead back a
+  beat later at 0.4/0.42 volume instead. **This is the change most likely to be
+  wrong to a listener**: it thins `dungeon2`'s harmony (its p2 was carrying
+  chord roots an octave above the bass) in exchange for making it audibly the
+  echoing dungeon rather than a transposed `dungeon`. Judge it before building
+  on it. Note the hard constraint that shapes both: echo is a channel config,
+  so a single authored `p2` string ANYWHERE in the track silently switches the
+  effect off for that pattern — `check-music.mjs` rejects a track carrying
+  both.
+- **Arpeggio** — the wave channel in eight of the nine intros, plus
+  `dungeon`/E. Every use is the same situation: a place where the harmony
+  wants a whole chord and there is no channel free to spell it.
+
+### 5. `check-music.mjs` (V10) now covers intros
+
+Four static rules (intro is a non-empty list of patterns that exist; shares no
+pattern with `order`; absent from `loop:false` tracks; and every pattern a
+track defines is reached by one or the other) — plus, importantly, **a live
+engine check**: each intro'd track is driven through `Audio._scheduleRow` for
+two full loops against the mock context, and the patterns it actually
+schedules must be exactly `intro` once then `order` twice. It asks the engine
+which pattern it played rather than modelling where the wrap falls, for the
+same reason a collision checker calls `solidAt`.
+
+All six new failure modes were deliberately induced and each went red; see
+`docs/HANDOFF.md`'s hard-won-lessons section for the two engine sabotages, and
+for why the ENGINE change was proved inert against the OLD render baseline
+before any track data was touched.
+
+`tools/lib/mock-audio-ctx.mjs` is new: the mock AudioContext, moved verbatim
+out of `check-audio-render.mjs` so both music checkers trace one engine rather
+than two slightly different copies of one.
+
+### 6. One pre-existing bug fixed in passing
+
+`village`/B's `p2` was 31 tokens against the pattern's 32 for the whole life of
+the track, so its last note rang into the next pattern's downbeat instead of
+releasing with `p1`. Fixed by appending the missing rest — **no note moved**,
+because which token was originally dropped is not recoverable from the data and
+guessing would have recomposed the bar. If the phrase sounds a row out of place
+to you, that is the thing to look at.
+
+### What S7 did NOT do
+
+- **Nobody has heard any of this.** Every claim above is structural. See the
+  listening notes at the end of this section.
+- `glide` is still declared in `DEFAULT_CFG` and read by nothing. Still not
+  removed; still out of scope.
+- `engineDemo` is still present. S6 said S7 may delete it once the techniques
+  are in real use — they now are, but it is still the only place to hear the
+  three in isolation, so it stays until someone has A/B'd the real tracks.
+- `reef`, `marsh`, `salt`, `shop` were not extended or given techniques at all.
+  They are the obvious next music session.
+
+### Where to stand to hear a full loop
+
+In `dist/oracle-of-tides.html`:
+
+- **`overworld`** — leave the first town and stand still on the overworld.
+  Intro ~3.6s, then a ~29s loop. The two new things to listen for are the
+  melody dropping into the bass register (pattern E, about 18s in) and the
+  minor turn immediately before the fanfare (F, about 22s in).
+- **`village`** — stand in the town square, out of the shop. Intro ~4.3s, then
+  ~30s. New: the two pulses trading phrases instead of stacking (D), then the
+  only bar of town music with a kick drum (E).
+- **`dungeon`** — enter D1 and stand in the first room. Intro ~3.9s (a crash
+  and a descent — the door closing), then ~27s. New: the octave call-and-
+  response (D) and the bar where the bass stops walking (E).
+- **`dungeon2`** — enter D2. This is the one to judge hardest: the second pulse
+  is now pure echo everywhere. Listen for whether the corridor reads as space
+  or as mud, and specifically for pattern D, where the lead stops and the echo
+  answers alone.
+- **Compare** `dungeon` against `dungeon2` back to back. They are supposed to
+  be two different dungeons now, not one theme in two keys.
+
+---
+
 ## S6 — Music engine: vibrato, echo, arpeggio (this session)
 
 **Run per `docs/SESSION-PROMPTS.md` S6, on top of S4.** `src/core/audio.js`
