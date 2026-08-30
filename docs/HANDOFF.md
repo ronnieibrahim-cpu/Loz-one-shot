@@ -447,6 +447,52 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+**A HANDOFF NOTE THAT NAMES A MECHANISM IS STILL A CLAIM ABOUT THE TREE.** `A6`
+said `npc`, `sign` and `giver` "each accept `dialogue`, `waiting` and `after`",
+and the S9 prompt built on it: no engine work needed, just write lines. `NPC`
+read only `o.dialogue`. `Sign` read only `o.text`. The two-state contract lived
+on `Giver` and `Trader` alone, so the twelve entities the session was about had
+no mechanism for a second line at all. **The note was specific, plausible, and
+wrong**, and it would have been believed for another session if the first thing
+done had been writing dialogue instead of opening `objects.js`. Its COUNTS
+(57 written / 51 referenced / 6 orphaned) re-verified exactly — so the failure
+was not sloppiness, it was that counting is checkable and "this class accepts
+that field" was never checked by anything. Now it is: `check-dialogue.mjs`
+constructs each NPC and drives the real `interact`.
+
+**AND THE SIZE OF THE GAP WAS WRONG IN THE SAME NOTE, IN THE OPPOSITE
+DIRECTION.** `A6` listed ~21 single-state townspeople. Nine of them were
+`trader` **waiting** lines that had always flipped to an `after` line as the
+Coastwise Chain advanced. The real number was 12. **Before writing to a list in
+a doc, print the same list out of the data** — it took one script and it moved
+the session's scope by 43%.
+
+**REUSE THE UNPLACED LINES INSTEAD OF ADDING NPCS TO SAY THEM.** Four of the six
+orphans (`child1`, `elder1`, `netMender`, `shopkeeper2`) were written for
+villagers nobody ever placed. They became the LATER lines of villagers who are
+placed, which resolves the orphan, honours `T49` (adding an NPC is not free),
+and costs no new entity. The other two were deletions with evidence rather than
+taste: `signCoast` duplicated text already inlined on a real sign — `Sign` says
+`o.text` literally and never consults the id table, so an entry there is
+unreachable by construction — and `villager3` explained how the conch works,
+which the intro cutscene already does.
+
+**THE ORPHAN CHECK NEEDS TO WALK NESTED DATA OR IT INVENTS ORPHANS.** A first
+cut of `check-dialogue.mjs` read only top-level entity fields and reported 20
+orphans against the true 6. Ten of the eleven trade lines live in
+`trader.deals[].text`, and `makuTree` hides two more behind `sceneAfter` and its
+own deal. A checker that is wrong in the *safe* direction is still wrong: it
+would have had this session delete fourteen lines that a player reads.
+
+**PROVE THE SECOND STATE IS REACHABLE, NOT MERELY WIRED.** Every id can be
+defined, every reference can resolve, and a townsperson can still have a line no
+player will ever hear — a threshold above the six Essences that exist, or an
+`after` with no condition at all (which silently makes the *first* line the
+unreachable one, because `ready()` is vacuously true with nothing to wait for).
+Both were induced and both go red. This is the dialogue-shaped instance of
+`T53`: existence is not appearance.
+
+
 **THE OVERWORLD IS 1% WATER, IN A GAME ABOUT TIDES.** Counted across all 120
 overworld screens (9600 tiles) using the engine's own flags: at LOW tide **88
 tiles carry `F.WATER` — 0.9%**; at MID 391 (4.1%); at HIGH 116 (1.2%). Solid is

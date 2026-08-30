@@ -389,7 +389,7 @@ const rooms = {
       '###gggg###',
     ],
     entities: [
-      ['npc', 4, 3, { sprite: 'npc_hood_red', dialogue: 'salterElder' }],
+      ['npc', 4, 3, { sprite: 'npc_hood_red', dialogue: 'salterElder', after: 'salterElderAfter', needEssences: 4 }],
       ['sign', 6, 4, { text: 'The pans drink the sea and give back stone.' }],
     ],
   },
@@ -680,7 +680,7 @@ const rooms = {
       '###gggg###',
     ],
     entities: [
-      ['npc', 4, 3, { sprite: 'npc_reefkin_r', dialogue: 'reefFisher' }],
+      ['npc', 4, 3, { sprite: 'npc_reefkin_r', dialogue: 'reefFisher', after: 'reefFisherAfter', needEssences: 1 }],
     ],
   },
   '0,10,2': {
@@ -1714,9 +1714,9 @@ const rooms = {
       // `every(e, n)` phases an enemy off its id — so one extra villager here
       // re-phases every enemy in the game and the d1-descent replay walks into
       // a hit it used to dodge. Recorded in docs/HANDOFF.md.
-      ['npc', 7, 1, { ...FOLK.brine, wander: true, dialogue: 'villager1' }],
-      ['npc', 6, 6, { sprite: 'npc_villager2', wander: true, dialogue: 'villager2' }],
-      ['npc', 6, 1, { sprite: 'npc_child', wander: true, dialogue: 'villageChild' }],
+      ['npc', 7, 1, { ...FOLK.brine, wander: true, dialogue: 'villager1', after: 'elder1', needEssences: 4 }],
+      ['npc', 6, 6, { sprite: 'npc_villager2', wander: true, dialogue: 'villager2', after: 'villager2After', needEssences: 3 }],
+      ['npc', 6, 1, { sprite: 'npc_child', wander: true, dialogue: 'villageChild', after: 'child1', needEssences: 2 }],
       ['giver', 8, 2, {
         ...FOLK.salter, dialogue: 'digger', waiting: 'diggerWait',
         after: 'diggerAfter', flag: 'gotCoin', item: 'coin', level: 1,
@@ -1955,7 +1955,7 @@ const rooms = {
         sprite: 'npc_child', waiting: 'coastChild', after: 'pellAfter',
         deals: [{ stage: 2, wants: 'float', gives: 'claw', text: 'pellTrade' }],
       }],
-      ['npc', 8, 1, { ...FOLK.salter, dialogue: 'shoreSalter' }],
+      ['npc', 8, 1, { ...FOLK.salter, dialogue: 'shoreSalter', after: 'shoreSalterAfter', needEssences: 3 }],
       ['crab', 6, 4],
     ],
   },
@@ -2067,7 +2067,7 @@ const rooms = {
     ],
     entities: [
       ['sign', 2, 1, { text: 'SANDPIPER ROW\nTwo houses, one boat, no harbour.' }],
-      ['npc', 5, 5, { sprite: 'npc_fisher', wander: true, dialogue: 'fisher1' }],
+      ['npc', 5, 5, { sprite: 'npc_fisher', wander: true, dialogue: 'fisher1', after: 'fisher1After', needEssences: 2 }],
       // Coastwise Chain, link 6.
       ['trader', 4, 6, {
         sprite: 'npc_hood_blue', waiting: 'sandpiperKid', after: 'sennitAfter',
@@ -2364,7 +2364,7 @@ function installHouses() {
           '##########',
         ],
         entities: [
-          ['npc', 2, 2, { sprite: 'npc_shopkeeper', dialogue: 'shopkeeper' }],
+          ['npc', 2, 2, { sprite: 'npc_shopkeeper', dialogue: 'shopkeeper', after: 'shopkeeper2', needEssences: 3 }],
           ['shopItem', 4, 3, { item: 'shield', level: 1, price: 30, once: true, saveKey: 'shopShield' }],
           ['shopItem', 6, 3, { pickup: 'bomb4', price: 20, name: 'Bombs' }],
           ['shopItem', 8, 3, { pickup: 'heart', price: 10, name: 'Heart' }],
@@ -2427,7 +2427,7 @@ function installHouses() {
             scene: 'makuMaster', sceneNeed: 5, sceneFlag: 'makuOpenedKeep',
             sceneAfter: 'makuOpened',
           }],
-          ['npc', 7, 4, { sprite: 'npc_farore_0', dialogue: 'faroreHome' }],
+          ['npc', 7, 4, { sprite: 'npc_farore_0', dialogue: 'faroreHome', after: 'faroreHomeAfter', needEssences: 5 }],
         ],
         // The hollow is at 3,1 in the tree line at the top of the square.
         warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 4, ry: 7, px: 64, py: 40, dir: 'down' } }],
@@ -2461,8 +2461,8 @@ function installHouses() {
   });
 
   home('houseHearth', 'A Village House', 'village', [
-    ['npc', 3, 2, { sprite: 'npc_villager2', dialogue: 'hearthWife' }],
-    ['npc', 7, 4, { sprite: 'npc_child', wander: true, dialogue: 'hearthChild' }],
+    ['npc', 3, 2, { sprite: 'npc_villager2', dialogue: 'hearthWife', after: 'hearthWifeAfter', needEssences: 3 }],
+    ['npc', 7, 4, { sprite: 'npc_child', wander: true, dialogue: 'hearthChild', after: 'hearthChildAfter', needEssences: 2 }],
     ['pickup', 2, 4, { kind: 'rupee5' }],
   ], { rx: 4, ry: 7, px: 32, py: 88 });
 
@@ -2482,7 +2482,7 @@ function installHouses() {
   ], { rx: 4, ry: 8, px: 48, py: 104 });
 
   home('houseSandpiper', 'Sandpiper Cottage', 'village', [
-    ['npc', 5, 2, { sprite: 'npc_villager', dialogue: 'sandpiper' }],
+    ['npc', 5, 2, { sprite: 'npc_villager', dialogue: 'sandpiper', after: 'netMender', needEssences: 2 }],
     ['pickup', 7, 4, { kind: 'rupee5' }],
   ], { rx: 9, ry: 8, px: 32, py: 88 });
 }

@@ -1,3 +1,104 @@
+## S9 — Townspeople react to the plot (this session)
+
+**Run per `docs/SESSION-PROMPTS.md` S9, on top of S8.** Twelve townspeople now
+have a second line keyed to a story beat, the six orphan ids are resolved, and
+`tools/check-dialogue.mjs` closes `T47`. **Two of `A6`'s claims were wrong and
+are corrected in `SESSION-HANDOFF.md`.**
+
+### The two corrections (read these before trusting A6 again)
+
+1. **`npc` and `sign` did NOT accept `waiting`/`after`.** `NPC` read only
+   `o.dialogue`; `Sign` reads only `o.text` and still does. The two-state
+   contract lived on `Giver`/`Trader` alone, so engine work WAS needed. `A6`'s
+   COUNTS were right and re-verified (57 written / 51 referenced / 6 orphaned).
+2. **The gap was 12 townspeople, not ~21.** Nine of the listed names are
+   `trader` waiting lines that already flipped to an `after` as the Coastwise
+   Chain advanced.
+
+### The engine change — deliberately not a third system
+
+`needEssences`, `needFlag`, `ready()` and `afterText` were lifted out of `Giver`
+into `NPC`, which `Giver` already extends. A townsperson's second state is now
+spelled exactly the way a quest-giver's already was; `Giver` inherits them
+instead of declaring its own. `Trader` keeps its own `waitingText` because its
+fallback differs (`o.waiting || o.dialogue`).
+
+`NPC` also gained `conditional()`, separate from `ready()`. `ready()` is
+vacuously true when nothing is declared — right for a `Giver` with nothing to
+wait for, and catastrophic for choosing a line, because an unconditional
+`after` would become the only line the NPC ever said and the first line would be
+unreachable. See `T80`.
+
+**Two states only.** A third would want a real condition table and nothing has
+needed one yet.
+
+### The twelve, and their beats
+
+Spread 1..5 on purpose — a whole town turning over at once reads as a switch.
+
+| NPC | after | at |
+|---|---|---|
+| reefFisher | reefFisherAfter | 1 |
+| villageChild | child1 | 2 |
+| hearthChild | hearthChildAfter | 2 |
+| sandpiper | netMender | 2 |
+| fisher1 | fisher1After | 2 |
+| villager2 | villager2After | 3 |
+| shopkeeper | shopkeeper2 | 3 |
+| hearthWife | hearthWifeAfter | 3 |
+| shoreSalter | shoreSalterAfter | 3 |
+| villager1 | elder1 | 4 |
+| salterElder | salterElderAfter | 4 |
+| faroreHome | faroreHomeAfter | 5 |
+
+**No existing line was rewritten.** Nobody explains the plot; they notice the
+weather and complain about it.
+
+### The six orphans, decided
+
+- **Placed as later lines** of villagers who exist (`T49` — do not add NPCs to
+  hang lines on): `child1`, `elder1`, `netMender`, `shopkeeper2`.
+- **Deleted, with evidence**: `signCoast` duplicated text already inlined on the
+  real sign at `overworld/0,4,7` 8,4 — and `Sign` says `o.text` literally, so an
+  id-table entry for a sign is unreachable by construction (`T78`).
+  `villager3` explained how the conch works, which the intro cutscene already
+  does; a townsperson explaining a mechanic is the wrong register.
+
+### `tools/check-dialogue.mjs` (`V22`), wired into `V16`
+
+- Every referenced id is defined (`T47` — a miss is a silent EMPTY BOX).
+- Every defined id is referenced.
+- **Each two-state NPC is constructed and its real `interact` driven** either
+  side of its threshold, so a second line that is wired but unreachable fails.
+  Also fails an `after` with no condition, and a threshold above the six
+  Essences that exist.
+- It walks `trader.deals[].text` and `makuTree.sceneAfter`; a first cut that
+  read only top-level fields reported 20 orphans against the true 6 (`T79`).
+- All four failure modes were induced and each went red.
+
+### Verified
+
+`check-dialogue` 63/63/0 + 12 proved · `V7` towns 58/58 · `V8` items 91/91 ·
+`check-trade` 43/43 (`T48`) · `V16` **79/79** · `V11` replay 51/51 · `V13`
+playthrough 19/19 · build OK.
+
+### What S9 did NOT do
+
+- **Whether the new lines are in voice is not verified and cannot be** (`§4.2`).
+  Twelve of them are new prose. The register they are aiming at is the existing
+  one: complain, notice, never explain.
+- Signs are still literal-only. Nothing was changed there.
+- The `S8` finding stands untouched and is still the biggest thing on the board:
+  **the overworld is 0.9% water at LOW tide** in a game about tides.
+
+### Where to stand
+
+`dist/oracle-of-tides.html`. Talk to everyone in Tidewatch Village and the two
+houses, then again after 3 Essences, then after 5. The turn-over should feel
+staggered, not switched. `faroreHome` is the last to change, at 5.
+
+---
+
 ## S8 — The overworld map becomes a picture (this session)
 
 **Run per `docs/SESSION-PROMPTS.md` S8, on top of S7.** The map screen's two

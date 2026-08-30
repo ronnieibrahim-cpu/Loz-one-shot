@@ -15,7 +15,8 @@ retired one.**
 
 Last verified against the tree: **2026-08-30**; `A5`, `§3` and `§4.1`
 re-verified by S7 (music: intros, loop length, the S6 techniques in use), then
-by S8 (the overworld map becomes a picture; `A3`, `§3`, `§4.1`).
+by S8 (the overworld map becomes a picture; `A3`, `§3`, `§4.1`), then by S9
+(townspeople react; `A6`, `§3`, `§4.1`).
 Previously **2026-08-29**, commit `64a6561`; `§1`, `A5` and
 `§3`/`§4.1` re-verified by S6 (music engine: vibrato, echo, arpeggio).
 Previously re-verified against `0d435fc`; `§1`, `A1` and
@@ -355,8 +356,36 @@ wrong.** Counted out of the data: **57 ids written, 51 referenced by map data, 4
 placed talkables.** Six orphans: `netMender`, `signCoast`, `villager3`, `elder1`,
 `child1`, `shopkeeper2`.
 
-**The reactive machinery already exists and is already used.** `npc`, `sign` and
-`giver` entities each accept `dialogue`, `waiting` and `after`. Every quest-giver
+**S9 IS DONE.** All twelve single-state townspeople now have a second line, the
+six orphans are resolved, and `tools/check-dialogue.mjs` (`V22`) closes `T47`.
+
+**TWO CLAIMS BELOW WERE WRONG AND ARE CORRECTED HERE.** The counts (57/51/6)
+were right and were re-verified; the machinery and the size of the gap were not.
+
+1. **`npc` and `sign` did NOT accept `waiting`/`after`.** `NPC` read only
+   `o.dialogue`; `Sign` read only `o.text` and still does. Only `Giver` and
+   `Trader` had a second state. So engine work WAS needed, and S9 did the
+   minimum: `needEssences`/`needFlag`/`ready()`/`afterText` were lifted out of
+   `Giver` into `NPC` — which `Giver` already extends — so a townsperson's
+   second state is spelled exactly the way a quest-giver's already was. It is
+   the same contract moved up a class, not a third system.
+2. **The gap was 12 townspeople, not ~21.** Nine of the names listed below
+   (`timberSalter`, `sandpiperKid`, `coastFisher`, `coastChild`,
+   `wreckSurvivor`, `coralDiver`, `bogWitch`, `stoneFisher`, `woodChild`) are
+   `trader` **waiting** lines and already flipped to an `after` line as the
+   Coastwise Chain advanced. They always had two states.
+
+**The orphans are resolved**: `child1`, `elder1`, `netMender` and `shopkeeper2`
+were written for villagers nobody placed and are now the later lines of
+villagers who ARE placed (`T49`: do not add NPCs to hang lines on). `signCoast`
+was **deleted as a duplicate** — the village sign at `overworld/0,4,7` 8,4
+already carries that exact text inline, and `Sign` says `o.text` literally, so
+an id-table entry for a sign is unreachable by construction. `villager3` was
+**deleted** — it explained the conch, which the intro cutscene already does, and
+a townsperson explaining a mechanic is the register this game does not use.
+
+**The old text, kept because it is what made the correction findable:**
+`npc`, `sign` and `giver` entities each accept `dialogue`, `waiting` and `after`. Every quest-giver
 uses it: `makuWait`/`makuBlocked`/`makuTree`/`makuAfter`/`makuOpened`,
 `ossaStart`/`ossaWait`/`ossaEnd`/`ossaAfter`, `diggerWait`/`digger`/`diggerAfter`,
 and all ten `*Trade`/`*After` pairs. **No engine work is needed** unless the
@@ -776,6 +805,25 @@ by number.
   Do not add NPCs to hang lines on — use the ones already placed.
 - **T50 — Story data that describes a design is not the design being wired.**
 
+- **T78 — `Sign` says its `text` LITERALLY; it is not a dialogue id.** Every
+  other talkable resolves an id through `story.js`. A sign does not, so a line
+  written into the id table for a sign can never be reached, and reads as an
+  unplaced orphan when it is really in the wrong table. This is also why a
+  checker cannot treat `text` as an id field everywhere: on a `sign` it is
+  prose, on a `trader` deal it is a key.
+- **T79 — Ten of the eleven trade lines are NESTED one level down**, in
+  `trader.deals[].text`, not at the top of the entity options. A scan that only
+  reads top-level fields sees 37 referenced ids instead of 51 and reports
+  fourteen false orphans. `check-dialogue.mjs` walks `deals[]` for exactly this
+  reason; the fields it reads are listed in its header and must be kept in step
+  with `src/game/objects.js`.
+- **T80 — An `after` line with no condition silently becomes the ONLY line.**
+  `ready()` is vacuously true for an entity that declares no `needEssences` and
+  no `needFlag` — correct for a `Giver` with nothing to wait for, catastrophic
+  for choosing a line, because the first line then becomes unreachable. `NPC`
+  has a separate `conditional()` test for this and `check-dialogue.mjs` fails on
+  it, along with a threshold above the six Essences that exist.
+
 ### Harness and process
 
 - **T51 — LIVE BUG: the ledge-hop prober can drop the player.**
@@ -943,6 +991,7 @@ are faster than you are and they do not rationalise.
 | V7 | `node tools/check-towns.mjs` | Every town screen's ways in and doors reach each other **on foot** at all three tides |
 | V8 | `node tools/check-items.mjs` | Every item does the verb `docs/ITEMS.md` claims; nothing hands out a nonexistent item |
 | V9 | `node tools/check-hearts.mjs` | Heart economy and the contact-damage ladder |
+| V22 | `node tools/check-dialogue.mjs` | Every dialogue id is both written and referenced (`T47` — a miss is a silent EMPTY BOX), and every two-state townsperson's second line is proved reachable by driving the real `NPC.interact` either side of its threshold. Wired into `V16` |
 | V19 | `node tools/check-sfx.mjs` | Every sfx name reachable from a call site or a data table is defined (`T45`), and nothing is defined and never played. Wired into `V16` |
 | V10 | `node tools/check-music.mjs` | Track orders, note ranges per channel including vibrato's swung extreme and every note of a '+' arpeggio chord, noise = percussion only. Since S7 also: a track's `intro` is a real, non-empty, loop-disjoint pattern list absent from jingles; no pattern is defined and never played; and — by DRIVING `Audio._scheduleRow` for two loops — the engine actually spends the lead-in exactly once (`T72`) |
 | V20 | `node tools/check-audio-render.mjs` | A track using none of vibrato/echo/arpeggio schedules the exact same Web Audio instructions it always did (`T71`). Wired into `V16` |

@@ -282,6 +282,24 @@ export class NPC extends Entity {
     this.harmless = true;
     this.shadow = false;
     this.dialogue = o.dialogue || null;      // dialogue id
+    // A SECOND STATE FOR AN ORDINARY TOWNSPERSON.
+    //
+    // `Giver` and `Trader` have always had a before/after line; a plain `npc`
+    // had exactly one line for the whole game, with no mechanism for a second
+    // — so a village that had just watched the player take an Essence said the
+    // same things it said at the title screen. (Note for anyone reading the
+    // handoff: `A6` claimed `npc` already accepted `waiting`/`after`. It did
+    // not. It does now.)
+    //
+    // This is deliberately NOT a new system. `needEssences`/`needFlag`/`ready`
+    // are lifted verbatim out of `Giver` — which extends this class — so a
+    // townsperson's second state is spelled exactly the way a quest-giver's
+    // already was, and `Giver` inherits them rather than declaring its own.
+    // Two states only: a third would want a real condition table, and nothing
+    // in this game has yet needed one.
+    this.afterText = o.after || null;
+    this.needEssences = o.needEssences || 0;
+    this.needFlag = o.needFlag || null;
     this.dir = o.dir || 'down';
     this.wander = !!o.wander;
     this.rate = o.rate || 22;
@@ -306,13 +324,30 @@ export class NPC extends Entity {
     }
   }
 
+  /** Whether this entity's condition is met. `Giver` gates its handover on
+   *  this; a plain NPC gates its second line on it. */
+  ready(game) {
+    const p = game.progress;
+    if (p.essences.length < this.needEssences) return false;
+    if (this.needFlag && !flag(p, this.needFlag)) return false;
+    return true;
+  }
+
+  /** Whether a condition was declared at all. `ready()` is vacuously true for
+   *  an entity with no condition — which is right for a `Giver` with nothing
+   *  to wait for, and wrong for choosing a line, since it would make an
+   *  unconditional `after` the only line the NPC ever said. */
+  conditional() { return this.needEssences > 0 || !!this.needFlag; }
+
   interact(game, player) {
     if (this.faceOnTalk) {
       const dx = player.cx - this.cx, dy = player.cy - this.cy;
       this.dir = Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 'left' : 'right') : (dy < 0 ? 'up' : 'down');
     }
     if (this.onTalk) { if (this.onTalk(game, this, player) === false) return; }
-    if (this.dialogue) game.startDialogue(this.dialogue, this);
+    const line = (this.afterText && this.conditional() && this.ready(game))
+      ? this.afterText : this.dialogue;
+    if (line) game.startDialogue(line, this);
   }
 
   spriteName() {
@@ -484,18 +519,11 @@ export class Giver extends NPC {
     this.level = o.level || 1;
     this.pickup = o.pickup || null;
     this.charm = o.charm || null;
-    this.needEssences = o.needEssences || 0;
-    this.needFlag = o.needFlag || null;
+    // `needEssences`, `needFlag`, `afterText` and `ready()` are inherited from
+    // NPC now — they used to be declared here and were lifted up so a plain
+    // townsperson could use the same contract.
     this.giveFlag = o.flag || null;
     this.waitingText = o.waiting || null;
-    this.afterText = o.after || null;
-  }
-
-  ready(game) {
-    const p = game.progress;
-    if (p.essences.length < this.needEssences) return false;
-    if (this.needFlag && !flag(p, this.needFlag)) return false;
-    return true;
   }
 
   interact(game, player) {

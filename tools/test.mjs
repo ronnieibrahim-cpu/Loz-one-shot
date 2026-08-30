@@ -209,6 +209,21 @@ const main = async () => {
       r.status === 0, 'see tools/check-audio-render.mjs');
   }
 
+  // T47: a dialogue id the world asks for and story.js does not define shows
+  // the player an EMPTY BOX, silently — and an id nobody references is a line
+  // nobody will read. Also proves each two-state townsperson's second line is
+  // actually reachable, by driving the real `NPC.interact`.
+  console.log('\n--- dialogue ids ---');
+  {
+    const { spawnSync } = await import('node:child_process');
+    const r = spawnSync(process.execPath, [new URL('check-dialogue.mjs', import.meta.url).pathname],
+      { encoding: 'utf8' });
+    const out = (r.stdout || '') + (r.stderr || '');
+    for (const line of out.trim().split('\n')) console.log('  ' + line);
+    check('every dialogue id is both written and referenced, and every second line is reachable',
+      r.status === 0, 'see tools/check-dialogue.mjs');
+  }
+
   const { chromium } = await loadPlaywright();
   // Random high port: concurrent runs must not fight over a fixed one.
   const PORT = Number(arg('port', 0)) || (20000 + Math.floor(Math.random() * 20000));

@@ -130,11 +130,33 @@ export const DIALOGUE = {
   // it is the best thing anyone says about nets and it belongs to whoever gets
   // a net next; her three chain lines say who she is now.
   netMender: 'Nets rot from the top down, boy — from\nthe part that dries. It is the drying that\nkills them, not the sea.',
-  signCoast: 'TIDEWATCH VILLAGE\nEast: the Shallows.\nMind the tide.',
-  villager3: 'Sound the conch twice and you can reach\nanything in Thalassia. Sound it three\ntimes and you are back where you started.',
   elder1: 'I have seen the sea take this village\ntwice and give it back once.\nWe are owed, is what I am saying.',
   child1: 'Are you going to fight the Drowned King?\nCan I have your boots if you lose?',
   shopkeeper2: 'Buy something or stand somewhere else.\nThose are the two options and I am fond\nof both.',
+
+  // ---- second states -----------------------------------------------------
+  //
+  // Every ordinary townsperson now has two lines: the one they have always
+  // had, and one keyed to a number of Essences a person in that town could
+  // plausibly have noticed. NOBODY EXPLAINS THE PLOT. They notice the weather
+  // and complain about it, which is the register the first lines established
+  // and the only register the four peoples of Thalassia have.
+  //
+  // Four of these are not new text at all: `child1`, `elder1`, `netMender` and
+  // `shopkeeper2` were written for villagers who were never placed, and are
+  // reused here as later lines for villagers who were. `T49` says do not add
+  // NPCs to hang lines on — so these got hung on the ones already standing.
+  //
+  // The beats are spread 1..5 on purpose. Talking to a whole town at once and
+  // hearing every line turn over together would read as a switch being thrown.
+  villager2After: 'Farore has stopped coming down to the\nshrine steps. Says she is busy.\nShe has never once been busy before.',
+  hearthWifeAfter: 'The floor has been dry a whole week.\nI do not trust it. A dry floor in this\nhouse has always been the sea thinking.',
+  hearthChildAfter: 'The sea does what it is told now.\nMum says not to say that outdoors.\nI do not see who else would hear me.',
+  shoreSalterAfter: 'The pans are filling right again.\nDo not expect thanks for it. A salter\ndoes not thank the weather.',
+  faroreHomeAfter: 'The agreement is nearly written again.\nI could tell you what the last of it\ncosts. You would go anyway.',
+  fisher1After: 'You have made the sea punctual.\nA punctual sea is no use to me at all.\nWe had the old one worked out.',
+  reefFisherAfter: 'The palace currents run both ways now.\nThat is worse. Before, at least, you\nknew which way you were going to drown.',
+  salterElderAfter: 'Salt is winning again up at the pans.\nI would not call that good news.\nI would not call anything good news.',
 };
 
 const CUTSCENES = {
