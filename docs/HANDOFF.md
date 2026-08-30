@@ -447,6 +447,72 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+**THE OVERWORLD IS 1% WATER, IN A GAME ABOUT TIDES.** Counted across all 120
+overworld screens (9600 tiles) using the engine's own flags: at LOW tide **88
+tiles carry `F.WATER` — 0.9%**; at MID 391 (4.1%); at HIGH 116 (1.2%). Solid is
+a flat ~32% at every level. S8 set out to draw Thalassia as a picture with a
+coastline and discovered there is essentially no sea on the overworld to draw a
+coast against. **The grid of coloured rectangles hid this completely** — every
+screen was one blue square whether it was open ocean or solid rock, so the map
+screen actively concealed the single biggest fidelity problem in the world.
+This is not a map bug and must not be "fixed" in the map: a map that invents
+water the world does not have is a lie. It is a TERRAIN problem and it is
+probably the most valuable thing on the board.
+
+Two more measurements from the same pass, both of which the old map also hid:
+
+- **The nine region blocks are ruler-straight rectangles.** The 12x10 legend
+  grid is `abyss`/`salt`/`reef` across the top in 4-wide columns, then
+  `cliffs`/`wood`/`coral`, then `marsh`/`coast`/`dunes` — every boundary is a
+  straight line on a 4-screen grid. Drawn honestly it reads as a quilt.
+- **The screens are individually varied but idiomatically identical.** A strict
+  test (relabel each screen's tile names by order of first appearance, which is
+  region-blind) says **116 distinct structural layouts out of 120** — so it is
+  NOT a stencil, and an earlier draft of this note claiming it was a stencil was
+  wrong and was corrected by running the test. What IS true is that nearly every
+  screen is a decorated border ring around a small central water patch, so at
+  map scale they read as repeating wallpaper anyway. **Structural variety and
+  visual variety are not the same measurement — test the one you mean.**
+
+**A MAP OF A PLACE CANNOT BE BETTER THAN THE PLACE.** The corollary, paid for
+in S8: when a "make this screen look good" session finds the screen already
+draws its input faithfully, the deliverable is the machinery plus the
+measurement of why it still does not look good — not a prettier lie. S8 shipped
+the picture (derived colours, tide-awareness, landmarks, the seen mask) and the
+three numbers above, because the numbers are what the next session needs.
+
+**DERIVE A MAP PIXEL FROM THE ART, AND TAKE THE MEAN, NOT THE MODE.** Two
+mistakes in a row here, both of which produced plausible-looking wrong output:
+1. **The palette is on the tile DEFINITION (`d.pal`), not on the art entry.**
+   `Room.render` draws every tile with `{ pal: d.pal }`; the art's own `pal` is
+   only the registration-time default and is `stone` for most terrain. Reading
+   the wrong one rendered the entire world in grey — which looked exactly like
+   plausible terrain noise, not like a bug.
+2. **One pixel per tile is a downsample, so it wants the MEAN tone, not the
+   most common colour.** Terrain art carries heavy dark detail (tufts, speckle,
+   outlines), so the modal index lands on the detail colour often enough that
+   the whole map reads as stipple. Take the mean RGB and then SNAP IT BACK to
+   the nearest of that tile's own four palette colours — a raw mean puts
+   colours on screen that exist in no palette in the game.
+
+**INSTANTIATING ALL 120 OVERWORLD ROOMS COSTS 3ms, ONCE.** Measured, not
+assumed, because `T75` says decide deliberately and measure if you instantiate:
+3ms to build all 120 `Room` objects cold (once per run — they are cached), and
+2ms to re-walk all 9600 tiles, which is what a tide change costs. Frame budget
+is 16.7ms. The alternative — decoding legend characters outside the engine —
+would have meant re-deriving `expandBlocks`, tide-tile resolution and overrides,
+which is exactly what `R4` exists to prevent.
+
+**A BEFORE/AFTER PICTURE NEEDS THE BEFORE TAKEN FIRST, AND THERE WAS NO TOOL.**
+S8's stated failure condition was regressing the dungeon map, which shares the
+code path. Nothing in `tools/` could screenshot the pause menu — every shot tool
+points at the world — so the proof was impossible until `tools/shoot-map.mjs`
+existed. It was written and the BEFORE shots taken **before a line of `menu.js`
+changed**; the three dungeon-map shots then came back pixel-identical after the
+split. Same shape as the audio-render baseline: the proof only exists in the
+window before you change the thing.
+
+
 **PROVE AN ENGINE CHANGE INERT BEFORE YOU CHANGE THE DATA THAT WOULD MASK IT.**
 `tools/check-audio-render.mjs` compares every track's Web Audio instruction
 trace against a recorded baseline, and its own failure message tells you to

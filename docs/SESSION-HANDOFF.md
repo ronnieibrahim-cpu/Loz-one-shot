@@ -14,7 +14,8 @@ Every id in this document (`R1`, `T14`, `V6`, `A3`) is stable. Prompts cite them
 retired one.**
 
 Last verified against the tree: **2026-08-30**; `A5`, `§3` and `§4.1`
-re-verified by S7 (music: intros, loop length, the S6 techniques in use).
+re-verified by S7 (music: intros, loop length, the S6 techniques in use), then
+by S8 (the overworld map becomes a picture; `A3`, `§3`, `§4.1`).
 Previously **2026-08-29**, commit `64a6561`; `§1`, `A5` and
 `§3`/`§4.1` re-verified by S6 (music engine: vibrato, echo, arpeggio).
 Previously re-verified against `0d435fc`; `§1`, `A1` and
@@ -193,7 +194,25 @@ and survives extraction.
 
 ### A3 — The map screen and the HUD
 
-**The overworld map is a grid of coloured rectangles.** `Menu.drawMap`
+**S8 IS DONE — and it found something much larger than the map screen.**
+`Menu.drawMap` now dispatches to `drawWorldMap` (a picture of Thalassia at one
+pixel per tile, colours derived from the terrain art, tide-aware, with dungeon
+doors read off each room's own warps) or `drawDungeonMap` (**unchanged — proved
+pixel-identical before and after by `tools/shoot-map.mjs`, which S8 also had to
+write because nothing could screenshot the pause menu**). `V11`/`V13`/`V16` all
+green.
+
+**THE FINDING: the overworld is 0.9% water at LOW tide** (88 of 9600 tiles),
+4.1% at MID, 1.2% at HIGH — in a game about tides. There is no coastline to
+draw because there is almost no sea. The old grid HID this, drawing open ocean
+and solid rock as the same blue square. Do not fix this in the map; it is a
+terrain problem and it is now the highest-value thing on the board. See
+`docs/HANDOFF.md` for the two companion measurements (the nine regions are
+ruler-straight rectangles; 116 of 120 screens are structurally distinct but all
+share one visual idiom, so they read as wallpaper at map scale).
+
+**The old text, kept because it is still why the split happened:**
+The overworld map was a grid of coloured rectangles. `Menu.drawMap`
 (`src/game/menu.js:270`) runs the same `fillRect` loop for the overworld as for a
 dungeon floor, changing only the cell size (8 vs 10). The source games draw a
 *picture* of the land. This is a screen the player opens constantly.
@@ -728,6 +747,24 @@ by number.
   decide, and write down which you chose. The general shape of this trap is a
   comment that outlived the code it was describing.
 
+- **T76 — A map screen can HIDE the world's worst problem by summarising it.**
+  The overworld map drew one flat blue rectangle per screen, so 0.9%-water
+  Thalassia and a Thalassia that was half ocean rendered identically. The bug
+  was not in the map; the map was the reason nobody had noticed. **When a
+  summary view and the thing it summarises disagree, the summary is the thing
+  that will be believed** — so a view that cannot be wrong about its input
+  (S8's is one pixel per tile, straight off the tiles) is worth more than a
+  prettier one that can.
+- **T77 — Structural variety and visual variety are different measurements.**
+  S8 first asserted the overworld was one screen stencilled 120 times, from
+  three samples that happened to be the three cave-entrance screens. The strict
+  test — relabel each screen's tile names by order of first appearance, which
+  is region-blind — says **116 distinct layouts out of 120**. The claim was
+  wrong and the test caught it. What is true is the weaker, vaguer thing (every
+  screen is a decorated ring around a small central patch, so they read alike).
+  **Do not promote "these three look similar" to "these are generated from one
+  template" without the test that separates them.**
+
 ### Story and dialogue
 
 - **T47 — A dialogue id the map asks for and `story.js` does not define shows an
@@ -916,7 +953,8 @@ are faster than you are and they do not rationalise.
 | V15 | `node tools/check-build.mjs` | The shipped single-file build boots and plays from a `file://` URL |
 | V16 | `node tools/test.mjs` | Everything else — including, since S1, that hitstop freezes the entity simulation and NOT the frame counter, the audio pump or the play clock (`T58`) |
 | V17 | `node tools/measure-boss-combat.mjs` | Real combat, no god mode, with a per-hit damage log |
-| V18 | `node tools/shoot-rooms.mjs` | Renders in-game screenshots — the only way to check anything visual |
+| V18 | `node tools/shoot-rooms.mjs` | Renders in-game screenshots of the WORLD — the only way to check anything visual |
+| V21 | `node tools/shoot-map.mjs` | Screenshots the pause menu's MAP tab in a named exploration state (`overworld:none/part/full`, `d1:0:map`, `d1:0:chart`). The only way to look at the one screen a player opens most; `--shot-dir=` a before and an after and diff them to prove a map change did not regress the other map |
 
 Item-specific: `check-anchor`, `check-cleats`, `check-lens`, `check-bellows`,
 `check-reefseed`, `check-dredge`, `check-trade`, `check-torches`, `check-motion`,

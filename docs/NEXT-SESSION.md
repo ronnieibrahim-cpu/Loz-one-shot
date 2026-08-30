@@ -1,3 +1,104 @@
+## S8 — The overworld map becomes a picture (this session)
+
+**Run per `docs/SESSION-PROMPTS.md` S8, on top of S7.** The map screen's two
+maps are now two routines, the overworld one draws Thalassia as a picture, and
+a new shot tool exists because the session's own failure condition could not
+otherwise be checked. **It also produced a measurement that matters more than
+the screen it came from — see "The finding" below.**
+
+### What was built
+
+- **`Menu.drawMap` now dispatches**: `drawDungeonMap` (the old loop, untouched)
+  and `drawWorldMap` (new). The title line is drawn once by the dispatcher.
+- **`drawWorldMap` draws the world at ONE PIXEL PER TILE.** Thalassia is 12x10
+  screens of 10x8 tiles = 120x80 tiles, and the space under the title is 160x88
+  px. The map is not a diagram of the world, it IS the world at 1:1, so its
+  coastline is the actual coastline. Region `legend` is deliberately NOT what
+  gets drawn — the legends are nine ruler-straight rectangles, so colouring by
+  region gives a quilt.
+- **Colours are derived from the terrain art**, never hand-picked: a tile's map
+  pixel is the mean tone of that tile's own 16x16 art, snapped back to the
+  nearest of that tile's own four palette colours. A hand-written name->colour
+  table would be a second source of truth that drifts the first time a terrain
+  tile is re-extracted.
+- **It is tide-aware.** The cache is keyed on `tide.stamp`, the same way Room's
+  render cache is and for the same reason (a key made of the LEVEL alone would
+  miss an anchor moving the field under one screen). The answer to the prompt's
+  open question — which tide does the map show — is **the one you are standing
+  in**, so the map is a live document that redraws as the conch turns.
+- **Dungeon doors are landmarks**, read off each room DEFINITION's `warps`: a
+  warp into a map whose `kind` is `dungeon` gets a 3x3 gold-on-black mark at the
+  exact tile it stands on. Nothing is a hand-kept list; move an entrance and the
+  mark moves. Six are on the overworld (d1 d2 d3 d4 d5 d6).
+- **The player marker alternates between two high-contrast colours** rather than
+  blinking on and off — the source blinks it so it is findable over any terrain,
+  and a marker absent half the time is not more findable, just harder to see.
+- **`tools/shoot-map.mjs` (`V21`)** — screenshots the MAP tab in a named state.
+  Nothing in `tools/` could photograph the pause menu.
+
+### The finding — read this before the next session
+
+**The overworld is 0.9% water at LOW tide.** Counted with the engine's own
+flags across all 9600 overworld tiles: LOW 88 water tiles (0.9%), MID 391
+(4.1%), HIGH 116 (1.2%). Solid is a flat ~32% at every level.
+
+S8 set out to draw a coastline and there is essentially no sea to draw one
+against. **The old map hid this perfectly** — every screen was one blue
+rectangle whether it was open ocean or solid rock. This is not a map bug and
+must not be fixed in the map; a map that invents water the world does not have
+is a lie. It is a terrain problem, in a game whose entire premise is the tide,
+and it is almost certainly the highest-value thing on the board now.
+
+Two companion measurements:
+
+- The nine region blocks are **ruler-straight rectangles** on a 4-screen grid.
+- **116 of the 120 screens are structurally distinct** (strict region-blind
+  test), so the world is NOT one stencil — an earlier draft of this note said it
+  was, from three samples that all happened to be cave-entrance screens, and the
+  test corrected it. But nearly every screen is a decorated border ring around a
+  small central patch, so at map scale they still read as wallpaper.
+
+### What was verified
+
+- **The dungeon map is pixel-identical.** `shoot-map.mjs` took the BEFORE shots
+  before a line of `menu.js` changed; `d1:0:map`, `d1:0:chart` and `d2:0:chart`
+  all diff to zero after the split. That was the session's stated failure
+  condition.
+- `V11` replay 51/51, `V13` playthrough 19/19, `V16` test 78/78, `check-build`
+  OK.
+- **Cost, measured because `T75` says to**: instantiating all 120 overworld
+  rooms is **3ms, once per run** (they are cached); re-walking 9600 tiles on a
+  tide change is **2ms**. Frame budget is 16.7ms.
+
+### What S8 did NOT do
+
+- **The map is honest but it does not read as Holodrum**, and it cannot until
+  the terrain does. Nobody has judged it in motion (`§4.2`).
+- The overworld Chartstone is still a dead feature (`progress.charts` is keyed
+  per map, an overworld Chartstone would set it, no pip would draw). Left alone:
+  with 0.9% water there is almost nothing for tide pips to mark, which is a
+  symptom of the finding above, not an oversight.
+- Caves and house doors get no landmark — only dungeons do. Town screens read as
+  town-coloured terrain already.
+- `tools/shots-map-*/` are gitignored; re-shoot rather than expecting them.
+
+### Where to stand to see it
+
+In `dist/oracle-of-tides.html`: press START, then SELECT to the MAP tab.
+
+- **From a new game**, the map is one lit screen in a dark frame — check the
+  "you are here" mark is findable immediately.
+- **Walk five or six screens and reopen it**: the explored blob should have a
+  shape, and the gold dungeon mark for d6 (north-west) or d1 (south-east)
+  should appear as you reach them.
+- **Turn the tide with the conch and reopen it.** The picture redraws. This is
+  the thing to judge hardest and it is the one nobody has seen: does the world
+  visibly change, or is 0.9%-to-4.1% too little water to notice? If it is too
+  little to notice, that is the finding above, confirmed by eye.
+- **Open a dungeon map (D1) and confirm it looks exactly as it always did.**
+
+---
+
 ## S7 — Music: intros, loop length, and the S6 techniques in use (this session)
 
 **Run per `docs/SESSION-PROMPTS.md` S7, on top of S6.** The music engine grew

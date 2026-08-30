@@ -10302,7 +10302,9 @@ __define("game/menu.js", function (__exports, __require) {
 
 const { SCREEN_W, SCREEN_H, HUD_H, VIEW_W, VIEW_H } = __require("core/screen.js");
 const { drawText, drawTextCentered, textWidth } = __require("gfx/font.js");
-const { sprites } = __require("gfx/art.js");
+const { sprites, tiles } = __require("gfx/art.js");
+const { getPalette } = __require("gfx/palettes.js");
+const { tileArt } = __require("world/tileset.js");
 const { drawPanel, drawBox } = __require("game/dialogue.js");
 const { ITEMS, itemIcon, itemName, equippableItems } = __require("game/items.js");
 const { CHARMS, CHARM_SLOTS, CHARM_COUNT, ownedCharms, charmsForSlot, slotCharm, caseSize, slotOpen, equippedIn } = __require("game/scrimshaw.js");
@@ -10350,6 +10352,131 @@ function tideMarks(mapId, floor, rx, ry) {
   CHART_CACHE.set(key, mask);
   return mask;
 }
+
+// --------------------------------------------------------------------------
+// The overworld map is a PICTURE, drawn one pixel per tile
+// --------------------------------------------------------------------------
+//
+// Thalassia is 12x10 screens and every screen is 10x8 tiles, so the whole
+// world is 120x80 tiles — and the space under the map title is 160x88 px.
+// That is the whole idea: the map is the world at 1:1 tile-to-pixel, not a
+// diagram of it. A coastline drawn this way is the actual coastline, because
+// it IS the tiles; nothing here decides what the land looks like.
+//
+// This is also why the region `legend` is NOT what gets drawn. The legends are
+// blocked out in straight 4x2 and 4x4 rectangles (verified: the 12x10 legend
+// grid is nine rectangular blocks), so colouring by region would produce a
+// patchwork quilt with ruler-straight borders — a diagram of the authoring,
+// not a picture of the place.
+//
+// COLOURS ARE DERIVED FROM THE TERRAIN ART, never hand-picked. A tile's map
+// pixel is the most common colour in that tile's own 16x16 art, resolved
+// through that art's own palette. Hand-authoring a name->colour table would
+// be a second source of truth that silently drifts the first time a terrain
+// tile is re-extracted; this cannot drift, because it is reading the same
+// pixels the room draws.
+const MAP_COLOUR = new Map();
+function tileMapColour(def) {
+  const name = def.name;
+  let c = MAP_COLOUR.get(name);
+  if (c !== undefined) return c;
+  const art = tiles.defs.get(tileArt(def, 0));
+  if (!art) { MAP_COLOUR.set(name, null); return null; }
+  // ONE PIXEL PER TILE IS A DOWNSAMPLE, so the pixel wants the tile's MEAN
+  // tone — not its most common colour. The modal index was tried first and is
+  // wrong: terrain art carries a lot of dark detail (tufts, rock speckle,
+  // outlines), so the mode lands on the detail colour often enough that the
+  // whole map reads as stipple instead of as land and water.
+  //
+  // But a raw mean would put colours on screen that are in no palette in the
+  // game, which is how a GBC-shaped picture starts looking like a JPEG. So the
+  // mean is SNAPPED BACK to the nearest of that tile's own four colours: every
+  // map pixel is a colour the tile itself is actually drawn in, chosen for
+  // being the closest thing to how the tile reads from a distance.
+  //
+  // The palette is on the tile DEFINITION, not on the art entry — `Room.render`
+  // draws every tile with `{ pal: d.pal }`, and the art's own `pal` is only the
+  // registration-time default. Reading the wrong one produced a map of the
+  // whole world in the grey 'stone' fallback, which looked like plausible
+  // terrain noise rather than like a bug.
+  const pal = getPalette(def.pal || art.pal);
+  const rgb = pal.map(hx => [
+    parseInt(hx.slice(1, 3), 16), parseInt(hx.slice(3, 5), 16), parseInt(hx.slice(5, 7), 16),
+  ]);
+  let r = 0, gg = 0, b = 0, n = 0;
+  for (let i = 0; i < art.art.px.length; i++) {
+    const v = art.art.px[i];
+    if (v >= 4) continue;
+    r += rgb[v][0]; gg += rgb[v][1]; b += rgb[v][2]; n++;
+  }
+  if (!n) { MAP_COLOUR.set(name, null); return null; }
+  r /= n; gg /= n; b /= n;
+  let best = 0, bestD = Infinity;
+  for (let i = 0; i < 4; i++) {
+    const d = (rgb[i][0] - r) ** 2 + (rgb[i][1] - gg) ** 2 + (rgb[i][2] - b) ** 2;
+    if (d < bestD) { bestD = d; best = i; }
+  }
+  c = pal[best];
+  MAP_COLOUR.set(name, c);
+  return c;
+}
+
+// The rendered world, cached. Rebuilding it walks 120 rooms x 80 tiles, which
+// is far too much to do per frame, and the tide changes what it looks like —
+// so it is keyed on the tide field's STAMP, exactly as Room's own render cache
+// is, and for exactly the reason in CLAUDE.md: a key made from the LEVEL alone
+// would not notice an anchor moving the field under one screen.
+let WORLD_CANVAS = null;
+let WORLD_KEY = '';
+
+/**
+ * Paint the whole overworld into an offscreen canvas at one pixel per tile.
+ *
+ * This DOES instantiate every room on the map, via `getRoom`, and that is a
+ * deliberate decision rather than an oversight — see `T75`. The caution at the
+ * old `drawMap` said an instantiated room "is one `liveRooms` will then save
+ * and restore the state of"; `liveRooms` has no callers, nothing saves or
+ * restores from the room cache, and `resetRooms()` clears it on new game and
+ * load. The alternative — decoding each room's legend characters here — would
+ * mean re-deriving `expandBlocks`, tide-tile resolution and overrides outside
+ * the engine, which is the mistake `R4` exists to prevent. So it asks Room
+ * what tile is there, and pays for it once per tide change rather than once
+ * per frame.
+ */
+function buildWorldCanvas(game, m) {
+  const tw = 10, th = 8;                       // tiles per screen
+  const W = m.w * tw, H = m.h * th;
+  const c = document.createElement('canvas');
+  c.width = W; c.height = H;
+  const g = c.getContext('2d');
+  g.imageSmoothingEnabled = false;
+  for (let sy = 0; sy < m.h; sy++) {
+    for (let sx = 0; sx < m.w; sx++) {
+      const room = getRoom(m.id, 0, sx, sy);
+      if (!room) continue;
+      for (let ty = 0; ty < th; ty++) {
+        for (let tx = 0; tx < tw; tx++) {
+          const col = tileMapColour(room.tile(tx, ty, game.tide));
+          if (!col) continue;
+          g.fillStyle = col;
+          g.fillRect(sx * tw + tx, sy * th + ty, 1, 1);
+        }
+      }
+    }
+  }
+  return c;
+}
+
+function worldCanvas(game, m) {
+  const key = m.id + '|' + (game.tide ? game.tide.stamp : 0) + '|' + m.w + 'x' + m.h;
+  if (WORLD_CANVAS && WORLD_KEY === key) return WORLD_CANVAS;
+  WORLD_CANVAS = buildWorldCanvas(game, m);
+  WORLD_KEY = key;
+  return WORLD_CANVAS;
+}
+
+/** Dropped when a new game or a load resets the world under us. */
+function invalidateWorldMap() { WORLD_CANVAS = null; WORLD_KEY = ''; MAP_COLOUR.clear(); }
 
 const TABS = ['ITEMS', 'MAP', 'CHARM', 'QUEST', 'SAVE'];
 
@@ -10562,18 +10689,99 @@ class Menu {
     }
   }
 
-  /** Dungeon floor grid, or the overworld screen grid. */
+  /** Two different screens that used to be one loop. See each one's own note. */
   drawMap(ctx) {
     const g = this.game;
     const m = g.map;
     if (!m) return;
-    const isDungeon = m.kind === 'dungeon';
-    const haveMap = isDungeon ? !!g.progress.dungeonMaps[m.id] : true;
-    const haveChart = !!g.progress.charts[m.id];
     drawTextCentered(ctx, m.name, SCREEN_W / 2, HUD_H + 15, '#f8f8e8');
+    if (m.kind === 'dungeon') this.drawDungeonMap(ctx, m);
+    else this.drawWorldMap(ctx, m);
+  }
 
-    const floor = isDungeon ? (this.mapFloor || 0) : 0;
-    const cell = isDungeon ? 10 : 8;
+  /**
+   * A picture of Thalassia at one pixel per tile — see the note above
+   * `tileMapColour`. What it says is exactly what the grid of rectangles it
+   * replaces said (which screens have been seen, and where you are), drawn as
+   * a place instead of as a table.
+   */
+  drawWorldMap(ctx, m) {
+    const g = this.game;
+    const tw = 10, th = 8;
+    const W = m.w * tw, H = m.h * th;
+    const ox = Math.round((SCREEN_W - W) / 2), oy = HUD_H + 28;
+
+    // A frame, so the sea reads as ending at a coast rather than at the edge
+    // of the drawing.
+    ctx.fillStyle = '#101820';
+    ctx.fillRect(ox - 1, oy - 1, W + 2, H + 2);
+    ctx.drawImage(worldCanvas(g, m), ox, oy);
+
+    // Unexplored screens are painted back out. Doing it this way — cached
+    // terrain underneath, the mask on top — is what keeps the expensive part
+    // keyed on the tide alone: walking into a new screen changes the mask, and
+    // the mask is at most 120 rectangles.
+    for (let sy = 0; sy < m.h; sy++) {
+      for (let sx = 0; sx < m.w; sx++) {
+        if (g.progress.secrets['seen:' + m.id + ':0,' + sx + ',' + sy]) continue;
+        ctx.fillStyle = '#0c1218';
+        ctx.fillRect(ox + sx * tw, oy + sy * th, tw, th);
+      }
+    }
+
+    // Landmarks, read off each room DEFINITION's own warps — a warp into a map
+    // whose kind is 'dungeon' is a dungeon door, and it is drawn at the tile it
+    // actually stands on. Nothing here is a hand-kept list that could fall out
+    // of step with the world; move a dungeon entrance and the mark moves.
+    for (let sy = 0; sy < m.h; sy++) {
+      for (let sx = 0; sx < m.w; sx++) {
+        if (!g.progress.secrets['seen:' + m.id + ':0,' + sx + ',' + sy]) continue;
+        const def = m.roomDefs['0,' + sx + ',' + sy];
+        if (!def || !def.warps) continue;
+        for (const w of def.warps) {
+          const to = w.to && getMap(w.to.map);
+          if (!to || to.kind !== 'dungeon') continue;
+          const px = ox + sx * tw + (w.x | 0), py = oy + sy * th + (w.y | 0);
+          ctx.fillStyle = '#101820';
+          ctx.fillRect(px - 1, py - 1, 3, 3);
+          ctx.fillStyle = '#f0c048';
+          ctx.fillRect(px, py, 1, 1);
+        }
+      }
+    }
+
+    // YOU ARE HERE. It alternates between two high-contrast colours rather
+    // than blinking on and off: the source games blink this because the marker
+    // has to be findable over any terrain, and a marker that spends half its
+    // time absent is not findable at all — it is just harder to see.
+    if (g.room && g.room.mapId === m.id) {
+      const cx = ox + g.room.rx * tw + Math.floor(tw / 2);
+      const cy = oy + g.room.ry * th + Math.floor(th / 2);
+      ctx.fillStyle = '#101820';
+      ctx.fillRect(cx - 2, cy - 2, 5, 5);
+      ctx.fillStyle = ((g.frame >> 4) & 1) ? '#f8f8e8' : '#e04858';
+      ctx.fillRect(cx - 1, cy - 1, 3, 3);
+    }
+
+    // The key, only once there is something on the map to key.
+    if (Object.keys(g.progress.secrets).some(k => k.startsWith('seen:' + m.id + ':'))) {
+      ctx.fillStyle = '#101820';
+      ctx.fillRect(5, SCREEN_H - 25, 3, 3);
+      ctx.fillStyle = '#f0c048';
+      ctx.fillRect(6, SCREEN_H - 24, 1, 1);
+      drawText(ctx, 'RUIN', 11, SCREEN_H - 26, '#a8b0a0');
+    }
+  }
+
+  /** Dungeon floor grid. Unchanged: `A3` says why it is already right. */
+  drawDungeonMap(ctx, m) {
+    const g = this.game;
+    const isDungeon = true;
+    const haveMap = !!g.progress.dungeonMaps[m.id];
+    const haveChart = !!g.progress.charts[m.id];
+
+    const floor = this.mapFloor || 0;
+    const cell = 10;
     const gw = m.w * cell, gh = m.h * cell;
     const ox = Math.round((SCREEN_W - gw) / 2), oy = HUD_H + 28;
 
@@ -10746,6 +10954,7 @@ class Menu {
     drawText(ctx, 'Slot ' + (this.game.slot + 1), 20, y + 34, '#a8b0a0');
   }
 }
+__exports["invalidateWorldMap"] = invalidateWorldMap;
 __exports["Menu"] = Menu;
 });
 
@@ -12063,7 +12272,7 @@ const { ThrownObject, ITEMS, itemName, itemIcon } = __require("game/items.js");
 const { newProgress, saveSlot, loadSlot, giveItem, addRupees, addKey, useKey, keyCount, itemLevel, hasItem, HEART_UNITS, addBombs, addReefseeds, addBottles, setFlag, flag } = __require("game/progress.js");
 const { drawHud, drawAreaBanner, drawBossBar } = __require("game/hud.js");
 const { Dialogue, drawBox, drawPanel, getText } = __require("game/dialogue.js");
-const { Menu } = __require("game/menu.js");
+const { Menu, invalidateWorldMap } = __require("game/menu.js");
 const { Camera } = __require("game/camera.js");
 const { TRADE_ITEMS, tradeName, tradeIcon } = __require("data/trade.js");
 const { Scrimshaw, CHARMS, giveCharm, ownedCharms, openCharmCases } = __require("game/scrimshaw.js");
@@ -12141,6 +12350,7 @@ class Game {
     this.progress = useSeed != null ? newProgress(name, useSeed) : newProgress(name);
     seedGlobal(this.progress.seed);
     resetRooms();
+    invalidateWorldMap();   // the map picture is built from Rooms, so it dies with them
     this.entities.length = 0;
     this.boss = null;
     this.tide.clearOverrides();
@@ -12160,6 +12370,7 @@ class Game {
     this.progress = p;
     seedGlobal(p.seed);
     resetRooms();
+    invalidateWorldMap();   // the map picture is built from Rooms, so it dies with them
     this.entities.length = 0;
     this.boss = null;
     // A placed anchor is run state, not save state: reloading returns it to

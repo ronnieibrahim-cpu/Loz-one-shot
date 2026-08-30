@@ -46,7 +46,7 @@ import {
 } from './progress.js';
 import { drawHud, drawAreaBanner, drawBossBar } from './hud.js';
 import { Dialogue, drawBox, drawPanel, getText } from './dialogue.js';
-import { Menu } from './menu.js';
+import { Menu, invalidateWorldMap } from './menu.js';
 import { Camera } from './camera.js';
 import { TRADE_ITEMS, tradeName, tradeIcon } from '../data/trade.js';
 import { Scrimshaw, CHARMS, giveCharm, ownedCharms, openCharmCases } from './scrimshaw.js';
@@ -137,6 +137,7 @@ export class Game {
     this.progress = useSeed != null ? newProgress(name, useSeed) : newProgress(name);
     seedGlobal(this.progress.seed);
     resetRooms();
+    invalidateWorldMap();   // the map picture is built from Rooms, so it dies with them
     this.entities.length = 0;
     this.boss = null;
     this.tide.clearOverrides();
@@ -156,6 +157,7 @@ export class Game {
     this.progress = p;
     seedGlobal(p.seed);
     resetRooms();
+    invalidateWorldMap();   // the map picture is built from Rooms, so it dies with them
     this.entities.length = 0;
     this.boss = null;
     // A placed anchor is run state, not save state: reloading returns it to
