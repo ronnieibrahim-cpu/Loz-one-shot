@@ -198,6 +198,23 @@ and survives extraction.
 dungeon floor, changing only the cell size (8 vs 10). The source games draw a
 *picture* of the land. This is a screen the player opens constantly.
 
+**The numbers, counted out of the data (2026-08-30), so S8 does not have to:**
+the overworld is **12x10 = 120 screens and all 120 are defined** — the grid's own
+silhouette is a filled rectangle, so a coastline must be derived from screen
+CONTENTS, not from the map's shape. **No overworld room is multi-screen**, so the
+cell-spanning logic is dungeon-only in practice. The draw box is `96x80 px` at
+`ox=32, oy=44`, inside `160x100` available. The overworld map carries exactly
+three states per cell — unseen, seen, here — because `haveMap` is hardcoded
+`true` for it and the Chartstone pips are gated `!isDungeon`, **a latent dead
+feature**: `progress.charts` is keyed per map and an overworld Chartstone would
+set it, but no pip would ever draw.
+
+**The thing that makes S8 tractable: every screen already declares a `legend`** —
+`dunes` 19, `reef` 16, `cliffs` 16, `wood` 15, `salt` 12, `marsh` 12, `coast` 10,
+`abyss` 8, `coral` 8, `town` 3, `townDunes` 1. That is a per-screen terrain class
+on the room DEFINITION, needing no `Room` instantiated, and its distribution is
+already geographic.
+
 **The dungeon map is genuinely good and must not regress.** Multi-screen rooms
 correctly span cells — read the comment at `menu.js:284`, which explains that
 drawing every covered cell would paint a 2×1 room as two rooms with a seam,
@@ -695,6 +712,21 @@ by number.
   the track and the symptom was a note releasing a sixteenth late, not a note
   vanishing. Ragged lengths are legal by design, so this is not checkable —
   count your tokens when you author a pattern.
+
+- **T75 — The map screen's "do not instantiate rooms" comment gives a reason
+  that is STALE, and the rule is already broken.** `menu.js:293` says an
+  instantiated room "is one `liveRooms` will then save and restore the state
+  of". **`liveRooms` (`src/world/maps.js:132`) has zero callers in `src/` or
+  `tools/`** — nothing saves or restores from `m._rooms`, and `resetRooms()`
+  clears it on new game and load (`game.js:139`, `:158`). Meanwhile the
+  Chartstone pip path already instantiates: `tideMarks` calls `getRoom`, which
+  does `new Room(...)` and caches it. So the save-corruption hazard the comment
+  names **does not exist today**. The cost that IS real is frame time — 120
+  overworld rooms built on every map open — and `def.legend` supplies terrain
+  without building any. **Do not cite this comment as a reason for a decision
+  without re-checking it**, and do not "fix" it by deleting the caution either:
+  decide, and write down which you chose. The general shape of this trap is a
+  comment that outlived the code it was describing.
 
 ### Story and dialogue
 

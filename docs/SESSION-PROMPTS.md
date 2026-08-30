@@ -482,12 +482,12 @@ grid of rectangles.
 **Failure condition:** breaking the dungeon map, which is genuinely good and
 shares this code path.
 
-**Model: Opus.**  **Depends on:** S2 and S3 merged — the map should reflect the
-final terrain.
+**Model: Opus.**  **Depends on:** S2 and S3 — **both merged** (`d7e3604`,
+`27c399f`), so this is unblocked.
 
 > Read `docs/SESSION-HANDOFF.md` first: `§0`, area `A3`, rules `R7`, `R9`, traps
-> `T2`, `T23`, `T24`, `T53`, verification `V11`, `V13`, `V16`, `V18`, `§4.2`,
-> `§5`. Also `docs/ART-DIRECTION.md`.
+> `T2`, `T23`, `T24`, `T53`, `T75`, verification `V11`, `V13`, `V16`, `V18`,
+> `§4.2`, `§5`. Also `docs/ART-DIRECTION.md`.
 >
 > `Menu.drawMap` (`src/game/menu.js:270`) draws the overworld with the same
 > `fillRect` grid loop it uses for a dungeon floor. A player opening the map sees
@@ -497,29 +497,78 @@ final terrain.
 > **The dungeon map is NOT the problem and must not regress** — `A3` says why it
 > is good. Leave it alone except to split the code path.
 >
+> **The numbers, verified against the tree on 2026-08-30 — do not re-derive
+> them, but do re-check them if the tree has moved:**
+>
+> - The overworld is **12x10 = 120 screens, and all 120 have room definitions.**
+>   There are no holes. **The grid's own shape is a filled rectangle, so a
+>   coastline cannot come from the map's silhouette — it has to be derived from
+>   what is IN each screen.** That is the central design problem of this session,
+>   and it is the thing that makes this art and not plumbing.
+> - **No overworld room is multi-screen** (`size` is absent from all 120). The
+>   cell-spanning logic that makes the dungeon map good is, in practice,
+>   dungeon-only — which is why splitting the two paths is far safer than it
+>   looks. **Do not delete the spanning logic; it stays on the dungeon path.**
+> - Current draw box: `cell = 8`, so `96x80 px` at `ox = 32, oy = 44`. Below the
+>   title there are **160x100 px** available. `cell = 10` would be `120x100` and
+>   exactly fill the height, if you want the room.
+> - **The overworld map carries exactly three states per cell today**: unseen,
+>   seen (`progress.secrets['seen:overworld:0,x,y']`), and here. That is the whole
+>   list point 3 below is asking you to preserve — it is short, and you should
+>   hold yourself to more than it, not less.
+> - **`haveMap` is hardcoded `true` for the overworld**, and the Chartstone pips
+>   are **dungeon-only** — `if (!haveChart || !isDungeon) continue`. `progress
+>   .charts` is keyed per map and an overworld Chartstone would set it, so there
+>   is a latent dead feature here. Wiring the overworld's tide-change pips is
+>   **in scope if and only if** it does not compromise the picture; say which you
+>   chose and why.
+>
+> **THE BEST THING IN THE DATA, and the reason this is tractable: every screen
+> already declares a `legend`** — `abyss` 8, `salt` 12, `reef` 16, `cliffs` 16,
+> `wood` 15, `coral` 8, `marsh` 12, `coast` 10, `dunes` 19, `town` 3,
+> `townDunes` 1. **That is a per-screen terrain class sitting on the room
+> DEFINITION**, readable with no `Room` instantiated, and its distribution is
+> already geographic. Land, water, cliff and town all fall out of it. Start
+> there; do not invent a second terrain table beside it.
+>
 > 1. Split the overworld map from the dungeon map so they no longer share a
 >    drawing routine.
 > 2. Draw Thalassia as a picture: coastline, regions, towns, dungeon entrances as
 >    landmarks. Extract from `assets/sheets/` whatever the source map screens can
 >    supply (`R5`); draw the rest to `T24`'s rules.
-> 3. **Keep every piece of information the grid currently carries** — which
->    screens have been seen, where the player is, what the Chartstone reveals. **A
->    prettier map that tells the player less is a regression.**
+> 3. **Keep every piece of information the grid currently carries** (the three
+>    states above). **A prettier map that tells the player less is a regression.**
 > 4. The player marker must be legible against every part of the drawn map; the
 >    source games blink it for exactly this reason.
 >
-> **The trap that will bite you is in the existing code's own comment: do not
-> instantiate rooms to draw the map.** It reads from the room DEFINITION because
-> "an instantiated room is one `liveRooms` will then save and restore the state
-> of" — reading live rooms would silently corrupt save state. And per `T23`, draw
-> from tiles/sprites or integer `fillRect`s, never paths, or it reads soft against
-> a pixel-art game.
+> **The instantiation trap is REAL but its stated reason is STALE — read `T75`
+> before you trust the comment at `menu.js:293`.** It says an instantiated room
+> "is one `liveRooms` will then save and restore the state of". `liveRooms`
+> (`src/world/maps.js:132`) has **zero callers in `src/` or `tools/`**; nothing
+> saves or restores from `m._rooms`, and `resetRooms()` wipes it on new game and
+> load (`game.js:139`, `game.js:158`). The rule is also **already broken** by the
+> Chartstone path — `tideMarks` calls `getRoom`, which does `new Room(...)`. So:
+> the save-corruption hazard the comment names does not exist today, but
+> instantiating **120 overworld rooms** on every map open is still a real frame
+> cost, and `legend` gives you what you need without it. **Decide deliberately,
+> say which you chose, and if you instantiate, measure it.** Do not cite the
+> stale comment as the reason for a decision.
+>
+> Per `T23`, draw from tiles/sprites or integer `fillRect`s, never paths, or it
+> reads soft against a pixel-art game.
+>
+> **The design question nobody has answered:** the overworld terrain is
+> tide-variant, and a map is one picture. **Which tide does Thalassia's map
+> show** — the current one, LOW as a baseline, or something that changes as the
+> tide does? There is no right answer in the tree. Pick one, write down why, and
+> flag it as a judgement call.
 >
 > Prove with `V11`, `V13`, `V16`. **Then screenshot the dungeon map before and
 > after and show it is unchanged**, including a multi-screen room and the
 > Chartstone pips — `T53`, assertions prove existence, never appearance. Screenshot
 > the new overworld map at three states: unexplored, partly explored, fully
-> explored with the Chartstone. **Then hand it to me.**
+> explored. **Then hand it to me, and per `§4.2` tell me exactly where to stand
+> to open it.**
 
 ---
 
