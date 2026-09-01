@@ -144,12 +144,6 @@ export function expectedSize(name) {
   // cropping it back to 16x16 would remove the sword. The engine derives the
   // draw anchor from these dimensions (see Player.draw), so if the ripper's
   // crop changes, this must change with it — that is what the assert is for.
-  // The oak's two halves. A tree is 32x32 in every Oracle sheet and there is
-  // no 16x16 tree anywhere to find, so it is drawn whole and overhangs its
-  // cell — see `big` in registerTiles and the note in Room.render. The canopy
-  // and the roots are separate arts because they cannot share one four-colour
-  // palette, which is why this is a PAIR of 32x16 rather than one 32x32.
-  if (['treeOakTop', 'treeOakBot', 'palmTop', 'palmBot'].includes(name)) return [32, 16];
   if (name === 'link_hold_down') return [16, 30];
   if (name === 'link_hold_up') return [16, 28];
   if (name === 'link_hold_side') return [28, 16];

@@ -447,6 +447,46 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+**A 32x32 OBJECT DRAWN FROM EVERY 16px TILE IS DRAWN AT DOUBLE DENSITY.** The
+first cut of the tree work anchored the whole tree on one tile and let it
+overhang, reasoning that this is what the source does with a 32x32 object. It is
+— but the source places that object every 32px. Here every tile is a tree, so
+each one half-covered its neighbour and a treeline read as overlapping circles
+with hard black seams. Worse, a tree on a screen's TOP ROW drew its canopy above
+the canvas, where nothing can see it, leaving a bare root mound with a torn
+outline — and every screen in this world is bordered with trees along its top
+row. **A person playing spotted it in seconds; every checker was green.**
+
+The working shape is four 16x16 quadrants, chosen by NEIGHBOURS rather than by
+coordinates:
+
+    qy = (no tree above) or (tree below) -> canopy, else roots
+    qx = start of a run -> L, end -> R, otherwise alternate by parity
+    no horizontal neighbour at all      -> draw BOTH halves, overhanging
+
+Canopy everywhere, trunks only along the bottom edge of a mass — which is how a
+wood actually looks — and a one-tile treeline stays a canopy instead of becoming
+a row of roots.
+
+**"LONE" IS A PROPERTY OF THE TREE, NOT OF ONE CELL OF IT.** The overhang case
+above was first decided per cell. A one-wide column's canopy had a horizontal
+neighbour and its roots did not, so the leaves came out 16px wide and the base
+32px, and the base stuck out past the tree. The other row of the same tree has
+to get a vote.
+
+**THE SAME COLOUR CAN BE BACKGROUND IN ONE PLACE AND ART IN ANOTHER, SO HOW
+BACKGROUND IS DECIDED IS PER-OBJECT.** The oak's pale cream is both the halo the
+map draws where grass meets tree and the highlight inside its roots. Clearing it
+by colour punched holes through the roots; the fix is to FLOOD inward from the
+border, which keeps anything the tree's own outline walls in. The palm needs the
+exact opposite: its background is dune sand, which appears nowhere in the palm,
+and the gaps between its fronds are ground showing through even though the
+fronds enclose them — flooding would have given it a solid sand-coloured middle.
+`rip-terrain.py` carries a `flood` flag per object for this reason. Compute the
+mask on the WHOLE object and slice afterwards, or the same pixel is art in one
+quadrant and background in its neighbour.
+
+
 **A PALM IS NOT AN OAK RECOLOURED.** The dunes are a third of every tree in the
 game (510 of 1559 tiles), and the cheap move — reuse the oak's art under a beige
 palette, the way `treeDark` and `treeDead` legitimately do — would have given

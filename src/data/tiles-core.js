@@ -1074,11 +1074,11 @@ function installTownBlocks() {
   // set is the Drowned Wood's colder green, the dead set its bleached brown.
   registerPalettes({
     treeOakTop: ['#93a846', '#546d25', '#546d25', '#000000'],
-    treeOakBot: ['#b49d73', '#7a5d35', '#546d25', '#000000'],
+    treeOakBot: ['#dfd9b5', '#b49d73', '#546d25', '#000000'],
     treeOakDkTop: ['#6c9848', '#3c6830', '#3c6830', '#08160c'],
-    treeOakDkBot: ['#8c6c44', '#5c3c1c', '#3c6830', '#08160c'],
+    treeOakDkBot: ['#c4c4a4', '#8c6c44', '#3c6830', '#08160c'],
     treeOakDdTop: ['#c8b088', '#907048', '#907048', '#20140c'],
-    treeOakDdBot: ['#c8b088', '#6c4c2c', '#907048', '#20140c'],
+    treeOakDdBot: ['#e4dcc4', '#c8b088', '#907048', '#20140c'],
     // The palm's two halves share one palette — see the note in rip-terrain.py.
     palmFrond: ['#a7c947', '#5a9731', '#8c5527', '#000000'],
   });
@@ -1333,19 +1333,19 @@ export function installCoreTiles() {
       underArt: 'rockFloor',
     },
     treeDead: { art: ART.tree, pal: 'treeoakdd', flags: F.SOLID, underArt: 'grassBog',
-      big: 'treeOak', bigPalTop: 'treeOakDdTop', bigPalBot: 'treeOakDdBot' },
+      quad: 'treeOak', quadPalTop: 'treeOakDdTop', quadPalBot: 'treeOakDdBot' },
     treeDark: { art: ART.tree, pal: 'treeoakdk', flags: F.SOLID, underArt: 'grassDark',
-      big: 'treeOak', bigPalTop: 'treeOakDkTop', bigPalBot: 'treeOakDkBot' },
+      quad: 'treeOak', quadPalTop: 'treeOakDkTop', quadPalBot: 'treeOakDkBot' },
     // THE TREES ARE WHOLE 32x32 OBJECTS NOW, not 16x16 lollipops. `big` names
     // the pair of half-arts; see `registerTiles` and `Room.render`. `art` stays
     // as the fallback the rest of the engine (previews, the map screen's colour
     // sampler) reads when it wants one 16x16 cell to stand for this tile.
     tree: { art: ART.tree, pal: 'treeoak', flags: F.SOLID, underArt: 'grass',
-      big: 'treeOak', bigPalTop: 'treeOakTop', bigPalBot: 'treeOakBot' },
+      quad: 'treeOak', quadPalTop: 'treeOakTop', quadPalBot: 'treeOakBot' },
     treeSand: { art: ART.tree, pal: 'treeoak', flags: F.SOLID, underArt: 'sand',
-      big: 'treeOak', bigPalTop: 'treeOakTop', bigPalBot: 'treeOakBot' },
+      quad: 'treeOak', quadPalTop: 'treeOakTop', quadPalBot: 'treeOakBot' },
     palm: { art: ART.palmTree, pal: 'tree', flags: F.SOLID, underArt: 'sand',
-      big: 'palm', bigPalTop: 'palmFrond', bigPalBot: 'palmFrond' },
+      quad: 'palm', quadPalTop: 'palmFrond', quadPalBot: 'palmFrond' },
     bush: { art: ART.bush, pal: 'tree', flags: F.SOLID | F.BUSH, underArt: 'grass' },
     // DRIFT-TANGLE. A mat of sun-dried weed packed into a doorway: springy,
     // salt-stiff, and the one obstacle in the game a blade does nothing to —

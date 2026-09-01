@@ -223,30 +223,49 @@ _TREE_GROUND = {(182, 182, 127), (117, 137, 70), (223, 217, 181), (252, 230, 198
 # The dune sand the palm stands on: two tones in a diagonal stripe, both ground.
 _SAND_GROUND = {(252, 232, 177), (227, 161, 77)}
 
-# (name, sheet, x, y, w, h, bg, slots, note)
+# WHOLE 32x32 OBJECTS, cut into four 16x16 quadrants after extraction.
+#
+# (name, sheet, x, y, w, h, bg, flood, topSlots, botSlots, note)
+#
+# TWO THINGS ARE DELIBERATE HERE AND BOTH WERE PAID FOR.
+#
+# 1. HOW BACKGROUND IS DECIDED IS PER-OBJECT, and both objects here need a
+#    DIFFERENT answer, which is why `flood` is a field rather than a policy.
+#    THE OAK FLOODS. Its pale cream is the halo the map draws where grass meets
+#    tree AND the highlight inside its roots — the same colour meaning two
+#    things. Clearing it by colour punched holes through the roots and left the
+#    quadrants looking like torn paper, which is what a person playing spotted.
+#    Flooding inward from the border clears the halo and keeps the highlight,
+#    because the highlight is walled in by the tree's own outline.
+#
+#    THE PALM DOES NOT. Its background is dune sand, which appears nowhere in
+#    the palm itself, so it is unambiguous — and the gaps BETWEEN its fronds are
+#    ground showing through even though the fronds enclose them. Flooding would
+#    keep those gaps opaque and give the palm a solid sand-coloured middle.
+#
+# 2. THE MASK IS COMPUTED ON THE WHOLE OBJECT, THEN THE OBJECT IS SLICED.
+#    Doing it per-quadrant would call a root gap "enclosed" or "reachable"
+#    depending on which 16x16 window it happened to touch, so the same pixel
+#    could be art in one quadrant and background in its neighbour.
+#
+# The two halves quantise separately because a canopy and its roots do not fit
+# in one four-colour palette — on hardware they are separate tiles with separate
+# palettes, and this is the same split.
 BIGPROPS = [
-    ('treeOakTop', OW, 2220, 1597, 32, 16, _TREE_GROUND, (0, 1, 3),
-     'oak canopy, upper half of a whole 32x32 tree'),
-    # Five colours into four slots, and the fifth is TWO PIXELS of canopy green
-    # that overhang into the root half. They go to the same index as the dark
-    # green beside them; slots may repeat, and this is the one place in this
-    # file where a colour is merged rather than kept.
-    ('treeOakBot', OW, 2220, 1613, 32, 16, _TREE_GROUND, (0, 2, 1, 2, 3),
-     'oak roots, lower half of the same tree'),
-
+    # The root half keeps SIX colours once the halo is flooded away rather than
+    # cleared by colour, so it is reduced deliberately: cream highlight and tan
+    # root take slots 0 and 1, the canopy's own shadow keeps a green at slot 2,
+    # and the root shadow joins the tan rather than the green — roots read as
+    # two tones and the leaf shadow above them stays a leaf shadow. Two stray
+    # canopy pixels overhanging the join go to the green with it.
+    ('treeOak', OW, 2220, 1597, 32, 32, _TREE_GROUND, True, (0, 1, 3), (0, 1, 2, 1, 2, 3),
+     'oak: round canopy over visible roots, standing on grass'),
     # THE PALM IS A DIFFERENT TREE, not the oak recoloured. The dunes are a
     # third of every tree in the game (510 of 1559 tiles) and recolouring an
-    # oak would have given the desert broadleaf woodland in beige.
-    #
-    # Unlike the oak this one needs only ONE palette: its fronds and its base
-    # share a colour set small enough to fit four slots between them, so both
-    # halves index the same four colours and `bigPalTop`/`bigPalBot` name the
-    # same palette. The pair of half-arts is kept anyway — it is the mechanism,
-    # and a palm that stopped being a pair would need its own draw path.
-    ('palmTop', OW, 402, 308, 32, 16, _SAND_GROUND, (0, 1, 2, 3),
-     'date palm fronds, upper half of a whole 32x32 palm'),
-    ('palmBot', OW, 402, 324, 32, 16, _SAND_GROUND, (1, 2, 3),
-     'date palm trunk and base, lower half of the same palm'),
+    # oak would have given the desert broadleaf woodland in beige. Its fronds
+    # and base share one colour set, so both halves index one palette.
+    ('palm', OW, 402, 308, 32, 32, _SAND_GROUND, False, (0, 1, 2, 3), (1, 2, 3),
+     'date palm: fronds over a trunk and sand mound'),
 ]
 
 # --------------------------------------------------------------------------
@@ -466,6 +485,44 @@ def quantise_town(block, w, h, bgs, cells):
             row.append(lines)
         out.append(row)
     return out
+
+
+def flood_background(block, bgset):
+    """True where a pixel is background REACHABLE FROM THE BORDER.
+
+    Colour alone cannot answer this: the pale tone around a tree is both the
+    halo the map draws under it and the highlight inside its roots. Flooding
+    inward keeps anything the object's own outline walls in.
+    """
+    H, W = len(block), len(block[0])
+    clear = [[False] * W for _ in range(H)]
+    stack = [(i, e) for i in range(W) for e in (0, H - 1)]
+    stack += [(e, i) for i in range(H) for e in (0, W - 1)]
+    while stack:
+        cx, cy = stack.pop()
+        if not (0 <= cx < W and 0 <= cy < H) or clear[cy][cx]:
+            continue
+        if block[cy][cx] not in bgset:
+            continue
+        clear[cy][cx] = True
+        stack += [(cx + 1, cy), (cx - 1, cy), (cx, cy + 1), (cx, cy - 1)]
+    return clear
+
+
+def quantise_masked(block, clear, slots):
+    """Index a block to 0-3 and '.', with transparency already decided."""
+    H, W = len(block), len(block[0])
+    kept = sorted({block[cy][cx] for cy in range(H) for cx in range(W)
+                   if not clear[cy][cx]}, key=lambda c: (-lum(c), c))
+    if len(kept) > len(slots):
+        raise SystemExit('rip-terrain: %d colours, %d slots given: %s'
+                         % (len(kept), len(slots), kept))
+    idx = {c: slots[i] for i, c in enumerate(kept)}
+    rows = []
+    for cy in range(H):
+        rows.append(''.join('.' if clear[cy][cx] else str(idx[block[cy][cx]])
+                            for cx in range(W)))
+    return rows, kept
 
 
 def quantise_prop(block, slots, bg=None):
@@ -874,14 +931,25 @@ def main():
                                 grids[cy][cx], pal))
         town.append((name, w, h, note, cells, townart))
 
-    for name, path, x, y, w, h, bg, slots, note in BIGPROPS:
+    for name, path, x, y, w, h, bg, flood, topSlots, botSlots, note in BIGPROPS:
         im = sheets.get(path)
         if im is None:
             im = sheets[path] = Image.open(path).convert('RGB')
         block = [[im.getpixel((x + cx, y + cy)) for cx in range(w)] for cy in range(h)]
-        grid, keep = quantise_prop(block, slots, bg)
-        arts.append((name, note, os.path.basename(path), x, y, grid))
-        pals.append((name, keep))
+        clear = (flood_background(block, bg) if flood
+                 else [[c in bg for c in row] for row in block])
+        halves = []
+        for hy, slots in ((0, topSlots), (1, botSlots)):
+            sub = [row[:] for row in block[hy * 16:hy * 16 + 16]]
+            submask = [r[:] for r in clear[hy * 16:hy * 16 + 16]]
+            grid, keep = quantise_masked(sub, submask, slots)
+            halves.append((grid, keep))
+            pals.append(('%s%s' % (name, 'TB'[hy]), keep))
+        for hy, (grid, keep) in enumerate(halves):
+            for qx in range(2):
+                q = [row[qx * 16:qx * 16 + 16] for row in grid]
+                arts.append(('%s%s%s' % (name, 'TB'[hy], 'LR'[qx]), note,
+                             os.path.basename(path), x + qx * 16, y + hy * 16, q))
 
     for name, path, x, y, slots, note in PROPS:
         im = sheets.get(path)

@@ -294,20 +294,57 @@ export class Room {
           }
           if (d.over) { this.overCells.push({ x, y, def: d }); continue; }
           if (d.anim) { this.animCells.push({ x, y, def: d }); continue; }
-          // AN OBJECT BIGGER THAN ITS CELL. A tree is 32x32 in every Oracle
-          // sheet and there is no 16x16 tree anywhere to find, so a faithful
-          // one cannot be a tile — it is drawn whole, centred on its cell and
-          // overhanging into the neighbours.
+          // ONE CELL OF A TREE. A tree is 32x32 in every Oracle sheet and
+          // there is no 16x16 tree to find, so each tile draws one QUADRANT of
+          // one, and which quadrant is a question about its NEIGHBOURS:
           //
-          // The roots sit ON the cell and the canopy hangs into the row above,
-          // which is what puts a border row of trees at the top of a screen and
-          // lets the canopy be clipped by the screen edge exactly as the source
-          // clips it. Row-major draw order does the rest: a tree one row down
-          // is drawn later and so overlaps the one above it, which is the right
-          // way round for depth.
-          if (d.big) {
-            tileSheet.draw(ctx, d.big + 'Top', x * TILE - 8, y * TILE - 16, { pal: d.bigPalTop });
-            tileSheet.draw(ctx, d.big + 'Bot', x * TILE - 8, y * TILE, { pal: d.bigPalBot });
+          //   * A cell with no tree above it is the top of the mass, so it
+          //     draws canopy. So does a cell with trees both above and below —
+          //     the inside of a wood is canopy all the way through.
+          //   * Only a cell with a tree above and open ground below draws the
+          //     trunks, which is where you actually see them: along the bottom
+          //     edge of the mass.
+          //   * Left/right is forced at the ends of a run so the outline reads
+          //     as one object, and alternates by parity in between.
+          //
+          // This is why a one-tile-thick treeline — which is how this world
+          // borders nearly every screen — is a continuous canopy rather than a
+          // row of bare root mounds, which is what an earlier coordinate-parity
+          // version produced.
+          if (d.big || d.quad) {
+            const q = d.quad || d.big;
+            const same = (ox, oy) => {
+              const n = this.baseName(x + ox, y + oy);
+              return n === d.name || (getTileDef(n) || {}).quad === q;
+            };
+            const above = same(0, -1), below = same(0, 1);
+            const left = same(-1, 0), right = same(1, 0);
+            const qy = (!above || below) ? 'T' : 'B';
+            const pal = qy === 'T' ? d.quadPalTop : d.quadPalBot;
+            // A COLUMN ONE TILE WIDE CANNOT HOLD HALF A 32-WIDE TREE AND LOOK
+            // LIKE ANYTHING. Every screen in this world is bordered left and
+            // right by exactly such a column, and picking a half for it drew a
+            // tree sliced down the middle with a hard edge — which is what a
+            // person playing reported as "partial tiles with jagged edges".
+            //
+            // With no tree either side there is nothing to collide with, so
+            // the whole 32-wide object is drawn centred on the cell and simply
+            // overhangs onto the ground beside it. That is what the source does
+            // with a 32x32 object, and it is safe HERE precisely because it is
+            // only done where no neighbour would be double-drawn.
+            // "Lone" is a property of the whole TREE, not of one cell of it.
+            // Asking only this cell made a column's canopy half-width and its
+            // roots full-width, so the base stuck out past the leaves. The
+            // other row of this tree gets a vote.
+            const other = qy === 'T' ? 1 : -1;
+            const lone = !left && !right && !same(-1, other) && !same(1, other);
+            if (lone) {
+              tileSheet.draw(ctx, q + qy + 'L', x * TILE - 8, y * TILE, { pal });
+              tileSheet.draw(ctx, q + qy + 'R', x * TILE + 8, y * TILE, { pal });
+              continue;
+            }
+            const qx = !left ? 'L' : (!right ? 'R' : ((x & 1) ? 'R' : 'L'));
+            tileSheet.draw(ctx, q + qy + qx, x * TILE, y * TILE, { pal });
             continue;
           }
           // A ground tile may declare interchangeable art. The choice is a pure

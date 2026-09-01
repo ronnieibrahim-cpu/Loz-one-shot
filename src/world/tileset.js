@@ -114,22 +114,27 @@ export function registerTiles(defs) {
       anim: def.anim || null,
       animRate: def.animRate || 10,
       over: !!def.over,
-      // A TILE MAY DRAW SOMETHING BIGGER THAN ITSELF. `big` names a pair of
-      // 32x16 arts — `<big>Top` and `<big>Bot` — drawn as one whole 32x32
-      // object anchored on this cell and overhanging its neighbours, which is
-      // what the source games do with a tree.
+      // A TILE THAT IS ONE CELL OF A BIGGER OBJECT. `quad` names a set of four
+      // 16x16 arts — `<quad>TL`, `TR`, `BL`, `BR` — cut from one 32x32 source
+      // tree. Which one this cell draws is decided by its NEIGHBOURS at render
+      // time, not by its coordinates: see `Room.render`.
       //
-      // It is a pair rather than one 32x32 art because a canopy and its roots
-      // do not fit in one four-colour palette; on hardware they are separate
-      // tiles with separate palettes, and this is the same split. `bigPalTop`
-      // and `bigPalBot` name them.
+      // The top and bottom rows carry separate palettes (`quadPalTop`,
+      // `quadPalBot`) because a canopy and its roots do not fit in one
+      // four-colour palette. On hardware they are separate tiles with separate
+      // palettes, and this is the same split.
+      //
+      // An earlier cut of this drew the whole 32x32 tree from one tile,
+      // overhanging its neighbours. It clipped the canopy off every tree on a
+      // screen's top row and double-drew every run. Quadrants keep each cell
+      // inside itself.
       //
       // NAMED HERE ON PURPOSE: this registrar copies field by field, so a
       // field it does not name is silently DISCARDED — that is how `liftLevel`
       // sat in the data unread for the life of the project.
-      big: def.big || null,
-      bigPalTop: def.bigPalTop || null,
-      bigPalBot: def.bigPalBot || null,
+      quad: def.quad || null,
+      quadPalTop: def.quadPalTop || null,
+      quadPalBot: def.quadPalBot || null,
       // GROUND VARIANTS: other art names this tile may be drawn as. Purely a
       // draw-time substitution — same flags, same palette, same everything the
       // simulation can see — so a field of grass stops being one 16x16 cell
