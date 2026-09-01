@@ -17,7 +17,8 @@ Last verified against the tree: **2026-08-30**; `A5`, `§3` and `§4.1`
 re-verified by S7 (music: intros, loop length, the S6 techniques in use), then
 by S8 (the overworld map becomes a picture; `A3`, `§3`, `§4.1`), then by S9
 (townspeople react; `A6`, `§3`, `§4.1`), then by S10 (cutscenes draw; `A7`,
-`§3`, `§4.1`).
+`§3`, `§4.1`), then by S11 (orphaned checkers recovered; `A9`, `§3`, `§4.1` —
+the feel.js measurement half remains open, see `A1`/`A9`).
 Previously **2026-08-29**, commit `64a6561`; `§1`, `A5` and
 `§3`/`§4.1` re-verified by S6 (music engine: vibrato, echo, arpeggio).
 Previously re-verified against `0d435fc`; `§1`, `A1` and
@@ -507,7 +508,21 @@ perfectly fair; one it beats easily may be boring.
 
 ### A9 — Orphaned verification
 
-**Multi-screen rooms shipped to `main` without their checkers.**
+**S11 RECOVERED BOTH.** `tools/check-camera.mjs` and `tools/check-wide-rooms.mjs`
+were rewritten from scratch against the current engine (not ported) and are
+wired into `V16`. Both were proved to fail against deliberately broken input
+before being trusted. `claude/p7-6-camera` can now be deleted.
+
+**The feel.js half of S11 is NOT done and was not attempted** — see `A1`. There
+is no gameplay reference in this repo to frame-step: `assets/` holds sprite
+sheets and one static title-screen GIF (single frame, no timing). Nothing was
+relabelled. What S11 added instead is `tools/check-feel.mjs` (`V25`), which
+makes the rule mechanical: every constant needs a unit and a provenance word,
+and **anything claiming `measured` must name the reference it was stepped
+from**. Census today: **0 measured, 17 derived, 220 guessed.**
+
+**The old text, kept for the history:**
+Multi-screen rooms shipped to `main` without their checkers.
 `tools/check-camera.mjs` (170 lines) and `tools/check-wide-rooms.mjs` (320 lines)
 were written on `claude/p7-6-camera` (commit `e00b6c5`) and never merged. That
 branch is **kept alive** for reference; it is 90 commits behind, so the files
@@ -862,6 +877,27 @@ by number.
   WAS being drawn. Layout is now computed — caption drops to the bottom
   whenever a sprite is up, and the sprite centres in the band that leaves.
 
+- **T84 — A checker that asks the thing under test for its own limits proves
+  nothing.** The first cut of `check-camera.mjs` computed `mx = cam.maxX(room)`
+  and then judged the camera against `mx`. A deliberately broken `maxX`
+  (returning 8 instead of 0 for a one-screen room) passed cleanly, because
+  "is this room pinned" was being answered by the very function under test.
+  Derive the expectation from the DATA (`room.pw - VIEW_W`) and then check the
+  engine's answer against it.
+- **T85 — A structural checker must know every verb, or it will condemn good
+  rooms.** `check-wide-rooms.mjs` first asked bare-foot solidity at each
+  internal seam and immediately flagged two hand-authored rooms as broken: the
+  Kelp Locks' seam is a torrent you cross with the Cleats, and the Shrine
+  Ford's is a snarl you cut and then swim. `everPassable` in
+  `tools/lib/collision.mjs` now carries the capability list AND the tile
+  transforms — **if you give the player a new way to move, add it there in the
+  same commit** (this is `T52`'s ledge lesson, in a new place).
+- **T86 — A comment can cover a GROUP of constants.** `feel.js` documents
+  amplitude/duration pairs under one `px, f —` comment, so the second of each
+  pair has no comment of its own and is NOT undocumented. The first cut of
+  `check-feel.mjs` reported all three such pairs as missing; the convention was
+  real and the checker was wrong.
+
 ### Harness and process
 
 - **T51 — LIVE BUG: the ledge-hop prober can drop the player.**
@@ -1029,6 +1065,9 @@ are faster than you are and they do not rationalise.
 | V7 | `node tools/check-towns.mjs` | Every town screen's ways in and doors reach each other **on foot** at all three tides |
 | V8 | `node tools/check-items.mjs` | Every item does the verb `docs/ITEMS.md` claims; nothing hands out a nonexistent item |
 | V9 | `node tools/check-hearts.mjs` | Heart economy and the contact-damage ladder |
+| V25 | `node tools/check-feel.mjs` | Every feel constant has a unit and a provenance word; a `measured` claim must name its reference (`R3`/`T4`). Wired into `V16` |
+| V26 | `node tools/check-camera.mjs` | The camera at every room size — pinned in one-screen rooms, in-bounds, whole-pixel, speed-capped, and it follows in wide ones. Wired into `V16` |
+| V27 | `node tools/check-wide-rooms.mjs` | Multi-screen rooms are internally consistent and crossable at their seams. Wired into `V16` |
 | V23 | `node tools/check-text.mjs` | Every character the game can display has a glyph (`T82` — a miss is a silent '?'). Wired into `V16` |
 | V24 | `node tools/shoot-cutscene.mjs` | Photographs each cutscene on a frame where its picture is actually up; `--nereth` reaches the throne room and proves `nerethIntro` fires and hands over to `finalBoss` |
 | V22 | `node tools/check-dialogue.mjs` | Every dialogue id is both written and referenced (`T47` — a miss is a silent EMPTY BOX), and every two-state townsperson's second line is proved reachable by driving the real `NPC.interact` either side of its threshold. Wired into `V16` |

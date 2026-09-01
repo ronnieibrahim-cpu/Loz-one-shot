@@ -16,7 +16,7 @@
 // restrictive than raw collision without forking the collision rule itself.
 
 import { TILE } from '../../src/core/screen.js';
-import { F, tileDefSolid } from '../../src/world/tileset.js';
+import { F, tileDefSolid, resolveTile, transformFor } from '../../src/world/tileset.js';
 
 export { F };
 
@@ -88,4 +88,45 @@ export function defWalkable(d, caps, avoid = 0) {
   if (defSolid(d, caps)) return false;
   if (avoid && d && (d.flags & avoid)) return false;
   return true;
+}
+
+
+/**
+ * Every capability set a player can actually be in, for a checker that has to
+ * ask "is this crossable by ANYONE, ever" rather than "can you walk here now".
+ *
+ * This list is the thing the project's own trap note is about: *a checker's
+ * flood only knows the movement verbs somebody taught it*, and
+ * `walk-dungeons.mjs` treated a one-way ledge as a wall for the life of the
+ * project because nobody had taught it that verb. `check-wide-rooms.mjs` was
+ * written with only the first entry here and immediately reported two hand-
+ * authored rooms as broken: the Kelp Locks' seam is a torrent you cross with
+ * the Cleats, and the Shrine Ford's is a snarl you cut and then swim.
+ *
+ * If you give the player a new way to move, add it here in the same commit.
+ */
+export const ALL_CAPS = [undefined, { swim: true }, { jumping: true }, { cutting: true },
+                         { swim: true, jumping: true }];
+
+/**
+ * Can a mover EVER get onto this tile — under any capability set above, or
+ * after the tile has been transformed by something the player can do to it
+ * (cutting a snarl, bombing a crack)?
+ *
+ * Transforms are read from the engine's own `transformFor` table and the
+ * result re-resolved through `resolveTile`, so this never guesses what a tile
+ * becomes. It answers "is this passable in principle", which is the right
+ * question for a structural checker and the wrong one for a route planner —
+ * a route planner must keep asking `tileWalkable` with the caps actually held.
+ */
+export function everPassable(room, tx, ty, tide) {
+  const d = room.tile(tx, ty, tide);
+  for (const caps of ALL_CAPS) if (!defSolid(d, caps)) return true;
+  for (const action of ['cut', 'bomb', 'fire', 'dredge', 'ring', 'seed', 'lift']) {
+    const t = transformFor(d.name, action);
+    if (!t || !t.to) continue;
+    const after = resolveTile(t.to, tide);
+    for (const caps of ALL_CAPS) if (!defSolid(after, caps)) return true;
+  }
+  return false;
 }

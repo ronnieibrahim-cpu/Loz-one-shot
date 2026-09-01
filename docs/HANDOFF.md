@@ -447,6 +447,47 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+**A CHECKER THAT ASKS THE THING UNDER TEST FOR ITS OWN LIMITS PROVES NOTHING.**
+`check-camera.mjs` first computed `mx = cam.maxX(room)` and then judged the
+camera against `mx`. Breaking `maxX` on purpose — returning 8 instead of 0 for a
+one-screen room — passed cleanly, because "is this room pinned" was being
+answered by the very function under test. The fix is to derive the expectation
+from the DATA (`room.pw - VIEW_W`) and check the engine's answer against it.
+**This is the sibling of the collision rule (`R4`) and it points the other way**:
+call the engine for BEHAVIOUR, never for the STANDARD you are holding it to.
+
+**A STRUCTURAL CHECKER MUST KNOW EVERY VERB OR IT WILL CONDEMN GOOD ROOMS.**
+`check-wide-rooms.mjs` asked bare-foot solidity across each internal seam and
+immediately reported two hand-authored rooms as broken. Both were right and the
+checker was wrong: the Kelp Locks' seam is a torrent you cross with the Cleats,
+and the Shrine Ford's is a snarl you cut and then swim. This is the ledge lesson
+(`T52`) in a new place, and it will keep happening — the fix is that
+`everPassable` in `tools/lib/collision.mjs` now owns both the capability list
+and the tile-transform lookup, so there is ONE place to update when the player
+gets a new way to move.
+
+**NEGATIVE-TEST EVERY CHECKER, AND EXPECT ONE OF THE TESTS TO SURPRISE YOU.**
+Four deliberate breaks were tried against the two new checkers. Three failed
+loudly as intended. The fourth — deleting the camera's `if (mx === 0 && my === 0)`
+early return — changed nothing at all, because the clamp below it already forces
+the same result. That is not a checker gap; it is defence in depth that nobody
+had written down. **A negative test that does not go red is information**: either
+the assertion is weak, or the code is more robust than it looks. Find out which
+before moving on.
+
+**THERE IS NOTHING IN THIS REPO TO FRAME-STEP.** S11's second half was to convert
+`feel.js` constants from `guessed` to `measured`. It was not attempted and
+nothing was relabelled. `assets/` contains sprite sheets and one title-screen
+GIF, and that GIF is a SINGLE STATIC FRAME with no timing information — checked,
+not assumed. Measuring walk speed, sword duration, knockback, invulnerability
+frames, room transitions or text speed needs gameplay video of the source games,
+which a session can only have if somebody puts it in the repo. **The census
+stands at 0 measured / 17 derived / 220 guessed**, and `check-feel.mjs` now
+makes the honest version enforceable: a `measured` claim must name the reference
+it was stepped from, so the failure the S11 prompt feared — quietly inflating
+that word — is now a red build rather than a matter of trust.
+
+
 **COUNT BEFORE YOU BUILD THE STEP THE PROMPT ASKED FOR.** S10's prompt listed a
 camera pan/hold/return as the first thing to add — "the source uses this
 constantly". In THIS game it would have been dead code on delivery:

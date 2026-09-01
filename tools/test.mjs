@@ -209,6 +209,37 @@ const main = async () => {
       r.status === 0, 'see tools/check-audio-render.mjs');
   }
 
+  // R3/T4 made mechanical: every feel constant carries a unit and a provenance
+  // word, and nothing may claim to be `measured` without naming the reference
+  // it was stepped from. Inflating that word is S11's stated failure condition.
+  console.log('\n--- feel constants ---');
+  {
+    const { spawnSync } = await import('node:child_process');
+    const r = spawnSync(process.execPath, [new URL('check-feel.mjs', import.meta.url).pathname],
+      { encoding: 'utf8' });
+    const out = (r.stdout || '') + (r.stderr || '');
+    for (const line of out.trim().split('\n')) console.log('  ' + line);
+    check('every feel constant has a provenance, and every measured claim names its reference',
+      r.status === 0, 'see tools/check-feel.mjs');
+  }
+
+  // A9: multi-screen rooms shipped without their checkers. These are the
+  // rewrites — the camera behaves at every room size, and a room that declares
+  // a size is internally consistent.
+  console.log('\n--- multi-screen rooms and the camera ---');
+  {
+    const { spawnSync } = await import('node:child_process');
+    for (const [tool, label] of [
+      ['check-camera.mjs', 'the camera is pinned in one-screen rooms and follows in wide ones'],
+      ['check-wide-rooms.mjs', 'every wide room fills its grid, owns its cells and is crossable at its seams'],
+    ]) {
+      const r = spawnSync(process.execPath, [new URL(tool, import.meta.url).pathname], { encoding: 'utf8' });
+      const out = (r.stdout || '') + (r.stderr || '');
+      for (const line of out.trim().split('\n')) console.log('  ' + line);
+      check(label, r.status === 0, `see tools/${tool}`);
+    }
+  }
+
   // A character with no glyph renders as '?', silently — six Essence title
   // cards read "I ? the Shallow Bell" for the project's whole life.
   console.log('\n--- displayable text ---');

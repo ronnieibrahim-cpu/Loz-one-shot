@@ -1,3 +1,94 @@
+## S11 — Orphaned checkers recovered; the feel.js debt is NOT paid (this session)
+
+**Run per `docs/SESSION-PROMPTS.md` S11, on top of S10.** Job 1 is done in full.
+**Job 2 was not attempted and nothing was relabelled** — read why below before
+assuming it was skipped out of laziness.
+
+### Job 1 — the two orphaned checkers, rewritten from scratch
+
+Both were written on `claude/p7-6-camera`, never merged, and that branch is ~90
+commits behind, so these are rewrites against the current engine, not ports
+(`T56`). Both are wired into `V16`.
+
+**`tools/check-camera.mjs` (`V26`)** drives the real `Camera` against all 273
+real rooms and checks six promises: pinned at 0,0 in every room no bigger than
+the view (264 of them), never outside the room, never more than `CAM_MAX_SPEED`
+in a frame, always whole-pixel, unmoved by a player inside the deadzone, and it
+actually reaches the far edge in the 9 rooms that are wider than the view.
+
+**`tools/check-wide-rooms.mjs` (`V27`)** checks that a room declaring a size
+fills its authored grid (a row one character short silently becomes a column of
+void), fits on its map, shares no cell with another room, resolves every covered
+cell back to itself, is crossable at every internal seam, and never neighbours
+itself.
+
+**Both were proved to fail before being trusted.** Four deliberate breaks:
+walling off a seam, shortening a map row, letting the camera exceed
+`CAM_MAX_SPEED`, and dropping its clamp — all went red with readable messages.
+
+Two things the negative tests taught, both now traps:
+
+- **`T84`** — the first cut of the camera checker asked `cam.maxX(room)` for the
+  limits and then judged the camera by them. A broken `maxX` passed cleanly. The
+  expectation must come from the data (`room.pw - VIEW_W`); the engine's answer
+  is then one of the things being checked.
+- **`T85`** — the first cut of the seam check asked bare-foot solidity and
+  flagged two perfectly good rooms. The Kelp Locks' seam is a torrent (Cleats);
+  the Shrine Ford's is a snarl you cut and then swim. `everPassable` in
+  `tools/lib/collision.mjs` now owns the capability list and the transform
+  lookup — **one place to update when the player gets a new verb.**
+
+A fifth break — deleting the camera's one-screen early return — changed nothing,
+because the clamp below it already forces the same answer. Defence in depth
+nobody had written down.
+
+### Job 2 — NOT DONE, and deliberately not faked
+
+**There is no gameplay reference in this repository to frame-step.** `assets/`
+holds sprite sheets and one title-screen GIF, and that GIF is a **single static
+frame with no timing data** — checked with Pillow, not assumed. Walk speed,
+sword duration, knockback, invulnerability frames, room transitions and text
+speed cannot be measured from anything present.
+
+`A1` is confirmed: **0 measured, 17 derived, 220 guessed.** (An earlier count in
+this session said 9 measured; that was a bad regex catching the word `measured`
+in prose — `WALK_SPEED` says "derived from the 8.8 grid" and `LENS_GHOST_ALPHA`
+says "guessed, but MEASURED AGAINST A ROOM". Neither is a measured claim.)
+
+**What was added instead: `tools/check-feel.mjs` (`V25`)**, which makes S11's own
+stated failure condition mechanical. Every constant must have a comment with a
+unit and a provenance word, and **anything claiming `measured` must carry a
+`reference:` note naming what was frame-stepped**. It reads a claim as
+`measured` only when the comment does not also say `guessed` or `derived`, which
+correctly exempts the two prose cases above. Negative-tested three ways.
+
+It also found three constants with no comment — which turned out to be a
+convention the checker did not know (`px, f —` comments covering an
+amplitude/duration pair), so the checker was fixed, not the file (`T86`).
+
+**To actually pay this debt, someone has to put gameplay video of Oracle of
+Seasons/Ages in the repo.** Then the constants can be stepped one at a time,
+each with its `reference:` line. Until then the honest state is `guessed`.
+
+### Verified
+
+`V16` **83/83** · `V11` replay 51/51 · `V13` playthrough 19/19 · check-camera
+273 rooms · check-wide-rooms 9 rooms / 9 seams · check-feel 237 constants ·
+build OK.
+
+### What is left after this
+
+`docs/ROADMAP.md`'s series is now complete (S1-S11). The open items:
+
+1. **The overworld is 0.9% water at LOW tide** (S8's finding) — the biggest
+   thing on the board, in a game about tides.
+2. **The feel.js measurement debt** — blocked on reference footage, as above.
+3. `speaker:` is a dead field in the cutscene engine; `glide` is a dead field in
+   the audio engine. Both harmless, both still there.
+4. `claude/p7-6-camera` can be deleted — its two checkers now exist on `main`.
+
+---
+
 ## S10 — Cutscenes draw pictures, and Nereth gets an entrance (this session)
 
 **Run per `docs/SESSION-PROMPTS.md` S10, on top of S9.** `cutscene.js` gained
