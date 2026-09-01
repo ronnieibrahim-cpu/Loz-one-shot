@@ -24,7 +24,7 @@ import { useEquipped, ITEMS, ThrownObject } from './items.js';
 import {
   WALK_SPEED, SWIM_SPEED, BOOST_SPEED, SHIELD_SPEED, SLOW_FACTOR,
   SHALLOW_FACTOR, CARRY_FACTOR, SPIN_DRIFT_SPEED, SWORD_HOLD_SPEED,
-  SWING_FRAMES, SWING_HIT_START, SWING_HIT_END, CHARGE_FRAMES, CHARGE_SPARKLE_EVERY,
+  SWING_FRAMES, SWING_HIT_START, SWING_HIT_END, BLADE_REACH_PX, CHARGE_FRAMES, CHARGE_SPARKLE_EVERY,
   SPIN_FRAMES, SWORD_REACH, SWORD_SPAN, SWORD_GAP, SPIN_BOX,
   SWORD_HOLD_DELAY, SWORD_HOLD_DAMAGE, SWORD_CLINK_COOLDOWN, KNOCK_HOLD,
   PLAYER_INVULN_FRAMES, PLAYER_FLICKER_FRAMES, PLAYER_RECOVER_INVULN_FRAMES,
@@ -1272,6 +1272,27 @@ export class Player extends Entity {
     // sits `ay` lower, because that is how much of the frame is above Link.
     sprites.draw(ctx, name, ox + this.x + ax, dy + ay,
       { pal, flipX: this.flipX, h: cropH == null ? null : cropH - ay });
+
+    // THE SWORD. Without this Link swings his empty hands: the sheet's
+    // "Slash/Use item" poses that `link_sword_*` comes from are BODIES ONLY,
+    // because on real hardware the blade is a separate sprite laid over him,
+    // and the sheet keeps it separate too. `fx_blade_*` is that sprite (see
+    // tools/rip-link.py). It shares Link's palette for the same reason it does
+    // on hardware — one OAM palette between them.
+    //
+    // Drawn before the arc so the white swoosh reads as coming off the edge of
+    // the blade rather than sitting under it.
+    if (this.swinging > 0) {
+      const t = SWING_FRAMES - this.swinging;
+      if (t <= SWING_HIT_END + 2) {
+        const side = this.dir === 'left' || this.dir === 'right';
+        const key = side ? 'side' : this.dir;
+        const [bdx, bdy] = DIR_VEC[this.dir];
+        sprites.draw(ctx, 'fx_blade_' + key,
+          ox + this.x + bdx * BLADE_REACH_PX, dy + bdy * BLADE_REACH_PX,
+          { pal, flipX: this.dir === 'left' });
+      }
+    }
 
     // Sword arc
     if (this.swinging > 0) {

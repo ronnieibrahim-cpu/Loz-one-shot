@@ -1209,6 +1209,15 @@ export const CHARM_HIGH_ESSENCES = 4;
 /** essences before every case takes two charms. derived, as above. */
 export const CHARM_CASE_ESSENCES = 6;
 
+/** px — how far out from Link the sword sprite is drawn during a swing.
+ *  guessed. The blade is its own 16x16 sprite (see `fx_blade_*` in
+ *  tools/rip-link.py — on real hardware the sword is a separate sprite from
+ *  Link, which is why the sheet's slash poses have no blade in them), so this
+ *  is the gap between his cell and the blade's. 11 leaves a few pixels of
+ *  overlap at the hilt so the sword reads as HELD rather than as floating
+ *  alongside him; the arc effect is drawn a pixel further out again. */
+export const BLADE_REACH_PX = 11;
+
 // ---------------------------------------------------------------------------
 // Cutscenes — the `show` step (S10)
 //

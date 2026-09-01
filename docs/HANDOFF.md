@@ -447,6 +447,42 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+**THE SWORD SWING HAD NO SWORD IN IT, AND NOTHING COULD SEE THAT.** `link_sword_*`
+comes from the sheet's "Slash/Use item" band, and every frame in that band is a
+BODY POSE with no blade — on real hardware the sword is a separate sprite laid
+over Link, and the sheet keeps it separate too. So Link swung his empty hands
+with only a white arc for company, for the life of the project. Every assertion
+passed: the sprite existed, resolved, and drew. It was simply not a picture of a
+man holding a sword. The blade is now `fx_blade_up/down/side`, taken from the
+Spin Attack band where each cardinal thrust is drawn as TWO 16x16 cells — one of
+Link, one of blade — so the blade cell is a clean extraction with nothing to
+composite and nothing to align.
+
+**`link_push_down` AND `link_push_up` WERE SWAPPED.** Pushing while facing the
+viewer drew Link's back; pushing away drew his face. Digging inherited the same
+mistake, because the dig frames were deliberately aliased to the push pair. Read
+off the sheet's Push band left to right, 1192/1209 are the front-facing pair and
+1226/1243 the back-facing one; the map had them the other way round. **A wrong
+sprite is the hardest class of bug in this project to catch** — it is not a
+crash, not a gap, not a missing asset, and `check-items`/`test.mjs`/the art
+coverage count are all perfectly happy. `tools/shoot-player.mjs` exists now for
+exactly this: it photographs Link in each state facing each way, and a person
+looks.
+
+**THE 32x32 TREE SYSTEM IS BUILT ON ONE SIDE ONLY — DO NOT ASSUME IT WORKS.**
+`tools/rip-terrain.py` carries a long, correct explanation of why a faithful
+tree cannot be 16x16 (every tree in every Oracle sheet is 32x32), a working
+`quantise_quad`, and an emitter that writes `name_<qx><qy>` quadrants. But
+**`QUADS = []` is empty and the ENGINE HAS NO `quad` SUPPORT AT ALL** — grep
+`src/world/` and there is nothing. The four tree tiles are one hand-drawn 16x16
+lollipop reused under four palettes. So the comment reads like a finished
+feature and describes a plan. Before building on it: the engine needs `quad`
+carried through `registerTiles` (remember a tiledef field the registrar does not
+name is silently DISCARDED) and honoured in `Room.artAt`, and every isolated
+single tree tile in the world needs finding, because a 2x2 system draws a lone
+tile as one quarter of a tree.
+
+
 **A CHECKER THAT ASKS THE THING UNDER TEST FOR ITS OWN LIMITS PROVES NOTHING.**
 `check-camera.mjs` first computed `mx = cam.maxX(room)` and then judged the
 camera against `mx`. Breaking `maxX` on purpose — returning 8 instead of 0 for a

@@ -118,8 +118,12 @@ FRAMES = {
     'link_sword_up':    (1103, ACT_Y, False),
     'link_sword_side':  (1069, ACT_Y, True),
 
-    'link_push_down':   (1226, ACT_Y, False),
-    'link_push_up':     (1192, ACT_Y, False),
+    # THESE TWO WERE SWAPPED, and had been since the map was written: pushing
+    # while facing the viewer drew Link's BACK and pushing away drew his FACE.
+    # Read off the sheet's own Push band, left to right: 1192 and 1209 are the
+    # front-facing pair, 1226 and 1243 the back-facing pair, 1260 the profile.
+    'link_push_down':   (1192, ACT_Y, False),
+    'link_push_up':     (1226, ACT_Y, False),
     'link_push_side':   (1260, ACT_Y, True),
 
     'link_carry_down':  (1370, ACT_Y, False),
@@ -127,8 +131,11 @@ FRAMES = {
     'link_carry_side':  (1404, ACT_Y, True),
 
     # Digging reuses the crouched push pose; the shovel effect sells the action.
-    'link_dig_0':       (1226, ACT_Y, False),
-    'link_dig_1':       (1243, ACT_Y, False),
+    # It follows the fix above: you dig facing the viewer, so these are the
+    # FRONT-facing push pair (1192/1209), not the back-facing one. Before the
+    # swap was found, digging drew Link's back.
+    'link_dig_0':       (1192, ACT_Y, False),
+    'link_dig_1':       (1209, ACT_Y, False),
 
     # Hurt reuses the walk pose: Link flashes while invulnerable, so the pose
     # barely registers, and the sheet's death frames are a spin, not a recoil.
@@ -165,6 +172,25 @@ FRAMES = {
     'link_hold_down':   (895, 362, False, 16, 30),
     'link_hold_up':     (967, 362, False, 16, 28),
     'link_hold_side':   (895, 397, True, 28, 16),
+
+    # ---- the sword itself ---------------------------------------------------
+    #
+    # THE SWING HAD NO SWORD IN IT. `link_sword_*` comes from the sheet's
+    # "Slash/Use item" band, and every frame in that band is a BODY POSE with no
+    # blade — on real hardware the sword is a separate sprite laid over Link,
+    # and the sheet keeps it separate too. So the game drew Link swinging his
+    # empty hands, with only a white arc for company.
+    #
+    # These are that missing sprite. They come from the Spin Attack band, where
+    # each cardinal thrust is drawn as a two-cell composite: one 16x16 cell of
+    # Link and one 16x16 cell of blade. The blade cell is taken ALONE — this is
+    # extraction, not compositing, and there is nothing to align because the
+    # source already drew them as separate cells.
+    #
+    # Side faces RIGHT, like every other `_side` frame; the engine mirrors it.
+    'fx_blade_up':      (895, 428, False),
+    'fx_blade_down':    (1008, 460, False),
+    'fx_blade_side':    (961, 444, False),
 }
 
 
