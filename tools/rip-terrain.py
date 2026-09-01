@@ -220,6 +220,9 @@ QUADS = []
 # including the pale gaps BETWEEN the roots — see quantise_prop's own note.
 _TREE_GROUND = {(182, 182, 127), (117, 137, 70), (223, 217, 181), (252, 230, 198)}
 
+# The dune sand the palm stands on: two tones in a diagonal stripe, both ground.
+_SAND_GROUND = {(252, 232, 177), (227, 161, 77)}
+
 # (name, sheet, x, y, w, h, bg, slots, note)
 BIGPROPS = [
     ('treeOakTop', OW, 2220, 1597, 32, 16, _TREE_GROUND, (0, 1, 3),
@@ -230,6 +233,20 @@ BIGPROPS = [
     # file where a colour is merged rather than kept.
     ('treeOakBot', OW, 2220, 1613, 32, 16, _TREE_GROUND, (0, 2, 1, 2, 3),
      'oak roots, lower half of the same tree'),
+
+    # THE PALM IS A DIFFERENT TREE, not the oak recoloured. The dunes are a
+    # third of every tree in the game (510 of 1559 tiles) and recolouring an
+    # oak would have given the desert broadleaf woodland in beige.
+    #
+    # Unlike the oak this one needs only ONE palette: its fronds and its base
+    # share a colour set small enough to fit four slots between them, so both
+    # halves index the same four colours and `bigPalTop`/`bigPalBot` name the
+    # same palette. The pair of half-arts is kept anyway — it is the mechanism,
+    # and a palm that stopped being a pair would need its own draw path.
+    ('palmTop', OW, 402, 308, 32, 16, _SAND_GROUND, (0, 1, 2, 3),
+     'date palm fronds, upper half of a whole 32x32 palm'),
+    ('palmBot', OW, 402, 324, 32, 16, _SAND_GROUND, (1, 2, 3),
+     'date palm trunk and base, lower half of the same palm'),
 ]
 
 # --------------------------------------------------------------------------

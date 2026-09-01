@@ -1079,6 +1079,8 @@ function installTownBlocks() {
     treeOakDkBot: ['#8c6c44', '#5c3c1c', '#3c6830', '#08160c'],
     treeOakDdTop: ['#c8b088', '#907048', '#907048', '#20140c'],
     treeOakDdBot: ['#c8b088', '#6c4c2c', '#907048', '#20140c'],
+    // The palm's two halves share one palette — see the note in rip-terrain.py.
+    palmFrond: ['#a7c947', '#5a9731', '#8c5527', '#000000'],
   });
   const defs = {}, blocks = {};
   for (const [name, b] of Object.entries(TOWN_BLOCKS)) {
@@ -1342,7 +1344,8 @@ export function installCoreTiles() {
       big: 'treeOak', bigPalTop: 'treeOakTop', bigPalBot: 'treeOakBot' },
     treeSand: { art: ART.tree, pal: 'treeoak', flags: F.SOLID, underArt: 'sand',
       big: 'treeOak', bigPalTop: 'treeOakTop', bigPalBot: 'treeOakBot' },
-    palm: { art: ART.palmTree, pal: 'tree', flags: F.SOLID, underArt: 'sand' },
+    palm: { art: ART.palmTree, pal: 'tree', flags: F.SOLID, underArt: 'sand',
+      big: 'palm', bigPalTop: 'palmFrond', bigPalBot: 'palmFrond' },
     bush: { art: ART.bush, pal: 'tree', flags: F.SOLID | F.BUSH, underArt: 'grass' },
     // DRIFT-TANGLE. A mat of sun-dried weed packed into a doorway: springy,
     // salt-stiff, and the one obstacle in the game a blade does nothing to —

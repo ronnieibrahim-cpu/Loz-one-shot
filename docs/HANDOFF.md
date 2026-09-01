@@ -447,6 +447,21 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+**A PALM IS NOT AN OAK RECOLOURED.** The dunes are a third of every tree in the
+game (510 of 1559 tiles), and the cheap move — reuse the oak's art under a beige
+palette, the way `treeDark` and `treeDead` legitimately do — would have given
+the desert broadleaf woodland in sand colours. It was found the same way the oak
+was: scan the reference map for isolated foliage whose SURROUNDING RING is sand
+rather than grass, which turns "find me a palm" into six lines of arithmetic
+instead of an afternoon of squinting at a 2577x2735 image. Every tree hunt in
+this repo should start there.
+
+Unlike the oak, the palm needs only ONE palette: its fronds and its base share a
+colour set small enough to fit four slots between them (fronds 4, base 3). It is
+still emitted as a PAIR of 32x16 halves, because that is the mechanism `big`
+speaks and a one-off 32x32 palm would need its own draw path for no gain.
+
+
 **THE 32x32 TREE NOTE IN `rip-terrain.py` WAS RIGHT ABOUT THE PROBLEM AND WRONG
 ABOUT THE ANSWER.** It correctly says every tree in every Oracle sheet is 32x32,
 that no 16x16 tree exists to find, and that the hand-drawn lollipop was a 16x16

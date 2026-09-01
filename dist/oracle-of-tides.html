@@ -14486,6 +14486,44 @@ const TERRAIN_ART = {
     ........000000133013331111000000
     ...........000013333111100......`,
 
+  // date palm fronds, upper half of a whole 32x32 palm — custom-oracle-style-overworld.png @ 402,308
+  palmTop: `
+    ....3300013..33100133..3100033..
+    ...3100001133311001133311000013.
+    ..310111101133110011331101111013
+    .3111111310131313313131013111111
+    .3113331131113130031311131133311
+    .3333310013131030030131310013333
+    .33.31000011310311301311000013.3
+    ...31001111130.0330.03111110013.
+    ..3100111131133.00.3311311110013
+    ..31011133111130..03111133111013
+    .3111111311000133331000113111111
+    .3111111310..00133100..013111111
+    .311111331..0011331100..13311111
+    .311113331.011113311110.13331111
+    .311133.310111113311111013.33111
+    .3223...311111113311111113...322`,
+
+  // date palm trunk and base, lower half of the same palm — custom-oracle-style-overworld.png @ 402,324
+  palmBot: `
+    .323...33111111311311111133...32
+    ..3...3.31111131..13111113.3...3
+    ......3.31111333..33311113.3....
+    ......32311133..33..33111323....
+    ......23311333......33311332....
+    ......3.3333.3..33..3.3333.3....
+    .....3....3...33..33...3....3...
+    ....3.....333........333.....3..
+    ...23.......23......32.......32.
+    ...23...22...3..33..3...22...32.
+    ...223333332..33..33..233333322.
+    ....223333332........233333322..
+    .....222333332......233333222...
+    .......22223332....23332222.....
+    ..........22223333332222........
+    ................................`,
+
   // liftable boulder, beside the dirt clearing — oracle-ages-overworld.png @ 418,936
   rock: `
     ................
@@ -14545,6 +14583,8 @@ const TERRAIN_SRC_PALETTES = {
   caveMouth: ['#c08820', '#704820', '#086018', '#000000'],
   treeOakTop: ['#93a846', '#546d25', '#000000'],
   treeOakBot: ['#b49d73', '#93a846', '#7a5d35', '#546d25', '#000000'],
+  palmTop: ['#a7c947', '#5a9731', '#8c5527', '#000000'],
+  palmBot: ['#5a9731', '#8c5527', '#000000'],
   rock: ['#c88808', '#805000', '#000000'],
   bush: ['#80e010', '#308800', '#000000'],
 };
@@ -17154,6 +17194,8 @@ function installTownBlocks() {
     treeOakDkBot: ['#8c6c44', '#5c3c1c', '#3c6830', '#08160c'],
     treeOakDdTop: ['#c8b088', '#907048', '#907048', '#20140c'],
     treeOakDdBot: ['#c8b088', '#6c4c2c', '#907048', '#20140c'],
+    // The palm's two halves share one palette — see the note in rip-terrain.py.
+    palmFrond: ['#a7c947', '#5a9731', '#8c5527', '#000000'],
   });
   const defs = {}, blocks = {};
   for (const [name, b] of Object.entries(TOWN_BLOCKS)) {
@@ -17417,7 +17459,8 @@ function installCoreTiles() {
       big: 'treeOak', bigPalTop: 'treeOakTop', bigPalBot: 'treeOakBot' },
     treeSand: { art: ART.tree, pal: 'treeoak', flags: F.SOLID, underArt: 'sand',
       big: 'treeOak', bigPalTop: 'treeOakTop', bigPalBot: 'treeOakBot' },
-    palm: { art: ART.palmTree, pal: 'tree', flags: F.SOLID, underArt: 'sand' },
+    palm: { art: ART.palmTree, pal: 'tree', flags: F.SOLID, underArt: 'sand',
+      big: 'palm', bigPalTop: 'palmFrond', bigPalBot: 'palmFrond' },
     bush: { art: ART.bush, pal: 'tree', flags: F.SOLID | F.BUSH, underArt: 'grass' },
     // DRIFT-TANGLE. A mat of sun-dried weed packed into a doorway: springy,
     // salt-stiff, and the one obstacle in the game a blade does nothing to —

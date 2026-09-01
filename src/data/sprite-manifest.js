@@ -149,7 +149,7 @@ export function expectedSize(name) {
   // cell — see `big` in registerTiles and the note in Room.render. The canopy
   // and the roots are separate arts because they cannot share one four-colour
   // palette, which is why this is a PAIR of 32x16 rather than one 32x32.
-  if (name === 'treeOakTop' || name === 'treeOakBot') return [32, 16];
+  if (['treeOakTop', 'treeOakBot', 'palmTop', 'palmBot'].includes(name)) return [32, 16];
   if (name === 'link_hold_down') return [16, 30];
   if (name === 'link_hold_up') return [16, 28];
   if (name === 'link_hold_side') return [28, 16];
