@@ -195,6 +195,44 @@ PROPS = [
 QUADS = []
 
 # --------------------------------------------------------------------------
+# OBJECTS TALLER AND WIDER THAN A TILE, kept whole.
+#
+# A tree is 32x32 in every Oracle sheet — that much of the note above QUADS is
+# right. What that note gets wrong is the CONCLUSION. It proposes cutting the
+# tree into four quadrants and having a 2x2 patch of tree tiles reassemble it.
+# Counted out of this game's own world data, only **18% of the 1559 tree tiles
+# placed are inside a full 2x2 block**; 41% have no tree above or below them at
+# all, because this world uses trees as a ONE-TILE-THICK border around screens.
+# A quadrant scheme would therefore render four fifths of the game's trees as
+# fragments — worse than the hand-drawn lollipop it replaces.
+#
+# So the tree stays WHOLE and one tile draws all of it, overhanging its
+# neighbours, which is what the source games do with a 32x32 object anyway.
+#
+# It is split into two halves rather than four quadrants because that is the
+# real constraint: the canopy is 3 colours and the roots are 4, and no single
+# 4-colour palette holds both. On hardware the canopy tiles and the root tiles
+# carry different palettes; two halves is the smallest split that reproduces
+# that, and it is a straight extraction with nothing composited.
+#
+# `bg` is a SET here. The tree stands on a rendered map, not on a flat key
+# colour: sage grass, a paler halo, a darker tuft tone. All of them are ground,
+# including the pale gaps BETWEEN the roots — see quantise_prop's own note.
+_TREE_GROUND = {(182, 182, 127), (117, 137, 70), (223, 217, 181), (252, 230, 198)}
+
+# (name, sheet, x, y, w, h, bg, slots, note)
+BIGPROPS = [
+    ('treeOakTop', OW, 2220, 1597, 32, 16, _TREE_GROUND, (0, 1, 3),
+     'oak canopy, upper half of a whole 32x32 tree'),
+    # Five colours into four slots, and the fifth is TWO PIXELS of canopy green
+    # that overhang into the root half. They go to the same index as the dark
+    # green beside them; slots may repeat, and this is the one place in this
+    # file where a colour is merged rather than kept.
+    ('treeOakBot', OW, 2220, 1613, 32, 16, _TREE_GROUND, (0, 2, 1, 2, 3),
+     'oak roots, lower half of the same tree'),
+]
+
+# --------------------------------------------------------------------------
 # THE TOWN KIT.
 #
 # A BUILDING IS NOT A TILE. The ones on the Subrosia tileset are three cells
@@ -432,30 +470,38 @@ def quantise_prop(block, slots, bg=None):
     # caller is asserting "this colour is ground wherever it appears", which is
     # what a tree needs: the sky between its roots is ground showing through and
     # must let the grass under it out, even though the outline encloses it.
-    grid = [[None] * 16 for _ in range(16)]
-    if bg is not None:
-        for cy in range(16):
-            for cx in range(16):
-                if block[cy][cx] == bg:
+    # Size comes from the block, not from a 16 written eight times: a 32-wide
+    # tree half goes through this same function. `bg` may be one colour or a
+    # SET of them — the ground around an object on a rendered map is rarely one
+    # flat tone (this tree stands on sage grass with a paler halo and a darker
+    # tuft tone, three colours that are all equally "not the tree").
+    H = len(block)
+    Wd = len(block[0])
+    bgset = bg if isinstance(bg, (set, frozenset)) else ({bg} if bg is not None else None)
+    grid = [[None] * Wd for _ in range(H)]
+    if bgset is not None:
+        for cy in range(H):
+            for cx in range(Wd):
+                if block[cy][cx] in bgset:
                     grid[cy][cx] = '.'
-        kept = sorted({block[cy][cx] for cy in range(16) for cx in range(16)
+        kept = sorted({block[cy][cx] for cy in range(H) for cx in range(Wd)
                        if grid[cy][cx] is None}, key=lambda c: (-lum(c), c))
         if len(kept) > len(slots):
             raise SystemExit('rip-terrain: prop has %d colours, %d slots given'
                              % (len(kept), len(slots)))
         idx = {c: slots[i] for i, c in enumerate(kept)}
-        for cy in range(16):
-            for cx in range(16):
+        for cy in range(H):
+            for cx in range(Wd):
                 if grid[cy][cx] is None:
                     grid[cy][cx] = str(idx[block[cy][cx]])
         return [''.join(r) for r in grid], kept
     bg = block[0][0]
-    stack = [(i, e) for i in range(16) for e in (0, 15)]
-    stack += [(e, i) for i in range(16) for e in (0, 15)]
+    stack = [(i, e) for i in range(Wd) for e in (0, H - 1)]
+    stack += [(e, i) for i in range(H) for e in (0, Wd - 1)]
     seen = set()
     while stack:
         cx, cy = stack.pop()
-        if not (0 <= cx < 16 and 0 <= cy < 16) or (cx, cy) in seen:
+        if not (0 <= cx < Wd and 0 <= cy < H) or (cx, cy) in seen:
             continue
         if block[cy][cx] != bg:
             continue
@@ -463,14 +509,14 @@ def quantise_prop(block, slots, bg=None):
         grid[cy][cx] = '.'
         stack += [(cx + 1, cy), (cx - 1, cy), (cx, cy + 1), (cx, cy - 1)]
 
-    kept = sorted({block[cy][cx] for cy in range(16) for cx in range(16)
+    kept = sorted({block[cy][cx] for cy in range(H) for cx in range(Wd)
                    if grid[cy][cx] is None}, key=lambda c: (-lum(c), c))
     if len(kept) > len(slots):
         raise SystemExit('rip-terrain: prop has %d colours, %d slots given'
                          % (len(kept), len(slots)))
     idx = {c: slots[i] for i, c in enumerate(kept)}
-    for cy in range(16):
-        for cx in range(16):
+    for cy in range(H):
+        for cx in range(Wd):
             if grid[cy][cx] is None:
                 grid[cy][cx] = str(idx[block[cy][cx]])
     return [''.join(r) for r in grid], kept
@@ -810,6 +856,15 @@ def main():
                                 'cell (%d,%d) — tileset c%d,r%d' % (cx, cy, sc, sr),
                                 grids[cy][cx], pal))
         town.append((name, w, h, note, cells, townart))
+
+    for name, path, x, y, w, h, bg, slots, note in BIGPROPS:
+        im = sheets.get(path)
+        if im is None:
+            im = sheets[path] = Image.open(path).convert('RGB')
+        block = [[im.getpixel((x + cx, y + cy)) for cx in range(w)] for cy in range(h)]
+        grid, keep = quantise_prop(block, slots, bg)
+        arts.append((name, note, os.path.basename(path), x, y, grid))
+        pals.append((name, keep))
 
     for name, path, x, y, slots, note in PROPS:
         im = sheets.get(path)

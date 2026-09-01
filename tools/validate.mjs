@@ -66,7 +66,13 @@ installData();
 
 // --- art ------------------------------------------------------------------
 for (const [label, pack] of Object.entries(ART_PACKS)) {
-  checkArtPack('tile:' + label, pack, 16, 16);
+  // Tiles consult the manifest for size exceptions too, not just sprites. A
+  // tile used to be 16x16 without exception; the oak is drawn as a whole
+  // 32x32 object overhanging its cell (see `big` in registerTiles), so its two
+  // halves are 32x16 and the ONE place that records such an exception is
+  // `expectedSize`. Without this the manifest could say 32x16 and the
+  // validator would still insist on 16x16, which is two sources of truth.
+  checkArtPack('tile:' + label, pack, 16, 16, { sizeFor: expectedSize });
 }
 for (const [label, pack] of Object.entries(SPRITE_PACKS)) {
   checkArtPack('sprite:' + label, pack, 16, 16, { sizeFor: expectedSize });

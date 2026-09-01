@@ -898,6 +898,23 @@ by number.
   `check-feel.mjs` reported all three such pairs as missing; the convention was
   real and the checker was wrong.
 
+- **T87 — Count the placements before you design the tile scheme.**
+  `rip-terrain.py`'s note proposed rebuilding trees as 2x2 quadrant patches.
+  Counted out of the world: of 1559 tree tiles, **only 18% sit in a full 2x2
+  block and 41% have no tree above or below** — this game borders its screens
+  with trees one tile thick. The scheme would have drawn four fifths of the
+  game's trees as fragments. A tile scheme is a claim about how the WORLD is
+  authored, and that claim is checkable in one script.
+- **T88 — A canopy and its roots cannot share a four-colour palette.** Measured:
+  canopy 3 colours, roots 4, together 6-8. That is why hardware draws a tree as
+  several tiles with separate palettes, and why the oak is a PAIR of 32x16
+  halves with a palette each rather than one 32x32 art. Any extracted object
+  spanning two materials will hit this.
+- **T89 — `expectedSize` applied to sprites only.** `validate.mjs` hardcoded
+  16x16 for TILE packs while passing the manifest's `sizeFor` for sprite packs,
+  so a tile could not legally be any other size no matter what the manifest
+  said. Fixed; tiles read the manifest now.
+
 ### Harness and process
 
 - **T51 — LIVE BUG: the ledge-hop prober can drop the player.**

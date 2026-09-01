@@ -1065,6 +1065,21 @@ const TOWN_GROUNDS = { '': 'grass', Sand: 'sand' };
 /** Tiledefs for every cell of every block variant, plus the block registry. */
 function installTownBlocks() {
   registerPalettes(TOWN_PALETTES);
+  // The oak's two halves. Index 2 of the canopy is unused (it has three
+  // colours), so it repeats the dark green rather than leaving a hole.
+  //
+  // The variants are palette swaps of the SAME extracted tree, which is how
+  // `treeDark`/`treeDead` already worked and what keeps one piece of art
+  // authoritative: a re-rip changes every wood in the game at once. The dark
+  // set is the Drowned Wood's colder green, the dead set its bleached brown.
+  registerPalettes({
+    treeOakTop: ['#93a846', '#546d25', '#546d25', '#000000'],
+    treeOakBot: ['#b49d73', '#7a5d35', '#546d25', '#000000'],
+    treeOakDkTop: ['#6c9848', '#3c6830', '#3c6830', '#08160c'],
+    treeOakDkBot: ['#8c6c44', '#5c3c1c', '#3c6830', '#08160c'],
+    treeOakDdTop: ['#c8b088', '#907048', '#907048', '#20140c'],
+    treeOakDdBot: ['#c8b088', '#6c4c2c', '#907048', '#20140c'],
+  });
   const defs = {}, blocks = {};
   for (const [name, b] of Object.entries(TOWN_BLOCKS)) {
     const door = TOWN_ENTRANCE[name] || null;
@@ -1315,10 +1330,18 @@ export function installCoreTiles() {
       art: ART.boulderCracked, pal: 'stonedk', flags: F.SOLID | F.BOMBABLE,
       underArt: 'rockFloor',
     },
-    treeDead: { art: ART.tree, pal: 'treeoakdd', flags: F.SOLID, underArt: 'grassBog' },
-    treeDark: { art: ART.tree, pal: 'treeoakdk', flags: F.SOLID, underArt: 'grassDark' },
-    tree: { art: ART.tree, pal: 'treeoak', flags: F.SOLID, underArt: 'grass' },
-    treeSand: { art: ART.tree, pal: 'treeoak', flags: F.SOLID, underArt: 'sand' },
+    treeDead: { art: ART.tree, pal: 'treeoakdd', flags: F.SOLID, underArt: 'grassBog',
+      big: 'treeOak', bigPalTop: 'treeOakDdTop', bigPalBot: 'treeOakDdBot' },
+    treeDark: { art: ART.tree, pal: 'treeoakdk', flags: F.SOLID, underArt: 'grassDark',
+      big: 'treeOak', bigPalTop: 'treeOakDkTop', bigPalBot: 'treeOakDkBot' },
+    // THE TREES ARE WHOLE 32x32 OBJECTS NOW, not 16x16 lollipops. `big` names
+    // the pair of half-arts; see `registerTiles` and `Room.render`. `art` stays
+    // as the fallback the rest of the engine (previews, the map screen's colour
+    // sampler) reads when it wants one 16x16 cell to stand for this tile.
+    tree: { art: ART.tree, pal: 'treeoak', flags: F.SOLID, underArt: 'grass',
+      big: 'treeOak', bigPalTop: 'treeOakTop', bigPalBot: 'treeOakBot' },
+    treeSand: { art: ART.tree, pal: 'treeoak', flags: F.SOLID, underArt: 'sand',
+      big: 'treeOak', bigPalTop: 'treeOakTop', bigPalBot: 'treeOakBot' },
     palm: { art: ART.palmTree, pal: 'tree', flags: F.SOLID, underArt: 'sand' },
     bush: { art: ART.bush, pal: 'tree', flags: F.SOLID | F.BUSH, underArt: 'grass' },
     // DRIFT-TANGLE. A mat of sun-dried weed packed into a doorway: springy,

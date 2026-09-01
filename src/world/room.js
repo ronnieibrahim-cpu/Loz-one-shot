@@ -294,6 +294,22 @@ export class Room {
           }
           if (d.over) { this.overCells.push({ x, y, def: d }); continue; }
           if (d.anim) { this.animCells.push({ x, y, def: d }); continue; }
+          // AN OBJECT BIGGER THAN ITS CELL. A tree is 32x32 in every Oracle
+          // sheet and there is no 16x16 tree anywhere to find, so a faithful
+          // one cannot be a tile — it is drawn whole, centred on its cell and
+          // overhanging into the neighbours.
+          //
+          // The roots sit ON the cell and the canopy hangs into the row above,
+          // which is what puts a border row of trees at the top of a screen and
+          // lets the canopy be clipped by the screen edge exactly as the source
+          // clips it. Row-major draw order does the rest: a tree one row down
+          // is drawn later and so overlaps the one above it, which is the right
+          // way round for depth.
+          if (d.big) {
+            tileSheet.draw(ctx, d.big + 'Top', x * TILE - 8, y * TILE - 16, { pal: d.bigPalTop });
+            tileSheet.draw(ctx, d.big + 'Bot', x * TILE - 8, y * TILE, { pal: d.bigPalBot });
+            continue;
+          }
           // A ground tile may declare interchangeable art. The choice is a pure
           // hash of this room and this cell, so it is stable across every cache
           // rebuild and consumes nothing — see `tileVariant` and `T2`.

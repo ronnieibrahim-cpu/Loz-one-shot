@@ -447,6 +447,44 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+**THE 32x32 TREE NOTE IN `rip-terrain.py` WAS RIGHT ABOUT THE PROBLEM AND WRONG
+ABOUT THE ANSWER.** It correctly says every tree in every Oracle sheet is 32x32,
+that no 16x16 tree exists to find, and that the hand-drawn lollipop was a 16x16
+impression of a 32x32 object. Its proposed fix — cut the tree into four
+quadrants and let a 2x2 patch of tree tiles reassemble it — does not survive
+contact with this game's own world data:
+
+    tree tiles placed in the world        1559
+    inside a full 2x2 block of trees       280   (18%)
+    with no tree above or below            639   (41%)
+
+**This world uses trees as a ONE-TILE-THICK border around screens**, so a
+quadrant scheme would have rendered four fifths of the game's trees as fragments
+— worse than what it replaced. Count the placements before building the scheme.
+
+The answer that does work: the tree stays WHOLE, and one tile draws all 32x32 of
+it, overhanging its neighbours — which is what the source does with a 32x32
+object anyway. Roots on the cell, canopy hanging into the row above; row-major
+draw order then makes a lower tree overlap a higher one, which is the correct
+depth order for free. **No world data changed, and the one isolated tree in the
+game still draws a whole tree.**
+
+**A CANOPY AND ITS ROOTS DO NOT FIT IN ONE FOUR-COLOUR PALETTE.** Measured on
+the extracted tree: the canopy is 3 colours, the roots are 4, and together 6-8.
+That is not a quantisation failure to work around, it is why the hardware draws
+a tree as several tiles with SEPARATE palettes. So the art is a PAIR of 32x16
+halves with a palette each — the smallest split that reproduces what the source
+actually does, and still a straight extraction with nothing composited. The
+dark and dead woods are palette swaps of that same pair, so a re-rip changes
+every wood in the game at once.
+
+**A TILE WAS 16x16 WITHOUT EXCEPTION, AND `expectedSize` ONLY APPLIED TO
+SPRITES.** `validate.mjs` passed `sizeFor: expectedSize` for sprite packs and
+hardcoded 16x16 for tile packs, so the manifest could declare a tile's size and
+the validator would still reject it — two sources of truth for the same fact.
+Tiles consult the manifest now.
+
+
 **THE SWORD SWING HAD NO SWORD IN IT, AND NOTHING COULD SEE THAT.** `link_sword_*`
 comes from the sheet's "Slash/Use item" band, and every frame in that band is a
 BODY POSE with no blade — on real hardware the sword is a separate sprite laid
