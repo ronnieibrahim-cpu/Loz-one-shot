@@ -477,7 +477,7 @@ export function installDungeonsB() {
         },
         entities: [
           ['chest', 1, 2, { pickup: 'key' }],
-          ['jellyfish', 7, 2],
+          ['jellyfish', 3, 3],
           ['keese', 6, 6],
         ],
       },
@@ -818,7 +818,7 @@ export function installDungeonsB() {
         entities: [
           ['stalfos', 2, 2],
           ['stalfos', 7, 2],
-          ['darknut', 4, 4],
+          ['darknut', 4, 5],
         ],
         puzzle: {
           enemies: true,
@@ -840,8 +840,8 @@ export function installDungeonsB() {
         ],
         entities: [
           ['wizzrobe', 4, 2],
-          ['darknut', 2, 5],
-          ['siren', 7, 3],
+          ['darknut', 2, 4],
+          ['siren', 6, 2],
           ['torch', 1, 1],
           ['torch', 8, 1],
           ['torch', 1, 6],
@@ -957,7 +957,7 @@ export function installDungeonsB() {
           ['torch', 7, 2],
           ['torch', 2, 5],
           ['torch', 7, 5],
-          ['darknut', 4, 4],
+          ['darknut', 4, 5],
         ],
         puzzle: {
           torches: 'all',
@@ -1232,7 +1232,7 @@ export function installDungeonsB() {
         },
         entities: [
           ['keese', 2, 2],
-          ['anglerfry', 2, 1],
+          ['anglerfry', 3, 6],
         ],
         readable: [
           [1, 3, 'Cut into the coping: "Stand while you can stand. The ledge is only a ledge at low water."'],
@@ -1328,7 +1328,7 @@ export function installDungeonsB() {
           ],
         },
         entities: [
-          ['siren', 7, 5],
+          ['siren', 2, 4],
         ],
       },
 
@@ -1346,7 +1346,7 @@ export function installDungeonsB() {
           '####..####',
         ],
         entities: [
-          ['wizzrobe', 6, 4],
+          ['wizzrobe', 6, 3],
         ],
       },
       '1,4,2': {
@@ -1417,7 +1417,7 @@ export function installDungeonsB() {
         ],
         noTide: true,
         entities: [
-          ['nereth', 4, 2],
+          ['nereth', 3, 2],
         ],
         script: {
           onEvent(game, name) {

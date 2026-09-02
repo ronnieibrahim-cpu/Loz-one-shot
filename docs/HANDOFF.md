@@ -447,6 +447,50 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+**NOTHING IN THIS GAME EXCEPT LINK HAD EVER SET `swimming`, SO DEEP WATER WAS A
+WALL TO EVERY AQUATIC ENEMY.** `canOccupy` (src/game/entity.js) builds its caps
+as `{ jumping: airborne, swim: !!e.swimming, cutting: false }`. `Enemy` set
+`flying` and `avoidFlags` from its spec's `terrain` and stopped there, so a
+jellyfish, siren, anglerfry or sea octorok could occupy SHALLOW water and
+nothing else: `terrainOk` kept it out of everything dry, and `solidAt` kept it
+out of the deep. One dropped in deep water could not take a step; one dropped
+on a dungeon floor beached and died on the frame it spawned. `Enemy` sets
+`swimming = terrain === 'water'` now, and the Raft — which moves by writing its
+own accumulators and never asks `canOccupy` at all — declares it too, so that
+anything ELSE asking about the raft gets a true answer.
+
+**AND AN ENTITY STUCK INSIDE SCENERY IS A SILENT DIFFICULTY SETTING.** 48 of the
+game's 529 placed entities sat where the engine says they cannot be — signs in
+trees, traders in bushes, a darknut in a ledge, the FINAL BOSS overlapping a
+ledge column with the outer 8px of its 32x32 hitbox. Most of them were enemies,
+and an enemy inside a solid tile is not a cosmetic bug: `beginStep`/`realign`
+refuse every destination, so it stands still, draws nothing from the room's
+stream, and is a free kill. Freeing them changed the fights AND the global rng
+stream, which moved three replay baselines and killed the playthrough actor in a
+room it had always survived. **Budget for that: a placement fix is a movement
+change, and movement changes are downstream of every recording.**
+
+**A CHECKER THAT COUNTS FLAGS ANSWERS A DIFFERENT QUESTION FROM THE ENGINE'S.**
+The first cut of this count was `F.SOLID` at every tide level and it found 16.
+It also could not see the other 32, because "can this thing be here" depends on
+caps that only exist on a CONSTRUCTED entity — `avoidFlags` derived from the
+spec's terrain, `flying`, `swimming`, and `terrainOk`'s WET rule. A flag sweep
+condemns the raft and every jellyfish and excuses the sign in the tree. That is
+why `check-placement.mjs` boots a page: it is not that a browser is convenient,
+it is that the answer lives on the object.
+
+**THE PLAYTHROUGH ACTOR STOOD AND BRAWLED WITH SHIELDED CRABS ON THREE HEARTS,
+AND WHETHER IT LIVED WAS DOWN TO WHICH WAY THEY WERE FACING.** The Drinking
+Floor (d1/0,3,6) gates nothing — no key, no puzzle, no door — and a crab is
+`shield: 'front'`, so the actor's one verb (line up, swing, stand rooted for the
+swing) trades two damage for nothing until a crab happens to turn. Twelve
+quarter-hearts, gone before the dungeon's only heal. It had been passing on
+luck: the crabs' phases come off the global stream, and the placement fix
+upstream moved it. The route walks through that room now. **A green
+check-playthrough does not mean the margin is comfortable — read its "deepest
+trough" line, which is the only number that says how close it came.**
+
+
 **A 32x32 OBJECT DRAWN FROM EVERY 16px TILE IS DRAWN AT DOUBLE DENSITY.** The
 first cut of the tree work anchored the whole tree on one tile and let it
 overhang, reasoning that this is what the source does with a 32x32 object. It is

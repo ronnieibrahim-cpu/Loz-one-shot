@@ -363,7 +363,7 @@ export function installDungeonsA() {
         // that stretch — see FEEL-SPEC.md.
         entities: [
           ['zol', 2, 4, { drops: 'good' }],
-          ['zol', 6, 5, { drops: 'good' }],
+          ['zol', 6, 4, { drops: 'good' }],
         ],
       },
       '0,2,3': {
@@ -1427,7 +1427,7 @@ export function installDungeonsA() {
         ],
         entities: [
           ['chest', 4, 2, { pickup: 'bossKey' }],
-          ['jellyfish', 2, 5],
+          ['jellyfish', 3, 4],
         ],
       },
       '1,3,1': {
@@ -1717,7 +1717,7 @@ export function installDungeonsA() {
           '##########',
         ],
         entities: [
-          ['jellyfish', 2, 1],
+          ['jellyfish', 3, 2],
           ['crab', 7, 6],
         ],
         puzzle: {
@@ -1872,7 +1872,7 @@ export function installDungeonsA() {
         ],
         entities: [
           ['chest', 7, 3, { pickup: 'bossKey' }],
-          ['jellyfish', 2, 5],
+          ['keese', 2, 5],
         ],
       },
       '0,2,1': {
@@ -2419,7 +2419,7 @@ export function installDungeonsA() {
         },
         entities: [
           ['wheel', 1, 3, { needTurns: 40 }],
-          ['jellyfish', 7, 4],
+          ['jellyfish', 5, 4],
           ['keese', 6, 6],
         ],
         script: {

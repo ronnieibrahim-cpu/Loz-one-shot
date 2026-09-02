@@ -65,9 +65,15 @@ export const ROUTE = [
   ['dialogue', 200],
 
   // ---------------------------------------------------------------- d1 0,3,6
-  // The Drinking Floor, waded at LOW. Two crabs and a keese.
+  // The Drinking Floor, waded at LOW. Two crabs and a keese, and the route
+  // WALKS PAST THEM. Nothing in this room gates anything — no key, no puzzle,
+  // no door — and a crab is `shield: 'front'`, so the actor's one verb (line
+  // up, swing, stand still for the swing) trades two damage for nothing until
+  // one of them happens to turn. Stood and brawled here it spent all three
+  // hearts of a new game before the dungeon's only heal, and whether it
+  // survived came down to which way the crabs were facing. A player walks
+  // through a room with nothing in it; so does this.
   ['travel', 3, 6, 2000],
-  ['fight', 1800],
   ['dialogue', 200],
   ['loot', 500],
 

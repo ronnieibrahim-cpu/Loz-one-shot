@@ -607,8 +607,16 @@ export const PLANS = {
       // of the lattice — but the actor cannot, and this replay exists to prove
       // the engine is deterministic, not to prove the game is beatable on three
       // hearts. Do not read the headroom as a difficulty statement.
-      maxHearts: 20,
-      hearts: 20,
+      //
+      // TEN hearts since the placement pass. The Locked Stair's east zol had
+      // been spawned INSIDE a post since the room was written, which pinned it
+      // there and drew nothing from the room's stream; freeing it cost the
+      // scripted swordsman the whole five-heart budget and ended this run in a
+      // game over, which would have baselined a replay that stops halfway
+      // through its own route. Same concession as the paragraph above, for the
+      // same reason.
+      maxHearts: 40,
+      hearts: 40,
       tide: 1,
       enter: ['d1', 0, 3, 7, 64, 96, 'up'],
     },

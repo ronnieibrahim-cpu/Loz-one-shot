@@ -83,6 +83,17 @@ export class Enemy extends Entity {
     this.hb = spec.hb || { x: 2, y: 5, w: 12, h: 10 };
     this.terrain = spec.terrain || 'land';
     this.flying = this.terrain === 'air' || !!spec.flying;
+    // AN AQUATIC ENEMY SWIMS. `canOccupy` (src/game/entity.js) builds its caps
+    // as `{ jumping: airborne, swim: !!e.swimming, cutting: false }`, and
+    // nothing outside the player had ever set `swimming` — so deep water was a
+    // WALL to every jellyfish, siren, anglerfry and sea octorok in the game.
+    // `terrainOk` then kept them out of everything dry as well, which left the
+    // aquatic cast able to occupy shallow water and nothing else: a jellyfish
+    // dropped in the deep could not take a single step, and one dropped on a
+    // dungeon floor beached and died on the frame it spawned.
+    // `terrainOk` is still what confines them to water; this is only the half
+    // that says which water.
+    this.swimming = this.terrain === 'water';
     this.avoidFlags = spec.avoid != null ? spec.avoid : TERRAIN_AVOID[this.terrain];
     this.shield = spec.shield || null;
     // Light enough for the Squall Bellows to shove. Fliers, floaters and

@@ -98,7 +98,7 @@ const rooms = {
     ],
     entities: [
       ['sign', 2, 4, { text: 'THE ABYSSAL KEEP\nNereth waits below the water.' }],
-      ['darknut', 6, 5],
+      ['darknut', 5, 5],
     ],
   },
   '0,2,0': {
@@ -125,7 +125,7 @@ const rooms = {
       '###gggg###',
     ],
     entities: [
-      ['wizzrobe', 4, 3],
+      ['wizzrobe', 4, 2],
       ['sign', 1, 6, { text: 'THE BLACK CAUSEWAY\nThe Keep holds this water. No shell\nsounds here. Bring your own sea.' }],
     ],
   },
@@ -143,7 +143,7 @@ const rooms = {
       '###gggg###',
     ],
     entities: [
-      ['darknut', 4, 2], ['pickup', 2, 5, { kind: 'heartPiece' }],
+      ['darknut', 3, 2], ['pickup', 2, 5, { kind: 'heartPiece' }],
     ],
   },
   // ---- salt --------------------------------------------------------------
@@ -178,7 +178,7 @@ const rooms = {
       '###gggg###',
     ],
     entities: [
-      ['beetle', 4, 3], ['pickup', 6, 4, { kind: 'heartPiece' }],
+      ['beetle', 4, 2], ['pickup', 6, 4, { kind: 'heartPiece' }],
     ],
   },
   '0,6,0': {
@@ -237,7 +237,7 @@ const rooms = {
       '###gggg###',
     ],
     entities: [
-      ['jellyfish', 4, 3],
+      ['jellyfish', 4, 1],
     ],
   },
   '0,9,0': {
@@ -306,7 +306,7 @@ const rooms = {
       '****######',
     ],
     entities: [
-      ['jellyfish', 3, 3],
+      ['jellyfish', 3, 2],
     ],
   },
   '0,1,1': {
@@ -357,7 +357,7 @@ const rooms = {
       '##########',
     ],
     entities: [
-      ['darknut', 3, 3], ['wizzrobe', 6, 2],
+      ['darknut', 3, 3], ['wizzrobe', 6, 1],
     ],
   },
   // ---- salt --------------------------------------------------------------
@@ -393,7 +393,7 @@ const rooms = {
     ],
     entities: [
       ['npc', 4, 3, { sprite: 'npc_hood_red', dialogue: 'salterElder', after: 'salterElderAfter', needEssences: 4 }],
-      ['sign', 6, 4, { text: 'The pans drink the sea and give back stone.' }],
+      ['sign', 7, 4, { text: 'The pans drink the sea and give back stone.' }],
     ],
   },
   '0,6,1': {
@@ -431,7 +431,7 @@ const rooms = {
       '###gggg###',
     ],
     entities: [
-      ['wisp', 4, 3], ['moblin', 2, 4],
+      ['wisp', 4, 2], ['moblin', 2, 4],
     ],
   },
   // ---- reef --------------------------------------------------------------
@@ -494,7 +494,7 @@ const rooms = {
     ],
     entities: [
       ['sign', 2, 3, { text: 'REEF PALACE\nDrowned to the arches. The porch is all\nthat is left of it.' }],
-      ['siren', 7, 4],
+      ['siren', 6, 4],
     ],
   },
   '0,11,1': {
@@ -511,7 +511,7 @@ const rooms = {
       '###ggg1***',
     ],
     entities: [
-      ['barnacle', 4, 2], ['jellyfish', 5, 4],
+      ['barnacle', 4, 2], ['jellyfish', 5, 5],
     ],
   },
   // ---- cliffs ------------------------------------------------------------
@@ -546,7 +546,7 @@ const rooms = {
       '###g##g###',
     ],
     entities: [
-      ['tektite', 3, 2], ['tektite', 6, 4],
+      ['tektite', 3, 1], ['tektite', 6, 4],
     ],
   },
   '0,2,2': {
@@ -724,7 +724,7 @@ const rooms = {
       '###ggg1***',
     ],
     entities: [
-      ['jellyfish', 4, 3],
+      ['jellyfish', 4, 1],
     ],
   },
   // ---- cliffs ------------------------------------------------------------
@@ -783,7 +783,7 @@ const rooms = {
       '###gggg###',
     ],
     entities: [
-      ['tektite', 4, 4], ['pickup', 6, 2, { kind: 'heartPiece' }],
+      ['tektite', 4, 3], ['pickup', 6, 1, { kind: 'heartPiece' }],
     ],
   },
   '0,3,3': {
@@ -818,7 +818,7 @@ const rooms = {
       'TTTggggTTT',
     ],
     entities: [
-      ['zol', 4, 3],
+      ['zol', 4, 2],
     ],
   },
   '0,5,3': {
@@ -876,7 +876,7 @@ const rooms = {
       'TTTggggTTT',
     ],
     entities: [
-      ['anglerfry', 4, 3],
+      ['anglerfry', 4, 1],
       ['sign', 4, 6, { text: 'The water here runs in a ring.\nSwimmers go round. Walkers go through.' }],
     ],
   },
@@ -929,7 +929,7 @@ const rooms = {
       '##########',
     ],
     entities: [
-      ['octorokSea', 5, 3],
+      ['octorokSea', 5, 4],
     ],
   },
   '0,11,3': {
@@ -946,7 +946,7 @@ const rooms = {
       '######****',
     ],
     entities: [
-      ['pickup', 4, 2, { kind: 'fairy' }],
+      ['pickup', 4, 1, { kind: 'fairy' }],
     ],
   },
   // ---- cliffs ------------------------------------------------------------
@@ -1091,7 +1091,7 @@ const rooms = {
       'TTTggggTTT',
     ],
     entities: [
-      ['anglerfry', 4, 3], ['pickup', 2, 5, { kind: 'heartPiece' }],
+      ['anglerfry', 4, 2], ['pickup', 2, 5, { kind: 'heartPiece' }],
     ],
   },
   '0,7,4': {
@@ -1108,7 +1108,7 @@ const rooms = {
       'TTTggggTTT',
     ],
     entities: [
-      ['anglerfry', 5, 3], ['jellyfish', 3, 4],
+      ['anglerfry', 5, 3], ['jellyfish', 3, 3],
     ],
   },
   // ---- coral -------------------------------------------------------------
@@ -1160,7 +1160,7 @@ const rooms = {
       '###g##g###',
     ],
     entities: [
-      ['octorokSea', 4, 3],
+      ['octorokSea', 4, 2],
     ],
   },
   '0,11,4': {
@@ -1212,7 +1212,7 @@ const rooms = {
       '###gggg###',
     ],
     entities: [
-      ['sign', 6, 2, { text: 'North: the Cliffs of Kell.\nSouth: the bog.' }],
+      ['sign', 7, 2, { text: 'North: the Cliffs of Kell.\nSouth: the bog.' }],
     ],
   },
   '0,2,5': {
@@ -1303,7 +1303,7 @@ const rooms = {
       'TTTggggTTT',
     ],
     entities: [
-      ['zol', 3, 4], ['moblin', 6, 2],
+      ['zol', 3, 4], ['moblin', 6, 1],
     ],
   },
   '0,7,5': {
@@ -1320,7 +1320,7 @@ const rooms = {
       'TTTTTTTTTT',
     ],
     entities: [
-      ['anglerfry', 4, 3],
+      ['anglerfry', 4, 2],
     ],
   },
   // ---- coral -------------------------------------------------------------
@@ -1356,7 +1356,7 @@ const rooms = {
     ],
     entities: [
       // Coastwise Chain, link 7.
-      ['trader', 4, 2, {
+      ['trader', 4, 3, {
         sprite: 'npc_reefkin_d', waiting: 'coralDiver', after: 'corriwigAfter',
         deals: [{ stage: 7, wants: 'whelk', gives: 'pearl', text: 'corriwigTrade' }],
       }],
@@ -1469,7 +1469,7 @@ const rooms = {
       'TTTggggTTT',
     ],
     entities: [
-      ['sign', 6, 2, { text: 'Someone has been digging here.' }],
+      ['sign', 2, 4, { text: 'Someone has been digging here.' }],
     ],
     buried: [[3, 4, 'rupee20']],
   },
@@ -1608,7 +1608,7 @@ const rooms = {
       'TTTggg1***',
     ],
     entities: [
-      ['leever', 4, 3], ['pickup', 6, 2, { kind: 'rupee20' }],
+      ['leever', 4, 3], ['pickup', 5, 2, { kind: 'rupee20' }],
     ],
   },
   // ---- marsh -------------------------------------------------------------
@@ -1660,7 +1660,7 @@ const rooms = {
       'TTTggggTTT',
     ],
     entities: [
-      ['sign', 2, 1, { text: 'The causeway wades only at LOW tide.' }],
+      ['sign', 2, 2, { text: 'The causeway wades only at LOW tide.' }],
       ['zol', 6, 4],
     ],
   },
@@ -1682,7 +1682,7 @@ const rooms = {
       { x: 3, y: 2, to: { map: 'cave1', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
     ],
     entities: [
-      ['sign', 5, 3, { text: 'A grotto in the bluff.\nSomething glitters within.' }],
+      ['sign', 4, 3, { text: 'A grotto in the bluff.\nSomething glitters within.' }],
       ['octorok', 6, 4],
     ],
   },
@@ -1757,7 +1757,7 @@ const rooms = {
       'TTTggggTTT',
     ],
     entities: [
-      ['octorok', 4, 3],
+      ['octorok', 5, 3],
       // Coastwise Chain, link 4.
       ['trader', 6, 4, {
         sprite: 'npc_fisher', waiting: 'coastFisher', after: 'mirrenAfter',
@@ -2172,7 +2172,7 @@ const rooms = {
       // opens to bombs, so the chain cannot be finished before the Coral Spire
       // hands them over. tools/check-trade.mjs proves the whole chain is
       // reachable with bombs and nothing else the Rod would have to unlock.
-      ['trader', 5, 2, {
+      ['trader', 5, 3, {
         ...FOLK.kelper, waiting: 'bogWitch', after: 'yarrowAfter',
         deals: [{ stage: 9, wants: 'cup', gives: 'jar', text: 'yarrowTrade' }],
       }],
@@ -2271,7 +2271,7 @@ const rooms = {
     ],
     entities: [
       ['pickup', 4, 4, { kind: 'rupee20' }],
-      ['sign', 2, 1, { text: 'Only the drained sea shows this floor.' }],
+      ['sign', 2, 2, { text: 'Only the drained sea shows this floor.' }],
     ],
   },
   // ---- dunes -------------------------------------------------------------
@@ -2363,7 +2363,7 @@ const rooms = {
       '**********',
     ],
     entities: [
-      ['sign', 4, 2, { text: 'Nothing past here but open sea.' }],
+      ['sign', 4, 3, { text: 'Nothing past here but open sea.' }],
     ],
   },
 };

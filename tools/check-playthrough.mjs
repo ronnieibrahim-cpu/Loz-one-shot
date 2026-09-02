@@ -267,7 +267,21 @@ console.log(`playthrough: seed ${SEED}, ${ROUTE.length} directives, target: the 
 const page = await newPage(browser);
 await prepare(page, PORT);
 await page.evaluate(steps => window.__rp.beginPlaythrough(steps), ROUTE);
-const run = await drain(page, 'playthrough');
+// A directive that throws inside the page loses the whole trace with it, and
+// the trace is the only thing that says WHERE the run stopped being the run.
+// So catch it, print what the actor got through, and then rethrow.
+let run;
+try {
+  run = await drain(page, 'playthrough');
+} catch (e) {
+  const t = await page.evaluate(() => (window.__rp.result ? window.__rp.result().trace : [])).catch(() => []);
+  console.log('  --- trace up to the throw ---');
+  for (const x of (t || [])) {
+    console.log(`  ${String(x.step).padStart(3)} ${x.kind.padEnd(9)} f${String(x.frame).padStart(6)} `
+      + `${x.room}  ${x.x},${x.y} hp ${x.hp} tide ${x.tide} foes ${x.foes} keys ${x.keys}`);
+  }
+  throw e;
+}
 
 if (TRACE) {
   console.log('  --- trace ---');

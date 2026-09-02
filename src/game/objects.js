@@ -1027,6 +1027,12 @@ export class Raft extends Entity {
     super(x, y, o);
     this.w = 32; this.h = 16;
     this.hb = { x: 0, y: 0, w: 32, h: 16 };
+    // IT FLOATS. The raft moves by writing its own accumulators and never asks
+    // `canOccupy`, so this changes nothing about how it sails — but `canOccupy`
+    // is what anything ELSE asks about it (tools/check-placement.mjs, and any
+    // future verb that wants to know whether the raft is somewhere legal), and
+    // without it the one raft in the game reads as parked inside deep water.
+    this.swimming = true;
     this.sprite = 'o_raft';
     this.pal = 'wood';
     this.harmless = true;
