@@ -447,6 +447,20 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+**AN OVERWORLD GAP WAS A BLACK RECTANGLE ON GOLDEN SAND.** `chasm` drew
+`dPit`'s art in the `abyss` palette. `dPit` is 90% its darkest index and
+`abyss`'s darkest is #0a0c1c, which is right for a pit cut into a brick floor
+and reads as the TILEMAP FAILING when it is cut into a dune. It has its own
+`pit` palette and its own body art now, plus a far lip through the same
+`family` + `edgeArt` autotiler the cliffs use — so a vertical run of four gets
+one lip instead of four, and the horizontal runs, being one tile tall, are all
+lip, which is what a shallow trench should be. **And the body carries no
+shading of its own**: a single darker row at the top of the cell looked like
+depth in the art string and rendered as a RUNG every sixteen pixels down a
+vertical run, four separate holes instead of one. Depth in a tiled body has to
+come from the edge pieces, never from the body.
+
+
 **THE WALKABLE GROUND OF THREE REGIONS WAS A PICTURE OF BOULDERS, AND LINK WAS
 STANDING ON IT.** `rockFloor` — the ground of the cliffs, the reef and the
 abyss, 39 overworld screens by dominant-ground count — was ripped from a

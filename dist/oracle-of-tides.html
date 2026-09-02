@@ -2806,6 +2806,14 @@ const PALETTES = {
   slime:   ['#b8f8d8', '#58d090', '#207850', '#082818'],
   shadow:  ['#8878a8', '#584870', '#302848', '#0a0818'],
 
+  // A HOLE IN THE GROUND, NOT A HOLE IN THE SCREEN. `chasm` drew `dPit`'s art
+  // in the `abyss` palette, whose darkest tone is #0a0c1c, and `dPit`'s art is
+  // 90% that tone — so the four dune screens with a gap in them had a flat
+  // black rectangle sitting on golden sand, which reads as the tilemap failing
+  // rather than as somewhere to jump over. A dungeon pit on brick is right to
+  // be black; a hole in a dune is a sand rim over a dark throat.
+  pit:     ['#c8a878', '#8a6840', '#3c2c1c', '#000000'],
+
   // --- objects / effects ---------------------------------------------------
   wood:    ['#e0b878', '#b08048', '#70502c', '#2c1c10'],
   pot:     ['#e8d0a8', '#c09060', '#805838', '#2c1c14'],
@@ -17767,6 +17775,50 @@ const HAND_ART = {
     3222222222222223
     3333333333333333`,
 
+  // THE BODY OF AN OVERWORLD GAP: no border of its own, and no shading at the
+  // top either. A single darker row per cell looked like depth in the art and
+  // rendered as a RUNG every sixteen pixels down a vertical run, which reads as
+  // four separate holes rather than one. `dPit` (below) keeps its frame because
+  // a dungeon pit is a single cell cut into a brick floor.
+  chasmBody: `
+    3333333333333333
+    3333333333333333
+    3333333333333333
+    3333333333333333
+    3333333333333333
+    3333333333333333
+    3333333333333333
+    3333333333333333
+    3333333333333333
+    3333333333333333
+    3333333333333333
+    3333333333333333
+    3333333333333333
+    3333333333333333
+    3333333333333333
+    3333333333333333`,
+
+  // ...and its FAR LIP, drawn only by the cells whose northern neighbour is not
+  // also a gap — the same `family` + `edgeArt` mechanism the cliffs use, and
+  // the reason a vertical run of four gets one lip instead of four rungs.
+  chasmTop: `
+    0000000000000000
+    1111111111111111
+    1111111111111111
+    2222222222222222
+    2222222222222222
+    3333333333333333
+    3333333333333333
+    3333333333333333
+    3333333333333333
+    3333333333333333
+    3333333333333333
+    3333333333333333
+    3333333333333333
+    3333333333333333
+    3333333333333333
+    3333333333333333`,
+
   dPit: `
     3333333333333333
     3222222222222223
@@ -18354,7 +18406,16 @@ function installCoreTiles() {
     // `tools/check-gates.mjs` measures the reach in-engine rather than trusting
     // this comment; the widths it proved are recorded there.
     chasm: {
-      art: ART.dPit, pal: 'abyss', flags: F.JUMPABLE | F.GAP,
+      art: ART.chasmBody, pal: 'pit', flags: F.JUMPABLE | F.GAP,
+      family: 'chasm', edgeArt: { up: 'chasmTop' },
+    },
+    // The lip is a tile so the autotiler can name it, and it carries the SAME
+    // flags as the body: a tiledef whose edge piece was passable where the body
+    // is not would make the top row of every gap in the game walkable, which is
+    // the invariant `validateTiles` asserts for ground variants and the same
+    // reasoning applies here.
+    chasmTop: {
+      art: ART.chasmTop, pal: 'pit', flags: F.JUMPABLE | F.GAP, family: 'chasm',
     },
     boulder: {
       art: ART.boulder, pal: 'stonedk', flags: F.SOLID | F.ROCK | F.HEAVY,

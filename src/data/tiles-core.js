@@ -1221,6 +1221,50 @@ const HAND_ART = {
     3222222222222223
     3333333333333333`,
 
+  // THE BODY OF AN OVERWORLD GAP: no border of its own, and no shading at the
+  // top either. A single darker row per cell looked like depth in the art and
+  // rendered as a RUNG every sixteen pixels down a vertical run, which reads as
+  // four separate holes rather than one. `dPit` (below) keeps its frame because
+  // a dungeon pit is a single cell cut into a brick floor.
+  chasmBody: `
+    3333333333333333
+    3333333333333333
+    3333333333333333
+    3333333333333333
+    3333333333333333
+    3333333333333333
+    3333333333333333
+    3333333333333333
+    3333333333333333
+    3333333333333333
+    3333333333333333
+    3333333333333333
+    3333333333333333
+    3333333333333333
+    3333333333333333
+    3333333333333333`,
+
+  // ...and its FAR LIP, drawn only by the cells whose northern neighbour is not
+  // also a gap — the same `family` + `edgeArt` mechanism the cliffs use, and
+  // the reason a vertical run of four gets one lip instead of four rungs.
+  chasmTop: `
+    0000000000000000
+    1111111111111111
+    1111111111111111
+    2222222222222222
+    2222222222222222
+    3333333333333333
+    3333333333333333
+    3333333333333333
+    3333333333333333
+    3333333333333333
+    3333333333333333
+    3333333333333333
+    3333333333333333
+    3333333333333333
+    3333333333333333
+    3333333333333333`,
+
   dPit: `
     3333333333333333
     3222222222222223
@@ -1808,7 +1852,16 @@ export function installCoreTiles() {
     // `tools/check-gates.mjs` measures the reach in-engine rather than trusting
     // this comment; the widths it proved are recorded there.
     chasm: {
-      art: ART.dPit, pal: 'abyss', flags: F.JUMPABLE | F.GAP,
+      art: ART.chasmBody, pal: 'pit', flags: F.JUMPABLE | F.GAP,
+      family: 'chasm', edgeArt: { up: 'chasmTop' },
+    },
+    // The lip is a tile so the autotiler can name it, and it carries the SAME
+    // flags as the body: a tiledef whose edge piece was passable where the body
+    // is not would make the top row of every gap in the game walkable, which is
+    // the invariant `validateTiles` asserts for ground variants and the same
+    // reasoning applies here.
+    chasmTop: {
+      art: ART.chasmTop, pal: 'pit', flags: F.JUMPABLE | F.GAP, family: 'chasm',
     },
     boulder: {
       art: ART.boulder, pal: 'stonedk', flags: F.SOLID | F.ROCK | F.HEAVY,

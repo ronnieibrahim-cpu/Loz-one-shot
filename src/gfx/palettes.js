@@ -74,6 +74,14 @@ export const PALETTES = {
   slime:   ['#b8f8d8', '#58d090', '#207850', '#082818'],
   shadow:  ['#8878a8', '#584870', '#302848', '#0a0818'],
 
+  // A HOLE IN THE GROUND, NOT A HOLE IN THE SCREEN. `chasm` drew `dPit`'s art
+  // in the `abyss` palette, whose darkest tone is #0a0c1c, and `dPit`'s art is
+  // 90% that tone — so the four dune screens with a gap in them had a flat
+  // black rectangle sitting on golden sand, which reads as the tilemap failing
+  // rather than as somewhere to jump over. A dungeon pit on brick is right to
+  // be black; a hole in a dune is a sand rim over a dark throat.
+  pit:     ['#c8a878', '#8a6840', '#3c2c1c', '#000000'],
+
   // --- objects / effects ---------------------------------------------------
   wood:    ['#e0b878', '#b08048', '#70502c', '#2c1c10'],
   pot:     ['#e8d0a8', '#c09060', '#805838', '#2c1c14'],
