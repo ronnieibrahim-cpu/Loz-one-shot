@@ -251,6 +251,16 @@ _SAND_GROUND = {(252, 232, 177), (227, 161, 77)}
 # The two halves quantise separately because a canopy and its roots do not fit
 # in one four-colour palette — on hardware they are separate tiles with separate
 # palettes, and this is the same split.
+#
+# 3. THE WINDOW IS THE OBJECT'S OWN BOUNDING BOX, TO THE PIXEL, and both of
+#    these were off by a couple and had been since they were ripped. The oak's
+#    outline-to-outline width is 32 starting two pixels right of where the
+#    window did, so its RIGHT outline column fell outside and every oak in the
+#    game ran off its own edge without one — a person playing saw it before any
+#    of this was measured. The palm was one row low, which cut the tips off its
+#    top fronds. On this sheet the objects TOUCH their neighbours, so neither
+#    box can be found by looking for background around them: measure the
+#    outline columns, per row, and take the extremes.
 BIGPROPS = [
     # The root half keeps SIX colours once the halo is flooded away rather than
     # cleared by colour, so it is reduced deliberately: cream highlight and tan
@@ -258,13 +268,18 @@ BIGPROPS = [
     # and the root shadow joins the tan rather than the green — roots read as
     # two tones and the leaf shadow above them stays a leaf shadow. Two stray
     # canopy pixels overhanging the join go to the green with it.
-    ('treeOak', OW, 2220, 1597, 32, 32, _TREE_GROUND, True, (0, 1, 3), (0, 1, 2, 1, 2, 3),
+    ('treeOak', OW, 2222, 1597, 32, 32, _TREE_GROUND, True, (0, 1, 3), (0, 1, 2, 1, 2, 3),
      'oak: round canopy over visible roots, standing on grass'),
     # THE PALM IS A DIFFERENT TREE, not the oak recoloured. The dunes are a
     # third of every tree in the game (510 of 1559 tiles) and recolouring an
     # oak would have given the desert broadleaf woodland in beige. Its fronds
     # and base share one colour set, so both halves index one palette.
-    ('palm', OW, 402, 308, 32, 32, _SAND_GROUND, False, (0, 1, 2, 3), (1, 2, 3),
+    # Three colours in the frond half, not four. The old window clipped the top
+    # fronds and caught four stray trunk pixels instead, so it had one more
+    # colour than the palm actually has up there; with the window on the palm's
+    # real bounding box the outline is the third colour, and slotting it as the
+    # second painted every frond edge trunk-brown.
+    ('palm', OW, 403, 307, 32, 32, _SAND_GROUND, False, (0, 1, 3), (1, 2, 3),
      'date palm: fronds over a trunk and sand mound'),
 ]
 
