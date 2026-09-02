@@ -4026,6 +4026,107 @@ class Room {
     return tileVariant(d, this.key, x, y);
   }
 
+  /**
+   * Lay whole 32x32 objects over the cells that asked for one.
+   *
+   * The room is divided into fixed 2x2 blocks. Every block holding at least one
+   * cell of a given quad set draws that set's four quadrants, whether or not
+   * all four cells are trees — which is the whole point: a tree at the bottom
+   * edge of a mass gets its trunks and root mound drawn on the ground below it
+   * instead of being cut off flat, and one at the end of a row gets its far
+   * half instead of a hard vertical edge down the middle of the canopy.
+   *
+   * The lattice is fixed to the room rather than walked out from each mass, and
+   * that is deliberate: two cells of the same tree must never disagree about
+   * which half of it they are, and a per-row or per-run parity lets exactly
+   * that happen wherever a mass is ragged — which is how a left-half root mound
+   * ended up under a right-half canopy.
+   *
+   * A block is keyed by quad set, so a palm standing against an oak draws both
+   * trees rather than one hybrid. Palette comes from the first cell found for
+   * that set, so a block straddling `tree` and `treeDark` picks one wood and
+   * stays one object rather than changing colour down its own middle.
+   */
+  drawQuads(ctx, cells, tide) {
+    if (!cells.length) return;
+    const blocks = new Map();
+    for (const c of cells) {
+      const q = c.def.quad || c.def.big;
+      const bx = c.x & ~1, by = c.y & ~1;
+      const key = `${bx},${by},${q}`;
+      if (!blocks.has(key)) blocks.set(key, { bx, by, q, def: c.def });
+    }
+    for (const b of blocks.values()) {
+      const top = b.def.quadPalTop, bot = b.def.quadPalBot;
+      const put = (qx, qy, ox, oy) => {
+        const x = b.bx + ox, y = b.by + oy;
+        if (!this.quadMayCover(x, y, tide, b.q)) return;
+        tileSheet.draw(ctx, b.q + qy + qx, x * TILE, y * TILE,
+          { pal: oy ? bot : top });
+      };
+      put('L', 'T', 0, 0); put('R', 'T', 1, 0);
+      put('L', 'B', 0, 1); put('R', 'B', 1, 1);
+    }
+  }
+
+  /**
+   * May a tree overhang this cell?
+   *
+   * A tree's own cells always may. Beyond them the answer is PLAIN GROUND ONLY,
+   * and the village is the reason: the Maku Tree's hollow sits in the tree line
+   * at the top of the square, so the block holding it drew a whole oak straight
+   * over the doorway and the way in vanished — art covering a warp, which
+   * nothing in the checker table can see because the tile is still there and
+   * still warps. Anything a player has to be able to SEE — a doorway, a prop, a
+   * cliff, water, an animated cell — keeps its pixels, and the tree is cut
+   * against it instead. That trade is the right way round: a tree with a flat
+   * side is a blemish, a door nobody can find is a dead end.
+   */
+  quadMayCover(x, y, tide, q) {
+    if (x < 0 || y < 0 || x >= this.tw || y >= this.th) return false;
+    const d = this.tile(x, y, tide);
+    if ((d.quad || d.big) === q) return true;
+    if (d.flags & (F.VOID | F.WARP | F.SOLID)) return false;
+    return !(d.over || d.anim || d.underArt || d.quad || d.big);
+  }
+
+  /**
+   * The ground to draw under a prop.
+   *
+   * A prop names one — `rock` stands on grass, `rockSand` on sand — and where
+   * the room disagrees with the name, the prop brings its own ground with it
+   * and lands as a HARD GREEN SQUARE in the middle of a beach. The Bluff
+   * Hollow had a boulder doing exactly that, and it is the same class of fault
+   * as a cave mouth with no rock round it: art that does not know what it is
+   * standing on.
+   *
+   * The declared ground is kept unless the room OUTVOTES it, and the bar is
+   * deliberately high: two or more plain-ground neighbours, all of them the
+   * same ground, and not one neighbour of any kind carrying the declared one.
+   * A single dissenting neighbour is not evidence — the Drowned Wood's snarl
+   * stands in a channel with walls on three sides and one plank floor on the
+   * fourth, and a one-vote rule walked it out of the water and onto the
+   * floorboards. Water and other props never get a vote for the substitute
+   * (this canvas is the static layer; animated cells are drawn over it later),
+   * but they do count for the match, or a prop standing in water could never
+   * find its own ground beside it.
+   */
+  underGround(d, x, y, tide) {
+    const declared = getTileDef(d.underArt);
+    let cand = null, agree = 0;
+    for (const [dx, dy] of [[0, 1], [0, -1], [-1, 0], [1, 0]]) {
+      const nx = x + dx, ny = y + dy;
+      if (nx < 0 || ny < 0 || nx >= this.tw || ny >= this.th) continue;
+      const n = this.tile(nx, ny, tide);
+      if (n.name === d.underArt) return declared;
+      if (n.underArt || n.over || n.anim || n.quad || n.big) continue;
+      if (n.flags & (F.VOID | F.SOLID | F.WARP)) continue;
+      if (!cand) { cand = n; agree = 1; } else if (n.name === cand.name) agree++;
+      else return declared;
+    }
+    return agree >= 2 ? cand : declared;
+  }
+
   /** Render (and cache) the static tile layer for a tide level or field. */
   render(tide, frame) {
     if (!this._cache) this._cache = offscreen(this.pw, this.ph);
@@ -4035,6 +4136,10 @@ class Room {
       ctx.clearRect(0, 0, this.pw, this.ph);
       this.animCells.length = 0;
       this.overCells.length = 0;
+      // Trees are drawn AFTER every ground cell, not in step with them. They
+      // overhang their own cells, and a ground tile painted afterwards would
+      // scrub the overhang off again — silently, and only at the edges.
+      const quadCells = [];
       for (let y = 0; y < this.th; y++) {
         for (let x = 0; x < this.tw; x++) {
           const d = this.tile(x, y, tide);
@@ -4045,7 +4150,7 @@ class Room {
           }
           // Tiles with transparent pixels sit on top of a base tile.
           if (d.underArt) {
-            const u = getTileDef(d.underArt);
+            const u = this.underGround(d, x, y, tide);
             // The ground under a tree or a bush varies too, or every prop in
             // the game would stand on the one unvaried cell and re-draw the
             // grid this exists to remove.
@@ -4053,65 +4158,36 @@ class Room {
           }
           if (d.over) { this.overCells.push({ x, y, def: d }); continue; }
           if (d.anim) { this.animCells.push({ x, y, def: d }); continue; }
-          // ONE CELL OF A TREE. A tree is 32x32 in every Oracle sheet and
-          // there is no 16x16 tree to find, so each tile draws one QUADRANT of
-          // one, and which quadrant is a question about its NEIGHBOURS:
+          // ONE CELL OF A TREE. A tree is 32x32 in every Oracle sheet and there
+          // is no 16x16 tree to find, so a tree cell is one QUADRANT of one —
+          // but WHICH quadrant is not a question about this cell, and asking it
+          // per cell is what put jagged edges on half the woods in the game.
           //
-          //   * A cell with no tree above it is the top of the mass, so it
-          //     draws canopy. So does a cell with trees both above and below —
-          //     the inside of a wood is canopy all the way through.
-          //   * Only a cell with a tree above and open ground below draws the
-          //     trunks, which is where you actually see them: along the bottom
-          //     edge of the mass.
-          //   * Left/right is forced at the ends of a run so the outline reads
-          //     as one object, and alternates by parity in between.
+          // The source draws whole trees. Look at any Holodrum screen: the
+          // canopies of a wood overlap, every one of them shows its own root
+          // mound, and not one is cut off flat. This engine was instead
+          // choosing a quadrant from the neighbours of each cell, so a tree
+          // whose mass did not happen to be an even 2x2 came out sliced: a
+          // canopy over open sand ended in a dead-straight horizontal line
+          // because there was no cell below it to draw the trunks in, and a
+          // root row one tile shorter than its canopy drew half a mound with a
+          // hard vertical edge — sometimes the LEFT half under the RIGHT half
+          // of the canopy, because the two rows voted separately.
           //
-          // This is why a one-tile-thick treeline — which is how this world
-          // borders nearly every screen — is a continuous canopy rather than a
-          // row of bare root mounds, which is what an earlier coordinate-parity
-          // version produced.
-          if (d.big || d.quad) {
-            const q = d.quad || d.big;
-            const same = (ox, oy) => {
-              const n = this.baseName(x + ox, y + oy);
-              return n === d.name || (getTileDef(n) || {}).quad === q;
-            };
-            const above = same(0, -1), below = same(0, 1);
-            const left = same(-1, 0), right = same(1, 0);
-            const qy = (!above || below) ? 'T' : 'B';
-            const pal = qy === 'T' ? d.quadPalTop : d.quadPalBot;
-            // A COLUMN ONE TILE WIDE CANNOT HOLD HALF A 32-WIDE TREE AND LOOK
-            // LIKE ANYTHING. Every screen in this world is bordered left and
-            // right by exactly such a column, and picking a half for it drew a
-            // tree sliced down the middle with a hard edge — which is what a
-            // person playing reported as "partial tiles with jagged edges".
-            //
-            // With no tree either side there is nothing to collide with, so
-            // the whole 32-wide object is drawn centred on the cell and simply
-            // overhangs onto the ground beside it. That is what the source does
-            // with a 32x32 object, and it is safe HERE precisely because it is
-            // only done where no neighbour would be double-drawn.
-            // "Lone" is a property of the whole TREE, not of one cell of it.
-            // Asking only this cell made a column's canopy half-width and its
-            // roots full-width, so the base stuck out past the leaves. The
-            // other row of this tree gets a vote.
-            const other = qy === 'T' ? 1 : -1;
-            const lone = !left && !right && !same(-1, other) && !same(1, other);
-            if (lone) {
-              tileSheet.draw(ctx, q + qy + 'L', x * TILE - 8, y * TILE, { pal });
-              tileSheet.draw(ctx, q + qy + 'R', x * TILE + 8, y * TILE, { pal });
-              continue;
-            }
-            const qx = !left ? 'L' : (!right ? 'R' : ((x & 1) ? 'R' : 'L'));
-            tileSheet.draw(ctx, q + qy + qx, x * TILE, y * TILE, { pal });
-            continue;
-          }
+          // So the quadrants are not picked here at all. Tree cells are
+          // collected, and `drawQuads` below lays whole 32x32 trees on a fixed
+          // 2x2 lattice over the room: a block with any tree cell in it draws
+          // ALL FOUR quadrants, overhanging onto the ground beside or below it
+          // where the mass runs out. Overhang is what the source does with a
+          // 32x32 object and it is why every tree there has roots.
+          if (d.big || d.quad) { quadCells.push({ x, y, def: d }); continue; }
           // A ground tile may declare interchangeable art. The choice is a pure
           // hash of this room and this cell, so it is stable across every cache
           // rebuild and consumes nothing — see `tileVariant` and `T2`.
           tileSheet.draw(ctx, this.artAt(d, x, y, tide), x * TILE, y * TILE, { pal: d.pal });
         }
       }
+      this.drawQuads(ctx, quadCells, tide);
       this._cacheTide = key;
       this._cacheDirty = false;
     }
@@ -4144,20 +4220,28 @@ class Room {
     if (a.dirty) {
       const ctx = a.ctx;
       ctx.clearRect(0, 0, this.pw, this.ph);
+      // The same deferred pass `render` uses. Without it this canvas drew every
+      // tree as the 16x16 fallback art the tiledef keeps for previews and the
+      // map screen's colour sampler — so holding the Lens up in a wood put a
+      // row of lollipops on sticks over the real trees, at every tide, for as
+      // long as the trees have been 32x32.
+      const quadCells = [];
       for (let y = 0; y < this.th; y++) {
         for (let x = 0; x < this.tw; x++) {
           const d = this.tile(x, y, tide);
           if (d.flags & F.VOID) continue;
           if (d.underArt) {
-            const u = getTileDef(d.underArt);
+            const u = this.underGround(d, x, y, tide);
             tileSheet.draw(ctx, tileVariant(u, this.key, x, y), x * TILE, y * TILE, { pal: u.pal });
           }
+          if (d.big || d.quad) { quadCells.push({ x, y, def: d }); continue; }
           // Same hash as `render`, or the Lens's preview of the room would
           // draw a DIFFERENT field of grass from the room behind it.
           tileSheet.draw(ctx, d.anim ? tileArt(d, frame) : this.artAt(d, x, y, tide),
             x * TILE, y * TILE, { pal: d.pal });
         }
       }
+      this.drawQuads(ctx, quadCells, tide);
       a.dirty = false;
     }
     return a.canvas;
@@ -17225,7 +17309,7 @@ const HAND_ART = {
     ................
     ................`,
 
-  digSpot: `
+  siltFloor: `
     1111111111111111
     1111133331111111
     1112211223111111
@@ -17242,6 +17326,29 @@ const HAND_ART = {
     1111113222211111
     1111111111111111
     1111111111111111`,
+
+  // THE SAME MARK, WITH NOTHING BEHIND IT. `digSpot` fills its cell with a flat
+  // mid-sand, so a spade mark on a dithered beach was a hard tan RECTANGLE with
+  // two rings in it — the tile boundary visible from across the screen. The
+  // rings alone, over whatever the room is actually made of, is what the source
+  // draws. The opaque one stays for the dungeon silt floors, which ARE ground.
+  digSpot: `
+    ................
+    .....3333.......
+    ...22..223......
+    ..32.....22.....
+    ..2.......32....
+    ...2.....22.....
+    ....3222........
+    ................
+    ................
+    ........333.....
+    ......322..3....
+    .....32....23...
+    .....2......2...
+    ......32222.....
+    ................
+    ................`,
 
   void: `
     3333333333333333
@@ -17833,7 +17940,7 @@ function installCoreTiles() {
     dPost: { art: ART.dPost, pal: 'stone', flags: F.SOLID | F.SNAG, underArt: 'dFloor' },
     post: { art: ART.dPost, pal: 'wood', flags: F.SOLID | F.SNAG, underArt: 'grass' },
     postSand: { art: ART.dPost, pal: 'wood', flags: F.SOLID | F.SNAG, underArt: 'sand' },
-    digSpot: { art: ART.digSpot, pal: 'sand', flags: F.SLOW },
+    digSpot: { art: ART.digSpot, pal: 'sand', flags: F.SLOW, underArt: 'sand' },
     dSwitchUp: { art: ART.dSwitchUp, pal: 'brick', flags: F.SWITCHF },
     dSwitchDown: { art: ART.dSwitchDown, pal: 'brick' },
     dBlock: { art: ART.dBlock, pal: 'stone', flags: F.SOLID },
@@ -17903,8 +18010,8 @@ function installCoreTiles() {
     // carries neither. So the floor gives up what it is holding while the sea
     // is on it and gives up nothing at all while the sea is off it, and that
     // is the one thing in this game that wants the water UP.
-    dSiltDry: { art: ART.digSpot, pal: 'stonedk' },
-    dSiltWet: { art: ART.digSpot, pal: 'water', flags: F.WATER },
+    dSiltDry: { art: ART.siltFloor, pal: 'stonedk' },
+    dSiltWet: { art: ART.siltFloor, pal: 'water', flags: F.WATER },
     dSilt: { tide: ['dSiltDry', 'dSiltWet', 'dSiltWet'] },
 
     // A lintel of the Keep's own stone, standing across a shaft, that the sea
@@ -17929,6 +18036,12 @@ function installCoreTiles() {
   // name — so every palette-swap tile (grassDark reusing ART.grass, treeDark
   // reusing ART.tree, and the rest) had no entry to find and rendered as a
   // placeholder box. Alias each tile name to the art it declared.
+  //
+  // NOTE THE `!(name in ART)`: a tile whose NAME is already an art name draws
+  // that art and CANNOT BE POINTED AT ANOTHER ONE. Repointing `digSpot.art`
+  // changed nothing at all and the tile went on drawing the art it shares its
+  // name with — no warning, no missing entry, just the old pixels. If a tile
+  // needs different art, rename the ART, not the tiledef.
   const aliases = {};
   for (const [name, def] of Object.entries(TILE_DEFS)) {
     if (def && def.art && !(name in ART)) aliases[name] = def.art;

@@ -988,7 +988,7 @@ const HAND_ART = {
     ................
     ................`,
 
-  digSpot: `
+  siltFloor: `
     1111111111111111
     1111133331111111
     1112211223111111
@@ -1005,6 +1005,29 @@ const HAND_ART = {
     1111113222211111
     1111111111111111
     1111111111111111`,
+
+  // THE SAME MARK, WITH NOTHING BEHIND IT. `digSpot` fills its cell with a flat
+  // mid-sand, so a spade mark on a dithered beach was a hard tan RECTANGLE with
+  // two rings in it — the tile boundary visible from across the screen. The
+  // rings alone, over whatever the room is actually made of, is what the source
+  // draws. The opaque one stays for the dungeon silt floors, which ARE ground.
+  digSpot: `
+    ................
+    .....3333.......
+    ...22..223......
+    ..32.....22.....
+    ..2.......32....
+    ...2.....22.....
+    ....3222........
+    ................
+    ................
+    ........333.....
+    ......322..3....
+    .....32....23...
+    .....2......2...
+    ......32222.....
+    ................
+    ................`,
 
   void: `
     3333333333333333
@@ -1596,7 +1619,7 @@ export function installCoreTiles() {
     dPost: { art: ART.dPost, pal: 'stone', flags: F.SOLID | F.SNAG, underArt: 'dFloor' },
     post: { art: ART.dPost, pal: 'wood', flags: F.SOLID | F.SNAG, underArt: 'grass' },
     postSand: { art: ART.dPost, pal: 'wood', flags: F.SOLID | F.SNAG, underArt: 'sand' },
-    digSpot: { art: ART.digSpot, pal: 'sand', flags: F.SLOW },
+    digSpot: { art: ART.digSpot, pal: 'sand', flags: F.SLOW, underArt: 'sand' },
     dSwitchUp: { art: ART.dSwitchUp, pal: 'brick', flags: F.SWITCHF },
     dSwitchDown: { art: ART.dSwitchDown, pal: 'brick' },
     dBlock: { art: ART.dBlock, pal: 'stone', flags: F.SOLID },
@@ -1666,8 +1689,8 @@ export function installCoreTiles() {
     // carries neither. So the floor gives up what it is holding while the sea
     // is on it and gives up nothing at all while the sea is off it, and that
     // is the one thing in this game that wants the water UP.
-    dSiltDry: { art: ART.digSpot, pal: 'stonedk' },
-    dSiltWet: { art: ART.digSpot, pal: 'water', flags: F.WATER },
+    dSiltDry: { art: ART.siltFloor, pal: 'stonedk' },
+    dSiltWet: { art: ART.siltFloor, pal: 'water', flags: F.WATER },
     dSilt: { tide: ['dSiltDry', 'dSiltWet', 'dSiltWet'] },
 
     // A lintel of the Keep's own stone, standing across a shaft, that the sea
@@ -1692,6 +1715,12 @@ export function installCoreTiles() {
   // name — so every palette-swap tile (grassDark reusing ART.grass, treeDark
   // reusing ART.tree, and the rest) had no entry to find and rendered as a
   // placeholder box. Alias each tile name to the art it declared.
+  //
+  // NOTE THE `!(name in ART)`: a tile whose NAME is already an art name draws
+  // that art and CANNOT BE POINTED AT ANOTHER ONE. Repointing `digSpot.art`
+  // changed nothing at all and the tile went on drawing the art it shares its
+  // name with — no warning, no missing entry, just the old pixels. If a tile
+  // needs different art, rename the ART, not the tiledef.
   const aliases = {};
   for (const [name, def] of Object.entries(TILE_DEFS)) {
     if (def && def.art && !(name in ART)) aliases[name] = def.art;
