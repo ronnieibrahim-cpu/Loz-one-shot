@@ -447,6 +447,44 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+**`fade: 'out'` IN A CUTSCENE FADED STRAIGHT BACK IN BY ITSELF, AND THE CARD IT
+WAS MAKING ROOM FOR WAS DRAWN UNDER THE FADE ANYWAY.** Two independent reasons
+one beat had never once happened, which is `T57`'s shape exactly — when a
+feature is dead, keep looking after you find the reason.
+  1. `updateFade` ended a completed fade-out with `if (!this.fadeDir)
+     this.fadeIn()`. That is right for a room transition, whose callback puts a
+     new room on screen and then wants the lights up; a cutscene passes no
+     callback and means the black. So the ending's `fade: 'out'` -> Tide Bell
+     card -> `fade: 'in'` played as a blink, put the game's LAST IMAGE over a
+     fully lit village square, and made the fade-in after it a no-op.
+  2. `Game.draw` drew the fade AFTER the cutscene overlay, so once (1) was
+     fixed the card was painted and then painted over: six seconds of black
+     with nothing on it. The fade is a veil over the WORLD; a cutscene's card
+     is presentation and belongs on top of it.
+Every assertion passed through both. `shownArt()` returned the orb's name the
+whole time and `watch-cutscenes` clocked the caption's full hold — the two
+seams that exist precisely to make a scene inspectable both reported success,
+because both of them ask the SCENE what it is holding up and neither can see
+the screen. **A filmstrip caught it in one glance.**
+
+**AND THE SPEAKER WAS NOT IN THE ROOM.** The intro is sixty-six seconds and
+eight speeches by Farore, who lives behind a five-Essence gate in the Maku
+Tree's hollow and is therefore nowhere near the village square the scene plays
+in. The game's opening was a voice with no body. `nerethIntro` already had the
+answer — a `show` beat putting the speaker's own sprite up on a card — and the
+same beat now opens Farore's. The Rod and the master sword had the matching
+gap: `{ give: ... }` fires a fanfare and grants the item, and only the intro's
+conch was ever HELD UP. Two of the game's three item handovers were a jingle
+and a text box.
+
+**RE-RECORD A REPLAY BASELINE LAST, NOT WHEN IT FIRST GOES RED.** village-walk
+was re-recorded, the suite went green, and then the data under it was checked
+out and re-applied while bisecting something else. The baseline shipped stale
+in a commit whose every checker was green, because `replay.mjs` was the one
+thing not re-run after the last data edit. A recording is downstream of every
+file it reads; it is the LAST thing to do before committing, never the first.
+
+
 **NOTHING IN THIS GAME EXCEPT LINK HAD EVER SET `swimming`, SO DEEP WATER WAS A
 WALL TO EVERY AQUATIC ENEMY.** `canOccupy` (src/game/entity.js) builds its caps
 as `{ jumping: airborne, swim: !!e.swimming, cutting: false }`. `Enemy` set

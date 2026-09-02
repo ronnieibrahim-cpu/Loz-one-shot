@@ -489,6 +489,18 @@ export class Game {
     }, o.white);
   }
 
+  /**
+   * Fade to black. `then` is a room transition's callback and its presence is
+   * also what says "come back up again afterwards" — see `updateFade`.
+   *
+   * A CUTSCENE'S `fade: 'out'` PASSES NO CALLBACK AND MEANS IT. It used to get
+   * a fade-out immediately followed by an automatic fade-in, so the ending's
+   * `fade: 'out'` -> Tide Bell card -> `fade: 'in'` played as a blink, put the
+   * game's last image over a fully lit village square, and made the fade-in
+   * after it a no-op. The card was drawn, the caption was up, every assertion
+   * passed, and the one thing the beat was for — the whole Bell alone on black
+   * — had never once happened.
+   */
   fadeOut(then, white = false) {
     this.fadeDir = 1; this.fadeAmount = 0; this.fadeThen = then; this.fadeWhite = white;
   }
@@ -500,8 +512,9 @@ export class Game {
     if (this.fadeDir > 0 && this.fadeAmount >= 1) {
       this.fadeAmount = 1;
       const t = this.fadeThen; this.fadeThen = null; this.fadeDir = 0;
-      if (t) t();
-      if (!this.fadeDir) this.fadeIn();
+      if (t) { t(); if (!this.fadeDir) this.fadeIn(); }
+      // No callback means nobody is going to put a new room on screen, so the
+      // black is the point. Whoever asked for it says when it lifts.
     } else if (this.fadeDir < 0 && this.fadeAmount <= 0) {
       this.fadeAmount = 0; this.fadeDir = 0;
     }
@@ -1518,10 +1531,16 @@ export class Game {
     this.dialogue.draw(ctx);
 
     if (this.mode === 'menu') this.menu.draw(ctx);
-    if (this.mode === 'cutscene' && this.cutscene) this.cutscene.draw(ctx);
     if (this.mode === 'gameover') this.drawGameOver(ctx);
 
+    // THE FADE IS A VEIL OVER THE WORLD, NOT OVER THE PRESENTATION. A cutscene
+    // that fades to black and then holds a card is asking for the card to be
+    // ON the black — which is what the ending's last beat and the Keep's
+    // entrance were both written to do. Drawn under the fade, the card was
+    // painted and then painted over: `shownArt()` returned its name, the
+    // caption's hold ran its full length, and the screen was empty.
     if (this.fadeAmount > 0) this.screen.fade(this.fadeAmount, this.fadeWhite);
+    if (this.mode === 'cutscene' && this.cutscene) this.cutscene.draw(ctx);
     if (this.debug) this.drawDebug(ctx);
   }
 

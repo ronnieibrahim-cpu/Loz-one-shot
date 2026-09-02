@@ -165,6 +165,12 @@ const CUTSCENES = {
     { fade: 'in' },
     { text: 'The Legend of Zelda\nOracle of Tides', frames: 150 },
     { text: 'Washed ashore on the coast of Thalassia, Link wakes to a sea that cannot decide where it belongs.', frames: 220 },
+    // SHE IS NOT IN THE ROOM. Farore lives in the Maku Tree's hollow behind a
+    // five-Essence gate, so the game's opening — eight speeches, sixty-four
+    // seconds — was delivered by a voice with no body on screen, over a static
+    // village square. This is the beat that gives her one, and it is the same
+    // beat `nerethIntro` already uses to put the Drowned King on his own card.
+    { show: { art: ['npc_farore_0', 'npc_farore_1'], scale: 3 }, frames: 130 },
     { say: 'Farore: You are awake. Good. I am Farore, Oracle of Secrets, and I have very few left to give.' },
     { say: 'Farore: Nereth the Drowned King has broken the Tide Bell into six Essences and scattered them through the drowned places of this land.' },
     { say: 'Farore: Without the Bell the sea rises and falls at his whim. Take this. It is a shard of the Bell itself.' },
@@ -243,6 +249,11 @@ const CUTSCENES = {
     { say: 'Maku Tree: Hoo hoo! One Essence and my roots can feel the Bell again.' },
     { say: 'Maku Tree: Take the Rod. It was cut from the Bell that used to keep the tide honest.' },
     { give: { item: 'rod', level: 1 }, jingle: 'fanfare' },
+    // The intro holds the conch up when Farore hands it over. These two did
+    // not, so the game's second and third item handovers — the Resonance Rod
+    // and the master sword — were a fanfare and a text box with nothing to
+    // look at.
+    { show: { art: 'i_rod', scale: 3 }, frames: 130 },
     { say: 'Maku Tree: Bring me five, Link, and I will open the road to the Abyssal Keep. Then I am going back to sleep.' },
   ],
   makuMaster: [
@@ -252,6 +263,7 @@ const CUTSCENES = {
     { say: 'Maku Tree: The roots under this village go all the way down to the Keep. I have been growing them for a century, waiting for a reason.' },
     { say: 'Maku Tree: Take this with you. It was left here a long time ago by someone who also thought they would be back.' },
     { give: { item: 'sword', level: 3 }, jingle: 'fanfare' },
+    { show: { art: 'i_sword3', scale: 3 }, frames: 130 },
     { say: 'Maku Tree: Go down, Link. And come back up. That second part is the one people forget.' },
     { flag: 'makuOpenedKeep' },
     { music: 'overworld' },
