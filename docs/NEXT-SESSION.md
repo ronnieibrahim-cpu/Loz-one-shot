@@ -1,4 +1,102 @@
-## S14 — every NPC was two half-people (this session)
+## S15 — placement, the cutscenes watched, and the interior sea (this session)
+
+Branch: `claude/oracle-entity-placement-ejahxd`, three commits, all pushed.
+Everything in the CLAUDE.md table is green, including all 51 replays,
+check-playthrough and check-build.
+
+### Job 1 — 48 entities were standing inside the scenery
+
+Counted with the engine's own question rather than a flag sweep: of 529 placed
+entities, 48 could not be where the room data put them at ANY tide level. Six
+signs (two buried in trees), two traders in bushes, three pickups in rocks, a
+darknut in a ledge, a wisp in a post, and Nereth, whose 32x32 hitbox overlapped
+the ledge column in his own arena.
+
+Two were an engine fault. **Nothing but Link had ever set `swimming`**, which
+is the flag `canOccupy` reads to decide whether deep water is floor, so every
+jellyfish, siren, anglerfry and sea octorok could occupy shallow water and
+nothing else — one in the deep could not take a step, one on a dry floor
+beached and died on the frame it spawned. `Enemy` sets it from its terrain now
+and the Raft declares that it floats.
+
+`tools/check-placement.mjs` is new and in the table. It boots a page because
+the answer lives on the CONSTRUCTED entity (`avoidFlags` derived from the
+spec's terrain, `flying`, `swimming`, `terrainOk`'s WET rule); `--suggest`
+asks the engine where each stuck entity could stand instead, and `--json=` writes
+the list. `tools/oneshot/move-entities.mjs` applied the moves.
+
+Freeing the enemies moved three replay baselines and killed the playthrough
+actor in d1/0,3,6, a room it had always survived on luck — see HANDOFF on the
+shielded crabs. The route walks past that room now.
+
+### Job 2 — the thirteen cutscenes, watched
+
+Three faults, none visible to any assertion:
+
+* **The ending's last image had never been on screen.** `{ fade: 'out' }` in a
+  cutscene faded straight back in by itself (right for a room transition, whose
+  callback puts a new room up; wrong for a scene that means the black), AND the
+  fade was drawn on top of the cutscene overlay. Two independent reasons for
+  one dead beat. Both fixed in `Game.fadeOut`/`updateFade` and `Game.draw`.
+* **Farore was not in the room.** She lives behind a five-Essence gate in the
+  Maku hollow, so the game's 66-second opening was a voice with no body. She
+  gets the `show` beat `nerethIntro` already uses.
+* **The Rod and the master sword were handed over with nothing to look at.**
+  Only the intro's conch was ever held up.
+
+Pacing, judged rather than asserted: **CUTSCENE_READ_CPS = 14 is not too
+generous.** A/B skips a caption and START collapses a scene, so it costs a fast
+reader one press and saves a slow one the line. The Essence scenes are a 3.5s
+card and 2-4 player-advanced boxes; they do not outstay their welcome at the
+fifth. **What IS wrong with them: all six share one orb sprite** where the
+source games draw a different icon per Essence. That is an art job nobody has
+done and it is the best remaining cutscene work.
+
+### Job 3 — the interior sea
+
+Interior water was 2.2% / 5.7% / 7.7% across the tide against the rim's
+22.6% / 40.4% / 41.9%, with 16 interior screens holding none at any level. It
+is now **4.3% / 17.5% / 19.5%**, and three screens are dry (the village, its
+neighbour, and one bog screen with no route to the sea through open ground).
+
+`tools/oneshot/carve-water.mjs` does it in three passes — a SANDBAR shoreline
+round every pool already inland, a CHANNEL creek from each landlocked screen
+down to existing water across screen seams, then a second shoreline pass to
+give the creeks banks — and reconciles every screen seam against the engine's
+own walkability until both sides agree at all three levels. Nothing is painted
+on a ledge or beside one, on a doorway, on an entity, or in a town.
+
+**It moved nothing.** All 51 replays and check-playthrough passed unrecorded,
+which is the argument for a tide tile over open water: `check-overworld`'s
+field flood models the conch honestly, so a crossing that is dry at LOW and
+deep at HIGH is still a crossing.
+
+### Job 4 — feel.js is still blocked, and nothing was relabelled
+
+`assets/` still holds sprite sheets and one title-screen GIF, and that GIF is
+still a SINGLE FRAME — checked by counting its graphic-control extensions, not
+assumed. The census stands at **0 measured / 17 derived / 223 guessed**.
+
+### What was NOT verified
+
+Nobody has played any of this. The three jobs were proved by checkers and
+judged from screenshots and filmstrips. Specifically:
+
+* **The interior water at screen scale, region by region.** Eight screens were
+  looked at out of the 77 that changed. Stand in the Salt Pans (0,7,2 and
+  0,5,1), the Cliffs of Kell (0,3,5) and the Marsh Stair (0,1,5), and sound
+  the conch through all three levels in each: a creek is deep at MID and HIGH
+  and the shoreline beside it is the only dry footing.
+* **The moved entities in the rooms nobody shot.** Six were photographed;
+  42 were not. `check-placement` proves they CAN be where they are, not that
+  they look right there.
+* **The cutscenes as a player meets them.** The three changed scenes were
+  re-watched as filmstrips, not played. Nereth's arena still has a one-way
+  ledge column down the middle of it, which is worth a second opinion.
+* **Aquatic enemies actually swimming.** They can occupy deep water now; how
+  a jellyfish READS crossing a deep tile has not been watched.
+
+## S14 — every NPC was two half-people
 
 Follow-on from S13's prompt leftovers, then the NPC sprite pass the same
 prompt asked for "like the tree tiles". It was the same fault and it was worse.
