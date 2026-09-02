@@ -40,7 +40,7 @@ export const PLANS = {
   // gets wrong, and it happens on every transition.
   // -------------------------------------------------------------------------
   'village-walk': {
-    note: 'Tidewatch Village, east into Village East and back, past three wandering NPCs',
+    note: 'Tidewatch Village, east into Village East and back, past the wandering villagers',
     setup: {
       seed: 20260806,
       playerName: 'LINK',
@@ -52,25 +52,31 @@ export const PLANS = {
     },
     steps: [
       ['wait', 30],
-      // RE-RECORDED FOR THE REBUILT VILLAGE. The old route walked rows 4 and 6
-      // of a square that was open ground and is now a shop and a house; the
-      // frame counts are not comparable with the pre-town recording, because
-      // the world moved and not the movement. The route is the same idea: the
-      // length of the square, the bottom of it, out east and back.
+      // RE-RECORDED FOR THE TWO-SCREEN VILLAGE. The shop moved east onto
+      // `0,5,7` when the village grew a second screen, which turned the old
+      // shopfront into open ground and turned Village East from a coast screen
+      // into the other half of the town — so the frame counts are not
+      // comparable with the one-screen recording. The route is the same idea:
+      // the length of the square, the bottom of it, out east and back.
       //
-      // Row 5 is the square's open row, in front of both shopfronts and clear
-      // of both doorways — a `goto` that ended on a door would warp mid-run.
+      // Row 5 is the square's open row, clear of the hearth's doorway — a
+      // `goto` that ended on a door would warp mid-run — and clear of the
+      // salter, who stands at 8,5.
       ['goto', 1, 5, 300],
       ['wait', 20],
       ['goto', 3, 6, 300],
-      ['goto', 6, 6, 400],
-      // Back up into the square and across to the east side.
-      ['goto', 8, 5, 400],
+      // Back up into the square and across to the east side. Row 6 is the
+      // strip in front of the treeline and it is where the wandering villager
+      // lives; a `goto` that crosses it spends its whole budget shouldering
+      // past her, which is what ended one recording two screens west of the
+      // village. Row 5 is the wide one.
+      ['goto', 6, 5, 400],
+      ['goto', 8, 3, 400],
       ['wait', 40],
       // Out east into Village East, then straight back. Two seams, two
       // reconcileWithTide calls, two chances to land on a different pixel.
       ['exit', 'right', 300],
-      ['goto', 3, 4, 400],
+      ['goto', 1, 5, 400],
       ['wait', 30],
       ['exit', 'left', 300],
       ['goto', 4, 5, 400],
@@ -94,7 +100,7 @@ export const PLANS = {
   // door fired once each way and the return did not re-trigger it.
   // -------------------------------------------------------------------------
   'village-shop-door': {
-    note: 'Tidewatch Village: in through the shop doorway and back out to the square',
+    note: 'Village East: in through the shop doorway and back out to the yard',
     setup: {
       seed: 20260806,
       playerName: 'LINK',
@@ -102,25 +108,37 @@ export const PLANS = {
       equipB: 'sword',
       equipA: 'conch',
       tide: 1,
-      // y was 88: close enough to the wandering villager's home tile (6,6,
-      // pixel 96,96) that the two hitboxes clip by 2px. That used to be
-      // invisible; now that canOccupy reads solid entities, spawning inside
-      // it fails reconcileWithTide's check and findSafeTile snaps the player
-      // off-route before a single button is pressed. Moved 8px further from
-      // the villager's tile; the scenario (walk up into the doorway from the
-      // square) is unchanged.
-      enter: ['overworld', 0, 4, 7, 96, 80, 'down'],
+      // THE SHOP IS ON `0,5,7` NOW. The village became two screens and the
+      // shop went east with the well, so this scenario starts in the Village
+      // East yard rather than in the square, two tiles below the shop's
+      // doorway at 4,4 and well clear of the wandering child's home tile at
+      // 2,5 — which matters because canOccupy reads solid entities, and
+      // spawning inside one fails reconcileWithTide and lets findSafeTile snap
+      // the player off-route before a button is pressed.
+      //
+      // x IS 64, NOT THE TILE'S MIDDLE. The player's hitbox is `x+3` wide by
+      // ten, so a player standing at a column's centre straddles the column to
+      // its right — harmless in the open, fatal in a doorway one tile wide
+      // with the shopfront either side of it. At 64 the box is 67..77 and
+      // fits inside the door's own column; at 72 it is 75..85, catches the
+      // solid front at 5,4, and the walk up simply stops dead below the door.
+      enter: ['overworld', 0, 5, 7, 64, 96, 'down'],
     },
     steps: [
       ['wait', 20],
-      // Straight up into the doorway at 6,4 from the square below it.
-      ['hold', ['up'], 60],
+      // Straight up into the doorway at 4,4, through the doorstep below it.
+      // Ninety frames rather than sixty: the warp reads the FEET tile,
+      // `floor((y + 12) / 16)`, so standing centred on the doorway is not yet
+      // standing in it — the player has to walk a further twelve pixels past
+      // the tile's middle before the door fires, and two tiles of approach
+      // plus that overshoot does not fit in sixty.
+      ['hold', ['up'], 90],
       ['wait', 40],
       // Inside the shop, and out again through its own door on the floor.
       ['goto', 5, 5, 300],
-      // Twenty-four frames, not sixty: the door lands the player at 96,114,
-      // which is two tiles from the screen's south edge, and a longer hold
-      // walks him out of the village and fires a third transition.
+      // Twenty-four frames, not sixty: the door lands the player at 72,88,
+      // which is two tiles from the yard's south edge, and a longer hold walks
+      // him out of the village and fires a third transition.
       ['hold', ['down'], 24],
       ['wait', 60],
     ],

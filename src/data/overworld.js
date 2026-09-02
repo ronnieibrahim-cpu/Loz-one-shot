@@ -1705,12 +1705,21 @@ const rooms = {
   '0,4,7': {
     name: 'Tidewatch Village',
     legend: 'town', music: 'overworld',
+    // THE VILLAGE IS TWO SCREENS. The square is here; the shop, the well and
+    // the water stair are east on `0,5,7`. It used to be one screen carrying
+    // two 3x3 buildings, a hollow and six people, which left exactly one row
+    // that crossed it — the trap at the top of CLAUDE.md, and the reason four
+    // townsfolk were standing in the roots of the treeline with nowhere else
+    // to go. Moving the shop east bought back nine solid tiles and a whole
+    // lane, and the north strip behind the shop — three tiles of grass that
+    // could only ever be reached past whoever was standing at 8,2 — is a
+    // treeline now rather than a pocket nobody could get into.
     map: [
       'TTTTTTTTTT',
-      'TTTTCTgggT',
-      'gjjjgHHHgg',
-      'gjjjgHHHgg',
-      'gjjjgHHHgg',
+      'TTTTCTTTTT',
+      'gjjjguuugg',
+      'gjjjguuugg',
+      'gjjjgggggg',
       'gggggggggg',
       'TzgggggeiT',
       'TTTggggTTT',
@@ -1718,25 +1727,33 @@ const rooms = {
     warps: [
       // Each door is the middle cell of its building's front row, which is the
       // one cell of a block that is not solid. Walk into it from the square.
-      { x: 6, y: 4, to: { map: 'houseShop', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
       { x: 2, y: 4, to: { map: 'houseHearth', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
       { x: 4, y: 1, to: { map: 'houseMaku', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
     ],
     entities: [
-      ['sign', 8, 4, { text: 'TIDEWATCH VILLAGE\nEast: the Shallows. Mind the tide.' }],
-      // The scrimshander works outdoors on the west side of the square, off
-      // the path between the doors — an NPC is an entity, not a tile, so she
-      // narrows the square without touching its connectivity.
-      ['scrimshander', 2, 6, {}],
+      ['sign', 8, 4, { text: 'TIDEWATCH VILLAGE\nEast: the shop, and the Shallows beyond.' }],
+      // The scrimshander works outdoors on the east side of the square, on the
+      // ground the shop used to stand on, off the path between the doors — an
+      // NPC is an entity, not a tile, so she narrows the square without
+      // touching its connectivity. Beside the noticeboard rather than beside
+      // the salter: three figures in adjacent tiles reads as a queue.
+      ['scrimshander', 7, 4, {}],
       // Brinekin, and re-dressed rather than joined by one. Adding an entity to
       // the STARTING room shifts every entity id allocated after it, and
       // `every(e, n)` phases an enemy off its id — so one extra villager here
       // re-phases every enemy in the game and the d1-descent replay walks into
       // a hit it used to dodge. Recorded in docs/HANDOFF.md.
-      ['npc', 7, 1, { ...FOLK.brine, wander: true, dialogue: 'villager1', after: 'elder1', needEssences: 4 }],
-      ['npc', 6, 6, { sprite: 'npc_villager2', wander: true, dialogue: 'villager2', after: 'villager2After', needEssences: 3 }],
-      ['npc', 6, 1, { sprite: 'npc_child', wander: true, dialogue: 'villageChild', after: 'child1', needEssences: 2 }],
-      ['giver', 8, 2, {
+      ['npc', 8, 2, { ...FOLK.brine, wander: true, dialogue: 'villager1', after: 'elder1', needEssences: 4 }],
+      ['npc', 4, 6, { sprite: 'npc_villager2', wander: true, dialogue: 'villager2', after: 'villager2After', needEssences: 3 }],
+      // The salter works at the stump table, at the west end of the square's
+      // open row 4. NOT IN ROW 5, at either end: row 5 is the one row that
+      // crosses this screen and it is how the player walks off it westward.
+      // A solid giver at 3,5 failed test.mjs's "walking west changed room";
+      // moved to 8,5 it passed that and instead walled off the east end, so
+      // village-walk's `goto` sat pushing against it for four hundred frames
+      // and the recording ended two screens away. The tile checkers see
+      // neither, because a giver is an entity and their floods are tiles.
+      ['giver', 5, 4, {
         ...FOLK.salter, dialogue: 'digger', waiting: 'diggerWait',
         after: 'diggerAfter', flag: 'gotCoin', item: 'coin', level: 1,
         needEssences: 3,
@@ -1745,28 +1762,37 @@ const rooms = {
   },
   '0,5,7': {
     name: 'Village East',
-    legend: 'coast', music: 'overworld',
+    // THE VILLAGE'S OTHER HALF, and a town legend rather than a coast one: the
+    // shop stands here now, with the well beside it and the tide pool at the
+    // foot of the yard. It is declared in tools/check-towns.mjs, which is what
+    // holds it to a village's standard — every way in and every door reaching
+    // each other ON FOOT at LOW and MID and HIGH, which is why the pool stops
+    // one column short of the north and south lanes: at HIGH those two rows of
+    // dry grass in the east are the only way round it.
+    legend: 'town', music: 'overworld',
     map: [
       'TTTggggTTT',
-      'TgTT..TTgT',
-      'gg..<.111g',
-      'gg.v<.1111',
-      'gf..<.1111',
-      'ggTT..TTgg',
       'TggggggggT',
+      'gggHHHgggg',
+      'gwwHHHg111',
+      'gwwHHHg111',
+      'gggggggggg',
+      'TzgggggegT',
       'TTTggggTTT',
     ],
+    warps: [
+      { x: 4, y: 4, to: { map: 'houseShop', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
+    ],
     entities: [
-      // 2,3 rather than the 3,4 check-placement.mjs offered. This octorok spent
-      // the project inside the ledge column at 4,3 and could not move; freed, it
-      // meets whoever crosses this screen, and 3,4 is in the lane. The
-      // suggestion is a legal tile, not a good one — see the tool's own note.
-      ['octorok', 2, 3],
-      // Coastwise Chain, link 4.
-      ['trader', 6, 4, {
+      // Coastwise Chain, link 4. Mirren stands at the lip of the tide pool,
+      // which is where a fisher stands.
+      ['trader', 6, 3, {
         sprite: 'npc_fisher', waiting: 'coastFisher', after: 'mirrenAfter',
         deals: [{ stage: 4, wants: 'brick', gives: 'eel', text: 'mirrenTrade' }],
       }],
+      // The village child, moved out of the strip behind the old shop. There
+      // is a well here now and that is where a child is.
+      ['npc', 2, 5, { sprite: 'npc_child', wander: true, dialogue: 'villageChild', after: 'child1', needEssences: 2 }],
     ],
   },
   '0,6,7': {
@@ -1981,7 +2007,7 @@ const rooms = {
         sprite: 'npc_child', waiting: 'coastChild', after: 'pellAfter',
         deals: [{ stage: 2, wants: 'float', gives: 'claw', text: 'pellTrade' }],
       }],
-      ['npc', 8, 1, { ...FOLK.salter, dialogue: 'shoreSalter', after: 'shoreSalterAfter', needEssences: 3 }],
+      ['npc', 4, 1, { ...FOLK.salter, dialogue: 'shoreSalter', after: 'shoreSalterAfter', needEssences: 3 }],
       ['crab', 6, 4],
     ],
   },
@@ -2400,10 +2426,11 @@ function installHouses() {
           ['shopItem', 4, 5, { pickup: 'bottle', price: 40, name: 'Bottled Tide' }],
           ['shopItem', 2, 5, { charm: 'ballastHeart', price: 80, once: true, saveKey: 'shopCharm' }],
         ],
-        // Out of the shop's door and back onto the square in front of it. The
-        // door moved when the village was rebuilt — it is the middle cell of
-        // the SHOP's front row now, at 6,5 — so this lands one tile below it.
-        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 4, ry: 7, px: 96, py: 88, dir: 'down' } }],
+        // Out of the shop's door and back onto the yard in front of it. The
+        // shop moved east when the village became two screens — its door is
+        // the middle cell of its front row on `0,5,7`, at 4,4 — so this lands
+        // one tile below it, on 0,5,7 rather than on the square.
+        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 5, ry: 7, px: 72, py: 88, dir: 'down' } }],
       },
     },
   });

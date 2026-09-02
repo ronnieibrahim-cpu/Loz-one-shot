@@ -1,6 +1,6 @@
 {
  "name": "village-shop-door",
- "note": "Tidewatch Village: in through the shop doorway and back out to the square",
+ "note": "Village East: in through the shop doorway and back out to the yard",
  "engine": 1,
  "setup": {
   "seed": 20260806,
@@ -15,10 +15,10 @@
   "enter": [
    "overworld",
    0,
-   4,
+   5,
    7,
+   64,
    96,
-   80,
    "down"
   ]
  },
@@ -45,7 +45,7 @@
   "start",
   "select"
  ],
- "frames": 211,
+ "frames": 255,
  "input": [
   [
    0,
@@ -53,7 +53,7 @@
   ],
   [
    1,
-   60
+   90
   ],
   [
    0,
@@ -65,7 +65,7 @@
   ],
   [
    2,
-   24
+   38
   ],
   [
    0,
@@ -76,17 +76,17 @@
  "trail": [
   {
    "f": 60,
-   "x": 72,
-   "y": 92,
+   "x": 64,
+   "y": 67,
    "hp": 12,
-   "e": 6,
+   "e": 2,
    "d": 0,
-   "r": "0,0,0"
+   "r": "0,5,7"
   },
   {
    "f": 120,
    "x": 72,
-   "y": 72,
+   "y": 58,
    "hp": 12,
    "e": 6,
    "d": 0,
@@ -94,21 +94,30 @@
   },
   {
    "f": 180,
-   "x": 80,
-   "y": 80,
+   "x": 79,
+   "y": 84,
    "hp": 12,
    "e": 6,
    "d": 0,
-   "r": "0,4,7"
+   "r": "0,0,0"
+  },
+  {
+   "f": 240,
+   "x": 72,
+   "y": 88,
+   "hp": 12,
+   "e": 2,
+   "d": 0,
+   "r": "0,5,7"
   }
  ],
  "expect": {
-  "frame": 211,
+  "frame": 255,
   "mapId": "overworld",
-  "room": "0,4,7",
+  "room": "0,5,7",
   "floor": 0,
-  "x": 80,
-  "y": 80,
+  "x": 72,
+  "y": 88,
   "z": 0,
   "dir": "down",
   "playerId": 1,
@@ -127,15 +136,15 @@
   "chartstone": false,
   "flags": [],
   "doorsChanged": 0,
-  "secretsSeen": 2,
+  "secretsSeen": 3,
   "chestsOpened": 0,
   "tide": 1,
   "probeLevels": null,
   "probePix": null,
   "mode": "play",
-  "entities": 6,
+  "entities": 2,
   "enemies": 0,
-  "roomSeed": 2982420076,
+  "roomSeed": 1253685221,
   "roomDraws": 0,
   "globalSeed": 781976111,
   "globalDraws": 0

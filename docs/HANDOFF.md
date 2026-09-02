@@ -447,6 +447,44 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+
+- **A town can be more than one screen, and the overworld will not let it be
+  one room.** `registerMap` throws on an overworld room that declares a `size`
+  — "the overworld is a grid of 1x1 screens" — so a bigger town is several
+  ADJACENT screens declared in `tools/check-towns.mjs`, the way Horon Village
+  is several screens in the source. Tidewatch is `0,4,7` (the square) plus
+  `0,5,7` (the yard, the shop, the well and the tide pool). The sweep at the
+  bottom of check-towns is what makes that safe: a screen that uses a town
+  legend and is not in `TOWNS` fails, so the second screen cannot quietly stop
+  being held to a village's standard.
+- **Three separate townspeople-placement bugs in one screen, and no tile
+  checker sees any of them, because a person is an entity.**
+  1. A solid giver at `3,5` failed `test.mjs`'s "walking west changed room" —
+     the player's box straddles two rows, so he leaves the screen along row 5
+     whatever row he started in.
+  2. Moved to `8,5` it passed that and walled the east end instead:
+     `village-walk`'s `goto 8,3` spent its whole 400-frame budget shouldering
+     against it, and the recording ended two screens west with the actor being
+     shot by an octorok. A `goto` paths over TILES and then walks into
+     ENTITIES; a failed goto does not fail, it just runs out.
+  3. `check-towns`'s pinch test only asks whether removing a tile strands a
+     WAY IN or a DOOR. The old square had three tiles of grass behind the shop
+     that were neither, reachable only through `8,2` — where the digger stood.
+     Two wandering NPCs lived in that pocket, sealed in, for the life of the
+     project. It is a treeline now.
+- **A doorway is one tile wide and the player is not.** The player's hitbox is
+  `x+3` by ten, so standing centred on a column overlaps the column to its
+  right. Walking into a building's doorway from below therefore has to be done
+  at `x = tx*16`, not at the tile's middle: at the middle the box catches the
+  solid shopfront beside the door and the walk stops dead one tile short,
+  silently. `village-shop-door` records this as a run that never changes room.
+  The warp itself reads the FEET tile, `floor((y + 12) / 16)`, so the player
+  must also walk twelve pixels PAST the door tile's centre before it fires.
+- **`.` is sand and `g` is grass in the coast legend, and a town is built on
+  the coast legend.** Laying a village square out with `.` gives it a hard-edged
+  tan rectangle in the middle of the lawn. Nothing asserts this — `check-ground`
+  only asks whether a PROP's ground exists on its screen, and sand did exist
+  here. It took a screenshot.
 **A TREELINE IS TWO TILES DEEP ON SCREEN AND ONE IN THE DATA**, because a tree
 is 32x32 on a 2x2 lattice: the canopy in the tree's own row and the root mound
 in the row below, painted over whatever ground is there. That is deliberate —

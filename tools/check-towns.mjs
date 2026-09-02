@@ -50,6 +50,7 @@ installData();
 // not listed.
 const TOWNS = [
   { key: '0,4,7', name: 'Tidewatch Village' },
+  { key: '0,5,7', name: 'Village East' },
   { key: '0,4,8', name: 'Village Shore' },
   { key: '0,5,8', name: 'Driftwood Strand' },
   { key: '0,9,8', name: 'Sandpiper Row' },

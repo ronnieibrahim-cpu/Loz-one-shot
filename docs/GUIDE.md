@@ -197,28 +197,35 @@ drowned places of Thalassia, hands you the **Moon Conch** — a shard of the Bel
 itself — and then the **Wooden Sword**, and tells you to go east to the
 Shallows.
 
-Do not go east yet. The village is four buildings and a square and there is a
-lot in it.
+The village is two screens — the square, and the yard east of it — and there is
+a lot in both.
 
-**The square** (`overworld/0,4,7`). Three doors and two people who matter:
+**The square** (`overworld/0,4,7`). Two doors and three people who matter:
 
 - **The Maku Tree** — the door at the top of the screen, tile (4,1), leading to
   `houseMaku/0,0,0`. She is asleep. She will say `makuWait`: bring one Essence
   and something of the Bell's. Farore is in here too, at (7,4), and will tell
   you what the Bell actually is.
-- **The shop** — tile (6,4), leading to `houseShop/0,0,0`. Stock is listed under
+- **A village house** — tile (2,4), leading to `houseHearth/0,0,0`. A small
+  rupee pickup on the floor at (2,4) and two people who explain the tide better
+  than the sign does.
+- **The scrimshander**, at (7,4), beside the noticeboard. She carves blanks into
+  charms. You have no blanks yet; the first one is in Dungeon 1.
+- **The village digger**, at (5,4), working at the stump table. He wants
+  **3 Essences** and will then hand over the **Ferryman's Coin** (`coin`).
+  Remember him.
+
+**Village East** (`overworld/0,5,7`), one screen east and the village's other
+half. The well is here, the tide pool is here, and so is:
+
+- **The shop** — tile (4,4), leading to `houseShop/0,0,0`. Stock is listed under
   [Caves, shops and secrets](#caves-shops-and-secrets). **Buy the shield for 30
   rupees the moment you can afford it**; it blocks frontal shots and the first
   dungeon opens with a room full of them. Do not bother with the bomb or
   Bottled Tide stock yet — both are refused until you own the bag they fill,
   and the shopkeeper says so rather than taking your money.
-- **A village house** — tile (2,4), leading to `houseHearth/0,0,0`. A small
-  rupee pickup on the floor at (2,4) and two people who explain the tide better
-  than the sign does.
-- **The scrimshander**, at (2,6). She carves blanks into charms. You have no
-  blanks yet; the first one is in Dungeon 1.
-- **The village digger**, at (8,2). He wants **3 Essences** and will then hand
-  over the **Ferryman's Coin** (`coin`). Remember him.
+- **Mirren, a fisher**, at (6,3), at the lip of the tide pool. He is link 4 of
+  the Coastwise Chain.
 
 **Village Shore** (`overworld/0,4,8`), one screen south. The net-mender's house
 is at tile (3,5) — `houseNets/0,0,0`. Inside is **Ossa**, and talking to her
@@ -231,7 +238,7 @@ reason not to run them now:
 1. **Ossa**, `houseNets/0,0,0` — gives the Cracked Float.
 2. **Pell**, `overworld/0,4,8` at (3,2) — Float → Crab Claw.
 3. **Hulla**, `overworld/0,5,8` at (6,3) — Claw → Salt Brick.
-4. **Mirren**, `overworld/0,5,7` at (6,4) — Brick → Smoked Eel.
+4. **Mirren**, `overworld/0,5,7` at (6,3) — Brick → Smoked Eel.
 
 **West Bluff** (`overworld/0,3,7`), one screen west of the square. A cave mouth
 at tile (3,2) leads to `cave1/0,0,0`, the **Bluff Grotto**. Inside:
@@ -1292,7 +1299,7 @@ Marsh. You have had bombs since Dungeon 2.
 | 1 | Ossa, the net-mender | `houseNets/0,0,0` (off `overworld/0,4,8`) | — | Cracked Float |
 | 2 | Pell | `overworld/0,4,8` (3,2) | Cracked Float | Crab Claw |
 | 3 | Hulla, a Salter | `overworld/0,5,8` (6,3) | Crab Claw | Salt Brick |
-| 4 | Mirren, a fisher | `overworld/0,5,7` (6,4) | Salt Brick | Smoked Eel |
+| 4 | Mirren, a fisher | `overworld/0,5,7` (6,3) | Salt Brick | Smoked Eel |
 | 5 | Dov, off the wreck | `overworld/0,8,9` (2,2) | Smoked Eel | Sounding Lead |
 | 6 | Sennit | `overworld/0,9,8` (4,6) | Sounding Lead | Ringing Whelk |
 | 7 | Corriwig, a diver | `overworld/0,9,5` (4,2) | Ringing Whelk | Slackwater Pearl |
@@ -1893,7 +1900,7 @@ The Salt Pan Vault and the Palace Porch are the one-room ruins of what used to b
 two more dungeons. Each kept the item its dungeon used to hand over. The notices
 inside both are the only explanation you get.
 
-**The Tidewatch Shop** (`houseShop/0,0,0`, from `overworld/0,4,7` at (6,4)):
+**The Tidewatch Shop** (`houseShop/0,0,0`, from `overworld/0,5,7` at (4,4)):
 
 | Stock | Price | Notes |
 |---|---|---|
