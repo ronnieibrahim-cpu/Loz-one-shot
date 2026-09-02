@@ -60,7 +60,12 @@ FRAMES = {
     # The capped seafarers. The sheet has no side view of this figure, and the
     # NPC's own spriteName() falls back to the down list, so none is invented.
     'npc_brine_d':    (815, 555, False),
-    'npc_brine_u':    (985, 555, False),
+    # 988, not 985. The window was three pixels left of the sprite, so it took
+    # a stripe of the sheet's green down one side and left three columns of the
+    # seafarer's back outside the cell. It is the tree lesson again: a window is
+    # the object's bounding box, and on a packed sheet you cannot find that by
+    # looking for background — measure the ink.
+    'npc_brine_u':    (988, 555, False),
     'npc_brinewife':  (917, 555, False),
 
     # The reef people.
@@ -68,6 +73,30 @@ FRAMES = {
     'npc_reefkin_u':  (900, 653, False),
     'npc_reefkin_r':  (951, 653, False),
 }
+
+
+def _own_blob(clear):
+    """The biggest eight-connected run of not-cleared cells in a 16x16 frame."""
+    seen = [[False] * 16 for _ in range(16)]
+    best = set()
+    for sy in range(16):
+        for sx in range(16):
+            if seen[sy][sx] or clear[sy][sx]:
+                continue
+            comp, stack = set(), [(sx, sy)]
+            seen[sy][sx] = True
+            while stack:
+                cx, cy = stack.pop()
+                comp.add((cx, cy))
+                for dy in (-1, 0, 1):
+                    for dx in (-1, 0, 1):
+                        nx, ny = cx + dx, cy + dy
+                        if 0 <= nx < 16 and 0 <= ny < 16 and not seen[ny][nx] and not clear[ny][nx]:
+                            seen[ny][nx] = True
+                            stack.append((nx, ny))
+            if len(comp) > len(best):
+                best = comp
+    return best
 
 
 def quantise_frame(px, ox, oy, flip):
@@ -91,6 +120,17 @@ def quantise_frame(px, ox, oy, flip):
         seen.add((cx, cy))
         clear[cy][cx] = True
         stack += [(cx + 1, cy), (cx - 1, cy), (cx, cy + 1), (cx, cy - 1)]
+
+    # WHATEVER IS LEFT THAT IS NOT THIS SPRITE CAME FROM THE CELL NEXT DOOR.
+    # The flood above clears background reachable from the border; it cannot
+    # clear a neighbour's ink, which is the same colour as artwork. A 16-wide
+    # cell around a 13-wide figure has columns to spare and on this sheet they
+    # belong to whoever is standing in them.
+    keep = _own_blob(clear)
+    for y in range(16):
+        for x in range(16):
+            if not clear[y][x] and (x, y) not in keep:
+                clear[y][x] = True
 
     cols = sorted({px[ox + x, oy + y] for y in range(16) for x in range(16)
                    if not clear[y][x]}, key=lambda c: (-lum(c), c))

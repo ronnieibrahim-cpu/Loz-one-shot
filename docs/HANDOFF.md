@@ -503,6 +503,28 @@ exactly nothing and the tile went on drawing the art it shares its name with. No
 warning, no missing entry, no failing assertion — the old pixels, for as long as
 you care to stare at them. Rename the ART, not the tiledef.
 
+**A SPRITE SHEET'S PITCH IS NOT 16 JUST BECAUSE ITS SPRITES ARE.** `find_cells`
+splits a band of content into runs and cuts each run every 16 pixels. The
+Oracle of Seasons NPC sheet's townspeople sit about 17 to 18 apart, so the cut
+drifted a pixel per sprite and by the middle of a row the window held the right
+half of one villager and the left half of the next. EVERY NPC IN THE GAME was
+two half-people, visible from across the room, and every checker was green for
+it — a sprite that exists and draws is all any of them can see. `find_sprites`
+finds each sprite as its own eight-connected blob and centres a cell on it,
+which is the same lesson the trees taught: measure the object, never assume the
+pitch. Migrating a ripper to it renumbers every index, so the frames have to be
+re-picked off a contact sheet by eye.
+
+**AND A 16-WIDE CELL AROUND A 13-WIDE SPRITE HAS COLUMNS THAT BELONG TO
+SOMEBODY ELSE.** Three separate extractions hit this: the boulder took a dotted
+column of its neighbour's dirt, Farore came out with two of a doorway's posts,
+and `npc_brine_u` took a stripe of the sheet's green. Keep only the window's
+biggest connected blob — `quantise(own=True)`, `_own_blob` in rip-races.py,
+`_detached` in rip-terrain.py. It is opt-in in each: a frame drawn in two
+pieces (a held item away from the hand) is legitimate, and this must not eat
+half of one. Where a neighbour TOUCHES the sprite the blob rule cannot help and
+the window has to be nudged by hand — Farore is the worked example.
+
 **AN EXTRACTION WINDOW HAS TO BE THE OBJECT'S BOUNDING BOX TO THE PIXEL, AND
 ON A RENDERED MAP YOU CANNOT FIND THAT BY LOOKING FOR BACKGROUND.** The oak and
 the palm were both a couple of pixels off theirs from the day they were ripped.

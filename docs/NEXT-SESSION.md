@@ -1,3 +1,52 @@
+## S14 — every NPC was two half-people (this session)
+
+Follow-on from S13's prompt leftovers, then the NPC sprite pass the same
+prompt asked for "like the tree tiles". It was the same fault and it was worse.
+
+**`find_cells` assumes a pitch.** It splits a band of sheet content into runs
+and cuts each run every 16 pixels. The Oracle of Seasons NPC sheet's
+townspeople sit about 17 to 18 apart, so the cut drifted a pixel per sprite and
+by the middle of a row the window held the right half of one villager and the
+left half of the next. Every villager, child, elder, shopkeeper, fisher and
+oracle in the game was two half-people. Nothing could see it: a sprite that
+exists and draws is all any checker can ask.
+
+`ripkit.find_sprites` finds each sprite as its own eight-connected blob and
+centres a cell on it, feet-anchored. Migrating renumbers every index, so all
+nine frames were re-picked off a contact sheet by eye — which is the half of
+this that is not mechanical, the sheet having soldiers, Zoras and Subrosians in
+it as well as townsfolk.
+
+**And a 16-wide cell around a 13-wide person has columns that belong to whoever
+is standing in them.** `quantise(own=True)` keeps only the window's biggest
+blob. Opt-in, because a frame drawn in two pieces is legitimate. Where the
+neighbour TOUCHES the sprite the rule cannot help: Farore is drawn in a doorway
+whose post joins her outline, so her two frames carry an explicit nudge.
+
+The races sheet had one hard fault of the same kind — `npc_brine_u`'s window
+was three pixels left of its seafarer, taking a stripe of sheet green and
+leaving three columns of his back outside the cell — plus neighbour bleed that
+the same blob rule clears.
+
+Also from the prompt's list: the boulder's grit column (rip-terrain, the same
+blob rule), the dead `speaker` and `glide` fields, three unreachable tiles, and
+the live bug hiding behind two of them — `REEFSEED_PLANT_BLOCK` names F.SWITCHF
+and the only tile carrying it was unplaceable, so nothing stopped a coral pillar
+being grown on a floor switch. A plate says `noPlant` now.
+
+**`claude/p7-6-camera` was NOT deleted.** The remote refuses ref deletion
+through this environment's git proxy (`send-pack: unexpected disconnect`) and
+no delete-branch API tool is available here. It is at `e00b6c5`, an unrelated
+history with no merge base to main, and its two checkers were rewritten onto
+main in S11. One command from a normal checkout:
+`git push origin --delete claude/p7-6-camera`.
+
+**What was NOT verified.** Nobody has played any of this. The NPCs were judged
+from stills at 1x and at 8x; how they read while WALKING (the wander animation
+swaps frames) has not been looked at, and Farore's green recolour makes her
+face very pale — that is a palette call a person should make. Stand in
+Tidewatch Village and in Sandpiper Row.
+
 ## S13 — the sea, and the cutscenes get watched (this session)
 
 Picked up the three jobs of the S12 prompt after the follow-up art work.

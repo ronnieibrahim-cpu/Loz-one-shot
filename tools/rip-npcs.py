@@ -8,26 +8,47 @@ Regenerate with:  python3 tools/rip-npcs.py
 """
 import sys, os
 sys.path.insert(0, os.path.dirname(__file__))
-from ripkit import load, background, find_cells, quantise, emit_module
+from ripkit import load, background, find_sprites, quantise, emit_module
 
 SHEET = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
     'assets', 'sheets', 'oracle-seasons-npcs.png')
 
-# Cell index on the detected grid -> engine sprite name.
-# Indices come from the contact sheet written by tools/ripkit.contact_sheet.
+# Sprite index -> engine sprite name, in the reading order `find_sprites`
+# returns: top to bottom by row, then left to right.
+#
+# THE INDICES ARE ALL NEW, because what they index is. This used `find_cells`,
+# which cuts a band of content every 16 pixels — and this sheet's townspeople
+# sit about 17 to 18 apart, so the cut drifted a pixel per sprite and by the
+# middle of a row the window held the right half of one villager and the left
+# half of the next. Every NPC in the game was two half-people, and it is
+# obvious from across the room once you look. `find_sprites` finds each sprite
+# as its own connected blob of ink instead, which is the same lesson the trees
+# taught one file over: measure the object, never assume the pitch.
+#
+# Picked off the contact sheet by eye, which is the half of this that is not
+# mechanical — the sheet has soldiers, Zoras and Subrosians in it as well as
+# townsfolk, and what this game wants is people standing still and facing you.
 FRAMES = {
-    'npc_villager': 0,
-    'npc_villager2': 6,
-    'npc_fisher': 22,
-    'npc_child': 70,
-    'npc_elder': 66,
-    'npc_shopkeeper': 32,
+    'npc_villager': 2,       # dark-haired townsman, front
+    'npc_villager2': 12,     # townswoman in red, arms out, front
+    'npc_fisher': 49,        # blue-clad man, front
+    'npc_child': 51,         # child, front
+    'npc_elder': 17,         # bald elder, front
+    'npc_shopkeeper': 20,    # fair-haired man in blue, front
     # The sheet has no oracle, so Farore borrows a townswoman and is recoloured
-    # green below — the Oracle series' own palette-swap trick.
-    'npc_farore_0': 54,
-    'npc_farore_1': 55,
-    'npc_zelda': 25,
+    # green below — the Oracle series' own palette-swap trick. Two frames of the
+    # same woman, so the recolour reads as one person breathing.
+    # NUDGED, and this is the one case the automatic window cannot get right.
+    # She is drawn standing in a doorway on this sheet, and its post touches her
+    # outline — so the post is part of her connected blob, `own=True` keeps it,
+    # and centring on the blob pushes HER off centre. Three pixels puts the post
+    # outside the cell. An offset is the honest fix here: the alternative is a
+    # rule about thin things at a window's edge, and an arm is a thin thing at a
+    # window's edge.
+    'npc_farore_0': (57, 3, 0),
+    'npc_farore_1': (60, -3, 0),
+    'npc_zelda': 59,         # the woman with the red bow
 }
 
 # Palette overrides, applied after quantisation.
@@ -40,14 +61,20 @@ PAL_OVERRIDE = {
 def main():
     im, px, W, H = load(SHEET)
     bg = background(px, W, H)
-    cells = find_cells(px, W, H, bg, size=16, y1=200)
+    cells = find_sprites(px, W, H, bg, size=16, y1=200)
     art, pals = {}, {}
-    for name, idx in FRAMES.items():
+    for name, spec in FRAMES.items():
+        idx, dx, dy = spec if isinstance(spec, tuple) else (spec, 0, 0)
         if idx >= len(cells):
             print('skip (no such cell):', name, idx)
             continue
         ox, oy = cells[idx]
-        rows, pal = quantise(px, ox, oy, 16, 16, bg)
+        ox += dx
+        oy += dy
+        # `own=True`: a 16-wide cell around a 13-wide townsperson has columns
+        # to spare, and on this sheet they belong to whoever is standing beside
+        # them — Farore arrived with two of a fence's posts, one either side.
+        rows, pal = quantise(px, ox, oy, 16, 16, bg, own=True)
         if rows is None:
             print('skip (empty):', name)
             continue

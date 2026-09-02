@@ -32,6 +32,83 @@ def background(px, W, H):
     return edge.most_common(1)[0][0]
 
 
+def find_sprites(px, W, H, bg, size=16, x0=0, x1=None, y0=0, y1=None, minink=40):
+    """Locate sprite cells by finding each sprite, rather than by assuming a pitch.
+
+    `find_cells` splits a band of content into runs and cuts each run every
+    `pitch` pixels. That works while a sheet's sprites really are that far
+    apart, and the Oracle of Seasons NPC sheet's are not — they sit about 17 to
+    18 apart, so a 16-pixel cut drifts by a pixel per sprite and by the middle
+    of a row the window is straddling two townspeople. Every villager, child,
+    elder and shopkeeper in this game was half of one person and half of the
+    one beside them, and it is visible from across the room.
+
+    So: eight-connected components. A sprite on these sheets is one blob of ink
+    with its own black outline all the way round, which is exactly what makes a
+    component the right unit — the same reason the trees had to be measured
+    outline-to-outline rather than found by looking for background. Components
+    smaller than `minink` are dropped (stray marks, dividers, single-pixel
+    joins), and each surviving one gets a `size` window centred on its own
+    bounding box and anchored on its FEET, because a head may sit high in the
+    cell but the ground line is what the engine draws against.
+
+    Returned in reading order — top to bottom by row band, then left to right —
+    so an index into this list means the same thing a person means when they
+    count sprites off a contact sheet.
+    """
+    x1 = W if x1 is None else x1
+    y1 = H if y1 is None else y1
+    bgset = bg if isinstance(bg, (set, frozenset)) else {bg}
+    seen = [[False] * W for _ in range(H)]
+    boxes = []
+    for sy in range(y0, y1):
+        for sx in range(x0, x1):
+            if seen[sy][sx] or px[sx, sy] in bgset:
+                continue
+            stack = [(sx, sy)]
+            seen[sy][sx] = True
+            bx0 = bx1 = sx
+            by0 = by1 = sy
+            n = 0
+            while stack:
+                cx, cy = stack.pop()
+                n += 1
+                if cx < bx0: bx0 = cx
+                if cx > bx1: bx1 = cx
+                if cy < by0: by0 = cy
+                if cy > by1: by1 = cy
+                for dy in (-1, 0, 1):
+                    for dx in (-1, 0, 1):
+                        nx, ny = cx + dx, cy + dy
+                        if x0 <= nx < x1 and y0 <= ny < y1 and not seen[ny][nx] \
+                                and px[nx, ny] not in bgset:
+                            seen[ny][nx] = True
+                            stack.append((nx, ny))
+            # A whole sheet's frame or divider is not a sprite either.
+            if n < minink or (bx1 - bx0 + 1) > size * 2 or (by1 - by0 + 1) > size * 2:
+                continue
+            boxes.append((bx0, by0, bx1, by1))
+    # Reading order: group into row bands by vertical overlap, then sort each
+    # band left to right. Sorting on raw y alone shuffles a row whose sprites
+    # are not all the same height, which on these sheets is most of them.
+    boxes.sort(key=lambda b: (b[1], b[0]))
+    bands, cur = [], []
+    for b in boxes:
+        if cur and b[1] > max(c[3] for c in cur):
+            bands.append(cur); cur = []
+        cur.append(b)
+    if cur:
+        bands.append(cur)
+    cells = []
+    for band in bands:
+        for bx0, by0, bx1, by1 in sorted(band, key=lambda b: b[0]):
+            w = bx1 - bx0 + 1
+            cx = bx0 - (size - w) // 2
+            cy = by1 - size + 1
+            cells.append((max(0, min(cx, W - size)), max(0, min(cy, H - size))))
+    return cells
+
+
 def find_cells(px, W, H, bg, size=16, x0=0, x1=None, y0=0, y1=None, pitch=None):
     """Locate sprite cells as bands of content split into `size`-wide columns."""
     x1 = W if x1 is None else x1
@@ -95,17 +172,62 @@ def lum(c):
     return 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]
 
 
-def quantise(px, ox, oy, w, h, bg, flip=False):
+def _own_mask(px, ox, oy, w, h, bgset):
+    """The window's biggest connected blob of ink — the sprite, and only it.
+
+    A 16x16 cell centred on a 13-wide character has three columns to spare, and
+    on a packed sheet those columns belong to whoever is standing next to them.
+    Farore came out of this sheet with two of a fence's posts either side of
+    her, one column of each, because they fell inside her window; the boulder in
+    `rip-terrain.py` took a dotted column of its neighbour's dirt for the same
+    reason, one file over. The window has to stay 16 wide — that is the cell the
+    engine draws — so what has to go is everything in it that is not the sprite.
+
+    Eight-connected, so an outline that steps diagonally stays one blob.
+    """
+    seen = [[False] * w for _ in range(h)]
+    best = set()
+    for sy in range(h):
+        for sx in range(w):
+            if seen[sy][sx] or px[ox + sx, oy + sy] in bgset:
+                continue
+            comp, stack = set(), [(sx, sy)]
+            seen[sy][sx] = True
+            while stack:
+                cx, cy = stack.pop()
+                comp.add((cx, cy))
+                for dy in (-1, 0, 1):
+                    for dx in (-1, 0, 1):
+                        nx, ny = cx + dx, cy + dy
+                        if 0 <= nx < w and 0 <= ny < h and not seen[ny][nx] \
+                                and px[ox + nx, oy + ny] not in bgset:
+                            seen[ny][nx] = True
+                            stack.append((nx, ny))
+            if len(comp) > len(best):
+                best = comp
+    return best
+
+
+def quantise(px, ox, oy, w, h, bg, flip=False, own=False):
     """Return (rows, palette) with the sprite reduced to at most four colours.
 
     Colours are sorted light to dark so index 0 is the highlight and index 3 the
     outline, matching how the hand-authored art is written.
+
+    `own=True` keeps only the window's biggest connected blob — see `_own_mask`.
+    It is opt-in because a sprite drawn in two pieces (a held item away from the
+    hand, a shadow under a jump) is a legitimate two-blob frame, and this must
+    not quietly eat half of one.
     """
+    bgset = bg if isinstance(bg, (set, frozenset)) else {bg}
+    mask = _own_mask(px, ox, oy, w, h, bgset) if own else None
     seen = Counter()
     for y in range(h):
         for x in range(w):
             p = px[ox + x, oy + y]
-            if p != bg:
+            if mask is not None and (x, y) not in mask:
+                continue
+            if p not in bgset:
                 seen[p] += 1
     if not seen:
         return None, None
@@ -129,9 +251,10 @@ def quantise(px, ox, oy, w, h, bg, flip=False):
     for y in range(h):
         row = []
         for x in range(w):
-            sx = ox + (w - 1 - x if flip else x)
-            p = px[sx, oy + y]
-            row.append('.' if p == bg else str(nearest(p)))
+            gx = (w - 1 - x if flip else x)
+            p = px[ox + gx, oy + y]
+            off = p in bgset or (mask is not None and (gx, y) not in mask)
+            row.append('.' if off else str(nearest(p)))
         rows.append(''.join(row))
     rows = _trim_slivers(rows)
     rows = _fill_pinholes(rows)
