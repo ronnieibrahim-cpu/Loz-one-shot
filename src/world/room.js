@@ -41,7 +41,7 @@
 
 import { TILE, ROOM_W, ROOM_H, offscreen } from '../core/screen.js';
 import { tiles as tileSheet } from '../gfx/art.js';
-import { F, resolveTile, getTileDef, tileArt, tileVariant, tileEdgeArt, blockRef, tileDefSolid } from './tileset.js';
+import { F, resolveTile, getTileDef, tileArt, tileVariant, tileEdgeArt, blockRef, tileDefSolid, isTideSensitive } from './tileset.js';
 
 export const LEGENDS = new Map();
 
@@ -328,6 +328,15 @@ export class Room {
     const d = this.tile(x, y, tide);
     if ((d.quad || d.big) === q) return true;
     if (d.flags & (F.VOID | F.WARP | F.SOLID)) return false;
+    // A TIDE TILE IS NEVER OVERHUNG, AT ANY LEVEL. The answer for one has to be
+    // the same at all three or the tree changes size when the conch is sounded:
+    // `sandbar` is plain sand at LOW, which a canopy may cover, and animated
+    // water at HIGH, which it may not (this is the static layer; the animated
+    // cells are drawn afterwards and would scrub the overhang off). 66 cells in
+    // the world were doing exactly that — the woods grew and shrank with the
+    // sea. Deciding it from the tile's own NAME rather than from what the name
+    // resolves to at the level being drawn is what makes the answer stable.
+    if (isTideSensitive(this.baseName(x, y))) return false;
     return !(d.over || d.anim || d.underArt || d.quad || d.big);
   }
 

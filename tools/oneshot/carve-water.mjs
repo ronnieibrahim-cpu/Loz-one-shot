@@ -62,6 +62,15 @@ const GROUND = new Set(['g', 'G', 'f', 'v', '.', ',', ':', 'd', 'm', 'R', 'r']);
 const WET = new Set(['~', '=', '*', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '!', 'N', 'S', 'E', 'W']);
 // Things a creek must keep its distance from.
 const KEEPOUT = new Set(['_', '"', '>', '<', 'C', 'c', 'D', '/', 'K', 'J', 'M', 'X', 'V', 'x']);
+// ...AND TREES, which is a rule about the picture rather than about the rules.
+// A tree is a 32x32 object whose root mound fills the bottom of its own cell
+// and overhangs its neighbours, so water painted in the cell beside one cuts a
+// hard rectangular edge through the roots — the tree ends up standing in a
+// bathtub. The first cut of this tool put 122 such cells into the world, which
+// is most of every "tiles clipping into the trees" anybody could point at.
+// Trees are not in KEEPOUT because KEEPOUT marks a 3x3 exclusion and a treeline
+// borders nearly every screen; one cell of clearance is the whole rule.
+const TREES = new Set(['T', 'Y', 'P']);
 
 const key = (rx, ry) => `0,${rx},${ry}`;
 const grid = new Map();      // key -> array of 10-char arrays
@@ -104,7 +113,16 @@ const paintable = (rx, ry, x, y) => {
   const k = key(rx, ry);
   if (TOWN.has(k)) return false;
   if (blocked.get(k).has(`${x},${y}`)) return false;
-  return GROUND.has(grid.get(k)[y][x]);
+  if (!GROUND.has(grid.get(k)[y][x])) return false;
+  // One cell of clearance from any tree. Read off the ORIGINAL grid, not the
+  // painted one, so the answer does not depend on what has been carved so far.
+  const og = original.get(k);
+  for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+    const nx = x + dx, ny = y + dy;
+    if (nx < 0 || ny < 0 || nx >= RW || ny >= RH) continue;
+    if (TREES.has(og[ny][nx])) return false;
+  }
+  return true;
 };
 const wet = (rx, ry, x, y) => WET.has(grid.get(key(rx, ry))[y][x]);
 const rim = (rx, ry) => rx === 0 || ry === 0 || rx === W - 1 || ry === H - 1;

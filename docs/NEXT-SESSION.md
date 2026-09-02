@@ -1,3 +1,51 @@
+## S17 — rows of four, and the trees that changed size (this session)
+
+Three faults, all reported by a person looking at the game.
+
+### Link was walking on a field of rocks
+
+Sixteen screens had their rocks laid out as `oooo` — four identical boulders in
+a straight line — and five of those had a SECOND such row with an `o..o`
+between, which is a hollow rectangle of boulders standing in open ground with
+the player walking about inside it. Six more screens did it with bushes and
+seven with posts: 32 straight runs. `tools/oneshot/thin-props.mjs` broke every
+one of them by REMOVAL — 46 cells, nothing moved, nothing added — choosing the
+cell that breaks the most runs at once, tie-broken by `hash32` so the answer is
+deterministic and is not the middle every time.
+
+### The woods grew and shrank with the tide
+
+`Room.quadMayCover` refuses to overhang an ANIMATED cell, which is right: the
+canopy is painted into the static layer and the animated cells go over it
+afterwards. But a tide tile is animated at some levels and not at others, so 66
+cells were overhung at LOW and bare at HIGH — sound the conch and the trees
+change size. It reads the tile's own NAME now (`isTideSensitive`), so the answer
+cannot move with the sea.
+
+### And the creeks were cut alongside the trees
+
+A tree's root mound fills the bottom of its own cell and overhangs its
+neighbours, so water in the next cell cuts a hard edge through the roots. S16's
+carve had put 122 such cells into the world; `carve-water.mjs` keeps one cell of
+clearance from any tree now, and the whole overworld was re-carved from main's
+data with the rule in place. Interior water 4.1% / 16.1% / 18.1% across the
+tide, down about 1.4 points from the version that ran through the woods. The 57
+tree-adjacent tide tiles that remain are S13's rim strand, where a beach running
+up to a treeline is a wood on a shore.
+
+`tools/check-ground.mjs` grew two assertions for the first two; both negative
+tests go red (66 cells, and the run it was given).
+
+### What was NOT verified
+
+Nobody has played it. Six screens were photographed out of the 21 the thinning
+touched and the 81 the re-carve rewrote. The thinning is a machine's answer to a
+composition question: several screens came out with the same pattern in two
+rows (`..oo..` twice, with a clear row between), which is a cluster rather than
+a fence and is better, but it is still symmetric. A person should look at the
+Boulder Run (0,1,4), the Kell Ledges (0,2,3) and Pan Corner (0,7,2) and decide
+whether they want a hand.
+
 ## S16 — the ground you stand on (this session)
 
 Two faults, both reported by a person looking at the game and both invisible to

@@ -447,6 +447,38 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+**THE WOODS GREW AND SHRANK WITH THE TIDE, IN 66 CELLS.** `Room.quadMayCover`
+decides whether a 32x32 object may overhang a cell and refuses an ANIMATED one,
+which is correct — the canopy goes into the static layer and the animated cells
+are drawn over it afterwards, so an overhang there is scrubbed off. But a TIDE
+TILE is animated at some levels and not at others: `sandbar` is plain sand at
+LOW and water at HIGH. So the same cell was overhung at LOW and bare at HIGH,
+and sounding the conch changed the size of the trees. **Anything a renderer
+decides from a RESOLVED tile is a decision that moves with the tide.** Decide it
+from the tile's own NAME (`isTideSensitive`) when the answer must not.
+
+**SIXTEEN SCREENS HAD THEIR ROCKS IN A ROW OF FOUR, AND FIVE OF THEM TWICE.**
+`oooo`, an `o..o`, and `oooo` again is a hollow rectangle of boulders standing
+in open ground with the player walking about inside it; six more screens did it
+with bushes and seven with posts, 32 straight runs in all. The source games
+place a rock singly or in twos, set against something, to shape where you walk.
+A line of four in open sand is a fence, and from inside it what it reads as is
+Link standing on a field of rocks. Broken by REMOVAL only — nothing moved,
+nothing added, because a removed prop leaves ground the room already has and a
+moved one is a new placement decision that wants an eye on it. **The rule is
+about resolved TILES, not legend characters**: `O` is `rockSand` in the base
+legend and `dPit` in the cave one, so a character-based sweep reported the
+Abyssal Keep's deliberate pit fields as rows of props.
+
+**A CREEK MUST NOT RUN ALONGSIDE A TREE.** A tree's root mound fills the bottom
+of its own cell and overhangs its neighbours, so water in the cell beside one
+cuts a hard rectangular edge through the roots and the tree ends up standing in
+a bathtub. The first cut of `carve-water.mjs` put 122 such cells into the world.
+One cell of clearance is the whole rule, and it costs about 1.4% of the interior
+water. The 57 that remain are S13's rim strand, where a beach running up to a
+treeline is a wood on a shore and is right.
+
+
 **AN OVERWORLD GAP WAS A BLACK RECTANGLE ON GOLDEN SAND.** `chasm` drew
 `dPit`'s art in the `abyss` palette. `dPit` is 90% its darkest index and
 `abyss`'s darkest is #0a0c1c, which is right for a pit cut into a brick floor

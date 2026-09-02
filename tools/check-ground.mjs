@@ -117,6 +117,89 @@ for (const [mapId, m] of MAPS) {
 for (const c of covered.slice(0, 8)) console.log('  cover  ' + c);
 check('no doorway is on a tile a 32x32 object may overhang', covered.length === 0,
   covered.length ? `${covered.length} warps` : '');
+// --- and a tree is the same size at every tide -------------------------------
+//
+// `Room.quadMayCover` decides whether a 32x32 object may overhang a cell, and it
+// refuses an ANIMATED one — the canopy is painted into the static layer and the
+// animated cells are drawn afterwards, so an overhang there would be scrubbed
+// off. A TIDE TILE is animated at some levels and not at others: `sandbar` is
+// plain sand at LOW and water at HIGH. So the same cell was overhung at LOW and
+// bare at HIGH, and the woods grew and shrank as the conch was sounded. 66 cells
+// did it. The rule now reads the tile's own NAME rather than what it resolves
+// to, and this is the assertion that the answer no longer moves.
+const flicker = [];
+for (const [mapId, m] of MAPS) {
+  for (const key of Object.keys(m.roomDefs)) {
+    const [floor, rx, ry] = key.split(',').map(Number);
+    const room = getRoom(mapId, floor, rx, ry);
+    if (!room) continue;
+    for (let by = 0; by < room.th; by += 2) {
+      for (let bx = 0; bx < room.tw; bx += 2) {
+        // The quad set this 2x2 block draws, if any. Read at one level: a block
+        // that holds a tree holds it at every level (a tree is not a tide tile).
+        let q = null;
+        for (const [ox, oy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) {
+          const d = room.tile(bx + ox, by + oy, 1);
+          if (d.quad || d.big) { q = d.quad || d.big; break; }
+        }
+        if (!q) continue;
+        for (const [ox, oy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) {
+          const x = bx + ox, y = by + oy;
+          const c = [0, 1, 2].map(t => room.quadMayCover(x, y, t, q));
+          if (c[0] !== c[1] || c[1] !== c[2]) {
+            flicker.push(`${mapId}/${key} (${x},${y}) '${room.baseName(x, y)}'`
+              + ` overhung ${c.map(v => v ? 'y' : 'n').join('')} across LOW/MID/HIGH`);
+          }
+        }
+      }
+    }
+  }
+}
+for (const f of flicker.slice(0, 8)) console.log('  grows  ' + f);
+check('a 32x32 object overhangs the same cells at every tide', flicker.length === 0,
+  flicker.length ? `${flicker.length} cells` : '');
+
+// --- and no decorative prop stands in a line of three ------------------------
+//
+// Sixteen screens had their rocks as `oooo`, four identical boulders in a row,
+// five of them with a second such row and an `o..o` between — a hollow
+// rectangle of boulders in open ground with the player walking about inside it.
+// The source games place a rock singly or in twos, against something, to shape
+// where you walk; a line of four in open sand is a fence, and from inside it
+// what it reads as is Link standing on a field of rocks.
+//
+// GATES ARE EXEMPT and are identified by their flags rather than by name: a
+// seal, a row of vanes, a cracked rockfall and a grate are all walls in a line
+// on purpose. So are ledges, and so are trees, which are the border of nearly
+// every screen in the game.
+const GATEISH = F.RING | F.BOMBABLE | F.VANE | F.HEAVY;
+const decorative = (d) => !!d.underArt && !!(d.flags & F.SOLID) && !d.quad && !d.big
+  && !(d.flags & (F.LEDGE | GATEISH)) && !d.openFlag;
+const lines = [];
+for (const [mapId, m] of MAPS) {
+  for (const key of Object.keys(m.roomDefs)) {
+    const [floor, rx, ry] = key.split(',').map(Number);
+    const room = getRoom(mapId, floor, rx, ry);
+    if (!room) continue;
+    const nameAt = (x, y) => { const d = room.tile(x, y, 1); return decorative(d) ? d.name : null; };
+    const scan = (n, m2, at, label) => {
+      for (let a = 0; a < n; a++) {
+        let cur = null, run = 0;
+        for (let b = 0; b <= m2; b++) {
+          const v = b < m2 ? at(a, b) : null;
+          if (v && v === cur) run++;
+          else { if (cur && run >= 3) lines.push(`${mapId}/${key} ${run}x ${cur} in ${label} ${a}`); cur = v; run = 1; }
+        }
+      }
+    };
+    scan(room.th, room.tw, (y, x) => nameAt(x, y), 'row');
+    scan(room.tw, room.th, (x, y) => nameAt(x, y), 'col');
+  }
+}
+for (const l of lines.slice(0, 8)) console.log('  line   ' + l);
+check('no decorative prop stands three in a straight line', lines.length === 0,
+  lines.length ? `${lines.length} runs` : '');
+
 // A checker that swept nothing passes for the wrong reason. The world has
 // roughly two thousand prop cells; anything near zero means the sweep broke,
 // not that the world got tidy.
