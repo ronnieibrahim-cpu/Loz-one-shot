@@ -597,6 +597,12 @@ defineEntity('anchor', (x, y, o) => new Anchor(x, y, o));
 // Exported so tools/check-reefseed.mjs's `plantableTerrain` — which has no
 // live `game` to call `Reefseed.canPlant` on — asks for the SAME mask rather
 // than keeping its own copy of which tiles a pillar may not stand on.
+// F.SWITCHF is in here for a switch TILE, and there is no longer one — the
+// two tiledefs that carried it were dead art no legend could name, because
+// every floor switch in the game is an entity. The flag stays in the mask so a
+// switch tile would be covered if one is ever added; what actually keeps a
+// pillar off a plate today is `noPlant` on the entity, which `canPlant` reads
+// below. Before that existed this mask was the only guard and it never fired.
 export const REEFSEED_PLANT_BLOCK = F.VOID | F.SOLID | F.DOOR | F.WARP | F.STAIRS | F.SWITCHF | F.PIT;
 export class Reefseed extends Entity {
   constructor(x, y, o = {}) {
@@ -696,7 +702,7 @@ export class Reefseed extends Entity {
     }
     for (const e of game.entities) {
       if (e.remove || e.isEffect || e.isDrop) continue;
-      if (!e.solid && !e.interact && !e.pushable) continue;
+      if (!e.solid && !e.interact && !e.pushable && !e.noPlant) continue;
       if (Math.floor(e.cx / TILE) === tx && Math.floor(e.cy / TILE) === ty) return false;
     }
     return true;

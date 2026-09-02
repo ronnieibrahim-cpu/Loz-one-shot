@@ -210,6 +210,33 @@ for (const [name, d] of TILES) {
     problems.push(`tile '${name}': built on extracted theme art and no legend, tide variant or`
       + ' transform can reach it — a room cannot name it, so it can never appear');
   }
+
+  // ...AND THE SAME QUESTION OF EVERY OTHER TILE, as a note.
+  //
+  // The check above only asks it of tiles built on extracted dungeon-theme art,
+  // which is where it bit last. It bit again somewhere else: a hand-drawn
+  // `stump` carrying F.SOLID that no legend could name, and `dSwitchUp` /
+  // `dSwitchDown` left over from a design where floor switches were terrain
+  // rather than entities. That pair was not merely waste — REEFSEED_PLANT_BLOCK
+  // names F.SWITCHF and `dSwitchUp` was the only tile carrying it, so the guard
+  // meant to stop a coral pillar sealing a switch room had no tile to fire on
+  // and never had.
+  //
+  // A NOTE rather than a failure: a tile whose region has not been built yet is
+  // a vocabulary waiting for a place, and failing on it would be a checker
+  // commissioning content. What it must not do is stay invisible.
+  for (const [, b] of BLOCKS) for (const row of b.tiles) for (const t of row) reachable.add(t);
+  for (const [, d] of TILES) {
+    if (d.variants) for (const t of d.variants) reachable.add(t);
+    if (d.edgeArt) for (const t of Object.values(d.edgeArt)) reachable.add(t);
+  }
+  // Set by code rather than by a grid; the call site is named so grep finds it
+  // if one of these stops being reached.
+  reachable.add('coralPillar');            // Reefseed.bloom, src/game/items.js
+  const orphans = [...TILES.keys()].filter(n => !reachable.has(n));
+  warn.push(orphans.length
+    ? `${orphans.length} tile(s) no grid, block, transform or tiledef can reach: ${orphans.join(' ')}`
+    : 'every registered tile is reachable from some grid, block, transform or tiledef');
 }
 
 // --- the town kit ---------------------------------------------------------

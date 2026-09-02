@@ -540,6 +540,37 @@ def quantise_masked(block, clear, slots):
     return rows, kept
 
 
+def _detached(grid, Wd, H):
+    """Cells of every opaque component except the biggest one.
+
+    Eight-connected on purpose: a diagonal touch is still the same object, and
+    an object's own outline steps diagonally all the time.
+    """
+    seen = [[False] * Wd for _ in range(H)]
+    best, rest = [], []
+    for sy in range(H):
+        for sx in range(Wd):
+            if seen[sy][sx] or grid[sy][sx] == '.':
+                continue
+            comp, stack = [], [(sx, sy)]
+            seen[sy][sx] = True
+            while stack:
+                cx, cy = stack.pop()
+                comp.append((cx, cy))
+                for dy in (-1, 0, 1):
+                    for dx in (-1, 0, 1):
+                        nx, ny = cx + dx, cy + dy
+                        if 0 <= nx < Wd and 0 <= ny < H and not seen[ny][nx] and grid[ny][nx] != '.':
+                            seen[ny][nx] = True
+                            stack.append((nx, ny))
+            if len(comp) > len(best):
+                rest.extend(best)
+                best = comp
+            else:
+                rest.extend(comp)
+    return rest
+
+
 def quantise_prop(block, slots, bg=None):
     """16x16 RGB -> (grid of 0-3 and '.', the prop's own colours lightest first).
 
@@ -597,6 +628,19 @@ def quantise_prop(block, slots, bg=None):
         seen.add((cx, cy))
         grid[cy][cx] = '.'
         stack += [(cx + 1, cy), (cx - 1, cy), (cx, cy + 1), (cx, cy - 1)]
+
+    # A PROP IS ONE OBJECT, so anything left over that is not joined to it came
+    # from the cell next door. `rock` sits one pixel from its neighbour on the
+    # Ages map and took a dotted column of that neighbour's brown down its left
+    # edge — and the flood above cannot clear it, because those pixels are the
+    # boulder's own colours and the flood only eats the sniffed ground. On
+    # screen it was a stripe of grit hanging in the air beside the boulder, in
+    # every room with a rock in it, from the day it was extracted.
+    #
+    # Only on this path. The stated-`bg` path above is what the tree quads use,
+    # and a tree's root lobes are genuinely several components.
+    for cx, cy in _detached(grid, Wd, H):
+        grid[cy][cx] = '.'
 
     kept = sorted({block[cy][cx] for cy in range(H) for cx in range(Wd)
                    if grid[cy][cx] is None}, key=lambda c: (-lum(c), c))

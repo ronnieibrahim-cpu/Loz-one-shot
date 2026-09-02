@@ -922,6 +922,16 @@ export class FloorSwitch extends Entity {
     this.hold = o.hold !== false;       // false = stays down once pressed
     this.group = o.group || 'default';
     this.depth = -8;
+    // NOTHING MAY BE GROWN ON A PLATE. `REEFSEED_PLANT_BLOCK` carries
+    // `F.SWITCHF` and the note in dungeons-b.js says that is what stops a
+    // stray seed sealing a switch room — but a floor switch is an ENTITY, the
+    // one tile that carries F.SWITCHF is named by no legend, and
+    // `Reefseed.canPlant` only refuses entities that are solid, interactive or
+    // pushable. A plate is none of those, so the guard has never fired: a seed
+    // landed on a switch, the pillar came up, and `bloom` SHOVED THE PLATE OFF
+    // ITS OWN TILE on the way. It came back on the next room entry, which is
+    // the only reason this was a nuisance rather than a dead save.
+    this.noPlant = true;
   }
 
   update(game) {

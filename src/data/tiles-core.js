@@ -508,23 +508,6 @@ const HAND_ART = {
     .....332233.....
     ................`,
 
-  stump: `
-    ................
-    ................
-    ................
-    ...3333333333...
-    ..311111111113..
-    .31122222221113.
-    .31212222212213.
-    .31221111122213.
-    .31222111222213.
-    .31222222222213.
-    .31122222222113.
-    ..311222222113..
-    ...3311111133...
-    .....333333.....
-    ................
-    ................`,
 
 
   // --------------------------------------------------------------------------
@@ -1328,41 +1311,7 @@ const HAND_ART = {
     3111111111111113
     3222222222222223`,
 
-  dSwitchUp: `
-    2222222222222222
-    2111111111111112
-    2113333333333112
-    2113111111113112
-    2131111111111312
-    2131111111111312
-    2131111111111312
-    2131111111111312
-    2131111111111312
-    2131111111111312
-    2131111111111312
-    2131111111111312
-    2113111111113112
-    2113333333333112
-    2111111111111112
-    2222222222222222`,
 
-  dSwitchDown: `
-    2222222222222222
-    2111111111111112
-    2111111111111112
-    2113333333333112
-    2130000000000312
-    2130000000000312
-    2130000000000312
-    2130000000000312
-    2130000000000312
-    2130000000000312
-    2130000000000312
-    2130000000000312
-    2113333333333112
-    2111111111111112
-    2111111111111112
-    2222222222222222`,
 
   dBlock: `
     3333333333333333
@@ -1908,7 +1857,12 @@ export function installCoreTiles() {
     rockSand: { art: ART.rock, pal: 'sand', flags: F.SOLID | F.ROCK, underArt: 'sand' },
     pot: { art: ART.pot, pal: 'pot', flags: F.SOLID | F.ROCK, underArt: 'dFloor' },
     sign: { art: ART.sign, pal: 'wood', flags: F.SOLID, underArt: 'grass' },
-    stump: { art: ART.stump, pal: 'wood', flags: F.SOLID, underArt: 'grass' },
+    // NO `stump` TILE. There was a hand-drawn one and no legend anywhere could
+    // name it, so no room grid could place it — dead art carrying a SOLID flag.
+    // The town kit's extracted `bStump` is the stump this game actually has.
+    // Likewise no `dSwitchUp`/`dSwitchDown`: every floor switch in the game is
+    // an ENTITY drawing `o_switch_up`/`o_switch_down`, and those two tiledefs
+    // were an earlier design nothing had reached since.
     spikes: { art: ART.spikes, pal: 'stone', flags: F.HAZARD, underArt: 'dFloor' },
 
     // --- transitions ---
@@ -2140,8 +2094,6 @@ export function installCoreTiles() {
     post: { art: ART.dPost, pal: 'wood', flags: F.SOLID | F.SNAG, underArt: 'grass' },
     postSand: { art: ART.dPost, pal: 'wood', flags: F.SOLID | F.SNAG, underArt: 'sand' },
     digSpot: { art: ART.digSpot, pal: 'sand', flags: F.SLOW, underArt: 'sand' },
-    dSwitchUp: { art: ART.dSwitchUp, pal: 'brick', flags: F.SWITCHF },
-    dSwitchDown: { art: ART.dSwitchDown, pal: 'brick' },
     dBlock: { art: ART.dBlock, pal: 'stone', flags: F.SOLID },
     dWaterS: { art: ART.waterS0, pal: 'water', flags: F.WATER, anim: ['waterS0', 'waterS1', 'waterS2', 'waterS1'], animRate: 11 },
     dWaterD: { art: ART.waterD0, pal: 'deep', flags: F.DEEP, anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 13 },

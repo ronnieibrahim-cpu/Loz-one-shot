@@ -2198,9 +2198,13 @@ const DRUMS = {
 // drift from these (the same reason a checker must call the engine's own
 // collision code rather than re-deriving it).
 const DEFAULT_CFG = {
-  p1: { duty: 0.5, vol: 0.20, decay: 0.10, glide: 0 },
-  p2: { duty: 0.25, vol: 0.13, decay: 0.14, glide: 0 },
-  wav: { vol: 0.24, decay: 0.05, glide: 0 },
+  // No `glide` here. Each of these carried one, set to 0, and nothing in the
+  // engine ever read it — a portamento that was configured and never
+  // implemented, which reads to the next person as a feature that is switched
+  // off rather than one that does not exist.
+  p1: { duty: 0.5, vol: 0.20, decay: 0.10 },
+  p2: { duty: 0.25, vol: 0.13, decay: 0.14 },
+  wav: { vol: 0.24, decay: 0.05 },
   noi: { vol: 0.15 },
 };
 
@@ -6902,6 +6906,12 @@ defineEntity('anchor', (x, y, o) => new Anchor(x, y, o));
 // Exported so tools/check-reefseed.mjs's `plantableTerrain` — which has no
 // live `game` to call `Reefseed.canPlant` on — asks for the SAME mask rather
 // than keeping its own copy of which tiles a pillar may not stand on.
+// F.SWITCHF is in here for a switch TILE, and there is no longer one — the
+// two tiledefs that carried it were dead art no legend could name, because
+// every floor switch in the game is an entity. The flag stays in the mask so a
+// switch tile would be covered if one is ever added; what actually keeps a
+// pillar off a plate today is `noPlant` on the entity, which `canPlant` reads
+// below. Before that existed this mask was the only guard and it never fired.
 const REEFSEED_PLANT_BLOCK = F.VOID | F.SOLID | F.DOOR | F.WARP | F.STAIRS | F.SWITCHF | F.PIT;
 class Reefseed extends Entity {
   constructor(x, y, o = {}) {
@@ -7001,7 +7011,7 @@ class Reefseed extends Entity {
     }
     for (const e of game.entities) {
       if (e.remove || e.isEffect || e.isDrop) continue;
-      if (!e.solid && !e.interact && !e.pushable) continue;
+      if (!e.solid && !e.interact && !e.pushable && !e.noPlant) continue;
       if (Math.floor(e.cx / TILE) === tx && Math.floor(e.cy / TILE) === ty) return false;
     }
     return true;
@@ -9749,6 +9759,16 @@ class FloorSwitch extends Entity {
     this.hold = o.hold !== false;       // false = stays down once pressed
     this.group = o.group || 'default';
     this.depth = -8;
+    // NOTHING MAY BE GROWN ON A PLATE. `REEFSEED_PLANT_BLOCK` carries
+    // `F.SWITCHF` and the note in dungeons-b.js says that is what stops a
+    // stray seed sealing a switch room — but a floor switch is an ENTITY, the
+    // one tile that carries F.SWITCHF is named by no legend, and
+    // `Reefseed.canPlant` only refuses entities that are solid, interactive or
+    // pushable. A plate is none of those, so the guard has never fired: a seed
+    // landed on a switch, the pillar came up, and `bloom` SHOVED THE PLATE OFF
+    // ITS OWN TILE on the way. It came back on the next room entry, which is
+    // the only reason this was a nuisance rather than a dead save.
+    this.noPlant = true;
   }
 
   update(game) {
@@ -12393,7 +12413,12 @@ __define("game/cutscene.js", function (__exports, __require) {
 // CUTSCENE STEP FORMAT (contract for story data files):
 //
 //   { say: 'text' }                          wait for the player to read it
-//   { say: 'text', speaker: 'Farore' }       prefixes the name
+//
+// THERE IS NO `speaker` FIELD. There was one — it prefixed the name onto the
+// line — and no scene ever used it, because the writing puts the name in the
+// line itself ("Farore: You are awake."). Two ways to say one thing, one of
+// them never exercised, is how a feature rots: it would have kept working
+// right up until the day somebody used it and found the colon doubled.
 //   { wait: 60 }                             pause n frames
 //   { fade: 'out' } / { fade: 'in' }         screen fade (waits for it)
 //   { white: true, fade: 'out' }             fade to white instead
@@ -12518,8 +12543,7 @@ function runCutscene(game, steps, data = {}) {
     }
     if (step.say) {
       waitingDialogue = true;
-      const body = step.speaker ? step.speaker + ': ' + step.say : step.say;
-      game.say(body, { onClose: () => { waitingDialogue = false; } });
+      game.say(step.say, { onClose: () => { waitingDialogue = false; } });
     }
     if (step.wait) waiting = step.wait;
     if (step.walk) walking = { ...step.walk, t: step.walk.frames || 30 };
@@ -14807,20 +14831,20 @@ const TERRAIN_ART = {
   // liftable boulder, beside the dirt clearing — oracle-ages-overworld.png @ 418,936
   rock: `
     ................
-    1......33333....
+    .......33333....
     ......3111223...
-    1....311112223..
-    2...31111122223.
-    3..3111111222223
-    1.31111111222221
+    .....311112223..
+    ....31111122223.
+    ...3111111222223
+    ..31111111222221
     ..32111112122213
     ..32211122212133
-    1.32221222221333
-    3.32221222221333
-    2.32221222221333
-    1.32221222221333
+    ..32221222221333
+    ..32221222221333
+    ..32221222221333
+    ..32221222221333
     ...3221222221333
-    1...33222222233.
+    ....33222222233.
     ......3333333...`,
 
   // cuttable shrub, beside the dirt clearing — oracle-ages-overworld.png @ 450,920
@@ -16903,23 +16927,6 @@ const HAND_ART = {
     .....332233.....
     ................`,
 
-  stump: `
-    ................
-    ................
-    ................
-    ...3333333333...
-    ..311111111113..
-    .31122222221113.
-    .31212222212213.
-    .31221111122213.
-    .31222111222213.
-    .31222222222213.
-    .31122222222113.
-    ..311222222113..
-    ...3311111133...
-    .....333333.....
-    ................
-    ................`,
 
 
   // --------------------------------------------------------------------------
@@ -17723,41 +17730,7 @@ const HAND_ART = {
     3111111111111113
     3222222222222223`,
 
-  dSwitchUp: `
-    2222222222222222
-    2111111111111112
-    2113333333333112
-    2113111111113112
-    2131111111111312
-    2131111111111312
-    2131111111111312
-    2131111111111312
-    2131111111111312
-    2131111111111312
-    2131111111111312
-    2131111111111312
-    2113111111113112
-    2113333333333112
-    2111111111111112
-    2222222222222222`,
 
-  dSwitchDown: `
-    2222222222222222
-    2111111111111112
-    2111111111111112
-    2113333333333112
-    2130000000000312
-    2130000000000312
-    2130000000000312
-    2130000000000312
-    2130000000000312
-    2130000000000312
-    2130000000000312
-    2130000000000312
-    2113333333333112
-    2111111111111112
-    2111111111111112
-    2222222222222222`,
 
   dBlock: `
     3333333333333333
@@ -18303,7 +18276,12 @@ function installCoreTiles() {
     rockSand: { art: ART.rock, pal: 'sand', flags: F.SOLID | F.ROCK, underArt: 'sand' },
     pot: { art: ART.pot, pal: 'pot', flags: F.SOLID | F.ROCK, underArt: 'dFloor' },
     sign: { art: ART.sign, pal: 'wood', flags: F.SOLID, underArt: 'grass' },
-    stump: { art: ART.stump, pal: 'wood', flags: F.SOLID, underArt: 'grass' },
+    // NO `stump` TILE. There was a hand-drawn one and no legend anywhere could
+    // name it, so no room grid could place it — dead art carrying a SOLID flag.
+    // The town kit's extracted `bStump` is the stump this game actually has.
+    // Likewise no `dSwitchUp`/`dSwitchDown`: every floor switch in the game is
+    // an ENTITY drawing `o_switch_up`/`o_switch_down`, and those two tiledefs
+    // were an earlier design nothing had reached since.
     spikes: { art: ART.spikes, pal: 'stone', flags: F.HAZARD, underArt: 'dFloor' },
 
     // --- transitions ---
@@ -18535,8 +18513,6 @@ function installCoreTiles() {
     post: { art: ART.dPost, pal: 'wood', flags: F.SOLID | F.SNAG, underArt: 'grass' },
     postSand: { art: ART.dPost, pal: 'wood', flags: F.SOLID | F.SNAG, underArt: 'sand' },
     digSpot: { art: ART.digSpot, pal: 'sand', flags: F.SLOW, underArt: 'sand' },
-    dSwitchUp: { art: ART.dSwitchUp, pal: 'brick', flags: F.SWITCHF },
-    dSwitchDown: { art: ART.dSwitchDown, pal: 'brick' },
     dBlock: { art: ART.dBlock, pal: 'stone', flags: F.SOLID },
     dWaterS: { art: ART.waterS0, pal: 'water', flags: F.WATER, anim: ['waterS0', 'waterS1', 'waterS2', 'waterS1'], animRate: 11 },
     dWaterD: { art: ART.waterD0, pal: 'deep', flags: F.DEEP, anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 13 },

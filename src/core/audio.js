@@ -140,9 +140,13 @@ const DRUMS = {
 // drift from these (the same reason a checker must call the engine's own
 // collision code rather than re-deriving it).
 export const DEFAULT_CFG = {
-  p1: { duty: 0.5, vol: 0.20, decay: 0.10, glide: 0 },
-  p2: { duty: 0.25, vol: 0.13, decay: 0.14, glide: 0 },
-  wav: { vol: 0.24, decay: 0.05, glide: 0 },
+  // No `glide` here. Each of these carried one, set to 0, and nothing in the
+  // engine ever read it — a portamento that was configured and never
+  // implemented, which reads to the next person as a feature that is switched
+  // off rather than one that does not exist.
+  p1: { duty: 0.5, vol: 0.20, decay: 0.10 },
+  p2: { duty: 0.25, vol: 0.13, decay: 0.14 },
+  wav: { vol: 0.24, decay: 0.05 },
   noi: { vol: 0.15 },
 };
 

@@ -3,7 +3,12 @@
 // CUTSCENE STEP FORMAT (contract for story data files):
 //
 //   { say: 'text' }                          wait for the player to read it
-//   { say: 'text', speaker: 'Farore' }       prefixes the name
+//
+// THERE IS NO `speaker` FIELD. There was one — it prefixed the name onto the
+// line — and no scene ever used it, because the writing puts the name in the
+// line itself ("Farore: You are awake."). Two ways to say one thing, one of
+// them never exercised, is how a feature rots: it would have kept working
+// right up until the day somebody used it and found the colon doubled.
 //   { wait: 60 }                             pause n frames
 //   { fade: 'out' } / { fade: 'in' }         screen fade (waits for it)
 //   { white: true, fade: 'out' }             fade to white instead
@@ -131,8 +136,7 @@ export function runCutscene(game, steps, data = {}) {
     }
     if (step.say) {
       waitingDialogue = true;
-      const body = step.speaker ? step.speaker + ': ' + step.say : step.say;
-      game.say(body, { onClose: () => { waitingDialogue = false; } });
+      game.say(step.say, { onClose: () => { waitingDialogue = false; } });
     }
     if (step.wait) waiting = step.wait;
     if (step.walk) walking = { ...step.walk, t: step.walk.frames || 30 };
