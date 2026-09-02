@@ -285,15 +285,26 @@ for (const m of MAPS.values()) {
 check('no screen uses a town legend without being declared here', undeclared.length === 0,
   undeclared.join(' '));
 
-// Every block the kit registers is placed somewhere, or it is art nobody can
-// see. validate.mjs proves a legend can NAME each block; this proves a town
-// actually uses one, which is the difference between a vocabulary and a place.
+// Every block registered is placed somewhere, or it is art nobody can see.
+// validate.mjs proves a legend can NAME each block; this proves a room actually
+// uses one, which is the difference between a vocabulary and a place.
+//
+// EVERY ROOM, not every town. The town kit was the only thing building blocks
+// out of when this was written, so it swept the declared towns and said
+// "standing in some town" — and the six dungeon gates, which are blocks on
+// ordinary overworld screens, read as six unplaced buildings the moment they
+// landed. The claim worth making is the one that catches dead art: a block
+// nothing in the world names.
 const placed = new Set();
-for (const town of TOWNS) {
-  const def = overworld.roomDefs[town.key];
-  const room = getRoom('overworld', 0, ...town.key.split(',').slice(1).map(Number));
-  for (const [ch, t] of Object.entries(room.legend)) {
-    if (typeof t === 'string' && t.startsWith('block:') && def.map.some(r => r.includes(ch))) placed.add(t.slice(6));
+for (const m of MAPS.values()) {
+  for (const key of Object.keys(m.roomDefs)) {
+    const def = m.roomDefs[key];
+    if (!def || !def.map) continue;
+    const room = getRoom(m.id, ...key.split(',').map(Number));
+    if (!room) continue;
+    for (const [ch, t] of Object.entries(room.legend)) {
+      if (typeof t === 'string' && t.startsWith('block:') && def.map.some(r => r.includes(ch))) placed.add(t.slice(6));
+    }
   }
 }
 // Judged per BUILDING, not per ground variant. `bShop` and `bShopSand` are one
@@ -306,7 +317,7 @@ const base = (n) => n.replace(/(Sand)$/, '');
 const bases = new Set([...BLOCKS.keys()].map(base));
 const placedBases = new Set([...placed].map(base));
 const unplaced = [...bases].filter(b => !placedBases.has(b));
-check('every extracted building is standing in some town', unplaced.length === 0, unplaced.join(' '));
+check('every registered block is standing somewhere in the world', unplaced.length === 0, unplaced.join(' '));
 const spare = [...BLOCKS.keys()].filter(b => !placed.has(b));
 if (spare.length) console.log(`  note: ${spare.length} ground variants registered and unplaced: ${spare.join(' ')}`);
 

@@ -503,6 +503,20 @@ exactly nothing and the tile went on drawing the art it shares its name with. No
 warning, no missing entry, no failing assertion — the old pixels, for as long as
 you care to stare at them. Rename the ART, not the tiledef.
 
+**AN EXTRACTION WINDOW HAS TO BE THE OBJECT'S BOUNDING BOX TO THE PIXEL, AND
+ON A RENDERED MAP YOU CANNOT FIND THAT BY LOOKING FOR BACKGROUND.** The oak and
+the palm were both a couple of pixels off theirs from the day they were ripped.
+The oak's outline-to-outline width is 32 starting two right of where its window
+started, so its RIGHT outline column fell outside and every oak in the game ran
+off its own edge in bare lit green — obvious next to the fully outlined left
+edge, and reported by a person playing. The palm was one row low and lost the
+tips of its top fronds. On these sheets the trees TOUCH their neighbours on
+every side, so there is no background to bound them with: walk each row to its
+outline columns and take the extremes. **And re-check the slots after moving a
+window** — the palm's old box caught four stray trunk pixels in its upper half,
+so that half had four colours instead of three, and the slot list left alone
+painted every frond edge trunk-brown.
+
 **A CAVE MOUTH IS A HOLE, AND THE ROCK ROUND IT IS THE TILES NEXT TO IT.** The
 extracted mouth is a dark arch and a one-pixel lip and nothing else — on the
 Subrosia sheet the rock it is cut into is supplied by its neighbours, and the
@@ -522,6 +536,14 @@ sits at the foot of a two-tile rock face. Two things this costs, both paid:
     lets the room outvote the declaration, but only on two or more agreeing
     neighbours — a one-vote rule walked the Drowned Wood's snarl out of its
     channel and onto the floorboards, and only a replay's probe hash caught it.
+
+**A CHECKER'S SWEEP IS AS WIDE AS THE THING THAT EXISTED WHEN IT WAS WRITTEN.**
+`check-towns` asserted every registered block is placed, and swept the declared
+TOWNS to prove it, because the town kit was the only thing making blocks. The
+six dungeon gates are blocks on ordinary overworld screens, and the moment they
+landed they read as six unplaced buildings. The assertion was right and its
+scope was not; it sweeps every room of every map now. Worth asking of any
+checker before adding a second user of the thing it checks.
 
 **"LONE" IS A PROPERTY OF THE TREE, NOT OF ONE CELL OF IT.** The overhang case
 above was first decided per cell. A one-wide column's canopy had a horizontal

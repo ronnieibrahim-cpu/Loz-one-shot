@@ -30,6 +30,10 @@ export function installLegends() {
     'K': 'grateOw',      // metal: only the Resonance Rod retracts it
     'J': 'chasm',        // Roc's Feather   — 1 tile, clearable at 2.27 tiles
     'M': 'boulder',      // Dredge Line     — drag it out of the way
+    // `C` IS A CAVE AND `D` IS A DUNGEON, and they are different objects
+    // because they are different promises. A dungeon door is a 2x2 BLOCK — a
+    // carved gate with its own emblem — declared per region below, because
+    // each region holds exactly one dungeon and each gate says which.
     'C': 'caveMouth', 'c': 'caveMouthSolid', '/': 'stairsDown', '_': 'ledgeS',
     '"': 'ledgeN', '>': 'ledgeE', '<': 'ledgeW',
     // TIDE TILES (digits)
@@ -65,6 +69,7 @@ export function installLegends() {
     'g': 'grassDark', 'G': 'grassDark', 'f': 'flowersDark', '.': 'mud', ',': 'mud', '_': 'ledgeDk',
     '"': 'ledgeDkN', '>': 'ledgeDkE', '<': 'ledgeDkW',
     'T': 'tree', '#': 'cliffDk', 'X': 'cliffCrackedDk',
+    'D': 'block:portalD3',  // the Bogwater Sanctum's gate
   }, 'base');
 
   // ---- dunes: the sandbar flats ------------------------------------------
@@ -73,6 +78,7 @@ export function installLegends() {
     'T': 'palm', 'b': 'bushSand', 'o': 'rockSand', 'q': 'postSand',
     '#': 'cliffSand', '^': 'cliffSand', '_': 'ledgeSand',
     'C': 'caveMouthSand',   // cut into a sand cliff, so it wears the sand ramp
+    'D': 'block:portalD1',  // the Tidewash Grotto's gate
     '"': 'ledgeSandN', '>': 'ledgeSandE', '<': 'ledgeSandW',
   }, 'base');
 
@@ -84,6 +90,7 @@ export function installLegends() {
     'V': 'keepSeal',        // story gate: the seal's upper course, on Upper Kell
     '#': 'cliffDk', '^': 'cliffTop', '%': 'cliffDk', '_': 'ledgeRock',
     '"': 'ledgeRockN', '>': 'ledgeRockE', '<': 'ledgeRockW',
+    'D': 'block:portalD4',  // the Cliffside Cistern's gate
   }, 'base');
 
   // ---- drowned wood: sunken forest --------------------------------------
@@ -92,6 +99,7 @@ export function installLegends() {
     'T': 'treeDark', 'P': 'treeDark',
     'b': 'bush', '#': 'cliffDk', '_': 'ledgeDk',
     '"': 'ledgeDkN', '>': 'ledgeDkE', '<': 'ledgeDkW',
+    'D': 'block:portalD5',  // the Drowned Wood Shrine's gate
   }, 'base');
 
   // ---- salt flats: bleached pans that flood ------------------------------
@@ -110,6 +118,7 @@ export function installLegends() {
     '~': 'waterD', '=': 'waterAbyss',
     'T': 'treeDead', 'o': 'rock', '#': 'cliffAbyss', '^': 'cliffAbyss',
     'C': 'caveMouthAbyss',
+    'D': 'block:portalD6',  // the Abyssal Keep's gate
     'V': 'keepSeal',        // story gate: the Maku Tree opens it at five Essences
     '_': 'ledgeAbyss',
     '"': 'ledgeAbyssN', '>': 'ledgeAbyssE', '<': 'ledgeAbyssW',
@@ -122,6 +131,7 @@ export function installLegends() {
     '~': 'waterSReef', '=': 'waterDReef',
     'T': 'palm', 'b': 'bushSand', 'o': 'rock', '#': 'cliffCoral', '^': 'cliffCoral',
     'C': 'caveMouthCoral',
+    'D': 'block:portalD2',  // the Coral Spire's gate
     '_': 'ledgeCoral',
     '"': 'ledgeCoralN', '>': 'ledgeCoralE', '<': 'ledgeCoralW',
   }, 'base');

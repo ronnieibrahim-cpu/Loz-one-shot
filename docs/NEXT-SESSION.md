@@ -26,13 +26,36 @@ lollipops over the real trees for as long as the trees have been 32x32. Props
 now look at what they are standing on, and the dig spot is two spade marks
 instead of a flat tan tile.
 
+**The six dungeons get doors.** Every dungeon was entered through the same
+cave arch as a grotto, so nothing on the overworld said which six holes in the
+rock the game is actually about. Each now has a carved gate: a 32x32 block in
+the source's own grammar — a crown that breaks the top line, an overhanging
+cornice, a frieze with one plaque, two pillars either side of a black arch —
+drawn rather than extracted, because no sheet has doors for six dungeons the
+source games never had. What is on each plaque is that dungeon's own argument
+with the tide, out of `docs/DUNGEON-STATUS.md`, and each wears its region's
+rock with a near-black at index 3 so the doorway is a hole. `D` in a room grid
+is a dungeon gate and `C` is a cave; one character serves all six because each
+region holds exactly one dungeon. `check-towns` swept only the declared towns
+when it asserted every registered block is placed, so the gates read as six
+unplaced buildings the moment they landed — it sweeps every room now.
+
+**The oaks and palms were also mis-ripped**, which is a different fault from
+the one above and was reported separately: both extraction windows were a
+couple of pixels off their objects' real bounding boxes, so every oak lost its
+right outline column and every palm the tips of its top fronds. Moving the palm
+window also drops four stray trunk pixels out of its upper half, so its frond
+half is three colours now and the slots moved with it.
+
 **What was NOT done, and where to stand to judge it.** The three jobs in the S12
 prompt — the empty sea (0.9% water at LOW), the thirteen cutscenes' pacing, and
 the `feel.js` debt — are untouched; this session was the follow-up request only.
 Nobody has WATCHED any of this in motion: every judgement here is from stills.
 In `dist/oracle-of-tides.html`, walk south out of Tidewatch to the Grotto Mouth
-(8,8) for a cave in rock, stand in the Rotting Grove (5,3) and the dunes (8,7)
-for the trees and palms, and hold the Lens up in a wood.
+(8,8) for the first dungeon gate, stand in the Rotting Grove (5,3) and the
+dunes (8,7) for the trees and palms, and hold the Lens up in a wood. The other
+five gates are at (10,5), (1,8), (1,3), (5,4) and (1,0); nothing has judged
+them beside each other in play, only in stills.
 
 ## S11 — Orphaned checkers recovered; the feel.js debt is NOT paid (this session)
 
