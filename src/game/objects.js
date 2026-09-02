@@ -1038,6 +1038,12 @@ export class Raft extends Entity {
     this.harmless = true;
     this.shadow = false;
     this.depth = -9;
+    // A RAFT FLOATS, and until this line nothing in the engine knew it. It
+    // moves by writing its own `fx`/`fy` rather than through `moveEntity`, so
+    // it worked — but anything that asks `canOccupy` where a raft is gets told
+    // a raft cannot be there, which is how a raft sitting on the only deep
+    // water it is for came out of check-placement.mjs as misplaced.
+    this.caps = { jumping: false, swim: true, cutting: false };
     this.axis = o.axis || 'x';
     this.range = o.range || 48;
     this.speed = o.speed || 0.5;

@@ -95,6 +95,15 @@ export class Enemy extends Entity {
     // that says which water.
     this.swimming = this.terrain === 'water';
     this.avoidFlags = spec.avoid != null ? spec.avoid : TERRAIN_AVOID[this.terrain];
+    // AN AQUATIC ENEMY SWIMS, and until this line none of them could. Its
+    // `avoidFlags` are 0 (see TERRAIN_AVOID) because the water constraint lives
+    // in `terrainOk`, not in the avoid mask — but `canOccupy` refuses F.DEEP to
+    // anything without `swim`, and nothing ever gave one to an enemy. So every
+    // jellyfish, anglerfry, sea octorok and siren in the game was welded to the
+    // tile it spawned on: 0 subpixels in 240 frames, measured. `caps` is the
+    // mechanism the player already uses and `moveEntity` already reads; the
+    // enemies simply never got one.
+    if (this.terrain === 'water') this.caps = { jumping: false, swim: true, cutting: false };
     this.shield = spec.shield || null;
     // Light enough for the Squall Bellows to shove. Fliers, floaters and
     // slimes are; anything armoured or anchored is not. See docs/ITEMS.md.

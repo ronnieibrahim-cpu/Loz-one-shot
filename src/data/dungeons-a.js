@@ -363,6 +363,10 @@ export function installDungeonsA() {
         // that stretch — see FEEL-SPEC.md.
         entities: [
           ['zol', 2, 4, { drops: 'good' }],
+          // 6,4 rather than the 6,6 check-placement.mjs offered. Both are legal floor;
+          // 6,6 is behind the post row, and this room's encounter is TWO ZOLS IN THE
+          // OPEN — put one behind the posts and the fight becomes a chase around
+          // furniture. The checker's suggestion is a starting point and says so.
           ['zol', 6, 4, { drops: 'good' }],
         ],
       },
@@ -1872,6 +1876,11 @@ export function installDungeonsA() {
         ],
         entities: [
           ['chest', 7, 3, { pickup: 'bossKey' }],
+          // A KEESE, NOT A JELLYFISH. There is no water in this room at any tide, so
+          // the jellyfish that stood here could never move: `terrainOk` keeps an
+          // aquatic enemy on wet tiles and there were none to be on. It was
+          // scenery with a hitbox. d3 fields five keese already and a flier is
+          // what a dry stone gallery wants. See tools/check-placement.mjs.
           ['keese', 2, 5],
         ],
       },

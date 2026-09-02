@@ -1,34 +1,25 @@
-// Placement harness. Proves that every entity the room data places can
-// actually BE where it was put — asked of the engine, with the entity itself
-// constructed, at every tide level.
+// Nothing is standing inside anything.
 //
-// Why this needs a live page rather than a flag sweep: the answer depends on
-// caps that only exist on a CONSTRUCTED entity. `Enemy` derives `avoidFlags`
-// from its spec's `terrain` (src/game/enemy.js), `flying` from the same field,
-// and aquatic enemies carry `terrainOk`, which is a rule about WET tiles that
-// no static table holds. Counting `F.SOLID` off the grid instead reports the
-// raft, every jellyfish, every urchin, the anglerfry, the sirens and all the
-// keese as misplaced, and misses nothing the engine would not have caught —
-// which is to say it is wrong in both directions at once.
+// Room data places 529 entities by tile. Nothing has ever asked whether the
+// tile can hold what was put on it, and sixteen of them could not: six signs
+// (two buried in trees), two traders inside bushes, three pickups inside
+// rocks, a darknut, a beetle, two tektites and a zol on a dungeon post. A
+// signpost growing out of a tree's root mound is visible from across the room
+// and every checker in the table was green for it, because a placed entity
+// exists, updates and draws exactly the same whether or not there is a rock in
+// the same square (`T53`).
 //
-// So this asks the engine's own question, the same composite `enemy.js` asks
-// before it steps anywhere (`canOccupy(g, e, x, y) && e.terrainOk(...)`):
+// THE RULE IS NOT RESTATED HERE (`R4`). It asks `canOccupy` — the same
+// function `moveEntity` calls on every frame of the real game — and passes NO
+// caps, so each entity's own nature answers: a flier ignores the ground, a
+// swimmer is fine in deep water, an enemy refuses the terrain in its own
+// `avoidFlags`. That is why this cannot be done from the room data in plain
+// Node: caps live on constructed entities, so the world has to be built.
 //
-//   * TILES — can this entity occupy its own spawn tile, at SOME tide level?
-//     Nothing in this world is placed for a tide that never comes, so an
-//     entity that fits at no level is inside the scenery. That is the hard
-//     assertion, and it is deliberately the weakest one that is certainly a
-//     bug: a sign that drowns at HIGH is a judgement call, a sign buried in a
-//     tree is not.
-//   * NEIGHBOURS — two SOLID entities may not overlap. `canOccupy` reads
-//     `Entity.solid` for every other entity in the room, so a chest standing
-//     on a signpost is a wall a player can walk into and never explain.
-//
-// The tide sweep is not decoration. `Room.solidAt` resolves tide tiles through
-// the field, so the same cell is floor at LOW and deep water at HIGH; asking
-// once would either condemn every strand pickup or excuse everything on a
-// sandbar. R4 applies throughout: this file defines no collision rule, it
-// calls `canOccupy` and `terrainOk`.
+// AN ENTITY IS ONLY WRONG IF IT IS WRONG AT EVERY TIDE. The sea moves; a crab
+// on a sandbar is standing on dry land at LOW and swimming at HIGH, and a room
+// is allowed to be uncomfortable at one setting of the conch. What no room is
+// allowed to do is put something where it can never be.
 //
 // Boot pattern copied from tools/check-gates.mjs.
 import { createServer } from 'node:http';
@@ -57,29 +48,15 @@ function serve(port) {
   });
   return new Promise(r => server.listen(port, () => r(server)));
 }
-
 async function loadPlaywright() {
   let mod;
-  try {
-    mod = await import('playwright');
-  } catch (e) {
+  try { mod = await import('playwright'); }
+  catch (e) {
     const { execSync } = await import('node:child_process');
-    const root = execSync('npm root -g', { encoding: 'utf8' }).trim();
-    mod = await import(join(root, 'playwright', 'index.js'));
+    mod = await import(join(execSync('npm root -g', { encoding: 'utf8' }).trim(), 'playwright', 'index.js'));
   }
   return mod.chromium ? mod : mod.default;
 }
-
-const VERBOSE = process.argv.includes('--verbose');
-// --suggest: for every entity that fits nowhere, ask the engine which nearby
-// tiles it COULD stand on, and print the nearest. It is a suggestion and not a
-// fix: a solid entity dropped into the one row that crosses a screen severs it
-// (see CLAUDE.md on town screens), so a move still has to be run past
-// check-overworld / walk-dungeons / check-towns afterwards.
-const SUGGEST = process.argv.includes('--suggest');
-// --json=<path>: write the stuck list, with the engine's own suggestions, for a
-// fixer to read. The moves themselves are a judgement call — see --suggest.
-const JSON_OUT = (process.argv.find(a => a.startsWith('--json=')) || '').split('=')[1] || '';
 
 let passed = 0; const failures = [];
 function check(name, cond, detail) {
@@ -99,190 +76,108 @@ const browser = await chromium.launch({ headless: true }).catch(async (err) => {
 const page = await browser.newPage({ viewport: { width: 800, height: 720 } });
 const errs = [];
 page.on('pageerror', e => errs.push('PAGEERROR: ' + (e.stack || e.message)));
-page.on('console', m => { if (m.type() === 'error') errs.push('console: ' + m.text()); });
-
-// Pin the seed: `newProgress` falls back to Date.now(), and a room's entity
-// list is filtered by progress flags. An unpinned run sweeps a different world.
 await page.goto(`http://localhost:${PORT}/index.html?seed=20260806`, { waitUntil: 'load' });
 await page.waitForFunction(() => !!window.__game && !!window.__harness, { timeout: 15000 });
 await page.evaluate(() => window.__harness.takeOver());
 
 const report = await page.evaluate(async () => {
   const g = window.__game;
-  const { MAPS } = await import('/src/world/maps.js');
-  const { canOccupy } = await import('/src/game/entity.js');
-  const { TILE } = await import('/src/core/screen.js');
-
-  // A fresh save with nothing in it, so the sweep sees the entities the room
-  // data declares rather than the ones this run's flags happen to allow. The
-  // hidden ones are still checked: `needFlag`/`hideFlag` entities are visited
-  // in a second pass below by forcing each flag on in turn would be a much
-  // larger harness, so instead the pass records how many were skipped.
-  g.mode = 'play';
-
-  const rows = [];
-  let skippedByFlag = 0;
-  let rooms = 0;
-
-  for (const [mapId, m] of MAPS) {
-    for (const key of Object.keys(m.roomDefs)) {
-      const [floor, rx, ry] = key.split(',').map(Number);
-      const def = m.roomDefs[key];
-      const declared = (def.entities || []).length;
-      g.enterMap(mapId, floor, rx, ry, 8, 8, 'down', { instant: true });
-      if (g.dialogue) g.dialogue.active = false;
-      g.mode = 'play';
-      rooms++;
-      const ents = g.entities.filter(e => e !== g.player && !e.remove && !e.dead);
-      skippedByFlag += Math.max(0, declared - ents.length);
-      if (!ents.length) continue;
-      const all = g.entities;
-      for (const e of ents) {
-        const row = {
-          map: mapId, room: key, type: e.type || e.constructor.name,
-          tx: Math.round(e.x / TILE), ty: Math.round(e.y / TILE),
-          x: e.x, y: e.y,
-          flying: !!e.flying, terrain: e.terrain || null, solid: !!e.solid,
-          tile: [], full: [], why: [], under: [],
-        };
-        for (let L = 0; L < 3; L++) {
-          g.tide.setLevel(L, { instant: true });
-          // TILES ONLY: hide every other entity from `canOccupy` so a
-          // neighbour's solidity cannot be mistaken for scenery. The engine's
-          // function is still the one answering.
-          g.entities = [e];
-          const occ = canOccupy(g, e, e.x, e.y);
-          const terr = (!e.terrainOk || e.terrainOk(g, e.x, e.y));
-          const tileOk = occ && terr;
-          // WHICH tile said no, and why. Every question below is put to the
-          // engine (`Room.solidAt`, `Room.flagsAt`) — this scans the hitbox to
-          // find the offender, it does not decide solidity itself.
-          let why = '';
-          if (!occ) {
-            const airborne = (e.flying || e.z > 2);
-            const avoid = (!airborne && e.avoidFlags) ? e.avoidFlags : 0;
-            const r = { x: e.x + e.hb.x, y: e.y + e.hb.y, w: e.hb.w, h: e.hb.h };
-            outer:
-            for (let py = r.y; py < r.y + r.h; py++) {
-              for (let px = r.x; px < r.x + r.w; px++) {
-                const tx = Math.floor(px / TILE), ty = Math.floor(py / TILE);
-                if (px < 0 || py < 0 || px >= g.room.pw || py >= g.room.ph) {
-                  why = 'offroom'; break outer;
-                }
-                if (g.room.solidAt(px, py, g.tide, { jumping: airborne, swim: !!e.swimming, cutting: false })) {
-                  why = 'solid ' + g.room.baseName(tx, ty)
-                    + (tx !== row.tx || ty !== row.ty ? `@${tx},${ty}` : '');
-                  break outer;
-                }
-                if (avoid && (g.room.flagsAt(tx, ty, g.tide) & avoid)) {
-                  why = 'avoids ' + g.room.baseName(tx, ty)
-                    + (tx !== row.tx || ty !== row.ty ? `@${tx},${ty}` : '');
-                  break outer;
-                }
+  const ent = await import('/src/game/entity.js');
+  const maps = await import('/src/world/maps.js');
+  const out = [];
+  let checked = 0;
+  for (const map of maps.MAPS.values()) {
+    for (const key of Object.keys(map.roomDefs || {})) {
+      const def = map.roomDefs[key];
+      if (!def || !def.entities || !def.entities.length) continue;
+      const [f, rx, ry] = key.split(',').map(Number);
+      // The player is parked off the room so it can never be the thing an
+      // entity is reported as standing in. Entity-on-entity is a real fault
+      // and is reported below, but it has to be between PLACED entities.
+      g.enterMap(map.id, f, rx, ry, -999, -999, 'down', { instant: true });
+      const placed = g.entities.filter(e => e !== g.player && !e.remove);
+      for (const e of placed) {
+        checked++;
+        const stuck = [];
+        for (const lv of [0, 1, 2]) {
+          g.tide.setLevel(lv, { instant: true });
+          // THE ENGINE'S OWN COMPOSITE, not half of it. `moveDir` in enemy.js
+          // asks `canOccupy(...) && terrainOk(...)`, and the two carry
+          // different halves of the rule: an aquatic enemy's avoid mask is 0,
+          // so canOccupy alone will happily put a jellyfish on a footpath.
+          if (!ent.canOccupy(g, e, e.x, e.y)
+              || (e.terrainOk && !e.terrainOk(g, e.x, e.y))) stuck.push(lv);
+        }
+        if (stuck.length === 3) {
+          const tx = Math.floor(e.cx / 16), ty = Math.floor(e.cy / 16);
+          // The nearest tile the ENGINE says this entity could stand on, so a
+          // fix is a tile the game agreed to rather than one a person liked the
+          // look of. Rings outward from where it was placed; the first hit at
+          // the smallest radius wins, ties broken up-left for determinism.
+          //
+          // DOWNWARD FIRST. A ring that tries up first walks a signpost into
+          // the seam corridor along a screen's top row — which is walkable, so
+          // the engine approves, and is the way north, so a player meets a sign
+          // standing in a doorway. Everything in this world stands BELOW the
+          // thing it is next to: a sign at the foot of a treeline, a prop on
+          // the near side of a rock. Then sideways, then up as a last resort.
+          let fix = null;
+          for (let r = 1; r <= 9 && !fix; r++) {
+            const ring = [];
+            for (let dy = -r; dy <= r; dy++) {
+              for (let dx = -r; dx <= r; dx++) {
+                if (Math.max(Math.abs(dx), Math.abs(dy)) === r) ring.push([dx, dy]);
               }
             }
-            if (!why) why = 'entity';
-          } else if (!terr) {
-            why = 'notwet ' + g.room.baseName(row.tx, row.ty);
-          }
-          row.why.push(why);
-          row.under.push(g.room.baseName(row.tx, row.ty));
-          g.entities = all;
-          const fullOk = canOccupy(g, e, e.x, e.y)
-            && (!e.terrainOk || e.terrainOk(g, e.x, e.y));
-          row.tile.push(tileOk);
-          row.full.push(fullOk);
-        }
-        if (!row.tile.some(Boolean)) {
-          // Where COULD it stand? Sweep the room, ask the engine the same
-          // composite question at every tide level, and keep the nearest cell
-          // that answers yes at the most levels.
-          const cands = [];
-          for (let ty = 0; ty < g.room.th; ty++) {
-            for (let tx = 0; tx < g.room.tw; tx++) {
-              let n = 0;
-              for (let L = 0; L < 3; L++) {
-                g.tide.setLevel(L, { instant: true });
-                g.entities = [e];
-                const ok = canOccupy(g, e, tx * TILE, ty * TILE)
-                  && (!e.terrainOk || e.terrainOk(g, tx * TILE, ty * TILE));
-                g.entities = all;
-                if (ok) n++;
+            ring.sort((a, b) => (b[1] - a[1]) || (Math.abs(a[0]) - Math.abs(b[0])) || (a[0] - b[0]));
+            for (const [dx, dy] of ring) {
+              if (fix) break;
+              {
+                const nx = tx + dx, ny = ty + dy;
+                if (!g.room.inBounds(nx, ny)) continue;
+                // AT SOME TIDE, matching the failure test above. Requiring all
+                // three would refuse a pool that is only deep at HIGH, which is
+                // exactly where a jellyfish belongs in a game about the sea.
+                let ok = false;
+                for (const lv of [0, 1, 2]) {
+                  g.tide.setLevel(lv, { instant: true });
+                  if (ent.canOccupy(g, e, nx * 16, ny * 16)
+                      && (!e.terrainOk || e.terrainOk(g, nx * 16, ny * 16))) { ok = true; break; }
+                }
+                if (ok) fix = nx + ',' + ny;
               }
-              if (n) cands.push({ tx, ty, n,
-                d: Math.abs(tx - row.tx) + Math.abs(ty - row.ty) });
             }
           }
-          cands.sort((a, b) => (b.n - a.n) || (a.d - b.d) || (a.ty - b.ty) || (a.tx - b.tx));
-          row.best = cands.slice(0, 4);
+          out.push({
+            where: map.id + '/' + key, type: e.type || e.constructor.name,
+            tile: tx + ',' + ty, on: g.room.baseName(tx, ty), fix,
+          });
         }
-        rows.push(row);
       }
-      g.tide.setLevel(1, { instant: true });
     }
   }
-  return { rows, rooms, skippedByFlag };
+  return { out, checked };
 });
 
-const { rows, rooms, skippedByFlag } = report;
-const LV = ['LOW', 'MID', 'HIGH'];
-const where = r => `${r.map}/${r.room} (${r.tx},${r.ty}) ${r.type}`
-  + (r.terrain ? ` [${r.terrain}]` : '') + (r.flying ? ' [flying]' : '')
-  + `  ${r.why.map((w, i) => LV[i] + ':' + (w || 'ok')).join('  ')}`;
-
-// --- the hard assertion ----------------------------------------------------
-const stuck = rows.filter(r => !r.tile.some(Boolean));
-console.log(`\nswept ${rooms} rooms, ${rows.length} entities`
-  + (skippedByFlag ? `, ${skippedByFlag} not spawned on this save (needFlag/hideFlag)` : ''));
-for (const r of stuck) {
-  console.log('       inside scenery at every tide: ' + where(r));
-  if (SUGGEST) {
-    console.log('              could stand at: ' + ((r.best || []).length
-      ? r.best.map(c => `(${c.tx},${c.ty}) ${c.n}/3 levels`).join(',  ')
-      : 'NOWHERE IN THIS ROOM'));
-  }
+if (process.argv.includes('--json')) {
+  // For a session applying the fixes: the same list the report prints, in a
+  // shape a patch script can read. Deliberately not a --fix flag — moving an
+  // entity is a judgement (a sign has to stay beside what it is about) and the
+  // suggestion is a starting point, not an instruction.
+  console.log(JSON.stringify(report.out, null, 2));
+  await browser.close(); server.close();
+  process.exit(0);
 }
-check('no entity is inside the scenery at every tide level',
-  stuck.length === 0, `${stuck.length} of ${rows.length}`);
-
-// --- solid entities may not share a tile -----------------------------------
-// A row that the tiles allow and the full room refuses is being blocked by
-// another entity, which for two solid things means they are standing in each
-// other.
-const overlaps = rows.filter(r => r.tile.some(Boolean)
-  && r.tile.some((t, i) => t && !r.full[i]));
-for (const r of overlaps) console.log('       overlapping another solid entity: ' + where(r));
-check('no two solid entities are standing in each other',
-  overlaps.length === 0, `${overlaps.length} pairs`);
-
-// --- the soft report -------------------------------------------------------
-// Placements that are legal at some levels and not others. Most are correct by
-// design — a jellyfish is in deep water and a strand pickup dries out — so
-// this is printed, never asserted. Read it when the tide work moves.
-const partial = rows.filter(r => r.tile.some(Boolean) && !r.tile.every(Boolean));
-console.log(`\n${partial.length} entities are legal at some tide levels and not others`
-  + ' (design, unless the tide work just moved):');
-const byType = new Map();
-for (const r of partial) {
-  const k = `${r.type}${r.terrain ? ' [' + r.terrain + ']' : ''}`;
-  byType.set(k, (byType.get(k) || 0) + 1);
+console.log(`check-placement: ${report.checked} placed entities, built in the real engine`);
+for (const b of report.out) {
+  console.log(`  stuck  ${b.where.padEnd(18)} ${b.type.padEnd(14)} at ${b.tile.padEnd(6)} inside '${b.on}'`
+    + (b.fix ? `  -> ${b.fix} is clear` : '  -> NOTHING CLEAR ANYWHERE IN THE ROOM'));
 }
-for (const [k, n] of [...byType].sort((a, b) => b[1] - a[1])) console.log(`       ${n}x ${k}`);
-if (VERBOSE) {
-  for (const r of partial) {
-    console.log('       ' + where(r) + '  ok at '
-      + LV.filter((_, i) => r.tile[i]).join('/'));
-  }
-}
-
-if (JSON_OUT) {
-  const { writeFileSync } = await import('node:fs');
-  writeFileSync(JSON_OUT, JSON.stringify(stuck, null, 1));
-  console.log(`\nwrote ${stuck.length} stuck placements to ${JSON_OUT}`);
-}
-
+check('every placed entity can stand where it was placed, at some tide',
+  report.out.length === 0, report.out.length ? `${report.out.length} cannot, at any level` : '');
 check('no page errors', errs.length === 0, errs.slice(0, 3).join(' | '));
 
 console.log(`\n=== ${passed} passed, ${failures.length} failed ===`);
+if (failures.length) { console.log('\nFailures:'); failures.forEach(f => console.log('  - ' + f)); }
 await browser.close(); server.close();
 process.exit(failures.length ? 1 : 0);

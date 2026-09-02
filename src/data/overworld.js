@@ -98,7 +98,7 @@ const rooms = {
     ],
     entities: [
       ['sign', 2, 4, { text: 'THE ABYSSAL KEEP\nNereth waits below the water.' }],
-      ['darknut', 5, 5],
+      ['darknut', 6, 6],
     ],
   },
   '0,2,0': {
@@ -125,7 +125,7 @@ const rooms = {
       '###1111###',
     ],
     entities: [
-      ['wizzrobe', 4, 2],
+      ['wizzrobe', 4, 4],
       ['sign', 1, 6, { text: 'THE BLACK CAUSEWAY\nThe Keep holds this water. No shell\nsounds here. Bring your own sea.' }],
     ],
   },
@@ -135,15 +135,15 @@ const rooms = {
     map: [
       '**********',
       '*11111111*',
-      '1g..oo..1*',
-      'gg.GGGG.1*',
-      'gg..oo..g#',
-      'ggGGGGGGg#',
-      '#gggggggg#',
-      '###gggg###',
+      '1g..oo5.1*',
+      'gg.GGG5.1*',
+      'gg..oo5.g#',
+      'ggGGGG5Gg#',
+      '#ggggg5gg#',
+      '###gg15###',
     ],
     entities: [
-      ['darknut', 3, 2], ['pickup', 2, 5, { kind: 'heartPiece' }],
+      ['darknut', 4, 3], ['pickup', 2, 5, { kind: 'heartPiece' }],
     ],
   },
   // ---- salt --------------------------------------------------------------
@@ -178,7 +178,7 @@ const rooms = {
       '###1151###',
     ],
     entities: [
-      ['beetle', 4, 2], ['pickup', 6, 4, { kind: 'heartPiece' }],
+      ['beetle', 4, 4], ['pickup', 6, 4, { kind: 'heartPiece' }],
     ],
   },
   '0,6,0': {
@@ -211,12 +211,12 @@ const rooms = {
     map: [
       '**********',
       '*11111111*',
-      '1g.o..o.1*',
-      'gg......1*',
-      'gg.o..o.g#',
-      'ggGGGGGGg#',
-      '#gggggggg#',
-      '###gggg###',
+      '1g5o..o.1*',
+      'gg5.....1*',
+      'gg5o..o.g#',
+      'gg55GGGGg#',
+      '#gg5ggggg#',
+      '###51gg###',
     ],
     entities: [
       ['moblin', 4, 3],
@@ -237,7 +237,7 @@ const rooms = {
       '###1gg1###',
     ],
     entities: [
-      ['jellyfish', 4, 1],
+      ['jellyfish', 4, 5],
     ],
   },
   '0,9,0': {
@@ -306,7 +306,7 @@ const rooms = {
       '****######',
     ],
     entities: [
-      ['jellyfish', 3, 2],
+      ['jellyfish', 3, 4],
     ],
   },
   '0,1,1': {
@@ -347,17 +347,17 @@ const rooms = {
     name: 'Iron Watch',
     legend: 'abyss', music: 'abyss',
     map: [
-      '###gggg###',
-      '#gGGGGGG5#',
+      '###gg15###',
+      '#gGGG1555#',
       'gg.qqqq.5#',
-      'gg.....15#',
-      'gg.oooo15#',
-      'gg1555555#',
-      '#gg1ggggg#',
+      'gg......5#',
+      'gg.oooo.5#',
+      'ggGGGGG15#',
+      '#gggggg15#',
       '##########',
     ],
     entities: [
-      ['darknut', 3, 3], ['wizzrobe', 6, 1],
+      ['darknut', 3, 3], ['wizzrobe', 6, 3],
     ],
   },
   // ---- salt --------------------------------------------------------------
@@ -393,7 +393,7 @@ const rooms = {
     ],
     entities: [
       ['npc', 4, 3, { sprite: 'npc_hood_red', dialogue: 'salterElder', after: 'salterElderAfter', needEssences: 4 }],
-      ['sign', 7, 4, { text: 'The pans drink the sea and give back stone.' }],
+      ['sign', 6, 5, { text: 'The pans drink the sea and give back stone.' }],
     ],
   },
   '0,6,1': {
@@ -402,12 +402,12 @@ const rooms = {
     map: [
       '###gggg###',
       '#g###..gg#',
-      'gg#C#.o.gg',
-      'gg......gg',
-      'g112222Ggg',
-      'g112222ggg',
+      'gg#C#.o.g5',
+      'gg......g5',
+      'g112222Gg5',
+      'g112222gg5',
       '#g111gggg#',
-      '###gggg###',
+      '###11gg###',
     ],
     warps: [
       { x: 3, y: 2, to: { map: 'cave3', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
@@ -421,17 +421,17 @@ const rooms = {
     name: 'Windward Pan',
     legend: 'salt', music: 'salt',
     map: [
-      '###gggg###',
-      '#gGGGGGGg#',
-      'gg......Vg',
-      'gg.qqqq.Vg',
-      'gg......Vg',
-      'gg______Vg',
+      '###51gg###',
+      '#5551GGGg#',
+      '5511....Vg',
+      '5g.qqqq.Vg',
+      '5g......Vg',
+      '5g______Vg',
       '#gggggggg#',
-      '###1115###',
+      '###1ggg###',
     ],
     entities: [
-      ['wisp', 4, 2], ['moblin', 2, 4],
+      ['wisp', 4, 4], ['moblin', 2, 4],
     ],
   },
   // ---- reef --------------------------------------------------------------
@@ -521,8 +521,8 @@ const rooms = {
     map: [
       '****######',
       '*111GGGGg#',
-      '*1.9999.gg',
-      '*1......gg',
+      '*1.9999555',
+      '*1......g1',
       '*1.9999.gg',
       '*1GGGGGGgg',
       '*1g""""gg#',
@@ -537,16 +537,16 @@ const rooms = {
     legend: 'cliffs', music: 'overworld',
     map: [
       '##########',
-      '#gg..5551#',
-      'gg.oooo55g',
-      'gg......51',
-      'gg.GGGG.55',
-      'ggg____g1g',
+      '#555551gg#',
+      '55.oooo.gg',
+      '11......gg',
+      'gg.GGGG.gg',
+      'ggg____ggg',
       '#gggggggg#',
       '###g##g###',
     ],
     entities: [
-      ['tektite', 3, 1], ['tektite', 6, 4],
+      ['tektite', 3, 3], ['tektite', 6, 4],
     ],
   },
   '0,2,2': {
@@ -562,10 +562,10 @@ const rooms = {
       '###gggg###',
       '#ggVVVVgg#',
       'gg.9999.11',
-      '11....1555',
-      '5519999.gg',
+      'gg1...1555',
+      'g119999.1g',
       'ggg11..ggg',
-      '#gggggggg#',
+      '#gg5ggggg#',
       '###5ggg###',
     ],
     entities: [
@@ -613,8 +613,8 @@ const rooms = {
     map: [
       '###gggg###',
       '#g2222221#',
-      'gg2...121g',
-      'gg2.GG121g',
+      'gg2...1211',
+      'gg2.GG1211',
       'g12...12gg',
       'gg222222gg',
       '#gggggggg#',
@@ -628,11 +628,11 @@ const rooms = {
     name: 'Vault Steps',
     legend: 'salt', music: 'salt',
     map: [
-      '###gggg###',
+      '###11gg###',
       '#gggggggg#',
-      'ggG1oo111g',
-      'gg11111555',
-      'ggg22221gg',
+      '1gG1oo1Ggg',
+      '1g111111gg',
+      'ggg222211g',
       'ggg2222ggg',
       '#ggVVVVgg#',
       '###gggg###',
@@ -645,10 +645,10 @@ const rooms = {
     name: 'Pan Corner',
     legend: 'salt', music: 'salt',
     map: [
-      '###1115###',
-      '#155555Gg#',
-      'gg5oooo.g#',
-      '555.....g#',
+      '###1ggg###',
+      '#g5555555#',
+      'gg5oooo.5#',
+      'gg5.....g#',
       'gg.oooo.g#',
       'ggGGGGGGg#',
       '#gggggggg#',
@@ -724,7 +724,7 @@ const rooms = {
       '###ggg1***',
     ],
     entities: [
-      ['jellyfish', 4, 1],
+      ['jellyfish', 4, 5],
     ],
   },
   // ---- cliffs ------------------------------------------------------------
@@ -753,8 +753,8 @@ const rooms = {
       '#gg.DD.gg#',
       'ggg.DD.gg5',
       'gg.9999.g5',
-      'gg......g1',
-      'ggG""""Ggg',
+      'gg......g5',
+      'ggG""""Gg5',
       '#gggggggg#',
       '###5511###',
     ],
@@ -777,13 +777,13 @@ const rooms = {
       '#5551..gg#',
       '551oooo.gg',
       '51......gg',
-      '1g.oooo.gg',
-      'ggg....ggg',
+      '51.oooo.gg',
+      '5gg....ggg',
       '#gggggggg#',
-      '###11gg###',
+      '###gggg###',
     ],
     entities: [
-      ['tektite', 4, 3], ['pickup', 6, 1, { kind: 'heartPiece' }],
+      ['tektite', 4, 5], ['pickup', 6, 3, { kind: 'heartPiece' }],
     ],
   },
   '0,3,3': {
@@ -818,7 +818,7 @@ const rooms = {
       'TTTggggTTT',
     ],
     entities: [
-      ['zol', 4, 2],
+      ['zol', 4, 4],
     ],
   },
   '0,5,3': {
@@ -849,7 +849,7 @@ const rooms = {
       'g110000.g1',
       'ggTT1.TTf1',
       'Tggg1gggfT',
-      'TTTggg1TTT',
+      'TTT1111TTT',
     ],
     entities: [
       ['sign', 2, 2, { text: 'North, over the gap: the Salt Pans.' }],
@@ -876,7 +876,7 @@ const rooms = {
       'TTTggggTTT',
     ],
     entities: [
-      ['anglerfry', 4, 1],
+      ['anglerfry', 4, 5],
       ['sign', 4, 6, { text: 'The water here runs in a ring.\nSwimmers go round. Walkers go through.' }],
     ],
   },
@@ -946,7 +946,7 @@ const rooms = {
       '######****',
     ],
     entities: [
-      ['pickup', 4, 1, { kind: 'fairy' }],
+      ['pickup', 4, 3, { kind: 'fairy' }],
     ],
   },
   // ---- cliffs ------------------------------------------------------------
@@ -988,7 +988,7 @@ const rooms = {
     name: 'Kell Basin',
     legend: 'cliffs', music: 'overworld',
     map: [
-      '###11gg###',
+      '###gggg###',
       '#gg1111gg#',
       '55.9999.gg',
       'gg......gg',
@@ -1081,17 +1081,17 @@ const rooms = {
     name: 'Log Drift',
     legend: 'wood', music: 'overworld',
     map: [
-      'TTTggg1TTT',
-      'Tg1...11gT',
-      'g11555511g',
-      'gg1...1.gg',
+      'TTT1111TTT',
+      'Tg11111ggT',
+      'gg155551gg',
+      'gg....1.gg',
       'gg.55551gg',
-      'ggg.111ggg',
+      'ggg...1ggg',
       'TffgfffggT',
       'TTTggggTTT',
     ],
     entities: [
-      ['anglerfry', 4, 2], ['pickup', 2, 5, { kind: 'heartPiece' }],
+      ['anglerfry', 4, 4], ['pickup', 2, 5, { kind: 'heartPiece' }],
     ],
   },
   '0,7,4': {
@@ -1100,15 +1100,15 @@ const rooms = {
     map: [
       'TTTggggTTT',
       'T1======1T',
-      'g1.....11T',
-      'gf.====11T',
-      'g1.....1gT',
-      'g1======gT',
+      'g111...11T',
+      'g11====1fT',
+      'gf......gT',
+      'gg======gT',
       'TggggggggT',
       'TTTggggTTT',
     ],
     entities: [
-      ['anglerfry', 5, 3], ['jellyfish', 3, 3],
+      ['anglerfry', 5, 3], ['jellyfish', 3, 5],
     ],
   },
   // ---- coral -------------------------------------------------------------
@@ -1151,16 +1151,16 @@ const rooms = {
     legend: 'coral', music: 'reef',
     map: [
       '##########',
-      '#g1...11g#',
+      '#g111111g#',
       'g11777711g',
       'gg....1.gg',
       'gg177771gg',
-      'ggg1111ggg',
+      'ggg...1ggg',
       '#gggggggg#',
       '###g##g###',
     ],
     entities: [
-      ['octorokSea', 4, 2],
+      ['octorokSea', 4, 4],
     ],
   },
   '0,11,4': {
@@ -1188,7 +1188,7 @@ const rooms = {
       '***1555###',
       '*11GGG555#',
       '*1.oooo.55',
-      '*1......gg',
+      '*1......g1',
       '*1.oooo.gg',
       '*1TTTTTTgg',
       '*111ggggg#',
@@ -1203,16 +1203,16 @@ const rooms = {
     legend: 'cliffs', music: 'overworld',
     map: [
       '###gggg###',
-      '#15555.gg#',
-      '555o11o.gg',
-      'gg......gg',
+      '#11....gg#',
+      '555o..o.gg',
+      '1151....gg',
       'ggg....ggg',
       'ggg____ggg',
       '#MM....MM#',
       '###gggg###',
     ],
     entities: [
-      ['sign', 7, 2, { text: 'North: the Cliffs of Kell.\nSouth: the bog.' }],
+      ['sign', 6, 3, { text: 'North: the Cliffs of Kell.\nSouth: the bog.' }],
     ],
   },
   '0,2,5': {
@@ -1294,16 +1294,16 @@ const rooms = {
     legend: 'wood', music: 'overworld',
     map: [
       'TTTggggTTT',
-      'Tg111..ggT',
+      'Tg111111gT',
       'g115555.fg',
-      'gg...111fg',
-      'gg.000011g',
+      'gg......fg',
+      'gg.0000.gg',
       'ggg..11ffg',
       'TggggggggT',
       'TTTggggTTT',
     ],
     entities: [
-      ['zol', 3, 4], ['moblin', 6, 1],
+      ['zol', 3, 4], ['moblin', 6, 3],
     ],
   },
   '0,7,5': {
@@ -1320,7 +1320,7 @@ const rooms = {
       'TTTTTTTTTT',
     ],
     entities: [
-      ['anglerfry', 4, 2],
+      ['anglerfry', 4, 4],
     ],
   },
   // ---- coral -------------------------------------------------------------
@@ -1469,7 +1469,7 @@ const rooms = {
       'TTTggggTTT',
     ],
     entities: [
-      ['sign', 2, 4, { text: 'Someone has been digging here.' }],
+      ['sign', 6, 3, { text: 'Someone has been digging here.' }],
     ],
     buried: [[3, 4, 'rupee20']],
   },
@@ -1608,7 +1608,7 @@ const rooms = {
       'TTTggg1***',
     ],
     entities: [
-      ['leever', 4, 3], ['pickup', 5, 2, { kind: 'rupee20' }],
+      ['leever', 4, 3], ['pickup', 6, 3, { kind: 'rupee20' }],
     ],
   },
   // ---- marsh -------------------------------------------------------------
@@ -1682,7 +1682,7 @@ const rooms = {
       { x: 3, y: 2, to: { map: 'cave1', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
     ],
     entities: [
-      ['sign', 4, 3, { text: 'A grotto in the bluff.\nSomething glitters within.' }],
+      ['sign', 4, 4, { text: 'A grotto in the bluff.\nSomething glitters within.' }],
       ['octorok', 6, 4],
     ],
   },
@@ -1757,7 +1757,11 @@ const rooms = {
       'TTTggggTTT',
     ],
     entities: [
-      ['octorok', 5, 3],
+      // 2,3 rather than the 3,4 check-placement.mjs offered. This octorok spent
+      // the project inside the ledge column at 4,3 and could not move; freed, it
+      // meets whoever crosses this screen, and 3,4 is in the lane. The
+      // suggestion is a legal tile, not a good one — see the tool's own note.
+      ['octorok', 2, 3],
       // Coastwise Chain, link 4.
       ['trader', 6, 4, {
         sprite: 'npc_fisher', waiting: 'coastFisher', after: 'mirrenAfter',

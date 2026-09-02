@@ -1,33 +1,55 @@
-## S15 — placement, the cutscenes watched, and the interior sea (this session)
+## S15 — placement, the cutscenes watched, and the interior sea
 
-Branch: `claude/oracle-entity-placement-ejahxd`, three commits, all pushed.
-Everything in the CLAUDE.md table is green, including all 51 replays,
-check-playthrough and check-build.
+TWO SESSIONS RAN THIS PROMPT IN PARALLEL AND BOTH DID JOB 1. `b09c0e6` landed
+on main first and its version of the placement work is the one that survives;
+this branch's was reconciled onto it at the merge, and the only thing kept from
+the losing copy is `--suggest`'s printed shortlist. **That is the pile lesson in
+HANDOFF happening again, live: one session at a time, merged before the next
+starts.** Everything below Job 1 is unique to this branch.
 
-### Job 1 — 48 entities were standing inside the scenery
+### Job 1 — nothing is standing inside anything (merged from b09c0e6)
 
-Counted with the engine's own question rather than a flag sweep: of 529 placed
-entities, 48 could not be where the room data put them at ANY tide level. Six
-signs (two buried in trees), two traders in bushes, three pickups in rocks, a
-darknut in a ledge, a wisp in a post, and Nereth, whose 32x32 hitbox overlapped
-the ledge column in his own arena.
+`tools/check-placement.mjs` is new: it builds all 273 rooms in the real engine
+and asks the engine's own pair — `canOccupy` AND `terrainOk`, with no caps
+passed, so each entity's own nature answers — whether every one of the 529
+placed entities can be where the room data put it, at any tide. Wiring it in
+found three things, in ascending order of how badly they wanted finding.
 
-Two were an engine fault. **Nothing but Link had ever set `swimming`**, which
-is the flag `canOccupy` reads to decide whether deep water is floor, so every
-jellyfish, siren, anglerfry and sea octorok could occupy shallow water and
-nothing else — one in the deep could not take a step, one on a dry floor
-beached and died on the frame it spawned. `Enemy` sets it from its terrain now
-and the Raft declares that it floats.
+**A signpost inside a tree, a trader inside a bush, forty-odd things inside
+rocks, posts and ledges.** All moved, mostly one tile down. Two of the tool's
+suggestions were overridden by hand: an octorok it put into the lane the
+playthrough actor travels, and a zol it put behind a post row in a room whose
+encounter is two zols in the open. The suggestion is a legal tile, not a good
+one, which is why the tool has no `--fix`.
 
-`tools/check-placement.mjs` is new and in the table. It boots a page because
-the answer lives on the CONSTRUCTED entity (`avoidFlags` derived from the
-spec's terrain, `flying`, `swimming`, `terrainOk`'s WET rule); `--suggest`
-asks the engine where each stuck entity could stand instead, and `--json=` writes
-the list. `tools/oneshot/move-entities.mjs` applied the moves.
+**The final boss was standing on a one-way ledge.** Nereth's throne room had a
+three-tile run of `>` down its middle, splitting the arena, with him on top of
+it. Removed.
 
-Freeing the enemies moved three replay baselines and killed the playthrough
-actor in d1/0,3,6, a room it had always survived on luck — see HANDOFF on the
-shielded crabs. The route walks past that room now.
+**And the sea had nothing living in it.** `moveEntity` reads `e.caps`;
+`canOccupy` read `e.swimming`; the player sets the first and NOTHING in the
+game ever set the second. The two functions disagreed and the one every bare
+call reaches said no, so every anglerfry, sea octorok and siren was welded to
+its spawn tile — 0 subpixels in 240 frames, measured, then thousands with the
+fix. Jellyfish moved only because `driftWithTide` writes their position
+directly, which walked them onto dry land where they despawned. An aquatic
+enemy gets `caps` in the `Enemy` constructor now and `canOccupy` falls back to
+`e.caps`, so there is one mechanism rather than two. A raft floats, too.
+
+Freeing things that were stuck has a cost and it was paid rather than hidden:
+d1-descent's actor died on a route it had always walked, because the Locked
+Stair now has the two zols it was always written to have. Its heart headroom
+went 20 -> 30 with the reason written next to the existing paragraph that says
+the headroom is the recorder's handicap and not the room's difficulty. Three
+replays re-recorded.
+
+**What was NOT verified.** Nobody has played any of it. The sea's enemies move
+now and nothing has judged whether they move WELL — whether a freed anglerfry
+is a fight or a nuisance, whether the Locked Stair is now too hard for a real
+player rather than for a scripted one, and whether the forty moved entities
+still read as deliberately placed. Stand in d1's Locked Stair, in any reef
+screen with a jellyfish, and in Nereth's throne room.
+
 
 ### Job 2 — the thirteen cutscenes, watched
 
@@ -97,6 +119,7 @@ judged from screenshots and filmstrips. Specifically:
   a jellyfish READS crossing a deep tile has not been watched.
 
 ## S14 — every NPC was two half-people
+
 
 Follow-on from S13's prompt leftovers, then the NPC sprite pass the same
 prompt asked for "like the tree tiles". It was the same fault and it was worse.
