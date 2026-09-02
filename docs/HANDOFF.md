@@ -447,6 +447,36 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+**A REFUSED QUADRANT IS A SLICED TREE, AND 146 OF 536 TREE BLOCKS WERE ONE.**
+`Room.drawQuads` skips a quadrant `quadMayCover` refuses, and a skipped quadrant
+is not drawn at all — so the tree ends in a dead straight vertical or horizontal
+edge, which is the exact fault the whole 32x32 tree system was built to avoid,
+arrived at from the other side. Three causes, and each one is its own lesson:
+  * **53 blocks were cut to avoid painting over a FLOWER.** The rule refused any
+    tile with `underArt`, which is right for a rock (a thing you walk into and
+    must see) and absurd for flowers (a transparent tile over grass and nothing
+    else). A flagless prop is decoration; anything with a flag is something the
+    player has to read.
+  * **18 were cut at the rim to avoid painting over `openSea`**, which carries
+    F.SOLID to stop a swimmer leaving the map and is, to look at, the sea. Solid
+    AND DRY is a wall; solid and wet is the edge of the world, and a tree
+    leaning over it is what the source draws.
+  * **60 because a tide tile is animated at some levels.** The canopy could not
+    go into the static layer over an animated cell — true, the water is
+    repainted over it every frame — so the quadrant goes on `animQuads` and
+    `drawAnim` lays it down straight after the water instead. Not `drawOver`:
+    that pass is above the entities and is for things that OCCLUDE the player,
+    and a tree canopy in this game does not.
+
+**AND THE NEGATIVE TEST FOR IT DID NOT GO RED THE FIRST TIME.** The assertion
+was written as "a quadrant may only be refused where the cell is not plain
+ground", with plain defined as `flags === 0 && !underArt`. Re-breaking the
+flower rule left it green, because `!underArt` exempted the very thing the fix
+was about. `T77` says a negative test that does not go red is information: here
+it said the assertion was weak, and the fix was to define "needed protecting" by
+FLAGS alone. It reports all 53 now.
+
+
 **THE WOODS GREW AND SHRANK WITH THE TIDE, IN 66 CELLS.** `Room.quadMayCover`
 decides whether a 32x32 object may overhang a cell and refuses an ANIMATED one,
 which is correct — the canopy goes into the static layer and the animated cells

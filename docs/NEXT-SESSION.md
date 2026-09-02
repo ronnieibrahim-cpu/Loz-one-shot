@@ -36,6 +36,18 @@ up to a treeline is a wood on a shore.
 `tools/check-ground.mjs` grew two assertions for the first two; both negative
 tests go red (66 cells, and the run it was given).
 
+### And 146 of 536 tree blocks were drawn incomplete
+
+A quadrant `quadMayCover` refuses is simply not drawn, so the tree ends in a
+dead straight edge — the fault the 32x32 tree system exists to avoid, from the
+other side. 53 blocks were cut to avoid painting over a FLOWER (a flagless prop
+is decoration; anything with a flag is something the player must read), 18 at
+the rim to avoid painting over `openSea` (solid and DRY is a wall, solid and wet
+is the edge of the world), and 60 because a tide tile is animated at some levels
+— those quadrants go on `animQuads` and are laid down by `drawAnim` straight
+after the water. 26 remain, every one of them beside a rock, a cliff, a
+drownWall, a town crate or the Maku hollow, which is where a tree should stop.
+
 ### What was NOT verified
 
 Nobody has played it. Six screens were photographed out of the 21 the thinning

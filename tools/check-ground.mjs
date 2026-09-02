@@ -159,6 +159,60 @@ for (const f of flicker.slice(0, 8)) console.log('  grows  ' + f);
 check('a 32x32 object overhangs the same cells at every tide', flicker.length === 0,
   flicker.length ? `${flicker.length} cells` : '');
 
+// --- and a tree is only ever cut by something real ---------------------------
+//
+// A refused quadrant is not drawn at all, so the tree comes out with a dead
+// straight edge down its middle — the exact fault the whole 32x32 tree system
+// exists to avoid, arrived at from the other side. 146 of the game's 536 tree
+// blocks were incomplete: 53 of them to avoid painting over a FLOWER, 18 to
+// avoid painting over the open sea at the rim, and 60 because a tide tile is
+// animated at some levels and the canopy could not go into the static layer.
+//
+// This does not restate `quadMayCover` — that would be asking the thing under
+// test for its own limits (`T74`). It asks the DATA: a quadrant may only be
+// refused where the cell holds something the player has to be able to SEE. A
+// cell that is plain, flagless, dry ground at all three levels is not that, and
+// a tree cut by one is a tree cut for nothing.
+const cut = [];
+for (const [mapId, m] of MAPS) {
+  for (const key of Object.keys(m.roomDefs)) {
+    const [floor, rx, ry] = key.split(',').map(Number);
+    const room = getRoom(mapId, floor, rx, ry);
+    if (!room) continue;
+    for (let by = 0; by < room.th; by += 2) {
+      for (let bx = 0; bx < room.tw; bx += 2) {
+        let q = null;
+        for (const [ox, oy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) {
+          const d = room.tile(bx + ox, by + oy, 1);
+          if (d.quad || d.big) { q = d.quad || d.big; break; }
+        }
+        if (!q) continue;
+        for (const [ox, oy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) {
+          const x = bx + ox, y = by + oy;
+          if (room.quadMayCover(x, y, 1, q)) continue;
+          // Nothing here needed protecting? A cell needs protecting when it
+          // carries a FLAG the player has to read — solid, a hazard, a pit, a
+          // doorway, water — or when it is itself part of another 32x32 object.
+          // A FLAGLESS PROP IS NOT ONE: flowers are a transparent tile over
+          // grass and nothing else, and refusing them is what cut 53 blocks.
+          // Writing this as `!underArt` instead was the first cut, and its
+          // negative test did not go red — it exempted the very thing the fix
+          // was about.
+          const plain = [0, 1, 2].every((lv) => {
+            const d = room.tile(x, y, lv);
+            return d.flags === 0 && !d.over && !d.quad && !d.big;
+          });
+          if (plain) cut.push(`${mapId}/${key} (${x},${y}) '${room.baseName(x, y)}'`
+            + ` refuses ${q} and is plain ground at every tide`);
+        }
+      }
+    }
+  }
+}
+for (const c of cut.slice(0, 8)) console.log('  cut    ' + c);
+check('no 32x32 object is cut short by plain ground', cut.length === 0,
+  cut.length ? `${cut.length} quadrants` : '');
+
 // --- and no decorative prop stands in a line of three ------------------------
 //
 // Sixteen screens had their rocks as `oooo`, four identical boulders in a row,

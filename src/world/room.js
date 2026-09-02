@@ -41,7 +41,7 @@
 
 import { TILE, ROOM_W, ROOM_H, offscreen } from '../core/screen.js';
 import { tiles as tileSheet } from '../gfx/art.js';
-import { F, resolveTile, getTileDef, tileArt, tileVariant, tileEdgeArt, blockRef, tileDefSolid, isTideSensitive } from './tileset.js';
+import { F, resolveTile, getTileDef, tileArt, tileVariant, tileEdgeArt, blockRef, tileDefSolid } from './tileset.js';
 
 export const LEGENDS = new Map();
 
@@ -132,6 +132,10 @@ export class Room {
     this._cacheDirty = true;
     this._alt = new Map();        // parallel caches, keyed like `render`'s
     this.animCells = [];      // [{x,y,def}] refreshed with the cache
+    // Quadrants of 32x32 objects that overhang an ANIMATED cell. They cannot go
+    // into the static canvas — the water is repainted over that cell every
+    // frame — so `drawAnim` puts them down straight after it.
+    this.animQuads = [];      // [{x,y,art,pal}] refreshed with the cache
     this.overCells = [];      // tiles drawn above entities
     this.visited = false;
     this.cleared = false;     // all enemies defeated at least once (for locked rooms)
@@ -302,6 +306,15 @@ export class Room {
       const put = (qx, qy, ox, oy) => {
         const x = b.bx + ox, y = b.by + oy;
         if (!this.quadMayCover(x, y, tide, b.q)) return;
+        // A quadrant that lands on an ANIMATED cell cannot go into the static
+        // canvas: the water is drawn over that cell every frame and would erase
+        // it. It goes on the list `drawAnim` paints straight after the water,
+        // so a tree at the edge of a stream keeps the half of itself that
+        // overhangs the stream.
+        if (this.tile(x, y, tide).anim) {
+          this.animQuads.push({ x, y, art: b.q + qy + qx, pal: oy ? bot : top });
+          return;
+        }
         tileSheet.draw(ctx, b.q + qy + qx, x * TILE, y * TILE,
           { pal: oy ? bot : top });
       };
@@ -327,17 +340,42 @@ export class Room {
     if (x < 0 || y < 0 || x >= this.tw || y >= this.th) return false;
     const d = this.tile(x, y, tide);
     if ((d.quad || d.big) === q) return true;
-    if (d.flags & (F.VOID | F.WARP | F.SOLID)) return false;
-    // A TIDE TILE IS NEVER OVERHUNG, AT ANY LEVEL. The answer for one has to be
-    // the same at all three or the tree changes size when the conch is sounded:
-    // `sandbar` is plain sand at LOW, which a canopy may cover, and animated
-    // water at HIGH, which it may not (this is the static layer; the animated
-    // cells are drawn afterwards and would scrub the overhang off). 66 cells in
-    // the world were doing exactly that — the woods grew and shrank with the
-    // sea. Deciding it from the tile's own NAME rather than from what the name
-    // resolves to at the level being drawn is what makes the answer stable.
-    if (isTideSensitive(this.baseName(x, y))) return false;
-    return !(d.over || d.anim || d.underArt || d.quad || d.big);
+    // DECIDED ACROSS ALL THREE LEVELS, so a canopy cannot change size with the
+    // sea. A tide tile is one thing at LOW and another at HIGH — `sandbar` is
+    // plain sand and then water, `drownWall` is a wall and then something you
+    // swim over — and asking about the level being drawn made 66 cells overhung
+    // at one level and bare at another. Sounding the conch changed the size of
+    // the trees.
+    //
+    // ANIMATION IS NOT ON THIS LIST any more, and that is the other half. It
+    // used to be, for a real reason — this is the static layer and the animated
+    // cells are painted over it afterwards, so an overhang there is scrubbed
+    // off — but the consequence was that a tree beside a stream lost the
+    // quadrant nearest the water and ended in a dead straight vertical edge.
+    // 146 of the game's 536 tree blocks were drawn incomplete. The quadrant is
+    // deferred to `animQuads` and painted after the water instead, which is
+    // both what the source does with a tree at the water's edge and the thing
+    // the whole 32x32 tree system exists to avoid: a sliced tree.
+    const name = this.baseName(x, y);
+    for (const lv of [0, 1, 2]) {
+      const t = resolveTile(name, lv);
+      if (t.flags & (F.VOID | F.WARP)) return false;
+      // SOLID BECAUSE IT IS A WALL, not solid because it is the edge of the
+      // world. `openSea` carries F.SOLID to stop a swimmer leaving the map and
+      // is, to look at, the sea — a tree on the rim leaning over it is what the
+      // source draws, and refusing it cut 18 blocks in half along the coast.
+      // Anything solid and DRY is something the player can walk into and must
+      // be able to see.
+      if ((t.flags & F.SOLID) && !(t.flags & F.WET)) return false;
+      // A PROP WITH NO FLAGS IS DECORATION. Flowers are a transparent tile over
+      // grass and nothing else; refusing them took a quadrant off 53 blocks,
+      // which is a sliced tree to save a flower that the canopy would have been
+      // sitting on anyway. Anything with a flag — a dig spot, spikes, a snarl —
+      // is something the player has to READ, and keeps its cell.
+      if (t.underArt && t.flags !== 0) return false;
+      if (t.over || t.quad || t.big) return false;
+    }
+    return true;
   }
 
   /**
@@ -467,6 +505,7 @@ export class Room {
       const ctx = this._cache.ctx;
       ctx.clearRect(0, 0, this.pw, this.ph);
       this.animCells.length = 0;
+      this.animQuads.length = 0;
       this.overCells.length = 0;
       // Trees are drawn AFTER every ground cell, not in step with them. They
       // overhang their own cells, and a ground tile painted afterwards would
@@ -583,6 +622,15 @@ export class Room {
   drawAnim(ctx, ox, oy, tide, frame) {
     for (const c of this.animCells) {
       tileSheet.draw(ctx, tileArt(c.def, frame), ox + c.x * TILE, oy + c.y * TILE, { pal: c.def.pal });
+    }
+    // ...and then the pieces of 32x32 objects that overhang them. These are in
+    // this pass rather than in `drawOver` on purpose: `drawOver` is above the
+    // entities and is for things that OCCLUDE the player, and a tree canopy in
+    // this game does not — Link walks in front of one, as he does in the source.
+    // This is the same layer the canopy would have been in had the cell under it
+    // not been animated.
+    for (const q of this.animQuads) {
+      tileSheet.draw(ctx, q.art, ox + q.x * TILE, oy + q.y * TILE, { pal: q.pal });
     }
   }
 
