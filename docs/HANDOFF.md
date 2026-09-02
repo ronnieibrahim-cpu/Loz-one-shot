@@ -484,7 +484,19 @@ BEFORE checking a file out for isolation, not after.**
   the coast legend.** Laying a village square out with `.` gives it a hard-edged
   tan rectangle in the middle of the lawn. Nothing asserts this — `check-ground`
   only asks whether a PROP's ground exists on its screen, and sand did exist
-  here. It took a screenshot.
+  here. It took a screenshot. Village Shore and Driftwood Strand had the same
+  thing and worse: their `.` cells formed a PLUS SHAPE of sand across the
+  middle of a lawn, which reads as a rendering fault rather than as a path.
+  Both are lawns now, with the tide channel the only thing in them that is not
+  grass.
+- **Widening a town's one-tile alley can seal its seam.** Sandpiper Row's two
+  houses are a tile apart, which is the town kit's trap shape, and moving the
+  east house one column over to widen it put its wall against the screen's east
+  border — so the four border tiles of that seam had a house on one side and a
+  palm on the other and reached nothing. `check-towns` said so at all three
+  tides, immediately. The hamlet is back as it was: its own sign calls it "two
+  houses, one boat, no harbour", the alley is what the source games do between
+  two houses, and the checker already guards the pinch.
 **A TREELINE IS TWO TILES DEEP ON SCREEN AND ONE IN THE DATA**, because a tree
 is 32x32 on a 2x2 lattice: the canopy in the tree's own row and the root mound
 in the row below, painted over whatever ground is there. That is deliberate —
