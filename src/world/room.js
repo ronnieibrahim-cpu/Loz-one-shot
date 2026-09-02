@@ -351,10 +351,27 @@ export class Room {
    * (this canvas is the static layer; animated cells are drawn over it later),
    * but they do count for the match, or a prop standing in water could never
    * find its own ground beside it.
+   *
+   * AND WHERE THE DECLARED GROUND IS NOWHERE ON THE SCREEN AT ALL, keeping it
+   * is not caution, it is the bug. The vote above needs two neighbours that
+   * AGREE, and a tree in a treeline has trees either side (which never vote,
+   * being 32x32 objects) while a rock in a row of rocks has rocks — so the
+   * commonest prop arrangements in this world reach `declared` by default. In
+   * the marsh that meant every oak stood on a square of bright Holodrum grass
+   * in the middle of `grassDark` and `mud`; on the reef, four posts and four
+   * boulders each carried a hard green rectangle across a rust-and-sand floor.
+   * 274 cells did it, and each one is the boulder-on-a-beach fault the
+   * paragraph above is about, arrived at from the other direction.
+   *
+   * So the last resort is the screen's OWN commonest ground rather than the
+   * tile table's idea of one. It fires only when the declaration is dry (a
+   * prop that stands in water keeps its water — see the snarl) and the screen
+   * has no ground of that palette anywhere, which is exactly the case where
+   * the declaration cannot be describing this place.
    */
   underGround(d, x, y, tide) {
     const declared = getTileDef(d.underArt);
-    let cand = null, agree = 0;
+    let cand = null, agree = 0, disagree = false;
     for (const [dx, dy] of [[0, 1], [0, -1], [-1, 0], [1, 0]]) {
       const nx = x + dx, ny = y + dy;
       if (nx < 0 || ny < 0 || nx >= this.tw || ny >= this.th) continue;
@@ -362,10 +379,75 @@ export class Room {
       if (n.name === d.underArt) return declared;
       if (n.underArt || n.over || n.anim || n.quad || n.big) continue;
       if (n.flags & (F.VOID | F.SOLID | F.WARP)) continue;
+      // A DISAGREEMENT NO LONGER SHORT-CIRCUITS. It used to return `declared`
+      // on the spot, and that is the path most of this world's props take: a
+      // tree on the edge of a wood has mud on one side and dark grass on the
+      // other, which is a disagreement about WHICH ground and not evidence
+      // that the declared one is right. It still refuses to pick a winner —
+      // `agree` stays below two and `cand` is discarded — but it now falls
+      // through to the screen-wide test below, which is the only one that can
+      // tell "these two grounds disagree" from "neither of them is grass".
       if (!cand) { cand = n; agree = 1; } else if (n.name === cand.name) agree++;
-      else return declared;
+      else { disagree = true; }
     }
-    return agree >= 2 ? cand : declared;
+    if (agree >= 2 && !disagree) return cand;
+    if (declared.flags & F.WET) return declared;
+    const g = this.groundCensus(tide);
+    if (!g.dominant || g.pals.has(declared.pal)) return declared;
+    // A NEIGHBOUR BEATS THE SCREEN. Once the declaration is disqualified the
+    // question is no longer "is one vote enough" — it is "which of the grounds
+    // that ARE here", and the one touching this cell is the right answer. The
+    // screen's commonest ground is only the fallback for a prop with no plain
+    // ground beside it at all: the Bog Causeway's tree line is `grassDark` on
+    // the outside and the screen's commonest ground is the `mud` band through
+    // its middle, so taking the screen's answer planted every oak in a beach.
+    for (const [dx, dy] of [[0, 1], [0, -1], [-1, 0], [1, 0]]) {
+      const nx = x + dx, ny = y + dy;
+      if (nx < 0 || ny < 0 || nx >= this.tw || ny >= this.th) continue;
+      const n = this.tile(nx, ny, tide);
+      if (n.underArt || n.over || n.anim || n.quad || n.big) continue;
+      if (n.flags & (F.VOID | F.SOLID | F.WARP | F.WET)) continue;
+      return n;
+    }
+    return g.dominant;
+  }
+
+  /**
+   * What ground this screen is actually made of: the set of palettes its plain
+   * ground uses, and the commonest ground tile.
+   *
+   * PALETTE, NOT NAME, IS THE TEST. `sand` and `sandRipple` are one material in
+   * two dressings and read identically under a boulder; `grass` on a screen of
+   * `grassDark` does not. Counting names would call the first pair a fault and
+   * would keep re-substituting between them for ever.
+   *
+   * Memoised on the same key the render cache uses (`cacheKeyFor`), because the
+   * answer moves with the tide — a screen that is sand at LOW and seafloor at
+   * HIGH is two different grounds — and because `render` asks it once per prop.
+   */
+  groundCensus(tide) {
+    const key = this.cacheKeyFor(tide);
+    if (this._groundKey === key && this._groundCensus) return this._groundCensus;
+    const pals = new Set();
+    const n = new Map();
+    for (let y = 0; y < this.th; y++) {
+      for (let x = 0; x < this.tw; x++) {
+        const d = this.tile(x, y, tide);
+        if (d.underArt || d.over || d.anim || d.quad || d.big) continue;
+        if (d.flags & (F.VOID | F.SOLID | F.WARP | F.WET)) continue;
+        pals.add(d.pal);
+        n.set(d.name, (n.get(d.name) || 0) + 1);
+      }
+    }
+    let dominant = null, best = 0;
+    // Ties break on the name, so a screen with two grounds in equal measure
+    // draws the same one every time it is rendered.
+    for (const [name, c] of [...n].sort((a, b) => a[0] < b[0] ? -1 : 1)) {
+      if (c > best) { best = c; dominant = getTileDef(name); }
+    }
+    this._groundKey = key;
+    this._groundCensus = { pals, dominant };
+    return this._groundCensus;
   }
 
   /** Render (and cache) the static tile layer for a tide level or field. */

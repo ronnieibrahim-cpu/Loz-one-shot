@@ -1,3 +1,50 @@
+## S16 — the ground you stand on (this session)
+
+Two faults, both reported by a person looking at the game and both invisible to
+every checker in the table, because both are pictures rather than facts.
+
+### Link was walking on a boulder field
+
+`rockFloor` is the walkable ground of the cliffs, the reef and the abyss — 39
+overworld screens by dominant-ground count — and it was ripped from a fan-sheet
+window the ripper's note calls "cobbled paving". A quarter of its pixels are the
+darkest index, drawn as an outline round every cobble, and every palette the
+family wears has a near-black darkest tone, so each cobble rendered as a rounded
+LUMP. The Gate of the Keep, the Sunken Reef and the Coral Hollow were heaps of
+stones with the player standing on top of them.
+
+Subrosia's own floor replaces it (`rip-terrain.py`, SB 8,440): one mid tone over
+72% of the cell, 5% darkest, three colours, so the near-black index goes unused
+and nothing gets outlined. **`tools/oneshot/find-floor-tile.py` is how it was
+found** — it scores every phased, seamless, four-colour window on a sheet by its
+dark fraction, which turns "find me a floor" into a sort rather than an
+afternoon of squinting.
+
+### Every prop was standing on ground the tile table chose, not the room
+
+`Room.underGround` existed to stop a rock bringing a lawn onto a beach, and it
+did nothing in the two arrangements this world is mostly made of: a tree in a
+treeline has trees either side and trees never vote, and one disagreeing
+neighbour returned the declaration on the spot. 274 cells drew a ground their
+screen did not have. The vote now falls through to a screen-wide palette test
+and, when it substitutes, takes a NEIGHBOUR'S ground rather than the screen's
+commonest — the Bog Causeway's tree line is `grassDark` on the outside and the
+screen's commonest ground is the `mud` band through its middle.
+
+`tools/check-ground.mjs` is new and in the table; its negative test goes red on
+849 cells.
+
+### What was NOT verified
+
+Nobody has played it. Eight screens were photographed out of the ~120 the floor
+change touches. The new floor is a fine two-tone speckle, which is right at 1x
+and busy at 4x — a person should decide whether it wants to be sparser. And the
+cliffs and reef read PLAINER now than they did as boulder fields: the lumps were
+wrong but they were visual interest, and those regions may now want real scatter
+(rocks, tufts, cracks) placed deliberately rather than smuggled in by the floor
+tile. Stand at the Gate of the Keep (0,1,0), the Sunken Reef (0,9,0) and the
+Coral Hollow (0,9,4).
+
 ## S15 — placement, the cutscenes watched, and the interior sea
 
 TWO SESSIONS RAN THIS PROMPT IN PARALLEL AND BOTH DID JOB 1. `b09c0e6` landed

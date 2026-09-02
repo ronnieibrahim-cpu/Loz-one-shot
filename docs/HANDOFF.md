@@ -447,6 +447,43 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+**THE WALKABLE GROUND OF THREE REGIONS WAS A PICTURE OF BOULDERS, AND LINK WAS
+STANDING ON IT.** `rockFloor` — the ground of the cliffs, the reef and the
+abyss, 39 overworld screens by dominant-ground count — was ripped from a
+fan-sheet window the ripper's own note calls "cobbled paving". A QUARTER of its
+256 pixels are the darkest index, drawn as an outline round every cobble, and
+every palette this tile family wears (`stone`, `stonedk`, `rust`, `coral`) has a
+near-black darkest tone. So each cobble rendered as a rounded LUMP and the floor
+came out as a heap of stones with the player on top of it. Nothing was wrong
+with the collision, the flags, or the palette wiring — the tile was a picture of
+rocks, and every checker in the table is happy with a tile that exists, resolves
+and draws. It took a screenshot at 4x, and then it was unmissable at 1x.
+Subrosia's own floor replaces it: one mid tone over 72% of the cell with a
+sparse speckle, 5% darkest, three colours so the near-black index goes unused —
+which is what stops it drawing outlines, and is how every ground tile already
+here is built. **A ground tile's darkest index is the whole difference between
+paving and rubble. Measure the dark fraction before believing a window.**
+
+**A PROP NAMES ITS OWN GROUND, AND THE NAME IS A PROPERTY OF THE TILE TABLE, NOT
+OF THE PLACE.** `Room.underGround` existed to stop a rock bringing a lawn onto a
+beach, and it kept the declaration unless two plain-ground neighbours AGREED —
+so it did nothing at all in the two arrangements this world is mostly made of.
+A tree in a treeline has trees either side, and trees never vote (they are 32x32
+objects); a rock in a row of rocks has rocks. And a single disagreeing neighbour
+returned the declaration on the spot, which is every prop on a boundary between
+two grounds. 274 cells drew a ground their screen did not have: every oak in the
+marsh on a square of Holodrum grass, four posts and four boulders on the Salt
+Pans' reef each carrying a hard green rectangle across rust and sand. The vote
+now falls through to a screen-wide test — is the declared ground's PALETTE
+anywhere on this screen at all — and only substitutes when the answer is no,
+which is the one case where the declaration provably is not describing this
+place. **When it substitutes it takes a NEIGHBOUR'S ground, not the screen's
+commonest one**: the Bog Causeway's tree line is `grassDark` on the outside and
+the screen's commonest ground is the `mud` band through its middle, so the
+screen-wide answer planted every oak in a beach. `tools/check-ground.mjs` holds
+the line, and its negative test goes red on 849 cells.
+
+
 **A DATA WRITER THAT FINDS A ROW BY ITS CONTENTS SHUFFLES A GRID WITH TWO
 IDENTICAL ROWS.** `carve-water.mjs` rewrote each changed room row by searching
 the room's block for the row's old text. Screens in this world are borders of

@@ -84,7 +84,25 @@ PICKS = [
     ('sandWet',     OW, 1933,   81, 'damp sand, denser grain'),
     ('sandRipple',  OW,  484,    1, 'wind-rippled dune'),
     ('mud',         OW, 2206,  154, 'churned bog'),
-    ('rockFloor',   OW,  645, 1549, 'cobbled paving'),
+    # THE GROUND YOU STAND ON IN A ROCKY PLACE, and the reason Link looked
+    # like he was walking over a boulder field for the life of the project.
+    #
+    # This was OW 645,1549, whose note said "cobbled paving" and which is a
+    # fan-sheet cobble: a quarter of its 256 pixels are the darkest index,
+    # drawn as an outline round every cobble. At 16x16 in a four-tone ramp
+    # whose darkest tone is near-black — `stone`, `stonedk`, and every other
+    # palette this tile family wears — each cobble reads as a rounded LUMP, so
+    # 39 overworld screens of walkable ground came out as a heap of stones with
+    # the player standing on top of it. Nothing was wrong with the collision,
+    # the flags or the palette wiring; the tile was a picture of rocks.
+    #
+    # Subrosia's own floor is the thing itself, and it is built like every
+    # other ground tile already here: one mid tone over 72% of the cell with a
+    # sparse speckle of light and dark, no feature big enough for the eye to
+    # lock onto. 5% darkest against the cobble's 25%. Three colours, so the
+    # near-black index every stone palette carries goes unused, which is what
+    # stops it drawing outlines.
+    ('rockFloor',   SB,    8,  440, 'Subrosian rock floor, sparse speckle'),
 
     # THE CLIFFS, and the reason they never read as cliffs.
     #
