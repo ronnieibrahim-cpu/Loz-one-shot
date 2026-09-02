@@ -448,6 +448,29 @@ BEFORE checking a file out for isolation, not after.**
 ## Hard-won lessons — do not rediscover these
 
 
+- **`progress.respawn` was written once and never again, and no checker in the
+  table could see it.** Every death anywhere in the world put the player back
+  outside the Maku Tree in Tidewatch Village. Nothing was LOST — items, keys,
+  doors, chests and Essences all live in `progress` and in the Rooms, and a
+  death rebuilds neither — so the only cost was the walk, from the first screen
+  of the game, every time. The reason nothing caught it is the reusable part:
+  **every other tool in the table models a PART, and none of them dies.** The
+  floods do not die, the switch solver does not die, and `check-playthrough`
+  has an assertion that its run never died at all. A death was a code path
+  nothing in this repository had ever taken. `tools/check-respawn.mjs` takes
+  it; 16 of its 42 assertions go red with the recording disabled.
+- **The respawn point has to be re-taken at every seam AND clamped into its
+  room.** `entryPos` hands a player walking east across a seam an x of -3 — the
+  slide needs him three pixels outside the room he is entering — so recording
+  the raw position put the respawn point outside the world. `reconcileWithTide`
+  would have snapped it back, but only by luck; it is clamped where it is
+  recorded now.
+- **A respawn that forces the sea to MID drowns the point it was taken at.**
+  The old `respawn()` called `tide.setLevel(1)`, which is fine in a village
+  square and fatal in a room whose floor is only above water at LOW — the
+  seafloor rooms of D6, which are exactly where a player dies. The point
+  carries the level it was taken at now.
+
 - **A town can be more than one screen, and the overworld will not let it be
   one room.** `registerMap` throws on an overworld room that declares a `size`
   — "the overworld is a grid of 1x1 screens" — so a bigger town is several

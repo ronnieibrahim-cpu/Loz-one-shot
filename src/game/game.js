@@ -206,6 +206,9 @@ export class Game {
     // After the player is placed, never before: a room has no camera history to
     // deadzone against on the frame you arrive in it.
     this.camera.snap(this.room, this.player);
+    // ...and after THAT, because the point a death sends you back to is a
+    // position the player was actually standing in, reconciled with the sea.
+    this.markRespawn(changedMap);
     if (changedMap || o.banner) {
       this.bannerText = m.kind === 'dungeon' ? m.name : (this.room && this.room.name) || m.name;
       this.bannerTime = BANNER_FRAMES;
@@ -477,6 +480,7 @@ export class Game {
       p.reconcileWithTide(this);
       this.camera.snap(this.room, p);
       this.transition = null;
+      this.markRespawn(false);
     }
   }
 
@@ -1160,18 +1164,70 @@ export class Game {
     this.audio.jingle('gameOver');
   }
 
+  /**
+   * Record where a death sends the player back to.
+   *
+   * THIS USED TO BE WRITTEN ONCE, BY `newProgress`, AND NEVER AGAIN. Every
+   * death in the game — the sixth dungeon's boss room, a cave on the far rim,
+   * the Abyss — put the player back on the tile outside the Maku Tree in
+   * Tidewatch Village, with the whole world to walk again. Nothing was lost
+   * except the walk, which is worse than it sounds: the run's items, keys,
+   * doors and Essences were all still there, so the punishment was purely a
+   * journey, and a journey is the one thing a player has already done.
+   *
+   * The rule now is the source games' rule:
+   *
+   *   OUTDOORS the point is the screen you are standing on, re-taken at every
+   *   seam. Die in the dunes, start again in the dunes.
+   *
+   *   INSIDE ANYTHING — a dungeon, a cave, a shop, a house — it is taken ONCE,
+   *   on the way IN, and it is the door you came in by. Stairs between a
+   *   dungeon's floors do not move it, so dying on floor 3 puts you at the
+   *   dungeon's mouth rather than back in the room that killed you, which is
+   *   the difference between a setback and a death loop in a boss room.
+   *
+   * Nothing here touches what has been DONE. Keys, opened doors, chests,
+   * Essences, charms and the map live in `progress` and in the Rooms, and a
+   * respawn rebuilds neither — `resetRooms()` is a NEW GAME, not a death.
+   */
+  markRespawn(arrival) {
+    if (!this.player || !this.room || !this.progress) return;
+    if (!arrival && this.mapId !== 'overworld') return;
+    const r = this.room, p = this.player;
+    const clamp = (v, hi) => Math.max(0, Math.min(Math.round(v), hi));
+    this.progress.respawn = {
+      map: this.mapId, floor: r.floor, rx: r.rx, ry: r.ry,
+      // CLAMPED INTO THE ROOM. `entryPos` hands a player walking east across a
+      // seam an x of -3 — three pixels outside the room he is entering, which
+      // is right for the slide and wrong as a place to be put back.
+      px: clamp(p.x, r.pw - 16), py: clamp(p.y, r.ph - 16), dir: p.dir,
+      // AND THE SEA AS IT STOOD. Forcing MID on every death drowns the point
+      // in any room whose floor is only above water at LOW — the seafloor
+      // rooms of D6 are exactly that, and they are where the player dies.
+      tide: this.tide.level,
+    };
+  }
+
   respawn(keepProgress = true) {
     const p = this.progress;
     p.hearts = p.maxHearts;
     const s = p.respawn;
     this.mode = 'play';
     this.entities.length = 0;
+    // The boss died with the room. Leaving the handle behind lets the HUD draw
+    // a health bar for something that is not in the world any more.
+    this.boss = null;
     this.player = new Player(s.px, s.py);
     this.player.dir = s.dir || 'down';
     this.tide.clearOverrides();
-    this.tide.setLevel(1, { instant: true });
+    this.tide.setLevel(s.tide != null ? s.tide : 1, { instant: true });
+    p.tide = this.tide.level;
     this.enterMap(s.map, s.floor, s.rx, s.ry, s.px, s.py, s.dir, { instant: true });
     this.fadeIn();
+    // DEATH IS NOT A WAY TO LOSE AN HOUR. Everything the run has earned is
+    // already in `progress`; writing it here is what makes it survive the tab
+    // being closed on the game-over screen, which is when a player closes it.
+    if (this.slot != null) this.save();
   }
 
   // ------------------------------------------------------------------ frame

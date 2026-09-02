@@ -70,7 +70,13 @@ export function newProgress(name = 'LINK', seed = (Date.now() >>> 0)) {
     // gained, and a new game opening in an alley is a worse first frame than
     // one opening in the square with the shop in front of it.
     pos: { map: 'overworld', floor: 0, rx: 4, ry: 7, px: 72, py: 72, dir: 'down' },
-    respawn: { map: 'overworld', floor: 0, rx: 4, ry: 7, px: 72, py: 72, dir: 'down' },
+    // Where a death puts you back. This is the STARTING value only —
+    // `Game.markRespawn` moves it every time the player crosses an overworld
+    // seam and every time he walks into a dungeon, a cave or a house. It used
+    // to be the only value it ever had, which meant dying anywhere in the
+    // world sent you back to the village square. `tide` is the sea as it stood
+    // when the point was taken, because MID is not a safe level everywhere.
+    respawn: { map: 'overworld', floor: 0, rx: 4, ry: 7, px: 72, py: 72, dir: 'down', tide: 1 },
     // stats
     deaths: 0, frames: 0, rupeesTotal: 0, kills: 0,
     createdAt: Date.now(),

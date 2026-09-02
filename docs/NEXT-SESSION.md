@@ -1,3 +1,35 @@
+## S19 — dying stopped costing an hour (this session)
+
+`progress.respawn` was set once, by `newProgress`, and NOTHING in the game ever
+wrote it again. Every death anywhere — the Abyssal Keep's boss room, a cave on
+the far rim, the seafloor of D6 — put the player back on the tile outside the
+Maku Tree in Tidewatch Village. Nothing was lost except the walk, and the walk
+is the part the player has already done.
+
+`Game.markRespawn` now takes the point:
+
+* **outdoors**, on every screen, re-taken at every seam and every warp;
+* **inside anything** — a dungeon, a cave, a shop, a house — ONCE, on the way
+  in. Stairs between a dungeon's floors do not move it, so dying on D2's floor
+  1 puts you at D2's mouth rather than back in the room that killed you.
+
+The point carries the SEA it was taken at, because `respawn()` used to force
+MID and MID is not a level you can stand at in a seafloor room. It is clamped
+into its room, because `entryPos` legitimately hands a player crossing a seam
+an x of -3. And `respawn()` writes the slot, so a player who dies and closes
+the tab on the game-over screen does not lose the run.
+
+**What was NOT broken and is not changed:** the run's state. Items, keys, boss
+keys, dungeon maps, opened doors, opened chests, flags, Essences, rupees and
+heart containers were always preserved through a death — `resetRooms()` is a
+new game, not a death — and `check-respawn.mjs` now asserts each of them so it
+stays that way.
+
+`tools/check-respawn.mjs` is new and is in CLAUDE.md's table. 42 assertions; 16
+of them go red with the recording disabled, which was checked by disabling it.
+
+---
+
 ## S18 — the village became two screens (this session)
 
 Continues S17. Everything below is on `main` at `e96efbb`.
