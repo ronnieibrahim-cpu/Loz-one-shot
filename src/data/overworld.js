@@ -82,8 +82,8 @@ const rooms = {
     legend: 'abyss', music: 'abyss',
     map: [
       '##########',
-      '#gg.CC.gg#',
-      'ggg....ggg',
+      '#gg.##.gg#',
+      'ggg.CC.ggg',
       'gg.GGG>.gg',
       'ggg.gg>ggg',
       'gggggg>ggg',
@@ -91,7 +91,10 @@ const rooms = {
       '###gggg###',
     ],
     warps: [
-      { x: 4, y: 1, to: { map: 'd6', floor: 0, rx: 3, ry: 7, px: 72, py: 96 } },
+      { x: 4, y: 2, to: { map: 'd6', floor: 0, rx: 3, ry: 7, px: 72, py: 96 } },
+      // Both halves of the arch enter. A two-tile-wide door whose
+      // right half is scenery is a door the player bumps into.
+      { x: 5, y: 2, to: { map: 'd6', floor: 0, rx: 3, ry: 7, px: 72, py: 96 } },
     ],
     entities: [
       ['sign', 2, 4, { text: 'THE ABYSSAL KEEP\nNereth waits below the water.' }],
@@ -265,7 +268,7 @@ const rooms = {
       'gg.6666.gg',
       'ggg6666ggg',
       '#gggggggg#',
-      '###gggg###',
+      '###gg#####',
     ],
     entities: [
       ['siren', 4, 2],
@@ -398,8 +401,8 @@ const rooms = {
     legend: 'salt', music: 'salt',
     map: [
       '###gggg###',
-      '#gg....gg#',
-      'gg.C..o.gg',
+      '#g###..gg#',
+      'gg#C#.o.gg',
       'gg......gg',
       'ggG2222Ggg',
       'ggg2222ggg',
@@ -470,9 +473,9 @@ const rooms = {
     name: 'Palace Mouth',
     legend: 'reef', music: 'reef',
     map: [
-      '###gggg###',
-      '#gg.CC.gg#',
-      'ggg....ggg',
+      '###gg#####',
+      '#gg..##gg#',
+      'ggg..CCggg',
       'gg.6666.gg',
       'gg.6666.gg',
       'gggggggggg',
@@ -480,7 +483,14 @@ const rooms = {
       '###gggg###',
     ],
     warps: [
-      { x: 4, y: 1, to: { map: 'cave4', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
+      // One column east of where the other mouths sit. Column 4 of the screen
+      // above is the lane tools/replays/tide-steps-split walks, and the anchor
+      // patch that replay measures is thrown from a fixed tile in it, so the
+      // rock face this porch is cut into is kept off that column.
+      { x: 5, y: 2, to: { map: 'cave4', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
+      // Both halves of the arch enter. A two-tile-wide door whose
+      // right half is scenery is a door the player bumps into.
+      { x: 6, y: 2, to: { map: 'cave4', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
     ],
     entities: [
       ['sign', 2, 3, { text: 'REEF PALACE\nDrowned to the arches. The porch is all\nthat is left of it.' }],
@@ -533,7 +543,7 @@ const rooms = {
       'gg.GGGG.gg',
       'ggg____ggg',
       '#gggggggg#',
-      '###gggg###',
+      '###g##g###',
     ],
     entities: [
       ['tektite', 3, 2], ['tektite', 6, 4],
@@ -739,9 +749,9 @@ const rooms = {
     name: 'Cistern Mouth',
     legend: 'cliffs', music: 'overworld',
     map: [
-      '###gggg###',
-      '#gg.CC.gg#',
-      'ggg....ggg',
+      '###g##g###',
+      '#gg.##.gg#',
+      'ggg.CC.ggg',
       'gg.9999.gg',
       'gg......gg',
       'ggG""""Ggg',
@@ -749,7 +759,10 @@ const rooms = {
       '###gggg###',
     ],
     warps: [
-      { x: 4, y: 1, to: { map: 'd4', floor: 0, rx: 3, ry: 7, px: 72, py: 96 } },
+      { x: 4, y: 2, to: { map: 'd4', floor: 0, rx: 3, ry: 7, px: 72, py: 96 } },
+      // Both halves of the arch enter. A two-tile-wide door whose
+      // right half is scenery is a door the player bumps into.
+      { x: 5, y: 2, to: { map: 'd4', floor: 0, rx: 3, ry: 7, px: 72, py: 96 } },
     ],
     entities: [
       ['sign', 2, 3, { text: 'CLIFFSIDE CISTERN\nWhat the water hides, the water opens.' }],
@@ -819,7 +832,7 @@ const rooms = {
       'gg......gg',
       'gfTT..TTfg',
       'TgggggggfT',
-      'TTTggggTTT',
+      'TTTg##gTTT',
     ],
     entities: [
       ['wisp', 4, 3], ['keese', 2, 4],
@@ -1044,9 +1057,9 @@ const rooms = {
     name: 'Shrine Mouth',
     legend: 'wood', music: 'overworld',
     map: [
-      'TTTggggTTT',
-      'Tgg.CC.ggT',
-      'ggf....ggg',
+      'TTTg##gTTT',
+      'Tgg.##.ggT',
+      'ggf.CC.ggg',
       'gg.0000.gg',
       'gg......gg',
       'ggTT..TTgg',
@@ -1054,7 +1067,10 @@ const rooms = {
       'TTTggggTTT',
     ],
     warps: [
-      { x: 4, y: 1, to: { map: 'd5', floor: 0, rx: 3, ry: 7, px: 72, py: 96 } },
+      { x: 4, y: 2, to: { map: 'd5', floor: 0, rx: 3, ry: 7, px: 72, py: 96 } },
+      // Both halves of the arch enter. A two-tile-wide door whose
+      // right half is scenery is a door the player bumps into.
+      { x: 5, y: 2, to: { map: 'd5', floor: 0, rx: 3, ry: 7, px: 72, py: 96 } },
     ],
     entities: [
       ['sign', 2, 3, { text: 'DROWNED WOOD SHRINE\nRide what floats.' }],
@@ -1141,7 +1157,7 @@ const rooms = {
       'gg.7777.gg',
       'ggg....ggg',
       '#gggggggg#',
-      '###gggg###',
+      '###g##g###',
     ],
     entities: [
       ['octorokSea', 4, 3],
@@ -1350,9 +1366,9 @@ const rooms = {
     name: 'Spire Mouth',
     legend: 'coral', music: 'reef',
     map: [
-      '###gggg###',
-      '#gg.CC.gg#',
-      'ggg....ggg',
+      '###g##g###',
+      '#gg.##.gg#',
+      'ggg.CC.ggg',
       'gg.6666.gg',
       'gg......gg',
       'ggg""""ggg',
@@ -1360,7 +1376,10 @@ const rooms = {
       '###gggg###',
     ],
     warps: [
-      { x: 4, y: 1, to: { map: 'd2', floor: 0, rx: 3, ry: 7, px: 72, py: 96 } },
+      { x: 4, y: 2, to: { map: 'd2', floor: 0, rx: 3, ry: 7, px: 72, py: 96 } },
+      // Both halves of the arch enter. A two-tile-wide door whose
+      // right half is scenery is a door the player bumps into.
+      { x: 5, y: 2, to: { map: 'd2', floor: 0, rx: 3, ry: 7, px: 72, py: 96 } },
     ],
     entities: [
       ['sign', 2, 3, { text: 'CORAL SPIRE\nLet the sea carry you up.' }],
@@ -1621,7 +1640,7 @@ const rooms = {
       'gg......gg',
       'ggf""""ggg',
       'TggggggffT',
-      'TTTggggTTT',
+      'TTTg##gTTT',
     ],
     entities: [
       ['zol', 5, 3], ['pickup', 2, 2, { kind: 'rupee20' }],
@@ -1651,8 +1670,8 @@ const rooms = {
     legend: 'coast', music: 'overworld',
     map: [
       'TTTggggTTT',
-      'Tgg....ggT',
-      'gg.C.>..gg',
+      'Tg###..ggT',
+      'gg#C#>..gg',
       'gf...>..gg',
       'gfGgg>gGgg',
       'ggg..>.ggg',
@@ -1751,16 +1770,16 @@ const rooms = {
     legend: 'coast', music: 'overworld',
     map: [
       'TTTTTTTTTT',
-      'Tgg....gfT',
-      'gg.1111.gg',
+      'Tgg###.gfT',
       'gg.1C11.gg',
+      'gg.1111.gg',
       'gg.1.11.gg',
       'ggg....gfg',
       'TgffgggggT',
       'TTTggggTTT',
     ],
     warps: [
-      { x: 4, y: 3, to: { map: 'cave2', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
+      { x: 4, y: 2, to: { map: 'cave2', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
     ],
     entities: [
       ['crab', 6, 4], ['sign', 2, 1, { text: 'At LOW tide the reef is a road.' }],
@@ -1796,7 +1815,7 @@ const rooms = {
       'gg.1111.gg',
       'ggg....ggg',
       'TggggggggT',
-      'TTTggggTTT',
+      'TTTg##gTTT',
     ],
     entities: [
       ['octorok', 4, 3], ['crab', 6, 4],
@@ -1875,9 +1894,9 @@ const rooms = {
     name: 'Sanctum Mouth',
     legend: 'marsh', music: 'marsh',
     map: [
-      'TTTggggTTT',
-      'Tgf.CC.ggT',
-      'ggf....ggg',
+      'TTTg##gTTT',
+      'Tgf.##.ggT',
+      'ggf.CC.ggg',
       'gg.!!!!.gg',
       'gg......gg',
       'ggg""""ggg',
@@ -1885,7 +1904,10 @@ const rooms = {
       'TTTggggTTT',
     ],
     warps: [
-      { x: 4, y: 1, to: { map: 'd3', floor: 0, rx: 3, ry: 7, px: 72, py: 96 } },
+      { x: 4, y: 2, to: { map: 'd3', floor: 0, rx: 3, ry: 7, px: 72, py: 96 } },
+      // Both halves of the arch enter. A two-tile-wide door whose
+      // right half is scenery is a door the player bumps into.
+      { x: 5, y: 2, to: { map: 'd3', floor: 0, rx: 3, ry: 7, px: 72, py: 96 } },
     ],
     entities: [
       ['sign', 2, 3, { text: 'BOGWATER SANCTUM\nThe current runs at one height only.' }],
@@ -2024,9 +2046,9 @@ const rooms = {
     name: 'Grotto Mouth',
     legend: 'dunes', music: 'overworld',
     map: [
-      'TTTggggTTT',
-      'Tgg.CC.ggT',
-      'ggg....ggg',
+      'TTTg##gTTT',
+      'Tgg.##.ggT',
+      'ggg.CC.ggg',
       'gg.1111.gg',
       'gg......gg',
       'ggg""""ggg',
@@ -2034,7 +2056,10 @@ const rooms = {
       'TTTggggTTT',
     ],
     warps: [
-      { x: 4, y: 1, to: { map: 'd1', floor: 0, rx: 3, ry: 7, px: 72, py: 96 } },
+      { x: 4, y: 2, to: { map: 'd1', floor: 0, rx: 3, ry: 7, px: 72, py: 96 } },
+      // Both halves of the arch enter. A two-tile-wide door whose
+      // right half is scenery is a door the player bumps into.
+      { x: 5, y: 2, to: { map: 'd1', floor: 0, rx: 3, ry: 7, px: 72, py: 96 } },
     ],
     entities: [
       ['sign', 2, 3, { text: 'TIDEWASH GROTTO\nDrain it, then walk it.' }],
@@ -2429,7 +2454,8 @@ function installHouses() {
           }],
           ['npc', 7, 4, { sprite: 'npc_farore_0', dialogue: 'faroreHome', after: 'faroreHomeAfter', needEssences: 5 }],
         ],
-        // The hollow is at 3,1 in the tree line at the top of the square.
+        // The hollow is at 4,1 in the tree line at the top of the square. It is drawn
+        // with `treeHollow`, not the cave arch — see the town legend.
         warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 4, ry: 7, px: 64, py: 40, dir: 'down' } }],
       },
     },

@@ -38,6 +38,10 @@ export const PALETTES = {
   stonef:  ['#9aa29a', '#868e88', '#6e766e', '#181c1a'],
   marble:  ['#f8f0e0', '#d0c8b8', '#908878', '#403c34'],
   coral:   ['#f8c0d0', '#e07898', '#a04060', '#481828'],
+  // The reef city's rock, one stop down the ramp. A cave mouth is a HOLE, and
+  // a hole drawn in `coral` proper came out the same brightness as the cliff
+  // around it — pink on pink, with nothing reading as depth.
+  coraldk: ['#c08098', '#a04060', '#682840', '#200810'],
   lava:    ['#f8d870', '#e88830', '#c03818', '#500c08'],
   ice:     ['#ffffff', '#d0e8f8', '#88a8d0', '#405068'],
   bog:     ['#b8c078', '#788048', '#4c5030', '#1c2014'],

@@ -72,6 +72,7 @@ export function installLegends() {
     'g': 'sandRipple', 'G': 'sand', 'f': 'sand', 'v': 'sandDeep',
     'T': 'palm', 'b': 'bushSand', 'o': 'rockSand', 'q': 'postSand',
     '#': 'cliffSand', '^': 'cliffSand', '_': 'ledgeSand',
+    'C': 'caveMouthSand',   // cut into a sand cliff, so it wears the sand ramp
     '"': 'ledgeSandN', '>': 'ledgeSandE', '<': 'ledgeSandW',
   }, 'base');
 
@@ -108,6 +109,7 @@ export function installLegends() {
     '.': 'sandRust', ',': 'sandRust',
     '~': 'waterD', '=': 'waterAbyss',
     'T': 'treeDead', 'o': 'rock', '#': 'cliffAbyss', '^': 'cliffAbyss',
+    'C': 'caveMouthAbyss',
     'V': 'keepSeal',        // story gate: the Maku Tree opens it at five Essences
     '_': 'ledgeAbyss',
     '"': 'ledgeAbyssN', '>': 'ledgeAbyssE', '<': 'ledgeAbyssW',
@@ -119,6 +121,7 @@ export function installLegends() {
     '.': 'sandCoral', ',': 'sandCoral',
     '~': 'waterSReef', '=': 'waterDReef',
     'T': 'palm', 'b': 'bushSand', 'o': 'rock', '#': 'cliffCoral', '^': 'cliffCoral',
+    'C': 'caveMouthCoral',
     '_': 'ledgeCoral',
     '"': 'ledgeCoralN', '>': 'ledgeCoralE', '<': 'ledgeCoralW',
   }, 'base');
@@ -159,7 +162,11 @@ export function installLegends() {
     'e': 'block:bCrate' + grass,
     'z': 'block:bCrates' + grass,
   });
-  registerLegend('town', townKit(''), 'coast');
+  // The village's one non-building doorway. `C` is the cave arch everywhere
+  // else in the world; in a town it is the hollow at the top of the square that
+  // the Maku Tree is reached through, and a grey cave mouth standing in a row
+  // of oaks was the tell that the two had been sharing a tile.
+  registerLegend('town', { ...townKit(''), 'C': 'treeHollow' }, 'coast');
   registerLegend('townDunes', townKit('Sand'), 'dunes');
 
   // ---- dungeon: shared indoor vocabulary ---------------------------------

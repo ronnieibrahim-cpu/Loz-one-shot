@@ -40,10 +40,12 @@ export const ROUTE = [
   // The planner works the way out for itself; see dTravel in actor-runtime.mjs.
   ['travel', 8, 8, 12000],
 
-  // The cave mouth is a warp tile at 4,1 — walking onto it is the whole of
-  // entering a dungeon. There is a crab on this screen; it is walked past
+  // The cave mouth is a warp tile at 4,2 — walking onto it is the whole of
+  // entering a dungeon. It moved down a row when the mouths were set into the
+  // rock they are cut into (the two cells above it are now the cliff), so this
+  // directive moves with it. There is a crab on this screen; it is walked past
   // rather than fought, which is what a player does.
-  ['goto', 4, 1, 600],
+  ['goto', 4, 2, 600],
   ['wait', 60],
   ['dialogue', 200],
 

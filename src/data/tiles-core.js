@@ -1369,8 +1369,34 @@ export function installCoreTiles() {
     spikes: { art: ART.spikes, pal: 'stone', flags: F.HAZARD, underArt: 'dFloor' },
 
     // --- transitions ---
-    caveMouth: { art: ART.caveMouth, pal: 'stonedk', flags: F.SOLID | F.WARP, mask: 0 },
-    caveMouthSolid: { art: ART.caveMouth, pal: 'stonedk', flags: F.SOLID },
+    //
+    // A CAVE MOUTH IS A HOLE, NOT AN OBJECT. The extracted art is a dark arch
+    // with a one-pixel lip and nothing else — on the Subrosia sheet the rock it
+    // is cut into is supplied by the tiles AROUND it, and that is how the source
+    // games do every cave in Holodrum and Labrynna too. Dropped on open sand or
+    // open grass with no rock touching it, the same tile reads as a rectangle
+    // somebody pasted on the ground, which is exactly what nine overworld
+    // screens looked like until the rock went in above them. `family: 'cliff'`
+    // is what makes that work: a cliff mass directly over a mouth is ONE mass,
+    // so no lip is drawn along the seam between them and the mouth reads as
+    // having been cut into the rock rather than parked under it.
+    //
+    // The palette variants are the same trick every cliff and every ledge here
+    // already uses. A grey arch inside a sand-coloured cliff or a coral one is
+    // the giveaway that the tile came from somewhere else, so each region's
+    // mouth carries its own cliff's ramp — darker, because it is a hole.
+    caveMouth: { art: ART.caveMouth, pal: 'stonedk', flags: F.SOLID | F.WARP, mask: 0, family: 'cliff' },
+    caveMouthSolid: { art: ART.caveMouth, pal: 'stonedk', flags: F.SOLID, family: 'cliff' },
+    caveMouthSand: { art: ART.caveMouth, pal: 'sandwet', flags: F.SOLID | F.WARP, mask: 0, family: 'cliff' },
+    caveMouthCoral: { art: ART.caveMouth, pal: 'coraldk', flags: F.SOLID | F.WARP, mask: 0, family: 'cliff' },
+    caveMouthAbyss: { art: ART.caveMouth, pal: 'abyss', flags: F.SOLID | F.WARP, mask: 0, family: 'cliff' },
+    // A HOLLOW IS NOT A CAVE. Tidewatch's Maku Tree is entered through a gap in
+    // the tree line at the top of the square — the room data has said so since
+    // it was laid out — and it was drawn with the grey stone cave arch, so the
+    // village had a rock doorway standing in a row of oaks with no rock
+    // anywhere near it. Same silhouette, the dead-oak ramp, and the tree line's
+    // own canopy showing through: a hollow trunk instead of a quarry.
+    treeHollow: { art: ART.caveMouth, pal: 'treeoakdd', flags: F.SOLID | F.WARP, mask: 0 },
     stairsDown: { art: ART.stairsDown, pal: 'stone', flags: F.WARP | F.STAIRS },
     // One-way ledges. The art is one tile; what changes per region is the
     // palette and the ground drawn under its transparent top and foot, the same
