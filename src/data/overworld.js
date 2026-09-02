@@ -1522,7 +1522,7 @@ const rooms = {
       'TTTTTTTTTT',
     ],
     entities: [
-      ['keese', 4, 3], ['pickup', 6, 4, { kind: 'rupee20' }],
+      ['keese', 4, 3], ['pickup', 6, 3, { kind: 'rupee20' }],
     ],
   },
   // ---- dunes -------------------------------------------------------------
@@ -1786,7 +1786,7 @@ const rooms = {
       { x: 4, y: 2, to: { map: 'cave2', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
     ],
     entities: [
-      ['crab', 6, 4], ['sign', 2, 1, { text: 'At LOW tide the reef is a road.' }],
+      ['crab', 6, 4], ['sign', 1, 2, { text: 'At LOW tide the reef is a road.' }],
     ],
   },
   // ---- dunes -------------------------------------------------------------
@@ -1804,7 +1804,7 @@ const rooms = {
       'TTTggggTTT',
     ],
     entities: [
-      ['sign', 2, 1, { text: 'THE SHALLOWS\nAt LOW tide the sandbar walks you east.' }],
+      ['sign', 2, 2, { text: 'THE SHALLOWS\nAt LOW tide the sandbar walks you east.' }],
       ['crab', 6, 4],
     ],
   },
@@ -2095,7 +2095,7 @@ const rooms = {
       { x: 2, y: 4, to: { map: 'houseSandpiper', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
     ],
     entities: [
-      ['sign', 2, 1, { text: 'SANDPIPER ROW\nTwo houses, one boat, no harbour.' }],
+      ['sign', 5, 1, { text: 'SANDPIPER ROW\nTwo houses, one boat, no harbour.' }],
       ['npc', 5, 5, { sprite: 'npc_fisher', wander: true, dialogue: 'fisher1', after: 'fisher1After', needEssences: 2 }],
       // Coastwise Chain, link 6.
       ['trader', 4, 6, {

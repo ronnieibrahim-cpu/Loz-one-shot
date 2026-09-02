@@ -447,6 +447,34 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+**A TREELINE IS TWO TILES DEEP ON SCREEN AND ONE IN THE DATA**, because a tree
+is 32x32 on a 2x2 lattice: the canopy in the tree's own row and the root mound
+in the row below, painted over whatever ground is there. That is deliberate —
+every tree in Holodrum has roots — and it means the row under a treeline is
+walkable ground with a tree drawn on it. Twenty-one placed entities stood in
+one, including two villagers and the scrimshander waist deep in Tidewatch
+Village's tree line and three signposts at the same cell (2,1) on three
+different coast screens.
+
+**AND MOVING THE PEOPLE OUT OF IT BROKE THE GAME.** "The nearest cell that is
+not overhung" put the scrimshander at (3,5), which is Tidewatch Village's only
+straight east-west route — rows 2-4 are two buildings and two lanes, row 5 is
+the thoroughfare — and `test.mjs` immediately reported that walking west no
+longer left the screen. **`check-towns` passed it**, and was right to: the
+screen is not SEVERED, because row 6 goes round the outside. A solid entity in
+a thoroughfare is legal for a flood and still wrong for a person walking in a
+straight line. So the pass moves OBJECTS — a sign, a pickup, a chest, whose
+position is nobody's decision but the tile's — and only reports the PEOPLE,
+because an NPC stands beside the thing it belongs to (the scrimshander next to
+his own shack) and moving one is a composition decision.
+
+**A doorway and the tile you stand on to use it are both off limits to any of
+this.** The first cut put a villager at (6,5), directly below the shop door at
+(6,4), and made the shop unenterable. check-towns did not notice — it floods
+TILES and an NPC is an entity — but the shop-door replay did, by simply
+recording zero room changes.
+
+
 **A REFUSED QUADRANT IS A SLICED TREE, AND 146 OF 536 TREE BLOCKS WERE ONE.**
 `Room.drawQuads` skips a quadrant `quadMayCover` refuses, and a skipped quadrant
 is not drawn at all — so the tree ends in a dead straight vertical or horizontal

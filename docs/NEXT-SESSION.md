@@ -48,6 +48,19 @@ is the edge of the world), and 60 because a tide tile is animated at some levels
 after the water. 26 remain, every one of them beside a rock, a cliff, a
 drownWall, a town crate or the Maku hollow, which is where a tree should stop.
 
+### And things were standing in the roots of the trees
+
+A treeline is two tiles deep on screen and one in the data — the canopy in the
+tree's own row, the root mound in the row below. Twenty-one placed entities
+stood in one. The four that are OBJECTS (three signposts and a pickup) were
+moved out; the six that are PEOPLE were not, and are printed by check-ground
+every run instead. That is not laziness: "the nearest cell that is not overhung"
+put the scrimshander in the middle of Tidewatch Village's only straight route
+west, and test.mjs reported that walking west no longer left the screen.
+check-towns passed it and was right to — the screen is not severed, row 6 goes
+round — so a solid entity in a thoroughfare is legal for a flood and still wrong
+for a person walking. **The six villagers want a hand, not a tool.**
+
 ### What was NOT verified
 
 Nobody has played it. Six screens were photographed out of the 21 the thinning

@@ -35,6 +35,22 @@ function check(name, cond, detail) {
   else { failures.push(name + (detail ? ' — ' + detail : '')); console.log('  FAIL ' + name + (detail ? ' — ' + detail : '')); }
 }
 
+// The placed OBJECTS a player walks up to, whose position is nobody's decision
+// but the tile's. An enemy is not one: it leaves its spawn cell in the first
+// second, and a spawn point is not a place anyone stands.
+//
+// PEOPLE ARE NOT ASSERTED, they are reported. An NPC stands beside the thing it
+// belongs to — the scrimshander next to his own shack, a shopkeeper outside her
+// shop — and Tidewatch Village is two buildings, two lanes and one thoroughfare,
+// so "the nearest cell that is not overhung" put the scrimshander in the middle
+// of the only straight route west and `test.mjs` reported that walking west no
+// longer left the screen. check-towns had passed it: the screen was not severed,
+// because row 6 goes round. A solid entity in a thoroughfare is legal for a
+// flood and still wrong for a person walking. Moving one is a composition
+// decision and wants an eye, so this prints them and leaves them.
+const STATIC_ENTITIES = new Set(['sign', 'pickup', 'chest', 'essence', 'torch']);
+const PEOPLE_ENTITIES = new Set(['npc', 'trader', 'giver', 'scrimshander', 'makuTree']);
+
 const bad = [];
 let props = 0, rooms = 0;
 
@@ -253,6 +269,62 @@ for (const [mapId, m] of MAPS) {
 for (const l of lines.slice(0, 8)) console.log('  line   ' + l);
 check('no decorative prop stands three in a straight line', lines.length === 0,
   lines.length ? `${lines.length} runs` : '');
+
+// --- and nothing you walk up to is standing in the roots of a tree -----------
+//
+// A tree is 32x32 on a fixed 2x2 lattice, so a treeline one tile deep in the
+// DATA is two tiles deep on the SCREEN: the canopy in the tree's own row and the
+// root mound in the row below, painted over whatever ground is there. That is
+// deliberate — every tree in Holodrum has roots — and it means the row under a
+// treeline is walkable ground with a tree drawn on it. Twenty-one placed
+// entities stood in one: two villagers and the scrimshander waist deep in
+// Tidewatch Village's tree line, three signposts, a pickup, a trader.
+//
+// ENEMIES ARE EXEMPT. One walks out of the cell in the first second and a spawn
+// point is not a place anyone stands. Everything static is not: a sign you read
+// and a shopkeeper you talk to should not be inside a bush.
+const shaded = [], shadedPeople = [];
+for (const [mapId, m] of MAPS) {
+  for (const [key, def] of Object.entries(m.roomDefs)) {
+    if (!def.entities || !def.entities.length) continue;
+    const [floor, rx, ry] = key.split(',').map(Number);
+    const room = getRoom(mapId, floor, rx, ry);
+    if (!room) continue;
+    const covered = new Set();
+    for (let by = 0; by < room.th; by += 2) {
+      for (let bx = 0; bx < room.tw; bx += 2) {
+        let q = null;
+        for (const [ox, oy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) {
+          const d = room.tile(bx + ox, by + oy, 1);
+          if (d.quad || d.big) { q = d.quad || d.big; break; }
+        }
+        if (!q) continue;
+        for (const [ox, oy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) {
+          const x = bx + ox, y = by + oy;
+          const d = room.tile(x, y, 1);
+          if ((d.quad || d.big) === q) continue;
+          if (room.quadMayCover(x, y, 1, q)) covered.add(`${x},${y}`);
+        }
+      }
+    }
+    if (!covered.size) continue;
+    for (const e of def.entities) {
+      const [type, ex, ey] = Array.isArray(e) ? e : [e.t, e.x, e.y];
+      if (!covered.has(`${ex},${ey}`)) continue;
+      if (PEOPLE_ENTITIES.has(type)) { shadedPeople.push(`${mapId}/${key} ${type} at ${ex},${ey}`); continue; }
+      if (!STATIC_ENTITIES.has(type)) continue;
+      shaded.push(`${mapId}/${key} ${type} at ${ex},${ey} is inside an overhang`);
+    }
+  }
+}
+for (const s2 of shaded.slice(0, 8)) console.log('  shade  ' + s2);
+check('no placed object is standing in an overhang', shaded.length === 0,
+  shaded.length ? `${shaded.length} entities` : '');
+if (shadedPeople.length) {
+  console.log(`  note: ${shadedPeople.length} people stand in one; each is beside`
+    + ' the thing they belong to and moving one is a judgement, not a rule:');
+  for (const p of shadedPeople) console.log('         ' + p);
+}
 
 // A checker that swept nothing passes for the wrong reason. The world has
 // roughly two thousand prop cells; anything near zero means the sweep broke,
