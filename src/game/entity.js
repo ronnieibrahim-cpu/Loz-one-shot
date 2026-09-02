@@ -241,7 +241,21 @@ export function canOccupy(game, e, x, y, caps) {
   const r = { x: x + e.hb.x, y: y + e.hb.y, w: e.hb.w, h: e.hb.h };
   // Flying entities and mid-jump entities ignore ground obstructions but not walls.
   const airborne = (e.flying || e.z > 2);
-  const cps = caps || { jumping: airborne, swim: !!e.swimming, cutting: false };
+  // AN ENTITY'S OWN `caps` ARE THE FALLBACK, and this is the whole of why the
+  // sea had no living thing in it. `moveEntity` has always read `e.caps`; this
+  // read `e.swimming`, which NOTHING IN THE GAME EVER SET. So one function said
+  // an anglerfry could swim and the other said it could not, and the one that
+  // said no is the one every bare call reaches — every aquatic enemy in the
+  // world sat frozen on its spawn tile, unable to leave deep water, for the
+  // life of the project. Nothing could see it: they spawn, they update, they
+  // draw, they animate, they hurt you if you touch them, and check-motion's
+  // "swimmers stay off the 8px lattice" is satisfied perfectly by not moving.
+  //
+  // `jumping` is OR-ed rather than taken, so an entity that is off the ground
+  // clears ground obstructions whatever its own caps say.
+  const cps = caps || (e.caps
+    ? { ...e.caps, jumping: e.caps.jumping || airborne }
+    : { jumping: airborne, swim: false, cutting: false });
   const x0 = r.x, x1 = r.x + r.w - 1, y0 = r.y, y1 = r.y + r.h - 1;
   const xs = sampleAxis(x0, x1), ys = sampleAxis(y0, y1);
   // Enemies additionally refuse terrain they will not walk on (water, pits, lava),

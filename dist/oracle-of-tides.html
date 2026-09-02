@@ -5286,7 +5286,21 @@ function canOccupy(game, e, x, y, caps) {
   const r = { x: x + e.hb.x, y: y + e.hb.y, w: e.hb.w, h: e.hb.h };
   // Flying entities and mid-jump entities ignore ground obstructions but not walls.
   const airborne = (e.flying || e.z > 2);
-  const cps = caps || { jumping: airborne, swim: !!e.swimming, cutting: false };
+  // AN ENTITY'S OWN `caps` ARE THE FALLBACK, and this is the whole of why the
+  // sea had no living thing in it. `moveEntity` has always read `e.caps`; this
+  // read `e.swimming`, which NOTHING IN THE GAME EVER SET. So one function said
+  // an anglerfry could swim and the other said it could not, and the one that
+  // said no is the one every bare call reaches — every aquatic enemy in the
+  // world sat frozen on its spawn tile, unable to leave deep water, for the
+  // life of the project. Nothing could see it: they spawn, they update, they
+  // draw, they animate, they hurt you if you touch them, and check-motion's
+  // "swimmers stay off the 8px lattice" is satisfied perfectly by not moving.
+  //
+  // `jumping` is OR-ed rather than taken, so an entity that is off the ground
+  // clears ground obstructions whatever its own caps say.
+  const cps = caps || (e.caps
+    ? { ...e.caps, jumping: e.caps.jumping || airborne }
+    : { jumping: airborne, swim: false, cutting: false });
   const x0 = r.x, x1 = r.x + r.w - 1, y0 = r.y, y1 = r.y + r.h - 1;
   const xs = sampleAxis(x0, x1), ys = sampleAxis(y0, y1);
   // Enemies additionally refuse terrain they will not walk on (water, pits, lava),
@@ -9869,6 +9883,12 @@ class Raft extends Entity {
     this.harmless = true;
     this.shadow = false;
     this.depth = -9;
+    // A RAFT FLOATS, and until this line nothing in the engine knew it. It
+    // moves by writing its own `fx`/`fy` rather than through `moveEntity`, so
+    // it worked — but anything that asks `canOccupy` where a raft is gets told
+    // a raft cannot be there, which is how a raft sitting on the only deep
+    // water it is for came out of check-placement.mjs as misplaced.
+    this.caps = { jumping: false, swim: true, cutting: false };
     this.axis = o.axis || 'x';
     this.range = o.range || 48;
     this.speed = o.speed || 0.5;
@@ -19089,7 +19109,7 @@ const rooms = {
     ],
     entities: [
       ['sign', 2, 4, { text: 'THE ABYSSAL KEEP\nNereth waits below the water.' }],
-      ['darknut', 6, 5],
+      ['darknut', 6, 6],
     ],
   },
   '0,2,0': {
@@ -19116,7 +19136,7 @@ const rooms = {
       '###gggg###',
     ],
     entities: [
-      ['wizzrobe', 4, 3],
+      ['wizzrobe', 4, 4],
       ['sign', 1, 6, { text: 'THE BLACK CAUSEWAY\nThe Keep holds this water. No shell\nsounds here. Bring your own sea.' }],
     ],
   },
@@ -19134,7 +19154,7 @@ const rooms = {
       '###gggg###',
     ],
     entities: [
-      ['darknut', 4, 2], ['pickup', 2, 5, { kind: 'heartPiece' }],
+      ['darknut', 4, 3], ['pickup', 2, 5, { kind: 'heartPiece' }],
     ],
   },
   // ---- salt --------------------------------------------------------------
@@ -19169,7 +19189,7 @@ const rooms = {
       '###gggg###',
     ],
     entities: [
-      ['beetle', 4, 3], ['pickup', 6, 4, { kind: 'heartPiece' }],
+      ['beetle', 4, 4], ['pickup', 6, 4, { kind: 'heartPiece' }],
     ],
   },
   '0,6,0': {
@@ -19228,7 +19248,7 @@ const rooms = {
       '###gggg###',
     ],
     entities: [
-      ['jellyfish', 4, 3],
+      ['jellyfish', 4, 5],
     ],
   },
   '0,9,0': {
@@ -19297,7 +19317,7 @@ const rooms = {
       '****######',
     ],
     entities: [
-      ['jellyfish', 3, 3],
+      ['jellyfish', 3, 4],
     ],
   },
   '0,1,1': {
@@ -19348,7 +19368,7 @@ const rooms = {
       '##########',
     ],
     entities: [
-      ['darknut', 3, 3], ['wizzrobe', 6, 2],
+      ['darknut', 3, 3], ['wizzrobe', 6, 3],
     ],
   },
   // ---- salt --------------------------------------------------------------
@@ -19384,7 +19404,7 @@ const rooms = {
     ],
     entities: [
       ['npc', 4, 3, { sprite: 'npc_hood_red', dialogue: 'salterElder', after: 'salterElderAfter', needEssences: 4 }],
-      ['sign', 6, 4, { text: 'The pans drink the sea and give back stone.' }],
+      ['sign', 6, 5, { text: 'The pans drink the sea and give back stone.' }],
     ],
   },
   '0,6,1': {
@@ -19422,7 +19442,7 @@ const rooms = {
       '###gggg###',
     ],
     entities: [
-      ['wisp', 4, 3], ['moblin', 2, 4],
+      ['wisp', 4, 4], ['moblin', 2, 4],
     ],
   },
   // ---- reef --------------------------------------------------------------
@@ -19485,7 +19505,7 @@ const rooms = {
     ],
     entities: [
       ['sign', 2, 3, { text: 'REEF PALACE\nDrowned to the arches. The porch is all\nthat is left of it.' }],
-      ['siren', 7, 4],
+      ['siren', 6, 4],
     ],
   },
   '0,11,1': {
@@ -19502,7 +19522,7 @@ const rooms = {
       '###ggg1***',
     ],
     entities: [
-      ['barnacle', 4, 2], ['jellyfish', 5, 4],
+      ['barnacle', 4, 2], ['jellyfish', 5, 5],
     ],
   },
   // ---- cliffs ------------------------------------------------------------
@@ -19537,7 +19557,7 @@ const rooms = {
       '###g##g###',
     ],
     entities: [
-      ['tektite', 3, 2], ['tektite', 6, 4],
+      ['tektite', 3, 3], ['tektite', 6, 4],
     ],
   },
   '0,2,2': {
@@ -19715,7 +19735,7 @@ const rooms = {
       '###ggg1***',
     ],
     entities: [
-      ['jellyfish', 4, 3],
+      ['jellyfish', 4, 5],
     ],
   },
   // ---- cliffs ------------------------------------------------------------
@@ -19774,7 +19794,7 @@ const rooms = {
       '###gggg###',
     ],
     entities: [
-      ['tektite', 4, 4], ['pickup', 6, 2, { kind: 'heartPiece' }],
+      ['tektite', 4, 5], ['pickup', 6, 3, { kind: 'heartPiece' }],
     ],
   },
   '0,3,3': {
@@ -19809,7 +19829,7 @@ const rooms = {
       'TTTggggTTT',
     ],
     entities: [
-      ['zol', 4, 3],
+      ['zol', 4, 4],
     ],
   },
   '0,5,3': {
@@ -19867,7 +19887,7 @@ const rooms = {
       'TTTggggTTT',
     ],
     entities: [
-      ['anglerfry', 4, 3],
+      ['anglerfry', 4, 5],
       ['sign', 4, 6, { text: 'The water here runs in a ring.\nSwimmers go round. Walkers go through.' }],
     ],
   },
@@ -19920,7 +19940,7 @@ const rooms = {
       '##########',
     ],
     entities: [
-      ['octorokSea', 5, 3],
+      ['octorokSea', 5, 4],
     ],
   },
   '0,11,3': {
@@ -19937,7 +19957,7 @@ const rooms = {
       '######****',
     ],
     entities: [
-      ['pickup', 4, 2, { kind: 'fairy' }],
+      ['pickup', 4, 3, { kind: 'fairy' }],
     ],
   },
   // ---- cliffs ------------------------------------------------------------
@@ -20082,7 +20102,7 @@ const rooms = {
       'TTTggggTTT',
     ],
     entities: [
-      ['anglerfry', 4, 3], ['pickup', 2, 5, { kind: 'heartPiece' }],
+      ['anglerfry', 4, 4], ['pickup', 2, 5, { kind: 'heartPiece' }],
     ],
   },
   '0,7,4': {
@@ -20099,7 +20119,7 @@ const rooms = {
       'TTTggggTTT',
     ],
     entities: [
-      ['anglerfry', 5, 3], ['jellyfish', 3, 4],
+      ['anglerfry', 5, 3], ['jellyfish', 3, 5],
     ],
   },
   // ---- coral -------------------------------------------------------------
@@ -20151,7 +20171,7 @@ const rooms = {
       '###g##g###',
     ],
     entities: [
-      ['octorokSea', 4, 3],
+      ['octorokSea', 4, 4],
     ],
   },
   '0,11,4': {
@@ -20203,7 +20223,7 @@ const rooms = {
       '###gggg###',
     ],
     entities: [
-      ['sign', 6, 2, { text: 'North: the Cliffs of Kell.\nSouth: the bog.' }],
+      ['sign', 6, 3, { text: 'North: the Cliffs of Kell.\nSouth: the bog.' }],
     ],
   },
   '0,2,5': {
@@ -20294,7 +20314,7 @@ const rooms = {
       'TTTggggTTT',
     ],
     entities: [
-      ['zol', 3, 4], ['moblin', 6, 2],
+      ['zol', 3, 4], ['moblin', 6, 3],
     ],
   },
   '0,7,5': {
@@ -20311,7 +20331,7 @@ const rooms = {
       'TTTTTTTTTT',
     ],
     entities: [
-      ['anglerfry', 4, 3],
+      ['anglerfry', 4, 4],
     ],
   },
   // ---- coral -------------------------------------------------------------
@@ -20347,7 +20367,7 @@ const rooms = {
     ],
     entities: [
       // Coastwise Chain, link 7.
-      ['trader', 4, 2, {
+      ['trader', 4, 3, {
         sprite: 'npc_reefkin_d', waiting: 'coralDiver', after: 'corriwigAfter',
         deals: [{ stage: 7, wants: 'whelk', gives: 'pearl', text: 'corriwigTrade' }],
       }],
@@ -20460,7 +20480,7 @@ const rooms = {
       'TTTggggTTT',
     ],
     entities: [
-      ['sign', 6, 2, { text: 'Someone has been digging here.' }],
+      ['sign', 6, 3, { text: 'Someone has been digging here.' }],
     ],
     buried: [[3, 4, 'rupee20']],
   },
@@ -20599,7 +20619,7 @@ const rooms = {
       'TTTggg1***',
     ],
     entities: [
-      ['leever', 4, 3], ['pickup', 6, 2, { kind: 'rupee20' }],
+      ['leever', 4, 3], ['pickup', 6, 3, { kind: 'rupee20' }],
     ],
   },
   // ---- marsh -------------------------------------------------------------
@@ -20651,7 +20671,7 @@ const rooms = {
       'TTTggggTTT',
     ],
     entities: [
-      ['sign', 2, 1, { text: 'The causeway wades only at LOW tide.' }],
+      ['sign', 2, 2, { text: 'The causeway wades only at LOW tide.' }],
       ['zol', 6, 4],
     ],
   },
@@ -20673,7 +20693,7 @@ const rooms = {
       { x: 3, y: 2, to: { map: 'cave1', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
     ],
     entities: [
-      ['sign', 5, 3, { text: 'A grotto in the bluff.\nSomething glitters within.' }],
+      ['sign', 4, 4, { text: 'A grotto in the bluff.\nSomething glitters within.' }],
       ['octorok', 6, 4],
     ],
   },
@@ -20748,7 +20768,11 @@ const rooms = {
       'TTTggggTTT',
     ],
     entities: [
-      ['octorok', 4, 3],
+      // 2,3 rather than the 3,4 check-placement.mjs offered. This octorok spent
+      // the project inside the ledge column at 4,3 and could not move; freed, it
+      // meets whoever crosses this screen, and 3,4 is in the lane. The
+      // suggestion is a legal tile, not a good one — see the tool's own note.
+      ['octorok', 2, 3],
       // Coastwise Chain, link 4.
       ['trader', 6, 4, {
         sprite: 'npc_fisher', waiting: 'coastFisher', after: 'mirrenAfter',
@@ -21163,7 +21187,7 @@ const rooms = {
       // opens to bombs, so the chain cannot be finished before the Coral Spire
       // hands them over. tools/check-trade.mjs proves the whole chain is
       // reachable with bombs and nothing else the Rod would have to unlock.
-      ['trader', 5, 2, {
+      ['trader', 5, 3, {
         ...FOLK.kelper, waiting: 'bogWitch', after: 'yarrowAfter',
         deals: [{ stage: 9, wants: 'cup', gives: 'jar', text: 'yarrowTrade' }],
       }],
@@ -21262,7 +21286,7 @@ const rooms = {
     ],
     entities: [
       ['pickup', 4, 4, { kind: 'rupee20' }],
-      ['sign', 2, 1, { text: 'Only the drained sea shows this floor.' }],
+      ['sign', 2, 2, { text: 'Only the drained sea shows this floor.' }],
     ],
   },
   // ---- dunes -------------------------------------------------------------
@@ -21354,7 +21378,7 @@ const rooms = {
       '**********',
     ],
     entities: [
-      ['sign', 4, 2, { text: 'Nothing past here but open sea.' }],
+      ['sign', 4, 3, { text: 'Nothing past here but open sea.' }],
     ],
   },
 };
@@ -21795,6 +21819,15 @@ class Enemy extends Entity {
     this.terrain = spec.terrain || 'land';
     this.flying = this.terrain === 'air' || !!spec.flying;
     this.avoidFlags = spec.avoid != null ? spec.avoid : TERRAIN_AVOID[this.terrain];
+    // AN AQUATIC ENEMY SWIMS, and until this line none of them could. Its
+    // `avoidFlags` are 0 (see TERRAIN_AVOID) because the water constraint lives
+    // in `terrainOk`, not in the avoid mask — but `canOccupy` refuses F.DEEP to
+    // anything without `swim`, and nothing ever gave one to an enemy. So every
+    // jellyfish, anglerfry, sea octorok and siren in the game was welded to the
+    // tile it spawned on: 0 subpixels in 240 frames, measured. `caps` is the
+    // mechanism the player already uses and `moveEntity` already reads; the
+    // enemies simply never got one.
+    if (this.terrain === 'water') this.caps = { jumping: false, swim: true, cutting: false };
     this.shield = spec.shield || null;
     // Light enough for the Squall Bellows to shove. Fliers, floaters and
     // slimes are; anything armoured or anchored is not. See docs/ITEMS.md.
@@ -24702,7 +24735,11 @@ function installDungeonsA() {
         // that stretch — see FEEL-SPEC.md.
         entities: [
           ['zol', 2, 4, { drops: 'good' }],
-          ['zol', 6, 5, { drops: 'good' }],
+          // 6,4 rather than the 6,6 check-placement.mjs offered. Both are legal floor;
+          // 6,6 is behind the post row, and this room's encounter is TWO ZOLS IN THE
+          // OPEN — put one behind the posts and the fight becomes a chase around
+          // furniture. The checker's suggestion is a starting point and says so.
+          ['zol', 6, 4, { drops: 'good' }],
         ],
       },
       '0,2,3': {
@@ -25766,7 +25803,7 @@ function installDungeonsA() {
         ],
         entities: [
           ['chest', 4, 2, { pickup: 'bossKey' }],
-          ['jellyfish', 2, 5],
+          ['jellyfish', 3, 4],
         ],
       },
       '1,3,1': {
@@ -26056,7 +26093,7 @@ function installDungeonsA() {
           '##########',
         ],
         entities: [
-          ['jellyfish', 2, 1],
+          ['jellyfish', 3, 2],
           ['crab', 7, 6],
         ],
         puzzle: {
@@ -26211,7 +26248,12 @@ function installDungeonsA() {
         ],
         entities: [
           ['chest', 7, 3, { pickup: 'bossKey' }],
-          ['jellyfish', 2, 5],
+          // A KEESE, NOT A JELLYFISH. There is no water in this room at any tide, so
+          // the jellyfish that stood here could never move: `terrainOk` keeps an
+          // aquatic enemy on wet tiles and there were none to be on. It was
+          // scenery with a hitbox. d3 fields five keese already and a flier is
+          // what a dry stone gallery wants. See tools/check-placement.mjs.
+          ['keese', 2, 5],
         ],
       },
       '0,2,1': {
@@ -26758,7 +26800,7 @@ function installDungeonsA() {
         },
         entities: [
           ['wheel', 1, 3, { needTurns: 40 }],
-          ['jellyfish', 7, 4],
+          ['jellyfish', 5, 4],
           ['keese', 6, 6],
         ],
         script: {
@@ -27495,7 +27537,7 @@ function installDungeonsB() {
         },
         entities: [
           ['chest', 1, 2, { pickup: 'key' }],
-          ['jellyfish', 7, 2],
+          ['jellyfish', 4, 4],
           ['keese', 6, 6],
         ],
       },
@@ -27836,7 +27878,7 @@ function installDungeonsB() {
         entities: [
           ['stalfos', 2, 2],
           ['stalfos', 7, 2],
-          ['darknut', 4, 4],
+          ['darknut', 4, 5],
         ],
         puzzle: {
           enemies: true,
@@ -27858,8 +27900,8 @@ function installDungeonsB() {
         ],
         entities: [
           ['wizzrobe', 4, 2],
-          ['darknut', 2, 5],
-          ['siren', 7, 3],
+          ['darknut', 2, 6],
+          ['siren', 7, 2],
           ['torch', 1, 1],
           ['torch', 8, 1],
           ['torch', 1, 6],
@@ -27975,7 +28017,7 @@ function installDungeonsB() {
           ['torch', 7, 2],
           ['torch', 2, 5],
           ['torch', 7, 5],
-          ['darknut', 4, 4],
+          ['darknut', 4, 5],
         ],
         puzzle: {
           torches: 'all',
@@ -28250,7 +28292,7 @@ function installDungeonsB() {
         },
         entities: [
           ['keese', 2, 2],
-          ['anglerfry', 2, 1],
+          ['anglerfry', 3, 6],
         ],
         readable: [
           [1, 3, 'Cut into the coping: "Stand while you can stand. The ledge is only a ledge at low water."'],
@@ -28346,7 +28388,7 @@ function installDungeonsB() {
           ],
         },
         entities: [
-          ['siren', 7, 5],
+          ['siren', 8, 2],
         ],
       },
 
@@ -28364,7 +28406,7 @@ function installDungeonsB() {
           '####..####',
         ],
         entities: [
-          ['wizzrobe', 6, 4],
+          ['wizzrobe', 6, 5],
         ],
       },
       '1,4,2': {
@@ -28423,13 +28465,20 @@ function installDungeonsB() {
         name: 'Nereth, the Drowned King',
         // The boss keeps the mechanic: `noTide` pins the arena at whatever sea
         // was brought through the door, and Nereth's own phases pin it again.
+        // NO LEDGE DOWN THE MIDDLE OF THE ARENA. There was one — a three-tile
+        // run of `>` at x=5 — and Nereth stood on top of it: a one-way drop
+        // splitting the throne room in two, with the final boss occupying it.
+        // tools/check-placement.mjs is what found it, by asking the engine
+        // whether the boss can be where the boss is put. Removing the run frees
+        // his tile and opens the floor; it cannot make the fight harder,
+        // because all it ever did was stand between the player and him.
         map: [
           '##########',
           '#........#',
           '#.9....9.#',
-          '#....>...#',
-          '#....>...#',
-          '#.9..>.9.#',
+          '#........#',
+          '#........#',
+          '#.9....9.#',
           '#........#',
           '####..####',
         ],

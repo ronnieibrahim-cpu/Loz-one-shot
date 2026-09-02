@@ -607,8 +607,17 @@ export const PLANS = {
       // of the lattice — but the actor cannot, and this replay exists to prove
       // the engine is deterministic, not to prove the game is beatable on three
       // hearts. Do not read the headroom as a difficulty statement.
-      maxHearts: 20,
-      hearts: 20,
+      //
+      // TWENTY BECAME THIRTY when the Locked Stair got its second zol back. That
+      // room has always been written as "two zols"; one of them was standing
+      // INSIDE a dungeon post and could not move, so for the life of the project
+      // the encounter was one zol and a decoration. check-placement.mjs found it
+      // and freeing it is correct — and it cost this actor the run, because it
+      // fights by lining up and standing still. Same reason as the paragraph
+      // above, one more time: the headroom is the recorder's handicap, not the
+      // room's difficulty.
+      maxHearts: 30,
+      hearts: 30,
       tide: 1,
       enter: ['d1', 0, 3, 7, 64, 96, 'up'],
     },

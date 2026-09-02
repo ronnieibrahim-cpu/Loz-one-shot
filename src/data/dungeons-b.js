@@ -477,7 +477,7 @@ export function installDungeonsB() {
         },
         entities: [
           ['chest', 1, 2, { pickup: 'key' }],
-          ['jellyfish', 7, 2],
+          ['jellyfish', 4, 4],
           ['keese', 6, 6],
         ],
       },
@@ -818,7 +818,7 @@ export function installDungeonsB() {
         entities: [
           ['stalfos', 2, 2],
           ['stalfos', 7, 2],
-          ['darknut', 4, 4],
+          ['darknut', 4, 5],
         ],
         puzzle: {
           enemies: true,
@@ -840,8 +840,8 @@ export function installDungeonsB() {
         ],
         entities: [
           ['wizzrobe', 4, 2],
-          ['darknut', 2, 5],
-          ['siren', 7, 3],
+          ['darknut', 2, 6],
+          ['siren', 7, 2],
           ['torch', 1, 1],
           ['torch', 8, 1],
           ['torch', 1, 6],
@@ -957,7 +957,7 @@ export function installDungeonsB() {
           ['torch', 7, 2],
           ['torch', 2, 5],
           ['torch', 7, 5],
-          ['darknut', 4, 4],
+          ['darknut', 4, 5],
         ],
         puzzle: {
           torches: 'all',
@@ -1232,7 +1232,7 @@ export function installDungeonsB() {
         },
         entities: [
           ['keese', 2, 2],
-          ['anglerfry', 2, 1],
+          ['anglerfry', 3, 6],
         ],
         readable: [
           [1, 3, 'Cut into the coping: "Stand while you can stand. The ledge is only a ledge at low water."'],
@@ -1328,7 +1328,7 @@ export function installDungeonsB() {
           ],
         },
         entities: [
-          ['siren', 7, 5],
+          ['siren', 8, 2],
         ],
       },
 
@@ -1346,7 +1346,7 @@ export function installDungeonsB() {
           '####..####',
         ],
         entities: [
-          ['wizzrobe', 6, 4],
+          ['wizzrobe', 6, 5],
         ],
       },
       '1,4,2': {
@@ -1405,13 +1405,20 @@ export function installDungeonsB() {
         name: 'Nereth, the Drowned King',
         // The boss keeps the mechanic: `noTide` pins the arena at whatever sea
         // was brought through the door, and Nereth's own phases pin it again.
+        // NO LEDGE DOWN THE MIDDLE OF THE ARENA. There was one — a three-tile
+        // run of `>` at x=5 — and Nereth stood on top of it: a one-way drop
+        // splitting the throne room in two, with the final boss occupying it.
+        // tools/check-placement.mjs is what found it, by asking the engine
+        // whether the boss can be where the boss is put. Removing the run frees
+        // his tile and opens the floor; it cannot make the fight harder,
+        // because all it ever did was stand between the player and him.
         map: [
           '##########',
           '#........#',
           '#.9....9.#',
-          '#....>...#',
-          '#....>...#',
-          '#.9..>.9.#',
+          '#........#',
+          '#........#',
+          '#.9....9.#',
           '#........#',
           '####..####',
         ],

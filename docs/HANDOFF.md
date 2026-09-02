@@ -503,6 +503,28 @@ exactly nothing and the tile went on drawing the art it shares its name with. No
 warning, no missing entry, no failing assertion — the old pixels, for as long as
 you care to stare at them. Rename the ART, not the tiledef.
 
+**NOTHING IN THE GAME EVER SET `e.caps` OR `e.swimming` ON AN ENEMY, SO THE SEA
+HAD NOTHING LIVING IN IT.** `moveEntity` reads `e.caps`; `canOccupy` read
+`e.swimming`; the player sets the first and nothing set the second. So the two
+functions disagreed about the same question and the one every bare call reaches
+said no: every anglerfry, sea octorok and siren in the world was welded to its
+spawn tile, and the jellyfish only moved because `driftWithTide` writes their
+position directly — which walked them onto dry land, where they despawned.
+MEASURED: 0 subpixels in 240 frames, before; thousands, after. Nothing could
+see it. They spawn, update, draw, animate and hurt you on contact, and
+check-motion's "swimmers stay off the 8px lattice" is satisfied perfectly by
+never moving. An aquatic enemy now gets `caps` in the `Enemy` constructor and
+`canOccupy` falls back to `e.caps`, so there is one mechanism instead of two.
+
+**AND WHEN YOU FREE SOMETHING THAT WAS STUCK, THE SCRIPTED RUNS MEET IT.** The
+Locked Stair is written as "two zols" and one of them stood inside a dungeon
+post for the life of the project. Freed, it fights — and d1-descent's actor,
+which lines up and stands still to swing, died on a route it had always walked.
+Two of the moves check-placement suggested had to be overridden by hand for the
+same reason (an octorok into the lane the playthrough travels, a zol behind a
+post row). The tool's suggestion is a legal tile; whether it is a good one is a
+judgement, which is why it has no `--fix`.
+
 **A SPRITE SHEET'S PITCH IS NOT 16 JUST BECAUSE ITS SPRITES ARE.** `find_cells`
 splits a band of content into runs and cuts each run every 16 pixels. The
 Oracle of Seasons NPC sheet's townspeople sit about 17 to 18 apart, so the cut
