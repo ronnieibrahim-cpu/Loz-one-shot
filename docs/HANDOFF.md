@@ -447,6 +447,43 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+**A DATA WRITER THAT FINDS A ROW BY ITS CONTENTS SHUFFLES A GRID WITH TWO
+IDENTICAL ROWS.** `carve-water.mjs` rewrote each changed room row by searching
+the room's block for the row's old text. Screens in this world are borders of
+trees and runs of open sand, so identical rows are common — and whichever row
+had actually changed, the FIRST matching one got rewritten. The tool then
+verified its own in-memory grids, pronounced every seam reconciled, and
+`check-overworld` disagreed with it about seams it had already fixed. Two
+hours went into the reconciler before the writer was suspected. **Replace the
+map array POSITIONALLY**, and when a tool and a checker disagree about data the
+tool just wrote, read the file before re-deriving the logic.
+
+**A TOWN IS NOT ONLY THE 'town' LEGEND.** Sandpiper Row is `townDunes`. A pass
+that skipped town screens by legend name carved a channel straight through it,
+and `check-towns` — which floods ON FOOT at all three levels, by design — cut
+the screen in half at HIGH within seconds. The four town keys are listed
+explicitly now as well as both legends: a town that stops declaring a town
+legend must not quietly become paintable.
+
+**WATER ADDED AS A TIDE TILE MOVED NOTHING — NOT ONE REPLAY, NOT THE
+PLAYTHROUGH.** 788 tiles of interior sea landed and all 51 replays and
+check-playthrough passed without re-recording. That is the whole argument for
+`sandbar`/`channel` over `waterD`: `check-overworld`'s field flood models the
+conch honestly (a state is screen/tile/LEVEL, and you may change level only
+where the tile you stand on survives it), so a crossing that is dry at LOW and
+deep at HIGH is still a crossing. The risk in this work was never the water, it
+was the SEAMS — a screen edge is shared, and a converted edge tile whose
+partner did not convert is a hole.
+
+**A CREEK WITH NO BANK IS A CANAL.** The first cut ran the shoreline pass
+before the creeks, so every creek came out as a one-tile rectangle of bright
+water with a hard edge against dry salt — legible as a channel and readable as
+pasted on. The shoreline pass runs again after the creeks now, with its own
+small per-screen allowance on top of the budget, because on a screen where the
+creek had spent the whole budget the creek came out with no shoreline at all,
+which is the one thing the coast work was for.
+
+
 **`fade: 'out'` IN A CUTSCENE FADED STRAIGHT BACK IN BY ITSELF, AND THE CARD IT
 WAS MAKING ROOM FOR WAS DRAWN UNDER THE FADE ANYWAY.** Two independent reasons
 one beat had never once happened, which is `T57`'s shape exactly — when a

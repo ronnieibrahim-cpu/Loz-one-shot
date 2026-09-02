@@ -48,6 +48,7 @@ import { MAPS } from '../../src/world/maps.js';
 installData();
 const DRY = process.argv.includes('--dry');
 const MAX_PER_SCREEN = Number((process.argv.find(a => a.startsWith('--max=')) || '=10').split('=')[1]);
+const STRAND_ROUNDS = Number((process.argv.find(a => a.startsWith('--strand=')) || '=2').split('=')[1]);
 
 const W = 12, H = 10, RW = 10, RH = 8;
 const m = MAPS.get('overworld');
@@ -64,12 +65,14 @@ const KEEPOUT = new Set(['_', '"', '>', '<', 'C', 'c', 'D', '/', 'K', 'J', 'M', 
 
 const key = (rx, ry) => `0,${rx},${ry}`;
 const grid = new Map();      // key -> array of 10-char arrays
+const original = new Map();  // key -> the room's grid as it was on disk
 const legend = new Map();
 const blocked = new Map();   // key -> Set of "x,y" that must never be painted
 
 for (let ry = 0; ry < H; ry++) for (let rx = 0; rx < W; rx++) {
   const d = m.roomDefs[key(rx, ry)];
   grid.set(key(rx, ry), d.map.map(r => r.split('')));
+  original.set(key(rx, ry), d.map.slice());
   legend.set(key(rx, ry), d.legend || m.legend);
   const b = new Set();
   const mark = (x, y, r = 1) => {
@@ -86,9 +89,15 @@ for (let ry = 0; ry < H; ry++) for (let rx = 0; rx < W; rx++) {
   blocked.set(key(rx, ry), b);
 }
 
-const TOWN = new Set();
+// EVERY town legend, not just 'town'. Sandpiper Row is `townDunes` and the
+// first cut only knew the one name, so it carved a channel through a town and
+// `check-towns` — which floods ON FOOT at all three levels by design — cut the
+// screen in half at HIGH. The four town keys are listed as well, so a town that
+// stops declaring a town legend does not quietly become paintable.
+const TOWN_LEGENDS = new Set(['town', 'townDunes']);
+const TOWN = new Set(['0,4,7', '0,4,8', '0,5,8', '0,9,8']);
 for (let ry = 0; ry < H; ry++) for (let rx = 0; rx < W; rx++) {
-  if (legend.get(key(rx, ry)) === 'town') TOWN.add(key(rx, ry));
+  if (TOWN_LEGENDS.has(legend.get(key(rx, ry)))) TOWN.add(key(rx, ry));
 }
 
 const paintable = (rx, ry, x, y) => {
@@ -102,33 +111,51 @@ const rim = (rx, ry) => rx === 0 || ry === 0 || rx === W - 1 || ry === H - 1;
 
 let painted = 0;
 const perScreen = new Map();
+const mine = new Map();      // "rx,ry,x,y" -> the character that was there before
+// A per-screen budget, so no screen becomes a lake. The bank pass gets its own
+// small allowance on top: it runs last, and on a screen where the creek spent
+// the whole budget the creek came out with no shoreline at all — deep water
+// straight against dry salt, which is the one thing the coast pass was for.
+let capBonus = 0;
 function paint(rx, ry, x, y, ch) {
   const k = key(rx, ry);
   const n = perScreen.get(k) || 0;
-  if (n >= MAX_PER_SCREEN) return false;
+  if (n >= MAX_PER_SCREEN + capBonus) return false;
+  const id = `${rx},${ry},${x},${y}`;
+  if (!mine.has(id)) mine.set(id, grid.get(k)[y][x]);
   grid.get(k)[y][x] = ch;
   perScreen.set(k, n + 1);
   painted++;
   return true;
 }
+function unpaint(rx, ry, x, y) {
+  const id = `${rx},${ry},${x},${y}`;
+  if (!mine.has(id)) return;
+  grid.get(key(rx, ry))[y][x] = mine.get(id);
+  mine.delete(id);
+  painted--;
+}
 
 // ---- pass 1: the strand round every pool already inland -------------------
-// Two rounds, recomputed from a snapshot each time so a round cannot chase its
-// own output across the whole screen.
-for (let round = 0; round < 2; round++) {
-  const todo = [];
-  for (let ry = 1; ry < H - 1; ry++) for (let rx = 1; rx < W - 1; rx++) {
-    for (let y = 0; y < RH; y++) for (let x = 0; x < RW; x++) {
-      if (!paintable(rx, ry, x, y)) continue;
-      const near = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => {
-        const nx = x + dx, ny = y + dy;
-        return nx >= 0 && ny >= 0 && nx < RW && ny < RH && wet(rx, ry, nx, ny);
-      });
-      if (near) todo.push([rx, ry, x, y]);
+// Recomputed from a snapshot each round so a round cannot chase its own output
+// across the whole screen.
+function strand(rounds) {
+  for (let round = 0; round < rounds; round++) {
+    const todo = [];
+    for (let ry = 1; ry < H - 1; ry++) for (let rx = 1; rx < W - 1; rx++) {
+      for (let y = 0; y < RH; y++) for (let x = 0; x < RW; x++) {
+        if (!paintable(rx, ry, x, y)) continue;
+        const near = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => {
+          const nx = x + dx, ny = y + dy;
+          return nx >= 0 && ny >= 0 && nx < RW && ny < RH && wet(rx, ry, nx, ny);
+        });
+        if (near) todo.push([rx, ry, x, y]);
+      }
     }
+    for (const [rx, ry, x, y] of todo) paint(rx, ry, x, y, '1');
   }
-  for (const [rx, ry, x, y] of todo) paint(rx, ry, x, y, '1');
 }
+strand(STRAND_ROUNDS);
 const afterStrand = painted;
 
 // ---- pass 2: creeks -------------------------------------------------------
@@ -194,6 +221,101 @@ for (const [rx, ry] of dryScreens) {
   console.log(`  ${rx},${ry}: creek of ${n} tiles to the sea`);
 }
 
+// ---- pass 2b: banks -------------------------------------------------------
+// A CREEK WITH NO BANK IS A CANAL. The first cut ran the strand before the
+// creeks, so every creek came out as a one-tile rectangle of bright water with
+// a hard edge against dry salt or grass — legible as a channel and readable as
+// pasted on. One more strand round gives each creek the same shoreline the
+// pools already had, and it is the shoreline that makes it look like water
+// found its way there rather than like somebody drew a line.
+const beforeBanks = painted;
+capBonus = 4;
+strand(1);
+console.log(`banks: ${painted - beforeBanks} tiles of shoreline along the new creeks`);
+
+// ---- pass 3: seams --------------------------------------------------------
+// A SCREEN EDGE IS SHARED. `check-overworld` compares WALKABILITY tile for tile
+// across every seam at every tide level, so a converted edge tile whose partner
+// on the next screen still reads differently is a hole the player walks into.
+// S13 hit this doing the coast; it is the same rule here.
+//
+// Reconciled by asking the ENGINE rather than by matching characters: a first
+// cut paired "did I paint this" against "did I paint that", which is not the
+// question — a tile painted next to an existing tide tile can disagree with it
+// without either being newly painted. `tileWalkable` (tools/lib/collision.mjs)
+// is `Room.solidAt`, so this is the same rule check-overworld will apply.
+const { getRoom, resetRooms } = await import('../../src/world/maps.js');
+const { tileWalkable, ROUTE_AVOID } = await import('../lib/collision.mjs');
+const CAPS = { jumping: false, swim: false, cutting: false };
+// check-overworld's own `walkableAt`, minus the item mask (nothing here is
+// holding an item). A tile behind a story flag is shut, and a checker that
+// forgets that disagrees with the one whose verdict actually matters.
+const walkableAt = (room, x, y, t) => {
+  const d = room.tile(x, y, t);
+  if (d && d.openFlag) return false;
+  return tileWalkable(room, x, y, t, CAPS, ROUTE_AVOID);
+};
+
+function applyGrids() {
+  for (let ry = 0; ry < H; ry++) for (let rx = 0; rx < W; rx++) {
+    m.roomDefs[key(rx, ry)].map = grid.get(key(rx, ry)).map(r => r.join(''));
+  }
+  resetRooms();
+}
+
+let reverted = 0;
+for (let pass = 0; pass < 12; pass++) {
+  applyGrids();
+  const rooms = new Map();
+  for (let ry = 0; ry < H; ry++) for (let rx = 0; rx < W; rx++) {
+    rooms.set(key(rx, ry), getRoom('overworld', 0, rx, ry));
+  }
+  const bad = [];
+  for (let ry = 0; ry < H; ry++) for (let rx = 0; rx < W; rx++) {
+    for (const [dx, dy] of [[1, 0], [0, 1]]) {
+      const bx = rx + dx, by = ry + dy;
+      if (bx >= W || by >= H) continue;
+      const ra = rooms.get(key(rx, ry)), rb = rooms.get(key(bx, by));
+      const n = dx ? RH : RW;
+      for (let i = 0; i < n; i++) {
+        const ax = dx ? RW - 1 : i, ay = dx ? i : RH - 1;
+        const nx = dx ? 0 : i, ny = dx ? i : 0;
+        for (const t of [0, 1, 2]) {
+          if (walkableAt(ra, ax, ay, t) !== walkableAt(rb, nx, ny, t)) {
+            bad.push([rx, ry, ax, ay, bx, by, nx, ny]);
+            break;
+          }
+        }
+      }
+    }
+  }
+  if (!bad.length) { console.log(`seams: clean after ${pass} reconciliation pass(es), ${reverted} tile(s) put back`); break; }
+  let did = 0;
+  for (const [arx, ary, ax, ay, brx, bry, bx2, by2] of bad) {
+    const A = [arx, ary, ax, ay], B = [brx, bry, bx2, by2];
+    const ma = mine.has(A.join(',')), mb = mine.has(B.join(','));
+    // First choice is always to carry the water ACROSS the seam rather than to
+    // pull it back: a creek that crosses a screen boundary is the whole point
+    // of a creek, and reverting both halves of one leaves a puddle.
+    if (ma !== mb) {
+      const [src, dst] = ma ? [A, B] : [B, A];
+      if (paintable(dst[0], dst[1], dst[2], dst[3])
+        && paint(dst[0], dst[1], dst[2], dst[3], grid.get(key(src[0], src[1]))[src[3]][src[2]])) {
+        did++; continue;
+      }
+    }
+    for (const t of [A, B]) {
+      if (mine.has(t.join(','))) { unpaint(t[0], t[1], t[2], t[3]); reverted++; did++; }
+    }
+  }
+  if (!did) {
+    console.log(`seams: ${bad.length} mismatch(es) NOT of this pass's making — left alone`);
+    for (const b of bad.slice(0, 6)) console.log('   ', JSON.stringify(b), 'mineA=', mine.has([b[0],b[1],b[2],b[3]].join(',')), 'mineB=', mine.has([b[4],b[5],b[6],b[7]].join(',')));
+    break;
+  }
+}
+applyGrids();
+
 console.log(`\nstrand ${afterStrand} tiles, creeks ${painted - afterStrand} tiles over ${creeks} screens`
   + `, ${painted} in total`);
 
@@ -205,21 +327,28 @@ let text = readFileSync(FILE, 'utf8');
 let rewritten = 0;
 for (let ry = 0; ry < H; ry++) for (let rx = 0; rx < W; rx++) {
   const k = key(rx, ry);
-  const before = m.roomDefs[k].map;
+  const before = original.get(k);
   const after = grid.get(k).map(r => r.join(''));
   if (before.every((r, i) => r === after[i])) continue;
   const i = text.indexOf(`'${k}': {`);
   if (i < 0) throw new Error(`no room block for ${k}`);
   const j = text.indexOf('\n  },', i);
   const body = text.slice(i, j);
-  let nb = body;
-  for (let row = 0; row < RH; row++) {
-    if (before[row] === after[row]) continue;
-    const needle = `'${before[row]}',`;
-    const at = nb.indexOf(needle);
-    if (at < 0) throw new Error(`${k} row ${row}: cannot find ${needle}`);
-    nb = nb.slice(0, at) + `'${after[row]}',` + nb.slice(at + needle.length);
-  }
+  // POSITIONAL, NOT BY CONTENT. A first cut replaced each changed row by
+  // searching the block for its old text — and a screen with two identical
+  // rows (a border of trees, a run of open sand) then had the FIRST one
+  // rewritten whichever row had actually changed. The rows came out shuffled,
+  // the tool reported its own grids clean, and check-overworld disagreed with
+  // it about seams it had already reconciled.
+  const ms = body.indexOf('map: [');
+  if (ms < 0) throw new Error(`${k}: no map array`);
+  const me = body.indexOf('],', ms);
+  const head = body.slice(0, ms), tail = body.slice(me);
+  const seg = body.slice(ms, me);
+  let row = 0;
+  const nseg = seg.replace(/'[^']*'/g, (lit) => (row < RH ? `'${after[row++]}'` : lit));
+  if (row !== RH) throw new Error(`${k}: found ${row} rows in its map array`);
+  const nb = head + nseg + tail;
   text = text.slice(0, i) + nb + text.slice(j);
   rewritten++;
 }
