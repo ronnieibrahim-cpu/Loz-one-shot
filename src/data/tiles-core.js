@@ -1696,6 +1696,23 @@ export function installCoreTiles() {
     waterSReef: { art: ART.waterS0, pal: 'reef', flags: F.WATER, anim: ['waterS0', 'waterS1', 'waterS2', 'waterS1'], animRate: 11 },
     waterDReef: { art: ART.waterD0, pal: 'reef', flags: F.DEEP, anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 13 },
     waterAbyss: { art: ART.waterD0, pal: 'abyss', flags: F.DEEP, anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 16 },
+    // THE OPEN SEA. Thalassia is an archipelago and had no coastline: the whole
+    // rim of the world was cliff, and so was the wall round every one of the
+    // 120 screens, which is why solid sits at a flat 33% at every tide while
+    // water never reaches 9%. A game about the tide was a walled garden with
+    // puddles in it.
+    //
+    // SOLID AND DEEP TOGETHER, and the order in `tileDefSolid` is the point:
+    // SOLID is answered first, so this stops a swimmer as well as a walker.
+    // That is what the world's edge has to do — there is no screen out there to
+    // swim to — and it is what the source games do with the water past the last
+    // screen of Holodrum. Everything else about it is water: it animates, it
+    // draws as the deep, and the map screen finally has something other than
+    // grey to paint the edge of the world with.
+    //
+    // It is NOT a substitute for real sea inside the world. Anywhere the player
+    // can reach, use `waterD` and let the Flippers mean something.
+    openSea: { art: ART.waterD0, pal: 'deep', flags: F.DEEP | F.SOLID, anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 13 },
     foamN: { art: ART.foamN, pal: 'water', flags: F.WATER },
 
     // --- riptides ---------------------------------------------------------

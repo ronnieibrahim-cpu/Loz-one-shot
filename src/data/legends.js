@@ -18,6 +18,7 @@ export function installLegends() {
     '.': 'sand', ',': 'sandWet', ':': 'sandRipple', 'd': 'sandDeep',
     'm': 'mud', 'R': 'rockFloor', 'r': 'rockFloorDk',
     '~': 'waterS', '=': 'waterD',
+    '*': 'openSea',   // the sea past the last screen: drawn as water, solid to a swimmer
     // barriers and props
     '#': 'cliff', '^': 'cliffTop', '%': 'cliffDk', 'X': 'cliffCracked',
     'T': 'tree', 'Y': 'treeSand', 'P': 'palm',
