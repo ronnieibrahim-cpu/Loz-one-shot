@@ -1,3 +1,39 @@
+## S12 — Cave mouths get their rock, trees stop being sliced (this session)
+
+Two visual faults, both reported by a person playing, both green in every
+checker before and after — `T53` again, twice in one session.
+
+**Cave mouths.** All eleven overworld mouths were a dark arch pasted on open
+ground: sand, grass, a tree canopy in Tidewatch, and open water at the Sunken
+Reef. The extracted tile is only the hole; the rock is the neighbours' job and
+nobody had ever done it. Each mouth now stands at the foot of a two-tile rock
+face in its region's own cliff, with `caveMouthSand` / `caveMouthCoral` /
+`caveMouthAbyss` so the arch is not grey inside a sand or coral one. The Reef
+Palace's porch is one column east of the rest — see HANDOFF for why. Tidewatch's
+Maku hollow is `treeHollow` now, the same silhouette on the dead-oak ramp,
+because the room data has always called it a gap in the tree line. The Sunken
+Reef grotto moved out of the middle of its pool to a shelf at the head of the
+reef road, which is the first time reaching it actually costs a low tide.
+`tide-steps-split` was re-recorded, not loosened: same end tile, same hearts,
+same probes.
+
+**Trees and palms.** Quadrants were being chosen per cell, so any tree mass that
+was not an even 2x2 came out sliced — the dune palms worst of all. `drawQuads`
+now lays whole 32x32 trees on a fixed lattice, after the ground, overhanging
+where the mass runs out and stopping at anything the player must see. The Lens's
+second copy of the room learned the same pass; it had been drawing 16x16
+lollipops over the real trees for as long as the trees have been 32x32. Props
+now look at what they are standing on, and the dig spot is two spade marks
+instead of a flat tan tile.
+
+**What was NOT done, and where to stand to judge it.** The three jobs in the S12
+prompt — the empty sea (0.9% water at LOW), the thirteen cutscenes' pacing, and
+the `feel.js` debt — are untouched; this session was the follow-up request only.
+Nobody has WATCHED any of this in motion: every judgement here is from stills.
+In `dist/oracle-of-tides.html`, walk south out of Tidewatch to the Grotto Mouth
+(8,8) for a cave in rock, stand in the Rotting Grove (5,3) and the dunes (8,7)
+for the trees and palms, and hold the Lens up in a wood.
+
 ## S11 — Orphaned checkers recovered; the feel.js debt is NOT paid (this session)
 
 **Run per `docs/SESSION-PROMPTS.md` S11, on top of S10.** Job 1 is done in full.

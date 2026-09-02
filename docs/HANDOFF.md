@@ -457,16 +457,71 @@ the canvas, where nothing can see it, leaving a bare root mound with a torn
 outline — and every screen in this world is bordered with trees along its top
 row. **A person playing spotted it in seconds; every checker was green.**
 
-The working shape is four 16x16 quadrants, chosen by NEIGHBOURS rather than by
-coordinates:
+**...AND CHOOSING THE QUADRANT PER CELL SLICES THE TREE.** The fix for the
+double-density bug above was to pick each cell's quadrant from its neighbours:
 
     qy = (no tree above) or (tree below) -> canopy, else roots
     qx = start of a run -> L, end -> R, otherwise alternate by parity
-    no horizontal neighbour at all      -> draw BOTH halves, overhanging
 
-Canopy everywhere, trunks only along the bottom edge of a mass — which is how a
-wood actually looks — and a one-tile treeline stays a canopy instead of becoming
-a row of roots.
+That is a rule about CELLS, and a tree is not a cell. Wherever a mass was not a
+neat even 2x2 it cut the object up. A canopy with open sand under it drew no
+trunks at all, so it ended in a dead-straight horizontal line — every dune palm
+in the game was a band of fronds guillotined along a tile boundary. A root row
+one tile shorter than its canopy drew half a mound with a hard vertical edge,
+and because the two rows voted separately it was sometimes the LEFT half under
+the RIGHT half of the canopy. **A person playing reported this too, and every
+checker was green for it as well.**
+
+The working shape is a FIXED 2x2 LATTICE over the room (`Room.drawQuads`). Any
+block holding at least one tree cell draws all four quadrants of one whole tree.
+That is the density the first cut got wrong — one object per 32px, not per 16px,
+because the lattice is what spaces them — and it is the consistency the second
+cut got wrong, because two cells of one tree can no longer disagree about which
+half of it they are. Ragged edges become OVERHANG, which is what the source does
+with a 32x32 object and why every tree in Holodrum has roots.
+
+Two things that fall out of it, both of which cost time:
+
+  * **The tree pass has to run after every ground cell.** Drawn in step with the
+    grid, the ground of the next cell along scrubs the overhang off again —
+    silently, and only at the edges.
+  * **Overhang must stop at anything the player has to SEE.** The Maku Tree's
+    hollow sits in Tidewatch's tree line, and the block holding it drew an oak
+    straight over the doorway: art covering a warp. Nothing in the checker table
+    can see that — the tile is still there and it still warps.
+
+`renderAt` — the Lens's second copy of the room — needs the same pass, and did
+not have it for as long as the trees have been 32x32. It fell back to the 16x16
+`art` the tiledef keeps for the map screen's colour sampler, so holding the Lens
+up in a wood put a row of lollipops on sticks over the real trees.
+
+**A TILEDEF WHOSE NAME COLLIDES WITH AN ART NAME CAN NEVER CHANGE ITS ART.**
+`tileSheet.add(ART)` keys the sheet by ART name, and `Room` draws a tile by its
+TILE name; the alias pass at the end of `installCoreTiles` bridges the two, but
+it is guarded `!(name in ART)`. So repointing `digSpot.art` at a new art did
+exactly nothing and the tile went on drawing the art it shares its name with. No
+warning, no missing entry, no failing assertion — the old pixels, for as long as
+you care to stare at them. Rename the ART, not the tiledef.
+
+**A CAVE MOUTH IS A HOLE, AND THE ROCK ROUND IT IS THE TILES NEXT TO IT.** The
+extracted mouth is a dark arch and a one-pixel lip and nothing else — on the
+Subrosia sheet the rock it is cut into is supplied by its neighbours, and the
+source does every cave in Holodrum and Labrynna the same way. Nobody supplied it
+here, so eleven overworld screens had a black rectangle pasted on open sand,
+open grass, a tree canopy and (at the Sunken Reef) open water. Each mouth now
+sits at the foot of a two-tile rock face. Two things this costs, both paid:
+
+  * The seam. Solid rock above a mouth on a screen's top row means the same two
+    cells are solid on the screen ABOVE, or `check-overworld` fails the seam. If
+    a replay stands in those cells it is displaced on entry and the run is not
+    the run any more — which is why the Reef Palace's porch is a column east of
+    every other mouth, keeping clear of the lane `tide-steps-split` throws its
+    anchor down.
+  * A prop with the wrong ground under it is the same fault one scale down: a
+    boulder declaring grass on a beach is a hard green square. `Room.underGround`
+    lets the room outvote the declaration, but only on two or more agreeing
+    neighbours — a one-vote rule walked the Drowned Wood's snarl out of its
+    channel and onto the floorboards, and only a replay's probe hash caught it.
 
 **"LONE" IS A PROPERTY OF THE TREE, NOT OF ONE CELL OF IT.** The overhang case
 above was first decided per cell. A one-wide column's canopy had a horizontal
