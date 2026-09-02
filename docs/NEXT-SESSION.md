@@ -1,3 +1,114 @@
+## S18 — the village became two screens (this session)
+
+Continues S17. Everything below is on `main` at `e96efbb`.
+
+### Tidewatch Village is two screens now
+
+The village was ONE 10x8 screen carrying two 3x3 buildings, the Maku hollow and
+six people, which is the town kit's own trap: two 3x3 blocks on a 10x8 screen
+leave exactly one row that crosses it. It is also why four townsfolk stood in
+the roots of the treeline — there was nowhere else to put them.
+
+A town cannot be one big ROOM. `registerMap` throws on an overworld room that
+declares a `size` ("the overworld is a grid of 1x1 screens"), so a bigger town
+is several ADJACENT screens, the way Horon Village is several screens in the
+source. Village East (`0,5,7`), which was a coast screen with a ledge nothing
+needed, is the other half of the town: it carries the shop, a well, the tide
+pool and Mirren, it is in the `town` legend, and it is DECLARED in
+`tools/check-towns.mjs` — the sweep at the bottom of that file fails on a screen
+that uses a town legend and is not in `TOWNS`, so the second screen cannot
+quietly stop being held to a village's standard.
+
+The pool stops one column short of the north and south lanes on purpose: at
+HIGH those two rows of dry grass are the only way round it on foot, and
+check-towns floods towns ON FOOT at all three seas.
+
+Back in the square: the nine tiles the shop stood on are a lawn with a stump
+table, the digger works at the table (5,4), the scrimshander works beside the
+noticeboard (7,4), and the three tiles of grass BEHIND the shop are a treeline
+rather than a pocket. That pocket had two wandering villagers in it and was
+reachable only through the tile the digger was standing on. Nobody could get
+in; neither of them could get out. It had been like that for the life of the
+project and no tile checker could see it — check-towns' pinch test asks whether
+removing a tile strands a WAY IN or a DOOR, and those three tiles were neither.
+
+`houseShop`'s return warp now lands on `0,5,7` at 72,88. `village-shop-door`
+and `village-walk` were re-recorded, and so were `d1-descent` and
+`tide-steps-split`, which move with any change to entity allocation order.
+
+`check-ground` reports NOBODY standing in a tree overhang, which it has never
+been able to say before.
+
+### Three ways to put a townsperson in the wrong place, none of them visible
+
+1. A solid giver at `3,5` failed `test.mjs`'s "walking west changed room". The
+   player's box straddles two rows, so he leaves a screen along row 5 whatever
+   row he set off in.
+2. Moved to `8,5` it passed that and walled the east end instead:
+   `village-walk`'s `goto 8,3` spent all 400 frames shouldering against it and
+   the recording ended two screens west being shot by an octorok. **A `goto`
+   paths over TILES and then walks into ENTITIES, and a failed goto does not
+   fail — it runs out.**
+3. The sealed pocket above.
+
+### A doorway is one tile wide and the player is not
+
+The player's hitbox is `x+3` by ten, so standing centred on a column overlaps
+the column to its right. Walking into a building's doorway from below has to be
+done at `x = tx*16`, not at the tile's middle — at the middle the box catches
+the solid shopfront beside the door and the walk stops dead one tile short,
+silently. And the warp reads the FEET tile, `floor((y + 12) / 16)`, so the
+player must walk twelve pixels PAST the door tile's centre before it fires.
+`village-shop-door` records both as a run that never changes room.
+
+### The sand cross in two village lawns
+
+Village Shore and Driftwood Strand each had a plus-shaped patch of sand laid
+across a grass screen: `.` is sand in the coast legend and `g` is grass, and the
+two had been mixed as though they were one ground. Both are lawns now with the
+tide channel the only thing in them that is not grass.
+
+### A beach on the cliffs, and another in the drowned wood
+
+The same fault, systematic. Every regional legend overrides `g`, `G` and `f`
+and most stop there, so `.` fell through to the base legend's seaside `sand`:
+191 tiles of beach on a high stone shelf in the cliffs, 170 under the trees in
+the wood, each with a hard straight edge because there is no transition tile
+between two grounds. `.` and `,` are `rockFloorDk` in the cliffs now and `mud`
+in the wood.
+
+`tools/oneshot/find-ground-specks.mjs` is how it was found: it asks the engine
+what it will PAINT in every cell of every screen, groups the answers into
+connected patches BY PALETTE, and reports patches too small to read as a place.
+86 before the legend fixes, 84 after — and of those 84, all but two are SHORES,
+sand meeting water, which is the one place two grounds are meant to meet.
+`tools/oneshot/despeckle-ground.mjs` re-lettered the two.
+
+### What was looked at and what was not
+
+Screenshotted and judged by eye: `0,4,7`, `0,5,7` (LOW and HIGH), `0,4,8`,
+`0,5,8`, `0,9,8`, `0,2,2`, `0,2,3`, `0,5,3`, `0,11,0`, `0,6,7`. NOT looked at:
+the other ~260 screens, including every cliffs and wood screen the legend change
+touched other than the three above. The change is uniform and the three that
+were checked came out right, but a screen whose author MEANT the sand — a
+beach at the foot of a cliff, say — would now be stone and nothing would say so.
+
+### Still open, carried from S17
+
+* Six... none. The people are all out of the overhangs.
+* The `pot` tile is a hand-drawn brown sphere with no rim (21 placements).
+* No transition tiles between two grounds, which is why every boundary in this
+  session's screenshots is a straight pixel edge. In `docs/ART-BACKLOG.md`.
+* All six Essences share one orb sprite; the source draws a different icon per
+  Essence.
+* Sandpiper Row is still one screen and stays that way — its own sign calls it
+  "two houses, one boat, no harbour", and the alley between its two houses is
+  what the source games do. Widening it by moving the east house one column
+  over put the house's wall against the screen's east seam and stranded four
+  border tiles at all three tides; check-towns said so immediately. Reverted.
+
+---
+
 ## S17 — rows of four, and the trees that changed size (this session)
 
 Three faults, all reported by a person looking at the game.
