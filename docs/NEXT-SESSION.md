@@ -32,7 +32,21 @@ commonest — the Bog Causeway's tree line is `grassDark` on the outside and the
 screen's commonest ground is the `mud` band through its middle.
 
 `tools/check-ground.mjs` is new and in the table; its negative test goes red on
-849 cells.
+849 cells. It also asserts that no room warp sits on a tile a 32x32 object may
+overhang — a room's `warps` list is a doorway that need not carry `F.WARP`, so
+`quadMayCover` says yes to it and a canopy would swallow the way in. None do
+today; 48 of 48 are protected, and breaking `quadMayCover` reports all 48.
+
+### And an overworld gap was a hole in the tilemap
+
+`chasm` drew the dungeon pit's art in the abyss palette — 90% of one near-black
+tone, right for a pit in a brick floor and a rendering failure in a dune. Four
+dune screens had flat black rectangles on golden sand. It has its own `pit`
+palette and body art now, with a far lip through the same `family` + `edgeArt`
+autotiler the cliffs use, so a vertical run of four gets one lip and the
+horizontal runs (one tile tall) are all lip. **The body carries no shading**: a
+single darker row per cell read as depth in the art string and rendered as a
+rung every sixteen pixels.
 
 ### What was NOT verified
 

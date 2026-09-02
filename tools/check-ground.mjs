@@ -80,6 +80,43 @@ if (bad.length > 12) console.log(`  ... and ${bad.length - 12} more`);
 
 check('every prop stands on ground its own screen has', bad.length === 0,
   bad.length ? `${bad.length} cells` : '');
+
+// --- and nothing 32x32 is allowed to grow over a doorway --------------------
+//
+// `Room.quadMayCover` refuses to overhang a tile carrying F.WARP, F.SOLID or
+// F.VOID, or one holding a prop — the Maku Tree's hollow sits in a tree line
+// and an earlier cut drew a whole oak over it, art covering a warp, which no
+// checker in the table can see because the tile is still there and still warps.
+//
+// A room's `warps` list is a SECOND kind of doorway and it does not have to
+// carry the flag: it is a coordinate the room script warps from. On plain
+// ground, `quadMayCover` says yes, so a warp put one tile under a treeline
+// would vanish under a canopy. None do today; this is the assertion that keeps
+// it that way, and it reads the engine's own predicate rather than restating
+// which flags protect a cell.
+const covered = [];
+for (const [mapId, m] of MAPS) {
+  for (const [key, def] of Object.entries(m.roomDefs)) {
+    if (!def.warps) continue;
+    const [floor, rx, ry] = key.split(',').map(Number);
+    const room = getRoom(mapId, floor, rx, ry);
+    if (!room) continue;
+    for (const w of def.warps) {
+      for (const tide of [0, 1, 2]) {
+        // `q` is the quad set asking to cover; any name that is not this
+        // cell's own asks the general question, which is the one that matters.
+        if (room.quadMayCover(w.x, w.y, tide, '\u0000none')) {
+          covered.push(`${mapId}/${key} warp at ${w.x},${w.y} at tide ${tide}`
+            + ` on '${room.baseName(w.x, w.y)}' — a tree may grow over it`);
+          break;
+        }
+      }
+    }
+  }
+}
+for (const c of covered.slice(0, 8)) console.log('  cover  ' + c);
+check('no doorway is on a tile a 32x32 object may overhang', covered.length === 0,
+  covered.length ? `${covered.length} warps` : '');
 // A checker that swept nothing passes for the wrong reason. The world has
 // roughly two thousand prop cells; anything near zero means the sweep broke,
 // not that the world got tidy.
