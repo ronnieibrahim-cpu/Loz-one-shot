@@ -84,8 +84,16 @@ export function installLegends() {
   }, 'base');
 
   // ---- cliffs: high stone shelves over deep water ------------------------
+  // `.` AND `,` ARE STONE UP HERE, NOT SAND. Every legend that overrides the
+  // ground overrides `g`/`G`/`f` and most of them forget `.`, which falls
+  // through to the base legend's beach `sand` — so nineteen tiles of seaside
+  // sand were sitting in the middle of a high stone shelf on Kell Ledges, with
+  // a hard straight edge all the way round because there are no transition
+  // tiles between two grounds. A hundred and ninety-one such cells across the
+  // cliffs.
   registerLegend('cliffs', {
     'g': 'rockFloor', 'G': 'rockFloorDk', 'f': 'rockFloor',
+    '.': 'rockFloorDk', ',': 'rockFloorDk',
     'T': 'treeDead', 'b': 'bush', 'o': 'rock',
     'X': 'boulderCracked',  // region gate: a boulder already split, bombs open it
     'V': 'keepSeal',        // story gate: the seal's upper course, on Upper Kell
@@ -95,8 +103,12 @@ export function installLegends() {
   }, 'base');
 
   // ---- drowned wood: sunken forest --------------------------------------
+  // `.` IS MUD HERE. Same fall-through as the cliffs: a drowned forest had a
+  // seventeen-tile beach in the middle of it. A wood that floods has a mud
+  // floor, which is what the marsh legend already says.
   registerLegend('wood', {
     'g': 'grassDark', 'G': 'grassTuft', 'f': 'flowersDark',
+    '.': 'mud', ',': 'mud',
     'T': 'treeDark', 'P': 'treeDark',
     'b': 'bush', '#': 'cliffDk', '_': 'ledgeDk',
     '"': 'ledgeDkN', '>': 'ledgeDkE', '<': 'ledgeDkW',

@@ -489,6 +489,19 @@ BEFORE checking a file out for isolation, not after.**
   middle of a lawn, which reads as a rendering fault rather than as a path.
   Both are lawns now, with the tide channel the only thing in them that is not
   grass.
+- **A legend that overrides the ground and forgets `.` puts a beach in it.**
+  Every regional legend overrides `g`, `G` and `f`, and most of them stop
+  there — so `.` fell through to the base legend's seaside `sand`. The cliffs
+  had 191 tiles of beach sand lying on a high stone shelf and the drowned wood
+  had 170 in the middle of a forest, each with a hard straight edge all the way
+  round, because there are no transition tiles between two grounds. `.` is
+  `rockFloorDk` in the cliffs and `mud` in the wood now. NOTHING ASSERTS THIS
+  and nothing can: `check-ground` asks whether a prop's ground exists on its
+  own screen, and sand did exist there. `tools/oneshot/find-ground-specks.mjs`
+  is the sweep that found it — connected patches of one ground, by palette,
+  that nothing near them shares — and after the two legend fixes the 86 it
+  reported were down to two real ones. Everything else it lists is a SHORE,
+  which is the one place two grounds are supposed to meet.
 - **Widening a town's one-tile alley can seal its seam.** Sandpiper Row's two
   houses are a tile apart, which is the town kit's trap shape, and moving the
   east house one column over to widen it put its wall against the screen's east

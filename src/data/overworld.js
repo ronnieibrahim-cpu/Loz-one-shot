@@ -84,7 +84,7 @@ const rooms = {
       '**********',
       '*111DD111*',
       '1gg.DD.gg1',
-      'gg.GGG>.gg',
+      'gg.GGG>ggg',
       'ggg.gg>ggg',
       'gggggg>ggg',
       '#gggggggg#',
@@ -1020,7 +1020,7 @@ const rooms = {
     // "without Bombs the Cliffs are sealed" would quietly stop being true.
     map: [
       '###gggg###',
-      '#gGG111Gg#',
+      '#gGG111GG#',
       'gg.====.Xg',
       'gg.====.Xg',
       'gg......Xg',
