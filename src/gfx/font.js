@@ -169,12 +169,34 @@ export function wrapText(s, maxW) {
   return out;
 }
 
-/** Split wrapped lines into pages of n lines. */
+/**
+ * Split wrapped text into pages of at most `linesPerPage`, BALANCED.
+ *
+ * Filling each page to the brim and letting the last one take what is left is
+ * the obvious way and it is wrong, because most speeches in this game are four
+ * lines long: the player reads a full box, presses A, and gets a box with
+ * "one eye." in it. Every multi-page speech in every cutscene did that, and it
+ * was invisible to everything — the text is all there, every id resolves,
+ * check-dialogue and check-text are both green — until somebody watched a
+ * scene play (`T53`, and see tools/watch-cutscenes.mjs).
+ *
+ * So the page COUNT is decided first, and the lines are then dealt out as
+ * evenly as they go: four lines are two and two, five are three and two, seven
+ * are three, two and two. No page is ever more than one line shorter than the
+ * page before it, and a speech that fits in one box is untouched.
+ */
 export function paginate(s, maxW, linesPerPage) {
   const lines = wrapText(s, maxW);
+  if (!lines.length) return [['']];
+  const nPages = Math.ceil(lines.length / linesPerPage);
+  const per = Math.floor(lines.length / nPages);
+  let extra = lines.length % nPages;
   const pages = [];
-  for (let i = 0; i < lines.length; i += linesPerPage) {
-    pages.push(lines.slice(i, i + linesPerPage));
+  for (let i = 0, n = 0; n < nPages; n++) {
+    const take = per + (extra > 0 ? 1 : 0);
+    if (extra > 0) extra--;
+    pages.push(lines.slice(i, i + take));
+    i += take;
   }
-  return pages.length ? pages : [['']];
+  return pages;
 }

@@ -1,3 +1,76 @@
+## S13 — the sea, and the cutscenes get watched (this session)
+
+Picked up the three jobs of the S12 prompt after the follow-up art work.
+
+### Job 1 — the overworld had no sea, and now it has one
+
+The count in the prompt was right about the symptom and slightly off on the
+numbers: with `F.WATER|F.DEEP` rather than `F.WATER` alone it was 1.8% at LOW
+and 8.1% at HIGH, and the drop the prompt reads at HIGH is shallow water
+becoming deep, not water disappearing. The cause was one thing and it was not
+subtle: **the whole rim of the world was cliff, and so was the wall round each
+of the 120 screens.**
+
+`openSea` — deep water that is also SOLID, so it stops a swimmer as well as a
+walker, which is what the edge of the world has to do. The rim (396 tiles)
+becomes it, then floods 3 tiles inward through the rock it touches (292 more),
+so the coast follows the stone already there. Both passes turn solid into
+solid and cannot move the world's connectivity. The third pass is the one the
+player feels: plain ground touching the sea becomes SANDBAR — dry at LOW,
+deep at HIGH — 372 tiles of shoreline that actually floods, and a tide tile
+rather than water is what keeps it safe, since every flood in the checkers
+counts a tile passable if it is walkable at ANY level.
+
+Water now runs 9.0% -> 19.1% across the tide, and the part you can stand in
+1.8% -> 11.9%. The map screen shows a coastline because the terrain has one.
+
+Two rules found by the checkers, not by reasoning: a ledge must land dry at
+every tide (so the strand goes round ledges), and that rule then broke a seam
+(so a converted tile whose partner across a seam did not convert goes back).
+
+### Job 2 — all 13 cutscenes played end to end
+
+`tools/watch-cutscenes.mjs` is new. It plays each scene at 60fps in the real
+engine, turning each dialogue PAGE after a human reading time rather than
+calling `dialogue.close()` (which skips pages two and three and clocks a scene
+at a third of its length), and writes a beat-by-beat timeline plus a filmstrip.
+It measures in GAME frames, not rAF callbacks, or a card held 180 frames reads
+as 178 and a one-frame slack fails at random.
+
+Two things it found, and only one of them was a duration:
+
+**Every caption in the game was gone before its words could be read.** The
+intro's opening paragraph is 97 characters and was on screen for 3.7 seconds.
+`runCutscene` now holds a caption for `max(the frames the scene asked for, the
+time its text needs)` — `CUTSCENE_READ_CPS` in feel.js — so a scene can dwell
+as long as it likes and can never ask for less than legible. A step holding a
+picture AND a card holds both for the same time, or the orb blinked out from
+under its own title card.
+
+**The one that only watching could find: every multi-page speech ended in a
+stub.** `paginate` filled each page to the brim and let the last take what was
+left, so a four-line speech was a full box followed by a box reading "one
+eye.". It deals the lines out evenly now. Nothing could see this — the text is
+all there, every id resolves, check-dialogue and check-text were green.
+
+### Job 3 — feel.js is still blocked, and nothing was relabelled
+
+`assets/` holds sprite sheets and one title-screen GIF that is a single static
+frame. There is no gameplay footage in the repo to frame-step, so 0 measured /
+17 derived / 221 guessed stands. Add Oracle gameplay video and this unblocks.
+
+### What was NOT done, and where to stand to judge it
+
+**Nobody has watched the cutscenes in motion.** The timeline and the filmstrips
+are stills and numbers; whether the intro's 64 seconds FEEL right, whether a
+25-second Essence scene outstays its welcome the fifth time, and whether the
+new caption holds are now too generous are all things only a person can say.
+Start a new game in `dist/oracle-of-tides.html` for the intro, and take an
+Essence for the card. For the sea, walk to any edge of the map and sound the
+conch: the strand at (5,9), (11,9), (0,5) and (3,0) is where the tide is now
+visible. The interior screens are unchanged — the sea is at the world's edge,
+not yet in its middle.
+
 ## S12 — Cave mouths get their rock, trees stop being sliced (this session)
 
 Two visual faults, both reported by a person playing, both green in every

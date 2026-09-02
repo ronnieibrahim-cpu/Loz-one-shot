@@ -537,6 +537,25 @@ sits at the foot of a two-tile rock face. Two things this costs, both paid:
     neighbours — a one-vote rule walked the Drowned Wood's snarl out of its
     channel and onto the floorboards, and only a replay's probe hash caught it.
 
+**A HARNESS THAT CLOSES A DIALOGUE BOX IS NOT WATCHING THE SCENE.**
+`dialogue.close()` closes the whole box, skipping every page after the current
+one, so a cutscene harness that uses it clocks a three-page speech at one page
+and reports the intro at 11 seconds when it is 64. Turn the PAGE — press A once
+the page has finished typing itself out and been up long enough to read — or
+the timeline is fiction. And count in GAME frames, not rAF callbacks: the fixed
+step can tick twice between two animation frames, so a card the engine holds
+for 180 reads as 178 and any check with a one-frame slack fails at random.
+
+**PACING FAULTS ARE NOT ALL DURATIONS.** Two were found by playing the 13
+scenes end to end, and the one that mattered was not a number in feel.js at
+all: `paginate` filled each page to the brim and let the last page take the
+remainder, so every four-line speech in the game was a full box followed by a
+box containing "one eye." Nothing could see it — the text is all there, every
+id resolves, check-dialogue and check-text were green, and shoot-cutscene
+photographs ONE frame. The other was a duration and is now impossible: a
+caption is held for `max(what the scene asked for, what its text needs to be
+read)`, so the floor cannot be violated by editing the text.
+
 **A CHECKER'S SWEEP IS AS WIDE AS THE THING THAT EXISTED WHEN IT WAS WRITTEN.**
 `check-towns` asserted every registered block is placed, and swept the declared
 TOWNS to prove it, because the town kit was the only thing making blocks. The

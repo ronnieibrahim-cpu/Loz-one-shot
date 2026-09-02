@@ -46,6 +46,7 @@ import { drawTextCentered, wrapText } from '../gfx/font.js';
 import { sprites } from '../gfx/art.js';
 import {
   CUTSCENE_SHOW_FRAMES, CUTSCENE_SHOW_ANIM_FRAMES, CUTSCENE_SHOW_RISE_PX,
+  CUTSCENE_READ_CPS, CUTSCENE_READ_LEAD_FRAMES,
 } from '../data/feel.js';
 import { spawnEntity } from './entity.js';
 import { giveItem, setFlag } from './progress.js';
@@ -53,6 +54,23 @@ import { DIR_VEC } from './entity.js';
 import { moveEntity } from './entity.js';
 import { sp } from '../core/fixed.js';
 import { WALK_SPEED } from '../data/feel.js';
+
+/**
+ * The floor under a caption's hold: how long its own text takes to read.
+ *
+ * A scene says how long it wants to dwell and this says how long it MUST. The
+ * two are combined with `max`, so a card can be held as long as an author
+ * likes and can never be held for less time than it takes to read — which
+ * every card in the game was, before this: the intro's opening paragraph is 97
+ * characters and it was on screen for 3.7 seconds.
+ *
+ * This does not make pacing assertable (§4.2) and does not try to. It removes
+ * the one part of pacing that IS decidable, so that a person watching is
+ * spending their attention on the part that is not.
+ */
+export function readFrames(text) {
+  return CUTSCENE_READ_LEAD_FRAMES + Math.ceil((String(text).length / CUTSCENE_READ_CPS) * 60);
+}
 
 export const CUTSCENES = {};
 
@@ -90,11 +108,17 @@ export function runCutscene(game, steps, data = {}) {
     }
     if (step.tide != null) game.tide.setLevel(step.tide);
     if (step.do) step.do(game, data);
-    if (step.text) { caption = { text: step.text, t: step.frames || 120 }; }
+    if (step.text) {
+      caption = { text: step.text, t: Math.max(step.frames || 120, readFrames(step.text)) };
+    }
     if (step.show) {
       const o = typeof step.show === 'string' ? { art: step.show } : step.show;
       const art = Array.isArray(o.art) ? o.art : [o.art];
-      const total = o.frames || step.frames || CUTSCENE_SHOW_FRAMES;
+      // A step that holds a picture AND a card holds both for the same time.
+      // Extending only the caption left the Essence orb blinking out from
+      // under its own title card two seconds before the card went.
+      const total = Math.max(o.frames || step.frames || CUTSCENE_SHOW_FRAMES,
+        step.text ? readFrames(step.text) : 0);
       shown = {
         art, pal: o.pal || null, scale: Math.max(1, o.scale || 1),
         x: o.x, y: o.y, rise: o.rise !== false, dim: o.dim !== false,
@@ -134,6 +158,15 @@ export function runCutscene(game, steps, data = {}) {
      *  there would skip the very thing being photographed. Same reason
      *  `Audio.init` takes a context override. Nothing in the game reads it. */
     shownArt() { return shown && shown.t > 0 ? shown.art[0] : null; },
+
+    /** The caption the scene is holding up, or null. The same seam as
+     *  `shownArt`, and it exists for the same reason one scale up:
+     *  `tools/watch-cutscenes.mjs` walks a scene beat by beat asking what a
+     *  person would be looking at, and a `text` step is invisible from outside
+     *  this closure — so the intro's title card and the ending's last three
+     *  read as SIX AND NINE SECONDS OF DEAD AIR until this was here. Nothing
+     *  in the game reads it. */
+    captionText() { return caption && caption.t > 0 ? caption.text : null; },
 
     update() {
       if (!started) { started = true; if (steps.length) begin(steps[0]); }

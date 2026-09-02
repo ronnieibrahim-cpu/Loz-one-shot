@@ -1243,6 +1243,23 @@ export const CUTSCENE_SHOW_ANIM_FRAMES = 10;
  *  moves. */
 export const CUTSCENE_SHOW_RISE_PX = 6;
 
+/** chars/s — how fast a caption can be READ, used as the floor under every
+ *  card's hold. guessed; a comfortable silent-reading rate for short lines on
+ *  a handheld, deliberately on the slow side because a card that outstays its
+ *  welcome costs a button press and a card that vanishes early costs the line.
+ *
+ *  IT IS A FLOOR, NOT A DURATION. `runCutscene` holds a caption for whichever
+ *  is longer, the frames the scene asked for or the time its own text needs,
+ *  so a scene can dwell as long as it likes and cannot ask for less than
+ *  legible. Every one of the eleven title cards in the game was asking for
+ *  less than legible before this existed: the intro's opening paragraph is 97
+ *  characters and was on screen for 3.7 seconds. */
+export const CUTSCENE_READ_CPS = 14;
+
+/** f — added to every caption's reading time, for the beat before the eye
+ *  starts and the beat after it finishes. guessed. */
+export const CUTSCENE_READ_LEAD_FRAMES = 30;
+
 // ---------------------------------------------------------------------------
 // Music engine — vibrato and arpeggio (S6)
 // ---------------------------------------------------------------------------

@@ -1762,6 +1762,23 @@ const CUTSCENE_SHOW_ANIM_FRAMES = 10;
  *  moves. */
 const CUTSCENE_SHOW_RISE_PX = 6;
 
+/** chars/s — how fast a caption can be READ, used as the floor under every
+ *  card's hold. guessed; a comfortable silent-reading rate for short lines on
+ *  a handheld, deliberately on the slow side because a card that outstays its
+ *  welcome costs a button press and a card that vanishes early costs the line.
+ *
+ *  IT IS A FLOOR, NOT A DURATION. `runCutscene` holds a caption for whichever
+ *  is longer, the frames the scene asked for or the time its own text needs,
+ *  so a scene can dwell as long as it likes and cannot ask for less than
+ *  legible. Every one of the eleven title cards in the game was asking for
+ *  less than legible before this existed: the intro's opening paragraph is 97
+ *  characters and was on screen for 3.7 seconds. */
+const CUTSCENE_READ_CPS = 14;
+
+/** f — added to every caption's reading time, for the beat before the eye
+ *  starts and the beat after it finishes. guessed. */
+const CUTSCENE_READ_LEAD_FRAMES = 30;
+
 // ---------------------------------------------------------------------------
 // Music engine — vibrato and arpeggio (S6)
 // ---------------------------------------------------------------------------
@@ -2029,6 +2046,8 @@ __exports["BLADE_REACH_PX"] = BLADE_REACH_PX;
 __exports["CUTSCENE_SHOW_FRAMES"] = CUTSCENE_SHOW_FRAMES;
 __exports["CUTSCENE_SHOW_ANIM_FRAMES"] = CUTSCENE_SHOW_ANIM_FRAMES;
 __exports["CUTSCENE_SHOW_RISE_PX"] = CUTSCENE_SHOW_RISE_PX;
+__exports["CUTSCENE_READ_CPS"] = CUTSCENE_READ_CPS;
+__exports["CUTSCENE_READ_LEAD_FRAMES"] = CUTSCENE_READ_LEAD_FRAMES;
 __exports["VIBRATO_DELAY_FRAMES"] = VIBRATO_DELAY_FRAMES;
 __exports["VIBRATO_STEP_FRAMES"] = VIBRATO_STEP_FRAMES;
 __exports["VIBRATO_DEPTH_SEMITONES"] = VIBRATO_DEPTH_SEMITONES;
@@ -3254,14 +3273,36 @@ function wrapText(s, maxW) {
   return out;
 }
 
-/** Split wrapped lines into pages of n lines. */
+/**
+ * Split wrapped text into pages of at most `linesPerPage`, BALANCED.
+ *
+ * Filling each page to the brim and letting the last one take what is left is
+ * the obvious way and it is wrong, because most speeches in this game are four
+ * lines long: the player reads a full box, presses A, and gets a box with
+ * "one eye." in it. Every multi-page speech in every cutscene did that, and it
+ * was invisible to everything — the text is all there, every id resolves,
+ * check-dialogue and check-text are both green — until somebody watched a
+ * scene play (`T53`, and see tools/watch-cutscenes.mjs).
+ *
+ * So the page COUNT is decided first, and the lines are then dealt out as
+ * evenly as they go: four lines are two and two, five are three and two, seven
+ * are three, two and two. No page is ever more than one line shorter than the
+ * page before it, and a speech that fits in one box is untouched.
+ */
 function paginate(s, maxW, linesPerPage) {
   const lines = wrapText(s, maxW);
+  if (!lines.length) return [['']];
+  const nPages = Math.ceil(lines.length / linesPerPage);
+  const per = Math.floor(lines.length / nPages);
+  let extra = lines.length % nPages;
   const pages = [];
-  for (let i = 0; i < lines.length; i += linesPerPage) {
-    pages.push(lines.slice(i, i + linesPerPage));
+  for (let i = 0, n = 0; n < nPages; n++) {
+    const take = per + (extra > 0 ? 1 : 0);
+    if (extra > 0) extra--;
+    pages.push(lines.slice(i, i + take));
+    i += take;
   }
-  return pages.length ? pages : [['']];
+  return pages;
 }
 __exports["hasGlyph"] = hasGlyph;
 __exports["charWidth"] = charWidth;
@@ -12393,13 +12434,30 @@ __define("game/cutscene.js", function (__exports, __require) {
 const { SCREEN_W, SCREEN_H, HUD_H } = __require("core/screen.js");
 const { drawTextCentered, wrapText } = __require("gfx/font.js");
 const { sprites } = __require("gfx/art.js");
-const { CUTSCENE_SHOW_FRAMES, CUTSCENE_SHOW_ANIM_FRAMES, CUTSCENE_SHOW_RISE_PX } = __require("data/feel.js");
+const { CUTSCENE_SHOW_FRAMES, CUTSCENE_SHOW_ANIM_FRAMES, CUTSCENE_SHOW_RISE_PX, CUTSCENE_READ_CPS, CUTSCENE_READ_LEAD_FRAMES } = __require("data/feel.js");
 const { spawnEntity } = __require("game/entity.js");
 const { giveItem, setFlag } = __require("game/progress.js");
 const { DIR_VEC } = __require("game/entity.js");
 const { moveEntity } = __require("game/entity.js");
 const { sp } = __require("core/fixed.js");
 const { WALK_SPEED } = __require("data/feel.js");
+
+/**
+ * The floor under a caption's hold: how long its own text takes to read.
+ *
+ * A scene says how long it wants to dwell and this says how long it MUST. The
+ * two are combined with `max`, so a card can be held as long as an author
+ * likes and can never be held for less time than it takes to read — which
+ * every card in the game was, before this: the intro's opening paragraph is 97
+ * characters and it was on screen for 3.7 seconds.
+ *
+ * This does not make pacing assertable (§4.2) and does not try to. It removes
+ * the one part of pacing that IS decidable, so that a person watching is
+ * spending their attention on the part that is not.
+ */
+function readFrames(text) {
+  return CUTSCENE_READ_LEAD_FRAMES + Math.ceil((String(text).length / CUTSCENE_READ_CPS) * 60);
+}
 
 const CUTSCENES = {};
 
@@ -12437,11 +12495,17 @@ function runCutscene(game, steps, data = {}) {
     }
     if (step.tide != null) game.tide.setLevel(step.tide);
     if (step.do) step.do(game, data);
-    if (step.text) { caption = { text: step.text, t: step.frames || 120 }; }
+    if (step.text) {
+      caption = { text: step.text, t: Math.max(step.frames || 120, readFrames(step.text)) };
+    }
     if (step.show) {
       const o = typeof step.show === 'string' ? { art: step.show } : step.show;
       const art = Array.isArray(o.art) ? o.art : [o.art];
-      const total = o.frames || step.frames || CUTSCENE_SHOW_FRAMES;
+      // A step that holds a picture AND a card holds both for the same time.
+      // Extending only the caption left the Essence orb blinking out from
+      // under its own title card two seconds before the card went.
+      const total = Math.max(o.frames || step.frames || CUTSCENE_SHOW_FRAMES,
+        step.text ? readFrames(step.text) : 0);
       shown = {
         art, pal: o.pal || null, scale: Math.max(1, o.scale || 1),
         x: o.x, y: o.y, rise: o.rise !== false, dim: o.dim !== false,
@@ -12481,6 +12545,15 @@ function runCutscene(game, steps, data = {}) {
      *  there would skip the very thing being photographed. Same reason
      *  `Audio.init` takes a context override. Nothing in the game reads it. */
     shownArt() { return shown && shown.t > 0 ? shown.art[0] : null; },
+
+    /** The caption the scene is holding up, or null. The same seam as
+     *  `shownArt`, and it exists for the same reason one scale up:
+     *  `tools/watch-cutscenes.mjs` walks a scene beat by beat asking what a
+     *  person would be looking at, and a `text` step is invisible from outside
+     *  this closure — so the intro's title card and the ending's last three
+     *  read as SIX AND NINE SECONDS OF DEAD AIR until this was here. Nothing
+     *  in the game reads it. */
+    captionText() { return caption && caption.t > 0 ? caption.text : null; },
 
     update() {
       if (!started) { started = true; if (steps.length) begin(steps[0]); }
@@ -12579,6 +12652,7 @@ function runCutscene(game, steps, data = {}) {
     },
   };
 }
+__exports["readFrames"] = readFrames;
 __exports["CUTSCENES"] = CUTSCENES;
 __exports["registerCutscenes"] = registerCutscenes;
 __exports["runCutscene"] = runCutscene;
