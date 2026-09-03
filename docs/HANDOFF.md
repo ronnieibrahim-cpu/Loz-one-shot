@@ -447,6 +447,33 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **`#` IS A CLIFF FACE, AND ONE CELL OF IT ALONE IS A MASONRY BLOCK.** The
+  batch fix that freed every doorway from its corner tree's canopy put a single
+  `cliffDk` where the tree had been, on 97 of 120 screens and 160 rows — the
+  most repeated motif on the map. `cliffDk` is drawn as a flat grey slab with a
+  lit top edge, which reads correctly in a RUN (a cliff band) and reads as cut
+  masonry dropped in a wood when it stands alone. The base legend's `o`
+  (`rock`) is the tile for a lone solid: a rounded boulder with an `underArt`,
+  so it sits on the ground instead of replacing it. Nothing in CLAUDE.md's
+  table can see this class of fault — it is not a fact about the world, it is a
+  fact about what the world LOOKS like, and every checker was right the whole
+  time.
+
+- **When you need a lone solid tile, `rock` is safe and `bush` is a trap.**
+  `tileDefSolid` reads `if (f & F.ROCK) return true` — unconditional — but
+  `if (f & F.BUSH) return !(caps && caps.cutting)`. Every flood in the tools
+  directory runs `cutting: false`, so a bush is a wall to every checker and a
+  doorway to any player holding a sword. Put one near a region gate and you
+  have built a leak that nothing in the table can model. Swapping `cliffDk` for
+  `rock` changes NO passability at all, which is what made it safe to do to 155
+  cells at once.
+
+- **Distinguish "a stray block" from "a cliff run" by what is BESIDE it.** The
+  rule that made the swap above safe to automate: convert a border corner only
+  when the neighbouring cell is a TREE. That leaves genuine 3-wide cliff bands
+  (`###gggg###`, 88 rows of them) alone, and they are correct as they are. A
+  blanket find-and-replace on `#` would have eaten them.
+
 - **`diffState` compared objects by REFERENCE, so an object field could never
   match.** `tools/replay.mjs` special-cased arrays into a structural compare and
   let everything else fall through to `a === b`, one side parsed from the

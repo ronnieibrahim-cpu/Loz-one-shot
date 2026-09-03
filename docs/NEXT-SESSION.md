@@ -1,4 +1,76 @@
-## S24 — the dungeon sheets land, and d4's walls stop being scribble (this session)
+## S25 — somebody finally LOOKED at the screens (this session)
+
+THE JOB: show the changes on screen and keep iterating. Looking at them turned
+out to be the work, which is what S23 and S24 both said it would be.
+
+### The batch corner fix had put a masonry block beside every doorway
+
+S22 solved a real problem — a corner tree's canopy overhung the first cell of
+every doorway, narrowing all 158 of them — by replacing the corner TREE with a
+non-quad solid, the region's own `#` cliff. Nothing was wrong with the
+reasoning and every checker agreed. But `#` in the wood and marsh legends is
+`cliffDk`, which is a CLIFF FACE: a flat grey slab with a lit top edge. One
+cell of it, alone, in the middle of a green wood, does not read as a boulder.
+It reads as a block of cut masonry somebody left there.
+
+**It was on 97 of the 120 screens, 160 rows.** That made it the single most
+repeated motif on the overworld map, and no tool in CLAUDE.md's table can see
+it, because it is not a fact about the world — it is a fact about what the
+world looks like, and every one of them was right.
+
+The fix is the base legend's `o` (`rock`), which every region inherits and no
+region in question overrides — a rounded natural boulder with `underArt`, so it
+sits ON the ground rather than replacing it.
+
+**IT IS AN ART FIX AND IT CHANGES NO PASSABILITY AT ALL, which is the whole
+reason it was safe to do at this scale.** `tileset.js` reads
+`if (f & F.ROCK) return true` — a rock is solid unconditionally, exactly like
+`cliffDk`, and neither is a quad. `bush` was the obvious alternative and is
+WRONG here: it carries `F.BUSH`, which `tileDefSolid` clears for a cutting
+player, while every flood in the table runs `cutting: false`. A bush would
+have been a hole the checkers could not model, next to a region gate, which is
+the exact shape of the Dredge Line near-miss S23 spent its session on.
+
+**The rule is deliberately conservative: a corner becomes a rock only when the
+cell BESIDE it is a tree.** That is what distinguishes a stray block standing
+in a treeline from a genuine 3-wide cliff run, and the 88 rows that are
+`###gggg###` — real cliff bands, correct as they are — were left untouched.
+155 cells across 56 screens changed; nothing else did.
+
+Screenshotted before and after at `overworld,4,6` (South Wood) and
+`overworld,7,4` (Drowned Hollow): grey slabs before, boulders nestled against
+the treeline after.
+
+### What was looked at and left alone
+
+- **The Gyre's stone band.** S23 made its two bottom corner blocks cliff to free
+  row 6. On screen that is a stone quay along the bottom of a tidal ring, and it
+  matches the `###gggg###` cliff-band vocabulary the other 88 rows already use.
+  Consistent, so kept.
+- **Reedbank's sealed south border** reads as an honest solid treeline with no
+  teasing gap. S23's judgement call looks right on screen as well as in the flood.
+
+### Verified
+
+Everything in CLAUDE.md's table plus `check-tilesets` and `check-strands`, all
+green — `check-ground` included, which is the one that would have caught a rock
+bringing its own lawn onto a screen that has none. `test.mjs` 83/83,
+`replay.mjs` **51/51 with no re-recording** (no recorded route samples a changed
+corner), `check-playthrough` 21/21. `npm run build` + `check-build` OK.
+
+### What is NOT done
+
+- **The other regions have not been looked at with the same eye.** This pass
+  fixed one motif that repeated 160 times. Dunes, cliffs, salt, reef, coral and
+  abyss screens were checked for THIS fault and for connectivity, not read as
+  compositions.
+- Everything S24 left open still stands: the `rip-terrain.py` hue-blind
+  quantiser (four bank corners, measured), the 50 replay baselines that predate
+  `beaten`/`heartPieces`, and three unused dungeon sheets.
+
+---
+
+## S24 — the dungeon sheets land, and d4's walls stop being scribble
 
 THE JOB: bring in the four per-dungeon Oracle of Seasons background sheets that
 were sitting unmerged on `claude/oracle-build-script-coklp7`, use them, and keep
