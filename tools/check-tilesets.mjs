@@ -70,5 +70,54 @@ if (files.some(f => f.endsWith('.json'))) {
   }
 }
 
+// --- no dungeon may draw two of its roles with the same pixels ---------------
+//
+// A THEME IS ONLY A THEME IF ITS PARTS ARE TELLABLE APART, and the failure here
+// is not cosmetic: `dWallSalt` and `dBlockSalt` were both `vaultBlock` in
+// `marble`, so in the Salt Pan Vault a block you can PUSH was pixel-for-pixel a
+// wall you cannot. Nothing else could see it — solve-switches proved the blocks
+// were pushable, walk-dungeons proved the rooms connected, check-placement
+// proved nothing stood inside anything, and all of them were right. A player
+// looking at the room is the only thing that was wrong, and no model looks.
+//
+// Palette is part of the comparison because a swap IS the house mechanism for
+// telling two uses of one art apart (d4 and d7 share `studWall` and differ by
+// tint, which is fine). What is never fine is same art AND same palette in one
+// dungeon, for two roles the player has to distinguish to play the room.
+//
+// The floor/wall pair is the same rule arrived at from the other side, and the
+// d5 note in tiles-core.js records it being paid once already: floor and wall
+// were both brick courses, and the room came out as one continuous texture with
+// no visible line between what you can walk on and what you cannot.
+{
+  const { installData } = await import('../src/data/index.js');
+  const { getTileDef } = await import('../src/world/tileset.js');
+  installData();
+  const THEMES = {
+    Grotto: 'd1 Tidewash Grotto', Coral: 'd2 Coral Spire', Bog: 'd3 Bogwater Sanctum',
+    Cistern: 'd4 Cliffside Cistern', Wood: 'd5 Drowned Wood Shrine', Salt: 'd6 Salt Pan Vault',
+    Palace: 'd7 Reef Palace', Abyss: 'd8 Abyssal Keep',
+  };
+  const roles = t => ({
+    floor: `dFloor${t}`, floorAlt: `dFloor${t}Alt`, wall: `dWall${t}`,
+    wallCracked: `dWall${t}X`, block: `dBlock${t}`, urn: `dUrn${t}`,
+  });
+  const clashes = [];
+  let checked = 0;
+  for (const [t, label] of Object.entries(THEMES)) {
+    const seen = new Map();
+    for (const [role, name] of Object.entries(roles(t))) {
+      const def = getTileDef(name);
+      if (!def) { clashes.push(`${label}: no tiledef named ${name}`); continue; }
+      checked++;
+      const key = `${def.art}|${def.pal}`;
+      if (seen.has(key)) clashes.push(`${label}: ${seen.get(key)} and ${role} are the same art AND palette`);
+      else seen.set(key, role);
+    }
+  }
+  check(`every dungeon's six themed roles are visually distinct (${checked} tiles)`,
+    clashes.length === 0, clashes.join(' | '));
+}
+
 console.log(`\n=== ${passed} passed, ${failures.length} failed ===`);
 process.exit(failures.length ? 1 : 0);

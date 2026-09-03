@@ -22,6 +22,14 @@ that table is blind to. Everything in the table is green, including
 `replay.mjs` 51/51 to the pixel, `check-playthrough` 21/21, and
 `watch-cutscenes` 13 scenes / 0 faults.
 
+Since then (S24) the four per-dungeon Oracle of Seasons background sheets are in
+`assets/sheets/` and credited; `rip-dungeon-themes.py` reads more than one sheet;
+d4 Cliffside Cistern's walls were drawing as gold scribble and now draw as the
+source's stud columns (the quantiser was remapping dropped colours by luminance,
+which is hue-blind, and swapped blue for gold); `check-tilesets.mjs` now asserts
+no dungeon draws two of its themed roles identically; and `replay.mjs`'s
+`diffState` could not compare an object field at all.
+
 **Re-run the suite yourself rather than trusting that list. If anything is red,
 that is the job.**
 
@@ -60,6 +68,23 @@ a button — which is how seven hundred green assertions once described a world
 that could not be finished. Extending `tools/playthrough-route.mjs` to walk D2
 (Coral Spire, Brineglass Lens) end to end is the single highest-confidence
 thing anyone can do to the project's correctness. Expect it to find something.
+
+### 2b. Two small, fully-scoped jobs left ready to pick up.
+
+Both are measured, both have their blast radius written down in
+`docs/NEXT-SESSION.md` §S24, and neither is a research task:
+
+- **`tools/rip-terrain.py` still has the hue-blind quantiser** that was fixed in
+  `rip-dungeon-themes.py`. Applying the same one-line change was measured and
+  reverted: it moves exactly four tiles, `bankCornerSE` and its three
+  rotations/mirrors. That is live shore art in every region, so do it with eyes
+  on — `node tools/shoot-rooms.mjs --tide=0|1|2 overworld,5,8` — and re-examine
+  the `GROUND_MERGE` overrides at the same time, since one of them was a
+  workaround for this exact bug and may now be making things worse.
+- **50 replay baselines predate `beaten`/`heartPieces`** and `diffState` only
+  walks the keys a baseline HAS, so those fields go unchecked there. Re-record
+  deliberately, on a tree already known good, reading each diff — a wholesale
+  re-record is how a regression gets blessed.
 
 ### 3. Land/land fringe art — `docs/ART-BACKLOG.md` item 1.
 
@@ -105,6 +130,12 @@ boss is not a player beating a boss.
   `walk-dungeons` has the same room-keyed blind spot by construction.
 - **A cell-level assertion inside `check-overworld` itself**, so the room-keyed
   `reached` set stops being a trap for a third time.
+- **Three of the four new dungeon sheets are unused** (`dancing-dragon`,
+  `explorers-crypt`, `poison-moths-lair`). They are full-size per-dungeon rooms
+  and are the obvious place to look for the land/land fringe art above, or for a
+  theme that wants its own floor. Read the sheets README first: every one is two
+  halves, the LCD half is the lighter/less saturated one, and picking from the
+  wrong half gives you art that will not sit with anything else in the project.
 - **Inner-corner edge art** (`ART-BACKLOG` item 3) — the mask supports it,
   nothing defines it, and it currently degrades to a straight edge.
 - **Reef and abyss water are deliberately unbanked** (`ART-BACKLOG` item 2);

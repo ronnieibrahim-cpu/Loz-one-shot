@@ -181,11 +181,37 @@ async function record(browser, port, name) {
   return doc;
 }
 
+/**
+ * Canonical JSON: objects with their keys sorted, all the way down.
+ *
+ * The two sides of a comparison come from different places — one parsed out of
+ * the baseline file, one serialised out of the live page — and nothing makes
+ * them agree on key ORDER. Comparing raw `JSON.stringify` would then fail on
+ * two objects that hold exactly the same thing, which is a false alarm that
+ * costs a session to chase.
+ */
+function canon(v) {
+  if (Array.isArray(v)) return '[' + v.map(canon).join(',') + ']';
+  if (v && typeof v === 'object') {
+    return '{' + Object.keys(v).sort().map(k => JSON.stringify(k) + ':' + canon(v[k])).join(',') + '}';
+  }
+  return JSON.stringify(v);
+}
+
 function diffState(want, got) {
   const bad = [];
   for (const k of Object.keys(want)) {
     const a = want[k], b = got[k];
-    const same = Array.isArray(a) ? JSON.stringify(a) === JSON.stringify(b) : a === b;
+    // OBJECTS ARE COMPARED BY VALUE, NOT BY REFERENCE. This read
+    // `Array.isArray(a) ? JSON.stringify(a) === JSON.stringify(b) : a === b`,
+    // so an array was compared structurally and a plain OBJECT fell through to
+    // `a === b` — reference equality between a value parsed from the baseline
+    // file and a value built in the page, which is false every single time.
+    // It never fired because no baseline held an object field until the
+    // recorder started capturing `beaten` (the set of dungeons cleared). The
+    // moment one did, that replay could never pass again and the message was
+    // the uniquely unhelpful `beaten: expected {}, got {}`.
+    const same = (a !== null && typeof a === 'object') ? canon(a) === canon(b) : a === b;
     if (!same) bad.push(`${k}: expected ${JSON.stringify(a)}, got ${JSON.stringify(b)}`);
   }
   return bad;

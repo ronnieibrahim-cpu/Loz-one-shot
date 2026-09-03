@@ -447,6 +447,69 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **`diffState` compared objects by REFERENCE, so an object field could never
+  match.** `tools/replay.mjs` special-cased arrays into a structural compare and
+  let everything else fall through to `a === b`, one side parsed from the
+  baseline file and the other built in the page. Dormant for the project's whole
+  life because no baseline held an object; the recorder now captures `beaten`,
+  so the first baseline re-recorded after that became permanently unpassable
+  with the message `beaten: expected {}, got {}`. Fixed with a key-sorting
+  `canon` — sorted, because the two sides never agree on key order and a raw
+  `JSON.stringify` compare just trades one false alarm for another. NOTE the 50
+  baselines recorded earlier still do not carry `beaten`/`heartPieces`, and
+  `diffState` only walks keys the baseline HAS, so those fields are unchecked
+  there until each is re-recorded deliberately.
+
+- **An art change fails a replay, and that is not a regression — prove which it
+  is before re-recording.** Changing `studWall` failed `d4-drowned-sill` on its
+  pixel probe. The evidence that it was art and not behaviour was in the same
+  output: identical frame count, identical room changes, EVERY CHECKPOINT still
+  matching, and only ONE of the two pixel probes moved. Re-record on that
+  evidence; never on "it is probably the art".
+
+- **A 4-COLOUR QUANTISER THAT PICKS BY LUMINANCE SWAPS HUES.** Both rippers'
+  `quantise` remapped a dropped colour to the nearest KEPT colour by luminance
+  alone, which is hue-blind. On a tile whose four slots straddle two hues the
+  dropped colours cross over: `studWall` (d4's wall) sent its mid-BLUE #5c8eb0
+  (lum 131) to the GOLD #856b2b (108) and its light GOLD #dbb969 (186) to the
+  pale BLUE #abcfe6 (199), the black course separators dissolved, and clean
+  vertical stud columns drew as gold tracery scribbled over blue. Squared RGB
+  distance fixes it and is just as reproducible — determinism came from the
+  tie-break on the colour tuple, never from the metric. Only tiles with MORE
+  THAN FOUR source colours can move, so the fix cannot disturb an exact pick.
+  S21 had already met this bug in `rip-terrain.py` and patched around it
+  per-tile with a `GROUND_MERGE` override, describing it exactly ("gold masonry
+  highlight and light-blue rim collide in luminance") without recognising it as
+  the metric's fault. `rip-terrain.py` IS STILL UNFIXED — see NEXT-SESSION S24
+  for the measured blast radius (four bank corners).
+
+- **Two differently-named extracted tiles can be the same pixels.**
+  `vaultBlock` and `coralWall` are picked from different rooms at different
+  coordinates with different notes, and they quantise to BYTE-IDENTICAL art —
+  both are bevelled block grids. Nothing said so, and the Salt theme used one
+  for its wall and the other for its block in the same palette, making a
+  pushable block pixel-for-pixel a wall. When two tiles must be TOLD APART by
+  the player, differing palettes are not enough if the art is secretly shared:
+  compare the art strings, not the pick names. `check-tilesets.mjs` does now.
+
+- **Every spriters-resource sheet is two halves and NEITHER IS LABELLED.**
+  "GBC LCD Colors" and "True Colors" sit side by side, splitting at the
+  midpoint on the per-dungeon sheets. The LCD half is the LIGHTER, LESS
+  SATURATED one — measure it (ancient-ruins: left 124 lum / 0.54 sat, right 92
+  / 0.73) rather than guessing, because the difference reads as ART. The tile
+  `laceWall` is a violet lattice in True Colors and its LCD twin looks like
+  pale BONE; picked by eye for a vault themed "salt and bone", the wrong half
+  is exactly what you would choose. Always take the right-hand half.
+
+- **A defect can be real, correctly fixed, and still invisible to players.**
+  The Salt and Palace dungeon themes are left over from the eight-dungeon plan
+  that DUNGEON-STATUS records as FOLDED IN; the six live dungeons use Grotto,
+  Coral, Bog, Cistern, Wood and Abyss. Check which themes a map actually names
+  (`m.legend` per room) before describing a theme fix as something a player can
+  see. The fix is still worth making — a reserve theme is picked up by whoever
+  builds the next dungeon — but say which it is.
+
+
 - **A ROOM CAN LOSE HALF ITS FLOOR AND EVERY CHECKER STILL PASSES.**
   `check-overworld` floods tile by tile but keys its `reached` set on the
   ROOM: a screen counts as reached the moment ONE of its cells is. So a

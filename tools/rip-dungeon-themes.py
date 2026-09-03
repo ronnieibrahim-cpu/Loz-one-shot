@@ -52,6 +52,22 @@ except ImportError:
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DG = os.path.join(ROOT, 'assets/sheets/oracle-seasons-dungeon-backgrounds.png')
+# A pick may name a different sheet as an optional 5th element. The per-dungeon
+# Seasons sheets carry rooms the stitched map does not, and they are the reason
+# the Salt Pan Vault stopped drawing its pushable block with its wall's pixels.
+#
+# EVERY ONE OF THESE SHEETS IS TWO HALVES: a "GBC LCD Colors" simulation of the
+# handheld screen and the raw "True Colors" palette, side by side. Measured on
+# ancient-ruins, the left half runs mean luminance 124 / saturation 0.54 and the
+# right half 92 / 0.73 — washed out versus raw, which is the signature. THE RIGHT
+# HALF IS THE ONE TO PICK FROM. A tile lifted from the left half is the LCD's
+# idea of the colour, not the cartridge's, and it will not sit with anything
+# extracted anywhere else in this project. `laceWall` below is at x=1280 on a
+# 2421-wide sheet for exactly this reason; its washed twin sits at x=68 and
+# reads as bone rather than violet, which is how the mistake presents.
+SHEETS = {
+    'ruins': os.path.join(ROOT, 'assets/sheets/oracle-seasons-dungeon-ancient-ruins.png'),
+}
 OUT = os.path.join(ROOT, 'src/data/tiles-dungeon-themes.js')
 
 # name, x, y, note.  The note's "xN" is the tile's occurrence count on the map,
@@ -102,6 +118,19 @@ PICKS = [
     ('hatchWall',       1,   42, 'x196 pale wall RUN, lit face and hatched base'),
     # DIRECTIONAL. Vertical barrel-vaulting. Never a fill.
     ('forgeWall',       1, 1274, 'x12 amber wall RUN, barrel-vaulted'),
+    # THE SALT PAN VAULT'S OWN WALL, and the reason the ancient-ruins sheet is
+    # in this repo. `vaultBlock` and `coralWall` quantise to BYTE-IDENTICAL art
+    # (they are both bevelled block grids from different rooms), and d6 was
+    # drawing its wall and its pushable block with that one grid in that one
+    # `marble` palette — so a block you can push was pixel-for-pixel a wall you
+    # cannot. An ornate lattice is the fix because it is not a bevel at all: no
+    # palette swap can make it read as a block.
+    #
+    # Found by looking for 16x16 blocks whose own neighbour in BOTH axes is
+    # itself, which is what "tiles in both axes" means and is a property of the
+    # SOURCE rather than a judgement — see the wall note above for why that
+    # matters. From the True Colors half; see SHEETS.
+    ('laceWall',     1280, 1492, 'ornate lattice, tiles in both axes', 'ruins'),
 
     # ---- blocks and props --------------------------------------------------
     ('cryptBlock',      1, 1370, 'x31 violet block, pale-capped, to match cryptWall'),
@@ -145,7 +174,29 @@ def quantise(block):
     cnt = Counter(p for row in block for p in row)
     ranked = sorted(cnt.items(), key=lambda kv: (-kv[1], kv[0]))
     keep = sorted((c for c, _ in ranked[:4]), key=lambda c: (-lum(c), c))
-    remap = {c: min(keep, key=lambda k: ((lum(k) - lum(c)) ** 2, k)) for c in cnt}
+    # NEAREST IN RGB, NOT IN LUMINANCE. This used to read
+    # `min(keep, key=lambda k: ((lum(k) - lum(c)) ** 2, k))`, which is hue-blind,
+    # and on a tile that spends its four slots across two different hues the
+    # dropped colours cross over into the wrong one. `studWall` — d4 Cliffside
+    # Cistern's wall, and the only pick here with more than four colours — is
+    # gold studs on blue, and it came out as neither: its mid-blue #5c8eb0
+    # (luminance 131) landed on the GOLD #856b2b (108) rather than the blue
+    # #85b2cf (168), while the light gold #dbb969 (186) landed on the pale BLUE
+    # #abcfe6 (199). The two hues swapped, the black separators between the
+    # courses dissolved, and a wall of clean vertical bands drew as gold
+    # tracery scribbled over blue.
+    #
+    # STILL REPRODUCIBLE, which is the property the luminance version was
+    # chosen for and the reason ripkit's search was rejected (see the docstring
+    # above): the tie-break on `k` is what makes it deterministic, not the
+    # metric, and it is kept. Squared RGB distance ties no more often than
+    # squared luminance distance does, and the same tie-break settles both.
+    #
+    # ONLY TILES WITH MORE THAN FOUR COLOURS CAN MOVE. At four or fewer, `keep`
+    # holds every colour the tile has and each one remaps to itself under any
+    # metric — so this cannot disturb a pick that was already exact.
+    remap = {c: min(keep, key=lambda k: (sum((a - b) ** 2 for a, b in zip(k, c)), k))
+             for c in cnt}
     idx = {c: i for i, c in enumerate(keep)}
     grid = [''.join(str(idx[remap[p]]) for p in row) for row in block]
     # PAD TO FOUR. A flat tile can have two or three distinct colours, and
@@ -184,6 +235,13 @@ def key_background(grid):
     return [''.join(r) for r in g]
 
 
+def unpack(pick):
+    """(name, x, y, note) or (name, x, y, note, sheet) -> (name, x, y, note, path)."""
+    if len(pick) == 5:
+        return pick[0], pick[1], pick[2], pick[3], SHEETS[pick[4]]
+    return pick[0], pick[1], pick[2], pick[3], DG
+
+
 def hexc(c):
     return '#%02x%02x%02x' % c
 
@@ -192,13 +250,15 @@ def read(im, x, y):
     return [[im.getpixel((x + cx, y + cy)) for cx in range(16)] for cy in range(16)]
 
 
-def contact_sheet(im, path):
+def contact_sheet(images, path):
     """Every pick, source above and 4-colour result below. LOOK AT IT."""
     S, COLS = 4, 6
     cw, ch = 16 * S + 8, 16 * S * 2 + 26
     out = Image.new('RGB', (COLS * cw, ((len(PICKS) + COLS - 1) // COLS) * ch), (24, 24, 32))
     dr = ImageDraw.Draw(out)
-    for i, (name, x, y, note) in enumerate(PICKS):
+    for i, pick in enumerate(PICKS):
+        name, x, y, note, sheet = unpack(pick)
+        im = images[sheet]
         grid, keep = quantise(read(im, x, y))
         q = Image.new('RGB', (16, 16))
         for yy in range(16):
@@ -213,15 +273,20 @@ def contact_sheet(im, path):
 
 
 def main():
-    im = Image.open(DG).convert('RGB')
+    images = {}
+    for pick in PICKS:
+        sheet = unpack(pick)[4]
+        if sheet not in images:
+            images[sheet] = Image.open(sheet).convert('RGB')
 
     if '--sheet' in sys.argv:
-        contact_sheet(im, os.path.join(ROOT, 'dungeon-themes-contact.png'))
+        contact_sheet(images, os.path.join(ROOT, 'dungeon-themes-contact.png'))
         return 0
 
     arts, pals, lossy = [], [], []
-    for name, x, y, note in PICKS:
-        block = read(im, x, y)
+    for pick in PICKS:
+        name, x, y, note, sheet = unpack(pick)
+        block = read(images[sheet], x, y)
         before = len({p for row in block for p in row})
         grid, keep = quantise(block)
         if name in KEY_BACKGROUND:

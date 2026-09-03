@@ -2139,9 +2139,17 @@ export function installCoreTiles() {
     dUrnWood: { art: ART.urn, pal: 'urn', flags: F.SOLID, underArt: 'dFloorWood' },
 
     // d6 Salt Pan Vault — the ruin rosette bleached out to salt and bone.
+    //
+    // THE WALL IS A LATTICE, NOT A BEVEL, AND THAT IS LOAD-BEARING. It used to be
+    // `vaultBlock` in `marble` — which is exactly what `dBlockSalt` below still
+    // is, so the wall and the pushable block were the same sixteen lines in the
+    // same four colours. `vaultBlock` and `coralWall` also quantise to
+    // byte-identical art, so no palette swap could separate them either: both
+    // are bevelled block grids. `laceWall` is an ornate lattice and cannot be
+    // mistaken for a block at any tint. See tools/rip-dungeon-themes.py.
     dFloorSalt: { art: ART.ruinFloorAlt, pal: 'marble' },
     dFloorSaltAlt: { art: ART.ruinFloorAlt, pal: 'stonef' },
-    dWallSalt: { art: ART.vaultBlock, pal: 'marble', flags: F.SOLID },
+    dWallSalt: { art: ART.laceWall, pal: 'marble', flags: F.SOLID },
     dWallSaltX: { art: ART.dWallCracked, pal: 'marble', flags: F.SOLID | F.BOMBABLE },
     dBlockSalt: { art: ART.vaultBlock, pal: 'marble', flags: F.SOLID },
     dUrnSalt: { art: ART.urn, pal: 'urn', flags: F.SOLID, underArt: 'dFloorSalt' },

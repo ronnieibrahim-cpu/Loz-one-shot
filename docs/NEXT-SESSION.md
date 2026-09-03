@@ -1,3 +1,146 @@
+## S24 — the dungeon sheets land, and d4's walls stop being scribble (this session)
+
+THE JOB: bring in the four per-dungeon Oracle of Seasons background sheets that
+were sitting unmerged on `claude/oracle-build-script-coklp7`, use them, and keep
+iterating.
+
+### The sheets
+
+Four added under the repo's naming convention, credited in
+`assets/sheets/README.md`: `oracle-seasons-dungeon-ancient-ruins.png`,
+`-dancing-dragon.png`, `-explorers-crypt.png`, `-poison-moths-lair.png`. A fifth
+file on that branch was a byte-identical duplicate of Explorer's Crypt and was
+dropped.
+
+`tools/rip-dungeon-themes.py` can now read more than one sheet: a pick may carry
+an optional 5th element naming a key in `SHEETS`. The refactor was proved
+behaviour-preserving by re-emitting and diffing BEFORE any pick was added —
+byte-identical, as CLAUDE.md requires.
+
+**WHICH HALF OF A SHEET YOU ARE LOOKING AT IS MEASURABLE, AND YOU MUST MEASURE
+IT.** Every one of these sheets is two halves side by side, "GBC LCD Colors" and
+"True Colors", and neither is labelled in the pixels. The LCD half is the
+LIGHTER, LESS SATURATED one: on ancient-ruins the left half runs mean luminance
+124 / saturation 0.54 against the right half's 92 / 0.73. This is not academic —
+the tile `laceWall` is a VIOLET lattice at x=1280, and its LCD twin near x=68
+reads as pale BONE. Judged by eye they are two different pieces of art, and the
+bone one is the wrong one. Recorded in the sheets README.
+
+Finding a wall was done by searching for 16x16 blocks whose own neighbour in
+BOTH axes is itself. That is what "tiles in both axes" means, and asking it of
+the SOURCE makes it a fact rather than a judgement — the ripper's own wall note
+records `hatchWall` and `forgeWall` being picked off a single-cell contact sheet
+and coming out in game as picket fencing.
+
+### What the sheets fixed: the Salt Pan Vault's wall was its own push block
+
+`vaultBlock` and `coralWall` QUANTISE TO BYTE-IDENTICAL ART — they are both
+bevelled block grids lifted from different rooms, and nothing said so. The Salt
+theme drew `dWallSalt` and `dBlockSalt` with that one grid in that one `marble`
+palette, so a block you can PUSH was pixel-for-pixel a wall you cannot. No
+palette swap could have separated them; only different art could, and an ornate
+lattice is different art at any tint. `dWallSalt` is `laceWall` now.
+
+**Scope, stated plainly: the Salt and Palace themes are NOT LIVE.** The six
+dungeons use Grotto, Coral, Bog, Cistern, Wood and Abyss; Salt and Palace are
+left from the eight-dungeon plan that `docs/DUNGEON-STATUS.md` records as
+FOLDED IN. So this fixed a real defect in a theme held in reserve, not one a
+player can currently see. It is guarded now either way.
+
+`tools/check-tilesets.mjs` gained the assertion: no dungeon may draw two of its
+six themed roles with the same art AND the same palette. Palette is part of the
+comparison because a swap is the house mechanism for reusing one art (d4 and d7
+share `studWall` and differ by tint, which is fine). Verified by restoring the
+old wall — it fails and names the dungeon.
+
+### What going through the sheets found, which IS live: d4's walls were scribble
+
+`studWall` is d4 Cliffside Cistern's wall and the only pick in this ripper with
+more than four source colours. The quantiser's remap picked the nearest kept
+colour BY LUMINANCE ALONE, which is hue-blind, and on a tile that spends its
+four slots across two hues the dropped colours cross over:
+
+    #5c8eb0  mid BLUE   lum 131  ->  #856b2b  GOLD  (lum 108)
+    #dbb969  light GOLD lum 186  ->  #abcfe6  BLUE  (lum 199)
+
+The two hues swapped, the black separators between the courses dissolved, and a
+wall of clean vertical stud columns drew as gold tracery scribbled over blue.
+The remap is squared RGB distance now, with the same tie-break on the colour
+tuple that made the old one deterministic — so it is still reproducible, which
+is the property the luminance version was chosen for. **Only tiles with more
+than four colours can move**: at four or fewer, every colour remaps to itself
+under any metric. Exactly one tile changed, `studWall`, and the room was
+screenshotted (`node tools/shoot-rooms.mjs d4,0,2,2`) before and after.
+
+### And the replay comparator could not compare an object at all
+
+Re-recording d4's baseline (its wall art legitimately changed, so its pixel
+probe had to move — behaviour was proved unchanged first: same frame count,
+same room changes, and EVERY CHECKPOINT still matching, with only one of the
+two pixel probes different) surfaced a latent bug in `tools/replay.mjs`.
+
+`diffState` read:
+
+    const same = Array.isArray(a) ? JSON.stringify(a) === JSON.stringify(b) : a === b;
+
+An array was compared structurally; a plain OBJECT fell through to `a === b` —
+reference equality between a value parsed out of the baseline file and a value
+built inside the page, which is false every single time. It had never fired
+because no baseline held an object-valued field. The recorder now captures
+`beaten` (the set of dungeons cleared), so the moment a baseline was
+re-recorded that replay could never pass again, reporting the uniquely useless
+`beaten: expected {}, got {}`.
+
+Objects are compared by value now, through a `canon` that sorts keys all the
+way down — the two sides come from different serialisers and nothing makes them
+agree on key order, so raw `JSON.stringify` would have swapped one false alarm
+for another. Proved by editing the baseline to claim d4 was beaten: it fails
+and says so.
+
+**A live coverage gap this leaves:** the other 50 baselines predate `beaten`
+and `heartPieces` and therefore still do not check them — `diffState` only
+walks the keys the baseline HAS. Re-recording them all would close that, and
+would also be exactly the kind of wholesale re-record that hides a regression,
+so it wants doing deliberately on a tree already known good, one at a time,
+reading each diff.
+
+### The same bug is still in `rip-terrain.py`, and it is scoped
+
+`tools/rip-terrain.py` carries its own copy of `quantise` with the same
+luminance-only remap, and it has three lossy picks: `cliffTop`, `bankEdgeS`,
+`bankCornerSE`. S21 already hit this and worked around it rather than fixing it
+— its note reads "bankEdgeS needed an explicit GROUND_MERGE override (gold
+masonry highlight and light-blue rim collide IN LUMINANCE)". That is this bug,
+named, and patched per-tile.
+
+Applying the same one-line fix there was MEASURED and then reverted, so the
+follow-up is concrete: it changes exactly four tiles — `bankCornerSE` and its
+three rotations/mirrors `bankCornerSW/NE/NW`. `cliffTop` and `bankEdgeS` do not
+move (their overrides already settle them). Four bank corners is a small blast
+radius but it is live art on the shore of every region, and S21 is explicit that
+the bank is judged by screenshot (`node tools/shoot-rooms.mjs --tide=0|1|2
+overworld,5,8`, Driftwood Strand). **Do it with eyes on, not blind.** The
+GROUND_MERGE overrides should be re-examined at the same time: one of them may
+become unnecessary, and a workaround left on top of a fixed metric is how a
+tile ends up wrong in a new way.
+
+### Verified
+
+Every tool in CLAUDE.md's table plus `check-tilesets` and `check-strands`, all
+green; `rip-dungeon-themes.py` and `rip-terrain.py` and `rip-dungeon-maps.py`
+all re-emit byte-identically. `npm run build` + `check-build` OK.
+
+### What is NOT done
+
+- **Three of the four new sheets are unused** (`dancing-dragon`,
+  `explorers-crypt`, `poison-moths-lair`), and honestly recorded as such in the
+  README. They are per-dungeon rooms at full size and are the obvious place to
+  look for the land/land fringe art and for any theme that wants its own floor.
+- The `rip-terrain.py` remap fix above.
+- S23's item stands: **nobody has LOOKED at the reshaped overworld screens.**
+
+---
+
 ## S23 — the tree-crown fix audited, and the corridor it quietly took (this session)
 
 THE JOB: audit S22's `quadCanopySolid` work — the Dredge gate, the Reedbank
