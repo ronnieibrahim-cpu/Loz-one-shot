@@ -3485,6 +3485,13 @@ function registerTiles(defs) {
       // `variants` — nothing the simulation can see moves.
       family: def.family || null,
       edgeArt: def.edgeArt || null,
+      // Narrows which neighbour families this tile draws an edge against. A
+      // cliff wants a lip against ANYTHING that is not cliff, so it leaves
+      // this unset. Grass does NOT want a bank against sand or mud — that is
+      // the still-hard rectangular fringe docs/ART-BACKLOG.md tracks
+      // separately — so it names 'water' and edgeArt fires only when the
+      // neighbour actually resolves to that family.
+      edgeAgainst: def.edgeAgainst || null,
       // 1 in `variantOdds` cells shows a variant. See `tileVariant` for why
       // this is a SCATTER and not an even mix.
       variantOdds: def.variantOdds || 8,
@@ -3565,6 +3572,21 @@ const EMPTY = {
 };
 
 const warned = new Set();
+
+/**
+ * The registered tiledef for `name`, or null if it names no tile at all (an
+ * animation-only art name, say). Unlike `getTileDef` this never warns and
+ * never returns the `EMPTY` placeholder — a caller that wants "the tile this
+ * name draws, if it has its own" needs to tell "no such tile" apart from "a
+ * tile that legitimately has no flags", which `EMPTY` collapses into the same
+ * answer. `Room.render`'s art/palette lookup is the reason this exists: an
+ * `edgeArt` or `variants` substitution can name a tile with a DIFFERENT
+ * palette than the cell being drawn (a bank tile's blue rim is not the
+ * grass's green), and only a real tiledef lookup can find that out.
+ */
+function artDef(name) {
+  return TILES.get(name) || null;
+}
 
 function getTileDef(name) {
   const d = TILES.get(name);
@@ -3677,22 +3699,86 @@ function tileVariant(def, roomKey, tx, ty) {
  * on cliff that visibly carries on. The caller returns the tile's own family
  * for a neighbour it cannot see.
  *
- * Only ONE edge wins, in the order the directions are listed. A cliff cell that
- * is both the top of its mass and the left of it draws the top lip: this game
- * has no corner pieces (see docs/ART-BACKLOG.md) and picking two edges would
- * need one.
+ * A FULL 4-NEIGHBOUR MASK, not "the first direction that matches" — that was
+ * `cliffTop`'s whole limitation (docs/ART-BACKLOG.md): a ground patch is a top
+ * edge and a left edge at once, and picking one lost the other. This reads all
+ * four of up/down/left/right and classifies the set of directions that differ:
+ *
+ *   0 differ  -> no edge art (this cell is not on a boundary)
+ *   1 differs -> a straight edge  (up/down/left/right)
+ *   2 differ, ADJACENT (e.g. up+left)  -> an OUTER corner: this tile's own
+ *              mass is confined to the corner opposite the two differing
+ *              sides, so the art shows it curving around a convex point
+ *   2 differ, OPPOSITE (up+down, or left+right) -> a one-tile-wide strip; no
+ *              dedicated art exists for this, so it degrades to whichever
+ *              single-direction edge is listed first (the old behaviour)
+ *   3 differ  -> an INNER corner: this tile is nearly engulfed, connected to
+ *              its own mass on only the one remaining side
+ *   4 differ  -> fully isolated; degrades the same way the opposite-pair case
+ *              does, for the same reason (no dedicated art, and a single-tile
+ *              island is a room-data smell a checker should catch on its own)
+ *
+ * Any of the 12 named keys (`up`/`down`/`left`/`right`,
+ * `cornerUpLeft`/`cornerUpRight`/`cornerDownLeft`/`cornerDownRight`,
+ * `innerUp`/`innerDown`/`innerLeft`/`innerRight`) may be omitted — a tile that
+ * only defines `up` behaves exactly as before, corners and all, because every
+ * case below falls back to the straight-edge degrade when the art it actually
+ * wants is not defined.
  */
 function tileEdgeArt(def, neighbourFamily) {
   const e = def.edgeArt;
   if (!e || !def.family) return null;
+  const against = def.edgeAgainst;
+  const matches = (nf) => (Array.isArray(against) ? against.includes(nf) : nf === against);
+  const differs = (dir) => {
+    const nf = neighbourFamily(dir);
+    if (nf === def.family) return false;
+    return against ? matches(nf) : true;
+  };
+  const diffDirs = EDGE_DIRS.filter(differs);
+  if (diffDirs.length === 0) return null;
+  if (diffDirs.length === 1) {
+    return e[diffDirs[0]] || null;
+  }
+  if (diffDirs.length === 2) {
+    const [a, b] = diffDirs;
+    const opposite = (a === 'up' && b === 'down') || (a === 'left' && b === 'right');
+    if (!opposite) {
+      const art = e[CORNER_KEY[a + ',' + b]];
+      if (art) return art;
+    }
+  } else if (diffDirs.length === 3) {
+    const missing = EDGE_DIRS.find((d) => !diffDirs.includes(d));
+    const art = e[INNER_KEY[missing]];
+    if (art) return art;
+  }
+  // Degrade: opposite pairs, four-way isolation, or a corner/inner direction
+  // with no dedicated art all fall back to the first single-edge match, the
+  // same answer this function always gave before corners existed.
   for (const dir of EDGE_DIRS) {
-    const art = e[dir];
-    if (art && neighbourFamily(dir) !== def.family) return art;
+    if (diffDirs.includes(dir) && e[dir]) return e[dir];
   }
   return null;
 }
 
 const EDGE_DIRS = ['up', 'down', 'left', 'right'];
+
+// The 2-differ (outer corner) and 3-differ (inner corner) cases, named by the
+// directions involved. `diffDirs` is always built by filtering EDGE_DIRS in
+// its own order, so a 2-element result is always one of exactly these four
+// pairs — the opposite pairs (up+down, left+right) are handled before this
+// table is consulted.
+const CORNER_KEY = {
+  'up,left': 'cornerUpLeft', 'up,right': 'cornerUpRight',
+  'down,left': 'cornerDownLeft', 'down,right': 'cornerDownRight',
+};
+// Keyed by the ONE direction that still matches (the tile's mass is nearly
+// engulfed, connected out through only that side).
+const INNER_KEY = { up: 'innerUp', down: 'innerDown', left: 'innerLeft', right: 'innerRight' };
+
+const EDGE_ART_KEYS = new Set([
+  ...EDGE_DIRS, ...Object.values(CORNER_KEY), ...Object.values(INNER_KEY),
+]);
 
 /** True if any tile in the set changes appearance with the tide. */
 function isTideSensitive(name) {
@@ -3727,10 +3813,11 @@ function validateTiles() {
     if (d.edgeArt) {
       if (!d.family) problems.push(`${name}: edgeArt needs a family to compare against`);
       for (const [dir, art] of Object.entries(d.edgeArt)) {
-        if (!EDGE_DIRS.includes(dir)) problems.push(`${name}: edgeArt direction '${dir}' is not up/down/left/right`);
+        if (!EDGE_ART_KEYS.has(dir)) problems.push(`${name}: edgeArt key '${dir}' is not a recognised edge/corner direction`);
         if (!TILES.has(art) && !ANIM_ART.has(art)) problems.push(`${name}: edgeArt '${art}' has no art`);
       }
     }
+    if (d.edgeAgainst && !d.edgeArt) problems.push(`${name}: edgeAgainst with no edgeArt does nothing`);
     if (d.variants) {
       if (d.anim) problems.push(`${name}: animated tiles cannot have variants`);
       if (!(d.variantOdds >= 1)) problems.push(`${name}: variantOdds must be >= 1`);
@@ -3798,6 +3885,7 @@ __exports["registerTiles"] = registerTiles;
 __exports["BLOCKS"] = BLOCKS;
 __exports["registerBlocks"] = registerBlocks;
 __exports["blockRef"] = blockRef;
+__exports["artDef"] = artDef;
 __exports["getTileDef"] = getTileDef;
 __exports["resolveTile"] = resolveTile;
 __exports["tileDefSolid"] = tileDefSolid;
@@ -3858,7 +3946,7 @@ __define("world/room.js", function (__exports, __require) {
 
 const { TILE, ROOM_W, ROOM_H, offscreen } = __require("core/screen.js");
 const { tiles: tileSheet } = __require("gfx/art.js");
-const { F, resolveTile, getTileDef, tileArt, tileVariant, tileEdgeArt, blockRef, tileDefSolid } = __require("world/tileset.js");
+const { F, resolveTile, getTileDef, artDef, tileArt, tileVariant, tileEdgeArt, blockRef, tileDefSolid } = __require("world/tileset.js");
 
 const LEGENDS = new Map();
 
@@ -4086,6 +4174,24 @@ class Room {
       if (edge) return edge;
     }
     return tileVariant(d, this.key, x, y);
+  }
+
+  /**
+   * The palette to draw `art` in, when `art` is what `artAt` returned for a
+   * cell whose own tiledef is `d`. `edgeArt` and `variants` both substitute a
+   * DIFFERENT tile's art by name, and that tile can bind a different palette
+   * than `d` does — a bank tile's blue rim is not the grass's green. Drawing
+   * every substitution in `d.pal` regardless was invisible for as long as
+   * every edge/variant art happened to share its base tile's palette (every
+   * `cliffTop` user binds `pal: 'stone'`, every grass variant binds
+   * `pal: 'grass'`); the bank tiles do not, and rendered as a green stripe
+   * shaped like a bank until this looked the substituted tile's own palette
+   * up instead of assuming it matched.
+   */
+  palFor(d, art) {
+    if (art === d.name) return d.pal;
+    const sub = artDef(art);
+    return sub ? sub.pal : d.pal;
   }
 
   /**
@@ -4372,7 +4478,10 @@ class Room {
           // A ground tile may declare interchangeable art. The choice is a pure
           // hash of this room and this cell, so it is stable across every cache
           // rebuild and consumes nothing — see `tileVariant` and `T2`.
-          tileSheet.draw(ctx, this.artAt(d, x, y, tide), x * TILE, y * TILE, { pal: d.pal });
+          {
+            const art = this.artAt(d, x, y, tide);
+            tileSheet.draw(ctx, art, x * TILE, y * TILE, { pal: this.palFor(d, art) });
+          }
         }
       }
       this.drawQuads(ctx, quadCells, tide);
@@ -4425,8 +4534,10 @@ class Room {
           if (d.big || d.quad) { quadCells.push({ x, y, def: d }); continue; }
           // Same hash as `render`, or the Lens's preview of the room would
           // draw a DIFFERENT field of grass from the room behind it.
-          tileSheet.draw(ctx, d.anim ? tileArt(d, frame) : this.artAt(d, x, y, tide),
-            x * TILE, y * TILE, { pal: d.pal });
+          {
+            const art = d.anim ? tileArt(d, frame) : this.artAt(d, x, y, tide);
+            tileSheet.draw(ctx, art, x * TILE, y * TILE, { pal: d.anim ? d.pal : this.palFor(d, art) });
+          }
         }
       }
       this.drawQuads(ctx, quadCells, tide);
@@ -14995,6 +15106,158 @@ const TERRAIN_ART = {
     1310000000000131
     3100000000000013`,
 
+  // shore bank, water below — rim on top, earth below — oracle-ages-overworld.png @ 545,1226
+  bankEdgeS: `
+    3333333333333333
+    2222222222222222
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    2222222222222222
+    3333333333333333
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    3333331111111111
+    3333333333333333`,
+
+  // shore bank outer corner, water down and right — oracle-ages-overworld.png @ 97,1226
+  bankCornerSE: `
+    3333333333333333
+    3222222222222222
+    3211111111111111
+    3210000000000000
+    3210000000000000
+    3210011111111111
+    3210011222222222
+    3210012333333333
+    3210012321111111
+    3210012311111111
+    3210012311133222
+    3210012311223322
+    3210012311222332
+    3210012311222333
+    3210012311222233
+    3210012311222233`,
+
+  // shore bank, water below — rim on top, earth below, rotated 180° from bankEdgeS — oracle-ages-overworld.png @ 545,1226
+  bankEdgeN: `
+    3333333333333333
+    1111111111333333
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    3333333333333333
+    2222222222222222
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    2222222222222222
+    3333333333333333`,
+
+  // shore bank, water below — rim on top, earth below, rotated 90° counter-clockwise from bankEdgeS — oracle-ages-overworld.png @ 545,1226
+  bankEdgeE: `
+    3200002311111113
+    3200002311111113
+    3200002311111113
+    3200002311111113
+    3200002311111113
+    3200002311111113
+    3200002311111113
+    3200002311111113
+    3200002311111113
+    3200002311111113
+    3200002311111133
+    3200002311111133
+    3200002311111133
+    3200002311111133
+    3200002311111133
+    3200002311111133`,
+
+  // shore bank, water below — rim on top, earth below, rotated 90° clockwise from bankEdgeS — oracle-ages-overworld.png @ 545,1226
+  bankEdgeW: `
+    3311111132000023
+    3311111132000023
+    3311111132000023
+    3311111132000023
+    3311111132000023
+    3311111132000023
+    3111111132000023
+    3111111132000023
+    3111111132000023
+    3111111132000023
+    3111111132000023
+    3111111132000023
+    3111111132000023
+    3111111132000023
+    3111111132000023
+    3111111132000023`,
+
+  // shore bank outer corner, water down and right, mirrored left-right from bankCornerSE — oracle-ages-overworld.png @ 97,1226
+  bankCornerSW: `
+    3333333333333333
+    2222222222222223
+    1111111111111123
+    0000000000000123
+    0000000000000123
+    1111111111100123
+    2222222221100123
+    3333333332100123
+    1111111232100123
+    1111111132100123
+    2223311132100123
+    2233221132100123
+    2332221132100123
+    3332221132100123
+    3322221132100123
+    3322221132100123`,
+
+  // shore bank outer corner, water down and right, mirrored top-to-bottom from bankCornerSE — oracle-ages-overworld.png @ 97,1226
+  bankCornerNE: `
+    3210012311222233
+    3210012311222233
+    3210012311222333
+    3210012311222332
+    3210012311223322
+    3210012311133222
+    3210012311111111
+    3210012321111111
+    3210012333333333
+    3210011222222222
+    3210011111111111
+    3210000000000000
+    3210000000000000
+    3211111111111111
+    3222222222222222
+    3333333333333333`,
+
+  // shore bank outer corner, water down and right, rotated 180° from bankCornerSE — oracle-ages-overworld.png @ 97,1226
+  bankCornerNW: `
+    3322221132100123
+    3322221132100123
+    3332221132100123
+    2332221132100123
+    2233221132100123
+    2223311132100123
+    1111111132100123
+    1111111232100123
+    3333333332100123
+    2222222221100123
+    1111111111100123
+    0000000000000123
+    0000000000000123
+    1111111111111123
+    2222222222222223
+    3333333333333333`,
+
   // oak: round canopy over visible roots, standing on grass — custom-oracle-style-overworld.png @ 2222,1597
   treeOakTL: `
     .......033333333
@@ -15223,6 +15486,14 @@ const TERRAIN_SRC_PALETTES = {
   dWall: ['#d3f9fd', '#aaccdc', '#7996b2', '#000000'],
   flowers: ['#b0c078', '#80c030', '#e840a0', '#000000'],
   caveMouth: ['#c08820', '#704820', '#086018', '#000000'],
+  bankEdgeS: ['#20b0f8', '#805000', '#0050b0', '#000000'],
+  bankCornerSE: ['#f8f8c0', '#20b0f8', '#0050b0', '#000000'],
+  bankEdgeN: ['#20b0f8', '#805000', '#0050b0', '#000000'],
+  bankEdgeE: ['#20b0f8', '#805000', '#0050b0', '#000000'],
+  bankEdgeW: ['#20b0f8', '#805000', '#0050b0', '#000000'],
+  bankCornerSW: ['#f8f8c0', '#20b0f8', '#0050b0', '#000000'],
+  bankCornerNE: ['#f8f8c0', '#20b0f8', '#0050b0', '#000000'],
+  bankCornerNW: ['#f8f8c0', '#20b0f8', '#0050b0', '#000000'],
   treeOakT: ['#93a846', '#546d25', '#000000'],
   treeOakB: ['#dfd9b5', '#b49d73', '#93a846', '#7a5d35', '#546d25', '#000000'],
   palmT: ['#a7c947', '#5a9731', '#000000'],
@@ -18400,9 +18671,31 @@ function installCoreTiles() {
   // The themed dungeon tiles bring their own colours off the cartridge, and
   // the tiledefs below name them. Must run before registerTiles.
   installDungeonThemePalettes();
+  // THE BANK. Installed rather than added to gfx/palettes.js's own hand-tuned
+  // ramps for the same reason TOWN_PALETTES is: this is new art with no
+  // existing hand-drawn tile to preserve the colours of, so it carries the
+  // cartridge's own extracted values — see tools/rip-terrain.py's PICKS note
+  // on `bankEdgeS`/`bankCornerSE`. Two palettes, not one, because the straight
+  // edges and the outer corners kept different four-colour sets off the
+  // source (the corner's window has more rim, less earth) and a tiledef binds
+  // exactly one palette.
+  registerPalettes({
+    bank: ['#20b0f8', '#805000', '#0050b0', '#000000'],
+    bankCorner: ['#f8f8c0', '#20b0f8', '#0050b0', '#000000'],
+  });
   tileSheet.add(ART, 'stone');
   // Animation frames are art without being tiles in their own right.
   declareAnimArt(Object.keys(ART));
+
+  // Shared by every LAND tile that wants a bank against water — the source
+  // draws the same earthen bank under grass and under dune sand alike (see
+  // rip-terrain.py's PICKS note), so this is one object every land family
+  // below points `edgeArt` at, not one per material.
+  const BANK_EDGE_ART = {
+    up: 'bankEdgeN', down: 'bankEdgeS', left: 'bankEdgeW', right: 'bankEdgeE',
+    cornerUpLeft: 'bankCornerNW', cornerUpRight: 'bankCornerNE',
+    cornerDownLeft: 'bankCornerSW', cornerDownRight: 'bankCornerSE',
+  };
 
   const TILE_DEFS = {
     void: { art: ART.void, pal: 'abyss', flags: F.VOID | F.SOLID },
@@ -18419,7 +18712,25 @@ function installCoreTiles() {
     // colours and a tonal seam appears wherever two of them meet. The rate was
     // settled by looking at 1-in-4 (busy), 1-in-7 (a meadow) and 1-in-12
     // (accidental) side by side at room scale.
-    grass: { art: ART.grass, pal: 'grass', variants: ['grassClump', 'grassTuft'], variantOdds: 7 },
+    // THE SHORE. Land bordering water no longer stops at a flat colour seam —
+    // `family`+`edgeAgainst` fire `edgeArt` only when the neighbour actually
+    // resolves to 'water' (grass next to sand or mud stays the hard rectangle
+    // docs/ART-BACKLOG.md tracks separately; only the land/water join is done).
+    // The bank tiles themselves are plain walkable ground — no flags of their
+    // own — because they replace grass at the edge cell, not add an obstacle.
+    bankEdgeN: { art: ART.bankEdgeN, pal: 'bank' },
+    bankEdgeS: { art: ART.bankEdgeS, pal: 'bank' },
+    bankEdgeE: { art: ART.bankEdgeE, pal: 'bank' },
+    bankEdgeW: { art: ART.bankEdgeW, pal: 'bank' },
+    bankCornerNW: { art: ART.bankCornerNW, pal: 'bankCorner' },
+    bankCornerNE: { art: ART.bankCornerNE, pal: 'bankCorner' },
+    bankCornerSW: { art: ART.bankCornerSW, pal: 'bankCorner' },
+    bankCornerSE: { art: ART.bankCornerSE, pal: 'bankCorner' },
+
+    grass: {
+      art: ART.grass, pal: 'grass', variants: ['grassClump', 'grassTuft'], variantOdds: 7,
+      family: 'grass', edgeAgainst: 'water', edgeArt: BANK_EDGE_ART,
+    },
     grassTuft: { art: ART.grassTuft, pal: 'grass' },
     grassClump: { art: ART.grassClump, pal: 'grass' },
     grassDark: { art: ART.grass, pal: 'grassdk', variants: ['grassClump', 'grassTuft'], variantOdds: 7 },
@@ -18429,9 +18740,13 @@ function installCoreTiles() {
     flowers: { art: ART.flowers, pal: 'grass', underArt: 'grass' },
     flowersDark: { art: ART.flowers, pal: 'grassdk', underArt: 'grassDark' },
     tallgrass: { art: ART.tallgrass, pal: 'grassdk', flags: F.TALLGRASS },
-    sand: { art: ART.sand, pal: 'sand' },
+    sand: {
+      art: ART.sand, pal: 'sand', family: 'sand', edgeAgainst: 'water', edgeArt: BANK_EDGE_ART,
+    },
     sandWet: { art: ART.sandWet, pal: 'sandwet' },
-    sandRipple: { art: ART.sandRipple, pal: 'sand' },
+    sandRipple: {
+      art: ART.sandRipple, pal: 'sand', family: 'sand', edgeAgainst: 'water', edgeArt: BANK_EDGE_ART,
+    },
     sandDeep: { art: ART.sand, pal: 'sandwet', flags: F.SLOW },
     mud: { art: ART.mud, pal: 'bog', flags: F.SLOW },
     rockFloor: { art: ART.rockFloor, pal: 'stone' },
@@ -18449,8 +18764,12 @@ function installCoreTiles() {
     sandRust: { art: ART.sand, pal: 'rust' },
 
     // --- water (concrete) ---
-    waterS: { art: ART.waterS0, pal: 'water', flags: F.WATER, anim: ['waterS0', 'waterS1', 'waterS2', 'waterS1'], animRate: 11 },
-    waterD: { art: ART.waterD0, pal: 'deep', flags: F.DEEP, anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 13 },
+    // `family: 'water'` on the ordinary sea/lake water only — reef and abyss
+    // water keep their own rocky shoreline treatment (rockFloor) and are
+    // deliberately NOT tagged, so grass's bank never tries to grow along a
+    // reef edge with the wrong art.
+    waterS: { art: ART.waterS0, pal: 'water', flags: F.WATER, family: 'water', anim: ['waterS0', 'waterS1', 'waterS2', 'waterS1'], animRate: 11 },
+    waterD: { art: ART.waterD0, pal: 'deep', flags: F.DEEP, family: 'water', anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 13 },
     waterSReef: { art: ART.waterS0, pal: 'reef', flags: F.WATER, anim: ['waterS0', 'waterS1', 'waterS2', 'waterS1'], animRate: 11 },
     waterDReef: { art: ART.waterD0, pal: 'reef', flags: F.DEEP, anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 13 },
     waterAbyss: { art: ART.waterD0, pal: 'abyss', flags: F.DEEP, anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 16 },
@@ -18470,7 +18789,7 @@ function installCoreTiles() {
     //
     // It is NOT a substitute for real sea inside the world. Anywhere the player
     // can reach, use `waterD` and let the Flippers mean something.
-    openSea: { art: ART.waterD0, pal: 'deep', flags: F.DEEP | F.SOLID, anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 13 },
+    openSea: { art: ART.waterD0, pal: 'deep', flags: F.DEEP | F.SOLID, family: 'water', anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 13 },
     foamN: { art: ART.foamN, pal: 'water', flags: F.WATER },
 
     // --- riptides ---------------------------------------------------------

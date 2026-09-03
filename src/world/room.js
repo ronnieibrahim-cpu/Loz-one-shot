@@ -41,7 +41,7 @@
 
 import { TILE, ROOM_W, ROOM_H, offscreen } from '../core/screen.js';
 import { tiles as tileSheet } from '../gfx/art.js';
-import { F, resolveTile, getTileDef, tileArt, tileVariant, tileEdgeArt, blockRef, tileDefSolid } from './tileset.js';
+import { F, resolveTile, getTileDef, artDef, tileArt, tileVariant, tileEdgeArt, blockRef, tileDefSolid } from './tileset.js';
 
 export const LEGENDS = new Map();
 
@@ -269,6 +269,24 @@ export class Room {
       if (edge) return edge;
     }
     return tileVariant(d, this.key, x, y);
+  }
+
+  /**
+   * The palette to draw `art` in, when `art` is what `artAt` returned for a
+   * cell whose own tiledef is `d`. `edgeArt` and `variants` both substitute a
+   * DIFFERENT tile's art by name, and that tile can bind a different palette
+   * than `d` does — a bank tile's blue rim is not the grass's green. Drawing
+   * every substitution in `d.pal` regardless was invisible for as long as
+   * every edge/variant art happened to share its base tile's palette (every
+   * `cliffTop` user binds `pal: 'stone'`, every grass variant binds
+   * `pal: 'grass'`); the bank tiles do not, and rendered as a green stripe
+   * shaped like a bank until this looked the substituted tile's own palette
+   * up instead of assuming it matched.
+   */
+  palFor(d, art) {
+    if (art === d.name) return d.pal;
+    const sub = artDef(art);
+    return sub ? sub.pal : d.pal;
   }
 
   /**
@@ -555,7 +573,10 @@ export class Room {
           // A ground tile may declare interchangeable art. The choice is a pure
           // hash of this room and this cell, so it is stable across every cache
           // rebuild and consumes nothing — see `tileVariant` and `T2`.
-          tileSheet.draw(ctx, this.artAt(d, x, y, tide), x * TILE, y * TILE, { pal: d.pal });
+          {
+            const art = this.artAt(d, x, y, tide);
+            tileSheet.draw(ctx, art, x * TILE, y * TILE, { pal: this.palFor(d, art) });
+          }
         }
       }
       this.drawQuads(ctx, quadCells, tide);
@@ -608,8 +629,10 @@ export class Room {
           if (d.big || d.quad) { quadCells.push({ x, y, def: d }); continue; }
           // Same hash as `render`, or the Lens's preview of the room would
           // draw a DIFFERENT field of grass from the room behind it.
-          tileSheet.draw(ctx, d.anim ? tileArt(d, frame) : this.artAt(d, x, y, tide),
-            x * TILE, y * TILE, { pal: d.pal });
+          {
+            const art = d.anim ? tileArt(d, frame) : this.artAt(d, x, y, tide);
+            tileSheet.draw(ctx, art, x * TILE, y * TILE, { pal: d.anim ? d.pal : this.palFor(d, art) });
+          }
         }
       }
       this.drawQuads(ctx, quadCells, tide);

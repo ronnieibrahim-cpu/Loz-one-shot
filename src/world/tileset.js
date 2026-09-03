@@ -156,6 +156,13 @@ export function registerTiles(defs) {
       // `variants` — nothing the simulation can see moves.
       family: def.family || null,
       edgeArt: def.edgeArt || null,
+      // Narrows which neighbour families this tile draws an edge against. A
+      // cliff wants a lip against ANYTHING that is not cliff, so it leaves
+      // this unset. Grass does NOT want a bank against sand or mud — that is
+      // the still-hard rectangular fringe docs/ART-BACKLOG.md tracks
+      // separately — so it names 'water' and edgeArt fires only when the
+      // neighbour actually resolves to that family.
+      edgeAgainst: def.edgeAgainst || null,
       // 1 in `variantOdds` cells shows a variant. See `tileVariant` for why
       // this is a SCATTER and not an even mix.
       variantOdds: def.variantOdds || 8,
@@ -236,6 +243,21 @@ const EMPTY = {
 };
 
 const warned = new Set();
+
+/**
+ * The registered tiledef for `name`, or null if it names no tile at all (an
+ * animation-only art name, say). Unlike `getTileDef` this never warns and
+ * never returns the `EMPTY` placeholder — a caller that wants "the tile this
+ * name draws, if it has its own" needs to tell "no such tile" apart from "a
+ * tile that legitimately has no flags", which `EMPTY` collapses into the same
+ * answer. `Room.render`'s art/palette lookup is the reason this exists: an
+ * `edgeArt` or `variants` substitution can name a tile with a DIFFERENT
+ * palette than the cell being drawn (a bank tile's blue rim is not the
+ * grass's green), and only a real tiledef lookup can find that out.
+ */
+export function artDef(name) {
+  return TILES.get(name) || null;
+}
 
 export function getTileDef(name) {
   const d = TILES.get(name);
@@ -348,22 +370,86 @@ export function tileVariant(def, roomKey, tx, ty) {
  * on cliff that visibly carries on. The caller returns the tile's own family
  * for a neighbour it cannot see.
  *
- * Only ONE edge wins, in the order the directions are listed. A cliff cell that
- * is both the top of its mass and the left of it draws the top lip: this game
- * has no corner pieces (see docs/ART-BACKLOG.md) and picking two edges would
- * need one.
+ * A FULL 4-NEIGHBOUR MASK, not "the first direction that matches" — that was
+ * `cliffTop`'s whole limitation (docs/ART-BACKLOG.md): a ground patch is a top
+ * edge and a left edge at once, and picking one lost the other. This reads all
+ * four of up/down/left/right and classifies the set of directions that differ:
+ *
+ *   0 differ  -> no edge art (this cell is not on a boundary)
+ *   1 differs -> a straight edge  (up/down/left/right)
+ *   2 differ, ADJACENT (e.g. up+left)  -> an OUTER corner: this tile's own
+ *              mass is confined to the corner opposite the two differing
+ *              sides, so the art shows it curving around a convex point
+ *   2 differ, OPPOSITE (up+down, or left+right) -> a one-tile-wide strip; no
+ *              dedicated art exists for this, so it degrades to whichever
+ *              single-direction edge is listed first (the old behaviour)
+ *   3 differ  -> an INNER corner: this tile is nearly engulfed, connected to
+ *              its own mass on only the one remaining side
+ *   4 differ  -> fully isolated; degrades the same way the opposite-pair case
+ *              does, for the same reason (no dedicated art, and a single-tile
+ *              island is a room-data smell a checker should catch on its own)
+ *
+ * Any of the 12 named keys (`up`/`down`/`left`/`right`,
+ * `cornerUpLeft`/`cornerUpRight`/`cornerDownLeft`/`cornerDownRight`,
+ * `innerUp`/`innerDown`/`innerLeft`/`innerRight`) may be omitted — a tile that
+ * only defines `up` behaves exactly as before, corners and all, because every
+ * case below falls back to the straight-edge degrade when the art it actually
+ * wants is not defined.
  */
 export function tileEdgeArt(def, neighbourFamily) {
   const e = def.edgeArt;
   if (!e || !def.family) return null;
+  const against = def.edgeAgainst;
+  const matches = (nf) => (Array.isArray(against) ? against.includes(nf) : nf === against);
+  const differs = (dir) => {
+    const nf = neighbourFamily(dir);
+    if (nf === def.family) return false;
+    return against ? matches(nf) : true;
+  };
+  const diffDirs = EDGE_DIRS.filter(differs);
+  if (diffDirs.length === 0) return null;
+  if (diffDirs.length === 1) {
+    return e[diffDirs[0]] || null;
+  }
+  if (diffDirs.length === 2) {
+    const [a, b] = diffDirs;
+    const opposite = (a === 'up' && b === 'down') || (a === 'left' && b === 'right');
+    if (!opposite) {
+      const art = e[CORNER_KEY[a + ',' + b]];
+      if (art) return art;
+    }
+  } else if (diffDirs.length === 3) {
+    const missing = EDGE_DIRS.find((d) => !diffDirs.includes(d));
+    const art = e[INNER_KEY[missing]];
+    if (art) return art;
+  }
+  // Degrade: opposite pairs, four-way isolation, or a corner/inner direction
+  // with no dedicated art all fall back to the first single-edge match, the
+  // same answer this function always gave before corners existed.
   for (const dir of EDGE_DIRS) {
-    const art = e[dir];
-    if (art && neighbourFamily(dir) !== def.family) return art;
+    if (diffDirs.includes(dir) && e[dir]) return e[dir];
   }
   return null;
 }
 
 const EDGE_DIRS = ['up', 'down', 'left', 'right'];
+
+// The 2-differ (outer corner) and 3-differ (inner corner) cases, named by the
+// directions involved. `diffDirs` is always built by filtering EDGE_DIRS in
+// its own order, so a 2-element result is always one of exactly these four
+// pairs — the opposite pairs (up+down, left+right) are handled before this
+// table is consulted.
+const CORNER_KEY = {
+  'up,left': 'cornerUpLeft', 'up,right': 'cornerUpRight',
+  'down,left': 'cornerDownLeft', 'down,right': 'cornerDownRight',
+};
+// Keyed by the ONE direction that still matches (the tile's mass is nearly
+// engulfed, connected out through only that side).
+const INNER_KEY = { up: 'innerUp', down: 'innerDown', left: 'innerLeft', right: 'innerRight' };
+
+const EDGE_ART_KEYS = new Set([
+  ...EDGE_DIRS, ...Object.values(CORNER_KEY), ...Object.values(INNER_KEY),
+]);
 
 /** True if any tile in the set changes appearance with the tide. */
 export function isTideSensitive(name) {
@@ -398,10 +484,11 @@ export function validateTiles() {
     if (d.edgeArt) {
       if (!d.family) problems.push(`${name}: edgeArt needs a family to compare against`);
       for (const [dir, art] of Object.entries(d.edgeArt)) {
-        if (!EDGE_DIRS.includes(dir)) problems.push(`${name}: edgeArt direction '${dir}' is not up/down/left/right`);
+        if (!EDGE_ART_KEYS.has(dir)) problems.push(`${name}: edgeArt key '${dir}' is not a recognised edge/corner direction`);
         if (!TILES.has(art) && !ANIM_ART.has(art)) problems.push(`${name}: edgeArt '${art}' has no art`);
       }
     }
+    if (d.edgeAgainst && !d.edgeArt) problems.push(`${name}: edgeAgainst with no edgeArt does nothing`);
     if (d.variants) {
       if (d.anim) problems.push(`${name}: animated tiles cannot have variants`);
       if (!(d.variantOdds >= 1)) problems.push(`${name}: variantOdds must be >= 1`);
