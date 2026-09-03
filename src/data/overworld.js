@@ -872,8 +872,8 @@ const rooms = {
       '11N."".SgT',
       '11N....SgT',
       'g1=WWWW=gT',
-      'Tgggff1ggT',
-      'TT#gggg#TT',
+      '#gggff1gg#',
+      '###gggg###',
     ],
     entities: [
       ['anglerfry', 4, 5],

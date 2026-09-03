@@ -447,6 +447,53 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **A ROOM CAN LOSE HALF ITS FLOOR AND EVERY CHECKER STILL PASSES.**
+  `check-overworld` floods tile by tile but keys its `reached` set on the
+  ROOM: a screen counts as reached the moment ONE of its cells is. So a
+  screen reduced to a four-tile doorway is indistinguishable from a screen
+  you can walk all of. The tree-crown fix severed The Gyre's entire southern
+  lobe and Drowned Hollow's north doorway — fifteen cells and the corridor
+  between two screens — while `check-overworld` reported 120/120 screens,
+  `check-progression` 120/120 with 6/6 dungeons, and walk-dungeons, gates,
+  towns, placement, ground, respawn, hearts, items, bosses, `replay.mjs`
+  51/51 to the pixel and `check-playthrough` 21/21 all passed. Every tool in
+  the table. `tools/check-strands.mjs` exists now and is the answer: flood on
+  foot, group the unreached foot-passable cells into regions ACROSS SEAMS,
+  diff a baseline. Group across seams or a severed corridor reports as two
+  innocent pockets, one per screen.
+
+- **The cell that goes missing is never a random cell.** The Gyre's lost lobe
+  held the SIGN that teaches the Kelp-Soled Cleats — "Swimmers go round.
+  Walkers go through." — and `caps.swim` is `this._cleats > 0`, so the screen
+  explaining the item became readable only by a player who already owned it.
+  When a connectivity change eats cells, look at what was STANDING on them
+  before deciding it was cosmetic. Checking is one pass over `entities`
+  against the stranded set; do it every time.
+
+- **Clearing one cell of a 2x2 quad block frees nothing.** `quadCanopySolid`
+  scans all four cells of `bx = x & ~1, by = y & ~1` for a quad and asks
+  `quadMayCover` if it finds ANY. So a canopy-covered neighbour stays solid
+  while a single tree remains anywhere in its block. Freeing `1,6` in The Gyre
+  needed `0,6`, `0,7` AND `1,7` to stop being trees, not just `0,6`. Budget
+  the whole block or the edit does nothing and looks like the rule is broken.
+
+- **A gate count is not a gate proof, and the assertion that actually holds a
+  gate may not be the one named after it.** Thinning Bog Causeway's row-1 tree
+  wall silently reopens the road into the Marsh's northern screens — and
+  `check-overworld` still prints `dredge: seals 2`. What catches it is the
+  SEAM assertion, several checks earlier and not about gates at all. Read the
+  pass/fail line, never the gate counts on their own.
+
+- **A one-tile verge running alongside a border treeline gets chopped into
+  islands.** The lattice is absolute: even rows are canopy and solidify, odd
+  rows are roots and do not. So a vertical lane of walkable grass hard against
+  a two-row treeline survives only at its odd rows, as disconnected single
+  cells. Fourteen of these exist and are LEFT ON PURPOSE — they render as tree
+  roots inside the treeline and hold no entity, so being unreachable is
+  correct. If one ever needs removing, make the pocket SOLID; do not reopen
+  the canopy to reach it.
+
+
 
 - **A screen border is a template, and the template's corner bleeds into its
   doorway.** Almost every screen in this game is framed `TTTggggTTT`: a

@@ -1,3 +1,148 @@
+## S23 — the tree-crown fix audited, and the corridor it quietly took (this session)
+
+THE JOB: audit S22's `quadCanopySolid` work — the Dredge gate, the Reedbank
+judgement call, the playability of the rooms the fix shrank, and the two
+`tools/test.mjs` edits — then continue the polish.
+
+S22's own verification was **honest and reproduced exactly**. Every tool in
+CLAUDE.md's table is green on its tree, including `replay.mjs` 51/51 to the
+pixel and `check-playthrough` 21/21. `watch-cutscenes.mjs`, the one thing S22
+could not get a clean read on, was run to completion here: **13 scenes, 0
+scene-level faults.** Nothing it changed touched cutscenes.
+
+But the audit found one thing every tool in the table was blind to, and the
+tool written to catch it is the durable part of this session.
+
+### The Gyre lost its southern half, and nothing could see it
+
+`check-overworld` floods TILE by tile but keys `reached` on the ROOM. A screen
+counts as reached the moment ONE of its cells is. S22 already knew this — its
+notes say "print reached CELLS" — and used it to find the Bog Stair. It is the
+same blindness that hid this.
+
+Flooding on foot and diffing reached CELLS against `471752e` (the pristine
+pre-change tree) shows the Dredge gate is **exactly preserved**: same three
+screens sealed (`0,0,6`, `0,1,6`'s interior, `0,2,6`), same four reachable
+doorway cells `3,7 4,7 5,7 6,7` in the Bog Stair, in both trees. Item 1 of the
+audit is answered and the gate is real — the ONLY difference between a flood
+that reaches the Marsh's north and one that does not is `F.HEAVY` in the mask.
+No leak was moved. S22's `dredge: seals 2` is right.
+
+The same diff also showed **29 cells that were walkable-and-reachable before
+and were not after**, in ten screens. Fifteen of them were one connected
+region spanning a seam: **The Gyre (`0,7,3`) rows 6 and 7, and Drowned
+Hollow's (`0,7,4`) row 0** — the whole north-south corridor between the two
+screens, severed on foot.
+
+The Gyre is `TTTTTTTTTT` at row 0 and had `T` corners at rows 6-7; rows 2-5 of
+its middle are riptide. So row 6's only links upward were `1,6` and `8,6`, and
+both are canopy-covered by the corner trees. Row 6 went solid at both ends and
+the whole southern lobe fell off the map.
+
+**What was on the lost cells: the sign at `4,6`.** Its text is
+*"The water here runs in a ring. Swimmers go round. Walkers go through."* —
+the screen that TEACHES the Kelp-Soled Cleats. `player.caps.swim` is
+`this._cleats > 0`, so swimming is the Cleats and nothing else. The sign
+explaining the item had become readable only by a player who already had it.
+
+Green while this was true: `check-overworld` 120/120 screens,
+`check-progression` 120/120 with 6/6 dungeons, walk-dungeons, gates, towns,
+placement, ground, respawn, hearts, items, bosses, replay and playthrough. All
+of them. A room can lose half its floor and every one of them still passes.
+
+**Fixed** by making the Gyre's two bottom corner BLOCKS cliff rather than tree,
+so no quad sits in them and row 6's ends are free again:
+
+    row 6  'Tgggff1ggT' -> '#gggff1gg#'
+    row 7  'TT#gggg#TT' -> '###gggg###'
+
+Both rows and the doorway are reachable again and the sign is back. Note it is
+the whole 2x2 BLOCK that has to be cleared, not the one cell: `quadCanopySolid`
+scans all four cells of `bx = x & ~1, by = y & ~1` for a quad, so leaving a
+tree at `0,7` keeps `1,6` solid no matter what `0,6` becomes.
+
+### `tools/check-strands.mjs` — new, and it is the point of the session
+
+Floods on foot from Tidewatch Village with all four gates held OPEN (this tool
+is about TERRAIN; a gate is proved in `check-overworld`, one drop at a time),
+collects every foot-passable cell the flood never reaches, groups them into
+connected regions **across seams** (the severed corridor was one region
+spanning two screens and per-room grouping would have reported it as two
+harmless pockets), and diffs against `tools/strands-baseline.json`.
+
+It is a BASELINE, not a zero-assertion, because two kinds of stranded cell are
+legitimate and both are in the recorded 24:
+
+- **Water.** The flood walks. The Gyre's 10-cell riptide ring is meant to be
+  unreachable on foot — that is the screen's argument, and it is stranded in
+  the pristine tree too.
+- **One-cell root pockets, 14 of them.** A border treeline is two rows deep;
+  `quadCanopySolid` solidifies the canopy (even) row and leaves the root (odd)
+  row walkable on purpose. Where a one-tile verge ran up alongside such a line,
+  its odd rows survive as isolated single cells. They RENDER AS TREE ROOTS
+  inside the treeline, they hold no entity (checked), and being unreachable is
+  correct. Left alone deliberately.
+
+A region that GROWS or APPEARS with more than one cell fails. Verified by
+reintroducing the Gyre regression: it reports the 14-cell region by name across
+both screens and exits 1. `--record` re-records, `--verbose` lists.
+
+### Audit answers
+
+1. **The Dredge gate is real.** Proved above, cell by cell, against pristine.
+2. **Sealing Reedbank's south border was right — keep it.** The pristine state
+   was a DEAD-END VESTIBULE: Reedbank's row-7 gap led into four cells of Bog
+   Causeway's row 0 that had a solid tree wall (`TfTTTTTTgT`) behind them and
+   went nowhere. S22's `TTTTTTTTTT` removes the tease from the Reedbank side,
+   and the Bog Causeway side is sealed **by the canopy rule itself** — row 0 is
+   an even row and row 1's tree wall is in its blocks, so the drawn gap is
+   crown. Coherent. A second gate tile here would be redundant: the Dredge gate
+   is the `M` boulders in the Bog Stair and the flood proves they are its sole
+   cause. **The landmine to write down:** thinning Bog Causeway's row-1 tree
+   wall silently unseals the region. It IS caught — but by `check-overworld`'s
+   SEAM assertion, not by its dredge count, which still reported `seals 2` with
+   the wall thinned. Do not read the gate counts alone.
+3. **Playability of the shrunk rooms.** The Gyre was not a readability
+   complaint, it was a severed corridor, and it is fixed. Of the rest, nothing
+   larger than a single decorative cell moved. `0,4,6` South Wood losing row 6
+   is correct and reads fine — it is the bottom border treeline. This item is
+   now closed as far as connectivity and cell-level reachability go; what is
+   still NOT done is a human looking at the screens.
+4. **The `test.mjs` edits are correct and the assertions are not weakened.**
+   Both still require `progress.hearts` to fall. Clearing `hurtTime`/`knockTime`
+   alongside `invuln` makes the test exercise the path it names rather than
+   passing by accident, and the enemy is force-teleported onto the player
+   (`e.x = g.player.x`), so the hit is never incidental. Moving the entry from
+   `72,56` to `72,24` moves it off the zol's spawn tile, which was also the
+   recorded respawn point.
+
+### Verified
+
+Every tool in CLAUDE.md's table, plus the new one: validate, walk-dungeons,
+check-overworld 17/17, check-progression 19/19, check-gates 26/26,
+**check-strands (15 regions, 24 cells)**, solve-switches, check-towns 67/67,
+check-placement, check-ground 7/7, check-camera, check-wide-rooms,
+check-respawn 60/60, check-hearts 114/114, check-items 91/91, the six item
+checkers, check-trade, check-motion, check-torches, check-bosses 19/19,
+check-dialogue, check-sfx, check-music, check-audio-render, check-feel,
+check-text, **watch-cutscenes 13/13 scenes 0 faults**, `test.mjs` 83/83,
+`replay.mjs` **51/51 to the pixel, no re-recording**, and
+**`check-playthrough` 21/21**. `npm run build` + `check-build` OK.
+
+### What is NOT done
+
+- **Nobody has LOOKED at the reshaped screens.** Connectivity and cell-level
+  reachability are now both proved; register and composition are not. The
+  batch corner fix put a `#` cliff corner into ~158 screens and two stone
+  corners into the Gyre, and no tool can tell you whether a stone corner reads
+  right in a wood screen. `node tools/shoot-rooms.mjs --tide=0|1|2 overworld,7,3`.
+- The 14 one-cell root pockets are left as decor. If a future session wants
+  them gone, the fix is to make the pocket solid, not to reopen the canopy.
+- S21 Phase 2 blob work is still a slice. `docs/ART-BACKLOG.md`'s top entry
+  stands.
+
+---
+
 ## S22 — Link cannot stand on a tree any more (this session)
 
 THE JOB, in the user's words: audit S21's work for out-of-place tile styles,
