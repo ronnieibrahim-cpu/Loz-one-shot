@@ -1,3 +1,139 @@
+## S21 — the shore is a bank now, and the mud clearings started losing their corners (this session)
+
+THE JOB was three phases from `docs/ART-BACKLOG.md`'s top entry and
+CLAUDE.md's overworld-design prompt, in order: (1) a real 4-neighbour mask
+autotiler plus one land/water pair end to end, (2) the regional SHAPE of the
+ground (organic blobs, not rectangles), (3) a tile-integration overlap pass.
+Phase 1 is DONE and thorough. Phase 2 is a verified SLICE, not the whole
+job — it was never going to fit one session; ART-BACKLOG says so and it was
+right. Phase 3 found nothing to fix.
+
+### Phase 1 — done, and worth reading `src/world/tileset.js`'s `tileEdgeArt` before touching it again
+
+`tileEdgeArt` now reads all 4 neighbours and classifies: 0 differ → plain,
+1 differs → a straight edge, 2 ADJACENT differ (e.g. up+left) → an OUTER
+corner, 2 OPPOSITE differ (a 1-tile-wide strip) → degrades to a single edge
+(no art for this, on purpose — see ART-BACKLOG), 3 differ → an INNER corner
+(no art exists for this yet either), 4 differ → degrades the same way as the
+opposite-pair case. A tiledef opts a neighbour comparison IN with `family` +
+optionally `edgeAgainst` (a family name or array) — `edgeAgainst` narrows
+"draw an edge" to "draw an edge only against THIS family", which cliff does
+not use (it wants a lip against anything) and grass/sand DO use (`'water'`
+only, so grass next to sand/mud stays the hard rectangle that is still
+correct there).
+
+The actual bank art: `bankEdgeS`/`bankCornerSE` are real extractions off
+`oracle-ages-overworld.png @ 50,1200` (a garden pool's shore — NOT the
+1400,1900 crop the S19 ART-BACKLOG note pointed at; that turned out to be
+Ambi's moat, a lock-puzzle canal, and its "bank" is walled masonry with a
+reflection-sparkle rim that quantises badly). The other 6 orientations
+(`bankEdgeN/E/W`, `bankCornerSW/NE/NW`) are ROTATIONS and MIRRORS of those
+two — `tools/rip-terrain.py`'s `TRANSFORMS` — not separate crops, and not
+authorship: the source's own lighting (pale rim toward land, dark earth
+toward water) is rotationally consistent, so a rotated real capture and a
+mirrored one are the same pixels a second real capture at that angle would
+have. `bankEdgeS` needed an explicit `GROUND_MERGE` override in the ripper
+(gold masonry highlight and light-blue rim collide in luminance, see
+HANDOFF) — the same fix pattern `TOWN_MERGE` already used.
+
+**A real, previously-invisible engine bug was found and fixed along the
+way**, and it is worth its own read in `src/world/room.js`: `palFor`.
+`Room.render`/`renderAt` drew every `artAt` substitution (an `edgeArt` or
+`variants` swap) in the ORIGINAL cell's palette, not the substituted tile's
+own. Invisible for the whole life of `edgeArt` because `cliffTop` and every
+grass variant happen to share a palette with what calls them; the bank tiles
+do not (blue/brown against grass's green) and rendered as a green stripe
+shaped like a bank until this was traced down. Side effect: every regional
+cliff (`cliffSand`/`cliffRust`/`cliffCoral`/`cliffMarble`/`cliffAbyss`) now
+draws its lip in `cliffTop`'s own `stone`, not the body's tint — screenshotted
+at `overworld,1,7` (marsh, `cliffDk`) and it reads as an overhang, not a
+regression; nowhere else was screenshotted for this specifically, so a
+session with time to spare should look at a `cliffSand`/`cliffRust`/
+`cliffCoral`/`cliffMarble`/`cliffAbyss` screen and confirm the same.
+
+`family: 'water'` is on `waterS`/`waterD`/`openSea` only — deliberately NOT
+on `waterSReef`/`waterDReef`/`waterAbyss`/the riptides, so reef and abyss
+keep their current look and no room silently changed near them. Extending
+the bank (or a reef-specific edge) to those is future work, named in
+ART-BACKLOG.
+
+**Judge by screenshot**: `node tools/shoot-rooms.mjs --tide=0|1|2
+overworld,5,8` (Driftwood Strand) is the clearest single room — a channel
+banked on all 4 sides plus two corners, at all three tides. `overworld,6,7`
+(Sunken Reef) shows grass-bank and sand-bank together, and shows the reef
+water NOT banked (deliberate, see above).
+
+### Phase 2 — a verified slice: 3 of ~15 wood-region screens, technique documented for the rest
+
+`tools/oneshot/find-ground-specks.mjs` is NOT the tool for this job — it
+finds 1-2 tile flecks touching a void/prop/pit (a room's own geometry, not a
+misplaced patch), and triaging its 84 hits found effectively zero genuine
+"stray tile in an open field" cases. The actual rectangle problem (grass vs
+mud drawn as a hard-edged block) has to be found by eye, room by room, the
+way ART-BACKLOG's own crop comparison does it.
+
+**Done, verified, screenshotted**: `0,5,3` (Rotting Grove — the room
+CLAUDE.md's prompt names), `0,6,6` (Wood Foot), `0,4,6` (South Wood). All
+three are the same shape: a mud clearing framed by trees, rows 1/5 narrow
+(the tree-lined "neck"), rows 2-4 wide. The fix staggers the mud/grass
+boundary by ONE cell on alternating rows (row 2's leftmost or rightmost mud
+cell → grass, row 4's the opposite side → grass), which turns a perfect
+rectangle into a shape with at least two notches, without touching the tide
+digit strip in the middle row, the entities, or the framing trees. Rotting
+Grove also got a 1-cell tendril poking south from the clearing into the row
+below it (row 6, above the boss-key cliff row), echoing the northern neck.
+
+**Not done — the same technique, applied by eye, to:**
+- The other 12 `legend: 'wood'` screens (`grep -n "legend: 'wood'"
+  src/data/overworld.js`) — several share this exact mud-clearing shape
+  (e.g. the ones at source lines ~843, ~1041, ~1255, ~1479 as of this
+  commit); several others are water-heavy (riptides, `=`/deep water, closed
+  circulation rooms) and should NOT be touched the same way — the tide-flood
+  and riptide connectivity in those is load-bearing and a bad edit there is
+  exactly the "solid tile strands a room, renders fine, validates clean" trap.
+- Every other region's grass/sand/mud/stone rectangles — `marsh` (grassDark/
+  mud), `cliffs` (stone/stonedk), `dunes` (sand/sandRipple), the reef and
+  salt-flat regions. None of these were surveyed this session beyond what the
+  screenshot judging list happened to show.
+- **Verify after EVERY room, not every batch of three** if the next session
+  wants to move faster than this one did — `validate.mjs` catches a malformed
+  grid instantly and is nearly free; the full battery
+  (`walk-dungeons`/`check-overworld`/`check-progression`/`check-towns`) is
+  what actually proves nothing strands, and it is cheap enough (a few seconds
+  each) to run after every 2-3 rooms rather than saving it for the end.
+
+### Phase 3 — checked, nothing to fix
+
+`node tools/check-ground.mjs` reports zero in every category (stuck props,
+covered doorways, flickering overhangs, cut-short trees, incomplete tree
+lines, shaded triple-props, people in overhangs) — all its conditional
+report blocks printed nothing, meaning their arrays are empty. Also checked
+directly: zero props render standing on a `bankEdge*`/`bankCorner*` tile
+(the new bank art didn't create a new overlap class). No new assertion was
+needed because nothing new was found broken.
+
+### What was NOT verified, and exactly where to look
+
+- **The cliffTop-palette fix was screenshotted in 5 regions**
+  (`overworld,1,7` marsh/`cliffDk`, `overworld,4,0` salt/`cliffMarble`,
+  `overworld,8,4` coral/`cliffCoral`, `overworld,8,7` dunes/`cliffSand`,
+  `overworld,0,0` abyss/`cliffAbyss`) and all five read fine — no clashing
+  lip anywhere. Not exhaustive (it touches every cliff cell in the game), but
+  no longer a one-sample check.
+- **The land/land fringe (grass-sand-mud-stone meeting each other) is
+  entirely unstarted.** Every screenshot in the judging list still shows a
+  hard rectangular edge wherever two LAND materials meet each other; only
+  land-meeting-WATER has a bank now.
+- **Reef and abyss shorelines were not looked at with fresh eyes.** They kept
+  their pre-existing rockFloor-meets-water look; whether that already reads
+  right or wants its own bank treatment was not evaluated this session.
+- Stand in `dist/oracle-of-tides.html` at Driftwood Strand (walk east from
+  the start, it is a short walk) at all three tide levels — press the conch
+  item and use it — to see Phase 1 at its clearest. Rotting Grove is the wood
+  region, reachable from the village; the notched mud clearing is Phase 2.
+
+---
+
 ## S20 — the game has been played to the end of a dungeon (this session)
 
 `node tools/check-playthrough.mjs` drives a new game from the title screen with

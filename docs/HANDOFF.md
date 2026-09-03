@@ -510,6 +510,54 @@ BEFORE checking a file out for isolation, not after.**
   is a brown strip with a pale rim on the LAND side, and it is as static as
   `cliffTop`. A blocker recorded from an assumption survives exactly as long as
   nobody crops the sheet and looks.
+- **The crop S19/S20's own note pointed at was NOT the shore.** `oracle-ages-
+  overworld.png @ 1400,1900` reads as a plain lake at a glance, and at 6x zoom
+  it is Ambi's moat: a canal/lock puzzle area whose "brown bank" is walled
+  masonry with a reflection-sparkle rim that quantises into a striped mess the
+  moment you actually render it at 4 colours (see the next lesson). The real
+  plain-lake shore — grass AND dune sand meeting open water with the bank the
+  ART-BACKLOG note describes — is 1100 pixels away at `@ 50,1200 500x300`,
+  around a garden pool. Cropping and LOOKING beats trusting a coordinate a
+  previous session recorded from a description; the two do not always agree,
+  and only rendering the quantised result at actual game colours catches it —
+  the raw crop looked clean at low zoom both times.
+- **A dropped colour remaps by nearest LUMINANCE, and luminance is blind to
+  hue.** `bankEdgeS`'s gold masonry highlight (`#c88808`, lum 140.5) sits
+  almost exactly on its own rim's light blue (`#20b0f8`, lum 141.2), so
+  `quantise`'s automatic remap welded a blue fleck into the middle of every
+  earth course — invisible in the terminal output (`rip-terrain.py` only
+  prints "merged down to 4", not WHICH colour went where), and it took
+  actually rendering the quantised tile with its own kept palette to see the
+  stripe. Fixed with an explicit `GROUND_MERGE` override table, the same
+  pattern `TOWN_MERGE` already used for the identical reason. **A quantised
+  tile with more than 4 source colours is not proven until you render it.**
+- **A palette lookup that reuses the CALLING cell's `pal` is invisible until
+  the substituted tile's palette actually differs.** `Room.render` drew
+  `this.artAt(d, x, y, tide)` — which can return a DIFFERENT tile's art, via
+  `edgeArt` or `variants` — in `d.pal`, the original cell's own palette. Every
+  existing user happened to share a palette with what it substitutes
+  (`cliffTop` binds `pal: 'stone'` and so does every `cliffDk`/`cliffSand`/...
+  that draws it; every grass variant binds `pal: 'grass'` like grass itself),
+  so this had been wrong for the whole life of `edgeArt` and nothing showed
+  it. The bank tiles are blue and brown against grass's green, and they
+  rendered as a green stripe shaped exactly like a bank until `Room.palFor`
+  started looking up the SUBSTITUTED tile's own registered palette instead of
+  assuming it matched. Side effect, and a positive one: every regional cliff
+  (`cliffSand`, `cliffRust`, `cliffCoral`, `cliffMarble`, `cliffAbyss`) now
+  draws its lip in `cliffTop`'s own registered `stone`, not the body's tint —
+  the lip reads as an overhang everywhere now instead of disappearing into a
+  dark body.
+- **`find-ground-specks.mjs` finds 1-2 tile flecks, not the region-shape
+  problem ART-BACKLOG's top entry is actually about.** Triaging its 84 hits by
+  "does every neighbour of this speck actually exist and share a different
+  material" found ZERO or close to it — nearly every hit borders a void, a
+  solid prop, or the room's own pit/ledge geometry, which is a room SHAPE
+  (an island floor split by a chasm, a rock's mat) rather than a mis-placed
+  patch of the wrong ground. The actual "grass meets mud as a rectangle"
+  problem (CLAUDE.md's Phase 2, the wood region's mud clearings) is a
+  different, larger thing the speck census does not enumerate at all — it has
+  to be found by eye, room by room, the way `docs/ART-BACKLOG.md`'s crop
+  comparison describes.
 
 
 - **`progress.respawn` was written once and never again, and no checker in the
