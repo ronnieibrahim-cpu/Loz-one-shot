@@ -88,15 +88,52 @@ changes, EVERY CHECKPOINT matching, only `probePix` moved. Both picked up
 `beaten`/`heartPieces`, closing part of the S24 coverage gap. All three rippers
 re-emit byte-identically. `npm run build` + `check-build` OK.
 
+### Two measurements that came back NEGATIVE — do not redo them
+
+Both were prototyped, calibrated against known-good and known-bad art, and
+rejected. They are written down because each looks like an obvious good idea.
+
+**A "regular pitch" checker for terrain art does not work.** The idea: the
+ladder fault has now been paid for three times (grass's fixed constellation,
+the cobble that read as boulders, water's dashes), so detect a tile whose rows
+or columns repeat at a sub-tile pitch. It does not discriminate. Period 8 is
+UNIVERSAL and correct — a 16x16 game tile is four 8x8 hardware tiles — so only
+periods 1, 2 and 4 are candidates, and there the old ladder `waterS` scores
+50% and the perfectly good `waterD` scores 50% TOO. The difference between
+them is not repetition, it is CONTRAST and whether the repeating feature forms
+a continuous straight line across the cell. A checker that fires on correct art
+and misses the fault is worse than none, so none was shipped.
+
+**`waterD` is correct as it is; leave it alone.** It scores the same 50% as the
+old ladder, which is what prompted the check. But rendered, it is a soft
+LOW-CONTRAST field of broken dashes, and — decisively — the only dark-blue
+seamless water on either overworld sheet is MORE banded than ours: AG 1504,24
+and 1544,24 are purple horizontal bands with black dashes, and AG 1128,2480 is
+strong light/dark banding. Extracting any of them would make deep water worse.
+The hand-drawn tile beats the source here, which is rare enough to record.
+
+**Depth discontinuity is not a defect either.** "Water of varying height that
+doesn't make sense" suggested checking for a dry cell orthogonally adjacent to
+a DEEP one — a cliff in the water. There are 159 at low tide, 375 at mid and
+2,095 at high, and that is simply what a coastline is in these games: land
+meets deep sea directly wherever there is no beach. Not actionable.
+
 ### What is NOT done
 
-- **A real natural shore has not been found.** That is the whole of the bank
-  work now. Look for grass or sand meeting water with NO built edge, on the
-  Seasons/Ages overworld sheets, and screenshot it in `overworld,5,8` before
-  believing it.
-- `waterD` was left alone — it is a sparse irregular dot field and does not
-  have the ladder fault. It is still hand-drawn, so it is a candidate for the
-  same treatment if someone wants the pair to match.
+- **A real natural shore HAS now been found, and it is an engine task.** See
+  `docs/ART-BACKLOG.md`'s top entry, rewritten: the source draws no bank at
+  all, it draws a 1px dark scalloped rim on the WATER side, and `edgeArt` on
+  water is silently ignored today because animated cells skip `artAt`
+  entirely (`Room.render`: `if (d.anim) { animCells.push(...); continue; }`).
+  That entry now specifies the work rather than describing a hope.
+- **The 8 bank tiledefs are PARKED, not dead.** `validate.mjs` lists them under
+  "no grid, block, transform or tiledef can reach", which is correct and is
+  what that warning is for ("a vocabulary waiting for a place" — its own
+  words). It was deliberately NOT silenced. Do not delete them to clear the
+  warning; the long comment above `grass` in tiles-core.js says why.
+- (The "find a natural shore" item above is now ANSWERED — see the
+  ART-BACKLOG entry and the negative-results section. `waterD` is likewise
+  settled: leave it.)
 - Everything S24/S25 left open still stands.
 
 ---

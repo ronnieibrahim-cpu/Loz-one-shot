@@ -21,11 +21,43 @@ been found and screenshotted at `overworld,5,8`.
 **What to look for, and the trap.** Ornamental pools, moats and canals are
 where the source's artists drew a deliberate edge, so a stitched map shows you
 walls when you go hunting for banks — S21 rejected the 1400,1900 crop for being
-walled masonry and then picked another walled pool 1,300 pixels away. A natural
-lake in Ages/Seasons generally has NO bank tile at all: the grass simply meets
-the water. It is entirely possible the right answer is that this feature should
-not exist for land/water, and that the straight-edge entry below is only about
-land/land.
+walled masonry and then picked another walled pool 1,300 pixels away.
+
+### S26 FOUND THE ANSWER, AND IT IS A DIFFERENT SHAPE OF FEATURE
+
+A natural pond on the Seasons spring map (around 1827,1066 — crop the region
+and look at it at 4x) settles it. **There is no bank tile.** The water meets
+the sand directly and the entire transition is a ONE-PIXEL DARK SCALLOPED RIM
+drawn along the water's edge — and the rim is on the WATER cell, not the land
+cell. The land is completely untouched right up to the boundary.
+
+That is the opposite of what S21 built. `bankEdgeS` REPLACED the land cell with
+a bank; the source leaves the land alone and outlines the water. So the feature
+is not "a bank tile for grass and sand", it is "water knows which of its sides
+face land, and draws a rim there" — which is the same `tileEdgeArt` machinery
+pointed at the other family:
+
+    waterS/waterD: family 'water', edgeAgainst ['grass','sand'], edgeArt = rim set
+
+**THE BLOCKER, and it is an engine change, not an art one.** `Room.render`
+does `if (d.anim) { this.animCells.push(...); continue; }` — an ANIMATED tile
+skips the static path entirely, and `drawAnim` paints it with
+`tileArt(c.def, frame)`, which never consults `artAt`. Water is animated. So
+`edgeArt` on a water tile is silently ignored today, and wiring it up without
+noticing would look exactly like "the art did not work".
+
+Doing this properly is therefore:
+1. Teach the animated path to resolve `artAt` per cell (and decide what that
+   costs per frame, and how it interacts with the render cache — `artAt` is
+   currently only called while filling the static canvas).
+2. Produce the rim set: 4 edges + 4 outer corners, and REMEMBER WATER HAS THREE
+   ANIMATION FRAMES, so that is up to 24 grids. The rim itself is a 1px dark
+   outline, so deriving it from the water frames in the ripper is plausible and
+   is not the hard part.
+3. Screenshot it at `overworld,5,8` at all three tides before believing it.
+
+Until then the hard boundary stands, which is what the source has wherever it
+did not draw a deliberate built edge.
 
 So the entry below is live again for the land/water join as well as land/land.
 
