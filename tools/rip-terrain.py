@@ -194,6 +194,24 @@ PROPS = [
     # This is the sheet's own cuttable bush, and the reason it was left behind
     # for two sessions is fixed one line above rather than worked around.
     ('bush', AG, 450, 920, (0, 1, 3), 'cuttable shrub, beside the dirt clearing'),
+
+    # A POT WITH A RIM. The hand-drawn `pot` was a brown sphere: a circle with
+    # a highlight and no lip, no shoulder and no base, in 21 placements across
+    # the dungeons. A Zelda pot is read at a glance by its RIM — the dark
+    # opening at the top and the band under it — and a sphere has none, so it
+    # sat in dungeon rooms looking like a boulder that had been polished.
+    #
+    # Seasons' own dungeon pots, in rows of six against the ice room's north
+    # wall. Found by colour rather than by the seamless scan (a pot does not
+    # repeat, which is the whole definition of a prop): the two orange tones
+    # occur in runs 16 apart in both axes from 902,43, which puts the cell at
+    # 900,42 with one pixel of margin all round.
+    #
+    # Three colours plus the floor it stands on. Slots (0, 1, 3) rather than
+    # (0, 2, 3): the two body tones on the sheet are a bright and a medium, not
+    # a bright and a dark, so `pot`'s own mid tan is the honest partner for the
+    # highlight and the near-black stays the outline.
+    ('pot', DG, 900, 42, (0, 1, 3), 'dungeon pot, rim and shoulder, against the ice room wall'),
 ]
 
 # Objects that are BIGGER THAN A TILE, cut into their four 16x16 quadrants.

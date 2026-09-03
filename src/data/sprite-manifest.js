@@ -71,7 +71,13 @@ export const REQUIRED_SPRITES = {
   pickups: [
     'p_rupee', 'p_rupee5', 'p_rupee20', 'p_heart', 'p_fairy', 'p_bombs',
     'p_key', 'p_bosskey', 'p_heartpiece', 'p_heartcontainer',
-    'p_essence0', 'p_essence1', 'p_essence_dim',
+    'p_tidebell_0', 'p_tidebell_1',
+    'p_essence1_0', 'p_essence1_1', 'p_essence1_dim',
+    'p_essence2_0', 'p_essence2_1', 'p_essence2_dim',
+    'p_essence3_0', 'p_essence3_1', 'p_essence3_dim',
+    'p_essence4_0', 'p_essence4_1', 'p_essence4_dim',
+    'p_essence5_0', 'p_essence5_1', 'p_essence5_dim',
+    'p_essence6_0', 'p_essence6_1', 'p_essence6_dim',
     'p_blank',
   ],
 

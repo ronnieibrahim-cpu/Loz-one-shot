@@ -3,6 +3,62 @@
 Work that is identified, scoped and not done. Each entry says what blocks it.
 
 
+## EVERY GROUND BOUNDARY IS A STRAIGHT PIXEL EDGE, and the shore is not blocked
+
+Investigated this session (S19) and NOT done. Read this before the S3 entry
+below it, which is partly wrong.
+
+**What the source actually does, checked rather than assumed.** Three regions
+were cropped and looked at:
+
+  * `oracle-ages-overworld.png @ 300,800 640x360` — two grasses meeting. The
+    boundary between the green field and the dry yellow one is a WIGGLY,
+    interlocking fringe, not a rectangle. There is a real transition tile set
+    there and it is static.
+  * `oracle-ages-overworld.png @ 1400,1900 500x380` — land meeting water. **The
+    source does not draw foam. It draws a BANK**: a brown earth strip with a
+    pale rim, on the LAND side of the join, with the water butting flat against
+    it. It is a hard-edged tile like any other and it does not animate.
+  * `oracle-seasons-overworld-spring.png @ 1280,880` — grass meeting a dirt
+    path. This one IS a hard 16px edge, and the join reads fine anyway because
+    both tiles are busy, the shape is an L rather than a rectangle, and trees
+    stand along it.
+
+**So the S3 entry below is wrong about the shore.** "Water edges are BLOCKED by
+the sheets" was reasoned from FOAM, which is drawn on the water side and does
+animate. The source's own answer is on the land side and is as static as
+`cliffTop`. That is a whole job that was written off and is not blocked.
+
+**What is actually blocking it is the ENGINE, and it is two specific things.**
+
+1. `tileEdgeArt` (src/world/tileset.js) takes the FIRST direction that
+   matches and stops. A patch of ground is a top edge and a left edge at once,
+   and there are no corner pieces — the function's own comment says so, and it
+   is why `cliffTop` is the only user. A ground fringe needs the 4-neighbour
+   MASK, not the first hit: 4 straight edges, 4 outer corners, 4 inner
+   corners.
+2. `edgeArt` names one art per direction, with no way to say *which neighbour*.
+   Grass meeting sand and grass meeting mud are different pictures. And a
+   transition cell holds BOTH materials' tones, so it needs a combined
+   palette — one tiledef binds one palette, so each ordered pair wants its own
+   (`grasssand`, `grassmud`, ...). That is data, not a limitation, but it is
+   what makes this per-PAIR rather than per-ground and therefore large.
+
+**Do not ship a partial one.** Softening grass/sand while mud/grass and
+stone/grass stay rectangular is worse than the uniform hard edge, for the same
+reason S3 gives for one-sided foam: the eye reads the inconsistency
+immediately. The job is one session's work for the mask autotiler plus one
+pair, and the pairs that actually occur should be counted first
+(`tools/oneshot/find-ground-specks.mjs` already walks every cell of every
+screen and knows what meets what — it groups by PALETTE, which is the same
+question).
+
+**What was fixed instead this session:** nothing here. The pot was extracted
+and the six Essences were given six icons (both were on this list); the ground
+joins were investigated, scoped and left, and the scoping above is the
+deliverable.
+
+
 ## S3 left these: water edges, tree borders, and the cliff corner set
 
 S3 extracted `cliff` and `cliffTop` from Seasons' terraced cliffs and built the
@@ -465,8 +521,25 @@ existing screen at once, and option 2 stays available on top of it.
 
 - **The `cliff` family** — surveyed above; the decision is what is left.
 - **The `ledge` families** — four directions, nine palette variants each.
-- `pot`, `sign`, `dBlock`, `dStairs`, `spikes`. Not found on a sheet yet; the
+- ~~All six Essences share one orb~~ **DONE** (S19). They are six BELLS now:
+  one silhouette — same loop, same rim, same clapper, so a row of them reads as
+  a set — with a different mark on the body, which is the only part that
+  varies and therefore the part that is legible at 16 pixels. Tide lines, a
+  coral sprig, a bog reed, a terrace of steps, a ribbon of kelp, a crown, in
+  that order, matching what the six are already CALLED in `src/data/story.js`.
+  `p_tidebell_0/_1` is the unmarked bell the ending card holds up: six marked
+  bells become one plain one. Hand-drawn — no sheet has our Essence — and the
+  story cards had to be given `pal: 'essence'` explicitly, because the old orb
+  used only index 0 and looked white in whatever palette it landed in.
+- `sign`, `dBlock`, `dStairs`, `spikes`. Not found on a sheet yet; the
   Subrosia tileset is the one to mine, being the only true tileset in the repo.
+- ~~`pot`~~ **DONE** (S19) — the Seasons dungeon backgrounds at 900,42, a PROP
+  in `tools/rip-terrain.py`. It was NOT on the Subrosia tileset and that is why
+  two sessions looked and did not find it: it is on the DUNGEON sheet, in rows
+  of six against the ice room's north wall, and it was found by colour rather
+  than by the seamless scan (a prop does not repeat, which is the definition of
+  a prop). The hand-drawn one was a brown SPHERE — a circle with a highlight,
+  no lip, no shoulder, no base — in 21 placements across the dungeons.
 - ~~`caveMouth`~~ **DONE** — the Subrosia tileset at 176,1632, a full-cell PICK
   in `tools/rip-terrain.py`. The hand-drawn one was a rectangular frame with a
   hole in it and is on record as the reason three doors in a row once read as

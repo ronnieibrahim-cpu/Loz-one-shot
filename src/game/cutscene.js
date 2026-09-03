@@ -25,8 +25,8 @@
 //   { flag: 'sawIntro' }                     set a progress flag
 //   { give: { item: 'sword', level: 1 } }
 //   { text: 'Big centred caption', frames: 120 }
-//   { show: 'p_essence0' }                   hold a sprite up on screen
-//   { show: { art: ['p_essence0','p_essence1'], frames: 150, scale: 3,
+//   { show: 'p_tidebell_0' }                 hold a sprite up on screen
+//   { show: { art: ['p_tidebell_0','p_tidebell_1'], frames: 150, scale: 3,
 //             rise: true, dim: false, pal: 'tide' } }
 //
 // `show` is the one drawing step, and it is the only one this file has ever

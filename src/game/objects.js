@@ -1010,7 +1010,9 @@ export class Essence extends Entity {
       game.claimEssence(this.index);
     }
   }
-  spriteName() { return 'p_essence' + (Math.floor(this.frame / 8) % 2); }
+  // Its OWN bell, not the one bell. `index` is the dungeon's essence number
+  // and it is already here — it is what `claimEssence` is called with.
+  spriteName() { return 'p_essence' + this.index + '_' + (Math.floor(this.frame / 8) % 2); }
   draw(ctx, game, ox, oy) {
     const bob = Math.round(Math.sin(this.frame * 0.07) * 2);
     sprites.draw(ctx, this.spriteName(), ox + this.x, oy + this.y + bob, { pal: this.pal });

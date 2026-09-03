@@ -472,6 +472,13 @@ const HAND_ART = {
     ................
     ................`,
 
+  // SUPERSEDED by the extracted pot in tiles-terrain.js (Seasons' own dungeon
+  // pots, `rip-terrain.py` PROPS). Kept the way `sand` and `mud` are kept, as
+  // the fallback if that pick is ever pulled — but do not edit it and do not
+  // read it as what the game draws. What it was, and why it had to go: a brown
+  // SPHERE. A circle with a highlight, no lip, no shoulder, no base. A Zelda
+  // pot is read at a glance by its RIM, and in 21 placements across the
+  // dungeons this one read as a polished boulder.
   pot: `
     ................
     .....333333.....
