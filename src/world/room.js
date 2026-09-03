@@ -397,6 +397,62 @@ export class Room {
   }
 
   /**
+   * True if (x,y) is painted with the CANOPY half of a tree/32x32 object
+   * whose own footprint is elsewhere in this fixed 2x2 block — the case
+   * `quadMayCover` exists to allow, and the one `solidAt` has to close.
+   *
+   * This game places 41% of its trees one row thick (see the note above
+   * `quadMayCover`), so the crown is completed by overhanging a real,
+   * ordinarily-walkable neighbour cell — and that neighbour's own tiledef is
+   * still plain grass or sand, with none of the tree's flags. Nothing made
+   * it solid, so a player could walk onto a cell painted with a full,
+   * leafy, seen-from-above canopy — indistinguishable on screen from a real
+   * tree cell — and stand there. `check-ground.mjs` already asserts a tree
+   * may never be cut short to avoid this, so the fix is not to stop drawing
+   * the canopy; it is to make the cell it lands on solid, the way the rest
+   * of the tree already is.
+   *
+   * ONLY THE TOP (canopy) HALF. `drawQuads`'s block is always `y & ~1`
+   * rows [by, by+1], so the top row is always even-`y` — this needs no
+   * parameter to know which half it is looking at. The BOTTOM (root) half
+   * stays walkable on purpose: a root mound is a thin decal at ground
+   * level, not a shape a player would read as "the tree is here", and
+   * roots overhanging a path are how the source draws a tree standing
+   * near — not blocking — a walkable verge.
+   *
+   * WATER KEEPS ITS OVERHANG PASSABLE, AT EVERY TIDE THE CELL IS EVER WET —
+   * not just the level being asked about. A canopy over a stream is a
+   * branch reaching over the water, and swimming under it is what the
+   * source draws (see `quadMayCover`'s own note on `openSea` and streams);
+   * it does not read as standing on the tree the way dry ground does. A
+   * tide-virtual cell (`mudflat`, `sandbar`, ...) is dry at some levels and
+   * wet at others, and the world's routing already depends on some of those
+   * being crossable at the tide where they dry out — solidifying one only
+   * at its dry levels would silently seal a route the tide field already
+   * proved open. Decided ACROSS ALL THREE LEVELS for exactly that reason,
+   * the same way `quadMayCover` decides overhang eligibility itself.
+   */
+  quadCanopySolid(x, y, tide) {
+    if (y % 2 !== 0) return false;
+    const d = this.tile(x, y, tide);
+    if (d.quad || d.big) return false; // a real tree/object cell: the ordinary rule already covers it
+    const name = this.baseName(x, y);
+    for (const lv of [0, 1, 2]) {
+      if (resolveTile(name, lv).flags & F.WET) return false;
+    }
+    const by = y, bx = x & ~1;
+    let q = null;
+    for (const [ox, oy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) {
+      const nx = bx + ox, ny = by + oy;
+      if (nx < 0 || ny < 0 || nx >= this.tw || ny >= this.th) continue;
+      const nd = this.tile(nx, ny, tide);
+      if (nd.quad || nd.big) { q = nd.quad || nd.big; break; }
+    }
+    if (!q) return false;
+    return this.quadMayCover(x, y, tide, q);
+  }
+
+  /**
    * The ground to draw under a prop.
    *
    * A prop names one — `rock` stands on grass, `rockSand` on sand — and where
@@ -683,6 +739,11 @@ export class Room {
       const bit = 1 << (qy * 2 + qx);
       quadSolid = (d.mask & bit) !== 0;
     }
+    // A canopy painted over this cell by a NEIGHBOURING tree's overhang is
+    // solid regardless of what this cell's own tiledef says — see
+    // `quadCanopySolid`. Checked before the cell's own rule so it cannot be
+    // walked, swum, or hopped through by any capability.
+    if (this.quadCanopySolid(tx, ty, tide)) return true;
     return tileDefSolid(d, caps, quadSolid);
   }
 }
