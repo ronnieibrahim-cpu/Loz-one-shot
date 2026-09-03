@@ -1,3 +1,275 @@
+## S22 — Link cannot stand on a tree any more (this session)
+
+THE JOB, in the user's words: audit S21's work for out-of-place tile styles,
+tilesets and clashing themes against the Oracle source overworld; and "Link
+should not be able to walk on top of tree tiles."
+
+The audit part is small and done: one real defect, the `bank` tile's rim had
+lost the cream highlight the source draws on it (`471752e`). Screens across
+marsh, wood, coast, dunes, cliffs, salt, coral, abyss, reef and town were
+read against the sheets and nothing else was out of register.
+
+The tree part is the session. **It is finished and everything is green,
+including `check-playthrough`** — but read the rest of this before touching
+`quadCanopySolid`, because the shape of what it broke is the interesting part.
+
+### What the bug actually was
+
+41% of this world's trees are placed ONE ROW THICK. A tree is a 32x32 quad on
+a fixed 2x2 lattice (`bx = x & ~1`, `by = y & ~1`), so a one-row tree gets the
+other half of its sprite drawn onto the neighbouring cell by `quadMayCover` —
+and that cell keeps its own tiledef, plain grass or plain sand, carrying none
+of the tree's flags. So the game drew a full leafy crown, seen from above,
+over ground you could walk out onto and stand on.
+
+The first attempt changed `quadMayCover` — i.e. stopped drawing the overhang.
+That is wrong and `check-ground` says so out loud (427 quadrant failures: "no
+32x32 object is cut short by plain ground"). Rendering was never the problem.
+
+The fix is `Room.quadCanopySolid` (`src/world/room.js`), called from `solidAt`
+BEFORE `tileDefSolid`. Read its comment; the two decisions worth keeping are:
+
+- **Only the canopy (even-`y`) half is solid.** The root half stays walkable
+  on purpose — a root mound is a ground-level decal, and roots over a verge is
+  how the source draws a tree standing beside a path.
+- **Water keeps its overhang passable at every tide the cell is EVER wet**,
+  not just the level being asked about. A branch over a stream is something you
+  swim under; and a `mudflat`/`sandbar` is dry at some levels and wet at
+  others, so solidifying one only at its dry levels silently seals routing the
+  tide field already proved open.
+
+### What it broke, and why the repair is spread over 60-odd screens
+
+The border template. Nearly every screen is framed `TTTggggTTT` — three-wide
+tree corner, four-tile gap, three more trees — and the corner's inner tree
+shares a 2x2 block with the gap's first cell. Making crowns solid therefore
+narrowed EVERY doorway on the map by one tile at each end: 158 screens at
+once. The repair is to make that corner cell a non-quad solid instead (`#`,
+the region's own cliff), so the block holds no tree and nothing overhangs.
+
+Then a second, structurally different class: `y & ~1` is absolute, so row 0 is
+ALWAYS the canopy half and row 7 is ALWAYS the root half. Every north-south
+seam therefore pairs a blockable row against an exempt one — a room's top
+border can be sealed by trees in the row behind it, and its bottom border can
+never be sealed by anything. There is no fixing that from the root side. You
+either clear the interior trees (open it) or close both sides with real solid
+tiles. `TgggTTgggT` — a decorative pair of trees mid-doorway — is the motif
+that triggers it; 12 instances, all cleared.
+
+`Village Shore` is the town case CLAUDE.md warns about: two 3x3 buildings
+leave exactly one lane across the screen, and the crowns of the corner trees
+took it. Its bottom corners are stone now.
+
+### The Dredge Line nearly got deleted, and this is the part to be careful of
+
+Mechanically applying "fix the seam by opening it" removed a region gate that
+no gate-shaped tile was implementing. The Bog Causeway draws the usual
+four-tile gap on its north border and has a SOLID LINE OF TREES immediately
+behind it — so nothing has ever reached that opening from inside the room.
+That unreachable gap is the entire reason the Marsh's northern screens sat
+behind the Dredge Line's boulders. Clearing those trees to "match the
+neighbour" opened a road straight into them and `dredge: seals 0`.
+
+It is now closed on both sides (Bog Causeway's tree wall restored, Reedbank's
+south border fully sealed), plus the Bog Stair's ledge shelf ends in rock
+again — its side lanes had been held shut by the crowns of the very corner
+trees the batch fix replaced. `dredge: seals 2`, matching the pristine
+baseline exactly.
+
+**Two debugging notes that cost real time.** `check-overworld`'s `reached` set
+is keyed on the ROOM, not the cell — a screen whose only reachable cells are
+one doorway counts as reached and never shows up as sealed, which is why the
+Bog Stair looked fine while its interior was unreachable. Print reached CELLS.
+And `cliffCracked`/`cliffCrackedDk` (the `X` in the marsh legend) is
+`F.BOMBABLE`, not `F.HEAVY` — it is a bombs gate, not the dredge gate; the
+dredge gate is `M` (`boulder`).
+
+### Two harness fixes, both real
+
+`tools/test.mjs` cleared `player.invuln` to force a contact hit but not
+`hurtTime` — and `update` returns early for the whole knockback, so contact
+damage never got a look in. It passed before only because the room's zol used
+to wander off the tile the test spawns Link on; with the tree line now walled
+it stays put and hits him on arrival. The same tile was the recorded respawn
+point, so the death test respawned him onto the zol. Both entry points moved
+two tiles clear.
+
+### Verified
+
+Everything in CLAUDE.md's table, all green: `check-overworld` 17/17 with all
+four gates sealing their own regions, `walk-dungeons` 23/23, `check-progression`
+19/19, `check-gates` 26/26, `check-towns` 67/67, `check-placement`,
+`check-ground` 7/7, `check-camera`, `check-wide-rooms`, `check-respawn` 60/60,
+`check-hearts` 114/114, `check-items` 91/91, the six item checkers,
+`solve-switches` (9 rooms, all solvable by real pushing), `check-bosses` 19/19,
+`test.mjs` 83/83, **`replay.mjs` 51/51 to the pixel with no re-recording**, and
+**`check-playthrough` 21/21**. `npm run build` + `check-build` OK.
+
+### What is NOT done
+
+- The S21 Phase 2 blob work is still a slice. `docs/ART-BACKLOG.md`'s top
+  entry and S21's own section below are still the right brief for it.
+- `quadCanopySolid` walls a whole row wherever a room has a full-width tree
+  line one row above open ground (`0,4,6` South Wood loses row 6 entirely).
+  That is CORRECT — those cells are drawn as crown — but it shrinks some
+  rooms noticeably and nobody has looked at them with an eye to whether the
+  rooms still play well. Connectivity is proved; playability is not.
+
+---
+
+## S21 — the shore is a bank now, and the mud clearings started losing their corners (this session)
+
+THE JOB was three phases from `docs/ART-BACKLOG.md`'s top entry and
+CLAUDE.md's overworld-design prompt, in order: (1) a real 4-neighbour mask
+autotiler plus one land/water pair end to end, (2) the regional SHAPE of the
+ground (organic blobs, not rectangles), (3) a tile-integration overlap pass.
+Phase 1 is DONE and thorough. Phase 2 is a verified SLICE, not the whole
+job — it was never going to fit one session; ART-BACKLOG says so and it was
+right. Phase 3 found nothing to fix.
+
+### Phase 1 — done, and worth reading `src/world/tileset.js`'s `tileEdgeArt` before touching it again
+
+`tileEdgeArt` now reads all 4 neighbours and classifies: 0 differ → plain,
+1 differs → a straight edge, 2 ADJACENT differ (e.g. up+left) → an OUTER
+corner, 2 OPPOSITE differ (a 1-tile-wide strip) → degrades to a single edge
+(no art for this, on purpose — see ART-BACKLOG), 3 differ → an INNER corner
+(no art exists for this yet either), 4 differ → degrades the same way as the
+opposite-pair case. A tiledef opts a neighbour comparison IN with `family` +
+optionally `edgeAgainst` (a family name or array) — `edgeAgainst` narrows
+"draw an edge" to "draw an edge only against THIS family", which cliff does
+not use (it wants a lip against anything) and grass/sand DO use (`'water'`
+only, so grass next to sand/mud stays the hard rectangle that is still
+correct there).
+
+The actual bank art: `bankEdgeS`/`bankCornerSE` are real extractions off
+`oracle-ages-overworld.png @ 50,1200` (a garden pool's shore — NOT the
+1400,1900 crop the S19 ART-BACKLOG note pointed at; that turned out to be
+Ambi's moat, a lock-puzzle canal, and its "bank" is walled masonry with a
+reflection-sparkle rim that quantises badly). The other 6 orientations
+(`bankEdgeN/E/W`, `bankCornerSW/NE/NW`) are ROTATIONS and MIRRORS of those
+two — `tools/rip-terrain.py`'s `TRANSFORMS` — not separate crops, and not
+authorship: the source's own lighting (pale rim toward land, dark earth
+toward water) is rotationally consistent, so a rotated real capture and a
+mirrored one are the same pixels a second real capture at that angle would
+have. `bankEdgeS` needed an explicit `GROUND_MERGE` override in the ripper
+(gold masonry highlight and light-blue rim collide in luminance, see
+HANDOFF) — the same fix pattern `TOWN_MERGE` already used.
+
+**A real, previously-invisible engine bug was found and fixed along the
+way**, and it is worth its own read in `src/world/room.js`: `palFor`.
+`Room.render`/`renderAt` drew every `artAt` substitution (an `edgeArt` or
+`variants` swap) in the ORIGINAL cell's palette, not the substituted tile's
+own. Invisible for the whole life of `edgeArt` because `cliffTop` and every
+grass variant happen to share a palette with what calls them; the bank tiles
+do not (blue/brown against grass's green) and rendered as a green stripe
+shaped like a bank until this was traced down. Side effect: every regional
+cliff (`cliffSand`/`cliffRust`/`cliffCoral`/`cliffMarble`/`cliffAbyss`) now
+draws its lip in `cliffTop`'s own `stone`, not the body's tint — screenshotted
+at `overworld,1,7` (marsh, `cliffDk`) and it reads as an overhang, not a
+regression; nowhere else was screenshotted for this specifically, so a
+session with time to spare should look at a `cliffSand`/`cliffRust`/
+`cliffCoral`/`cliffMarble`/`cliffAbyss` screen and confirm the same.
+
+`family: 'water'` is on `waterS`/`waterD`/`openSea` only — deliberately NOT
+on `waterSReef`/`waterDReef`/`waterAbyss`/the riptides, so reef and abyss
+keep their current look and no room silently changed near them. Extending
+the bank (or a reef-specific edge) to those is future work, named in
+ART-BACKLOG.
+
+**Judge by screenshot**: `node tools/shoot-rooms.mjs --tide=0|1|2
+overworld,5,8` (Driftwood Strand) is the clearest single room — a channel
+banked on all 4 sides plus two corners, at all three tides. `overworld,6,7`
+(Sunken Reef) shows grass-bank and sand-bank together, and shows the reef
+water NOT banked (deliberate, see above).
+
+### Phase 2 — a verified slice: 15 of ~27 wood/marsh screens, and a survey of the rest of the map
+
+`tools/oneshot/find-ground-specks.mjs` is NOT the tool for this job — it
+finds 1-2 tile flecks touching a void/prop/pit (a room's own geometry, not a
+misplaced patch), and triaging its 84 hits found effectively zero genuine
+"stray tile in an open field" cases. The actual rectangle problem (grass vs
+mud drawn as a hard-edged block) has to be found by eye, room by room, the
+way ART-BACKLOG's own crop comparison does it.
+
+**Done, verified, screenshotted — 8 of the wood region's 15 screens:**
+`0,5,3` Rotting Grove (the room CLAUDE.md's prompt names), `0,6,6` Wood Foot,
+`0,4,6` South Wood, `0,4,5` Bog Trees, `0,4,4` Shrine Path, `0,6,5` Sunken
+Glade, `0,4,3` Wood Edge, `0,6,3` Wood Gate. **And 7 of the marsh region's
+12:** `0,0,6` Bog Head, `0,0,7` Mire, `0,1,7` Sanctum Path, `0,2,8` Sunken
+Reeds, `0,2,7` Bog Causeway, `0,1,6` Bog Stair, `0,2,6` Reedbank.
+
+The shape and the technique are the same across all 15: a mud clearing
+(wood) or grassDark/mud mix (marsh), usually framed by trees, with the
+mud/grass boundary staggered by ONE cell on one or two rows (a row's
+leftmost or rightmost mud cell → the surrounding material), turning a
+straight edge into a shape with at least one notch. Never touches: tide
+digits, mudflat (`!`), channel (`5`)/drownWall (`9`) tiles, ledges, rocks
+(`o`), signs, entities, dungeon-gate blocks, or the framing trees themselves
+— every edit is a single legend character, chosen to land on a cell that is
+plain `.`/`,` mud in the room's OWN legend, with the room's actual entity
+list checked first so nothing moved onto or off of a spawn point.
+
+**Left alone, and why — this is a real boundary, not just "not done yet":**
+- **7 wood screens**: the closed riptide ring (`'0,7,3' The Gyre` — explicit
+  comment in the source says its circulation is load-bearing), a channel
+  room, the D5 gate room (`portalD5`), a ledge-bounded room, and three rooms
+  whose ground is almost entirely deep water/tide digits with only 1-2 loose
+  mud cells left — not a rectangle to soften.
+- **5 marsh screens**: all sit on the ocean rim, where most of the room grid
+  is `*` (open sea) rather than land, so there is no clearing shape to work
+  with.
+- **Every other region — untouched, unsurveyed beyond a dump-and-read
+  pass this session**: `cliffs` (16 screens) and `dunes` (19) are the
+  Cliffs-of-Kell/dune-flats puzzle areas — boulders, cracked walls, drownWall
+  tide gates, liftable rocks in specific positions — and what LOOKS like a
+  ground rectangle there is usually a puzzle room's playing field, not a
+  meadow; reshaping it by eye is a materially different and riskier job than
+  the wood/marsh clearings. `reef` (16), `coral` (8), `salt` (12) and `abyss`
+  (8) mostly pair a ground material with its OWN palette variant (`sand`/
+  `sandRipple`, `rockFloor`/`rockFloorDk`) rather than two different
+  materials, which is a scatter-variant question (`tileVariant`, already
+  solved) more than a rectangle-boundary one. `coast` (10 explicit screens)
+  was dumped and read; none of the 10 has a static grass/sand/mud rectangle
+  — what sand there is comes from tide digits, already tide-reactive.
+- **Verify after EVERY room, not every batch of three** if the next session
+  wants to move faster than this one did — `validate.mjs` catches a malformed
+  grid instantly and is nearly free; the full battery
+  (`walk-dungeons`/`check-overworld`/`check-progression`/`check-towns`) is
+  what actually proves nothing strands, and it is cheap enough (a few seconds
+  each) to run after every 2-3 rooms rather than saving it for the end.
+
+### Phase 3 — checked, nothing to fix
+
+`node tools/check-ground.mjs` reports zero in every category (stuck props,
+covered doorways, flickering overhangs, cut-short trees, incomplete tree
+lines, shaded triple-props, people in overhangs) — all its conditional
+report blocks printed nothing, meaning their arrays are empty. Also checked
+directly: zero props render standing on a `bankEdge*`/`bankCorner*` tile
+(the new bank art didn't create a new overlap class). No new assertion was
+needed because nothing new was found broken.
+
+### What was NOT verified, and exactly where to look
+
+- **The cliffTop-palette fix was screenshotted in 5 regions**
+  (`overworld,1,7` marsh/`cliffDk`, `overworld,4,0` salt/`cliffMarble`,
+  `overworld,8,4` coral/`cliffCoral`, `overworld,8,7` dunes/`cliffSand`,
+  `overworld,0,0` abyss/`cliffAbyss`) and all five read fine — no clashing
+  lip anywhere. Not exhaustive (it touches every cliff cell in the game), but
+  no longer a one-sample check.
+- **The land/land fringe (grass-sand-mud-stone meeting each other) is
+  entirely unstarted.** Every screenshot in the judging list still shows a
+  hard rectangular edge wherever two LAND materials meet each other; only
+  land-meeting-WATER has a bank now.
+- **Reef and abyss shorelines were not looked at with fresh eyes.** They kept
+  their pre-existing rockFloor-meets-water look; whether that already reads
+  right or wants its own bank treatment was not evaluated this session.
+- Stand in `dist/oracle-of-tides.html` at Driftwood Strand (walk east from
+  the start, it is a short walk) at all three tide levels — press the conch
+  item and use it — to see Phase 1 at its clearest. Rotting Grove is the wood
+  region, reachable from the village; the notched mud clearing is Phase 2.
+
+---
+
 ## S20 — the game has been played to the end of a dungeon (this session)
 
 `node tools/check-playthrough.mjs` drives a new game from the title screen with

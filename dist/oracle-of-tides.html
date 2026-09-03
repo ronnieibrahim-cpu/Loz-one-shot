@@ -3485,6 +3485,13 @@ function registerTiles(defs) {
       // `variants` — nothing the simulation can see moves.
       family: def.family || null,
       edgeArt: def.edgeArt || null,
+      // Narrows which neighbour families this tile draws an edge against. A
+      // cliff wants a lip against ANYTHING that is not cliff, so it leaves
+      // this unset. Grass does NOT want a bank against sand or mud — that is
+      // the still-hard rectangular fringe docs/ART-BACKLOG.md tracks
+      // separately — so it names 'water' and edgeArt fires only when the
+      // neighbour actually resolves to that family.
+      edgeAgainst: def.edgeAgainst || null,
       // 1 in `variantOdds` cells shows a variant. See `tileVariant` for why
       // this is a SCATTER and not an even mix.
       variantOdds: def.variantOdds || 8,
@@ -3565,6 +3572,21 @@ const EMPTY = {
 };
 
 const warned = new Set();
+
+/**
+ * The registered tiledef for `name`, or null if it names no tile at all (an
+ * animation-only art name, say). Unlike `getTileDef` this never warns and
+ * never returns the `EMPTY` placeholder — a caller that wants "the tile this
+ * name draws, if it has its own" needs to tell "no such tile" apart from "a
+ * tile that legitimately has no flags", which `EMPTY` collapses into the same
+ * answer. `Room.render`'s art/palette lookup is the reason this exists: an
+ * `edgeArt` or `variants` substitution can name a tile with a DIFFERENT
+ * palette than the cell being drawn (a bank tile's blue rim is not the
+ * grass's green), and only a real tiledef lookup can find that out.
+ */
+function artDef(name) {
+  return TILES.get(name) || null;
+}
 
 function getTileDef(name) {
   const d = TILES.get(name);
@@ -3677,22 +3699,86 @@ function tileVariant(def, roomKey, tx, ty) {
  * on cliff that visibly carries on. The caller returns the tile's own family
  * for a neighbour it cannot see.
  *
- * Only ONE edge wins, in the order the directions are listed. A cliff cell that
- * is both the top of its mass and the left of it draws the top lip: this game
- * has no corner pieces (see docs/ART-BACKLOG.md) and picking two edges would
- * need one.
+ * A FULL 4-NEIGHBOUR MASK, not "the first direction that matches" — that was
+ * `cliffTop`'s whole limitation (docs/ART-BACKLOG.md): a ground patch is a top
+ * edge and a left edge at once, and picking one lost the other. This reads all
+ * four of up/down/left/right and classifies the set of directions that differ:
+ *
+ *   0 differ  -> no edge art (this cell is not on a boundary)
+ *   1 differs -> a straight edge  (up/down/left/right)
+ *   2 differ, ADJACENT (e.g. up+left)  -> an OUTER corner: this tile's own
+ *              mass is confined to the corner opposite the two differing
+ *              sides, so the art shows it curving around a convex point
+ *   2 differ, OPPOSITE (up+down, or left+right) -> a one-tile-wide strip; no
+ *              dedicated art exists for this, so it degrades to whichever
+ *              single-direction edge is listed first (the old behaviour)
+ *   3 differ  -> an INNER corner: this tile is nearly engulfed, connected to
+ *              its own mass on only the one remaining side
+ *   4 differ  -> fully isolated; degrades the same way the opposite-pair case
+ *              does, for the same reason (no dedicated art, and a single-tile
+ *              island is a room-data smell a checker should catch on its own)
+ *
+ * Any of the 12 named keys (`up`/`down`/`left`/`right`,
+ * `cornerUpLeft`/`cornerUpRight`/`cornerDownLeft`/`cornerDownRight`,
+ * `innerUp`/`innerDown`/`innerLeft`/`innerRight`) may be omitted — a tile that
+ * only defines `up` behaves exactly as before, corners and all, because every
+ * case below falls back to the straight-edge degrade when the art it actually
+ * wants is not defined.
  */
 function tileEdgeArt(def, neighbourFamily) {
   const e = def.edgeArt;
   if (!e || !def.family) return null;
+  const against = def.edgeAgainst;
+  const matches = (nf) => (Array.isArray(against) ? against.includes(nf) : nf === against);
+  const differs = (dir) => {
+    const nf = neighbourFamily(dir);
+    if (nf === def.family) return false;
+    return against ? matches(nf) : true;
+  };
+  const diffDirs = EDGE_DIRS.filter(differs);
+  if (diffDirs.length === 0) return null;
+  if (diffDirs.length === 1) {
+    return e[diffDirs[0]] || null;
+  }
+  if (diffDirs.length === 2) {
+    const [a, b] = diffDirs;
+    const opposite = (a === 'up' && b === 'down') || (a === 'left' && b === 'right');
+    if (!opposite) {
+      const art = e[CORNER_KEY[a + ',' + b]];
+      if (art) return art;
+    }
+  } else if (diffDirs.length === 3) {
+    const missing = EDGE_DIRS.find((d) => !diffDirs.includes(d));
+    const art = e[INNER_KEY[missing]];
+    if (art) return art;
+  }
+  // Degrade: opposite pairs, four-way isolation, or a corner/inner direction
+  // with no dedicated art all fall back to the first single-edge match, the
+  // same answer this function always gave before corners existed.
   for (const dir of EDGE_DIRS) {
-    const art = e[dir];
-    if (art && neighbourFamily(dir) !== def.family) return art;
+    if (diffDirs.includes(dir) && e[dir]) return e[dir];
   }
   return null;
 }
 
 const EDGE_DIRS = ['up', 'down', 'left', 'right'];
+
+// The 2-differ (outer corner) and 3-differ (inner corner) cases, named by the
+// directions involved. `diffDirs` is always built by filtering EDGE_DIRS in
+// its own order, so a 2-element result is always one of exactly these four
+// pairs — the opposite pairs (up+down, left+right) are handled before this
+// table is consulted.
+const CORNER_KEY = {
+  'up,left': 'cornerUpLeft', 'up,right': 'cornerUpRight',
+  'down,left': 'cornerDownLeft', 'down,right': 'cornerDownRight',
+};
+// Keyed by the ONE direction that still matches (the tile's mass is nearly
+// engulfed, connected out through only that side).
+const INNER_KEY = { up: 'innerUp', down: 'innerDown', left: 'innerLeft', right: 'innerRight' };
+
+const EDGE_ART_KEYS = new Set([
+  ...EDGE_DIRS, ...Object.values(CORNER_KEY), ...Object.values(INNER_KEY),
+]);
 
 /** True if any tile in the set changes appearance with the tide. */
 function isTideSensitive(name) {
@@ -3727,10 +3813,11 @@ function validateTiles() {
     if (d.edgeArt) {
       if (!d.family) problems.push(`${name}: edgeArt needs a family to compare against`);
       for (const [dir, art] of Object.entries(d.edgeArt)) {
-        if (!EDGE_DIRS.includes(dir)) problems.push(`${name}: edgeArt direction '${dir}' is not up/down/left/right`);
+        if (!EDGE_ART_KEYS.has(dir)) problems.push(`${name}: edgeArt key '${dir}' is not a recognised edge/corner direction`);
         if (!TILES.has(art) && !ANIM_ART.has(art)) problems.push(`${name}: edgeArt '${art}' has no art`);
       }
     }
+    if (d.edgeAgainst && !d.edgeArt) problems.push(`${name}: edgeAgainst with no edgeArt does nothing`);
     if (d.variants) {
       if (d.anim) problems.push(`${name}: animated tiles cannot have variants`);
       if (!(d.variantOdds >= 1)) problems.push(`${name}: variantOdds must be >= 1`);
@@ -3798,6 +3885,7 @@ __exports["registerTiles"] = registerTiles;
 __exports["BLOCKS"] = BLOCKS;
 __exports["registerBlocks"] = registerBlocks;
 __exports["blockRef"] = blockRef;
+__exports["artDef"] = artDef;
 __exports["getTileDef"] = getTileDef;
 __exports["resolveTile"] = resolveTile;
 __exports["tileDefSolid"] = tileDefSolid;
@@ -3858,7 +3946,7 @@ __define("world/room.js", function (__exports, __require) {
 
 const { TILE, ROOM_W, ROOM_H, offscreen } = __require("core/screen.js");
 const { tiles: tileSheet } = __require("gfx/art.js");
-const { F, resolveTile, getTileDef, tileArt, tileVariant, tileEdgeArt, blockRef, tileDefSolid } = __require("world/tileset.js");
+const { F, resolveTile, getTileDef, artDef, tileArt, tileVariant, tileEdgeArt, blockRef, tileDefSolid } = __require("world/tileset.js");
 
 const LEGENDS = new Map();
 
@@ -4089,6 +4177,24 @@ class Room {
   }
 
   /**
+   * The palette to draw `art` in, when `art` is what `artAt` returned for a
+   * cell whose own tiledef is `d`. `edgeArt` and `variants` both substitute a
+   * DIFFERENT tile's art by name, and that tile can bind a different palette
+   * than `d` does — a bank tile's blue rim is not the grass's green. Drawing
+   * every substitution in `d.pal` regardless was invisible for as long as
+   * every edge/variant art happened to share its base tile's palette (every
+   * `cliffTop` user binds `pal: 'stone'`, every grass variant binds
+   * `pal: 'grass'`); the bank tiles do not, and rendered as a green stripe
+   * shaped like a bank until this looked the substituted tile's own palette
+   * up instead of assuming it matched.
+   */
+  palFor(d, art) {
+    if (art === d.name) return d.pal;
+    const sub = artDef(art);
+    return sub ? sub.pal : d.pal;
+  }
+
+  /**
    * Lay whole 32x32 objects over the cells that asked for one.
    *
    * The room is divided into fixed 2x2 blocks. Every block holding at least one
@@ -4193,6 +4299,62 @@ class Room {
       if (t.over || t.quad || t.big) return false;
     }
     return true;
+  }
+
+  /**
+   * True if (x,y) is painted with the CANOPY half of a tree/32x32 object
+   * whose own footprint is elsewhere in this fixed 2x2 block — the case
+   * `quadMayCover` exists to allow, and the one `solidAt` has to close.
+   *
+   * This game places 41% of its trees one row thick (see the note above
+   * `quadMayCover`), so the crown is completed by overhanging a real,
+   * ordinarily-walkable neighbour cell — and that neighbour's own tiledef is
+   * still plain grass or sand, with none of the tree's flags. Nothing made
+   * it solid, so a player could walk onto a cell painted with a full,
+   * leafy, seen-from-above canopy — indistinguishable on screen from a real
+   * tree cell — and stand there. `check-ground.mjs` already asserts a tree
+   * may never be cut short to avoid this, so the fix is not to stop drawing
+   * the canopy; it is to make the cell it lands on solid, the way the rest
+   * of the tree already is.
+   *
+   * ONLY THE TOP (canopy) HALF. `drawQuads`'s block is always `y & ~1`
+   * rows [by, by+1], so the top row is always even-`y` — this needs no
+   * parameter to know which half it is looking at. The BOTTOM (root) half
+   * stays walkable on purpose: a root mound is a thin decal at ground
+   * level, not a shape a player would read as "the tree is here", and
+   * roots overhanging a path are how the source draws a tree standing
+   * near — not blocking — a walkable verge.
+   *
+   * WATER KEEPS ITS OVERHANG PASSABLE, AT EVERY TIDE THE CELL IS EVER WET —
+   * not just the level being asked about. A canopy over a stream is a
+   * branch reaching over the water, and swimming under it is what the
+   * source draws (see `quadMayCover`'s own note on `openSea` and streams);
+   * it does not read as standing on the tree the way dry ground does. A
+   * tide-virtual cell (`mudflat`, `sandbar`, ...) is dry at some levels and
+   * wet at others, and the world's routing already depends on some of those
+   * being crossable at the tide where they dry out — solidifying one only
+   * at its dry levels would silently seal a route the tide field already
+   * proved open. Decided ACROSS ALL THREE LEVELS for exactly that reason,
+   * the same way `quadMayCover` decides overhang eligibility itself.
+   */
+  quadCanopySolid(x, y, tide) {
+    if (y % 2 !== 0) return false;
+    const d = this.tile(x, y, tide);
+    if (d.quad || d.big) return false; // a real tree/object cell: the ordinary rule already covers it
+    const name = this.baseName(x, y);
+    for (const lv of [0, 1, 2]) {
+      if (resolveTile(name, lv).flags & F.WET) return false;
+    }
+    const by = y, bx = x & ~1;
+    let q = null;
+    for (const [ox, oy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) {
+      const nx = bx + ox, ny = by + oy;
+      if (nx < 0 || ny < 0 || nx >= this.tw || ny >= this.th) continue;
+      const nd = this.tile(nx, ny, tide);
+      if (nd.quad || nd.big) { q = nd.quad || nd.big; break; }
+    }
+    if (!q) return false;
+    return this.quadMayCover(x, y, tide, q);
   }
 
   /**
@@ -4372,7 +4534,10 @@ class Room {
           // A ground tile may declare interchangeable art. The choice is a pure
           // hash of this room and this cell, so it is stable across every cache
           // rebuild and consumes nothing — see `tileVariant` and `T2`.
-          tileSheet.draw(ctx, this.artAt(d, x, y, tide), x * TILE, y * TILE, { pal: d.pal });
+          {
+            const art = this.artAt(d, x, y, tide);
+            tileSheet.draw(ctx, art, x * TILE, y * TILE, { pal: this.palFor(d, art) });
+          }
         }
       }
       this.drawQuads(ctx, quadCells, tide);
@@ -4425,8 +4590,10 @@ class Room {
           if (d.big || d.quad) { quadCells.push({ x, y, def: d }); continue; }
           // Same hash as `render`, or the Lens's preview of the room would
           // draw a DIFFERENT field of grass from the room behind it.
-          tileSheet.draw(ctx, d.anim ? tileArt(d, frame) : this.artAt(d, x, y, tide),
-            x * TILE, y * TILE, { pal: d.pal });
+          {
+            const art = d.anim ? tileArt(d, frame) : this.artAt(d, x, y, tide);
+            tileSheet.draw(ctx, art, x * TILE, y * TILE, { pal: d.anim ? d.pal : this.palFor(d, art) });
+          }
         }
       }
       this.drawQuads(ctx, quadCells, tide);
@@ -4477,6 +4644,11 @@ class Room {
       const bit = 1 << (qy * 2 + qx);
       quadSolid = (d.mask & bit) !== 0;
     }
+    // A canopy painted over this cell by a NEIGHBOURING tree's overhang is
+    // solid regardless of what this cell's own tiledef says — see
+    // `quadCanopySolid`. Checked before the cell's own rule so it cannot be
+    // walked, swum, or hopped through by any capability.
+    if (this.quadCanopySolid(tx, ty, tide)) return true;
     return tileDefSolid(d, caps, quadSolid);
   }
 }
@@ -14995,6 +15167,158 @@ const TERRAIN_ART = {
     1310000000000131
     3100000000000013`,
 
+  // shore bank, water below — rim on top, earth below — oracle-ages-overworld.png @ 545,1226
+  bankEdgeS: `
+    3333333333333333
+    2222222222222222
+    2222222222222222
+    0000000000000000
+    0000000000000000
+    2222222222222222
+    2222222222222222
+    3333333333333333
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    3333331111111111
+    3333333333333333`,
+
+  // shore bank outer corner, water down and right — oracle-ages-overworld.png @ 97,1226
+  bankCornerSE: `
+    3333333333333333
+    3222222222222222
+    3211111111111111
+    3210000000000000
+    3210000000000000
+    3210011111111111
+    3210011222222222
+    3210012333333333
+    3210012321111111
+    3210012311111111
+    3210012311133222
+    3210012311223322
+    3210012311222332
+    3210012311222333
+    3210012311222233
+    3210012311222233`,
+
+  // shore bank, water below — rim on top, earth below, rotated 180° from bankEdgeS — oracle-ages-overworld.png @ 545,1226
+  bankEdgeN: `
+    3333333333333333
+    1111111111333333
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    3333333333333333
+    2222222222222222
+    2222222222222222
+    0000000000000000
+    0000000000000000
+    2222222222222222
+    2222222222222222
+    3333333333333333`,
+
+  // shore bank, water below — rim on top, earth below, rotated 90° counter-clockwise from bankEdgeS — oracle-ages-overworld.png @ 545,1226
+  bankEdgeE: `
+    3220022311111113
+    3220022311111113
+    3220022311111113
+    3220022311111113
+    3220022311111113
+    3220022311111113
+    3220022311111113
+    3220022311111113
+    3220022311111113
+    3220022311111113
+    3220022311111133
+    3220022311111133
+    3220022311111133
+    3220022311111133
+    3220022311111133
+    3220022311111133`,
+
+  // shore bank, water below — rim on top, earth below, rotated 90° clockwise from bankEdgeS — oracle-ages-overworld.png @ 545,1226
+  bankEdgeW: `
+    3311111132200223
+    3311111132200223
+    3311111132200223
+    3311111132200223
+    3311111132200223
+    3311111132200223
+    3111111132200223
+    3111111132200223
+    3111111132200223
+    3111111132200223
+    3111111132200223
+    3111111132200223
+    3111111132200223
+    3111111132200223
+    3111111132200223
+    3111111132200223`,
+
+  // shore bank outer corner, water down and right, mirrored left-right from bankCornerSE — oracle-ages-overworld.png @ 97,1226
+  bankCornerSW: `
+    3333333333333333
+    2222222222222223
+    1111111111111123
+    0000000000000123
+    0000000000000123
+    1111111111100123
+    2222222221100123
+    3333333332100123
+    1111111232100123
+    1111111132100123
+    2223311132100123
+    2233221132100123
+    2332221132100123
+    3332221132100123
+    3322221132100123
+    3322221132100123`,
+
+  // shore bank outer corner, water down and right, mirrored top-to-bottom from bankCornerSE — oracle-ages-overworld.png @ 97,1226
+  bankCornerNE: `
+    3210012311222233
+    3210012311222233
+    3210012311222333
+    3210012311222332
+    3210012311223322
+    3210012311133222
+    3210012311111111
+    3210012321111111
+    3210012333333333
+    3210011222222222
+    3210011111111111
+    3210000000000000
+    3210000000000000
+    3211111111111111
+    3222222222222222
+    3333333333333333`,
+
+  // shore bank outer corner, water down and right, rotated 180° from bankCornerSE — oracle-ages-overworld.png @ 97,1226
+  bankCornerNW: `
+    3322221132100123
+    3322221132100123
+    3332221132100123
+    2332221132100123
+    2233221132100123
+    2223311132100123
+    1111111132100123
+    1111111232100123
+    3333333332100123
+    2222222221100123
+    1111111111100123
+    0000000000000123
+    0000000000000123
+    1111111111111123
+    2222222222222223
+    3333333333333333`,
+
   // oak: round canopy over visible roots, standing on grass — custom-oracle-style-overworld.png @ 2222,1597
   treeOakTL: `
     .......033333333
@@ -15223,6 +15547,14 @@ const TERRAIN_SRC_PALETTES = {
   dWall: ['#d3f9fd', '#aaccdc', '#7996b2', '#000000'],
   flowers: ['#b0c078', '#80c030', '#e840a0', '#000000'],
   caveMouth: ['#c08820', '#704820', '#086018', '#000000'],
+  bankEdgeS: ['#f8f8c0', '#805000', '#0050b0', '#000000'],
+  bankCornerSE: ['#f8f8c0', '#20b0f8', '#0050b0', '#000000'],
+  bankEdgeN: ['#f8f8c0', '#805000', '#0050b0', '#000000'],
+  bankEdgeE: ['#f8f8c0', '#805000', '#0050b0', '#000000'],
+  bankEdgeW: ['#f8f8c0', '#805000', '#0050b0', '#000000'],
+  bankCornerSW: ['#f8f8c0', '#20b0f8', '#0050b0', '#000000'],
+  bankCornerNE: ['#f8f8c0', '#20b0f8', '#0050b0', '#000000'],
+  bankCornerNW: ['#f8f8c0', '#20b0f8', '#0050b0', '#000000'],
   treeOakT: ['#93a846', '#546d25', '#000000'],
   treeOakB: ['#dfd9b5', '#b49d73', '#93a846', '#7a5d35', '#546d25', '#000000'],
   palmT: ['#a7c947', '#5a9731', '#000000'],
@@ -18400,9 +18732,34 @@ function installCoreTiles() {
   // The themed dungeon tiles bring their own colours off the cartridge, and
   // the tiledefs below name them. Must run before registerTiles.
   installDungeonThemePalettes();
+  // THE BANK. Installed rather than added to gfx/palettes.js's own hand-tuned
+  // ramps for the same reason TOWN_PALETTES is: this is new art with no
+  // existing hand-drawn tile to preserve the colours of, so it carries the
+  // cartridge's own extracted values — see tools/rip-terrain.py's PICKS note
+  // on `bankEdgeS`/`bankCornerSE`. Two palettes, not one, because the straight
+  // edges and the outer corners kept different four-colour sets off the
+  // source (the corner's window has more rim, less earth) and a tiledef binds
+  // exactly one palette. Both keep the rim's cream sparkle over one of its
+  // two blues — `GROUND_KEEP` in the ripper — because a side-by-side with the
+  // source crop showed it as the rim's most distinctive feature, lost by the
+  // automatic top-4-by-count choice on a tie-break.
+  registerPalettes({
+    bank: ['#f8f8c0', '#805000', '#0050b0', '#000000'],
+    bankCorner: ['#f8f8c0', '#20b0f8', '#0050b0', '#000000'],
+  });
   tileSheet.add(ART, 'stone');
   // Animation frames are art without being tiles in their own right.
   declareAnimArt(Object.keys(ART));
+
+  // Shared by every LAND tile that wants a bank against water — the source
+  // draws the same earthen bank under grass and under dune sand alike (see
+  // rip-terrain.py's PICKS note), so this is one object every land family
+  // below points `edgeArt` at, not one per material.
+  const BANK_EDGE_ART = {
+    up: 'bankEdgeN', down: 'bankEdgeS', left: 'bankEdgeW', right: 'bankEdgeE',
+    cornerUpLeft: 'bankCornerNW', cornerUpRight: 'bankCornerNE',
+    cornerDownLeft: 'bankCornerSW', cornerDownRight: 'bankCornerSE',
+  };
 
   const TILE_DEFS = {
     void: { art: ART.void, pal: 'abyss', flags: F.VOID | F.SOLID },
@@ -18419,7 +18776,25 @@ function installCoreTiles() {
     // colours and a tonal seam appears wherever two of them meet. The rate was
     // settled by looking at 1-in-4 (busy), 1-in-7 (a meadow) and 1-in-12
     // (accidental) side by side at room scale.
-    grass: { art: ART.grass, pal: 'grass', variants: ['grassClump', 'grassTuft'], variantOdds: 7 },
+    // THE SHORE. Land bordering water no longer stops at a flat colour seam —
+    // `family`+`edgeAgainst` fire `edgeArt` only when the neighbour actually
+    // resolves to 'water' (grass next to sand or mud stays the hard rectangle
+    // docs/ART-BACKLOG.md tracks separately; only the land/water join is done).
+    // The bank tiles themselves are plain walkable ground — no flags of their
+    // own — because they replace grass at the edge cell, not add an obstacle.
+    bankEdgeN: { art: ART.bankEdgeN, pal: 'bank' },
+    bankEdgeS: { art: ART.bankEdgeS, pal: 'bank' },
+    bankEdgeE: { art: ART.bankEdgeE, pal: 'bank' },
+    bankEdgeW: { art: ART.bankEdgeW, pal: 'bank' },
+    bankCornerNW: { art: ART.bankCornerNW, pal: 'bankCorner' },
+    bankCornerNE: { art: ART.bankCornerNE, pal: 'bankCorner' },
+    bankCornerSW: { art: ART.bankCornerSW, pal: 'bankCorner' },
+    bankCornerSE: { art: ART.bankCornerSE, pal: 'bankCorner' },
+
+    grass: {
+      art: ART.grass, pal: 'grass', variants: ['grassClump', 'grassTuft'], variantOdds: 7,
+      family: 'grass', edgeAgainst: 'water', edgeArt: BANK_EDGE_ART,
+    },
     grassTuft: { art: ART.grassTuft, pal: 'grass' },
     grassClump: { art: ART.grassClump, pal: 'grass' },
     grassDark: { art: ART.grass, pal: 'grassdk', variants: ['grassClump', 'grassTuft'], variantOdds: 7 },
@@ -18429,9 +18804,13 @@ function installCoreTiles() {
     flowers: { art: ART.flowers, pal: 'grass', underArt: 'grass' },
     flowersDark: { art: ART.flowers, pal: 'grassdk', underArt: 'grassDark' },
     tallgrass: { art: ART.tallgrass, pal: 'grassdk', flags: F.TALLGRASS },
-    sand: { art: ART.sand, pal: 'sand' },
+    sand: {
+      art: ART.sand, pal: 'sand', family: 'sand', edgeAgainst: 'water', edgeArt: BANK_EDGE_ART,
+    },
     sandWet: { art: ART.sandWet, pal: 'sandwet' },
-    sandRipple: { art: ART.sandRipple, pal: 'sand' },
+    sandRipple: {
+      art: ART.sandRipple, pal: 'sand', family: 'sand', edgeAgainst: 'water', edgeArt: BANK_EDGE_ART,
+    },
     sandDeep: { art: ART.sand, pal: 'sandwet', flags: F.SLOW },
     mud: { art: ART.mud, pal: 'bog', flags: F.SLOW },
     rockFloor: { art: ART.rockFloor, pal: 'stone' },
@@ -18449,8 +18828,12 @@ function installCoreTiles() {
     sandRust: { art: ART.sand, pal: 'rust' },
 
     // --- water (concrete) ---
-    waterS: { art: ART.waterS0, pal: 'water', flags: F.WATER, anim: ['waterS0', 'waterS1', 'waterS2', 'waterS1'], animRate: 11 },
-    waterD: { art: ART.waterD0, pal: 'deep', flags: F.DEEP, anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 13 },
+    // `family: 'water'` on the ordinary sea/lake water only — reef and abyss
+    // water keep their own rocky shoreline treatment (rockFloor) and are
+    // deliberately NOT tagged, so grass's bank never tries to grow along a
+    // reef edge with the wrong art.
+    waterS: { art: ART.waterS0, pal: 'water', flags: F.WATER, family: 'water', anim: ['waterS0', 'waterS1', 'waterS2', 'waterS1'], animRate: 11 },
+    waterD: { art: ART.waterD0, pal: 'deep', flags: F.DEEP, family: 'water', anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 13 },
     waterSReef: { art: ART.waterS0, pal: 'reef', flags: F.WATER, anim: ['waterS0', 'waterS1', 'waterS2', 'waterS1'], animRate: 11 },
     waterDReef: { art: ART.waterD0, pal: 'reef', flags: F.DEEP, anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 13 },
     waterAbyss: { art: ART.waterD0, pal: 'abyss', flags: F.DEEP, anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 16 },
@@ -18470,7 +18853,7 @@ function installCoreTiles() {
     //
     // It is NOT a substitute for real sea inside the world. Anywhere the player
     // can reach, use `waterD` and let the Flippers mean something.
-    openSea: { art: ART.waterD0, pal: 'deep', flags: F.DEEP | F.SOLID, anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 13 },
+    openSea: { art: ART.waterD0, pal: 'deep', flags: F.DEEP | F.SOLID, family: 'water', anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 13 },
     foamN: { art: ART.foamN, pal: 'water', flags: F.WATER },
 
     // --- riptides ---------------------------------------------------------
@@ -20212,12 +20595,12 @@ const rooms = {
     map: [
       'TTTTTTTTTT',
       'TgG0000GgT',
-      'Tf0....01g',
+      'Tf0g...01g',
       'Tf."""".1g',
-      'Tg0....011',
+      'Tg0...g011',
       'Tg1000011g',
       'Tgg1111ggT',
-      'TTTg11gTTT',
+      'TT#g11g#TT',
     ],
     entities: [
       ['zol', 4, 4],
@@ -20229,29 +20612,29 @@ const rooms = {
     map: [
       'TTTTTTTTTT',
       'TgTT..TTgT',
-      'gg......fg',
+      'ggg.....fg',
       'gg.000011g',
-      '1g......gg',
+      '1g.g...ggg',
       'gfTT..TTfg',
-      'TgggggggfT',
-      'TTTg##gTTT',
+      'Tggg.gggfT',
+      'TT#g##g#TT',
     ],
     entities: [
-      ['wisp', 4, 3], ['keese', 2, 4],
+      ['wisp', 4, 3], ['keese', 1, 5],
     ],
   },
   '0,6,3': {
     name: 'Wood Gate',
     legend: 'wood', music: 'overworld',
     map: [
-      'TTTggggTTT',
-      'Tfg....ggT',
+      'TT#gggg#TT',
+      'Tfgg...ggT',
       'gg.o1oo.gg',
       'gf..1...g1',
       'gg.0000.g1',
       'ggTT..TTfg',
       'TgggggggfT',
-      'TTTg11gTTT',
+      'TT#g11g#TT',
     ],
     entities: [
       ['sign', 2, 2, { text: 'North, over the gap: the Salt Pans.' }],
@@ -20275,7 +20658,7 @@ const rooms = {
       '11N....SgT',
       'g1=WWWW=gT',
       'Tgggff1ggT',
-      'TTTggggTTT',
+      'TT#gggg#TT',
     ],
     entities: [
       ['anglerfry', 4, 5],
@@ -20442,31 +20825,31 @@ const rooms = {
     name: 'Shrine Path',
     legend: 'wood', music: 'overworld',
     map: [
-      'TTTg11gTTT',
+      'TT#g11g#TT',
       'TgG0000GgT',
-      'gg...1..gg',
+      'ggg..1..gg',
       'gg.TT.T.gg',
-      'gg1....1fg',
+      'gg1g...1fg',
       'g11000011g',
       'Tgg1111ggT',
-      'TTTg1ggTTT',
+      'TT#g1gg#TT',
     ],
     entities: [
-      ['zol', 5, 4], ['keese', 3, 2],
+      ['zol', 5, 4], ['keese', 2, 3],
     ],
   },
   '0,5,4': {
     name: 'Shrine Mouth',
     legend: 'wood', music: 'overworld',
     map: [
-      'TTTg##gTTT',
+      'TT#g##g#TT',
       'Tgg.DD.ggT',
       'ggf.DD.ggg',
       'gg.0000.gg',
       'gg..11..gg',
       'ggTT..TTgg',
       'TggggggggT',
-      'TTTg11gTTT',
+      'TT#g11g#TT',
     ],
     warps: [
       { x: 4, y: 2, to: { map: 'd5', floor: 0, rx: 3, ry: 7, px: 72, py: 96 } },
@@ -20476,21 +20859,21 @@ const rooms = {
     ],
     entities: [
       ['sign', 2, 3, { text: 'DROWNED WOOD SHRINE\nRide what floats.' }],
-      ['wisp', 7, 4],
+      ['wisp', 8, 5],
     ],
   },
   '0,6,4': {
     name: 'Log Drift',
     legend: 'wood', music: 'overworld',
     map: [
-      'TTTg11gTTT',
+      'TT#g11g#TT',
       'Tgg1111ggT',
       'g11555511g',
       'gg1...1.gg',
       'gg.55551gg',
       'ggg...1ggg',
       'TffgfffggT',
-      'TTTggggTTT',
+      'TT#gggg#TT',
     ],
     entities: [
       ['anglerfry', 4, 4], ['pickup', 2, 5, { kind: 'heartPiece' }],
@@ -20500,14 +20883,14 @@ const rooms = {
     name: 'Drowned Hollow',
     legend: 'wood', music: 'overworld',
     map: [
-      'TTTggggTTT',
+      'TT#gggg#TT',
       'Tg======gT',
       'g111...1gT',
       'g11====1fT',
       'g1.....1gT',
       'g1======gT',
       'Tgggg11ggT',
-      'TTTggggTTT',
+      'TT#gggg#TT',
     ],
     entities: [
       ['anglerfry', 5, 3], ['jellyfish', 3, 5],
@@ -20656,14 +21039,14 @@ const rooms = {
     name: 'Bog Trees',
     legend: 'wood', music: 'overworld',
     map: [
-      'TTTg1ggTTT',
-      'TgTT..TTgT',
-      'Tg......fg',
+      'TT#g1gg#TT',
+      'Tgg....ggT',
+      'Tgg.....fg',
       'Tg10000.fg',
-      'Tg......gg',
+      'Tg.....ggg',
       'TgTT..TTgg',
       'TggffgfggT',
-      'TTTggggTTT',
+      'TT#gggg#TT',
     ],
     entities: [
       ['zol', 4, 3], ['keese', 6, 2],
@@ -20673,14 +21056,14 @@ const rooms = {
     name: 'Wood Heart',
     legend: 'wood', music: 'overworld',
     map: [
-      'TTTg11gTTT',
+      'TT#g11g#TT',
       'Tgg.111ggT',
       'gg.000011g',
       'gg.000011g',
       'gg.0000.gg',
       'ggg____fgg',
       'TggggggffT',
-      'TTTg11gTTT',
+      'TTgg11ggTT',
     ],
     entities: [
       // Coastwise Chain, link 8.
@@ -20695,14 +21078,14 @@ const rooms = {
     name: 'Sunken Glade',
     legend: 'wood', music: 'overworld',
     map: [
-      'TTTggggTTT',
+      'TT#gggg#TT',
       'Tgg1111ggT',
       'g115555.fg',
-      'gg......fg',
+      'ggg.....fg',
       'gg.0000.gg',
       'ggg..111fg',
       'Tgggg11ggT',
-      'TTTggggTTT',
+      'TT#gggg#TT',
     ],
     entities: [
       ['zol', 3, 4], ['moblin', 6, 3],
@@ -20712,8 +21095,8 @@ const rooms = {
     name: 'Wood Verge',
     legend: 'wood', music: 'overworld',
     map: [
-      'TTTggggTTT',
-      'TgTTTTTTgT',
+      'TT#gggg#TT',
+      'TggggggggT',
       'gg.====.gT',
       'gg....11gT',
       'gg.====.fT',
@@ -20801,7 +21184,7 @@ const rooms = {
       '######****',
     ],
     entities: [
-      ['crab', 5, 3], ['urchin', 3, 4],
+      ['crab', 5, 3], ['urchin', 2, 4],
     ],
   },
   // ---- marsh -------------------------------------------------------------
@@ -20811,12 +21194,12 @@ const rooms = {
     map: [
       '****TTTTTT',
       '*1*T..TTgT',
-      '*11.....gg',
+      '*11g....gg',
       '*1.!!!!.gg',
-      '*1......gg',
+      '*1.....ggg',
       '*1TT..TTgg',
       '*11ggggggT',
-      '***1gggTTT',
+      '***1TTT#TT',
     ],
     entities: [
       ['zol', 4, 3],
@@ -20826,14 +21209,14 @@ const rooms = {
     name: 'Bog Stair',
     legend: 'marsh', music: 'marsh',
     map: [
-      'TTTggggTTT',
+      'TT#gggg#TT',
       'Tgg#X##ggT',
       'g11!!!!11g',
       'gg1...11gg',
       'gg.!!!!11g',
-      'ggg....ffg',
-      'Tgg""""ffT',
-      'TTTggggTTT',
+      'gggg...ffg',
+      'Tg#""""#fT',
+      'TT#gggg#TT',
     ],
     entities: [
       ['leever', 4, 3], ['sign', 2, 5, { text: 'North: boulders, and the cliffs beyond.' }],
@@ -20845,15 +21228,15 @@ const rooms = {
     map: [
       'TTTTTTTTTT',
       'TgTT..TTgT',
-      'gg..1...gT',
+      'ggg.1...gT',
       'gg.5555.gT',
-      'gf...1..gT',
+      'gf...1.ggT',
       'ggTT..TTgT',
       'TfggggfffT',
-      'TTTggggTTT',
+      'TTTTTTTTTT',
     ],
     entities: [
-      ['zol', 3, 4], ['keese', 6, 2],
+      ['zol', 4, 5], ['keese', 6, 2],
     ],
   },
   // ---- coast -------------------------------------------------------------
@@ -20868,7 +21251,7 @@ const rooms = {
       'Tf.x..o.gT',
       'Tgg....ggT',
       'Tgg....ggT',
-      'TTTggggTTT',
+      'TT#gggg#TT',
     ],
     entities: [
       ['sign', 6, 3, { text: 'Someone has been digging here.' }],
@@ -20880,11 +21263,11 @@ const rooms = {
     name: 'South Wood',
     legend: 'wood', music: 'overworld',
     map: [
-      'TTTggggTTT',
-      'TgTT..TTgT',
-      'Tg......gg',
+      'TT#gggg#TT',
+      'Tggg..gggT',
+      'Tgg.....gg',
       'Tg1000011g',
-      'Tg......gg',
+      'Tg.....ggg',
       'TfTTTTTTgg',
       'TggggggggT',
       'TTTTTTTTTT',
@@ -20897,14 +21280,14 @@ const rooms = {
     name: 'The Wading',
     legend: 'wood', music: 'overworld',
     map: [
-      'TTTg11gTTT',
+      'TTgg11ggTT',
       'Tgg1111ggT',
       'g11====11g',
       'gf1====1fg',
       'gf.====1gg',
       'gfg.1..ggg',
       'Tfg....ggT',
-      'TTTggggTTT',
+      'TT#gggg#TT',
     ],
     entities: [
       ['sign', 2, 5, { text: 'Only a swimmer goes north from here.' }],
@@ -20914,11 +21297,11 @@ const rooms = {
     name: 'Wood Foot',
     legend: 'wood', music: 'overworld',
     map: [
-      'TTTggggTTT',
-      'TgTT..TTfT',
-      'gf......gT',
+      'TT#gggg#TT',
+      'Tggg..ggfT',
+      'gfg.....gT',
       'g110000.gT',
-      'gg......gT',
+      'gg.....ggT',
       'ggTTTTTTgT',
       'TggggggfgT',
       'TTTTTTTTTT',
@@ -20939,7 +21322,7 @@ const rooms = {
       'Tg......gg',
       'Tgg""""ggg',
       'TggggggggT',
-      'TTTggggTTT',
+      'TT#gggg#TT',
     ],
     entities: [
       ['crab', 4, 3],
@@ -20956,7 +21339,7 @@ const rooms = {
       'gJ.1111.gg',
       'gJg....ggg',
       'TggJJJJggT',
-      'TTTggggTTT',
+      'TT#gggg#TT',
     ],
     entities: [
       ['leever', 4, 3], ['crab', 6, 4],
@@ -20973,7 +21356,7 @@ const rooms = {
       'gg.1111.gg',
       'ggg....ggg',
       'TggJJJJggT',
-      'TTTggggTTT',
+      'TT#gggg#TT',
     ],
     entities: [
       ['crab', 3, 3], ['octorokSea', 6, 4],
@@ -20983,14 +21366,14 @@ const rooms = {
     name: 'Feather Gap',
     legend: 'dunes', music: 'overworld',
     map: [
-      'TTTggggTTT',
+      'TT#gggg#TT',
       'Tgg1111ggT',
       'g11=11=11g',
       'gg1...1.gg',
       'gg1=..=1gg',
       'ggg....ggg',
       'TggJJJJggT',
-      'TTTggggTTT',
+      'TT#gggg#TT',
     ],
     entities: [
       ['sign', 4, 4, { text: 'North lies the reef.\nThe gaps are a single stride wide.' }],
@@ -21007,7 +21390,7 @@ const rooms = {
       'gg.1111.1*',
       'ggg....g1*',
       'TggJJJJ11*',
-      'TTTggg1***',
+      'TT#ggg1***',
     ],
     entities: [
       ['leever', 4, 3], ['pickup', 6, 3, { kind: 'rupee20' }],
@@ -21019,13 +21402,13 @@ const rooms = {
     legend: 'marsh', music: 'marsh',
     map: [
       '***1gggTTT',
-      '*1*TTTTTgT',
+      '*1*TTTgggT',
       '*11!!!!.gg',
-      '*1......gg',
+      '*1.....ggg',
       '*1.!!!!.fg',
       '*1TTTTTTfg',
       '*11ggggggT',
-      '***1gggTTT',
+      '***1ggg#TT',
     ],
     entities: [
       ['leever', 4, 3],
@@ -21035,14 +21418,14 @@ const rooms = {
     name: 'Sanctum Path',
     legend: 'marsh', music: 'marsh',
     map: [
-      'TTTggggTTT',
-      'Tgg....ggT',
+      'TT#gggg#TT',
+      'Tggg...ggT',
       'gg.....1gg',
       'gg.!!!!11g',
-      'gg......gg',
+      'gg.....ggg',
       'ggf""""ggg',
       'TggggggffT',
-      'TTTg##gTTT',
+      'TT#g##g#TT',
     ],
     entities: [
       ['zol', 5, 3], ['pickup', 2, 2, { kind: 'rupee20' }],
@@ -21052,14 +21435,14 @@ const rooms = {
     name: 'Bog Causeway',
     legend: 'marsh', music: 'marsh',
     map: [
-      'TTTggggTTT',
+      'TT#gggg#TT',
       'TfTTTTTTgT',
-      'gf......Xg',
+      'gf.....gXg',
       'gg.5555.%g',
       'gg.5555.%g',
       'ggTTTTTT%g',
       'TgffgggggT',
-      'TTTggggTTT',
+      'TT#gggg#TT',
     ],
     entities: [
       ['sign', 2, 2, { text: 'The causeway wades only at LOW tide.' }],
@@ -21071,14 +21454,14 @@ const rooms = {
     name: 'West Bluff',
     legend: 'coast', music: 'overworld',
     map: [
-      'TTTggggTTT',
+      'TT#gggg#TT',
       'Tg###..ggT',
       'gg#C#>..gg',
       'gf...>..gg',
       'gfGgg>gGgg',
       'ggg..>.ggg',
       'Tgg....ggT',
-      'TTTg51gTTT',
+      'TT#g51g#TT',
     ],
     warps: [
       { x: 3, y: 2, to: { map: 'cave1', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
@@ -21124,7 +21507,7 @@ const rooms = {
       'gjjjgggggg',
       'gggggggggg',
       'TzgggggeiT',
-      'TTTggggTTT',
+      'TT#gggg#TT',
     ],
     warps: [
       // Each door is the middle cell of its building's front row, which is the
@@ -21173,14 +21556,14 @@ const rooms = {
     // dry grass in the east are the only way round it.
     legend: 'town', music: 'overworld',
     map: [
-      'TTTggggTTT',
+      'TT#gggg#TT',
       'TggggggggT',
       'gggHHHgggg',
       'gwwHHHg111',
       'gwwHHHg111',
       'gggggggggg',
       'TzgggggegT',
-      'TTTggggTTT',
+      'TT#gggg#TT',
     ],
     warps: [
       { x: 4, y: 4, to: { map: 'houseShop', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
@@ -21208,7 +21591,7 @@ const rooms = {
       '1111111.gg',
       'gg111..gfg',
       'Tgf1gggggT',
-      'TTTggggTTT',
+      'TT#gggg#TT',
     ],
     warps: [
       { x: 4, y: 2, to: { map: 'cave2', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
@@ -21222,14 +21605,14 @@ const rooms = {
     name: 'Shallows Gate',
     legend: 'dunes', music: 'overworld',
     map: [
-      'TTTggggTTT',
+      'TT#gggg#TT',
       'Tgg.111ggT',
       'gg..1111gg',
       'g111111.gg',
       'g111111.gg',
       'gg111..ggg',
       'TggggggggT',
-      'TTTggggTTT',
+      'TT#gggg#TT',
     ],
     entities: [
       ['sign', 2, 2, { text: 'THE SHALLOWS\nAt LOW tide the sandbar walks you east.' }],
@@ -21240,14 +21623,14 @@ const rooms = {
     name: 'Grotto Approach',
     legend: 'dunes', music: 'overworld',
     map: [
-      'TTTggggTTT',
+      'TT#gggg#TT',
       'Tgg....ggT',
       'gg.BB.B.gg',
       'gg1.....gg',
       'g111111.gg',
       'gg111..ggg',
       'Tgg11ggggT',
-      'TTTg##gTTT',
+      'TT#g##g#TT',
     ],
     entities: [
       ['octorok', 4, 3], ['crab', 6, 4],
@@ -21257,14 +21640,14 @@ const rooms = {
     name: 'Dune Bowl',
     legend: 'dunes', music: 'overworld',
     map: [
-      'TTTggggTTT',
+      'TT#gggg#TT',
       'Tgg....ggT',
       'gg.vv<v55g',
       'gg.v.<v.55',
       'gg.vv<v.1g',
       'ggg..<.ggg',
       'TggggggggT',
-      'TTTggggTTT',
+      'TT#gggg#TT',
     ],
     entities: [
       ['leever', 4, 3], ['leever', 6, 4],
@@ -21274,14 +21657,14 @@ const rooms = {
     name: 'Tidepools',
     legend: 'dunes', music: 'overworld',
     map: [
-      'TTTggggTTT',
+      'TT#gggg#TT',
       'Tgg1111ggT',
       'g11222211g',
       '5g......gg',
       'gg12222.gg',
       'ggg11..ggg',
       'TggggggggT',
-      'TTTggggTTT',
+      'TT#gggg#TT',
     ],
     entities: [
       ['crab', 4, 3], ['urchin', 6, 4],
@@ -21291,14 +21674,14 @@ const rooms = {
     name: 'Far Dunes',
     legend: 'dunes', music: 'overworld',
     map: [
-      'TTTggg1***',
-      'TgTTTTT*1*',
+      'TT#ggg1***',
+      'TgggggT*1*',
       'gg.O..O11*',
       'gg......1*',
       'gg.1111.1*',
       'ggg....g1*',
       'Tgggggg11*',
-      'TTTggg1***',
+      'TT#ggg1***',
     ],
     entities: [
       ['leever', 5, 3],
@@ -21309,14 +21692,14 @@ const rooms = {
     name: 'Deep Mire',
     legend: 'marsh', music: 'marsh',
     map: [
-      '***1gggTTT',
-      '*1*TTTTTfT',
+      '***1ggg#TT',
+      '*1*TggggfT',
       '*11!!!!.fg',
       '*1.!!!!.gg',
       '*1.!!!!.gg',
       '*1TTTTTTgg',
       '*11ggggggT',
-      '***1gggTTT',
+      '***1ggg#TT',
     ],
     entities: [
       ['leever', 3, 3], ['leever', 6, 4],
@@ -21326,14 +21709,14 @@ const rooms = {
     name: 'Sanctum Mouth',
     legend: 'marsh', music: 'marsh',
     map: [
-      'TTTg##gTTT',
+      'TT#g##g#TT',
       'Tgf.DD.ggT',
       'ggf.DD.ggg',
       'gg.!!!!.gg',
       'gg......gg',
       'ggg""""ggg',
-      'TggggggggT',
-      'TTTggggTTT',
+      'TTggggggTT',
+      'TTggggggTT',
     ],
     warps: [
       { x: 4, y: 2, to: { map: 'd3', floor: 0, rx: 3, ry: 7, px: 72, py: 96 } },
@@ -21350,14 +21733,14 @@ const rooms = {
     name: 'Sunken Reeds',
     legend: 'marsh', music: 'marsh',
     map: [
-      'TTTggggTTT',
-      'TgTTTTTTgT',
-      'gg......gT',
+      'TT#gggg#TT',
+      'TggggggggT',
+      'ggg.....gT',
       'g115555.gT',
-      'gg......gT',
+      'gg.....ggT',
       'ggTTTTTTgT',
-      'TggffggggT',
-      'TTTggggTTT',
+      'TTggffggTT',
+      'TTggggggTT',
     ],
     entities: [
       ['keese', 4, 3], ['zol', 6, 2],
@@ -21368,14 +21751,14 @@ const rooms = {
     name: 'Shell Beach',
     legend: 'coast', music: 'overworld',
     map: [
-      'TTTg51gTTT',
+      'TT#g51g#TT',
       'Tgg.511ggT',
       'Tg..111ogg',
       'Tg.111111g',
       'Tg1111111g',
       'Tgf...1ggg',
       'TgfggfgggT',
-      'TTTggggTTT',
+      'TT#gggg#TT',
     ],
     entities: [
       ['crab', 4, 4], ['octorok', 2, 2],
@@ -21389,14 +21772,14 @@ const rooms = {
     name: 'Village Shore',
     legend: 'town', music: 'overworld',
     map: [
-      'TTTggggTTT',
+      'TT#gggg#TT',
       'TgggggzigT',
       'gggggggggg',
       'gghhh222gg',
       'gghhh222gg',
       'gghhhwwggg',
-      'TggggwwggT',
-      'TTTggggTTT',
+      '#ggggwwgg#',
+      '###gggg###',
     ],
     warps: [
       { x: 3, y: 5, to: { map: 'houseNets', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
@@ -21421,14 +21804,14 @@ const rooms = {
     name: 'Driftwood Strand',
     legend: 'town', music: 'overworld',
     map: [
-      'TTTggggTTT',
+      'TT#gggg#TT',
       'TggggggfgT',
       'gguuugqggg',
       'gguuuggggg',
       'ggg1111ggg',
       'ggggggnggg',
       'TgggfgnfgT',
-      'TTTggggTTT',
+      'TT#gggg#TT',
     ],
     entities: [
       ['octorok', 4, 4], ['pickup', 7, 3, { kind: 'rupee20' }],
@@ -21443,14 +21826,14 @@ const rooms = {
     name: 'East Strand',
     legend: 'coast', music: 'overworld',
     map: [
-      'TTTggggTTT',
+      'TT#gggg#TT',
       'Tfg..11ggT',
       'gf...111gg',
       'gg.1111.gg',
       'gg.1111.gg',
       'gf111..ggg',
       'Tff11ggggT',
-      'TTTggggTTT',
+      'TT#gggg#TT',
     ],
     entities: [
       ['crab', 3, 3], ['crab', 6, 4],
@@ -21461,14 +21844,14 @@ const rooms = {
     name: 'Dune Crossing',
     legend: 'dunes', music: 'overworld',
     map: [
-      'TTTggggTTT',
+      'TT#gggg#TT',
       'Tgg....ggT',
       'gg.B..B.gg',
       'gg1.....gg',
       'g111111.gg',
       'gg111..ggg',
       'Tgg11ggggT',
-      'TTTggggTTT',
+      'TT#gggg#TT',
     ],
     entities: [
       ['octorok', 4, 3], ['crab', 6, 4],
@@ -21478,14 +21861,14 @@ const rooms = {
     name: 'Grotto Mouth',
     legend: 'dunes', music: 'overworld',
     map: [
-      'TTTg##gTTT',
+      'TT#g##g#TT',
       'Tgg.DD.ggT',
       'ggg.DD.ggg',
       'gg.1111.gg',
       'gg......gg',
       'ggg""""ggg',
       'TggggggggT',
-      'TTTggggTTT',
+      'TT#gggg#TT',
     ],
     warps: [
       { x: 4, y: 2, to: { map: 'd1', floor: 0, rx: 3, ry: 7, px: 72, py: 96 } },
@@ -21510,14 +21893,14 @@ const rooms = {
     name: 'Sandpiper Row',
     legend: 'townDunes', music: 'overworld',
     map: [
-      'TTTggggTTT',
+      'TT#gggg#TT',
       'Tgg....ggT',
       'gjjjgkkkgg',
       'gjjjgkkkgg',
       'gjjjgkkkgg',
       'gg......ng',
       'TizggggenT',
-      'TTTggggTTT',
+      'TT#gggg#TT',
     ],
     warps: [
       { x: 2, y: 4, to: { map: 'houseSandpiper', floor: 0, rx: 0, ry: 0, px: 72, py: 96 } },
@@ -21537,14 +21920,14 @@ const rooms = {
     name: 'Shell Flats',
     legend: 'dunes', music: 'overworld',
     map: [
-      'TTTggggTTT',
+      'TT#gggg#TT',
       'Tgg1111ggT',
       'g11444411g',
       'gg14444.gg',
       'gg14444.gg',
       'ggg11..ggg',
       'TggggggggT',
-      'TTTggggTTT',
+      'TT#gggg#TT',
     ],
     entities: [
       ['urchin', 4, 3], ['pickup', 6, 4, { kind: 'heartPiece' }],
@@ -21554,14 +21937,14 @@ const rooms = {
     name: 'Dune Corner',
     legend: 'dunes', music: 'overworld',
     map: [
-      'TTTggg1***',
-      'TgTTTTT*1*',
+      'TT#ggg1***',
+      'TgggggT*1*',
       'gg.x..O11*',
       'gg......1*',
       'gg.1111.1*',
       'ggg....g1*',
       'Tgggggg11*',
-      'TTTggg1***',
+      'TT#ggg1***',
     ],
     entities: [
       ['leever', 5, 4],
@@ -21573,8 +21956,8 @@ const rooms = {
     name: 'Bog Foot',
     legend: 'marsh', music: 'marsh',
     map: [
-      '***1gggTTT',
-      '*1*TTTTTgT',
+      '***1ggg#TT',
+      '*1*TgggggT',
       '*11!!!!.gg',
       '*1......gg',
       '*11.oo.1gg',
@@ -21590,7 +21973,7 @@ const rooms = {
     name: 'Witchs Hollow',
     legend: 'marsh', music: 'marsh',
     map: [
-      'TTTggggTTT',
+      'TTggggggTT',
       'Tgg....gfT',
       'gg..bb..gg',
       'gf......gg',
@@ -21615,8 +21998,8 @@ const rooms = {
     name: 'Marsh Corner',
     legend: 'marsh', music: 'marsh',
     map: [
-      'TTTggggTTT',
-      'TgTTTTTTgT',
+      'TTggggggTT',
+      'TTggggggTT',
       'gg......gT',
       'gg.!!!!.fT',
       'gg1111111*',
@@ -21633,7 +22016,7 @@ const rooms = {
     name: 'South Bluff',
     legend: 'coast', music: 'overworld',
     map: [
-      'TTTggggTTT',
+      'TT#gggg#TT',
       'Tff....ggT',
       'Tg.o.oo.gg',
       'Tg......gg',
@@ -21651,7 +22034,7 @@ const rooms = {
     name: 'Fishing Stones',
     legend: 'coast', music: 'overworld',
     map: [
-      'TTTggggTTT',
+      'TT#gggg#TT',
       'Tgg....ggT',
       'gg......gg',
       'gg.3333.gg',
@@ -21675,7 +22058,7 @@ const rooms = {
     name: 'South Sands',
     legend: 'coast', music: 'overworld',
     map: [
-      'TTTggggTTT',
+      'TT#gggg#TT',
       'Tfg....fgT',
       'gg......gg',
       'gg.1111.gg',
@@ -21692,8 +22075,8 @@ const rooms = {
     name: 'Reef Pocket',
     legend: 'coast', music: 'overworld',
     map: [
-      'TTTggggTTT',
-      'TgTTTTTTgT',
+      'TT#gggg#TT',
+      'TggggggggT',
       'gg......gT',
       'gf.4444.gT',
       'gf1444411*',
@@ -21711,7 +22094,7 @@ const rooms = {
     name: 'South Shallows',
     legend: 'dunes', music: 'overworld',
     map: [
-      'TTTggggTTT',
+      'TT#gggg#TT',
       'Tgg....ggT',
       'Tg......gg',
       'Tg.1111.gg',
@@ -21728,7 +22111,7 @@ const rooms = {
     name: 'Wrecked Hull',
     legend: 'dunes', music: 'overworld',
     map: [
-      'TTTggggTTT',
+      'TT#gggg#TT',
       'Tgg....ggT',
       'gg.qq.q.gg',
       'gg......gg',
@@ -21751,7 +22134,7 @@ const rooms = {
     name: 'Deep Bar',
     legend: 'dunes', music: 'overworld',
     map: [
-      'TTTggggTTT',
+      'TT#gggg#TT',
       'Tgg....ggT',
       'gg.4444.gg',
       'gg.4444.gg',
@@ -21768,7 +22151,7 @@ const rooms = {
     name: 'Sunken Cove',
     legend: 'dunes', music: 'overworld',
     map: [
-      'TTTggggTTT',
+      'TT#gggg#TT',
       'Tgg....ggT',
       'gg......gg',
       'gg.5555.gg',
@@ -21785,8 +22168,8 @@ const rooms = {
     name: 'Worlds Edge',
     legend: 'dunes', music: 'overworld',
     map: [
-      'TTTggg1***',
-      'TgTTTTT*1*',
+      'TT#ggg1***',
+      'TgggggT*1*',
       'gg.O.O.11*',
       'gg......1*',
       'gg1111111*',

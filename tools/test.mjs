@@ -671,7 +671,10 @@ const main = async () => {
   console.log('\n--- combat and damage ---');
   await G(() => {
     const g = window.__game;
-    g.enterMap('overworld', 0, 4, 6, 72, 56, 'down', { instant: true });
+    // Not 72,56: that is the zol's own spawn tile, so Link arrives already mid-
+    // knockback, and the death-and-respawn section below would respawn him onto
+    // it again once the room reloads its enemies. Two tiles clear of it.
+    g.enterMap('overworld', 0, 4, 6, 72, 24, 'down', { instant: true });
   });
   await frames(10);
   check('enemies spawned', await G(() => window.__game.entities.filter(e => e.isEnemy).length > 0),
@@ -682,7 +685,13 @@ const main = async () => {
     const g = window.__game;
     const e = g.entities.find(x => x.isEnemy);
     if (e) { e.x = g.player.x; e.y = g.player.y; }
+    // Clearing invuln alone is not enough to make Link hittable: `update` returns
+    // early the whole time `hurtTime` is running, so contact damage never gets a
+    // look in. This room's zol spawns on the entry tile and lands a hit the
+    // moment we arrive, and the knockback from it outlived the six frames below.
     g.player.invuln = 0;
+    g.player.hurtTime = 0;
+    g.player.knockTime = 0;
   });
   await frames(6);
   check('contact damage lands', await G(() => window.__game.progress.hearts) < hp0,
@@ -752,7 +761,10 @@ const main = async () => {
   const stop = await G(async () => {
     const g = window.__game;
     const feel = await import('/src/data/feel.js');
-    g.enterMap('overworld', 0, 4, 6, 72, 56, 'down', { instant: true });
+    // Same tile-avoidance as the combat section above: this is the last entry
+    // into the room before the death-and-respawn checks, so it is what sets the
+    // respawn point, and the zol sits on 72,56.
+    g.enterMap('overworld', 0, 4, 6, 72, 24, 'down', { instant: true });
     window.__harness.step(10);
     g.hitstop = 0;
     g.player.invuln = 999;          // keep the player out of the measurement

@@ -448,6 +448,47 @@ BEFORE checking a file out for isolation, not after.**
 ## Hard-won lessons — do not rediscover these
 
 
+- **A screen border is a template, and the template's corner bleeds into its
+  doorway.** Almost every screen in this game is framed `TTTggggTTT`: a
+  three-wide corner of trees, a four-tile gap, three more trees. Trees sit on
+  a fixed 2x2 lattice (`bx = x & ~1`), so the corner's INNER tree shares a
+  block with the gap's first cell — which means any rule that makes a
+  crown-covered cell solid narrows every doorway on the map by a tile at each
+  end. It hit 158 screens at once. The fix is to make the corner cell
+  something solid that is NOT a quad (`#`, the region's own cliff): the block
+  then holds no tree, nothing overhangs, and the doorway is whole. Do not
+  hand-fix these one at a time — the second one you fix reveals the third.
+- **Row 0 is always canopy and row 7 is always root, so every north-south seam
+  pairs a blockable row against an exempt one.** The lattice is absolute, not
+  per-room: `y & ~1` makes even rows the top half of their block and odd rows
+  the bottom. A room's top border row (0) can therefore be sealed by a crown
+  from the interior row below it, while its bottom border row (7) never can be,
+  whatever is drawn above it. That asymmetry is a whole CLASS of seam
+  mismatch, and it is not fixable from the root side: you cannot make a row-7
+  cell solid by adding trees near it. Either open the canopy side (clear the
+  interior trees) or close BOTH sides with real solid tiles. Nothing else
+  makes the seam agree.
+- **A doorway you can see is not a doorway you can reach, and the difference
+  can be load-bearing.** The Bog Causeway's north border draws the usual
+  four-tile gap, and the row immediately behind it is a solid line of trees —
+  so nothing has ever reached that opening from inside the room. That
+  unreachable gap was the whole reason the Marsh's northern screens stayed
+  behind the Dredge Line. "Fix the seam by opening it," applied mechanically,
+  deleted a region gate that no gate-shaped tile was implementing. Before
+  clearing an interior tree line to widen a border, flood the room and ask
+  whether anything was reaching that border already.
+- **`check-overworld`'s room-reached set counts a room that the flood merely
+  touched.** `reached` is keyed on the room, not the cell, so a screen whose
+  only reachable cells are the four tiles of one doorway counts as reached and
+  never appears in the sealed list. The Bog Stair has always been like that.
+  When a gate's seal count looks wrong, print the reached CELLS, not the rooms.
+- **A five-line collision change is never a five-line change, and the second
+  order effects are in the tests, not the game.** Making crowns solid walled
+  a room's tree line, which stopped a zol wandering off the tile the combat
+  test spawns Link on, which meant Link arrived mid-knockback — and `update`
+  returns early for the whole of `hurtTime`, so the forced contact hit the
+  test then set up could never land. Clearing `invuln` does not make Link
+  hittable; `hurtTime` and `knockTime` have to go too.
 - **"Don't walk into it" beats "dodge it", and the difference is whether the
   fix ADDS a move.** Two sessions tried to cut the boss verb's chip damage with
   a dodge — a movement made instead of fighting, keyed off a boss's state — and
@@ -533,6 +574,54 @@ BEFORE checking a file out for isolation, not after.**
   is a brown strip with a pale rim on the LAND side, and it is as static as
   `cliffTop`. A blocker recorded from an assumption survives exactly as long as
   nobody crops the sheet and looks.
+- **The crop S19/S20's own note pointed at was NOT the shore.** `oracle-ages-
+  overworld.png @ 1400,1900` reads as a plain lake at a glance, and at 6x zoom
+  it is Ambi's moat: a canal/lock puzzle area whose "brown bank" is walled
+  masonry with a reflection-sparkle rim that quantises into a striped mess the
+  moment you actually render it at 4 colours (see the next lesson). The real
+  plain-lake shore — grass AND dune sand meeting open water with the bank the
+  ART-BACKLOG note describes — is 1100 pixels away at `@ 50,1200 500x300`,
+  around a garden pool. Cropping and LOOKING beats trusting a coordinate a
+  previous session recorded from a description; the two do not always agree,
+  and only rendering the quantised result at actual game colours catches it —
+  the raw crop looked clean at low zoom both times.
+- **A dropped colour remaps by nearest LUMINANCE, and luminance is blind to
+  hue.** `bankEdgeS`'s gold masonry highlight (`#c88808`, lum 140.5) sits
+  almost exactly on its own rim's light blue (`#20b0f8`, lum 141.2), so
+  `quantise`'s automatic remap welded a blue fleck into the middle of every
+  earth course — invisible in the terminal output (`rip-terrain.py` only
+  prints "merged down to 4", not WHICH colour went where), and it took
+  actually rendering the quantised tile with its own kept palette to see the
+  stripe. Fixed with an explicit `GROUND_MERGE` override table, the same
+  pattern `TOWN_MERGE` already used for the identical reason. **A quantised
+  tile with more than 4 source colours is not proven until you render it.**
+- **A palette lookup that reuses the CALLING cell's `pal` is invisible until
+  the substituted tile's palette actually differs.** `Room.render` drew
+  `this.artAt(d, x, y, tide)` — which can return a DIFFERENT tile's art, via
+  `edgeArt` or `variants` — in `d.pal`, the original cell's own palette. Every
+  existing user happened to share a palette with what it substitutes
+  (`cliffTop` binds `pal: 'stone'` and so does every `cliffDk`/`cliffSand`/...
+  that draws it; every grass variant binds `pal: 'grass'` like grass itself),
+  so this had been wrong for the whole life of `edgeArt` and nothing showed
+  it. The bank tiles are blue and brown against grass's green, and they
+  rendered as a green stripe shaped exactly like a bank until `Room.palFor`
+  started looking up the SUBSTITUTED tile's own registered palette instead of
+  assuming it matched. Side effect, and a positive one: every regional cliff
+  (`cliffSand`, `cliffRust`, `cliffCoral`, `cliffMarble`, `cliffAbyss`) now
+  draws its lip in `cliffTop`'s own registered `stone`, not the body's tint —
+  the lip reads as an overhang everywhere now instead of disappearing into a
+  dark body.
+- **`find-ground-specks.mjs` finds 1-2 tile flecks, not the region-shape
+  problem ART-BACKLOG's top entry is actually about.** Triaging its 84 hits by
+  "does every neighbour of this speck actually exist and share a different
+  material" found ZERO or close to it — nearly every hit borders a void, a
+  solid prop, or the room's own pit/ledge geometry, which is a room SHAPE
+  (an island floor split by a chasm, a rock's mat) rather than a mis-placed
+  patch of the wrong ground. The actual "grass meets mud as a rectangle"
+  problem (CLAUDE.md's Phase 2, the wood region's mud clearings) is a
+  different, larger thing the speck census does not enumerate at all — it has
+  to be found by eye, room by room, the way `docs/ART-BACKLOG.md`'s crop
+  comparison describes.
 
 
 - **`progress.respawn` was written once and never again, and no checker in the

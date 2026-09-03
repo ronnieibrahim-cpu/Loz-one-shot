@@ -1642,9 +1642,34 @@ export function installCoreTiles() {
   // The themed dungeon tiles bring their own colours off the cartridge, and
   // the tiledefs below name them. Must run before registerTiles.
   installDungeonThemePalettes();
+  // THE BANK. Installed rather than added to gfx/palettes.js's own hand-tuned
+  // ramps for the same reason TOWN_PALETTES is: this is new art with no
+  // existing hand-drawn tile to preserve the colours of, so it carries the
+  // cartridge's own extracted values — see tools/rip-terrain.py's PICKS note
+  // on `bankEdgeS`/`bankCornerSE`. Two palettes, not one, because the straight
+  // edges and the outer corners kept different four-colour sets off the
+  // source (the corner's window has more rim, less earth) and a tiledef binds
+  // exactly one palette. Both keep the rim's cream sparkle over one of its
+  // two blues — `GROUND_KEEP` in the ripper — because a side-by-side with the
+  // source crop showed it as the rim's most distinctive feature, lost by the
+  // automatic top-4-by-count choice on a tie-break.
+  registerPalettes({
+    bank: ['#f8f8c0', '#805000', '#0050b0', '#000000'],
+    bankCorner: ['#f8f8c0', '#20b0f8', '#0050b0', '#000000'],
+  });
   tileSheet.add(ART, 'stone');
   // Animation frames are art without being tiles in their own right.
   declareAnimArt(Object.keys(ART));
+
+  // Shared by every LAND tile that wants a bank against water — the source
+  // draws the same earthen bank under grass and under dune sand alike (see
+  // rip-terrain.py's PICKS note), so this is one object every land family
+  // below points `edgeArt` at, not one per material.
+  const BANK_EDGE_ART = {
+    up: 'bankEdgeN', down: 'bankEdgeS', left: 'bankEdgeW', right: 'bankEdgeE',
+    cornerUpLeft: 'bankCornerNW', cornerUpRight: 'bankCornerNE',
+    cornerDownLeft: 'bankCornerSW', cornerDownRight: 'bankCornerSE',
+  };
 
   const TILE_DEFS = {
     void: { art: ART.void, pal: 'abyss', flags: F.VOID | F.SOLID },
@@ -1661,7 +1686,25 @@ export function installCoreTiles() {
     // colours and a tonal seam appears wherever two of them meet. The rate was
     // settled by looking at 1-in-4 (busy), 1-in-7 (a meadow) and 1-in-12
     // (accidental) side by side at room scale.
-    grass: { art: ART.grass, pal: 'grass', variants: ['grassClump', 'grassTuft'], variantOdds: 7 },
+    // THE SHORE. Land bordering water no longer stops at a flat colour seam —
+    // `family`+`edgeAgainst` fire `edgeArt` only when the neighbour actually
+    // resolves to 'water' (grass next to sand or mud stays the hard rectangle
+    // docs/ART-BACKLOG.md tracks separately; only the land/water join is done).
+    // The bank tiles themselves are plain walkable ground — no flags of their
+    // own — because they replace grass at the edge cell, not add an obstacle.
+    bankEdgeN: { art: ART.bankEdgeN, pal: 'bank' },
+    bankEdgeS: { art: ART.bankEdgeS, pal: 'bank' },
+    bankEdgeE: { art: ART.bankEdgeE, pal: 'bank' },
+    bankEdgeW: { art: ART.bankEdgeW, pal: 'bank' },
+    bankCornerNW: { art: ART.bankCornerNW, pal: 'bankCorner' },
+    bankCornerNE: { art: ART.bankCornerNE, pal: 'bankCorner' },
+    bankCornerSW: { art: ART.bankCornerSW, pal: 'bankCorner' },
+    bankCornerSE: { art: ART.bankCornerSE, pal: 'bankCorner' },
+
+    grass: {
+      art: ART.grass, pal: 'grass', variants: ['grassClump', 'grassTuft'], variantOdds: 7,
+      family: 'grass', edgeAgainst: 'water', edgeArt: BANK_EDGE_ART,
+    },
     grassTuft: { art: ART.grassTuft, pal: 'grass' },
     grassClump: { art: ART.grassClump, pal: 'grass' },
     grassDark: { art: ART.grass, pal: 'grassdk', variants: ['grassClump', 'grassTuft'], variantOdds: 7 },
@@ -1671,9 +1714,13 @@ export function installCoreTiles() {
     flowers: { art: ART.flowers, pal: 'grass', underArt: 'grass' },
     flowersDark: { art: ART.flowers, pal: 'grassdk', underArt: 'grassDark' },
     tallgrass: { art: ART.tallgrass, pal: 'grassdk', flags: F.TALLGRASS },
-    sand: { art: ART.sand, pal: 'sand' },
+    sand: {
+      art: ART.sand, pal: 'sand', family: 'sand', edgeAgainst: 'water', edgeArt: BANK_EDGE_ART,
+    },
     sandWet: { art: ART.sandWet, pal: 'sandwet' },
-    sandRipple: { art: ART.sandRipple, pal: 'sand' },
+    sandRipple: {
+      art: ART.sandRipple, pal: 'sand', family: 'sand', edgeAgainst: 'water', edgeArt: BANK_EDGE_ART,
+    },
     sandDeep: { art: ART.sand, pal: 'sandwet', flags: F.SLOW },
     mud: { art: ART.mud, pal: 'bog', flags: F.SLOW },
     rockFloor: { art: ART.rockFloor, pal: 'stone' },
@@ -1691,8 +1738,12 @@ export function installCoreTiles() {
     sandRust: { art: ART.sand, pal: 'rust' },
 
     // --- water (concrete) ---
-    waterS: { art: ART.waterS0, pal: 'water', flags: F.WATER, anim: ['waterS0', 'waterS1', 'waterS2', 'waterS1'], animRate: 11 },
-    waterD: { art: ART.waterD0, pal: 'deep', flags: F.DEEP, anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 13 },
+    // `family: 'water'` on the ordinary sea/lake water only — reef and abyss
+    // water keep their own rocky shoreline treatment (rockFloor) and are
+    // deliberately NOT tagged, so grass's bank never tries to grow along a
+    // reef edge with the wrong art.
+    waterS: { art: ART.waterS0, pal: 'water', flags: F.WATER, family: 'water', anim: ['waterS0', 'waterS1', 'waterS2', 'waterS1'], animRate: 11 },
+    waterD: { art: ART.waterD0, pal: 'deep', flags: F.DEEP, family: 'water', anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 13 },
     waterSReef: { art: ART.waterS0, pal: 'reef', flags: F.WATER, anim: ['waterS0', 'waterS1', 'waterS2', 'waterS1'], animRate: 11 },
     waterDReef: { art: ART.waterD0, pal: 'reef', flags: F.DEEP, anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 13 },
     waterAbyss: { art: ART.waterD0, pal: 'abyss', flags: F.DEEP, anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 16 },
@@ -1712,7 +1763,7 @@ export function installCoreTiles() {
     //
     // It is NOT a substitute for real sea inside the world. Anywhere the player
     // can reach, use `waterD` and let the Flippers mean something.
-    openSea: { art: ART.waterD0, pal: 'deep', flags: F.DEEP | F.SOLID, anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 13 },
+    openSea: { art: ART.waterD0, pal: 'deep', flags: F.DEEP | F.SOLID, family: 'water', anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 13 },
     foamN: { art: ART.foamN, pal: 'water', flags: F.WATER },
 
     // --- riptides ---------------------------------------------------------

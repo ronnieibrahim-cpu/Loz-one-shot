@@ -3,10 +3,59 @@
 Work that is identified, scoped and not done. Each entry says what blocks it.
 
 
+## THE SHORE IS BANKED NOW (S21) — the land/water half of the entry below is DONE
+
+`node tools/rip-terrain.py`'s PICKS gained `bankEdgeS`/`bankCornerSE` (the
+other 6 orientations are rotations/mirrors of those two — see `TRANSFORMS`),
+extracted off a plain garden-pool shore at `oracle-ages-overworld.png @
+50,1200 500x300`, NOT the 1400,1900 crop the S19 entry below names — that
+region turned out to be Ambi's moat, a canal/lock puzzle area, not a plain
+shore; see docs/HANDOFF.md's hard-won-lessons for how that was found.
+`tileEdgeArt` (src/world/tileset.js) is a real 4-neighbour mask now: 4
+straight edges, 4 outer corners, and (where art exists — none does yet) 4
+inner corners, replacing the old "first direction wins, no corners" rule.
+A tile opts in with `family` + `edgeAgainst` (`edgeAgainst: 'water'` on
+`grass`/`sand`/`sandRipple`) so a bank only grows against water — grass
+meeting sand or mud is UNCHANGED, still the hard rectangle the entry below
+describes, and is NOT this job.
+
+**What is still open, in order of value:**
+
+1. **The land/land fringe (grass vs sand vs mud vs stone) is not started.**
+   This is the harder half of the S19 entry below and everything in it is
+   still accurate: it needs its own per-pair art (a transition cell holds
+   both materials' tones) and its own palette per ordered pair.
+2. **Reef and abyss water were deliberately left unbanked.** `waterSReef`/
+   `waterDReef`/`waterAbyss` do not carry `family: 'water'`, on purpose —
+   those regions have their own rocky shore treatment (`rockFloor`) already
+   and extending the same earthen bank there was out of scope; scoping
+   whether they want the same bank or a rock-specific one is undone.
+3. **Inner corners have no art.** The mask supports `innerUp/Down/Left/Right`
+   (a tile nearly engulfed, connected to its own mass on one side only) and
+   nothing defines them, so that case degrades to a single straight edge —
+   graceful, not wrong, but not what a real peninsula tip should look like.
+   Nothing in the current 273 rooms appears to need one (the room-shape pass
+   below would be the place to find out for certain).
+4. **The regional SHAPE of the ground (CLAUDE.md's Phase 2)** — grass and mud
+   drawn as organic interlocking blobs rather than axis-aligned rectangles —
+   is a room-DATA problem, not an art or engine one. This session did 8 of
+   the wood region's 15 screens and 7 of the marsh region's 12 (the rest of
+   each region is riptide/channel/gate rooms or sits on the sea rim — see
+   docs/NEXT-SESSION.md for exactly which and why they were left). Every
+   other region — `cliffs`, `dunes`, `reef`, `coral`, `salt`, `abyss`,
+   `coast` — was surveyed by reading every room's grid and found NOT to have
+   the same shape of problem: those regions' ground pairs are mostly one
+   material and its own palette variant (already solved by `tileVariant`) or
+   puzzle-room floors bounded by boulders/gates rather than meadows. If a
+   future pass disagrees with that read, it should say which room and why
+   before touching it — this is an eyes-on judgement call, not a census.
+
+
 ## EVERY GROUND BOUNDARY IS A STRAIGHT PIXEL EDGE, and the shore is not blocked
 
-Investigated this session (S19) and NOT done. Read this before the S3 entry
-below it, which is partly wrong.
+Investigated in S19, and its shore/bank half is DONE as of S21 (see the entry
+above this one). The land/land fringe half below is still accurate and still
+not done. Read this before the S3 entry below it, which is partly wrong.
 
 **What the source actually does, checked rather than assumed.** Three regions
 were cropped and looked at:

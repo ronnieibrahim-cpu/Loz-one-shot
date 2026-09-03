@@ -161,7 +161,99 @@ PICKS = [
     # whichever palette the tiledef already binds, so the surround reads as the
     # rock the mouth is cut into.
     ('caveMouth',   SB,  176, 1632, 'cave mouth, arched and cut into rock'),
+
+    # THE BANK, and the reason every shoreline in the game was a flat colour
+    # seam instead of a tile. docs/ART-BACKLOG.md's top entry (S19) named the
+    # crop and the shape: "The source draws a BANK: a brown earth strip with a
+    # pale rim, on the LAND side of the join, with the water butting flat
+    # against it. It is a hard-edged tile like any other and it does not
+    # animate." S20 found the actual tile inside that crop, off a shoreline
+    # around a garden pool at `oracle-ages-overworld.png @ 50,1200 500x300`
+    # (a plain lake edge, not the canal/lock puzzle area at 1400,1900 the S19
+    # note pointed at — that region turned out to be Ambi's moat and its walls
+    # read as masonry, not turf; this pool is bordered by ordinary grass and
+    # dune sand on the same source sheet).
+    #
+    # `--phase ag 60 1190 260 1350` put the grid at x=1+16n, y=10+16n, which
+    # landed a straight run and a real corner on grid-aligned windows: a
+    # horizontal bank (water below, land above) and the rounded corner where
+    # it turns to run vertically. Every other orientation is derived from
+    # these two by rotation/mirror — see TRANSFORMS below — rather than
+    # picked separately: the window one grid cell further along the same
+    # vertical run looked like a second real capture at low zoom, but its
+    # 4-colour render came out visibly striped (see GROUND_MERGE's note for
+    # why) and a derived orientation of a verified-clean tile beat a second
+    # real crop that could not be trusted without the same rework.
+    ('bankEdgeS',     AG, 545, 1226, 'shore bank, water below — rim on top, earth below'),
+    ('bankCornerSE',  AG,  97, 1226, 'shore bank outer corner, water down and right'),
 ]
+
+# Explicit dropped-colour overrides for specific PICKS, keyed by name — see
+# `quantise`'s own note. `bankEdgeS` has 6 source colours (rim: black, two
+# blues, a cream sparkle; earth: brown body, gold highlight) and only 4
+# slots.
+#
+# GROUND_KEEP forces which 4 survive. Ranked by raw pixel count the
+# automatic choice is brown+black (clear) plus two of {dark blue, light
+# blue, cream} tied at 32px each — and the ascending-tuple tie-break keeps
+# the two blues over the cream. Side by side with the source crop
+# (`oracle-ages-overworld.png @ 50,1200`) the cream sparkle is the single
+# most visually distinctive part of the rim, brighter than either blue, and
+# losing it is the one thing that actually reads as different from the
+# reference. Keeping it forces dropping the LIGHT blue instead — the dark
+# blue and black together already carry the "this is a rim, not open
+# ground" read, so the light blue is the more affordable loss of the three.
+#
+# GROUND_MERGE then aims the two colours GROUND_KEEP drops: the gold
+# highlight (#c88808, lum 140.5) sits almost exactly on the rim's light
+# blue by nearest-LUMINANCE (140.5 vs 141.2) and the automatic guess welded
+# a blue fleck into the middle of the earth course — send it to the earth
+# body instead. The light blue itself, now dropped, goes to dark blue
+# rather than to brown (nearer by raw luminance, 55.9 vs 74.2, but a blue
+# rim pixel turning earth-brown is a worse-looking guess than it staying a
+# duller blue).
+GROUND_KEEP = {
+    'bankEdgeS': [(248, 248, 192), (128, 80, 0), (0, 80, 176), (0, 0, 0)],
+}
+GROUND_MERGE = {
+    'bankEdgeS': {(200, 136, 8): (128, 80, 0), (32, 176, 248): (0, 80, 176)},
+}
+
+# THE OTHER SIX ORIENTATIONS OF THE BANK, rotated or mirrored rather than
+# redrawn. This is still extraction, not authoring: every pixel comes from one
+# of the two PICKS above, reordered — see the CLAUDE.md note on compositing
+# being authorship, which this is not, because no two source tiles are ever
+# blended into one cell, only one tile's own pixels rotated or reflected. It
+# is sound specifically because the source's own lighting rule (pale rim
+# toward land, dark earth toward water) is rotationally consistent — turning
+# the bank a quarter-turn puts the rim on the new land-facing edge exactly
+# where a real capture of the bank at that angle would put it.
+#
+# (new name, source PICK name, op)
+ROT_CW, ROT_CCW, ROT_180, FLIP_H, FLIP_V = 'cw', 'ccw', '180', 'h', 'v'
+TRANSFORMS = [
+    ('bankEdgeN',    'bankEdgeS',    ROT_180),  # water above, land below
+    ('bankEdgeE',    'bankEdgeS',    ROT_CCW),  # water to the right, land left
+    ('bankEdgeW',    'bankEdgeS',    ROT_CW),   # water to the left, land right
+    ('bankCornerSW', 'bankCornerSE', FLIP_H),   # water down and left
+    ('bankCornerNE', 'bankCornerSE', FLIP_V),   # water up and right
+    ('bankCornerNW', 'bankCornerSE', ROT_180),  # water up and left
+]
+
+
+def transform_grid(grid, op):
+    n = len(grid)
+    if op == FLIP_V:
+        return grid[::-1]
+    if op == FLIP_H:
+        return [r[::-1] for r in grid]
+    if op == ROT_180:
+        return [r[::-1] for r in grid[::-1]]
+    if op == ROT_CW:
+        return [''.join(grid[n - 1 - c][r] for c in range(n)) for r in range(n)]
+    if op == ROT_CCW:
+        return [''.join(grid[c][n - 1 - r] for c in range(n)) for r in range(n)]
+    raise SystemExit('rip-terrain: unknown transform op %r' % op)
 
 # Props are a different shape of problem from ground, and need their own pass.
 #
@@ -433,7 +525,7 @@ def lum(c):
     return 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]
 
 
-def quantise(block):
+def quantise(block, merge=None, keep=None):
     """16x16 RGB -> (grid of 0-3, four source colours lightest first).
 
     Deliberately not `ripkit.quantise`: that pads a short palette by repeating
@@ -441,12 +533,37 @@ def quantise(block):
     ties and is not reproducible (see docs/HANDOFF.md). Here the four kept
     colours are ranked by a total order and every pixel is a direct lookup, so
     the output is byte-identical run to run.
+
+    A dropped colour falls back to nearest LUMINANCE, which is blind to hue —
+    `bankEdgeS`'s masonry highlight (a gold `#c88808`) sits almost exactly on
+    the rim's light-blue shade by that measure (140.5 vs 141.2) and the
+    automatic guess welded a blue speckle into the middle of the earth
+    course. `merge` overrides specific dropped colours to a specific kept one
+    explicitly, the same fix `TOWN_MERGE` already uses for the same reason —
+    see the note above it: "stated ... rather than merged by nearest
+    luminance, so the choice is a decision somebody made and not an
+    arithmetic accident."
+
+    `keep` overrides which 4 colours survive, when the automatic top-4-by-
+    frequency choice throws out something a side-by-side with the source
+    shows is load-bearing. `bankEdgeS` ranked BY COUNT keeps two near-
+    identical blues (32px each) over the rim's bright cream sparkle (also
+    32px, lost on the tuple tie-break) — technically correct, but the sparkle
+    is the most visually distinctive part of the rim in the source crop, and
+    dropping it is the difference a side-by-side comparison actually catches.
     """
     cnt = Counter(p for row in block for p in row)
-    # Ties broken on the RGB tuple so the choice does not depend on dict order.
-    ranked = sorted(cnt.items(), key=lambda kv: (-kv[1], kv[0]))
-    keep = sorted((c for c, _ in ranked[:4]), key=lambda c: (-lum(c), c))
+    if keep:
+        keep = sorted(keep, key=lambda c: (-lum(c), c))
+    else:
+        # Ties broken on the RGB tuple so the choice does not depend on dict order.
+        ranked = sorted(cnt.items(), key=lambda kv: (-kv[1], kv[0]))
+        keep = sorted((c for c, _ in ranked[:4]), key=lambda c: (-lum(c), c))
     remap = {c: min(keep, key=lambda k: ((lum(k) - lum(c)) ** 2, k)) for c in cnt}
+    if merge:
+        for c, target in merge.items():
+            if c in remap and target in keep:
+                remap[c] = target
     idx = {c: i for i, c in enumerate(keep)}
     grid = [''.join(str(idx[remap[p]]) for p in row) for row in block]
     return grid, keep
@@ -979,11 +1096,21 @@ def main():
             im = sheets[path] = Image.open(path).convert('RGB')
         block = [[im.getpixel((x + cx, y + cy)) for cx in range(16)] for cy in range(16)]
         before = len({p for row in block for p in row})
-        grid, keep = quantise(block)
+        grid, keep = quantise(block, merge=GROUND_MERGE.get(name), keep=GROUND_KEEP.get(name))
         if before > 4:
             dropped.append((name, before))
         arts.append((name, note, os.path.basename(path), x, y, grid))
         pals.append((name, keep))
+
+    by_name = {a[0]: a for a in arts}
+    VERB = {ROT_CW: 'rotated 90° clockwise', ROT_CCW: 'rotated 90° counter-clockwise',
+            ROT_180: 'rotated 180°', FLIP_H: 'mirrored left-right', FLIP_V: 'mirrored top-to-bottom'}
+    for newname, srcname, op in TRANSFORMS:
+        _, note, sheet, x, y, grid = by_name[srcname]
+        turned = transform_grid(grid, op)
+        arts.append((newname, '%s, %s from %s' % (note, VERB[op], srcname), sheet, x, y, turned))
+        pals.append((newname, dict(pals)[srcname]))
+        by_name[newname] = arts[-1]
 
     for name, path, x, y, bg, colmap, note in QUADS:
         im = sheets.get(path)
@@ -1142,7 +1269,7 @@ def main():
     ncells = sum(b[1] * b[2] for b in TOWN)
     print('emitted %d terrain tiles (%d ground, %d props) and %d town blocks '
           '(%d cells, %d palettes) -> %s'
-          % (len(arts), len(PICKS), len(PROPS), len(TOWN), ncells,
+          % (len(arts), len(PICKS) + len(TRANSFORMS), len(PROPS), len(TOWN), ncells,
              len(TOWN_PALETTES), OUT))
     for name, n in dropped:
         print('  note: %s had %d colours on the sheet, merged down to 4' % (name, n))
