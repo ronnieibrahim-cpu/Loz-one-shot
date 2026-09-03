@@ -63,6 +63,24 @@ export class Dialogue {
     this.holdFrames = 0;
   }
 
+  /**
+   * Throw the whole thing away without finishing it.
+   *
+   * NOT `close()`. Closing a box is a box being READ: it fires `onClose`, which
+   * is how a giver hands over what it was talking about and how a cutscene
+   * steps to its next beat, and it pulls the next queued page up. A death is
+   * none of those things — nothing was read, and the callback belongs to a
+   * conversation that is over. `Game.respawn` calls this.
+   */
+  reset() {
+    this.active = false;
+    this.choices = null;
+    this.onClose = null;
+    this.queue.length = 0;
+    this.pages = [];
+    this.page = 0;
+  }
+
   close() {
     this.active = false;
     this.choices = null;

@@ -744,7 +744,17 @@ export function installBosses() {
     if (strength > 0 && p && !e.hidden) {
       const dx = e.cx - p.cx, dy = e.cy - p.cy, d = Math.hypot(dx, dy) || 1;
       if (d < 96) moveEntity(g, p, sp((dx / d) * strength), sp((dy / d) * strength));
-      if (every(e, 20)) g.spawnEffect('ripple', e.cx - 8, e.cy - 8, { life: 24 });
+      // THE ONE MECHANIC THIS FIGHT IS BUILT ON, AND IT MADE NO NOISE. The pull
+      // showed as a ripple and moved the player's feet in silence, which is the
+      // same class of gap `check-sfx` was written for: a verb nobody can hear
+      // is a verb the player works out by accident. `whirl` has been in
+      // src/data/audio.js since the audio pass and was never played by
+      // anything — `enterWhirlpool` was its only caller and nothing could reach
+      // that either. On the ripple's own beat so the two read as one thing.
+      if (every(e, 20)) {
+        g.spawnEffect('ripple', e.cx - 8, e.cy - 8, { life: 24 });
+        if (d < 96) g.audio.sfx('whirl');
+      }
     }
     return lvl === LOW ? 1.9 : 1.0;   // beached: no pull, but twice the thrash
   }

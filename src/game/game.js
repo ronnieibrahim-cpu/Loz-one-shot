@@ -1143,17 +1143,15 @@ export class Game {
     });
   }
 
-  enterWhirlpool(p) {
-    if (this._whirl) return;
-    this._whirl = true;
-    const dest = (this.room.def.whirlpool) || null;
-    this.audio.sfx('whirl');
-    this.fadeOut(() => {
-      this._whirl = false;
-      if (dest) this.enterMap(dest.map, dest.floor || 0, dest.rx, dest.ry, dest.px, dest.py, 'down', { banner: true });
-      else { const s = this.progress.respawn; this.enterMap(s.map, s.floor, s.rx, s.ry, s.px, s.py, s.dir); }
-    });
-  }
+  // `enterWhirlpool` WAS HERE, AND NOTHING COULD EVER CALL IT. It fired off
+  // `F.WHIRL`, and no tiledef in `src/data/tiles-core.js` has ever carried that
+  // flag — so the whole path was a feature in the engine that the world had no
+  // way to reach. Its no-destination branch (no room defines `whirlpool`
+  // either, so it was the only branch) sent the player to the last respawn
+  // point, which reads as a death he did not die. Deleted rather than given a
+  // destination: a whirlpool is a design decision about a screen, and inventing
+  // one to make an unreachable branch reachable is the tail wagging the dog.
+  // Thalassor's whirlpool is a boss behaviour and does not go through here.
 
   onPlayerDied() {
     if (this.mode === 'gameover') return;
@@ -1217,6 +1215,31 @@ export class Game {
     // The boss died with the room. Leaving the handle behind lets the HUD draw
     // a health bar for something that is not in the world any more.
     this.boss = null;
+    // AND `mode = 'play'` IS A CLAIM ABOUT WHAT THE GAME IS DOING, so
+    // everything that owns the mode has to be torn down with it. Each of these
+    // was left standing by a death:
+    //
+    //   a CUTSCENE keeps running the moment anything sets the mode back, so a
+    //   scene the player died in the middle of would resume over the room he
+    //   was put back in;
+    //   a DIALOGUE box returns out of `update` before the player moves, so the
+    //   respawn room opens with a text box from before the death across it and
+    //   nothing able to walk. `reset`, not `close`: closing fires the
+    //   conversation's `onClose` and pulls the next queued page up, and nothing
+    //   was read;
+    //   a TRANSITION is a slide back toward the room that killed him;
+    //   a FADE-OUT'S CALLBACK is a room change that has not happened yet, and
+    //   it is holding the destination the death interrupted;
+    //   an ITEM BANNER, a room banner and a lure are all things drawn over a
+    //   place that is not there any more.
+    this.cutscene = null;
+    this.dialogue.reset();
+    this.transition = null;
+    this.fadeThen = null;
+    this.itemShow = null;
+    this.bannerText = null; this.bannerTime = 0;
+    this.lure = null;
+    this.paused = false;
     this.player = new Player(s.px, s.py);
     this.player.dir = s.dir || 'down';
     this.tide.clearOverrides();

@@ -234,7 +234,6 @@ export class Player extends Entity {
     if (this.z > 2 || this.jumping) return;
     if (f & F.PIT) { this.beginFall(game); return; }
     if (f & F.HAZARD) this.takeDamage(game, HAZARD_DAMAGE, null, { noKnockDir: true, hazard: true });
-    if (f & F.WHIRL) game.enterWhirlpool(this);
   }
 
   // ----------------------------------------------------------------- input

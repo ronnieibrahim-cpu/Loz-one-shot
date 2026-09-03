@@ -3393,7 +3393,12 @@ const F = {
   DOOR:      1 << 17,  // dungeon door (state in room)
   SWITCHF:   1 << 18,  // floor switch
   CURRENT:   1 << 19,  // pushes the player while swimming (see `push`)
-  WHIRL:     1 << 20,  // whirlpool: pulls in, warps
+  // 1 << 20 was WHIRL — "whirlpool: pulls in, warps". No tiledef ever carried
+  // it, so nothing in the world could reach `Game.enterWhirlpool`, and that
+  // function's only live branch sent the player to his last respawn point: a
+  // death he did not die. Both are gone and the bit is free. Same drift as the
+  // MAGNETIC note below — a flag whose comment names a mechanic the world does
+  // not have reads as true and is not.
   VOID:      1 << 21,  // outside the map: solid and never rendered as floor
   SANDBAR:   1 << 22,  // marks tiles whose walkability depends on tide (for hints)
   TALLGRASS: 1 << 23,  // hides the player's feet, drops rupees when cut
@@ -7884,7 +7889,6 @@ class Player extends Entity {
     if (this.z > 2 || this.jumping) return;
     if (f & F.PIT) { this.beginFall(game); return; }
     if (f & F.HAZARD) this.takeDamage(game, HAZARD_DAMAGE, null, { noKnockDir: true, hazard: true });
-    if (f & F.WHIRL) game.enterWhirlpool(this);
   }
 
   // ----------------------------------------------------------------- input
@@ -10600,6 +10604,24 @@ class Dialogue {
     const cam = this.game.camera;
     this.top = !!(p && p.y - (cam ? cam.y : 0) > VIEW_H - 60);
     this.holdFrames = 0;
+  }
+
+  /**
+   * Throw the whole thing away without finishing it.
+   *
+   * NOT `close()`. Closing a box is a box being READ: it fires `onClose`, which
+   * is how a giver hands over what it was talking about and how a cutscene
+   * steps to its next beat, and it pulls the next queued page up. A death is
+   * none of those things — nothing was read, and the callback belongs to a
+   * conversation that is over. `Game.respawn` calls this.
+   */
+  reset() {
+    this.active = false;
+    this.choices = null;
+    this.onClose = null;
+    this.queue.length = 0;
+    this.pages = [];
+    this.page = 0;
   }
 
   close() {
@@ -14008,17 +14030,15 @@ class Game {
     });
   }
 
-  enterWhirlpool(p) {
-    if (this._whirl) return;
-    this._whirl = true;
-    const dest = (this.room.def.whirlpool) || null;
-    this.audio.sfx('whirl');
-    this.fadeOut(() => {
-      this._whirl = false;
-      if (dest) this.enterMap(dest.map, dest.floor || 0, dest.rx, dest.ry, dest.px, dest.py, 'down', { banner: true });
-      else { const s = this.progress.respawn; this.enterMap(s.map, s.floor, s.rx, s.ry, s.px, s.py, s.dir); }
-    });
-  }
+  // `enterWhirlpool` WAS HERE, AND NOTHING COULD EVER CALL IT. It fired off
+  // `F.WHIRL`, and no tiledef in `src/data/tiles-core.js` has ever carried that
+  // flag — so the whole path was a feature in the engine that the world had no
+  // way to reach. Its no-destination branch (no room defines `whirlpool`
+  // either, so it was the only branch) sent the player to the last respawn
+  // point, which reads as a death he did not die. Deleted rather than given a
+  // destination: a whirlpool is a design decision about a screen, and inventing
+  // one to make an unreachable branch reachable is the tail wagging the dog.
+  // Thalassor's whirlpool is a boss behaviour and does not go through here.
 
   onPlayerDied() {
     if (this.mode === 'gameover') return;
@@ -14082,6 +14102,31 @@ class Game {
     // The boss died with the room. Leaving the handle behind lets the HUD draw
     // a health bar for something that is not in the world any more.
     this.boss = null;
+    // AND `mode = 'play'` IS A CLAIM ABOUT WHAT THE GAME IS DOING, so
+    // everything that owns the mode has to be torn down with it. Each of these
+    // was left standing by a death:
+    //
+    //   a CUTSCENE keeps running the moment anything sets the mode back, so a
+    //   scene the player died in the middle of would resume over the room he
+    //   was put back in;
+    //   a DIALOGUE box returns out of `update` before the player moves, so the
+    //   respawn room opens with a text box from before the death across it and
+    //   nothing able to walk. `reset`, not `close`: closing fires the
+    //   conversation's `onClose` and pulls the next queued page up, and nothing
+    //   was read;
+    //   a TRANSITION is a slide back toward the room that killed him;
+    //   a FADE-OUT'S CALLBACK is a room change that has not happened yet, and
+    //   it is holding the destination the death interrupted;
+    //   an ITEM BANNER, a room banner and a lure are all things drawn over a
+    //   place that is not there any more.
+    this.cutscene = null;
+    this.dialogue.reset();
+    this.transition = null;
+    this.fadeThen = null;
+    this.itemShow = null;
+    this.bannerText = null; this.bannerTime = 0;
+    this.lure = null;
+    this.paused = false;
     this.player = new Player(s.px, s.py);
     this.player.dir = s.dir || 'down';
     this.tide.clearOverrides();
@@ -24203,7 +24248,17 @@ function installBosses() {
     if (strength > 0 && p && !e.hidden) {
       const dx = e.cx - p.cx, dy = e.cy - p.cy, d = Math.hypot(dx, dy) || 1;
       if (d < 96) moveEntity(g, p, sp((dx / d) * strength), sp((dy / d) * strength));
-      if (every(e, 20)) g.spawnEffect('ripple', e.cx - 8, e.cy - 8, { life: 24 });
+      // THE ONE MECHANIC THIS FIGHT IS BUILT ON, AND IT MADE NO NOISE. The pull
+      // showed as a ripple and moved the player's feet in silence, which is the
+      // same class of gap `check-sfx` was written for: a verb nobody can hear
+      // is a verb the player works out by accident. `whirl` has been in
+      // src/data/audio.js since the audio pass and was never played by
+      // anything — `enterWhirlpool` was its only caller and nothing could reach
+      // that either. On the ripple's own beat so the two read as one thing.
+      if (every(e, 20)) {
+        g.spawnEffect('ripple', e.cx - 8, e.cy - 8, { life: 24 });
+        if (d < 96) g.audio.sfx('whirl');
+      }
     }
     return lvl === LOW ? 1.9 : 1.0;   // beached: no pull, but twice the thrash
   }

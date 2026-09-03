@@ -40,7 +40,17 @@
 //   9. the point is somewhere the player can actually STAND, asked of
 //      `canOccupy` — the engine's own question, not a model of it;
 //  10. and the run is written to its save slot, because a player who dies and
-//      closes the tab on the game-over screen should not lose the hour.
+//      closes the tab on the game-over screen should not lose the hour;
+//  11. dying to a REAL BOSS, in a fight that is actually running, lets go of
+//      the boss handle (the HUD used to draw a bar for a ghost), does not mark
+//      the dungeon beaten, puts the player at the dungeon's MOUTH rather than
+//      back in the arena, and leaves the boss standing there to be fought
+//      again at full health — a death is not a way to delete a boss;
+//  12. and a death takes whatever was ON TOP of the game with it. `respawn`
+//      sets `mode = 'play'` unconditionally, which is a claim about what the
+//      game is doing: a cutscene, a text box and its queue, a room slide, a
+//      pending fade callback and the item and room banners all used to survive
+//      it and land on the room the player was put back in.
 //
 // Boot pattern copied from tools/check-gates.mjs.
 import { createServer } from 'node:http';
@@ -370,6 +380,164 @@ console.log('\n--- 9. the death is written to the save slot ---');
   check('and reloading it would resume where the death put him',
     saved && saved.pos && saved.pos.map === 'd1' && saved.pos.rx === 3 && saved.pos.ry === 7,
     JSON.stringify(saved && saved.pos));
+}
+
+// --------------------------------------------------------------------------
+// A REAL BOSS, IN A REAL FIGHT. Everything above this dies to a call to
+// `takeDamage`, which is a death but not a death in the one room where dying
+// is most likely and most expensive. `respawn` clears `this.boss` — the handle
+// used to dangle and the HUD drew a health bar for something no longer in the
+// world — and nothing had ever tested it with a boss alive.
+console.log('\n--- 10. dying to Gohmaraq, with the fight actually running ---');
+{
+  await page.evaluate(() => {
+    const g = window.__game;
+    g.progress.maxHearts = 12; g.progress.hearts = 12;
+    g.tide.setLevel(0, { instant: true });
+    // Through the mouth, so the point is the mouth and not the arena — which
+    // is the whole difference between a setback and a death loop.
+    g.enterMap('d1', 0, 3, 7, 72, 96, 'up', { instant: true });
+  });
+  await frames(6);
+  await page.evaluate(() => window.__game.enterMap('d1', 0, 3, 1, 72, 80, 'up', { instant: true }));
+  // Let the intro run out and the fight start for real: no god mode, no
+  // scripted state, just the boss's own AI moving and shooting.
+  await frames(240);
+  const live = await page.evaluate(() => {
+    const g = window.__game;
+    return { boss: !!g.boss, hp: g.boss && g.boss.hp, intro: g.boss && g.boss.introTime };
+  });
+  check('the boss is in the room and out of its intro', live.boss && live.hp > 0, JSON.stringify(live));
+  const over = await die();
+  check('dying with a boss alive reaches the game-over screen', over);
+  const w = await where();
+  check('and the continue puts the player at the DUNGEON MOUTH, not in the arena',
+    w.map === 'd1' && w.rx === 3 && w.ry === 7, JSON.stringify(w));
+  const after = await page.evaluate(() => {
+    const g = window.__game;
+    return {
+      boss: !!g.boss,
+      bossEntities: g.entities.filter(e => e.isBoss).length,
+      beaten: !!(g.progress.beaten && g.progress.beaten.d1),
+      mode: g.mode,
+    };
+  });
+  check('the boss handle is let go, so the HUD is not drawing a bar for a ghost',
+    after.boss === false, JSON.stringify(after));
+  check('and no boss entity came back with the player', after.bossEntities === 0, JSON.stringify(after));
+  check('dying to a boss does not mark the dungeon beaten', after.beaten === false, JSON.stringify(after));
+  // A DEATH IS NOT A WAY TO DELETE A BOSS. Walking back in has to find it
+  // there, at full health, with the fight to have again.
+  await page.evaluate(() => window.__game.enterMap('d1', 0, 3, 1, 72, 80, 'up', { instant: true }));
+  await frames(180);
+  const again = await page.evaluate(() => {
+    const g = window.__game;
+    return { boss: !!g.boss, hp: g.boss && g.boss.hp, max: g.boss && g.boss.maxHp };
+  });
+  check('walking back in finds the boss there again, at full health',
+    again.boss && again.hp === again.max, JSON.stringify(again));
+}
+
+// --------------------------------------------------------------------------
+// `respawn` sets `mode = 'play'` unconditionally, and that is a CLAIM about
+// what the game is doing. Anything that owns the mode has to be torn down with
+// it, or the respawn room opens with the interrupted thing still on top of it.
+console.log('\n--- 11. a death takes whatever was on top of the game with it ---');
+const reviveFrom = async (setup) => {
+  await page.evaluate(() => {
+    const g = window.__game;
+    g.progress.maxHearts = 12; g.progress.hearts = 12;
+    g.tide.setLevel(1, { instant: true });
+    g.enterMap('overworld', 0, 4, 7, 72, 72, 'down', { instant: true });
+  });
+  await frames(6);
+  await page.evaluate(setup);
+  await frames(4);
+  await die();
+  return page.evaluate(() => {
+    const g = window.__game;
+    return {
+      mode: g.mode, cutscene: !!g.cutscene, dialogue: g.dialogue.active,
+      queued: g.dialogue.queue.length, transition: !!g.transition,
+      fadeThen: !!g.fadeThen, itemShow: !!g.itemShow, banner: g.bannerTime,
+      fired: !!window.__respawnFadeFired,
+    };
+  });
+};
+{
+  // MID-DIALOGUE. `update` returns before the player moves while a box is
+  // open, so a box left standing is a respawn room the player cannot walk in.
+  const d = await reviveFrom(() => {
+    const g = window.__game;
+    g.say('A line that was never read.');
+    g.say('And one queued behind it.');
+  });
+  check('a death closes the text box that was open', d.dialogue === false, JSON.stringify(d));
+  check('and drops what was queued behind it rather than showing it later',
+    d.queued === 0, JSON.stringify(d));
+  check('and the game is in play mode with nothing on top', d.mode === 'play', JSON.stringify(d));
+
+  // MID-CUTSCENE. A scene that is still parked resumes the moment anything
+  // sets the mode back to 'cutscene'.
+  const c = await reviveFrom(() => { window.__game.startCutscene('intro'); });
+  check('a death throws away the cutscene it interrupted', c.cutscene === false, JSON.stringify(c));
+  check('and does not leave the game in cutscene mode', c.mode === 'play', JSON.stringify(c));
+
+  // MID-TRANSITION. A slide left running is a slide back toward the room that
+  // killed him.
+  const t = await reviveFrom(() => {
+    const g = window.__game;
+    g.enterMap('overworld', 0, 5, 7, 8, 72, 'right');
+  });
+  check('a death cancels the room slide it interrupted', t.transition === false, JSON.stringify(t));
+
+  // MID-FADE. `fadeOut`'s callback is a room change that has not happened yet,
+  // holding the destination the death interrupted. `respawn` calls `fadeIn`,
+  // which sets the direction the other way and leaves the callback parked for
+  // whoever fades out NEXT — so it does not fire on the respawn, it fires on
+  // the next door the player walks through, in place of that door.
+  //
+  // Timed by hand rather than through `die()`: FADE_RATE is 0.09, so a fade
+  // takes about twelve frames and `die()`'s twenty-frame wait for the
+  // game-over screen is long enough for the callback to run on its own before
+  // the continue — which is a different question (`updateFade` runs above the
+  // mode switch, so a fade started before a death does finish under the
+  // game-over screen) and not the one this asserts.
+  await page.evaluate(() => {
+    const g = window.__game;
+    window.__respawnFadeFired = false;
+    g.progress.maxHearts = 12; g.progress.hearts = 1;
+    g.tide.setLevel(1, { instant: true });
+    g.enterMap('overworld', 0, 4, 7, 72, 72, 'down', { instant: true });
+  });
+  await frames(6);
+  await page.evaluate(() => {
+    const g = window.__game;
+    g.fadeOut(() => { window.__respawnFadeFired = true; });
+    g.player.invuln = 0;
+    g.player.takeDamage(g, 99, null, {});
+  });
+  await frames(2);
+  const wasOver = await page.evaluate(() => window.__game.mode === 'gameover');
+  const heldBefore = await page.evaluate(() => !!window.__game.fadeThen);
+  await page.evaluate(() => window.__game.respawn());
+  await frames(4);
+  const f = await page.evaluate(() => ({ fadeThen: !!window.__game.fadeThen }));
+  check('the death happened before the fade could finish', wasOver && heldBefore,
+    `gameover ${wasOver}, callback held ${heldBefore}`);
+  check('a death drops the pending fade callback', f.fadeThen === false, JSON.stringify(f));
+  await frames(120);
+  const fired = await page.evaluate(() => !!window.__respawnFadeFired);
+  check('and it never fires afterwards', fired === false, String(fired));
+
+  // AN ITEM BANNER is a thing drawn over a place that is not there any more.
+  const i = await reviveFrom(() => {
+    const g = window.__game;
+    g.itemShow = { id: 'conch', t: 600 };
+    g.bannerText = 'Somewhere Else'; g.bannerTime = 600;
+  });
+  check('a death clears the item banner', i.itemShow === false, JSON.stringify(i));
+  check('and the room banner', i.banner === 0, JSON.stringify(i));
 }
 
 check('no page errors', errs.length === 0, errs.slice(0, 3).join(' | '));
