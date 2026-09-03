@@ -1,3 +1,122 @@
+## S22 — Link cannot stand on a tree any more (this session)
+
+THE JOB, in the user's words: audit S21's work for out-of-place tile styles,
+tilesets and clashing themes against the Oracle source overworld; and "Link
+should not be able to walk on top of tree tiles."
+
+The audit part is small and done: one real defect, the `bank` tile's rim had
+lost the cream highlight the source draws on it (`471752e`). Screens across
+marsh, wood, coast, dunes, cliffs, salt, coral, abyss, reef and town were
+read against the sheets and nothing else was out of register.
+
+The tree part is the session. **It is finished and everything is green,
+including `check-playthrough`** — but read the rest of this before touching
+`quadCanopySolid`, because the shape of what it broke is the interesting part.
+
+### What the bug actually was
+
+41% of this world's trees are placed ONE ROW THICK. A tree is a 32x32 quad on
+a fixed 2x2 lattice (`bx = x & ~1`, `by = y & ~1`), so a one-row tree gets the
+other half of its sprite drawn onto the neighbouring cell by `quadMayCover` —
+and that cell keeps its own tiledef, plain grass or plain sand, carrying none
+of the tree's flags. So the game drew a full leafy crown, seen from above,
+over ground you could walk out onto and stand on.
+
+The first attempt changed `quadMayCover` — i.e. stopped drawing the overhang.
+That is wrong and `check-ground` says so out loud (427 quadrant failures: "no
+32x32 object is cut short by plain ground"). Rendering was never the problem.
+
+The fix is `Room.quadCanopySolid` (`src/world/room.js`), called from `solidAt`
+BEFORE `tileDefSolid`. Read its comment; the two decisions worth keeping are:
+
+- **Only the canopy (even-`y`) half is solid.** The root half stays walkable
+  on purpose — a root mound is a ground-level decal, and roots over a verge is
+  how the source draws a tree standing beside a path.
+- **Water keeps its overhang passable at every tide the cell is EVER wet**,
+  not just the level being asked about. A branch over a stream is something you
+  swim under; and a `mudflat`/`sandbar` is dry at some levels and wet at
+  others, so solidifying one only at its dry levels silently seals routing the
+  tide field already proved open.
+
+### What it broke, and why the repair is spread over 60-odd screens
+
+The border template. Nearly every screen is framed `TTTggggTTT` — three-wide
+tree corner, four-tile gap, three more trees — and the corner's inner tree
+shares a 2x2 block with the gap's first cell. Making crowns solid therefore
+narrowed EVERY doorway on the map by one tile at each end: 158 screens at
+once. The repair is to make that corner cell a non-quad solid instead (`#`,
+the region's own cliff), so the block holds no tree and nothing overhangs.
+
+Then a second, structurally different class: `y & ~1` is absolute, so row 0 is
+ALWAYS the canopy half and row 7 is ALWAYS the root half. Every north-south
+seam therefore pairs a blockable row against an exempt one — a room's top
+border can be sealed by trees in the row behind it, and its bottom border can
+never be sealed by anything. There is no fixing that from the root side. You
+either clear the interior trees (open it) or close both sides with real solid
+tiles. `TgggTTgggT` — a decorative pair of trees mid-doorway — is the motif
+that triggers it; 12 instances, all cleared.
+
+`Village Shore` is the town case CLAUDE.md warns about: two 3x3 buildings
+leave exactly one lane across the screen, and the crowns of the corner trees
+took it. Its bottom corners are stone now.
+
+### The Dredge Line nearly got deleted, and this is the part to be careful of
+
+Mechanically applying "fix the seam by opening it" removed a region gate that
+no gate-shaped tile was implementing. The Bog Causeway draws the usual
+four-tile gap on its north border and has a SOLID LINE OF TREES immediately
+behind it — so nothing has ever reached that opening from inside the room.
+That unreachable gap is the entire reason the Marsh's northern screens sat
+behind the Dredge Line's boulders. Clearing those trees to "match the
+neighbour" opened a road straight into them and `dredge: seals 0`.
+
+It is now closed on both sides (Bog Causeway's tree wall restored, Reedbank's
+south border fully sealed), plus the Bog Stair's ledge shelf ends in rock
+again — its side lanes had been held shut by the crowns of the very corner
+trees the batch fix replaced. `dredge: seals 2`, matching the pristine
+baseline exactly.
+
+**Two debugging notes that cost real time.** `check-overworld`'s `reached` set
+is keyed on the ROOM, not the cell — a screen whose only reachable cells are
+one doorway counts as reached and never shows up as sealed, which is why the
+Bog Stair looked fine while its interior was unreachable. Print reached CELLS.
+And `cliffCracked`/`cliffCrackedDk` (the `X` in the marsh legend) is
+`F.BOMBABLE`, not `F.HEAVY` — it is a bombs gate, not the dredge gate; the
+dredge gate is `M` (`boulder`).
+
+### Two harness fixes, both real
+
+`tools/test.mjs` cleared `player.invuln` to force a contact hit but not
+`hurtTime` — and `update` returns early for the whole knockback, so contact
+damage never got a look in. It passed before only because the room's zol used
+to wander off the tile the test spawns Link on; with the tree line now walled
+it stays put and hits him on arrival. The same tile was the recorded respawn
+point, so the death test respawned him onto the zol. Both entry points moved
+two tiles clear.
+
+### Verified
+
+Everything in CLAUDE.md's table, all green: `check-overworld` 17/17 with all
+four gates sealing their own regions, `walk-dungeons` 23/23, `check-progression`
+19/19, `check-gates` 26/26, `check-towns` 67/67, `check-placement`,
+`check-ground` 7/7, `check-camera`, `check-wide-rooms`, `check-respawn` 60/60,
+`check-hearts` 114/114, `check-items` 91/91, the six item checkers,
+`solve-switches` (9 rooms, all solvable by real pushing), `check-bosses` 19/19,
+`test.mjs` 83/83, **`replay.mjs` 51/51 to the pixel with no re-recording**, and
+**`check-playthrough` 21/21**. `npm run build` + `check-build` OK.
+
+### What is NOT done
+
+- The S21 Phase 2 blob work is still a slice. `docs/ART-BACKLOG.md`'s top
+  entry and S21's own section below are still the right brief for it.
+- `quadCanopySolid` walls a whole row wherever a room has a full-width tree
+  line one row above open ground (`0,4,6` South Wood loses row 6 entirely).
+  That is CORRECT — those cells are drawn as crown — but it shrinks some
+  rooms noticeably and nobody has looked at them with an eye to whether the
+  rooms still play well. Connectivity is proved; playability is not.
+
+---
+
 ## S21 — the shore is a bank now, and the mud clearings started losing their corners (this session)
 
 THE JOB was three phases from `docs/ART-BACKLOG.md`'s top entry and

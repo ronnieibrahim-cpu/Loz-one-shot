@@ -448,6 +448,47 @@ BEFORE checking a file out for isolation, not after.**
 ## Hard-won lessons — do not rediscover these
 
 
+- **A screen border is a template, and the template's corner bleeds into its
+  doorway.** Almost every screen in this game is framed `TTTggggTTT`: a
+  three-wide corner of trees, a four-tile gap, three more trees. Trees sit on
+  a fixed 2x2 lattice (`bx = x & ~1`), so the corner's INNER tree shares a
+  block with the gap's first cell — which means any rule that makes a
+  crown-covered cell solid narrows every doorway on the map by a tile at each
+  end. It hit 158 screens at once. The fix is to make the corner cell
+  something solid that is NOT a quad (`#`, the region's own cliff): the block
+  then holds no tree, nothing overhangs, and the doorway is whole. Do not
+  hand-fix these one at a time — the second one you fix reveals the third.
+- **Row 0 is always canopy and row 7 is always root, so every north-south seam
+  pairs a blockable row against an exempt one.** The lattice is absolute, not
+  per-room: `y & ~1` makes even rows the top half of their block and odd rows
+  the bottom. A room's top border row (0) can therefore be sealed by a crown
+  from the interior row below it, while its bottom border row (7) never can be,
+  whatever is drawn above it. That asymmetry is a whole CLASS of seam
+  mismatch, and it is not fixable from the root side: you cannot make a row-7
+  cell solid by adding trees near it. Either open the canopy side (clear the
+  interior trees) or close BOTH sides with real solid tiles. Nothing else
+  makes the seam agree.
+- **A doorway you can see is not a doorway you can reach, and the difference
+  can be load-bearing.** The Bog Causeway's north border draws the usual
+  four-tile gap, and the row immediately behind it is a solid line of trees —
+  so nothing has ever reached that opening from inside the room. That
+  unreachable gap was the whole reason the Marsh's northern screens stayed
+  behind the Dredge Line. "Fix the seam by opening it," applied mechanically,
+  deleted a region gate that no gate-shaped tile was implementing. Before
+  clearing an interior tree line to widen a border, flood the room and ask
+  whether anything was reaching that border already.
+- **`check-overworld`'s room-reached set counts a room that the flood merely
+  touched.** `reached` is keyed on the room, not the cell, so a screen whose
+  only reachable cells are the four tiles of one doorway counts as reached and
+  never appears in the sealed list. The Bog Stair has always been like that.
+  When a gate's seal count looks wrong, print the reached CELLS, not the rooms.
+- **A five-line collision change is never a five-line change, and the second
+  order effects are in the tests, not the game.** Making crowns solid walled
+  a room's tree line, which stopped a zol wandering off the tile the combat
+  test spawns Link on, which meant Link arrived mid-knockback — and `update`
+  returns early for the whole of `hurtTime`, so the forced contact hit the
+  test then set up could never land. Clearing `invuln` does not make Link
+  hittable; `hurtTime` and `knockTime` have to go too.
 - **"Don't walk into it" beats "dodge it", and the difference is whether the
   fix ADDS a move.** Two sessions tried to cut the boss verb's chip damage with
   a dodge — a movement made instead of fighting, keyed off a boss's state — and
