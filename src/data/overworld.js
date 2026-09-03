@@ -810,9 +810,9 @@ const rooms = {
     map: [
       'TTTTTTTTTT',
       'TgG0000GgT',
-      'Tf0....01g',
+      'Tf0g...01g',
       'Tf."""".1g',
-      'Tg0....011',
+      'Tg0...g011',
       'Tg1000011g',
       'Tgg1111ggT',
       'TTTg11gTTT',
@@ -843,7 +843,7 @@ const rooms = {
     legend: 'wood', music: 'overworld',
     map: [
       'TTTggggTTT',
-      'Tfg....ggT',
+      'Tfgg...ggT',
       'gg.o1oo.gg',
       'gf..1...g1',
       'gg.0000.g1',
