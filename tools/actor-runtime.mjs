@@ -770,15 +770,37 @@ export async function installRuntime() {
   /**
    * The swap itself.
    *
-   *   `fence`  an optional filter a candidate has to survive unchanged. `dBoss`
-   *            passes its arena fence so a swap cannot walk out of a boss room;
-   *            `dGoto` passes nothing, because leaving the room is the job.
-   *   `avoid`  an entity a RETREAT may not be swapped toward. The escape is
-   *            chosen from eight directions with `except` not in the hazard
-   *            list, so without this the way out of a zol's path is very often
-   *            straight into the thing the fight is about. Applying the same
-   *            veto to an APPROACH pushed the actor away from every opening,
-   *            which is why it is only passed on retreats.
+   *   `fence`      an optional filter a candidate has to survive unchanged.
+   *                `dBoss` passes its arena fence so a swap cannot walk out of
+   *                a boss room; `dGoto` passes nothing, because leaving the
+   *                room is the job.
+   *   `avoid`      an entity a RETREAT may not be swapped toward. The escape
+   *                is chosen from eight directions with `except` not in the
+   *                hazard list, so without this the way out of a zol's path is
+   *                very often straight into the thing the fight is about.
+   *                Applying the same veto to an APPROACH pushed the actor away
+   *                from every opening, which is why it is only passed on
+   *                retreats.
+   *   `noContact`  an entity no candidate — approach or retreat — may swap
+   *                INTO. Not the same rule as `avoid`: `avoid` vetoes any
+   *                direction with a component toward the entity, which is far
+   *                too broad for an approach (that is the exact experiment
+   *                that pushed the actor away from every opening, above); this
+   *                only vetoes the candidate whose projected one-frame box
+   *                would actually overlap it — the same test
+   *                `updateContactDamage` (src/game/player.js) uses to land a
+   *                hit. Measured directly on D3 (Gloomtide): `except` keeps
+   *                the boss out of `hazards()` on purpose (see that function's
+   *                own comment — counting it makes every approach look unsafe
+   *                and the actor circles forever), so a swap chosen to dodge a
+   *                summoned zol had NOTHING telling it the boss was standing
+   *                in one of the eight candidate cells. Seed 20260806, D3: the
+   *                actor took three separate 4-quarter-heart `gloomtide`
+   *                contact hits at dist 8-9, all while a zol was also on
+   *                screen — the shot-avoidance swap kept relanding the player
+   *                on the boss the instant invuln lapsed. `noContact` closes
+   *                exactly that gap without reopening the broader one `avoid`
+   *                already proved too costly.
    */
   function evade(g, m, o) {
     if (!evading()) return m;
@@ -800,6 +822,13 @@ export async function installRuntime() {
         bvx = opts.avoid.cx - g.player.cx; bvy = opts.avoid.cy - g.player.cy;
       }
     }
+    // `noContact`: the projected box for each candidate, tested against the
+    // same AABB overlap `Entity.overlaps` uses. Computed once outside the
+    // loop since neither rect moves within it.
+    let noBody = null;
+    if (opts.noContact && !opts.noContact.dead && g.player) {
+      noBody = { pr: g.player.rect(), tr: opts.noContact.rect() };
+    }
     // Prefer the candidate that keeps most of what was asked for, so the swap
     // is the smallest one that works.
     let bestM = m, bestC = base, bestKeep = -1;
@@ -814,6 +843,15 @@ export async function installRuntime() {
       if (cm === 0 && opts.noStay) continue;
       if (fence(cm) !== cm) continue;
       if ((bvx || bvy) && cm !== m && (cx * bvx + cy * bvy) > 0) continue;
+      // A swap that trades a dodged shot for a free hit from the thing
+      // `except` is keeping out of `hazards()` is worse than the shot it
+      // dodged. Only alternatives are vetoed — `m` itself is never touched
+      // here, the same as every other filter in this loop.
+      if (noBody && cm !== m) {
+        const px = noBody.pr.x + cx * WALK, py = noBody.pr.y + cy * WALK;
+        const t = noBody.tr;
+        if (px < t.x + t.w && t.x < px + noBody.pr.w && py < t.y + t.h && t.y < py + noBody.pr.h) continue;
+      }
       const c = moveCost(g, cx * WALK, cy * WALK, list);
       const keep = cm === m ? 2 : ((cm & m) ? 1 : 0);
       if (c < bestC - 1e-6 || (c < bestC + 1e-6 && c < base && keep > bestKeep)) {
@@ -1076,10 +1114,13 @@ export async function installRuntime() {
      * here; the two swing yields keep plain `fence`, because turning a swing
      * to face somewhere safer is just a whiff. `retreat` marks the masks whose
      * PURPOSE is to be away from the target — the post-swing backoff, the
-     * shelled stand-off, the invuln spend-down.
+     * shelled stand-off, the invuln spend-down. `noContact` is unconditional —
+     * see its own comment on `evade` — because an approach swapped to dodge a
+     * summoned minion needs the same "don't land on the boss" guarantee a
+     * retreat already has.
      */
     const safe = (m, retreat) => evade(g, fence(m), {
-      fence, except: target, avoid: retreat ? target : null,
+      fence, except: target, avoid: retreat ? target : null, noContact: target,
     });
     const budget = maxF || 16000;
     for (let f = 0; f < budget;) {
