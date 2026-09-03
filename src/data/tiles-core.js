@@ -1649,9 +1649,12 @@ export function installCoreTiles() {
   // on `bankEdgeS`/`bankCornerSE`. Two palettes, not one, because the straight
   // edges and the outer corners kept different four-colour sets off the
   // source (the corner's window has more rim, less earth) and a tiledef binds
-  // exactly one palette.
+  // exactly one palette. Both keep the rim's cream sparkle over one of its
+  // two blues — `GROUND_KEEP` in the ripper — because a side-by-side with the
+  // source crop showed it as the rim's most distinctive feature, lost by the
+  // automatic top-4-by-count choice on a tie-break.
   registerPalettes({
-    bank: ['#20b0f8', '#805000', '#0050b0', '#000000'],
+    bank: ['#f8f8c0', '#805000', '#0050b0', '#000000'],
     bankCorner: ['#f8f8c0', '#20b0f8', '#0050b0', '#000000'],
   });
   tileSheet.add(ART, 'stone');

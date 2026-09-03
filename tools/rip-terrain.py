@@ -190,12 +190,33 @@ PICKS = [
 
 # Explicit dropped-colour overrides for specific PICKS, keyed by name — see
 # `quantise`'s own note. `bankEdgeS` has 6 source colours (rim: black, two
-# blues; earth: brown body, gold highlight) and only 4 slots: automatic
-# nearest-LUMINANCE remap put the gold highlight (#c88808, lum 140.5) onto
-# the rim's light blue (#20b0f8, lum 141.2) instead of the earth body it
-# actually belongs to, welding a blue fleck into the middle of every course.
+# blues, a cream sparkle; earth: brown body, gold highlight) and only 4
+# slots.
+#
+# GROUND_KEEP forces which 4 survive. Ranked by raw pixel count the
+# automatic choice is brown+black (clear) plus two of {dark blue, light
+# blue, cream} tied at 32px each — and the ascending-tuple tie-break keeps
+# the two blues over the cream. Side by side with the source crop
+# (`oracle-ages-overworld.png @ 50,1200`) the cream sparkle is the single
+# most visually distinctive part of the rim, brighter than either blue, and
+# losing it is the one thing that actually reads as different from the
+# reference. Keeping it forces dropping the LIGHT blue instead — the dark
+# blue and black together already carry the "this is a rim, not open
+# ground" read, so the light blue is the more affordable loss of the three.
+#
+# GROUND_MERGE then aims the two colours GROUND_KEEP drops: the gold
+# highlight (#c88808, lum 140.5) sits almost exactly on the rim's light
+# blue by nearest-LUMINANCE (140.5 vs 141.2) and the automatic guess welded
+# a blue fleck into the middle of the earth course — send it to the earth
+# body instead. The light blue itself, now dropped, goes to dark blue
+# rather than to brown (nearer by raw luminance, 55.9 vs 74.2, but a blue
+# rim pixel turning earth-brown is a worse-looking guess than it staying a
+# duller blue).
+GROUND_KEEP = {
+    'bankEdgeS': [(248, 248, 192), (128, 80, 0), (0, 80, 176), (0, 0, 0)],
+}
 GROUND_MERGE = {
-    'bankEdgeS': {(200, 136, 8): (128, 80, 0)},
+    'bankEdgeS': {(200, 136, 8): (128, 80, 0), (32, 176, 248): (0, 80, 176)},
 }
 
 # THE OTHER SIX ORIENTATIONS OF THE BANK, rotated or mirrored rather than
@@ -504,7 +525,7 @@ def lum(c):
     return 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]
 
 
-def quantise(block, merge=None):
+def quantise(block, merge=None, keep=None):
     """16x16 RGB -> (grid of 0-3, four source colours lightest first).
 
     Deliberately not `ripkit.quantise`: that pads a short palette by repeating
@@ -522,11 +543,22 @@ def quantise(block, merge=None):
     see the note above it: "stated ... rather than merged by nearest
     luminance, so the choice is a decision somebody made and not an
     arithmetic accident."
+
+    `keep` overrides which 4 colours survive, when the automatic top-4-by-
+    frequency choice throws out something a side-by-side with the source
+    shows is load-bearing. `bankEdgeS` ranked BY COUNT keeps two near-
+    identical blues (32px each) over the rim's bright cream sparkle (also
+    32px, lost on the tuple tie-break) — technically correct, but the sparkle
+    is the most visually distinctive part of the rim in the source crop, and
+    dropping it is the difference a side-by-side comparison actually catches.
     """
     cnt = Counter(p for row in block for p in row)
-    # Ties broken on the RGB tuple so the choice does not depend on dict order.
-    ranked = sorted(cnt.items(), key=lambda kv: (-kv[1], kv[0]))
-    keep = sorted((c for c, _ in ranked[:4]), key=lambda c: (-lum(c), c))
+    if keep:
+        keep = sorted(keep, key=lambda c: (-lum(c), c))
+    else:
+        # Ties broken on the RGB tuple so the choice does not depend on dict order.
+        ranked = sorted(cnt.items(), key=lambda kv: (-kv[1], kv[0]))
+        keep = sorted((c for c, _ in ranked[:4]), key=lambda c: (-lum(c), c))
     remap = {c: min(keep, key=lambda k: ((lum(k) - lum(c)) ** 2, k)) for c in cnt}
     if merge:
         for c, target in merge.items():
@@ -1064,7 +1096,7 @@ def main():
             im = sheets[path] = Image.open(path).convert('RGB')
         block = [[im.getpixel((x + cx, y + cy)) for cx in range(16)] for cy in range(16)]
         before = len({p for row in block for p in row})
-        grid, keep = quantise(block, merge=GROUND_MERGE.get(name))
+        grid, keep = quantise(block, merge=GROUND_MERGE.get(name), keep=GROUND_KEEP.get(name))
         if before > 4:
             dropped.append((name, before))
         arts.append((name, note, os.path.basename(path), x, y, grid))
