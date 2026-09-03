@@ -801,6 +801,17 @@ export async function installRuntime() {
    *                on the boss the instant invuln lapsed. `noContact` closes
    *                exactly that gap without reopening the broader one `avoid`
    *                already proved too costly.
+   *   `noContactVel`  the target's own estimated one-frame movement,
+   *                `{vx,vy}`, applied to its box before the `noContact` test.
+   *                A STATIC box undersells a closing boss: the same D3 seed,
+   *                first shipped with `noContact` alone, still took three
+   *                `gloomtide` hits — now at dist 20-21 instead of 8-9, pushed
+   *                out but not gone, because the veto kept clearing candidates
+   *                against a box the boss had already left by the time the
+   *                frame played. `dBoss` passes the delta from the boss's
+   *                position one iteration ago; omit it (or pass nothing) and
+   *                the target's box is tested where `hazards()` — which this
+   *                caller does not appear in — last left it.
    */
   function evade(g, m, o) {
     if (!evading()) return m;
@@ -823,11 +834,17 @@ export async function installRuntime() {
       }
     }
     // `noContact`: the projected box for each candidate, tested against the
-    // same AABB overlap `Entity.overlaps` uses. Computed once outside the
-    // loop since neither rect moves within it.
+    // same AABB overlap `Entity.overlaps` uses. `noContactVel` — the target's
+    // own estimated one-frame movement, `{vx:0,vy:0}` if the caller has no
+    // estimate — shifts the target's box the same distance so a closing boss
+    // is compared against where it is ABOUT TO BE, not where `hazards()`
+    // already left it a frame behind. Both computed once outside the loop
+    // since neither rect moves within it.
     let noBody = null;
     if (opts.noContact && !opts.noContact.dead && g.player) {
-      noBody = { pr: g.player.rect(), tr: opts.noContact.rect() };
+      const vel = opts.noContactVel || { vx: 0, vy: 0 };
+      const tr = opts.noContact.rect();
+      noBody = { pr: g.player.rect(), tr: { x: tr.x + vel.vx, y: tr.y + vel.vy, w: tr.w, h: tr.h } };
     }
     // Prefer the candidate that keeps most of what was asked for, so the swap
     // is the smallest one that works.
@@ -1119,13 +1136,29 @@ export async function installRuntime() {
      * summoned minion needs the same "don't land on the boss" guarantee a
      * retreat already has.
      */
+    // The boss's own velocity, estimated from where it was one iteration ago.
+    // A static `noContact` box (the boss's CURRENT rect, per the comment on
+    // `evade`) stopped a swap from landing where the boss already is, but
+    // Gloomtide keeps closing every frame it is not stunned — measured on the
+    // same D3 seed 20260806: three `gloomtide`-source hits still landed after
+    // the static box shipped, now at dist 20-21 instead of 8-9 (further out,
+    // not gone), because the veto cleared the candidate against a box the
+    // boss had already left by the time the frame played. One iteration's
+    // lag is the same approximation `dGoto`'s replanning already leans on
+    // elsewhere in this file — good enough when a boss's heading holds for
+    // more than one frame, which every phase here does outside a direction
+    // change.
+    let prevBX = null, prevBY = null, bvel = { vx: 0, vy: 0 };
     const safe = (m, retreat) => evade(g, fence(m), {
-      fence, except: target, avoid: retreat ? target : null, noContact: target,
+      fence, except: target, avoid: retreat ? target : null,
+      noContact: target, noContactVel: bvel,
     });
     const budget = maxF || 16000;
     for (let f = 0; f < budget;) {
       const b = target = find();
       if (!b || b.dead) return;
+      bvel = { vx: prevBX == null ? 0 : b.cx - prevBX, vy: prevBY == null ? 0 : b.cy - prevBY };
+      prevBX = b.cx; prevBY = b.cy;
       const p = g.player;
       if (!p) return;
       const dm = dialogueMask(g, f);
