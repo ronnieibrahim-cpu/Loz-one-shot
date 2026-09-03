@@ -205,7 +205,7 @@ corner), `check-playthrough` 21/21. `npm run build` + `check-build` OK.
   abyss screens were checked for THIS fault and for connectivity, not read as
   compositions.
 - Everything S24 left open still stands: the `rip-terrain.py` hue-blind
-  quantiser (four bank corners, measured), the 50 replay baselines that predate
+  quantiser (four bank corners, measured), the replay baselines that predate
   `beaten`/`heartPieces`, and three unused dungeon sheets.
 
 ---
@@ -309,9 +309,11 @@ agree on key order, so raw `JSON.stringify` would have swapped one false alarm
 for another. Proved by editing the baseline to claim d4 was beaten: it fails
 and says so.
 
-**A live coverage gap this leaves:** the other 50 baselines predate `beaten`
+**A live coverage gap this leaves:** the other baselines predate `beaten`
 and `heartPieces` and therefore still do not check them — `diffState` only
-walks the keys the baseline HAS. Re-recording them all would close that, and
+walks the keys the baseline HAS. (S26 correction: there are ELEVEN baseline
+FILES in tools/replays/, not fifty — the 51 in `replay.mjs`'s output is the
+count of ASSERTIONS across them. Three now carry the fields.) Re-recording them all would close that, and
 would also be exactly the kind of wholesale re-record that hides a regression,
 so it wants doing deliberately on a tree already known good, one at a time,
 reading each diff.
