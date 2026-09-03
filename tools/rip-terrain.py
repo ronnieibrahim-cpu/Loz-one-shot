@@ -84,6 +84,19 @@ PICKS = [
     ('sandWet',     OW, 1933,   81, 'damp sand, denser grain'),
     ('sandRipple',  OW,  484,    1, 'wind-rippled dune'),
     ('mud',         OW, 2206,  154, 'churned bog'),
+
+    # SHALLOW WATER, AND IT WAS A LADDER. `waterS0/1/2` were hand-drawn: a flat
+    # field with a row of dashes on rows 2, 6, 10 and 14 — a perfectly regular
+    # four-row pitch. Tiled across a lake that is not a ripple, it is RUNGS, and
+    # a screen of it reads as a ladder lying on the ground. It is the same fault
+    # the `grass` note above describes and the same fix: the source's own water
+    # is a fine, dense, IRREGULAR speckle with no mark big enough for the eye to
+    # line up on, so tiled it has no structure at all.
+    #
+    # From Ages rather than Seasons because Seasons' overworld water on these
+    # sheets is drawn in horizontal wave BANDS — which is the very thing being
+    # removed here, and would have swapped one grid for another.
+    ('waterS0',     AG, 1376,  168, 'shallow water, fine irregular sparkle'),
     # THE GROUND YOU STAND ON IN A ROCKY PLACE, and the reason Link looked
     # like he was walking over a boulder field for the life of the project.
     #
@@ -231,6 +244,9 @@ GROUND_MERGE = {
 #
 # (new name, source PICK name, op)
 ROT_CW, ROT_CCW, ROT_180, FLIP_H, FLIP_V = 'cw', 'ccw', '180', 'h', 'v'
+# A cyclic SHIFT, for animation phases. ('shift', dx, dy).
+def SHIFT(dx, dy):
+    return ('shift', dx, dy)
 TRANSFORMS = [
     ('bankEdgeN',    'bankEdgeS',    ROT_180),  # water above, land below
     ('bankEdgeE',    'bankEdgeS',    ROT_CCW),  # water to the right, land left
@@ -238,6 +254,20 @@ TRANSFORMS = [
     ('bankCornerSW', 'bankCornerSE', FLIP_H),   # water down and left
     ('bankCornerNE', 'bankCornerSE', FLIP_V),   # water up and right
     ('bankCornerNW', 'bankCornerSE', ROT_180),  # water up and left
+    # THE OTHER TWO WATER FRAMES ARE DERIVED, AND THAT IS STATED RATHER THAN
+    # IMPLIED. The sheets are stitched MAPS, so every lake on them is captured
+    # in one animation phase — 1376,168 and 1680,200 look like two frames and
+    # are provably the same tile at two crop offsets (one is a cyclic shift of
+    # the other). There is no second phase to extract.
+    #
+    # So the frames are the extracted tile shifted a pixel or two. That is
+    # legitimate for THIS tile and would not be for most: the pick was chosen
+    # precisely because it has no feature large enough to track, so a small
+    # shift reads as the sparkle shimmering rather than as the lake sliding.
+    # The cycle is 0,1,2,1 (see tiles-core.js), so this rocks back and forth
+    # along a diagonal rather than scrolling in one direction.
+    ('waterS1', 'waterS0', SHIFT(1, 1)),
+    ('waterS2', 'waterS0', SHIFT(2, 2)),
 ]
 
 
@@ -253,6 +283,9 @@ def transform_grid(grid, op):
         return [''.join(grid[n - 1 - c][r] for c in range(n)) for r in range(n)]
     if op == ROT_CCW:
         return [''.join(grid[c][n - 1 - r] for c in range(n)) for r in range(n)]
+    if isinstance(op, tuple) and op[0] == 'shift':
+        _, dx, dy = op
+        return [''.join(grid[(r - dy) % n][(c - dx) % n] for c in range(n)) for r in range(n)]
     raise SystemExit('rip-terrain: unknown transform op %r' % op)
 
 # Props are a different shape of problem from ground, and need their own pass.
@@ -1105,10 +1138,15 @@ def main():
     by_name = {a[0]: a for a in arts}
     VERB = {ROT_CW: 'rotated 90° clockwise', ROT_CCW: 'rotated 90° counter-clockwise',
             ROT_180: 'rotated 180°', FLIP_H: 'mirrored left-right', FLIP_V: 'mirrored top-to-bottom'}
+
+    def verb(op):
+        if isinstance(op, tuple) and op[0] == 'shift':
+            return 'shifted %d,%d for the next animation frame' % (op[1], op[2])
+        return VERB[op]
     for newname, srcname, op in TRANSFORMS:
         _, note, sheet, x, y, grid = by_name[srcname]
         turned = transform_grid(grid, op)
-        arts.append((newname, '%s, %s from %s' % (note, VERB[op], srcname), sheet, x, y, turned))
+        arts.append((newname, '%s, %s from %s' % (note, verb(op), srcname), sheet, x, y, turned))
         pals.append((newname, dict(pals)[srcname]))
         by_name[newname] = arts[-1]
 

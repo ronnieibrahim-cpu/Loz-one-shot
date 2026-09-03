@@ -3,7 +3,35 @@
 Work that is identified, scoped and not done. Each entry says what blocks it.
 
 
-## THE SHORE IS BANKED NOW (S21) — the land/water half of the entry below is DONE
+## THE SHORE IS NOT BANKED (S26 turned S21's bank OFF) — READ THIS FIRST
+
+**`bankEdgeS` was a brick retaining wall and the bank is disabled.** The pick at
+Ages 545,1226 is the masonry wall of an ornamental walled pool — brown courses,
+dark mortar, white stone coping — and rotated onto every shoreline in the game
+it drew as a wooden ladder laid on the ground, 8,536 cells across all 120
+screens. `family`/`edgeAgainst`/`edgeArt` are removed from `grass`, `sand` and
+`sandRipple`; bank cells drawn went 8,536 -> 0.
+
+**The machinery is fine and is still in use.** `tileEdgeArt`, the tiledefs, the
+palettes and the `TRANSFORMS` rotations are all correct and `cliffTop` still
+draws its lip through them (3,111 cells, untouched). Re-enabling the shore is
+adding three properties back to three tiles — AFTER a genuine natural shore has
+been found and screenshotted at `overworld,5,8`.
+
+**What to look for, and the trap.** Ornamental pools, moats and canals are
+where the source's artists drew a deliberate edge, so a stitched map shows you
+walls when you go hunting for banks — S21 rejected the 1400,1900 crop for being
+walled masonry and then picked another walled pool 1,300 pixels away. A natural
+lake in Ages/Seasons generally has NO bank tile at all: the grass simply meets
+the water. It is entirely possible the right answer is that this feature should
+not exist for land/water, and that the straight-edge entry below is only about
+land/land.
+
+So the entry below is live again for the land/water join as well as land/land.
+
+---
+
+## THE SHORE WAS BANKED (S21) — superseded by the entry above
 
 `node tools/rip-terrain.py`'s PICKS gained `bankEdgeS`/`bankCornerSE` (the
 other 6 orientations are rotations/mirrors of those two — see `TRANSFORMS`),

@@ -447,6 +447,45 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **AN ORACLE SHEET'S WATER EDGES ARE MOSTLY BUILT WALLS, NOT SHORES.**
+  Ornamental pools, moats and canals are where the artists drew a deliberate
+  edge, so that is what a stitched map shows you when you go looking for a
+  "bank". A natural lake in these games generally has NO bank tile — the grass
+  meets the water. S21 rejected one crop for being "walled masonry" and then
+  picked a second walled pool 1,300 pixels away; `bankEdgeS` was the brown
+  brick RETAINING WALL of a garden pond, rotated onto every shoreline in the
+  game, 8,536 cells across all 120 screens, reading as a wooden ladder laid on
+  the ground. Before extracting a transition tile, look at the WHOLE region it
+  comes from at 5x and ask what the structure is; a 16x16 crop of a brick
+  course and a 16x16 crop of a sandbank are equally plausible in isolation.
+
+- **A REGULAR PITCH IS A LADDER, whatever the tile is meant to be.** Hand-drawn
+  `waterS` put its dashes on rows 2, 6, 10 and 14 — a perfect four-row pitch —
+  and tiled across a lake that reads as rungs, not ripples. This is the THIRD
+  time this exact fault has been paid for in this repo (`grass`'s fixed
+  constellation of speckles, the cobble that read as boulders, now water), and
+  the cure is always the same: extract the source's own texture, which is a
+  fine dense IRREGULAR speckle with no mark big enough for the eye to line up
+  on. If you can describe a terrain tile's pattern in one short sentence, it
+  will read as a grid at room scale.
+
+- **An animation frame can be honestly DERIVED, but say so and check the tile
+  can take it.** The sheets are stitched maps, so every lake is captured in one
+  animation phase — two water tiles that look like two frames turned out to be
+  the same tile at two crop offsets (one a cyclic shift of the other). The
+  other frames are the extracted tile shifted 1-2px, which reads as shimmer
+  ONLY because the pick has no feature large enough to track; do the same to a
+  tile with structure and the lake visibly slides. The ripper names it
+  "shifted N,N for the next animation frame" in the generated file.
+
+- **Removing a feature can be the fix.** The bank machinery was fine and
+  `cliffTop` still uses it; the ART was wrong and there is no correct
+  replacement to hand. Turning it off restored the plain grass-meets-water
+  boundary the source actually has in most places, and reopened
+  `docs/ART-BACKLOG.md`'s straight-edge entry honestly. Leave the machinery and
+  the tiledefs in place when you do this, so re-enabling is three properties
+  rather than a re-implementation.
+
 - **`#` IS A CLIFF FACE, AND ONE CELL OF IT ALONE IS A MASONRY BLOCK.** The
   batch fix that freed every doorway from its corner tree's canopy put a single
   `cliffDk` where the tree had been, on 97 of 120 screens and 160 rows — the

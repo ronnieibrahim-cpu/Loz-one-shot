@@ -1,4 +1,107 @@
-## S25 — somebody finally LOOKED at the screens (this session)
+## S26 — the water was a ladder and so was every shoreline (this session)
+
+THE JOB, in the user's words: "random interspersed water tiles of varying
+height that don't make sense" and "ladder tiles used as ground terrain which
+looks ugly." Both were real. Neither was what it first looked like.
+
+### 1. `waterS` was drawn as a ladder, by hand
+
+`waterS0/1/2` in tiles-core.js were hand-drawn: a flat field with a row of
+dashes on rows 2, 6, 10 and 14. That is a PERFECTLY REGULAR four-row pitch, so
+tiled across a lake it is not a ripple, it is RUNGS. It is the identical fault
+`rip-terrain.py`'s own `grass` note describes ("about fourteen dark speckles in
+a fixed constellation... the eye locks onto sparse marks that recur on a
+16-pixel pitch") and the identical fix: extract the source's own water, which
+is a fine, dense, IRREGULAR sparkle with no mark big enough to line up on.
+
+`('waterS0', AG, 1376, 168)` — Ages, not Seasons, because Seasons' overworld
+water on these sheets is drawn in horizontal wave BANDS, which is the very
+thing being removed.
+
+**The other two frames are DERIVED and the ripper says so.** The sheets are
+stitched maps, so every lake is captured in ONE animation phase — 1376,168 and
+1680,200 look like two frames and are provably the same tile at two crop
+offsets (one is a cyclic shift of the other). So `waterS1`/`waterS2` are the
+extracted tile shifted 1,1 and 2,2 via a new `SHIFT` op in `TRANSFORMS`. That
+is legitimate for THIS tile and would not be for most: the pick has no feature
+large enough to track, so a small shift reads as shimmer rather than as the
+lake sliding. `TERRAIN_ART` spreads over `HAND_ART` in tiles-core.js, so the
+extraction overrides the hand-drawn frames with no rewiring.
+
+### 2. THE SHORELINE WAS A BRICK WALL — 8,536 cells, all 120 screens
+
+This is the "ladder tiles used as ground terrain", and the phrase is exact: the
+bank tiles ARE ground (plain walkable, they replace grass at the edge cell) and
+they ARE drawn as a ladder.
+
+`bankEdgeS` was extracted from Ages 545,1226, which S21 believed was "a garden
+pool's shore". **It is not. It is the brick RETAINING WALL of an ornamental
+walled pool** — brown courses with dark mortar lines and a white stone coping
+above the water. Rotated into `bankEdgeE`/`bankEdgeW` those courses stand on
+end, and every shoreline in the game drew as a wooden ladder laid on the ground.
+
+The irony is on the record: S21 rejected the 1400,1900 crop for being exactly
+this ("Ambi's moat, a lock-puzzle canal... its bank is walled masonry") and then
+picked a second walled pool 1,300 pixels away. **A built wall is what an Oracle
+sheet mostly SHOWS at a water's edge**, because ornamental pools are where the
+artists drew a deliberate edge; a natural lake in these games generally has no
+bank tile at all — the grass simply meets the water.
+
+So the bank is OFF: `family`/`edgeAgainst`/`edgeArt` are removed from `grass`,
+`sand` and `sandRipple`. Bank cells drawn went 8,536 -> 0. **The machinery and
+the tiledefs are LEFT IN PLACE and are correct** — `cliffTop` still uses them,
+and its 3,111 cells of cliff lip are untouched and still right. Restoring the
+bank is adding three properties back, once a genuine natural shore has been
+found AND screenshotted. `docs/ART-BACKLOG.md`'s straight-edge entry is open
+again, and that is the honest state: the cure was worse than the disease.
+
+### 3. The "random interspersed water" is mostly real design, and one cell was not
+
+Asked of the engine (wet at any tide, no wet 4-neighbour, seams crossed):
+**8 stray water cells**, of which 6 are the deliberate paired `abyssHole`s in
+Drowned Shore and Sunless Flat. Of the remaining two plus one fixed:
+
+- **Kell Spur `0,3,5` 1,4 was `5` (channel) — FIXED to rockFloor.** `channel`
+  is water at EVERY tide, so this was a permanent hole in the middle of a dry
+  stone shelf with nothing feeding it. Unambiguously wrong.
+- Wood Edge `0,4,3` 2,2 (`0`, tideGrass) and Coral Foot `0,11,5` 2,4 (`6`,
+  reefFlat) are LEFT. Both are dry at most tides and read as meadow and reef
+  rather than as water, and Coral Foot's has a mirrored partner at 7,4 that is
+  not stray — breaking the pair would be imposing taste on a motif.
+
+**The wider pattern is level design, not a bug, and was deliberately not
+touched.** Rows like South Wood's `Tg1000011g` mix `1` (sandbar) and `0`
+(tideGrass), which flood at different levels, so at mid tide the row reads
+water/grass/grass/grass/grass/water. That IS "water of varying height
+interspersed" — but the tide is this game's whole subject, and redesigning
+tidal terrain is a design decision for a person, not a cleanup. Flagged here
+rather than acted on. Most of the ugliness people were reading off those rows
+was the ladder texture, which is gone.
+
+### Verified
+
+Everything in CLAUDE.md's table plus `check-tilesets` and `check-strands`,
+green. `test.mjs` 83/83, `check-playthrough` 21/21, `replay.mjs` 51/51 — two
+baselines (`d1-sluicegate`, `tide-steps-split`, both water rooms) needed
+re-recording, and were confirmed ART-ONLY first: same frame count, same room
+changes, EVERY CHECKPOINT matching, only `probePix` moved. Both picked up
+`beaten`/`heartPieces`, closing part of the S24 coverage gap. All three rippers
+re-emit byte-identically. `npm run build` + `check-build` OK.
+
+### What is NOT done
+
+- **A real natural shore has not been found.** That is the whole of the bank
+  work now. Look for grass or sand meeting water with NO built edge, on the
+  Seasons/Ages overworld sheets, and screenshot it in `overworld,5,8` before
+  believing it.
+- `waterD` was left alone — it is a sparse irregular dot field and does not
+  have the ladder fault. It is still hand-drawn, so it is a candidate for the
+  same treatment if someone wants the pair to match.
+- Everything S24/S25 left open still stands.
+
+---
+
+## S25 — somebody finally LOOKED at the screens
 
 THE JOB: show the changes on screen and keep iterating. Looking at them turned
 out to be the work, which is what S23 and S24 both said it would be.

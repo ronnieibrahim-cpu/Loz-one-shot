@@ -1240,7 +1240,7 @@ const rooms = {
       '#gGGGGGGg#',
       '5g.oo.o.g#',
       'gg......g#',
-      'g5.oo.o.g#',
+      'gg.oo.o.g#',
       'ggTTTTTTg#',
       '#gggggggg#',
       '##########',

@@ -1701,9 +1701,32 @@ export function installCoreTiles() {
     bankCornerSW: { art: ART.bankCornerSW, pal: 'bankCorner' },
     bankCornerSE: { art: ART.bankCornerSE, pal: 'bankCorner' },
 
+    // THE SHORE BANK IS OFF, AND THE ART IS THE REASON — read this before
+    // turning it back on. `bankEdgeS` was extracted from Ages at 545,1226,
+    // which S21 believed was "a garden pool's shore". It is not. It is the
+    // BRICK RETAINING WALL of an ornamental walled pool: brown courses with
+    // dark mortar lines and a white stone coping above the water. Rotated into
+    // `bankEdgeE`/`bankEdgeW` those courses stand on end, and every shoreline
+    // in the game — 8,536 cells across all 120 screens — drew as a wooden
+    // ladder laid on the ground.
+    //
+    // The irony is that S21 rejected the 1400,1900 crop for being exactly this
+    // (its note says "Ambi's moat, a lock-puzzle canal... its bank is walled
+    // masonry") and then picked a second walled pool 1,300 pixels away. A
+    // built wall is what an Oracle sheet mostly SHOWS at a water's edge,
+    // because ornamental pools are where the artists drew a deliberate edge;
+    // a natural lake in these games generally has no bank tile at all — the
+    // grass simply meets the water.
+    //
+    // So the hard boundary is back, which is the look the source actually has
+    // in most places, and `docs/ART-BACKLOG.md`'s straight-edge entry is open
+    // again. The tiledefs and the `tileEdgeArt` machinery are LEFT IN PLACE
+    // and are correct — `cliffTop` still uses them — so rewiring this is
+    // adding `family`/`edgeAgainst` back to these three tiles once a genuine
+    // natural shore has been found and screenshotted. Do not restore it
+    // without doing that; the machinery was never the problem.
     grass: {
       art: ART.grass, pal: 'grass', variants: ['grassClump', 'grassTuft'], variantOdds: 7,
-      family: 'grass', edgeAgainst: 'water', edgeArt: BANK_EDGE_ART,
     },
     grassTuft: { art: ART.grassTuft, pal: 'grass' },
     grassClump: { art: ART.grassClump, pal: 'grass' },
@@ -1714,13 +1737,9 @@ export function installCoreTiles() {
     flowers: { art: ART.flowers, pal: 'grass', underArt: 'grass' },
     flowersDark: { art: ART.flowers, pal: 'grassdk', underArt: 'grassDark' },
     tallgrass: { art: ART.tallgrass, pal: 'grassdk', flags: F.TALLGRASS },
-    sand: {
-      art: ART.sand, pal: 'sand', family: 'sand', edgeAgainst: 'water', edgeArt: BANK_EDGE_ART,
-    },
+    sand: { art: ART.sand, pal: 'sand' },
     sandWet: { art: ART.sandWet, pal: 'sandwet' },
-    sandRipple: {
-      art: ART.sandRipple, pal: 'sand', family: 'sand', edgeAgainst: 'water', edgeArt: BANK_EDGE_ART,
-    },
+    sandRipple: { art: ART.sandRipple, pal: 'sand' },
     sandDeep: { art: ART.sand, pal: 'sandwet', flags: F.SLOW },
     mud: { art: ART.mud, pal: 'bog', flags: F.SLOW },
     rockFloor: { art: ART.rockFloor, pal: 'stone' },

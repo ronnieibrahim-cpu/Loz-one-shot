@@ -164,6 +164,25 @@ export const TERRAIN_ART = {
     1222222222212221
     1121211111201212`,
 
+  // shallow water, fine irregular sparkle — oracle-ages-overworld.png @ 1376,168
+  waterS0: `
+    1111101011111010
+    1010112110101121
+    0111011101110111
+    1021110110211101
+    1110111111101111
+    0011110100111101
+    2111011121110111
+    1101111111011111
+    1111101011111010
+    1010112110101121
+    0111011101110111
+    1021110110211101
+    1110111111101111
+    0011110100111101
+    2111011121110111
+    1101111111011111`,
+
   // Subrosian rock floor, sparse speckle — oracle-seasons-tileset-subrosia.png @ 8,440
   rockFloor: `
     1110111011101110
@@ -449,6 +468,44 @@ export const TERRAIN_ART = {
     2222222222222223
     3333333333333333`,
 
+  // shallow water, fine irregular sparkle, shifted 1,1 for the next animation frame from waterS0 — oracle-ages-overworld.png @ 1376,168
+  waterS1: `
+    1110111111101111
+    0111110101111101
+    1101011211010112
+    1011101110111011
+    1102111011021110
+    1111011111110111
+    1001111010011110
+    1211101112111011
+    1110111111101111
+    0111110101111101
+    1101011211010112
+    1011101110111011
+    1102111011021110
+    1111011111110111
+    1001111010011110
+    1211101112111011`,
+
+  // shallow water, fine irregular sparkle, shifted 2,2 for the next animation frame from waterS0 — oracle-ages-overworld.png @ 1376,168
+  waterS2: `
+    1121110111211101
+    1111011111110111
+    1011111010111110
+    2110101121101011
+    1101110111011101
+    0110211101102111
+    1111101111111011
+    0100111101001111
+    1121110111211101
+    1111011111110111
+    1011111010111110
+    2110101121101011
+    1101110111011101
+    0110211101102111
+    1111101111111011
+    0100111101001111`,
+
   // oak: round canopy over visible roots, standing on grass — custom-oracle-style-overworld.png @ 2222,1597
   treeOakTL: `
     .......033333333
@@ -670,6 +727,7 @@ export const TERRAIN_SRC_PALETTES = {
   sandWet: ['#fce8b1', '#e3a14d', '#8c5527'],
   sandRipple: ['#fce8b1', '#e3a14d'],
   mud: ['#e3a14d', '#8c5527', '#000000'],
+  waterS0: ['#e0d8f0', '#8080f8', '#1010b8'],
   rockFloor: ['#f8f0f8', '#b07880', '#604850'],
   cliffTop: ['#e80818', '#702800', '#680828', '#000000'],
   cliff: ['#c87818', '#702800', '#000000'],
@@ -685,6 +743,8 @@ export const TERRAIN_SRC_PALETTES = {
   bankCornerSW: ['#f8f8c0', '#20b0f8', '#0050b0', '#000000'],
   bankCornerNE: ['#f8f8c0', '#20b0f8', '#0050b0', '#000000'],
   bankCornerNW: ['#f8f8c0', '#20b0f8', '#0050b0', '#000000'],
+  waterS1: ['#e0d8f0', '#8080f8', '#1010b8'],
+  waterS2: ['#e0d8f0', '#8080f8', '#1010b8'],
   treeOakT: ['#93a846', '#546d25', '#000000'],
   treeOakB: ['#dfd9b5', '#b49d73', '#93a846', '#7a5d35', '#546d25', '#000000'],
   palmT: ['#a7c947', '#5a9731', '#000000'],
