@@ -63,7 +63,7 @@ banked on all 4 sides plus two corners, at all three tides. `overworld,6,7`
 (Sunken Reef) shows grass-bank and sand-bank together, and shows the reef
 water NOT banked (deliberate, see above).
 
-### Phase 2 — a verified slice: 3 of ~15 wood-region screens, technique documented for the rest
+### Phase 2 — a verified slice: 15 of ~27 wood/marsh screens, and a survey of the rest of the map
 
 `tools/oneshot/find-ground-specks.mjs` is NOT the tool for this job — it
 finds 1-2 tile flecks touching a void/prop/pit (a room's own geometry, not a
@@ -72,29 +72,46 @@ misplaced patch), and triaging its 84 hits found effectively zero genuine
 mud drawn as a hard-edged block) has to be found by eye, room by room, the
 way ART-BACKLOG's own crop comparison does it.
 
-**Done, verified, screenshotted**: `0,5,3` (Rotting Grove — the room
-CLAUDE.md's prompt names), `0,6,6` (Wood Foot), `0,4,6` (South Wood). All
-three are the same shape: a mud clearing framed by trees, rows 1/5 narrow
-(the tree-lined "neck"), rows 2-4 wide. The fix staggers the mud/grass
-boundary by ONE cell on alternating rows (row 2's leftmost or rightmost mud
-cell → grass, row 4's the opposite side → grass), which turns a perfect
-rectangle into a shape with at least two notches, without touching the tide
-digit strip in the middle row, the entities, or the framing trees. Rotting
-Grove also got a 1-cell tendril poking south from the clearing into the row
-below it (row 6, above the boss-key cliff row), echoing the northern neck.
+**Done, verified, screenshotted — 8 of the wood region's 15 screens:**
+`0,5,3` Rotting Grove (the room CLAUDE.md's prompt names), `0,6,6` Wood Foot,
+`0,4,6` South Wood, `0,4,5` Bog Trees, `0,4,4` Shrine Path, `0,6,5` Sunken
+Glade, `0,4,3` Wood Edge, `0,6,3` Wood Gate. **And 7 of the marsh region's
+12:** `0,0,6` Bog Head, `0,0,7` Mire, `0,1,7` Sanctum Path, `0,2,8` Sunken
+Reeds, `0,2,7` Bog Causeway, `0,1,6` Bog Stair, `0,2,6` Reedbank.
 
-**Not done — the same technique, applied by eye, to:**
-- The other 12 `legend: 'wood'` screens (`grep -n "legend: 'wood'"
-  src/data/overworld.js`) — several share this exact mud-clearing shape
-  (e.g. the ones at source lines ~843, ~1041, ~1255, ~1479 as of this
-  commit); several others are water-heavy (riptides, `=`/deep water, closed
-  circulation rooms) and should NOT be touched the same way — the tide-flood
-  and riptide connectivity in those is load-bearing and a bad edit there is
-  exactly the "solid tile strands a room, renders fine, validates clean" trap.
-- Every other region's grass/sand/mud/stone rectangles — `marsh` (grassDark/
-  mud), `cliffs` (stone/stonedk), `dunes` (sand/sandRipple), the reef and
-  salt-flat regions. None of these were surveyed this session beyond what the
-  screenshot judging list happened to show.
+The shape and the technique are the same across all 15: a mud clearing
+(wood) or grassDark/mud mix (marsh), usually framed by trees, with the
+mud/grass boundary staggered by ONE cell on one or two rows (a row's
+leftmost or rightmost mud cell → the surrounding material), turning a
+straight edge into a shape with at least one notch. Never touches: tide
+digits, mudflat (`!`), channel (`5`)/drownWall (`9`) tiles, ledges, rocks
+(`o`), signs, entities, dungeon-gate blocks, or the framing trees themselves
+— every edit is a single legend character, chosen to land on a cell that is
+plain `.`/`,` mud in the room's OWN legend, with the room's actual entity
+list checked first so nothing moved onto or off of a spawn point.
+
+**Left alone, and why — this is a real boundary, not just "not done yet":**
+- **7 wood screens**: the closed riptide ring (`'0,7,3' The Gyre` — explicit
+  comment in the source says its circulation is load-bearing), a channel
+  room, the D5 gate room (`portalD5`), a ledge-bounded room, and three rooms
+  whose ground is almost entirely deep water/tide digits with only 1-2 loose
+  mud cells left — not a rectangle to soften.
+- **5 marsh screens**: all sit on the ocean rim, where most of the room grid
+  is `*` (open sea) rather than land, so there is no clearing shape to work
+  with.
+- **Every other region — untouched, unsurveyed beyond a dump-and-read
+  pass this session**: `cliffs` (16 screens) and `dunes` (19) are the
+  Cliffs-of-Kell/dune-flats puzzle areas — boulders, cracked walls, drownWall
+  tide gates, liftable rocks in specific positions — and what LOOKS like a
+  ground rectangle there is usually a puzzle room's playing field, not a
+  meadow; reshaping it by eye is a materially different and riskier job than
+  the wood/marsh clearings. `reef` (16), `coral` (8), `salt` (12) and `abyss`
+  (8) mostly pair a ground material with its OWN palette variant (`sand`/
+  `sandRipple`, `rockFloor`/`rockFloorDk`) rather than two different
+  materials, which is a scatter-variant question (`tileVariant`, already
+  solved) more than a rectangle-boundary one. `coast` (10 explicit screens)
+  was dumped and read; none of the 10 has a static grass/sand/mud rectangle
+  — what sand there is comes from tide digits, already tide-reactive.
 - **Verify after EVERY room, not every batch of three** if the next session
   wants to move faster than this one did — `validate.mjs` catches a malformed
   grid instantly and is nearly free; the full battery

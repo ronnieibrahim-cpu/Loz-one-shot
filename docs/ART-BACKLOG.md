@@ -38,11 +38,17 @@ describes, and is NOT this job.
    below would be the place to find out for certain).
 4. **The regional SHAPE of the ground (CLAUDE.md's Phase 2)** — grass and mud
    drawn as organic interlocking blobs rather than axis-aligned rectangles —
-   is a room-DATA problem, not an art or engine one, and got a representative
-   slice this session (3 of the wood region's 15 screens: Rotting Grove,
-   Wood Foot, South Wood). The other 12 wood-region screens and every other
-   region's rectangular ground joins are untouched. See docs/NEXT-SESSION.md
-   for the worked technique and exactly which screens are left.
+   is a room-DATA problem, not an art or engine one. This session did 8 of
+   the wood region's 15 screens and 7 of the marsh region's 12 (the rest of
+   each region is riptide/channel/gate rooms or sits on the sea rim — see
+   docs/NEXT-SESSION.md for exactly which and why they were left). Every
+   other region — `cliffs`, `dunes`, `reef`, `coral`, `salt`, `abyss`,
+   `coast` — was surveyed by reading every room's grid and found NOT to have
+   the same shape of problem: those regions' ground pairs are mostly one
+   material and its own palette variant (already solved by `tileVariant`) or
+   puzzle-room floors bounded by boulders/gates rather than meadows. If a
+   future pass disagrees with that read, it should say which room and why
+   before touching it — this is an eyes-on judgement call, not a census.
 
 
 ## EVERY GROUND BOUNDARY IS A STRAIGHT PIXEL EDGE, and the shore is not blocked
