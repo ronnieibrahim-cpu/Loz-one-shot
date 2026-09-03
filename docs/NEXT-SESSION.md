@@ -1,3 +1,207 @@
+## S20 — the game has been played to the end of a dungeon (this session)
+
+`node tools/check-playthrough.mjs` drives a new game from the title screen with
+nothing granted, no warps and no flags set from outside, and it comes out of
+Tidewash Grotto **holding the Essence**. 24,630 frames, 197 directives, no
+death. Three Small Keys, the Boss Key, four Pieces of Heart, the Heart
+Container they make, both anchor gates in each wing, both pairs of gauges, and
+Gohmaraq killed in real combat.
+
+For the whole life of this harness the assertion at the top of
+`check-playthrough.mjs` has been a STOPPING POINT — first the Sluicegate,
+because the actor could not place the Anchor; then the Iron Pipe's far side,
+because it could not fight a boss. It is an Essence now, plus the kill and the
+Container.
+
+### The boss verb learned one thing and it is not a dodge
+
+Two sessions answered this fight's chip damage with a DODGE — a movement made
+*instead of* fighting, keyed off a boss's state — and both measured worse than
+doing nothing and were reverted. `evade` (tools/actor-runtime.mjs) is the other
+half of that idea: **it never adds a move**. It takes the mask the fight
+already chose and, only on a frame where that mask walks the player into
+something about to occupy the same pixels, swaps it for the nearest mask that
+does not. A dodge changes WHEN the player re-enters range and the shift
+cascades; this fires only on frames a hit was coming, so what comes out is the
+same fight minus those hits.
+
+Swept, because one seed is one sample and this repo has mistaken a seed's swing
+for a fix twice. `measure-boss-combat.mjs <d> --seed=N` is new for exactly
+that. Wins out of four seeds, in-order health, no god mode:
+
+|        | d1  | d2  | d3  | d4  | d5  | d6  |
+|--------|-----|-----|-----|-----|-----|-----|
+| old    | 0/4 | 1/4 | 2/4 | 4/4 | 3/4 | 0/4 |
+| this   | 4/4 | 0/4 | 1/4 | 4/4 | 1/4 | 0/4 |
+
+D1 is the one this session needed and the one the old verb could not win on ANY
+seed — 0 of 6 tried, never better than 24 hp down to 18. This wins it **12 of
+12** seeds. **D2, D3 and D5 are a real cost and are not dressed up**: all three
+were already coin-flips, and reshuffling a knife-edge reshuffles which side it
+lands on. `--no-evade` reproduces the old row exactly, so the trade stays
+measurable rather than becoming folklore.
+
+The horizon (`SHOT_HORIZON = 30`) was swept 24/30/36/40/45/50/55 over five
+seeds: 24, 30 and 36 win all five and 40 up start dropping them. **30 is the
+middle of a plateau, not a spike** — which is the whole difference between this
+and the two reverted attempts. Above ~60 something is always a threat, the
+actor never closes, and every seed deals exactly 18/24.
+
+Three things had to be true for it to hold, each found by losing a fight:
+
+* **The target is not in its own hazard list.** Counting the boss makes every
+  approach look unsafe and the actor circles it forever. What the boss gets
+  instead is a veto on RETREAT masks only: an escape may not be toward it.
+  Applying that veto to an approach pushed the actor away from every opening.
+* **Standing still is not an option for a walker.** `dGoto` passes `noStay`. A
+  stationary enemy in a doorway makes every direction cost something and makes
+  standing still cost least, so the actor stopped dead in front of it, `dGoto`
+  replanned onto the same path for two thousand frames, and the thing it was
+  standing next to ate eight quarter-hearts.
+* **Frames guarded by `p.invuln` are immune, so avoiding hazards in them is
+  pure disruption.** Those branches keep plain `fence`.
+
+### Three faults the long route found, none of them in the boss
+
+* **A goto was addressed to one room and did not know it.** `dFight` has had
+  that guard since P3; `dGoto` did not, which matters the moment a goto's
+  TARGET is a warp tile. Walking onto the return stair out of the Two Gauges
+  warped the player into the Tide Gallery and the same goto carried straight on
+  toward tile 7,6 of THAT room, through its tektite and its crab: sixteen
+  quarter-hearts to nothing in 596 frames, with the next directive still
+  patiently waiting to be a `wait`.
+* **A drain at LOW is an open pit, and a pit is not solid.** `canOccupy` said
+  yes and `dAnchor` — which walks to tiles chosen from geometry rather than
+  from a path — fell into two of them in the Iron Pipe, at two quarter-hearts
+  each. `standAt` in `src/game/entity.js` is the engine's own "somewhere to put
+  your feet" rule now: `canOccupy` plus the flags that hurt. `findSafeTile` was
+  the only thing that had it and it had it inline.
+* **The Bluff Grotto's Piece of Heart misses a tile-centred player by ONE
+  PIXEL.** It sits on row 2 with rows 0 and 1 solid wall, and it settles at
+  y=27 — box 31..41 against a player's 41..48 — so `dLoot`'s existing "try one
+  tile north" retry had nowhere to go. Leaning on the wall puts him at y=24 and
+  picks it up. Two of the four Pieces this route needs were uncollectable
+  without it.
+
+### The route is a player's route, and the comments say why at every turn
+
+* **The sea goes DOWN to cross the Drowned Chamber.** Walked at MID it cost six
+  quarter-hearts a crossing, twice, and killed the run on the way back; fought,
+  nine of twelve. At LOW the pool is a floor of holes, an aquatic enemy out of
+  water is asleep before it can flop, and the dry ring round the edge is
+  walkable at every level. Free both ways, and it lands the sea exactly where
+  the Long Race wants it.
+* **Bite 7,3, not 8,3, in the Long Race and the Long Sluice.** The wells (or
+  drains) are columns 5-8 and the held patch is a radius-2 square, so 7 covers
+  5..9 and 8 leaves column 5 on the wrong side. Same correction as the Iron
+  Pipe's 2,3, from the same cause: `check-anchor.mjs` is right about REACH and
+  silent about the crossing.
+* **The Sluicegate's floor is DEEP at HIGH and its south doorway opens into
+  it.** Walk up out of the Locked Stair at HIGH and you are in water over your
+  head with the room you want on the far side. Two soundings first.
+* **The stair out of the Two Gauges lands the player ON TOP of the Tide
+  Gallery's tektite** — the warp's exit tile is 4,3 and the tektite's spawn is
+  4,3, with a crab in the next column. The first cut walked straight through
+  and was dead 120 frames later with no directive noticing.
+* **The Clawcrab is fought, and it is a miniboss, so it is not `g.boss`.**
+  `defineBoss` builds it and its `init` clears `isBoss`, because
+  `progress.beaten` is keyed off the MAP and a miniboss counted as a boss would
+  mark the whole dungeon beaten. The directive names what it is fighting:
+  `['boss', 6000, 'clawcrab']`. `dFight` cannot take it — it died in 480 frames
+  from a full twelve.
+
+### Health is the route, and the Container is the whole budget
+
+Gohmaraq walked in at 12 quarter-hearts loses; at 16 he is killed with 4 to
+spare. So the route collects four Pieces of Heart — the Bluff Grotto's, the
+Reef Hollow's, the Clawcrab's, and the one behind the Clawcrab door — and the
+Container completes on the fourth, two rooms before the boss door, refilling to
+the new maximum. **That ordering is the health budget for the whole run and it
+is not an accident.**
+
+Shell Flats (0,10,8) has a fifth piece and the route does NOT go for it: the
+round trip costs about ten of twelve quarter-hearts, Sandpiper Row is crossed
+twice, and the run died there. Recorded so it is not retried blind.
+
+### And a death takes what was on top of the game with it
+
+`respawn` sets `mode = 'play'` unconditionally, which is a claim about what the
+game is doing, and nothing else was torn down with it. A text box (which
+returns out of `update` before the player moves — a respawn room nobody can
+walk in), its queue, a cutscene, a pending fade callback and the item and room
+banners all survived a death and landed on the room the player was put back in.
+`Dialogue.reset` is new and is not `close`: closing a box is a box being READ,
+it fires `onClose` and pulls the next page up, and nothing was read. Six of
+`check-respawn`'s new assertions go red with the teardown removed.
+
+It had also never met a boss. Dying to Gohmaraq in a fight that is actually
+running is asserted end to end now: the continue lands at the dungeon MOUTH,
+the boss handle is let go (it used to dangle and the HUD drew a bar for a
+ghost), the dungeon is not marked beaten, and the claw is still standing at
+full health when the player walks back in. 60 assertions.
+
+**The whirlpool is gone.** `Game.enterWhirlpool` fired off `F.WHIRL`, no
+tiledef ever carried that flag, and no room ever defined a `whirlpool`
+destination — so the path was unreachable and its only live branch sent the
+player to his last respawn point, which reads as a death he did not die.
+Deleted rather than given a destination: inventing a screen to make an
+unreachable branch reachable is the tail wagging the dog. Bit `1 << 20` is
+free. Its SOUND was not wasted — `whirl` had sat in the audio table unplayed,
+and Thalassor's whirlpool, the one mechanic that fight is built on, dragged the
+player's feet in silence. It has the ripple's beat now.
+
+### Art: a pot with a rim, and six bells
+
+See `docs/ART-BACKLOG.md`. The `pot` is extracted (Seasons' dungeon
+backgrounds at 900,42 — NOT the Subrosia tileset, which is where two sessions
+looked), and the six Essences are six different bells instead of one orb six
+times.
+
+**Ground boundaries are still a straight pixel edge and were deliberately not
+half-fixed.** The investigation is in `ART-BACKLOG.md` and one of its findings
+overturns a claim that entry has carried since S3: **the shore is not blocked
+by the sheets.** S3 reasoned from FOAM, which is drawn on the water side and
+animates; the source's own answer is a BANK on the LAND side, and it is as
+static as `cliffTop`. What blocks it is the engine — `tileEdgeArt` takes the
+first direction that matches and stops, there are no corner pieces, and a
+transition cell holds both materials' tones so each ordered pair wants its own
+palette.
+
+### feel.js untouched
+
+240 constants, 0 measured / 17 derived / 223 guessed, exactly as it was.
+Nothing was relabelled, because nothing was frame-stepped.
+
+### Verified
+
+```
+check-playthrough 21/0   test           83/0    replay          51/0
+check-respawn     60/0   check-bosses   19/0    check-items     91/0
+walk-dungeons     23/0   check-overworld 17/0   check-progression 19/0
+check-anchor      14/0   check-gates    26/0    check-hearts   114/114
+check-placement    2/0   check-ground    7/0    check-tilesets   6/0
+check-guide        4/0   check-text     OK      check-sfx       OK
+solve-switches    OK     validate       OK      check-build     OK
+```
+
+`tools/rip-terrain.py` was run before anything was changed and reproduced
+`src/data/tiles-terrain.js` byte-identically, per CLAUDE.md.
+
+### Hand it back — what was NOT verified
+
+* **Nobody has looked at the six Essence bells in the quest MENU at 1x.** The
+  title cards were screenshotted and are right; the menu row draws them 18
+  pixels apart at native size and has not been seen. Open the map/quest screen
+  with an Essence taken.
+* **The five other bosses' real-combat numbers moved and only four seeds were
+  swept.** If D2/D3/D5 matter before their routes exist, sweep more seeds
+  before believing either row of that table.
+* **The playthrough is ONE seed.** It is a tape and it replays to the pixel,
+  which is the point, but it does not say the route is robust — only that this
+  run happened.
+
+---
+
 ## S19 — dying stopped costing an hour (this session)
 
 `progress.respawn` was set once, by `newProgress`, and NOTHING in the game ever

@@ -448,6 +448,70 @@ BEFORE checking a file out for isolation, not after.**
 ## Hard-won lessons — do not rediscover these
 
 
+- **"Don't walk into it" beats "dodge it", and the difference is whether the
+  fix ADDS a move.** Two sessions tried to cut the boss verb's chip damage with
+  a dodge — a movement made instead of fighting, keyed off a boss's state — and
+  both measured worse than doing nothing. The version that worked never adds a
+  move: it takes the mask the fight already chose and swaps it, only on frames
+  where that mask walks into something. A dodge changes WHEN the actor
+  re-enters range and the shift cascades through a deterministic sim, which is
+  how a five-value sweep finds its own noise; a swap fires only on frames a hit
+  was coming. **And sweep the SEEDS.** `measure-boss-combat.mjs --seed=N`
+  exists because this repo mistook a single seed's swing for a fix twice.
+  A parameter that wins at the middle of a PLATEAU is a fix; one that wins at a
+  spike among five samples is the sweep finding noise.
+- **Standing still is a legal move and it is a deadlock for a walker.** A
+  hazard-aware movement filter that includes "stay put" among its candidates
+  will pick it in front of a stationary enemy, because standing still is
+  genuinely the cheapest option and the path never advances. `dGoto` stopped
+  dead in a doorway, replanned onto the same path for two thousand frames, and
+  the thing it was standing next to ate eight quarter-hearts.
+- **A `goto` is addressed to ONE ROOM, and it matters most when its target is a
+  warp.** `dFight` has had that guard since P3 and `dGoto` did not. Walking
+  onto the return stair out of D1's Two Gauges warped the player into the Tide
+  Gallery and the same goto carried on toward tile 7,6 of THAT room, through
+  its tektite and its crab: sixteen quarter-hearts to nothing in 596 frames,
+  with the next directive still waiting to be a `wait`.
+- **A pit is not SOLID, so `canOccupy` says yes to it.** Any code that picks a
+  tile from GEOMETRY rather than from a path has to ask a stricter question —
+  `standAt` in `src/game/entity.js`, which is `canOccupy` plus the flags that
+  hurt. `dAnchor`'s candidate standing tiles walked into two drains at LOW in
+  the Iron Pipe, two quarter-hearts each, and the rule for "somewhere to put
+  your feet" existed only inline inside `findSafeTile`.
+- **A pickup can miss the player by ONE PIXEL and there be nowhere to stand.**
+  The Bluff Grotto's Piece of Heart sits on the top walkable row with wall
+  above it and settles five pixels high: its box is 31..41 and a tile-centred
+  player's is 41..48. `dLoot`'s "try one tile north" retry had nowhere to go.
+  Leaning on the wall is what collects it, and two of the four Pieces the
+  playthrough needs were uncollectable without it.
+- **`mode = 'play'` is a CLAIM, and everything that owns the mode has to be
+  torn down with it.** `Game.respawn` set the mode and nothing else, so a text
+  box (which returns out of `update` before the player moves), its queue, a
+  cutscene, a pending fade callback and the item and room banners all survived
+  a death and landed on the room the player was put back in. And `close()` is
+  not `reset()`: closing a dialogue fires the conversation's `onClose` and
+  pulls the next queued page up, which is a conversation being READ. Nothing
+  was read.
+- **A flag no tiledef carries is a feature the world cannot reach.** `F.WHIRL`
+  and `Game.enterWhirlpool` were wired to each other and to nothing else for
+  the life of the project, and the function's only live branch sent the player
+  to his last respawn point — a death he did not die. Same drift as a tiledef
+  field the registrar drops: it reads as true and is not. Deleted; bit
+  `1 << 20` is free, noted the way `1 << 25` already was.
+- **A prop is not found by the seamless scan, and it may not be on the tileset
+  you are looking at.** `pot` sat on the backlog for two sessions with the note
+  "the Subrosia tileset is the one to mine". It is on the DUNGEON BACKGROUNDS
+  sheet, in rows of six against the ice room's north wall, and it was found by
+  scanning for its two orange tones and reading the runs: 16 apart in both
+  axes from 902,43, so the cell is 900,42.
+- **The source draws a BANK, not foam.** `docs/ART-BACKLOG.md` carried "water
+  edges are BLOCKED by the sheets" from S3 for six sessions, reasoned from foam
+  being animated. Foam is drawn on the WATER side; the source's own shoreline
+  is a brown strip with a pale rim on the LAND side, and it is as static as
+  `cliffTop`. A blocker recorded from an assumption survives exactly as long as
+  nobody crops the sheet and looks.
+
+
 - **`progress.respawn` was written once and never again, and no checker in the
   table could see it.** Every death anywhere in the world put the player back
   outside the Maku Tree in Tidewatch Village. Nothing was LOST — items, keys,
@@ -458,7 +522,9 @@ BEFORE checking a file out for isolation, not after.**
   floods do not die, the switch solver does not die, and `check-playthrough`
   has an assertion that its run never died at all. A death was a code path
   nothing in this repository had ever taken. `tools/check-respawn.mjs` takes
-  it; 16 of its 42 assertions go red with the recording disabled.
+  it; 16 of its 42 assertions go red with the recording disabled. (S20 took it
+  to 60 assertions: a real boss fight, and everything a death used to leave
+  standing on top of the game.)
 - **The respawn point has to be re-taken at every seam AND clamped into its
   room.** `entryPos` hands a player walking east across a seam an x of -3 — the
   slide needs him three pixels outside the room he is entering — so recording

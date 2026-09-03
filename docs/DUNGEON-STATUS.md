@@ -32,6 +32,19 @@ whatever a commit message elsewhere claims.
 | — | `d7` | Reef Palace | — | **FOLDED IN** | `84d14e5` |
 | — | `d8` | Abyssal Keep | — | **FOLDED IN** | `84d14e5` |
 
+### D1 IS PLAYED, NOT MODELLED (S19)
+
+`node tools/check-playthrough.mjs` drives a new game with nothing granted and
+walks out of Tidewash Grotto holding its Essence: three Small Keys, the Boss
+Key, four Pieces of Heart and the Heart Container they make, both anchor gates
+in each wing, both pairs of gauges, and Gohmaraq killed in real combat on four
+hearts. 24,000 frames, no death, no warp, no flag set from outside. Landed in
+`661e585`.
+
+**That is one dungeon of six.** Nothing past D1 is routed, and until it is,
+"D2 is DONE" in the table above means what it has always meant: authored,
+flooded, and proved by models. See `GOAL` in `tools/playthrough-route.mjs`.
+
 ### Boss winnability, measured (S5)
 
 `node tools/measure-boss-combat.mjs <id>` — real combat, no god mode, seed
@@ -41,17 +54,25 @@ floor, since 24 pieces exist in the world).
 
 | D | boss | in-order | before S5 | after S5 | wins at |
 |---|---|---|---|---|---|
-| 1 | Gohmaraq | 3 hearts | 16/24, died | **20/24**, died | **4 hearts** |
+| 1 | Gohmaraq | 3 hearts | 16/24, died | **KILLED** (S19: 12 of 12 seeds) | **3 hearts** |
 | 2 | Anemos | 4 hearts | 12/30, died | **KILLED**, 1 qh left | **4 hearts** |
 | 3 | Gloomtide | 5 hearts | 28/36, died | **KILLED**, 8 qh left | **5 hearts** |
 | 4 | Wyverna | 6 hearts | *reported* 40/44, died | **KILLED, unhurt** | **6 hearts** |
 | 5 | Rootmaw | 7 hearts | *reported* 24/52, died | **KILLED**, 15 qh left | **7 hearts** |
 | 6 | Nereth | 8 hearts | 0/80, died | **42/80**, died | **11 hearts** |
 
-**Four of six are won at a floor that counts zero heart pieces.** D1 needs one
-heart's worth of pieces (4 of the 24) and D6 needs three hearts' worth (12 of
-24) — both comfortably inside the route; 9 pieces sit in the overworld and 3 in
-the caves before any dungeon is counted.
+**Five of six are won at a floor that counts zero heart pieces.** D6 needs
+three hearts' worth (12 of 24) — comfortably inside the route; 9 pieces sit in
+the overworld and 3 in the caves before any dungeon is counted.
+
+**S19 moved D1's row and put a caveat under it.** The verb learned not to walk
+into things (`evade` in `tools/actor-runtime.mjs`) and now kills Gohmaraq on
+three hearts on 12 of 12 seeds — but that measurement TELEPORTS into the arena
+and starts from a standing position. Walked in through the south door with the
+boss's intro already running, three hearts loses and four wins, which is why
+`playthrough-route.mjs` collects a Heart Container before the door. The same
+change costs Anemos, Gloomtide and Rootmaw a coin-flip each on the four seeds
+swept; `measure-boss-combat.mjs --no-evade` reproduces the old row exactly.
 
 Wyverna and Rootmaw were **already being won before this session** and the
 harness was reporting them as unfinished fights: `g.boss` goes null when the
