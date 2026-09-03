@@ -109,6 +109,10 @@ export async function installRuntime() {
       deaths: g.progress.deaths,
       keys: g.progress.keys[g.mapId] || 0,
       essences: g.progress.essences.slice(),
+      // Ground truth for a kill: `g.boss` goes null when the entity is removed,
+      // so "the boss is gone" is not the same fact (T38/T39).
+      beaten: Object.assign({}, g.progress.beaten),
+      heartPieces: g.progress.heartPieces,
       items: Object.keys(g.progress.items).filter(k => g.progress.items[k] > 0).sort(),
       // Persisted world state. A chest opened, a door unlocked and a buried
       // secret dug up all land in a different bucket from `items`, and every
@@ -208,6 +212,18 @@ export async function installRuntime() {
   // instead of treating column 10 as the end of the world.
   const RW = (g) => (g.room ? g.room.tw : ROOM_W);
   const RH = (g) => (g.room ? g.room.th : ROOM_H);
+
+  /**
+   * Somewhere to put your feet, not merely somewhere to move through: the
+   * engine's own `standAt`, which is `canOccupy` plus the flags that hurt.
+   * `dAnchor` walks to tiles it chose from geometry rather than from a path,
+   * and a drain at LOW is an open PIT — not solid, so `canOccupy` says yes and
+   * the player falls in. Two of its candidate standing tiles in the Iron Pipe
+   * are exactly that, and each cost the run two quarter-hearts.
+   */
+  function standable(g, p, tx, ty) {
+    return !!ent.standAt(g, p, tx, ty, { caps: p.caps });
+  }
 
   function passable(g, p, tx, ty) {
     if (tx < 0 || ty < 0 || tx >= RW(g) || ty >= RH(g)) return false;
@@ -388,9 +404,22 @@ export async function installRuntime() {
       // that did not collect it gets one retry a tile north before this drop
       // is given up on — a real player nudging up when the first step misses
       // is not a shortcut, it is the marginal reach the room was built with.
-      if (g.entities.includes(best) && !best.dead && !best.remove
-        && passable(g, p, t.tx, t.ty - 1)) {
-        for (const m of dGoto(t.tx, t.ty - 1, 120)) { yield m; spent++; if (spent > budget) break; }
+      if (g.entities.includes(best) && !best.dead && !best.remove) {
+        if (passable(g, p, t.tx, t.ty - 1)) {
+          for (const m of dGoto(t.tx, t.ty - 1, 120)) { yield m; spent++; if (spent > budget) break; }
+        } else {
+          // NO TILE NORTH TO STAND ON, AND THAT IS NOT THE SAME AS OUT OF
+          // REACH. The Bluff Grotto's Piece of Heart sits on row 2 with rows 0
+          // and 1 solid wall, and it settles at y=27: its box is 31..41 and a
+          // player stopped tile-centred at y=33 has 41..48, which miss each
+          // other BY ONE PIXEL. Pressing up walks him flush against the wall
+          // at y=24 (box 32..39) and he picks it up. This is a real player
+          // leaning on the wall under a ledge, and without it two of the four
+          // Heart Pieces this route needs are simply not collectable.
+          for (let i = 0; i < 24 && g.entities.includes(best) && !best.remove; i++) {
+            yield BIT.up; spent++;
+          }
+        }
       }
       // A drop that survived both stands is one the walk could not actually
       // reach — in water, behind a pot. Give up on it rather than loop.
@@ -512,9 +541,20 @@ export async function installRuntime() {
     const g = window.__game;
     let path = null, wi = 0, sinceReplan = 1e9, sinceProgress = 0;
     let lastX = null, lastY = null;
+    // A GOTO IS ADDRESSED TO ONE ROOM. `dFight` has had this guard since P3 —
+    // a directive that ends somewhere other than it started makes every
+    // directive after it fiction while still recording perfectly well — and
+    // `dGoto` did not, which matters the moment a goto's TARGET is a warp
+    // tile. Walking onto the return stair out of the Two Gauges warped the
+    // player into the Tide Gallery and the same goto carried straight on
+    // toward tile 7,6 of THAT room, through its tektite and its crab: sixteen
+    // quarter-hearts to nothing in 596 frames, with the next directive still
+    // patiently waiting to be a `wait`.
+    const home = g.mapId + '/' + (g.room ? g.room.key : '');
     for (let f = 0; f < (maxF || 600); f++) {
       const p = g.player;
       if (!p) return;
+      if (g.mapId + '/' + (g.room ? g.room.key : '') !== home) { yield* dWait(4); return; }
       const dm = dialogueMask(g, f);
       if (dm !== null) { yield dm; continue; }
       const wantX = tx * TILE, wantY = ty * TILE;
@@ -530,7 +570,17 @@ export async function installRuntime() {
       const w = path[wi];
       const wx = w.tx * TILE, wy = w.ty * TILE;
       if (Math.abs(p.x - wx) <= 1 && Math.abs(p.y - wy) <= 1) { wi++; continue; }
-      yield steer(p, wx, wy);
+      // WALKING IS WHERE THIS RUN BLED. `evade` (above) only ever replaces a
+      // step that was about to walk into a shot or a body, and the path is
+      // re-derived from the engine's own `canOccupy` whenever twenty frames
+      // pass with no progress, so a step spent sidestepping an octorok's shot
+      // costs a replan and nothing else. Before this, crossing the overworld
+      // to three Pieces of Heart cost the run more health than the dungeon
+      // did, and it died in the Crab Pit on the way to the Anchor.
+      // Shots only, and never a standstill. A walker cannot out-wait a body
+      // that is not going anywhere — see `noStay` in `evade` — and an enemy in
+      // the way is `dFight`'s business, not the path's.
+      yield evade(g, steer(p, wx, wy), { shotsOnly: true, noStay: true });
     }
   }
 
@@ -600,6 +650,187 @@ export async function installRuntime() {
    * the swordsman dies in it. This is the actor learning the same lesson the
    * source games teach a player in their first dungeon.
    */
+  /**
+   * The gap between two entities' real boxes, per axis. Asks the entities' own
+   * `rect()` — the same AABB `Entity.overlaps` and `updateContactDamage` use —
+   * rather than re-deriving a box from `cx`/`cy` and a guessed offset.
+   */
+  /**
+   * DON'T WALK INTO IT.
+   *
+   * Twice now a session has tried to cut this actor's chip damage with a
+   * DODGE — a movement made *instead of* fighting, keyed off a boss's state —
+   * and twice it measured net negative and was reverted (docs/NEXT-SESSION.md
+   * keeps the numbers and the two implementation traps). This is the other
+   * half of that idea and it is not a dodge: it never adds a move of its own.
+   * It takes the mask a directive already decided on and, ONLY on a frame
+   * where that mask walks the player into something about to occupy the same
+   * pixels, swaps it for the nearest mask that does not.
+   *
+   * That distinction is why it holds where a dodge did not. A dodge changes
+   * WHEN the player re-enters range, and in a deterministic sim that shift
+   * cascades through everything downstream — which is how a five-value sweep
+   * finds its own noise. This fires only on frames the actor was going to eat
+   * a hit on, so what it produces is the same run minus those hits.
+   *
+   * MEASURED ON BOSSES, and read the second half of this before touching it.
+   * `tools/measure-boss-combat.mjs <d> --seed=N`, in-order health, no god
+   * mode, four seeds (20260806/11111/22222/33333), wins out of four:
+   *
+   *          d1    d2    d3    d4    d5    d6
+   *   old    0/4   1/4   2/4   4/4   3/4   0/4
+   *   this   4/4   0/4   1/4   4/4   1/4   0/4
+   *
+   * D1 is the one this session needed and the one the old verb could not win
+   * on ANY seed — 0 of 6 tried, never better than 24 hp down to 18. This wins
+   * it 12 of 12 seeds. D2, D3 and D5 are a real cost and are not dressed up as
+   * anything else: all three were already coin-flips, and reshuffling a
+   * knife-edge reshuffles which side it lands on. `--no-evade` turns this off
+   * and reproduces the old row exactly, so the trade stays measurable rather
+   * than becoming folklore.
+   */
+  // How far ahead to look, in frames. Swept 24/30/36/40/45/50/55 over five
+  // seeds on D1: 24, 30 and 36 win all five, 40 and up start dropping them. 30
+  // is the middle of a PLATEAU rather than a spike, which is the whole
+  // difference between this and the two reverted attempts. Above ~60 the
+  // horizon is long enough that something is always a threat and the actor
+  // never closes at all — 18/24 on every seed, deterministically.
+  const SHOT_HORIZON = 30;
+  // Half-width of the player's own box, near enough: `Player.hb` is 10x7, and
+  // a miss by less than this is not a miss.
+  const HIT_R = 10;
+  // WALK_SPEED (src/data/feel.js) is 1 px/f and diagonal is not normalised
+  // (CLAUDE.md), so a diagonal candidate really does move 1 on each axis.
+  const WALK = 1;
+  const DIRS8 = [
+    [0, 0, 0],
+    [BIT.right, 1, 0], [BIT.left, -1, 0], [BIT.down, 0, 1], [BIT.up, 0, -1],
+    [BIT.right | BIT.down, 1, 1], [BIT.right | BIT.up, 1, -1],
+    [BIT.left | BIT.down, -1, 1], [BIT.left | BIT.up, -1, -1],
+  ];
+  const evading = () => globalThis.__ACTOR_NO_EVADE !== true;
+
+  /**
+   * Everything in the room that hurts on contact, as {position, velocity,
+   * radius}. Shots carry their real velocity — `vx`/`vy` are SUBPIXELS per
+   * frame, 256 to the pixel (src/core/fixed.js), and mixing those units with
+   * pixel ones is the "a direction is not a distance" bug the last attempt
+   * shipped and only found by instrumenting `takeDamage`.
+   *
+   * `except` is left out of the list. `dBoss` passes the thing it is trying to
+   * reach: closing on it is the entire point of that verb and `nearContact`
+   * already stops the approach a step short, so counting it here makes every
+   * approach look unsafe and the actor circles it for ever — measured, and it
+   * cost D1 the win outright. What the boss gets instead is the retreat veto
+   * in `evade` below.
+   */
+  function hazards(g, except, shotsOnly) {
+    const out = [];
+    for (const e of g.entities) {
+      if (e.remove || e === g.player || e === except) continue;
+      if (e.isProjectile) {
+        if (e.fromPlayer) continue;
+      } else if (shotsOnly || !e.isEnemy || e.dead) continue;
+      const r = e.rect();
+      out.push({
+        x: r.x + r.w / 2, y: r.y + r.h / 2,
+        vx: e.isProjectile ? e.vx / 256 : 0, vy: e.isProjectile ? e.vy / 256 : 0,
+        r: Math.max(r.w, r.h) / 2,
+      });
+    }
+    return out;
+  }
+
+  /**
+   * What a candidate move costs: for each hazard, the time of closest approach
+   * in the player's own frame of reference, and whether the two boxes are
+   * inside each other at it. Sooner is worse, so the cost is the time
+   * REMAINING on the horizon — a hit five frames out outranks one twenty-five
+   * frames out, which may still be walked out of next frame.
+   */
+  function moveCost(g, mx, my, list) {
+    const q = g.player;
+    if (!q) return 0;
+    const pr = q.rect();
+    const px0 = pr.x + pr.w / 2, py0 = pr.y + pr.h / 2;
+    let cost = 0;
+    for (const h of list) {
+      const rx0 = h.x - px0, ry0 = h.y - py0;
+      const vrx = h.vx - mx, vry = h.vy - my;
+      const sp2 = vrx * vrx + vry * vry;
+      let t = sp2 > 0.0001 ? (rx0 * vrx + ry0 * vry) / sp2 : 0;
+      if (t < 0) t = 0; else if (t > SHOT_HORIZON) t = SHOT_HORIZON;
+      const dxm = rx0 - vrx * t, dym = ry0 - vry * t;
+      const R = HIT_R + h.r;
+      if (dxm * dxm + dym * dym < R * R) cost += SHOT_HORIZON - t;
+    }
+    return cost;
+  }
+
+  /**
+   * The swap itself.
+   *
+   *   `fence`  an optional filter a candidate has to survive unchanged. `dBoss`
+   *            passes its arena fence so a swap cannot walk out of a boss room;
+   *            `dGoto` passes nothing, because leaving the room is the job.
+   *   `avoid`  an entity a RETREAT may not be swapped toward. The escape is
+   *            chosen from eight directions with `except` not in the hazard
+   *            list, so without this the way out of a zol's path is very often
+   *            straight into the thing the fight is about. Applying the same
+   *            veto to an APPROACH pushed the actor away from every opening,
+   *            which is why it is only passed on retreats.
+   */
+  function evade(g, m, o) {
+    if (!evading()) return m;
+    const opts = o || {};
+    const fence = opts.fence || ((x) => x);
+    const list = hazards(g, opts.except, opts.shotsOnly);
+    if (!list.length) return m;
+    const mvx = ((m & BIT.right) ? WALK : 0) - ((m & BIT.left) ? WALK : 0);
+    const mvy = ((m & BIT.down) ? WALK : 0) - ((m & BIT.up) ? WALK : 0);
+    const base = moveCost(g, mvx, mvy, list);
+    // Nothing the directive did not already account for is about to hit us:
+    // hand back exactly what it asked for. This is the branch almost every
+    // frame takes, and it is why what comes out is still the same run.
+    if (base <= 0) return m;
+    let bvx = 0, bvy = 0;
+    if (opts.avoid && !opts.avoid.dead && g.player) {
+      const gp = gapTo(g.player, opts.avoid);
+      if (gp.gapX < 14 && gp.gapY < 14) {
+        bvx = opts.avoid.cx - g.player.cx; bvy = opts.avoid.cy - g.player.cy;
+      }
+    }
+    // Prefer the candidate that keeps most of what was asked for, so the swap
+    // is the smallest one that works.
+    let bestM = m, bestC = base, bestKeep = -1;
+    for (const [cm, cx, cy] of DIRS8) {
+      // STANDING STILL IS NOT AN OPTION FOR A WALKER. `dGoto` passes `noStay`,
+      // and it is the difference between a route and a deadlock: a stationary
+      // enemy in a doorway makes every direction cost something and makes
+      // standing still cost least, so the actor stopped dead in front of it,
+      // `dGoto` replanned onto the same path for two thousand frames, and the
+      // thing it was standing next to ate eight quarter-hearts. A fight can
+      // afford to wait a hazard out; a walk cannot.
+      if (cm === 0 && opts.noStay) continue;
+      if (fence(cm) !== cm) continue;
+      if ((bvx || bvy) && cm !== m && (cx * bvx + cy * bvy) > 0) continue;
+      const c = moveCost(g, cx * WALK, cy * WALK, list);
+      const keep = cm === m ? 2 : ((cm & m) ? 1 : 0);
+      if (c < bestC - 1e-6 || (c < bestC + 1e-6 && c < base && keep > bestKeep)) {
+        bestC = c; bestM = cm; bestKeep = keep;
+      }
+    }
+    return bestM;
+  }
+
+  function gapTo(a, c) {
+    const ra = a.rect(), rb = c.rect();
+    return {
+      gapX: Math.max(rb.x - (ra.x + ra.w), ra.x - (rb.x + rb.w)),
+      gapY: Math.max(rb.y - (ra.y + ra.h), ra.y - (rb.y + rb.h)),
+    };
+  }
+
   function* dFight(maxF, patience) {
     const g = window.__game;
     // How long to keep at it with nothing dying before giving the room up.
@@ -644,6 +875,15 @@ export async function installRuntime() {
       if (q.y > (g.room ? g.room.ph : VIEW_H) - 16 - EDGE) m &= ~BIT.down;
       return m;
     };
+    // The same swap `dBoss` uses, with the foe currently being closed on left
+    // out of the hazard list: closing on IT is the job. Three shielded crabs in
+    // the Crab Pit is the fight that needed it — the room that has to be
+    // cleared for D1's first Small Key, and the one the actor died in twice
+    // while this route was being extended.
+    let foe = null;
+    const safeF = (m, retreat) => evade(g, fence(m), {
+      fence, except: foe, avoid: retreat ? foe : null,
+    });
     for (let f = 0; f < (maxF || 900);) {
       const p = g.player;
       if (!p || g.mode !== 'play') { yield 0; f++; continue; }
@@ -659,6 +899,7 @@ export async function installRuntime() {
 
       let best = foes[0], bd = 1e9;
       for (const e of foes) { const d = p.distTo(e); if (d < bd) { bd = d; best = e; } }
+      foe = best;
       const dx = best.cx - p.cx, dy = best.cy - p.cy;
 
       /**
@@ -694,22 +935,22 @@ export async function installRuntime() {
       if (Math.abs(perp) > LINED) {
         // Off the enemy's row or column: the sword box is narrow, so line up
         // before closing or the swing goes past it.
-        yield fence(axisX ? (dy < 0 ? BIT.up : BIT.down) : (dx < 0 ? BIT.left : BIT.right));
+        yield safeF(axisX ? (dy < 0 ? BIT.up : BIT.down) : (dx < 0 ? BIT.left : BIT.right));
         f++; continue;
       }
       const dist = Math.abs(along);
-      if (dist > FAR) { yield fence(BIT[face]); f++; continue; }
+      if (dist > FAR) { yield safeF(BIT[face]); f++; continue; }
       if (dist < NEAR) {
-        yield fence(axisX ? (dx < 0 ? BIT.right : BIT.left) : (dy < 0 ? BIT.down : BIT.up));
+        yield safeF(axisX ? (dx < 0 ? BIT.right : BIT.left) : (dy < 0 ? BIT.down : BIT.up));
         f++; continue;
       }
       // In the window: face, swing, then back off diagonally until the enemy
       // has to come and find us again.
       const backAlong = axisX ? (dx < 0 ? BIT.right : BIT.left) : (dy < 0 ? BIT.down : BIT.up);
       const backPerp = axisX ? (dy < 0 ? BIT.down : BIT.up) : (dx < 0 ? BIT.right : BIT.left);
-      yield fence(BIT[face]); f++;
+      yield safeF(BIT[face]); f++;
       yield swordBit(); f++;
-      for (let i = 0; i < BACKOFF; i++) { yield fence(backAlong | backPerp); f++; }
+      for (let i = 0; i < BACKOFF; i++) { yield safeF(backAlong | backPerp, true); f++; }
     }
   }
 
@@ -750,10 +991,23 @@ export async function installRuntime() {
   // already closed are expensive to rediscover; it is NOT referenced by
   // tools/playthrough-route.mjs, because a route step that cannot reliably
   // finish is worse than one that is missing.
-  function* dBoss(maxF) {
+  function* dBoss(maxF, type) {
     const g = window.__game;
-    for (let i = 0; i < 300 && !g.boss; i++) yield 0;
-    if (!g.boss) throw new Error('boss: nothing to fight in ' + g.mapId + ' ' + (g.room && g.room.key));
+    // A MINIBOSS IS NOT `g.boss`. `defineBoss` builds both, but a miniboss
+    // clears `isBoss` in its init (src/data/bosses.js says why: `beaten` is
+    // keyed off the MAP, so a miniboss counted as a boss marks its whole
+    // dungeon beaten), and `g.boss` only ever holds the real one. So the
+    // target is named when it is not the room's boss — `['boss', N,
+    // 'clawcrab']` — and everything below fights whatever this returns. The
+    // Clawcrab has no shell, so `weakOpen` is true for its whole life
+    // (`Boss` sets `weakOpen = !spec.shell`) and the open/shut state machine
+    // simply never takes its shut branch.
+    const find = () => (type
+      ? g.entities.find(e => e.type === type && !e.dead && !e.remove)
+      : g.boss);
+    for (let i = 0; i < 300 && !find(); i++) yield 0;
+    let target = find();
+    if (!target) throw new Error('boss: nothing to fight in ' + g.mapId + ' ' + (g.room && g.room.key));
     const sword = () => slotBit('sword') || BIT.b;
     // The same numbers dFight uses, for the same reasons: strike from the near
     // band, then break contact. A boss does contact damage like anything else,
@@ -812,21 +1066,24 @@ export async function installRuntime() {
     // asks the entities' own `rect()` — the same AABB `Entity.overlaps` and
     // `updateContactDamage` already use — rather than re-deriving the box
     // from `cx`/`cy` and a guessed offset.
-    const gapTo = (a, c) => {
-      const ra = a.rect(), rb = c.rect();
-      return {
-        gapX: Math.max(rb.x - (ra.x + ra.w), ra.x - (rb.x + rb.w)),
-        gapY: Math.max(rb.y - (ra.y + ra.h), ra.y - (rb.y + rb.h)),
-      };
-    };
     const CONTACT_SAFETY = 4;
     const nearContact = (a, c) => {
       const { gapX, gapY } = gapTo(a, c);
       return gapX <= CONTACT_SAFETY && gapY <= CONTACT_SAFETY;
     };
+    /**
+     * `fence`, plus the swap. Every MOVEMENT yield in this verb goes through
+     * here; the two swing yields keep plain `fence`, because turning a swing
+     * to face somewhere safer is just a whiff. `retreat` marks the masks whose
+     * PURPOSE is to be away from the target — the post-swing backoff, the
+     * shelled stand-off, the invuln spend-down.
+     */
+    const safe = (m, retreat) => evade(g, fence(m), {
+      fence, except: target, avoid: retreat ? target : null,
+    });
     const budget = maxF || 16000;
     for (let f = 0; f < budget;) {
-      const b = g.boss;
+      const b = target = find();
       if (!b || b.dead) return;
       const p = g.player;
       if (!p) return;
@@ -841,7 +1098,7 @@ export async function installRuntime() {
         const perp = (b.dir === 'up' || b.dir === 'down')
           ? (chargeSide > 0 ? BIT.right : BIT.left)
           : (chargeSide > 0 ? BIT.down : BIT.up);
-        yield fence(perp); f++; continue;
+        yield safe(perp); f++; continue;
       }
       chargeSide = 0;
       const dx = b.cx - p.cx, dy = b.cy - p.cy;
@@ -869,9 +1126,9 @@ export async function installRuntime() {
           const dx2 = b.cx - p.cx, dy2 = b.cy - p.cy;
           const ax2 = Math.abs(dx2), ay2 = Math.abs(dy2);
           const toward2 = towardDiag(dx2, dy2);
-          if (ax2 + ay2 > NEAR + 6) { yield fence(toward2); f++; continue; }
+          if (ax2 + ay2 > NEAR + 6) { yield safe(toward2); f++; continue; }
           const faceOnly = ax2 >= ay2 ? (dx2 > 0 ? BIT.right : BIT.left) : (dy2 > 0 ? BIT.down : BIT.up);
-          yield fence(faceOnly); f++;
+          yield safe(faceOnly); f++;
           yield fence(faceOnly | sword()); f++;
           continue;
         }
@@ -905,15 +1162,15 @@ export async function installRuntime() {
             // (dx=8,dy=-8) 18 times running against a stunned, non-moving
             // boss before this fix.
             if (!nearContact(p, b)) {
-              if (ax2 + ay2 > NEAR + 6) { yield fence(towardDiag(dx2, dy2)); f++; continue; }
+              if (ax2 + ay2 > NEAR + 6) { yield safe(towardDiag(dx2, dy2)); f++; continue; }
               const LINED_TOL = 8;
               const perp2 = axisX2 ? dy2 : dx2;
               if (Math.abs(perp2) > LINED_TOL) {
-                yield fence(axisX2 ? (dy2 < 0 ? BIT.up : BIT.down) : (dx2 < 0 ? BIT.left : BIT.right));
+                yield safe(axisX2 ? (dy2 < 0 ? BIT.up : BIT.down) : (dx2 < 0 ? BIT.left : BIT.right));
                 f++; continue;
               }
             }
-            yield fence(faceOnly); f++;
+            yield safe(faceOnly); f++;
             yield fence(faceOnly | sword()); f++;
             continue;
           }
@@ -923,7 +1180,7 @@ export async function installRuntime() {
           const axisX2 = Math.abs(dx2) > Math.abs(dy2);
           const backAlong2 = axisX2 ? (dx2 > 0 ? BIT.left : BIT.right) : (dy2 > 0 ? BIT.up : BIT.down);
           const backPerp2 = axisX2 ? (dy2 > 0 ? BIT.up : BIT.down) : (dx2 > 0 ? BIT.left : BIT.right);
-          yield fence(backAlong2 | backPerp2); f++;
+          yield safe(backAlong2 | backPerp2, true); f++;
           continue;
         }
         // No invuln banked: close the distance and take the shot. Retreating
@@ -950,34 +1207,38 @@ export async function installRuntime() {
         // only checked in the final stretch, where an off-axis stop actually
         // matters.
         if (!nearContact(p, b)) {
-          if (adx + ady > NEAR + 6) { yield fence(towardDiag(dx, dy)); f++; continue; }
+          if (adx + ady > NEAR + 6) { yield safe(towardDiag(dx, dy)); f++; continue; }
           const LINED_TOL = 8;
           const perp = axisX ? dy : dx;
           if (Math.abs(perp) > LINED_TOL) {
-            yield fence(axisX ? (dy < 0 ? BIT.up : BIT.down) : (dx < 0 ? BIT.left : BIT.right));
+            yield safe(axisX ? (dy < 0 ? BIT.up : BIT.down) : (dx < 0 ? BIT.left : BIT.right));
             f++; continue;
           }
-          yield fence(toward); f++; continue;
+          yield safe(toward); f++; continue;
         }
         // In range and lined up: face it, swing, then get out before it closes.
-        yield fence(toward); f++;
+        yield safe(toward); f++;
         yield fence(toward | sword()); f++;
-        for (let i = 0; i < BACKOFF && f < budget; i++) { yield fence(backAlong | backPerp); f++; }
+        for (let i = 0; i < BACKOFF && f < budget; i++) { yield safe(backAlong | backPerp, true); f++; }
         continue;
       }
       // Shelled: nothing to hit. Keep off it and wait out the tell.
-      if (adx + ady < 72) { yield fence(backAlong | backPerp); f++; continue; }
+      if (adx + ady < 72) { yield safe(backAlong | backPerp, true); f++; continue; }
       const room = g.room;
       const ox = (room ? room.pw : 160) / 2 - p.cx, oy = (room ? room.ph : 144) / 2 - p.cy;
       if (Math.abs(ox) > 12 || Math.abs(oy) > 12) {
-        yield fence(Math.abs(ox) > Math.abs(oy) ? (ox > 0 ? BIT.right : BIT.left)
+        yield safe(Math.abs(ox) > Math.abs(oy) ? (ox > 0 ? BIT.right : BIT.left)
                                                 : (oy > 0 ? BIT.down : BIT.up));
       } else {
-        yield 0;
+        // Standing still is a choice too, and it is the one place this verb
+        // ever made it: waiting out a shelled boss in the middle of the arena
+        // with shots crossing it. `safe(0)` is "stay unless staying is what
+        // gets hit".
+        yield safe(0, true);
       }
       f++;
     }
-    const b = g.boss;
+    const b = find();
     throw new Error(`boss: still alive after ${budget} frames (hp ${b ? b.hp : '?'})`);
   }
 
@@ -1084,7 +1345,7 @@ export async function installRuntime() {
       if (spent >= budget) { why.push('budget'); break; }
       const p = g.player;
       if (!p) { why.push('no player'); continue; }
-      if (!passable(g, p, c.sx, c.sy)) { why.push(`${c.sx},${c.sy} ${c.dname}: not standable`); continue; }
+      if (!standable(g, p, c.sx, c.sy)) { why.push(`${c.sx},${c.sy} ${c.dname}: not standable`); continue; }
       // Walk there. If the tile cannot be reached this leg, try the next one.
       let before = g.frame;
       yield* dGoto(c.sx, c.sy, 300);
@@ -1158,7 +1419,7 @@ export async function installRuntime() {
       else if (kind === 'use') yield* dUse(a[0], a[1], a[2]);
       else if (kind === 'travel') yield* dTravel(a[0], a[1], a[2]);
       else if (kind === 'loot') yield* dLoot(a[0]);
-      else if (kind === 'boss') yield* dBoss(a[0]);
+      else if (kind === 'boss') yield* dBoss(a[0], a[1]);
       else if (kind === 'equip') yield* dEquip(a[0], a[1], a[2]);
       else if (kind === 'anchor') yield* dAnchor(a[0], a[1], a[2]);
       else if (kind === 'unanchor') yield* dUnanchor(a[0]);

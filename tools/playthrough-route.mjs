@@ -36,8 +36,83 @@ export const ROUTE = [
   // press: this is where the conch and the sword come from.
   ['newgame', 3000],
 
-  // Tidewatch Village to the Grotto Mouth, five screens east and one south.
-  // The planner works the way out for itself; see dTravel in actor-runtime.mjs.
+  // ---- THREE PIECES OF HEART, AND WHY THE ROUTE NOW DETOURS FOR THEM -----
+  //
+  // Gohmaraq is not winnable at three hearts by a player who walks in the
+  // front door. Measured both ways: `tools/measure-boss-combat.mjs d1` drops
+  // the actor into the arena at twelve quarter-hearts and it wins 12 seeds of
+  // 12 — but that harness TELEPORTS in and starts the fight from a standing
+  // position at 72,80, and this route walks in through the south door with the
+  // boss's intro already running. Walked in at 12 qh it loses; walked in at
+  // 16 it wins, finishing on 4. So the route collects a Heart Container, the
+  // same way a player does: four Pieces of Heart.
+  //
+  // Three of them are out here and the fourth is the one behind D1's Clawcrab
+  // door, which is what makes the east wing worth walking rather than a
+  // detour — see the east wing below. The container completes on that fourth
+  // piece, and `addHeartContainer` (src/game/progress.js) refills to the new
+  // maximum, so the run walks out of the Two Gauges on a full sixteen with
+  // only the west wing between it and the boss. That ordering is the health
+  // budget for this whole run and it is not an accident.
+  //
+  // The Bluff Grotto, one screen west of the village. Its piece is on row 2
+  // with rows 0 and 1 solid wall above it, so there is no tile north to step
+  // to and it misses a tile-centred player BY ONE PIXEL — `dLoot` leans on the
+  // wall for it now. See the note there; it is the same fault in two caves.
+  ['travel', 3, 7, 6000],
+  ['goto', 3, 2, 900],
+  ['wait', 90],
+  ['dialogue', 300],
+  ['loot', 900],
+  ['dialogue', 400],
+  ['goto', 5, 6, 400],
+  ['wait', 120],
+  ['dialogue', 300],
+
+  // The Reef Hollow, on the way east. Its piece is two tiles into the seafloor
+  // patch and the wall carving says so — "When the sea withdraws, walk where
+  // fish swam". Seafloor is walkable at LOW and nowhere else, so the conch is
+  // the whole puzzle: MID -> HIGH -> LOW is two soundings.
+  ['travel', 6, 7, 6000],
+  ['goto', 4, 2, 900],
+  ['wait', 90],
+  ['dialogue', 300],
+  ['use', 'conch', 2, 140],
+  ['loot', 1500],
+  ['dialogue', 400],
+  ['goto', 5, 6, 400],
+  ['wait', 120],
+  ['dialogue', 300],
+  // There is an octorok on the mouth of this cave and the run comes out of the
+  // door into its line. Walked past, it took six of twelve quarter-hearts —
+  // half the run's health for a screen it crosses twice — and left the Sunken
+  // Hall's fight to be fought on three. Cleared, it costs nothing and drops
+  // what it drops.
+  ['fight', 1400],
+  ['dialogue', 200],
+  ['loot', 600],
+  // AND PUT THE SEA BACK BEFORE WALKING ANYWHERE. `travel` re-derives its path
+  // from the engine's own `canOccupy` every leg, so at LOW it happily routes
+  // across seabed that is only walkable at LOW — straight through the
+  // anglerfry and urchins that live there. The first cut of this route left
+  // the conch down and crossed the coast on the sea floor: it died twice
+  // before reaching the dungeon. One sounding puts it back to MID, which is
+  // also the level everything from the Grotto Mouth on was written against.
+  // Sounded OUT HERE and not in the cave: the piece is two tiles into the
+  // seafloor patch, and seafloor at MID is over your head. Raising the sea
+  // while standing in it strands the player in the water he waded to get
+  // there.
+  ['use', 'conch', 1, 140],
+
+  // THE THIRD PIECE IS NOT OUT HERE, and that was measured rather than
+  // assumed. Shell Flats (0,10,8) has one on a sandbar two screens east of the
+  // grotto mouth, and the round trip costs about ten quarter-hearts of the
+  // twelve this run has: Sandpiper Row is crossed twice and the mouth of the
+  // Reef Hollow has an octorok sitting on it. The route died there. The third
+  // piece is the Clawcrab's instead — inside the dungeon, past the fairy that
+  // heals to full, and on the way to the fourth.
+
+  // And on to the Grotto Mouth.
   ['travel', 8, 8, 12000],
 
   // The cave mouth is a warp tile at 4,2 — walking onto it is the whole of
@@ -244,42 +319,287 @@ export const ROUTE = [
   // as a corridor.
   ['goto', 9, 3, 900],
   ['exit', 'right', 300],
+
+  // ---------------------------------------------------------------- d1 0,5,2
+  // The Drowned Chamber, AND THE CONCH IS THE ANSWER TO IT.
+  //
+  // Two anglerfry and a crab round a pool. The fight is optional — the room's
+  // own comment says the crossing never depends on the iron — but WALKING it
+  // at MID is not free either: the fish hunt the shallow water and it cost six
+  // quarter-hearts a crossing, twice, and killed the run on the way back.
+  // Fought at MID it cost nine of twelve.
+  //
+  // At LOW the pool is a floor of holes and an aquatic enemy out of water is
+  // asleep before it has even begun to flop (`tideOnly`, then
+  // ENEMY_BEACHED_FRAMES). The dry ring round the edge is walkable at every
+  // level, which is what the room's comment means by keeping it honest. So the
+  // sea goes down and the run walks the ring: MID -> HIGH -> LOW is two
+  // soundings, and it is free both ways.
+  //
+  // It also lands the sea exactly where the Long Race wants it.
+  ['use', 'conch', 2, 140],
+  ['goto', 1, 1, 900],
+  ['goto', 4, 1, 900],
+  ['exit', 'up', 300],
+
+  // ---------------------------------------------------------------- d1 0,5,1
+  // The Long Race: the same gate as the Iron Pipe, entered from the far end.
+  // Come in at the south door, round the elbow at column 9, and stand on the
+  // sill at 9,3.
+  ['goto', 9, 6, 600],
+  ['goto', 9, 3, 600],
+  // The sea is already at LOW — the Drowned Chamber put it there — so the iron
+  // goes down first and the conch comes after, which is the wing's whole
+  // primitive. `anchor` recalls the iron out of the Iron Pipe by itself, and
+  // that is the point of this wing's one-way return stair: the crossing behind
+  // us cannot be un-made from this side.
+  //
+  // BITE 7,3, NOT 8,3. The wells are columns 5-8 and the held patch is a
+  // radius-2 square, so 7 covers 5..9 — every well and the sill — while 8
+  // covers 6..10 and leaves the well at column 5 to drown at MID. Same
+  // correction as the Iron Pipe's, from the same cause: `check-anchor.mjs`
+  // names 8,3 and is right about REACH and silent about the crossing.
+  ['anchor', 7, 3, 1600],
+  ['use', 'conch', 1, 140],
+  ['goto', 0, 3, 900],
+  ['exit', 'left', 300],
+
+  // ---------------------------------------------------------------- d1 0,4,1
+  // The Keyvault, and THE THIRD SMALL KEY. A keese, then the chest, opened
+  // from the north because row 1 is the only clear approach.
+  ['equip', 'sword', 'A', 400],
+  ['fight', 1200],
+  ['loot', 500],
+  ['goto', 4, 1, 600],
+  ['hold', ['down'], 6],
+  ['tap', 'a', 40],
+  ['dialogue', 400],
+  ['loot', 600],
+
+  // Back east across the Long Race — the iron is still in it, so it is a
+  // corridor now — and down through the Drowned Chamber into the den.
+  ['goto', 9, 3, 900],
+  ['exit', 'right', 300],
+  ['goto', 9, 3, 900],
+  ['goto', 9, 6, 600],
+  ['goto', 4, 6, 600],
+  ['exit', 'down', 300],
+  // And down the ring again, with the sea taken back to LOW so the fish are
+  // asleep for the second crossing too.
+  ['use', 'conch', 2, 140],
+  // Down the EAST side of the ring, not the west: the crab spawns at 1,6 and
+  // the fish are the only things the sea puts to sleep.
+  ['goto', 8, 1, 900],
+  ['goto', 8, 6, 900],
+  ['goto', 4, 6, 900],
+  ['exit', 'down', 300],
+  // Back up to MID before the den. The Clawcrab is not fought (see below) but
+  // it does chase, and it patrols at 1.0 and charges at 1.2 with the sea down
+  // against 0.7 and 0.9 at any other level — its own spec says so, and one
+  // sounding is cheaper than the difference.
+  ['use', 'conch', 1, 140],
+
+  // ---------------------------------------------------------------- d1 0,5,3
+  // The Clawcrab Den, the one 2x1 room in the game, and the THIRD Piece of
+  // Heart.
+  //
+  // A MINIBOSS IS NOT `g.boss`. `defineBoss` builds it and its `init` clears
+  // `isBoss`, because `progress.beaten` is keyed off the MAP and a miniboss
+  // counted as a boss would mark the whole dungeon beaten — so `g.boss` is
+  // null in this room and the directive has to name what it is fighting:
+  // `['boss', 6000, 'clawcrab']`. `dFight` cannot take it; measured, it died
+  // in 480 frames from a full twelve.
+  //
+  // THE THIRD KEY IS SPENT HERE. The door at 2,3 is the only way between the
+  // den and the west antechamber (the room's own comment explains the four
+  // walled tiles that make that true), and 0,4,3 is entered only through it.
+  ['boss', 6000, 'clawcrab'],
+  ['dialogue', 600],
+  ['loot', 1500],
+  ['dialogue', 400],
+  ['goto', 3, 3, 900],
+  ['hold', ['left'], 24],
+  ['tap', 'a', 30],
+  ['dialogue', 300],
+  ['goto', 0, 3, 600],
+  ['exit', 'left', 300],
+
+  // ---------------------------------------------------------------- d1 0,4,3
+  // The Two Gauges. A door that opens only while one well reads drained and
+  // the other reads drowned, five tiles apart with a five-tile patch — so one
+  // of them is the base and the other is under the iron, and there is no way
+  // to have both.
+  //
+  // Sea to LOW, sink the iron so the WEST gauge keeps LOW, then take the sea
+  // to HIGH: the east gauge reads drowned, the west one is still dry, and the
+  // door gives. The bite is 3,4 — a radius-2 patch centred there covers
+  // columns 1..5 and rows 2..6, which holds 2,2 and cannot reach 7,2.
+  ['equip', 'anchor', 'A', 400],
+  ['use', 'conch', 2, 140],
+  ['anchor', 3, 4, 1600],
+  ['use', 'conch', 2, 140],
+  ['dialogue', 400],
+  // The fourth Piece of Heart, and with it the Heart Container: four hearts,
+  // refilled to full. Two came out of the caves west of the village, the third
+  // off the Clawcrab, and this is the one the door was for.
+  // Everything after this is fought on sixteen — which is what Gohmaraq
+  // costs.
+  ['loot', 1500],
+  ['dialogue', 600],
+  // The wing's one-way return stair, back to the Tide Gallery.
+  ['goto', 7, 6, 600],
+  ['wait', 120],
+  ['dialogue', 300],
+
+  // ---------------------------------------------------------------- d1 0,3,4
+  // The stair lands the player back in the Tide Gallery ON TOP OF ITS
+  // TEKTITE — the warp's exit tile is 4,3 and the tektite's spawn is 4,3 —
+  // with a crab in the next column. Both doors up the spine are already open,
+  // so the temptation is to walk straight through, and the first cut of this
+  // route did: it arrived on a full sixteen and was dead 120 frames later
+  // without a single directive in between noticing. Both of these drop
+  // `good`, which is the room's own answer to being crossed this often.
+  ['equip', 'sword', 'A', 400],
+  ['fight', 1600],
+  ['dialogue', 200],
+  ['loot', 600],
+  ['goto', 4, 1, 900],
+  ['exit', 'up', 400],
+
+  // ---------------------------------------------------------------- d1 0,3,3
+  // The Locked Stair, and its two zols are a fresh pair: a room re-spawns its
+  // entity list every time it is entered, so the ones the route killed on the
+  // way up are not the ones standing here now.
+  ['fight', 1600],
+  ['dialogue', 200],
+  ['loot', 600],
+  // AND PUT THE SEA BACK DOWN BEFORE OPENING THAT DOOR. The gauges left it at
+  // HIGH, and the Sluicegate's floor is `dSluice` — dry, then shallow, then
+  // DEEP. Its south doorway opens straight into that patch, so a player who
+  // walks up out of here at HIGH steps into water over his head with the room
+  // he wants on the far side of it: the run got in, could not reach the west
+  // wall, and every directive after it addressed a room it was not in.
+  // HIGH -> LOW -> MID is two soundings and MID is what the Long Sluice wants
+  // anyway.
+  ['use', 'conch', 2, 140],
+  ['goto', 4, 1, 900],
+  ['exit', 'up', 400],
+
+  // ---------------------------------------------------------------- d1 0,3,2
+  // ---- THE WEST WING ------------------------------------------------------
+  // The Long Sluice: the mirror of the other two gates. The DRAINS are near
+  // now, so the iron holds THEM full at MID and the sea goes down, emptying
+  // the wells beyond. Bite 7,3 for the same reason as the Long Race: the
+  // drains are columns 5-8 and a patch centred on 8 leaves column 5 an open
+  // pit at LOW. That pit is worth two quarter-hearts a crossing, measured.
+  ['equip', 'anchor', 'A', 400],
+  ['goto', 0, 3, 500],
+  ['exit', 'left', 300],
+  ['anchor', 7, 3, 1600],
+  ['use', 'conch', 2, 140],
+  ['goto', 0, 3, 900],
+  ['exit', 'left', 300],
+
+  // ---------------------------------------------------------------- d1 0,1,2
+  // Cistern Turn. A zol and a crab round a basin, neither of which gates
+  // anything; the run walks north through it.
+  ['goto', 4, 1, 600],
+  ['exit', 'up', 300],
+
+  // ---------------------------------------------------------------- d1 0,1,1
+  // The Drip Vault: the second pair of gauges, stacked five ROWS apart rather
+  // than five columns. Clear the keese first — it is a two-quarter-heart tax
+  // on standing still long enough to work the iron, measured — then hold the
+  // upper well at LOW and take the sea to HIGH.
+  ['equip', 'sword', 'A', 400],
+  ['fight', 900],
+  ['loot', 400],
+  ['equip', 'anchor', 'A', 400],
+  ['anchor', 4, 3, 1600],
+  ['use', 'conch', 2, 140],
+  ['dialogue', 400],
+  ['goto', 9, 3, 600],
+  ['exit', 'right', 300],
+
+  // ---------------------------------------------------------------- d1 0,2,1
+  // The Bosskey Vault, and the last thing between the run and the boss door.
+  ['equip', 'sword', 'A', 400],
+  ['fight', 900],
+  ['loot', 400],
+  ['goto', 4, 2, 600],
+  ['hold', ['down'], 6],
+  ['tap', 'a', 40],
+  ['dialogue', 400],
+  ['loot', 600],
+  // The west wing's own return stair, back down to the Locked Stair.
+  ['goto', 5, 5, 600],
+  ['wait', 120],
+  ['dialogue', 300],
+
+  // ---------------------------------------------------------------- d1 0,3,3
+  // Two zols, and they respawn — a room is re-populated every time it is
+  // entered, so the pair the route killed on the way up is a fresh pair now.
+  // They drop `good`, which is the dungeon's last chance to hand health back
+  // before the arena.
+  ['fight', 1500],
+  ['dialogue', 200],
+  ['loot', 600],
+  // Gohmaraq's shell holds its eye open TWICE as long at LOW (`gohmaraqSlam`
+  // doubles `openFor` there), and the boss room is `noTide` — the arena is
+  // whatever level was carried through the door. One sounding takes HIGH to
+  // LOW; this is the last decision of the dungeon and it is worth more than
+  // any item in it.
+  ['use', 'conch', 1, 140],
+  ['goto', 4, 1, 500],
+  ['exit', 'up', 400],
+
+  // ---------------------------------------------------------------- d1 0,3,2
+  // The boss door, above the chest the Anchor came out of.
+  ['goto', 4, 3, 600],
+  ['hold', ['up'], 24],
+  ['tap', 'a', 30],
+  ['dialogue', 300],
+  ['goto', 4, 1, 500],
+  ['exit', 'up', 400],
+  ['wait', 90],
+
+  // ---------------------------------------------------------------- d1 0,3,1
+  // GOHMARAQ, THE TIDEWASH CLAW — the first boss anything in this repository
+  // has ever fought outside god mode and won on the way past.
+  ['boss', 9000],
+  ['wait', 300],
+  ['dialogue', 900],
+  ['loot', 900],
+  ['dialogue', 900],
+  ['wait', 240],
 ];
 
 /**
- * Where the run actually stops, and why.
+ * Where the run ends, and what that now means.
  *
- * The goal of this harness is the Essence of Tidewash Grotto and it does not
- * reach it. Not because the game is unfinishable any more — the solid-entity
- * fix (`0b68e6b`) means every push block in D1 can genuinely be pushed, both
- * Small Keys are obtainable, and this route collects both and walks out with
- * the Anchor — but because everything past the Sluicegate is gated by the
- * Anchor's OWN verb (sink it on a tile, walk elsewhere, recall it) and the
- * actor-runtime has no directive for that: `dUse` presses whichever button an
- * item is on, which is right for a conch sounding or a sword swing and is not
- * enough to place an item at a chosen tile. Building that verb, and proving it
- * against the Iron Pipe / Long Race gate pair and the two anchor-gauge rooms,
- * is real dungeon-specific engineering and belongs to its own session — see
- * docs/NEXT-SESSION.md.
+ * IT REACHES AN ESSENCE. For the whole life of this harness this block
+ * explained a stopping point instead — first the Sluicegate, because the actor
+ * had no way to place the Anchor; then the Iron Pipe's far side, because it
+ * had no way to fight a boss. Both verbs exist now (`anchor` landed last
+ * session, `boss` this one), the route walks both wings of Tidewash Grotto,
+ * spends all three Small Keys and the Boss Key, and kills Gohmaraq at four
+ * hearts. `check-playthrough.mjs` asserts the Essence rather than a distance.
  *
- * So this asserts the furthest point the ACTOR currently allows, which is
- * also, for the first time, the furthest point the WORLD allows short of the
- * Anchor's own puzzles: failing to reach it is a regression in the actor or
- * the route, not a re-confirmation of a game bug.
+ * WHAT IS STILL NOT DRIVEN, so the next session does not have to find it:
+ * everything after D1. Five dungeons, the Coastwise Chain, the overworld's
+ * later gates and the other five bosses are all unrouted, and four of those
+ * five bosses have never been beaten by this actor in real combat on the seed
+ * this run uses — see the sweep table above `safe` in tools/actor-runtime.mjs
+ * for exactly which, and `tools/measure-boss-combat.mjs <d> --seed=N` for how
+ * to re-measure it.
  */
 export const GOAL = {
   essence: 1,
-  // The furthest this route drives the actor. Failing to REACH this is a
-  // regression; reaching further (once the Anchor-placement verb exists) is
-  // the next extension, not a discrepancy to paper over.
-  room: 'd1/0,5,2',
-  // Not a game blocker — see the comment above. Named here so a future
-  // extension of the route knows exactly what capability it is adding.
-  // ANCHOR PLACEMENT IS NO LONGER THE MISSING VERB — the run sinks the iron,
-  // sounds the conch and walks the Iron Pipe for real. What stops it now is the
-  // east wing's third key and the boss: `dFight` can trade blows with ordinary
-  // enemies, and nothing here has ever fought Gohmaraq or carried a Boss Key.
-  needsVerb: 'a boss fight, and the third Small Key behind the Clawcrab door',
-  keysNeeded: 2,
-  keysObtainable: 2,
+  // The room the run finishes in: Gohmaraq's arena, with the Essence taken.
+  room: 'd1/0,3,1',
+  // Nothing left to add for D1. Named for the next extension: D2's route needs
+  // the Lens and the bombs, and `dBoss` has never beaten Anemos in real combat.
+  needsVerb: null,
+  keysNeeded: 3,
+  keysObtainable: 3,
 };

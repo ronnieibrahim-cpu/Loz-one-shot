@@ -306,11 +306,12 @@ printWorstStretches(a.roomHealth, s.maxHearts);
 
 // --- 1. how far a new game gets ---------------------------------------------
 //
-// The target used to be a game bug — GOAL.blocked named the reason a new game
-// could not be finished — and is now a capability gap in the ACTOR: past the
-// Sluicegate every room is gated by the Anchor's own placement verb, which
-// this harness has no directive for. See GOAL's own comment in
-// playthrough-route.mjs.
+// This assertion has been a stopping point twice — first the Sluicegate, then
+// the Iron Pipe's far side, each time naming a verb the ACTOR did not have
+// rather than a bug in the game. It is an ESSENCE now. A run that reaches
+// GOAL.room without GOAL.essence has fought Gohmaraq and lost; a run that
+// stops short has broken somewhere earlier, and the room table above says
+// where.
 
 if (GOAL.needsVerb) {
   console.log(`  !! the route stops at ${GOAL.room}: the actor has no directive for `
@@ -320,11 +321,15 @@ if (GOAL.needsVerb) {
 const ended = `${s.mapId}/${s.room}`;
 check('the run gets as far as the route currently drives it (' + GOAL.room + ')',
   ended === GOAL.room, `stopped in ${ended}`);
-check('the run earned both Small Keys and spent them on both locked doors',
+check(`the run earned all ${GOAL.keysObtainable} Small Keys and spent them on locked doors`,
   s.doorsChanged >= GOAL.keysObtainable && a.blocksMoved >= 4,
   `doors ${s.doorsChanged}, blocks moved ${a.blocksMoved}`);
-check('the Essence is not yet reached — the route does not go that far',
-  !s.essences.includes(GOAL.essence), `essences [${s.essences.join(',')}]`);
+check('THE ESSENCE OF TIDEWASH GROTTO IS TAKEN — the dungeon is finished',
+  s.essences.includes(GOAL.essence), `essences [${s.essences.join(',')}]`);
+check('the boss was beaten in real combat, with nothing granted',
+  !!(s.beaten && s.beaten.d1), `beaten ${JSON.stringify(s.beaten || {})}`);
+check('the run collected four Pieces of Heart and the Container they make',
+  s.maxHearts >= 16, `maxHearts ${s.maxHearts}`);
 
 // --- 2. nothing was handed to it -------------------------------------------
 //

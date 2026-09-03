@@ -5512,6 +5512,28 @@ function tideAt(game, e) {
   return game.tide.levelAt(tx, ty, game.room);
 }
 
+/**
+ * Can this entity STAND on that tile — not merely move through it?
+ *
+ * `canOccupy` answers a narrower question. A pit is not solid, so the engine
+ * lets a walker step into one and then punishes him for it; deep water, lava
+ * and a ledge's jumpable face are all the same shape of answer. This is the
+ * "somewhere to put your feet" rule, and it lives here rather than in each
+ * caller because a caller with its own copy of it is the private-model
+ * mistake this project keeps paying for (CLAUDE.md's collision rule).
+ *
+ * Returns the pixel position to stand at, or null.
+ */
+function standAt(game, e, tx, ty, o = {}) {
+  if (tx < 0 || ty < 0 || tx >= game.room.tw || ty >= game.room.th) return null;
+  const f = game.room.flagsAt(tx, ty, game.tide);
+  if (f & (F.SOLID | F.VOID | F.DEEP | F.PIT | F.HAZARD | F.JUMPABLE)) return null;
+  const px = tx * TILE + (TILE - e.w) / 2;
+  const py = ty * TILE + (TILE - e.h) / 2;
+  if (!canOccupy(game, e, px, py, o.caps || { jumping: false, swim: false })) return null;
+  return { x: px, y: py };
+}
+
 /** Nearest tile the given entity can legally stand on. Used after a tide change. */
 function findSafeTile(game, e, maxRadius = 6) {
   const { tx, ty } = groundTile(game, e);
@@ -5519,13 +5541,8 @@ function findSafeTile(game, e, maxRadius = 6) {
     for (let dy = -r; dy <= r; dy++) {
       for (let dx = -r; dx <= r; dx++) {
         if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
-        const nx = tx + dx, ny = ty + dy;
-        if (nx < 0 || ny < 0 || nx >= game.room.tw || ny >= game.room.th) continue;
-        const f = game.room.flagsAt(nx, ny, game.tide);
-        if (f & (F.SOLID | F.VOID | F.DEEP | F.PIT | F.HAZARD | F.JUMPABLE)) continue;
-        const px = nx * TILE + (TILE - e.w) / 2;
-        const py = ny * TILE + (TILE - e.h) / 2;
-        if (canOccupy(game, e, px, py, { jumping: false, swim: false })) return { x: px, y: py };
+        const at = standAt(game, e, tx + dx, ty + dy);
+        if (at) return at;
       }
     }
   }
@@ -5544,6 +5561,7 @@ __exports["canOccupy"] = canOccupy;
 __exports["groundFlags"] = groundFlags;
 __exports["groundTile"] = groundTile;
 __exports["tideAt"] = tideAt;
+__exports["standAt"] = standAt;
 __exports["findSafeTile"] = findSafeTile;
 });
 

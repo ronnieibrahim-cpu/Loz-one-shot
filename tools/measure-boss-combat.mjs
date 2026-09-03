@@ -41,7 +41,12 @@ import { installRuntime } from './actor-runtime.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, '..');
-const SEED = 20260806;
+// The seed. One seed is one sample, and a boss fight is a small deterministic
+// simulation in which any change to the actor reshuffles the whole fight's
+// timing — three sessions in a row have now mistaken a single seed's swing for
+// a fix. `--seed=N` is how a change is shown to be a real improvement rather
+// than a lucky reshuffle: sweep it.
+const DEFAULT_SEED = 20260806;
 const LOW = 0, MID = 1, HIGH = 2;
 
 // Same fights and design tide as check-bosses.mjs's FIGHTS table (kept in
@@ -58,8 +63,15 @@ const FIGHTS = {
 };
 
 const args = process.argv.slice(2);
+const seedArg = args.find(a => a.startsWith('--seed='));
+const SEED = seedArg ? Number(seedArg.slice('--seed='.length)) : DEFAULT_SEED;
 const dungeonId = args.find(a => !a.startsWith('--')) || 'd1';
 const godMode = args.includes('--god');
+// Turn off the actor's hazard-avoidance (`safe` in dBoss) and fight with the
+// verb exactly as it was before it existed. Kept so the trade that shipped it
+// — D1 unwinnable to won on every seed, D2/D3/D5 the other way — stays a thing
+// anyone can re-measure rather than a paragraph in a handoff doc.
+const noEvade = args.includes('--no-evade');
 const budgetArg = args.find(a => a.startsWith('--budget='));
 const BUDGET = budgetArg ? Number(budgetArg.slice('--budget='.length)) : 9000;
 
@@ -127,6 +139,7 @@ page.on('pageerror', e => errs.push('PAGEERROR: ' + (e.stack || e.message)));
 await page.goto(`http://localhost:${PORT}/index.html?seed=${SEED}`, { waitUntil: 'load' });
 await page.waitForFunction(() => !!window.__game && !!window.__harness, { timeout: 20000 });
 await page.evaluate(installRuntime);
+await page.evaluate(v => { window.__ACTOR_NO_EVADE = v; }, noEvade);
 
 // Instrument every point of damage taken, without touching the actor: log
 // amount, source shape, distance to the boss, and the boss's own tell state
