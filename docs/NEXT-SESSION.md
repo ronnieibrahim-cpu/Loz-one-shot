@@ -187,15 +187,70 @@ solve-switches    OK     validate       OK      check-build     OK
 `tools/rip-terrain.py` was run before anything was changed and reproduced
 `src/data/tiles-terrain.js` byte-identically, per CLAUDE.md.
 
+### Boss combat sweep, 36 seeds a side: D1's win is real, D2/D5 were noise, D3 is real and still open
+
+The four-seed table above was not enough to believe, and it lied about two
+bosses. Swept `measure-boss-combat.mjs <d> --seed=N` (and `--no-evade`) to 36
+seeds a side. Wins out of 36, in-order health, no god mode:
+
+```
+       d1     d2     d3     d4     d5     d6
+old    1/36   4/36  25/36  36/36  10/36   0/36
+now   31/36   5/36  15/36  36/36  13/36   0/36
+```
+
+**D2 and D5 come out level** (Fisher's exact p=1.00 and p=0.61) — the 4-seed
+table's "real cost" on both was the seed sample, not the boss. D5's damage log
+confirms it independently: it is almost entirely projectile and summoned-zol
+contact, never `rootmaw` itself. **D1 is confirmed real and is now the biggest
+number in the table** (1/36 to 31/36 — the 4-seed "0/4" undersold it, not
+oversold it). **D3 is a real, significant regression** (p=0.032 at 36, p=0.0089
+against `--no-evade`) and stayed real at every sample size this session tried.
+
+D3's damage log names the mechanism: `hazards()` (tools/actor-runtime.mjs)
+deliberately excludes the boss the player is fighting — counting it makes
+every approach look unsafe and the actor circles forever, which cost D1 the
+win outright when tried — so a swap chosen to dodge a summoned zol's shot had
+nothing telling it Gloomtide's own body was standing in one of the eight
+candidate cells. Seed 20260806 took three separate 4-quarter-heart
+`gloomtide` contact hits while a zol was on screen, all from the
+shot-avoidance swap relanding the player on the boss.
+
+Built and shipped `noContact`/`noContactVel` on `evade`: a candidate whose
+projected one-frame box would overlap the boss — using the boss's own
+estimated velocity, not just its current position — is vetoed, narrower than
+the existing `avoid` retreat veto (which forbids any direction with a
+component toward the target and was already measured to push the actor away
+from every opening when tried on an approach). It fixed exactly the bug it
+was built for: seed 20260806 went from three `gloomtide` hits to one, and
+from a loss to a win. **It did not move D3's aggregate row** — 15/36 before
+it, 15/36 after, two seeds flipped each way — and cost nothing on any of the
+other five bosses at 36 seeds. Shipped anyway, on its own merits (a swap
+landing on the entity it was built to route around is a bug regardless of
+whether it's the dominant cause of D3's losses), not on a claim that it fixes
+D3. The full reasoning and the sweep numbers live in the comment above
+`evade` in `tools/actor-runtime.mjs`.
+
+**What is very likely the rest of D3's gap, not attempted this session:**
+`hazards()` gives every non-projectile enemy `vx:0, vy:0` — a summoned zol or
+gel closing on the player is exactly as invisible to `moveCost` as the boss
+itself used to be, and D3's damage log is mostly small `gel`/`zol` contact
+hits, not boss hits. That is a `hazards()` fix (give walking enemies a real
+one-frame velocity estimate, the same trick `noContactVel` uses for the
+boss), not an `evade` one, and it touches every caller of `evade` —
+`dFight`'s room-clearing included — so it needs its own sweep across d1-d6
+AND a `check-playthrough`/`replay` pass before it ships, not just a D3 number.
+
 ### Hand it back — what was NOT verified
 
 * **Nobody has looked at the six Essence bells in the quest MENU at 1x.** The
   title cards were screenshotted and are right; the menu row draws them 18
   pixels apart at native size and has not been seen. Open the map/quest screen
   with an Essence taken.
-* **The five other bosses' real-combat numbers moved and only four seeds were
-  swept.** If D2/D3/D5 matter before their routes exist, sweep more seeds
-  before believing either row of that table.
+* **D3's regression is real and still open.** `noContact`/`noContactVel`
+  fixed the bug they targeted without moving D3's win rate — see above. The
+  `hazards()` static-velocity theory is a hypothesis from one damage log, not
+  a measured fix.
 * **The playthrough is ONE seed.** It is a tape and it replays to the pixel,
   which is the point, but it does not say the route is robust — only that this
   run happened.

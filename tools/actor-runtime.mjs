@@ -770,6 +770,38 @@ export async function installRuntime() {
   /**
    * The swap itself.
    *
+   * SWEPT AT 36 SEEDS A SIDE (`measure-boss-combat.mjs <d> --seed=N`, and
+   * `--no-evade` for the pre-`evade` baseline), because the first sweep of
+   * this table — 4 seeds — was not enough to believe: at n=4, D2 and D5 both
+   * read as real costs of `evade`; at n=36 D2 and D5 are statistically level
+   * with `--no-evade` (Fisher's exact p=1.00 and p=0.61) and D1's own
+   * "old" row moves from a false-looking 0/4 to a real 1/36 — the swing was
+   * the seed sample, not the boss. Wins out of 36, in-order health, no god
+   * mode:
+   *
+   *          d1     d2     d3     d4     d5     d6
+   *   old    1/36   4/36  25/36  36/36  10/36   0/36
+   *   now   31/36   5/36  15/36  36/36  13/36   0/36
+   *
+   * D1 is the one the game's own assertion (`check-playthrough.mjs`) needs
+   * and the one `evade` exists for — 1/36 to 31/36. D2, D4, D5 and D6 are
+   * unchanged at this sample size (D4 and D6 are ceiling/floor effects, not
+   * evidence of anything). **D3 is a real, significant regression** (p=0.032
+   * at 36, p=0.0089 against `--no-evade`) that `noContact`/`noContactVel`
+   * below were built to answer, and it is an HONEST PARTIAL ANSWER: they
+   * fixed the exact bug they were built for (seed 20260806 went from three
+   * `gloomtide` contact hits to one, and from a loss to a win) without
+   * moving D3's aggregate row — 15/36 before them, 15/36 after, two seeds
+   * flipped each way. `hazards()` gives every non-projectile enemy `vx:0,
+   * vy:0` (see its own comment), so a summoned zol or gel closing on the
+   * player is exactly as invisible to `moveCost` as the boss itself used to
+   * be, and D3's damage log is mostly small `gel`/`zol` contact hits, not
+   * boss hits — that is very likely the rest of the gap, and it is a
+   * `hazards()` fix, not an `evade` one; not attempted this session; not
+   * proven, only observed. **Ship `noContact` on its own merits — it closes
+   * a real bug and cost nothing on any of the other five bosses — not on the
+   * claim that it fixes D3.**
+   *
    *   `fence`      an optional filter a candidate has to survive unchanged.
    *                `dBoss` passes its arena fence so a swap cannot walk out of
    *                a boss room; `dGoto` passes nothing, because leaving the

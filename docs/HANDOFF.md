@@ -460,6 +460,29 @@ BEFORE checking a file out for isolation, not after.**
   exists because this repo mistook a single seed's swing for a fix twice.
   A parameter that wins at the middle of a PLATEAU is a fix; one that wins at a
   spike among five samples is the sweep finding noise.
+- **A 4-seed sweep lied in BOTH directions, not just toward false positives.**
+  Re-swept the D1-D6 `evade` table at 36 seeds a side (S20): D2 and D5, which
+  the 4-seed table read as real costs of `evade`, came out statistically level
+  with `--no-evade` (Fisher's exact p=1.00, p=0.61) — noise. D1, which the
+  4-seed table read as a clean 0/4 to 4/4, was actually the UNDERSTATED row:
+  1/36 to 31/36. **Do not read a 4-seed swing as "probably right, just soften
+  it" — a small sweep can be wrong about which bosses are affected at all, not
+  only about the exact ratio.** And when comparing a "before" count against an
+  "after" count, sweep them to the SAME seed set — comparing a 16-seed 16/16
+  against a 36-seed 31/36 reads as a regression that a same-N comparison (32/36
+  vs 31/36) shows is not there; the gap was sample size, not the change.
+- **`hazards()` (`tools/actor-runtime.mjs`) gives every non-projectile enemy
+  `vx:0, vy:0`.** `moveCost`'s time-of-closest-approach math is exact for a
+  shot, which carries its real velocity, but a walking zol or gel is scored as
+  if it were standing still. Found while fixing D3's boss-contact regression
+  (S20): the fix (`noContact`/`noContactVel` on `evade`, boss-only) closed the
+  specific bug it targeted but left D3's aggregate win rate exactly where it
+  started, because most of D3's evade-cost damage log is small `gel`/`zol`
+  CONTACT hits, not boss hits — a moving minion is exactly as invisible to
+  `moveCost` as the boss itself used to be. Not fixed: it would need a
+  velocity estimate for every hazard entity, not just the one `dBoss` already
+  tracks, and it touches `dFight`'s room-clearing too, so it needs its own
+  full sweep and a `check-playthrough`/`replay` pass before it ships.
 - **Standing still is a legal move and it is a deadlock for a walker.** A
   hazard-aware movement filter that includes "stay put" among its candidates
   will pick it in front of a stationary enemy, because standing still is
