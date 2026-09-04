@@ -49,49 +49,49 @@ have caught it, and prove the assertion goes red against the old code.
 Pick the first one or two that fit the session. Finish them properly and leave
 the rest better described than you found them.
 
-### 1. YOU CANNOT WALK OUT OF A DUNGEON UNLESS YOU ARE LINED UP ON ONE TILE
+### 1. The usable items are hand-drawn, and the sheet has 29 of them
 
-Reported by a person stuck inside Tidewash Grotto who could not find the way
-out at all. Every dungeon mouth room in `src/data/dungeons-a.js` and
-`dungeons-b.js` ends in `'####/#####'`: a single `dStairs` tile at x=4 of the
-bottom wall row, with a `warps` entry pointing back to the overworld. Link's
-collision rect is 10px wide, so the door only admits him from roughly x=56..68
-of a 16px tile.
+**Asked for directly: clean up the pixel art on the usable items to match the
+Oracles — the gear icons, the pickups and the dungeon items.**
+`docs/ART-BACKLOG.md`'s top entry is the full brief, measured rather than
+estimated; read it before touching anything. The short version:
 
-Measured in the live engine in `d1/0,3,7` (Grotto Mouth), holding DOWN:
+  * `tools/rip-hud.py` extracts EIGHT of the 37 populated cells on the Oracle
+    gear grid. Twenty-nine authentic icons — feather, cape, both boomerangs,
+    both switch-hook levels, satchel, shovel, four horns, rod, flute, magnet
+    gloves, three rings, bracelet L-1/L-2, jar — are sitting in
+    `assets/sheets/oracle-seasons-hud-gear.png` unused. So is a second
+    white-plate set of the same icons, and the held-item and projectile strips
+    below them.
+  * `src/data/sprites-gear.js` hand-draws 25 icons and
+    `src/data/sprites-world.js` hand-draws EVERY pickup in the game.
+  * **Start with the rupee and the heart.** `hud_rupee` and `hud_heart0..4` are
+    extracted at 8x8 for the status bar while `p_rupee` and `p_heart` are
+    hand-drawn at 16x16 for the floor — the same object by two different hands,
+    on screen at the same time. That is the one a player sees side by side.
+  * **Goal 2 does not block this and does not license a port.** Extract the
+    generic objects outright (rupee, heart, fairy, key, bottle, jar, bomb,
+    map). For the seven items that are OURS, the extracted cells are the
+    REGISTER to redraw against, not art to paste on: the horn cell is not the
+    Moon Conch and the switch hook is not the Dredge Line.
 
-    start x = 60, 64, 68  ->  exits to the overworld
-    start x = 72, 76, 80  ->  stops dead at y=97 against the wall, never leaves
+Nothing in CLAUDE.md's table can see this — `check-items` proves verbs and
+`validate` proves existence, and neither has an opinion about whether a sprite
+was drawn or extracted. It ends with a person looking.
 
-The room's own north opening is TWO tiles wide, so a player walking down the
-middle of the room — which is where that opening puts him — meets blank blue
-brick beside the stairs. All six dungeons share this grid (Grotto, Spire,
-Sanctum, Shrine and the rest).
+### 1b. YOU CANNOT WALK OUT OF A DUNGEON — **LANDED IN S33, do not redo**
 
-Two things are wrong and both want fixing:
+The dungeon mouths were one 16px tile against a 10px hitbox: three of thirteen
+start positions across the Grotto's entrance room could leave. Fixed by
+`Game.doorwayPull` (one rule, every warp in the game, caves and houses
+included) plus a two-tile `dMouth` arch at all six mouths, both halves warping.
+`tools/check-exits.mjs` is the new checker — 192 assertions, in CLAUDE.md's
+table, proved red (12 failures) against the old door. Full account in
+`docs/NEXT-SESSION.md` S33.
 
-  (a) **It does not read as a door.** Look at how the source games draw a
-      dungeon entrance: an arch two tiles wide, framed, reading as an opening
-      in the wall rather than a tile laid into it. `docs/ART-DIRECTION.md` and
-      `assets/sheets/` FIRST — if the Seasons dungeon sheet has a mouth or
-      arch tile, extract it via `tools/rip-dungeon-themes.py` per CLAUDE.md's
-      extraction rule rather than drawing one.
-  (b) **A one-tile warp the player must be aligned on is a movement problem
-      regardless of art.** Decide whether the answer is a wider door, a wider
-      warp trigger, or a doorway that pulls the player to its centre the way
-      the source games do at a stairwell — and whichever it is, it must be ONE
-      RULE applied at every dungeon mouth, not six edits.
-
-Then close the checker gap that let this live: **nothing proves a dungeon can
-be LEFT.** `walk-dungeons.mjs` floods rooms, `check-towns.mjs` proves town
-doorways round-trip ON FOOT, and no tool asks the same question of a dungeon.
-Write the assertion (extend `walk-dungeons` or add a tool — your call, but say
-which in its header and add it to CLAUDE.md's table): for every dungeon,
-entering from the overworld and walking the entrance room's reachable floor
-must reach a tile that warps back out, driven in the real engine with a real
-player, not modelled. **Prove it goes RED against today's one-tile door before
-you widen it.** Check caves and house interiors for the same shape while you
-are there.
+Still open from that entry, and worth a look if you are nearby: nothing floods
+a dungeon's interior for STRANDED FLOOR the way `check-strands` does the
+overworld (see item 7).
 
 ### 2. Five of the six dungeons have never been PLAYED
 

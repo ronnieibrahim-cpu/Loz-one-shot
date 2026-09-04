@@ -109,6 +109,19 @@ condition to check before assuming a re-record: not "did I touch movement" but
 Whole table re-run green afterwards, `check-playthrough` 21/21 included.
 (`check-tilesets` needs `pip install pillow` in a fresh container; it passes.)
 
+**Action item added, not started: the usable items are hand-drawn.** Asked for
+directly at the end of the session — clean up the pixel art on the usable
+items, pickups and dungeon items included, to match the Oracles. Full brief at
+the top of `docs/ART-BACKLOG.md`, surfaced as item 1 of
+`docs/prompts/NEXT-PROMPT.md`. Measured while writing it: `tools/rip-hud.py`
+extracts EIGHT of the 37 populated cells on the Oracle gear grid, leaving 29
+authentic icons unused, plus a second white-plate set and the held-item and
+projectile strips; `sprites-gear.js` hand-draws 25 icons and
+`sprites-world.js` hand-draws every pickup in the game. The sharpest single
+symptom is that `hud_rupee`/`hud_heart0..4` are EXTRACTED at 8x8 for the status
+bar while `p_rupee`/`p_heart` are HAND-DRAWN at 16x16 for the floor — the same
+object by two different hands, on screen together.
+
 ---
 
 ## S32 — A death after a Continue went to the save room, not the dungeon mouth
