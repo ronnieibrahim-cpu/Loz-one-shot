@@ -1,3 +1,48 @@
+## S38b — The kilnshell stops being a shield, and the fix was a palette
+
+The collision S38 named as the next job: `i_kilnshell` and `o_kilnshell` drew
+in the `stone` palette, and **a grey fan with ribs is a shield** — the actual
+shield sits two cells away in the same items menu.
+
+**Three options were built and rendered side by side before choosing**, which
+is the part worth copying:
+
+  1. hinge ears added to the existing fan — came out a lumpy blob;
+  2. the fan redrawn column-by-column, hinge at the bottom, lower edge sweeping
+     up at the sides, rim undulating over three lobes — **read as a claw.** The
+     rim's one-pixel notches turn into black slots at 16px and the eye reads
+     them as fingers. A scalloped rim is below the resolution this art has;
+  3. **the palette alone — which fixed it.**
+
+So the shape was never the problem and the redraw would have made it worse. The
+two unlit sprites now carry their own bone-and-scorch palette
+(`['#f8f0dc','#d8c4a0','#9a6a44','#000000']`), and the lit pair keep `fire`,
+which was already unmistakable.
+
+**Its 12x11 footprint is deliberately left outside the register.** S38 measured
+the gear median at 8 wide and 30% fill, but the source's own widest icons — the
+four animal flutes — are 15-16 wide and up to 57% full. A cockle is a wide
+object. **Width was never what made this read wrong**, and trimming it to the
+median would have been the same mistake as taking the register off the swords
+and shields alone.
+
+The general lesson, and it is now three-for-three this session: **build the
+alternatives and look at them together before committing to the expensive
+one.** Two of the three options here were redraws and both were worse than the
+one-line palette change.
+
+Whole table green: `replay` 51/51 with no baseline re-recorded,
+`check-playthrough` 21/21, `check-rippers` 17/17, `check-items`, `check-hearts`,
+`check-exits`, `check-placement`.
+
+**Left on the art, all width-only and none illegible:** `i_coin` (12x13, 51%),
+`o_kilnshell_lit0/1` (12x16, 53%), `i_bellows`, `i_lens`, `i_charm`,
+`i_bottle`. After that the icon work really is finished and what remains in
+`docs/ART-BACKLOG.md` is terrain: the land/land fringe, and the regions never
+read as pictures.
+
+---
+
 ## S38 — Four gear icons brought into the source's own register
 
 Continuing the craft job S37 measured. The finding there was that the

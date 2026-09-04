@@ -39266,7 +39266,7 @@ const GEAR_ART = {
   // sat low in the cell so it reads as resting rather than floating. The
   // outline is computed by dilation on a PADDED grid — see the title
   // wordmark's note in docs/HANDOFF.md for what happens without the pad.
-  i_kilnshell: { pal: 'stone', art: `
+  i_kilnshell: { pal: 'i_kilnshell', art: `
     ................
     ................
     ................
@@ -39283,7 +39283,7 @@ const GEAR_ART = {
     ......3333......
     ................
     ................` },
-  o_kilnshell: { pal: 'stone', art: `
+  o_kilnshell: { pal: 'i_kilnshell', art: `
     ................
     ................
     ................
@@ -39399,6 +39399,20 @@ const GEAR_ART = {
 };
 
 const GEAR_PALETTES = {
+  // A COCKLE BURNT DOWN TO LIME, and the reason it has a palette at all: both
+  // unlit kilnshell sprites used to draw in `stone`, and a grey fan with ribs
+  // IS A SHIELD — the actual shield sits two cells away in the same menu. The
+  // shape was never the problem. Three things were tried side by side: hinge
+  // ears added to this fan, a fan redrawn column-by-column with a scalloped
+  // rim, and the palette alone. The ears came out a lumpy blob and the redraw
+  // read as a claw; the palette alone fixed it. Bone and scorch, no steel.
+  //
+  // Its 12x11 footprint is left as it is. It sits outside the gear register's
+  // median (8 wide, 30% fill) and that is fine — the source's own widest icons,
+  // the four animal flutes, are 15-16 wide and up to 57% full. A cockle is a
+  // wide object. Width was never what made this read wrong.
+  i_kilnshell: ['#f8f0dc', '#d8c4a0', '#9a6a44', '#000000'],
+
   // Raw bone: grey-white, no warmth, nothing cut into it yet.
   p_blank: ['#f0f0e8', '#b8b8a8', '#787868', '#000000'],
   // Carved: the same bone warmed by handling, with the scrimshander's ink in

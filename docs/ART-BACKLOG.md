@@ -75,11 +75,22 @@ chosen because they failed on LEGIBILITY and not merely on width:
 two palettes, which is how the source separates sword and shield levels and is
 why `icon: ['i_cleats','i_cleats2']` reads as one item upgraded.
 
+**The kilnshell/shield collision is fixed, and the fix was NOT a redraw (S38).**
+`i_kilnshell` and `o_kilnshell` drew in the `stone` palette, and a grey fan with
+ribs IS a shield — the actual shield sits two cells away in the same menu.
+Three options were built and rendered side by side: hinge ears added to the
+existing fan, a fan redrawn column-by-column with a scalloped rim, and the
+palette alone. **The ears came out a lumpy blob, the redraw read as a claw, and
+the palette alone fixed it.** They now carry their own bone-and-scorch palette.
+Its 12x11 footprint is left alone deliberately — a cockle is a wide object, the
+source's own widest icons (the four animal flutes) are 15-16 wide and up to 57%
+full, and width was never what made this read wrong. **Do not redraw this
+shape**; the two attempts are in S38's history if anyone wants to see them.
+
 **Still outside the register, and still to do:** `i_coin` (12x13, 51%),
-`o_kilnshell_lit0/1` (12x16, 53%), `i_kilnshell` (12x11, 42% — and it reads as
-a SHIELD, which collides with the actual shield two cells away), `i_bellows`
-(12x14, 47%), `i_lens` (12x14, 41%), `i_charm`, `i_bottle`. None of these is
-illegible, which is why they were left; they are width alone.
+`o_kilnshell_lit0/1` (12x16, 53%), `i_bellows` (12x14, 47%), `i_lens` (12x14,
+41%), `i_charm`, `i_bottle`. None of these is illegible, which is why they were
+left; they are width alone.
 
 **A hard constraint discovered drawing these: nothing narrower than 4px carries
 an interior.** Every pixel of a 2px run is an edge, so the outliner paints the
