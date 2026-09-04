@@ -249,7 +249,7 @@ const main = async () => {
       { encoding: 'utf8' });
     const out = (r.stdout || '') + (r.stderr || '');
     for (const line of out.trim().split('\n')) console.log('  ' + line);
-    check('every character the game can display has a glyph', r.status === 0, 'see tools/check-text.mjs');
+    check('every character has a glyph, and every description fits its panel', r.status === 0, 'see tools/check-text.mjs');
   }
 
   // T47: a dialogue id the world asks for and story.js does not define shows

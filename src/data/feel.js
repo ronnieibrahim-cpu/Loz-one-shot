@@ -1218,6 +1218,24 @@ export const CHARM_CASE_ESSENCES = 6;
  *  alongside him; the arc effect is drawn a pixel further out again. */
 export const BLADE_REACH_PX = 11;
 
+// ---------------------------------------------------------------------------
+// Pause menu
+// ---------------------------------------------------------------------------
+
+/** f — how long one line of a scrolling item or charm description is held
+ *  before the next one slides up. guessed; a line of this font at this width
+ *  is a dozen words at most, and 96 frames is a comfortable read of one
+ *  without the panel feeling frozen. The description panel is one line tall
+ *  and several descriptions wrap to three, so this is the ONLY way the rest
+ *  of the words are ever seen. */
+export const MENU_DESC_DWELL = 96;
+
+/** f — extra frames the FIRST line of a scrolling description is held for,
+ *  on top of MENU_DESC_DWELL. guessed. The cycle wraps from the last line
+ *  straight back to the first, and without a longer beat there the loop reads
+ *  as a jitter rather than as a sentence starting again. */
+export const MENU_DESC_HOLD = 48;
+
 /** px — how far out from Link the blade is drawn during the WIND-UP and the
  *  FOLLOW-THROUGH, the frames either side of the active swing. guessed. The
  *  sword starts and finishes the arc across Link's body rather than out at

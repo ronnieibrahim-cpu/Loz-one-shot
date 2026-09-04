@@ -3451,6 +3451,15 @@ back to the level that suits them.
   into an upward one. Nothing in the checker table can see any of this: shoot
   the swing frame by frame with `__harness.takeOver()` + `step`, and look.
 
+- **A `.slice()` on a description is a silent edit of the game's own words.**
+  The pause menu cut item descriptions at 33 characters and charm descriptions
+  at 38, with an ellipsis, and nine of seventeen items lost the second half of
+  a two-clause sentence — including every "press again to recall it" clause,
+  which is the only place the game says how to get a thrown item back. It
+  looked deliberate, it read as a design decision, and no checker can tell a
+  truncation from a short description. If the panel cannot hold the text, the
+  panel scrolls; it does not shorten what was written.
+
 **A ledge is solid from three sides, so it partitions the room it is in.**
 Placing one is the same class of hazard as a mis-stamped doorway. The 38 runs
 placed were chosen by a script that, for every candidate run, re-floods the room

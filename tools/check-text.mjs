@@ -30,6 +30,8 @@ import { hasGlyph } from '../src/gfx/font.js';
 import { ITEMS } from '../src/game/items.js';
 import { CHARMS } from '../src/game/scrimshaw.js';
 import { TRADE_ITEMS } from '../src/data/trade.js';
+import { wrapText, textWidth } from '../src/gfx/font.js';
+import { DESC_WRAP_W } from '../src/game/menu.js';
 
 const VERBOSE = process.argv.includes('--verbose');
 installData();
@@ -70,7 +72,10 @@ for (const m of MAPS.values()) {
     }
   }
 }
-for (const [k, v] of Object.entries(ITEMS || {})) scan(v && v.name, `item ${k}`);
+for (const [k, v] of Object.entries(ITEMS || {})) {
+  scan(v && v.name, `item ${k}`);
+  scan(v && v.desc, `item ${k}.desc`);
+}
 for (const [k, v] of Object.entries(CHARMS || {})) {
   scan(v && v.name, `charm ${k}`);
   scan(v && v.desc, `charm ${k}.desc`);
@@ -96,4 +101,32 @@ if (missing.size) {
     `src/gfx/font.js, or use a character that has one.`);
   process.exit(1);
 }
-console.log('check-text: OK — every displayable character has a glyph');
+// -------------------------------------------------------------------------
+// Descriptions have to FIT the panel that scrolls them.
+//
+// The pause menu wraps an item or charm description to its panel and cycles it
+// a line at a time, so length is no longer a reason to cut one — but wrapText
+// is greedy on SPACES, and a single word wider than the panel is the one thing
+// it cannot break. Such a word does not warn: it simply runs off the right
+// edge of the panel and out of the screen, and the checker table would stay
+// green. The widths come from the menu itself (DESC_WRAP_W), so this assertion
+// follows the panel rather than describing a panel that used to exist.
+const wide = [];
+function fits(text, maxW, where) {
+  if (typeof text !== 'string') return;
+  for (const line of wrapText(text, maxW)) {
+    const w = textWidth(line);
+    if (w > maxW) wide.push(`${where}: "${line}" is ${w}px in a ${maxW}px panel`);
+  }
+}
+for (const [k, v] of Object.entries(ITEMS || {})) fits(v && v.desc, DESC_WRAP_W.item, `item ${k}.desc`);
+for (const [k, v] of Object.entries(CHARMS || {})) fits(v && v.desc, DESC_WRAP_W.charm, `charm ${k}.desc`);
+
+if (wide.length) {
+  console.error(`\n${wide.length} description line(s) too wide for the panel that shows them:`);
+  for (const w of wide) console.error('  ' + w);
+  console.error('\nA word that cannot be broken runs off the edge. Reword it.');
+  process.exit(1);
+}
+console.log(`check-text: OK — every displayable character has a glyph, and every ` +
+  `description wraps inside its panel`);

@@ -1,3 +1,43 @@
+## S30 — Item and charm descriptions scroll instead of being cut off
+
+`Menu.drawItems` cut every item description with `.slice(0, 33) + '…'`, and
+`drawCharms` with `.slice(0, 38)`. That is not a summary — "Throw it to hold
+the tide where it lands. Press again to recall it." became "Throw it to hold
+the tide where…", and the half that says how to get the Tidestone BACK was
+unreachable from anywhere inside the game. Nine of the seventeen item
+descriptions and a third of the charms lost words that way.
+
+The panel cannot grow: the item grid is above it (its fourth row is already
+partly under the panel once you own all seventeen) and the button hint is
+below. So the one line it has now SCROLLS.
+
+  - `Menu.descWindow(text, maxW, visible)` wraps with the font's own
+    `wrapText` and returns the lines showing this frame, cycling one at a time
+    on `MENU_DESC_DWELL` (96f) with `MENU_DESC_HOLD` (48f) extra on the first
+    line so the wrap back to the top reads as the sentence starting again.
+  - `Menu.tickDesc()` drives it, from `update()` and NOT from `draw()`: draw
+    runs at the display's rate, so a description scrolled there would go
+    faster on a 120Hz screen and would not replay. It restarts the cycle
+    whenever `descId()` changes, i.e. whenever the cursor moves.
+  - `drawScrollMark` puts a column of dots at the right of the line, one per
+    line of wrapped text with the current one lit. Without it a player who
+    looks away comes back to a different sentence with no way to know the
+    panel is cycling rather than that they nudged the cursor.
+  - `DESC_WRAP_W` is exported from menu.js so the checker asks the panel for
+    its width rather than keeping a second copy of the number.
+
+**`check-text.mjs` grew two things.** It now scans item `desc` (it only ever
+scanned item `name`, so a missing glyph in a description — which until today
+was mostly not drawn — would have printed as a `?`), and it asserts every item
+and charm description WRAPS INSIDE its panel. `wrapText` is greedy on spaces
+and a single word wider than the panel is the one thing it cannot break: that
+word runs off the right edge silently, with the whole table green. 513 strings
+scanned now, up from 497.
+
+Nothing else moved: no replay changed (the menu is not in one), 83/83 test,
+91/91 check-items, 51/51 replay, 21/21 check-playthrough, and the build is
+current.
+
 ## S29 — The sword actually swings, and the flourish is gone
 
 Two changes, both to the sword's LOOK; nothing about what it hits changed.

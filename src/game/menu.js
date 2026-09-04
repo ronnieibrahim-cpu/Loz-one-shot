@@ -2,7 +2,7 @@
 // status, and save. Opened with START, closed with START or B on the first tab.
 
 import { SCREEN_W, SCREEN_H, HUD_H, VIEW_W, VIEW_H } from '../core/screen.js';
-import { drawText, drawTextCentered, textWidth } from '../gfx/font.js';
+import { drawText, drawTextCentered, textWidth, wrapText } from '../gfx/font.js';
 import { sprites, tiles } from '../gfx/art.js';
 import { getPalette } from '../gfx/palettes.js';
 import { tileArt } from '../world/tileset.js';
@@ -17,6 +17,17 @@ import { essenceCount } from '../world/maps.js';
 import { MAPS, getMap, hasRoom, getRoom, roomKeyAt } from '../world/maps.js';
 import { TIDE_NAMES, TIDE_COUNT } from './tide.js';
 import { tradeName, tradeIcon } from '../data/trade.js';
+import { MENU_DESC_DWELL, MENU_DESC_HOLD } from '../data/feel.js';
+
+/**
+ * The pixel width a description is wrapped to, per panel. Exported because
+ * tools/check-text.mjs proves every description fits one of them — a single
+ * word too long to break is the one thing wrapText cannot fix, and it would
+ * run off the edge of the panel — and a checker with its own copy of the
+ * number is a checker that stops describing the game the moment the panel
+ * moves.
+ */
+export const DESC_WRAP_W = { item: SCREEN_W - 22, charm: SCREEN_W - 20 };
 
 // The Chartstone's pips, LOW to HIGH. Sand, shallow, deep — the same three
 // tones the water itself is drawn in, so the mark needs no key to read.
@@ -200,6 +211,8 @@ export class Menu {
     this.saveCursor = 0;
     this.message = '';
     this.messageTime = 0;
+    this.descKey = '';
+    this.descT = 0;
   }
 
   open() { this.game.mode = 'menu'; this.tab = 0; this.cursor = 0; }
@@ -211,6 +224,7 @@ export class Menu {
     const g = this.game;
     const i = g.input;
     if (this.messageTime > 0) this.messageTime--;
+    this.tickDesc();
 
     if (i.pressed('start')) { this.close(); return; }
 
@@ -279,6 +293,74 @@ export class Menu {
   /** The case currently highlighted, and the charms that could go in it. */
   get caseSlot() { return CASE_ROWS[this.caseRow]; }
   get pool() { return charmsForSlot(this.game.progress, this.caseSlot); }
+
+  // ------------------------------------------------- scrolling descriptions
+  //
+  // The description panel is ONE line of this font tall — the item grid is
+  // above it and the button hint below, and neither has a row to give — while
+  // several item descriptions wrap to three lines at that width. They used to
+  // be cut with `.slice(0, 33) + '…'`, which is not a summary: "Throw it to
+  // hold the tide where it lands. Press again to recall it." became "Throw it
+  // to hold the tide where…", and the half that says how to get the thing
+  // BACK was unreachable from inside the game. So the panel scrolls: the text
+  // is wrapped to the panel and cycles a line at a time, and every word an
+  // item's description has is eventually on screen.
+  //
+  // The cycle is driven from update() rather than from draw(), because draw()
+  // runs at the display's rate and update() runs at the fixed step — a
+  // description that scrolled in draw() would go faster on a 120Hz screen and
+  // would not replay.
+
+  /** Identifies what the cursor is on, so moving it restarts the scroll. */
+  descId() {
+    if (this.tab === 0) {
+      const it = this.items[this.cursor];
+      return it ? 'item:' + it.id + ':' + it.level : 'item:';
+    }
+    if (this.tab === 2) return 'charm:' + (this.pool[this.poolCursor] || '');
+    return '';
+  }
+
+  tickDesc() {
+    const id = this.descId();
+    if (id !== this.descKey) { this.descKey = id; this.descT = 0; }
+    else this.descT++;
+  }
+
+  /**
+   * The `visible` lines of `text` that are on screen this frame, wrapped to
+   * `maxW`, plus whether there are more of them than fit.
+   *
+   * The first line is held for MENU_DESC_HOLD longer than the rest: the cycle
+   * wraps from the bottom straight back to the top, and a beat there is what
+   * makes that read as the sentence starting again.
+   */
+  descWindow(text, maxW, visible = 1) {
+    const lines = wrapText(text || '', maxW);
+    if (lines.length <= visible) return { lines, more: false };
+    const stops = lines.length - visible + 1;
+    let t = this.descT % (stops * MENU_DESC_DWELL + MENU_DESC_HOLD);
+    t = Math.max(0, t - MENU_DESC_HOLD);
+    const at = Math.min(stops - 1, Math.floor(t / MENU_DESC_DWELL));
+    return { lines: lines.slice(at, at + visible), more: true, at, stops };
+  }
+
+  /**
+   * The dots beside a description that has more lines than the panel shows —
+   * one per line of the wrapped text, the current one lit. Without it a player
+   * who looks away for a beat comes back to a different sentence and has no
+   * way to know the panel is cycling rather than that they moved the cursor.
+   * Drawn as pixels rather than glyphs: this font has no dot small enough.
+   */
+  drawScrollMark(ctx, x, y, w) {
+    // The dots have one line of text to live in, so they tighten up rather
+    // than growing out of the panel when a description wraps far enough.
+    const pitch = w.stops <= 3 ? 3 : 2;
+    for (let i = 0; i < w.stops; i++) {
+      ctx.fillStyle = i === w.at ? '#a8f0f8' : '#485868';
+      ctx.fillRect(x, y + 1 + i * pitch, 2, 2);
+    }
+  }
 
   updateCharms() {
     const g = this.game, i = g.input, p = g.progress;
@@ -384,10 +466,9 @@ export class Menu {
     drawPanel(ctx, 4, infoY, SCREEN_W - 8, 24);
     if (sel) {
       drawText(ctx, itemName(sel.id, sel.level), 8, infoY + 3, '#f8f8e8');
-      const d = sel.def.desc || '';
-      drawText(ctx, d.length > 34 ? d.slice(0, 33) + '…' : d, 8, infoY + 13, '#a8b0a0');
-      if (sel.id === 'satchel' || sel.id === 'slingshot') {
-      }
+      const w = this.descWindow(sel.def.desc, DESC_WRAP_W.item);
+      drawText(ctx, w.lines[0] || '', 8, infoY + 13, '#a8b0a0');
+      if (w.more) this.drawScrollMark(ctx, SCREEN_W - 12, infoY + 13, w);
     } else {
       drawText(ctx, 'No items yet.', 8, infoY + 3, '#a8b0a0');
     }
@@ -646,7 +727,9 @@ export class Menu {
     const sel = CHARMS[pool[this.poolCursor]];
     if (!sel) return;
     drawText(ctx, sel.name, 6, y, '#f8f8e8');
-    drawText(ctx, sel.desc.slice(0, 38), 6, y + 9, '#a8b0a0');
+    const w = this.descWindow(sel.desc, DESC_WRAP_W.charm);
+    drawText(ctx, w.lines[0] || '', 6, y + 9, '#a8b0a0');
+    if (w.more) this.drawScrollMark(ctx, SCREEN_W - 11, y + 9, w);
   }
 
   drawSave(ctx) {
