@@ -997,10 +997,14 @@ export class Essence extends Entity {
     super(x, y, o);
     this.w = 16; this.h = 16;
     this.hb = { x: 3, y: 3, w: 10, h: 10 };
-    this.pal = 'essence';
     this.harmless = true;
     this.shadow = false;
     this.index = o.index || 1;
+    // EACH ESSENCE WEARS ITS OWN DUNGEON'S COLOUR. All six used to share the
+    // one `essence` palette, which — with all six also sharing one silhouette —
+    // made the quest screen six copies of the same object. See gfx/palettes.js.
+    // Set after `index`, which is why this line moved below it.
+    this.pal = 'essence' + this.index;
     this.taken = false;
     this.depth = 10;
   }

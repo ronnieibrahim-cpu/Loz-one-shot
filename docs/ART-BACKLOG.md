@@ -65,6 +65,48 @@ Two of the faults this entry names are fixed; the rest of it stands.
 
 Both looked at in the real game at 1:1, not just on a contact sheet.
 
+### LANDED (S35): the heart, the piece, the fairy's outline, the six Essences
+
+  * **`p_heart` and `p_heartpiece` were ONE FLAT TONE.** Every pixel was index 0,
+    the palette's palest pink, so they read as pastel blobs beside the saturated
+    red `hud_heart4` extracted for the status bar. Note what was NOT wrong: they
+    always had a complete outline. An earlier note in this file said several
+    pickups had "no black outline at all" — that was read off a low-contrast
+    contact sheet and it was WRONG. `tools/` has no checker for this, so it was
+    settled by counting: a script that walks each sprite's art and reports the
+    distinct body tones and any body pixel touching bare air. Measure this kind
+    of claim; it is cheap and eyes are not reliable at 16px on a dark ground.
+    Both are now the extracted heart's silhouette at twice the size, three tones
+    plus the outline, lit from the upper left like the rupees. The piece is the
+    heart's top-left QUADRANT, with the two straight cut edges that say "a
+    quarter" rather than "a small heart".
+  * **`p_fairy` had eight genuinely exposed pixels** along the wings' inner
+    edges — the one real violation of the outline rule in the file. Closed
+    without moving a body pixel. **The proper fix is extraction and is NOT
+    done**: `assets/sheets/oracle-seasons-fairies.png` is in this repo, unused,
+    and its top row is this exact sprite in four colours. That needs a new
+    ripper (`rip-fairies.py`) and a new generated module, which is why the
+    pixels were not hand-copied into the hand-drawn file — the extraction rule
+    forbids exactly that. **This is the best-scoped extraction job left.**
+  * **The six Essences were one silhouette in one palette.** They are the six
+    pieces of the Tide Bell (`story.js`: the Shallow, Coral, Bog, Cliff,
+    Drowned and Drowned King's Bells), so a shared bell family is CORRECT — the
+    fault was that they shared everything. Now they share a skeleton (ring,
+    shoulder, waist, flared rim, clapper) and differ in profile, crown and rim:
+    Coral buds off its stock and has a notched lip, Bog drips, Cliff is cut
+    square and narrow, Drowned is split down the waist, the King's is crowned.
+    Each also takes **its own dungeon's colour**, six new palettes in
+    `gfx/palettes.js` echoing the `portalD*` palettes that dungeon's own door is
+    drawn in — so the row says where each came from as well as which is which.
+    Wired through the quest screen, the `Essence` entity and the six title
+    cards. The `_dim` frames stay one flat silhouette in `uidark`: that is the
+    "not collected yet" slot and six identical blanks are right there.
+
+Two things worth copying from how this was done: the bells are generated from a
+per-Essence spec rather than hand-typed, so the family stays consistent and a
+change to the skeleton moves all six; and **a straight taper reads as a traffic
+cone** — a bell needs its flare to arrive late, in the last two rows.
+
 ### What the game currently hand-draws
 
   * `src/data/sprites-gear.js` — **25 icons**, every one hand-drawn:

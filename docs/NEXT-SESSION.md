@@ -1,3 +1,94 @@
+## S35 — The heart has a body, and the six Essences are six bells
+
+Continuing the item-art pass. Asked for directly: the outline pass on the
+hand-drawn pickups, and the Essence redraw.
+
+**FIRST, A CORRECTION, because it is the reusable part.** S34's handoff — and a
+message to the person who asked for this — said several pickups had "no black
+outline at all": `p_heart`, `p_heartpiece`, `p_fairy`, `p_tidebell`, the
+Essences. **That was wrong.** It was read off a contact sheet where a
+near-black outline sat on a dark checkered ground, and it did not survive
+measurement. A twenty-line script that walks each sprite's art, counts the
+distinct body tones and flags any body pixel touching bare air says:
+
+    p_heart          tones 0     0 gaps   FLAT — one body tone
+    p_heartpiece     tones 0     0 gaps   FLAT — one body tone
+    p_fairy          tones 01    8 gaps   body pixel exposed to air
+    p_essenceN_1     tones 012   4 gaps   (the four corner sparkles — deliberate)
+
+So the real fault in the hearts was **a flat single-tone FILL**, not a missing
+outline, and only the fairy had real gaps — eight of them. Different fault,
+different fix. Measure claims about pixels; eyes are not reliable at 16px on a
+dark ground, and mine were not.
+
+**The hearts.** Every pixel of `p_heart` was index 0, the `heart` palette's
+palest pink, so it read as a pastel blob next to `hud_heart4` — the EXTRACTED
+status-bar heart, a saturated red. It is now that extracted silhouette at twice
+the size: two lobes, a cleft, a taper to a point, three tones plus the outline,
+lit from the upper left the way the rupees are. `p_heartpiece` was a diagonal
+shard that read as neither a heart nor a quarter, and was flat too; it is now
+the heart's TOP-LEFT QUADRANT at twice the size, filling the cell, with the two
+straight cut edges that say "a quarter" rather than "a small heart".
+
+**The fairy.** Eight body pixels on the wings' inner edges touched bare air.
+Closed by outlining the exposed cells, which moves no body pixel and no
+silhouette. **The proper fix is extraction and is deliberately NOT done here:**
+`assets/sheets/oracle-seasons-fairies.png` is in this repo, unused, and its top
+row is this exact sprite in four colours. That wants a new `rip-fairies.py` and
+a new generated module; hand-copying the pixels into the hand-drawn file is
+precisely what CLAUDE.md's extraction rule forbids. **It is the best-scoped
+extraction job left in the project** — see `docs/ART-BACKLOG.md`.
+
+**The six Essences.** They were one silhouette in one palette, so the quest
+screen showed the same object six times. Reading `story.js` first was what made
+the fix obvious: they are the six pieces of the Tide Bell — the Shallow, Coral,
+Bog, Cliff, Drowned and Drowned King's Bells — so a shared BELL FAMILY is
+correct and the fault was that they shared everything. They now share a
+skeleton (ring, shoulder, waist, flared rim, clapper) and differ where bells
+differ:
+
+  * I Shallow — plain, the reference bell
+  * II Coral — buds off its stock, notched lip
+  * III Bog — drips below the rim
+  * IV Cliff — narrow, cut square
+  * V Drowned — split down the waist
+  * VI King — crowned
+
+And each takes **its own dungeon's colour**: six new palettes in
+`gfx/palettes.js`, echoing the `portalD*` palettes that dungeon's own door is
+already drawn in, brighter and more saturated because a portal is masonry and
+an Essence is treasure. Index 0 stays white in all six — the glow they have in
+common. Wired through the quest screen, the `Essence` entity (`this.pal` moved
+below `this.index`, which it now reads) and the six title cards. The `_dim`
+frames stay one flat silhouette in `uidark`: that is the "not collected" slot
+and six identical blanks are correct there.
+
+Three things this cost, all worth keeping:
+
+  * **A straight taper reads as a traffic cone.** The first six bells had a
+    linear profile and came out as six coloured cones. A bell's flare has to
+    arrive LATE — the last two rows of the body — and the difference is the
+    whole silhouette.
+  * **`int(x + 0.5)` on both ends of a span is not symmetric.** It rounds .5 the
+    same way at each end, so a rim drawn at half-width 7 about a centre line of
+    7.5 came out one pixel right of the body under it, leaving an un-outlined
+    pixel hanging past the flank. Use `ceil` on the left and `floor` on the
+    right. The audit script caught it; nothing else would have.
+  * **Generate a set, do not type it.** The six bells come out of a per-Essence
+    spec, so the family stays consistent and a change to the skeleton moves all
+    six at once. The same discipline as the rupees deriving from `hud_rupee`.
+
+Whole table re-run green — `replay` 51/51 with no baseline re-recorded,
+`check-playthrough` 21/21, `check-text` (which reads the title cards) and
+`check-tilesets` included.
+
+**Still open in `docs/ART-BACKLOG.md`'s top entry:** the fairy extraction above;
+the 29 unextracted cells on the Oracle gear grid; the second white-plate icon
+set and the held-item/projectile strips; and `oracle-seasons-maku-tree.png`
+sitting unused while `npc_maku` is hand-drawn.
+
+---
+
 ## S34 — The rupees are the Oracle gem, and a bomb drop is a bomb
 
 Two items off the top of `docs/ART-BACKLOG.md`, both asked for directly after

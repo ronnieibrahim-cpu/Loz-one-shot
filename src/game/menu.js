@@ -629,7 +629,7 @@ export class Menu {
     drawText(ctx, 'ESSENCES OF THE TIDE', 6, y, '#a8f0f8'); y += 11;
     for (let i = 1; i <= essenceCount(); i++) {
       const got = p.essences.includes(i);
-      sprites.draw(ctx, 'p_essence' + i + (got ? '_0' : '_dim'), 6 + (i - 1) * 18, y, { pal: got ? 'essence' : 'uidark' });
+      sprites.draw(ctx, 'p_essence' + i + (got ? '_0' : '_dim'), 6 + (i - 1) * 18, y, { pal: got ? 'essence' + i : 'uidark' });
     }
     y += 20;
     drawText(ctx, `Hearts ${Math.ceil(p.hearts / HEART_UNITS)}/${Math.ceil(p.maxHearts / HEART_UNITS)}`

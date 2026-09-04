@@ -94,6 +94,20 @@ export const PALETTES = {
   spark:   ['#ffffff', '#d8f8ff', '#78c0e8', '#284870'],
   magic:   ['#f8e0ff', '#c090f0', '#7040b0', '#200c38'],
   essence: ['#ffffff', '#a8f0f8', '#48a0d8', '#184068'],
+  // THE SIX ESSENCES ARE SIX PIECES OF ONE BELL, and they used to be six copies
+  // of one sprite in this one palette — the quest screen showed the same object
+  // six times. Each now takes the colour of the dungeon it came out of, echoing
+  // the six `portalD*` palettes that dungeon's own door is already drawn in
+  // (src/data/tiles-core.js), so the row reads as six things AND says where
+  // each came from. Brighter and more saturated than the portals, because a
+  // portal is masonry and an Essence is treasure: index 0 stays white in all
+  // six, which is the glow they have in common.
+  essence1: ['#ffffff', '#ffe0a0', '#e0a038', '#402410'],   // Tidewash Grotto, sand
+  essence2: ['#ffffff', '#ffc0d8', '#e05888', '#401828'],   // Coral Spire, rose
+  essence3: ['#ffffff', '#d8f8a8', '#68b048', '#183010'],   // Bogwater Sanctum, green
+  essence4: ['#ffffff', '#e0e8f0', '#8898a8', '#202830'],   // Cliffside Cistern, steel
+  essence5: ['#ffffff', '#f8d0a0', '#c07838', '#301808'],   // Drowned Wood, amber
+  essence6: ['#ffffff', '#c0c8ff', '#6070d8', '#181848'],   // Abyssal Keep, deep blue
 
   // --- UI ------------------------------------------------------------------
   ui:      ['#f8f8e8', '#a8b0a0', '#505850', '#101410'],
