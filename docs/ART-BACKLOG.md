@@ -47,6 +47,46 @@ correct register (hard outline, three tones) and is the better sprite. The
 change was reverted; `rip-hud.py` is untouched. **Do not redo this** — the work
 is in the git history of S36 if anyone wants to see the two side by side.
 
+### THE REGISTER, MEASURED — and four icons brought into it (S37)
+
+**The reference is not the eight extracted icons, it is all 37 on the grid.**
+Measured with their level captions stripped the way `rip-hud.py` strips them:
+
+    width   min 6   median 8    max 16
+    height  min 9   median 15   max 16
+    fill    min 20% median 30%  max 57%
+
+Taking only the extracted subset (swords and shields) gives a misleadingly
+narrow 6-8px, because a sword and a shield are narrow objects; the full 37
+includes four animal flutes at 15-16 wide and 43-57% full. So WIDE IS ALLOWED —
+it is just not the middle of the distribution.
+
+Against that, the hand-drawn set had drifted to a median 12 wide and 35-53%
+fill: half the cell where the source takes a third. **Four were brought in**,
+chosen because they failed on LEGIBILITY and not merely on width:
+
+| | was | now | what it was reading as |
+|---|---|---|---|
+| `i_cleats` / `i_cleats2` | 14x14, 48% | 8x12, 28% | a fir tree or a dune, not a boot |
+| `i_rod` | 12x15, 47% | 8x13, 27% | a horseshoe or a tuning fork |
+| `i_dredge` | 15x14, 49% | 8x13, 19% | a crab, or a claw machine |
+
+`i_cleats2` is now the SAME boot in the deep-water palette — one silhouette,
+two palettes, which is how the source separates sword and shield levels and is
+why `icon: ['i_cleats','i_cleats2']` reads as one item upgraded.
+
+**Still outside the register, and still to do:** `i_coin` (12x13, 51%),
+`o_kilnshell_lit0/1` (12x16, 53%), `i_kilnshell` (12x11, 42% — and it reads as
+a SHIELD, which collides with the actual shield two cells away), `i_bellows`
+(12x14, 47%), `i_lens` (12x14, 41%), `i_charm`, `i_bottle`. None of these is
+illegible, which is why they were left; they are width alone.
+
+**A hard constraint discovered drawing these: nothing narrower than 4px carries
+an interior.** Every pixel of a 2px run is an edge, so the outliner paints the
+whole run index 3 and it renders as a solid black bar. The first grapnel had
+1-2px flukes and came out as loose black specks. Keep anything meant to read as
+metal at least four across.
+
 **The remaining art job is CRAFT, and it is measurable.** `sprites-gear.js`'s
 own header sets the register off the 18 extracted icons: "~30% of the cell —
 gear icons are slender portraits". Measured fills against that: `i_chart` 66%

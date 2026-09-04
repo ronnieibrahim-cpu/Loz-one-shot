@@ -1,3 +1,64 @@
+## S38 — Four gear icons brought into the source's own register
+
+Continuing the craft job S37 measured. The finding there was that the
+hand-drawn icons are fatter than the extracted ones beside them; this acts on
+it, and first it fixes the reference.
+
+**THE REFERENCE WAS WRONG, AND THE FIX MATTERS.** S37 took the register off the
+eight EXTRACTED icons and got "6-8px wide, 25-32% fill". That is swords and
+shields — intrinsically narrow objects — and enforcing it would have made every
+icon in the game a thin vertical. Measured properly, across all 37 icons on the
+Oracle gear grid with their level captions stripped the way `rip-hud.py` strips
+them:
+
+    width   min 6   median 8    max 16
+    height  min 9   median 15   max 16
+    fill    min 20% median 30%  max 57%
+
+So the median is 8 wide and 30% full — but the maximum is a full 16, because
+the four animal flutes are 15-16 wide and 43-57% full. **Wide is allowed; it is
+just not the middle.** That distinction is the difference between "bring the
+outliers in" and "flatten everything", and it is the third time this session
+that measuring the reference rather than a corner of it changed the answer.
+
+**Four icons brought in**, chosen because they failed on LEGIBILITY and not
+merely on width:
+
+| | was | now | it was reading as |
+|---|---|---|---|
+| `i_cleats` / `i_cleats2` | 14x14, 48% | 8x12, 28% | a fir tree or a dune |
+| `i_rod` | 12x15, 47% | 8x13, 27% | a horseshoe, or a tuning fork |
+| `i_dredge` | 15x14, 49% | 8x13, 19% | a crab, or a claw machine |
+
+The Cleats are a boot on a kelp sole now, toe to the left. The Rod is a struck
+head on a haft. The Dredge Line is a gaff hook on a rope — a four-fluke grapnel
+was drawn first and is unreadable at this size. `i_cleats2` is the SAME boot in
+the deep-water palette: one silhouette, two palettes, which is how the source
+separates sword and shield levels and is why `icon: ['i_cleats','i_cleats2']`
+reads as one item upgraded rather than two objects.
+
+**NOTHING NARROWER THAN 4px CARRIES AN INTERIOR.** Every pixel of a 2px run is
+an edge, so the outliner paints the whole run index 3 and it renders as a solid
+black bar. The first grapnel had 1-2px flukes and came out as loose black
+specks in the cell; the first rod had a 2px haft and came out as a black stick.
+Keep anything meant to read as metal at least four across. This is a property
+of the outliner every sprite in this project shares, so it applies to any new
+art, not just these.
+
+**Left deliberately, and listed in `docs/ART-BACKLOG.md`:** `i_coin` (12x13,
+51%), `o_kilnshell_lit0/1` (12x16, 53%), `i_kilnshell` (12x11, 42% — and it
+reads as a SHIELD, which collides with the actual shield two cells away in the
+menu), `i_bellows`, `i_lens`, `i_charm`, `i_bottle`. None is illegible; they are
+width alone, and width alone is a weaker reason to redraw than "it reads as the
+wrong object". The kilnshell/shield collision is the strongest of them and is
+the one to take next.
+
+Whole table green: `replay` 51/51 with no baseline re-recorded,
+`check-playthrough` 21/21, `check-rippers` 17/17, `check-items`, `check-hearts`,
+`check-respawn`, `check-exits`, `check-text`.
+
+---
+
 ## S37 — The map and the Chartstone stop being UI panels, and an art rule gets corrected
 
 Continuing the item art after the gear grid closed. Two useful outcomes, and
