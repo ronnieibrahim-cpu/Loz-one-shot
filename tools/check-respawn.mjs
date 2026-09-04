@@ -383,6 +383,52 @@ console.log('\n--- 9. the death is written to the save slot ---');
 }
 
 // --------------------------------------------------------------------------
+// A SAVE CARRIES THE RESPAWN POINT, AND LOADING ONE MUST NOT MOVE IT.
+//
+// Every assertion above drives a death inside ONE session, and the point was
+// right in all of them. What no assertion did was quit and come back:
+// `loadGame` enters the saved map through `enterMap` with `this.mapId` still
+// unset, so `changedMap` was true, so `markRespawn` stamped a fresh point over
+// the one the save was carrying — the room the save was made in. Save four
+// rooms into the Tidewash Grotto, put the game down, press Continue, and every
+// death for the rest of that run put you back four rooms into the Grotto
+// instead of at its mouth. It looked random because it was wherever the player
+// had last stopped, and 60 green assertions had nothing to say about it: they
+// all lived inside a single boot.
+//
+// So this saves DEEP in a dungeon, reloads the slot the way Continue does, and
+// asks where a death goes.
+console.log('\n--- 10. a load does not move the point a death goes back to ---');
+{
+  const r = await page.evaluate(async () => {
+    const g = window.__game;
+    // Walk in at the mouth so the point is stamped there, then go deep.
+    g.enterMap('d1', 0, 3, 7, 72, 96, 'up', { instant: true });
+    const atMouth = JSON.parse(JSON.stringify(g.progress.respawn));
+    g.enterMap('d1', 0, 3, 4, 72, 64, 'up', { instant: true });
+    const deep = { map: g.mapId, key: g.room.key };
+    g.save();
+    // Continue: the same call the title screen makes, and the state it starts
+    // from — a game that has not entered a map yet.
+    g.mapId = undefined;
+    const loaded = g.loadGame(g.slot);
+    const afterLoad = JSON.parse(JSON.stringify(g.progress.respawn));
+    g.respawn();
+    return { atMouth, deep, loaded, afterLoad,
+      diedTo: { map: g.mapId, key: g.room.key } };
+  });
+  check('the save was made deep in the dungeon, not at its mouth',
+    r.deep.key === '0,3,4', JSON.stringify(r.deep));
+  check('and the point it was carrying was still the mouth',
+    r.atMouth.rx === 3 && r.atMouth.ry === 7, JSON.stringify(r.atMouth));
+  check('loading the slot leaves that point alone',
+    r.afterLoad.map === 'd1' && r.afterLoad.rx === 3 && r.afterLoad.ry === 7,
+    JSON.stringify(r.afterLoad));
+  check('so a death after a load still goes to the DUNGEON MOUTH',
+    r.diedTo.map === 'd1' && r.diedTo.key === '0,3,7', JSON.stringify(r.diedTo));
+}
+
+// --------------------------------------------------------------------------
 // A REAL BOSS, IN A REAL FIGHT. Everything above this dies to a call to
 // `takeDamage`, which is a death but not a death in the one room where dying
 // is most likely and most expensive. `respawn` clears `this.boss` — the handle

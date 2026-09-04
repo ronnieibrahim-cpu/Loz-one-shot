@@ -3496,6 +3496,18 @@ back to the level that suits them.
   into an upward one. Nothing in the checker table can see any of this: shoot
   the swing frame by frame with `__harness.takeOver()` + `step`, and look.
 
+- **Every assertion in check-respawn lived inside ONE boot, so the save/load
+  path was invisible to all 60 of them.** `loadGame` enters the saved map
+  through `enterMap` with `this.mapId` still unset, which makes `changedMap`
+  true, which made `markRespawn` stamp a new point over the one the save was
+  carrying. Save deep in a dungeon, press Continue the next day, and every
+  death for the rest of that run put you back at the save room instead of the
+  dungeon mouth — reported by a person playing D1, who read it as respawning
+  in a random room, which is exactly what it looks like from inside. The
+  reusable part: a checker that drives one session cannot see a bug that needs
+  two, and "quit and come back" is a verb the player has and the harness did
+  not. `markRespawn` now takes the enterMap options and honours `keepRespawn`.
+
 - **A `.slice()` on a description is a silent edit of the game's own words.**
   The pause menu cut item descriptions at 33 characters and charm descriptions
   at 38, with an ellipsis, and nine of seventeen items lost the second half of

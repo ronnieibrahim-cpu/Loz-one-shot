@@ -13485,7 +13485,10 @@ class Game {
     this.player = new Player(s.px, s.py);
     this.player.dir = s.dir || 'down';
     this.mode = 'play';
-    this.enterMap(s.map, s.floor, s.rx, s.ry, s.px, s.py, s.dir, { instant: true });
+    // `keepRespawn`: see markRespawn. Loading a save is not walking into a
+    // map, and the point a death sends you back to is part of what was saved.
+    this.enterMap(s.map, s.floor, s.rx, s.ry, s.px, s.py, s.dir,
+      { instant: true, keepRespawn: true });
     return true;
   }
 
@@ -13524,7 +13527,7 @@ class Game {
     this.camera.snap(this.room, this.player);
     // ...and after THAT, because the point a death sends you back to is a
     // position the player was actually standing in, reconciled with the sea.
-    this.markRespawn(changedMap);
+    this.markRespawn(changedMap, o);
     if (changedMap || o.banner) {
       this.bannerText = m.kind === 'dungeon' ? m.name : (this.room && this.room.name) || m.name;
       this.bannerTime = BANNER_FRAMES;
@@ -14522,8 +14525,17 @@ class Game {
    * Essences, charms and the map live in `progress` and in the Rooms, and a
    * respawn rebuilds neither — `resetRooms()` is a NEW GAME, not a death.
    */
-  markRespawn(arrival) {
+  markRespawn(arrival, o = {}) {
     if (!this.player || !this.room || !this.progress) return;
+    // RESTORING A SAVE IS NOT ARRIVING SOMEWHERE. `loadGame` comes in through
+    // `enterMap` with `this.mapId` still unset, so `changedMap` is true and
+    // this used to stamp a new point over the one the save was carrying — the
+    // room the save was made in. A player who saved four rooms into a dungeon
+    // and came back the next day therefore respawned four rooms into that
+    // dungeon on every death for the rest of the run, instead of at its
+    // mouth, and it looked random because it was wherever they had stopped.
+    // The point is save state; a load restores it rather than replacing it.
+    if (o.keepRespawn && this.progress.respawn) return;
     if (!arrival && this.mapId !== 'overworld') return;
     const r = this.room, p = this.player;
     const clamp = (v, hi) => Math.max(0, Math.min(Math.round(v), hi));

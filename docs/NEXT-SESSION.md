@@ -1,3 +1,42 @@
+## S32 — A death after a Continue went to the save room, not the dungeon mouth
+
+Reported by a person playing D1: "on death I respawn in a random room". It was
+not random and it was not the dungeon logic — S29 had that right, and its 60
+assertions were all honest. It was the LOAD.
+
+`Game.loadGame` restores the saved map by calling `enterMap`, and at that
+moment `this.mapId` is still unset, so `changedMap` computes true, so
+`markRespawn(true)` fired and stamped a fresh point over the one the save was
+carrying. Save four rooms into the Tidewash Grotto, put the game down, press
+Continue: every death for the rest of that run puts you back in that room.
+Reproduced in the live engine — a fresh page, a save at `d1/0,3,4`, Continue,
+then `respawn()` landed at `0,3,4`; it now lands at `0,3,7`, the mouth.
+
+The fix is that the respawn point is SAVE STATE and a load restores it rather
+than replacing it: `loadGame` passes `{ keepRespawn: true }`, `enterMap` hands
+its options to `markRespawn`, and `markRespawn` returns early when the option
+is set and the progress already carries a point. The `&& this.progress.respawn`
+half matters — a save with no point (there should be none, `newProgress`
+writes one, but a hand-edited or older slot could) still gets one stamped
+rather than being left with `undefined`.
+
+**Why nothing caught it.** Every one of check-respawn's 60 assertions drove a
+death inside a single boot. Quitting and coming back is a verb the player has
+and the harness did not. Section 10 of `tools/check-respawn.mjs` is now that
+verb: it saves deep in D1, clears `mapId` and calls `loadGame` the way Continue
+does, and asserts the point survived and the death goes to the mouth. 64
+assertions; the three new ones go red against the old code, confirmed by
+stashing the fix.
+
+**Still open, reported in the same session and NOT fixed:** you cannot walk out
+of a dungeon unless you are lined up on one tile. Every mouth room ends
+`'####/#####'` — a single `dStairs` at x=4 of the bottom wall — and Link's 10px
+collision rect only clears it from about x=56..68. Measured in `d1/0,3,7`:
+holding DOWN from x=60/64/68 exits, from x=72/76/80 he stops dead against the
+wall beside the stairs. All six dungeons share the grid, and nothing in the
+checker table asks whether a dungeon can be LEFT. This is priority 1 of the
+next session's prompt.
+
 ## S31 — Item and charm descriptions scroll instead of being cut off
 
 `Menu.drawItems` cut every item description with `.slice(0, 33) + '…'`, and
