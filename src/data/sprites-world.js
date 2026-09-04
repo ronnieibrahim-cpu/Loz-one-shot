@@ -120,34 +120,10 @@ export const PICKUP_ART = {
     .......33.......
     ................
     ................`,
-  // THE WINGS HAD OPEN EDGES. Eight body pixels along the wings' inner edges
-  // touched bare air with no outline — the one place in this file where the
-  // "hard 1px black outline all the way round, no exceptions" rule was actually
-  // broken, as opposed to the flat-fill faults above. Closed by outlining every
-  // exposed pixel, which changes no body pixel and no silhouette.
-  //
-  // PROPERLY THIS SHOULD BE EXTRACTED: `assets/sheets/oracle-seasons-fairies.png`
-  // is in the repo, unused, and its top row is this exact sprite in four
-  // colours. That needs a new ripper and a new generated module, so it is
-  // written up in docs/ART-BACKLOG.md rather than hand-copied out of the sheet
-  // into this hand-drawn file, which the extraction rule forbids.
-  p_fairy: `
-    ................
-    .333........333.
-    .3003......3003.
-    .30003.33.30003.
-    .30000300300003.
-    .30000300300003.
-    ..300331133003..
-    ...33.3113.33...
-    ......3113......
-    ......3003......
-    .......33.......
-    ................
-    ................
-    ................
-    ................
-    ................`,
+  // The healing fairy is EXTRACTED — see src/data/sprites-fairies.js and
+  // tools/rip-fairies.py. It was hand-drawn here, and it was the one sprite in
+  // this file that actually broke the outline rule (eight body pixels on the
+  // wings' inner edges touched bare air). The sheet had it all along.
 
   // ---- ammunition --------------------------------------------------------
 

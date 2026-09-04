@@ -1,3 +1,75 @@
+## S36 — The fairy is extracted, and the rippers are finally checked
+
+Two things, and the second is the one that outlives this session.
+
+**THE FAIRY.** `assets/sheets/oracle-seasons-fairies.png` had been sitting in
+the repo unused while `p_fairy` was hand-drawn — a purple butterfly with no
+outline, and the one sprite in `sprites-world.js` that actually broke the
+outline rule. S35 closed its eight exposed pixels by hand and said in the same
+breath that the real fix was extraction. This is that fix.
+
+`tools/rip-fairies.py` -> `src/data/sprites-fairies.js`, installed after
+`sprites-world.js` in `src/data/index.js` so it takes the `p_fairy` name, which
+is the mechanism `sprites-npcs.js` has always used to beat the hand-drawn NPCs.
+The hand-drawn fairy is DELETED, not left beside it.
+
+  * The fairy row is at y=28 on 16x16 white plates: FOUR COLOURS x TWO FRAMES,
+    red at x=157/174, orange 191/208, blue 225/242, green 259/276 — right half
+    only, the True Colors half; the left half is the LCD ramp and will not sit
+    with anything else extracted here. Only the red pair is taken, because only
+    the red pair is used and an unused name is one `validate.mjs` reports as
+    unreachable. The other three colours' coordinates are written into the
+    ripper, the way `rip-hud.py` records the magic ring's cell.
+  * **The plates are WHITE on this sheet**, not the HUD sheet's tan and not the
+    green field around them. And the fairy's body is a pale disc, so only plate
+    reachable from the EDGE of the cell may be erased — a blanket "white is
+    transparent" rule punches a hole straight through it. `quantise_exact` is
+    lifted from `rip-hud.py` for this, deliberately rather than shared: ripkit's
+    own `quantise` breaks ties by scan order and is not reproducible.
+  * **It flaps.** The sheet gives wings-up and wings-out, so `Pickup.draw` grew
+    a `frames` array, driven off the `frame` counter it was already ticking —
+    no new state, no new clock, which is why no replay moved.
+
+**THE RIPPERS ARE CHECKED NOW — `tools/check-rippers.mjs`, 17 assertions.**
+Writing the fairy ripper is what exposed this. CLAUDE.md has always said
+extraction lands in a generated file and never to hand-edit one, and NOTHING
+ENFORCED IT: `check-tilesets.mjs` verifies exactly one ripper
+(`rip-dungeon-maps.py`, through its own `--verify` flag), and the eight that
+emit the modules the game actually draws from were on the honour system.
+
+It re-runs each ripper and compares the output byte for byte. That catches two
+different faults, and the second is the reason it re-RUNS rather than diffing:
+
+  1. a generated file edited by hand — the next regeneration throws the edit
+     away silently, which is the failure the rule is about;
+  2. **a ripper that has stopped being deterministic.** Nothing about this looks
+     like a mistake. `rip-hud.py`'s own header records that its rip "was three
+     pixels unstable across runs" before it stopped using ripkit's
+     nearest-colour search, whose ties are broken by whichever colour is scanned
+     first. A checker that only diffed the committed file against itself would
+     be permanently green through that.
+
+It restores the file from git on a mismatch, so a red run does not also leave a
+dirty tree — a checker that dirties the working copy is one people stop
+running. It sweeps `tools/` for any `rip-*.py` its own table does not name, so a
+new ripper cannot land uncovered. It SKIPs with exit 2 without Pillow rather
+than passing, the same contract `check-tilesets` uses: a green tick for a check
+that did not run is worse than no check.
+
+**All eight reproduce today.** Proved red by changing one character in
+`sprites-hud.js`: the run fails and the tree comes back clean.
+
+Whole table green afterwards — `replay` 51/51 with no baseline re-recorded,
+`check-playthrough` 21/21, `check-feel`, `check-tilesets`, `check-exits`.
+
+**Still open in `docs/ART-BACKLOG.md`'s top entry:** the 29 unextracted cells on
+the Oracle gear grid; the second white-plate icon set and the held-item and
+projectile strips below it; and `oracle-seasons-maku-tree.png` unused while
+`npc_maku` is hand-drawn — that one is now the best-scoped extraction job left,
+and `rip-fairies.py` is the worked example to copy.
+
+---
+
 ## S35 — The heart has a body, and the six Essences are six bells
 
 Continuing the item-art pass. Asked for directly: the outline pass on the

@@ -17,6 +17,7 @@ import { installPlayerSprites, PLAYER_ART } from './sprites-player.js';
 import { installNpcSprites, NPC_ART as NPC_RIPPED_ART } from './sprites-npcs.js';
 import { installRaceSprites, RACE_ART } from './sprites-races.js';
 import { installWorldSprites, PICKUP_ART, OBJECT_ART, SHOT_ART, NPC_ART } from './sprites-world.js';
+import { installFairies, FAIRY_ART } from './sprites-fairies.js';
 import { installEnemySprites, ENEMY_ART } from './sprites-enemies.js';
 import { installBossSprites, BOSS_ART, MINIBOSS_ART } from './sprites-bosses.js';
 import { installHudSprites, HUD_ART } from './sprites-hud.js';
@@ -34,6 +35,7 @@ export const SPRITE_PACKS = {
   link: LINK_ART,
   player: PLAYER_ART,
   npcsRipped: NPC_RIPPED_ART,
+  fairies: FAIRY_ART,
   races: RACE_ART,
   fx: FX_ART,
   fxBig: FX_BIG_ART,
@@ -65,6 +67,11 @@ export function installData() {
   installWorldSprites();
   // After sprites-world.js, so extracted NPC art overrides the placeholders.
   installNpcSprites();
+  // Same reason, for the healing fairy: this takes the `p_fairy` name off the
+  // hand-drawn pack. The hand-drawn one is gone, so this is now the only
+  // definition — the ordering is kept explicit anyway, because that is what
+  // makes it safe to re-add a placeholder later.
+  installFairies();
   // The peoples of Thalassia, off a sheet nothing else has touched.
   installRaceSprites();
   installEnemySprites();

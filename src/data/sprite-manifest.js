@@ -67,9 +67,17 @@ export const REQUIRED_SPRITES = {
     'i_t_pearl', 'i_t_cup', 'i_t_jar', 'i_t_kettle', 'i_t_rope',
   ],
 
+  // ---- pack: sprites-fairies.js (GENERATED, tools/rip-fairies.py) --------
+  //
+  // Its own entry rather than a line in `pickups`, because the pack that owns
+  // a name is the thing this file is for: `p_fairy` used to be hand-drawn in
+  // sprites-world.js and is now extracted, and that move should be visible
+  // here rather than only in a git log.
+  fairies: ['p_fairy', 'p_fairy_1'],
+
   // ---- pack: sprites-world.js ------------------------------------------
   pickups: [
-    'p_rupee', 'p_rupee5', 'p_rupee20', 'p_heart', 'p_fairy',
+    'p_rupee', 'p_rupee5', 'p_rupee20', 'p_heart',
     'p_key', 'p_bosskey', 'p_heartpiece', 'p_heartcontainer',
     'p_tidebell_0', 'p_tidebell_1',
     'p_essence1_0', 'p_essence1_1', 'p_essence1_dim',

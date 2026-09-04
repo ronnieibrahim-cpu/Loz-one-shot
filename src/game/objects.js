@@ -15,7 +15,7 @@ import { itemName, itemIcon, ITEMS } from './items.js';
 import { CHARMS, giveCharm, openCharmCases } from './scrimshaw.js';
 import {
   PICKUP_LIFE_FRAMES, PICKUP_POP_SPEED, PICKUP_GRAVITY, PICKUP_SETTLE_FRAMES,
-  PICKUP_GRAB_DELAY, FAIRY_DRIFT_TURN, FAIRY_DRIFT_X, FAIRY_DRIFT_Y,
+  PICKUP_GRAB_DELAY, FAIRY_DRIFT_TURN, FAIRY_DRIFT_X, FAIRY_DRIFT_Y, FAIRY_FLAP_FRAMES,
   NPC_WANDER_PERIOD, NPC_WANDER_SPEED,
   ESSENCE_SPARKLE_EVERY, ESSENCE_SPARKLE_SPREAD,
   BELLOWS_PUSH, BELLOWS_RAFT_SCALE, BELLOWS_WHEEL_COAST, BELL_CHIME_FRAMES,
@@ -39,8 +39,11 @@ export const PICKUPS = {
   rupee20: { sprite: 'p_rupee20', pal: 'enemyp', worth: 20, get(g, e) { addRupees(g.progress, worthOf(e, 20)); g.audio.sfx('rupeeBig'); } },
   rupee100: { sprite: 'p_rupee20', pal: 'gold', worth: 100, get(g, e) { addRupees(g.progress, worthOf(e, 100)); g.audio.sfx('rupeeBig'); } },
   heart: { sprite: 'p_heart', pal: 'heart', get(g) { heal(g.progress, HEART_UNITS); g.audio.sfx('heart'); } },
+  // EXTRACTED, and it flaps. Both frames come off the Oracle fairy sheet
+  // (tools/rip-fairies.py); `pal: null` because each binds its own palette and
+  // passing one would override the colours taken off the cartridge.
   fairy: {
-    sprite: 'p_fairy', pal: 'magic', float: true,
+    sprite: 'p_fairy', frames: ['p_fairy', 'p_fairy_1'], pal: null, float: true,
     get(g) { heal(g.progress, HEART_UNITS * 6); g.audio.sfx('fairy'); },
   },
   // THE PICKUP IS THE BOMB, not a picture of one. `p_bombs` was a hand-drawn
@@ -214,7 +217,12 @@ export class Pickup extends Entity {
     // Blink out as the timer runs down.
     if (this.life !== Infinity && this.life < 90 && (this.life >> 2) % 2 === 0) return;
     const bob = this.spec.persistent ? Math.round(Math.sin(this.frame * 0.08) * 1.5) : 0;
-    sprites.draw(ctx, this.sprite, ox + this.x, oy + this.y + bob, { pal: this.pal });
+    // A pickup with `frames` cycles them; everything else draws its one sprite.
+    // `frame` already ticks in update(), so this costs no new state and no new
+    // clock — which is what keeps it out of the recorded replays.
+    const f = this.spec.frames;
+    const art = f ? f[Math.floor(this.frame / FAIRY_FLAP_FRAMES) % f.length] : this.sprite;
+    sprites.draw(ctx, art, ox + this.x, oy + this.y + bob, { pal: this.pal });
   }
 }
 defineEntity('pickup', (x, y, o) => new Pickup(x, y, o));

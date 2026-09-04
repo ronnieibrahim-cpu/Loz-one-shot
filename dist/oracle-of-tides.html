@@ -1389,6 +1389,13 @@ const PICKUP_SETTLE_FRAMES = 12;
 /** f — delay before a drop can be collected, so it is not grabbed mid-pop. guessed. */
 const PICKUP_GRAB_DELAY = 8;
 
+/** f — frames per wing frame. The healing fairy's two EXTRACTED frames
+ *  (tools/rip-fairies.py) alternate every this many. guessed: nothing was
+ *  frame-stepped for it. Six is two beats a second at 60fps, which is a flutter
+ *  rather than a flap; the sheet gives wings-up and wings-out and nothing in
+ *  between, so slower reads as a stutter and faster as a blur. */
+const FAIRY_FLAP_FRAMES = 6;
+
 /** rad/f — how fast a fairy's drift angle turns. guessed. */
 const FAIRY_DRIFT_TURN = 0.06;
 
@@ -2027,6 +2034,7 @@ __exports["PICKUP_POP_SPEED"] = PICKUP_POP_SPEED;
 __exports["PICKUP_GRAVITY"] = PICKUP_GRAVITY;
 __exports["PICKUP_SETTLE_FRAMES"] = PICKUP_SETTLE_FRAMES;
 __exports["PICKUP_GRAB_DELAY"] = PICKUP_GRAB_DELAY;
+__exports["FAIRY_FLAP_FRAMES"] = FAIRY_FLAP_FRAMES;
 __exports["FAIRY_DRIFT_TURN"] = FAIRY_DRIFT_TURN;
 __exports["FAIRY_DRIFT_X"] = FAIRY_DRIFT_X;
 __exports["FAIRY_DRIFT_Y"] = FAIRY_DRIFT_Y;
@@ -9411,7 +9419,7 @@ const { drawText } = __require("gfx/font.js");
 const { addRupees, heal, addBombs, addReefseeds, addBottles, addKey, giveItem, addHeartContainer, addHeartPiece, HEART_UNITS, setFlag, flag } = __require("game/progress.js");
 const { itemName, itemIcon, ITEMS } = __require("game/items.js");
 const { CHARMS, giveCharm, openCharmCases } = __require("game/scrimshaw.js");
-const { PICKUP_LIFE_FRAMES, PICKUP_POP_SPEED, PICKUP_GRAVITY, PICKUP_SETTLE_FRAMES, PICKUP_GRAB_DELAY, FAIRY_DRIFT_TURN, FAIRY_DRIFT_X, FAIRY_DRIFT_Y, NPC_WANDER_PERIOD, NPC_WANDER_SPEED, ESSENCE_SPARKLE_EVERY, ESSENCE_SPARKLE_SPREAD, BELLOWS_PUSH, BELLOWS_RAFT_SCALE, BELLOWS_WHEEL_COAST, BELL_CHIME_FRAMES, CARVE_PRICE, CHARM_CASE_MAX, CHARM_LOW_ESSENCES, CHARM_HIGH_ESSENCES, CHARM_CASE_ESSENCES } = __require("data/feel.js");
+const { PICKUP_LIFE_FRAMES, PICKUP_POP_SPEED, PICKUP_GRAVITY, PICKUP_SETTLE_FRAMES, PICKUP_GRAB_DELAY, FAIRY_DRIFT_TURN, FAIRY_DRIFT_X, FAIRY_DRIFT_Y, FAIRY_FLAP_FRAMES, NPC_WANDER_PERIOD, NPC_WANDER_SPEED, ESSENCE_SPARKLE_EVERY, ESSENCE_SPARKLE_SPREAD, BELLOWS_PUSH, BELLOWS_RAFT_SCALE, BELLOWS_WHEEL_COAST, BELL_CHIME_FRAMES, CARVE_PRICE, CHARM_CASE_MAX, CHARM_LOW_ESSENCES, CHARM_HIGH_ESSENCES, CHARM_CASE_ESSENCES } = __require("data/feel.js");
 
 // --------------------------------------------------------------------------
 // Pickups
@@ -9429,8 +9437,11 @@ const PICKUPS = {
   rupee20: { sprite: 'p_rupee20', pal: 'enemyp', worth: 20, get(g, e) { addRupees(g.progress, worthOf(e, 20)); g.audio.sfx('rupeeBig'); } },
   rupee100: { sprite: 'p_rupee20', pal: 'gold', worth: 100, get(g, e) { addRupees(g.progress, worthOf(e, 100)); g.audio.sfx('rupeeBig'); } },
   heart: { sprite: 'p_heart', pal: 'heart', get(g) { heal(g.progress, HEART_UNITS); g.audio.sfx('heart'); } },
+  // EXTRACTED, and it flaps. Both frames come off the Oracle fairy sheet
+  // (tools/rip-fairies.py); `pal: null` because each binds its own palette and
+  // passing one would override the colours taken off the cartridge.
   fairy: {
-    sprite: 'p_fairy', pal: 'magic', float: true,
+    sprite: 'p_fairy', frames: ['p_fairy', 'p_fairy_1'], pal: null, float: true,
     get(g) { heal(g.progress, HEART_UNITS * 6); g.audio.sfx('fairy'); },
   },
   // THE PICKUP IS THE BOMB, not a picture of one. `p_bombs` was a hand-drawn
@@ -9604,7 +9615,12 @@ class Pickup extends Entity {
     // Blink out as the timer runs down.
     if (this.life !== Infinity && this.life < 90 && (this.life >> 2) % 2 === 0) return;
     const bob = this.spec.persistent ? Math.round(Math.sin(this.frame * 0.08) * 1.5) : 0;
-    sprites.draw(ctx, this.sprite, ox + this.x, oy + this.y + bob, { pal: this.pal });
+    // A pickup with `frames` cycles them; everything else draws its one sprite.
+    // `frame` already ticks in update(), so this costs no new state and no new
+    // clock — which is what keeps it out of the recorded replays.
+    const f = this.spec.frames;
+    const art = f ? f[Math.floor(this.frame / FAIRY_FLAP_FRAMES) % f.length] : this.sprite;
+    sprites.draw(ctx, art, ox + this.x, oy + this.y + bob, { pal: this.pal });
   }
 }
 defineEntity('pickup', (x, y, o) => new Pickup(x, y, o));
@@ -35003,34 +35019,10 @@ const PICKUP_ART = {
     .......33.......
     ................
     ................`,
-  // THE WINGS HAD OPEN EDGES. Eight body pixels along the wings' inner edges
-  // touched bare air with no outline — the one place in this file where the
-  // "hard 1px black outline all the way round, no exceptions" rule was actually
-  // broken, as opposed to the flat-fill faults above. Closed by outlining every
-  // exposed pixel, which changes no body pixel and no silhouette.
-  //
-  // PROPERLY THIS SHOULD BE EXTRACTED: `assets/sheets/oracle-seasons-fairies.png`
-  // is in the repo, unused, and its top row is this exact sprite in four
-  // colours. That needs a new ripper and a new generated module, so it is
-  // written up in docs/ART-BACKLOG.md rather than hand-copied out of the sheet
-  // into this hand-drawn file, which the extraction rule forbids.
-  p_fairy: `
-    ................
-    .333........333.
-    .3003......3003.
-    .30003.33.30003.
-    .30000300300003.
-    .30000300300003.
-    ..300331133003..
-    ...33.3113.33...
-    ......3113......
-    ......3003......
-    .......33.......
-    ................
-    ................
-    ................
-    ................
-    ................`,
+  // The healing fairy is EXTRACTED — see src/data/sprites-fairies.js and
+  // tools/rip-fairies.py. It was hand-drawn here, and it was the one sprite in
+  // this file that actually broke the outline rule (eight body pixels on the
+  // wings' inner edges touched bare air). The sheet had it all along.
 
   // ---- ammunition --------------------------------------------------------
 
@@ -35922,6 +35914,79 @@ __exports["OBJECT_ART"] = OBJECT_ART;
 __exports["SHOT_ART"] = SHOT_ART;
 __exports["NPC_ART"] = NPC_ART;
 __exports["installWorldSprites"] = installWorldSprites;
+});
+
+/* ===== src/data/sprites-fairies.js ===== */
+__define("data/sprites-fairies.js", function (__exports, __require) {
+// GENERATED by tools/rip-fairies.py — do not hand-edit.
+//
+// The healing fairy, extracted from assets/sheets/oracle-seasons-fairies.png
+// (the "True Colors" half; see the ripper and assets/sheets/README.md). Sprites
+// ripped by Mister Mike via spriters-resource.com; original artwork Nintendo's.
+// Fan-work use only, credit given as the ripper asks.
+//
+// Two frames, the wing beat. This pack installs AFTER sprites-world.js in
+// src/data/index.js and takes the `p_fairy` name from it, which is how
+// sprites-npcs.js already beats the hand-drawn NPCs — extracted art wins, per
+// docs/ART-DIRECTION.md rule 1.
+//
+// Each sprite binds its own palette, so draw sites must NOT pass one: art.js
+// resolves `palName || d.pal` and an explicit palette would override the
+// colours taken off the cartridge.
+
+const { sprites } = __require("gfx/art.js");
+const { registerPalettes } = __require("gfx/palettes.js");
+
+const FAIRY_ART = {
+  p_fairy: { pal: 'p_fairy', art: `
+    ................
+    ................
+    ..22........22..
+    ..202......202..
+    ..2012....2102..
+    ..2002....2002..
+    ..20012..21002..
+    ...2001111002...
+    ....21100112....
+    .....100001.....
+    ....21000012....
+    ...2011001102...
+    ..200211112002..
+    ..2222....2222..
+    ................
+    ................` },
+  p_fairy_1: { pal: 'p_fairy_1', art: `
+    ................
+    ................
+    ................
+    ................
+    2222........2222
+    200122....221002
+    2100001111000012
+    .21001100110012.
+    ..222100001222..
+    .....100001.....
+    .....110011.....
+    ....20111102....
+    ....202..202....
+    ....212..212....
+    .....22..22.....
+    ................` },
+};
+
+// One palette per sprite, taken from the source artwork.
+const FAIRY_ART_PALETTES = {
+  p_fairy: ['#ffd68c', '#ff0829', '#000000', '#000000'],
+  p_fairy_1: ['#ffd68c', '#ff0829', '#000000', '#000000'],
+};
+
+function installFairies() {
+  registerPalettes(FAIRY_ART_PALETTES);
+  sprites.add(FAIRY_ART, 'magic');
+}
+__exports["FAIRY_ART"] = FAIRY_ART;
+__exports["FAIRY_ART_PALETTES"] = FAIRY_ART_PALETTES;
+__exports["installFairies"] = installFairies;
 });
 
 /* ===== src/data/sprites-enemies.js ===== */
@@ -39651,6 +39716,7 @@ const { installPlayerSprites, PLAYER_ART } = __require("data/sprites-player.js")
 const { installNpcSprites, NPC_ART: NPC_RIPPED_ART } = __require("data/sprites-npcs.js");
 const { installRaceSprites, RACE_ART } = __require("data/sprites-races.js");
 const { installWorldSprites, PICKUP_ART, OBJECT_ART, SHOT_ART, NPC_ART } = __require("data/sprites-world.js");
+const { installFairies, FAIRY_ART } = __require("data/sprites-fairies.js");
 const { installEnemySprites, ENEMY_ART } = __require("data/sprites-enemies.js");
 const { installBossSprites, BOSS_ART, MINIBOSS_ART } = __require("data/sprites-bosses.js");
 const { installHudSprites, HUD_ART } = __require("data/sprites-hud.js");
@@ -39668,6 +39734,7 @@ const SPRITE_PACKS = {
   link: LINK_ART,
   player: PLAYER_ART,
   npcsRipped: NPC_RIPPED_ART,
+  fairies: FAIRY_ART,
   races: RACE_ART,
   fx: FX_ART,
   fxBig: FX_BIG_ART,
@@ -39699,6 +39766,11 @@ function installData() {
   installWorldSprites();
   // After sprites-world.js, so extracted NPC art overrides the placeholders.
   installNpcSprites();
+  // Same reason, for the healing fairy: this takes the `p_fairy` name off the
+  // hand-drawn pack. The hand-drawn one is gone, so this is now the only
+  // definition — the ordering is kept explicit anyway, because that is what
+  // makes it safe to re-add a placeholder later.
+  installFairies();
   // The peoples of Thalassia, off a sheet nothing else has touched.
   installRaceSprites();
   installEnemySprites();

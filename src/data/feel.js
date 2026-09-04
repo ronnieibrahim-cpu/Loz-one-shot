@@ -870,6 +870,13 @@ export const PICKUP_SETTLE_FRAMES = 12;
 /** f — delay before a drop can be collected, so it is not grabbed mid-pop. guessed. */
 export const PICKUP_GRAB_DELAY = 8;
 
+/** f — frames per wing frame. The healing fairy's two EXTRACTED frames
+ *  (tools/rip-fairies.py) alternate every this many. guessed: nothing was
+ *  frame-stepped for it. Six is two beats a second at 60fps, which is a flutter
+ *  rather than a flap; the sheet gives wings-up and wings-out and nothing in
+ *  between, so slower reads as a stutter and faster as a blur. */
+export const FAIRY_FLAP_FRAMES = 6;
+
 /** rad/f — how fast a fairy's drift angle turns. guessed. */
 export const FAIRY_DRIFT_TURN = 0.06;
 

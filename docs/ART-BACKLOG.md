@@ -80,6 +80,15 @@ Both looked at in the real game at 1:1, not just on a contact sheet.
     plus the outline, lit from the upper left like the rupees. The piece is the
     heart's top-left QUADRANT, with the two straight cut edges that say "a
     quarter" rather than "a small heart".
+  * **THE FAIRY IS EXTRACTED (S36).** Done — `tools/rip-fairies.py` ->
+    `src/data/sprites-fairies.js`, installed after `sprites-world.js` so it takes
+    the `p_fairy` name, and the hand-drawn one is deleted. TWO frames, because
+    the sheet has two: the wing beat, alternating on `FAIRY_FLAP_FRAMES`.
+    `Pickup.draw` grew a `frames` array for it, off the `frame` counter it was
+    already ticking, so no new state and no new clock. The sheet's fairy row is
+    four colours x two frames at y=28; only the red pair is taken because only
+    the red pair is used, and the other three colours' coordinates are recorded
+    in the ripper so nobody has to find them again.
   * **`p_fairy` had eight genuinely exposed pixels** along the wings' inner
     edges — the one real violation of the outline rule in the file. Closed
     without moving a body pixel. **The proper fix is extraction and is NOT
@@ -87,7 +96,7 @@ Both looked at in the real game at 1:1, not just on a contact sheet.
     and its top row is this exact sprite in four colours. That needs a new
     ripper (`rip-fairies.py`) and a new generated module, which is why the
     pixels were not hand-copied into the hand-drawn file — the extraction rule
-    forbids exactly that. **This is the best-scoped extraction job left.**
+    forbids exactly that. That was S35's stopgap; S36 did the extraction.
   * **The six Essences were one silhouette in one palette.** They are the six
     pieces of the Tide Bell (`story.js`: the Shallow, Coral, Bog, Cliff,
     Drowned and Drowned King's Bells), so a shared bell family is CORRECT — the
