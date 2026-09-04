@@ -10,111 +10,65 @@ icons, the pickups and the dungeon items — so they read as Oracle art.** This
 is the single largest remaining violation of CLAUDE.md's first hard art rule,
 "if a sheet has it, extract it", and it is concentrated in two files.
 
-### What the sheet actually holds
+### What the sheet actually holds — SURVEYED AND LARGELY SETTLED (S36)
 
-`assets/sheets/oracle-seasons-hud-gear.png` (680x283, "True Colors" right half
-— see `assets/sheets/README.md`; the left half is the LCD ramp and must not be
-picked from). Measured, not estimated:
+The first cut of this entry said "29 of the gear grid's 37 cells are
+unextracted" and treated that as 29 jobs. **It is not.** Every one of the 37
+was cropped, zoomed and named, and the answer is that nearly all of them are
+items THIS GAME DOES NOT HAVE. The roster in `docs/ITEMS.md` is ours by design
+(Goal 2), so an unextracted cell is usually not a gap — it is an Oracle item
+with no counterpart here.
 
-  * **The 6x7 gear grid at `GRID_COLS`/`GRID_ROWS` in `tools/rip-hud.py` has 37
-    populated cells. Eight are extracted** — `i_sword1..3`, `i_shield1..3`,
-    `i_bomb`, `i_unknown`. **Twenty-nine are not.** Among them: the feather and
-    cape, both boomerangs, both switch-hook/hookshot levels, the seed satchel,
-    the shovel, four colour variants of the horn, the rod, the flute, the
-    magnet gloves (N and S), three rings, the bracelet at L-1 and L-2, and the
-    jar. Contact-sheet it before picking anything: crop `(504,22)-(660,152)`.
-  * **A SECOND, WHITE-PLATE SET of the same icons** lower on the sheet (roughly
-    y=180-280) — the pause-menu presentation rather than the HUD one. Nothing
-    in this project touches it. Decide which plate the game's own menu wants
-    before extracting either; picking both is how two subtly different swords
-    end up in the build.
-  * **HELD-ITEM AND PROJECTILE STRIPS** below that: Link's hand holding a sword,
-    a hookshot, a rod, a boomerang, bombs and seeds, plus boomerang arcs,
-    hookshot chain links and seed sprites. These are the in-world half of
-    "usable items" and this project draws all of them by hand.
-  * Also unused entirely: `oracle-seasons-fairies.png` (and `p_fairy` is
-    hand-drawn), `oracle-seasons-maku-tree.png` (and `npc_maku` is hand-drawn),
-    `oracle-seasons-effects.png`.
+`assets/sheets/oracle-seasons-hud-gear.png`, the 6x7 grid at `GRID_COLS`/
+`GRID_ROWS` in `tools/rip-hud.py`. **[E] = already extracted.**
 
-### LANDED SO FAR (S34): the rupees and the bomb pickup
+| | c0 | c1 | c2 | c3 | c4 | c5 |
+|---|---|---|---|---|---|---|
+| r0 | sword L-1 **[E]** | sword L-2 **[E]** | sword L-3 **[E]** | shield L-1 **[E]** | shield L-2 **[E]** | shield L-3 **[E]** |
+| r1 | Roc's Feather | Roc's Feather L-1 | Roc's Cape L-2 | boomerang | boomerang L-1 | magic boomerang L-2 |
+| r2 | switch hook | switch hook L-1 | long hook L-2 | bombs **[E]** | seed satchel | shovel |
+| r3 | flute (green) | flute (blue) | flute (orange) | flute (red) | dark pouch, amber top | sword, laid diagonally |
+| r4 | Rod of Seasons | slingshot L-1 | slingshot L-2 | Gasha seed | magnetic glove S | magnetic glove N |
+| r5 | ring box + green ring | ring box + orange ring | ring box + blue ring | power bracelet L-1 | power bracelet L-2 | amber vase, quantity swatch |
+| r6 | the red '?' **[E]** | — | — | — | — | — |
 
-Two of the faults this entry names are fixed; the rest of it stands.
+**The verdict: there is nothing left on this grid worth taking.** Of the 29
+un-extracted cells, 28 are items Oracle of Tides does not have — feathers,
+capes, boomerangs, hooks, satchels, shovels, animal flutes, the Rod of Seasons,
+slingshots, Gasha seeds, magnetic gloves, rings and bracelets. Our items are
+ours and pasting the nearest Oracle icon onto one is the straight port
+`docs/ITEMS.md` forbids.
 
-  * **The rupees are the Oracle gem now.** They were symmetric diamonds. The
-    Oracle rupee is a hexagon LEANING RIGHT — two vertical edges joined by two
-    edges running down-left — and the game already owned the real shape, because
-    `hud_rupee` is extracted off the gear sheet for the status bar. Read that
-    7x7 art as a span per row and it is exactly `lo <= c + r <= hi`: the slanted
-    edges are lines of constant `c+r`. `p_rupee`/`p_rupee5`/`p_rupee20` are that
-    same inequality at N=10 and N=14, so the floor gem is the bar gem's
-    silhouette and cannot drift from it. **No sheet in this repo has a 16x16
-    world rupee** — checked; the overworld sheets are stitched MAPS, not sprite
-    strips — so this is the "draw to match" half of the rule with the extracted
-    half as its reference. The 20's corner sparkles are gone: the Oracles put
-    none on a rupee, colour is the whole signal there, and detached pixels in
-    the corners of a cell read as grit rather than shine. Say so if you want the
-    signal back.
-  * **The bomb pickup IS the bomb now.** `p_bombs` was a hand-drawn pair of
-    flat-topped canisters while the bomb the game actually throws — `i_bomb`,
-    extracted, round with a curling fuse — sat in the same build. `PICKUPS.bomb4`
-    now points at `i_bomb` with `pal: null` (it binds its own palette), the same
-    shape `seeds5` has always had, and the hand-drawn duplicate is deleted from
-    `sprites-world.js` and from `sprite-manifest.js`. **Deleting the sprite was
-    the point** — a second drawing of an object the sheet already gave us is the
-    thing this whole entry is about.
+The one cell that looked like a shared object was **r5c5**, taken for a flask
+and tried as `i_bottle`. **Extracted, rendered beside the hand-drawn one, and
+REJECTED**: it is an amber vase with a narrow waist, and the hand-drawn blue
+bottle with its cork reads far better as the Bottled Tide, is already in the
+correct register (hard outline, three tones) and is the better sprite. The
+change was reverted; `rip-hud.py` is untouched. **Do not redo this** — the work
+is in the git history of S36 if anyone wants to see the two side by side.
 
-Both looked at in the real game at 1:1, not just on a contact sheet.
+So the honest state of the item art is: **the extraction opportunities are
+spent.** The sword, shield, bomb, rupee, heart and fairy — the objects the genre
+shares — are extracted or derived from extracted art. What remains hand-drawn
+is what SHOULD be hand-drawn, and the standing job on it is craft (register,
+outlines, shading against the extracted neighbours), not extraction.
 
-### LANDED (S35): the heart, the piece, the fairy's outline, the six Essences
+Two things on this sheet are still genuinely unexamined, and neither is on the
+grid: **the second, white-plate icon set** lower down (the pause-menu
+presentation of the same icons — worth a look only if the menu's own plate
+style ever changes), and **the held-item and projectile strips** below that —
+Link's hand holding a sword, a hookshot, a rod, a boomerang, bombs and seeds,
+plus boomerang arcs and chain links. Those are the in-world half of "usable
+items" and this project draws all of them by hand. That is the largest
+remaining extraction target in the repo.
 
-  * **`p_heart` and `p_heartpiece` were ONE FLAT TONE.** Every pixel was index 0,
-    the palette's palest pink, so they read as pastel blobs beside the saturated
-    red `hud_heart4` extracted for the status bar. Note what was NOT wrong: they
-    always had a complete outline. An earlier note in this file said several
-    pickups had "no black outline at all" — that was read off a low-contrast
-    contact sheet and it was WRONG. `tools/` has no checker for this, so it was
-    settled by counting: a script that walks each sprite's art and reports the
-    distinct body tones and any body pixel touching bare air. Measure this kind
-    of claim; it is cheap and eyes are not reliable at 16px on a dark ground.
-    Both are now the extracted heart's silhouette at twice the size, three tones
-    plus the outline, lit from the upper left like the rupees. The piece is the
-    heart's top-left QUADRANT, with the two straight cut edges that say "a
-    quarter" rather than "a small heart".
-  * **THE FAIRY IS EXTRACTED (S36).** Done — `tools/rip-fairies.py` ->
-    `src/data/sprites-fairies.js`, installed after `sprites-world.js` so it takes
-    the `p_fairy` name, and the hand-drawn one is deleted. TWO frames, because
-    the sheet has two: the wing beat, alternating on `FAIRY_FLAP_FRAMES`.
-    `Pickup.draw` grew a `frames` array for it, off the `frame` counter it was
-    already ticking, so no new state and no new clock. The sheet's fairy row is
-    four colours x two frames at y=28; only the red pair is taken because only
-    the red pair is used, and the other three colours' coordinates are recorded
-    in the ripper so nobody has to find them again.
-  * **`p_fairy` had eight genuinely exposed pixels** along the wings' inner
-    edges — the one real violation of the outline rule in the file. Closed
-    without moving a body pixel. **The proper fix is extraction and is NOT
-    done**: `assets/sheets/oracle-seasons-fairies.png` is in this repo, unused,
-    and its top row is this exact sprite in four colours. That needs a new
-    ripper (`rip-fairies.py`) and a new generated module, which is why the
-    pixels were not hand-copied into the hand-drawn file — the extraction rule
-    forbids exactly that. That was S35's stopgap; S36 did the extraction.
-  * **The six Essences were one silhouette in one palette.** They are the six
-    pieces of the Tide Bell (`story.js`: the Shallow, Coral, Bog, Cliff,
-    Drowned and Drowned King's Bells), so a shared bell family is CORRECT — the
-    fault was that they shared everything. Now they share a skeleton (ring,
-    shoulder, waist, flared rim, clapper) and differ in profile, crown and rim:
-    Coral buds off its stock and has a notched lip, Bog drips, Cliff is cut
-    square and narrow, Drowned is split down the waist, the King's is crowned.
-    Each also takes **its own dungeon's colour**, six new palettes in
-    `gfx/palettes.js` echoing the `portalD*` palettes that dungeon's own door is
-    drawn in — so the row says where each came from as well as which is which.
-    Wired through the quest screen, the `Essence` entity and the six title
-    cards. The `_dim` frames stay one flat silhouette in `uidark`: that is the
-    "not collected yet" slot and six identical blanks are right there.
-
-Two things worth copying from how this was done: the bells are generated from a
-per-Essence spec rather than hand-typed, so the family stays consistent and a
-change to the skeleton moves all six; and **a straight taper reads as a traffic
-cone** — a bell needs its flare to arrive late, in the last two rows.
+**`oracle-seasons-maku-tree.png` is NOT the easy job an earlier note called
+it.** Measured: the Maku Tree occupies roughly 169x96 pixels of its own screen,
+drawn into the room's tilemap with the face worked into the trunk. `npc_maku`
+here is a 16x16 NPC standing on a village screen. Swapping one for the other is
+not an art change, it is a redesign of that screen — its layout, its collision
+and where everything else on it stands. Leave it, or take it as a deliberate
+screen job with `docs/DUNGEON-STATUS.md`-style scoping.
 
 ### What the game currently hand-draws
 

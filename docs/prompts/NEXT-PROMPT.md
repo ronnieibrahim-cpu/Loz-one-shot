@@ -49,35 +49,37 @@ have caught it, and prove the assertion goes red against the old code.
 Pick the first one or two that fit the session. Finish them properly and leave
 the rest better described than you found them.
 
-### 1. The usable items are hand-drawn, and the sheet has 29 of them
+### 1. The item art — mostly LANDED (S34-S36); read before restarting it
 
-**Asked for directly: clean up the pixel art on the usable items to match the
-Oracles — the gear icons, the pickups and the dungeon items.**
-`docs/ART-BACKLOG.md`'s top entry is the full brief, measured rather than
-estimated; read it before touching anything. The short version:
+Asked for directly and largely done. Landed: the rupees derived from the
+extracted HUD gem; the bomb drop pointed at the extracted bomb; the heart and
+heart piece rebuilt from the extracted `hud_heart4`; the fairy EXTRACTED off
+`oracle-seasons-fairies.png` with both wing frames; the six Essences made six
+bells in six regional palettes. Plus `tools/check-rippers.mjs`, which is what
+now enforces "never hand-edit a generated file".
 
-  * `tools/rip-hud.py` extracts EIGHT of the 37 populated cells on the Oracle
-    gear grid. Twenty-nine authentic icons — feather, cape, both boomerangs,
-    both switch-hook levels, satchel, shovel, four horns, rod, flute, magnet
-    gloves, three rings, bracelet L-1/L-2, jar — are sitting in
-    `assets/sheets/oracle-seasons-hud-gear.png` unused. So is a second
-    white-plate set of the same icons, and the held-item and projectile strips
-    below them.
-  * `src/data/sprites-gear.js` hand-draws 25 icons and
-    `src/data/sprites-world.js` hand-draws EVERY pickup in the game.
-  * **Start with the rupee and the heart.** `hud_rupee` and `hud_heart0..4` are
-    extracted at 8x8 for the status bar while `p_rupee` and `p_heart` are
-    hand-drawn at 16x16 for the floor — the same object by two different hands,
-    on screen at the same time. That is the one a player sees side by side.
-  * **Goal 2 does not block this and does not license a port.** Extract the
-    generic objects outright (rupee, heart, fairy, key, bottle, jar, bomb,
-    map). For the seven items that are OURS, the extracted cells are the
-    REGISTER to redraw against, not art to paste on: the horn cell is not the
-    Moon Conch and the switch hook is not the Dredge Line.
+**The gear grid is surveyed and there is nothing left on it.** All 37 cells are
+named in a table at the top of `docs/ART-BACKLOG.md`. Of the 29 unextracted,
+28 are Oracle items this game does not have — feathers, capes, boomerangs,
+hooks, flutes, rings, bracelets — and our roster is ours by design. The one
+that looked shared (r5c5, taken for a flask) was extracted, rendered against
+the hand-drawn bottle and **rejected**; do not redo it.
 
-Nothing in CLAUDE.md's table can see this — `check-items` proves verbs and
-`validate` proves existence, and neither has an opinion about whether a sprite
-was drawn or extracted. It ends with a person looking.
+What is genuinely left, in order:
+
+  * **The held-item and projectile strips** on the gear sheet, below the grid:
+    Link's hand holding a sword, hookshot, rod, boomerang, bombs and seeds,
+    plus boomerang arcs and chain links. All hand-drawn here. This is now the
+    largest extraction target in the repo. `tools/rip-fairies.py` is the worked
+    example — a small, single-purpose ripper emitting its own generated module,
+    installed after the hand-drawn pack so it takes the name.
+  * **Craft, not extraction, on everything else.** What is still hand-drawn is
+    what SHOULD be: the items original to this game. The job there is register —
+    outlines, three tones, silhouette — measured against the extracted art
+    beside it, not replaced by it.
+  * **`oracle-seasons-maku-tree.png` is not the easy job** an earlier prompt
+    implied. The Maku Tree is ~169x96 px drawn into its screen's tilemap;
+    `npc_maku` is a 16x16 NPC. That is a screen redesign, not an art swap.
 
 ### 1b. YOU CANNOT WALK OUT OF A DUNGEON — **LANDED IN S33, do not redo**
 

@@ -62,11 +62,36 @@ that did not run is worse than no check.
 Whole table green afterwards — `replay` 51/51 with no baseline re-recorded,
 `check-playthrough` 21/21, `check-feel`, `check-tilesets`, `check-exits`.
 
-**Still open in `docs/ART-BACKLOG.md`'s top entry:** the 29 unextracted cells on
-the Oracle gear grid; the second white-plate icon set and the held-item and
-projectile strips below it; and `oracle-seasons-maku-tree.png` unused while
-`npc_maku` is hand-drawn — that one is now the best-scoped extraction job left,
-and `rip-fairies.py` is the worked example to copy.
+**Then the gear grid was surveyed, and it closed the item-art job.** All 37
+cells of `oracle-seasons-hud-gear.png`'s grid were cropped, zoomed and named
+into a table at the top of `docs/ART-BACKLOG.md`. The earlier framing — "29
+unextracted cells" as 29 jobs — was wrong: **28 of the 29 are Oracle items this
+game does not have** (feathers, capes, boomerangs, hooks, satchels, shovels,
+flutes, the Rod of Seasons, slingshots, Gasha seeds, magnetic gloves, rings,
+bracelets). Our roster is ours by design, so those cells are not gaps.
+
+The one cell that looked like a shared object — **r5c5**, taken for a flask —
+was extracted and tried as `i_bottle`. **Rendered beside the hand-drawn one and
+REJECTED**: it is an amber vase with a narrow waist, and the hand-drawn blue
+bottle reads far better as the Bottled Tide and is already in the right
+register. Reverted; `rip-hud.py` and `sprites-hud.js` are untouched and
+`check-rippers` is green on them. DO NOT REDO IT.
+
+**And a correction: `oracle-seasons-maku-tree.png` is NOT the easy extraction I
+called it at the end of S36's first half.** Measured rather than assumed: the
+Maku Tree occupies ~169x96 px of its own screen, drawn into the room's tilemap
+with the face worked into the trunk. `npc_maku` here is a 16x16 NPC standing on
+a village screen. Swapping them is a redesign of that screen — layout,
+collision, and where everything else on it stands — not an art change. The
+lesson is the cheap one: **measure the sprite before promising the swap.**
+
+So the honest state: **the extraction opportunities on the icons are spent.**
+The objects the genre shares — sword, shield, bomb, rupee, heart, fairy — are
+extracted or derived from extracted art. What remains hand-drawn is what should
+be. The largest extraction target left in the repo is the **held-item and
+projectile strips** below the gear grid (Link's hand holding a sword, hookshot,
+rod, boomerang, bombs and seeds, plus boomerang arcs and chain links), all of
+which this project draws by hand.
 
 ---
 
