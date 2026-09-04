@@ -218,19 +218,46 @@ in the WEST column specifically, since that is the only column ever safely
 flooded) onward to the stairs/Spire Ascent, and this session did not find a
 way that is not a lossy dead loop.
 
-**The most concrete lead for next time**: the valve's `open` state
-DOES persist across room re-entry (`saveKey`-backed, confirmed —
-`d2:1,2,2:0` was still in `progress.flags` on the return trip), but
-`tideForce: 0` unconditionally resets `game.tide.level` to LOW "on entry"
-regardless of that flag, and nothing re-applies a remembered-open valve's
-effect (another `forceTideStep`) automatically on room load. If the design
-intent was "a valve you have already thrown stays thrown, and the room
-remembers to start flooded," that reconciliation is simply not wired up
-anywhere — worth checking `Game.applyStoryGates`/room-entry code (the same
-place `tideForce` itself is applied, per its own comment in
-`src/data/dungeons-a.js`) for whether it was meant to and doesn't, versus
-whether re-entry is supposed to force a fresh LOW every time and the
-crossing is expected to work some other way entirely.
+**Checked, and it is NOT a missing wire-up**: `Tide.applyRoomRules`
+(`src/game/tide.js`) is explicit that `tideForce` re-pins the level on
+EVERY room entry, unconditionally, and the engine already has a purpose-
+built override for exactly this shape of problem — `Tide.force()`, "the
+Bottled Tide, and it is the ONLY thing that overrides `locked` and
+`forced`" (its own comment). So a valve NOT persisting the water level
+across a fresh entry reads as intentional, not an oversight — the item that
+answers "I need to defeat a `tideForce` room's reset" already exists and is
+deliberately gated elsewhere (`docs/ITEMS.md`: the Bottled Tide is a Salt
+Pan Vault / late-`cave3` item, nowhere near reachable this early — checked,
+and ruled out as the answer here).
+
+**Which sharpens the open question rather than closing it.** The
+`lensRoom.branches[west].escape: [2,4]` field — the stair tile — sits
+adjacent to `land: [1,4]`, i.e. it is reachable the INSTANT you land from
+the ledge-hop, before ever committing to the shaft upward. That is very
+likely the field's whole purpose: "realised you took the wrong shaft, bail
+out NOW, from right here" — a bailout available only in the few tiles right
+after the ledge, not a general-purpose return path from the far side once
+you have already gone all the way up and back. If that reading is right,
+**Bosskey Cell may be an actual one-way pocket in the room graph as
+currently authored — reachable, but not designed to be left again** — which
+none of `check-lens.mjs`, `walk-dungeons.mjs` or `check-progression.mjs`
+would necessarily catch, since a flood proves reachability, not that a
+reached room can also get back out. Checked: `walk-dungeons.mjs` DOES model the ledge-hop as strictly one-way
+(its own comment: "A ONE-WAY LEDGE IS TRAVERSAL... this flood used to treat
+it as a wall" — it was fixed to be directional on purpose), and it reports
+`d2: all 24 rooms reachable` and `d2: boss room reachable`. Both are true and
+neither is the claim this session's finding is about — a flood proves every
+room can be REACHED from the start, not that a room reached via a one-way
+edge can ALSO be LEFT again once something inside it (the Boss Key) is
+needed somewhere else. That is exactly the class of gap CLAUDE.md's own
+history warns about (a model treats an item as "available" without
+simulating whether it can actually be carried to where it is needed) and
+is precisely why `check-playthrough.mjs` exists at all. **This is not yet
+proven to be a real design defect** — this session ran out of budget before
+trying every alternative (a longer health buffer through the pit-fall loop
+chief among them) — but it is now a well-evidenced, specific hypothesis
+rather than a vague "something's wrong here," and worth treating as the
+leading theory rather than re-deriving from scratch.
 
 ### For the next session
 
