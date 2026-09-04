@@ -1,3 +1,75 @@
+## S29 — Respawn: dungeon death was already correct; enemies now stay dead
+
+A user request, not a `docs/prompts/NEXT-PROMPT.md` priority: (a) death in a
+dungeon should return the player to the dungeon's own entrance, not the room
+they died in; (b) a killed enemy should not come back just by leaving its room
+and walking back in; (c) same rule on the overworld, except an overworld
+enemy should respawn once the player has gone far enough away.
+
+**(a) needed no code.** `Game.markRespawn`/`enterMap`'s `changedMap` gating
+already take the respawn point once, on the way IN to a dungeon, cave or
+house, and never move it again until the player leaves that map — verified
+directly in `check-respawn.mjs` section 4 ("walking DEEPER into the same
+dungeon does not move it" / "at its mouth rather than in the room that killed
+him"), which was already green before this session touched anything.
+
+**(b) and (c) are new**, in `src/game/progress.js` and `src/game/game.js`:
+
+- `progress.slain`: a bag keyed exactly like `chests`/`secrets`
+  (`mapId:roomKey:index`), written once in `Game.onEnemyDefeated` (bosses are
+  exempt — `progress.beaten` already owns their persistence and
+  `spawnRoomEntities` never respawns a beaten boss anyway). Indoors
+  (`mapId !== 'overworld'`) it is `{ perm: true }` and never clears. On the
+  overworld it is `{ until: <owVisits value> }`.
+- `progress.owVisits`: counts overworld screen-to-screen crossings, advanced
+  only in `Game.updateTransition`'s sliding-transition completion (the same
+  site `markRespawn(false)` already fires from) — so it only moves on real
+  walked travel, never on a warp or a direct `enterMap`, which keeps it
+  deterministic and replay-safe.
+- `OVERWORLD_RESPAWN_DISTANCE` (`progress.js`) is the threshold — currently 5
+  screens. It is a gameplay/economy knob, not a `feel.js` timing constant (no
+  frame-stepped reference exists to measure it against), so it lives next to
+  `progress.slain` with a plain comment instead of a `measured`/`derived`/
+  `guessed` provenance tag.
+- `spawnRoomEntities` skips spawning an entity whose `saveKey` is in
+  `progress.slain` and still within its window — one new `if` beside the
+  existing chest/secret checks, same shape.
+
+**What this does NOT touch**: `checkPuzzle`'s `pz.enemies` clause (every
+`enemies: true` puzzle in the game already carries its own `pz.flag`, so a
+re-entered puzzle room short-circuits on that flag at the top of
+`checkPuzzle`, line ~811, regardless of whether its enemies are alive — this
+was already correct and stayed correct). `room.cleared`/`roomEvent('cleared')`
+also unaffected, since it fires per-kill against the room's LIVE entity list,
+never against `progress.slain`.
+
+**Verification, full width, because this touches something every fight in
+the game runs through**: `test.mjs` 83/83 (one pre-existing test needed a
+one-line fix — see below), `replay.mjs` 51/51 (`d1-descent` needed
+`--record`, see the new HANDOFF hard-won lesson on why the other replay
+mechanism didn't), `check-playthrough.mjs` 21/21 with **no re-record needed
+and no health-budget regression** — the run still ends at 29/30 hearts,
+deepest trough 3/16qh, same as before; `check-hearts.mjs` 114/114,
+`walk-dungeons.mjs`/`check-gates.mjs`/`check-progression.mjs`/
+`check-strands.mjs`/`check-placement.mjs`/`check-bosses.mjs`/
+`check-respawn.mjs` all green, `npm run build` + `check-build.mjs` OK.
+
+**The one test fix**: `tools/test.mjs`'s hitstop section re-enters the exact
+overworld room the earlier "combat and damage" section had just killed every
+enemy in, via a direct `enterMap` call — which, correctly, does not advance
+`owVisits`. That is the new feature working, not a bug; the fix is
+`g.progress.slain = {}` right before that re-entry, since the hitstop
+assertions are about freeze timing and have nothing to do with persistence.
+
+**Balance note for whoever designs D2 onward with this live**: a dungeon room
+that used to let the player leave-and-return to re-farm a weak enemy for
+health (the D1 Tide Gallery zols were the one example on record) no longer
+can. D1's own route and health budget held up fine end to end without any
+compensating change. Nothing else in the game was known to lean on
+enemy-respawn-as-a-health-source, but it is worth keeping in mind when tuning
+D2–D6: a room's health economy now has to work on ONE pass through its
+enemies, not an assumed second one.
+
 ## S28 — D2 routed to its Boss Key in the live engine; a self-correction mid-session
 
 Priority 2 from `docs/prompts/NEXT-PROMPT.md`: extend `tools/playthrough-route.mjs`

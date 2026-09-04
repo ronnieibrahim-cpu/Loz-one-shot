@@ -43,6 +43,7 @@ import { ThrownObject, ITEMS, itemName, itemIcon } from './items.js';
 import {
   newProgress, saveSlot, loadSlot, giveItem, addRupees, addKey, useKey, keyCount,
   itemLevel, hasItem, HEART_UNITS, addBombs, addReefseeds, addBottles, setFlag, flag,
+  OVERWORLD_RESPAWN_DISTANCE,
 } from './progress.js';
 import { drawHud, drawAreaBanner, drawBossBar } from './hud.js';
 import { Dialogue, drawBox, drawPanel, getText } from './dialogue.js';
@@ -283,6 +284,11 @@ export class Game {
       if (this.progress.secrets[saveKey] && (type === 'pickup' || type === 'essence')) return;
       if (o.needFlag && !flag(this.progress, o.needFlag)) return;
       if (o.hideFlag && flag(this.progress, o.hideFlag)) return;
+      // A killed enemy stays dead: permanently indoors, until the player has
+      // put enough distance behind them on the overworld. Only ever set by
+      // `onEnemyDefeated`, so a non-enemy sharing this saveKey never matches.
+      const slain = this.progress.slain[saveKey];
+      if (slain && (slain.perm || (this.progress.owVisits || 0) < slain.until)) return;
       const e = spawnEntity(this, type, tx, ty, o);
       if (e && o.openedAlready) e.opened = true;
       if (e && e.isBoss) {
@@ -481,6 +487,10 @@ export class Game {
       this.camera.snap(this.room, p);
       this.transition = null;
       this.markRespawn(false);
+      // "Far enough away" for an overworld enemy's respawn clause (see
+      // `onEnemyDefeated`) is measured in screens actually crossed, not
+      // frames or wall-clock time — deterministic, and replay-safe.
+      if (this.mapId === 'overworld') this.progress.owVisits = (this.progress.owVisits || 0) + 1;
     }
   }
 
@@ -780,6 +790,15 @@ export class Game {
       this.boss = null;
       this.onBossDefeated(e);
       return;
+    }
+    // Record the kill so this enemy does not come back on a room reload.
+    // Bosses are exempt — `progress.beaten` above already owns their
+    // persistence, and they are not respawned by `spawnRoomEntities` at all.
+    const saveKey = e.opts && e.opts.saveKey;
+    if (saveKey) {
+      this.progress.slain[saveKey] = this.mapId === 'overworld'
+        ? { until: (this.progress.owVisits || 0) + OVERWORLD_RESPAWN_DISTANCE }
+        : { perm: true };
     }
     if (!this.entities.some(x => x.isEnemy && !x.dead && x !== e)) {
       this.room.cleared = true;

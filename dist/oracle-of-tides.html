@@ -6109,6 +6109,16 @@ const SAVE_KEY = 'oracleOfTides.save.v1';
 const SLOTS = 3;
 
 /**
+ * How many overworld screen-to-screen crossings must pass before a killed
+ * overworld enemy is eligible to respawn on its own screen again. Walking
+ * off-screen and immediately back is not "far enough away" — the player has
+ * to actually put ground between the kill and the return. Dungeon and cave
+ * rooms have no such grace: an enemy killed indoors stays dead for the rest
+ * of the save (see `Game.onEnemyDefeated`/`spawnRoomEntities`).
+ */
+const OVERWORLD_RESPAWN_DISTANCE = 5;
+
+/**
  * `seed` is the root of every random decision the run will ever make. It is
  * saved, so a reloaded game keeps rolling the same way, and tools/replay.mjs
  * pins it explicitly. Passing one makes a new game fully reproducible.
@@ -6154,6 +6164,15 @@ function newProgress(name = 'LINK', seed = (Date.now() >>> 0)) {
     chests: {},              // "mapId:roomKey:index" -> true
     doors: {},               // "mapId:roomKey:tx,ty" -> 'open'
     secrets: {},             // one-shot world changes
+    // Killed enemies that stay dead. Keyed the same as chests/secrets
+    // ("mapId:roomKey:index"). A dungeon/cave entry is `{ perm: true }` and
+    // never respawns; an overworld entry is `{ until: <owVisits value> }`
+    // and respawns once `owVisits` reaches it. See `OVERWORLD_RESPAWN_DISTANCE`.
+    slain: {},
+    // Counts overworld screen-to-screen crossings, for the "far enough away"
+    // clause above. Only overworld travel advances it — see
+    // `Game.updateTransition`.
+    owVisits: 0,
     trade: { stage: 0, item: null },
     // Where the Ferryman's Coin is lying, or null if it is in your hand.
     // Saved, because the coin's whole point is that it works across rooms.
@@ -6399,7 +6418,7 @@ function migrate(p) {
   const base = newProgress(p.name || 'LINK');
   const out = { ...base, ...p };
   for (const k of ['items', 'keys', 'bossKeys', 'dungeonMaps', 'charts',
-    'beaten', 'flags', 'chests', 'doors', 'secrets', 'charms', 'charmOpen',
+    'beaten', 'flags', 'chests', 'doors', 'secrets', 'slain', 'charms', 'charmOpen',
     'charmTold',
     'trade', 'pos', 'respawn']) {
     out[k] = { ...base[k], ...(p[k] || {}) };
@@ -6423,6 +6442,7 @@ function migrate(p) {
 __exports["HEART_UNITS"] = HEART_UNITS;
 __exports["SAVE_KEY"] = SAVE_KEY;
 __exports["SLOTS"] = SLOTS;
+__exports["OVERWORLD_RESPAWN_DISTANCE"] = OVERWORLD_RESPAWN_DISTANCE;
 __exports["newProgress"] = newProgress;
 __exports["itemLevel"] = itemLevel;
 __exports["hasItem"] = hasItem;
@@ -13189,7 +13209,7 @@ const { spawnEntity, ENTITY_TYPES, Entity, findSafeTile } = __require("game/enti
 const { spawnEffectAt, Explosion } = __require("game/effects.js");
 const { Pickup, PICKUPS, rollDropTable, PushBlock, Torch, FloorSwitch, Chest } = __require("game/objects.js");
 const { ThrownObject, ITEMS, itemName, itemIcon } = __require("game/items.js");
-const { newProgress, saveSlot, loadSlot, giveItem, addRupees, addKey, useKey, keyCount, itemLevel, hasItem, HEART_UNITS, addBombs, addReefseeds, addBottles, setFlag, flag } = __require("game/progress.js");
+const { newProgress, saveSlot, loadSlot, giveItem, addRupees, addKey, useKey, keyCount, itemLevel, hasItem, HEART_UNITS, addBombs, addReefseeds, addBottles, setFlag, flag, OVERWORLD_RESPAWN_DISTANCE } = __require("game/progress.js");
 const { drawHud, drawAreaBanner, drawBossBar } = __require("game/hud.js");
 const { Dialogue, drawBox, drawPanel, getText } = __require("game/dialogue.js");
 const { Menu, invalidateWorldMap } = __require("game/menu.js");
@@ -13416,6 +13436,11 @@ class Game {
       if (this.progress.secrets[saveKey] && (type === 'pickup' || type === 'essence')) return;
       if (o.needFlag && !flag(this.progress, o.needFlag)) return;
       if (o.hideFlag && flag(this.progress, o.hideFlag)) return;
+      // A killed enemy stays dead: permanently indoors, until the player has
+      // put enough distance behind them on the overworld. Only ever set by
+      // `onEnemyDefeated`, so a non-enemy sharing this saveKey never matches.
+      const slain = this.progress.slain[saveKey];
+      if (slain && (slain.perm || (this.progress.owVisits || 0) < slain.until)) return;
       const e = spawnEntity(this, type, tx, ty, o);
       if (e && o.openedAlready) e.opened = true;
       if (e && e.isBoss) {
@@ -13614,6 +13639,10 @@ class Game {
       this.camera.snap(this.room, p);
       this.transition = null;
       this.markRespawn(false);
+      // "Far enough away" for an overworld enemy's respawn clause (see
+      // `onEnemyDefeated`) is measured in screens actually crossed, not
+      // frames or wall-clock time — deterministic, and replay-safe.
+      if (this.mapId === 'overworld') this.progress.owVisits = (this.progress.owVisits || 0) + 1;
     }
   }
 
@@ -13913,6 +13942,15 @@ class Game {
       this.boss = null;
       this.onBossDefeated(e);
       return;
+    }
+    // Record the kill so this enemy does not come back on a room reload.
+    // Bosses are exempt — `progress.beaten` above already owns their
+    // persistence, and they are not respawned by `spawnRoomEntities` at all.
+    const saveKey = e.opts && e.opts.saveKey;
+    if (saveKey) {
+      this.progress.slain[saveKey] = this.mapId === 'overworld'
+        ? { until: (this.progress.owVisits || 0) + OVERWORLD_RESPAWN_DISTANCE }
+        : { perm: true };
     }
     if (!this.entities.some(x => x.isEnemy && !x.dead && x !== e)) {
       this.room.cleared = true;

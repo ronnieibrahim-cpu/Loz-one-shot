@@ -447,6 +447,27 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **A DELIBERATE BEHAVIOUR CHANGE THAT MOVES ANY RECORDED FRAME COUNT NEEDS ITS
+  OWN RE-RECORD, AND THE TWO REPLAY MECHANISMS IN THIS REPO DO NOT NEED IT THE
+  SAME WAY.** Making killed enemies stay dead (`progress.slain`,
+  `Game.onEnemyDefeated`/`spawnRoomEntities`, S29) is exactly the "a five-line
+  change to the movement path is never a five-line change" case CLAUDE.md
+  already names for the push-block fix, and it landed on both of this repo's
+  two replay mechanisms differently. `tools/replay.mjs`'s plans
+  (`tools/replay-plans.mjs`) are DIRECTIVE-based (`goto`/`exit`/`fight`/...),
+  not raw keypresses, so `--record <name>` re-drove the existing plan against
+  the new engine and produced a new frame-exact tape on its own — one file
+  (`tools/replays/d1-descent.json`) needed this, because the D1 combat section
+  it exercises is the one replay that fights the same room's enemies twice.
+  `tools/check-playthrough.mjs` needed **no re-record at all**: its tape is
+  generated fresh every run and replayed blind within that SAME run, so it is
+  self-consistent by construction and never drifts from a stored golden file.
+  **The general shape**: before assuming a checker needs manual re-recording
+  after an engine change, check whether it compares against a git-committed
+  baseline (it does) or only against its own freshly-driven tape (it
+  doesn't) — the fix is only needed for the former, and guessing wrong wastes
+  a re-record on a tool that was never going to fail.
+
 - **A FIXTURE THAT PERSISTS ITS OWN STATE STILL HAS TO READ IT BACK.**
   `TideValve` (the D2 fork valves) wrote `progress.flags[saveKey] = open` on
   every `interact` and never once read it — the identical bug `GustWheel`
