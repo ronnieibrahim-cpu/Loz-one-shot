@@ -304,62 +304,70 @@ describes, and is NOT this job.
    before touching it — this is an eyes-on judgement call, not a census.
 
 
-## EVERY GROUND BOUNDARY IS A STRAIGHT PIXEL EDGE, and the shore is not blocked
+## EVERY GROUND BOUNDARY IS A STRAIGHT PIXEL EDGE — **LANDED (S39)**
 
-Investigated in S19, and its shore/bank half is DONE as of S21 (see the entry
-above this one). The land/land fringe half below is still accurate and still
-not done. Read this before the S3 entry below it, which is partly wrong.
+**Done.** The 17 land/land pairs the overworld actually contains now interlock
+along a wiggly fringe instead of meeting at a hard pixel edge. `West Bluff`'s
+sand read as painted rectangles cut into a lawn, because it was; it reads as a
+shape now. Screenshotted across coast, marsh, reef, salt, cliffs, dunes and
+abyss before it was believed, per CLAUDE.md's rule on composited art.
 
-**What the source actually does, checked rather than assumed.** Three regions
-were cropped and looked at:
+**BOTH THINGS THIS ENTRY CALLED BLOCKERS WERE WRONG, and that is the reusable
+part.**
 
-  * `oracle-ages-overworld.png @ 300,800 640x360` — two grasses meeting. The
-    boundary between the green field and the dry yellow one is a WIGGLY,
-    interlocking fringe, not a rectangle. There is a real transition tile set
-    there and it is static.
-  * `oracle-ages-overworld.png @ 1400,1900 500x380` — land meeting water. **The
-    source does not draw foam. It draws a BANK**: a brown earth strip with a
-    pale rim, on the LAND side of the join, with the water butting flat against
-    it. It is a hard-edged tile like any other and it does not animate.
-  * `oracle-seasons-overworld-spring.png @ 1280,880` — grass meeting a dirt
-    path. This one IS a hard 16px edge, and the join reads fine anyway because
-    both tiles are busy, the shape is an L rather than a rectangle, and trees
-    stand along it.
+1. *"`tileEdgeArt` takes the FIRST direction that matches and stops."* **Already
+   fixed** — the water-rim work (S27) rewrote it as a full 4-neighbour mask with
+   all 12 keys. This entry was simply stale, and a session could have spent a
+   day rebuilding what was already there. **Re-read the code the entry names
+   before believing the entry.**
+2. *"`edgeArt` names one art per direction, with no way to say which
+   neighbour."* True but not the real blocker. **The real blocker was that
+   `family` cannot see a land/land join at all**: every dry ground carries
+   `family: 'shore'` — that is exactly what lets the water rim fire against all
+   of them — so grass and sand are the same family by construction, and
+   `differs()` returns false. No amount of per-direction art would have helped.
 
-**So the S3 entry below is wrong about the shore.** "Water edges are BLOCKED by
-the sheets" was reasoned from FOAM, which is drawn on the water side and does
-animate. The source's own answer is on the land side and is as static as
-`cliffTop`. That is a whole job that was written off and is not blocked.
+**The fix is a SECOND comparison axis.** `material` is the specific ground and
+`edgePairs` maps a neighbour's material to that pair's 12 mask keys.
+`tileEdgeArt` checks it before the family path and runs it through the SAME
+mask classifier (`pickByMask`, extracted for the purpose), so a fringe gets
+real corners rather than the first direction that matched. Both fields had to be
+added to `registerTiles` or the registrar drops them — CLAUDE.md's `liftLevel`
+trap, hit again.
 
-**What is actually blocking it is the ENGINE, and it is two specific things.**
+**204 tiles, none of them typed.** 17 pairs x 12 mask cases, composited at
+install time from the two materials' own extracted textures (`installGroundFringes`
+in tiles-core.js), so a re-rip of the terrain moves every fringe with it. All 12
+cases fall out of one rule: a pixel belongs to the intruder if it lies past the
+wiggle on ANY differing side, which makes corners and inner corners the union of
+their edges rather than art of their own.
 
-1. `tileEdgeArt` (src/world/tileset.js) takes the FIRST direction that
-   matches and stops. A patch of ground is a top edge and a left edge at once,
-   and there are no corner pieces — the function's own comment says so, and it
-   is why `cliffTop` is the only user. A ground fringe needs the 4-neighbour
-   MASK, not the first hit: 4 straight edges, 4 outer corners, 4 inner
-   corners.
-2. `edgeArt` names one art per direction, with no way to say *which neighbour*.
-   Grass meeting sand and grass meeting mud are different pictures. And a
-   transition cell holds BOTH materials' tones, so it needs a combined
-   palette — one tiledef binds one palette, so each ordered pair wants its own
-   (`grasssand`, `grassmud`, ...). That is data, not a limitation, but it is
-   what makes this per-PAIR rather than per-ground and therefore large.
+**The four-colour budget is the whole constraint.** A transition cell holds both
+materials and a tile has four colours, so each side gets its two lightest;
+grass's darkest speckle is dropped in a fringe cell and nothing else is.
 
-**Do not ship a partial one.** Softening grass/sand while mud/grass and
-stone/grass stay rectangular is worse than the uniform hard edge, for the same
-reason S3 gives for one-sided foam: the eye reads the inconsistency
-immediately. The job is one session's work for the mask autotiler plus one
-pair, and the pairs that actually occur should be counted first
-(`tools/oneshot/find-ground-specks.mjs` already walks every cell of every
-screen and knows what meets what — it groups by PALETTE, which is the same
-question).
+**Only one side of each pair carries it** (`FRINGE_PAIRS` is ordered [carrier,
+intruder]). Fringing from both sides doubles the transition to two tiles and
+reads as a seam rather than a join.
 
-**What was fixed instead this session:** nothing here. The pot was extracted
-and the six Essences were given six icons (both were on this list); the ground
-joins were investigated, scoped and left, and the scoping above is the
-deliverable.
+**TIDE TILES DELIBERATELY CARRY NO MATERIAL.** `sandbar`, `tidePool`, `shoal`,
+`seafloor`, `channel` and the reef tiles resolve to ground at some sea levels
+and water at others, and several animate — the same reason `quadMayCover`
+refuses an animated cell. A fringe that appeared and vanished as the conch was
+sounded would be worse than none. With no `material` they never match, so this
+needed no special case.
 
+**It is not partial.** This entry's old warning — do not soften grass/sand while
+mud/grass stays rectangular — is honoured: all 17 static pairs are covered,
+including the near-identical ones (`stone|stonedk`, `sand|sandwet`), which were
+screenshotted specifically because a fringe between two similar greys was the
+most likely thing to read as noise. It does not.
+
+Render-only: `artAt` is on the draw path and no fringe tile carries flags, so
+passability is untouched. `replay` 51/51 with **no baseline re-recorded**, and
+`check-strands`, `check-overworld`, `check-ground`, `check-placement`,
+`check-playthrough` all green. `validate.mjs` learned to reach tiles through
+`edgePairs`, or the 204 new names drown the one warning that sweep exists for.
 
 ## S3 left these: water edges, tree borders, and the cliff corner set
 

@@ -156,6 +156,14 @@ export function registerTiles(defs) {
       // `variants` — nothing the simulation can see moves.
       family: def.family || null,
       edgeArt: def.edgeArt || null,
+      // PROTOTYPE, land-vs-land fringes. A SECOND comparison axis: `family`
+      // groups the same MASS (every land tile is 'shore', which is what lets
+      // the water rim fire), so it cannot see grass meeting sand. `material`
+      // is the specific ground and `edgePairs` maps a neighbour's material to
+      // the 12 edge keys. Both must be listed HERE or the registrar drops them
+      // — see CLAUDE.md's `liftLevel` trap.
+      material: def.material || null,
+      edgePairs: def.edgePairs || null,
       // Narrows which neighbour families this tile draws an edge against. A
       // cliff wants a lip against ANYTHING that is not cliff, so it leaves
       // this unset. Grass does NOT want a bank against sand or mud — that is
@@ -396,7 +404,38 @@ export function tileVariant(def, roomKey, tx, ty) {
  * case below falls back to the straight-edge degrade when the art it actually
  * wants is not defined.
  */
-export function tileEdgeArt(def, neighbourFamily) {
+export function tileEdgeArt(def, neighbourFamily, neighbourMaterial) {
+  // ---- LAND AGAINST LAND, which needs a SECOND comparison axis -----------
+  //
+  // `family` groups tiles that are the same MASS, and every dry ground in the
+  // game is `'shore'` — that is what lets the water rim fire against all of
+  // them at once. So family cannot see grass meeting sand: they are the same
+  // family by design. `material` is the specific ground, and `edgePairs` maps a
+  // NEIGHBOUR'S material to its own set of the 12 mask keys, because grass
+  // meeting sand and grass meeting mud are different pictures.
+  //
+  // It runs before the family check and uses the SAME mask classifier, so a
+  // fringe gets real corners rather than the first direction that matched.
+  // Only one side of a pair carries `edgePairs` — see `FRINGE_PAIRS` in
+  // tiles-core.js — so a boundary is fringed once, not from both sides.
+  if (def.edgePairs && neighbourMaterial) {
+    const byMat = new Map();
+    for (const dir of EDGE_DIRS) {
+      const m = neighbourMaterial(dir);
+      if (!m || m === def.material || !def.edgePairs[m]) continue;
+      if (!byMat.has(m)) byMat.set(m, []);
+      byMat.get(m).push(dir);
+    }
+    // A cell touching two different foreign materials picks the one it touches
+    // most; ties go to the first in EDGE_DIRS order, which is stable.
+    let best = null;
+    for (const [m, dirs] of byMat) if (!best || dirs.length > best[1].length) best = [m, dirs];
+    if (best) {
+      const art = pickByMask(def.edgePairs[best[0]], best[1]);
+      if (art) return art;
+    }
+  }
+
   const e = def.edgeArt;
   if (!e || !def.family) return null;
   const against = def.edgeAgainst;
@@ -406,7 +445,15 @@ export function tileEdgeArt(def, neighbourFamily) {
     if (nf === def.family) return false;
     return against ? matches(nf) : true;
   };
-  const diffDirs = EDGE_DIRS.filter(differs);
+  return pickByMask(e, EDGE_DIRS.filter(differs));
+}
+
+/**
+ * Choose one of an art set's 12 keys from the set of directions that differ.
+ * Shared by the family path and the material path above so a fringe and a rim
+ * classify a corner identically.
+ */
+function pickByMask(e, diffDirs) {
   if (diffDirs.length === 0) return null;
   if (diffDirs.length === 1) {
     return e[diffDirs[0]] || null;

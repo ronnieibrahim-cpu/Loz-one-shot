@@ -229,6 +229,15 @@ for (const [name, d] of TILES) {
   for (const [, d] of TILES) {
     if (d.variants) for (const t of d.variants) reachable.add(t);
     if (d.edgeArt) for (const t of Object.values(d.edgeArt)) reachable.add(t);
+    // A ground fringe is reached through `edgePairs` — a map of a neighbour's
+    // MATERIAL to that pair's 12 mask keys (see installGroundFringes in
+    // tiles-core.js). Without this the 204 fringe tiles all read as unreachable
+    // and drown the one warning this sweep exists to give.
+    if (d.edgePairs) {
+      for (const set of Object.values(d.edgePairs)) {
+        for (const t of Object.values(set)) reachable.add(t);
+      }
+    }
   }
   // Set by code rather than by a grid; the call site is named so grep finds it
   // if one of these stops being reached.

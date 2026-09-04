@@ -259,12 +259,17 @@ export class Room {
    * screen; see `tileEdgeArt`.
    */
   artAt(d, x, y, tide) {
-    if (d.edgeArt) {
+    if (d.edgeArt || d.edgePairs) {
       const edge = tileEdgeArt(d, (dir) => {
         const nx = x + (dir === 'left' ? -1 : dir === 'right' ? 1 : 0);
         const ny = y + (dir === 'up' ? -1 : dir === 'down' ? 1 : 0);
         if (nx < 0 || ny < 0 || nx >= this.tw || ny >= this.th) return d.family;
         return this.tile(nx, ny, tide).family;
+      }, (dir) => {
+        const nx = x + (dir === 'left' ? -1 : dir === 'right' ? 1 : 0);
+        const ny = y + (dir === 'up' ? -1 : dir === 'down' ? 1 : 0);
+        if (nx < 0 || ny < 0 || nx >= this.tw || ny >= this.th) return null;
+        return this.tile(nx, ny, tide).material || null;
       });
       if (edge) return edge;
     }

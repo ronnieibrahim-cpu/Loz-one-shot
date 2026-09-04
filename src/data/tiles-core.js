@@ -8,7 +8,7 @@
 import { tiles as tileSheet } from '../gfx/art.js';
 import { registerTiles, registerBlocks, F, declareAnimArt, registerTransforms } from '../world/tileset.js';
 import { TERRAIN_ART, TOWN_ART, TOWN_PALETTES, TOWN_BLOCKS } from './tiles-terrain.js';
-import { registerPalettes } from '../gfx/palettes.js';
+import { registerPalettes, PALETTES } from '../gfx/palettes.js';
 import { DUNGEON_THEME_ART, installDungeonThemePalettes } from './tiles-dungeon-themes.js';
 import { TORRENT_PUSH } from './feel.js';
 
@@ -1670,6 +1670,148 @@ function installTownBlocks() {
   return defs;
 }
 
+
+// --------------------------------------------------------------------------
+// GROUND FRINGES: where one dry ground meets another.
+//
+// Every land/land boundary in the game was a straight pixel edge — a sand patch
+// cut into a lawn read as a painted rectangle, because it WAS one. The source
+// does not do that: `oracle-ages-overworld.png @ 300,800` has two grasses
+// meeting along a wiggly interlocking fringe (docs/ART-BACKLOG.md's own
+// investigation). This is that fringe, for the 17 ordered pairs the overworld
+// actually contains.
+//
+// DERIVED, NOT DRAWN, for the same reason the water rim is: 17 pairs x 12 mask
+// cases is 204 tiles, and hand-drawing them would guarantee they drift. Each is
+// composited at install time from the two materials' OWN already-extracted
+// textures, so a re-rip of the terrain moves every fringe with it.
+//
+// THE FOUR-COLOUR BUDGET IS THE WHOLE CONSTRAINT. A transition cell holds both
+// materials and a tile has four colours, so each side gets two: the carrier's
+// two lightest and the intruder's two lightest. Grass's darkest speckle is
+// dropped in a fringe cell and nothing else is. That is what a real GBC
+// transition tile does, and it is why this is AUTHORING rather than extraction
+// (CLAUDE.md) — it is checked by screenshot in several regions, not by a ripper.
+//
+// ONE SIDE OF EACH PAIR CARRIES IT. `FRINGE_PAIRS` is ordered [carrier,
+// intruder]: only the carrier's tiledefs get `edgePairs`, so a boundary is
+// fringed once. Fringing from both sides doubles the transition to two tiles
+// and reads as a seam rather than a join.
+
+/** tiledef name -> the ground material it is made of. */
+const GROUND_MATERIAL = {
+  grass: 'grass', grassTuft: 'grass', grassClump: 'grass',
+  grassDark: 'grassdk', tallgrass: 'grassdk',
+  sand: 'sand', sandRipple: 'sand',
+  sandWet: 'sandwet', sandDeep: 'sandwet',
+  mud: 'bog', grassBog: 'bog', grassTuftBog: 'bog',
+  rockFloor: 'stone', rockFloorDk: 'stonedk',
+  rockFloorRust: 'rust', sandRust: 'rust',
+  rockFloorCoral: 'coral', sandCoral: 'coral', coralStep: 'coral',
+  saltFlat: 'marble', saltCrust: 'marble',
+};
+
+// TIDE TILES DELIBERATELY CARRY NO MATERIAL. `sandbar`, `tidePool`, `shoal`,
+// `seafloor`, `channel` and the reef tiles resolve to a ground at some sea
+// levels and to water at others, and several of them ANIMATE — the same reason
+// `quadMayCover` refuses an animated cell (CLAUDE.md). A fringe that appeared
+// and vanished as the conch was sounded would be worse than none. Without a
+// `material` they simply never match, so this needs no special case.
+
+/** material -> the tiledef whose art and palette represent it. */
+const FRINGE_REP = {
+  grass: 'grass', grassdk: 'grassDark', sand: 'sand', sandwet: 'sandWet',
+  bog: 'mud', stone: 'rockFloor', stonedk: 'rockFloorDk',
+  rust: 'rockFloorRust', coral: 'rockFloorCoral', marble: 'saltFlat',
+};
+
+// [carrier, intruder], commonest first. Counted off the real world at all three
+// tide levels rather than guessed: 4,660 boundary cells, and these 17 pairs are
+// all of them. The carrier is the finer or more organic of the two, so the
+// coarser ground intrudes into it — which is the way round the source draws it.
+const FRINGE_PAIRS = [
+  ['grassdk', 'bog'], ['stone', 'sand'], ['stonedk', 'stone'],
+  ['grass', 'sand'], ['stonedk', 'rust'], ['grassdk', 'sand'],
+  ['sandwet', 'sand'], ['grass', 'bog'], ['marble', 'sand'],
+  ['stonedk', 'sand'], ['coral', 'sand'], ['coral', 'stone'],
+  ['marble', 'sandwet'], ['bog', 'sand'], ['grass', 'grassdk'],
+  ['rust', 'sand'], ['grass', 'sandwet'],
+];
+
+// The interlock. Three pixels of travel, and the same wiggle every pair uses so
+// the whole world's joins share one hand. Deterministic by construction — no
+// call to the RNG, which `tools/test.mjs` would fail anyway.
+const FRINGE_WIGGLE = [12, 11, 11, 12, 13, 13, 12, 11, 12, 13, 13, 12, 11, 11, 12, 13];
+
+const FRINGE_KEYS = {
+  up: ['up'], down: ['down'], left: ['left'], right: ['right'],
+  cornerUpLeft: ['up', 'left'], cornerUpRight: ['up', 'right'],
+  cornerDownLeft: ['down', 'left'], cornerDownRight: ['down', 'right'],
+  innerUp: ['down', 'left', 'right'], innerDown: ['up', 'left', 'right'],
+  innerLeft: ['up', 'down', 'right'], innerRight: ['up', 'down', 'left'],
+};
+
+/** A 16x16 art string as a grid of digits. */
+function fringeGrid(art) {
+  return art.trim().split('\n').map((r) => r.trim()).filter((r) => r.length === 16);
+}
+
+/**
+ * One fringe cell. A pixel belongs to the intruder if it lies past the wiggle
+ * on ANY of the differing sides — which makes the corner and inner-corner
+ * cases fall out of the same rule as the straight edges, rather than needing
+ * their own art. That union is why all 12 keys cost one function.
+ */
+function fringeCell(carrier, intruder, dirs) {
+  const w = FRINGE_WIGGLE;
+  const rows = [];
+  for (let y = 0; y < 16; y++) {
+    let row = '';
+    for (let x = 0; x < 16; x++) {
+      const into = dirs.some((d) => (
+        d === 'down' ? y >= w[x] : d === 'up' ? y <= 15 - w[x]
+          : d === 'right' ? x >= w[y] : x <= 15 - w[y]));
+      const v = Number((into ? intruder : carrier)[y][x]);
+      row += String(Math.min(v, 1) + (into ? 2 : 0));
+    }
+    rows.push(row);
+  }
+  return rows.join('\n');
+}
+
+/** Build every fringe tile and hang `material`/`edgePairs` on the ground defs. */
+function installGroundFringes(defs) {
+  const pals = {}, tiles = {};
+  for (const [name, mat] of Object.entries(GROUND_MATERIAL)) {
+    if (defs[name]) defs[name].material = mat;
+  }
+  for (const [carrier, intruder] of FRINGE_PAIRS) {
+    const cd = defs[FRINGE_REP[carrier]], idf = defs[FRINGE_REP[intruder]];
+    const cg = fringeGrid(cd.art), ig = fringeGrid(idf.art);
+    const palName = `fr_${carrier}_${intruder}`;
+    const cp = PALETTES[cd.pal], ip = PALETTES[idf.pal];
+    pals[palName] = [cp[0], cp[1], ip[0], ip[1]];
+    const set = {};
+    for (const [key, dirs] of Object.entries(FRINGE_KEYS)) {
+      const tile = `${palName}_${key}`;
+      tiles[tile] = { art: fringeCell(cg, ig, dirs), pal: palName };
+      set[key] = tile;
+    }
+    for (const [name, mat] of Object.entries(GROUND_MATERIAL)) {
+      if (mat !== carrier || !defs[name]) continue;
+      defs[name].edgePairs = { ...(defs[name].edgePairs || {}), [intruder]: set };
+    }
+  }
+  registerPalettes(pals);
+  Object.assign(defs, tiles);
+  // The fringe art is addressed by TILE name, and `tileSheet` was loaded from
+  // ART before these existed, so each one has to be added to the sheet too.
+  tileSheet.add(Object.fromEntries(
+    Object.entries(tiles).map(([n, d]) => [n, d.art])), 'grass');
+  return tiles;
+}
+
+
 export function installCoreTiles() {
   // The themed dungeon tiles bring their own colours off the cartridge, and
   // the tiledefs below name them. Must run before registerTiles.
@@ -2415,6 +2557,7 @@ export function installCoreTiles() {
     // answer wants to be a shade of blue, reach for a whole tile instead.
     dLintel: { tide: ['dWallAbyss', 'dWallAbyss', 'dWaterD'] },
   };
+  installGroundFringes(TILE_DEFS);
   registerTiles(TILE_DEFS);
   // After the tiledefs, so a block cell can never be shadowed by one of them.
   const townDefs = installTownBlocks();

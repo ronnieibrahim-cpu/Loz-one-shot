@@ -1,3 +1,85 @@
+## S39 — Land stops meeting land at a hard pixel edge
+
+`docs/ART-BACKLOG.md`'s oldest open item, and the last big one. Every land/land
+boundary in the game was a straight pixel edge: a sand patch cut into a lawn
+read as a painted rectangle because it WAS one. The 17 pairs the overworld
+actually contains now interlock along a wiggly fringe.
+
+**BOTH BLOCKERS THE BACKLOG NAMED WERE WRONG.** This is the part worth keeping.
+
+1. *"`tileEdgeArt` takes the first direction that matches and stops."*
+   **Already fixed.** The water-rim work in S27 rewrote it as a full
+   4-neighbour mask with all 12 keys — 4 edges, 4 outer corners, 4 inner. The
+   entry was stale and a session could have spent a day rebuilding it.
+   **Re-read the code an entry names before believing the entry.**
+2. *"`edgeArt` cannot say which neighbour."* True, and not the real blocker.
+   **The real one: `family` cannot see a land/land join at all.** Every dry
+   ground carries `family: 'shore'` — which is exactly what lets the water rim
+   fire against all of them — so grass and sand are the same family by
+   construction and `differs()` returns false. The edge system could not see
+   the boundary, and no amount of per-direction art would have changed that.
+
+**The fix is a second comparison axis.** `material` is the specific ground;
+`edgePairs` maps a neighbour's material to that pair's 12 mask keys.
+`tileEdgeArt` checks it before the family path and runs it through the SAME
+classifier — `pickByMask`, extracted so a fringe and a rim resolve a corner
+identically. Both new fields had to be listed in `registerTiles`: the registrar
+copies field by field, which is CLAUDE.md's `liftLevel` trap, hit again.
+
+**204 tiles and not one of them typed.** 17 pairs x 12 cases, composited at
+install time from the two materials' own extracted textures
+(`installGroundFringes`), so a re-rip of the terrain moves every fringe with it.
+All 12 cases fall out of one rule: **a pixel belongs to the intruder if it lies
+past the wiggle on ANY differing side**, so corners and inner corners are the
+union of their edges rather than art of their own.
+
+Three things that shaped it:
+
+  * **The four-colour budget is the constraint.** A transition cell holds both
+    materials and a tile has four colours, so each side gets its two lightest
+    and grass's darkest speckle is dropped in a fringe cell. That is what a real
+    GBC transition tile does, and it is why this is AUTHORING not extraction —
+    believed by screenshot across seven regions, not by a ripper.
+  * **One side of each pair carries it.** `FRINGE_PAIRS` is ordered [carrier,
+    intruder]. Fringing from both sides doubles the transition to two tiles and
+    reads as a seam rather than a join.
+  * **Tide tiles carry no `material` on purpose.** `sandbar`, `tidePool`,
+    `shoal`, `seafloor`, `channel` and the reef tiles are ground at some seas
+    and water at others, and several animate. A fringe that appeared and
+    vanished as the conch was sounded would be worse than none. With no
+    material they never match — no special case needed.
+
+**It is not partial**, which the backlog explicitly warned against: all 17
+static pairs are covered. The near-identical ones (`stone|stonedk`,
+`sand|sandwet`) were screenshotted specifically because a fringe between two
+similar greys was the likeliest thing to read as noise. It does not.
+
+Render-only — `artAt` is on the draw path and no fringe tile carries flags — so
+passability is untouched. **`replay` 51/51 with no baseline re-recorded**, plus
+`check-strands`, `check-overworld`, `check-ground`, `check-placement`,
+`check-playthrough`, `check-towns`, `check-progression`, `walk-dungeons`,
+`check-tilesets`, `check-rippers` all green. `validate.mjs` learned to reach
+tiles through `edgePairs`, or 204 new names drown the one warning that sweep
+exists to give.
+
+### The art backlog is now down to composition, and that is a different job
+
+What is left in `docs/ART-BACKLOG.md` is **regions never read as pictures**, and
+it was measured this session rather than guessed. Scenery as a share of dry
+land, by region:
+
+    dunes 28%   reef 32%   abyss 33%   salt 34%   coast 37%
+    marsh 40%   coral 41%  cliffs 38%  wood 39%   town 45%
+
+**Do not act on that table alone.** A dune field being empty is correct; the
+wood is dense because woods are dense. Screenshots of Salt Terraces, Palace Wall
+and Wind Shelf say the fault is not sparseness but SHAPE: teal rectangles inset
+in grey, tan bars, a uniform texture with no structure. That is authoring — room
+data, not tiles — and it wants a person deciding what each screen is a picture
+OF. The 12 emptiest screens are listed in the backlog as a starting point.
+
+---
+
 ## S38b — The kilnshell stops being a shield, and the fix was a palette
 
 The collision S38 named as the next job: `i_kilnshell` and `o_kilnshell` drew
