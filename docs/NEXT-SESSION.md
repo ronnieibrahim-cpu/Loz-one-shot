@@ -1,3 +1,73 @@
+## S37 — The map and the Chartstone stop being UI panels, and an art rule gets corrected
+
+Continuing the item art after the gear grid closed. Two useful outcomes, and
+the first is a rule rather than a sprite.
+
+**"A HARD 1PX BLACK OUTLINE ALL THE WAY ROUND. NO EXCEPTIONS" IS NOT LITERALLY
+WHAT THE SOURCE DOES.** S35 patched eight pixels on the hand-drawn fairy's
+wings where a body pixel touched bare air, reading CLAUDE.md's rule as a
+per-pixel invariant. S36 extracted the real Oracle fairy — and it has EIGHT
+exposed pixels of its own, its second frame ten. Measured across the extracted
+pack:
+
+    i_bomb        6 exposed        hud_heart1/2  3 exposed
+    p_fairy       8 exposed        hud_heart3    4 exposed
+    p_fairy_1    10 exposed        swords/shields/rupee  0
+
+So the rule means the SILHOUETTE reads with a dark edge; it is not a per-pixel
+law, and a checker asserting one would go red on art taken straight off the
+cartridge. **This is why no `check-outline` tool was written**, which was the
+obvious next move and would have been wrong. The same audit also flagged four
+"gaps" on every `p_essenceN_1` and on `p_tidebell_1` — those are the corner
+SPARKLES, deliberate. Two near-misses from one script in one session.
+
+What the measurement DID find, and it is the real fidelity gap: **the
+hand-drawn gear icons are systematically fatter than the register their own
+file defines.** `sprites-gear.js`'s header sets the target off the 18 extracted
+icons — "~30% of the cell, gear icons are slender portraits". Measured fills:
+`i_chart` 66%, `i_coin` 51%, `i_dredge` 49%, `i_cleats` 48%, `i_bellows` 47%,
+`i_rod` 47%. That is a standing craft job, not a bug, and it is the honest
+remaining art work.
+
+**The map and the Chartstone are redrawn.** Both were rectangles inside a heavy
+uniform border — they read as UI PANELS rather than things Link is carrying.
+The map is now a leaf of parchment with the floor's route wound across it and
+its own thickness shading the bottom edge; the Chartstone is BEVELLED — light
+face, one shadow edge down the right and along the bottom — which is what makes
+it read as a solid slab instead of a window with blue stripes behind it. Its
+palette lost its second blue for a stone shadow: a chartstone is stone that has
+been scored, not a piece of sea. Both outlines are pure black now, which is
+what the extracted icons beside them use.
+
+**And a real bug found on the way: the dungeon map's floor pickup drew in the
+MENU'S GREY RAMP.** `PICKUPS.dungeonMap` passed `pal: 'ui'`, so the parchment
+came out the colour of a dialogue box and the red route across it — the one
+mark that says "map" rather than "card" — was grey on grey. It looked
+deliberate, because grey UI art is a real style. Now `pal: null`, letting the
+sprite's own bound palette win, which is the rule the rest of the table follows
+(`chartstone` next to it already did). Worth grepping `pal: '` in that table
+when a sprite looks oddly desaturated.
+
+**The held-item and projectile strips were surveyed and are ALSO spent** — the
+"largest extraction target left" claim from S36 does not survive contact
+either. The held sword poses are already extracted (`link_hold_*` from
+`rip-link.py`); the coloured bars are SWORD BEAMS and this game has no player
+beam (`shot_beam` is an enemy projectile fired by four bosses and one enemy);
+the boomerangs, slingshots and seeds are items we do not have; the hookshot
+head and chain are the Dredge Line's job and ours by design; and `i_bomb_lit`
+is already derived from the extracted bomb, by its own header. Nothing to take.
+
+So: **the icon extraction is genuinely finished.** What remains on the art is
+craft against the extracted register — the fill percentages above are the
+measurable version of it — plus the terrain jobs that were always in
+`docs/ART-BACKLOG.md` (the land/land fringe, regions never read as pictures).
+
+Whole table green: `replay` 51/51 with no baseline re-recorded,
+`check-playthrough` 21/21, `check-rippers` 17/17, `check-items`, `check-hearts`,
+`check-respawn`, `check-exits`.
+
+---
+
 ## S36 — The fairy is extracted, and the rippers are finally checked
 
 Two things, and the second is the one that outlives this session.

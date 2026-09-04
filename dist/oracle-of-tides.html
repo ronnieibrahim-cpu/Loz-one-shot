@@ -9481,7 +9481,11 @@ const PICKUPS = {
     get(g) { g.progress.bossKeys[g.mapId] = true; g.audio.jingle('fanfareShort'); g.say('You found the Boss Key!'); },
   },
   dungeonMap: {
-    sprite: 'i_map', pal: 'ui', persistent: true,
+    // `pal: null` so the sprite's OWN palette wins, like the chartstone below.
+    // This drew with `ui` — the menu's grey ramp — so the parchment came out
+    // the colour of a dialogue box and the route drawn across it, the one thing
+    // that says "map" rather than "card", came out grey on grey.
+    sprite: 'i_map', pal: null, persistent: true,
     get(g) { g.progress.dungeonMaps[g.mapId] = true; g.audio.sfx('key'); g.say('You found the Dungeon Map!'); },
   },
   chartstone: {
@@ -38958,43 +38962,56 @@ const GEAR_ART = {
     ..3113..
     ...33...
     ........` },
+  // The dungeon map: a leaf of parchment with the floor's route wound across
+  // it and its own thickness shading the bottom edge.
+  //
+  // It used to be a rectangle inside a heavy uniform border, which read as a UI
+  // PANEL rather than as a thing Link is carrying — the same fault as the
+  // Chartstone below. Measured against the 18 extracted icons: those have a
+  // black outline that varies in weight around the shape and a body that is
+  // never one flat tone. This has both. Nothing on the Oracle gear sheet is a
+  // dungeon map (all 37 of its cells are named in docs/ART-BACKLOG.md), so this
+  // is the draw-to-match half of the rule.
   i_map: { pal: 'i_map', art: `
     ................
-    ................
-    ...333333333....
-    ...300000003....
-    ...301000003....
-    ...301100003....
-    ...300110003....
-    ...300011003....
-    ...300001103....
-    ...300000103....
-    ...300001103....
-    ...301110003....
-    ...300000003....
-    ...333333333....
-    ................
+    ....33333333....
+    ...3000000003...
+    ...3000220003...
+    ...3002200003...
+    ...3022000003...
+    ...3020000003...
+    ...3022000003...
+    ...3002200003...
+    ...3000220003...
+    ...3000022003...
+    ...3000002203...
+    ...3000000103...
+    ...3011111103...
+    ....33333333....
     ................` },
-  // Chartstone: a slab of banded stone with three tide lines scored across
-  // it. Three lines, because there are three tide levels and the stone's whole
-  // job is to say which of them changes a room. Deliberately NOT round — it
-  // replaces the Compass and must not be mistaken for one.
+  // Chartstone: a slab of banded stone with three tide lines scored across it.
+  //
+  // Now BEVELLED — light face, one shadow edge down the right and along the
+  // bottom — which is what makes it read as a solid slab instead of a window
+  // with blue stripes behind it. The palette lost its second blue for a stone
+  // shadow, because a chartstone is stone that has been scored, not a piece of
+  // sea.
   i_chart: { pal: 'i_chart', art: `
     ................
+    ................
     ..333333333333..
-    ..300000000003..
-    ..301111111103..
-    ..322222222203..
-    ..301111111103..
-    ..300000000003..
-    ..322222222203..
-    ..300000000003..
-    ..301111111103..
-    ..322222222203..
-    ..300000000003..
-    ..301111111103..
-    ..300000000003..
+    ..300000000013..
+    ..302222222213..
+    ..300000000013..
+    ..300000000013..
+    ..302222222213..
+    ..300000000013..
+    ..300000000013..
+    ..302222222213..
+    ..300000000013..
+    ..311111111113..
     ..333333333333..
+    ................
     ................` },
   // ---- the item roster (docs/ITEMS.md) ----------------------------------
   //
@@ -39378,8 +39395,8 @@ const GEAR_PALETTES = {
   i_cleats2: ['#d8ffe0', '#38a878', '#186048', '#000000'],
   i_chain: ['#e8e8f0', '#8890a8', '#000000', '#000000'],
   i_hookhead: ['#e8e8f0', '#8890a8', '#000000', '#000000'],
-  i_map: ['#f0e8c0', '#d83820', '#000000', '#000000'],
-  i_chart: ['#e8e0c8', '#78a8c0', '#3868a0', '#000000'],
+  i_map: ['#f0e8c0', '#c8b070', '#d83820', '#000000'],
+  i_chart: ['#e0d8c0', '#a89880', '#3868a0', '#000000'],
   i_bomb_lit: ['#73adff', '#0000ff', '#000000', '#ffd020'],
   // Sea-glass green over brass. The green is the same family as the water
   // palettes so the Lens reads as belonging to the tide, not to the shop.

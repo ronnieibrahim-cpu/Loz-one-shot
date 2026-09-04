@@ -47,14 +47,37 @@ correct register (hard outline, three tones) and is the better sprite. The
 change was reverted; `rip-hud.py` is untouched. **Do not redo this** — the work
 is in the git history of S36 if anyone wants to see the two side by side.
 
+**The remaining art job is CRAFT, and it is measurable.** `sprites-gear.js`'s
+own header sets the register off the 18 extracted icons: "~30% of the cell —
+gear icons are slender portraits". Measured fills against that: `i_chart` 66%
+(now redrawn), `i_coin` 51%, `i_dredge` 49%, `i_cleats` 48%, `i_bellows` 47%,
+`i_rod` 47%. The hand-drawn icons are systematically FATTER than the extracted
+ones they sit beside, and that — not outlines — is what makes a screen betray
+which is which.
+
+**Do NOT write a per-pixel outline checker.** It was the obvious next tool and
+it would be wrong: the extracted art has exposed pixels of its own (`i_bomb` 6,
+`p_fairy` 8, `p_fairy_1` 10, the part-filled hearts 3 and 4). "A hard 1px black
+outline all the way round" means the silhouette reads with a dark edge, not
+that every body pixel is enclosed. See docs/HANDOFF.md.
+
 So the honest state of the item art is: **the extraction opportunities are
 spent.** The sword, shield, bomb, rupee, heart and fairy — the objects the genre
 shares — are extracted or derived from extracted art. What remains hand-drawn
 is what SHOULD be hand-drawn, and the standing job on it is craft (register,
 outlines, shading against the extracted neighbours), not extraction.
 
-Two things on this sheet are still genuinely unexamined, and neither is on the
-grid: **the second, white-plate icon set** lower down (the pause-menu
+**The held-item and projectile strips are surveyed too (S37) and are ALSO
+spent.** An earlier note called them "the largest remaining extraction target";
+they are not. The held sword poses are already extracted (`link_hold_*`, from
+`rip-link.py`). The coloured bars are SWORD BEAMS and this game has no player
+beam — `shot_beam` is an ENEMY projectile, fired by four bosses and one enemy.
+The boomerangs, slingshots and seeds are items we do not have. The hookshot
+head and chain are the Dredge Line's, and the Dredge Line is ours by design.
+And `i_bomb_lit` is already the extracted bomb with its fuse alight, by its own
+header. **There is nothing left on this sheet to take.**
+
+Still genuinely unexamined, and not on the grid: **the second, white-plate icon set** lower down (the pause-menu
 presentation of the same icons — worth a look only if the menu's own plate
 style ever changes), and **the held-item and projectile strips** below that —
 Link's hand holding a sword, a hookshot, a rod, a boomerang, bombs and seeds,

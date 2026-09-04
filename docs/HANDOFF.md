@@ -447,6 +447,41 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **"A HARD 1PX BLACK OUTLINE ALL THE WAY ROUND. NO EXCEPTIONS" IS NOT LITERALLY
+  WHAT THE SOURCE DOES — CHECK THE EXTRACTED ART BEFORE ENFORCING A RULE ON THE
+  HAND-DRAWN ART.** S35 "fixed" eight pixels on the hand-drawn fairy's wings
+  where a body pixel touched bare air, reading CLAUDE.md's outline rule
+  literally. S36 then extracted the real Oracle fairy and measured it: it has
+  EIGHT exposed pixels of its own, and its second frame has ten. So does the
+  extracted bomb (six). So do the part-filled hearts (three and four). The rule
+  means the SILHOUETTE reads with a dark edge — it is not a per-pixel
+  invariant, and a checker that asserted one would go red on art taken straight
+  off the cartridge. Measure the reference before calling the copy wrong.
+
+- **A "GAP" IN A SPRITE AUDIT IS OFTEN DELIBERATE.** The same audit flagged four
+  exposed pixels on every `p_essenceN_1` and on `p_tidebell_1`. Those are the
+  corner SPARKLES — art, not holes. Two separate near-misses from one script in
+  one session: read what the pixels are before believing what the count says.
+
+- **A PICKUP CAN BE DRAWN IN SOMEBODY ELSE'S PALETTE AND LOOK FINE.** The
+  dungeon map's floor pickup passed `pal: 'ui'` — the menu's grey ramp — so a
+  parchment map drew the colour of a dialogue box, and the red route across it,
+  the one mark that says "map" rather than "card", came out grey on grey. It
+  looked deliberate because grey UI art is a real style. The rule these packs
+  follow is `pal: null`, letting the sprite's OWN bound palette win; grep for
+  `pal: '` in the PICKUPS table when a sprite looks oddly desaturated.
+
+- **THE EXTRACTION WELL RUNS DRY, AND "THE SHEET HAS IT" IS A CLAIM TO CHECK.**
+  Three times in one session an extraction was promised on the strength of a
+  thumbnail and did not survive contact: the Maku Tree (169x96 in its own
+  screen's tilemap, against a 16x16 NPC — a screen redesign, not an art swap);
+  the gear grid's r5c5 (taken for a flask, actually an amber vase, and worse
+  than the hand-drawn bottle it would have replaced); and the sword-beam bars
+  on the held-item strip (our `shot_beam` is an ENEMY projectile, not a player
+  beam — no counterpart at all). CROP IT, ZOOM IT AND RENDER IT BESIDE WHAT IT
+  WOULD REPLACE before promising the swap. All three cost minutes that way and
+  would have cost an afternoon the other way.
+
 - **A DOOR IS AS WIDE AS THE PLAYER'S HITBOX LETS IT BE, NOT AS WIDE AS THE
   TILE.** Every dungeon mouth was one 16px `dStairs`. Link's hitbox is 10px and
   the warp probe is a single point (`floor(cx/16)`), so of a 160px room exactly

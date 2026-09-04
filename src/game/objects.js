@@ -83,7 +83,11 @@ export const PICKUPS = {
     get(g) { g.progress.bossKeys[g.mapId] = true; g.audio.jingle('fanfareShort'); g.say('You found the Boss Key!'); },
   },
   dungeonMap: {
-    sprite: 'i_map', pal: 'ui', persistent: true,
+    // `pal: null` so the sprite's OWN palette wins, like the chartstone below.
+    // This drew with `ui` — the menu's grey ramp — so the parchment came out
+    // the colour of a dialogue box and the route drawn across it, the one thing
+    // that says "map" rather than "card", came out grey on grey.
+    sprite: 'i_map', pal: null, persistent: true,
     get(g) { g.progress.dungeonMaps[g.mapId] = true; g.audio.sfx('key'); g.say('You found the Dungeon Map!'); },
   },
   chartstone: {
