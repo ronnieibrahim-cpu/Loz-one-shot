@@ -1,3 +1,74 @@
+## S34 — The rupees are the Oracle gem, and a bomb drop is a bomb
+
+Two items off the top of `docs/ART-BACKLOG.md`, both asked for directly after
+looking at a contact sheet of every item icon in the game.
+
+**The rupees were symmetric diamonds.** The Oracle rupee is not symmetric: it
+is a hexagon leaning right, two vertical edges joined by two edges running
+down-left. This mattered more than it sounds because the game ALREADY OWNED the
+real shape — `hud_rupee` is extracted off the gear sheet for the status bar —
+so the rupee on the bar and the rupee on the floor were the same object drawn
+by two different hands, on screen at the same time.
+
+The fix is derived, not eyeballed. Read `hud_rupee`'s 7x7 art as a span per row
+and it is exactly `lo <= c + r <= hi` — the two slanted edges are lines of
+constant `c+r`, which is what makes the gem lean. The three floor rupees are
+that same inequality at N=10 (the green 1) and N=14 (the 5 and the 20), so the
+floor gem IS the bar gem's silhouette and cannot drift from it. Highlight on
+the small-`c+r` side, shadow on the large, matching where `hud_rupee` puts its
+one light facet; three tones rather than its two, because the `rupee` palette
+has a real mid-tone and an 8x8 icon has no room to spend it.
+
+**Checked before drawing: no sheet in this repo has a 16x16 world rupee.** The
+overworld sheets are stitched MAPS, not sprite strips; the effects sheet is
+magic rings; the enemies sheet has no drops. The only rupee any sheet here has
+is the 8x8 HUD one. So this is ART-DIRECTION's second rule (draw to match) with
+the first rule's own art as the reference — which is the pattern to copy for
+the rest of the pickups.
+
+The 20's corner sparkles are GONE. The Oracles put none on a rupee; colour is
+the whole size signal there, and `enemyr` against `enemyp` carries it. Detached
+pixels in the corners of the cell read as grit rather than shine. Easy to put
+back if the signal is wanted.
+
+**A bomb drop looked nothing like the bombs it gave you.** `p_bombs` was a
+hand-drawn pair of flat-topped canisters; the bomb this game actually throws is
+`i_bomb`, extracted, round with a curling fuse, sitting in the same build.
+`PICKUPS.bomb4` now points at `i_bomb` with `pal: null` (it binds its own
+palette — passing one would override it), which is the shape `seeds5` has
+always had. **The hand-drawn duplicate is deleted**, from `sprites-world.js`
+and from `sprite-manifest.js`, and that deletion is the point rather than a
+tidy-up: a second drawing of an object the sheet already gave us is exactly
+what the backlog entry is about.
+
+Two harness notes worth keeping:
+
+  * **`new Pickup(x, y, kind)` silently gives you a green rupee.** The third
+    argument is an OPTIONS OBJECT (`{ kind }`), so a bare string falls through
+    to `PICKUPS.rupee1`. A screenshot of "four different rupees" came back as
+    four identical green ones and looked like a palette bug in the sprites.
+    Use `game.spawnPickup(x, y, kind)`.
+  * **A contact sheet is not the check.** Bake every icon through
+    `sprites.bake(name, pal)` on a checkered ground to see outline and
+    transparency, then look at the same sprites at 1:1 in a real room. The
+    heart's missing black outline is obvious on the sheet and nearly invisible
+    in the shot; the rupee's lean is the other way round.
+
+Whole table re-run green, `check-playthrough` 21/21 and `replay` 51/51
+included — no baseline moved, because nothing in a replay picks up a rupee at a
+probed pixel.
+
+**Still open in `docs/ART-BACKLOG.md`'s top entry**, and the next things to do
+there: several hand-drawn pickups have NO black outline at all (`p_heart`,
+`p_heartpiece`, `p_fairy`, the Essences, `p_tidebell`) against a rule that says
+"a hard 1px black outline all the way round. No exceptions"; and **the six
+Essences are one silhouette in one palette**, differing only by interior
+banding that is invisible at 16px — the quest screen shows six copies of the
+same object. That is the same fault the Essence TEXT had before `check-text`
+caught it, now in the art.
+
+---
+
 ## S33 — You could not walk out of a dungeon unless you were lined up on one tile
 
 Reported by a person stuck inside Tidewash Grotto who could not find the way

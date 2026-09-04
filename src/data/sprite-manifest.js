@@ -69,7 +69,7 @@ export const REQUIRED_SPRITES = {
 
   // ---- pack: sprites-world.js ------------------------------------------
   pickups: [
-    'p_rupee', 'p_rupee5', 'p_rupee20', 'p_heart', 'p_fairy', 'p_bombs',
+    'p_rupee', 'p_rupee5', 'p_rupee20', 'p_heart', 'p_fairy',
     'p_key', 'p_bosskey', 'p_heartpiece', 'p_heartcontainer',
     'p_tidebell_0', 'p_tidebell_1',
     'p_essence1_0', 'p_essence1_1', 'p_essence1_dim',

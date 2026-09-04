@@ -36,6 +36,35 @@ picked from). Measured, not estimated:
     hand-drawn), `oracle-seasons-maku-tree.png` (and `npc_maku` is hand-drawn),
     `oracle-seasons-effects.png`.
 
+### LANDED SO FAR (S34): the rupees and the bomb pickup
+
+Two of the faults this entry names are fixed; the rest of it stands.
+
+  * **The rupees are the Oracle gem now.** They were symmetric diamonds. The
+    Oracle rupee is a hexagon LEANING RIGHT — two vertical edges joined by two
+    edges running down-left — and the game already owned the real shape, because
+    `hud_rupee` is extracted off the gear sheet for the status bar. Read that
+    7x7 art as a span per row and it is exactly `lo <= c + r <= hi`: the slanted
+    edges are lines of constant `c+r`. `p_rupee`/`p_rupee5`/`p_rupee20` are that
+    same inequality at N=10 and N=14, so the floor gem is the bar gem's
+    silhouette and cannot drift from it. **No sheet in this repo has a 16x16
+    world rupee** — checked; the overworld sheets are stitched MAPS, not sprite
+    strips — so this is the "draw to match" half of the rule with the extracted
+    half as its reference. The 20's corner sparkles are gone: the Oracles put
+    none on a rupee, colour is the whole signal there, and detached pixels in
+    the corners of a cell read as grit rather than shine. Say so if you want the
+    signal back.
+  * **The bomb pickup IS the bomb now.** `p_bombs` was a hand-drawn pair of
+    flat-topped canisters while the bomb the game actually throws — `i_bomb`,
+    extracted, round with a curling fuse — sat in the same build. `PICKUPS.bomb4`
+    now points at `i_bomb` with `pal: null` (it binds its own palette), the same
+    shape `seeds5` has always had, and the hand-drawn duplicate is deleted from
+    `sprites-world.js` and from `sprite-manifest.js`. **Deleting the sprite was
+    the point** — a second drawing of an object the sheet already gave us is the
+    thing this whole entry is about.
+
+Both looked at in the real game at 1:1, not just on a contact sheet.
+
 ### What the game currently hand-draws
 
   * `src/data/sprites-gear.js` — **25 icons**, every one hand-drawn:

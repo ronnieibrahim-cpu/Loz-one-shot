@@ -43,7 +43,14 @@ export const PICKUPS = {
     sprite: 'p_fairy', pal: 'magic', float: true,
     get(g) { heal(g.progress, HEART_UNITS * 6); g.audio.sfx('fairy'); },
   },
-  bomb4: { sprite: 'p_bombs', pal: 'bomb', get(g) { addBombs(g.progress, 4); g.audio.sfx('rupee'); } },
+  // THE PICKUP IS THE BOMB, not a picture of one. `p_bombs` was a hand-drawn
+  // pair of flat-topped canisters — the bomb this game actually throws is
+  // `i_bomb`, EXTRACTED off the Oracle gear sheet, round with a curling fuse.
+  // So a bomb drop looked nothing like the bombs it gave you, with the right
+  // art already in the build. `pal: null` because i_bomb binds its own palette
+  // (see the header of sprites-gear.js); passing one would override it. Same
+  // shape as `seeds5` below, which has always pointed at `i_reefseed`.
+  bomb4: { sprite: 'i_bomb', pal: null, get(g) { addBombs(g.progress, 4); g.audio.sfx('rupee'); } },
   // NO TEXT BOX, deliberately. An open dialogue freezes every entity while the
   // mode is still 'play' (see CLAUDE.md, traps), so a first-time hint on a
   // FLOOR DROP stops the game dead in the middle of whatever fight dropped it.
