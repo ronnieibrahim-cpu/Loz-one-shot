@@ -45,21 +45,24 @@ hearts. 24,000 frames, no death, no warp, no flag set from outside. Landed in
 "D2 is DONE" in the table above means what it has always meant: authored,
 flooded, and proved by models. See `GOAL` in `tools/playthrough-route.mjs`.
 
-**S28 got 6 of D2's ~14 required rooms into a live-engine route** (Spire
-Mouth through the First Fork's west branch, correctly identified, plus the
-Lens obtained) and stopped at Reefguard Hall's miniboss — not landed in
-`tools/playthrough-route.mjs` (still D1-only), but verified against the real
-engine in a scratch harness and written up in full in `docs/NEXT-SESSION.md`
-S28. **The finding**: `tools/actor-runtime.mjs`'s `dBoss` wins this fight
-from a favourable start (measured: ~10qh cost, ~1150 frames) but reliably
-loses it from every position the route's own arrival state produces — the
-pair drift into a wall and stall at 0 damage across the full budget. This is
-the first SHELLED boss `dBoss` has fought in a room bigger than one screen
-(Reefguard Hall is `size:[2,1]`), and whether the fix is a route position, a
-`dBoss` generalisation, or both is not yet known. Read S28 before attempting
-D2 again — it names exactly which rooms are solid and saves re-deriving the
-switch puzzle, the locked-door position, and the fork's ledge/valve sequence
-from scratch.
+**S28 got 10 of D2's ~14 required rooms into a live-engine route** (Spire
+Mouth through both Small Keys, the Lens, the Bombs, a heart piece and the
+Boss Key) — not landed in `tools/playthrough-route.mjs` (still D1-only), but
+verified against the real engine in a scratch harness and written up in full
+in `docs/NEXT-SESSION.md` S28. Read S28 before attempting D2 again: it names
+exactly which rooms are solid and saves re-deriving the switch puzzle, the
+locked-door positions, both `lensRoom` fork sequences, and a real, general
+`dTravel` gap (it cannot path through a `size:[w,h]>1x1` room's non-anchor
+exits — hits both Reefguard Hall and Spire Ascent) from scratch.
+
+**S28 also self-corrected a wrong diagnosis mid-session, kept on record
+rather than silently fixed.** An earlier pass reported the Reefguard miniboss
+as unwinnable and blamed `dBoss`'s wide-room combat AI. The real cause was a
+route bug: equipping the Lens onto B displaced the sword (only ever bound
+there), so every subsequent swing attempt pressed the Lens button instead.
+`dBoss` needed no changes. What is NOT yet solved is the return leg from the
+Boss Key room back to Spire Ascent's boss door — see S28's "open problem"
+for exactly where it stalls and what was ruled out.
 
 ### Boss winnability, measured (S5)
 

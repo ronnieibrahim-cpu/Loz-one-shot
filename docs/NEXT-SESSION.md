@@ -1,11 +1,38 @@
-## S28 — D2 routed to its miniboss, and a real actor blocker found there (this session)
+## S28 — D2 routed to its Boss Key in the live engine; a self-correction mid-session
 
 Priority 2 from `docs/prompts/NEXT-PROMPT.md`: extend `tools/playthrough-route.mjs`
-past D1. **The route was NOT landed in the repo this session** — it lives only
-in this entry, verified against the live engine in a scratch harness, because
-it stops at a real blocker before reaching Coral Spire's Essence. `main`'s
-`check-playthrough.mjs`/`playthrough-route.mjs` are UNCHANGED and still D1-only,
-21/21, exactly as S27 left them.
+past D1. **Not landed in the repo this session** — it lives only in this
+entry, verified against the live engine in a scratch harness, because the
+final leg (getting back to the boss door and fighting Anemos) was not
+finished. `main`'s `check-playthrough.mjs`/`playthrough-route.mjs` are
+UNCHANGED and still D1-only, 21/21, exactly as S27 left them.
+
+**This entry SUPERSEDES an earlier version of itself written mid-session.**
+That version reported the Reefguard miniboss as unwinnable from the route's
+own arrival state and pinned the cause on `dBoss`/`tools/actor-runtime.mjs`
+being untested against a wide, shelled-boss room. That diagnosis was WRONG,
+and pushed to `main` before the mistake was found — recorded here rather than
+quietly rewritten, because the actual bug is a real hazard worth naming
+precisely: **`['equip', 'lens', 'B', 400]`, called once the Lens is picked up,
+silently displaces the sword** (it was only ever bound to B) — every `'boss'`/
+`'fight'` swing after that presses the LENS button, not a sword swing, so the
+fight was never landing a hit for a reason that had nothing to do with room
+geometry or the actor's combat AI. Removing that one `equip` call — or
+equipping the Lens to A instead, since a scripted route that already knows a
+fork's answer never needs to press the Lens button at all — fixes the fight
+outright, costing ~2-7qh depending on approach, same order as Clawcrab. **Do
+NOT equip the Lens onto a button that is already carrying the sword or
+conch** unless the step immediately re-equips what it displaced before the
+next fight. `dBoss`/`evade` need no changes; the "wide shelled room" theory,
+the four repositioning attempts, and the wall-drift measurements described in
+the superseded text were all real observations of the SAME symptom (zero
+damage landing) with the wrong cause attached — a lesson in not stopping at
+the first plausible-sounding explanation for "zero progress across a long
+budget", which is exactly the diagnostic instinct CLAUDE.md's bosses.js
+`open()` comment warns has a real failure mode (`fires into its own window`)
+and this was a reminder that there is at least one more failure mode shaped
+exactly like it (an unrelated button held) that produces the identical
+symptom.
 
 ### What is VERIFIED working, room by room, in the live engine
 
@@ -26,12 +53,14 @@ throughout.
    100px), NOT a combat objective; `puzzle.enemies` is not set on this room,
    `puzzle.switches: 'all'` is. Do **not** send `['fight', ...]` at it — the
    first attempt did, on 20 max hearts, and died in 1200 frames without
-   landing a hit, exactly like fighting a wall. Solve instead: block (2,5) ->
-   switch (1,5) by `['goto',3,5],['hold',['left'],40]`; block (7,6) -> switch
-   (8,6) by `['goto',6,6],['hold',['right'],40]`. Both down spawns the key at
-   (4,2) and opens door (4,1) (the Cistern Cell/charm detour — skipped this
-   session, optional). Cost ~6qh from the barnacle's ink while working the
-   blocks.
+   landing a hit (the SAME "zero damage, long budget" symptom as the Reefguard
+   misdiagnosis above, this time correctly attributed on the first try: it is
+   a `hp:999,shield:'all'` fixture, not an enemy). Solve instead: block (2,5)
+   -> switch (1,5) by `['goto',3,5],['hold',['left'],40]`; block (7,6) ->
+   switch (8,6) by `['goto',6,6],['hold',['right'],40]`. Both down spawns the
+   key at (4,2) and opens door (4,1) (the Cistern Cell/charm detour — skipped
+   this session, optional). Cost ~6qh from the barnacle's ink while working
+   the blocks.
 3. **Stair Coil's locked door.** The room's key doors are WITHIN the room,
    not on its edges (`travel` reaches the room key `0,2,4` without needing
    the key at all — the west edge of Rising Chamber opens straight into
@@ -48,91 +77,189 @@ throughout.
    silently fails (0 movement, `canOccupy` correctly refuses it). Goto the
    tile BESIDE it instead: (1,1) is plain floor at every tide; (2,2) below it
    is `dWell` (deep at MID/HIGH, avoid). `['goto',1,1],['hold',['right'],20],
-   ['tap','a',40]` opens it and grants `lens`.
-6. **The First Fork, west branch (correct — "the west one fills").** Mirrors
-   `tools/replay-plans.mjs`'s `d2-fork-wrong` (which deliberately takes the
-   WRONG/east branch and proves the shaft stays a hole) reflected onto the
-   west side: `goto(3,5)` onto the shelf, `hold left 60` to auto-hop the
-   one-way ledge at (2,5) landing at (1,5), `goto(1,6)` down to the west
+   ['tap','a',40]` opens it and grants `lens`. **Do not then equip it to B** —
+   see the correction above.
+6. **The First Fork (1,4,3), west branch — correct ("the west one fills").**
+   Mirrors `tools/replay-plans.mjs`'s `d2-fork-wrong` (which deliberately
+   takes the WRONG/east branch and proves the shaft stays a hole) reflected
+   onto the west side: `goto(3,5)` onto the shelf, `hold left 60` to auto-hop
+   the one-way ledge at (2,5) landing at (1,5), `goto(1,6)` down to the west
    valve, `hold right` to face it, `tap a` to fire `TideValve.interact` ->
    `game.forceTideStep()` (tide 0 -> 1, the room's OWN sluice, since
    `tideForce: 0` refuses the conch), then `hold up 80` walks the actor all
    the way up the now-wadeable shaft (`dDrain` floods at MID) to (1,1),
    `goto(1,0)` + `hold up` crosses into Reefguard Hall. Confirms the room's
-   `lensRoom` data (`src/data/dungeons-a.js`, `'1,4,3'`) against the live
-   engine, not just against `check-lens.mjs`'s model of it.
+   `lensRoom` data against the live engine, not just against
+   `check-lens.mjs`'s model of it.
+7. **Reefguard Hall (1,4,2), the miniboss for key 2.** `['boss', 6000,
+   'reefguard']` wins cleanly once the sword is actually on a button (see the
+   correction above) — no positioning trick needed, plain engagement from the
+   shaft's own arrival point works. `puzzle.enemies: true` needs BOTH
+   Reefguard AND the urchin at local (15,4) dead, and the urchin sits on
+   `dWell` — deep at MID, unreachable without swimming — so sound the conch to
+   LOW first (`['use','conch',2,140]`), THEN `goto(14,4)` and `['fight',...]`
+   to clear it, or the puzzle flag/key never fires. The reward key at local
+   (4,1) sits flush against the room's own north wall — `dLoot`'s usual
+   "lean one tile north" recovery presses into solid wall there and gains
+   nothing (row 0 is unbroken `dWall` the whole width); approach it from
+   BELOW instead (`goto(4,3)` then `hold up`) and it collects normally.
+8. **Bomb Vault (1,5,3), Whelk Cell (1,5,4).** Reefguard Hall is `size:[2,1]`
+   — `travel` cannot path to Bomb Vault: `dTravel`'s cross-room BFS treats the
+   WHOLE multi-cell room as one graph node keyed to its registered rx,ry (4),
+   with no edge modelled for the room's SECOND cell's own south exit
+   (5,2)->(5,3); it silently wandered off to an unrelated room rather than
+   failing loudly. **This is a real, general `dTravel` limitation, not just a
+   Reefguard-Hall quirk — any `size:[w,h]>1x1` room's non-anchor-cell exits
+   are invisible to it.** Walk it by hand: `goto(14,7)` (the east chamber's
+   own south opening) then `exit('down')`. The chest (bombs) and the heart
+   piece are both plain, undramatic pickups once there.
+9. **Spire Ascent (1,3,2)/(1,3,3), also `size:[1,2]`, same `travel` gap.**
+   Its WEST edge (rows 3-4 of the upper cell) connects to Reefguard Hall's own
+   corridor — `travel(3,2)` from Reefguard Hall happens to work because that
+   IS an edge from the room's anchor cell. Its locked-door crossing to Drowned
+   Cell is at LOCAL (1,11) (the lower cell, i.e. row 11 of the room's full
+   16-row grid) — `goto(4,6)` (into the lower cell generally) then
+   `goto(2,11)`, `hold left`, `tap a` spends key 2, then `goto(0,11)` +
+   `exit('left')` reaches Drowned Cell (1,2,3).
+10. **The Sounding Fork (1,2,2), FORK 2 — three throats, west correct again**
+   ("one wades" is the design's own line for it). Same primitive as the First
+   Fork, one more branch: `travel(2,2)` from Drowned Cell works (plain edge).
+   Cross exactly like the First Fork — shelf (4,6) -> ledge at (1,6) [`hold
+   up`] -> valve at (2,3), approached from (1,3) [`hold right`, `tap a`] ->
+   shaft up to (1,0) -> `exit up` into **Bosskey Cell (1,2,1)**, where the
+   chest at (4,2) (approached from (4,1), `hold down`) gives the Boss Key.
 
-That is 6 of the dungeon's ~14 required rooms (per the intended-route comment
-above `registerMap({id:'d2',...})`), fully driven and verified, plus the
-Lens obtained — proof the room DATA (switch/block placement, the locked
-door's real position inside Stair Coil, the Lens chest, the fork's
-`lensRoom` fields) all check out against a live playthrough, which no model
-in CLAUDE.md's table can say.
+That is **10 of the dungeon's ~14 required rooms**, fully driven and verified
+against the live engine, holding the Lens, the Bombs, both Small Keys spent,
+one heart piece, and the Boss Key. hp was 12/20 (3 hearts) on reaching
+Bosskey Cell on this run — tight but not yet desperate; the Glass Cell heart
+piece (skipped this session) is sitting right off the First Fork's approach
+and is the obvious top-up if health is short later.
 
-### THE BLOCKER: Reefguard Hall (1,4,2), and it is the ACTOR, not the game
+### THE OPEN PROBLEM: getting back from Bosskey Cell to the boss door
 
-`['boss', N, 'reefguard']` (the same directive D1's Clawcrab used) reliably
-loses this fight: reefguard's hp never leaves 16/16 across a full 6000-frame
-budget while the actor's health drains to 0 and the harness respawns it back
-at the Spire Mouth. Measured **four separate ways** (immediate engagement, a
-`goto(8,5)` reposition, a `goto(10,3)` reposition, a `goto(9,6)` reposition —
-all four from the route's own arrival state) and all four lose the same way.
+Bosskey Cell has exactly one exit (south, back into the Sounding Fork) —
+confirmed by reading its full map, no side openings anywhere. The room's own
+comment names the intended way past a fork once you're on the far side of its
+one-way ledge: **"a stair back out <- the cost of being wrong"** — all three
+of Sounding Fork's stairs (2,4)/(5,4)/(8,4) warp to the SAME destination,
+`{map:'d2', floor:1, rx:3, ry:3, px:64, py:208}` — Spire Ascent's LOWER cell,
+directly, which is exactly where the boss door route needs to go.
 
-**It is winnable.** Booted in isolation directly into the room
-(`enter:['d2',1,4,2,140,90,'up']`, full items, full 20 max hearts, no route
-preamble) the identical `['boss',6000,'reefguard']` call wins outright: hp
-16->14->8->6->2->dead in ~1150 frames for ~10qh of damage taken — a normal,
-reasonable miniboss cost, similar to Clawcrab's.
+**Reaching that stair from Bosskey Cell's south exit was not solved this
+session.** Landing back in Sounding Fork puts the actor at row 0 (north of
+the shaft, on the far/committed side of the ledge) — and `tideForce: 0`
+RE-PINS THE ROOM TO LOW ON THIS FRESH ENTRY, same as every entry; the valve's
+own `open` flag persisted (it is a `saveKey`-backed toggle) but the WATER
+LEVEL did not, so the shaft between row 0 and the stairs (row 4) is a bare
+`dPit` again. Walking down through it did not read as "falls in, takes
+damage, tries again" the way a plain hazard normally would: `goto`/`hold
+down` both went completely static (zero net movement across 200+ frames at
+15-frame polling resolution, health UNCHANGED the whole time — no pit-fall
+damage was ever taken) and then, after enough stuck time, the actor was
+thrown back through the NORTH edge into a freshly-repopulated Bosskey Cell.
 
-**The difference is NOT the entry corner, and four attempts to fix it by
-repositioning all failed the same way**, so record the failure mode itself
-rather than a guess at the cause: polled `weakOpen`/`hp`/positions every 15
-frames through the live fight (a custom debug harness, not
-`check-playthrough.mjs`) and in every losing run the pair drift together to
-a ROOM WALL (west in most runs, once the far east) and stall there — boss
-and player end up aligned on one axis 20-30px apart (not the <=4px
-`nearContact` needs), `weakOpen` cycles true/false repeatedly with the actor
-never closing the last stretch of distance, health draining the whole time.
-`dBoss` (`tools/actor-runtime.mjs`) has fought five other bosses (Gohmaraq
-real-combat proven, four more swept by `measure-boss-combat.mjs`) and one
-other miniboss (Clawcrab, unshelled) — **this is the first shelled fight it
-has ever been asked to win in a room wider than one screen** (Reefguard Hall
-is `size:[2,1]`, 320x128, `dungeon`'s bosses are all single-screen 10x8), and
-the "shelled: hold position, retreat toward `room.pw/2, room.ph/2`" fallback
-(`tools/actor-runtime.mjs` around the `weakOpen` branch) was written and
-proven against Gohmaraq's square arena only. Whether the fix belongs in that
-fallback, in the wall-drift itself, or is purely a route-positioning problem
-that four attempts simply have not found the right pixel for yet, is NOT
-determined — this is a characterisation, not a diagnosis. **Do not touch
-`dBoss`/`evade` without re-sweeping all five already-working bosses
-afterward** (`measure-boss-combat.mjs <d> --seed=20260806` for d1-d6, plus
-`check-playthrough.mjs` for D1) — CLAUDE.md's own P8 boss-combat history
-(the `evade` merge) already paid once for exactly this class of regression.
+**Fully diagnosed, frame-by-frame, and it may be a genuine completability
+gap in the dungeon rather than a routing mistake.** Queried the engine
+directly first (`room.tile(1,1,tide).flags`, `room.solidAt(...)`) — the
+shaft tile is `dPit`, `F.PIT` only, and `solidAt` returns `false`: it is not
+solid, so this was never a `canOccupy`/pathfinding refusal. Then polled
+`player.falling`/`player.lastSafe`/`player.x,y`/`progress.hearts` on EVERY
+frame (not every 15) through an isolated, full-health repro
+(`enter:['d2',1,2,2,16,3,'up']`, tide 0, `['hold',['down'],200]`) and the
+mechanism is now completely accounted for:
+
+- Stepping onto the pit calls `Player.beginFall` (`src/game/player.js`),
+  which sets `falling = FALL_FRAMES` (34) and ignores movement input for
+  that whole window — the "frozen, not merely blocked" symptom the coarser
+  15-frame polling read as a stuck pathfind.
+- After 34 frames, `updateFalling` relocates to `findSafeTile(...) ||
+  lastSafe` and deals `PIT_DAMAGE` (2qh) — confirmed directly: hearts went
+  20 -> 18 on the first fall, exactly as `player.js` says it should. (The
+  EARLIER coarse trace showing hearts unchanged for 200+ frames was reading
+  a run that was already critically low on health from the rest of the
+  route — see below, not a sign the damage wasn't firing.)
+- **The relocation lands EXACTLY back at the same tile in row 0 every time —
+  zero net progress.** `lastSafe` only updates while standing on safe ground,
+  so once the actor is in the shaft it is frozen at the row-0 entry point;
+  `findSafeTile`'s own search apparently finds nothing better within its
+  radius (rows 1-2 are the whole 2-tile shaft, hazardous both cells, with
+  walls on both sides at that column). So `hold down` from row 0 does not
+  inch forward and fail — it repeats an EXACT, zero-progress 34-frame cycle,
+  costing 2qh every time, forever, until health runs out.
+- **That is very likely what produced the "ended up back in Bosskey Cell"
+  observation in the earlier (in-route) attempts**: by the time this segment
+  ran, health was already down to single digits from the rest of the route,
+  a fall cycle or two finished it off, and the game's own death/respawn
+  system (`docs/DUNGEON-STATUS.md`/CLAUDE.md's `check-respawn.mjs` row) put
+  the actor back at whatever checkpoint it had — which read, in the trace, as
+  an ordinary room transition back to Bosskey Cell. Not confirmed with a
+  `mode:'gameover'` frame captured directly, but it is the only account that
+  fits every observation, including the fine-grained repro (no route
+  preamble, full health, same fall-loop, same landing tile, never once a
+  room change — because it never ran long enough to die).
+
+**So: there is no evidence of any way to safely re-cross this shaft at LOW
+tide once tideForce has reset it, and the valve that would fix that is on
+the FAR side of the very hazard that blocks reaching it.** Whether that
+means: (a) a genuinely missing exit or shortcut in Bosskey Cell / Spire
+Ascent's design, (b) the Boss Key is supposed to be fetched by a completely
+different path this session did not find, or (c) accepting several 2qh
+fall-cycles really is the intended "cost" and the room is simply meant to be
+crossed on a health budget that assumes it (which the design's own "one
+wades, one waits, one keeps you" framing does not obviously support, since
+wading was supposed to be the SAFE answer) — **is not settled, and is the
+single highest-value thing to resolve before touching this room again.**
+Bosskey Cell has exactly one exit (confirmed by reading its full map), so
+"another way back to Bosskey Cell" is not the question — the actor does not
+need to return there once the key is in hand. The real question is how to
+get from Sounding Fork's row 0 (where leaving Bosskey Cell always lands you,
+in the WEST column specifically, since that is the only column ever safely
+flooded) onward to the stairs/Spire Ascent, and this session did not find a
+way that is not a lossy dead loop.
+
+**The most concrete lead for next time**: the valve's `open` state
+DOES persist across room re-entry (`saveKey`-backed, confirmed —
+`d2:1,2,2:0` was still in `progress.flags` on the return trip), but
+`tideForce: 0` unconditionally resets `game.tide.level` to LOW "on entry"
+regardless of that flag, and nothing re-applies a remembered-open valve's
+effect (another `forceTideStep`) automatically on room load. If the design
+intent was "a valve you have already thrown stays thrown, and the room
+remembers to start flooded," that reconciliation is simply not wired up
+anywhere — worth checking `Game.applyStoryGates`/room-entry code (the same
+place `tideForce` itself is applied, per its own comment in
+`src/data/dungeons-a.js`) for whether it was meant to and doesn't, versus
+whether re-entry is supposed to force a fresh LOW every time and the
+crossing is expected to work some other way entirely.
 
 ### For the next session
 
-The 6-room segment above is ready to paste into `tools/playthrough-route.mjs`
-almost verbatim (it will need the SAME overworld-walk-in preamble D1's route
-used, from wherever D1's Essence leaves the player to Coral Spire's mouth at
-`overworld,10,5` — not attempted this session). What is NOT ready is
-Reefguard Hall onward: the miniboss fight, then Bomb Vault, Whelk Cell, Spire
-Ascent, the Sounding Fork (second `lensRoom`, three-way this time), the Boss
-Key, and Anemos — none of those were reached. Two honest paths forward:
+The 10-room segment above (rooms 1-10, all update notes inline) is ready to
+paste into `tools/playthrough-route.mjs` almost verbatim once the return leg
+is solved — it will also need the overworld-walk-in preamble D1's route used,
+from wherever D1's Essence leaves the player to Coral Spire's mouth at
+`overworld,10,5` (not attempted this session). What is NOT reached: the
+return to Spire Ascent's boss door, and Anemos itself.
 
-1. **Keep empirically tuning the route.** The exact position/timing that
-   makes this specific fight land its first hit fast (the way the isolated
-   test did) is very likely findable with more attempts — D1's own route
-   needed exactly this kind of pixel-level iteration repeatedly (see its
-   `anchor` bite corrections). Poll `weakOpen`/positions the way this session
-   did rather than guessing blind.
-2. **Improve `dBoss`'s shelled-fallback for wide rooms**, then re-sweep
-   everything it touches. Riskier, and only worth it if (1) turns out not to
-   converge — a real per-room positioning fix is cheaper than re-verifying
-   five boss fights.
+1. **Solve the return leg first.** Start from the `tideForce`-vs-persisted-
+   valve lead above — check whether room re-entry was ever supposed to
+   re-apply an already-thrown valve's tide bump and simply doesn't, before
+   assuming a repeated 2qh pit-fall cycle (measured: zero net progress, not
+   just expensive) is the intended crossing.
+2. **`dTravel` cannot path through any `size:[w,h]` multi-cell room's
+   non-anchor exits** (item 8/9 above) — worth a real fix in
+   `tools/actor-runtime.mjs` at some point (teach `bfsScreens` the room's full
+   footprint, not just its rx,ry), since it will bite every future route that
+   touches Reefguard Hall or Spire Ascent again. Not attempted this session;
+   flagged as a genuine, general gap rather than routed around silently.
+3. Anemos itself (1,3,1) has never been fought by this route or measured
+   fresh this session — `docs/DUNGEON-STATUS.md`'s S5 table says it wins at 4
+   hearts with zero pieces counted; this run was carrying 3 (12qh) at Bosskey
+   Cell, before the Glass Cell piece, before whatever the return leg costs.
 
-Either way, `docs/DUNGEON-STATUS.md`'s "D1 is played" framing needs revising
-once D2 lands — this session's finding belongs there too, and is recorded
-in that file now.
+`docs/DUNGEON-STATUS.md`'s "D1 is played" framing still needs revising once
+D2 actually lands — this session's progress is recorded there too, corrected
+to match this entry.
 
 ---
 
