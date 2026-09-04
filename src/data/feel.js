@@ -63,6 +63,33 @@
  *  least the right shape. */
 export const WALK_SPEED = 256;
 
+/**
+ * tiles — how far to either side of a doorway the doorway pull reaches.
+ *
+ * THE DOORWAY PULL. Walking into the wall beside a door slides you along the
+ * wall toward the door, the way a stairwell takes you in the source games,
+ * instead of stopping you dead against blank brick a few pixels from the way
+ * out. A person got stuck inside Tidewash Grotto because of its absence: the
+ * dungeon mouth was one 16px tile, the player's hitbox is 10px, and only a
+ * nine-pixel band of a hundred-and-sixty-pixel room lined up with it.
+ *
+ * ONE TILE, and the number is load-bearing in both directions. Less is no help
+ * at all — you are already within a tile of the door when you can see you have
+ * missed it. More and the door stops being somewhere you walk to and becomes a
+ * floor that swallows you from across the room, which is worse than the bug.
+ * `tools/check-exits.mjs` asserts both halves: the door's span plus this reach
+ * leaves, and one tile beyond it does not.
+ *
+ * guessed: no reference was frame-stepped for it. What was measured is the
+ * failure it fixes — see the header of tools/check-exits.mjs.
+ */
+export const DOORWAY_PULL_REACH_TILES = 1;
+
+/** sp/f — how fast the doorway pull slides you along the wall. derived: half
+ *  WALK_SPEED, so the slide reads as being drawn in rather than as the stick
+ *  being taken off you, and a full tile of it takes 16 frames. */
+export const DOORWAY_PULL_SPEED = 128;
+
 /** sp/f — surface swimming. derived: three quarters of WALK_SPEED, the same
  *  ratio the old guessed pair (0.95 / 1.35) had, snapped to the grid. */
 export const SWIM_SPEED = 192;

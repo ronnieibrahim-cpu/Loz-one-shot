@@ -32,6 +32,21 @@ whatever a commit message elsewhere claims.
 | — | `d7` | Reef Palace | — | **FOLDED IN** | `84d14e5` |
 | — | `d8` | Abyssal Keep | — | **FOLDED IN** | `84d14e5` |
 
+### ALL SIX MOUTHS WERE WIDENED IN S33 — and none of them is re-opened by it
+
+A person got stuck inside Tidewash Grotto because a dungeon mouth was one 16px
+tile and Link's hitbox is 10px: three of thirteen start positions across the
+entrance room could actually leave. Every dungeon shared the grid, so all six
+entrance rooms changed in one edit — `'####/#####'` became `'####CC####'`, the
+`dMouth` block — and every mouth got a second `warps` entry for the arch's
+right half. `Game.doorwayPull` is the engine half and applies to every warp in
+the game, caves and houses included. `tools/check-exits.mjs` (new, 192
+assertions, in CLAUDE.md's table) is what now proves a dungeon can be LEFT;
+nothing did before. **No dungeon's status below changes** — the rooms, keys,
+puzzles, bosses and items are untouched, and `walk-dungeons`, `solve-switches`,
+`check-playthrough` and the six item checkers were all re-run green. See
+`docs/NEXT-SESSION.md` S33.
+
 ### D1 IS PLAYED, NOT MODELLED (S19)
 
 `node tools/check-playthrough.mjs` drives a new game with nothing granted and

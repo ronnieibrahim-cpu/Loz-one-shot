@@ -447,6 +447,43 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **A DOOR IS AS WIDE AS THE PLAYER'S HITBOX LETS IT BE, NOT AS WIDE AS THE
+  TILE.** Every dungeon mouth was one 16px `dStairs`. Link's hitbox is 10px and
+  the warp probe is a single point (`floor(cx/16)`), so of a 160px room exactly
+  NINE PIXELS actually led outside, and a person got stuck inside Tidewash
+  Grotto. Fixed in S33 by `Game.doorwayPull` plus a two-tile arch. The reusable
+  part is the arithmetic: whenever a rule is keyed on one probe point but the
+  thing obeying it is a rectangle, the working band is narrower than the tile —
+  and the FIRST DRAFT OF THE FIX FELL INTO THE SAME HOLE, bailing as soon as
+  the probe point was over the door while a third of Link was still in the
+  wall. It slid him one pixel and stopped. Aim at the CENTRE.
+
+- **A GEOMETRY BUG CAN BE INVISIBLE TO EVERY MODEL IN THE TABLE AT ONCE.**
+  Nothing proved a dungeon could be LEFT. `walk-dungeons` floods ROOMS, and the
+  mouth room floods fine because it is where you arrive; `check-towns` asks the
+  round-trip question of towns only; `check-playthrough` walked D1 by a route
+  that already knew the door was at x=4. Seven hundred assertions and a played
+  playthrough, all green, on a first dungeon you could not get out of. When a
+  person reports being stuck, the first question is not "which checker is
+  wrong" but "which QUESTION has no checker" — see `tools/check-exits.mjs`.
+
+- **A LEGEND KEY YOU ADD CAN BE SILENTLY EATEN BY THE SAME OBJECT.** `'E':
+  'block:dMouth'` was added near the top of the shared `dungeon` legend, and
+  `'E': 'riptideE'` further down the SAME object literal won. No error, no
+  warning; the block simply had no character and no room grid could place it.
+  `validate.mjs` catches it ("registered and no legend names it") and that is
+  what the assertion is for. Grep the whole object for the key, not the six
+  lines you are editing.
+
+- **"I TOUCHED THE MOVEMENT PATH" IS NOT THE SAME AS "THE BASELINES MOVED."**
+  CLAUDE.md rightly warns that a five-line change to movement is never five
+  lines, because the replays are downstream of it. S33 added a branch to
+  `updateMovement` and re-recorded NOTHING: the branch only fires when the
+  player is already pushing against a wall AND a live warp is within one tile,
+  which no baseline does. The test to run before budgeting a re-record is not
+  "did I touch movement" but "does any baseline take the new branch" — and the
+  way to answer it is to run `replay.mjs`, not to reason about it.
+
 - **A DELIBERATE BEHAVIOUR CHANGE THAT MOVES ANY RECORDED FRAME COUNT NEEDS ITS
   OWN RE-RECORD, AND THE TWO REPLAY MECHANISMS IN THIS REPO DO NOT NEED IT THE
   SAME WAY.** Making killed enemies stay dead (`progress.slain`,

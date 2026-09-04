@@ -36,7 +36,7 @@ import { F, transformFor, getTileDef, resolveTile } from '../world/tileset.js';
 import { getMap, getRoom, hasRoom, resetRooms, MAPS } from '../world/maps.js';
 import { Tide, TIDE_COUNT } from './tide.js';
 import { Player } from './player.js';
-import { spawnEntity, ENTITY_TYPES, Entity, findSafeTile } from './entity.js';
+import { spawnEntity, ENTITY_TYPES, Entity, findSafeTile, moveEntity } from './entity.js';
 import { spawnEffectAt, Explosion } from './effects.js';
 import { Pickup, PICKUPS, rollDropTable, PushBlock, Torch, FloorSwitch, Chest } from './objects.js';
 import { ThrownObject, ITEMS, itemName, itemIcon } from './items.js';
@@ -62,6 +62,7 @@ import {
   LOW_HEART_THRESHOLD, LOW_HEART_EVERY,
   BOSS_MUSIC_RESUME_FRAMES, ITEM_PRESENT_FRAMES, ESSENCE_FREEZE_FRAMES,
   GAMEOVER_WAIT_FRAMES, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE,
+  DOORWAY_PULL_REACH_TILES, DOORWAY_PULL_SPEED,
   LENS_FADE_FRAMES, LENS_GHOST_ALPHA, LENS_TINT_ALPHA, LENS_PHASE_ALPHA,
   LENS_SHIMMER_FRAMES, REEFSEED_CAPACITY, COIN_SWAP_DELAY_FRAMES, BOTTLE_CAPACITY,
   CARVE_TIDE_TURNS, QUARTERMASTER_BONUS, CHANDLER_FACTOR, LANTERN_RADIUS,
@@ -703,6 +704,81 @@ export class Game {
     this.warpTo(w.to.map, w.to.floor || 0, w.to.rx, w.to.ry,
       { x: w.to.px != null ? w.to.px : p.x, y: w.to.py != null ? w.to.py : p.y },
       w.to.dir || p.dir, { banner: true });
+  }
+
+  /**
+   * THE DOORWAY PULL — walking into the wall beside a door slides you into it.
+   *
+   * A person got stuck inside Tidewash Grotto and could not find the way out.
+   * A dungeon mouth was one 16px tile and the player's hitbox is 10px, so of a
+   * hundred-and-sixty-pixel room exactly nine pixels of it left the dungeon:
+   * hold DOWN anywhere else along that wall and Link stopped dead against
+   * blank blue brick with no way to tell he was two pixels off. The source
+   * games do not make you find a stairwell by pixel; they take you in.
+   *
+   * THIS LIVES HERE, NEXT TO `checkWarpTile`, AND NOT IN THE PLAYER, because
+   * the two have to agree about what a doorway is. The pull aims at exactly
+   * the tile the warp fires on — same foot cell, same `warpAt`, same
+   * `needFlag` — so a door the player is drawn toward is always a door that
+   * opens. A second, private idea of "a doorway" in the movement code is how
+   * a pull that slides you helpfully into a sealed gate gets written.
+   *
+   * It is ONE RULE for every warp in the game, not a fix at six dungeon
+   * mouths: the four caves and five house interiors all had the same one-tile
+   * door, and so will the seventh dungeon.
+   *
+   * @param p    the player
+   * @param dx   pressed x, -1..1
+   * @param dy   pressed y, -1..1
+   * @param res  what `moveEntity` said about the step just taken
+   */
+  doorwayPull(p, dx, dy, res) {
+    if (!this.room || this.transition || this.fadeDir || this._warpLock) return;
+    if (p.z > 2) return;
+    // Only a cardinal press into something solid pulls. A diagonal already has
+    // a free axis to find the door with, and pulling one would fight the
+    // player's own correction.
+    let ax = 0, ay = 0;
+    if (res.hitY && dy !== 0 && dx === 0) ay = dy;
+    else if (res.hitX && dx !== 0 && dy === 0) ax = dx;
+    else return;
+    // The foot cell, asked exactly the way `checkWarpTile` asks it, and the
+    // cell the player is walking into.
+    const tx = Math.floor(p.cx / TILE), ty = Math.floor((p.y + 12) / TILE);
+    const gx = tx + ax, gy = ty + ay;
+    // Look along the wall for a doorway that will actually fire — the cell
+    // being walked into first, then outward a tile at a time. `warpAt` and
+    // `needFlag` are the same two questions `checkWarpTile` asks, so a sealed
+    // door does not tug.
+    //
+    // THE CELL STRAIGHT AHEAD IS A CANDIDATE, NOT A REASON TO STOP. Standing
+    // with the foot probe already over the door is not the same as fitting
+    // through it: the probe is one point and the hitbox is ten pixels wide, so
+    // at x=71 in the Grotto the probe read the stairs while the right third of
+    // Link was still against the brick beside them. Bailing there left him
+    // stuck one pixel off, which is the original bug with a smaller number.
+    let target = null;
+    for (let k = 0; k <= DOORWAY_PULL_REACH_TILES && !target; k++) {
+      for (const s of (k === 0 ? [0] : [-1, 1])) {
+        const nx = gx + (ax ? 0 : s * k), ny = gy + (ay ? 0 : s * k);
+        if (!(this.room.flagsAt(nx, ny, this.tide) & F.WARP)) continue;
+        const w = this.room.warpAt(nx, ny);
+        if (!w) continue;
+        if (w.needFlag && !flag(this.progress, w.needFlag)) continue;
+        target = [nx, ny];
+        break;
+      }
+    }
+    if (!target) return;
+    // Slide along the wall toward the doorway's own centre — the centre of the
+    // cell, in the same coordinate the probe above reads, so arriving means
+    // the next frame's `checkWarpTile` lands on it.
+    const want = (ay ? target[0] : target[1]) * TILE + TILE / 2;
+    const here = ay ? p.cx : p.y + 12;
+    const step = Math.max(-DOORWAY_PULL_SPEED,
+      Math.min(DOORWAY_PULL_SPEED, sp(want - here)));
+    if (step === 0) return;
+    moveEntity(this, p, ay ? step : 0, ay ? 0 : step);
   }
 
   // ---------------------------------------------------------------- puzzles
