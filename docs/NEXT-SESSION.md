@@ -136,7 +136,12 @@ Bosskey Cell on this run — tight but not yet desperate; the Glass Cell heart
 piece (skipped this session) is sitting right off the First Fork's approach
 and is the obvious top-up if health is short later.
 
-### THE OPEN PROBLEM: getting back from Bosskey Cell to the boss door
+### THE RETURN LEG — RESOLVED, and it was a real engine bug (fixed, landed)
+
+*(This section originally read "THE OPEN PROBLEM" and walked through the
+diagnosis live. Left mostly intact below rather than deleted, because the
+diagnosis is exactly what led to the fix and is worth keeping as the record
+of how it was found — see the fix itself at the end of this section.)*
 
 Bosskey Cell has exactly one exit (south, back into the Sounding Fork) —
 confirmed by reading its full map, no side openings anywhere. The room's own
@@ -259,34 +264,90 @@ chief among them) — but it is now a well-evidenced, specific hypothesis
 rather than a vague "something's wrong here," and worth treating as the
 leading theory rather than re-deriving from scratch.
 
+### THE FIX
+
+The leading hypothesis above was right, but not in the place it pointed —
+the actual bug was not "an already-thrown valve fails to re-flood on
+re-entry"; it was **an already-thrown valve fails to REMEMBER it was
+thrown at all, on re-entry**, and the fix for exactly that shape of problem
+already existed once elsewhere in the same file and had simply never been
+applied to this fixture. `src/game/objects.js`'s `GustWheel` (D4's Squall
+Bellows wheel — a different fixture, same "toggles open/shut, `saveKey`
+persists the flag" shape) carries its own hard-won-lesson comment: *"A wheel
+you turned and walked away from was shut again when you came back: `interact`
+wrote the flag and nothing ever read it."* `TideValve` — the D2 fork valves —
+had exactly that bug and had never been given the fix `GustWheel` already
+has.
+
+**Landed**: `TideValve` gained an `update(game)` method mirroring
+`GustWheel`'s own `_restored` pattern — the first update after a fresh room
+load, if the valve's `saveKey` flag says it was already thrown and `open` is
+currently `false`, it sets `open = true` and, ONLY in a `tideForce` room
+(scoped so the many other rooms using this same entity type for a plain
+`openDoors` gate are untouched — their door state already persists on its
+own and stepping the global tide there on re-entry would be an unwanted side
+effect), calls `game.forceTideStep()` to re-apply the one-time tide bump.
+Confirmed directly against the exact repro that found the bug
+(`enter:['d2',1,2,2,16,3,'up']`, tide 0, `flags:['d2:1,2,2:0']`): the shaft
+that used to be a zero-progress `dPit` fall-loop is wadeable water again from
+frame 1, no second `interact` needed.
+
+**Verified broadly before trusting it** — this is shared entity code used by
+every fork valve in the game, not a D2-only fixture: `test.mjs` 83/83,
+`validate.mjs` clean, `check-lens.mjs` 24/24 (both D2 forks, unchanged —
+that checker models room DATA, not runtime valve state, so it was never
+going to catch this either way, which is worth remembering), `replay.mjs`
+**51/51 with zero re-recording** (no existing baseline re-enters a valve
+room after leaving it, so nothing was touching the new code path),
+`check-playthrough.mjs` **21/21**, `walk-dungeons.mjs` 23/23,
+`check-anchor.mjs` 14/14, `check-bellows.mjs` 60/60 (the closest relative —
+`GustWheel` itself, proving the shared pattern still works for the fixture
+it was written for).
+
+**Then re-ran the full 10-room route with the fix live, past the point that
+used to be the wall**: Bosskey Cell -> Sounding Fork (tide auto-restores to
+MID on entry, confirmed) -> straight down through the shaft with no fall,
+no valve re-tap -> the west stair's warp -> Spire Ascent's lower cell ->
+up through the room to the boss door (`doorsChanged` 3 -> 4, confirming it
+opened) -> **Anemos's own room, reached for the first time by any route in
+this repository.** `['boss', 9000]` was then attempted and LOST — the actor
+died at 12qh (3 hearts) of an artificial 20qh test cap, comfortably below
+`docs/DUNGEON-STATUS.md`'s S5 table's measured 4-heart (16qh) win threshold
+for Anemos at zero heart pieces counted. **That is a health-budget problem,
+not a structural one** — the fight itself was never reached by any route
+before this session, so it has never actually been tried at the health a
+real run would carry (the S5 table's number comes from
+`measure-boss-combat.mjs`, which teleports in — see the `§4.2` caveat that
+already exists for that measurement).
+
 ### For the next session
 
-The 10-room segment above (rooms 1-10, all update notes inline) is ready to
-paste into `tools/playthrough-route.mjs` almost verbatim once the return leg
-is solved — it will also need the overworld-walk-in preamble D1's route used,
-from wherever D1's Essence leaves the player to Coral Spire's mouth at
-`overworld,10,5` (not attempted this session). What is NOT reached: the
-return to Spire Ascent's boss door, and Anemos itself.
+The full 10-room segment (rooms 1-10 above) PLUS the now-working return leg
+through the boss door is ready to paste into `tools/playthrough-route.mjs`
+almost verbatim — it will also need the overworld-walk-in preamble D1's
+route used, from wherever D1's Essence leaves the player to Coral Spire's
+mouth at `overworld,10,5` (not attempted this session).
 
-1. **Solve the return leg first.** Start from the `tideForce`-vs-persisted-
-   valve lead above — check whether room re-entry was ever supposed to
-   re-apply an already-thrown valve's tide bump and simply doesn't, before
-   assuming a repeated 2qh pit-fall cycle (measured: zero net progress, not
-   just expensive) is the intended crossing.
-2. **`dTravel` cannot path through any `size:[w,h]` multi-cell room's
-   non-anchor exits** (item 8/9 above) — worth a real fix in
-   `tools/actor-runtime.mjs` at some point (teach `bfsScreens` the room's full
-   footprint, not just its rx,ry), since it will bite every future route that
-   touches Reefguard Hall or Spire Ascent again. Not attempted this session;
-   flagged as a genuine, general gap rather than routed around silently.
-3. Anemos itself (1,3,1) has never been fought by this route or measured
-   fresh this session — `docs/DUNGEON-STATUS.md`'s S5 table says it wins at 4
-   hearts with zero pieces counted; this run was carrying 3 (12qh) at Bosskey
-   Cell, before the Glass Cell piece, before whatever the return leg costs.
+1. **Health-budget the run into Anemos.** The skipped Glass Cell heart piece
+   (off the First Fork's approach — see item 6 above) is the obvious first
+   top-up; beyond that, look for avoidable chip damage along the route the
+   way D1's own route notes do (this session's scratch route was not tuned
+   for health the way the final one needs to be — several `goto`/`fight`
+   calls took contact damage a more careful sequence would dodge).
+2. **`dTravel` still cannot path through any `size:[w,h]` multi-cell room's
+   non-anchor exits** (Reefguard Hall, Spire Ascent) — a real, general gap in
+   `tools/actor-runtime.mjs`'s `bfsScreens`, not fixed this session, worked
+   around with manual `goto`/`exit` throughout. Worth a real fix at some
+   point since it will bite every future route touching either room.
+3. Once Anemos is won on a realistic health budget, the whole route is ready
+   to land in `tools/playthrough-route.mjs` and `check-playthrough.mjs`'s
+   `GOAL` extended to `essence: 2` — this session did not attempt that
+   integration, only proved every room and the fight itself reachable in a
+   scratch harness.
 
 `docs/DUNGEON-STATUS.md`'s "D1 is played" framing still needs revising once
-D2 actually lands — this session's progress is recorded there too, corrected
-to match this entry.
+D2 actually lands — this session's progress, and the `TideValve` fix, are
+recorded there too.
 
 ---
 

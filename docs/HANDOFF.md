@@ -447,6 +447,30 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **A FIXTURE THAT PERSISTS ITS OWN STATE STILL HAS TO READ IT BACK.**
+  `TideValve` (the D2 fork valves) wrote `progress.flags[saveKey] = open` on
+  every `interact` and never once read it — the identical bug `GustWheel`
+  (D4's Squall Bellows wheel) already carries its own fix and comment for
+  ("a wheel you turned and walked away from was shut again when you came
+  back: `interact` wrote the flag and nothing ever read it"), just never
+  applied to this second fixture with the same shape. Cosmetically that is a
+  wrong sprite; here it was a real blocker, because the valve's SIDE EFFECT
+  (`game.forceTideStep()`, raising a `tideForce`-pinned room's water) is not
+  the same thing as its own `open` boolean, and `Tide.applyRoomRules` re-pins
+  the room's tide level on every entry unconditionally, by design — so a
+  valve that "remembered" only its sprite state left the water reset to a
+  level its own shaft could not be safely crossed at, with the valve that
+  would fix it a second time sitting on the far side of that same hazard.
+  Found by driving a full playthrough route through it twice (out and back),
+  which is exactly the class of thing a room-data model (`check-lens.mjs`)
+  cannot see — it proves the fork's DATA is consistent, never that a fixture
+  which mutates global state actually restores it. **The general shape: any
+  entity whose `interact` has a side effect beyond its own visible state
+  (the sprite, a door) needs its OWN read-back on load, not just the one the
+  first fixture of this kind happened to get built with** — grep for
+  `saveKey` in `src/game/objects.js` before adding a new toggle fixture and
+  check whether its neighbours already needed this fix.
+
 - **AN ANIMATED TILE'S `edgeArt` WAS DEAD CODE, AND NOTHING SAID SO.**
   `Room.render`'s animated branch (water, lava, torches) skipped straight past
   `artAt` — the function that resolves `edgeArt`/`variants` — and `drawAnim`
