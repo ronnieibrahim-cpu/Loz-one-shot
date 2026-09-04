@@ -1504,6 +1504,38 @@ const HAND_ART = {
 const ART = { ...HAND_ART, ...TERRAIN_ART, ...DUNGEON_THEME_ART, ...TOWN_ART };
 
 // --------------------------------------------------------------------------
+// THE DUNGEON MOUTH, TWO TILES WIDE.
+//
+// Every dungeon's entrance room used to end in `'####/#####'` — one `dStairs`
+// set into the bottom course of brick. A person got stuck inside Tidewash
+// Grotto and could not find the way out: the door is 16px, Link's hitbox is
+// 10px, and of a hundred-and-sixty-pixel room exactly nine pixels of it led
+// outside. It did not read as a door either, and that is this half of the fix.
+//
+// The OUTSIDE of every dungeon has been a two-tile arch since the portals
+// landed (see PORTALS below) — a framed opening in the cliff, not a tile laid
+// into it. The inside now answers it at the same width.
+//
+// `dStairs` carries a dark rail down BOTH its edges, which is right for a
+// stair one tile wide and wrong for two side by side: the two inner rails meet
+// as a black seam down the middle and read as two narrow staircases rather
+// than one wide one. So each half drops the rail on its inner edge and keeps
+// the one on its outer, and the treads run unbroken across the seam. The top
+// row of `dStairs` is already dark all the way across and becomes the lintel.
+//
+// DERIVED FROM `dStairs` RATHER THAN DRAWN. It is the same staircase at twice
+// the width, and a second hand-drawn copy is a second thing to keep in step —
+// re-tune the stair and both halves follow.
+const stairHalf = (dropRail) => ART.dStairs.trim().split('\n').map((row) => {
+  const c = row.trim().split('');
+  const i = dropRail === 'right' ? c.length - 1 : 0;
+  c[i] = c[dropRail === 'right' ? c.length - 2 : 1];   // the row's own fill
+  return c.join('');
+}).join('\n');
+ART.dStairsL = stairHalf('right');   // keeps its left jamb, opens to the right
+ART.dStairsR = stairHalf('left');
+
+// --------------------------------------------------------------------------
 // THE TOWN KIT: what each extracted building DOES.
 //
 // The art, the cell layout and the palettes are generated (tools/rip-terrain.py
@@ -2290,6 +2322,11 @@ export function installCoreTiles() {
     dDoorLocked: { art: ART.dDoorLocked, pal: 'gold', flags: F.SOLID | F.DOOR },
     dDoorBoss: { art: ART.dDoorBoss, pal: 'gold', flags: F.SOLID | F.DOOR },
     dStairs: { art: ART.dStairs, pal: 'stonedk', flags: F.WARP | F.STAIRS },
+    // The two halves of a dungeon mouth. Exactly `dStairs`' flags — the width
+    // is the whole change, and a mouth that walked differently from a stair
+    // would be a second rule to prove.
+    dStairsL: { art: ART.dStairsL, pal: 'stonedk', flags: F.WARP | F.STAIRS },
+    dStairsR: { art: ART.dStairsR, pal: 'stonedk', flags: F.WARP | F.STAIRS },
     dPost: { art: ART.dPost, pal: 'stone', flags: F.SOLID | F.SNAG, underArt: 'dFloor' },
     post: { art: ART.dPost, pal: 'wood', flags: F.SOLID | F.SNAG, underArt: 'grass' },
     postSand: { art: ART.dPost, pal: 'wood', flags: F.SOLID | F.SNAG, underArt: 'sand' },
@@ -2383,6 +2420,10 @@ export function installCoreTiles() {
   const townDefs = installTownBlocks();
   Object.assign(TILE_DEFS, townDefs);
   Object.assign(TILE_DEFS, installDungeonPortals());
+  // The dungeon mouth, spelled `EE` in a room grid and expanded by
+  // `Room.expandBlocks` — one legend character, so widening every dungeon's
+  // door was one edit per grid and not a hand-placed pair of tiles six times.
+  registerBlocks({ dMouth: { w: 2, h: 1, tiles: [['dStairsL', 'dStairsR']] } });
 
   // Rooms draw a tile by its *tile* name, but the art above is keyed by art
   // name — so every palette-swap tile (grassDark reusing ART.grass, treeDark

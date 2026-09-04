@@ -430,6 +430,13 @@ export class Player extends Entity {
       // Pushing against a wall: show the push pose and try to shove blocks.
       this.pushing = (res.hitX && dx !== 0) || (res.hitY && dy !== 0);
       if (this.pushing) this.tryPush(game, dx, dy);
+      // WALKING INTO THE WALL BESIDE A DOOR TAKES YOU IN. The rule lives in
+      // `Game.doorwayPull`, beside `checkWarpTile`, so the tile the player is
+      // drawn toward and the tile the warp fires on are the same tile — see
+      // the note there. It runs after `tryPush` because a block you are
+      // shoving is something you meant to walk into, and the pull only fires
+      // when there is a doorway within a tile to fire at.
+      if (this.pushing) game.doorwayPull(this, dx, dy, res);
     } else {
       this.pushing = false;
       if (this.inDeep) this.animT++;      // treading water keeps animating

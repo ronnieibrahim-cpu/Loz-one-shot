@@ -1,3 +1,129 @@
+## S33 — You could not walk out of a dungeon unless you were lined up on one tile
+
+Reported by a person stuck inside Tidewash Grotto who could not find the way
+out at all. It was not a lost door: it was a door 16 pixels wide answered by a
+hitbox 10 pixels wide, in a room 160 pixels across.
+
+MEASURED FIRST, in the live engine in `d1/0,3,7`, holding DOWN from thirteen
+start positions four pixels apart:
+
+    x = 48 52 56              stops dead at y=97, never leaves
+    x = 60 64 68              exits to the overworld
+    x = 72 76 80 84 88 92 96  stops dead at y=97, never leaves
+
+Three of thirteen. Every dungeon mouth room in `dungeons-a.js` and
+`dungeons-b.js` ended in `'####/#####'` — one `dStairs` at x=4 of the bottom
+wall row — and the room's own north opening is TWO tiles wide, so the way in
+puts the player exactly where the way out is blank blue brick. All six
+dungeons shared the grid. The same thirteen positions now all leave.
+
+**Two things were wrong and both are fixed.**
+
+**(b) first, because it is the one that generalises. `Game.doorwayPull`**, next
+to `checkWarpTile` in `src/game/game.js`. Walking into the wall beside a door
+now slides you along the wall into it, the way a stairwell takes you in the
+source games. ONE RULE for every warp in the game — the four caves and five
+house interiors had the same one-tile door, and so will a seventh dungeon —
+and it lives next to `checkWarpTile` on purpose: the pull aims at exactly the
+tile the warp fires on, asking the same `warpAt` and the same `needFlag`, so a
+door you are drawn toward is always a door that opens and a sealed gate does
+not tug. Reach is `DOORWAY_PULL_REACH_TILES = 1` and speed
+`DOORWAY_PULL_SPEED = 128` (half `WALK_SPEED`), both in `feel.js`.
+
+  THE TRAP INSIDE THE FIX, and it cost the first draft: the first version bailed
+  when the cell straight ahead was already a doorway — "standing at a door,
+  nothing to find". That is the ORIGINAL BUG WITH A SMALLER NUMBER. The warp
+  probe is ONE POINT (`floor(cx/16)`) and the hitbox is TEN PIXELS, so at x=71
+  in the Grotto the probe read the stairs while the right third of Link was
+  still against the brick beside them: he slid one pixel and stopped, stuck.
+  The cell ahead is a CANDIDATE, not a reason to stop; the pull runs until the
+  player is on the door's CENTRE.
+
+**(a) the mouth is now a two-tile arch.** It did not read as a door. The
+OUTSIDE of every dungeon has been a two-tile framed arch since the portals
+landed (`PORTALS` in `tiles-core.js`); the inside now answers it at the same
+width. `dStairsL`/`dStairsR` are DERIVED from `ART.dStairs` rather than drawn —
+`dStairs` carries a dark rail down both edges, which is right for a stair one
+tile wide and wrong for two side by side (the inner rails meet as a black seam
+and read as two narrow staircases), so each half drops its inner rail and the
+treads run unbroken across the join. The top row is already dark across and
+becomes the lintel. They are one 2x1 block, `dMouth`, spelled `C` in a room
+grid and expanded by `Room.expandBlocks` — one legend character, so all six
+dungeons widened together and no mouth was hand-placed. Both halves carry a
+`warps` entry: a two-tile arch whose right half is scenery is a door the player
+bumps into. Screenshotted at `d1`, `d2` and `d6`; it reads as a stairway in the
+wall and it lines up with the room's north opening.
+
+  `C` because `C` is already the way out of a cave and the way into a hollow
+  tree — across every legend in the game it means the arch you leave by. THE
+  FIRST CHOICE WAS `E` AND IT WAS SILENTLY EATEN: `riptideE` is already keyed
+  to `E` further down the same legend object, so the later key won and the
+  block simply had no character. `validate.mjs` caught it — "block 'dMouth':
+  registered and no legend names it" — which is exactly what that assertion is
+  for. Check the whole legend object, not the neighbourhood you are editing.
+
+**The checker gap, which is the durable half. `tools/check-exits.mjs`** — 192
+assertions. NOTHING PROVED A DUNGEON COULD BE LEFT. `walk-dungeons` floods
+ROOMS and the mouth room is reachable because it is where you arrive;
+`check-towns` asks the round-trip question of a town and of nothing else;
+`check-playthrough` walks D1 by a scripted route that already knew the door was
+at x=4. Every tool in CLAUDE.md's table was green while a person could not get
+out of the first dungeon. It drives a real player in the real engine and
+asserts, per interior (six dungeons, four caves, five houses): doorway tiles
+and the `warps` list agree BOTH ways; walking at the door from its own span and
+one tile either side leaves; the pull is BOUNDED so two tiles clear does not
+(without that half the first claim would pass everywhere and mean nothing); and
+the way out lands somewhere standable in a room that comes back. PROVED RED
+AGAINST THE OLD CODE: 12 assertions fail with `doorwayPull` disconnected.
+
+Two things it taught about writing this kind of harness:
+
+  * **A door in a wall and a door in open floor are different claims.** The
+    dungeon mouths are set into the bottom course of brick and can only be
+    entered head-on — that is the shape alignment can miss. The caves and
+    houses put their exit in the last walkable ROW, with floor on both flanks,
+    so it is entered by walking along the row as readily as onto it and no
+    alignment can miss it. The tool derives which shape it is looking at (are
+    the door's flanks walkable?) and asserts the reach claim for the first and
+    a reach-it-from-either-side claim for the second. Asserting the pull's
+    reach on a door the pull does not apply to is asserting nothing.
+  * **Stop the walk the moment the map changes.** Holding the key for a fixed
+    count and reading the map afterwards reported six probes as stuck when they
+    had in fact worked: the player left the cave, arrived on the overworld
+    facing its mouth with the key still down, and walked straight back in. They
+    read as failures because they succeeded twice.
+
+Also found, and reported rather than asserted (the way `check-ground` treats
+people): Sandpiper Cottage's net-mender stands four tiles up the door's own
+column, which is not a fault — you walk round a villager — but it is the shape
+of thing that becomes one when a room is rearranged. The probe now stops
+backing up at an occupied tile rather than spawning the player inside somebody.
+
+**No replay needed re-recording.** This touches the movement path, which
+CLAUDE.md warns is never a five-line change — but the pull only fires when the
+player is already pushing against a wall AND a live warp is within one tile,
+and no recorded baseline does that. `replay.mjs` 51/51 untouched. That is the
+condition to check before assuming a re-record: not "did I touch movement" but
+"does any baseline take the new branch".
+
+Whole table re-run green afterwards, `check-playthrough` 21/21 included.
+(`check-tilesets` needs `pip install pillow` in a fresh container; it passes.)
+
+**Action item added, not started: the usable items are hand-drawn.** Asked for
+directly at the end of the session — clean up the pixel art on the usable
+items, pickups and dungeon items included, to match the Oracles. Full brief at
+the top of `docs/ART-BACKLOG.md`, surfaced as item 1 of
+`docs/prompts/NEXT-PROMPT.md`. Measured while writing it: `tools/rip-hud.py`
+extracts EIGHT of the 37 populated cells on the Oracle gear grid, leaving 29
+authentic icons unused, plus a second white-plate set and the held-item and
+projectile strips; `sprites-gear.js` hand-draws 25 icons and
+`sprites-world.js` hand-draws every pickup in the game. The sharpest single
+symptom is that `hud_rupee`/`hud_heart0..4` are EXTRACTED at 8x8 for the status
+bar while `p_rupee`/`p_heart` are HAND-DRAWN at 16x16 for the floor — the same
+object by two different hands, on screen together.
+
+---
+
 ## S32 — A death after a Continue went to the save room, not the dungeon mouth
 
 Reported by a person playing D1: "on death I respawn in a random room". It was

@@ -582,6 +582,33 @@ __define("data/feel.js", function (__exports, __require) {
  *  least the right shape. */
 const WALK_SPEED = 256;
 
+/**
+ * tiles — how far to either side of a doorway the doorway pull reaches.
+ *
+ * THE DOORWAY PULL. Walking into the wall beside a door slides you along the
+ * wall toward the door, the way a stairwell takes you in the source games,
+ * instead of stopping you dead against blank brick a few pixels from the way
+ * out. A person got stuck inside Tidewash Grotto because of its absence: the
+ * dungeon mouth was one 16px tile, the player's hitbox is 10px, and only a
+ * nine-pixel band of a hundred-and-sixty-pixel room lined up with it.
+ *
+ * ONE TILE, and the number is load-bearing in both directions. Less is no help
+ * at all — you are already within a tile of the door when you can see you have
+ * missed it. More and the door stops being somewhere you walk to and becomes a
+ * floor that swallows you from across the room, which is worse than the bug.
+ * `tools/check-exits.mjs` asserts both halves: the door's span plus this reach
+ * leaves, and one tile beyond it does not.
+ *
+ * guessed: no reference was frame-stepped for it. What was measured is the
+ * failure it fixes — see the header of tools/check-exits.mjs.
+ */
+const DOORWAY_PULL_REACH_TILES = 1;
+
+/** sp/f — how fast the doorway pull slides you along the wall. derived: half
+ *  WALK_SPEED, so the slide reads as being drawn in rather than as the stick
+ *  being taken off you, and a full tile of it takes 16 frames. */
+const DOORWAY_PULL_SPEED = 128;
+
 /** sp/f — surface swimming. derived: three quarters of WALK_SPEED, the same
  *  ratio the old guessed pair (0.95 / 1.35) had, snapped to the grid. */
 const SWIM_SPEED = 192;
@@ -1846,6 +1873,8 @@ const VIBRATO_DEPTH_SEMITONES = 0.18;
  *  fast enough to read as one chord rather than a scale run. */
 const ARPEGGIO_STEP_FRAMES = 3;
 __exports["WALK_SPEED"] = WALK_SPEED;
+__exports["DOORWAY_PULL_REACH_TILES"] = DOORWAY_PULL_REACH_TILES;
+__exports["DOORWAY_PULL_SPEED"] = DOORWAY_PULL_SPEED;
 __exports["SWIM_SPEED"] = SWIM_SPEED;
 __exports["BOOST_SPEED"] = BOOST_SPEED;
 __exports["SHIELD_SPEED"] = SHIELD_SPEED;
@@ -8355,6 +8384,13 @@ class Player extends Entity {
       // Pushing against a wall: show the push pose and try to shove blocks.
       this.pushing = (res.hitX && dx !== 0) || (res.hitY && dy !== 0);
       if (this.pushing) this.tryPush(game, dx, dy);
+      // WALKING INTO THE WALL BESIDE A DOOR TAKES YOU IN. The rule lives in
+      // `Game.doorwayPull`, beside `checkWarpTile`, so the tile the player is
+      // drawn toward and the tile the warp fires on are the same tile — see
+      // the note there. It runs after `tryPush` because a block you are
+      // shoving is something you meant to walk into, and the pull only fires
+      // when there is a doorway within a tile to fire at.
+      if (this.pushing) game.doorwayPull(this, dx, dy, res);
     } else {
       this.pushing = false;
       if (this.inDeep) this.animT++;      // treading water keeps animating
@@ -13368,7 +13404,7 @@ const { F, transformFor, getTileDef, resolveTile } = __require("world/tileset.js
 const { getMap, getRoom, hasRoom, resetRooms, MAPS } = __require("world/maps.js");
 const { Tide, TIDE_COUNT } = __require("game/tide.js");
 const { Player } = __require("game/player.js");
-const { spawnEntity, ENTITY_TYPES, Entity, findSafeTile } = __require("game/entity.js");
+const { spawnEntity, ENTITY_TYPES, Entity, findSafeTile, moveEntity } = __require("game/entity.js");
 const { spawnEffectAt, Explosion } = __require("game/effects.js");
 const { Pickup, PICKUPS, rollDropTable, PushBlock, Torch, FloorSwitch, Chest } = __require("game/objects.js");
 const { ThrownObject, ITEMS, itemName, itemIcon } = __require("game/items.js");
@@ -13383,7 +13419,7 @@ const { Title } = __require("game/title.js");
 const { runCutscene, CUTSCENES } = __require("game/cutscene.js");
 const { Stream, seedGlobal, roomStream, noise1, rng: rngGlobal } = __require("core/rng.js");
 const { sp } = __require("core/fixed.js");
-const { ROOM_TRANSITION_FRAMES, ROOM_EXIT_MARGIN, FADE_RATE, BANNER_FRAMES, SHAKE_LARGE, SHAKE_LARGE_FRAMES, BOSS_ESSENCE_DELAY_FRAMES, HITSTOP_HIT_FRAMES, HITSTOP_HURT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES, LOW_HEART_THRESHOLD, LOW_HEART_EVERY, BOSS_MUSIC_RESUME_FRAMES, ITEM_PRESENT_FRAMES, ESSENCE_FREEZE_FRAMES, GAMEOVER_WAIT_FRAMES, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, LENS_FADE_FRAMES, LENS_GHOST_ALPHA, LENS_TINT_ALPHA, LENS_PHASE_ALPHA, LENS_SHIMMER_FRAMES, REEFSEED_CAPACITY, COIN_SWAP_DELAY_FRAMES, BOTTLE_CAPACITY, CARVE_TIDE_TURNS, QUARTERMASTER_BONUS, CHANDLER_FACTOR, LANTERN_RADIUS, GULLS_TALLY_FACTOR, CARVE_PRICE, PICKUP_LIFE_FRAMES, WRECK_GLIMMER_PERIOD, WRECK_GLIMMER_ON, WRECK_GLIMMER_ALPHA, CAM_DEADZONE_W, CAM_DEADZONE_H } = __require("data/feel.js");
+const { ROOM_TRANSITION_FRAMES, ROOM_EXIT_MARGIN, FADE_RATE, BANNER_FRAMES, SHAKE_LARGE, SHAKE_LARGE_FRAMES, BOSS_ESSENCE_DELAY_FRAMES, HITSTOP_HIT_FRAMES, HITSTOP_HURT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES, LOW_HEART_THRESHOLD, LOW_HEART_EVERY, BOSS_MUSIC_RESUME_FRAMES, ITEM_PRESENT_FRAMES, ESSENCE_FREEZE_FRAMES, GAMEOVER_WAIT_FRAMES, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, DOORWAY_PULL_REACH_TILES, DOORWAY_PULL_SPEED, LENS_FADE_FRAMES, LENS_GHOST_ALPHA, LENS_TINT_ALPHA, LENS_PHASE_ALPHA, LENS_SHIMMER_FRAMES, REEFSEED_CAPACITY, COIN_SWAP_DELAY_FRAMES, BOTTLE_CAPACITY, CARVE_TIDE_TURNS, QUARTERMASTER_BONUS, CHANDLER_FACTOR, LANTERN_RADIUS, GULLS_TALLY_FACTOR, CARVE_PRICE, PICKUP_LIFE_FRAMES, WRECK_GLIMMER_PERIOD, WRECK_GLIMMER_ON, WRECK_GLIMMER_ALPHA, CAM_DEADZONE_W, CAM_DEADZONE_H } = __require("data/feel.js");
 
 class Game {
   constructor(screen, input) {
@@ -14018,6 +14054,81 @@ class Game {
     this.warpTo(w.to.map, w.to.floor || 0, w.to.rx, w.to.ry,
       { x: w.to.px != null ? w.to.px : p.x, y: w.to.py != null ? w.to.py : p.y },
       w.to.dir || p.dir, { banner: true });
+  }
+
+  /**
+   * THE DOORWAY PULL — walking into the wall beside a door slides you into it.
+   *
+   * A person got stuck inside Tidewash Grotto and could not find the way out.
+   * A dungeon mouth was one 16px tile and the player's hitbox is 10px, so of a
+   * hundred-and-sixty-pixel room exactly nine pixels of it left the dungeon:
+   * hold DOWN anywhere else along that wall and Link stopped dead against
+   * blank blue brick with no way to tell he was two pixels off. The source
+   * games do not make you find a stairwell by pixel; they take you in.
+   *
+   * THIS LIVES HERE, NEXT TO `checkWarpTile`, AND NOT IN THE PLAYER, because
+   * the two have to agree about what a doorway is. The pull aims at exactly
+   * the tile the warp fires on — same foot cell, same `warpAt`, same
+   * `needFlag` — so a door the player is drawn toward is always a door that
+   * opens. A second, private idea of "a doorway" in the movement code is how
+   * a pull that slides you helpfully into a sealed gate gets written.
+   *
+   * It is ONE RULE for every warp in the game, not a fix at six dungeon
+   * mouths: the four caves and five house interiors all had the same one-tile
+   * door, and so will the seventh dungeon.
+   *
+   * @param p    the player
+   * @param dx   pressed x, -1..1
+   * @param dy   pressed y, -1..1
+   * @param res  what `moveEntity` said about the step just taken
+   */
+  doorwayPull(p, dx, dy, res) {
+    if (!this.room || this.transition || this.fadeDir || this._warpLock) return;
+    if (p.z > 2) return;
+    // Only a cardinal press into something solid pulls. A diagonal already has
+    // a free axis to find the door with, and pulling one would fight the
+    // player's own correction.
+    let ax = 0, ay = 0;
+    if (res.hitY && dy !== 0 && dx === 0) ay = dy;
+    else if (res.hitX && dx !== 0 && dy === 0) ax = dx;
+    else return;
+    // The foot cell, asked exactly the way `checkWarpTile` asks it, and the
+    // cell the player is walking into.
+    const tx = Math.floor(p.cx / TILE), ty = Math.floor((p.y + 12) / TILE);
+    const gx = tx + ax, gy = ty + ay;
+    // Look along the wall for a doorway that will actually fire — the cell
+    // being walked into first, then outward a tile at a time. `warpAt` and
+    // `needFlag` are the same two questions `checkWarpTile` asks, so a sealed
+    // door does not tug.
+    //
+    // THE CELL STRAIGHT AHEAD IS A CANDIDATE, NOT A REASON TO STOP. Standing
+    // with the foot probe already over the door is not the same as fitting
+    // through it: the probe is one point and the hitbox is ten pixels wide, so
+    // at x=71 in the Grotto the probe read the stairs while the right third of
+    // Link was still against the brick beside them. Bailing there left him
+    // stuck one pixel off, which is the original bug with a smaller number.
+    let target = null;
+    for (let k = 0; k <= DOORWAY_PULL_REACH_TILES && !target; k++) {
+      for (const s of (k === 0 ? [0] : [-1, 1])) {
+        const nx = gx + (ax ? 0 : s * k), ny = gy + (ay ? 0 : s * k);
+        if (!(this.room.flagsAt(nx, ny, this.tide) & F.WARP)) continue;
+        const w = this.room.warpAt(nx, ny);
+        if (!w) continue;
+        if (w.needFlag && !flag(this.progress, w.needFlag)) continue;
+        target = [nx, ny];
+        break;
+      }
+    }
+    if (!target) return;
+    // Slide along the wall toward the doorway's own centre — the centre of the
+    // cell, in the same coordinate the probe above reads, so arriving means
+    // the next frame's `checkWarpTile` lands on it.
+    const want = (ay ? target[0] : target[1]) * TILE + TILE / 2;
+    const here = ay ? p.cx : p.y + 12;
+    const step = Math.max(-DOORWAY_PULL_SPEED,
+      Math.min(DOORWAY_PULL_SPEED, sp(want - here)));
+    if (step === 0) return;
+    moveEntity(this, p, ay ? step : 0, ay ? 0 : step);
   }
 
   // ---------------------------------------------------------------- puzzles
@@ -19439,6 +19550,38 @@ const HAND_ART = {
 const ART = { ...HAND_ART, ...TERRAIN_ART, ...DUNGEON_THEME_ART, ...TOWN_ART };
 
 // --------------------------------------------------------------------------
+// THE DUNGEON MOUTH, TWO TILES WIDE.
+//
+// Every dungeon's entrance room used to end in `'####/#####'` — one `dStairs`
+// set into the bottom course of brick. A person got stuck inside Tidewash
+// Grotto and could not find the way out: the door is 16px, Link's hitbox is
+// 10px, and of a hundred-and-sixty-pixel room exactly nine pixels of it led
+// outside. It did not read as a door either, and that is this half of the fix.
+//
+// The OUTSIDE of every dungeon has been a two-tile arch since the portals
+// landed (see PORTALS below) — a framed opening in the cliff, not a tile laid
+// into it. The inside now answers it at the same width.
+//
+// `dStairs` carries a dark rail down BOTH its edges, which is right for a
+// stair one tile wide and wrong for two side by side: the two inner rails meet
+// as a black seam down the middle and read as two narrow staircases rather
+// than one wide one. So each half drops the rail on its inner edge and keeps
+// the one on its outer, and the treads run unbroken across the seam. The top
+// row of `dStairs` is already dark all the way across and becomes the lintel.
+//
+// DERIVED FROM `dStairs` RATHER THAN DRAWN. It is the same staircase at twice
+// the width, and a second hand-drawn copy is a second thing to keep in step —
+// re-tune the stair and both halves follow.
+const stairHalf = (dropRail) => ART.dStairs.trim().split('\n').map((row) => {
+  const c = row.trim().split('');
+  const i = dropRail === 'right' ? c.length - 1 : 0;
+  c[i] = c[dropRail === 'right' ? c.length - 2 : 1];   // the row's own fill
+  return c.join('');
+}).join('\n');
+ART.dStairsL = stairHalf('right');   // keeps its left jamb, opens to the right
+ART.dStairsR = stairHalf('left');
+
+// --------------------------------------------------------------------------
 // THE TOWN KIT: what each extracted building DOES.
 //
 // The art, the cell layout and the palettes are generated (tools/rip-terrain.py
@@ -20225,6 +20368,11 @@ function installCoreTiles() {
     dDoorLocked: { art: ART.dDoorLocked, pal: 'gold', flags: F.SOLID | F.DOOR },
     dDoorBoss: { art: ART.dDoorBoss, pal: 'gold', flags: F.SOLID | F.DOOR },
     dStairs: { art: ART.dStairs, pal: 'stonedk', flags: F.WARP | F.STAIRS },
+    // The two halves of a dungeon mouth. Exactly `dStairs`' flags — the width
+    // is the whole change, and a mouth that walked differently from a stair
+    // would be a second rule to prove.
+    dStairsL: { art: ART.dStairsL, pal: 'stonedk', flags: F.WARP | F.STAIRS },
+    dStairsR: { art: ART.dStairsR, pal: 'stonedk', flags: F.WARP | F.STAIRS },
     dPost: { art: ART.dPost, pal: 'stone', flags: F.SOLID | F.SNAG, underArt: 'dFloor' },
     post: { art: ART.dPost, pal: 'wood', flags: F.SOLID | F.SNAG, underArt: 'grass' },
     postSand: { art: ART.dPost, pal: 'wood', flags: F.SOLID | F.SNAG, underArt: 'sand' },
@@ -20318,6 +20466,10 @@ function installCoreTiles() {
   const townDefs = installTownBlocks();
   Object.assign(TILE_DEFS, townDefs);
   Object.assign(TILE_DEFS, installDungeonPortals());
+  // The dungeon mouth, spelled `EE` in a room grid and expanded by
+  // `Room.expandBlocks` — one legend character, so widening every dungeon's
+  // door was one edit per grid and not a hand-placed pair of tiles six times.
+  registerBlocks({ dMouth: { w: 2, h: 1, tiles: [['dStairsL', 'dStairsR']] } });
 
   // Rooms draw a tile by its *tile* name, but the art above is keyed by art
   // name — so every palette-swap tile (grassDark reusing ART.grass, treeDark
@@ -20601,6 +20753,13 @@ function installLegends() {
     'D': 'dDoorClosed', 'o': 'dDoorOpen', 'L': 'dDoorLocked', 'B': 'dDoorBoss',
     'G': 'grate',      // metal: only the Resonance Rod retracts it
     '/': 'dStairs',
+    // THE WAY OUT, two tiles wide. See the dungeon-mouth note in tiles-core.js
+    // for why it is not two `/`s side by side. Inherited by every theme, so
+    // all six dungeons widened together. `C` because `C` is already the way
+    // out of a cave and the way into a hollow tree — across every legend in
+    // the game it means the arch you leave by. (`E` is `riptideE`, further
+    // down this same object, which is how this entry was silently eaten once.)
+    'C': 'block:dMouth',
     // Themed scenery, extracted by tools/rip-dungeon-themes.py. These had
     // tiledefs and a comment saying "for P8 to place" from the moment P7.5
     // step 8 landed, and no legend character — so no room grid could name
@@ -26249,10 +26408,14 @@ function installDungeonsA() {
           '#..1..1..#',
           '#..1..1..#',
           '#........#',
-          '####/#####',
+          '####CC####',
         ],
         warps: [
+          // BOTH HALVES WARP. A two-tile arch whose right half is
+          // scenery is a door the player bumps into — the same rule
+          // the dungeon portals outside have carried since they landed.
           { x: 4, y: 7, to: { map: 'overworld', floor: 0, rx: 8, ry: 8, px: 64, py: 32, dir: 'down' } },
+          { x: 5, y: 7, to: { map: 'overworld', floor: 0, rx: 8, ry: 8, px: 64, py: 32, dir: 'down' } },
         ],
         readable: [
           [2, 3, 'Carved by the door: "The sea keeps this floor. Take it back."'],
@@ -27013,10 +27176,14 @@ function installDungeonsA() {
           '#.33..33.#',
           '#........#',
           '#U......U#',
-          '####/#####',
+          '####CC####',
         ],
         warps: [
+          // BOTH HALVES WARP. A two-tile arch whose right half is
+          // scenery is a door the player bumps into — the same rule
+          // the dungeon portals outside have carried since they landed.
           { x: 4, y: 7, to: { map: 'overworld', floor: 0, rx: 10, ry: 5, px: 64, py: 32, dir: 'down' } },
+          { x: 5, y: 7, to: { map: 'overworld', floor: 0, rx: 10, ry: 5, px: 64, py: 32, dir: 'down' } },
         ],
         readable: [
           [2, 3, 'Coral script over the door: "What rises, carries.\nWhat falls, reveals. Look before you fall."'],
@@ -27683,10 +27850,14 @@ function installDungeonsA() {
           '#..2..2..#',
           '#........#',
           '#........#',
-          '####/#####',
+          '####CC####',
         ],
         warps: [
+          // BOTH HALVES WARP. A two-tile arch whose right half is
+          // scenery is a door the player bumps into — the same rule
+          // the dungeon portals outside have carried since they landed.
           { x: 4, y: 7, to: { map: 'overworld', floor: 0, rx: 1, ry: 8, px: 64, py: 32, dir: 'down' } },
+          { x: 5, y: 7, to: { map: 'overworld', floor: 0, rx: 1, ry: 8, px: 64, py: 32, dir: 'down' } },
         ],
         readable: [
           [2, 2, 'Bog script: "The water has two floors. Only one of them drowns you."'],
@@ -28220,10 +28391,14 @@ function installDungeonsA() {
           '#..2222..#',
           '#........#',
           '#........#',
-          '####/#####',
+          '####CC####',
         ],
         warps: [
+          // BOTH HALVES WARP. A two-tile arch whose right half is
+          // scenery is a door the player bumps into — the same rule
+          // the dungeon portals outside have carried since they landed.
           { x: 4, y: 7, to: { map: 'overworld', floor: 0, rx: 1, ry: 3, px: 64, py: 32, dir: 'down' } },
+          { x: 5, y: 7, to: { map: 'overworld', floor: 0, rx: 1, ry: 3, px: 64, py: 32, dir: 'down' } },
         ],
         readable: [
           [2, 3, 'Chiselled deep: "This cistern is worked from the far bank. Nothing here is meant to be reached."'],
@@ -28923,10 +29098,14 @@ function installDungeonsB() {
           '#..2222..#',
           '#........#',
           '#........#',
-          '####/#####',
+          '####CC####',
         ],
         warps: [
+          // BOTH HALVES WARP. A two-tile arch whose right half is
+          // scenery is a door the player bumps into — the same rule
+          // the dungeon portals outside have carried since they landed.
           { x: 4, y: 7, to: { map: 'overworld', floor: 0, rx: 5, ry: 4, px: 64, py: 32, dir: 'down' } },
+          { x: 5, y: 7, to: { map: 'overworld', floor: 0, rx: 5, ry: 4, px: 64, py: 32, dir: 'down' } },
         ],
         readable: [
           [2, 3, 'Cut into the lintel: "The wood was here before the water. Stand on what you plant, and plant while you can stand."'],
@@ -29568,10 +29747,14 @@ function installDungeonsB() {
           '#.19..91.#',
           '#........#',
           '#........#',
-          '####/#####',
+          '####CC####',
         ],
         warps: [
+          // BOTH HALVES WARP. A two-tile arch whose right half is
+          // scenery is a door the player bumps into — the same rule
+          // the dungeon portals outside have carried since they landed.
           { x: 4, y: 7, to: { map: 'overworld', floor: 0, rx: 1, ry: 0, px: 64, py: 32, dir: 'down' } },
+          { x: 5, y: 7, to: { map: 'overworld', floor: 0, rx: 1, ry: 0, px: 64, py: 32, dir: 'down' } },
         ],
         readable: [
           [2, 3, 'Cut in black stone: "Everything the sea takes, it keeps. Everything it keeps, it puts down."'],

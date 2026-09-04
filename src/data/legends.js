@@ -201,6 +201,13 @@ export function installLegends() {
     'D': 'dDoorClosed', 'o': 'dDoorOpen', 'L': 'dDoorLocked', 'B': 'dDoorBoss',
     'G': 'grate',      // metal: only the Resonance Rod retracts it
     '/': 'dStairs',
+    // THE WAY OUT, two tiles wide. See the dungeon-mouth note in tiles-core.js
+    // for why it is not two `/`s side by side. Inherited by every theme, so
+    // all six dungeons widened together. `C` because `C` is already the way
+    // out of a cave and the way into a hollow tree — across every legend in
+    // the game it means the arch you leave by. (`E` is `riptideE`, further
+    // down this same object, which is how this entry was silently eaten once.)
+    'C': 'block:dMouth',
     // Themed scenery, extracted by tools/rip-dungeon-themes.py. These had
     // tiledefs and a comment saying "for P8 to place" from the moment P7.5
     // step 8 landed, and no legend character — so no room grid could name

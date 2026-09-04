@@ -121,10 +121,14 @@ export function installDungeonsA() {
           '#..1..1..#',
           '#..1..1..#',
           '#........#',
-          '####/#####',
+          '####CC####',
         ],
         warps: [
+          // BOTH HALVES WARP. A two-tile arch whose right half is
+          // scenery is a door the player bumps into — the same rule
+          // the dungeon portals outside have carried since they landed.
           { x: 4, y: 7, to: { map: 'overworld', floor: 0, rx: 8, ry: 8, px: 64, py: 32, dir: 'down' } },
+          { x: 5, y: 7, to: { map: 'overworld', floor: 0, rx: 8, ry: 8, px: 64, py: 32, dir: 'down' } },
         ],
         readable: [
           [2, 3, 'Carved by the door: "The sea keeps this floor. Take it back."'],
@@ -885,10 +889,14 @@ export function installDungeonsA() {
           '#.33..33.#',
           '#........#',
           '#U......U#',
-          '####/#####',
+          '####CC####',
         ],
         warps: [
+          // BOTH HALVES WARP. A two-tile arch whose right half is
+          // scenery is a door the player bumps into — the same rule
+          // the dungeon portals outside have carried since they landed.
           { x: 4, y: 7, to: { map: 'overworld', floor: 0, rx: 10, ry: 5, px: 64, py: 32, dir: 'down' } },
+          { x: 5, y: 7, to: { map: 'overworld', floor: 0, rx: 10, ry: 5, px: 64, py: 32, dir: 'down' } },
         ],
         readable: [
           [2, 3, 'Coral script over the door: "What rises, carries.\nWhat falls, reveals. Look before you fall."'],
@@ -1555,10 +1563,14 @@ export function installDungeonsA() {
           '#..2..2..#',
           '#........#',
           '#........#',
-          '####/#####',
+          '####CC####',
         ],
         warps: [
+          // BOTH HALVES WARP. A two-tile arch whose right half is
+          // scenery is a door the player bumps into — the same rule
+          // the dungeon portals outside have carried since they landed.
           { x: 4, y: 7, to: { map: 'overworld', floor: 0, rx: 1, ry: 8, px: 64, py: 32, dir: 'down' } },
+          { x: 5, y: 7, to: { map: 'overworld', floor: 0, rx: 1, ry: 8, px: 64, py: 32, dir: 'down' } },
         ],
         readable: [
           [2, 2, 'Bog script: "The water has two floors. Only one of them drowns you."'],
@@ -2092,10 +2104,14 @@ export function installDungeonsA() {
           '#..2222..#',
           '#........#',
           '#........#',
-          '####/#####',
+          '####CC####',
         ],
         warps: [
+          // BOTH HALVES WARP. A two-tile arch whose right half is
+          // scenery is a door the player bumps into — the same rule
+          // the dungeon portals outside have carried since they landed.
           { x: 4, y: 7, to: { map: 'overworld', floor: 0, rx: 1, ry: 3, px: 64, py: 32, dir: 'down' } },
+          { x: 5, y: 7, to: { map: 'overworld', floor: 0, rx: 1, ry: 3, px: 64, py: 32, dir: 'down' } },
         ],
         readable: [
           [2, 3, 'Chiselled deep: "This cistern is worked from the far bank. Nothing here is meant to be reached."'],

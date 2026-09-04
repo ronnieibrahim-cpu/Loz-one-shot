@@ -3,6 +3,108 @@
 Work that is identified, scoped and not done. Each entry says what blocks it.
 
 
+## THE USABLE ITEMS ARE HAND-DRAWN AND THE SHEET HAS 29 OF THEM (S33) — NOT STARTED
+
+**Requested directly: clean up the pixel art on the usable items — the gear
+icons, the pickups and the dungeon items — so they read as Oracle art.** This
+is the single largest remaining violation of CLAUDE.md's first hard art rule,
+"if a sheet has it, extract it", and it is concentrated in two files.
+
+### What the sheet actually holds
+
+`assets/sheets/oracle-seasons-hud-gear.png` (680x283, "True Colors" right half
+— see `assets/sheets/README.md`; the left half is the LCD ramp and must not be
+picked from). Measured, not estimated:
+
+  * **The 6x7 gear grid at `GRID_COLS`/`GRID_ROWS` in `tools/rip-hud.py` has 37
+    populated cells. Eight are extracted** — `i_sword1..3`, `i_shield1..3`,
+    `i_bomb`, `i_unknown`. **Twenty-nine are not.** Among them: the feather and
+    cape, both boomerangs, both switch-hook/hookshot levels, the seed satchel,
+    the shovel, four colour variants of the horn, the rod, the flute, the
+    magnet gloves (N and S), three rings, the bracelet at L-1 and L-2, and the
+    jar. Contact-sheet it before picking anything: crop `(504,22)-(660,152)`.
+  * **A SECOND, WHITE-PLATE SET of the same icons** lower on the sheet (roughly
+    y=180-280) — the pause-menu presentation rather than the HUD one. Nothing
+    in this project touches it. Decide which plate the game's own menu wants
+    before extracting either; picking both is how two subtly different swords
+    end up in the build.
+  * **HELD-ITEM AND PROJECTILE STRIPS** below that: Link's hand holding a sword,
+    a hookshot, a rod, a boomerang, bombs and seeds, plus boomerang arcs,
+    hookshot chain links and seed sprites. These are the in-world half of
+    "usable items" and this project draws all of them by hand.
+  * Also unused entirely: `oracle-seasons-fairies.png` (and `p_fairy` is
+    hand-drawn), `oracle-seasons-maku-tree.png` (and `npc_maku` is hand-drawn),
+    `oracle-seasons-effects.png`.
+
+### What the game currently hand-draws
+
+  * `src/data/sprites-gear.js` — **25 icons**, every one hand-drawn:
+    `i_conch i_cleats i_cleats2 i_chain i_hookhead i_map i_chart i_lens i_lens2
+    i_bellows i_reefseed o_coralbud i_dredge i_rod i_coin i_bottle i_anchor
+    o_anchor i_kilnshell o_kilnshell o_kilnshell_lit0 o_kilnshell_lit1
+    i_bomb_lit p_blank i_charm`.
+  * `src/data/sprites-world.js` `PICKUP_ART` — **every pickup in the game**:
+    `p_rupee p_rupee5 p_rupee20 p_heart p_fairy p_bombs p_key p_bosskey
+    p_heartpiece p_heartcontainer`, plus the tide bell and the six Essences.
+    Note `hud_rupee` and `hud_heart0..4` ARE extracted, at 8x8, for the HUD
+    only — so the rupee on the status bar and the rupee on the floor are
+    different artwork by different hands. That is the mismatch to fix first;
+    it is the one a player sees side by side.
+  * Dungeon items: `i_map` and `i_chart` (the compass) are hand-drawn; there is
+    no `p_key`/`p_bosskey` counterpart on the gear grid, but the sheet's jar,
+    ring and bracelet cells are the register they have to match.
+
+### The rule this work runs into, and how to hold both sides of it
+
+**Goal 2 is not a reason to skip this, and it is not a licence to port.**
+CLAUDE.md is explicit that the extraction rule "binds the art, not the design".
+So:
+
+  * Where the object is generic to the genre — a rupee, a heart, a fairy, a
+    key, a bottle, a jar, a bomb, a map — **extract it.** There is no original
+    design being protected by a hand-drawn heart.
+  * Where the object is ours — the Moon Conch, the Brineglass Lens, the
+    Tidewright's Anchor, the Squall Bellows, the Reefseed, the Dredge Line, the
+    Kelp-Soled Cleats — **do not paste the nearest Oracle icon onto it.** The
+    horn cell is not the Moon Conch and the switch hook is not the Dredge Line;
+    shipping them as such would make the roster the straight ports
+    `docs/ITEMS.md` forbids. What the extracted cells are for here is the
+    REGISTER: `sprites-gear.js`'s header already measures its target off the 18
+    extracted icons (median 8x15 content, ~30% fill, 2-3 colours plus a hard
+    1px black outline). Twenty-nine more references make that measurement much
+    sharper, and re-drawing our seven originals against it is the deliverable.
+
+### How to do it, and what will bite
+
+  1. Add the cells to `GRID`/`RECTS` in `tools/rip-hud.py` and re-emit
+     `src/data/sprites-hud.js`. **Never hand-edit the generated file**, and run
+     the ripper once before changing anything to confirm it still reproduces
+     byte-identically (`node tools/check-tilesets.mjs`; `pip install pillow`
+     first in a fresh container).
+  2. Removing a hand-drawn icon means deleting it from `sprites-gear.js` AND
+     from `src/data/sprite-manifest.js`, or `validate.mjs` will say so.
+  3. Install order decides who wins. `sprites-npcs.js` already beats
+     `sprites-world.js` by installing after it — the same mechanism applies
+     here, so an extracted `p_heart` must install after `PICKUP_ART` or the
+     hand-drawn one silently stays. Check the order in `src/data/index.js`
+     rather than assuming.
+  4. `SWATCH` in `rip-hud.py` paints out the quantity swatches that share a
+     plate with the icon; several of the 29 cells have one (the satchel, the
+     rod, the jar). Miss it and the swatch becomes a fourth colour.
+  5. A palette is BOUND per sprite in these packs — draw sites must not pass
+     one. See the header of `sprites-gear.js`.
+  6. **Screenshot it.** `tools/preview.mjs` renders one palette and proves
+     nothing about colour. Photograph the pause menu, the HUD and a floor drop:
+     the whole point is that the icon on the status bar and the pickup on the
+     ground stop looking like two different games.
+
+**Nothing in CLAUDE.md's verification table can see this.** `check-items`
+proves every item does its verb and that the registry matches `docs/ITEMS.md`;
+`validate` proves every sprite the manifest names exists. Neither has an
+opinion about whether a sprite was drawn or extracted, or whether it sits with
+the art beside it. This one ends with a person looking.
+
+
 ## THE SHORE HAS A RIM (S27) — LANDED
 
 **Done as of S27.** `docs/NEXT-SESSION.md`'s S27 entry has the full account;

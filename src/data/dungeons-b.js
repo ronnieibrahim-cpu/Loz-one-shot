@@ -107,10 +107,14 @@ export function installDungeonsB() {
           '#..2222..#',
           '#........#',
           '#........#',
-          '####/#####',
+          '####CC####',
         ],
         warps: [
+          // BOTH HALVES WARP. A two-tile arch whose right half is
+          // scenery is a door the player bumps into — the same rule
+          // the dungeon portals outside have carried since they landed.
           { x: 4, y: 7, to: { map: 'overworld', floor: 0, rx: 5, ry: 4, px: 64, py: 32, dir: 'down' } },
+          { x: 5, y: 7, to: { map: 'overworld', floor: 0, rx: 5, ry: 4, px: 64, py: 32, dir: 'down' } },
         ],
         readable: [
           [2, 3, 'Cut into the lintel: "The wood was here before the water. Stand on what you plant, and plant while you can stand."'],
@@ -752,10 +756,14 @@ export function installDungeonsB() {
           '#.19..91.#',
           '#........#',
           '#........#',
-          '####/#####',
+          '####CC####',
         ],
         warps: [
+          // BOTH HALVES WARP. A two-tile arch whose right half is
+          // scenery is a door the player bumps into — the same rule
+          // the dungeon portals outside have carried since they landed.
           { x: 4, y: 7, to: { map: 'overworld', floor: 0, rx: 1, ry: 0, px: 64, py: 32, dir: 'down' } },
+          { x: 5, y: 7, to: { map: 'overworld', floor: 0, rx: 1, ry: 0, px: 64, py: 32, dir: 'down' } },
         ],
         readable: [
           [2, 3, 'Cut in black stone: "Everything the sea takes, it keeps. Everything it keeps, it puts down."'],
