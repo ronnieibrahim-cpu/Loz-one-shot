@@ -45,6 +45,22 @@ hearts. 24,000 frames, no death, no warp, no flag set from outside. Landed in
 "D2 is DONE" in the table above means what it has always meant: authored,
 flooded, and proved by models. See `GOAL` in `tools/playthrough-route.mjs`.
 
+**S28 got 6 of D2's ~14 required rooms into a live-engine route** (Spire
+Mouth through the First Fork's west branch, correctly identified, plus the
+Lens obtained) and stopped at Reefguard Hall's miniboss — not landed in
+`tools/playthrough-route.mjs` (still D1-only), but verified against the real
+engine in a scratch harness and written up in full in `docs/NEXT-SESSION.md`
+S28. **The finding**: `tools/actor-runtime.mjs`'s `dBoss` wins this fight
+from a favourable start (measured: ~10qh cost, ~1150 frames) but reliably
+loses it from every position the route's own arrival state produces — the
+pair drift into a wall and stall at 0 damage across the full budget. This is
+the first SHELLED boss `dBoss` has fought in a room bigger than one screen
+(Reefguard Hall is `size:[2,1]`), and whether the fix is a route position, a
+`dBoss` generalisation, or both is not yet known. Read S28 before attempting
+D2 again — it names exactly which rooms are solid and saves re-deriving the
+switch puzzle, the locked-door position, and the fork's ledge/valve sequence
+from scratch.
+
 ### Boss winnability, measured (S5)
 
 `node tools/measure-boss-combat.mjs <id>` — real combat, no god mode, seed

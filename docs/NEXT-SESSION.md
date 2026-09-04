@@ -1,4 +1,142 @@
-## S27 — the shoreline rim landed (this session)
+## S28 — D2 routed to its miniboss, and a real actor blocker found there (this session)
+
+Priority 2 from `docs/prompts/NEXT-PROMPT.md`: extend `tools/playthrough-route.mjs`
+past D1. **The route was NOT landed in the repo this session** — it lives only
+in this entry, verified against the live engine in a scratch harness, because
+it stops at a real blocker before reaching Coral Spire's Essence. `main`'s
+`check-playthrough.mjs`/`playthrough-route.mjs` are UNCHANGED and still D1-only,
+21/21, exactly as S27 left them.
+
+### What is VERIFIED working, room by room, in the live engine
+
+Built and driven with a scratch dev harness (`window.__rp.beginRecord`, the
+same driver `tools/replay.mjs` and the other playthrough tools use, just
+booted directly into `d2` with granted items rather than from a title screen —
+a shortcut that is fine for THIS kind of route-development probing, the same
+way `tools/measure-boss-combat.mjs` and the replay plans already do it, and
+is NOT what the final `check-playthrough.mjs` run may do). Seed 20260806
+throughout.
+
+1. **Spire Mouth (0,3,7) -> Rising Chamber (0,3,4)**: `['travel', 3, 4, 2000]`
+   crosses Coral Landing and Tide Gallery on its own (BFS pathing across the
+   room graph, no manual `goto`+`exit` needed for a plain corridor room —
+   this generalises past D1, which never happened to lean on it this hard).
+2. **Rising Chamber's switch puzzle.** `barnacle` at (4,6) has `hp: 999,
+   shield: 'all'` — it is a stationary hazard (shoots ink every 96f within
+   100px), NOT a combat objective; `puzzle.enemies` is not set on this room,
+   `puzzle.switches: 'all'` is. Do **not** send `['fight', ...]` at it — the
+   first attempt did, on 20 max hearts, and died in 1200 frames without
+   landing a hit, exactly like fighting a wall. Solve instead: block (2,5) ->
+   switch (1,5) by `['goto',3,5],['hold',['left'],40]`; block (7,6) -> switch
+   (8,6) by `['goto',6,6],['hold',['right'],40]`. Both down spawns the key at
+   (4,2) and opens door (4,1) (the Cistern Cell/charm detour — skipped this
+   session, optional). Cost ~6qh from the barnacle's ink while working the
+   blocks.
+3. **Stair Coil's locked door.** The room's key doors are WITHIN the room,
+   not on its edges (`travel` reaches the room key `0,2,4` without needing
+   the key at all — the west edge of Rising Chamber opens straight into
+   Stair Coil's east half; the locked door at local (5,3) only gates the
+   STAIRS beyond it). `['goto',6,3],['hold',['left'],20],['tap','a',40]`
+   spends the key and opens it, same as any D1 locked door — walking into it
+   is not enough, it needs the interact tap.
+4. **Floor 1: Upper Landing -> Anemone Cell -> Spire Concourse -> Sealed
+   Cell**, all plain `travel` hops. Anemone Cell drops a fairy pickup that
+   `loot` grabs — free full heal, worth routing through even though it is not
+   on the shortest path.
+5. **Sealed Cell's big chest (the Lens).** THE CHEST IS A SOLID ENTITY
+   (`0b68e6b`, CLAUDE.md's own closed trap) — `goto` onto its own tile (2,1)
+   silently fails (0 movement, `canOccupy` correctly refuses it). Goto the
+   tile BESIDE it instead: (1,1) is plain floor at every tide; (2,2) below it
+   is `dWell` (deep at MID/HIGH, avoid). `['goto',1,1],['hold',['right'],20],
+   ['tap','a',40]` opens it and grants `lens`.
+6. **The First Fork, west branch (correct — "the west one fills").** Mirrors
+   `tools/replay-plans.mjs`'s `d2-fork-wrong` (which deliberately takes the
+   WRONG/east branch and proves the shaft stays a hole) reflected onto the
+   west side: `goto(3,5)` onto the shelf, `hold left 60` to auto-hop the
+   one-way ledge at (2,5) landing at (1,5), `goto(1,6)` down to the west
+   valve, `hold right` to face it, `tap a` to fire `TideValve.interact` ->
+   `game.forceTideStep()` (tide 0 -> 1, the room's OWN sluice, since
+   `tideForce: 0` refuses the conch), then `hold up 80` walks the actor all
+   the way up the now-wadeable shaft (`dDrain` floods at MID) to (1,1),
+   `goto(1,0)` + `hold up` crosses into Reefguard Hall. Confirms the room's
+   `lensRoom` data (`src/data/dungeons-a.js`, `'1,4,3'`) against the live
+   engine, not just against `check-lens.mjs`'s model of it.
+
+That is 6 of the dungeon's ~14 required rooms (per the intended-route comment
+above `registerMap({id:'d2',...})`), fully driven and verified, plus the
+Lens obtained — proof the room DATA (switch/block placement, the locked
+door's real position inside Stair Coil, the Lens chest, the fork's
+`lensRoom` fields) all check out against a live playthrough, which no model
+in CLAUDE.md's table can say.
+
+### THE BLOCKER: Reefguard Hall (1,4,2), and it is the ACTOR, not the game
+
+`['boss', N, 'reefguard']` (the same directive D1's Clawcrab used) reliably
+loses this fight: reefguard's hp never leaves 16/16 across a full 6000-frame
+budget while the actor's health drains to 0 and the harness respawns it back
+at the Spire Mouth. Measured **four separate ways** (immediate engagement, a
+`goto(8,5)` reposition, a `goto(10,3)` reposition, a `goto(9,6)` reposition —
+all four from the route's own arrival state) and all four lose the same way.
+
+**It is winnable.** Booted in isolation directly into the room
+(`enter:['d2',1,4,2,140,90,'up']`, full items, full 20 max hearts, no route
+preamble) the identical `['boss',6000,'reefguard']` call wins outright: hp
+16->14->8->6->2->dead in ~1150 frames for ~10qh of damage taken — a normal,
+reasonable miniboss cost, similar to Clawcrab's.
+
+**The difference is NOT the entry corner, and four attempts to fix it by
+repositioning all failed the same way**, so record the failure mode itself
+rather than a guess at the cause: polled `weakOpen`/`hp`/positions every 15
+frames through the live fight (a custom debug harness, not
+`check-playthrough.mjs`) and in every losing run the pair drift together to
+a ROOM WALL (west in most runs, once the far east) and stall there — boss
+and player end up aligned on one axis 20-30px apart (not the <=4px
+`nearContact` needs), `weakOpen` cycles true/false repeatedly with the actor
+never closing the last stretch of distance, health draining the whole time.
+`dBoss` (`tools/actor-runtime.mjs`) has fought five other bosses (Gohmaraq
+real-combat proven, four more swept by `measure-boss-combat.mjs`) and one
+other miniboss (Clawcrab, unshelled) — **this is the first shelled fight it
+has ever been asked to win in a room wider than one screen** (Reefguard Hall
+is `size:[2,1]`, 320x128, `dungeon`'s bosses are all single-screen 10x8), and
+the "shelled: hold position, retreat toward `room.pw/2, room.ph/2`" fallback
+(`tools/actor-runtime.mjs` around the `weakOpen` branch) was written and
+proven against Gohmaraq's square arena only. Whether the fix belongs in that
+fallback, in the wall-drift itself, or is purely a route-positioning problem
+that four attempts simply have not found the right pixel for yet, is NOT
+determined — this is a characterisation, not a diagnosis. **Do not touch
+`dBoss`/`evade` without re-sweeping all five already-working bosses
+afterward** (`measure-boss-combat.mjs <d> --seed=20260806` for d1-d6, plus
+`check-playthrough.mjs` for D1) — CLAUDE.md's own P8 boss-combat history
+(the `evade` merge) already paid once for exactly this class of regression.
+
+### For the next session
+
+The 6-room segment above is ready to paste into `tools/playthrough-route.mjs`
+almost verbatim (it will need the SAME overworld-walk-in preamble D1's route
+used, from wherever D1's Essence leaves the player to Coral Spire's mouth at
+`overworld,10,5` — not attempted this session). What is NOT ready is
+Reefguard Hall onward: the miniboss fight, then Bomb Vault, Whelk Cell, Spire
+Ascent, the Sounding Fork (second `lensRoom`, three-way this time), the Boss
+Key, and Anemos — none of those were reached. Two honest paths forward:
+
+1. **Keep empirically tuning the route.** The exact position/timing that
+   makes this specific fight land its first hit fast (the way the isolated
+   test did) is very likely findable with more attempts — D1's own route
+   needed exactly this kind of pixel-level iteration repeatedly (see its
+   `anchor` bite corrections). Poll `weakOpen`/positions the way this session
+   did rather than guessing blind.
+2. **Improve `dBoss`'s shelled-fallback for wide rooms**, then re-sweep
+   everything it touches. Riskier, and only worth it if (1) turns out not to
+   converge — a real per-room positioning fix is cheaper than re-verifying
+   five boss fights.
+
+Either way, `docs/DUNGEON-STATUS.md`'s "D1 is played" framing needs revising
+once D2 lands — this session's finding belongs there too, and is recorded
+in that file now.
+
+---
+
+## S27 — the shoreline rim landed
 
 Priority 1 from `docs/prompts/NEXT-PROMPT.md`, fully specified going in, and it
 turned out to be exactly as specified: an engine bug (animated tiles never
