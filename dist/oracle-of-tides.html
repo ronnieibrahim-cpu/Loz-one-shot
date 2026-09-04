@@ -1737,6 +1737,21 @@ const CHARM_CASE_ESSENCES = 6;
  *  alongside him; the arc effect is drawn a pixel further out again. */
 const BLADE_REACH_PX = 11;
 
+/** px — how far out from Link the blade is drawn during the WIND-UP and the
+ *  FOLLOW-THROUGH, the frames either side of the active swing. guessed. The
+ *  sword starts and finishes the arc across Link's body rather than out at
+ *  arm's length, so the blade is drawn tucked in at both ends and only reaches
+ *  BLADE_REACH_PX while it is actually pointing where he is facing. Without
+ *  this the sword simply appears fully extended on the frame the button is
+ *  pressed, which is the one thing the source games never do. */
+const BLADE_TUCK_PX = 5;
+
+/** f — frames of follow-through after the blade stops being able to hit,
+ *  during which the sword is still drawn sweeping past the facing. guessed;
+ *  the same length as the wind-up (SWING_HIT_START) so the arc is symmetric,
+ *  and short enough to finish inside SWING_FRAMES. */
+const SWING_RECOVER_FRAMES = 3;
+
 // ---------------------------------------------------------------------------
 // Cutscenes — the `show` step (S10)
 //
@@ -2043,6 +2058,8 @@ __exports["CHARM_LOW_ESSENCES"] = CHARM_LOW_ESSENCES;
 __exports["CHARM_HIGH_ESSENCES"] = CHARM_HIGH_ESSENCES;
 __exports["CHARM_CASE_ESSENCES"] = CHARM_CASE_ESSENCES;
 __exports["BLADE_REACH_PX"] = BLADE_REACH_PX;
+__exports["BLADE_TUCK_PX"] = BLADE_TUCK_PX;
+__exports["SWING_RECOVER_FRAMES"] = SWING_RECOVER_FRAMES;
 __exports["CUTSCENE_SHOW_FRAMES"] = CUTSCENE_SHOW_FRAMES;
 __exports["CUTSCENE_SHOW_ANIM_FRAMES"] = CUTSCENE_SHOW_ANIM_FRAMES;
 __exports["CUTSCENE_SHOW_RISE_PX"] = CUTSCENE_SHOW_RISE_PX;
@@ -6647,7 +6664,6 @@ const EFFECTS = {
   bubble: { frames: ['fx_bubble0', 'fx_bubble1'], pal: 'water', rate: 8, loop: true },
   foam: { frames: ['fx_foam0', 'fx_foam1', 'fx_foam2'], pal: 'water', rate: 6 },
   shine: { frames: ['fx_shine0', 'fx_shine1', 'fx_shine2', 'fx_shine1'], pal: 'essence', rate: 6, loop: true, life: 9999 },
-  slashD: { frames: ['fx_slash_d0', 'fx_slash_d1'], pal: 'spark', rate: 4, depth: 60 },
 };
 
 function spawnEffectAt(game, name, x, y, opts) {
@@ -7917,7 +7933,23 @@ const { sp, toPx } = __require("core/fixed.js");
 const { sprites } = __require("gfx/art.js");
 const { hasItem, itemLevel, HEART_UNITS } = __require("game/progress.js");
 const { useEquipped, ITEMS, ThrownObject } = __require("game/items.js");
-const { WALK_SPEED, SWIM_SPEED, BOOST_SPEED, SHIELD_SPEED, SLOW_FACTOR, SHALLOW_FACTOR, CARRY_FACTOR, SPIN_DRIFT_SPEED, SWORD_HOLD_SPEED, SWING_FRAMES, SWING_HIT_START, SWING_HIT_END, BLADE_REACH_PX, CHARGE_FRAMES, CHARGE_SPARKLE_EVERY, SPIN_FRAMES, SWORD_REACH, SWORD_SPAN, SWORD_GAP, SPIN_BOX, SWORD_HOLD_DELAY, SWORD_HOLD_DAMAGE, SWORD_CLINK_COOLDOWN, KNOCK_HOLD, PLAYER_INVULN_FRAMES, PLAYER_FLICKER_FRAMES, PLAYER_RECOVER_INVULN_FRAMES, PLAYER_HURT_FRAMES, PLAYER_KNOCK_DIST, PLAYER_KNOCK_FRAMES, KNOCK_SWORD, KNOCK_SPIN, HAZARD_DAMAGE, PIT_DAMAGE, WASH_DAMAGE, JUMP_GRAVITY, LAND_SETTLE_RATE, LEDGE_MAX_SPAN, LEDGE_HOP_FRAMES, LEDGE_HOP_HEIGHT, LEDGE_PROBE_REACH, GAP_HOP_MAX_SPAN, FALL_FRAMES, WASH_FRAMES, CONCH_FRAMES, PUSH_DELAY_FRAMES, LENS_FADE_FRAMES, BELLOWS_RANGE, BELLOWS_WARMUP_FRAMES, BELLOWS_PUSH, BELLOWS_PUFF_EVERY, BELLOWS_RAFT_SCALE, SINK_SPEED, SINK_ENTER_FRAMES, CLEATS_BREATH_FRAMES, CLEATS_BREATH_WARN_FRAMES, SINK_BUBBLE_EVERY, SINK_DROWN_DAMAGE, CONTEXT_REACH, LIFT_REACH, LIFT_STRENGTH, THROW_SPEED, CARRY_HEIGHT, ROD_RING_FRAMES, SHAKE_SMALL, SHAKE_SMALL_FRAMES, CHARGE_SPARKLE_SPREAD, WADE_FOAM_EVERY, PUSH_PROBE_REACH, RIPTIDE_FIN_FACTOR, DEADWEIGHT_FACTOR, KELP_BRAID_FACTOR, SPLIT_FANG_SPAN, SEAWOLF_KNOCK_FACTOR, HAGSTONE_CHANCE, STRANDWALKER_EVERY, PRESSURE_SCAR_FACTOR, BOSUN_FACTOR, HITSTOP_HURT_FRAMES } = __require("data/feel.js");
+const { WALK_SPEED, SWIM_SPEED, BOOST_SPEED, SHIELD_SPEED, SLOW_FACTOR, SHALLOW_FACTOR, CARRY_FACTOR, SPIN_DRIFT_SPEED, SWORD_HOLD_SPEED, SWING_FRAMES, SWING_HIT_START, SWING_HIT_END, BLADE_REACH_PX, BLADE_TUCK_PX, SWING_RECOVER_FRAMES, CHARGE_FRAMES, CHARGE_SPARKLE_EVERY, SPIN_FRAMES, SWORD_REACH, SWORD_SPAN, SWORD_GAP, SPIN_BOX, SWORD_HOLD_DELAY, SWORD_HOLD_DAMAGE, SWORD_CLINK_COOLDOWN, KNOCK_HOLD, PLAYER_INVULN_FRAMES, PLAYER_FLICKER_FRAMES, PLAYER_RECOVER_INVULN_FRAMES, PLAYER_HURT_FRAMES, PLAYER_KNOCK_DIST, PLAYER_KNOCK_FRAMES, KNOCK_SWORD, KNOCK_SPIN, HAZARD_DAMAGE, PIT_DAMAGE, WASH_DAMAGE, JUMP_GRAVITY, LAND_SETTLE_RATE, LEDGE_MAX_SPAN, LEDGE_HOP_FRAMES, LEDGE_HOP_HEIGHT, LEDGE_PROBE_REACH, GAP_HOP_MAX_SPAN, FALL_FRAMES, WASH_FRAMES, CONCH_FRAMES, PUSH_DELAY_FRAMES, LENS_FADE_FRAMES, BELLOWS_RANGE, BELLOWS_WARMUP_FRAMES, BELLOWS_PUSH, BELLOWS_PUFF_EVERY, BELLOWS_RAFT_SCALE, SINK_SPEED, SINK_ENTER_FRAMES, CLEATS_BREATH_FRAMES, CLEATS_BREATH_WARN_FRAMES, SINK_BUBBLE_EVERY, SINK_DROWN_DAMAGE, CONTEXT_REACH, LIFT_REACH, LIFT_STRENGTH, THROW_SPEED, CARRY_HEIGHT, ROD_RING_FRAMES, SHAKE_SMALL, SHAKE_SMALL_FRAMES, CHARGE_SPARKLE_SPREAD, WADE_FOAM_EVERY, PUSH_PROBE_REACH, RIPTIDE_FIN_FACTOR, DEADWEIGHT_FACTOR, KELP_BRAID_FACTOR, SPLIT_FANG_SPAN, SEAWOLF_KNOCK_FACTOR, HAGSTONE_CHANCE, STRANDWALKER_EVERY, PRESSURE_SCAR_FACTOR, BOSUN_FACTOR, HITSTOP_HURT_FRAMES } = __require("data/feel.js");
+
+// The two ends of the sword's arc, as directions. A swing is a half-turn: the
+// blade begins one quarter-turn back from the facing and finishes one
+// quarter-turn past it, so what is drawn is a sweep rather than a sword that
+// is suddenly there.
+//
+// These are NOT a uniform rotation, and that is on purpose. The side swing is
+// the same swing facing either way — sword up over the shoulder, down through
+// the facing, ending at the ground — because the engine draws left by
+// MIRRORING the right-facing frames, and a mirror does not turn a downward
+// chop into an upward one. Facing the viewer he sweeps across himself
+// left-to-right, and facing away, right-to-left, which is the same arc seen
+// from behind. These are directions, not timings, so they live here rather
+// than in feel.js.
+const SWING_START_DIR = { down: 'left', up: 'right', right: 'up', left: 'up' };
+const SWING_END_DIR = { down: 'right', up: 'left', right: 'down', left: 'down' };
 
 class Player extends Entity {
   constructor(x, y) {
@@ -8541,7 +8573,6 @@ class Player extends Entity {
     this.swordLevel = level;
     this.swingHit = new Set();
     game.audio.sfx(level >= 3 ? 'sword3' : (level >= 2 ? 'sword2' : 'sword1'));
-    game.spawnEffect('slashD', this.x, this.y);   // replaced per-direction below
     return true;
   }
 
@@ -8560,6 +8591,37 @@ class Player extends Entity {
     }
     // tiles (bushes, signs)
     game.checkTileAction(box, 'cut');
+  }
+
+  /**
+   * Where the blade is, this frame of the swing.
+   *
+   * The sword is a separate sprite from Link (see the draw notes below), so
+   * unless something moves it, it simply blinks into existence pointing where
+   * he faces — which is what this used to do, and it is the one thing the
+   * Oracles never do: there, the sword travels. It starts across his body,
+   * sweeps through the facing, and finishes on the far side, and the frames
+   * where it is not yet pointing forward are the frames that make a press read
+   * as a SWING rather than as a blade appearing.
+   *
+   * So: wind-up (before SWING_HIT_START) draws it tucked in on the near side,
+   * the active window draws it out at full reach along the facing, and the
+   * follow-through carries it tucked in again on the far side. The arc effect
+   * is suppressed for the wind-up, because a swoosh belongs to a blade that is
+   * already moving.
+   *
+   * Returns null once the follow-through is spent, even though `swinging` runs
+   * a few frames longer — those last frames are the recovery Link is rooted
+   * for, with the sword back at his side.
+   */
+  bladePose() {
+    const t = SWING_FRAMES - this.swinging;
+    if (t < SWING_HIT_START) return { dir: SWING_START_DIR[this.dir], reach: BLADE_TUCK_PX, arc: -1 };
+    if (t <= SWING_HIT_END) return { dir: this.dir, reach: BLADE_REACH_PX, arc: 0 };
+    if (t <= SWING_HIT_END + SWING_RECOVER_FRAMES) {
+      return { dir: SWING_END_DIR[this.dir], reach: BLADE_TUCK_PX, arc: 1 };
+    }
+    return null;
   }
 
   /**
@@ -9151,29 +9213,26 @@ class Player extends Entity {
     //
     // Drawn before the arc so the white swoosh reads as coming off the edge of
     // the blade rather than sitting under it.
-    if (this.swinging > 0) {
-      const t = SWING_FRAMES - this.swinging;
-      if (t <= SWING_HIT_END + 2) {
-        const side = this.dir === 'left' || this.dir === 'right';
-        const key = side ? 'side' : this.dir;
-        const [bdx, bdy] = DIR_VEC[this.dir];
-        sprites.draw(ctx, 'fx_blade_' + key,
-          ox + this.x + bdx * BLADE_REACH_PX, dy + bdy * BLADE_REACH_PX,
-          { pal, flipX: this.dir === 'left' });
-      }
+    const pose = this.swinging > 0 ? this.bladePose() : null;
+    if (pose) {
+      const side = pose.dir === 'left' || pose.dir === 'right';
+      const key = side ? 'side' : pose.dir;
+      const [bdx, bdy] = DIR_VEC[pose.dir];
+      sprites.draw(ctx, 'fx_blade_' + key,
+        ox + this.x + bdx * pose.reach, dy + bdy * pose.reach,
+        { pal, flipX: pose.dir === 'left' });
     }
 
-    // Sword arc
-    if (this.swinging > 0) {
-      const t = SWING_FRAMES - this.swinging;
-      if (t <= SWING_HIT_END + 2) {
-        const side = this.dir === 'left' || this.dir === 'right';
-        const key = side ? 'side' : this.dir;
-        const [ddx, ddy] = DIR_VEC[this.dir];
-        sprites.draw(ctx, 'fx_slash_' + key + '_' + Math.min(1, Math.floor(t / 5)),
-          ox + this.x + ddx * 12, dy + ddy * 12,
-          { pal: this.swordLevel >= 3 ? 'essence' : 'spark', flipX: this.dir === 'left' });
-      }
+    // Sword arc. It is the swoosh coming OFF the blade, so it only exists once
+    // the blade is moving — never on the wind-up frames, where the sword is
+    // still being drawn back.
+    if (pose && pose.arc >= 0) {
+      const side = pose.dir === 'left' || pose.dir === 'right';
+      const key = side ? 'side' : pose.dir;
+      const [ddx, ddy] = DIR_VEC[pose.dir];
+      sprites.draw(ctx, 'fx_slash_' + key + '_' + pose.arc,
+        ox + this.x + ddx * (pose.reach + 1), dy + ddy * (pose.reach + 1),
+        { pal: this.swordLevel >= 3 ? 'essence' : 'spark', flipX: pose.dir === 'left' });
     }
     if (this.charge >= CHARGE_FRAMES && (this.frame >> 2) % 2 === 0) {
       sprites.draw(ctx, 'fx_sparkle1', ox + this.x, dy - 4, { pal: 'gold' });
@@ -32669,46 +32728,6 @@ const FX_ART = {
     ........0003....
     .......0003.....
     .......333......
-    ................`,
-
-  // The engine's `slashD` effect (src/game/effects.js) asks for these two by
-  // name on every single sword swing, and they are not in sprite-manifest.js —
-  // so nothing flagged them and the most-seen effect in the game drew as a
-  // placeholder box. It is spawned without a facing, so this is a radial sweep
-  // that reads the same in all four directions rather than a facing crescent.
-  fx_slash_d0: `
-    ................
-    ................
-    ................
-    ......0000......
-    ....00....00....
-    ...0........0...
-    ...0........0...
-    ..0..........0..
-    ..0..........0..
-    ...0........0...
-    ...0........0...
-    ....00....00....
-    ......0000......
-    ................
-    ................
-    ................`,
-  fx_slash_d1: `
-    ................
-    .....000000.....
-    ...00......00...
-    ..0..........0..
-    .0............0.
-    .0............0.
-    0..............0
-    0..............0
-    0..............0
-    0..............0
-    .0............0.
-    .0............0.
-    ..0..........0..
-    ...00......00...
-    .....000000.....
     ................`,
 
   // ---- the drop shadow every airborne entity gets ------------------------

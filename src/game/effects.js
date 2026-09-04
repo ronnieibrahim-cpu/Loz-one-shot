@@ -56,7 +56,6 @@ export const EFFECTS = {
   bubble: { frames: ['fx_bubble0', 'fx_bubble1'], pal: 'water', rate: 8, loop: true },
   foam: { frames: ['fx_foam0', 'fx_foam1', 'fx_foam2'], pal: 'water', rate: 6 },
   shine: { frames: ['fx_shine0', 'fx_shine1', 'fx_shine2', 'fx_shine1'], pal: 'essence', rate: 6, loop: true, life: 9999 },
-  slashD: { frames: ['fx_slash_d0', 'fx_slash_d1'], pal: 'spark', rate: 4, depth: 60 },
 };
 
 export function spawnEffectAt(game, name, x, y, opts) {

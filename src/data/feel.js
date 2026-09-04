@@ -1218,6 +1218,21 @@ export const CHARM_CASE_ESSENCES = 6;
  *  alongside him; the arc effect is drawn a pixel further out again. */
 export const BLADE_REACH_PX = 11;
 
+/** px — how far out from Link the blade is drawn during the WIND-UP and the
+ *  FOLLOW-THROUGH, the frames either side of the active swing. guessed. The
+ *  sword starts and finishes the arc across Link's body rather than out at
+ *  arm's length, so the blade is drawn tucked in at both ends and only reaches
+ *  BLADE_REACH_PX while it is actually pointing where he is facing. Without
+ *  this the sword simply appears fully extended on the frame the button is
+ *  pressed, which is the one thing the source games never do. */
+export const BLADE_TUCK_PX = 5;
+
+/** f — frames of follow-through after the blade stops being able to hit,
+ *  during which the sword is still drawn sweeping past the facing. guessed;
+ *  the same length as the wind-up (SWING_HIT_START) so the arc is symmetric,
+ *  and short enough to finish inside SWING_FRAMES. */
+export const SWING_RECOVER_FRAMES = 3;
+
 // ---------------------------------------------------------------------------
 // Cutscenes — the `show` step (S10)
 //

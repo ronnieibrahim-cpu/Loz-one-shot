@@ -250,6 +250,8 @@
   "deaths": 0,
   "keys": 0,
   "essences": [],
+  "beaten": {},
+  "heartPieces": 0,
   "items": [
    "conch",
    "shield",

@@ -3430,11 +3430,26 @@ back to the level that suits them.
 - `preview.mjs` renders a whole pack in **one** palette, so it shows silhouette
   and shape but not in-game colour. That is the right tool for "does it read as
   the thing it names"; use `test.mjs --shots` for colour.
-- The engine's `slashD` effect (`src/game/effects.js`) wants `fx_slash_d0` and
-  `fx_slash_d1`, and `player.js` spawns it on **every sword swing** — but
-  neither name is in `sprite-manifest.js`, so nothing flagged them and the
-  most-seen effect in the game drew as a placeholder box for the whole project.
-  If you add an effect to the engine, add its frames to the manifest.
+- The engine's `slashD` effect (`src/game/effects.js`) wanted `fx_slash_d0` and
+  `fx_slash_d1`, and `player.js` spawned it on **every sword swing** — but
+  neither name was in `sprite-manifest.js`, so nothing flagged them and the
+  most-seen effect in the game drew as a placeholder box for most of the
+  project. If you add an effect to the engine, add its frames to the manifest.
+  The effect itself is now gone: once it was drawing, it was a white ring
+  expanding out of Link on every swing, and the Oracles have no such flourish —
+  the swoosh there comes off the blade and goes where the blade goes.
+- **A sprite that is drawn for the whole of a state is not an animation.** The
+  sword was a separate `fx_blade_*` sprite pinned in front of Link at full
+  reach from the first frame of the swing to the last, so a press did not read
+  as a swing — the blade simply existed, and then it did not. It now travels:
+  a quarter-turn back from the facing and tucked in close for the wind-up
+  frames, out along the facing for the frames it can actually hit, and a
+  quarter-turn past the facing for the follow-through (`Player.bladePose`).
+  The side swing is deliberately NOT a uniform rotation — left is the mirror
+  of right, so both go over the shoulder and finish at the ground, because the
+  engine draws left by mirroring and a mirror does not turn a downward chop
+  into an upward one. Nothing in the checker table can see any of this: shoot
+  the swing frame by frame with `__harness.takeOver()` + `step`, and look.
 
 **A ledge is solid from three sides, so it partitions the room it is in.**
 Placing one is the same class of hazard as a mis-stamped doorway. The 38 runs

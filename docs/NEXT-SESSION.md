@@ -1,3 +1,51 @@
+## S29 — The sword actually swings, and the flourish is gone
+
+Two changes, both to the sword's LOOK; nothing about what it hits changed.
+
+**The blade travels now.** `fx_blade_*` was drawn at `BLADE_REACH_PX` in front
+of Link from the first frame of the swing to the last, so pressing the button
+made a sword appear rather than making Link swing one. `Player.bladePose()`
+(src/game/player.js) now answers where the blade is for the frame:
+
+  - `t < SWING_HIT_START` — wind-up. Blade a quarter-turn back from the facing,
+    drawn at the new `BLADE_TUCK_PX` (5px) so it reads as held across the body.
+    No arc effect: the swoosh belongs to a blade that is already moving.
+  - `SWING_HIT_START <= t <= SWING_HIT_END` — the active window, unchanged.
+    Blade along the facing at `BLADE_REACH_PX`, arc frame 0.
+  - the next `SWING_RECOVER_FRAMES` (3) — follow-through. Blade a quarter-turn
+    PAST the facing, tucked in again, arc frame 1.
+  - after that, nothing, though `swinging` runs a few frames longer: those are
+    the recovery frames Link is rooted for with the sword back at his side.
+
+The two ends of the arc are `SWING_START_DIR`/`SWING_END_DIR` at the top of
+player.js. They are **not** a uniform rotation and must not be "fixed" into
+one: left is the mirror of right (both start over the shoulder and finish at
+the ground) because the engine draws left by mirroring right's frames, and a
+mirror does not turn a downward chop into an upward one. Facing the viewer the
+sweep goes left-to-right across him; facing away, right-to-left — the same arc
+seen from behind. The first attempt DID rotate uniformly and came out with
+Link scooping upward when facing right, which the frame-by-frame shots caught
+immediately and no checker could have.
+
+**The `slashD` effect is deleted** — the entry in `EFFECTS`
+(src/game/effects.js), the `spawnEffect` call in `Player.startSwing`, and the
+`fx_slash_d0`/`fx_slash_d1` art in `src/data/sprites-link.js` (hand-authored,
+not generated, so deleting the lines is the correct removal here). It was a
+white ring expanding out of Link on every single swing. The Oracles have no
+such flourish; their swoosh comes off the blade and goes where the blade goes,
+which is what `fx_slash_<dir>_0/1` already does.
+
+**Verifying this.** No tool in the table can see any of it — nothing there
+looks at a picture. Drive `window.__harness.takeOver()`, set
+`player.dir`/`player.swinging` by hand, call `game.draw()` and screenshot per
+frame; a strip of 14 frames per facing is what both bugs above were found in.
+
+**Replays re-recorded.** All nine baselines in `tools/replays/` moved: the
+removed effect is one fewer entity, which shifts entity ids and cascades. 51/51
+green after `--record-all`. Also green: test (83), check-items (91),
+check-hearts (114), check-bosses (19), check-respawn (60), check-playthrough
+(21), check-motion, check-sfx, check-text, check-feel, validate.
+
 ## S28 — D2 routed to its Boss Key in the live engine; a self-correction mid-session
 
 Priority 2 from `docs/prompts/NEXT-PROMPT.md`: extend `tools/playthrough-route.mjs`

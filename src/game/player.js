@@ -24,7 +24,8 @@ import { useEquipped, ITEMS, ThrownObject } from './items.js';
 import {
   WALK_SPEED, SWIM_SPEED, BOOST_SPEED, SHIELD_SPEED, SLOW_FACTOR,
   SHALLOW_FACTOR, CARRY_FACTOR, SPIN_DRIFT_SPEED, SWORD_HOLD_SPEED,
-  SWING_FRAMES, SWING_HIT_START, SWING_HIT_END, BLADE_REACH_PX, CHARGE_FRAMES, CHARGE_SPARKLE_EVERY,
+  SWING_FRAMES, SWING_HIT_START, SWING_HIT_END, BLADE_REACH_PX, BLADE_TUCK_PX,
+  SWING_RECOVER_FRAMES, CHARGE_FRAMES, CHARGE_SPARKLE_EVERY,
   SPIN_FRAMES, SWORD_REACH, SWORD_SPAN, SWORD_GAP, SPIN_BOX,
   SWORD_HOLD_DELAY, SWORD_HOLD_DAMAGE, SWORD_CLINK_COOLDOWN, KNOCK_HOLD,
   PLAYER_INVULN_FRAMES, PLAYER_FLICKER_FRAMES, PLAYER_RECOVER_INVULN_FRAMES,
@@ -48,6 +49,22 @@ import {
   PRESSURE_SCAR_FACTOR, BOSUN_FACTOR,
   HITSTOP_HURT_FRAMES,
 } from '../data/feel.js';
+
+// The two ends of the sword's arc, as directions. A swing is a half-turn: the
+// blade begins one quarter-turn back from the facing and finishes one
+// quarter-turn past it, so what is drawn is a sweep rather than a sword that
+// is suddenly there.
+//
+// These are NOT a uniform rotation, and that is on purpose. The side swing is
+// the same swing facing either way — sword up over the shoulder, down through
+// the facing, ending at the ground — because the engine draws left by
+// MIRRORING the right-facing frames, and a mirror does not turn a downward
+// chop into an upward one. Facing the viewer he sweeps across himself
+// left-to-right, and facing away, right-to-left, which is the same arc seen
+// from behind. These are directions, not timings, so they live here rather
+// than in feel.js.
+const SWING_START_DIR = { down: 'left', up: 'right', right: 'up', left: 'up' };
+const SWING_END_DIR = { down: 'right', up: 'left', right: 'down', left: 'down' };
 
 export class Player extends Entity {
   constructor(x, y) {
@@ -671,7 +688,6 @@ export class Player extends Entity {
     this.swordLevel = level;
     this.swingHit = new Set();
     game.audio.sfx(level >= 3 ? 'sword3' : (level >= 2 ? 'sword2' : 'sword1'));
-    game.spawnEffect('slashD', this.x, this.y);   // replaced per-direction below
     return true;
   }
 
@@ -690,6 +706,37 @@ export class Player extends Entity {
     }
     // tiles (bushes, signs)
     game.checkTileAction(box, 'cut');
+  }
+
+  /**
+   * Where the blade is, this frame of the swing.
+   *
+   * The sword is a separate sprite from Link (see the draw notes below), so
+   * unless something moves it, it simply blinks into existence pointing where
+   * he faces — which is what this used to do, and it is the one thing the
+   * Oracles never do: there, the sword travels. It starts across his body,
+   * sweeps through the facing, and finishes on the far side, and the frames
+   * where it is not yet pointing forward are the frames that make a press read
+   * as a SWING rather than as a blade appearing.
+   *
+   * So: wind-up (before SWING_HIT_START) draws it tucked in on the near side,
+   * the active window draws it out at full reach along the facing, and the
+   * follow-through carries it tucked in again on the far side. The arc effect
+   * is suppressed for the wind-up, because a swoosh belongs to a blade that is
+   * already moving.
+   *
+   * Returns null once the follow-through is spent, even though `swinging` runs
+   * a few frames longer — those last frames are the recovery Link is rooted
+   * for, with the sword back at his side.
+   */
+  bladePose() {
+    const t = SWING_FRAMES - this.swinging;
+    if (t < SWING_HIT_START) return { dir: SWING_START_DIR[this.dir], reach: BLADE_TUCK_PX, arc: -1 };
+    if (t <= SWING_HIT_END) return { dir: this.dir, reach: BLADE_REACH_PX, arc: 0 };
+    if (t <= SWING_HIT_END + SWING_RECOVER_FRAMES) {
+      return { dir: SWING_END_DIR[this.dir], reach: BLADE_TUCK_PX, arc: 1 };
+    }
+    return null;
   }
 
   /**
@@ -1281,29 +1328,26 @@ export class Player extends Entity {
     //
     // Drawn before the arc so the white swoosh reads as coming off the edge of
     // the blade rather than sitting under it.
-    if (this.swinging > 0) {
-      const t = SWING_FRAMES - this.swinging;
-      if (t <= SWING_HIT_END + 2) {
-        const side = this.dir === 'left' || this.dir === 'right';
-        const key = side ? 'side' : this.dir;
-        const [bdx, bdy] = DIR_VEC[this.dir];
-        sprites.draw(ctx, 'fx_blade_' + key,
-          ox + this.x + bdx * BLADE_REACH_PX, dy + bdy * BLADE_REACH_PX,
-          { pal, flipX: this.dir === 'left' });
-      }
+    const pose = this.swinging > 0 ? this.bladePose() : null;
+    if (pose) {
+      const side = pose.dir === 'left' || pose.dir === 'right';
+      const key = side ? 'side' : pose.dir;
+      const [bdx, bdy] = DIR_VEC[pose.dir];
+      sprites.draw(ctx, 'fx_blade_' + key,
+        ox + this.x + bdx * pose.reach, dy + bdy * pose.reach,
+        { pal, flipX: pose.dir === 'left' });
     }
 
-    // Sword arc
-    if (this.swinging > 0) {
-      const t = SWING_FRAMES - this.swinging;
-      if (t <= SWING_HIT_END + 2) {
-        const side = this.dir === 'left' || this.dir === 'right';
-        const key = side ? 'side' : this.dir;
-        const [ddx, ddy] = DIR_VEC[this.dir];
-        sprites.draw(ctx, 'fx_slash_' + key + '_' + Math.min(1, Math.floor(t / 5)),
-          ox + this.x + ddx * 12, dy + ddy * 12,
-          { pal: this.swordLevel >= 3 ? 'essence' : 'spark', flipX: this.dir === 'left' });
-      }
+    // Sword arc. It is the swoosh coming OFF the blade, so it only exists once
+    // the blade is moving — never on the wind-up frames, where the sword is
+    // still being drawn back.
+    if (pose && pose.arc >= 0) {
+      const side = pose.dir === 'left' || pose.dir === 'right';
+      const key = side ? 'side' : pose.dir;
+      const [ddx, ddy] = DIR_VEC[pose.dir];
+      sprites.draw(ctx, 'fx_slash_' + key + '_' + pose.arc,
+        ox + this.x + ddx * (pose.reach + 1), dy + ddy * (pose.reach + 1),
+        { pal: this.swordLevel >= 3 ? 'essence' : 'spark', flipX: pose.dir === 'left' });
     }
     if (this.charge >= CHARGE_FRAMES && (this.frame >> 2) % 2 === 0) {
       sprites.draw(ctx, 'fx_sparkle1', ox + this.x, dy - 4, { pal: 'gold' });
