@@ -764,6 +764,13 @@ const main = async () => {
     // Same tile-avoidance as the combat section above: this is the last entry
     // into the room before the death-and-respawn checks, so it is what sets the
     // respawn point, and the zol sits on 72,56.
+    // The combat section above killed everything in this room, and a killed
+    // overworld enemy now stays dead until the player is "far enough away"
+    // (see progress.slain/OVERWORLD_RESPAWN_DISTANCE) -- direct `enterMap`
+    // calls in this harness never advance that distance. This test is about
+    // hitstop physics, not persistence, so clear the record rather than
+    // walking real screens just to satisfy it.
+    g.progress.slain = {};
     g.enterMap('overworld', 0, 4, 6, 72, 24, 'down', { instant: true });
     window.__harness.step(10);
     g.hitstop = 0;

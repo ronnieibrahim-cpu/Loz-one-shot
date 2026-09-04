@@ -13,6 +13,16 @@ export const SAVE_KEY = 'oracleOfTides.save.v1';
 export const SLOTS = 3;
 
 /**
+ * How many overworld screen-to-screen crossings must pass before a killed
+ * overworld enemy is eligible to respawn on its own screen again. Walking
+ * off-screen and immediately back is not "far enough away" — the player has
+ * to actually put ground between the kill and the return. Dungeon and cave
+ * rooms have no such grace: an enemy killed indoors stays dead for the rest
+ * of the save (see `Game.onEnemyDefeated`/`spawnRoomEntities`).
+ */
+export const OVERWORLD_RESPAWN_DISTANCE = 5;
+
+/**
  * `seed` is the root of every random decision the run will ever make. It is
  * saved, so a reloaded game keeps rolling the same way, and tools/replay.mjs
  * pins it explicitly. Passing one makes a new game fully reproducible.
@@ -58,6 +68,15 @@ export function newProgress(name = 'LINK', seed = (Date.now() >>> 0)) {
     chests: {},              // "mapId:roomKey:index" -> true
     doors: {},               // "mapId:roomKey:tx,ty" -> 'open'
     secrets: {},             // one-shot world changes
+    // Killed enemies that stay dead. Keyed the same as chests/secrets
+    // ("mapId:roomKey:index"). A dungeon/cave entry is `{ perm: true }` and
+    // never respawns; an overworld entry is `{ until: <owVisits value> }`
+    // and respawns once `owVisits` reaches it. See `OVERWORLD_RESPAWN_DISTANCE`.
+    slain: {},
+    // Counts overworld screen-to-screen crossings, for the "far enough away"
+    // clause above. Only overworld travel advances it — see
+    // `Game.updateTransition`.
+    owVisits: 0,
     trade: { stage: 0, item: null },
     // Where the Ferryman's Coin is lying, or null if it is in your hand.
     // Saved, because the coin's whole point is that it works across rooms.
@@ -303,7 +322,7 @@ function migrate(p) {
   const base = newProgress(p.name || 'LINK');
   const out = { ...base, ...p };
   for (const k of ['items', 'keys', 'bossKeys', 'dungeonMaps', 'charts',
-    'beaten', 'flags', 'chests', 'doors', 'secrets', 'charms', 'charmOpen',
+    'beaten', 'flags', 'chests', 'doors', 'secrets', 'slain', 'charms', 'charmOpen',
     'charmTold',
     'trade', 'pos', 'respawn']) {
     out[k] = { ...base[k], ...(p[k] || {}) };

@@ -45,24 +45,40 @@ hearts. 24,000 frames, no death, no warp, no flag set from outside. Landed in
 "D2 is DONE" in the table above means what it has always meant: authored,
 flooded, and proved by models. See `GOAL` in `tools/playthrough-route.mjs`.
 
-**S28 got 10 of D2's ~14 required rooms into a live-engine route** (Spire
-Mouth through both Small Keys, the Lens, the Bombs, a heart piece and the
-Boss Key) — not landed in `tools/playthrough-route.mjs` (still D1-only), but
-verified against the real engine in a scratch harness and written up in full
-in `docs/NEXT-SESSION.md` S28. Read S28 before attempting D2 again: it names
-exactly which rooms are solid and saves re-deriving the switch puzzle, the
-locked-door positions, both `lensRoom` fork sequences, and a real, general
-`dTravel` gap (it cannot path through a `size:[w,h]>1x1` room's non-anchor
-exits — hits both Reefguard Hall and Spire Ascent) from scratch.
+**S28 got a live-engine route all the way to Anemos's own room** — every
+required room of Coral Spire, both Small Keys, the Lens, the Bombs, a heart
+piece, the Boss Key, and through the boss door — not landed in
+`tools/playthrough-route.mjs` (still D1-only), but verified against the real
+engine in a scratch harness and written up in full in `docs/NEXT-SESSION.md`
+S28. Read S28 before attempting D2 again: it names exactly which rooms are
+solid and saves re-deriving the switch puzzle, the locked-door positions,
+both `lensRoom` fork sequences, and a real, general `dTravel` gap (it cannot
+path through a `size:[w,h]>1x1` room's non-anchor exits — hits both
+Reefguard Hall and Spire Ascent) from scratch.
 
-**S28 also self-corrected a wrong diagnosis mid-session, kept on record
-rather than silently fixed.** An earlier pass reported the Reefguard miniboss
-as unwinnable and blamed `dBoss`'s wide-room combat AI. The real cause was a
-route bug: equipping the Lens onto B displaced the sword (only ever bound
-there), so every subsequent swing attempt pressed the Lens button instead.
-`dBoss` needed no changes. What is NOT yet solved is the return leg from the
-Boss Key room back to Spire Ascent's boss door — see S28's "open problem"
-for exactly where it stalls and what was ruled out.
+**S28 found and fixed a real engine bug along the way, landed in
+`src/game/objects.js`.** `TideValve` (the fork valves that raise a
+`tideForce`-pinned room's water) wrote its `open`/`saveKey` flag on interact
+but never read it back on a fresh room load — the exact bug `GustWheel`
+(D4's Squall Bellows wheel) already carries a fix and a comment for
+("a wheel you turned and walked away from was shut again when you came
+back"), just never applied to this fixture. A valve already thrown reset to
+shut on re-entry, and since `Tide.applyRoomRules` re-pins a `tideForce`
+room's level on every entry by design, that meant the water level reset too
+— stranding the return trip from either D2 fork's far side in a shaft that
+looked like a bare pit again, with the valve that would fix it on the other
+side of that same pit. `TideValve.update` now restores both, scoped to
+`tideForce` rooms only. Verified broadly (`test.mjs`, `replay.mjs` 51/51 no
+re-recording, `check-playthrough.mjs` 21/21, `check-lens.mjs`,
+`check-bellows.mjs`, `check-anchor.mjs`, `walk-dungeons.mjs`, all clean)
+before trusting it, then re-ran the route through the fixed crossing to
+Anemos's room and lost the fight at 3 hearts, well under the 4-heart
+threshold `measure-boss-combat.mjs` already put on this boss (S5, below) —
+a health-budget problem for the next pass, not a structural one. An earlier
+pass this same session had misdiagnosed the Reefguard miniboss fight (a
+route bug, not this one — the Lens had displaced the sword) and self-
+corrected before finding the real valve bug; both are recorded in S28
+rather than silently rewritten.
 
 ### Boss winnability, measured (S5)
 

@@ -1133,6 +1133,35 @@ export class TideValve extends Entity {
     game.say(this.open ? 'The sluice grinds open. Water can move again.' : 'The sluice slams shut.');
     game.onValveToggled(this);
   }
+  /**
+   * A valve you already threw was shut again when you came back: `interact`
+   * wrote the flag and nothing ever read it — the exact bug `GustWheel.update`
+   * below was fixed for. Here it costs more than a wrong sprite. In a
+   * `tideForce` room the water LEVEL is the actual effect, nothing else
+   * records it, and `Tide.applyRoomRules` re-pins the room to its forced
+   * level on every entry — unconditionally, by design, so a Bottled Tide can
+   * still mean something in one. So a fork whose valve had already been
+   * thrown reset to a level its own shaft cannot be safely crossed at, with
+   * the valve that would fix it again on the far side of the very hazard
+   * blocking the way there. Restoring the boolean AND re-throwing the tide
+   * step once, the first update after a fresh room load, is what makes the
+   * valve mean what its own sprite already claims to.
+   *
+   * Scoped to `tideForce` rooms only — the other rooms this entity type
+   * appears in gate a door through `openDoors`, which is a persisted door
+   * state already surviving re-entry on its own; stepping the GLOBAL tide
+   * there on every return visit would be a surprising side effect nothing
+   * asked for.
+   */
+  update(game) {
+    if (this._restored) return;
+    this._restored = true;
+    if (!this.open && this.saveKey && game.progress.flags[this.saveKey]) {
+      this.open = true;
+      const room = game.room;
+      if (room && room.def && room.def.tideForce != null) game.forceTideStep();
+    }
+  }
   spriteName() { return this.open ? 'o_valve_open' : 'o_valve'; }
 }
 defineEntity('valve', (x, y, o) => new TideValve(x, y, o));

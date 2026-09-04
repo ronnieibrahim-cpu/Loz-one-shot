@@ -1,4 +1,4 @@
-## S30 — Item and charm descriptions scroll instead of being cut off
+## S31 — Item and charm descriptions scroll instead of being cut off
 
 `Menu.drawItems` cut every item description with `.slice(0, 33) + '…'`, and
 `drawCharms` with `.slice(0, 38)`. That is not a summary — "Throw it to hold
@@ -38,7 +38,7 @@ Nothing else moved: no replay changed (the menu is not in one), 83/83 test,
 91/91 check-items, 51/51 replay, 21/21 check-playthrough, and the build is
 current.
 
-## S29 — The sword actually swings, and the flourish is gone
+## S30 — The sword actually swings, and the flourish is gone
 
 Two changes, both to the sword's LOOK; nothing about what it hits changed.
 
@@ -85,6 +85,78 @@ removed effect is one fewer entity, which shifts entity ids and cascades. 51/51
 green after `--record-all`. Also green: test (83), check-items (91),
 check-hearts (114), check-bosses (19), check-respawn (60), check-playthrough
 (21), check-motion, check-sfx, check-text, check-feel, validate.
+
+## S29 — Respawn: dungeon death was already correct; enemies now stay dead
+
+A user request, not a `docs/prompts/NEXT-PROMPT.md` priority: (a) death in a
+dungeon should return the player to the dungeon's own entrance, not the room
+they died in; (b) a killed enemy should not come back just by leaving its room
+and walking back in; (c) same rule on the overworld, except an overworld
+enemy should respawn once the player has gone far enough away.
+
+**(a) needed no code.** `Game.markRespawn`/`enterMap`'s `changedMap` gating
+already take the respawn point once, on the way IN to a dungeon, cave or
+house, and never move it again until the player leaves that map — verified
+directly in `check-respawn.mjs` section 4 ("walking DEEPER into the same
+dungeon does not move it" / "at its mouth rather than in the room that killed
+him"), which was already green before this session touched anything.
+
+**(b) and (c) are new**, in `src/game/progress.js` and `src/game/game.js`:
+
+- `progress.slain`: a bag keyed exactly like `chests`/`secrets`
+  (`mapId:roomKey:index`), written once in `Game.onEnemyDefeated` (bosses are
+  exempt — `progress.beaten` already owns their persistence and
+  `spawnRoomEntities` never respawns a beaten boss anyway). Indoors
+  (`mapId !== 'overworld'`) it is `{ perm: true }` and never clears. On the
+  overworld it is `{ until: <owVisits value> }`.
+- `progress.owVisits`: counts overworld screen-to-screen crossings, advanced
+  only in `Game.updateTransition`'s sliding-transition completion (the same
+  site `markRespawn(false)` already fires from) — so it only moves on real
+  walked travel, never on a warp or a direct `enterMap`, which keeps it
+  deterministic and replay-safe.
+- `OVERWORLD_RESPAWN_DISTANCE` (`progress.js`) is the threshold — currently 5
+  screens. It is a gameplay/economy knob, not a `feel.js` timing constant (no
+  frame-stepped reference exists to measure it against), so it lives next to
+  `progress.slain` with a plain comment instead of a `measured`/`derived`/
+  `guessed` provenance tag.
+- `spawnRoomEntities` skips spawning an entity whose `saveKey` is in
+  `progress.slain` and still within its window — one new `if` beside the
+  existing chest/secret checks, same shape.
+
+**What this does NOT touch**: `checkPuzzle`'s `pz.enemies` clause (every
+`enemies: true` puzzle in the game already carries its own `pz.flag`, so a
+re-entered puzzle room short-circuits on that flag at the top of
+`checkPuzzle`, line ~811, regardless of whether its enemies are alive — this
+was already correct and stayed correct). `room.cleared`/`roomEvent('cleared')`
+also unaffected, since it fires per-kill against the room's LIVE entity list,
+never against `progress.slain`.
+
+**Verification, full width, because this touches something every fight in
+the game runs through**: `test.mjs` 83/83 (one pre-existing test needed a
+one-line fix — see below), `replay.mjs` 51/51 (`d1-descent` needed
+`--record`, see the new HANDOFF hard-won lesson on why the other replay
+mechanism didn't), `check-playthrough.mjs` 21/21 with **no re-record needed
+and no health-budget regression** — the run still ends at 29/30 hearts,
+deepest trough 3/16qh, same as before; `check-hearts.mjs` 114/114,
+`walk-dungeons.mjs`/`check-gates.mjs`/`check-progression.mjs`/
+`check-strands.mjs`/`check-placement.mjs`/`check-bosses.mjs`/
+`check-respawn.mjs` all green, `npm run build` + `check-build.mjs` OK.
+
+**The one test fix**: `tools/test.mjs`'s hitstop section re-enters the exact
+overworld room the earlier "combat and damage" section had just killed every
+enemy in, via a direct `enterMap` call — which, correctly, does not advance
+`owVisits`. That is the new feature working, not a bug; the fix is
+`g.progress.slain = {}` right before that re-entry, since the hitstop
+assertions are about freeze timing and have nothing to do with persistence.
+
+**Balance note for whoever designs D2 onward with this live**: a dungeon room
+that used to let the player leave-and-return to re-farm a weak enemy for
+health (the D1 Tide Gallery zols were the one example on record) no longer
+can. D1's own route and health budget held up fine end to end without any
+compensating change. Nothing else in the game was known to lean on
+enemy-respawn-as-a-health-source, but it is worth keeping in mind when tuning
+D2–D6: a room's health economy now has to work on ONE pass through its
+enemies, not an assumed second one.
 
 ## S28 — D2 routed to its Boss Key in the live engine; a self-correction mid-session
 
@@ -224,7 +296,12 @@ Bosskey Cell on this run — tight but not yet desperate; the Glass Cell heart
 piece (skipped this session) is sitting right off the First Fork's approach
 and is the obvious top-up if health is short later.
 
-### THE OPEN PROBLEM: getting back from Bosskey Cell to the boss door
+### THE RETURN LEG — RESOLVED, and it was a real engine bug (fixed, landed)
+
+*(This section originally read "THE OPEN PROBLEM" and walked through the
+diagnosis live. Left mostly intact below rather than deleted, because the
+diagnosis is exactly what led to the fix and is worth keeping as the record
+of how it was found — see the fix itself at the end of this section.)*
 
 Bosskey Cell has exactly one exit (south, back into the Sounding Fork) —
 confirmed by reading its full map, no side openings anywhere. The room's own
@@ -347,34 +424,90 @@ chief among them) — but it is now a well-evidenced, specific hypothesis
 rather than a vague "something's wrong here," and worth treating as the
 leading theory rather than re-deriving from scratch.
 
+### THE FIX
+
+The leading hypothesis above was right, but not in the place it pointed —
+the actual bug was not "an already-thrown valve fails to re-flood on
+re-entry"; it was **an already-thrown valve fails to REMEMBER it was
+thrown at all, on re-entry**, and the fix for exactly that shape of problem
+already existed once elsewhere in the same file and had simply never been
+applied to this fixture. `src/game/objects.js`'s `GustWheel` (D4's Squall
+Bellows wheel — a different fixture, same "toggles open/shut, `saveKey`
+persists the flag" shape) carries its own hard-won-lesson comment: *"A wheel
+you turned and walked away from was shut again when you came back: `interact`
+wrote the flag and nothing ever read it."* `TideValve` — the D2 fork valves —
+had exactly that bug and had never been given the fix `GustWheel` already
+has.
+
+**Landed**: `TideValve` gained an `update(game)` method mirroring
+`GustWheel`'s own `_restored` pattern — the first update after a fresh room
+load, if the valve's `saveKey` flag says it was already thrown and `open` is
+currently `false`, it sets `open = true` and, ONLY in a `tideForce` room
+(scoped so the many other rooms using this same entity type for a plain
+`openDoors` gate are untouched — their door state already persists on its
+own and stepping the global tide there on re-entry would be an unwanted side
+effect), calls `game.forceTideStep()` to re-apply the one-time tide bump.
+Confirmed directly against the exact repro that found the bug
+(`enter:['d2',1,2,2,16,3,'up']`, tide 0, `flags:['d2:1,2,2:0']`): the shaft
+that used to be a zero-progress `dPit` fall-loop is wadeable water again from
+frame 1, no second `interact` needed.
+
+**Verified broadly before trusting it** — this is shared entity code used by
+every fork valve in the game, not a D2-only fixture: `test.mjs` 83/83,
+`validate.mjs` clean, `check-lens.mjs` 24/24 (both D2 forks, unchanged —
+that checker models room DATA, not runtime valve state, so it was never
+going to catch this either way, which is worth remembering), `replay.mjs`
+**51/51 with zero re-recording** (no existing baseline re-enters a valve
+room after leaving it, so nothing was touching the new code path),
+`check-playthrough.mjs` **21/21**, `walk-dungeons.mjs` 23/23,
+`check-anchor.mjs` 14/14, `check-bellows.mjs` 60/60 (the closest relative —
+`GustWheel` itself, proving the shared pattern still works for the fixture
+it was written for).
+
+**Then re-ran the full 10-room route with the fix live, past the point that
+used to be the wall**: Bosskey Cell -> Sounding Fork (tide auto-restores to
+MID on entry, confirmed) -> straight down through the shaft with no fall,
+no valve re-tap -> the west stair's warp -> Spire Ascent's lower cell ->
+up through the room to the boss door (`doorsChanged` 3 -> 4, confirming it
+opened) -> **Anemos's own room, reached for the first time by any route in
+this repository.** `['boss', 9000]` was then attempted and LOST — the actor
+died at 12qh (3 hearts) of an artificial 20qh test cap, comfortably below
+`docs/DUNGEON-STATUS.md`'s S5 table's measured 4-heart (16qh) win threshold
+for Anemos at zero heart pieces counted. **That is a health-budget problem,
+not a structural one** — the fight itself was never reached by any route
+before this session, so it has never actually been tried at the health a
+real run would carry (the S5 table's number comes from
+`measure-boss-combat.mjs`, which teleports in — see the `§4.2` caveat that
+already exists for that measurement).
+
 ### For the next session
 
-The 10-room segment above (rooms 1-10, all update notes inline) is ready to
-paste into `tools/playthrough-route.mjs` almost verbatim once the return leg
-is solved — it will also need the overworld-walk-in preamble D1's route used,
-from wherever D1's Essence leaves the player to Coral Spire's mouth at
-`overworld,10,5` (not attempted this session). What is NOT reached: the
-return to Spire Ascent's boss door, and Anemos itself.
+The full 10-room segment (rooms 1-10 above) PLUS the now-working return leg
+through the boss door is ready to paste into `tools/playthrough-route.mjs`
+almost verbatim — it will also need the overworld-walk-in preamble D1's
+route used, from wherever D1's Essence leaves the player to Coral Spire's
+mouth at `overworld,10,5` (not attempted this session).
 
-1. **Solve the return leg first.** Start from the `tideForce`-vs-persisted-
-   valve lead above — check whether room re-entry was ever supposed to
-   re-apply an already-thrown valve's tide bump and simply doesn't, before
-   assuming a repeated 2qh pit-fall cycle (measured: zero net progress, not
-   just expensive) is the intended crossing.
-2. **`dTravel` cannot path through any `size:[w,h]` multi-cell room's
-   non-anchor exits** (item 8/9 above) — worth a real fix in
-   `tools/actor-runtime.mjs` at some point (teach `bfsScreens` the room's full
-   footprint, not just its rx,ry), since it will bite every future route that
-   touches Reefguard Hall or Spire Ascent again. Not attempted this session;
-   flagged as a genuine, general gap rather than routed around silently.
-3. Anemos itself (1,3,1) has never been fought by this route or measured
-   fresh this session — `docs/DUNGEON-STATUS.md`'s S5 table says it wins at 4
-   hearts with zero pieces counted; this run was carrying 3 (12qh) at Bosskey
-   Cell, before the Glass Cell piece, before whatever the return leg costs.
+1. **Health-budget the run into Anemos.** The skipped Glass Cell heart piece
+   (off the First Fork's approach — see item 6 above) is the obvious first
+   top-up; beyond that, look for avoidable chip damage along the route the
+   way D1's own route notes do (this session's scratch route was not tuned
+   for health the way the final one needs to be — several `goto`/`fight`
+   calls took contact damage a more careful sequence would dodge).
+2. **`dTravel` still cannot path through any `size:[w,h]` multi-cell room's
+   non-anchor exits** (Reefguard Hall, Spire Ascent) — a real, general gap in
+   `tools/actor-runtime.mjs`'s `bfsScreens`, not fixed this session, worked
+   around with manual `goto`/`exit` throughout. Worth a real fix at some
+   point since it will bite every future route touching either room.
+3. Once Anemos is won on a realistic health budget, the whole route is ready
+   to land in `tools/playthrough-route.mjs` and `check-playthrough.mjs`'s
+   `GOAL` extended to `essence: 2` — this session did not attempt that
+   integration, only proved every room and the fight itself reachable in a
+   scratch harness.
 
 `docs/DUNGEON-STATUS.md`'s "D1 is played" framing still needs revising once
-D2 actually lands — this session's progress is recorded there too, corrected
-to match this entry.
+D2 actually lands — this session's progress, and the `TideValve` fix, are
+recorded there too.
 
 ---
 
