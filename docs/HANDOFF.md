@@ -447,6 +447,23 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **AN ANIMATED TILE'S `edgeArt` WAS DEAD CODE, AND NOTHING SAID SO.**
+  `Room.render`'s animated branch (water, lava, torches) skipped straight past
+  `artAt` — the function that resolves `edgeArt`/`variants` — and `drawAnim`
+  painted every one of them with the cell's OWN tiledef, full stop. So a
+  `family`/`edgeAgainst`/`edgeArt` on `waterS` would validate, render, and
+  simply never draw its edge piece, with no warning and no failing assertion
+  anywhere in the table — the exact "looks like the art failed" trap
+  `docs/ART-BACKLOG.md` warned S27 about in advance, which is the only reason
+  it didn't cost a session finding it blind. The fix (`Room.animArtAt`) had to
+  resolve the SUBSTITUTED art's own tiledef, not the cell's, so a substitution
+  that itself declares `anim` (three rim frames) animates through its own
+  frames rather than freezing on frame 0 or inheriting the base tile's cycle.
+  **The general shape**: when a rendering feature is built and tested only
+  against the STATIC layer, an animated tile is not "the same case, slower" —
+  it is a separate code path that can silently opt out of the feature
+  entirely. Check both paths before believing a draw-time feature is general.
+
 - **AN ORACLE SHEET'S WATER EDGES ARE MOSTLY BUILT WALLS, NOT SHORES.**
   Ornamental pools, moats and canals are where the artists drew a deliberate
   edge, so that is what a stitched map shows you when you go looking for a

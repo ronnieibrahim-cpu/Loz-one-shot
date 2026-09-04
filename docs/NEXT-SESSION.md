@@ -1,4 +1,116 @@
-## S26 — the water was a ladder and so was every shoreline (this session)
+## S27 — the shoreline rim landed (this session)
+
+Priority 1 from `docs/prompts/NEXT-PROMPT.md`, fully specified going in, and it
+turned out to be exactly as specified: an engine bug (animated tiles never
+consulted `artAt`) plus a derivation, not an extraction.
+
+### 1. The engine fix — `Room.animArtAt`, `src/world/room.js`
+
+`Room.render`'s animated branch used to push `{x, y, def: d}` into
+`animCells` and `drawAnim` painted every one of them with
+`tileArt(c.def, frame)` — the cell's OWN tiledef, full stop. `artAt`'s edge
+substitution (the thing that gives `cliffTop` its lip) was only ever called
+on the STATIC path. Water is animated, so an `edgeArt` entry on `waterS`
+was silently dead code before this session — wiring the art without finding
+this first would have looked exactly like "the art didn't work".
+
+New method `Room.animArtAt(d, x, y, tide)` calls `artAt` (same as the static
+path) and resolves the result against the SUBSTITUTED art's own tiledef,
+not the cell's: if `artAt` names a tile that itself declares `anim` (the rim
+pieces do, three frames each, matching water's own cycle), `tileArt` walks
+ITS frames; if it names a plain substitution with no `anim` (`bankEdgeS`,
+still parked), `tileArt` falls back to that tile's `name` and draws it
+static — identical to the old un-animated `artAt` behaviour. `render`,
+`renderAt` (the Brineglass Lens preview — fixed too, or the Lens's still
+would have shown a hard-edged coast next to the real view's rimmed one) and
+`drawAnim` all route through it. Called once per cache rebuild, never per
+frame — same cost as the static path already pays.
+
+Verified this is a true no-op before any tiledef used it: `test.mjs` 83/83
+with the engine change alone, before Part 2 below touched any data.
+
+### 2. The art — derived, not picked, in `tools/rip-terrain.py`
+
+Cropped the natural pond on the Seasons spring map at ~1827,1066 and read
+its pixels directly (not just eyeballed): land is untouched right up to the
+water, and the boundary is a dark line sitting hard against the water fill,
+wobbling in and out by a pixel rather than running straight — "scalloped" is
+accurate. There is no clean 16x16 rectangle to extract from a hand-painted
+coastline that isn't tile-aligned, the same reason `waterS1`/`waterS2` are a
+SHIFT of `waterS0` rather than a second sheet crop.
+
+So `build_water_rim()` derives 24 grids (4 edges + 4 outer corners x 3 anim
+frames) from water's own already-extracted sparkle: it overwrites the
+border row/column facing land with a 2-on/1-off tooth mask in palette index
+3 — the `water` palette's own darkest tone (`#10305c`), which the extracted
+sparkle never uses, so the rim costs no new colour or palette. Phase-shifted
+a third per animation frame so the teeth crawl gently along the shore in
+step with water's own three-frame cycle. This is NOT the interior-ladder
+fault the negative-results section below (and S26's) warns a "regular
+pitch" checker can't discriminate — that trap is a texture repeating across
+a whole tiled field; this is a boundary, drawn once per edge cell, the same
+kind of feature `cliffTop`'s solid rim row already is.
+
+### 3. Wiring — `src/data/tiles-core.js`
+
+`family: 'shore'` on `grass`, `grassDark`, `grassBog`, `sand`, `sandWet`,
+`sandRipple`, `mud` — the land tiles a natural coast is built from.
+`waterS` gets `edgeAgainst: 'shore'` and `edgeArt: WATER_RIM_ART` (the 8
+direction names, mirroring `BANK_EDGE_ART`'s shape exactly, inverted onto
+water instead of onto land).
+
+**Only `waterS`, deliberately not `waterD` or `openSea` too.** The rim
+pieces bind `pal: 'water'`; `waterD` draws in `pal: 'deep'`, a visibly
+darker ramp, and `Room.palFor` looks up a substituted art's OWN palette
+rather than the cell's — so a deep-water rim would ring every drop-off in
+the shallow palette's colours, a seam worse than the hard edge it replaced.
+A coast in this game is always land -> shallow -> deep, so the land/water
+join is always against `waterS` in practice; a direct land/`waterD` join
+(a cliff dropping straight into deep water) keeps its hard edge, unchanged
+from before this session.
+
+### Verified
+
+Screenshotted `overworld,5,8` and `overworld,3,8` (Shell Beach) at all three
+tides — the rim renders exactly as the pond reference showed: dark teeth on
+the water side, land untouched. `test.mjs` 83/83, `check-overworld` 17/17,
+`check-strands` OK (no new stranded region), `check-tilesets` 7/7 (ripper
+still re-emits byte-identically), `walk-dungeons` 23/23, `check-ground` 7/7,
+`check-placement` 2/2, `check-camera` OK, `replay.mjs` **51/51 with zero
+re-recording** — no baseline's probe pixel happened to land on a
+rim-affected cell — `check-playthrough` 21/21 (unchanged: still D1-only,
+see Priority 2 below), `npm run build` + `check-build` OK.
+
+### One real limitation, found by screenshot and not a regression
+
+A water cell exactly ONE TILE WIDE with land on both opposite sides (a
+narrow channel, e.g. Shell Beach `0,3,8`'s row-0 channel cell) gets rim art
+on only ONE of its two facing edges, not both. This is `tileEdgeArt`'s own
+documented "opposite pair" degrade — `up+down` or `left+right` both
+differing has no dedicated two-sided art, so it falls back to whichever
+single edge comes first in `EDGE_DIRS` order (`up`, then `down`, then
+`left`, then `right`). This is PRE-EXISTING engine behaviour, the same
+degrade `cliffTop` and the old `bankEdge*` always had — not introduced by
+this session, and not worth a special case for the rim alone. A future
+session wanting to close it would add `up+down`/`left+right` "channel" art
+to `EDGE_ART_KEYS` in `src/world/tileset.js` and to whichever tiles want it;
+out of scope here.
+
+### What is NOT done
+
+- **Salt flats, ice floors and reef/abyss shorelines were not audited.**
+  `family: 'shore'` was added only to the plain grass/sand/mud coastal
+  grounds the pond reference actually showed. Whether Frostbound's ice or
+  the salt-flat region's coastline should also grow a rim is an open
+  question for whoever reads those regions next (Priority 3 in the prompt).
+- **The two-sided "channel" degrade above.** Known, screenshotted, not
+  fixed — see the limitation note.
+- Priority 2 (route D2 through `check-playthrough`) and everything below it
+  in `docs/prompts/NEXT-PROMPT.md` is untouched this session.
+
+---
+
+## S26 — the water was a ladder and so was every shoreline
 
 THE JOB, in the user's words: "random interspersed water tiles of varying
 height that don't make sense" and "ladder tiles used as ground terrain which

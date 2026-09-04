@@ -131,7 +131,7 @@ export class Room {
     this._cacheTide = -1;
     this._cacheDirty = true;
     this._alt = new Map();        // parallel caches, keyed like `render`'s
-    this.animCells = [];      // [{x,y,def}] refreshed with the cache
+    this.animCells = [];      // [{x,y,artDef,pal}] refreshed with the cache; see `animArtAt`
     // Quadrants of 32x32 objects that overhang an ANIMATED cell. They cannot go
     // into the static canvas — the water is repainted over that cell every
     // frame — so `drawAnim` puts them down straight after it.
@@ -287,6 +287,37 @@ export class Room {
     if (art === d.name) return d.pal;
     const sub = artDef(art);
     return sub ? sub.pal : d.pal;
+  }
+
+  /**
+   * The tiledef and palette to draw an ANIMATED cell with.
+   *
+   * `artAt`'s edge/corner substitution used to be applied to the static path
+   * only: an animated tile (water, lava, torches) skips straight into
+   * `animCells` in `render` below and `drawAnim` painted it with
+   * `tileArt(c.def, frame)` — the cell's OWN tiledef, never consulting
+   * `artAt` at all. That silently dropped `edgeArt` on every animated tile,
+   * which is exactly the shoreline rim's blocker: water is animated, so a
+   * `waterS` tile that borders land never asked whether it should draw its
+   * rim piece instead of its ordinary sparkle.
+   *
+   * The fix resolves the substitution against the SUBSTITUTED art's own
+   * tiledef, not the cell's. If `artAt` names a different tile than `d` and
+   * that tile itself declares `anim` (the rim pieces do — three frames each,
+   * matching water's own), `tileArt` walks ITS frames instead of `d`'s; if it
+   * has no `anim` (a plain substitution like `bankEdgeS`), `tileArt` falls
+   * back to that tile's own `name` and draws it static, exactly as the
+   * un-animated `artAt` path already does for `bankEdgeS` today.
+   *
+   * Called once per cache rebuild (`render`/`renderAt` refresh `animCells`
+   * only when the cache is dirty), never per frame — the neighbour lookup
+   * `artAt` performs is exactly as cheap here as it already is on the static
+   * path; nothing new happens at display rate.
+   */
+  animArtAt(d, x, y, tide) {
+    const name = this.artAt(d, x, y, tide);
+    const artTile = name === d.name ? d : (artDef(name) || d);
+    return { artDef: artTile, pal: this.palFor(d, name) };
   }
 
   /**
@@ -602,7 +633,11 @@ export class Room {
             tileSheet.draw(ctx, tileVariant(u, this.key, x, y), x * TILE, y * TILE, { pal: u.pal });
           }
           if (d.over) { this.overCells.push({ x, y, def: d }); continue; }
-          if (d.anim) { this.animCells.push({ x, y, def: d }); continue; }
+          if (d.anim) {
+            const a = this.animArtAt(d, x, y, tide);
+            this.animCells.push({ x, y, artDef: a.artDef, pal: a.pal });
+            continue;
+          }
           // ONE CELL OF A TREE. A tree is 32x32 in every Oracle sheet and there
           // is no 16x16 tree to find, so a tree cell is one QUADRANT of one —
           // but WHICH quadrant is not a question about this cell, and asking it
@@ -684,10 +719,18 @@ export class Room {
           }
           if (d.big || d.quad) { quadCells.push({ x, y, def: d }); continue; }
           // Same hash as `render`, or the Lens's preview of the room would
-          // draw a DIFFERENT field of grass from the room behind it.
+          // draw a DIFFERENT field of grass from the room behind it. Routed
+          // through `animArtAt` for animated cells too, the same as `render`
+          // — otherwise the Lens's still preview would show a hard-edged
+          // shoreline next to the real view's rimmed one.
           {
-            const art = d.anim ? tileArt(d, frame) : this.artAt(d, x, y, tide);
-            tileSheet.draw(ctx, art, x * TILE, y * TILE, { pal: d.anim ? d.pal : this.palFor(d, art) });
+            if (d.anim) {
+              const a = this.animArtAt(d, x, y, tide);
+              tileSheet.draw(ctx, tileArt(a.artDef, frame), x * TILE, y * TILE, { pal: a.pal });
+            } else {
+              const art = this.artAt(d, x, y, tide);
+              tileSheet.draw(ctx, art, x * TILE, y * TILE, { pal: this.palFor(d, art) });
+            }
           }
         }
       }
@@ -700,7 +743,7 @@ export class Room {
   /** Draw animated tiles (water, lava, torches) that sit below entities. */
   drawAnim(ctx, ox, oy, tide, frame) {
     for (const c of this.animCells) {
-      tileSheet.draw(ctx, tileArt(c.def, frame), ox + c.x * TILE, oy + c.y * TILE, { pal: c.def.pal });
+      tileSheet.draw(ctx, tileArt(c.artDef, frame), ox + c.x * TILE, oy + c.y * TILE, { pal: c.pal });
     }
     // ...and then the pieces of 32x32 objects that overhang them. These are in
     // this pass rather than in `drawOver` on purpose: `drawOver` is above the

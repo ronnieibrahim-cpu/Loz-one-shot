@@ -1671,6 +1671,35 @@ export function installCoreTiles() {
     cornerDownLeft: 'bankCornerSW', cornerDownRight: 'bankCornerSE',
   };
 
+  // THE SHORELINE RIM. docs/ART-BACKLOG.md's top entry, now landed: a natural
+  // shore has no bank tile at all (S21/S26 both tried a bank; both picks
+  // turned out to be a built pool's retaining wall). The land is untouched
+  // and the water draws a dark scalloped 1px rim along whichever of its own
+  // edges face land — the opposite of `BANK_EDGE_ART` in every sense but the
+  // machinery: the substitution lives on WATER, not on the land tiles beside
+  // it, and `tools/rip-terrain.py`'s `build_water_rim` derives the 24 pieces
+  // (4 edges + 4 outer corners x 3 animation frames) from water's own already
+  // -extracted sparkle rather than picking a rectangle off a sheet.
+  //
+  // This is the object that made the shore restorable at all: `Room.artAt`'s
+  // edge substitution used to be applied to the STATIC render path only, and
+  // `waterS` is animated, so an `edgeArt` here was silently ignored — see
+  // `Room.animArtAt` in src/world/room.js. That is fixed; this is what it was
+  // fixed for.
+  const WATER_RIM_ART = {
+    up: 'waterRimN', down: 'waterRimS', left: 'waterRimW', right: 'waterRimE',
+    cornerUpLeft: 'waterRimNW', cornerUpRight: 'waterRimNE',
+    cornerDownLeft: 'waterRimSW', cornerDownRight: 'waterRimSE',
+  };
+  // Each names a tiledef with its OWN 3-frame `anim`, resolved through
+  // `Room.animArtAt` rather than the water tile's frames — see the block
+  // comment on `waterS` below for why only shallow water carries the rim.
+  const rimTile = (suffix) => ({
+    art: ART['waterRim' + suffix + '0'], pal: 'water',
+    anim: ['waterRim' + suffix + '0', 'waterRim' + suffix + '1', 'waterRim' + suffix + '2', 'waterRim' + suffix + '1'],
+    animRate: 11,
+  });
+
   const TILE_DEFS = {
     void: { art: ART.void, pal: 'abyss', flags: F.VOID | F.SOLID },
 
@@ -1701,6 +1730,14 @@ export function installCoreTiles() {
     bankCornerSW: { art: ART.bankCornerSW, pal: 'bankCorner' },
     bankCornerSE: { art: ART.bankCornerSE, pal: 'bankCorner' },
 
+    // See WATER_RIM_ART above. Plain walkable-water tiledefs — `edgeArt`
+    // substitution never touches flags, only the pixels drawn, so these carry
+    // none of their own; `waterS` below is what actually sits in a room grid.
+    waterRimN: rimTile('N'), waterRimS: rimTile('S'),
+    waterRimE: rimTile('E'), waterRimW: rimTile('W'),
+    waterRimNW: rimTile('NW'), waterRimNE: rimTile('NE'),
+    waterRimSW: rimTile('SW'), waterRimSE: rimTile('SE'),
+
     // THE SHORE BANK IS OFF, AND THE ART IS THE REASON — read this before
     // turning it back on. `bankEdgeS` was extracted from Ages at 545,1226,
     // which S21 believed was "a garden pool's shore". It is not. It is the
@@ -1725,30 +1762,42 @@ export function installCoreTiles() {
     // adding `family`/`edgeAgainst` back to these three tiles once a genuine
     // natural shore has been found and screenshotted. Do not restore it
     // without doing that; the machinery was never the problem.
+    // `family: 'shore'` is read by `waterS`'s own `edgeAgainst` below — the
+    // rim lives on the WATER cell, so this is what lets water tell a natural
+    // beach apart from a neighbour it should not grow a rim against (cliff,
+    // rock floor, a dungeon floor). Draw-time only, exactly like `edgeArt`
+    // itself: nothing the simulation reads moves.
     grass: {
       art: ART.grass, pal: 'grass', variants: ['grassClump', 'grassTuft'], variantOdds: 7,
+      family: 'shore',
     },
     grassTuft: { art: ART.grassTuft, pal: 'grass' },
     grassClump: { art: ART.grassClump, pal: 'grass' },
-    grassDark: { art: ART.grass, pal: 'grassdk', variants: ['grassClump', 'grassTuft'], variantOdds: 7 },
+    grassDark: {
+      art: ART.grass, pal: 'grassdk', variants: ['grassClump', 'grassTuft'], variantOdds: 7,
+      family: 'shore',
+    },
     // The extracted `flowers` is a transparent prop rather than a filled ground
     // tile, so it needs a base drawn under it like `bush` and `rock` do. Still
     // walkable, and still cuts down to plain grass (see TRANSFORMS below).
     flowers: { art: ART.flowers, pal: 'grass', underArt: 'grass' },
     flowersDark: { art: ART.flowers, pal: 'grassdk', underArt: 'grassDark' },
     tallgrass: { art: ART.tallgrass, pal: 'grassdk', flags: F.TALLGRASS },
-    sand: { art: ART.sand, pal: 'sand' },
-    sandWet: { art: ART.sandWet, pal: 'sandwet' },
-    sandRipple: { art: ART.sandRipple, pal: 'sand' },
+    sand: { art: ART.sand, pal: 'sand', family: 'shore' },
+    sandWet: { art: ART.sandWet, pal: 'sandwet', family: 'shore' },
+    sandRipple: { art: ART.sandRipple, pal: 'sand', family: 'shore' },
     sandDeep: { art: ART.sand, pal: 'sandwet', flags: F.SLOW },
-    mud: { art: ART.mud, pal: 'bog', flags: F.SLOW },
+    mud: { art: ART.mud, pal: 'bog', flags: F.SLOW, family: 'shore' },
     rockFloor: { art: ART.rockFloor, pal: 'stone' },
     rockFloorDk: { art: ART.rockFloor, pal: 'stonedk' },
     // Regional palette variants. Same art, different colours — this is how the
     // GBC games gave each region its own look without redrawing every tile.
     rockFloorRust: { art: ART.rockFloor, pal: 'rust' },
     rockFloorCoral: { art: ART.rockFloor, pal: 'coral' },
-    grassBog: { art: ART.grass, pal: 'bog', variants: ['grassClump', 'grassTuft'], variantOdds: 7 },
+    grassBog: {
+      art: ART.grass, pal: 'bog', variants: ['grassClump', 'grassTuft'], variantOdds: 7,
+      family: 'shore',
+    },
     grassTuftBog: { art: ART.grassTuft, pal: 'bog' },
     saltFlat: { art: ART.sandRipple, pal: 'marble' },
     saltCrust: { art: ART.sand, pal: 'marble' },
@@ -1761,7 +1810,20 @@ export function installCoreTiles() {
     // water keep their own rocky shoreline treatment (rockFloor) and are
     // deliberately NOT tagged, so grass's bank never tries to grow along a
     // reef edge with the wrong art.
-    waterS: { art: ART.waterS0, pal: 'water', flags: F.WATER, family: 'water', anim: ['waterS0', 'waterS1', 'waterS2', 'waterS1'], animRate: 11 },
+    //
+    // ONLY `waterS` carries `edgeAgainst`/`edgeArt`, not `waterD` too. The
+    // rim pieces are derived from waterS's OWN sparkle and bind `pal: 'water'`
+    // (see WATER_RIM_ART above); `waterD` draws in `pal: 'deep'`, a visibly
+    // darker ramp, and `Room.palFor` looks up a substituted art's OWN palette
+    // rather than the cell's — so a deep-water rim would draw the shallow
+    // palette's colours in a ring around every drop-off, a seam worse than
+    // the hard edge it replaced. A coast is land -> shallow -> deep in this
+    // game already; the land/water join is always against `waterS`.
+    waterS: {
+      art: ART.waterS0, pal: 'water', flags: F.WATER, family: 'water',
+      anim: ['waterS0', 'waterS1', 'waterS2', 'waterS1'], animRate: 11,
+      edgeAgainst: 'shore', edgeArt: WATER_RIM_ART,
+    },
     waterD: { art: ART.waterD0, pal: 'deep', flags: F.DEEP, family: 'water', anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 13 },
     waterSReef: { art: ART.waterS0, pal: 'reef', flags: F.WATER, anim: ['waterS0', 'waterS1', 'waterS2', 'waterS1'], animRate: 11 },
     waterDReef: { art: ART.waterD0, pal: 'reef', flags: F.DEEP, anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 13 },

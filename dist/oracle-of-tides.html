@@ -4036,7 +4036,7 @@ class Room {
     this._cacheTide = -1;
     this._cacheDirty = true;
     this._alt = new Map();        // parallel caches, keyed like `render`'s
-    this.animCells = [];      // [{x,y,def}] refreshed with the cache
+    this.animCells = [];      // [{x,y,artDef,pal}] refreshed with the cache; see `animArtAt`
     // Quadrants of 32x32 objects that overhang an ANIMATED cell. They cannot go
     // into the static canvas — the water is repainted over that cell every
     // frame — so `drawAnim` puts them down straight after it.
@@ -4192,6 +4192,37 @@ class Room {
     if (art === d.name) return d.pal;
     const sub = artDef(art);
     return sub ? sub.pal : d.pal;
+  }
+
+  /**
+   * The tiledef and palette to draw an ANIMATED cell with.
+   *
+   * `artAt`'s edge/corner substitution used to be applied to the static path
+   * only: an animated tile (water, lava, torches) skips straight into
+   * `animCells` in `render` below and `drawAnim` painted it with
+   * `tileArt(c.def, frame)` — the cell's OWN tiledef, never consulting
+   * `artAt` at all. That silently dropped `edgeArt` on every animated tile,
+   * which is exactly the shoreline rim's blocker: water is animated, so a
+   * `waterS` tile that borders land never asked whether it should draw its
+   * rim piece instead of its ordinary sparkle.
+   *
+   * The fix resolves the substitution against the SUBSTITUTED art's own
+   * tiledef, not the cell's. If `artAt` names a different tile than `d` and
+   * that tile itself declares `anim` (the rim pieces do — three frames each,
+   * matching water's own), `tileArt` walks ITS frames instead of `d`'s; if it
+   * has no `anim` (a plain substitution like `bankEdgeS`), `tileArt` falls
+   * back to that tile's own `name` and draws it static, exactly as the
+   * un-animated `artAt` path already does for `bankEdgeS` today.
+   *
+   * Called once per cache rebuild (`render`/`renderAt` refresh `animCells`
+   * only when the cache is dirty), never per frame — the neighbour lookup
+   * `artAt` performs is exactly as cheap here as it already is on the static
+   * path; nothing new happens at display rate.
+   */
+  animArtAt(d, x, y, tide) {
+    const name = this.artAt(d, x, y, tide);
+    const artTile = name === d.name ? d : (artDef(name) || d);
+    return { artDef: artTile, pal: this.palFor(d, name) };
   }
 
   /**
@@ -4507,7 +4538,11 @@ class Room {
             tileSheet.draw(ctx, tileVariant(u, this.key, x, y), x * TILE, y * TILE, { pal: u.pal });
           }
           if (d.over) { this.overCells.push({ x, y, def: d }); continue; }
-          if (d.anim) { this.animCells.push({ x, y, def: d }); continue; }
+          if (d.anim) {
+            const a = this.animArtAt(d, x, y, tide);
+            this.animCells.push({ x, y, artDef: a.artDef, pal: a.pal });
+            continue;
+          }
           // ONE CELL OF A TREE. A tree is 32x32 in every Oracle sheet and there
           // is no 16x16 tree to find, so a tree cell is one QUADRANT of one —
           // but WHICH quadrant is not a question about this cell, and asking it
@@ -4589,10 +4624,18 @@ class Room {
           }
           if (d.big || d.quad) { quadCells.push({ x, y, def: d }); continue; }
           // Same hash as `render`, or the Lens's preview of the room would
-          // draw a DIFFERENT field of grass from the room behind it.
+          // draw a DIFFERENT field of grass from the room behind it. Routed
+          // through `animArtAt` for animated cells too, the same as `render`
+          // — otherwise the Lens's still preview would show a hard-edged
+          // shoreline next to the real view's rimmed one.
           {
-            const art = d.anim ? tileArt(d, frame) : this.artAt(d, x, y, tide);
-            tileSheet.draw(ctx, art, x * TILE, y * TILE, { pal: d.anim ? d.pal : this.palFor(d, art) });
+            if (d.anim) {
+              const a = this.animArtAt(d, x, y, tide);
+              tileSheet.draw(ctx, tileArt(a.artDef, frame), x * TILE, y * TILE, { pal: a.pal });
+            } else {
+              const art = this.artAt(d, x, y, tide);
+              tileSheet.draw(ctx, art, x * TILE, y * TILE, { pal: this.palFor(d, art) });
+            }
           }
         }
       }
@@ -4605,7 +4648,7 @@ class Room {
   /** Draw animated tiles (water, lava, torches) that sit below entities. */
   drawAnim(ctx, ox, oy, tide, frame) {
     for (const c of this.animCells) {
-      tileSheet.draw(ctx, tileArt(c.def, frame), ox + c.x * TILE, oy + c.y * TILE, { pal: c.def.pal });
+      tileSheet.draw(ctx, tileArt(c.artDef, frame), ox + c.x * TILE, oy + c.y * TILE, { pal: c.pal });
     }
     // ...and then the pieces of 32x32 objects that overhang them. These are in
     // this pass rather than in `drawOver` on purpose: `drawOver` is above the
@@ -15376,6 +15419,462 @@ const TERRAIN_ART = {
     1111101111111011
     0100111101001111`,
 
+  // water rim, N edge, frame 0 — derived from waterS0, see the note above — oracle-ages-overworld.png @ 1376,168
+  waterRimN0: `
+    3313303313313313
+    1010112110101121
+    0111011101110111
+    1021110110211101
+    1110111111101111
+    0011110100111101
+    2111011121110111
+    1101111111011111
+    1111101011111010
+    1010112110101121
+    0111011101110111
+    1021110110211101
+    1110111111101111
+    0011110100111101
+    2111011121110111
+    1101111111011111`,
+
+  // water rim, N edge, frame 1 — derived from waterS1, see the note above — oracle-ages-overworld.png @ 1376,168
+  waterRimN1: `
+    3133133133133133
+    0111110101111101
+    1101011211010112
+    1011101110111011
+    1102111011021110
+    1111011111110111
+    1001111010011110
+    1211101112111011
+    1110111111101111
+    0111110101111101
+    1101011211010112
+    1011101110111011
+    1102111011021110
+    1111011111110111
+    1001111010011110
+    1211101112111011`,
+
+  // water rim, N edge, frame 2 — derived from waterS2, see the note above — oracle-ages-overworld.png @ 1376,168
+  waterRimN2: `
+    1331330331331331
+    1111011111110111
+    1011111010111110
+    2110101121101011
+    1101110111011101
+    0110211101102111
+    1111101111111011
+    0100111101001111
+    1121110111211101
+    1111011111110111
+    1011111010111110
+    2110101121101011
+    1101110111011101
+    0110211101102111
+    1111101111111011
+    0100111101001111`,
+
+  // water rim, S edge, frame 0 — derived from waterS0, see the note above — oracle-ages-overworld.png @ 1376,168
+  waterRimS0: `
+    1111101011111010
+    1010112110101121
+    0111011101110111
+    1021110110211101
+    1110111111101111
+    0011110100111101
+    2111011121110111
+    1101111111011111
+    1111101011111010
+    1010112110101121
+    0111011101110111
+    1021110110211101
+    1110111111101111
+    0011110100111101
+    2111011121110111
+    3303313313313313`,
+
+  // water rim, S edge, frame 1 — derived from waterS1, see the note above — oracle-ages-overworld.png @ 1376,168
+  waterRimS1: `
+    1110111111101111
+    0111110101111101
+    1101011211010112
+    1011101110111011
+    1102111011021110
+    1111011111110111
+    1001111010011110
+    1211101112111011
+    1110111111101111
+    0111110101111101
+    1101011211010112
+    1011101110111011
+    1102111011021110
+    1111011111110111
+    1001111010011110
+    3233133133133033`,
+
+  // water rim, S edge, frame 2 — derived from waterS2, see the note above — oracle-ages-overworld.png @ 1376,168
+  waterRimS2: `
+    1121110111211101
+    1111011111110111
+    1011111010111110
+    2110101121101011
+    1101110111011101
+    0110211101102111
+    1111101111111011
+    0100111101001111
+    1121110111211101
+    1111011111110111
+    1011111010111110
+    2110101121101011
+    1101110111011101
+    0110211101102111
+    1111101111111011
+    0330331331331331`,
+
+  // water rim, W edge, frame 0 — derived from waterS0, see the note above — oracle-ages-overworld.png @ 1376,168
+  waterRimW0: `
+    3111101011111010
+    3010112110101121
+    0111011101110111
+    3021110110211101
+    3110111111101111
+    0011110100111101
+    3111011121110111
+    3101111111011111
+    1111101011111010
+    3010112110101121
+    3111011101110111
+    1021110110211101
+    3110111111101111
+    3011110100111101
+    2111011121110111
+    3101111111011111`,
+
+  // water rim, W edge, frame 1 — derived from waterS1, see the note above — oracle-ages-overworld.png @ 1376,168
+  waterRimW1: `
+    3110111111101111
+    0111110101111101
+    3101011211010112
+    3011101110111011
+    1102111011021110
+    3111011111110111
+    3001111010011110
+    1211101112111011
+    3110111111101111
+    3111110101111101
+    1101011211010112
+    3011101110111011
+    3102111011021110
+    1111011111110111
+    3001111010011110
+    3211101112111011`,
+
+  // water rim, W edge, frame 2 — derived from waterS2, see the note above — oracle-ages-overworld.png @ 1376,168
+  waterRimW2: `
+    1121110111211101
+    3111011111110111
+    3011111010111110
+    2110101121101011
+    3101110111011101
+    3110211101102111
+    1111101111111011
+    3100111101001111
+    3121110111211101
+    1111011111110111
+    3011111010111110
+    3110101121101011
+    1101110111011101
+    3110211101102111
+    3111101111111011
+    0100111101001111`,
+
+  // water rim, E edge, frame 0 — derived from waterS0, see the note above — oracle-ages-overworld.png @ 1376,168
+  waterRimE0: `
+    1111101011111013
+    1010112110101123
+    0111011101110111
+    1021110110211103
+    1110111111101113
+    0011110100111101
+    2111011121110113
+    1101111111011113
+    1111101011111010
+    1010112110101123
+    0111011101110113
+    1021110110211101
+    1110111111101113
+    0011110100111103
+    2111011121110111
+    1101111111011113`,
+
+  // water rim, E edge, frame 1 — derived from waterS1, see the note above — oracle-ages-overworld.png @ 1376,168
+  waterRimE1: `
+    1110111111101113
+    0111110101111101
+    1101011211010113
+    1011101110111013
+    1102111011021110
+    1111011111110113
+    1001111010011113
+    1211101112111011
+    1110111111101113
+    0111110101111103
+    1101011211010112
+    1011101110111013
+    1102111011021113
+    1111011111110111
+    1001111010011113
+    1211101112111013`,
+
+  // water rim, E edge, frame 2 — derived from waterS2, see the note above — oracle-ages-overworld.png @ 1376,168
+  waterRimE2: `
+    1121110111211101
+    1111011111110113
+    1011111010111113
+    2110101121101011
+    1101110111011103
+    0110211101102113
+    1111101111111011
+    0100111101001113
+    1121110111211103
+    1111011111110111
+    1011111010111113
+    2110101121101013
+    1101110111011101
+    0110211101102113
+    1111101111111013
+    0100111101001111`,
+
+  // water rim, NW outer corner, frame 0 — derived from waterS0, see the note above — oracle-ages-overworld.png @ 1376,168
+  waterRimNW0: `
+    3313303313313313
+    3010112110101121
+    0111011101110111
+    3021110110211101
+    3110111111101111
+    0011110100111101
+    3111011121110111
+    3101111111011111
+    1111101011111010
+    3010112110101121
+    3111011101110111
+    1021110110211101
+    3110111111101111
+    3011110100111101
+    2111011121110111
+    3101111111011111`,
+
+  // water rim, NW outer corner, frame 1 — derived from waterS1, see the note above — oracle-ages-overworld.png @ 1376,168
+  waterRimNW1: `
+    3133133133133133
+    0111110101111101
+    3101011211010112
+    3011101110111011
+    1102111011021110
+    3111011111110111
+    3001111010011110
+    1211101112111011
+    3110111111101111
+    3111110101111101
+    1101011211010112
+    3011101110111011
+    3102111011021110
+    1111011111110111
+    3001111010011110
+    3211101112111011`,
+
+  // water rim, NW outer corner, frame 2 — derived from waterS2, see the note above — oracle-ages-overworld.png @ 1376,168
+  waterRimNW2: `
+    3331330331331331
+    3111011111110111
+    3011111010111110
+    2110101121101011
+    3101110111011101
+    3110211101102111
+    1111101111111011
+    3100111101001111
+    3121110111211101
+    1111011111110111
+    3011111010111110
+    3110101121101011
+    1101110111011101
+    3110211101102111
+    3111101111111011
+    0100111101001111`,
+
+  // water rim, NE outer corner, frame 0 — derived from waterS0, see the note above — oracle-ages-overworld.png @ 1376,168
+  waterRimNE0: `
+    3313303313313313
+    1010112110101123
+    0111011101110111
+    1021110110211103
+    1110111111101113
+    0011110100111101
+    2111011121110113
+    1101111111011113
+    1111101011111010
+    1010112110101123
+    0111011101110113
+    1021110110211101
+    1110111111101113
+    0011110100111103
+    2111011121110111
+    1101111111011113`,
+
+  // water rim, NE outer corner, frame 1 — derived from waterS1, see the note above — oracle-ages-overworld.png @ 1376,168
+  waterRimNE1: `
+    3133133133133133
+    0111110101111101
+    1101011211010113
+    1011101110111013
+    1102111011021110
+    1111011111110113
+    1001111010011113
+    1211101112111011
+    1110111111101113
+    0111110101111103
+    1101011211010112
+    1011101110111013
+    1102111011021113
+    1111011111110111
+    1001111010011113
+    1211101112111013`,
+
+  // water rim, NE outer corner, frame 2 — derived from waterS2, see the note above — oracle-ages-overworld.png @ 1376,168
+  waterRimNE2: `
+    1331330331331333
+    1111011111110113
+    1011111010111113
+    2110101121101011
+    1101110111011103
+    0110211101102113
+    1111101111111011
+    0100111101001113
+    1121110111211103
+    1111011111110111
+    1011111010111113
+    2110101121101013
+    1101110111011101
+    0110211101102113
+    1111101111111013
+    0100111101001111`,
+
+  // water rim, SW outer corner, frame 0 — derived from waterS0, see the note above — oracle-ages-overworld.png @ 1376,168
+  waterRimSW0: `
+    3111101011111010
+    3010112110101121
+    0111011101110111
+    3021110110211101
+    3110111111101111
+    0011110100111101
+    3111011121110111
+    3101111111011111
+    1111101011111010
+    3010112110101121
+    3111011101110111
+    1021110110211101
+    3110111111101111
+    3011110100111101
+    2111011121110111
+    3303313313313313`,
+
+  // water rim, SW outer corner, frame 1 — derived from waterS1, see the note above — oracle-ages-overworld.png @ 1376,168
+  waterRimSW1: `
+    3110111111101111
+    0111110101111101
+    3101011211010112
+    3011101110111011
+    1102111011021110
+    3111011111110111
+    3001111010011110
+    1211101112111011
+    3110111111101111
+    3111110101111101
+    1101011211010112
+    3011101110111011
+    3102111011021110
+    1111011111110111
+    3001111010011110
+    3233133133133033`,
+
+  // water rim, SW outer corner, frame 2 — derived from waterS2, see the note above — oracle-ages-overworld.png @ 1376,168
+  waterRimSW2: `
+    1121110111211101
+    3111011111110111
+    3011111010111110
+    2110101121101011
+    3101110111011101
+    3110211101102111
+    1111101111111011
+    3100111101001111
+    3121110111211101
+    1111011111110111
+    3011111010111110
+    3110101121101011
+    1101110111011101
+    3110211101102111
+    3111101111111011
+    3330331331331331`,
+
+  // water rim, SE outer corner, frame 0 — derived from waterS0, see the note above — oracle-ages-overworld.png @ 1376,168
+  waterRimSE0: `
+    1111101011111013
+    1010112110101123
+    0111011101110111
+    1021110110211103
+    1110111111101113
+    0011110100111101
+    2111011121110113
+    1101111111011113
+    1111101011111010
+    1010112110101123
+    0111011101110113
+    1021110110211101
+    1110111111101113
+    0011110100111103
+    2111011121110111
+    3303313313313313`,
+
+  // water rim, SE outer corner, frame 1 — derived from waterS1, see the note above — oracle-ages-overworld.png @ 1376,168
+  waterRimSE1: `
+    1110111111101113
+    0111110101111101
+    1101011211010113
+    1011101110111013
+    1102111011021110
+    1111011111110113
+    1001111010011113
+    1211101112111011
+    1110111111101113
+    0111110101111103
+    1101011211010112
+    1011101110111013
+    1102111011021113
+    1111011111110111
+    1001111010011113
+    3233133133133033`,
+
+  // water rim, SE outer corner, frame 2 — derived from waterS2, see the note above — oracle-ages-overworld.png @ 1376,168
+  waterRimSE2: `
+    1121110111211101
+    1111011111110113
+    1011111010111113
+    2110101121101011
+    1101110111011103
+    0110211101102113
+    1111101111111011
+    0100111101001113
+    1121110111211103
+    1111011111110111
+    1011111010111113
+    2110101121101013
+    1101110111011101
+    0110211101102113
+    1111101111111013
+    0330331331331333`,
+
   // oak: round canopy over visible roots, standing on grass — custom-oracle-style-overworld.png @ 2222,1597
   treeOakTL: `
     .......033333333
@@ -15615,6 +16114,30 @@ const TERRAIN_SRC_PALETTES = {
   bankCornerNW: ['#f8f8c0', '#20b0f8', '#0050b0', '#000000'],
   waterS1: ['#e0d8f0', '#8080f8', '#1010b8'],
   waterS2: ['#e0d8f0', '#8080f8', '#1010b8'],
+  waterRimN0: ['#e0d8f0', '#8080f8', '#1010b8'],
+  waterRimN1: ['#e0d8f0', '#8080f8', '#1010b8'],
+  waterRimN2: ['#e0d8f0', '#8080f8', '#1010b8'],
+  waterRimS0: ['#e0d8f0', '#8080f8', '#1010b8'],
+  waterRimS1: ['#e0d8f0', '#8080f8', '#1010b8'],
+  waterRimS2: ['#e0d8f0', '#8080f8', '#1010b8'],
+  waterRimW0: ['#e0d8f0', '#8080f8', '#1010b8'],
+  waterRimW1: ['#e0d8f0', '#8080f8', '#1010b8'],
+  waterRimW2: ['#e0d8f0', '#8080f8', '#1010b8'],
+  waterRimE0: ['#e0d8f0', '#8080f8', '#1010b8'],
+  waterRimE1: ['#e0d8f0', '#8080f8', '#1010b8'],
+  waterRimE2: ['#e0d8f0', '#8080f8', '#1010b8'],
+  waterRimNW0: ['#e0d8f0', '#8080f8', '#1010b8'],
+  waterRimNW1: ['#e0d8f0', '#8080f8', '#1010b8'],
+  waterRimNW2: ['#e0d8f0', '#8080f8', '#1010b8'],
+  waterRimNE0: ['#e0d8f0', '#8080f8', '#1010b8'],
+  waterRimNE1: ['#e0d8f0', '#8080f8', '#1010b8'],
+  waterRimNE2: ['#e0d8f0', '#8080f8', '#1010b8'],
+  waterRimSW0: ['#e0d8f0', '#8080f8', '#1010b8'],
+  waterRimSW1: ['#e0d8f0', '#8080f8', '#1010b8'],
+  waterRimSW2: ['#e0d8f0', '#8080f8', '#1010b8'],
+  waterRimSE0: ['#e0d8f0', '#8080f8', '#1010b8'],
+  waterRimSE1: ['#e0d8f0', '#8080f8', '#1010b8'],
+  waterRimSE2: ['#e0d8f0', '#8080f8', '#1010b8'],
   treeOakT: ['#93a846', '#546d25', '#000000'],
   treeOakB: ['#dfd9b5', '#b49d73', '#93a846', '#7a5d35', '#546d25', '#000000'],
   palmT: ['#a7c947', '#5a9731', '#000000'],
@@ -18841,6 +19364,35 @@ function installCoreTiles() {
     cornerDownLeft: 'bankCornerSW', cornerDownRight: 'bankCornerSE',
   };
 
+  // THE SHORELINE RIM. docs/ART-BACKLOG.md's top entry, now landed: a natural
+  // shore has no bank tile at all (S21/S26 both tried a bank; both picks
+  // turned out to be a built pool's retaining wall). The land is untouched
+  // and the water draws a dark scalloped 1px rim along whichever of its own
+  // edges face land — the opposite of `BANK_EDGE_ART` in every sense but the
+  // machinery: the substitution lives on WATER, not on the land tiles beside
+  // it, and `tools/rip-terrain.py`'s `build_water_rim` derives the 24 pieces
+  // (4 edges + 4 outer corners x 3 animation frames) from water's own already
+  // -extracted sparkle rather than picking a rectangle off a sheet.
+  //
+  // This is the object that made the shore restorable at all: `Room.artAt`'s
+  // edge substitution used to be applied to the STATIC render path only, and
+  // `waterS` is animated, so an `edgeArt` here was silently ignored — see
+  // `Room.animArtAt` in src/world/room.js. That is fixed; this is what it was
+  // fixed for.
+  const WATER_RIM_ART = {
+    up: 'waterRimN', down: 'waterRimS', left: 'waterRimW', right: 'waterRimE',
+    cornerUpLeft: 'waterRimNW', cornerUpRight: 'waterRimNE',
+    cornerDownLeft: 'waterRimSW', cornerDownRight: 'waterRimSE',
+  };
+  // Each names a tiledef with its OWN 3-frame `anim`, resolved through
+  // `Room.animArtAt` rather than the water tile's frames — see the block
+  // comment on `waterS` below for why only shallow water carries the rim.
+  const rimTile = (suffix) => ({
+    art: ART['waterRim' + suffix + '0'], pal: 'water',
+    anim: ['waterRim' + suffix + '0', 'waterRim' + suffix + '1', 'waterRim' + suffix + '2', 'waterRim' + suffix + '1'],
+    animRate: 11,
+  });
+
   const TILE_DEFS = {
     void: { art: ART.void, pal: 'abyss', flags: F.VOID | F.SOLID },
 
@@ -18871,6 +19423,14 @@ function installCoreTiles() {
     bankCornerSW: { art: ART.bankCornerSW, pal: 'bankCorner' },
     bankCornerSE: { art: ART.bankCornerSE, pal: 'bankCorner' },
 
+    // See WATER_RIM_ART above. Plain walkable-water tiledefs — `edgeArt`
+    // substitution never touches flags, only the pixels drawn, so these carry
+    // none of their own; `waterS` below is what actually sits in a room grid.
+    waterRimN: rimTile('N'), waterRimS: rimTile('S'),
+    waterRimE: rimTile('E'), waterRimW: rimTile('W'),
+    waterRimNW: rimTile('NW'), waterRimNE: rimTile('NE'),
+    waterRimSW: rimTile('SW'), waterRimSE: rimTile('SE'),
+
     // THE SHORE BANK IS OFF, AND THE ART IS THE REASON — read this before
     // turning it back on. `bankEdgeS` was extracted from Ages at 545,1226,
     // which S21 believed was "a garden pool's shore". It is not. It is the
@@ -18895,30 +19455,42 @@ function installCoreTiles() {
     // adding `family`/`edgeAgainst` back to these three tiles once a genuine
     // natural shore has been found and screenshotted. Do not restore it
     // without doing that; the machinery was never the problem.
+    // `family: 'shore'` is read by `waterS`'s own `edgeAgainst` below — the
+    // rim lives on the WATER cell, so this is what lets water tell a natural
+    // beach apart from a neighbour it should not grow a rim against (cliff,
+    // rock floor, a dungeon floor). Draw-time only, exactly like `edgeArt`
+    // itself: nothing the simulation reads moves.
     grass: {
       art: ART.grass, pal: 'grass', variants: ['grassClump', 'grassTuft'], variantOdds: 7,
+      family: 'shore',
     },
     grassTuft: { art: ART.grassTuft, pal: 'grass' },
     grassClump: { art: ART.grassClump, pal: 'grass' },
-    grassDark: { art: ART.grass, pal: 'grassdk', variants: ['grassClump', 'grassTuft'], variantOdds: 7 },
+    grassDark: {
+      art: ART.grass, pal: 'grassdk', variants: ['grassClump', 'grassTuft'], variantOdds: 7,
+      family: 'shore',
+    },
     // The extracted `flowers` is a transparent prop rather than a filled ground
     // tile, so it needs a base drawn under it like `bush` and `rock` do. Still
     // walkable, and still cuts down to plain grass (see TRANSFORMS below).
     flowers: { art: ART.flowers, pal: 'grass', underArt: 'grass' },
     flowersDark: { art: ART.flowers, pal: 'grassdk', underArt: 'grassDark' },
     tallgrass: { art: ART.tallgrass, pal: 'grassdk', flags: F.TALLGRASS },
-    sand: { art: ART.sand, pal: 'sand' },
-    sandWet: { art: ART.sandWet, pal: 'sandwet' },
-    sandRipple: { art: ART.sandRipple, pal: 'sand' },
+    sand: { art: ART.sand, pal: 'sand', family: 'shore' },
+    sandWet: { art: ART.sandWet, pal: 'sandwet', family: 'shore' },
+    sandRipple: { art: ART.sandRipple, pal: 'sand', family: 'shore' },
     sandDeep: { art: ART.sand, pal: 'sandwet', flags: F.SLOW },
-    mud: { art: ART.mud, pal: 'bog', flags: F.SLOW },
+    mud: { art: ART.mud, pal: 'bog', flags: F.SLOW, family: 'shore' },
     rockFloor: { art: ART.rockFloor, pal: 'stone' },
     rockFloorDk: { art: ART.rockFloor, pal: 'stonedk' },
     // Regional palette variants. Same art, different colours — this is how the
     // GBC games gave each region its own look without redrawing every tile.
     rockFloorRust: { art: ART.rockFloor, pal: 'rust' },
     rockFloorCoral: { art: ART.rockFloor, pal: 'coral' },
-    grassBog: { art: ART.grass, pal: 'bog', variants: ['grassClump', 'grassTuft'], variantOdds: 7 },
+    grassBog: {
+      art: ART.grass, pal: 'bog', variants: ['grassClump', 'grassTuft'], variantOdds: 7,
+      family: 'shore',
+    },
     grassTuftBog: { art: ART.grassTuft, pal: 'bog' },
     saltFlat: { art: ART.sandRipple, pal: 'marble' },
     saltCrust: { art: ART.sand, pal: 'marble' },
@@ -18931,7 +19503,20 @@ function installCoreTiles() {
     // water keep their own rocky shoreline treatment (rockFloor) and are
     // deliberately NOT tagged, so grass's bank never tries to grow along a
     // reef edge with the wrong art.
-    waterS: { art: ART.waterS0, pal: 'water', flags: F.WATER, family: 'water', anim: ['waterS0', 'waterS1', 'waterS2', 'waterS1'], animRate: 11 },
+    //
+    // ONLY `waterS` carries `edgeAgainst`/`edgeArt`, not `waterD` too. The
+    // rim pieces are derived from waterS's OWN sparkle and bind `pal: 'water'`
+    // (see WATER_RIM_ART above); `waterD` draws in `pal: 'deep'`, a visibly
+    // darker ramp, and `Room.palFor` looks up a substituted art's OWN palette
+    // rather than the cell's — so a deep-water rim would draw the shallow
+    // palette's colours in a ring around every drop-off, a seam worse than
+    // the hard edge it replaced. A coast is land -> shallow -> deep in this
+    // game already; the land/water join is always against `waterS`.
+    waterS: {
+      art: ART.waterS0, pal: 'water', flags: F.WATER, family: 'water',
+      anim: ['waterS0', 'waterS1', 'waterS2', 'waterS1'], animRate: 11,
+      edgeAgainst: 'shore', edgeArt: WATER_RIM_ART,
+    },
     waterD: { art: ART.waterD0, pal: 'deep', flags: F.DEEP, family: 'water', anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 13 },
     waterSReef: { art: ART.waterS0, pal: 'reef', flags: F.WATER, anim: ['waterS0', 'waterS1', 'waterS2', 'waterS1'], animRate: 11 },
     waterDReef: { art: ART.waterD0, pal: 'reef', flags: F.DEEP, anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 13 },

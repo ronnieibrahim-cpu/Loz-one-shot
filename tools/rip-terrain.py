@@ -288,6 +288,89 @@ def transform_grid(grid, op):
         return [''.join(grid[(r - dy) % n][(c - dx) % n] for c in range(n)) for r in range(n)]
     raise SystemExit('rip-terrain: unknown transform op %r' % op)
 
+# --------------------------------------------------------------------------
+# THE SHORELINE RIM.
+#
+# docs/ART-BACKLOG.md's top entry: the natural pond on the Seasons spring map
+# (~1827,1066) has no bank tile at all. The land is untouched right up to the
+# water, and the whole transition is a dark, slightly irregular 1px line
+# drawn on the WATER side of the boundary — measured directly off that pond,
+# pixel by pixel: the line sits hard against the water fill and wobbles in
+# and out by a pixel rather than running dead straight.
+#
+# DERIVED, not picked. There is no clean 16x16 rectangle of "rim" to extract
+# from a hand-painted coastline that isn't tile-aligned — the same reason
+# waterS1/waterS2 above are a SHIFT of waterS0 rather than a second sheet
+# crop. This overwrites the border row or column of water's own already-
+# extracted sparkle (waterS0/1/2) with a 2-on/1-off tooth mask in palette
+# index 3 — the water palette's own darkest tone (`#10305c` in
+# gfx/palettes.js), which the extracted sparkle never uses, so the rim costs
+# no new colour. NOT the interior-ladder fault HANDOFF.md warns a "regular
+# pitch" checker cannot discriminate: that trap is a texture repeating across
+# a whole tiled FIELD; this is a boundary, drawn once per edge cell, the same
+# kind of feature `cliffTop`'s solid rim row already is. The mask is
+# phase-shifted a third per animation frame, so the teeth crawl gently along
+# the shore in step with water's own three-frame cycle instead of sitting
+# static while the water around them moves.
+#
+# Four straight edges (rim on the row/column facing land) and four outer
+# corners (rim on both, water confined to that corner), times 3 animation
+# frames = 24 grids. No inner-corner art, the same choice `BANK_EDGE_ART`
+# made when the bank existed — `tileEdgeArt` already degrades that case to
+# the single-edge fallback.
+_RIM_EDGE = {  # suffix -> (axis, index into the 16x16 grid)
+    'N': ('row', 0), 'S': ('row', 15), 'W': ('col', 0), 'E': ('col', 15),
+}
+_RIM_CORNER = {  # suffix -> the two edges it combines
+    'NW': ('N', 'W'), 'NE': ('N', 'E'), 'SW': ('S', 'W'), 'SE': ('S', 'E'),
+}
+
+
+def _rim_mask(n, frame):
+    return [(i + frame) % 3 != 2 for i in range(n)]  # 2 on, 1 off, phase-shifted
+
+
+def _apply_rim_row(grid, row, frame, force_col=None):
+    mask = _rim_mask(16, frame)
+    chars = list(grid[row])
+    for i, on in enumerate(mask):
+        if on or i == force_col:
+            chars[i] = '3'
+    grid[row] = ''.join(chars)
+
+
+def _apply_rim_col(grid, col, frame, force_row=None):
+    mask = _rim_mask(16, frame)
+    for i, on in enumerate(mask):
+        if on or i == force_row:
+            chars = list(grid[i])
+            chars[col] = '3'
+            grid[i] = ''.join(chars)
+
+
+def build_water_rim(by_name):
+    frames = [by_name['waterS%d' % f][5] for f in range(3)]
+    _, _, sheet0, x0, y0, _ = by_name['waterS0']
+    out = []
+    for suffix, (axis, idx) in _RIM_EDGE.items():
+        for f in range(3):
+            grid = list(frames[f])
+            (_apply_rim_row if axis == 'row' else _apply_rim_col)(grid, idx, f)
+            out.append(('waterRim%s%d' % (suffix, f),
+                        'water rim, %s edge, frame %d — derived from waterS%d, see the note above'
+                        % (suffix, f, f), sheet0, x0, y0, grid))
+    for suffix, (ed1, ed2) in _RIM_CORNER.items():
+        ax1, i1 = _RIM_EDGE[ed1]
+        ax2, i2 = _RIM_EDGE[ed2]
+        for f in range(3):
+            grid = list(frames[f])
+            (_apply_rim_row if ax1 == 'row' else _apply_rim_col)(grid, i1, f, i2)
+            (_apply_rim_row if ax2 == 'row' else _apply_rim_col)(grid, i2, f, i1)
+            out.append(('waterRim%s%d' % (suffix, f),
+                        'water rim, %s outer corner, frame %d — derived from waterS%d, see the note above'
+                        % (suffix, f, f), sheet0, x0, y0, grid))
+    return out
+
 # Props are a different shape of problem from ground, and need their own pass.
 #
 # A ground tile fills its cell; a prop is an object with ground showing around
@@ -1150,6 +1233,12 @@ def main():
         pals.append((newname, dict(pals)[srcname]))
         by_name[newname] = arts[-1]
 
+    water_keep = dict(pals)['waterS0']
+    for name, note, sheet, x, y, grid in build_water_rim(by_name):
+        arts.append((name, note, sheet, x, y, grid))
+        pals.append((name, water_keep))
+        by_name[name] = arts[-1]
+
     for name, path, x, y, bg, colmap, note in QUADS:
         im = sheets.get(path)
         if im is None:
@@ -1305,9 +1394,9 @@ def main():
     with open(OUT, 'w') as f:
         f.write('\n'.join(lines))
     ncells = sum(b[1] * b[2] for b in TOWN)
-    print('emitted %d terrain tiles (%d ground, %d props) and %d town blocks '
-          '(%d cells, %d palettes) -> %s'
-          % (len(arts), len(PICKS) + len(TRANSFORMS), len(PROPS), len(TOWN), ncells,
+    print('emitted %d terrain tiles (%d ground, %d shoreline rim, %d props) and '
+          '%d town blocks (%d cells, %d palettes) -> %s'
+          % (len(arts), len(PICKS) + len(TRANSFORMS), 24, len(PROPS), len(TOWN), ncells,
              len(TOWN_PALETTES), OUT))
     for name, n in dropped:
         print('  note: %s had %d colours on the sheet, merged down to 4' % (name, n))
