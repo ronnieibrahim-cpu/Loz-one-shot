@@ -1,3 +1,174 @@
+## S41 — D2 landed. `check-playthrough.mjs` is 21/21 holding BOTH essences
+
+Continuing directly from S40, same session's actual goal finally reached:
+**`tools/playthrough-route.mjs` and `tools/check-playthrough.mjs` now drive a
+new game through Tidewash Grotto AND the Coral Spire, back to back, no
+shortcuts, and pass 21/21 — `GOAL.essences: [1, 2]`, both bosses beaten,
+`deaths: 0`.** Every fix S40 found was real and needed exactly nothing
+structural changed from S40's account; what was missing was re-sweeping the
+timing-sensitive numbers against the REAL route instead of an isolated
+scratch test, plus two ordinary assembly bugs (a missing `travel` step, and
+one segment run in the wrong room) that had nothing to do with frame phase
+and would have been caught by anyone re-reading their own diff. Read S40
+first for the WHY of each fix; this entry is the WHAT CHANGED to actually
+land them.
+
+### The frame-phase problem, resolved
+
+S40 predicted correctly: every `wait` tuned against `beginRecord`'s
+frame-0 `boot()` needed re-sweeping once spliced after the real ~23,500-frame
+D1 route. The fix was mechanical, not clever — a sweep script that boots via
+`beginPlaythrough` with the REAL committed `ROUTE` array plus a fixed prefix
+of already-working steps, varying only the one `wait` under test, run
+headless in a loop:
+
+- **Rising Chamber's barnacle** (S40's `wait: 22`, tuned at frame ~1200 in
+  isolation) needed `wait: 60` against the real route's frame ~38,600 arrival
+  — found by sweeping 0/20/22/40/60/80/100/120/150/180/200/220/240/260 and
+  reading off which values survived, then narrowing 45-75 to confirm it is a
+  wide, stable plateau rather than one lucky frame (a single-frame knife-edge
+  would not be trustworthy against any future change earlier in the route;
+  this one held across a 30-frame band).
+- **Anemos** (S40's `wait: 220`, tuned in isolation) held unchanged at the
+  real route's actual arrival frame — a coincidence, not a re-derivation;
+  worth re-sweeping again if anything upstream of the fight ever changes by
+  more than a few frames, since nothing pins it structurally.
+- **The Sandpiper Row crab's vertical-attack technique** (S40 #4) held
+  unchanged too — the technique itself (attack from directly above,
+  regardless of the crab's facing) is not frame-sensitive by construction,
+  only ITS OWN exact `hold`/`tap` counts would be, and those didn't need
+  adjusting.
+
+**The general lesson, stated once for whoever extends this past D2:** don't
+sweep a timing-sensitive `wait` against an isolated `beginRecord` boot and
+assume it survives. Sweep it against `beginPlaythrough` with the real `ROUTE`
+prefix from the start. Slower per iteration, but the only number that
+transfers.
+
+### Two assembly bugs, not frame-phase at all
+
+Both found by tracing a full end-to-end run step by step and noticing the
+room key didn't match what the step assumed — worth naming because they cost
+real time before being told apart from the frame-phase problem they were
+first mistaken for:
+
+1. **A missing `['travel', 3, 7, 30000]`.** The first assembly of the D2
+   extension started its "exit D1" segment with `['goto', 4, 7, 500]` alone
+   — the mouth room's OWN warp tile — while the run was still standing
+   inside Gohmaraq's arena. `goto` to a tile that doesn't exist in the
+   current room just fails quietly (no error, no movement past what the
+   room actually contains), so the run continued executing "overworld" and
+   "shop" steps while still inside `d1`, wandering its rooms under totally
+   wrong assumptions until a step finally referenced something that plain
+   does not exist there and threw.
+2. **The overworld heart-piece crossing run from the wrong starting room.**
+   After buying the shop's heart, the very next segment's first few steps
+   (`['goto', 4, 6, 500], ['exit', 'right', 400], ...`) were written assuming
+   the current room was the Grotto Mouth (where they'd been tested in
+   isolation) — but the shop visit actually leaves the run in Village East,
+   a different overworld room with a different layout, so those coordinates
+   meant something else entirely. Fixed with an explicit `['travel', 8, 8,
+   8000]` back to the Grotto Mouth between the shop and the crossing, rather
+   than assuming continuity of position across a hand-assembled sequence.
+
+**Read the room key in every trace line, not just whether frames advance and
+health looks plausible** — a `goto` that fails quietly and a `travel` that
+succeeds into the wrong place both look, at a glance, like the run is still
+making progress.
+
+### One reordering that fixed a health-budget problem outright
+
+The first fully-connected attempt reached the D2 mouth alive but at 1
+quarter-heart — survivable in isolation, not survivable once real frame-phase
+variance (the Sandpiper crab costing 2 qh here instead of 0, an unrelated
+overworld leg costing 4 more than the isolated test had) ate the margin.
+Fixed by REORDERING rather than by finding more health: cross to D2 and heal
+at Coral Landing's fairy FIRST (full 16, unconditional), THEN exit back to
+the overworld for the two Pieces of Heart, at full health where the crossing
+costs nothing it can't spare. The two overworld pieces still complete the
+Heart Container at the same point either way — order among the four pieces
+doesn't matter, only WHEN in the health timeline each detour is taken.
+
+**A second routing fix inside that reordered detour**: `overworld/0,10,6`
+(Feather Gap, no entities at all, its own sign warns "the gaps are a single
+stride wide") could not be crossed by plain `travel` — it read the one true
+edge as blocked and rerouted through `overworld/0,11,6`'s leever instead,
+which is not survivable at this point in the run. A manual `goto` to the gap
+tile plus `exit` crosses it cleanly, every time; `travel`'s BFS apparently
+cannot classify this specific narrow-gap edge as walkable no matter how
+large a budget it is given.
+
+### What actually changed, file by file
+
+- **`tools/playthrough-route.mjs`**: `ROUTE` extended by 158 directives (D1's
+  213 unchanged), `GOAL` now `{ essences: [1, 2], room: 'd2/1,3,1', needsVerb:
+  null, keysNeeded: 5, keysObtainable: 5 }` (was `{ essence: 1, room:
+  'd1/0,3,1', ... keysNeeded: 3 }`).
+- **`tools/check-playthrough.mjs`**: header and assertions updated for two
+  dungeons — `GOAL.essences.every(...)`, `s.beaten.d1 && s.beaten.d2`,
+  `s.maxHearts >= 20`, dungeon-map/chartstone checked via new per-map fields
+  (below) rather than the current-mapId-only booleans, "walked the overworld
+  before EACH dungeon". The tape file is renamed `playthrough-d1.json` ->
+  `playthrough.json` (it covers both now); the old file is deleted, nothing
+  reads it.
+- **`tools/actor-runtime.mjs`**: `snapshot()` gained two new fields,
+  `dungeonMaps` and `charts` — full per-map dicts (`Object.assign({},
+  g.progress.dungeonMaps)`), alongside the existing `dungeonMap`/`chartstone`
+  booleans which only ever read the CURRENT map's entry and so cannot
+  distinguish "D1 collected it, D2 didn't visit that room" from "neither
+  dungeon has it" once a run's final `mapId` isn't the one being asked
+  about. **Confirmed additive and safe before trusting it**: `replay.mjs`'s
+  determinism check walks `Object.keys(want)` — the STORED baseline's own
+  keys — so a new field absent from all 51 existing recorded baselines is
+  simply never compared; ran all 51 to confirm (0 re-recorded, 0 failed).
+- **`tools/playthroughs/playthrough-d1.json`** deleted, superseded by
+  **`tools/playthroughs/playthrough.json`** (recorded fresh by this session's
+  `check-playthrough.mjs` run — 3155 recorded inputs, 49,516 frames, replays
+  blind to the pixel).
+
+**Verified broadly before trusting any of it**: `test.mjs` 83/83,
+`replay.mjs` 51/51 (zero re-recorded), `walk-dungeons.mjs` 23/23,
+`check-playthrough.mjs` **21/21** (fresh tape recorded and replayed
+deterministically), `npm run build` + `check-build.mjs` OK.
+
+### The measured shape of the health economy, for whoever reads it next
+
+Printed by `check-playthrough.mjs`'s own health table on this run: deepest
+trough 3/20 qh (`d1/0,3,6`, unchanged from D1 alone), and Anemos's own fight
+is now the single most expensive ROOM in the whole two-dungeon run (13 qh,
+3.25 hearts) — narrowly above Gohmaraq's own arena (12 qh). The run ends the
+Anemos fight on 7 of 20 quarter-hearts. That is a real margin, not a
+knife-edge, but it is not a large one either: the next dungeon's own health
+economy should not assume this run's ending health as a floor without
+re-measuring, the same caution CLAUDE.md already states for `d1-descent`.
+
+### For the next session
+
+1. **D3 (Bogwater Sanctum) is next**, following the same shape: exit D2,
+   cross whatever overworld lies between the Coral Spire and the Sanctum,
+   route the dungeon, sweep any new timing-sensitive fights/hazards against
+   the REAL route (not isolation), extend `GOAL.essences` to `[1, 2, 3]`.
+   Budget for at least one health-economy surprise the way D1->D2 had one —
+   nothing has proven the overworld between D2 and D3 is safer than the one
+   already found not to be.
+2. **`docs/DUNGEON-STATUS.md`'s "D1 is played, not modelled" framing now
+   needs to say D1 AND D2** — updated this session; re-check it still reads
+   true after any future change to either dungeon's route.
+3. **Two real, general tooling gaps are still open**, found again this
+   session and still worth fixing once rather than working around a third
+   time: `dTravel` cannot path through a `size: [w,h] > 1` room's non-anchor
+   cell (hit Reefguard Hall and Spire Ascent, worked around by hand both
+   times); and `dFight`/`dBoss` have no notion of "approach perpendicular to
+   a horizontally-patrolling shielded enemy's own axis" (worked around by a
+   manual vertical attack once, will recur on any future shielded-enemy
+   route).
+4. **The Tidewatch Shop's heart purchase is now load-bearing on the
+   committed route** — if the shop, its price, or the heart's `once`
+   behaviour ever change, `check-playthrough.mjs` will need re-verifying
+   from that point on, not just the immediate diff.
+
+---
+
 ## S40 — D2 routed to the Essence in a scratch harness, end to end; not landed in `tools/`
 
 Priority 2 from `docs/prompts/NEXT-PROMPT.md`, continuing from S28. **The

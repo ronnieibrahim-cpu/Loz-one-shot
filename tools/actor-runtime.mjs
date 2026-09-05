@@ -119,6 +119,14 @@ export async function installRuntime() {
       // one of them is a thing a drifting run would get wrong.
       dungeonMap: !!g.progress.dungeonMaps[g.mapId],
       chartstone: !!g.progress.charts[g.mapId],
+      // Per-map, unlike the two booleans above (which read only the CURRENT
+      // map's entry) — a multi-dungeon run ends holding a mapId that is not
+      // the one whose Map/Chartstone a check cares about. New fields are
+      // additive: `tools/replay.mjs`'s diff walks `Object.keys(want)` (the
+      // STORED baseline), so an old recording with no `dungeonMaps` key is
+      // simply never asked about it.
+      dungeonMaps: Object.assign({}, g.progress.dungeonMaps),
+      charts: Object.assign({}, g.progress.charts),
       flags: Object.keys(g.progress.flags).filter(k => g.progress.flags[k]).sort(),
       doorsChanged: Object.keys(g.progress.doors).length,
       secretsSeen: Object.keys(g.progress.secrets).length,

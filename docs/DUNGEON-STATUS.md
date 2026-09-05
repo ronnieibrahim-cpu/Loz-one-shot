@@ -24,7 +24,7 @@ whatever a commit message elsewhere claims.
 | D | Map | Name | Item | Status | Where it landed |
 |---|---|---|---|---|---|
 | 1 | `d1` | Tidewash Grotto | Tidewright's Anchor | **DONE** | `d655d1f`, merged to `main` |
-| 2 | `d2` | Coral Spire | Brineglass Lens | **DONE** | `0a3776f` (authored on `claude/p8-dungeon-generation-faqood`) |
+| 2 | `d2` | Coral Spire | Brineglass Lens | **DONE, AND PLAYED** | authored `0a3776f`; played end to end, `check-playthrough.mjs` 21/21, S41 |
 | 3 | `d3` | Bogwater Sanctum | Kelp-Soled Cleats | **DONE** | `a9eb63e` |
 | 4 | `d4` | Cliffside Cistern | Squall Bellows | **DONE** | `5fd7301` |
 | 5 | `d5` | Drowned Wood Shrine | Reefseed | **DONE** | `0db0eab` |
@@ -47,17 +47,25 @@ puzzles, bosses and items are untouched, and `walk-dungeons`, `solve-switches`,
 `check-playthrough` and the six item checkers were all re-run green. See
 `docs/NEXT-SESSION.md` S33.
 
-### D1 IS PLAYED, NOT MODELLED (S19)
+### D1 AND D2 ARE PLAYED, NOT MODELLED (S19, S41)
 
-`node tools/check-playthrough.mjs` drives a new game with nothing granted and
-walks out of Tidewash Grotto holding its Essence: three Small Keys, the Boss
-Key, four Pieces of Heart and the Heart Container they make, both anchor gates
-in each wing, both pairs of gauges, and Gohmaraq killed in real combat on four
-hearts. 24,000 frames, no death, no warp, no flag set from outside. Landed in
-`661e585`.
+`node tools/check-playthrough.mjs` drives ONE new game with nothing granted
+through BOTH dungeons back to back: three Small Keys and the Boss Key in
+Tidewash Grotto, four Pieces of Heart and the Heart Container they make, both
+anchor gates in each wing, both pairs of gauges, Gohmaraq killed in real
+combat on four hearts — then, without stopping, out of the dungeon, across
+the overworld, into the Coral Spire: two more Small Keys and its own Boss Key,
+the Lens, the Bombs, a second Heart Container completed mid-dungeon from four
+Pieces of Heart (two the overworld itself was hiding, two in the Spire), and
+Anemos killed in real combat on a health budget that was MEASURED (a full 40
+quarter-hearts of survived damage against the current combat verb) rather
+than assumed. 49,516 frames, no death, no warp, no flag set from outside.
+21/21, `GOAL.essences: [1, 2]` in `tools/playthrough-route.mjs`. Landed in
+S41 (`docs/NEXT-SESSION.md`); see that entry for exactly what changed and
+S40, just above it, for why each fix was needed.
 
-**That is one dungeon of six.** Nothing past D1 is routed, and until it is,
-"D2 is DONE" in the table above means what it has always meant: authored,
+**That is two dungeons of six.** Nothing past D2 is routed, and until it is,
+"D3 is DONE" in the table above means what it has always meant: authored,
 flooded, and proved by models. See `GOAL` in `tools/playthrough-route.mjs`.
 
 **S28 got a live-engine route all the way to Anemos's own room** — every
@@ -96,10 +104,8 @@ corrected before finding the real valve bug; both are recorded in S28
 rather than silently rewritten.
 
 **S40 got a live-engine route past the boss door — every room, Anemos beaten,
-the Essence collected — in the same kind of scratch harness, and STILL has
-not landed it in `tools/`.** `tools/playthrough-route.mjs`/
-`check-playthrough.mjs` are UNCHANGED by this session, on purpose: still
-D1-only, still 21/21. The route needed a fourth Heart Container completed
+the Essence collected — in a scratch harness, and did NOT land it in
+`tools/` that session.** The route needed a fourth Heart Container completed
 mid-dungeon (two overworld Pieces of Heart neither prior session used, plus
 D2's own two) to survive Anemos at all — the fight measures at needing a
 full 40 quarter-hearts of survived damage against the current combat verb,
@@ -111,16 +117,18 @@ genuinely one-per-save, checked against the code); a "shield: front" enemy
 that only ever turns to face left/right can always be hit from directly
 above or below, which one Sandpiper Row crab needed after resisting
 `['fight', 25000, 25000]` outright; and the Essence entity itself has no
-`isDrop`, so it needs an explicit `goto` rather than a `loot`. **What stopped
-this from landing**: every timing-sensitive fix (a barnacle's fire cycle, the
-boss's own attack windows) was tuned against a scratch harness that starts
-counting frames from zero, and the real route reaches the same rooms tens of
-thousands of frames later — a `wait` that lands well in isolation does not
-necessarily still land once spliced after the real D1 route, and the one
-full end-to-end attempt this session made proved it does not, currently. Full
-route, exact tile coordinates and the fix for each blocker: `docs/
-NEXT-SESSION.md` S40. Read it before attempting D2 again — the room-by-room
-route does not need re-deriving, only the frame-phase sweeps.
+`isDrop`, so it needs an explicit `goto` rather than a `loot`. What stopped
+S40 from landing it was that every timing-sensitive fix (a barnacle's fire
+cycle, the boss's own attack windows) had been tuned against a scratch
+harness that starts counting frames from zero, and the real route reaches
+the same rooms tens of thousands of frames later.
+
+**S41, the very next session, landed it — see that entry, immediately above
+this one, and the board row at the top of this file.** The frame-phase
+values needed re-sweeping against the real route (mechanical, not clever:
+`beginPlaythrough` with the actual `ROUTE` prefix instead of an isolated
+`boot()`), plus two ordinary assembly bugs S40 had not yet hit. Nothing in
+S40's account of WHY each fix was needed changed; only the landing did.
 
 ### Boss winnability, measured (S5)
 

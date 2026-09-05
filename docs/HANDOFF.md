@@ -461,7 +461,9 @@ BEFORE checking a file out for isolation, not after.**
   executing against the wrong dungeon. Any frame-phase-dependent tune must be
   swept against `beginPlaythrough` with the real `ROUTE` prefix, not
   `beginRecord`'s quick boot, before it can be trusted. See
-  `docs/NEXT-SESSION.md` S40.
+  `docs/NEXT-SESSION.md` S40 — and S41, the very next session, for the
+  re-sweep landing cleanly once done this way: nothing about the fix
+  changed, only the sweep target did.
 
 - **A `shield: 'front'` enemy that only ever turns to face left/right
   (`patrol(e, g, { axis: 'x' })`) can ALWAYS be hit from directly above or

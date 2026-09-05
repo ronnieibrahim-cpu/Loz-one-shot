@@ -1,5 +1,5 @@
-// THE BEATABILITY TEST — a new game driven to an Essence in the real engine,
-// headless, with no developer shortcuts of any kind.
+// THE BEATABILITY TEST — a new game driven to two Essences in the real
+// engine, headless, with no developer shortcuts of any kind.
 //
 // WHY IT EXISTS, and this is not hypothetical. Every other tool in this repo
 // proves a PART. `validate.mjs` proves the grids are well-formed;
@@ -21,13 +21,19 @@
 //     Everything the run holds at the end was picked up, opened or handed over
 //     by a cutscene during the run, and the audit below prints the frame each
 //     one arrived on.
-//   * No warp. There is no `enterMap` anywhere in this file. The run walks.
+//   * No warp. There is no `enterMap` anywhere in this file. The run walks —
+//     out of Tidewash Grotto, across the overworld, and into the Coral Spire,
+//     the same as into and through each dungeon.
 //   * No flag is set from outside, no key is added, no door is opened, no
 //     tide level is assigned. The conch is sounded by pressing the conch.
-//   * No heart is added. `d1-descent` plays on twenty hearts and says plainly
-//     why — the scripted swordsman eats contact damage a human would step out
-//     of — and this runs on the three a new game actually starts with. If that
-//     is not survivable, that is a FINDING, not a number to raise.
+//   * No heart is added by this file. The run DOES buy one from the Tidewatch
+//     Shop with rupees it earned — that is a real in-game action available to
+//     any player, not a shortcut, and D1's own boss fight leaves no margin for
+//     the overworld crossing that follows it without one. Past that: `d1-descent`
+//     plays on twenty hearts and says plainly why — the scripted swordsman
+//     eats contact damage a human would step out of — and everything else
+//     runs on whatever health was actually earned. If a stretch is not
+//     survivable on that, that is a FINDING, not a number to raise.
 //
 // The one thing that IS pinned is the seed, via `?seed=` on the URL, which sets
 // `game.seedOverride` and is read by the `newGame` the title screen itself
@@ -38,44 +44,35 @@
 // WHAT IT PROVES, in one run:
 //   * how far a new game gets with nothing handed to it
 //   * every item the run ends with was acquired during the run
-//   * a Small Key was earned and spent on a locked door
+//   * Small Keys were earned and spent on locked doors, in both dungeons
+//   * two bosses were beaten in real combat, at a health budget that was
+//     MEASURED rather than assumed (Anemos alone needs a full 40
+//     quarter-hearts of survived damage against the current `dBoss` verb —
+//     see the comment on the Anemos fight in `tools/playthrough-route.mjs`)
 //   * the run never reloaded a save and health never reached zero
 //   * zero console errors and zero unresolved tiles for the whole run
 //   * it is deterministic: the tape is replayed blind and lands to the pixel
 //
-// AND WHAT IT FOUND ON ITS FIRST RUN, which is the reason it exists:
-//
-//   THE GAME CANNOT BE FINISHED. D1 puts two locked doors between a new game
-//   and the Tidewright's Anchor, and only one of the two Small Keys that open
-//   them can be obtained. The other is the Switch Room's, behind two `hold`
-//   floor switches that want both blocks pushed onto them at once — and NO
-//   PUSH BLOCK IN THIS GAME CAN BE PUSHED. `Entity.solid` is documented on the
-//   field as "blocks the player like a pushable block" and nothing in the
-//   movement path reads it: `canOccupy` samples tiles only. So the player walks
-//   through the block, `Player.tryPush` never fires (it needs a movement HIT),
-//   and the key never appears.
-//
-//   `solve-switches.mjs` reports all nine switch rooms "solvable by pushing"
-//   and `walk-dungeons.mjs` counts the key as available, because both model a
-//   push that the engine cannot perform. That is precisely the gap between a
-//   model and a game, and it is why a flood cannot close this item.
-//
-//   The fix is small to write and NOT small to land: teaching `canOccupy` about
-//   solid entities was tried on this branch and moves the recorded baseline —
-//   d1-descent ends up dead on the overworld, d2-fork-wrong diverges by frame
-//   240. Every replay would need re-recording and every checker re-verifying,
-//   which is its own session. So this file reports the blocker instead of
-//   working around it, and asserts it is still exactly where it was.
+// WHAT ITS FIRST RUN FOUND, kept because the shape of the trap recurs: D1
+// alone could not be finished at all, because no push block in the game
+// could be pushed (`Entity.solid` was documented but nothing in the movement
+// path read it) — fixed in `0b68e6b`. Extending past D1 into D2 found the
+// same CLASS of gap one level up: nothing had ever asked whether the game
+// could be finished ACROSS a dungeon boundary, and D1's own boss fight
+// leaving no margin for the overworld immediately after it was invisible to
+// every tool that only ever measured D1 alone (`docs/NEXT-SESSION.md` S40
+// has the full account — the Tidewatch Shop purchase above is the fix).
 //
 //   node tools/check-playthrough.mjs            run, verify, and replay the tape
 //   node tools/check-playthrough.mjs --record   re-record the tape from the route
 //   node tools/check-playthrough.mjs --trace    print the per-directive trace
 //   node tools/check-playthrough.mjs --headed   watch it in a real browser
 //
-// SCOPE. This is step (a) of the brief's staged plan: new game to D1's Essence.
-// The route reaches the Locked Stair and stops there because the world stops
-// there. When the blocker is fixed, `GOAL.blocked` in tools/playthrough-route.mjs
-// comes out and the Essence assertions go live on their own.
+// SCOPE. New game to D2's Essence — Tidewash Grotto and the Coral Spire, in
+// order, nothing granted. `GOAL` in `tools/playthrough-route.mjs` names
+// exactly where the run currently stops and what would need to change to
+// extend it: four dungeons, the Coastwise Chain and four bosses are still
+// unrouted past this point.
 
 import { createServer } from 'node:http';
 import { readFile, stat, mkdir, writeFile } from 'node:fs/promises';
@@ -91,7 +88,11 @@ const ROOT = resolve(HERE, '..');
 // a playthrough tape has no `setup` — having none is the whole point of it —
 // so dropping it in there takes all 51 replays down with a TypeError.
 const TAPE_DIR = join(HERE, 'playthroughs');
-const TAPE = join(TAPE_DIR, 'playthrough-d1.json');
+// Renamed from `playthrough-d1.json`: the tape now covers both dungeons, and
+// the old name would have quietly stopped meaning what it said. `--record`
+// on a stale D1-only tape from before this rename writes the new file
+// fresh; nothing reads the old one any more.
+const TAPE = join(TAPE_DIR, 'playthrough.json');
 
 const argv = process.argv.slice(2);
 const RECORD = argv.includes('--record');
@@ -262,7 +263,7 @@ const browser = await chromium.launch({ headless: !HEADED }).catch(async (err) =
   return chromium.launch({ headless: !HEADED, executablePath: fallback });
 });
 
-console.log(`playthrough: seed ${SEED}, ${ROUTE.length} directives, target: the Essence of Tidewash Grotto\n`);
+console.log(`playthrough: seed ${SEED}, ${ROUTE.length} directives, target: the Essences of Tidewash Grotto and the Coral Spire\n`);
 
 const page = await newPage(browser);
 await prepare(page, PORT);
@@ -306,12 +307,14 @@ printWorstStretches(a.roomHealth, s.maxHearts);
 
 // --- 1. how far a new game gets ---------------------------------------------
 //
-// This assertion has been a stopping point twice — first the Sluicegate, then
-// the Iron Pipe's far side, each time naming a verb the ACTOR did not have
-// rather than a bug in the game. It is an ESSENCE now. A run that reaches
-// GOAL.room without GOAL.essence has fought Gohmaraq and lost; a run that
-// stops short has broken somewhere earlier, and the room table above says
-// where.
+// This assertion has been a stopping point three times now — first the
+// Sluicegate, then the Iron Pipe's far side, each time naming a verb the
+// ACTOR did not have rather than a bug in the game; then D1's own boss fight
+// leaving the run too low on health to survive the overworld crossing into
+// D2, which was a real gap in the WORLD rather than in the actor (see
+// `docs/NEXT-SESSION.md` S40). A run that reaches GOAL.room without both of
+// GOAL.essences has fought a boss and lost; a run that stops short has
+// broken somewhere earlier, and the room table above says where.
 
 if (GOAL.needsVerb) {
   console.log(`  !! the route stops at ${GOAL.room}: the actor has no directive for `
@@ -324,12 +327,12 @@ check('the run gets as far as the route currently drives it (' + GOAL.room + ')'
 check(`the run earned all ${GOAL.keysObtainable} Small Keys and spent them on locked doors`,
   s.doorsChanged >= GOAL.keysObtainable && a.blocksMoved >= 4,
   `doors ${s.doorsChanged}, blocks moved ${a.blocksMoved}`);
-check('THE ESSENCE OF TIDEWASH GROTTO IS TAKEN — the dungeon is finished',
-  s.essences.includes(GOAL.essence), `essences [${s.essences.join(',')}]`);
-check('the boss was beaten in real combat, with nothing granted',
-  !!(s.beaten && s.beaten.d1), `beaten ${JSON.stringify(s.beaten || {})}`);
-check('the run collected four Pieces of Heart and the Container they make',
-  s.maxHearts >= 16, `maxHearts ${s.maxHearts}`);
+check('THE ESSENCES OF TIDEWASH GROTTO AND THE CORAL SPIRE ARE BOTH TAKEN',
+  GOAL.essences.every(i => s.essences.includes(i)), `essences [${s.essences.join(',')}]`);
+check('both bosses were beaten in real combat, with nothing granted',
+  !!(s.beaten && s.beaten.d1 && s.beaten.d2), `beaten ${JSON.stringify(s.beaten || {})}`);
+check('the run completed a second Heart Container mid-D2, on top of D1\'s own',
+  s.maxHearts >= 20, `maxHearts ${s.maxHearts}`);
 
 // --- 2. nothing was handed to it -------------------------------------------
 //
@@ -337,6 +340,12 @@ check('the run collected four Pieces of Heart and the Container they make',
 // mean something. The harness grants nothing, so the inventory at the end is a
 // list of things the run went and got — and each has a frame, so an item that
 // somehow appeared at frame 0 would be visible as exactly that.
+//
+// ONE EXCEPTION, DELIBERATE AND NAMED: the run spends rupees it earned at the
+// Tidewatch Shop for one Heart. That is not an item grant — `heal()` adds
+// quarter-hearts, it never touches `progress.items` — and it costs the run
+// something real (10 rupees) rather than materialising for free, which is
+// exactly the line "nothing was handed to it" means to hold.
 
 const intro = a.gained.filter(g => g.frame <= 600).map(g => g.id).sort();
 check('the run starts empty and is given the conch and the sword by the intro',
@@ -345,14 +354,16 @@ check('every item the run ends with was acquired during the run',
   s.items.every(id => a.gained.some(g => g.id === id)),
   `unaccounted: ${s.items.filter(id => !a.gained.some(g => g.id === id)).join(',')}`);
 
-// --- 3. the dungeon was actually played ------------------------------------
+// --- 3. both dungeons were actually played ---------------------------------
 
-check('the run collected the Dungeon Map and Chartstone', s.dungeonMap && s.chartstone,
-  `dungeonMap ${s.dungeonMap}, chartstone ${s.chartstone}`);
+check('the run collected D1\'s Dungeon Map and Chartstone',
+  !!(s.dungeonMaps && s.dungeonMaps.d1) && !!(s.charts && s.charts.d1),
+  `dungeonMaps ${JSON.stringify(s.dungeonMaps)}, charts ${JSON.stringify(s.charts)}`);
 check('the run opened chests', s.chestsOpened >= 1, `chests ${s.chestsOpened}`);
 check('the run killed things', s.kills >= 5, `kills ${s.kills}`);
-check('the run walked the overworld before the dungeon',
-  a.rooms.some(r => r.startsWith('overworld/')) && a.rooms.some(r => r.startsWith('d1/')),
+check('the run walked the overworld before each dungeon',
+  a.rooms.some(r => r.startsWith('overworld/')) && a.rooms.some(r => r.startsWith('d1/'))
+    && a.rooms.some(r => r.startsWith('d2/')),
   a.rooms.slice(0, 4).join(' '));
 
 // --- 4. it was never soft-locked -------------------------------------------
@@ -396,8 +407,9 @@ check('no unresolved sprites were drawn during the run',
 
 await mkdir(TAPE_DIR, { recursive: true });
 const tape = {
-  note: 'A new game driven to the Essence of Tidewash Grotto with no shortcuts. '
-    + 'Recorded by tools/check-playthrough.mjs; see its header for what "no shortcuts" means.',
+  note: 'A new game driven to the Essences of Tidewash Grotto and the Coral Spire '
+    + 'with no shortcuts. Recorded by tools/check-playthrough.mjs; see its header '
+    + 'for what "no shortcuts" means.',
   seed: SEED,
   frames: run.frames,
   state: run.state,
