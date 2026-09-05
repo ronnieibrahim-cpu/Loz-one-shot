@@ -152,7 +152,7 @@ degrade — would need `up+down`/`left+right` in `EDGE_ART_KEYS`); and salt
 flats, ice floors and reef/abyss water were never audited for whether they want
 a rim of their own.
 
-### 5. Whole regions have never been READ AS PICTURES
+### 5. Whole regions have never been READ AS PICTURES — spot-checked, S44, not exhausted
 
 Dunes, cliffs, salt, reef, coral and abyss have been checked for connectivity
 and for one specific fault, never looked at as compositions. The one time
@@ -161,6 +161,22 @@ every tool in the table was green through. `node tools/shoot-rooms.mjs
 --tide=0|1|2 <room>`; judge against `assets/sheets/` and
 `docs/ART-DIRECTION.md`. Where a sheet has the tile, EXTRACT it — do not
 hand-draw what `assets/sheets/` already provides.
+
+**S44 sampled 20 screenshots across all six regions (roughly 2-6 rooms each,
+one region — abyss — also checked at all three tides) and found nothing.**
+That is a real result on the SAMPLE, not a clearance of the region: the woods'
+own fault needed 97 of 120 screens to surface, and this session looked at
+~20 of roughly 90 candidate rooms. Two things that looked like the woods'
+bug at first glance turned out to be legitimate on inspection (Kell Spur's
+two rows of 3 rocks are a puzzle/clearing arena in front of an enemy and a
+charm, not decorative filler; Sunless Flat's four `abyssHole` tiles in a 2x2
+are a deliberate symmetric hazard, same family as Vault Steps' pedestal row
+and Grotto Approach's four corner palms) — see `docs/NEXT-SESSION.md` S44
+for the full account and which rooms were checked, so a future pass samples
+DIFFERENT rooms rather than re-confirming these two. If you take this
+further, prefer a systematic diff of room grids within a region over more
+sampling — that is how the tree-crown fix was eventually found to generalize,
+and sampling alone can only ever report "clean on what was looked at".
 
 ### 6. The story is the least-audited thing in the project
 

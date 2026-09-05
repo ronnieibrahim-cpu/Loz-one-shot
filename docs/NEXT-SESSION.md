@@ -1,3 +1,47 @@
+## S44 — item 5 spot-checked: a sample of dunes/cliffs/salt/reef/coral/abyss, read as pictures
+
+Before the ending-cutscene bug (S43, below) turned up a bigger fish, this
+session started on `docs/prompts/NEXT-PROMPT.md` item 5 — six regions never
+looked at as compositions, only checked for connectivity and the one fault
+`check-ground.mjs` names. `tools/shoot-rooms.mjs` at 12 rooms spread across
+all six regions (two per region), then 4 more abyss rooms for a denser look
+at one region, then the same 4 rooms again at `--tide=0` and `--tide=2` to
+see the tide mechanic itself on screen rather than just asserted.
+
+**Nothing landed, and that is the actual finding, not a non-answer.** No
+motif-repeated-160-times problem (the woods' own fault, S25) turned up in
+this sample — every screen read as thematically coherent and distinct from
+its neighbours (abyss grey/blue, salt cream/tan, reef teal/grey, cliffs grey
+stone, coral pink/teal, dunes tan/green). Two things that LOOKED like bugs at
+first glance turned out not to be, and are worth naming so a future session
+does not re-flag them:
+
+  - **Kell Spur** (cliffs) has two rows of 3 identical rocks — the exact shape
+    `check-ground.mjs` polices ("no decorative prop stands three in a
+    straight line"). Not decorative: they sit in front of a green enemy and a
+    charm pickup, reading as a puzzle/clearing arena, and `check-ground.mjs`
+    is green on the room, so whatever tile these actually are is either
+    exempted or not the flagged category. Left alone.
+  - **Sunless Flat** (abyss) has four identical `abyssHole` tiles in a 2x2
+    arrangement. Traced to the legend (`'?': 'abyssHole'`) and read as a
+    deliberate symmetric hazard layout (a jellyfish patrols it), the same
+    family as the pedestal rows seen in **Vault Steps** (salt) and the palm
+    trees in **Grotto Approach** (dunes) — plaza-style symmetric arrangements
+    that are a Zelda overworld convention, not an accidental repeat.
+
+Tide behaviour checked directly on screen too (`overworld,0,0` "Drowned
+Shore" at LOW/MID/HIGH): the beach visibly grows and shrinks correctly, no
+tearing or mismatched art at the transition.
+
+**This was a spot-check (20 screenshots across ~90 candidate rooms), not an
+exhaustive read.** The woods' own fault was found by looking at 97 of 120
+screens, not 12. If a future session takes this item further, the efficient
+way is probably systematic (diff room grids within a region for exact or
+near-exact repeats, the way the tree-crown fix was eventually generalized
+into a rule) rather than more sampling — sampling is what this session did,
+and it is honestly reporting a clean read on the sample, not a clean read on
+the region.
+
 ## S43 — the game had no ending. Nothing ever called `startCutscene('ending')`
 
 `docs/prompts/NEXT-PROMPT.md` item 6 named the story as the least-audited part
