@@ -1062,6 +1062,18 @@ export class Game {
     this._charmLine = openCharmCases(p);
     this.audio.jingle('essence');
     this.player.frozen = ESSENCE_FREEZE_FRAMES;
+    // The sixth Essence is the last one there is. `ending` was written into
+    // story.js to follow it directly, but nothing ever queued it — nothing in
+    // the whole game ever called `startCutscene('ending')`, so a player who
+    // beat Nereth and picked up his shard got the essence6 scene and then
+    // simply kept playing, with no THE END and no `finishedGame` flag ever
+    // set. Queued here rather than started directly: this fires from inside
+    // the OLD cutscene's own `.update()` call, and the switch in the main
+    // loop unconditionally nulls `this.cutscene` the moment that call reports
+    // done, which would stomp a cutscene started right now. `_pendingCutscene`
+    // is read and started from that same block, once the current scene (and
+    // any charm-case line queued behind it) has actually let go.
+    if (p.essences.length === 6) this._pendingCutscene = 'ending';
     this.startCutscene('essence' + index, { fallback: 'essenceGeneric', data: { index } });
   }
 
@@ -1386,8 +1398,12 @@ export class Game {
           const done = this.cutscene.update();
           if (done) {
             this.cutscene = null; this.mode = 'play'; this.updateMusic();
+            const next = this._pendingCutscene; this._pendingCutscene = null;
             // A case opened by the shard says so as the scene lets go.
-            if (this._charmLine) { const l = this._charmLine; this._charmLine = null; this.audio.jingle('fanfareShort'); this.say(l); }
+            if (this._charmLine) {
+              const l = this._charmLine; this._charmLine = null; this.audio.jingle('fanfareShort');
+              this.say(l, next ? { onClose: () => this.startCutscene(next) } : undefined);
+            } else if (next) this.startCutscene(next);
           }
         } else this.mode = 'play';
         return;

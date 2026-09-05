@@ -11,6 +11,7 @@
 //   node tools/shoot-cutscene.mjs essence3 ending
 //   node tools/shoot-cutscene.mjs --all           # all 13, picture or not
 //   node tools/shoot-cutscene.mjs --nereth        # prove nerethIntro FIRES
+//   node tools/shoot-cutscene.mjs --ending        # prove essence6 -> ending FIRES
 //
 // HOW IT FINDS THE RIGHT FRAME. A scene's `show` step may sit behind several
 // `say` steps, and pressing A to get past them would also skip the sprite —
@@ -34,6 +35,7 @@ const shotDir = (args.find(a => a.startsWith('--shot-dir=')) || '').split('=')[1
   || join(ROOT, 'tools/shots-cutscene');
 const ALL = args.includes('--all');
 const NERETH = args.includes('--nereth');
+const ENDING = args.includes('--ending');
 const named = args.filter(a => !a.startsWith('--'));
 
 // The scenes that hold a picture up. The rest are dialogue-only and are shot
@@ -125,6 +127,58 @@ if (NERETH) {
     problems.push(`after nerethIntro the track is '${end.track}', not 'finalBoss' — ` +
       `the final boss theme is played by nothing else in the game`);
   }
+}
+
+// --------------------------------------------------------------------------
+// The ending: prove claimEssence(6) actually reaches it, rather than that
+// starting it directly by id "works". Nothing in the game ever called
+// startCutscene('ending') before this fix — story.js wrote the scene, and the
+// essence6 scene's own text ("The Tide Bell is whole. It is much smaller than
+// the stories, and much heavier.") reads as the line right before it, but
+// nothing chained the two, so a player who beat Nereth and picked up the
+// sixth Essence got the essence6 card and then just kept playing. No THE
+// END, no `finishedGame` flag, ever. Game.claimEssence now queues 'ending'
+// via `_pendingCutscene` when the sixth Essence completes the set; the check
+// below is the one thing here that plays the real handoff rather than the
+// two scenes in isolation.
+// --------------------------------------------------------------------------
+if (ENDING) {
+  const r = await page.evaluate(async () => {
+    const g = window.__game;
+    g.mode = 'play'; g.cutscene = null;
+    if (g.dialogue) g.dialogue.active = false;
+    g.progress.essences = [1, 2, 3, 4, 5];
+    g.progress.charmOpen = g.progress.charmOpen || {};
+    g.claimEssence(6);
+    const modeAfterClaim = g.mode;
+    // Drive through essence6, then whatever follows it, closing dialogue
+    // boxes as they come (the way a player presses through text) rather than
+    // skipping scenes outright — skipping would also skip the chain this is
+    // here to prove.
+    const tracks = [];
+    await new Promise(res => {
+      let n = 0;
+      const tick = () => {
+        if (g.audio.trackName && tracks[tracks.length - 1] !== g.audio.trackName) tracks.push(g.audio.trackName);
+        if (n > 20 && g.dialogue && g.dialogue.active) g.dialogue.close();
+        return (++n > 2400 || g.mode !== 'cutscene') ? res() : requestAnimationFrame(tick);
+      };
+      tick();
+    });
+    return {
+      modeAfterClaim, tracks,
+      endMode: g.mode,
+      finishedGame: !!(g.progress.flags && g.progress.flags.finishedGame),
+      essences: g.progress.essences.slice(),
+    };
+  });
+  console.log(`  ending: mode after claimEssence(6)=${r.modeAfterClaim}, tracks seen=[${r.tracks.join(', ')}]`);
+  console.log(`  ending: scene(s) ended, mode=${r.endMode}, finishedGame=${r.finishedGame}, essences=[${r.essences.join(',')}]`);
+  if (r.modeAfterClaim !== 'cutscene') problems.push(`claimEssence(6) did not start a cutscene: mode is '${r.modeAfterClaim}'`);
+  if (!r.tracks.includes('ending')) {
+    problems.push(`essence6 never handed off to 'ending' — track sequence was [${r.tracks.join(', ')}]`);
+  }
+  if (!r.finishedGame) problems.push(`the run never reached 'finishedGame' — the ending never played to its last beat`);
 }
 
 // --------------------------------------------------------------------------

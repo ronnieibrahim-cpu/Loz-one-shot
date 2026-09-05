@@ -1,3 +1,84 @@
+## S43 — the game had no ending. Nothing ever called `startCutscene('ending')`
+
+`docs/prompts/NEXT-PROMPT.md` item 6 named the story as the least-audited part
+of the project and asked, among other things, whether Nereth's motivation in
+`nerethIntro` pays off in `ending`. Reading both scenes side by side to answer
+that question is what found this: **`ending` — the scene that reads "The Tide
+Bell is whole," runs Farore's epilogue, and shows "THE LEGEND OF ZELDA /
+Oracle of Tides / THE END" — was never wired to anything.** `grep -rn "startCutscene"`
+across `src/` turns up the intro, `essence1..6` (via `claimEssence`), and
+`nerethIntro` (via the boss's own script). `ending` appears nowhere as an
+argument to `startCutscene`, anywhere, in code. Its own `{ flag: 'finishedGame' }`
+last step was equally dead: nothing anywhere reads `finishedGame` either.
+
+**Why every green tool in CLAUDE.md's table missed it.** `watch-cutscenes.mjs`
+and `shoot-cutscene.mjs` both iterate `Object.keys(CUTSCENES)` and call
+`g.startCutscene(id, ...)` directly for each one — which is exactly right for
+proving a scene RUNS and paces correctly, and exactly blind to whether
+anything in real play ever asks for it. `shoot-cutscene.mjs`'s own `--nereth`
+flag exists because an earlier session already learned this lesson once for
+`nerethIntro` specifically; it just hadn't been generalized. `check-playthrough.mjs`
+doesn't reach essence 6 either (`GOAL.essences: [1, 2]`, D1+D2 only), so it
+has never been in a position to notice.
+
+**The fix, and why it isn't a one-line `startCutscene('ending')` at the end of
+`claimEssence`.** `essence6`'s own text ("The last shard comes away from
+Nereth's crown... The Tide Bell is whole. It is much smaller than the
+stories, and much heavier.") reads as the beat immediately before `ending`'s
+own opening ("The Tide Bell is whole.") restates the same image as a title
+card — the two were clearly authored to run back to back. But `claimEssence`
+also sets `this._charmLine` on this exact pickup (`CHARM_CASE_ESSENCES` is 6,
+so the sixth Essence is also the one that upgrades both charm cases to two
+slots each), and that line is said from *inside* the game loop's own
+`if (done) { this.cutscene = null; ... }` block, the instant the essence
+scene's `.update()` reports itself finished. Calling `startCutscene` directly
+from a cutscene step's `.do()` would get silently stomped: the outer switch in
+`Game.update()` nulls `this.cutscene` unconditionally the moment the CURRENT
+scene's `update()` returns `done`, so a new cutscene assigned by a callback
+still running inside that same call would be overwritten a few lines later.
+
+So: `claimEssence` now sets `this._pendingCutscene = 'ending'` when the sixth
+Essence completes the set, and `Game.update()`'s cutscene-done branch reads
+and clears it right where `_charmLine` already gets said — chaining onto the
+charm line's own `onClose` when both are pending, or starting directly when
+there is no charm line. Same shape as the existing `_charmLine` mechanism
+("arrives as the last beat of the moment rather than on top of it"), just
+one step further down the chain. No frame-counted `wait`, no guessed timing —
+it fires exactly when the thing before it actually lets go, which is the
+lesson `docs/HANDOFF.md`'s frame-phase notes (S40/S41) already paid for once.
+
+**Verified the actual handoff, not just that both scenes still play in
+isolation.** Added `--ending` to `tools/shoot-cutscene.mjs`, modeled on the
+existing `--nereth` proof: sets `progress.essences = [1,2,3,4,5]`, calls
+`g.claimEssence(6)` for real, then drives the resulting cutscene(s) forward
+(closing dialogue boxes as a player would, not skipping) and asserts the
+audio track sequence actually passes through `'ending'` and that
+`progress.flags.finishedGame` is true by the time control returns to
+`'play'`. Confirmed it fails without the fix (reverted the `game.js` change
+locally, track sequence stops at `overworld` after the charm-case fanfare,
+`finishedGame` is `false`) and passes with it — track sequence
+`[$jingle:essence, overworld, $jingle:fanfareShort, ending, overworld]`,
+`finishedGame=true`, `essences=[1,2,3,4,5,6]`. Screenshotted the resulting
+`ending` card too, unchanged from before (this fix is purely about reaching
+the scene, not what it looks like).
+
+**Verified broadly**: `test.mjs` 83/83, `check-playthrough.mjs` 21/21 (D1+D2
+never reach essence 6, so this path is untouched by that run — expected),
+`replay.mjs` 51/51 with no re-recording, `check-dialogue.mjs`,
+`check-sfx.mjs`, `check-music.mjs` all clean. `npm run build` + `check-build`
+OK.
+
+**Not done, and worth flagging rather than guessing at:** whether Nereth's
+own death gets a line. `onBossDefeated` spawns the Essence entity and plays
+the `bossClear` jingle; there is no post-fight Nereth dialogue between the
+killing blow and picking up the shard, and `essence6`'s own text does not
+say what becomes of him beyond "the last shard comes away from Nereth's
+crown". That may be intentional (he is simply gone, the crown outlives him,
+the game does not linger) or it may be the next gap in the same audit. Left
+alone this session rather than inventing a death line under time pressure —
+that is a story-content decision, not a wiring bug, and the two should not
+be fixed in the same breath.
+
 ## S42 — dungeon interiors get their own `check-strands`, and it shares its flood with `walk-dungeons`
 
 `docs/prompts/NEXT-PROMPT.md` item 7 named the gap directly: `check-strands.mjs`

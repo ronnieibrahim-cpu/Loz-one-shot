@@ -167,8 +167,19 @@ hand-draw what `assets/sheets/` already provides.
 No `check-story.mjs` exists and it is not obvious one can. These are answerable
 by reading and watching:
 
-  - Does Nereth's motivation in `nerethIntro` pay off in `ending`?
-    `node tools/watch-cutscenes.mjs --strips` (~10 minutes).
+  - ~~Does Nereth's motivation in `nerethIntro` pay off in `ending`?~~ Asking
+    this question found something bigger, **fixed in S43**: `ending` was
+    never wired to anything. Nothing in the whole game ever called
+    `startCutscene('ending')` — a player who beat Nereth and collected the
+    sixth Essence got the essence6 card and then just kept playing, with no
+    THE END. `Game.claimEssence` now chains into it when the sixth Essence
+    completes the set (`tools/shoot-cutscene.mjs --ending` proves the real
+    handoff, not just that the scene plays in isolation). The THEMATIC
+    question this bullet actually asked is answered in `docs/NEXT-SESSION.md`
+    S43 too: yes, loosely — the ending's "boring, isn't it" line about the
+    tamed sea directly echoes Nereth's own "the sea was told what to do...
+    never once asked", played straight rather than examined. Still open:
+    whether Nereth gets a death line at all (see S43's last section).
   - Do the six Essence title cards name six DISTINCT ideas, each matching its
     own dungeon? That text is young — `check-text` caught six of them reading
     "I ? the Shallow Bell" for the project's whole life.
