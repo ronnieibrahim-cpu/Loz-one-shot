@@ -1,3 +1,130 @@
+## S45 — boss fairness measured fresh: D3/D4 clearly fair, D5 an open question, and Nereth's "wins at 11 hearts" no longer reproduces — with a precise diagnosis, not fixed
+
+`docs/prompts/NEXT-PROMPT.md` item 3 named two open worries: D3's evade
+result, and whether Nereth's ~11-heart survivability requirement is
+realistic against an in-order floor of 8. Ran `tools/measure-boss-combat.mjs`
+fresh for all six dungeons at each one's in-order heart count (no god mode,
+seed 20260806, current `main`):
+
+| D | boss | in-order hearts | outcome | damage dealt |
+|---|---|---|---|---|
+| 1 | Gohmaraq | 3 (12qh) | **WON**, finished on 8/12 qh | 24/24 |
+| 2 | Anemos | 4 (16qh) | died, 20/24 | — expected: see below |
+| 3 | Gloomtide | 5 (20qh) | **WON**, finished on 7/20 qh | 36/36 |
+| 4 | Wyverna | 6 (24qh) | **WON flawlessly**, 0 damage taken | 44/44 |
+| 5 | Rootmaw | 7 (28qh) | died, 26/52 | new open question, see below |
+| 6 | Nereth | 8 (32qh) and 11 (44qh) | died both, 6/80 both times | see below |
+
+**D3's evade result is answered: Gloomtide is decisively fair.** Won at the
+in-order 5 hearts with 7 of 20 quarter-hearts to spare — not a knife-edge.
+Nothing to fix; this closes that half of item 3.
+
+**D2's death at 16qh is not a new concern.** `IN_ORDER_QH` in
+`measure-boss-combat.mjs` says so itself: it "counts NO heart pieces... a
+conservative floor". `docs/DUNGEON-STATUS.md`'s own S41 entry already
+measured Anemos won in the REAL playthrough route on a 40-quarter-heart
+budget (10 hearts, from the heart pieces that route actually collects) —
+more than double the pessimistic floor. A death at the floor number is
+what "conservative floor" means; only a death at the REAL collected total
+would be news, and that is already measured and already fine.
+
+**D5 (Rootmaw) is a new, undiagnosed finding.** Died at the in-order 7
+hearts, 26 of 52 dealt, 14 hits taken — all seven-plus at `weakOpen:false`
+and at STEADILY GROWING distance (78, 85, 108, 98, 74, 92, 104, 116, 132px),
+unlike Nereth's fixed-distance pattern below. Reads like the actor retreating
+from something that keeps pace with or outruns it rather than a stuck
+loop, but this session did not chase it further — flagging it precisely so
+a future session does not have to re-run the baseline measurement to find
+where to start.
+
+**D6 (Nereth) is the one this session actually chased to a mechanism, and
+the historical record does not hold up.** `docs/NEXT-SESSION.md`'s own
+earlier entry claims Nereth was fixed to "win at 11 hearts, finishing on 3
+quarter-hearts" (0/80 → 42/80 → 78/80, from delaying `nerethOpening` and
+adding `dismissSummons`). Re-measured at BOTH 8 hearts (the in-order floor)
+and 11 hearts (the historically-claimed threshold) on current `main`: **both
+runs die at exactly 6 of 80 damage dealt**, never progressing past phase 1,
+taking a projectile hit every ~158 frames indefinitely. Something has
+changed since that record was written that this session could not locate in
+git history: `git log --all -- src/data/bosses.js` shows only 2 commits, both
+unrelated to Nereth's balance, which likely means the commit that made (and
+whatever later touched) that fix is not reachable from any ref this checkout
+has fetched — not that it never happened.
+
+**The mechanism, found by instrumenting `weakOpen` transitions frame by
+frame** (scratch harness, not committed — the debugging steps are written
+out here instead so they don't need re-deriving):
+
+  - Nereth's phase 1 throws a 3-trident spread every ~130 frames, and
+    `nerethOpening` (already fixed, per the historical record) opens his
+    shell 34 frames after each volley for `NERETH_OPEN_FRAMES` (55) frames.
+  - The FIRST opening is exploited cleanly: the actor closes in and deals
+    6 damage (80→74) before it shuts.
+  - EVERY subsequent opening in both runs shows `boss.hp` UNCHANGED. The
+    actor's own distance-to-boss at each opening's start/end does shrink a
+    little (typically ~40px down to ~23px) but never reaches actual sword
+    range, and the pattern repeats identically for the rest of the fight.
+  - The reason is `tools/actor-runtime.mjs`'s own `dBoss` boss-fighting verb,
+    in the `b.weakOpen` branch: it has THREE sub-cases keyed on
+    `p.invuln` — `> RETREAT_MARGIN(20)` (approach and swing), `1..20`
+    (approach and swing ONLY if `b.stun > 0`, otherwise **actively retreat**
+    — "spending down the banked margin... hold clear until invuln itself
+    runs out"), and `0` (approach and swing). Nereth's trident keeps
+    landing on the actor roughly once per cycle (it is not dodging the
+    spread), so residual invuln from that hit is very often sitting in the
+    1-20 range by the time the NEXT opening arrives — and because Nereth's
+    opening is driven by `_open`/`stun` being 0 the whole time (his shell is
+    a counter, not a stun), the actor's "is the boss stunned" check in that
+    middle branch reads false and it retreats through almost the entire
+    window instead of pressing the one advantage it has. The comment on
+    that branch is explicit that it exists for a DIFFERENT case (Gohmaraq's
+    charge-recovery stun, where retreating was once burning a
+    guaranteed-safe window) and was never taught that a `weakOpen` boss
+    whose shell is not stun-gated is the same case in reverse.
+
+**Judgement, not a verdict — three reasons this measures the actor more than
+it measures Nereth:**
+
+  1. `tools/actor-runtime.mjs` says outright, in its own comment (line ~459),
+     that the actor "cannot sound the conch for itself" — and Nereth's first
+     three phases are DESIGNED around breaking his tide pin with the conch
+     (`nerethPin`'s whole point). This measurement fights him with a hand
+     tied behind its back on the one verb the fight was built around; a real
+     player pressing B to break the MID pin gets an extended open window
+     `nerethPin`'s own `else` branch grants, which this run never once
+     triggers.
+  2. The actor does not appear to dodge the trident spread at all — every
+     hit in both logs is `isProjectile:true` at whatever distance it
+     happened to be standing. A human sidesteps a telegraphed 3-shot 36°
+     fan; this AI's positioning logic has no such verb (see `evade`'s own
+     long comment block on what it does and does not cover).
+  3. `check-bosses.mjs` (**god mode**) confirms the shell genuinely opens and
+     is genuinely killable — 80/80 damage dealt there. God mode's own
+     invuln handling makes it a bad tool for THIS specific diagnosis (a
+     quick check found invuln reads implausibly high and never depletes
+     under `godMode: true`, so the branch structure above never engages the
+     same way) — which is exactly why this session built the frame-by-frame
+     instrument on a REAL, no-god-mode run instead of trusting the
+     god-mode number as a stand-in.
+
+**Not fixed this session, deliberately.** `tools/actor-runtime.mjs` is the
+shared combat verb `check-playthrough.mjs` depends on for a MUST-STAY-GREEN
+gate, and CLAUDE.md's own trap note applies directly: "a five-line change to
+the movement path is never a five-line change." The candidate fix (teach the
+retreat branch that `b.weakOpen` with `b.stun === 0` is ALSO a
+press-the-advantage case, not just `b.stun > 0`) is narrow and named
+precisely enough to attempt directly, but it touches the one verb all SIX
+boss fights and the whole playthrough route run through, and needs
+`measure-boss-combat.mjs` re-run for every dungeon plus `check-playthrough`
+plus `replay.mjs` before it can be trusted — that is real, multi-front
+validation, not a same-session addendum, and this entry exists so that
+validation starts from a diagnosis instead of from zero.
+
+**Do not re-cite the old "11 hearts, finishes on 3 quarter-hearts" number.**
+It does not reproduce against current `main`. Either fix the mechanism above
+and re-measure, or treat Nereth's real threshold as genuinely unknown until
+then.
+
 ## S44 — item 5 spot-checked: a sample of dunes/cliffs/salt/reef/coral/abyss, read as pictures
 
 Before the ending-cutscene bug (S43, below) turned up a bigger fish, this

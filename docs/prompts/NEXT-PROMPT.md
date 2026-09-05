@@ -118,20 +118,43 @@ silently displaces the sword, so every scripted swing afterwards presses the
 Lens button and the fight lands no damage for a reason that looks like room
 geometry.
 
-### 3. Nobody knows whether the bosses are FAIR
+### 3. Nobody knows whether the bosses are FAIR — measured fresh, S45; D6 needs a real fix
 
 `check-bosses.mjs` runs in GOD MODE and says so in its own output: it proves
 each boss spawns in its declared room and that its weak point opens at its
-design tide. It does not prove a player can win. Two specific worries already
-on the record:
+design tide. It does not prove a player can win.
 
-  - Nereth needs about 11 hearts of survivability against an in-order floor of
-    8. The 24 heart pieces cover it, but only if the player finds 12 of them.
-  - D3's evade result is open.
+  - ~~D3's evade result is open.~~ **Answered, S45**: Gloomtide wins decisively
+    at the in-order 5 hearts (7/20 qh to spare). Nothing to fix.
+  - ~~Nereth needs about 11 hearts of survivability against an in-order floor
+    of 8.~~ **That number no longer reproduces.** S45 re-measured Nereth at
+    both 8 and 11 hearts on current `main`: both die at 6 of 80 damage,
+    stuck in phase 1 forever, never resembling the historical "42/80 → 78/80"
+    record. **Root cause found and written up in full in
+    `docs/NEXT-SESSION.md` S45 — read it before touching this** — in short:
+    `tools/actor-runtime.mjs`'s `dBoss` verb retreats instead of pressing an
+    advantage whenever `p.invuln` is 1-20 and `b.stun === 0`, which is exactly
+    Nereth's situation on nearly every one of his post-volley openings (his
+    shell opens via a counter, not a stun, and his trident keeps the actor's
+    invuln sitting in that range). **Not fixed this session** — the retreat
+    branch is shared by every boss fight `check-playthrough.mjs` depends on,
+    and the fix needs `measure-boss-combat.mjs` re-run on all six dungeons
+    plus `check-playthrough` plus `replay.mjs` before it can be trusted. S45
+    names the exact branch and exact condition to change; start there rather
+    than re-diagnosing.
+  - **New, undiagnosed**: Rootmaw (D5) also died in this session's sweep (26
+    of 52 damage, in-order 7 hearts) — a different pattern from Nereth's
+    (growing distance, not a fixed one), not chased further. See S45.
+  - D1/D2/D4 all measured fine (D2's expected death at the pessimistic floor
+    is explained in S45, not a new concern).
 
-`§4.2` applies: a robot beating a boss is not a player beating a boss. If you
-take this, `tools/measure-boss-combat.mjs` is the starting point, and the
-honest deliverable is a measurement plus a judgement, not a green tick.
+`§4.2` applies: a robot beating a boss is not a player beating a boss —
+and, freshly relevant after S45, the reverse also applies: a robot LOSING
+does not prove a boss is unfair if the robot is missing a verb (here, the
+conch and any projectile-dodge) the fight assumes a player has. `§4.2`'s own
+warning that the honest deliverable is a measurement plus a judgement, not a
+green tick, is exactly what S45 tried to leave behind for Nereth rather than
+either a false "fixed" or a false "hopeless".
 
 ### 4. Land meets land as a hard pixel edge, everywhere
 
