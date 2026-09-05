@@ -180,13 +180,34 @@ by reading and watching:
     tamed sea directly echoes Nereth's own "the sea was told what to do...
     never once asked", played straight rather than examined. Still open:
     whether Nereth gets a death line at all (see S43's last section).
-  - Do the six Essence title cards name six DISTINCT ideas, each matching its
-    own dungeon? That text is young — `check-text` caught six of them reading
-    "I ? the Shallow Bell" for the project's whole life.
-  - Do townspeople's two-state lines track world progress coherently, or just
-    toggle? `check-dialogue` proves both states are REACHABLE, never that the
-    second makes sense after the first.
-  - Is the Coastwise Chain a story, or a fetch quest with a proof attached?
+  - ~~Do the six Essence title cards name six DISTINCT ideas, each matching
+    its own dungeon?~~ Read, S43: yes — Shallow/Coral/Bog/Cliff/Drowned/
+    Drowned King's Bell map 1:1 onto Grotto/Spire/Sanctum/Cistern/Shrine/Keep,
+    and each essence's body text is a different KIND of beat (awakening,
+    villain noticing the hero, the world visibly stabilising, escalating
+    threat, foreboding, completion) rather than the same sentence six times.
+    No bug; nothing to fix.
+  - ~~Do townspeople's two-state lines track world progress coherently, or
+    just toggle?~~ Read against their `needEssences` gates, S43: yes, and
+    better than "coherent" — there is a real thread. `reefFisherAfter`
+    ("both ways now. That is worse"), `fisher1After` ("a punctual sea is no
+    use to me at all"), `salterElderAfter` ("I would not call that good
+    news") and the `ending` cutscene itself ("boring, isn't it") all make the
+    SAME point from different mouths: restoring the tide to order is not
+    unambiguously good news to the people who adapted to it broken. That is
+    a deliberate, consistent piece of theme, not a toggle. The Farore thread
+    also sequences correctly — villagers notice she has stopped coming down
+    to the shrine at 3 essences (`villager2After`), and Farore's own second
+    line at her private shrine, gated at 5, confirms why. No bug found; if a
+    future session wants to extend this, the "restoration has a cost" thread
+    is the one to write more of, not against.
+  - ~~Is the Coastwise Chain a story, or a fetch quest with a proof
+    attached?~~ Read all eleven links, S43: a story. Every trader's item and
+    reply are specific to who they are (Sennit settling an argument with her
+    mother about tide depth, Wick paying "the wood" that "takes payment and
+    does not take promises", Yarrow's jar surviving "forty years of brine"),
+    not generic hand-offs. `check-trade.mjs` already proves the mechanics;
+    the writing independently holds up.
 
 Goal 2 territory: mechanics, items, dungeons and story are OURS. And **do not
 "fix" the title screen** — it says THE LEGEND OF ZELDA — ORACLE OF TIDES in the

@@ -65,8 +65,36 @@ the scene, not what it looks like).
 **Verified broadly**: `test.mjs` 83/83, `check-playthrough.mjs` 21/21 (D1+D2
 never reach essence 6, so this path is untouched by that run — expected),
 `replay.mjs` 51/51 with no re-recording, `check-dialogue.mjs`,
-`check-sfx.mjs`, `check-music.mjs` all clean. `npm run build` + `check-build`
-OK.
+`check-sfx.mjs`, `check-music.mjs`, `watch-cutscenes.mjs` (all 13 scenes, 0
+faults) all clean. `npm run build` + `check-build` OK.
+
+**The rest of item 6's questions, read rather than guessed at, while the
+scenes were already open:**
+
+  - The six Essence title cards (Shallow/Coral/Bog/Cliff/Drowned/Drowned
+    King's Bell) map 1:1 onto their dungeons, and each essence's body text is
+    a DIFFERENT kind of beat — awakening, the villain noticing the hero, the
+    world visibly stabilising, escalating threat, foreboding, completion —
+    not the same sentence six times. No bug.
+  - The two-state townsperson lines are more than coherent, they carry a real
+    thread: `reefFisherAfter` ("both ways now. That is worse"),
+    `fisher1After` ("a punctual sea is no use to me at all"),
+    `salterElderAfter` ("I would not call that good news") and `ending`
+    itself ("boring, isn't it") all make the same point independently —
+    restoring the tide to order is not unambiguously good news to whoever
+    adapted to it broken. The Farore thread sequences correctly too:
+    villagers notice she has stopped visiting the shrine at 3 essences
+    (`villager2After`), and her own second line at the shrine, gated at 5,
+    explains why. No bug; if this thread gets extended later, that is the
+    throughline to write more of.
+  - The Coastwise Chain reads as a story on its own terms, not a fetch quest
+    with `check-trade.mjs` bolted on: every trader's item and reply is
+    specific to who they are (Sennit settling an argument with her mother,
+    Wick paying "the wood" that "takes payment and does not take promises",
+    Yarrow's jar surviving "forty years of brine"). No bug.
+
+All three folded into `docs/prompts/NEXT-PROMPT.md` item 6 so a future
+session does not re-read the same text looking for the same thing.
 
 **Not done, and worth flagging rather than guessing at:** whether Nereth's
 own death gets a line. `onBossDefeated` spawns the Essence entity and plays
