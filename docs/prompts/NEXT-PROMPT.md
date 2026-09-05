@@ -91,9 +91,9 @@ included) plus a two-tile `dMouth` arch at all six mouths, both halves warping.
 table, proved red (12 failures) against the old door. Full account in
 `docs/NEXT-SESSION.md` S33.
 
-Still open from that entry, and worth a look if you are nearby: nothing floods
-a dungeon's interior for STRANDED FLOOR the way `check-strands` does the
-overworld (see item 7).
+The one thing still open from that entry — nothing floods a dungeon's interior
+for STRANDED FLOOR the way `check-strands` does the overworld — is now closed;
+see item 7.
 
 ### 2. Five of the six dungeons have never been PLAYED
 
@@ -184,9 +184,11 @@ misreading Goal 2 as a rule about names. It is a rule about design.
 
 ### 7. Smaller, fully scoped
 
-- **Extend `check-strands.mjs` to the dungeons.** It floods the overworld only;
-  `walk-dungeons` has the same room-keyed blind spot by construction — a room
-  reduced to a four-tile doorway reads as fully walkable.
+- ~~Extend `check-strands.mjs` to the dungeons.~~ **DONE, S42.**
+  `tools/check-dungeon-strands.mjs` (new), sharing its flood with
+  `walk-dungeons.mjs` via `tools/lib/dungeon-flood.mjs` rather than
+  re-deriving it a second time. Found 9 regions, 12 cells, all legitimate on
+  first run — see `docs/NEXT-SESSION.md` S42.
 - **Replay baselines predating `beaten`/`heartPieces`.** Eleven files live in
   `tools/replays/` (the 51 in the output is assertions, not files); only some
   carry those fields, and `diffState` only walks keys a baseline HAS, so the

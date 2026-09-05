@@ -1,3 +1,68 @@
+## S42 — dungeon interiors get their own `check-strands`, and it shares its flood with `walk-dungeons`
+
+`docs/prompts/NEXT-PROMPT.md` item 7 named the gap directly: `check-strands.mjs`
+floods the overworld only, and `walk-dungeons.mjs` has the exact same
+room-keyed blind spot by construction — its flood walks cell by cell
+internally, but the assertion it reports (`all N rooms reachable`) is keyed on
+the ROOM, so a dungeon room reduced to a four-tile doorway would read as fully
+walkable there too, precisely the failure shape check-strands was written to
+catch on the overworld (the tree-crown fix severing The Gyre's southern lobe
+while every room-keyed tool stayed green).
+
+**Landed as two pieces, not one, because the honest way to close this gap
+without creating a second copy of it was to stop having two copies of the
+flood.** `walk-dungeons.mjs`'s reachability flood (locked doors counted
+against the dungeon's key supply, the boss door against its Boss Key, every
+one-way ledge, every puzzle/gust-wheel/kelp-snarl door, the Cleats' swim from
+D3 on, the Dredge Line's mooring from D6 on, floor-to-floor warps) was ported
+verbatim into `tools/lib/dungeon-flood.mjs` — a plain-Node module, no browser
+needed for this part of the logic even though `walk-dungeons.mjs` happens to
+run one for its rendering and live-ledge-hop checks. `walk-dungeons.mjs` now
+imports `floodDungeon` instead of carrying its own copy inline;
+`tools/check-dungeon-strands.mjs` (new) imports the exact same function and
+asks a different question of the exact same graph: not "is every room
+reached" but "which cells in the dungeon's own floor universe did the flood
+never actually stand on", grouped into connected regions across room seams
+AND warps (a severed corridor can span two rooms exactly the way it did on the
+overworld), diffed against `tools/dungeon-strands-baseline.json`.
+
+**Verified the extraction was behavior-preserving before trusting either
+tool**: ran `walk-dungeons.mjs` before touching anything (23/23, `d1: all 24
+rooms reachable` through `d6: all 26 rooms reachable`, boss rooms reachable,
+39/39 ledge hops each direction), did the extraction, ran it again — byte-
+identical pass count and room counts. Then `test.mjs` (83/83),
+`check-playthrough.mjs` (21/21, same route, same frame count), `replay.mjs`
+(51/51) — none of them touch dungeon-flood.mjs's code path directly, but a
+mistake in the port would have shown up as a changed room count in
+`walk-dungeons.mjs` and did not.
+
+**The baseline came back small and every entry was actually read before being
+trusted, not just recorded** — the trap this whole family of checker
+explicitly warns about ("Re-record with --record only once you have looked at
+what moved and believe it"). 9 regions, 12 cells:
+
+  - 8 single-cell pockets across d4 and d5 — printed each one's tile name and
+    its room's ASCII grid; every one is a single floor or water tile boxed in
+    on all four cardinal sides by a wall, a pot, or another wall, the exact
+    shape of the 14 accepted one-cell root pockets in `strands-baseline.json`
+    for the overworld. Decorative, not a route.
+  - One 4-cell region in d6's "Colonnade of the Drowned" (`1,2,4`, row y=2,
+    x=3-6) — the only one worth real scrutiny, being multi-cell. Printed the
+    room's grid: that row is `dFloorAbyss` floor sandwiched between a solid
+    wall above and a row of `G` tiles below, and `G` resolves (`legends.js`
+    line 202) to `dGrate` — "metal: only the Resonance Rod retracts it". This
+    is the Abyssal Keep, the Coastwise Chain's own dungeon, and the Rod is
+    exactly what the chain pays out; `check-trade.mjs` already proves that
+    exact crossing end to end. `dungeon-flood.mjs` has no verb for retracting
+    a grate (correctly — that is a trading-quest action, not a movement
+    capability), so this floor strip reads as stranded to THIS flood by
+    construction, the same way the overworld baseline's water reads as
+    stranded to a flood that does not swim. Legitimate; recorded.
+
+No new multi-cell region appearing here in the future is the thing that
+matters, exactly as for the overworld version. Add this to CLAUDE.md's
+verification table; nothing else in it changed meaning.
+
 ## S41 — D2 landed. `check-playthrough.mjs` is 21/21 holding BOTH essences
 
 Continuing directly from S40, same session's actual goal finally reached:
