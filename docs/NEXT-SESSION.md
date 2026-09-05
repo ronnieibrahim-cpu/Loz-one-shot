@@ -1,3 +1,277 @@
+## S40 — D2 routed to the Essence in a scratch harness, end to end; not landed in `tools/`
+
+Priority 2 from `docs/prompts/NEXT-PROMPT.md`, continuing from S28. **The
+route now REACHES THE ESSENCE OF CORAL SPIRE** — every required room, both
+Small Keys, the Lens, the Bombs, a heart piece, the Boss Key, Anemos beaten in
+real combat, essence collected — verified against the live engine in a
+scratch harness exactly as S28's was, and considerably further than S28 got
+(S28 stopped at the boss's own door). **Still NOT landed in
+`tools/playthrough-route.mjs`/`check-playthrough.mjs`** — `main`'s copies of
+both files are UNCHANGED, still D1-only, still 21/21. The reason is a real,
+specific blocker found late in the session (see "THE FRAME-PHASE PROBLEM"
+below) and it is worth reading before touching any of this again, because it
+will cost a session to rediscover.
+
+Read this whole entry before re-attempting D2 — it supersedes S28's route
+notes with a complete, working route, names a real engine bug and its
+one-line workaround, and ends with the one open problem that stopped this
+session from landing the result.
+
+### What is VERIFIED working, in a scratch harness (`window.__rp.beginRecord`)
+
+Two harnesses were used, same shape as S28's: `beginRecord` booted directly
+into a room with granted items (fast iteration, not the final run), and
+`beginPlaythrough` with the REAL committed `ROUTE` from
+`tools/playthrough-route.mjs` plus a candidate extension (the actual
+end-to-end proof). Seed 20260806 throughout, per `SEED` in that file.
+
+**1. Exiting D1.** Never attempted before this session — every prior route
+stopped inside Gohmaraq's arena. `['travel', 3, 7, 30000]` from the boss room
+(`d1/0,3,1`) successfully BFS-paths all the way back out to the Grotto Mouth
+(`d1/0,3,7`), through every anchor-gated corridor, with NO help placing the
+anchor — `travel` just tries edges and learns which are blocked, and the
+dungeon's redundant connectivity apparently offers a route that doesn't need
+the anchor sitting anywhere specific. Then `['goto', 4, 7, 500]` steps onto
+the mouth's own warp tile and exits to `overworld/0,8,8`. Costs almost
+nothing on its own — the run arrives at the mouth still holding whatever
+Gohmaraq left it (measured: 16 -> 3 quarter-hearts, ALL of it from the boss
+fight itself, none from the walk out).
+
+**2. THE REAL PROBLEM THIS EXPOSED: D1 leaves no margin for anything
+past it.** Gohmaraq's fight is tuned to be survivable AT ALL, not to leave a
+buffer for a fresh three-hearts-worth of overworld hazards afterward — arriving
+at 3-4 quarter-hearts, a single unavoidable hit is instant death, and the
+overworld between D1 and D2 is not hazard-free. Every attempt to cross it at
+that health died, repeatedly, in different rooms, to different things
+(an octorok's shot, a stationary "shielded" crab a script can't reliably
+kill — see #4 below). **This is not a routing mistake to route around — it
+is D1 ending exactly where it was designed to, with nothing past it ever
+having been asked of it before.** The fix that worked is real, in-game, and
+costs nothing to justify:
+
+**3. TIDEWATCH SHOP SELLS A HEART. Use it.** `src/data/overworld.js`'s
+`houseShop` stocks `['shopItem', 8, 3, { pickup: 'heart', price: 10, name:
+'Heart' }]` — 10 rupees for one full heart (`heal(progress, HEART_UNITS)`),
+via `Player.tryContextAction` -> `ShopItem.interact` -> `game.ask(...)`. The
+scripted actor's `dialogueMask` (mash A every 6 frames) accidentally answers
+the ensuing Yes/No prompt correctly, because "Yes" is the choice index the
+dialogue defaults to. **Approach from BELOW and face UP, not from the side
+and not standing on the tile** — `tryContextAction` checks a reach point one
+`CONTEXT_REACH` in front of the player against the item's rect, and standing
+on the item's own tile (or approaching from the side and taking one wrong
+step) misses that check entirely with no visible symptom (tap does nothing,
+no dialogue opens) — this cost real time to diagnose. Concretely:
+`['goto', 8, 4, 500], ['hold', ['up'], 6], ['tap', 'a', 30], ['dialogue',
+300]` from inside `houseShop`'s one room, reached from
+`overworld/0,5,7` (Village East) via `['goto', 4, 4, 600]` (the door tile) and
+exited via `['goto', 5, 6, 500], ['exit', 'down', 400]`.
+
+**IT IS ONE-PER-SAVE, NOT ONE-PER-VISIT — checked directly against the code,
+not assumed.** `spawnRoomEntities` (`src/game/game.js`) auto-generates a
+`saveKey` for EVERY entity a room spawns (`` `${mapId}:${room.key}:${i}` ``),
+regardless of whether the room's own data specifies one — so even though the
+heart's OWN data has no `saveKey` field, it gets one anyway, and
+`ShopItem.interact`'s `if (this.once) { this.sold = true; if (this.saveKey)
+p.secrets[this.saveKey] = true; }` writes to `progress.secrets`, which is
+real save data that survives leaving and re-entering the shop. Confirmed by
+testing exactly this: buy once, leave, come back, try again — second attempt
+is silently a no-op (no dialogue, no rupee spent, no heal), because
+`ShopItem.update`'s `_checked` block reads `progress.secrets[saveKey]` and
+marks itself `sold` before the player ever gets there. **One heart, ever,
+for 10 rupees.** D1's route nets enough rupees (rupees printed ~48-58 by
+this point, from `good`-drop enemies along the way) that the price is never
+the constraint — the "once" is.
+
+**4. A "SHIELD: 'FRONT'" ENEMY CAN BE HIT FROM ABOVE OR BELOW, ALWAYS,
+REGARDLESS OF WHICH WAY IT FACES — read this before spending an hour fighting
+one head-on.** `Entity.hurt` (`src/game/enemy.js` around the shield check):
+`if (this.shield === 'front' && opposite[dir] === this.dir) { ...blocked... }`
+— `dir` here is the ATTACK's direction, `this.dir` is the enemy's current
+facing, and the comparison is only ever between the two HORIZONTAL directions
+(`left`/`right`) for a crab or urchin, whose own AI (`patrol(e, g, {axis:
+'x'})`, `src/data/enemies.js`) only ever turns to face left or right. A
+vertical attack (`dir` = `up` or `down`) can NEVER equal the horizontal
+`opposite[dir]` the check is comparing against, so **it is unconditionally
+unblockable, every time, regardless of which way the crab is currently
+facing.** One overworld crab (Sandpiper Row, `overworld/0,9,8`, at roughly
+tile (6,1)) resisted `['fight', N, N]` for a MEASURED 25,000 frames without
+dying, taking no damage either way — not a bug, just `dFight`'s generic
+"line up on one axis" logic apparently converging on the SAME axis the crab
+patrols (both parties end up level on x, which is exactly its shielded
+front). The fix that actually worked: stand directly above it and swing down
+by hand — `['goto', 6, 0, 800], ['hold', ['down'], 30], ['tap', 'a', 40]`
+(repeated a few times) killed it outright. `dFight`/`dBoss` do not know this
+trick; a generic verb improvement here (approach perpendicular to a
+horizontally-patrolling shielded enemy's own axis) would fix more than one
+route, but was out of scope to build this session — the manual `goto`+`tap`
+sequence is what the route uses instead. **A different crab in the SAME
+session (Grotto Mouth's, and a different one again in Outer Coral) died to
+plain `['fight', N, N]` within a few hundred to a few thousand frames, no
+special handling needed** — so this is not "crabs are unkillable", it is
+specifically "a crab `dFight` cannot get off-axis from is functionally
+unkillable by it," which is a narrower and more useful fact.
+
+**5. THE OVERWORLD HEART-PIECE DETOUR, and why it matters more than it looks
+like it should.** Two more Pieces of Heart sit right next to the Coral Spire
+approach and neither was used by any prior route: **Shell Flats**
+(`overworld/0,10,8`, `['pickup', 6, 4, { kind: 'heartPiece' }]`, needs LOW
+tide specifically — the pickup's own tile is a well/pit variant impassable at
+MID or HIGH, confirmed by testing all three levels directly) and **Outer
+Coral** (`overworld/0,11,4`, right next to Spire Mouth, needs MID). Combined
+with the Coral Spire's own two (Glass Cell, off the First Fork approach;
+Whelk Cell, in the Bomb Vault detour) that is FOUR pieces — enough to
+complete a Heart Container mid-route. `addHeartPiece` (`src/game/progress.js`)
+confirms: the fourth piece calls `addHeartContainer`, which sets `hearts =
+maxHearts` — a FULL HEAL as well as +4 max, landing right around when the
+Whelk Cell piece is collected (the last of the four, if the overworld two are
+gathered before entering the dungeon and Glass Cell before Whelk Cell inside
+it). **This is not a nice-to-have — it is the difference between entering
+Anemos's fight able to win and not.** See #7.
+
+**6. THE ESSENCE PICKUP CANNOT BE TARGETED BY `loot` — a real, narrow tooling
+gap, not a game bug.** `Essence` (`src/game/objects.js`) is its OWN entity
+class, not a `Pickup` subclass, and never sets `isDrop = true`. `dLoot`
+(`tools/actor-runtime.mjs`) filters candidates on `e.isDrop`, so it can never
+see an essence at all — not "fails to reach it", literally never tries.
+Essence collection is driven entirely by `Essence.update`'s own
+`this.overlaps(game.player)` check, identical in shape to `Pickup`'s but
+implemented separately, so the ONLY way the actor collects one is to
+physically walk onto its tile via `goto`. D1's own route has apparently
+always worked by INCIDENTAL contact (something else in that arena's geometry
+puts the player over the essence's tile in the course of other movement,
+because it was never seen to fail) — D2's Anemos arena does not have that
+coincidence, and calling `['loot', N]` after the boss dies finds the drop
+heart container (which IS a `Pickup`, IS `isDrop`) and stops there, never
+touching the essence, however long the budget. **Fix: `['goto', 4, 3, 400]`
+(the exact tile `game.spawnEntity(this, 'essence', 4, 3, ...)` uses,
+`onBossDefeated` in `src/game/game.js`) immediately after the post-boss wait,
+BEFORE any `loot` call** — reversed order (loot first) also works by
+accident since the goto still lands on the tile afterward, but essence-first
+is the one order verified not to depend on where `loot` happens to leave the
+player. `BOSS_ESSENCE_DELAY_FRAMES` (`feel.js`) is only 70 frames, so a
+`['wait', 200]` before the `goto` is ample — the timer itself was confirmed
+firing (`game._timers`) well before that.
+
+**7. THE FIGHT ITSELF: measured, and it needs the fourth heart piece.**
+`measure-boss-combat.mjs`'s own sweep table (comment above `moveCost` in
+`tools/actor-runtime.mjs`) already had Anemos at roughly 4-5 wins out of 36
+seeds at the in-order 16-quarter-heart budget — this session's own god-mode-
+style measurement (`maxHearts: 200`, `['boss', 30000]`) found the fight needs
+a full **40 quarter-hearts of survived damage** to win outright with the
+current `dBoss` verb — three times the in-order budget. At the real seed
+(20260806), entering with the FULL heart-container bonus above (20 qh, tide
+already HIGH) still LOST on the first attempt. **The fix that worked, and it
+is the same shape as the Rising Chamber barnacle fix from S39-adjacent work:
+the fight's outcome is sensitive to the EXACT FRAME the boss room is entered
+at**, because `Anemos`'s own attack timers (`timer(e, 'feed', 250)`,
+`timer(e, 'ring', 170)`, etc., `src/data/bosses.js`) are absolute-frame-based,
+not relative to when the fight starts. A `['wait', N]` swept in front of
+`['boss', 9000]` found several winning phases with a comfortable margin
+(`wait: 220` and `240` both won leaving ~8-15 qh; most other values in the
+range 0-400 LOST outright) — this is a coin the route gets to flip by
+choosing when it walks in, not a skill the actor needs. **This is exactly
+where the session ran out of runway — see the blocker below.**
+
+### THE FRAME-PHASE PROBLEM — why nothing above is landed yet
+
+Every timing-sensitive fix above (`wait: 22` for the Rising Chamber barnacle,
+`wait: 220` for the Anemos fight, and implicitly the crab-fighting technique
+in #4) was TUNED AND VERIFIED IN ISOLATION — `beginRecord`'s `boot()` always
+zeroes `g.frame` to 0 before a scripted run starts (`tools/actor-runtime.mjs`),
+so every scratch-harness test in this session, however deep into "the route"
+it represented, actually started counting frames from zero. Several of the
+things being timed (a barnacle's `every(e, 96)` fire cycle, Anemos's own
+attack timers, an overworld crab's `every(e, 120)` patrol flip) are keyed to
+**absolute** `g.frame`, not to anything relative to when the actor's own
+script began. So a `wait` value that lands on a favourable phase when tested
+from frame 0 is not guaranteed — and in the one full end-to-end test this
+session ran, was NOT true — to still land on a favourable phase when the
+same steps run after D1's own ~20,000+ frame route has already elapsed.
+
+**This was caught, not missed silently**: the one full run of the REAL
+`ROUTE` (from `tools/playthrough-route.mjs`) plus this session's whole D2
+extension, via `beginPlaythrough`, ended in a death (`progress.deaths: 1`,
+respawned back into `d1`) partway through the new material, and the
+subsequent step threw (`boss: nothing to fight in d1 0,3,6` — the actor was
+still executing D2-shaped steps after being bounced back into D1 by the
+death). The death happened somewhere in the exit-D1 / shop / overworld-
+crossing material, almost certainly the Sandpiper Row crab fight or the
+barnacle-style timing in Rising Chamber landing on an unfavourable phase this
+time, because THIS run's frame count at that point does not match the
+isolated test's.
+
+**What the next session needs to do, precisely**: re-run the tuning passes
+(the `wait` sweeps for the barnacle and for Anemos, and re-verify the crab
+technique) using `beginPlaythrough` with the REAL `ROUTE` array plus the
+candidate extension every time, not `beginRecord` with a fresh `boot()` —
+slower per iteration (each run replays the whole of D1 first, ~20-40 seconds
+of real time per attempt at 3000-frame chunks) but the only way a `wait`
+value found this way will actually hold once landed. The full step-by-step
+route below is otherwise complete and does not need re-deriving — only the
+handful of absolute-frame-dependent `wait` values need re-sweeping against
+real frame counts, plus one shortened-scope idea worth trying first: shrink
+D1's own route wherever it has slack (the four-heart-piece detour order, an
+optional room) so the D2 extension's steps land at a MORE PREDICTABLE frame
+offset from a fixed point, rather than re-sweeping blind.
+
+### The full route, room by room (S28's numbering, extended)
+
+Not repeated in full here — see S28's own entry below for items 1-10 (Spire
+Mouth through the Boss Key), which this session re-verified essentially
+unchanged (current `main` already carries the `TideValve` fix S28 landed).
+NEW this session, in order:
+
+0. **Exit D1** (`['travel', 3, 7, 30000]` from the boss room, `['goto', 4, 7,
+   500]` to the mouth's warp) — see #1.
+1. **Tidewatch Shop**, one heart, exactly once — see #3.
+2. **The Grotto Mouth's own crab** (`overworld/0,8,8`, tile ~(7,4)) — killed
+   by plain `['fight', N, N]` in a few hundred frames, no special handling.
+3. **Sandpiper Row** (`overworld/0,9,8`) — the ONLY through-corridor is row 1
+   (row 5's own eastern end is walled off by a solid dock tile, a real dead
+   end, not a shortcut worth re-deriving); its crab needs the vertical-attack
+   technique, #4.
+4. **Shell Flats** (`overworld/0,10,8`) — heart piece, LOW tide, `['loot',
+   N]` alone (no fight needed; the urchin is stationary at LOW and evadable).
+5. Sound the conch to MID, **Outer Coral** (`overworld/0,11,4`) — heart
+   piece; its crab died to plain `fight` this run, may not always.
+6. **Spire Mouth** (`overworld/0,10,5`) into `d2/0,3,7` — the dungeon proper,
+   S28's route from here, with the Glass Cell detour added (off Sealed Cell,
+   south one room, `['travel', 4, 5, ...], ['loot', 900]` — cheap, ~1 qh,
+   phase-2 keese are harmless off-HIGH-tide and do not need fighting).
+7. Post-boss: `['wait', 200], ['goto', 4, 3, 400]` (the essence, #6) BEFORE
+   `['loot', N]` (the bonus heart container).
+
+Every room-to-room hop in this list that is NOT a `size:[w,h] > 1` room uses
+plain `['travel', rx, ry, N]`; Reefguard Hall and Spire Ascent still need the
+manual `goto`/`exit` S28 already worked out (the `dTravel` gap on non-anchor
+cells of a multi-cell room — still not fixed, still general, still worth
+fixing once for every future route that touches either room).
+
+### For the next session
+
+1. Re-sweep the `wait` values against the REAL route's frame count (see
+   above) — this is the ONE remaining step between this session's work and a
+   landed `tools/playthrough-route.mjs` extension with `GOAL.essence: 2`.
+2. Once a run holds end to end, extend `check-playthrough.mjs`'s assertions:
+   `s.essences.includes(2)` in addition to `1`, `s.beaten.d2` alongside
+   `s.beaten.d1`, `s.maxHearts >= 20` (D2's own two heart pieces plus the two
+   overworld ones complete a container D1's four did not need to), and the
+   D1-specific checks (`dungeonMap && chartstone`, `s.kills >= 5`, etc.)
+   either generalised or duplicated per-dungeon as appropriate — read them
+   fresh rather than assuming which still make sense once two dungeons are in
+   play.
+3. `docs/DUNGEON-STATUS.md`'s D2 row and its "D1 is played, not modelled"
+   framing both need revising once this actually lands — this session did
+   NOT change either, on purpose, because the harness is still D1-only.
+4. The `dTravel` multi-cell-room gap (Reefguard Hall, Spire Ascent) and the
+   generic "attack perpendicular to a horizontally-patrolling shielded
+   enemy's axis" idea for `dFight`/`dBoss` are both real, reusable engine-
+   tooling improvements that this session found reasons to want but did not
+   build — worth doing once, since both will keep costing route-authoring
+   time otherwise.
+
+---
+
 ## S39 — Land stops meeting land at a hard pixel edge
 
 `docs/ART-BACKLOG.md`'s oldest open item, and the last big one. Every land/land

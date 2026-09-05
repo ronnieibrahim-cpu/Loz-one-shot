@@ -95,6 +95,33 @@ route bug, not this one — the Lens had displaced the sword) and self-
 corrected before finding the real valve bug; both are recorded in S28
 rather than silently rewritten.
 
+**S40 got a live-engine route past the boss door — every room, Anemos beaten,
+the Essence collected — in the same kind of scratch harness, and STILL has
+not landed it in `tools/`.** `tools/playthrough-route.mjs`/
+`check-playthrough.mjs` are UNCHANGED by this session, on purpose: still
+D1-only, still 21/21. The route needed a fourth Heart Container completed
+mid-dungeon (two overworld Pieces of Heart neither prior session used, plus
+D2's own two) to survive Anemos at all — the fight measures at needing a
+full 40 quarter-hearts of survived damage against the current combat verb,
+not the 16 the in-order table below assumes — and needed several fixes to
+things that only bite once a route runs long enough to reach them: D1's own
+ending health (3-4 quarter-hearts) turns out to leave no margin for the
+overworld at all, closed by spending rupees at the Tidewatch Shop (one heart,
+genuinely one-per-save, checked against the code); a "shield: front" enemy
+that only ever turns to face left/right can always be hit from directly
+above or below, which one Sandpiper Row crab needed after resisting
+`['fight', 25000, 25000]` outright; and the Essence entity itself has no
+`isDrop`, so it needs an explicit `goto` rather than a `loot`. **What stopped
+this from landing**: every timing-sensitive fix (a barnacle's fire cycle, the
+boss's own attack windows) was tuned against a scratch harness that starts
+counting frames from zero, and the real route reaches the same rooms tens of
+thousands of frames later — a `wait` that lands well in isolation does not
+necessarily still land once spliced after the real D1 route, and the one
+full end-to-end attempt this session made proved it does not, currently. Full
+route, exact tile coordinates and the fix for each blocker: `docs/
+NEXT-SESSION.md` S40. Read it before attempting D2 again — the room-by-room
+route does not need re-deriving, only the frame-phase sweeps.
+
 ### Boss winnability, measured (S5)
 
 `node tools/measure-boss-combat.mjs <id>` — real combat, no god mode, seed

@@ -447,6 +447,46 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **A `wait` value tuned against `beginRecord`'s fresh `boot()` (frame 0) does
+  not transfer to the real route, because `boot()` zeroes `g.frame` and the
+  real route arrives at the same point tens of thousands of frames later.**
+  D2's session found this the expensive way: a barnacle's `every(e, 96)` fire
+  cycle, a boss's own attack timers, and an enemy's `every(e, 120)` patrol
+  flip are all keyed to ABSOLUTE `g.frame`, not to when a scripted run's own
+  steps began. A `wait` swept to find a favourable phase in an isolated
+  scratch test (fast to iterate on) can land on an UNfavourable one once
+  spliced after the real, much longer route that precedes it in
+  `check-playthrough.mjs` — confirmed: it did, on the one full end-to-end
+  attempt, costing a death that then cascaded into every subsequent step
+  executing against the wrong dungeon. Any frame-phase-dependent tune must be
+  swept against `beginPlaythrough` with the real `ROUTE` prefix, not
+  `beginRecord`'s quick boot, before it can be trusted. See
+  `docs/NEXT-SESSION.md` S40.
+
+- **A `shield: 'front'` enemy that only ever turns to face left/right
+  (`patrol(e, g, { axis: 'x' })`) can ALWAYS be hit from directly above or
+  below, regardless of which way it currently faces** — the shield check
+  (`Entity.hurt`, `src/game/enemy.js`) only ever compares the attack's
+  direction against the enemy's facing along the SAME axis pair
+  (`opposite[dir] === this.dir`), so a vertical attack can never match a
+  horizontal facing and is unconditionally unblockable. `dFight`'s generic
+  "line up on one axis" approach logic apparently converges on the SAME axis
+  a horizontally-patrolling shielded enemy patrols, which is exactly its
+  shielded front — one overworld crab resisted `['fight', 25000, 25000]`
+  outright (no damage either way, in 25,000 frames) until attacked by hand
+  from directly above. Not every shielded crab needs this — two others in
+  the same session died to plain `fight` in the ordinary way — but when one
+  doesn't, this is the fix, not a longer patience budget.
+
+- **`Essence` (`src/game/objects.js`) is not a `Pickup` and has no `isDrop`,
+  so `tools/actor-runtime.mjs`'s `dLoot` can never target it — not "fails to
+  reach it", it is invisible to the candidate filter regardless of budget.**
+  D1's own route has always collected its essence by incidental contact
+  during other post-boss movement; that coincidence does not hold for every
+  arena. The fix is an explicit `['goto', tx, ty, N]` to the exact tile
+  `spawnEntity(this, 'essence', tx, ty, ...)` used (`onBossDefeated`,
+  `src/game/game.js`), not `loot`.
+
 - **"A HARD 1PX BLACK OUTLINE ALL THE WAY ROUND. NO EXCEPTIONS" IS NOT LITERALLY
   WHAT THE SOURCE DOES — CHECK THE EXTRACTED ART BEFORE ENFORCING A RULE ON THE
   HAND-DRAWN ART.** S35 "fixed" eight pixels on the hand-drawn fairy's wings
