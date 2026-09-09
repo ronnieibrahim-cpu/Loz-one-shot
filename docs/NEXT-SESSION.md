@@ -1,3 +1,124 @@
+## S49 — tried S45's named `dBoss` retreat-branch fix, measured it dramatically helps three bosses and breaks a fourth, reverted
+
+Continuation of the S48 session, picking the next task off the project's own
+roadmap rather than a queue stub: `docs/HANDOFF.md`'s hard-won-lessons entry
+and S45 (`docs/NEXT-SESSION.md`) both name a precise, narrow candidate fix
+for why Nereth (D6) and Rootmaw (D5) lose to the harness actor's `dBoss`
+verb — "teach the retreat branch that `b.weakOpen` with `b.stun === 0` is
+ALSO a press-the-advantage case, not just `b.stun > 0`" — already scoped
+enough to attempt directly, with the validation bar already named
+(`measure-boss-combat.mjs` on all six dungeons, `check-playthrough.mjs`,
+`replay.mjs`). This session attempted exactly that fix and found the reason
+nobody had landed it yet: **it is not a pure win, and the trade-off could
+not have been seen without measuring all six.**
+
+**Baseline reconfirmed first, exactly matching S45's table** (same seed
+20260806, in-order hearts, no god mode): D1 won 24/24 (4qh lost), D2 died
+20/24 (16qh lost), D3 won 36/36 (13qh lost), D4 won flawlessly 44/44 (0qh
+lost), D5 died 26/52 (28qh lost), D6 died 6/80 (32qh lost, both at 8 and 11
+hearts). No drift since S45.
+
+**The fix**, in `tools/actor-runtime.mjs`'s `dBoss`: the `p.invuln` 1..20
+sub-branch of the `b.weakOpen` case changed from `if (b.stun > 0 &&
+!b.charging)` (press) / else (retreat, the bug) to `if (!b.charging)` —
+dropping the stun requirement entirely, since `b.weakOpen` is already this
+branch's real precondition (the outer `if`) and `b.stun` was only ever an
+accidental, Gohmaraq-specific proxy for "also not mid-action."
+
+**Re-measured all six. Three bosses improved dramatically; one regressed
+outright:**
+
+| D | boss | before | after |
+|---|---|---|---|
+| 1 | Gohmaraq | **WON**, 24/24, 4qh lost | **DIED**, 20/24, 12qh lost |
+| 2 | Anemos | died, 20/24, 16qh lost | **WON**, 24/24, 7qh lost |
+| 3 | Gloomtide | won, 36/36, 13qh lost | won, 36/36, 6qh lost |
+| 4 | Wyverna | won flawlessly, 44/44, 0qh | unchanged |
+| 5 | Rootmaw | died, 26/52, 28qh lost | died, 46/52, 28qh lost |
+| 6 | Nereth | died, 6/80, 32qh lost | died, 78/80, 32qh lost |
+
+D2 flips from a loss to a clean win. D5 and D6 come dramatically closer
+(Nereth in particular: 6 -> 78 of 80) without yet winning. **D1 flips from a
+clean win to a loss — deterministically, not a seed-luck artefact**: reran
+at `--seed=1` through `--seed=5`, identical result every time (20/24, 12qh,
+same 5 hits). `docs/measure-boss-combat.mjs`'s own damage log names exactly
+why: every one of D1's five post-fix hits (four projectile, one contact)
+lands with `weakOpen:true, stun:0, charging:false` — precisely the state the
+fix now presses into.
+
+**Root cause of the trade-off, found by reading `src/data/bosses.js` rather
+than guessing:** `weakOpen` does NOT universally mean "the boss cannot act."
+The file's own comment on the `open`/`shut` helpers (search "A BOSS DOES NOT
+FIRE INTO ITS OWN WINDOW") says outright that a source-level checker
+demanding `!weakOpen` gate every shelled boss's fire was written and
+REMOVED, because it fired false positives on Gohmaraq, Wyverna and Rootmaw —
+"all three of which are WON at the health an in-order player carries" with
+their weak point open and still shooting. Only each FINAL-phase boss
+(Nereth, Anemos — grep `!e.weakOpen` in the file, two call sites) gates its
+own fire off while its shell is open. So `weakOpen && !charging && stun===0`
+is genuinely safe for Nereth and Anemos (his fire is switched off exactly
+then) and genuinely NOT safe for Gohmaraq (his fire is not gated on
+`weakOpen` at all — only `stun` ever meant "cannot act" for him). The old
+code's `b.stun > 0` requirement was accidentally correct for the one boss it
+was written for and accidentally wrong for every boss whose safety signal
+isn't stun-shaped — which is exactly backwards from how it reads at a
+glance.
+
+**Reverted rather than landed**, per the same standard the dTravel splice
+used: a fix that trades one dungeon's win for three other dungeons'
+improvement is not a smaller win, it is a different, unevaluated fight, and
+CLAUDE.md's boss-fairness caveat applies here directly — a measurement plus
+a judgement, not a green tick. `git diff` confirmed clean after
+`git checkout -- tools/actor-runtime.mjs`; re-ran D1 to confirm the revert
+restored the exact baseline (24/24, 4qh lost).
+
+**What the next attempt needs, precisely, so it isn't rediscovered:** the
+real fix needs a signal for "is this boss's `weakOpen` alone sufficient to
+press"
+that is TRUE for Nereth/Anemos and FALSE for Gohmaraq/Wyverna/Rootmaw, and
+`b.stun`/`b.charging` cannot supply it — both are per-boss runtime state,
+not a boss-shaped classification. Two directions worth trying, neither
+attempted this session:
+
+1. **An explicit spec field**, set once per boss in `src/data/bosses.js`
+   (e.g. `safeWhenOpen: true` on Nereth and Anemos's `defineBoss` calls,
+   read by `dBoss` off `b.spec`) — the most direct fix, but it touches boss
+   DATA as well as the combat verb, which widens what
+   `measure-boss-combat.mjs` has to reverify (six bosses' full behaviour,
+   not just the one branch) and needs its own care not to let "make the
+   actor win" quietly become "make the fight easier."
+2. **A learned-at-runtime signal inside `dBoss` itself**, matching the
+   project's existing preference for verbs that discover rules rather than
+   being handed them (the same spirit as `dTravel`'s BFS learning which
+   edges are blocked): track, per fight, whether `b.stun > 0` has EVER been
+   observed while `b.weakOpen` was true; if a boss's weak point has stayed
+   open for some multiple of a plausible stun window's length without stun
+   ever firing, treat that boss's openings as counter-shaped and start
+   pressing without waiting for stun. Not attempted because getting the
+   threshold wrong in either direction reproduces exactly this session's
+   trade-off (too eager: D1-shaped regressions on a boss with a real but
+   slow stun cycle; too conservative: no improvement on Nereth/Rootmaw at
+   all) — it needs its own measurement pass across all six before trusting
+   a number, the same discipline this session already applied to the naive
+   fix.
+
+Either direction still needs the same validation bar named in S45: all six
+`measure-boss-combat.mjs` runs, `check-playthrough.mjs`, `replay.mjs`, no
+regression on D1/D3/D4, real improvement (ideally an outright win) on
+D2/D5/D6 — this session already confirms D2 is winnable this way and D5/D6
+are far closer than the historical record showed, so the upside is real, not
+hypothetical.
+
+**Also confirmed, separately, before starting any of this:** scanned all 90
+branches on `origin` for anything that duplicates the S48 dTravel splice or
+attempts D3 routing — nothing does. Full account in this session's own
+summary to the user; not repeated here since it found no work to fold in.
+
+`docs/prompts/LEDGER.md`'s "Nereth and Rootmaw lose to the harness actor"
+bullet (under "Known and deliberately unfixed") is updated to point here
+rather than rewritten in place, since it named the candidate fix without
+knowing its cost and this entry is the accurate, current account.
+
 ## S48 — spliced the fixed `dTravel` into D2's route (both legs), re-swept Anemos's `wait` against the real route
 
 Continuation of S47's session, per `docs/prompts/NEXT-PROMPT.md`: replace

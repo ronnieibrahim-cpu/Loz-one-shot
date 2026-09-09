@@ -110,25 +110,29 @@ extract from it:
   — would need `up+down`/`left+right` in `EDGE_ART_KEYS`); and salt flats,
   ice floors and reef/abyss water were never audited for whether they want a
   rim of their own.
-- **Nereth and Rootmaw lose to the harness actor.** Nereth's old "wins at 11
-  hearts" measurement no longer reproduces at all — S45 re-measured at both
-  8 and 11 hearts on current `main` and both die at 6 of 80 damage, stuck in
-  phase 1 forever. Root cause (S45, in full in `docs/NEXT-SESSION.md`):
-  `tools/actor-runtime.mjs`'s `dBoss` verb retreats instead of pressing an
-  advantage whenever `p.invuln` is 1-20 and `b.stun === 0`, which is nearly
-  every one of Nereth's post-volley openings, because his shell opens via a
-  counter rather than a stun and his trident keeps the actor's invuln
-  sitting in that range. Not fixed — the retreat branch is shared by every
-  boss fight `check-playthrough.mjs` depends on, and the fix needs
-  `measure-boss-combat.mjs` re-run on all six dungeons plus
-  `check-playthrough` plus `replay.mjs` before it can be trusted. Rootmaw
-  (D5) is a separate, undiagnosed finding from the same S45 sweep — died at
-  the in-order 7 hearts with a growing-distance retreat pattern, unlike
-  Nereth's fixed-distance one, not chased further.
-  **Caveat that applies to both:** a robot losing does not by itself prove a
-  boss is unfair if the robot is missing a verb (here, the conch and any
-  projectile-dodge) the fight assumes a player has. The honest deliverable
-  on either of these is a measurement plus a judgement, not a green tick.
+- **Nereth and Rootmaw lose to the harness actor — TRIED the fix S45 named,
+  it is not a pure win, see S49.** S45's root cause still stands (`dBoss`
+  retreats instead of pressing whenever `p.invuln` is 1-20 and `b.stun ===
+  0`), and S49 tried the fix it named (drop the `b.stun > 0` requirement).
+  Result, measured on all six: **D2 flips from a loss to a clean win, D5 and
+  D6 come dramatically closer (Nereth 6 -> 78 of 80) without yet winning —
+  and D1 flips from a clean win to a deterministic loss** (same result
+  across five different seeds; the damage log shows every D1 hit lands in
+  exactly the newly-permitted state). Root cause of the trade-off: `weakOpen`
+  does not universally mean "cannot act" — `src/data/bosses.js`'s own
+  comment says a checker requiring `!weakOpen` before any shelled boss fires
+  was written and removed because it false-positived on Gohmaraq, Wyverna
+  and Rootmaw, all three already won without it. Only Nereth's and Anemos's
+  FINAL phases actually gate their fire on `!weakOpen`; Gohmaraq's does not,
+  so `b.stun` was the only real safety signal his fight ever had. Reverted;
+  full account, the exact before/after table for all six bosses, and the two
+  untried directions for a real fix (a per-boss spec flag, or a
+  learned-at-runtime signal) are in `docs/NEXT-SESSION.md` S49.
+  **Caveat that still applies to both:** a robot losing does not by itself
+  prove a boss is unfair if the robot is missing a verb (here, the conch and
+  any projectile-dodge) the fight assumes a player has. The honest
+  deliverable on either of these is a measurement plus a judgement, not a
+  green tick.
 - **The replay baselines predate `beaten`/`heartPieces`.** Eleven files live
   in `tools/replays/`; only some carry those fields, and `diffState` only
   walks keys a baseline HAS, so the rest go unchecked. Re-record
