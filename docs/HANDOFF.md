@@ -4337,6 +4337,31 @@ because the tile he was facing is one of the village rocks and it ate the press.
   This landed Tideshade Hall's `2x2` conversion; see `docs/NEXT-SESSION.md`
   and `docs/DUNGEON-STATUS.md` for the room itself.
 
+- **`dTravel`'s "cannot path a sized room's non-anchor cell" gap had a
+  one-line root cause: the harness only ever compared the target against the
+  room's ANCHOR coordinates, never against what room the target coordinate
+  actually resolves to.** `dTravel` (`tools/actor-runtime.mjs`) terminates a
+  leg with `if (room.rx === rx && room.ry === ry) return;` — fine when the
+  target IS the anchor, wrong when the target is a `size:[w,h]>1` room's
+  OTHER covered cell, because `room.rx`/`room.ry` are always the anchor's own
+  coordinates no matter which of the room's cells the player is physically
+  standing in. Proved the failure mode concretely with a scratch harness
+  before touching anything: asked to travel to Reefguard Hall's own second
+  cell while standing in the room, the OLD code walked the actor to the far
+  edge of the room and tried to exit past it — landing in a completely
+  different, wrong room 923 frames later, not a timeout and not a no-op. The
+  fix is `window.__roomKeyAt` (already existed as `maps.js`'s `roomKeyAt`,
+  just never exposed to the page the way `hasRoom` was) plus one more
+  early-return check comparing it against `room.key`; with it, the same
+  travel call lands in 5 frames, still in the right room. **Left unresolved
+  on purpose:** `bfsScreens`' own graph still treats a wide room's covered
+  cells as separate nodes with a fake "edge" between them, which only stops
+  mattering because the fix's early-return fires before that fake edge is
+  ever walked for a same-room target — a THIRD room reached only by routing
+  THROUGH a wide room's non-anchor cell as a waypoint would still hit the old
+  failure. Neither documented past session (D2's) needed that case, so it
+  was left alone rather than guessed at. See `docs/prompts/QUEUE.md` item 1.
+
 ## The two gates that cannot be tiles
 
 Roc's Feather and the Power Bracelet became real tile gates this session. The

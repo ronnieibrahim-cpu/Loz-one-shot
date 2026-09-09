@@ -23,6 +23,8 @@ the relevant section, not folded into `docs/prompts/NEXT-PROMPT.md`.
 | `ending` wired to `Game.claimEssence` — nothing had ever called `startCutscene('ending')` before this | S43 | `docs/NEXT-SESSION.md` S43; `tools/shoot-cutscene.mjs --ending` |
 | Item art extraction: rupees, bomb drop, heart/heart piece, fairy, six Essence bells; `tools/check-rippers.mjs` added to enforce "never hand-edit a generated file" | S34-S36 | `docs/ART-BACKLOG.md`; `docs/NEXT-SESSION.md` S34-S36 |
 | Boss-fairness sweep measured fresh: D1/D3/D4 confirmed fair (D3 and D4 newly so), D2's floor-number death explained as expected, Nereth's old "wins at 11 hearts" root-caused as no longer reproducing, Rootmaw flagged as a new open question | S45 | `docs/NEXT-SESSION.md` S45; `docs/DUNGEON-STATUS.md` "Boss winnability, measured" |
+| Tideshade Hall (D6) widened to the game's first `2x2` room | S46 | `docs/NEXT-SESSION.md` S46; `docs/DUNGEON-STATUS.md` D6 section |
+| `dTravel`'s non-anchor-cell gap fixed in `tools/actor-runtime.mjs` (`window.__roomKeyAt` + a same-room short-circuit) — proven with a scratch harness showing the old code walked into the WRONG room (923 frames) and the fix lands correctly (5 frames). **Not yet spliced into the committed `playthrough-route.mjs`** — Reefguard Hall and Spire Ascent still use their manual `goto`/`exit` workaround there on purpose, since Anemos's fight is frame-phase-sensitive and re-sweeping that timing is separate work | S47 | `docs/NEXT-SESSION.md` S47 |
 
 ---
 
@@ -108,9 +110,6 @@ extract from it:
   — would need `up+down`/`left+right` in `EDGE_ART_KEYS`); and salt flats,
   ice floors and reef/abyss water were never audited for whether they want a
   rim of their own.
-- **dTravel cannot path a `size:[w,h]>1x1` room's non-anchor exits.** A real,
-  general engine/harness gap named in S28 and still open. It hit both
-  Reefguard Hall and Spire Ascent in D2's routing.
 - **Nereth and Rootmaw lose to the harness actor.** Nereth's old "wins at 11
   hearts" measurement no longer reproduces at all — S45 re-measured at both
   8 and 11 hearts on current `main` and both die at 6 of 80 damage, stuck in

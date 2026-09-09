@@ -11,17 +11,43 @@ a done-condition, and scope explicitly.
 
 ## 1. Wide rooms, continued
 
-Fix `dTravel`'s non-anchor-cell gap once — a sized room's exits that are not
-on its anchor cell cannot currently be pathed by `dTravel` at all, which is
-the constraint that pinned this session's `2x2` room to the anchor cell in
-the first place (see `docs/prompts/LEDGER.md`). Fix it before any future
-routing session (D3 and onward) meets a sized room and has to route around
-the same gap a second time.
+**The `dTravel` non-anchor-cell gap is fixed (S47)** — `tools/actor-runtime.mjs`
+now short-circuits `dTravel` when the target screen coordinate resolves (via
+the new `window.__roomKeyAt`) to the room the actor is already standing in,
+rather than only comparing against the room's own anchor `rx`/`ry`. Proven
+with a scratch harness: the old code, asked to travel to Reefguard Hall's own
+second cell while standing in the room, walked the actor into a completely
+different, wrong room in 923 frames; the fix lands correctly in 5. Full
+account in `docs/NEXT-SESSION.md` S47.
 
-Then: one `2x2` room per dungeon, in the order D5, D6, D3, D1, D2 — leaving
-D1 and D2 for last because both are baselined by `check-playthrough.mjs` and
-a geometry change there is the most expensive one to get wrong. Then
-consider whether a `3x1` room is worth doing anywhere.
+**This fixes ROUTING, not COLLISION — they are different problems, and the
+second one is still mostly closed.** `docs/prompts/LEDGER.md`'s S46 entry
+found that a `2x1`/`1x2` room can only grow to `2x2` if its down-right
+neighbour cells (per its own anchor key) are vacant — most aren't. Checked
+every sized room in the game: only D6's Tideshade Hall had a free block
+(converted, S46). D4's Cistern Floor and Ironknight Gallery, D5's Shrine
+Ford, and D6's Crossed Shafts are ALL boxed in by real neighbouring rooms —
+the original "one `2x2` room per dungeon D5, D6, D3, D1, D2" plan this stub
+used to state is not achievable by widening alone for D5 (Shrine Ford is
+boxed; D6 is already done via Tideshade Hall, not Crossed Shafts). A future
+`2x2` for D4 or D5 needs either a real redesign that deletes/merges a
+neighbouring room (a bigger job than "widen one room" — treat it as its own
+scoped task, not a queue stub) or accepting D3/D1/D2 as the only remaining
+candidates with free growth cells, which the room-size session's own
+selection rule excludes (D1/D2 baselined by `check-playthrough`, D3 reserved
+for routing). Read `docs/HANDOFF.md`'s hard-won-lessons entry on the
+down-right-growth constraint before proposing a target.
+
+**Separately, now that `dTravel` itself is fixed:** `tools/playthrough-route.mjs`
+still uses a manual `goto`/`exit` workaround for Reefguard Hall's and Spire
+Ascent's own non-anchor cells (deliberately not touched in S47 — Anemos's
+fight is frame-phase-sensitive, per S40/S41, and splicing a timing change
+into the live ~49,500-frame route needs its own re-sweep, not a drive-by
+edit). A future session COULD simplify those two legs to use `travel` now
+that it works, but must re-sweep `wait` values against `beginPlaythrough`
+with the real `ROUTE` prefix per S40's lesson, not a fresh `boot()`, before
+trusting the result — and must not do this as a side effect of some other
+task.
 
 ## 2. Region art / overworld polish
 

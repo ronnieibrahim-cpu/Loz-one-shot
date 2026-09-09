@@ -28,6 +28,12 @@ export async function installRuntime() {
   // coordinate that lands INSIDE a multi-screen room; a raw key lookup does not.
   const mapsMod = await import('/src/world/maps.js');
   window.__hasRoom = mapsMod.hasRoom;
+  // For `dTravel`'s own non-anchor-cell fix below: which room's key actually
+  // OWNS a screen coordinate, as opposed to which coordinate a room is keyed
+  // to. A `size:[w,h]>1` room's non-anchor cells resolve to the same key as
+  // its anchor; a raw `room.rx===rx && room.ry===ry` comparison does not see
+  // that, because `room.rx`/`room.ry` are always the anchor's own coordinates.
+  window.__roomKeyAt = mapsMod.roomKeyAt;
 
   const TILE = screen.TILE, ROOM_W = screen.ROOM_W, ROOM_H = screen.ROOM_H;
   const VIEW_W = screen.VIEW_W, VIEW_H = screen.VIEW_H;
@@ -520,7 +526,20 @@ export async function installRuntime() {
     for (let leg = 0; leg < 80 && spent < budget; leg++) {
       const room = g.room;
       if (!room) { yield 0; spent++; continue; }
+      // A `size:[w,h]>1` room's non-anchor cells resolve to the SAME key as
+      // its anchor (`room.key`), so a target that is really just "the room
+      // I'm already standing in, at its second screen" must be recognised
+      // here — `room.rx===rx && room.ry===ry` alone never sees it, because
+      // `room.rx`/`room.ry` are always the room's own anchor coordinates,
+      // and there is no real boundary to cross to be considered "there".
+      // Without this, asking to travel to a wide room's own non-anchor cell
+      // never terminates: BFS finds a one-step "edge" between the anchor and
+      // that cell (they are adjacent coordinates), but walking it means
+      // walking to the room's TRUE far edge and trying to exit past it,
+      // which never fires `room.key` changing — the leg reads as blocked
+      // forever. See docs/prompts/LEDGER.md and docs/HANDOFF.md.
       if (room.rx === rx && room.ry === ry) return;
+      if (window.__roomKeyAt && window.__roomKeyAt(g.mapId, room.floor, rx, ry) === room.key) return;
       const plan = bfsScreens(g, room.rx, room.ry, rx, ry, blocked);
       if (!plan || !plan.length) return;          // nowhere left to try
       const dir = plan[0];

@@ -1,3 +1,81 @@
+## S47 — fixed `dTravel`'s non-anchor-cell gap, proved it with a scratch harness, did not splice it into the live route
+
+Continuation of S46's session. `docs/prompts/QUEUE.md` item 1 named this gap
+as the thing to fix "before any future routing session meets a sized room" —
+`dTravel` (`tools/actor-runtime.mjs`) could not path to a `size:[w,h]>1`
+room's own non-anchor cell, which is why `tools/playthrough-route.mjs` has
+carried a manual `goto`/`exit` workaround for Reefguard Hall and Spire Ascent
+since D2's own routing session.
+
+**Root cause.** `dTravel`'s per-leg termination check was
+`if (room.rx === rx && room.ry === ry) return;` — comparing the travel
+target against the room's own ANCHOR coordinates. `room.rx`/`room.ry` are
+always the anchor's coordinates, whichever of the room's covered cells the
+player is actually standing in, so asking to travel to a wide room's own
+second cell while already inside that room never short-circuited. Instead
+`bfsScreens` found a spurious one-step "edge" between the anchor coordinate
+and the target coordinate (both resolve to a room via `window.__hasRoom`,
+so the BFS graph treats them as two adjacent, distinct nodes), and walking
+that "edge" meant walking to the room's TRUE far physical edge and trying to
+exit past it — which does not fail cleanly.
+
+**Proved this concretely before fixing anything**, per CLAUDE.md's own
+"screenshot it" / "add the assertion that would have caught it" habit,
+applied to a harness bug rather than a game one: a scratch Playwright script
+(not committed — same convention as other one-off diagnostics in this file)
+warped into Reefguard Hall's anchor cell and issued
+`['travel', 5, 2, 600]`, targeting the room's own second cell. Against the
+pre-fix code: 923 frames, ending in room `1,4,3` — a DIFFERENT, wrong room,
+not a timeout. Confirms the failure mode is silent misdirection, not a hang.
+
+**The fix**, in `tools/actor-runtime.mjs`:
+
+  - Exposed `window.__roomKeyAt = mapsMod.roomKeyAt` next to the existing
+    `window.__hasRoom`. `roomKeyAt(mapId, floor, x, y)` (already existed in
+    `src/world/maps.js`, just never exposed to the page) returns the KEY of
+    whichever room occupies a cell — the same key for all of a wide room's
+    covered cells, not just its anchor.
+  - Added `if (window.__roomKeyAt(g.mapId, room.floor, rx, ry) === room.key) return;`
+    right after the existing anchor check in `dTravel`. Now "the target cell
+    is part of the room I'm already in" terminates the leg immediately,
+    however many legs of BFS-planned travel it took to get there.
+
+Re-ran the same scratch script against the fix: 5 frames, correct room
+(`1,4,2`). Reverted the fix with `git stash` and re-ran to confirm the
+scratch test genuinely discriminates (it does — fails with the exact same
+923-frame wrong-room symptom against the unmodified code), then restored
+the fix and deleted the scratch script (not a permanent tool, same as other
+one-off harness diagnostics recorded in this file rather than committed).
+
+**Full regression suite re-run, all green:** `test.mjs` 83/83, `replay.mjs`
+51/51 (unchanged — replays drive from a recorded button-mask tape, not
+`dTravel`, so this proves no accidental breakage rather than proving the
+fix), `check-playthrough.mjs` 21/21 with the exact same frame count and
+route as before the fix (expected: the committed route still uses the
+manual `goto`/`exit` workaround, not `travel`, for Reefguard Hall and Spire
+Ascent — see below for why that was left alone).
+
+**Deliberately NOT done this session: splicing the fix into
+`tools/playthrough-route.mjs` itself.** Reefguard Hall's and Spire Ascent's
+manual `goto`/`exit` legs could now be replaced with `travel` calls, which
+would simplify the route. Did not do it, because S40/S41's own lesson
+applies directly here: Anemos's fight is frame-phase-sensitive (his attack
+timers are absolute-`g.frame`-based, not relative to when the fight starts),
+and the `wait` values elsewhere in this exact route were swept against the
+REAL ~49,500-frame route rather than an isolated scratch boot for precisely
+this reason. Changing how many frames the Reefguard Hall / Spire Ascent legs
+take — even by a handful — could shift Anemos's fight into an unfavourable
+phase window, and chasing that down would cost far more than the
+simplification is worth in this session. This is exactly the class of
+change CLAUDE.md warns about under "a five-line change to the movement path
+is never a five-line change." Left as a clearly-scoped future task in
+`docs/prompts/QUEUE.md` item 1, with the re-sweep requirement stated
+explicitly so a future session does not skip it.
+
+`docs/prompts/LEDGER.md` and `docs/prompts/QUEUE.md` updated to reflect the
+fix and this scoping decision; `docs/HANDOFF.md` carries the mechanism as a
+hard-won lesson.
+
 ## S46 — the first `2x2` room: Tideshade Hall (D6), after both named candidates turned out boxed in
 
 `docs/prompts/NEXT-PROMPT.md` asked for the game's first `2x2` room, naming
