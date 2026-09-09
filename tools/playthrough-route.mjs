@@ -825,11 +825,17 @@ export const ROUTE = [
   ['loot', 700],
 
   // ---------------------------------------------------------------- d2 1,5,3
-  // Bomb Vault and Whelk Cell — Reefguard Hall's own second cell, reached by
-  // hand (goto/exit, not `travel`; see the `dTravel` note above). The chest
-  // holds the Bombs; Whelk Cell's own Piece of Heart is the FOURTH one this
-  // run collects (two overworld, Glass Cell, this one) — the Heart
-  // Container completes here, refilling to full and raising the cap.
+  // Bomb Vault and Whelk Cell. Still reached by hand (goto/exit, not
+  // `travel`) in THIS direction — `bfsScreens` always plans from the wide
+  // room's own ANCHOR coordinates, so a `travel` call issued from here would
+  // have to cross the same phantom anchor/non-anchor "edge" the S47 fix does
+  // not resolve (see the GOAL comment's note on the narrower gap that
+  // remains). The RETURN trip below, entering Reefguard Hall's own second
+  // cell directly from Bomb Vault, is the one S47's fix does cover — see
+  // that comment. The chest holds the Bombs; Whelk Cell's own Piece of Heart
+  // is the FOURTH one this run collects (two overworld, Glass Cell, this
+  // one) — the Heart Container completes here, refilling to full and
+  // raising the cap.
   ['goto', 14, 7, 900],
   ['exit', 'down', 400],
   ['goto', 2, 3, 500],
@@ -840,24 +846,30 @@ export const ROUTE = [
   ['travel', 5, 4, 1200],
   ['loot', 900],
 
-  // Back to Reefguard Hall's anchor cell — `travel` from there reaches Spire
-  // Ascent fine, since that IS an edge from the room's own registered cell.
+  // Back to Reefguard Hall's anchor cell. `dTravel`'s non-anchor-cell fix
+  // (S47) lets a single `travel` call reach the room's own second cell
+  // (1,5,2) directly from Bomb Vault, replacing the manual `goto`/`exit`
+  // pair this used to need — `travel` from there reaches Spire Ascent fine,
+  // since that IS an edge from the room's own registered cell.
   ['travel', 5, 3, 900],
-  ['goto', 2, 0, 500],
-  ['exit', 'up', 400],
+  ['travel', 5, 2, 1200],
   ['goto', 4, 4, 900],
   ['travel', 3, 2, 1200],
 
   // ---------------------------------------------------------------- d2 1,3,2
-  // Spire Ascent — `size: [1, 2]`, the same `dTravel` gap. Its locked door
-  // (the second Small Key) sits at local row 11, gating only the crossing to
-  // Drowned Cell, not the room's own approach.
+  // Spire Ascent — `size: [1, 2]`. Its locked door (the second Small Key)
+  // sits at local row 11 of the room's own second cell (`1,3,3`), gating
+  // only the crossing to Drowned Cell, not the room's own approach — reached
+  // by walking down from the anchor cell (ordinary internal movement, not a
+  // `dTravel` matter) and unlocking it. Leaving to Drowned Cell used to need
+  // a manual `goto`/`exit` pair for the same reason Reefguard Hall's return
+  // leg did (S47's non-anchor-cell fix); `['travel', 2, 3, N]` now covers it
+  // in one call — S48.
   ['goto', 4, 6, 900],
   ['goto', 2, 11, 500],
   ['hold', ['left'], 20],
   ['tap', 'a', 30],
-  ['goto', 0, 11, 500],
-  ['exit', 'left', 300],
+  ['travel', 2, 3, 900],
 
   // ---------------------------------------------------------------- d2 1,2,2
   // The Sounding Fork, the west throat — the same primitive as the First
@@ -921,10 +933,20 @@ export const ROUTE = [
   // THE FIGHT'S OWN OUTCOME IS SENSITIVE TO THE EXACT FRAME THE ROOM IS
   // ENTERED AT, because Anemos's attack timers (`timer(e, 'feed', 250)`,
   // `timer(e, 'ring', 170)`, etc.) are absolute-frame-based rather than
-  // relative to when the fight starts — the `wait` below was swept against
-  // this exact route to find a stretch of favourable frames, not a single
-  // lucky one.
-  ['wait', 220],
+  // relative to when the fight starts. RE-SWEPT THIS SESSION (S48) against
+  // this exact route, after splicing the fixed `dTravel` into Reefguard
+  // Hall's return leg shifted this room's entry by several hundred frames —
+  // the OLD `wait: 220` still happened to pass here, but a 1-frame sweep of
+  // 195-235 showed it sitting on an isolated single-frame win surrounded by
+  // losses (219 and 221 both lose), not a plateau. A wider band was found at
+  // 207-213 (7 consecutive frames, all wins); `wait: 212` sits in the middle
+  // of it with a comfortable 13/20 quarter-heart margin, not the 1-3 qh a
+  // knife-edge frame would have left. Per CLAUDE.md: "a five-line change to
+  // the movement path is never a five-line change" — if anything upstream of
+  // this fight ever shifts the entry frame again, re-sweep the same way
+  // (`beginPlaythrough` with the real `ROUTE` prefix, never an isolated
+  // `boot()`) rather than trusting a single pass.
+  ['wait', 212],
   ['boss', 9000],
   ['wait', 200],
 
@@ -962,10 +984,27 @@ export const ROUTE = [
  * the sweep table above `safe` in tools/actor-runtime.mjs for exactly which,
  * and `tools/measure-boss-combat.mjs <d> --seed=N` for how to re-measure it.
  *
- * A REAL, GENERAL GAP THE NEXT EXTENSION WILL HIT AGAIN: `dTravel` cannot
- * path through a `size: [w,h] > 1` room's non-anchor cell (Reefguard Hall and
- * Spire Ascent both needed manual `goto`/`exit` because of it). Worth fixing
- * once in `tools/actor-runtime.mjs` rather than working around a third time.
+ * THE `dTravel` NON-ANCHOR-CELL GAP (S47) IS NOW SPLICED IN, for both of the
+ * two rooms that needed it — S48. Reefguard Hall's return leg (Bomb Vault
+ * back into the Hall's own second cell, `1,5,2`) and Spire Ascent's exit leg
+ * (its own second cell, `1,3,3`, out to Drowned Cell) both now use a single
+ * `['travel', rx, ry, N]` call in place of the manual `goto`/`exit` pair they
+ * used to need. Landing this shifted the route's total frame count (fewer
+ * redundant positioning frames) and, because Anemos's attack timers are
+ * absolute-`g.frame`-based, moved his fight's entry frame enough that the old
+ * `wait: 220` needed re-sweeping against the real route — see the comment on
+ * the Anemos fight below for the new value and how it was found.
+ *
+ * A narrower version of the same `dTravel` gap remains, and is still out of
+ * scope: `bfsScreens` plans every route from a wide room's OWN ANCHOR
+ * coordinates, never the player's actual physical cell, so a `travel` call
+ * FROM a wide room's anchor TO a target beyond its own non-anchor cell still
+ * has to cross a phantom "edge" between the anchor and non-anchor cells that
+ * does not correspond to any real wall — and that leg does not resolve.
+ * Neither of D2's two legs needed this (both fixed instances are a single
+ * real leg from an ordinary adjacent room straight onto the wide room's own
+ * non-anchor cell), so it was not built or tested here. See
+ * `docs/HANDOFF.md`'s hard-won-lessons entry on the S47 fix.
  */
 export const GOAL = {
   essences: [1, 2],

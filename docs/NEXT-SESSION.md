@@ -1,3 +1,109 @@
+## S48 — spliced the fixed `dTravel` into D2's route (both legs), re-swept Anemos's `wait` against the real route
+
+Continuation of S47's session, per `docs/prompts/NEXT-PROMPT.md`: replace
+Reefguard Hall's and Spire Ascent's manual `goto`/`exit` workarounds with the
+now-fixed `dTravel`, one leg at a time, re-running `check-playthrough.mjs`
+after each — and if Anemos's timing shifted, re-sweep the `wait` against the
+real route rather than an isolated boot, per S40/S41's method.
+
+**Read the exact room adjacency graph before touching anything, not just the
+comments.** The route's own comments called BOTH directions of Reefguard's
+Bomb-Vault crossing "reached by hand... because of the dTravel gap," but that
+is only true of ONE direction. `occupancy()` (`src/world/maps.js`) confirmed
+Reefguard Hall (anchor `1,4,2`, `size:[2,1]`) covers `1,4,2` and `1,5,2`; Bomb
+Vault (`1,5,3`) is a genuinely separate room one row south of the wide room's
+own second cell, not part of it. `bfsScreens` (`tools/actor-runtime.mjs`)
+plans routes purely in COORDINATE space, always starting from `room.rx`/`ry`
+— the room's own ANCHOR — never the player's actual physical position inside
+a wide room. That has one real consequence:
+
+- **A `travel` call FROM an ordinary adjacent room straight onto a wide
+  room's own non-anchor cell is exactly what S47's fix repairs**, because
+  after the one real leg lands there, `dTravel`'s new
+  `roomKeyAt(...) === room.key` check fires immediately and stops — no
+  second leg is ever planned. Verified first in an isolated scratch harness
+  (`beginRecord`, booted directly into Bomb Vault with the reefguard puzzle
+  flag faked true): `['travel', 5, 2, 1200]` reached Reefguard Hall
+  (`room: '1,4,2'`) in 109 frames. This is the leg the fix was built for.
+- **A `travel` call FROM a wide room's own ANCHOR to a target beyond its
+  non-anchor cell is NOT fixed by S47**, because `bfsScreens` plans from the
+  anchor coordinates regardless of where the player physically stands, and
+  the first leg of that plan is a phantom "edge" between the anchor and
+  non-anchor cell that does not correspond to any real wall (the two halves
+  share open floor, not a doorway) — `dExit` never registers a room-key
+  change walking it, so the leg never completes. Tried this directly
+  (`['travel', 5, 3, budget]` called from Reefguard's anchor half, aimed at
+  Bomb Vault): the isolated scratch test only got as far as one failed
+  `goto` (900-frame budget spent moving ~12px) before a follow-on `travel`
+  mis-routed into the wrong room entirely — confirming the forward leg
+  genuinely does not benefit from the fix and has to stay manual. This is the
+  "narrower version of the same gap" the GOAL comment and `docs/prompts/
+  QUEUE.md` item 1 now both name as still open and out of scope.
+
+**What actually changed, leg by leg — Reefguard Hall first, alone, verified
+green before touching Spire Ascent:**
+
+- `tools/playthrough-route.mjs`: the return trip from Bomb Vault back into
+  Reefguard Hall — `['goto', 2, 0, 500], ['exit', 'up', 400]` — became
+  `['travel', 5, 2, 1200]`, leaving the following `['goto', 4, 4, 900]`
+  (ordinary internal movement back toward the anchor half) untouched.
+  `check-playthrough.mjs` stayed 21/21, frame count dropped from 49,516 to
+  49,239 (route got 277 frames more efficient; still comfortably survivable,
+  Anemos's own room cost ticked from 13 to 14 qh).
+- Spire Ascent's own exit to Drowned Cell — `['goto', 0, 11, 500], ['exit',
+  'left', 300]` — became `['travel', 2, 3, 900]`. Tested this one directly
+  against the full real route (cheap: a full run is ~3-5 seconds headless,
+  not the 20-40s/attempt S40 warned about for a slower harness) rather than
+  an isolated scratch boot first, since the risk here was correctness, not
+  frame-phase. It worked, and — unexpectedly — produced BYTE-IDENTICAL frame
+  timings to the Reefguard-only run at every later room boundary. Reading
+  `bfsScreens`'s BFS order explains why: from Spire Ascent's anchor `(3,2)`,
+  the shortest coordinate-space path to Drowned Cell `(2,3)` goes `left` to
+  the Sounding Fork `(2,2)` and then `down` to `(2,3)` — two REAL leg
+  attempts in BFS's graph, neither of which is the phantom anchor/non-anchor
+  edge — rather than through Spire Ascent's own second cell at all. `dExit`
+  apparently resolved the whole thing in exactly the moves the manual code
+  already used, at zero frame cost either way. This leg turned out to be
+  frame-neutral, which is why isolating "one leg at a time" still worked even
+  though both edits ended up in the same file before the final sweep — the
+  Spire Ascent change contributed nothing to the timing shift, only
+  Reefguard's did.
+
+**Anemos's `wait` needed re-sweeping, and the OLD value's margin was worse
+than it looked.** Wrote a scratch sweep script (not committed, same
+convention as S47's): boot `beginPlaythrough` with the REAL, current `ROUTE`
+sliced up to the wait step, substitute a candidate value, run only through
+`['boss', 9000]`, and read off `beaten`/hearts. A coarse pass (every 25
+frames, 0-1000) showed wins scattered in isolated pockets with no obviously
+wide safe region; a 1-frame sweep of 195-235 (bracketing the old `wait: 220`)
+showed EXACTLY why the old value was fragile: 220 wins, but 219 and 221 both
+lose — a single-frame knife-edge, not a plateau, even though it happened to
+still pass in this session's full `check-playthrough.mjs` run. The same
+1-frame sweep found a genuine 7-frame stable band at 207-213 (every value in
+it wins). Picked `wait: 212`, the middle of that band, which also has the
+best margin among the band's members (13/20 quarter-hearts remaining vs. the
+1-3 qh some of the other winning frames left). Landed it; full checker run:
+21/21, 48,795 frames total (721 fewer than S47's baseline), tape re-recorded
+with `--record` (2986 inputs).
+
+**Comments updated in place, not just added:** the GOAL block's "A REAL,
+GENERAL GAP" note is rewritten to say what's fixed and what narrower gap
+remains; Reefguard's and Spire Ascent's own section comments now say which
+direction is fixed and which still needs the manual pair, and why.
+
+**Verified before calling it done:** `check-playthrough.mjs` 21/21 (same
+completion claims — both Essences, both bosses beaten in real combat, health
+never zero, deterministic blind replay), `replay.mjs` 51/51 (unchanged,
+confirms no collateral damage — these baselines don't touch
+`playthrough-route.mjs`), `test.mjs` 83/83, `npm run build` re-run (no
+`dist/` diff — `tools/` is not bundled into the shipped game, exactly as
+`docs/prompts/NEXT-PROMPT.md` predicted).
+
+`docs/prompts/LEDGER.md`'s S47 row and `docs/prompts/QUEUE.md` item 1's
+"separately, now that dTravel is fixed" paragraph both updated to say this
+landed, naming the remaining narrower gap so it isn't rediscovered from
+scratch.
+
 ## S47 — fixed `dTravel`'s non-anchor-cell gap, proved it with a scratch harness, did not splice it into the live route
 
 Continuation of S46's session. `docs/prompts/QUEUE.md` item 1 named this gap

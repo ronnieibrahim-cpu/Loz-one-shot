@@ -4362,6 +4362,46 @@ because the tile he was facing is one of the village rocks and it ate the press.
   failure. Neither documented past session (D2's) needed that case, so it
   was left alone rather than guessed at. See `docs/prompts/QUEUE.md` item 1.
 
+- **The fix above only helps ONE of the two directions through a wide room's
+  non-anchor cell — read the room's comments critically, they can describe
+  both directions as equally broken when only one is.** `bfsScreens`
+  (`tools/actor-runtime.mjs`) plans every route from `room.rx`/`room.ry` — the
+  CURRENT room's own ANCHOR coordinates — never from where the player is
+  physically standing. So: `travel` called FROM an ordinary adjacent room
+  straight ONTO a wide room's own non-anchor cell is a single real leg, and
+  the S47 fix's `roomKeyAt(...) === room.key` check fires the instant it
+  lands — this direction works now. `travel` called FROM the wide room's own
+  anchor toward a target BEYOND its non-anchor cell still has to cross the
+  same phantom "edge" between the anchor and non-anchor cell that never
+  corresponded to a real wall, and that leg still does not resolve — proved
+  directly (S48): `['travel', 5, 3, N]` from Reefguard Hall's anchor half,
+  aimed at Bomb Vault one room past its own non-anchor cell, spent its whole
+  `dGoto` budget moving about 12px and never got there. D2's actual
+  committed route needed the FIRST direction for both its legs (Reefguard
+  Hall's return from Bomb Vault, Spire Ascent's exit to Drowned Cell), so
+  both simplified cleanly to a single `travel` call; the second direction is
+  still manual and will be for any future room shaped that way, until
+  `bfsScreens` is taught to plan from the player's own physical cell — see
+  `docs/prompts/QUEUE.md` item 1 for the still-open, unscoped version of it.
+
+- **A wait tuned once against the real route is not proven robust by that one
+  pass — sweep the neighbourhood before trusting it, even when nothing
+  upstream is believed to have changed.** S48 re-swept Anemos's `wait` after
+  splicing `travel` into Reefguard Hall's leg (721 fewer frames total). The
+  OLD value, `220`, still passed `check-playthrough.mjs` clean, 21/21 — and
+  would have shipped as "verified" on that basis alone. A 1-frame sweep of
+  195-235 against `beginPlaythrough` with the real `ROUTE` prefix (per
+  S40/S41's method) showed why that was luck: `219` and `221` both lose,
+  `220` is an isolated single-frame win, not a plateau. The same sweep found
+  a genuine 7-frame stable band at 207-213; `212`, the middle of it, also
+  happened to carry the best health margin among the band (13/20 qh vs. 1-3
+  qh at some of the other winning frames). **The lesson generalizes past this
+  one fight**: a timing-sensitive constant that currently passes is not the
+  same claim as a timing-sensitive constant that has been swept and shown to
+  sit on a stable band — the first is one data point, the second is the only
+  one CLAUDE.md's "measured, not guessed" standard actually supports for a
+  frame-phase-dependent value.
+
 ## The two gates that cannot be tiles
 
 Roc's Feather and the Power Bracelet became real tile gates this session. The

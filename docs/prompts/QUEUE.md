@@ -38,16 +38,23 @@ selection rule excludes (D1/D2 baselined by `check-playthrough`, D3 reserved
 for routing). Read `docs/HANDOFF.md`'s hard-won-lessons entry on the
 down-right-growth constraint before proposing a target.
 
-**Separately, now that `dTravel` itself is fixed:** `tools/playthrough-route.mjs`
-still uses a manual `goto`/`exit` workaround for Reefguard Hall's and Spire
-Ascent's own non-anchor cells (deliberately not touched in S47 — Anemos's
-fight is frame-phase-sensitive, per S40/S41, and splicing a timing change
-into the live ~49,500-frame route needs its own re-sweep, not a drive-by
-edit). A future session COULD simplify those two legs to use `travel` now
-that it works, but must re-sweep `wait` values against `beginPlaythrough`
-with the real `ROUTE` prefix per S40's lesson, not a fresh `boot()`, before
-trusting the result — and must not do this as a side effect of some other
-task.
+**DONE (S48):** `tools/playthrough-route.mjs`'s manual `goto`/`exit`
+workarounds for Reefguard Hall's and Spire Ascent's own non-anchor cells are
+now single `travel` calls. Landing it shortened the route by 721 frames and
+did shift Anemos's fight entry frame enough that the old `wait: 220` had to
+be re-swept against `beginPlaythrough` with the real `ROUTE` prefix (not a
+fresh `boot()`), per S40/S41's method — `wait: 212` replaces it, sitting in
+the middle of a 7-frame stable band rather than the isolated single-frame win
+`220` turned out to be. Full account in `docs/NEXT-SESSION.md` S48.
+
+A narrower version of the same `dTravel` gap remains open, and is still not
+scoped: `bfsScreens` always plans from a wide room's own ANCHOR coordinates,
+never the player's actual physical cell, so a `travel` call FROM a wide
+room's anchor TO a target beyond its own non-anchor cell still has to cross
+a phantom "edge" that does not correspond to a real wall, and that leg does
+not resolve. Neither of D2's two legs needed this — a future dungeon with a
+wide room whose non-anchor cell is itself a through-route to a third room
+would.
 
 ## 2. Region art / overworld polish
 
