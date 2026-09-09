@@ -1,380 +1,157 @@
-# Next session — Oracle of Tides: keep improving
+# Next session — Oracle of Tides
 
 Repo `ronnieibrahim-cpu/Loz-one-shot`. Branch from the CURRENT tip of `main` —
-`git log -1 origin/main` for the real commit; the hash this file happened to
-be written against goes stale the moment the next session pushes, so do not
-trust one printed here. One prompt = one session = one branch. Do not open a
-pull request unless asked.
+`git log -1 origin/main` for the real commit. One prompt = one session = one
+branch. Do not open a pull request unless asked.
 
-**Read first, in this order:** `CLAUDE.md` — its hard rules and its
-verification table govern everything below — then the top entries of
-`docs/NEXT-SESSION.md` (whatever is newest; do not trust the specific §-numbers
-named anywhere in THIS file, including below, to still be the top of that
-file — this document has repeatedly gone stale on exactly that point, see the
-warning at the end of this section), the new entries at the top of
-`docs/HANDOFF.md`'s hard-won-lessons section, `docs/ART-BACKLOG.md`, and
-`docs/DUNGEON-STATUS.md` (the board) if you touch a dungeon.
+## Task: author the first 2x2 room in the game
 
-**This file itself goes stale fast, and has repeatedly sent sessions to
-re-investigate settled ground.** As of the entry naming this warning (after
-S45), cross-checking every item below against `docs/ART-BACKLOG.md` and
-`docs/NEXT-SESSION.md` found FOUR items already fully landed while this file
-still described them as open work: D2 being played (done S41), the dungeon
-strand-checker (done S42), land/land ground fringes (done S39), and the
-held-item/projectile gear-sheet strips being an extraction target (surveyed
-and found empty, S37). All four are now marked below, but treat every
-remaining "open" item here as a claim to VERIFY against `ART-BACKLOG.md` /
-`NEXT-SESSION.md` before spending a session on it, not as ground truth on its
-own — this file is written once per session and the authoritative record is
-whichever of those two documents has the newer entry.
+`ROOM_SIZES` in `src/world/room.js` allows `1x1`, `2x1`, `1x2`, `2x2`, `3x1`.
+Across the 144 dungeon rooms in the game, `2x1` is used eight times and `1x2`
+once; `2x2` and `3x1` are used zero times. (Verify this count yourself before
+trusting it — it was checked by counting room keys under each dungeon's
+`rooms:` object in `src/data/dungeons-a.js` and `src/data/dungeons-b.js` at
+the time this file was written, and drift is possible.)
 
-Before designing anything, run `git ls-remote --heads origin` and look for a
-branch that has already done it. A finished dungeon was once very nearly built
-twice, and 70-odd stale branches are still on the remote; `main` is a content
-SUPERSET of all of them and merging one would delete tens of thousands of
-lines. Do not merge old branches to "recover" work — it is already in `main`.
+Per-dungeon table, room count and which rooms are sized:
 
-## Where things stand
+| D | Rooms | Sized rooms |
+|---|---|---|
+| D1 Tidewash Grotto | 24 | Clawcrab Den — 2x1 |
+| D2 Coral Spire | 24 | Reefguard Hall — 2x1; Spire Ascent — 1x2 |
+| D3 Bogwater Sanctum | 22 | The Kelp Locks — 2x1 |
+| D4 Cliffside Cistern | 24 | The Cistern Floor — 2x1; Ironknight Gallery — 2x1 |
+| D5 Drowned Wood Shrine | 24 | The Shrine Ford — 2x1 |
+| D6 Abyssal Keep | 26 | Tideshade Hall — 2x1; The Crossed Shafts — 2x1 |
 
-`main` is green on everything in CLAUDE.md's table: `test.mjs` 83/83,
-`replay.mjs` 51/51, `check-playthrough` 21/21, `check-respawn` 64/64,
-`check-items` 91/91, `check-hearts` 114/114, plus `check-tilesets`,
-`check-strands`, `check-dungeon-strands`, `watch-cutscenes` and `check-build`.
-**Re-run the suite yourself rather than trusting that. If anything is red,
-that is the job.** (Counts drift session to session; treat these as "roughly
-this many, and growing" rather than exact.)
+24+24+22+24+24+26 = 144.
 
-Two recurring lessons, from across many sessions rather than just the last
-one — **the specific session numbers below are old and this file will not be
-kept in sync with them; read them for the shape of the lesson, not as a
-pointer to what is newest:**
+## Read first, in this order
 
-  - **A PERSON PLAYING once found three real faults in one sitting that a
-    suite of several hundred assertions was green through**: the sword
-    appearing fully extended instead of travelling on the swing (S30); every
-    item description in the pause menu cut at 33 characters, losing the
-    second half of nine of them (S31); a death after Continue landing in the
-    save room instead of the dungeon mouth, reachable only by QUITTING AND
-    COMING BACK — a verb the harness had never had (S32). **Assume there are
-    more of these, and assume looking will find them faster than reasoning
-    will.**
-  - **Reading the game's own data files with a specific question in mind has
-    since found real bugs the whole green suite missed too, with no browser
-    open at all** — S43's story-audit read found that `ending` was never
-    wired to `startCutscene` anywhere in the game, so finishing it produced no
-    THE END; S45's boss-fairness re-measurement found Nereth's
-    once-documented "wins at 11 hearts" no longer reproduces at all, root-
-    caused to a specific branch in the shared actor-combat verb. Neither
-    needed a person with a controller — both needed someone to actually ask
-    the question and check the answer instead of trusting an old note or a
-    green checker.
+1. `CLAUDE.md` — its hard rules and verification table govern everything below.
+2. `docs/prompts/LEDGER.md` — settled ground and known-unfixed items. Read
+   only for the area you're touching (room sizing / dungeon geometry), not
+   end to end.
+3. `docs/DUNGEON-STATUS.md` — the board. Read the whole thing before
+   designing anything; it names which dungeons are baselined and why that
+   matters to the room you pick.
+4. `src/world/room.js` lines 44-70 — the `ROOM_SIZES` contract and its
+   rationale (why the set is closed, why a wide room's internal seam is not
+   a boundary).
+5. `tools/check-wide-rooms.mjs`'s header — what it proves about a sized room
+   and the specific failure each assertion guards against.
+6. `git ls-remote --heads origin` — before designing anything, check for a
+   branch that has already done this. A finished dungeon was once very
+   nearly built twice; `main` is a content superset of every stale branch.
 
-When you fix something this class finds, add the assertion that would have
-caught it, and prove the assertion goes red against the old code.
+## The room
 
-## The work, in priority order
+Convert **The Cistern Floor** (`d4`, room key `0,4,4`, currently `size: [2, 1]`
+in `src/data/dungeons-a.js`) to `size: [2, 2]`.
 
-Pick the first one or two that fit the session. Finish them properly and leave
-the rest better described than you found them.
+If that does not work out, fall back to **The Crossed Shafts** (`d6`, room
+key `1,4,2` in `src/data/dungeons-b.js`), and write down in the room's own
+comment and in `docs/NEXT-SESSION.md` exactly why the first choice was
+abandoned.
 
-### 1. The item art — mostly LANDED (S34-S36); read before restarting it
+**The selection rule, stated so a future session can reapply it without
+re-deriving it:**
 
-Asked for directly and largely done. Landed: the rupees derived from the
-extracted HUD gem; the bomb drop pointed at the extracted bomb; the heart and
-heart piece rebuilt from the extracted `hud_heart4`; the fairy EXTRACTED off
-`oracle-seasons-fairies.png` with both wing frames; the six Essences made six
-bells in six regional palettes. Plus `tools/check-rippers.mjs`, which is what
-now enforces "never hand-edit a generated file".
+- Not D1 or D2 — both are baselined end to end by `check-playthrough.mjs`
+  (49,516 frames, no death, no warp, no flag set from outside). A change to
+  either dungeon's geometry risks re-recording that baseline for a benefit
+  this session isn't asking for.
+- Not D3 — it is the next dungeon `tools/playthrough-route.mjs` routing work
+  should target (see `docs/prompts/QUEUE.md` item 1's sibling in dungeon
+  work), and a geometry change there would collide with that.
+- Prefer widening an existing sized room (already `2x1` or `1x2`) over
+  authoring new geometry from a `1x1` room. A sized room already has both
+  screens' worth of tile budget accounted for in its dungeon's room count
+  and connectivity graph; growing it to `2x2` is a smaller, more contained
+  change than turning a `1x1` room into a `2x2` one.
 
-**The gear grid is surveyed and there is nothing left on it.** All 37 cells are
-named in a table at the top of `docs/ART-BACKLOG.md`. Of the 29 unextracted,
-28 are Oracle items this game does not have — feathers, capes, boomerangs,
-hooks, flutes, rings, bracelets — and our roster is ours by design. The one
-that looked shared (r5c5, taken for a flask) was extracted, rendered against
-the hand-drawn bottle and **rejected**; do not redo it.
+## Authoring constraints
 
-~~The held-item and projectile strips on the gear sheet are the largest
-extraction target in the repo.~~ **Stale — surveyed and found spent (S37,
-`docs/ART-BACKLOG.md`).** An earlier note called them that; they are not. The
-held sword poses are already extracted (`link_hold_*`, `rip-link.py`). The
-coloured bars are enemy-only sword-beam projectiles this game's player never
-fires. The boomerangs/slingshots/seeds are items we do not have by design. The
-hookshot head and chain are the Dredge Line's, ours already. **There is
-nothing left on that sheet to take.**
+- **20 columns x 16 rows.** A `2x2` room's `map` is 16 rows of 20 characters
+  — one grid, not four 10x8 screens laid side by side. A row one character
+  short becomes a column of void down the seam; a missing row becomes a void
+  band across the bottom. Neither throws (see `check-wide-rooms.mjs`'s own
+  header, point 1).
+- **The seam must be crossable by some verb.** Use `everPassable` in
+  `tools/lib/collision.mjs` — it carries the list of movement verbs the
+  flood knows about. If you give the player a way across the seam that
+  `everPassable` doesn't model, add it there in the same commit (this is the
+  same class of trap CLAUDE.md's "a checker's flood only knows the movement
+  verbs somebody taught it" warns about).
+- **Keep exits on the anchor cell.** `dTravel` cannot path a sized room's
+  non-anchor-cell exits (a known, open gap — see `docs/prompts/LEDGER.md`).
+  If the layout forces an exit off the anchor cell, say so loudly in the
+  room's comment and in `docs/NEXT-SESSION.md` rather than trying to fix
+  `dTravel` as part of this session — that is explicitly out of scope below.
+- **The space must do something.** State the reason in one sentence in the
+  room's own comment: a fight with room to circle, a tide puzzle whose two
+  halves can't both be on screen at once, or a descent where you see the
+  bottom from the top. A `2x2` room that could have been four `1x1` rooms is
+  not a `2x2` room, it's a missed cut.
+- **`tide.levelAt(tx, ty, room)`, never `tide.level`.** Per CLAUDE.md's
+  design rules: the tide is a field, not a global, and a call site that
+  means "the water here" and reads `tide.level` is wrong the moment an
+  anchor lands near it.
 
-What is genuinely left, in order:
+## Look at it
 
-  * **Craft, not extraction, on what is still hand-drawn.** That art is what
-    SHOULD be hand-drawn: the items original to this game. The job is
-    register — outlines, three tones, silhouette — measured against the
-    extracted art beside it, not replaced by it. `docs/ART-BACKLOG.md`'s
-    "REGISTER, MEASURED" section (S37) has the actual numbers to compare
-    against (target ~30% cell fill; several hand-drawn icons run 47-66% and
-    read fatter than their extracted neighbours).
-  * **The second, white-plate icon set** (the pause-menu presentation of the
-    same icons, lower on the gear sheet) — genuinely unexamined, per
-    `ART-BACKLOG.md`, but "worth a look only if the menu's own plate style
-    ever changes." Low priority.
-  * **`oracle-seasons-maku-tree.png` is not the easy job** an earlier prompt
-    implied. The Maku Tree is ~169x96 px drawn into its screen's tilemap;
-    `npc_maku` is a 16x16 NPC. That is a screen redesign, not an art swap.
+`node tools/shoot-rooms.mjs` at all three tide levels. Judge the camera, not
+just the tiles — `tools/check-camera.mjs`'s own header notes that a room
+bigger than the default view is one of the 9 rooms in the game where the
+camera actually has to follow, and a `2x2` room is four times the default
+view's area.
 
-### 1b. YOU CANNOT WALK OUT OF A DUNGEON — **LANDED IN S33, do not redo**
+## Done means
 
-The dungeon mouths were one 16px tile against a 10px hitbox: three of thirteen
-start positions across the Grotto's entrance room could leave. Fixed by
-`Game.doorwayPull` (one rule, every warp in the game, caves and houses
-included) plus a two-tile `dMouth` arch at all six mouths, both halves warping.
-`tools/check-exits.mjs` is the new checker — 192 assertions, in CLAUDE.md's
-table, proved red (12 failures) against the old door. Full account in
-`docs/NEXT-SESSION.md` S33.
+All of the following green, and each one actually re-run this session, not
+assumed from a prior green:
 
-The one thing still open from that entry — nothing floods a dungeon's interior
-for STRANDED FLOOR the way `check-strands` does the overworld — is now closed;
-see item 7.
+- `node tools/check-wide-rooms.mjs`
+- `node tools/validate.mjs`
+- `node tools/walk-dungeons.mjs`
+- `node tools/check-exits.mjs`
+- `node tools/solve-switches.mjs`
+- `node tools/check-dungeon-strands.mjs`
+- `node tools/check-camera.mjs`
+- `node tools/test.mjs`
+- `node tools/replay.mjs`
+- `node tools/check-playthrough.mjs`
+- `npm run build`, with `dist/oracle-of-tides.html` committed
 
-### 2. ~~Five~~ **Four of the six dungeons have never been PLAYED — D2 landed S41, stale below fixed**
+Plus:
 
-`docs/DUNGEON-STATUS.md` is blunt: D1 AND D2 are played now (D2 since S41 —
-`GOAL.essences: [1, 2]` in `tools/playthrough-route.mjs`, `check-playthrough`
-21/21, both bosses beaten in real combat, a second Heart Container completed
-mid-D2). D3-D6 are still "authored, flooded, and proved by models", and
-CLAUDE.md is explicit that a model does not fight a boss, spend a key or
-press a button — which is how seven hundred green assertions once described
-a world that could not be finished. Extending `tools/playthrough-route.mjs`
-to walk D3 (Bogwater Sanctum) end to end next is the highest-confidence
-correctness work available, and per S45's boss-fairness sweep, D3's own boss
-(Gloomtide) is already confirmed fair, so this dungeon's boss fight is not
-the thing likely to bite. Expect the ROUTE to find something anyway — D2 took
-three sessions (S28's scratch route, S40's landing attempt, S41's actual
-landing) even with a boss that was never in question.
+- Three screenshots (one per tide level) actually looked at, with
+  conclusions written down — not just captured.
+- `docs/DUNGEON-STATUS.md` ticked for whichever dungeon the room lives in.
+- `docs/NEXT-SESSION.md` updated losslessly.
+- `docs/HANDOFF.md` appended if anything expensive was learned.
 
-**Read `docs/NEXT-SESSION.md` §S28, §S40 and §S41 before attempting D2's
-successor** — not because they cover D3, but because they are the worked
-example of exactly how much harder "route it for real" is than "prove it
-reachable by a model", and they name general engine/harness gaps
-(`dTravel` cannot path a `size:[w,h]` room's non-anchor exits; frame-phase
-timing tuned in isolation needs re-sweeping once spliced after a real,
-~23,500-frame D1+D2 route; `['equip','lens','B']` silently displaces the
-sword) that are likely to recur on D3 in some form even though D3 has no
-Lens of its own.
+**If a checker goes red and you can't make it green, revert the room and
+write up why** — in `docs/NEXT-SESSION.md` and, if it's a generalizable
+lesson, in `docs/prompts/LEDGER.md`'s "known and deliberately unfixed"
+section. A reverted attempt with a clear writeup is worth more to the next
+session than a room that shipped broken.
 
-### 3. Nobody knows whether the bosses are FAIR — measured fresh, S45; D6 needs a real fix
+## Explicit out of scope
 
-`check-bosses.mjs` runs in GOD MODE and says so in its own output: it proves
-each boss spawns in its declared room and that its weak point opens at its
-design tide. It does not prove a player can win.
+- Fixing `dTravel`'s non-anchor-cell gap. Note it if you hit it; don't fix it
+  here.
+- A second `2x2` (or `3x1`) room. One room, this session.
+- Any change to `src/data/feel.js`.
+- Item art, overworld art, boss balance, story.
 
-  - ~~D3's evade result is open.~~ **Answered, S45**: Gloomtide wins decisively
-    at the in-order 5 hearts (7/20 qh to spare). Nothing to fix.
-  - ~~Nereth needs about 11 hearts of survivability against an in-order floor
-    of 8.~~ **That number no longer reproduces.** S45 re-measured Nereth at
-    both 8 and 11 hearts on current `main`: both die at 6 of 80 damage,
-    stuck in phase 1 forever, never resembling the historical "42/80 → 78/80"
-    record. **Root cause found and written up in full in
-    `docs/NEXT-SESSION.md` S45 — read it before touching this** — in short:
-    `tools/actor-runtime.mjs`'s `dBoss` verb retreats instead of pressing an
-    advantage whenever `p.invuln` is 1-20 and `b.stun === 0`, which is exactly
-    Nereth's situation on nearly every one of his post-volley openings (his
-    shell opens via a counter, not a stun, and his trident keeps the actor's
-    invuln sitting in that range). **Not fixed this session** — the retreat
-    branch is shared by every boss fight `check-playthrough.mjs` depends on,
-    and the fix needs `measure-boss-combat.mjs` re-run on all six dungeons
-    plus `check-playthrough` plus `replay.mjs` before it can be trusted. S45
-    names the exact branch and exact condition to change; start there rather
-    than re-diagnosing.
-  - **New, undiagnosed**: Rootmaw (D5) also died in this session's sweep (26
-    of 52 damage, in-order 7 hearts) — a different pattern from Nereth's
-    (growing distance, not a fixed one), not chased further. See S45.
-  - D1/D2/D4 all measured fine (D2's expected death at the pessimistic floor
-    is explained in S45, not a new concern).
+## Habits worth carrying in
 
-`§4.2` applies: a robot beating a boss is not a player beating a boss —
-and, freshly relevant after S45, the reverse also applies: a robot LOSING
-does not prove a boss is unfair if the robot is missing a verb (here, the
-conch and any projectile-dodge) the fight assumes a player has. `§4.2`'s own
-warning that the honest deliverable is a measurement plus a judgement, not a
-green tick, is exactly what S45 tried to leave behind for Nereth rather than
-either a false "fixed" or a false "hopeless".
-
-### 4. ~~Land meets land as a hard pixel edge, everywhere~~ — **DONE, LANDED S39. Stale — do not redo.**
-
-`docs/ART-BACKLOG.md`'s own item 1 header says it plainly: "EVERY GROUND
-BOUNDARY IS A STRAIGHT PIXEL EDGE — LANDED (S39)". All 17 land/land pairs the
-overworld actually contains now interlock along a composited fringe
-(`edgePairs`/`material`, a second comparison axis added to `tileEdgeArt`
-alongside the water-rim `family` path) instead of meeting at a hard cut — 204
-generated tiles, screenshotted across coast, marsh, reef, salt, cliffs, dunes
-and abyss, `replay` 51/51 with no baseline re-recorded, `check-strands`/
-`check-overworld`/`check-ground`/`check-placement`/`check-playthrough` all
-green. Read that entry in full before touching this area again — it also
-records two blockers an earlier version of this task-list entry got wrong
-(`tileEdgeArt`'s "first direction wins" bug was already fixed in S27; the real
-blocker was that `family` cannot see a land/land join at all, only a
-land/water one).
-
-A follow-up session independently re-checked the underlying premise — does
-the SOURCE actually draw a blended transition at an interior land/land join,
-the way S26 warned to check before assuming one exists — by cropping and
-inspecting `custom-oracle-style-overworld.png` and `oracle-ages-overworld.png`
-directly around grass/sand and sand/mud joins. Both showed a hard, single-row
-pixel cut with no blend in the source art itself. This does not contradict
-S39: S39 never claimed to have found or extracted an EXISTING source
-transition tile, it COMPOSITES one from the two adjacent materials' own
-already-extracted textures (a documented, screenshot-verified judgement call,
-not a fidelity violation) — but it's worth knowing the source's own convention
-here really is the hard cut, in case a future session weighs whether to keep
-compositing this way.
-
-Two known, screenshotted, unfixed edges of the SHORE (water/land, S27) work
-remain, if you are in there anyway: a water cell one tile wide with land on
-both opposite sides shows the rim on only one of its two facing edges
-(`tileEdgeArt`'s "opposite pair" degrade — would need `up+down`/`left+right`
-in `EDGE_ART_KEYS`); and salt flats, ice floors and reef/abyss water were
-never audited for whether they want a rim of their own.
-
-### 5. Whole regions have never been READ AS PICTURES — spot-checked, S44, not exhausted
-
-Dunes, cliffs, salt, reef, coral and abyss have been checked for connectivity
-and for one specific fault, never looked at as compositions. The one time
-somebody did that for the woods they found a motif repeated 160 times that
-every tool in the table was green through. `node tools/shoot-rooms.mjs
---tide=0|1|2 <room>`; judge against `assets/sheets/` and
-`docs/ART-DIRECTION.md`. Where a sheet has the tile, EXTRACT it — do not
-hand-draw what `assets/sheets/` already provides.
-
-**S44 sampled 20 screenshots across all six regions (roughly 2-6 rooms each,
-one region — abyss — also checked at all three tides) and found nothing.**
-That is a real result on the SAMPLE, not a clearance of the region: the woods'
-own fault needed 97 of 120 screens to surface, and this session looked at
-~20 of roughly 90 candidate rooms. Two things that looked like the woods'
-bug at first glance turned out to be legitimate on inspection (Kell Spur's
-two rows of 3 rocks are a puzzle/clearing arena in front of an enemy and a
-charm, not decorative filler; Sunless Flat's four `abyssHole` tiles in a 2x2
-are a deliberate symmetric hazard, same family as Vault Steps' pedestal row
-and Grotto Approach's four corner palms) — see `docs/NEXT-SESSION.md` S44
-for the full account and which rooms were checked, so a future pass samples
-DIFFERENT rooms rather than re-confirming these two. If you take this
-further, prefer a systematic diff of room grids within a region over more
-sampling — that is how the tree-crown fix was eventually found to generalize,
-and sampling alone can only ever report "clean on what was looked at".
-
-### 6. The story is the least-audited thing in the project
-
-No `check-story.mjs` exists and it is not obvious one can. These are answerable
-by reading and watching:
-
-  - ~~Does Nereth's motivation in `nerethIntro` pay off in `ending`?~~ Asking
-    this question found something bigger, **fixed in S43**: `ending` was
-    never wired to anything. Nothing in the whole game ever called
-    `startCutscene('ending')` — a player who beat Nereth and collected the
-    sixth Essence got the essence6 card and then just kept playing, with no
-    THE END. `Game.claimEssence` now chains into it when the sixth Essence
-    completes the set (`tools/shoot-cutscene.mjs --ending` proves the real
-    handoff, not just that the scene plays in isolation). The THEMATIC
-    question this bullet actually asked is answered in `docs/NEXT-SESSION.md`
-    S43 too: yes, loosely — the ending's "boring, isn't it" line about the
-    tamed sea directly echoes Nereth's own "the sea was told what to do...
-    never once asked", played straight rather than examined. Still open:
-    whether Nereth gets a death line at all (see S43's last section).
-  - ~~Do the six Essence title cards name six DISTINCT ideas, each matching
-    its own dungeon?~~ Read, S43: yes — Shallow/Coral/Bog/Cliff/Drowned/
-    Drowned King's Bell map 1:1 onto Grotto/Spire/Sanctum/Cistern/Shrine/Keep,
-    and each essence's body text is a different KIND of beat (awakening,
-    villain noticing the hero, the world visibly stabilising, escalating
-    threat, foreboding, completion) rather than the same sentence six times.
-    No bug; nothing to fix.
-  - ~~Do townspeople's two-state lines track world progress coherently, or
-    just toggle?~~ Read against their `needEssences` gates, S43: yes, and
-    better than "coherent" — there is a real thread. `reefFisherAfter`
-    ("both ways now. That is worse"), `fisher1After` ("a punctual sea is no
-    use to me at all"), `salterElderAfter` ("I would not call that good
-    news") and the `ending` cutscene itself ("boring, isn't it") all make the
-    SAME point from different mouths: restoring the tide to order is not
-    unambiguously good news to the people who adapted to it broken. That is
-    a deliberate, consistent piece of theme, not a toggle. The Farore thread
-    also sequences correctly — villagers notice she has stopped coming down
-    to the shrine at 3 essences (`villager2After`), and Farore's own second
-    line at her private shrine, gated at 5, confirms why. No bug found; if a
-    future session wants to extend this, the "restoration has a cost" thread
-    is the one to write more of, not against.
-  - ~~Is the Coastwise Chain a story, or a fetch quest with a proof
-    attached?~~ Read all eleven links, S43: a story. Every trader's item and
-    reply are specific to who they are (Sennit settling an argument with her
-    mother about tide depth, Wick paying "the wood" that "takes payment and
-    does not take promises", Yarrow's jar surviving "forty years of brine"),
-    not generic hand-offs. `check-trade.mjs` already proves the mechanics;
-    the writing independently holds up.
-
-Goal 2 territory: mechanics, items, dungeons and story are OURS. And **do not
-"fix" the title screen** — it says THE LEGEND OF ZELDA — ORACLE OF TIDES in the
-Oracle series' own layout on purpose. A previous session stripped it by
-misreading Goal 2 as a rule about names. It is a rule about design.
-
-### 7. Smaller, fully scoped
-
-- ~~Extend `check-strands.mjs` to the dungeons.~~ **DONE, S42.**
-  `tools/check-dungeon-strands.mjs` (new), sharing its flood with
-  `walk-dungeons.mjs` via `tools/lib/dungeon-flood.mjs` rather than
-  re-deriving it a second time. Found 9 regions, 12 cells, all legitimate on
-  first run — see `docs/NEXT-SESSION.md` S42.
-- **Replay baselines predating `beaten`/`heartPieces`.** Eleven files live in
-  `tools/replays/` (the 51 in the output is assertions, not files); only some
-  carry those fields, and `diffState` only walks keys a baseline HAS, so the
-  rest go unchecked. Re-record deliberately on a known-good tree, reading each
-  diff — a wholesale re-record is how a regression gets blessed.
-- **Three unused dungeon sheets** (`dancing-dragon`, `explorers-crypt`,
-  `poison-moths-lair`). Read `assets/sheets/README.md` first: every sheet is
-  two halves, the LCD half is the lighter/less saturated one, and picking from
-  the wrong half gives art that will not sit with anything else.
-
-## Do NOT redo these — measured and rejected
-
-- **The pause menu's item grid being covered by the description panel.** A
-  previous handoff listed this as a priority. It is NOT REAL: only 14 items are
-  `equippable`, the grid is five columns, so it is never more than three rows
-  and never reaches the panel at y=106. Verified with every item granted.
-- **A "regular pitch" checker for terrain art.** Period 8 is universal and
-  correct (a 16x16 tile is four 8x8 hardware tiles); at sub-8 the old ladder
-  `waterS` and the perfectly good `waterD` BOTH score 50%. It cannot
-  discriminate. The real difference is contrast and whether the repeat forms a
-  continuous line.
-- **Replacing `waterD`.** Every dark-blue seamless water on both overworld
-  sheets is MORE banded than ours. The hand-drawn tile beats the source here.
-- **Depth-discontinuity checks.** Dry adjacent to deep is 2,095 cells at high
-  tide and is simply what a coast is without a beach.
-- **The `rip-terrain.py` hue-blind quantiser.** Still unfixed there, but it now
-  changes ONLY `bankCornerSE` and its three rotations, which nothing draws.
-  Moot; if it ever matters again, re-examine the `GROUND_MERGE` overrides in
-  the same pass (one was a workaround for this exact bug).
-- **The 8 bank tiledefs in `validate`'s unreachable list.** Correct and
-  deliberate — that warning is for "a vocabulary waiting for a place", its own
-  words. Do not delete them to clear it.
-- **The sword's swing arc as a uniform rotation.** `SWING_START_DIR`/
-  `SWING_END_DIR` in `src/game/player.js` are deliberately NOT one: facing left
-  is the MIRROR of facing right, so both go over the shoulder and finish at the
-  ground. Rotating them uniformly makes Link scoop upward facing right. This
-  was tried and photographed.
-
-## House rules
-
-`main` is trunk. Update `docs/NEXT-SESSION.md` losslessly before you finish,
-add anything expensive you learn to `docs/HANDOFF.md`, tick
-`docs/DUNGEON-STATUS.md` if you touched a dungeon, run `npm run build` and
-commit `dist/oracle-of-tides.html`, and **do not end green without
-`check-playthrough.mjs`**. Commit messages describe what changed in the game,
-not what changed in the code.
-
-Three habits worth copying from the last several sessions:
-
-  - **When a checker and your eyes disagree, screenshot it.** Every real win
-    came from looking. The established way to photograph an exact frame is
-    `window.__harness.takeOver()`, set the state you want, `step`, then
-    `game.draw()` and screenshot the canvas — deterministic, and it does not
-    race the render loop the way pressing keys and waiting does.
-  - **When an art change fails a replay, prove it is art before re-recording:**
-    same frame count, same room changes, EVERY CHECKPOINT matching, only
-    `probePix` moved.
-  - **A five-line change to the movement path is never a five-line change**,
-    because every recorded baseline is downstream of it. Budget for the
-    re-record and read the diff rather than blessing it.
+- **When a checker and your eyes disagree, screenshot it.** The established
+  way to photograph an exact frame is `window.__harness.takeOver()`, set the
+  state you want, `step`, then `game.draw()` and screenshot the canvas —
+  deterministic, and it does not race the render loop the way pressing keys
+  and waiting does.
+- **When you fix something a checker missed, add the assertion that would
+  have caught it, and prove it goes red against the old code.** A fix
+  without a red-then-green proof is a fix nobody can trust stays fixed.
