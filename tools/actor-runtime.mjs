@@ -1282,7 +1282,25 @@ export async function installRuntime() {
           // `nearContact` below still applies) but not the boss's ability to
           // move or attack, so pressing in here costs nothing a retreat was
           // ever protecting against.
-          if (b.stun > 0 && !b.charging) {
+          //
+          // `b.stun > 0` is not the general rule, though — it is Gohmaraq's
+          // OWN safety signal, not every boss's. `weakOpen` does not
+          // universally mean "cannot act": `src/data/bosses.js`'s own
+          // comment (search "A BOSS DOES NOT FIRE INTO ITS OWN WINDOW") says
+          // a checker requiring every shelled boss to hold fire while open
+          // was written and removed, because Gohmaraq, Wyverna and Rootmaw
+          // all keep attacking through at least part of their own open
+          // windows and are won anyway — pressing blindly into THEIR open
+          // windows previously cost D1 a win outright (measured directly,
+          // `docs/NEXT-SESSION.md` S49: a version of this fix that dropped
+          // `b.stun > 0` for every boss flipped Gohmaraq from a clean win to
+          // a deterministic loss, every post-fix hit landing with
+          // `weakOpen:true, stun:0, charging:false` — exactly the state that
+          // version treated as safe). `b.spec.safeWhenOpen` is the real,
+          // per-boss signal: only Anemos and Nereth's final phases actually
+          // gate their own fire on `!weakOpen` (the same string, in
+          // `bosses.js`), so only they are safe to press without a stun.
+          if ((b.stun > 0 || b.spec.safeWhenOpen) && !b.charging) {
             const dx2 = b.cx - p.cx, dy2 = b.cy - p.cy;
             const ax2 = Math.abs(dx2), ay2 = Math.abs(dy2);
             const axisX2 = ax2 > ay2;

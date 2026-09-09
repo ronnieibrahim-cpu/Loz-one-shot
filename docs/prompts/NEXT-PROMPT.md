@@ -4,127 +4,147 @@ Repo `ronnieibrahim-cpu/Loz-one-shot`. Branch from the CURRENT tip of `main` —
 `git log -1 origin/main` for the real commit. One prompt = one session = one
 branch. Do not open a pull request unless asked.
 
-## Task: give `dBoss` a real per-boss "is `weakOpen` alone safe to press" signal
+## Task: diagnose and, if tractable, fix Rootmaw (D5) losing to the harness actor
 
-S49 tried the narrow fix S45 named for why Nereth (D6) and Rootmaw (D5) lose
-to the harness actor's `dBoss` verb, measured it against all six bosses, and
-found it is not a pure win — full account in `docs/NEXT-SESSION.md` S49 and
-`docs/prompts/LEDGER.md`'s "Known and deliberately unfixed" section. Read
-both before touching anything.
-
-**The short version.** `dBoss`'s `p.invuln` 1-20 sub-branch used to require
-`b.stun > 0` before pressing an attack, else it retreated. Dropping that
-requirement (pressing whenever `!b.charging`, regardless of stun) flips D2
-from a loss to a clean win and brings D5/D6 dramatically closer (Nereth: 6 of
-80 damage dealt before, 78 of 80 after) — but flips D1 from a clean win to a
-**deterministic** loss (same result across `--seed=1` through `--seed=5`).
-Root cause: `weakOpen` does not universally mean "the boss cannot act" —
-`src/data/bosses.js`'s own comment (search "A BOSS DOES NOT FIRE INTO ITS OWN
-WINDOW") says a checker requiring exactly that was written and removed
-because it false-positived on Gohmaraq, Wyverna and Rootmaw, all three
-already won without it. Only Nereth's and Anemos's FINAL phases actually gate
-their own fire on `!weakOpen`; Gohmaraq's does not, so `b.stun` was the only
-real safety signal his fight ever had, and dropping it blindly presses into
-live fire — confirmed directly in the damage log, every post-fix D1 hit lands
-with `weakOpen:true, stun:0, charging:false`, exactly the newly-permitted
-state.
+S50 landed a fix for Nereth (D6) — `dBoss` now has a per-boss
+`safeWhenOpen` signal instead of blindly trusting `b.stun` — and confirmed
+directly that it does NOT apply to Rootmaw: Rootmaw is explicitly one of
+the three bosses (`src/data/bosses.js`'s own "A BOSS DOES NOT FIRE INTO ITS
+OWN WINDOW" comment names Gohmaraq, Wyverna and Rootmaw) that keeps
+attacking through its own `weakOpen` window by design, so flagging it
+`safeWhenOpen` would be wrong, not just untried. Rootmaw's failure is a
+**different mechanism** from the one S49/S50 fixed, first flagged in S45 as
+"a new, undiagnosed finding" and still undiagnosed. This session's job is to
+actually diagnose it, the way S45 diagnosed Nereth's (frame-by-frame
+instrumentation, not guessing), and fix it if the diagnosis turns out
+tractable in one session.
 
 ## Read first, in this order
 
 1. `docs/prompts/LEDGER.md`'s "Known and deliberately unfixed" section, the
-   Nereth/Rootmaw bullet.
-2. `docs/NEXT-SESSION.md` S49 in full — the exact before/after table for all
-   six bosses, the damage-log evidence for D1's regression, and the two
-   untried directions named at the end (read them before picking one; this
-   prompt expands the first).
-3. `docs/NEXT-SESSION.md` S45 — the original diagnosis of Nereth's mechanism
-   frame by frame, and its own caveat that a robot losing does not by itself
-   prove a boss unfair.
-4. `src/data/bosses.js` — the `open`/`shut`/`closeTick` helpers and the "A
-   BOSS DOES NOT FIRE INTO ITS OWN WINDOW" comment block above them, then the
-   two `!e.weakOpen`-gated call sites (Nereth's and Anemos's final phases).
-5. `tools/actor-runtime.mjs`'s `dBoss`, the `b.weakOpen` branch — read the
-   comment S49 left on the `p.invuln > 0` sub-branch; it documents exactly
-   what was tried and reverted, in place, so you are not rediscovering it
-   from a diff.
-6. `tools/measure-boss-combat.mjs`'s own header — the `--seed=`, `--qh=`,
-   `--tide=` flags, and why a single seed is never trusted.
-7. `git ls-remote --heads origin` before starting, in case another session
-   already attempted this.
+   Rootmaw bullet (rewritten this session — read the CURRENT version, not an
+   older cached one).
+2. `docs/NEXT-SESSION.md` S45 — the original measurement: Rootmaw died at
+   the in-order 7 hearts, 26 of 52 damage dealt, 14 hits taken, "all
+   seven-plus at `weakOpen:false` and at STEADILY GROWING distance (78, 85,
+   108, 98, 74, 92, 104, 116, 132px), unlike Nereth's fixed-distance
+   pattern." Read this literally — the growing-distance number sequence is
+   the actual clue, not decoration.
+3. `docs/NEXT-SESSION.md` S49 and S50 — not because the fix applies, but
+   because the METHOD does: S45's frame-by-frame `weakOpen` instrumentation
+   (a scratch harness, not committed — the steps are written out in S45's
+   own entry) is exactly the technique to adapt here, and S49/S50 show the
+   discipline a change to `dBoss` needs (measure all six bosses before and
+   after, sweep seeds, don't trust one green run).
+4. `src/data/bosses.js`'s `rootmaw` entry (search `defineBoss('rootmaw'`)
+   and `rootmawTide` immediately below it. Read this BEFORE hypothesising —
+   it already changes the shape of the problem from what S45's own
+   distance-based framing suggests:
+   - Rootmaw's `weakOpen` is NOT a periodic window like Anemos's or
+     Nereth's. `rootmawTide` calls `open(e, g, 30)` EVERY FRAME the tide is
+     LOW (no timer gate), so at LOW tide Rootmaw is CONTINUOUSLY open, not
+     periodically — a structurally different shape from the boss this
+     session's fix was built for.
+   - None of Rootmaw's three phases gate fire on `!weakOpen` (confirmed:
+     `!e.weakOpen` appears exactly twice in the whole file, in `anemos` and
+     `nereth` only) — he keeps spitting seed volleys and rings the entire
+     time he is open. `safeWhenOpen` would be actively wrong for him, not
+     just untested.
+   - Phase 3 (`above: 0.00`) has him tear free and `chase(e, g, { speed:
+     0.38 })` — a MOBILE boss, unlike Gohmaraq/Anemos/Nereth's mostly
+     stationary or scripted-movement fights. S45's growing-distance numbers
+     might be this: the actor's retreat-and-reapproach cycle (the "no
+     invuln banked" branch and the RETREAT_MARGIN branch in `dBoss`) may be
+     tuned against a boss that holds still or orbits in place, and simply
+     lose ground against one that walks toward the player at a sustained
+     speed during the exact window the actor is backing off.
+5. `tools/actor-runtime.mjs`'s `dBoss`, the whole `b.weakOpen` branch (the
+   comment S50 left names exactly what was tried and why) AND the
+   `!b.weakOpen` ("Shelled: nothing to hit") branch just past it — Rootmaw
+   spends real time in the shelled/not-open state too (at MID/HIGH tide,
+   `rootmawTide` only opens on an 80-220 frame cycle, not continuously), so
+   the growing-distance pattern could originate in EITHER branch depending
+   on which tide level the fight is at when it happens.
+6. `tools/measure-boss-combat.mjs`'s header — `--seed=`, `--qh=`, `--tide=`,
+   why a single seed is never trusted.
 
 ## What to build
 
-**Direction 1 from S49 (recommended first): an explicit per-boss spec field.**
-Add something like `safeWhenOpen: true` to Nereth's and Anemos's
-`defineBoss(...)` calls in `src/data/bosses.js` — the two bosses whose final
-phase already gates its own fire on `!weakOpen`, i.e. the two for which
-`weakOpen` genuinely does mean "cannot act." Read it in `dBoss` off `b.spec`
-(or wherever the boss's own definition is reachable from the fight entity)
-and use it, not `b.stun`, to decide whether the `p.invuln` 1-20 sub-branch
-presses or retreats: press when `(b.stun > 0 || b.spec.safeWhenOpen) &&
-!b.charging`, retreat otherwise. This keeps Gohmaraq/Wyverna/Rootmaw on the
-stun-gated behaviour that already wins those three fights, while giving
-Nereth and Anemos the aggressive behaviour that S49 already measured working
-for Anemos (D2) and getting Nereth (D6) to 78 of 80.
+**Start with measurement, not a fix.** Reproduce S45's baseline first
+(`node tools/measure-boss-combat.mjs d5` — confirm it still dies at 26 of 52,
+28qh lost, matching S45/S49/S50's own repeated confirmations that nothing
+has drifted). Then instrument frame-by-frame the way S45 did for Nereth: log
+`weakOpen`, `stun`, `charging` (if set), tide level, and distance-to-player
+at every damage event AND at some regular sampling interval in between, not
+just at hits — S45's own distance sequence for Rootmaw came from hit events
+only, and a fuller trace between hits may show the actual retreat pattern
+more clearly than the hit log alone does.
 
-Direction 2 (a learned-at-runtime signal, no `bosses.js` change) is named in
-S49's own entry as a fallback if direction 1 turns out to need per-boss data
-plumbing that is more invasive than it looks from here — do not start there
-unless direction 1 proves genuinely blocked, since a runtime-learned
-heuristic has its own failure modes (named in S49) and is harder to verify.
+**Once the mechanism is named, judge whether it is a `dBoss` bug or a real
+difficulty wall**, the same caveat every boss-fairness entry in this project
+carries: a robot losing does not by itself prove a boss unfair if the robot
+is missing a verb a real player has. Rootmaw at LOW tide is permanently
+open and permanently dangerous at the same time — a real player's answer to
+that is presumably "hit it anyway, eat some risk, don't camp the retreat
+forever," which is a genuinely different calculus from Gohmaraq's
+charge-recovery-stun or Nereth's counter-gated final phase. It is possible
+the honest finding here is "Rootmaw needs the actor to accept some
+unavoidable chip damage during a continuously-open window, and the current
+verb doesn't have a notion of that" rather than a discrete bug to patch.
+
+**If a fix is found, validate it exactly the way S49/S50 did:**
+`measure-boss-combat.mjs` on all six dungeons (zero regression on D1-D4, D2,
+D6 unchanged or better), a seed sweep (`--seed=1` through at least `--seed=5`)
+on whichever boss the fix touches, `check-playthrough.mjs` 21/21,
+`replay.mjs` 51/51, `test.mjs` 83/83. If the fix touches shared `dBoss`
+logic (likely, since Rootmaw's mobile phase-3 chase pattern may share code
+paths with other bosses' approach logic), re-measure literally all six, not
+just D5 — S49's own mistake was trusting a fix without doing this.
 
 ## Done means
 
-- `node tools/measure-boss-combat.mjs d1` through `d6` (default seed) — D1,
-  D3, D4 still WIN at their current margins or better (no regression); D2
-  still wins; D5 and D6 measurably improve over the S49 baseline (6/80 and
-  26/52 respectively) — an outright win on one or both is the real goal, but
-  a judgement call, not a checker, decides if a large improvement short of a
-  win is worth landing this session vs. continuing next time.
-- The same six measurements repeated at `--seed=1` through `--seed=5` (or
-  more) for D1 specifically — S49's regression was deterministic across five
-  seeds, so a fix that only helps at the default seed is not trusted; sweep
-  before believing a result, per the file's own header comment.
-- `node tools/check-playthrough.mjs` — 21/21, unchanged (D1/D2 only; this
-  proves the change doesn't destabilize the one real end-to-end run that
-  exists).
-- `node tools/replay.mjs` — 51/51, unchanged.
-- `node tools/test.mjs` — 83/83.
-- `docs/prompts/LEDGER.md`'s Nereth/Rootmaw bullet updated to say what
-  landed (or, if this session also has to revert, updated the same way S49's
-  did — a precise negative result is worth exactly as much as a positive
-  one here).
-- `docs/NEXT-SESSION.md` updated losslessly (new entry).
+- Either: a landed fix, validated per the bar above, with
+  `docs/prompts/LEDGER.md`'s Rootmaw bullet updated to say what changed and
+  by how much (measured numbers, not "should be better now").
+- Or: a precise diagnosis written up the way S45's and S49's were — the
+  actual mechanism, why it resisted a same-session fix, and what a fix would
+  need — so a THIRD session does not have to re-instrument from scratch.
+  A measurement plus a judgement is an acceptable outcome; a guess dressed
+  as a fix is not.
+- `docs/NEXT-SESSION.md` updated losslessly (new entry, do not renumber or
+  edit past ones).
 - `npm run build` re-run; commit `dist/oracle-of-tides.html` only if it
-  changed (a `bosses.js`/`actor-runtime.mjs` change does not touch anything
-  bundled from `tools/`, but boss balance data IS bundled — check, don't
-  assume, since this session's change (if any) touches `src/`).
+  changed (it will if `src/data/bosses.js` or `src/game/enemy.js` changes,
+  per S50's own note that `src/` — unlike `tools/` — is bundled).
 
 ## Explicit out of scope
 
-- Teaching `dBoss` to dodge a telegraphed attack, or to press the conch
-  contextually (Nereth's tide-pin mechanic) — both named in S45 as real
-  capability gaps the actor has, neither is this session's job. If Nereth
-  still doesn't win after direction 1 lands cleanly for D2, that is a
-  legitimate stopping point, not a reason to scope-creep into a dodge verb.
-- D3, D4 routing, or any extension of `tools/playthrough-route.mjs` past D2 —
-  separate work; see the note below.
-- Rootmaw's own attack pattern (growing-distance retreat, per S45) beyond
-  what falls out of this fix naturally — a separate undiagnosed mechanism if
-  D5 still doesn't win afterward.
+- Nereth (D6) — S50 already measured it close (78 of 80) and named what a
+  further push would need (a conch-press verb, a dodge verb); neither is
+  this session's job unless Rootmaw's diagnosis turns out to need the SAME
+  missing verb, in which case name that overlap rather than building it
+  twice.
+- D3/D4 routing (needs the Coastwise Chain first, see `docs/NEXT-SESSION.md`
+  S49's closing note) or D5 routing (blocked on Rootmaw either way) — not
+  this session's job even if Rootmaw gets fixed; routing is its own,
+  separate, much larger task.
+- Any change to `rootmawTide`'s own design (the continuously-open-at-LOW
+  mechanic is presumably intentional — it is not named anywhere as a bug).
+  This session's job is the ACTOR's response to it, not the boss's design.
 
-## For whoever picks D3/D4/D5 routing after this lands
+## Habits worth carrying in
 
-Not this session's job, but recorded here so it isn't rediscovered: **D3 and
-D4 are NOT simply "next after D2."** `node tools/check-progression.mjs`'s own
-flood shows D1, D2 and D5 are all reachable in round 1 (no prerequisite
-beyond the starting sword+conch), while D3's and D4's overworld doors only
-become reachable in round 3 — after round 2's offers (Thalassia's coin and
-the Coastwise Chain's Rod, the latter needing the full 12-stage trade
-sequence completed) are granted. Routing D3 or D4 for `check-playthrough.mjs`
-therefore means routing a meaningful slice of the Coastwise Chain trading
-sequence FIRST, not just walking from the Coral Spire to Bogwater Sanctum —
-a substantially bigger task than D1->D2 was. D5 (Drowned Wood Shrine) has no
-such prerequisite and would route more directly after D1+D2 — but its boss,
-Rootmaw, is one of the two this prompt's own task is trying to fix, so it is
-blocked on this session's outcome either way.
+- **Read the boss's own code before hypothesising from the distance
+  numbers alone.** S45's framing ("growing-distance retreat pattern") is a
+  real clue but not the mechanism — this prompt already found one
+  structural difference (continuous vs. periodic `weakOpen`) just from
+  reading `rootmawTide`, before running anything. Read further before
+  assuming that's the whole story.
+- **A boss fight losing to the robot is not automatically a bug.** Every
+  entry in this project's boss-fairness history says so explicitly. Land a
+  measurement and a judgement even if the judgement is "not fixable this
+  session, here is why."
+- **`dBoss` is shared by all six boss fights `check-playthrough.mjs`
+  depends on.** Any change to it needs the full six-boss re-measurement,
+  not just the one dungeon that motivated the change — S49 found this out
+  the expensive way so a third session does not have to.

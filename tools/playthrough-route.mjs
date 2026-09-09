@@ -926,27 +926,36 @@ export const ROUTE = [
   ['wait', 90],
 
   // ---------------------------------------------------------------- d2 1,3,1
-  // ANEMOS, THE CROWNED COLUMN. Measured in god-mode-style testing (unlimited
-  // health) to need a full 40 quarter-hearts of survived damage against the
-  // current `dBoss` verb — well above the 16-quarter-heart in-order budget —
-  // which is exactly why the Heart Container above is not a nice-to-have.
-  // THE FIGHT'S OWN OUTCOME IS SENSITIVE TO THE EXACT FRAME THE ROOM IS
-  // ENTERED AT, because Anemos's attack timers (`timer(e, 'feed', 250)`,
-  // `timer(e, 'ring', 170)`, etc.) are absolute-frame-based rather than
-  // relative to when the fight starts. RE-SWEPT THIS SESSION (S48) against
-  // this exact route, after splicing the fixed `dTravel` into Reefguard
-  // Hall's return leg shifted this room's entry by several hundred frames —
-  // the OLD `wait: 220` still happened to pass here, but a 1-frame sweep of
-  // 195-235 showed it sitting on an isolated single-frame win surrounded by
-  // losses (219 and 221 both lose), not a plateau. A wider band was found at
-  // 207-213 (7 consecutive frames, all wins); `wait: 212` sits in the middle
-  // of it with a comfortable 13/20 quarter-heart margin, not the 1-3 qh a
-  // knife-edge frame would have left. Per CLAUDE.md: "a five-line change to
-  // the movement path is never a five-line change" — if anything upstream of
-  // this fight ever shifts the entry frame again, re-sweep the same way
+  // ANEMOS, THE CROWNED COLUMN. THE FIGHT'S OWN OUTCOME IS SENSITIVE TO THE
+  // EXACT FRAME THE ROOM IS ENTERED AT, because Anemos's attack timers
+  // (`timer(e, 'feed', 250)`, `timer(e, 'ring', 170)`, etc.) are
+  // absolute-frame-based rather than relative to when the fight starts.
+  // RE-SWEPT TWICE NOW, for two different reasons, and the `wait` below
+  // reflects the second sweep:
+  //   S48: splicing the fixed `dTravel` into Reefguard Hall's return leg
+  //     shifted this room's entry by several hundred frames. The OLD
+  //     `wait: 220` still happened to pass, but a 1-frame sweep of 195-235
+  //     found it sitting on an isolated single-frame win, not a plateau —
+  //     replaced with `wait: 212`, the middle of a 7-frame stable band
+  //     (207-213).
+  //   S50: `dBoss` itself changed (`b.spec.safeWhenOpen`, see
+  //     `tools/actor-runtime.mjs` and `src/data/bosses.js`'s `anemos`
+  //     entry) — a boss-AI change moves a frame-phase tune exactly the same
+  //     way a route change does, and `check-playthrough.mjs` confirmed it:
+  //     `wait: 212` still passed but left only 2 of 20 quarter-hearts, a
+  //     much thinner margin than S48 measured for it. A fresh 1-frame sweep
+  //     of 205-230 against the new `dBoss` behaviour found an 8-frame
+  //     unbroken winning streak at 213-220 (no losses anywhere in it, unlike
+  //     the choppy frames on both sides); `wait: 216` is the middle of that
+  //     streak and also has the best margin within it (14 of 24
+  //     quarter-hearts).
+  // Per CLAUDE.md: "a five-line change to the movement path is never a
+  // five-line change" — the same is true of a change to the combat verb
+  // every boss fight shares. If anything upstream of this fight, OR
+  // `dBoss`'s own logic, ever changes again, re-sweep the same way
   // (`beginPlaythrough` with the real `ROUTE` prefix, never an isolated
   // `boot()`) rather than trusting a single pass.
-  ['wait', 212],
+  ['wait', 216],
   ['boss', 9000],
   ['wait', 200],
 
@@ -973,9 +982,13 @@ export const ROUTE = [
  * margin for, see `docs/NEXT-SESSION.md` S40), into the Coral Spire, and out
  * the other side holding both: every Small Key from both dungeons spent, the
  * Lens, the Bombs, a completed Heart Container earned mid-route, and Anemos
- * beaten in real combat at a health budget that was MEASURED to need it (a
- * full 40 quarter-hearts of survived damage against the current `dBoss` verb
- * in god-mode-style testing — see the comment on the Anemos fight above).
+ * beaten in real combat — see the comment on the Anemos fight above for the
+ * current health margin and where it came from; `dBoss`'s own logic changed
+ * in S50 (`b.spec.safeWhenOpen`, see `src/data/bosses.js`), so an older
+ * "measured to need N quarter-hearts" figure here would describe a fight
+ * that no longer happens. Re-measure with `measure-boss-combat.mjs d2` if a
+ * fresh number is needed rather than trusting either the old or new one
+ * without checking.
  *
  * WHAT IS STILL NOT DRIVEN, so the next session does not have to find it:
  * everything after D2. Four dungeons, the Coastwise Chain, the overworld's
@@ -983,6 +996,9 @@ export const ROUTE = [
  * been beaten by this actor in real combat on the seed this run uses — see
  * the sweep table above `safe` in tools/actor-runtime.mjs for exactly which,
  * and `tools/measure-boss-combat.mjs <d> --seed=N` for how to re-measure it.
+ * D6's Nereth now comes very close in isolation (78 of 80 damage dealt,
+ * `docs/NEXT-SESSION.md` S50) but is not routed here — D2 is still the end
+ * of this file's own committed run.
  *
  * THE `dTravel` NON-ANCHOR-CELL GAP (S47) IS NOW SPLICED IN, for both of the
  * two rooms that needed it — S48. Reefguard Hall's return leg (Bomb Vault

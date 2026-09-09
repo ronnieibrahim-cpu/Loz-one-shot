@@ -1,3 +1,127 @@
+## S50 — landed the real fix for S49's trade-off: a per-boss `safeWhenOpen` flag, not a blanket relax
+
+Continuation of the S49 session's own prompt (`docs/prompts/NEXT-PROMPT.md`),
+which named the exact problem and two candidate directions after S49's naive
+fix regressed D1 while fixing D2/D5/D6. This session built direction 1 (the
+explicit spec field) and it works cleanly.
+
+**Confirmed first, before writing anything:** no other branch on `origin`
+had touched this (`git ls-remote --heads`, grepped for boss/weakopen/nereth/
+rootmaw/safewhenopen — the only hits were this session's own prior work,
+already merged).
+
+**The fix, precisely.** Two files:
+
+- `src/data/bosses.js`: added `safeWhenOpen: true` to `anemos`'s and
+  `nereth`'s `defineBoss(...)` calls — the two bosses (found by grepping
+  `!e.weakOpen`, exactly two call sites) whose FINAL phase actually holds
+  fire while its own shell is open. `Boss extends Enemy` and `Enemy`'s
+  constructor sets `this.spec = spec` unconditionally, so the field is
+  reachable at runtime as `b.spec.safeWhenOpen` with no plumbing needed.
+- `tools/actor-runtime.mjs`'s `dBoss`: the `p.invuln` 1-20 sub-branch's
+  condition changed from `if (b.stun > 0 && !b.charging)` to `if ((b.stun >
+  0 || b.spec.safeWhenOpen) && !b.charging)` — press when EITHER signal says
+  safe, not just the stun-shaped one.
+
+**Verified this does exactly what it was designed to, not by accident.**
+Read `anemos`'s phases before trusting the flag: only its THIRD (final,
+"above: 0.00") phase gates volley/ring fire on `!e.weakOpen` — phases 1 and
+2 do not, and `anemosLash` (a separate spread attack) fires in every phase
+regardless of `weakOpen`. So `safeWhenOpen` is not literally true for 100%
+of Anemos's fight — it is a per-boss APPROXIMATION that happened to measure
+as strictly better in S49's own naive-fix data (Anemos flipped from a loss
+to a flawless-margin win under the SAME unrestricted logic this session now
+gates behind the flag), which is the actual justification, not a structural
+guarantee. Nereth's case is cleaner: `nerethPin`'s first three phases each
+call `nerethOpening` right after their own attack fires (via `windUp`'s
+stun-then-callback pattern), and the FOURTH phase is the one line 900's
+comment describes fixing outright ("HE HOLDS FIRE WHILE HE IS OPEN, and that
+is the whole of this phase's fix") — chase() does keep him moving toward the
+player during an opening in phases 1-3, so contact damage is still
+theoretically possible, but S49's own measurement already showed this cost
+nothing new (32 quarter-hearts taken, identical before and after S49's
+unrestricted version, while boss damage dealt rocketed from 6 to 78 of 80).
+
+**Measured on all six, at the default seed, before trusting any of it:**
+
+| D | boss | before (post-S49-revert) | after S50 |
+|---|---|---|---|
+| 1 | Gohmaraq | won, 24/24, 4qh lost | **unchanged** — won, 24/24, 4qh lost |
+| 2 | Anemos | died, 20/24, 16qh lost | **won**, 24/24, 7qh lost |
+| 3 | Gloomtide | won, 36/36, 13qh lost | **unchanged** — won, 36/36, 13qh lost |
+| 4 | Wyverna | won flawlessly, 44/44, 0qh | **unchanged** |
+| 5 | Rootmaw | died, 26/52, 28qh lost | **unchanged** — no `safeWhenOpen`, no change |
+| 6 | Nereth | died, 6/80, 32qh lost | died, **78/80**, 32qh lost |
+
+D1/D3/D4/D5 are BYTE-IDENTICAL to the pre-S49 baseline — exactly the
+zero-regression bar this session was set. D2 is a clean win. D6 is not yet a
+win but is a real fight now, not the wall S45 measured (6 of 80, never
+progressing past phase 1).
+
+**D1 specifically re-swept across five seeds** (`--seed=1` through `--seed=5`,
+per the file's own "never trust one seed" doctrine and because S49's
+regression was itself only caught by a seed sweep): all five win cleanly,
+4-6 quarter-hearts lost each time. No regression at any seed sampled.
+
+**Anemos's `wait` needed a THIRD sweep**, and this is the generalizable
+lesson of the session: `check-playthrough.mjs`'s real run at the
+already-committed `wait: 212` still passed 21/21, but left only 2 of 20
+quarter-hearts — a much thinner margin than S48 measured for that exact
+value, because `dBoss`'s own logic changed under it and a frame-phase tune
+is downstream of the COMBAT VERB, not just the route. A fresh 1-frame sweep
+of 205-230 against `beginPlaythrough` with the real (now `safeWhenOpen`-
+aware) `ROUTE` found the terrain choppier than S48's had been in most of
+that range (211, 209, 221, 224, 225, 226 all lose) but with one clean
+8-frame unbroken winning streak at 213-220 — no losses anywhere inside it,
+margins ranging 1-14 quarter-hearts across the eight frames. `wait: 216`,
+the middle of the streak, also carries the best individual margin (14 of
+24). Landed; full run re-recorded (3066 inputs, 48,781 frames).
+
+**The god-mode "40 quarter-hearts of survived damage" figure in the old
+Anemos route comment no longer means anything and was removed rather than
+re-measured wrong.** `dBoss`'s behaviour against Anemos changed structurally
+this session (it now presses through the fight instead of retreating from
+much of it), so the old figure describes a fight that no longer happens;
+`measure-boss-combat.mjs d2 --god` returns 0 damage taken under the new
+logic, which is a different METHODOLOGY (full invuln, not a damage-survived
+count) and not a fair replacement number either. Left unasserted in the
+comment rather than guessed at — a future session that wants this number
+back needs to re-derive the original methodology, not trust either figure
+sitting here.
+
+**Verified broadly before calling it done:** `check-playthrough.mjs` 21/21
+(fresh tape), `replay.mjs` 51/51 (unchanged baselines), `test.mjs` 83/83,
+`check-bosses.mjs` 19/19 (god mode, structural only — confirms nothing about
+`weakOpen`'s own spawn/open/kill wiring broke). `npm run build`: `dist/`
+DID change this time (`src/data/bosses.js` is bundled, unlike `tools/`),
+committed.
+
+**`docs/prompts/LEDGER.md` updated**: a new "Landed" row for this fix, and
+the Nereth/Rootmaw "known and deliberately unfixed" bullet rewritten to
+describe the current, partially-resolved state (Nereth much closer,
+Rootmaw genuinely untouched) rather than pointing at S49's now-superseded
+account.
+
+### For whoever picks this up next
+
+1. **Nereth (D6) is close but not landed.** 78 of 80 with 32 quarter-hearts
+   spent at the in-order floor (8 hearts) — the fight is survivable enough
+   to be worth another look, but the actor is missing two real verbs the
+   fight is designed around: pressing the conch to break `nerethPin`
+   (extends every opening in phases 1-3 from "grudging" to "standing"), and
+   dodging the telegraphed trident/ring/beam spreads rather than tanking
+   them. Either could plausibly close the last 2 damage and a healthier
+   margin than the current fight leaves. Neither was built this session —
+   out of scope, named so it isn't rediscovered as new territory.
+2. **Rootmaw (D5) has not been touched since S45's diagnosis.** Its failure
+   mode (growing-distance retreat, 26 of 52 dealt) is a different mechanism
+   from the `weakOpen`/`stun` bug this session and S49 chased — start from
+   S45's own account, not from this session's fix, which does not apply to
+   it.
+3. **D3/D4 routing still needs the Coastwise Chain first**, and **D5 routing
+   is still blocked on Rootmaw** — both noted in `docs/prompts/NEXT-PROMPT.md`
+   already and unchanged by this session.
+
 ## S49 — tried S45's named `dBoss` retreat-branch fix, measured it dramatically helps three bosses and breaks a fourth, reverted
 
 Continuation of the S48 session, picking the next task off the project's own

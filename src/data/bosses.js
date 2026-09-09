@@ -296,6 +296,13 @@ export function installBosses() {
     frames: ['boss_anemos_0', 'boss_anemos_1', 'boss_anemos_2'],
     hurtFrame: 'boss_anemos_hurt',
     intro: 80, shell: true, terrain: 'any', drops: 'none',
+    // Read by `tools/actor-runtime.mjs`'s `dBoss`: this fight's final phase
+    // gates its own fire on `!e.weakOpen` (search that string below), so
+    // `weakOpen === true` genuinely means "will not attack" here, unlike a
+    // boss whose shell just happens to be open while it keeps fighting. See
+    // docs/NEXT-SESSION.md S49/S50 for why this needs to be an explicit flag
+    // rather than something the actor infers from `b.stun`.
+    safeWhenOpen: true,
     init(e) { e._open = 0; e._sweep = 0; },
     onIntro(e, g) { unlockTide(g); },
     onPhase(e, g, i) {
@@ -797,6 +804,11 @@ export function installBosses() {
     frames: ['boss_nereth_0', 'boss_nereth_1', 'boss_nereth_2', 'boss_nereth_3'],
     hurtFrame: 'boss_nereth_hurt',
     intro: 120, shell: true, terrain: 'any', drops: 'none',
+    // Read by `tools/actor-runtime.mjs`'s `dBoss` — see the matching comment
+    // on `anemos` above. His shell opens via `nerethOpening`/his final
+    // phase's own cycle, never via a stun, so `b.stun` alone could never see
+    // one of his openings as safe; `weakOpen` is the real signal here.
+    safeWhenOpen: true,
     init(e) { e._open = 0; e._sweep = 0; },
     // NERETH SPEAKS BEFORE HE FIGHTS. `nerethIntro` was written into story.js
     // and had no trigger anywhere in `src/` — it had never once played, and

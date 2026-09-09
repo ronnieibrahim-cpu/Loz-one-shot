@@ -25,6 +25,7 @@ the relevant section, not folded into `docs/prompts/NEXT-PROMPT.md`.
 | Boss-fairness sweep measured fresh: D1/D3/D4 confirmed fair (D3 and D4 newly so), D2's floor-number death explained as expected, Nereth's old "wins at 11 hearts" root-caused as no longer reproducing, Rootmaw flagged as a new open question | S45 | `docs/NEXT-SESSION.md` S45; `docs/DUNGEON-STATUS.md` "Boss winnability, measured" |
 | Tideshade Hall (D6) widened to the game's first `2x2` room | S46 | `docs/NEXT-SESSION.md` S46; `docs/DUNGEON-STATUS.md` D6 section |
 | `dTravel`'s non-anchor-cell gap fixed in `tools/actor-runtime.mjs` (`window.__roomKeyAt` + a same-room short-circuit) — proven with a scratch harness showing the old code walked into the WRONG room (923 frames) and the fix lands correctly (5 frames). **Now spliced into the committed `playthrough-route.mjs` (S48)** — Reefguard Hall's return leg and Spire Ascent's exit leg both use a single `travel` call in place of their old manual `goto`/`exit` workaround. Anemos's fight timing DID shift (the route is 721 frames shorter) and was re-swept against the real route, per S40/S41's own method: the old `wait: 220` happened to still pass but sat on an isolated single-frame win with losses on both neighbours; `wait: 212` was found instead, in the middle of a 7-frame stable band (207-213) with a comfortable 13/20 quarter-heart margin | S47 (fix), S48 (spliced in) | `docs/NEXT-SESSION.md` S47, S48 |
+| `dBoss`'s retreat-branch bug (Nereth and Rootmaw losing to the harness actor) fixed for Nereth — a `safeWhenOpen: true` spec field on `anemos` and `nereth` in `src/data/bosses.js`, read by `dBoss` instead of blindly relaxing the `b.stun > 0` check for every boss (S49's attempt did that and regressed D1). Zero regressions: D1/D3/D4/D5 measured byte-identical to before, D2 flips from a loss to a clean win, D6 (Nereth) goes from 6 of 80 damage dealt to 78 of 80 (very close, not yet a win). Anemos's `wait` re-swept again (`dBoss` itself changed, which moves a frame-phase tune the same way a route change does) — `wait: 216`, an 8-frame unbroken winning streak (213-220), 14/24 quarter-heart margin. Rootmaw (D5) is untouched by this fix on purpose — it doesn't have `safeWhenOpen` and its own failure is a different, still-undiagnosed mechanism (S45) | S49 (tried, reverted), S50 (landed) | `docs/NEXT-SESSION.md` S49, S50 |
 
 ---
 
@@ -110,29 +111,32 @@ extract from it:
   — would need `up+down`/`left+right` in `EDGE_ART_KEYS`); and salt flats,
   ice floors and reef/abyss water were never audited for whether they want a
   rim of their own.
-- **Nereth and Rootmaw lose to the harness actor — TRIED the fix S45 named,
-  it is not a pure win, see S49.** S45's root cause still stands (`dBoss`
-  retreats instead of pressing whenever `p.invuln` is 1-20 and `b.stun ===
-  0`), and S49 tried the fix it named (drop the `b.stun > 0` requirement).
-  Result, measured on all six: **D2 flips from a loss to a clean win, D5 and
-  D6 come dramatically closer (Nereth 6 -> 78 of 80) without yet winning —
-  and D1 flips from a clean win to a deterministic loss** (same result
-  across five different seeds; the damage log shows every D1 hit lands in
-  exactly the newly-permitted state). Root cause of the trade-off: `weakOpen`
-  does not universally mean "cannot act" — `src/data/bosses.js`'s own
-  comment says a checker requiring `!weakOpen` before any shelled boss fires
-  was written and removed because it false-positived on Gohmaraq, Wyverna
-  and Rootmaw, all three already won without it. Only Nereth's and Anemos's
-  FINAL phases actually gate their fire on `!weakOpen`; Gohmaraq's does not,
-  so `b.stun` was the only real safety signal his fight ever had. Reverted;
-  full account, the exact before/after table for all six bosses, and the two
-  untried directions for a real fix (a per-boss spec flag, or a
-  learned-at-runtime signal) are in `docs/NEXT-SESSION.md` S49.
-  **Caveat that still applies to both:** a robot losing does not by itself
-  prove a boss is unfair if the robot is missing a verb (here, the conch and
-  any projectile-dodge) the fight assumes a player has. The honest
-  deliverable on either of these is a measurement plus a judgement, not a
-  green tick.
+- **Rootmaw (D5) still loses to the harness actor. Nereth (D6) does not fix
+  entirely but comes very close — see S49 (tried, reverted) and S50
+  (landed).** S45's root cause of the `dBoss` retreat-branch bug still
+  stands; S49 tried the fix it named (drop `b.stun > 0` entirely) and found
+  it regressed D1 (Gohmaraq keeps attacking through part of his own
+  `weakOpen` window; only `b.stun` ever meant "cannot act" for him). S50
+  landed the corrected version instead: an explicit `safeWhenOpen: true`
+  spec field on `anemos` and `nereth` (the two bosses whose FINAL phase
+  actually gates its own fire on `!weakOpen` — grep that string in
+  `src/data/bosses.js`), read by `dBoss` alongside `b.stun`. Measured on all
+  six: **D1/D3/D4 byte-identical to the pre-S49 baseline (zero regression),
+  D2 flips from a loss to a clean win, D6 goes from 6 of 80 damage dealt to
+  78 of 80** (a real fight now, not a wall — see the caveats below for why it
+  isn't called a full win). **D5 (Rootmaw) is untouched on purpose** — it
+  never had `safeWhenOpen` set, so its behaviour did not change at all; its
+  own failure is a different, still-undiagnosed mechanism from the same S45
+  sweep (a growing-distance retreat pattern, unlike Nereth's fixed-distance
+  one).
+  **Caveat that still applies to Nereth and Rootmaw both:** a robot losing
+  (or not quite winning) does not by itself prove a boss is unfair if the
+  robot is missing a verb (here, the conch and any projectile-dodge) the
+  fight assumes a player has. Nereth's own fight is explicitly designed
+  around the conch (`nerethPin`) and the actor still cannot press it
+  contextually — 78 of 80 without that verb at all is a strong result, not
+  a ceiling on the fight's real fairness. The honest deliverable here is a
+  measurement plus a judgement, not a green tick.
 - **The replay baselines predate `beaten`/`heartPieces`.** Eleven files live
   in `tools/replays/`; only some carry those fields, and `diffState` only
   walks keys a baseline HAS, so the rest go unchecked. Re-record
