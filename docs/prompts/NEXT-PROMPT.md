@@ -1,14 +1,32 @@
 # Next session — Oracle of Tides: keep improving
 
-Repo `ronnieibrahim-cpu/Loz-one-shot`. Branch from `main` (currently
-`d05424e`); one prompt = one session = one branch. Do not open a pull request
-unless asked.
+Repo `ronnieibrahim-cpu/Loz-one-shot`. Branch from the CURRENT tip of `main` —
+`git log -1 origin/main` for the real commit; the hash this file happened to
+be written against goes stale the moment the next session pushes, so do not
+trust one printed here. One prompt = one session = one branch. Do not open a
+pull request unless asked.
 
 **Read first, in this order:** `CLAUDE.md` — its hard rules and its
-verification table govern everything below — then the top four entries of
-`docs/NEXT-SESSION.md` (§S32, §S31, §S30, §S29), the new entries at the top of
+verification table govern everything below — then the top entries of
+`docs/NEXT-SESSION.md` (whatever is newest; do not trust the specific §-numbers
+named anywhere in THIS file, including below, to still be the top of that
+file — this document has repeatedly gone stale on exactly that point, see the
+warning at the end of this section), the new entries at the top of
 `docs/HANDOFF.md`'s hard-won-lessons section, `docs/ART-BACKLOG.md`, and
 `docs/DUNGEON-STATUS.md` (the board) if you touch a dungeon.
+
+**This file itself goes stale fast, and has repeatedly sent sessions to
+re-investigate settled ground.** As of the entry naming this warning (after
+S45), cross-checking every item below against `docs/ART-BACKLOG.md` and
+`docs/NEXT-SESSION.md` found FOUR items already fully landed while this file
+still described them as open work: D2 being played (done S41), the dungeon
+strand-checker (done S42), land/land ground fringes (done S39), and the
+held-item/projectile gear-sheet strips being an extraction target (surveyed
+and found empty, S37). All four are now marked below, but treat every
+remaining "open" item here as a claim to VERIFY against `ART-BACKLOG.md` /
+`NEXT-SESSION.md` before spending a session on it, not as ground truth on its
+own — this file is written once per session and the authoritative record is
+whichever of those two documents has the newer entry.
 
 Before designing anything, run `git ls-remote --heads origin` and look for a
 branch that has already done it. A finished dungeon was once very nearly built
@@ -21,28 +39,38 @@ lines. Do not merge old branches to "recover" work — it is already in `main`.
 `main` is green on everything in CLAUDE.md's table: `test.mjs` 83/83,
 `replay.mjs` 51/51, `check-playthrough` 21/21, `check-respawn` 64/64,
 `check-items` 91/91, `check-hearts` 114/114, plus `check-tilesets`,
-`check-strands`, `watch-cutscenes` and `check-build`. **Re-run the suite
-yourself rather than trusting that. If anything is red, that is the job.**
+`check-strands`, `check-dungeon-strands`, `watch-cutscenes` and `check-build`.
+**Re-run the suite yourself rather than trusting that. If anything is red,
+that is the job.** (Counts drift session to session; treat these as "roughly
+this many, and growing" rather than exact.)
 
-The last session was driven by a PERSON PLAYING, and that is the important
-context for this one. In a single sitting they found three real faults that a
-suite of several hundred assertions was green through:
+Two recurring lessons, from across many sessions rather than just the last
+one — **the specific session numbers below are old and this file will not be
+kept in sync with them; read them for the shape of the lesson, not as a
+pointer to what is newest:**
 
-  - the sword appeared fully extended on the frame the button went down and
-    never travelled, so a press did not read as a swing (fixed, S30);
-  - every item description in the pause menu was cut at 33 characters with an
-    ellipsis, losing the second half of nine of them — including every "press
-    again to recall it" clause, the only place the game says how to get a
-    thrown item back (fixed, S31);
-  - a death after pressing Continue put the player back in the room the save
-    was made in rather than at the dungeon mouth, because loading a save
-    counted as arriving somewhere new and restamped the respawn point (fixed,
-    S32).
+  - **A PERSON PLAYING once found three real faults in one sitting that a
+    suite of several hundred assertions was green through**: the sword
+    appearing fully extended instead of travelling on the swing (S30); every
+    item description in the pause menu cut at 33 characters, losing the
+    second half of nine of them (S31); a death after Continue landing in the
+    save room instead of the dungeon mouth, reachable only by QUITTING AND
+    COMING BACK — a verb the harness had never had (S32). **Assume there are
+    more of these, and assume looking will find them faster than reasoning
+    will.**
+  - **Reading the game's own data files with a specific question in mind has
+    since found real bugs the whole green suite missed too, with no browser
+    open at all** — S43's story-audit read found that `ending` was never
+    wired to `startCutscene` anywhere in the game, so finishing it produced no
+    THE END; S45's boss-fairness re-measurement found Nereth's
+    once-documented "wins at 11 hearts" no longer reproduces at all, root-
+    caused to a specific branch in the shared actor-combat verb. Neither
+    needed a person with a controller — both needed someone to actually ask
+    the question and check the answer instead of trusting an old note or a
+    green checker.
 
-The third one needed the player to QUIT AND COME BACK, a verb the harness had
-never had. **Assume there are more of these, and assume looking will find them
-faster than reasoning will.** When you fix one, add the assertion that would
-have caught it, and prove the assertion goes red against the old code.
+When you fix something this class finds, add the assertion that would have
+caught it, and prove the assertion goes red against the old code.
 
 ## The work, in priority order
 
@@ -65,18 +93,28 @@ hooks, flutes, rings, bracelets — and our roster is ours by design. The one
 that looked shared (r5c5, taken for a flask) was extracted, rendered against
 the hand-drawn bottle and **rejected**; do not redo it.
 
+~~The held-item and projectile strips on the gear sheet are the largest
+extraction target in the repo.~~ **Stale — surveyed and found spent (S37,
+`docs/ART-BACKLOG.md`).** An earlier note called them that; they are not. The
+held sword poses are already extracted (`link_hold_*`, `rip-link.py`). The
+coloured bars are enemy-only sword-beam projectiles this game's player never
+fires. The boomerangs/slingshots/seeds are items we do not have by design. The
+hookshot head and chain are the Dredge Line's, ours already. **There is
+nothing left on that sheet to take.**
+
 What is genuinely left, in order:
 
-  * **The held-item and projectile strips** on the gear sheet, below the grid:
-    Link's hand holding a sword, hookshot, rod, boomerang, bombs and seeds,
-    plus boomerang arcs and chain links. All hand-drawn here. This is now the
-    largest extraction target in the repo. `tools/rip-fairies.py` is the worked
-    example — a small, single-purpose ripper emitting its own generated module,
-    installed after the hand-drawn pack so it takes the name.
-  * **Craft, not extraction, on everything else.** What is still hand-drawn is
-    what SHOULD be: the items original to this game. The job there is register —
-    outlines, three tones, silhouette — measured against the extracted art
-    beside it, not replaced by it.
+  * **Craft, not extraction, on what is still hand-drawn.** That art is what
+    SHOULD be hand-drawn: the items original to this game. The job is
+    register — outlines, three tones, silhouette — measured against the
+    extracted art beside it, not replaced by it. `docs/ART-BACKLOG.md`'s
+    "REGISTER, MEASURED" section (S37) has the actual numbers to compare
+    against (target ~30% cell fill; several hand-drawn icons run 47-66% and
+    read fatter than their extracted neighbours).
+  * **The second, white-plate icon set** (the pause-menu presentation of the
+    same icons, lower on the gear sheet) — genuinely unexamined, per
+    `ART-BACKLOG.md`, but "worth a look only if the menu's own plate style
+    ever changes." Low priority.
   * **`oracle-seasons-maku-tree.png` is not the easy job** an earlier prompt
     implied. The Maku Tree is ~169x96 px drawn into its screen's tilemap;
     `npc_maku` is a 16x16 NPC. That is a screen redesign, not an art swap.
@@ -95,28 +133,31 @@ The one thing still open from that entry — nothing floods a dungeon's interior
 for STRANDED FLOOR the way `check-strands` does the overworld — is now closed;
 see item 7.
 
-### 2. Five of the six dungeons have never been PLAYED
+### 2. ~~Five~~ **Four of the six dungeons have never been PLAYED — D2 landed S41, stale below fixed**
 
-`docs/DUNGEON-STATUS.md` is blunt: D1 is played, and it is one dungeon of six.
-D2-D6 are "authored, flooded, and proved by models", and CLAUDE.md is explicit
-that a model does not fight a boss, spend a key or press a button — which is
-how seven hundred green assertions once described a world that could not be
-finished. Extending `tools/playthrough-route.mjs` to walk D2 (Coral Spire,
-Brineglass Lens) end to end is the highest-confidence correctness work
-available. Expect it to find something.
+`docs/DUNGEON-STATUS.md` is blunt: D1 AND D2 are played now (D2 since S41 —
+`GOAL.essences: [1, 2]` in `tools/playthrough-route.mjs`, `check-playthrough`
+21/21, both bosses beaten in real combat, a second Heart Container completed
+mid-D2). D3-D6 are still "authored, flooded, and proved by models", and
+CLAUDE.md is explicit that a model does not fight a boss, spend a key or
+press a button — which is how seven hundred green assertions once described
+a world that could not be finished. Extending `tools/playthrough-route.mjs`
+to walk D3 (Bogwater Sanctum) end to end next is the highest-confidence
+correctness work available, and per S45's boss-fairness sweep, D3's own boss
+(Gloomtide) is already confirmed fair, so this dungeon's boss fight is not
+the thing likely to bite. Expect the ROUTE to find something anyway — D2 took
+three sessions (S28's scratch route, S40's landing attempt, S41's actual
+landing) even with a boss that was never in question.
 
-**Read `docs/NEXT-SESSION.md` §S28 before attempting this.** A previous session
-got a live-engine route all the way through Coral Spire's boss door — every
-required room, both Small Keys, the Lens, the Bombs, a heart piece, the Boss
-Key — in a scratch harness that was never committed. S28 names exactly which
-rooms are solid and saves re-deriving the switch puzzle, the locked-door
-positions and both `lensRoom` fork sequences from scratch. It also names a real
-general gap in `dTravel`: it cannot path through a `size:[w,h]` room's
-non-anchor exits, which hits both Reefguard Hall and Spire Ascent. And it
-records the trap that cost that session most of its time: `['equip','lens','B']`
-silently displaces the sword, so every scripted swing afterwards presses the
-Lens button and the fight lands no damage for a reason that looks like room
-geometry.
+**Read `docs/NEXT-SESSION.md` §S28, §S40 and §S41 before attempting D2's
+successor** — not because they cover D3, but because they are the worked
+example of exactly how much harder "route it for real" is than "prove it
+reachable by a model", and they name general engine/harness gaps
+(`dTravel` cannot path a `size:[w,h]` room's non-anchor exits; frame-phase
+timing tuned in isolation needs re-sweeping once spliced after a real,
+~23,500-frame D1+D2 route; `['equip','lens','B']` silently displaces the
+sword) that are likely to recur on D3 in some form even though D3 has no
+Lens of its own.
 
 ### 3. Nobody knows whether the bosses are FAIR — measured fresh, S45; D6 needs a real fix
 
@@ -156,24 +197,41 @@ warning that the honest deliverable is a measurement plus a judgement, not a
 green tick, is exactly what S45 tried to leave behind for Nereth rather than
 either a false "fixed" or a false "hopeless".
 
-### 4. Land meets land as a hard pixel edge, everywhere
+### 4. ~~Land meets land as a hard pixel edge, everywhere~~ — **DONE, LANDED S39. Stale — do not redo.**
 
-The water's edge was fixed in S27 and looks right — `waterS` carries a 1px dark
-scalloped rim derived in `rip-terrain.py`, and `Room.animArtAt` was the engine
-change that made `edgeArt` on an animated tile work at all. Grass against sand,
-sand against mud, mud against stone are all still abrupt. This is
-`ART-BACKLOG` item 1: it needs per-ordered-pair art and its own palette per
-pair. Read S21's `tileEdgeArt` notes in `src/world/tileset.js` first, and note
-S26's lesson may apply here too — **check what the source actually does at a
-land/land join before assuming a transition tile exists at all.** S21 assumed
-one for the shore and was wrong in the opposite direction.
+`docs/ART-BACKLOG.md`'s own item 1 header says it plainly: "EVERY GROUND
+BOUNDARY IS A STRAIGHT PIXEL EDGE — LANDED (S39)". All 17 land/land pairs the
+overworld actually contains now interlock along a composited fringe
+(`edgePairs`/`material`, a second comparison axis added to `tileEdgeArt`
+alongside the water-rim `family` path) instead of meeting at a hard cut — 204
+generated tiles, screenshotted across coast, marsh, reef, salt, cliffs, dunes
+and abyss, `replay` 51/51 with no baseline re-recorded, `check-strands`/
+`check-overworld`/`check-ground`/`check-placement`/`check-playthrough` all
+green. Read that entry in full before touching this area again — it also
+records two blockers an earlier version of this task-list entry got wrong
+(`tileEdgeArt`'s "first direction wins" bug was already fixed in S27; the real
+blocker was that `family` cannot see a land/land join at all, only a
+land/water one).
 
-Two known, screenshotted, unfixed edges of the shore work, if you are in there
-anyway: a water cell one tile wide with land on both opposite sides shows the
-rim on only one of its two facing edges (`tileEdgeArt`'s "opposite pair"
-degrade — would need `up+down`/`left+right` in `EDGE_ART_KEYS`); and salt
-flats, ice floors and reef/abyss water were never audited for whether they want
-a rim of their own.
+A follow-up session independently re-checked the underlying premise — does
+the SOURCE actually draw a blended transition at an interior land/land join,
+the way S26 warned to check before assuming one exists — by cropping and
+inspecting `custom-oracle-style-overworld.png` and `oracle-ages-overworld.png`
+directly around grass/sand and sand/mud joins. Both showed a hard, single-row
+pixel cut with no blend in the source art itself. This does not contradict
+S39: S39 never claimed to have found or extracted an EXISTING source
+transition tile, it COMPOSITES one from the two adjacent materials' own
+already-extracted textures (a documented, screenshot-verified judgement call,
+not a fidelity violation) — but it's worth knowing the source's own convention
+here really is the hard cut, in case a future session weighs whether to keep
+compositing this way.
+
+Two known, screenshotted, unfixed edges of the SHORE (water/land, S27) work
+remain, if you are in there anyway: a water cell one tile wide with land on
+both opposite sides shows the rim on only one of its two facing edges
+(`tileEdgeArt`'s "opposite pair" degrade — would need `up+down`/`left+right`
+in `EDGE_ART_KEYS`); and salt flats, ice floors and reef/abyss water were
+never audited for whether they want a rim of their own.
 
 ### 5. Whole regions have never been READ AS PICTURES — spot-checked, S44, not exhausted
 
