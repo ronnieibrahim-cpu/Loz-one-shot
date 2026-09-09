@@ -519,6 +519,22 @@ the near bank, and a mooring whose closure clause was asking the wrong question.
   checker's word.
 - **Three enemies are registered and unplaced** after the fold. See above.
 
+**Tideshade Hall widened to `2x2`.** The miniboss arena (`1,4,5`) was `2x1` —
+side-to-side room only. It is now four screens: the same tideshade fight, the
+same north door opening on the kill, the same two `1111` basins, with an
+identical second pair added south across an open seam (row 7, previously the
+room's solid bottom wall, is now floor matching every other row in the
+room). The tideshade gets somewhere to fall back into and the player gets
+somewhere to give ground, rather than only east-west space. Nothing about the
+puzzle, the door, or the entity's local coordinates moved — growth is
+down-right from a room's own key, and `(4,6)`/`(5,6)` had nothing in them, so
+the existing top half didn't need to shift. See
+`docs/HANDOFF.md`'s hard-won-lessons entry on why this was the only sized
+room in the game with a genuinely free down-right block, and
+`docs/NEXT-SESSION.md` for the full session account, screenshots and
+checker results. D6's room count is unchanged at 26 — this widened an
+existing room rather than adding one.
+
 ---
 
 ## What no dungeon has yet, and it is the same gap in all of them

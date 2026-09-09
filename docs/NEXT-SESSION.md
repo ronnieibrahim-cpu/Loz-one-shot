@@ -1,3 +1,97 @@
+## S46 — the first `2x2` room: Tideshade Hall (D6), after both named candidates turned out boxed in
+
+`docs/prompts/NEXT-PROMPT.md` asked for the game's first `2x2` room, naming
+D4's Cistern Floor (`0,4,4`) as the primary target and D6's Crossed Shafts
+(`1,4,2`) as the fallback. Verified the room-size count first (per the
+prompt's own instruction to check it, not trust it): 144 dungeon rooms
+across D1-D6 (24/24/22/24/24/26), `2x1` used 8 times, `1x2` once, `2x2`/`3x1`
+zero times — the prompt's "nine times" for `2x1` was off by one; the actual
+split is 8 `2x1` + 1 `1x2` = 9 sized rooms total, which is what the prompt's
+own per-dungeon table adds up to.
+
+**Both named candidates are boxed in, and neither was fixable by a size-field
+edit alone.** `maps.js` says a room's key is its own top-left cell and a
+`sw x sh` room covers cells DOWN-RIGHT from there — so a `2x1` room growing
+to `2x2` needs its own `(x+1, y+1)` cell free, not merely "some neighbour has
+room." Checked every neighbour directly against the room data rather than by
+inspection of the map:
+
+- **Cistern Floor (`0,4,4`)**: boxed on all four sides by real rooms — The
+  Long Race and Ironknight Gallery to the north, Rung Gallery and Cliffside
+  Cell to the south. The down-right cells its `2x2` would need, `(4,5)` and
+  `(5,5)`, are Rung Gallery and Cliffside Cell respectively. Converting it
+  would mean deleting or redesigning two other rooms, not widening one.
+- **Crossed Shafts (`1,4,2`)**: same problem south (`(4,3)` is The Drowned
+  Sill), and even if a direction had been free, it carries a `dredgeRoom`
+  mooring geometry (`entry`/`moorings`/`returns`, all absolute row numbers)
+  that any row-shifting growth would have forced a full renumber of — a much
+  bigger, more error-prone change than "widen a switch-puzzle room."
+
+**Checked every one of the game's nine sized rooms the same way rather than
+guessing a third candidate.** Only one has a genuinely free down-right
+block: **D6's Tideshade Hall (`1,4,5`)** — `(4,6)` and `(5,6)` have nothing
+in them. (Three others — Clawcrab Den `0,5,3`, Spire Ascent `1,3,2`, Kelp
+Locks — already carry a comment saying they were picked because "the cells
+it grows into have no other neighbours"; those three are exactly the ones
+excluded by the prompt's own selection rule, D1/D2 baselined by
+`check-playthrough` and D3 reserved for routing. Shrine Ford (D5) is boxed
+south like the other two D4/D6 candidates.) This is written up as a general
+lesson in `docs/HANDOFF.md`'s hard-won-lessons section, since it will recur
+the next time anyone wants to widen a room.
+
+**What was built.** Tideshade Hall, the only two-screens-wide miniboss arena
+in the game, converted from `size: [2, 1]` to `size: [2, 2]`. Growth is
+down-right from the room's own key, so the existing top half (the tideshade
+fight, its north door, its two `1111` basins, the entity at local `(9,3)`)
+needed no coordinate changes at all — only the old bottom wall (row 7,
+previously `####################`) changed to match every other floor row
+in the room, opening a seam into a new, identical second half added below:
+same two-basin layout, walls solid on the new half's west/south/east sides
+because `(3,6)`/`(4,7)`/`(5,7)`/`(6,6)` have no neighbouring rooms to
+connect to. One sentence for why the space exists, per the prompt's own
+constraint: the tideshade phases with the tide and wants somewhere to fall
+back into, not just east-west space to patrol; the player now has room to
+give ground in a fight that previously only offered a hallway.
+
+**Checkers, all re-run this session, all green:**
+
+- `check-wide-rooms.mjs` — 9 multi-screen rooms, 10 internal seams, OK.
+- `validate.mjs` — 273 rooms, OK (pre-existing unrelated warnings only).
+- `walk-dungeons.mjs` — 23/23, all six dungeons' room counts unchanged
+  (D6 still 26), all boss rooms reachable.
+- `check-exits.mjs` — 192/192.
+- `solve-switches.mjs` — 9/9 switch rooms solvable (Tideshade Hall isn't
+  one of them; unaffected).
+- `check-dungeon-strands.mjs` — still 9 regions / 12 cells, the same
+  pre-existing baseline, no new strand.
+- `check-camera.mjs` — 273 rooms, 9 bigger than the view (same count as
+  before — one of the nine just got bigger), OK.
+- `test.mjs` — 83/83.
+- `replay.mjs` — 51/51, no baseline re-recorded.
+- `check-playthrough.mjs` — 21/21. The route only covers D1+D2 and never
+  enters D6, so this is an unaffected-but-still-green check, not direct
+  evidence about the new room.
+- `npm run build` + `check-build.mjs` — OK, `dist/oracle-of-tides.html`
+  committed.
+
+**Screenshots looked at** (`tools/shoot-rooms.mjs d6,1,4,5` at `--tide=0/1/2`,
+both halves and the seam): the new south half renders the same dry-stone /
+shallow-blue / deep-blue progression as the original top half at LOW/MID/
+HIGH, indistinguishable in register — no seam artefact, no palette mismatch.
+A shot centred on the seam (`--px=140 --py=136`) shows one continuous open
+corridor between the two basins with the shared centre pillar wall running
+through both halves; the room reads as one arena, not two screens stapled
+together. Camera followed correctly into the new half (`cam=8,128` at
+`py=200`, `cam=68,80` at the seam), consistent with `check-camera.mjs`.
+
+**`docs/DUNGEON-STATUS.md` and `docs/HANDOFF.md` updated.** D6's room count
+in the board is unchanged (26) since this widened an existing room. No item
+art, overworld art, boss balance or story touched, per the prompt's explicit
+scope. `dTravel`'s non-anchor-cell gap (an existing, separately-tracked
+issue) was not hit here because both of Tideshade Hall's doors — the north `D` (`dDoorClosed`) and the west entrance
+from Upper Keep — are on the room's own anchor cell; nothing in this room
+needed a non-anchor exit.
+
 ## S45 — boss fairness measured fresh: D3/D4 clearly fair, D5 an open question, and Nereth's "wins at 11 hearts" no longer reproduces — with a precise diagnosis, not fixed
 
 `docs/prompts/NEXT-PROMPT.md` item 3 named two open worries: D3's evade

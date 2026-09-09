@@ -30395,18 +30395,38 @@ function installDungeonsB() {
       },
       '1,4,5': {
         name: 'Tideshade Hall',
-        // Two screens wide, and the only miniboss arena in the game that is.
+        // Four screens now, and the only miniboss arena in the game that is.
         // The tideshade phases with the water and the room is `1` throughout —
         // dry at LOW, wading at MID, swimming at HIGH — so the fight is a
         // different fight at each sea and the player picks which one they want
         // before they walk in. Its north door opens on the kill.
-        size: [2, 1],
+        //
+        // THE 2x2: the fight was two 1111 basins side by side with nowhere to
+        // fall back to; a tideshade that phases with the tide wants room to
+        // give ground into, not just room to walk around in. The south half
+        // is the same fixture repeated — a second pair of basins reached
+        // through the same open floor the original room already had at its
+        // south wall (row 7 was solid; it is now the seam into the new half,
+        // same shape as every other floor row here, per check-wide-rooms.mjs's
+        // "crossable by some verb" rule). It owns map cells 5,5 and 4,6 and
+        // 5,6 as well as its own; nothing else may be keyed there. Cells
+        // 3,6 / 4,7 / 5,7 / 6,6 have no neighbouring room, so the new half's
+        // west, south and east walls stay solid — nothing to open onto.
+        size: [2, 2],
         map: [
           '####D###############',
           '#........##........#',
           '#.1111....1111....##',
           '..1111....1111....##',
           '#.1111....1111....##',
+          '#........##........#',
+          '#........##........#',
+          '#........##........#',
+          '#........##........#',
+          '#.1111....1111....##',
+          '#.1111....1111....##',
+          '#.1111....1111....##',
+          '#........##........#',
           '#........##........#',
           '#........##........#',
           '####################',

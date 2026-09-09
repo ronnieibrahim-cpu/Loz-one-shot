@@ -4310,6 +4310,33 @@ means the pot comes up instead.** That was already true of talking to a
 villager — `tools/test.mjs` had to turn Link around before the conch section,
 because the tile he was facing is one of the village rocks and it ate the press.
 
+- **A ROOM'S SIZE GROWS DOWN-RIGHT FROM ITS OWN KEY, NEVER OUTWARD, SO MOST
+  SIZED ROOMS ARE BOXED IN ON EVERY SIDE THAT MATTERS.** `maps.js` says it
+  outright — "a room's key is its top-left cell, and a multi-screen room
+  covers `sw x sh` cells from there" — which means growing ANY existing `2x1`
+  or `1x2` room to `2x2` needs its own key's `(x+1, y+1)` cell free, not
+  merely "a neighbour has room." A session set out to convert D4's Cistern
+  Floor (`0,4,4`) to `2x2` and found it boxed in on all four sides by real
+  rooms (Rung Gallery and Cliffside Cell to the south, The Long Race and
+  Ironknight Gallery to the north) — the down-right cells `(5,5)` were ALSO
+  occupied. The named fallback, D6's Crossed Shafts (`1,4,2`), failed the
+  same way (`(4,3)` is The Drowned Sill) and additionally carries a
+  `dredgeRoom` mooring geometry keyed to absolute row numbers, which growing
+  it in any direction would have forced a wholesale renumber of. Checking
+  EVERY sized room in the game the same way found exactly one with a free
+  down-right block: D6's Tideshade Hall (`1,4,5`) has nothing at `(4,6)` or
+  `(5,6)`. That is why three of the game's nine sized rooms — Clawcrab Den
+  (`0,5,3`), Spire Ascent (`1,3,2`), Kelp Locks — carry a comment saying they
+  were picked because "the cells it grows into have no other neighbours":
+  whoever sized those three already knew this constraint and picked rooms
+  that satisfied it, while Cistern Floor, Ironknight Gallery, Shrine Ford and
+  Crossed Shafts were evidently sized `2x1` under a different constraint that
+  did not consider future growth. **Before proposing which room to widen,
+  check the down-right block's occupancy in the actual room data — a room
+  comment naming a plausible-sounding target is not evidence it is free.**
+  This landed Tideshade Hall's `2x2` conversion; see `docs/NEXT-SESSION.md`
+  and `docs/DUNGEON-STATUS.md` for the room itself.
+
 ## The two gates that cannot be tiles
 
 Roc's Feather and the Power Bracelet became real tile gates this session. The
