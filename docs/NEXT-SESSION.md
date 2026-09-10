@@ -1,3 +1,113 @@
+## S55 — traced exactly how far S54's `hazards()` velocity fix's drift reaches: it starts at the FIRST ordinary fight in D1 (route step 35 of 369), not near D2, and compounds to a nearly-6000-frame swing before it corrupts D2's boss room state outright. Not landed; this is a measurement session, per its own prompt
+
+Continuation of S54, per `docs/prompts/NEXT-PROMPT.md`: reproduce the exact
+fix S54 already found and reverted, then find the FIRST point the scripted
+route diverges — not just where it finally throws — and use that single
+finding to decide whether landing it this session is realistic.
+
+**Method.** `check-playthrough.mjs --trace` already prints exactly the step
+log S47 traced `dTravel`'s gap with by hand — `step kind frame room x,y hp
+tide foes keys` for every one of the route's 369 directives — and the file's
+own catch block prints the same trace up to the throw when a directive
+errors, so no custom instrumentation was needed. Ran it once on the
+unmodified tree (21/21, saved verbatim as the baseline trace), reproduced
+S54's exact fix (the `WeakMap<Entity,{x,y,frame}>` in `hazards()`,
+`tools/actor-runtime.mjs`, one-frame position-delta velocity, honest to 0 on
+first sighting or a sighting gap — identical code to S54's entry, not
+re-derived), ran `--trace` again (throws at step 307 with S54's exact
+message, `boss: nothing to fight in d2 0,4,5`, confirming the same starting
+point), then diffed the two traces step-by-step by index.
+
+**Finding 1: the drift starts at route step 35, not anywhere near D2.**
+Step 35 is D1's very first ordinary `fight` directive — room `d1/0,3,5`,
+two foes at the start of a `dGoto`-scripted approach, nothing to do with a
+boss room — and it is 9% into the route, right after the very first D1
+fight worth naming. Baseline resolves it at frame 4759, landing the actor
+at `68,89`; with the fix, frame 4764, landing at `67,88` — a 5-frame, 1px
+divergence, from the very first frame any non-projectile hazard's estimated
+velocity feeds `moveCost`. This confirms S54's own suspicion outright (item
+2 of "what the next attempt should know"): the drift does not begin inside
+a boss room, and scoping the fix to an opt-in flag passed only from `dBoss`
+would not have saved anything, because the very first divergence is an
+ordinary `dFight` call that happens before D1's OWN boss fight, let alone D2's.
+
+**Finding 2: the drift does not stay small, and it does not stay one sign.**
+Tabulated the frame delta (fixed − baseline) at every one of the 307
+directives the fixed run reached before throwing:
+
+- Steps 35-59 (still inside D1's early rooms): a small, near-constant +4/+5
+  frames — the S47/S48 shape, if it had stopped there.
+- Step 60 (D1, next fight): flips sign to −32.
+- Steps 62-225 (the rest of D1 — the mid-dungeon fights, both anchor
+  placements, the D1 boss fight at step 133, the post-boss items, exiting to
+  the overworld, and the Tidewatch Shop heart purchase): settles into a long
+  stable plateau at exactly −28 frames for roughly 160 consecutive
+  directives. This alone would have been a believable, re-sweepable
+  single-offset shape.
+- Step 226 onward (leaving the Tidewatch Shop, back into the overworld
+  toward D2): the plateau breaks. −50 at step 226, −171 by step 231 (an
+  overworld fight), and it keeps growing through the overworld crossing to
+  **−5788 frames at step 258** (the fight right after leaving the shop,
+  before the crossing into D2's map) — nearly 100 seconds of drift at 60fps,
+  from a fix that only ever changes what a hazard's estimated velocity is.
+- Steps 258-306: keeps swinging in the thousands (between −871 and −5801),
+  never settling into a second plateau, before the route reaches D2's boss
+  room at step 307 and the fixed run has nothing there to fight — the state
+  itself has diverged by then, not just the timing.
+
+**This is Shape B (a large, compounding drift through many rooms), not
+Shape A (a small number of drifted `wait` constants) — decided by this
+measurement, not guessed.** A believable re-sweep target would look like the
+step-60-to-225 plateau: one stable offset, one or two `wait` constants to
+re-derive, the S47/S48 shape this project has already priced. What actually
+happens is that plateau breaks again at step 226 and the offset explodes by
+three more orders of magnitude before the route is even a third of the way
+through its overworld crossing to D2 — meaning nearly every `wait`/`goto`/
+`fight`/`anchor` constant downstream of route step 35 (272 of the route's
+369 directives, canvasing the rest of D1, the whole overworld crossing, and
+everything scripted into D2 so far) is now suspect, not just the handful
+near the D2 boss room the thrown error names. Re-sweeping this properly is
+not a single-leg splice the size of S47/S48's `dTravel` fix — it is closer
+to re-recording the scripted route from a third of the way through D1
+onward, against a target that itself keeps moving as each constant is
+re-tuned (fixing one `wait` shifts the frame the next hazard is first seen
+on, which can shift ITS estimated velocity, which can shift the next
+`wait`...). That is real work this session does not have the room to spend
+credibly, per its own prompt's explicit instruction not to attempt the
+re-sweep without first sizing it — which this entry now does.
+
+**Not landed, on purpose — this was a measurement session.** Reverted
+(`git checkout -- tools/actor-runtime.mjs`); `check-playthrough.mjs`
+confirmed 21/21 again on the restored tree. No `src/` file was touched, so
+`dist/oracle-of-tides.html` does not need a rebuild — confirmed, not
+assumed, by `git status` showing a clean tree before this session's `npm run
+build`.
+
+**What the next attempt should know, so it does not re-spend this session's
+cost:**
+1. The fix code itself is still correct and small — S54's entry has it
+   verbatim, this session reproduced it unchanged, both entries agree.
+2. **Do not scope the fix to `dBoss` alone expecting that to save
+   `check-playthrough.mjs`.** The first divergence (route step 35) is an
+   ordinary `dFight` call in D1, nowhere near a boss room. This was S54's
+   open question; it is now closed, with the specific step and room that
+   answers it.
+3. **A full re-sweep is not "re-tune a handful of `wait` constants."** The
+   drift crosses two very different regimes in the same run — a small
+   stable offset for ~160 directives, then an unstable multi-thousand-frame
+   swing for the rest — so a future session budgeting this work should plan
+   for re-deriving the route from around step 35 forward with the fix
+   permanently in place (the same iterative sweep-and-relock method S47/S48
+   used, but applied to most of the route rather than one leg), not for a
+   quick patch of the handful of constants nearest the D2 boss room.
+4. D5's own net trade (3/6 winning vs. 4/6 before, per S54) is still a real,
+   separate judgement call, untouched by this session, and still not
+   automatically worth taking even once `check-playthrough.mjs` is no
+   longer at risk.
+5. `docs/prompts/LEDGER.md`'s S54 entry updated in place with this more
+   precise finding (the exact step, room, and magnitude) rather than
+   duplicated as a second entry.
+
 ## S54 — tried the `hazards()` velocity fix S52's own comment flagged for the D5 `gel`-loop and the D3 gap; it fixes the named bug, nets to a wash on D5, and BREAKS `check-playthrough.mjs`. Reverted; not landed
 
 `evade()`'s own long comment (`tools/actor-runtime.mjs`, above `hazards()`)

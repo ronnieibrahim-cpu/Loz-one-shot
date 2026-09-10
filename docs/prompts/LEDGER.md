@@ -70,12 +70,23 @@ extract from it:
   `dFight`/`dGoto` in every ordinary room along the scripted route, not
   just boss fights, and the route's tuned `wait` constants assume the
   frame-exact timing this change perturbs everywhere a hazard is on
-  screen. Reverted (`git checkout`); zero trace left in `tools/` or `src/`.
-  Full account, including what a future attempt needs to budget for (very
-  likely a full re-sweep of `playthrough-route.mjs`'s timing, not a
-  single-leg splice), is `docs/NEXT-SESSION.md` S54. Do not re-attempt the
-  same narrow patch expecting a different result — the fix code itself is
-  fine; it is the blast radius that was not this session's to pay for.
+  screen. **S55 measured exactly how far that reaches: the drift starts at
+  route step 35 of 369** — D1's very first ordinary `fight` directive
+  (`d1/0,3,5`), a 5-frame divergence, nowhere near a boss room — settles
+  into a deceptively stable −28-frame plateau for ~160 directives through
+  the rest of D1, then breaks again leaving the Tidewatch Shop and balloons
+  to a **−5788-frame swing** crossing the overworld into D2, before the
+  state itself (not just the timing) diverges at the D2 boss room. This
+  confirms scoping the fix to `dBoss` alone would not have been enough (the
+  first divergence is an ordinary `dFight`, not a boss verb) and rules out
+  a small re-sweep: it is closer in size to re-recording the route from a
+  third of the way through D1 onward than to S47/S48's single-leg splice.
+  Reverted both sessions (`git checkout`); zero trace left in `tools/` or
+  `src/`. Full account is `docs/NEXT-SESSION.md` S54 (the fix, first
+  attempt) and S55 (the drift measurement). Do not re-attempt the same
+  narrow patch, and do not budget this as a quick timing re-sweep — the fix
+  code itself is fine; the blast radius is the size of a route
+  re-recording, and neither session had the room to pay for it.
 - **The pause menu's item grid being covered by the description panel.** Not
   real: only 14 items are `equippable`, the grid is five columns, so it is
   never more than three rows and never reaches the panel at y=106. Verified
