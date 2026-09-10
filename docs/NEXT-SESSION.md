@@ -1,3 +1,83 @@
+## S51 — audited the repo's OTHER git lineage for duplicated boss-beatability work; found a real lead for Rootmaw instead
+
+The user asked directly: hadn't a boss playability/beatability test already
+been done, and were the S49/S50 fixes duplicating work sitting in one of the
+many `claude/*` branches on `origin`? Worth answering properly rather than
+repeating the shallow "no branch has `safeWhenOpen`" grep from S49/S50's own
+scans, which only checked branches that share history with `main`.
+
+**The repo has exactly two root commits, not one.** `git log --format=%H
+origin/main | tail -1` gives one root; running the same over all ~90 other
+branches and clustering by root shows 15 branches share `main`'s root and 77
+share a COMPLETELY DIFFERENT one — `git merge-base` between `main` and any
+of those 77 returns nothing, meaning they share no history with `main` at
+all. The 77-branch lineage's newest commit (`claude/terrain-cave-entry-
+sprites-upvsvb`, 2026-09-02 11:14) sits about 7 hours before `main`'s own
+first commit (`da8c2b6`, 2026-09-02 18:04) — this reads as a repository
+reset on that date, not active parallel development: nothing in the old
+lineage has been touched since, across any of its 77 branches.
+
+**That old lineage DID already do a "beat every boss" pass, and it is worth
+knowing about even though nothing needed duplicating.** Its tip commit for
+boss work, `64a6561` ("Every boss in the game can now be beaten, and two of
+them always could", on `claude/session-prompts-iterate-wqudrq`, not
+reachable from `main`), fixed: Gohmaraq's charge having no minimum range (it
+re-triggered on the player's own approach); a measurement-tool bug where
+`g.boss` going `null` on a kill read as "still alive" (falsely failing
+Wyverna and Rootmaw, both of which were ALREADY winning); Gloomtide being
+fought at the tide level that makes it strong instead of weak; Anemos's hp
+(30 -> 24, matching every other boss's hit count instead of exceeding it);
+and, for Nereth specifically, the volley and its own opening firing on the
+same frame (fixed with `NERETH_OPENING_DELAY`) plus four phases of summons
+never being cleared (`dismissSummons`).
+
+**Checked every one of those against current `main` directly, not assumed:**
+`NERETH_OPENING_DELAY`/`NERETH_OPEN_FRAMES`/`NERETH_FINAL_OPEN_FRAMES`/
+`ANEMOS_LASH_MIN_RANGE` all exist in `src/data/feel.js` with matching
+values; `dismissSummons` and the `!e.weakOpen` gating exist in
+`src/data/bosses.js`, word-for-word the same comment in places; Anemos's hp
+is 24; the ground-truth `beaten` check exists in
+`tools/measure-boss-combat.mjs`. **All of it already landed on `main`'s own
+lineage**, independently re-derived or ported at some point before S45 ever
+ran (S45's own baseline table already reflects a world where D1/D3/D4 win
+and only D2/D5/D6 don't — consistent with these fixes already being in
+place). Nothing here needed redoing, and S49/S50 did not duplicate any of
+it — that old commit's own message says "None of this touched the robot
+that does the measuring," and S49/S50 were entirely about the robot
+(`tools/actor-runtime.mjs`'s `dBoss`), a layer that commit explicitly left
+alone.
+
+**One real discrepancy, though, and it's a genuine lead for D5.** The old
+lineage's own table reports Rootmaw ALREADY winning at the bare in-order
+floor (7 hearts) with 15 of 28 quarter-hearts to spare — using a `dBoss`
+that, diffed directly against the current one, has NO `evade`/`noContact`/
+velocity-prediction system (`safe(m, retreat)`, which wraps every movement
+yield in the current verb, doesn't exist there at all; every yield in the
+old verb is a plain `fence(m)`). That system was added to `main`'s own
+lineage LATER, for an unrelated, documented reason — stopping Gloomtide's
+D3 fight from landing hits on a stale, already-vacated collision box, per
+the comment on `bvel` in `dBoss`. It was never measured against Rootmaw
+specifically. S45's own failure signature for Rootmaw — hits landing at a
+"STEADILY GROWING distance" — is exactly the shape an over-cautious
+`noContact` veto would produce against a boss whose final phase chases the
+player unconditionally (`chase(e, g, { speed: 0.38 })`): each rejected
+approach candidate could plausibly land the actor a little further out than
+the last, without ever being a stuck loop. **Not confirmed — a hypothesis,
+handed to the next session to verify by instrumenting `evade`'s own veto
+decisions during a real Rootmaw fight, not to patch on the strength of this
+paragraph alone.**
+
+**Also reconfirmed, more thoroughly than S49/S50's own pass:** no branch in
+either lineage has `tools/playthrough-route.mjs` routing past D1 in the old
+lineage or past D2 in `main`'s — D3-D6 routing genuinely has not been
+attempted anywhere, in any branch, ever.
+
+`docs/prompts/NEXT-PROMPT.md` updated with the Rootmaw lead in full (it was
+already scoped for Rootmaw diagnosis; this adds a concrete starting
+hypothesis instead of a blank frame-by-frame instrumentation task).
+`docs/prompts/LEDGER.md`'s Rootmaw bullet updated with a pointer to this
+entry. No code changed this session — this was purely an audit.
+
 ## S50 — landed the real fix for S49's trade-off: a per-boss `safeWhenOpen` flag, not a blanket relax
 
 Continuation of the S49 session's own prompt (`docs/prompts/NEXT-PROMPT.md`),

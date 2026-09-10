@@ -128,7 +128,17 @@ extract from it:
   never had `safeWhenOpen` set, so its behaviour did not change at all; its
   own failure is a different, still-undiagnosed mechanism from the same S45
   sweep (a growing-distance retreat pattern, unlike Nereth's fixed-distance
-  one).
+  one). **A real lead for it, found auditing the repo's OTHER git lineage
+  (S51 — see `docs/prompts/NEXT-PROMPT.md`):** this repo has two disjoint
+  root commits (a 2026-09-02 reset), and the abandoned lineage's own latest
+  boss work (`64a6561`, unreachable from `main`) measured Rootmaw as an easy
+  win using a `dBoss` with no `evade`/`noContact`/velocity-prediction
+  system — a system `main`'s `dBoss` gained LATER, for a documented and
+  unrelated reason (Gloomtide's D3 fight landing hits on a stale collision
+  box). That system may be over-cautious against Rootmaw's own continuously-
+  mobile final phase in a way it was never measured against. Not confirmed
+  — a hypothesis for the next session to verify by instrumentation, not to
+  patch on the strength of this note alone.
   **Caveat that still applies to Nereth and Rootmaw both:** a robot losing
   (or not quite winning) does not by itself prove a boss is unfair if the
   robot is missing a verb (here, the conch and any projectile-dodge) the

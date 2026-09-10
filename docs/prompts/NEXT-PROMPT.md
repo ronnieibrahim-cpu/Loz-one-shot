@@ -19,11 +19,71 @@ actually diagnose it, the way S45 diagnosed Nereth's (frame-by-frame
 instrumentation, not guessing), and fix it if the diagnosis turns out
 tractable in one session.
 
+## A real lead, found by auditing the repo's pre-reset history (S51)
+
+`git log --format=%H origin/main | tail -1` vs. the same for `git ls-remote
+--heads origin`'s other ~90 branches shows this repo has exactly TWO root
+commits: `main`'s own 15-branch lineage, and one 77-branch lineage that
+shares NO history with it at all (`git merge-base` returns nothing) —
+almost certainly a repo reset around 2026-09-02, the day the old
+lineage's last commit and `main`'s first commit both fall on. **This is
+not live parallel work to worry about** — every branch in the old lineage
+predates `main`'s entire history and none has been touched since. But one
+commit in it is directly relevant here: `claude/session-prompts-iterate-
+wqudrq`'s tip, `64a6561` ("Every boss in the game can now be beaten, and
+two of them always could") — fetch it with `git fetch origin
+claude/session-prompts-iterate-wqudrq` if it's not already local, it is
+NOT reachable from `main`. Read `git show 64a6561 --format=%B -s` in full.
+
+**Everything valuable in it is already ported to `main`** — checked
+directly, not assumed: `NERETH_OPENING_DELAY`/`NERETH_OPEN_FRAMES`/
+`NERETH_FINAL_OPEN_FRAMES`/`ANEMOS_LASH_MIN_RANGE` all exist in
+`src/data/feel.js`, `dismissSummons` and the `!e.weakOpen` gating exist in
+`src/data/bosses.js`, and the ground-truth `beaten` check that fixed a
+false-negative in the measuring tool (`g.boss` going `null` on a kill,
+misread as "still alive") is already in `tools/measure-boss-combat.mjs`.
+None of this needs redoing.
+
+**One real discrepancy is worth chasing, and it points straight at
+Rootmaw.** That old commit's own table reports Rootmaw ALREADY WINNABLE at
+the bare in-order floor (7 hearts) with **15 of 28 quarter-hearts to
+spare** — using a `dBoss` verb that, diffed directly against the current
+one (`git show 64a6561:tools/actor-runtime.mjs` vs. `tools/actor-runtime.mjs`,
+both define `dBoss` — compare them), has NO `evade`/`noContact`/velocity-
+prediction system at all. Every movement yield in the old verb was a plain
+`fence(m)`; the current verb wraps the same calls in `safe(m, retreat)`,
+which adds `evade(...)` with a `noContact` box and an estimated boss
+velocity (`bvel`, built from the boss's position one frame ago) — added
+later, for a documented and different reason (stopping Gloomtide's D3
+fight from landing hits on a target that had already moved past a stale
+static collision box). **This system did not exist when Rootmaw last
+measured as an easy win**, and Rootmaw's own current failure signature —
+S45's "steadily growing distance" retreat pattern — is exactly the shape
+an over-cautious `noContact` veto against a CONTINUOUSLY MOBILE boss would
+produce: Rootmaw's final phase runs `chase(e, g, { speed: 0.38 })`
+unconditionally, and if `evade`'s veto keeps rejecting approach candidates
+because the predicted boss position is inside the `noContact` box, the
+actor could plausibly back off a little further on every attempt without
+ever closing the distance back down — a slow net retreat, not a stuck
+loop. **This is a hypothesis, not a diagnosis — verify it before touching
+anything.** Instrument `evade`'s own veto decisions during a Rootmaw fight
+(does it reject an approach candidate more often, and increasingly so,
+compared to a boss the actor wins against?) rather than assuming this
+account is the whole story and patching blind.
+
 ## Read first, in this order
 
 1. `docs/prompts/LEDGER.md`'s "Known and deliberately unfixed" section, the
    Rootmaw bullet (rewritten this session — read the CURRENT version, not an
-   older cached one).
+   older cached one) — includes a pointer to the pre-reset-history lead
+   above; read that section before this list's item 2 if you skipped it.
+1b. `git show 64a6561:tools/actor-runtime.mjs` (needs `git fetch origin
+   claude/session-prompts-iterate-wqudrq` first) diffed against the current
+   `dBoss` in `tools/actor-runtime.mjs` — the `evade`/`noContact`/`bvel`
+   system named above is the whole diff beyond cosmetic renames and the
+   miniboss/`safeWhenOpen` additions S48-S50 made. Confirm this yourself
+   rather than trusting the summary above; a hypothesis written by a
+   previous session is still a hypothesis.
 2. `docs/NEXT-SESSION.md` S45 — the original measurement: Rootmaw died at
    the in-order 7 hearts, 26 of 52 damage dealt, 14 hits taken, "all
    seven-plus at `weakOpen:false` and at STEADILY GROWING distance (78, 85,
