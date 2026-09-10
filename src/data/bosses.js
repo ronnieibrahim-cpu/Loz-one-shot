@@ -836,7 +836,25 @@ export function installBosses() {
     // phase's own cycle, never via a stun, so `b.stun` alone could never see
     // one of his openings as safe; `weakOpen` is the real signal here.
     safeWhenOpen: true,
-    init(e) { e._open = 0; e._sweep = 0; },
+    // Also read by `dBoss`, as a FUNCTION rather than Rootmaw's constant
+    // (docs/NEXT-SESSION.md S52's "still open" list, closed in S53): a single
+    // tide level cannot answer "what reopens him" because `nerethPin` pins a
+    // different level per phase (MID, then HIGH, then LOW). This returns
+    // `e._pinLevel` — the level `nerethPin` is CURRENTLY holding him at,
+    // recorded there each time it runs — which `dBoss` reads as "the level to
+    // escape FROM", the opposite sense from Rootmaw's fixed "level to reach":
+    // Nereth is only ever shut while `g.tide.level === e._pinLevel` (see
+    // `nerethPin`'s own `if` branch), and `Tide.cycle()` steps by exactly one
+    // of three levels, so any single conch press while shut necessarily
+    // lands somewhere else — there is no wrong direction to press in, unlike
+    // Rootmaw, who has exactly one safe target. Null in phase 4 (cleared in
+    // `onPhase` below), which has no pin to escape — it already reopens on
+    // its own cycle and already has `safeWhenOpen`; a stale phase-3 value
+    // here would otherwise make `dBoss` press a conch that phase never asked
+    // for and that does nothing (phase 4's own `open()` runs on its windUp
+    // timer regardless of tide, not gated on the field this reads).
+    tideEscape: (e) => e._pinLevel,
+    init(e) { e._open = 0; e._sweep = 0; e._pinLevel = null; },
     // NERETH SPEAKS BEFORE HE FIGHTS. `nerethIntro` was written into story.js
     // and had no trigger anywhere in `src/` — it had never once played, and
     // because its LAST step is `{ music: 'finalBoss' }`, and nothing else in
@@ -868,7 +886,7 @@ export function installBosses() {
       if (i === 2) summon(g, e, 'stalfos', 2);
       // Phase 4 opens on its own cycle timer; give the player a window at once
       // rather than up to 200 sealed frames on arrival.
-      if (i === 3) { g.audio.sfx('shatter'); summon(g, e, 'darknut', 1); open(e, g, 120); }
+      if (i === 3) { e._pinLevel = null; g.audio.sfx('shatter'); summon(g, e, 'darknut', 1); open(e, g, 120); }
     },
     phases: [
       // Pins the sea at MID and throws his tridents.
@@ -959,6 +977,11 @@ export function installBosses() {
   // to MID, which is where the player walks in, so a pure tide gate would mean
   // an invulnerable boss and no way to learn otherwise.
   function nerethPin(e, g, level, period) {
+    // Read by `tools/actor-runtime.mjs`'s `dBoss` through `nereth`'s own
+    // `tideEscape` function (see the comment on that field) — recorded here,
+    // not on the spec, because it changes every phase and this is the one
+    // place that phase's target is actually known.
+    e._pinLevel = level;
     if (g.tide.level === level) {
       closeTick(e, g);
       if (timer(e, 'seal', 200)) g.spawnEffect('shine', e.cx - 8, e.cy - 8, { life: 24 });

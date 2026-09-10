@@ -1220,23 +1220,55 @@ export async function installRuntime() {
     /**
      * THE CONCH IS THE ONLY WAY OUT OF A TIDE-LOCKED BOSS, AND THIS VERB
      * COULD NOT PRESS IT. See docs/NEXT-SESSION.md S52: `b.spec.tideEscape`
-     * is a boss's own answer to "what tide level reopens me" — set only on
-     * Rootmaw (`LOW`), because he is the one boss in the roster whose
-     * `weakOpen` is a pure function of the tide field with no independent
-     * reopen (every other shelled boss has an attack whose own `windUp`
-     * calls `open()` regardless of tide). Once his own 'drink' attack forces
-     * the tide away from that level, nothing reopens him without a conch
-     * press — measured directly: the actor died at 26 of 52 damage dealt,
-     * every hit past the lock at `weakOpen:false`, while `rootmawTide`'s
-     * shut branch quietly healed him back up. `shutFrames` counts how long
-     * the boss has been continuously shut; the loop below only presses when
-     * the NEXT conch cycle (`Tide.cycle()` steps LOW->MID->HIGH->LOW by
-     * exactly one, never straight to a target) actually lands on
-     * `tideEscape` — pressing from the wrong level would move the tide
-     * further from safety, not closer.
+     * is a boss's own answer to "what tide level reopens me". Two shapes,
+     * because the answer is not the same shape for every boss:
+     *
+     *   - A CONSTANT (Rootmaw: `LOW`) for a boss with exactly one safe
+     *     target — he is the one boss in the roster whose `weakOpen` is a
+     *     pure function of the tide field with no independent reopen (every
+     *     other shelled boss has an attack whose own `windUp` calls
+     *     `open()` regardless of tide), and he only ever locks at one level
+     *     (HIGH), so "the next cycle step lands on LOW" is the whole
+     *     condition. Checked with `===`: pressing from the wrong level would
+     *     move the tide further from safety, not closer.
+     *   - A FUNCTION of the boss entity (Nereth: S53) for a boss whose lock
+     *     level moves — `nerethPin` pins a different level per phase, so
+     *     there is no single constant to reach FOR; instead the function
+     *     returns the level currently locking him (`e._pinLevel`, which
+     *     `nerethPin` records on itself), and the check below is "is not the
+     *     level locking me" rather than "is the level that frees me". Those
+     *     are the same question for Rootmaw (one lock level, one free level)
+     *     and materially different for Nereth (whichever OTHER level the
+     *     next cycle step reaches frees him, since `Tide.cycle()` steps
+     *     LOW->MID->HIGH->LOW by exactly one and can never re-land on the
+     *     level it started at).
+     *
+     * Once a boss's lock condition holds, nothing reopens it without a
+     * conch press — measured directly on Rootmaw: the actor died at 26 of 52
+     * damage dealt, every hit past the lock at `weakOpen:false`, while
+     * `rootmawTide`'s shut branch quietly healed him back up. `shutFrames`
+     * counts how long the boss has been continuously shut; the loop below
+     * only presses once that lock has held a moment (`SHUT_LOCK_FRAMES`) and
+     * the escape condition for whichever shape above applies actually holds.
      */
-    const tideEscape = target.spec.tideEscape;
+    const tideEscapeSpec = target.spec.tideEscape;
     let shutFrames = 0;
+    // Whether this boss has ever been seen open. A boss that has never once
+    // opened has not necessarily locked — it may simply not have reached its
+    // first attack yet, and every boss's first cycle includes a shut stretch
+    // before that attack fires. Measured directly on Nereth: his own first
+    // shut window, before his own first `trident`/`ring`/`beam` volley has
+    // even landed, runs longer than `SHUT_LOCK_FRAMES` in every seed swept —
+    // pressing there is not rescuing a lock, it is racing his own tell, and
+    // it makes the fight WORSE about as often as better (a real regression
+    // on one swept seed, not a wash), because the freeze itself buys the
+    // boss free contact time for no reason: the same natural window this
+    // verb would have waited for anyway was already on its way. Gating on
+    // "has opened before" costs Rootmaw nothing (his LOW branch opens him
+    // unconditionally from frame one, well before he can ever lock) and
+    // stops Nereth's verb from firing before his own tell has had its first
+    // chance to answer for itself.
+    let hasOpened = false;
     const budget = maxF || 16000;
     for (let f = 0; f < budget;) {
       const b = target = find();
@@ -1265,6 +1297,7 @@ export async function installRuntime() {
       const toward = axisX ? (dx > 0 ? BIT.right : BIT.left) : (dy > 0 ? BIT.down : BIT.up);
       const backAlong = axisX ? (dx > 0 ? BIT.left : BIT.right) : (dy > 0 ? BIT.up : BIT.down);
       const backPerp = axisX ? (dy > 0 ? BIT.up : BIT.down) : (dx > 0 ? BIT.left : BIT.right);
+      if (b.weakOpen) hasOpened = true;
       shutFrames = b.weakOpen ? 0 : shutFrames + 1;
 
       if (b.weakOpen) {
@@ -1400,15 +1433,46 @@ export async function installRuntime() {
         continue;
       }
       // Shelled: nothing to hit. Keep off it and wait out the tell — unless
-      // waiting is not going to work. `(g.tide.level+1) % 3 === tideEscape`
-      // is deliberately narrower than "tide is not where I want it": `Tide.
-      // cycle()` (src/game/tide.js) steps LOW->MID->HIGH->LOW by exactly one
-      // level, never straight to a target, so pressing from the wrong level
-      // would move the tide further from safety, not closer. `p.conchTime
-      // === 0` and `!g.tide.busy` are the engine's own "would this press
-      // even take" signals (`Player.playConch`) — asked rather than assumed.
-      if (tideEscape != null && shutFrames > SHUT_LOCK_FRAMES && !g.tide.busy
-        && p.conchTime === 0 && (g.tide.level + 1) % 3 === tideEscape) {
+      // waiting is not going to work. Re-evaluated every frame, not cached
+      // outside the loop, because Nereth's function form changes what it
+      // returns every phase (`e._pinLevel` moves; a constant like Rootmaw's
+      // never does, so re-evaluating it costs nothing new for him). See the
+      // comment above this verb's loop for why the two shapes use different
+      // comparisons. `p.conchTime === 0` and `!g.tide.busy` are the engine's
+      // own "would this press even take" signals (`Player.playConch`) —
+      // asked rather than assumed.
+      //
+      // The function form ALSO requires a safe distance
+      // (`FUNCTION_ESCAPE_RANGE`) that the constant form deliberately does
+      // not. They are not the same kind of press: Rootmaw's is the ONLY way
+      // out of a lock that never clears itself, so pressing it adjacent to
+      // him — the only place his mobile final phase is ever reachable from,
+      // since `evade`'s own hazard-dodging keeps the actor within his seed
+      // spray and never lets the gap open past this range on its own
+      // (measured: 282 frames of a real fight sat "ready" at 41-282 shut
+      // frames and 14-54px, never once reaching it) — is still strictly
+      // better than never pressing at all; requiring distance here reproduced
+      // his exact S52 loss (46 of 52 dealt, PLAYER DIED) by simply never
+      // firing. Nereth's is a PRE-EMPTIVE press against a lock that already
+      // clears itself on its own attack timer, so there is no such trade to
+      // make: pressing early into his faster phases' chase (1.05 px/f in
+      // phase 2) bought the boss a free approach during the freeze for a
+      // window that was about to open on its own anyway — measured directly,
+      // seed 1's clean win (80/80) became a loss (66/80) from exactly one
+      // such press, contact damage landing 5 frames after it at 15px. Same
+      // field, two bosses, two different costs of pressing blind — the
+      // distance check is scoped to the shape that actually has a cost.
+      const FUNCTION_ESCAPE_RANGE = 72;
+      const nextTide = (g.tide.level + 1) % 3;
+      const escapeReady = typeof tideEscapeSpec === 'function'
+        ? (() => {
+            const lock = tideEscapeSpec(b);
+            return lock != null && nextTide !== lock && hasOpened
+              && (adx + ady) >= FUNCTION_ESCAPE_RANGE;
+          })()
+        : tideEscapeSpec != null && nextTide === tideEscapeSpec;
+      if (escapeReady && shutFrames > SHUT_LOCK_FRAMES && !g.tide.busy
+        && p.conchTime === 0) {
         const cb = slotBit('conch');
         if (cb) {
           yield cb; f++;

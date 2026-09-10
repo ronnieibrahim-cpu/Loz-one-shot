@@ -1,3 +1,131 @@
+## S53 — generalized Rootmaw's `tideEscape` conch-verb to Nereth's per-phase pin target, as S52's own "still open" list asked; measured that the generalization is correct and the honest result is that it never fires
+
+`docs/prompts/NEXT-PROMPT.md` asked for exactly the gap S52 named: Nereth
+(D6) needs the same `tideEscape` idea Rootmaw got, but a single constant
+does not fit him, since `nerethPin` pins a different tide level per phase
+(MID, then HIGH, then LOW) rather than one fixed target. The session built
+the generalization, measured it honestly across a full seed sweep on both
+bosses, and found real regressions in the first version — which is the
+part worth reading carefully, because the fix for those regressions is not
+what either boss's own comment would suggest in isolation.
+
+**The generalization itself (`src/data/bosses.js`, `tools/actor-runtime.mjs`).**
+`nerethPin(e, g, level, period)` now does `e._pinLevel = level;` as its
+first line, every time it runs — recording "the level currently locking
+him" onto the boss instance, the one place that value is actually known,
+since it changes every phase. `nereth`'s spec gets `tideEscape: (e) =>
+e._pinLevel` (cleared to `null` in `onPhase`'s `i === 3` branch, since phase
+4 has no pin and a stale phase-3 value would otherwise make the verb chase
+a lock that phase never asked for). `dBoss` now dispatches on
+`typeof spec.tideEscape`: a constant (Rootmaw, `LOW`, unchanged) keeps
+S52's exact check — "does the next conch-cycle step land ON the target" —
+while a function (Nereth) is called with the boss entity and checked with
+a **materially different** comparison — "does the next step land OFF the
+level it currently returns" — because Rootmaw has one target to reach and
+Nereth has no fixed target, only a level to get away from (and since
+`Tide.cycle()` steps LOW->MID->HIGH->LOW by exactly one and Nereth is only
+ever shut while `g.tide.level === e._pinLevel`, ANY single press while shut
+necessarily lands somewhere else — there is no wrong direction to press in,
+unlike Rootmaw). This part is exactly what the prompt asked for and is
+correct as far as it goes.
+
+**The naive version fires, and it is noise, not a rescue — measured, not
+assumed.** With only the dispatch above (no extra gating), a seed sweep on
+D6 (`measure-boss-combat.mjs d6 --seed=1..5` plus the default 20260806)
+went from the pre-existing 1 of 6 seeds winning (only seed 1; default,
+2, 3, 4, 5 all lose) to 4 of 6 (default, 2, 3, 5 win; 1 and 4 lose) — a
+raw-count improvement that is NOT the same thing as a real fix, and
+instrumenting every press (a scratch `window.__pressLog`, not committed)
+showed why: **every seed pressed the conch exactly once, at the same
+frame (f≈339-428 depending on gating), during the FIGHT'S FIRST shut
+window — before Nereth's own first `trident` volley had even landed a
+shot.** Raising the shut-frame threshold that gates the press
+(`SHUT_LOCK_FRAMES`, 40) up to 180 still caught this same first-cycle
+press; only 200+ made it inert, which is also the frame count at which the
+boss's own attack-triggered reopen arrives on its own. In other words:
+**there is no genuine "stuck" state for Nereth to rescue** — his own
+reopen channel (measured directly: after that first window, `shutFrames`
+never again exceeds even 40 for the rest of any swept fight) already
+covers everything the verb exists for, exactly as S52's "still open" note
+predicted ("very likely why Nereth already measures at 78 of 80 without
+any conch verb at all"). The one press that ever fires is a coin-flip: it
+perturbs the whole rest of the deterministic fight via the conch's 46-frame
+freeze, flipping some seeds to wins and — critically — **flipping seed 1's
+existing clean win (80/80) into a loss (66/80)**, a real regression, not a
+wash. Landing that version would have been "a guess dressed as a fix."
+
+**Two gates, each justified by a specific measured failure, not by
+symmetry with Rootmaw's fix:**
+
+1. **`hasOpened`** — the escape may only fire once the boss has been SEEN
+   open at least once. A boss that has never opened has not necessarily
+   locked; it may simply not have reached its first attack yet, and every
+   boss's first cycle includes a shut stretch before that attack fires.
+   Costs Rootmaw nothing (his LOW branch opens him unconditionally from
+   frame one, long before he can ever lock) and stops Nereth's verb from
+   racing his own tell on the very first cycle.
+2. **`FUNCTION_ESCAPE_RANGE` (72px), scoped to the function form only** —
+   the constant form (Rootmaw) does NOT get this gate, and adding it
+   universally was the second mistake this session made and caught before
+   landing it: instrumenting Rootmaw's own fight with the same distance
+   requirement showed 282 frames sitting "ready" (locked, past
+   `SHUT_LOCK_FRAMES`) at 14-54px, NEVER once reaching 72px, because
+   `evade`'s own hazard-dodging keeps the actor inside his seed spray
+   through his mobile final phase and never lets the gap open on its own.
+   Requiring distance there reproduced his exact S52 loss byte-for-byte
+   (46 of 52 dealt, PLAYER DIED) by simply never firing — his press is the
+   ONLY way out of a lock that never clears itself, so pressing adjacent to
+   him is still strictly better than never pressing. Nereth's press is the
+   opposite kind of decision: PRE-EMPTIVE against a lock that clears itself
+   on a timer regardless of the player, so there is no equivalent cost to
+   waiting for safety — and there is a real cost to not waiting, per the
+   seed-1 regression above (his phase 2 chases at 1.05 px/f, more than
+   enough to close on a frozen player during the conch's 46-frame freeze;
+   the seed-1 regression's fatal hit landed 5 frames after the bad press,
+   at 15px). Same field, two bosses, two different costs of pressing
+   blind — the gate belongs on the shape that actually has one.
+
+**Measured with both gates — D6's full seed sweep is BYTE-IDENTICAL to the
+pre-fix baseline**: default seed 20260806 78 of 80 dealt / 32 quarter-hearts
+lost / PLAYER DIED; seed 1 80/80 dealt / 21qh / BOSS DIED; seeds 2, 3, 4
+matching their pre-fix losses (72/80, 78/80, 72/80) exactly; seed 5 60/80.
+The escape verb is now correctly built, correctly gated, exercised by real
+combat, and **measurably does nothing** for Nereth under real play — which
+is the honest answer to "close some of the remaining 2hp/32qh cost," not a
+disappointing one: there was no lock to close.
+
+**Zero regression, checked directly:** D1 24/24 (4qh), D2 24/24 (7qh), D3
+36/36 (13qh), D4 44/44 (0qh) all byte-identical to every prior session's
+table. **D5 (Rootmaw) reproduces S52's exact documented numbers seed for
+seed**: default 52/52 (11qh, WIN), seed 1 WIN (15qh), seed 2 a 52/52 photo
+finish (LOSE), seed 3 still loses to the pre-existing, unrelated `gel`-
+contact bug (20/52, LOSE), seeds 4 and 5 WIN (11qh, 20qh) — the shared
+`dBoss` code path this session generalized left his own fix untouched.
+`check-bosses.mjs` 19/19 (god mode, structural). `check-playthrough.mjs`
+21/21 (fresh tape). `replay.mjs` 51/51. `test.mjs` 83/83.
+
+**Still open, named so a later session does not re-diagnose from zero:**
+1. Seed 3's `gel`-contact loop on D5 (named in S52's own "still open" list)
+   is untouched by this session, as expected — it is a pre-existing,
+   separate `dBoss` weakness, not something either the Rootmaw or the
+   Nereth escape work introduced or could fix.
+2. **A distance-safety gate for a per-boss escape verb is NOT a universal
+   improvement — it has to be scoped to which boss's press is optional vs.
+   mandatory.** If a THIRD boss ever gets a `tideEscape` (constant or
+   function), the question to ask first is which of Rootmaw's or Nereth's
+   shape it matches — "is this the only way out of a permanent lock" vs.
+   "is this racing a reopen that's coming anyway" — before assuming either
+   existing gate's behavior transfers.
+3. Nereth's phase 4 (self-cycling final phase) is untouched, as the prompt
+   asked — `e._pinLevel` is cleared to `null` on entry to it and the
+   function returns `null` there, so `escapeReady` is always false in that
+   phase regardless of the other gates.
+
+`docs/prompts/LEDGER.md`'s Rootmaw/Nereth entry rewritten to record this
+session's generalization and the measured "correctly inert" result.
+`npm run build` re-run — `dist/` DID change (`src/data/bosses.js` is
+bundled; the `tools/actor-runtime.mjs` change is not) and is committed.
+
 ## S52 — diagnosed Rootmaw (D5)'s loss precisely (it is NOT the S51 evade hypothesis), then landed the fix the diagnosis named: 0 of 6 seeds winning to 4 of 6, zero regression elsewhere
 
 `docs/prompts/NEXT-PROMPT.md` handed this session a concrete hypothesis from
