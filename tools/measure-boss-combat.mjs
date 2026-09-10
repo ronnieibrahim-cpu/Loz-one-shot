@@ -22,8 +22,18 @@
 //               already: a 60000-frame god-mode Gohmaraq run never lands a
 //               hit past 14 hp, proving that fight's ceiling is the verb's
 //               positioning, not the player's survivability.
-//   --budget=N  frames to give the ['boss', N] step (default 9000; a
+//   --budget=N  frames to give the ['boss', N] step (default 18000; a
 //               god-mode run asking "does it EVER win" wants far more).
+//               Raised from 9000 after D4 seed 3 read as "still alive after
+//               9000 frames (never finished)" while taking ZERO damage the
+//               entire time — not a losing fight, a slow-but-perfectly-safe
+//               one: re-run at --budget=20000 it wins outright at frame
+//               13220, 44 of 44, on only 14 of 24 quarter-hearts. 9000 was
+//               never a fairness ceiling (nothing in this game times the
+//               player out of a fight), just a convenience default sized to
+//               the FAST fights — Wyverna's evasive-flight pattern on this
+//               particular seed needed more clock than that to land enough
+//               hits, and the old default silently reported that as a loss.
 //   --tide=N    fight at tide level N (0 LOW, 1 MID, 2 HIGH) instead of the
 //               boss's design tide. Asks "is this winnable when the player uses
 //               the conch correctly?" — for a boss with no shell the design
@@ -73,7 +83,7 @@ const godMode = args.includes('--god');
 // anyone can re-measure rather than a paragraph in a handoff doc.
 const noEvade = args.includes('--no-evade');
 const budgetArg = args.find(a => a.startsWith('--budget='));
-const BUDGET = budgetArg ? Number(budgetArg.slice('--budget='.length)) : 9000;
+const BUDGET = budgetArg ? Number(budgetArg.slice('--budget='.length)) : 18000;
 
 // The health a player clearing dungeons IN ORDER actually carries: 3 starting
 // hearts plus one Heart Container per boss already beaten, in quarter-hearts.

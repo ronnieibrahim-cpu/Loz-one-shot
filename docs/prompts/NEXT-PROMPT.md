@@ -4,54 +4,79 @@ Repo `ronnieibrahim-cpu/Loz-one-shot`. Branch from the CURRENT tip of `main` —
 `git log -1 origin/main` for the real commit. One prompt = one session = one
 branch. Do not open a pull request unless asked.
 
-## Task: your choice — D5 seeds 9/10's remaining loss, or the next item on the project's own backlog
+## The honest state of the roster (read `docs/NEXT-SESSION.md` S59 in full first)
 
-S58 closed D5 seed 3 for good: the standard 6-seed sample is now **6 of 6
-winning** (read `docs/NEXT-SESSION.md` S58 before touching this area again —
-it root-caused the loss to Rootmaw's own `zol`->`gel` split swarming the
-actor, and generalized S57's `breakDeadlock` stall detector to fix it, no new
-spec field). Widening the sample past the standard 6 (seeds 6-10) found two
-that still lose — 9 and 10 — but both moved a long way in the right direction
-under the same fix (seed 9: 40 -> 48 of 52 boss damage dealt; seed 10: 28 ->
-52 of 52, the boss actually reaching 0 hp in the same 20-frame sample window
-the player's own health does — a near photo finish the harness still counts
-as a loss). **This is a real, open, bounded question, but D5 is no longer the
-only thing worth doing** — the standard sample is clean, and this prompt is
-deliberately not narrowing to just the widened-sample remainder.
+Standard 6-seed sample, `tools/measure-boss-combat.mjs <d> --seed=N`, in-order
+health, no god mode:
 
-**Read `docs/DUNGEON-STATUS.md` and `docs/prompts/QUEUE.md` before deciding**
-— between them they name several other independently-scoped, ready-to-pick-up
-items (region-art systematic diffs, the narrower `dTravel` gap, wide-room
-follow-ups, cross-dungeon item reuse, frame-stepped `feel.js`). Pick whichever
-is best-scoped for a single session; do not feel obligated to continue the
-boss-combat thread just because it was the most recent session's focus.
+```
+     d1    d2    d3    d4    d5    d6
+     6/6   3/6   1/6   6/6   6/6   1/6
+```
 
-## If you pick up D5 seeds 9/10
+D1, D4, D5 are robust. D2 is a real coin-flip. **D3 and D6 are the weak
+points**, and S59 diagnosed WHY, precisely: it is one shared cause, not three
+separate bugs — `evade` (`tools/actor-runtime.mjs`) does not reliably dodge
+multi-shot spread/ring attacks over a long fight, and every losing fight in
+D2/D3/D6 dies overwhelmingly to `isProjectile:true` chip damage. This is not
+a new finding — `evade`'s own 36-seed comment block already measured this
+(D3 a deliberate, accepted regression from adding shot-dodging at all; D2/D6
+statistically unmoved by it) — S59 just confirmed it is STILL the live cause
+after every boss-scoped spec-field fix since.
 
-1. Read `docs/NEXT-SESSION.md` S57 and S58 in full first — both used the same
-   trace method (log player/boss/hazard positions every 20 frames via a
-   scratch harness, watch for what's actually happening rather than guessing)
-   and both found a mechanism that was NOT what the previous session
-   expected going in. Reuse the method; do not assume the cause.
-2. **Do not assume seeds 9/10 are "more of the same swarm problem" without
-   checking.** S58 explicitly declined to chase them without a fresh trace —
-   the stall-detector fix already closed the swarm-drift mechanism it found;
-   whatever is left in 9/10 might be that same mechanism at a harder
-   parameter (a bigger swarm, worse luck on spawn positions) or it might be
-   something else entirely (a `zol`/`gel` positioned to block a doorway the
-   way the ORIGINAL S57 bug did, a timing interaction with `forceTide`, etc).
-   Trace first.
-3. If a fix is needed, the same discipline S52-S58 have all used applies: a
-   boss-specific spec field if at all possible (not a `hazards()`/`evade()`
-   shared-machinery change — four sessions now have shown that road
-   expensive), a full sweep (the standard 6 seeds AND seeds 6-10, since
-   that's the sample this fix would be measured against), and a check that
-   D1-D4/D6 stay byte-identical.
-4. If it doesn't close cleanly, the same honesty rule applies: a precise
-   account of what was tried and measured is a fine outcome. D5 winning 6 of
-   6 on the standard sample (9 of 11 on the widened one) is already a real
-   result worth having banked, even if the widened sample's two stragglers
-   stay open.
+**S59 also tried and rejected one boss-scoped fix on D6** (giving Nereth
+`rootmaw.spec.breakDeadlock` directly): net negative, one win gained, one
+lost, reverted. Read that entry before trying anything similar — the reason
+it failed is instructive (Nereth actively chases in his final phase; Rootmaw,
+the boss the fix was built for, never moves).
+
+## Task: your choice — the shared evade-dodge gap, or the next item on the project's own backlog
+
+**If you want to move D2/D3/D6's numbers for real, the lever is teaching
+`evade` to actually dodge a telegraphed spread/ring attack** — a genuinely
+new capability, not a reuse of `breakDeadlock`/`noContact`/`tideEscape`'s
+existing shapes. This is explicitly a BIG, risky, shared-machinery change:
+four-plus sessions (S54-S59) have all found touching `hazards()`/`evade()`
+expensive, and this one touches the core swap-cost function every single
+boss fight and the whole `check-playthrough.mjs` route runs through. Do NOT
+attempt this as a quick addendum to something else. If you pick it up:
+
+1. Read the full comment block above `evade()` in `tools/actor-runtime.mjs`
+   first — it already documents the 36-seed methodology, why `SHOT_HORIZON`
+   is 30 and not more, and exactly which past attempts cost which bosses.
+2. Trace a losing D3 or D6 fight the same way S57/S58/S59 all did (log
+   positions every 5-20 frames) and confirm the SPECIFIC failure mode before
+   designing anything — is the actor picking a bad swap direction against a
+   spread it CAN see coming, or is it a detection gap (the shot isn't in
+   `hazards()`'s list yet when the decision is made, a windUp-timing issue)?
+   Guessing the mechanism and reusing an old idea is exactly the mistake
+   S54 made and S59 just repeated in miniature.
+3. Budget a FULL session for this alone, with the 36-seed validation bar
+   (`--seed=N` for N=1..36, both with and without the change) — a 6-seed
+   sample is not enough to trust here; S45's own single-seed "D3 clearly
+   fair" claim is the cautionary tale for why.
+4. Zero tolerance for turning any currently-winning seed into a loss, on
+   ANY of the six dungeons — that is the bar every fix in this area has been
+   held to since S52, and S59's own rejected experiment is a fresh example
+   of how easily a boss-scoped-looking change can violate it anyway.
+
+**If that's too large for one session** (it probably is), `docs/DUNGEON-
+STATUS.md` and `docs/prompts/QUEUE.md` name several other independently-
+scoped, ready-to-pick-up items (region-art systematic diffs, the narrower
+`dTravel` gap, wide-room follow-ups, cross-dungeon item reuse, frame-stepped
+`feel.js`). Pick whichever is best-scoped for a single session.
+
+## On "are the dungeons beatable" — a separate, narrower question
+
+Only D1 and D2 have ever been played start-to-finish by the real, no-items-
+granted actor (`tools/check-playthrough.mjs`) — `playthrough-route.mjs`'s own
+`GOAL.essences` is `[1, 2]`, and its file header says so outright. D3-D6's
+rooms and puzzles are each proven solvable by their own dedicated checker,
+and each boss is proven to spawn/open in god mode (`check-bosses.mjs`), but
+nobody has chained "walk in, solve everything, beat the boss" for D3-D6 the
+way S19/S41 did for D1/D2. Extending the route that far is a large,
+multi-session undertaking on its own — not a fit for "continue iterating"
+unless a session is explicitly budgeted for it.
 
 ## Done means (whichever task is picked)
 
@@ -60,47 +85,37 @@ boss-combat thread just because it was the most recent session's focus.
 - `docs/NEXT-SESSION.md` updated losslessly (new entry, do not renumber or
   edit past ones).
 - `docs/DUNGEON-STATUS.md` and/or `docs/prompts/LEDGER.md` and/or
-  `docs/prompts/QUEUE.md` updated to reflect whatever changed, so the next
-  session doesn't re-discover the same state.
+  `docs/prompts/QUEUE.md` updated to reflect whatever changed.
 - `npm run build` re-run; commit `dist/oracle-of-tides.html` only if `src/`
-  changed — confirm rather than assume either way. (S57 and S58 both landed
-  entirely inside `tools/actor-runtime.mjs`, the test harness's own scripted
-  player-actor, not `src/` — so neither changed the shipped build. A fix to
-  the ACTUAL boss AI would live in `src/data/bosses.js` and WOULD need a
-  rebuild; know which kind of change you're making before skipping this.)
+  changed — confirm rather than assume either way. (S57-S59 all landed
+  entirely inside `tools/`, not `src/`, so none changed the shipped build. A
+  fix to `hazards()`/`evade()` or any boss's own AI in `src/data/bosses.js`
+  WOULD need a rebuild.)
 
 ## Explicit out of scope
 
-- **Do not touch `hazards()` or `evade()`'s shared swap-cost machinery.**
-  Four sessions (S54-S58) have all found a boss-scoped, opt-in spec field
-  (read only by `dBoss`) sufficient, and three of those four sessions tried
-  touching shared machinery first and reverted it. Reuse or extend
-  `rootmaw.spec.breakDeadlock`'s pattern if a similar problem shows up on
-  another boss.
-- **Routing D3 onward** (needs the Coastwise Chain first) and **Nereth's D6
-  `tideEscape`** (S53, landed and correctly inert) remain untouched.
+- **Do not re-attempt `breakDeadlock` (or any boss-scoped opt-in flag proven
+  for a stationary/corridor-bound boss) on a boss that actively chases the
+  player without a materially different safety condition.** S59's Nereth
+  experiment is the concrete example of why this fails.
+- **Routing D3 onward** (needs the Coastwise Chain first) remains untouched.
 
 ## Habits worth carrying in
 
-- **Trace before diagnosing, every time — S57 AND S58 both found a mechanism
-  different from what the session before them expected.** S54 assumed
-  "needs velocity" and was wrong; S57 traced and found a positional
-  deadlock; S57 (reasonably) expected the residual seed-3 loss to be "the
-  actor isn't efficient enough," and S58 traced and found a specific,
-  fixable swarm mechanism instead. The scratch-harness method (log state
-  every N frames via `window.__rp.pump`, look at the raw numbers — extend
-  it to log nearby entity types/positions, not just the player and boss, if
-  the question involves a third party like a summon) is cheap and has now
-  paid off on every single boss-combat session that used it.
-- **A fix that closes a named bug without flipping the aggregate number all
-  the way is still worth landing, per this project's own `noContact`
-  precedent** — but check whether THIS TIME it actually does flip the
-  aggregate before assuming it won't; S58 generalized S57's own pattern by
-  one step and turned "4 of 6, seed 3 still open" into "6 of 6, nothing
-  standard-sample open." Don't stop measuring at the first plausible
-  explanation for why a fix "probably only closes one thing."
-- **When a session's fix might be a real structural improvement (not a
-  seed-3-specific patch), widen the sample past whatever the standing
-  convention is before calling it done** — S58's 6-seed sweep alone would
-  have read as "fully closed"; the seeds 6-10 sample found it wasn't quite.
-  Widening cost five extra fight measurements and found real, useful signal.
+- **Trace before diagnosing, every time.** Every session in this thread
+  (S57, S58, S59) found a mechanism at least somewhat different from what
+  the session before it expected going in, including S59's own initial guess
+  about Nereth.
+- **A boss-scoped fix that resembles a previously-successful one is not
+  automatically safe — measure the FULL seed sweep before believing it,
+  every time, even when the code change is one line.** S59's Nereth
+  experiment looked like a free win by inspection and was a net loss when
+  actually measured.
+- **Zero regression means zero — not "net positive."** A fix that gains one
+  win and costs another is not a wash to keep, it's a rejection, per the
+  project's own bar since S52.
+- **A tool timing out is not the same claim as a fight being lost — check
+  the damage log before believing either.** S59's D4 finding: "still alive
+  after N frames" with an EMPTY damage log is a slow, safe win the tool cut
+  off too early, not a stuck or losing fight. Don't conflate the two without
+  checking which one a "never finished" result actually is.

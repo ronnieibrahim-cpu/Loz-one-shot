@@ -1,3 +1,159 @@
+## S59 — the honest full-roster answer to "is every boss beatable": D1/D4/D5 yes (6/6 each, D4 by a tooling fix not a gameplay one), D2/D3/D6 no (3/6, 1/6, 1/6) with a diagnosed but explicitly NOT-safely-fixable-this-session shared cause. One experiment tried on D6, measured, and rejected.
+
+Prompted directly by a question about the whole roster's state, not by
+`docs/prompts/NEXT-PROMPT.md` (which had left the choice open). Re-measured
+all six bosses across the standard 6 seeds fresh, since the last few
+sessions' own sweeps were all single-dungeon.
+
+**Full 6-seed sweep, current `main` plus S58 (before this session's own
+changes below):**
+
+```
+     d1    d2    d3    d4          d5    d6
+     6/6   3/6   1/6   5/6+1 t/o   6/6   1/6
+```
+
+("t/o" = timed out at the tool's old 9000-frame budget without dying or
+winning — see the D4 finding below, which turned this into a clean 6/6.)
+
+**D4's "5/6 + 1 timeout" was a measurement artifact, not a fairness gap —
+found and fixed, zero gameplay risk.** Seed 3 read as "still alive after
+9000 frames (never finished)," which sounds like the worst kind of result
+(a deadlock, the same shape as S57/S58's own bugs) — but the damage log for
+that run was EMPTY: the player took zero hits the entire 9000 frames. Not a
+losing or stuck fight, a perfectly safe but slow one — Wyverna's evasive
+flight pattern happened to need more clock than the tool's default budget
+gave it on this particular seed. Re-run at `--budget=20000`: clean win, 44
+of 44, at frame 13220, only 14 of 24 quarter-hearts spent. `tools/measure-
+boss-combat.mjs`'s default `--budget` raised from 9000 to 18000 (comfortable
+margin over the observed 13220) — this tool is explicitly NOT a checker
+(asserts nothing, exits 0 always, not in CLAUDE.md's verification table), so
+raising its default budget cannot make any gate less strict; it only stops
+the tool from misreporting a slow-but-safe fight as unresolved. Re-swept all
+six dungeons at the new default: every OTHER seed's outcome and frame count
+is unchanged (all finish in well under 9000 frames already), and D4 seed 3
+now correctly reads as a win. **D4 is 6 of 6 on the standard sample**, same
+as D1 and D5 — it always was; the tool just wasn't giving it enough rope.
+
+**D6 (Nereth): one targeted experiment tried, measured, and REJECTED —
+recorded here so it isn't retried blind.** Traced the post-S50 default-seed
+fight (a scratch harness, not committed, same method as S57/S58 — log
+player/boss/summon positions every 5 frames): boss `hp` gets stuck at 2 of
+80 — a hair from dead — for over 400 consecutive frames while the player,
+at 14 of 32 quarter-hearts, is chased simultaneously by Nereth himself
+(phase 4 `chase`s continuously, unlike Rootmaw), a summoned `darknut`, and
+periodic `keese`/ring/trident volleys, and dies from accumulated chip damage
+without ever landing the last hit. Superficially this looks like the same
+"swarm defeats `evade`'s hazard-avoidance" shape S58 just fixed for Rootmaw,
+so the cheap thing to try was giving Nereth the same `rootmaw.spec.
+breakDeadlock` flag (already opt-in, already proven safe elsewhere,
+literally a one-line addition). **Measured result: net negative, not net
+positive.** Full 6-seed sweep with the flag on: default 78->66 of 80 (worse),
+seed1 flips from a clean WIN to a loss (72/80), seed2 unchanged (72/80),
+seed3 flips a loss to a WIN (80/80), seed4/seed5 unchanged. One win gained,
+one win lost, two fights measurably worse — not a clean improvement, and
+per this project's own zero-regression bar (a fix that turns any prior WIN
+into a loss fails, full stop, no matter what it gains elsewhere), this does
+NOT ship. Reverted; `src/data/bosses.js` is back to exactly what it was.
+
+**Why the naive transplant failed, as a lesson for the next attempt**:
+Rootmaw's `breakDeadlock` bypasses `evade`'s hazard veto ONLY as an escape
+from a genuine deadlock (a stationary boss, a corridor, a swarm that never
+lets a candidate direction look safe). Nereth is a fundamentally different
+shape in phase 4 — he ACTIVELY CHASES at 0.85px/frame the entire time,
+so forcing a candidate direction through without checking whether it walks
+the player face-first into the thing that's chasing them (or into `darknut`,
+also chasing) trades a dodged hit for a guaranteed one on some seeds. The
+pattern that worked for a STATIONARY boss's chokepoint is not free to reuse
+against a MOVING one without a materially different safety condition — this
+is not "the same bug, try the same fix," it just resembles it from the
+outside.
+
+**The deeper, shared cause across D2/D3/D6 (3/6, 1/6, 1/6) was NOT
+diagnosed as a NEW finding this session — it is the same one `tools/
+actor-runtime.mjs`'s own `evade` comment block already measured at 36 seeds
+a side, long before this session**: `SHOT_HORIZON`-based shot-dodging helps
+D1 enormously (1/36 -> 31/36) and is statistically a wash for D2/D5/D6 at
+that sample size, and D3 was a measured, deliberate, accepted REGRESSION
+(25/36 -> 15/36) partially offset by `noContact`/`noContactVel` (which fixed
+their own named bug — contact hits from a boss `evade` couldn't see — without
+moving D3's aggregate). Every losing fight measured fresh this session (D2,
+D3, D6) dies overwhelmingly to `isProjectile:true` chip damage the actor
+never dodges cleanly, exactly matching S45's own third caveat on Nereth
+("the actor does not appear to dodge the trident spread at all... this AI's
+positioning logic has no such verb") — this is a single, shared, ALREADY-
+KNOWN gap in `evade`'s own dodge algorithm for multi-shot spread/ring
+patterns, not three separate per-boss bugs. **Explicitly not attempted this
+session**: teaching `evade` to actually dodge a telegraphed spread is a
+`hazards()`/`evade()` shared-machinery change of exactly the kind CLAUDE.md
+and four straight sessions (S54-S58) have found expensive and regression-
+prone even in far narrower, boss-scoped forms — this session's own D6
+experiment above is a fresh, direct data point for that same caution, not
+just an inherited one.
+
+**The honest state of the roster, this session's own measurement, standard
+6-seed sample:**
+
+```
+     d1    d2    d3    d4    d5    d6
+     6/6   3/6   1/6   6/6   6/6   1/6
+```
+
+D1, D4, D5 are robust. D2 is a real coin-flip. D3 and D6 are fragile — most
+individual fights are close (D3 typically 20-32 of 36 dealt; D6 typically
+60-78 of 80), so "beatable" is not the same claim as "the harness reliably
+wins" — but neither should be reported as solved. **A robot beating a boss
+is not a player beating a boss (`§4.2`), and the inverse caution applies
+just as hard: a robot LOSING to a boss on more than half its seeds is not
+proof a real player with real dodging skill would lose it too** — this
+measures the actor's own competence at range-dodging as much as it measures
+the boss.
+
+**On "are the dungeons beatable" — a separate, narrower claim than "is the
+boss beatable" and worth stating precisely.** `tools/check-playthrough.mjs`
+(the only tool in CLAUDE.md's table that actually plays the game rather than
+modelling a part of it) currently drives a real, no-items-granted run
+through D1 and D2 ONLY — `tools/playthrough-route.mjs`'s own `GOAL.essences`
+is `[1, 2]` and its file header says outright "everything after D2... is
+unrouted, and none of the four has ever been beaten by this actor in real
+combat on the seed this run uses." D3-D6's ROOMS and PUZZLES are each proven
+solvable by their own dedicated checker (`walk-dungeons`, `solve-switches`,
+`check-anchor`/`cleats`/`lens`/`bellows`/`reefseed`/`dredge`/`trade`), and
+each boss is proven to structurally spawn and open in god mode
+(`check-bosses.mjs`, 19/19) — but nobody has chained "walk in empty-handed,
+solve everything, beat the boss" for D3, D4, D5 or D6 the way S19/S41 did
+for D1/D2. Extending the real route that far is a large, multi-session
+undertaking (route authoring plus per-dungeon boss-fight tuning), explicitly
+out of scope for this session, and not attempted.
+
+**Validation.** The only code change with any gameplay surface
+(`src/data/bosses.js`'s experimental `breakDeadlock` flag on `nereth`) was
+reverted in full — `git diff --stat` confirms zero net change there.
+`tools/measure-boss-combat.mjs`'s budget default is the only landed change,
+and it is not a checker (own header comment: "NOT a checker — it asserts
+nothing and always exits 0"), so nothing in CLAUDE.md's verification table
+reads it. `git status` after this session shows only that one file touched;
+`npm run build` was not re-run because `src/` did not change.
+
+**What the next attempt should know:**
+1. **D2, D3 and D6's remaining losses are one shared problem, not three** —
+   `evade` not reliably dodging multi-shot spread/ring attacks over a long
+   fight. Fixing it for real needs a new, careful, probably NEW capability
+   (not a reuse of `breakDeadlock`/`noContact`'s existing shape) added to
+   `hazards()`/`evade()` itself, which is exactly the kind of change this
+   project's history says to isolate in its own session with a full 36-seed
+   validation bar, not a quick addendum to a different task.
+2. **Do not transplant `breakDeadlock` onto a CHASING boss again without a
+   distinct safety condition.** This session's own attempt on Nereth is the
+   second and third data point (after Nereth's own S53 gating and this) that
+   a fix proven on a stationary or corridor-bound boss is not automatically
+   safe on one that actively closes distance itself.
+3. If a future session wants a genuinely bigger D2/D3/D6 number, the
+   `evade`-dodge project is where the real ceiling is — but per the four
+   sessions already spent finding that road expensive, it deserves its own
+   dedicated, well-budgeted session with the full 36-seed bar S52's own
+   comment block established, not a continuation tacked onto something else.
+
 ## S58 — D5 seed 3's remaining loss root-caused to Rootmaw's own `zol`-summon design (not a second positional bug) and closed with the same lever S57 already built: `breakDeadlock`'s stall detector generalized from "frozen pixel" to "no net progress toward the boss". Full 6-seed sweep 4/6 -> 6/6. LANDED
 
 Picked up per `docs/prompts/NEXT-PROMPT.md`'s own framing: "your choice — D5
