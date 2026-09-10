@@ -125,28 +125,53 @@ extract from it:
   D2 flips from a loss to a clean win, D6 goes from 6 of 80 damage dealt to
   78 of 80** (a real fight now, not a wall — see the caveats below for why it
   isn't called a full win). **D5 (Rootmaw) is untouched on purpose** — it
-  never had `safeWhenOpen` set, so its behaviour did not change at all; its
-  own failure is a different, still-undiagnosed mechanism from the same S45
-  sweep (a growing-distance retreat pattern, unlike Nereth's fixed-distance
-  one). **A real lead for it, found auditing the repo's OTHER git lineage
-  (S51 — see `docs/prompts/NEXT-PROMPT.md`):** this repo has two disjoint
-  root commits (a 2026-09-02 reset), and the abandoned lineage's own latest
-  boss work (`64a6561`, unreachable from `main`) measured Rootmaw as an easy
-  win using a `dBoss` with no `evade`/`noContact`/velocity-prediction
-  system — a system `main`'s `dBoss` gained LATER, for a documented and
-  unrelated reason (Gloomtide's D3 fight landing hits on a stale collision
-  box). That system may be over-cautious against Rootmaw's own continuously-
-  mobile final phase in a way it was never measured against. Not confirmed
-  — a hypothesis for the next session to verify by instrumentation, not to
-  patch on the strength of this note alone.
+  never had `safeWhenOpen` set, so its behaviour did not change at all.
+  **S52 diagnosed Rootmaw's mechanism precisely, by instrumenting a real
+  fight (not by patching on a hypothesis) — see `docs/NEXT-SESSION.md` S52
+  for the full account, including the frame traces and the control
+  comparison.** S51's own lead (that the `evade`/`noContact` system added to
+  `dBoss` after Rootmaw last measured as winnable might be over-cautious
+  against his mobile final phase) is **disproved, not confirmed**: Rootmaw
+  never reaches that phase in the losing fights (hp bottoms at 20 of 52,
+  still inside the stationary `above: 0.32` phase), and `evade`'s swap rate
+  against Rootmaw (90.1% of hazardous calls) is statistically
+  indistinguishable from its swap rate against D1/Gohmaraq, a boss the
+  actor wins cleanly (86.1%). **The real mechanism: Rootmaw's own 'drink'
+  attack (`if (timer(e, 'drink', 380)) forceTide(e, g, HIGH)`) forces the
+  tide to HIGH, and `rootmawTide`'s HIGH branch (`shut` + slow heal) has NO
+  reopen mechanism at all — no periodic timer, no attack-triggered backup.
+  Every OTHER shelled boss in the roster (Gohmaraq, Anemos, Wyverna,
+  Nereth) has at least one reopen channel independent of the tide field
+  (an attack whose `windUp` callback always calls `open()`, or a timer that
+  fires regardless of tide) — Rootmaw is the only one whose vulnerability
+  is a pure, un-backed-up function of the tide field.** Since nothing in
+  the game auto-cycles the tide and `forceTide` is a no-op once already at
+  the target level, the first successful drink is a ONE-WAY LOCK: only the
+  player's conch (LOW->MID->HIGH->LOW, one press reaches anywhere) undoes
+  it, and `tools/actor-runtime.mjs` cannot press it contextually — the same
+  documented limitation S50 already named for Nereth
+  ("cannot sound the conch for itself"). `evade` is a measurable but
+  secondary contributor (disabling it wins the default seed outright, by
+  finishing the boss before the 380-frame drink timer fires — but a full
+  `--no-evade` seed sweep still loses 4 of 6, so this is a coin-flip-or-worse
+  race against the lock either way, not something `dBoss` tuning reliably
+  closes). **The honest fix is the SAME missing conch-press verb already
+  named out of scope for Nereth in S50 — S52 names this overlap explicitly
+  rather than building it twice; see its own entry for what the verb needs
+  (a per-boss `tideEscape` signal, a spend condition, the equip step, and
+  the full six-boss + seed-sweep validation this table already demands for
+  any `dBoss` change).**
   **Caveat that still applies to Nereth and Rootmaw both:** a robot losing
   (or not quite winning) does not by itself prove a boss is unfair if the
   robot is missing a verb (here, the conch and any projectile-dodge) the
   fight assumes a player has. Nereth's own fight is explicitly designed
   around the conch (`nerethPin`) and the actor still cannot press it
   contextually — 78 of 80 without that verb at all is a strong result, not
-  a ceiling on the fight's real fairness. The honest deliverable here is a
-  measurement plus a judgement, not a green tick.
+  a ceiling on the fight's real fairness. Rootmaw's fight reads the same
+  way, more starkly: it has no fallback the way Nereth does, so the actor's
+  loss here is close to entirely explained by the one verb it lacks. The
+  honest deliverable here is a measurement plus a judgement, not a green
+  tick.
 - **The replay baselines predate `beaten`/`heartPieces`.** Eleven files live
   in `tools/replays/`; only some carry those fields, and `diffState` only
   walks keys a baseline HAS, so the rest go unchecked. Re-record

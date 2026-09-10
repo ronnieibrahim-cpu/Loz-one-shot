@@ -1,3 +1,185 @@
+## S52 — diagnosed Rootmaw (D5)'s loss precisely: it is NOT the S51 evade hypothesis, it is the same missing conch verb already named for Nereth, and worse (no fallback channel at all)
+
+`docs/prompts/NEXT-PROMPT.md` handed this session a concrete hypothesis from
+S51's git-archaeology: the `evade`/`noContact`/velocity-prediction system
+added to `dBoss` after Rootmaw last measured as winnable might be
+over-cautious against Rootmaw's mobile, continuously-chasing final phase
+(`chase(e, g, { speed: 0.38 })`). **The hypothesis is false, and the real
+mechanism is both simpler and more structural — found by instrumenting a
+real fight frame by frame rather than trusting the theory, per the prompt's
+own instruction.**
+
+**Baseline reconfirmed first, byte-identical to S45/S49/S50**: seed 20260806,
+in-order 7 hearts, `measure-boss-combat.mjs d5` — died at 26/52, 28qh lost,
+14 hits, the same growing-distance-at-hit sequence S45 recorded.
+
+**Instrumentation 1 — tide level and `weakOpen` sampled every 20 frames
+(scratch harness, not committed; the method is written out here).** Patched
+`Player.takeDamage` to log `g.tide.level` alongside the fields S45 already
+logged, and sampled `{tide, weakOpen, hp, dist}` every pump of 20 frames
+regardless of damage events. Result: **Rootmaw NEVER REACHES its mobile
+final phase (`above: 0.00`) in this losing fight.** hp bottoms out at 20 of
+52 (0.385 of max, still inside the `above: 0.32` phase — the STATIONARY
+"spits seed clusters" phase) and then climbs back to 26 via `rootmawTide`'s
+own healing. The S51 hypothesis's entire premise — an over-cautious veto
+against a chasing boss — cannot be the mechanism here, because the boss
+that supposedly out-runs the actor's retreat is not moving at all during
+the failure.
+
+**What actually happens, read directly from the trace:** tide sits at LOW
+(0) continuously from fight start through f=840ish — `rootmawTide`'s LOW
+branch calls `open(e, g, 30)` every single frame with no timer gate, so
+Rootmaw is continuously vulnerable the whole time, exactly as
+`src/data/bosses.js` says it should be. At f=860 the tide flips to HIGH
+(2) — this is phase 2's own `if (timer(e, 'drink', 380)) forceTide(e, g,
+HIGH)`, Rootmaw's own "drink" attack — and **from that frame on, `weakOpen`
+is false for the rest of the fight, all the way to the player's death at
+f=1780.** Every hit in S45's own "growing distance" sequence past f=942 is
+taken at `weakOpen:false, tide:2` — the actor is not retreating from a
+mobile boss, it is orbiting a permanently shelled one it has no way to
+reopen, while `rootmawTide`'s HIGH branch quietly heals it (`e.hp += 1`
+every 110 frames) and its summoned zols and residual seed volleys chip the
+player down to zero over 900 helpless frames.
+
+**Why this is permanent, not just slow.** `g.tide.level` changes only two
+ways: the player's own conch, or a boss's `forceTide` call
+(`src/data/bosses.js`). Nothing in the game auto-cycles the tide back down.
+Once Rootmaw's drink timer fires and tide reaches HIGH, `forceTide` itself
+is a no-op on every subsequent call (`if (g.tide.level === level ...)
+return false`) — so the state is a one-way door. A real player's answer is
+presumably identical to Nereth's fight: press the conch the moment the boss
+drinks, forcing tide back to LOW (one press covers the whole LOW->MID->HIGH->LOW
+cycle). **`tools/actor-runtime.mjs` cannot do this — it says so itself,
+in the same comment S50's own account already cites for Nereth ("cannot
+sound the conch for itself").** This is not a new gap; it is the SAME
+missing verb, now confirmed to also be what's blocking D5, not just D6 —
+the overlap `docs/prompts/NEXT-PROMPT.md`'s "out of scope" section asked
+this session to name rather than rebuild.
+
+**Why Rootmaw is worse than Nereth at this, and why no five-of-six-boss
+comparison caught it before:** every OTHER shelled boss in the roster
+(`shell: true` — Gohmaraq, Anemos, Wyverna, Nereth; Gloomtide has no shell
+at all, so `weakOpen` is always true for it regardless of tide) has at
+least one reopen channel that does NOT depend on the tide field:
+  - Gohmaraq: `gohmaraqSlam`'s `windUp` callback calls `open(e2, g2, ...)`
+    after every slam, unconditionally — no tide check at all.
+  - Anemos: `anemosFeed` calls `open(e, g, [40,80,160][g.tide.level])`
+    every 250 frames on its own timer, REGARDLESS of tide (the tide only
+    changes the DURATION, never whether it fires).
+  - Wyverna: `wyvernaDive`'s `windUp` callback calls `open(e2, g2, 60)`
+    on every dive, unconditionally — this is why `forceTide(e, g, HIGH)`
+    in her own phases 2-3 does not brick her fight (measured WON flawlessly,
+    44/44, in S45/S49/S50): the dive attack keeps opening her on its own
+    100-170f timer no matter what the tide is doing.
+  - Nereth: `nerethOpening()` fires after every volley in phases 1-3,
+    independent of the pin state, AND `nerethPin`'s own `else` branch keeps
+    him open continuously (`open(e, g, 60)` every frame) for as long as the
+    tide sits off his pinned level — his "locked" state is the SHORT one,
+    not the long one.
+  - **Rootmaw has none of this.** `rootmawTide` is the *only* source of his
+    `weakOpen`, and its HIGH branch (`shut(e, g)` + heal, no `open()` call
+    anywhere in it) has zero periodic reopen — contrast with the implicit
+    MID branch just above it, which at least breathes open for 80 of every
+    220 frames. Once HIGH is reached, he is sealed until the conch is
+    pressed, full stop, with no attack-triggered backup the way every other
+    shelled boss in the game has one.
+
+**Instrumentation 2 — `evade`'s own veto decisions, exactly as the prompt
+asked, to settle the hypothesis rather than merely set it aside.** Patched a
+scratch copy of `actor-runtime.mjs` to count every `evade()` call, whether
+it found a hazard worth reacting to, and whether it swapped the commanded
+mask for an alternative. Ran it against D5 (the loser) and D1/Gohmaraq (a
+clean, near-flawless win: 24/24, 4qh lost) as the control the prompt asked
+for:
+
+| | hazardous calls | swaps | swap rate |
+|---|---|---|---|
+| D5 Rootmaw (loses) | 751 | 677 | **90.1%** |
+| D1 Gohmaraq (wins cleanly) | 202 | 174 | **86.1%** |
+
+**Statistically indistinguishable.** `evade` is not measurably more
+trigger-happy against Rootmaw than against a boss it beats comfortably —
+the S51 hypothesis's "does it reject an approach candidate more often, and
+increasingly so" question has a clean negative answer. Reading the actual
+swap log in the stall window (f=794-825, during Rootmaw's 'seed' spread
+attack) shows why: most swaps are ordinary shot-dodging against a
+five-shot 60° spread plus a summoned zol, the same kind of reactive
+sidestep `evade` performs against every boss in the roster, not a
+Rootmaw-specific veto pattern.
+
+**`evade` is a real, secondary contributor to LOSING THE RACE, though —
+just not the mechanism the hypothesis named.** `--no-evade` (the harness's
+own existing flag) on the same seed wins outright: 52/52 dealt, finishes on
+15/28 qh, boss dead by f=920 — BEFORE the 380-frame drink timer would have
+locked the tide. Comparing the two runs frame by frame: both are
+byte-identical up to f=540 (hp=20, still LOW tide, still phase 2). In the
+next 320 frames (f=540-860, tide still LOW, `weakOpen` still continuously
+true), the WITH-evade run deals **zero further damage** — all its
+attention goes to dodging the seed spread and the zol — while the
+WITHOUT-evade run uses the identical window to finish the boss outright.
+So `evade`'s shot-avoidance overhead measurably slows this specific race,
+but it is not the root cause: a **seed sweep with `--no-evade` still loses
+4 of 6** (seeds 1/2/3/4 die at 27/29/16/21 of 52; only seeds 5 and 20260806
+win) — consistent with the 36-seed table already sitting in `dBoss`'s own
+comment (`old` i.e. no-evade: 10/36, `now` i.e. with evade: 13/36,
+"statistically level," per that comment's own Fisher's-exact test). Rootmaw
+is a coin-flip-or-worse race against its own drink timer with or without
+`evade` — the deciding factor is the ONE-WAY LOCK on the far side of that
+race, which no movement tuning inside `dBoss` removes, because nothing
+short of a conch press can undo it once it happens.
+
+**Judgement, not a guess dressed as a fix — this is not tractable to land
+this session, precisely because of what it needs.** The honest fix is a
+contextual conch-press verb in `dBoss` (or a shared helper both Nereth and
+Rootmaw call): detect a shelled boss whose `weakOpen` has been false longer
+than its own attack cadence would explain, and press B (equipped to the
+conch slot) to force the tide back toward the design level. This is
+explicitly the SAME missing verb S50 already named out of scope for Nereth
+("the actor cannot sound the conch for itself... neither is this session's
+job"), and `docs/prompts/NEXT-PROMPT.md`'s own "out of scope" section
+anticipated this exact overlap and asked that it be named rather than
+built twice — building it well needs: recognising which boss's `weakOpen`
+is tide-gated (not universal — Gloomtide has no shell at all, and pressing
+the conch mid-fight against a boss that does not care would just be a
+wasted, exploitable input), knowing which tide level actually reopens each
+one (LOW for Rootmaw, an escape from whichever `nerethPin` level is
+currently set for Nereth — not the same target), and the full six-boss
+plus seed-sweep validation bar this file's own table demands for any
+`dBoss` change. That is a new capability, not a tuning pass, and attempting
+it inside this session risks exactly the "five-line change to the movement
+path is never a five-line change" trap CLAUDE.md already names.
+
+**What a fix needs, precisely, for whoever picks this up next (for BOTH
+D5 and D6 — they need the same verb):**
+1. A per-boss "how do I get reopened" signal in `src/data/bosses.js`,
+   parallel to `safeWhenOpen` — e.g. `tideEscape: LOW` on Rootmaw's spec,
+   `tideEscape: 'pin'` (meaning "away from whatever `nerethPin`'s current
+   pin level is") on Nereth's — read by `dBoss`, not re-derived from boss
+   state.
+2. A condition for WHEN to spend the conch press: not on every frame
+   `weakOpen` is false (that would be a spam input with no cost model),
+   but plausibly "has stayed shut longer than N frames" or "boss hp has not
+   moved in N frames while shut" — needs its own measurement pass to find
+   N, the same discipline S49's reverted attempt and S50's landed fix both
+   required.
+3. The equip step: `dBoss` already assumes `sword()` is bound; a conch
+   press needs `slotBit('conch')` (mirroring the equip helper `dEquip`
+   already uses elsewhere in this file) and the room setup's `equipB:
+   'conch'` convention `measure-boss-combat.mjs` already uses for boss
+   fights.
+4. Full validation per this file's own table: all six `measure-boss-combat.mjs`
+   runs (Nereth and Rootmaw both touched, D1/D2/D3/D4 must not regress),
+   a seed sweep on both, `check-playthrough.mjs`, `replay.mjs`, `test.mjs`.
+
+**Not done this session, and that is the honest outcome per this project's
+own standard**: a measurement plus a judgement, not a guess dressed as a
+fix. `docs/prompts/LEDGER.md`'s Rootmaw bullet rewritten with this
+mechanism (superseding the S51 hypothesis it points to, which this entry
+disproves rather than confirms). No code changed — every instrumentation
+in this session lived in scratch copies, never in `tools/` or `src/`; `git
+status` is clean. `npm run build` re-run to confirm `dist/` is unaffected
+(it is — nothing in `src/` changed) and not recommitted.
+
 ## S51 — audited the repo's OTHER git lineage for duplicated boss-beatability work; found a real lead for Rootmaw instead
 
 The user asked directly: hadn't a boss playability/beatability test already
