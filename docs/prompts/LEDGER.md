@@ -63,30 +63,46 @@ extract from it:
   (non-projectile) enemies instead of the `vx:0, vy:0` it always handed
   them.** Fixes the named bug outright — D5 seed 3's `gel`-contact loop
   (S52's own "still open" item) goes from a loss (20/52 dealt, 24 hits, 23
-  contact) to a clean win (52/52, 8 hits) — but nets to a WASH once swept
-  (D5: 3/6 seeds winning vs. 4/6 before, two other seeds flipping win to
-  loss) and, far more seriously, **breaks `check-playthrough.mjs` outright**
-  (`boss: nothing to fight in d2 0,4,5`) because `hazards()` underlies
-  `dFight`/`dGoto` in every ordinary room along the scripted route, not
-  just boss fights, and the route's tuned `wait` constants assume the
-  frame-exact timing this change perturbs everywhere a hazard is on
-  screen. **S55 measured exactly how far that reaches: the drift starts at
-  route step 35 of 369** — D1's very first ordinary `fight` directive
-  (`d1/0,3,5`), a 5-frame divergence, nowhere near a boss room — settles
-  into a deceptively stable −28-frame plateau for ~160 directives through
-  the rest of D1, then breaks again leaving the Tidewatch Shop and balloons
-  to a **−5788-frame swing** crossing the overworld into D2, before the
-  state itself (not just the timing) diverges at the D2 boss room. This
-  confirms scoping the fix to `dBoss` alone would not have been enough (the
-  first divergence is an ordinary `dFight`, not a boss verb) and rules out
-  a small re-sweep: it is closer in size to re-recording the route from a
-  third of the way through D1 onward than to S47/S48's single-leg splice.
-  Reverted both sessions (`git checkout`); zero trace left in `tools/` or
-  `src/`. Full account is `docs/NEXT-SESSION.md` S54 (the fix, first
-  attempt) and S55 (the drift measurement). Do not re-attempt the same
-  narrow patch, and do not budget this as a quick timing re-sweep — the fix
-  code itself is fine; the blast radius is the size of a route
-  re-recording, and neither session had the room to pay for it.
+  contact) to a clean win (52/52, 8 hits) — but nets to a WASH on D5 once
+  swept (3/6 seeds winning vs. 4/6 before) and, applied unconditionally,
+  **breaks `check-playthrough.mjs` outright** (`boss: nothing to fight in
+  d2 0,4,5`) because `hazards()` underlies `dFight`/`dGoto` in every
+  ordinary room along the scripted route, not just boss fights. S55 traced
+  that drift to route step 35 of 369 (D1's first ordinary fight) compounding
+  to a −5788-frame swing before D2's boss room state itself diverges; S56
+  found the actual mechanism — the drift shifts which ABSOLUTE FRAME later
+  rooms are entered on, which desyncs against enemies with fixed-frame
+  attack timers (confirmed: the run dies for real, `deaths:1`, against a
+  stationary `barnacle` in `d2/0,3,4` whose own velocity never changed —
+  only the frame it was encountered on did).
+  **S56 then tried the natural fix — scope the velocity estimate to `dBoss`
+  alone via an opt-in `hazardVel` flag on `hazards()`/`evade()`'s options,
+  never passed from `dFight`/`dGoto`.** This DOES fully solve the
+  `check-playthrough.mjs` problem: verified byte-identical for the first
+  207 of 369 route directives (everywhere except an active boss fight),
+  21/21, zero deaths. **But it surfaces a worse, previously-unmeasured
+  regression: D1's own boss fight (Gohmaraq) drops from a perfect 6/6 win
+  rate to 3/6 on the same 6-seed sample this project has used since S52** —
+  S54 never swept D1 with this fix, only D5. The mechanism generalizes:
+  giving `hazards()` real velocity for even one secondary entity inside a
+  boss fight shifts the fight's own frame sequence, which collides with
+  that boss's own absolute-frame attack timers exactly the way S55's
+  route-wide drift collided with the barnacle's — the effect is the same
+  coin flip, just concentrated inside single fights instead of scattered
+  across a route. **Scoping fixes WHERE the risk can reach; it does not
+  remove the risk itself, because the risk is frame-phase sensitivity
+  inside whatever it touches, and it now touches D1's own boss fight.**
+  Reverted all three sessions (`git checkout`); zero trace left in `tools/`
+  or `src/`. Full account: `docs/NEXT-SESSION.md` S54 (the fix), S55 (the
+  route-wide drift), S56 (the scoped attempt, the death's real cause, and
+  the D1 regression). **Do not re-attempt either the unconditional or the
+  `dBoss`-scoped version expecting a different result — both are measured
+  and both cost more than they're worth on the numbers so far.** A more
+  promising direction, per S56's own recommendation: a Rootmaw-specific
+  spec field (the `tideEscape`/`safeWhenOpen` shape S52 already used for his
+  OTHER bug) that answers the gel-loop without touching `hazards()`'s shared
+  machinery at all, so it cannot reproduce either the route-wide drift or
+  the D1 regression by construction.
 - **The pause menu's item grid being covered by the description panel.** Not
   real: only 14 items are `equippable`, the grid is five columns, so it is
   never more than three rows and never reaches the panel at y=106. Verified

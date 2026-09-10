@@ -4,109 +4,108 @@ Repo `ronnieibrahim-cpu/Loz-one-shot`. Branch from the CURRENT tip of `main` —
 `git log -1 origin/main` for the real commit. One prompt = one session = one
 branch. Do not open a pull request unless asked.
 
-## Task: attempt the full `hazards()` velocity fix re-sweep now that S55 has mapped exactly where and how badly it drifts — or, if it does not converge, size it more precisely still and hand it off again rather than force a landing
+## Task: fix D5 Rootmaw's `gel`-contact loop with a boss-specific spec field, the same shape S52 already used for his other bug — not another change to the shared `hazards()`/`evade()` machinery
 
-S54 found a real, well-motivated fix for the D5 `gel`-loop and reverted it
-because it broke `check-playthrough.mjs`. S55 (this session's predecessor)
-did NOT re-derive or re-attempt the fix — it re-applied S54's exact code and
-measured, step by step, exactly how far the resulting drift reaches. **Read
-`docs/NEXT-SESSION.md`'s S55 entry in full before starting anything below —
-it has the fix's exact code, the exact method used to trace the drift, and
-the precise map of where it starts and how it grows.**
+Three sessions now (S54, S55, S56) have tried variations of "give
+`hazards()` a real velocity estimate for non-projectile hazards" to fix D5
+seed 3's losing `gel`-contact loop, and all three have been reverted.
+**Read `docs/NEXT-SESSION.md`'s S54, S55, and S56 entries in full before
+starting anything below** — this prompt exists specifically because that
+line of attack is now measured and closed, not because it is untried.
 
-The short version: the fix is correct and small — a `WeakMap` in
-`hazards()` (`tools/actor-runtime.mjs`) giving every non-projectile hazard a
-real one-frame position-delta velocity instead of always `vx:0, vy:0`. It
-fixes D5 seed 3's losing loop outright. But `hazards()` underlies ordinary
-room combat (`dFight`/`dGoto`) everywhere a hazard is on screen, not just
-boss fights, so it perturbs the scripted route's frame-exact timing almost
-everywhere. S55 traced the FIRST divergence to route step 35 of 369 — D1's
-very first ordinary fight, nowhere near a boss room — and found the drift
-crosses two regimes: a deceptively stable −28-frame plateau for about 160
-directives (D1's midgame through its boss fight and the Tidewatch Shop
-purchase), then an unstable multi-thousand-frame swing (up to −5788 frames)
-crossing the overworld into D2, ending in an actual state divergence at
-D2's boss room (the boss isn't there).
-
-**This session's job is to see whether that can actually be re-swept, now
-that the map exists — not to re-discover the map.**
+The short version: giving `hazards()` real velocity — whether applied
+everywhere, or scoped narrowly so only `dBoss`'s own `evade()` call asks for
+it — fixes D5 seed 3's loop, but the mechanism that fixes it (shifting
+exactly which frame a swap happens on) is the same mechanism that breaks
+things elsewhere, because every boss's attack AI and at least one ordinary
+room enemy (a stationary `barnacle`) run on absolute-frame timers that a
+shifted swap sequence can desync against. Applied everywhere: it kills the
+scripted playthrough actor outright in an ordinary D2 room (S55/S56).
+Scoped to `dBoss` alone: it fully protects the scripted route (verified
+byte-identical outside an active boss fight), but drops **D1's own boss
+fight from a 6/6 win rate to 3/6** on the standard 6-seed sample — and D1 is
+the one dungeon `check-playthrough.mjs` actually depends on. Neither version
+is worth landing on the numbers measured so far.
 
 ## What to do, in order
 
-1. Read `docs/NEXT-SESSION.md` S55 (and S54, which it builds on) in full.
-   Re-apply the fix exactly as described (same `WeakMap` code) so you start
-   from the same place, not a re-derivation.
-2. **Re-record the route with the fix permanently in place**, using the same
-   iterative method S47/S48 used for their single-leg splice, but expect to
-   apply it across most of the route rather than one leg: run
-   `check-playthrough.mjs --trace` (or `--record` once it gets far enough),
-   find the first place it throws or a `wait`/timing constant no longer
-   lands where it needs to in `tools/playthrough-route.mjs`, re-derive that
-   constant with a stable-band sweep (never a single lucky value — S47/S48's
-   own method, and the trap CLAUDE.md's table already warns about: a
-   knife-edge value that happens to pass once is not a fix), re-run, repeat.
-3. **This is a genuinely open-ended task, and S55 already named the risk: a
-   fixed constant upstream can shift when a later hazard is first sighted,
-   which can shift ITS estimated velocity, which can shift the next
-   constant.** Set yourself a real checkpoint partway through (for instance:
-   is the route stable and green through the end of D1 and the overworld
-   crossing, before starting on D2's own timing?). If progress stalls —
-   constants that were just re-swept keep drifting again as later ones are
-   fixed, rather than converging — **stop rather than force a landing**,
-   per this project's own rule against guessing dressed as a fix. Document
-   precisely where the re-sweep got to and why it stalled, the same honest
-   way S55 documented the drift's size rather than guessing at it.
-4. **If it converges and lands:** the full validation bar from CLAUDE.md's
-   own table for any `dBoss`/`evade`/`hazards` change —
-   `measure-boss-combat.mjs` on all six dungeons (a seed sweep on D5 in
-   particular — S54 found its own net trade a wash at the default sweep,
-   3/6 winning vs. 4/6 before; decide and write down whether that trade is
-   worth taking now that D5 seed 3's loop is fixed for real), `check-bosses.mjs`,
-   `check-playthrough.mjs`, `replay.mjs`, `test.mjs`.
-5. **Either way**, `docs/prompts/LEDGER.md`'s "Giving `hazards()`... real
-   velocity" entry (under "Measured and rejected", or moved to "Landed" if
-   it lands) needs to reflect the final state — landed with a commit, or
-   parked again with a sharper account of exactly how far the re-sweep got.
+1. Read `docs/NEXT-SESSION.md` S54, S55, S56 in full. Do not re-attempt
+   either the unconditional or the `dBoss`-scoped velocity change — both
+   are measured and both cost more than they fix.
+2. **Design a Rootmaw-specific answer instead**, in `src/data/bosses.js`'s
+   `rootmaw` spec, read by `dBoss` (`tools/actor-runtime.mjs`) only for
+   bosses that declare it — the exact shape `tideEscape`/`safeWhenOpen`
+   already use for his OTHER bug (S52). The problem to solve: a `gel` (or
+   `zol`) sits in continuous or near-continuous contact range of the player
+   for many frames without a successful dodge (S52's own trace: roughly a
+   hit every 52 frames, 23 of 24 hits in the losing fight a `gel` contact,
+   not a boss hit). A field that detects "a specific hazard has been within
+   contact range, un-dodged, for N consecutive frames" and responds with a
+   deliberate, narrow nudge (a forced retreat swap toward open space, sized
+   the same way `RETREAT_MARGIN`/`avoid` already work in `evade`) would
+   answer the named bug directly, scoped to Rootmaw, without touching
+   `hazards()` — so it cannot reproduce either S55's route-wide drift or
+   S56's D1 regression, by construction, the same way `tideEscape` cannot.
+3. Measure it the same way S52 measured `tideEscape`: D5 seed sweep
+   (default + seeds 1-5 at minimum, same as every prior boss-verb session),
+   `measure-boss-combat.mjs` for confirmation on seed 3 specifically.
+   **Do not stop at seed 3 alone** — S54's own mistake was shipping the
+   general fix on the strength of one seed; this field needs the same
+   6-seed bar every other boss change in this project has been held to.
+4. Run the full validation bar for any `dBoss` change: `check-bosses.mjs`,
+   `check-playthrough.mjs`, `replay.mjs`, `test.mjs`. Since this field is
+   scoped to `rootmaw`'s own spec and D5 is not on `check-playthrough.mjs`'s
+   route, expect (and confirm, don't assume) zero effect on the other five
+   bosses and the scripted route — if anything outside D5 changes, that is
+   itself a finding worth stopping and understanding before going further.
+5. If it does not close the loop cleanly, or trades a new regression for
+   it, apply the same honesty this task's predecessors did: document
+   precisely what was tried and measured rather than landing something
+   fragile. A fourth "tried and reverted" entry is an acceptable outcome;
+   a knife-edge pass is not.
 
 ## Done means
 
-- Either: the fix landed, the route re-recorded and fully validated per the
-  bar above, `docs/prompts/LEDGER.md` updated to say it landed (moved out of
-  "Measured and rejected"), and D5's net win/loss trade-off written down as
-  a real judgement call, not left implicit.
-- Or: the re-sweep was attempted, a real checkpoint was reached and the
-  stall point is precisely described (which constants converged, which kept
-  drifting, and why) — appended to `docs/NEXT-SESSION.md` as a new entry,
-  with `docs/prompts/LEDGER.md` updated again rather than left describing
-  S55's now-superseded sizing as the latest word.
+- Either: a `rootmaw`-scoped spec field lands, D5's seed sweep shows the
+  named loop closed with no new regression on the same sample (or a
+  clearly-better trade than the 3/6-vs-4/6 wash every `hazards()`-based
+  attempt has produced so far), the full validation bar passes, and
+  `docs/prompts/LEDGER.md`'s entry is updated (moved to "Landed" if it
+  lands, or given a fourth precise account if not).
 - `docs/NEXT-SESSION.md` updated losslessly (new entry, do not renumber or
   edit past ones).
 - `npm run build` re-run; commit `dist/oracle-of-tides.html` only if `src/`
-  changed (the fix so far lives entirely in `tools/` — confirm rather than
-  assume, the same way S55 did).
+  changed (this fix, if it lands, DOES touch `src/data/bosses.js`, unlike
+  S54-S56's attempts — confirm the build actually changed rather than
+  assuming either way).
 
 ## Explicit out of scope
 
-- **Do not re-derive the fix from scratch or re-run S55's step-by-step
-  trace.** It is written up in full; start from its map.
-- **Routing D3 onward** (needs the Coastwise Chain first) and **Nereth's D6
-  `tideEscape`** (S53, landed and correctly inert) are both untouched by
-  this task.
-- **Rootmaw's (D5) `tideEscape`/`safeWhenOpen` fields** (S52) are landed and
-  sit alongside this fix in the shared `hazards()`/`evade()` machinery, not
-  inside `bosses.js` — do not re-touch them directly.
+- **Do not touch `hazards()` or `evade()`'s shared swap-cost machinery.**
+  Three sessions have now shown that any change there risks every boss
+  fight and the whole scripted route, not just D5. This task is scoped to
+  `rootmaw`'s own spec precisely to avoid that risk.
+- **Routing D3 onward** and **Nereth's D6 `tideEscape`** (S53, landed and
+  correctly inert) are both untouched by this task.
+- **Rootmaw's existing `tideEscape`/`safeWhenOpen` fields** (S52) are
+  landed and should not be modified — this task adds a new field alongside
+  them, not a change to those.
 
 ## Habits worth carrying in
 
-- **S55 already paid for finding out where the drift starts and how big it
-  gets — spend this session's budget on the re-sweep itself, not on
-  re-measuring.**
-- **A checkpoint that isn't converging is real information, not a failure to
-  hide.** Stopping with a precise account of where the re-sweep stalled is
-  a legitimate, valuable outcome — the same shape S54 and S55 both already
-  used. Landing something that only passes `check-playthrough.mjs` by luck
-  (a knife-edge `wait` value, the exact trap CLAUDE.md's own table warns
-  about) is worse than not landing at all.
-- **`hazards()`/`evade()` is load-bearing for the whole actor harness.**
-  Every change needs the full `check-playthrough.mjs` run, not a boss-fight
-  sweep alone — S55's own trace is proof of how far a change here reaches.
+- **A shared-machinery fix that helps one boss and hurts another (or the
+  whole route) is not a boss-specific bug — it is a symptom that the fix
+  belongs in that boss's own spec, not in the machinery every boss shares.**
+  This is the same lesson S52 already learned once for Rootmaw's tide-lock;
+  S54-S56 spent three sessions re-learning it for his `gel`-loop the
+  expensive way, by trying the shared-machinery version first.
+- **Any `dBoss`-adjacent change needs a real seed sweep on every boss it can
+  reach, not just the one it was built for.** S54 only swept D5; S56 found
+  D1's regression specifically because it swept a boss nobody had reason to
+  suspect. Do not repeat that gap here — even a spec-field fix should be
+  confirmed inert on the other five bosses, not assumed inert because it is
+  "scoped."
+- **`check-playthrough.mjs` is the one thing that proves the game is
+  finishable, and it is fast to run — use it liberally, not as a final
+  gate.** Both S55 and S56's most important findings came from reading its
+  full trace, not just its pass/fail line.

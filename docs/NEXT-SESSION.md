@@ -1,3 +1,143 @@
+## S56 — tried the natural next refinement of S54's `hazards()` fix (scope it to `dBoss` alone via an opt-in flag): it DOES fully solve S55's `check-playthrough.mjs` catastrophe, but uncovers a worse, previously-unmeasured regression — D1's own boss fight drops from a robust 6/6 win rate to a coin flip. Not landed; the whole "give hazards real velocity" approach is now in real doubt for this boss, not just this session's budget
+
+Continuation of S55, per `docs/prompts/NEXT-PROMPT.md`: re-apply S54's fix,
+re-record the route with it permanently in place, checkpoint honestly if it
+does not converge. **Read S54 and S55 in full before this entry — this one
+builds directly on both.**
+
+**Step 1: reproduced S55's finding exactly, to confirm the same starting
+point before trying anything new.** Same method (`check-playthrough.mjs
+--trace`, diffed step by step against a baseline trace), same result:
+throws at route step 307 (`boss: nothing to fight in d2 0,4,5`) with S54's
+exact fix in place. One thing S55 had not checked: whether the run actually
+DIES. It does — a one-off diagnostic added to `check-playthrough.mjs`
+(`window.__rp.result().audit.deaths`, reverted before finishing) showed
+`deaths: 1`, `minHearts: 0`, and a `gameover` entry in the mode trace. The
+death happens in D2's Rising Chamber (`d2/0,3,4`) against a **stationary**
+`barnacle` (`speed: 0`, an aimed shot on a 96-frame timer) — an enemy the
+fix's own velocity estimate cannot touch, since a non-moving entity's
+position delta is always zero either way. **The death is not caused by the
+fix changing how that fight is fought; it is caused by the fix shifting
+which ABSOLUTE FRAME the room is entered on**, so the player crosses the
+barnacle's fixed 96-frame attack cycle at a different, unluckier phase than
+the baseline run does — the exact same "entry frame matters" sensitivity
+Anemos's own fight comment already names, just showing up in an ordinary
+puzzle room instead of a boss arena. Once that death forces a mid-dungeon
+respawn, the scripted route (built assuming continuous, undying progress)
+has no way to recover, and everything after it is meaningless — which is
+the real reason S55's drift looked chaotic rather than a clean plateau: a
+death is a hard discontinuity, not a gradual one.
+
+**Step 2: tried the obvious fix for exactly that — make the velocity
+estimate opt-in, and have `dBoss` alone ask for it.** `hazards()` took a
+new fourth argument, `useVelocity` (default off, old zero-velocity
+behaviour); `evade()` threads it through as `opts.hazardVel`; only `dBoss`'s
+own `safe` helper (`tools/actor-runtime.mjs`, the `evade()` call inside
+`dBoss`) passes `hazardVel: true`. `dFight` and `dGoto`'s own `evade()`
+calls (`safeF`, and the `shotsOnly` call in the travel-avoidance path) were
+left untouched on purpose, so ordinary room combat never touches the new
+`lastSeen` `WeakMap` at all.
+
+**This worked exactly as intended, and fully.** `check-playthrough.mjs`:
+21/21, no death, `deaths: 0`. Diffing the full trace against the unmodified
+baseline confirms the reason why — **every one of the first 207 route
+directives is byte-identical**, covering the whole of D1's ordinary combat
+and puzzles, the overworld crossing, and D2 up to its own first boss
+directive; the trace only starts to differ at step 207, which is D1's own
+`['boss', 9000]` call — exactly where a `dBoss`-scoped change is supposed to
+start mattering and nowhere else. This is a real, verified result, not a
+guess: **scoping the fix to `dBoss` alone genuinely does insulate the whole
+scripted route from the drift S55 measured.**
+
+**But it does not make the fix safe to land, because of what it does
+INSIDE the boss fights it touches.** D5 reproduces S54's exact numbers
+(seed 3 fixed, seeds 4 and 5 newly lose — the same 3/6-vs-4/6 wash, because
+Rootmaw's whole fight already runs through `dBoss` regardless of scoping).
+That part was already known. **What was not known, because S54 never swept
+it, is D1.** The same 6-seed sample this project has used since S52
+(default + seeds 1-5):
+
+```
+           default  seed1  seed2  seed3  seed4  seed5
+  before     WIN     WIN    WIN    WIN    WIN    WIN     (6/12-8/12 qh left every time)
+  scoped     DIE     WIN    WIN    DIE    WIN    DIE     (3 of 6 winning)
+```
+
+D1 drops from a **perfect 6/6**, comfortable-margin win rate to **3/6**, and
+the default seed alone flips from "8 of 12 qh left, 980 frames" to an
+actual death by a near-simultaneous trade at frame 1120 — the boss's HP and
+the player's health both hit zero within the same short window, with a new
+`crab` contact hit (a secondary hazard in Gohmaraq's own room, exactly the
+kind of entity this fix targets) among the damage taken. **D1 is "the one
+dungeon the game's own assertion needs and the one `evade` exists for"**,
+per this exact file's own comment header on the swap it is being asked to
+extend — its swept table already treats a flip below the full sample as
+the signal that decides a change (see the D3 `noContact` history in the
+same comment block). A drop to 50% on THAT dungeon specifically is a more
+serious result than D5's wash, not a smaller one.
+
+**Mechanism, stated plainly: this is not a scoping problem, it is a
+frame-phase problem, and scoping cannot fix it.** Every boss's attack AI
+runs on absolute-frame timers (`timer(e, 'strike', 140)`, `every(e, 96)`,
+etc. — see `src/data/bosses.js`), exactly like Anemos's own fight, whose
+comment already says its outcome is "sensitive to the exact frame the room
+is entered at" and has needed re-sweeping three separate times (S48, S50,
+and implicitly again by this session's own numbers). Giving `hazards()` a
+real velocity estimate for even one secondary entity inside a boss fight —
+scoped as narrowly as `dBoss` alone — changes the exact frame sequence of
+every swap `evade()` picks for the REST of that fight, which shifts exactly
+when the actor is standing where relative to the boss's own frame-locked
+attack cycle. That can help (D5 seed 3, closing a real loop) or hurt (D5
+seeds 4/5, D1 default/3/5) in roughly equal measure, because the mechanism
+is a coin flip against each boss's own timer phase, not a monotonic
+improvement to hazard-avoidance. The exact same effect S55 found scattered
+across an entire scripted route now shows up concentrated inside single
+boss fights instead — smaller in frame-count terms, identical in kind.
+
+**Not landed. Reverted (`git checkout -- tools/actor-runtime.mjs`);
+`check-playthrough.mjs` confirmed 21/21 on the clean tree afterward. No
+`src/` file was touched by either attempt this session, so
+`dist/oracle-of-tides.html` does not need a rebuild — confirmed, not
+assumed.**
+
+**What the next attempt should know:**
+1. **The scoped (`dBoss`-only) version of the fix is a genuine, reusable
+   result on its own: it proves `check-playthrough.mjs` can be fully
+   insulated from any change to `hazards()`'s hazard-velocity behaviour by
+   making the behaviour opt-in and never asking for it from `dFight`/
+   `dGoto`.** That pattern (an opt-in flag threaded through `evade()`'s
+   `opts`, default off) is worth keeping for ANY future change to shared
+   `hazards()`/`evade()` machinery that only needs to matter inside a boss
+   fight — it is cheap insurance against exactly the S55 catastrophe, at
+   the cost of the calling code needing to say so explicitly.
+2. **That pattern does not, by itself, make a boss-AI change safe.** The
+   real risk this whole approach carries is frame-phase sensitivity WITHIN
+   the fight it touches, not drift outside it. Landing any change to
+   `dBoss`'s own `evade()` behaviour — this one included — needs a full
+   6-seed (or better, 36-seed, per this file's own established sweep size)
+   check on EVERY boss it can reach, not just the one it was built for. S54
+   only swept D5; this session's sweep of D1 is what surfaced the real
+   blocker. Before any future landing, D2, D3, D4 and D6 also need the same
+   6-seed sweep — this session only spot-checked them at their own default
+   seed (D2/D3/D4/D6 all still won there, with D2/Anemos's own margin
+   narrowing to 1 of 24 quarter-hearts, a near-death worth treating as a
+   warning sign rather than a pass) and did not have the room to run the
+   full sweep on all four.
+3. **A more promising direction for the ORIGINAL bug (D5 seed 3's `gel`-loop)
+   is a boss-specific spec field, not a shared-machinery change.** S52 set
+   this precedent already: Rootmaw's tide-lock problem was fixed with
+   `tideEscape`/`safeWhenOpen`, fields read only for the bosses that declare
+   them, rather than a change to `dBoss`'s or `evade()`'s general behaviour.
+   A narrow, Rootmaw-specific answer to "a gel has been in continuous
+   contact range for N frames without a dodge" (a defensive nudge scoped to
+   Rootmaw's own spec, the same shape as `tideEscape`) would not touch
+   `hazards()` at all, and so could not reproduce either this session's D1
+   regression or S55's route-wide drift, by construction. This is a real,
+   scoped alternative worth trying before another attempt at the general
+   `hazards()` velocity approach.
+4. `docs/prompts/LEDGER.md`'s entry updated again with this finding, in
+   place, not as a fourth parallel account of the same line of work.
+
 ## S55 — traced exactly how far S54's `hazards()` velocity fix's drift reaches: it starts at the FIRST ordinary fight in D1 (route step 35 of 369), not near D2, and compounds to a nearly-6000-frame swing before it corrupts D2's boss room state outright. Not landed; this is a measurement session, per its own prompt
 
 Continuation of S54, per `docs/prompts/NEXT-PROMPT.md`: reproduce the exact
