@@ -1226,13 +1226,43 @@ export async function installRuntime() {
     // recovery stun) is normal and must not trip this.
     let stuckX = null, stuckY = null, stuckFrames = 0;
     const STUCK_FRAMES = 30;
+    // A second, more general shape of the same symptom, found while chasing
+    // D5 seed 3's remaining loss (docs/NEXT-SESSION.md, this entry): Rootmaw's
+    // own `zol` summons split into two `gel`s apiece when killed
+    // (`src/data/enemies.js`), and a swarm of them gives `evade`'s swap a real
+    // hazard to dodge on almost every frame without ever repeating the exact
+    // same pixel — so `stuckFrames` above never trips, but the approach still
+    // never gets anywhere. Measured directly: with the summons stubbed out
+    // in a scratch harness the same seed wins in 1120 frames, taking only 9
+    // of 28 quarter-hearts; with them left in, the actor deals ZERO boss
+    // damage for 1540 consecutive frames while `weakOpen` is true for most of
+    // that stretch. `stallFrames` tracks the best (lowest) Manhattan distance
+    // to the boss seen recently and counts how long it has gone without
+    // improving; past the same kind of real accumulation window `STUCK_
+    // FRAMES` already uses, the swap is let through the fence the same way.
+    // Scoped tighter than the pixel check: only `!retreat` (never overrides a
+    // deliberate back-off after a swing) and only while `target.weakOpen`
+    // (closing on a boss that cannot be hit yet is not the problem this
+    // fixes, and bypassing hazard avoidance while waiting out a shelled phase
+    // would just eat free chip damage for nothing).
+    let stallBest = Infinity, stallFrames = 0;
+    const STALL_FRAMES = 60;
     const safe = (m, retreat) => {
       if (target.spec.breakDeadlock) {
         const q = g.player;
         const rx = q ? Math.round(q.cx) : null, ry = q ? Math.round(q.cy) : null;
         if (rx === stuckX && ry === stuckY) stuckFrames++;
         else { stuckFrames = 0; stuckX = rx; stuckY = ry; }
-        if (stuckFrames > STUCK_FRAMES) return fence(m);
+        let stalled = false;
+        if (q && target.weakOpen && !retreat) {
+          const d = Math.abs(target.cx - q.cx) + Math.abs(target.cy - q.cy);
+          if (d < stallBest - 2) { stallBest = d; stallFrames = 0; }
+          else stallFrames++;
+          stalled = stallFrames > STALL_FRAMES;
+        } else {
+          stallBest = Infinity; stallFrames = 0;
+        }
+        if (stuckFrames > STUCK_FRAMES || stalled) return fence(m);
       }
       return evade(g, fence(m), {
         fence, except: target, avoid: retreat ? target : null,

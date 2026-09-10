@@ -1,3 +1,121 @@
+## S58 — D5 seed 3's remaining loss root-caused to Rootmaw's own `zol`-summon design (not a second positional bug) and closed with the same lever S57 already built: `breakDeadlock`'s stall detector generalized from "frozen pixel" to "no net progress toward the boss". Full 6-seed sweep 4/6 -> 6/6. LANDED
+
+Picked up per `docs/prompts/NEXT-PROMPT.md`'s own framing: "your choice — D5
+seed 3's remaining loss, or the next item on the project's own backlog." Took
+the D5 thread, per its own suggested method (trace before diagnosing, reuse
+S57's scratch-harness approach rather than re-deriving from scratch).
+
+**Traced the post-S57 seed 3 fight the same way S57 traced the pre-S57 one**
+(a scratch harness logging player/boss/`zol`/`gel` positions every 20 frames —
+not committed, mirrors `tools/measure-boss-combat.mjs`'s own plumbing). The
+literal freeze S57 closed is confirmed gone. What replaces it: **the boss's
+own `hp` sits dead flat at 32 of 52 from frame 360 to frame 1900 — 1540
+frames, most of it with `weakOpen:true` — while the player is at all sorts of
+distances from the stationary boss** (it never moves in phases 1-2; only
+phase 3, below 32% hp, calls `chase`). That is not a chokepoint symptom: the
+player is moving the whole time, just never closing.
+
+**Root cause, confirmed by direct experiment, not inferred:** Rootmaw's
+`onPhase`/phase-2 `sapling` timer summons up to 3 `zol`s over the fight
+(`src/data/bosses.js`), and `zol.onDie` (`src/data/enemies.js`) splits each
+one into TWO `gel`s when killed. A diagnostic patch (`Game.prototype.
+addEntity` stubbed in a scratch harness to drop any `zol`/`gel` the instant
+it spawns — nothing in the committed tree, pure measurement) turned the SAME
+seed 3 into a clean, fast win: 52 of 52 dealt, 1120 frames, player finishing
+on 9 of 28 quarter-hearts. With the summons left in, the actor spends the
+whole 1540-frame stretch fighting or fleeing an accumulating slime swarm
+instead of reaching the boss. **This is the same class of bug S57 fixed, one
+level more general**: a hazard blocking the direct path made every one of
+`evade`'s eight swap candidates look equally bad in BOTH cases; S57's arena
+chokepoint made the candidates repeat the exact same pixel (easy to detect —
+literal freeze), while a roaming swarm in open floor makes the candidates
+different every frame (drift, not freeze) without ever making net progress —
+`stuckFrames`'s exact-pixel check legitimately never trips on this, since the
+position is never actually the same twice.
+
+**The fix (`tools/actor-runtime.mjs`, `dBoss`'s `safe()`): extended, not
+duplicated.** No new spec field — `rootmaw.spec.breakDeadlock` (S57) already
+gates this whole block, and the fix is a second counter alongside `stuckFrames`
+in the same closure: `stallFrames` tracks how long the best (lowest) Manhattan
+distance-to-boss seen has gone without a real (>2px) improvement, but ONLY
+while `target.weakOpen && !retreat` — i.e. only during an active close-the-
+distance attempt, never during a deliberate post-swing backoff or while
+waiting out a shelled phase, where bypassing hazard avoidance would just eat
+free chip damage for nothing. Past `STALL_FRAMES = 60` (double `STUCK_FRAMES`
+— this catches a slower, less certain symptom than a literal freeze, and
+wants a longer real-accumulation window before concluding the approach is
+going nowhere), the move is let through the arena fence without `evade`'s
+hazard veto — the exact same escape `stuckFrames > STUCK_FRAMES` already used,
+now reached by a second, more general road. `stallBest`/`stallFrames` reset
+to `Infinity`/`0` whenever the branch condition is false, so every fresh
+close-the-distance attempt (after a retreat, after a shelled wait) starts its
+own clean 60-frame grace period rather than accumulating across unrelated
+movement.
+
+**Measured, full sweep, before (S57) vs. after:**
+
+```
+           default  seed1  seed2  seed3  seed4  seed5
+  before     WIN     WIN    DIE    DIE    WIN     WIN     (4 of 6)
+  after      WIN     WIN    WIN    WIN    WIN     WIN     (6 of 6)
+```
+
+Seed 3: 52 of 52 boss damage dealt (was 23 of 52, PLAYER DIED), finishes in
+1260 frames on 13 of 28 quarter-hearts, taking 15 quarter-hearts in 7 hits (5
+projectile, 2 contact) — a clean, comfortable win, not a photo finish. Seed 2
+also flips (was a loss; now wins on 18 of 28 qh, 4 hits, 3 projectile/1
+contact).
+
+**Widened the sample past the standard 6 seeds, since the fix is now
+plausibly a real structural improvement rather than a seed-3-specific patch**
+(seeds 6-10, same tool, same method): before 2 of 5 (default's neighbours
+6/7 win, 8/9/10 lose); after 3 of 5 (6/7/8 win, 9/10 still lose). Seeds 9 and
+10 are NOT closed — they still lose — but both moved substantially in the
+right direction under the same measurement (seed 9: 40 -> 48 of 52 boss
+damage dealt; seed 10: 28 -> 52 of 52, the boss actually reaching 0 hp in the
+same 20-frame sample window the player's own quarter-hearts hit 0, an
+effective photo finish the harness's strict "which happened first" criterion
+still calls a loss). Combined 11-seed sample: 6 of 11 -> 9 of 11. **Named,
+not chased**: whatever seeds 9/10 still lose to is a genuinely separate,
+undiagnosed remainder — worth a future session's trace, not assumed to be
+"more of the same swarm problem" without checking.
+
+**Zero regression, verified by diff, not just outcome.** `target.spec.
+breakDeadlock` is still falsy for every boss but `rootmaw`, so the whole
+`stallFrames` block is skip-tested by the same top-level `if` S57 already
+gated on. Confirmed both ways: (1) `git stash`, re-ran the full D1-D4/D6 x
+6-seed grid (30 fights) on the pre-fix tree, then re-ran the identical grid
+post-fix — every single outcome matched; (2) direct byte-for-byte `diff` on
+D1's default-seed transcript and D3's seed-3 transcript, both IDENTICAL, not
+just outcome-identical. `check-bosses.mjs` 19/19 (god mode, structural,
+unaffected). `check-playthrough.mjs` 21/21 (D5 still is not on its route).
+`replay.mjs` 51/51. `test.mjs` 83/83.
+
+**`npm run build` re-run; `dist/oracle-of-tides.html` did NOT change and was
+NOT recommitted — confirmed, not assumed.** The whole fix lives in `tools/
+actor-runtime.mjs`, which is the test harness's own scripted player-actor
+(the thing that plays boss fights to MEASURE them), not the game's boss AI
+(`src/data/bosses.js`, untouched this session) or anything else under `src/`.
+`git status` after the build showed only `tools/actor-runtime.mjs` modified.
+
+**What the next attempt should know:**
+1. **Seeds 9 and 10 are still open**, with a real, unexplained remainder —
+   trace them the same way (log positions every 20 frames, watch for what's
+   different) before assuming the fix above just needs a bigger `STALL_FRAMES`
+   or a smaller distance-improvement threshold; guessing at the existing
+   knobs without a fresh trace is exactly the mistake S54 made with the
+   velocity hypothesis.
+2. **The generalized stall-detector pattern (best-distance-seen, reset on
+   real improvement, gated on `weakOpen && !retreat`) is reusable** the same
+   way `breakDeadlock`'s original pixel check was — if a future boss shows the
+   same "evade avoids a swarm forever without ever repeating a pixel"
+   symptom, this is the shape to reach for, still entirely inside `dBoss`,
+   still opt-in per boss via the boss's own spec.
+3. `docs/prompts/LEDGER.md`'s S57 row left untouched (it is accurate for what
+   it claims); a new row appended for this session rather than editing that
+   one, per this file's own "do not renumber or edit past entries" rule
+   extended to the ledger.
+
 ## S57 — landed a Rootmaw-specific `breakDeadlock` spec field that fixes the actual mechanism behind D5 seed 3's `gel`-loop (a positional deadlock, not a velocity gap), with zero regression measured anywhere. LANDED
 
 Continuation of S54-S56, per `docs/prompts/NEXT-PROMPT.md`'s own pivot away
