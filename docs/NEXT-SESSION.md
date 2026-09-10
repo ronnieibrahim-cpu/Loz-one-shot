@@ -1,4 +1,4 @@
-## S52 — diagnosed Rootmaw (D5)'s loss precisely: it is NOT the S51 evade hypothesis, it is the same missing conch verb already named for Nereth, and worse (no fallback channel at all)
+## S52 — diagnosed Rootmaw (D5)'s loss precisely (it is NOT the S51 evade hypothesis), then landed the fix the diagnosis named: 0 of 6 seeds winning to 4 of 6, zero regression elsewhere
 
 `docs/prompts/NEXT-PROMPT.md` handed this session a concrete hypothesis from
 S51's git-archaeology: the `evade`/`noContact`/velocity-prediction system
@@ -128,57 +128,101 @@ is a coin-flip-or-worse race against its own drink timer with or without
 race, which no movement tuning inside `dBoss` removes, because nothing
 short of a conch press can undo it once it happens.
 
-**Judgement, not a guess dressed as a fix — this is not tractable to land
-this session, precisely because of what it needs.** The honest fix is a
-contextual conch-press verb in `dBoss` (or a shared helper both Nereth and
-Rootmaw call): detect a shelled boss whose `weakOpen` has been false longer
-than its own attack cadence would explain, and press B (equipped to the
-conch slot) to force the tide back toward the design level. This is
-explicitly the SAME missing verb S50 already named out of scope for Nereth
-("the actor cannot sound the conch for itself... neither is this session's
-job"), and `docs/prompts/NEXT-PROMPT.md`'s own "out of scope" section
-anticipated this exact overlap and asked that it be named rather than
-built twice — building it well needs: recognising which boss's `weakOpen`
-is tide-gated (not universal — Gloomtide has no shell at all, and pressing
-the conch mid-fight against a boss that does not care would just be a
-wasted, exploitable input), knowing which tide level actually reopens each
-one (LOW for Rootmaw, an escape from whichever `nerethPin` level is
-currently set for Nereth — not the same target), and the full six-boss
-plus seed-sweep validation bar this file's own table demands for any
-`dBoss` change. That is a new capability, not a tuning pass, and attempting
-it inside this session risks exactly the "five-line change to the movement
-path is never a five-line change" trap CLAUDE.md already names.
+**The diagnosis said the fix needed a contextual conch-press verb, the same
+missing capability S50 already named out of scope for Nereth. This session
+went on to build it for Rootmaw specifically** (Nereth's own spec field is
+left unset — see "still open" below for why that is not the same job) —
+the initial judgement above ("not tractable this session") turned out to
+be wrong once the actual pieces were laid out; keeping the paragraph rather
+than deleting it because the reasoning in it is still the right way to
+scope a change like this, it just turned out smaller than it looked.
 
-**What a fix needs, precisely, for whoever picks this up next (for BOTH
-D5 and D6 — they need the same verb):**
-1. A per-boss "how do I get reopened" signal in `src/data/bosses.js`,
-   parallel to `safeWhenOpen` — e.g. `tideEscape: LOW` on Rootmaw's spec,
-   `tideEscape: 'pin'` (meaning "away from whatever `nerethPin`'s current
-   pin level is") on Nereth's — read by `dBoss`, not re-derived from boss
-   state.
-2. A condition for WHEN to spend the conch press: not on every frame
-   `weakOpen` is false (that would be a spam input with no cost model),
-   but plausibly "has stayed shut longer than N frames" or "boss hp has not
-   moved in N frames while shut" — needs its own measurement pass to find
-   N, the same discipline S49's reverted attempt and S50's landed fix both
-   required.
-3. The equip step: `dBoss` already assumes `sword()` is bound; a conch
-   press needs `slotBit('conch')` (mirroring the equip helper `dEquip`
-   already uses elsewhere in this file) and the room setup's `equipB:
-   'conch'` convention `measure-boss-combat.mjs` already uses for boss
-   fights.
-4. Full validation per this file's own table: all six `measure-boss-combat.mjs`
-   runs (Nereth and Rootmaw both touched, D1/D2/D3/D4 must not regress),
-   a seed sweep on both, `check-playthrough.mjs`, `replay.mjs`, `test.mjs`.
+**The fix, in two parts.**
 
-**Not done this session, and that is the honest outcome per this project's
-own standard**: a measurement plus a judgement, not a guess dressed as a
-fix. `docs/prompts/LEDGER.md`'s Rootmaw bullet rewritten with this
-mechanism (superseding the S51 hypothesis it points to, which this entry
-disproves rather than confirms). No code changed — every instrumentation
-in this session lived in scratch copies, never in `tools/` or `src/`; `git
-status` is clean. `npm run build` re-run to confirm `dist/` is unaffected
-(it is — nothing in `src/` changed) and not recommitted.
+1. **`tideEscape: LOW` on `rootmaw`'s spec** (`src/data/bosses.js`), read by
+   a new block in `dBoss` (`tools/actor-runtime.mjs`): a `shutFrames`
+   counter tracks how long the boss has been continuously shut, and once it
+   exceeds `SHUT_LOCK_FRAMES` (40) **and** the tide is exactly one conch
+   cycle away from `tideEscape` (`Tide.cycle()` steps LOW->MID->HIGH->LOW by
+   one, never straight to a target — pressing from the wrong level would
+   move the tide further from safety), the verb presses `slotBit('conch')`
+   once and waits out `p.frozen`/`g.tide.busy` (asked from the engine, not
+   modelled as a frame count) before resuming. Gated behind `tideEscape !=
+   null`, so every other boss's behaviour is byte-for-byte unchanged — the
+   block is dead code for them.
+2. **`safeWhenOpen: true` on `rootmaw`'s spec**, the same flag S50 built for
+   Anemos and Nereth, deliberately withheld from Rootmaw at the time because
+   he keeps firing through his own `weakOpen` window (the "BOSS DOES NOT
+   FIRE INTO ITS OWN WINDOW" comment names him alongside Gohmaraq and
+   Wyverna as a boss that was "already WON" and so should be left alone).
+   **That premise is what S52's own diagnosis (above) found false.**
+   Instrumented with `tideEscape` alone and no `safeWhenOpen`: the actor
+   stalled at hp 20 of 52 for over a thousand frames even fully reopened
+   (`px`/`py` vs `bx`/`by` traced directly) — every approach that took a
+   ranged hit mid-close landed with `invuln` in the 1-20 range, and without
+   `safeWhenOpen` that is a mandatory retreat (the exact branch this file's
+   own `RETREAT_MARGIN` comment describes); against a boss that never
+   stops shooting, the next approach ate another mid-range hit before
+   closing, and the cycle repeated without ever reaching sword range. Adding
+   `safeWhenOpen` breaks that cycle by pressing through instead of
+   retreating. This is NOT the same claim as Anemos/Nereth's flag (their
+   final phases genuinely hold fire while open — Rootmaw does not, and
+   still doesn't); it is a narrower, boss-specific, MEASURED judgement that
+   pressing through his fire costs less than the retreat-and-reapproach
+   cycle did, not an assertion that doing so is safe. `src/data/bosses.js`'s
+   own comment on the flag says so, so a later session does not read it as
+   the same reasoning as the other two.
+
+**Measured, not assumed, at every step.** Baseline (pre-fix) d5: 26/52
+dealt, 0 of 6 swept seeds win. `tideEscape` alone (intermediate step,
+verified with the frame trace above): tide-lock broken, but still 0 of 6
+— the stall just moved to hp 20 instead of terminating in a hard lock.
+Both together, default seed (20260806): **52/52 dealt, 4 hits taken (all
+projectile, zero contact), finished on 17 of 28 quarter-hearts** — down
+from 14 hits/28qh lost/loss. **Seed sweep 1-5: seeds 1, 4, 5 win clean; seed
+2 deals the full 52/52 but the player's own qh hits 0 in the same pump batch
+(a genuine photo finish, not investigated further); seed 3 still loses**
+(20/52 dealt, 23 of 24 hits contact damage from a `gel` sitting at a
+constant 102px from the boss for over a thousand frames — traced back to
+the SAME baseline run before this fix, where seed 3 already lost the same
+way at 0/52 dealt with 14 of 19 hits contact: a pre-existing dBoss weakness,
+not something this fix introduced, and this fix already improves its
+damage output 0/52 -> 20/52 without closing it). **Net: 0 of 6 -> 4 of 6
+seeds winning**, one photo finish, one still-losing seed with an
+independent, pre-existing cause.
+
+**Zero regression, checked directly rather than assumed from "the block is
+gated":** D1 24/24 (4qh), D2 24/24 (7qh), D3 36/36 (13qh), D4 44/44 (0qh),
+D6 78/80 (32qh) — every one byte-identical to the pre-S52 baseline (S50's
+own table). `check-bosses.mjs` 19/19 (god mode, structural). `check-
+playthrough.mjs` 21/21 (fresh tape — D1/D2 route unaffected, as expected
+since neither boss's spec changed). `replay.mjs` 51/51. `test.mjs` 83/83.
+
+**Still open, named so a later session does not re-diagnose from zero:**
+1. **Nereth (D6) needs the same `tideEscape` idea but NOT the same value.**
+   `nerethPin`'s target level changes per phase (MID, then HIGH, then a
+   drained level in phase 3), so a single constant `tideEscape` field does
+   not fit him the way it fits Rootmaw — he needs the dynamic form ("away
+   from whichever level `nerethPin` currently wants") this session's earlier
+   draft plan named and did not build. Out of scope here on purpose: this
+   session's job was D5, and Nereth's fight (78/80) was not asked for.
+   `safeWhenOpen` is already true for him from S50 and is untouched.
+2. **Seed 3's `gel`-stuck contact loop is a real, separate dBoss weakness**,
+   not part of this diagnosis: the actor parks near a persistent non-boss
+   enemy at a fixed distance from the target and eats rhythmic contact
+   damage for over a thousand frames without re-engaging. Reproduces
+   pre-fix too (same seed, same shape, worse numbers), so it predates S52
+   and is not this session's to fix — flagged precisely so the next boss
+   session does not have to re-find it from a seed sweep.
+3. **Seed 2's photo finish** (52/52 dealt, player also hits 0qh in the same
+   20-frame sample window) was not chased further — worth a tighter-
+   granularity replay if a future session wants to know which side of the
+   race it actually falls on, but it does not change this session's own
+   accounting (counted as a loss, honestly, not rounded up).
+
+`docs/prompts/LEDGER.md`'s Rootmaw bullet rewritten to record the landed
+fix and the measured numbers. `npm run build` re-run — `dist/` DID change
+this time (`src/data/bosses.js` is bundled) and is committed.
 
 ## S51 — audited the repo's OTHER git lineage for duplicated boss-beatability work; found a real lead for Rootmaw instead
 

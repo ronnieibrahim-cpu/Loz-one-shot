@@ -544,6 +544,33 @@ export function installBosses() {
     frames: ['boss_rootmaw_0', 'boss_rootmaw_1', 'boss_rootmaw_2'],
     hurtFrame: 'boss_rootmaw_hurt',
     intro: 90, shell: true, terrain: 'any', drops: 'none',
+    // Read by `tools/actor-runtime.mjs`'s `dBoss`. `rootmawTide`'s HIGH
+    // branch (below) shuts him and heals him with no reopen of its own —
+    // unlike every other shelled boss, which has at least one attack that
+    // opens regardless of tide. Once his own 'drink' attack forces the tide
+    // to HIGH, only the conch (LOW is one step back round the cycle) undoes
+    // it. See docs/NEXT-SESSION.md S52 for the diagnosis this came from.
+    tideEscape: LOW,
+    // Also read by `dBoss`. This looks like the exact case the "BOSS DOES
+    // NOT FIRE INTO ITS OWN WINDOW" comment above warns off — Rootmaw keeps
+    // firing his seed spread through his own `weakOpen` window, same as
+    // Gohmaraq, and giving Gohmaraq this exact flag (S49) turned a clean win
+    // into a loss. It measures differently for Rootmaw, not by assumption —
+    // that old exclusion was written on the premise that Rootmaw was
+    // "already WON at the health an in-order player carries," which S52
+    // (docs/NEXT-SESSION.md) found false. With `tideEscape` alone (still
+    // excluded from `safeWhenOpen`), the actor stalled at hp 20 of 52 for
+    // over a thousand frames even fully reopened: every approach that got
+    // hit by a ranged shot mid-close landed at `invuln` 1-20, and without
+    // `safeWhenOpen` that is a mandatory retreat back out — against a boss
+    // that never stops shooting, the next approach eats another mid-range
+    // hit before it can close, and the cycle repeats without ever reaching
+    // sword range. `safeWhenOpen` skips that retreat and presses through
+    // instead; measured, it wins 4 of 6 swept seeds (0 of 6 before) and
+    // finishes at seed 20260806 having taken only 4 hits, all projectile,
+    // zero contact — pressing through his fire is not free, it still costs
+    // real hits, but it costs fewer than the oscillation did.
+    safeWhenOpen: true,
     init(e) { e._open = 0; },
     onIntro(e, g) { unlockTide(g); },
     onPhase(e, g, i) {

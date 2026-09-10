@@ -1153,6 +1153,11 @@ export async function installRuntime() {
     // Frames of invuln to leave unspent as a retreat allowance — see the
     // comment on RETREAT_MARGIN's use, below.
     const RETREAT_MARGIN = 20;
+    // How long a tide-locked boss (see `tideEscape` below) has to sit shut
+    // before the verb accepts it is not a brief window and reaches for the
+    // conch. Small — the lock does not clear on its own, so this only exists
+    // to avoid pressing on the very frame `weakOpen` flips.
+    const SHUT_LOCK_FRAMES = 40;
     // Every mask goes through the fence. A boss arena has exits, and leaving
     // one wipes the room's entities — the boss with them. That reads exactly
     // like a kill (no boss, full health) and is a retreat; it is why this verb
@@ -1212,6 +1217,26 @@ export async function installRuntime() {
       fence, except: target, avoid: retreat ? target : null,
       noContact: target, noContactVel: bvel,
     });
+    /**
+     * THE CONCH IS THE ONLY WAY OUT OF A TIDE-LOCKED BOSS, AND THIS VERB
+     * COULD NOT PRESS IT. See docs/NEXT-SESSION.md S52: `b.spec.tideEscape`
+     * is a boss's own answer to "what tide level reopens me" — set only on
+     * Rootmaw (`LOW`), because he is the one boss in the roster whose
+     * `weakOpen` is a pure function of the tide field with no independent
+     * reopen (every other shelled boss has an attack whose own `windUp`
+     * calls `open()` regardless of tide). Once his own 'drink' attack forces
+     * the tide away from that level, nothing reopens him without a conch
+     * press — measured directly: the actor died at 26 of 52 damage dealt,
+     * every hit past the lock at `weakOpen:false`, while `rootmawTide`'s
+     * shut branch quietly healed him back up. `shutFrames` counts how long
+     * the boss has been continuously shut; the loop below only presses when
+     * the NEXT conch cycle (`Tide.cycle()` steps LOW->MID->HIGH->LOW by
+     * exactly one, never straight to a target) actually lands on
+     * `tideEscape` — pressing from the wrong level would move the tide
+     * further from safety, not closer.
+     */
+    const tideEscape = target.spec.tideEscape;
+    let shutFrames = 0;
     const budget = maxF || 16000;
     for (let f = 0; f < budget;) {
       const b = target = find();
@@ -1240,6 +1265,7 @@ export async function installRuntime() {
       const toward = axisX ? (dx > 0 ? BIT.right : BIT.left) : (dy > 0 ? BIT.down : BIT.up);
       const backAlong = axisX ? (dx > 0 ? BIT.left : BIT.right) : (dy > 0 ? BIT.up : BIT.down);
       const backPerp = axisX ? (dy > 0 ? BIT.up : BIT.down) : (dx > 0 ? BIT.left : BIT.right);
+      shutFrames = b.weakOpen ? 0 : shutFrames + 1;
 
       if (b.weakOpen) {
         // Invulnerability frames are the only free hits in this game. A touch
@@ -1373,7 +1399,29 @@ export async function installRuntime() {
         for (let i = 0; i < BACKOFF && f < budget; i++) { yield safe(backAlong | backPerp, true); f++; }
         continue;
       }
-      // Shelled: nothing to hit. Keep off it and wait out the tell.
+      // Shelled: nothing to hit. Keep off it and wait out the tell — unless
+      // waiting is not going to work. `(g.tide.level+1) % 3 === tideEscape`
+      // is deliberately narrower than "tide is not where I want it": `Tide.
+      // cycle()` (src/game/tide.js) steps LOW->MID->HIGH->LOW by exactly one
+      // level, never straight to a target, so pressing from the wrong level
+      // would move the tide further from safety, not closer. `p.conchTime
+      // === 0` and `!g.tide.busy` are the engine's own "would this press
+      // even take" signals (`Player.playConch`) — asked rather than assumed.
+      if (tideEscape != null && shutFrames > SHUT_LOCK_FRAMES && !g.tide.busy
+        && p.conchTime === 0 && (g.tide.level + 1) % 3 === tideEscape) {
+        const cb = slotBit('conch');
+        if (cb) {
+          yield cb; f++;
+          yield 0; f++;
+          // The conch freezes the player for its own duration
+          // (`Player.playConch`) — wait it out rather than guess the frame
+          // count, the same way this file already prefers asking the engine
+          // over modelling it.
+          while (f < budget && (p.frozen > 0 || g.tide.busy)) { yield 0; f++; }
+          shutFrames = 0;
+          continue;
+        }
+      }
       if (adx + ady < 72) { yield safe(backAlong | backPerp, true); f++; continue; }
       const room = g.room;
       const ox = (room ? room.pw : 160) / 2 - p.cx, oy = (room ? room.ph : 144) / 2 - p.cy;
