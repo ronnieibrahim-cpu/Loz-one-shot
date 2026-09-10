@@ -1,3 +1,127 @@
+## S61 — traced D3 and D6's losing boss fights per NEXT-PROMPT's own required method, and found S59's "isProjectile chip damage" diagnosis is not the real (or not the only) cause on either — a NEW, precise, corrected diagnosis, no code changed yet
+
+Before touching anything, checked whether `docs/prompts/NEXT-PROMPT.md` was
+still current: fetched `main` and all ~100 remote branches fresh, confirmed
+`main`'s own boss-fix thread (S45-S59) already contains every branch tip
+that looked boss-related except `claude/evade-boss-combat-sweep-hixhvk`,
+which is dated 2026-09-03 — a full week before S54-S59's own, more thorough
+re-litigation of the same evade/dodge question. Nothing on any branch is
+ahead of what S59 already found. `NEXT-PROMPT.md` was current going in.
+
+**S59 said "every losing fight in D2/D3/D6 dies overwhelmingly to
+`isProjectile:true` chip damage." Traced both D3 and D6 across all 6
+standard seeds (default + 1-5) with the real per-hit damage log
+`measure-boss-combat.mjs` already prints, plus one custom position trace for
+D6, per NEXT-PROMPT's step 2 requirement to confirm the specific failure
+mode before designing anything. Neither dungeon's losses match that claim
+as stated.**
+
+**D3 (Gloomtide): damage is a roughly EVEN three-way split, not
+projectile-dominated.** Summed every damage-log entry across all 5 losing
+seeds by source:
+
+```
+              seed1  seed2  seed3  seed4  seed5
+projectile      6      4      6     10      4
+gel (chase)     4      6      7      2      6
+gloomtide       10     10     7      8      10   (direct body contact)
+```
+
+Projectile damage is 20-50% of the total in every seed — never
+"overwhelming." The single BIGGEST category in 4 of 5 seeds is direct
+`gloomtide`-body contact (7-10 of 20 qh), landing during the verb's own
+documented "no invuln banked: close the distance and take the shot"
+branch (`tools/actor-runtime.mjs` ~line 1448), which its own comment
+already calls "the ONE branch a hit can actually land in" — i.e. accepted
+by design, not a dodge failure. The second category, `gel` chase-contact
+chip damage, is the ALREADY-DIAGNOSED, ALREADY-ATTEMPTED-AND-REVERTED
+`hazards()`-velocity gap from S54-S56 (`docs/prompts/LEDGER.md`'s "Measured
+and rejected" section) — explicitly not to be retried. **Arithmetic
+consequence: in every one of the 5 losing seeds, gel + direct-contact
+damage ALONE is 11-17 of the 20 qh that killed the player — close to or
+past the lethal budget with zero projectile damage counted at all.** A
+perfect fix to spread/ring dodging could not by itself flip D3 to reliably
+winning; the dominant costs are two different, already-understood problems
+neither of which `evade`'s shot-dodging logic touches.
+
+**D6 (Nereth): found something more specific and more useful than "dodge
+tuning" — a fixed, seed-INDEPENDENT tax, not a dodge failure at all.**
+Every one of the 6 standard seeds — including seed1, the one seed that
+wins — takes an IDENTICAL opening sequence: three `isProjectile` hits of
+3 qh each (9 of 32 qh, 28% of the fight's whole health budget) at frames
+699, 866, 1033, always at `dist:46`, always `weakOpen:false`. Identical
+across seeds because nothing about it involves RNG: it happens before
+Nereth ever opens, during his phase-1 trident spread
+(`src/data/bosses.js`'s `nereth.phases[0]`, `spread(e2,g2,3,36,{...
+damage:3})` every ~152 frames), and it is not a near-miss dodge — a direct
+position trace (scratch harness, not committed, same method as S57-S59:
+log player/boss/shot positions every 20 frames) shows **the player is
+completely stationary at (139,105) for 220+ consecutive frames while the
+boss sits equally stationary at (100,98)** — exactly 46px apart, matching
+the logged hit distance precisely, with zero evasive movement in either
+axis across three separate attack cycles. This is `dBoss`'s own "shelled:
+nothing to hit, wait out the tell" branch (`tools/actor-runtime.mjs` ~line
+1541: `if (adx + ady < 72) { yield safe(backAlong | backPerp, true); ... }`
+— a RETREAT directive, not a stand-still one). The player only moves during
+the brief `weakOpen:true` windows (confirmed in the same trace: x drops
+from 139 to 117-123 exactly when `weakOpen` flips true, then returns to
+139 once it flips back) — meaning the retreat directive is being filed and
+then going nowhere the rest of the time, not that no directive is issued.
+**Not yet proven which of two mechanisms causes the freeze** — either
+`fence` (applied to the retreat vector before `evade` ever sees it, per
+`safe`'s own `evade(g, fence(m), ...)`) is zeroing it out against a wall
+behind the player at that spot, or `evade`'s own cost comparison finds
+every alternative direction no better than standing still until the shot
+is already too close to react to. Distinguishing those two is the right
+first step for whoever picks this up — it was not done this session
+(budget spent on breadth: confirming the SAME finding across D3 too, per
+NEXT-PROMPT's own warning that a single dungeon's trace is not enough to
+trust a "shared cause" claim).
+
+**Why this matters for NEXT-PROMPT's framing:** the recommended lever —
+teaching `evade` to dodge a telegraphed spread/ring attack better — assumes
+the problem is `evade` making a bad CHOICE among available directions.
+D6's freeze looks instead like the RETREAT DIRECTIVE ITSELF never reaching
+`evade` as a live choice (fenced out before evade runs) or `evade` finding
+no live alternative at all near a static equilibrium point — a different
+class of bug, likely more tractable and lower-risk to fix (touches one
+`dBoss` branch and/or `fence`'s wall check at one specific position, not
+`SHOT_HORIZON`/`moveCost`'s shared cost function every boss fight runs
+through). D3's finding argues the opposite: even a full fix to shot-dodging
+leaves D3 losing on gel-chase and melee-contact damage alone, so it is
+individually a poor return on the large, shared-machinery risk NEXT-PROMPT
+itself flags.
+
+**D2 was not examined this session** — S59's "shared cause" claim rests on
+three dungeons and this session only re-traced two; whoever picks this up
+next should check D2 before assuming it matches either D3's or D6's shape,
+rather than assuming a single mechanism explains all three the way S59's
+wording implied.
+
+**Nothing shipped — `src/` and `tools/actor-runtime.mjs` are both
+unchanged from S60.** This is a diagnosis-only session, on the project's
+own established precedent (S54, S57, S58, S59 all did the same at various
+points): tracing found the prior session's "shared cause" framing incomplete
+for both dungeons checked, in two DIFFERENT ways, which itself argues
+against attempting one unified `evade`/`hazards()` fix for "D2/D3/D6
+together" — NEXT-PROMPT's own 36-seed, zero-regression bar for that
+shared-machinery change stands, and spending it on a premise this session
+just found shaky would have been the wrong trade.
+
+**Validation:** none needed — no code changed. The scratch trace scripts
+used for D6's position log are not committed (same convention S57-S59 used
+for their own scratch harnesses).
+
+**Recommended next step, concretely scoped smaller than NEXT-PROMPT's own
+"fix evade generally" framing:** trace D6's `fence`/wall-vs-cost-tie
+question directly (log `fence(backAlong|backPerp)` and `evade`'s per-
+candidate costs at frames 690-700, one hit cycle, rather than only outer
+positions) to find out whether the freeze is a wall problem (fixable in
+`dBoss`'s own retreat-target choice, boss-scoped, low shared-machinery
+risk) or an `evade` cost-function problem (higher risk, same as
+NEXT-PROMPT's original framing). Do this BEFORE writing any fix — the two
+diagnoses call for different, non-overlapping code changes.
+
 ## S60 — cleared three of `docs/prompts/QUEUE.md`'s four doc-rot items; found the fourth was never actually rot
 
 `docs/prompts/NEXT-PROMPT.md` offered a choice: the big shared `evade`
