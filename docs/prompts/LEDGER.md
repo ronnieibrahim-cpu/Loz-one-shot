@@ -188,23 +188,35 @@ extract from it:
 Verified against the current tree while writing this ledger. Fold these into
 the next overworld/gates session rather than opening a dedicated one.
 
-- `src/data/overworld.js` lines 9-18 still name Roc's Feather, Power
+**All four items below were resolved in S60** — three fixed, one found to be
+a false alarm. Kept here (rather than deleted) as the record of what was
+checked and why; see `docs/NEXT-SESSION.md` S60 for the full account.
+
+- ~~`src/data/overworld.js` lines 9-18 still name Roc's Feather, Power
   Bracelet, Zora's Flippers, Bombs, Hookshot and Magnetic Gloves as region
-  gates, while `feel.js` and `tiles-core.js` state the Feather and Bracelet
-  are gone and hop/lift are base moveset (see `LIFT_STRENGTH` in
-  `src/data/feel.js` and `boulder`'s `liftLevel: 2` comment in
-  `src/data/tiles-core.js`).
-- `GAP_HOP_MAX_SPAN` (`src/data/feel.js:1127`) is 2 and `Player.tryHop`
-  (`src/game/player.js` around line 535) gates the hop on nothing but
-  `carrying`/`bellowsOpen`/`hookPulling` — it is unconditional, so the
-  documented "Coral Reef: 1-tile deep gaps -> Roc's Feather" gate in
-  `overworld.js` gates nothing.
-- `tools/check-gates.mjs`'s header (lines 11-12, 20-21) still claims plain
-  boomerang vs. Magic Boomerang assertions; the body actually tests the
-  Resonance Rod (see its own in-body comments: "the Magic Boomerang that
-  used to turn it is gone — the Resonance Rod rings it").
-- `F.HEAVY` (`src/world/tileset.js:91`) is set on `boulder`
-  (`src/data/tiles-core.js:2180`) and read by nothing — no call site tests
-  `& F.HEAVY` anywhere in `src/`. The real gate on the boulder is
-  `liftLevel: 2` (past bare hands, since the Power Bracelet is gone) plus
-  the `dredge` tile action the Dredge Line uses to drag it clear.
+  gates~~ — **fixed, S60.** Rewritten to the real current gate table (Bombs,
+  Resonance Rod, Dredge Line, the Maku Tree's story flag), mirroring
+  `tools/check-overworld.mjs`'s own already-accurate header.
+- ~~`GAP_HOP_MAX_SPAN` (`src/data/feel.js:1127`) ... the documented "Coral
+  Reef: 1-tile deep gaps -> Roc's Feather" gate in `overworld.js` gates
+  nothing~~ — **fixed, S60**, folded into the same `overworld.js` edit
+  above. Confirmed by reading `Player.tryGapHop` directly: it checks only
+  `jumping`/`z`/`inDeep`/`underwater`/`carrying`/`bellowsOpen`/
+  `hookPulling`, no item flag at all.
+- ~~`tools/check-gates.mjs`'s header (lines 11-12, 20-21) still claims plain
+  boomerang vs. Magic Boomerang assertions~~ — **fixed, S60.** Header
+  rewritten to describe what the body actually asserts (the Resonance Rod,
+  always at `level: 1`, gated by RANGE and tide rather than by item level).
+- **`F.HEAVY` (`src/world/tileset.js:91`) is set on `boulder`
+  (`src/data/tiles-core.js:2180`) — checked in S60 and found NOT to be dead
+  code, contrary to this ledger's own earlier claim.** The earlier claim
+  only grepped `src/`; `F.HEAVY` is read by FOUR checker tools
+  (`tools/check-strands.mjs`, `tools/check-overworld.mjs`,
+  `tools/check-ground.mjs`, `tools/check-progression.mjs`) as the marker
+  flag that tells a checker "gated on the Dredge Line" versus "just
+  unreachable" — the same deliberate pattern as `F.RING`/`F.BOMBABLE`/
+  `F.VANE`, documented in `tiles-core.js`'s own comment above the boulder
+  tiledef. **Do not remove it** — doing so would break four working
+  checkers. The boulder's actual passability still comes from `F.SOLID` +
+  `liftLevel: 2` + the `dredge` tile action, as this entry originally said;
+  only the "read by nothing" half of the claim was wrong.

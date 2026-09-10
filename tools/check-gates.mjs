@@ -1,4 +1,4 @@
-// Region-gate harness. Boots headless and proves the two item gates GAME-PLAN
+// Region-gate harness. Boots headless and proves the region gates GAME-PLAN
 // asks for actually behave like gates, with a live player and the real items.
 //
 // check-overworld.mjs proves the MAP side of this — that the Salt Pans and the
@@ -8,17 +8,21 @@
 // be impassable in the actual game.
 //
 // So this asserts, in-engine:
-//   * the plain boomerang (level 1) bounces off a salt vane and leaves it shut
-//   * the Magic Boomerang (level 2) turns it, and the tile becomes floor
-//   * the Dredge Line drags a boulder off the Marsh Stair
-//   * the Line shifts the boulder in FRONT, not the whole row
+//   * the salt vane starts shut, and the Resonance Rod rings it open — but
+//     only in range, and the sea itself is part of the reach: the same cast
+//     that falls short at MID tide reaches at HIGH
+//   * the Dredge Line drags a boulder off the Bog Stair, and shifts only the
+//     boulder in FRONT, not the whole row
 //   * Bombs open the cracked rockfall that holds the Cliffs of Kell
 //   * the Keep's seal refuses EVERY item, and opens on a flag instead
 //   * the change persists across leaving and re-entering the room
+//   * a one-tile chasm is no longer a gate at all — the hop is base moveset,
+//     and walking into the gap crosses it
 //
-// The level check is the whole point of the `level` field on a transform:
-// without it "needs the Magic Boomerang" silently degrades to "needs any
-// boomerang", and the Salt Pans open two dungeons early.
+// There is no Magic Boomerang here to level-check: the plain boomerang and
+// the Magic Boomerang are both gone, and the Resonance Rod that replaced them
+// has no levels — its gate is RANGE, which is what the tide-dependent reach
+// assertions above are proving instead.
 //
 // Boot pattern copied from tools/test.mjs.
 import { createServer } from 'node:http';

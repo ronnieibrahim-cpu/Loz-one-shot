@@ -1,3 +1,67 @@
+## S60 — cleared three of `docs/prompts/QUEUE.md`'s four doc-rot items; found the fourth was never actually rot
+
+`docs/prompts/NEXT-PROMPT.md` offered a choice: the big shared `evade`
+dodge-gap fix (explicitly scoped as a full session on its own, not an
+addendum) or an independently-scoped queue item. Picked the smaller, safe
+option — QUEUE.md item 2's four doc-rot fixes, which the queue itself said
+to fold into a future overworld/gates session rather than opening a
+dedicated one for. This session is that fold, on its own, without the
+larger systematic-region-diff task item 2 was originally written around
+(that part is still open — see QUEUE.md).
+
+**Three real fixes, comment-only, zero behaviour change:**
+
+1. `src/data/overworld.js` lines 9-18 named Roc's Feather, Power Bracelet,
+   Zora's Flippers and Magnetic Gloves as region gates — none of those items
+   exist in this game. Replaced with the real, current gate table (Bombs,
+   Resonance Rod, Dredge Line, the Maku Tree's story flag), copied from
+   `tools/check-overworld.mjs`'s own header, which had already been kept
+   accurate and just wasn't mirrored here. Also folded in the
+   `GAP_HOP_MAX_SPAN` item from the same queue entry: the gap-hop
+   (`Player.tryGapHop`) is unconditional base moveset (gated only on
+   `jumping`/`z`/`inDeep`/`underwater`/`carrying`/`bellowsOpen`/
+   `hookPulling`, verified by reading the function directly) — there is no
+   item check at all, so the old "Coral Reef: 1-tile gaps -> Roc's Feather"
+   claim gated nothing even in spirit. The new comment says so explicitly.
+2. `tools/check-gates.mjs`'s header still described a "plain boomerang vs.
+   Magic Boomerang, gated on `level`" test that the body no longer runs —
+   verified by reading every `level:` usage in the file: the Resonance Rod
+   is always granted at `level: 1`, and the real gate the body proves is
+   RANGE (a cast that falls short at MID tide and reaches at HIGH), not an
+   item level. Rewrote the header to describe what the body actually
+   asserts today, and said plainly that there is no boomerang level to
+   check anymore.
+3. `GAP_HOP_MAX_SPAN` itself needed no code change, only documentation —
+   covered under item 1 above.
+
+**The fourth item, F.HEAVY, was NOT fixed, because it was never actually
+rot.** The queue claimed "`F.HEAVY` is set on `boulder` and read by
+nothing — no call site tests `& F.HEAVY` anywhere in `src/`." That's true
+as far as it checked, but it only grepped `src/`. `F.HEAVY` is read by
+FOUR checker tools — `tools/check-strands.mjs`, `tools/check-overworld.mjs`,
+`tools/check-ground.mjs`, `tools/check-progression.mjs` — as the marker
+flag that tells a checker "this tile is gated on the Dredge Line" versus
+"this tile is just unreachable," exactly the pattern the boulder's own
+comment in `src/data/tiles-core.js` describes for every marker flag
+(F.RING, F.BOMBABLE, F.VANE, F.HEAVY): "the engine already knows how to
+cross all of these... the marker is purely so a checker can tell 'gated on
+X' from 'unreachable'." Removing it would have broken four working
+checkers to chase a bug that doesn't exist. Recorded as measured-and-
+corrected in `docs/prompts/LEDGER.md` rather than acted on.
+
+**Validation:** `node tools/test.mjs` (83/83), `node tools/check-overworld.mjs`
+(17/17), `node tools/check-gates.mjs` (26/26) — all comment-only edits, so
+this is a confirmation of zero drift rather than a search for a regression.
+No `src/` behaviour changed; `npm run build` was NOT re-run (nothing in the
+shipped game changed, only comments in `src/data/overworld.js` and a
+`tools/` header).
+
+**Still open, unchanged:** the D2/D3/D6 shared `evade` dodge gap (see S59
+and `docs/prompts/NEXT-PROMPT.md`); QUEUE.md item 2's actual systematic
+region-diff (this session only did the doc-rot fold-in, not the diff
+itself); items 3 and 4 of QUEUE.md (cross-dungeon item reuse, frame-stepped
+`feel.js`).
+
 ## S59 — the honest full-roster answer to "is every boss beatable": D1/D4/D5 yes (6/6 each, D4 by a tooling fix not a gameplay one), D2/D3/D6 no (3/6, 1/6, 1/6) with a diagnosed but explicitly NOT-safely-fixable-this-session shared cause. One experiment tried on D6, measured, and rejected.
 
 Prompted directly by a question about the whole roster's state, not by

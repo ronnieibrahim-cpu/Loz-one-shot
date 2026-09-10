@@ -21140,16 +21140,23 @@ __define("data/overworld.js", function (__exports, __require) {
 // table, so a walkable east edge always has a walkable west edge facing it;
 // every other edge tile is barrier, and the world border is solid all round.
 //
-// Region gates use what the tileset can actually enforce:
-//   Coral Reef   1-tile deep gaps          Roc's Feather   (as planned)
-//   Cliffs of Kell  boulders               Power Bracelet  (as planned)
-//   Drowned Wood  a wide deep channel      Zora's Flippers (as planned)
-//   Reef Palace   posts over deep water    Dredge Line     (as planned)
-//   Sunken Marsh  cracked cliff             Bombs           (as planned)
-//   Salt Pans     a deep gap and boulders (Feather + Bracelet) — the plan
-//                 calls for the Resonance Rod, which gates nothing here.
-//   Abyssal app.  deep water and posts (Flippers + Hookshot) — the plan
-//                 calls for the Magnetic Gloves, likewise.
+// Region gates use what the tileset can actually enforce. Four gates exist —
+// see tools/check-overworld.mjs, which proves each one seals its region
+// without the item and opens it with the item:
+//   Sunken Marsh, Cliffs of Kell   cracked cliff / rockfall   Bombs
+//   Salt Pans                      a vane                     Resonance Rod
+//                                   (also holds the Reef Palace approach
+//                                   shut, since the Palace is reached only
+//                                   through the Pans)
+//   the Bog Stair (optional)       boulders                   Dredge Line
+//   Abyssal approach                deep water                the Maku Tree,
+//                                                              at five
+//                                                              Essences —
+//                                                              a story gate,
+//                                                              not an item
+// The Coral Reef and the Drowned Wood are not gated at all; the gap-hop is
+// base moveset, not a Roc's Feather unlock, and there is no Zora's Flippers
+// or Power Bracelet or Magnetic Gloves in this game.
 //
 // The Marsh has exactly two ways in — Bog Causeway (2,7) from the Coast and Bog
 // Stair (1,6) down from the Cliffs — and both are now sealed by a `cliffCracked`

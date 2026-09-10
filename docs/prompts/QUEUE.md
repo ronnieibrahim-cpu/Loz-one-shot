@@ -69,19 +69,12 @@ not more sampling — that is how the tree-crown fault was found to
 generalize once someone looked for it that way. Where `assets/sheets/` has
 the tile, extract it; do not hand-draw what the sheets already provide.
 
-Fold in the four doc-rot fixes from `docs/prompts/LEDGER.md`'s "doc rot
-found, not yet fixed" section — they all sit in overworld/gate code this
-session will already be touching:
-
-- `src/data/overworld.js` lines 9-18's stale region-gate comment (still
-  names Roc's Feather, Power Bracelet, Zora's Flippers, Hookshot and
-  Magnetic Gloves as gates that no longer exist).
-- `GAP_HOP_MAX_SPAN` being unconditional, so the documented "Coral Reef:
-  1-tile deep gaps -> Roc's Feather" gate gates nothing.
-- `tools/check-gates.mjs`'s header still claiming plain-boomerang vs.
-  Magic-Boomerang assertions when the body tests the Resonance Rod.
-- `F.HEAVY` being set on `boulder` and read by nothing, when the real gate
-  is `liftLevel: 2` plus the `dredge` tile action.
+**The four doc-rot fixes this item used to ask a future session to fold in
+are done (S60)**, on their own rather than bundled with the diff below —
+`docs/prompts/LEDGER.md`'s "doc rot found, not yet fixed" section has the
+full account, including the one item (`F.HEAVY`) that turned out not to be
+rot at all. The systematic region diff itself is still untouched and still
+this item's real, unclaimed work.
 
 ## 3. Cross-dungeon item reuse
 
