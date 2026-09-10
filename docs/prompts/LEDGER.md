@@ -59,6 +59,23 @@ extract from it:
 
 ## Measured and rejected
 
+- **Giving `hazards()` (`tools/actor-runtime.mjs`) real velocity for chasing
+  (non-projectile) enemies instead of the `vx:0, vy:0` it always handed
+  them.** Fixes the named bug outright — D5 seed 3's `gel`-contact loop
+  (S52's own "still open" item) goes from a loss (20/52 dealt, 24 hits, 23
+  contact) to a clean win (52/52, 8 hits) — but nets to a WASH once swept
+  (D5: 3/6 seeds winning vs. 4/6 before, two other seeds flipping win to
+  loss) and, far more seriously, **breaks `check-playthrough.mjs` outright**
+  (`boss: nothing to fight in d2 0,4,5`) because `hazards()` underlies
+  `dFight`/`dGoto` in every ordinary room along the scripted route, not
+  just boss fights, and the route's tuned `wait` constants assume the
+  frame-exact timing this change perturbs everywhere a hazard is on
+  screen. Reverted (`git checkout`); zero trace left in `tools/` or `src/`.
+  Full account, including what a future attempt needs to budget for (very
+  likely a full re-sweep of `playthrough-route.mjs`'s timing, not a
+  single-leg splice), is `docs/NEXT-SESSION.md` S54. Do not re-attempt the
+  same narrow patch expecting a different result — the fix code itself is
+  fine; it is the blast radius that was not this session's to pay for.
 - **The pause menu's item grid being covered by the description panel.** Not
   real: only 14 items are `equippable`, the grid is five columns, so it is
   never more than three rows and never reaches the panel at y=106. Verified

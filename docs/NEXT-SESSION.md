@@ -1,3 +1,95 @@
+## S54 — tried the `hazards()` velocity fix S52's own comment flagged for the D5 `gel`-loop and the D3 gap; it fixes the named bug, nets to a wash on D5, and BREAKS `check-playthrough.mjs`. Reverted; not landed
+
+`evade()`'s own long comment (`tools/actor-runtime.mjs`, above `hazards()`)
+already named this exactly: `hazards()` hands every non-projectile enemy
+(a summoned `gel`, `zol`, etc.) `vx:0, vy:0` regardless of what it is
+actually doing, so a `chase()`-type enemy (constant speed, straight at the
+player, no tell — see `gel`'s definition in `src/data/enemies.js`) reads to
+`moveCost` as parked in place. The comment called this "not attempted this
+session; not proven, only observed," for D3's gap specifically, and S52
+separately traced D5 seed 3's loss to the identical shape: the actor sat
+102px from Rootmaw taking a `gel` contact hit roughly every 52 frames, 23
+of 24 hits in that fight a contact rather than a dodged shot. This session
+picked that thread up.
+
+**The fix (tried, then reverted).** A `WeakMap<Entity, {x,y,frame}>` at
+`installRuntime`'s scope, updated inside `hazards()` itself: for each
+non-projectile hazard, if it was also seen exactly one frame ago, its
+velocity is the position delta; otherwise (first sighting, or a sighting
+gap) it falls back to 0, same honesty rule `dBoss`'s own `bvel` estimate
+for the boss already uses. Projectiles were untouched (they already carry
+a real `vx`/`vy`).
+
+**It fixes the named bug outright.** D5 seed 3 alone:
+`measure-boss-combat.mjs d5 --seed=3` went from 20/52 dealt, PLAYER DIED,
+24 hits (23 contact) — to 52/52 dealt, BOSS DIED, 8 hits (5 contact), 8 of
+28 quarter-hearts left. The loop is gone on that seed, not just shortened.
+
+**It is NOT a net improvement once swept, and it breaks something far more
+important than any one seed.** D5's own full sweep flips both ways: seed 3
+fixed (loss -> win) and the default seed, seed 1 stay wins, but **seed 4
+and seed 5 flip from clean wins to losses** (48/52 and 24/52 dealt) — net
+3 of 6 winning after the fix, against 4 of 6 before it (S52/S53's own
+number). That alone would be a judgement call, the same shape as every
+other boss-verb change in this project's history. It is not what killed
+this attempt.
+
+**`node tools/check-playthrough.mjs` throws outright with the fix in
+place**: `page.evaluate: Error: boss: nothing to fight in d2 0,4,5`, thrown
+from inside `dBoss` itself — the scripted route (`tools/
+playthrough-route.mjs`) arrived at D2's boss room and the boss the route
+expected to find there was gone, meaning some earlier step in the route
+desynced from the frame-exact timing the route's own `wait` constants
+assume. **This is the real reason not to land the fix as tried**:
+`hazards()`/`evade()` is not boss-fight-only machinery — `dFight` and
+`dGoto` call it in every ordinary room along the ENTIRE scripted route, so
+a change to what counts as a "moving" hazard shifts frame counts
+everywhere a hazard is on screen, not just inside `dBoss`. The project's
+own precedent (S47/S48: a `dTravel` fix moved Anemos's fight timing by 721
+frames and needed its `wait` re-swept from scratch) is the right shape of
+what fixing this properly costs — except this change touches EVERY room's
+combat along the route, not one spliced leg, so the honest cost is
+re-sweeping every tuned `wait` in `playthrough-route.mjs`, not one.
+That is real work, not a quick resweep, and this session did not have
+the room left to do it credibly — landing a change that breaks the one
+test that proves the game is finishable, then re-tuning against a
+still-drifting target, is exactly the "guess dressed as a fix" this
+project's own rules warn against.
+
+**Reverted.** `git checkout -- tools/actor-runtime.mjs` restored the
+pre-session file exactly; `check-playthrough.mjs` (21/21), `replay.mjs`,
+and `test.mjs` all confirmed green again afterward on the unmodified tree.
+No `src/` file was touched this session, so `dist/oracle-of-tides.html`
+does not need a rebuild.
+
+**What the next attempt should know, so it does not re-spend this
+session's cost:**
+1. The fix itself (the `WeakMap` position-delta velocity estimate
+   described above) is correct and small — reproduce it directly from this
+   entry rather than re-deriving it.
+2. **Scoping it to `dBoss` alone (an opt-in flag passed only from that
+   verb's own `evade()` calls) will not by itself save
+   `check-playthrough.mjs`**, because the route's desync traced to D2,
+   whose boss fight was not even the first place the route uses `dFight`/
+   `dGoto` after any earlier change — the drift very likely starts in
+   ordinary room combat, not a boss room, and compounds by the time the
+   route reaches D2. Confirm where the FIRST divergence from the recorded
+   route actually happens (instrument `playthrough-route.mjs`'s own step
+   log, the way S47 traced `dTravel`'s gap) before assuming a narrower
+   scope is enough.
+3. **If the fix is worth landing, budget the session for a full re-sweep
+   of `playthrough-route.mjs`'s tuned `wait`/timing constants**, not a
+   splice of one leg — every room with a hazard on screen can shift by a
+   different amount, so this is closer in size to re-recording the route
+   than to S47/S48's single-leg fix.
+4. D5's own net trade (3/6 winning vs. 4/6 before, two different seeds
+   swapping) is a real, separate judgement call even once
+   `check-playthrough.mjs` is no longer at risk — it is not automatically
+   worth taking just because seed 3's specific loop closes.
+5. `docs/prompts/LEDGER.md`'s D5/gel-loop line updated to record this as
+   tried-and-reverted, not fixed, so a future session does not re-attempt
+   the exact same patch expecting a clean win.
+
 ## S53 — generalized Rootmaw's `tideEscape` conch-verb to Nereth's per-phase pin target, as S52's own "still open" list asked; measured that the generalization is correct and the honest result is that it never fires
 
 `docs/prompts/NEXT-PROMPT.md` asked for exactly the gap S52 named: Nereth
