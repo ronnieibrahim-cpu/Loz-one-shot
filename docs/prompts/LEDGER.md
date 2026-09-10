@@ -28,6 +28,7 @@ the relevant section, not folded into `docs/prompts/NEXT-PROMPT.md`.
 | `dBoss`'s retreat-branch bug (Nereth and Rootmaw losing to the harness actor) fixed for Nereth — a `safeWhenOpen: true` spec field on `anemos` and `nereth` in `src/data/bosses.js`, read by `dBoss` instead of blindly relaxing the `b.stun > 0` check for every boss (S49's attempt did that and regressed D1). Zero regressions: D1/D3/D4/D5 measured byte-identical to before, D2 flips from a loss to a clean win, D6 (Nereth) goes from 6 of 80 damage dealt to 78 of 80 (very close, not yet a win). Anemos's `wait` re-swept again (`dBoss` itself changed, which moves a frame-phase tune the same way a route change does) — `wait: 216`, an 8-frame unbroken winning streak (213-220), 14/24 quarter-heart margin. Rootmaw (D5) is untouched by this fix on purpose — it doesn't have `safeWhenOpen` and its own failure is a different, still-undiagnosed mechanism (S45) | S49 (tried, reverted), S50 (landed) | `docs/NEXT-SESSION.md` S49, S50 |
 | Rootmaw (D5) diagnosed AND fixed in the same session. Diagnosis: S51's `evade`/`noContact` hypothesis disproved (Rootmaw never reaches his mobile phase in the losing fights; `evade`'s swap rate against him is statistically level with its rate against a boss the actor wins cleanly). Real mechanism: his own 'drink' attack forces the tide to HIGH, and unlike every other shelled boss he has no reopen channel independent of the tide field, so the first successful drink is a one-way lock only the conch undoes. Fix, two spec fields on `rootmaw` in `src/data/bosses.js`, both read by `dBoss`: `tideEscape: LOW` (press the conch once the boss has sat locked shut long enough, only when the next conch cycle actually lands on LOW) breaks the lock; `safeWhenOpen: true` (withheld from him at S50 on a premise this session found false) stops the actor oscillating short of sword range against his continuous fire once reopened. Measured: seed sweep 0 of 6 winning -> 4 of 6 (one photo finish, one still-losing seed traced to a pre-existing, unrelated `gel`-contact bug, not this fix). Zero regression: D1/D2/D3/D4/D6 byte-identical to the pre-S52 baseline, `check-bosses.mjs` 19/19, `check-playthrough.mjs` 21/21, `replay.mjs` 51/51, `test.mjs` 83/83 | S52 | `docs/NEXT-SESSION.md` S52 |
 | `tideEscape` generalized to a FUNCTION form for Nereth (D6), closing S52's own "still open" item — `nerethPin` now records its own `level` argument onto `e._pinLevel` every time it runs (cleared in `onPhase` for phase 4, which has no pin), and `nereth`'s spec reads `tideEscape: (e) => e._pinLevel`. `dBoss` (`tools/actor-runtime.mjs`) dispatches on `typeof spec.tideEscape`: a constant (Rootmaw, unchanged) still checks "does the next cycle step land ON the target"; a function (Nereth) checks "does the next cycle step land OFF the level it currently returns" — a materially different comparison, per the prompt's own warning, not a copy-paste. **Measured result: inert, on purpose, and that is the finding.** The naive version (no extra gating) DID fire — but only ever during each fight's first shut window, before Nereth's own first attack had even landed a shot, and it was pure RNG-cascade noise from the 46-frame conch freeze: seed-swept, it flipped 3 losing seeds to wins and one clean win (seed 1, 80/80) to a loss (66/80) in the same run, with no causal safety story behind either direction. Rather than land noise, two real gates were added to `dBoss`: `hasOpened` (the function form may only fire after the boss has been seen open at least once — a boss that has never opened has not necessarily locked, it may just not have reached its first attack yet) and a `FUNCTION_ESCAPE_RANGE` (72px) distance requirement scoped to the function form only (the constant form does NOT get this gate — Rootmaw's mobile final phase never lets `evade` open a 72px gap on its own, measured directly at 282 frames sitting "ready" between 14-54px, so requiring distance there reproduces his exact S52 loss by simply never firing; Nereth's press is pre-emptive against a lock that clears itself on a timer regardless of the player, so there is no equivalent cost to waiting for safety). With both gates: **D6 is measured BYTE-IDENTICAL to the pre-fix baseline across the full seed sweep** (default 78/80 32qh loss; seeds 1/2/3/4/5 matching exactly) — the escape verb never fires under real play because Nereth's own attack-triggered reopen already covers every case it exists to rescue, confirming S52's own prediction ("very likely why Nereth already measures at 78 of 80 without any conch verb at all") rather than disproving it. Zero regression: D1-D4 byte-identical, **D5 (Rootmaw) reproduces S52's exact documented numbers seed-for-seed** (1/4/5 clean wins, seed 2 a 52/52 photo finish, seed 3 still loses to the pre-existing `gel`-contact bug), `check-bosses.mjs` 19/19, `check-playthrough.mjs` 21/21, `replay.mjs` 51/51, `test.mjs` 83/83 | S53 | `docs/NEXT-SESSION.md` S53 |
+| D5 Rootmaw's `gel`-loop (S52's own "still open" item, and the subject of S54-S56's three reverted attempts at a `hazards()`/`evade()` shared-machinery fix) closed with a boss-specific spec field, `rootmaw.spec.breakDeadlock`, the same shape as his existing `tideEscape`/`safeWhenOpen`. **The real mechanism, found by tracing positions frame by frame rather than reusing S54's velocity hypothesis**: Rootmaw's arena has exactly one exit (a single floor tile in an otherwise solid wall), and a `gel` parked there turns `evade`'s eight-candidate swap into a genuine deadlock — every candidate is either wall-blocked or hazard-vetoed, so the actor freezes at the EXACT SAME PIXEL for 400+ consecutive frames taking chip damage, measured directly. `dBoss` now tracks how long the player's position has gone unchanged and, past a 30-frame window, lets the move through the arena fence without `evade`'s hazard veto — contained entirely inside `dBoss`, gated by a spec field only `rootmaw` declares, so it cannot reach any other boss's fight by construction. **The named freeze is genuinely gone** (verified: no more static-pixel stretches; seed 3's contact-hit count drops from 23 of 24 hits to 14 of 20) but **seed 3 still loses overall** — the fight now runs longer and Rootmaw's own `zol` summons accumulate faster than the actor closes distance, a separate, undiagnosed problem. Full 6-seed sweep: 4 of 6 winning, UNCHANGED in aggregate (default/seed2/seed4/seed5 byte-identical to the pre-fix baseline via direct `git stash` comparison; seed1 within 1 quarter-heart; seed3 still a loss but a different, less concentrated one). Landed anyway on the project's own `noContact` precedent — closes a real, previously-named bug at zero cost elsewhere, even without flipping the aggregate count. Zero regression: `check-bosses.mjs` 19/19, D1/D2/D3/D4/D6 byte-identical at default seed, `check-playthrough.mjs` 21/21 (D5 isn't on its route), `replay.mjs` 51/51, `test.mjs` 83/83. `dist/` rebuilt and `check-build.mjs` reconfirmed | S57 | `docs/NEXT-SESSION.md` S57 |
 
 ---
 
@@ -61,48 +62,23 @@ extract from it:
 
 - **Giving `hazards()` (`tools/actor-runtime.mjs`) real velocity for chasing
   (non-projectile) enemies instead of the `vx:0, vy:0` it always handed
-  them.** Fixes the named bug outright — D5 seed 3's `gel`-contact loop
-  (S52's own "still open" item) goes from a loss (20/52 dealt, 24 hits, 23
-  contact) to a clean win (52/52, 8 hits) — but nets to a WASH on D5 once
-  swept (3/6 seeds winning vs. 4/6 before) and, applied unconditionally,
-  **breaks `check-playthrough.mjs` outright** (`boss: nothing to fight in
-  d2 0,4,5`) because `hazards()` underlies `dFight`/`dGoto` in every
-  ordinary room along the scripted route, not just boss fights. S55 traced
-  that drift to route step 35 of 369 (D1's first ordinary fight) compounding
-  to a −5788-frame swing before D2's boss room state itself diverges; S56
-  found the actual mechanism — the drift shifts which ABSOLUTE FRAME later
-  rooms are entered on, which desyncs against enemies with fixed-frame
-  attack timers (confirmed: the run dies for real, `deaths:1`, against a
-  stationary `barnacle` in `d2/0,3,4` whose own velocity never changed —
-  only the frame it was encountered on did).
-  **S56 then tried the natural fix — scope the velocity estimate to `dBoss`
-  alone via an opt-in `hazardVel` flag on `hazards()`/`evade()`'s options,
-  never passed from `dFight`/`dGoto`.** This DOES fully solve the
-  `check-playthrough.mjs` problem: verified byte-identical for the first
-  207 of 369 route directives (everywhere except an active boss fight),
-  21/21, zero deaths. **But it surfaces a worse, previously-unmeasured
-  regression: D1's own boss fight (Gohmaraq) drops from a perfect 6/6 win
-  rate to 3/6 on the same 6-seed sample this project has used since S52** —
-  S54 never swept D1 with this fix, only D5. The mechanism generalizes:
-  giving `hazards()` real velocity for even one secondary entity inside a
-  boss fight shifts the fight's own frame sequence, which collides with
-  that boss's own absolute-frame attack timers exactly the way S55's
-  route-wide drift collided with the barnacle's — the effect is the same
-  coin flip, just concentrated inside single fights instead of scattered
-  across a route. **Scoping fixes WHERE the risk can reach; it does not
-  remove the risk itself, because the risk is frame-phase sensitivity
-  inside whatever it touches, and it now touches D1's own boss fight.**
-  Reverted all three sessions (`git checkout`); zero trace left in `tools/`
-  or `src/`. Full account: `docs/NEXT-SESSION.md` S54 (the fix), S55 (the
-  route-wide drift), S56 (the scoped attempt, the death's real cause, and
-  the D1 regression). **Do not re-attempt either the unconditional or the
-  `dBoss`-scoped version expecting a different result — both are measured
-  and both cost more than they're worth on the numbers so far.** A more
-  promising direction, per S56's own recommendation: a Rootmaw-specific
-  spec field (the `tideEscape`/`safeWhenOpen` shape S52 already used for his
-  OTHER bug) that answers the gel-loop without touching `hazards()`'s shared
-  machinery at all, so it cannot reproduce either the route-wide drift or
-  the D1 regression by construction.
+  them** — S54's original idea for D5 seed 3's `gel`-loop, and S55/S56's two
+  follow-on attempts to salvage it (route-wide, then scoped to `dBoss`
+  alone). **All three tried and reverted; do not re-attempt either shape.**
+  Applied unconditionally it breaks `check-playthrough.mjs` outright (a
+  route-wide frame-phase drift that eventually kills the scripted actor in
+  an ordinary D2 room, S55/S56); scoped to `dBoss` alone it protects the
+  route but regresses D1's own boss fight from a 6/6 win rate to 3/6 (S56).
+  The mechanism in both cases: giving `hazards()` real velocity for even one
+  secondary entity shifts the exact frame sequence of whatever it touches,
+  which collides with absolute-frame-based attack/AI timers elsewhere in
+  the engine — a coin flip, not a monotonic improvement, wherever it reaches.
+  **The bug this was chasing (D5 seed 3's `gel`-loop) is landed anyway, by a
+  completely different, boss-scoped mechanism — see the "Landed" table
+  above (S57).** Full account: `docs/NEXT-SESSION.md` S54 (the fix), S55
+  (the route-wide drift), S56 (the scoped attempt and the D1 regression),
+  S57 (the actual landed fix and why `hazards()`/`evade()` turned out not
+  to be the right place for it at all).
 - **The pause menu's item grid being covered by the description panel.** Not
   real: only 14 items are `equippable`, the grid is five columns, so it is
   never more than three rows and never reaches the panel at y=106. Verified

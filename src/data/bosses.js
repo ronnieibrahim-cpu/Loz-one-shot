@@ -571,6 +571,25 @@ export function installBosses() {
     // zero contact — pressing through his fire is not free, it still costs
     // real hits, but it costs fewer than the oscillation did.
     safeWhenOpen: true,
+    // Also read by `dBoss`. Rootmaw's arena (`d5 0,3,1`) has exactly one
+    // exit — a single floor tile in an otherwise solid south wall — and his
+    // own `onPhase` summons a `zol`/`gel` into it. `evade`'s swap picks the
+    // least-bad of eight candidate directions each frame, but a hazard
+    // parked in a one-tile chokepoint can make every one of them look
+    // equally dangerous (wall on one side, hazard on the other), so the
+    // swap keeps re-choosing a net-zero move forever. Measured directly,
+    // seed 3: the actor freezes at the EXACT SAME PIXEL for 400+ consecutive
+    // frames a step from that doorway, a `gel` parked 4px away, taking chip
+    // damage the whole time it cannot move away from or past. `breakDeadlock`
+    // is this boss's own answer — `dBoss` tracks how long the player's
+    // position has gone unchanged and, past a real accumulation window (not
+    // a single frame), lets the requested move through the arena fence
+    // WITHOUT `evade`'s hazard veto, so a stuck approach can push past
+    // whatever is blocking it rather than freeze. Scoped to this boss's own
+    // spec, not to `hazards()`/`evade()`'s shared machinery — see
+    // `docs/NEXT-SESSION.md`'s S54-S56 for why a shared-machinery version of
+    // this idea was tried three times and reverted three times.
+    breakDeadlock: true,
     init(e) { e._open = 0; },
     onIntro(e, g) { unlockTide(g); },
     onPhase(e, g, i) {

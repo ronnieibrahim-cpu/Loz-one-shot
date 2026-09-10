@@ -1213,10 +1213,32 @@ export async function installRuntime() {
     // more than one frame, which every phase here does outside a direction
     // change.
     let prevBX = null, prevBY = null, bvel = { vx: 0, vy: 0 };
-    const safe = (m, retreat) => evade(g, fence(m), {
-      fence, except: target, avoid: retreat ? target : null,
-      noContact: target, noContactVel: bvel,
-    });
+    // `b.spec.breakDeadlock` (see `rootmaw`'s own spec in `src/data/bosses.js`
+    // for the full account): a hazard parked in a one-tile chokepoint can
+    // make every one of `evade`'s eight swap candidates look equally unsafe,
+    // so the swap keeps re-choosing a net-zero move forever — measured on
+    // Rootmaw seed 3, the actor freezes at the exact same pixel for 400+
+    // frames next to his arena's one-tile exit with a `gel` parked in it.
+    // Tracked entirely inside this verb, opt-in per boss, so it cannot touch
+    // any other boss's fight or `hazards()`/`evade()`'s own shared behaviour.
+    // `STUCK_FRAMES` is a real accumulation window: a swap legitimately
+    // holding still for a few frames (lining up a swing, riding out a
+    // recovery stun) is normal and must not trip this.
+    let stuckX = null, stuckY = null, stuckFrames = 0;
+    const STUCK_FRAMES = 30;
+    const safe = (m, retreat) => {
+      if (target.spec.breakDeadlock) {
+        const q = g.player;
+        const rx = q ? Math.round(q.cx) : null, ry = q ? Math.round(q.cy) : null;
+        if (rx === stuckX && ry === stuckY) stuckFrames++;
+        else { stuckFrames = 0; stuckX = rx; stuckY = ry; }
+        if (stuckFrames > STUCK_FRAMES) return fence(m);
+      }
+      return evade(g, fence(m), {
+        fence, except: target, avoid: retreat ? target : null,
+        noContact: target, noContactVel: bvel,
+      });
+    };
     /**
      * THE CONCH IS THE ONLY WAY OUT OF A TIDE-LOCKED BOSS, AND THIS VERB
      * COULD NOT PRESS IT. See docs/NEXT-SESSION.md S52: `b.spec.tideEscape`

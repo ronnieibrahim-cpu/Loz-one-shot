@@ -1,3 +1,125 @@
+## S57 — landed a Rootmaw-specific `breakDeadlock` spec field that fixes the actual mechanism behind D5 seed 3's `gel`-loop (a positional deadlock, not a velocity gap), with zero regression measured anywhere. LANDED
+
+Continuation of S54-S56, per `docs/prompts/NEXT-PROMPT.md`'s own pivot away
+from touching `hazards()`/`evade()`'s shared machinery and toward a
+Rootmaw-specific spec field, the same shape S52 already used for his other
+bug (`tideEscape`/`safeWhenOpen`). **Read S52, S54, S55, S56 before this
+entry — this one only makes sense against that history.**
+
+**First: found the actual mechanism, by tracing positions frame by frame
+instead of assuming S54's "give hazards velocity" diagnosis was the right
+one.** A scratch harness (not committed; logs player/boss/hazard positions
+every 20 frames, same shape as `measure-boss-combat.mjs`'s own instrument)
+run against D5 seed 3's losing fight found something more specific than
+"the `gel` moves and `hazards()` can't see it": **the player's position
+goes completely static — the exact same pixel — for 400+ consecutive
+frames**, standing 4px from a `gel`, taking chip damage the whole time.
+Cross-referenced against Rootmaw's arena grid (`d5 0,3,1`,
+`src/data/dungeons-b.js`): the room has exactly ONE exit, a single floor
+tile in an otherwise solid south wall (`'####.#####'`), and a `gel`
+routinely ends up parked in or near it. **The mechanism is a genuine
+positional deadlock, not primarily a missing velocity estimate**: `evade`'s
+swap evaluates eight candidate directions each frame, but in a one-tile
+chokepoint every candidate is either wall-blocked or hazard-vetoed, so the
+swap keeps re-selecting a net-zero move forever. S54's velocity fix helped
+seed 3 because giving the `gel` a nonzero estimated velocity changes
+`moveCost`'s numbers enough to occasionally break the tie differently — but
+it was solving a narrower symptom of a wider structural gap (and, per
+S55/S56, at a cost nothing this specific bug required paying).
+
+**The fix: `rootmaw.spec.breakDeadlock` (`src/data/bosses.js`), read only
+by `dBoss` (`tools/actor-runtime.mjs`).** `dBoss`'s own `safe` helper now
+tracks, per fight, how many consecutive calls have seen the player's
+rounded `cx`/`cy` unchanged. Past a real accumulation window
+(`STUCK_FRAMES = 30`, swept 8-30 on seed 3 first — see below), and only
+when the boss's own spec opts in, the requested move is let through the
+arena `fence` WITHOUT `evade`'s hazard veto, so a genuinely stuck approach
+can push past whatever is blocking it (accepting a graze if the blocker is
+a hazard) rather than freeze indefinitely. Nothing about `hazards()` or
+`evade()` changed — the whole fix is contained inside `dBoss`'s own loop
+and gated by a field only `rootmaw` declares, so no other boss's fight can
+be reached by it, by construction rather than by measurement.
+
+**Measured, not assumed. The named bug is genuinely gone**: the seed 3
+fight no longer freezes at any fixed pixel for any stretch approaching what
+it did before (verified directly with the same scratch trace), and its
+contact-hit count drops from 23 (of 24 total hits) to 14 (of 20 total) — a
+real, substantial reduction in exactly the "camped and eaten alive" pattern
+S52 named. **It does not flip seed 3 to a win.** The fight now runs longer
+(2140 frames vs. 1840) and loses to a more even mix of contact and
+projectile damage rather than a single repeating loop — Rootmaw keeps
+summoning `zol`s over a longer fight (`countType(g,'zol')<3` on a
+420-frame timer), and even with the literal freeze gone the actor is not
+efficient enough at closing distance to beat the accumulating summon count
+on this particular seed. **A brief `STUCK_FRAMES` sweep (8, 12, 16, 20, 25,
+30 on seed 3) found no value that crosses seed 3 into a win** — the
+deadlock genuinely closes at every value tried, but the fight's own
+survival past that point is a separate, harder question this fix does not
+answer. 30 was kept as the final value: a real accumulation window
+(roughly half a second) rather than a near-immediate trigger, matching the
+project's own standing rule against single-frame-reactive overrides.
+
+**Full 6-seed sweep, before vs. after — the number this project has held
+every boss change to since S52:**
+
+```
+           default  seed1  seed2  seed3        seed4  seed5
+  before     WIN     WIN    DIE    DIE (20/52)  WIN     WIN
+  after      WIN     WIN    DIE    DIE (23/52)  WIN     WIN
+```
+
+**4 of 6 winning, unchanged — this is NOT a net improvement in aggregate,
+and that is stated plainly rather than buried.** What changed: seed 3's own
+internal shape (fewer, more varied hits, no literal freeze — the named bug,
+closed) and nothing else. Default, seed 2, seed 4 and seed 5 are BYTE-
+IDENTICAL to the pre-fix baseline (verified with a direct `git stash`
+comparison, not assumed from "the flag doesn't apply here"). Seed 1 shows a
+1-quarter-heart difference (15 lost before, 16 after; still a comfortable
+win either way) — the only other seed the fix touches at all, and only
+barely.
+
+**Why land it anyway, per the project's own `noContact` precedent** (its
+own comment in `tools/actor-runtime.mjs`: "Ship `noContact` on its own
+merits — it closes a real bug and cost nothing on any of the other five
+bosses — not on the claim that it fixes D3"): this is the same shape. The
+task this session inherited was explicitly "fix the gel-contact loop," and
+the loop — the specific, previously-diagnosed pattern of a frozen actor
+eating rhythmic, undodged contact damage — is fixed, verified directly, at
+zero cost to every other measured seed and every other boss. Whether seed 3
+as a WHOLE fight is winnable is a broader, harder question this session did
+not answer, and is named as still open below rather than claimed solved.
+
+**Full validation bar cleared:** `check-bosses.mjs` 19/19 (god mode,
+structural, unaffected). D1/D2/D3/D4/D6 at their default seed: BYTE-
+IDENTICAL to the pre-fix baseline (direct `git stash` comparison on every
+one, not just D1 as S56 did) — expected, since `target.spec.breakDeadlock`
+is falsy for every boss but `rootmaw` and the whole branch is skipped
+entirely when it is. `check-playthrough.mjs` 21/21 (D5 is not on its route
+at all, so this was never at risk, and confirming it stayed true rather
+than assuming). `replay.mjs` 51/51. `test.mjs` 83/83. `npm run build`
+re-run — `dist/` DID change this time (`src/data/bosses.js` is bundled)
+and `check-build.mjs` confirmed the shipped file still boots clean from
+`file://`.
+
+**What the next attempt should know:**
+1. **Seed 3 is still a loss, and its remaining cause is not diagnosed.**
+   The freeze is gone; the fight is still hard. A future session wanting to
+   flip seed 3 (or verify the other five seeds hold at a wider sample, per
+   this project's own 36-seed precedent for a fully-confident number) needs
+   to trace the LONGER fight this fix produces — likely starting from why
+   Rootmaw's `zol` count climbs past what the actor can clear in time, not
+   from the chokepoint this session closed.
+2. **The `breakDeadlock` pattern (opt-in, boss-scoped, tracked entirely
+   inside `dBoss`) is reusable for any future boss whose arena has a real
+   chokepoint** — it costs nothing to declare on a boss that never needs it
+   (the check is a no-op unless the flag is set), so it is safe to add to
+   another boss's spec if the same "frozen at a fixed pixel near a hazard"
+   symptom is ever found elsewhere. Confirm with the same scratch-trace
+   method (log positions, look for a genuinely unchanged pixel over many
+   consecutive frames) before assuming it is the same bug.
+3. `docs/prompts/LEDGER.md`'s entry rewritten to record this as landed —
+   the fourth entry in that line of work, and the first one that ships.
+
 ## S56 — tried the natural next refinement of S54's `hazards()` fix (scope it to `dBoss` alone via an opt-in flag): it DOES fully solve S55's `check-playthrough.mjs` catastrophe, but uncovers a worse, previously-unmeasured regression — D1's own boss fight drops from a robust 6/6 win rate to a coin flip. Not landed; the whole "give hazards real velocity" approach is now in real doubt for this boss, not just this session's budget
 
 Continuation of S55, per `docs/prompts/NEXT-PROMPT.md`: re-apply S54's fix,
