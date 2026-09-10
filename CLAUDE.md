@@ -1,5 +1,16 @@
 # Oracle of Tides
 
+## How to talk to the person running these sessions
+
+Explain things in plain, everyday language. No code terms, no jargon, no
+file names or function names in chat replies unless they're asked for.
+Describe what changed in the game and what it means for them to see or do
+— the way you'd explain it to a friend who doesn't program — not how it
+was built. Save the technical detail for the code, the commit messages,
+and the docs in this repo, where it belongs; it does not belong in the
+chat reply. If a chat reply would otherwise read like an engineering
+report, rewrite it before sending.
+
 A personal, unpublished GBC-style Zelda. Two goals, in order:
 
 1. **It must look and feel like Oracle of Seasons / Ages.** Fidelity is the
