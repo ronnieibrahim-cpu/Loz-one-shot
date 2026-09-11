@@ -126,6 +126,45 @@ extract from it:
   Oracle series' own layout, on purpose. A previous session stripped it by
   misreading Goal 2 as a rule about names rather than about design. Do not
   "fix" it — see CLAUDE.md's own warning on this.
+- **A wall-aware `dBoss` retreat fix for D6 (Nereth)'s "shelled: wait out the
+  tell" freeze — four separate shapes across S62-S65, all rejected.** The
+  freeze itself: Nereth's arena has a genuine interior corner, the retreat
+  direction is computed once from pure geometry and never checked against
+  real wall collision, and once a hazard exists `evade`'s own cost search can
+  freely re-select the wall-blocked direction anyway (it has no concept of
+  walls) — this diagnosis is SOLID and not in question. Every attempt to fix
+  it: (1) S62, an ungated per-frame `canOccupy` override on the retreat
+  branch — flipped D1's clean win to a death and made D6 uniformly worse.
+  (2) S63, the same check gated behind a 30-frame accumulated-stall counter
+  and handed to `evade` as a pre-chosen base directive — zero regression, but
+  measured completely INERT (`evade`'s own hazard search silently swapped
+  back onto the wall the instant a real hazard existed). (3) S64, folding the
+  wall check into `fence` itself so `evade`'s hazard search can only ever
+  land on a wall-real candidate — genuinely changes the fight for the first
+  time (seed3 flips a loss to a win), but seed1 flips a clean win to a loss;
+  net aggregate unchanged, and turning any winning seed into a loss is
+  disqualifying on its own regardless of what else improves. (4) S65,
+  independent rebuild of S64's exact shape, confirming the same win/loss
+  pattern and then tracing seed1's flip to ground: at the exact frame the
+  fix's wall-check activates, it correctly eliminates the one dishonest
+  "cheap" candidate (moving into the wall) and leaves three genuinely
+  walkable options that score IDENTICALLY under `moveCost`'s own arithmetic
+  — `evade`'s existing keep-based tie-break (shared by every boss) picks the
+  same direction the UNFIXED freeze eventually stumbles into anyway, just
+  about 70 frames sooner, and that timing shift alone (not a wrong choice)
+  is what reshuffles the rest of the fight. **There is no narrow fix here —
+  the divergence is the fix correctly doing its job, not a defect in it.**
+  The only remaining lever is `evade`'s shared cost/tie-break function
+  itself, which is NOT boss-scoped (every boss fight runs through it) and
+  would need the full 36-seed zero-regression bar `docs/prompts/
+  NEXT-PROMPT.md` already sets aside as a separate, larger undertaking — not
+  a fifth variant of this same movement-layer idea. **Do not re-attempt a
+  `dBoss`/`fence`/`evade` movement-layer fix for this freeze again.** If D6
+  is revisited, the next angle is `bosses.js` itself — Nereth's phase-1
+  trident timing or arena geometry, changing whether the freeze-inducing
+  corner is reachable during the tell at all, rather than patching the
+  symptom inside `actor-runtime.mjs`. Full account: `docs/NEXT-SESSION.md`
+  S61 (diagnosis), S62, S63, S64, S65.
 - **S43's four story questions.** Does Nereth's motivation in `nerethIntro`
   pay off in `ending`? Yes, loosely — the ending's "boring, isn't it" line
   about the tamed sea echoes Nereth's own "the sea was told what to do...

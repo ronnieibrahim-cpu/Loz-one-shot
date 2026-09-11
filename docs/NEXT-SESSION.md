@@ -1,3 +1,138 @@
+## S65 — rebuilt S64's unified-fence fix, confirmed it reproduces the same win/loss pattern, traced seed1's new loss to the exact frame, and found there is no narrow fix — this is the fourth rejection on this mechanism, and it's a real ceiling
+
+Direct continuation of S64, whose own recommended next step was narrow and
+specific: S64's fix was never committed (reverted the same session it was
+built, per this project's own standard for a result that fails validation),
+so this session rebuilt it from S64's own account, confirmed the rebuild
+actually reproduces S64's measured table, then traced seed1's specific new
+loss the same rigorous way S62-S64 traced the freeze.
+
+**Rebuilt exactly as described: `nereth.spec.stuckRetreat = true`
+(`src/data/bosses.js`) plus a wall-aware `fence` inside `dBoss`
+(`tools/actor-runtime.mjs`).** `fence` now tracks `retreatStuckFrames` (same
+shape as `breakDeadlock`'s own `stuckFrames`, updated once per `safe()` call
+so the accumulation runs at real-frame cadence rather than once per
+candidate `evade` tries) and, once that counter passes 30, strips any bit
+from the mask it's given that fails `canStep` — the engine's own
+`canOccupy`, never re-derived, at the same 8px lookahead S62/S63 measured.
+No separate pre-chosen direction, exactly S64's shape: `evade`'s own
+candidate loop already calls `fence` on every option it tries, hazard search
+included, so this is one decision, not two systems overriding each other.
+
+**Confirmed the rebuild reproduces S64's own result before touching
+anything further.** D1's default seed is byte-identical to the documented
+baseline before and after the change (24/24 boss damage, 4 qh lost, 980
+frames, exact hit list) — direct `git stash` A/B, not memory — confirming
+the opt-in gate touches nothing outside Nereth. A fresh, re-confirmed D6
+baseline (fix disabled) matched S64's own documented baseline row exactly on
+every seed's win/loss and damage-dealt numbers. With the fix enabled, the
+full 6-seed sweep's WIN/LOSS PATTERN matches S64's finding exactly: **seed1
+flips from a clean win to a loss, seed3 flips from a loss to a clean win,
+every other seed (default, seed2, seed4, seed5) keeps its baseline win/loss
+outcome.** Exact frame counts and hit tallies on the unchanged seeds are
+NOT byte-identical to S64's own table (e.g. default stays a loss at 78/80
+boss damage either way, but the hit list's frame numbers differ) — expected
+and explicitly not a red flag: this file's own `evade()` header already
+documents that any behavior change here shifts WHEN the player re-enters
+range, and in a deterministic sim that shift cascades downstream even on a
+seed whose outcome doesn't change. The win/loss pattern is the thing that
+has to match to call this the same fix, and it does.
+
+**Traced seed1's new loss to the exact frame it splits from baseline, with a
+direct trace of both runs (temporary `console.log` in `evade`'s candidate
+loop and in `fence`'s wall-check branch, gated behind a `globalThis.__TRACE_D6`
+flag so it never fires outside a deliberate trace run; never touched the
+committed file for the tracing itself — same convention S57-S64 used).**
+Both runs are byte-identical through the fight's first four hits (frames
+699, 866, 1033, 1088 — the seed-independent phase-1 tax every seed eats,
+per S61). Immediately after, both runs enter the SAME freeze: the player is
+pinned in a corner and, every single frame from at least frame 1120 on,
+`evade`'s own candidate search picks "down" (cost 19.5, genuinely the
+cheapest hazard-dodge option in `moveCost`'s own arithmetic) over the raw
+retreat direction it was handed — and "down" is exactly the wall-blocked
+axis. **This is the identical mechanism S64 already diagnosed for the
+general case; nothing new here.** The two runs are indistinguishable up to
+this point.
+
+**They split at the exact frame `retreatStuckFrames` crosses 30 (frame
+1163 in this trace) — and at that frame, the wall-aware fence does not have
+a "bad ranking" to fix. It has no live alternative to rank against.**
+Stripping the wall-blocked bit from every DIRS8 candidate that contains it
+(down, right+down, left+down) leaves exactly three viable options: stand
+still (cost 30), go right (cost 30), go right+up (cost 30) — ALL THREE
+SCORE IDENTICALLY under `moveCost`, because none of them meaningfully
+changes the hazard geometry; only the (now-forbidden) "down" component ever
+did. `evade`'s existing keep-based tie-break — shared by every boss, not
+something scoped to this fix — picks "right" because it keeps the most of
+the original directive. **In baseline (no wall-check), the SAME freeze
+persists for roughly 70 more frames** (still picking the useless "down"
+every frame, hazard count rising as more shots spawn) **before the identical
+"right" choice finally wins the tie on its own**, once a additional hazard
+enters the cost calculation around frame 1235. The fix's only effect is
+timing: it reaches the same eventual direction about 70 frames sooner. That
+70-frame shift is what reshuffles the rest of the fight — the earlier
+escape puts the player at a different distance from the boss's ongoing
+attacks at every later decision point, which is the exact "a dodge changes
+WHEN, and that shift cascades" cost `evade()`'s own header has warned about
+since the function was written, just never previously measured landing on
+this specific boss and seed.
+
+**Conclusion: there is no narrow fix here, because there was nothing wrong
+to fix at the divergence frame.** The wall-aware fence did exactly its job
+— it eliminated the one candidate that was pure self-deception (a
+"cheap" dodge that goes nowhere) and left the actor to choose honestly among
+what was actually walkable. All three honest options were equally bad by
+`moveCost`'s own arithmetic, and the tie-break it already uses picked the
+same direction the un-fixed freeze eventually stumbles into anyway. The
+only lever left is `moveCost`'s tie-break itself or its cost weighting —
+and that is `evade`'s own shared cost function, run by every boss fight in
+the game, not a boss-scoped knob; changing it is explicitly the LARGER,
+separately-budgeted lever NEXT-PROMPT's own task 2 describes (a full
+session, the 36-seed zero-regression bar, `SHOT_HORIZON`'s own tuning
+history read first) — not a small addition to this thread.
+
+**This is the fourth rejection of a fix at this exact mechanism (S62
+ungated, S63 gated-but-inert, S64 unified-but-seed-trading, and this
+session's confirmed re-derivation of S64's own result with the seed-trade
+now fully explained rather than merely observed).** Per this project's own
+standing rule (NEXT-PROMPT's own decision tree, step 5) a fourth rejection
+in a row on the same boss is treated as a real signal, not a reason to try
+a fifth variant — and this session's tracing gives a concrete reason the
+signal is real: the divergence isn't a bug in the fix, it's the fix
+correctly doing its one job and exposing that `evade`'s shared tie-break has
+no opinion beyond "closest to what was asked," which is exactly as likely to
+help a seed as hurt it once wall-awareness removes the one dishonest option
+that used to hide the tie.
+
+**Recommendation for whoever picks this up next, stated as NEXT-PROMPT's own
+step 5 anticipated: leave D6's `evade`/`dBoss` movement-layer interaction
+alone entirely.** Either accept D6 at its documented 1/6 (this thread has
+now shown the freeze fix and the seed-trade are the SAME phenomenon, not two
+separable problems — fixing one necessarily risks the other via timing
+alone, not via a mistake in the fix), or look at `bosses.js` itself for a
+fix that doesn't touch movement at all: e.g. shape phase-1's own trident
+timing or Nereth's arena geometry so the corner this freeze depends on
+either doesn't exist or isn't reachable during the phase-1 tell, which
+would remove the PREMISE (a wall-locked retreat) rather than patch the
+symptom inside `dBoss`. Not attempted this session — it is a different kind
+of change (`bosses.js` AI/arena data, not `actor-runtime.mjs` movement
+logic) and deserves its own session rather than being bolted onto a fourth
+rejection.
+
+**Nothing shipped.** `git checkout --` on both touched files
+(`src/data/bosses.js`, `tools/actor-runtime.mjs`) after tracing, confirmed
+against `git diff` (empty) and a final re-measurement of D1's default seed
+and D6's default/seed1 seeds against their documented baselines (exact
+match on all three, reported above). The temporary trace scripts (a copy of
+`measure-boss-combat.mjs`'s own harness pointed at a `console.log`-gated
+`globalThis.__TRACE_D6`) are not committed, same convention as every prior
+session's scratch tracing.
+
+**Validation:** D1 default seed and D6 default/seed1/seed2/seed3/seed4/seed5
+all re-measured against documented baselines before and after every edit;
+`git status`/`git diff` empty at the end of the session. No `src/`
+behavior changed, so no rebuild is needed — `npm run build` was not re-run.
+
 ## S64 — found exactly why S63's fix was inert (two systems fighting over the same decision), built the unified version, and it genuinely changes the fight — but trades one win for a different one, so it's rejected too
 
 Direct continuation of S63, whose own open question was narrow and
