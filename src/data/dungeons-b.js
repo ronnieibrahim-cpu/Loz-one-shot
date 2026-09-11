@@ -1440,23 +1440,44 @@ export function installDungeonsB() {
         // whether the boss can be where the boss is put. Removing the run frees
         // his tile and opens the floor; it cannot make the fight harder,
         // because all it ever did was stand between the player and him.
+        //
+        // WIDENED TO size:[2,1] (docs/NEXT-SESSION.md S66): the single-screen
+        // hall pinned every real-combat fight's retreat against the east wall
+        // during Nereth's phase-1 tell — measured identical, seed-independent,
+        // at local (139,105) on every one of the standard 6 seeds, win or
+        // lose (S65). Four attempts to fix the retreat logic itself all
+        // traded one winnable seed for another (S62-S65) because the room
+        // simply did not have enough floor for a straight-line retreat to
+        // clear before hitting a wall. Doubling the hall removes the
+        // precondition instead of patching the symptom — this is now the
+        // only boss room in the game wider than one screen, a deliberate,
+        // known trade against the "boss fights don't scroll" convention
+        // every other fight here keeps, made because the alternative
+        // (patching `dBoss`'s movement logic) had already failed four times
+        // for a structural reason no movement-layer fix could address.
+        // Door stays at local cols 4-5, UNCHANGED, because Keep Gate below
+        // (`'1,3,2'`) has its own matching north gap at the same local
+        // columns and transitions are computed by local column position
+        // (`entryPos`, src/game/game.js) — moving the door here without
+        // moving Keep Gate's would sever the dungeon's own route.
+        size: [2, 1],
         map: [
-          '##########',
-          '#........#',
-          '#.9....9.#',
-          '#........#',
-          '#........#',
-          '#.9....9.#',
-          '#........#',
-          '####..####',
+          '####################',
+          '#..................#',
+          '#.9..............9.#',
+          '#..................#',
+          '#..................#',
+          '#.9..............9.#',
+          '#..................#',
+          '####..##############',
         ],
         noTide: true,
         entities: [
-          ['nereth', 4, 2],
+          ['nereth', 9, 2],
         ],
         script: {
           onEvent(game, name) {
-            if (name === 'bossDead') game.spawnPickup(80, 40, 'heartContainer', { grabDelay: 30 });
+            if (name === 'bossDead') game.spawnPickup(160, 40, 'heartContainer', { grabDelay: 30 });
           },
         },
       },

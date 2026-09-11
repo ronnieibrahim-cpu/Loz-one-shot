@@ -1,3 +1,112 @@
+## S66 — closed D6's wall-freeze from the room side instead of the movement layer: widened Nereth's arena, and it landed clean — 1/6 winning to 3/6, zero regressions
+
+Direct continuation of S65, whose own recommendation was to stop patching
+`dBoss`'s movement logic (a fourth attempt there had just been rejected, for
+a structural reason no fifth variant could fix) and instead look at
+`bosses.js`/the room itself, since the real cause was never a bad decision
+by the actor — it was Nereth's arena not having enough floor for a
+straight-line retreat to clear before hitting a wall.
+
+**Confirmed the room, not the AI, was the real constraint, before touching
+anything.** Added a temporary freeze-position scanner (gated behind
+`globalThis.__SCAN_FREEZE`, never touched the committed file for the scan
+itself) to `dBoss`'s "shelled: wait out the tell" branch and ran all 6
+standard seeds unmodified. Finding: **every single seed — including the one
+that already wins — freezes at the exact same local pixel, (139,105),
+repeatedly, starting at frame 480 and recurring every ~150-175 frames
+(matching the trident's own timer) for as long as phase 1 runs.** This
+happens before any seed's RNG has a chance to diverge, which is why it's
+identical across every seed rather than seed-dependent. (139,105) is the
+player's hitbox pressed flush against the room's own EAST interior wall
+boundary (`cx=139` puts the hitbox's right edge exactly at the wall tile) —
+confirms S62's original east-wall finding was the dominant case, not one of
+several equally-likely walls. The mechanism: Nereth spawns left-of-center in
+an 8-tile-wide interior, the player's natural approach-and-retreat rhythm
+biases them rightward over repeated cycles, and the room was never wide
+enough to absorb that drift before the retreat ran out of floor.
+
+**Fixed the actual constraint: widened Nereth's room from a single 10x8
+screen to a `size:[2,1]`, 20x8 hall — the room's own footprint, not the
+actor's decision-making.** `src/data/dungeons-b.js`'s `'1,3,1'`:
+- Door stays at local columns 4-5, byte-for-byte where it always was — Keep
+  Gate (`'1,3,2'`) below has its own matching gap at the same local columns,
+  and transitions are computed by local column position (`entryPos`,
+  `src/game/game.js`), so moving the door without moving Keep Gate's would
+  have severed the route. Left untouched on purpose.
+- New east half is fully walled on every outer edge (no accidental door),
+  confirmed safe against `'1,4,2'` The Crossed Shafts (which sits directly
+  below Nereth's new east half) independent of that: Crossed Shafts' own
+  north wall is unbroken solid (`'####################'`), so even a stray
+  gap on this side could never have opened an unintended connection — belt
+  and suspenders, both sides are closed.
+- Mirrored the original tide-pool decoration (two `9` tiles per long wall,
+  two tiles in) onto the new east wall as well, so the doubled hall doesn't
+  read as "the old room plus an empty box."
+- Nereth's own spawn moved from `(4,2)` to `(9,2)` — the new room's true
+  horizontal center — instead of leaving him off-centre in the enlarged
+  hall.
+- The `heartContainer` pickup on death moved from `(80,40)` to `(160,40)` —
+  it was hardcoded to the old room's own centre pixel (half of 160), and the
+  room is now 320px wide.
+
+**This is now the only boss room in the game bigger than one screen — a
+deliberate, named trade, not an oversight.** Every other boss arena in this
+game, and every boss fight in the source Oracle games, is a single static
+screen; this makes Nereth's the 10th wide room overall (`check-camera.mjs`,
+`check-wide-rooms.mjs`) and the first boss room to need camera-follow at
+all. Checked with the user before building it, specifically because it
+trades a Goal-1 fidelity convention (every boss fight is one screen) against
+fixing a real, structural fairness problem that four movement-layer attempts
+had already failed to solve — the user chose to accept the trade rather than
+keep the single-screen convention over a fight that reliably cost every
+player the same 9 quarter-hearts for a wall the retreat AI couldn't see.
+
+**Measured: D6 1 of 6 -> 3 of 6 winning, zero regressions.** Full standard
+sweep, before (documented baseline, S64/S65) -> after (this session):
+
+```
+          default  seed1  seed2  seed3  seed4  seed5
+before      L78/80  W80/80 L72/80 L78/80 L72/80 L60/80
+after       W80/80  W80/80 L54/80 L48/80 L72/80 W80/80
+```
+
+Default and seed5 flip from losses to clean wins; seed1 stays a win
+(unchanged); seed2/seed3/seed4 stay losses (seed2 and seed3's boss-damage
+numbers actually got worse in absolute terms — the fight runs differently
+now that there's more room to move in — but neither was a win to begin
+with, so this is not a regression under this project's own per-seed bar,
+only a different-shaped loss). **No seed that was winning before is losing
+now** — the bar every fix in this thread has been held to since S52, and the
+first time this specific mechanism has cleared it in five attempts (S62-S66).
+
+**Full validation, not just the fight itself** (a room/entity data change,
+unlike S62-S65's actor-only changes, touches real dungeon structure and
+needed the full relevant sweep): `node tools/validate.mjs` OK (563 tiles, 16
+maps, 273 rooms, only pre-existing unrelated warnings); `walk-dungeons.mjs`
+23/23 (d6 still 26 rooms, all reachable, boss room reachable);
+`check-dungeon-strands.mjs` OK (same 9 pre-existing stranded regions, no new
+one); `check-placement.mjs` 2/2 (Nereth's new spawn tile stands legally);
+`check-ground.mjs` 7/7; `check-wide-rooms.mjs` OK (10 wide rooms now, up
+from 9, new seam crossable); `check-camera.mjs` OK (10 rooms bigger than the
+view now, up from 9, follows correctly); `check-bosses.mjs` 19/19 (god mode,
+structure unaffected); `check-motion.mjs` 8/8; `check-overworld.mjs` 17/17;
+`check-gates.mjs` 26/26; `solve-switches.mjs` 9/9; `test.mjs` 83/83;
+`replay.mjs` 51/51; `check-playthrough.mjs` 21/21 (D6 isn't on the route,
+confirms zero effect on D1/D2). D1-D5's full 6-seed boss sweep re-measured
+and matches the documented roster exactly (d1 6/6, d2 3/6, d3 1/6, d4 6/6,
+d5 6/6) — confirms this is a D6-only change, as it should be given nothing
+outside `'1,3,1'`'s own room data was touched. `npm run build` re-run
+(`dist/oracle-of-tides.html`, 1474 KB, 56 modules) and `check-build.mjs`
+reconfirmed OK.
+
+**What's still open on D6:** 3 of 6, not 6 of 6. Seed2/3/4 still lose, and
+this session did not trace WHY — the room widening fixed the one
+seed-independent, universal freeze every fight paid identically; whatever
+seed2/3/4 still lose to is presumably RNG-dependent and has not been
+diagnosed. `docs/prompts/NEXT-PROMPT.md` names this as the natural next
+step for whoever picks D6 back up, using the same trace-before-diagnosing
+method this whole thread has used since S57.
+
 ## S65 — rebuilt S64's unified-fence fix, confirmed it reproduces the same win/loss pattern, traced seed1's new loss to the exact frame, and found there is no narrow fix — this is the fourth rejection on this mechanism, and it's a real ceiling
 
 Direct continuation of S64, whose own recommended next step was narrow and

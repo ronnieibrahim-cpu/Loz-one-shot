@@ -535,6 +535,31 @@ room in the game with a genuinely free down-right block, and
 checker results. D6's room count is unchanged at 26 — this widened an
 existing room rather than adding one.
 
+**Nereth's own boss room (`1,3,1`) widened to `size:[2,1]` (S66), for a
+fairness reason rather than a puzzle one.** Real-combat measurement (see
+"Boss winnability, measured" above and `docs/NEXT-SESSION.md` S61-S66) found
+every fight — wins included — froze the player against the room's own east
+wall during Nereth's phase-1 tell, because the single-screen arena did not
+have enough floor for the fight's own retreat rhythm to clear before hitting
+a wall; four sessions of movement-layer fixes (S62-S65) all failed to solve
+it without trading one seed's outcome for another, for a genuinely
+structural reason (documented in `docs/prompts/LEDGER.md`'s "Measured and
+rejected" section). Doubling the room removed the constraint outright: D6's
+real-combat win rate went from 1 of 6 standard seeds to 3 of 6, with zero
+seeds that were winning flipping to losing. The door stayed at its original
+local columns so Keep Gate's own connection needed no change, and the new
+half is walled off from Crossed Shafts below it on both sides. **This makes
+Nereth's the only boss room in the game — and the only boss room in either
+source Oracle game's own grammar — bigger than one screen.** That is a
+known, deliberate trade against the "every boss fight is a static single
+screen" convention every other fight here keeps, confirmed with the user
+before building it, made because the alternative (a fifth movement-layer
+patch) had already failed four times. D6's room count is unchanged at 26 —
+same convention as Tideshade Hall above, this widened an existing room
+rather than adding one. **Still open:** D6 is 3 of 6, not 6 of 6 — seed2/3/4
+still lose to a cause nobody has traced yet, presumably RNG-dependent since
+the seed-independent freeze this session fixed is now gone.
+
 ---
 
 ## What no dungeon has yet, and it is the same gap in all of them
