@@ -9,7 +9,7 @@ its name) — S61 found one branch that looked relevant and was a week stale;
 don't repeat that check by hand if a fresher one already did it, but don't
 skip it either.
 
-## The honest state of the roster (read `docs/NEXT-SESSION.md` S62, then S61, then S59, in full first)
+## The honest state of the roster (read `docs/NEXT-SESSION.md` S63, then S62, then S61, then S59, in full first)
 
 Standard 6-seed sample, `tools/measure-boss-combat.mjs <d> --seed=N`, in-order
 health, no god mode:
@@ -39,87 +39,116 @@ claim does not hold as stated for EITHER dungeon, in two DIFFERENT ways:**
   (The `gel` chase-contact piece is the ALREADY-DIAGNOSED, ALREADY-TRIED-
   AND-REVERTED `hazards()`-velocity gap — S54-S56, see
   `docs/prompts/LEDGER.md`'s "Measured and rejected" — do not re-open it.)
-- **D6 (Nereth): mechanism now CONFIRMED (S62), one fix shape already tried
-  and rejected.** Every one of the 6 standard seeds, WINS INCLUDED, eats an
-  identical opening tax — three `isProjectile` hits, 3 qh each (9 of 32,
-  28% of the whole fight), at the same three frames, same distance, every
-  single time, because nothing about it involves RNG (it's Nereth's
-  deterministic phase-1 trident spread). S61 found the player frozen
-  stationary for 220+ frames while it happens; S62's per-frame trace
-  (temporary instrumentation on a scratch copy of `actor-runtime.mjs`, not
-  committed) found WHY: it is neither of the two mechanisms S61 left open.
-  **The retreat direction is computed once from pure geometry ("away from
-  the boss") and is never checked against real wall collision before being
-  committed to.** `fence` doesn't catch it (it only guards the room's four
-  OUTER edges via a pixel margin off `room.pw`/`room.ph`, and the player
-  was one pixel inside that margin — the real wall it's pinned against is
-  an INTERIOR one `fence` has no way to see). `evade` doesn't catch it
-  either (its hazard list is empty until the boss's own attack windup
-  fires, so its early-return hands the blocked direction through
-  unexamined for the entire wait). Confirmed against the real room grid
-  (`src/data/dungeons-b.js`, room `'1,3,1'`): the player's hitbox sits
-  flush against a real wall the whole freeze.
-  **S62 tried the direct fix — a `canOccupy`-based check (the engine's own
-  function, never re-derived) on the retreat direction, falling back to a
-  single axis when the diagonal is blocked — and it was a clear regression,
-  reverted in full:** D1's default seed, a rock-solid 6/6 for this entire
-  thread, flipped to PLAYER DIED; D6 got uniformly WORSE (all 6 seeds
-  converged to an identical, faster loss). **Do not re-attempt this exact
-  shape** (a per-frame geometric override with no accumulated-evidence
-  gate) — S62's own account gives the likely reason (a short lookahead
-  reads as "blocked" near ordinary room corners far more often than the one
-  genuine dead-end it targeted, substituting a worse retreat on completely
-  normal frames) and a concretely different shape to try instead: gate the
-  same `canOccupy` check behind an ACCUMULATED STALL counter (the same
-  `stuckFrames`/`stallFrames` shape `breakDeadlock` already uses safely in
-  this exact file, S57/S58) rather than re-checking geometry every single
-  frame regardless of whether anything is actually wrong. This is still
-  likely a narrower, lower-risk bug than "fix evade's general dodge logic"
-  — it lives in one `dBoss` branch, not `SHOT_HORIZON`/`moveCost` — but S62
-  proved it is not a free, obvious fix either.
-- **D2 was not traced this session.** Don't assume it matches either shape
-  above without checking — S59's "one shared cause" framing already turned
-  out to average over two different mechanisms once two of its three
-  dungeons were actually looked at separately.
+- **D6 (Nereth): the WHY is confirmed (S62), a safe-but-inert fix was built
+  and rejected on those grounds (S63), and there is now a specific, narrow
+  question to answer before trying again.** Every one of the 6 standard
+  seeds, WINS INCLUDED, eats an identical opening tax — three `isProjectile`
+  hits, 3 qh each (9 of 32, 28% of the whole fight), at the same three
+  frames, same distance, every single time, because nothing about it
+  involves RNG (it's Nereth's deterministic phase-1 trident spread). S61
+  found the player frozen stationary for 220+ frames while it happens; S62
+  found why: **the retreat direction is computed once from pure geometry
+  ("away from the boss") and is never checked against real wall collision
+  before being committed to** — neither `fence` (only guards the room's
+  four OUTER edges) nor `evade` (its hazard list is empty until the boss's
+  attack windup fires, so it has nothing to object with) ever catches it.
+  Confirmed against the real room grid: the player is cornered — blocked by
+  a wall on BOTH the direct retreat axis and, it turns out, its own
+  individual components too (S63 found this is a genuine corner, not a
+  single blocked side).
+  **S62's ungated fix regressed D1 outright — rejected.** **S63 built the
+  safe, opt-in, accumulated-stall-gated version S62 itself recommended
+  (a new `nereth.spec.stuckRetreat` flag, `breakDeadlock`'s own
+  `stuckFrames` shape, an 8-direction search once S62's narrower 2-direction
+  version was found to stay silently inert at a true corner) — measured
+  ZERO regression (D1 and the full D6 6-seed sweep both byte-identical to
+  baseline, confirmed by direct `git stash` A/B, not memory) but ALSO ZERO
+  EFFECT. Not shipped — an inert fix adds real complexity for no measured
+  benefit, so it was reverted rather than left in the tree unused.**
+  **The reason it's inert is now the specific, narrow next question, and
+  it is NOT "which direction to pick" anymore — S63 already fixed that.**
+  Traced the player's own fixed-point position accumulator (`fy`, the real
+  sub-pixel value position is built from) through the entire stuck window:
+  it moved a total of ~242 of a 256-per-pixel unit across ~250 frames of a
+  direction (`up`) the fix had correctly selected and that a static
+  `canOccupy` check calls walkable — roughly ONE frame's worth of drift,
+  not what 30+ frames of genuinely free 1px/frame movement would produce.
+  Something separate from "which direction is correct" is refusing the
+  actual per-frame movement almost entirely, even once the right direction
+  is chosen. Two specific, NOT YET CHECKED candidates, in priority order:
+  (a) `canOccupy` also checks other SOLID entities in the room (CLAUDE.md's
+  "a solid entity is solid now" rule) — the stall-gated fix's one-shot 8px
+  probe takes that check at a single instant, which could differ from what
+  the REAL per-frame `moveEntity` sees if anything solid in the room moves
+  between the probe and the actual resolution; (b) the probe distance
+  itself (8px) may never actually leave the player's CURRENT tile from this
+  exact position (S63 found the hitbox has ~9px of clearance on the tested
+  axis before the probe distance would even reach the tile boundary), which
+  would mean "canStep says walkable" was never really testing "leads
+  somewhere new" here — a probe-methodology flaw independent of whatever
+  else is blocking real movement.
+- **D2 was not traced this session (or last).** Don't assume it matches
+  either D3's or D6's shape without checking — S59's "one shared cause"
+  framing already turned out to average over two different mechanisms once
+  two of its three dungeons were actually looked at separately.
 
-Full account, including the exact damage-log tables and the position trace,
-in `docs/NEXT-SESSION.md` S61. S59's own entry (still worth reading for the
-rejected `breakDeadlock`-on-Nereth experiment) is now superseded on the
-"shared cause" claim specifically — everything else in it stands.
+Full account, including the exact damage-log tables, the position traces,
+and the fixed-point accumulator measurement, in `docs/NEXT-SESSION.md` S61,
+S62 and S63 — read all three, in that order; each is the direct, narrower
+continuation of the one before it, not a restart. S59's own entry (still
+worth reading for the rejected `breakDeadlock`-on-Nereth experiment) is now
+superseded on the "shared cause" claim specifically — everything else in it
+stands.
 
 ## Task: your choice, in priority order
 
-**1. (Recommended, better-scoped than before) Fix D6's freeze using the
-accumulated-stall shape, not the per-frame geometric override S62 already
-ruled out.** The diagnosis is DONE (S62) — do not re-trace it. The one
-thing S62 didn't do is ship a working fix:
+**1. (Recommended, narrower than ever) Answer S63's ONE open question
+before touching `dBoss` again: does the REAL per-frame `moveEntity` call —
+not a reimplemented static `canOccupy` probe — actually refuse to move the
+player from the exact frozen position, and if so, why?** The direction-
+selection problem is SOLVED (S63's 8-direction, away-ranked search); do not
+rebuild it. The safety mechanism is SOLVED (opt-in flag + accumulated
+stall, proven zero-regression); do not rebuild that either. The only
+missing piece is why a direction a static check calls safe doesn't actually
+move the player in practice:
 
-1. Read `docs/NEXT-SESSION.md` S62 in full before writing any code — it
-   names the exact mechanism, the exact fix shape already tried, and the
-   exact reason (best guess, not fully re-verified) that shape regressed
-   D1. Re-deriving any of this by re-tracing is wasted effort the diagnosis
-   already paid for.
-2. Implement the retreat-direction `canOccupy` check (same as S62's) but
-   GATED behind an accumulated-stall counter scoped to the "shelled: wait
-   out the tell" branch specifically — only override the geometric retreat
-   once the player's position has gone ~30 frames without changing while
-   shelled, mirroring `breakDeadlock`'s own `stuckFrames` shape exactly
-   (same file, same verb, already proven safe across D1-D6 twice, S57/S58).
-   Do not invent a new gating shape — reuse that one's constants and logic
-   pattern unless you have a specific, measured reason not to.
-3. Validate the FULL six-dungeon, 6-seed sweep before trusting anything —
-   S62's fix looked locally reasonable and broke a dungeon it had no
-   business touching. Check D1 specifically first (fastest way to catch
-   the same class of regression S62 hit), then the rest.
-4. Re-verify D3 and D6's per-seed damage-source breakdowns AFTER the fix
+1. Read `docs/NEXT-SESSION.md` S61, S62 AND S63 in full before writing any
+   code. Each is the direct continuation of the one before it; skipping one
+   means re-deriving work that is already paid for.
+2. Trace the REAL movement resolution directly rather than reasoning about
+   `canOccupy` from outside it — e.g., log `Entity.moveEntity`'s own
+   `hitX`/`hitY` return values for the player at this exact position and
+   direction (temporary instrumentation, same scratch-then-real method as
+   every session in this thread), or check whether any OTHER entity's
+   `solid` rect overlaps the path during the stuck window. Confirm the
+   mechanism before designing anything — this thread's own recurring lesson
+   (S57, S58, S59, S61, S62) is that guessing here has cost a session every
+   single time it happened.
+3. Separately, sanity-check S63's `canStep` probe DISTANCE (currently 8px)
+   against the actual tile geometry at the frozen position — if 8px never
+   crosses a tile boundary from there, fix the probe (a full 16px, or a
+   step that explicitly checks the destination tile rather than a fixed
+   pixel offset) before concluding the direction-selection logic itself is
+   sound.
+4. Once the real blocker is identified, THEN decide whether S63's already-
+   built stall-gated redirect (revert it from git history — `git log`
+   for the S63 commit, or rebuild from this file's account) needs a small
+   adjustment or a different approach entirely. Do not guess a fix before
+   this step is done — that is exactly the mistake this task description
+   is trying to prevent for a fourth time.
+5. Validate the FULL six-dungeon, 6-seed sweep before trusting anything,
+   D1 first (fastest way to catch the class of regression S62 hit, even
+   though S63's gating already made that specific regression structurally
+   impossible — a different change could reintroduce a different one).
+6. Re-verify D3 and D6's per-seed damage-source breakdowns AFTER the fix
    (not just win/loss counts) — S61's tables are the before-picture;
-   confirm the fix actually changes the mechanism it claims to, not just
-   the aggregate score by coincidence.
-5. If the accumulated-stall version ALSO regresses something: stop, revert,
-   document precisely why (per-seed numbers, which dungeon, which frame),
-   and hand it off rather than trying a third variant in the same session
-   — two rejected shapes in one sitting is a sign the branch itself needs
-   fresh eyes, not a third guess under time pressure.
+   confirm the fix actually changes the mechanism it claims to.
+7. If this ALSO turns out inert or regresses something: stop, revert,
+   document precisely why, and hand it off rather than guessing a fourth
+   time in the same session — three attempts on one branch (S62's ungated
+   version, S63's gated-but-inert version, and whatever this session tries)
+   without a shipped result is a real signal the next session should try a
+   genuinely different angle, not a fourth variant of the same one.
 
 **2. (The bigger, riskier lever, if you have a full session for it and
 option 1 turns out to need it) Teach `evade` to dodge a telegraphed
@@ -184,11 +213,21 @@ unless a session is explicitly budgeted for it.
   (non-projectile) enemies**, in any shape (route-wide or `dBoss`-scoped) —
   tried three times (S54-S56), reverted every time; see
   `docs/prompts/LEDGER.md`.
-- **Do not re-attempt a per-frame, ungated `canOccupy` override on D6's
+- **Do not re-attempt a per-frame, UNGATED `canOccupy` override on D6's
   "shelled: wait out the tell" retreat direction.** S62 tried exactly this
   and it flipped D1's default seed from a clean win to a loss while making
-  D6 uniformly worse. The accumulated-stall version (task 1 above) is a
-  different, not-yet-tried shape — this line rules out only the ungated one.
+  D6 uniformly worse.
+- **Do not re-attempt an accumulated-stall-gated `canOccupy` redirect that
+  only tries `backAlong`/`backPerp` individually.** S63 tried exactly this
+  first and found it stays silently inert at a genuine corner (both single
+  axes blocked, not just the diagonal) — it needs the full 8-direction
+  search S63 built next, not this narrower version.
+- **Do not re-attempt the FULL S63 version (opt-in flag + stall gate +
+  8-direction away-ranked search) unchanged, expecting a different result.**
+  It is confirmed zero-regression but also confirmed INERT — the player's
+  own position accumulator barely moves even once "up" is selected and
+  approved. Something else in the real movement path is refusing it; find
+  that first (task 1 above) before re-shipping this exact logic.
 - **Routing D3 onward** (needs the Coastwise Chain first) remains untouched.
 
 ## Habits worth carrying in
@@ -197,9 +236,23 @@ unless a session is explicitly budgeted for it.
   session's diagnosis before building on it.** S61's whole contribution was
   re-tracing S59's "shared cause" claim rather than accepting it, and found
   it didn't hold for either dungeon checked, in two different ways. Every
-  session in this thread (S57, S58, S59, S61, S62) found a mechanism at
-  least somewhat different from what the session before it expected going
-  in.
+  session in this thread (S57, S58, S59, S61, S62, S63) found a mechanism
+  at least somewhat different from what the session before it expected
+  going in.
+- **Zero regression is necessary, not sufficient — an inert fix is not a
+  finished fix, and "it didn't break anything" is not the same claim as
+  "it works."** S63 built exactly the fix S62 recommended, validated it
+  perfectly clean, and it turned out to change nothing at all. Measure the
+  THING THE FIX WAS FOR (here: does the player actually move, does the hit
+  count go down), not only the safety bar — a change can clear the safety
+  bar by doing nothing.
+- **A reimplemented check is not the real thing, even when it calls the
+  real function.** S63's `canStep` called the engine's own `canOccupy` (the
+  sanctioned pattern, not a re-derived rule) but still diverged from what
+  actually happens during real per-frame movement, because it asked the
+  question at a single static instant with a guessed probe distance rather
+  than observing the real, live movement resolution. Calling the right
+  function is not the same as asking it the right question.
 - **A fix that only touches ONE named branch can still regress a dungeon
   that never looked related — measure the OTHER five dungeons, not just
   the one you're fixing, even when the change looks obviously scoped.**

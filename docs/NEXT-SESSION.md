@@ -1,3 +1,111 @@
+## S63 — built S62's recommended fix (opt-in, accumulated-stall gated, exactly like `breakDeadlock`) properly this time: zero regression, but found the fix is INERT — a new, deeper puzzle under the one S62 solved
+
+Direct continuation of S62, whose own recommended next step was explicit:
+gate the same `canOccupy`-based retreat check behind an accumulated-stall
+counter (`stuckFrames`/`stallFrames`'s own shape) and an opt-in per-boss
+spec flag, rather than S62's ungated, every-shelled-boss version that
+regressed D1. Built exactly that.
+
+**The safety design worked as intended.** Added `nereth.spec.stuckRetreat
+= true` (`src/data/bosses.js`) — a NEW, opt-in flag, unset on every other
+boss, mirroring `rootmaw.spec.breakDeadlock`'s own precedent exactly. In
+`tools/actor-runtime.mjs`'s `dBoss`, the "shelled: wait out the tell"
+retreat branch now tracks `retreatStuckFrames` (rounded player position
+unchanged, reset otherwise — identical shape to `stuckFrames`) and only
+consults `canStep` (the engine's own `canOccupy`, never re-derived) once
+that counter passes 30 frames, exactly `STUCK_FRAMES`'s own threshold.
+**D1's default seed is confirmed byte-identical to its documented baseline
+after this change** (24/24 boss damage, 4 qh lost, 980 frames) — the
+opt-in flag means the new code path cannot execute for Gohmaraq at all,
+which is exactly the point of gating it that way rather than S62's
+unconditional version.
+
+**First version of the actual redirect logic was too narrow and stayed
+silently inert — caught by tracing, not assumed fixed.** The first cut only
+tried `backAlong` and `backPerp` individually when the full diagonal was
+blocked (S62's own suggestion, read literally). Direct trace (temporary
+`console.log`, same scratch-then-real-file method as S61/S62) at the exact
+freeze position found `canStep` returning FALSE for the diagonal AND both
+of its own individual axes — Nereth's arena pins the player in a genuine
+CORNER (blocked to the right by the east wall, blocked below by the south
+wall's solid stretch outside the door), not a single blocked side, so
+neither axis alone escapes either. Widened the search to all eight
+directions `evade` itself would consider (`DIRS8`, already in scope),
+ranked by how much each still retreats (dot product against the
+away-from-boss vector) rather than taking the first walkable one. This
+DID find a nominally walkable direction (`up`, scored -7 — not a great
+retreat, but genuinely walkable per a static `canOccupy` check at an 8px
+lookahead) and started selecting it once the stall threshold was crossed.
+
+**Full 6-seed sweep with the widened version: BYTE-IDENTICAL to the
+pre-fix baseline on every single seed** (default 78/80, seed1 WIN 80/80,
+seed2 72/80, seed3 78/80, seed4 72/80, seed5 60/80 — same frame counts,
+same hit lists, same everything). Zero regression, confirmed by direct A/B
+(`git stash`/`git stash pop` around a fresh sweep) rather than trusted from
+memory. **But also zero improvement — the fix does not change the fight at
+all**, which needed its own explanation rather than being accepted as "safe
+so ship it."
+
+**Traced why, and found something odder than "the direction is wrong": the
+selected direction (`up`) IS accepted by the stall-gated override — but
+real per-frame movement in that direction barely happens at all.** Sampled
+the player's own fixed-point `fy` accumulator (the sub-pixel value
+`Player`'s real position is built from, per CLAUDE.md's 8.8 fixed-point
+rule) every 5 real game frames through the entire ~250-frame stuck window:
+it moves a total of 242 of a 256-per-pixel unit across the WHOLE window —
+roughly one frame's worth of drift, not the ~7000+ units 30+ frames of a
+genuinely free 1px/frame walk would accumulate. So the stall-gated
+override IS firing (confirmed: `retreatStuckFrames` counts up every frame,
+`canStep(BIT.up)` returns true, `up` is selected and handed to `safe`/
+`evade`), and `evade` has no hazard to object with (list still empty) — but
+whatever actually resolves player movement each frame is refusing it
+almost completely anyway, for a candidate a STATIC `canOccupy` check calls
+walkable.
+
+**Not root-caused further this session — the honest state is a real
+open question, not a hunch.** `canOccupy` (`src/game/entity.js`) checks
+both tile solidity AND other SOLID ENTITIES in the room (`o.solid`, per
+CLAUDE.md's own "a solid entity is solid now" rule) — a check `canStep`'s
+one-shot 8px-ahead probe necessarily takes at a single instant, which could
+differ from what the REAL per-frame `moveEntity` sees if anything solid in
+that room is itself moving between when the probe is taken and when actual
+movement resolves. Not confirmed; a plausible next lead, not a diagnosis.
+Reverted `canStep`'s own probe distance is also suspect on its own terms:
+8px from a position already 9px clear of the next tile boundary on the
+relevant axis never actually crosses into new territory, so "canStep says
+walkable" here may just mean "the current tile has room to wobble in," not
+"this direction genuinely leads somewhere new" — a probe-distance flaw
+independent of whatever is separately blocking the real per-frame movement.
+
+**Reverted in full — an inert fix is not a fix, and shipping unused
+complexity (a new spec flag, a new stall counter, a new 8-direction search)
+for zero measured benefit is worse than shipping nothing.** `git checkout
+--` on all three touched files (`src/data/bosses.js`,
+`tools/actor-runtime.mjs`, and a temporary `tools/measure-boss-combat.mjs`
+console listener used only for tracing). D1 and D6 both re-confirmed at
+their exact documented baselines after the revert.
+
+**Validation:** D1 and D6 default-seed re-measurements match documented
+baselines exactly, before and after every edit in this session. Full
+6-seed D6 sweep A/B'd against a clean `git stash` baseline (not memory).
+`git status`/`git diff` empty at the end of the session. `npm run test`/
+`check-playthrough`/`replay` were not re-run since the tree is byte-
+identical to the already-green S62 commit.
+
+**Recommended next step, concretely scoped smaller than "make the fix
+work":** before touching the fix again, answer the one open question this
+session leaves: does the REAL per-frame `moveEntity` call (not a
+reimplemented static probe) actually refuse to move the player up from
+this exact position, and if so, WHY — is another entity's `solid` rect in
+the way at some point during the window, is the probe distance simply
+wrong (try a 1px probe matching the real per-frame step, or better, call
+`moveEntity` itself in a disposable clone of the game state rather than
+re-deriving the question with `canOccupy`), or is something entirely
+unrelated (hurtTime, a knockback lock, `frozen`) suppressing input
+independent of direction. Answer that FIRST, in isolation, before touching
+`dBoss` again — S61, S62 and S63 have each found the mechanism one layer
+deeper than the session before it expected, and this is the next layer.
+
 ## S62 — pinned down D6's freeze exactly (a real wall, not `fence` or `evade`), tried the obvious fix, and measured it into the ground: reverted, D1 flipped from a clean win to a loss
 
 Direct continuation of S61, whose one open question was: is the D6 freeze
