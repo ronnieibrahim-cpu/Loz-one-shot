@@ -1,59 +1,55 @@
-# Next session — build tools/shoot-sprites.mjs
+# Next session — tag sprites-trade.js's provenance
 
 ## Read first
 - `docs/prompts/CHARTER.md` — the standing rules for every session; run it
   verbatim before reading anything else here.
-- `docs/prompts/STATE.md` — objective #2 (art-provenance), its file
-  allowlist, and the GENERATED-vs-hand-authored split for the twelve
-  `sprites-*.js` files. Read that split before touching any of them.
-- `CLAUDE.md`'s "Extraction lands in a generated file" rule and its table of
-  which `sprites-*.js` file belongs to which `tools/rip-*.py` script.
-- `tools/shoot-rooms.mjs` and `tools/shoot-player.mjs` for the existing
-  pattern: a headless server + Playwright page that boots the real game and
-  reads its actual sprite data, rather than a second renderer.
+- `docs/prompts/STATE.md` — objective #2 (art-provenance) and its file
+  allowlist's generated-vs-hand-authored split.
+- The "S70" entry in `docs/NEXT-SESSION.md` (search for "built the sprite
+  contact-sheet tool") for the exact method used on `sprites-bosses.js`: one
+  short comment line inserted directly above each entry's own key line —
+  not a shared block above a group, because `check-drift.mjs`'s own
+  comment-reader only looks at the line(s) immediately preceding one
+  entry, and a multi-line sprite object always has its own prior entry's
+  closing line in the way. That entry also has two findings about the
+  shared entry-regex worth knowing before trusting a raw grep count again.
+- `src/data/sprites-trade.js`'s file header — it already states its own
+  provenance in one sentence.
 
 ## Why this, now
-STATE.md's objective of record is #2, art-provenance, which has two parts:
-tagging every sprite entry with how it was made, and a contact-sheet tool
-to look at the result. The tagging half needs real per-file research (which
-sheet, which cell, or a written reason none exists) that does not fit in
-one session alongside a new tool — attempting both in one sitting is how a
-detour eats the session. This prompt is scoped to the tool alone.
+STATE.md's objective of record is #2, art-provenance: every sprite in
+`src/data/sprites-*.js` carries a provenance tag. `check-drift.mjs` reports
+`drawn: 59` (was 10) after last session tagged all 49 boss/miniboss
+entries. `sprites-trade.js` is next because it is the same shape of task —
+its header says "HAND-DRAWN, and deliberately so" for all eleven Coastwise
+Chain objects, uniformly, with a written reason (importing Seasons' own
+trade-item art would import that game's design) — so, like bosses, this
+needs no per-entry research, only per-entry insertion.
 
 ## The task
-Write `tools/shoot-sprites.mjs`: one contact-sheet PNG of every sprite in
-every `src/data/sprites-*.js` file, every enemy's animation frames (walk at
-minimum; attack/hurt/death wherever they exist under the `<name>_atk`-style
-keys `check-drift.mjs`'s enemy-roster metric already looks for), and every
-NPC, rendered at both 1x and 3x scale. Load the real sprite data through the
-game itself (Playwright against the built page, the way `shoot-rooms.mjs`
-does), not a reimplementation of the sprite decoder — a second decoder can
-drift from the real one silently. Lay sprites out in a grid with their data
-key as a label; group by source file. Write output PNGs under `tools/shots/`
-(gitignored, same as every other `shoot-*` tool).
-
-Do not add provenance tags to any sprite file this session — that is the
-next slice, and STATE.md's allowlist marks six of the twelve files as
-ripper-generated, where a tag has to go into the Python ripper and get
-re-emitted rather than hand-edited into the `.js`.
+Tag every entry in `src/data/sprites-trade.js` (`TRADE_ART`) `drawn` in
+its own comment line, directly above that entry's key. Most entries
+already carry a flavor comment immediately above them (see `i_t_float` at
+the top of the file) — add the tag as one more line in that same block
+rather than deleting the existing prose; `check-drift.mjs`'s comment
+reader collects every directly-adjacent comment line and only needs the
+word `drawn` to appear once, unambiguously, somewhere in the combined
+text.
 
 ## Done means
-- `node tools/shoot-sprites.mjs` runs and produces at least one contact-sheet
-  PNG covering all twelve `sprites-*.js` files, with every enemy's available
-  animation states and every NPC visibly present and labelled.
-- Look at the output: every sprite must be legible at 3x (not a blank cell,
-  not a decode error swallowed into a blank tile — `test.mjs`'s existing
-  "art coverage" check already proves 0 unauthored names, so a blank cell
-  here would mean the new tool's own rendering is wrong, not the data).
-- `node tools/test.mjs` still passes (no engine code touched).
+- `node tools/check-drift.mjs`'s `drawn` count reads 70 (59 + 11).
+- `node --check src/data/sprites-trade.js` and `node tools/validate.mjs`
+  both pass (comment-only change, but confirm rather than assume).
+- `node tools/test.mjs` passes.
+- `npm run build` re-run, `dist/oracle-of-tides.html` committed.
 - STATE.md gets one new session-log row.
-- `npm run build` re-run, `dist/oracle-of-tides.html` committed only if
-  `src/` changed (it shouldn't for a new `tools/` script — confirm before
-  claiming this bullet, don't assume).
 
 ## Out of scope
-- Tagging any sprite with `extracted`/`derived`/`drawn` this session.
-- Hand-editing any of the six ripper-generated `sprites-*.js` files.
-- Touching `docs/DUNGEON-STATUS.md` or anything dungeon-related — that
-  objective is closed; this is a new one.
-- Building a `rip-bosses.py` (that is rotation #3, not this one).
+- Any other sprite file this session — `sprites-gear.js` is NOT uniform
+  (its own header says some icons are measured against extracted art and
+  others are original), and needs real per-entry judgement rather than one
+  blanket reason; leave it for its own session.
+- Any of the six ripper-generated `sprites-*.js` files — a tag there goes
+  into the Python ripper, never a hand-edit.
+- Re-litigating whether `check-drift.mjs`'s shared entry-regex should be
+  fixed for the palette-array and font-glyph false positives S70 found.

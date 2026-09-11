@@ -1,3 +1,85 @@
+## S70 — built the sprite contact-sheet tool, then tagged all 49 boss/miniboss sprites `drawn` in the same session
+
+`docs/prompts/NEXT-PROMPT.md` scoped this to `tools/shoot-sprites.mjs`
+alone and explicitly deferred tagging to a later session. Built the tool,
+then found `sprites-bosses.js` was a clean, zero-research, same-session
+extension of the exact same objective rather than a detour — its own file
+header already says "Drawn by hand, cell by cell" and CLAUDE.md already
+documents no `rip-bosses.py` exists, so every one of its 49 entries has one
+uniform, already-written, honest answer. Did both.
+
+**`tools/shoot-sprites.mjs`.** Loads the real `sprites` Sheet singleton by
+`import()`ing `/src/gfx/art.js` inside the page — the exact module URL
+`main.js` already loaded, so this reads the same bake cache the game
+draws from, not a second decoder. Entry names come from each file's own
+text (the same two-space-indent line shape `check-drift.mjs`'s census
+already reads), deduped per file and cross-checked against the live
+registry so a name that never actually got registered is reported, not
+silently skipped or drawn as a blank.
+
+**Two real gotchas found writing it, both left as findings rather than
+fixed (out of scope, no detour token spent):**
+1. The shared entry-line regex (two spaces, `name:` then `{`/`` ` ``/`[`)
+   matches more than sprite art in at least two files. `sprites-npcs.js`
+   (and presumably its siblings) registers a same-named PALETTE array
+   later in the same file (`npc_child: ['#ffd3...', ...]`), which the
+   regex matches identically — deduping by name fixed this tool's own
+   double-draws, dropping its "entries found" count from 18 to 9 for that
+   one file, but `check-drift.mjs`'s own sprite-provenance total (561) is
+   built from the same regex WITHOUT dedup and likely over-counts by the
+   same mechanism across every file that pairs art with a same-named
+   palette table.
+2. `sprites-title.js` mixes real sprite entries (`title_splash`,
+   `title_caption`, `title_sub`, `title_wordmark`, five more) with a
+   26-letter bitmap FONT GLYPH table (`A:`, `B:`, ... each an array of
+   row strings, for the title screen's custom lettering — the `GLYPHS`
+   table `check-text.mjs` already tests) and a small layout/geometry
+   object (`splash: {w,h}`, `caption: {x,y}`, etc.) — none of which are
+   sprites at all, registered through the Sheet or otherwise. 31 of that
+   file's ~38 raw regex matches are one of these two, not art. Whoever
+   tags `sprites-title.js`'s provenance should expect a much smaller real
+   count than the raw grep suggests, and should not try to tag glyph or
+   layout entries — they aren't sprite-provenance objects.
+
+Both are recorded here rather than chased; neither blocks the objective,
+and fixing `check-drift.mjs`'s own regex is a decision about what the
+measurement should count, not obviously this session's to make alone.
+
+**Tagged `sprites-bosses.js`'s 49 entries (`BOSS_ART` + `MINIBOSS_ART`)
+`drawn`**, via a small one-off script (not committed) that inserted one
+comment line directly above each of the 49 top-level entry lines:
+`// drawn by hand, no boss ripper exists yet (CLAUDE.md; rotation #3 is
+next) — see docs/ART-DIRECTION.md for the grammar it follows.` Checked the
+insertion lands correctly against `check-drift.mjs`'s own comment-walk
+rule (`tools/check-drift.mjs`'s `entryComment`): for a MULTI-LINE entry
+(every one here — `name: \`...many rows...\``), the line directly above
+the key is what gets read, and the line directly above THAT closes the
+previous entry — so a shared header comment two sessions back (the
+`// --- D1: Gohmaraq...` style section dividers) does not by itself tag
+anything; every entry needed its own line. `node --check` confirmed the
+file still parses; `check-drift.mjs` confirms the count: `drawn` 10 -> 59
+(exactly +49), `extracted`/`derived` unchanged, `untagged` 548 -> 499.
+
+**Checkers re-run:** `validate.mjs` (563 tiles, 273 rooms, same
+pre-existing warnings only), `test.mjs` (83/83, comment-only change to a
+data file, no engine code touched), `check-build.mjs`. `npm run build`
+re-run, `dist/oracle-of-tides.html` committed (the build DOES bundle
+`sprites-bosses.js`'s new comments as source, even though comments are
+stripped at build time — rebuilding after any `src/` change is the
+standing rule regardless of whether the diff is visible in the output).
+
+**Left for the next session:** eleven `sprites-*.js` files still fully or
+mostly untagged (499 of 561 raw entries). Five more are hand-authored and
+safe to edit directly the same way (`sprites-gear.js`, `sprites-link.js`,
+`sprites-title.js` — mind the glyph/layout finding above — `sprites-trade.js`,
+`sprites-world.js`); six are ripper-generated and must go through their
+Python script, never a hand-edit (`docs/prompts/STATE.md`'s allowlist
+names which script owns which file). Unlike bosses, several of the
+remaining hand-authored files are NOT uniform — `sprites-gear.js`'s own
+header says some icons are "measured against the extracted set" and
+others are original, so that file needs real per-entry judgement, not one
+blanket comment.
+
 ## S69 — the third `3x1` room: D5's Shrine Ford, closing rotation #1 (wide-rooms)
 
 Direct continuation of S68: `docs/prompts/NEXT-PROMPT.md` pointed at D5's
