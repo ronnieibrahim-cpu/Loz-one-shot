@@ -1,83 +1,79 @@
-# Next session — investigate whether a boss ripper is actually possible
+# Next session — give one enemy a real hurt frame, proving the engine path
 
 ## Read first
 - `docs/prompts/CHARTER.md` — the standing rules for every session; run it
   verbatim before reading anything else here.
-- `docs/prompts/STATE.md` — objective #3 (boss-art) and its file allowlist.
-  Read the "Note" left by the previous objective (#2, art-provenance) too —
-  it explains why that objective was marked done despite `check-drift.mjs`
-  still printing a nonzero "untagged" count, in case that call needs
-  revisiting.
-- `src/data/sprites-bosses.js`'s own header (top of file) — "Drawn by hand,
-  cell by cell" is the CURRENT state this objective is asking whether to
-  change, not a fact to re-derive.
-- `assets/sheets/README.md` — the sheet-sourcing and ripper-credit
-  convention every existing `tools/rip-*.py` follows. Any new sheet has to
-  fit this same pattern (Copyright section, ripper credit, True-Colors-vs-
-  LCD half).
+- `docs/prompts/STATE.md` — objective #4 (enemy-roster) and its file
+  allowlist.
+- `docs/ENEMIES.md` — the one-line lesson per enemy this objective's
+  documentation half already wrote (S11). Read it to know which enemy this
+  session's art should belong to, if you're picking one not named below.
+- `src/game/enemy.js` around line 419 (`this.spec.hurtFrame`) — the ONLY
+  animation-state field the engine currently reads beyond `frames` (the
+  walk cycle), and it is wired for BOSSES only (`hurtFrame: 'boss_..._hurt'`
+  is a real, working example — see any `defineBoss` call in
+  `src/data/bosses.js`). There is no `attackFrame` or `deathFrame` concept
+  anywhere in the engine for an ordinary enemy. This is the actual gap:
+  `check-drift.mjs`'s enemy-roster metric reads sprite-key NAMING
+  (`<name>_atk`/`_attack`, `<name>_death`/`_die`) rather than a spec field
+  specifically so it would notice the day this exists — it doesn't exist
+  yet.
 
 ## Why this, now
-STATE.md's objective of record is #3, boss-art: "for each boss, either a
-`rip-bosses.py` extraction path exists, or the writeup says per boss why
-the source sheets can't supply it." The premise CLAUDE.md and STATE.md
-both currently state — "there is no rip script for it today" — turns out
-to be about tooling, not about source availability: a web search this
-session found individual Oracle of Seasons BOSS sprite sheets on
-spriters-resource.com (the same site every existing sheet in
-`assets/sheets/` was pulled from), including Onox, Dodongo, Gohma,
-Digdogger, Gleeok, Mothula, Twinrova and Aquamentus — see
-`https://www.spriters-resource.com/game_boy_gbc/thelegendofzeldaoracleofseasons/`
-for the full listing. Nobody has checked whether that changes the answer.
+STATE.md's objective of record is #4, enemy-roster: every enemy needs
+idle/walk/attack/hurt/death states, `check-drift.mjs` reports 0 of 22
+complete. The documentation half (`docs/ENEMIES.md`) is done. The art half
+is not a documentation task — it needs an ENGINE change (a `hurtFrame`
+path for ordinary enemies, matching what bosses already have, plus new
+concepts for attack/death) before any new art has anywhere to plug in. 22
+enemies × up to 3 new states each is a large undertaking; this session's
+job is to prove the path on ONE enemy rather than attempt all 22.
 
 ## The task
-This is a RESEARCH session, not a build-the-ripper session — the design
-question underneath is harder than "is a sheet available" and needs
-answering first, in writing, before any pixels are pulled:
-
-This game's six dungeon bosses (Gohmaraq, Anemos, Gloomtide, Wyverna,
-Rootmaw, Nereth — see `src/data/bosses.js`) are ORIGINAL CREATURES, not
-Oracle of Seasons bosses under new names (Goal 2 in CLAUDE.md: mechanics,
-items, dungeons and story are ours). Onox, Gohma, Digdogger etc. are
-SPECIFIC NAMED CHARACTERS with their own designs, not generic creature
-TYPES the way `sprites-enemies.js`'s octoroks and keese are — extraction
-worked for enemies and NPCs because a "generic Zelda octorok" transfers
-cleanly to "this game's octorok". A "generic Zelda final boss" does not
-obviously transfer the same way to Nereth, who has to look like nothing
-but himself.
-
-So: for EACH of the six bosses (plus the two miniboss slots, if in scope —
-check `docs/prompts/STATE.md`'s wording, it says "boss" not "miniboss"),
-answer in writing, in a new doc or `docs/ART-BACKLOG.md`:
-1. Does any sheet on spriters-resource.com contain a creature whose
-   SILHOUETTE or POSE could genuinely inform this boss's design without
-   importing the other game's specific character (the same "surface is
-   theirs, subject is ours" test CLAUDE.md already applies to trade
-   items and NPCs)?
-2. If yes — name the sheet and the boss it could inform, and stop there
-   this session; downloading and integrating a new asset is real
-   copyright/attribution surface (see `assets/sheets/README.md`'s
-   Copyright section) and is its own session's work once a source is
-   picked, not something to rush through here.
-3. If no for a given boss — write the one-sentence reason (this is what
-   the objective's own done-condition asks for regardless of outcome).
+Pick ONE enemy (a simple one — `gel` or `keese`, both `light: true` with a
+small 2-frame walk cycle already, are good candidates; check
+`docs/ENEMIES.md` first so the choice doesn't contradict that enemy's own
+written lesson). Give it a real `hurtFrame`:
+1. Check `assets/sheets/oracle-seasons-enemies.png` for an unused cell
+   that IS this enemy flinching — `rip-enemies.py`'s own comment says the
+   sheet has more content than the 56 sprites currently pulled ("344
+   sprite boxes found"). If one exists, extract it the way every other
+   enemy frame is extracted (through the ripper, never hand-edited).
+2. If nothing on the sheet is a flinch pose for this creature, hand-draw
+   one flinch frame to `docs/ART-DIRECTION.md`'s register, in a NEW
+   hand-authored file (do not touch the generated `sprites-enemies.js`) —
+   same "extract first, draw only if genuinely blocked" discipline every
+   other objective in this rotation has used.
+3. Wire `hurtFrame` into this enemy's `defineEnemy` call in
+   `src/data/enemies.js`, following the boss precedent in
+   `src/game/enemy.js`.
+4. Do NOT attempt `attackFrame`/`deathFrame` this session — those need
+   their own engine design (what triggers an attack pose? most enemies
+   here attack via `shoot()`, not a melee swing) and are a different,
+   larger question than the hurt-frame path this session is proving.
 
 ## Done means
-- A written answer for all six dungeon bosses (and a decision on whether
-  minibosses are in scope), landed in `docs/ART-BACKLOG.md` or a new doc.
-- If a usable sheet is identified for any boss, it is NAMED, not
-  downloaded — no new file in `assets/sheets/` this session.
-- No code changes are required for this to be a complete session; a
-  finished writeup is the deliverable.
-- STATE.md gets one new session-log row. If every boss comes back "no
-  sheet applies, hand-drawn stays", that is a legitimate DONE state for
-  the objective per its own wording — advance the rotation to #4 and say
-  so plainly, the same judgement call #2 made for its own done-condition.
+- One enemy has a real, in-engine hurt flinch, visible in `tools/shoot-
+  sprites.mjs`'s contact sheet and (ideally) screenshotted taking a hit.
+- `node tools/check-drift.mjs`'s enemy-roster table shows that one enemy
+  with `hurt: true` (it won't show "complete" yet — attack/death are
+  still missing — and that's expected, not a bug to chase this session).
+- `node tools/validate.mjs`, `node tools/test.mjs` pass.
+- If `sprites-enemies.js` changed, `node tools/check-rippers.mjs` passes
+  (17/17) — regenerate via the ripper, never hand-edit.
+- `npm run build` re-run, `dist/oracle-of-tides.html` committed only if
+  `src/` changed.
+- STATE.md gets one new session-log row, and a short note in
+  `docs/NEXT-SESSION.md` on whether `attackFrame`/`deathFrame` look like a
+  clean engine addition or a bigger redesign, for whoever picks this up
+  next — this is exactly the kind of finding that shapes the next 21
+  enemies' worth of work, so it is worth writing down precisely.
 
 ## Out of scope
-- Downloading or integrating any new sheet — naming a candidate is the
-  ceiling this session, per the copyright-surface reasoning above.
-- Writing any part of `tools/rip-bosses.py` before a sheet is actually in
-  `assets/sheets/` and its README entry is written.
-- Touching `sprites-bosses.js` at all.
-- Re-opening rotation #2 (art-provenance) — read STATE.md's Note on it,
-  but do not act on it unless you have new evidence the call was wrong.
+- All 22 enemies this session — one proves the path, the rest is real
+  content-creation work for later sessions.
+- `attackFrame`/`deathFrame` — a different, harder engine question.
+- Boss art (`sprites-bosses.js`) — rotation #3 is closed; do not reopen it.
+- Rewriting `docs/ENEMIES.md`'s lessons to fit new art — the lessons
+  describe existing behavior and shouldn't change because a sprite was
+  added.

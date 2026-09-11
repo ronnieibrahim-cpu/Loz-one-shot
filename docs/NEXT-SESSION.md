@@ -1,3 +1,59 @@
+## S75 — boss-art (rotation #3), closed by research rather than by building anything
+
+`docs/prompts/NEXT-PROMPT.md` scoped this as a research session: CLAUDE.md
+and `docs/prompts/STATE.md` both stated the premise "there is no rip
+script for boss art today" as though the underlying problem were that no
+source sheet exists. It doesn't hold — a web search found real Oracle of
+Seasons boss sprite sheets on spriters-resource.com (Onox, Gohma,
+Digdogger, Gleeok, Mothula, Twinrova, Aquamentus, Dodongo, each
+individually catalogued) and confirmed Oracle of Ages has its own
+Enemies & Bosses / Minibosses pages on the same site. The premise CLAUDE.md
+states is about TOOLING, not availability, and nobody had actually
+checked that distinction before.
+
+**Checked anyway, and the answer doesn't change — for a reason that
+generalises from a rule already in CLAUDE.md rather than a new one.** All
+eight of this game's dungeon bosses (`src/data/bosses.js`: Gohmaraq crab,
+Anemos anemone, Gloomtide bog creature, Wyverna sea wyvern, Rootmaw
+drowned tree, Brinehulk salt golem, Thalassor giant eel, Nereth the
+Drowned King) were checked against the found Oracle of Seasons roster.
+Seven have no creature-type overlap at all. The eighth, Wyverna, overlaps
+with Aquamentus/Gleeok at the level of "winged dragon-type boss" — the
+one candidate worth weighing seriously rather than dismissing on sight.
+
+Weighed it against `sprites-trade.js`'s own header, which already states
+the exact principle needed: extracting Seasons' trade items would import
+"the other game's design," because the surface (pixels) can be borrowed
+but the subject (what a specific, individually-authored thing IS) can't.
+A generic enemy TYPE (octorok, keese, villager) recurs across dozens of
+Zelda games as shared genre grammar, which is why extracting those was
+fine. Aquamentus is not that — it is a specific character (the boss
+guarding the end of level 1), however often that archetype recurs
+series-wide, and its sprite carries more of its identity in its
+silhouette than an item's shape does. Using it for Wyverna, even
+recoloured, would read as "Aquamentus, but wet" — precisely the shape
+Design rules already reject for items ("No item may be a straight port
+of an Oracle item... 'it's the hookshot but wet' isn't done"), and a
+boss's design is more identity-bearing than an item's, not less.
+
+**Landed as a full writeup in `docs/ART-BACKLOG.md`** ("Boss art (S75)"),
+covering all eight bosses, the sheets that were found, and the reasoning
+for each. No code or asset changed — the objective's own done-condition
+("for each boss, either a rip path exists, or the writeup says why not")
+is satisfied by the writeup alone, which is what this session's own
+prompt asked for and nothing more.
+
+**`OBJECTIVE OF RECORD` advanced to rotation #4, enemy-roster** (every
+enemy needs idle/walk/attack/hurt/death states and a one-line
+`docs/ENEMIES.md` behavior spec, no two enemies teaching the same
+lesson). `check-drift.mjs` currently reads `0 of 22` enemies complete —
+all have `walk` only. STATE.md's new allowlist splits this: the
+documentation half (`docs/ENEMIES.md`, no art required) is a reasonable
+first slice; the art half (new attack/hurt/death frames for 22 enemies)
+is a much larger, separate undertaking that needs the same
+extract-first-draw-second discipline this whole thread has been using,
+not something to rush.
+
 ## S74 — tagged the last hand-authored file, then all six ripper-generated ones — art-provenance's tagging half is now effectively closed
 
 Two things in one session, both real continuations of the same objective

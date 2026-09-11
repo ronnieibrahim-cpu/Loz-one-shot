@@ -862,3 +862,62 @@ existing screen at once, and option 2 stays available on top of it.
 - **Water is still hand-drawn** and is genuinely blocked: every terrain sheet
   in the repo is an assembled static map, so there is no second animation frame
   to extract. It needs a sheet that has one.
+
+## Boss art (S75) — sheets exist; extraction is the wrong move anyway
+
+`docs/prompts/STATE.md`'s rotation #3 (boss-art) asks, for each of the
+game's eight dungeon bosses, whether a `rip-bosses.py` extraction path
+exists or whether the writeup should say why not. CLAUDE.md and STATE.md
+both currently say "there is no rip script for it today" as if the
+premise were that no source sheet exists. **That premise is wrong; the
+sheets are there.** A web search this session found individual Oracle of
+Seasons boss sprite sheets on spriters-resource.com — Onox, Gohma,
+Digdogger, Gleeok, Mothula, Twinrova, Aquamentus, Dodongo are all
+catalogued (`https://www.spriters-resource.com/game_boy_gbc/thelegendofzeldaoracleofseasons/`),
+and Oracle of Ages has its own Enemies & Bosses and Minibosses pages on
+the same site, not individually catalogued here for time but confirmed
+to exist. **The answer is still no, for a reason that has nothing to do
+with availability.**
+
+**The eight bosses** (`src/data/bosses.js`'s own list): Gohmaraq (giant
+crab), Anemos (anemone), Gloomtide (splitting bog creature), Wyverna (sea
+wyvern), Rootmaw (drowned tree), Brinehulk (salt golem), Thalassor (giant
+eel), Nereth (the Drowned King, final boss). None of the eight Oracle of
+Seasons bosses found is a crab, an anemone, a bog thing, an eel, a
+drowned tree, or a salt golem — no coincidental type overlap to even
+weigh. The one real candidate is Wyverna: Aquamentus and Gleeok are both
+winged dragon-type bosses, and "sea wyvern" is the same broad creature
+class.
+
+**Weighed that one seriously, and the answer is still no — CLAUDE.md's
+own rule for the trade items says why, verbatim, and it generalises.**
+The rule that blocked extracting Seasons' trade characters
+(`sprites-trade.js`'s own header: "Extracting them would have imported
+the other game's design, which is the one borrowing CLAUDE.md forbids:
+the surface is theirs, the subject is ours") is not really about trade
+items specifically — it is about the difference between a GENERIC,
+recurring creature TYPE (an octorok, a keese, a villager — these repeat
+across dozens of Zelda games as shared genre grammar, which is exactly
+why extracting them was fine) and a SPECIFIC, individually-authored
+character whose design IS its identity within one game (a named trade
+NPC, a named boss). Aquamentus is not "a generic dragon enemy" the way
+an octorok is "a generic tentacle enemy" — it is THE dragon that guards
+the end of level 1, a specific character, however often the archetype
+recurs series-wide. Pulling its sprite for Wyverna — even just its
+silhouette, even recoloured — would make Wyverna legible as "Aquamentus,
+but wet," which is exactly the shape Design rules already reject for
+items ("No item may be a straight port of an Oracle item... 'it's the
+hookshot but wet' isn't done") and which applies at least as strongly to
+a boss, where the silhouette carries more of the character's identity
+than any one item's shape does.
+
+**Conclusion: no boss gets a `rip-bosses.py` path.** All eight stay
+hand-drawn, per `sprites-bosses.js`'s own header, for the same reason
+every trade item and every original overworld terrain feature stays
+hand-drawn: nothing on any source sheet is a thing this game's own
+bosses are, and the one place a generic-creature-type argument might
+have applied (Wyverna, against the dragon-type bosses), the boss in
+question is still specific enough that using it would import
+characterisation, not merely surface grammar. `docs/prompts/STATE.md`'s
+rotation #3 is DONE by its own wording (a writeup exists, per boss, why
+extraction doesn't apply) without any code or asset change.
