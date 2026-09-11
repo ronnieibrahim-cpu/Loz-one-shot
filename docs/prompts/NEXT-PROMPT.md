@@ -1,79 +1,104 @@
-# Next session — give one enemy a real hurt frame, proving the engine path
+# Next session — prove a deathFrame path on one plain enemy
 
 ## Read first
 - `docs/prompts/CHARTER.md` — the standing rules for every session; run it
   verbatim before reading anything else here.
 - `docs/prompts/STATE.md` — objective #4 (enemy-roster) and its file
   allowlist.
-- `docs/ENEMIES.md` — the one-line lesson per enemy this objective's
-  documentation half already wrote (S11). Read it to know which enemy this
-  session's art should belong to, if you're picking one not named below.
-- `src/game/enemy.js` around line 419 (`this.spec.hurtFrame`) — the ONLY
-  animation-state field the engine currently reads beyond `frames` (the
-  walk cycle), and it is wired for BOSSES only (`hurtFrame: 'boss_..._hurt'`
-  is a real, working example — see any `defineBoss` call in
-  `src/data/bosses.js`). There is no `attackFrame` or `deathFrame` concept
-  anywhere in the engine for an ordinary enemy. This is the actual gap:
-  `check-drift.mjs`'s enemy-roster metric reads sprite-key NAMING
-  (`<name>_atk`/`_attack`, `<name>_death`/`_die`) rather than a spec field
-  specifically so it would notice the day this exists — it doesn't exist
-  yet.
+- `docs/NEXT-SESSION.md` S76 (top of file) — last session's `hurtFrame` work
+  and, at its end, the specific reason `deathFrame` has a clear trigger
+  (`Entity.die()`) while `attackFrame` does not (no enemy's `ai()` has a
+  shared "about to attack" moment) — read that reasoning before picking a
+  different field to prototype.
+- `Boss.beginDeath`/`Boss.dying`/`Boss.deathTime` (`src/game/enemy.js`,
+  search `beginDeath`) — the ONLY existing "linger after hp<=0, then vanish"
+  precedent in the engine, and it lives entirely on the `Boss` subclass, not
+  on `Entity`/`Enemy`. This is what a stripped-down ordinary-enemy version
+  has to be measured against, not copied wholesale — a boss gets a full
+  `HITSTOP_BOSS_DEATH_FRAMES` freeze and fade; an ordinary `gel` almost
+  certainly should not.
 
 ## Why this, now
 STATE.md's objective of record is #4, enemy-roster: every enemy needs
-idle/walk/attack/hurt/death states, `check-drift.mjs` reports 0 of 22
-complete. The documentation half (`docs/ENEMIES.md`) is done. The art half
-is not a documentation task — it needs an ENGINE change (a `hurtFrame`
-path for ordinary enemies, matching what bosses already have, plus new
-concepts for attack/death) before any new art has anywhere to plug in. 22
-enemies × up to 3 new states each is a large undertaking; this session's
-job is to prove the path on ONE enemy rather than attempt all 22.
+idle/walk/attack/hurt/death states before `check-drift.mjs`'s roster metric
+reads any enemy as complete (S12/S76 wired `wisp`'s `hurtFrame`; the metric
+is still, correctly, `0 of 22`). `attackFrame` and `deathFrame` are both
+still missing engine concepts. S76 found `attackFrame` has no shared trigger
+to hang a pose on anywhere in the 22 `ai()` functions — a bigger design
+question than one session should absorb by surprise. `deathFrame` has an
+unambiguous trigger (`Entity.die()`) but needs a real decision (how long
+does an ordinary enemy linger post-death, and where does that number live
+in `feel.js`) — exactly the kind of thing this rotation proves on ONE enemy
+before committing a shape to all 22, the same discipline S76 used for
+`hurtFrame`.
+
+**Useful inversion, worth knowing before picking an enemy:** `hurtFrame`
+could only ever be proven on an enemy that SURVIVES a hit (`hp >= 3`, no
+`shield: 'all'` — S76's own finding). `deathFrame` has the opposite
+constraint: every enemy dies eventually regardless of `hp`, so `gel` or
+`keese` — the two enemies S76 explicitly rejected for `hurtFrame` — are
+perfectly good `deathFrame` candidates, arguably better ones (`gel` in
+particular dies constantly, in packs, so a real player will actually see
+this pose often).
 
 ## The task
-Pick ONE enemy (a simple one — `gel` or `keese`, both `light: true` with a
-small 2-frame walk cycle already, are good candidates; check
-`docs/ENEMIES.md` first so the choice doesn't contradict that enemy's own
-written lesson). Give it a real `hurtFrame`:
-1. Check `assets/sheets/oracle-seasons-enemies.png` for an unused cell
-   that IS this enemy flinching — `rip-enemies.py`'s own comment says the
-   sheet has more content than the 56 sprites currently pulled ("344
-   sprite boxes found"). If one exists, extract it the way every other
-   enemy frame is extracted (through the ripper, never hand-edited).
-2. If nothing on the sheet is a flinch pose for this creature, hand-draw
-   one flinch frame to `docs/ART-DIRECTION.md`'s register, in a NEW
-   hand-authored file (do not touch the generated `sprites-enemies.js`) —
-   same "extract first, draw only if genuinely blocked" discipline every
-   other objective in this rotation has used.
-3. Wire `hurtFrame` into this enemy's `defineEnemy` call in
-   `src/data/enemies.js`, following the boss precedent in
-   `src/game/enemy.js`.
-4. Do NOT attempt `attackFrame`/`deathFrame` this session — those need
-   their own engine design (what triggers an attack pose? most enemies
-   here attack via `shoot()`, not a melee swing) and are a different,
-   larger question than the hurt-frame path this session is proving.
+Pick ONE simple enemy (a `gel` is a reasonable default — cross-check
+`docs/ENEMIES.md` first so the choice doesn't contradict its own written
+lesson) and give it a real, in-engine `deathFrame`:
+1. Decide the minimal shape: does `Enemy` need its own `dying`/`deathTime`
+   fields (mirroring `Boss`'s, at a much shorter duration), or is there a
+   simpler mechanism that doesn't need a new per-frame timer at all? Look
+   at `Entity.die()` (`src/game/entity.js`) and `game.js`'s
+   `this.entities = this.entities.filter(e => !e.remove)` (the exact line
+   S76's ledger entry traced) — the removal has to be DELAYED for a death
+   pose to ever draw, which is the one non-negotiable engine change.
+2. Add whatever `feel.js` constant the linger duration needs, tagged
+   `guessed` (nothing here has been frame-stepped against a reference) with
+   a one-line reason, per `docs/FEEL-SPEC.md`'s existing convention.
+3. Check `assets/sheets/oracle-seasons-enemies.png` for an unused box that
+   is this enemy's own death/pop pose before drawing one by hand — S76's
+   own survey (344 boxes, contact-sheet method in that session's log) found
+   nothing for a hurt pose, but did not specifically look for a death pose,
+   which Zelda sheets are more likely to carry (a "poof" or squash frame).
+   If genuinely nothing is there, hand-draw one `<name>_death` frame in
+   `src/data/sprites-enemy-hurt.js` (rename the file if a death frame no
+   longer fits its name — your call, state it either way) or a fresh file,
+   never in generated `sprites-enemies.js`.
+4. Wire `deathFrame` into this enemy's `defineEnemy` call.
+5. Do NOT attempt `attackFrame` this session — S76's own reasoning for why
+   it needs a dedicated design session, not a mechanical extension, still
+   holds; do not reopen that question by surprise mid-session.
 
 ## Done means
-- One enemy has a real, in-engine hurt flinch, visible in `tools/shoot-
-  sprites.mjs`'s contact sheet and (ideally) screenshotted taking a hit.
-- `node tools/check-drift.mjs`'s enemy-roster table shows that one enemy
-  with `hurt: true` (it won't show "complete" yet — attack/death are
-  still missing — and that's expected, not a bug to chase this session).
-- `node tools/validate.mjs`, `node tools/test.mjs` pass.
-- If `sprites-enemies.js` changed, `node tools/check-rippers.mjs` passes
-  (17/17) — regenerate via the ripper, never hand-edit.
+- One enemy visibly holds a distinct death pose for a short, deliberate
+  window after `hp` reaches 0, before its entity is actually removed —
+  provable with the same kind of scratch Playwright proof S76 used
+  (`e.hurt()` for enough damage to kill it, then screenshot before and
+  during the linger window).
+- `node tools/check-drift.mjs`'s enemy-roster table shows that enemy with
+  `hurt` (if it already has one) AND/OR `death: true` — reads sprite-key
+  naming for death (`<name>_death`/`<name>_die`), not a spec field; if your
+  shape changes that, say so explicitly and update the checker's own
+  comment, don't leave it describing a contract that no longer matches.
+- `node tools/validate.mjs`, `node tools/test.mjs`, `node tools/check-
+  rippers.mjs` (only if a generated file changed — it shouldn't),
+  `node tools/replay.mjs`, `node tools/check-playthrough.mjs` all pass.
+  Read the replay/playthrough output carefully: delaying entity removal is
+  a change to the shared death path every enemy in the game uses, so a
+  regression here is exactly the kind CLAUDE.md's own trap notes warn
+  about ("a five-line change to the movement path is never a five-line
+  change") — treat any baseline drift as a real finding, not noise to
+  silence.
 - `npm run build` re-run, `dist/oracle-of-tides.html` committed only if
   `src/` changed.
 - STATE.md gets one new session-log row, and a short note in
-  `docs/NEXT-SESSION.md` on whether `attackFrame`/`deathFrame` look like a
-  clean engine addition or a bigger redesign, for whoever picks this up
-  next — this is exactly the kind of finding that shapes the next 21
-  enemies' worth of work, so it is worth writing down precisely.
+  `docs/NEXT-SESSION.md` on whether `attackFrame` now looks any more
+  tractable given whatever `deathFrame`'s shape turns out to need.
 
 ## Out of scope
-- All 22 enemies this session — one proves the path, the rest is real
-  content-creation work for later sessions.
-- `attackFrame`/`deathFrame` — a different, harder engine question.
-- Boss art (`sprites-bosses.js`) — rotation #3 is closed; do not reopen it.
-- Rewriting `docs/ENEMIES.md`'s lessons to fit new art — the lessons
-  describe existing behavior and shouldn't change because a sprite was
-  added.
+- All 22 enemies this session — one proves the path, same as S76.
+- `attackFrame` — still a separate, harder design question (S76's own
+  finding: no shared trigger exists in `ai()` today).
+- Boss art or boss death timing (`Boss.beginDeath` etc.) — read-only
+  reference this session, not something to refactor.
+- Rewriting `docs/ENEMIES.md`'s lessons to fit new art.

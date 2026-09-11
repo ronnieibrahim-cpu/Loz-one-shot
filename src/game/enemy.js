@@ -126,6 +126,11 @@ export class Enemy extends Entity {
   }
 
   spriteName() {
+    // Same precedent as `Boss.spriteName` (below): a single flinch pose shown
+    // only while `flicker` is counting down from a hit, for a species that
+    // declares one. Most enemies have no `hurtFrame` and fall through to the
+    // walk cycle unchanged.
+    if (this.flicker > 0 && this.spec.hurtFrame) return this.spec.hurtFrame;
     const f = this.spec.frames;
     if (!f) return this.spec.sprite || 'blob';
     if (Array.isArray(f)) {

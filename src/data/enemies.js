@@ -178,6 +178,11 @@ export function installEnemies() {
     light: true,
     hp: 3, damage: 2, pal: 'magic', speed: 0, rate: 7, terrain: 'air',
     frames: ['wisp_0', 'wisp_1'],
+    // The one enemy in the roster proven to survive a hit at base sword
+    // damage (hp 3 vs. 2) without a shield in the way, so this is the one
+    // flinch pose that is actually reachable in real play rather than only
+    // in tools/shoot-sprites.mjs's contact sheet — see sprites-enemy-hurt.js.
+    hurtFrame: 'wisp_hurt',
     z: 8,
     drops: 'good',
     ai(e, g) {

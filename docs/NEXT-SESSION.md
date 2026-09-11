@@ -1,4 +1,123 @@
-## S75 — boss-art (rotation #3), closed by research rather than by building anything
+## S76 — enemy-roster (rotation #4): the hurtFrame engine path, proved on one enemy
+
+`docs/prompts/NEXT-PROMPT.md` asked for exactly one thing: give ONE enemy a
+real `hurtFrame` (bosses already have this; ordinary enemies didn't), to
+prove the engine path before 22 enemies' worth of art gets commissioned
+against it.
+
+**The engine change was one line, by design.** `Boss.spriteName()`
+(`src/game/enemy.js`) already reads `this.spec.hurtFrame` while
+`this.flicker > 0`; `Enemy.spriteName()` had no equivalent. Added the same
+check at the top of `Enemy.spriteName()`. `Entity.hurt()` already sets
+`flicker` on every hit (that's what drives the existing invincibility
+blink for every enemy in the game today), so no other engine plumbing was
+missing — the gap really was exactly what the prompt said it was.
+
+**Did NOT pick `gel` or `keese`, the two the prompt suggested, and this is
+the actual finding worth keeping.** Both are `hp: 1`. `swordDamage(1)` is
+2 (`src/game/player.js`) and the base sword is the weakest hit in the
+game, so ANY real hit kills either of them outright — `Entity.hurt` sets
+`flicker` and calls `die()` in the same synchronous call, `die()` sets
+`remove = true`, and `game.js`'s update loop filters removed entities out
+**before the next draw call, same frame** (`this.entities =
+this.entities.filter(e => !e.remove)`, right after the update pass). A
+`hurtFrame` wired onto either of them would be real code that can never
+render in actual play — only in `shoot-sprites.mjs`'s static contact
+sheet, which draws sprites directly rather than through combat. Checked
+further: `bubble`/`beamos`/`barnacle` (the three `hp: 999` "unkillable"
+enemies) are WORSE candidates than gel/keese, not better — they carry
+`shield: 'all'`, and `Enemy.hurt()` returns `false` before ever calling
+`super.hurt()` when that shield blocks, so `flicker` never gets set at
+all; nothing they take is ever a "hit" as far as the engine is concerned.
+
+Picked `wisp` instead: `hp: 3`, no shield, so a base-sword hit (2 damage)
+leaves it alive at 1 hp and genuinely flickering. Verified this isn't
+theoretical — a scratch Playwright harness (boot pattern copied from
+`check-motion.mjs`: `newGame` → force `mode: 'play'` → `enterMap` →
+clear the room → spawn) spawned a real `wisp`, called its real
+`e.hurt(g, 2, 'down', 0)` (the same method the sword swing calls), and
+screenshotted the live canvas: hp 3 -> 1, `alive: true`,
+`e.spriteName()` reporting `wisp_hurt`, and the flinch pose visible next
+to Link on screen. This enemy's hurt flinch is reachable by a player
+swinging a level-1 sword at it once, not just by a tool forcing state.
+
+**No sheet has a flinch pose for any ordinary enemy — checked, not
+assumed.** Dumped the enemy sheet's 344 detected boxes (`rip-enemies.py`'s
+own `find_boxes`, same segmentation, via a scratch script) as labelled
+contact sheets and inspected the neighbourhoods around Octorok
+(220-223), the beetle/urchin cluster (280-298) and Wisp/Spark's own boxes
+(282-283) by eye. Nothing reads as a second pose for any of the 22
+species — only the Oracle bosses ever got a drawn recoil frame; ordinary
+enemies in the source games rely on the invincibility palette-flicker
+alone (which this engine already gives every enemy for free, independent
+of `hurtFrame`). So this is CLAUDE.md's "if no sheet has it, draw it to
+match" path, not a shortcut past extraction — and it generalises: every
+future ordinary-enemy `hurtFrame` this rotation adds will need the same
+hand-drawn treatment, not a ripper run.
+
+**Landed as a NEW hand-authored file, `src/data/sprites-enemy-hurt.js`**
+(`sprites-enemies.js` itself, being generated, was not touched): one
+entry, `wisp_hurt`, drawn at the docs/ART-DIRECTION.md register — same
+outer spiky-ring silhouette as `wisp_0`/`wisp_1` held in place (16x16 has
+no room for a whole-body flinch the way a 32x32 boss frame does), face
+pinched shut instead of the open grin both idle frames wear. Wired the
+same way every other hand-authored sprite pack in this repo is wired:
+`SPRITE_PACKS.enemyHurt` and `REQUIRED_SPRITES.enemyHurt` in
+`src/data/index.js` / `src/data/sprite-manifest.js`, `installEnemyHurtSprites()`
+called from `installData()` right after `installEnemySprites()`, and the
+file added to `shoot-sprites.mjs`'s `SPRITE_FILES` list so it shows in the
+contact sheet the prompt's own done-means asked for.
+
+**Measured, not asserted, that this is genuinely additive.** `wisp`'s own
+two idle frames (`wisp_0`/`wisp_1`) are unchanged, its `ai` is unchanged,
+and `hurtFrame` is read only inside the `this.flicker > 0` branch every
+other enemy already skips over — every enemy WITHOUT a `hurtFrame` falls
+through to the exact same code path as before this session, line for
+line. `check-drift.mjs`'s enemy-roster table now reads `wisp walk,hurt`
+(was `wisp walk`), still `0 of 22 complete` as expected (attack/death are
+untouched, on purpose — see below). Full sweep, all green, zero
+regressions: `validate.mjs` (OK, pre-existing unrelated warnings only —
+three `fx_blade_*` sprites and 13 unreachable bank tiledefs, both already
+on record), `test.mjs` 83/83, `check-rippers.mjs` 17/17 (nothing
+generated was touched), `check-motion.mjs` 8/8, `replay.mjs` 51/51,
+`check-playthrough.mjs` 21/21. `npm run build` + `check-build.mjs`
+reconfirmed OK; `dist/` committed.
+
+**For whoever picks up `attackFrame`/`deathFrame` next** (the prompt's own
+"out of scope" item, and the harder half of this objective): `hurtFrame`
+was easy specifically because `flicker` already exists as a per-frame
+timer nothing else uses for pose selection, and the invulnerability
+window it drives (`ENEMY_INVULN_FRAMES`/`ENEMY_FLICKER_FRAMES`,
+`src/data/feel.js`) is a natural "how long should this pose show" clock
+that came for free. Neither future field has an equivalent free clock:
+- `deathFrame` is the more clear-cut of the two — `Entity.die()` sets
+  `dead = true` and `remove = true` in the SAME call that would need to
+  start showing the pose, and `game.js` filters removed entities out
+  before the next draw (the exact mechanism this session's gel/keese
+  finding above turns on). A death pose needs the entity to survive one
+  or more extra DRAWN frames after `hp <= 0` — Boss already does this
+  (`beginDeath`/`dying`/`deathTime`, a hand-rolled flicker-out over
+  `HITSTOP_BOSS_DEATH_FRAMES`) but that machinery lives entirely on the
+  `Boss` subclass, not on the shared `Entity`/`Enemy` base every ordinary
+  enemy actually uses. Porting even a stripped version means deciding how
+  long an ordinary enemy lingers post-death (bosses get a whole
+  heavyweight freeze + fade; a `gel` almost certainly should not) and
+  where that number lives in `feel.js` — a real design decision, not a
+  mechanical port.
+- `attackFrame` has no candidate trigger at all. This session's own read
+  of `enemies.js` (all 22 `ai()` functions) found no shared "about to
+  attack" moment to hang a pose on: ranged attackers (`octorok`, `beamos`,
+  `barnacle`, `wisp`, `moblin`, `wizzrobe`...) call `shoot()`/`shootRing()`
+  on a bare frame-count timer with no wind-up state machine, and the
+  handful of melee-ish enemies (`leever`, `stalfos`) drive their own ad
+  hoc timers inside `ai()` with nothing standardised for a spec field to
+  read. This is a bigger question than "add a field" — it is closer to
+  "design a wind-up phase into the shared AI toolkit `enemy.js` exports"
+  — and picking one enemy to prototype it on (the same one-enemy-first
+  discipline this session used) is the right shape for that session, not
+  a mechanical extension of this one.
+
+
 
 `docs/prompts/NEXT-PROMPT.md` scoped this as a research session: CLAUDE.md
 and `docs/prompts/STATE.md` both stated the premise "there is no rip

@@ -130,6 +130,12 @@ export const REQUIRED_SPRITES = {
     ...seq('jellyfish_', 2), ...seq('siren_', 2), ...seq('pincer_', 2),
   ],
 
+  // ---- pack: sprites-enemy-hurt.js --------------------------------------
+  // Hand-drawn flinch poses for ordinary enemies (see that file's header for
+  // why they're not extracted). One entry per enemy that declares a
+  // `hurtFrame` in its `defineEnemy` spec (src/data/enemies.js).
+  enemyHurt: ['wisp_hurt'],
+
   // ---- pack: sprites-bosses.js -----------------------------------------
   // Bosses are 32x32 unless the name ends in _48 (48x48).
   bosses: [
