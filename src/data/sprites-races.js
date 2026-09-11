@@ -17,6 +17,7 @@ import { sprites } from '../gfx/art.js';
 import { registerPalettes } from '../gfx/palettes.js';
 
 export const RACE_ART = {
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   npc_brine_d: { pal: 'npc_brine_d', art: `
     .....222222.....
     ....21111112....
@@ -34,6 +35,7 @@ export const RACE_ART = {
     ...222000012222.
     ..20002221112...
     ..22222222222...` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   npc_brine_u: { pal: 'npc_brine_u', art: `
     ....222222......
     ...21100112.....
@@ -51,6 +53,7 @@ export const RACE_ART = {
     ..222000012222..
     .20002221112....
     .22222222222....` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   npc_brinewife: { pal: 'npc_brinewife', art: `
     ................
     .....22....22...
@@ -68,6 +71,7 @@ export const RACE_ART = {
     .....20200202...
     ......222222....
     ................` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   npc_hood_blue: { pal: 'npc_hood_blue', art: `
     ......222222....
     ....220001112...
@@ -85,6 +89,7 @@ export const RACE_ART = {
     .21111221111112.
     .211111111111112
     .222222222222222` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   npc_hood_red: { pal: 'npc_hood_red', art: `
     ......222222....
     ....220001112...
@@ -102,6 +107,7 @@ export const RACE_ART = {
     .21111221111112.
     .211111111111112
     .222222222222222` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   npc_kelper_d: { pal: 'npc_kelper_d', art: `
     ......222222....
     ....220001112...
@@ -119,6 +125,7 @@ export const RACE_ART = {
     .21111221111112.
     .211111111111112
     .222222222222222` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   npc_kelper_s: { pal: 'npc_kelper_s', art: `
     ......22222222..
     ....22100000012.
@@ -136,6 +143,7 @@ export const RACE_ART = {
     .211111111122...
     .211111111112...
     .222222222222...` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   npc_kelper_u: { pal: 'npc_kelper_u', art: `
     ......222222....
     ....221100112...
@@ -153,6 +161,7 @@ export const RACE_ART = {
     .21111111211112.
     .211111111111112
     .222222222222222` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   npc_reefkin_d: { pal: 'npc_reefkin_d', art: `
     ......2222222...
     ....22010101222.
@@ -170,6 +179,7 @@ export const RACE_ART = {
     ..2211122211212.
     ..2020112222222.
     ..222222........` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   npc_reefkin_r: { pal: 'npc_reefkin_r', art: `
     ......2222222...
     ....22010101222.
@@ -187,6 +197,7 @@ export const RACE_ART = {
     ..2211122211212.
     ..2020112222222.
     ..222222........` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   npc_reefkin_u: { pal: 'npc_reefkin_u', art: `
     ......222222....
     ....2210220022..
@@ -204,6 +215,7 @@ export const RACE_ART = {
     ....22222110222.
     ....20111211002.
     ...22222222222..` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   npc_salter_d: { pal: 'npc_salter_d', art: `
     ......222222....
     ....220001112...
@@ -221,6 +233,7 @@ export const RACE_ART = {
     .21111221111112.
     .211111111111112
     .222222222222222` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   npc_salter_s: { pal: 'npc_salter_s', art: `
     ......22222222..
     ....22100000012.
@@ -238,6 +251,7 @@ export const RACE_ART = {
     .211111111122...
     .211111111112...
     .222222222222...` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   npc_salter_u: { pal: 'npc_salter_u', art: `
     ......222222....
     ....221100112...

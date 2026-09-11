@@ -19,6 +19,7 @@ import { sprites } from '../gfx/art.js';
 import { registerPalettes } from '../gfx/palettes.js';
 
 export const ENEMY_ART = {
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   anglerfry_0: { pal: 'anglerfry_0', art: `
     ......3333......
     .....300003.....
@@ -36,6 +37,7 @@ export const ENEMY_ART = {
     .310131001133003
     ..333111113..33.
     .....33333......` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   anglerfry_1: { pal: 'anglerfry_1', art: `
     ......3333......
     .....300003.....
@@ -53,6 +55,7 @@ export const ENEMY_ART = {
     3100013001133003
     .3101311113..33.
     ..33333333......` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   barnacle_0: { pal: 'barnacle_0', art: `
     ................
     ....33333333....
@@ -70,6 +73,7 @@ export const ENEMY_ART = {
     3311311111131133
     .33333111133333.
     ...3333333333...` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   barnacle_1: { pal: 'barnacle_1', art: `
     ................
     .....333333.....
@@ -87,6 +91,7 @@ export const ENEMY_ART = {
     .33131100113133.
     ..333311113333..
     .....333333.....` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   beamos_0: { pal: 'beamos_0', art: `
     .....333333.....
     ....31033013....
@@ -104,6 +109,7 @@ export const ENEMY_ART = {
     .33113333331133.
     ..331100001133..
     ...3333333333...` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   beamos_1: { pal: 'beamos_1', art: `
     ................
     ................
@@ -121,6 +127,7 @@ export const ENEMY_ART = {
     .33133333331133.
     ..331100001133..
     ...3333333333...` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   beetle_d0: { pal: 'beetle_d0', art: `
     ...33......33...
     ...303....303...
@@ -138,6 +145,7 @@ export const ENEMY_ART = {
     .30331111113303.
     .30003333330003.
     ..333333333333..` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   beetle_d1: { pal: 'beetle_d1', art: `
     ................
     ...33......33...
@@ -155,6 +163,7 @@ export const ENEMY_ART = {
     3031110000111303
     3003311111133003
     3333333333333333` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   beetle_s0: { pal: 'beetle_s0', art: `
     ................
     .....333333.....
@@ -172,6 +181,7 @@ export const ENEMY_ART = {
     ....33333333....
     .....310013.....
     ......3333......` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   beetle_s1: { pal: 'beetle_s1', art: `
     ................
     .....333333.....
@@ -189,6 +199,7 @@ export const ENEMY_ART = {
     ....33333333....
     .....310013.....
     ......3333......` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   bubble_0: { pal: 'bubble_0', art: `
     ......3333......
     .00003333333000.
@@ -206,6 +217,7 @@ export const ENEMY_ART = {
     .00003333330000.
     .00003333333000.
     ......3333......` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   bubble_1: { pal: 'bubble_1', art: `
     ......0000......
     .33330000000333.
@@ -223,6 +235,7 @@ export const ENEMY_ART = {
     .33330000003333.
     .33330000000333.
     ......0000......` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   crab_0: { pal: 'crab_0', art: `
     ................
     ..333......333..
@@ -240,6 +253,7 @@ export const ENEMY_ART = {
     3003110000113003
     3033311111133303
     3333333333333333` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   crab_1: { pal: 'crab_1', art: `
     ...333....333...
     ..30003..30003..
@@ -257,6 +271,7 @@ export const ENEMY_ART = {
     .30031111113003.
     .30333333333303.
     .33333333333333.` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   darknut_d0: { pal: 'darknut_d0', art: `
     ..33........333.
     ..3033333333003.
@@ -274,6 +289,7 @@ export const ENEMY_ART = {
     3000333333330003
     3000333330030003
     .33333333333333.` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   darknut_d1: { pal: 'darknut_d1', art: `
     ..33........333.
     ..3033333333003.
@@ -291,6 +307,7 @@ export const ENEMY_ART = {
     3030033333330003
     3030033330030003
     .33003333333333.` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   darknut_s0: { pal: 'darknut_s0', art: `
     ........333333..
     ...33333000003..
@@ -308,6 +325,7 @@ export const ENEMY_ART = {
     .3333333333303..
     33300000033333..
     333333333333....` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   darknut_s1: { pal: 'darknut_s1', art: `
     ................
     ........333333..
@@ -325,6 +343,7 @@ export const ENEMY_ART = {
     .333311133033333
     3000333300033...
     333333333333....` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   gel_0: { pal: 'gel_0', art: `
     ................
     ................
@@ -342,6 +361,7 @@ export const ENEMY_ART = {
     ................
     ................
     ................` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   gel_1: { pal: 'gel_1', art: `
     ................
     ................
@@ -359,6 +379,7 @@ export const ENEMY_ART = {
     ................
     ................
     ................` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   jellyfish_0: { pal: 'jellyfish_0', art: `
     .....333333.....
     ...3310000133...
@@ -376,6 +397,7 @@ export const ENEMY_ART = {
     .33033300333033.
     ...3333003333...
     .......33.......` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   jellyfish_1: { pal: 'jellyfish_1', art: `
     ......3333......
     ....33000033....
@@ -393,6 +415,7 @@ export const ENEMY_ART = {
     .33303300330333.
     ...3333003333...
     .......33.......` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   keese_0: { pal: 'keese_0', art: `
     ................
     ................
@@ -410,6 +433,7 @@ export const ENEMY_ART = {
     ................
     ................
     ................` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   keese_1: { pal: 'keese_1', art: `
     ................
     ................
@@ -427,6 +451,7 @@ export const ENEMY_ART = {
     ................
     ................
     ................` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   leever_0: { pal: 'leever_0', art: `
     .......33.......
     .33...3003...33.
@@ -444,6 +469,7 @@ export const ENEMY_ART = {
     0033333333333300
     .00333333333300.
     ..003003300300..` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   leever_1: { pal: 'leever_1', art: `
     ....33....33....
     ...3003..3003...
@@ -461,6 +487,7 @@ export const ENEMY_ART = {
     0333333333333330
     .00033333333000.
     ...0033003300...` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   moblin_d0: { pal: 'moblin_d0', art: `
     3333..3333..3333
     3111331111331113
@@ -478,6 +505,7 @@ export const ENEMY_ART = {
     .331113333333...
     .300100333333...
     .333333333......` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   moblin_d1: { pal: 'moblin_d1', art: `
     3333..3333..3333
     3111331111331113
@@ -495,6 +523,7 @@ export const ENEMY_ART = {
     .33333333311133.
     ..3003333001003.
     ..3003333333333.` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   moblin_s0: { pal: 'moblin_s0', art: `
     ....3333333.....
     333311111113....
@@ -512,6 +541,7 @@ export const ENEMY_ART = {
     .....3333333333.
     .....3300111133.
     .....3333333333.` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   moblin_s1: { pal: 'moblin_s1', art: `
     ................
     ....3333333.....
@@ -529,6 +559,7 @@ export const ENEMY_ART = {
     ...3333333333113
     ...3001113300113
     ...333333333333.` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   moblin_u0: { pal: 'moblin_u0', art: `
     3333..3333..3333
     3111331111331113
@@ -546,6 +577,7 @@ export const ENEMY_ART = {
     ..311133333333..
     .3111113333333..
     .3333333........` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   moblin_u1: { pal: 'moblin_u1', art: `
     3333..3333303333
     3111331111331113
@@ -563,6 +595,7 @@ export const ENEMY_ART = {
     ..333333331113..
     ..3333333111113.
     ........3333333.` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   octorok_d0: { pal: 'octorok_d0', art: `
     .....333333.....
     3333311111133333
@@ -580,6 +613,7 @@ export const ENEMY_ART = {
     ...3110000113...
     ...3333333333...
     ................` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   octorok_d1: { pal: 'octorok_d1', art: `
     ................
     .....333333.....
@@ -597,6 +631,7 @@ export const ENEMY_ART = {
     ....33333333....
     ...3110000113...
     ...3333333333...` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   octorok_s0: { pal: 'octorok_s0', art: `
     ...333..3333....
     ...32233111233..
@@ -614,6 +649,7 @@ export const ENEMY_ART = {
     ...3223333333223
     ...333.......333
     ................` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   octorok_s1: { pal: 'octorok_s1', art: `
     ......33333.....
     .....33000133...
@@ -631,6 +667,7 @@ export const ENEMY_ART = {
     ....311333113...
     .....3133313....
     ......33333.....` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   octorok_u0: { pal: 'octorok_u0', art: `
     ................
     .....3333.......
@@ -648,6 +685,7 @@ export const ENEMY_ART = {
     ...3011.1103....
     ...3003.3003....
     ....33...33.....` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   octorok_u1: { pal: 'octorok_u1', art: `
     ................
     .....3333.......
@@ -665,6 +703,7 @@ export const ENEMY_ART = {
     ...30113.3103...
     ...3003...003...
     ....33.....33...` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   pincer_0: { pal: 'pincer_0', art: `
     ....33333333....
     ...3111111113...
@@ -682,6 +721,7 @@ export const ENEMY_ART = {
     .30003....30003.
     ..30003..30003..
     ...3333..3333...` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   pincer_1: { pal: 'pincer_1', art: `
     ..33333..333....
     .300000330003...
@@ -699,6 +739,7 @@ export const ENEMY_ART = {
     ..311113333333..
     ...3333.........
     ................` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   siren_0: { pal: 'siren_0', art: `
     .......33.......
     ......3003......
@@ -716,6 +757,7 @@ export const ENEMY_ART = {
     0000333003330000
     ..000000000000..
     .....000000.....` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   siren_1: { pal: 'siren_1', art: `
     ................
     .......33.......
@@ -733,6 +775,7 @@ export const ENEMY_ART = {
     0003311111133000
     .00013333331000.
     ....00000000....` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   stalfos_d0: { pal: 'stalfos_d0', art: `
     ......333333....
     .....30000003...
@@ -750,6 +793,7 @@ export const ENEMY_ART = {
     ...330033311333.
     ...3000333333...
     ...33333........` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   stalfos_d1: { pal: 'stalfos_d1', art: `
     333..333333..333
     3003300000033003
@@ -767,6 +811,7 @@ export const ENEMY_ART = {
     ..3..........3..
     ................
     ................` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   stalfos_s0: { pal: 'stalfos_s0', art: `
     ......333333333.
     .....3100000003.
@@ -784,6 +829,7 @@ export const ENEMY_ART = {
     .311111113331133
     .31111111113333.
     .33333333333....` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   stalfos_s1: { pal: 'stalfos_s1', art: `
     ......333333333.
     .....3100000003.
@@ -801,6 +847,7 @@ export const ENEMY_ART = {
     .311111113331133
     .31111111113333.
     .33333333333....` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   tektite_0: { pal: 'tektite_0', art: `
     ................
     ................
@@ -818,6 +865,7 @@ export const ENEMY_ART = {
     3033333333333303
     3113330330333113
     .333..3333..333.` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   tektite_1: { pal: 'tektite_1', art: `
     ......3333......
     ..333311113333..
@@ -835,6 +883,7 @@ export const ENEMY_ART = {
     303..........303
     3113........3113
     .333........333.` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   urchin_0: { pal: 'urchin_0', art: `
     .33...3003...33.
     .30333000033303.
@@ -852,6 +901,7 @@ export const ENEMY_ART = {
     322333322333323.
     303332322323223.
     .3...3222233303.` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   urchin_1: { pal: 'urchin_1', art: `
     .33...3003...33.
     .30333000033303.
@@ -869,6 +919,7 @@ export const ENEMY_ART = {
     .323333223333223
     .322323223233303
     .3033322223...3.` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   wisp_0: { pal: 'wisp_0', art: `
     ....03300330....
     ..300333333003..
@@ -886,6 +937,7 @@ export const ENEMY_ART = {
     .33333000033333.
     ..300333333003..
     ....03300330....` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   wisp_1: { pal: 'wisp_1', art: `
     ....30033003....
     ..033000000330..
@@ -903,6 +955,7 @@ export const ENEMY_ART = {
     .00000333300000.
     ..033000000330..
     ....30033003....` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   wizzrobe_0: { pal: 'wizzrobe_0', art: `
     .......33.......
     ......3003......
@@ -920,6 +973,7 @@ export const ENEMY_ART = {
     .30000011000003.
     3000000000000003
     3333333333333333` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   wizzrobe_1: { pal: 'wizzrobe_1', art: `
     ................
     ................
@@ -937,6 +991,7 @@ export const ENEMY_ART = {
     .31111111111113.
     ..311111111113..
     ...3333333333...` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   zol_0: { pal: 'zol_0', art: `
     ................
     ................
@@ -954,6 +1009,7 @@ export const ENEMY_ART = {
     ..331111111133..
     ...3311111133...
     ....33333333....` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   zol_1: { pal: 'zol_1', art: `
     ......3333......
     .....311113.....

@@ -373,6 +373,13 @@ def emit_module(path, header, art, palettes, const_name, install_name, default_p
     # the sprite's original colours instead of a shared default.
     lines.append(f'export const {const_name} = {{')
     for name in sorted(art):
+        # Provenance tag for tools/check-drift.mjs's art-provenance rotation
+        # objective (docs/prompts/STATE.md #2). Every pixel this function emits
+        # came off the source sheet named in this file's own header — that is
+        # what makes it GENERATED rather than hand-authored — so the tag is
+        # uniform and mechanical, unlike the hand-authored sprites-*.js files.
+        lines.append('  // extracted — pulled straight off the source sheet named '
+                      'in this file\'s own header, by this ripper.')
         lines.append(f'  {name}: {{ pal: \'{name}\', art: `')
         for r in art[name]:
             lines.append('    ' + r)

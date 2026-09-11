@@ -1,3 +1,144 @@
+## S74 — tagged the last hand-authored file, then all six ripper-generated ones — art-provenance's tagging half is now effectively closed
+
+Two things in one session, both real continuations of the same objective
+rather than a detour: `sprites-link.js` was the last untouched
+hand-authored file (per S73's own note), and once it was done the only
+untagged sprites left in the whole game were in the six ripper-generated
+files — which turned out to be far more tractable than expected, so this
+session finished all six rather than stopping at the hand-authored/
+generated boundary.
+
+**`sprites-link.js` (103 entries: `LINK_ART`, `FX_ART`, `FX_BIG_ART`,
+`UI_ART` — four separate `sprites.add()` calls in one file) turned out to
+be uniform, unlike gear/world.** Grepped the whole 1880-line file for
+`extracted`/`derived`/`drawn` first (S73's own rule) and found NONE —
+zero existing provenance claims anywhere. Cross-checked against
+`sprites-player.js` (the real, extracted Link frames) and found 37 of
+`LINK_ART`'s 40 names are overridden by it at install time
+(`src/data/index.js`'s order), same mechanism as `sprites-world.js`'s NPC
+placeholders — and separately found that six of `UI_ART`'s names
+(`hud_heart0-4`, `hud_rupee`) are ALSO placeholders, overridden by
+`sprites-hud.js`. None of that changes what THIS file's own pixels are,
+though: every entry in it is hand-drawn, so one comment inserted above
+each of the 103 unique entries, tagged `drawn`. `check-drift.mjs`:
+`drawn` 146 -> 244 (+98, not +103 — 5 entries already carried an
+incidental single-word `drawn` in their own prose, the same non-bug S73
+found with `p_heart`, confirmed by `561 total = 0+4+244+313` balancing
+exactly before moving on).
+
+**The six ripper-generated files (`sprites-player.js`,
+`sprites-npcs.js`, `sprites-races.js`, `sprites-enemies.js`,
+`sprites-hud.js`, `sprites-fairies.js`) were assumed to be a separate,
+harder session — they were not.** `pip install pillow` (missing in this
+container), confirmed `check-rippers.mjs` green (17/17) BEFORE touching
+anything, per its own standing rule. Five of the six share one emission
+function, `tools/ripkit.py`'s `emit_module()` — adding ONE comment line
+there (`// extracted — pulled straight off the source sheet named in
+this file's own header, by this ripper.`) fixed all five
+(`rip-npcs.py`, `rip-races.py`, `rip-enemies.py`, `rip-hud.py`,
+`rip-fairies.py`) in one place, then each ripper was re-run
+(`python3 tools/rip-*.py`) to regenerate its output. The sixth,
+`rip-link.py` (emits `sprites-player.js`), has its own standalone
+`emit()` — most of its 43 frames are direct crops off the sheet
+(`extracted`, mirroring in place for a flipped pose doesn't change
+that), but `link_fall_0/1/2` are `shrink()` — a real nearest-neighbour
+RESAMPLE of another already-cropped frame, not a fresh cut — so those
+three are tagged `derived` instead, the same distinction S73 drew for
+`p_heart`/`p_heartpiece`. `check-rippers.mjs` re-run after every
+regeneration: 17/17 green throughout, confirming determinism survived
+the change (this is the check that would have caught a broken ripper
+immediately, per its own stated purpose).
+
+**Final tally, and the arithmetic behind it:** `check-drift.mjs` now
+reads `135 extracted, 7 derived, 244 drawn, 175 untagged` out of 561 raw
+entries. The 175 "untagged" are now ENTIRELY the structural false
+matches S70-S73 already documented (same-named palette-table entries,
+`sprites-title.js`'s font glyphs and layout objects) — 80 in the
+hand-authored files, 95 more in the generated ones (each ripper's own
+`_PALETTES` export shares names with its `_ART` export the same way).
+Every REAL sprite the game can draw now carries a tag. This is,
+functionally, rotation #2's tagging requirement MET — not by the raw
+"0 untagged" count check-drift prints (which structurally can't reach
+zero without also fixing the regex to exclude palette tables, a separate
+question S70 raised and none of S71-S74 have picked up), but by the
+actual claim STATE.md's objective makes: every sprite carries a tag.
+
+**Checkers re-run:** `node --check` on every touched file,
+`check-rippers.mjs` (17/17, the determinism check this whole session
+leaned on), `validate.mjs`, `test.mjs` (83/83), `shoot-sprites.mjs` spot
+run on three regenerated files (counts match expectations, no blank
+cells), `check-build.mjs`. `npm run build` re-run,
+`dist/oracle-of-tides.html` committed.
+
+**Judgement call, flagged per the charter's own clause rather than acted
+on unilaterally:** this session believes rotation #2's tagging half is
+done and the `check-drift.mjs`-reported "175 untagged" should not block
+advancing `OBJECTIVE OF RECORD` to rotation #3 (boss-art) — seeing this
+in the next session's STATE.md diff.
+
+## S73 — tagged sprites-world.js, and found the same pre-existing false-positive pattern hiding a real one
+
+Continuation of the same objective. `sprites-world.js` (53 unique entries:
+`PICKUP_ART`, `OBJECT_ART`, `SHOT_ART`, `NPC_ART`) turned out to need real
+per-entry research, as S71/S72 predicted, and paid off: cross-referenced
+`assets/sheets/README.md` (the actual sheet inventory) rather than guessing
+whether "a chest" or "a torch" has a source equivalent — no sheet in the
+repo covers overworld objects, projectiles, or pickups at all, which makes
+"drawn" a *confirmed* fact for 50 of the 53 entries, not a default assumed
+in the absence of evidence.
+
+**Three entries are genuinely `derived`, and finding them required reading
+what each comment actually claims, not skimming for the word:**
+- `p_rupee`: its own header states the exact geometric relationship to
+  `sprites-hud.js`'s real `hud_rupee` icon (a span inequality `lo <= c+r <=
+  hi` at two different N values) — this is `derived` by the rotation's own
+  definition, word for word.
+- `p_heart`: "The silhouette is hud_heart4's own, at twice the size" — same
+  relationship, doubled rather than widened.
+- `p_heartpiece`: composed from `p_heart`'s own silhouette (this file's,
+  not a sheet's), cut to one quadrant — derived from an already-derived
+  sprite, which still satisfies the definition since the lineage traces
+  back to extracted pixels.
+
+**The same false-positive-tag trap S72 found in `sprites-gear.js` was
+ALREADY LIVE in this file before this session touched it, and it was
+hiding the wrong number.** `p_heart`'s original comment said "EXTRACTED
+off the Oracle gear sheet" (describing `hud_heart4`, not itself) with no
+other provenance word nearby — one word, unambiguous by the tool's own
+rule, so `check-drift.mjs` was already counting `p_heart` as `extracted`
+before this session existed. It is not. Fixing this dropped the
+`extracted` count from 1 to 0 and is why this session's arithmetic doesn't
+look like "53 entries tagged, 53 new" — `p_heart` was already counted
+(wrongly) as tagged, so the net gain in TAGGED entries is 52, with the
+CORRECT category split landing as `extracted` 1->0, `derived` 1->4,
+`drawn` 96->146 (0+4+146=150 tagged, 561-150=411 untagged, matching
+`check-drift.mjs`'s own printed total exactly). Same fix applied to
+`p_rupee`'s own header (three provenance words present at once:
+"EXTRACTED", "DERIVED FROM THE EXTRACTED ONE", "drawn to match") and to
+the essence/tidebell block's "`_dim` is drawn rather than derived" line —
+both reworded to state the same facts without the colliding words.
+
+**The generalizable check, worth stating as a rule rather than a story:**
+before tagging any file, `grep -n "extracted\|derived\|drawn"` across it
+FIRST. Every hit is either something that needs rewording (an existing
+comment naming a DIFFERENT sprite's provenance in passing) or a real
+pre-existing tag to preserve — and the tool has no way to tell those
+apart from a raw count, only a person reading each hit can.
+
+**Checkers re-run:** `node --check`, an independent `entryComment`
+simulation confirming 53/53 tagged with zero ambiguous (before trusting
+`check-drift.mjs`'s own number), `validate.mjs`, `test.mjs` (83/83),
+`check-build.mjs`. `npm run build` re-run, `dist/oracle-of-tides.html`
+committed.
+
+**Left for the next session:** `sprites-link.js` is the last hand-authored
+file (103 raw entries across four separate `sprites.add()` calls: Link's
+on-model overrides, `FX_ART` effects, `FX_BIG_ART`, `UI_ART`). After that,
+every remaining untagged sprite is in one of the six ripper-generated
+files and needs its Python script touched, which is a different kind of
+session (verify `check-rippers.mjs` still passes byte-identical after any
+such change) rather than a straightforward continuation of this pattern.
+
 ## S72 — tagged sprites-gear.js and sprites-title.js, applying S71's lesson from the start
 
 Continuation of the same objective. Pre-checked every drafted tag sentence

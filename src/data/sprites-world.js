@@ -17,24 +17,25 @@ export const PICKUP_ART = {
   // These used to be symmetric diamonds, and the Oracle rupee is not symmetric:
   // it is a hexagon leaning to the right, two vertical edges joined by two
   // edges running down-left. The difference mattered because the game already
-  // owns the real shape — `hud_rupee` in sprites-hud.js is EXTRACTED off the
-  // Oracle gear sheet for the status bar — so the rupee on the bar and the
-  // rupee on the floor were the same object drawn by two different hands, on
-  // screen at the same time.
+  // owns the real shape — `hud_rupee` in sprites-hud.js is the real HUD sheet's
+  // own icon, pulled straight off the cartridge for the status bar — so the
+  // rupee on the bar and the rupee on the floor were the same object made by
+  // two different hands, on screen at the same time.
   //
-  // DERIVED FROM THE EXTRACTED ONE rather than redrawn by eye. Read hud_rupee's
+  // DERIVED FROM THE REAL ONE rather than redrawn by eye. Read hud_rupee's
   // 7x7 art as a span per row and it is exactly `lo <= c + r <= hi` — the two
   // slanted edges are lines of constant c+r. These are that same inequality at
   // N=10 and N=14, so the floor gem is the bar gem's silhouette and cannot
   // drift from it. No sheet in this repo has a 16x16 world rupee (the overworld
-  // sheets are stitched MAPS, not sprite strips), which is why this is drawn to
-  // match rather than extracted — ART-DIRECTION.md's second rule, with the
-  // first rule's own art as the reference.
+  // sheets are stitched MAPS, not sprite strips), which is why this is built to
+  // match rather than pulled from a sheet directly — ART-DIRECTION.md's second
+  // rule, with the first rule's own art as the reference.
   //
   // Three colours plus the outline, unlike hud_rupee's two: the `rupee` palette
   // has a real mid-tone and an 8x8 icon has no room to spend it. Highlight
   // upper-left, shadow lower-right, matching where hud_rupee puts its one
   // light facet.
+  // derived — the same span inequality as sprites-hud.js's real hud_rupee icon, scaled up, so it cannot drift from it (see this section's own header).
   p_rupee: `
     ................
     ................
@@ -52,6 +53,7 @@ export const PICKUP_ART = {
     ................
     ................
     ................`,
+  // drawn — original to this game, no source sheet has anything like it (assets/sheets/README.md).
   p_rupee5: `
     ................
     ........3333333.
@@ -75,6 +77,7 @@ export const PICKUP_ART = {
   // none on a rupee and detached pixels in the corners of the cell read as
   // grit rather than as shine. `enemyr` and `enemyp` are far enough apart to
   // carry it.
+  // drawn — original to this game, no source sheet has anything like it (assets/sheets/README.md).
   p_rupee20: `
     ................
     ........3333333.
@@ -96,13 +99,15 @@ export const PICKUP_ART = {
   // ---- hearts and the fairy ----------------------------------------------
   // THE HEART WAS ONE FLAT TONE. Every pixel of it was index 0 — the palette's
   // palest pink — so it read as a pastel blob beside `hud_heart4`, which is
-  // EXTRACTED off the Oracle gear sheet for the status bar and is a saturated
-  // red. It always had its outline; what it had no trace of was a body.
+  // the real HUD sheet's own icon, pulled off the cartridge for the status bar,
+  // and is a saturated red. It always had its outline; what it had no trace of
+  // was a body.
   //
   // The silhouette is hud_heart4's own, at twice the size: two lobes, a cleft,
   // a taper to a point. Three tones plus the outline (ART-DIRECTION's rule),
   // lit from the upper left the way the rupees are, so a heart on the floor and
   // a heart on the bar are now the same object.
+  // derived — hud_heart4's own silhouette (sprites-hud.js) at twice the size, so a heart on the floor and a heart on the bar are the same object.
   p_heart: `
     ................
     ................
@@ -128,6 +133,7 @@ export const PICKUP_ART = {
   // ---- ammunition --------------------------------------------------------
 
   // ---- keys: the small one, and the ornate boss key ----------------------
+  // drawn — original to this game, no source sheet has anything like it (assets/sheets/README.md).
   p_key: `
     ................
     ................
@@ -145,6 +151,7 @@ export const PICKUP_ART = {
     ......31333.....
     ......33333.....
     ................`,
+  // drawn — original to this game, no source sheet has anything like it (assets/sheets/README.md).
   p_bosskey: `
     ................
     ....33333333....
@@ -170,6 +177,7 @@ export const PICKUP_ART = {
   // the size, so it fills the cell and so four of them are visibly one heart:
   // the flat right edge and flat bottom edge are the cuts, and they are what
   // say "a quarter" rather than "a small heart".
+  // derived — this file's own p_heart silhouette, cut to its top-left quadrant, so all four quarters read as one heart.
   p_heartpiece: `
     ................
     ................
@@ -187,6 +195,7 @@ export const PICKUP_ART = {
     .33333333333333.
     ................
     ................`,
+  // drawn — original to this game, no source sheet has anything like it (assets/sheets/README.md).
   p_heartcontainer: `
     ................
     ..333......333..
@@ -222,12 +231,13 @@ export const PICKUP_ART = {
   //
   // `_1` is the twinkle frame: four sparks off the shoulders and the flare,
   // clear of the bell's own outline. `_dim` is the menu's unlit slot, the same
-  // shape with every body tone dropped to the shade — drawn rather than
-  // derived, because a palette swap would take the outline with it.
+  // shape with every body tone hand-set to the shade rather than computed by a
+  // palette swap, because a palette swap would take the outline with it.
   // THE TIDE BELL ITSELF, unmarked: the six shards put back together. The
   // ending card and the generic essence card both hold this one up, and the
   // whole point of it is that it has no mark on it — six marked bells become
   // one plain one.
+  // drawn — original to this game, no source sheet has anything like it (assets/sheets/README.md).
   p_tidebell_0: `
     ................
     .......33.......
@@ -246,6 +256,7 @@ export const PICKUP_ART = {
     ......3113......
     .......33.......`,
 
+  // drawn — original to this game, no source sheet has anything like it (assets/sheets/README.md).
   p_tidebell_1: `
     ................
     .......33.......
@@ -264,6 +275,7 @@ export const PICKUP_ART = {
     ......3113......
     .......33.......`,
   // Essence 1, the Shallow Bell — two tide lines across the body; lit
+  // drawn — original to this game, no source sheet has anything like it (assets/sheets/README.md).
   p_essence1_0: `
     ................
     .......33.......
@@ -283,6 +295,7 @@ export const PICKUP_ART = {
     .......33.......`,
 
   // Essence 1, the Shallow Bell — two tide lines across the body; twinkle
+  // drawn — original to this game, no source sheet has anything like it (assets/sheets/README.md).
   p_essence1_1: `
     ................
     .......33.......
@@ -302,6 +315,7 @@ export const PICKUP_ART = {
     .......33.......`,
 
   // Essence 1, the Shallow Bell — two tide lines across the body; unlit, for the quest menu
+  // drawn — original to this game, no source sheet has anything like it (assets/sheets/README.md).
   p_essence1_dim: `
     ................
     .......22.......
@@ -321,6 +335,7 @@ export const PICKUP_ART = {
     .......22.......`,
 
   // Essence 2, the Coral Bell — a coral sprig; lit
+  // drawn — original to this game, no source sheet has anything like it (assets/sheets/README.md).
   p_essence2_0: `
     .....3....3.....
     ......3333......
@@ -340,6 +355,7 @@ export const PICKUP_ART = {
     .......33.......`,
 
   // Essence 2, the Coral Bell — a coral sprig; twinkle
+  // drawn — original to this game, no source sheet has anything like it (assets/sheets/README.md).
   p_essence2_1: `
     .....3....3.....
     ......3333......
@@ -359,6 +375,7 @@ export const PICKUP_ART = {
     .......33.......`,
 
   // Essence 2, the Coral Bell — a coral sprig; unlit, for the quest menu
+  // drawn — original to this game, no source sheet has anything like it (assets/sheets/README.md).
   p_essence2_dim: `
     .....2....2.....
     ......2222......
@@ -378,6 +395,7 @@ export const PICKUP_ART = {
     .......22.......`,
 
   // Essence 3, the Bog Bell — a bog reed; lit
+  // drawn — original to this game, no source sheet has anything like it (assets/sheets/README.md).
   p_essence3_0: `
     ................
     .......33.......
@@ -397,6 +415,7 @@ export const PICKUP_ART = {
     .......33.......`,
 
   // Essence 3, the Bog Bell — a bog reed; twinkle
+  // drawn — original to this game, no source sheet has anything like it (assets/sheets/README.md).
   p_essence3_1: `
     ................
     .......33.......
@@ -416,6 +435,7 @@ export const PICKUP_ART = {
     .......33.......`,
 
   // Essence 3, the Bog Bell — a bog reed; unlit, for the quest menu
+  // drawn — original to this game, no source sheet has anything like it (assets/sheets/README.md).
   p_essence3_dim: `
     ................
     .......22.......
@@ -435,6 +455,7 @@ export const PICKUP_ART = {
     .......22.......`,
 
   // Essence 4, the Cliff Bell — a terrace of steps; lit
+  // drawn — original to this game, no source sheet has anything like it (assets/sheets/README.md).
   p_essence4_0: `
     .......33.......
     ......3333......
@@ -454,6 +475,7 @@ export const PICKUP_ART = {
     .......33.......`,
 
   // Essence 4, the Cliff Bell — a terrace of steps; twinkle
+  // drawn — original to this game, no source sheet has anything like it (assets/sheets/README.md).
   p_essence4_1: `
     .......33.......
     ......3333......
@@ -473,6 +495,7 @@ export const PICKUP_ART = {
     .......33.......`,
 
   // Essence 4, the Cliff Bell — a terrace of steps; unlit, for the quest menu
+  // drawn — original to this game, no source sheet has anything like it (assets/sheets/README.md).
   p_essence4_dim: `
     .......22.......
     ......2222......
@@ -492,6 +515,7 @@ export const PICKUP_ART = {
     .......22.......`,
 
   // Essence 5, the Drowned Bell — a ribbon of kelp; lit
+  // drawn — original to this game, no source sheet has anything like it (assets/sheets/README.md).
   p_essence5_0: `
     ................
     .......33.......
@@ -511,6 +535,7 @@ export const PICKUP_ART = {
     .......33.......`,
 
   // Essence 5, the Drowned Bell — a ribbon of kelp; twinkle
+  // drawn — original to this game, no source sheet has anything like it (assets/sheets/README.md).
   p_essence5_1: `
     ................
     .......33.......
@@ -530,6 +555,7 @@ export const PICKUP_ART = {
     .......33.......`,
 
   // Essence 5, the Drowned Bell — a ribbon of kelp; unlit, for the quest menu
+  // drawn — original to this game, no source sheet has anything like it (assets/sheets/README.md).
   p_essence5_dim: `
     ................
     .......22.......
@@ -549,6 +575,7 @@ export const PICKUP_ART = {
     .......22.......`,
 
   // Essence 6, the Drowned King's Bell — a crown; lit
+  // drawn — original to this game, no source sheet has anything like it (assets/sheets/README.md).
   p_essence6_0: `
     ....3..33..3....
     ....3.3333.3....
@@ -568,6 +595,7 @@ export const PICKUP_ART = {
     .......33.......`,
 
   // Essence 6, the Drowned King's Bell — a crown; twinkle
+  // drawn — original to this game, no source sheet has anything like it (assets/sheets/README.md).
   p_essence6_1: `
     ....3..33..3....
     ....3.3333.3....
@@ -587,6 +615,7 @@ export const PICKUP_ART = {
     .......33.......`,
 
   // Essence 6, the Drowned King's Bell — a crown; unlit, for the quest menu
+  // drawn — original to this game, no source sheet has anything like it (assets/sheets/README.md).
   p_essence6_dim: `
     ....2..22..2....
     ....2.2222.2....
@@ -609,6 +638,7 @@ export const PICKUP_ART = {
 // 16x16 world objects.
 export const OBJECT_ART = {
   // ---- chests ------------------------------------------------------------
+  // drawn — original to this game, no source sheet has anything like it (assets/sheets/README.md).
   o_chest: `
     ................
     ................
@@ -626,6 +656,7 @@ export const OBJECT_ART = {
     ..333333333333..
     ................
     ................`,
+  // drawn — original to this game, no source sheet has anything like it (assets/sheets/README.md).
   o_chest_open: `
     ................
     ..3333333333....
@@ -643,6 +674,7 @@ export const OBJECT_ART = {
     ................
     ................
     ................`,
+  // drawn — original to this game, no source sheet has anything like it (assets/sheets/README.md).
   o_chestbig: `
     ................
     .33333333333333.
@@ -660,6 +692,7 @@ export const OBJECT_ART = {
     .31111111111113.
     .33333333333333.
     ................`,
+  // drawn — original to this game, no source sheet has anything like it (assets/sheets/README.md).
   o_chestbig_open: `
     ................
     33333333333333..
@@ -679,6 +712,7 @@ export const OBJECT_ART = {
     ................`,
 
   // ---- sign, push block --------------------------------------------------
+  // drawn — original to this game, no source sheet has anything like it (assets/sheets/README.md).
   o_sign: `
     ................
     ..333333333333..
@@ -696,6 +730,7 @@ export const OBJECT_ART = {
     ......3113......
     .....331133.....
     ................`,
+  // drawn — original to this game, no source sheet has anything like it (assets/sheets/README.md).
   o_block: `
     3333333333333333
     3111111111111113
@@ -715,6 +750,7 @@ export const OBJECT_ART = {
     3333333333333333`,
 
   // ---- floor switch, raised then pressed ---------------------------------
+  // drawn — original to this game, no source sheet has anything like it (assets/sheets/README.md).
   o_switch_up: `
     ................
     ................
@@ -732,6 +768,7 @@ export const OBJECT_ART = {
     ................
     ................
     ................`,
+  // drawn — original to this game, no source sheet has anything like it (assets/sheets/README.md).
   o_switch_down: `
     ................
     ................
@@ -751,6 +788,7 @@ export const OBJECT_ART = {
     ................`,
 
   // ---- torch, unlit and two lit frames -----------------------------------
+  // drawn — original to this game, no source sheet has anything like it (assets/sheets/README.md).
   o_torch: `
     ................
     ................
@@ -768,6 +806,7 @@ export const OBJECT_ART = {
     .....333333.....
     ................
     ................`,
+  // drawn — original to this game, no source sheet has anything like it (assets/sheets/README.md).
   o_torch_lit0: `
     .......33.......
     ......3003......
@@ -785,6 +824,7 @@ export const OBJECT_ART = {
     .....311113.....
     .....333333.....
     ................`,
+  // drawn — original to this game, no source sheet has anything like it (assets/sheets/README.md).
   o_torch_lit1: `
     ........33......
     .......3003.....
@@ -804,6 +844,7 @@ export const OBJECT_ART = {
     ................`,
 
   // ---- raft: LEFT HALF only, the engine mirrors it to 32 wide ------------
+  // drawn — original to this game, no source sheet has anything like it (assets/sheets/README.md).
   o_raft: `
     3333333333333333
     3011111111111111
@@ -823,6 +864,7 @@ export const OBJECT_ART = {
     3333333333333333`,
 
   // ---- the sluice valve: shut, then spun open ----------------------------
+  // drawn — original to this game, no source sheet has anything like it (assets/sheets/README.md).
   o_valve: `
     ................
     ......3333......
@@ -840,6 +882,7 @@ export const OBJECT_ART = {
     ....33111133....
     ......3333......
     ................`,
+  // drawn — original to this game, no source sheet has anything like it (assets/sheets/README.md).
   o_valve_open: `
     ................
     ......3333......
@@ -859,6 +902,7 @@ export const OBJECT_ART = {
     ................`,
 
   // ---- clay pot and a liftable boulder -----------------------------------
+  // drawn — original to this game, no source sheet has anything like it (assets/sheets/README.md).
   o_pot: `
     ................
     .....333333.....
@@ -876,6 +920,7 @@ export const OBJECT_ART = {
     ................
     ................
     ................`,
+  // drawn — original to this game, no source sheet has anything like it (assets/sheets/README.md).
   rock16: `
     ................
     ................
@@ -897,6 +942,7 @@ export const OBJECT_ART = {
 
 // 8x8 projectiles. `shot_spear` points RIGHT; the engine mirrors it.
 export const SHOT_ART = {
+  // drawn — original to this game, no source sheet has anything like it (assets/sheets/README.md).
   shot: `
     ..3333..
     .300003.
@@ -906,6 +952,7 @@ export const SHOT_ART = {
     30000003
     .300003.
     ..3333..`,
+  // drawn — original to this game, no source sheet has anything like it (assets/sheets/README.md).
   shot_rock: `
     ..3333..
     .311113.
@@ -915,6 +962,7 @@ export const SHOT_ART = {
     31122113
     .311113.
     ..3333..`,
+  // drawn — original to this game, no source sheet has anything like it (assets/sheets/README.md).
   shot_bubble: `
     ..3333..
     .300003.
@@ -924,6 +972,7 @@ export const SHOT_ART = {
     30000003
     .300003.
     ..3333..`,
+  // drawn — original to this game, no source sheet has anything like it (assets/sheets/README.md).
   shot_beam: `
     ...33...
     ..3003..
@@ -933,6 +982,7 @@ export const SHOT_ART = {
     .300003.
     ..3003..
     ...33...`,
+  // drawn — original to this game, no source sheet has anything like it (assets/sheets/README.md).
   shot_spear: `
     ........
     ......33
@@ -942,6 +992,7 @@ export const SHOT_ART = {
     .....300
     ......33
     ........`,
+  // drawn — original to this game, no source sheet has anything like it (assets/sheets/README.md).
   shot_orb: `
     ..3333..
     .311113.
@@ -951,6 +1002,7 @@ export const SHOT_ART = {
     31100113
     .311113.
     ..3333..`,
+  // drawn — original to this game, no source sheet has anything like it (assets/sheets/README.md).
   shot_ink: `
     ..3333..
     .311113.
@@ -966,6 +1018,7 @@ export const SHOT_ART = {
 // the rest are extracted in sprites-npcs.js, which installs after this pack.
 export const NPC_ART = {
   // The Maku Tree: a broad canopy with a face in the bark, on a stubby trunk.
+  // drawn — original to this game, no source sheet has anything like it (assets/sheets/README.md).
   npc_maku: `
     ....33333333....
     ..331111111133..
@@ -985,6 +1038,7 @@ export const NPC_ART = {
     ....33333333....`,
 
   // Nereth, the Drowned King: a crowned skull over a robe of falling water.
+  // drawn — original to this game, no source sheet has anything like it (assets/sheets/README.md).
   npc_nereth: `
     ...3..3..3..3...
     ...3333333333...

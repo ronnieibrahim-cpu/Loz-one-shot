@@ -238,7 +238,20 @@ def emit(path):
     lines.append("import { sprites } from '../gfx/art.js';")
     lines.append('')
     lines.append('export const PLAYER_ART = {')
+    # Provenance tags for tools/check-drift.mjs's art-provenance rotation
+    # objective (docs/prompts/STATE.md #2). Every FRAMES entry is a direct crop
+    # off the sheet (mirrored in place for a `flip` pose, which is orientation,
+    # not recomposition) — extracted. The three fall frames are `shrink()` of
+    # an already-extracted crop, a real resampling rather than a plain cut —
+    # derived.
+    fall_frames = {'link_fall_0', 'link_fall_1', 'link_fall_2'}
     for name in sorted(art):
+        if name in fall_frames:
+            lines.append("  // derived — a nearest-neighbour shrink() of this file's own "
+                          "idle crop, not a fresh cut from the sheet.")
+        else:
+            lines.append("  // extracted — a direct crop off the sheet named in this "
+                          "file's own header (mirrored in place for a flipped pose).")
         lines.append(f'  {name}: `')
         for r in art[name]:
             lines.append('    ' + r)
