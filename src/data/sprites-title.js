@@ -623,6 +623,8 @@ const splash = buildSplash();
 // ---------------------------------------------------------------------------
 
 export const TITLE_ART = {
+  // drawn — the title screen's own art; nothing in assets/sheets/ has this
+  // game's name on it (see this file's own header for the full account).
   title_splash: { art: toArt(splash.art), pal: 'title_splash' },
   title_caption: { art: toArt(captionArt), pal: 'title_caption' },
   title_sub: { art: toArt(subArt), pal: 'title_caption' },

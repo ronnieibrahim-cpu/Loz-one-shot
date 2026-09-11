@@ -24,6 +24,7 @@ import { sprites } from '../gfx/art.js';
 import { registerPalettes } from '../gfx/palettes.js';
 
 export const GEAR_ART = {
+  // drawn — original gear this game needs, made to the register measured off sprites-hud.js's real-sheet icons rather than invented freehand.
   i_conch: { pal: 'i_conch', art: `
     ................
     .........333....
@@ -51,6 +52,7 @@ export const GEAR_ART = {
   // A BOOT, toe to the left, on a kelp sole. It was a filled triangle with green
   // dashes down one side, which read as a fir tree or a dune rather than
   // anything you wear. 14 wide and 48%% full; now 8 and 28%%.
+  // drawn — original gear this game needs, made to the register measured off sprites-hud.js's real-sheet icons rather than invented freehand.
   i_cleats: { pal: 'i_cleats', art: `
     ................
     ................
@@ -72,6 +74,7 @@ export const GEAR_ART = {
   // palettes, which is exactly how the source separates sword and shield levels
   // — and is why `icon: ['i_cleats', 'i_cleats2']` in items.js reads as one item
   // upgraded rather than as two different objects.
+  // drawn — original gear this game needs, made to the register measured off sprites-hud.js's real-sheet icons rather than invented freehand.
   i_cleats2: { pal: 'i_cleats2', art: `
     ................
     ................
@@ -93,6 +96,7 @@ export const GEAR_ART = {
   // links overlap. The hole has to be transparent, not filled: with a filled
   // centre the run of overlapping stamps merges into one grey bar. Lit from the
   // top, so a diagonal run still reads as metal.
+  // drawn — original gear this game needs, made to the register measured off sprites-hud.js's real-sheet icons rather than invented freehand.
   i_chain: { pal: 'i_chain', art: `
     ........
     ..3333..
@@ -102,6 +106,7 @@ export const GEAR_ART = {
     .311113.
     ..3333..
     ........` },
+  // drawn — original gear this game needs, made to the register measured off sprites-hud.js's real-sheet icons rather than invented freehand.
   i_hookhead: { pal: 'i_hookhead', art: `
     ........
     .3....3.
@@ -116,11 +121,12 @@ export const GEAR_ART = {
   //
   // It used to be a rectangle inside a heavy uniform border, which read as a UI
   // PANEL rather than as a thing Link is carrying — the same fault as the
-  // Chartstone below. Measured against the 18 extracted icons: those have a
+  // Chartstone below. Measured against the 18 real-sheet icons in sprites-hud.js: those have a
   // black outline that varies in weight around the shape and a body that is
   // never one flat tone. This has both. Nothing on the Oracle gear sheet is a
   // dungeon map (all 37 of its cells are named in docs/ART-BACKLOG.md), so this
   // is the draw-to-match half of the rule.
+  // drawn — original gear this game needs, made to the register measured off sprites-hud.js's real-sheet icons rather than invented freehand.
   i_map: { pal: 'i_map', art: `
     ................
     ....33333333....
@@ -145,6 +151,7 @@ export const GEAR_ART = {
   // with blue stripes behind it. The palette lost its second blue for a stone
   // shadow, because a chartstone is stone that has been scored, not a piece of
   // sea.
+  // drawn — original gear this game needs, made to the register measured off sprites-hud.js's real-sheet icons rather than invented freehand.
   i_chart: { pal: 'i_chart', art: `
     ................
     ................
@@ -176,6 +183,7 @@ export const GEAR_ART = {
   // Brineglass Lens: a disc of green sea-glass in a ring, with a short handle
   // running out to the bottom right. The handle is what stops it reading as
   // the Compass, which is the only other round icon in the set.
+  // drawn — original gear this game needs, made to the register measured off sprites-hud.js's real-sheet icons rather than invented freehand.
   i_lens: { pal: 'i_lens', art: `
     ................
     .....33333......
@@ -193,6 +201,7 @@ export const GEAR_ART = {
     ..........322...
     ...........33...
     ................` },
+  // drawn — original gear this game needs, made to the register measured off sprites-hud.js's real-sheet icons rather than invented freehand.
   i_lens2: { pal: 'i_lens2', art: `
     ................
     .....33333......
@@ -213,6 +222,7 @@ export const GEAR_ART = {
   // Squall Bellows: the concertina seen side on, nozzle to the right, handles
   // top and bottom. The pleats are what name it — a smooth wedge reads as an
   // anvil or a bell, which two drafts confirmed.
+  // drawn — original gear this game needs, made to the register measured off sprites-hud.js's real-sheet icons rather than invented freehand.
   i_bellows: { pal: 'i_bellows', art: `
     ................
     ...3333.........
@@ -233,6 +243,7 @@ export const GEAR_ART = {
   // Reefseed: a fluted coral seed-case, wide at the foot and split at the
   // crown where the pillar comes out of it. The split is what stops it reading
   // as an acorn or a bomb.
+  // drawn — original gear this game needs, made to the register measured off sprites-hud.js's real-sheet icons rather than invented freehand.
   i_reefseed: { pal: 'i_reefseed', art: `
     ................
     .......33.......
@@ -253,6 +264,7 @@ export const GEAR_ART = {
   // The same case cracked open with the sprout showing, drawn for the two
   // seconds between landing and growing. It is a different silhouette on
   // purpose: the wait is the item, so the wait has to be legible.
+  // drawn — original gear this game needs, made to the register measured off sprites-hud.js's real-sheet icons rather than invented freehand.
   o_coralbud: { pal: 'i_reefseed', art: `
     ................
     ................
@@ -278,6 +290,7 @@ export const GEAR_ART = {
   // flukes come out 1-2px, the outliner turns every pixel of them to edge, and
   // they render as loose black specks. One hook is the legible shape, and it is
   // what "cast into deep water and drag" looks like anyway.
+  // drawn — original gear this game needs, made to the register measured off sprites-hud.js's real-sheet icons rather than invented freehand.
   i_dredge: { pal: 'i_dredge', art: `
     ................
     .......22.......
@@ -301,6 +314,7 @@ export const GEAR_ART = {
   //
   // NOTHING NARROWER THAN 4px CAN CARRY AN INTERIOR: every pixel of a 2px run
   // is an edge, so the haft came out a solid black bar until it was widened.
+  // drawn — original gear this game needs, made to the register measured off sprites-hud.js's real-sheet icons rather than invented freehand.
   i_rod: { pal: 'i_rod', art: `
     ................
     ................
@@ -320,6 +334,7 @@ export const GEAR_ART = {
     ................` },
   // Ferryman's Coin: a holed coin on edge, the way a toll is held out. The
   // hole has to be transparent — filled, it reads as a rupee at 16px.
+  // drawn — original gear this game needs, made to the register measured off sprites-hud.js's real-sheet icons rather than invented freehand.
   i_coin: { pal: 'i_coin', art: `
     ................
     .....33333......
@@ -340,6 +355,7 @@ export const GEAR_ART = {
   // Bottled Tide: a stoppered flask, half full, with the waterline drawn flat
   // across it. The flat line is the whole read — a flask drawn full is a
   // potion, and this is a measure of water.
+  // drawn — original gear this game needs, made to the register measured off sprites-hud.js's real-sheet icons rather than invented freehand.
   i_bottle: { pal: 'i_bottle', art: `
     ................
     ......3333......
@@ -359,13 +375,14 @@ export const GEAR_ART = {
     ................` },
   // The Tidewright's Anchor. No Oracle sheet has one — neither game has an
   // anchor item, or an anchor prop on any of the overworld rips — so this is
-  // the "draw to match" half of the rule, measured against the extracted icons
+  // the "draw to match" half of the rule, measured against the real-sheet icons
   // rather than freehand: 10 wide by 15 tall in the cell, 35% fill, two tones
   // plus pure black, hard 1px outline all the way round.
   //
   // Ring, stock, shank, flukes — the four parts that make an anchor read in
   // silhouette. The stock (the crossbar) is what stops it reading as a plumb
   // bob, and the flukes are what stop it reading as a key.
+  // drawn — original gear this game needs, made to the register measured off sprites-hud.js's real-sheet icons rather than invented freehand.
   i_anchor: { pal: 'i_anchor', art: `
     .....333333.....
     .....33..33.....
@@ -385,6 +402,7 @@ export const GEAR_ART = {
     ................` },
   // The same object lying on the ground: squatter, its stock foreshortened,
   // sat near the bottom of the cell so it reads as resting rather than floating.
+  // drawn — original gear this game needs, made to the register measured off sprites-hud.js's real-sheet icons rather than invented freehand.
   o_anchor: { pal: 'i_anchor', art: `
     ......3333......
     .....33..33.....
@@ -406,6 +424,7 @@ export const GEAR_ART = {
   // sat low in the cell so it reads as resting rather than floating. The
   // outline is computed by dilation on a PADDED grid — see the title
   // wordmark's note in docs/HANDOFF.md for what happens without the pad.
+  // drawn — original gear this game needs, made to the register measured off sprites-hud.js's real-sheet icons rather than invented freehand.
   i_kilnshell: { pal: 'i_kilnshell', art: `
     ................
     ................
@@ -423,6 +442,7 @@ export const GEAR_ART = {
     ......3333......
     ................
     ................` },
+  // drawn — original gear this game needs, made to the register measured off sprites-hud.js's real-sheet icons rather than invented freehand.
   o_kilnshell: { pal: 'i_kilnshell', art: `
     ................
     ................
@@ -443,6 +463,7 @@ export const GEAR_ART = {
   // Alight. The flame touches the shell rather than hovering over it: a gap
   // of one row puts an outline between them and the fire reads as a
   // separate object. Two frames, differing by well over three pixels.
+  // drawn — original gear this game needs, made to the register measured off sprites-hud.js's real-sheet icons rather than invented freehand.
   o_kilnshell_lit0: { pal: 'fire', art: `
     ......3333......
     .....331133.....
@@ -460,6 +481,7 @@ export const GEAR_ART = {
     ....33212233....
     .....331233.....
     ......3333......` },
+  // drawn — original gear this game needs, made to the register measured off sprites-hud.js's real-sheet icons rather than invented freehand.
   o_kilnshell_lit1: { pal: 'fire', art: `
     ......333.......
     .....33133......
@@ -477,6 +499,7 @@ export const GEAR_ART = {
     ....33212233....
     .....331233.....
     ......3333......` },
+  // derived — pixel-identical to sprites-hud.js's i_bomb (pulled straight off the cartridge) with a lit fuse added, so it cannot drift from the sprite it sits next to.
   i_bomb_lit: { pal: 'i_bomb_lit', art: `
     ................
     .........33.....
@@ -502,6 +525,7 @@ export const GEAR_ART = {
   // — a blank is a charm that has not been cut yet — and are told apart by the
   // scored line across the carved one and by their palettes, which is the
   // whole visual language of the system.
+  // drawn — original gear this game needs, made to the register measured off sprites-hud.js's real-sheet icons rather than invented freehand.
   p_blank: { pal: 'p_blank', art: `
     ................
     ................
@@ -519,6 +543,7 @@ export const GEAR_ART = {
     ................
     ................
     ................` },
+  // drawn — original gear this game needs, made to the register measured off sprites-hud.js's real-sheet icons rather than invented freehand.
   i_charm: { pal: 'i_charm', art: `
     ................
     ......333.......

@@ -1,3 +1,111 @@
+## S72 — tagged sprites-gear.js and sprites-title.js, applying S71's lesson from the start
+
+Continuation of the same objective. Pre-checked every drafted tag sentence
+for accidental extra provenance words before writing it this time (the
+lesson S71 paid for), and it caught real problems before they shipped:
+
+**`sprites-gear.js` (25 unique entries) is NOT uniform, as S70 predicted.**
+24 are `drawn` (original gear, no Oracle sheet has anything like it) but
+`i_bomb_lit` is `derived`: `sprites-hud.js` (a ripper-generated, genuinely
+EXTRACTED file) defines `i_bomb`, and this file's own header says
+`i_bomb_lit` is "the extracted bomb pixel for pixel with its fuse alight"
+— literally recomposed from another sprite's extracted pixels, which is
+exactly the rotation's own definition of `derived`. Found two more
+pre-existing traps before inserting anything: `i_map` and `i_anchor`
+already read as (wrongly) `extracted`-tagged by `check-drift.mjs`, not
+because anyone tagged them that way on purpose, but because their own
+flavour comments say "measured against the extracted icons" — one
+provenance word, alone, passes the tool's own single-word check with no
+sense of WHOSE provenance it's describing. Both are actually `drawn` (the
+same comments call this "the draw-to-match half of the rule" one line
+later). Reworded those two comments to say "real-sheet icons" instead of
+"extracted icons" — same meaning, and it also fixes a false reading that
+existed before this session touched the file, not just one this session
+would have caused. `extracted` count: 3 -> 1 (both false positives
+removed), `derived`: 0 -> 1 (the one real case), `drawn`: 69 -> 89.
+
+**`sprites-title.js` (7 real sprite entries, per S70's own finding) is
+uniform** — its header states outright that every glyph is "drawn to
+match rather than extracted" — so one comment above the first of the 7
+consecutive one-line entries in `TITLE_ART` was enough: `check-drift.mjs`'s
+comment-walk skips back through consecutive sibling ENTRY_RE lines with no
+separating comment, so a single header comment above `title_splash`
+covers `title_caption` through `title_press` too. Verified this is real by
+the arithmetic, not by assumption: `drawn` 89 -> 96, exactly +7.
+`sprites-title.js` is now fully tagged — its 26 font glyphs and its 5
+layout/geometry fields are correctly NOT sprites and correctly carry no
+tag; nothing left to do in this file for this objective.
+
+**Checkers re-run:** `node --check` on both files, `validate.mjs`,
+`test.mjs` (83/83), `check-build.mjs`. `npm run build` re-run,
+`dist/oracle-of-tides.html` committed. Before trusting `check-drift.mjs`'s
+own count this time, independently re-ran `entryComment`'s exact logic
+against both files in a throwaway script and confirmed zero ambiguous
+entries — worth doing every time a file's existing prose might already
+contain a stray provenance word, which by S71/S72's combined experience is
+common in this codebase's own writing style (comparing against "the
+extracted set" is how half these files explain their own register).
+
+**Left for the next session:** `sprites-link.js` (103 raw entries: Link's
+on-model overrides, FX_ART effects, FX_BIG_ART, UI_ART icons — four
+different `sprites.add()` calls in one file, almost certainly not
+uniform) and `sprites-world.js` (53 raw: pickups, objects, shot art, and a
+hand-drawn NPC placeholder set that `sprites-npcs.js` partly overrides by
+name — the cross-file name collision S70 flagged, worth checking whether
+it changes what "this file's own provenance" even means for the
+overridden names). After those two, every remaining untagged sprite is in
+one of the six ripper-generated files, which need their Python script
+touched, not the `.js` output.
+
+## S71 — tagged sprites-trade.js, and found a trap that will bite every future tagging session by default
+
+`docs/prompts/NEXT-PROMPT.md` scoped this to `sprites-trade.js`'s 11
+entries, uniform for the same reason bosses were: its own header says
+"HAND-DRAWN, and deliberately so."
+
+**A trap worth its own heading, because it is not a one-off mistake, it is
+what the OBVIOUS phrasing does.** First attempt tagged all 11 entries with
+a comment ending "...drawn to match the extracted people holding these" —
+a completely natural sentence, since that IS why the art is drawn (to
+match `sprites-npcs.js`'s extracted people). `check-drift.mjs`'s own
+entry-comment reader counts ANY comment block containing more than one of
+`extracted`/`derived`/`drawn` as AMBIGUOUS and silently discards it as
+untagged — so writing the honest, natural reason for a `drawn` tag, in a
+file whose whole point is contrasting itself with extracted art nearby, is
+exactly the sentence shape that trips the guard. Ran `check-drift.mjs`
+after the first pass and got `drawn: 58` — DOWN one from the 59 that S70
+left, not up 11 — because one entry (`i_t_whelk`) already carried a
+legitimate single-word `drawn` tag in its ORIGINAL prose ("Drawn as a
+spiral..."), and appending a comment containing "extracted" next to it
+flipped that one from tagged to ambiguous too. `git checkout` the file and
+redid it with the word "extracted" removed from the tag sentence
+entirely (same meaning, "made to match the people holding these").
+Re-ran: `drawn: 69` (59 + 10 new — `i_t_whelk` was already one of the 59).
+
+**The reusable lesson:** a provenance tag's comment must contain EXACTLY
+ONE of `extracted`/`derived`/`drawn`, even in explanatory prose that
+mentions a DIFFERENT sprite's provenance in passing. Before writing a tag
+comment, grep the drafted sentence for the other two words, not just
+confirm the intended one is present — and after tagging a file, run
+`check-drift.mjs` and check the delta arithmetic actually adds up (baseline
++ new-entries-tagged), not just that the number went up, since a file with
+even one entry already legitimately tagged (like `i_t_whelk` here) makes
+"count of entries touched" and "count of new drawn tags" different
+numbers, and a naive off-by-a-few reads as success when it is actually
+silently eating a pre-existing tag elsewhere in the same file.
+
+**Checkers re-run:** `node --check`, `validate.mjs`, `test.mjs` (83/83),
+`check-build.mjs`. `npm run build` re-run, `dist/oracle-of-tides.html`
+committed. `check-drift.mjs`: `drawn` 59 -> 69, `untagged` 499 -> 489,
+`extracted`/`derived` unchanged.
+
+**Left for the next session:** ten `sprites-*.js` files still fully or
+mostly untagged. `sprites-gear.js` is next per S70's own note (NOT
+uniform — some icons measured against extracted art, others original —
+needs real per-entry judgement, not one blanket sentence, and now doubly
+needs the ambiguous-word check above since "measured against the
+extracted set" is exactly its own file header's phrase).
+
 ## S70 — built the sprite contact-sheet tool, then tagged all 49 boss/miniboss sprites `drawn` in the same session
 
 `docs/prompts/NEXT-PROMPT.md` scoped this to `tools/shoot-sprites.mjs`

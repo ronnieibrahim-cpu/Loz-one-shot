@@ -21,6 +21,7 @@ export const TRADE_ART = {
   // A glass net-float with a hairline crack through it. It still holds air,
   // which is the joke: it is worthless to the woman who needs it to float and
   // perfect for the boy who needs something to sink.
+  // drawn — importing Seasons' own trade-item art would import its design (CLAUDE.md); made to match the people holding these.
   i_t_float: { pal: 'i_t_float', art: `
     ................
     .....333333.....
@@ -41,6 +42,7 @@ export const TRADE_ART = {
 
   // The claw the crab left behind. Pincer open, hinge at the bottom — a closed
   // claw at 16px is a mitten.
+  // drawn — importing Seasons' own trade-item art would import its design (CLAUDE.md); made to match the people holding these.
   i_t_claw: { pal: 'i_t_claw', art: `
     .....33.........
     ....3003........
@@ -61,6 +63,7 @@ export const TRADE_ART = {
 
   // A brick of pan salt, cut and dried. Square, because that is what a salt
   // pan gives you back — the shape is the Salters' whole trade.
+  // drawn — importing Seasons' own trade-item art would import its design (CLAUDE.md); made to match the people holding these.
   i_t_brick: { pal: 'i_t_brick', art: `
     ................
     ................
@@ -81,6 +84,7 @@ export const TRADE_ART = {
 
   // Smoked eel, hung from a stick through the head. Kept whole and curled,
   // because a straight eel at this size is a stick.
+  // drawn — importing Seasons' own trade-item art would import its design (CLAUDE.md); made to match the people holding these.
   i_t_eel: { pal: 'i_t_eel', art: `
     ...3333.........
     ..300003........
@@ -101,6 +105,7 @@ export const TRADE_ART = {
 
   // A sounding lead: a plumb of iron on a knotted line, the last thing off a
   // drowned boat and the first thing anyone asks for.
+  // drawn — importing Seasons' own trade-item art would import its design (CLAUDE.md); made to match the people holding these.
   i_t_lead: { pal: 'i_t_lead', art: `
     .......33.......
     ......3003......
@@ -121,6 +126,7 @@ export const TRADE_ART = {
 
   // A whelk shell that rings when it is wet. Drawn as a spiral: the coil is
   // the only thing that tells a shell from a stone at 16px.
+  // drawn — importing Seasons' own trade-item art would import its design (CLAUDE.md); made to match the people holding these.
   i_t_whelk: { pal: 'i_t_whelk', art: `
     .......33.......
     ......3003......
@@ -142,6 +148,7 @@ export const TRADE_ART = {
   // A pearl the reef only gives up at slack water, on the half-shell it came
   // out of. The pearl is index 0 and nothing else on the sprite is, so it is
   // the brightest thing in the cell.
+  // drawn — importing Seasons' own trade-item art would import its design (CLAUDE.md); made to match the people holding these.
   i_t_pearl: { pal: 'i_t_pearl', art: `
     ................
     ................
@@ -162,6 +169,7 @@ export const TRADE_ART = {
 
   // A cup cut from a tree that drinks. Bogwood: the grain runs round it
   // because the tree grew round the water, and the Kelpers will tell you so.
+  // drawn — importing Seasons' own trade-item art would import its design (CLAUDE.md); made to match the people holding these.
   i_t_cup: { pal: 'i_t_cup', art: `
     ................
     ...33333333.....
@@ -182,6 +190,7 @@ export const TRADE_ART = {
 
   // A stoppered jar of brine-jelly, which is bait, and which the witch of the
   // bog will not explain any further than that.
+  // drawn — importing Seasons' own trade-item art would import its design (CLAUDE.md); made to match the people holding these.
   i_t_jar: { pal: 'i_t_jar', art: `
     .....3333.......
     ....302203......
@@ -202,6 +211,7 @@ export const TRADE_ART = {
 
   // The Cold Kettle. It went out with the tide and it comes back full of the
   // sea, and it is the only object in the chain that anybody has been missing.
+  // drawn — importing Seasons' own trade-item art would import its design (CLAUDE.md); made to match the people holding these.
   i_t_kettle: { pal: 'i_t_kettle', art: `
     ........33......
     .......3003.....
@@ -223,6 +233,7 @@ export const TRADE_ART = {
   // The bell-rope off the old Tide Bell, forty years in a drawer. A rope with
   // a bell-ringer's sally on it — the woolly grip. It is the only thing in the
   // chain the Maku Tree has any interest in.
+  // drawn — importing Seasons' own trade-item art would import its design (CLAUDE.md); made to match the people holding these.
   i_t_rope: { pal: 'i_t_rope', art: `
     .......33.......
     ......3013......
