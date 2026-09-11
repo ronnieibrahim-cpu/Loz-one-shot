@@ -1,3 +1,105 @@
+## S62 — pinned down D6's freeze exactly (a real wall, not `fence` or `evade`), tried the obvious fix, and measured it into the ground: reverted, D1 flipped from a clean win to a loss
+
+Direct continuation of S61, whose one open question was: is the D6 freeze
+a `fence`-vs-wall problem or an `evade`-cost problem? Traced per-frame
+(not per-20-frames like S61) with temporary `console.log` instrumentation
+added to a SCRATCH COPY of `tools/actor-runtime.mjs` (never touched the
+committed file for the tracing itself) covering `evade`'s hazard list and
+candidate costs, `safe`'s `fence(m)` output, and the raw retreat direction
+computed at the "shelled: wait out the tell" call site.
+
+**Answer: neither of the two guesses. A third mechanism** — the retreat
+DIRECTION ITSELF is never checked against real wall geometry before being
+committed to, and by the time a hazard exists for `evade` to reason about,
+the retreat has already failed. Exact trace, D6 default seed, frames
+630-679: the player retreats correctly (x: 133->139) for six frames, then
+FREEZES at (139,105) for the rest of the window while the boss also sits
+still at (100,98), 46px away (the exact distance every hit in every seed
+logs). At every one of those frames: the raw retreat direction is
+unchanged (`right|down`), `fence(m)` returns it UNCHANGED (not vetoed —
+the player is one pixel inside `fence`'s own `EDGE=12` margin off
+`room.pw`/`room.ph`), and `evade`'s hazard list is EMPTY (no hazard yet),
+so `evade`'s own early-return hands the direction straight through
+unexamined. Checked the real room grid (`src/data/dungeons-b.js`,
+`'1,3,1'`): the player's tile column (8) is floor, but its hitbox's own
+east edge sits flush against the REAL wall at column 9 — a wall `fence`'s
+generic room-pixel-margin arithmetic has no way to know about, because it
+only guards the room's OUTER four edges, never an interior wall inside a
+smaller margin. Nothing between "compute the retreat vector" and "hand it
+to the input" ever asks the engine "does this direction actually go
+anywhere" — not `fence` (edge-only), not `evade` (nothing to dodge yet).
+
+**Tried the direct fix and it was a clear, sizeable regression — reverted
+in full, nothing shipped.** Added a `canStep(p, mask)` helper next to
+`fence` inside `dBoss`, calling the engine's own `ent.canOccupy` (never
+re-derived — same function `Entity.moveEntity`'s per-axis wall-slide
+already calls) at an 8px lookahead; the "shelled" retreat branch tried the
+full diagonal first, fell back to whichever single axis still passed
+`canStep`, and left the original diagonal unchanged if neither did. Full
+sweep before trusting it: **D1's default seed — a dungeon that has been a
+clean, robust 6/6 for as long as this thread has measured it — flipped
+from a win (4 qh lost) to PLAYER DIED (12 qh lost, frame 1120).** D6 got
+uniformly WORSE, not better: all 6 standard seeds converged to an
+identical loss at frame 860, 8 straight body-contact hits (0 projectile),
+32 of 32 qh — a faster, harder death than any of the pre-fix seeds, and
+suspiciously IDENTICAL across seeds that used to diverge, meaning the
+fight was failing before any seed-dependent content even had a chance to
+run. Reverted via `git checkout -- tools/actor-runtime.mjs`; confirmed D1
+and D6 both back to their exact known baselines (D1: 24/24 boss damage, 4
+qh lost; D6: 78/80, 32 qh lost, 2060 frames) after the revert.
+
+**Why it almost certainly failed, as a lead for the next attempt (not
+verified further this session — budget spent confirming the regression
+was real rather than root-causing the fallback's own bug):** `canOccupy`
+only checks tile solidity, not other entities, so the regression is not
+"the check thinks the boss's body is a wall" — it is checking geometry
+that legitimately exists. The likely mechanism is closer to home: an
+8px-ahead diagonal check will read as blocked near ANY moderately tight
+corner or room feature, not only the one genuine dead-end this was built
+for, and D1's own arena (Gohmaraq is a shelled boss and runs this exact
+branch) apparently has enough of those that the fallback substitution
+fired constantly on completely ordinary retreats, not just the rare
+freeze — trading a well-aimed diagonal for a worse single-axis retreat on
+frames that were never broken. **This project already has a proven-safe
+shape for exactly this class of problem and this fix didn't use it**:
+`breakDeadlock`'s `stuckFrames`/`stallFrames` (S57/S58, `tools/actor-
+runtime.mjs`) never override anything on a single frame's geometry —
+they accumulate real evidence of NO PROGRESS over a 30-60 frame window
+before bypassing anything, which is exactly why they've shipped clean
+across six dungeons where this session's per-frame geometric override did
+not. The next attempt at this should gate on an accumulated stall (the
+same kind of counter, scoped to this branch: distance-to-boss or
+player-position not changing for N frames while shelled) rather than
+re-litigating the geometry every single frame regardless of whether
+anything is actually wrong.
+
+**Nothing shipped.** `tools/actor-runtime.mjs` is byte-identical to S61's
+end state; `src/` is untouched; no rebuild needed. This is a second
+diagnosis-and-rejection session on the same thread, and per this project's
+own established pattern (S54-56's `hazards()`-velocity attempts, S59's
+Nereth `breakDeadlock` transplant) that is a legitimate, valuable outcome
+on its own: the mechanism is now precisely known (not "one of two
+guesses" — a specific, confirmed third mechanism), and one wrong-shaped
+fix is ruled out with a concrete reason rather than left for someone else
+to re-discover by trying the same obvious thing.
+
+**Validation:** `git diff` empty on `tools/actor-runtime.mjs` after revert
+(confirmed byte-identical to the pre-session commit). D1 and D6 default-
+seed re-measurements both match their documented baselines exactly. Full
+`node tools/test.mjs` / `check-playthrough.mjs` / `replay.mjs` sweep was
+NOT re-run since the revert makes the tree identical to the already-green
+S61 commit — nothing to re-verify that S61 didn't already cover.
+
+**Recommended next step, concretely scoped:** implement the same
+`canOccupy`-based check, but gated behind an accumulated stall counter
+(the `stuckFrames`/`stallFrames` pattern) inside the "shelled: wait out the
+tell" branch specifically, rather than every frame — override the retreat
+direction only once the player's position has genuinely not changed for
+~30 frames while shelled, the same evidence bar `breakDeadlock` already
+uses elsewhere. Validate with the SAME full sweep this session used (all
+six dungeons, standard 6 seeds, watching D1 specifically since it's the
+one this attempt broke) before trusting it.
+
 ## S61 — traced D3 and D6's losing boss fights per NEXT-PROMPT's own required method, and found S59's "isProjectile chip damage" diagnosis is not the real (or not the only) cause on either — a NEW, precise, corrected diagnosis, no code changed yet
 
 Before touching anything, checked whether `docs/prompts/NEXT-PROMPT.md` was

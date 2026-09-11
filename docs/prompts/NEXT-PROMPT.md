@@ -9,7 +9,7 @@ its name) — S61 found one branch that looked relevant and was a week stale;
 don't repeat that check by hand if a fresher one already did it, but don't
 skip it either.
 
-## The honest state of the roster (read `docs/NEXT-SESSION.md` S61, then S59, in full first)
+## The honest state of the roster (read `docs/NEXT-SESSION.md` S62, then S61, then S59, in full first)
 
 Standard 6-seed sample, `tools/measure-boss-combat.mjs <d> --seed=N`, in-order
 health, no god mode:
@@ -39,27 +39,44 @@ claim does not hold as stated for EITHER dungeon, in two DIFFERENT ways:**
   (The `gel` chase-contact piece is the ALREADY-DIAGNOSED, ALREADY-TRIED-
   AND-REVERTED `hazards()`-velocity gap — S54-S56, see
   `docs/prompts/LEDGER.md`'s "Measured and rejected" — do not re-open it.)
-- **D6 (Nereth):** found something more specific and more promising than a
-  dodge-tuning gap. Every one of the 6 standard seeds, WINS INCLUDED, eats
-  an identical opening tax — three `isProjectile` hits, 3 qh each (9 of 32,
+- **D6 (Nereth): mechanism now CONFIRMED (S62), one fix shape already tried
+  and rejected.** Every one of the 6 standard seeds, WINS INCLUDED, eats an
+  identical opening tax — three `isProjectile` hits, 3 qh each (9 of 32,
   28% of the whole fight), at the same three frames, same distance, every
   single time, because nothing about it involves RNG (it's Nereth's
-  deterministic phase-1 trident spread). A direct position trace found WHY
-  it's identical every seed: **the player sits completely stationary for
-  220+ consecutive frames while the boss also sits stationary, exactly the
-  logged hit distance apart, with zero evasive movement across three full
-  attack cycles** — even though `dBoss` DOES issue a retreat directive in
-  this state (`tools/actor-runtime.mjs`'s "shelled: wait out the tell"
-  branch, ~line 1541). The retreat is being filed and going nowhere. Two
-  candidate mechanisms, NOT yet distinguished: `fence` zeroing the retreat
-  vector against a wall before `evade` ever runs (per `safe`'s own
-  `evade(g, fence(m), ...)`), or `evade`'s cost comparison finding no
-  candidate direction better than standing still until the shot is too
-  close to react to. **This is likely a narrower, lower-risk bug than "fix
-  evade's general dodge logic"** — it may live entirely in one `dBoss`
-  branch or one `fence` check at one specific equilibrium point, not in
-  `SHOT_HORIZON`/`moveCost`, the shared function every boss fight runs
-  through.
+  deterministic phase-1 trident spread). S61 found the player frozen
+  stationary for 220+ frames while it happens; S62's per-frame trace
+  (temporary instrumentation on a scratch copy of `actor-runtime.mjs`, not
+  committed) found WHY: it is neither of the two mechanisms S61 left open.
+  **The retreat direction is computed once from pure geometry ("away from
+  the boss") and is never checked against real wall collision before being
+  committed to.** `fence` doesn't catch it (it only guards the room's four
+  OUTER edges via a pixel margin off `room.pw`/`room.ph`, and the player
+  was one pixel inside that margin — the real wall it's pinned against is
+  an INTERIOR one `fence` has no way to see). `evade` doesn't catch it
+  either (its hazard list is empty until the boss's own attack windup
+  fires, so its early-return hands the blocked direction through
+  unexamined for the entire wait). Confirmed against the real room grid
+  (`src/data/dungeons-b.js`, room `'1,3,1'`): the player's hitbox sits
+  flush against a real wall the whole freeze.
+  **S62 tried the direct fix — a `canOccupy`-based check (the engine's own
+  function, never re-derived) on the retreat direction, falling back to a
+  single axis when the diagonal is blocked — and it was a clear regression,
+  reverted in full:** D1's default seed, a rock-solid 6/6 for this entire
+  thread, flipped to PLAYER DIED; D6 got uniformly WORSE (all 6 seeds
+  converged to an identical, faster loss). **Do not re-attempt this exact
+  shape** (a per-frame geometric override with no accumulated-evidence
+  gate) — S62's own account gives the likely reason (a short lookahead
+  reads as "blocked" near ordinary room corners far more often than the one
+  genuine dead-end it targeted, substituting a worse retreat on completely
+  normal frames) and a concretely different shape to try instead: gate the
+  same `canOccupy` check behind an ACCUMULATED STALL counter (the same
+  `stuckFrames`/`stallFrames` shape `breakDeadlock` already uses safely in
+  this exact file, S57/S58) rather than re-checking geometry every single
+  frame regardless of whether anything is actually wrong. This is still
+  likely a narrower, lower-risk bug than "fix evade's general dodge logic"
+  — it lives in one `dBoss` branch, not `SHOT_HORIZON`/`moveCost` — but S62
+  proved it is not a free, obvious fix either.
 - **D2 was not traced this session.** Don't assume it matches either shape
   above without checking — S59's "one shared cause" framing already turned
   out to average over two different mechanisms once two of its three
@@ -72,31 +89,37 @@ rejected `breakDeadlock`-on-Nereth experiment) is now superseded on the
 
 ## Task: your choice, in priority order
 
-**1. (Recommended, better-scoped than before) Finish diagnosing D6's freeze,
-then fix it if the diagnosis supports a narrow fix.** This is the most
-promising lead in this thread precisely because it may NOT require touching
-`evade`/`hazards()`'s shared cost function at all:
+**1. (Recommended, better-scoped than before) Fix D6's freeze using the
+accumulated-stall shape, not the per-frame geometric override S62 already
+ruled out.** The diagnosis is DONE (S62) — do not re-trace it. The one
+thing S62 didn't do is ship a working fix:
 
-1. Trace frames 690-700 of a D6 fight (default seed, boss room `1,3,1`) at
-   PER-FRAME resolution (not every 20 like S61's pass) — log the exact
-   directive `dBoss` computes before `fence`, `fence`'s output, and (adding
-   temporary instrumentation to `evade` itself, or reasoning from its
-   candidate loop) each of the 8 candidates' `moveCost` at that instant.
-   Confirm which of the two mechanisms S61 named is the real one — do not
-   guess.
-2. If it's a `fence`-vs-wall problem: the fix is almost certainly scoped to
-   `dBoss`'s own retreat-target choice (e.g., picking a retreat vector that
-   isn't fenced out at that position, or recognizing the equilibrium and
-   choosing a different waiting spot) — LOW risk to the shared `evade()`
-   path other bosses use, but still validate the full 6-seed sweep on ALL
-   SIX dungeons before shipping, per the zero-regression bar below.
-3. If it's an `evade`-cost problem: this converges with option 2 below and
-   inherits its full risk profile and validation bar — do not shortcut the
-   36-seed sweep just because the D6-specific trace was narrow.
-4. Either way, re-verify D3 and D6's per-seed damage-source breakdowns
-   AFTER the fix (not just win/loss counts) — S61's tables are the
-   before-picture; confirm the fix actually changes the mechanism it claims
-   to, not just the aggregate score by coincidence.
+1. Read `docs/NEXT-SESSION.md` S62 in full before writing any code — it
+   names the exact mechanism, the exact fix shape already tried, and the
+   exact reason (best guess, not fully re-verified) that shape regressed
+   D1. Re-deriving any of this by re-tracing is wasted effort the diagnosis
+   already paid for.
+2. Implement the retreat-direction `canOccupy` check (same as S62's) but
+   GATED behind an accumulated-stall counter scoped to the "shelled: wait
+   out the tell" branch specifically — only override the geometric retreat
+   once the player's position has gone ~30 frames without changing while
+   shelled, mirroring `breakDeadlock`'s own `stuckFrames` shape exactly
+   (same file, same verb, already proven safe across D1-D6 twice, S57/S58).
+   Do not invent a new gating shape — reuse that one's constants and logic
+   pattern unless you have a specific, measured reason not to.
+3. Validate the FULL six-dungeon, 6-seed sweep before trusting anything —
+   S62's fix looked locally reasonable and broke a dungeon it had no
+   business touching. Check D1 specifically first (fastest way to catch
+   the same class of regression S62 hit), then the rest.
+4. Re-verify D3 and D6's per-seed damage-source breakdowns AFTER the fix
+   (not just win/loss counts) — S61's tables are the before-picture;
+   confirm the fix actually changes the mechanism it claims to, not just
+   the aggregate score by coincidence.
+5. If the accumulated-stall version ALSO regresses something: stop, revert,
+   document precisely why (per-seed numbers, which dungeon, which frame),
+   and hand it off rather than trying a third variant in the same session
+   — two rejected shapes in one sitting is a sign the branch itself needs
+   fresh eyes, not a third guess under time pressure.
 
 **2. (The bigger, riskier lever, if you have a full session for it and
 option 1 turns out to need it) Teach `evade` to dodge a telegraphed
@@ -161,6 +184,11 @@ unless a session is explicitly budgeted for it.
   (non-projectile) enemies**, in any shape (route-wide or `dBoss`-scoped) —
   tried three times (S54-S56), reverted every time; see
   `docs/prompts/LEDGER.md`.
+- **Do not re-attempt a per-frame, ungated `canOccupy` override on D6's
+  "shelled: wait out the tell" retreat direction.** S62 tried exactly this
+  and it flipped D1's default seed from a clean win to a loss while making
+  D6 uniformly worse. The accumulated-stall version (task 1 above) is a
+  different, not-yet-tried shape — this line rules out only the ungated one.
 - **Routing D3 onward** (needs the Coastwise Chain first) remains untouched.
 
 ## Habits worth carrying in
@@ -169,8 +197,25 @@ unless a session is explicitly budgeted for it.
   session's diagnosis before building on it.** S61's whole contribution was
   re-tracing S59's "shared cause" claim rather than accepting it, and found
   it didn't hold for either dungeon checked, in two different ways. Every
-  session in this thread (S57, S58, S59, S61) found a mechanism at least
-  somewhat different from what the session before it expected going in.
+  session in this thread (S57, S58, S59, S61, S62) found a mechanism at
+  least somewhat different from what the session before it expected going
+  in.
+- **A fix that only touches ONE named branch can still regress a dungeon
+  that never looked related — measure the OTHER five dungeons, not just
+  the one you're fixing, even when the change looks obviously scoped.**
+  S62's fix touched only D6's "shelled" retreat branch and broke D1, which
+  shares that branch (both bosses are shelled) but had no known problem in
+  it. "This code path only matters for the dungeon I traced" is exactly the
+  assumption that cost a session here.
+- **A per-frame override is not the same risk class as an accumulated-
+  evidence one, even when they check the same condition.** S62's `canStep`
+  and `breakDeadlock`'s `stuckFrames` both ask "is this direction actually
+  safe/possible" — the difference that made one safe and the other a
+  regression is WHEN they're allowed to act: `stuckFrames` only overrides
+  after 30+ frames of real, measured non-progress, while S62's version
+  re-litigated the geometry on every single frame regardless of whether
+  anything was actually wrong, and fired on ordinary frames it had no
+  business touching.
 - **A "shared cause" claim across multiple dungeons needs each dungeon
   actually traced, not one dungeon's trace generalized by inspection.**
   S59's own D6 experiment and S61's D3/D6 tables are both evidence of this:
