@@ -9,7 +9,7 @@ its name) — S61 found one branch that looked relevant and was a week stale;
 don't repeat that check by hand if a fresher one already did it, but don't
 skip it either.
 
-## The honest state of the roster (read `docs/NEXT-SESSION.md` S63, then S62, then S61, then S59, in full first)
+## The honest state of the roster (read `docs/NEXT-SESSION.md` S64, then S63, then S62, then S61, then S59, in full first)
 
 Standard 6-seed sample, `tools/measure-boss-combat.mjs <d> --seed=N`, in-order
 health, no god mode:
@@ -39,116 +39,120 @@ claim does not hold as stated for EITHER dungeon, in two DIFFERENT ways:**
   (The `gel` chase-contact piece is the ALREADY-DIAGNOSED, ALREADY-TRIED-
   AND-REVERTED `hazards()`-velocity gap — S54-S56, see
   `docs/prompts/LEDGER.md`'s "Measured and rejected" — do not re-open it.)
-- **D6 (Nereth): the WHY is confirmed (S62), a safe-but-inert fix was built
-  and rejected on those grounds (S63), and there is now a specific, narrow
-  question to answer before trying again.** Every one of the 6 standard
-  seeds, WINS INCLUDED, eats an identical opening tax — three `isProjectile`
-  hits, 3 qh each (9 of 32, 28% of the whole fight), at the same three
-  frames, same distance, every single time, because nothing about it
-  involves RNG (it's Nereth's deterministic phase-1 trident spread). S61
-  found the player frozen stationary for 220+ frames while it happens; S62
-  found why: **the retreat direction is computed once from pure geometry
-  ("away from the boss") and is never checked against real wall collision
-  before being committed to** — neither `fence` (only guards the room's
-  four OUTER edges) nor `evade` (its hazard list is empty until the boss's
-  attack windup fires, so it has nothing to object with) ever catches it.
-  Confirmed against the real room grid: the player is cornered — blocked by
-  a wall on BOTH the direct retreat axis and, it turns out, its own
-  individual components too (S63 found this is a genuine corner, not a
-  single blocked side).
-  **S62's ungated fix regressed D1 outright — rejected.** **S63 built the
-  safe, opt-in, accumulated-stall-gated version S62 itself recommended
-  (a new `nereth.spec.stuckRetreat` flag, `breakDeadlock`'s own
-  `stuckFrames` shape, an 8-direction search once S62's narrower 2-direction
-  version was found to stay silently inert at a true corner) — measured
-  ZERO regression (D1 and the full D6 6-seed sweep both byte-identical to
-  baseline, confirmed by direct `git stash` A/B, not memory) but ALSO ZERO
-  EFFECT. Not shipped — an inert fix adds real complexity for no measured
-  benefit, so it was reverted rather than left in the tree unused.**
-  **The reason it's inert is now the specific, narrow next question, and
-  it is NOT "which direction to pick" anymore — S63 already fixed that.**
-  Traced the player's own fixed-point position accumulator (`fy`, the real
-  sub-pixel value position is built from) through the entire stuck window:
-  it moved a total of ~242 of a 256-per-pixel unit across ~250 frames of a
-  direction (`up`) the fix had correctly selected and that a static
-  `canOccupy` check calls walkable — roughly ONE frame's worth of drift,
-  not what 30+ frames of genuinely free 1px/frame movement would produce.
-  Something separate from "which direction is correct" is refusing the
-  actual per-frame movement almost entirely, even once the right direction
-  is chosen. Two specific, NOT YET CHECKED candidates, in priority order:
-  (a) `canOccupy` also checks other SOLID entities in the room (CLAUDE.md's
-  "a solid entity is solid now" rule) — the stall-gated fix's one-shot 8px
-  probe takes that check at a single instant, which could differ from what
-  the REAL per-frame `moveEntity` sees if anything solid in the room moves
-  between the probe and the actual resolution; (b) the probe distance
-  itself (8px) may never actually leave the player's CURRENT tile from this
-  exact position (S63 found the hitbox has ~9px of clearance on the tested
-  axis before the probe distance would even reach the tile boundary), which
-  would mean "canStep says walkable" was never really testing "leads
-  somewhere new" here — a probe-methodology flaw independent of whatever
-  else is blocking real movement.
-- **D2 was not traced this session (or last).** Don't assume it matches
-  either D3's or D6's shape without checking — S59's "one shared cause"
-  framing already turned out to average over two different mechanisms once
-  two of its three dungeons were actually looked at separately.
+- **D6 (Nereth): the wall-freeze mechanism is FULLY SOLVED (S62-S64) —
+  a correctly-shaped fix now exists and genuinely changes the fight, but
+  it trades one winning seed for a different one, so it is STILL not
+  shippable. What's left is a narrower, different kind of question.**
+  Every one of the 6 standard seeds, WINS INCLUDED, eats an identical
+  opening tax — three `isProjectile` hits, 3 qh each (9 of 32, 28% of the
+  whole fight) — because nothing about it involves RNG (it's Nereth's
+  deterministic phase-1 trident spread). S61 found the player frozen
+  stationary for 220+ frames while it happens. S62 found why: the retreat
+  direction is computed once from pure geometry and never checked against
+  real wall collision — S62's own fix (ungated) regressed D1. S63 built
+  the safe, opt-in, accumulated-stall-gated version — zero regression, but
+  measured completely INERT. **S64 found out why it was inert, and fixed
+  that specific problem: `evade`'s own hazard-cost search has zero concept
+  of walls, so once a real hazard (the trident shot) exists, `evade` can
+  freely swap BACK onto the wall-blocked direction S63's fix had correctly
+  avoided, because from `evade`'s point of view that direction dodges the
+  shot better and it has no idea it's a wall.** Confirmed with a direct,
+  frame-by-frame trace of the REAL applied input mask (not just the
+  yielded value): S63's fix genuinely selected "up" in time, but the real
+  mask flips back to the wall-blocked direction the instant a hazard
+  exists, then the hit lands anyway. S64 also ruled out S63's own leading
+  hypothesis (another solid entity in the room) directly — `Entity.solid`
+  is never set on any enemy or boss in this codebase, only on push-block/
+  chest/torch/signpost objects, and Nereth's room has none — and proved
+  the room geometry itself is NOT the blocker via a completely independent
+  test (calling `Entity.moveEntity` directly on a warped player, bypassing
+  `dBoss` entirely: 40 free 1px steps, zero blocked).
+  **S64's actual fix: fold the wall check into `fence` itself** (still
+  behind the same opt-in flag and the same accumulated-stall gate as S63)
+  rather than pre-choosing a direction and fighting `evade` from outside
+  it — since `evade`'s own candidate search already calls `fence` to
+  filter every option, hazard search included, this makes wall-awareness
+  and hazard-awareness ONE decision instead of two overriding each other.
+  **Measured: D1 still byte-identical (the opt-in gate works exactly as
+  designed) and D6 genuinely changes for the first time in this entire
+  thread — seed3 flips a loss to a clean win. But seed1 flips a CLEAN WIN
+  to a loss.** Net aggregate unchanged (still 1 of 6 winning, just a
+  different seed) — which is exactly why this project measures PER-SEED
+  outcomes, not aggregates: an aggregate-only read would call this a wash
+  and might ship it. Per this project's own standing rule (S52 onward,
+  and S59's own rejected Nereth experiment the same shape), turning any
+  currently-winning seed into a loss is disqualifying regardless of what
+  else improves. **Reverted in full.**
+  **The wall-awareness problem itself is now SOLVED and should not be
+  re-investigated** — S64's unified-fence approach is very likely the
+  right SHAPE (it demonstrably stopped the two systems fighting, and
+  found a real, better answer for seed3). What's left is a DIFFERENT,
+  finer-grained question: among several directions that are ALL wall-real
+  and ALL hazard-clearing, does `evade`'s own cost function rank them the
+  way a player actually would? Seed1's newly-introduced loss is the thing
+  to trace — not the freeze, which is already understood.
+- **D2 was not traced this session (or any prior one in this thread).**
+  Don't assume it matches D3's or D6's shape without checking — S59's "one
+  shared cause" framing already turned out to average over two different
+  mechanisms once two of its three dungeons were actually looked at
+  separately.
 
 Full account, including the exact damage-log tables, the position traces,
-and the fixed-point accumulator measurement, in `docs/NEXT-SESSION.md` S61,
-S62 and S63 — read all three, in that order; each is the direct, narrower
-continuation of the one before it, not a restart. S59's own entry (still
-worth reading for the rejected `breakDeadlock`-on-Nereth experiment) is now
-superseded on the "shared cause" claim specifically — everything else in it
-stands.
+the fixed-point accumulator measurement, and S64's own per-seed before/
+after table, in `docs/NEXT-SESSION.md` S61 through S64 — read all four, in
+order; each is the direct, narrower continuation of the one before it, not
+a restart. S59's own entry (still worth reading for the rejected
+`breakDeadlock`-on-Nereth experiment) is now superseded on the "shared
+cause" claim specifically — everything else in it stands.
 
 ## Task: your choice, in priority order
 
-**1. (Recommended, narrower than ever) Answer S63's ONE open question
-before touching `dBoss` again: does the REAL per-frame `moveEntity` call —
-not a reimplemented static `canOccupy` probe — actually refuse to move the
-player from the exact frozen position, and if so, why?** The direction-
-selection problem is SOLVED (S63's 8-direction, away-ranked search); do not
-rebuild it. The safety mechanism is SOLVED (opt-in flag + accumulated
-stall, proven zero-regression); do not rebuild that either. The only
-missing piece is why a direction a static check calls safe doesn't actually
-move the player in practice:
+**1. (Recommended) Trace WHY seed1 newly loses under S64's unified-fence
+fix, then decide whether `evade`'s cost function needs a small, targeted
+change or whether this specific approach has hit a real ceiling.** The
+wall-awareness problem is SOLVED — do not re-diagnose the freeze, and do
+not re-attempt S62's or S63's rejected shapes. S64's fix is not committed
+to git (reverted in the same session it was built, per this project's own
+standard for a result that fails validation) — rebuild it from this file's
+and S64's own account before tracing; it's a small, precisely-described
+diff (a `stuckRetreat` boss-spec flag plus a wall-aware `fence` in
+`dBoss`), not a large reconstruction.
 
-1. Read `docs/NEXT-SESSION.md` S61, S62 AND S63 in full before writing any
-   code. Each is the direct continuation of the one before it; skipping one
-   means re-deriving work that is already paid for.
-2. Trace the REAL movement resolution directly rather than reasoning about
-   `canOccupy` from outside it — e.g., log `Entity.moveEntity`'s own
-   `hitX`/`hitY` return values for the player at this exact position and
-   direction (temporary instrumentation, same scratch-then-real method as
-   every session in this thread), or check whether any OTHER entity's
-   `solid` rect overlaps the path during the stuck window. Confirm the
-   mechanism before designing anything — this thread's own recurring lesson
-   (S57, S58, S59, S61, S62) is that guessing here has cost a session every
-   single time it happened.
-3. Separately, sanity-check S63's `canStep` probe DISTANCE (currently 8px)
-   against the actual tile geometry at the frozen position — if 8px never
-   crosses a tile boundary from there, fix the probe (a full 16px, or a
-   step that explicitly checks the destination tile rather than a fixed
-   pixel offset) before concluding the direction-selection logic itself is
-   sound.
-4. Once the real blocker is identified, THEN decide whether S63's already-
-   built stall-gated redirect (revert it from git history — `git log`
-   for the S63 commit, or rebuild from this file's account) needs a small
-   adjustment or a different approach entirely. Do not guess a fix before
-   this step is done — that is exactly the mistake this task description
-   is trying to prevent for a fourth time.
-5. Validate the FULL six-dungeon, 6-seed sweep before trusting anything,
-   D1 first (fastest way to catch the class of regression S62 hit, even
-   though S63's gating already made that specific regression structurally
-   impossible — a different change could reintroduce a different one).
-6. Re-verify D3 and D6's per-seed damage-source breakdowns AFTER the fix
-   (not just win/loss counts) — S61's tables are the before-picture;
-   confirm the fix actually changes the mechanism it claims to.
-7. If this ALSO turns out inert or regresses something: stop, revert,
-   document precisely why, and hand it off rather than guessing a fourth
-   time in the same session — three attempts on one branch (S62's ungated
-   version, S63's gated-but-inert version, and whatever this session tries)
-   without a shipped result is a real signal the next session should try a
-   genuinely different angle, not a fourth variant of the same one.
+1. Read `docs/NEXT-SESSION.md` S61 through S64 in full before writing any
+   code. Each is the direct continuation of the one before it; skipping
+   one means re-deriving work that is already paid for.
+2. Rebuild S64's unified-fence fix exactly as described (opt-in
+   `nereth.spec.stuckRetreat`, `fence` rejecting any bit that fails
+   `canOccupy` once `retreatStuckFrames > 30`, no separate pre-chosen
+   direction). Confirm you reproduce S64's own measured table first
+   (seed1 W->L, seed3 L->W, others unchanged) before changing anything —
+   if your rebuild doesn't match, you've built something different, not
+   the same fix.
+3. Trace seed1's fight the same rigorous way S62-S64 traced the freeze:
+   at the exact frame the newly-introduced loss diverges from baseline,
+   what direction did the wall-aware `fence`+`evade` combination choose,
+   what was its hazard cost, and was a DIFFERENT wall-real candidate
+   available with a worse cost score but a better real outcome? This is
+   the same class of question S59's own `evade` comment block already
+   answers for the GENERAL case (`SHOT_HORIZON`'s own tuning history) —
+   read that comment block too, since this may turn out to be a specific
+   instance of the same known trade-off rather than a new one.
+4. If the ranking problem has a narrow, boss-scoped answer (e.g., a small
+   adjustment to how `moveCost` weights a candidate that's wall-blocked
+   vs. one that isn't, scoped to when `stuckRetreat` applies): try it,
+   and validate the FULL six-dungeon 6-seed sweep, D1 first.
+5. If it does NOT have a narrow answer — if fixing seed1 costs seed3 again,
+   or any other seed — stop. This is the FOURTH attempt at this specific
+   D6 mechanism across three sessions (S62 ungated, S63 gated-but-inert,
+   S64 unified-but-trades-seeds), all rejected. A fourth rejection in a
+   row on the same boss is a real signal to leave D6's `evade` interaction
+   alone entirely and either accept D6 at its current 1/6 or reconsider
+   whether the fix belongs in `bosses.js` (e.g., a room/AI change to
+   Nereth's own arena or phase-1 behavior, avoiding the actor-runtime
+   entirely) rather than a fifth variant of the same movement-layer idea.
+6. Whichever way it resolves, write up the per-seed damage-source
+   breakdown AFTER any change (not just win/loss counts), the same way
+   S61's tables serve as this thread's before-picture.
 
 **2. (The bigger, riskier lever, if you have a full session for it and
 option 1 turns out to need it) Teach `evade` to dodge a telegraphed
@@ -223,11 +227,24 @@ unless a session is explicitly budgeted for it.
   axes blocked, not just the diagonal) — it needs the full 8-direction
   search S63 built next, not this narrower version.
 - **Do not re-attempt the FULL S63 version (opt-in flag + stall gate +
-  8-direction away-ranked search) unchanged, expecting a different result.**
-  It is confirmed zero-regression but also confirmed INERT — the player's
-  own position accumulator barely moves even once "up" is selected and
-  approved. Something else in the real movement path is refusing it; find
-  that first (task 1 above) before re-shipping this exact logic.
+  a separately pre-chosen 8-direction search, handed to `evade` as its base
+  directive) unchanged, expecting a different result.** Confirmed
+  zero-regression but also confirmed INERT — `evade`'s own hazard-cost
+  search silently overrides the pre-chosen direction back onto the wall
+  the instant a real hazard exists, because `evade` has no concept of
+  walls at all. S64 found and fixed this specific problem (fold the wall
+  check into `fence` itself instead) — do not rebuild S63's shape again.
+- **Do not re-attempt S64's unified-fence fix UNCHANGED, expecting it to
+  suddenly pass.** It is the right SHAPE (wall-awareness folded into
+  `fence`, so `evade`'s hazard search respects it automatically) and it
+  measurably helps seed3 — but it also flips seed1 from a clean win to a
+  loss, which is disqualifying on its own. Re-shipping it exactly as S64
+  built it will reproduce that exact regression. The next step is tracing
+  seed1's specific new loss (task 1 above), not re-running the same code.
+- **Do not treat a "net aggregate unchanged" result as safe.** S64's fix
+  kept D6 at 1 of 6 winning in aggregate — it just moved WHICH seed wins.
+  This project's own bar is per-seed, not aggregate: trading any winning
+  seed for a loss fails regardless of what else the same change fixes.
 - **Routing D3 onward** (needs the Coastwise Chain first) remains untouched.
 
 ## Habits worth carrying in
@@ -236,9 +253,20 @@ unless a session is explicitly budgeted for it.
   session's diagnosis before building on it.** S61's whole contribution was
   re-tracing S59's "shared cause" claim rather than accepting it, and found
   it didn't hold for either dungeon checked, in two different ways. Every
-  session in this thread (S57, S58, S59, S61, S62, S63) found a mechanism
-  at least somewhat different from what the session before it expected
-  going in.
+  session in this thread (S57, S58, S59, S61, S62, S63, S64) found a
+  mechanism at least somewhat different from what the session before it
+  expected going in.
+- **Two systems independently deciding the same thing is itself a bug
+  shape worth naming, not just working around.** S63's fix and `evade`'s
+  own candidate search each computed "which direction is safe" separately,
+  and `evade` — going second, with no idea the first system existed —
+  silently won. The fix wasn't to make the first system's answer stronger;
+  it was to make it feed the SAME decision point (`fence`) the second
+  system already deferred to, so there was only ever one search instead of
+  two overriding each other. When a new check keeps getting silently
+  undone by existing logic downstream, look for whether that downstream
+  logic has its own filtering hook to plug into, before assuming the new
+  check just needs to be more forceful.
 - **Zero regression is necessary, not sufficient — an inert fix is not a
   finished fix, and "it didn't break anything" is not the same claim as
   "it works."** S63 built exactly the fix S62 recommended, validated it

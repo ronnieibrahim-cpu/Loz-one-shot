@@ -1,3 +1,132 @@
+## S64 — found exactly why S63's fix was inert (two systems fighting over the same decision), built the unified version, and it genuinely changes the fight — but trades one win for a different one, so it's rejected too
+
+Direct continuation of S63, whose own open question was narrow and
+specific: does the real per-frame movement genuinely refuse a direction a
+static `canOccupy` check calls safe, and if so why? Answered it precisely
+this session, then built and measured the fix the answer implies.
+
+**Ruled out S63's own leading hypothesis first.** S63 guessed the
+discrepancy might be another SOLID ENTITY in the room, checked at a
+different instant than the real per-frame resolution sees. Checked
+directly: `Entity.solid` defaults `false` and is only ever set `true` on
+`objects.js`'s pushable-block/chest/torch/signpost family (`grep`, seven
+call sites, none of them an enemy or boss) — Nereth's room has no such
+object in its `entities` list, so this was never the mechanism. Ruled out
+cheaply rather than carried forward as an assumption.
+
+**Direct-tested the room geometry itself, bypassing `dBoss` entirely.**
+Warped a real player to the exact frozen position (via the working
+`beginRecord` harness, not a hand-rolled one — a first attempt using
+`Game.enterMap` directly failed because `g.player` doesn't exist until a
+real save is loaded) and called `Entity.moveEntity` directly, 40
+consecutive 1px steps upward, no `dBoss`/`evade`/`fence` involved at all.
+**Result: moves freely every single frame, `hitY: false` throughout,
+40 of 40 pixels covered.** This is conclusive: the room permits upward
+movement from this exact position without any restriction. Whatever was
+stopping it in the real fight is not a geometry problem.
+
+**Traced the real applied input mask, frame by frame, against the fix's
+own decision — and found the two disagreeing.** Correlated `dBoss`'s
+internal step counter against the real `g.frame` and the actual
+`ScriptedInput` mask/`held` state (not just the yielded value — the value
+actually consumed). S63's fix DOES correctly decide "up" once the 30-frame
+stall threshold passes, well before the first hit lands. But at the exact
+frame the first trident hit connects, the REAL applied mask is still `10`
+(the original, wall-blocked `right+down`) — S63's chosen `1` (up) had been
+overridden back to the blocked direction. Only once the hit lands (and its
+projectile is presumably removed) does the mask return to `1` — by which
+point the player is in `hurtTime` knockback-lock for the next ~15 frames,
+making the correct direction moot until the stun clears.
+
+**The mechanism: `evade`'s own hazard-cost search can freely re-select a
+wall-blocked direction, because `evade` has no concept of walls at all —
+only hazards.** S63's fix worked by pre-choosing a direction and handing it
+to `evade` as the base directive (`m`). That's only safe while `evade`'s
+own hazard list is empty (its early-return `if (!list.length) return m`
+hands the choice straight through). The instant a real hazard exists —
+here, the trident projectile, which spawns and travels for several frames
+before impact — `evade` runs its FULL 8-candidate search, ranking every
+option purely by hazard-dodge cost, with zero awareness that one of those
+candidates (the original wall-blocked `right+down`) leads nowhere. If that
+wall-blocked direction happens to score best against the incoming shot's
+actual path, `evade` swaps back onto it, overwriting S63's own wall-aware
+choice — two systems making the same decision independently, with `evade`
+going last and knowing nothing about the first system's reasoning.
+
+**Fixed properly this time: fold the wall check into `fence` itself,
+rather than fighting `evade` from outside it.** `evade`'s own candidate
+loop already calls `fence` to filter EVERY candidate, hazard search
+included (`if (fence(cm) !== cm) continue`) — so making `fence` ALSO
+reject any bit that fails `canStep` (still gated behind the same opt-in
+`stuckRetreat` flag and the same accumulated `retreatStuckFrames > 30`
+threshold as S63, so the safety story is unchanged) means `evade`'s hazard
+search can only ever land on a direction that is BOTH wall-real and
+hazard-safe, decided once, rather than two systems overriding each other
+frame to frame. Deleted S63's separate 8-direction pre-search entirely —
+it's no longer needed once `evade` itself can be trusted to search
+correctly.
+
+**Measured: D1 unaffected (byte-identical, opt-in gate confirmed working
+exactly as designed), and D6 genuinely changes for the first time in this
+whole thread — but it is a rejection, not a win, on this project's own
+standing rule.** Full 6-seed sweep:
+
+```
+          default   seed1   seed2   seed3   seed4   seed5
+baseline    L78/80   W80/80   L72/80  L78/80  L72/80  L60/80
+this fix    L66/80   L78/80   L78/80  W80/80  L72/80  L66/80
+```
+
+Seed3 flips from a loss to a clean win. **Seed1 flips from a clean win to
+a loss** — this alone is disqualifying, full stop, regardless of what else
+improves. "One win gained, one win lost" is not a wash to keep; it is a
+rejection, per the exact bar S52 set and S59's own rejected Nereth
+experiment already demonstrated the same way. Net aggregate is unchanged
+(1 of 6 winning, same as baseline — just a different seed), which is the
+clearest possible illustration of why this project measures per-seed
+outcomes rather than an aggregate score: an aggregate-only read would have
+called this a wash and possibly shipped it.
+
+**Reverted in full.** `git checkout --` on both touched files
+(`src/data/bosses.js`, `tools/actor-runtime.mjs`). D1 and D6 seed1 both
+re-confirmed at their exact documented baselines after the revert.
+
+**This is now the FOURTH attempt at this specific bug across three
+sessions (S62's ungated version, S63's gated-but-inert version, and this
+session's gated-and-unified-but-regressing version), all rejected for
+different reasons — a real signal that whoever picks this up next should
+seriously consider whether `evade`'s hazard-cost ranking needs to change
+for THIS specific case, not just its inputs.** The unified-fence approach
+is very likely the right SHAPE (it correctly stopped fighting itself, and
+it demonstrably found a real, better answer for seed3) — but `evade`'s own
+cost function evidently still has a blind spot that lets a geometrically-
+correct-but-tactically-worse direction win against a specific attack
+pattern on some seeds (seed1) while genuinely helping on others (seed3).
+That is a finer-grained question than anything asked so far in this
+thread: not "is the direction wall-real" (solved) but "among several
+wall-real, hazard-clearing directions, does `evade`'s cost function
+actually rank them the way a player would" — which may need per-candidate
+tracing on seed1's specific losing sequence the same way this session
+traced the wall problem, before trying a fifth variant blind.
+
+**Validation:** D1 and D6 (all 6 seeds) measured before and after every
+edit, compared against the documented baseline table above (not memory —
+the baseline itself was re-confirmed via direct `git stash` A/B in S63 and
+spot-checked again this session). `git status`/`git diff` empty at the end
+of the session.
+
+**Recommended next step, concretely scoped:** before writing a fifth
+variant, trace seed1's OWN newly-introduced loss the same rigorous way
+this session traced the freeze — which candidate did the unified-fence
+version pick at the moment seed1's fight goes wrong, what did `evade`'s
+cost function score it against, and was there a better wall-real
+candidate `evade` had available but ranked lower? This is a narrower,
+answerable question, not a restart — the wall-awareness problem (S61-S64's
+whole subject) is SOLVED; what's left is a specific ranking question
+inside `evade`'s own cost function, scoped to this one flag, that the
+unified-fence fix (recoverable from this account, not committed to git
+history) is the right base to keep tracing from.
+
 ## S63 — built S62's recommended fix (opt-in, accumulated-stall gated, exactly like `breakDeadlock`) properly this time: zero regression, but found the fix is INERT — a new, deeper puzzle under the one S62 solved
 
 Direct continuation of S62, whose own recommended next step was explicit:
