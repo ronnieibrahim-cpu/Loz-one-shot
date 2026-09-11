@@ -88,6 +88,11 @@ export function installEnemies() {
     light: true,
     hp: 1, damage: 1, pal: 'slime', speed: 0.42, rate: 10,
     frames: ['gel_0', 'gel_1'],
+    // Every hit is a killing hit at hp:1, so — unlike `hurtFrame` (S76: only
+    // reachable by a species that survives a hit) — `deathFrame` is reachable
+    // on this enemy every single time, which is exactly why it's the one
+    // this rotation's death-pose proof landed on. See sprites-enemy-states.js.
+    deathFrame: 'gel_death',
     w: 16, h: 16,
     hb: { x: 5, y: 8, w: 6, h: 7 },
     terrain: 'any',

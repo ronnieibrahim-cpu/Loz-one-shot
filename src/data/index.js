@@ -19,7 +19,7 @@ import { installRaceSprites, RACE_ART } from './sprites-races.js';
 import { installWorldSprites, PICKUP_ART, OBJECT_ART, SHOT_ART, NPC_ART } from './sprites-world.js';
 import { installFairies, FAIRY_ART } from './sprites-fairies.js';
 import { installEnemySprites, ENEMY_ART } from './sprites-enemies.js';
-import { installEnemyHurtSprites, ENEMY_HURT_ART } from './sprites-enemy-hurt.js';
+import { installEnemyStateSprites, ENEMY_STATE_ART } from './sprites-enemy-states.js';
 import { installBossSprites, BOSS_ART, MINIBOSS_ART } from './sprites-bosses.js';
 import { installHudSprites, HUD_ART } from './sprites-hud.js';
 import { installGearSprites, GEAR_ART } from './sprites-gear.js';
@@ -46,7 +46,7 @@ export const SPRITE_PACKS = {
   shots: SHOT_ART,
   npcs: NPC_ART,
   enemies: ENEMY_ART,
-  enemyHurt: ENEMY_HURT_ART,
+  enemyStates: ENEMY_STATE_ART,
   bosses: BOSS_ART,
   minibosses: MINIBOSS_ART,
   hudRipped: HUD_ART,
@@ -77,10 +77,10 @@ export function installData() {
   // The peoples of Thalassia, off a sheet nothing else has touched.
   installRaceSprites();
   installEnemySprites();
-  // The one ordinary-enemy flinch pose no sheet has (see the file's own
-  // header) — after the ripped set, so it can't be shadowed by a same-named
-  // extracted frame.
-  installEnemyHurtSprites();
+  // Ordinary-enemy hurt/death poses no sheet has (see the file's own
+  // header) — after the ripped set, so they can't be shadowed by a
+  // same-named extracted frame.
+  installEnemyStateSprites();
   installBossSprites();
   // After sprites-link.js, so the extracted HUD and gear icons override the
   // hand-drawn ones for the items Oracle of Seasons actually has.

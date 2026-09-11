@@ -227,6 +227,12 @@ export const ENEMY_INVULN_FRAMES = 24;
 /** f — how long an ordinary enemy flickers after a hit. guessed. */
 export const ENEMY_FLICKER_FRAMES = 24;
 
+/** f — how long an ordinary enemy holds its `deathFrame` pose (species that
+ *  declare one) before it is actually removed. guessed — short on purpose,
+ *  a beat rather than a boss's whole boom sequence; `Enemy.die()` is what
+ *  reads this (src/game/enemy.js). */
+export const ENEMY_DEATH_FRAMES = 14;
+
 /** f — how long an ordinary enemy is shoved after a hit. guessed. Together with
  *  the KNOCK_* distances below this is the fixed frame count half of the
  *  fixed-distance-over-fixed-frames rule; nothing decays.

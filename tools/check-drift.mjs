@@ -242,19 +242,22 @@ for (const file of SPRITE_FILES) {
 // 6. Enemies with a complete five-state animation set (rotation
 //    objective #4, enemy-roster).
 // ---------------------------------------------------------------------
-// `src/game/enemy.js` recognises exactly two per-species animation fields
-// today: `spec.frames` (the walk cycle an idle pose is also drawn from —
-// this engine, like its source games, has no separate idle art) and
-// `spec.hurtFrame` (a single flinch frame). There is no engine-level
-// `attackFrame` or `deathFrame` concept for an ordinary enemy at all
-// (only bosses declare `hurtFrame` today; regular hits and deaths are a
-// shared effect, not per-species art) — so "attack" and "death" below are
-// read from sprite-key NAMING (`<name>_atk`/`<name>_attack`,
-// `<name>_death`/`<name>_die` in sprites-enemies.js) rather than a spec
-// field, on purpose: that way this measurement notices the day a session
-// adds such art even before any engine field exists to consume it.
-// Reading zero complete enemies today is the honest, expected baseline —
-// nothing in the data claims otherwise.
+// `src/game/enemy.js` recognises three per-species animation fields today:
+// `spec.frames` (the walk cycle an idle pose is also drawn from — this
+// engine, like its source games, has no separate idle art), `spec.hurtFrame`
+// (a single flinch pose, shown while `flicker` counts down from a hit — S76
+// gave ordinary enemies this too; only bosses had it before), and
+// `spec.deathFrame` (a single pose held for `ENEMY_DEATH_FRAMES` once `hp`
+// reaches 0, before the entity is actually removed — S77). `hurt` and
+// `death` below both read their spec field directly, the same way `walk`
+// reads `frames`. There is still no engine-level `attackFrame` concept for
+// an ordinary enemy (S76's own survey of all 22 `ai()` functions found no
+// shared "about to attack" moment to hang one on) — `attack` below is still
+// read from sprite-key NAMING (`<name>_atk`/`<name>_attack` in
+// sprites-enemies.js) rather than a spec field, on purpose: that way this
+// measurement notices the day a session adds such art even before any
+// engine field exists to consume it. Reading zero complete enemies today is
+// the honest, expected baseline — nothing in the data claims otherwise.
 let enemyNames = [];
 {
   let text;
@@ -289,7 +292,7 @@ for (const { name, block } of enemyNames) {
   const walk = /\bframes\s*:/.test(block);
   const hurt = /\bhurtFrame\s*:/.test(block);
   const attack = enemySpriteKeys.has(`${name}_atk`) || enemySpriteKeys.has(`${name}_attack`);
-  const death = enemySpriteKeys.has(`${name}_death`) || enemySpriteKeys.has(`${name}_die`);
+  const death = /\bdeathFrame\s*:/.test(block);
   const complete = walk && hurt && attack && death;
   if (complete) enemiesComplete++;
   enemyReport.push({ name, walk, hurt, attack, death });

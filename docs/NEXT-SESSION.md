@@ -1,3 +1,119 @@
+## Flagged by the project owner, not chased this session: enemy HP vs. the source games
+
+S76 (below) found that the starting sword (`swordDamage(1) == 2`) one-shots
+8 of the roster's 19 killable enemies (`gel`/`keese`: hp 1; `octorok`/
+`crab`/`zol`/`tektite`/`urchin`/`jellyfish`: hp 2). The project owner
+disputes that this matches Oracle of Seasons/Ages' own damage ladder.
+Not measured against the emulator — nobody has frame-stepped the source
+game's actual per-enemy hit counts, so this is a claim to VERIFY, not a
+bug to fix by guessing new `hp` numbers. Expanded into a queue stub:
+`docs/prompts/QUEUE.md` item 5.
+
+## S77 — enemy-roster (rotation #4): the deathFrame engine path, proved on one enemy
+
+Continuation of S76's own next-step prompt: prove `deathFrame` (a held pose
+once `hp` reaches 0, before the entity is removed) the same way S76 proved
+`hurtFrame` — on ONE enemy, not all 22.
+
+**Picked `gel`, and for the mirror-image reason S76 rejected it for
+`hurtFrame`.** S76 found `hurtFrame` can only ever be reached by a species
+that SURVIVES a hit (`hp >= 3`, no `shield: 'all'`) — `gel`'s `hp: 1` was
+disqualifying there. `deathFrame` has the opposite shape: every enemy dies
+eventually regardless of `hp`, so `gel` (which dies on literally every hit,
+constantly, in packs) is not just eligible but a BETTER choice than a
+tougher enemy — a real player will see this pose often, not rarely.
+
+**First implementation shape was wrong, and the wrongness was exactly the
+kind CLAUDE.md's own traps section warns about — a five-line change to a
+shared path is never five lines.** Modelled directly on `Boss.beginDeath`:
+defer the ENTIRE `Entity.die()` call (the loot roll, the kill count, the
+`dead` flag, all of it) until the hold finishes, the same way a boss's
+Essence doesn't spawn until its boom sequence ends. Every other checker
+passed. `tools/replay.mjs` did not: `d1-descent`'s recorded baseline
+diverged at frame 1200, `d` (the RNG-draw counter) reading 3 instead of the
+recorded 4. Root cause, confirmed by inspecting `Enemy.onDie`
+(`game.rollDrop`, which draws RNG to pick a loot table entry): a `gel` on
+the D1 route died shortly before frame 1200 in the original game, and its
+loot roll's draw used to land before that checkpoint; deferring the whole
+`die()` call by `ENEMY_DEATH_FRAMES` pushed that SAME draw to just after
+frame 1200 instead. Nothing about the fight's outcome changed — the draw
+still happens, with the same seed, in the same order relative to every
+OTHER draw — only its absolute frame shifted, which is exactly enough to
+break a frame-exact replay tape.
+
+**Fixed by narrowing what actually gets deferred.** Rather than mirror
+`Boss.beginDeath` wholesale, `Enemy.die()` now calls `super.die(game)`
+immediately — `dead`, `onDie`/the loot roll, the 'puff' effect, the kill
+count via `game.onEnemyDefeated`, all at the ORIGINAL frame, unchanged —
+and only then, if the species declared a `deathFrame`, undoes the ONE flag
+that controls visual/array presence (`this.remove = false`) and starts the
+hold. Verified this is a materially different, safer shape by checking
+every place in the engine that asks "is this entity still a threat/still
+interactable" (`src/game/player.js`'s sword-hit, spin-hit, contact-damage
+and interact checks; `src/game/entity.js`'s solid-collision check;
+`src/game/game.js`'s two room-clear checks) — every one of them already
+reads `.dead`, never array presence, so a "dead but not yet removed" gel is
+invisible to all of them exactly as intended: it can't be hit again, can't
+deal contact damage, doesn't block movement, and doesn't hold a room open.
+**Re-recorded `d1-descent` only after reading the full diff**, per
+CLAUDE.md's own warning against a wholesale re-record blessing a
+regression: all 115 trail checkpoints across the full 6900-frame run
+matched except the one at frame 1200, where `e` (entity count) read 7
+instead of 6 — the exact, predicted, transient effect of a gel still
+occupying its array slot for a few extra frames right at that checkpoint
+boundary. (The freshly re-recorded baseline's `expect` block also picked up
+two fields, `dungeonMaps`/`charts`, absent from every other file in
+`tools/replays/` — a pre-existing schema gap this file predates, not
+something this session's change introduced; confirmed by grepping the rest
+of the directory.)
+
+**`check-drift.mjs` needed a real update, not just a re-read.** Its own
+comment said only bosses had `hurtFrame` (stale since S76) and read
+"death" purely from sprite-key naming in `sprites-enemies.js` — which would
+never see a key registered from a hand-authored file. Changed `death` to
+read `deathFrame:` straight from the spec block, the same way `hurt` already
+reads `hurtFrame:`, and rewrote the comment to describe the current
+contract (three real spec fields now: `frames`, `hurtFrame`, `deathFrame`;
+`attackFrame` still has no engine concept and is still read from sprite-key
+naming, on purpose, per S76's own finding that it has no shared trigger to
+hang a field on yet). `check-drift` now reads `gel walk,death`.
+
+**No sheet has a death pose for any ordinary enemy either** — checked
+alongside S76's own hurt-pose survey of the same 344 boxes, same pass, same
+conclusion: only bosses get a drawn reaction in the source games; ordinary
+enemies get a shared 'puff' particle and instant removal. Landed
+`gel_death` in `src/data/sprites-enemy-hurt.js`, RENAMED to
+`sprites-enemy-states.js` now that it holds both a hurt and a death pose
+(`ENEMY_HURT_ART`/`installEnemyHurtSprites` renamed to
+`ENEMY_STATE_ART`/`installEnemyStateSprites` to match) — a flattened,
+symmetric splat (gel's own round blob squashed flat and wide), rendered in
+gel's own `slime` palette. Wired through the same three places S76 used
+(`src/data/index.js`, `sprite-manifest.js`, `tools/shoot-sprites.mjs`'s
+`SPRITE_FILES`), each updated to the new file/pack name.
+
+Verified end to end with a real `e.hurt()` call in a live page (same method
+as S76): a spawned `gel`, hit for lethal damage, reads `dead: true,
+dying: true, remove: false, sprite: 'gel_death'` one frame later, is still
+in `game.entities` through the hold, and is confirmed gone
+(`entities: 0`) 20 frames on — screenshotted mid-hold, the flattened green
+splat visible on screen next to Link. Full validation, zero regressions:
+`validate.mjs` OK (same pre-existing warnings only), `test.mjs` 83/83,
+`check-rippers.mjs` 17/17 (nothing generated touched), `check-motion.mjs`
+8/8, `replay.mjs` 51/51 (after the one deliberate, read-and-verified
+re-record above), `check-playthrough.mjs` 21/21, `check-bosses.mjs` 19/19
+— including D5 Rootmaw, whose fight leans on a `zol`/`gel` swarm (S57/S58's
+own hard-won tuning), killed clean at 52/52 with this change in place.
+`npm run build` + `check-build.mjs` reconfirmed OK; `dist/` committed.
+
+**For whoever extends `deathFrame` to more enemies:** the shape that works
+is "run the real death exactly once, at the real frame, then only hide the
+`remove` flag" — anything that defers game-logic effects (loot, kill
+count, `dead`) to match a boss's own heavier pattern will likely hit the
+same replay-timing trap this session found, because ANY enemy whose death
+lands near a replay checkpoint boundary on a route with a `deathFrame`
+species is exposed to it, not just `gel`. `attackFrame` is still
+untouched and still needs its own design session, per S76's own finding.
+
 ## S76 — enemy-roster (rotation #4): the hurtFrame engine path, proved on one enemy
 
 `docs/prompts/NEXT-PROMPT.md` asked for exactly one thing: give ONE enemy a

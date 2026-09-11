@@ -97,6 +97,46 @@ Then state a numeric target — e.g. every dungeon item required in at least
 one room of two later dungeons, and on three overworld screens — because
 "more reuse" by itself is not a done-condition a session can finish against.
 
+## 5. Enemy HP vs. the source games
+
+**Flagged by the project owner, not measured yet.** S76
+(`docs/NEXT-SESSION.md`) found that the starting sword (`swordDamage(1)`
+in `src/game/player.js`, which returns `2`) kills 8 of the 19 killable
+enemies in `src/data/enemies.js` in exactly one hit: `gel`/`keese` at
+`hp: 1`, and `octorok`/`crab`/`zol`/`tektite`/`urchin`/`jellyfish` at
+`hp: 2`. The owner's read is that Oracle of Seasons/Ages does not make
+this large a share of the roster one-hit kills at the starting sword
+level. That is a real, checkable claim, not yet checked — CLAUDE.md's
+`measured`/`guessed` discipline for `feel.js` applies just as much to a
+damage ladder as to a speed constant, and item 4 below already
+establishes that an emulator and a frame-steppable ROM are available for
+exactly this kind of question.
+
+**Before writing a scoped prompt from this stub, do the measurement
+first, not last:** frame-step a representative sample of the disputed
+enemies against the real ROM (at minimum one from each current `hp`
+tier — 1, 2, and a taller one like `hp: 3` or `hp: 4` for contrast) and
+record how many hits the STARTING sword actually takes to kill each one
+there. Only once that table exists does this become an actionable prompt
+— either "the numbers already match, close the stub" (a real, valid
+outcome — do not assume the owner is right before checking) or "these N
+enemies need their `hp` raised to M, sword-by-sword," with the measured
+table as the evidence, not a guess. Whichever the answer, land the
+provenance the same way `feel.js` constants do: state in
+`src/data/enemies.js` (or a linked doc) which `hp` values are
+`measured` against the ROM and which are still `guessed`, so this
+doesn't quietly get asserted as settled the way `feel.js` almost was
+before item 4 existed.
+
+**Do not change any `hp` value against this stub without that
+measurement.** A guessed rebalance would touch `check-motion.mjs`'s and
+`replay.mjs`'s baselines (enemy death timing shows up in recorded
+frame-by-frame state) and `check-bosses.mjs`'s fights that route through
+ordinary enemies (D5's `zol`/`gel` swarm, S57/S58's own hard-won
+tuning) — a real risk for a change made on a hunch, and CLAUDE.md's own
+traps section is explicit that a change to a shared, load-bearing number
+is never as small as it looks.
+
 ## 4. Frame-step `feel.js`
 
 Nothing in `src/data/feel.js` currently carries the provenance `measured`,

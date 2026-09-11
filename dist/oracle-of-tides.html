@@ -746,6 +746,12 @@ const ENEMY_INVULN_FRAMES = 24;
 /** f — how long an ordinary enemy flickers after a hit. guessed. */
 const ENEMY_FLICKER_FRAMES = 24;
 
+/** f — how long an ordinary enemy holds its `deathFrame` pose (species that
+ *  declare one) before it is actually removed. guessed — short on purpose,
+ *  a beat rather than a boss's whole boom sequence; `Enemy.die()` is what
+ *  reads this (src/game/enemy.js). */
+const ENEMY_DEATH_FRAMES = 14;
+
 /** f — how long an ordinary enemy is shoved after a hit. guessed. Together with
  *  the KNOCK_* distances below this is the fixed frame count half of the
  *  fixed-distance-over-fixed-frames rule; nothing decays.
@@ -1913,6 +1919,7 @@ __exports["PLAYER_KNOCK_DIST"] = PLAYER_KNOCK_DIST;
 __exports["PLAYER_KNOCK_FRAMES"] = PLAYER_KNOCK_FRAMES;
 __exports["ENEMY_INVULN_FRAMES"] = ENEMY_INVULN_FRAMES;
 __exports["ENEMY_FLICKER_FRAMES"] = ENEMY_FLICKER_FRAMES;
+__exports["ENEMY_DEATH_FRAMES"] = ENEMY_DEATH_FRAMES;
 __exports["ENEMY_KNOCK_FRAMES"] = ENEMY_KNOCK_FRAMES;
 __exports["KNOCK_DEFAULT"] = KNOCK_DEFAULT;
 __exports["KNOCK_SWORD"] = KNOCK_SWORD;
@@ -23937,6 +23944,9 @@ __define("game/enemy.js", function (__exports, __require) {
 //     light: true,              // optional: the Squall Bellows can shove it
 //     tideDies: 2,              // optional: dies when tide reaches this level
 //     tideOnly: [0,1],          // optional: only active at these tide levels
+//     hurtFrame: 'gel_hurt',    // optional: shown while flickering from a hit
+//     deathFrame: 'gel_death',  // optional: shown for ENEMY_DEATH_FRAMES once
+//                               // hp reaches 0, before the entity is removed
 //     init(e, g) {},            // optional one-time setup
 //     ai(e, g) {                // called every frame
 //       wander(e, g);
@@ -23953,7 +23963,7 @@ const { F } = __require("world/tileset.js");
 const { TILE } = __require("core/screen.js");
 const { hash32 } = __require("core/rng.js");
 const { FP_ONE, sp, toPx } = __require("core/fixed.js");
-const { ENEMY_DEFAULT_SPEED, ENEMY_DEFAULT_RATE, ENEMY_TURN_CHANCE, ENEMY_BEACHED_FRAMES, ENEMY_GRID_STEP, ENEMY_DECIDE_STEPS, ENEMY_TURN_PAUSE_FRAMES, ENEMY_CHARGE_SPEED_MULT, ENEMY_CHARGE_RECOVER_FRAMES, ENEMY_CHARGE_TOLERANCE, ENEMY_CHARGE_RANGE, ENEMY_CHARGE_MIN_RANGE, ENEMY_HOP_WAIT_FRAMES, ENEMY_HOP_DIST, ENEMY_HOP_FRAMES, ENEMY_HOP_HEIGHT, ENEMY_ORBIT_SPEED, ENEMY_ORBIT_RADIUS, ENEMY_SUBMERGE_DOWN_FRAMES, ENEMY_SUBMERGE_UP_FRAMES, ENEMY_SURFACE_MIN_DIST, ENEMY_SURFACE_DIST_SPAN, ENEMY_ALIGN_TOLERANCE, ENEMY_KNOCK_FRAMES, ENEMY_SHOT_SPEED, ENEMY_SHOT_LIFE, RING_SHOT_SPEED, RING_SHOT_LIFE, BOSS_INTRO_FRAMES, BOSS_INVULN_FRAMES, BOSS_PHASE_INVULN_FRAMES, BOSS_KNOCK_FRAMES, BOSS_KNOCK_SCALE, BOSS_DEATH_FRAMES, BOSS_DEATH_BOOM_EVERY, SHAKE_MEDIUM, SHAKE_SMALL_FRAMES, TIDE_DRIFT_PER_LEVEL, DREDGE_FLOP_DAMAGE_SCALE, HITSTOP_HIT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES } = __require("data/feel.js");
+const { ENEMY_DEFAULT_SPEED, ENEMY_DEFAULT_RATE, ENEMY_TURN_CHANCE, ENEMY_BEACHED_FRAMES, ENEMY_GRID_STEP, ENEMY_DECIDE_STEPS, ENEMY_TURN_PAUSE_FRAMES, ENEMY_CHARGE_SPEED_MULT, ENEMY_CHARGE_RECOVER_FRAMES, ENEMY_CHARGE_TOLERANCE, ENEMY_CHARGE_RANGE, ENEMY_CHARGE_MIN_RANGE, ENEMY_HOP_WAIT_FRAMES, ENEMY_HOP_DIST, ENEMY_HOP_FRAMES, ENEMY_HOP_HEIGHT, ENEMY_ORBIT_SPEED, ENEMY_ORBIT_RADIUS, ENEMY_SUBMERGE_DOWN_FRAMES, ENEMY_SUBMERGE_UP_FRAMES, ENEMY_SURFACE_MIN_DIST, ENEMY_SURFACE_DIST_SPAN, ENEMY_ALIGN_TOLERANCE, ENEMY_KNOCK_FRAMES, ENEMY_SHOT_SPEED, ENEMY_SHOT_LIFE, ENEMY_DEATH_FRAMES, RING_SHOT_SPEED, RING_SHOT_LIFE, BOSS_INTRO_FRAMES, BOSS_INVULN_FRAMES, BOSS_PHASE_INVULN_FRAMES, BOSS_KNOCK_FRAMES, BOSS_KNOCK_SCALE, BOSS_DEATH_FRAMES, BOSS_DEATH_BOOM_EVERY, SHAKE_MEDIUM, SHAKE_SMALL_FRAMES, TIDE_DRIFT_PER_LEVEL, DREDGE_FLOP_DAMAGE_SCALE, HITSTOP_HIT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES } = __require("data/feel.js");
 
 const TERRAIN_AVOID = {
   land: F.WATER | F.DEEP | F.PIT | F.HAZARD | F.JUMPABLE,
@@ -24013,6 +24023,10 @@ class Enemy extends Entity {
     this.aiState = 0;
     this.aiTimer = 0;
     this.tick = 0;
+    // Held only for species with `spec.deathFrame` — see `die()` below. Every
+    // other enemy leaves these at their initial values for its whole life.
+    this.dying = false;
+    this.deathTime = 0;
     this.homeX = x; this.homeY = y;
     this.shadow = this.flying;
     if (spec.z) this.z = spec.z;
@@ -24020,6 +24034,10 @@ class Enemy extends Entity {
   }
 
   spriteName() {
+    // `dying` outranks a leftover hit-flicker: the killing hit sets `flicker`
+    // to its usual value before `die()` ever runs, so both could read true at
+    // once, and the death pose is what should win.
+    if (this.dying && this.spec.deathFrame) return this.spec.deathFrame;
     // Same precedent as `Boss.spriteName` (below): a single flinch pose shown
     // only while `flicker` is counting down from a hit, for a species that
     // declares one. Most enemies have no `hurtFrame` and fall through to the
@@ -24055,6 +24073,20 @@ class Enemy extends Entity {
     this.tick++;
     if (this.invuln > 0) this.invuln--;
     if (this.flicker > 0) this.flicker--;
+
+    // Held on its `deathFrame` pose. Unlike `Boss.update`'s own `dying`
+    // branch, `die()` (below) has ALREADY run in full by the time this fires
+    // — `dead`, the loot roll, the kill count, all of it, at the original
+    // frame — so all that is left to do here is stop drawing it. Deferring
+    // any of those instead (the first shape this took) shifted a recorded
+    // RNG-draw count in `tools/replays/d1-descent.json` by delaying gel's
+    // own loot roll past a checkpoint frame — a real, measured regression,
+    // not a flake; `remove` is the only thing this holds back.
+    if (this.dying) {
+      this.deathTime++;
+      if (this.deathTime > ENEMY_DEATH_FRAMES) { this.dying = false; this.remove = true; }
+      return;
+    }
 
     // Tide interactions: some enemies only exist at certain tide levels — and
     // at the level where THIS enemy is standing, not the room's base. An
@@ -24135,6 +24167,40 @@ class Enemy extends Entity {
   onDie(game) {
     if (this.spec.onDie) this.spec.onDie(this, game);
     game.rollDrop(this.cx - 8, this.cy - 8, this.drops);
+  }
+
+  die(game) {
+    const already = this.dead;
+    // `dead`, the loot roll (`onDie` above), the kill count
+    // (`game.onEnemyDefeated`) and the 'puff' effect all run HERE, at the
+    // exact original frame, for every enemy, `deathFrame` or not. Only what
+    // happens next differs.
+    super.die(game);
+    // A species with no `deathFrame` is removed same as it always was —
+    // `super.die` above already set `remove = true`. One with a pose gets
+    // that undone right back: `dead` stays true (room-clear checks and every
+    // "can this still be hit/hit me" check already read `.dead`, not
+    // presence in `game.entities`, so this is invisible to them), but the
+    // entity keeps drawing its `deathFrame` for ENEMY_DEATH_FRAMES (the
+    // `update()` branch above) before it actually leaves the room.
+    //
+    // Earlier shape deferred ALL of the above instead of just `remove` — the
+    // same "hold, then really die" idea `Boss.beginDeath` uses for its boom
+    // sequence — and it measurably regressed `tools/replay.mjs`: delaying
+    // gel's own loot roll (an RNG draw) past a recorded checkpoint frame
+    // shifted `tools/replays/d1-descent.json`'s draw count, not because
+    // anything about the fight changed, only because the SAME draw now
+    // happened later. `!already` guards re-entry so a second lethal hit
+    // landing mid-hold (invuln is still counting down) does not spawn a
+    // second puff/drop/kill-count.
+    if (!already && this.spec.deathFrame) {
+      this.remove = false;
+      this.dying = true;
+      this.deathTime = 0;
+      // A leftover hit-flicker would otherwise fight Entity.draw's own
+      // flicker-hide against the held pose for the first few frames.
+      this.flicker = 0;
+    }
   }
 
   draw(ctx, game, ox, oy) {
@@ -25000,6 +25066,11 @@ function installEnemies() {
     light: true,
     hp: 1, damage: 1, pal: 'slime', speed: 0.42, rate: 10,
     frames: ['gel_0', 'gel_1'],
+    // Every hit is a killing hit at hp:1, so — unlike `hurtFrame` (S76: only
+    // reachable by a species that survives a hit) — `deathFrame` is reachable
+    // on this enemy every single time, which is exactly why it's the one
+    // this rotation's death-pose proof landed on. See sprites-enemy-states.js.
+    deathFrame: 'gel_death',
     w: 16, h: 16,
     hb: { x: 5, y: 8, w: 6, h: 7 },
     terrain: 'any',
@@ -37685,9 +37756,9 @@ __exports["ENEMY_ART_PALETTES"] = ENEMY_ART_PALETTES;
 __exports["installEnemySprites"] = installEnemySprites;
 });
 
-/* ===== src/data/sprites-enemy-hurt.js ===== */
-__define("data/sprites-enemy-hurt.js", function (__exports, __require) {
-// Ordinary-enemy hurt (flinch) frames.
+/* ===== src/data/sprites-enemy-states.js ===== */
+__define("data/sprites-enemy-states.js", function (__exports, __require) {
+// Ordinary-enemy hurt (flinch) and death frames.
 //
 // HAND-DRAWN, and for a structural reason rather than a stylistic one:
 // `assets/sheets/oracle-seasons-enemies.png` was surveyed cell by cell for a
@@ -37696,33 +37767,41 @@ __define("data/sprites-enemy-hurt.js", function (__exports, __require) {
 // mid-recoil pose for BOSSES (see sprites-bosses.js's own `_hurt` frames);
 // an ordinary enemy's "hurt" reaction there is the invincibility flicker
 // alone (Entity.draw's own flicker skip-frame, unconditionally free for
-// every enemy already). So there is nothing on the sheet to extract for
-// this — CLAUDE.md's "if no sheet has it, draw it to match" path, not a
-// shortcut past extraction.
+// every enemy already), and its death is a shared 'puff' effect plus instant
+// removal, not a per-species pose. So there is nothing on either sheet to
+// extract for what this file holds — CLAUDE.md's "if no sheet has it, draw
+// it to match" path, not a shortcut past extraction. (S76 surveyed for a
+// hurt pose specifically; S77 did not find a death pose either, on the same
+// sheet, in the same pass.)
 //
 // Same register as everywhere else: docs/ART-DIRECTION.md's three colours
 // plus transparency, a hard 1px outline, no anti-aliasing, silhouette held
-// (this is the same creature, not a new one) with the one feature the eye
-// actually reads — the face — changed to sell the recoil, exactly the
-// "eyes shut or squinted, body flinched a pixel" convention the boss frames
-// already use, scaled down to what a 16x16 cell can actually show.
+// (this is the same creature reacting, not a new one) with the one feature
+// the eye actually reads changed to sell the moment.
 //
-// Read by `Enemy.spriteName()` (src/game/enemy.js): a species with
-// `hurtFrame` in its `defineEnemy` spec shows this sprite while `flicker` is
-// counting down from a hit, the same mechanism `Boss.spriteName` already
-// uses. Always drawn through the enemy's own `pal`, never a colour baked in
-// here — see wisp's `pal: 'magic'` in src/data/enemies.js.
+// Read by `Enemy.spriteName()`/`Enemy.die()` (src/game/enemy.js): a species
+// with `hurtFrame` shows that sprite while `flicker` is counting down from a
+// hit (the same mechanism `Boss.spriteName` already uses); a species with
+// `deathFrame` holds that sprite for `ENEMY_DEATH_FRAMES` once `hp` reaches
+// 0, before the entity is actually removed (the same "hold, then really
+// die" shape `Boss.beginDeath` already uses for its own boom sequence,
+// scaled down and with no boom). Each entry below carries its OWN default
+// palette because, unlike in play (where the enemy's live `pal` field always
+// wins), `tools/shoot-sprites.mjs`'s contact sheet bakes every sprite with
+// no palette override — the default here is what that sheet actually shows.
 
 const { sprites } = __require("gfx/art.js");
 
-const ENEMY_HURT_ART = {
+const ENEMY_STATE_ART = {
   // Wisp (Spark): the same spiky ring held in place — no room in 16x16 for a
   // whole-body flinch the way a 32x32 boss gets one — with its face pinched
   // shut instead of the open grin both idle frames (wisp_0/wisp_1) wear:
   // the eye ticks widen into short shut lines and the wide smile band
   // narrows to a small clenched notch. Compare against wisp_0/wisp_1 in
-  // src/data/sprites-enemies.js before changing either.
-  wisp_hurt: `
+  // src/data/sprites-enemies.js before changing either. Default palette
+  // 'magic' matches wisp's own `pal` in src/data/enemies.js.
+  wisp_hurt: {
+    pal: 'magic', art: `
     ....03300330....
     ..300333333003..
     .33333000033333.
@@ -37738,14 +37817,38 @@ const ENEMY_HURT_ART = {
     .03300000000330.
     .33333000033333.
     ..300333333003..
-    ....03300330....`,
+    ....03300330....` },
+
+  // Gel: the same round blob (gel_0/gel_1 in src/data/sprites-enemies.js,
+  // 9x12 centred in the 16x16 cell) squashed into a flat, wide splat — a
+  // slime's death reads as "it stopped holding its shape", not a flinch or
+  // a fade, and this is the whole silhouette change that says so. Default
+  // palette 'slime' matches gel's own `pal` in src/data/enemies.js.
+  gel_death: {
+    pal: 'slime', art: `
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    .33333333333333.
+    .31111111111113.
+    .31111111111113.
+    .33333333333333.
+    ................
+    ................
+    ................
+    ................` },
 };
 
-function installEnemyHurtSprites() {
-  sprites.add(ENEMY_HURT_ART, 'magic');
+function installEnemyStateSprites() {
+  sprites.add(ENEMY_STATE_ART);
 }
-__exports["ENEMY_HURT_ART"] = ENEMY_HURT_ART;
-__exports["installEnemyHurtSprites"] = installEnemyHurtSprites;
+__exports["ENEMY_STATE_ART"] = ENEMY_STATE_ART;
+__exports["installEnemyStateSprites"] = installEnemyStateSprites;
 });
 
 /* ===== src/data/sprites-bosses.js ===== */
@@ -40574,7 +40677,7 @@ const { installRaceSprites, RACE_ART } = __require("data/sprites-races.js");
 const { installWorldSprites, PICKUP_ART, OBJECT_ART, SHOT_ART, NPC_ART } = __require("data/sprites-world.js");
 const { installFairies, FAIRY_ART } = __require("data/sprites-fairies.js");
 const { installEnemySprites, ENEMY_ART } = __require("data/sprites-enemies.js");
-const { installEnemyHurtSprites, ENEMY_HURT_ART } = __require("data/sprites-enemy-hurt.js");
+const { installEnemyStateSprites, ENEMY_STATE_ART } = __require("data/sprites-enemy-states.js");
 const { installBossSprites, BOSS_ART, MINIBOSS_ART } = __require("data/sprites-bosses.js");
 const { installHudSprites, HUD_ART } = __require("data/sprites-hud.js");
 const { installGearSprites, GEAR_ART } = __require("data/sprites-gear.js");
@@ -40601,7 +40704,7 @@ const SPRITE_PACKS = {
   shots: SHOT_ART,
   npcs: NPC_ART,
   enemies: ENEMY_ART,
-  enemyHurt: ENEMY_HURT_ART,
+  enemyStates: ENEMY_STATE_ART,
   bosses: BOSS_ART,
   minibosses: MINIBOSS_ART,
   hudRipped: HUD_ART,
@@ -40632,10 +40735,10 @@ function installData() {
   // The peoples of Thalassia, off a sheet nothing else has touched.
   installRaceSprites();
   installEnemySprites();
-  // The one ordinary-enemy flinch pose no sheet has (see the file's own
-  // header) — after the ripped set, so it can't be shadowed by a same-named
-  // extracted frame.
-  installEnemyHurtSprites();
+  // Ordinary-enemy hurt/death poses no sheet has (see the file's own
+  // header) — after the ripped set, so they can't be shadowed by a
+  // same-named extracted frame.
+  installEnemyStateSprites();
   installBossSprites();
   // After sprites-link.js, so the extracted HUD and gear icons override the
   // hand-drawn ones for the items Oracle of Seasons actually has.

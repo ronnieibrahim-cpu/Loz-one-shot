@@ -2059,7 +2059,7 @@
    "x": 74,
    "y": 52,
    "hp": 30,
-   "e": 6,
+   "e": 7,
    "d": 4,
    "r": "0,3,5"
   },
@@ -2945,6 +2945,10 @@
   ],
   "dungeonMap": true,
   "chartstone": false,
+  "dungeonMaps": {
+   "d1": true
+  },
+  "charts": {},
   "flags": [],
   "doorsChanged": 0,
   "secretsSeen": 7,

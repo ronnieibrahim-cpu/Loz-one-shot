@@ -23,6 +23,9 @@
 //     light: true,              // optional: the Squall Bellows can shove it
 //     tideDies: 2,              // optional: dies when tide reaches this level
 //     tideOnly: [0,1],          // optional: only active at these tide levels
+//     hurtFrame: 'gel_hurt',    // optional: shown while flickering from a hit
+//     deathFrame: 'gel_death',  // optional: shown for ENEMY_DEATH_FRAMES once
+//                               // hp reaches 0, before the entity is removed
 //     init(e, g) {},            // optional one-time setup
 //     ai(e, g) {                // called every frame
 //       wander(e, g);
@@ -51,7 +54,7 @@ import {
   ENEMY_ORBIT_SPEED, ENEMY_ORBIT_RADIUS,
   ENEMY_SUBMERGE_DOWN_FRAMES, ENEMY_SUBMERGE_UP_FRAMES,
   ENEMY_SURFACE_MIN_DIST, ENEMY_SURFACE_DIST_SPAN, ENEMY_ALIGN_TOLERANCE,
-  ENEMY_KNOCK_FRAMES, ENEMY_SHOT_SPEED, ENEMY_SHOT_LIFE,
+  ENEMY_KNOCK_FRAMES, ENEMY_SHOT_SPEED, ENEMY_SHOT_LIFE, ENEMY_DEATH_FRAMES,
   RING_SHOT_SPEED, RING_SHOT_LIFE,
   BOSS_INTRO_FRAMES, BOSS_INVULN_FRAMES, BOSS_PHASE_INVULN_FRAMES,
   BOSS_KNOCK_FRAMES, BOSS_KNOCK_SCALE,
@@ -119,6 +122,10 @@ export class Enemy extends Entity {
     this.aiState = 0;
     this.aiTimer = 0;
     this.tick = 0;
+    // Held only for species with `spec.deathFrame` — see `die()` below. Every
+    // other enemy leaves these at their initial values for its whole life.
+    this.dying = false;
+    this.deathTime = 0;
     this.homeX = x; this.homeY = y;
     this.shadow = this.flying;
     if (spec.z) this.z = spec.z;
@@ -126,6 +133,10 @@ export class Enemy extends Entity {
   }
 
   spriteName() {
+    // `dying` outranks a leftover hit-flicker: the killing hit sets `flicker`
+    // to its usual value before `die()` ever runs, so both could read true at
+    // once, and the death pose is what should win.
+    if (this.dying && this.spec.deathFrame) return this.spec.deathFrame;
     // Same precedent as `Boss.spriteName` (below): a single flinch pose shown
     // only while `flicker` is counting down from a hit, for a species that
     // declares one. Most enemies have no `hurtFrame` and fall through to the
@@ -161,6 +172,20 @@ export class Enemy extends Entity {
     this.tick++;
     if (this.invuln > 0) this.invuln--;
     if (this.flicker > 0) this.flicker--;
+
+    // Held on its `deathFrame` pose. Unlike `Boss.update`'s own `dying`
+    // branch, `die()` (below) has ALREADY run in full by the time this fires
+    // — `dead`, the loot roll, the kill count, all of it, at the original
+    // frame — so all that is left to do here is stop drawing it. Deferring
+    // any of those instead (the first shape this took) shifted a recorded
+    // RNG-draw count in `tools/replays/d1-descent.json` by delaying gel's
+    // own loot roll past a checkpoint frame — a real, measured regression,
+    // not a flake; `remove` is the only thing this holds back.
+    if (this.dying) {
+      this.deathTime++;
+      if (this.deathTime > ENEMY_DEATH_FRAMES) { this.dying = false; this.remove = true; }
+      return;
+    }
 
     // Tide interactions: some enemies only exist at certain tide levels — and
     // at the level where THIS enemy is standing, not the room's base. An
@@ -241,6 +266,40 @@ export class Enemy extends Entity {
   onDie(game) {
     if (this.spec.onDie) this.spec.onDie(this, game);
     game.rollDrop(this.cx - 8, this.cy - 8, this.drops);
+  }
+
+  die(game) {
+    const already = this.dead;
+    // `dead`, the loot roll (`onDie` above), the kill count
+    // (`game.onEnemyDefeated`) and the 'puff' effect all run HERE, at the
+    // exact original frame, for every enemy, `deathFrame` or not. Only what
+    // happens next differs.
+    super.die(game);
+    // A species with no `deathFrame` is removed same as it always was —
+    // `super.die` above already set `remove = true`. One with a pose gets
+    // that undone right back: `dead` stays true (room-clear checks and every
+    // "can this still be hit/hit me" check already read `.dead`, not
+    // presence in `game.entities`, so this is invisible to them), but the
+    // entity keeps drawing its `deathFrame` for ENEMY_DEATH_FRAMES (the
+    // `update()` branch above) before it actually leaves the room.
+    //
+    // Earlier shape deferred ALL of the above instead of just `remove` — the
+    // same "hold, then really die" idea `Boss.beginDeath` uses for its boom
+    // sequence — and it measurably regressed `tools/replay.mjs`: delaying
+    // gel's own loot roll (an RNG draw) past a recorded checkpoint frame
+    // shifted `tools/replays/d1-descent.json`'s draw count, not because
+    // anything about the fight changed, only because the SAME draw now
+    // happened later. `!already` guards re-entry so a second lethal hit
+    // landing mid-hold (invuln is still counting down) does not spawn a
+    // second puff/drop/kill-count.
+    if (!already && this.spec.deathFrame) {
+      this.remove = false;
+      this.dying = true;
+      this.deathTime = 0;
+      // A leftover hit-flicker would otherwise fight Entity.draw's own
+      // flicker-hide against the held pose for the first few frames.
+      this.flicker = 0;
+    }
   }
 
   draw(ctx, game, ox, oy) {
