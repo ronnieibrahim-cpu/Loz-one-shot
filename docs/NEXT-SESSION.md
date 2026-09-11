@@ -1,3 +1,149 @@
+## S67 — traced D6's three remaining losses (seed2/3/4) separately per NEXT-PROMPT's own instruction, and found three different damage shapes, not one — no code changed, nothing shipped
+
+Direct continuation of S66, whose own open question was exactly this: the
+room-widening fix closed the seed-independent wall-freeze tax and moved D6
+from 1/6 to 3/6, but did not touch WHY seed2, seed3 and seed4 still lose.
+Nobody had traced those three losses since the room fix landed. Per this
+whole thread's own standing caution (S59's "shared cause" mistake, repeated
+in S61 for D3/D6), this session got the real per-hit damage log for each of
+the three losses before assuming any of them share a mechanism — and found
+they don't.
+
+**First re-confirmed the roster is exactly as documented**: `measure-boss-
+combat.mjs d6` across the default seed and `--seed=1` through `--seed=5`
+gives default/seed1/seed5 WIN (80/80 dealt) and seed2/seed3/seed4 LOSE
+(54/80, 48/80, 72/80 dealt respectively) — matches S66's table exactly.
+
+**A finding that applies to all six seeds, wins included, before any of
+them diverge: the deterministic "opening tax" is bigger than previously
+documented, and it now includes a contact hit that didn't used to be part
+of it.** Every one of the 6 standard seeds — win or loss — takes the
+IDENTICAL first four hits, byte-for-byte, before frame 903: `f=551` (3qh,
+projectile, dist 70), `f=611` (4qh, CONTACT, `src:"nereth"`, dist 24),
+`f=741` (3qh, projectile, dist 59), `f=903` (3qh, projectile, dist 24) — 13
+of 32 quarter-hearts, 40.6% of the whole health pool, gone before Nereth's
+phase-1 RNG has any chance to diverge between seeds. Older session accounts
+(pre-S66) described this tax as "three isProjectile hits, 9 of 32 qh" — this
+session's trace shows a fourth, CONTACT hit is now part of the same
+deterministic prefix (likely a side effect of S66 moving Nereth's spawn to
+the new room's center at `(9,2)`, which changed the initial engagement
+geometry). Nobody has traced whether this specific contact hit is new
+because of the room change or was always there and previously miscounted —
+worth checking before treating it as a S66 side effect for certain. Either
+way: winning seeds finish with only 4-7 of 32 qh to spare, so this
+deterministic 13qh tax — not any of the three seeds' own individual
+mechanism below — is arguably the single biggest lever left on D6's overall
+win rate, since it eats 40% of the margin on every single attempt before
+anything seed-specific even starts.
+
+**Seed3: pure sustained ranged attrition, no contact damage, no anomaly —
+the player just doesn't damage the boss fast enough to outrace the chip.**
+Of seed3's 11 total hits, 10 are `isProjectile:true`; the only contact hit
+is the shared opening-tax one at f=611. The boss is only at 32 of 80 hp (48
+dealt) when the player dies at frame 1620 — the SLOWEST kill pace of any of
+the six seeds relative to frames elapsed (the three winners land 80/80 by
+frame 1920-2240; the other two losers land 54/80 and 72/80 by frame
+1560-1660). No wall-freeze signature (no repeated identical position), no
+extended-open anomaly (checked — `weakOpen` cycles normally through
+phase0/phase1 the same shape as the winning seeds). This reads as ordinary
+seed variance in how favourably the RNG lines up Nereth's tell timing
+against the player's own attack windows, not a bug: a boss that opens for
+exactly as long on this seed as on a winning one, but happens to end each
+opening a little further from the player, banks fewer sword hits per
+window and pays the same trident/ring/beam tax for longer.
+
+**Seed2: an extended `weakOpen` window (by design, not a bug) that hosted
+three contact hits late in the fight, all point-blank and one landed while
+the player was still in stun from the previous hit.** Traced with a
+temporary, gated instrument (not committed; removed after tracing, same
+convention as S57-S65) that logs `boss.phase` and position alongside every
+damage event, plus a separate whole-fight `weakOpen` transition log. Found:
+`weakOpen` goes true at frame 1320 (during phase index 1, the HIGH-pin
+"flood the keep" phase) and stays continuously true through the
+phase1-to-phase2 transition (boss hp crosses the 40/80 threshold around
+frame 1340) all the way to the player's death at frame 1560 — a single
+240+ frame open stretch spanning two phases. This is `nerethPin`'s own
+designed behaviour, not a glitch: `nerethPin`'s `else` branch (tide !=
+pinLevel, i.e. the pin has been broken by a conch press) calls `open(e, g,
+60)` EVERY FRAME for as long as the tide stays off the pin level, so a
+broken pin keeps Nereth open until his own `pin` timer (260-300 frames,
+depending on phase) forces the tide back — this is the intended "break the
+pin, get an extended window to hit him" mechanic the fight is built
+around, not an accident, and it doesn't stop just because a phase boundary
+happens to fall inside it. During that specific 240-frame window, the
+player landed three contact hits from Nereth's own body (`f=1445` 4qh,
+`f=1498` 4qh, `f=1550` 2qh — all `weakOpen:true`, all at dist 19-24), the
+last one while `stun:23` (i.e. the player was still recovering from the
+previous hit's knockback when the third one landed — a chain, not three
+independent unlucky touches). This phase (index 2, "above 0.25", LOW pin)
+does not `chase()` — Nereth only takes a slow, facing-based step every 4
+frames and otherwise stands still sweeping beams — so the player is the one
+closing distance to reach his weak point, repeatedly, over almost a
+quarter of the fight's frame budget, and clipped his body three times doing
+it. Whether this is "the actor doing something an alert player wouldn't" or
+"genuinely bad luck in an unusually long window" was NOT resolved this
+session — it would need the same frame-by-frame position trace S62-S65 used
+for the wall-freeze, applied to this specific 240-frame stretch, which is a
+full session's worth of work on its own and wasn't started.
+
+**Seed4: the closest of the three losses — dies 8 of 80 boss-hp short of a
+win — mostly ordinary projectile damage plus two contact hits in the
+phase-4 finale.** Of seed4's 10 hits, 6 are the shared-plus-early
+projectile tax; the distinctive part is the ending: `f=1596` (3qh, contact,
+`src:"darknut"`, the minion `onPhase` summons on the transition into phase
+3, i.e. hp<=20) and `f=1651` (4qh, contact, `src:"nereth"`) — two contact
+hits 55 frames apart during phase 4's "everything at once" finale (Nereth
+himself plus a darknut plus keese), which by design is the most chaotic
+part of the fight. Boss reaches 8 of 80 hp remaining (72 dealt) — the
+player was one or two more sword hits from winning this seed outright.
+This looks like ordinary multi-enemy-chaos risk at low health rather than
+any single identifiable mechanism, and given how close it is, a very small
+change to the deterministic opening tax above (which every seed pays
+identically) is more likely to flip this specific seed to a win than
+anything scoped to phase 4's finale itself.
+
+**Conclusion: three losses, three different shapes — confirms yet again
+(S59's mistake, S61's correction) that "shared cause" cannot be assumed
+across seeds any more than across dungeons.** None of the three shows the
+OLD wall-freeze signature (no repeated identical position, no seed pinned
+against the same wall) — good confirmation that S66's room fix generalised
+and didn't just relocate the problem. But none of the three has an obvious,
+narrow, safe fix either: seed3 is RNG variance in engagement efficiency,
+seed2 is an emergent risk of the fight's own core "break the pin, get an
+extended window" mechanic rather than a glitch, and seed4 is multi-enemy
+finale chaos the player nearly survives anyway. Attempting a fix for any of
+them without a dedicated frame-by-frame trace (the kind S62-S65 needed a
+full session each for the wall-freeze) would be guessing, and this
+project's own history (S59's Nereth experiment, S62's ungated fix) is the
+standing argument against guessing on this specific boss. **Nothing
+changed in `src/` or `tools/`** — the position/phase instrumentation used
+to trace seed2 was written to a temporary, uncommitted script and deleted
+after tracing (`git status` empty at the end of the session, confirmed).
+
+**Validation:** none needed beyond the tracing runs themselves — no code
+changed. Re-ran `measure-boss-combat.mjs d6` across all 6 standard seeds a
+final time after removing the temporary trace scripts to confirm the
+roster still reads exactly 3/6 (default, seed1, seed5 win; seed2, seed3,
+seed4 lose) with the same per-seed damage totals reported above.
+
+**Recommendation for whoever picks D6 back up next:** don't try to fix all
+three losses at once. Seed4 is the best next target — it is the closest
+margin (8 of 80 boss-hp) and its own damage log shows nothing structurally
+wrong, which means even a small, safe improvement anywhere (the shared
+opening tax being the most promising single lever, since it costs EVERY
+seed 40% of their margin before anything seed-specific happens) has a real
+chance of flipping it without needing a seed4-specific mechanism fix. Seed2
+needs a full frame-by-frame trace of its specific 240-frame open window
+before any fix is attempted — treating "reduce contact risk during long
+open windows" as a general dBoss/evade change would repeat this whole
+thread's own recurring mistake (a shared-cost-function change is not
+boss-scoped and risks every other fight in the game). Seed3 may not be
+fixable at all without touching Nereth's own attack timing or the
+`evade` cost function generally, which is explicitly the larger, separately
+budgeted lever `docs/prompts/NEXT-PROMPT.md`'s own task 3 already
+describes. `docs/prompts/NEXT-PROMPT.md` names the single best-scoped next
+step for whoever picks this up.
+
 ## S66 — closed D6's wall-freeze from the room side instead of the movement layer: widened Nereth's arena, and it landed clean — 1/6 winning to 3/6, zero regressions
 
 Direct continuation of S65, whose own recommendation was to stop patching

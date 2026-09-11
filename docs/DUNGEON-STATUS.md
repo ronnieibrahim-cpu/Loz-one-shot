@@ -556,9 +556,18 @@ screen" convention every other fight here keeps, confirmed with the user
 before building it, made because the alternative (a fifth movement-layer
 patch) had already failed four times. D6's room count is unchanged at 26 —
 same convention as Tideshade Hall above, this widened an existing room
-rather than adding one. **Still open:** D6 is 3 of 6, not 6 of 6 — seed2/3/4
-still lose to a cause nobody has traced yet, presumably RNG-dependent since
-the seed-independent freeze this session fixed is now gone.
+rather than adding one. **Still open:** D6 is 3 of 6, not 6 of 6 — S67
+traced seed2/3/4 separately (no shared cause, per this thread's own
+standing habit of checking rather than assuming) and found three different
+damage shapes: seed3 is ordinary ranged-attrition RNG variance, seed2 takes
+three contact hits during one of Nereth's own designed extended-open
+windows (the "break the pin, get ~260 frames to hit him" mechanic — not a
+glitch, but not traced deeply enough to know if the actor mishandled it),
+and seed4 loses by only 8 of 80 boss-hp in the phase-4 finale. All six
+seeds — wins included — also share a bigger-than-previously-documented
+deterministic opening tax: 13 of 32 qh (40.6%) gone identically before any
+seed's RNG diverges. See `docs/NEXT-SESSION.md` S67 for the full per-seed
+damage-log breakdown; no code changed this session.
 
 ---
 

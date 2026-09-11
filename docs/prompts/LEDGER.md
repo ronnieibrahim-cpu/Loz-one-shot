@@ -198,26 +198,14 @@ extract from it:
   — would need `up+down`/`left+right` in `EDGE_ART_KEYS`); and salt flats,
   ice floors and reef/abyss water were never audited for whether they want a
   rim of their own.
-- **Nereth (D6) does not fix entirely but comes very close — see S49
-  (tried, reverted) and S50 (landed); Rootmaw (D5) was the same class of bug
-  and is now fixed, see the Landed table's S52 row.** S50 landed
-  `safeWhenOpen: true` on `anemos` and `nereth` only, read by `dBoss`
-  alongside `b.stun`: **D6 goes from 6 of 80 damage dealt to 78 of 80** (a
-  real fight now, not a wall — not yet a full win). Nereth still needs the
-  same contextual conch-press idea S52 built for Rootmaw (`tideEscape`), but
-  NOT the same value — `nerethPin`'s target level changes per phase (MID,
-  then HIGH, then a drained level), so he needs a dynamic form ("away from
-  whichever level `nerethPin` currently wants"), not a single constant.
-  Named and left for a future session in `docs/NEXT-SESSION.md` S52's "still
-  open" list — building it is out of scope until a session is asked to chase
-  Nereth specifically, since 78/80 was not this session's job.
-  **Caveat that still applies:** a robot losing (or not quite winning) does
-  not by itself prove a boss is unfair if the robot is missing a verb the
-  fight assumes a player has. Nereth's own fight is explicitly designed
-  around the conch (`nerethPin`) and the actor still cannot press it
-  contextually — 78 of 80 without that verb at all is a strong result, not
-  a ceiling on the fight's real fairness. The honest deliverable is a
-  measurement plus a judgement, not a green tick.
+- **Nereth (D6) is 3 of 6, not 6 of 6 — see the Landed table's S66 row for
+  the wall-freeze fix (closed) and `docs/NEXT-SESSION.md` S67 for the three
+  remaining losses (traced, not fixed: seed3 is RNG variance in engagement
+  efficiency, seed2 takes contact damage during one of Nereth's own
+  designed extended-open windows, seed4 loses by 8 of 80 boss-hp in the
+  phase-4 finale — three different shapes, no shared cause and no safe
+  narrow fix identified yet).** `docs/prompts/NEXT-PROMPT.md` names the
+  best-scoped next step.
 - **The replay baselines predate `beaten`/`heartPieces`.** Eleven files live
   in `tools/replays/`; only some carry those fields, and `diffState` only
   walks keys a baseline HAS, so the rest go unchecked. Re-record
