@@ -1,3 +1,60 @@
+## S70 — built `tools/shoot-sprites.mjs`, the art-provenance objective's verification tool, before any sprite entry is tagged
+
+Third session run under `docs/prompts/CHARTER.md` (`STATE.md`'s own S5).
+`check-drift.mjs` self-checks were green, so the session did NEXT-PROMPT.md's
+task: write `tools/shoot-sprites.mjs` — a real-pixel contact sheet of every
+sprite the engine can draw, at 1x and 3x — and touch no sprite data file.
+
+**Why a tool session before any tagging.** Rotation #2 (art-provenance) has
+two done-conditions: every sprite entry tagged `extracted`/`derived`/`drawn`,
+and this tool existing. `docs/ART-BACKLOG.md` already warns that a
+composited or recoloured TILE "needs an in-game screenshot ... before it is
+believed" — the same standard has to apply to a `derived`/`drawn` SPRITE
+claim, and there was no way to look at 561 entries at once before this.
+
+**What it does, and why it isn't just `tools/preview.mjs` with an extra
+scale flag.** `preview.mjs` already draws a real sprite via `sprites.draw()`
+into a PNG, one pack per invocation, with no per-cell label and one scale.
+`shoot-sprites.mjs` covers every pack in `src/data/sprite-manifest.js` in
+one run, draws each entry TWICE (1x and 3x, matching the rotation's own
+wording), and labels every cell with the sprite's own name — the thing a
+provenance reviewer actually needs to know which entry they're looking at,
+which `preview.mjs` never needed for a "does this pack look right" glance.
+One combined image across all 561 entries would be unreadable at 1x and
+enormous at 3x, so output is one sheet PER PACK per scale (30 files, 356KB
+total) — the same unit `preview.mjs` already uses, just automatic instead of
+needing every pack name typed by hand, and gitignored under `tools/shots/`
+like every other tool's screenshots.
+
+**Verified against the real game, not just against itself.** Every pack
+reports `0 missing` (every manifest name is registered — the same thing
+`validate.mjs` already asserts, confirmed here rather than assumed). Cross-
+checked one entry directly: the `keese` in D4's Ironknight Gallery
+(screenshotted last session, `room-d4_0_5_3-tide1-px80.png`) is pixel-for-
+pixel the same dark bat shape as `keese_0` on the enemies contact sheet —
+expected, since both paths call the same `sprites.draw()`, but worth
+confirming once rather than trusting the mechanism blind. Looked at the
+`npcs`, `enemies` and `bosses` sheets directly: all 11 named NPCs, all 28
+enemy species' two-frame walk cycles (matching `check-drift.mjs`'s own
+"0 of 22 complete — walk" line: walk is genuinely the only animation state
+today, so the sheet correctly shows no attack/hurt/death frames to be
+missing), and all 8 bosses' 3-4 phase frames plus a hurt frame, read as real
+extracted/drawn pixel art, not placeholders.
+
+**No sprite data file touched, on purpose** — this was a viewer, not a
+tagging pass. `git status` after the session shows exactly one new file,
+`tools/shoot-sprites.mjs`; `npm run build` was re-run to confirm `dist/`
+genuinely didn't change (it didn't, so it wasn't recommitted) rather than
+assuming a tools-only change can't affect it.
+
+**Checkers run:** `check-drift.mjs` (self-checks OK, sprite-provenance count
+unchanged at 3/0/10/548 as expected — this session added a tool, not a tag),
+`check-playthrough.mjs` 21/21, `test.mjs` 83/83, all byte-identical to
+before, confirming zero effect on the game itself.
+
+**Next session's job:** tag entries with the tool now in hand. See
+`docs/prompts/NEXT-PROMPT.md`.
+
 ## S69 — the third dungeon, closing the standing session charter's "1 wide-rooms" objective: D5's Thornvine widened, rotation advances to art-provenance
 
 Second session run under `docs/prompts/CHARTER.md` (`STATE.md`'s own S4).
