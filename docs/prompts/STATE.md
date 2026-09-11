@@ -42,3 +42,4 @@ DETOUR TOKENS: 1
 SESSION LOG: one row per session — `S## | objective|detour | one line`
 S1 | objective | ran SETUP: created check-drift.mjs, STATE.md, AUDITED-ROOMS.md; measured baseline (1 of 6 dungeons wide, 0/0 reuse on 4 of 6 items, 0 feel.js constants measured, 0 rooms audited)
 S2 | objective | corrected objective 1's bar to 3 of 6 (was 4 of 6); added art-provenance/boss-art/enemy-roster/npc-detail as rotation #2-5, renumbered region-art/item-reuse/feel-measure to #6-8, item-reuse's condition now names only the 4 single-use items; added sprite-provenance (561 entries, 13 tagged) and enemy-animation-completeness (0 of 22 complete) metrics to check-drift.mjs
+S3 | objective | widened D4's Cistern Floor 2x1->3x1 (a free-right cell S46 never checked, since it only tried growing down); 2x2/3x1 count now 2 of 6 dungeons (was 1), still short of the 3-of-6 bar; all named checkers + test.mjs + build green

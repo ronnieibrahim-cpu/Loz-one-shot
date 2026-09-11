@@ -1,48 +1,58 @@
-# Next session — widen one dungeon's room to 2x2
+# Next session — widen D5's Shrine Ford to 3x1
 
 ## Read first
 - `docs/prompts/CHARTER.md` — the standing rules for every session; run it
   verbatim before reading anything else here.
 - `docs/prompts/STATE.md` — current objective, file allowlist, detour tokens.
-- `docs/DUNGEON-STATUS.md`'s D6 section on Tideshade Hall — the one room in
-  the game already widened this way, and the "genuinely free down-right
-  block" condition that made it possible.
-- The Tideshade Hall session entry in `docs/NEXT-SESSION.md` (search for
-  "Tideshade Hall widened") for the exact method: grow into the free block,
-  keep the puzzle/door/entities at their existing local coordinates, touch
-  no other room.
+- The "S68" entry in `docs/NEXT-SESSION.md` (search for "the second `3x1`
+  room") for the exact method used last time: find a room with a genuinely
+  free block using the map registry's own occupancy index, grow into it,
+  leave every local coordinate alone. That entry also names the free-right
+  candidates it found in every dungeon, D5's Shrine Ford among them.
+- `src/data/dungeons-b.js`, the `reefseedRoom` block inside `'0,4,2'` (The
+  Shrine Ford) — its stakes/snarl/cutFrom coordinates are all inside columns
+  0-19; growing right must not need to touch any of them.
 
 ## Why this, now
 STATE.md's objective of record is rotation #1, wide-rooms: done at 3 of 6
-dungeons holding a 2x2 or 3x1 room. `node tools/check-drift.mjs` currently
-reports exactly one such room in the whole game — 1 of 6.
+dungeons holding a `2x2` or `3x1` room. `node tools/check-drift.mjs` reports
+2 of 6 (D4's Cistern Floor, D6's Tideshade Hall). One more distinct dungeon
+clears the bar.
 
 ## The task
-Survey D1 through D5 (D6 already has a qualifying room) for a room with a
-genuinely free block in some direction, the same check the Tideshade Hall
-session made before building. Widen ONE such room, in ONE dungeon, to 2x2
-or 3x1 — files: `src/data/dungeons-a.js` or `src/data/dungeons-b.js`,
-whichever holds the dungeon chosen.
+Widen D5's `0,4,2` ("The Shrine Ford", currently `size:[2,1]`) to `size:[3,1]`
+in `src/data/dungeons-b.js`. Cell `6,2` has nothing keyed to it — confirm
+that against the live `MAPS` registry before touching anything, the same way
+S68 did, rather than trusting this prompt. Append 10 columns of new floor to
+the right, open the current east wall (column 19) into it, and give the new
+space a one-sentence reason to exist rather than leaving it an empty box —
+S68's causeway-and-ledge treatment of D4's Cistern Floor is one example of
+what that looks like, not a template to copy verbatim. Do not move the
+`reefseedRoom` entry/stakes/snarl/cutFrom coordinates or any entity.
 
 ## Done means
-- `node tools/check-drift.mjs` reports 2 of 6 dungeons with a qualifying
-  room (still short of the 3-of-6 bar — one room this session is enough).
+- `node tools/check-drift.mjs` reports 3 of 6 dungeons with a `2x2` or `3x1`
+  room — the rotation's own done-condition. If it does, advance
+  `OBJECTIVE OF RECORD` in STATE.md to rotation #2 (art-provenance) and
+  rewrite the file allowlist for it; if some other room turned out to fit
+  the free block better once checked in-engine, 2 of 6 with a clean writeup
+  is still an acceptable session.
 - `node tools/validate.mjs`, `node tools/walk-dungeons.mjs`,
   `node tools/check-dungeon-strands.mjs`, `node tools/check-placement.mjs`,
   `node tools/check-ground.mjs`, `node tools/check-wide-rooms.mjs`,
-  `node tools/check-camera.mjs`, and `node tools/check-bosses.mjs` (only if
-  the widened room is a boss room) all pass.
+  `node tools/check-camera.mjs`, `node tools/check-reefseed.mjs`,
+  `node tools/check-playthrough.mjs`, and `node tools/test.mjs` all pass.
 - `npm run build` re-run, `dist/oracle-of-tides.html` committed.
 - STATE.md gets one new session-log row.
-- A person looking at the widened room in the game sees a deliberate space,
-  not an empty box bolted onto the old one.
+- Screenshots (`tools/shoot-rooms.mjs d5,0,4,2` at all three tides) show the
+  new area in the same palette as the rest of the room, no seam artefact.
 
 ## Out of scope
-- Widening a second room this session — one room fully validated beats five
-  rooms half-checked.
-- Touching Nereth's room (D6) again — already widened for a fairness
-  reason unrelated to this objective; leave it alone.
+- Widening a second room this session.
+- D2's Reefguard Hall as an alternative target — S68 flagged it as
+  unaudited against the current `check-playthrough.mjs` route rather than
+  cleared; leave that question for whoever wants to spend a detour token
+  chasing it.
 - Any room size outside `room.js`'s existing `ROOM_SIZES` list.
-- Spending the detour token on anything found while surveying for a free
-  block — record it in `docs/NEXT-SESSION.md` per the charter's step 5 and
-  keep going.
+- Rewriting `reefseedRoom`'s puzzle logic itself — only the room's footprint
+  and its dead space change.

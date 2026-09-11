@@ -2261,21 +2261,26 @@ export function installDungeonsA() {
       },
       '0,4,4': {
         name: 'The Cistern Floor',
-        // Two screens wide, and the only room in the dungeon that is. It owns
-        // the cell at 5,4 as well as its own, so nothing else may be keyed
-        // there. The whole floor is `3` — wading at LOW, swimming above it —
-        // so the room is a different shape depending on what the conch last
-        // said, which is the argument for making it the big one.
-        size: [2, 1],
+        // Three screens wide now — it owns 5,4 and 6,4 as well as its own, so
+        // nothing else may be keyed there. The whole floor is `3` — wading at
+        // LOW, swimming above it — so more room is literally more sea to
+        // cross, which is the argument for making it the bigger one twice.
+        // Grown east (S3, `docs/prompts/STATE.md`): 6,4 had nothing in it —
+        // Ironknight Gallery only reaches as far as 6,3, one row north — so
+        // the old east wall (col 19) opened into a dry ledge beyond the far
+        // switch, giving the swim a landing on the far side the way the west
+        // door already gives one on the near side, instead of ending flush on
+        // a wall the moment the plate is reached.
+        size: [3, 1],
         map: [
-          '####################',
-          '#..................#',
-          '#..33333333333333..#',
-          '...33333333333333..#',
-          '...33333333333333..#',
-          '#..33333333333333..#',
-          '#..................#',
-          '####..########..####',
+          '##############################',
+          '#............................#',
+          '#..33333333333333..3333333...#',
+          '...33333333333333..3333333...#',
+          '...33333333333333..3333333...#',
+          '#..33333333333333..3333333...#',
+          '#............................#',
+          '####..########..##############',
         ],
         entities: [
           // Two plates and one block, at opposite ends of twenty tiles: the

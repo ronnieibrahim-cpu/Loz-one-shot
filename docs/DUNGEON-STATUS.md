@@ -342,6 +342,22 @@ and HIGH, so a player pumping at the wrong sea cannot tell "my cone is not
 reaching" from "my cone is reaching and one level is not enough". The wheel's
 own sprite never says it is drowned. See `docs/ART-BACKLOG.md`.
 
+**The Cistern Floor (`0,4,4`) widened from `2x1` to `3x1` (S3, standing session
+charter, rotation #1 wide-rooms).** Cell `6,4` had nothing in it — Ironknight
+Gallery (`0,5,3`, `2x1`) reaches only as far as `6,3`, one row north, so this
+was a genuinely free block the way Tideshade Hall's was, growing right instead
+of down. The old east wall (col 19) opened into a second, smaller pool with a
+dry ledge past it; the switches, block, and every entity kept their original
+local coordinates, unmoved. Screenshotted at all three tides
+(`tools/shoot-rooms.mjs d4,0,4,4`): LOW drains the whole floor to walkable sand
+as before, MID/HIGH show two lakes split by the old dry margin (now a
+causeway) with Link able to stand and rest on the new far shore rather than
+hitting a wall the instant the swim ends. `check-wide-rooms.mjs`,
+`walk-dungeons.mjs`, `check-dungeon-strands.mjs`, `check-placement.mjs`,
+`check-ground.mjs`, `check-camera.mjs`, `check-playthrough.mjs` and `test.mjs`
+all re-run green; D4's own room count is unchanged at 24 (an existing room
+widened, not a new one added).
+
 ---
 
 ## D5 — Drowned Wood Shrine. DONE, and what it settled for D6.

@@ -1,3 +1,81 @@
+## S68 — the second `3x1` room: D4's Cistern Floor, found by checking the growth direction S46 never tried
+
+Standing session charter, `docs/prompts/STATE.md` objective #1 (wide-rooms):
+done at 3 of 6 dungeons holding a `2x2` or `3x1` room; `check-drift.mjs`
+reported 1 of 6 (D6's Tideshade Hall, `2x2`, S46). `docs/prompts/NEXT-PROMPT.md`
+asked for one more room in D1-D5, pointing at the Tideshade session as the
+method to repeat: find a room with a genuinely free down-right block, grow
+into it, leave every local coordinate alone.
+
+**S46 only ever checked growing DOWN, because it was hunting `2x2` specifically
+— growing RIGHT toward `3x1` was never tried.** Wrote a small survey (not
+committed; a throwaway script over the real `MAPS` registry, same occupancy
+index `world/maps.js` uses) that checked, for every room in D1-D5, both
+directions: down into `2x2` and right into `3x1`. Result: every one of the
+five already-`2x1` rooms in D1-D5 (Clawcrab Den D1, Reefguard Hall D2, Kelp
+Locks D3, **Cistern Floor D4**, Ironknight Gallery D4) has a free cell to its
+right, even the two S46 called "boxed in" — Cistern Floor (`0,4,4`) is boxed
+south by Rung Gallery and Cliffside Cell exactly as S46 found, but nothing
+sits at `6,4`, one column east. S46 never looked there because it was only
+checking the `2x2` direction.
+
+**Why Cistern Floor over the other four free candidates.** Clawcrab Den (D1)
+and Kelp Locks (D3) carry S46's own exclusion — D1 is what `check-playthrough`
+drives and D3 is "reserved for routing" — and this session had no reason to
+revisit that call. Reefguard Hall (D2) is untouched territory but D2 is also
+on the playthrough route. Ironknight Gallery (D4) is the dungeon's miniboss
+arena; widening a fight room changes combat balance (see D6's Nereth
+widening, S66), which is a bigger, different decision than this session's
+scope. Cistern Floor is a switch/wading puzzle room with no combat AI and no
+`dredgeRoom`-style absolute-coordinate geometry to renumber — the same
+"boring is good" reasoning that picked Tideshade over Crossed Shafts in S46.
+
+**What was built.** `The Cistern Floor` (`0,4,4`), `size:[2,1]` -> `[3,1]`. The
+room is entirely tide tile `3` (wade at LOW, swim above), so growth is 10 more
+columns of the same floor, not a new zone: the old east wall (column 19,
+solid on every row) opened to floor on the six interior rows, and the
+original 2-tile dry margin that used to sit just inside that wall (columns
+17-18) was left untouched rather than folded into the new pool — which,
+unplanned, reads as a causeway splitting one long lake into two, echoing
+Tideshade's own two-basin shape rather than copying it. The new ten columns
+end in a three-tile dry ledge before the new dead-end wall, so the swim now
+has a far shore to stand on instead of ending flush against stone the moment
+the plate is reached. Every entity (two switches, one block, three enemies)
+and the puzzle's reward stayed at their original local coordinates — nothing
+in columns 0-18 changed, only column 19 (wall -> floor) and the ten new
+columns beyond it.
+
+**Screenshots** (`tools/shoot-rooms.mjs d4,0,4,4` at all three tides, three
+camera positions covering all three screens): LOW drains the whole floor to
+walkable sand exactly as before, including the new area. MID/HIGH show the
+new causeway and second lake in the same palette as the original pool, no
+seam artefact. The far-east shot shows Link standing dry on the new ledge
+with plain wall beyond him — reads as a resting spot, not an empty box
+stapled onto the room.
+
+**Checkers, all re-run this session, all green:** `validate.mjs` (273 rooms,
+only pre-existing warnings), `walk-dungeons.mjs` (23/23, D4 still 24 rooms,
+boss room reachable), `check-dungeon-strands.mjs` (still 9 regions/12 cells,
+same baseline, no new strand), `check-placement.mjs` (528 entities),
+`check-ground.mjs` (273 rooms, 1732 prop cells), `check-wide-rooms.mjs` (10
+multi-screen rooms now, up from 9, 12 internal seams), `check-camera.mjs`
+(273 rooms, 10 bigger than the view), `check-playthrough.mjs` (21/21 — the
+route doesn't enter D4, so this is unaffected-but-green, not direct
+evidence), `test.mjs` (83/83), `check-build.mjs`. `check-drift.mjs`'s sized-
+room table now reads `2x1: 7, 3x1: 1` (was `2x1: 8, 3x1: 0`) alongside the
+existing `2x2: 1` — two dungeons (D4, D6) now qualify for the objective's
+"3 of 6" bar. `npm run build` re-run, `dist/oracle-of-tides.html` committed.
+
+`docs/DUNGEON-STATUS.md`'s D4 section updated with the same write-up in
+miniature. No item art, overworld art, boss balance or story touched.
+
+**Left for whoever does the third room:** the survey script found free-right
+cells on Reefguard Hall (D2, `1,4,2`, needs `1,6,2`) that nobody has weighed
+against D2's playthrough-route caution yet, and this session did not re-audit
+whether that caution still binds under the *current* `check-playthrough.mjs`
+route (which the tool's own output says stops at D2, never mind D3-D6) —
+worth checking directly rather than inheriting S46's call unread.
+
 ## S67 — traced D6's three remaining losses (seed2/3/4) separately per NEXT-PROMPT's own instruction, and found three different damage shapes, not one — no code changed, nothing shipped
 
 Direct continuation of S66, whose own open question was exactly this: the
