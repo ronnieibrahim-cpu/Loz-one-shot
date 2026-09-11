@@ -28,12 +28,19 @@ installData();
 // ---------------------------------------------------------------------
 const SIZES = ['1x1', '2x1', '1x2', '2x2', '3x1'];
 const sizeCounts = Object.fromEntries(SIZES.map(s => [s, 0]));
+// Also totalled here, in the same pass, for the playthrough-coverage metric
+// below (144 dungeon rooms, 6 bosses) — measured off the loaded data rather
+// than hardcoded, so a dungeon added or removed moves the denominator too.
+let totalDungeonRooms = 0;
+let totalBosses = 0;
 for (const m of dungeons()) {
   for (const def of Object.values(m.roomDefs)) {
     const [sw, sh] = normaliseSize(def.size, m.id);
     const key = `${sw}x${sh}`;
     sizeCounts[key] = (sizeCounts[key] || 0) + 1;
   }
+  totalDungeonRooms += Object.keys(m.roomDefs).length;
+  if (m.dungeon.boss) totalBosses++;
 }
 
 // ---------------------------------------------------------------------
@@ -172,6 +179,67 @@ const byRegion = new Map();
 for (const row of auditedRows) byRegion.set(row.region, (byRegion.get(row.region) || 0) + 1);
 
 // ---------------------------------------------------------------------
+// 5. Playthrough coverage — objective #9 (STATE.md rotation), read from the
+//    harness's own recorded tape (tools/playthroughs/playthrough.json)
+//    rather than re-running check-playthrough.mjs or re-deriving what it
+//    already measured. That tape is written by a real, no-grants,
+//    no-god-mode run — see check-playthrough.mjs's own header — so its
+//    `state`/`audit` are ground truth for how far the CURRENT run gets,
+//    not a model of it. Reports zero, not an error, before #9 extends the
+//    tape past D1/D2 — that is the honest number today.
+// ---------------------------------------------------------------------
+// Total heart pieces (24) is read from check-hearts.mjs's own census —
+// the one place that count is actually enumerated from room data — the
+// same "delegate rather than re-derive" rule the feel.js census above
+// follows. 24 is kept only as a fallback if that line is ever missing.
+let totalHeartPieces = 24;
+{
+  let out = '';
+  try {
+    out = execFileSync(process.execPath, [resolve(HERE, 'check-hearts.mjs')], { cwd: ROOT, encoding: 'utf8' });
+  } catch (e) { out = (e.stdout || '').toString(); }
+  const m = out.match(/heart pieces\s+(\d+)/);
+  if (m) totalHeartPieces = +m[1];
+}
+
+let playthrough = { dungeonRoomsPlayed: 0, bossesBeaten: 0, heartPiecesCollected: 0, present: false };
+try {
+  const tapeRaw = await readFile(resolve(ROOT, 'tools/playthroughs/playthrough.json'), 'utf8');
+  const tape = JSON.parse(tapeRaw);
+  const dungeonRooms = new Set((tape.audit && tape.audit.rooms || []).filter(r => /^d\d+\//.test(r)));
+  const beaten = (tape.state && tape.state.beaten) || {};
+  playthrough = {
+    dungeonRoomsPlayed: dungeonRooms.size,
+    bossesBeaten: Object.values(beaten).filter(Boolean).length,
+    heartPiecesCollected: (tape.state && tape.state.heartPieces) || 0,
+    present: true,
+  };
+} catch (e) { /* no tape recorded yet — reported as zero below, not hidden */ }
+
+// ---------------------------------------------------------------------
+// 6. Guide coverage — objective #10 (STATE.md rotation): how much of
+//    docs/ROUTE.json's step log is already reflected in docs/GUIDE.md.
+//    docs/ROUTE.json does not exist until #9 lands, so this reports 0 of 0
+//    until then, per the objective's own done-condition — not an error.
+//    This is a rough measure (does the step's own room key appear anywhere
+//    in the guide text), not the strict two-directional, route-order proof
+//    tools/check-guide.mjs will assert once #10 lands; that is its job.
+// ---------------------------------------------------------------------
+let guideCoverage = { present: 0, total: 0 };
+try {
+  const routeRaw = await readFile(resolve(ROOT, 'docs/ROUTE.json'), 'utf8');
+  const route = JSON.parse(routeRaw);
+  const steps = Array.isArray(route) ? route : (route.steps || []);
+  const guideText = await readFile(resolve(ROOT, 'docs/GUIDE.md'), 'utf8').catch(() => '');
+  let present = 0;
+  for (const step of steps) {
+    const roomKey = (step && (step.room || step.roomKey || step.key)) || '';
+    if (roomKey && guideText.includes(String(roomKey))) present++;
+  }
+  guideCoverage = { present, total: steps.length };
+} catch (e) { /* docs/ROUTE.json doesn't exist yet — 0 of 0, as specified */ }
+
+// ---------------------------------------------------------------------
 // Print the table.
 // ---------------------------------------------------------------------
 console.log('=== check-drift ===\n');
@@ -194,6 +262,15 @@ if (byRegion.size) {
 } else {
   console.log('  (none audited yet)');
 }
+
+console.log(`\nPlaythrough coverage (objective #9)${playthrough.present ? '' : ' — no tape recorded yet'}:`);
+console.log(`  dungeon rooms played  ${playthrough.dungeonRoomsPlayed} of ${totalDungeonRooms}`);
+console.log(`  bosses beaten         ${playthrough.bossesBeaten} of ${totalBosses}`);
+console.log(`  Heart Pieces          ${playthrough.heartPiecesCollected} of ${totalHeartPieces}`);
+
+console.log(`\nGuide coverage (objective #10): ${guideCoverage.present} of ${guideCoverage.total} `
+  + `docs/ROUTE.json steps present in docs/GUIDE.md`
+  + (guideCoverage.total === 0 ? ' (docs/ROUTE.json does not exist yet)' : ''));
 
 // ---------------------------------------------------------------------
 // SELF-CHECKS — the only thing that can fail this tool. It measures the
