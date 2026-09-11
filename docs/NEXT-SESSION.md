@@ -1,3 +1,92 @@
+## S68 — the second `3x1`/`2x2` room, and the second dungeon: D4's Ironknight Gallery widened, under the standing session charter's own "1 wide-rooms" objective
+
+First session run under `docs/prompts/CHARTER.md`. `check-drift.mjs` reported
+its self-checks green (`NEXT-PROMPT.md` and `STATE.md` both within shape), so
+the session did the task in `NEXT-PROMPT.md`'s `## The task`: survey D1-D5
+for a room with a genuinely free growth block, the same check the S46
+Tideshade Hall session made before building, and widen one to `2x2` or `3x1`.
+
+**Surveyed every room in D1-D5 in the real map registry, not by eye.** A
+scratch script (`installData()` + `MAPS`) built the full set of cells every
+room actually covers — including the SECOND cell of every existing `2x1`
+room, which a naive "is this key occupied" check misses and which the S46
+account itself warns about ("check the down-right block's occupancy in the
+actual room data"). The first version of the script had exactly that bug: it
+flagged Ironknight Gallery's own down-right block as free because it only
+marked room KEYS as occupied, and `(5,4)` is covered by D4's Cistern Floor
+(`size:[2,1]` at `0,4,4`) despite not being a key itself. Fixed before
+trusting any result.
+
+**Every sized room and every 1x1 room in D1-D5 was checked** for a free
+`2x2` or `3x1` growth block in the down/right directions. Most 1x1 rooms near
+a dungeon's edge had one (dungeons are sparse — 22-24 rooms on an 8x8 grid),
+but the two most viable were the ones already carrying the S46-era comment
+"the cells it grows into have no other neighbours": D1's Clawcrab Den and
+D2's Spire Ascent. Both were left alone on purpose — D1 and D2 are the two
+dungeons `check-playthrough.mjs` actually plays end to end, frame-exact, and
+touching either risked a re-tune of that route for a session that had no
+budget to chase it. D3's Kelp Locks (already `2x1`) had a free cell to its
+right too, but carries a `cleatRoom` mooring geometry the way D6's Crossed
+Shafts does, and NEXT-PROMPT's own out-of-scope list already names avoiding
+exactly that shape of complication.
+
+**Built: D4's Ironknight Gallery (`0,5,3`), `2x1` -> `3x1`.** It is the
+dungeon's miniboss arena, already widened once for the same reason Tideshade
+Hall was — "two screens wide because the Ironknight charges in straight
+lines and a 10-tile room gives it nowhere to do that" — and `(7,3)` had
+nothing in it, no room and no warp, so the old east wall opened straight into
+a third screen with nothing else to connect. The new screen is open floor,
+not a second copy of the drown-wall cover puzzle: the room already states its
+one decision is worth having and is singular, so duplicating it would have
+muddied that rather than served the stated reason for widening (more room to
+charge). One urn was placed in the new third, mirroring the position of the
+existing urn near the west wall (2 tiles in from its own wall), so the new
+half reads as placed rather than empty — the same reason Tideshade Hall
+mirrored its own basin pair into its new south half. The door, the drown-wall
+pair, and both entities (`ironknight` at local `12,3`, `keese` at local
+`4,5`) needed no coordinate changes — growth is east from the room's own key,
+so the existing west two-thirds didn't move.
+
+**Checkers, all re-run this session, all green:**
+
+- `validate.mjs` — 273 rooms, OK (pre-existing warnings only).
+- `walk-dungeons.mjs` — 23/23, D4 still 24 rooms, boss room reachable.
+- `check-dungeon-strands.mjs` — still 9 regions / 12 cells, no new strand.
+- `check-placement.mjs` — 528 entities, OK.
+- `check-ground.mjs` — 273 rooms, 1733 prop cells, OK.
+- `check-wide-rooms.mjs` — 10 multi-screen rooms now (was 9), 12 internal
+  seams, OK — fills its grid, owns its cells alone, crossable at every seam.
+- `check-camera.mjs` — 273 rooms, 10 bigger than the view now (was 9), OK.
+- `solve-switches.mjs` — 9/9 (Ironknight Gallery isn't a switch room).
+- `check-exits.mjs` — 192/192 (unaffected; asserts D6, this room isn't a
+  dungeon mouth).
+- `check-motion.mjs` — 8/8, ground enemies still 8px-lattice-aligned.
+- `check-bosses.mjs` — 19/19, god mode (Ironknight isn't a `bossRoom`, so
+  this is confirming zero effect on D4's actual boss, Wyverna, not direct
+  evidence about the miniboss).
+- `check-drift.mjs` — self-checks OK; sized-room table now reads `3x1: 1`
+  (was 0), `2x1: 7` (was 8) — 2 of 6 dungeons now have a qualifying room
+  (D4 and D6), still short of STATE.md's 3-of-6 bar, exactly what
+  NEXT-PROMPT.md's "Done means" asked this session to reach.
+- `check-playthrough.mjs` — 21/21, byte-identical route (D4 isn't on it).
+- `test.mjs` — 83/83.
+- `replay.mjs` — 51/51, no baseline re-recorded.
+- `npm run build` + `dist/oracle-of-tides.html` committed.
+
+**Screenshots looked at** (`tools/shoot-rooms.mjs d4,0,5,3` at
+`--tide=0/1/2 --px=280`, the new third screen; `--px=160`, the seam; `--px=80`,
+the unchanged west end): the new third renders the same dry cistern floor and
+wall texture as the rest of the room, identical at all three tides (this room
+carries no tide tile, so that identity is expected and confirms nothing
+tide-related leaked in by accident). The seam shot shows the drown-wall pair
+and the ironknight itself both visible from one camera position, reading as
+one continuous gallery rather than two rooms stapled together. The west end
+(door, urn, keese, locked-door tile) is pixel-unchanged from before.
+
+**`docs/DUNGEON-STATUS.md` updated** (D4 section, mirroring the D6 writeup
+style). STATE.md gets one new session-log row. OBJECTIVE OF RECORD stays
+`1 wide-rooms` — the done-condition (3 of 6) is not yet met.
+
 ## S67 — traced D6's three remaining losses (seed2/3/4) separately per NEXT-PROMPT's own instruction, and found three different damage shapes, not one — no code changed, nothing shipped
 
 Direct continuation of S66, whose own open question was exactly this: the

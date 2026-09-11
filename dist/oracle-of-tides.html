@@ -29167,21 +29167,26 @@ function installDungeonsA() {
       },
       '0,5,3': {
         name: 'Ironknight Gallery',
-        // The miniboss, at room 17 of 24. Two screens wide because the
+        // The miniboss, at room 17 of 24. Three screens wide because the
         // Ironknight charges in straight lines and a 10-tile room gives it
-        // nowhere to do that. The drown-wall pair in the middle is cover at LOW
-        // and MID and simply gone at HIGH, which is the only decision the fight
-        // offers and is worth having.
-        size: [2, 1],
+        // nowhere to do that — two screens already said so, and this session
+        // gave it a third rather than a second decision. The drown-wall pair
+        // in the middle is cover at LOW and MID and simply gone at HIGH,
+        // which is the only decision the fight offers and is worth having;
+        // the new east third is open floor on purpose, more room to charge
+        // rather than a second copy of the same puzzle. `(7,3)` had nothing
+        // in it — no room, no warp — so the old east wall opened straight
+        // into new floor with nothing else to connect.
+        size: [3, 1],
         map: [
-          '####..##############',
-          '####D###############',
-          '#.U............U...#',
-          '#..................#',
-          '#........99........#',
-          '#........99........#',
-          '...................#',
-          '####################',
+          '####..########################',
+          '####D#########################',
+          '#.U............U...........U.#',
+          '#............................#',
+          '#........99..................#',
+          '#........99..................#',
+          '.............................#',
+          '##############################',
         ],
         entities: [
           ['ironknight', 12, 3],

@@ -342,6 +342,21 @@ and HIGH, so a player pumping at the wrong sea cannot tell "my cone is not
 reaching" from "my cone is reaching and one level is not enough". The wheel's
 own sprite never says it is drowned. See `docs/ART-BACKLOG.md`.
 
+**Ironknight Gallery widened to `3x1`.** The miniboss arena (`0,5,3`) was
+already `2x1` — "two screens wide because the Ironknight charges in straight
+lines and a 10-tile room gives it nowhere to do that." `(7,3)` had nothing in
+it — no room, no warp — so the room's old east wall opened into a third
+screen of plain floor rather than a second copy of the drown-wall cover
+puzzle: more room for the same charge, not a second decision. The urn near
+the west wall is mirrored near the new east wall for the same reason
+Tideshade Hall's south half mirrored its basins — so the new floor reads as
+authored rather than bolted on. Nothing about the door, the drown-wall pair,
+or either entity's local coordinates moved; growth is east from the room's
+own key, exactly as Tideshade Hall's was south from its own. D4's room count
+is unchanged at 24 — this widened an existing room rather than adding one.
+See `docs/NEXT-SESSION.md` for the full session account, screenshots and
+checker results.
+
 ---
 
 ## D5 — Drowned Wood Shrine. DONE, and what it settled for D6.
