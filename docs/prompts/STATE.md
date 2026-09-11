@@ -1,4 +1,4 @@
-OBJECTIVE OF RECORD: 1 wide-rooms
+OBJECTIVE OF RECORD: 2 art-provenance
 
 ROTATION (fixed, do not reorder):
   1 wide-rooms      — 3 of 6 dungeons have a 2x2 or 3x1
@@ -29,11 +29,18 @@ ROTATION (fixed, do not reorder):
   8 feel-measure    — done when >=40 feel.js constants are tagged
                       `measured` against the emulator
 
-FILE ALLOWLIST for the current objective (1 wide-rooms):
-  src/data/dungeons-a.js
-  src/data/dungeons-b.js
+FILE ALLOWLIST for the current objective (2 art-provenance):
+  src/data/sprites-bosses.js src/data/sprites-enemies.js
+  src/data/sprites-fairies.js src/data/sprites-gear.js src/data/sprites-hud.js
+  src/data/sprites-link.js src/data/sprites-npcs.js src/data/sprites-player.js
+  src/data/sprites-races.js src/data/sprites-title.js src/data/sprites-trade.js
+  src/data/sprites-world.js
+  tools/rip-link.py tools/rip-npcs.py tools/rip-races.py tools/rip-enemies.py
+  tools/rip-hud.py tools/rip-fairies.py (generated files: tag via the ripper,
+  never hand-edit the output — CLAUDE.md's hard rule)
+  tools/shoot-sprites.mjs (new)
   dist/oracle-of-tides.html
-  docs/DUNGEON-STATUS.md
+  docs/ART-BACKLOG.md
   docs/NEXT-SESSION.md
   docs/prompts/LEDGER.md
 
@@ -43,3 +50,4 @@ SESSION LOG: one row per session — `S## | objective|detour | one line`
 S1 | objective | ran SETUP: created check-drift.mjs, STATE.md, AUDITED-ROOMS.md; measured baseline (1 of 6 dungeons wide, 0/0 reuse on 4 of 6 items, 0 feel.js constants measured, 0 rooms audited)
 S2 | objective | corrected objective 1's bar to 3 of 6 (was 4 of 6); added art-provenance/boss-art/enemy-roster/npc-detail as rotation #2-5, renumbered region-art/item-reuse/feel-measure to #6-8, item-reuse's condition now names only the 4 single-use items; added sprite-provenance (561 entries, 13 tagged) and enemy-animation-completeness (0 of 22 complete) metrics to check-drift.mjs
 S3 | objective | first charter-run session; surveyed D1-D5 in the real map registry (fixed a false-positive in the survey script itself first — it missed a 2x1 room's second cell); widened D4's Ironknight Gallery miniboss room 2x1->3x1, mirroring S46's Tideshade Hall; 2 of 6 dungeons wide now, still short of the 3-of-6 bar
+S4 | objective | widened D5's Thornvine miniboss room 1x1->3x1 (passed over Kelp Locks/Shrine Ford for their custom room-geometry objects); 3 of 6 dungeons wide now, rotation #1 done-condition met; advanced OBJECTIVE OF RECORD to #2 art-provenance and rewrote the file allowlist for it

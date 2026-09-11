@@ -440,6 +440,17 @@ walked that room knows what a bole is.
   a snarl, because a replay's equipment is fixed in its setup and the grove
   wants the Reefseed, the conch and the sword in two slots.
 
+**Thornvine widened to `3x1`.** The miniboss arena (`0,5,3`) was a single
+10x8 basin; it is now three screens of the same `dBasin` floor (dry at LOW,
+damp at MID, shallow at HIGH), one continuous lagoon rather than a repeated
+fixture. `(6,3)` and `(7,3)` had nothing in them, so the old east wall opened
+straight into more basin. Nothing needs an item to cross this floor at any
+tide, so widening it only changes how much room the fight has, not what it
+takes to reach — the same reasoning D4's Ironknight Gallery widening used.
+The door and the `thornvine` entity's local coordinates didn't move. D5's
+room count is unchanged at 24. See `docs/NEXT-SESSION.md` for the session
+account, screenshots and checker results.
+
 ---
 
 ## D6 — the Abyssal Keep. DONE, and it closes P8.

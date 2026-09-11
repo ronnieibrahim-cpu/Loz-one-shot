@@ -1,3 +1,73 @@
+## S69 — the third dungeon, closing the standing session charter's "1 wide-rooms" objective: D5's Thornvine widened, rotation advances to art-provenance
+
+Second session run under `docs/prompts/CHARTER.md` (`STATE.md`'s own S4).
+`check-drift.mjs` self-checks were green, so the session did NEXT-PROMPT.md's
+task: survey D3 and D5 (D4 and D6 already qualified) for a room with a free
+growth block and widen one to `2x2` or `3x1`, closing the 3-of-6 bar.
+
+**Re-ran S68's survey script against D3 and D5.** Nothing in either dungeon
+had changed since S68, so the same candidates turned up: D3's Kelp Locks and
+D5's Shrine Ford both have a free cell but both carry custom room geometry
+(`cleatRoom` mooring coordinates; the bank/bole/stake/snarl Reefseed fixture)
+that NEXT-PROMPT.md explicitly asked to avoid unless nothing plainer existed.
+D5's Thornvine (`0,5,3`) — the dungeon's own route comment names it "the
+miniboss" — had a free block to its right and no fixture object of its own,
+the same shape as S68's own pick (D4's Ironknight Gallery, also a miniboss
+room with no fixture). Picked it for the same reason.
+
+**Checked what the room's floor actually needs before touching it.**
+Thornvine's whole interior is tile `2`, which `legends.js` resolves to
+`dBasin` for the `dungeonWood` legend — dry at LOW, damp at MID, shallow at
+HIGH, never deep. So unlike Kelp Locks or Shrine Ford, growing this room
+doesn't touch anything an item gates; it only changes how much basin the
+fight has room to use. Confirmed the free cells (`0,6,3`, `0,7,3`) were
+genuinely empty in the real map registry, not just absent from the printed
+room list, the same care S68 had to learn the hard way.
+
+**Built: D5's Thornvine (`0,5,3`), `1x1` -> `3x1`.** Rather than duplicate
+the original room's fixture verbatim (Tideshade Hall's approach) or leave
+the new area empty floor (Ironknight Gallery's approach), this widening
+scaled the SAME tapered-lagoon shape — narrower at the north/south banks,
+full width through the middle two rows — across the new 20 columns, so the
+result reads as one bigger basin rather than either a copy-pasted room or a
+blank box. The door and the `thornvine` entity's local coordinates (`4,3`)
+needed no change — growth is east from the room's own key, same as S68.
+
+**Checkers, all re-run this session, all green:**
+
+- `validate.mjs` — 273 rooms, OK (pre-existing warnings only).
+- `walk-dungeons.mjs` — 23/23, D5 still 24 rooms, boss room reachable.
+- `check-dungeon-strands.mjs` — still 9 regions / 12 cells, no new strand.
+- `check-placement.mjs` — 528 entities, OK.
+- `check-ground.mjs` — 273 rooms, 1733 prop cells, OK.
+- `check-wide-rooms.mjs` — 11 multi-screen rooms now (was 10), 14 internal
+  seams, OK.
+- `check-camera.mjs` — 273 rooms, 11 bigger than the view now (was 10), OK.
+- `check-bosses.mjs` — 19/19, god mode (Thornvine isn't a `bossRoom`).
+- `solve-switches.mjs` — 9/9 (unaffected).
+- `check-exits.mjs` — 192/192 (unaffected).
+- `check-motion.mjs` — 8/8.
+- `check-drift.mjs` — self-checks OK; sized-room table now reads `3x1: 2`
+  (was 1), `1x1: 133` (was 134) — **3 of 6 dungeons now have a qualifying
+  room (D4, D5, D6), closing rotation #1's done-condition.**
+- `check-playthrough.mjs` — 21/21, byte-identical route (D5 isn't on it).
+- `test.mjs` — 83/83.
+- `replay.mjs` — 51/51, no baseline re-recorded.
+- `npm run build` + `dist/oracle-of-tides.html` committed.
+
+**Screenshots looked at** (`tools/shoot-rooms.mjs d5,0,5,3` at
+`--tide=0/1/2 --px=280`, the new east basin; `--px=150`, the seam; `--px=80`,
+the unchanged west end/door): the tide progression (dry stone at LOW, damp
+grey at MID, full blue water at HIGH) reads identically across the whole
+widened floor at every tide, with no seam artifact between the original
+screen and the new two. The seam shot shows the thornvine and the north door
+from one camera position, reading as one arena. The west end (door, basin
+edge) is pixel-unchanged.
+
+**Rotation advances.** `docs/prompts/STATE.md`'s OBJECTIVE OF RECORD moves to
+rotation #2, art-provenance, with the file allowlist rewritten for it.
+`docs/DUNGEON-STATUS.md` (D5 section) and `docs/prompts/LEDGER.md` updated.
+
 ## S68 — the second `3x1`/`2x2` room, and the second dungeon: D4's Ironknight Gallery widened, under the standing session charter's own "1 wide-rooms" objective
 
 First session run under `docs/prompts/CHARTER.md`. `check-drift.mjs` reported
