@@ -172,6 +172,130 @@ const byRegion = new Map();
 for (const row of auditedRows) byRegion.set(row.region, (byRegion.get(row.region) || 0) + 1);
 
 // ---------------------------------------------------------------------
+// 5. Sprites by provenance tag (rotation objective #2, art-provenance).
+// ---------------------------------------------------------------------
+// Every `src/data/sprites-*.js` file is plain data — a top-level exported
+// object per sheet, one entry per sprite, each entry either a template
+// literal (`name: \`...pixels...\``) or an object carrying one
+// (`name: { pal: 'x', art: \`...\` }`). Neither shape is unique to one
+// file, so both are matched by looking only at the KEY, two spaces deep —
+// the same depth every sprites-*.js file uses for "one sprite" and one
+// level shallower than any field inside a sprite's own object (`pal:`,
+// `art:`, a per-frame comment).
+//
+// A sprite's provenance tag, if it has one, is read the same way
+// check-feel.mjs reads a constant's provenance: the comment block
+// directly above the entry, walking up past any adjacent sibling entries
+// first (the same grouped-comment convention feel.js uses), stopping at
+// the first non-comment line. This does NOT re-derive check-feel.mjs's
+// regex — that one is scoped to `export const NAME =` lines, which no
+// sprite entry is — it is the same small idea applied to a different
+// line shape, not a competing rule about what a provenance word means.
+//
+// As of this objective's creation, no sprites-*.js file actually tags
+// entries this way — provenance today is prose in a file-level header
+// comment ("extracted from the Oracle of Seasons enemy sheet"), which
+// this deliberately does NOT count, because a file header describes the
+// sheet, not any one sprite's own path onto it (a file extracted wholesale
+// can still contain an individual hand-drawn frame — sprites-enemies.js's
+// own header says exactly that about its Octorok back frames). So reading
+// near-zero tagged entries below is the true, expected starting point for
+// this objective, not a bug in the count.
+const SPRITE_FILES = [
+  'sprites-bosses.js', 'sprites-enemies.js', 'sprites-fairies.js', 'sprites-gear.js',
+  'sprites-hud.js', 'sprites-link.js', 'sprites-npcs.js', 'sprites-player.js',
+  'sprites-races.js', 'sprites-title.js', 'sprites-trade.js', 'sprites-world.js',
+];
+const PROVENANCE_WORDS = ['extracted', 'derived', 'drawn'];
+
+function entryComment(lines, entryLineIdx) {
+  const ENTRY_RE = /^  [A-Za-z0-9_]+:\s*[{`[]/;
+  let j = entryLineIdx - 1;
+  while (j >= 0 && ENTRY_RE.test(lines[j])) j--; // skip adjacent sibling entries
+  const block = [];
+  for (; j >= 0; j--) {
+    const t = lines[j].trim();
+    if (t.startsWith('*') || t.startsWith('/**') || t.startsWith('*/') || t.startsWith('//')) block.unshift(t);
+    else break;
+  }
+  return block.join(' ').toLowerCase();
+}
+
+const spriteCensus = { total: 0, extracted: 0, derived: 0, drawn: 0, untagged: 0 };
+for (const file of SPRITE_FILES) {
+  let text;
+  try { text = await readFile(resolve(ROOT, 'src/data', file), 'utf8'); }
+  catch (e) { continue; }
+  const lines = text.split('\n');
+  const ENTRY_RE = /^  [A-Za-z0-9_]+:\s*[{`[]/;
+  for (let i = 0; i < lines.length; i++) {
+    if (!ENTRY_RE.test(lines[i])) continue;
+    spriteCensus.total++;
+    const comment = entryComment(lines, i);
+    const tags = PROVENANCE_WORDS.filter(w => new RegExp(`\\b${w}\\b`).test(comment));
+    if (tags.length === 1) spriteCensus[tags[0]]++;
+    else spriteCensus.untagged++; // 0 tags, or >1 (ambiguous prose) both count as untagged
+  }
+}
+
+// ---------------------------------------------------------------------
+// 6. Enemies with a complete five-state animation set (rotation
+//    objective #4, enemy-roster).
+// ---------------------------------------------------------------------
+// `src/game/enemy.js` recognises exactly two per-species animation fields
+// today: `spec.frames` (the walk cycle an idle pose is also drawn from —
+// this engine, like its source games, has no separate idle art) and
+// `spec.hurtFrame` (a single flinch frame). There is no engine-level
+// `attackFrame` or `deathFrame` concept for an ordinary enemy at all
+// (only bosses declare `hurtFrame` today; regular hits and deaths are a
+// shared effect, not per-species art) — so "attack" and "death" below are
+// read from sprite-key NAMING (`<name>_atk`/`<name>_attack`,
+// `<name>_death`/`<name>_die` in sprites-enemies.js) rather than a spec
+// field, on purpose: that way this measurement notices the day a session
+// adds such art even before any engine field exists to consume it.
+// Reading zero complete enemies today is the honest, expected baseline —
+// nothing in the data claims otherwise.
+let enemyNames = [];
+{
+  let text;
+  try { text = await readFile(resolve(ROOT, 'src/data/enemies.js'), 'utf8'); }
+  catch (e) { text = ''; }
+  const re = /defineEnemy\('([A-Za-z0-9]+)',\s*\{/g;
+  let m;
+  while ((m = re.exec(text))) {
+    // Brace-match from the opening `{` to find this call's own block, so a
+    // later enemy's fields are never attributed to an earlier one.
+    let depth = 1, k = m.index + m[0].length;
+    while (depth > 0 && k < text.length) {
+      if (text[k] === '{') depth++;
+      else if (text[k] === '}') depth--;
+      k++;
+    }
+    enemyNames.push({ name: m[1], block: text.slice(m.index, k) });
+  }
+}
+let enemySpriteKeys = new Set();
+try {
+  const t = await readFile(resolve(ROOT, 'src/data/sprites-enemies.js'), 'utf8');
+  for (const line of t.split('\n')) {
+    const km = line.match(/^  ([A-Za-z0-9_]+):/);
+    if (km) enemySpriteKeys.add(km[1]);
+  }
+} catch (e) { /* absent file reported as zero enemies complete below */ }
+
+let enemiesComplete = 0;
+const enemyReport = [];
+for (const { name, block } of enemyNames) {
+  const walk = /\bframes\s*:/.test(block);
+  const hurt = /\bhurtFrame\s*:/.test(block);
+  const attack = enemySpriteKeys.has(`${name}_atk`) || enemySpriteKeys.has(`${name}_attack`);
+  const death = enemySpriteKeys.has(`${name}_death`) || enemySpriteKeys.has(`${name}_die`);
+  const complete = walk && hurt && attack && death;
+  if (complete) enemiesComplete++;
+  enemyReport.push({ name, walk, hurt, attack, death });
+}
+
+// ---------------------------------------------------------------------
 // Print the table.
 // ---------------------------------------------------------------------
 console.log('=== check-drift ===\n');
@@ -193,6 +317,16 @@ if (byRegion.size) {
   for (const [region, n] of [...byRegion.entries()].sort()) console.log(`  ${region.padEnd(28)} ${n}`);
 } else {
   console.log('  (none audited yet)');
+}
+
+console.log(`\nSprite provenance, across ${SPRITE_FILES.length} sprites-*.js files: `
+  + `${spriteCensus.total} entries — ${spriteCensus.extracted} extracted, `
+  + `${spriteCensus.derived} derived, ${spriteCensus.drawn} drawn, ${spriteCensus.untagged} untagged`);
+
+console.log(`\nEnemies with a complete walk/attack/hurt/death set: ${enemiesComplete} of ${enemyReport.length}`);
+for (const r of enemyReport) {
+  const have = ['walk', 'attack', 'hurt', 'death'].filter(k => r[k]);
+  console.log(`  ${r.name.padEnd(11)} ${have.length ? have.join(',') : '(none)'}`);
 }
 
 // ---------------------------------------------------------------------

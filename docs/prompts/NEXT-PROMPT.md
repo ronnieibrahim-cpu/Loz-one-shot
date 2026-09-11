@@ -13,7 +13,7 @@
   no other room.
 
 ## Why this, now
-STATE.md's objective of record is rotation #1, wide-rooms: done at 4 of 6
+STATE.md's objective of record is rotation #1, wide-rooms: done at 3 of 6
 dungeons holding a 2x2 or 3x1 room. `node tools/check-drift.mjs` currently
 reports exactly one such room in the whole game — 1 of 6.
 
@@ -26,7 +26,7 @@ whichever holds the dungeon chosen.
 
 ## Done means
 - `node tools/check-drift.mjs` reports 2 of 6 dungeons with a qualifying
-  room (still short of the 4-of-6 bar — one room this session is enough).
+  room (still short of the 3-of-6 bar — one room this session is enough).
 - `node tools/validate.mjs`, `node tools/walk-dungeons.mjs`,
   `node tools/check-dungeon-strands.mjs`, `node tools/check-placement.mjs`,
   `node tools/check-ground.mjs`, `node tools/check-wide-rooms.mjs`,
