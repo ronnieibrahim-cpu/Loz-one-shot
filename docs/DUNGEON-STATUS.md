@@ -441,6 +441,24 @@ walked that room knows what a bole is.
   a snarl, because a replay's equipment is fixed in its setup and the grove
   wants the Reefseed, the conch and the sword in two slots.
 
+**The Shrine Ford (`0,4,2`) widened from `2x1` to `3x1` (S4, standing session
+charter, rotation #1 wide-rooms).** Cell `6,2` was fully isolated — no room
+anywhere adjacent to it. The dry ground east of the grove (columns 15-18)
+used to end flush on the room's own east wall the instant the snarl was cut;
+that wall opened into a plain clearing instead, four rows tall to match the
+dry band it continues, dead-ended on its own far wall. Every coordinate the
+puzzle depends on — the two stakes, the snarl, the chest, the boss key —
+sits inside the original 20 columns and did not move.
+`node tools/check-reefseed.mjs` (87/87), `check-wide-rooms.mjs`,
+`walk-dungeons.mjs`, `check-dungeon-strands.mjs`, `check-placement.mjs`,
+`check-ground.mjs`, `check-camera.mjs`, `check-playthrough.mjs` and
+`test.mjs` all re-run green; D5's own room count is unchanged at 24.
+
+**This is the third qualifying room (D4, D5, D6), which closes rotation #1.**
+`check-drift.mjs`'s sized-room table now reads `2x2: 1, 3x1: 2` across three
+distinct dungeons — the objective's own "3 of 6" bar. See
+`docs/prompts/STATE.md` for the rotation's next objective.
+
 ---
 
 ## D6 — the Abyssal Keep. DONE, and it closes P8.

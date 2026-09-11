@@ -572,9 +572,8 @@ export function installDungeonsB() {
       },
       '0,4,2': {
         name: 'The Shrine Ford',
-        // GROVE 5, two screens wide, and the only room in the dungeon that is.
-        // It owns the cell at 5,2 as well as its own, so nothing else may be
-        // keyed there.
+        // GROVE 5, three screens wide now. It owns the cells at 5,2 and 6,2
+        // as well as its own, so nothing else may be keyed there.
         //
         // The width is the point, and it is the answer to the Cistern's own
         // complaint that every one of its sills fitted inside ten tiles and so
@@ -584,16 +583,25 @@ export function installDungeonsB() {
         // ground, and the second at LOW from the first — which means standing
         // on something that did not exist when you threw it, and which will not
         // be there if you let the sea back up.
-        size: [2, 1],
+        //
+        // Grown further east (S4, `docs/prompts/STATE.md`): 6,2 had nothing in
+        // it. The dry ground past the grove (cols 15-18) used to end flush on
+        // the room's own east wall the moment the snarl was cleared; that wall
+        // opened into a plain clearing instead, four rows tall to match the
+        // dry band it extends, walled on its own far side. The fixture, the
+        // stakes, the snarl and the chest are exactly where they were — every
+        // coordinate in `reefseedRoom` below and in `entities` sits inside the
+        // original 20 columns, untouched.
+        size: [3, 1],
         map: [
-          '####################',
-          '#........###########',
-          '#........#000000000#',
-          '#........#0WWWW....#',
-          '..........kWWW5....#',
-          '#........#0W0W.....#',
-          '#........#0000.....#',
-          '##############.#####',
+          '##############################',
+          '#........#####################',
+          '#........#000000000###########',
+          '#........#0WWWW..............#',
+          '..........kWWW5..............#',
+          '#........#0W0W...............#',
+          '#........#0000...............#',
+          '##############.###############',
         ],
         reefseedRoom: {
           entry: [14, 7],

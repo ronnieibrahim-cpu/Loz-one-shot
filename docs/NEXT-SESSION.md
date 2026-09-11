@@ -1,3 +1,60 @@
+## S69 — the third `3x1` room: D5's Shrine Ford, closing rotation #1 (wide-rooms)
+
+Direct continuation of S68: `docs/prompts/NEXT-PROMPT.md` pointed at D5's
+Shrine Ford (`0,4,2`, `size:[2,1]`) as the already-surveyed candidate, cell
+`6,2` free. Re-confirmed against the live `MAPS` registry before touching
+anything, per the prompt's own instruction rather than trusting it: `6,2`,
+`7,2`, `6,1` and `6,3` are all unoccupied — this cell is more isolated than
+D4's was, with no neighbouring room on any side.
+
+**What was built.** `The Shrine Ford` grew `size:[2,1]` -> `[3,1]`. The room
+is a reefseed grove: a dry west half with the Boss Key chest, a wall with a
+single mid-row gap into the east half's flooded grove (kelp snarl, two
+stakes, a `dSnag` bole), and a dry band (columns 15-18) east of the grove
+that used to dead-end on the room's own east wall the instant the snarl was
+cut. That wall (column 19) opened to floor on the four rows the dry band
+already occupies (3-6); the grove's enclosure rows (0-2, the sump's north
+border) and the south wall (row 7, with its single entry gap at column 14)
+stayed solid, matching the original room's own vertical rhythm rather than
+opening on every row the way D4's did. The ten new columns are a plain dry
+clearing, walled on the far side — no puzzle content, on purpose: every
+coordinate the room's `reefseedRoom` block and `entities` list name (two
+stakes, the snarl, the snag, the chest) sits inside the original 20 columns
+and none of them moved.
+
+**Checkers, all re-run this session, all green:** `validate.mjs` (273 rooms,
+same pre-existing warnings only), `walk-dungeons.mjs` (23/23, D5 still 24
+rooms, boss room reachable), `check-dungeon-strands.mjs` (still 9 regions/12
+cells, same baseline), `check-placement.mjs` (528 entities),
+`check-ground.mjs` (273 rooms, 1732 prop cells), `check-wide-rooms.mjs` (10
+multi-screen rooms, 13 internal seams — up from 12, one new seam for the new
+room), `check-camera.mjs` (273 rooms, 10 bigger than the view),
+`check-reefseed.mjs` (87/87, unchanged — nothing about the fixture moved),
+`check-playthrough.mjs` (21/21, unaffected-but-green — the route doesn't
+enter D5), `test.mjs` (83/83), `check-build.mjs`. Screenshotted at MID and
+HIGH tide (`tools/shoot-rooms.mjs d5,0,4,2`): the new clearing matches the
+room's existing dry-floor palette exactly, no seam artefact, a clean dead
+end past the grove rather than an empty box. `npm run build` re-run,
+`dist/oracle-of-tides.html` committed.
+
+**This closes rotation #1 (wide-rooms).** `check-drift.mjs`'s sized-room
+table now reads `2x2: 1, 3x1: 2` — three distinct dungeons (D4, D5, D6)
+qualify, meeting the objective's own "3 of 6" bar written into
+`docs/prompts/STATE.md`. `OBJECTIVE OF RECORD` advances to rotation #2,
+art-provenance, and the file allowlist changes accordingly — see STATE.md's
+session log for the row recording that switch.
+
+`docs/DUNGEON-STATUS.md`'s D5 section updated with the same write-up in
+miniature, plus a note that this room closed the objective. No item art,
+overworld art, boss balance or story touched.
+
+**Left over, not chased (no detour token spent):** the S68 entry flagged
+D2's Reefguard Hall as an unaudited free-right candidate against the
+current `check-playthrough.mjs` route. With rotation #1 now closed at 3 of
+6, that question doesn't block anything — the objective could still grow
+past its own bar later, but nothing requires it. Left as a standing
+possibility, not a to-do.
+
 ## S68 — the second `3x1` room: D4's Cistern Floor, found by checking the growth direction S46 never tried
 
 Standing session charter, `docs/prompts/STATE.md` objective #1 (wide-rooms):
