@@ -12979,3 +12979,46 @@ These are in HANDOFF in full. The short list, because each one cost a session:
   view), so check the front/side plate for a spare frame the way this
   session checked Pincer's before assuming another hand-drawn edit is
   needed.
+- `octorokSea` given a `hurtFrame` (10th, after `wisp`, `beetle`, `wisp`
+  again, `darknut`, `moblin`, `wizzrobe`, `siren`, `anglerfry`, `pincer`)
+  — the last hp > 2 target besides `stalfos`'s reverse-order case. Checked
+  the sheet's own "Octorok" plate first: exactly four frames (front x2,
+  side x2), all already mapped as `octorok_d0`/`d1`/`s0`/`s1`. A fifth box
+  sits right after them at a matching pitch (which briefly looked like it
+  might be a fifth Octorok pose the way S23 found `pincer`'s spare frame
+  the same way) but turned out to be a shell/pickup icon in a visibly
+  different orange palette — confirmed against the sheet's own "Octorok"
+  label, which sits only over the first four boxes, not a fifth. Nothing
+  to extract; hand-drew instead. `octorok_d0`'s face has two black
+  eye-squares that are already the outline's own colour, so the
+  `darknut`/`moblin` "recolour a lighter dot to the outline shade" trick
+  doesn't apply here — there's nothing lighter left to shut. The two
+  eye-squares are separated by a tan gap that narrows to 2 pixels at its
+  middle row (row 7, columns 7-8): reused `anglerfry_hurt`'s "merge two
+  dark eye-shapes by filling the gap between them" trick instead, applied
+  only at that one row (rows 6 and 8 keep their wider tan gaps) so the
+  eyes read as squeezed shut at their centre without turning the whole
+  nose bridge into a solid black bar. 2 pixels total, silhouette
+  untouched. `octorokSea_hurt` added to `ENEMY_HURT_ART`
+  (`sprites-enemies-hurt.js`); the land `octorok` (hp 2) shares this exact
+  frame set but doesn't qualify for a `hurtFrame` under the S12 hp rule,
+  hence the enemy-id-scoped key rather than `octorok_hurt`. Confirmed (not
+  assumed) `octorokSea` has no `submerge()` or other hidden state — its
+  `ai()` is plain `wander()` + `shoot()`, gated only by `tideOnly` at spawn
+  time. Verified in-engine with a probe that also cycles `e.dir` through
+  down/up/left/right on every sampled frame — the first directional-
+  `frames` target since `darknut`/`moblin` — confirming `hurtFrame`
+  overrides every direction the same way those two already proved: a
+  non-lethal hit (hp 3 -> 2) held `octorokSea_hurt` for the full 24-frame
+  flicker window regardless of `dir`, then reverted to the
+  direction-correct frame (`octorok_d0`/`u0`/`s0`) exactly on schedule.
+  `check-drift` reads `octorokSea: walk,hurt`. `sprites-enemies.js`
+  untouched (hand-drawn path this time, not the ripper); `check-
+  rippers.mjs` still 17/17. `check-playthrough.mjs`'s existing stop
+  (`boss: nothing to fight in d2 0,4,5`) unchanged. Roster status: `hurt`
+  on `wisp`, `beetle`, `darknut`, `moblin`, `wizzrobe`, `siren`,
+  `anglerfry`, `pincer`, `octorokSea`; `death` on `wisp`, `stalfos`,
+  `gel`. Next: `stalfos` is now the only remaining hp > 2 enemy without
+  both fields (it already has `deathFrame`; this would be the first
+  `hurtFrame` added in the reverse order) — every other hp > 2 target in
+  the roster is now done.

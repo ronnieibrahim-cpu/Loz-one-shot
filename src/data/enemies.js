@@ -39,6 +39,7 @@ export function installEnemies() {
       up: ['octorok_u0', 'octorok_u1'],
       side: ['octorok_s0', 'octorok_s1'],
     },
+    hurtFrame: 'octorokSea_hurt',
     drops: 'common',
     tideOnly: [1, 2],
     ai(e, g) {

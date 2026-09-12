@@ -342,6 +342,51 @@ export const ENEMY_HURT_ART = {
     .310131001133003
     ..333111113..33.
     .....33333......` ,
+
+  // octorokSea hurt — drawn: assets/sheets/oracle-seasons-enemies.png's own
+  // "Octorok" plate has exactly four frames (front x2, side x2), all
+  // already used as `octorok_d0`/`d1`/`s0`/`s1`; the one nearby box with a
+  // matching pitch (963,307, right after `octorok_s1`) turns out to be a
+  // shell/pickup icon in a visibly different orange, not a fifth Octorok
+  // pose — confirmed against the sheet's own "Octorok" label, which sits
+  // only over the first four boxes. Nothing to extract. `octorok_d0`'s own
+  // grid (sprites-enemies.js) is reused pixel-for-pixel: its face has two
+  // distinct black eye-squares (rows 6-8, centred on cols 5-6 and 9-10)
+  // separated by a tan gap that narrows to 2 pixels at its middle row (row
+  // 7, cols 7-8) — the same "merge two dark eye-shapes by filling the gap
+  // between them" trick `anglerfry_hurt` used, not the `darknut`/`moblin`
+  // "recolour red dots to the outline shade" variant, since these eyes are
+  // already the outline's own colour (there is no lighter dot left to
+  // shut). Only row 7's 2-pixel gap is filled — rows 6 and 8 keep their
+  // wider tan gaps — so the eyes read as squeezed shut at their centre
+  // without turning the whole nose bridge into a single black bar. 2
+  // pixels total, silhouette untouched. `octorokSea` renders with
+  // `pal: 'enemyb'` (`src/data/enemies.js`), not this sprite's own
+  // extracted palette, and the grid never uses index 2 — so unlike this
+  // edit, an unused-palette-slot mark was available here too, but the
+  // eyes-shut trick applies cleanly and needed no fallback. Eligible under
+  // the S12 hp rule: hp 3 > swordDamage() 2, so the flicker window
+  // survives long enough to show it. `octorok` (the hp-2 land cousin)
+  // shares this exact frame set but does not qualify for a `hurtFrame`
+  // under that rule, hence the enemy-id-scoped key rather than
+  // `octorok_hurt`.
+  octorokSea_hurt: `
+    .....333333.....
+    3333311111133333
+    3113111001113113
+    .31311000011313.
+    ..311110011113..
+    ..310011110013..
+    ..310300003013..
+    ..310333333013..
+    ..331030030133..
+    .31310000001313.
+    3113331111333113
+    3133331001333313
+    3333333333333333
+    ...3110000113...
+    ...3333333333...
+    ................` ,
 };
 
 export function installEnemyHurtSprites() {
