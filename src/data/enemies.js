@@ -55,6 +55,7 @@ export function installEnemies() {
   defineEnemy('crab', {
     hp: 2, damage: 2, pal: 'enemyr', speed: 0.62, rate: 8,
     frames: ['crab_0', 'crab_1'],
+    deathFrame: 'crab_death',
     hb: { x: 1, y: 6, w: 14, h: 9 },
     terrain: 'shallow',
     shield: 'front',

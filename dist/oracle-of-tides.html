@@ -25017,6 +25017,7 @@ function installEnemies() {
   defineEnemy('crab', {
     hp: 2, damage: 2, pal: 'enemyr', speed: 0.62, rate: 8,
     frames: ['crab_0', 'crab_1'],
+    deathFrame: 'crab_death',
     hb: { x: 1, y: 6, w: 14, h: 9 },
     terrain: 'shallow',
     shield: 'front',
@@ -38325,6 +38326,49 @@ const ENEMY_HURT_ART = {
     ..331030030133..
     3113331111333113
     3333333333333333` ,
+
+  // Crab death — drawn: the sheet's own "Sand Crab" plate has exactly two
+  // frames, both already extracted as `crab_0`/`crab_1`, confirmed
+  // against the sheet's own label spanning only those two boxes ("Rope"
+  // and "Spiny Beetle" sit either side of it, both other creatures).
+  // Nothing to extract; hand-drawn instead. First drafts tried the
+  // `octorok_death` "keep every other row" squash and a full vertical
+  // flip — both failed on inspection: the every-other-row squash breaks
+  // apart the two claw columns (they're separated by a real gap in the
+  // living sprite, unlike `octorok_d0`'s continuous hood band, so halving
+  // the rows leaves them floating with no connecting body between them),
+  // and a full flip pushes the shape to the TOP of the cell instead of
+  // sitting low, which reads as an odd crop rather than "on its back."
+  // What actually works: `crab_0`'s own LOWER half (rows 7-14 of its
+  // grid, sprites-enemies.js — the legs/underside band, below where the
+  // two raised claws split off) reused pixel-for-pixel and shifted down
+  // to sit at the bottom of the cell. With the claws gone from the frame
+  // entirely rather than redrawn, it reads as "flipped, claws tucked
+  // under, only the legs and belly showing" — a real shape change
+  // (allowed for `_death`, per this file's own header), not a squash of
+  // the same silhouette. `crab` has no `z` field (ground/`terrain:
+  // 'shallow'`, `src/data/enemies.js`), confirmed before drawing a
+  // low-in-the-cell pose, same check `octorok_death`/`urchin_death` made.
+  // No hp constraint applies (`deathFrame` has none); `crab` is hp 2, so
+  // — same as `octorok`/`urchin` — this is its only possible death/hit
+  // feedback, since `swordDamage()` (2) always kills it in one hit.
+  crab_death: `
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    3103013..3103013
+    .31013333331013.
+    ..313303303313..
+    ..333303303333..
+    ..331313313133..
+    .30310311301303.
+    3003110000113003
+    3033311111133303` ,
 };
 
 function installEnemyHurtSprites() {

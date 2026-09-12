@@ -13187,3 +13187,97 @@ These are in HANDOFF in full. The short list, because each one cost a session:
   fresh sheet-check is warranted for whichever target comes next, since
   this session is the second in four to find a real frame where the
   immediately preceding sessions assumed the plate was exhausted.
+- `crab` given a `deathFrame` (5th, after `gel`, `keese`, `octorok`,
+  `urchin`). Checked the sheet's own "Sand Crab" plate: exactly two
+  frames, both already used as `crab_0`/`crab_1`, confirmed against the
+  label spanning only those two boxes ("Rope" and "Spiny Beetle" sit
+  either side, both different creatures). Nothing to extract; hand-drew
+  instead — but this one took THREE attempts, not one, and the two
+  failures are worth recording so a future session doesn't repeat them.
+  First tried `octorok_death`'s "keep every other row" squash: FAILED on
+  inspection — `crab_0`'s two claw columns are separated by a real green
+  gap in the living sprite (unlike `octorok_d0`'s continuous hood band),
+  so halving the rows leaves the claws floating disconnected from any
+  body between them. Second tried a full vertical flip (reading "on its
+  back" literally): FAILED — flipping the whole 16-row grid pushes the
+  shape to sit at the TOP of the cell (the flat black legs-band that was
+  the visual "floor" of the living sprite becomes the new top edge, and
+  the bottom rows that used to anchor it to the ground are now blank),
+  which reads as an odd crop, not "flipped over." What worked: `crab_0`'s
+  own LOWER half (rows 7-14 of its grid, sprites-enemies.js — the legs/
+  underside band sitting below where the two claws split off) reused
+  pixel-for-pixel and shifted down to sit at the bottom of the cell, with
+  the claws dropped from the frame entirely rather than redrawn or
+  flipped. Reads as "flipped over, claws tucked underneath, only the legs
+  and belly showing" — a genuine shape change (allowed for `_death`, this
+  file's own header) rather than a squash or crop of the living pose.
+  Confirmed `crab` has no `z` field before drawing low in the cell
+  (`terrain: 'shallow'`, ground-level, same check `octorok_death`/
+  `urchin_death` made). Verified in-engine: lethal hit (hp 2 -> 0) set
+  `dying = true`, `spriteName()` returned `crab_death`, `z` held at 0,
+  `dead = true` after the `ENEMY_DEATH_FRAMES` stall. `check-drift` reads
+  `crab: walk,death`. `sprites-enemies.js` untouched, `check-rippers.mjs`
+  still 17/17.
+
+  **A significant, unplanned finding surfaced by this session's own
+  required `check-playthrough.mjs` run — recorded here per the charter's
+  rule 5 rather than chased (no detour token spent):** the harness's
+  long-standing stop point, `boss: nothing to fight in d2 0,4,5` (an
+  uncaught exception, byte-identical across S23 through S28's own
+  stash-and-recompare checks each session), is GONE after this session's
+  cumulative work. The run now completes without crashing: `20 passed, 1
+  failed`. The likely mechanism, not yet confirmed: every `deathFrame`
+  this thread has added (S12-S29, eleven `hurtFrame`s and five
+  `deathFrame`s now) makes an enemy linger `dying = true` for
+  `ENEMY_DEATH_FRAMES` (~16 frames) before `Entity.die()` actually runs
+  and removes it, where it used to vanish on the same frame it died. That
+  shifts the whole run's frame-exact timing from the very first kill
+  onward — route steps have frame budgets (`['loot', 900]`, `['wait',
+  90]`, etc.), and a route that used to just barely fail some earlier
+  frame-budgeted step might now just barely pass it, cascading into a
+  completely different run shape past that point. `crab` is placed far
+  more densely across the dungeons than any other single `deathFrame`
+  target so far (dozens of placements in `src/data/dungeons-a.js` alone,
+  versus a handful each for `keese`/`octorok`/`urchin`), which is the
+  best available explanation for why THIS session is the one that tipped
+  it rather than one of the previous four — not confirmed by tracing the
+  actual timing, just the strongest lead.
+
+  What the run now actually reports: both D1 and D2 bosses are beaten in
+  real combat (`s.beaten.d1 && s.beaten.d2` both `true` — the run gets to
+  and wins BOTH boss fights, further than it has ever previously reached
+  in this thread's own memory of running this checker every session).
+  It FAILS `THE ESSENCES OF TIDEWASH GROTTO AND THE CORAL SPIRE ARE BOTH
+  TAKEN`: `GOAL.essences` (`tools/playthrough-route.mjs`) is `[1, 2]`,
+  but `s.essences` (`g.progress.essences.slice()`, read live off the
+  actual game state at run end, `tools/actor-runtime.mjs` line ~117) is
+  `[2]` only — D1's essence (index 1) is missing despite Gohmaraq being
+  beaten. `Essence` (`src/game/objects.js`) is a walkable-into pickup
+  entity, not something `defineBoss`/`die()` grants automatically — the
+  player (or the actor standing in for one) has to physically overlap it
+  after it appears. The route's own D1-boss-aftermath sequence
+  (`tools/playthrough-route.mjs`, right after `['boss', 9000]` at
+  Gohmaraq) is `['wait', 300], ['dialogue', 900], ['loot', 900],
+  ['dialogue', 900], ['wait', 240]` — the `['loot', 900]` step at that
+  point is presumably meant to collect the essence, but this run's
+  `s.essences` says it didn't. NOT YET DIAGNOSED — this bullet is the
+  finding, not the fix. Concrete starting points for whichever session
+  spends the detour token on this: (1) read what the `loot` verb in
+  `tools/actor-runtime.mjs` actually does — does it walk toward and
+  overlap an `Essence`-type entity specifically, or only interact with
+  chests/ground items already in reach; (2) check whether the essence
+  entity has even SPAWNED by the time that `['loot', 900]` step runs —
+  it may depend on the boss's own death sequence/cutscene finishing
+  first, and the frame-timing shift this session's own finding describes
+  could plausibly be part of why a previously-untested interaction is
+  now the one thing standing between the run and a fully green
+  `check-playthrough`; (3) confirm whether this is new (a real
+  regression from the accumulated `dying` stall time) or whether the
+  route's D1 essence pickup was ALWAYS broken and simply unreachable
+  before, since the run never got this far in one continuous piece until
+  now. Per `docs/prompts/CHARTER.md`'s own rule 5 ("a correctness bug is
+  not an exception"), this session did NOT spend its detour token
+  chasing this — `crab_death` is complete, verified, and shipped on its
+  own merits, and this finding waits for a session that deliberately
+  picks it up. `DETOUR TOKENS` in `docs/prompts/STATE.md` remains 1,
+  unspent. This session's branch was fast-forwarded onto `main` again.
