@@ -12795,3 +12795,34 @@ These are in HANDOFF in full. The short list, because each one cost a session:
   field to give it). This particular interaction is now proven and does
   not need re-testing on a second dual-field enemy — treat it as settled
   (moved to LEDGER), not a recurring thing to re-verify each session.
+- `darknut` given a `hurtFrame` (fourth proof of the mechanism, after
+  `wisp`, `beetle`, and `wisp` again for the coexistence test) — and the
+  first session in this thread to actually LOOK at the sheet before
+  drawing anything, per NEXT-PROMPT's own instruction. Cropped every box
+  in the sheet's "Darknut" plate (idle x2, side x2, two walk-leg frames,
+  an overhead swing windup, four side-lunge attack poses, three loose
+  weapon icons) and confirmed none of them is a flinch — every pose is
+  mid-stride or mid-swing, nothing shows the knight caught off guard, so
+  hand-drawing was the right call, not a shortcut. `darknut_hurt`
+  (`sprites-enemies-hurt.js`) reuses `darknut_d0`'s own 16x16 grid
+  character-for-character; the only change is the two red visor eye-dots
+  and the tan nose bridge between them turned black (3 pixels total) —
+  eyes shut, the same grammar `sprites-bosses.js`'s own header uses, but
+  WITHOUT that file's accompanying 1px body shift: this file's header
+  says silhouette stays untouched, so the shift was deliberately not
+  copied over. Eligible under the hp rule above (`darknut` hp 6 >
+  `swordDamage()` 2). Verified in-engine with a scratch Playwright probe
+  (same shape as every prior proof, not committed): a non-lethal hit
+  (hp 6 -> 5) held `darknut_hurt` for the full 24-frame flicker window,
+  screenshotted mid-flicker confirming the shut visor actually renders
+  under the invuln tint (not just in a standalone preview PNG), then
+  reverted to the walk cycle exactly on schedule. `check-drift` reads
+  `darknut: walk,hurt`. Roster status: `hurt` on `wisp`, `beetle`,
+  `darknut`; `death` on `wisp`, `stalfos`, `gel`. `sprites-enemies.js`
+  itself untouched — confirmed byte-identical to the ripper's own
+  re-emission both before and after this session, `check-rippers.mjs`
+  17/17. Next: either a fourth `hurtFrame` target (hp > 2, not yet
+  touched — `beamos`/`moblin`/`stalfos`/`wizzrobe`/etc.) or a second
+  `deathFrame` on an enemy that also has `hurtFrame`, which S17 already
+  ruled out as uninformative (the ordering is settled) — so plain
+  coverage growth, same cadence as every session in this thread.

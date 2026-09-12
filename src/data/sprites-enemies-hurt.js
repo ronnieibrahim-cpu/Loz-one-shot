@@ -158,6 +158,39 @@ export const ENEMY_HURT_ART = {
     ................
     ................
     ................` ,
+
+  // Darknut hurt — drawn: assets/sheets/oracle-seasons-enemies.png's own
+  // "Darknut" plate was checked frame by frame (idle x2, side x2, walk-leg
+  // pairs, a raised-sword windup, four side-lunge poses) and every one of
+  // them is an aggressive stance, not a flinch — nothing on the sheet shows
+  // this knight caught off guard. `darknut_d0`'s own grid (sprites-enemies.js)
+  // is reused pixel-for-pixel, per this file's own header: same silhouette,
+  // only the visor slot touched. The two red eye-dots (row 2) go black —
+  // eyes shut, the boss roster's own "eyes shut or squinted" grammar — and
+  // the tan nose bridge between them (row 3) goes black too, pulling the
+  // visor into a scrunched wince. Reads as a knight staggering forward from
+  // a hit it didn't see coming (its `shield: 'front'` in src/data/
+  // enemies.js only covers the way it's facing), without moving a single
+  // outline pixel of the armour itself. Eligible under the S12 hp rule:
+  // hp 6 > swordDamage() 2, so the flicker window survives long enough to
+  // show it.
+  darknut_hurt: `
+    ..33........333.
+    ..3033333333003.
+    ..303300033003..
+    ...31313133033..
+    ...313333313333.
+    .333130303113003
+    3003113331113103
+    3013111311113113
+    3113111311113333
+    3333311311333113
+    3113333333333113
+    3333330001133333
+    3001331111331003
+    3000333333330003
+    3000333330030003
+    .33333333333333.` ,
 };
 
 export function installEnemyHurtSprites() {
