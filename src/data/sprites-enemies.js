@@ -740,6 +740,24 @@ export const ENEMY_ART = {
     ...3333.........
     ................` },
   // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  pincer_hurt: { pal: 'pincer_hurt', art: `
+    .......333333...
+    ....3330003113..
+    ..3313000003113.
+    .311130330031113
+    .310030300033313
+    3100033000300033
+    31003..333000003
+    3003.....3003003
+    3003.....3033003
+    3003.....330003.
+    303......333333.
+    .33......300113.
+    ......33300013..
+    ....3300000113..
+    ....300001133...
+    .....333333.....` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   siren_0: { pal: 'siren_0', art: `
     .......33.......
     ......3003......
@@ -1071,6 +1089,7 @@ export const ENEMY_ART_PALETTES = {
   octorok_u1: ['#ffd68c', '#ff0829', '#ff0829', '#000000'],
   pincer_0: ['#ffd68c', '#ff0829', '#ff0829', '#000000'],
   pincer_1: ['#ffd68c', '#ff0829', '#ff0829', '#000000'],
+  pincer_hurt: ['#ffd68c', '#ff0829', '#ff0829', '#000000'],
   siren_0: ['#ffd68c', '#ff0829', '#ff0829', '#000000'],
   siren_1: ['#ffd68c', '#ff0829', '#ff0829', '#000000'],
   stalfos_d0: ['#ffd68c', '#1984ff', '#1984ff', '#000000'],

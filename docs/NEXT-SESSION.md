@@ -12939,3 +12939,43 @@ These are in HANDOFF in full. The short list, because each one cost a session:
   `pincer` (the last two hp > 2 targets not yet touched) or `stalfos`'s
   reverse-order coexistence case, same cadence as every session in this
   thread.
+- `pincer` given a `hurtFrame` (ninth, after `wisp`, `beetle`, `wisp`
+  again, `darknut`, `moblin`, `wizzrobe`, `siren`, `anglerfry`) — and,
+  unlike every session since S18, EXTRACTED rather than hand-drawn.
+  Checked the sheet's own "Pincer" plate first rather than assuming a
+  sixth exhausted plate: it holds three frames, not two — `pincer_0`
+  (box 233, the head lunging into view) and `pincer_1` (box 234, the
+  body coiled back) were already mapped, but a third box (235) sits on
+  the same plate, same exact four-colour palette
+  (`#ffffff`/`#ffd68c`/`#ff0829`/`#000000`), separated from box 234 by
+  no background gap and from the next real plate (box 236, a `Piranha`
+  frame with a different orange palette) by a genuine 14px green gap —
+  confirmed with a scratch crop of the raw, unquantised sheet region
+  showing the "Pincer" label sitting directly above boxes 233-235 and
+  "Piranha" above 236 onward, not assumed from adjacency alone. Box 235
+  reads as a tighter, asymmetric coil with the eyes rolled off-centre —
+  a dazed stagger distinct from box 234's calm coiled-back idle pose —
+  so it was mapped as `pincer_hurt` in `tools/rip-enemies.py`'s `FRAMES`
+  table and re-emitted through the ripper, per the hard rule that
+  extraction beats hand-drawing whenever the sheet actually has the
+  frame; `tools/check-rippers.mjs` stayed 17/17 (byte-identical for the
+  other seven generated modules, `rip-enemies.py` itself re-verified
+  deterministic). Confirmed (not assumed) `pincer` has no `submerge()`
+  or other hidden state — it never leaves `terrain: 'any'`, and the
+  spawned entity has no `hidden` property at all — so no extra guard was
+  needed beyond the plain `hurtFrame` mechanism S12 built. Verified
+  in-engine: a non-lethal hit (hp 3 -> 2) held `pincer_hurt` for the
+  full 24-frame flicker window, `hidden` absent throughout, then
+  reverted to `pincer_0` on schedule. `check-drift` reads `pincer:
+  walk,hurt`. Roster status: `hurt` on `wisp`, `beetle`, `darknut`,
+  `moblin`, `wizzrobe`, `siren`, `anglerfry`, `pincer`; `death` on
+  `wisp`, `stalfos`, `gel`. Next: `octorokSea` is now the only untouched
+  hp > 2 target besides `stalfos`'s reverse-order case — it uses a
+  directional `frames` dict (down/up/side) rather than a flat array, so
+  confirm (not assume) that `hurtFrame` still overrides every direction
+  the same way `darknut`/`moblin` already prove it does; its `octorok_d0`/
+  `d1`/`s0`/`s1` frames are extracted from the sheet's own "Octorok"
+  plate but `octorok_u0`/`u1` are `HAND_ART` (the sheet has no back
+  view), so check the front/side plate for a spare frame the way this
+  session checked Pincer's before assuming another hand-drawn edit is
+  needed.

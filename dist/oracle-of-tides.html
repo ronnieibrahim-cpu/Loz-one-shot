@@ -25325,7 +25325,7 @@ function installEnemies() {
   // --- Pincer: an eel head on a tether, lunging out of its burrow -------
   defineEnemy('pincer', {
     hp: 3, damage: 3, pal: 'enemyr', speed: 0, rate: 10, terrain: 'any',
-    frames: ['pincer_0', 'pincer_1'],
+    frames: ['pincer_0', 'pincer_1'], hurtFrame: 'pincer_hurt',
     hb: { x: 3, y: 3, w: 10, h: 11 },
     drops: 'common',
     ai(e, g) {
@@ -37395,6 +37395,24 @@ const ENEMY_ART = {
     ...3333.........
     ................` },
   // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  pincer_hurt: { pal: 'pincer_hurt', art: `
+    .......333333...
+    ....3330003113..
+    ..3313000003113.
+    .311130330031113
+    .310030300033313
+    3100033000300033
+    31003..333000003
+    3003.....3003003
+    3003.....3033003
+    3003.....330003.
+    303......333333.
+    .33......300113.
+    ......33300013..
+    ....3300000113..
+    ....300001133...
+    .....333333.....` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   siren_0: { pal: 'siren_0', art: `
     .......33.......
     ......3003......
@@ -37726,6 +37744,7 @@ const ENEMY_ART_PALETTES = {
   octorok_u1: ['#ffd68c', '#ff0829', '#ff0829', '#000000'],
   pincer_0: ['#ffd68c', '#ff0829', '#ff0829', '#000000'],
   pincer_1: ['#ffd68c', '#ff0829', '#ff0829', '#000000'],
+  pincer_hurt: ['#ffd68c', '#ff0829', '#ff0829', '#000000'],
   siren_0: ['#ffd68c', '#ff0829', '#ff0829', '#000000'],
   siren_1: ['#ffd68c', '#ff0829', '#ff0829', '#000000'],
   stalfos_d0: ['#ffd68c', '#1984ff', '#1984ff', '#000000'],

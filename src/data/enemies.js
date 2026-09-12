@@ -363,7 +363,7 @@ export function installEnemies() {
   // --- Pincer: an eel head on a tether, lunging out of its burrow -------
   defineEnemy('pincer', {
     hp: 3, damage: 3, pal: 'enemyr', speed: 0, rate: 10, terrain: 'any',
-    frames: ['pincer_0', 'pincer_1'],
+    frames: ['pincer_0', 'pincer_1'], hurtFrame: 'pincer_hurt',
     hb: { x: 3, y: 3, w: 10, h: 11 },
     drops: 'common',
     ai(e, g) {

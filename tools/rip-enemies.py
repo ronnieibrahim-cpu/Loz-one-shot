@@ -217,9 +217,14 @@ FRAMES = {
     'siren_0': (256, 0.5, 0.5, False),
     'siren_1': (257, 0.5, 0.5, False),
 
-    # Pincer: head lunging out, then the body coiled back.
+    # Pincer: head lunging out, then the body coiled back. A third frame sits
+    # on the same plate, same palette, right after the other two (box 235,
+    # immediately following 234 with no background gap between): a tighter,
+    # asymmetric coil with the eyes rolled to one side — read as a dazed
+    # stagger rather than a third idle pose, so it's the hurtFrame.
     'pincer_0': (233, 0.5, 0.5, False),
     'pincer_1': (234, 0.5, 0.5, False),
+    'pincer_hurt': (235, 0.5, 0.5, False),
 }
 
 # Frames taken from an explicit sheet rectangle instead of a detected box,
