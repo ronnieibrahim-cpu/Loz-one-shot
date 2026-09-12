@@ -302,6 +302,7 @@ export function installEnemies() {
     light: true,
     hp: 3, damage: 3, pal: 'enemyb', speed: 0.35, rate: 12, terrain: 'water',
     frames: ['anglerfry_0', 'anglerfry_1'],
+    hurtFrame: 'anglerfry_hurt',
     drops: 'good',
     tideOnly: [1, 2],
     ai(e, g) {

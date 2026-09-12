@@ -12911,3 +12911,31 @@ These are in HANDOFF in full. The short list, because each one cost a session:
   `hurtFrame` target with hp > 2 not yet touched (`octorokSea`,
   `anglerfry`, `pincer`) or `stalfos`'s reverse-order coexistence case,
   same cadence as every session in this thread.
+- `anglerfry` given a `hurtFrame` (eighth proof of the mechanism, after
+  `wisp`, `beetle`, `wisp` again, `darknut`, `moblin`, `wizzrobe`,
+  `siren`). Checked the sheet's own "Cheep-Cheep" plate (its documented
+  substitution source, per this file's own header — `anglerfry` has no
+  direct Oracle equivalent): exactly two frames, both already used as
+  `anglerfry_0`/`anglerfry_1`, nothing else nearby belongs to it — the
+  fourth session running to find an exhausted plate. Which trick applies
+  is genuinely per-sprite, confirmed a third way: `anglerfry_0`'s face
+  DOES have distinct two-dot eyes (two short black bars, rows 5-6,
+  columns 3 and 5, on a light tan face), closer to `darknut`/`moblin`'s
+  case than `wizzrobe`/`siren`'s masked-face case, so the eye-shut trick
+  applies directly, just in the opposite tone direction (dark marks on a
+  light face rather than light marks pulled into a dark visor): the
+  single tan pixel separating the two eye-dots (column 4, both rows)
+  turned black too, merging two separate dots into one solid
+  squeezed-shut bar. 2 pixels total, silhouette untouched. Also confirmed
+  (didn't assume) that `anglerfry`'s `light: true` flag is unrelated to
+  rendering — `src/game/enemy.js`'s own comment on the flag says it only
+  lets the Squall Bellows push the entity — so it has no bearing on
+  whether `hurtFrame` draws. Verified in-engine: a non-lethal hit (hp 3
+  -> 2) held `anglerfry_hurt` for the full 24-frame flicker window, then
+  reverted to `anglerfry_0` on schedule. `check-drift` reads `anglerfry:
+  walk,hurt`. Roster status: `hurt` on `wisp`, `beetle`, `darknut`,
+  `moblin`, `wizzrobe`, `siren`, `anglerfry`; `death` on `wisp`,
+  `stalfos`, `gel`. `sprites-enemies.js` untouched. Next: `octorokSea` or
+  `pincer` (the last two hp > 2 targets not yet touched) or `stalfos`'s
+  reverse-order coexistence case, same cadence as every session in this
+  thread.

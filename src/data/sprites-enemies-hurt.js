@@ -304,6 +304,44 @@ export const ENEMY_HURT_ART = {
     0000333003330000
     ..000022200000..
     .....000000.....` ,
+
+  // Anglerfry hurt — drawn: assets/sheets/oracle-seasons-enemies.png's own
+  // "Cheep-Cheep" plate (per this file's own substitution note — anglerfry
+  // has no direct source equivalent) has exactly two frames, both already
+  // used as `anglerfry_0`/`anglerfry_1`; every neighbouring box on the
+  // sheet belongs to a different creature. Nothing to extract, the fourth
+  // session running to find this. `anglerfry_0`'s own grid (sprites-
+  // enemies.js) is reused pixel-for-pixel. Unlike `wizzrobe`/`siren`, this
+  // face DOES have distinct eyes — two short black bars (rows 5-6, col 3
+  // and col 5) on the sprite's light tan face, separated by one tan pixel
+  // (col 4) — so the `darknut`/`moblin` "shut the eyes" trick applies
+  // directly, just in the opposite tone direction (dark marks on a light
+  // face rather than light marks on a dark one): the single tan pixel
+  // between the two eye-dots (col 4, both rows) turns black too, merging
+  // them into one solid squeezed-shut bar. 2 pixels total, silhouette
+  // untouched. `anglerfry`'s `light: true` flag (src/data/enemies.js) is
+  // unrelated to rendering — it only lets the Squall Bellows push it
+  // (src/game/enemy.js's own comment on the flag) — so it has no bearing
+  // on whether this frame draws. Eligible under the S12 hp rule: hp 3 >
+  // swordDamage() 2, so the flicker window survives long enough to show
+  // it.
+  anglerfry_hurt: `
+    ......3333......
+    .....300003.....
+    ...333333003....
+    ..30300333003...
+    .3000000333333..
+    .3033300333003..
+    .3033300330003..
+    .3000000300003..
+    .3333003330033..
+    .30003330033333.
+    3000003000013003
+    3033003000013003
+    3000013000113003
+    .310131001133003
+    ..333111113..33.
+    .....33333......` ,
 };
 
 export function installEnemyHurtSprites() {
