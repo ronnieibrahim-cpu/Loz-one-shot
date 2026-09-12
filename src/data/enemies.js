@@ -88,6 +88,11 @@ export function installEnemies() {
     light: true,
     hp: 1, damage: 1, pal: 'slime', speed: 0.42, rate: 10,
     frames: ['gel_0', 'gel_1'],
+    // hp 1, deliberately: deathFrame has no hp-vs-swordDamage() constraint
+    // (unlike hurtFrame, which gel was ruled out for in S12) — die() defers
+    // removal on the hit that reaches hp 0 regardless of how many hits that
+    // took. See src/game/enemy.js's Enemy.die() and docs/prompts/LEDGER.md.
+    deathFrame: 'gel_death',
     w: 16, h: 16,
     hb: { x: 5, y: 8, w: 6, h: 7 },
     terrain: 'any',

@@ -25050,6 +25050,11 @@ function installEnemies() {
     light: true,
     hp: 1, damage: 1, pal: 'slime', speed: 0.42, rate: 10,
     frames: ['gel_0', 'gel_1'],
+    // hp 1, deliberately: deathFrame has no hp-vs-swordDamage() constraint
+    // (unlike hurtFrame, which gel was ruled out for in S12) — die() defers
+    // removal on the hit that reaches hp 0 regardless of how many hits that
+    // took. See src/game/enemy.js's Enemy.die() and docs/prompts/LEDGER.md.
+    deathFrame: 'gel_death',
     w: 16, h: 16,
     hb: { x: 5, y: 8, w: 6, h: 7 },
     terrain: 'any',
@@ -37842,6 +37847,36 @@ const ENEMY_HURT_ART = {
     .30331111113303.
     .30003333330003.
     ..333333333333..` ,
+
+  // Gel death — drawn: the sheet's "Color-Changing Gel" strip (six frames,
+  // red/yellow/blue x2) is only ever the same small round blob in a
+  // different colour, no squashed pose; `gel_0`/`gel_1` already extract the
+  // red pair. hp 1, deliberately: `gel` was ruled OUT for `hurtFrame` in S12
+  // (a 1-hp enemy is removed the same frame it takes its only hit, before a
+  // flicker window ever renders) — `deathFrame` has no such rule (see
+  // docs/prompts/LEDGER.md), and this is that claim's sharpest test, not the
+  // stalfos-shaped "hp happened to be above the cutoff" case. Shape changed
+  // on purpose, per the `_death` exception in this file's own header:
+  // `gel_0` is a compact round blob in rows 4-9; this is the same blob
+  // flattened into a wide puddle low in the cell (rows 8-13) with two
+  // isolated splash flecks at row 14, reading as "squashed", not a recolour.
+  gel_death: `
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ......3113......
+    .....301113.....
+    ....31111113....
+    ...3111111113...
+    ..311111111113..
+    .31111111111113.
+    ..1..........1..
+    ................` ,
 };
 
 function installEnemyHurtSprites() {

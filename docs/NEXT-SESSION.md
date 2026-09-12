@@ -12762,3 +12762,20 @@ These are in HANDOFF in full. The short list, because each one cost a session:
   pick an enemy not yet touched (`wisp`/`beetle` have `hurt`, `stalfos`
   has `death`) with hp > 2 for a `hurtFrame`, or hp anything at all for a
   `deathFrame` (no hp constraint — see the dedicated LEDGER entry).
+- `gel` (hp 1) given a `deathFrame`, closing the loop on the "no hp
+  constraint" claim by actually testing the sharp case rather than just
+  asserting it. `gel` was ruled OUT for `hurtFrame` in S12 for exactly
+  this hp; giving it `deathFrame` instead and watching it hold `gel_death`
+  for the full `ENEMY_DEATH_FRAMES` stall (verified in-engine: hp 1, one
+  hit, `dead`/`remove` both still false through the whole window, then
+  flip together) confirms the two mechanisms are genuinely different
+  rules, not one rule that happened not to bind yet. `gel_death` is a
+  flattened puddle (shape changed on purpose, per the `_death` exception)
+  rather than the round `gel_0`/`gel_1` blob. Roster status after S12/13/
+  15/16: `hurt` on `wisp`, `beetle`; `death` on `stalfos`, `gel`. No
+  enemy has both yet, and none has `attack` (still no engine field).
+  Next: either a third `hurtFrame` target (hp > 2, not yet touched) or a
+  second `deathFrame` on an enemy that ALSO already has `hurtFrame` — the
+  untested combination — to check the two stalls don't collide when both
+  fields are set on the same spec (`spriteName()` already orders `dying`
+  before `hurtFrame`, but no enemy has exercised that ordering for real).

@@ -119,7 +119,7 @@ export const REQUIRED_SPRITES = {
   // ---- pack: sprites-enemies.js ----------------------------------------
   enemies: [
     ...seq('octorok_d', 2), ...seq('octorok_u', 2), ...seq('octorok_s', 2),
-    ...seq('crab_', 2), ...seq('zol_', 2), ...seq('gel_', 2), ...seq('keese_', 2),
+    ...seq('crab_', 2), ...seq('zol_', 2), ...seq('gel_', 2), 'gel_death', ...seq('keese_', 2),
     ...seq('leever_', 2), ...seq('bubble_', 2), ...seq('beamos_', 2),
     ...seq('beetle_d', 2), ...seq('beetle_s', 2), 'beetle_hurt', ...seq('tektite_', 2),
     ...seq('wisp_', 2), 'wisp_hurt', ...seq('urchin_', 2),
