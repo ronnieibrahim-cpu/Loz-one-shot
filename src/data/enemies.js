@@ -245,6 +245,7 @@ export function installEnemies() {
     // hit that actually brings hp to 0 — a 1-hit kill stalls exactly the same
     // as a 3-hit one. See src/game/enemy.js's Enemy.die().
     deathFrame: 'stalfos_death',
+    hurtFrame: 'stalfos_hurt',
     drops: 'good',
     ai(e, g) {
       if (distToPlayer(e, g) < 26) flee(e, g, { speed: 0.9 });

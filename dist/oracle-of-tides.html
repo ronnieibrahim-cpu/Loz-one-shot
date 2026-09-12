@@ -25207,6 +25207,7 @@ function installEnemies() {
     // hit that actually brings hp to 0 — a 1-hit kill stalls exactly the same
     // as a 3-hit one. See src/game/enemy.js's Enemy.die().
     deathFrame: 'stalfos_death',
+    hurtFrame: 'stalfos_hurt',
     drops: 'good',
     ai(e, g) {
       if (distToPlayer(e, g) < 26) flee(e, g, { speed: 0.9 });
@@ -38164,6 +38165,53 @@ const ENEMY_HURT_ART = {
     ...3110000113...
     ...3333333333...
     ................` ,
+
+  // Stalfos hurt — drawn: the last hp > 2 enemy in the roster without a
+  // `hurtFrame`, and the reverse-order case every prior session's prompt
+  // flagged as out of scope — `stalfos` already has `deathFrame`
+  // (`stalfos_death`, above), and `Enemy.spriteName()` (src/game/enemy.js)
+  // checks `dying && deathFrame` BEFORE `flicker > 0 && hurtFrame`, so the
+  // two coexist without conflict; S17 proved that ordering on `wisp`
+  // (which has both), this is the second real case rather than a fresh
+  // derivation. Checked the sheet's own "Stalfos, Sword Stalfos & Shrouded
+  // Stalfos" plate first: the plain bone-white skeleton (blue trim) that
+  // `stalfos_d0`/`d1` extract from has exactly two frames, both already
+  // used; every other frame on the same labelled plate is green-hooded
+  // Sword Stalfos art (idle stances and mid-swing attack poses, already
+  // the substitution source for `stalfos_s0`/`s1`'s side view) — no third
+  // pose of the plain skeleton itself exists to extract. `stalfos_d0`'s
+  // own grid (sprites-enemies.js) is reused pixel-for-pixel: its eye
+  // sockets are already solid black cave shapes, not a lighter dot with
+  // headroom to "shut" (the same situation `octorokSea` hit two sessions
+  // ago), and unlike `octorokSea` there's no clean 2px gap between two
+  // separate dark shapes to merge — the black here is one continuous
+  // area. So this uses the `wizzrobe`/`siren` fallback instead: the grid
+  // never uses index 2, which is a genuinely distinct dark olive
+  // (`#565640`) in the runtime `enemyk` bone palette (`src/gfx/
+  // palettes.js`), so two pixels on the plain white forehead band (row 1,
+  // columns 8-9 — the widest run of untouched white in the whole sprite)
+  // turn to index 2, reading as a crack punched into the skull's own bone
+  // — thematically apt for a skeleton, not just a bruise borrowed from an
+  // enemy with skin. 2 pixels total, silhouette untouched. Eligible under
+  // the S12 hp rule: hp 3 > swordDamage() 2, so the flicker window
+  // survives long enough to show it.
+  stalfos_hurt: `
+    ......333333....
+    .....30022003...
+    ....3000100003..
+    ....3033113303..
+    .333303000030333
+    .300310033001303
+    .300333000033003
+    .33000303303003.
+    .313003333330313
+    .333331133113313
+    .300313311331333
+    .300331133113003
+    ..33333333333003
+    ...330033311333.
+    ...3000333333...
+    ...33333........` ,
 };
 
 function installEnemyHurtSprites() {

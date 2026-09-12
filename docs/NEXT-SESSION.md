@@ -13022,3 +13022,50 @@ These are in HANDOFF in full. The short list, because each one cost a session:
   both fields (it already has `deathFrame`; this would be the first
   `hurtFrame` added in the reverse order) — every other hp > 2 target in
   the roster is now done.
+- `stalfos` given a `hurtFrame` (11th, after `wisp`, `beetle`, `wisp`
+  again, `darknut`, `moblin`, `wizzrobe`, `siren`, `anglerfry`, `pincer`,
+  `octorokSea`) — the reverse-order coexistence case flagged as out of
+  scope in every prior session's prompt. `stalfos` already had
+  `deathFrame` (`stalfos_death`, S13); this is the first session to add
+  `hurtFrame` to an enemy that already carries one, so **every hp > 2
+  enemy in the roster now has a `hurtFrame`**. `Enemy.spriteName()`
+  (`src/game/enemy.js`) checks `dying && deathFrame` before `flicker > 0
+  && hurtFrame`, so the two fields don't conflict by construction — S17
+  proved that ordering on `wisp` (which has both); this session confirms
+  it on a second real case rather than re-deriving the mechanism.
+  Checked the sheet's own "Stalfos, Sword Stalfos & Shrouded Stalfos"
+  plate first: the plain bone-white skeleton (blue trim) that
+  `stalfos_d0`/`d1` extract from has exactly two frames, both already
+  used; every other frame on that same labelled plate is green-hooded
+  Sword Stalfos art (idle stances, mid-swing attacks — already the
+  substitution source for `stalfos_s0`/`s1`'s side view), nothing else of
+  the plain skeleton to extract. Hand-drew instead. `stalfos_d0`'s eye
+  sockets are already solid black caves, the same "nothing lighter left
+  to shut" situation `octorokSea` hit two sessions ago, but unlike
+  `octorokSea` there's no clean 2-pixel gap between two separate dark
+  shapes to merge — the black here is one continuous area, not two dots.
+  Used the `wizzrobe`/`siren` unused-palette-slot fallback instead:
+  the grid never uses index 2, a genuinely distinct dark olive
+  (`#565640`) in the runtime `enemyk` bone palette
+  (`src/gfx/palettes.js`), so two pixels on the plain white forehead band
+  (row 1, columns 8-9 — the widest run of untouched white in the sprite)
+  turn to index 2, reading as a crack punched into the skull's own bone
+  rather than a bruise borrowed from an enemy with skin. 2 pixels total,
+  silhouette untouched. Verified BOTH orderings in-engine, not just the
+  usual single case: a non-lethal hit (hp 3 -> 2) held `stalfos_hurt` for
+  the full 24-frame flicker window across all four cycled directions,
+  `dying` false throughout, then reverted correctly; a SEPARATE lethal
+  hit on a fresh spawn set `dying = true` and `spriteName()` returned
+  `stalfos_death`, not `stalfos_hurt`, confirming the ordering holds for
+  real rather than by construction alone. `check-drift` reads `stalfos:
+  walk,hurt,death`. `sprites-enemies.js` untouched, `check-rippers.mjs`
+  still 17/17, `check-playthrough.mjs`'s stop unchanged. Roster status:
+  `hurt` on `wisp`, `beetle`, `darknut`, `moblin`, `wizzrobe`, `siren`,
+  `anglerfry`, `pincer`, `octorokSea`, `stalfos`; `death` on `wisp`,
+  `stalfos`, `gel`. Next: every hp > 2 enemy now has `hurtFrame` — the
+  next candidate under the enemy-roster objective is either revisiting
+  the hp <= 2 eligibility rule (S12 ruled it out for 1-hp enemies
+  specifically; hp-2 enemies were never separately tested) or moving to
+  `deathFrame` for an enemy that only has `hurtFrame`, a bigger decision
+  than fits one session's prompt — read `docs/prompts/LEDGER.md`'s
+  enemy-roster section before picking either.
