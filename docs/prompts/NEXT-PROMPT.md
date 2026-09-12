@@ -1,71 +1,70 @@
-# Next session — give keese a real deathFrame
+# Next session — give octorok (land) a real deathFrame
 
 ## Read first
 - `docs/prompts/CHARTER.md` — the standing rules for every session; run it
   verbatim before reading anything else here.
 - `docs/prompts/STATE.md` — objective #4 (enemy-roster) and its file
   allowlist.
-- `docs/NEXT-SESSION.md`'s `gel_death` entry (S16) and `stalfos` `hurtFrame`
-  entry (S25, the two newest) — `gel_death` is the precedent for a
-  `deathFrame` on an hp-1 enemy (no hp constraint applies, unlike
-  `hurtFrame`); `stalfos`'s entry shows the same "check both orderings
-  in-engine" discipline this session should apply if it turns out `keese`
-  ever gets a `hurtFrame` question raised again (it shouldn't — see Out of
-  scope — but the verification habit still applies to `deathFrame` alone).
+- `docs/NEXT-SESSION.md`'s `keese_death` entry (S26, the newest) — it
+  found a real mistake (a death pose drawn to sit low in the cell reads as
+  hovering, not fallen, for any enemy with a height offset) before it
+  shipped, and named `wisp_death` as the precedent for getting an airborne
+  enemy's death pose right. `octorok` (land) has no `z` field at all
+  (ground-level, unlike `keese`/`wisp`), so that specific trap likely
+  doesn't apply here — but confirm that from the code rather than assume
+  it just because this prompt says so.
 
 ## Why this, now
-S12-S25 gave `hurtFrame` to every enemy with hp > `swordDamage()` (2) —
-eleven enemies, one per session, and that thread is now closed: `wisp`,
-`beetle`, `darknut`, `moblin`, `wizzrobe`, `siren`, `anglerfry`, `pincer`,
-`octorokSea`, `stalfos` all have it, and every remaining enemy has hp <= 2,
-which means a sword hit (`swordDamage()` 2, S12's own measured constant)
-always brings it to hp <= 0 in one hit — there is no non-lethal hit for a
-`hurtFrame`'s flicker window to ever run during. That branch of the
-enemy-roster objective is exhausted, not stalled.
-
-`deathFrame` has NO such constraint (S13, confirmed again by `gel_death`
-at hp 1, S16): `die()` runs exactly once, on whichever hit actually brings
-hp to 0, regardless of how many hits that took. So `deathFrame` is the
-open half of `docs/ENEMIES.md`'s "idle/walk/attack/hurt/death" states, and
-unlike `hurtFrame` it isn't gated by a stat — only three enemies have it
-today (`wisp`, `stalfos`, `gel`). `keese` (hp 1, `terrain: 'air'`,
-`src/data/enemies.js`) is the next hp-1 case after `gel`, and per S16's own
-framing it's the sharper test of the same claim on a SECOND hp-1 enemy —
-not a fresh derivation, a confirmation that the hp-1 exemption from
-`hurtFrame` generalises without also exempting `deathFrame`.
+S12-S25 closed the `hurtFrame` thread (every hp > `swordDamage()` (2)
+enemy has one); S26 opened the `deathFrame` branch, which has no hp
+constraint, on `keese` (hp 1). `octorok` (the land cousin of `octorokSea`,
+hp 2, `src/data/enemies.js`) is a clean next target for the same reason
+`keese` was: hp 2 means `swordDamage()` (2) always brings it to hp <= 0 in
+one hit, so `deathFrame` is the ONLY visual feedback this enemy could ever
+show — there is no non-lethal case to design around, unlike the hp > 2
+roster `hurtFrame` covered. It also directly extends S24's work:
+`octorokSea_hurt` already established the enemy-id-scoped naming pattern
+for a creature whose sprite frames (`octorok_d0`/`d1`/`s0`/`s1`) are
+shared between two different `defineEnemy` entries — `octorok_death` (or
+whatever name fits, decide from the actual naming precedent) should follow
+the same logic, not re-derive it.
 
 ## The task
-1. Check `assets/sheets/oracle-seasons-enemies.png`'s own "Keese" plate
-   (source for `keese_0`/`keese_1` — index 125 for wings-spread,
-   `RECTS['keese_1']` at pixel rect `(841, 201, 11, 16)` for wings-folded,
-   per `tools/rip-enemies.py`) for a collapse/falling pose. Actually look
-   at the crop rather than assuming a bat sheet has no such frame — this
-   is the first `deathFrame` search since `stalfos_death` (S13), and that
-   one found nothing on ITS sheet, but that doesn't predict this one.
-2. If one exists: add it to `FRAMES` or `RECTS` in `tools/rip-enemies.py`
-   and re-emit. Never hand-add a key to `sprites-enemies.js`.
-3. If hand-drawn: add `keese_death` to `ENEMY_HURT_ART`
-   (`sprites-enemies-hurt.js`, no new file — the shared home for hand-
-   authored hurt/death art despite the filename). Read this file's own
-   header on the `_death` exception first: unlike `hurtFrame`, a death
-   pose is allowed to change silhouette (`stalfos_death`, `gel_death` both
-   do) as long as it's still legibly the same creature — a folded-wing
-   heap or a scorch mark reading as "this is what was flying at you," not
-   a generic poof.
+1. Check `assets/sheets/oracle-seasons-enemies.png`'s own "Octorok" plate
+   again (already surveyed at S24 — re-read that finding rather than
+   re-cropping from scratch) for a collapse pose distinct from the four
+   frames already extracted. S24 found a fifth nearby box that turned out
+   to be an unrelated shell/pickup icon, not a fifth Octorok frame —
+   confirm that finding still holds rather than re-doing the whole survey,
+   but do look again with "collapse pose" specifically in mind rather than
+   trusting S24's "nothing else to extract" conclusion blindly, since that
+   session was looking for a HURT pose, not a DEATH one, and the two are
+   different questions.
+2. If one exists: add it to `FRAMES` in `tools/rip-enemies.py` and
+   re-emit. Never hand-add a key to `sprites-enemies.js`.
+3. If hand-drawn: add the new key to `ENEMY_HURT_ART`
+   (`sprites-enemies-hurt.js`, no new file). Read this file's own header
+   on the `_death` exception: silhouette MAY change, unlike a `hurtFrame`
+   — `gel_death`, `stalfos_death`, `keese_death` are all precedent for
+   how much. Confirm `octorok` (land) has no `z` field before deciding
+   whether a "collapsed low in the cell" pose is safe here (S26's whole
+   finding was that this depends on the specific enemy's height handling,
+   not on a rule you can assume transfers).
 4. Add the new sprite name to `sprite-manifest.js`'s `enemies` list.
-5. Wire `deathFrame: '<name>'` onto `keese`'s `defineEnemy` call.
-6. Verify in-engine, same shape as `gel_death`'s S16 proof: spawn `keese`,
-   hit it for its full hp (lethal, hp 1 -> 0 in one hit) and confirm
-   `spriteName()` returns the new deathFrame while `dying` is true, across
-   however many frames `die()` defers removal for. `keese` has `z: 8` (an
-   airborne height offset) and `light: true` — confirm (don't assume)
-   neither interacts badly with the death pose rendering (e.g. the shadow
-   or height offset not stranding the sprite oddly once it's "fallen").
+5. Wire `deathFrame: '<name>'` onto `octorok`'s (land) `defineEnemy` call.
+6. Verify in-engine: spawn `octorok`, hit it for its full hp (lethal, hp 2
+   -> 0 in one hit at `swordDamage()` 2) and confirm `spriteName()`
+   returns the new deathFrame while `dying` is true, held for
+   `ENEMY_DEATH_FRAMES`, then confirm `dead` becomes true and the entity
+   is actually removed. `octorok` uses a directional `frames` dict — check
+   whether `deathFrame` needs the same "overrides every direction" proof
+   `hurtFrame` needed (`spriteName()`'s own code decides this; read it
+   rather than assume symmetry with `hurtFrame`'s behaviour).
 
 ## Done means
-- `keese` shows a real collapse/death pose on the lethal hit that kills
-  it, proven by an in-engine probe, not by reading the code.
-- `node tools/check-drift.mjs` shows `keese: walk,death`.
+- `octorok` (land) shows a real collapse pose on the hit that kills it,
+  proven by an in-engine probe, not by reading the code.
+- `node tools/check-drift.mjs` shows `octorok: walk,death`.
 - `node tools/validate.mjs`, `node tools/test.mjs` pass. If
   `sprites-enemies.js` changed, `node tools/check-rippers.mjs` is 17/17.
 - `npm run build`, `dist/oracle-of-tides.html` committed.
@@ -73,12 +72,17 @@ not a fresh derivation, a confirmation that the hp-1 exemption from
   lines).
 
 ## Out of scope
-- `keese_hurt` — hp 1 means no non-lethal hit ever happens; S12 already
-  ruled this out explicitly (`docs/prompts/LEDGER.md`), do not re-open it.
+- `octorokSea`'s own `deathFrame` — it already has `hurtFrame`
+  (`octorokSea_hurt`, S24); giving it `deathFrame` too would be the next
+  hurtFrame+deathFrame coexistence proof after `wisp`/`stalfos`, a
+  different question from this session's (a fresh single-field target).
+  Worth doing eventually, not this session.
 - Any OTHER enemy's `deathFrame` — one enemy per session, same cadence
   the `hurtFrame` thread kept for eleven sessions straight.
+- `bubble`, `beamos`, `barnacle` — all hp 999, effectively unkillable by
+  normal play. A `deathFrame` for one of these would need an in-engine
+  probe that force-kills it with an unrealistic hit, proving nothing about
+  real play. Skip these for `deathFrame` unless a future session has a
+  specific reason (e.g. a new one-shot kill mechanic) to revisit.
 - `attackFrame` or any engine field for it — still the separate, bigger
   redesign question (see `docs/prompts/LEDGER.md`).
-- Re-deriving whether hp-1 enemies can have `deathFrame` — `gel_death`
-  (S16) already proved it structurally; this session CONFIRMS it on
-  `keese`, it does not re-litigate `die()`'s own mechanics from scratch.

@@ -25068,6 +25068,7 @@ function installEnemies() {
     light: true,
     hp: 1, damage: 1, pal: 'shadow', speed: 1.0, rate: 5, terrain: 'air',
     frames: ['keese_0', 'keese_1'],
+    deathFrame: 'keese_death',
     hb: { x: 3, y: 4, w: 10, h: 8 },
     z: 8,
     drops: 'common',
@@ -38212,6 +38213,54 @@ const ENEMY_HURT_ART = {
     ...330033311333.
     ...3000333333...
     ...33333........` ,
+
+  // Keese death — drawn: the sheet's own "Keese" plate has exactly two
+  // frames (wings-spread, wings-folded), both already extracted as
+  // `keese_0`/`keese_1` (`tools/rip-enemies.py` — index 125 and a
+  // `RECTS` entry respectively), confirmed against the sheet's own
+  // "Keese" label sitting directly over just those two boxes. Nothing to
+  // extract; hand-drawn instead. The first `deathFrame` target since
+  // `gel_death` (S16) to actually test this file's own exception (see
+  // header): a death pose is allowed to change silhouette, unlike a
+  // `hurtFrame`. First draft tried the `stalfos_death`/`gel_death`
+  // pattern of shifting the shape down to sit low in the cell — WRONG for
+  // this creature specifically: `keese` has `z: 8` (an airborne height
+  // offset, `src/data/enemies.js`), and `Enemy.update()`'s `dying` branch
+  // (`src/game/enemy.js`) returns before touching `z` at all, so the
+  // whole dying stall renders 8px up from the ground exactly where it
+  // died — a "collapsed low in the cell" pose would read as hovering, not
+  // fallen. `wisp` is the existing precedent for this (`z: 8`, `terrain:
+  // 'air'`, already has `deathFrame` since S17): `wisp_death`'s own
+  // shape stays CENTRED in the cell rather than dropping to the bottom,
+  // reading as "fizzling out in place," not "landing" — checked that
+  // shape before drawing this one rather than repeating the mismatch.
+  // Base is `keese_1` (wings-folded, sprites-enemies.js) reused
+  // pixel-for-pixel and centred the same way: its two eye-dots (rows 7-8,
+  // columns 5 and 8) recoloured to the outline shade, closed for good;
+  // its right foot-point (row 11, column 10) removed and its left one
+  // (row 12, column 3) extended one row further down (row 13) — an
+  // asymmetric droop reading as gone limp, rather than the tidy
+  // fully-folded rest pose `keese_1` already is. 6 pixels changed total.
+  // No hp constraint applies to `deathFrame` (`keese` is hp 1, same as
+  // `gel` — `die()` runs exactly once regardless of hit count, per
+  // S13/S16).
+  keese_death: `
+    ................
+    ................
+    ................
+    .....3..3.......
+    .....3..3.......
+    ....33..33......
+    ....333333......
+    ...33333333.....
+    ...33333333.....
+    ...33333333.....
+    ...33333333.....
+    ...33....33.....
+    ...3............
+    ...3............
+    ................
+    ................` ,
 };
 
 function installEnemyHurtSprites() {

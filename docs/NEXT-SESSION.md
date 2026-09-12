@@ -13069,3 +13069,48 @@ These are in HANDOFF in full. The short list, because each one cost a session:
   `deathFrame` for an enemy that only has `hurtFrame`, a bigger decision
   than fits one session's prompt — read `docs/prompts/LEDGER.md`'s
   enemy-roster section before picking either.
+- `keese` given a `deathFrame` (2nd, after `gel`, S16) — the `hurtFrame`
+  thread closed at S25 (every hp > 2 enemy has one; hp <= 2 enemies can
+  never take a non-lethal hit since `swordDamage()` is 2, S12's own
+  measured constant, so a hit always brings them to hp <= 0), so this
+  moves to the `deathFrame` branch, which has no hp constraint. Checked
+  the sheet's own "Keese" plate first: exactly two frames (wings-spread,
+  wings-folded), both already used as `keese_0`/`keese_1` — nothing to
+  extract, hand-drew instead. **First draft got the shape wrong and this
+  session caught it before committing**: copied the `stalfos_death`/
+  `gel_death` pattern of shifting the silhouette down to sit low in the
+  cell, which reads as "fallen to the ground" — but `keese` has `z: 8`
+  (an airborne height offset, `src/data/enemies.js`) and
+  `Enemy.update()`'s `dying` branch (`src/game/enemy.js`) returns before
+  touching `z` at all, so the entire death stall renders 8 pixels up from
+  the ground exactly where the kill landed — confirmed in-engine, `z`
+  stayed 8 across every sampled frame of the stall. A "collapsed low in
+  the cell" pose there would read as hovering, not fallen. `wisp` (also
+  `z: 8`, `terrain: 'air'`, already has `deathFrame` since S17) is the
+  existing precedent for exactly this situation: `wisp_death`'s own shape
+  stays CENTRED in the cell rather than dropping to the bottom, reading
+  as "fizzling out in place" rather than landing — checked that shape
+  before redrawing rather than assuming the ground-pose pattern would
+  transfer. Redrew `keese_death` from `keese_1` (wings-folded,
+  `sprites-enemies.js`) instead, centred the same way `keese_1` already
+  sits: both eye-dots (rows 7-8, columns 5 and 8) recoloured to the
+  outline shade, closed for good; the right foot-point (row 11, column
+  10) removed and the left one (row 12, column 3) extended one row
+  further down (row 13) — an asymmetric droop reading as gone limp,
+  distinct from `keese_1`'s tidy fully-folded rest pose. 6 pixels changed
+  total. No hp constraint applies (`keese` is hp 1, same as `gel` —
+  `die()` runs exactly once regardless of hit count, per S13/S16).
+  Verified in-engine: a lethal hit (hp 1 -> 0) set `dying = true`,
+  `spriteName()` returned `keese_death`, `z` held at 8 for the full
+  ~16-frame stall (`ENEMY_DEATH_FRAMES`), then `dead = true` once it
+  elapsed. `check-drift` reads `keese: walk,death`. `sprites-enemies.js`
+  untouched, `check-rippers.mjs` still 17/17, `check-playthrough.mjs`'s
+  stop unchanged. Roster status: `hurt` on `wisp`, `beetle`, `darknut`,
+  `moblin`, `wizzrobe`, `siren`, `anglerfry`, `pincer`, `octorokSea`,
+  `stalfos`; `death` on `wisp`, `stalfos`, `gel`, `keese`. Next: any
+  other enemy's `deathFrame` — no hp constraint, so any of the 22 is
+  eligible; the flying/`z`-offset lesson from this session applies to
+  `bubble` and `urchin` too if either is picked next (both have
+  `terrain: 'air'`/height quirks — check their own `z` handling before
+  assuming the ground-pose pattern, don't re-derive the wisp precedent
+  from scratch a third time).

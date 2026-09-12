@@ -106,6 +106,7 @@ export function installEnemies() {
     light: true,
     hp: 1, damage: 1, pal: 'shadow', speed: 1.0, rate: 5, terrain: 'air',
     frames: ['keese_0', 'keese_1'],
+    deathFrame: 'keese_death',
     hb: { x: 3, y: 4, w: 10, h: 8 },
     z: 8,
     drops: 'common',
