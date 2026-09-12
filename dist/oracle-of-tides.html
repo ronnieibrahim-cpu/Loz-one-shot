@@ -24020,6 +24020,12 @@ class Enemy extends Entity {
   }
 
   spriteName() {
+    // Same mechanism Boss.spriteName already uses: while the invuln flicker is
+    // running, show the flinch pose instead of the walk cycle. Ordinary
+    // enemies had no path to this at all until now — only bosses declared
+    // `hurtFrame` — so most of the roster has none and falls through to the
+    // walk cycle exactly as before.
+    if (this.flicker > 0 && this.spec.hurtFrame) return this.spec.hurtFrame;
     const f = this.spec.frames;
     if (!f) return this.spec.sprite || 'blob';
     if (Array.isArray(f)) {
@@ -25085,6 +25091,7 @@ function installEnemies() {
     light: true,
     hp: 3, damage: 2, pal: 'magic', speed: 0, rate: 7, terrain: 'air',
     frames: ['wisp_0', 'wisp_1'],
+    hurtFrame: 'wisp_hurt',
     z: 8,
     drops: 'good',
     ai(e, g) {
@@ -37675,6 +37682,56 @@ __exports["ENEMY_ART_PALETTES"] = ENEMY_ART_PALETTES;
 __exports["installEnemySprites"] = installEnemySprites;
 });
 
+/* ===== src/data/sprites-enemies-hurt.js ===== */
+__define("data/sprites-enemies-hurt.js", function (__exports, __require) {
+// Hand-drawn enemy hurt frames — the ordinary-enemy counterpart to
+// sprites-bosses.js's `boss_*_hurt` art, one flinch pose per enemy that has
+// one. NOT generated: `sprites-enemies.js` is the ripper's own file and stays
+// off limits (CLAUDE.md), so a per-species flinch frame the sheet doesn't
+// have lands here instead, following the same "hand-draw only once
+// extraction is checked and comes up empty" discipline the boss roster used.
+//
+// Same grammar as every other sprite pack (src/gfx/art.js): silhouette first,
+// a hard 1px '3' outline, flat 0-2 light-to-dark ramp, no gradients. Drawn to
+// the boss precedent (sprites-bosses.js's own header): the SAME creature
+// caught mid-recoil, not a recolour — eyes shut or squinted, expression
+// changed a few pixels, body silhouette untouched so it still reads as the
+// same thing on the same frame the walk cycle would have drawn.
+
+const { sprites } = __require("gfx/art.js");
+
+const ENEMY_HURT_ART = {
+  // Wisp — drawn: assets/sheets/oracle-seasons-enemies.png has no flinch pose
+  // for Spark (the creature wisp_0/wisp_1 substitute in), only the two
+  // lit/unlit frames already in sprites-enemies.js. Same spiky halo
+  // silhouette as wisp_0 (rows 0-5 and 12-15 are pixel-identical to it), the
+  // grinning face squinted shut and the wide grin pulled in to a small wince.
+  wisp_hurt: `
+    ....03300330....
+    ..300333333003..
+    .33333000033333.
+    .03300000000330.
+    0030330000330300
+    3330033003300333
+    3300033003300033
+    0303000000003030
+    0303300000033030
+    3300000000000033
+    3330000330000333
+    0030000000000300
+    .03300000000330.
+    .33333000033333.
+    ..300333333003..
+    ....03300330....` ,
+};
+
+function installEnemyHurtSprites() {
+  sprites.add(ENEMY_HURT_ART, 'magic');
+}
+__exports["ENEMY_HURT_ART"] = ENEMY_HURT_ART;
+__exports["installEnemyHurtSprites"] = installEnemyHurtSprites;
+});
+
 /* ===== src/data/sprites-bosses.js ===== */
 __define("data/sprites-bosses.js", function (__exports, __require) {
 // Sprite pack: bosses (32x32) and minibosses (24x24).
@@ -40501,6 +40558,7 @@ const { installRaceSprites, RACE_ART } = __require("data/sprites-races.js");
 const { installWorldSprites, PICKUP_ART, OBJECT_ART, SHOT_ART, NPC_ART } = __require("data/sprites-world.js");
 const { installFairies, FAIRY_ART } = __require("data/sprites-fairies.js");
 const { installEnemySprites, ENEMY_ART } = __require("data/sprites-enemies.js");
+const { installEnemyHurtSprites, ENEMY_HURT_ART } = __require("data/sprites-enemies-hurt.js");
 const { installBossSprites, BOSS_ART, MINIBOSS_ART } = __require("data/sprites-bosses.js");
 const { installHudSprites, HUD_ART } = __require("data/sprites-hud.js");
 const { installGearSprites, GEAR_ART } = __require("data/sprites-gear.js");
@@ -40527,6 +40585,7 @@ const SPRITE_PACKS = {
   shots: SHOT_ART,
   npcs: NPC_ART,
   enemies: ENEMY_ART,
+  enemiesHurt: ENEMY_HURT_ART,
   bosses: BOSS_ART,
   minibosses: MINIBOSS_ART,
   hudRipped: HUD_ART,
@@ -40557,6 +40616,7 @@ function installData() {
   // The peoples of Thalassia, off a sheet nothing else has touched.
   installRaceSprites();
   installEnemySprites();
+  installEnemyHurtSprites();
   installBossSprites();
   // After sprites-link.js, so the extracted HUD and gear icons override the
   // hand-drawn ones for the items Oracle of Seasons actually has.

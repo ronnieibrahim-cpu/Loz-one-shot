@@ -126,6 +126,12 @@ export class Enemy extends Entity {
   }
 
   spriteName() {
+    // Same mechanism Boss.spriteName already uses: while the invuln flicker is
+    // running, show the flinch pose instead of the walk cycle. Ordinary
+    // enemies had no path to this at all until now — only bosses declared
+    // `hurtFrame` — so most of the roster has none and falls through to the
+    // walk cycle exactly as before.
+    if (this.flicker > 0 && this.spec.hurtFrame) return this.spec.hurtFrame;
     const f = this.spec.frames;
     if (!f) return this.spec.sprite || 'blob';
     if (Array.isArray(f)) {

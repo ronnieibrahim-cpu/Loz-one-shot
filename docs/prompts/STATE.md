@@ -35,11 +35,12 @@ FILE ALLOWLIST for the current objective (4 enemy-roster):
   src/data/sprites-enemies.js — GENERATED (rip-enemies.py). Never hand-edit;
     new attack/hurt/death frames go through the ripper or, where the source
     sheet has nothing to extract, are hand-drawn in a NEW hand-authored file
-    (the same "no rip script for it" path boss-art (#3) just took — check
-    assets/sheets/oracle-seasons-enemies.png's own unused cells first)
-  src/game/enemy.js (the `frames`/`hurtFrame` spec contract check-drift's
-    enemy-roster metric reads — new fields go here if the engine needs one
-    for attack/death, e.g. `attackFrame`/`deathFrame`)
+  src/data/sprites-enemies-hurt.js (new, S12 — hand-drawn hurtFrame art the
+    ripper's sheet lacks; one entry, wisp_hurt; wire a new one into
+    index.js + sprite-manifest.js + shoot-sprites.mjs, same 3 edits)
+  src/data/enemies.js (wire hurtFrame on a defineEnemy call — only for
+    hp > swordDamage(), see S12 log row for why)
+  src/game/enemy.js (the frames/hurtFrame contract check-drift reads — new fields go here for attack/death)
   dist/oracle-of-tides.html
   docs/NEXT-SESSION.md
   docs/prompts/LEDGER.md
@@ -55,6 +56,5 @@ OBJECTIVE OF RECORD to `3 boss-art`.
 DETOUR TOKENS: 1
 
 SESSION LOG: one row per session — `S## | objective|detour | one line`
-S9 | objective | tagged sprites-link.js (103 drawn) and ALL SIX ripper-generated files (135 extracted + 7 derived, via one shared line in ripkit.py's emit_module() plus rip-link.py's own emit(), each ripper re-run and check-rippers.mjs kept green throughout); every real sprite in the game now carries a tag — rotation #2's tagging half MET; advanced OBJECTIVE OF RECORD to #3 boss-art, rewrote allowlist; test.mjs + build green
-S10 | objective | boss-art research (docs/ART-BACKLOG.md): confirmed via web search that Oracle boss sheets DO exist (Onox, Gohma, Aquamentus etc.) but none is the right creature TYPE for any of our 8 bosses, and the one type-overlap (Wyverna vs. dragon bosses) still fails CLAUDE.md's "hookshot but wet" test since a named boss's silhouette IS its identity, unlike a generic enemy type; all 8 stay hand-drawn, reasoned per-boss — rotation #3 DONE, no code changed; advanced OBJECTIVE OF RECORD to #4 enemy-roster
 S11 | objective | wrote docs/ENEMIES.md: one-line "what the player learns" per enemy for all 22, cross-checked so no two teach the same lesson (3 unkillable turrets form a contact/axis/aim progression; leever/wizzrobe/siren share one engine primitive but differ in payoff); enemy-roster's DOC half done, the ART half (0 of 22 have attack/hurt/death states) is untouched and much larger; no code changed, no build needed
+S12 | objective | gave an ordinary enemy its first real hurtFrame, proving the engine path: added the Boss-precedent flicker check to Enemy.spriteName (src/game/enemy.js), hand-drew wisp_hurt (src/data/sprites-enemies-hurt.js, new file — the sheet has no flinch pose for Spark) and wired it on wisp. Found NEXT-PROMPT's gel/keese suggestion was wrong — both are 1-hp and get removed from game.entities the same frame they die, so a hurtFrame can never draw on them; verified in-engine both that wisp (hp 3) shows hurt for its whole flicker window and that a 1-hp enemy never does. check-drift's enemy-roster table now reads wisp: walk,hurt. validate/check-rippers/test/check-motion/build all green; docs/NEXT-SESSION.md carries the attackFrame/deathFrame design note NEXT-PROMPT asked for

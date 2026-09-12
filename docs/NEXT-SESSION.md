@@ -12656,3 +12656,35 @@ These are in HANDOFF in full. The short list, because each one cost a session:
   in the page. Prefer that to writing the number down in the tool — a frame
   budget hard-coded against a constant rots the moment the constant moves, and
   `check-gates.mjs` had exactly that bug.
+- A 1-HP enemy can never show a `hurtFrame`: `Entity.hurt` sets `flicker`
+  then, since `hp<=0`, calls `die()` (`remove=true`) in the same call, and
+  `Game.updatePlay`'s entity filter runs unconditionally at the END of that
+  SAME frame (not gated by hitstop, which only skips FUTURE frames) — so the
+  entity leaves `game.entities`, and therefore stops being drawn at all,
+  before the next `draw()`. Verified in-engine: a wisp (hp 3) held `hurt`
+  visibly for its whole 24-frame flicker window and reverted to its walk
+  cycle once it survived; a gel/keese-shaped 1-hp enemy given a test
+  `hurtFrame` never drew it once — `remove` was already true and it was
+  already out of `game.entities` on the very frame `hurt()` ran. So
+  NEXT-PROMPT.md's old suggestion of gel or keese as "good candidates" for
+  proving the hurtFrame path was wrong; any enemy picked for a hurtFrame
+  needs hp greater than the player's current sword damage (`swordDamage`,
+  `src/game/player.js`), or the frame is dead code. This session used `wisp`
+  (hp 3) instead and confirmed it renders.
+- `attackFrame`/`deathFrame` (the two states `hurtFrame` still doesn't cover):
+  `attackFrame` looks like a genuinely bigger redesign, not a small addition
+  — `spec.ai` is a free-form callback (`chase`, `shoot`, `orbit`, custom
+  per-enemy functions), so there is no single moment "an attack begins" the
+  way `Boss` phases have; it would need every attacking enemy's `ai()` to set
+  some shared "I am attacking" flag itself before `spriteName()` could read
+  it, which is a convention change across every enemy definition, not an
+  engine-only change. `deathFrame` looks smaller: `Entity.die()` is one
+  choke point already (`this.dead=true; this.remove=true;`), so a
+  `spec.deathFrame` read there and consulted by `spriteName()` while the
+  entity lingers un-removed for a few frames (the way `Boss.beginDeath` +
+  `dying`/`deathTime` already stalls a boss's removal for its death
+  animation) would follow an existing pattern instead of inventing one. An
+  ordinary enemy has no such stall today — `die()` sets `remove=true`
+  immediately — so `deathFrame` needs that same "linger" mechanic added
+  before the frame could ever be seen, for the identical reason `hurtFrame`
+  needed hp>1 above.

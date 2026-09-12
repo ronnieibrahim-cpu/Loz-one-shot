@@ -32,8 +32,8 @@ const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css
 const SHOT_DIR = join(ROOT, 'tools/shots');
 
 const SPRITE_FILES = [
-  'sprites-bosses.js', 'sprites-enemies.js', 'sprites-fairies.js', 'sprites-gear.js',
-  'sprites-hud.js', 'sprites-link.js', 'sprites-npcs.js', 'sprites-player.js',
+  'sprites-bosses.js', 'sprites-enemies.js', 'sprites-enemies-hurt.js', 'sprites-fairies.js',
+  'sprites-gear.js', 'sprites-hud.js', 'sprites-link.js', 'sprites-npcs.js', 'sprites-player.js',
   'sprites-races.js', 'sprites-title.js', 'sprites-trade.js', 'sprites-world.js',
 ];
 const ONLY = process.argv.slice(2).filter(a => !a.startsWith('--'));

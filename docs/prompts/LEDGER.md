@@ -63,6 +63,20 @@ extract from it:
 
 ## Measured and rejected
 
+- **An enemy with hp <= the player's current `swordDamage()` can never show
+  a `hurtFrame`** — ruled out for `gel`/`keese` specifically (both hp 1),
+  and for any future enemy at sword level 1 with hp <= 2. `Entity.hurt` sets
+  `flicker` and, since `hp<=0`, calls `die()` (`remove=true`) in the SAME
+  call; `Game.updatePlay`'s entity filter runs unconditionally at the end of
+  that same frame (hitstop only skips FUTURE frames, not this one), so the
+  entity is out of `game.entities` — and therefore never drawn again — before
+  the flicker window gets a single frame to render on. Verified in-engine
+  both ways in the same session: `wisp` (hp 3, `hurtFrame: 'wisp_hurt'`
+  added S12) visibly shows the flinch pose for its whole 24-frame flicker
+  window and survives; a `gel` given a test `hurtFrame` never draws it once
+  — confirmed `remove: true` and absent from `game.entities` from the very
+  frame `hurt()` ran. Do not add `hurtFrame` to any enemy without first
+  checking hp against `swordDamage()` (`src/game/player.js`).
 - **Giving `hazards()` (`tools/actor-runtime.mjs`) real velocity for chasing
   (non-projectile) enemies instead of the `vx:0, vy:0` it always handed
   them** — S54's original idea for D5 seed 3's `gel`-loop, and S55/S56's two

@@ -178,6 +178,7 @@ export function installEnemies() {
     light: true,
     hp: 3, damage: 2, pal: 'magic', speed: 0, rate: 7, terrain: 'air',
     frames: ['wisp_0', 'wisp_1'],
+    hurtFrame: 'wisp_hurt',
     z: 8,
     drops: 'good',
     ai(e, g) {
