@@ -12746,3 +12746,19 @@ These are in HANDOFF in full. The short list, because each one cost a session:
   stays its only signal until that redesign happens; do not "fix" attack
   to match without adding the engine field first, or the metric will just
   go back to reading zero forever.
+- `beetle` given a `hurtFrame` (third proof of S12's mechanism, after
+  `wisp`). Sheet has no recoil pose, so `beetle_hurt` is hand-drawn
+  (`sprites-enemies-hurt.js`): every outline/antenna/leg pixel of
+  `beetle_d0` is unchanged, only a 7-pixel zigzag crack added straight
+  down the shell's centre column (rows 5-11, which was a clean solid-`3`
+  fill with nothing else drawn over it — checked before picking that
+  spot). `beetle` has `shield: 'front'`, and a `hurtFrame` only ever shows
+  on a hit that got past that shield, so "the armour itself cracks" fits
+  without contradicting the shield mechanic. Eligible under the S12 hp
+  rule (hp 3 > `swordDamage()` 2). Verified in-engine: hit for 1 (non-
+  lethal), `beetle_hurt` held the whole 24-frame flicker window, then
+  reverted to the walk cycle. `check-drift` reads `beetle: walk,hurt`.
+  Next candidate for either state, per the roster in `docs/ENEMIES.md`:
+  pick an enemy not yet touched (`wisp`/`beetle` have `hurt`, `stalfos`
+  has `death`) with hp > 2 for a `hurtFrame`, or hp anything at all for a
+  `deathFrame` (no hp constraint — see the dedicated LEDGER entry).

@@ -71,6 +71,34 @@ export const ENEMY_HURT_ART = {
     .30000000000003.
     .30111111111103.
     .33333333333333.` ,
+
+  // Beetle hurt — drawn: assets/sheets/oracle-seasons-enemies.png's Spiked
+  // Beetle has only its two upright frames (beetle_d0/d1) and two balled-charge
+  // frames (beetle_s0/s1) already in sprites-enemies.js, no recoil pose. Every
+  // outline, antenna and leg pixel here is beetle_d0's own, unchanged — only
+  // seven pixels differ, a single zigzag crack punched down the shell's dead
+  // centre (a clean solid-3 column in beetle_d0 with nothing else drawn over
+  // it) from row 5 to row 11. `beetle` has `shield: 'front'` (src/data/
+  // enemies.js) and only ever shows this on a hit that got PAST that shield,
+  // so "the armour itself cracks" reads as the same creature struck from an
+  // angle its shell doesn't cover, not a recolour or a different pose.
+  beetle_hurt: `
+    ...33......33...
+    ...303....303...
+    ...3003..3003...
+    ...3013333103...
+    3333133113313333
+    3033333303333303
+    3003333033333003
+    .30033330333003.
+    .31003333030013.
+    .33113303331133.
+    .31333330333313.
+    .31113333031113.
+    .33111000011133.
+    .30331111113303.
+    .30003333330003.
+    ..333333333333..` ,
 };
 
 export function installEnemyHurtSprites() {
