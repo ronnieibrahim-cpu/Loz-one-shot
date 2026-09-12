@@ -12736,3 +12736,13 @@ These are in HANDOFF in full. The short list, because each one cost a session:
   `shoot`, `hop`, and a custom `ai()`, and nothing today marks it. Borrowing
   the stall shape does not remove the need for a convention change across
   every attacking enemy's own `ai()`. Still out of scope for one session.
+- `check-drift.mjs`'s enemy-roster "death" column fixed: was
+  `enemySpriteKeys.has('${name}_death') || .has('${name}_die')` (a sprite-
+  key-naming guess from before `spec.deathFrame` existed); now
+  `/\bdeathFrame\s*:/.test(block)`, reading the enemy's own spec the same
+  way "hurt" already did. `stalfos` now reads `walk,death`. "attack" is
+  UNCHANGED on purpose — there is still no engine-level `attackFrame`
+  field to read (see the `attackFrame` note above), so sprite-key naming
+  stays its only signal until that redesign happens; do not "fix" attack
+  to match without adding the engine field first, or the metric will just
+  go back to reading zero forever.

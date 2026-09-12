@@ -242,17 +242,21 @@ for (const file of SPRITE_FILES) {
 // 6. Enemies with a complete five-state animation set (rotation
 //    objective #4, enemy-roster).
 // ---------------------------------------------------------------------
-// `src/game/enemy.js` recognises exactly two per-species animation fields
-// today: `spec.frames` (the walk cycle an idle pose is also drawn from —
-// this engine, like its source games, has no separate idle art) and
-// `spec.hurtFrame` (a single flinch frame). There is no engine-level
-// `attackFrame` or `deathFrame` concept for an ordinary enemy at all
-// (only bosses declare `hurtFrame` today; regular hits and deaths are a
-// shared effect, not per-species art) — so "attack" and "death" below are
-// read from sprite-key NAMING (`<name>_atk`/`<name>_attack`,
-// `<name>_death`/`<name>_die` in sprites-enemies.js) rather than a spec
-// field, on purpose: that way this measurement notices the day a session
-// adds such art even before any engine field exists to consume it.
+// `src/game/enemy.js` recognises three per-species animation fields today:
+// `spec.frames` (the walk cycle an idle pose is also drawn from — this
+// engine, like its source games, has no separate idle art), `spec.hurtFrame`
+// (a single flinch frame, S12) and `spec.deathFrame` (a single held pose
+// before removal, S13 — `Enemy.die()` stalls `remove=true` behind it). There
+// is still no engine-level `attackFrame` concept for an ordinary enemy — no
+// AI verb marks the moment "an attack begins" the way a boss's phases do —
+// so "attack" below is read from sprite-key NAMING (`<name>_atk`/
+// `<name>_attack` in sprites-enemies.js) rather than a spec field, on
+// purpose: that way this measurement notices the day a session adds such art
+// even before any engine field exists to consume it. "hurt" and "death" both
+// read the real spec field straight from the enemy's own `defineEnemy`
+// block, the same as "walk" does — sprite-key naming stopped being the right
+// proxy for either the day an engine field for it existed (S13 found "death"
+// still using the naming proxy after "hurt" had already moved off it).
 // Reading zero complete enemies today is the honest, expected baseline —
 // nothing in the data claims otherwise.
 let enemyNames = [];
@@ -289,7 +293,7 @@ for (const { name, block } of enemyNames) {
   const walk = /\bframes\s*:/.test(block);
   const hurt = /\bhurtFrame\s*:/.test(block);
   const attack = enemySpriteKeys.has(`${name}_atk`) || enemySpriteKeys.has(`${name}_attack`);
-  const death = enemySpriteKeys.has(`${name}_death`) || enemySpriteKeys.has(`${name}_die`);
+  const death = /\bdeathFrame\s*:/.test(block);
   const complete = walk && hurt && attack && death;
   if (complete) enemiesComplete++;
   enemyReport.push({ name, walk, hurt, attack, death });

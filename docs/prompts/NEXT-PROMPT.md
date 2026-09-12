@@ -1,76 +1,71 @@
-# Next session — fix check-drift's stale death-state metric
+# Next session — give the Spiked Beetle a real hurtFrame
 
 ## Read first
 - `docs/prompts/CHARTER.md` — the standing rules for every session; run it
   verbatim before reading anything else here.
 - `docs/prompts/STATE.md` — objective #4 (enemy-roster) and its file
-  allowlist, which now includes `tools/check-drift.mjs` for this reason.
-- `docs/NEXT-SESSION.md`'s two newest entries (the `deathFrame` build/proof
-  on `stalfos`, and the re-assessment of `attackFrame` against it) — they
-  are why this session's task is the metric, not another enemy.
+  allowlist.
+- `docs/NEXT-SESSION.md`'s two newest entries (the `check-drift` "death"
+  column fix, and its own note on why "attack" was deliberately left
+  alone) — they explain why this session resumes ART, not the tool.
 
 ## Why this, now
-S12 gave `wisp` a real `hurtFrame` and S13 gave `stalfos` a real
-`deathFrame`, both proven in-engine. `check-drift.mjs`'s enemy-roster table
-reads `hurt` correctly — it greps the enemy's own `defineEnemy` spec block
-for `/\bhurtFrame\s*:/` — but reads `death` a different, older way: it
-greps `src/data/sprites-enemies.js` for a sprite KEY named `<name>_death`
-or `<name>_die`. That heuristic predates `spec.deathFrame` existing at all
-(its own header comment says so: "there is no engine-level `attackFrame` or
-`deathFrame` concept ... only bosses declare `hurtFrame` today"). It is now
-simply wrong for `death` the same way it was already right for `hurt`, and
-it will never see `stalfos_death` — that key lives in the hand-authored
-`sprites-enemies-hurt.js`, not the ripped `sprites-enemies.js`, because
-CLAUDE.md forbids hand-editing a generated file. Fixing this is small,
-mechanical, and was deliberately left for its own session (S13's log row)
-rather than folded into art work.
+S12 proved `hurtFrame` works on `wisp`. S13 proved `deathFrame` works on
+`stalfos`. S14 fixed the one thing those two proofs exposed: `check-
+drift.mjs` measuring "death" the wrong way. Both engine mechanisms are now
+proven AND correctly measured — `wisp` reads `walk,hurt`, `stalfos` reads
+`walk,death`. The metric is trustworthy again, which is exactly what
+S14's own "out of scope" note said had to happen before more art work.
+`beetle` (hp 3, `src/data/enemies.js`) is eligible for `hurtFrame` under
+the S12 rule (hp > `swordDamage()`, which is 2 at sword level 1) and was
+already named as a `deathFrame` candidate in S13's own prompt before
+`stalfos` was picked instead — it has never had either state.
 
 ## The task
-In `tools/check-drift.mjs`, find the enemy-roster block (search
-`Enemies with a complete`). Change the `death` line from a sprite-key
-lookup to a spec-block regex, the same shape `hurt` already uses two lines
-above it:
-```js
-const hurt = /\bhurtFrame\s*:/.test(block);
-const death = /\bdeathFrame\s*:/.test(block);   // was: enemySpriteKeys.has(...)
-```
-`enemySpriteKeys` and the file read that builds it
-(`src/data/sprites-enemies.js`) may become dead code once nothing else
-uses them — check with a repo-wide grep before deleting anything; if
-`attack`'s own line still needs it, leave it and only change `death`.
-Update the block comment above (`// src/game/enemy.js recognises exactly
-two ...`) — it is now stale in the same way the code was: `deathFrame` is
-a real engine field today, not just a naming convention. Do not touch
-`attack`'s own line or add an `attackFrame` engine field — that redesign
-is still explicitly out of scope (see `docs/NEXT-SESSION.md`).
-
-After the fix, run `node tools/check-drift.mjs` and confirm `stalfos` now
-reads `walk,death` (not `walk`) and the "Enemies with a complete ...
-set" count is unchanged at 0 of 22 (nothing has all four yet — `wisp` is
-`walk,hurt`, `stalfos` is `walk,death`, neither is complete). If either
-number surprises you, the fix is wrong — stop and re-read `Enemy.die()`
-(`src/game/enemy.js`) rather than adjusting the check to match.
+Give `beetle` a `hurtFrame`, the same shape S12 gave `wisp`:
+1. Check `assets/sheets/oracle-seasons-enemies.png` first (per CLAUDE.md's
+   extraction rule) for an existing flinch/recoil pose for the Spiked
+   Beetle. If one exists, it goes through `tools/rip-enemies.py`'s
+   coordinate map and a re-emit of `sprites-enemies.js` — never hand-add a
+   key to that file. If nothing fits, hand-draw it.
+2. If hand-drawn: add `beetle_hurt` to `ENEMY_HURT_ART` in
+   `src/data/sprites-enemies-hurt.js` (the existing file — no new file, no
+   `index.js` edit needed, same as `stalfos_death` needed only a
+   `sprite-manifest.js` addition). Follow the file's own header grammar:
+   silhouette first, hard 1px outline, the SAME creature caught mid-recoil
+   (not a recolour) — `beetle` has `shield: 'front'` and charges in
+   straight lines (`docs/ENEMIES.md`), so a recoil that reads as "shell
+   struck from an unshielded angle" would fit its own lesson.
+3. Add `'beetle_hurt'` to `sprite-manifest.js`'s `enemies` list (next to
+   the `beetle_d`/`beetle_s` entries).
+4. Wire `hurtFrame: 'beetle_hurt'` onto `beetle`'s `defineEnemy` call in
+   `src/data/enemies.js`.
+5. Verify in-engine, the same way S12/S13 did: a scratch harness that hits
+   `beetle` (hp 3, so it survives at least one non-lethal hit at sword
+   level 1) and confirms `spriteName()` returns `beetle_hurt` while
+   `flicker > 0`. A screenshot is worth taking if you can get one.
 
 ## Done means
-- `tools/check-drift.mjs`'s `death` column reads `spec.deathFrame` from
-  each enemy's own block, mirroring `hurt`'s existing pattern exactly.
-- `node tools/check-drift.mjs` runs clean (self-checks OK), and its printed
-  table shows `stalfos: walk,death`, `wisp: walk,hurt`, everything else
-  unchanged.
-- `node tools/test.mjs` and `node tools/validate.mjs` still pass (neither
-  should be touched by this, but confirm nothing else reads the old
-  `enemySpriteKeys` logic in a way this change breaks).
+- `beetle` shows a real flinch pose on a non-lethal hit, proven by an
+  in-engine probe, not by reading the code.
+- `node tools/check-drift.mjs` shows `beetle: walk,hurt` (or
+  `walk,hurt,death` only if you also happen to already have a death pose
+  — you do not; do not add one this session, see below).
+- `node tools/validate.mjs`, `node tools/test.mjs` pass. If
+  `sprites-enemies.js` changed (an extraction was possible),
+  `node tools/check-rippers.mjs` is 17/17; if only the hand-drawn file
+  changed, `check-rippers.mjs` is unaffected and does not need re-running.
+- `npm run build`, `dist/oracle-of-tides.html` committed (this session
+  touches `src/`, unlike S14).
 - STATE.md gets one new session-log row (delete the oldest if over 60
-  lines); note in it whether `enemySpriteKeys` became unused and, if so,
-  whether you removed it or left it for `attack`.
-- No sprite, enemy-data, or `dist/` changes this session — this is a tool
-  fix, not art or engine work, so `npm run build` is not required unless
-  you touched `src/`.
+  lines).
 
 ## Out of scope
-- Giving any enemy an `attackFrame` or an engine field for one — still the
-  bigger redesign identified in S12/S13; do not start it.
-- Giving a third enemy a `hurtFrame` or `deathFrame` — this session is the
-  metric, not more art; that resumes next once the metric is trustworthy.
+- `beetle_death` — one state per enemy per session, same cadence S12/S13
+  set; do not add both `hurtFrame` and `deathFrame` to the same enemy in
+  one session.
+- `attackFrame` or any engine field for it — still the separate, bigger
+  redesign question; do not start it.
+- Any change to `check-drift.mjs` — S14 already fixed the one thing that
+  needed fixing there.
 - Rewriting `docs/ENEMIES.md`'s lessons — unrelated to this task.
-- Any change to how `attack` is measured — only `death` is known stale.
