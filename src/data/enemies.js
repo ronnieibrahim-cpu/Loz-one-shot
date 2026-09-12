@@ -187,6 +187,10 @@ export function installEnemies() {
     hp: 3, damage: 2, pal: 'magic', speed: 0, rate: 7, terrain: 'air',
     frames: ['wisp_0', 'wisp_1'],
     hurtFrame: 'wisp_hurt',
+    // First enemy to carry both fields at once — see the wisp_death header
+    // comment in sprites-enemies-hurt.js for why this is the real test of
+    // spriteName()'s dying-before-hurtFrame ordering (src/game/enemy.js).
+    deathFrame: 'wisp_death',
     z: 8,
     drops: 'good',
     ai(e, g) {

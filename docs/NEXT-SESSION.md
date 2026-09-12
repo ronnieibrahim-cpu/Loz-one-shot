@@ -12779,3 +12779,19 @@ These are in HANDOFF in full. The short list, because each one cost a session:
   untested combination — to check the two stalls don't collide when both
   fields are set on the same spec (`spriteName()` already orders `dying`
   before `hurtFrame`, but no enemy has exercised that ordering for real).
+- `wisp` given `deathFrame` on top of its existing `hurtFrame` — the first
+  enemy with both, and the ordering test the item above called for.
+  Verified on ONE instance across two hits (not two separate enemies):
+  hit 1 (non-lethal) held `wisp_hurt` for its whole flicker window and
+  reverted to the walk cycle; hit 2 (lethal) held `wisp_death` for the
+  whole `dying` stall — with `flicker` independently confirmed nonzero
+  the entire time, since `hurt()` sets it on every hit including the one
+  that kills. `Enemy.spriteName()`'s `if (this.dying && ...) return
+  spec.deathFrame` really does win over the `hurtFrame` check beneath it;
+  no code change was needed. `wisp_death` is a collapsed dim ember (the
+  halo shrunk down), not a recolour of `wisp_hurt`. Roster status: `hurt`
+  on `wisp`, `beetle`; `death` on `wisp`, `stalfos`, `gel`; `wisp` is the
+  first with two states, none has three (`attack` still has no engine
+  field to give it). This particular interaction is now proven and does
+  not need re-testing on a second dual-field enemy — treat it as settled
+  (moved to LEDGER), not a recurring thing to re-verify each session.
