@@ -127,7 +127,7 @@ export const REQUIRED_SPRITES = {
     ...seq('stalfos_d', 2), ...seq('stalfos_s', 2), 'stalfos_death',
     ...seq('darknut_d', 2), ...seq('darknut_s', 2), 'darknut_hurt',
     ...seq('wizzrobe_', 2), 'wizzrobe_hurt', ...seq('anglerfry_', 2), ...seq('barnacle_', 2),
-    ...seq('jellyfish_', 2), ...seq('siren_', 2), ...seq('pincer_', 2),
+    ...seq('jellyfish_', 2), ...seq('siren_', 2), 'siren_hurt', ...seq('pincer_', 2),
   ],
 
   // ---- pack: sprites-bosses.js -----------------------------------------

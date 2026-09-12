@@ -12885,3 +12885,29 @@ These are in HANDOFF in full. The short list, because each one cost a session:
   untouched. Next: another `hurtFrame` target with hp > 2 not yet touched
   (`octorokSea`, `anglerfry`, `siren`, `pincer`) or `stalfos`'s reverse-
   order coexistence case, same cadence as every session in this thread.
+- `siren` given a `hurtFrame` (seventh proof of the mechanism, after
+  `wisp`, `beetle`, `wisp` again, `darknut`, `moblin`, `wizzrobe`) —
+  confirming, not assuming, that both of S20's findings carry over.
+  Checked the sheet's own "River Zora" plate: exactly two frames exist
+  (`siren_0` fanged-mouth-shut, `siren_1` open singing ring-shot pose),
+  both already used; every other box nearby belongs to unrelated
+  creatures (Pols Voice, two coral/flower icons) — nothing to extract,
+  third session running to find this pattern. `siren_0`'s face is a
+  fanged mask with no distinct pupil-in-iris eyes, closer to `wizzrobe`'s
+  visor case than `darknut`/`moblin`'s, so `siren_hurt` (`sprites-
+  enemies-hurt.js`) reuses S20's fallback: `siren_0`'s own grid reused
+  pixel-for-pixel, 3 pixels on the flat tan chin (row 14) turned to the
+  sprite's otherwise-unused THIRD colour (index 2, distinct in the
+  runtime `enemyb` palette — `src/gfx/palettes.js`) as a graze mark.
+  `siren` shares `wizzrobe`'s `submerge()` primitive exactly, so S20's
+  "can only ever be hit while surfaced" finding was confirmed to hold
+  here too rather than assumed. Verified in-engine with the same
+  pinned-`_subState`/`_subT` probe S20 used: a non-lethal hit (hp 4 -> 3)
+  held `siren_hurt` for the full 24-frame flicker window with `hidden`
+  staying false throughout, then reverted to `siren_1` on schedule.
+  `check-drift` reads `siren: walk,hurt`. Roster status: `hurt` on
+  `wisp`, `beetle`, `darknut`, `moblin`, `wizzrobe`, `siren`; `death` on
+  `wisp`, `stalfos`, `gel`. `sprites-enemies.js` untouched. Next: another
+  `hurtFrame` target with hp > 2 not yet touched (`octorokSea`,
+  `anglerfry`, `pincer`) or `stalfos`'s reverse-order coexistence case,
+  same cadence as every session in this thread.

@@ -25306,6 +25306,7 @@ function installEnemies() {
   defineEnemy('siren', {
     hp: 4, damage: 3, pal: 'enemyb', speed: 0, rate: 16, terrain: 'water',
     frames: ['siren_0', 'siren_1'],
+    hurtFrame: 'siren_hurt',
     drops: 'good',
     ai(e, g) {
       submerge(e, g, {
@@ -38020,6 +38021,45 @@ const ENEMY_HURT_ART = {
     .30000011000003.
     3000000000000003
     3333333333333333` ,
+
+  // Siren hurt — drawn: assets/sheets/oracle-seasons-enemies.png's own
+  // "River Zora" plate has exactly two frames for this creature —
+  // `siren_0` (fanged mouth shut) and `siren_1` (open singing ring-shot
+  // pose), both already used — and every neighbouring box on the sheet
+  // near them belongs to a different creature entirely (Pols Voice, and
+  // two unrelated coral/flower icons). Nothing to extract. `siren_0`'s
+  // own grid (sprites-enemies.js) is reused pixel-for-pixel; this face
+  // reads as a fanged mask rather than a face with distinct pupil-in-iris
+  // eyes (unlike `darknut`/`moblin`), so this uses the same fallback S20
+  // introduced for `wizzrobe`: the sprite's otherwise-unused THIRD colour
+  // (index 2 — a distinct dark shade in the runtime `enemyb` palette,
+  // `src/gfx/palettes.js` — separate from both the light body and the
+  // near-black outline) for a small graze mark on the flat tan chin below
+  // the mouth (row 14, three pixels), guaranteed to contrast whatever
+  // palette this enemy renders in. Silhouette untouched. `siren` shares
+  // `wizzrobe`'s `submerge()` primitive, so the same S20 finding applies
+  // without re-deriving it: hidden sets `invuln = 9999` and `Entity.hurt`
+  // early-returns on `invuln > 0`, so it can only ever be hit — and only
+  // ever show this frame — while surfaced and visible. Eligible under the
+  // S12 hp rule: hp 4 > swordDamage() 2, so the flicker window survives
+  // long enough to show it.
+  siren_hurt: `
+    .......33.......
+    ......3003......
+    333...3003...333
+    3003333333333003
+    3000333333330003
+    .30300333300303.
+    .30300033000303.
+    3003030000303003
+    3003033333303003
+    .30331100113303.
+    3003113333113003
+    3033131111313303
+    0333111331113330
+    0000333003330000
+    ..000022200000..
+    .....000000.....` ,
 };
 
 function installEnemyHurtSprites() {
