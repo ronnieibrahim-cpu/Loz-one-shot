@@ -191,6 +191,40 @@ export const ENEMY_HURT_ART = {
     3000333333330003
     3000333330030003
     .33333333333333.` ,
+
+  // Moblin hurt — drawn: assets/sheets/oracle-seasons-enemies.png's own
+  // "Moblin & Goriya" plate was checked frame by frame the same way S18
+  // checked Darknut's — idle front/back, two side-holding-spear poses, a
+  // raised-spear windup (front and back), and four side-lunge throwing
+  // poses — and every one is either a neutral stance or an active attack,
+  // nothing caught off guard. `moblin_d0`'s own grid (sprites-enemies.js)
+  // is reused pixel-for-pixel: the two red eye-dots sitting just under the
+  // helmet's brow band (row 3, flanking the snout) go black — the same
+  // "eyes shut" edit `darknut_hurt` used — and one pixel at the centre of
+  // the flat tan snout (row 9) goes red, a small wince/flush mark on the
+  // one part of the face with nothing else drawn over it. 3 pixels total,
+  // silhouette untouched. Reads as the moment a hit actually catches this
+  // ranged attacker before it can put distance back between itself and the
+  // player (its `ai` in src/data/enemies.js only backs away once it's
+  // already close). Eligible under the S12 hp rule: hp 4 > swordDamage()
+  // 2, so the flicker window survives long enough to show it.
+  moblin_hurt: `
+    3333..3333..3333
+    3111331111331113
+    .31313111131313.
+    .33330333303333.
+    .31311311311313.
+    3333311111133113
+    3003033333303313
+    3013031001303333
+    3113310330133003
+    .333100100013103
+    .333331001333113
+    .33311333331333.
+    .3333300000333..
+    .331113333333...
+    .300100333333...
+    .333333333......` ,
 };
 
 export function installEnemyHurtSprites() {

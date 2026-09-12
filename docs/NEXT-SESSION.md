@@ -12826,3 +12826,31 @@ These are in HANDOFF in full. The short list, because each one cost a session:
   `deathFrame` on an enemy that also has `hurtFrame`, which S17 already
   ruled out as uninformative (the ordering is settled) — so plain
   coverage growth, same cadence as every session in this thread.
+- `moblin` given a `hurtFrame` (fifth proof of the mechanism, after `wisp`,
+  `beetle`, `wisp` again, and `darknut`), following the same sheet-first
+  discipline S18 set for `darknut`. Checked every box on the sheet's own
+  "Moblin & Goriya" plate (idle front/back, two side-holding-spear poses,
+  a raised-spear windup both facing, four side-lunge throwing poses) and
+  found the same pattern as Darknut's plate: neutral stances and active
+  attacks only, nothing shows this ranged attacker caught off guard.
+  `moblin_hurt` (`sprites-enemies-hurt.js`) reuses `moblin_d0`'s own
+  16x16 grid character-for-character; the two red eye-dots sitting just
+  under the helmet brow (row 3, flanking the snout) turned black — same
+  "eyes shut" edit as `darknut_hurt` — plus one pixel at the centre of
+  the flat tan snout (row 9) turned red, a small wince/flush mark on the
+  one part of the face with nothing else drawn over it. 3 pixels total,
+  silhouette untouched. Eligible under the hp rule above (`moblin` hp 4 >
+  `swordDamage()` 2). Verified in-engine with a scratch Playwright probe
+  (same shape as every prior proof, not committed): a non-lethal hit
+  (hp 4 -> 3) held `moblin_hurt` for the full 24-frame flicker window,
+  then reverted to the walk cycle exactly on schedule. `check-drift`
+  reads `moblin: walk,hurt`. Roster status: `hurt` on `wisp`, `beetle`,
+  `darknut`, `moblin`; `death` on `wisp`, `stalfos`, `gel`.
+  `sprites-enemies.js` itself untouched — no ripper re-run needed since
+  neither Darknut's nor Moblin's plate had anything usable, and nothing
+  else on the sheet was touched this session. Next: another `hurtFrame`
+  target with hp > 2 not yet touched (`octorokSea`, `wizzrobe`,
+  `anglerfry`, `siren`, `pincer`, or `stalfos` — the last already has
+  `deathFrame`, so it would be the reverse-order coexistence case, which
+  is not novel after S17 but still valid coverage), same cadence as every
+  session in this thread.

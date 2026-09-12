@@ -218,6 +218,7 @@ export function installEnemies() {
       up: ['moblin_u0', 'moblin_u1'],
       side: ['moblin_s0', 'moblin_s1'],
     },
+    hurtFrame: 'moblin_hurt',
     hb: { x: 2, y: 4, w: 12, h: 11 },
     drops: 'good',
     ai(e, g) {
