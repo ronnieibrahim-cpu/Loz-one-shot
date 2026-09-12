@@ -21,6 +21,7 @@ export function installEnemies() {
       up: ['octorok_u0', 'octorok_u1'],
       side: ['octorok_s0', 'octorok_s1'],
     },
+    deathFrame: 'octorok_death',
     hb: { x: 2, y: 5, w: 12, h: 10 },
     drops: 'common',
     ai(e, g) {

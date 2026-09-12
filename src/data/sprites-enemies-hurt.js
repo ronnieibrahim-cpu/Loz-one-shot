@@ -482,6 +482,49 @@ export const ENEMY_HURT_ART = {
     ...3............
     ................
     ................` ,
+
+  // Octorok (land) death — drawn: the sheet's own "Octorok" plate has
+  // exactly four frames (front x2, side x2), all already extracted as
+  // `octorok_d0`/`d1`/`s0`/`s1`, plus one more nearby box S24 already
+  // identified as an unrelated shell/pickup icon (different orange
+  // palette, confirmed against the sheet's own "Octorok" label spanning
+  // only the first four boxes) — re-checked with a death pose in mind
+  // specifically rather than trusting S24's hurt-pose conclusion blindly,
+  // same result. Nothing to extract; hand-drawn instead. `octorok` (the
+  // land enemy, hp 2 — distinct from `octorokSea`, hp 3, which already
+  // has `hurtFrame`) has no `z` field at all (`src/data/enemies.js`), so
+  // unlike `keese_death` (S26) there's no height-offset trap here: a
+  // pose that sits low in the cell genuinely reads as "on the ground,"
+  // confirmed by reading `Entity`'s own `fz` default (0) before drawing,
+  // not assumed from the ground-pose precedent alone. `octorok_d0`'s own
+  // grid (sprites-enemies.js) is squashed rather than shifted: every
+  // other row from its top hood band down through its body (rows 0, 2,
+  // 4, 6, 8, 10, 12 of the original 16) is kept, compressing the whole
+  // 15-row silhouette into 7 rows sat at the very bottom of the cell —
+  // the same "flatten the existing shape into a puddle" move
+  // `gel_death` used, not a redraw from scratch, so it still reads as
+  // the same creature deflated rather than a generic blob. Eligible
+  // under no hp constraint (`deathFrame` has none, per S13/S16); hp 2
+  // means `octorok` can never show a `hurtFrame` (`swordDamage()` is 2,
+  // so any hit is lethal), making this its only possible death/hit
+  // feedback.
+  octorok_death: `
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    .....333333.....
+    3113111001113113
+    ..311110011113..
+    ..310300003013..
+    ..331030030133..
+    3113331111333113
+    3333333333333333` ,
 };
 
 export function installEnemyHurtSprites() {

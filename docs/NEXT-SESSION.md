@@ -13114,3 +13114,39 @@ These are in HANDOFF in full. The short list, because each one cost a session:
   `terrain: 'air'`/height quirks — check their own `z` handling before
   assuming the ground-pose pattern, don't re-derive the wisp precedent
   from scratch a third time).
+- `octorok` (the land enemy, hp 2 — distinct from `octorokSea`, hp 3,
+  which already has `hurtFrame` since S24) given a `deathFrame` (3rd,
+  after `gel`, `keese`) — hp 2 means `swordDamage()` (2) always brings it
+  to hp <= 0 in one hit, so `deathFrame` is the only possible visual
+  feedback this enemy could ever show. Re-checked the sheet's own
+  "Octorok" plate with a DEATH pose specifically in mind, rather than
+  trusting S24's hurt-pose survey to answer a different question: still
+  exactly four frames (front x2, side x2), all already extracted, plus
+  the same nearby shell/pickup icon S24 already ruled out (different
+  orange palette, outside the sheet's own "Octorok" label). Nothing to
+  extract; hand-drew instead. Confirmed `octorok` (land) has no `z` field
+  at all (`src/data/enemies.js`) — read `Entity`'s own `fz` default (0,
+  `src/game/entity.js`) before drawing, rather than assuming from the
+  ground-pose precedent alone, so unlike `keese_death` (S26) there is no
+  height-offset trap here: a pose that sits low in the cell genuinely
+  reads as "on the ground." `octorok_d0`'s own grid (sprites-enemies.js)
+  is squashed rather than shifted: every other row (indices 0, 2, 4, 6,
+  8, 10, 12 of the original 16) is kept, compressing the 15-row
+  silhouette into 7 rows sat at the very bottom of the cell — the same
+  "flatten the existing shape into a puddle" move `gel_death` used at
+  S16, not a redraw from scratch. Verified in-engine: a lethal hit (hp 2
+  -> 0) set `dying = true`, `spriteName()` returned `octorok_death`, `z`
+  held at 0 throughout the full `ENEMY_DEATH_FRAMES` stall, then `dead =
+  true` once it elapsed. `check-drift` reads `octorok: walk,death`.
+  `sprites-enemies.js` untouched, `check-rippers.mjs` still 17/17,
+  `check-playthrough.mjs`'s stop unchanged. Roster status: `hurt` on
+  `wisp`, `beetle`, `darknut`, `moblin`, `wizzrobe`, `siren`, `anglerfry`,
+  `pincer`, `octorokSea`, `stalfos`; `death` on `wisp`, `stalfos`, `gel`,
+  `keese`, `octorok`. This session's work was also fast-forwarded onto
+  `main` directly (the standing branch was a clean, conflict-free
+  ancestor of `main` at push time) per an explicit user request to keep
+  pushing completed work to `main` as sessions land, not just to the
+  standing branch. Next: any other enemy's `deathFrame` — no hp
+  constraint, so any of the 22 without one is eligible; `bubble` and
+  `urchin` still carry the untested flying/height question flagged at
+  S26 if either is picked.
