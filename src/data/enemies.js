@@ -206,6 +206,7 @@ export function installEnemies() {
   defineEnemy('urchin', {
     hp: 2, damage: 2, pal: 'enemyp', speed: 0.25, rate: 16, terrain: 'any',
     frames: ['urchin_0', 'urchin_1'],
+    deathFrame: 'urchin_death',
     shield: 'front',
     drops: 'common',
     ai(e, g) {

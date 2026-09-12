@@ -938,6 +938,24 @@ export const ENEMY_ART = {
     .322323223233303
     .3033322223...3.` },
   // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  urchin_death: { pal: 'urchin_death', art: `
+    .....3000113....
+    ....300001113...
+    ...30000011113..
+    ..3000000111113.
+    .300000001111103
+    .310000010111033
+    .311000111010333
+    .311101111103333
+    .311101111103333
+    .311101111103333
+    3311101111103333
+    333110111110333.
+    323331111111333.
+    322333333333323.
+    303332322323223.
+    .3...3222233303.` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   wisp_0: { pal: 'wisp_0', art: `
     ....03300330....
     ..300333333003..
@@ -1100,6 +1118,7 @@ export const ENEMY_ART_PALETTES = {
   tektite_1: ['#ffd68c', '#ff7b08', '#ff7b08', '#000000'],
   urchin_0: ['#c0c0c0', '#808080', '#ff0829', '#000000'],
   urchin_1: ['#c0c0c0', '#808080', '#ff0829', '#000000'],
+  urchin_death: ['#c0c0c0', '#808080', '#ff0829', '#000000'],
   wisp_0: ['#ffd68c', '#ffd68c', '#ffd68c', '#000000'],
   wisp_1: ['#ffb531', '#ffb531', '#ffb531', '#000000'],
   wizzrobe_0: ['#ffd68c', '#10ad42', '#10ad42', '#000000'],

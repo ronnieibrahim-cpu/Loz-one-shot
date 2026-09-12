@@ -165,9 +165,15 @@ FRAMES = {
     'wisp_1': (283, 0.5, 0.5, False),
 
     # Urchin — "spiky ball". SUBSTITUTION: original to this game, so it borrows
-    # Spiny Beetle, an armoured ball of grey spines.
+    # Spiny Beetle, an armoured ball of grey spines. The same plate has a
+    # second pose directly below the two spiky ones (box 295, same light
+    # grey shell colour, the red/tan legs still visible beneath): spikes
+    # pulled fully in, a smooth dome instead of a spiked ball. Used as the
+    # deathFrame — the spikes retracting reads as the creature's own defeat,
+    # not a generic recolour.
     'urchin_0': (292, 0.5, 0.5, False),
     'urchin_1': (293, 0.5, 0.5, False),
+    'urchin_death': (295, 0.5, 0.5, False),
 
     # Moblin: idle frame, then the same angle with its spear raised.
     'moblin_d0': (163, 0.5, 0.5, False),

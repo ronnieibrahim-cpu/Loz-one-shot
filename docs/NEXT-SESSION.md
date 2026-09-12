@@ -13150,3 +13150,40 @@ These are in HANDOFF in full. The short list, because each one cost a session:
   constraint, so any of the 22 without one is eligible; `bubble` and
   `urchin` still carry the untested flying/height question flagged at
   S26 if either is picked.
+- `urchin` given a `deathFrame` (4th, after `gel`, `keese`, `octorok`) —
+  hp 2, `deathFrame`-only, same reasoning as `octorok`. **First genuine
+  extraction find since `pincer` (S23)**: checked the sheet's own "Spiny
+  Beetle" plate (`urchin`'s substitution source, per `tools/rip-
+  enemies.py`'s own comment) with a death pose specifically in mind
+  rather than assuming another empty plate, and found a real fifth frame
+  — box 295, sitting directly below the two already-used spiky poses
+  (292/293 -> `urchin_0`/`urchin_1`), sharing their light grey shell
+  colour (`#c0c0c0`) but with the spikes fully retracted into a smooth
+  dome, the red/tan legs still visible underneath. Confirmed against the
+  sheet's own "Spiny Beetle" label, which spans the whole five-box block
+  including this one. Added `urchin_death: (295, 0.5, 0.5, False)` to
+  `FRAMES` in `tools/rip-enemies.py` and re-emitted — `sprites-
+  enemies.js` DID change (58 sprites now, was 57), `check-rippers.mjs`
+  stayed 17/17. Confirmed `urchin` has no `z` field (ground-level, like
+  `octorok`) — no height-offset trap. **Also confirmed something the
+  enemy's own code comment could have left ambiguous**: `urchin`'s
+  "harmless until the tide covers it" describes its `ai()`'s movement
+  gate (`if (g.tide.level >= 1) wander(...)`) only — the ENTITY's own
+  `harmless` flag (`src/game/entity.js`, "never damages the player") is
+  never set anywhere in `urchin`'s spec and measured `false` in both tide
+  states, not assumed from the comment's wording. Ran TWO in-engine
+  lethal-hit probes as a result — one at `tide.level = 0` (motionless),
+  one at `tide.level = 1` (drifting) — and both produced byte-identical
+  results (`dying`, `spriteName()`, `z`, and the frame count to finish
+  the stall all matched), confirming the death mechanism doesn't care
+  which state the enemy was in when it died. `check-drift` reads `urchin:
+  walk,death`. `check-rippers.mjs` 17/17, `check-playthrough.mjs`'s stop
+  unchanged. Roster status: `hurt` on `wisp`, `beetle`, `darknut`,
+  `moblin`, `wizzrobe`, `siren`, `anglerfry`, `pincer`, `octorokSea`,
+  `stalfos`; `death` on `wisp`, `stalfos`, `gel`, `keese`, `octorok`,
+  `urchin`. This session's branch was again fast-forwarded onto `main`
+  directly, same as S27. Next: any other enemy's `deathFrame` — `bubble`
+  is still explicitly out of scope (hp 999, effectively unkillable); a
+  fresh sheet-check is warranted for whichever target comes next, since
+  this session is the second in four to find a real frame where the
+  immediately preceding sessions assumed the plate was exhausted.
