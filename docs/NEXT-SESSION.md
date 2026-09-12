@@ -12688,3 +12688,51 @@ These are in HANDOFF in full. The short list, because each one cost a session:
   immediately — so `deathFrame` needs that same "linger" mechanic added
   before the frame could ever be seen, for the identical reason `hurtFrame`
   needed hp>1 above.
+- `deathFrame` built and proven, on `stalfos`: `Enemy.die()` (src/game/
+  enemy.js) now checks `spec.deathFrame` and, if set, sets `dying=true`
+  instead of `remove=true`; `Enemy.update()` holds during `dying` (no AI, no
+  tide check) for `ENEMY_DEATH_FRAMES` (16, feel.js) then calls
+  `super.die(game)` — the real `Entity.die()`, deferred rather than skipped,
+  so loot/onDie/the puff effect/`onEnemyDefeated` all still fire, just after
+  the pose is seen instead of on the same frame. `spriteName()` checks
+  `dying` before `hurtFrame`. Unlike `hurtFrame`, this has NO hp-vs-
+  swordDamage() constraint — `die()` only ever runs on the hit that actually
+  reaches hp 0, so a 1-hit kill stalls exactly like a 3-hit one; gel/keese
+  are equally eligible for a `deathFrame` even though S12 ruled them out for
+  `hurtFrame`. Art: `stalfos_death` (src/data/sprites-enemies-hurt.js) — the
+  sheet has no collapse pose, only the standing walk frames — a skull (same
+  cranium/eye-socket shape as `stalfos_d0`'s head) fallen onto a bone mound,
+  in `enemyk`'s own bone palette. Verified in-engine with a scratch harness
+  (killed a `stalfos` with one hit, forced `flicker=0` to rule out the
+  invuln-flicker blink hiding it, then stepped and screenshotted the canvas):
+  `dying` held true and `spriteName()` returned `stalfos_death` for the
+  entity's full stall while it was still in `game.entities` and `remove`
+  was still false, then it flipped to `dead/remove=true` and left the array
+  right on schedule. `check-drift.mjs`'s enemy-roster "death" column is
+  UNCHANGED by this (still 0 of 22, stalfos still reads `walk` only) — it
+  greps `src/data/sprites-enemies.js` alone for a `<name>_death`/`_die` KEY,
+  and `stalfos_death` correctly lives in the hand-drawn
+  `sprites-enemies-hurt.js` instead (`sprites-enemies.js` is the ripper's own
+  file, off limits to a hand-added key per CLAUDE.md). The metric was never
+  reading a spec field to begin with (unlike its own "hurt" column, which
+  correctly greps the enemy's spec block for `hurtFrame:`) — it was reading
+  sprite-key naming as a stand-in for art nobody had built an engine path for
+  yet. Now that a real `spec.deathFrame` field exists, that stand-in is
+  stale: fixing it means checking `deathFrame\s*:` in the enemy's own spec
+  block (the `hurt` line just above it in check-drift.mjs is the template),
+  the same shape change `hurt` already has. Left unfixed on purpose —
+  changing what a rotation objective measures is bigger than one task,
+  per NEXT-PROMPT's own instruction — but it is a known-stale metric now,
+  not an open question: the fix is small and obvious the next time
+  `docs/prompts/STATE.md`'s allowlist includes `tools/check-drift.mjs`.
+- `attackFrame`, re-assessed now that `deathFrame`'s stall exists: still a
+  separate, bigger question, not more tractable. The stall mechanism
+  (`dying`/`deathTime`, a countdown gating `spriteName()` and skipping
+  `update()`) solved `deathFrame` because death has exactly one moment with
+  one universal engine-owned trigger (`hp` reaching 0, inside `die()`) that
+  every enemy already funnels through. `attackFrame` has no equivalent
+  choke point: S12's analysis holds unchanged — `spec.ai` is free-form
+  per-enemy code, "an attack begins" is a different moment for `charge`,
+  `shoot`, `hop`, and a custom `ai()`, and nothing today marks it. Borrowing
+  the stall shape does not remove the need for a convention change across
+  every attacking enemy's own `ai()`. Still out of scope for one session.

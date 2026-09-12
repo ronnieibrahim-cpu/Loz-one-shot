@@ -226,6 +226,11 @@ export function installEnemies() {
       up: ['stalfos_d0', 'stalfos_d1'],
       side: ['stalfos_s0', 'stalfos_s1'],
     },
+    // Unlike hurtFrame, this has no hp-vs-swordDamage() constraint: die() (not
+    // hurt()) is what defers removal, and die() only ever runs once, on the
+    // hit that actually brings hp to 0 — a 1-hit kill stalls exactly the same
+    // as a 3-hit one. See src/game/enemy.js's Enemy.die().
+    deathFrame: 'stalfos_death',
     drops: 'good',
     ai(e, g) {
       if (distToPlayer(e, g) < 26) flee(e, g, { speed: 0.9 });

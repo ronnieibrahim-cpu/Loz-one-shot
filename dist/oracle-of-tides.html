@@ -746,6 +746,15 @@ const ENEMY_INVULN_FRAMES = 24;
 /** f — how long an ordinary enemy flickers after a hit. guessed. */
 const ENEMY_FLICKER_FRAMES = 24;
 
+/** f — how long an ordinary enemy with a `spec.deathFrame` lingers showing it
+ *  before removal. guessed, following BOSS_DEATH_FRAMES's own comment as a
+ *  reference point: a boss gets 72 frames of death throes plus periodic
+ *  explosions because it is a set piece; an ordinary enemy's death pose is a
+ *  single held frame with no animation of its own, so it needs only long
+ *  enough to be seen, not a performance. An enemy with no `deathFrame` is
+ *  unaffected — it is still removed on the same frame it dies, as before. */
+const ENEMY_DEATH_FRAMES = 16;
+
 /** f — how long an ordinary enemy is shoved after a hit. guessed. Together with
  *  the KNOCK_* distances below this is the fixed frame count half of the
  *  fixed-distance-over-fixed-frames rule; nothing decays.
@@ -1913,6 +1922,7 @@ __exports["PLAYER_KNOCK_DIST"] = PLAYER_KNOCK_DIST;
 __exports["PLAYER_KNOCK_FRAMES"] = PLAYER_KNOCK_FRAMES;
 __exports["ENEMY_INVULN_FRAMES"] = ENEMY_INVULN_FRAMES;
 __exports["ENEMY_FLICKER_FRAMES"] = ENEMY_FLICKER_FRAMES;
+__exports["ENEMY_DEATH_FRAMES"] = ENEMY_DEATH_FRAMES;
 __exports["ENEMY_KNOCK_FRAMES"] = ENEMY_KNOCK_FRAMES;
 __exports["KNOCK_DEFAULT"] = KNOCK_DEFAULT;
 __exports["KNOCK_SWORD"] = KNOCK_SWORD;
@@ -23953,7 +23963,7 @@ const { F } = __require("world/tileset.js");
 const { TILE } = __require("core/screen.js");
 const { hash32 } = __require("core/rng.js");
 const { FP_ONE, sp, toPx } = __require("core/fixed.js");
-const { ENEMY_DEFAULT_SPEED, ENEMY_DEFAULT_RATE, ENEMY_TURN_CHANCE, ENEMY_BEACHED_FRAMES, ENEMY_GRID_STEP, ENEMY_DECIDE_STEPS, ENEMY_TURN_PAUSE_FRAMES, ENEMY_CHARGE_SPEED_MULT, ENEMY_CHARGE_RECOVER_FRAMES, ENEMY_CHARGE_TOLERANCE, ENEMY_CHARGE_RANGE, ENEMY_CHARGE_MIN_RANGE, ENEMY_HOP_WAIT_FRAMES, ENEMY_HOP_DIST, ENEMY_HOP_FRAMES, ENEMY_HOP_HEIGHT, ENEMY_ORBIT_SPEED, ENEMY_ORBIT_RADIUS, ENEMY_SUBMERGE_DOWN_FRAMES, ENEMY_SUBMERGE_UP_FRAMES, ENEMY_SURFACE_MIN_DIST, ENEMY_SURFACE_DIST_SPAN, ENEMY_ALIGN_TOLERANCE, ENEMY_KNOCK_FRAMES, ENEMY_SHOT_SPEED, ENEMY_SHOT_LIFE, RING_SHOT_SPEED, RING_SHOT_LIFE, BOSS_INTRO_FRAMES, BOSS_INVULN_FRAMES, BOSS_PHASE_INVULN_FRAMES, BOSS_KNOCK_FRAMES, BOSS_KNOCK_SCALE, BOSS_DEATH_FRAMES, BOSS_DEATH_BOOM_EVERY, SHAKE_MEDIUM, SHAKE_SMALL_FRAMES, TIDE_DRIFT_PER_LEVEL, DREDGE_FLOP_DAMAGE_SCALE, HITSTOP_HIT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES } = __require("data/feel.js");
+const { ENEMY_DEFAULT_SPEED, ENEMY_DEFAULT_RATE, ENEMY_TURN_CHANCE, ENEMY_BEACHED_FRAMES, ENEMY_GRID_STEP, ENEMY_DECIDE_STEPS, ENEMY_TURN_PAUSE_FRAMES, ENEMY_CHARGE_SPEED_MULT, ENEMY_CHARGE_RECOVER_FRAMES, ENEMY_CHARGE_TOLERANCE, ENEMY_CHARGE_RANGE, ENEMY_CHARGE_MIN_RANGE, ENEMY_HOP_WAIT_FRAMES, ENEMY_HOP_DIST, ENEMY_HOP_FRAMES, ENEMY_HOP_HEIGHT, ENEMY_ORBIT_SPEED, ENEMY_ORBIT_RADIUS, ENEMY_SUBMERGE_DOWN_FRAMES, ENEMY_SUBMERGE_UP_FRAMES, ENEMY_SURFACE_MIN_DIST, ENEMY_SURFACE_DIST_SPAN, ENEMY_ALIGN_TOLERANCE, ENEMY_KNOCK_FRAMES, ENEMY_SHOT_SPEED, ENEMY_SHOT_LIFE, ENEMY_DEATH_FRAMES, RING_SHOT_SPEED, RING_SHOT_LIFE, BOSS_INTRO_FRAMES, BOSS_INVULN_FRAMES, BOSS_PHASE_INVULN_FRAMES, BOSS_KNOCK_FRAMES, BOSS_KNOCK_SCALE, BOSS_DEATH_FRAMES, BOSS_DEATH_BOOM_EVERY, SHAKE_MEDIUM, SHAKE_SMALL_FRAMES, TIDE_DRIFT_PER_LEVEL, DREDGE_FLOP_DAMAGE_SCALE, HITSTOP_HIT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES } = __require("data/feel.js");
 
 const TERRAIN_AVOID = {
   land: F.WATER | F.DEEP | F.PIT | F.HAZARD | F.JUMPABLE,
@@ -24010,6 +24020,11 @@ class Enemy extends Entity {
     this.step = null;
     this.stepping = false;
     this.charging = false;
+    // Death stall, the ordinary-enemy counterpart to Boss.dying/deathTime:
+    // set by die() only when spec.deathFrame exists, so an enemy with none
+    // dies exactly as before (see die() below).
+    this.dying = false;
+    this.deathTime = 0;
     this.aiState = 0;
     this.aiTimer = 0;
     this.tick = 0;
@@ -24020,6 +24035,10 @@ class Enemy extends Entity {
   }
 
   spriteName() {
+    // Checked before the hurtFrame flinch pose: a dying enemy's invuln
+    // flicker is still running (hurt() set both on the killing blow), and the
+    // death pose is the one that should win once dying is true.
+    if (this.dying && this.spec.deathFrame) return this.spec.deathFrame;
     // Same mechanism Boss.spriteName already uses: while the invuln flicker is
     // running, show the flinch pose instead of the walk cycle. Ordinary
     // enemies had no path to this at all until now — only bosses declared
@@ -24056,6 +24075,16 @@ class Enemy extends Entity {
     this.tick++;
     if (this.invuln > 0) this.invuln--;
     if (this.flicker > 0) this.flicker--;
+
+    // Death stall: the killing blow already ran (hp<=0, die() below set
+    // `dying` instead of `remove`), so skip everything else — no AI, no tide
+    // check, no knockback — and just hold the death pose until the countdown
+    // ends, then finish the removal die() deferred.
+    if (this.dying) {
+      this.deathTime++;
+      if (this.deathTime > ENEMY_DEATH_FRAMES) { this.dying = false; super.die(game); }
+      return;
+    }
 
     // Tide interactions: some enemies only exist at certain tide levels — and
     // at the level where THIS enemy is standing, not the room's base. An
@@ -24131,6 +24160,26 @@ class Enemy extends Entity {
     }
     if (this.spec.onHurt) this.spec.onHurt(this, game, dmg);
     return super.hurt(game, dmg, dir, knock);
+  }
+
+  /**
+   * An enemy with a `spec.deathFrame` lingers un-removed for ENEMY_DEATH_FRAMES
+   * so its death pose can actually draw, the same "stall the removal" shape
+   * `Boss.beginDeath` already uses for a boss's own death animation. `update`
+   * above counts the stall down and calls `super.die(game)` — the real
+   * `Entity.die` (loot, onDie, the puff effect, the defeated bookkeeping) —
+   * once it ends. An enemy with no `deathFrame` is untouched: this falls
+   * straight through to `super.die(game)` on the same frame, exactly as
+   * before this stall existed.
+   */
+  die(game) {
+    if (this.dead || this.dying) return;
+    if (this.spec.deathFrame) {
+      this.dying = true;
+      this.deathTime = 0;
+      return;
+    }
+    super.die(game);
   }
 
   onDie(game) {
@@ -25139,6 +25188,11 @@ function installEnemies() {
       up: ['stalfos_d0', 'stalfos_d1'],
       side: ['stalfos_s0', 'stalfos_s1'],
     },
+    // Unlike hurtFrame, this has no hp-vs-swordDamage() constraint: die() (not
+    // hurt()) is what defers removal, and die() only ever runs once, on the
+    // hit that actually brings hp to 0 — a 1-hit kill stalls exactly the same
+    // as a 3-hit one. See src/game/enemy.js's Enemy.die().
+    deathFrame: 'stalfos_death',
     drops: 'good',
     ai(e, g) {
       if (distToPlayer(e, g) < 26) flee(e, g, { speed: 0.9 });
@@ -37684,10 +37738,10 @@ __exports["installEnemySprites"] = installEnemySprites;
 
 /* ===== src/data/sprites-enemies-hurt.js ===== */
 __define("data/sprites-enemies-hurt.js", function (__exports, __require) {
-// Hand-drawn enemy hurt frames — the ordinary-enemy counterpart to
-// sprites-bosses.js's `boss_*_hurt` art, one flinch pose per enemy that has
-// one. NOT generated: `sprites-enemies.js` is the ripper's own file and stays
-// off limits (CLAUDE.md), so a per-species flinch frame the sheet doesn't
+// Hand-drawn enemy hurt/death frames — the ordinary-enemy counterpart to
+// sprites-bosses.js's `boss_*_hurt` art, one flinch or death pose per enemy
+// that has one. NOT generated: `sprites-enemies.js` is the ripper's own file
+// and stays off limits (CLAUDE.md), so a per-species frame the sheet doesn't
 // have lands here instead, following the same "hand-draw only once
 // extraction is checked and comes up empty" discipline the boss roster used.
 //
@@ -37696,7 +37750,11 @@ __define("data/sprites-enemies-hurt.js", function (__exports, __require) {
 // the boss precedent (sprites-bosses.js's own header): the SAME creature
 // caught mid-recoil, not a recolour — eyes shut or squinted, expression
 // changed a few pixels, body silhouette untouched so it still reads as the
-// same thing on the same frame the walk cycle would have drawn.
+// same thing on the same frame the walk cycle would have drawn. `_death`
+// frames are the one deliberate exception to "silhouette untouched": a death
+// pose is a collapsed final state, not a recoil, so the shape is allowed to
+// change as long as the creature is still legibly itself (see stalfos_death
+// below).
 
 const { sprites } = __require("gfx/art.js");
 
@@ -37723,6 +37781,36 @@ const ENEMY_HURT_ART = {
     .33333000033333.
     ..300333333003..
     ....03300330....` ,
+
+  // Stalfos death — drawn: assets/sheets/oracle-seasons-enemies.png's Sword
+  // Stalfos has no collapse pose, only the standing walk frames stalfos_d0/
+  // d1/s0/s1 already in sprites-enemies.js. A skeleton's own death is the one
+  // case in this roster where "the same creature caught mid-recoil" doesn't
+  // apply (see header) — a stalfos does not flinch when it dies, it comes
+  // apart. Drawn as its own skull (same rounded cranium and two eye-socket
+  // notches as stalfos_d0's head, rows 5-10 here) fallen onto a heap of its
+  // own bones (rows 11-15), rather than a recolour or a generic cloud, so it
+  // still reads as "this is what was chasing you" and not a shared effect.
+  // Drawn in `enemyk`'s own four bone tones at runtime (stalfos already
+  // passes `pal: 'enemyk'` — see src/data/enemies.js — so the palette here is
+  // only the fallback for a direct lookup with no runtime override).
+  stalfos_death: `
+    ................
+    ................
+    ................
+    ................
+    ................
+    ......3333......
+    .....300003.....
+    ....30300303....
+    ....30000003....
+    .....300003.....
+    ......3333......
+    ....30000003....
+    ..300000000003..
+    .30000000000003.
+    .30111111111103.
+    .33333333333333.` ,
 };
 
 function installEnemyHurtSprites() {

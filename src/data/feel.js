@@ -227,6 +227,15 @@ export const ENEMY_INVULN_FRAMES = 24;
 /** f — how long an ordinary enemy flickers after a hit. guessed. */
 export const ENEMY_FLICKER_FRAMES = 24;
 
+/** f — how long an ordinary enemy with a `spec.deathFrame` lingers showing it
+ *  before removal. guessed, following BOSS_DEATH_FRAMES's own comment as a
+ *  reference point: a boss gets 72 frames of death throes plus periodic
+ *  explosions because it is a set piece; an ordinary enemy's death pose is a
+ *  single held frame with no animation of its own, so it needs only long
+ *  enough to be seen, not a performance. An enemy with no `deathFrame` is
+ *  unaffected — it is still removed on the same frame it dies, as before. */
+export const ENEMY_DEATH_FRAMES = 16;
+
 /** f — how long an ordinary enemy is shoved after a hit. guessed. Together with
  *  the KNOCK_* distances below this is the fixed frame count half of the
  *  fixed-distance-over-fixed-frames rule; nothing decays.

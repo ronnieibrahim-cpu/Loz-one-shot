@@ -51,7 +51,7 @@ import {
   ENEMY_ORBIT_SPEED, ENEMY_ORBIT_RADIUS,
   ENEMY_SUBMERGE_DOWN_FRAMES, ENEMY_SUBMERGE_UP_FRAMES,
   ENEMY_SURFACE_MIN_DIST, ENEMY_SURFACE_DIST_SPAN, ENEMY_ALIGN_TOLERANCE,
-  ENEMY_KNOCK_FRAMES, ENEMY_SHOT_SPEED, ENEMY_SHOT_LIFE,
+  ENEMY_KNOCK_FRAMES, ENEMY_SHOT_SPEED, ENEMY_SHOT_LIFE, ENEMY_DEATH_FRAMES,
   RING_SHOT_SPEED, RING_SHOT_LIFE,
   BOSS_INTRO_FRAMES, BOSS_INVULN_FRAMES, BOSS_PHASE_INVULN_FRAMES,
   BOSS_KNOCK_FRAMES, BOSS_KNOCK_SCALE,
@@ -116,6 +116,11 @@ export class Enemy extends Entity {
     this.step = null;
     this.stepping = false;
     this.charging = false;
+    // Death stall, the ordinary-enemy counterpart to Boss.dying/deathTime:
+    // set by die() only when spec.deathFrame exists, so an enemy with none
+    // dies exactly as before (see die() below).
+    this.dying = false;
+    this.deathTime = 0;
     this.aiState = 0;
     this.aiTimer = 0;
     this.tick = 0;
@@ -126,6 +131,10 @@ export class Enemy extends Entity {
   }
 
   spriteName() {
+    // Checked before the hurtFrame flinch pose: a dying enemy's invuln
+    // flicker is still running (hurt() set both on the killing blow), and the
+    // death pose is the one that should win once dying is true.
+    if (this.dying && this.spec.deathFrame) return this.spec.deathFrame;
     // Same mechanism Boss.spriteName already uses: while the invuln flicker is
     // running, show the flinch pose instead of the walk cycle. Ordinary
     // enemies had no path to this at all until now — only bosses declared
@@ -162,6 +171,16 @@ export class Enemy extends Entity {
     this.tick++;
     if (this.invuln > 0) this.invuln--;
     if (this.flicker > 0) this.flicker--;
+
+    // Death stall: the killing blow already ran (hp<=0, die() below set
+    // `dying` instead of `remove`), so skip everything else — no AI, no tide
+    // check, no knockback — and just hold the death pose until the countdown
+    // ends, then finish the removal die() deferred.
+    if (this.dying) {
+      this.deathTime++;
+      if (this.deathTime > ENEMY_DEATH_FRAMES) { this.dying = false; super.die(game); }
+      return;
+    }
 
     // Tide interactions: some enemies only exist at certain tide levels — and
     // at the level where THIS enemy is standing, not the room's base. An
@@ -237,6 +256,26 @@ export class Enemy extends Entity {
     }
     if (this.spec.onHurt) this.spec.onHurt(this, game, dmg);
     return super.hurt(game, dmg, dir, knock);
+  }
+
+  /**
+   * An enemy with a `spec.deathFrame` lingers un-removed for ENEMY_DEATH_FRAMES
+   * so its death pose can actually draw, the same "stall the removal" shape
+   * `Boss.beginDeath` already uses for a boss's own death animation. `update`
+   * above counts the stall down and calls `super.die(game)` — the real
+   * `Entity.die` (loot, onDie, the puff effect, the defeated bookkeeping) —
+   * once it ends. An enemy with no `deathFrame` is untouched: this falls
+   * straight through to `super.die(game)` on the same frame, exactly as
+   * before this stall existed.
+   */
+  die(game) {
+    if (this.dead || this.dying) return;
+    if (this.spec.deathFrame) {
+      this.dying = true;
+      this.deathTime = 0;
+      return;
+    }
+    super.die(game);
   }
 
   onDie(game) {
