@@ -12854,3 +12854,34 @@ These are in HANDOFF in full. The short list, because each one cost a session:
   `deathFrame`, so it would be the reverse-order coexistence case, which
   is not novel after S17 but still valid coverage), same cadence as every
   session in this thread.
+- `wizzrobe` given a `hurtFrame` (sixth proof of the mechanism, after
+  `wisp`, `beetle`, `wisp` again, `darknut`, `moblin`), same sheet-first
+  discipline as the last two sessions. Checked every box on the sheet's
+  own "Wizzrobe" plate: the two used idle frames plus two hood-only
+  teleport-transition frames and a turned 3/4 view — the extras are its
+  own `submerge()` appear/disappear cycle (`src/data/enemies.js`), already
+  animated, not a reaction to being hit. **The "shut the eyes" trick the
+  last two sessions used does not generalise**: `wizzrobe`'s eyes are the
+  sprite's LIGHTEST colour sitting inside its DARKEST (a full-face visor,
+  not a lit face with a dark pupil), so recolouring them to the outline
+  shade would make them the same colour as their surroundings and vanish
+  rather than read as a change. Used the sprite's otherwise-unused THIRD
+  palette slot instead (index 2, distinct from both the light face and
+  dark visor in the runtime `enemyp` ramp — `src/gfx/palettes.js`) for a
+  3-pixel bruise/wince mark on the cheek, guaranteed to contrast whatever
+  runtime palette is applied. Also confirmed directly (read `submerge()`
+  in `src/game/enemy.js`, didn't assume): a submerge-cycle enemy can never
+  be hit while hidden — the hidden branch sets `invuln = 9999`, and
+  `Entity.hurt` early-returns on `invuln > 0` — so the flicker window this
+  mechanism needs can only ever start while surfaced and visible. No extra
+  guard needed for this or any future submerge-cycle enemy (`leever`,
+  `siren` share the same primitive). Verified in-engine with a probe that
+  pins `_subState`/`_subT` so the cycle doesn't flip mid-test: a
+  non-lethal hit (hp 3 -> 2) held `wizzrobe_hurt` for the full 24-frame
+  flicker window with `hidden` staying false throughout, then reverted to
+  `wizzrobe_0` on schedule. `check-drift` reads `wizzrobe: walk,hurt`.
+  Roster status: `hurt` on `wisp`, `beetle`, `darknut`, `moblin`,
+  `wizzrobe`; `death` on `wisp`, `stalfos`, `gel`. `sprites-enemies.js`
+  untouched. Next: another `hurtFrame` target with hp > 2 not yet touched
+  (`octorokSea`, `anglerfry`, `siren`, `pincer`) or `stalfos`'s reverse-
+  order coexistence case, same cadence as every session in this thread.

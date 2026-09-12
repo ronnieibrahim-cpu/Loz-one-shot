@@ -225,6 +225,46 @@ export const ENEMY_HURT_ART = {
     .331113333333...
     .300100333333...
     .333333333......` ,
+
+  // Wizzrobe hurt — drawn: assets/sheets/oracle-seasons-enemies.png's own
+  // "Wizzrobe" plate was checked frame by frame (the two used idle poses,
+  // two hood-only appear/disappear transition frames, and a turned 3/4
+  // view) and none of them is a flinch — the extra frames are the
+  // teleport transition its `submerge()` cycle already animates (src/data/
+  // enemies.js), not a reaction to being hit. `wizzrobe_0`'s own grid
+  // (sprites-enemies.js) is reused pixel-for-pixel. Its "eyes" (row 7-8,
+  // col 6 and col 9) are the sprite's LIGHTEST colour sitting inside its
+  // DARKEST — the same "shut the eyes" trick `darknut_hurt`/`moblin_hurt`
+  // used would turn them the same colour as the visor around them and
+  // vanish instead of reading as a change, so this one uses the sprite's
+  // otherwise-unused THIRD colour (index 2, the runtime `enemyp` palette's
+  // own mid-tone — see src/gfx/palettes.js) for a small bruise/wince mark
+  // on the right cheek (rows 9-10, three pixels), guaranteed to contrast
+  // against both the light face and the dark visor since nothing else in
+  // this sprite uses that shade. Silhouette untouched. Verified harmless
+  // to draw while surfaced: `submerge()` only clears `invuln` while
+  // visible (`_subState === 'up'`) and sets it to 9999 while hidden, so
+  // `Entity.hurt` can only ever land — and the flicker window can only
+  // ever run — during the surfaced half of the cycle, when the sprite is
+  // actually drawn. Eligible under the S12 hp rule: hp 3 > swordDamage()
+  // 2, so the flicker window survives long enough to show it.
+  wizzrobe_hurt: `
+    .......33.......
+    ......3003......
+    .....310013.....
+    ...3333333333...
+    ..311111111113..
+    .31111111111113.
+    3331133333311333
+    3003330330333003
+    3000330330330003
+    3100333333332213
+    .31003333330213.
+    ..300000000003..
+    ..300011110003..
+    .30000011000003.
+    3000000000000003
+    3333333333333333` ,
 };
 
 export function installEnemyHurtSprites() {

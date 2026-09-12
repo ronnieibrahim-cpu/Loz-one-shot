@@ -280,6 +280,7 @@ export function installEnemies() {
   defineEnemy('wizzrobe', {
     hp: 3, damage: 3, pal: 'enemyp', speed: 0, rate: 12, terrain: 'any',
     frames: ['wizzrobe_0', 'wizzrobe_1'],
+    hurtFrame: 'wizzrobe_hurt',
     drops: 'good',
     ai(e, g) {
       // submerge() is the engine's appear/disappear cycle; it hides the sprite
