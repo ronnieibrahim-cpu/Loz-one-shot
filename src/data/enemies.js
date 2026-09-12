@@ -72,6 +72,7 @@ export function installEnemies() {
     light: true,
     hp: 2, damage: 2, pal: 'slime', speed: 0.3, rate: 14,
     frames: ['zol_0', 'zol_1'],
+    deathFrame: 'zol_death',
     hb: { x: 3, y: 6, w: 10, h: 9 },
     terrain: 'any',
     drops: 'common',

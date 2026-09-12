@@ -568,6 +568,54 @@ export const ENEMY_HURT_ART = {
     .30310311301303.
     3003110000113003
     3033311111133303` ,
+
+  // Zol death — drawn: the sheet's own "Zol & Gel" plate has exactly two
+  // frames (round at rest, stretched tall mid-hop), both already
+  // extracted as `zol_0`/`zol_1`, confirmed against the sheet's own
+  // label — the box immediately before it (index 341) is a different
+  // creature entirely (green `#10ad42` palette, not `zol`'s red). Nothing
+  // to extract; hand-drawn instead, following `gel_death`'s own template
+  // (same file, S16) rather than inventing a new shape: `zol` splits INTO
+  // two `gel`s on death (`onDie`, `src/data/enemies.js`), so echoing
+  // `gel_death`'s wide flat puddle — just scaled up to `zol_0`'s own
+  // larger blob size, with the same two isolated single-pixel "splash"
+  // flecks at the base — reads as a visual link between the two rather
+  // than an arbitrary new pose. `zol_0`'s round eye-marks (already the
+  // outline's own dark colour, same "nothing lighter to shut" situation
+  // `octorok`/`stalfos` hit) are dropped entirely rather than recoloured,
+  // which the `_death` exception in this file's header explicitly allows
+  // (silhouette may change) and which `gel_death` itself already does
+  // (no eyes at all). Confirmed `zol` has no `z` field before drawing low
+  // in the cell. **This is the first `deathFrame` target whose `onDie`
+  // does something beyond a loot roll** — it spawns two `gel`s to either
+  // side — and `Enemy.die()` (src/game/enemy.js) defers that spawn until
+  // the `ENEMY_DEATH_FRAMES` stall this pose plays through actually ends
+  // (`dying = true` returns early; `super.die(game)` — which calls
+  // `onDie` — only runs once `update()`'s stall counter finishes). This
+  // is the deferred-`onDie` mechanism S29's `docs/NEXT-SESSION.md` entry
+  // theorised about for `check-playthrough.mjs`'s own timing shift,
+  // verified here directly rather than left as theory: an in-engine probe
+  // confirmed zero `gel`s exist during the stall and exactly two appear
+  // the instant it ends, at the same `x` the `zol` died at (frozen by
+  // `dying` skipping `update()`'s own movement), each carrying
+  // `opts.split: true` so neither of them recurses into a third split.
+  zol_death: `
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ....3333333.....
+    ...311111113....
+    ..31111111113...
+    .3111111111113..
+    311111111111113.
+    31111111111111.3
+    .11111111111111.
+    .1..........1..1
+    ................` ,
 };
 
 export function installEnemyHurtSprites() {

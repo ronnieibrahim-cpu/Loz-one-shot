@@ -13281,3 +13281,84 @@ These are in HANDOFF in full. The short list, because each one cost a session:
   own merits, and this finding waits for a session that deliberately
   picks it up. `DETOUR TOKENS` in `docs/prompts/STATE.md` remains 1,
   unspent. This session's branch was fast-forwarded onto `main` again.
+- `zol` given a `deathFrame` (6th, after `gel`, `keese`, `octorok`,
+  `urchin`, `crab`) — hp 2, and the first `deathFrame` target whose
+  `onDie` does something beyond a loot roll: it splits into two `gel`s
+  (`src/data/enemies.js`), unless it was itself a split. Checked the
+  sheet's own "Zol & Gel" plate: exactly two frames, both already used as
+  `zol_0`/`zol_1`, confirmed against the sheet's own label and against
+  the palette of the box immediately before it (a different creature,
+  green not red) — nothing to extract. Hand-drew `zol_death` following
+  `gel_death`'s own template (same file, S16) scaled up to `zol_0`'s
+  larger size, since the two creatures are already linked by the split —
+  a wide flat puddle, no eyes (already the outline's own colour, same
+  "nothing lighter to shut" situation `octorok`/`stalfos` hit), with the
+  same isolated single-pixel "splash" flecks `gel_death` uses at its
+  base. Confirmed `zol` has no `z` field.
+
+  **Verified the exact mechanism S29's `crab_death` entry theorised
+  about, with real evidence rather than leaving it as theory**:
+  `Enemy.die()` (`src/game/enemy.js`) sets `dying = true` and returns
+  early when `spec.deathFrame` exists, deferring `super.die(game)` — and
+  everything inside it, including `onDie` — until the
+  `ENEMY_DEATH_FRAMES` stall finishes. An in-engine probe confirmed zero
+  `gel`s exist (checked via both `g.entities` and `g.pendingAdd`, since
+  `addEntity` queues into the latter and only `flushPending()` moves them
+  into the former — the first version of this probe wrongly reported
+  zero `gel`s forever because it only checked `g.entities`) during the
+  entire 16-frame stall, then exactly two appear the instant it ends, at
+  `x = (the zol's own x) ± ENEMY_GRID_STEP` (frozen throughout, since
+  `dying` skips `update()`'s own movement), each correctly carrying
+  `opts.split: true` so neither recurses into a third split.
+
+  **Found and fixed a real regression this session's own change caused,
+  not a pre-existing issue**: `tools/test.mjs`'s "enemies can be killed"
+  check (in the "combat and damage" section) kills every enemy in a room
+  whose comment says outright "this room's zol spawns on the entry
+  tile," then waits only `frames(6)` before asserting
+  `progress.kills` incremented. `progress.kills++` lives in
+  `Game.onEnemyDefeated`, called from `Entity.die()` — exactly the call
+  `Enemy.die()` now defers behind the stall for a `deathFrame`'d enemy.
+  6 frames was enough for an instant kill; it is not enough to outlast a
+  16-frame stall. Fixed by bumping the wait to `frames(20)` with a
+  comment explaining why, rather than leaving a red test or silently
+  lowering the bar some other way. `test.mjs` is back to 83/83.
+
+  **ESCALATED FINDING — this is the second time in two sessions running
+  that a `deathFrame` addition has visibly moved `check-playthrough.mjs`'s
+  own outcome, confirmed by direct stash A/B comparison rather than
+  assumed**: with only `crab_death` applied (the exact commit S29 shipped),
+  the run reproduces S29's own documented state exactly (`20 passed, 1
+  failed`, missing D1's essence). Adding THIS session's `zol_death` on
+  top of that moves the failure EARLIER and turns it back into an
+  uncaught crash: `equip: anchor is not in the item list`, thrown at
+  frame ~33017 in D1 room `0,3,6` — much earlier than either the original
+  S23-S28 stopping point (the D2 boss room, deep into the run) or S29's
+  own further-progressing failure. The crashing step is
+  `tools/playthrough-route.mjs`'s `['loot', 600]` right before
+  `['equip', 'anchor', 'A', 400]` (around line 267/293) — the same shape
+  of bug as S29's missing essence (a fixed-frame-budget route step that
+  used to just barely finish in time no longer does), just landing on a
+  completely different step because a different enemy (`zol` instead of
+  `crab`) is what tipped the timing this time. **The pattern is now
+  confirmed systemic, not a one-off**: giving ANY additional enemy a
+  `deathFrame` is likely to keep reshuffling `check-playthrough.mjs`'s
+  exact outcome in an unpredictable direction (sometimes further,
+  sometimes earlier/worse), because the whole route is written against
+  fixed frame budgets that assume enemies vanish the instant they die.
+  This was NOT chased this session either (still no detour token spent,
+  per the charter's own rule 5 — both `zol_death` itself and the
+  `test.mjs` timing fix it required are complete, verified, and shipped
+  on their own merits), but it is flagged here explicitly, and to the
+  user directly in this session's own summary, because the pattern has
+  now repeated with a WORSE outcome the second time rather than settling
+  down on its own. A future session that spends the detour token on this
+  general area should probably treat the ROUTE'S OWN FRAGILITY to
+  incidental timing drift as the real target — not chase each individual
+  step (`['loot', 600]` here, `['loot', 900]` at S29) one at a time as
+  they keep breaking, since the next `deathFrame` addition (this thread
+  is not done — `docs/prompts/STATE.md`'s enemy-roster objective still
+  has many enemies without one) will likely just move the failure
+  somewhere else again. `check-drift` reads `zol: walk,death`.
+  `sprites-enemies.js` untouched, `check-rippers.mjs` still 17/17.
+  `DETOUR TOKENS` remains 1, unspent, as of S30.

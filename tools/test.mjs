@@ -701,7 +701,12 @@ const main = async () => {
     const g = window.__game;
     for (const e of g.entities.filter(x => x.isEnemy)) e.hurt(g, 99, 'down', 0);
   });
-  await frames(6);
+  // This room's enemy is a zol, which carries a deathFrame (S30): a lethal
+  // hit sets `dying` rather than removing it outright, and `progress.kills`
+  // only increments once `Enemy.update`'s ENEMY_DEATH_FRAMES (16) stall
+  // finishes and defers into `super.die`. 6 frames was enough for an instant
+  // kill; it is not enough to outlast that stall.
+  await frames(20);
   check('enemies can be killed', await G(() => window.__game.progress.kills) > kills0);
   await shot('10-combat');
 
