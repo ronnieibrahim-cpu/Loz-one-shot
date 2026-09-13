@@ -2525,7 +2525,7 @@ function installHouses() {
   });
 
   home('houseHearth', 'A Village House', 'village', [
-    ['npc', 3, 2, { sprite: 'npc_villager2', dialogue: 'hearthWife', after: 'hearthWifeAfter', needEssences: 3 }],
+    ['npc', 3, 2, { sprite: 'npc_brinewife', dialogue: 'hearthWife', after: 'hearthWifeAfter', needEssences: 3 }],
     ['npc', 7, 4, { sprite: 'npc_child', wander: true, dialogue: 'hearthChild', after: 'hearthChildAfter', needEssences: 2 }],
     ['pickup', 2, 4, { kind: 'rupee5' }],
   ], { rx: 4, ry: 7, px: 32, py: 88 });
@@ -2537,7 +2537,7 @@ function installHouses() {
   // flat thing about it not being her kettle on every visit in between.
   home('houseNets', "The Net-mender's", 'village', [
     ['trader', 4, 2, {
-      sprite: 'npc_fisher', waiting: 'ossaWait', after: 'ossaAfter',
+      sprite: 'npc_zelda', waiting: 'ossaWait', after: 'ossaAfter',
       deals: [
         { stage: 1, gives: 'float', text: 'ossaStart' },
         { stage: 11, wants: 'kettle', gives: 'bellrope', text: 'ossaEnd' },
@@ -2546,7 +2546,7 @@ function installHouses() {
   ], { rx: 4, ry: 8, px: 48, py: 104 });
 
   home('houseSandpiper', 'Sandpiper Cottage', 'village', [
-    ['npc', 5, 2, { sprite: 'npc_villager', dialogue: 'sandpiper', after: 'netMender', needEssences: 2 }],
+    ['npc', 5, 2, { sprite: 'npc_elder', dialogue: 'sandpiper', after: 'netMender', needEssences: 2 }],
     ['pickup', 7, 4, { kind: 'rupee5' }],
   ], { rx: 9, ry: 8, px: 32, py: 88 });
 }

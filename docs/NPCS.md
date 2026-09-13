@@ -15,58 +15,62 @@ every Coastwise Chain trader has a `waiting` line, a trade line, and an
 `after` line (Ossa, who opens and closes the chain, has four). This half
 of the objective's done-condition needs no further work.
 
-**Unique sprite: the open half.** 7 of 22 identities have a sprite nobody
-else uses. 15 of 22 share one of 6 sprites with at least one other named
-character — a real, specific gap, not the vague "give everyone their own
-look" the rotation line alone would suggest.
+**Unique sprite: 12 of 22 as of S61, up from 7.** S60 found 7 unique / 6
+shared sprites covering 15 identities. S61 spent the three sprites that
+were already extracted and sitting unused (`npc_elder`, `npc_zelda`,
+`npc_brinewife` — see "Landed" below) rather than hand-drawing anything,
+and checked each in-engine after. 10 identities across 4 groups remain.
 
-## Sprite-reuse groups
+## Sprite-reuse groups (current)
 
 | Sprite | Shared by | Count |
 |---|---|---|
-| `npc_fisher` | Mirren (trader), the East Strand fisher (`fisher1`), Teel (trader), Ossa (trader) | 4 |
+| `npc_fisher` | Mirren (trader), the East Strand fisher (`fisher1`), Teel (trader) | 3 |
 | `npc_child` | the village child (`villageChild`), Pell (trader), the Hearth child (`hearthChild`) | 3 |
 | `npc_hood_blue` | Wick (trader), Sennit (trader) | 2 |
-| `npc_villager2` | the second Tidewatch villager (`villager2`), the Hearth wife (`hearthWife`) | 2 |
-| `npc_salter_d` | the shore Salter (`shoreSalter`), Hulla (trader) | 2 |
-| `npc_villager` | Dov (trader), Sandpiper Row's `sandpiper` | 2 |
+| `npc_salter_d` | the shore Salter (`shoreSalter`), Hulla (trader) — left alone, see below | 2 |
 
-Every group above is genuinely different PEOPLE, not one character placed
-twice — each has its own name, its own dialogue ids, and (bar Dov/Ossa/
-Teel/Mirren, who are stops on the Coastwise Chain and never on screen
-together) no two ever appear in the same room. `npc_fisher` is the worst
-case: four separate named characters read as the same person on sight.
+`npc_salter_d` is a different shape from the other three and should
+probably stay shared: both entries spread the same `FOLK.salter` preset
+(`src/data/overworld.js`'s own `FOLK` object) rather than a raw `sprite:`
+field, and `story.js`'s own comment above `DIALOGUE` names this on
+purpose — "the peoples of Thalassia... the Salters the pans" — with both
+characters' own lines identifying them as Salters (`shoreSalter`:
+"Salter, up from the pans"; Hulla's `timberSalter` waiting line: "Wood
+comes ashore, we cut it..."). A shared clan hood for two members of one
+people reads as a uniform. Not touched this session; still pending a
+call from the person running these sessions, same as idle-art's
+design-merit question got asked rather than assumed.
 
-**One of the six groups is a different shape from the other five, and
-should probably be left alone.** `npc_salter_d` (`shoreSalter`/Hulla) is
-the only group where both entries spread the same `FOLK.salter` preset
-(`src/data/overworld.js`'s own `FOLK` object) rather than writing a raw
-`sprite:` field — and `story.js`'s own comment block above `DIALOGUE`
-names exactly this as deliberate: "the peoples of Thalassia... the
-Salters the pans" — both characters' own dialogue lines identify them as
-Salters (`shoreSalter`: "Salter, up from the pans"; Hulla's `timberSalter`
-waiting line: "Wood comes ashore, we cut it..."). A shared clan hood for
-two members of the same people reads as a uniform, not a mistake — worth
-flagging to the person running these sessions before touching it, the
-same way idle-art's design-merit question got asked rather than assumed.
-The other five groups (`npc_fisher`, `npc_child`, `npc_hood_blue`,
-`npc_villager2`, `npc_villager`) all use a raw `sprite:` field with no
-clan framing — generic archetypes reused ad hoc, not a uniform. Those are
-the real gap.
+The other three groups (`npc_fisher`, `npc_child`, `npc_hood_blue`) are
+generic-archetype reuse with no in-fiction framing — the real remaining
+gap, 8 identities. `npc_fisher`'s 3-way collision (down from 4 after
+Ossa moved to `npc_zelda`) needs at least one genuinely NEW extraction;
+no further already-extracted, unused NPC sprite remains after this
+session spent all three that existed.
 
-**Three sprites are already extracted and sitting completely unused**,
-found by checking every name `tools/rip-npcs.py`/`tools/rip-races.py`
-emit against every placement in `src/data/overworld.js`: `npc_elder` and
-`npc_zelda` (`rip-npcs.py`, the same sheet as `npc_villager`/`npc_fisher`/
-`npc_child`) and `npc_brinewife` (`rip-races.py`, alongside `npc_brine_d`/
-`npc_brine_u`). None is placed anywhere in the game. This is
-`docs/ENEMIES.md`'s idle-art situation in reverse: there, every spare
-frame near a candidate was already claimed; here, real spare frames exist
-and nothing has claimed them yet — reassigning one to break up a
-same-sprite collision costs zero new art, only a one-line `sprite:` edit
-per identity plus a fresh look confirming it reads right on that
-character (`npc_brinewife` toward `hearthWife`/`villager2` is the
-obvious first try — the name alone fits one of them).
+## Landed — S61
+
+Zero new art. Three sprites `tools/rip-npcs.py`/`tools/rip-races.py`
+already extract but nothing had ever placed were assigned to break up
+three collisions, one `sprite:` line each in `src/data/overworld.js`,
+each checked in-engine afterward (`tools/shoot-rooms.mjs`, screenshotted,
+compared against the old sprite for anything broken or unauthored — none
+was; `test.mjs`'s "art coverage" check independently confirms zero
+unauthored sprite names):
+
+- `hearthWife` (houseHearth): `npc_villager2` -> `npc_brinewife` (fits —
+  the name alone says "wife," and her own line is about the family home).
+  Also fully resolved `npc_villager2`'s old collision with `villager2`.
+- Ossa (houseNets, `ossaStart`): `npc_fisher` -> `npc_zelda`. Ossa is
+  written as a woman throughout her own lines ("my grandmother rang it")
+  but had been wearing the male-coded "blue-clad man" sprite; this fixes
+  the mismatch as a side effect of fixing the collision. Also trims
+  `npc_fisher`'s group from 4 identities to 3.
+- `sandpiper` (houseSandpiper): `npc_villager` -> `npc_elder`. Fits —
+  `sandpiper`'s own `after` state (`netMender`) addresses the player as
+  "boy" while handing down advice, an elder's register. Also fully
+  resolved `npc_villager`'s old collision with Dov.
 
 ## Full census
 
@@ -82,34 +86,38 @@ first `deals[].text` for a trader.
 | Wick (`wickTrade`) | trader | `npc_hood_blue` | overworld / 0,5,5 | woodChild, wickTrade, wickAfter | no — shares with Sennit |
 | Corriwig (`corriwigTrade`) | trader | `npc_reefkin_d` | overworld / 0,9,5 | coralDiver, corriwigTrade, corriwigAfter | yes |
 | `villager1` | npc | `npc_brine_d` | overworld / 0,4,7 | villager1, elder1 | yes |
-| `villager2` | npc | `npc_villager2` | overworld / 0,4,7 | villager2, villager2After | no — shares with the Hearth wife |
-| Mirren (`mirrenTrade`) | trader | `npc_fisher` | overworld / 0,5,7 | coastFisher, mirrenTrade, mirrenAfter | no — shares with 3 others |
+| `villager2` | npc | `npc_villager2` | overworld / 0,4,7 | villager2, villager2After | yes |
+| Mirren (`mirrenTrade`) | trader | `npc_fisher` | overworld / 0,5,7 | coastFisher, mirrenTrade, mirrenAfter | no — shares with `fisher1`, Teel |
 | `villageChild` | npc | `npc_child` | overworld / 0,5,7 | villageChild, child1 | no — shares with Pell, the Hearth child |
 | Pell (`pellTrade`) | trader | `npc_child` | overworld / 0,4,8 | coastChild, pellTrade, pellAfter | no — shares with `villageChild`, the Hearth child |
-| `shoreSalter` | npc | `npc_salter_d` | overworld / 0,4,8 | shoreSalter, shoreSalterAfter | no — shares with Hulla |
-| Hulla (`hullaTrade`) | trader | `npc_salter_d` | overworld / 0,5,8 | timberSalter, hullaTrade, hullaAfter | no — shares with `shoreSalter` |
-| `fisher1` | npc | `npc_fisher` | overworld / 0,9,8 | fisher1, fisher1After | no — shares with 3 others |
+| `shoreSalter` | npc | `npc_salter_d` | overworld / 0,4,8 | shoreSalter, shoreSalterAfter | no — shares with Hulla (left alone, clan hood) |
+| Hulla (`hullaTrade`) | trader | `npc_salter_d` | overworld / 0,5,8 | timberSalter, hullaTrade, hullaAfter | no — shares with `shoreSalter` (left alone, clan hood) |
+| `fisher1` | npc | `npc_fisher` | overworld / 0,9,8 | fisher1, fisher1After | no — shares with Mirren, Teel |
 | Sennit (`sennitTrade`) | trader | `npc_hood_blue` | overworld / 0,9,8 | sandpiperKid, sennitTrade, sennitAfter | no — shares with Wick |
 | Yarrow (`yarrowTrade`) | trader | `npc_kelper_d` | overworld / 0,1,9 | bogWitch, yarrowTrade, yarrowAfter | yes |
-| Teel (`teelTrade`) | trader | `npc_fisher` | overworld / 0,4,9 | stoneFisher, teelTrade, teelAfter | no — shares with 3 others |
-| Dov (`dovTrade`) | trader | `npc_villager` | overworld / 0,8,9 | wreckSurvivor, dovTrade, dovAfter | no — shares with `sandpiper` |
+| Teel (`teelTrade`) | trader | `npc_fisher` | overworld / 0,4,9 | stoneFisher, teelTrade, teelAfter | no — shares with Mirren, `fisher1` |
+| Dov (`dovTrade`) | trader | `npc_villager` | overworld / 0,8,9 | wreckSurvivor, dovTrade, dovAfter | yes |
 | `shopkeeper` | npc | `npc_shopkeeper` | houseShop / 0,0,0 | shopkeeper, shopkeeper2 | yes |
 | `faroreHome` | npc | `npc_farore_0` | houseMaku / 0,0,0 | faroreHome, faroreHomeAfter | yes |
-| `hearthWife` | npc | `npc_villager2` | houseHearth / 0,0,0 | hearthWife, hearthWifeAfter | no — shares with `villager2` |
+| `hearthWife` | npc | `npc_brinewife` | houseHearth / 0,0,0 | hearthWife, hearthWifeAfter | yes |
 | `hearthChild` | npc | `npc_child` | houseHearth / 0,0,0 | hearthChild, hearthChildAfter | no — shares with `villageChild`, Pell |
-| Ossa (`ossaStart`) | trader | `npc_fisher` | houseNets / 0,0,0 | ossaWait, ossaStart, ossaEnd, ossaAfter | no — shares with 3 others |
-| `sandpiper` | npc | `npc_villager` | houseSandpiper / 0,0,0 | sandpiper, netMender | no — shares with Dov |
+| Ossa (`ossaStart`) | trader | `npc_zelda` | houseNets / 0,0,0 | ossaWait, ossaStart, ossaEnd, ossaAfter | yes |
+| `sandpiper` | npc | `npc_elder` | houseSandpiper / 0,0,0 | sandpiper, netMender | yes |
 
-## What this session did not do
+## What's left
 
-No sprite was extracted, drawn, or reassigned. This is the count, not the
-fix. A future session's real work under this objective: reassign the 3
-already-extracted, already-unused sprites above to break 3 of the 5
-generic-archetype collisions at zero art cost, then check
-`assets/sheets/` for further spare frames for whatever's left (same
-method as `docs/ENEMIES.md`'s idle-art search) before reaching for
-`docs/ART-DIRECTION.md`'s hand-drawing rules — extraction first, per
-CLAUDE.md. `npc_fisher`'s 4-way collision needs at least one new source
-regardless (only one spare covers three gaps at most). Leave
-`npc_salter_d` (`shoreSalter`/Hulla) alone pending a decision from the
-person running these sessions on whether shared-clan-hood is a feature.
+`npc_fisher` (Mirren/`fisher1`/Teel) and `npc_child` (`villageChild`/
+Pell/`hearthChild`) each need at least one genuinely new extraction —
+every already-extracted, unused NPC sprite was spent this session.
+`npc_hood_blue` (Wick/Sennit) is the smallest remaining gap, 2
+identities. Check `assets/sheets/oracle-seasons-npcs.png` (via
+`tools/rip-npcs.py`'s own `find_sprites`, same tool this session used to
+confirm the three reassigned sprites weren't placed anywhere) for a real
+spare frame before reaching for `docs/ART-DIRECTION.md`'s hand-drawing
+rules — extraction first, per CLAUDE.md. A first pass over the sheet's
+fisher/child rows (this session, informal) found mostly walk-cycle
+repeats of the same two archetypes plus unrelated soldier/Zora art in
+the same neighbourhood, and one promising recolour-shaped candidate
+(index 69 on the sheet's own reading order) worth a proper look — not
+confirmed or extracted, flagged for whoever does this next rather than
+rushed.
