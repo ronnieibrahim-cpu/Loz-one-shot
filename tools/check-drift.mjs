@@ -297,6 +297,53 @@ for (const { name, block } of enemyNames) {
 }
 
 // ---------------------------------------------------------------------
+// 7. Named NPCs/traders: sprite uniqueness and dialogue-state count
+//    (rotation objective #5, npc-detail).
+// ---------------------------------------------------------------------
+// A "named NPC" here means one `['npc', x, y, opts]` or `['trader', x, y,
+// opts]` entity literal, read straight off the already-installed `MAPS`
+// (every overworld screen AND every interior — a house is as much a place
+// a named character stands as a village square), never re-parsed from
+// `overworld.js`'s own text. Two entities are the "same identity" only if
+// they share the field that actually carries their name in the data:
+// `dialogue` for an `npc`, the first `deals[].text` for a `trader` — both
+// are already-unique ids nothing else reuses (`docs/prompts/STATE.md`'s
+// allowlist note). A sprite is "reused" when more than one identity's
+// `opts.sprite` resolves to the same string; `FOLK.*` presets are already
+// spread into `opts` by the time this reads it; no re-derivation of that.
+//
+// "Dialogue states" counts every distinct id an identity's own opts can
+// reach: an `npc`'s `dialogue`+`after`; a `trader`'s `waiting`+ every
+// `deals[].text` + `after`. The done-condition (STATE.md #5) asks for
+// >=2; this reports the shortfall, not just a pass/fail, so a future
+// session can see the true count instead of nothing.
+let npcRows = [];
+for (const m of MAPS.values()) {
+  for (const [key, def] of Object.entries(m.roomDefs)) {
+    for (const ent of def.entities || []) {
+      const [type, , , opts] = ent;
+      if (type !== 'npc' && type !== 'trader') continue;
+      const o = opts || {};
+      const identity = type === 'npc' ? o.dialogue : (o.deals && o.deals[0] && o.deals[0].text);
+      const states = type === 'npc'
+        ? [o.dialogue, o.after].filter(Boolean)
+        : [o.waiting, ...(o.deals || []).map(d => d.text), o.after].filter(Boolean);
+      npcRows.push({ map: m.id, key, type, sprite: o.sprite, identity: identity || '(unnamed)', states });
+    }
+  }
+}
+
+const spriteGroups = new Map();
+for (const r of npcRows) {
+  if (!r.sprite) continue;
+  if (!spriteGroups.has(r.sprite)) spriteGroups.set(r.sprite, []);
+  spriteGroups.get(r.sprite).push(r.identity);
+}
+const reusedSprites = [...spriteGroups.entries()].filter(([, ids]) => ids.length > 1);
+const nonUniqueCount = reusedSprites.reduce((n, [, ids]) => n + ids.length, 0);
+const shortDialogue = npcRows.filter(r => r.states.length < 2);
+
+// ---------------------------------------------------------------------
 // Print the table.
 // ---------------------------------------------------------------------
 console.log('=== check-drift ===\n');
@@ -329,6 +376,15 @@ for (const r of enemyReport) {
   const have = ['walk', 'idle', 'attack', 'hurt', 'death'].filter(k => r[k]);
   console.log(`  ${r.name.padEnd(11)} ${have.length ? have.join(',') : '(none)'}`);
 }
+
+console.log(`\nNamed NPCs/traders: ${npcRows.length} total — `
+  + `${npcRows.length - nonUniqueCount} of ${npcRows.length} have a sprite nobody else uses`);
+console.log(`  sprites shared by more than one identity: ${reusedSprites.length}`);
+for (const [sprite, ids] of reusedSprites.sort((a, b) => b[1].length - a[1].length)) {
+  console.log(`    ${sprite.padEnd(16)} ${ids.join(', ')}`);
+}
+console.log(`  identities with fewer than 2 dialogue states: ${shortDialogue.length}`);
+for (const r of shortDialogue) console.log(`    ${r.identity} (${r.map}/${r.key})`);
 
 // ---------------------------------------------------------------------
 // SELF-CHECKS — the only thing that can fail this tool. It measures the

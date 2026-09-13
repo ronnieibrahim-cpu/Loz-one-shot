@@ -1,72 +1,71 @@
-# Next session — survey NPCs, add the drift metric
+# Next session — give three villagers their own look
 
 ## Read first
-- `docs/prompts/STATE.md` — objective #5 (npc-detail) and its file
-  allowlist.
-- `src/data/overworld.js` — every `['npc', ...]` and `['trader', ...]`
-  entity literal (search both strings). Read the `FOLK` object near the
-  top too; several npc/trader entries spread a `FOLK.*` preset instead of
-  writing their own `sprite`.
-- `src/data/story.js`'s `DIALOGUE` object — the actual line text keyed by
-  each `dialogue`/`waiting`/`after`/`deals[].text` id.
+- `docs/NPCS.md` — the full census (S60): which of the 22 named NPCs/
+  traders share a sprite, which sharing looks deliberate (the Salter
+  clan hood) versus generic reuse, and the three already-extracted,
+  already-unused sprites (`npc_elder`, `npc_zelda`, `npc_brinewife`).
+- `docs/prompts/STATE.md` — objective #5 (npc-detail) and its allowlist.
+- `tools/rip-npcs.py` / `tools/rip-races.py` — where `npc_elder`/
+  `npc_zelda`/`npc_brinewife` come from, so a reassignment isn't a guess
+  at what they look like.
 
 ## Why this, now
-Objective #4 (enemy-roster) closed this session (S59) with the person
-running these sessions confirming the idle-art question directly: `urchin`
-stays the only idle pilot, and hurt/attack/death are complete or
-structurally blocked roster-wide. Rotation moves to #5, npc-detail: "every
-NPC has a unique sprite and >=2 dialogue states." A first read of
-`overworld.js` already found real, specific non-uniqueness worth
-recording precisely rather than from memory: `npc_fisher` is the sprite
-for Mirren, Teel and Ossa (three different named traders) plus the plain
-`fisher1` NPC; `npc_child` is Pell's trader sprite and also
-`villageChild`'s and `hearthChild`'s; `npc_villager` is Dov's trader
-sprite and also `sandpiper`'s; `npc_hood_blue` is both Wick's and
-Sennit's; `npc_villager2` is both `villager2`'s and `hearthWife`'s. That
-needs to be turned into an exact, complete table, not left as one read's
-impression — and dialogue-state coverage looks much further along already
-(`story.js`'s own "second states" comment block says every ordinary
-townsperson already has two lines), so the actual gap may be narrower than
-the rotation's headline suggests. No `docs/NPCS.md` exists yet and
-`check-drift.mjs` has no npc-detail metric — objective #4 had both
-(`docs/ENEMIES.md`, the section-6 census) before any art decision got
-made, and this objective should start the same way.
+`check-drift.mjs`'s new npc-detail section (S60) found dialogue states
+already done roster-wide (22 of 22 have >=2) — the real gap is sprite
+uniqueness: 15 of 22 identities share one of 6 sprites. `docs/NPCS.md`
+sharpened that further: one group (`npc_salter_d`, `shoreSalter`/Hulla)
+spreads the same `FOLK.salter` preset on purpose — both characters'
+own dialogue lines identify them as Salters, so a shared clan hood may be
+a feature, not a bug, and needs a call from the person running these
+sessions before it's touched (the idle-art precedent: ask, don't
+default). The other five groups are generic reuse with no in-fiction
+reason, and three sprites — `npc_elder`, `npc_zelda`, `npc_brinewife` —
+are already extracted and sitting completely unused, found by diffing
+every ripper-emitted name against every placement. Reassigning them
+costs zero new art.
 
 ## The task
-1. Add an npc-detail section to `tools/check-drift.mjs`, same pattern as
-   section 6 (the enemy census): import `MAPS` (already imported) and walk
-   every room's `entities` for `'npc'`/`'trader'` literals — this reads
-   the real, resolved objects (FOLK spreads already applied), not text.
-   For each, resolve an identity label (`dialogue` for npc, the first
-   `deals[].text` for trader — both are already-unique ids) and its
-   `sprite`. Report: total named NPCs/traders, how many sprites are used
-   by more than one identity (list the groups), and how many identities
-   have fewer than 2 reachable dialogue ids (npc: `dialogue`+`after`;
-   trader: `waiting`+every `deals[].text`+`after`).
-2. Write `docs/NPCS.md` from that same data (by hand or a throwaway
-   script — the file itself is what's kept): one row per named NPC/trader
-   with its key/screen, sprite, and dialogue-state count, then a short
-   section naming every sprite-reuse group found. Model the file's shape
-   on `docs/ENEMIES.md` (a table plus prose, not just a dump).
-3. Do not hand-draw or extract anything yet. This session is the count,
-   not the fix — the fix needs `docs/ART-DIRECTION.md` + a sheet check per
-   character, which is real work for a later session once the shape of
-   the problem is on paper.
+1. Put the Salter question to the person running these sessions (one
+   short question, like the idle-art one): leave `shoreSalter`/Hulla
+   sharing the hood as deliberate clan dress, or give one a different
+   look anyway. Do not default either way.
+2. Reassign `npc_brinewife`, `npc_elder`, `npc_zelda` to three of the
+   five generic-reuse identities (`docs/NPCS.md`'s table) — one line each
+   in `src/data/overworld.js` (`sprite: '...'`), no ripper or generated
+   file touched. Pick recipients where the sprite plausibly fits (e.g.
+   `npc_brinewife` toward `hearthWife` or `villager2` — check both
+   against `docs/ART-DIRECTION.md`'s register before deciding, a
+   fisherman's wife and a farmer's wife don't necessarily read the same).
+   Screenshot or render each reassigned identity in its own room after,
+   the same in-engine verification `docs/ENEMIES.md`'s art sessions used
+   — a name fitting in prose doesn't guarantee the art reads right next
+   to its room's other sprites.
+3. `npc_fisher` (4 identities: Mirren/fisher1/Teel/Ossa) needs at least
+   one NEW source regardless — the 3 spares above cover at most 3 of the
+   5 non-clan gaps. Check `assets/sheets/oracle-seasons-npcs.png` and
+   `oracle-seasons-races.png` (or whatever `rip-races.py`'s `SHEET`
+   constant names) for a genuinely spare frame near the existing
+   fisherman/child/villager plates before concluding none exists — don't
+   assume the two rippers already found everything, the way `rip-enemies.
+   py`'s near-the-block search missed frames a whole-sheet pass later
+   found (S57).
 
 ## Done means
-- `node tools/check-drift.mjs` prints the new npc-detail line(s) and still
-  exits 0.
-- `docs/NPCS.md` exists, matches what the metric counts (same totals).
-- `node tools/check-playthrough.mjs`, `node tools/test.mjs` still green
-  (no engine file touched, so this should be a no-op check).
+- `node tools/check-drift.mjs`'s npc-detail line shows more than 7 of 22
+  unique, with `docs/NPCS.md` rewritten to match.
+- Every reassigned identity checked in-engine (a scratch probe or
+  screenshot showing the new sprite drawn, not just the data changed).
+- `node tools/check-rippers.mjs` still green (no generated file
+  hand-edited).
 - STATE.md gets one new session-log row (delete the oldest if over 60
   lines).
 
 ## Out of scope
-- Hand-drawing or extracting any new NPC sprite this session.
-- Writing new dialogue text — read what's already in `story.js`'s "second
-  states" section before assuming a gap exists.
-- Re-litigating objective #4 (enemy-roster) or its idle-art decision —
-  closed, human-confirmed, S59.
-- Advancing `OBJECTIVE OF RECORD` — #5 is not done until the metric and
-  `docs/NPCS.md` both say so.
+- Touching `shoreSalter`/Hulla without an explicit answer to the Salter
+  question.
+- Hand-drawing new art before checking the sheets — extraction first,
+  per CLAUDE.md.
+- Re-running the S60 census from scratch — read `docs/NPCS.md`, don't
+  rebuild it, unless the reassignments below make it stale.
+- Advancing `OBJECTIVE OF RECORD` — #5 needs 22 of 22 unique, not 10.
