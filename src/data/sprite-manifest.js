@@ -120,13 +120,13 @@ export const REQUIRED_SPRITES = {
   enemies: [
     ...seq('octorok_d', 2), ...seq('octorok_u', 2), ...seq('octorok_s', 2), 'octorokSea_hurt', 'octorok_death',
     ...seq('crab_', 2), 'crab_death', ...seq('zol_', 2), 'zol_death', ...seq('gel_', 2), 'gel_death', ...seq('keese_', 2), 'keese_death',
-    ...seq('leever_', 2), 'leever_death', ...seq('bubble_', 2), ...seq('beamos_', 2),
+    ...seq('leever_', 2), 'leever_death', ...seq('bubble_', 2), ...seq('beamos_', 2), 'beamos_atk',
     ...seq('beetle_d', 2), ...seq('beetle_s', 2), 'beetle_hurt', 'beetle_death', ...seq('tektite_', 2), 'tektite_death',
     ...seq('wisp_', 2), 'wisp_hurt', 'wisp_death', ...seq('urchin_', 2), 'urchin_death',
     ...seq('moblin_d', 2), ...seq('moblin_u', 2), ...seq('moblin_s', 2), 'moblin_hurt', 'moblin_death',
     ...seq('stalfos_d', 2), ...seq('stalfos_s', 2), 'stalfos_death', 'stalfos_hurt',
     ...seq('darknut_d', 2), ...seq('darknut_s', 2), 'darknut_hurt', 'darknut_death',
-    ...seq('wizzrobe_', 2), 'wizzrobe_hurt', 'wizzrobe_death', ...seq('anglerfry_', 2), 'anglerfry_hurt', 'anglerfry_death', ...seq('barnacle_', 2),
+    ...seq('wizzrobe_', 2), 'wizzrobe_hurt', 'wizzrobe_death', ...seq('anglerfry_', 2), 'anglerfry_hurt', 'anglerfry_death', ...seq('barnacle_', 2), 'barnacle_atk',
     ...seq('jellyfish_', 2), 'jellyfish_death', ...seq('siren_', 2), 'siren_hurt', 'siren_death', ...seq('pincer_', 2), 'pincer_hurt', 'pincer_death',
   ],
 

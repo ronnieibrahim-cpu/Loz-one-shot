@@ -92,6 +92,24 @@ export const ENEMY_ART = {
     ..333311113333..
     .....333333.....` },
   // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  barnacle_atk: { pal: 'barnacle_atk', art: `
+    ................
+    ................
+    ................
+    ................
+    ...3333333333...
+    ..310000000013..
+    .31001333310013.
+    3111000000001113
+    3111311001131113
+    3311311111131133
+    3033331111333303
+    3000113333110003
+    3100000000000013
+    3311310000131133
+    .33333111133333.
+    ...3333333333...` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   beamos_0: { pal: 'beamos_0', art: `
     .....333333.....
     ....31033013....
@@ -125,6 +143,24 @@ export const ENEMY_ART = {
     .33100011333313.
     .31311113333113.
     .33133333331133.
+    ..331100001133..
+    ...3333333333...` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  beamos_atk: { pal: 'beamos_atk', art: `
+    ................
+    ................
+    ......3333......
+    ....33333333....
+    ...3333113333...
+    ...3333113333...
+    ...3333333333...
+    ..333333333333..
+    .31333000033313.
+    .31330000003313.
+    .31330033003313.
+    .31331033013313.
+    .31133100133113.
+    .33113333331133.
     ..331100001133..
     ...3333333333...` },
   // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
@@ -1161,8 +1197,10 @@ export const ENEMY_ART_PALETTES = {
   anglerfry_1: ['#ffd68c', '#ff7b08', '#ff7b08', '#000000'],
   barnacle_0: ['#ffd68c', '#ff7b08', '#ff7b08', '#000000'],
   barnacle_1: ['#ffd68c', '#ff7b08', '#ff7b08', '#000000'],
+  barnacle_atk: ['#ffd68c', '#ff7b08', '#ff7b08', '#000000'],
   beamos_0: ['#ffd68c', '#1984ff', '#1984ff', '#000000'],
   beamos_1: ['#ffd68c', '#1984ff', '#1984ff', '#000000'],
+  beamos_atk: ['#ffd68c', '#1984ff', '#1984ff', '#000000'],
   beetle_d0: ['#ffd68c', '#1984ff', '#1984ff', '#000000'],
   beetle_d1: ['#ffd68c', '#1984ff', '#1984ff', '#000000'],
   beetle_s0: ['#ffd68c', '#1984ff', '#1984ff', '#000000'],

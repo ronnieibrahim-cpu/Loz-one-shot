@@ -1,3 +1,66 @@
+## S89 — surveying the remaining shoot() users: two real wins, five honest misses
+
+Picked up right after S88 (STATE.md's own log calls it S43) built the
+`attackFrame` mechanism and proved it on `moblin`. Task: survey the 7
+other `shoot()`/`shootRing()` users (`octorok`, `octorokSea`, `beamos`,
+`wisp`, `wizzrobe`, `barnacle`, `siren`) for the same zero-new-art
+opportunity, and wire only the ones that honestly qualify.
+
+**Four candidates ruled out cleanly, each for a documented reason rather
+than a shrug**: `octorok`/`octorokSea` share the exact same 4 live
+frames plus one icon already ruled out (S24) — nothing left. `wisp`'s
+substitution source ("Spark") has exactly 2 frames on its own plate,
+both already used. `wizzrobe`'s one spare frame was already spent on
+`deathFrame` (S83). `siren`'s substitution source ("River Zora") has
+exactly 2 real frames — its one visually-adjacent neighbour was already
+identified and rejected as a different creature entirely back at S86.
+None of these four get new art forced onto them just to keep a rollout
+moving.
+
+**Two candidates genuinely qualified, both real extraction finds.**
+`beamos`'s own sheet plate has 8 frames of its eye sweeping through
+different positions — only 2 are used (`beamos_0`/`1`). Box 20, sitting
+right after `beamos_1`, is a 9th: same palette, but the pupil is a solid
+dilated dot instead of `beamos_1`'s open ring — confirmed by quantising
+both rather than eyeballing a resize. Reads naturally as "the eye locked
+fully open, about to fire," a genuine attack telegraph distinct from the
+ordinary "noticed you" pose. `barnacle`'s substitution source ("Like
+Like") has a 5-frame gape cycle — only 2 used. Box 144, right after
+`barnacle_1`, is squashed flatter and wider than the already-open pose,
+reading as the mouth stretched to its absolute fullest right before it
+spits. Added `beamos_atk: (20, 0.5, 0.5, False)` and
+`barnacle_atk: (144, 0.5, 0.5, False)` to `FRAMES` in
+`tools/rip-enemies.py` and re-emitted — `sprites-enemies.js` now 65
+sprites (up from 63), `check-rippers.mjs` stayed 17/17.
+
+Wired `attackFrame: 'beamos_atk'` and `attackFrame: 'barnacle_atk'` (both
+plain strings, since neither enemy has per-facing `frames`). Verified
+both in-engine: `shoot()` immediately shows the attack pose, holds for
+the full `ENEMY_ATTACK_FRAMES` window, then correctly reverts. Both
+enemies are `shield: 'all'` and hp 999 — they can never show
+`hurtFrame`/`dying` at all — confirmed a hit is still blocked outright
+regardless, so there's no interruption case to worry about for either.
+
+`check-drift` reads `beamos: walk,attack` and `barnacle: walk,attack`.
+`validate.mjs`/`test.mjs` (83/83) and `check-feel.mjs` all green.
+Neither `check-playthrough.mjs` (21/21) nor `replay.mjs` (51/51) moved.
+`check-build.mjs` OK, `dist/oracle-of-tides.html` rebuilt and committed.
+
+**The 7-enemy survey this thread set out to do is now complete.** Of the
+8 total `shoot()`/`shootRing()` users in the roster, 3 have `attackFrame`
+(`moblin`, `beamos`, `barnacle`); the other 5 (`octorok`, `octorokSea`,
+`wisp`, `wizzrobe`, `siren`) would need genuinely NEW hand-drawn art —
+and that's a harder ask than a `deathFrame` squash was, because a
+throwing or casting gesture can't just be a flattened silhouette of an
+idle pose the way a collapse can. Whoever picks this up next has to
+actually draw something, following the art rules in `CLAUDE.md` (3
+colours + transparency, hard 1px outline, silhouette-first) rather than
+reuse/squash. Picked `octorok` as the next target: it's the plainest hp
+of the five, and drawing its throwing pose also raises the same
+reuse-vs-new-art question `octorokSea` already answered once for
+`deathFrame` (S80) — worth deciding on purpose again for `attackFrame`,
+not assumed to default the same way.
+
 ## S88 — the attackFrame engine mechanism, built and proven on moblin
 
 Picked up right after S87 (STATE.md's own log calls it S42) closed the

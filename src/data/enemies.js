@@ -157,6 +157,7 @@ export function installEnemies() {
   defineEnemy('beamos', {
     hp: 999, damage: 2, pal: 'stonedk', speed: 0, rate: 12,
     frames: ['beamos_0', 'beamos_1'],
+    attackFrame: 'beamos_atk',
     shield: 'all',
     terrain: 'any',
     drops: 'none',
@@ -348,6 +349,7 @@ export function installEnemies() {
   defineEnemy('barnacle', {
     hp: 999, damage: 2, pal: 'enemyk', speed: 0, rate: 22, terrain: 'any',
     frames: ['barnacle_0', 'barnacle_1'],
+    attackFrame: 'barnacle_atk',
     shield: 'all',
     drops: 'none',
     ai(e, g) {

@@ -149,9 +149,16 @@ FRAMES = {
     'bubble_1': (2, 0.5, 0.5, False),
 
     # Beamos: the sheet has eight frames of its eye sweeping round. Take two
-    # that read as clearly different directions.
+    # that read as clearly different directions. Box 20, right after
+    # beamos_1, is a ninth candidate worth naming separately: same
+    # front-facing eye position but the pupil is a solid dilated dot rather
+    # than beamos_1's open ring — confirmed by quantising both, not just
+    # eyeballing a resize. Used as the attackFrame: the eye fully focused
+    # right before it fires, distinct from beamos_1's ordinary "looking at
+    # you" scan pose.
     'beamos_0': (16, 0.5, 0.5, False),
     'beamos_1': (19, 0.5, 0.5, False),
+    'beamos_atk': (20, 0.5, 0.5, False),
 
     # Spiked Beetle: upright when wandering, balled up when it charges — which
     # is what the engine's charge() does with the side frames.
@@ -229,9 +236,15 @@ FRAMES = {
     'anglerfry_1': (44, 0.5, 0.5, False),
 
     # Barnacle — "a cluster that opens". SUBSTITUTION: original to this game,
-    # so it borrows Like Like, a ridged tube that gapes open and shut.
+    # so it borrows Like Like, a ridged tube that gapes open and shut. The
+    # sheet's own gape cycle is five frames, not two; box 144, right after
+    # barnacle_1, is a genuine sixth-in-sequence candidate — same palette,
+    # confirmed by quantising — squashed flatter and wider than barnacle_1's
+    # already-open pose, reading as the mouth stretched to its fullest right
+    # before it spits. Used as the attackFrame.
     'barnacle_0': (140, 0.5, 0.5, False),
     'barnacle_1': (143, 0.5, 0.5, False),
+    'barnacle_atk': (144, 0.5, 0.5, False),
 
     # Jellyfish. SUBSTITUTION in name only: this is Bari, which already is one.
     # The "Bari & Biri" plate has four Bari frames, not two: box 14 sits right
