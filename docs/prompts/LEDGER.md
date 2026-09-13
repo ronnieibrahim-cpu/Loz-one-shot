@@ -175,6 +175,21 @@ extract from it:
   a continuous line.
 - **Replacing `waterD`.** Every dark-blue seamless water on both overworld
   sheets is more banded than ours. The hand-drawn tile beats the source here.
+- **Hand-drawing `idleFrame` art for `beamos`, `barnacle`, `wizzrobe`,
+  `siren`, `keese`, `zol`, `tektite`, `pincer`.** Ruled out on two
+  independent grounds, neither art alone: none of the 8 clears `urchin`'s
+  own bar of teaching a real dormant/awake distinction (their stillness is
+  either uniformly dangerous or already read through ordinary movement —
+  full reasoning in `docs/ENEMIES.md`'s "Idle states" section), AND a
+  whole-sheet search of `oracle-seasons-enemies.png` (all 344 boxes, not
+  just each candidate's own plate) found zero unclaimed frames for any of
+  them — every same-palette box elsewhere on the sheet is visually a
+  different creature entirely. `urchin` is the only enemy this roster's
+  `idleFrame` lands on; objective #4's "every enemy has idle/.../death"
+  done-condition cannot be met for `idle` without a from-scratch
+  hand-drawing effort across all 8, which is a call for the person running
+  these sessions, not a default. Do not re-run this search a third time
+  without a stated reason the whole-sheet pass could have missed.
 - **Depth-discontinuity checks.** Dry adjacent to deep is 2,095 cells at high
   tide and is simply what a coast is without a beach.
 - **The `rip-terrain.py` hue-blind quantiser.** Still unfixed, but it now

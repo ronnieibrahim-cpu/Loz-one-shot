@@ -191,12 +191,58 @@ question:
   fixed, measurable snap-and-return reach) comes from watching where the
   head visibly stops, not from a resting pose while it hasn't acted yet.
 
-**Verdict: no second `idleFrame` pilot this session.** The concrete next
+**Verdict: no second `idleFrame` pilot that session.** The concrete next
 step, if this objective's rotation returns to `idle` again, is either a
 full sheet re-audit for the remaining 8 (in case any of them turns out
 to have a design case this pass missed) or accepting that `urchin` may
 be the only enemy in this roster where idle art was ever going to teach
 something — not a search for a 9th candidate or an 8-at-once push.
+
+**A follow-up session did that re-audit, whole-sheet this time rather
+than repeating the near-the-block search, and found nothing.** The prior
+audit (table above) only checked boxes adjacent to each of the 8
+candidates' own plates on `oracle-seasons-enemies.png` — a real gap,
+since a couple of these creatures (e.g. `jellyfish`/Bari, `pincer`) turned
+out to have a second occurrence's worth of spare frames sitting right
+next to their own block, so "does a second occurrence exist ELSEWHERE on
+the sheet, away from the block" was a genuinely untested question. This
+session ran `tools/rip-enemies.py`'s own `find_boxes`/`strip_plates` over
+the full sheet (344 boxes total, not just the ~15 checked per candidate
+before), built each of the 8 candidates' quantised palette from their
+known boxes, and flagged every OTHER, unclaimed box anywhere on the sheet
+sharing >60% of that palette — 42 to 189 hits per candidate, because the
+sheet's total colour vocabulary is small and this signal alone is too
+weak to discriminate (grey/tan/black covers most of the cast). Rendered
+the strongest hits at 6x for each of the 8 candidates and looked at them
+directly rather than trusting the palette score: every single one is a
+different creature entirely that merely shares a colour family — a
+helmet-and-shield enemy for `wizzrobe`'s green, an eyeball-spike thing and
+a sword prop for `beamos`/`siren`'s palettes, a coiled shell for `keese`'s
+black, an unrelated red enemy for `zol`/`pincer`'s red — never a second
+pose of the actual target creature. Screenshot kept this session only
+(not committed; the negative result is what matters and is recorded
+here). **Zero unclaimed frames exist anywhere on the sheet for any of the
+8 candidates — not just near their own block.** This closes the "maybe
+S53 missed a spot" question definitively: the search space was the WHOLE
+sheet this time, not a re-run of the same scoped search, and it still
+comes back empty.
+
+**Decision, given both the design-merit finding above and this exhausted
+art search: `urchin` is the only enemy in this roster getting an `idle`
+pose.** Objective #4's own done-condition ("every enemy has
+idle/walk/attack/hurt/death states") cannot be met literally for `idle`
+without hand-drawing new art for all 8 remaining candidates from scratch
+— a real undertaking (8 enemies x new pixel art meeting the 3-colour/
+1px-outline/silhouette rules in `docs/ART-DIRECTION.md`, each needing the
+same in-engine verification `urchin`'s pilot got), not something to start
+inside this task. Whether that hand-drawing is worth doing is a call for
+the person running these sessions, not something to default into —
+flagged in this session's final message rather than started here. Until
+that call is made, this roster's real state is 21 of 22 enemies without a
+meaningful `idle` concept at all (13 by AI shape, 8 blocked on art) and 1
+(`urchin`) with one, and `check-drift.mjs`'s "0 of 22 complete" count will
+stay exactly that shape regardless — the missing state for those 21 is
+`idle`, in every case, not any of the other four.
 
 ## Audit: all 22 lessons checked against the real code
 
