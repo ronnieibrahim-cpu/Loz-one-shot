@@ -1,3 +1,64 @@
+## S87 — anglerfry's deathFrame closes the whole sub-thread; the next gap is attackFrame, piloted on moblin
+
+Picked up right after S86 (STATE.md's own log calls it S41) gave `siren`
+a `deathFrame` and flagged `anglerfry` as the last remaining candidate.
+Task: give `anglerfry` (hp 3, `terrain: 'water'`, `src/data/enemies.js`,
+"hangs in deep water, lunges when you swim near") one too.
+
+**Checked the sheet's own "Cheep-Cheep" plate properly, same discipline
+every session in this thread has kept**: exactly two frames, both
+already used (`anglerfry_0`/`1`), unrelated creatures sitting on either
+side with a wide gap — nothing to extract. Hand-drew `anglerfry_death`,
+an `octorok_death`-style every-other-row squash of `anglerfry_0`, reusing
+only colours already present. Confirmed no spec `z` field. Verified the
+two-hit sequence identically at BOTH tide levels `anglerfry` actually
+exists at (`tideOnly: [1, 2]`) — the same check `octorokSea` (S80) made,
+now repeated on the last water/tideOnly target.
+
+`check-drift` now shows `death` on every killable enemy in the roster;
+only `bubble`/`beamos`/`barnacle` (hp 999, permanently unkillable by
+design) lack it. `validate.mjs`/`test.mjs` stayed 83/83.
+`check-playthrough.mjs` (21/21) and `replay.mjs` (51/51) both unchanged.
+`check-build.mjs` OK, `dist/oracle-of-tides.html` rebuilt and committed.
+
+**This closes the entire `deathFrame` sub-thread running since S26**
+(STATE.md's own numbering) / roughly S70 (this file's numbering) — 17
+enemies given a real collapse pose across ~17 sessions, one per session,
+every single one verified in-engine rather than assumed from reading the
+code.
+
+**Before picking a new direction, checked whether objective #4's OTHER
+half — `docs/ENEMIES.md`, the one-line-behavior-spec documentation —
+was actually finished, rather than assuming it must be since nobody had
+flagged it as incomplete.** It is: all 22 enemies have a spec, and the
+file already carries its own "why this ordering of lessons holds
+together" section arguing explicitly that no two entries teach the same
+lesson (three unkillable enemies form a deliberate escalation; the three
+`submerge()` users each punish their exposure window differently; etc).
+Nothing left to do there.
+
+**The real remaining gap is the art half's `idle`/`attack` states.**
+`check-drift`'s roster print has never shown either on any enemy in this
+whole thread — not because nobody's gotten to it, but because no engine
+field for `attack` exists at all yet (`idle` is folded into the ordinary
+walk cycle everywhere; no enemy has a distinct standing-still pose
+separate from its walk frames). Rather than starting a 22-enemy rollout
+cold, went looking for the SMALLEST real first step and found one:
+`moblin_d1`/`u1`/`s1` are already-extracted art (`rip-enemies.py`'s own
+FRAMES comment: "idle frame, then the same angle with its spear
+raised") that currently just alternates into the ordinary walk cycle as
+if it were a second walk frame, rather than being shown specifically
+during the actual spear-throw (`shoot()` call in `moblin`'s `ai()`). This
+means a real `attackFrame` mechanism — mirroring how `hurtFrame` (S12)
+and `deathFrame` (S13) were each first proven on a single enemy before
+becoming a roster-wide thread — could be prototyped on `moblin` with
+ZERO new art, just engine plumbing: a `spec.attackFrame` field, an
+`Enemy` field tracking "currently attacking," and a `spriteName()` check,
+the same shape `hurtFrame`/`deathFrame` already established. Next
+session's task: build that mechanism and land it on `moblin` specifically
+— not a full 22-enemy rollout, which would be too big for one session
+the same way the `deathFrame` rollout took 17.
+
 ## S86 — siren's deathFrame confirms submerge() generalises, and a real replay divergence this time
 
 Picked up right after S85 (STATE.md's own log calls it S40) gave

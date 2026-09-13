@@ -764,6 +764,37 @@ export const ENEMY_HURT_ART = {
     3003113333113003
     0333111331113330
     ..000000000000..` ,
+
+  // Anglerfry death — drawn: the sheet's own "Cheep-Cheep" plate
+  // (anglerfry's substitution source) has exactly two frames, both
+  // already extracted as anglerfry_0/1, confirmed against the sheet's
+  // own "Cheep-Cheep" label spanning only those two boxes — unrelated
+  // creatures sit on either side with a wide gap, no shared plate.
+  // Nothing to extract; hand-drawn instead. Squashed anglerfry_0
+  // following octorok_death's own every-other-row squash template: rows
+  // 0/2/4/6/8/10/12/14 of its 16-row grid (sprites-enemies.js) kept
+  // pixel-for-pixel and compressed to the bottom half of the cell,
+  // reusing only colour indices already present. anglerfry (hp 3,
+  // terrain: 'water', src/data/enemies.js) has no z field, confirmed
+  // directly. THE LAST deathFrame TARGET in this thread's whole run: every
+  // killable enemy now has one (see docs/prompts/STATE.md).
+  anglerfry_death: `
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ......3333......
+    ...333333003....
+    .3000000333333..
+    .3030300330003..
+    .3333003330033..
+    3000003000013003
+    3000013000113003
+    ..333111113..33.` ,
 };
 
 export function installEnemyHurtSprites() {
