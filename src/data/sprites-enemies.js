@@ -488,6 +488,24 @@ export const ENEMY_ART = {
     .00033333333000.
     ...0033003300...` },
   // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  leever_death: { pal: 'leever_death', art: `
+    ................
+    ................
+    ................
+    ................
+    ................
+    .....33..33.....
+    ....303..303....
+    ..33303..30333..
+    ..303033330303..
+    ..303331133303..
+    ..300333333003..
+    .33100333300133.
+    3003103333013003
+    0003313333133000
+    0030333333330300
+    .00003333330000.` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   moblin_d0: { pal: 'moblin_d0', art: `
     3333..3333..3333
     3111331111331113
@@ -1093,6 +1111,7 @@ export const ENEMY_ART_PALETTES = {
   keese_1: ['#ffd68c', '#ffd68c', '#ffd68c', '#000000'],
   leever_0: ['#ffd68c', '#ff0829', '#ff0829', '#000000'],
   leever_1: ['#ffd68c', '#ff0829', '#ff0829', '#000000'],
+  leever_death: ['#ffd68c', '#ff0829', '#ff0829', '#000000'],
   moblin_d0: ['#ffd68c', '#ff0829', '#ff0829', '#000000'],
   moblin_d1: ['#ffd68c', '#ff0829', '#ff0829', '#000000'],
   moblin_s0: ['#ffd68c', '#ff0829', '#ff0829', '#000000'],

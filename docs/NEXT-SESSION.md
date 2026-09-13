@@ -1,3 +1,60 @@
+## S77 — leever's deathFrame, and confirmation the playthrough fix holds
+
+Picked up right after S76 (STATE.md's own log calls it S31) closed the
+`check-playthrough`/`replay` timing problem. Task: give `leever` (hp 2,
+`terrain: 'land'`, `src/data/enemies.js`) a `deathFrame` — the 7th enemy in
+this thread, after `gel`, `keese`, `octorok`, `urchin`, `crab`, `zol`.
+
+**Checked the sheet's own "Leever" plate for a death pose specifically**,
+not reusing S24's "check once, assume forever" mistake from a different
+enemy. Four frames total: a buried sand mound (unused — the engine hides
+the sprite outright via `submerge()`, never animates rising), the two
+fully-emerged claws-raised poses already extracted as `leever_0`/`leever_1`
+— and a THIRD frame (sheet box 137) sitting between them that nothing had
+mapped: same four-colour palette as the other two, claws only partway up,
+body still low, confirmed against the sheet's own "Leever" label spanning
+all four boxes. A genuine extraction, not a hand-draw: added
+`leever_death: (137, 0.5, 1.0, False)` to `FRAMES` in `tools/rip-enemies.py`
+and re-emitted (`sprites-enemies.js` now 59 sprites, `check-rippers.mjs`
+stayed 17/17). It reads as the creature sinking back down into the sand
+rather than standing fully risen — the same burrowing motion the enemy is
+built around, now doing double duty as its own defeat animation, not a
+pose invented from nothing.
+
+**Verified both halves of the `submerge()` interaction directly, rather
+than re-deriving them from S20's older `hurtFrame`-era finding**: pinned
+`e._subState = 'down'` / `e.hidden = true` / `e.invuln = 9999` (buried) and
+confirmed a lethal hit does NOT connect at all — `hurt()` returns `false`,
+`hp` and `dying` both untouched. Then pinned `e._subState = 'up'` /
+`e.hidden = false` / `e.invuln = 0` (surfaced) and confirmed a lethal hit
+DOES connect: `dying = true`, `spriteName()` returns `leever_death`, holds
+for the full `ENEMY_DEATH_FRAMES` stall, then `dead = true`. `leever` has
+no `z` field, confirmed before deciding the pose could sit at its natural
+low position rather than needing a `wisp`/`keese`-style centred placement.
+
+**Confirmed S76's fix actually holds under a new `deathFrame`, rather than
+assuming it because the last session said so.** This session's own prompt
+explicitly said `check-playthrough.mjs`/`replay.mjs` should be GREEN going
+in, and a red result afterward would be this session's own fault, not a
+known-bad baseline to route around. Ran both after `leever_death` landed:
+`replay.mjs` is 51/51, `check-playthrough.mjs` is 21/21, both unchanged
+from S76's own numbers. `leever` is not one of the enemies placed as
+densely as `crab`/`zol` were, so this is a fairly easy case for the fix to
+hold under — worth remembering that a future `deathFrame` addition to a
+more heavily-placed enemy is still the more informative test of whether
+S76's fix generalises, not this one.
+
+`check-drift` reads `leever: walk,death`. Roster status now: `hurt` on
+`wisp`, `beetle`, `darknut`, `moblin`, `wizzrobe`, `siren`, `anglerfry`,
+`pincer`, `octorokSea`, `stalfos`; `death` on `wisp`, `stalfos`, `gel`,
+`keese`, `octorok`, `urchin`, `crab`, `zol`, `leever`. Full suite green:
+`validate.mjs`, `test.mjs` 83/83, `check-rippers.mjs` 17/17,
+`check-playthrough.mjs` 21/21, `replay.mjs` 51/51, `check-build.mjs` OK.
+`DETOUR TOKENS` stays at 0 (S76 spent the only one; two consecutive
+`objective` sessions — this one and whichever comes next — regenerate it).
+Pushed to the standing branch and fast-forwarded `main` on top, same
+pattern earlier sessions in this thread used.
+
 ## S76 — the two playthrough failures were real, and neither was what the report said
 
 Picked up a bug report (written against `3f9906d`) claiming

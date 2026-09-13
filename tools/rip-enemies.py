@@ -134,10 +134,15 @@ FRAMES = {
     # only nine pixels wide, below the box finder's minimum.
     'keese_0': (125, 0.5, 0.5, False),
 
-    # Leever, surfaced. The buried frames are unused: the engine hides the
-    # sprite outright while submerge() has it under the sand.
+    # Leever, surfaced. The buried frame (box 136, a plain sand mound) is
+    # unused: the engine hides the sprite outright while submerge() has it
+    # under the sand. Box 137 sits between that and the two fully-risen
+    # frames below — same palette, claws only partway up, body still low —
+    # used as the deathFrame: the creature sinking back down rather than
+    # standing fully emerged reads as its own defeat, not a generic pose.
     'leever_0': (138, 0.5, 1.0, False),
     'leever_1': (139, 0.5, 1.0, False),
+    'leever_death': (137, 0.5, 1.0, False),
 
     # Anti-Fairy, the skull-in-a-bubble hazard.
     'bubble_0': (1, 0.5, 0.5, False),

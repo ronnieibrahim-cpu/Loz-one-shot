@@ -125,6 +125,7 @@ export function installEnemies() {
   defineEnemy('leever', {
     hp: 2, damage: 2, pal: 'enemyp', speed: 0.5, rate: 9,
     frames: ['leever_0', 'leever_1'],
+    deathFrame: 'leever_death',
     terrain: 'land',
     drops: 'common',
     ai(e, g) {
