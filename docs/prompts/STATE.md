@@ -1,4 +1,4 @@
-OBJECTIVE OF RECORD: 4 enemy-roster
+OBJECTIVE OF RECORD: 5 npc-detail
 
 ROTATION (fixed, do not reorder):
   1 wide-rooms      — 3 of 6 dungeons have a 2x2 or 3x1
@@ -29,32 +29,31 @@ ROTATION (fixed, do not reorder):
   8 feel-measure    — done when >=40 feel.js constants are tagged
                       `measured` against the emulator
 
-FILE ALLOWLIST for the current objective (4 enemy-roster):
-  docs/ENEMIES.md (one-line behavior spec per enemy; no two share a lesson)
-  src/data/sprites-enemies.js — GENERATED (rip-enemies.py). Never hand-edit;
-    new frames go through the ripper, or a NEW hand-authored file if none
-  src/data/sprites-enemies-hurt.js (hand-drawn hurtFrame/deathFrame art the
-    sheet lacks — new keys need only sprite-manifest.js)
-  src/data/enemies.js (wire hurtFrame/deathFrame/attackFrame on a
-    defineEnemy call, S12/S13/S43; attackFrame set via shoot()/shootRing())
-  src/data/feel.js — new constant needs a unit + provenance comment,
-    check-feel.mjs must stay green (ENEMY_ATTACK_FRAMES, S43)
-  src/game/enemy.js — spriteName priority dying>hurtFrame>attackFrame>walk
-  tools/check-drift.mjs — "hurt"/"death"/"attack" read the real spec field,
-    no naming proxy left (S14/S43)
+FILE ALLOWLIST for the current objective (5 npc-detail):
+  docs/NPCS.md — NEW: one row per named NPC/trader (key, sprite, dialogue
+    states), sprite-reuse table, design notes as art lands
+  tools/check-drift.mjs — new npc-detail metric, reading MAPS directly
+    (pattern: section 6's enemy census), never re-parsed from text
+  src/data/overworld.js — npc/trader placements only (sprite/dialogue/
+    after/waiting/deals[].text); never room maps/legends
+  src/data/sprites-npcs.js — GENERATED (rip-npcs.py). Never hand-edit
+  tools/rip-npcs.py — only for a real spare sheet frame, rip-enemies.py's
+    method
+  src/data/story.js — DIALOGUE text only, for a genuinely new state
   dist/oracle-of-tides.html
   docs/NEXT-SESSION.md
   docs/prompts/LEDGER.md
 
-Note (keep): art-provenance (#2) is done per S9/S74 — every real sprite
-carries a tag; check-drift's "untagged" (175) is only the shared regex
-matching non-sprite palette/layout data, documented S70-S74. boss-art (#3)
-is done per S75 (docs/ART-BACKLOG.md): all 8 bosses stay hand-drawn,
-reasoned per-boss. If either is wrong, revert OBJECTIVE OF RECORD to it.
+Note (keep): #2 done S9/S74 (untagged 175 = non-sprite regex noise,
+S70-S74). #3 done S75 (docs/ART-BACKLOG.md, all 8 bosses hand-drawn,
+reasoned). #4 done S59 (human decision): hurt/death/attack complete or
+structurally-blocked roster-wide (S25/S41/S58); idle deliberately
+urchin-only, the other 8 judged against its bar and none clear it
+(S55/S57), person running sessions confirmed no further idle art (S59).
+Wrong on any of these three -> revert OBJECTIVE OF RECORD.
 
 DETOUR TOKENS: 0
 
 SESSION LOG: one row per session — `S## | objective|detour | one line`
-S56 | objective | AUDITED all 22 docs/ENEMIES.md lessons against the real code in src/data/enemies.js/src/game/enemy.js, per NEXT-PROMPT.md's own instruction following S99's accidental urchin find. Confirmed each with a scratch probe (check-motion.mjs's headless boot pattern), not by reasoning alone. Two real code bugs found and fixed: beamos claimed "only fires along its own facing axis" but had aim:true with no aligned() check, firing an aimed shot at any range <80 regardless of alignment — probe confirmed a hit 40px off both axes; fixed to match octorok's own shape (aligned(e,g,14) gates the shot, no aim passed), reprobed at 0 off-axis hits. leever claimed to spend "most of its time buried" but its submerge(down:70,up:110) had it surfaced the LONGER half of every cycle — probe measured 38.5% hidden; swapped to down:110,up:70 (same 180f total), reprobed at 60.5% hidden. Neither is on check-playthrough's route or a replay tape, so no timing-drift risk. One doc-only fix: anglerfry's "sits still like part of the scenery" line was wrong, not the code — its idle wander(speed:0.35) genuinely drifts (~82px/600f measured), and this file's own "Why this ordering" section already correctly lists it as "never meaningfully still," contradicting the roster table's own line; reworded the line rather than nerf a deliberate behavior (code comment: "Drifts on its lure"). Other 18 lessons read and checked out true, including every shield:'front' claim traced through Enemy.hurt()'s opposite[dir]===this.dir check against both a projectile's travel dir and a sword swing's this.dir (player's own facing) — consistent for both. Full regression: validate/test(83/83)/check-feel/check-motion(8/8) all green, check-playthrough 21/21 and replay.mjs 51/51 BOTH unchanged, check-rippers 17/17 (no generated sprite file touched). check-build OK, dist rebuilt. docs/ENEMIES.md and docs/prompts/LEDGER.md updated with the full account; no findings deferred to docs/NEXT-SESSION.md since every real mismatch found was small enough to fix in this same session
-S57 | objective | Per NEXT-PROMPT.md's own instruction, made the written decision on idle's remaining 8 candidates rather than leaving it open again. Ran a genuine WHOLE-SHEET re-audit (all 344 boxes on oracle-seasons-enemies.png via find_boxes/strip_plates, not S53's near-the-block scoping) for beamos/barnacle/wizzrobe/siren/keese/zol/tektite/pincer: built each candidate's quantised palette, flagged every unclaimed box anywhere on the sheet sharing >60% of it (42-189 hits per candidate — the signal is weak since the sheet's colour vocabulary is small), then rendered the strongest hits at 6x and looked at them directly. Every hit is a different creature sharing only a colour family (a helmet enemy for wizzrobe's green, an eyeball-spike and a sword prop for beamos/siren, a coiled shell for keese, unrelated red enemies for zol/pincer) — never a second pose of the actual target. Zero unclaimed frames exist anywhere on the sheet for any of the 8, not just near their own block, closing the "maybe S53 missed a spot" question for good. Combined with S55's independent design-merit finding (none of the 8 clear urchin's own dormant/awake bar), the decision is written into docs/ENEMIES.md's Idle section and docs/prompts/LEDGER.md's negations: urchin is the only enemy this roster's idleFrame lands on; objective #4's literal "every enemy has idle/.../death" done-condition cannot be met for idle without hand-drawing new art for all 8 from scratch, which is flagged to the user as a call for them, not defaulted into. Zero code changes this session (rip-enemies.py/sprites-enemies.js untouched, confirmed via check-rippers 17/17 before and after). Full regression unchanged: validate/test(83/83)/check-feel/check-motion(8/8)/check-playthrough(21/21)/replay(51/51)/check-rippers(17/17)/check-build all green
 S58 | objective | Per NEXT-PROMPT.md's own instruction, audited stalfos's missing attack state — the only one of the 6 non-idle-eligible enemies check-drift showed missing attack that S52/S97's "confirmed structural wall" list (crab/gel/leever/urchin/jellyfish) never actually named. Read stalfos.ai() and both functions it calls (flee/chase, src/game/enemy.js) in full: pure movement, no shoot/charge/hop, no attackTime set anywhere — same shape as the other 5. Found docs/ENEMIES.md's own "Why this ordering" section already stated the reason in plain language before this audit started: "stalfos retreats with no attack at all, purely to deny a swing" — its whole lesson IS having no attack, so an attackFrame would mean inventing an attack for an enemy whose design is not having one. Closed: stalfos joins the structural wall, now 6 enemies (crab/gel/leever/urchin/jellyfish/stalfos). Zero code changes — a documentation gap (unenumerated case), not a missed engine opportunity. docs/ENEMIES.md and docs/prompts/LEDGER.md updated. Full regression unchanged: validate/test(83/83)/check-feel/check-motion(8/8)/check-playthrough(21/21)/replay(51/51)/check-rippers(17/17)/check-build all green
+S59 | objective | NEXT-PROMPT.md's whole task was getting the idle-art judgement call answered rather than deciding it alone (docs/ENEMIES.md's "Idle states" section already showed every one of the 8 remaining candidates failing urchin's own design-merit bar, independent of the art question). Put it to the person running these sessions directly: hand-draw one anyway, or close the thread. Answer: leave it alone. Followed up with the natural next question — since hurt/death/attack were already closed roster-wide (S25/S41/S58) and idle is now closed too, objective #4 (enemy-roster) has no further open work under its current allowlist; asked whether to mark it done and advance the rotation. Answer: yes, advance. STATE.md rewritten: OBJECTIVE OF RECORD -> 5 npc-detail, allowlist rewritten for it (docs/NPCS.md is new — no such file existed), enemy-roster's closure reasoning folded into the Note line. Zero code changes (no file outside STATE.md/NEXT-PROMPT.md/LEDGER.md touched); check-drift/check-playthrough/build re-run to confirm nothing regressed while idle
