@@ -288,9 +288,16 @@ export function installEnemies() {
     hp: 2, damage: 2, pal: 'enemyp', speed: 0.25, rate: 16, terrain: 'any',
     frames: ['urchin_0', 'urchin_1'],
     deathFrame: 'urchin_death',
+    // First idleFrame in the roster (docs/ENEMIES.md's idle scoping
+    // section). Hand-drawn — src/data/sprites-enemies-hurt.js's own comment
+    // on `urchin_idle` has the sheet-exhaustion account. Gated directly by
+    // ai() below on the exact condition that already decides whether this
+    // enemy does anything at all, not a generic movement timer.
+    idleFrame: 'urchin_idle',
     shield: 'front',
     drops: 'common',
     ai(e, g) {
+      e.idle = g.tide.level < 1;
       if (g.tide.level >= 1) wander(e, g, { speed: 0.3, decide: 2 });
     },
   });

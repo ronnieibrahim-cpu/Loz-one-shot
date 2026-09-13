@@ -9,10 +9,11 @@ if this file and that one ever disagree, the code is right and this file
 is stale.
 
 This is the documentation half of the objective. The art half — every
-enemy having idle/walk/attack/hurt/death sprite states, which
-`tools/check-drift.mjs` currently reports as 9 of 22 complete (up from 0
-before `attackFrame` work began) — is a separate, much larger undertaking
-and is scoped, not addressed, below.
+enemy having idle/walk/attack/hurt/death sprite states — is a separate,
+much larger undertaking, scoped (and partly piloted) below.
+`tools/check-drift.mjs` reports 0 of 22 with the full 5-state set
+(`idle` included), but 9 of 22 already have walk/attack/hurt/death, and
+one (`urchin`) now has `idle` too — see below for both.
 
 | Enemy | What fighting it teaches |
 |---|---|
@@ -57,7 +58,7 @@ all, purely to deny a swing — a zoner versus an evader. `zol`/`gel` and
 the tide-linked pair `urchin`/`jellyfish` are similarly built to be read
 together rather than alone.
 
-## Idle states: scoped, and found not to fit yet
+## Idle states: scoped, then piloted on one enemy
 
 `Enemy.spriteName()` (`src/game/enemy.js`) has no concept of "idle" at
 all: its priority order is `dying > hurtFrame > attackFrame > walk
@@ -106,29 +107,47 @@ own comments already identified nearby has already been claimed:
 | `keese`, `zol`, `tektite`, `siren` | none found | both of their only 2 frames are already walk-cycle + `attackFrame` |
 
 Zero unclaimed frames remain for any of the 9 candidates. Wiring `idle`
-today would mean either reusing an already-claimed pose for a second,
-conflicting meaning (`urchin`'s retracted-spike `deathFrame` doubling as
-its dormant pose would make the same sprite mean both "defeated" and
-"asleep") or hand-drawing new art — a real undertaking (potentially 9
-new frames) that CLAUDE.md's extraction-first rule says shouldn't be
-reached for until the sheets are re-audited in full, which is a sheet
-research task and not a wiring one. That audit is the concrete next step
-if this objective's rotation ever returns to `idle`, not more AI survey.
+for any of the other 8 today would mean either reusing an already-claimed
+pose for a second, conflicting meaning (`urchin`'s own retracted-spike
+`deathFrame` doubling as a dormant pose would have made the same sprite
+mean both "defeated" and "asleep" — see below for why it got a real new
+pose instead) or hand-drawing new art for each of them in turn — a real
+undertaking that CLAUDE.md's extraction-first rule says shouldn't be
+reached for casually, one enemy at a time, without weighing it against a
+sheet re-audit first.
 
-**No pilot enemy was wired this session.** `urchin` was the strongest
-candidate by AI shape and came closest — its 2 live frames carry no
-`attackFrame` competing for them — but still has no unclaimed art, so
-piloting it would mean hand-drawing on the strength of a single enemy,
-which is the shaky case this scoping was told to avoid.
-
-If a future session clears the art blocker (new sheet frames found, or
-a deliberate decision to hand-draw), the shape to build is
-`spec.idleFrame` — a single pose, the same shape `spec.attackFrame`
-already takes, not `spec.idleFrames` (a cycle): these are held poses for
-a state, not animations. Splice it into `spriteName()`'s existing chain
-as `dying > hurtFrame > attackFrame > idle > walk`, gated on an explicit
-per-enemy flag that enemy's own `ai()` sets (mirroring how `attackTime`
-is set explicitly by `shoot()`/`charge()`/`hop()`, never inferred
-generically) — a generic "hasn't moved in N frames" timer would
+**`urchin` was piloted anyway, in a follow-up session, as a deliberate
+hand-draw decision** — not a shortcut around the finding above, but the
+one candidate worth spending hand-drawn art on immediately: it has no
+`attackFrame` competing for its 2 live frames, and "dormant and harmless
+below tide level 1" versus "awake and dangerous at or above it" is a
+real design distinction the player can learn to read, not a mechanical
+pause. `urchin_idle` (`src/data/sprites-enemies-hurt.js`) is a genuinely
+new pose — the crown's four tallest spike-tip rows blanked outright,
+sitting visibly lower and flatter than `urchin_0`/`_1`'s full spike
+crown while keeping the notched shell texture `urchin_death`'s smooth
+dome fills in entirely — confirmed distinct from both neighbours by
+rendering all three side by side from the real palette before wiring it
+in (a first, subtler draft that only trimmed a couple of edge pixels
+looked identical to `urchin_0` at actual size and was discarded).
+`Enemy.spriteName()` now reads `spec.idleFrame` (`src/game/enemy.js`)
+between `attackFrame` and the plain walk cycle, and `urchin`'s own
+`ai()` (`src/data/enemies.js`) sets `e.idle = g.tide.level < 1` directly
+— the exact condition that already decides whether it does anything at
+all, not a generic "hasn't moved in N frames" timer (which would
 misfire on every walker's ordinary pause between lattice-step
-decisions, which is not a meaningful idle.
+decisions). Verified in-engine: forcing the tide to LOW shows
+`urchin_idle`, forcing it back to HIGH reverts to the ordinary walk
+cycle, cycling back to LOW re-triggers it, and a lethal hit taken while
+dormant still shows `urchin_death`, not the idle pose — the same
+priority-order proof every other field in this roster got.
+`tools/check-drift.mjs` now reads `idleFrame` the same way it reads
+`hurtFrame`/`attackFrame`/`deathFrame`, and `urchin` reports
+`walk,idle,death`.
+
+**The finding for the other 8 stands unchanged**: no free art, and no
+enemy among them has as clean a design case as `urchin`'s tide gate. The
+concrete next step, if this objective's rotation returns to `idle`
+again, is either a full sheet re-audit for the remaining 8 or a
+one-at-a-time hand-draw decision on whichever of them has the next-best
+design case — not a search for a new mechanism, and not all 8 at once.

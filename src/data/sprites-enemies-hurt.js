@@ -1002,6 +1002,51 @@ export const ENEMY_HURT_ART = {
     3000003000013003
     3000013000113003
     ..333111113..33.` ,
+
+  // Urchin idle — drawn: the sheet's own "Spiny Beetle" plate has exactly
+  // three poses (docs/ENEMIES.md's idle scoping section): the two spiky
+  // frames already extracted as `urchin_0`/`urchin_1`, and the smooth
+  // retracted dome already spent on `urchin_death`. Nothing left to
+  // extract; hand-drawn, the first `idleFrame` in the roster. Piloted
+  // here specifically because `urchin` is the strongest AI-shape
+  // candidate `docs/ENEMIES.md` found: `ai()` (src/data/enemies.js) does
+  // nothing at all while the tide is below level 1, a real
+  // "dormant, harmless" state, not a mechanical pause between actions.
+  // `urchin_0`'s own grid (sprites-enemies.js) is reused pixel-for-pixel
+  // for rows 4-15 — the notched shell texture and the leg/base silhouette
+  // that read as "this is an urchin" are both untouched. Rows 0-3 (the
+  // four tallest spike-tip rows) are blanked outright rather than edited a
+  // few pixels at a time, the same "silhouette may change" latitude this
+  // file's header reserves for `_death` — an idle pose needs the same
+  // latitude for the opposite reason: a few-pixel edit (the `hurtFrame`
+  // norm) rendered too close to `urchin_0` to read as a different state at
+  // actual in-game size, confirmed by rendering both from the real
+  // palette side by side before committing to this version. The result
+  // sits visibly lower and flatter in the cell than `urchin_0`/`_1`'s full
+  // spike crown, reading as spikes lowered/relaxed rather than extended,
+  // while keeping the segmented notch pattern `urchin_death`'s single
+  // smooth rounded dome fills in entirely — a real middle state, not a
+  // step toward either neighbour. `urchin` has no `z` field, so no
+  // height-offset consideration applies. Wired as `spec.idleFrame`
+  // (src/data/enemies.js, src/game/enemy.js), gated on the same
+  // `g.tide.level < 1` condition `ai()` already reads.
+  urchin_idle: `
+    ................
+    ................
+    ................
+    ................
+    .30010300301003.
+    ..300130031003..
+    ..333331133333..
+    ..300133331003..
+    .30010301311003.
+    .30003001030003.
+    333333000033333.
+    33322300003223..
+    32300333333003..
+    322333322333323.
+    303332322323223.
+    .3...3222233303.` ,
 };
 
 export function installEnemyHurtSprites() {

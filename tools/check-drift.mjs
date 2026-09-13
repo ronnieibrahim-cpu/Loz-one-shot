@@ -242,23 +242,28 @@ for (const file of SPRITE_FILES) {
 // 6. Enemies with a complete five-state animation set (rotation
 //    objective #4, enemy-roster).
 // ---------------------------------------------------------------------
-// `src/game/enemy.js` recognises four per-species animation fields today:
-// `spec.frames` (the walk cycle an idle pose is also drawn from — this
-// engine, like its source games, has no separate idle art), `spec.hurtFrame`
-// (a single flinch frame, S12), `spec.deathFrame` (a single held pose before
-// removal, S13 — `Enemy.die()` stalls `remove=true` behind it), and
-// `spec.attackFrame` (a single held telegraph pose while `shoot()`/
-// `shootRing()`'s attack timer runs — piloted on `moblin` first, the same
+// `src/game/enemy.js` recognises five per-species animation fields today:
+// `spec.frames` (the walk cycle), `spec.hurtFrame` (a single flinch frame,
+// S12), `spec.deathFrame` (a single held pose before removal, S13 —
+// `Enemy.die()` stalls `remove=true` behind it), `spec.attackFrame` (a
+// single held telegraph pose while `shoot()`/`shootRing()`/`charge()`/
+// `hop()`'s attack timer runs — piloted on `moblin` first, the same
 // one-enemy-before-a-roster-wide-thread shape `hurtFrame`/`deathFrame` each
-// started from). All four read the real spec field straight from the
-// enemy's own `defineEnemy` block, the same as "walk" does — sprite-key
-// NAMING was only ever a temporary proxy for a field before it existed
-// (S13 found "death" still using a naming proxy after "hurt" had already
-// moved off it; "attack" carried the same proxy until this session gave it
-// a real engine field to read instead). Reading close to zero complete
-// enemies today is still the expected baseline — only `moblin` has all
-// four so far, and `idle` (a genuinely distinct standing pose, not just the
-// walk cycle at rest) has no engine concept at all yet.
+// started from), and `spec.idleFrame` (a single held pose while the
+// enemy's own `ai()` sets `this.idle` true — piloted on `urchin`, gated on
+// the exact tide condition that already decides whether it does anything
+// at all). All five read the real spec field straight from the enemy's
+// own `defineEnemy` block, the same as "walk" does — sprite-key NAMING was
+// only ever a temporary proxy for a field before it existed (S13 found
+// "death" still using a naming proxy after "hurt" had already moved off
+// it; "attack" carried the same proxy until a later session gave it a
+// real engine field to read instead). `idle` is NOT a meaningful concept
+// for most of this roster: `docs/ENEMIES.md`'s "Idle states: scoped, and
+// found not to fit yet" section found 13 of 22 enemies never meaningfully
+// stationary, and of the 9 that are, only `urchin` currently has an
+// `idleFrame` — every other candidate has zero free sheet art to draw a
+// distinct pose from (same section, with the per-enemy account). Reading
+// close to zero complete enemies is the expected baseline, not a defect.
 let enemyNames = [];
 {
   let text;
@@ -282,12 +287,13 @@ let enemiesComplete = 0;
 const enemyReport = [];
 for (const { name, block } of enemyNames) {
   const walk = /\bframes\s*:/.test(block);
+  const idle = /\bidleFrame\s*:/.test(block);
   const hurt = /\bhurtFrame\s*:/.test(block);
   const attack = /\battackFrame\s*:/.test(block);
   const death = /\bdeathFrame\s*:/.test(block);
-  const complete = walk && hurt && attack && death;
+  const complete = walk && idle && hurt && attack && death;
   if (complete) enemiesComplete++;
-  enemyReport.push({ name, walk, hurt, attack, death });
+  enemyReport.push({ name, walk, idle, hurt, attack, death });
 }
 
 // ---------------------------------------------------------------------
@@ -318,9 +324,9 @@ console.log(`\nSprite provenance, across ${SPRITE_FILES.length} sprites-*.js fil
   + `${spriteCensus.total} entries — ${spriteCensus.extracted} extracted, `
   + `${spriteCensus.derived} derived, ${spriteCensus.drawn} drawn, ${spriteCensus.untagged} untagged`);
 
-console.log(`\nEnemies with a complete walk/attack/hurt/death set: ${enemiesComplete} of ${enemyReport.length}`);
+console.log(`\nEnemies with a complete walk/idle/attack/hurt/death set: ${enemiesComplete} of ${enemyReport.length}`);
 for (const r of enemyReport) {
-  const have = ['walk', 'attack', 'hurt', 'death'].filter(k => r[k]);
+  const have = ['walk', 'idle', 'attack', 'hurt', 'death'].filter(k => r[k]);
   console.log(`  ${r.name.padEnd(11)} ${have.length ? have.join(',') : '(none)'}`);
 }
 

@@ -128,6 +128,16 @@ export class Enemy extends Entity {
     // only reads it for an enemy that declares `spec.attackFrame` — harmless
     // for everything else.
     this.attackTime = 0;
+    // Idle pose flag: unlike `attackTime`/`flicker`, this is not a countdown —
+    // an enemy's own `ai()` sets it true/false directly, every frame, for
+    // whatever condition IT defines as "genuinely dormant" (see `urchin`,
+    // `src/data/enemies.js: g.tide.level < 1`). Deliberately not a generic
+    // "hasn't moved in N frames" timer: that would misfire on every walker's
+    // ordinary pause between lattice-step decisions (see `readyToDecide`
+    // below), which is not a meaningful idle. Harmless for every enemy
+    // without `spec.idleFrame` — `spriteName()` only reads it when that
+    // field exists.
+    this.idle = false;
     this.aiState = 0;
     this.aiTimer = 0;
     this.tick = 0;
@@ -156,6 +166,24 @@ export class Enemy extends Entity {
     // cycled array, since it is a held telegraph, not an animation.
     if (this.attackTime > 0 && this.spec.attackFrame) {
       const a = this.spec.attackFrame;
+      if (typeof a === 'string') { this.flipX = false; return a; }
+      let key = this.dir;
+      if (key === 'left' || key === 'right') {
+        key = a.side ? 'side' : key;
+        this.flipX = (this.dir === 'left') && !!a.side;
+      } else {
+        this.flipX = false;
+      }
+      return a[key] || a.down || a.side || Object.values(a)[0];
+    }
+    // Idle pose: checked after attackFrame on purpose, mirroring hurtFrame's
+    // own placement above it — an enemy mid-telegraph is not idle, whatever
+    // its own `ai()` last set `this.idle` to. `spec.idleFrame` takes the
+    // same shape `spec.attackFrame` does (a plain string, or one entry per
+    // facing): a single held pose, not a cycled array, since "dormant" is a
+    // state to sit in, not an animation to play.
+    if (this.idle && this.spec.idleFrame) {
+      const a = this.spec.idleFrame;
       if (typeof a === 'string') { this.flipX = false; return a; }
       let key = this.dir;
       if (key === 'left' || key === 'right') {

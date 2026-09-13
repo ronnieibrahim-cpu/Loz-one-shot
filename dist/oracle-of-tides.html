@@ -24053,6 +24053,16 @@ class Enemy extends Entity {
     // only reads it for an enemy that declares `spec.attackFrame` — harmless
     // for everything else.
     this.attackTime = 0;
+    // Idle pose flag: unlike `attackTime`/`flicker`, this is not a countdown —
+    // an enemy's own `ai()` sets it true/false directly, every frame, for
+    // whatever condition IT defines as "genuinely dormant" (see `urchin`,
+    // `src/data/enemies.js: g.tide.level < 1`). Deliberately not a generic
+    // "hasn't moved in N frames" timer: that would misfire on every walker's
+    // ordinary pause between lattice-step decisions (see `readyToDecide`
+    // below), which is not a meaningful idle. Harmless for every enemy
+    // without `spec.idleFrame` — `spriteName()` only reads it when that
+    // field exists.
+    this.idle = false;
     this.aiState = 0;
     this.aiTimer = 0;
     this.tick = 0;
@@ -24081,6 +24091,24 @@ class Enemy extends Entity {
     // cycled array, since it is a held telegraph, not an animation.
     if (this.attackTime > 0 && this.spec.attackFrame) {
       const a = this.spec.attackFrame;
+      if (typeof a === 'string') { this.flipX = false; return a; }
+      let key = this.dir;
+      if (key === 'left' || key === 'right') {
+        key = a.side ? 'side' : key;
+        this.flipX = (this.dir === 'left') && !!a.side;
+      } else {
+        this.flipX = false;
+      }
+      return a[key] || a.down || a.side || Object.values(a)[0];
+    }
+    // Idle pose: checked after attackFrame on purpose, mirroring hurtFrame's
+    // own placement above it — an enemy mid-telegraph is not idle, whatever
+    // its own `ai()` last set `this.idle` to. `spec.idleFrame` takes the
+    // same shape `spec.attackFrame` does (a plain string, or one entry per
+    // facing): a single held pose, not a cycled array, since "dormant" is a
+    // state to sit in, not an animation to play.
+    if (this.idle && this.spec.idleFrame) {
+      const a = this.spec.idleFrame;
       if (typeof a === 'string') { this.flipX = false; return a; }
       let key = this.dir;
       if (key === 'left' || key === 'right') {
@@ -25332,9 +25360,16 @@ function installEnemies() {
     hp: 2, damage: 2, pal: 'enemyp', speed: 0.25, rate: 16, terrain: 'any',
     frames: ['urchin_0', 'urchin_1'],
     deathFrame: 'urchin_death',
+    // First idleFrame in the roster (docs/ENEMIES.md's idle scoping
+    // section). Hand-drawn — src/data/sprites-enemies-hurt.js's own comment
+    // on `urchin_idle` has the sheet-exhaustion account. Gated directly by
+    // ai() below on the exact condition that already decides whether this
+    // enemy does anything at all, not a generic movement timer.
+    idleFrame: 'urchin_idle',
     shield: 'front',
     drops: 'common',
     ai(e, g) {
+      e.idle = g.tide.level < 1;
       if (g.tide.level >= 1) wander(e, g, { speed: 0.3, decide: 2 });
     },
   });
@@ -39148,6 +39183,51 @@ const ENEMY_HURT_ART = {
     3000003000013003
     3000013000113003
     ..333111113..33.` ,
+
+  // Urchin idle — drawn: the sheet's own "Spiny Beetle" plate has exactly
+  // three poses (docs/ENEMIES.md's idle scoping section): the two spiky
+  // frames already extracted as `urchin_0`/`urchin_1`, and the smooth
+  // retracted dome already spent on `urchin_death`. Nothing left to
+  // extract; hand-drawn, the first `idleFrame` in the roster. Piloted
+  // here specifically because `urchin` is the strongest AI-shape
+  // candidate `docs/ENEMIES.md` found: `ai()` (src/data/enemies.js) does
+  // nothing at all while the tide is below level 1, a real
+  // "dormant, harmless" state, not a mechanical pause between actions.
+  // `urchin_0`'s own grid (sprites-enemies.js) is reused pixel-for-pixel
+  // for rows 4-15 — the notched shell texture and the leg/base silhouette
+  // that read as "this is an urchin" are both untouched. Rows 0-3 (the
+  // four tallest spike-tip rows) are blanked outright rather than edited a
+  // few pixels at a time, the same "silhouette may change" latitude this
+  // file's header reserves for `_death` — an idle pose needs the same
+  // latitude for the opposite reason: a few-pixel edit (the `hurtFrame`
+  // norm) rendered too close to `urchin_0` to read as a different state at
+  // actual in-game size, confirmed by rendering both from the real
+  // palette side by side before committing to this version. The result
+  // sits visibly lower and flatter in the cell than `urchin_0`/`_1`'s full
+  // spike crown, reading as spikes lowered/relaxed rather than extended,
+  // while keeping the segmented notch pattern `urchin_death`'s single
+  // smooth rounded dome fills in entirely — a real middle state, not a
+  // step toward either neighbour. `urchin` has no `z` field, so no
+  // height-offset consideration applies. Wired as `spec.idleFrame`
+  // (src/data/enemies.js, src/game/enemy.js), gated on the same
+  // `g.tide.level < 1` condition `ai()` already reads.
+  urchin_idle: `
+    ................
+    ................
+    ................
+    ................
+    .30010300301003.
+    ..300130031003..
+    ..333331133333..
+    ..300133331003..
+    .30010301311003.
+    .30003001030003.
+    333333000033333.
+    33322300003223..
+    32300333333003..
+    322333322333323.
+    303332322323223.
+    .3...3222233303.` ,
 };
 
 function installEnemyHurtSprites() {
