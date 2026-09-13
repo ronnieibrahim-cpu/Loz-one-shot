@@ -1,3 +1,56 @@
+## S80 — octorokSea's deathFrame: a reuse decided on purpose, and the first hurt+death two-hit proof at hp3
+
+Picked up right after S79 (STATE.md's own log calls it S34) closed out the
+"next hp<=2 enemy without one" cadence and left a real open question:
+`octorokSea` (hp 3, `terrain: 'water'`, `src/data/enemies.js`) reuses the
+exact same `octorok_d0`/`d1`/`u0`/`u1`/`s0`/`s1` sprite keys as land
+`octorok`, which already has `octorok_death` (S27). This session's actual
+task was answering that question on purpose, not drawing new art by
+default.
+
+**Decided to reuse `octorok_death` outright.** The two enemies are already
+the same creature on screen while alive — nothing about their `frames:`
+blocks differs — so a distinct corpse for one and not the other would be
+the first point they diverged, and for no reason visible to a player.
+`octorok_death`'s own shape (a flattened, squashed silhouette) doesn't
+actually assert dry land specifically; "collapsed" reads the same
+regardless of what it collapsed onto. Wired
+`deathFrame: 'octorok_death'` directly onto `octorokSea`'s `defineEnemy`
+call, with the reasoning written inline as a comment so a future session
+doesn't have to re-derive it. **This is the first `deathFrame` session in
+the whole thread that touched zero art-pipeline files** — no
+`sprites-enemies.js`, no `rip-enemies.py`, no `sprite-manifest.js` change,
+because there was no new art to add.
+
+**First real `hurtFrame`+`deathFrame` two-hit proof where the first hit is
+actually non-lethal at hp 3** (`stalfos`, S25, proved the mechanism exists,
+but at hp 3 vs. `swordDamage()` 2 — every `deathFrame` target since has
+been hp <= 2, where a single hit always kills, so this specific
+interaction hadn't been re-tested on THIS creature). Probed both hits on
+one instance: hit 1 (hp 3 -> 1) showed `octorokSea_hurt`, and — checked
+explicitly rather than assumed — reverted to the ordinary walk cycle once
+the flicker window ended, with `dying` still `false` throughout; hit 2
+(hp 1 -> negative) showed `octorok_death`, never `octorokSea_hurt`, for
+the entire `ENEMY_DEATH_FRAMES` stall, then `dead = true` and fully
+removed. Confirmed no spec `z` field beforehand, same discipline every
+prior session has used.
+
+`check-drift` reads `octorokSea: walk,hurt,death`. `validate.mjs`/
+`test.mjs` stayed 83/83. Neither `check-playthrough.mjs` (21/21) nor
+`replay.mjs` (51/51) moved — no re-recording needed. `check-build.mjs`
+OK, `dist/oracle-of-tides.html` rebuilt and committed.
+
+Every remaining `deathFrame` candidate is now hp 3+ with a `hurtFrame`
+already: `beetle`/`wizzrobe`/`anglerfry`/`pincer` at hp 3, `moblin`/
+`siren` at hp 4, `darknut` at hp 6 — hp no longer orders the choice at
+all, so each pick from here needs its own stated reason. Picked `beetle`
+next for a reason, not by default: it's the first candidate with BOTH
+`shield: 'front'` and a `charge()` AI, and `Enemy.hurt()`
+(`src/game/enemy.js`) has real front-shield-blocking logic this thread has
+never exercised against a lethal hit — worth confirming a killing blow
+from an unshielded angle still reaches `deathFrame` correctly, and that a
+blocked hit from the front does not.
+
 ## S79 — jellyfish's deathFrame, the plainest target yet, and the hp<=2 cadence is exhausted
 
 Picked up right after S78 (STATE.md's own log calls it S33) gave `tektite`

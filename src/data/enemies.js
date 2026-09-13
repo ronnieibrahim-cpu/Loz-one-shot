@@ -41,6 +41,15 @@ export function installEnemies() {
       side: ['octorok_s0', 'octorok_s1'],
     },
     hurtFrame: 'octorokSea_hurt',
+    // Reuses octorok's own deathFrame on purpose rather than drawing a second
+    // one: octorokSea's frames: block above names the exact same sprite keys
+    // (octorok_d0/d1/u0/u1/s0/s1) as land octorok, so the two are already the
+    // same creature on screen while alive. Giving them different corpses
+    // would be the first place they diverged for no visible reason; a
+    // squashed, flattened silhouette reads as "this creature collapsed"
+    // regardless of what it collapsed onto, so nothing about octorok_death's
+    // shape actually claims dry land specifically.
+    deathFrame: 'octorok_death',
     drops: 'common',
     tideOnly: [1, 2],
     ai(e, g) {
