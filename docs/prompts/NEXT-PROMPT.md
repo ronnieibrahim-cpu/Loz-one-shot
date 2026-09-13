@@ -1,99 +1,106 @@
-# Next session — wire tektite's attackFrame, then start a real design gap
+# Next session — scope what an idle state actually needs
 
 ## Read first
 - `docs/prompts/CHARTER.md` — the standing rules for every session; run it
   verbatim before reading anything else here.
 - `docs/prompts/STATE.md` — objective #4 (enemy-roster) and its file
   allowlist.
-- `docs/NEXT-SESSION.md`'s S96 entry (the newest) — built `attackFrame`
-  support into `hop()` itself and piloted it on `zol` (a zero-new-art
-  reuse of `zol_1`). The plumbing already exists — `tektite` just needs
-  the same survey-and-wire treatment `zol` got.
+- `docs/NEXT-SESSION.md`'s S97 entry (the newest) — closed every known
+  attack-telegraph mechanism (`shoot()`/`shootRing()`, `charge()`,
+  `hop()`, plus two one-off patterns on `keese`/`pincer`) and confirmed
+  the 5 enemies still missing `attack` (`crab`, `gel`, `leever`,
+  `urchin`, `jellyfish`) have no discrete windup anywhere in their `ai()`
+  — a real wall, not an unchecked lead. This session picks the OTHER
+  named gap: `idle` states, unaddressed roster-wide since this objective
+  began.
 
 ## Why this, now
-`tektite` (`src/data/enemies.js`, `hop()` with `wait: 34`) is the other
-`hop()` user; `zol`'s own `deathFrame` comment (`sprites-enemies-hurt.js`)
-already refers to `tektite_1` in passing as "the hop-apex tuck" —
-language from a session that looked at `tektite`'s frames for a DIFFERENT
-purpose (finding `zol_death`'s own inspiration) but never wired it as an
-attack telegraph. That is a strong hint this is another `zol_1`-shaped
-reuse, not a hand-draw, but confirm it rather than assume it from one
-passing phrase.
+`docs/ENEMIES.md`'s own header calls `idle`/`walk`/`attack`/`hurt`/
+`death` completion "a separate, much larger undertaking" and has said so
+since before this objective's `attackFrame` work even started — five-plus
+sessions have named it as the other gap without any of them actually
+opening `src/game/enemy.js` to see what it would take. That note is also
+now stale in one concrete way: it cites `check-drift.mjs` as reporting
+"0 of 22 complete," which was true when it was written but is now 9 of
+22 (this objective's own `attackFrame` work moved that number) — a small
+fix worth making in passing, not the point of the session.
 
 ## The task
-1. Confirm `tektite`'s real spec directly (`hp`, `pal`, `frames`, the
-   `hop()` call's `wait`/`dist`/`height`/`frames` values) from
-   `src/data/enemies.js`.
-2. Render `tektite_0` and `tektite_1` from `tektite`'s real runtime
-   palette (`src/gfx/palettes.js`) to PNGs before judging — the
-   technique every session since S90 has used. Confirm `tektite_1` is a
-   genuine shape change (a "hop-apex tuck") and not a recolour, the same
-   test that separated `siren_1`/`beetle_s0`/`zol_1` (real reuses) from
-   `wisp_1` (correctly rejected).
-3. If it qualifies, wire `attackFrame: 'tektite_1'` on `tektite`'s
-   `defineEnemy` call, documenting the reuse reasoning inline the way
-   `zol`'s own entry does. If it doesn't qualify for some reason this
-   file didn't anticipate, hand-draw instead, following `CLAUDE.md`'s
-   art rules and checking what `tektite_death` (already hand-drawn,
-   `sprites-enemies-hurt.js`) has already claimed on the sprite.
-4. Verify in-engine with a scratch Playwright probe (not committed),
-   following S96's own pattern exactly: clear a room to plain ground
-   (`check-motion.mjs`'s boot pattern) so `hop()`'s `beginStep()` can
-   actually succeed, then drive `tektite` through at least two full hop
-   cycles, tracing `_hopState`/`_hopWait`/`attackTime` every frame.
-   Confirm the attack pose window is exactly the last `ENEMY_ATTACK_FRAMES`
-   of the 34-frame wait, and — the one thing S96 got wrong on its FIRST
-   attempt and only caught by tracing — confirm the pose's last active
-   frame is immediately before the `_hopState` transition to `'air'`,
-   with no 1-frame overlap. `tektite` has no `hurtFrame` (hp 2, always
-   lethal), so also confirm a lethal hit mid-windup still shows
-   `tektite_death`, not the attack pose frozen in place.
-5. Run the full regression sweep: `validate.mjs`, `test.mjs` (83/83),
-   `check-feel.mjs`, `check-motion.mjs` (8/8 — this touches `hop()`-
-   adjacent territory even if `hop()` itself isn't touched again),
-   `check-playthrough.mjs` (21/21), `replay.mjs` (51/51) — re-record
-   anything that diverges — `check-rippers.mjs` (17/17 if untouched) —
-   `check-build.mjs`.
-6. **Once `tektite` is wired, this session has TIME AND SCOPE LEFT — use
-   it to actually START one of the two real remaining gaps**, rather
-   than stopping at the last easy wiring win:
-   - Survey the 7 pure-contact enemies (`crab`, `zol`\* is now handled,
-     `gel`, `keese`, `leever`, `urchin`, `jellyfish`, `pincer`) for
-     whether any has an existing pause-then-strike moment hiding in its
-     own AI the way `hop()`'s wait and `charge()`'s tell both turned out
-     to have — read each one's `ai()` function fully, not just its name.
-     `keese`'s own `_dash`/`_rest` counters (`src/data/enemies.js`) are
-     the most promising lead, since a dash-then-rest cycle is
-     structurally similar to `charge()`'s own shape.
-   - OR scope what an `idle` field would actually need from the engine:
-     read `docs/ENEMIES.md`'s own header for what's already been said
-     about it, and write a concrete, honest assessment of what's
-     missing (a new `spec.idleFrame`? a timer for "how long standing
-     still before idle shows"? which enemies even have a natural idle
-     vs. constant motion?) rather than leaving it as an un-investigated
-     one-line mention for the 5th session in a row.
-   Pick ONE, not both — write up the other as a clearly-scoped
-   candidate for the session after, the same way S95/S96 each left a
-   clean handoff.
+This is a SCOPING session, not an implementation one — the objective is
+too big and too undefined right now to wire in one sitting the way
+`attackFrame` was. Produce a concrete, honest assessment, not another
+one-line deferral.
+
+1. Read `Enemy.spriteName()` (`src/game/enemy.js`) in full — the
+   existing priority order is `dying > hurtFrame > attackFrame > walk
+   cycle`. There is currently NO concept of "idle" anywhere in it: an
+   enemy that isn't moving still shows whatever `spec.frames` gives via
+   tick-based cycling, identical to when it IS moving. Confirm this
+   directly rather than assuming.
+2. For each of the 22 enemies, determine whether it has a genuine
+   standing-still moment distinct from its ordinary walk/attack cycle —
+   read every `ai()` function, the same full-read discipline S97 used
+   for the contact-enemy survey. Some candidates worth checking first:
+   `keese`'s own rest phase (already has `attackFrame` covering the last
+   16 frames — does the FIRST 44 frames of its 60-frame rest need a
+   different idle look, or does showing the ordinary walk cycle while
+   standing still already read fine?), `wisp`/`beamos`/`barnacle`
+   (stationary or near-stationary casters), anything using `patrol()`
+   at its turn-around points. Many enemies (anything using `chase()`,
+   `wander()`, `charge()`'s own `idle:` callback, `bounceDiag()`) are
+   never actually still, and "idle" may not be a meaningful concept for
+   them at all — say so plainly if that's what you find, rather than
+   forcing an idle field onto every enemy for the metric's sake.
+3. Decide and document what an `idle` FIELD would need, if any enemies
+   genuinely qualify: a `spec.idleFrame` (single pose, like
+   `attackFrame`) or `spec.idleFrames` (a cycle, like `frames`)? What
+   triggers it — a timer since the last actual movement, or specific
+   AI states named explicitly (the way `hurtFrame`/`deathFrame`/
+   `attackFrame` are each triggered by a specific, named condition)?
+   Whichever shape you land on, justify it against `spriteName()`'s
+   existing pattern rather than inventing an unrelated one.
+4. Pick ONE enemy to pilot on, if a clear, well-motivated candidate
+   emerges — following this objective's own established precedent
+   (`attackFrame` was built and proven on exactly one enemy, `moblin`,
+   before any survey of the rest). Do not pilot on a shaky or borderline
+   case just to have piloted on something.
+5. If the investigation instead concludes idle doesn't cleanly fit this
+   roster's actual AI shapes (most enemies here are closer to "always in
+   motion" than "stands, occasionally acts," unlike the Oracle games'
+   own more idle-heavy roster), say that plainly and explicitly, and
+   treat it as a real finding — not a failure to complete the task. A
+   correct "this doesn't fit, here's why" is worth more than a forced
+   `idleFrame` on every enemy.
+6. Fix `docs/ENEMIES.md`'s stale "0 of 22" line while you're in the
+   area (now 9 of 22, or whatever `check-drift.mjs` reports at the time
+   you run it) — a one-line fix, not a rewrite of the file.
+7. Whatever you build (if anything), run the full regression sweep:
+   `validate.mjs`, `test.mjs` (83/83), `check-feel.mjs`,
+   `check-playthrough.mjs` (21/21), `replay.mjs` (51/51),
+   `check-rippers.mjs`, `check-build.mjs`.
 
 ## Done means
-- `tektite: walk,attack,death` in `check-drift.mjs`'s output (or
-  `walk,attack,hurt,death` if it turns out to have a `hurtFrame` — check
-  rather than assume).
-- All regression tools pass (see above).
-- `npm run build`, `dist/oracle-of-tides.html` committed.
-- Real, documented progress on ONE of the two remaining gaps (a survey
-  finding, or a design scope) beyond just wiring `tektite` — this session
-  should not end at "one more enemy done" if there's time left in it.
+- A concrete written scope for `idle` exists somewhere durable (this
+  file's own successor, or a new section in `docs/ENEMIES.md` if that's
+  the more natural home) — not just "still separate, much larger" for a
+  sixth time.
+- If a pilot enemy was wired: proven in-engine the same way every
+  `attackFrame` proof has been, and all regression tools pass.
+- If idle was found not to fit: that conclusion is written clearly
+  enough that a future session doesn't re-open the same investigation
+  from scratch.
+- `docs/ENEMIES.md`'s stale enemy-count line is corrected.
 - STATE.md gets one new session-log row (delete the oldest if over 60
   lines).
 
 ## Out of scope
-- Hand-drawing new art for any of the 7 pure-contact enemies in THIS
-  session, even if the survey finds a good candidate — survey and scope
-  only; wiring is the next session's job, same cadence as every roster
-  survey before it.
-- `idle` states implementation — scoping only if that's the branch
-  chosen, not building it yet.
-- Any change to `hop()`'s own height, distance, wait or speed values —
-  art and wiring only, not balance.
+- Wiring `idle` onto the full 22-enemy roster in one session, even if
+  the scope turns out simple — one pilot enemy at most, same cadence
+  `attackFrame` used.
+- Reopening the `attack`-state question for `crab`/`gel`/`leever`/
+  `urchin`/`jellyfish` — S97 already closed that investigation with a
+  clear negative result; inventing a new mechanism for them is a
+  separate, later design decision if the charter's rotation ever
+  revisits it, not something to fold into this session.
+- Any change to enemy movement speed, damage, or AI decision logic
+  beyond what showing an idle pose requires.

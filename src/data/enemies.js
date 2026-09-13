@@ -10,7 +10,7 @@ import {
 import { spawnEntity } from '../game/entity.js';
 import { F } from '../world/tileset.js';
 import { TILE } from '../core/screen.js';
-import { ENEMY_GRID_STEP } from './feel.js';
+import { ENEMY_GRID_STEP, ENEMY_ATTACK_FRAMES } from './feel.js';
 
 export function installEnemies() {
   // --- Octorok: wanders and spits rocks along its facing axis -------------
@@ -140,13 +140,32 @@ export function installEnemies() {
     hp: 1, damage: 1, pal: 'shadow', speed: 1.0, rate: 5, terrain: 'air',
     frames: ['keese_0', 'keese_1'],
     deathFrame: 'keese_death',
+    // Reuses keese's own keese_0 as its attackFrame — the sheet's "wings
+    // spread" pose vs. keese_1's "wings folded" (rip-enemies.py's own
+    // FRAMES comment), a real shape change. keese's own rest/dash cycle
+    // below is written directly in its ai() rather than through a shared
+    // primitive, but _rest is structurally the same pause-before-a-burst
+    // shape charge()'s tell and hop()'s wait both already are — spread
+    // wings for a beat before it bursts into its erratic dash reads
+    // naturally as "about to move", the same telegraph grammar.
+    attackFrame: 'keese_0',
     hb: { x: 3, y: 4, w: 10, h: 8 },
     z: 8,
     drops: 'common',
     ai(e, g) {
       // Rests, then darts toward Link in bursts.
       if (e._rest == null) e._rest = 60;
-      if (e._rest > 0) { e._rest--; if (e._rest === 0) e._dash = 70; return; }
+      if (e._rest > 0) {
+        // Same +1 phase correction hop() needed (src/game/enemy.js):
+        // Enemy.update() decrements attackTime at the top of the frame,
+        // before this ai() runs, while _rest's own trigger decrement
+        // happens here, later in the same frame — one tick out of phase
+        // if both were keyed to the same countdown value. Measured with a
+        // scratch probe the same way hop()'s own fix was, not assumed to
+        // carry over untested.
+        if (e._rest === ENEMY_ATTACK_FRAMES + 1) e.attackTime = ENEMY_ATTACK_FRAMES;
+        e._rest--; if (e._rest === 0) e._dash = 70; return;
+      }
       if (e._dash > 0) { e._dash--; bounceDiag(e, g, { speed: 1.15 }); if (e._dash === 0) e._rest = 50; }
     },
   });
@@ -234,6 +253,13 @@ export function installEnemies() {
     hp: 2, damage: 2, pal: 'enemyb', speed: 0.6, rate: 8, terrain: 'any',
     frames: ['tektite_0', 'tektite_1'],
     deathFrame: 'tektite_death',
+    // Reuses tektite's own tektite_1 as its attackFrame — a real shape
+    // change from tektite_0 (compact body, short tucked legs) to legs
+    // extended long and dangling, already referred to in passing as "the
+    // hop-apex tuck" in zol_death's own comment (sprites-enemies-hurt.js).
+    // hop()'s windup window (src/game/enemy.js) now guarantees this pose
+    // shows in the run-up to every hop, the same beetle_s0/zol_1 shape.
+    attackFrame: 'tektite_1',
     drops: 'common',
     ai(e, g) { hop(e, g, { wait: 34, dist: 16, height: 13, frames: 20 }); },
   });
@@ -463,6 +489,16 @@ export function installEnemies() {
     hp: 3, damage: 3, pal: 'enemyr', speed: 0, rate: 10, terrain: 'any',
     frames: ['pincer_0', 'pincer_1'], hurtFrame: 'pincer_hurt',
     deathFrame: 'pincer_death',
+    // Reuses pincer's own pincer_1 as its attackFrame — a real shape
+    // change from pincer_0's symmetric front-on stance to a curled, turned
+    // silhouette (sprites-enemies.js), reading as coiling to snap out. The
+    // ai() below already sets e.stun right before it lunges (a discrete
+    // windup, the same shape charge()'s tell is), so this pairs
+    // e.attackTime with that existing e.stun the same way charge() itself
+    // pairs the two — no phase-lag correction needed here, unlike hop()'s
+    // fix, since this is a one-time set rather than a countdown loop
+    // crossing a threshold.
+    attackFrame: 'pincer_1',
     hb: { x: 3, y: 3, w: 10, h: 11 },
     drops: 'common',
     ai(e, g) {
@@ -488,6 +524,7 @@ export function installEnemies() {
         facePlayer(e, g);
         g.spawnEffect('spark', e.x, e.y - 6);
         e.stun = 10;
+        e.attackTime = 10;
         if (beginStep(e, g, e.dir, ENEMY_GRID_STEP * 2, 14)) e._pinch = 'out';
       }
     },

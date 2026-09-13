@@ -1,3 +1,93 @@
+## S97 — tektite closes hop(); a full ai() read finds two more free windups (keese, pincer); leever checked and honestly ruled out
+
+Picked up right after S96 (STATE.md's own log calls it S51) built
+`attackFrame` support into `hop()` and piloted it on `zol`, fixing a
+real 1-frame phase bug along the way. Task: wire `tektite` (the other
+`hop()` user), then — since S96's own prompt asked for real use of any
+scope left over — actually start on the two named remaining gaps rather
+than stopping at "one more enemy done."
+
+**`tektite` wired first, same shape as `zol`.** `zol_death`'s own
+comment (settled ground) already referred to `tektite_1` in passing as
+"the hop-apex tuck." Rendered both frames from `tektite`'s real
+palette to confirm it's a genuine shape change — legs extended long and
+dangling vs. `tektite_0`'s compact, tucked stance — and wired
+`attackFrame: 'tektite_1'`. Verified with the same multi-cycle trace
+probe S96 built: exact 16-frame window, zero overlap into the jump,
+lethal hit mid-windup correctly shows `tektite_death`. This closes
+`hop()`'s sub-thread — `shoot()`/`shootRing()`, `charge()`, and `hop()`
+are now all fully wired across every enemy that has one.
+
+**Read every remaining contact enemy's `ai()` function in full, not
+just its name or one-line comment**, which is what actually turned up
+two more wins nobody had spotted:
+
+`keese`'s rest/dash cycle lives directly in its own `ai()` (not a
+shared engine primitive like `charge()`/`hop()`): it stands still 60
+frames, then bursts into an erratic dash for 70. That pause is
+structurally the same shape `hop()`'s wait is — a discrete rest before
+a discrete burst of motion. Added the identical "last
+`ENEMY_ATTACK_FRAMES` of the pause" window, and — worth stating clearly
+since it could have gone either way — the same `+1` phase correction
+`hop()` needed turned out to be needed here too, confirmed with a fresh
+trace rather than assumed to transfer. The pattern generalizes: any
+countdown that's decremented inside a function `ai()` calls, one step
+after `attackTime`'s own top-of-update decrement, needs that one-tick
+correction. Reused `keese_0` ("wings spread," vs. `keese_1` "wings
+folded" — `rip-enemies.py`'s own comment) with zero new art.
+
+`pincer`'s `ai()` was the bigger find. It already sets `e.stun = 10`
+as an explicit windup the instant before it snaps out of its hole to
+lunge — a real, ALREADY-INTENTIONAL windup a past session built for
+gameplay pacing, just never connected to a sprite. Because this is a
+one-time set rather than a countdown loop threaded through a called
+function, it needed NO phase correction — paired `e.attackTime = 10`
+directly alongside the existing `e.stun = 10` and confirmed both fields
+decrement in perfect natural lockstep (both live at the very top of
+`update()`, with nothing in between). Reused `pincer_1`, a genuinely
+curled and turned silhouette against `pincer_0`'s symmetric front-on
+stance. `pincer` already had BOTH `hurtFrame` and `deathFrame` sitting
+extracted (not hand-drawn) from earlier sessions — this one wiring
+instantly gave it a complete four-state set.
+
+**Verified both in-engine with the real AI actually triggering each**,
+the same discipline every wiring session since S94 has used. Confirmed
+the interrupt cases too: `tektite`/`keese` have no `hurtFrame` (hp 1/2,
+always lethal), so confirmed a lethal hit shows the correct
+`deathFrame` rather than a frozen pose; `pincer` does have `hurtFrame`,
+confirmed a mid-windup hit shows `pincer_hurt`.
+
+**Also explicitly checked `leever`** (`submerge()` + `chase()`,
+structurally similar to `wizzrobe`/`siren`) rather than leaving it an
+unchecked lead in this file, and ruled it out honestly: unlike
+`wizzrobe`/`siren` it never calls `shoot()`/`shootRing()` while
+surfaced, only `chase()` — no existing `attackTime`-setting call
+anywhere to piggyback on.
+
+`check-drift` now reads `tektite: walk,attack,death`, `keese:
+walk,attack,death`, `pincer: walk,attack,hurt,death` — 9 of 22 enemies
+with a complete set, up from 6. validate/test(83/83)/check-feel/
+check-motion (8/8) all green. check-playthrough 21/21 and replay.mjs
+51/51 BOTH unchanged. check-rippers 17/17 (`sprites-enemies.js`
+untouched across this entire session — every win here was reuse and
+wiring, zero new art). check-build OK, dist rebuilt.
+
+**The honest final tally for objective #4's remaining gap**: `crab`,
+`gel`, `leever` (checked and ruled out this session), `urchin`, and
+`jellyfish` genuinely have no discrete windup-shaped moment anywhere in
+their `ai()` functions. Four mechanisms have now been found and fully
+wired across this whole multi-session thread —
+`shoot()`/`shootRing()`, `charge()`, `hop()`, and the two one-off
+`keese`/`pincer` patterns — and none of them apply to these 5. This is
+a confirmed wall, not an unchecked lead: giving any of these 5 a real
+`attack` state means DELIBERATELY INVENTING a new pause-then-strike
+moment in one of their AIs (a genuine design decision, not a survey
+task), or the objective should pivot to `idle` states — completely
+unaddressed roster-wide — as the more productive next target. Next
+session should pick one of those two and treat it as a real design
+task, not search for a 5th hidden windup this session's full-`ai()`
+read didn't already rule out.
+
 ## S96 — hop() gets attackFrame too, a real 1-frame timing bug caught by tracing rather than trusting the arithmetic
 
 Picked up right after S95 (STATE.md's own log calls it S50) closed the
