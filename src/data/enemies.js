@@ -325,6 +325,7 @@ export function installEnemies() {
     frames: ['wizzrobe_0', 'wizzrobe_1'],
     hurtFrame: 'wizzrobe_hurt',
     deathFrame: 'wizzrobe_death',
+    attackFrame: 'wizzrobe_atk',
     drops: 'good',
     ai(e, g) {
       // submerge() is the engine's appear/disappear cycle; it hides the sprite
@@ -394,6 +395,21 @@ export function installEnemies() {
     frames: ['siren_0', 'siren_1'],
     hurtFrame: 'siren_hurt',
     deathFrame: 'siren_death',
+    // Reuses siren's own siren_1 as its attackFrame rather than hand-drawing
+    // a new pose — the same zero-new-art shape S43 found on moblin_d1, not a
+    // hand-draw like octorok_atk/wisp_atk/wizzrobe_atk needed. S89's survey
+    // tested all 7 remaining shoot()/shootRing() users only for an UNUSED
+    // third sheet frame (correctly finding none for siren) and never asked
+    // the different question moblin answered: does an ALREADY-used second
+    // frame show a genuinely distinct pose. siren_1's own sheet art
+    // (sprites-enemies.js) is not a recolour of siren_0 the way wisp_1 is of
+    // wisp_0 (ruled out for that exact reason at S91) — it is a real shape
+    // change, fanged mouth SHUT (siren_0) versus a wide round mouth OPEN
+    // (siren_1), already described in siren_hurt's own comment as "open
+    // singing ring-shot pose." That is exactly what shootRing() below does.
+    // Left in the ordinary frames: cycle too, same as moblin_d1/u1/s1 —
+    // removing it would leave only one walk frame.
+    attackFrame: 'siren_1',
     drops: 'good',
     ai(e, g) {
       submerge(e, g, {

@@ -1,3 +1,175 @@
+## S93 — siren's attackFrame turned out to be a REUSE, not a hand-draw, closing the whole shoot()/shootRing() sub-thread
+
+Picked up right after S92 (STATE.md's own log calls it S47) hand-drew
+`wizzrobe_atk`. Task per the standing prompt: hand-draw `siren_atk`, the
+last of the 5 enemies S89's survey said needed new art.
+
+**Before drawing anything, re-examined S89's own survey methodology and
+found a gap.** S89 tested all 7 remaining `shoot()`/`shootRing()`
+candidates for exactly one thing: is there an UNUSED third frame on the
+sheet. That correctly found nothing for `siren` (its "River Zora"
+plate has only the two frames already in use, and S86 already rejected
+the one visually-adjacent neighbour for a palette mismatch). But that is
+not the only way an enemy can get a zero-new-art `attackFrame` — `moblin`
+qualified at S43 through a DIFFERENT route: reusing its own SECOND
+already-used walk-cycle frame (`moblin_d1`, "spear raised"), because
+that frame is a genuinely different POSE, not just a recolour. S89 never
+re-asked that second question for the other 6 candidates. It should
+have, for `siren` specifically: `siren_hurt`'s own existing comment
+already describes `siren_1` as the "open singing ring-shot pose" — a
+description that is literally naming an attack telegraph that was
+already sitting in the sprite table.
+
+**Verified this before trusting the comment.** Rendered `siren_0` and
+`siren_1` from `siren`'s real runtime palette (`pal: 'enemyb'` —
+`#a8d8f8`/`#5888d0`/`#284880`/`#0c1428`) to PNGs. The two are not a
+recolour of the same silhouette the way `wisp_0`/`wisp_1` are (correctly
+rejected for reuse at S91, on exactly that basis) — `siren_0` shows a
+closed, fanged jaw shape; `siren_1` shows a completely different wide,
+round OPEN mouth. A real shape change, the same class of difference as
+`moblin_d0` vs `moblin_d1`, not the same class as `wisp_0` vs `wisp_1`.
+
+**Wired `attackFrame: 'siren_1'` directly** on `siren`'s `defineEnemy`
+call (`src/data/enemies.js`) — no new art, no `sprite-manifest.js`
+change needed (`siren_1` is already registered and already drawn from
+the sheet). Left it in the ordinary `frames` array too, same as
+`moblin_d1`/`u1`/`s1` — removing it would leave `siren` with only one
+walk frame. Documented both the reuse reasoning and the explicit
+contrast against the `wisp_1` rejection inline, so a future session
+doesn't re-litigate either question from scratch.
+
+**Verified in-engine** with a scratch Playwright probe (not committed):
+`siren_1` shows immediately once `attackTime` is set, and a mid-attack
+non-lethal hit correctly interrupts to `siren_hurt` (which `siren`
+declares). One probe wrinkle worth recording so a future session doesn't
+mistake it for a bug: the first version of the hold-duration check came
+back with `attackTime` at 8 instead of the expected 1 after 15 simulated
+frames. Not a defect — `every(e, 40)` (the AI's own re-fire gate) uses a
+per-entity hashed `_phase` offset (`hash32('phase', e.id, n) % n`), and
+that offset happened to land a second `shootRing()` call inside the
+observation window, which reset `attackTime` back to 16 partway through.
+Re-ran with `ai` disabled on the test instance to isolate the field
+being tested, which came back exactly as expected (16 → 1 after 15
+ticks). Also confirmed `siren_1` still appears normally during ordinary
+(non-attacking) cycling, so nothing about the wiring removed it from the
+walk animation.
+
+`check-drift` now reads `siren: walk,attack,hurt,death` — 5 of 22
+enemies with a complete set, up from 4. validate/test(83/83)/check-feel
+all green. check-playthrough 21/21 and replay.mjs 51/51 BOTH unchanged
+— no new divergence, since `siren`'s death-stall replay fix already
+landed back at S86. check-rippers 17/17 (`sprites-enemies.js` untouched
+— this was pure wiring, not art). check-build OK, dist rebuilt.
+
+**ALL 8 `shoot()`/`shootRing()` users now have `attackFrame`**: `moblin`,
+`beamos`, `barnacle` (S88/S89), `octorok`/`octorokSea` sharing one pose
+(S90), `wisp` (S91), `wizzrobe` (S92), `siren` (this session, S93). The
+entire sub-thread that began at S88 building the `attackFrame` mechanism
+is now closed.
+
+**Found the next real candidate while closing this one, rather than
+leaving it for a future session to rediscover.** `charge()`
+(`src/game/enemy.js`) — the AI primitive `beetle`, `darknut` and
+`anglerfry` all use for their lunge attacks — already has its own
+windup: the `tell` parameter (16/22/26 frames respectively) sets
+`e.stun`, which freezes the enemy (via `update()`'s own `if (this.stun >
+0) { this.stun--; return; }` early-out, skipping `ai()` entirely) for
+that many frames before the actual charge motion begins. That is
+structurally identical to the situation `shoot()` was in before S43 —
+a real windup moment already exists in the engine, it just doesn't swap
+the sprite yet. All three `charge()` users already have `hurtFrame` and
+`deathFrame`; only `attack` is missing from each. The one real
+engineering difference from `shoot()`'s case: `charge()` needs to set
+`e.attackTime` to a VARIABLE duration (`tell` itself, since 16/22/26
+differ per enemy) rather than the fixed `ENEMY_ATTACK_FRAMES` constant
+`shoot()`/`shootRing()` use unconditionally. Next session: build that
+plumbing and survey `beetle`/`darknut`/`anglerfry` for reusable-vs-
+hand-drawn art, the same discipline S89 used for the `shoot()` roster.
+
+## S92 — wizzrobe's attackFrame: widened eyes, and the submerge()/hidden edge case checked rather than assumed
+
+Picked up right after S91 (STATE.md's own log calls it S46) hand-drew
+`wisp_atk`. Task: draw the third one, `wizzrobe_atk`, and figure out
+whether `submerge()`'s blink-in/blink-out cycle raises any complication
+`octorok`/`wisp` didn't have to deal with.
+
+Confirmed `wizzrobe`'s real spec directly: hp 3, damage 3, `pal:
+'enemyp'`, `frames: ['wizzrobe_0', 'wizzrobe_1']`, fires a single aimed
+`shoot()` from inside `submerge()`'s own `whileUp` callback every 44
+ticks while surfaced. Re-confirmed nothing extractable — the third
+sheet frame (`wizzrobe_death`) is already extracted and already spent
+on `deathFrame` at S83, re-confirmed again in S89's survey. Ran `python3
+tools/rip-enemies.py` unmodified first, byte-identical.
+
+**Rendered `wizzrobe_0`, `wizzrobe_1`, `wizzrobe_death` and the existing
+`wizzrobe_hurt` from the real runtime `enemyp` palette** (`#e0b0f8`/
+`#a860d0`/`#603080`/`#1c0c28`) to PNGs, the technique S90/S91 both
+introduced and both found essential. This showed two things worth
+knowing before drawing: `wizzrobe_hurt`'s own existing edit already
+claims the right cheek, using the sprite's otherwise-unused palette
+index 2 for a small bruise mark (its own comment says so, and the
+render confirms it). And `wisp_atk` (S91, landed last session) already
+established "the mouth widens" as this roster's attack-telegraph
+grammar for a magic-caster — reusing that same idea on `wizzrobe` would
+make two different enemies read identically when winding up, which
+defeats the point of a distinct pose per creature.
+
+**The edit uses the eyes instead.** `wizzrobe_0`'s face has two eyes,
+each a single 1-pixel-wide light column (rows 7-8, columns 6 and 9)
+sitting in an otherwise dark hood — thin, half-lidded slits at rest.
+Widened each one column further inward (columns 5 and 10 added at both
+rows), turning each slit into a wider, rounder eye. Reads as "eyes going
+wide as the orb charges" — the opposite direction from `wizzrobe_hurt`'s
+own bruise, and a different face-region entirely from `wisp_atk`'s
+mouth. 4 pixels changed total; the hat, hood, collar and mouth shape are
+all byte-identical to `wizzrobe_0`. Landed in `ENEMY_HURT_ART`
+(`sprites-enemies-hurt.js`, right after `wizzrobe_hurt`) and
+`sprite-manifest.js`'s `enemies` list. Wired `attackFrame:
+'wizzrobe_atk'` on `wizzrobe`'s `defineEnemy` call — a plain string,
+since `frames` here is a flat 2-entry array with no facings.
+
+**The genuinely new question this session had to answer**: `wizzrobe`
+is the first `attackFrame`-bearing enemy that also blinks fully
+invisible via `submerge()`. Its own `whileUp` callback can fire `shoot()`
+(and therefore set `attackTime`) at any point during the 80-tick "up"
+phase, since the `every(e, 44)` gate runs off the enemy's own global
+tick counter, unsynchronized with the phase's own countdown. That means
+a shot could in principle fire with fewer than `ENEMY_ATTACK_FRAMES` (16)
+ticks left before `submerge()` flips the enemy to `hidden = true` — so
+`attackTime` could still be counting down into the hidden phase.
+Checked this directly instead of assuming it away: `Enemy.spriteName()`
+itself does NOT check `e.hidden` at all, so in isolation it would
+happily keep returning `wizzrobe_atk` while the enemy is hidden. But the
+actual draw loop (`src/game/game.js:1772`, `if (e.hidden) continue`)
+skips calling `e.draw()` — and therefore ever reading `spriteName()`'s
+result for rendering — for ANY hidden entity, unconditionally. So
+nothing wrong is ever actually drawn; the enemy is simply invisible,
+exactly as `submerge()` intends, regardless of what `attackTime` happens
+to be doing underneath. This is a stronger, roster-wide guarantee than
+`wizzrobe_hurt`'s own comment relies on (it separately forces `invuln`
+to 9999 while hidden, specifically so `hurtFrame`'s own flicker check
+can never trigger then) — the draw loop's `hidden` check covers
+`attackFrame`, and any future pose field, on every enemy automatically,
+with no per-field reasoning required.
+
+**Verified the ordinary cases too**, same shape as every prior proof:
+`wizzrobe_atk` shows immediately once `attackTime` is set, holds through
+the full 16-frame window, reverts to the ordinary walk cycle exactly on
+schedule. A mid-attack non-lethal hit correctly interrupts to
+`wizzrobe_hurt` (which `wizzrobe` does declare), matching the ordering
+`wisp` already confirmed at S91.
+
+`check-drift` now reads `wizzrobe: walk,attack,hurt,death` — 4 of 22
+enemies with a complete set, up from 3. validate/test(83/83)/check-feel
+all green. check-playthrough 21/21 and replay.mjs 51/51 BOTH unchanged.
+check-rippers 17/17 (`sprites-enemies.js` untouched — hand-drawn only).
+check-build OK, dist rebuilt.
+
+**Only `siren` remains of the 5 hand-draw-needed enemies S89's survey
+identified.** Next session: hand-draw `siren_atk` — the last one, which
+closes the entire "give every `shoot()`/`shootRing()` user a real
+attack telegraph" sub-thread running since S88.
+
 ## S91 — wisp's attackFrame: the grin widens instead of shrinking
 
 Picked up right after S90 (STATE.md's own log calls it S45) hand-drew

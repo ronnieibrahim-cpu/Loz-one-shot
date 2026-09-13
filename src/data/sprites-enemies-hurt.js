@@ -307,6 +307,45 @@ export const ENEMY_HURT_ART = {
     3000000000000003
     3333333333333333` ,
 
+  // Wizzrobe attack (`shoot()`'s telegraph, ENEMY_ATTACK_FRAMES) — drawn:
+  // `wizzrobe`'s third sheet frame is already extracted and already spent
+  // on `deathFrame` (S83, re-confirmed S89/S92) — nothing left on the plate
+  // for an attack pose. Rendered `wizzrobe_0`/`_1`/`_death`/`_hurt` from the
+  // real runtime `enemyp` palette before drawing (S90/S91's own technique),
+  // which is what made it obvious `wizzrobe_hurt`'s bruise mark (above) had
+  // already claimed the right cheek with palette index 2 — this pose needed
+  // a different part of the face. `wisp_atk` (S91) already owns the
+  // "mouth widens" grammar, so this one uses the sprite's two narrow eye
+  // slits instead: `wizzrobe_0`'s own grid (sprites-enemies.js) has each
+  // eye as a single light column (rows 7-8, columns 6 and 9) inside the
+  // dark hood. Widened each one column further inward (columns 5 and 10
+  // added at both rows) so the two slits read as one wider, rounder eye
+  // each — "eyes going wide as the orb charges" — rather than the thin,
+  // half-lidded look of the idle frame. 4 pixels changed; the hat, hood,
+  // collar and mouth are all byte-identical to `wizzrobe_0`. Verified safe
+  // to draw at all: `shoot()` (inside `submerge()`'s own `whileUp`
+  // callback, src/data/enemies.js) only ever runs while `wizzrobe` is
+  // surfaced, the same half of the cycle `wizzrobe_hurt`'s own comment
+  // already established `hurtFrame` is restricted to — so `attackTime`
+  // can never be counting down while the sprite is hidden and undrawn.
+  wizzrobe_atk: `
+    .......33.......
+    ......3003......
+    .....310013.....
+    ...3333333333...
+    ..311111111113..
+    .31111111111113.
+    3331133333311333
+    3003300330033003
+    3000300330030003
+    3100333333330013
+    .31003333330013.
+    ..300000000003..
+    ..300011110003..
+    .30000011000003.
+    3000000000000003
+    3333333333333333` ,
+
   // Siren hurt — drawn: assets/sheets/oracle-seasons-enemies.png's own
   // "River Zora" plate has exactly two frames for this creature —
   // `siren_0` (fanged mouth shut) and `siren_1` (open singing ring-shot

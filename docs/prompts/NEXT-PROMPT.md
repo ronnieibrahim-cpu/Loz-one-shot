@@ -1,97 +1,110 @@
-# Next session — hand-draw wizzrobe's attackFrame
+# Next session — give charge()'s own windup a real attack pose
 
 ## Read first
 - `docs/prompts/CHARTER.md` — the standing rules for every session; run it
   verbatim before reading anything else here.
 - `docs/prompts/STATE.md` — objective #4 (enemy-roster) and its file
   allowlist.
-- `docs/NEXT-SESSION.md`'s S91 entry (the newest) — `wisp_atk` landed by
-  widening an existing hand-drawn grin rather than reusing a walk frame,
-  and explains why the walk-frame-reuse shortcut was rejected for `wisp`
-  specifically. `wizzrobe` is next.
+- `docs/NEXT-SESSION.md`'s S93 entry (the newest) — closed the entire
+  `shoot()`/`shootRing()` `attackFrame` sub-thread (`siren` turned out to
+  be a reuse, not a hand-draw) and found the next candidate: `charge()`'s
+  own `tell` parameter already freezes an enemy before it lunges, but
+  doesn't swap the sprite yet.
 
 ## Why this, now
-`wizzrobe` (`src/data/enemies.js`) is the plainest of the 2 remaining
-candidates: hp 3, damage 3, `pal: 'enemyp'`, `frames: ['wizzrobe_0',
-'wizzrobe_1']`, blinks in and out via `submerge()` and fires a single
-aimed `shoot()` (not `shootRing()`) while up. Its THIRD sheet frame
-(`wizzrobe_death`, `sprites-enemies.js`) is already extracted and
-already spent on `deathFrame` — confirmed at S83, re-confirmed in S89's
-survey — so there is nothing left on the sheet and this is a from-
-scratch hand-draw, same as `octorok_atk` (S90) and `wisp_atk` (S91).
-`wizzrobe_hurt` (`sprites-enemies-hurt.js`) already exists: it uses the
-sprite's otherwise-unused third palette colour (index 2, `enemyp`'s own
-mid-tone) for a small bruise mark on the right cheek, specifically
-because the usual "shut the eyes" trick would vanish against this
-sprite's dark visor. Read that comment before drawing — it names which
-part of the face is already spoken for and which colour index is free.
+`charge()` (`src/game/enemy.js`) is the AI primitive `beetle`, `darknut`
+and `anglerfry` all use for their lunge attacks, called with a `tell`
+value (16/22/26 frames respectively). When the charge triggers, `charge()`
+sets `e.charging = true` AND `e.stun = o.tell` in the same call —
+`Enemy.update()`'s own `if (this.stun > 0) { this.stun--; return; }`
+early-out then skips `ai()` entirely for that many frames, freezing the
+enemy in place before the actual lunge motion begins next time `ai()`
+runs. That freeze is a real windup moment sitting unused, exactly the
+situation `shoot()` was in before S43/S88 built `attackFrame` for it.
+All three `charge()` users already have `hurtFrame` and `deathFrame`;
+`attack` is the only missing state on each.
 
 ## The task
-1. Confirm `wizzrobe`'s real spec fields directly from `enemies.js`
-   rather than trusting this file's summary — `hp`, `damage`, `pal`,
-   the `submerge()` timings, and the `shoot()` call inside `whileUp`.
-2. Re-confirm nothing extractable exists for an attack pose specifically
-   — re-check the sheet plate `wizzrobe_0`/`wizzrobe_1`/`wizzrobe_death`
-   came from with an attack telegraph in mind, not just trusting S89's
-   summary. `python3 tools/rip-enemies.py` once unmodified first to
-   confirm byte-identical reproduction before touching anything.
-3. Render `wizzrobe_0`, `wizzrobe_1`, `wizzrobe_death` and the existing
-   `wizzrobe_hurt` from their real runtime `enemyp` palette
-   (`src/gfx/palettes.js`) to PNGs before drawing — the technique S90/
-   S91 both used and both found essential for reading the actual shape
-   rather than misreading the raw digit grid.
-4. Read `CLAUDE.md`'s art rules section: three colours plus
-   transparency, hard 1px outline, no anti-aliasing/gradients/dithering,
-   silhouette-first. Not a collapse (that's `_death`'s exception) — read
-   as "about to fire" while staying recognisably `wizzrobe_0`, the way
-   `wizzrobe_hurt` stays silhouette-close to it.
-5. Design the edit against a part of the sprite `wizzrobe_hurt` has NOT
-   already used (it used the visor cheek + palette index 2). `wizzrobe`
-   fires a single aimed orb via `shoot()`, so a telegraph that reads as
-   "hands/staff raised" or "eyes/orb glowing before the cast" fits
-   better than a mouth-based one (that grammar is already `wisp`'s).
-6. Add `wizzrobe_atk` to `ENEMY_HURT_ART` in `sprites-enemies-hurt.js`
-   (next to `wizzrobe_hurt`) and to `sprite-manifest.js`'s `enemies`
-   list. Wire `attackFrame: 'wizzrobe_atk'` on `wizzrobe`'s
-   `defineEnemy` call — a plain string, since `frames` here is a flat
-   array with no facings.
-7. Verify in-engine with a scratch Playwright probe (not committed, same
-   shape as S90/S91's own): `shoot()` sets `attackTime` and shows
-   `wizzrobe_atk` immediately, holds for `ENEMY_ATTACK_FRAMES`, reverts
-   correctly. Test the interrupt case: `wizzrobe` HAS `hurtFrame`, so a
-   mid-attack non-lethal hit should show `wizzrobe_hurt`, not the attack
-   pose — confirm directly. Also confirm, rather than assume, that
-   `attackTime` set while `submerge()` has the enemy hidden (down phase)
-   does not draw anything wrong — `wizzrobe_hurt`'s own comment notes
-   `invuln` is forced to 9999 while hidden so `hurtFrame` can never show
-   then; check whether `attackFrame` needs the same reasoning applied or
-   whether `shoot()` only ever fires during the up phase already (it
-   does, per `whileUp` — confirm this makes the question moot rather
-   than assuming it).
-8. Run the full regression sweep: `validate.mjs`, `test.mjs` (83/83),
+1. Read `charge()`'s full body (`src/game/enemy.js`, search `export
+   function charge`) to confirm the exact mechanics above yourself
+   rather than trusting this summary — in particular confirm `e.stun`
+   really does gate `ai()` (and therefore `charge()` itself) the way
+   described, and confirm there is no existing `attackTime` write
+   anywhere in `charge()` already.
+2. Add `if (o.tell) e.attackTime = o.tell;` alongside the existing `if
+   (o.tell) e.stun = o.tell;` line inside `charge()`. Unlike `shoot()`/
+   `shootRing()` (which always set the fixed `ENEMY_ATTACK_FRAMES`),
+   this uses the CALLER'S OWN `tell` value, since `beetle`/`darknut`/
+   `anglerfry` each pass a different one (16/22/26) and the pose should
+   last exactly as long as the freeze does — confirm this reasoning
+   holds rather than defaulting to the fixed constant out of habit.
+3. Pick ONE enemy to pilot on first, following the exact precedent S88
+   set with `moblin` (build the mechanism, land it on one enemy, leave
+   the rest for a follow-up survey session) rather than doing all three
+   at once. `beetle` (`tell: 16`, shortest windup, already familiar from
+   its own `hurtFrame`/`deathFrame` sessions) is the obvious pick unless
+   you find a reason otherwise.
+4. Re-confirm nothing extractable exists for `beetle`'s attack pose
+   before drawing — check `beetle_hurt`'s own comment
+   (`sprites-enemies-hurt.js`) for what was already ruled out on its
+   sheet plate, and re-check with an attack telegraph specifically in
+   mind rather than trusting the hurt-pose conclusion to carry over
+   unchanged. `python3 tools/rip-enemies.py` once unmodified first to
+   confirm byte-identical reproduction.
+5. Also check for a `moblin_d1`/`siren_1`-style reuse first — does
+   `beetle`'s own `frames` array already contain a second pose that is a
+   genuinely different shape (not just a recolour, the test S91
+   established for rejecting `wisp_1`) that could double as the charge
+   telegraph with zero new art? Render both existing frames from
+   `beetle`'s real runtime palette to check visually before concluding
+   either way.
+6. If nothing reusable, hand-draw `beetle_atk` (or whatever the reuse
+   turns out to be) following `CLAUDE.md`'s art rules: three colours
+   plus transparency, hard 1px outline, silhouette-first, not a collapse
+   — reads as "about to lunge" while staying recognisably `beetle`, on
+   a part of the sprite `beetle_hurt`'s own edit hasn't already claimed.
+7. Wire it as `attackFrame` on `beetle`'s `defineEnemy` call.
+8. Verify in-engine with a scratch Playwright probe (not committed, same
+   shape as every prior `attackFrame` proof): triggering `charge()`
+   sets `attackTime` to `beetle`'s own `tell` (16) and shows the pose
+   immediately; the enemy stays frozen (not moving) for the whole
+   windup, matching `e.stun`'s own countdown; once the charge itself
+   begins (`e.charging` true, `e.stun` at 0), confirm what the sprite
+   shows during the actual lunge motion — likely reverts to ordinary
+   walk frames once `attackTime` also expires, but confirm the two
+   timers (`stun` and `attackTime`, both seeded from the same `tell`)
+   actually expire together rather than assuming it. Test the interrupt
+   case: `beetle` has `hurtFrame`, so a mid-windup non-lethal hit should
+   show `beetle_hurt` instead, per the existing `spriteName()` ordering.
+9. Run the full regression sweep: `validate.mjs`, `test.mjs` (83/83),
    `check-feel.mjs`, `check-playthrough.mjs` (21/21), `replay.mjs`
    (51/51) — re-record anything that diverges — `check-rippers.mjs`
-   (17/17, should stay untouched) — `check-build.mjs`.
+   (17/17 if untouched, or updated if a new frame was extracted) —
+   `check-build.mjs`.
 
 ## Done means
-- `wizzrobe` shows a real, distinct attack pose while actually firing,
-  proven by an in-engine probe, not by reading the code.
-- `node tools/check-drift.mjs` shows `wizzrobe: walk,attack,hurt,death`
-  (4 of 22 complete, up from 3).
+- `beetle` shows a real, distinct pose during its charge windup, proven
+  by an in-engine probe, not by reading the code.
+- `node tools/check-drift.mjs` shows `beetle: walk,attack,hurt,death`
+  (6 of 22 complete, up from 5).
 - `node tools/validate.mjs`, `node tools/test.mjs` (83/83),
   `node tools/check-feel.mjs`, `node tools/check-playthrough.mjs`
   (21/21), `node tools/replay.mjs` (51/51), `node tools/check-rippers.mjs`
-  (17/17) all pass.
+  all pass.
 - `npm run build`, `dist/oracle-of-tides.html` committed.
 - STATE.md gets one new session-log row (delete the oldest if over 60
   lines).
 
 ## Out of scope
-- `siren` — the last enemy still needing new attack art. One enemy per
-  session, same cadence this whole objective has kept.
+- `darknut`, `anglerfry` — the other 2 `charge()` users. One enemy per
+  session, same cadence this whole objective has kept; a follow-up
+  survey session (mirroring S89's own shoot()-roster survey) picks
+  these up next.
 - `idle` states — still the separate, much larger undertaking noted in
   `docs/ENEMIES.md`'s own header.
-- Redrawing `wizzrobe_hurt` or `wizzrobe_death` — they stay exactly as
-  they are; this session only adds a third, new pose alongside them.
-- Any change to `submerge()`'s or `shoot()`'s own mechanics or damage —
-  this is an art and wiring task, not a balance one.
+- The remaining pure-contact enemies with no `shoot()`/`shootRing()`/
+  `charge()` at all (`crab`, `zol`, `gel`, `keese`, `leever`, `tektite`,
+  `urchin`, `jellyfish`, `pincer`) — whether any of these can meaningfully
+  get an `attack` state is an open question this session does not answer.
+- Any change to `charge()`'s own speed, range or damage — this is an art
+  and wiring task, not a balance one.
