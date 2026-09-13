@@ -1,3 +1,53 @@
+## S84 — pincer's deathFrame: a fourth sheet frame found, and the plainest target confirmed plain
+
+Picked up right after S83 (STATE.md's own log calls it S38) gave
+`wizzrobe` a `deathFrame` and confirmed the submerge/flicker interaction
+was benign. Task: give `pincer` (hp 3, `speed: 0`, `src/data/
+enemies.js`, "an eel head on a tether, lunging out of its burrow") one
+too — picked because it has neither `shield` nor `submerge()`, running
+instead a small `e._pinch` state machine (`'hole'`/`'out'`/`'back'`) that
+snaps its body out along an axis and reels it back.
+
+**Checked the sheet's own "Pincer" plate properly, and found a genuine
+fourth frame this time in the OTHER direction** — not right after the
+live frames (where `pincer_hurt`, found in an earlier session, already
+sits), but one box BEFORE `pincer_0`. Same red/tan/black palette,
+confirmed by quantising directly: just two eyes, centred, with the whole
+body faded to nothing else visible. Reads as the creature receding back
+into its hole for good — a fitting death pose for something whose entire
+identity, per its own `ai()` comment, is that it "never leaves its hole."
+Added `pincer_death: (232, 0.5, 0.5, False)` to `FRAMES` in
+`tools/rip-enemies.py` and re-emitted — `sprites-enemies.js` now 63
+sprites (up from 62), `check-rippers.mjs` stayed 17/17.
+
+**Verified a lethal hit lands correctly regardless of which `_pinch`
+state the creature is in when killed** — tested `'hole'`, `'out'`, and
+`'back'` on three separate instances, all show `dying = true` and
+`spriteName()` returning `pincer_death` identically. The ordinary
+two-hit sequence (hp 3 -> 1 -> negative) behaves exactly like every other
+hp-3 target tested so far: hit 1 shows `pincer_hurt` and reverts
+correctly once the flicker window ends, the lethal hit 2 shows
+`pincer_death` for the full stall. Confirmed no spec `z` field and no
+`hidden`/`invuln` toggling anywhere in its `ai()` (unlike `leever`/
+`wizzrobe`) — **the first target in a few sessions to actually turn out
+as plain as it looked going in**, worth noting since `tektite` (S78) and
+`darknut`/`wizzrobe` (S82/S83) all found real complications or extraction
+surprises where the prompt expected something simpler.
+
+`check-drift` reads `pincer: walk,hurt,death`. `validate.mjs`/`test.mjs`
+stayed 83/83. Neither `check-playthrough.mjs` (21/21) nor `replay.mjs`
+(51/51) moved. `check-build.mjs` OK, `dist/oracle-of-tides.html` rebuilt
+and committed.
+
+Three candidates remain: `moblin` (hp 4, land, throws spears, genuinely
+plain — no shield, no submerge, no hop), `anglerfry` (hp 3, water,
+`tideOnly`, the same shape `octorokSea`/`jellyfish` already covered), and
+`siren` (hp 4, water, ALSO uses `submerge()` like `wizzrobe`/`leever` —
+would confirm that mechanism generalises to a second enemy rather than
+being a `wizzrobe`-specific one-off). Picked `moblin` next: it's the last
+plain land enemy before only water/`submerge()` repeats are left in the
+roster.
+
 ## S83 — wizzrobe's deathFrame, a real extraction find, and a benign flicker/submerge quirk confirmed
 
 Picked up right after S82 (STATE.md's own log calls it S37) gave `darknut`

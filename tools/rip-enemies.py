@@ -255,10 +255,17 @@ FRAMES = {
     # on the same plate, same palette, right after the other two (box 235,
     # immediately following 234 with no background gap between): a tighter,
     # asymmetric coil with the eyes rolled to one side — read as a dazed
-    # stagger rather than a third idle pose, so it's the hurtFrame.
+    # stagger rather than a third idle pose, so it's the hurtFrame. A FOURTH
+    # frame sits on the plate too, one box BEFORE pincer_0 (box 232): same
+    # red/tan/black palette, but just two eyes centred with the whole body
+    # faded to nothing else visible — used as the deathFrame, reading as the
+    # creature receding back into its hole for good rather than a squash or
+    # a recolour (fitting for something that "never leaves its hole" by
+    # design, per its own ai() comment below).
     'pincer_0': (233, 0.5, 0.5, False),
     'pincer_1': (234, 0.5, 0.5, False),
     'pincer_hurt': (235, 0.5, 0.5, False),
+    'pincer_death': (232, 0.5, 0.5, False),
 }
 
 # Frames taken from an explicit sheet rectangle instead of a detected box,
