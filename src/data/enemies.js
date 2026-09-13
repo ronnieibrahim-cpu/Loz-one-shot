@@ -22,6 +22,7 @@ export function installEnemies() {
       side: ['octorok_s0', 'octorok_s1'],
     },
     deathFrame: 'octorok_death',
+    attackFrame: 'octorok_atk',
     hb: { x: 2, y: 5, w: 12, h: 10 },
     drops: 'common',
     ai(e, g) {
@@ -50,6 +51,16 @@ export function installEnemies() {
     // regardless of what it collapsed onto, so nothing about octorok_death's
     // shape actually claims dry land specifically.
     deathFrame: 'octorok_death',
+    // Reuses octorok's own attackFrame too, same reasoning as the deathFrame
+    // reuse just above: octorokSea shares octorok's exact living frames, so
+    // it's already the same creature on screen right up until it fires.
+    // octorokSea's own projectile is shot_bubble, not shot_rock — a real
+    // difference, checked rather than assumed identical — but octorok_atk
+    // only depicts the mouth opening, not the projectile inside it, so
+    // nothing about that pose actually claims "rock" specifically; a second
+    // hand-drawn pose here would only diverge for a difference the sprite
+    // itself never shows.
+    attackFrame: 'octorok_atk',
     drops: 'common',
     tideOnly: [1, 2],
     ai(e, g) {

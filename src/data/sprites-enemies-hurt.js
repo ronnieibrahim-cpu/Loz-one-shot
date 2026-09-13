@@ -526,6 +526,57 @@ export const ENEMY_HURT_ART = {
     3113331111333113
     3333333333333333` ,
 
+  // Octorok attack (`shoot()`'s telegraph, ENEMY_ATTACK_FRAMES) — drawn:
+  // re-checked the sheet's own "Octorok" plate with a throwing pose
+  // specifically in mind (same four-frame plate `octorok_death` and
+  // `octorokSea_hurt` already confirmed empty, at S24/S27, plus the one
+  // nearby shell/pickup icon in a different orange palette) — nothing new
+  // to extract, same result a third time. Hand-drawn, following this
+  // file's own header for attack poses: silhouette-close to the idle
+  // frame, not a collapse like `_death` is allowed to be. `octorok_d0`'s
+  // own grid (sprites-enemies.js) is untouched everywhere except the
+  // small red-and-tan mouth patch at its own row 13 (visually confirmed
+  // by rendering both frames from their palette rather than reading the
+  // grid blind) — the two red "lip" pixels flanking its narrow tan slit
+  // are recoloured to tan, stretching the opening from 4 pixels to the
+  // patch's full 8-pixel width. Same grammar `barnacle_atk`'s own comment
+  // already used ("the mouth stretched to its absolute fullest right
+  // before it spits"), applied here as an actual pixel edit rather than a
+  // frame swap since `octorok` has no spare frame to reuse. 4 pixels
+  // changed, nothing else touched — every other row identical to
+  // `octorok_d0`.
+  //
+  // Applied as ONE non-directional pose (`attackFrame: 'octorok_atk'`,
+  // `src/data/enemies.js`), the same shape `beamos_atk`/`barnacle_atk`
+  // already use, not a per-facing set like `moblin_d1`/`u1`/`s1`: unlike
+  // moblin, `octorok_u0` (back view) has no face at all to open a mouth
+  // on, so a real per-facing set would need a second new hand-drawn pose
+  // for "up" anyway, and `spriteName()`'s own fallback (`a.up || a.down`)
+  // would otherwise show this same front-facing mouth on a back view if
+  // "up" were left unset — worse than the one accepted inconsistency of
+  // showing a front telegraph while `octorok` happens to be facing up or
+  // sideways when it fires, which lasts only `ENEMY_ATTACK_FRAMES` (16f,
+  // guessed) before reverting. Decided explicitly here rather than
+  // defaulted to, mirroring how S24/S80 decided the `octorokSea` reuse
+  // question rather than assuming it.
+  octorok_atk: `
+    .....333333.....
+    3333311111133333
+    3113111001113113
+    .31311000011313.
+    ..311110011113..
+    ..310011110013..
+    ..310300003013..
+    ..310330033013..
+    ..331030030133..
+    .31310000001313.
+    3113331111333113
+    3133331001333313
+    3333333333333333
+    ...3000000003...
+    ...3333333333...
+    ................` ,
+
   // Crab death — drawn: the sheet's own "Sand Crab" plate has exactly two
   // frames, both already extracted as `crab_0`/`crab_1`, confirmed
   // against the sheet's own label spanning only those two boxes ("Rope"

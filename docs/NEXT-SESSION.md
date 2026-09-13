@@ -1,3 +1,98 @@
+## S90 — octorok's attackFrame, hand-drawn, and octorokSea's own reuse decision
+
+Picked up right after S89 (STATE.md's own log calls it S44) closed the
+7-enemy `attackFrame` survey with 3 zero-new-art wins (`moblin`,
+`beamos`, `barnacle`) and 5 honest misses needing genuinely new
+hand-drawn art (`octorok`, `octorokSea`, `wisp`, `wizzrobe`, `siren`).
+Task: draw the first one, `octorok_atk`, and decide on purpose whether
+`octorokSea` reuses it.
+
+**Re-confirmed nothing extractable a third time.** Re-checked the
+sheet's "Octorok" plate specifically for a throwing pose (not just a
+generic re-check) — same four frames (`octorok_d0`/`d1`/`s0`/`s1`) plus
+the one nearby shell/pickup icon in a different orange palette already
+ruled out at S24 and re-confirmed at S27. `python3 tools/rip-enemies.py`
+re-run unmodified first, byte-identical (`check-rippers.mjs` 17/17
+before touching anything).
+
+**Rendered the ASCII grid to a PNG before drawing anything**, rather
+than reading the digit grid by eye — `pip install pillow`, a small
+script mapping each grid's palette indices to real hex colours at 20x
+scale. This is the technique this whole session's edit rests on, and it
+revealed something the raw digits alone would have been easy to misread:
+`octorok_d0`'s face is a big tan centre with two solid-black eye
+notches, and there is a SEPARATE small red-and-tan mouth patch two rows
+below it, across a black collar band — not part of the main face at all.
+That patch, not the eyes, is the one place on the frame that plausibly
+"opens" for a spit.
+
+**The edit**: widened that mouth patch's tan opening from 4 pixels to
+its full 8-pixel width, recolouring the 2 red "lip" pixels flanking it
+on each side to tan. 4 pixels changed total; every other row of
+`octorok_d0`'s grid is untouched. Same grammar `barnacle_atk`'s own
+comment already used ("the mouth stretched to its absolute fullest
+right before it spits"), done here as an actual pixel edit rather than a
+frame swap, since `octorok` has no spare frame to reuse the way
+`barnacle` did. Lands in `ENEMY_HURT_ART` (`sprites-enemies-hurt.js`,
+next to `octorok_death`) and `sprite-manifest.js`'s `enemies` list.
+
+**Decided explicitly, not defaulted, to make it ONE non-directional
+pose** — `attackFrame: 'octorok_atk'`, the `beamos_atk`/`barnacle_atk`
+shape — rather than a per-facing set like `moblin_d1`/`u1`/`s1`.
+`octorok_u0` (the back-view walk frame) has no face on it at all, so a
+real per-facing set would need a second brand-new pose anyway just for
+"up," and leaving "up" unset would only make `spriteName()`'s own
+fallback (`a.up || a.down`) show this same front-facing mouth on what
+should be a back view — no better than the one accepted simplification
+of showing the front telegraph in all four facings, which lasts only
+`ENEMY_ATTACK_FRAMES` (16f) before reverting.
+
+**Decided `octorokSea` reuses `octorok_atk` outright**, the same
+reasoning S80 used for the `deathFrame` reuse: `octorokSea`'s `frames:`
+block names the exact same sprite keys as land `octorok`, so the two are
+already the same creature on screen right up until they fire.
+`octorokSea`'s own projectile is `shot_bubble`, not `shot_rock` —
+checked directly in its `ai()`, a real difference from `octorok`'s
+`shot_rock` — but `octorok_atk` only depicts the mouth opening, not the
+projectile that comes out of it, so nothing about the pose actually
+claims "rock" specifically. Documented both decisions inline in
+`enemies.js` the same way S80's comment documents its own reuse call.
+
+**Verified in-engine** with a scratch Playwright probe (not committed,
+same shape as every prior `attackFrame` proof): spawned both `octorok`
+and `octorokSea`, forced `attackTime`, and confirmed `octorok_atk` shows
+across all four facings (`down`/`up`/`left`/`right`), holds for the full
+16-frame `ENEMY_ATTACK_FRAMES` window (still showing at `attackTime=1`),
+then correctly reverts to the ordinary walk cycle the frame `attackTime`
+hits 0. Also tested the interrupt case both ways, since the two enemies
+disagree on it: a mid-attack hit on `octorokSea` (which has `hurtFrame`)
+correctly shows `octorokSea_hurt` instead of the attack pose; the same
+hit on `octorok` (no `hurtFrame` declared) does NOT interrupt — the
+attack pose keeps showing through the hit. Both are the existing
+`spriteName()` ordering (`dying` > `hurtFrame` > `attackFrame` > walk)
+doing exactly what it already did for `beamos`/`barnacle`, not new
+behaviour; confirmed rather than assumed since this was the first time
+that ordering was checked on an enemy that DOESN'T have `hurtFrame`.
+Also confirmed neither `octorok` nor `octorokSea` has a `z` field, so
+the "no height-offset trap" check S26/S27 established doesn't apply
+here.
+
+`check-drift` now reads `octorok: walk,attack,death` and `octorokSea:
+walk,attack,hurt,death` — 2 of 22 enemies with a complete set, up from
+1. validate/test(83/83)/check-feel all green. check-playthrough 21/21
+and replay.mjs 51/51 BOTH unchanged. check-rippers 17/17
+(`sprites-enemies.js` untouched — hand-drawn only). check-build OK,
+dist rebuilt.
+
+**2 of the 5 hand-draw-needed enemies from S89 are now done**
+(`octorok`/`octorokSea` share the one pose). `wisp`, `wizzrobe`, `siren`
+remain — each is its own separate creature with no frame-sharing cousin,
+so each needs its own new pose, one per session at this objective's
+established cadence. Next session: hand-draw `wisp_atk` — `wisp` already
+has both `hurtFrame` and `deathFrame` hand-drawn in this same file, so
+its established "spiky halo, squint/shrink for a reaction pose" grammar
+is the reference to extend rather than invent from nothing.
+
 ## S89 — surveying the remaining shoot() users: two real wins, five honest misses
 
 Picked up right after S88 (STATE.md's own log calls it S43) built the
