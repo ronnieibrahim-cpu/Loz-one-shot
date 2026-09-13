@@ -1,3 +1,88 @@
+## S94 — charge() gets its own attackFrame plumbing, and beetle turns out to be another reuse
+
+Picked up right after S93 (STATE.md's own log calls it S48) closed the
+`shoot()`/`shootRing()` `attackFrame` sub-thread by finding `siren`
+didn't need hand-drawn art after all. That session also found the next
+real candidate before handing off: `charge()`, the AI primitive
+`beetle`/`darknut`/`anglerfry` use for their lunge attacks, already has
+its own windup (`tell`) that freezes the enemy but never swapped the
+sprite. Task: build that plumbing and pilot it on one enemy.
+
+**Confirmed the mechanics directly** rather than trusting the S93
+summary: `charge()` (`src/game/enemy.js`) sets `e.charging = true` and
+`e.stun = o.tell` in the same call once the enemy is aligned and in
+range. `Enemy.update()`'s own `if (this.stun > 0) { this.stun--;
+return; }` early-out then skips `ai()` — and therefore `charge()`
+itself — for `tell` frames, which is why the enemy visibly freezes
+before lunging: `ai()` never runs again to advance the charge until
+`stun` reaches 0. Confirmed no existing `attackTime` write anywhere in
+`charge()` before adding one.
+
+**Added `if (o.tell) e.attackTime = o.tell;`** right alongside the
+existing `e.stun = o.tell` line. This is the one real design difference
+from `shoot()`/`shootRing()`: those two always set the fixed
+`ENEMY_ATTACK_FRAMES` (16) regardless of caller, but `charge()`'s three
+callers pass different `tell` values (`beetle` 16, `darknut` 22,
+`anglerfry` 26) — using the caller's own value means the pose lasts
+exactly as long as the freeze actually does, not a fixed duration that
+would drift out of sync with `stun` for two of the three enemies.
+
+**Picked `beetle` to pilot on**, following the exact precedent S88 set
+piloting the `shoot()` mechanism on `moblin` alone before surveying the
+rest. Before drawing anything, checked for a `moblin_d1`/`siren_1`-style
+reuse first — and found one. `beetle_hurt`'s own existing comment
+(`sprites-enemies-hurt.js`) already describes `beetle_s0`/`s1` as "two
+balled-charge frames", as opposed to the upright `beetle_d0`/`d1` pair.
+Rendered both from `beetle`'s real runtime palette (`pal: 'enemyk'` —
+bone/skeleton tones) to confirm rather than trust the comment: `beetle_d0`
+is an upright bug shape with legs and antennae spread to the sides;
+`beetle_s0` is a completely different silhouette, curled into a round
+shell with a target-like ringed pattern. A genuine shape change, not a
+recolour — the same test S91 used to correctly reject reusing `wisp_1`
+(a pure palette inversion with no shape change at all).
+
+**Wired `attackFrame: 'beetle_s0'`** — one non-directional pose, the
+`octorok_atk` shape (S90), not per-facing: `beetle` only has a second
+pose for its SIDE facing (`beetle_s0`/`s1`); `down`/`up` share
+`beetle_d0`/`d1` with no second variant at all, so a charge triggered
+while facing down or up would show no telegraph under a per-facing
+scheme unless a whole new pose were drawn for those too. Left
+`beetle_s0` in the ordinary side walk-cycle too, same as `moblin_d1`/
+`siren_1` before it — pulling it out would leave `beetle` with only one
+side-facing walk frame.
+
+**Verified in-engine with the actual AI triggering the charge**, not
+`attackTime` forced by hand — the first `attackFrame` proof driven by a
+real AI decision rather than a manually-set field. Placed the player and
+a fresh `beetle` aligned and in range, then drove real `e.update(g)`
+calls until `charge()` fired on its own. Confirmed: `stun` and
+`attackTime` both start at 16 and count down together, one tick per
+frame, in lockstep; the enemy's position never moves during the entire
+window (the freeze is real, not just a sprite swap over live movement);
+`beetle_s0` shows for the whole 16-frame stretch; both timers hit 0 on
+the exact same tick and the sprite correctly falls back to the ordinary
+walk cycle. A separate probe confirmed the interrupt case: a non-lethal
+hit mid-windup shows `beetle_hurt`, not the attack pose, matching the
+existing `dying > hurtFrame > attackFrame > walk` ordering every prior
+enemy already confirmed.
+
+`check-drift` now reads `beetle: walk,attack,hurt,death` — 6 of 22
+enemies with a complete set, up from 5. validate/test(83/83)/check-feel
+all green. check-playthrough 21/21 and replay.mjs 51/51 BOTH unchanged —
+the `charge()` engine change didn't move any recorded plan, meaning no
+existing replay happened to catch a charging enemy mid-tell at a
+checkpoint. check-rippers 17/17 (`sprites-enemies.js` untouched — this
+was reuse, not new art, the second in a row after `siren`). check-build
+OK, dist rebuilt.
+
+**`darknut` (`tell: 22`) and `anglerfry` (`tell: 26`) remain** — both
+already have `hurtFrame` and `deathFrame`, and both now have
+`attackFrame` support sitting ready on the shared `charge()` primitive
+this session built. Next session: survey both for a `beetle_s0`-style
+reuse (an already-extracted, genuinely different pose doing ordinary
+walk-cycle duty) before assuming either needs a hand-drawn pose, the
+same discipline S89 used surveying the `shoot()` roster.
+
 ## S93 — siren's attackFrame turned out to be a REUSE, not a hand-draw, closing the whole shoot()/shootRing() sub-thread
 
 Picked up right after S92 (STATE.md's own log calls it S47) hand-drew

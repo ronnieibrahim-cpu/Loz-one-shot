@@ -193,6 +193,24 @@ export function installEnemies() {
     // found (src/game/enemy.js's Enemy.die(), docs/prompts/LEDGER.md).
     hurtFrame: 'beetle_hurt',
     deathFrame: 'beetle_death',
+    // Reuses beetle's own beetle_s0 as its attackFrame rather than hand-
+    // drawing a new pose — the same zero-new-art shape S43 found on
+    // moblin_d1 and S93 found on siren_1. beetle_hurt's own comment
+    // (sprites-enemies-hurt.js) already names beetle_s0/s1 as "two
+    // balled-charge frames", distinct from the upright beetle_d0/d1 pair —
+    // rendered both from the real runtime enemyk palette to confirm: d0 is
+    // an upright bug with legs and antennae spread to the sides, s0 is a
+    // genuinely different silhouette, curled into a round shell with a
+    // target-like pattern. A real shape change, not a recolour (the test
+    // S91 used to reject wisp_1) — exactly what "rolling into a ball to
+    // charge" should look like. Applied as ONE non-directional pose (like
+    // octorok_atk, S90) rather than per-facing: beetle only has a second
+    // pose for the SIDE facing, not down/up, so a charge that starts while
+    // facing down or up would otherwise show no telegraph at all — the
+    // same "one accepted pose beats an inconsistent per-facing set"
+    // reasoning octorok_atk already used. Left in the ordinary side frames
+    // cycle too, same as moblin_d1/siren_1.
+    attackFrame: 'beetle_s0',
     shield: 'front',
     drops: 'good',
     ai(e, g) {

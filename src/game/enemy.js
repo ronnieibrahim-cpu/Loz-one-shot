@@ -951,7 +951,17 @@ export function charge(e, g, o = {}) {
     // Abandon any step in progress: the charge is the decision now.
     e.step = null; e.stepping = false;
     e.charging = true;
-    if (o.tell) e.stun = o.tell;
+    if (o.tell) {
+      e.stun = o.tell;
+      // Unlike shoot()/shootRing() (which always use the fixed
+      // ENEMY_ATTACK_FRAMES), this uses the caller's own tell value: the
+      // pose should last exactly as long as update()'s own `stun > 0`
+      // early-out freezes the enemy for, and callers pass different tells
+      // (beetle 16, darknut 22, anglerfry 26) for a reason. Harmless for a
+      // charge() user with no spec.attackFrame declared — spriteName() only
+      // reads it when the field exists.
+      e.attackTime = o.tell;
+    }
     if (g.audio) g.audio.sfx(o.sfx || 'charge');
     return true;
   }
