@@ -250,6 +250,27 @@ extract from it:
   with a proof attached? A story — all eleven links have writing specific to
   who each trader is, not generic hand-offs. None of the four found a bug;
   full accounts are in `docs/NEXT-SESSION.md` S43.
+- **Wiring `idle` sprite states onto any enemy right now** — scoped, not
+  found unworkable in shape, but blocked on art. Read every one of the 22
+  `ai()` functions in `src/data/enemies.js` and found 9 enemies with a
+  genuine standing-still state distinct from walk/attack (`beamos`,
+  `barnacle`, `wizzrobe`, `siren`, `keese`, `zol`, `tektite`, `pincer`,
+  `urchin`) and 13 that are never meaningfully still. For every one of the
+  9, re-checked `tools/rip-enemies.py`'s own coordinate-map comments for a
+  spare sheet frame near that enemy's block — the exact method that found
+  every `attackFrame`/`hurtFrame`/`deathFrame` reuse this objective has
+  landed so far — and every candidate frame those comments already name
+  (`beamos` box 20, `barnacle` box 144, `urchin` box 295, `wizzrobe` box
+  338, `pincer` boxes 232/235) is already spent on that enemy's own
+  `attackFrame`/`hurtFrame`/`deathFrame`; `keese`/`zol`/`tektite`/`siren`
+  never had a third frame to begin with. Zero unclaimed art remains for any
+  of the 9. Do not pilot `idle` on any current enemy without either a fresh
+  sheet re-audit finding a real spare frame, or a deliberate decision to
+  hand-draw — both bigger than a wiring session. Full scope, including the
+  recommended `spec.idleFrame` shape for whichever session clears the
+  blocker, is in `docs/ENEMIES.md`'s "Idle states: scoped, and found not to
+  fit yet" section, not repeated here | `docs/prompts/STATE.md` session log,
+  S53 |
 
 ---
 

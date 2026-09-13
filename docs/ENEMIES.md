@@ -10,9 +10,9 @@ is stale.
 
 This is the documentation half of the objective. The art half — every
 enemy having idle/walk/attack/hurt/death sprite states, which
-`tools/check-drift.mjs` currently reports as 0 of 22 complete — is a
-separate, much larger undertaking (new pixel art for every enemy) and is
-not addressed here.
+`tools/check-drift.mjs` currently reports as 9 of 22 complete (up from 0
+before `attackFrame` work began) — is a separate, much larger undertaking
+and is scoped, not addressed, below.
 
 | Enemy | What fighting it teaches |
 |---|---|
@@ -56,3 +56,79 @@ keep using a ranged attack while `stalfos` retreats with no attack at
 all, purely to deny a swing — a zoner versus an evader. `zol`/`gel` and
 the tide-linked pair `urchin`/`jellyfish` are similarly built to be read
 together rather than alone.
+
+## Idle states: scoped, and found not to fit yet
+
+`Enemy.spriteName()` (`src/game/enemy.js`) has no concept of "idle" at
+all: its priority order is `dying > hurtFrame > attackFrame > walk
+cycle`, and an enemy that isn't moving just keeps showing its ordinary
+`spec.frames` cycle, tick-driven, identical to when it IS moving.
+Confirmed by reading the method directly, not assumed.
+
+Reading every one of the 22 `ai()` functions in `src/data/enemies.js`
+for a genuine standing-still moment (distinct from a walker's brief
+pause between lattice-step decisions) splits the roster in two:
+
+- **13 enemies are never meaningfully still**: `octorok`, `octorokSea`,
+  `crab`, `gel`, `leever` (hidden while submerged, always chasing while
+  up), `bubble`, `beetle`, `moblin`, `stalfos`, `darknut`, `anglerfry`,
+  `jellyfish`, `wisp`. Each drives `chase`/`flee`/`wander`/`patrol`/
+  `bounceDiag`/`orbit`, or a `charge()` whose own `idle:` callback is
+  itself one of those movement verbs. "Idle" isn't a meaningful concept
+  for any of them.
+- **9 enemies do have a real, nameable standing-still state**: `beamos`
+  and `barnacle` (speed 0, stationary their entire life between shots),
+  `wizzrobe` and `siren` (motionless for most of their surfaced phase
+  between `shootRing`/`shoot` calls), `keese` (the first ~44 of its
+  60-frame rest, before the last 16 already show `attackFrame`), `zol`
+  and `tektite` (the equivalent wait before `hop()`'s own attackFrame
+  window), `pincer` (its `'hole'` state — the bulk of its life), and
+  `urchin` (does nothing at all while the tide is below level 1 — the
+  cleanest case: "dormant and harmless" versus "awake and dangerous" is
+  a real design distinction, not just a mechanical pause).
+
+So the AI shape is not the blocker — for those 9, a `spec.idleFrame`
+condition could be written down precisely (see below). **The blocker is
+art.** For every one of those 9, this session re-checked
+`tools/rip-enemies.py`'s own coordinate map for a spare sheet frame near
+that enemy's block — the same method that found every `attackFrame`/
+`hurtFrame`/`deathFrame` reuse this objective has landed so far — and in
+every single case the answer is the same: any extra frame the ripper's
+own comments already identified nearby has already been claimed:
+
+| Enemy | Spare frame the ripper found | Already spent on |
+|---|---|---|
+| `beamos` | box 20 | `beamos_atk` |
+| `barnacle` | box 144 | `barnacle_atk` |
+| `wizzrobe` | box 338 | `wizzrobe_death` |
+| `urchin` | box 295 | `urchin_death` |
+| `pincer` | boxes 232, 235 | `pincer_death`, `pincer_hurt` |
+| `keese`, `zol`, `tektite`, `siren` | none found | both of their only 2 frames are already walk-cycle + `attackFrame` |
+
+Zero unclaimed frames remain for any of the 9 candidates. Wiring `idle`
+today would mean either reusing an already-claimed pose for a second,
+conflicting meaning (`urchin`'s retracted-spike `deathFrame` doubling as
+its dormant pose would make the same sprite mean both "defeated" and
+"asleep") or hand-drawing new art — a real undertaking (potentially 9
+new frames) that CLAUDE.md's extraction-first rule says shouldn't be
+reached for until the sheets are re-audited in full, which is a sheet
+research task and not a wiring one. That audit is the concrete next step
+if this objective's rotation ever returns to `idle`, not more AI survey.
+
+**No pilot enemy was wired this session.** `urchin` was the strongest
+candidate by AI shape and came closest — its 2 live frames carry no
+`attackFrame` competing for them — but still has no unclaimed art, so
+piloting it would mean hand-drawing on the strength of a single enemy,
+which is the shaky case this scoping was told to avoid.
+
+If a future session clears the art blocker (new sheet frames found, or
+a deliberate decision to hand-draw), the shape to build is
+`spec.idleFrame` — a single pose, the same shape `spec.attackFrame`
+already takes, not `spec.idleFrames` (a cycle): these are held poses for
+a state, not animations. Splice it into `spriteName()`'s existing chain
+as `dying > hurtFrame > attackFrame > idle > walk`, gated on an explicit
+per-enemy flag that enemy's own `ai()` sets (mirroring how `attackTime`
+is set explicitly by `shoot()`/`charge()`/`hop()`, never inferred
+generically) — a generic "hasn't moved in N frames" timer would
+misfire on every walker's ordinary pause between lattice-step
+decisions, which is not a meaningful idle.
