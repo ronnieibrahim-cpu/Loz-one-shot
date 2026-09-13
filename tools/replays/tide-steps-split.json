@@ -126,7 +126,7 @@
    "x": 64,
    "y": 104,
    "hp": 12,
-   "e": 5,
+   "e": 6,
    "d": 1,
    "r": "0,10,0",
    "pl": [
@@ -319,6 +319,8 @@
   ],
   "dungeonMap": false,
   "chartstone": false,
+  "dungeonMaps": {},
+  "charts": {},
   "flags": [],
   "doorsChanged": 0,
   "secretsSeen": 2,

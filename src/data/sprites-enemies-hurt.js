@@ -733,6 +733,37 @@ export const ENEMY_HURT_ART = {
     .333331001333113
     .3333300000333..
     .300100333333...` ,
+
+  // Siren death — drawn: the sheet's own "River Zora" plate (siren's
+  // substitution source, per rip-enemies.py's own comment) has a
+  // spiral-shaped frame right before the two already used, but quantising
+  // it shows NO red at all (#ffd68c/#000000 only, vs. siren_0/1's
+  // #ffd68c/#ff0829/#000000) — a genuinely different creature or icon on
+  // the same sheet, correctly rejected rather than used just because it
+  // sits nearby. Nothing usable to extract; hand-drawn instead. Squashed
+  // `siren_0` (front singing pose) following `octorok_death`'s own
+  // every-other-row squash template: rows 0/2/4/6/8/10/12/14 of its 16-row
+  // grid (sprites-enemies.js) kept pixel-for-pixel and compressed to the
+  // bottom half of the cell, reusing only colour indices already present.
+  // `siren` (hp 4, `terrain: 'water'`, `src/data/enemies.js`) has no `z`
+  // field, confirmed directly.
+  siren_death: `
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    .......33.......
+    333...3003...333
+    3000333333330003
+    .30300033000303.
+    3003033333303003
+    3003113333113003
+    0333111331113330
+    ..000000000000..` ,
 };
 
 export function installEnemyHurtSprites() {

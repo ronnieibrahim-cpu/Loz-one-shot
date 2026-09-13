@@ -1,69 +1,84 @@
-# Next session — give siren a real deathFrame
+# Next session — give anglerfry a real deathFrame (the last one)
 
 ## Read first
 - `docs/prompts/CHARTER.md` — the standing rules for every session; run it
   verbatim before reading anything else here.
 - `docs/prompts/STATE.md` — objective #4 (enemy-roster) and its file
   allowlist.
-- `docs/NEXT-SESSION.md`'s S85 entry (`moblin_death`, the newest) — it
-  correctly REJECTED two sheet frames that matched the right palette but
-  didn't read as a collapse. Keep that same discipline: a candidate has
-  to actually look defeated, not just belong to the right creature.
+- `docs/NEXT-SESSION.md`'s S86 entry (`siren_death`, the newest) — it
+  flags that `anglerfry` is the LAST remaining `deathFrame` candidate.
+  Read that entry's closing paragraph before doing anything else: this
+  session finishes a sub-thread running since S26 (STATE.md's own
+  numbering), and needs to leave the NEXT session a genuinely different
+  task under objective #4, not "pick the next enemy" from a list that
+  will be empty.
 
 ## Why this, now
-Fifteen enemies have `deathFrame` already. `siren` (hp 4, `terrain:
-'water'`, `src/data/enemies.js`, "surfaces to sing a shot at you,
-submerges to dodge") is next: it uses `submerge()`, the same
-hidden/invuln mechanism `leever` (S32) and `wizzrobe` (S83) already
-proved blocks a hit outright while hidden. Picked specifically to confirm
-that mechanism genuinely generalises across MULTIPLE enemies rather than
-being something that happens to work for `wizzrobe` alone. `siren` is
-also hp 4 (two hits at `swordDamage()` 2: 4 -> 2 -> 0), same shape
-`moblin` (S85) just proved, now combined with the submerge cycle.
+Sixteen enemies have `deathFrame` already. `anglerfry` (hp 3, `terrain:
+'water'`, `src/data/enemies.js`, "hangs in deep water, lunges when you
+swim near") is the last one: `charge()` AI, `tideOnly: [1, 2]` — the same
+general shape `octorokSea` (S80) and `jellyfish` (S79) already covered,
+so this session is not expected to find a new mechanism, but check
+properly anyway rather than assuming plainness — several "plain-looking"
+targets in this thread turned out not to be.
 
 ## The task
-1. Check `assets/sheets/oracle-seasons-enemies.png`'s own "Siren" plate
-   (boxes 256/257 per `tools/rip-enemies.py` — check the actual label,
-   don't guess it from this prompt) for a collapse pose distinct from the
-   two already used and from `siren_hurt` (`sprites-enemies-hurt.js`).
-   `pip install pillow` first if needed, and run `python3
-   tools/rip-enemies.py` once unmodified to confirm it still reproduces
-   byte-identically before changing anything. Check properly for a real
-   frame, but also be ready to correctly reject one that matches the
-   palette without reading as defeated — `moblin` (S85) just found two
-   such traps on one plate.
+1. Check `assets/sheets/oracle-seasons-enemies.png`'s own plate for
+   `anglerfry_0`/`anglerfry_1` (boxes 43/44 per `tools/rip-enemies.py` —
+   the comment there says this is a Cheep-Cheep substitution) for a
+   collapse pose distinct from the two already used and from
+   `anglerfry_hurt` (`sprites-enemies-hurt.js`). `pip install pillow`
+   first if needed, and run `python3 tools/rip-enemies.py` once
+   unmodified to confirm it still reproduces byte-identically before
+   changing anything. Quantise and compare palettes directly for any
+   candidate rather than trusting visual adjacency — `wizzrobe` (S83) and
+   `siren` (S86) both found sheet-neighbours that turned out to be a
+   different creature entirely.
 2. If a real extra frame exists: add it to `FRAMES` in `tools/rip-enemies.py`
    and re-emit. Never hand-add a key to `sprites-enemies.js`.
-3. If nothing extractable exists: add `siren_death` to `ENEMY_HURT_ART`
-   (`sprites-enemies-hurt.js`), following the same "reuse/squash the live
-   frames, invent nothing" discipline recent sessions used.
+3. If nothing extractable exists: add `anglerfry_death` to
+   `ENEMY_HURT_ART` (`sprites-enemies-hurt.js`), following the same
+   "reuse/squash the live frames, invent nothing" discipline recent
+   sessions used.
 4. Add the new sprite name to `sprite-manifest.js`'s `enemies` list (if
    hand-drawn).
-5. Wire `deathFrame: 'siren_death'` onto `siren`'s `defineEnemy` call.
-6. Verify in-engine, in this order — read `siren`'s own `ai()` first for
-   its actual `submerge()` timing (`down: 76, up: 70`) rather than
-   guessing:
-   - Confirm `siren` has no `z` field.
-   - While hidden (down phase): confirm a hit does not connect at all —
-     `hurt()` returns `false`, `hp`/`dying` untouched — the same proof
-     `leever` and `wizzrobe` already made. Confirm it holds on THIS
-     enemy too rather than assuming the mechanism just carries over
-     because it worked twice before.
-   - While visible (up phase): hit 1 (hp 4 -> 2) shows `siren_hurt` and
-     reverts to the ordinary cycle once the flicker window ends, `dying`
-     false throughout. Hit 2 (hp 2 -> 0) shows `siren_death`, never
-     `siren_hurt`, held for the full `ENEMY_DEATH_FRAMES` stall, then
+5. Wire `deathFrame: 'anglerfry_death'` onto `anglerfry`'s `defineEnemy`
+   call.
+6. Verify in-engine:
+   - Confirm `anglerfry` has no `z` field.
+   - Non-lethal hit (hp 3 -> 1, `swordDamage()` 2) shows `anglerfry_hurt`
+     and reverts correctly once the flicker window ends.
+   - The lethal follow-up shows `anglerfry_death`, never
+     `anglerfry_hurt`, held for the full `ENEMY_DEATH_FRAMES` stall, then
      `dead = true`.
+   - `anglerfry` is `tideOnly: [1, 2]` — confirm the kill works the same
+     at both tide levels it actually exists at, the same check
+     `octorokSea` (S80) made.
 7. Run `node tools/check-playthrough.mjs` and `node tools/replay.mjs`
-   after everything else is green. Re-record whichever replay plan
-   actually diverges (`node tools/replay.mjs --record <name>`) if one
-   does.
+   after everything else is green. `tektite` (S78) and `siren` (S86) both
+   needed a replay re-record; `octorokSea`/`beetle`/`darknut`/`wizzrobe`/
+   `pincer`/`moblin` didn't. Check rather than assume either way, and
+   re-record whichever plan actually diverges
+   (`node tools/replay.mjs --record <name>`) if one does.
+8. **This is the last `deathFrame` target.** Once it's done, update
+   `docs/ENEMIES.md`/`check-drift.mjs`'s own roster status mentally and
+   write the NEXT-PROMPT.md for a genuinely different task under
+   objective #4 (enemy-roster) — re-read the objective's own done
+   condition in STATE.md (idle/walk/attack/hurt/death states, a one-line
+   behavior spec per enemy, no two enemies teaching the same lesson) and
+   figure out what's still missing now that every killable enemy has
+   `walk`+`hurt`(where applicable)+`death`. `attackFrame` has no engine
+   field yet (see `docs/prompts/LEDGER.md`) — deciding whether that's
+   this thread's next real gap, or whether `docs/ENEMIES.md`'s one-line
+   specs need auditing for the "no two enemies teach the same lesson"
+   rule, is itself worth a paragraph in this session's own
+   `docs/NEXT-SESSION.md` entry, even if it isn't fully resolved this
+   session.
 
 ## Done means
-- `siren` shows a real collapse pose on the hit that kills it, proven by
-  an in-engine probe covering both submerge phases, not by reading the
-  code.
-- `node tools/check-drift.mjs` shows `siren: walk,hurt,death`.
+- `anglerfry` shows a real collapse pose on the hit that kills it, proven
+  by an in-engine probe, not by reading the code.
+- `node tools/check-drift.mjs` shows `anglerfry: walk,hurt,death`.
 - `node tools/validate.mjs`, `node tools/test.mjs` pass (83/83). If
   `sprites-enemies.js` changed, `node tools/check-rippers.mjs` is 17/17.
 - `node tools/check-playthrough.mjs` is 21/21 and `node tools/replay.mjs`
@@ -71,15 +86,15 @@ also hp 4 (two hits at `swordDamage()` 2: 4 -> 2 -> 0), same shape
   running them.
 - `npm run build`, `dist/oracle-of-tides.html` committed.
 - STATE.md gets one new session-log row (delete the oldest if over 60
-  lines).
+  lines) AND a clear statement that the deathFrame sub-thread is closed.
+- NEXT-PROMPT.md (rewritten by this session, per the charter's own step 7)
+  names a genuinely different task, not another enemy's `deathFrame`.
 
 ## Out of scope
-- Any OTHER enemy's `deathFrame` — one enemy per session, same cadence
-  this thread has kept for fifteen sessions straight. `anglerfry` is the
-  last remaining candidate after this one, not this session's target.
-- `bubble`, `beamos`, `barnacle` — all hp 999, effectively unkillable.
-- Re-investigating the wizzrobe flicker/submerge quirk (S83) — that's
-  settled as benign; confirm the hidden-hit-blocked mechanism holds here,
-  don't re-derive why it works.
-- `attackFrame` or any engine field for it — still the separate, bigger
-  redesign question (see `docs/prompts/LEDGER.md`).
+- Any hand-wringing about which enemy comes "after" this one — there
+  isn't one left. Don't invent a 17th `deathFrame` target that doesn't
+  exist (`bubble`/`beamos`/`barnacle` are hp 999 and permanently out of
+  scope, not secretly eligible).
+- Fully redesigning `attackFrame` or auditing all 22 `docs/ENEMIES.md`
+  lines in one sitting — naming the next real gap is in scope, closing it
+  is a future session's work.

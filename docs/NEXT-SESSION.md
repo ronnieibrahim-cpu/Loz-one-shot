@@ -1,3 +1,58 @@
+## S86 — siren's deathFrame confirms submerge() generalises, and a real replay divergence this time
+
+Picked up right after S85 (STATE.md's own log calls it S40) gave
+`moblin` a `deathFrame`. Task: give `siren` (hp 4, `terrain: 'water'`,
+`src/data/enemies.js`, "surfaces to sing a shot at you, submerges to
+dodge") one too — picked specifically to confirm `submerge()`'s
+hidden/invuln mechanism (already proven twice, on `leever` S32 and
+`wizzrobe` S83) generalises to a THIRD enemy rather than being something
+that happens to work for those two specifically.
+
+**Checked the sheet's own "River Zora" plate (`siren`'s substitution
+source) properly, and correctly rejected a visually-plausible trap** —
+the same class `wizzrobe` (S83) hit with its box 335. A spiral-shaped
+frame sits right before the two already-used Zora frames, but quantising
+it shows it carries NO red at all (`#ffd68c`/`#000000` only), while
+`siren_0`/`siren_1` both include `#ff0829`. That's not a variant pose of
+the same creature — palette mismatch means it's something else entirely
+on the same sheet, and using it anyway would have been exactly the
+mistake this thread has learned to catch by now. Nothing usable to
+extract; hand-drew `siren_death` instead, an `octorok_death`-style
+every-other-row squash of `siren_0`, reusing only colours already
+present. Confirmed no spec `z` field.
+
+**Confirmed the submerge mechanism a third time, not assumed to carry
+over just because it worked twice before**: a hit while hidden is
+blocked outright (`hurt()` returns `false`, `hp`/`dying` untouched) —
+this is now proven on `leever`, `wizzrobe`, and `siren`, three
+independently-implemented uses of the same `submerge()` helper. The
+ordinary two-hit sequence while visible behaves exactly like every other
+hp-4 proof: hit 1 (hp 4 -> 2) shows `siren_hurt` and reverts correctly,
+the lethal hit 2 shows `siren_death` for the full stall.
+
+`check-drift` reads `siren: walk,hurt,death`. `validate.mjs`/`test.mjs`
+stayed 83/83; `check-playthrough.mjs` stayed 21/21. **`replay.mjs` found
+a real divergence this time** — `tide-steps-split` failed at frame 120
+with an entity-count mismatch, because `siren` is present in that plan's
+room and the new death stall now outlives a checkpoint the old recording
+assumed instant removal at. Exactly the class `tektite` (S78) already
+hit; re-recorded `tide-steps-split`
+(`node tools/replay.mjs --record tide-steps-split`), back to 51/51 clean.
+`check-build.mjs` OK, `dist/oracle-of-tides.html` rebuilt and committed.
+`sprites-enemies.js` untouched (hand-drawn art) so `check-rippers.mjs`
+had nothing new to verify.
+
+**One candidate remains: `anglerfry`** (hp 3, water, `tideOnly`,
+`charge()` AI — the same shape `octorokSea`/`jellyfish` already covered).
+After it, EVERY killable enemy in the roster (everything except the
+three hp-999 enemies — `bubble`, `beamos`, `barnacle` — which cannot be
+finished by design) will have a `deathFrame`. That closes out this
+entire sub-thread running since S26 (STATE.md's numbering) / roughly S70
+(this file's numbering) — worth flagging clearly to whoever picks up
+`anglerfry`'s session, since finishing it means the NEXT session after
+that has to pick a genuinely different task under objective #4
+(enemy-roster), not just the next enemy in a list that will have run out.
+
 ## S85 — moblin's deathFrame: two candidate frames correctly rejected, and the first hp-4 land proof
 
 Picked up right after S84 (STATE.md's own log calls it S39) gave `pincer`

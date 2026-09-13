@@ -369,6 +369,7 @@ export function installEnemies() {
     hp: 4, damage: 3, pal: 'enemyb', speed: 0, rate: 16, terrain: 'water',
     frames: ['siren_0', 'siren_1'],
     hurtFrame: 'siren_hurt',
+    deathFrame: 'siren_death',
     drops: 'good',
     ai(e, g) {
       submerge(e, g, {
