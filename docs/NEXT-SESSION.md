@@ -1,3 +1,69 @@
+## S79 — jellyfish's deathFrame, the plainest target yet, and the hp<=2 cadence is exhausted
+
+Picked up right after S78 (STATE.md's own log calls it S33) gave `tektite`
+a `deathFrame`. Task: give `jellyfish` (hp 2, `terrain: 'water'`,
+`src/data/enemies.js`) one too — the 9th enemy in this thread, and notably
+the first target with no `hurtFrame` at all before this session (hp 2 means
+`swordDamage()` always kills it in one hit, so it could never have shown
+one anyway — same reasoning `octorok`/`crab`/`zol`/`urchin`/`tektite` all
+already established).
+
+**Checked the sheet's own "Bari & Biri" plate properly rather than trusting
+that `jellyfish_0`/`jellyfish_1`'s two boxes (12/13) were the whole
+story** — the lesson every prior extraction-hunting session in this thread
+has repeated. The plate actually has six frames total, not two: four tan
+"Bari" poses, then two visually-similar but genuinely separate blue "Biri"
+frames. Told them apart by quantising and comparing PALETTES directly
+rather than eyeballing a resized screenshot crop: `jellyfish_0`/`1` and the
+newly-found box 14 all share the exact same `#ffd68c`/`#1984ff` tan/blue
+pair, while box 15 is `#73adff`/`#0000ff` — a different creature's electric
+variant, not a pose of the same one. Box 14 itself reads as a real
+collapse: its body sits smaller and shifted down (row 0 empty in its
+16-row grid, unlike the two live frames), and its tentacle fringe is
+ragged rather than the neat hanging skirt `jellyfish_0`/`1` share. Added
+`jellyfish_death: (14, 0.5, 0.5, False)` to `FRAMES` in
+`tools/rip-enemies.py` and re-emitted — `sprites-enemies.js` now 60
+sprites (up from 59), `check-rippers.mjs` stayed 17/17.
+
+**The plainest `deathFrame` target this thread has verified so far.**
+`jellyfish`'s `ai()` is `bounceDiag` + `driftWithTide` — continuous
+movement, not lattice-locked, no `hop()`, no `submerge()`, and confirmed
+directly (not assumed) that its spec carries no `z` field either. An
+in-engine probe (deep water, tide level 2, since `jellyfish` is
+`terrain: 'water'`) confirmed a lethal hit sets `dying = true`
+immediately, `spriteName()` returns `jellyfish_death`, holds for the full
+`ENEMY_DEATH_FRAMES` stall, then `dead = true` and the entity leaves both
+`game.entities` and `game.pendingAdd`.
+
+`check-drift` reads `jellyfish: walk,death`. `validate.mjs`/`test.mjs`
+stayed 83/83. **Unlike `tektite` (S78), neither `check-playthrough.mjs`
+(21/21) nor `replay.mjs` (51/51) moved at all** — `jellyfish` doesn't
+appear in the scripted playthrough route or in any recorded replay plan,
+so this session needed no re-recording. `check-build.mjs` OK,
+`dist/oracle-of-tides.html` rebuilt and committed.
+
+**The "next hp<=2 enemy without one" cadence this thread has followed
+since S26 is now EXHAUSTED.** Every non-hp-999 enemy at hp <= 2 —
+`octorok`, `crab`, `zol`, `gel`, `keese`, `leever`, `tektite`, `urchin`,
+`jellyfish` — has a `deathFrame`. The remaining roster without one is all
+hp >= 3, and every one of those already has a `hurtFrame`:
+`octorokSea`/`beetle`/`wizzrobe`/`anglerfry`/`pincer` at hp 3, `moblin`/
+`siren` at hp 4, `darknut` at hp 6. `deathFrame` carries no hp constraint
+(S13/S16), so all of these are equally eligible now — the selection
+criterion has to change from "lowest hp without one" to something else.
+
+Picked `octorokSea` as the next target, but flagging a real design
+question rather than deciding it here: `octorokSea` reuses the exact same
+`octorok_d0`/`d1`/`u0`/`u1`/`s0`/`s1` live frames as land `octorok`
+(`src/data/enemies.js` — both `frames:` blocks name the identical sprite
+keys), which already has `octorok_death` (S27). It may be correct to
+simply reuse `octorok_death` as `octorokSea`'s `deathFrame` too, rather
+than drawing or extracting a second one — visually the two enemies are
+already the same sprite, so a distinct death pose would be the first place
+they diverge for no evident reason. Or it may be wrong, if drowning is
+meant to read differently from a squash-on-land. The next session should
+decide this ON PURPOSE, not by default, and say which and why.
+
 ## S78 — tektite's deathFrame, a real hop/death interaction, and a real replay re-record
 
 Picked up right after S77 (STATE.md's own log calls it S32) gave `leever` a

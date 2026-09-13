@@ -340,6 +340,7 @@ export function installEnemies() {
     light: true,
     hp: 2, damage: 3, pal: 'enemyb', speed: 0.4, rate: 14, terrain: 'water',
     frames: ['jellyfish_0', 'jellyfish_1'],
+    deathFrame: 'jellyfish_death',
     hb: { x: 3, y: 4, w: 10, h: 10 },
     drops: 'common',
     ai(e, g) {

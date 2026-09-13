@@ -416,6 +416,24 @@ export const ENEMY_ART = {
     ...3333003333...
     .......33.......` },
   // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  jellyfish_death: { pal: 'jellyfish_death', art: `
+    ................
+    ......3333......
+    ....33111133....
+    ...3212222123...
+    ...3332112333...
+    .33231311313233.
+    3132321331232313
+    3332233223322333
+    .31312222221313.
+    3233211111123323
+    3303321111233033
+    .33133333333133.
+    .32303133130323.
+    .33331233213333.
+    ....313..313....
+    .....3....3.....` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   keese_0: { pal: 'keese_0', art: `
     ................
     ................
@@ -1107,6 +1125,7 @@ export const ENEMY_ART_PALETTES = {
   gel_1: ['#ffffff', '#ffffff', '#ffffff', '#ff0829'],
   jellyfish_0: ['#ffd68c', '#1984ff', '#1984ff', '#000000'],
   jellyfish_1: ['#ffd68c', '#1984ff', '#1984ff', '#000000'],
+  jellyfish_death: ['#ffffff', '#ffd68c', '#1984ff', '#000000'],
   keese_0: ['#ffd68c', '#ffd68c', '#ffd68c', '#000000'],
   keese_1: ['#ffd68c', '#ffd68c', '#ffd68c', '#000000'],
   leever_0: ['#ffd68c', '#ff0829', '#ff0829', '#000000'],

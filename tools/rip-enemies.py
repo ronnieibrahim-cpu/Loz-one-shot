@@ -220,8 +220,17 @@ FRAMES = {
     'barnacle_1': (143, 0.5, 0.5, False),
 
     # Jellyfish. SUBSTITUTION in name only: this is Bari, which already is one.
+    # The "Bari & Biri" plate has four Bari frames, not two: box 14 sits right
+    # after the two already used, same tan/blue palette (#ffd68c/#1984ff) as
+    # jellyfish_0/1 — box 15 is a different creature entirely (Biri, all-blue
+    # electric palette #73adff/#0000ff), confirmed by comparing the quantised
+    # palettes directly rather than by eye. Box 14's body sits smaller and
+    # shifted down (row 0 empty, unlike 12/13) and its tentacle fringe is
+    # ragged rather than the neat hanging skirt the live frames share — used
+    # as the deathFrame, reading as the creature pulled in and coming apart.
     'jellyfish_0': (12, 0.5, 0.5, False),
     'jellyfish_1': (13, 0.5, 0.5, False),
+    'jellyfish_death': (14, 0.5, 0.5, False),
 
     # Siren — "mermaid-like singer". SUBSTITUTION: original to this game, so it
     # borrows River Zora, which surfaces and sings a shot at you.
