@@ -25154,6 +25154,7 @@ function installEnemies() {
     // hp 3 > swordDamage() at sword level 1 (2) — the hurtFrame hp rule S12
     // found (src/game/enemy.js's Enemy.die(), docs/prompts/LEDGER.md).
     hurtFrame: 'beetle_hurt',
+    deathFrame: 'beetle_death',
     shield: 'front',
     drops: 'good',
     ai(e, g) {
@@ -38523,6 +38524,49 @@ const ENEMY_HURT_ART = {
     3031311331131303
     3033333333333303
     .333..3333..333.` ,
+
+  // Beetle death — drawn: the sheet's own "Spiked Beetle" plate has exactly
+  // four frames (upright front x2, balled-up side x2), all already
+  // extracted as `beetle_d0`/`d1`/`s0`/`s1` — confirmed against the sheet's
+  // own "Spiked Beetle" label spanning only those four boxes, "Spinning
+  // Blade" sitting to the right as an unrelated creature. Nothing to
+  // extract; hand-drawn instead. Squashed the UPRIGHT pose (`beetle_d0`,
+  // the resting/walking shape) rather than uncurling the balled-up
+  // `charge()` shape (`beetle_s0`/`s1`) — a squash of the standing form
+  // reads as "collapsed," where uncurling the charge ball could as easily
+  // read as "about to charge," the wrong direction for a death pose.
+  // Following `octorok_death`'s own every-other-row squash rather than
+  // inventing a new shape: rows 0/2/4/6/8/10/12/14 of `beetle_d0`'s 16-row
+  // grid (sprites-enemies.js) kept pixel-for-pixel and compressed to the
+  // bottom half of the cell, reusing only colour indices already present
+  // in the live frames. `beetle` (hp 3, `src/data/enemies.js`) has no `z`
+  // field, confirmed directly. `beetle` also has `shield: 'front'` — the
+  // first `deathFrame` target with a shield checked against a LETHAL hit
+  // by this thread (`crab`, S29, has the same field but the interaction
+  // was never explicitly probed): verified in-engine that a hit arriving
+  // at the shielded front is blocked outright regardless of damage
+  // (`hurt()` returns `false`, `hp`/`dying` untouched, even for a
+  // would-be-lethal amount), and that a hit from an unshielded angle goes
+  // through normally — a non-lethal one (hp 3 -> 1) shows `beetle_hurt`
+  // and reverts to the walk cycle, the lethal follow-up shows
+  // `beetle_death` and holds for the full stall.
+  beetle_death: `
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ...33......33...
+    ...3003..3003...
+    3333133113313333
+    3003333333333003
+    .31003333330013.
+    .31333333333313.
+    .33111000011133.
+    .30003333330003.` ,
 };
 
 function installEnemyHurtSprites() {

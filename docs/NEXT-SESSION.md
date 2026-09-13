@@ -1,3 +1,55 @@
+## S81 — beetle's deathFrame, and the first shield-vs-lethal-hit proof in this thread
+
+Picked up right after S80 (STATE.md's own log calls it S35) gave
+`octorokSea` a `deathFrame` by reuse and established that hp no longer
+orders which enemy comes next. Task: give `beetle` (hp 3, `src/data/
+enemies.js`) its own `deathFrame`, picked specifically because it combines
+`shield: 'front'` with a `charge()` AI — the first candidate with both,
+and a genuine gap this thread had left untested: `crab` (S29) also has
+`shield: 'front'` but nobody had actually probed a lethal hit against its
+shielded side.
+
+**Checked the sheet's own "Spiked Beetle" plate first**, same discipline
+every extraction-hunting session in this thread has used: exactly four
+frames (upright front x2, balled-up charge-side x2), all four already
+extracted as `beetle_d0`/`d1`/`s0`/`s1`, "Spinning Blade" sitting to the
+right as a clearly unrelated creature. Nothing to extract; hand-drawn
+instead. **A real choice made on purpose, not by default**: squashed the
+UPRIGHT resting pose (`beetle_d0`) rather than uncurling the balled-up
+charge shape (`beetle_s0`/`s1`), because a squash of the standing form
+reads unambiguously as "collapsed," while unrolling the charge ball could
+just as easily read as "about to charge" — the wrong direction for a
+death pose. Followed `octorok_death`'s own every-other-row squash
+template rather than inventing a new shape: rows 0/2/4/6/8/10/12/14 of
+`beetle_d0`'s 16-row grid kept pixel-for-pixel, compressed to the bottom
+half of the cell, reusing only colours already present.
+
+**Verified the shield interaction directly, the actual point of this
+session**: with the enemy facing one direction, a hit arriving at its
+shielded front — even carrying 99 damage, an absurdly lethal amount — is
+blocked outright by `Enemy.hurt()` (`hp`/`dying` both untouched, `hurt()`
+itself returns `false`). A hit from an unshielded angle goes through
+normally: a non-lethal hit (hp 3 -> 1) shows `beetle_hurt` and correctly
+reverts to the ordinary walk cycle once the flicker window elapses
+(`dying` false throughout), and the lethal follow-up shows `beetle_death`
+— never `beetle_hurt` — for the full `ENEMY_DEATH_FRAMES` stall before
+`dead = true`. Confirmed no spec `z` field beforehand.
+
+`check-drift` reads `beetle: walk,hurt,death`. `validate.mjs`/`test.mjs`
+stayed 83/83; `sprites-enemies.js` untouched (hand-drawn art, not
+extracted) so `check-rippers.mjs` had nothing new to verify. Neither
+`check-playthrough.mjs` (21/21) nor `replay.mjs` (51/51) moved. `check-
+build.mjs` OK, `dist/oracle-of-tides.html` rebuilt and committed.
+
+Picked `darknut` (hp 6, `shield: 'front'`, "only vulnerable from behind")
+as the next target for a specific reason: it is the first `deathFrame`
+candidate that needs THREE hits at `swordDamage()` 2 to die (6 -> 4 -> 2
+-> 0) — every prior multi-hit proof in this thread (`stalfos` S25,
+`octorokSea` S80, `beetle` this session) has been exactly one non-lethal
+hit followed by one lethal hit. Worth confirming `hurtFrame` actually
+re-triggers correctly on a SECOND non-lethal hit, not just a first one,
+before the third hit finally shows `deathFrame`.
+
 ## S80 — octorokSea's deathFrame: a reuse decided on purpose, and the first hurt+death two-hit proof at hp3
 
 Picked up right after S79 (STATE.md's own log calls it S34) closed out the

@@ -121,7 +121,7 @@ export const REQUIRED_SPRITES = {
     ...seq('octorok_d', 2), ...seq('octorok_u', 2), ...seq('octorok_s', 2), 'octorokSea_hurt', 'octorok_death',
     ...seq('crab_', 2), 'crab_death', ...seq('zol_', 2), 'zol_death', ...seq('gel_', 2), 'gel_death', ...seq('keese_', 2), 'keese_death',
     ...seq('leever_', 2), 'leever_death', ...seq('bubble_', 2), ...seq('beamos_', 2),
-    ...seq('beetle_d', 2), ...seq('beetle_s', 2), 'beetle_hurt', ...seq('tektite_', 2), 'tektite_death',
+    ...seq('beetle_d', 2), ...seq('beetle_s', 2), 'beetle_hurt', 'beetle_death', ...seq('tektite_', 2), 'tektite_death',
     ...seq('wisp_', 2), 'wisp_hurt', 'wisp_death', ...seq('urchin_', 2), 'urchin_death',
     ...seq('moblin_d', 2), ...seq('moblin_u', 2), ...seq('moblin_s', 2), 'moblin_hurt',
     ...seq('stalfos_d', 2), ...seq('stalfos_s', 2), 'stalfos_death', 'stalfos_hurt',

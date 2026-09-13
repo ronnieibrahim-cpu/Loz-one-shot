@@ -180,6 +180,7 @@ export function installEnemies() {
     // hp 3 > swordDamage() at sword level 1 (2) — the hurtFrame hp rule S12
     // found (src/game/enemy.js's Enemy.die(), docs/prompts/LEDGER.md).
     hurtFrame: 'beetle_hurt',
+    deathFrame: 'beetle_death',
     shield: 'front',
     drops: 'good',
     ai(e, g) {
