@@ -25369,8 +25369,18 @@ function installEnemies() {
     shield: 'front',
     drops: 'common',
     ai(e, g) {
-      e.idle = g.tide.level < 1;
-      if (g.tide.level >= 1) wander(e, g, { speed: 0.3, decide: 2 });
+      // "Harmless on dry ground" (this file's own comment above, and
+      // docs/ENEMIES.md's lesson) used to only be true of its MOVEMENT —
+      // e.harmless is Player.updateContactDamage's own skip flag
+      // (src/game/player.js), already used the same way by submerge()'s
+      // down/up cycle (src/game/enemy.js), and nothing had ever set it here.
+      // A "dozing" urchin at LOW tide dealt its full contact damage on
+      // touch for the whole life of this enemy until this line. Tied to the
+      // same condition `idleFrame`/`wander` already use, not a separate one.
+      const dormant = g.tide.level < 1;
+      e.idle = dormant;
+      e.harmless = dormant;
+      if (!dormant) wander(e, g, { speed: 0.3, decide: 2 });
     },
   });
 

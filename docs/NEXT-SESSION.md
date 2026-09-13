@@ -1,3 +1,31 @@
+## S99 (STATE.md's own log calls it S54/S55) — found AND fixed in the same session: `urchin`'s "harmless at low tide" was not actually true
+
+While piloting `urchin`'s new `idleFrame` (STATE.md S54) and then judging
+whether any of the other 8 idle candidates deserved the same treatment
+(S55), checked how `docs/ENEMIES.md`'s "harmless on dry ground" claim
+for `urchin` is actually enforced and found it wasn't: `Player.
+updateContactDamage` (`src/game/player.js`) skips an enemy's contact
+damage via `e.harmless` (also via `e.dormant`, which `urchin` never used
+— it declares no `spec.tideOnly`), and nothing had ever set
+`e.harmless` for `urchin`. So a "dozing" `urchin` at LOW tide dealt its
+full 2 qh on touch; only its MOVEMENT (`wander`) was tide-gated, not its
+danger.
+
+**Fixed in the same session, not deferred**, once it became clear the
+fix was one line reusing an already-read engine flag rather than a new
+mechanism: `urchin`'s `ai()` (`src/data/enemies.js`) now sets
+`e.harmless` from the exact same `g.tide.level < 1` condition that
+already drives `e.idle` and `wander()` — the same flag `submerge()`'s
+down/up cycle (`src/game/enemy.js`) already toggles the same way for
+`leever`/`wizzrobe`/`siren`, not a new one. Verified in-engine with a
+scratch probe placing the player directly on an `urchin` at each tide
+level: LOW takes zero damage, HIGH takes the normal 2 quarter-hearts;
+sword damage TO the enemy is unaffected either way (`e.harmless` only
+gates the enemy's own contact damage OUTPUT). `docs/ENEMIES.md`'s idle
+section and `docs/prompts/LEDGER.md` both updated to record the fix.
+Full regression sweep green and unchanged (`urchin` isn't on the
+playthrough route or any replay tape). `dist/` rebuilt.
+
 ## S97 — tektite closes hop(); a full ai() read finds two more free windups (keese, pincer); leever checked and honestly ruled out
 
 Picked up right after S96 (STATE.md's own log calls it S51) built

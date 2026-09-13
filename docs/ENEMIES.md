@@ -145,9 +145,55 @@ priority-order proof every other field in this roster got.
 `hurtFrame`/`attackFrame`/`deathFrame`, and `urchin` reports
 `walk,idle,death`.
 
-**The finding for the other 8 stands unchanged**: no free art, and no
-enemy among them has as clean a design case as `urchin`'s tide gate. The
-concrete next step, if this objective's rotation returns to `idle`
-again, is either a full sheet re-audit for the remaining 8 or a
-one-at-a-time hand-draw decision on whichever of them has the next-best
-design case — not a search for a new mechanism, and not all 8 at once.
+**`urchin`'s own "harmless" claim was found half-implemented, then
+fixed.** While judging the other 8 candidates against `urchin`'s bar
+(below), a follow-up session found that only `urchin`'s MOVEMENT was
+ever tide-gated — `Player.updateContactDamage` (`src/game/player.js`)
+also skips a `harmless` enemy's contact damage, but nothing had ever set
+`e.harmless` for `urchin`, so a "dozing" one at LOW tide still dealt its
+full contact damage on touch (`docs/NEXT-SESSION.md`'s S99 entry has the
+original finding). Fixed in the same session that found it: `urchin`'s
+`ai()` (`src/data/enemies.js`) now sets `e.harmless` from the same
+`g.tide.level < 1` condition that already drives `e.idle` and `wander()`
+— reusing the exact flag `submerge()`'s down/up cycle already toggles
+the same way, not a new mechanism. Verified in-engine with a scratch
+probe placing the player directly on an `urchin` at each tide level:
+LOW takes zero damage, HIGH takes the normal 2 quarter-hearts. Sword
+damage TO the enemy is unaffected either way (`e.harmless` only gates
+its own contact damage OUTPUT, not incoming hits), so it can still be
+fought at any tide. The lesson above is now literally true.
+
+**A follow-up session judged the other 8 candidates against `urchin`'s
+own bar — does a distinct idle pose teach the player something, the way
+a real dormant/awake split does — rather than treating "no free art" as
+the only test, and found NONE of them clear it**, independent of the art
+question:
+
+- `beamos`/`barnacle`: stationary their entire existence, with no
+  separate safe/dangerous mode — they can fire whenever a player is
+  aligned and in range, at any moment, and `attackFrame` already marks
+  the one moment that differs (about to fire). An idle pose would be
+  redundant with that contrast, not add a new one.
+- `wizzrobe`/`siren`: their `whileUp` callbacks fire on a plain frame
+  counter with no player-distance or range check at all — surfaced
+  means "will shoot again within its own period," full stop. There is
+  no safe surfaced sub-state to give a separate pose to; the entire
+  surfaced window is uniformly dangerous, unlike `urchin`'s tide split.
+- `keese`/`zol`/`tektite`: their rest/wait IS already visually distinct
+  from their burst/hop via actual movement — motionless means "not
+  currently closing distance," moving means it is, and `attackFrame`
+  already marks the last stretch before the movement starts. A separate
+  idle pose for the earlier, quieter part of the same wait would be
+  cosmetic, not informative: the player already reads "stopped moving"
+  as the safe signal.
+- `pincer`: spends its whole life visually anchored to one point in the
+  hole regardless of internal state, and the player's actual lesson (a
+  fixed, measurable snap-and-return reach) comes from watching where the
+  head visibly stops, not from a resting pose while it hasn't acted yet.
+
+**Verdict: no second `idleFrame` pilot this session.** The concrete next
+step, if this objective's rotation returns to `idle` again, is either a
+full sheet re-audit for the remaining 8 (in case any of them turns out
+to have a design case this pass missed) or accepting that `urchin` may
+be the only enemy in this roster where idle art was ever going to teach
+something — not a search for a 9th candidate or an 8-at-once push.
