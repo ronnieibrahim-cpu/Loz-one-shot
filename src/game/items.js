@@ -234,7 +234,10 @@ export class DredgeLine extends Entity {
       for (const e of game.entities) {
         if (e.dead || e === this || e === p) continue;
         if (!this.overlaps(e)) continue;
-        if (e.isEnemy && !e.harmless) { this.snag(game, e); return; }
+        // `dying` for the same reason contact damage skips it: a corpse in
+        // its defeat pose is not a catch. Snagging one hooked a thing that
+        // removed itself mid-haul and left the line holding nothing.
+        if (e.isEnemy && !e.dying && !e.harmless) { this.snag(game, e); return; }
         if (e.isDrop || e.liftable) { this.hooked = e; e.attached = this; this.state = 'haul'; return; }
       }
 

@@ -757,7 +757,12 @@ export async function installRuntime() {
       if (e.remove || e === g.player || e === except) continue;
       if (e.isProjectile) {
         if (e.fromPlayer) continue;
-      } else if (shotsOnly || !e.isEnemy || e.dead) continue;
+      // `dying` is the death-animation stall (see `Enemy.die`): `dead` is
+      // still false for all of it, and the thing cannot touch the player any
+      // more. Dodging a corpse is how the actor lost D1's Tide Gallery — it
+      // circled the wreckage of the zol it had just killed, on a lattice that
+      // backed it into the two gels the same zol had just split into.
+      } else if (shotsOnly || !e.isEnemy || e.dead || e.dying) continue;
       const r = e.rect();
       out.push({
         x: r.x + r.w / 2, y: r.y + r.h / 2,
@@ -1004,7 +1009,16 @@ export async function installRuntime() {
       if (g.mapId + '/' + (g.room ? g.room.key : '') !== home) { yield* dWait(6); return; }
       const dm = dialogueMask(g, f);
       if (dm !== null) { yield dm; f++; continue; }
-      const foes = g.entities.filter(e => e.isEnemy && !e.dead && !e.dormant && !e.hidden);
+      // A CORPSE IS NOT A FOE. An enemy with a `deathFrame` sits `dying` for
+      // ENEMY_DEATH_FRAMES with `dead` still false, invulnerable the whole
+      // time (ENEMY_INVULN_FRAMES outlasts the stall), so an actor that counts
+      // it keeps closing on and swinging at something it cannot kill — and
+      // `stale` cannot see the difference, because the foe count does not move
+      // either. That is what the zol's defeat pose broke: every zol in D1 now
+      // bought its own killer sixteen wasted frames in the middle of a fight,
+      // and the Tide Gallery's went from cleared to a death.
+      const foes = g.entities.filter(e => e.isEnemy && !e.dead && !e.dying
+        && !e.dormant && !e.hidden);
       if (!foes.length) return;
       // Some enemies sit in water the player cannot follow them into. Killing
       // nothing for a long stretch means this is one of those, not that the
@@ -1055,8 +1069,21 @@ export async function installRuntime() {
       const dist = Math.abs(along);
       if (dist > FAR) { yield safeF(BIT[face]); f++; continue; }
       if (dist < NEAR) {
-        yield safeF(axisX ? (dx < 0 ? BIT.right : BIT.left) : (dy < 0 ? BIT.down : BIT.up));
-        f++; continue;
+        const away = axisX ? (dx < 0 ? BIT.right : BIT.left) : (dy < 0 ? BIT.down : BIT.up);
+        const room2 = safeF(away);
+        // CORNERED: SWING, DO NOT KEEP BACKING INTO THE WALL. Everything above
+        // assumes the actor can always give ground and re-enter the standoff
+        // band. Against a room edge it cannot — `fence` strips the very
+        // direction this retreat needs — so a chaser that is already touching
+        // the player pins it there, and the actor backs into the wall for ever
+        // without ever swinging, because `dist` never climbs back to NEAR.
+        // That is how D1's Tide Gallery killed the run: the two gels a zol
+        // splits into walked it into the bottom edge and ate four hits off it
+        // while it retreated against a wall that was not there.
+        // A person swings at something standing on top of them. So: if the
+        // retreat is actually blocked, face it and swing instead.
+        if (!room2) { yield safeF(BIT[face]); f++; yield swordBit(); f++; continue; }
+        yield room2; f++; continue;
       }
       // In the window: face, swing, then back off diagonally until the enemy
       // has to come and find us again.

@@ -1,3 +1,104 @@
+## S76 — the two playthrough failures were real, and neither was what the report said
+
+Picked up a bug report (written against `3f9906d`) claiming
+`check-playthrough.mjs`'s two failures were both "fixed-frame-budget route
+steps that no longer finish in time", caused by the accumulated 16-frame
+`ENEMY_DEATH_FRAMES` stall each new `deathFrame` adds. **Both failures are
+real and reproduce exactly as described. Both diagnoses are wrong**, and the
+budget-drift theory is wrong in a way worth recording, because it is the
+kind of theory that survives a plausibility check and dies on a measurement.
+
+`dLoot` (`tools/actor-runtime.mjs`) RETURNS IMMEDIATELY when nothing
+collectable is on the floor — `if (!pending.length) return;`. Its frame
+number is a CAP, not a wait. So "600 frames is no longer enough" cannot be
+the mechanism for either failure: a `loot` step that finds nothing spends
+nothing. Neither failing step was ever short of budget.
+
+**Bug 1 (D1's Essence never recorded) is a ROUTE GAP, not a regression.**
+`Essence` (`src/game/objects.js`) has no `isDrop`, so `dLoot` cannot see it
+at any budget — it collects only by its own `overlaps(game.player)`, and
+`onBossDefeated` spawns it at tile 4,3. D2's own boss sequence already had
+an explicit `['goto', 4, 3, 400]` for exactly this, with a comment saying so
+in capitals. D1's never did: it leant on the following `loot` happening to
+leave the actor near enough, which is the accident D2's comment warns is not
+to be relied on. Fixed by giving D1 the same explicit walk-onto-the-tile
+step. This had nothing to do with `crab`'s `deathFrame`; that commit merely
+let the run get far enough to reach it.
+
+**Bug 2 (`equip: anchor is not in the item list`) is a DEATH, several rooms
+and 28000 frames upstream of where it throws.** The trace tells this plainly
+and nobody read it: the actor's hearts hit 0 at step 35 in `d1 0,3,5`, it sat
+at `hp 0` for ~9000 frames until the death screen took a button, respawned at
+the dungeon mouth — and every directive after that addressed a room the
+player was no longer standing in. The chest holding the Anchor was never
+opened because the actor was never there. (`openChest` grants `chest.item`
+outright via `giveItem`; no drop, no pickup, nothing for `loot` to do. The
+`loot` step by that chest was never load-bearing.)
+
+Confirmed by A/B across three adjacent commits: `32b336b` (pre-`crab`)
+crashes deep in D2; `202f3aa` (`crab`) is `20 passed, 1 failed`, never dies;
+`3f9906d` (`zol`) dies in D1. Reverting the single line `deathFrame:
+'zol_death'` restores a full pass, which is what makes `zol` the trigger —
+but the trigger is not the defect, and the line stays.
+
+### What the fights actually showed, frame by frame
+
+Instrumented `Player.takeDamage` to record every hit's source, and snapshotted
+every entity in `d1 0,3,5` per frame, with and without the zol's `deathFrame`.
+The two runs are IDENTICAL to frame 4654 and diverge the frame the zol dies.
+
+Without it: the zol vanishes and its two gels appear the same frame, one of
+them right beside the actor, which kills them and clears the room in 230
+frames having taken no damage at all.
+
+With it: the corpse stands `dying` for 19 frames while the actor finishes its
+swing; by the time the gels appear the actor has committed to walking across
+the room at a distant crab, and the gels arrive behind it. It ends up cornered
+against the room's bottom edge taking a hit every 52 frames — the
+`PLAYER_INVULN_FRAMES` cadence, i.e. being chewed as fast as the game allows.
+
+**The actor never swings at any of it, and that is the real defect.**
+`dFight`'s standoff band retreats whenever `dist < NEAR`, on the assumption
+that ground can always be given and the band re-entered. Against a room edge
+it cannot: `fence` strips the very direction the retreat needs, so a chaser
+already touching the player pins it there and `dist` never climbs back. The
+actor backed into a wall that was not there until it died. A person swings at
+something standing on top of them; it now does too, and ONLY when the retreat
+is actually blocked, so nothing else about the band changes.
+
+With that, `d1 0,3,5` clears in 326 frames with 2 hearts left and
+**`check-playthrough.mjs` is 21 passed, 0 failed with the zol's defeat pose
+fully intact.** Nothing was skipped, disabled or granted.
+
+### A real game bug found on the way, unrelated to the harness
+
+`Enemy.die`'s stall leaves `dead` false for the whole death animation, and
+`updateContactDamage` only skipped `dead` — so **a corpse mid-collapse dealt
+full contact damage**, for `ENEMY_DEATH_FRAMES` on an enemy and
+`BOSS_DEATH_FRAMES` (72) on a boss's explosion. Proved with an in-engine
+probe against a live-enemy control: alive 16 hits / 16 frames, dying 16 hits
+/ 16 frames — identical. Now 0. The same one-word omission let the Dredge
+Line snag a corpse that then removed itself mid-haul.
+
+This is NOT what broke the playthrough (the fixed run's trace is unchanged by
+it — no dying enemy ever overlapped the actor), and it would not have been
+found by chasing the crash. It is a fidelity bug on its own merits: in the
+source games the thing that is visibly finished cannot hurt you.
+
+### Also worth knowing
+
+- **`replay.mjs` was ALREADY RED on `main`** before any of this — 49 passed,
+  2 failed, `d1-descent` diverging at frame 540 and ending with 6 hearts
+  instead of 29. The `deathFrame` commits broke it and it shipped unnoticed
+  alongside the red playthrough. Re-recorded; 51/51.
+- The margin here is genuinely thin: the deepest trough is now 2/28
+  quarter-hearts in `d1 0,3,5`. The run survives it, but this room is the
+  first thing any future combat or enemy change will break.
+- Full suite green: `test.mjs` 83/83, `check-playthrough` 21/21,
+  `replay` 51/51, `check-rippers` 17/17 (needs `pip install pillow`), and
+  every other tool in CLAUDE.md's table.
+
+
 ## S75 — boss-art (rotation #3), closed by research rather than by building anything
 
 `docs/prompts/NEXT-PROMPT.md` scoped this as a research session: CLAUDE.md

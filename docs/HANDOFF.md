@@ -447,6 +447,52 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **A DEAD ENEMY IS NOT DEAD UNTIL THE ANIMATION ENDS, AND EVERYTHING THAT
+  ASKS "IS THIS STILL A THREAT" HAS TO SAY SO.** `Enemy.die` defers
+  `Entity.die` behind an `ENEMY_DEATH_FRAMES` stall for anything with a
+  `deathFrame` (and `Boss.beginDeath` behind `BOSS_DEATH_FRAMES`), so `dead`
+  stays FALSE for the whole defeat pose. Every guard in the codebase spelled
+  `!e.dead` silently changed meaning the day the first `deathFrame` landed.
+  `updateContactDamage` was one of them: a corpse went on dealing full
+  contact damage for its entire collapse — 72 frames for a boss's explosion.
+  Proved with a live-enemy control (alive 16/16 hits, dying 16/16, identical;
+  now 0/16). When you add a state between "alive" and "removed", grep every
+  `!e.dead` in `src/` and `tools/` and decide each one deliberately.
+
+- **READ THE TRACE BEFORE BELIEVING THE STACK.** `check-playthrough.mjs`
+  threw `equip: anchor is not in the item list` in `d1 0,3,6`, and two
+  sessions in a row diagnosed it as the `loot` step before it running out of
+  frames. It was a DEATH 28000 frames earlier: the trace shows `hp 0` at step
+  35, then ~9000 frames parked on the death screen, then a respawn at the
+  dungeon mouth — after which every directive addresses a room the player is
+  not in, and the run keeps recording perfectly while being fiction. A
+  scripted route cannot detect its own desync. When this checker throws, find
+  the first step where the position stops changing or the hearts hit zero;
+  the throw is only where the fiction finally became an exception.
+
+- **`dLoot`'s frame number is a CAP, NOT A WAIT.** It returns immediately if
+  nothing collectable is on the floor. "The budget is no longer enough" is
+  therefore never the explanation for a `loot` step that achieved nothing,
+  and a whole theory of cumulative frame drift was built on assuming
+  otherwise. Chests are worse than that: `openChest` grants `chest.item`
+  outright through `giveItem` — no drop, no pickup, nothing for `loot` to
+  collect at all. A `loot` step next to a chest is decoration.
+
+- **`Essence` IS NOT A DROP AND `dLoot` CAN NEVER COLLECT IT.** It has no
+  `isDrop`; it collects only by its own `overlaps(game.player)`, and
+  `onBossDefeated` spawns it at tile 4,3. Every boss in the route needs its
+  own explicit `['goto', 4, 3, N]`. D2 had one and D1 did not, and D1's
+  Essence was silently never taken while its boss counted as beaten — the
+  dungeon reads as cleared and the reward is still lying on the floor.
+
+- **The actor could not fight anything that was already touching it.**
+  `dFight` retreats whenever `dist < NEAR` to re-enter its standoff band,
+  which assumes ground can always be given. Against a room edge `fence`
+  strips that direction, so a chaser in contact pins the actor and `dist`
+  never recovers: it backs into the wall, never swings, and dies at the
+  `PLAYER_INVULN_FRAMES` cadence. Fixed by swinging when the retreat is
+  actually blocked. If a future fight is lost in a corner, this is the shape.
+
 - **A `wait` value tuned against `beginRecord`'s fresh `boot()` (frame 0) does
   not transfer to the real route, because `boot()` zeroes `g.frame` and the
   real route arrives at the same point tens of thousands of frames later.**

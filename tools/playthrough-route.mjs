@@ -568,6 +568,17 @@ export const ROUTE = [
   // has ever fought outside god mode and won on the way past.
   ['boss', 9000],
   ['wait', 300],
+  // WALK ONTO THE ESSENCE BY HAND — `dLoot` CANNOT COLLECT IT AT ANY BUDGET.
+  // Same reason spelled out at D2's own boss below: `Essence`
+  // (`src/game/objects.js`) has no `isDrop`, so the drop sweep does not see it
+  // and never will; it collects only by its own `overlaps(game.player)`, and
+  // `onBossDefeated` spawns it at tile 4,3. D2 got this step and D1 did not —
+  // D1 leant on the following `loot` happening to leave the actor near enough,
+  // which is exactly the accident D2's comment warns is not to be relied on.
+  // It stopped holding, and the run beat Gohmaraq and walked away without his
+  // Essence. `wait` above covers the spawn: BOSS_DEATH_FRAMES (72) of death
+  // stall, then BOSS_ESSENCE_DELAY_FRAMES (70) before it appears.
+  ['goto', 4, 3, 400],
   ['dialogue', 900],
   ['loot', 900],
   ['dialogue', 900],

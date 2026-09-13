@@ -1111,7 +1111,16 @@ export class Player extends Entity {
   updateContactDamage(game) {
     if (this.invuln > 0 || this.invincible) return;
     for (const e of game.entities) {
-      if (!e.isEnemy || e.dead || e.harmless || e.dormant || e.hidden) continue;
+      // A CORPSE MID-COLLAPSE IS NOT A THREAT. `dying` is the death-animation
+      // stall an enemy with a `deathFrame` and every boss sit in before
+      // `Entity.die` runs — `dead` is still false for all of it, so without
+      // this an enemy went on dealing full contact damage for the whole of its
+      // own defeat pose (ENEMY_DEATH_FRAMES, and BOSS_DEATH_FRAMES for a
+      // boss's explosion). That is not what the source games do and it is not
+      // what the animation reads as: the thing is visibly finished. It cost a
+      // playthrough — the actor walked through the wreckage of what it had
+      // just killed in D1's Tide Gallery and died to it.
+      if (!e.isEnemy || e.dead || e.dying || e.harmless || e.dormant || e.hidden) continue;
       if (e.damage <= 0) continue;
       if (this.z > 6 && !e.flying) continue;      // jumped over it
       if (!this.overlaps(e)) continue;
