@@ -1,3 +1,86 @@
+## S91 — wisp's attackFrame: the grin widens instead of shrinking
+
+Picked up right after S90 (STATE.md's own log calls it S45) hand-drew
+`octorok_atk`, the first genuinely new attack pose in the roster. Task:
+draw the second one, `wisp_atk`, following `wisp`'s own established
+hurt/death grammar rather than inventing a new one.
+
+Confirmed `wisp`'s real spec directly rather than trusting the previous
+prompt's guess: hp 3 (not 999), `pal: 'magic'`, `frames: ['wisp_0',
+'wisp_1']`, `z: 8`, `terrain: 'air'`, fires via `shootRing()` every 150
+ticks. Re-confirmed nothing extractable a second time — Spark's own
+plate (the sheet source `wisp_0`/`wisp_1` substitute in) has exactly 2
+frames, both already spent on the ordinary lit/unlit flicker cycle. Ran
+`python3 tools/rip-enemies.py` unmodified first, byte-identical.
+
+**Considered and rejected a zero-new-art shortcut before drawing
+anything**: reuse `wisp_1` (the colour-inverted flicker frame) as the
+attack pose, the same way S43 reused `moblin_d1` (an already-extracted
+"spear raised" frame that had been sitting unused as an attack
+telegraph). The two cases are not the same. `moblin_d1` was a
+genuinely different POSE that happened to be doing walk-cycle duty;
+`wisp_1` is just the ordinary other half of the idle flicker a player
+already sees every other tick regardless of whether `wisp` is
+attacking. Freezing on it for the attack window would not read as
+anything — it's the frame the player has already been staring at. Ruled
+out on that basis rather than assumed to generalise from moblin's case.
+
+**Rendered the actual runtime look before drawing**: `wisp_0`, `wisp_1`,
+`wisp_hurt` and `wisp_death` all rendered from `wisp`'s real runtime
+palette (`pal: 'magic'` — `#f8e0ff`/`#c090f0`/`#7040b0`/`#200c38`, not
+the sprite's own per-key fallback palette) to PNGs, the same technique
+S90 introduced. This showed the face clearly: a spiky halo ring, two
+dark eye wedges, and a wide grin along the bottom. `wisp_hurt`'s own
+existing edit (already landed, untouched this session) shrinks that
+grin down to a small wince — 2 pixels squinting the eyes, most of the
+grin's dark span erased. That meant the grin was already "spoken for"
+in one direction. `wisp_atk` goes the OTHER way: the same grin widened
+further rather than shrunk, reading as the mouth opening wide right
+before it lets out the ring of orbs.
+
+**The edit**: exactly 4 pixels, both in the grin's lower two rows.
+`wisp_0` row 10 has two dark "corner" pixels bracketing a gap; extended
+each one column further in. Row 11's centre dark span widened by one
+column on each side to match, keeping the shape a single coherent wide
+grin rather than two disconnected marks. Every other pixel — the whole
+spiky halo (rows 0-5 and 12-15) and both eye wedges — is byte-identical
+to `wisp_0`. Landed in `ENEMY_HURT_ART` (`sprites-enemies-hurt.js`,
+right after `wisp_death`) and `sprite-manifest.js`'s `enemies` list.
+Wired `attackFrame: 'wisp_atk'` on `wisp`'s `defineEnemy` call — a plain
+string, since `wisp`'s own `frames` is a flat 2-entry array with no
+facings to disambiguate (unlike `octorok`, this was never a design
+choice to make).
+
+**Verified in-engine** with a scratch Playwright probe (not committed,
+same shape as every prior `attackFrame` proof): `e.attackTime` forced to
+`ENEMY_ATTACK_FRAMES` shows `wisp_atk` immediately, holds through the
+whole window (still showing at `attackTime = 1`), then reverts to
+`wisp_0` the frame `attackTime` hits 0. `z` reads 8 before, during and
+after — confirmed rather than assumed, since this is the first
+`attackFrame` proof on a `z`-offset flier, though a non-death pose was
+never going to move `z` the way S26's `keese_death` height trap did.
+The interrupt case is the one genuinely new proof this session adds:
+`wisp` DOES declare `hurtFrame` (unlike `octorok` in S90, which does
+not), so a mid-attack non-lethal hit is the first real test of
+`spriteName()`'s `dying > hurtFrame > attackFrame > walk` ordering from
+the side that actually has all three fields live at once other than
+`stalfos`'s reverse-order case (S25) — confirmed the hit correctly
+shows `wisp_hurt`, not `wisp_atk`, for the whole flicker window.
+
+`check-drift` now reads `wisp: walk,attack,hurt,death` — 3 of 22
+enemies with a complete set, up from 2. validate/test(83/83)/check-feel
+all green. check-playthrough 21/21 and replay.mjs 51/51 BOTH unchanged.
+check-rippers 17/17 (`sprites-enemies.js` untouched — hand-drawn only).
+check-build OK, dist rebuilt.
+
+**3 of the 5 hand-draw-needed enemies from S89's survey are now done**
+(`octorok`/`octorokSea` sharing one pose, plus `wisp`). `wizzrobe` and
+`siren` remain — `wizzrobe`'s one spare sheet frame was already spent on
+`deathFrame` (S83), so it needs the same from-scratch hand-drawing
+`wisp_atk` just got, extending `wizzrobe`'s own existing hurt/death
+grammar the same way this session extended wisp's. Next session: hand-
+draw `wizzrobe_atk`.
+
 ## S90 — octorok's attackFrame, hand-drawn, and octorokSea's own reuse decision
 
 Picked up right after S89 (STATE.md's own log calls it S44) closed the

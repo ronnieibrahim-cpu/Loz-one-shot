@@ -220,6 +220,7 @@ export function installEnemies() {
     // comment in sprites-enemies-hurt.js for why this is the real test of
     // spriteName()'s dying-before-hurtFrame ordering (src/game/enemy.js).
     deathFrame: 'wisp_death',
+    attackFrame: 'wisp_atk',
     z: 8,
     drops: 'good',
     ai(e, g) {

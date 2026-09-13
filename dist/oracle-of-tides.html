@@ -25235,6 +25235,7 @@ function installEnemies() {
     // comment in sprites-enemies-hurt.js for why this is the real test of
     // spriteName()'s dying-before-hurtFrame ordering (src/game/enemy.js).
     deathFrame: 'wisp_death',
+    attackFrame: 'wisp_atk',
     z: 8,
     drops: 'good',
     ai(e, g) {
@@ -38187,6 +38188,47 @@ const ENEMY_HURT_ART = {
     ................
     ................
     ................` ,
+
+  // Wisp attack (`shootRing()`'s telegraph, ENEMY_ATTACK_FRAMES) — drawn:
+  // Spark's own plate (`wisp_0`/`wisp_1`'s substitution source) has exactly
+  // 2 frames, both already spent on the ordinary lit/unlit flicker cycle —
+  // re-confirmed, same result S89 already found. Reusing `wisp_1` (the
+  // inverted-colour flicker frame) as the attack pose was considered and
+  // rejected: it is not a materially different pose, only the same
+  // silhouette a player already sees every other tick during ordinary idle
+  // flicker, unlike `moblin_d1`'s genuinely different "spear raised" pose
+  // that S43 got to reuse — freezing on it would not read as a telegraph.
+  // Hand-drawn instead, extending `wisp_0`'s own established family rather
+  // than inventing a new grammar: `wisp_hurt` (above) shrinks the wide grin
+  // down to a small wince, and `wisp_death` collapses the whole halo to an
+  // ember, so this pose goes the OTHER direction from `wisp_hurt` — the
+  // same grin widened further, reading as the mouth opening wide right
+  // before it unleashes the ring of orbs. `wisp_0`'s own grid
+  // (sprites-enemies.js) is unchanged everywhere except 4 pixels in the
+  // grin's lower rows (10-11): the two dark corner-teeth at row 10 extended
+  // one column further in on each side, and row 11's centre dark span
+  // widened by one column on each side to match — confirmed by rendering
+  // both frames from their actual runtime `magic` palette before drawing,
+  // the same technique `octorok_atk` (S90) used. The spiky halo (rows 0-5,
+  // 12-15) and both eye wedges are untouched, so it stays unmistakably the
+  // same creature mid-cast, not a different expression entirely.
+  wisp_atk: `
+    ....03300330....
+    ..300333333003..
+    .33333000033333.
+    .03300000000330.
+    0030330000330300
+    3330033003300333
+    3300003003000033
+    0303000000003030
+    0303300000033030
+    3300033003300033
+    3330033333300333
+    0030003333000300
+    .03300000000330.
+    .33333000033333.
+    ..300333333003..
+    ....03300330....` ,
 
   // Darknut hurt — drawn: assets/sheets/oracle-seasons-enemies.png's own
   // "Darknut" plate was checked frame by frame (idle x2, side x2, walk-leg

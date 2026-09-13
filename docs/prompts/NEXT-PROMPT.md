@@ -1,85 +1,83 @@
-# Next session — hand-draw wisp's attackFrame
+# Next session — hand-draw wizzrobe's attackFrame
 
 ## Read first
 - `docs/prompts/CHARTER.md` — the standing rules for every session; run it
   verbatim before reading anything else here.
 - `docs/prompts/STATE.md` — objective #4 (enemy-roster) and its file
   allowlist.
-- `docs/NEXT-SESSION.md`'s S90 entry (the newest) — `octorok_atk` landed
-  as a single non-directional pose, with the reasoning for that choice
-  written out. `wisp` is next; the same "one pose, not per-facing"
-  question does not apply here since `wisp`'s own `frames` is a plain
-  array (no facings at all), so that decision is already made for you.
+- `docs/NEXT-SESSION.md`'s S91 entry (the newest) — `wisp_atk` landed by
+  widening an existing hand-drawn grin rather than reusing a walk frame,
+  and explains why the walk-frame-reuse shortcut was rejected for `wisp`
+  specifically. `wizzrobe` is next.
 
 ## Why this, now
-`wisp` (hp 999... no — check `src/data/enemies.js`, it is NOT hp 999,
-confirm the real value) already has both `hurtFrame` (`wisp_hurt`) and
-`deathFrame` (`wisp_death`) hand-drawn in `sprites-enemies-hurt.js`, so
-unlike `octorok_atk` this session has an established per-creature
-grammar to extend rather than invent: `wisp_hurt`'s own comment
-describes the "same spiky halo silhouette, squinted eyes, wide grin
-pulled to a wince" pattern, and `wisp_death`'s comment describes how the
-halo collapses for death. An attack pose needs its own third variation
-in that same family — not a squint (that's `_hurt`) and not a collapse
-(that's `_death`).
+`wizzrobe` (`src/data/enemies.js`) is the plainest of the 2 remaining
+candidates: hp 3, damage 3, `pal: 'enemyp'`, `frames: ['wizzrobe_0',
+'wizzrobe_1']`, blinks in and out via `submerge()` and fires a single
+aimed `shoot()` (not `shootRing()`) while up. Its THIRD sheet frame
+(`wizzrobe_death`, `sprites-enemies.js`) is already extracted and
+already spent on `deathFrame` — confirmed at S83, re-confirmed in S89's
+survey — so there is nothing left on the sheet and this is a from-
+scratch hand-draw, same as `octorok_atk` (S90) and `wisp_atk` (S91).
+`wizzrobe_hurt` (`sprites-enemies-hurt.js`) already exists: it uses the
+sprite's otherwise-unused third palette colour (index 2, `enemyp`'s own
+mid-tone) for a small bruise mark on the right cheek, specifically
+because the usual "shut the eyes" trick would vanish against this
+sprite's dark visor. Read that comment before drawing — it names which
+part of the face is already spoken for and which colour index is free.
 
 ## The task
-1. Confirm `wisp`'s real spec fields (`hp`, `frames`, `pal`) directly
-   from `src/data/enemies.js` rather than trusting this file's guess
-   above.
-2. Re-confirm nothing extractable exists for `wisp` before drawing — S89
-   already checked this (its substitution source, "Spark", has exactly 2
-   frames on its own plate, both used as `wisp_0`/`wisp_1`), but confirm
-   it yourself from the actual sheet. `pip install pillow` first if
-   needed; render `wisp_0`'s ASCII grid (`sprites-enemies.js`) to a PNG
-   the way S90 did (small standalone script, palette hex -> pixels) so
-   you are looking at the shape rather than reading digits blind — that
-   technique is what made S90's edit legible on the first try. Then run
-   `python3 tools/rip-enemies.py` once unmodified to confirm
-   byte-identical reproduction before touching anything.
-3. Read `CLAUDE.md`'s art rules section before drawing: three colours
-   plus transparency, a hard 1px black outline, no
-   anti-aliasing/gradients/dithering, silhouette-first. An attack pose is
-   NOT a collapse (that's `_death`'s own exception) — it needs to read as
-   "about to fire a spark" while staying recognisably `wisp`, closer to
-   how `wisp_hurt` stays silhouette-close to `wisp_0`.
-4. Design the actual edit against the rendered PNG, not the raw grid.
-   `wisp` shoots via `shootRing()` (confirm in `enemies.js`) — the
-   telegraph is a wind-up before firing a ring of orbs, not a
-   directional throw, so the read to aim for is something like "the
-   halo brightens/widens" or "the grin opens wider" rather than a
-   pointing gesture. Look at what's actually free to change: `wisp_hurt`
-   already used the eyes and grin; find a part of the silhouette neither
-   `_hurt` nor `_death` has touched yet.
-5. Add `wisp_atk` to `ENEMY_HURT_ART` in `sprites-enemies-hurt.js` (next
-   to `wisp_hurt`/`wisp_death` for locality) and to
-   `sprite-manifest.js`'s `enemies` list.
-6. Wire `attackFrame: 'wisp_atk'` on `wisp`'s `defineEnemy` call
-   (`src/data/enemies.js`) — a plain string, since `wisp`'s `frames` is
-   a flat array with no facings.
+1. Confirm `wizzrobe`'s real spec fields directly from `enemies.js`
+   rather than trusting this file's summary — `hp`, `damage`, `pal`,
+   the `submerge()` timings, and the `shoot()` call inside `whileUp`.
+2. Re-confirm nothing extractable exists for an attack pose specifically
+   — re-check the sheet plate `wizzrobe_0`/`wizzrobe_1`/`wizzrobe_death`
+   came from with an attack telegraph in mind, not just trusting S89's
+   summary. `python3 tools/rip-enemies.py` once unmodified first to
+   confirm byte-identical reproduction before touching anything.
+3. Render `wizzrobe_0`, `wizzrobe_1`, `wizzrobe_death` and the existing
+   `wizzrobe_hurt` from their real runtime `enemyp` palette
+   (`src/gfx/palettes.js`) to PNGs before drawing — the technique S90/
+   S91 both used and both found essential for reading the actual shape
+   rather than misreading the raw digit grid.
+4. Read `CLAUDE.md`'s art rules section: three colours plus
+   transparency, hard 1px outline, no anti-aliasing/gradients/dithering,
+   silhouette-first. Not a collapse (that's `_death`'s exception) — read
+   as "about to fire" while staying recognisably `wizzrobe_0`, the way
+   `wizzrobe_hurt` stays silhouette-close to it.
+5. Design the edit against a part of the sprite `wizzrobe_hurt` has NOT
+   already used (it used the visor cheek + palette index 2). `wizzrobe`
+   fires a single aimed orb via `shoot()`, so a telegraph that reads as
+   "hands/staff raised" or "eyes/orb glowing before the cast" fits
+   better than a mouth-based one (that grammar is already `wisp`'s).
+6. Add `wizzrobe_atk` to `ENEMY_HURT_ART` in `sprites-enemies-hurt.js`
+   (next to `wizzrobe_hurt`) and to `sprite-manifest.js`'s `enemies`
+   list. Wire `attackFrame: 'wizzrobe_atk'` on `wizzrobe`'s
+   `defineEnemy` call — a plain string, since `frames` here is a flat
+   array with no facings.
 7. Verify in-engine with a scratch Playwright probe (not committed, same
-   shape as S90's own — see `docs/NEXT-SESSION.md`'s S90 entry for the
-   pattern): `shootRing()` sets `attackTime` and shows `wisp_atk`
-   immediately, holds for the full `ENEMY_ATTACK_FRAMES` (16f), then
-   reverts to the ordinary walk cycle. Also test the interrupt case:
-   `wisp` HAS `hurtFrame`, so (unlike `octorok`) a mid-attack non-lethal
-   hit should show `wisp_hurt` instead, per `spriteName()`'s existing
-   `dying > hurtFrame > attackFrame > walk` order — confirm this
-   directly rather than assuming S90's `octorokSea` result carries over.
-   Confirm whether `wisp` has a `z`/`terrain: 'air'` complication before
-   drawing (it does have `z: 8` per S26/S17's own notes on it — check
-   whether that affects anything about an attack pose the way it did for
-   `keese`'s `_death`).
+   shape as S90/S91's own): `shoot()` sets `attackTime` and shows
+   `wizzrobe_atk` immediately, holds for `ENEMY_ATTACK_FRAMES`, reverts
+   correctly. Test the interrupt case: `wizzrobe` HAS `hurtFrame`, so a
+   mid-attack non-lethal hit should show `wizzrobe_hurt`, not the attack
+   pose — confirm directly. Also confirm, rather than assume, that
+   `attackTime` set while `submerge()` has the enemy hidden (down phase)
+   does not draw anything wrong — `wizzrobe_hurt`'s own comment notes
+   `invuln` is forced to 9999 while hidden so `hurtFrame` can never show
+   then; check whether `attackFrame` needs the same reasoning applied or
+   whether `shoot()` only ever fires during the up phase already (it
+   does, per `whileUp` — confirm this makes the question moot rather
+   than assuming it).
 8. Run the full regression sweep: `validate.mjs`, `test.mjs` (83/83),
    `check-feel.mjs`, `check-playthrough.mjs` (21/21), `replay.mjs`
    (51/51) — re-record anything that diverges — `check-rippers.mjs`
-   (17/17, should be untouched — hand-drawn only) — `check-build.mjs`.
+   (17/17, should stay untouched) — `check-build.mjs`.
 
 ## Done means
-- `wisp` shows a real, distinct attack pose while actually firing its
-  ring of orbs, proven by an in-engine probe, not by reading the code.
-- `node tools/check-drift.mjs` shows `wisp: walk,attack,hurt,death` (3
-  of 22 complete, up from 2).
+- `wizzrobe` shows a real, distinct attack pose while actually firing,
+  proven by an in-engine probe, not by reading the code.
+- `node tools/check-drift.mjs` shows `wizzrobe: walk,attack,hurt,death`
+  (4 of 22 complete, up from 3).
 - `node tools/validate.mjs`, `node tools/test.mjs` (83/83),
   `node tools/check-feel.mjs`, `node tools/check-playthrough.mjs`
   (21/21), `node tools/replay.mjs` (51/51), `node tools/check-rippers.mjs`
@@ -89,11 +87,11 @@ in that same family — not a squint (that's `_hurt`) and not a collapse
   lines).
 
 ## Out of scope
-- `wizzrobe`, `siren` — the other 2 enemies still needing new attack art.
-  One enemy per session, same cadence this whole objective has kept.
+- `siren` — the last enemy still needing new attack art. One enemy per
+  session, same cadence this whole objective has kept.
 - `idle` states — still the separate, much larger undertaking noted in
   `docs/ENEMIES.md`'s own header.
-- Redrawing `wisp_hurt` or `wisp_death` — they stay exactly as they are;
-  this session only adds a third, new pose alongside them.
-- Any change to `shootRing()`'s own mechanics or damage — this is an art
-  and wiring task, not a balance one.
+- Redrawing `wizzrobe_hurt` or `wizzrobe_death` — they stay exactly as
+  they are; this session only adds a third, new pose alongside them.
+- Any change to `submerge()`'s or `shoot()`'s own mechanics or damage —
+  this is an art and wiring task, not a balance one.
