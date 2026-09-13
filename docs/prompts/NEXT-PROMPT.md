@@ -1,99 +1,99 @@
-# Next session — give hop()'s own wait state a real attack pose
+# Next session — wire tektite's attackFrame, then start a real design gap
 
 ## Read first
 - `docs/prompts/CHARTER.md` — the standing rules for every session; run it
   verbatim before reading anything else here.
 - `docs/prompts/STATE.md` — objective #4 (enemy-roster) and its file
   allowlist.
-- `docs/NEXT-SESSION.md`'s S95 entry (the newest) — closed the `charge()`
-  `attackFrame` sub-thread (`darknut`, `anglerfry`) and named the two real
-  remaining gaps: 9 pure-contact enemies with no natural attack hook, and
-  `idle` states roster-wide. This session's task is the concrete first
-  step into the first gap: `hop()` turns out to have its own windup,
-  structurally the same shape `charge()`'s `tell` was before S94.
+- `docs/NEXT-SESSION.md`'s S96 entry (the newest) — built `attackFrame`
+  support into `hop()` itself and piloted it on `zol` (a zero-new-art
+  reuse of `zol_1`). The plumbing already exists — `tektite` just needs
+  the same survey-and-wire treatment `zol` got.
 
 ## Why this, now
-`hop()` (`src/game/enemy.js`) — the AI primitive `zol` (`wait: 52`) and
-`tektite` (`wait: 34`) both use — has an internal `_hopState` machine:
-`'wait'` (counting down `_hopWait`, the enemy stands still) then `'air'`
-(the actual jump arc). That `'wait'` phase is a real pause before a real
-action, the same shape `charge()`'s `tell`/`stun` freeze was — except
-`charge()`'s `tell` is a SHORT window immediately before the lunge
-(16-26 frames), while `hop()`'s `wait` is the enemy's entire REST period
-between hops (34-52 frames) — showing an attack pose for the whole thing
-would read as "this creature is always attacking," not a telegraph. The
-engineering task is narrower than `charge()`'s was: only the LAST few
-frames of `_hopWait` (immediately before the jump begins) should count
-as the windup, not the whole wait.
+`tektite` (`src/data/enemies.js`, `hop()` with `wait: 34`) is the other
+`hop()` user; `zol`'s own `deathFrame` comment (`sprites-enemies-hurt.js`)
+already refers to `tektite_1` in passing as "the hop-apex tuck" —
+language from a session that looked at `tektite`'s frames for a DIFFERENT
+purpose (finding `zol_death`'s own inspiration) but never wired it as an
+attack telegraph. That is a strong hint this is another `zol_1`-shaped
+reuse, not a hand-draw, but confirm it rather than assume it from one
+passing phrase.
 
 ## The task
-1. Read `hop()`'s full body (`src/game/enemy.js`, search `export
-   function hop`) to confirm the `_hopState`/`_hopWait` mechanics
-   yourself rather than trusting this summary — in particular confirm
-   exactly which line transitions `_hopState` from `'wait'` to `'air'`
-   and what `_hopWait` counts down from.
-2. Decide and justify a windup WINDOW length (e.g., the last
-   `ENEMY_ATTACK_FRAMES` worth of `_hopWait`, or a fraction of each
-   enemy's own `wait` value) — do not just copy `charge()`'s "the whole
-   tell counts" shape without checking whether it fits here; it likely
-   doesn't, per the reasoning above. Add a `feel.js` constant if a new
-   fixed window length is needed, with a unit and provenance comment
-   (`check-feel.mjs` must stay green).
-3. Wire `e.attackTime` inside `hop()` to start counting only once
-   `_hopWait` drops to that window's length, not at the start of the
-   whole wait — harmless for any `hop()` user with no `spec.attackFrame`
-   declared, the same "set unconditionally, only read when the field
-   exists" pattern `shoot()`/`shootRing()`/`charge()` all already use.
-4. Pick ONE of `zol`/`tektite` to pilot on, following the established
-   precedent (build the mechanism, land it on one enemy, survey the
-   rest next). Check both first for a reuse candidate (a second frame
-   in `frames` that's a genuinely different SHAPE, not a recolour — the
-   test S91/S93/S94 all used) before assuming either needs a hand-drawn
-   pose; render whichever frames exist from the enemy's real runtime
-   `pal` before judging.
-5. If nothing reusable, hand-draw the pose following `CLAUDE.md`'s art
-   rules (three colours plus transparency, hard 1px outline, no
-   anti-aliasing/gradients/dithering, silhouette-first, not a collapse),
-   checking what the enemy's own `_hurt`/`_death` entries (if any) have
-   already claimed so the new pose uses a different feature.
-6. Verify in-engine with a scratch Playwright probe (not committed):
-   drive the real `ai()` through several full hop cycles (not just one)
-   to confirm the windup shows ONLY in the last stretch of each wait,
-   not the whole 34-52 frame rest — this is the one property that
-   distinguishes this session's design from a naive copy of `charge()`'s
-   shape, so prove it explicitly. Confirm the pose clears the instant
-   `_hopState` flips to `'air'`, and test the interrupt case if the
-   enemy has `hurtFrame`.
-7. Run the full regression sweep: `validate.mjs`, `test.mjs` (83/83),
-   `check-feel.mjs`, `check-playthrough.mjs` (21/21), `replay.mjs`
-   (51/51) — re-record anything that diverges — `check-rippers.mjs`
-   (17/17 if untouched) — `check-build.mjs`. `hop()` is also used by
-   fliers/other motion — check `tools/check-motion.mjs` still passes
-   too, since it specifically asserts lattice behaviour around hops.
+1. Confirm `tektite`'s real spec directly (`hp`, `pal`, `frames`, the
+   `hop()` call's `wait`/`dist`/`height`/`frames` values) from
+   `src/data/enemies.js`.
+2. Render `tektite_0` and `tektite_1` from `tektite`'s real runtime
+   palette (`src/gfx/palettes.js`) to PNGs before judging — the
+   technique every session since S90 has used. Confirm `tektite_1` is a
+   genuine shape change (a "hop-apex tuck") and not a recolour, the same
+   test that separated `siren_1`/`beetle_s0`/`zol_1` (real reuses) from
+   `wisp_1` (correctly rejected).
+3. If it qualifies, wire `attackFrame: 'tektite_1'` on `tektite`'s
+   `defineEnemy` call, documenting the reuse reasoning inline the way
+   `zol`'s own entry does. If it doesn't qualify for some reason this
+   file didn't anticipate, hand-draw instead, following `CLAUDE.md`'s
+   art rules and checking what `tektite_death` (already hand-drawn,
+   `sprites-enemies-hurt.js`) has already claimed on the sprite.
+4. Verify in-engine with a scratch Playwright probe (not committed),
+   following S96's own pattern exactly: clear a room to plain ground
+   (`check-motion.mjs`'s boot pattern) so `hop()`'s `beginStep()` can
+   actually succeed, then drive `tektite` through at least two full hop
+   cycles, tracing `_hopState`/`_hopWait`/`attackTime` every frame.
+   Confirm the attack pose window is exactly the last `ENEMY_ATTACK_FRAMES`
+   of the 34-frame wait, and — the one thing S96 got wrong on its FIRST
+   attempt and only caught by tracing — confirm the pose's last active
+   frame is immediately before the `_hopState` transition to `'air'`,
+   with no 1-frame overlap. `tektite` has no `hurtFrame` (hp 2, always
+   lethal), so also confirm a lethal hit mid-windup still shows
+   `tektite_death`, not the attack pose frozen in place.
+5. Run the full regression sweep: `validate.mjs`, `test.mjs` (83/83),
+   `check-feel.mjs`, `check-motion.mjs` (8/8 — this touches `hop()`-
+   adjacent territory even if `hop()` itself isn't touched again),
+   `check-playthrough.mjs` (21/21), `replay.mjs` (51/51) — re-record
+   anything that diverges — `check-rippers.mjs` (17/17 if untouched) —
+   `check-build.mjs`.
+6. **Once `tektite` is wired, this session has TIME AND SCOPE LEFT — use
+   it to actually START one of the two real remaining gaps**, rather
+   than stopping at the last easy wiring win:
+   - Survey the 7 pure-contact enemies (`crab`, `zol`\* is now handled,
+     `gel`, `keese`, `leever`, `urchin`, `jellyfish`, `pincer`) for
+     whether any has an existing pause-then-strike moment hiding in its
+     own AI the way `hop()`'s wait and `charge()`'s tell both turned out
+     to have — read each one's `ai()` function fully, not just its name.
+     `keese`'s own `_dash`/`_rest` counters (`src/data/enemies.js`) are
+     the most promising lead, since a dash-then-rest cycle is
+     structurally similar to `charge()`'s own shape.
+   - OR scope what an `idle` field would actually need from the engine:
+     read `docs/ENEMIES.md`'s own header for what's already been said
+     about it, and write a concrete, honest assessment of what's
+     missing (a new `spec.idleFrame`? a timer for "how long standing
+     still before idle shows"? which enemies even have a natural idle
+     vs. constant motion?) rather than leaving it as an un-investigated
+     one-line mention for the 5th session in a row.
+   Pick ONE, not both — write up the other as a clearly-scoped
+   candidate for the session after, the same way S95/S96 each left a
+   clean handoff.
 
 ## Done means
-- The piloted enemy shows a real, distinct pose ONLY in the last
-  stretch before each hop, proven by an in-engine probe across multiple
-  hop cycles, not by reading the code.
-- `node tools/check-drift.mjs` shows the piloted enemy with `attack` in
-  its set (9 of 22, up from 8, assuming it already has walk/hurt/death).
-- `node tools/validate.mjs`, `node tools/test.mjs` (83/83),
-  `node tools/check-feel.mjs`, `node tools/check-playthrough.mjs`
-  (21/21), `node tools/replay.mjs` (51/51), `node tools/check-rippers.mjs`,
-  `node tools/check-motion.mjs` all pass.
+- `tektite: walk,attack,death` in `check-drift.mjs`'s output (or
+  `walk,attack,hurt,death` if it turns out to have a `hurtFrame` — check
+  rather than assume).
+- All regression tools pass (see above).
 - `npm run build`, `dist/oracle-of-tides.html` committed.
+- Real, documented progress on ONE of the two remaining gaps (a survey
+  finding, or a design scope) beyond just wiring `tektite` — this session
+  should not end at "one more enemy done" if there's time left in it.
 - STATE.md gets one new session-log row (delete the oldest if over 60
   lines).
 
 ## Out of scope
-- The other `hop()` user (whichever of `zol`/`tektite` wasn't piloted) —
-  a follow-up survey session picks it up, same cadence as the
-  `shoot()`/`charge()` rosters.
-- `crab`, `gel`, `keese`, `leever`, `urchin`, `jellyfish`, `pincer` — the
-  remaining pure-contact enemies with no `hop()`/`charge()`/`shoot()` at
-  all. Whether any of these has its own hidden windup (the way `hop()`
-  and `charge()` both turned out to) is a real open question for a
-  FUTURE survey, not something to improvise here.
-- `idle` states — still the separate, much larger undertaking.
-- Any change to `hop()`'s own height, distance or speed — art and
-  wiring only, not balance.
+- Hand-drawing new art for any of the 7 pure-contact enemies in THIS
+  session, even if the survey finds a good candidate — survey and scope
+  only; wiring is the next session's job, same cadence as every roster
+  survey before it.
+- `idle` states implementation — scoping only if that's the branch
+  chosen, not building it yet.
+- Any change to `hop()`'s own height, distance, wait or speed values —
+  art and wiring only, not balance.

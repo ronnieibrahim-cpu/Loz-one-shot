@@ -1,3 +1,89 @@
+## S96 — hop() gets attackFrame too, a real 1-frame timing bug caught by tracing rather than trusting the arithmetic
+
+Picked up right after S95 (STATE.md's own log calls it S50) closed the
+`charge()` sub-thread and named the two real remaining gaps for
+objective #4. Rather than jumping straight to one of those two big open
+questions, this session checked whether a THIRD engine primitive might
+have the same "unused windup already sitting there" shape `shoot()` and
+`charge()` both turned out to have — and `hop()` did.
+
+**Confirmed `hop()`'s own state machine directly.** `zol` (`wait: 52`)
+and `tektite` (`wait: 34`) both use it. `hop()` tracks `_hopState`
+('wait' then 'air') and `_hopWait` (a countdown); while waiting, the
+enemy stands still until `_hopWait` reaches 0, then `beginStep()` fires
+and it jumps. That wait IS a real pause before a real action — but it
+is NOT the same shape `charge()`'s `tell` was. `charge()`'s `tell` is a
+short window that IS the entire freeze before the lunge; `hop()`'s
+`wait` is the enemy's ENTIRE rest period between hops (34-52 frames).
+Showing an attack pose for the whole thing would read as "this creature
+is always about to attack," not a telegraph — the key design decision
+this session had to make that `charge()`'s didn't.
+
+**Windowed the pose to only the last `ENEMY_ATTACK_FRAMES` (16) of the
+wait**, reusing the existing constant rather than adding a new one to
+`feel.js` — both current `wait` values (34, 52) comfortably exceed 16,
+leaving a real rest period before the telegraph kicks in.
+
+**Caught a genuine timing bug by tracing, not by trusting the
+arithmetic.** The first version triggered the window at the same
+`_hopWait` value as the window length. A scratch probe (not committed)
+drove a `zol` through two full hop cycles on an emptied room (the
+`check-motion.mjs` boot pattern, needed so `beginStep()` could actually
+succeed rather than retry forever into blocked space) and logged
+`_hopState`/`_hopWait`/`attackTime` every single frame. The trace showed
+the attack pose still active for ONE FRAME AFTER `_hopState` had already
+flipped to `'air'` — a real, measured 1-frame overlap, not a
+hypothetical. The cause: `Enemy.update()` decrements `attackTime` at the
+very top of the frame, before `ai()` (and therefore `hop()`) ever runs,
+while `_hopWait`'s own decrement — the one that actually triggers the
+jump — happens LATER in that same frame's `hop()` call. Same `_hopWait`
+trigger value for both meant they were one tick out of phase. Fixed by
+moving the trigger one tick earlier (`_hopWait === ENEMY_ATTACK_FRAMES +
+1`) and re-ran the exact same probe: the last attack-pose frame and the
+state-transition frame are now adjacent with no overlap, confirmed by
+comparing the two frame lists directly rather than re-deriving the
+arithmetic and hoping it's right this time.
+
+**Piloted on `zol`, a THIRD zero-new-art reuse in a row** (after
+`siren_1` at S93, `beetle_s0` at S94): `rip-enemies.py`'s own `FRAMES`
+comment already describes `zol_1` as "round at rest, stretched tall
+mid-hop" — a genuine shape change from the short, wide `zol_0`, not a
+recolour. Wired `attackFrame: 'zol_1'`. Since `spec.frames` already
+cycles between the two on an ordinary tick regardless of hop state,
+`zol_1` was already visible some of the time before this session; the
+new windup GUARANTEES it shows in the run-up to every hop instead of
+only by chance.
+
+`zol` has no `hurtFrame` at all (hp 2, always lethal under
+`swordDamage()`), so there was no hurt-interrupt case to test the way
+every `shoot()`/`charge()` enemy so far has had — but confirmed a
+LETHAL hit landed mid-windup still correctly shows `zol_death`, not the
+attack pose frozen in place; `dying` still wins over `attackFrame` in
+`spriteName()`'s ordering, the same check every prior enemy has passed.
+
+`check-drift` reads `zol: walk,attack,death`. validate/test(83/83)/
+check-feel all green. `check-motion.mjs` (8/8) also run explicitly and
+green, since this session edited `hop()` itself and that tool is
+specifically the one that asserts ground-enemy lattice behaviour around
+stepping. check-playthrough 21/21 and replay.mjs 51/51 BOTH unchanged.
+check-rippers 17/17 (`sprites-enemies.js` untouched — reuse and engine
+wiring only, no new art). check-build OK, dist rebuilt.
+
+**`tektite` (the other `hop()` user, also hp 2 with no `hurtFrame`)
+remains** for a follow-up survey session, the same cadence the
+`shoot()` and `charge()` rosters both used.
+
+**This may be the last engine primitive with a free-standing unused
+windup.** Three found and wired now (`shoot()`/`shootRing()`,
+`charge()`, `hop()`); no fourth movement mechanism with an unused pause
+is currently known. The two real remaining gaps for objective #4 are
+unchanged from S95's own list: 7 pure-contact enemies with no
+windup-shaped primitive at all (`crab`, `gel`, `keese`, `leever`,
+`urchin`, `jellyfish`, `pincer`), and `idle` states roster-wide. Both
+are genuine design questions. Next session, after wiring `tektite`,
+should actually start one of those two rather than looking for a
+non-existent fourth mechanism.
+
 ## S95 — darknut and anglerfry close the charge() attackFrame sub-thread; darknut's own sheet investigated and correctly declined
 
 Picked up right after S94 (STATE.md's own log calls it S49) built

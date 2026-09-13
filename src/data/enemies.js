@@ -93,6 +93,16 @@ export function installEnemies() {
     hp: 2, damage: 2, pal: 'slime', speed: 0.3, rate: 14,
     frames: ['zol_0', 'zol_1'],
     deathFrame: 'zol_death',
+    // Reuses zol's own zol_1 as its attackFrame — a real shape change from
+    // zol_0 (short and wide vs. tall and narrow), already described in
+    // rip-enemies.py's own FRAMES comment as "round at rest, stretched tall
+    // mid-hop". hop()'s own new windup window (src/game/enemy.js, the last
+    // ENEMY_ATTACK_FRAMES of the wait) reads naturally as the same
+    // creature stretching upward right before it springs — the ordinary
+    // idle cycle already shows this frame some of the time, but the
+    // windup now shows it FOR CERTAIN in the run-up to every hop, rather
+    // than at random.
+    attackFrame: 'zol_1',
     hb: { x: 3, y: 6, w: 10, h: 9 },
     terrain: 'any',
     drops: 'common',

@@ -909,6 +909,25 @@ export function hop(e, g, o = {}) {
     return;
   }
 
+  // Telegraph only the LAST stretch of the wait, not the whole rest period —
+  // unlike charge()'s tell (a short window that IS the whole freeze before a
+  // lunge), hop()'s wait is the enemy's entire rest between hops (34-52f for
+  // the two current users), and showing an attack pose for all of it would
+  // read as "always attacking" rather than a telegraph. Reuses
+  // ENEMY_ATTACK_FRAMES rather than a new constant — both current wait
+  // values comfortably exceed it, leaving a real rest beforehand.
+  //
+  // Triggered one tick before the window starts (+1), not AT it: `update()`
+  // decrements `attackTime` at the TOP of the frame, before `ai()` (and so
+  // this line) ever runs, while `_hopWait`'s own trigger decrement happens
+  // HERE, later in the same frame. Triggering both at the same `_hopWait`
+  // value leaves them exactly one tick out of phase — measured directly (a
+  // scratch probe caught the pose still showing one frame into the actual
+  // jump) rather than assumed fine. The `+1` cancels that lag so `attackTime`
+  // reaches 0 on the exact frame `beginStep` fires below, confirmed the same
+  // way. Harmless for a hop() user with no spec.attackFrame and for any
+  // wait <= ENEMY_ATTACK_FRAMES + 1 (the crossover is simply never hit).
+  if (e._hopWait === ENEMY_ATTACK_FRAMES + 1) e.attackTime = ENEMY_ATTACK_FRAMES;
   if (--e._hopWait > 0) return;
   if (o.toward !== false) facePlayer(e, g);
   // Blocked ahead: try one other direction from the room's stream rather than
