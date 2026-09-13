@@ -1,3 +1,58 @@
+## S82 — darknut's deathFrame: a real extraction find, and the first three-hit sequence proved whole
+
+Picked up right after S81 (STATE.md's own log calls it S36) gave `beetle`
+a `deathFrame` and proved a `shield`-blocked hit stays blocked even at
+absurd lethal damage. Task: give `darknut` (hp 6, `src/data/enemies.js`,
+"only vulnerable from behind," `shield: 'front'`) its own `deathFrame` —
+picked because it's the first candidate needing THREE hits at
+`swordDamage()` 2 to die (6 -> 4 -> 2 -> 0), where every prior multi-hit
+proof in this thread has been exactly one non-lethal hit then one lethal
+hit.
+
+**Checked the sheet's own "Darknut" plate properly rather than assuming
+the four boxes already extracted (`darknut_d0`/`d1`/`s0`/`s1`) were the
+whole story** — the lesson this thread keeps re-learning pays off again.
+The plate actually has at least six distinct poses. Box 57, sitting
+directly between `darknut_d0` (56) and `darknut_s0` (58), same
+red/tan/black palette, was unused: a hunched-forward, head-down posture
+with no shield or sword visible in the cropped 16x16 — visually distinct
+from every standing battle pose already extracted. (Two more unused
+poses — box 83, a d1 variant, and boxes 84/85, a hunched pose with a
+dragging sword visible in a taller box — sit nearby too, but 57 alone was
+the cleanest self-contained match, needing no special tall-box crop
+math.) Added `darknut_death: (57, 0.5, 0.5, False)` to `FRAMES` in
+`tools/rip-enemies.py` and re-emitted — `sprites-enemies.js` now 61
+sprites (up from 60), `check-rippers.mjs` stayed 17/17.
+
+**Verified the entire three-hit sequence on one instance, not just the
+first hit.** A shielded-front hit (dealt with dir logic set up the same
+way `beetle`, S81, proved the mechanism) is blocked outright even at 99
+damage. From an unshielded angle: hit 1 (hp 6 -> 4) shows `darknut_hurt`
+and reverts to the ordinary walk cycle once the flicker window ends,
+`dying` false throughout — same as every prior two-hit proof. Hit 2 (hp
+4 -> 2) shows `darknut_hurt` AGAIN — this is the actual new ground: no
+prior session in this thread had a target survive a SECOND non-lethal
+hit, so this confirms the flicker/hurtFrame cycle genuinely repeats
+rather than only firing once per enemy lifetime. Hit 3 (hp 2 -> 0) shows
+`darknut_death`, never `darknut_hurt`, held for the full
+`ENEMY_DEATH_FRAMES` stall, then `dead = true`. Confirmed no spec `z`
+field beforehand.
+
+`check-drift` reads `darknut: walk,hurt,death`. `validate.mjs`/`test.mjs`
+stayed 83/83. Neither `check-playthrough.mjs` (21/21) nor `replay.mjs`
+(51/51) moved. `check-build.mjs` OK, `dist/oracle-of-tides.html` rebuilt
+and committed.
+
+Picked `wizzrobe` (hp 3, "blinks in, fires, blinks out") as the next
+target for a specific reason: it uses `submerge()` — the same
+appear/disappear, hide-sprite-and-drop-hitbox mechanism `leever` (S32)
+already proved blocks a hit outright while hidden — but `leever` was hp 2
+and never showed `hurtFrame`. `wizzrobe` has `hurtFrame` too, so this is
+the first chance to confirm both mechanisms together: does a hit land
+correctly while visible, does the flicker/hurt window survive (or get
+cut short by) a `submerge()` cycle starting mid-flicker, and does the
+hidden phase still block a hit exactly the way `leever`'s did.
+
 ## S81 — beetle's deathFrame, and the first shield-vs-lethal-hit proof in this thread
 
 Picked up right after S80 (STATE.md's own log calls it S35) gave

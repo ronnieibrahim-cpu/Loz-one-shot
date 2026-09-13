@@ -279,6 +279,7 @@ export function installEnemies() {
       side: ['darknut_s0', 'darknut_s1'],
     },
     hurtFrame: 'darknut_hurt',
+    deathFrame: 'darknut_death',
     hb: { x: 2, y: 4, w: 12, h: 11 },
     shield: 'front',
     drops: 'rich',

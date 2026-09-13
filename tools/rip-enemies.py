@@ -199,11 +199,17 @@ FRAMES = {
     'stalfos_s0': (316, 1.0, 0.0, True),
     'stalfos_s1': (317, 0.0, 0.0, False),
 
-    # Darknut.
+    # Darknut. The plate has more poses than this game uses: box 57 sits
+    # right between darknut_d0 (56) and darknut_s0 (58), same red/tan/black
+    # palette, unused until now — a hunched-forward, head-down posture with
+    # no shield or sword visible, distinct from every standing battle pose
+    # already extracted. Used as the deathFrame: reads as the knight keeled
+    # over, not a recolour or a squash of a live frame.
     'darknut_d0': (56, 0.5, 0.5, False),
     'darknut_d1': (82, 0.5, 0.0, False),
     'darknut_s0': (58, 0.5, 0.5, False),
     'darknut_s1': (59, 0.5, 0.5, False),
+    'darknut_death': (57, 0.5, 0.5, False),
 
     # Wizzrobe: hood-only as it phases in, then the full sorcerer.
     'wizzrobe_0': (337, 0.5, 0.5, False),

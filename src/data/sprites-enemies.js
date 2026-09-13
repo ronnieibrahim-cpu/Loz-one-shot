@@ -308,6 +308,24 @@ export const ENEMY_ART = {
     3030033330030003
     .33003333333333.` },
   // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  darknut_death: { pal: 'darknut_death', art: `
+    ......3333......
+    .....300013.....
+    ....311000133...
+    ...33311001303..
+    ..3303111113003.
+    ..3003111113003.
+    .33003111113303.
+    3030331333133333
+    3133333111330303
+    3130010333010313
+    .330010000000313
+    ..3001000000033.
+    ..3001100000033.
+    .33100111000033.
+    .33310000000333.
+    ..333333333333..` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   darknut_s0: { pal: 'darknut_s0', art: `
     ........333333..
     ...33333000003..
@@ -1119,6 +1137,7 @@ export const ENEMY_ART_PALETTES = {
   crab_1: ['#ffd68c', '#ff7b08', '#ff7b08', '#000000'],
   darknut_d0: ['#ffd68c', '#ff0829', '#ff0829', '#000000'],
   darknut_d1: ['#ffd68c', '#ff0829', '#ff0829', '#000000'],
+  darknut_death: ['#ffd68c', '#ff0829', '#ff0829', '#000000'],
   darknut_s0: ['#ffd68c', '#ff0829', '#ff0829', '#000000'],
   darknut_s1: ['#ffd68c', '#ff0829', '#ff0829', '#000000'],
   gel_0: ['#ffffff', '#ff0829', '#ff0829', '#000000'],
