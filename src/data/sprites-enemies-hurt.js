@@ -702,6 +702,37 @@ export const ENEMY_HURT_ART = {
     .31333333333313.
     .33111000011133.
     .30003333330003.` ,
+
+  // Moblin death — drawn: the sheet's own "Moblin & Goriya" plate has two
+  // unused frames near the six already extracted (boxes 171 and 173,
+  // confirmed against the sheet's own palette to be genuine Moblin poses,
+  // not Goriya's separate blue boomerang icons sitting nearby) — but both
+  // are active holding-a-spear-down stances, not a collapse, so neither
+  // reads as a death pose. Nothing usable to extract; hand-drawn instead.
+  // Squashed the FRONT idle pose (`moblin_d0`) rather than a side view,
+  // following `octorok_death`/`beetle_death`'s own every-other-row squash
+  // template: rows 0/2/4/6/8/10/12/14 of `moblin_d0`'s 16-row grid
+  // (sprites-enemies.js) kept pixel-for-pixel and compressed to the bottom
+  // half of the cell, reusing only colour indices already present in the
+  // live frames. `moblin` (hp 4, `src/data/enemies.js`) has no `z` field,
+  // confirmed directly.
+  moblin_death: `
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    3333..3333..3333
+    .31313111131313.
+    .31311311311313.
+    3003033333303313
+    3113310330133003
+    .333331001333113
+    .3333300000333..
+    .300100333333...` ,
 };
 
 export function installEnemyHurtSprites() {

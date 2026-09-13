@@ -1,3 +1,55 @@
+## S85 — moblin's deathFrame: two candidate frames correctly rejected, and the first hp-4 land proof
+
+Picked up right after S84 (STATE.md's own log calls it S39) gave `pincer`
+a `deathFrame`. Task: give `moblin` (hp 4, `src/data/enemies.js`,
+"throws spears, retreats when close") one too — the last plain LAND
+enemy before only water/`submerge()` repeats (`anglerfry`, `siren`)
+remain in the roster, and the first hp-4 target (two hits at
+`swordDamage()` 2: 4 -> 2 -> 0).
+
+**Checked the sheet's own "Moblin & Goriya" plate properly, and this time
+the right call was to REJECT what was found rather than use it.** Two
+frames near the six already extracted (boxes 171 and 173) share the exact
+same red/tan/black palette as the live Moblin frames — confirmed
+directly, and distinct from Goriya's separate blue boomerang icons
+sitting nearby on the same plate, which could have been mistaken for
+Moblin poses at a glance. But both candidate frames are active
+spear-held-down stances, not a collapse — recognising that a frame is
+genuinely part of the same creature is only half the check; it also has
+to actually read as a defeat pose, and neither of these did. Correctly
+walked away from them rather than using a frame just because it existed
+and matched the palette. Hand-drew `moblin_death` instead, following
+`octorok_death`'s own every-other-row squash of the front idle pose
+(`moblin_d0`), reusing only colours already present.
+
+**Verified the two-hit sequence with the player kept close enough to
+actually trigger `moblin`'s own `flee()` AI during both hits**, rather
+than testing an idle target — this is genuinely different from every
+prior hp-3/hp-4 proof, which never confirmed the enemy's own movement AI
+was actually running at the moment of the hit. Hit 1 (hp 4 -> 2) shows
+`moblin_hurt` and reverts correctly once the flicker window ends; the
+lethal hit 2 (hp 2 -> 0) shows `moblin_death` for the full
+`ENEMY_DEATH_FRAMES` stall, with its position tracked frame-by-frame
+across the entire stall confirming zero drift — `ai()` (and therefore
+`flee()`) is correctly skipped while `dying`, exactly as every other
+target has shown, now confirmed on a creature that was actively fleeing
+right up to the killing blow rather than standing still. Confirmed no
+spec `z` field beforehand.
+
+`check-drift` reads `moblin: walk,hurt,death`. `validate.mjs`/`test.mjs`
+stayed 83/83; `sprites-enemies.js` untouched (hand-drawn art) so
+`check-rippers.mjs` had nothing new to verify. Neither
+`check-playthrough.mjs` (21/21) nor `replay.mjs` (51/51) moved. `check-
+build.mjs` OK, `dist/oracle-of-tides.html` rebuilt and committed.
+
+Two candidates remain: `anglerfry` (hp 3, water, `tideOnly`, the same
+shape `octorokSea`/`jellyfish` already covered) and `siren` (hp 4, water,
+ALSO uses `submerge()` like `wizzrobe`/`leever`). Picked `siren` next for
+the more informative test: it would confirm the hidden/invuln mechanism
+`submerge()` provides genuinely generalises across MULTIPLE enemies
+rather than being something that happens to work for `wizzrobe`
+specifically.
+
 ## S84 — pincer's deathFrame: a fourth sheet frame found, and the plainest target confirmed plain
 
 Picked up right after S83 (STATE.md's own log calls it S38) gave

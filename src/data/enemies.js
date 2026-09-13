@@ -237,6 +237,7 @@ export function installEnemies() {
       side: ['moblin_s0', 'moblin_s1'],
     },
     hurtFrame: 'moblin_hurt',
+    deathFrame: 'moblin_death',
     hb: { x: 2, y: 4, w: 12, h: 11 },
     drops: 'good',
     ai(e, g) {
