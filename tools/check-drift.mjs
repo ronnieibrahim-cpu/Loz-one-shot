@@ -242,23 +242,23 @@ for (const file of SPRITE_FILES) {
 // 6. Enemies with a complete five-state animation set (rotation
 //    objective #4, enemy-roster).
 // ---------------------------------------------------------------------
-// `src/game/enemy.js` recognises three per-species animation fields today:
+// `src/game/enemy.js` recognises four per-species animation fields today:
 // `spec.frames` (the walk cycle an idle pose is also drawn from — this
 // engine, like its source games, has no separate idle art), `spec.hurtFrame`
-// (a single flinch frame, S12) and `spec.deathFrame` (a single held pose
-// before removal, S13 — `Enemy.die()` stalls `remove=true` behind it). There
-// is still no engine-level `attackFrame` concept for an ordinary enemy — no
-// AI verb marks the moment "an attack begins" the way a boss's phases do —
-// so "attack" below is read from sprite-key NAMING (`<name>_atk`/
-// `<name>_attack` in sprites-enemies.js) rather than a spec field, on
-// purpose: that way this measurement notices the day a session adds such art
-// even before any engine field exists to consume it. "hurt" and "death" both
-// read the real spec field straight from the enemy's own `defineEnemy`
-// block, the same as "walk" does — sprite-key naming stopped being the right
-// proxy for either the day an engine field for it existed (S13 found "death"
-// still using the naming proxy after "hurt" had already moved off it).
-// Reading zero complete enemies today is the honest, expected baseline —
-// nothing in the data claims otherwise.
+// (a single flinch frame, S12), `spec.deathFrame` (a single held pose before
+// removal, S13 — `Enemy.die()` stalls `remove=true` behind it), and
+// `spec.attackFrame` (a single held telegraph pose while `shoot()`/
+// `shootRing()`'s attack timer runs — piloted on `moblin` first, the same
+// one-enemy-before-a-roster-wide-thread shape `hurtFrame`/`deathFrame` each
+// started from). All four read the real spec field straight from the
+// enemy's own `defineEnemy` block, the same as "walk" does — sprite-key
+// NAMING was only ever a temporary proxy for a field before it existed
+// (S13 found "death" still using a naming proxy after "hurt" had already
+// moved off it; "attack" carried the same proxy until this session gave it
+// a real engine field to read instead). Reading close to zero complete
+// enemies today is still the expected baseline — only `moblin` has all
+// four so far, and `idle` (a genuinely distinct standing pose, not just the
+// walk cycle at rest) has no engine concept at all yet.
 let enemyNames = [];
 {
   let text;
@@ -278,21 +278,12 @@ let enemyNames = [];
     enemyNames.push({ name: m[1], block: text.slice(m.index, k) });
   }
 }
-let enemySpriteKeys = new Set();
-try {
-  const t = await readFile(resolve(ROOT, 'src/data/sprites-enemies.js'), 'utf8');
-  for (const line of t.split('\n')) {
-    const km = line.match(/^  ([A-Za-z0-9_]+):/);
-    if (km) enemySpriteKeys.add(km[1]);
-  }
-} catch (e) { /* absent file reported as zero enemies complete below */ }
-
 let enemiesComplete = 0;
 const enemyReport = [];
 for (const { name, block } of enemyNames) {
   const walk = /\bframes\s*:/.test(block);
   const hurt = /\bhurtFrame\s*:/.test(block);
-  const attack = enemySpriteKeys.has(`${name}_atk`) || enemySpriteKeys.has(`${name}_attack`);
+  const attack = /\battackFrame\s*:/.test(block);
   const death = /\bdeathFrame\s*:/.test(block);
   const complete = walk && hurt && attack && death;
   if (complete) enemiesComplete++;

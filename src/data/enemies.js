@@ -238,6 +238,15 @@ export function installEnemies() {
     },
     hurtFrame: 'moblin_hurt',
     deathFrame: 'moblin_death',
+    // The "spear raised" pose (rip-enemies.py's own FRAMES comment: "idle
+    // frame, then the same angle with its spear raised") already alternates
+    // into the ordinary walk cycle above as moblin_d1/u1/s1 — left there on
+    // purpose rather than removed, since moblin has no other second walk
+    // frame and pulling it out would leave the walk cycle static. This wires
+    // the SAME art to the real moment it depicts: shoot() below sets
+    // attackTime, and spriteName() shows this pose specifically then, not
+    // just whenever the walk cycle happens to land on it.
+    attackFrame: { down: 'moblin_d1', up: 'moblin_u1', side: 'moblin_s1' },
     hb: { x: 2, y: 4, w: 12, h: 11 },
     drops: 'good',
     ai(e, g) {

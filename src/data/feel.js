@@ -236,6 +236,15 @@ export const ENEMY_FLICKER_FRAMES = 24;
  *  unaffected — it is still removed on the same frame it dies, as before. */
 export const ENEMY_DEATH_FRAMES = 16;
 
+/** f — how long an ordinary enemy with a `spec.attackFrame` holds that pose
+ *  once `shoot()`/`shootRing()` fires. guessed, same order of magnitude as
+ *  `ENEMY_FLICKER_FRAMES` above: long enough to read as "this is the attack,"
+ *  not a full animation of its own. An enemy with no `attackFrame` is
+ *  unaffected — `shoot()`/`shootRing()` still set the timer, but nothing
+ *  reads it without the spec field, the same "harmless funnel" shape
+ *  `Entity.hurt()`'s own hitstop already uses. */
+export const ENEMY_ATTACK_FRAMES = 16;
+
 /** f — how long an ordinary enemy is shoved after a hit. guessed. Together with
  *  the KNOCK_* distances below this is the fixed frame count half of the
  *  fixed-distance-over-fixed-frames rule; nothing decays.

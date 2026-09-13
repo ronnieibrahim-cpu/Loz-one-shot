@@ -755,6 +755,15 @@ const ENEMY_FLICKER_FRAMES = 24;
  *  unaffected — it is still removed on the same frame it dies, as before. */
 const ENEMY_DEATH_FRAMES = 16;
 
+/** f — how long an ordinary enemy with a `spec.attackFrame` holds that pose
+ *  once `shoot()`/`shootRing()` fires. guessed, same order of magnitude as
+ *  `ENEMY_FLICKER_FRAMES` above: long enough to read as "this is the attack,"
+ *  not a full animation of its own. An enemy with no `attackFrame` is
+ *  unaffected — `shoot()`/`shootRing()` still set the timer, but nothing
+ *  reads it without the spec field, the same "harmless funnel" shape
+ *  `Entity.hurt()`'s own hitstop already uses. */
+const ENEMY_ATTACK_FRAMES = 16;
+
 /** f — how long an ordinary enemy is shoved after a hit. guessed. Together with
  *  the KNOCK_* distances below this is the fixed frame count half of the
  *  fixed-distance-over-fixed-frames rule; nothing decays.
@@ -1923,6 +1932,7 @@ __exports["PLAYER_KNOCK_FRAMES"] = PLAYER_KNOCK_FRAMES;
 __exports["ENEMY_INVULN_FRAMES"] = ENEMY_INVULN_FRAMES;
 __exports["ENEMY_FLICKER_FRAMES"] = ENEMY_FLICKER_FRAMES;
 __exports["ENEMY_DEATH_FRAMES"] = ENEMY_DEATH_FRAMES;
+__exports["ENEMY_ATTACK_FRAMES"] = ENEMY_ATTACK_FRAMES;
 __exports["ENEMY_KNOCK_FRAMES"] = ENEMY_KNOCK_FRAMES;
 __exports["KNOCK_DEFAULT"] = KNOCK_DEFAULT;
 __exports["KNOCK_SWORD"] = KNOCK_SWORD;
@@ -23975,7 +23985,7 @@ const { F } = __require("world/tileset.js");
 const { TILE } = __require("core/screen.js");
 const { hash32 } = __require("core/rng.js");
 const { FP_ONE, sp, toPx } = __require("core/fixed.js");
-const { ENEMY_DEFAULT_SPEED, ENEMY_DEFAULT_RATE, ENEMY_TURN_CHANCE, ENEMY_BEACHED_FRAMES, ENEMY_GRID_STEP, ENEMY_DECIDE_STEPS, ENEMY_TURN_PAUSE_FRAMES, ENEMY_CHARGE_SPEED_MULT, ENEMY_CHARGE_RECOVER_FRAMES, ENEMY_CHARGE_TOLERANCE, ENEMY_CHARGE_RANGE, ENEMY_CHARGE_MIN_RANGE, ENEMY_HOP_WAIT_FRAMES, ENEMY_HOP_DIST, ENEMY_HOP_FRAMES, ENEMY_HOP_HEIGHT, ENEMY_ORBIT_SPEED, ENEMY_ORBIT_RADIUS, ENEMY_SUBMERGE_DOWN_FRAMES, ENEMY_SUBMERGE_UP_FRAMES, ENEMY_SURFACE_MIN_DIST, ENEMY_SURFACE_DIST_SPAN, ENEMY_ALIGN_TOLERANCE, ENEMY_KNOCK_FRAMES, ENEMY_SHOT_SPEED, ENEMY_SHOT_LIFE, ENEMY_DEATH_FRAMES, RING_SHOT_SPEED, RING_SHOT_LIFE, BOSS_INTRO_FRAMES, BOSS_INVULN_FRAMES, BOSS_PHASE_INVULN_FRAMES, BOSS_KNOCK_FRAMES, BOSS_KNOCK_SCALE, BOSS_DEATH_FRAMES, BOSS_DEATH_BOOM_EVERY, SHAKE_MEDIUM, SHAKE_SMALL_FRAMES, TIDE_DRIFT_PER_LEVEL, DREDGE_FLOP_DAMAGE_SCALE, HITSTOP_HIT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES } = __require("data/feel.js");
+const { ENEMY_DEFAULT_SPEED, ENEMY_DEFAULT_RATE, ENEMY_TURN_CHANCE, ENEMY_BEACHED_FRAMES, ENEMY_GRID_STEP, ENEMY_DECIDE_STEPS, ENEMY_TURN_PAUSE_FRAMES, ENEMY_CHARGE_SPEED_MULT, ENEMY_CHARGE_RECOVER_FRAMES, ENEMY_CHARGE_TOLERANCE, ENEMY_CHARGE_RANGE, ENEMY_CHARGE_MIN_RANGE, ENEMY_HOP_WAIT_FRAMES, ENEMY_HOP_DIST, ENEMY_HOP_FRAMES, ENEMY_HOP_HEIGHT, ENEMY_ORBIT_SPEED, ENEMY_ORBIT_RADIUS, ENEMY_SUBMERGE_DOWN_FRAMES, ENEMY_SUBMERGE_UP_FRAMES, ENEMY_SURFACE_MIN_DIST, ENEMY_SURFACE_DIST_SPAN, ENEMY_ALIGN_TOLERANCE, ENEMY_KNOCK_FRAMES, ENEMY_SHOT_SPEED, ENEMY_SHOT_LIFE, ENEMY_DEATH_FRAMES, ENEMY_ATTACK_FRAMES, RING_SHOT_SPEED, RING_SHOT_LIFE, BOSS_INTRO_FRAMES, BOSS_INVULN_FRAMES, BOSS_PHASE_INVULN_FRAMES, BOSS_KNOCK_FRAMES, BOSS_KNOCK_SCALE, BOSS_DEATH_FRAMES, BOSS_DEATH_BOOM_EVERY, SHAKE_MEDIUM, SHAKE_SMALL_FRAMES, TIDE_DRIFT_PER_LEVEL, DREDGE_FLOP_DAMAGE_SCALE, HITSTOP_HIT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES } = __require("data/feel.js");
 
 const TERRAIN_AVOID = {
   land: F.WATER | F.DEEP | F.PIT | F.HAZARD | F.JUMPABLE,
@@ -24037,6 +24047,12 @@ class Enemy extends Entity {
     // dies exactly as before (see die() below).
     this.dying = false;
     this.deathTime = 0;
+    // Attack pose stall: `shoot()`/`shootRing()` set this unconditionally
+    // (the one funnel every enemy attack passes through, the same shape
+    // `Entity.hurt()`'s own hitstop comment describes), and `spriteName()`
+    // only reads it for an enemy that declares `spec.attackFrame` — harmless
+    // for everything else.
+    this.attackTime = 0;
     this.aiState = 0;
     this.aiTimer = 0;
     this.tick = 0;
@@ -24057,6 +24073,24 @@ class Enemy extends Entity {
     // `hurtFrame` — so most of the roster has none and falls through to the
     // walk cycle exactly as before.
     if (this.flicker > 0 && this.spec.hurtFrame) return this.spec.hurtFrame;
+    // Attack pose: checked after hurtFrame on purpose — a hit landing mid-
+    // attack should show the flinch, not the attack telegraph, the same way
+    // getting hit already interrupts everything else an enemy is doing.
+    // `spec.attackFrame` takes the same shape `spec.frames` does (a plain
+    // string, or one entry per facing) but holds a single pose rather than a
+    // cycled array, since it is a held telegraph, not an animation.
+    if (this.attackTime > 0 && this.spec.attackFrame) {
+      const a = this.spec.attackFrame;
+      if (typeof a === 'string') { this.flipX = false; return a; }
+      let key = this.dir;
+      if (key === 'left' || key === 'right') {
+        key = a.side ? 'side' : key;
+        this.flipX = (this.dir === 'left') && !!a.side;
+      } else {
+        this.flipX = false;
+      }
+      return a[key] || a.down || a.side || Object.values(a)[0];
+    }
     const f = this.spec.frames;
     if (!f) return this.spec.sprite || 'blob';
     if (Array.isArray(f)) {
@@ -24087,6 +24121,7 @@ class Enemy extends Entity {
     this.tick++;
     if (this.invuln > 0) this.invuln--;
     if (this.flicker > 0) this.flicker--;
+    if (this.attackTime > 0) this.attackTime--;
 
     // Death stall: the killing blow already ran (hp<=0, die() below set
     // `dying` instead of `remove`), so skip everything else — no AI, no tide
@@ -24895,6 +24930,11 @@ function submerge(e, g, o = {}) {
 function shoot(e, g, o = {}) {
   if (!g.player) return null;
   if (g.audio) g.audio.sfx(o.sfx || 'enemyShoot');
+  // Set unconditionally: the one funnel every enemy shot passes through, so
+  // an enemy declaring `spec.attackFrame` gets its telegraph pose without
+  // every AI needing to set the timer itself. Harmless for everything else —
+  // `spriteName()` only reads it when `spec.attackFrame` exists.
+  e.attackTime = ENEMY_ATTACK_FRAMES;
   return fire(g, e, {
     sprite: o.sprite || 'shot',
     pal: o.pal || e.pal,
@@ -24911,6 +24951,7 @@ function shoot(e, g, o = {}) {
 
 /** Fire n shots evenly spaced in a circle. */
 function shootRing(e, g, n = 8, o = {}) {
+  e.attackTime = ENEMY_ATTACK_FRAMES;
   const off = o.offset || 0;
   for (let i = 0; i < n; i++) {
     const a = off + (i / n) * Math.PI * 2;
@@ -25212,6 +25253,15 @@ function installEnemies() {
     },
     hurtFrame: 'moblin_hurt',
     deathFrame: 'moblin_death',
+    // The "spear raised" pose (rip-enemies.py's own FRAMES comment: "idle
+    // frame, then the same angle with its spear raised") already alternates
+    // into the ordinary walk cycle above as moblin_d1/u1/s1 — left there on
+    // purpose rather than removed, since moblin has no other second walk
+    // frame and pulling it out would leave the walk cycle static. This wires
+    // the SAME art to the real moment it depicts: shoot() below sets
+    // attackTime, and spriteName() shows this pose specifically then, not
+    // just whenever the walk cycle happens to land on it.
+    attackFrame: { down: 'moblin_d1', up: 'moblin_u1', side: 'moblin_s1' },
     hb: { x: 2, y: 4, w: 12, h: 11 },
     drops: 'good',
     ai(e, g) {

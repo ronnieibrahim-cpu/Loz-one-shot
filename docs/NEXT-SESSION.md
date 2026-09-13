@@ -1,3 +1,83 @@
+## S88 — the attackFrame engine mechanism, built and proven on moblin
+
+Picked up right after S87 (STATE.md's own log calls it S42) closed the
+17-session `deathFrame` sub-thread and identified `moblin` as a
+zero-new-art pilot for a real `attackFrame` mechanism. This session
+built that mechanism — the first genuinely new engine feature under
+objective #4 (enemy-roster), rather than another enemy's death pose.
+
+**Design, mirroring `hurtFrame`/`deathFrame`'s own S12/S13 plumbing but
+adapted for a different trigger shape.** `hurtFrame`/`deathFrame` fire
+from taking damage (`Enemy.hurt()`/`Enemy.die()`); `attackFrame` fires
+from the enemy's own offensive action instead, so it needed a different
+hook. Added `spec.attackFrame` (the same shape `spec.frames` uses — a
+plain string, or one entry per facing — but a single held pose, not a
+cycled array, since it's a telegraph, not an animation) and
+`e.attackTime` (`src/game/enemy.js`). Set `e.attackTime =
+ENEMY_ATTACK_FRAMES` unconditionally inside `shoot()`/`shootRing()` — the
+shared funnel every ranged enemy attack already passes through,
+mirroring `Entity.hurt()`'s own comment about routing hitstop through
+one place — so it's completely inert for the many enemies with no
+`attackFrame` declared. `ENEMY_ATTACK_FRAMES` added to `feel.js` (16f,
+`guessed`); `check-feel.mjs` still passes with the new constant properly
+tagged.
+
+**`spriteName()`'s priority order, decided rather than copied**: `dying`
+first (unchanged), then `flicker`/`hurtFrame`, THEN `attackTime`/
+`attackFrame`, then the ordinary walk cycle. A hit landing mid-attack
+shows the flinch, not the attack telegraph — verified directly in-engine
+(not assumed): a non-lethal hit during an active attack pose immediately
+shows `hurtFrame`, with `attackTime` left running underneath but
+overridden by `flicker`'s higher priority.
+
+**Landed on `moblin` using art that already existed.** `moblin_d1`/`u1`/
+`s1` ("spear raised," per `rip-enemies.py`'s own long-standing FRAMES
+comment) were already extracted but only ever shown as an ordinary
+alternate walk-cycle frame. Wired them as
+`attackFrame: { down: 'moblin_d1', up: 'moblin_u1', side: 'moblin_s1' }`
+— and deliberately LEFT them in the walk cycle too, rather than removing
+them, since `moblin` has no other second walk frame and removing them
+would leave it static while walking. Documented that choice inline in
+`enemies.js` so a future session doesn't "clean up" what looks like
+redundant art.
+
+**Verified in-engine across all three facings**, correcting a probe
+mistake along the way (an early attempt to "freeze" the enemy's AI by
+overwriting `e.ai` did nothing, since `Enemy.update()` calls
+`this.spec.ai`, not `this.ai` — the same class of mistake an earlier
+`beetle` session's probe made too; fixed by re-pinning `e.dir` each
+frame instead of trying to disable the AI). Confirmed: `shoot()`
+immediately shows the correct facing's attack pose; `attackTime` counts
+down 16 -> 0 precisely; once it hits 0, the pose correctly falls through
+to the ordinary walk cycle (which sometimes coincidentally lands on the
+same sprite key, since the art is shared — a harmless visual overlap,
+not a mechanism failure, confirmed by watching the actual `attackTime`
+values rather than only the sprite names).
+
+**Updated `check-drift.mjs`'s "attack" column** from sprite-key naming
+(`<name>_atk`/`_attack`, the deliberately-temporary proxy S14's own
+comment already flagged) to the real `/\battackFrame\s*:/` regex — the
+exact fix S14 already made for "death." Removed the now-entirely-unused
+`enemySpriteKeys` block rather than leaving dead code behind. `moblin`
+now reads `walk,attack,hurt,death` — 1 of 22 complete, the first enemy
+ever to hit that mark.
+
+`validate.mjs`/`test.mjs` (83/83), `check-feel.mjs`, `check-playthrough.mjs`
+(21/21) and `replay.mjs` (51/51) all green and unchanged.
+`check-build.mjs` OK, `dist/oracle-of-tides.html` rebuilt and committed.
+`sprites-enemies.js` untouched — no new art this session, pure engine
+work plus reuse of frames that already existed — so `check-rippers.mjs`
+wasn't re-run.
+
+**Found 7 more `shoot()`/`shootRing()` users that could plausibly get
+the same treatment**: `octorok`, `octorokSea`, `beamos`, `wisp`,
+`wizzrobe`, `barnacle`, `siren`. None of them have been surveyed yet for
+whether any has `moblin`'s same lucky situation (an already-extracted,
+currently-unused-as-attack pose sitting right there). That survey — and
+wiring whichever ones clearly qualify without needing new art — is the
+next session's task. Not every one of the 7 necessarily has a matching
+frame; this is a real research question, not a guaranteed rollout.
+
 ## S87 — anglerfry's deathFrame closes the whole sub-thread; the next gap is attackFrame, piloted on moblin
 
 Picked up right after S86 (STATE.md's own log calls it S41) gave `siren`

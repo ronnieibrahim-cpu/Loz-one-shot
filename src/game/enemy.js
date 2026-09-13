@@ -52,6 +52,7 @@ import {
   ENEMY_SUBMERGE_DOWN_FRAMES, ENEMY_SUBMERGE_UP_FRAMES,
   ENEMY_SURFACE_MIN_DIST, ENEMY_SURFACE_DIST_SPAN, ENEMY_ALIGN_TOLERANCE,
   ENEMY_KNOCK_FRAMES, ENEMY_SHOT_SPEED, ENEMY_SHOT_LIFE, ENEMY_DEATH_FRAMES,
+  ENEMY_ATTACK_FRAMES,
   RING_SHOT_SPEED, RING_SHOT_LIFE,
   BOSS_INTRO_FRAMES, BOSS_INVULN_FRAMES, BOSS_PHASE_INVULN_FRAMES,
   BOSS_KNOCK_FRAMES, BOSS_KNOCK_SCALE,
@@ -121,6 +122,12 @@ export class Enemy extends Entity {
     // dies exactly as before (see die() below).
     this.dying = false;
     this.deathTime = 0;
+    // Attack pose stall: `shoot()`/`shootRing()` set this unconditionally
+    // (the one funnel every enemy attack passes through, the same shape
+    // `Entity.hurt()`'s own hitstop comment describes), and `spriteName()`
+    // only reads it for an enemy that declares `spec.attackFrame` — harmless
+    // for everything else.
+    this.attackTime = 0;
     this.aiState = 0;
     this.aiTimer = 0;
     this.tick = 0;
@@ -141,6 +148,24 @@ export class Enemy extends Entity {
     // `hurtFrame` — so most of the roster has none and falls through to the
     // walk cycle exactly as before.
     if (this.flicker > 0 && this.spec.hurtFrame) return this.spec.hurtFrame;
+    // Attack pose: checked after hurtFrame on purpose — a hit landing mid-
+    // attack should show the flinch, not the attack telegraph, the same way
+    // getting hit already interrupts everything else an enemy is doing.
+    // `spec.attackFrame` takes the same shape `spec.frames` does (a plain
+    // string, or one entry per facing) but holds a single pose rather than a
+    // cycled array, since it is a held telegraph, not an animation.
+    if (this.attackTime > 0 && this.spec.attackFrame) {
+      const a = this.spec.attackFrame;
+      if (typeof a === 'string') { this.flipX = false; return a; }
+      let key = this.dir;
+      if (key === 'left' || key === 'right') {
+        key = a.side ? 'side' : key;
+        this.flipX = (this.dir === 'left') && !!a.side;
+      } else {
+        this.flipX = false;
+      }
+      return a[key] || a.down || a.side || Object.values(a)[0];
+    }
     const f = this.spec.frames;
     if (!f) return this.spec.sprite || 'blob';
     if (Array.isArray(f)) {
@@ -171,6 +196,7 @@ export class Enemy extends Entity {
     this.tick++;
     if (this.invuln > 0) this.invuln--;
     if (this.flicker > 0) this.flicker--;
+    if (this.attackTime > 0) this.attackTime--;
 
     // Death stall: the killing blow already ran (hp<=0, die() below set
     // `dying` instead of `remove`), so skip everything else — no AI, no tide
@@ -979,6 +1005,11 @@ export function submerge(e, g, o = {}) {
 export function shoot(e, g, o = {}) {
   if (!g.player) return null;
   if (g.audio) g.audio.sfx(o.sfx || 'enemyShoot');
+  // Set unconditionally: the one funnel every enemy shot passes through, so
+  // an enemy declaring `spec.attackFrame` gets its telegraph pose without
+  // every AI needing to set the timer itself. Harmless for everything else —
+  // `spriteName()` only reads it when `spec.attackFrame` exists.
+  e.attackTime = ENEMY_ATTACK_FRAMES;
   return fire(g, e, {
     sprite: o.sprite || 'shot',
     pal: o.pal || e.pal,
@@ -995,6 +1026,7 @@ export function shoot(e, g, o = {}) {
 
 /** Fire n shots evenly spaced in a circle. */
 export function shootRing(e, g, n = 8, o = {}) {
+  e.attackTime = ENEMY_ATTACK_FRAMES;
   const off = o.offset || 0;
   for (let i = 0; i < n; i++) {
     const a = off + (i / n) * Math.PI * 2;
