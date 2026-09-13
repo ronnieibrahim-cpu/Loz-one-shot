@@ -5,18 +5,20 @@
   verbatim before reading anything else here.
 - `docs/prompts/STATE.md` — objective #4 (enemy-roster) and its file
   allowlist.
-- `docs/NEXT-SESSION.md`'s S30 entry (`zol_death`) IN FULL, especially its
-  "ESCALATED FINDING" paragraph — `check-playthrough.mjs`'s own outcome
-  has now moved twice in two sessions from `deathFrame` additions alone
-  (`crab` then `zol`), each time in a different, unpredictable direction.
-  This session's OWN `deathFrame` addition will very likely do the same
-  thing a third time. That is not a reason to stop adding `deathFrame`s
-  (the charter's rule 5 says a correctness bug found mid-task is not an
-  exception, and this pattern has already been flagged and NOT chased
-  twice) — it IS a reason to run `check-playthrough.mjs` after this
-  session's own change, exactly as instructed below, and report
-  faithfully whatever it says, rather than skipping the check because two
-  prior sessions already found problems there.
+- `docs/NEXT-SESSION.md`'s S31 entry IN FULL. **THE ESCALATED FINDING
+  S29 AND S30 FLAGGED IS CLOSED.** `check-playthrough.mjs` is 21/21 and
+  `replay.mjs` is 51/51 on `main`, with every `deathFrame` intact. The
+  "cumulative frame-budget drift" theory those two sessions recorded was
+  MEASURED AND DISPROVED — `dLoot`'s frame number is a cap, not a wait,
+  so a `loot` step that finds nothing spends nothing and can never be
+  short of budget. The two real faults were a missing walk-onto-the-tile
+  step for D1's Essence, and the actor being unable to swing at anything
+  already touching it (it backed into a room edge and died, ~28000 frames
+  before the crash the stack trace showed). Do not re-derive any of this;
+  S31's entry has the whole measurement. You are still expected to run
+  `check-playthrough.mjs` after your own change and report whatever it
+  says — but it should now be GREEN before you start, so a failure is
+  yours and is in scope to fix, not a known-bad baseline to report around.
 
 ## Why this, now
 S26-S30 gave `deathFrame` to `keese`, `octorok`, `urchin`, `crab`, `zol` —
@@ -80,11 +82,9 @@ this session should confirm the same holds for a LETHAL hit specifically
   lines).
 
 ## Out of scope
-- Investigating or fixing the `check-playthrough.mjs` route-fragility
-  pattern itself (S29's missing essence, S30's anchor-equip crash) — that
-  remains the detour-token-gated item. Running the checker and reporting
-  its result honestly is in scope; diagnosing or patching
-  `tools/playthrough-route.mjs` or `tools/actor-runtime.mjs` is not.
+- Re-opening S29's missing essence or S30's anchor-equip crash — both are
+  FIXED on `main` (S31). If `check-playthrough.mjs` goes red after your
+  change, that is a NEW fault and fixing it is in scope.
 - Any OTHER enemy's `deathFrame` — one enemy per session.
 - `bubble`, `beamos`, `barnacle` — all hp 999, effectively unkillable.
 - Redesigning `leever`'s `submerge()`/chase AI — visual death feedback
