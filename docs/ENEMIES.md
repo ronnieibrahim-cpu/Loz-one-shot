@@ -315,3 +315,32 @@ aim + `aligned()`, `wizzrobe` `aim: true`) matched its own lesson exactly;
 `urchin`'s `harmless`/`idle` tide gating (fixed at S99) still holds. No
 further findings recorded to `docs/NEXT-SESSION.md` — every real mismatch
 this pass found was small enough to resolve in this same session.
+
+## `stalfos`'s missing `attack` state, closed
+
+`check-drift.mjs` reports `stalfos: walk,hurt,death` — the only one of the
+6 non-idle-eligible enemies (see "Idle states" above) still shown with no
+`attack` column at all, and it was never named in S52/S97's "confirmed
+structural wall" list (`crab`, `gel`, `leever`, `urchin`, `jellyfish`) even
+though `check-drift` has shown it missing `attack` the whole time. A
+follow-up session read `stalfos`'s `ai()` and both functions it calls
+(`chase`/`flee`, `src/game/enemy.js`) in full: `if (distToPlayer(e,g)<26)
+flee(...); else chase(...);` — no `shoot`/`charge`/`hop` call, no
+`attackTime` set anywhere in either function, nothing but continuous
+movement. Exactly the same shape as the other 5.
+
+**It is not merely the same shape — this roster's own "Why this ordering"
+section (above) already says so explicitly**: "`moblin` and `stalfos` both
+retreat from a close player, but `moblin` retreats to keep using a ranged
+attack while `stalfos` retreats with no attack at all, purely to deny a
+swing." `stalfos` having no attack whatsoever isn't an accident this
+session found — it's the design, stated in this same file before this
+audit ever started. Giving it an `attackFrame` would need inventing an
+attack for an enemy whose entire lesson is that it has none.
+
+**`stalfos` joins the structural wall.** The confirmed list for `attack`
+is now 6: `crab`, `gel`, `leever`, `urchin`, `jellyfish`, `stalfos` — all
+pure evaders or contact-only chasers with no discrete windup moment
+anywhere in their `ai()`, recorded in `docs/prompts/LEDGER.md`. Zero code
+changes; this was a documentation gap (an unenumerated case), not a
+missed engine opportunity.

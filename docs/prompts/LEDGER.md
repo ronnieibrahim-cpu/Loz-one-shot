@@ -190,6 +190,18 @@ extract from it:
   hand-drawing effort across all 8, which is a call for the person running
   these sessions, not a default. Do not re-run this search a third time
   without a stated reason the whole-sheet pass could have missed.
+- **Giving `stalfos` an `attackFrame`.** It was never named in S52/S97's
+  "confirmed structural wall" list for `attack` (`crab`, `gel`, `leever`,
+  `urchin`, `jellyfish`, above) even though `check-drift.mjs` has shown it
+  missing `attack` the whole time — an unenumerated case, checked and
+  closed by a later session. `stalfos.ai()` is `flee` under 26px, `chase`
+  otherwise (`src/data/enemies.js`) — both pure movement (`src/
+  game/enemy.js`), no `shoot`/`charge`/`hop`, no `attackTime` set anywhere.
+  Same shape as the other 5, and `docs/ENEMIES.md`'s own "Why this
+  ordering" section already says so in plain language, predating this
+  check: "`stalfos` retreats with no attack at all, purely to deny a
+  swing." The structural-wall list for `attack` is now 6: `crab`, `gel`,
+  `leever`, `urchin`, `jellyfish`, `stalfos`.
 - **Depth-discontinuity checks.** Dry adjacent to deep is 2,095 cells at high
   tide and is simply what a coast is without a beach.
 - **The `rip-terrain.py` hue-blind quantiser.** Still unfixed, but it now
