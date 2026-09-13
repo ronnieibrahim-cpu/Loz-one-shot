@@ -1,77 +1,60 @@
-# Next session — audit enemy lessons against real code
+# Next session — decide idle art: re-audit sheets or stop
 
 ## Read first
 - `docs/prompts/CHARTER.md` — the standing rules for every session; run it
   verbatim before reading anything else here.
 - `docs/prompts/STATE.md` — objective #4 (enemy-roster) and its file
   allowlist.
-- `docs/NEXT-SESSION.md`'s S99 entry (newest) — the shape of bug this
-  session hunts for more of: a `docs/ENEMIES.md` lesson that reads as
-  true but isn't actually enforced anywhere in `src/`.
+- `docs/ENEMIES.md`'s "Idle states" section and its new "Audit" section
+  (S56) — what is already ruled out and why, so this isn't re-derived.
 
 ## Why this, now
-S55 found that `urchin`'s "harmless on dry ground" lesson wasn't
-actually true — its danger was never tide-gated, only its movement was
-— and fixed it once the fix turned out to be a one-line reuse of an
-existing engine flag (`e.harmless`, the same one `submerge()` already
-toggles). That was found by accident, while comparing `urchin` against
-other idle candidates, not by a deliberate audit. `docs/ENEMIES.md` has
-21 other one-line lessons that have never been checked the same way —
-each one is a specific, falsifiable claim about what the code actually
-does, and this objective's rotation (#4, enemy-roster) is exactly the
-one whose job is to keep that document honest.
+S53-S55 scoped and piloted `idleFrame`, landing it on `urchin` only; the
+other 8 candidates (`beamos`, `barnacle`, `wizzrobe`, `siren`, `keese`,
+`zol`, `tektite`, `pincer`) were judged against `urchin`'s own bar (does a
+distinct pose teach something new) and none cleared it, independent of
+whether art exists. S56 then audited all 22 `docs/ENEMIES.md` lessons
+against the real code (not just `idle`) and found two real bugs (`beamos`
+aim, `leever` timing) plus one wrong doc line (`anglerfry`), all fixed in
+that same session. `check-drift.mjs` still reports 0 of 22 with the full
+5-state set — objective #4 is not done, and the only lever left is
+`idle`, since `walk`/`attack`/`hurt`/`death` are as complete as they can
+get without new engine concepts.
 
 ## The task
-1. For each of the 22 lessons in `docs/ENEMIES.md`'s table, read the
-   enemy's real `ai()`/`hurt()`/spec fields in `src/data/enemies.js` (and
-   `src/game/enemy.js` where a lesson depends on shared engine behavior,
-   e.g. `shield`, `terrain`, `tideOnly`) and check whether the lesson's
-   claim is actually enforced, not just plausible. Concrete things worth
-   checking specifically, based on what tripped `urchin` up:
-   - A claim of "harmless under condition X" — is contact damage actually
-     gated (`e.harmless`/`e.dormant`/`hp`), or does only movement change?
-   - A claim about aim/alignment ("only fires along its row/column",
-     "aims at you") — does the actual `shoot()`/`shootRing()` call pass
-     `aim: true`/`false` and the direction logic match the claim?
-   - A claim about a shield's coverage ("shielded from the front only")
-     — does `hurt()`'s shield check actually match the enemy's `dir`
-     logic the way the lesson implies?
-   - A claim tied to the tide (`jellyfish`'s drift speed, `octorokSea`'s
-     tide-gated existence) — read the actual thresholds, don't assume
-     they match the prose.
-2. For anything that reads as true, move on — this is an audit, not a
-   rewrite. Do not touch lessons that already check out.
-3. For each real mismatch found, decide the SAME way S55 did: if the fix
-   is small and reuses an existing engine mechanism (a flag already read
-   elsewhere, like `e.harmless` was), fix it in this session and verify
-   in-engine with a scratch probe. If it would need new engine concepts,
-   new art, or a design decision, do NOT fix it — record it as a finding
-   in `docs/NEXT-SESSION.md` (three lines, per the charter's own rule 5)
-   and move to the next enemy. Do not spend the session's whole budget on
-   one hard case.
-4. After the audit, run the full regression sweep on whatever changed:
-   `validate.mjs`, `test.mjs` (83/83), `check-feel.mjs`,
-   `check-motion.mjs`, `check-playthrough.mjs` (21/21), `replay.mjs`
-   (51/51), `check-rippers.mjs`, `check-build.mjs`.
+Make an explicit, written decision on `idle`'s remaining 8 candidates,
+rather than leaving it an open lead session after session:
+1. Either do a genuine sheet RE-AUDIT for one or more of the 8 (not a
+   repeat of S53's already-done search — look for anything S53 might have
+   missed, or accept its "zero unclaimed frames" finding stands), OR
+2. Conclude in writing that `urchin` is the only `idle` this roster is
+   getting, and that objective #4 rotates on WITHOUT full 5-state
+   coverage — i.e. surface to the user (per the charter's "one judgement
+   call" section) that the done-condition as written may be unreachable
+   without new hand-drawn art across 8 enemies, and ask whether that's
+   worth doing.
+Do not re-run S53/S55's own search a third time without a stated reason
+the prior two passes could have missed something.
 
 ## Done means
-- All 22 lessons have been read against the real code at least once
-  this objective's life (say so plainly if some were already checked in
-  an earlier session and skip re-deriving them).
-- Every mismatch found is either fixed-and-verified-in-engine, or
-  recorded as a named finding for later — never silently dropped.
-- Every checker in step 4 passes; `dist/oracle-of-tides.html` rebuilt
-  and committed if anything in `src/` changed.
+- A written decision exists in `docs/ENEMIES.md` (or a clear escalation in
+  this session's final message per the charter) — not a third repeat of
+  the same scoping pass.
+- If any art or wiring lands, it is verified in-engine with a scratch
+  probe the way `urchin`'s was, and the full regression sweep passes:
+  `validate.mjs`, `test.mjs` (83/83), `check-feel.mjs`, `check-motion.mjs`
+  (8/8), `check-playthrough.mjs` (21/21), `replay.mjs` (51/51),
+  `check-rippers.mjs` (17/17), `check-build.mjs`.
 - STATE.md gets one new session-log row (delete the oldest if over 60
   lines).
 
 ## Out of scope
-- Rewriting a lesson's WORDING for style — only fix a lesson that is
-  factually wrong about what the code does.
-- Any of the 8 idle candidates S55 already ruled out, or the 5
-  structurally-blocked `attack` cases (S52/S97) — both closed
-  investigations, not to be reopened here.
+- Re-litigating `urchin`'s own pilot (S54) or its `harmless` fix (S55) —
+  both closed and verified.
+- Any of the S52/S97 structurally-blocked `attack` cases (`crab`, `gel`,
+  `urchin`, `jellyfish`, plus `leever` ruled out at S97) — closed
+  investigation, not to be reopened.
+- Re-running S56's full 22-lesson audit again — it is done; only act on a
+  SPECIFIC new claim if one surfaces, not a repeat sweep.
 - A fix that requires inventing a new engine mechanism, new hand-drawn
-  art, or a design decision — name it and move on, per step 3.
-- Any change to enemy damage, hp, or speed values beyond what a found
-  mismatch's fix requires.
+  art without a stated reason, or a design decision beyond `idle` itself.

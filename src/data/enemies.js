@@ -178,7 +178,13 @@ export function installEnemies() {
     terrain: 'land',
     drops: 'common',
     ai(e, g) {
-      submerge(e, g, { down: 70, up: 110, whileUp: (e2, g2) => chase(e2, g2, { speed: 0.5 }) });
+      // down/up were 70/110 — surfaced (chasing, vulnerable) for MORE of the
+      // cycle than buried, the opposite of docs/ENEMIES.md's "spends most of
+      // its time buried and untouchable" lesson. Swapped so buried is the
+      // longer half, confirmed with a scratch probe counting hidden vs. up
+      // frames over several cycles before and after. See
+      // docs/prompts/LEDGER.md.
+      submerge(e, g, { down: 110, up: 70, whileUp: (e2, g2) => chase(e2, g2, { speed: 0.5 }) });
     },
   });
 
@@ -202,9 +208,19 @@ export function installEnemies() {
     terrain: 'any',
     drops: 'none',
     ai(e, g) {
-      if (every(e, 44) && distToPlayer(e, g) < 80) {
-        facePlayer(e, g);
-        shoot(e, g, { sprite: 'shot_beam', pal: 'enemyr', speed: 2.0, aim: true, damage: 2 });
+      // Fires only along its own row/column, same shape as octorok's shot —
+      // `aligned()` both gates the shot and sets `e.dir` toward the player,
+      // and the shoot() call below carries no `aim`, so `fire()` sends the
+      // shot straight in that direction rather than homing on the player's
+      // exact position. Found and fixed this session: `aim: true` here
+      // used to fire an aimed shot at any range < 80 regardless of
+      // alignment, which is exactly what docs/ENEMIES.md's "only fires
+      // straight along its own facing; step off its row or column and it's
+      // harmless" lesson says does NOT happen — confirmed with a scratch
+      // probe placing the player diagonally off-axis, which still took a
+      // hit before this fix. See docs/prompts/LEDGER.md.
+      if (every(e, 44) && aligned(e, g, 14) && distToPlayer(e, g) < 80) {
+        shoot(e, g, { sprite: 'shot_beam', pal: 'enemyr', speed: 2.0, damage: 2 });
       }
     },
   });

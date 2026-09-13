@@ -34,7 +34,7 @@ one (`urchin`) now has `idle` too — see below for both.
 | `stalfos` | Chases you down on its own, then hops back the instant you're in range — it's daring you to swing into empty air. |
 | `darknut` | Combines a directional shield with a committed charge: survive or dodge the lunge, then still come at it from an angle it isn't watching. |
 | `wizzrobe` | Teleports in, fires one aimed shot, teleports out — the punish window is short and needs closing distance fast, not just dodging. |
-| `anglerfry` | Sits still like part of the scenery until you swim past, then commits to a single fast lunge — the lesson is not trusting empty-looking water. |
+| `anglerfry` | Drifts lazily on its lure rather than sitting still, then commits to a single fast lunge once you're close — the lesson is that slow, aimless movement isn't the same as harmless movement. |
 | `barnacle` | Can't be killed and aims its shot straight at you, so the alignment tricks that work on other turrets don't — you have to break its line of sight or its range instead. |
 | `jellyfish` | Its drift speed and direction change with the tide level, so predicting where it's going means reading the sea, not the enemy. |
 | `siren` | Surfaces and fires in every direction at once, so standing at an angle doesn't help — only range or timing the window before it fires does. |
@@ -197,3 +197,75 @@ full sheet re-audit for the remaining 8 (in case any of them turns out
 to have a design case this pass missed) or accepting that `urchin` may
 be the only enemy in this roster where idle art was ever going to teach
 something — not a search for a 9th candidate or an 8-at-once push.
+
+## Audit: all 22 lessons checked against the real code
+
+Following S99's accidental `urchin` find (a lesson that read as true but
+wasn't enforced), a follow-up session read every one of the 22 lessons in
+the table above against `src/data/enemies.js`'s real `ai()`/`hurt()`/spec
+fields (and `src/game/enemy.js` where a lesson depends on shared engine
+behavior), checking each one the way `urchin`'s was checked: is the claim
+actually enforced, not just plausible. Confirmed every check in-engine
+with a scratch probe (headless, same boot pattern as
+`tools/check-motion.mjs`) rather than reasoning about the code alone.
+
+**Two real code bugs found and fixed:**
+
+- **`beamos`** claimed to "only fire straight along its own facing; step
+  off its row or column and it's harmless" — a contrast the file's own
+  "Why this ordering of lessons holds together" section states explicitly
+  ("`beamos` adds a ranged attack but one that only fires along a fixed
+  axis, and `barnacle` adds aim"). The actual `ai()` passed `aim: true`
+  to `shoot()` with no `aligned()` check at all — it fired a shot homing
+  on the player's exact position at any range under 80px, aligned or not.
+  Confirmed with a scratch probe: placing the player 40px off both axes,
+  well inside range, still drew a hit before the fix. Fixed by matching
+  `octorok`'s own already-correct call shape — `aligned(e, g, 14)` gates
+  the shot and sets `e.dir`, and `shoot()` is called with no `aim`, so
+  `fire()` sends it straight in that direction. Re-ran the same probe
+  after the fix: 0 off-axis hits, on-axis shot still fires and travels
+  with zero lateral velocity. `barnacle` was checked too and is correct
+  as shipped — its `aim: true` with no alignment check is exactly what
+  its own lesson claims.
+- **`leever`** claimed to spend "most of its time buried and untouchable,"
+  only surfacing for "a window" to chase. Its `submerge()` call had
+  `down: 70, up: 110` — surfaced (chasing, vulnerable) for the LONGER
+  half of every cycle, not the shorter one. Confirmed with a scratch
+  probe counting hidden-vs-up frames over ~11 full cycles: 38.5% hidden
+  before the fix. Swapped to `down: 110, up: 70` (same 180-frame total,
+  so nothing about the cycle's overall length changed) and re-ran the
+  same probe: 60.5% hidden after. `leever` does not appear on
+  `check-playthrough.mjs`'s route or any `replay.mjs` tape (only in a
+  routing comment explaining why the route avoids it), so this carried
+  none of the timing-drift risk `docs/prompts/LEDGER.md`'s "Measured and
+  rejected" section warns `deathFrame` additions do.
+
+**One doc-only fix — the lesson was wrong, not the code:** `anglerfry`'s
+roster line claimed it "sits still like part of the scenery until you
+swim past." Its actual idle behavior is `charge()`'s own `idle` callback,
+`wander(e, g, { speed: 0.35, turnChance: 0.02 })` — genuine continuous
+movement, not stillness. A scratch probe confirmed it: released with no
+player nearby, it drifted ~82px over 600 frames, more than five tile
+widths. This is not a bug: the code's own comment right above it already
+says "Drifts on its lure until you are close, then dashes in a straight
+line," and this file's own "Why this ordering of lessons holds together"
+section (above) already lists `anglerfry` among the enemies that are
+"never meaningfully still" — the roster table's "sits still" line
+contradicted this file's OWN later section, not just the code. Reworded
+the roster line to describe the actual, deliberate drift instead of
+rewriting the code to match an aspiration nothing else in the project
+shared.
+
+**The other 18 lessons were read against the real code and checked out
+true**, including the specific categories worth double-checking per this
+audit's own brief: every shield claim (`crab`, `beetle`, `darknut`, all
+`shield: 'front'`) was traced through `Enemy.hurt()`'s `opposite[dir] ===
+this.dir` check against both a projectile's travel direction and a sword
+swing's `this.dir` (the player's own facing) — both funnel into the same
+"blocked only from the front" logic, confirmed consistent for both attack
+kinds; every aimed-vs-axis claim other than `beamos`/`barnacle` above
+(`octorok` no aim + `aligned()`, `octorokSea` `aim: true`, `moblin` no
+aim + `aligned()`, `wizzrobe` `aim: true`) matched its own lesson exactly;
+`urchin`'s `harmless`/`idle` tide gating (fixed at S99) still holds. No
+further findings recorded to `docs/NEXT-SESSION.md` — every real mismatch
+this pass found was small enough to resolve in this same session.
