@@ -25157,6 +25157,7 @@ function installEnemies() {
     light: true,
     hp: 2, damage: 2, pal: 'enemyb', speed: 0.6, rate: 8, terrain: 'any',
     frames: ['tektite_0', 'tektite_1'],
+    deathFrame: 'tektite_death',
     drops: 'common',
     ai(e, g) { hop(e, g, { wait: 34, dist: 16, height: 13, frames: 20 }); },
   });
@@ -38450,6 +38451,49 @@ const ENEMY_HURT_ART = {
     .11111111111111.
     .1..........1..1
     ................` ,
+
+  // Tektite death — drawn: the sheet's own "Tektite" plate has exactly two
+  // frames (legs splayed on the ground, legs tucked mid-hop), both already
+  // extracted as `tektite_0`/`tektite_1` — confirmed against the sheet's own
+  // "Tektite" label spanning only those two boxes, "Stalfos" and "Thwomp"
+  // sitting either side of it as unrelated creatures. Nothing to extract;
+  // hand-drawn instead, following `octorok_death`'s own squash rather than
+  // inventing a new shape: every other row of `tektite_0`'s body (the
+  // splayed-legs pose, rows 5/7/9/11/13/15 of its 16-row grid in
+  // sprites-enemies.js — the resting pose, not `tektite_1`'s hop-apex tuck)
+  // kept pixel-for-pixel and compressed to the bottom of the cell, reusing
+  // only colour indices already present in the two live frames so it renders
+  // correctly under `tektite`'s own palette with nothing invented. Reads as
+  // the eight-legged body pressed flat rather than a generic squash, the
+  // same "flatten the existing shape into a puddle" move `octorok_death`/
+  // `gel_death` used. `tektite` (hp 2, `src/data/enemies.js`) has no `z`
+  // field — confirmed directly rather than assumed — so a low pose is
+  // correct; it does drive `hop()` (`src/game/enemy.js`), whose airborne
+  // `fz` is a per-frame accumulator distinct from a spec `z` field, and
+  // `Enemy.update()`'s `dying` branch skips `ai()` entirely, so a kill
+  // mid-hop freezes `fz` at whatever height it held and the flat pose draws
+  // there rather than snapping to the ground — verified in-engine, not
+  // assumed, and noted rather than treated as a defect (see this session's
+  // NEXT-SESSION.md entry). No hp constraint applies to `deathFrame`; hp 2
+  // means `swordDamage()` always kills `tektite` in one hit, so this is its
+  // only possible death/hit feedback, same as `octorok`/`crab`.
+  tektite_death: `
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ..33........33..
+    3010331111330103
+    3031313003131303
+    3031311331131303
+    3033333333333303
+    .333..3333..333.` ,
 };
 
 function installEnemyHurtSprites() {

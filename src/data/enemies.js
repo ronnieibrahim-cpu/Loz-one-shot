@@ -183,6 +183,7 @@ export function installEnemies() {
     light: true,
     hp: 2, damage: 2, pal: 'enemyb', speed: 0.6, rate: 8, terrain: 'any',
     frames: ['tektite_0', 'tektite_1'],
+    deathFrame: 'tektite_death',
     drops: 'common',
     ai(e, g) { hop(e, g, { wait: 34, dist: 16, height: 13, frames: 20 }); },
   });

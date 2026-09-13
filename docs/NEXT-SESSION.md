@@ -1,3 +1,69 @@
+## S78 — tektite's deathFrame, a real hop/death interaction, and a real replay re-record
+
+Picked up right after S77 (STATE.md's own log calls it S32) gave `leever` a
+`deathFrame`. Task: give `tektite` (hp 2, `terrain: 'any'`, `src/data/
+enemies.js`) one too — the 8th enemy in this thread, after `gel`, `keese`,
+`octorok`, `urchin`, `crab`, `zol`, `leever`. The handoff prompt called
+`tektite` "plainer" than `leever` (no submerge/height quirk to verify) but
+also said explicitly to check that framing rather than trust it — and it
+was wrong: `tektite` drives `hop()` (`src/game/enemy.js`), so it has a live
+`fz` height accumulator at any given moment, just not a static spec `z`
+field. Worth remembering for whichever enemy is next: "no `z` field" and
+"never off the ground" are different claims, and only the first one was
+actually checked before.
+
+**Checked the sheet's own "Tektite" plate for a distinct pose before
+drawing anything**, same discipline `leever` used. Cropped and viewed the
+plate directly (Pillow wasn't installed yet this session; `pip install
+pillow` per CLAUDE.md, then re-ran `rip-enemies.py` once unmodified to
+confirm it still reproduces byte-identically before touching anything).
+Exactly two frames: legs splayed on the ground (`tektite_0`) and legs
+tucked at the hop's apex (`tektite_1`), "Stalfos" and "Thwomp & Sword" on
+either side as clearly separate creatures, no hidden third frame the box
+finder missed. Nothing to extract; hand-drawn instead, following
+`octorok_death`'s own squash template rather than inventing a new shape:
+every other row of `tektite_0`'s body (rows 5/7/9/11/13/15 of its 16-row
+grid in `sprites-enemies.js`) kept pixel-for-pixel and compressed to the
+bottom of the cell, reusing only the colour indices already present in the
+two live frames so it renders correctly under `tektite`'s own palette with
+nothing invented.
+
+**Verified the hop interaction in-engine with a real probe, not by
+inspecting the code and assuming.** Confirmed `tektite`'s spec has no `z`
+field (unlike `wisp`/`keese`-style floaters), then drove the real `hop()`
+AI until airborne and dealt a lethal hit there: `dying` goes true
+immediately, `spriteName()` returns `tektite_death`, and `fz` stays frozen
+at its hit-instant value (632 subpixels in the probe) for the entire
+`ENEMY_DEATH_FRAMES` stall — `Enemy.update()`'s `dying` branch skips `ai()`
+entirely, so nothing brings it back to the ground early. The flat, "on the
+ground" death pose therefore briefly draws elevated when the kill lands
+mid-hop. This is the same class of thing `zol`'s own hop (`S30`) already
+normalised without incident, so it's recorded here as an accepted quirk,
+not chased as a defect. A second probe confirmed the ordinary grounded case
+(`fz = 0` throughout) behaves identically to every prior `deathFrame`
+target.
+
+`check-drift` reads `tektite: walk,death`. `validate.mjs`/`test.mjs` stayed
+83/83; `sprites-enemies.js` was not touched (the death frame is hand-drawn,
+not extracted), so `check-rippers.mjs` had nothing new to re-verify and
+was not re-run. `check-playthrough.mjs` stayed 21/21 unchanged — `tektite`
+is not one of the route's heavily-scripted fights, so this alone doesn't
+say much about the timing-sensitivity question S76/S77 raised.
+`replay.mjs`, however, DID catch a real divergence: `d1-descent` failed at
+frame 5940 with an entity-count mismatch, because the new 20-frame death
+stall now outlives a checkpoint the old recording implicitly assumed
+instant removal at — exactly the class of thing CLAUDE.md's own
+hard-won-lessons section warns "every replay wanted re-recording" about.
+Re-recorded `d1-descent` (`node tools/replay.mjs --record d1-descent`);
+full suite back to 51/51. `check-build.mjs` OK, `dist/oracle-of-tides.html`
+rebuilt and committed.
+
+Next hp<=2 enemy with no `deathFrame` yet, per this thread's own cadence:
+`jellyfish` (hp 2, `terrain: 'water'`, currently walk-only — no `hurtFrame`
+either, so this will be its first hit-feedback pose of any kind, not just
+its death). `bubble`/`beamos`/`barnacle` remain hp 999 and out of scope, as
+prior sessions already noted.
+
 ## S77 — leever's deathFrame, and confirmation the playthrough fix holds
 
 Picked up right after S76 (STATE.md's own log calls it S31) closed the
