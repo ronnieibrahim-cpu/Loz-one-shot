@@ -211,9 +211,17 @@ FRAMES = {
     'darknut_s1': (59, 0.5, 0.5, False),
     'darknut_death': (57, 0.5, 0.5, False),
 
-    # Wizzrobe: hood-only as it phases in, then the full sorcerer.
+    # Wizzrobe: hood-only as it phases in, then the full sorcerer. The plate
+    # has a third frame (box 338) right after the two used — same green
+    # palette (#10ad42), not the red box 335 sitting to its left, which
+    # belongs to the previous creature ("Whisp") entirely. Box 338's top half
+    # matches wizzrobe_0's small hood, its bottom half matches wizzrobe_1's
+    # full flowing robe — a genuine mid-transition pose, half-materialised
+    # between the two. Used as the deathFrame: reads as the sorcerer
+    # dissolving away for good, rather than its ordinary phase cycle.
     'wizzrobe_0': (337, 0.5, 0.5, False),
     'wizzrobe_1': (336, 0.5, 0.5, False),
+    'wizzrobe_death': (338, 0.5, 0.5, False),
 
     # Anglerfry — "anglerfish with a lure". SUBSTITUTION: original to this game,
     # so it borrows Cheep-Cheep, the sheet's only fish.

@@ -1,3 +1,63 @@
+## S83 — wizzrobe's deathFrame, a real extraction find, and a benign flicker/submerge quirk confirmed
+
+Picked up right after S82 (STATE.md's own log calls it S37) gave `darknut`
+a `deathFrame` and proved the hurt-hurt-death sequence holds across a
+third hit. Task: give `wizzrobe` (hp 3, `src/data/enemies.js`, "blinks in,
+fires, blinks out") one too — picked because it uses `submerge()`, the
+same appear/disappear mechanism `leever` (S32) already proved blocks a
+hit outright while hidden, but `leever` never had `hurtFrame` (hp 2) to
+combine it with. `wizzrobe` does.
+
+**Checked the sheet's own "Wizzrobe" plate properly, and caught a real
+trap along the way.** The plate visually reads as having a frame
+immediately to the left of the two already used (`wizzrobe_0`/`1`), but
+quantising and comparing its palette directly showed it's `#ff0829`
+(red) — it belongs to the PREVIOUS creature on the sheet ("Whisp"), not
+Wizzrobe at all (`#10ad42`, green). Trusting visual adjacency alone would
+have misattributed it. The real find was one box further along: box 338,
+right after the two live frames, shares the exact green palette and reads
+as a genuine mid-transition pose — its top half matches `wizzrobe_0`'s
+small hood, its bottom half matches `wizzrobe_1`'s full flowing robe, as
+if caught half-materialised. Added
+`wizzrobe_death: (338, 0.5, 0.5, False)` to `FRAMES` in
+`tools/rip-enemies.py` and re-emitted — `sprites-enemies.js` now 62
+sprites (up from 61), `check-rippers.mjs` stayed 17/17.
+
+**First test of `submerge()`'s hidden/invuln mechanism combined with
+`hurtFrame` on the same enemy.** Confirmed a hit while hidden is blocked
+outright — `hurt()` returns `false`, `hp`/`dying` untouched — same as
+`leever` already proved. **Found a real, but entirely benign, quirk by
+deliberately probing the interaction rather than assuming either
+outcome**: hitting `wizzrobe` non-lethally right before its `up` timer
+expires does NOT reset or cancel the flicker countdown when `submerge()`
+flips it to `down` — `flicker` just keeps counting down from whatever
+value it already held, and `spriteName()` technically still returns
+`wizzrobe_hurt` while `hidden = true`. This sounds like it should be a
+visible glitch, but isn't: `game.js:1772`'s render loop skips ANY entity
+with `hidden = true` unconditionally, before `spriteName()`'s return value
+ever reaches the screen — confirmed by reading that exact line, not
+assumed from how `hidden` is described elsewhere. `invuln` is correctly
+overwritten to `9999` by the submerge transition regardless of whatever
+flicker-driven `invuln` value was already counting down. Separately
+verified the ordinary two-hit sequence with the submerge timer held open
+(no interference): hit 1 (hp 3 -> 1) shows `wizzrobe_hurt` and reverts
+correctly once the flicker window ends; the lethal hit 2 shows
+`wizzrobe_death`, never `wizzrobe_hurt`, for the full stall. Confirmed no
+spec `z` field beforehand.
+
+`check-drift` reads `wizzrobe: walk,hurt,death`. `validate.mjs`/`test.mjs`
+stayed 83/83. Neither `check-playthrough.mjs` (21/21) nor `replay.mjs`
+(51/51) moved. `check-build.mjs` OK, `dist/oracle-of-tides.html` rebuilt
+and committed.
+
+Picked `pincer` (hp 3, `speed: 0`, "an eel head on a tether, lunging out
+of its burrow") as the next target for a specific reason: it has neither
+`shield` nor `submerge()` — its own AI (`e._pinch` state machine:
+`'hole'`/`'out'`/`'back'`) is a genuinely different movement shape from
+anything a `deathFrame` has been given so far in this thread, a
+stationary creature whose body itself travels along a fixed
+snap-out-and-reel-back path rather than roaming, hopping, or phasing.
+
 ## S82 — darknut's deathFrame: a real extraction find, and the first three-hit sequence proved whole
 
 Picked up right after S81 (STATE.md's own log calls it S36) gave `beetle`

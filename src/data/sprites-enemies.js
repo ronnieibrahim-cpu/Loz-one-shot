@@ -1082,6 +1082,24 @@ export const ENEMY_ART = {
     ..311111111113..
     ...3333333333...` },
   // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
+  wizzrobe_death: { pal: 'wizzrobe_death', art: `
+    .......33.......
+    ......3003......
+    .....310013.....
+    ...3331001333...
+    ..311310013113..
+    .31113100131113.
+    .31113100131113.
+    3311113333111133
+    3031111111111303
+    3003111111113003
+    .30033333333003.
+    ..300111111003..
+    ..300000000003..
+    .30000000000003.
+    3000000000000003
+    3333333333333333` },
+  // extracted — pulled straight off the source sheet named in this file's own header, by this ripper.
   zol_0: { pal: 'zol_0', art: `
     ................
     ................
@@ -1180,6 +1198,7 @@ export const ENEMY_ART_PALETTES = {
   wisp_1: ['#ffb531', '#ffb531', '#ffb531', '#000000'],
   wizzrobe_0: ['#ffd68c', '#10ad42', '#10ad42', '#000000'],
   wizzrobe_1: ['#ffd68c', '#10ad42', '#10ad42', '#000000'],
+  wizzrobe_death: ['#ffd68c', '#10ad42', '#10ad42', '#000000'],
   zol_0: ['#ffd68c', '#ff0829', '#ff0829', '#000000'],
   zol_1: ['#ffd68c', '#ff0829', '#ff0829', '#000000'],
 };
