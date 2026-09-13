@@ -1,102 +1,99 @@
-# Next session — survey darknut and anglerfry for a charge() attackFrame
+# Next session — give hop()'s own wait state a real attack pose
 
 ## Read first
 - `docs/prompts/CHARTER.md` — the standing rules for every session; run it
   verbatim before reading anything else here.
 - `docs/prompts/STATE.md` — objective #4 (enemy-roster) and its file
   allowlist.
-- `docs/NEXT-SESSION.md`'s S94 entry (the newest) — built `attackFrame`
-  support into `charge()` itself (`if (o.tell) e.attackTime = o.tell;`,
-  `src/game/enemy.js`) and piloted it on `beetle`, which turned out to
-  be a zero-new-art reuse (`beetle_s0`, already labelled a "balled-
-  charge frame" in `beetle_hurt`'s own comment). The plumbing already
-  exists — this session is survey-and-wire, not engine work.
+- `docs/NEXT-SESSION.md`'s S95 entry (the newest) — closed the `charge()`
+  `attackFrame` sub-thread (`darknut`, `anglerfry`) and named the two real
+  remaining gaps: 9 pure-contact enemies with no natural attack hook, and
+  `idle` states roster-wide. This session's task is the concrete first
+  step into the first gap: `hop()` turns out to have its own windup,
+  structurally the same shape `charge()`'s `tell` was before S94.
 
 ## Why this, now
-`darknut` (`tell: 22`) and `anglerfry` (`tell: 26`) are the other two
-`charge()` users (`src/data/enemies.js`); both already have `hurtFrame`
-and `deathFrame`, missing only `attack`. `charge()` now sets
-`e.attackTime = o.tell` automatically whenever a `tell` is passed, so
-the ONLY work left per enemy is finding the right pose (reused or
-hand-drawn) and wiring `attackFrame` on its `defineEnemy` call — no
-further engine changes needed. This mirrors S89's `shoot()`-roster
-survey exactly, just for the two remaining `charge()` users.
+`hop()` (`src/game/enemy.js`) — the AI primitive `zol` (`wait: 52`) and
+`tektite` (`wait: 34`) both use — has an internal `_hopState` machine:
+`'wait'` (counting down `_hopWait`, the enemy stands still) then `'air'`
+(the actual jump arc). That `'wait'` phase is a real pause before a real
+action, the same shape `charge()`'s `tell`/`stun` freeze was — except
+`charge()`'s `tell` is a SHORT window immediately before the lunge
+(16-26 frames), while `hop()`'s `wait` is the enemy's entire REST period
+between hops (34-52 frames) — showing an attack pose for the whole thing
+would read as "this creature is always attacking," not a telegraph. The
+engineering task is narrower than `charge()`'s was: only the LAST few
+frames of `_hopWait` (immediately before the jump begins) should count
+as the windup, not the whole wait.
 
 ## The task
-1. Confirm both specs directly from `src/data/enemies.js` rather than
-   trusting this file's summary: `darknut`'s `frames` is per-facing
-   (`down`/`up`/`side`, like `beetle`), `anglerfry`'s is a flat 2-entry
-   array (like `wisp`/`wizzrobe`/`siren` — check this yourself, since it
-   changes whether a facing question even applies).
-2. For EACH enemy, check for a `beetle_s0`-style reuse BEFORE assuming
-   a hand-draw is needed: does the enemy's own `frames` array contain a
-   second pose that is a genuinely different SHAPE from the first (not
-   a recolour — the test S91 used to reject `wisp_1`, and S93/S94 used
-   to accept `siren_1`/`beetle_s0`)? Render every candidate frame from
-   the enemy's real runtime `pal` (`src/gfx/palettes.js`) to a PNG
-   before judging by eye on the raw digit grid — the technique every
-   session since S90 has found essential. Also check existing comments
-   in `sprites-enemies-hurt.js` near each enemy's `_hurt`/`_death` entry
-   — a prior session may have already described a candidate frame in
-   passing (the way `beetle_hurt`'s own comment named "balled-charge
-   frames" before anyone had wired them as one).
-3. Re-confirm nothing NEW is extractable either, the same "run the
-   ripper unmodified first" discipline every prior session used —
-   `python3 tools/rip-enemies.py` once, confirm byte-identical, before
-   concluding a sheet has nothing left.
-4. For whichever enemy(ies) need a hand-drawn pose: read `CLAUDE.md`'s
-   art rules first (three colours plus transparency, hard 1px outline,
-   no anti-aliasing/gradients/dithering, silhouette-first, not a
-   collapse). Check what `_hurt`'s own edit already claimed on that
-   sprite (S92's `wizzrobe_atk` used the eyes specifically because
-   `wizzrobe_hurt` had already claimed the cheek) so the new pose uses a
-   different part of the face/body.
-5. Wire `attackFrame` on whichever `defineEnemy` call(s) qualify. If a
-   `frames` array is per-facing (like `darknut`) and only ONE facing has
-   a genuinely distinct second pose, decide explicitly (and document
-   inline, the way `octorok_atk`/`beetle_s0` both did) whether to apply
-   it as one non-directional pose or leave a gap for the other facings
-   — do not default silently either way.
+1. Read `hop()`'s full body (`src/game/enemy.js`, search `export
+   function hop`) to confirm the `_hopState`/`_hopWait` mechanics
+   yourself rather than trusting this summary — in particular confirm
+   exactly which line transitions `_hopState` from `'wait'` to `'air'`
+   and what `_hopWait` counts down from.
+2. Decide and justify a windup WINDOW length (e.g., the last
+   `ENEMY_ATTACK_FRAMES` worth of `_hopWait`, or a fraction of each
+   enemy's own `wait` value) — do not just copy `charge()`'s "the whole
+   tell counts" shape without checking whether it fits here; it likely
+   doesn't, per the reasoning above. Add a `feel.js` constant if a new
+   fixed window length is needed, with a unit and provenance comment
+   (`check-feel.mjs` must stay green).
+3. Wire `e.attackTime` inside `hop()` to start counting only once
+   `_hopWait` drops to that window's length, not at the start of the
+   whole wait — harmless for any `hop()` user with no `spec.attackFrame`
+   declared, the same "set unconditionally, only read when the field
+   exists" pattern `shoot()`/`shootRing()`/`charge()` all already use.
+4. Pick ONE of `zol`/`tektite` to pilot on, following the established
+   precedent (build the mechanism, land it on one enemy, survey the
+   rest next). Check both first for a reuse candidate (a second frame
+   in `frames` that's a genuinely different SHAPE, not a recolour — the
+   test S91/S93/S94 all used) before assuming either needs a hand-drawn
+   pose; render whichever frames exist from the enemy's real runtime
+   `pal` before judging.
+5. If nothing reusable, hand-draw the pose following `CLAUDE.md`'s art
+   rules (three colours plus transparency, hard 1px outline, no
+   anti-aliasing/gradients/dithering, silhouette-first, not a collapse),
+   checking what the enemy's own `_hurt`/`_death` entries (if any) have
+   already claimed so the new pose uses a different feature.
 6. Verify in-engine with a scratch Playwright probe (not committed):
-   drive the REAL `ai()` to trigger `charge()` (place the player and
-   enemy aligned and in range, then call `e.update(g)` in a loop until
-   `e.charging` flips true — the technique S94 used, stronger than
-   forcing `attackTime` by hand since it also proves the trigger path
-   itself). Confirm `stun` and `attackTime` count down together for the
-   enemy's own `tell` duration, the enemy stays frozen throughout, the
-   pose shows the whole time, and both expire together with a correct
-   reversion. Test the interrupt case: both enemies have `hurtFrame`, so
-   a mid-windup non-lethal hit should show that instead.
+   drive the real `ai()` through several full hop cycles (not just one)
+   to confirm the windup shows ONLY in the last stretch of each wait,
+   not the whole 34-52 frame rest — this is the one property that
+   distinguishes this session's design from a naive copy of `charge()`'s
+   shape, so prove it explicitly. Confirm the pose clears the instant
+   `_hopState` flips to `'air'`, and test the interrupt case if the
+   enemy has `hurtFrame`.
 7. Run the full regression sweep: `validate.mjs`, `test.mjs` (83/83),
    `check-feel.mjs`, `check-playthrough.mjs` (21/21), `replay.mjs`
    (51/51) — re-record anything that diverges — `check-rippers.mjs`
-   (17/17 if no new extraction, updated if one was made) —
-   `check-build.mjs`.
+   (17/17 if untouched) — `check-build.mjs`. `hop()` is also used by
+   fliers/other motion — check `tools/check-motion.mjs` still passes
+   too, since it specifically asserts lattice behaviour around hops.
 
 ## Done means
-- Both `darknut` and `anglerfry` show a real, distinct pose during their
-  charge windup, proven by an in-engine probe driven through the real
-  AI trigger, not by reading the code.
-- `node tools/check-drift.mjs` shows `darknut: walk,attack,hurt,death`
-  and `anglerfry: walk,attack,hurt,death` (8 of 22 complete, up from 6)
-  — or, if either genuinely cannot get a good pose this session, a
-  clearly stated reason why, not a silent skip.
+- The piloted enemy shows a real, distinct pose ONLY in the last
+  stretch before each hop, proven by an in-engine probe across multiple
+  hop cycles, not by reading the code.
+- `node tools/check-drift.mjs` shows the piloted enemy with `attack` in
+  its set (9 of 22, up from 8, assuming it already has walk/hurt/death).
 - `node tools/validate.mjs`, `node tools/test.mjs` (83/83),
   `node tools/check-feel.mjs`, `node tools/check-playthrough.mjs`
-  (21/21), `node tools/replay.mjs` (51/51), `node tools/check-rippers.mjs`
-  all pass.
+  (21/21), `node tools/replay.mjs` (51/51), `node tools/check-rippers.mjs`,
+  `node tools/check-motion.mjs` all pass.
 - `npm run build`, `dist/oracle-of-tides.html` committed.
 - STATE.md gets one new session-log row (delete the oldest if over 60
   lines).
 
 ## Out of scope
-- The remaining pure-contact enemies with no `shoot()`/`shootRing()`/
-  `charge()` at all (`crab`, `zol`, `gel`, `keese`, `leever`, `tektite`,
-  `urchin`, `jellyfish`, `pincer`) — whether any of these can
-  meaningfully get an `attack` state is a real open question for a
-  FUTURE session to design, not something to improvise here by stretching
-  `charge()` or `attackFrame` onto a mechanic that doesn't have one.
-- `idle` states — still the separate, much larger undertaking noted in
-  `docs/ENEMIES.md`'s own header.
-- Any change to `charge()`'s own speed, range, tell values or damage —
-  art and wiring only, not balance.
+- The other `hop()` user (whichever of `zol`/`tektite` wasn't piloted) —
+  a follow-up survey session picks it up, same cadence as the
+  `shoot()`/`charge()` rosters.
+- `crab`, `gel`, `keese`, `leever`, `urchin`, `jellyfish`, `pincer` — the
+  remaining pure-contact enemies with no `hop()`/`charge()`/`shoot()` at
+  all. Whether any of these has its own hidden windup (the way `hop()`
+  and `charge()` both turned out to) is a real open question for a
+  FUTURE survey, not something to improvise here.
+- `idle` states — still the separate, much larger undertaking.
+- Any change to `hop()`'s own height, distance or speed — art and
+  wiring only, not balance.

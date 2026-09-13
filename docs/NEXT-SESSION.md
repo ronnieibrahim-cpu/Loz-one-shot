@@ -1,3 +1,133 @@
+## S95 — darknut and anglerfry close the charge() attackFrame sub-thread; darknut's own sheet investigated and correctly declined
+
+Picked up right after S94 (STATE.md's own log calls it S49) built
+`attackFrame` support into `charge()` and piloted it on `beetle`. Task:
+survey `darknut` and `anglerfry` (the other 2 `charge()` users) for a
+`beetle_s0`-style reuse before assuming either needs hand-drawn art.
+
+**`anglerfry` checked and correctly ruled out for reuse.** Rendered
+`anglerfry_0` and `anglerfry_1` from the real runtime `enemyb` palette
+and diffed them pixel-by-pixel: 42 of 256 pixels differ, but every
+difference sits in the lure-bob/mouth-chomp region that's already doing
+ordinary idle-cycle duty — a breathing animation, not a distinct "about
+to lunge" shape. Real difference, but the wrong KIND of difference for
+reuse (same test that separated `siren_1`, a genuine reuse, from
+`wisp_1`, correctly rejected at S91).
+
+**`darknut` turned into a real investigation, not a quick check.**
+`darknut_hurt`'s own existing comment — settled ground from S18's
+frame-by-frame flinch-pose survey — already names "a raised-sword
+windup, four side-lunge poses" as present somewhere on the sheet near
+this plate. That comment only ever answered "is any of this a flinch"
+(no), and had never been re-asked "is any of this an attack pose"
+before this session. Wrote a scratch script (not committed) that
+imports `rip-enemies.py`'s own `find_boxes`/`strip_plates` functions
+directly — the exact box-finding logic the real ripper uses, not a
+reimplementation — and rendered a labelled contact sheet of the boxes
+sitting near `darknut`'s known indices (56-59, 82).
+
+**The result was inconclusive, and treated as inconclusive rather than
+stretched into a yes.** The boxes directly below `darknut`'s 4 main
+frames (56/57/58/59) — the same region `darknut_d1` already sources its
+own top half from, via the ripper's `(82, 0.5, 0.0, False)` window
+entry — are oddly-tall MERGED boxes (23-26px instead of the usual 16px),
+each showing what looks like a raised tan arm repeated near-identically
+under all four columns. That repetition is the tell: four genuinely
+different lunge poses would not all show the identical arm shape in the
+identical position relative to each column. It reads far more like
+flood-fill bleed connecting `darknut`'s red/tan sprite to an unrelated
+neighbouring sprite sharing a touching edge, than like four distinct
+attack frames. CLAUDE.md is explicit that composited or guessed-at sheet
+content needs to be believed with real confidence before use, not
+assumed correct because an old comment used the word "pose" — so this
+session declined to extract it, rather than force a confident-sounding
+write-up onto an ambiguous crop.
+
+**A second, independent reason this pose wouldn't have fit even if
+confidently found**: this game's own `darknut` doesn't swing a sword at
+all. Its `ai()` (`src/data/enemies.js`) is explicitly a SHIELD-forward
+charge ("advances steadily with its shield up, then lunges") — a
+"raised sword" pose would have shown the wrong weapon for what this
+specific enemy actually does, regardless of whether the sheet box could
+be confidently read.
+
+**Hand-drew both instead**, following the established "widen an
+existing feature" grammar rather than inventing new silhouette. Rendered
+each base frame in flat debug colours first (not the real palette) when
+the real colours sat too close together to read cleanly — this is what
+made `anglerfry_0`'s fang row unambiguous, where the actual in-game
+blues had blurred together at a glance. `darknut_atk` widens
+`darknut_d0`'s own shield band (row 12 of its grid, `sprites-
+enemies.js`) from a 4-pixel red span to an 8-pixel span, recolouring the
+flanking black pixels to the shield's own red — reads as the shield
+braced wider and thrust further forward, matching the actual charge.
+`anglerfry_atk` widens `anglerfry_0`'s own fang row (rows 13-14) by the
+same 4-pixel technique, reading as the jaw opened wider than either
+existing idle frame shows. Both land in `ENEMY_HURT_ART`
+(`sprites-enemies-hurt.js`, each next to its own `_hurt` entry) and
+`sprite-manifest.js`'s `enemies` list.
+
+Wired `attackFrame: 'darknut_atk'` as ONE non-directional pose — the
+`octorok_atk`/`beetle_s0` shape — since only a front variant was drawn;
+`darknut_s0`/`s1` (side) have no equivalent, so a per-facing scheme
+would need a second new pose anyway. `attackFrame: 'anglerfry_atk'` is a
+plain string, since `anglerfry`'s `frames` is a flat 2-entry array with
+no facings at all.
+
+**Verified in-engine with the real AI actually triggering `charge()`**
+on fresh instances of both, the S94 technique (not `attackTime` forced
+by hand): both show their pose immediately once the charge fires, hold
+for their own `tell` (`darknut` 22, `anglerfry` 26 — `stun` and
+`attackTime` counting down in lockstep the whole time), and revert
+correctly to the ordinary cycle the instant both timers hit 0. Both
+correctly interrupt to their own `hurtFrame` on a mid-windup non-lethal
+hit, matching every prior enemy's confirmed ordering.
+
+`check-drift` now reads `darknut: walk,attack,hurt,death` and
+`anglerfry: walk,attack,hurt,death` — 8 of 22 enemies with a complete
+set, up from 6. validate/test(83/83)/check-feel all green.
+check-playthrough 21/21 and replay.mjs 51/51 BOTH unchanged.
+check-rippers 17/17 — `sprites-enemies.js` confirmed byte-identical
+before AND after (re-ran the ripper unmodified first, per the standing
+discipline, since this session's own investigation involved reading the
+sheet closely enough that a stray edit would have been easy to miss).
+check-build OK, dist rebuilt.
+
+**ALL 3 `charge()` users now have `attackFrame`.** Combined with the
+complete `shoot()`/`shootRing()` roster (S88 through S93), every ranged
+AND every melee-lunge enemy in the game now telegraphs its attack before
+it lands. That closes the second and last mechanism-driven sub-thread
+this objective has run since S88.
+
+**What's left for objective #4 is genuinely structural, not another
+survey-and-wire session.** Two real gaps, both already flagged in
+`docs/ENEMIES.md`'s own header and repeated across many prior sessions
+without either being started:
+
+1. **9 pure-contact enemies have no natural attack hook at all** —
+   `crab`, `zol`, `gel`, `keese`, `leever`, `tektite`, `urchin`,
+   `jellyfish`, `pincer` deal damage purely by touch, with no
+   `shoot()`/`shootRing()`/`charge()` anywhere in their `ai()`. There is
+   no existing windup moment to attach `attackFrame` to the way there
+   was for the 11 enemies just finished — giving any of them a real
+   `attack` state means designing a NEW telegraph for whatever their
+   contact AI actually does (a hop's peak, a burrow-up moment, an
+   erratic flight turn), which is a design question this session
+   correctly did not try to improvise an answer to.
+2. **`idle` states are completely unaddressed, roster-wide.** Every
+   enemy's `spec.frames` today IS its walk cycle; there is no separate
+   idle animation or field anywhere in the engine. This has been called
+   "the separate, much larger undertaking" since at least S42
+   (STATE.md's numbering) and no session has yet scoped what it would
+   actually take.
+
+Next session should pick ONE of these two and actually scope it —
+survey which of the 9 contact enemies has a natural pause-then-strike
+moment already built into its movement (the same way `charge()`'s
+`tell` turned out to have one hiding in plain sight), or scope what an
+`idle` field would need from the engine — rather than looking for a
+fourth ranged/melee mechanism that does not exist.
+
 ## S94 — charge() gets its own attackFrame plumbing, and beetle turns out to be another reuse
 
 Picked up right after S93 (STATE.md's own log calls it S48) closed the

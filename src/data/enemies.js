@@ -321,6 +321,11 @@ export function installEnemies() {
     },
     hurtFrame: 'darknut_hurt',
     deathFrame: 'darknut_death',
+    // One non-directional pose (like octorok_atk/beetle_s0), not per-facing:
+    // only a front pose was drawn (darknut_atk, sprites-enemies-hurt.js) —
+    // darknut_s0/s1 (side) have no equivalent shield-braced variant, so a
+    // per-facing set would need a second new pose anyway.
+    attackFrame: 'darknut_atk',
     hb: { x: 2, y: 4, w: 12, h: 11 },
     shield: 'front',
     drops: 'rich',
@@ -367,6 +372,7 @@ export function installEnemies() {
     frames: ['anglerfry_0', 'anglerfry_1'],
     hurtFrame: 'anglerfry_hurt',
     deathFrame: 'anglerfry_death',
+    attackFrame: 'anglerfry_atk',
     drops: 'good',
     tideOnly: [1, 2],
     ai(e, g) {

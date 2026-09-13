@@ -233,6 +233,49 @@ export const ENEMY_HURT_ART = {
     3000333330030003
     .33333333333333.` ,
 
+  // Darknut attack (charge()'s tell windup, ENEMY_ATTACK_FRAMES-equivalent
+  // — this enemy's own tell, 22f) — drawn: `darknut_hurt`'s own comment
+  // above already names what the sheet has near this plate ("a raised-
+  // sword windup, four side-lunge poses") from S18's frame-by-frame check
+  // for a FLINCH pose. Re-examined those same boxes with an ATTACK pose in
+  // mind instead (boxes directly below darknut_d0/_death/_s0/_s1 in the
+  // sheet's own layout, the same region `darknut_d1` already draws its top
+  // half from) — inconclusive. Each is an oddly-tall, irregular box (the
+  // flood-fill merging two touching sprites rather than one clean frame),
+  // and what's visible reads as a raised tan ARM/fist repeated identically
+  // under all four Darknut boxes, which is more consistent with bleed from
+  // an unrelated neighbouring sprite than with four distinct lunge poses of
+  // this knight — not a confident extraction (CLAUDE.md: compositing or
+  // guessing at sheet content needs to be believed, not assumed). Hand-
+  // drawn instead, rather than risk mis-extracting. This game's own
+  // `darknut` doesn't swing a sword at all — `ai()` (src/data/enemies.js)
+  // is a shield-forward charge, not a sword lunge — so a sword-raise pose
+  // would have shown the wrong weapon anyway even if confidently found.
+  // `darknut_d0`'s own grid (sprites-enemies.js) is reused pixel-for-pixel
+  // except the shield band along its own bottom edge (row 12): widened
+  // from a 4-pixel red span (columns 6-9) to an 8-pixel span (columns
+  // 4-11) by recolouring the flanking black pixels to the shield's own
+  // red — reads as the shield braced wider and further forward, matching
+  // the actual attack rather than an invented weapon. 4 pixels changed;
+  // helmet, visor and gauntlets all untouched.
+  darknut_atk: `
+    ..33........333.
+    ..3033333333003.
+    ..303100013003..
+    ...31310133033..
+    ...313333313333.
+    .333130303113003
+    3003113331113103
+    3013111311113113
+    3113111311113333
+    3333311311333113
+    3113333333333113
+    3333330001133333
+    3001111111111003
+    3000333333330003
+    3000333330030003
+    .33333333333333.` ,
+
   // Moblin hurt — drawn: assets/sheets/oracle-seasons-enemies.png's own
   // "Moblin & Goriya" plate was checked frame by frame the same way S18
   // checked Darknut's — idle front/back, two side-holding-spear poses, a
@@ -421,6 +464,39 @@ export const ENEMY_HURT_ART = {
     3000013000113003
     .310131001133003
     ..333111113..33.
+    .....33333......` ,
+
+  // Anglerfry attack (charge()'s tell windup, this enemy's own tell, 26f)
+  // — drawn: the "Cheep-Cheep" plate `anglerfry` substitutes in (per
+  // `anglerfry_death`'s own header, below) has only the two frames already
+  // in `anglerfry_0`/`_1`, an idle lure-bob/chomp cycle rather than a
+  // windup — checked with an attack telegraph specifically in mind, same
+  // result. Rendered `anglerfry_0` in flat debug colours (not the real
+  // runtime palette) before drawing, since its actual blues sit close
+  // enough together to blur which pixels are body versus fang at a glance
+  // — that made the fang row (row 14, the sheet's own light-on-dark zigzag
+  // along the jaw) unambiguous. `anglerfry_0`'s own grid (sprites-
+  // enemies.js) is reused pixel-for-pixel except that fang band: widened
+  // by recolouring one black outline pixel to fang colour on each side, at
+  // both row 13 and row 14 (4 pixels total), so the jaw reads as opened
+  // wider than either existing idle frame shows — the lunge telegraph,
+  // not the ordinary breathing cycle. Eyes, lure and fins all untouched.
+  anglerfry_atk: `
+    ......3333......
+    .....300003.....
+    ...333333003....
+    ..30300333003...
+    .3000000333333..
+    .3030300333003..
+    .3030300330003..
+    .3000000300003..
+    .3333003330033..
+    .30003330033333.
+    3000003000013003
+    3033003000013003
+    3000013000113003
+    .110131001131003
+    ..331111111..33.
     .....33333......` ,
 
   // octorokSea hurt — drawn: assets/sheets/oracle-seasons-enemies.png's own
