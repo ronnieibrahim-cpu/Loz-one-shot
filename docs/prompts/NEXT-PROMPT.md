@@ -1,61 +1,54 @@
-# Next session — finish the Drowned Wood except its two flagged rooms
+# Next session — open the reef region's north row
 
 ## Read first
-- `docs/AUDITED-ROOMS.md` — 52 rows so far (S64-S72). Wood is 7/15 (South
-  Wood, The Wading, Wood Foot, Bog Trees, Wood Heart, Sunken Glade, Wood
-  Verge). Coast, marsh and dunes are fully done.
-- `docs/prompts/LEDGER.md`'s "Known and deliberately unfixed" section, the
-  S72 bullet on three visual patterns that look like defects and aren't
-  (flying-enemy shadows, a shore-adjacent `grassTuft` variant, tree canopy
-  overhanging a water cell via `Room.quadCanopySolid`) — don't re-spend a
-  session chasing any of the three again.
-- CLAUDE.md's own hard-won-lessons list, the "solid tile can strand a
-  room" entry — it names **The Gyre** (`0,7,3`) and **Drowned Hollow**
-  (`0,7,4`) by name as rooms a tree-crown fix once silently severed while
-  every checker but `check-strands.mjs` stayed green. They are NOT in
-  this session's list (see "Out of scope").
+- `docs/AUDITED-ROOMS.md` — 60 rows so far (S64-S73). Coast, marsh, dunes
+  and the whole Drowned Wood (15/15) are fully done. Reef is untouched.
+- `docs/prompts/LEDGER.md`'s "Known and deliberately unfixed" section,
+  the S72 bullet on three visual patterns that look like defects and
+  aren't (flying-enemy shadows, a shore-adjacent `grassTuft` variant, a
+  tree canopy overhanging a water cell) — don't re-spend a session
+  chasing any of the three again. Also the S70/S73 pattern: if the
+  default screenshot spot puts Link on top of an enemy's own spawn tile
+  and the two sprites blend oddly, re-shot with a different `--px/--py`
+  before calling it a defect.
 - `docs/prompts/STATE.md` — objective #6 and its allowlist.
 
 ## Why this, now
-S72 finished wood's rows 5 and 6. Rows 3 and 4 are the only wood rooms
-left, and two of those eight (The Gyre, Drowned Hollow) are the exact
-rooms CLAUDE.md flags as having been silently severed once already — they
-need a dedicated, careful session, not a rushed add-on to a six-room
-batch. Doing the other six now keeps the batch honest instead of skipping
-straight past the whole row because two of its rooms are risky.
+S73 finished the whole Drowned Wood, including a careful look at the two
+rooms (The Gyre, Drowned Hollow) CLAUDE.md flags by name for a historical
+tree-crown severing — both confirmed clean, `check-strands.mjs` still at
+its established baseline. The reef region (legend `reef`, `rx` 8-11 x
+`ry` 0-3, 16 rooms) is the next fully self-contained block and has not
+been touched this rotation.
 
 ## The task
-Same method as the last 9 sessions: `tools/shoot-rooms.mjs
+Same method as the last 10 sessions: `tools/shoot-rooms.mjs
 overworld,<rx>,<ry> --tide=0/1/2` for each of the six rooms below (add
 `--dpr=4`+ and/or a different `--px/--py` to zoom into a sprite or a tile
-seam), zoom every ground boundary and every sprite, write one verdict row
-each to `docs/AUDITED-ROOMS.md`. If a visual read is ambiguous, query
+seam, or to move Link off an enemy's own spawn tile), zoom every ground
+boundary and every sprite, write one verdict row each to
+`docs/AUDITED-ROOMS.md`. If a visual read is ambiguous, query
 `room.tile(tx,ty,tide)` or the relevant `Room` method directly in a
-throwaway Playwright script rather than trusting the screenshot crop (see
-S70/S72's own STATE.md rows for the method). Run `node
-tools/check-strands.mjs` once at the end of the batch and confirm it's
-still at its baseline before calling the session done.
-- `overworld,4,3` (Wood Edge), `overworld,5,3` (Rotting Grove),
-  `overworld,6,3` (Wood Gate) — row 3, skipping `overworld,7,3` (The Gyre).
-- `overworld,4,4` (Shrine Path), `overworld,5,4` (Shrine Mouth),
-  `overworld,6,4` (Log Drift) — row 4, skipping `overworld,7,4` (Drowned
-  Hollow).
+throwaway Playwright script rather than trusting the screenshot crop.
+Run `node tools/check-strands.mjs` once at the end of the batch and
+confirm it's still at its baseline before calling the session done.
+- `overworld,8,0` (Coral Gate), `overworld,9,0` (Palace Wall),
+  `overworld,10,0` (Tide Steps), `overworld,11,0` (East Spire) — reef's
+  whole top row.
+- `overworld,8,1` (Reefway), `overworld,9,1` (Hooked Channel) — the start
+  of reef's row 1.
 
 ## Done means
-- `node tools/check-drift.mjs`'s audit count goes from 52 to 58.
+- `node tools/check-drift.mjs`'s audit count goes from 60 to 66.
 - `node tools/check-strands.mjs` still reports no new multi-cell region.
 - Any real fix made is verified (screenshot + relevant checker).
 - STATE.md gets one new session-log row.
 
 ## Out of scope
-- `overworld,7,3` (The Gyre) and `overworld,7,4` (Drowned Hollow)
-  specifically — CLAUDE.md's own hard-won-lessons list names both as
-  already having been silently severed once; they need their own
-  dedicated session with `check-strands.mjs` run per-room, not folded
-  into this six-room batch.
+- `overworld,10,1` / `overworld,11,1` and the rest of reef's rows 2-3 —
+  next session's batch, not this one's.
 - Re-opening npc-detail (#5) or enemy-roster (#4).
-- Advancing `OBJECTIVE OF RECORD` — #6 needs many more than 58.
+- Advancing `OBJECTIVE OF RECORD` — #6 needs many more than 66.
 - Re-flagging a flying-enemy shadow, a wet-neighbour `grassTuft` variant,
-  or a tree canopy overhanging a water cell as a defect without first
-  checking the S72 ledger entry — all three are traced, deliberate engine
-  behaviour, not bugs.
+  a tree canopy overhanging a water cell, or a spawn-position sprite
+  overlap as a defect without first checking the S72/S73 ledger entries.
