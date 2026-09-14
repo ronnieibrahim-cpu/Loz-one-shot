@@ -1,4 +1,4 @@
-OBJECTIVE OF RECORD: 5 npc-detail
+OBJECTIVE OF RECORD: 6 region-art
 
 ROTATION (fixed, do not reorder):
   1 wide-rooms      — 3 of 6 dungeons have a 2x2 or 3x1
@@ -29,32 +29,32 @@ ROTATION (fixed, do not reorder):
   8 feel-measure    — done when >=40 feel.js constants are tagged
                       `measured` against the emulator
 
-FILE ALLOWLIST for the current objective (5 npc-detail):
-  docs/NPCS.md — NEW: one row per named NPC/trader (key, sprite, dialogue
-    states), sprite-reuse table, design notes as art lands
-  tools/check-drift.mjs — new npc-detail metric, reading MAPS directly
-    (pattern: section 6's enemy census), never re-parsed from text
-  src/data/overworld.js — npc/trader placements only (sprite/dialogue/
-    after/waiting/deals[].text); never room maps/legends
-  src/data/sprites-npcs.js — GENERATED (rip-npcs.py). Never hand-edit
-  tools/rip-npcs.py — only for a real spare sheet frame, rip-enemies.py's
-    method
-  src/data/story.js — DIALOGUE text only, for a genuinely new state
+FILE ALLOWLIST for the current objective (6 region-art):
+  docs/AUDITED-ROOMS.md — one row per overworld room actually looked at:
+    key, region, name, date, one-sentence verdict (header names the exact
+    column order tools/check-drift.mjs parses — don't reorder it)
+  tools/shoot-rooms.mjs — screenshot tool, already exists; use it, don't
+    fork it. `node tools/shoot-rooms.mjs overworld,rx,ry` per room
+  docs/ART-DIRECTION.md — read-only reference for what to check a room
+    against; only edit if this session finds the rule itself wrong
+  src/data/overworld.js, src/data/tiles-terrain.js — ONLY for a confirmed
+    art defect found while auditing, not proactive polish; re-screenshot
   dist/oracle-of-tides.html
   docs/NEXT-SESSION.md
   docs/prompts/LEDGER.md
 
-Note (keep): #2 done S9/S74 (untagged 175 = non-sprite regex noise,
-S70-S74). #3 done S75 (docs/ART-BACKLOG.md, all 8 bosses hand-drawn,
-reasoned). #4 done S59 (human decision): hurt/death/attack complete or
-structurally-blocked roster-wide (S25/S41/S58); idle deliberately
-urchin-only, the other 8 judged against its bar and none clear it
-(S55/S57), person running sessions confirmed no further idle art (S59).
-Wrong on any of these three -> revert OBJECTIVE OF RECORD.
+Note (keep): #2 done S9/S74 (untagged 175 = non-sprite regex noise).
+#3 done S75 (docs/ART-BACKLOG.md, all 8 bosses hand-drawn, reasoned).
+#4 done S59 (human decision): hurt/death/attack complete or structurally-
+blocked roster-wide; idle urchin-only, other 8 judged against its bar
+and none clear it (S55/S57), human confirmed no further idle art.
+#5 done S63 (human decision): dialogue complete roster-wide (S60);
+sprite uniqueness 13/22 (S61 spent 3 free sprites, S62 extracted 1 new),
+remaining 9 have no extraction path left (both sheets exhausted, S62),
+human confirmed no further hand-drawn NPC art. Wrong on any -> revert.
 
 DETOUR TOKENS: 0
 
 SESSION LOG: one row per session — `S## | objective|detour | one line`
-S59 | objective | NEXT-PROMPT.md's whole task was getting the idle-art judgement call answered rather than deciding it alone (docs/ENEMIES.md's "Idle states" section already showed every one of the 8 remaining candidates failing urchin's own design-merit bar, independent of the art question). Put it to the person running these sessions directly: hand-draw one anyway, or close the thread. Answer: leave it alone. Followed up with the natural next question — since hurt/death/attack were already closed roster-wide (S25/S41/S58) and idle is now closed too, objective #4 (enemy-roster) has no further open work under its current allowlist; asked whether to mark it done and advance the rotation. Answer: yes, advance. STATE.md rewritten: OBJECTIVE OF RECORD -> 5 npc-detail, allowlist rewritten for it (docs/NPCS.md is new — no such file existed), enemy-roster's closure reasoning folded into the Note line. Zero code changes (no file outside STATE.md/NEXT-PROMPT.md/LEDGER.md touched); check-drift/check-playthrough/build re-run to confirm nothing regressed while idle
-S60 | objective | Per NEXT-PROMPT.md's own task, built objective #5's first real measurement rather than guessing at scope. Added an npc-detail section to tools/check-drift.mjs reading MAPS directly (every 'npc'/'trader' entity literal, overworld AND interiors, identity = dialogue field for an npc / first deals[].text for a trader — both already-unique ids) and wrote docs/NPCS.md from the same data. Finding: dialogue states are ALREADY done roster-wide (22 of 22 have >=2 — every ordinary villager already carries an Essence-gated second line per story.js's own "second states" block, every trader already has waiting+trade+after). The real gap is sprite uniqueness only: 7 of 22 identities have a sprite nobody else uses; 6 sprites are shared across 15 identities, worst case npc_fisher covering 4 separate named characters (Mirren/fisher1/Teel/Ossa) who read as the same person on sight. No sprite touched, extracted, or reassigned this session — docs/NPCS.md says explicitly this was the count, not the fix. Zero src/ changes outside the one metric addition; full regression: check-drift self-checks OK, test.mjs 83/83, check-playthrough 21/21, npm run build (dist unchanged, tools/ isn't bundled)
-S61 | objective | Per NEXT-PROMPT.md's own task, spent the 3 already-extracted-but-unused NPC sprites S60 found (npc_elder, npc_zelda, npc_brinewife) to break 3 of the 5 generic-reuse sprite collisions, zero new art: hearthWife npc_villager2->npc_brinewife (also fully clears villager2's old collision), Ossa npc_fisher->npc_zelda (also fixes Ossa reading as a man despite her own lines; trims npc_fisher's group 4->3), sandpiper npc_villager->npc_elder (also fully clears Dov's old collision, fits her netMender line addressing the player as "boy"). Each checked in-engine with tools/shoot-rooms.mjs, screenshotted, confirmed rendering correctly and distinctly from the old sprite. Left npc_salter_d (shoreSalter/Hulla) alone on purpose, per docs/NPCS.md's own finding that both spread the same FOLK.salter preset and both characters' own dialogue lines identify them as Salters — a likely-deliberate clan uniform, still pending a call from the person running these sessions rather than defaulted into a fix (same posture as the idle-art question, not re-asked this session since the reasoning was already written down and low-stakes/reversible). Ran python3 tools/rip-npcs.py and rip-races.py first to confirm byte-identical reproduction before touching anything, per CLAUDE.md's extraction rule. Did an informal sheet scan (pip install pillow, tools/ripkit.py's own find_sprites) for further spare frames to close npc_fisher's remaining 3-way and npc_child's 3-way collisions; found mostly walk-cycle repeats and unrelated soldier/Zora art, one unconfirmed recolour-shaped candidate flagged in docs/NPCS.md rather than rushed into an extraction. check-drift now reads 12 of 22 unique, up from 7. Full regression: check-drift self-checks OK, test.mjs 83/83 (0 unauthored art names), validate.mjs OK, check-playthrough 21/21, check-rippers.mjs 17/17 (no generated file hand-edited), npm run build (dist changed, src/data/overworld.js did)
+S62 | objective | Per NEXT-PROMPT.md's own task, did the full sheet audit S61 only started informally. Confirmed pip/pillow, re-ran rip-npcs.py and rip-races.py first (byte-identical). Rendered and looked at ALL 71 unclaimed blobs on oracle-seasons-npcs.png (two batches, both actually viewed) rather than trusting a palette score — almost entirely soldiers/Zoras/Subrosians/decorative urns/birds and walk-cycle repeats of already-used archetypes, plus what reads as a reserved third oracle-recolour figure (red-haired, paired portraits, same trick as farore/zelda) never placed anywhere. Two ambiguous candidates (index 9: arm-raised holding-an-item pose; index 16: possible helmeted/armoured face) were LOOKED AT CLOSELY and rejected rather than guessed into service — closer crops read as action poses or armour, not clean standing townsfolk. One clean candidate found and extracted: index 69, a genuinely different silhouette (both arms low holding a basket) from npc_fisher's arms-at-sides stance, not a recolour. Added to rip-npcs.py's FRAMES as npc_fisher2 with a comment, regenerated, assigned to Mirren (whose own line is about carrying catch — fits), verified in-engine (shoot-rooms.mjs overworld,5,7, screenshotted, reads as a distinct person beside fisher1's unchanged sprite). npc_fisher's group trims 3->2. Also checked oracle-seasons-nonhuman-races.png (npc_hood_blue's source) by reading rip-races.py's own header: only 4 canonical silhouettes exist, all already extracted — no fifth silhouette for a Wick/Sennit fix; that group has no extraction path left, same open-question shape as npc_salter_d. check-drift now reads 13 of 22 unique. docs/NPCS.md rewritten (Landed — S62, updated census/groups/what's-left). Full regression: check-drift self-checks OK, test.mjs 83/83 (0 unauthored art names), check-rippers.mjs 17/17, check-playthrough 21/21, npm run build (dist changed)
+S63 | objective | Put the remaining npc-detail question to the person running these sessions directly, following the idle-art precedent rather than deciding alone: 9 identities across 3 groups (npc_fisher 2, npc_child 3, npc_hood_blue 2) plus npc_salter_d (2, likely-deliberate clan hood) have no extraction path left after S62 confirmed both source sheets exhausted — hand-draw new portraits for the rest, or call npc-detail done with the gap documented. Answer: call it done, advance. STATE.md rewritten: OBJECTIVE OF RECORD -> 6 region-art, allowlist rewritten (docs/AUDITED-ROOMS.md is empty — 0 of ~120 overworld rooms have a verdict), npc-detail's closure reasoning folded into the Note line. Zero code changes this session (decision + STATE.md/LEDGER.md only)

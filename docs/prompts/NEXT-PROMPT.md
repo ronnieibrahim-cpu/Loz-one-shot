@@ -1,71 +1,70 @@
-# Next session — extract new faces for the last 8 villagers
+# Next session — audit the village screens' art
 
 ## Read first
-- `docs/NPCS.md` — S61's "What's left" section: 3 collisions remain
-  (`npc_fisher` x3, `npc_child` x3, `npc_hood_blue` x2), all already-
-  extracted spares are spent, and an informal scan flagged sheet index
-  69 (`oracle-seasons-npcs.png`) as an unconfirmed candidate.
-- `tools/rip-npcs.py` and `tools/rip-races.py` — the FRAMES coordinate
-  maps to extend. `npc_hood_blue` comes from `rip-races.py`'s sheet
-  (check its own `SHEET` constant), the other two from `rip-npcs.py`'s.
-- `docs/prompts/STATE.md` — objective #5's allowlist and done-condition
-  (22 of 22 unique; currently 12 of 22).
+- `docs/AUDITED-ROOMS.md` — currently empty (header only). This session
+  writes its first real rows.
+- `docs/ART-DIRECTION.md` — the measured rules to check each room
+  against (colour count, outline, no anti-aliasing, ground boundaries
+  as a straight composited edge not a hard pixel cut, no mixed
+  registers). `docs/ART-BACKLOG.md`'s landed entries (the shore rim,
+  ground-boundary work) for what's already been fixed project-wide —
+  don't re-flag those as new findings.
+- `docs/prompts/STATE.md` — objective #6 (region-art) and its allowlist.
 
 ## Why this, now
-S60 measured the objective (dialogue done roster-wide; sprite uniqueness
-the real gap, 6 groups). S61 spent the free lunch — three sprites already
-extracted and sitting unused — closing 3 of 6 groups at zero art cost and
-checking each in-engine. What's left needs actual new extraction: no
-further already-extracted NPC sprite exists unclaimed. `npc_fisher`
-(Mirren/`fisher1`/Teel) and `npc_child` (`villageChild`/Pell/
-`hearthChild`) both need a genuinely new source; `npc_hood_blue` (Wick/
-Sennit) is the smaller of the three, 2 identities. S61's informal sheet
-scan (not a full audit — `find_sprites` over `oracle-seasons-npcs.png`'s
-92 blobs, most of which are soldiers/Zoras/Subrosians per the ripper's
-own comment, not townsfolk) found index 69 as one plausible recolour of
-the fisher archetype but did not confirm it or look at the races sheet
-at all for a `npc_hood_blue` alternative.
+Objective #5 (npc-detail) closed S63 with the person running these
+sessions confirming the remaining sprite gaps should stay as documented,
+not hand-drawn. Rotation moves to #6, region-art: "done when 90 of ~90
+overworld rooms are in docs/AUDITED-ROOMS.md with a verdict." That file
+is completely empty — every mechanical checker in CLAUDE.md's table
+(`check-ground.mjs`, `check-placement.mjs`, `check-strands.mjs`, etc.)
+already passes for the whole map, but none of them looks at a room and
+asks "does this actually read as an Oracle of Seasons/Ages screen" —
+that's a visual judgement call no automated tool makes, which is the
+entire reason this rotation objective exists.
 
 ## The task
-1. Render a labelled contact sheet of every unclaimed blob on
-   `assets/sheets/oracle-seasons-npcs.png` (`tools/ripkit.py`'s
-   `find_sprites`, same call `rip-npcs.py` uses: `size=16, y1=200`) and
-   look at it directly — don't trust a palette-similarity score alone,
-   per `docs/ENEMIES.md`'s S57 lesson (a shared colour family is not the
-   same character). Confirm or reject index 69 first since it's already
-   flagged, then look at the rest of the sheet for anything else usable
-   as a front-facing townsperson (not a soldier, Zora, or Subrosian —
-   `rip-npcs.py`'s own header names what this sheet's crowd art wants).
-2. Do the same for `assets/sheets/oracle-seasons-races.png` (or whatever
-   `rip-races.py`'s `SHEET` constant actually names — check it, don't
-   assume) for a second `npc_hood_blue`-style recolour.
-3. For each confirmed candidate: add it to the relevant ripper's `FRAMES`
-   dict with a comment saying what it is and why it's a real, distinct
-   pose/recolour (the same discipline `docs/ENEMIES.md`'s hand-drawn
-   entries use), regenerate (`python3 tools/rip-npcs.py` /
-   `rip-races.py`), reassign the sprite in `src/data/overworld.js`, and
-   verify in-engine (`tools/shoot-rooms.mjs`, screenshotted) the same way
-   S61 checked its three reassignments.
-4. If a group's collision can't be closed by extraction (checked and
-   genuinely nothing fits), say so plainly in `docs/NPCS.md` rather than
-   force a bad match — a soldier recoloured as a fisherman would fail
-   `docs/ART-DIRECTION.md`'s register even if the palette technically
-   passes.
+Audit the four Tidewatch Village screens — the smallest, most central
+cluster, and a reasonable first batch to establish the process other
+sessions will repeat: `overworld,4,7` (Tidewatch Village), `overworld,5,7`
+(Village East), `overworld,4,8` (Village Shore), `overworld,5,8`.
+1. Screenshot each at all three tide levels worth checking (`tools/
+   shoot-rooms.mjs overworld,4,7 --tide=0`, `--tide=1`, `--tide=2` — a
+   room can look right at one tide and wrong at another; terrain that
+   changes with the tide is exactly where a seam is most likely).
+2. Look at each shot against `docs/ART-DIRECTION.md`'s rules: does the
+   ground read as one of the source games' own tile vocabularies, are
+   boundaries between ground types composited rather than a hard pixel
+   cut, is every decorative object (rock/tree/bush) drawn whole rather
+   than clipped, does anything look hand-drawn next to extracted art in
+   a way that betrays which is which.
+3. Write one row per room per this file's own header format (key,
+   region — use "Tidewatch Village" for all four, name, date,
+   one-sentence verdict) to `docs/AUDITED-ROOMS.md`. A verdict that
+   found nothing wrong is still a verdict — "checked against
+   ART-DIRECTION.md at all 3 tides, no defect found" is a complete,
+   honest row, not a placeholder.
+4. If a real defect turns up, it's in scope to fix (allowlist covers
+   `src/data/overworld.js`/`tiles-terrain.js` for exactly this) — but
+   re-screenshot and re-run the relevant checker from CLAUDE.md's table
+   afterward, and don't go looking for extra polish beyond what the
+   audit actually found.
 
 ## Done means
-- `node tools/check-drift.mjs`'s npc-detail line shows progress past 12
-  of 22 (or an explicit, written reason for each group still stuck).
-- `node tools/check-rippers.mjs` still green (18+ assertions if a ripper
-  gained an entry — it re-derives its own count).
-- Every newly-assigned sprite confirmed in-engine, not just in data.
-- STATE.md gets one new session-log row (delete the oldest if over 60
-  lines); `docs/NPCS.md` rewritten to match the new census.
+- `docs/AUDITED-ROOMS.md` has 4 new rows, correctly formatted (`node
+  tools/check-drift.mjs`'s "Overworld room audits" count goes from 0 to
+  4 and self-checks stay green).
+- Any fix made is verified (screenshot + the relevant checker), not just
+  asserted.
+- STATE.md gets one new session-log row.
 
 ## Out of scope
-- Touching `shoreSalter`/Hulla (`npc_salter_d`) — still an open question
-  for the person running these sessions, not this session's to resolve.
-- Hand-drawing new NPC art before the sheet check above comes back empty
-  for a given group.
-- Re-running S60's full census from scratch — read `docs/NPCS.md`.
-- Advancing `OBJECTIVE OF RECORD` before 22 of 22 (or a written, reasoned
-  ceiling below it) is reached.
+- Auditing rooms outside the four named above — this is deliberately one
+  small batch to prove the process, not the whole map in one session.
+- Re-opening npc-detail (#5) or enemy-roster (#4) — both closed by an
+  explicit human decision, not this session's to revisit.
+- Advancing `OBJECTIVE OF RECORD` — #6 needs 90 of ~90 rooms audited,
+  not 4.
+- Inventing a canonical region-name partition — `tools/check-drift.mjs`
+  already notes none exists; use plain names consistently, don't design
+  a taxonomy.

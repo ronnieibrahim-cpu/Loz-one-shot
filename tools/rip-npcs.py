@@ -36,6 +36,13 @@ FRAMES = {
     'npc_child': 51,         # child, front
     'npc_elder': 17,         # bald elder, front
     'npc_shopkeeper': 20,    # fair-haired man in blue, front
+    # A second, genuinely different coastal-worker pose: red kerchief, green
+    # vest, both arms drawn low holding a red basket/creel against the body —
+    # a different silhouette from npc_fisher's arms-at-sides stance, not a
+    # recolour of it. Found by a whole-sheet pass (S62) after the sprite it
+    # breaks a collision for (npc_fisher, shared by 3 named traders/villagers
+    # as of S61) had no other unused extracted art left to spend.
+    'npc_fisher2': 69,
     # The sheet has no oracle, so Farore borrows a townswoman and is recoloured
     # green below — the Oracle series' own palette-swap trick. Two frames of the
     # same woman, so the recolour reads as one person breathing.

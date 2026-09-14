@@ -1794,7 +1794,7 @@ const rooms = {
       // Coastwise Chain, link 4. Mirren stands at the lip of the tide pool,
       // which is where a fisher stands.
       ['trader', 6, 3, {
-        sprite: 'npc_fisher', waiting: 'coastFisher', after: 'mirrenAfter',
+        sprite: 'npc_fisher2', waiting: 'coastFisher', after: 'mirrenAfter',
         deals: [{ stage: 4, wants: 'brick', gives: 'eel', text: 'mirrenTrade' }],
       }],
       // The village child, moved out of the strip behind the old shop. There
