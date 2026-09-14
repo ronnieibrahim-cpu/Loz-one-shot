@@ -1,70 +1,57 @@
-# Next session — audit the village screens' art
+# Next session — audit the six rooms ringing the village
 
 ## Read first
-- `docs/AUDITED-ROOMS.md` — currently empty (header only). This session
-  writes its first real rows.
-- `docs/ART-DIRECTION.md` — the measured rules to check each room
-  against (colour count, outline, no anti-aliasing, ground boundaries
-  as a straight composited edge not a hard pixel cut, no mixed
-  registers). `docs/ART-BACKLOG.md`'s landed entries (the shore rim,
-  ground-boundary work) for what's already been fixed project-wide —
-  don't re-flag those as new findings.
-- `docs/prompts/STATE.md` — objective #6 (region-art) and its allowlist.
+- `docs/AUDITED-ROOMS.md` — 4 rows so far (Tidewatch Village's own 4
+  screens, S64). Same format, same standard, one row each for 6 more.
+- `docs/ART-DIRECTION.md` — the rules each room gets checked against.
+- `docs/prompts/STATE.md` — objective #6 and its allowlist.
 
 ## Why this, now
-Objective #5 (npc-detail) closed S63 with the person running these
-sessions confirming the remaining sprite gaps should stay as documented,
-not hand-drawn. Rotation moves to #6, region-art: "done when 90 of ~90
-overworld rooms are in docs/AUDITED-ROOMS.md with a verdict." That file
-is completely empty — every mechanical checker in CLAUDE.md's table
-(`check-ground.mjs`, `check-placement.mjs`, `check-strands.mjs`, etc.)
-already passes for the whole map, but none of them looks at a room and
-asks "does this actually read as an Oracle of Seasons/Ages screen" —
-that's a visual judgement call no automated tool makes, which is the
-entire reason this rotation objective exists.
+S64 proved the process on the 4 village screens: screenshot at all 3
+tides, zoom every ground-type boundary to confirm a composited edge (not
+a hard pixel cut), check every sprite for register consistency, write an
+honest verdict either way. Zero defects found there. Region-art needs 90
+of ~120 rooms audited; this keeps building outward from the village
+rather than jumping to a random distant room, so a defect that spans a
+seam between two already-audited screens (a real risk CLAUDE.md's own
+traps list calls out — see `check-strands.mjs`'s entry) stays visible.
 
 ## The task
-Audit the four Tidewatch Village screens — the smallest, most central
-cluster, and a reasonable first batch to establish the process other
-sessions will repeat: `overworld,4,7` (Tidewatch Village), `overworld,5,7`
-(Village East), `overworld,4,8` (Village Shore), `overworld,5,8`.
-1. Screenshot each at all three tide levels worth checking (`tools/
-   shoot-rooms.mjs overworld,4,7 --tide=0`, `--tide=1`, `--tide=2` — a
-   room can look right at one tide and wrong at another; terrain that
-   changes with the tide is exactly where a seam is most likely).
-2. Look at each shot against `docs/ART-DIRECTION.md`'s rules: does the
-   ground read as one of the source games' own tile vocabularies, are
-   boundaries between ground types composited rather than a hard pixel
-   cut, is every decorative object (rock/tree/bush) drawn whole rather
-   than clipped, does anything look hand-drawn next to extracted art in
-   a way that betrays which is which.
-3. Write one row per room per this file's own header format (key,
-   region — use "Tidewatch Village" for all four, name, date,
-   one-sentence verdict) to `docs/AUDITED-ROOMS.md`. A verdict that
-   found nothing wrong is still a verdict — "checked against
-   ART-DIRECTION.md at all 3 tides, no defect found" is a complete,
-   honest row, not a placeholder.
-4. If a real defect turns up, it's in scope to fix (allowlist covers
-   `src/data/overworld.js`/`tiles-terrain.js` for exactly this) — but
-   re-screenshot and re-run the relevant checker from CLAUDE.md's table
-   afterward, and don't go looking for extra polish beyond what the
-   audit actually found.
+Audit the six overworld rooms directly adjacent to the four already-done
+village screens: `overworld,3,7` (West Bluff), `overworld,6,7` (Sunken
+Reef), `overworld,7,7` (Shallows Gate), `overworld,3,8` (Shell Beach),
+`overworld,6,8` (East Strand), `overworld,7,8` (Dune Crossing). Same
+method S64 used:
+1. `tools/shoot-rooms.mjs overworld,<rx>,<ry> --tide=0/1/2` for each.
+2. Look at every ground-type boundary (crop and zoom, don't judge from
+   the thumbnail) for a composited edge; look at every sprite for
+   anything that reads as a different register than its neighbours;
+   check nothing decorative is clipped or standing on the wrong ground
+   material (`check-ground.mjs` already asserts this mechanically —
+   this is the "does it also look right" pass on top of that, per
+   `docs/ART-DIRECTION.md`'s own framing).
+3. One row per room in `docs/AUDITED-ROOMS.md`, region "Tidewatch
+   Village" to match the existing 4 rows (still the same coastal
+   cluster) unless a room clearly reads as a different named stretch —
+   check `docs/ART-BACKLOG.md`'s prose for an existing name before
+   inventing one.
+4. A real defect is in scope to fix (`src/data/overworld.js`/
+   `tiles-terrain.js` on the allowlist) — re-screenshot and re-run the
+   relevant CLAUDE.md checker afterward. Don't go looking for extra
+   polish beyond what the audit actually finds; S64 found none in 4
+   rooms and that's a fine outcome here too if it holds.
 
 ## Done means
-- `docs/AUDITED-ROOMS.md` has 4 new rows, correctly formatted (`node
-  tools/check-drift.mjs`'s "Overworld room audits" count goes from 0 to
-  4 and self-checks stay green).
-- Any fix made is verified (screenshot + the relevant checker), not just
-  asserted.
+- `node tools/check-drift.mjs`'s audit count goes from 4 to 10.
+- Any fix made is verified (screenshot + checker), not just asserted.
 - STATE.md gets one new session-log row.
 
 ## Out of scope
-- Auditing rooms outside the four named above — this is deliberately one
-  small batch to prove the process, not the whole map in one session.
+- Rooms outside the six named above — keep building the audited area
+  contiguously, one ring at a time, not scattered across the map.
 - Re-opening npc-detail (#5) or enemy-roster (#4) — both closed by an
-  explicit human decision, not this session's to revisit.
-- Advancing `OBJECTIVE OF RECORD` — #6 needs 90 of ~90 rooms audited,
-  not 4.
-- Inventing a canonical region-name partition — `tools/check-drift.mjs`
-  already notes none exists; use plain names consistently, don't design
-  a taxonomy.
+  explicit human decision.
+- Advancing `OBJECTIVE OF RECORD` — #6 needs 90 of ~120, not 10.
+- Assuming S64's "no defects" result means this batch will match — audit
+  each room on its own, especially Sunken Reef and Shallows Gate, which
+  by name alone sound more tide-sensitive than the village screens were.
