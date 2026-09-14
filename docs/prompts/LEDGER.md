@@ -328,6 +328,19 @@ extract from it:
 
 ## Known and deliberately unfixed
 
+- **Three region-art visual patterns that look like defects on a screenshot
+  and are not, traced to source in S72 (`docs/prompts/STATE.md`) so a future
+  audit doesn't re-spend time on them:** a grey blob under a flying enemy
+  (`keese`, `wisp`, ...) is that enemy's own ground shadow (`this.shadow =
+  this.flying`, `src/game/enemy.js`), not a stray prop; a decorative sprout
+  appearing over a `grassDark` cell only at MID/HIGH tide is a randomised
+  `grassTuft` variant the shore-`family` rendering picks once the cell's
+  neighbour is actually wet, not a glitch; and an enemy standing in a `waterD`
+  cell that visually overlaps the tree canopy from the row below is
+  `Room.quadCanopySolid` (`src/world/room.js`) deliberately keeping a WET
+  cell's overhang passable at every tide ("a canopy over a stream is a
+  branch reaching over the water, and swimming under it is what the source
+  draws") — the enemy is reachable, not stranded.
 - **Two S27 shore edges remain unfixed**, if a session is in there anyway: a
   water cell one tile wide with land on both opposite sides shows the rim on
   only one of its two facing edges (`tileEdgeArt`'s "opposite pair" degrade
