@@ -1,3 +1,16 @@
+## (STATE.md's own log calls it S78) — off-plan finding, not chased: the reef region's ordinary tide digits never use the reef water palette
+
+Found while auditing Palace Causeway (`0,10,3`): `sandbar`/`tideRock`/every
+other shared tide-digit tile (`src/data/tiles-core.js`, the ten `tide:`
+entries besides `reefFlat`/`reefDeep`) hardcodes the plain `waterS`/`waterD`
+palette for every region, so a reef room's ordinary flooded sand or stepping
+stone renders in generic ocean blue right next to `reefFlat`/`reefDeep`'s
+teal. No room audited so far happens to put the two in direct contact (a dry
+band always separates them), so nothing actually clashes on screen yet — but
+it's a pre-existing, region-wide characteristic worth a real look once
+region-art has a spare detour token, not something one room's fix should
+paper over.
+
 ## S99 (STATE.md's own log calls it S54/S55) — found AND fixed in the same session: `urchin`'s "harmless at low tide" was not actually true
 
 While piloting `urchin`'s new `idleFrame` (STATE.md S54) and then judging
