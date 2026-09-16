@@ -1,4 +1,4 @@
-OBJECTIVE OF RECORD: 6 region-art
+OBJECTIVE OF RECORD: 7 item-reuse
 
 ROTATION (fixed, do not reorder):
   1 wide-rooms      — 3 of 6 dungeons have a 2x2 or 3x1
@@ -29,16 +29,15 @@ ROTATION (fixed, do not reorder):
   8 feel-measure    — done when >=40 feel.js constants are tagged
                       `measured` against the emulator
 
-FILE ALLOWLIST for the current objective (6 region-art):
-  docs/AUDITED-ROOMS.md — one row per overworld room actually looked at:
-    key, region, name, date, one-sentence verdict (header names the exact
-    column order tools/check-drift.mjs parses — don't reorder it)
-  tools/shoot-rooms.mjs — screenshot tool, already exists; use it, don't
-    fork it. `node tools/shoot-rooms.mjs overworld,rx,ry` per room
-  docs/ART-DIRECTION.md — read-only reference for what to check a room
-    against; only edit if this session finds the rule itself wrong
-  src/data/overworld.js, src/data/tiles-terrain.js — ONLY for a confirmed
-    art defect found while auditing, not proactive polish; re-screenshot
+FILE ALLOWLIST for the current objective (7 item-reuse):
+  src/data/dungeons-a.js, src/data/dungeons-b.js — dungeon room data;
+    where a new Anchor/Lens/Bellows/Reefseed-gated obstacle gets added
+  src/data/overworld.js — where a new overworld screen gets an
+    Anchor/Lens/Bellows/Reefseed requirement
+  docs/ITEMS.md — read-only reference for each item's three verbs; only
+    edit if a session finds the doc itself wrong
+  docs/DUNGEON-STATUS.md — read before touching a dungeon marked done;
+    tick/update if a change affects its checklist
   dist/oracle-of-tides.html
   docs/NEXT-SESSION.md
   docs/prompts/LEDGER.md
@@ -52,9 +51,10 @@ and none clear it (S55/S57), human confirmed no further idle art.
 sprite uniqueness 13/22 (S61 spent 3 free sprites, S62 extracted 1 new),
 remaining 9 have no extraction path left (both sheets exhausted, S62),
 human confirmed no further hand-drawn NPC art. Wrong on any -> revert.
+#6 done S89: 120/120 overworld rooms in docs/AUDITED-ROOMS.md, every
+region audited S64-S89. Real fixes landed along the way (S76-S81 ledges).
 
 DETOUR TOKENS: 0
 
 SESSION LOG: one row per session — `S## | objective|detour | one line`
-S87 | objective | Finished the coral region's second and last row (Reef Wall, Coral Hollow, Spire Mouth, Coral Foot) — **the coral region is now fully audited, 8/8.** No terrain defects found: Reef Wall's `TTTTTT` resolves to `palm` (coral's own override, distinct from cliffs' `treeDead`), confirming each region draws its own tree; Coral Hollow's link-7 reefkin trader poking above its palm row is the same known tree-canopy overhang already in the ledger; Spire Mouth (D2's portal) and Coral Foot both matched patterns already confirmed at Coral Shelf/Cistern Mouth. check-drift's audit count now 112 of 120 — **only abyss (8 rooms) remains in the whole rotation.** Full regression: check-overworld.mjs 17/17, check-strands.mjs (15 stranded regions/24 cells, baseline unchanged), check-placement.mjs, check-playthrough.mjs 21/21, check-drift self-checks OK, npm run build (unchanged, no src touched).
-S88 | objective | Opened the abyss region, its first row (Drowned Shore, Gate of the Keep, Black Causeway, Rustfall) — 4/8. No terrain defects found. Two real ambiguities chased to ground: Drowned Shore's sandbar band looked unchanged across tides in a screenshot (Link's own tide-based repositioning was hiding the actual tile change again) — a one-off Playwright probe sampling live canvas pixels at the tile centre proved the flood is correct (sand->shallow->deep, exact RGB values recorded); Black Causeway's `noTide` flag was read in the engine source (`src/game/tide.js`) before being flagged as a bug — it only blocks a conch press, not `tide.setLevel()`, so the room still floods normally, matching its own sign's actual meaning ("no shell sounds here", not "the water never moves"). check-drift's audit count now 116 of 120. Full regression: check-overworld.mjs 17/17, check-strands.mjs (15 stranded regions/24 cells, baseline unchanged), check-placement.mjs, check-playthrough.mjs 21/21, check-drift self-checks OK, npm run build (unchanged, no src touched).
+S89 | objective | Finished the abyss region's last row (Sunless Flat, The Long Drop, Abyss Stair, Iron Watch) — **the abyss region is now fully audited, 8/8, and with it every region in the world. check-drift's audit count reaches 120/120.** No terrain defects found: Abyss Stair carries the second half of the `keepSeal` story gate whose first half is Upper Kell (S82) — confirmed both halves share the same brown-crate fixture rather than drifting apart. **Objective #6 (region-art) is DONE.** Advanced `OBJECTIVE OF RECORD` to `7 item-reuse` per the rotation's fixed order, rewrote the file allowlist, and added #6's completion note. Full regression: check-overworld.mjs 17/17, check-strands.mjs (15 stranded regions/24 cells, baseline unchanged), check-placement.mjs, check-playthrough.mjs 21/21, check-drift self-checks OK, npm run build (unchanged, no src touched).
