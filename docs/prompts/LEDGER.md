@@ -342,6 +342,8 @@ extract from it:
   cell's overhang passable at every tide ("a canopy over a stream is a
   branch reaching over the water, and swimming under it is what the source
   draws") — the enemy is reachable, not stranded.
+- **A cave mouth's ceiling drips a white splash particle onto the pool below it (Palace Mouth, S77)** — a transient animated effect, not a static art defect. Don't re-flag it.
+- **S76's ledge-violation sweep ("zero cliff chars anywhere in the room") has a real blind spot, found and fixed in S77**: it misses a room whose only cliff chars are the map's own border wall, which is every room. Spire Shallows had a genuinely stranded ledge (open sand on both sides, no elevation change) that the grep didn't catch for exactly that reason. Judge each ledge by what's actually adjacent to it, not by whether the room contains a cliff char anywhere at all — Drowned Steps' ledge sits right below a `tideRock` shelf and is the correct, deliberate use of the same tile.
 - **Two S27 shore edges remain unfixed**, if a session is in there anyway: a
   water cell one tile wide with land on both opposite sides shows the rim on
   only one of its two facing edges (`tileEdgeArt`'s "opposite pair" degrade
