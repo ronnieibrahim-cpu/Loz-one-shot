@@ -1,3 +1,63 @@
+## S90 — item-reuse objective opens: the Anchor's first reuse outside D1, and why the overworld half didn't land
+
+First session on rotation objective #7 (item-reuse). `docs/prompts/STATE.md`
+S89 closed out region-art at 120/120; this is the clean handoff into the
+next item.
+
+**D2's Bone Cell (`0,2,6`) done and fully verified.** Confirmed first
+(`grep` in `tools/playthrough-route.mjs`) that this room is a genuine
+dead-end side room off Coral Landing that the dungeon's own scripted route
+never visits — the safest possible place to add a new gate, since nothing
+about the mandatory critical path's frame-exact timing could be disturbed
+by changing it. Gave it the same `dWell`/`dDrain` pairing D1's Iron Pipe
+already uses (walkable at LOW only vs. walkable at MID only — no single
+global tide crosses both). **First draft failed `check-anchor.mjs`'s own
+"the conch alone does not cross it" assertion**: a 2-tile-wide half is
+exactly `HOP_TILES` (2), so the flood found a hop straight over it without
+needing the anchor at all. Widened each half to 3 tiles and it passed
+clean (`check-anchor.mjs` 16/16, up from 14). Moved the room's existing
+`blank` pickup behind the gate as the reward rather than inventing a new
+item — the task said not to redesign the dungeon's economy, and a generic
+loot-table item with two other sources elsewhere in the game (`grep
+"kind: 'blank'"` in `src/data/dungeons-a.js`) was the safe choice.
+`check-drift.mjs` now reads `anchor dungeons: 1 of 5` (was 0). Full
+regression confirmed the "off the route" read was correct: `check-
+progression.mjs` (19/19) and `check-playthrough.mjs` (21/21) are both
+byte-identical to before this session, alongside `validate`,
+`walk-dungeons`, `check-dungeon-strands` (baseline unchanged, still 9
+regions/12 cells), `check-placement`, `check-ground`, `check-items`.
+`npm run build` + `check-build.mjs` reconfirmed.
+
+**The overworld half (this same task's step 3) is NOT done, and this is
+the session's real finding.** `tools/check-anchor.mjs` scans EVERY map in
+`MAPS` generically (it does not special-case dungeons), so an overworld
+screen declaring `anchorGate` would in principle work — until its own
+`late` assertion, which filters declared gates against a *hardcoded*
+`['d1', 'd2']` map-id whitelist with the comment "the model has no
+swimming in it, so it is only sound for a dungeon reached before the
+Cleats." That reasoning is equally true of the overworld before the
+Cleats (no map anywhere allows swimming pre-D3) — the whitelist is just
+never written to include `'overworld'`. Confirmed by reading the
+assertion directly rather than guessing: the room-collection loop above
+it iterates every entry in `MAPS` generically, so an overworld screen's
+`def` would be collected into `gates`/`gauges` exactly like a dungeon
+room's — the only thing that fails is the plain string-literal filter
+`!['d1', 'd2'].includes(r.mapId)`, deterministic and independent of
+whether the room's own puzzle is sound.
+`tools/` is outside item-reuse's file allowlist in `docs/prompts/
+STATE.md`, so this was not fixed here — recorded in full in
+`docs/prompts/LEDGER.md`'s "Known and deliberately unfixed" (search
+"cannot prove an overworld anchor gate") rather than chased, per the
+charter's rule 5. No detour token was spent; `DETOUR TOKENS` was 0
+entering this session and this finding was written down, not pursued.
+Logged as an `objective` session in `docs/prompts/STATE.md` (D2's Bone
+Cell is real, verified progress on the stated task), which is the second
+consecutive `objective` session after S89 and regenerates a token to 1 —
+spelled out in `docs/prompts/NEXT-PROMPT.md` as the natural next spend:
+widen the whitelist, reconfirm `check-anchor.mjs` still passes 16/16 on
+the existing d1/d2 rooms, then add the overworld screen this session
+couldn't.
+
 ## (STATE.md's own log calls it S78) — off-plan finding, not chased: the reef region's ordinary tide digits never use the reef water palette
 
 Found while auditing Palace Causeway (`0,10,3`): `sandbar`/`tideRock`/every

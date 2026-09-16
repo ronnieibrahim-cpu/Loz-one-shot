@@ -130,6 +130,27 @@ values needed re-sweeping against the real route (mechanical, not clever:
 `boot()`), plus two ordinary assembly bugs S40 had not yet hit. Nothing in
 S40's account of WHY each fix was needed changed; only the landing did.
 
+### D2's Bone Cell now reuses the Anchor (S90)
+
+`0,2,6`, the small side room off Coral Landing that never sat on the
+dungeon's own route (`tools/playthrough-route.mjs` never visits it — the
+route goes Landing straight to Tide Gallery), now carries an `anchorGate`:
+the same `dWell`/`dDrain` pairing as the Iron Pipe in Tidewash Grotto
+(walkable at LOW only vs. walkable at MID only, no single tide crosses
+both), each half widened to 3 tiles so a 2-tile hop can't skip across the
+unwalkable half either. The room's own pre-existing `blank` pickup was
+moved behind the gate rather than a new item invented — nothing about the
+dungeon's key count, boss, or economy changed. `tools/check-anchor.mjs`
+proves both directions for the room; full regression
+(`validate`, `walk-dungeons`, `check-dungeon-strands`, `check-placement`,
+`check-ground`, `check-progression`, `check-playthrough`, `check-items`)
+is unchanged from before this session, confirming the room really was
+off the critical path. `check-drift.mjs` now reads `anchor dungeons: 1 of
+5` (up from 0). The overworld half of this same task (item-reuse's
+step 3) is NOT done — see `docs/prompts/LEDGER.md`'s "Known and
+deliberately unfixed" for why (`tools/check-anchor.mjs`'s own whitelist
+blocks it, not a design problem).
+
 ### Boss winnability, measured (S5)
 
 `node tools/measure-boss-combat.mjs <id>` — real combat, no god mode, seed

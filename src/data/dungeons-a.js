@@ -929,23 +929,30 @@ export function installDungeonsA() {
       },
       '0,2,6': {
         name: 'Bone Cell',
+        // The Anchor's first reuse outside D1: the same dWell/dDrain pairing
+        // as the Iron Pipe (Tidewash Grotto, 0,4,2) — one half only holds at
+        // LOW, the other only at MID, so no single tide crosses it and the
+        // conch alone cannot reach the alcove. The reward is the room's own
+        // pre-existing blank, simply moved behind the gate rather than a new
+        // item; nothing about the dungeon's economy changes.
         map: [
           '##########',
-          '#........#',
-          '#..2222..#',
-          '#..2222...',
-          '#..2222...',
-          '#..2222..#',
-          '#........#',
+          '##########',
+          '##########',
+          '..333444..',
+          '..333444..',
+          '##########',
+          '##########',
           '##########',
         ],
         entities: [
-          ['pickup', 2, 1, { kind: 'blank' }],
-          ['keese', 7, 6],
+          ['pickup', 1, 3, { kind: 'blank' }],
+          ['keese', 8, 4],
         ],
         readable: [
-          [7, 1, 'Scratched into the shell: "The carver in Tidewatch\nwants bone, not gold."'],
+          [8, 3, 'Scratched into the shell: "The carver in Tidewatch\nwants bone, not gold."'],
         ],
+        anchorGate: { from: [8, 3], to: [1, 3] },
       },
       '0,3,5': {
         name: 'Tide Gallery',
