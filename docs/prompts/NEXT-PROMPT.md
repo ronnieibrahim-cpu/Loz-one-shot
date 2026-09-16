@@ -1,30 +1,28 @@
-# Next session — open the cliffs region, its third row
+# Next session — finish the cliffs region, its last row
 
 ## Read first
-- `docs/AUDITED-ROOMS.md` — 96 rows so far (S64-S83). Coast, marsh, dunes,
-  wood, reef and salt are fully done. Cliffs is half done (8/16); coral,
-  abyss and cliffs' last two rows (24 rooms) are all that's left.
+- `docs/AUDITED-ROOMS.md` — 100 rows so far (S64-S84). Coast, marsh, dunes,
+  wood, reef and salt are fully done. Cliffs is three-quarters done
+  (12/16); coral, abyss and cliffs' last row (20 rooms) are all that's left.
 - `docs/prompts/LEDGER.md`'s "Known and deliberately unfixed" section: the
   three S72 visual patterns that look like defects and aren't, the two S77
   ledge notes, and the S78 reef-palette finding.
-- **Seven sessions running (S76, S77, S79, S80, S81, S82, S83) have each
-  found or ruled out a stray ledge sitting in open ground with nothing
-  marking a real step — check every ledge in this batch against its
-  actual neighbouring TILE DATA (which legend character is on each side),
-  not the room's name or a guess by eye.** S82/S83 (Wind Shelf, Cistern
-  Path) are the latest confirmed-real examples: a terrace tile on one
-  side, a plain-floor tile on the other, two different tiles by data.
+- **Eight sessions running (S76, S77, S79, S80, S81, S82, S83, S84) have
+  each found or ruled out a stray ledge sitting in open ground with
+  nothing marking a real step — check every ledge in this batch against
+  its actual neighbouring TILE DATA (which legend character is on each
+  side), not the room's name or a guess by eye.** `overworld,1,5` (Marsh
+  Stair) has a `____` run worth checking this way first.
   When a screenshot looks ambiguous (a sprite's colour/pose, a pool's
-  extent), check it against the room's own map/entity data, the enemy's
-  definition in `src/data/enemies.js`, or a live tile/entity probe before
-  writing it up as a defect — S81's Pan Corner and S82's Kell Corner
-  beetle are both worked examples of a false alarm resolved this way.
+  extent), zoom in tighter (`--dpr=5`+, a `--px/--py` near the feature)
+  before writing it up as a defect — S84's Boulder Run and Deep Cut
+  verdicts are worked examples of a false alarm resolved exactly that way.
 
 ## Why this, now
-S83 finished cliffs' second row and confirmed check-drift's audit count at
-96 of 120. Cliffs is split across four sessions like salt was split across
-two: S82 took row 1 (`overworld,0-3,2`), S83 took row 2 (`overworld,0-3,3`),
-this one takes row 3 (`overworld,0-3,4`), and one more session finishes it.
+S84 finished cliffs' third row and confirmed check-drift's audit count at
+100 of 120. This session finishes cliffs (its 4th and last row,
+`overworld,0-3,5`) — after it lands, only coral (8 rooms) and abyss (8
+rooms) remain in the whole rotation.
 
 ## The task
 Same method as every session this rotation: `tools/shoot-rooms.mjs
@@ -38,22 +36,22 @@ definition in `src/data/enemies.js` for its runtime palette/pose, rather
 than trusting the screenshot crop alone.
 Run `node tools/check-strands.mjs` once at the end of the batch and confirm
 it's still at its baseline before calling the session done.
-- `overworld,0,4`, `overworld,1,4`
-- `overworld,2,4`, `overworld,3,4`
+- `overworld,0,5` (Kell Foot), `overworld,1,5` (Marsh Stair)
+- `overworld,2,5` (Sunken Shelf), `overworld,3,5` (Kell Spur)
 
 ## Done means
-- `node tools/check-drift.mjs`'s audit count goes from 96 to 100.
+- `node tools/check-drift.mjs`'s audit count goes from 100 to 104.
 - `node tools/check-strands.mjs` still reports no new multi-cell region.
 - Any real fix made is verified (screenshot + relevant checker).
-- STATE.md gets one new session-log row.
+- STATE.md gets one new session-log row, and notes the cliffs region as
+  fully audited (16/16) if this row confirms clean.
 
 ## Out of scope
-- Any other region (coral, abyss, or cliffs' last row) — pick the next
-  batch only after this row is done.
+- Coral or abyss — pick the first coral room only after this row lands.
 - Reopening npc-detail (#5) or enemy-roster (#4).
 - Advancing `OBJECTIVE OF RECORD` — the actual overworld total is 120
   rooms (check-drift measures it directly), not the ~90 STATE.md's
-  rotation text still says; 100/120 after this session is still 20 short.
+  rotation text still says; 104/120 after this session is still 16 short.
   Don't rewrite the rotation table until check-drift's own count reaches
   120.
 - Chasing the S78 reef-palette finding — it has no detour token yet.
