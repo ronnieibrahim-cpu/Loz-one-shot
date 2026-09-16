@@ -133,6 +133,19 @@ they are also how a future session finds which sheet a tile came from.
 - **A ledge is solid from three sides.** A ledge run dropped across a corridor
   makes rooms unreachable. Use `node tools/find-ledges.mjs` to pick placements;
   do not place by eye.
+- **A ledge only belongs where the source games would actually draw one: the
+  edge of a real elevation change** — a cliff, a terrace, a raised bank, a
+  dais — never sitting alone in the middle of flat, open ground with plain
+  walkable tiles on every side. Oracle of Seasons/Ages never place a one-way
+  drop with nothing above it to drop FROM and nothing below it to land INTO;
+  a lone `_`/`"`/`>`/`<` run stranded in open field reads as broken art, not
+  terrain, and is a Goal 1 violation on sight. `node tools/find-ledges.mjs`
+  only proves a placement is SAFE (won't sever the room); it says nothing
+  about whether the surrounding art gives the ledge a reason to exist — that
+  half is a by-eye check against a real screenshot, the same pass region-art
+  audits already do room by room. Remove any ledge that fails it; if it was
+  load-bearing for connectivity, re-route around it with the actual tool
+  rather than leaving mismatched art in place to keep a shortcut open.
 - **A checker's flood only knows the movement verbs somebody taught it.**
   `walk-dungeons.mjs` treated a one-way ledge as a wall for the whole life of
   the project, which was harmless until D2 made a ledge the only way into
