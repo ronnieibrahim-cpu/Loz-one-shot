@@ -180,7 +180,7 @@ const rooms = {
       '1g......g1',
       'ggG.oo.Ggg',
       'gg......gg',
-      'ggG""""Ggg',
+      'ggGggggGgg',
       '#gggggggg#',
       '###1151###',
     ],
