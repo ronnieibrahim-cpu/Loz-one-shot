@@ -1,27 +1,26 @@
-# Next session — continue the salt region, its middle row
+# Next session — finish the salt region, its last row
 
 ## Read first
-- `docs/AUDITED-ROOMS.md` — 80 rows so far (S64-S79). Coast, marsh,
-  dunes, wood and reef are fully done. Salt is 4/12 (top row only).
+- `docs/AUDITED-ROOMS.md` — 84 rows so far (S64-S80). Coast, marsh,
+  dunes, wood and reef are fully done. Salt is 8/12 (rows 0-1 done).
 - `docs/prompts/LEDGER.md`'s "Known and deliberately unfixed" section:
   the three S72 visual patterns that look like defects and aren't, the
-  two S77 ledge notes, and the S78 reef-palette finding (not this
-  region's problem — salt uses its own `saltFlat`/`saltCrust` water
-  tiles, not reef's, so check whether the same shared-tide-digit issue
-  recurs here before assuming it does or doesn't).
-- `docs/NEXT-SESSION.md`'s top entry — the reef-palette finding, logged
-  but not chased.
+  two S77 ledge notes, and the S78 reef-palette finding (not salt's
+  problem — check whether it recurs here before assuming either way).
 - `docs/prompts/STATE.md` — objective #6 and its allowlist.
-- **A ledge needs an actual visible elevation change next to it, not
-  just a room name that implies one.** Salt Terraces was named for a
-  terrace that wasn't actually drawn — the ledge sat between two
-  identically-dithered stretches of ground. Check what's really on
-  screen, not what the room's name promises.
+- **Three sessions running (S76, S77, S79, S80 — four counting S76's
+  original sweep) have each found a stray ledge sitting in open ground
+  with nothing marking a real step.** It is worth specifically checking
+  every ledge in this last salt row against its actual neighbours (not
+  the room's name, not whether the room has a cliff char anywhere) before
+  calling the room clean — this pattern has recurred in every region
+  audited except reef's own row 0-2 batches.
 
 ## Why this, now
-S79 opened the salt region (legend `salt`) with its top row, a clean 4x3
-grid at `overworld,4-7,0-2`. Continuing row by row (same order every
-other region has used) means the middle row next.
+S79-S80 worked through the salt region's top two rows. Its last row
+(`overworld,4-7,2`) finishes the region: South Pan, Cracked Basin, Vault
+Steps, Pan Corner — all four already glimpsed in earlier reads of
+`src/data/overworld.js` but never actually screenshotted or checked.
 
 ## The task
 Same method as every session this rotation: `tools/shoot-rooms.mjs
@@ -34,18 +33,20 @@ boundary and every sprite, write one verdict row each to
 verdict for the method) rather than trusting the screenshot crop alone.
 Run `node tools/check-strands.mjs` once at the end of the batch and
 confirm it's still at its baseline before calling the session done.
-- `overworld,4,1` (Pan Road), `overworld,5,1` (Salters Rest)
-- `overworld,6,1` (Vault Approach), `overworld,7,1` (Windward Pan)
+- `overworld,4,2` (South Pan), `overworld,5,2` (Cracked Basin)
+- `overworld,6,2` (Vault Steps), `overworld,7,2` (Pan Corner)
 
 ## Done means
-- `node tools/check-drift.mjs`'s audit count goes from 80 to 84.
+- `node tools/check-drift.mjs`'s audit count goes from 84 to 88.
 - `node tools/check-strands.mjs` still reports no new multi-cell region.
 - Any real fix made is verified (screenshot + relevant checker).
-- STATE.md gets one new session-log row.
+- STATE.md gets one new session-log row. If salt is now fully audited,
+  say so (it does not close the rotation objective by itself — 88 of
+  120 is still short of 90).
 
 ## Out of scope
-- Salt's row 2 (`overworld,4-7,2`) — next batch, closes out the region.
-- Any other region (cliffs, coast, coral, abyss) — salt first, in full.
+- Any other region (cliffs, coast, coral, abyss) — pick the next one
+  only after salt is fully closed out.
 - Re-opening npc-detail (#5) or enemy-roster (#4).
-- Advancing `OBJECTIVE OF RECORD` — #6 needs many more than 84.
+- Advancing `OBJECTIVE OF RECORD` — #6 needs many more than 88.
 - Chasing the S78 reef-palette finding — it has no detour token yet.
