@@ -405,8 +405,19 @@ console.log(`  a seed carries ${(REEFSEED_THROW_SPEED / FP).toFixed(2)} px/f, `
 
 check('at least one room declares a Reefseed room', rooms.length > 0, 'nothing to prove');
 
+// The Reefseed is dungeon five's item, so a Reefseed room in an earlier
+// dungeon is a room the player cannot answer. Same bug check-anchor's `late`
+// filter had before S91 and check-bellows's `early` filter had before S95:
+// `index` is derived as `(m.dungeon && m.dungeon.index) | 0`, so an OVERWORLD
+// room (no `m.dungeon` at all) always computes to 0, which this clause used
+// to read as "before the Reefseed" whatever the room actually needed. The
+// Reefseed is carried rather than held-and-aimed, but the same argument
+// applies: the player either has it by the time they reach an overworld room
+// or they do not, and nothing about being outdoors changes that. Excluded
+// explicitly rather than by patching the derived index, so a future dungeon
+// mistakenly reading index 0 still fails loudly.
 {
-  const early = rooms.filter(r => r.index < 5);
+  const early = rooms.filter(r => r.mapId !== 'overworld' && r.index < 5);
   check('no Reefseed room comes before the Reefseed', early.length === 0,
     early.map(r => `${r.mapId} ${r.key}`).join(', '));
 }

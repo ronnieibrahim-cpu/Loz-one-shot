@@ -508,6 +508,47 @@ extract from it:
   bigger change than a filter fix, and not attempted this session (no
   detour token; `tools/` is outside item-reuse's file allowlist regardless
   of token count). See `docs/NEXT-SESSION.md` S96/S97.
+- **`check-reefseed.mjs`'s overworld filter bug (the identical shape to
+  S91's `check-anchor.mjs` fix and S95's `check-bellows.mjs` fix) is fixed
+  (S98): `early` now reads `r.mapId !== 'overworld' && r.index < 5`,
+  confirmed 102/102 unchanged on the existing D5/D6 rooms — this part is
+  correct and stays. The tile-level hypothesis also checked out sound:
+  `drownWall` (`{ tide: ['cliff', 'cliff', 'waterD'] }`) is tile-for-tile
+  `dSnag`'s shape, plain `waterD` (`{ flags: F.DEEP }`) is the same fixed
+  role `dWaterD` plays as the stake, and `dSnarl`'s indoor `underArt:
+  'dWaterD'` is exempted by `check-ground.mjs`'s own `F.WET` skip
+  regardless of where it's placed.
+  **But none of that is the real blocker, found on a closer read AFTER
+  this session's first writeup already called it a mere "design-fit"
+  problem — correcting that here rather than leaving it wrong: `grep`
+  for `reefseedRoom`/`anchorGate`/`anchorGauges`/`bellowsRoom`/`lensRoom`
+  in `tools/check-strands.mjs` and `tools/check-overworld.mjs` returns
+  NOTHING. The overworld flood has zero concept of any of the four
+  items' gate mechanisms — unlike `tools/lib/dungeon-flood.mjs`, which
+  explicitly treats a `reefseedRoom`'s `snarl` (and a puzzle's
+  `openDoors`, and a `bellowsRoom`'s `opens`) as a passable puzzle-door
+  precisely so a dungeon gate doesn't read as a stranding. Outdoors, that
+  treatment does not exist at all, for any of the four items — so ANY
+  cell placed behind ANY of their gates reads as a brand-new multi-cell
+  stranded region to `check-strands.mjs` and fails outright, regardless
+  of how well the room is designed or which tiles it uses.** This is
+  very likely the SAME root cause S91 described for the Anchor from a
+  narrower angle ("the hop model only recognizes `F.JUMPABLE`, never
+  `drownWall`-at-HIGH") and S95 partly touched for the Bellows — three
+  investigations, three different proximate symptoms, one shared
+  underlying gap: the overworld strand-checkers were built for terrain
+  and region gates, never extended to know about item-gated puzzle rooms
+  at all. **Reefseed's overworld half is therefore in the SAME class as
+  the Anchor's and the Bellows' — structurally blocked under the current
+  toolset, not merely hard to fit — and so, by the same reasoning, is the
+  Lens's.** Unblocking any of the four outdoors needs one shared fix
+  (teaching `check-strands.mjs`/`check-overworld.mjs`'s flood the same
+  puzzle-door treatment `dungeon-flood.mjs` already has), not four
+  separate per-item investigations — worth raising as the rotation-level
+  question this file's own earlier Lens entry already flagged, rather
+  than spending another detour token re-discovering the same wall from a
+  fourth angle. See `docs/NEXT-SESSION.md` S98 for the full account,
+  including the (superseded) first-pass writeup this correction replaces.
 
 ---
 

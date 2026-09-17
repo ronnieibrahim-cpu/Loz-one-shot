@@ -1,5 +1,11 @@
 OBJECTIVE OF RECORD: 7 item-reuse
 
+FLAGGED FOR HUMAN DECISION (S98, changing nothing per charter rule):
+item-reuse's `>=3 overworld` bar is unreachable for all 4 items — no
+tool models any item's gate outdoors (LEDGER's final "Known and
+deliberately unfixed" entry). Needs a `tools/` change bigger than one
+token. Awaiting: descope, a dedicated session, or advance the rotation.
+
 ROTATION (fixed, do not reorder):
   1 wide-rooms      — 3 of 6 dungeons have a 2x2 or 3x1
   2 art-provenance  — every sprite in src/data/sprites-*.js carries a
@@ -42,19 +48,12 @@ FILE ALLOWLIST for the current objective (7 item-reuse):
   docs/NEXT-SESSION.md
   docs/prompts/LEDGER.md
 
-Note (keep): #2 done S9/S74 (untagged 175 = non-sprite regex noise).
-#3 done S75 (docs/ART-BACKLOG.md, all 8 bosses hand-drawn, reasoned).
-#4 done S59 (human decision): hurt/death/attack complete or structurally-
-blocked roster-wide; idle urchin-only, other 8 judged against its bar
-and none clear it (S55/S57), human confirmed no further idle art.
-#5 done S63 (human decision): dialogue complete roster-wide (S60);
-sprite uniqueness 13/22 (S61 spent 3 free sprites, S62 extracted 1 new),
-remaining 9 have no extraction path left (both sheets exhausted, S62),
-human confirmed no further hand-drawn NPC art. Wrong on any -> revert.
-#6 done S89: 120/120 overworld rooms in docs/AUDITED-ROOMS.md, every
-region audited S64-S89. Real fixes landed along the way (S76-S81 ledges).
+Note (keep): #2 done S9/S74. #3 done S75 (ART-BACKLOG.md, 8 bosses
+hand-drawn, reasoned). #4 done S59 (human decision, no further idle art).
+#5 done S63 (human decision, no further hand-drawn NPC art; wrong on any
+-> revert). #6 done S89 (120/120 audited, fixes landed S76-S81 ledges).
 
-DETOUR TOKENS: 1 (regenerated — S96+S97 were 2 consecutive objective sessions)
+DETOUR TOKENS: 0 (spent S98)
 
 SESSION LOG: one row per session — `S## | objective|detour | one line`
-S97 | objective | Before building NEXT-PROMPT.md's "Anchor's second dungeon room" task, re-read check-anchor.mjs first and found its `late` filter unconditionally whitelists only d1/d2/overworld — S91's fix never actually opened d3-d6, the tool's own header says why (no swim model). Anchor's dungeon ceiling is 1 of 5 (D2 only), same shape as Lens (S92) and Reefseed (S92/S96). Ruled out before building anything, not by a failed room. Logged objective per S92's own precedent (ruling out a move IS the objective's work). Full writeup: docs/prompts/LEDGER.md "Known and deliberately unfixed", docs/NEXT-SESSION.md S97. No game file changed; full regression re-confirmed clean.
+S98 | detour | Spent the regenerated token: fixed check-reefseed.mjs's overworld filter bug (same shape as S91/S95's fixes), confirmed 102/102 unchanged — lands regardless of the rest. Then found (correcting my own first-pass "design-fit" conclusion after one more check): check-strands.mjs/check-overworld.mjs have NO puzzle-door model for ANY of the four items' gates (grep for reefseedRoom/anchorGate/anchorGauges/bellowsRoom/lensRoom in both returns nothing), unlike dungeon-flood.mjs which explicitly treats a snarl as passable. So any cell gated by any of the four items outdoors reads as a new stranded region and fails check-strands.mjs, regardless of tile choice or screen. Reefseed's (and by the same argument, the Lens's) overworld half is structurally blocked, same class as the Anchor's/Bellows' — likely the SAME shared root cause behind all three, not three separate ones. Full writeup: docs/prompts/LEDGER.md "Known and deliberately unfixed", docs/NEXT-SESSION.md S98. No game file changed.

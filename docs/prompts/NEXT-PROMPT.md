@@ -1,77 +1,69 @@
-# Next session — spend the detour token: reefseed overworld filter
+# Next session — check for a human decision on item-reuse's overworld gap
 
 ## Read first
-- `docs/prompts/STATE.md` — DETOUR TOKENS is 1 (regenerated after S96+S97,
-  two consecutive `objective` sessions). This session may spend it.
-- `docs/prompts/LEDGER.md`, "Known and deliberately unfixed": the S95
-  entry (`check-bellows.mjs`'s identical filter bug, fixed, then a real
-  structural block found underneath) and the new S96/S97-referenced entry
-  right after it (Anchor's ceiling, and the outdoor-tile argument for why
-  Reefseed might be different from Bellows).
-- `docs/NEXT-SESSION.md` S97 (this session's own scoping) and S95 (the
-  worked example to copy the shape of, including its own caution: fixing
-  the filter does not guarantee the deeper structure works).
+- `docs/prompts/STATE.md`'s top note (added this session) — the rotation-
+  level question raised to the person running these sessions. Check
+  whether they have responded (in this file, in a commit message, or
+  directly) before doing anything else.
+- `docs/prompts/LEDGER.md`, "Known and deliberately unfixed", the final
+  entry (S98) — the full evidence: ALL FOUR items' overworld halves are
+  structurally blocked by the same gap, not four separate ones.
+- `docs/NEXT-SESSION.md` S98 for how that conclusion was reached
+  (including the corrected first-pass writeup, kept for the record).
 
 ## Why this, now
-`check-reefseed.mjs` computes `index: (m.dungeon && m.dungeon.index) | 0`
-for every room with a `reefseedRoom`. An overworld screen has no
-`m.dungeon`, so it always computes `index: 0`, which the tool's own
-`early = rooms.filter(r => r.index < 5)` then rejects as "before the
-Reefseed" — the identical bug shape S91 found in `check-anchor.mjs` and
-S95 found and fixed in `check-bellows.mjs`. Nobody has actually tried
-declaring an outdoor `reefseedRoom` yet, so this has never been hit.
+Many sessions running have worked objective #7 (item-reuse) to the edge of
+what the current toolset allows: Bellows' dungeon bar is met (2/5); the
+Anchor, Lens and Reefseed are each capped below the `>=2 dungeons` bar for
+a tool reason, not a design one; and ALL FOUR items' `>=3 overworld
+screens` bar is unreachable because `check-strands.mjs`/
+`check-overworld.mjs` have no concept of any of the four items' gate
+mechanisms at all (confirmed by grep, not by a failed build — see the
+LEDGER entry). There is no more item-reuse work left to do inside the
+current file allowlist without a `tools/` change bigger than a single
+detour token was designed to cover — the exact situation
+`docs/prompts/LEDGER.md`'s Lens entry already flagged as "worth raising
+as a rotation-level question."
 
-Unlike Bellows' overworld half (confirmed S95 structurally impossible —
-no outdoor tile has `dPit`'s exact flag combination), the Reefseed's two
-load-bearing tiles both have real outdoor candidates already in the `base`
-legend (`src/data/legends.js`): `drownWall` (digit `9`, solid at LOW/MID,
-swimmable at HIGH — the same tide shape as `dSnag`) for the bole, and
-`waterD` (`=`, fixed, always deep — the same role `dWaterD`/`W` plays
-indoors) for the stake. This is a real possibility, not a hunch to chase
-on faith — but it is NOT proven; treat it as a hypothesis the checker will
-settle, not a plan to force through.
+**This session raised it. Per the charter's own rule** ("You do not
+choose what to work on... If you believe the objective of record is
+wrong, say so... I will decide"), nothing about the objective or the
+rotation was changed. `docs/prompts/STATE.md` carries the question at the
+top.
 
 ## The task
-1. Fix the filter bug in `tools/check-reefseed.mjs`: change
-   `rooms.filter(r => r.index < 5)` to also exempt the overworld, the same
-   shape as `check-bellows.mjs`'s own fix (`r.mapId !== 'overworld' &&
-   r.index < 5`). Confirm the existing 5 D5 rooms plus D6's `0,4,2` still
-   pass unchanged (102/102) before touching anything else.
-2. Try ONE outdoor placement: pick a real overworld screen (a coastal spot
-   where `drownWall` and open sea already make sense visually — check
-   `docs/ART-DIRECTION.md`/existing coastal rooms in `src/data/overworld.js`
-   for where this reads naturally, don't force it onto a screen it doesn't
-   fit), and declare a `reefseedRoom` there using `drownWall` for the bole
-   position and `waterD` for the stake, mirroring D5/D6's exact fixture
-   shape (bank, bole, stake, snarl in a line). Run `check-reefseed.mjs`
-   after this one attempt.
-3. If it passes: run the full regression suite (below) and land it — this
-   would be `reefseed overworld screens: 1 of 3`.
-   If it fails on something structural (not a small coordinate error):
-   STOP, do not iterate indefinitely. Revert the room, keep the filter
-   fix (it's correct regardless), write up exactly what blocked it in
-   `docs/prompts/LEDGER.md`'s "Known and deliberately unfixed" (same
-   section, same style as the Bellows/Anchor/Lens entries there), and end
-   the session there. A confirmed "no" is as valid a result as a "yes" —
-   S92 and S95 both ended sessions this way and both were real progress.
+Check whether the person running these sessions has responded to the
+flagged question (a reply, a commit, a direct instruction). Two cases:
+
+- **They have responded:** follow their direction exactly — it overrides
+  everything below.
+- **No response yet:** do NOT guess at scope (do not unilaterally build
+  the shared flood-model fix, do not advance the rotation past #7, do not
+  spend a token that doesn't exist). Instead: run
+  `node tools/check-drift.mjs` and confirm its numbers still match this
+  session's own (`anchor: 1/5,0`, `lens: 0/5,0`, `bellows: 2/5,0`,
+  `reefseed: 1/5,0`). If they match, there is nothing new to do — log the
+  session as `objective` with one line confirming the state is unchanged,
+  and leave `docs/prompts/NEXT-PROMPT.md` as this same holding prompt
+  (re-copy it, do not invent a new task). If the numbers have DRIFTED
+  (something changed them outside this loop), investigate why before
+  anything else — that is a real finding, not noise.
 
 ## Done means
-- `tools/check-reefseed.mjs`'s filter bug is fixed either way (this part
-  is not optional and not the risky part).
-- Either `check-drift.mjs` reads `reefseed overworld screens: 1 of 3` with
-  a landed room and full regression green, OR the LEDGER has a new entry
-  explaining precisely why it can't work, mirroring the Bellows entry's
-  level of specificity (which flag, which tile, why no substitute exists).
-- `docs/prompts/STATE.md` logs this session as `detour` (it touches
-  `tools/`, outside item-reuse's own file allowlist) either way.
-- Full regression if a room landed: `walk-dungeons.mjs` is NOT relevant to
-  an overworld room — use `check-overworld.mjs`, `check-strands.mjs`,
-  `check-placement.mjs`, `check-ground.mjs`, `test.mjs`, `npm run build`.
+- The flagged question's status is checked, not assumed.
+- `node tools/check-drift.mjs` self-checks still pass.
+- `docs/prompts/STATE.md` logs the session (`objective`, one line: either
+  "no response, state unchanged" or the human's direction acted on).
+- If no response: `docs/prompts/NEXT-PROMPT.md` stays this same holding
+  prompt so the question isn't silently dropped.
 
 ## Out of scope
-- The Anchor's and Lens's ceilings — both need a swim-model change to the
-  respective tool, a bigger job than one detour token, not this session.
-- Chasing the outdoor Reefseed placement past one real, honest attempt —
-  if it's structurally blocked, write it up like Bellows was and stop.
-- Any change to `src/data/dungeons-a.js`/`dungeons-b.js` — this session's
-  token is spent on the tool and, at most, one overworld screen.
+- Building the shared `check-strands.mjs`/`check-overworld.mjs`
+  puzzle-door fix without an explicit go-ahead — it touches `tools/`,
+  is bigger than one detour token, and is exactly the scope question
+  that's pending.
+- Advancing `OBJECTIVE OF RECORD` to rotation item #8 on your own
+  initiative — that is the human's call, not a default to fall into
+  after enough blocked sessions.
+- Any new Anchor/Lens/Bellows/Reefseed dungeon or overworld room — every
+  remaining angle on all four is now accounted for in the LEDGER.

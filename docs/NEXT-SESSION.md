@@ -1,3 +1,74 @@
+## S98 — check-reefseed.mjs's overworld filter bug fixed (detour token spent); then found the overworld half of ALL FOUR items is structurally blocked by one shared gap, not four separate ones
+
+Spent the token STATE.md regenerated after S96+S97 (both `objective`).
+Step 1 of my own S97 NEXT-PROMPT.md: fixed `check-reefseed.mjs`'s `early`
+filter, the identical bug shape S91 found in `check-anchor.mjs` and S95
+fixed in `check-bellows.mjs` — `index: (m.dungeon && m.dungeon.index) | 0`
+reads 0 for any overworld room (no `m.dungeon`), which the old `r.index <
+5` clause read as "before the Reefseed" regardless of what the room
+needed. Now `r.mapId !== 'overworld' && r.index < 5`. Confirmed 102/102
+unchanged on the existing five D5 rooms plus D6's Bole Cistern. This part
+is correct and landed regardless of everything below.
+
+Step 2: checked the tiledefs before trying a placement. `drownWall`
+(`{ tide: ['cliff', 'cliff', 'waterD'] }`) is tile-for-tile the same
+shape as `dSnag`, plain `waterD` (`{ flags: F.DEEP }`) is the same
+fixed-always-deep role `dWaterD` plays for the stake, and `dSnarl`'s
+indoor `underArt: 'dWaterD'` is exempted by `check-ground.mjs`'s own
+`F.WET` skip regardless of where it's placed — so the MECHANISM genuinely
+has real outdoor tile support, unlike the Bellows' wheel/pit fixture.
+
+Walked four candidate coastal/abyss screens (Drowned Shore, Black
+Causeway — `noTide`, ruled out immediately — Abyss Stair, Rustfall)
+looking for a clean spot, found none in a first pass, and wrote up "an
+unsolved design-fit problem, not a proven impossibility" as this
+session's conclusion.
+
+**That conclusion was wrong, found by one more check before actually
+trusting it enough to hand to the next session.** `grep` for
+`reefseedRoom`, `anchorGate`, `anchorGauges`, `bellowsRoom` and
+`lensRoom` in `tools/check-strands.mjs` and `tools/check-overworld.mjs`
+returns nothing at all. `tools/lib/dungeon-flood.mjs` (shared by
+`walk-dungeons.mjs` and `check-dungeon-strands.mjs`) explicitly treats a
+`reefseedRoom`'s `snarl` as a passable puzzle-door for exactly this
+reason — "the flood cannot solve a puzzle, turn a wheel, or grow a
+pillar; asserting each is actually achievable is
+solve-switches.mjs/check-bellows.mjs/check-reefseed.mjs's job, not this
+flood's." The OVERWORLD equivalent (`check-strands.mjs`/
+`check-overworld.mjs`) has no such treatment for ANY of the four items'
+gates. So whatever screen a Reefseed grove (or an Anchor gate, or a
+Bellows sill, or a Lens fork) went on outdoors, every cell placed behind
+its gate would read as a brand-new multi-cell stranded region and fail
+`check-strands.mjs` outright — independent of tile choice, independent
+of which screen, independent of how well the room is designed. This is
+very likely the shared root cause behind S91's Anchor finding (described
+narrowly as "the hop model doesn't recognize `drownWall`-at-HIGH") and
+touches S95's Bellows finding too — three sessions, three different
+proximate symptoms, one actual gap: the overworld strand-checkers were
+built for terrain and region gates and were never extended to know about
+ANY item-gated puzzle room.
+
+**Corrected conclusion: the Reefseed's overworld half is in the same
+blocked class as the Anchor's and the Bellows' — and so, by the same
+argument, is the Lens's.** Not a design-fit problem to iterate past, a
+shared missing capability in two tools. Unblocking any of the four
+outdoors needs ONE fix (teach `check-strands.mjs`/`check-overworld.mjs`'s
+flood the puzzle-door treatment `dungeon-flood.mjs` already has), not
+four separate per-item investigations each spending its own token to
+re-discover the same wall. `docs/prompts/LEDGER.md`'s "Known and
+deliberately unfixed" entry for this is written to the corrected
+finding, not the superseded first pass above — kept here for the record
+of how the correction was reached, since catching your own wrong
+conclusion before it costs a future session real time is worth writing
+down as plainly as the finding itself.
+
+Reverted nothing (no room was ever written; the filter fix is correct
+and kept either way). No game file changed. `check-reefseed.mjs` re-run
+clean (102/102); no other regression needed since nothing in `src/`
+moved.
+
+---
+
 ## S97 — the Anchor's dungeon-reuse ceiling turns out to be 1 of 5 too, found by reading the tool before building anything, not by a failed room
 
 Before starting NEXT-PROMPT.md's task ("give the Anchor a second dungeon
