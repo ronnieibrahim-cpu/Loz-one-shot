@@ -646,6 +646,36 @@ extract from it:
   (`coast`, `marsh`, `wood`, `salt`, `reef`, `coral`) — that is where the
   `cliffTop` gap this entry describes is actually untested, and it is the
   next session's job to find out by screenshot, not to assume it again.
+  **S102 built the third, Marsh Corner (`0,2,9`, `marsh`), and settled the
+  question this entry left open — but not in the direction it expected.
+  `reefseed overworld screens` is now 3, the rotation's own bar, and the
+  right fix was `drownWallSand`, not a new `marsh` palette.** First attempt
+  matched S100's pattern literally: gave `marsh` its own body colour
+  (`cliffMarsh`, `pal:'stonedk'`, the same shade `marsh`'s real `#`/
+  `cliffDk` walls wear) plus its own top. Screenshot showed the SAME flat
+  grey box the sand case had, just a shade darker — because a coastal
+  grove's bar never actually touches `marsh`'s own dark interior ground; it
+  sits on the last row or two before open sea, and that row is `1`/
+  `sandbar`, which resolves to plain `sand` in every region's legend alike
+  (digits are never region-overridden — CLAUDE.md's own rule). `marsh`'s
+  own wall colour was answering a question the room wasn't asking.
+  `drownWallSand`/`cliffSandTop` — already built in S100 — turned out to be
+  the correct bar here too, confirmed by a second screenshot, because it's
+  a SHORE palette, not a `dunes`-only one: reused as-is, no new tiles.
+  **This retires the "untested region" framing entirely.** Every region
+  bordering open sea shares the same sand fringe at its coast, so
+  `drownWallSand` is very likely already the right answer for `coast`,
+  `wood`, `salt`, `reef` and `coral` too, for the same structural reason —
+  not because their OWN `#` palettes (`cliff`, `cliffDk`, `cliffMarble`,
+  `cliffCoral`) have been individually cleared. What is still genuinely
+  untested is whether `cliffRust`/`cliffCoral`/`cliffMarble`/`cliffDk` need
+  their own top when a wall sits against a region's ACTUAL interior ground
+  — and the Reefseed's own fixture shape (bank/bar/stake/snarl running
+  into open sea) structurally cannot test that, because it can only ever
+  be built at a coastline. Proving THAT gap needs either a different
+  item's outdoor fixture that doesn't require open water, or a dungeon
+  room screenshot of an existing `cliffRust`/`cliffMarble`/`cliffCoral`
+  wall with a visible top edge — not another Reefseed grove.
 
 ---
 

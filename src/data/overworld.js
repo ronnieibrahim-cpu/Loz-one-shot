@@ -2219,16 +2219,39 @@ const rooms = {
   '0,2,9': {
     name: 'Marsh Corner',
     legend: 'marsh', music: 'marsh',
+    // The third outdoor Reefseed grove — item-reuse (docs/prompts/STATE.md).
+    // South Shallows (`0,7,9`) and Worlds Edge (`0,11,9`) proved the fixture
+    // in `dunes`, both fixed at the tile level. This is the first placement
+    // in a region whose own cliffs were never asked whether they need the
+    // same fix: `marsh` doesn't override `9`/`drownWall`, so the bar renders
+    // in the base `cliff`/`cliffTop` pair (`pal:'stone'`) while every other
+    // wall marsh actually authors is `cliffDk` (`pal:'stonedk'`) — the exact
+    // shape of gap `cliffSand` had before S100, untested until now.
+    //
+    // Same shape as the first two: bank at 5,3 (was `!`/mudflat, now plain
+    // `.`/mud so it's dry at every tide, not just some), bar at 5,4 (was a
+    // `1`/sandbar cell, now `9`), stake at 5,5 with the swim-around at 4,5
+    // and 6,5 (both `=`/plain `waterD`, open to the Cleats), snarl at 5,6
+    // boxed by border `*`. Carved into what was open sea south of the
+    // mudflat band; the zol at 4,3 and the mudflat cells either side of the
+    // bank are untouched.
     map: [
       'TTggggggTT',
       'TTggggggTT',
       'gg......gT',
-      'gg.!!!!.fT',
-      'gg1111111*',
-      '11******1*',
-      '*1******1*',
+      'gg.!!.!.fT',
+      'gg1119111*',
+      '11**===*1*',
+      '*1***k**1*',
       '**********',
     ],
+    reefseedRoom: {
+      entry: [4, 1],
+      stakes: [
+        { at: [5, 5], from: [5, 3], face: 'down', sea: 2 },
+      ],
+      snarl: [5, 6], cutFrom: [5, 5],
+    },
     entities: [
       ['zol', 4, 3],
     ],

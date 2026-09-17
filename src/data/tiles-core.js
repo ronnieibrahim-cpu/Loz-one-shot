@@ -2147,6 +2147,20 @@ export function installCoreTiles() {
     // existing `#`/`^` in it sits on a screen's own top row, where
     // off-screen always counts as the same family and the edge never fires.
     // The other five cliff palettes keep the shared grey lip untouched.
+    //
+    // `cliffSand`/`drownWallSand` are NOT actually dunes-exclusive, and the
+    // third grove (`marsh`, Marsh Corner) is what found that out the hard
+    // way: `1`/`sandbar` resolves to plain `sand` at LOW in every region
+    // alike (digits are never region-overridden, CLAUDE.md), so the last
+    // couple of rows before open sea are tan sand no matter whose legend is
+    // in force — a `marsh`-toned grey bar (tried first, `pal:'stonedk'`,
+    // matching `marsh`'s own `cliffDk`) still sat on that band as a flat
+    // grey box, because the ground it actually touches there is the shared
+    // sandy shore, not `marsh`'s dark interior mud. The Reefseed fixture
+    // only ever gets built against open sea, and every room bordering open
+    // sea uses this same sand fringe, so `drownWallSand` is the right bar
+    // for a coastal grove in ANY region — this is a shore palette, not a
+    // dunes one.
     cliffSandTop: { art: ART.cliffTop, pal: 'sand', flags: F.SOLID, family: 'cliff' },
     cliffSand: { art: ART.cliff, pal: 'sand', flags: F.SOLID, family: 'cliff', edgeArt: { up: 'cliffSandTop' } },
     cliffRust: { art: ART.cliff, pal: 'rust', flags: F.SOLID, family: 'cliff', edgeArt: { up: 'cliffTop' } },

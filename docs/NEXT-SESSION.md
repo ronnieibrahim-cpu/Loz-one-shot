@@ -1,3 +1,62 @@
+## S102 — a third outdoor Reefseed grove, and the palette question actually answered: it's a shore palette, not a `dunes` one
+
+NEXT-PROMPT.md asked for a third grove in a region other than `dunes`/
+`cliffs`/`abyss`, to find out whether `cliffTop`'s grey-lip gap (fixed for
+`dunes` in S100) shows up elsewhere. Built it: Marsh Corner (`0,2,9`,
+`marsh`) — bank at 5,3 (was `!`/mudflat, changed to plain `.`/mud so it's
+dry at every tide), bar (`9`) at 5,4 (was `1`/sandbar), stake (`=`) at 5,5
+flanked by `=` at 4,5 and 6,5, snarl (`k`) at 5,6 boxed by border `*` —
+same shape as the first two, carved into what was open sea south of the
+room's own mudflat band. The zol at 4,3 and the rest of the mudflat are
+untouched.
+
+**First guess was wrong, and the screenshot is what caught it.** `marsh`
+doesn't override `9`, so the bar rendered in plain `cliff`, `pal:'stone'`
+— the same flat grey box S100 found on sand. The obvious fix looked like
+S100's: give `marsh` its own variant, body colour matching `marsh`'s own
+`#`/`cliffDk` wall (`pal:'stonedk'`). Built `cliffMarsh`/`cliffMarshTop` and
+pointed `9` at them — and a re-screenshot showed **the same mismatch,
+just a shade darker**: a grey box on a tan beach, because the ground this
+room's bar actually touches is `mud` (`pal:'bog'`, tan), not `marsh`'s dark
+mossy interior. `marsh`'s own wall colour was never the relevant fact.
+
+**What's actually true, checked directly:** `1`/`sandbar` resolves to
+plain `sand` at LOW in every region's legend, because digits are never
+region-overridden (CLAUDE.md's own hard rule) — so the last couple of rows
+before open sea are the same tan sand in `dunes`, `marsh`, and (by the same
+argument) every other coastal region. The Reefseed fixture only ever gets
+built against open sea, so it only ever sits on that shared sand fringe.
+`drownWallSand`/`cliffSandTop` — already built in S100 — is therefore the
+right bar for a coastal grove in ANY region, not a `dunes`-only asset.
+Deleted the `marsh`-only tiles, pointed `marsh`'s `9` at the existing
+`drownWallSand`, re-screenshotted: matches South Shallows exactly, tan on
+tan, reads as a real sandbar. `tools/shoot-rooms.mjs` earned its keep
+twice in one session — the wrong fix would have shipped invisibly without
+it, same as S100.
+
+check-reefseed 147/147 (132 baseline + 15 new). check-drift reads
+`reefseed overworld screens: 3` — the rotation's own bar for Reefseed is
+now met (Anchor, Lens, Bellows are still 0 each; the objective isn't done
+until those catch up). Screenshotted at LOW and HIGH
+(`tools/shots/room-overworld_2_9-tide{0,2}-px80.png`), looked at both times
+(once with the wrong fix, once with the right one). Full verification:
+check-overworld, check-strands (still 15 regions/24 cells, unchanged
+baseline), check-placement, check-ground, check-progression,
+check-playthrough, test.mjs (83/83), `npm run build` + check-build — all
+green, nothing re-recorded.
+
+**What this means for whoever tests the next region:** the open question
+S101 left behind — "does `cliffRust`/`cliffCoral`/`cliffMarble` need its
+own top?" — turned out not to be answerable by building a *coastal* grove
+at all, because every coastal grove lands on the same sand fringe
+regardless of region. If a future session wants to actually test one of
+those three palettes against its OWN region ground (not the shared shore),
+it needs a Reefseed-style fixture that does NOT touch open sea — which the
+current fixture shape (bank/bar/stake/snarl running into the sea) cannot
+do at all. That is a real unknown, not a build-from-a-known-shape task.
+
+---
+
 ## S101 — a second outdoor Reefseed grove, built clean on the first try: the S100 palette fix generalises
 
 NEXT-PROMPT.md asked for a second outdoor Reefseed grove, same shape as

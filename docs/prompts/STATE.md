@@ -1,7 +1,7 @@
 OBJECTIVE OF RECORD: 7 item-reuse
 
-S101 built a second outdoor Reefseed grove (Worlds Edge, 0,11,9) in the same
-dunes region, reefseed overworld screens now 2/3. Anchor, Lens, Bellows: 0.
+S102 built a third outdoor Reefseed grove (Marsh Corner, 0,2,9), first one
+outside dunes. reefseed overworld screens now 3/3 — met; Anchor/Lens/Bellows: 0.
 
 ROTATION (fixed, do not reorder):
   1 wide-rooms      — 3 of 6 dungeons have a 2x2 or 3x1
@@ -57,4 +57,4 @@ hand-drawn, reasoned). #4 done S59 (human decision, no further idle art).
 DETOUR TOKENS: 1 (regenerated: S99 and S100 both `objective`)
 
 SESSION LOG: one row per session — `S## | objective|detour | one line`
-S101 | objective | Built a SECOND outdoor Reefseed grove at Worlds Edge (0,11,9), same dunes region and same bank/bar/stake/snarl fixture as South Shallows, carved into what was open sea below the room's own dry sandbar band, without moving its one existing sign. No new palette bug: `drownWallSand`/`cliffSandTop` already fix the bar's top edge for any `dunes` room, so this shipped on the first run — check-reefseed went straight to 132/132 (117+15 new). check-drift reads `reefseed overworld screens: 2`. Screenshotted at LOW and HIGH, looked at: bar reads sand-toned, opens to water at HIGH, matches South Shallows. Full suite green: check-overworld, check-strands (still 15 regions/24 cells, unchanged baseline), check-placement, check-ground, check-progression, check-playthrough, test.mjs, build + check-build.
+S102 | objective | Built a THIRD outdoor Reefseed grove at Marsh Corner (0,2,9), first one outside `dunes`. Tried a `marsh`-toned grey bar first (`pal:'stonedk'`, matching `marsh`'s own `cliffDk`) — still a flat grey box on screenshot, because the room's own ground there is the shared sandy shore fringe (`1`/sandbar resolves to plain `sand` in every region alike), not `marsh`'s dark interior. Reused `drownWallSand` instead — that IS the fix, confirmed by screenshot, and the real finding: it's a shore palette, not a dunes-only one. check-reefseed 147/147, check-drift reads `reefseed overworld screens: 3` — rotation's own bar met for Reefseed; Anchor/Lens/Bellows still 0. Full suite green: check-overworld, check-strands (still 15/24, unchanged), check-placement, check-ground, check-progression, check-playthrough, test.mjs 83/83, build + check-build.

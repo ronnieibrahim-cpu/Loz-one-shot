@@ -20340,6 +20340,20 @@ function installCoreTiles() {
     // existing `#`/`^` in it sits on a screen's own top row, where
     // off-screen always counts as the same family and the edge never fires.
     // The other five cliff palettes keep the shared grey lip untouched.
+    //
+    // `cliffSand`/`drownWallSand` are NOT actually dunes-exclusive, and the
+    // third grove (`marsh`, Marsh Corner) is what found that out the hard
+    // way: `1`/`sandbar` resolves to plain `sand` at LOW in every region
+    // alike (digits are never region-overridden, CLAUDE.md), so the last
+    // couple of rows before open sea are tan sand no matter whose legend is
+    // in force — a `marsh`-toned grey bar (tried first, `pal:'stonedk'`,
+    // matching `marsh`'s own `cliffDk`) still sat on that band as a flat
+    // grey box, because the ground it actually touches there is the shared
+    // sandy shore, not `marsh`'s dark interior mud. The Reefseed fixture
+    // only ever gets built against open sea, and every room bordering open
+    // sea uses this same sand fringe, so `drownWallSand` is the right bar
+    // for a coastal grove in ANY region — this is a shore palette, not a
+    // dunes one.
     cliffSandTop: { art: ART.cliffTop, pal: 'sand', flags: F.SOLID, family: 'cliff' },
     cliffSand: { art: ART.cliff, pal: 'sand', flags: F.SOLID, family: 'cliff', edgeArt: { up: 'cliffSandTop' } },
     cliffRust: { art: ART.cliff, pal: 'rust', flags: F.SOLID, family: 'cliff', edgeArt: { up: 'cliffTop' } },
@@ -20967,6 +20981,9 @@ function installLegends() {
     '"': 'ledgeDkN', '>': 'ledgeDkE', '<': 'ledgeDkW',
     'T': 'tree', '#': 'cliffDk', 'X': 'cliffCrackedDk',
     'D': 'block:portalD3',  // the Bogwater Sanctum's gate
+    '9': 'drownWallSand',   // a coastal bar sits on the shared sandy shore
+                             // fringe, not marsh's own dark ground — see
+                             // `cliffSandTop`'s tiledef comment
   }, 'base');
 
   // ---- dunes: the sandbar flats ------------------------------------------
@@ -23460,16 +23477,39 @@ const rooms = {
   '0,2,9': {
     name: 'Marsh Corner',
     legend: 'marsh', music: 'marsh',
+    // The third outdoor Reefseed grove — item-reuse (docs/prompts/STATE.md).
+    // South Shallows (`0,7,9`) and Worlds Edge (`0,11,9`) proved the fixture
+    // in `dunes`, both fixed at the tile level. This is the first placement
+    // in a region whose own cliffs were never asked whether they need the
+    // same fix: `marsh` doesn't override `9`/`drownWall`, so the bar renders
+    // in the base `cliff`/`cliffTop` pair (`pal:'stone'`) while every other
+    // wall marsh actually authors is `cliffDk` (`pal:'stonedk'`) — the exact
+    // shape of gap `cliffSand` had before S100, untested until now.
+    //
+    // Same shape as the first two: bank at 5,3 (was `!`/mudflat, now plain
+    // `.`/mud so it's dry at every tide, not just some), bar at 5,4 (was a
+    // `1`/sandbar cell, now `9`), stake at 5,5 with the swim-around at 4,5
+    // and 6,5 (both `=`/plain `waterD`, open to the Cleats), snarl at 5,6
+    // boxed by border `*`. Carved into what was open sea south of the
+    // mudflat band; the zol at 4,3 and the mudflat cells either side of the
+    // bank are untouched.
     map: [
       'TTggggggTT',
       'TTggggggTT',
       'gg......gT',
-      'gg.!!!!.fT',
-      'gg1111111*',
-      '11******1*',
-      '*1******1*',
+      'gg.!!.!.fT',
+      'gg1119111*',
+      '11**===*1*',
+      '*1***k**1*',
       '**********',
     ],
+    reefseedRoom: {
+      entry: [4, 1],
+      stakes: [
+        { at: [5, 5], from: [5, 3], face: 'down', sea: 2 },
+      ],
+      snarl: [5, 6], cutFrom: [5, 5],
+    },
     entities: [
       ['zol', 4, 3],
     ],

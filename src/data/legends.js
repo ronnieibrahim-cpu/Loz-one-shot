@@ -72,6 +72,9 @@ export function installLegends() {
     '"': 'ledgeDkN', '>': 'ledgeDkE', '<': 'ledgeDkW',
     'T': 'tree', '#': 'cliffDk', 'X': 'cliffCrackedDk',
     'D': 'block:portalD3',  // the Bogwater Sanctum's gate
+    '9': 'drownWallSand',   // a coastal bar sits on the shared sandy shore
+                             // fringe, not marsh's own dark ground — see
+                             // `cliffSandTop`'s tiledef comment
   }, 'base');
 
   // ---- dunes: the sandbar flats ------------------------------------------
