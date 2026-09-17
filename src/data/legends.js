@@ -31,6 +31,7 @@ export function installLegends() {
     'K': 'grateOw',      // metal: only the Resonance Rod retracts it
     'J': 'chasm',        // Roc's Feather   — 1 tile, clearable at 2.27 tiles
     'M': 'boulder',      // Dredge Line     — drag it out of the way
+    'k': 'seaSnarl',     // Reefseed        — a snarl only a pillar puts a blade beside
     // `C` IS A CAVE AND `D` IS A DUNGEON, and they are different objects
     // because they are different promises. A dungeon door is a 2x2 BLOCK — a
     // carved gate with its own emblem — declared per region below, because
@@ -81,6 +82,8 @@ export function installLegends() {
     'C': 'caveMouthSand',   // cut into a sand cliff, so it wears the sand ramp
     'D': 'block:portalD1',  // the Tidewash Grotto's gate
     '"': 'ledgeSandN', '>': 'ledgeSandE', '<': 'ledgeSandW',
+    '9': 'drownWallSand',   // the base drownWall's grey cliff read as a
+                             // stray box on sand — see its tiledef comment
   }, 'base');
 
   // ---- cliffs: high stone shelves over deep water ------------------------

@@ -2315,18 +2315,60 @@ const rooms = {
   '0,7,9': {
     name: 'South Shallows',
     legend: 'dunes', music: 'overworld',
+    // The first outdoor Reefseed grove — item-reuse (docs/prompts/STATE.md).
+    // S98 found the overworld half of the rotation's four single-use items
+    // grep-deep "structurally blocked" and S99 withdrew that: neither
+    // `check-overworld.mjs` (it keys `reached` on the room, not the cell) nor
+    // `check-strands.mjs` (a baseline, `--record` and all) actually forbids a
+    // gated pocket. This is the room that tests it, not argues it.
+    //
+    // Same fixture every grove in the Drowned Wood Shrine uses — bank, bar,
+    // stake, snarl, one tile apart in a line — just built from tiles the
+    // overworld already owns instead of the Shrine's own set. `9` is the
+    // bar: solid at LOW/MID, open water at HIGH, the same shape as `dSnag`.
+    // It reads as `cliffSand` here, not plain `drownWall` — see
+    // `drownWallSand`'s and `cliffSandTop`'s tiledef comments in
+    // tiles-core.js for the two-part reason a one-row outdoor wall needed
+    // both a region body AND a region top before it stopped looking like a
+    // grey box dropped on the beach. `=`/plain `waterD` is the stake,
+    // always deep so nothing stands there until a pillar does. `k`/
+    // `seaSnarl` is the snarl, the Keep's own `reef`-palette kelp rather
+    // than the Shrine's oak-trunked one — see its tiledef comment for why
+    // that one and not the other.
+    //
+    // The pocket sits south of the plaza in what was open sea. Bank at 5,3,
+    // thrown down at HIGH into the bar at 5,4, into the stake at 5,5 — and
+    // the bar is solid at LOW same as `dBole` is, so the pillar it grows
+    // needs the same answer the Shrine's own groves give it: plain `waterD`
+    // either side of the stake (4,5 and 6,5), open to a swimmer, so the
+    // route to what was grown runs AROUND the bar rather than through it —
+    // the one piece of the fixture's geometry that isn't legible from a
+    // single row and cost this room its first failed run
+    // (`check-reefseed.mjs`: "nothing reaches the stake once it is grown").
+    // The snarl at 5,6 gets none of that width — boxed by border `*` on
+    // both flanks, same as before, so the only blade that reaches it is the
+    // one standing on the stake. Nothing beyond it is needed for anything —
+    // it is a find, same as the Keep's own.
     map: [
       'TToggggoTT',
       'Tgg....ggT',
       'Tg......gg',
-      'Tg.1111.gg',
-      '*1111111gg',
-      '*1******11',
-      '*1******1*',
+      'Tg.11.1.gg',
+      '*1111911gg',
+      '*1**===*11',
+      '*1***k**1*',
       '**********',
     ],
+    reefseedRoom: {
+      entry: [4, 1],
+      stakes: [
+        { at: [5, 5], from: [5, 3], face: 'down', sea: 2 },
+      ],
+      snarl: [5, 6], cutFrom: [5, 5],
+    },
     entities: [
       ['crab', 4, 3],
+      ['sign', 6, 2, { text: 'Sow at the flood. Stand once the sea has gone back out.' }],
     ],
   },
   '0,8,9': {

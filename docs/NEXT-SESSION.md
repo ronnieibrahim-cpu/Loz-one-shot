@@ -1,3 +1,52 @@
+## S100 — the outdoor Reefseed grove: built, failed once, fixed twice (a geometry bug and a palette bug), now 117/117
+
+NEXT-PROMPT.md asked for one outdoor Reefseed grove and the suite run on
+it, not argued about. Built it: South Shallows (`0,7,9`, dunes) — bank at
+5,3, bar at 5,4, stake at 5,5, snarl at 5,6, exactly the fixture every
+Drowned Wood Shrine grove already uses, tucked into what had been open
+sea at the south edge of an otherwise-untouched screen.
+
+**First run failed one assertion**: "and it can be got to at LOW —
+nothing reaches the stake once it is grown." The bar (`9`/`drownWall`) is
+solid at LOW same as `dBole` is, so a pillar reachable only by walking
+through the bar is stranded the instant the tide that grows it (HIGH)
+drops back to the tide that makes it ground (LOW). Grove2 in the Shrine
+already answers this — its "pool" is three tiles wide, so a swimmer can
+go around the bar rather than through it. Copied the same shape: plain
+`waterD` flanking the stake (4,5 and 6,5), open to anyone with the
+Cleats. `check-reefseed.mjs` went to 117/117.
+
+**Screenshotting it (LOW and HIGH, per NEXT-PROMPT.md's own "Done
+means") found a second bug the assertions couldn't see**: the bar
+rendered as a flat grey box, not a wall. `drownWall`'s LOW/MID state is
+plain `cliff`, `pal:'stone'` — every one of the eight prior outdoor
+placements is in `abyss` or `cliffs`, both already grey-ground regions,
+so nobody had ever put one on sand. Repointed it at `cliffSand` (already
+existed, already used by two other dunes rooms) and the screenshot did
+not change AT ALL — because a one-row wall is nothing but its own top
+edge, and `cliffSand`'s `edgeArt.up`, like all six cliff palettes',
+pointed at the one shared `cliffTop` tile, hardcoded grey regardless of
+the body it caps. The two existing dunes cliffs never exposed this
+because both sit on a screen's own top row, where off-screen always
+counts as the same family and the edge never fires. Fixed with one new
+tile, `cliffSandTop` (same art, `pal:'sand'`), and repointed only
+`cliffSand`'s own edge at it — confirmed by direct query that the two
+pre-existing dunes rooms are unaffected (their edge genuinely never
+fires), so this is additive, not a retune of shared art.
+
+Full verification: `check-reefseed` 117/117, `check-drift` (`reefseed
+overworld screens: 1`), `check-overworld`, `check-strands` (15
+regions/24 cells — unchanged baseline, no `--record` needed: the gated
+cells are deep water and solid respectively in the static data, so the
+foot flood never even asked the question), `check-placement`,
+`check-ground`, `check-progression`, `check-playthrough`, `test.mjs`,
+`npm run build` + `check-build` — all green. Screenshotted at LOW, MID
+and HIGH, looked at, believed.
+
+Full writeup: `docs/prompts/LEDGER.md`, "Known and deliberately unfixed".
+
+---
+
 ## S99 — audit of S96-S98: the Keep shipped with a forest tree in it, and S98's "structurally blocked" finding was grep-deep and wrong
 
 Ran as an audit rather than a build session. Two defects, both already on

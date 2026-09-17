@@ -2065,6 +2065,22 @@ export function installCoreTiles() {
     reefDeep: { tide: ['waterSReef', 'waterDReef', 'waterDReef'] },
     tideRock: { tide: ['rockFloor', 'rockFloor', 'waterS'] },     // stepping stone
     drownWall: { tide: ['cliff', 'cliff', 'waterD'] },            // swim over it at high
+    // Every other outdoor region `9` has shown up in so far — the abyss, the
+    // cliffs — already has a stone floor of its own, so plain grey `cliff`
+    // never had to prove it against anything but more grey. The dunes are
+    // the first sand-ground region to place one (item-reuse,
+    // docs/prompts/STATE.md), and `tools/shoot-rooms.mjs` on it said what
+    // colour alone can't be reasoned past: `cliffSand`'s own BODY was already
+    // `pal: 'sand'`, and the swap below to point `9` at it changed nothing
+    // visible, because a one-row wall is nothing but its own top edge, and
+    // `cliffSand`'s `edgeArt.up` pointed at the shared `cliffTop` — the same
+    // grey silhouette all six cliff palettes reuse, never itself repalletted
+    // (see the comment on `cliff` below). Every existing dunes `#`/`^` sits
+    // on a screen's own top row, where off-screen always counts as the same
+    // family, so the edge never fires and nobody had seen this. `dunes`
+    // already carries its own cliff body for exactly this reason — so it
+    // gets its own top too: `cliffSandTop`, below.
+    drownWallSand: { tide: ['cliffSand', 'cliffSand', 'waterD'] },
     tideGrass: { tide: ['grass', 'grass', 'waterS'] },
     mudflat: { tide: ['mud', 'waterS', 'waterD'] },
     abyssHole: { tide: ['waterD', 'waterAbyss', 'waterAbyss'] },
@@ -2120,7 +2136,19 @@ export function installCoreTiles() {
     cliff: { art: ART.cliff, pal: 'stone', flags: F.SOLID, family: 'cliff', edgeArt: { up: 'cliffTop' } },
     cliffTop: { art: ART.cliffTop, pal: 'stone', flags: F.SOLID, family: 'cliff' },
     cliffDk: { art: ART.cliff, pal: 'stonedk', flags: F.SOLID, family: 'cliff', edgeArt: { up: 'cliffTop' } },
-    cliffSand: { art: ART.cliff, pal: 'sand', flags: F.SOLID, family: 'cliff', edgeArt: { up: 'cliffTop' } },
+    // `cliffSandTop`, not the shared `cliffTop` above: found placing the
+    // outdoor Reefseed grove (item-reuse, docs/prompts/STATE.md) —
+    // `cliffSand`'s own BODY has carried `pal: 'sand'` since before this
+    // session, but every cliff variant's `edgeArt.up` pointed at the one
+    // shared `cliffTop`, always `pal: 'stone'`, and a one-row wall is
+    // nothing but its own top edge — so the tan cliff the body promised
+    // rendered as a grey block on sand. `dunes` is the only region whose
+    // ground colour is far enough from stone that this ever showed: every
+    // existing `#`/`^` in it sits on a screen's own top row, where
+    // off-screen always counts as the same family and the edge never fires.
+    // The other five cliff palettes keep the shared grey lip untouched.
+    cliffSandTop: { art: ART.cliffTop, pal: 'sand', flags: F.SOLID, family: 'cliff' },
+    cliffSand: { art: ART.cliff, pal: 'sand', flags: F.SOLID, family: 'cliff', edgeArt: { up: 'cliffSandTop' } },
     cliffRust: { art: ART.cliff, pal: 'rust', flags: F.SOLID, family: 'cliff', edgeArt: { up: 'cliffTop' } },
     cliffCoral: { art: ART.cliff, pal: 'coral', flags: F.SOLID, family: 'cliff', edgeArt: { up: 'cliffTop' } },
     cliffMarble: { art: ART.cliff, pal: 'marble', flags: F.SOLID, family: 'cliff', edgeArt: { up: 'cliffTop' } },
@@ -2219,6 +2247,19 @@ export function installCoreTiles() {
     driftTangle: { art: ART.bush, pal: 'bog', flags: F.SOLID, underArt: 'grass' },
     driftTangleDk: { art: ART.bush, pal: 'bog', flags: F.SOLID, underArt: 'rockFloorDk' },
     bushSand: { art: ART.bush, pal: 'tree', flags: F.SOLID | F.BUSH, underArt: 'sand' },
+    // The Reefseed's snarl, outdoors — item-reuse (docs/prompts/STATE.md). Not
+    // `dSnarl`: that one is drawn in `treeoakdk`, a ramp built for the Drowned
+    // Wood's oaks, and S96 already proved what happens when it is dropped
+    // somewhere its brown trunk doesn't belong (docs/prompts/LEDGER.md, "A
+    // tile borrowed from another dungeon..."). `dSnarlAbyss` is the tile to
+    // follow instead: `pal: 'reef'`, the sea-plant ramp the reef city already
+    // uses, which fit the Abyssal Keep's black stone precisely because kelp in
+    // water reads the same regardless of what land is next to it. `underArt`
+    // is `waterD` rather than any region's ground for the same reason `dSnarl`
+    // names `dWaterD` — the tile this sits on is always going to be water, cut
+    // or not. No new art; same bush silhouette every solid bush in the game
+    // already uses.
+    seaSnarl: { art: ART.bush, pal: 'reef', flags: F.SOLID, underArt: 'waterD' },
     rock: { art: ART.rock, pal: 'stone', flags: F.SOLID | F.ROCK, underArt: 'grass' },
     rockSand: { art: ART.rock, pal: 'sand', flags: F.SOLID | F.ROCK, underArt: 'sand' },
     pot: { art: ART.pot, pal: 'pot', flags: F.SOLID | F.ROCK, underArt: 'dFloor' },
@@ -2612,6 +2653,7 @@ export function installCoreTiles() {
     // a puzzle, it is a trap.
     dSnarl: { cut: 'dWaterS', fx: 'cut', sfx: 'cut', persist: true },
     dSnarlAbyss: { cut: 'dWaterS', fx: 'cut', sfx: 'cut', persist: true },
+    seaSnarl: { cut: 'waterS', fx: 'cut', sfx: 'cut', persist: true },
     rock: { lift: 'grass', drop: 'common' },
     rockSand: { lift: 'sand', drop: 'common' },
     pot: { lift: 'dFloor', drop: 'common' },

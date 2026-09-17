@@ -592,6 +592,52 @@ extract from it:
   question asked of a borrowed tile is what `pal` and `underArt` it NAMES** —
   not whether its own name sounds theme-neutral. Goal 1 is the product, and
   nothing in the verification table defends it.
+- **S98's "the overworld half of item-reuse is structurally blocked" is
+  CONFIRMED WITHDRAWN — S100 built a real room and it passed.** South
+  Shallows (`0,7,9`, overworld) declares a `reefseedRoom` — bank, bar,
+  stake, snarl, the identical fixture the Drowned Wood Shrine's groves use
+  — and `check-reefseed.mjs` proves it 117/117, `check-strands.mjs` finds
+  no new region (the gated cells are deep water/solid in the static data,
+  not foot-passable, so the flood never counted them as a stranding
+  question at all), and the full suite plus `check-playthrough.mjs` and
+  `npm run build` are all green on it. The other three single-use items
+  (Anchor, Lens, Bellows) still have zero overworld screens and their own
+  dungeon-side ceilings (above) are untouched by this — only the overworld
+  HALF of the question is now settled, and only for the Reefseed.
+  **Two build notes for whoever builds the next one.** First, the bar's
+  reachability is not the throw axis: `dBole`/`dSnag`-style bars are solid
+  at LOW same as everywhere else, so a grown pillar reachable ONLY through
+  the bar is stranded the moment the tide drops — the fixture needs a
+  swim-around, plain deep water flanking the stake (not the snarl) the way
+  Grove2 already has, open to a Cleats-owning swimmer so the route to the
+  pillar runs AROUND the bar rather than through it. Missing this failed
+  `check-reefseed.mjs` outright ("nothing reaches the stake once it is
+  grown") on the first run. Second, and the one screenshot caught that
+  nothing else could:
+  **`drownWall`'s LOW/MID state is `cliff`, `pal:'stone'`, and it had never
+  once been placed in a region whose ground isn't already stone-coloured.**
+  All eight prior outdoor placements are in `abyss`/`cliffs`, both regions
+  whose OWN ground is grey rock, so the grey cliff blended by coincidence.
+  Repointing it at `cliffSand` (a tile that already existed, already used
+  by two other dunes rooms) changed nothing in the screenshot, because a
+  one-row wall is nothing but its own top edge, and `cliffSand`'s
+  `edgeArt.up` — like all six cliff palettes' — pointed at the ONE shared
+  `cliffTop`, hardcoded `pal:'stone'` regardless of the body it caps
+  (`tiles-core.js`, the `cliff`/`cliffTop` block: "`edgeArt` is what makes
+  a cliff read as a cliff... the renderer now puts the lip on the top row
+  of every mass by looking at the neighbours"). The two existing dunes
+  `#`/`^` cells sit on a screen's own top ROW, where off-screen always
+  counts as the same family and the edge never fires — so nobody had ever
+  seen a `cliffSand` cell actually draw its own top before. Fixed with one
+  new tile, `cliffSandTop` (`pal:'sand'`, same `ART.cliffTop` shape), and
+  repointing only `cliffSand`'s own `edgeArt.up` at it — the other five
+  cliff palettes (`cliff`, `cliffDk`, `cliffRust`, `cliffCoral`,
+  `cliffMarble`, `cliffAbyss`) still share the grey `cliffTop` untouched,
+  and both pre-existing dunes rooms are provably unaffected (their edge
+  never fires). **Whoever gives a LATER dungeon's later-reused item an
+  outdoor gate should expect the same shape of gap if the fixture crosses
+  into a region whose ground colour hasn't been tested against `cliffTop`
+  before** — check by screenshot, not by reading the tiledef.
 
 ---
 

@@ -20258,6 +20258,22 @@ function installCoreTiles() {
     reefDeep: { tide: ['waterSReef', 'waterDReef', 'waterDReef'] },
     tideRock: { tide: ['rockFloor', 'rockFloor', 'waterS'] },     // stepping stone
     drownWall: { tide: ['cliff', 'cliff', 'waterD'] },            // swim over it at high
+    // Every other outdoor region `9` has shown up in so far — the abyss, the
+    // cliffs — already has a stone floor of its own, so plain grey `cliff`
+    // never had to prove it against anything but more grey. The dunes are
+    // the first sand-ground region to place one (item-reuse,
+    // docs/prompts/STATE.md), and `tools/shoot-rooms.mjs` on it said what
+    // colour alone can't be reasoned past: `cliffSand`'s own BODY was already
+    // `pal: 'sand'`, and the swap below to point `9` at it changed nothing
+    // visible, because a one-row wall is nothing but its own top edge, and
+    // `cliffSand`'s `edgeArt.up` pointed at the shared `cliffTop` — the same
+    // grey silhouette all six cliff palettes reuse, never itself repalletted
+    // (see the comment on `cliff` below). Every existing dunes `#`/`^` sits
+    // on a screen's own top row, where off-screen always counts as the same
+    // family, so the edge never fires and nobody had seen this. `dunes`
+    // already carries its own cliff body for exactly this reason — so it
+    // gets its own top too: `cliffSandTop`, below.
+    drownWallSand: { tide: ['cliffSand', 'cliffSand', 'waterD'] },
     tideGrass: { tide: ['grass', 'grass', 'waterS'] },
     mudflat: { tide: ['mud', 'waterS', 'waterD'] },
     abyssHole: { tide: ['waterD', 'waterAbyss', 'waterAbyss'] },
@@ -20313,7 +20329,19 @@ function installCoreTiles() {
     cliff: { art: ART.cliff, pal: 'stone', flags: F.SOLID, family: 'cliff', edgeArt: { up: 'cliffTop' } },
     cliffTop: { art: ART.cliffTop, pal: 'stone', flags: F.SOLID, family: 'cliff' },
     cliffDk: { art: ART.cliff, pal: 'stonedk', flags: F.SOLID, family: 'cliff', edgeArt: { up: 'cliffTop' } },
-    cliffSand: { art: ART.cliff, pal: 'sand', flags: F.SOLID, family: 'cliff', edgeArt: { up: 'cliffTop' } },
+    // `cliffSandTop`, not the shared `cliffTop` above: found placing the
+    // outdoor Reefseed grove (item-reuse, docs/prompts/STATE.md) —
+    // `cliffSand`'s own BODY has carried `pal: 'sand'` since before this
+    // session, but every cliff variant's `edgeArt.up` pointed at the one
+    // shared `cliffTop`, always `pal: 'stone'`, and a one-row wall is
+    // nothing but its own top edge — so the tan cliff the body promised
+    // rendered as a grey block on sand. `dunes` is the only region whose
+    // ground colour is far enough from stone that this ever showed: every
+    // existing `#`/`^` in it sits on a screen's own top row, where
+    // off-screen always counts as the same family and the edge never fires.
+    // The other five cliff palettes keep the shared grey lip untouched.
+    cliffSandTop: { art: ART.cliffTop, pal: 'sand', flags: F.SOLID, family: 'cliff' },
+    cliffSand: { art: ART.cliff, pal: 'sand', flags: F.SOLID, family: 'cliff', edgeArt: { up: 'cliffSandTop' } },
     cliffRust: { art: ART.cliff, pal: 'rust', flags: F.SOLID, family: 'cliff', edgeArt: { up: 'cliffTop' } },
     cliffCoral: { art: ART.cliff, pal: 'coral', flags: F.SOLID, family: 'cliff', edgeArt: { up: 'cliffTop' } },
     cliffMarble: { art: ART.cliff, pal: 'marble', flags: F.SOLID, family: 'cliff', edgeArt: { up: 'cliffTop' } },
@@ -20412,6 +20440,19 @@ function installCoreTiles() {
     driftTangle: { art: ART.bush, pal: 'bog', flags: F.SOLID, underArt: 'grass' },
     driftTangleDk: { art: ART.bush, pal: 'bog', flags: F.SOLID, underArt: 'rockFloorDk' },
     bushSand: { art: ART.bush, pal: 'tree', flags: F.SOLID | F.BUSH, underArt: 'sand' },
+    // The Reefseed's snarl, outdoors — item-reuse (docs/prompts/STATE.md). Not
+    // `dSnarl`: that one is drawn in `treeoakdk`, a ramp built for the Drowned
+    // Wood's oaks, and S96 already proved what happens when it is dropped
+    // somewhere its brown trunk doesn't belong (docs/prompts/LEDGER.md, "A
+    // tile borrowed from another dungeon..."). `dSnarlAbyss` is the tile to
+    // follow instead: `pal: 'reef'`, the sea-plant ramp the reef city already
+    // uses, which fit the Abyssal Keep's black stone precisely because kelp in
+    // water reads the same regardless of what land is next to it. `underArt`
+    // is `waterD` rather than any region's ground for the same reason `dSnarl`
+    // names `dWaterD` — the tile this sits on is always going to be water, cut
+    // or not. No new art; same bush silhouette every solid bush in the game
+    // already uses.
+    seaSnarl: { art: ART.bush, pal: 'reef', flags: F.SOLID, underArt: 'waterD' },
     rock: { art: ART.rock, pal: 'stone', flags: F.SOLID | F.ROCK, underArt: 'grass' },
     rockSand: { art: ART.rock, pal: 'sand', flags: F.SOLID | F.ROCK, underArt: 'sand' },
     pot: { art: ART.pot, pal: 'pot', flags: F.SOLID | F.ROCK, underArt: 'dFloor' },
@@ -20805,6 +20846,7 @@ function installCoreTiles() {
     // a puzzle, it is a trap.
     dSnarl: { cut: 'dWaterS', fx: 'cut', sfx: 'cut', persist: true },
     dSnarlAbyss: { cut: 'dWaterS', fx: 'cut', sfx: 'cut', persist: true },
+    seaSnarl: { cut: 'waterS', fx: 'cut', sfx: 'cut', persist: true },
     rock: { lift: 'grass', drop: 'common' },
     rockSand: { lift: 'sand', drop: 'common' },
     pot: { lift: 'dFloor', drop: 'common' },
@@ -20884,6 +20926,7 @@ function installLegends() {
     'K': 'grateOw',      // metal: only the Resonance Rod retracts it
     'J': 'chasm',        // Roc's Feather   — 1 tile, clearable at 2.27 tiles
     'M': 'boulder',      // Dredge Line     — drag it out of the way
+    'k': 'seaSnarl',     // Reefseed        — a snarl only a pillar puts a blade beside
     // `C` IS A CAVE AND `D` IS A DUNGEON, and they are different objects
     // because they are different promises. A dungeon door is a 2x2 BLOCK — a
     // carved gate with its own emblem — declared per region below, because
@@ -20934,6 +20977,8 @@ function installLegends() {
     'C': 'caveMouthSand',   // cut into a sand cliff, so it wears the sand ramp
     'D': 'block:portalD1',  // the Tidewash Grotto's gate
     '"': 'ledgeSandN', '>': 'ledgeSandE', '<': 'ledgeSandW',
+    '9': 'drownWallSand',   // the base drownWall's grey cliff read as a
+                             // stray box on sand — see its tiledef comment
   }, 'base');
 
   // ---- cliffs: high stone shelves over deep water ------------------------
@@ -23511,18 +23556,60 @@ const rooms = {
   '0,7,9': {
     name: 'South Shallows',
     legend: 'dunes', music: 'overworld',
+    // The first outdoor Reefseed grove — item-reuse (docs/prompts/STATE.md).
+    // S98 found the overworld half of the rotation's four single-use items
+    // grep-deep "structurally blocked" and S99 withdrew that: neither
+    // `check-overworld.mjs` (it keys `reached` on the room, not the cell) nor
+    // `check-strands.mjs` (a baseline, `--record` and all) actually forbids a
+    // gated pocket. This is the room that tests it, not argues it.
+    //
+    // Same fixture every grove in the Drowned Wood Shrine uses — bank, bar,
+    // stake, snarl, one tile apart in a line — just built from tiles the
+    // overworld already owns instead of the Shrine's own set. `9` is the
+    // bar: solid at LOW/MID, open water at HIGH, the same shape as `dSnag`.
+    // It reads as `cliffSand` here, not plain `drownWall` — see
+    // `drownWallSand`'s and `cliffSandTop`'s tiledef comments in
+    // tiles-core.js for the two-part reason a one-row outdoor wall needed
+    // both a region body AND a region top before it stopped looking like a
+    // grey box dropped on the beach. `=`/plain `waterD` is the stake,
+    // always deep so nothing stands there until a pillar does. `k`/
+    // `seaSnarl` is the snarl, the Keep's own `reef`-palette kelp rather
+    // than the Shrine's oak-trunked one — see its tiledef comment for why
+    // that one and not the other.
+    //
+    // The pocket sits south of the plaza in what was open sea. Bank at 5,3,
+    // thrown down at HIGH into the bar at 5,4, into the stake at 5,5 — and
+    // the bar is solid at LOW same as `dBole` is, so the pillar it grows
+    // needs the same answer the Shrine's own groves give it: plain `waterD`
+    // either side of the stake (4,5 and 6,5), open to a swimmer, so the
+    // route to what was grown runs AROUND the bar rather than through it —
+    // the one piece of the fixture's geometry that isn't legible from a
+    // single row and cost this room its first failed run
+    // (`check-reefseed.mjs`: "nothing reaches the stake once it is grown").
+    // The snarl at 5,6 gets none of that width — boxed by border `*` on
+    // both flanks, same as before, so the only blade that reaches it is the
+    // one standing on the stake. Nothing beyond it is needed for anything —
+    // it is a find, same as the Keep's own.
     map: [
       'TToggggoTT',
       'Tgg....ggT',
       'Tg......gg',
-      'Tg.1111.gg',
-      '*1111111gg',
-      '*1******11',
-      '*1******1*',
+      'Tg.11.1.gg',
+      '*1111911gg',
+      '*1**===*11',
+      '*1***k**1*',
       '**********',
     ],
+    reefseedRoom: {
+      entry: [4, 1],
+      stakes: [
+        { at: [5, 5], from: [5, 3], face: 'down', sea: 2 },
+      ],
+      snarl: [5, 6], cutFrom: [5, 5],
+    },
     entities: [
       ['crab', 4, 3],
+      ['sign', 6, 2, { text: 'Sow at the flood. Stand once the sea has gone back out.' }],
     ],
   },
   '0,8,9': {

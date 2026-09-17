@@ -1,10 +1,7 @@
 OBJECTIVE OF RECORD: 7 item-reuse
 
-S98's FLAGGED DECISION IS WITHDRAWN (S99): its premise was grep-deep and
-false. check-overworld keys `reached` on the ROOM so it cannot see an
-in-screen pocket, and check-strands is a BASELINE with `--record`, already
-holding a 10-cell region. The overworld half is UNTESTED, not blocked.
-Nothing awaits a call; next session builds one and runs the suite. See LEDGER.
+S100 built the overworld half's first real room (Reefseed, South Shallows)
+and it passed clean. Anchor, Lens, Bellows still have zero overworld screens.
 
 ROTATION (fixed, do not reorder):
   1 wide-rooms      — 3 of 6 dungeons have a 2x2 or 3x1
@@ -40,6 +37,10 @@ FILE ALLOWLIST for the current objective (7 item-reuse):
     where a new Anchor/Lens/Bellows/Reefseed-gated obstacle gets added
   src/data/overworld.js — where a new overworld screen gets an
     Anchor/Lens/Bellows/Reefseed requirement
+  src/data/legends.js, src/data/tiles-core.js — ADDED S100: an outdoor
+    gated fixture needs outdoor tiles, and none existed. Region-palette
+    variants only (`seaSnarl`, `drownWallSand`, `cliffSandTop`) — never
+    an existing tile's own shape, flags or mechanics
   docs/ITEMS.md — read-only reference for each item's three verbs; only
     edit if a session finds the doc itself wrong
   docs/DUNGEON-STATUS.md — read before touching a dungeon marked done;
@@ -53,7 +54,7 @@ hand-drawn, reasoned). #4 done S59 (human decision, no further idle art).
 #5 done S63 (human decision, no further hand-drawn NPC art; wrong on any
 -> revert). #6 done S89 (120/120 audited, fixes landed S76-S81 ledges).
 
-DETOUR TOKENS: 0 (spent S98)
+DETOUR TOKENS: 1 (regenerated: S99 and S100 both `objective`)
 
 SESSION LOG: one row per session — `S## | objective|detour | one line`
-S99 | objective | AUDIT of S96-S98, and both things it checked were wrong. (1) S96's D6 grove borrowed D5's `dSnag`/`dSnarl`, which are drawn in an oak ramp with a brown trunk and sit on the Wood's own floor — the Keep shipped with a green forest tree and shrub in a black stone hall, green on `main`, caught by the one tool nobody ran (shoot-rooms). Fixed with no new art: snarl -> new `dSnarlAbyss` (reef ramp, `dPostAbyss`'s precedent), bole -> `7`/`dLintel`, which the Keep already owned and which has `dSnag`'s exact tide shape; `5` override deleted; room renamed The Drowned Garden. check-reefseed still 102/102, full suite + replay 51/51 + build green, screenshotted at LOW and HIGH. (2) S98's "overworld is structurally blocked" was grep-deep and false — check-overworld keys `reached` on the ROOM, check-strands is a baseline with `--record` already holding a 10-cell region. Claim withdrawn, its flagged decision withdrawn, S91/S95's own findings un-merged. Pre-existing, NOT ours: check-hearts fails 2/112 at 406e785 too. Full writeup: LEDGER "Known and deliberately unfixed" (2 entries), docs/NEXT-SESSION.md S99.
+S100 | objective | Built the outdoor Reefseed grove NEXT-PROMPT.md asked for (South Shallows, 0,7,9): bank/bar/stake/snarl, thrown at HIGH, cut at LOW. First run failed one assertion (bar solid at LOW stranded the grown pillar) — fixed by widening the stake row with plain `waterD` either side, the same swim-around Grove2 already uses. check-reefseed 117/117. Screenshot then found a second, more interesting bug: the bar rendered as a grey box on sand because `cliffSand`'s edge-art lip is the shared `cliffTop`, always `pal:'stone'`, never exercised in a non-stone region before (every existing dunes `#`/`^` sits on a screen's own top row, which never fires the edge). Fixed with two small region-palette tiles (`drownWallSand`, `cliffSandTop`), zero effect on the two pre-existing dunes cliffs. Full suite, check-strands (no new region), check-playthrough, replay, build all green. `reefseed overworld screens: 1`. Writeup: LEDGER "Known and deliberately unfixed".
