@@ -1,3 +1,109 @@
+## S94 — the Squall Bellows close their ">=2 dungeons" bar: a second sill in D6's West Crypt, and a real gap found in check-bellows.mjs's own filter (not a rebuild fantasy — the overworld half is genuinely blocked, same shape as S92's Lens finding, but this one is a one-line bug, not a design decision)
+
+Followed my own S93 NEXT-PROMPT.md: found a second, low-risk Bellows room
+in D6, built it, and `bellows dungeons` now reads `2 of 5` — the exact
+number the rotation's ">=2 later dungeons" bar asks for.
+
+**The room:** D6's West Crypt (`0,2,4`), previously a plain dead end
+holding a fairy behind one stalfos. D6's rooms use a narrower interior
+band than D4/D5 (two full-wall border rows top and bottom, not one), so
+the D5 Bower Cell shape didn't fit unchanged — folded the same
+wheel-boxed-by-wall-and-pit-plus-tide-gated-shaft fixture into 4 interior
+rows instead of 6, wheel and stand on the SAME row instead of stacked.
+
+**Cost one real iteration, unlike Bower Cell's clean first pass, and the
+reason is worth keeping:** the first layout failed `check-bellows.mjs`'s
+"no sea level frees the wheel where you can stand" clause — LOW, from two
+tiles the room's plain floor left standing a diagonal knight's-move from
+the wheel. `coneCovers`'s cone widens one tile of width for every two
+tiles of reach, so a facing that looks like it only travels in a straight
+line still catches an off-axis tile once it's gone far enough — a stand at
+(4,3) or (3,4) facing toward a wheel at (2,2) both cover it at `along=2`
+because the perpendicular offset (1) is within `floor(along/2)` at that
+range. Both failing lines shared the same solidity-check midpoint, `(3,3)`
+— walling that one tile blocked both diagonals at once. The lesson for
+next time: a wheel pocket carved into a room that ALREADY has open floor
+nearby needs every tile within cone-width of the wheel checked, not just
+the tiles directly on the stand's own axis.
+
+Full regression re-run clean after the fix: `check-bellows.mjs` (78/78),
+`walk-dungeons.mjs`, `check-dungeon-strands.mjs` (two new single-cell
+regions, both wheel tiles themselves — expected, same as every D4 sill),
+`check-progression.mjs`, `check-placement.mjs`, `check-ground.mjs`,
+`check-playthrough.mjs`, `test.mjs` (83/83), `npm run build`.
+
+**Found, while re-reading check-bellows.mjs's own filter to make sure D6
+was actually legal (S92 had only checked the `index < HOME` shape, not
+whether an OVERWORLD room would pass the same check): it would not.**
+`rooms.push({ ..., index: (m.dungeon && m.dungeon.index) | 0, ... })` —
+for an overworld screen, `m.dungeon` is `undefined`, so `index` computes
+to `0`, and the very next check, `early = rooms.filter(r => r.index < 4)`,
+would catch ANY declared overworld `bellowsRoom` as "before the Bellows,"
+full stop. This is the exact shape of bug S91 found and fixed in
+`check-anchor.mjs` — a hardcoded/derived value with no `overworld` case,
+not a deliberate scope decision like S92's Lens finding — so it is a
+one-line fix (something like `r.index < 4 && r.mapId !== 'overworld'`),
+not a model change. Did NOT touch it: `tools/` is out of this session's
+own allowlist and the fix wants verifying with a real overworld test case
+the way S91 did for the Anchor, which is real work in its own right.
+
+Bellows is now the FIRST item-reuse item with its dungeon half fully
+closed (2 of 5, matching the bar) — its overworld half (still 0 of the
+required 3) is next, and needs the filter bug above fixed first. That is
+a natural detour-token spend: `DETOUR TOKENS` regenerated to 1 after this
+session (S92 and S93 were both `objective`), so next session can spend it
+on the one-line fix, verify it the way S91 verified the Anchor's, and then
+try to actually place an overworld Bellows sill (a windmill or wheel
+against the coast is the obvious shape, not yet designed).
+
+Logged as `objective`.
+
+## S93 — the Squall Bellows get a second home: Cliffside Cistern's own sump-shaft sill, rebuilt inside D5's Bower Cell
+
+S92 found `check-bellows.mjs` has no D2-style hard block (unlike
+`check-lens.mjs`) and that D5 or D6 could legally take a `bellowsRoom`
+today. This session built one in D5's Bower Cell (`0,5,5`,
+`src/data/dungeons-b.js`), the Shrine's south-east dead end that used to
+hold a bare heart piece behind one tektite.
+
+Reused D4's Squall Loft geometry exactly rather than inventing a new
+shape: a wheel (`dWell`, char `3`) walled on three sides and pitted
+(`dPit`, `O`) on the fourth so no hand ever reaches it regardless of tide;
+a stand two tiles off across the pit, cone facing across it; and a
+`dSump` shaft (LOW = hole, MID/HIGH = deep) as the ONLY route up to the
+stand, so the stand is reachable exactly when the wheel is drowned (MID
+and HIGH, both — `dWell` drowns at both) and not before. Turning the wheel
+now spawns the heart piece at the stand tile via a script `onEvent`/
+`onEnter` pair (the Cistern Gauge's soft-lock guard, copied verbatim: a
+script-spawned pickup exists only in the frame it was released in, so
+leaving without it and coming back has to put it back).
+
+`node tools/check-bellows.mjs` passed all 69 assertions the FIRST run, no
+iteration needed — the geometry was proven once already in D4 and this is
+the same geometry, not a new one. `check-drift.mjs` now reads
+`bellows dungeons: 1 of 5` (was 0). Full regression re-run clean:
+`walk-dungeons.mjs`, `check-progression.mjs`, `check-placement.mjs`,
+`check-ground.mjs`, `check-playthrough.mjs`, `check-reefseed.mjs`
+(unaffected — 87/87, confirms D5's own Reefseed puzzle wasn't touched),
+`test.mjs` (83/83). `check-dungeon-strands.mjs` reports one new
+single-cell region (the wheel's own tile, `d5 0,5,5:1,1`) — expected and
+accepted by the tool's own tolerance (a single isolated cell, same as the
+wheel tiles in every D4 sill room); left the baseline file alone since
+"no change to `tools/`" was this session's own scope limit and the tool
+already exits clean without a re-record.
+
+**Did not also build a D6 room**, on my own NEXT-PROMPT.md's instruction
+not to force a second room in a hurry. D6's remaining side rooms are
+mostly load-bearing pieces of the Dredge Line's already-intricate mooring
+fixture (docs/DUNGEON-STATUS.md's D6 section) or hold required items
+(Mermaid Vault's Cleats L2, Dredge Vault's own chest) — none looked like
+a clean, low-risk drop-in the way Bower Cell was. That is next session's
+task: find or build the second Bellows room, in D6, to close the
+rotation's ">=2 dungeons" bar for this item.
+
+Logged as `objective` — the second of the two STATE.md needs before the
+detour token regenerates.
+
 ## S92 — the Lens task named in NEXT-PROMPT.md is blocked the same way the Anchor's overworld half was, but by an unconditional assertion in check-lens.mjs rather than a bug; checked the other three gate checkers while here and found Bellows is NOT blocked
 
 NEXT-PROMPT.md's task was to find or build one Lens room outside D2 using

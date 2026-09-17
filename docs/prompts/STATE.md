@@ -54,7 +54,7 @@ human confirmed no further hand-drawn NPC art. Wrong on any -> revert.
 #6 done S89: 120/120 overworld rooms in docs/AUDITED-ROOMS.md, every
 region audited S64-S89. Real fixes landed along the way (S76-S81 ledges).
 
-DETOUR TOKENS: 0 (spent S91; needs 2 consecutive objective sessions to regen — S92 is 1 of 2)
+DETOUR TOKENS: 1 (regenerated S92+S93; unspent — S94 also objective)
 
 SESSION LOG: one row per session — `S## | objective|detour | one line`
-S92 | objective | Lens task (NEXT-PROMPT.md) hit its own documented contingency: check-lens.mjs unconditionally rejects any lensRoom outside D2 (deliberate, not a bug like S91's whitelist), so no tool-free fix exists — wrote it up and stopped rather than spend a token that doesn't exist (0 available). Checked check-bellows.mjs/check-reefseed.mjs/check-cleats.mjs while there: Bellows has NO such block and can reach the ">=2 dungeons" bar via D5+D6 with zero tool changes; Reefseed is capped at 1 dungeon (D6 only) under its own index filter, one short of the bar. Full writeup: docs/prompts/LEDGER.md "Known and deliberately unfixed", docs/NEXT-SESSION.md S92.
+S94 | objective | Built the Squall Bellows' second room, D6's West Crypt (fairy behind a wheel+cone sill, same fixture as D5's Bower Cell folded into D6's narrower room band) — check-bellows.mjs 78/78 after fixing one real diagonal-cone leak found along the way. check-drift now reads bellows dungeons: 2 of 5, closing the rotation's dungeon bar for this item. Found (not fixed, no detour spent) that check-bellows.mjs's own index filter would wrongly reject ANY overworld bellowsRoom — same shape as S91's check-anchor.mjs bug, a one-line fix — which blocks Bellows' still-open overworld half (0 of 3 needed). Full regression green (walk-dungeons/strands/progression/placement/ground/playthrough/test.mjs/build). Full writeup: docs/prompts/LEDGER.md "Known and deliberately unfixed", docs/NEXT-SESSION.md S94.

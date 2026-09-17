@@ -29965,24 +29965,48 @@ function installDungeonsB() {
       },
       '0,5,5': {
         name: 'Bower Cell',
+        // D5's second Piece of Heart moved behind the Shrine's own second
+        // item, not its first: a Bellows sill, item-reuse's first one built
+        // outside Cliffside Cistern (see docs/prompts/LEDGER.md). Same shape
+        // as D4's Squall Loft — a wheel boxed by wall on three sides and a
+        // pit on the fourth, a stand two tiles off across the pit, and a
+        // sump shaft the only way up to it, drowned at the same sea the
+        // wheel is. The Bower Cell is the Shrine's south-east corner and
+        // still leads nowhere — the tektite guards the shaft's foot instead
+        // of the piece directly.
         map: [
           '##########',
-          '#........#',
-          '#..88....#',
-          '...88....#',
-          '.........#',
+          '#3OO.#...#',
+          '####.#...#',
+          '....0#...#',
+          '....0....#',
           '#........#',
           '#........#',
           '##########',
         ],
+        bellowsRoom: {
+          wheel: [1, 1], stand: [4, 1], face: 'left', at: 1, gives: 'heartPiece',
+        },
         entities: [
+          ['wheel', 1, 1, { needTurns: 30 }],
           ['pickup', 7, 2, { kind: 'rupee20' }],
-          ['tektite', 3, 5],
-          // D5's second Piece of Heart. The Bower Cell is the Shrine's
-          // south-east corner and leads nowhere — the tektite is the whole
-          // price.
-          ['pickup', 5, 1, { kind: 'heartPiece' }],
+          ['tektite', 6, 5],
         ],
+        script: {
+          // Put the Piece of Heart back if it was released and never
+          // collected — the Cistern Gauge's soft lock, one dungeon over.
+          onEnter(game) {
+            if (game.progress.flags.d5BowerWheel && !game.progress.secrets.d5BowerHeart) {
+              game.spawnPickup(64, 16, 'heartPiece', { grabDelay: 14, saveKey: 'd5BowerHeart' });
+            }
+          },
+          onEvent(game, name, data) {
+            if (name !== 'valve' || !data || !data.open) return;
+            game.progress.flags.d5BowerWheel = true;
+            if (game.progress.secrets.d5BowerHeart) return;
+            game.spawnPickup(64, 16, 'heartPiece', { grabDelay: 14, saveKey: 'd5BowerHeart' });
+          },
+        },
       },
       '0,5,4': {
         name: 'Coppice Cell',
@@ -30647,20 +30671,43 @@ function installDungeonsB() {
       },
       '0,2,4': {
         name: 'West Crypt',
+        // D6's own Bellows sill, item-reuse's second (docs/prompts/LEDGER.md,
+        // S93/S94) — the same wheel-boxed-by-wall-and-pit fixture as D5's
+        // Bower Cell, folded to fit this room's narrower 4-row band instead
+        // of stretched across a full 8-row one. The fairy that used to sit
+        // in the open now waits behind the wheel instead.
         map: [
           '##########',
           '##########',
-          '##..99..##',
-          '#.........',
+          '##3OO.####',
+          '####.0....',
           '##........',
           '##......##',
           '##########',
           '##########',
         ],
+        bellowsRoom: {
+          wheel: [2, 2], stand: [5, 2], face: 'left', at: 1, gives: 'fairy',
+        },
         entities: [
-          ['pickup', 4, 4, { kind: 'fairy' }],
-          ['stalfos', 6, 2],
+          ['wheel', 2, 2, { needTurns: 30 }],
+          ['stalfos', 6, 4],
         ],
+        script: {
+          // Put the fairy back if it was released and never collected — the
+          // Cistern Gauge's soft lock, same as Bower Cell.
+          onEnter(game) {
+            if (game.progress.flags.d6CryptWheel && !game.progress.secrets.d6CryptFairy) {
+              game.spawnPickup(80, 32, 'fairy', { grabDelay: 14, saveKey: 'd6CryptFairy' });
+            }
+          },
+          onEvent(game, name, data) {
+            if (name !== 'valve' || !data || !data.open) return;
+            game.progress.flags.d6CryptWheel = true;
+            if (game.progress.secrets.d6CryptFairy) return;
+            game.spawnPickup(80, 32, 'fairy', { grabDelay: 14, saveKey: 'd6CryptFairy' });
+          },
+        },
       },
       '0,4,4': {
         name: 'Black Kiln',

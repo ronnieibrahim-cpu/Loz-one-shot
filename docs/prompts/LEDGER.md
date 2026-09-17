@@ -438,6 +438,28 @@ extract from it:
   Reefseed cannot: home is D5, so `index < 5` leaves only D6 as a legal
   dungeon, one short of ">=2" — the same shape of ceiling as the Lens,
   just less immediately absolute. Full writeup: `docs/NEXT-SESSION.md` S92.
+  **S93 acted on this:** built D5's Bower Cell as the Bellows' first room
+  outside D4 (`check-bellows.mjs` 69/69 first run — same geometry as D4's
+  Squall Loft, just relocated), so `bellows dungeons` is now 1 of 5, not
+  0. D6 still needed for the rotation's ">=2" bar; its own remaining side
+  rooms mostly belong to the Dredge Line's mooring fixture or hold
+  required items, so the next one needs picking with more care than Bower
+  Cell did. See `docs/NEXT-SESSION.md` S93.
+  **S94 closed the dungeon half:** a second sill in D6's West Crypt
+  (`check-bellows.mjs` 78/78 after one real iteration — the cone's
+  diagonal reach at range 2 caught a stand two tiles off-axis at LOW,
+  fixed by walling the shared line-of-sight midpoint), so `bellows
+  dungeons` is 2 of 5 — the rotation's own bar. **Bellows' overworld half
+  (0 of the required 3) is still open, and is blocked by a bug, not a
+  design decision this time:** `check-bellows.mjs` computes `index:
+  (m.dungeon && m.dungeon.index) | 0` for every room, so an overworld
+  screen (no `m.dungeon`) always computes `index: 0`, which its own `early
+  = rooms.filter(r => r.index < 4)` clause then rejects as "before the
+  Bellows" — the identical shape of gap S91 found and fixed in
+  `check-anchor.mjs` (a derived value missing an `overworld` case), a
+  one-line fix rather than a model change. Left unfixed this session (no
+  detour token spent, `tools/` out of the objective allowlist); next
+  session's natural detour. See `docs/NEXT-SESSION.md` S94.
 
 ---
 
