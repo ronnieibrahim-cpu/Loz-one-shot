@@ -1,71 +1,72 @@
-# Next session — fix check-bellows.mjs's overworld gap, then try one screen
+# Next session — give the Reefseed its first room outside D5
 
 ## Read first
-- `docs/prompts/STATE.md` — DETOUR TOKENS is 1 (regenerated after S92 and
-  S93, both `objective`; unspent since). This session may spend it.
-- `docs/prompts/LEDGER.md`, "Known and deliberately unfixed", the S94
-  entry on `check-bellows.mjs`'s index filter — the exact bug and why it
-  blocks Bellows' overworld half.
-- `docs/NEXT-SESSION.md` S94 for the cone-geometry lesson from building
-  D6's West Crypt, if this session ends up building a new sill room too.
+- `docs/prompts/STATE.md` — DETOUR TOKENS is 0. This session must be
+  `objective`, and so must the one after it, before a token regenerates.
+- `docs/prompts/LEDGER.md`, "Known and deliberately unfixed", the S95
+  entry on why Bellows' and the Lens' and the Anchor's remaining halves
+  are each blocked differently — this session's target (Reefseed) is
+  NOT one of those; it is picked because it is NOT blocked, just capped.
+- `docs/NEXT-SESSION.md` S95 for the outdoor-tile-vocabulary argument, if
+  useful background (not required for this session's task).
 
 ## Why this, now
-S93 and S94 gave the Squall Bellows a second and third home (D5's Bower
-Cell, D6's West Crypt), closing the rotation's ">=2 dungeons" bar for
-that item (`check-drift.mjs` reads `bellows dungeons: 2 of 5`). Its
-overworld half is still 0 of the required 3, and S94 found why nothing
-can be built there yet: `check-bellows.mjs` derives `index: (m.dungeon &&
-m.dungeon.index) | 0` for every room, so an overworld screen (no
-`m.dungeon`) always computes `index: 0` — and the tool's own `early =
-rooms.filter(r => r.index < 4)` clause then rejects ANY declared overworld
-`bellowsRoom` as "before the Bellows." This is the same shape of gap S91
-found and fixed in `check-anchor.mjs` (a derived value with no
-`overworld` case) — a one-line fix, not a design change like S92's Lens
-finding, and DETOUR TOKENS is available to spend on it.
+Three sessions running (S92, S94, S95) found the Lens, the Anchor's
+overworld half, and now the Bellows' overworld half each blocked by a
+different structural limit that needs a tool or tile change no detour
+token currently covers. The Reefseed is different: `check-reefseed.mjs`'s
+own filter is `r.index < 5` (blocks D1-D4, allows D5 and D6), so a
+`reefseedRoom` in D6 is legal by the tool's own rules TODAY, the same way
+S94 found D5/D6 legal for the Bellows. `check-drift.mjs` reads
+`reefseed dungeons: 0 of 5` — building one D6 grove gets this to 1 of 5.
+
+Worth saying plainly, so it isn't rediscovered as a surprise: D6 is the
+ONLY dungeon after D5, so 1 of 5 is the ceiling here without a tool
+change — same shape of cap as the Lens/Bellows problems, just already
+known and out of scope. This session is not trying to close the rotation's
+">=2 dungeons" bar for the Reefseed; it is making the one move that is
+actually available.
 
 ## The task
-1. Fix `check-bellows.mjs`'s `early` filter so an overworld room is never
-   rejected on this clause (something like `r.index < 4 &&
-   r.mapId !== 'overworld'`, mirroring `check-anchor.mjs`'s own `late`
-   filter after S91). Confirm the existing D4/D5/D6 sills are unaffected
-   (still 78/78).
-2. THEN, the way S91 did for the Anchor: build (or find) a REAL overworld
-   screen using a Bellows sill, to prove the fix actually unblocks
-   something rather than just changing a filter in the abstract. A
-   windmill or gust wheel against the coast, gated the same way as the
-   dungeon sills (wheel boxed by wall+pit, drowned at the sea the screen
-   is played at, freed one level down, stand reached only through a
-   tide-gated approach) is the obvious shape — nothing overworld has used
-   this fixture before, so there is no existing overworld example to copy
-   the way D6 could copy D4/D5.
-3. If step 2 turns out to be blocked for a DEEPER reason once you try it
-   (the way S91's Anchor overworld gate was — check `check-strands.mjs`/
-   `check-overworld.mjs`'s hop model before assuming it is clear), STOP,
-   revert the test placement, and write it up instead of spending a
-   second token that does not exist. Do not repeat S91's shape by finding
-   a second problem and trying to solve both in one session.
+Read `docs/ITEMS.md`'s Reefseed section and `tools/check-reefseed.mjs`'s
+own file header in full before writing any room — it is the most
+demanding of the four gate checkers (10 numbered assertions per room, plus
+three global ones) and the fixture is exact: a bank, a drowned bole
+(`dSnag`-shaped tile — D5's own dungeon legend override, NOT available in
+`dungeonAbyss`; D6 will need ITS OWN override of a spare digit the same
+way D5 overrode `5`, see `src/data/legends.js`'s `dungeonWood`/
+`dungeonAbyss` entries), a stake, and a kelp snarl in a straight line,
+water on one perpendicular side and a sump (`0`/`dSump`) on the other.
+Find or build ONE room in D6 (`src/data/dungeons-b.js`, `id: 'd6'`) where
+growing a pillar with the Reefseed is the answer. Read D5's five groves
+first (`src/data/dungeons-b.js`, `id: 'd5'`) as the worked examples — do
+not invent a new fixture shape; `check-reefseed.mjs`'s own header says a
+second answer is exactly what a different arrangement produces.
+
+Budget real iteration time: S94's Bellows room needed one real fix after
+the first `check-bellows.mjs` run (a cone diagonal-reach leak); expect
+`check-reefseed.mjs` to be at least as strict; run it after every change
+rather than only at the end.
 
 ## Done means
-- `node tools/check-bellows.mjs` still reads 78/78 (or more) after the
-  filter fix, with the existing D4/D5/D6 rooms unchanged.
-- Either: an overworld screen declares a `bellowsRoom` and
-  `check-bellows.mjs` proves it, and `check-drift.mjs` reads
-  `bellows overworld screens: 1` (or more) — up from 0; OR: a written-up
-  finding says why the overworld half is blocked at a deeper level, same
-  shape as S91's Anchor writeup.
+- `node tools/check-reefseed.mjs` passes with a new room in D6 declaring
+  a `reefseedRoom`.
+- `node tools/check-drift.mjs` reads `reefseed dungeons: 1 of 5`, up from
+  0.
 - Full regression: `walk-dungeons.mjs`, `check-dungeon-strands.mjs`,
-  `check-strands.mjs`, `check-overworld.mjs`, `check-progression.mjs`,
-  `check-placement.mjs`, `check-ground.mjs`, `check-playthrough.mjs`,
-  `test.mjs`, `npm run build`.
-- `docs/prompts/STATE.md` logs this session as `detour` (a real `tools/`
-  change) and decrements DETOUR TOKENS to 0.
+  `check-progression.mjs`, `check-placement.mjs`, `check-ground.mjs`,
+  `check-playthrough.mjs`, `test.mjs`, `npm run build`.
+- `docs/prompts/STATE.md` logs this session as `objective` — the first of
+  the two needed before the detour token regenerates.
 
 ## Out of scope
-- The Lens and the overworld Anchor gate — both need a bigger model
-  change than this session's one token covers (see LEDGER).
-- The Reefseed — capped at 1 eligible dungeon under its own index filter,
-  a separate question from this session's Bellows work.
-- Do not use this session's token on anything besides the
-  `check-bellows.mjs` filter fix and proving it with one overworld room.
-  If the fix reveals a second, deeper problem, write it up rather than
-  spending further effort chasing it in the same session.
+- The Lens, the Anchor's overworld gate, and the Bellows' overworld half
+  — all three need a tool or tile change no detour token exists to cover
+  this session (see LEDGER).
+- Trying to reach ">=2 dungeons" for the Reefseed — D6 is the only
+  eligible dungeon under the current tool; 1 of 5 is this session's real
+  ceiling, not a shortfall to work around.
+- A new `dungeonAbyss` digit override for the bole needs picking (a spare
+  digit, same as D5's `5`) — do this inside the task, not as a separate
+  detour; it is data, not a `tools/` change.
+- Any change to `tools/` — no detour token exists this session.

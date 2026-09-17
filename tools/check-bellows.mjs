@@ -259,9 +259,18 @@ for (const [mapId, m] of MAPS) {
 check('at least one room declares a Bellows room', rooms.length > 0, 'nothing to prove');
 
 // The Bellows are dungeon four's item, so a Bellows room in an earlier dungeon
-// is a room the player cannot answer. Same shape as check-anchor's clause.
+// is a room the player cannot answer. Same shape as check-anchor's clause —
+// and the same bug check-anchor's `late` filter had before S91: `index` is
+// derived as `(m.dungeon && m.dungeon.index) | 0`, so an OVERWORLD room (no
+// `m.dungeon` at all) always computes to 0, which this clause used to read as
+// "before the Bellows" whatever the room actually needed. The Bellows are
+// held rather than placed, so an overworld room is never "before" them the
+// way an early DUNGEON room is — the player either has the item by the time
+// they reach it or they do not, and nothing about being outdoors changes
+// that. Excluded explicitly rather than by patching the derived index, so a
+// future dungeon mistakenly reading index 0 still fails loudly.
 {
-  const early = rooms.filter(r => r.index < 4);
+  const early = rooms.filter(r => r.mapId !== 'overworld' && r.index < 4);
   check('no Bellows room comes before the Bellows', early.length === 0,
     early.map(r => `${r.mapId} ${r.key}`).join(', '));
 }

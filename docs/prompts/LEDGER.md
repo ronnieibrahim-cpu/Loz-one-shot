@@ -449,17 +449,36 @@ extract from it:
   (`check-bellows.mjs` 78/78 after one real iteration — the cone's
   diagonal reach at range 2 caught a stand two tiles off-axis at LOW,
   fixed by walling the shared line-of-sight midpoint), so `bellows
-  dungeons` is 2 of 5 — the rotation's own bar. **Bellows' overworld half
-  (0 of the required 3) is still open, and is blocked by a bug, not a
-  design decision this time:** `check-bellows.mjs` computes `index:
+  dungeons` is 2 of 5 — the rotation's own bar. Bellows' overworld half
+  (0 of the required 3) was still open, blocked at the filter level by a
+  bug, not a design decision: `check-bellows.mjs` computed `index:
   (m.dungeon && m.dungeon.index) | 0` for every room, so an overworld
-  screen (no `m.dungeon`) always computes `index: 0`, which its own `early
-  = rooms.filter(r => r.index < 4)` clause then rejects as "before the
+  screen (no `m.dungeon`) always computed `index: 0`, which its own `early
+  = rooms.filter(r => r.index < 4)` clause then rejected as "before the
   Bellows" — the identical shape of gap S91 found and fixed in
-  `check-anchor.mjs` (a derived value missing an `overworld` case), a
-  one-line fix rather than a model change. Left unfixed this session (no
-  detour token spent, `tools/` out of the objective allowlist); next
-  session's natural detour. See `docs/NEXT-SESSION.md` S94.
+  `check-anchor.mjs`. **S95 fixed this one-line bug**
+  (`r.mapId !== 'overworld' && r.index < 4`, mirroring `check-anchor.mjs`'s
+  `late` filter; confirmed 78/78 unchanged on the existing D4/D5/D6 rooms)
+  **and then found the real blocker underneath it, which the filter fix
+  does not touch:** every dungeon Bellows wheel is boxed by wall on three
+  sides and `dPit` on the fourth, because `dPit` is the one tile in the
+  game that is impassable in every mode (foot, swim, sink) at every tide
+  level while NOT being `F.SOLID` — so a body can never stand there, but
+  the cone's `solidAt` line-of-sight check still passes over it. Outdoors,
+  nothing has that exact combination (confirmed by grep, not assumed):
+  solid rock blocks the cone the same as it blocks a body; a `chasm`
+  (`F.JUMPABLE`) is a gap the flood's own hop model crosses, so the far
+  side becomes reachable by jump; deep water is impassable on foot but
+  swimmable, and `reachable()` unions foot/swim/sink, so a swimmer floats
+  up beside the wheel; `drownWall` itself turns swimmable at exactly the
+  tide level a HIGH-drowned wheel needs its neighbour blocked at. The
+  wheel tile and the gating tile both have real outdoor equivalents
+  (`sandbar`/`tidePool` for the single-level drown, `drownWall` for the
+  solid-then-swimmable gate) — only the "impassable buffer that isn't
+  solid" piece has no outdoor tile at all. Needs either a new tile with
+  `dPit`'s flag combination or a genuinely different "no hand reaches"
+  model for outdoor rooms — not a filter change, and not something this
+  token could also cover. See `docs/NEXT-SESSION.md` S95.
 
 ---
 

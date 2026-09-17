@@ -1,3 +1,75 @@
+## S95 — fixed check-bellows.mjs's real overworld bug (detour token spent), then found the Bellows' overworld half is ALSO structurally blocked, for a third and different reason than the Lens or the Anchor
+
+Spent the detour token STATE.md regenerated after S92+S93 (both
+`objective`). Step 1 of my own S94 NEXT-PROMPT.md: fixed
+`check-bellows.mjs`'s `early` filter, which derived `index: (m.dungeon &&
+m.dungeon.index) | 0` for every room and so always read an overworld
+screen's index as `0` — rejecting ANY overworld `bellowsRoom` as "before
+the Bellows." Changed the filter to `r.mapId !== 'overworld' && r.index <
+4`, mirroring `check-anchor.mjs`'s own `late` filter after S91.
+`check-bellows.mjs` still reads 78/78 with the existing D4/D5/D6 rooms
+untouched — confirmed before going further.
+
+**Step 2 — actually placing an overworld Bellows sill — turned out to be
+blocked too, and this time by neither a bug nor the Anchor's exact
+problem, but a THIRD shape of the same underlying limit: the outdoor tile
+vocabulary is missing a primitive every dungeon sill secretly depends
+on.** Worked it through on paper before touching any room data, the same
+way S91 did once bitten:
+
+- A wheel tile that drowns at exactly one level and is freed one level
+  down DOES exist outdoors: `sandbar` and `tidePool` are both dry/shallow
+  at LOW and MID and deep only at HIGH — the exact shape of D4's
+  `dSluice`. Not the blocker.
+- A gating tile that's solid (blocking) below some level and swimmable
+  above it also exists: `drownWall`, solid at LOW/MID, deep at HIGH — the
+  exact shape D4's Drowned Sill used to gate its own stand. Also not the
+  blocker.
+- **What does NOT exist outdoors is `dPit`'s niche: a tile that is
+  impassable in every mode (foot AND swim AND sink) at every tide level,
+  while also not `F.SOLID`, so a cone's line-of-sight still crosses it.**
+  Every D4/D5/D6 wheel is boxed by wall on three sides and `dPit` on the
+  fourth specifically because the pit is the one tile a body can never
+  occupy (`F.PIT`, no tide) that a cone's `solidAt` check does not also
+  refuse. CLAUDE.md's own S91 finding already established `F.PIT`/
+  `F.HAZARD` exist on exactly two tiles in the whole game, both indoor
+  (`dPit`, `spikes`) — checked again here rather than trusted, since S91
+  was answering a different question (a walkable-set pair, not an
+  always-impassable buffer). Every candidate substitute fails a different
+  way: solid rock blocks the cone same as it blocks a body; a chasm
+  (`F.JUMPABLE`) is impassable to a walker but the flood's own hop model
+  crosses exactly one of them, so a chasm one tile from the wheel makes
+  the far side reachable by jump; deep water is impassable to a walker
+  but swimmable, and `reachable()` unions `foot`/`swim`/`sink`, so a
+  swimmer floats up next to the wheel and assertion 1 fails outright;
+  `drownWall` itself is solid at LOW/MID but becomes swimmable at HIGH,
+  which is exactly the level a HIGH-drowned wheel needs its neighbour
+  blocked at.
+
+No test case was built in room data for this one — the argument is about
+which tile FLAGS exist in the game at all, verified by grep
+(`F.PIT`/`F.HAZARD` usage, `F.JUMPABLE` tiles, `F.SOLID` on `openSea`/
+`drownWall`), not about any particular room's geometry, so a placed test
+would only have reproduced the same conclusion at more cost. Per my own
+S94 NEXT-PROMPT.md's step 3: stopped here rather than chasing a fourth
+substitute.
+
+**So Bellows' overworld half (still 0 of the required 3) needs the same
+kind of tool-plus-model change the Anchor's overworld half does — but a
+DIFFERENT one.** The Anchor needs `check-strands.mjs`/
+`check-overworld.mjs` taught that `drownWall`-at-HIGH is hoppable. The
+Bellows would need either a new outdoor tile with `dPit`'s exact
+flag combination (impassable-everywhere, non-solid), or a change to how
+`check-bellows.mjs` models "no hand reaches" for an outdoor room
+specifically (a genuinely different, weaker claim, not just a relaxed
+filter). Neither is a one-line fix. Recorded in full in
+`docs/prompts/LEDGER.md` under "Known and deliberately unfixed."
+
+Logged as `detour` (the token was spent, on the filter fix that DID land
+and is worth keeping regardless of whether the overworld ever gets a
+Bellows room). `DETOUR TOKENS` goes 1 -> 0. Two consecutive `objective`
+sessions regenerate it again.
+
 ## S94 — the Squall Bellows close their ">=2 dungeons" bar: a second sill in D6's West Crypt, and a real gap found in check-bellows.mjs's own filter (not a rebuild fantasy — the overworld half is genuinely blocked, same shape as S92's Lens finding, but this one is a one-line bug, not a design decision)
 
 Followed my own S93 NEXT-PROMPT.md: found a second, low-risk Bellows room
