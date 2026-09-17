@@ -1,7 +1,7 @@
 OBJECTIVE OF RECORD: 7 item-reuse
 
-S100 built the overworld half's first real room (Reefseed, South Shallows)
-and it passed clean. Anchor, Lens, Bellows still have zero overworld screens.
+S101 built a second outdoor Reefseed grove (Worlds Edge, 0,11,9) in the same
+dunes region, reefseed overworld screens now 2/3. Anchor, Lens, Bellows: 0.
 
 ROTATION (fixed, do not reorder):
   1 wide-rooms      — 3 of 6 dungeons have a 2x2 or 3x1
@@ -57,4 +57,4 @@ hand-drawn, reasoned). #4 done S59 (human decision, no further idle art).
 DETOUR TOKENS: 1 (regenerated: S99 and S100 both `objective`)
 
 SESSION LOG: one row per session — `S## | objective|detour | one line`
-S100 | objective | Built the outdoor Reefseed grove NEXT-PROMPT.md asked for (South Shallows, 0,7,9): bank/bar/stake/snarl, thrown at HIGH, cut at LOW. First run failed one assertion (bar solid at LOW stranded the grown pillar) — fixed by widening the stake row with plain `waterD` either side, the same swim-around Grove2 already uses. check-reefseed 117/117. Screenshot then found a second, more interesting bug: the bar rendered as a grey box on sand because `cliffSand`'s edge-art lip is the shared `cliffTop`, always `pal:'stone'`, never exercised in a non-stone region before (every existing dunes `#`/`^` sits on a screen's own top row, which never fires the edge). Fixed with two small region-palette tiles (`drownWallSand`, `cliffSandTop`), zero effect on the two pre-existing dunes cliffs. Full suite, check-strands (no new region), check-playthrough, replay, build all green. `reefseed overworld screens: 1`. Writeup: LEDGER "Known and deliberately unfixed".
+S101 | objective | Built a SECOND outdoor Reefseed grove at Worlds Edge (0,11,9), same dunes region and same bank/bar/stake/snarl fixture as South Shallows, carved into what was open sea below the room's own dry sandbar band, without moving its one existing sign. No new palette bug: `drownWallSand`/`cliffSandTop` already fix the bar's top edge for any `dunes` room, so this shipped on the first run — check-reefseed went straight to 132/132 (117+15 new). check-drift reads `reefseed overworld screens: 2`. Screenshotted at LOW and HIGH, looked at: bar reads sand-toned, opens to water at HIGH, matches South Shallows. Full suite green: check-overworld, check-strands (still 15 regions/24 cells, unchanged baseline), check-placement, check-ground, check-progression, check-playthrough, test.mjs, build + check-build.

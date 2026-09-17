@@ -23672,16 +23672,30 @@ const rooms = {
   '0,11,9': {
     name: 'Worlds Edge',
     legend: 'dunes', music: 'overworld',
+    // The second outdoor Reefseed grove — item-reuse (docs/prompts/STATE.md),
+    // same fixture South Shallows (`0,7,9`) proved: bank/bar/stake/snarl in a
+    // line, carved out of what was open sea south of the room's own dry
+    // sandbar band. Same region (`dunes`), so `drownWallSand`'s repointed
+    // `cliffSandTop` edge already reads right here — no new palette work
+    // needed, see South Shallows' own comment for the two-part reason a bare
+    // `drownWall` did.
     map: [
       'TToggg1***',
       'TgggggT*1*',
       'gg.O.O.11*',
       'gg......1*',
-      'gg1111111*',
-      '11******1*',
-      '*1******1*',
+      'gg1119111*',
+      '11**===*1*',
+      '*1***k**1*',
       '**********',
     ],
+    reefseedRoom: {
+      entry: [4, 1],
+      stakes: [
+        { at: [5, 5], from: [5, 3], face: 'down', sea: 2 },
+      ],
+      snarl: [5, 6], cutFrom: [5, 5],
+    },
     entities: [
       ['sign', 4, 3, { text: 'Nothing past here but open sea.' }],
     ],

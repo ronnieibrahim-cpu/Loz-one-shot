@@ -638,6 +638,14 @@ extract from it:
   outdoor gate should expect the same shape of gap if the fixture crosses
   into a region whose ground colour hasn't been tested against `cliffTop`
   before** — check by screenshot, not by reading the tiledef.
+  **S101 built a second one, Worlds Edge (`0,11,9`), same `dunes` region,
+  and confirmed the fix generalises: zero new palette work, `check-reefseed`
+  132/132 on the first run.** `reefseed overworld screens` is now 2 of the
+  rotation's own >=3 bar. The still-open work is a THIRD grove in a region
+  that has never carried a `drownWall` variant on non-grey ground before
+  (`coast`, `marsh`, `wood`, `salt`, `reef`, `coral`) — that is where the
+  `cliffTop` gap this entry describes is actually untested, and it is the
+  next session's job to find out by screenshot, not to assume it again.
 
 ---
 

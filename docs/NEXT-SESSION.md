@@ -1,3 +1,49 @@
+## S101 — a second outdoor Reefseed grove, built clean on the first try: the S100 palette fix generalises
+
+NEXT-PROMPT.md asked for a second outdoor Reefseed grove, same shape as
+South Shallows, and the suite run on it. Built it: Worlds Edge (`0,11,9`,
+dunes) — bank at 5,3 (already plain `.` sand, no edit needed), bar (`9`)
+at 5,4, stake (`=`) at 5,5 flanked by `=` at 4,5 and 6,5 (the swim-around),
+snarl (`k`) at 5,6 boxed by border `*` on both flanks — carved into what
+was open sea south of the room's own dry sandbar band, in a screen whose
+only existing content was a sign reading "Nothing past here but open sea"
+(unmoved) — about as literal an "unused pocket" as the overworld has.
+
+**It passed on the first run.** `check-reefseed.mjs` went straight to
+132/132 (117 baseline + 15 new assertions), no geometry fix and no palette
+fix needed — because both of S100's bugs were fixed at the TILE level
+(`drownWallSand`/`cliffSandTop` on the `dunes` legend, the swim-around
+copied verbatim from the proven shape), not the room level, so a second
+`dunes` placement inherits the fix for free. This is the expected/boring
+outcome the choice of region was picked for: `docs/prompts/NEXT-PROMPT.md`
+explicitly named `dunes` as "already fixed" and staying in it was the
+low-risk path to hit the rotation's raw screen-count target quickly.
+
+Screenshotted at LOW and HIGH (`tools/shots/room-overworld_11_9-tide{0,2}
+-px80.png`), looked at: the bar reads as a sand-toned wall next to the
+sign at LOW, and opens into plain sea at HIGH with the kelp snarl visible
+either tide — matches South Shallows' art exactly, nothing grey.
+
+Full verification: `check-reefseed` 132/132, `check-drift` (`reefseed
+overworld screens: 2`), `check-overworld`, `check-strands` (still 15
+regions/24 cells, unchanged baseline), `check-placement`, `check-ground`,
+`check-progression`, `check-playthrough`, `test.mjs` (83/83), `npm run
+build` + `check-build` — all green, nothing re-recorded.
+
+**What is NOT yet done, and is the honest next step:** the rotation's own
+bar is >=3 overworld screens, so this is 2 of 3 — one more grove closes
+the Reefseed's overworld half. But a THIRD `dunes` placement would prove
+nothing new; every region except `coast`/`marsh`/`wood`/`salt`/`reef`/
+`coral` already carries a `drownWall` variant tested against its own
+ground colour (`cliffs`/`abyss` are grey by nature, `dunes` now fixed).
+Building the third grove in one of those six untested regions is the
+session that actually retires `docs/prompts/LEDGER.md`'s "Known and
+deliberately unfixed" note about `cliffTop`, instead of restating it a
+third time. Full writeup: `docs/prompts/LEDGER.md`, "Known and
+deliberately unfixed", the S101 addendum after the S100 entry.
+
+---
+
 ## S100 — the outdoor Reefseed grove: built, failed once, fixed twice (a geometry bug and a palette bug), now 117/117
 
 NEXT-PROMPT.md asked for one outdoor Reefseed grove and the suite run on
