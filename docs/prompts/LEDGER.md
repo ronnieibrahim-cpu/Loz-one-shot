@@ -676,6 +676,80 @@ extract from it:
   item's outdoor fixture that doesn't require open water, or a dungeon
   room screenshot of an existing `cliffRust`/`cliffMarble`/`cliffCoral`
   wall with a visible top edge — not another Reefseed grove.
+- **Rotation item 7 (item-reuse) has no task left that fits inside its own
+  file allowlist. Checked directly rather than inherited (S102's own
+  scoping pass, before any dungeon room was built), and it closes a
+  question S90-S98 had each answered separately for one item at a time
+  without ever stating the total.** The picture, item by item:
+  - **Reefseed** (home D5): overworld screens now 3 of the rotation's own
+    >=3 bar (S100-S102, above) — MET. Dungeon reuse is 1 of 5 (D6's Bole
+    Cistern, S96) and CANNOT go higher: `check-reefseed.mjs`'s own `early`
+    filter (`r.mapId !== 'overworld' && r.index < 5`) rejects any
+    `reefseedRoom` in a dungeon numbered below 5, on the stated reasoning
+    that the player cannot hold an item before the dungeon that grants it
+    — and D6 is the only dungeon numbered above 5. The rotation asks for
+    `>=2 later dungeons`; the true ceiling here is 1. Confirmed again this
+    session by reading the filter directly before drafting a task that
+    would have asked for a `d3`/`d4` reefseed room — that room would fail
+    `check-reefseed.mjs` outright, by design, not by bug.
+  - **Anchor** (home D1): dungeon reuse is 1 of 5 (D2's Bone Cell, S90)
+    and is very likely ALSO at its ceiling under the current tool
+    (S96/S97): `check-anchor.mjs`'s `late` filter is an unconditional
+    `['d1','d2']` whitelist, not an index comparison, and its own header
+    says opening D3+ needs the swim/no-swim model relaxed first. Overworld
+    screens is 0 of 3 and PROVEN blocked, not merely untried (S91): the
+    one outdoor tile combination that could form a genuine two-level gate
+    (`drownWall` at HIGH) was built as a real test room, and
+    `check-strands.mjs`/`check-overworld.mjs`'s own hop models refuse to
+    ever treat it as crossable (they gate hoppability on `F.JUMPABLE`,
+    which deep water never carries), so the room read as a new stranded
+    region and was reverted. Both halves need a `tools/` change.
+  - **Lens** (home D2): dungeon reuse is 0 of 5, blocked the same shape as
+    the Anchor's but with no partial credit, and by the SAME single
+    assertion as the overworld half, not two separate gaps: `check-lens.mjs`
+    filters `rooms.filter(r => r.mapId !== 'd2')` and fails if that set is
+    non-empty (S92), so a declared `lensRoom` anywhere but `d2` — another
+    dungeon or an overworld screen alike — is rejected outright, on sight,
+    with no model even run against it. Re-checked directly this session
+    (not inherited): this is stricter than the Anchor's own two filters,
+    which at least distinguish "which dungeon" from "overworld or not."
+    Both halves need the same `tools/` change: relaxing this one line to
+    an index comparison plus a real model extension (the tool's own header
+    says the D2 restriction stands in for "no swimming, no anchor," which
+    would need re-deriving for any room outside D2).
+  - **Bellows** (home D4): dungeon reuse is 2 of 5 (D5's Bower Cell S93,
+    D6's West Crypt S94) — MET. Overworld screens is 0 of 3 and blocked
+    for a third, different reason (S95): every dungeon Bellows wheel is
+    boxed on its fourth side by `dPit`, the one tile in the game that is
+    impassable in every mode at every tide while NOT `F.SOLID`, so a body
+    can never stand there but the cone's own `solidAt` line-of-sight check
+    still passes over it — no outdoor tile has that exact flag combination
+    (checked by grep). Adding one is plain data (`tiles-core.js`, in this
+    objective's own allowlist) — but whether a `solidAt`-based
+    line-of-sight check ought to treat a plain `F.PIT` tile as blocking
+    reach is a mechanic question, and today `solidAt` only reads `F.SOLID`
+    (`src/world/room.js`/`tileset.js`), which is engine code, not data. A
+    tile alone does not close this without also touching how the cone
+    decides what it reaches.
+  **So: two of the four items (Reefseed, Bellows) are each stuck one
+  requirement short of the rotation's own bar, at a real structural
+  ceiling under the current toolset and game rules — not a shortfall this
+  objective failed to reach, but the actual maximum reachable without
+  changing something outside `src/data/*`. The other two (Anchor, Lens)
+  are stuck on both halves.** Every remaining path needs either a
+  `tools/` checker change (the swim/no-swim model both `check-anchor.mjs`
+  and `check-lens.mjs` name in their own headers as what would unblock
+  them) or an engine change (`solidAt`'s line-of-sight treatment of
+  `F.PIT`, for the Bellows) — both outside `item-reuse`'s file allowlist,
+  which multiple sessions (S91, S94's detour, S96, S97) have each
+  independently declined to spend a token on for the same reason: it is
+  not a one-line unblock, and a wrong one would need re-proving across
+  every existing gate room. **This is the charter's own judgement call,
+  not a session's to make**: either the allowlist gets widened for a
+  scoped follow-up (one item at a time, its own detour token, its own
+  regression pass), or the rotation's own done-condition for item 7 is
+  reconsidered given what is actually reachable. Flagged plainly at the
+  top of S102's final message rather than guessed at.
 
 ---
 

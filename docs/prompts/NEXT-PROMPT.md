@@ -1,64 +1,68 @@
-# Next session — a second dungeon Reefseed pocket, D3 or D4
+# Next session — item-reuse has no reachable task; needs a human call
 
 ## Read first
-- `docs/prompts/LEDGER.md`, "Known and deliberately unfixed", the S102
-  addendum — the overworld half of Reefseed is now closed (3/3 screens);
-  the open half is dungeon reuse (1/5: only D6's Bole Cistern).
-- `src/data/dungeons-b.js`, D6's Bole Cistern room (search `reefseedRoom`)
-  — the working example: a self-contained pocket off the Dredge Vault,
-  nothing past it needed for anything else, same fixture shape as the
-  overworld groves.
-- `docs/DUNGEON-STATUS.md`, the D3 and D4 sections — both DONE; read
-  before adding a room so the addition doesn't contradict what "done"
-  already committed to for either.
+- `docs/prompts/LEDGER.md`, "Known and deliberately unfixed", the entry
+  starting "Rotation item 7 (item-reuse) has no task left that fits
+  inside its own file allowlist" — the full per-item picture, checked
+  directly this session, not inherited from an old note.
+- `docs/prompts/STATE.md`'s rotation table, item 7's wording.
+- Do NOT re-read S90-S98 in `docs/NEXT-SESSION.md` individually — the
+  LEDGER entry above already consolidates what each one found. Re-reading
+  them one at a time is exactly the repeated-rediscovery this entry exists
+  to prevent.
 
 ## Why this, now
-`node tools/check-drift.mjs` reads `reefseed home D5 dungeons: 1 of 5
-overworld screens: 3`. The overworld sub-goal (>=3 screens) is met as of
-S102. The dungeon sub-goal (>=2 OTHER dungeons) is not: D6's Bole Cistern
-is the only one. Rotation item 7 (item-reuse) isn't done until Reefseed
-(and Anchor, Lens, Bellows) clear BOTH halves — this session's job is
-Reefseed's other half, the same kind of task D6 already proved works.
+Reefseed's overworld half closed this session (S102: 3 of 3). Scoping the
+next task — a second dungeon Reefseed room — found `check-reefseed.mjs`
+would reject it outright: it can only ever be required in D6, and that
+slot is already spent. Checking the other three items the same way before
+drafting anything found each is ALSO either met at its true ceiling
+(Bellows' dungeon half) or blocked by an unconditional assertion in its
+own checker (Anchor's dungeon half and overworld half; Lens's dungeon AND
+overworld half, both by one filter) or by an engine question the tiles
+alone can't answer (Bellows' overworld half, `solidAt`'s treatment of
+`F.PIT`). Every remaining path needs a change outside `src/data/*` — the
+file allowlist a plain data session is scoped to. This is not a shortfall
+to grind on; it is the actual ceiling.
 
 ## The task
-Add ONE new room to D3 (Bogwater Sanctum) OR D4 (Cliffside Cistern) —
-pick whichever has a genuine unused pocket off an existing room, the same
-way D6's Bole Cistern sits off the Dredge Vault — that needs the Reefseed
-to reach something inside it (a Piece of Heart, rupees, a find). Copy the
-Bole Cistern's shape: a stake thrown at HIGH onto a drowned bole/snag,
-the pillar standing at LOW only, a snarl only that pillar's blade
-reaches. **Nothing past this room may be required for anything else** —
-same as the Bole Cistern and the overworld groves, so no ordering
-question about whether the player has reefseed yet can even arise.
-Update `docs/DUNGEON-STATUS.md`'s D3 or D4 section (whichever you use)
-to note the addition, the same way S## additions elsewhere are noted
-inline rather than by rewriting the "DONE" verdict.
+There is no `src/data/*`-only task left under item-reuse. Do not attempt
+another placement to test this again — four items, both halves each,
+were all checked directly this session and the LEDGER entry names the
+exact line in each tool that blocks it. Instead:
+
+1. Confirm nothing has changed: run `node tools/check-drift.mjs` and
+   confirm it still reads `anchor`/`lens` overworld screens 0, `bellows`
+   overworld screens 0, `reefseed` dungeons 1. If any of those numbers
+   moved, someone else's work landed — read what changed before doing
+   anything else.
+2. If a human has NOT given new direction: stop here. Do not touch
+   `tools/` or `src/game/*` or `src/world/*` on your own judgement —
+   every prior session that found this wall declined to cross it without
+   that direction, and this session's LEDGER entry says why explicitly:
+   "This is the charter's own judgement call, not a session's to make."
+   Say so in your first message and end the session without touching
+   game files.
+3. If a human HAS given direction (e.g. "widen the allowlist, fix
+   `check-anchor.mjs`'s swim model" or "accept item 7 as done given its
+   real ceiling"), follow that instruction instead of this file — it
+   supersedes this prompt.
 
 ## Done means
-- `node tools/check-reefseed.mjs` passes with the new dungeon room
-  declared, and `node tools/check-drift.mjs` reads `reefseed ... dungeons:
-  2 of 5`.
-- `node tools/shoot-rooms.mjs` on the new room at LOW and HIGH (dungeon
-  spec is `d3,0,rx,ry` or `d4,0,rx,ry` — see the tool's own `--help`
-  text), and the shot actually looked at.
-- `node tools/walk-dungeons.mjs`, `node tools/check-dungeon-strands.mjs`,
-  `node tools/check-placement.mjs`, `node tools/check-ground.mjs`,
-  `node tools/check-progression.mjs`, `node tools/check-playthrough.mjs`,
-  `node tools/test.mjs`, `npm run build` with `dist/` committed.
-- If a run fails, fix it and re-run — do not hand a red assertion to the
-  next session unexplained. If BOTH D3 and D4 turn out to have no clean
-  unused pocket, say so plainly and leave the room count at 1 rather than
-  forcing a placement that damages either dungeon's "done" state.
+- `check-drift.mjs`'s numbers confirmed unchanged from this session's
+  own final run (see `docs/prompts/STATE.md`'s S102 row).
+- No `src/` file touched if no new human direction exists.
+- `docs/prompts/STATE.md` gets a new session-log row either way, even if
+  the row says "confirmed nothing new to do, waiting on a decision."
 
 ## Out of scope
-- Anchor's, Lens's and Bellows' own dungeon-reuse and overworld-screen
-  ceilings — each needs its own investigation, not a copy-paste of this
-  session's shape. Untouched here.
-- A second Reefseed room in D6 (already has one; the metric counts
-  distinct dungeons, not room count) or a fourth overworld grove (that
-  half is already met at 3/3).
-- Redesigning any part of D3 or D4 that isn't the one new pocket — both
-  are DONE dungeons; this adds to them, it doesn't revise them.
-- Touching `check-reefseed.mjs` or any other tool — the mechanism already
-  proved itself generic across D5 and D6; a third placement should not
-  need a checker change.
+- Any `tools/` or `src/game/*` or `src/world/*` edit without explicit new
+  human direction — this is the one thing every prior session on this
+  objective (S91, S92, S94's detour, S96, S97) declined to do alone, for
+  the same reason each time.
+- A fifth attempt at an Anchor or Lens overworld/dungeon placement, or a
+  third Reefseed dungeon room — all three are proven blocked by reading
+  the checker's own filter, not by trying and failing again.
+- Advancing `OBJECTIVE OF RECORD` to rotation item 8 on your own — only a
+  met done-condition or a human decision moves the rotation, and item 7's
+  is not met.

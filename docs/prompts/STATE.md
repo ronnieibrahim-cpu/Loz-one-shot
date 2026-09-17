@@ -1,7 +1,7 @@
 OBJECTIVE OF RECORD: 7 item-reuse
 
-S102 built a third outdoor Reefseed grove (Marsh Corner, 0,2,9), first one
-outside dunes. reefseed overworld screens now 3/3 — met; Anchor/Lens/Bellows: 0.
+S103: item-reuse has no task left inside its allowlist — every remaining
+half needs tools/ or engine code. LEDGER "item 7 ... has no task left".
 
 ROTATION (fixed, do not reorder):
   1 wide-rooms      — 3 of 6 dungeons have a 2x2 or 3x1
@@ -57,4 +57,4 @@ hand-drawn, reasoned). #4 done S59 (human decision, no further idle art).
 DETOUR TOKENS: 1 (regenerated: S99 and S100 both `objective`)
 
 SESSION LOG: one row per session — `S## | objective|detour | one line`
-S102 | objective | Built a THIRD outdoor Reefseed grove at Marsh Corner (0,2,9), first one outside `dunes`. Tried a `marsh`-toned grey bar first (`pal:'stonedk'`, matching `marsh`'s own `cliffDk`) — still a flat grey box on screenshot, because the room's own ground there is the shared sandy shore fringe (`1`/sandbar resolves to plain `sand` in every region alike), not `marsh`'s dark interior. Reused `drownWallSand` instead — that IS the fix, confirmed by screenshot, and the real finding: it's a shore palette, not a dunes-only one. check-reefseed 147/147, check-drift reads `reefseed overworld screens: 3` — rotation's own bar met for Reefseed; Anchor/Lens/Bellows still 0. Full suite green: check-overworld, check-strands (still 15/24, unchanged), check-placement, check-ground, check-progression, check-playthrough, test.mjs 83/83, build + check-build.
+S103 | objective | Scoped the next item-reuse task before building it and found there isn't one: a second D3/D4 Reefseed room would fail `check-reefseed.mjs` by design (D6 is its only legal slot, already spent), and checking Anchor/Lens/Bellows the same way found each blocked the same way — an unconditional filter in its own checker (Anchor, Lens) or an engine question `solidAt` doesn't answer (Bellows' overworld `F.PIT` gap). No `src/` file touched. Full writeup in LEDGER; NEXT-PROMPT.md now asks the next session to wait for a human call rather than try a fifth workaround.
