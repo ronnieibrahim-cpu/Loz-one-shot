@@ -518,37 +518,80 @@ extract from it:
   role `dWaterD` plays as the stake, and `dSnarl`'s indoor `underArt:
   'dWaterD'` is exempted by `check-ground.mjs`'s own `F.WET` skip
   regardless of where it's placed.
-  **But none of that is the real blocker, found on a closer read AFTER
-  this session's first writeup already called it a mere "design-fit"
-  problem — correcting that here rather than leaving it wrong: `grep`
-  for `reefseedRoom`/`anchorGate`/`anchorGauges`/`bellowsRoom`/`lensRoom`
-  in `tools/check-strands.mjs` and `tools/check-overworld.mjs` returns
-  NOTHING. The overworld flood has zero concept of any of the four
-  items' gate mechanisms — unlike `tools/lib/dungeon-flood.mjs`, which
-  explicitly treats a `reefseedRoom`'s `snarl` (and a puzzle's
-  `openDoors`, and a `bellowsRoom`'s `opens`) as a passable puzzle-door
-  precisely so a dungeon gate doesn't read as a stranding. Outdoors, that
-  treatment does not exist at all, for any of the four items — so ANY
-  cell placed behind ANY of their gates reads as a brand-new multi-cell
-  stranded region to `check-strands.mjs` and fails outright, regardless
-  of how well the room is designed or which tiles it uses.** This is
-  very likely the SAME root cause S91 described for the Anchor from a
-  narrower angle ("the hop model only recognizes `F.JUMPABLE`, never
-  `drownWall`-at-HIGH") and S95 partly touched for the Bellows — three
-  investigations, three different proximate symptoms, one shared
-  underlying gap: the overworld strand-checkers were built for terrain
-  and region gates, never extended to know about item-gated puzzle rooms
-  at all. **Reefseed's overworld half is therefore in the SAME class as
-  the Anchor's and the Bellows' — structurally blocked under the current
-  toolset, not merely hard to fit — and so, by the same reasoning, is the
-  Lens's.** Unblocking any of the four outdoors needs one shared fix
-  (teaching `check-strands.mjs`/`check-overworld.mjs`'s flood the same
-  puzzle-door treatment `dungeon-flood.mjs` already has), not four
-  separate per-item investigations — worth raising as the rotation-level
-  question this file's own earlier Lens entry already flagged, rather
-  than spending another detour token re-discovering the same wall from a
-  fourth angle. See `docs/NEXT-SESSION.md` S98 for the full account,
-  including the (superseded) first-pass writeup this correction replaces.
+  S98 then went on to claim, from a bare `grep`, that the overworld half
+  is STRUCTURALLY BLOCKED for all four items, and raised that to the
+  person running these sessions as a rotation-level decision.
+  **THAT CLAIM IS WITHDRAWN. It was wrong, and S99 withdrew it by reading
+  the two tools instead of grepping them.** What the grep got right is
+  narrow and uninteresting: neither overworld tool NAMES a gate field. What
+  it got wrong is everything that followed from that.
+    * `check-overworld.mjs` cannot see an in-screen pocket AT ALL. Its
+      `reached` set is keyed on the ROOM, not the cell
+      (`new Set([...seen].map(k => k.split(':')[0]))`) — the very blind
+      spot `check-strands.mjs`'s own header was written to describe. A
+      gated pocket inside a screen the player can enter is invisible to
+      it. It was never a blocker and could not have been.
+    * `check-strands.mjs` is a BASELINE, not a zero-assertion, and
+      `--record` is part of its documented workflow. Its own header names
+      two kinds of legitimately unreachable cell already in the recorded
+      set (water, one-cell root pockets), and `tools/strands-baseline.json`
+      already carries a TEN-cell region. So "a new region fails outright,
+      no recourse" is simply not how the tool works: a deliberate
+      item-gated pocket is a third legitimate kind, recorded with its
+      reason written down, exactly as the other two were.
+  **So the honest status of the overworld half is UNTESTED, not blocked.**
+  Nobody has yet built one and run the suite. The real cost to weigh is
+  not impossibility, it is that baselining a pocket stops those cells
+  being watched for future regressions — a genuine judgement call, and a
+  smaller one than "teach both floods the cut/gate verbs", which remains
+  the other option. Whoever picks this up should BUILD ONE AND RUN IT
+  rather than argue it either way from the source.
+  **Also withdrawn: S98's retroactive claim that this was "the same root
+  cause" behind S91's Anchor finding and S95's Bellows finding.** Those two
+  were each traced to something specific and different (the hop model's
+  `F.JUMPABLE`-only reach; no outdoor tile carrying `dPit`'s flag
+  combination), and folding them into one tidy story replaced earned
+  precision with a guess. Their own entries above stand as written and were
+  not re-verified by S98 or S99 — treat them as they were left, and note
+  that the baseline argument above may well apply to S91's too.
+  **The lesson, which is the part worth keeping:** a `grep` that finds no
+  mention of X proves the file does not say "X". It does not prove the
+  file would reject X. Both wrong conclusions in this thread — this one and
+  the art one below — came from asserting a result instead of running the
+  thing that would have produced it. See `docs/NEXT-SESSION.md` S98/S99.
+- **A TILE BORROWED FROM ANOTHER DUNGEON CARRIES THAT DUNGEON'S PALETTE AND
+  ITS FLOOR, AND NOT ONE CHECKER IN THE TABLE LOOKS AT COLOUR (S96, caught
+  and fixed S99).** S96 built D6's Reefseed grove by pointing `dungeonAbyss`
+  at the Drowned Wood Shrine's own `dSnag` and `dSnarl`, and wrote into
+  `legends.js` that the two are "generic... so they sit in the Keep's own
+  palette without looking borrowed." They do not. Both are drawn in
+  `treeoakdk`, whose index 2 is a BROWN TRUNK, and `dBole` names
+  `underArt: 'dFloorWood'` — the Wood's own flagstones — so the Abyssal
+  Keep's black stone hall came out with a green forest tree and a green
+  shrub standing in it, over a square of another dungeon's floor. It is
+  obvious in one screenshot and invisible to everything else: `validate`,
+  `walk-dungeons`, `check-dungeon-strands`, `check-placement`, `check-ground`
+  and `check-reefseed` (102/102) were ALL green on it, and it shipped to
+  `main`. `check-ground` is the one that looks closest and still cannot see
+  it — it compares the ground under a PROP against the grounds its screen
+  has, and skips any tile whose `underArt` is wet (`F.WET = F.WATER |
+  F.DEEP`), which a pool fixture always is.
+  **The fix was not new art.** `legends.js` already had the worked example
+  three lines above where the bad line was added: `dPostAbyss` exists
+  because the shared post named the BRICK floor. Same reasoning applied —
+  the snarl became `dSnarlAbyss` (same bush art, the `reef` sea-plant ramp,
+  same flags/`underArt`/`cut`), and the bole was dropped ENTIRELY in favour
+  of `7`/`dLintel`, which the Keep already owned and which carries the
+  identical tide shape (`['dWallAbyss', 'dWallAbyss', 'dWaterD']` against
+  `dSnag`'s `['dBole', 'dBole', 'dWaterD']`). The room now says the same
+  sentence in the Keep's own masonry, the `5` override is gone, and
+  check-reefseed still passes 102/102 — a theme may change the look and
+  never the rules.
+  **Standing rule: a fixture copied between dungeons gets
+  `tools/shoot-rooms.mjs` run on it before it is believed, and the first
+  question asked of a borrowed tile is what `pal` and `underArt` it NAMES** —
+  not whether its own name sounds theme-neutral. Goal 1 is the product, and
+  nothing in the verification table defends it.
 
 ---
 

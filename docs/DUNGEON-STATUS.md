@@ -624,19 +624,36 @@ deterministic opening tax: 13 of 32 qh (40.6%) gone identically before any
 seed's RNG diverges. See `docs/NEXT-SESSION.md` S67 for the full per-seed
 damage-log breakdown; no code changed this session.
 
-**A 27th room, `0,4,2` "The Bole Cistern", added off Dredge Vault's own north
-wall (item-reuse, docs/prompts/STATE.md).** D6's first Reefseed grove — the
-Drowned Wood Shrine's own bole/stake/snarl fixture, unmoved, copied in with
-`dungeonAbyss` repointing the two free characters D5's own theme repoints
-(`5`→`dSnag`, `k`→`dSnarl`; both untouched anywhere in D6 before this).
-Unlike Tideshade Hall and Nereth's arena above, this is a genuinely new room,
-not a widened one, so D6's room count moves from 26 to 27 — `check-dredge.mjs`
-counts rooms by iterating `dungeon.rooms`, not by a written total, so nothing
-needed updating there. It is a find, not a gate: nothing beyond the snarl is
-needed for anything, the same shape as D5's own Grove 1 and Grove 2. Still
-1 of 5 dungeons for the Reefseed — D6 is the only dungeon after D5, so that is
-the rotation's real ceiling under `check-reefseed.mjs`'s current `r.index < 5`
+**A 27th room, `0,4,2` "The Drowned Garden", added off Dredge Vault's own north
+wall (item-reuse, docs/prompts/STATE.md).** D6's first Reefseed grove: the
+Drowned Wood Shrine's GRAMMAR — bar, stake, snarl in a line, thrown at one sea
+and stood on at another — in the Keep's OWN materials. Unlike Tideshade Hall
+and Nereth's arena above, this is a genuinely new room, not a widened one, so
+D6's room count moves from 26 to 27 — `check-dredge.mjs` counts rooms by
+iterating `dungeon.rooms`, not by a written total, so nothing needed updating
+there. It is a find, not a gate: nothing beyond the snarl is needed for
+anything, the same shape as D5's own Grove 1 and Grove 2. Still 1 of 5
+dungeons for the Reefseed — D6 is the only dungeon after D5, so that is the
+rotation's real ceiling under `check-reefseed.mjs`'s current `r.index < 5`
 filter, not a shortfall to chase.
+
+**It did not ship that way, and the correction is the part worth reading
+(S96 built it, S99 fixed it).** The room was first built by pointing
+`dungeonAbyss` at D5's own `dSnag` and `dSnarl` — and both are drawn in
+`treeoakdk`, an oak ramp with a brown trunk at index 2, with the bole sitting
+on `underArt: 'dFloorWood'`. So the Keep's black stone hall shipped to `main`
+with a green forest tree and a green shrub standing in it, on a square of
+another dungeon's floor, under a committed comment claiming the tiles were
+"generic". Every checker in the table was green on it, `check-reefseed`
+included at 102/102; the one command that shows it, `tools/shoot-rooms.mjs`,
+had not been run. The fix needed no new art: the snarl is now `dSnarlAbyss`
+(same art, the `reef` sea-plant ramp, identical flags/`underArt`/`cut`,
+following `dPostAbyss`'s precedent) and the bole is gone entirely in favour of
+`7`/`dLintel` — the Keep's own masonry, which already carries `dSnag`'s exact
+tide shape. **That is the better room as well as the correct one:** the bar
+now drowns at HIGH the way the Sunken Bar on floor 1 already teaches, so the
+grove reads as the Abyssal Keep arguing with itself rather than as a transplant
+from D5. Screenshotted at LOW and HIGH before being believed this time.
 
 ---
 

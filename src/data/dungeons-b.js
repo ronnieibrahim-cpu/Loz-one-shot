@@ -1084,25 +1084,43 @@ export function installDungeonsB() {
         ],
       },
       '0,4,2': {
-        name: 'The Bole Cistern',
+        name: 'The Drowned Garden',
         // The Keep's own Reefseed grove — item-reuse (docs/prompts/STATE.md).
         // D6 is the only dungeon after D5 the tool allows (check-reefseed.mjs
         // filters `r.index < 5`), so this is the whole reachable ceiling for
         // this rotation item, not a shortfall.
         //
-        // The fixture is Drowned Wood Shrine's own, unchanged: a drowned bole
-        // at 4,4 blocks the pool until HIGH; the stake at 4,3 is open water at
-        // every sea until a pillar is grown on it; the snarl at 4,2 sits in the
-        // one gap of the north wall, directly above where the pillar lands, so
-        // standing on it is what puts a blade in reach. Cut it and the alcove
-        // above opens for good — nothing beyond it is needed for anything, it
-        // is a find, the same shape as Grove 1 and Grove 2's own quiet ones.
+        // The Shrine's GRAMMAR, in the Keep's own MATERIALS — and the second
+        // half of that is not decoration, it is the fix for how this room
+        // first shipped. It was built with `dSnag` and `dSnarl` lifted
+        // straight out of the Drowned Wood, and both are drawn in an oak
+        // palette with a brown trunk in it (the bole over the Wood's own
+        // flagstones besides), so a black stone hall came out with a green
+        // forest tree and a green shrub standing in it. It validated clean and
+        // check-reefseed passed it 102/102: no checker in the table looks at
+        // colour, which is what `tools/shoot-rooms.mjs` is for, and nobody ran
+        // it. See docs/prompts/LEDGER.md.
+        //
+        // So the bar across the pool is `7`/`dLintel`, the Keep's OWN masonry,
+        // which already carries the exact tide shape the fixture needs —
+        // stone at LOW and MID, open water at HIGH — and which the Sunken Bar
+        // on floor 1 has already taught the player to read. The kelp is
+        // `dSnarlAbyss`, the same snarl in the reef's sea-plant ramp. Nothing
+        // was drawn for this room; both tiles are ones the game already had.
+        //
+        // The fixture itself is the Shrine's, unchanged: the lintel at 4,4
+        // stops the throw until HIGH drowns it; the stake at 4,3 is open water
+        // at every sea until a pillar is grown on it; the snarl at 4,2 sits in
+        // the one gap of the north wall, directly above where the pillar
+        // lands, so standing on it is what puts a blade in reach. Cut it and
+        // the alcove above opens for good — nothing beyond it is needed for
+        // anything, it is a find, the shape Grove 1 and Grove 2 already have.
         map: [
           '##########',
           '#........#',
           '####k#####',
           '#.0WWW0..#',
-          '#...5....#',
+          '#...7....#',
           '#........#',
           '#........#',
           '####..####',
@@ -1119,7 +1137,7 @@ export function installDungeonsB() {
           ['pickup', 4, 1, { kind: 'rupee20' }],
         ],
         readable: [
-          [2, 5, 'A cistern plate, green with age: "The wood goes under at the flood. Stand on what it leaves behind."'],
+          [2, 5, 'A gardener\'s plate, green with age: "The course drowns at the flood. Sow then, and stand when the sea goes out."'],
         ],
       },
 

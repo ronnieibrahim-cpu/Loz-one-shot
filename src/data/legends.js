@@ -299,14 +299,23 @@ export function installLegends() {
   // BRICK floor — the same defect the urn had before every theme got its own.
   // `7` is `dRaceW`, the Sanctum's westward race, and the same argument applies.
   //
-  // `5` and `k` repoint to the Drowned Wood Shrine's own drowned-bole fixture
-  // (`dSnag`/`dSnarl`) the same way D5's `dungeonWood` legend does: `5`
-  // (`channel`) and `k` (undefined in the shared `dungeon` legend) are both
-  // free inside every d6 room, so pointing them at the bole and the snarl
-  // moves nothing outside this dungeon. The tiles themselves are generic —
-  // a drowned tree and a kelp snarl over deep water — not Wood-themed art, so
-  // they sit in the Keep's own palette without looking borrowed.
-  registerLegend('dungeonAbyss', { '6': 'dSilt', '7': 'dLintel', 'q': 'dPostAbyss', '5': 'dSnag', 'k': 'dSnarl' }, 'dungeonAbyss');
+  // `k` is the Keep's kelp snarl, for the Reefseed grove on floor 0. It points
+  // at `dSnarlAbyss`, NOT at the Shrine's shared `dSnarl`: that one is drawn in
+  // `treeoakdk`, an oak ramp with a brown TRUNK at index 2, and in a black
+  // stone hall it read as a forest shrub somebody had carried indoors. Exactly
+  // the argument `q` makes above — and it was caught the way that one should
+  // have been, by screenshotting the room instead of assuming the tile was
+  // neutral because its name did not say "wood".
+  //
+  // THE BOLE IS NOT BORROWED AT ALL, and that is the better half of this. The
+  // Shrine's `dSnag` is a drowned oak over `dFloorWood`, so it would have
+  // dragged a square of another dungeon's flagstones in with it on top of the
+  // palette. The Keep already owns a tile with the identical tide shape:
+  // `7`/`dLintel`, `['dWallAbyss', 'dWallAbyss', 'dWaterD']` — its own masonry,
+  // standing until the flood covers it, which the Sunken Bar on floor 1
+  // already teaches the player to read. The grove uses that, so there is no
+  // `5` override here and the fixture needed no new art at all.
+  registerLegend('dungeonAbyss', { '6': 'dSilt', '7': 'dLintel', 'q': 'dPostAbyss', 'k': 'dSnarlAbyss' }, 'dungeonAbyss');
 
   // ---- cave / interior ---------------------------------------------------
   registerLegend('cave', {

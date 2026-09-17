@@ -20721,6 +20721,16 @@ function installCoreTiles() {
     // a theme may change the look and never the rules.
     dPostAbyss: { art: ART.dPost, pal: 'stone', flags: F.SOLID | F.SNAG, underArt: 'dFloorAbyss' },
 
+    // The Keep's own kelp, and it exists for the reason the post above does.
+    // `dSnarl` is this same bush art in `treeoakdk` — a ramp whose index 2 is
+    // a BROWN TRUNK, built for the Drowned Wood's oaks — so a snarl placed in
+    // an abyss room read as a forest shrub standing in a black stone hall.
+    // `reef` is the sea-plant ramp the reef city already uses, and it puts the
+    // kelp in the Keep's own cold register instead. Flags, `underArt` and the
+    // `cut` transform are `dSnarl`'s to the bit: a theme may change the look
+    // and never the rules, so check-reefseed proves the identical room.
+    dSnarlAbyss: { art: ART.bush, pal: 'reef', flags: F.SOLID, underArt: 'dWaterD' },
+
     // A silted cache: the ring a heavy thing leaves in the floor when it has
     // been lying there long enough to settle. Two palettes of ONE extracted
     // art, which is the whole trick — bleached on the dry pan, blue once the
@@ -20794,6 +20804,7 @@ function installCoreTiles() {
     // and a barrier that grows back across the only route out of a room is not
     // a puzzle, it is a trap.
     dSnarl: { cut: 'dWaterS', fx: 'cut', sfx: 'cut', persist: true },
+    dSnarlAbyss: { cut: 'dWaterS', fx: 'cut', sfx: 'cut', persist: true },
     rock: { lift: 'grass', drop: 'common' },
     rockSand: { lift: 'sand', drop: 'common' },
     pot: { lift: 'dFloor', drop: 'common' },
@@ -21141,14 +21152,23 @@ function installLegends() {
   // BRICK floor — the same defect the urn had before every theme got its own.
   // `7` is `dRaceW`, the Sanctum's westward race, and the same argument applies.
   //
-  // `5` and `k` repoint to the Drowned Wood Shrine's own drowned-bole fixture
-  // (`dSnag`/`dSnarl`) the same way D5's `dungeonWood` legend does: `5`
-  // (`channel`) and `k` (undefined in the shared `dungeon` legend) are both
-  // free inside every d6 room, so pointing them at the bole and the snarl
-  // moves nothing outside this dungeon. The tiles themselves are generic —
-  // a drowned tree and a kelp snarl over deep water — not Wood-themed art, so
-  // they sit in the Keep's own palette without looking borrowed.
-  registerLegend('dungeonAbyss', { '6': 'dSilt', '7': 'dLintel', 'q': 'dPostAbyss', '5': 'dSnag', 'k': 'dSnarl' }, 'dungeonAbyss');
+  // `k` is the Keep's kelp snarl, for the Reefseed grove on floor 0. It points
+  // at `dSnarlAbyss`, NOT at the Shrine's shared `dSnarl`: that one is drawn in
+  // `treeoakdk`, an oak ramp with a brown TRUNK at index 2, and in a black
+  // stone hall it read as a forest shrub somebody had carried indoors. Exactly
+  // the argument `q` makes above — and it was caught the way that one should
+  // have been, by screenshotting the room instead of assuming the tile was
+  // neutral because its name did not say "wood".
+  //
+  // THE BOLE IS NOT BORROWED AT ALL, and that is the better half of this. The
+  // Shrine's `dSnag` is a drowned oak over `dFloorWood`, so it would have
+  // dragged a square of another dungeon's flagstones in with it on top of the
+  // palette. The Keep already owns a tile with the identical tide shape:
+  // `7`/`dLintel`, `['dWallAbyss', 'dWallAbyss', 'dWaterD']` — its own masonry,
+  // standing until the flood covers it, which the Sunken Bar on floor 1
+  // already teaches the player to read. The grove uses that, so there is no
+  // `5` override here and the fixture needed no new art at all.
+  registerLegend('dungeonAbyss', { '6': 'dSilt', '7': 'dLintel', 'q': 'dPostAbyss', 'k': 'dSnarlAbyss' }, 'dungeonAbyss');
 
   // ---- cave / interior ---------------------------------------------------
   registerLegend('cave', {
@@ -30798,25 +30818,43 @@ function installDungeonsB() {
         ],
       },
       '0,4,2': {
-        name: 'The Bole Cistern',
+        name: 'The Drowned Garden',
         // The Keep's own Reefseed grove — item-reuse (docs/prompts/STATE.md).
         // D6 is the only dungeon after D5 the tool allows (check-reefseed.mjs
         // filters `r.index < 5`), so this is the whole reachable ceiling for
         // this rotation item, not a shortfall.
         //
-        // The fixture is Drowned Wood Shrine's own, unchanged: a drowned bole
-        // at 4,4 blocks the pool until HIGH; the stake at 4,3 is open water at
-        // every sea until a pillar is grown on it; the snarl at 4,2 sits in the
-        // one gap of the north wall, directly above where the pillar lands, so
-        // standing on it is what puts a blade in reach. Cut it and the alcove
-        // above opens for good — nothing beyond it is needed for anything, it
-        // is a find, the same shape as Grove 1 and Grove 2's own quiet ones.
+        // The Shrine's GRAMMAR, in the Keep's own MATERIALS — and the second
+        // half of that is not decoration, it is the fix for how this room
+        // first shipped. It was built with `dSnag` and `dSnarl` lifted
+        // straight out of the Drowned Wood, and both are drawn in an oak
+        // palette with a brown trunk in it (the bole over the Wood's own
+        // flagstones besides), so a black stone hall came out with a green
+        // forest tree and a green shrub standing in it. It validated clean and
+        // check-reefseed passed it 102/102: no checker in the table looks at
+        // colour, which is what `tools/shoot-rooms.mjs` is for, and nobody ran
+        // it. See docs/prompts/LEDGER.md.
+        //
+        // So the bar across the pool is `7`/`dLintel`, the Keep's OWN masonry,
+        // which already carries the exact tide shape the fixture needs —
+        // stone at LOW and MID, open water at HIGH — and which the Sunken Bar
+        // on floor 1 has already taught the player to read. The kelp is
+        // `dSnarlAbyss`, the same snarl in the reef's sea-plant ramp. Nothing
+        // was drawn for this room; both tiles are ones the game already had.
+        //
+        // The fixture itself is the Shrine's, unchanged: the lintel at 4,4
+        // stops the throw until HIGH drowns it; the stake at 4,3 is open water
+        // at every sea until a pillar is grown on it; the snarl at 4,2 sits in
+        // the one gap of the north wall, directly above where the pillar
+        // lands, so standing on it is what puts a blade in reach. Cut it and
+        // the alcove above opens for good — nothing beyond it is needed for
+        // anything, it is a find, the shape Grove 1 and Grove 2 already have.
         map: [
           '##########',
           '#........#',
           '####k#####',
           '#.0WWW0..#',
-          '#...5....#',
+          '#...7....#',
           '#........#',
           '#........#',
           '####..####',
@@ -30833,7 +30871,7 @@ function installDungeonsB() {
           ['pickup', 4, 1, { kind: 'rupee20' }],
         ],
         readable: [
-          [2, 5, 'A cistern plate, green with age: "The wood goes under at the flood. Stand on what it leaves behind."'],
+          [2, 5, 'A gardener\'s plate, green with age: "The course drowns at the flood. Sow then, and stand when the sea goes out."'],
         ],
       },
 

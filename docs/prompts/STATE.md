@@ -1,10 +1,10 @@
 OBJECTIVE OF RECORD: 7 item-reuse
 
-FLAGGED FOR HUMAN DECISION (S98, changing nothing per charter rule):
-item-reuse's `>=3 overworld` bar is unreachable for all 4 items — no
-tool models any item's gate outdoors (LEDGER's final "Known and
-deliberately unfixed" entry). Needs a `tools/` change bigger than one
-token. Awaiting: descope, a dedicated session, or advance the rotation.
+S98's FLAGGED DECISION IS WITHDRAWN (S99): its premise was grep-deep and
+false. check-overworld keys `reached` on the ROOM so it cannot see an
+in-screen pocket, and check-strands is a BASELINE with `--record`, already
+holding a 10-cell region. The overworld half is UNTESTED, not blocked.
+Nothing awaits a call; next session builds one and runs the suite. See LEDGER.
 
 ROTATION (fixed, do not reorder):
   1 wide-rooms      — 3 of 6 dungeons have a 2x2 or 3x1
@@ -56,4 +56,4 @@ hand-drawn, reasoned). #4 done S59 (human decision, no further idle art).
 DETOUR TOKENS: 0 (spent S98)
 
 SESSION LOG: one row per session — `S## | objective|detour | one line`
-S98 | detour | Spent the regenerated token: fixed check-reefseed.mjs's overworld filter bug (same shape as S91/S95's fixes), confirmed 102/102 unchanged — lands regardless of the rest. Then found (correcting my own first-pass "design-fit" conclusion after one more check): check-strands.mjs/check-overworld.mjs have NO puzzle-door model for ANY of the four items' gates (grep for reefseedRoom/anchorGate/anchorGauges/bellowsRoom/lensRoom in both returns nothing), unlike dungeon-flood.mjs which explicitly treats a snarl as passable. So any cell gated by any of the four items outdoors reads as a new stranded region and fails check-strands.mjs, regardless of tile choice or screen. Reefseed's (and by the same argument, the Lens's) overworld half is structurally blocked, same class as the Anchor's/Bellows' — likely the SAME shared root cause behind all three, not three separate ones. Full writeup: docs/prompts/LEDGER.md "Known and deliberately unfixed", docs/NEXT-SESSION.md S98. No game file changed.
+S99 | objective | AUDIT of S96-S98, and both things it checked were wrong. (1) S96's D6 grove borrowed D5's `dSnag`/`dSnarl`, which are drawn in an oak ramp with a brown trunk and sit on the Wood's own floor — the Keep shipped with a green forest tree and shrub in a black stone hall, green on `main`, caught by the one tool nobody ran (shoot-rooms). Fixed with no new art: snarl -> new `dSnarlAbyss` (reef ramp, `dPostAbyss`'s precedent), bole -> `7`/`dLintel`, which the Keep already owned and which has `dSnag`'s exact tide shape; `5` override deleted; room renamed The Drowned Garden. check-reefseed still 102/102, full suite + replay 51/51 + build green, screenshotted at LOW and HIGH. (2) S98's "overworld is structurally blocked" was grep-deep and false — check-overworld keys `reached` on the ROOM, check-strands is a baseline with `--record` already holding a 10-cell region. Claim withdrawn, its flagged decision withdrawn, S91/S95's own findings un-merged. Pre-existing, NOT ours: check-hearts fails 2/112 at 406e785 too. Full writeup: LEDGER "Known and deliberately unfixed" (2 entries), docs/NEXT-SESSION.md S99.

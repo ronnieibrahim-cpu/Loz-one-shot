@@ -2528,6 +2528,16 @@ export function installCoreTiles() {
     // a theme may change the look and never the rules.
     dPostAbyss: { art: ART.dPost, pal: 'stone', flags: F.SOLID | F.SNAG, underArt: 'dFloorAbyss' },
 
+    // The Keep's own kelp, and it exists for the reason the post above does.
+    // `dSnarl` is this same bush art in `treeoakdk` — a ramp whose index 2 is
+    // a BROWN TRUNK, built for the Drowned Wood's oaks — so a snarl placed in
+    // an abyss room read as a forest shrub standing in a black stone hall.
+    // `reef` is the sea-plant ramp the reef city already uses, and it puts the
+    // kelp in the Keep's own cold register instead. Flags, `underArt` and the
+    // `cut` transform are `dSnarl`'s to the bit: a theme may change the look
+    // and never the rules, so check-reefseed proves the identical room.
+    dSnarlAbyss: { art: ART.bush, pal: 'reef', flags: F.SOLID, underArt: 'dWaterD' },
+
     // A silted cache: the ring a heavy thing leaves in the floor when it has
     // been lying there long enough to settle. Two palettes of ONE extracted
     // art, which is the whole trick — bleached on the dry pan, blue once the
@@ -2601,6 +2611,7 @@ export function installCoreTiles() {
     // and a barrier that grows back across the only route out of a room is not
     // a puzzle, it is a trap.
     dSnarl: { cut: 'dWaterS', fx: 'cut', sfx: 'cut', persist: true },
+    dSnarlAbyss: { cut: 'dWaterS', fx: 'cut', sfx: 'cut', persist: true },
     rock: { lift: 'grass', drop: 'common' },
     rockSand: { lift: 'sand', drop: 'common' },
     pot: { lift: 'dFloor', drop: 'common' },

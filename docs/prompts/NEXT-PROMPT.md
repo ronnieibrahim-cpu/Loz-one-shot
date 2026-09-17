@@ -1,69 +1,72 @@
-# Next session — check for a human decision on item-reuse's overworld gap
+# Next session — build one outdoor Reefseed grove and run it
 
 ## Read first
-- `docs/prompts/STATE.md`'s top note (added this session) — the rotation-
-  level question raised to the person running these sessions. Check
-  whether they have responded (in this file, in a commit message, or
-  directly) before doing anything else.
-- `docs/prompts/LEDGER.md`, "Known and deliberately unfixed", the final
-  entry (S98) — the full evidence: ALL FOUR items' overworld halves are
-  structurally blocked by the same gap, not four separate ones.
-- `docs/NEXT-SESSION.md` S98 for how that conclusion was reached
-  (including the corrected first-pass writeup, kept for the record).
+- `docs/prompts/LEDGER.md`, "Known and deliberately unfixed", the last two
+  entries — the withdrawn "structurally blocked" claim and what is
+  actually true about the two overworld checkers, plus the borrowed-tile
+  art trap. Both are corrections of earlier sessions; read them before
+  trusting anything else written about this objective.
+- `docs/NEXT-SESSION.md` S99 (the audit) and S98 (what it corrected).
+- `docs/prompts/STATE.md` — DETOUR TOKENS is 0. This session is
+  `objective` and stays inside the file allowlist.
 
 ## Why this, now
-Many sessions running have worked objective #7 (item-reuse) to the edge of
-what the current toolset allows: Bellows' dungeon bar is met (2/5); the
-Anchor, Lens and Reefseed are each capped below the `>=2 dungeons` bar for
-a tool reason, not a design one; and ALL FOUR items' `>=3 overworld
-screens` bar is unreachable because `check-strands.mjs`/
-`check-overworld.mjs` have no concept of any of the four items' gate
-mechanisms at all (confirmed by grep, not by a failed build — see the
-LEDGER entry). There is no more item-reuse work left to do inside the
-current file allowlist without a `tools/` change bigger than a single
-detour token was designed to cover — the exact situation
-`docs/prompts/LEDGER.md`'s Lens entry already flagged as "worth raising
-as a rotation-level question."
+The overworld half of item-reuse was written up as structurally
+impossible and escalated as a decision. It is neither: that came from a
+grep, not from running anything. `check-overworld.mjs` keys its `reached`
+set on the ROOM, so a gated pocket inside a screen the player can walk
+into is invisible to it. `check-strands.mjs` is a baseline with
+`--record`, and its own header names two kinds of legitimately
+unreachable cell already recorded; the baseline file already carries a
+ten-cell region. So the real question was never "is it possible" but
+"what does the suite actually say", and nobody has asked it.
 
-**This session raised it. Per the charter's own rule** ("You do not
-choose what to work on... If you believe the objective of record is
-wrong, say so... I will decide"), nothing about the objective or the
-rotation was changed. `docs/prompts/STATE.md` carries the question at the
-top.
+The tile vocabulary is confirmed present: `drownWall` (digit `9`) is
+`['cliff', 'cliff', 'waterD']`, the same tide shape a bole needs, and
+`waterD` (`=`) is the always-deep stake tile. `check-reefseed.mjs`'s
+overworld filter was fixed in S98 and is correct.
 
 ## The task
-Check whether the person running these sessions has responded to the
-flagged question (a reply, a commit, a direct instruction). Two cases:
+Build ONE outdoor Reefseed grove in `src/data/overworld.js` and run the
+suite on it. Use `drownWall` for the bar and `waterD` for the stake;
+the snarl needs a cuttable tile whose `pal` and `underArt` suit the
+region it stands in — read the S99 art entry in the LEDGER before
+picking one, and give the region its own variant if the shared tile
+does not fit, exactly as `dSnarlAbyss` did for the Keep.
 
-- **They have responded:** follow their direction exactly — it overrides
-  everything below.
-- **No response yet:** do NOT guess at scope (do not unilaterally build
-  the shared flood-model fix, do not advance the rotation past #7, do not
-  spend a token that doesn't exist). Instead: run
-  `node tools/check-drift.mjs` and confirm its numbers still match this
-  session's own (`anchor: 1/5,0`, `lens: 0/5,0`, `bellows: 2/5,0`,
-  `reefseed: 1/5,0`). If they match, there is nothing new to do — log the
-  session as `objective` with one line confirming the state is unchanged,
-  and leave `docs/prompts/NEXT-PROMPT.md` as this same holding prompt
-  (re-copy it, do not invent a new task). If the numbers have DRIFTED
-  (something changed them outside this loop), investigate why before
-  anything else — that is a real finding, not noise.
+Pick the screen FIRST and pick it for space: the fixture needs four
+cells in a line plus a real far side, and every screen is already
+audited region art, so prefer one with several rows of open sea on an
+edge (`*`/`openSea` is solid to a swimmer and makes a natural flanking
+wall). `Worlds Edge` (`0,11,9`, dunes) has the most open sea on the map
+and holds only a sign; `South Bluff`, `Reef Pocket` and `South Shallows`
+are the next-emptiest. Do not retrofit into a screen whose existing
+content has to be moved to make room.
+
+Then run it and believe the output, not your reasoning about it. If
+`check-strands.mjs` reports a new region, that is the DECISION POINT,
+not a failure: either record it with `--record` and write the reason
+into the baseline commit, or conclude the cells should not be gated that
+way. Say which you did and why.
 
 ## Done means
-- The flagged question's status is checked, not assumed.
-- `node tools/check-drift.mjs` self-checks still pass.
-- `docs/prompts/STATE.md` logs the session (`objective`, one line: either
-  "no response, state unchanged" or the human's direction acted on).
-- If no response: `docs/prompts/NEXT-PROMPT.md` stays this same holding
-  prompt so the question isn't silently dropped.
+- `node tools/check-reefseed.mjs` passes with an overworld room declared,
+  and `node tools/check-drift.mjs` reads `reefseed overworld screens: 1`.
+- `node tools/shoot-rooms.mjs` run on the new screen at LOW and HIGH, and
+  the shot actually looked at — Goal 1 is not defended by any checker.
+- `check-overworld.mjs`, `check-strands.mjs`, `check-placement.mjs`,
+  `check-ground.mjs`, `check-progression.mjs`, `check-playthrough.mjs`,
+  `test.mjs`, `npm run build` with `dist/` committed.
+- If it does not work, the LEDGER gets the specific reason — which
+  assertion, which tile, what was tried — not a general conclusion.
 
 ## Out of scope
-- Building the shared `check-strands.mjs`/`check-overworld.mjs`
-  puzzle-door fix without an explicit go-ahead — it touches `tools/`,
-  is bigger than one detour token, and is exactly the scope question
-  that's pending.
-- Advancing `OBJECTIVE OF RECORD` to rotation item #8 on your own
-  initiative — that is the human's call, not a default to fall into
-  after enough blocked sessions.
-- Any new Anchor/Lens/Bellows/Reefseed dungeon or overworld room — every
-  remaining angle on all four is now accounted for in the LEDGER.
+- The Anchor's and Lens's dungeon ceilings: both need a swim-model change
+  inside their own checkers, which is a `tools/` change and there is no
+  token.
+- Re-deriving whether the overworld is "blocked" by reading source. That
+  is what produced the withdrawn claim. Build the room.
+- Any second grove, or a dungeon room for any item — one screen, one
+  fixture, one honest result.
+- Chasing `check-hearts`' 2 pre-existing failures (they predate all of
+  this; see the S99 log row). Note them, leave them.

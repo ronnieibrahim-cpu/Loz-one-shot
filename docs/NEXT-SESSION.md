@@ -1,4 +1,73 @@
-## S98 — check-reefseed.mjs's overworld filter bug fixed (detour token spent); then found the overworld half of ALL FOUR items is structurally blocked by one shared gap, not four separate ones
+## S99 — audit of S96-S98: the Keep shipped with a forest tree in it, and S98's "structurally blocked" finding was grep-deep and wrong
+
+Ran as an audit rather than a build session. Two defects, both already on
+`main`, both the same shape: a conclusion asserted instead of run.
+
+**1. The art, and this is the one that was actually in the game.** S96
+gave D6 its Reefseed grove by pointing `dungeonAbyss` at the Drowned Wood
+Shrine's own `dSnag` and `dSnarl`, and wrote into `legends.js` that the
+tiles are "generic... so they sit in the Keep's own palette without
+looking borrowed." One screenshot says otherwise. Both are drawn in
+`treeoakdk` — an oak ramp whose index 2 is a brown TRUNK — and `dBole`
+names `underArt: 'dFloorWood'`, so the Abyssal Keep's black stone hall
+came out with a bright green forest tree and a green shrub standing in
+it, over a square of the Wood Shrine's flagstones. Side by side with D5's
+own Bole Walk it is unmistakable: the same two tiles that sit perfectly
+against warm timber are foreign against cold stone.
+
+Nothing caught it and nothing could have. `validate`, `walk-dungeons`,
+`check-dungeon-strands`, `check-progression`, `check-placement`,
+`check-ground` and `check-reefseed` (102/102) were all green on it.
+`check-ground` comes closest and still cannot see it — it compares the
+ground under a prop against the grounds its screen has, then skips any
+tile whose `underArt` is wet, which a pool fixture always is. The tool
+that would have caught it in one command, `tools/shoot-rooms.mjs`, is the
+one nobody ran, on a change whose whole justification was a claim about
+colour.
+
+Fixed with NO new art, following the worked example sitting three lines
+above the bad line in `legends.js` (`dPostAbyss`, which exists because the
+shared post named the brick floor): the snarl became `dSnarlAbyss` — same
+bush art, the `reef` sea-plant ramp, flags/`underArt`/`cut` identical —
+and the bole was dropped ENTIRELY for `7`/`dLintel`, which the Keep
+already owned and which carries `dSnag`'s exact tide shape
+(`['dWallAbyss', 'dWallAbyss', 'dWaterD']`). So the grove now says the
+same sentence in the Keep's own masonry, the `5` override is gone, and
+the room reads as the dungeon it is in rather than a transplant — the
+bar drowns at HIGH exactly the way the Sunken Bar two floors up already
+teaches. Room renamed The Drowned Garden and its sign rewritten to match.
+`check-reefseed` still 102/102; full suite, `replay.mjs` 51/51 and
+`check-build` green; screenshotted at LOW and HIGH and actually looked at.
+
+**2. S98's finding, which was escalated to the person running these
+sessions as a rotation-level decision, is withdrawn.** It claimed the
+overworld half of item-reuse is structurally blocked for all four items
+because a grep for the gate fields in `check-strands.mjs` and
+`check-overworld.mjs` returned nothing. Reading the two tools instead:
+`check-overworld.mjs` keys its `reached` set on the ROOM
+(`new Set([...seen].map(k => k.split(':')[0]))`), so a gated pocket
+inside a screen the player can enter is invisible to it — it was never a
+blocker. And `check-strands.mjs` is a BASELINE with `--record`, whose own
+header names two kinds of legitimately unreachable cell already in the
+recorded set, with a ten-cell region sitting in
+`tools/strands-baseline.json` today. "Fails outright, no recourse" is not
+how it works. The honest status is UNTESTED: nobody has built one and run
+the suite, which is now what `NEXT-PROMPT.md` asks for. S98's retroactive
+folding of S91's and S95's findings into "one shared root cause" is also
+withdrawn — those were each traced to something specific and different,
+and the merge replaced earned precision with a guess.
+
+Also checked and NOT ours: `check-hearts` fails 2 of 112 (23 pieces
+leaves 3 orphaned; D5 holds 1 piece not 2). Confirmed identical at
+`406e785`, before any of this thread's work. Left alone deliberately.
+
+The reusable lesson from both: a grep that finds no mention of X proves
+the file does not say "X", not that it would reject X — and a tile whose
+NAME sounds theme-neutral still carries a `pal` and an `underArt`.
+
+---
+
+## S98 — check-reefseed.mjs's overworld filter bug fixed (detour token spent); then found the overworld half of ALL FOUR items is structurally blocked by one shared gap, not four separate ones — CLAIM WITHDRAWN BY S99, see above
 
 Spent the token STATE.md regenerated after S96+S97 (both `objective`).
 Step 1 of my own S97 NEXT-PROMPT.md: fixed `check-reefseed.mjs`'s `early`
