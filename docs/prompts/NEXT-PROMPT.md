@@ -1,72 +1,72 @@
-# Next session — give the Reefseed its first room outside D5
+# Next session — give the Anchor its second reuse dungeon
 
 ## Read first
 - `docs/prompts/STATE.md` — DETOUR TOKENS is 0. This session must be
-  `objective`, and so must the one after it, before a token regenerates.
-- `docs/prompts/LEDGER.md`, "Known and deliberately unfixed", the S95
-  entry on why Bellows' and the Lens' and the Anchor's remaining halves
-  are each blocked differently — this session's target (Reefseed) is
-  NOT one of those; it is picked because it is NOT blocked, just capped.
-- `docs/NEXT-SESSION.md` S95 for the outdoor-tile-vocabulary argument, if
-  useful background (not required for this session's task).
+  `objective`, the second in a row, for a token to regenerate.
+- `docs/prompts/LEDGER.md`, the Reefseed and Lens entries (end of "Known
+  and deliberately unfixed") — both items are now at a PERMANENT ceiling
+  under their checkers' current filters. The Anchor is not: it already
+  has a second dungeon's worth of room to grow before it needs a filter
+  changed.
+- `src/data/dungeons-a.js`, D1's `anchorGate`/`anchorGauges` rooms (lines
+  ~444-740) and D2's single `anchorGate` (~line 955) as the two worked
+  examples.
 
 ## Why this, now
-Three sessions running (S92, S94, S95) found the Lens, the Anchor's
-overworld half, and now the Bellows' overworld half each blocked by a
-different structural limit that needs a tool or tile change no detour
-token currently covers. The Reefseed is different: `check-reefseed.mjs`'s
-own filter is `r.index < 5` (blocks D1-D4, allows D5 and D6), so a
-`reefseedRoom` in D6 is legal by the tool's own rules TODAY, the same way
-S94 found D5/D6 legal for the Bellows. `check-drift.mjs` reads
-`reefseed dungeons: 0 of 5` — building one D6 grove gets this to 1 of 5.
+`check-drift.mjs` reads `anchor dungeons: 1 of 5` (D2, landed before this
+rotation started). The rotation's own bar is `>=2 later dungeons`, and
+`tools/check-anchor.mjs`'s own `late` filter — `r.mapId !== 'overworld'
+&& !['d1', 'd2'].includes(r.mapId)` — already treats D3, D4, D5 and D6 as
+legal anchor-gate dungeons; nothing in that filter needs fixing first,
+unlike the Reefseed and Lens. This session is the direct sequel to S93/S94
+(Bellows: D4 home, D5 then D6 built to close its own dungeon-side bar) and
+S96 (Reefseed: found its dungeon-side ceiling is 1, permanently, because
+its home dungeon eats the only slot `index < 5` allows) — the Anchor has
+no such ceiling; D2 was one pick among four legal dungeons, not the only
+one.
 
-Worth saying plainly, so it isn't rediscovered as a surprise: D6 is the
-ONLY dungeon after D5, so 1 of 5 is the ceiling here without a tool
-change — same shape of cap as the Lens/Bellows problems, just already
-known and out of scope. This session is not trying to close the rotation's
-">=2 dungeons" bar for the Reefseed; it is making the one move that is
-actually available.
+**Do not touch `tools/`.** Every remaining overworld half (Anchor's own,
+the Lens', the Bellows') needs a real tool or tile change per LEDGER — out
+of scope for an `objective` session with 0 detour tokens.
 
 ## The task
-Read `docs/ITEMS.md`'s Reefseed section and `tools/check-reefseed.mjs`'s
-own file header in full before writing any room — it is the most
-demanding of the four gate checkers (10 numbered assertions per room, plus
-three global ones) and the fixture is exact: a bank, a drowned bole
-(`dSnag`-shaped tile — D5's own dungeon legend override, NOT available in
-`dungeonAbyss`; D6 will need ITS OWN override of a spare digit the same
-way D5 overrode `5`, see `src/data/legends.js`'s `dungeonWood`/
-`dungeonAbyss` entries), a stake, and a kelp snarl in a straight line,
-water on one perpendicular side and a sump (`0`/`dSump`) on the other.
-Find or build ONE room in D6 (`src/data/dungeons-b.js`, `id: 'd6'`) where
-growing a pillar with the Reefseed is the answer. Read D5's five groves
-first (`src/data/dungeons-b.js`, `id: 'd5'`) as the worked examples — do
-not invent a new fixture shape; `check-reefseed.mjs`'s own header says a
-second answer is exactly what a different arrangement produces.
+Read `docs/ITEMS.md`'s Anchor section and `tools/check-anchor.mjs`'s own
+file header in full before writing any room. Read D1's two `anchorGate`
+rooms and two `anchorGauges` rooms as the worked examples of both
+fixture shapes the item supports (a plain in/out gate, and a two-gauge
+puzzle). Pick ONE of D3 (`src/data/dungeons-a.js`, `id: 'd3'`), D4
+(`id: 'd4'`), D5 or D6 (`src/data/dungeons-b.js`) and find or build ONE
+room there where the Anchor is the answer — same approach S96 used for
+the Reefseed: survey the target dungeon's existing plain rooms first
+(`docs/DUNGEON-STATUS.md` has each one's own section) for a spot with no
+existing lock/puzzle/reward to disturb, before reaching for a brand-new
+room. If a new room is genuinely needed, `game.js`'s `checkRoomExit`
+resolves neighbours purely by grid coordinate (`hasRoom`), so a dead-end
+off an existing room needs only one new door opened in that room's own
+wall plus the new room itself — S96's `docs/NEXT-SESSION.md` entry has
+the worked mechanics.
 
-Budget real iteration time: S94's Bellows room needed one real fix after
-the first `check-bellows.mjs` run (a cone diagonal-reach leak); expect
-`check-reefseed.mjs` to be at least as strict; run it after every change
-rather than only at the end.
+Budget real iteration time: `check-anchor.mjs` proves the gate/gauge holds
+at every relevant tide with a live conch. Run it after every change.
 
 ## Done means
-- `node tools/check-reefseed.mjs` passes with a new room in D6 declaring
-  a `reefseedRoom`.
-- `node tools/check-drift.mjs` reads `reefseed dungeons: 1 of 5`, up from
-  0.
+- `node tools/check-anchor.mjs` passes with a new `anchorGate` or
+  `anchorGauges` room in the chosen dungeon.
+- `node tools/check-drift.mjs` reads `anchor dungeons: 2 of 5`, up from 1
+  — the rotation's own bar for this item, closing its dungeon half.
 - Full regression: `walk-dungeons.mjs`, `check-dungeon-strands.mjs`,
   `check-progression.mjs`, `check-placement.mjs`, `check-ground.mjs`,
   `check-playthrough.mjs`, `test.mjs`, `npm run build`.
-- `docs/prompts/STATE.md` logs this session as `objective` — the first of
-  the two needed before the detour token regenerates.
+- `docs/prompts/STATE.md` logs this session as `objective` — the second
+  in a row, which regenerates the detour token per its own rule.
 
 ## Out of scope
-- The Lens, the Anchor's overworld gate, and the Bellows' overworld half
-  — all three need a tool or tile change no detour token exists to cover
-  this session (see LEDGER).
-- Trying to reach ">=2 dungeons" for the Reefseed — D6 is the only
-  eligible dungeon under the current tool; 1 of 5 is this session's real
-  ceiling, not a shortfall to work around.
-- A new `dungeonAbyss` digit override for the bole needs picking (a spare
-  digit, same as D5's `5`) — do this inside the task, not as a separate
-  detour; it is data, not a `tools/` change.
-- Any change to `tools/` — no detour token exists this session.
+- The Anchor's, the Lens' and the Bellows' overworld halves, and pushing
+  the Reefseed past its dungeon-side ceiling of 1 — all four need a real
+  tool or tile change no detour token exists to cover this session (see
+  LEDGER's "Known and deliberately unfixed").
+- Any change to `tools/` or to a shared tile/legend file outside the
+  chosen dungeon's own `dungeonX` legend override — data in the target
+  dungeon's room file only, same boundary S96 kept.
+- Trying more than one dungeon this session — one new anchor room closes
+  the bar; a second is not needed and not this session's job.

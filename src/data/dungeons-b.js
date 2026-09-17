@@ -1047,8 +1047,13 @@ export function installDungeonsB() {
       },
       '0,2,3': {
         name: 'Keep Stair',
+        // NORTH WALL OPENED (item-reuse, docs/prompts/LEDGER.md): a door at
+        // 4-5,0 where there was none, onto a new room at 2,2 — the Keep's own
+        // Reefseed grove, item-reuse's fourth item to move outside its home
+        // dungeon. Nothing else about this room changes; the door was plain
+        // closed wall before, not a route any checker depended on staying shut.
         map: [
-          '##########',
+          '####..####',
           '##....../#',
           '##......##',
           '#.........',
@@ -1062,6 +1067,42 @@ export function installDungeonsB() {
         ],
         entities: [
           ['stalfos', 3, 4],
+        ],
+      },
+      '0,2,2': {
+        name: 'The Drowned Root',
+        // D6's own Reefseed grove — the same single-stake fixture as D5's
+        // First Stake (the plainest of that dungeon's five), relegended for
+        // the Keep. A bank, a bole gone only at HIGH, a pillar that is ground
+        // at LOW and only at LOW, and a kelp snarl sealing a vault instead of
+        // a corridor onward: the far side is a dead end here, not a route to
+        // the next grove, so it holds a reward instead of continuing the
+        // dungeon's own critical path. `dungeonAbyss` repoints the same two
+        // free characters D5 used on its own legend (`5`->dSnag, `k`->dSnarl,
+        // src/data/legends.js) — neither is spoken for anywhere else in D6.
+        map: [
+          '##########',
+          '#.....##.#',
+          '#.....0#.#',
+          '#.....W#.#',
+          '#....5Wk.#',
+          '#.....W#.#',
+          '#.....##.#',
+          '####..####',
+        ],
+        reefseedRoom: {
+          entry: [4, 7],
+          stakes: [
+            { at: [6, 4], from: [4, 4], face: 'right', sea: 2 },
+          ],
+          snarl: [7, 4], cutFrom: [6, 4],
+        },
+        entities: [
+          ['chest', 8, 4, { pickup: 'rupee50' }],
+          ['keese', 2, 2],
+        ],
+        readable: [
+          [2, 5, 'Scratched into the coping: "The root only shows itself gone. Throw at the flood, stand at the ebb."'],
         ],
       },
       '0,4,3': {

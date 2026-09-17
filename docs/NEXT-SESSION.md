@@ -1,3 +1,74 @@
+## S96 — D6's first Reefseed grove, The Drowned Root (`0,2,2`), the same shape of move S93 made for the Bellows in D5's Bower Cell
+
+`objective` session, no detour token spent (0 available, per S95).
+NEXT-PROMPT.md's task exactly: give the Reefseed a room outside D5.
+`check-reefseed.mjs`'s own filter (`r.index < 5`) leaves D6 as the only
+legal dungeon — the same shape of ceiling S92 found for the Lens (blocked
+outright) and the Bellows (blocked only until S93/S94 built the rooms) —
+so this was the one move actually available, not an attempt at the
+rotation's full ">=2 dungeons" bar.
+
+Read D5's five groves (`src/data/dungeons-b.js`, `id: 'd5'`) before
+writing anything, per the prompt's own instruction. Picked Grove 1, "The
+First Stake," as the template: a bank, a drowned bole (gone only at
+HIGH), a target tile of permanent deep water (`W`, already in the shared
+`dungeon` legend, no override needed), and a kelp snarl one tile past it.
+D5's `dungeonWood` legend repoints digit `5` to `dSnag` and letter `k` to
+`dSnarl` for exactly this fixture; confirmed by grep that digit `5` is
+unused anywhere in D6's existing room grids (`0,1,2,3,4,6,7,9` are all
+spoken for; `5` and `8` are not) and `k` isn't in the shared `dungeon`
+legend either — so `src/data/legends.js`'s `dungeonAbyss` override picked
+up the identical pair D5 used, on its own separate legend, moving nothing
+outside D6.
+
+**Where the room went, and why:** D6 is already a finished, fully-keyed
+26-room dungeon (`docs/DUNGEON-STATUS.md`), so this wasn't a slot in the
+original route — it's a new dead-end grafted onto it. Surveyed every
+floor-0 room for one with no existing lock/puzzle/reward to disturb;
+`Keep Stair` (`0,2,3`) was the plainest (one enemy, a decorative ledge, a
+stairs warp elsewhere) and its north wall (row 0) was fully closed with
+no neighbouring room at `0,2,2` — confirmed via `game.js`'s
+`checkRoomExit`, which resolves neighbours purely by grid coordinate
+(`hasRoom(mapId, floor, nx, ny)`), so a brand-new dead-end room needs
+nothing more than one new door opening in one existing wall plus the new
+room itself; no existing room's warps, locks or reward needed touching.
+Opened a door at Keep Stair's row 0, cols 4-5 (mirroring its own south
+wall's door shape) and built The Drowned Root behind it — Grove 1's exact
+map, unchanged in shape, with the far side (beyond the snarl) closed off
+into a one-tile-wide vault instead of continuing on to a further room,
+holding a rupee chest since D6's own key economy is already complete.
+
+**First `check-reefseed.mjs` run: 102/102, no iteration needed** — unlike
+the budget the prompt set aside for likely rework, reusing Grove 1's
+proven geometry verbatim (only the legend and the room's own walls
+changed) meant every one of its ten per-stake/per-room clauses passed
+immediately, including the two that catch a bad fixture on the first
+try elsewhere in the project (no stray pillar can seal the room; no
+blade but the stake's reaches the snarl).
+
+Full regression: `walk-dungeons.mjs` (d6 now 27/27 rooms), `check-drift.mjs`
+(`reefseed dungeons: 1 of 5`, up from 0), `check-dungeon-strands.mjs` (2
+single-cell "NEW" warnings — `d6 0,2,4:2,2` and `d5 0,5,5:1,1` — confirmed
+via `git stash` to already exist on `main` before this session's changes,
+unrelated to this room), `check-progression.mjs`, `check-placement.mjs`,
+`check-ground.mjs`, `check-playthrough.mjs` (unchanged, still stops at
+`d2/1,3,1` per the known D1/D2 Anchor-placement gap), `test.mjs` (83/83),
+`npm run build` + `check-build.mjs`. All green.
+
+**Corrected while writing this up, so a future session doesn't repeat the
+mistake:** unlike the Bellows (D5 and D6 were BOTH eligible "other"
+dungeons, so S93 then S94 could add a room to each and go 0 -> 1 -> 2),
+the Reefseed's home is D5 itself, and `index < 5` only ever leaves D6 as
+an eligible OTHER dungeon — there is no second dungeon left to add a room
+to. A second grove inside D6 would not move `reefseed dungeons` past 1 of
+5; the metric counts dungeons, not rooms. **1 of 5 is this item's true,
+permanent ceiling under `check-reefseed.mjs`'s current filter — not a
+partial result waiting on more room-building, the same way the Lens's 0
+of 5 isn't.** Closing the rotation's ">=2" bar for the Reefseed needs the
+filter itself reconsidered (why `index < 5` rather than "not the home
+dungeon"), which is a `tools/` change and needs a detour token, same as
+the Lens and the Anchor's and Bellows' remaining halves.
+
 ## S95 — fixed check-bellows.mjs's real overworld bug (detour token spent), then found the Bellows' overworld half is ALSO structurally blocked, for a third and different reason than the Lens or the Anchor
 
 Spent the detour token STATE.md regenerated after S92+S93 (both

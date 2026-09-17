@@ -484,8 +484,22 @@ distinct dungeons — the objective's own "3 of 6" bar. See
 
 ## D6 — the Abyssal Keep. DONE, and it closes P8.
 
-26 rooms over two floors, the Dredge Line at room 13, three crossings, three
+27 rooms over two floors, the Dredge Line at room 13, three crossings, three
 caches, `tools/check-dredge.mjs` (103 assertions) and the `d6-mooring` replay.
+
+**Item-reuse addition (docs/prompts/LEDGER.md): a Reefseed grove, The Drowned
+Root (`0,2,2`).** A new door opened in Keep Stair's own north wall (plain
+closed stone before, no route depended on it staying shut) leads to a
+single-stake grove — the same fixture as D5's First Stake, relegended onto
+`dungeonAbyss` via the same two free characters D5 used on its own legend
+(`5`->dSnag, `k`->dSnarl). The far side is a dead end holding a rupee chest,
+not a route onward, since D6 already had its own critical path. `reefseed
+dungeons` is now 1 of 5 — and, unlike the Bellows' own cap (open until
+S93/S94 built it a second eligible dungeon), this is PERMANENT under
+`check-reefseed.mjs`'s current `index < 5` filter: D5 is the Reefseed's
+own home, so D6 is the only OTHER dungeon the filter ever allows, and a
+second D6 grove would not raise the count past 1. See LEDGER's Reefseed
+entry. `check-reefseed.mjs` 102/102, full regression green.
 
 **The problem it had to solve, and it is the one the whole game had been
 building toward: THE PLAYER OF THE SIXTH DUNGEON OWNS THE CLEATS, SO WATER IS A

@@ -479,6 +479,21 @@ extract from it:
   `dPit`'s flag combination or a genuinely different "no hand reaches"
   model for outdoor rooms — not a filter change, and not something this
   token could also cover. See `docs/NEXT-SESSION.md` S95.
+  **S96 closed the Reefseed's own move (`reefseed dungeons` 0 -> 1 of 5):**
+  a single-stake grove, The Drowned Root, built in D6 at `0,2,2`, behind a
+  new door opened in Keep Stair's own north wall (plain closed stone before,
+  nothing depended on it staying shut). Same fixture as D5's First Stake
+  (the plainest of its five groves), relegended onto `dungeonAbyss` via the
+  same two free characters D5 used on its own legend (`5`->dSnag,
+  `k`->dSnarl; neither is spoken for anywhere else in D6's room grids).
+  `check-reefseed.mjs` 102/102 first run. **Unlike the Bellows, this is the
+  Reefseed's PERMANENT ceiling, not a partial result:** the Bellows had TWO
+  eligible other-dungeons (D5 and D6) to fill one at a time (S93, then
+  S94); the Reefseed's home is D5 itself, so `index < 5` leaves exactly ONE
+  eligible other dungeon (D6), and the metric counts dungeons, not rooms —
+  a second D6 grove would not move it past 1 of 5. Closing the rotation's
+  ">=2" bar needs the filter reconsidered, a `tools/` change with the same
+  standing as the Lens's and the Anchor's own open halves (below).
 
 ---
 

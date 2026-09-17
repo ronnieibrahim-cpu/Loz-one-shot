@@ -298,7 +298,11 @@ export function installLegends() {
   // is transparent art over an `underArt` floor, and the shared one names the
   // BRICK floor — the same defect the urn had before every theme got its own.
   // `7` is `dRaceW`, the Sanctum's westward race, and the same argument applies.
-  registerLegend('dungeonAbyss', { '6': 'dSilt', '7': 'dLintel', 'q': 'dPostAbyss' }, 'dungeonAbyss');
+  // `5` and `k` repeat D5's own Reefseed override (the Drowned Wood Shrine's
+  // `dungeonWood` legend, above) for the Keep's own grove: neither is spoken
+  // for anywhere in D6's room grids, so pointing `5` at the drowned bole and
+  // `k` at the kelp snarl moves nothing else in this dungeon.
+  registerLegend('dungeonAbyss', { '5': 'dSnag', '6': 'dSilt', '7': 'dLintel', 'k': 'dSnarl', 'q': 'dPostAbyss' }, 'dungeonAbyss');
 
   // ---- cave / interior ---------------------------------------------------
   registerLegend('cave', {
