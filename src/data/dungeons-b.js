@@ -1066,9 +1066,12 @@ export function installDungeonsB() {
       },
       '0,4,3': {
         name: 'Dredge Vault',
+        // North wall opened (cols 4-5, the standard gap) onto the new Reefseed
+        // grove at '0,4,2' — item-reuse (docs/prompts/STATE.md). Nothing else
+        // about this room moved.
         map: [
-          '##########',
-          '##########',
+          '####..####',
+          '####..####',
           '##......##',
           '..........',
           '..........',
@@ -1078,6 +1081,45 @@ export function installDungeonsB() {
         ],
         entities: [
           ['chest', 4, 3, { big: true, item: 'dredge', level: 1 }],
+        ],
+      },
+      '0,4,2': {
+        name: 'The Bole Cistern',
+        // The Keep's own Reefseed grove — item-reuse (docs/prompts/STATE.md).
+        // D6 is the only dungeon after D5 the tool allows (check-reefseed.mjs
+        // filters `r.index < 5`), so this is the whole reachable ceiling for
+        // this rotation item, not a shortfall.
+        //
+        // The fixture is Drowned Wood Shrine's own, unchanged: a drowned bole
+        // at 4,4 blocks the pool until HIGH; the stake at 4,3 is open water at
+        // every sea until a pillar is grown on it; the snarl at 4,2 sits in the
+        // one gap of the north wall, directly above where the pillar lands, so
+        // standing on it is what puts a blade in reach. Cut it and the alcove
+        // above opens for good — nothing beyond it is needed for anything, it
+        // is a find, the same shape as Grove 1 and Grove 2's own quiet ones.
+        map: [
+          '##########',
+          '#........#',
+          '####k#####',
+          '#.0WWW0..#',
+          '#...5....#',
+          '#........#',
+          '#........#',
+          '####..####',
+        ],
+        reefseedRoom: {
+          entry: [4, 7],
+          stakes: [
+            { at: [4, 3], from: [4, 5], face: 'up', sea: 2 },
+          ],
+          snarl: [4, 2], cutFrom: [4, 3],
+        },
+        entities: [
+          ['keese', 6, 5],
+          ['pickup', 4, 1, { kind: 'rupee20' }],
+        ],
+        readable: [
+          [2, 5, 'A cistern plate, green with age: "The wood goes under at the flood. Stand on what it leaves behind."'],
         ],
       },
 

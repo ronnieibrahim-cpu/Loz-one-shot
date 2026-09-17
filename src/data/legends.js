@@ -298,7 +298,15 @@ export function installLegends() {
   // is transparent art over an `underArt` floor, and the shared one names the
   // BRICK floor — the same defect the urn had before every theme got its own.
   // `7` is `dRaceW`, the Sanctum's westward race, and the same argument applies.
-  registerLegend('dungeonAbyss', { '6': 'dSilt', '7': 'dLintel', 'q': 'dPostAbyss' }, 'dungeonAbyss');
+  //
+  // `5` and `k` repoint to the Drowned Wood Shrine's own drowned-bole fixture
+  // (`dSnag`/`dSnarl`) the same way D5's `dungeonWood` legend does: `5`
+  // (`channel`) and `k` (undefined in the shared `dungeon` legend) are both
+  // free inside every d6 room, so pointing them at the bole and the snarl
+  // moves nothing outside this dungeon. The tiles themselves are generic —
+  // a drowned tree and a kelp snarl over deep water — not Wood-themed art, so
+  // they sit in the Keep's own palette without looking borrowed.
+  registerLegend('dungeonAbyss', { '6': 'dSilt', '7': 'dLintel', 'q': 'dPostAbyss', '5': 'dSnag', 'k': 'dSnarl' }, 'dungeonAbyss');
 
   // ---- cave / interior ---------------------------------------------------
   registerLegend('cave', {

@@ -624,6 +624,20 @@ deterministic opening tax: 13 of 32 qh (40.6%) gone identically before any
 seed's RNG diverges. See `docs/NEXT-SESSION.md` S67 for the full per-seed
 damage-log breakdown; no code changed this session.
 
+**A 27th room, `0,4,2` "The Bole Cistern", added off Dredge Vault's own north
+wall (item-reuse, docs/prompts/STATE.md).** D6's first Reefseed grove — the
+Drowned Wood Shrine's own bole/stake/snarl fixture, unmoved, copied in with
+`dungeonAbyss` repointing the two free characters D5's own theme repoints
+(`5`→`dSnag`, `k`→`dSnarl`; both untouched anywhere in D6 before this).
+Unlike Tideshade Hall and Nereth's arena above, this is a genuinely new room,
+not a widened one, so D6's room count moves from 26 to 27 — `check-dredge.mjs`
+counts rooms by iterating `dungeon.rooms`, not by a written total, so nothing
+needed updating there. It is a find, not a gate: nothing beyond the snarl is
+needed for anything, the same shape as D5's own Grove 1 and Grove 2. Still
+1 of 5 dungeons for the Reefseed — D6 is the only dungeon after D5, so that is
+the rotation's real ceiling under `check-reefseed.mjs`'s current `r.index < 5`
+filter, not a shortfall to chase.
+
 ---
 
 ## What no dungeon has yet, and it is the same gap in all of them
