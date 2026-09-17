@@ -54,7 +54,7 @@ human confirmed no further hand-drawn NPC art. Wrong on any -> revert.
 #6 done S89: 120/120 overworld rooms in docs/AUDITED-ROOMS.md, every
 region audited S64-S89. Real fixes landed along the way (S76-S81 ledges).
 
-DETOUR TOKENS: 0 (spent S91)
+DETOUR TOKENS: 0 (spent S91; needs 2 consecutive objective sessions to regen — S92 is 1 of 2)
 
 SESSION LOG: one row per session — `S## | objective|detour | one line`
-S91 | detour | Fixed check-anchor.mjs's whitelist (16/16 unchanged, d1/d2 byte-identical) — that part of S90's plan landed clean. The overworld anchorGate itself still does NOT exist: built and empirically tested a real placement (Kell Spur) and found a deeper block than the whitelist — check-strands.mjs/check-overworld.mjs's hop model only recognizes F.JUMPABLE (chasm) tiles, never drownWall-at-HIGH, so any outdoor tile arrangement that gives check-anchor.mjs a genuine gate reads as a new stranded region and fails check-strands.mjs outright. No outdoor tide tile besides drownWall is ever unwalkable at LOW, so there is no other candidate. Reverted the test edit; full regression (anchor/overworld/strands/placement/ground/progression/playthrough/drift) green on the whitelist fix alone. Full writeup: docs/prompts/LEDGER.md "Known and deliberately unfixed", docs/NEXT-SESSION.md S91.
+S92 | objective | Lens task (NEXT-PROMPT.md) hit its own documented contingency: check-lens.mjs unconditionally rejects any lensRoom outside D2 (deliberate, not a bug like S91's whitelist), so no tool-free fix exists — wrote it up and stopped rather than spend a token that doesn't exist (0 available). Checked check-bellows.mjs/check-reefseed.mjs/check-cleats.mjs while there: Bellows has NO such block and can reach the ">=2 dungeons" bar via D5+D6 with zero tool changes; Reefseed is capped at 1 dungeon (D6 only) under its own index filter, one short of the bar. Full writeup: docs/prompts/LEDGER.md "Known and deliberately unfixed", docs/NEXT-SESSION.md S92.

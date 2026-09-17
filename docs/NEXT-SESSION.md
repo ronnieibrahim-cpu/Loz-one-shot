@@ -1,3 +1,66 @@
+## S92 — the Lens task named in NEXT-PROMPT.md is blocked the same way the Anchor's overworld half was, but by an unconditional assertion in check-lens.mjs rather than a bug; checked the other three gate checkers while here and found Bellows is NOT blocked
+
+NEXT-PROMPT.md's task was to find or build one Lens room outside D2 using
+`tools/check-lens.mjs` as proof, with an explicit contingency: if the tool
+has "the same kind of gap check-anchor.mjs had," write it up and stop —
+DETOUR TOKENS is 0, so no tool change is available this session. It does.
+
+Read `check-lens.mjs` in full before touching any game file. Its own
+"collect the declared rooms" section runs:
+
+    const strays = rooms.filter(r => r.mapId !== 'd2');
+    check('every declared Lens fork is inside the Lens\'s own dungeon',
+      strays.length === 0, ...);
+
+This fails for ANY `lensRoom` declared outside D2 — a later dungeon, an
+overworld screen, doesn't matter, and it doesn't depend on what the room's
+terrain actually needs. Unlike S91's Anchor whitelist (a hardcoded array
+missing an `overworld` case — a real bug, fixed in one line), this is
+deliberate: the tool's own comment says "The assertion that every declared
+lensRoom is in D2 is what will catch a later dungeon that needs this
+relaxed," and the flood function two sections up is explicitly built with
+"NO SWIMMING and NO ANCHOR" — so a D3+ Lens room would need the model
+widened to those verbs too, not just the filter relaxed. That is a design
+decision plus a model change, not a one-line fix, and it lives in
+`tools/`, same as S91's finding. No test case was needed to prove this one
+(unlike S91's Kell Spur build) — the block is unconditional in the source,
+not something an empirical placement could dodge.
+
+**Went one step further than the task asked, since it costs nothing and
+directly informs the next session's target: read `check-bellows.mjs`,
+`check-reefseed.mjs`, and `check-cleats.mjs` to see whether they have the
+same kind of hard block.** They don't, or not the same way:
+
+- `check-cleats.mjs` has no dungeon-index restriction at all — any
+  dungeon, earlier or later than D3, can declare a Cleats crossing. This
+  is why Cleats is already 5/5 with real backtrack content in D1/D2.
+- `check-bellows.mjs` and `check-reefseed.mjs` both use
+  `r.index < HOME.dungeon.index` (bellows) or `r.index < 4`/`< 5`
+  (equivalent), which blocks only dungeons BEFORE the item's own — not an
+  exact-map whitelist. So a `bellowsRoom` in D5 or D6 is legal by the
+  tool's own rules today, no tool change needed.
+- Consequence for the rotation's ">=2 later dungeons" bar: **Bellows can
+  reach exactly 2/5 (D5 and D6, its only two eligible dungeons) with zero
+  tool changes** — the most promising open item-reuse target right now.
+  **Reefseed cannot reach 2/5 under the current restriction**: home is D5,
+  `index < 5` leaves only D6 eligible, one dungeon short of the bar — a
+  smaller version of the Lens's problem, worth knowing before a session
+  sinks time into designing a second Reefseed dungeon room that the tool
+  can never let count.
+
+Logged as `objective` (the task was followed to its documented
+contingency; no game file was touched, per NEXT-PROMPT.md's own
+instruction not to spend a token that doesn't exist). Full regression run
+clean with no changes: `walk-dungeons.mjs`, `check-dungeon-strands.mjs`,
+`check-progression.mjs`, `check-playthrough.mjs`, `check-drift.mjs`.
+`npm run build` re-run and `dist/oracle-of-tides.html` committed unchanged
+in content (rebuilt from an unchanged `src/`).
+
+DETOUR TOKENS stays 0. STATE.md's rule needs two consecutive `objective`
+sessions after a spend before a token regenerates; S92 is the first of
+those two (S91 was `detour`). The next `objective` session completes the
+pair.
+
 ## S91 — the whitelist gap S90 found is fixed, but the overworld half of item-reuse's Anchor task is blocked by something deeper: `check-strands.mjs`/`check-overworld.mjs` can never cross the one tile that would make the gate real
 
 Spent the token `check-drift.mjs` regenerated after S89/S90's two

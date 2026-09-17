@@ -411,6 +411,33 @@ extract from it:
   outside item-reuse's file allowlist, and a bigger scope than a single
   detour token was meant to cover — this may be worth raising as a
   rotation-level question rather than another detour.
+- **`check-lens.mjs` cannot prove a Lens fork outside D2, full stop — found
+  S92, no test case needed, it is right there in the tool's own filter.**
+  Unlike the Anchor's whitelist (a hardcoded array missing a case, fixed
+  S91), this one is an unconditional assertion: `strays = rooms.filter(r =>
+  r.mapId !== 'd2')` fails the run for ANY declared `lensRoom` whose map
+  isn't `'d2'` — a dungeon room, an overworld screen, doesn't matter, and
+  it doesn't matter whether the room's own reachability model would even
+  need swimming or the Anchor. The tool's own header says this is
+  deliberate ("The assertion that every declared lensRoom is in D2 is what
+  will catch a later dungeon that needs this relaxed"), not an oversight —
+  so unlike S91's fix this genuinely needs a scope decision plus a model
+  change (the flood has "NO SWIMMING and NO ANCHOR" written into it, so a
+  Lens room in D3+ would need those verbs added too), not a one-line
+  unblock. Left untouched; no detour token existed to spend on it (0,
+  per STATE.md). **Checked the other three gate checkers while here, since
+  the fix (if any) is the same shape of tool change and it's worth knowing
+  which items are actually reachable first:** `check-bellows.mjs` and
+  `check-reefseed.mjs` use `r.index < HOME.dungeon.index` (or an
+  equivalent), which blocks only EARLIER dungeons, not a hardcoded map —
+  so a `bellowsRoom` in D5 or D6 (both index > D4's) is not structurally
+  blocked the way a `lensRoom` outside D2 is. `check-cleats.mjs` has no
+  index restriction at all, which is why Cleats already reused into D1/D2
+  as backtrack content. Bellows can reach exactly the rotation's ">=2 later
+  dungeons" bar (D5 and D6, its only two candidates) with no tool change.
+  Reefseed cannot: home is D5, so `index < 5` leaves only D6 as a legal
+  dungeon, one short of ">=2" — the same shape of ceiling as the Lens,
+  just less immediately absolute. Full writeup: `docs/NEXT-SESSION.md` S92.
 
 ---
 

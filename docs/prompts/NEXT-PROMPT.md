@@ -1,54 +1,65 @@
-# Next session — decide item-reuse's overworld Anchor path forward
+# Next session — give the Squall Bellows a room in D5 or D6
 
 ## Read first
-- `docs/prompts/STATE.md` — DETOUR TOKENS is 0 (spent S91). This session
-  must be `objective`, and the one after it too, before another detour.
-- `docs/prompts/LEDGER.md`, "Known and deliberately unfixed", the entry
-  starting "What is NOT fixed... no overworld `anchorGate` can actually
-  be built" — the full mechanism and why it blocks the overworld half of
-  item-reuse's Anchor task specifically.
-- `docs/NEXT-SESSION.md` S91 — the empirical test (Kell Spur) that proved
-  it, if the LEDGER summary needs more detail.
+- `docs/prompts/STATE.md` — DETOUR TOKENS is 0. This session must be
+  `objective`, and so must the one after it, before a token regenerates.
+- `docs/prompts/LEDGER.md`, "Known and deliberately unfixed", the S92 entry
+  on `check-lens.mjs`/`check-bellows.mjs`/`check-reefseed.mjs` — it is why
+  Bellows and not Lens or Reefseed is this session's target.
+- `docs/NEXT-SESSION.md` S92 for the full comparison if the LEDGER summary
+  needs more detail.
 
 ## Why this, now
-S91 fixed `check-anchor.mjs`'s whitelist bug but found the overworld half
-of the Anchor task is blocked by something a single detour token can't
-reach: `check-strands.mjs`/`check-overworld.mjs`'s hop model never treats
-`drownWall` (the only outdoor tile unwalkable at every tide level) as
-crossable, so any placement that gives `check-anchor.mjs` a real gate
-reads as a stranded region and fails outright. This is not a data
-question `dungeons-a.js`/`overworld.js` can answer — DETOUR TOKENS is 0
-regardless, so the fastest path is to work the Lens instead: Cleats and
-Dredge Line already partly pass (5/5, 3/5), and the Lens is still
-untouched (`dungeons: 0 of 5`, `overworld screens: 0`).
+S92 found the Lens task blocked by an unconditional `mapId !== 'd2'`
+assertion inside `check-lens.mjs` itself (a scope decision, not a bug —
+fixing it needs a tool change no detour token exists to cover). While
+comparing the four gate checkers it also found `check-bellows.mjs` has NO
+such block: its own filter is `r.index < HOME.dungeon.index` (blocks only
+dungeons BEFORE D4), so a `bellowsRoom` declared in D5 (`dungeons-b.js`,
+`id: 'd5'`, index 5) or D6 (`id: 'd6'`, index 6) is legal by the tool's own
+rules today. Bellows is 0 of 5 dungeons and 0 overworld screens reused
+(`check-drift.mjs`), and reaching D5 **and** D6 both is exactly the
+rotation's ">=2 later dungeons" bar — the ceiling and the target are the
+same number, so this is the one item-reuse task that closes in one clean
+move with zero tool changes needed.
 
 ## The task
-Read `docs/ITEMS.md`'s Brineglass Lens section (search "Lens") for its
-three verbs, then find or build ONE dungeon room outside its home (D2)
-where the Lens's own verb — pinning the tide so a branch stays the same
-tile rather than switching — is the answer, the same way S90 gave the
-Anchor a second home in D2's Bone Cell. Use `tools/check-lens.mjs` as the
-proof tool (see CLAUDE.md's verification table for what it asserts) the
-way S90 used `check-anchor.mjs`. Do NOT touch `tools/` this session —
-DETOUR TOKENS is 0, so if `check-lens.mjs` has the same kind of gap
-`check-anchor.mjs` had, write it up and stop; do not spend a token that
-does not exist.
+Read `docs/ITEMS.md`'s Squall Bellows section and `tools/check-bellows.mjs`'s
+own file header (it documents exactly what a `bellowsRoom` declaration must
+prove: the wheel is drowned at the room's sea, no hand reaches it, the cone
+alone frees it, and the door it opens actually separates the room). Find or
+build ONE room in D5 (`src/data/dungeons-b.js`, `id: 'd5'`) or D6 (`id: 'd6'`)
+where turning a drowned gust wheel with the cone is the answer, the same way
+S90 gave the Anchor a second home in D2's Bone Cell. Remember the model's own
+edges from the header: the player of dungeon four onward owns the Cleats, so
+deep water is floor in two different ways — the wheel has to sit somewhere a
+swimmer still can't reach by hand, not just a walker. Prove it with
+`node tools/check-bellows.mjs`.
+
+If D5 and D6 both take a room this session, even better — that alone clears
+the ">=2 dungeons" bar for Bellows in one session. If only one fits cleanly,
+land that one and leave the other as next session's task; do not force a
+second room in in a hurry to hit the number.
 
 ## Done means
-- `node tools/check-lens.mjs` passes with the Lens required in a second
-  dungeon (or the session ends with a written-up, unchased finding if the
-  tool itself blocks it — same shape as S91).
-- `node tools/check-drift.mjs` reads `lens dungeons: 1 of 5` (or more),
-  up from 0, OR a clear LEDGER/NEXT-SESSION entry says why not.
+- `node tools/check-bellows.mjs` passes with at least one new room in D5 or
+  D6 declaring a `bellowsRoom`.
+- `node tools/check-drift.mjs` reads `bellows dungeons: 1 of 5` (or `2 of
+  5` if both landed), up from 0.
 - Full regression: `walk-dungeons.mjs`, `check-dungeon-strands.mjs`,
-  `check-progression.mjs`, `check-playthrough.mjs`, `npm run build`.
-- `docs/prompts/STATE.md` logs this session as `objective`.
+  `check-progression.mjs`, `check-placement.mjs`, `check-ground.mjs`,
+  `check-playthrough.mjs`, `npm run build` with `dist/` committed.
+- `docs/prompts/STATE.md` logs this session as `objective` (the second
+  consecutive one — DETOUR TOKENS should read 1 after this, per its own
+  regen rule).
 
 ## Out of scope
-- The overworld Anchor gate — genuinely blocked until a future session
-  can spend a detour token inside `tools/` on `check-strands.mjs`/
-  `check-overworld.mjs`'s hop model, or on a baseline-recording mechanism
-  for `check-strands.mjs`. Do not retry the drownWall trick; S91 already
-  proved it fails.
-- The Bellows or Reefseed. One item at a time.
+- The Lens or the overworld Anchor gate — both need a tool change (see
+  Read first) that no detour token exists to cover this session.
+- The Reefseed — `check-reefseed.mjs`'s own index filter caps it at 1
+  eligible dungeon (D6 only), one short of the ">=2" bar, so a second
+  Reefseed room cannot close this rotation item without a tool change
+  either. Worth a future detour, not this session.
 - Any change to `tools/` — no detour token exists this session.
+- Do not force a second Bellows room if only one fits without contorting
+  the room's design; one clean room this session is still real progress.
