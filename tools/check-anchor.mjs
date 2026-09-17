@@ -205,10 +205,11 @@ for (const [mapId, m] of MAPS) {
 
 check('at least one room declares an anchor gate', gates.length > 0, 'nothing to prove');
 // The model has no swimming in it, so it is only sound for a dungeon reached
-// before the Cleats. If a later dungeon declares a gate, this fires rather than
-// silently proving the wrong thing.
-const late = [...gates, ...gauges].filter(r => !['d1', 'd2'].includes(r.mapId));
-check('every declared anchor room is in a pre-Cleats dungeon', late.length === 0,
+// before the Cleats, or for the overworld (also reachable and fully crossable
+// on foot before the Cleats). If a later dungeon declares a gate, this fires
+// rather than silently proving the wrong thing.
+const late = [...gates, ...gauges].filter(r => r.mapId !== 'overworld' && !['d1', 'd2'].includes(r.mapId));
+check('every declared anchor room is in a pre-Cleats dungeon or the overworld', late.length === 0,
   late.map(r => `${r.mapId} ${r.key}`).join(', ') + ' — teach this tool to swim first');
 
 // --- part 1: the gates ------------------------------------------------------

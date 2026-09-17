@@ -368,21 +368,49 @@ extract from it:
   `poison-moths-lair`). Read `assets/sheets/README.md` first: every sheet is
   two halves, the LCD half is the lighter/less saturated one, and picking
   from the wrong half gives art that will not sit with anything else.
-- **`tools/check-anchor.mjs` cannot prove an overworld anchor gate, found
-  S90 trying to do exactly that (item-reuse's own step 3, an overworld
-  screen).** Its own assertion `every declared anchor room is in a
-  pre-Cleats dungeon` filters `r.mapId` against a hardcoded
-  `['d1', 'd2']`, so any `anchorGate`/`anchorGauges` declared on the
-  `overworld` map fails that check immediately — not because the MODEL is
-  unsound there (the flood is plain foot movement, no swimming, exactly as
-  valid before the Cleats on the overworld as in a dungeon), only because
-  the whitelist is a map-id list instead of "pre-Cleats dungeon OR
-  overworld". `tools/` is outside item-reuse's own file allowlist
-  (`docs/prompts/STATE.md`), so this was not fixed in S90 — recorded here
-  instead, per the charter's rule 5. A future session with a detour token
-  should widen the whitelist (e.g. `mapId === 'overworld' || ['d1',
-  'd2'].includes(mapId)`), confirm `check-anchor.mjs` still passes 16/16
-  on the existing d1/d2 rooms, and only then add the overworld screen.
+- **`tools/check-anchor.mjs`'s whitelist gap (S90) is fixed (S91):** the
+  `late` filter now reads `r.mapId !== 'overworld' && !['d1',
+  'd2'].includes(r.mapId)`, confirmed still 16/16 on the existing d1/d2
+  rooms. This entry is closed.
+- **What is NOT fixed, and cannot be inside `tools/lib/collision.mjs`'s
+  current rule set: no overworld `anchorGate`/`anchorGauges` can actually
+  be built, because `check-strands.mjs` and `check-overworld.mjs` will
+  always call it a stranding.** Found S91 building a real test case
+  (Kell Spur, `0,3,5`) and confirmed empirically, not just by reading code.
+  Every dungeon `anchorGate` pairs a tile walkable ONLY at LOW with one
+  that's a `dPit` (refused by `ROUTE_AVOID`) at LOW and walkable ONLY at
+  MID — two disjoint walkable sets, so no global tide level crosses both.
+  The outdoor `base` legend has no such pair: `sandbar`, `tidePool`,
+  `shoal`, `seafloor`, `channel`, `reefFlat`, `reefDeep`, `tideRock` and
+  `tideGrass` are ALL walkable at LOW (`F.PIT`/`F.HAZARD` exist on exactly
+  two tiles in the whole game, both indoor — `spikes`, `dPit`), so any
+  corridor built from them crosses at plain `base = LOW` with no anchor
+  needed. The one outdoor tile that's never walkable on foot at any level
+  is `drownWall` (solid at LOW/MID, deep at HIGH) — and `check-anchor.mjs`
+  itself WOULD accept it (its hop model treats anything non-`VOID`/
+  non-`SOLID` as hoppable, so `drownWall`-at-HIGH counts). But
+  `check-strands.mjs`'s and `check-overworld.mjs`'s own hop model
+  (`isGap`/`hoppable`) checks `F.JUMPABLE` specifically, a flag that
+  exists on exactly the two `chasm` tiles in the game and never on water —
+  so in THEIR model `drownWall` is a wall at every tide level with no
+  exception, and anything sealed behind one reads as a newly stranded
+  region and fails outright (verified: sealing Kell Spur's other approaches
+  behind one `drownWall` tile with a `channel` beyond it produced exactly
+  one new 8-cell `FAIL` in `check-strands.mjs`, reverted immediately after
+  confirming it). This is why all eight existing overworld `drownWall`
+  placements always leave a walkable margin around them instead of using
+  them as the only crossing — the region's actual design (walk the margin,
+  or swim at HIGH once the Cleats exist) already routes around exactly
+  this limitation. A future session would need to either teach
+  `check-strands.mjs`/`check-overworld.mjs`'s hop model about
+  `drownWall`-at-HIGH specifically (not deep water generally — swimming
+  already crosses deep water; this is the narrower "hoppable without
+  swimming" case the anchor puzzle depends on), or give `check-strands.mjs`
+  a baseline-recording mechanism like `tools/dungeon-strands-baseline.json`
+  already has for its dungeon counterpart. Either is a real tool change
+  outside item-reuse's file allowlist, and a bigger scope than a single
+  detour token was meant to cover — this may be worth raising as a
+  rotation-level question rather than another detour.
 
 ---
 

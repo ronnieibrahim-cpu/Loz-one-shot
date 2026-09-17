@@ -1,3 +1,74 @@
+## S91 — the whitelist gap S90 found is fixed, but the overworld half of item-reuse's Anchor task is blocked by something deeper: `check-strands.mjs`/`check-overworld.mjs` can never cross the one tile that would make the gate real
+
+Spent the token `check-drift.mjs` regenerated after S89/S90's two
+consecutive `objective` sessions, exactly as S90's `NEXT-PROMPT.md` laid
+out. Step 1-2 landed clean: `tools/check-anchor.mjs`'s `late` filter now
+reads `r.mapId !== 'overworld' && !['d1', 'd2'].includes(r.mapId)`
+(was a hardcoded `['d1', 'd2']` with no `overworld` case), and the
+existing d1/d2 rooms are still 16/16, byte-identical.
+
+**Step 3 — actually placing an overworld `anchorGate` — turned out to be
+impossible with the outdoor tile vocabulary as it stands, for a reason
+that has nothing to do with the whitelist.** Every dungeon `anchorGate`
+today (D1's three, D2's Bone Cell) works by pairing `dWell`/`dDrain`:
+`dWell` is walkable ONLY at LOW, `dDrain` is a `dPit` at LOW (so
+`ROUTE_AVOID` refuses it) and walkable ONLY at MID — two tide tiles whose
+walkable sets don't overlap, so no single global tide level crosses both
+and the anchor is the only way to hold one half still. **The outdoor
+`base` legend (`src/data/legends.js`) has no equivalent pair.** Checked
+every one of its ten tide digits' `tide:` arrays in
+`src/data/tiles-core.js`: `sandbar`, `tidePool`, `shoal`, `seafloor`,
+`channel`, `reefFlat`, `reefDeep`, `tideRock` and `tideGrass` are ALL
+walkable at LOW (their LOW-tide resolution is never `F.PIT`/`F.HAZARD` —
+grep confirms those two flags exist on exactly two tiles in the whole
+game, both indoor: `spikes` and `dPit`). So any corridor built from them
+is crossable by plain `base = LOW`, with no anchor needed — `check-
+anchor.mjs` would never even report `conch alone does not cross it`.
+
+The one exception is `drownWall` (digit `9`): solid at LOW and MID
+(`cliff`), deep water at HIGH — never walkable on foot at any level. That
+looked promising: `check-anchor.mjs`'s own hop model treats anything
+non-`VOID`/non-`SOLID` as hoppable, so `drownWall` at HIGH (`waterD`, no
+`SOLID` flag) IS hoppable in ITS model, which is exactly the kind of
+complementary gate the dungeon rooms use. **Built a real test case**
+(Kell Spur, `0,3,5`: sealed the room's other approaches, put a `drownWall`
+tile across the one opening with a `channel` tile beyond it) and ran it
+through the full regression before touching `check-anchor.mjs` about it
+at all. `check-strands.mjs` — which shares nothing with `check-anchor.mjs`
+and asks its own question, "does the terrain still own every foot-passable
+cell" — failed immediately: 1 new 8-cell stranded region. Read why:
+`check-strands.mjs`'s and `check-overworld.mjs`'s hop model
+(`isGap`/`hoppable`, both files) checks `F.JUMPABLE` specifically, a flag
+that exists on exactly the two `chasm` tiles in the whole tileset (`grep
+F.JUMPABLE src/data/tiles-core.js`) — chasm is not tide-sensitive, and
+deep water never carries it. So in THEIR model `drownWall` is a wall at
+every tide level, full stop, no exception — which is exactly why every
+one of the eight overworld screens that already use `drownWall` always
+gives it a walkable margin to go around (matching the region's actual
+"swim across at HIGH, or walk the margin" design). The edit was reverted
+immediately after confirming the failure; nothing of it survives in this
+commit.
+
+**So the overworld half of item-reuse's Anchor task cannot be done inside
+this objective's file allowlist at all**, not because of one bad line
+(that part IS fixed) but because the only outdoor tile that could form a
+genuine two-level gate is a tile that two OTHER checkers (`check-
+strands.mjs`, `check-overworld.mjs`) refuse to ever treat as crossable —
+and both of those live in `tools/`, same as the file that was already
+this session's one detour. Two tools' hop models would need to learn
+about `drownWall`-at-HIGH specifically (not deep water generally — a
+swimmer already crosses deep water; this is about the narrower "hoppable
+without swimming" case the anchor puzzle depends on), or `tools/strands-
+baseline.json`/`tools/dungeon-strands-baseline.json`-style baseline
+recording would need to exist for `check-strands.mjs` the way it already
+does for the dungeon equivalent. Either is a real, separate tool change,
+not a one-line unblock — recorded in full in `docs/prompts/LEDGER.md`
+under "Known and deliberately unfixed."
+
+Logged as a `detour` session (the token was spent, on the fix that DID
+land). `DETOUR TOKENS` goes 1 -> 0. The next `objective`-rotation session
+after this one, then another, regenerates it.
+
 ## S90 — item-reuse objective opens: the Anchor's first reuse outside D1, and why the overworld half didn't land
 
 First session on rotation objective #7 (item-reuse). `docs/prompts/STATE.md`
