@@ -54,7 +54,7 @@ human confirmed no further hand-drawn NPC art. Wrong on any -> revert.
 #6 done S89: 120/120 overworld rooms in docs/AUDITED-ROOMS.md, every
 region audited S64-S89. Real fixes landed along the way (S76-S81 ledges).
 
-DETOUR TOKENS: 0 (S96 is the 1st of 2 consecutive objective sessions to regen)
+DETOUR TOKENS: 1 (regenerated — S96+S97 were 2 consecutive objective sessions)
 
 SESSION LOG: one row per session — `S## | objective|detour | one line`
-S96 | objective | Gave the Reefseed its first room outside D5: a new grove, D6's `0,4,2` "The Bole Cistern", off Dredge Vault's own north wall (opening it needed BOTH top rows, not one — walk-dungeons caught the first attempt). Fixture copied unchanged from D5's own Grove 2; `dungeonAbyss` repoints `5`/`k` to `dSnag`/`dSnarl`, same as D5's own theme. check-reefseed 102/102 first run. check-drift reads `reefseed dungeons: 1 of 5` (up from 0) — D6 is the only dungeon after D5, so that is this item's real ceiling under the tool's own filter, not a shortfall. Full regression green (walk-dungeons 27 rooms, check-dungeon-strands no new multi-cell region, check-progression, check-placement, check-ground, check-playthrough, test.mjs, build). Full writeup: docs/prompts/LEDGER.md "Landed", docs/DUNGEON-STATUS.md D6 section.
+S97 | objective | Before building NEXT-PROMPT.md's "Anchor's second dungeon room" task, re-read check-anchor.mjs first and found its `late` filter unconditionally whitelists only d1/d2/overworld — S91's fix never actually opened d3-d6, the tool's own header says why (no swim model). Anchor's dungeon ceiling is 1 of 5 (D2 only), same shape as Lens (S92) and Reefseed (S92/S96). Ruled out before building anything, not by a failed room. Logged objective per S92's own precedent (ruling out a move IS the objective's work). Full writeup: docs/prompts/LEDGER.md "Known and deliberately unfixed", docs/NEXT-SESSION.md S97. No game file changed; full regression re-confirmed clean.

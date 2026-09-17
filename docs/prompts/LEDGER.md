@@ -480,6 +480,34 @@ extract from it:
   `dPit`'s flag combination or a genuinely different "no hand reaches"
   model for outdoor rooms — not a filter change, and not something this
   token could also cover. See `docs/NEXT-SESSION.md` S95.
+- **`check-anchor.mjs`'s dungeon reuse ceiling is ALSO 1 of 5 (D2 only),
+  found S96 while scoping the session after it — before any room was
+  built, not by a failed attempt.** S91's own fix reads `late = [...gates,
+  ...gauges].filter(r => r.mapId !== 'overworld' && !['d1',
+  'd2'].includes(r.mapId))` and fails the run for ANY declared
+  `anchorGate`/`anchorGauges` outside that whitelist — d1, d2 or the
+  overworld, nothing else. This was framed at the time as closing "a
+  whitelist gap" (S90 had put a D2 room in, and the ORIGINAL whitelist
+  simply hadn't included `'d2'` yet), but the fixed version is still an
+  unconditional hardcoded array, not an index comparison — d3, d4, d5 and
+  d6 were never actually opened up, they were never tried. The tool's own
+  header says why, in plain language, right above the model: "NO SWIMMING.
+  The Kelp-Soled Cleats are the D3 item, so in D1 deep water is a wall...
+  A room in a later dungeon that declares an anchorGate would need this
+  relaxed, and the assertion below about which dungeons are covered is
+  what will catch that." So this is the same SHAPE of ceiling as
+  `check-lens.mjs`'s D2-only block (an unconditional assertion, not an
+  index-early clause like Bellows'/Reefseed's), just reached by ruling out
+  the move BEFORE spending a session building a room that would fail —
+  the way S92 checked all four tools in one pass rather than letting each
+  ceiling be found by a separate failed attempt. **Anchor `dungeons: 1 of
+  5` is very likely this rotation item's actual ceiling under the current
+  toolset, same practical shape as the Lens (0 of 5) and the Reefseed (1
+  of 5, D6 only, landed S96).** Unblocking it needs the same swim/no-swim
+  model relaxation `check-lens.mjs`'s own header names for itself — a
+  bigger change than a filter fix, and not attempted this session (no
+  detour token; `tools/` is outside item-reuse's file allowlist regardless
+  of token count). See `docs/NEXT-SESSION.md` S96/S97.
 
 ---
 

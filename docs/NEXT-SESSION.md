@@ -1,3 +1,100 @@
+## S97 — the Anchor's dungeon-reuse ceiling turns out to be 1 of 5 too, found by reading the tool before building anything, not by a failed room
+
+Before starting NEXT-PROMPT.md's task ("give the Anchor a second dungeon
+room in D3/D4/D5/D6"), re-read `tools/check-anchor.mjs` to pick a target
+room the way S90 did for D2's Bone Cell — and its own `late` filter reads
+`[...gates, ...gauges].filter(r => r.mapId !== 'overworld' && !['d1',
+'d2'].includes(r.mapId))`, an unconditional hardcoded whitelist, not an
+index comparison. Any `anchorGate`/`anchorGauges` outside d1/d2/overworld
+fails the run outright. S91 fixed a DIFFERENT bug in this same filter (the
+original whitelist didn't even have `'d2'` in it, which nearly broke S90's
+own legitimate room) and that got remembered as "the whitelist gap is
+fixed" — but the fixed version never actually opened d3-d6, because it
+can't: the tool's own header says why, right above the model: "NO
+SWIMMING... A room in a later dungeon that declares an anchorGate would
+need this relaxed, and the assertion below about which dungeons are
+covered is what will catch that." Nobody had tried a D3+ room before this
+session, so nobody had hit it.
+
+This is the same SHAPE of ceiling S92 found for the Lens (an unconditional
+assertion, not a fixable index-early clause like Bellows/Reefseed had) —
+just discovered by reading the tool first instead of by a failed build.
+Building a room in D3-D6 this session would have failed
+`check-anchor.mjs` outright, so nothing was built; this session's actual
+work is the previous one's landing (see the S96 entry below) plus this
+write-up. `docs/prompts/LEDGER.md`'s "Known and deliberately unfixed"
+section has the full account, appended right after the existing Bellows/
+Reefseed ceiling entries so the four items' status reads as one picture:
+Anchor 1/5 (D2 only), Lens 0/5, Bellows 2/5 (dungeon bar MET, overworld
+blocked), Reefseed 1/5 (D6 only, landed this session). Every remaining
+move on any item needs a `tools/` change — the rotation's own dungeon-axis
+options are exhausted under the current toolset. **Logged as `objective`
+anyway, per S92's own precedent**: ruling out a move before spending a
+build session on it IS the objective's work, not a detour from it — and
+this is the 2nd of 2 consecutive `objective` sessions STATE.md's own rule
+needs, so `DETOUR TOKENS` regenerates to 1 at the end of this session.
+`NEXT-PROMPT.md` rewritten to spend it on `check-reefseed.mjs`'s own
+overworld index bug next — same one-line shape as S95's `check-bellows.mjs`
+fix (`index: (m.dungeon && m.dungeon.index) | 0` reads 0, always `< 5`,
+for any overworld room) — worth trying because, unlike Bellows' wheel/pit
+fixture, a Reefseed grove's two load-bearing tiles both have real outdoor
+equivalents already sitting in the `base` legend: `drownWall` (digit `9`,
+solid at LOW/MID, swimmable at HIGH — the exact tide shape `dSnag` has)
+for the bole, and `waterD` (`=`, always deep, non-tide, the same fixed
+role `dWaterD`/`W` plays indoors) for the stake. Not proven buildable —
+only that the filter bug is the same easy shape as last time and the tile
+vocabulary question (unlike Bellows') isn't obviously a dead end.
+
+No game file changed this session; full regression suite re-run clean
+(the previous session's D6 grove is what it's confirming, not new work).
+
+---
+
+## S96 — the Reefseed's first reuse outside D5: a new grove in the Abyssal Keep, off Dredge Vault's own north wall
+
+`check-drift.mjs` read `reefseed dungeons: 0 of 5`; S92 had already found
+D6 is the only dungeon this rotation item can legally reach a second home
+in (`check-reefseed.mjs`'s own `r.index < 5` filter blocks D1-D4, home is
+D5). NEXT-PROMPT.md's task: build one room in D6 declaring a
+`reefseedRoom`, reusing D5's own bole/stake/snarl fixture rather than
+inventing a new one.
+
+Picked Dredge Vault (`0,4,3`) as the attachment point — a plain chest room
+with no puzzle logic, both its east and west edges already spoken for by
+existing neighbours, but its north/south walls fully solid and (4,2) on
+the dungeon's own grid free. Opened the standard 2-tile gap (cols 4-5) in
+its north wall for a new room at `0,4,2`, "The Bole Cistern". First
+`walk-dungeons.mjs` run failed ("27 rooms" expected, `0,4,2` unreached) —
+Dredge Vault's own row0 was opened but row1 stayed fully solid underneath
+it, so the new doorway had no path down to the room's own interior floor;
+every other two-row gap in this dungeon opens BOTH rows, and I'd only
+opened one. Fixed by opening row1 too; green after that.
+
+The new room's own fixture is D5's Grove 2 ("The Bole Walk") copied at the
+same relative coordinates — bole at (4,4), stake at (4,3), snarl at (4,2),
+throw-from at (4,5) facing up at HIGH — inside a `dungeonAbyss` legend
+that now repoints the same two characters D5's own `dungeonWood` legend
+repoints (`5`→`dSnag`, `k`→`dSnarl`), confirmed free in every d6 room
+before this change (checked by parsing every `map:` block in the file, not
+assumed). `check-reefseed.mjs` passed all 102 assertions — including the
+new room's own 15 — on the very first run.
+
+`check-drift.mjs` now reads `reefseed dungeons: 1 of 5` — the rotation
+item's real ceiling under the current tool, not a shortfall (D6 is the
+only dungeon after D5). Full regression: `walk-dungeons.mjs` (27 rooms,
+up from 26), `check-dungeon-strands.mjs` (two pre-existing 1-cell regions
+confirmed unrelated to this change via a `git stash` A/B run — identical
+output on the unmodified tree), `check-progression.mjs` 19/19,
+`check-placement.mjs`, `check-ground.mjs`, `check-playthrough.mjs` 21/21,
+`test.mjs` 83/83, `check-build.mjs` OK, `dist/` rebuilt.
+`docs/DUNGEON-STATUS.md`'s D6 section gets a new paragraph noting the room
+count moved 26 -> 27 (a genuinely new room, unlike the two prior D6
+widenings which kept the count at 26) and confirming `check-dredge.mjs`
+counts rooms dynamically rather than against a written total, so nothing
+else needed updating there.
+
+---
+
 ## S95 — fixed check-bellows.mjs's real overworld bug (detour token spent), then found the Bellows' overworld half is ALSO structurally blocked, for a third and different reason than the Lens or the Anchor
 
 Spent the detour token STATE.md regenerated after S92+S93 (both
