@@ -1,3 +1,69 @@
+## S109 — the Squall Bellows go out of doors: three coastal wheels
+
+Objective 7 (item-reuse) left the Bellows short on its overworld half only:
+2 of 5 dungeons already (D5 Bower Cell, D6 West Crypt) but 0 overworld
+screens. Three screens now declare a `bellowsRoom`, taking it to 3 and
+meeting the done-condition. `check-drift` reads
+`bellows ... dungeons: 2 of 5   overworld screens: 3`.
+
+**The human call the S108 prompt asked for was answered: a pit does NOT stop
+the cone.** It blows straight over. This is what the engine already did —
+`coneCovers` stops on `F.SOLID | F.VOID` and a chasm carries neither — so
+nothing was changed to honour it. Recorded here because the next person to
+ask will otherwise re-derive it: **a hole in the ground is not a wall to
+moving air, and that is what makes an outdoor fixture buildable at all.**
+
+**THE OUTDOOR FIXTURE HAS EXACTLY TWO PIECES, and both are forced.**
+
+  * *The barrier is a chasm two tiles wide.* It is the only outdoor thing
+    that stops a player and not the gust. Water cannot be the barrier: the
+    Bellows are a D4 item and the player has had the Cleats since D3, so
+    deep water is floor in two different ways. One tile of chasm is not
+    enough — the Loft clears a run shorter than `GAP_HOP_MAX_SPAN`.
+  * *The shelf is closed by a drown-wall.* Reachable only at HIGH is the
+    only "reachable at exactly one level" an outdoor screen can express,
+    because the sole tile that is solid at some levels and open at others is
+    `drownWall` (cliff, cliff, deep). There is nothing that opens at MID and
+    shuts either side of it, so **every outdoor Bellows fixture is an `at: 2`
+    fixture** and a later session should not waste a run looking for a MID one.
+
+The three, each a different direction so they do not read as one room built
+three times: `0,3,3` Cliff Face blows RIGHT across the fissure; `0,3,0`
+Rustfall blows UP a shaft; `0,0,3` Cistern Path blows LEFT out to sea, on the
+screen you walk to the Cistern along. Each pays a gold rupee, with the
+Cistern Gauge's flag-plus-save-key `onEnter`/`onEvent` pair so the prize
+comes back if you walk off the screen without it. All 105 `check-bellows`
+assertions pass, D4's own rooms included.
+
+**Two things cost a cycle each and will cost the next one the same.**
+
+  * *`check-strands` counts a chasm cell as foot-passable.* It is not SOLID
+    and it is not `F.PIT`, so `ROUTE_AVOID` lets it through and only the
+    hop-run length keeps the player out. A two-wide fissure therefore lands
+    in the baseline as a stranded region together with the shelf and the
+    wheel bar either side of it — 4 cells, three times over. That is the
+    right answer and the same one S108 reached for the Whelk Hollow's pocket:
+    **record it, never open a second way in.** `tools/strands-baseline.json`
+    is on the allowlist for this from S109.
+  * *A ledge needs something above it.* Walling off the Cistern Path's west
+    side put cliff over three cells of its ledge run and `check-overworld`
+    said so immediately: "nothing to approach from". The run was shortened to
+    the three cells that still have walkable ground above them.
+
+**Clause 4 is the one that bites, and it bites diagonally.** "No sea level
+frees the wheel where you can stand" is checked in all four facings from
+every reachable tile, and the cone is *wider than it is long* at its mouth —
+offset up to `floor(along/2)`. Rustfall failed first build from a tile two
+across and one up that nobody would think of as facing the wheel. Wall the
+two cells flanking the wheel one step back along the cone, not just the ones
+touching it.
+
+**Left undone, deliberately:** all three pay the same prize. A gold rupee is
+the right register for an optional outdoor secret, but three identical
+payouts is thin, and the obvious fix — a Piece of Heart — is blocked by
+`check-hearts`' two standing failures (23 pieces; D5 holds 1, not 2). Worth
+revisiting once that census is settled.
+
 ## S108 — the Coral Spire has a Reefseed grove: the Whelk Hollow
 
 Objective 7 (item-reuse) asked for one optional Reefseed room below D5, the

@@ -139,19 +139,43 @@ const rooms = {
   '0,3,0': {
     name: 'Rustfall',
     legend: 'abyss', music: 'abyss',
+    // THE SECOND OUTDOOR BELLOWS FIXTURE, and it is the Cliff Face's turned on
+    // its end the way the Long Race turns the Drowned Sill: the shelf is at the
+    // bottom of the fissure and the wheel at the top, so the gust goes UP and
+    // you are blowing at something you have to crane to see. Same two closures
+    // as the Cliff Face — a drown-wall you can only swim over at HIGH, a
+    // fissure two tiles deep that nothing crosses and air ignores — and a
+    // different shape to read.
     map: [
       '**********',
-      '*11111111*',
-      '1g..oo5.1*',
-      'gg.GGG5.1*',
-      'gg..oo5.g#',
-      'ggGGGG5Gg#',
-      '#ggggg5gg#',
+      '*1111111#*',
+      '1g..oo5#1*',
+      'gg.GGG5#J*',
+      'gg..oo5#J#',
+      'ggGGGG59g#',
+      '#ggggg5g##',
       '###gg15###',
     ],
+    bellowsRoom: {
+      wheel: [8, 2], stand: [8, 5], face: 'up', at: 2, gives: 'rupee100',
+    },
     entities: [
+      ['wheel', 8, 2, { needTurns: 45 }],
       ['darknut', 4, 3], ['pickup', 2, 5, { kind: 'heartPiece' }],
     ],
+    script: {
+      onEnter(game) {
+        if (game.progress.flags.rustfallWheel && !game.progress.secrets.rustfallCreel) {
+          game.spawnPickup(128, 80, 'rupee100', { grabDelay: 14, saveKey: 'rustfallCreel' });
+        }
+      },
+      onEvent(game, name, data) {
+        if (name !== 'valve' || !data || !data.open) return;
+        game.progress.flags.rustfallWheel = true;
+        if (game.progress.secrets.rustfallCreel) return;
+        game.spawnPickup(128, 80, 'rupee100', { grabDelay: 14, saveKey: 'rustfallCreel' });
+      },
+    },
   },
   // ---- salt --------------------------------------------------------------
   '0,4,0': {
@@ -738,19 +762,42 @@ const rooms = {
   '0,0,3': {
     name: 'Cistern Path',
     legend: 'cliffs', music: 'overworld',
+    // THE THIRD OUTDOOR BELLOWS FIXTURE, on the screen you walk to the Cistern
+    // along — so the first thing the Bellows meet on the way back out is a
+    // headland you have passed a dozen times. The gust goes LEFT, out to sea:
+    // the wheel is a bar of tide-rock in the water at the foot of the headland,
+    // with the open sea hard against its far side and the fissure on its near
+    // one, so there has never been anywhere to stand beside it.
     map: [
       '***gggg###',
       '*11GGGGGg#',
-      '*1......gg',
-      '*1.8888.gg',
-      '*1......gg',
-      '*g______gg',
+      '*####...gg',
+      '*1JJg9..gg',
+      '*####...gg',
+      '*g###___gg',
       '*1ggggggg#',
       '***1ggg###',
     ],
+    bellowsRoom: {
+      wheel: [1, 3], stand: [4, 3], face: 'left', at: 2, gives: 'rupee100',
+    },
     entities: [
-      ['tektite', 5, 3],
+      ['wheel', 1, 3, { needTurns: 45 }],
+      ['tektite', 6, 4],
     ],
+    script: {
+      onEnter(game) {
+        if (game.progress.flags.cisternPathWheel && !game.progress.secrets.cisternPathCreel) {
+          game.spawnPickup(64, 48, 'rupee100', { grabDelay: 14, saveKey: 'cisternPathCreel' });
+        }
+      },
+      onEvent(game, name, data) {
+        if (name !== 'valve' || !data || !data.open) return;
+        game.progress.flags.cisternPathWheel = true;
+        if (game.progress.secrets.cisternPathCreel) return;
+        game.spawnPickup(64, 48, 'rupee100', { grabDelay: 14, saveKey: 'cisternPathCreel' });
+      },
+    },
   },
   '0,1,3': {
     name: 'Cistern Mouth',
@@ -796,19 +843,57 @@ const rooms = {
   '0,3,3': {
     name: 'Cliff Face',
     legend: 'cliffs', music: 'overworld',
+    // THE FIRST BELLOWS FIXTURE OUT OF DOORS, and it is the Drowned Sill
+    // (d4 `0,2,3`) carried outside rather than a new idea: a shelf you can
+    // only get onto while the sea is up, and a wheel that only the cone can
+    // free once you are on it. What the cliff supplies that the Cistern could
+    // not is the barrier — a fissure two tiles wide, which the Loft cannot
+    // clear and the gust crosses without noticing, because a hole in the
+    // ground is not a wall to moving air.
+    //
+    // The shelf at 5,3 is walled in stone on three sides and closed on the
+    // fourth by the drown-wall band; at LOW and MID that band is cliff and the
+    // shelf is a notch you can see and not enter, at HIGH it is water and you
+    // swim over it. The wheel across the fissure is a bar of sandbar rock:
+    // under at HIGH, clear one level down. So the sea has to be up for you to
+    // be standing there and down for the wheel to turn, and the cone is the
+    // only thing that does both at once.
     map: [
       '###gggg###',
       '#g11111Gg#',
-      'gg199991g#',
-      'gg......g#',
-      'gg19999.g#',
+      'gg19######',
+      'gg..9gJJ1#',
+      'gg199#####',
       'ggG11GGGg#',
       '#gggggggg#',
       '###gggg###',
     ],
+    bellowsRoom: {
+      wheel: [8, 3], stand: [5, 3], face: 'right', at: 2, gives: 'rupee100',
+    },
     entities: [
-      ['keese', 4, 3], ['keese', 6, 4],
+      ['wheel', 8, 3, { needTurns: 40 }],
+      ['keese', 2, 3], ['keese', 6, 5],
     ],
+    script: {
+      // A SCRIPT-SPAWNED PICKUP EXISTS ONLY IN THE FRAME IT WAS RELEASED IN,
+      // and out of doors the player leaves a screen by walking off the edge of
+      // it, which is easier to do by accident than walking out of a dungeon
+      // room. Same answer as the Cistern Gauge: the wheel sets a flag, the
+      // prize carries a save key, and coming back puts it out again if it was
+      // released and never picked up.
+      onEnter(game) {
+        if (game.progress.flags.cliffFaceWheel && !game.progress.secrets.cliffFaceCreel) {
+          game.spawnPickup(80, 48, 'rupee100', { grabDelay: 14, saveKey: 'cliffFaceCreel' });
+        }
+      },
+      onEvent(game, name, data) {
+        if (name !== 'valve' || !data || !data.open) return;
+        game.progress.flags.cliffFaceWheel = true;
+        if (game.progress.secrets.cliffFaceCreel) return;
+        game.spawnPickup(80, 48, 'rupee100', { grabDelay: 14, saveKey: 'cliffFaceCreel' });
+      },
+    },
   },
   // ---- wood --------------------------------------------------------------
   '0,4,3': {

@@ -120,6 +120,28 @@ extract from it:
 
 ## Measured and rejected
 
+- **The Bellows' share of objective 7 is MET, and every outdoor Bellows
+  fixture is an `at: 2` fixture.** S109 landed three overworld wheels —
+  `0,3,3` Cliff Face, `0,3,0` Rustfall, `0,0,3` Cistern Path — so
+  `check-drift` reads `bellows ... dungeons: 2 of 5, overworld screens: 3`.
+  Do not rebuild them, and do not go looking for a MID or LOW outdoor
+  fixture: "a shelf reachable at exactly one tide level" is expressible out
+  of doors only with `drownWall`, the one tile that is solid at some levels
+  and open at others, and it opens at HIGH alone. Rejected on the way:
+  water as the outdoor barrier (the Cleats predate the Bellows, so deep
+  water is floor); a one-tile chasm as the barrier (the Loft clears it).
+  A chasm two tiles wide is the barrier, and **a pit does not stop the cone**
+  — human call, S109, and already what `coneCovers` did, since it stops on
+  `F.SOLID | F.VOID` and a chasm carries neither.
+
+- **A sealed Bellows shelf belongs in the OVERWORLD strands baseline**, for
+  the same reason S108's grove pocket belongs in the dungeon one. A chasm
+  cell reads as foot-passable to `check-strands` (not SOLID, not `F.PIT`),
+  so each fixture strands 4 cells: the shelf, the two fissure cells and the
+  wheel bar. Recorded, not opened. Opening a second way in would break
+  `check-bellows`' clause 6 — the stand is reachable only while the wheel is
+  drowned — which is the whole fixture.
+
 - **The Reefseed's share of objective 7 is MET, and a sealed Reefseed pocket
   belongs in the dungeon-strands baseline.** S108 landed D2's Whelk Hollow
   (`1,5,5`), the optional early grove S107's filter change made lawful, so
