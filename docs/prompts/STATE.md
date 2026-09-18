@@ -4,8 +4,9 @@ The human retired the exhausted rotation at S112 and chose this in its place.
 Objectives 1-7 are met and 8 stays BLOCKED (no emulator capture). The new
 objective is the largest open claim in the repo: `check-playthrough.mjs` is
 the only tool that proves the game is finishable, and its route now ends at
-`d5/0,3,1` with five Essences of six taken. One dungeon, one boss, the
-Coastwise Chain and the Salt Pans' story gate have never been played.
+`d6/0,3,7` — the Abyssal Keep's mouth — with five Essences of six taken, the
+Resonance Rod in hand and the Keep's own gate open. One dungeon and one boss
+have never been played.
 
 DONE-CONDITION: `tools/playthrough-route.mjs` drives a new game to the sixth
 Essence and `node tools/check-playthrough.mjs` is green on it. Advance one
@@ -28,6 +29,8 @@ FILE ALLOWLIST for the current objective (9 playthrough-route):
   dist/oracle-of-tides.html
   docs/NEXT-SESSION.md
   docs/prompts/LEDGER.md
+  src/data/overworld.js — ONLY to put a heal on the Coastwise Chain's road,
+    which S118 proved the world does not have (see NEXT-PROMPT.md)
 A game-side fix the route PROVES is broken is in scope only for the one file
 holding the fault, and only with the trace written into docs/NEXT-SESSION.md.
 
@@ -42,3 +45,4 @@ S114 | objective | Made the third boss beatable by the test robot: it now cuts d
 S115 | objective | Played the third dungeon for the first time. A new game now walks from the title screen all the way to the Bogwater Sanctum's boss and comes out with three of the six Essences: it bombs its way into the marsh to reach the door, dives under all three of the Sanctum's currents in the new soles, and beats Gloomtide with hearts to spare.
 S116 | objective | Played the fourth dungeon for the first time. A new game now walks out of the Bogwater Sanctum on its own feet, crosses the marsh and the bluffs, bombs the rockfall that holds the Cliffs of Kell shut, and takes the Cliffside Cistern end to end: three keys, the Squall Bellows, all six drowned wheels turned by holding the breath against them, the Ironknight, and Wyverna beaten with the sea drained under her. Four of the six Essences.
 S117 | objective | Played the fifth dungeon for the first time. A new game now walks out of the Cliffside Cistern, goes back to the grotto it started in for the second sword — which the stone there only gives up at four Essences — crosses the wood to the Drowned Wood Shrine, and takes it end to end: three keys, the Reefseed, all five groves grown at high water and stood on at low, Thornvine, and Rootmaw. Found on the way that the Shrine's third key never existed: the chest holding it dropped it behind itself in a corridor one tile wide, and nothing in the game could reach it. Ended the session laying the groundwork for the next one: the robot can now hold a conversation with a trader, which is how the Coastwise Chain gets walked, and the first seven links of that chain have been passed in a test harness.
+S118 | objective | Played the Coastwise Chain for the first time. A new game now walks out of the Drowned Wood Shrine, passes all twelve of the coast's traders in order across fifty screens, comes out of the far end with the Resonance Rod, takes the third sword off the Maku Tree and the road she opens with it, and walks down the Kell into the Abyssal Keep. It arrives on a heart and a half: the tour costs thirty-six quarter-hearts and there is nothing anywhere on it to heal on, which is now the thing stopping the run.

@@ -1,3 +1,76 @@
+## S118 — the Coastwise Chain is played, and the run reaches the Keep's door
+
+`check-playthrough.mjs` now drives a new game from the title screen to the
+mouth of the Abyssal Keep, holding five Essences and the Resonance Rod.
+33 assertions, 145,611 frames, no death. It walks out of the Drowned Wood
+Shrine on its own feet, passes all twelve links of the Coastwise Chain in
+stage order, takes the Rod off the Maku Tree, talks to her a second time for
+the level-3 blade and `makuOpenedKeep`, walks through the keep seal on Upper
+Kell and the Abyss Stair, and steps into `d6/0,3,7`.
+
+### THE TOUR COSTS THIRTY-SIX QUARTER-HEARTS AND NOTHING ON IT HEALS
+
+This is the finding, and it is the next session's first problem. The run
+leaves the Shrine on 42 of 44 and arrives at the Keep's arch on SIX — a heart
+and a half. Nothing on the tour is a fight it loses; it is two quarter-hearts
+of contact damage per screen crossed, across forty-odd screens, and the
+world's whole answer to that is one fairy at `0,11,3` (six screens off the
+tour, worth less than the detour costs) and the Tidewatch Shop's one heart,
+which is once-per-save and was spent before D2.
+
+Three answers were measured and all three are worse:
+
+  * FIGHTING EVERY SCREEN ends on 4, not 6. `dFight` roams the whole screen
+    after one crab and takes contact damage the whole time it is roaming.
+  * FIGHTING BRIEFLY on every screen (700-frame budget) shoves the actor into
+    doorways it did not mean to enter — it walked into D1's mouth mid-chain.
+  * THE SHORT WAY OUT OF THE SHRINE, through the Bole Walk rather than back
+    the way it came, starts the tour twenty-two quarter-hearts down instead
+    of two. Rootbound Hall's barnacle is cheaper to cross than the Bole Walk
+    is to walk.
+
+Nereth cannot be fought on six quarter-hearts. Whatever fixes this is a WORLD
+change and not a route change: a fairy or a shop somewhere on the chain's own
+zig-zag, or a Heart Container the run can still reach. Note that the cap is
+14 hearts and the run is on 11, so there are pieces in the world it has never
+been sent for.
+
+### THREE SEAMS THE PATHFINDER WILL NOT PLAN, AND EACH IS NAMED BY HAND NOW
+
+  * SANDBAR RUN'S SOUTH EDGE IS A CHASM. `findPath` has no hop in it, so a
+    `goto` at the far side comes back null and a `travel` south plans east
+    instead, swims off the map and drowns. The run walks onto row 5 at 4,5
+    and holds `down`; `tryGapHop` fires on the walk.
+  * SUNKEN REEF'S CAVE MOUTH IS ON THE SHORTEST PATH WEST. `0,6,7`'s cave is
+    at 4,2 and row 2 is the row any westward path picks, so both crossings of
+    that screen walked into the cave. Both are steered down onto row 4 first.
+  * BOG CAUSEWAY'S SOUTHERN LOBE, which the D3 leg already wrote down, eats
+    an eastward `travel` the same way it ate a westward one. The marsh is
+    entered and left through Sanctum Mouth's north seam at `0,1,7`.
+
+### A `travel` OF ONE SCREEN, ALWAYS, ON THIS COAST
+
+`bfsScreens` models an edge between any two adjacent screens that exist and
+learns the blocked ones by trying them. On the east coast that means
+swimming: a `travel` from Coral Hollow to Wood Verge walked west into the
+Reef Wall, off the map's edge, and drowned with twenty-two quarter-hearts
+still in hand. Every hop on the chain is its own directive.
+
+### THE MAKU TREE IS TWO CONVERSATIONS
+
+`MakuTree.interact` runs the trade first by design, so one visit pays out the
+Rod and nothing else. The route steps back from her, faces her again and
+talks a second time; that visit grants the level-3 blade and sets
+`makuOpenedKeep`. Nothing had ever set that flag in a run, so the keep seal
+across Upper Kell and the Abyss Stair had never been opened by anything.
+
+### A TRADE IS ATTEMPTED BEFORE THE SCREEN IS CLEARED, NOT AFTER
+
+Confirmed the S117b measurement in a real run: on Sandpiper Row, a `fight`
+before the deal left the actor on the far side of the wandering fisherman and
+all four sides of the link came back "no path". Arriving and trading first is
+reliable, and the crab can be ignored.
+
 ## S117b — the Coastwise Chain's verb, and what the tour costs
 
 Groundwork for the next session, not a finished leg. `['trade', N]` is in

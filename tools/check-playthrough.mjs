@@ -68,18 +68,21 @@
 //   node tools/check-playthrough.mjs --trace    print the per-directive trace
 //   node tools/check-playthrough.mjs --headed   watch it in a real browser
 //
-// SCOPE. New game to D5's Essence — Tidewash Grotto, the Coral Spire, the
-// Bogwater Sanctum, the Cliffside Cistern and the Drowned Wood Shrine, in
-// order, nothing granted. Five bosses and two minibosses beaten, fourteen
-// Small Keys earned and spent, the Sunken Marsh and the Cliffs of Kell both
-// opened with the Bombs the Coral Spire paid out, all three of the Sanctum's
-// torrents crossed on the seafloor, all six of the Cistern's drowned wheels
-// turned with the Squall Bellows held, the Noble Sword fetched back out of the
-// grotto the run started in once it held four Essences, and all five of the
-// Shrine's groves grown at HIGH and stood on at LOW. `GOAL` in
-// `tools/playthrough-route.mjs` names exactly where the run currently stops:
-// the Abyssal Keep, the Coastwise Chain, Nereth and the Salt Pans are still
-// unrouted past this point.
+// SCOPE. New game to the Abyssal Keep's door — Tidewash Grotto, the Coral
+// Spire, the Bogwater Sanctum, the Cliffside Cistern and the Drowned Wood
+// Shrine, in order, nothing granted. Five bosses and two minibosses beaten,
+// fourteen Small Keys earned and spent, the Sunken Marsh and the Cliffs of
+// Kell both opened with the Bombs the Coral Spire paid out, all three of the
+// Sanctum's torrents crossed on the seafloor, all six of the Cistern's drowned
+// wheels turned with the Squall Bellows held, the Noble Sword fetched back out
+// of the grotto the run started in once it held four Essences, all five of the
+// Shrine's groves grown at HIGH and stood on at LOW — and then the whole
+// Coastwise Chain walked, twelve links across fifty screens, the Resonance Rod
+// taken out of the far end of it, and the road down the Kell opened by the
+// Maku Tree and walked to the Keep's arch. `GOAL` in
+// `tools/playthrough-route.mjs` names exactly where the run stops and what it
+// costs to get there: the Keep's interior and Nereth are still unrouted, and
+// the run arrives on a heart and a half.
 
 import { createServer } from 'node:http';
 import { readFile, stat, mkdir, writeFile } from 'node:fs/promises';
@@ -412,6 +415,33 @@ check('the run grew a coral stake in all five of the Shrine\'s groves',
 check('the run completed a third Heart Container inside the Shrine',
   s.maxHearts >= 40 && a.rooms.includes('d5/0,1,5') && a.rooms.includes('d5/0,5,5'),
   `maxHearts ${s.maxHearts}`);
+
+// THE COASTWISE CHAIN WAS WALKED, NOT MODELLED. `check-trade.mjs` already
+// proves the chain is one total order and that each link will deal when it is
+// spoken to; what it cannot prove is that a run can GET to all twelve of them
+// in stage order and survive the walk. Every link's screen has to appear in
+// the run's own room list, and the thing that comes out of the far end has to
+// be the Resonance Rod.
+const CHAIN_SCREENS = ['houseNets/0,0,0', 'overworld/0,4,8', 'overworld/0,5,8',
+  'overworld/0,5,7', 'overworld/0,8,9', 'overworld/0,9,8', 'overworld/0,9,5',
+  'overworld/0,5,5', 'overworld/0,1,9', 'overworld/0,4,9', 'houseMaku/0,0,0'];
+check('THE COASTWISE CHAIN WAS PLAYED END TO END, all twelve links in order',
+  s.items.includes('rod') && CHAIN_SCREENS.every(r => a.rooms.includes(r)),
+  `rod ${s.items.includes('rod')}, screens missing ${CHAIN_SCREENS.filter(r => !a.rooms.includes(r)).join(' ') || '(none)'}`);
+// THE MAKU TREE IS TWO CONVERSATIONS AND THE SECOND ONE IS THE ROAD. Her
+// first beat is the chain's twelfth link and pays out the Rod; her second,
+// at five Essences, grants the level-3 blade and sets `makuOpenedKeep` — the
+// only thing in the game that opens the keep seal. A run that got the Rod and
+// not the blade talked to her once and would find the Kell shut.
+check('the Maku Tree gave up both the Resonance Rod and the third blade',
+  a.gained.filter(g => g.id === 'sword').length >= 3 && s.items.includes('rod'),
+  `sword grants ${a.gained.filter(g => g.id === 'sword').length}`);
+// THE KEEP SEAL OPENED. Upper Kell and the Abyss Stair each carry it right
+// across, and no item in the world touches it. The run walks through both.
+check('the road down the Kell opened, and the run walked into the Abyssal Keep',
+  ['overworld/0,2,2', 'overworld/0,2,1', 'overworld/0,1,0', 'd6/0,3,7']
+    .every(r => a.rooms.includes(r)),
+  `rooms ${['overworld/0,2,2', 'overworld/0,2,1', 'overworld/0,1,0', 'd6/0,3,7'].filter(r => !a.rooms.includes(r)).join(' ')} missing`);
 
 // --- 2. nothing was handed to it -------------------------------------------
 //

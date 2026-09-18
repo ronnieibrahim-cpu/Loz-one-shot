@@ -1029,3 +1029,34 @@ unwritten because it re-sweeps every recorded frame in the repo.
 **A `fight` inside a multi-screen room is a thirty-tile walk.** The Cistern
 Floor wrote this down and the Shrine Ford repeated it. Wide rooms are crossed,
 not cleared, until `dFight` learns a radius.
+
+## Settled at S118 — proved by playing the Coastwise Chain
+
+**The Coastwise Chain plays end to end in a real run.** All twelve links, in
+stage order, across fifty screens and two interiors, with nothing granted and
+no warp. `check-playthrough.mjs` walks it. Do not re-prove any of it by hand,
+and do not re-derive the link order — it is in the route file, by screen.
+
+**The one story gate in the world opens on schedule.** The Maku Tree's second
+beat sets `makuOpenedKeep` at five Essences, and the keep seal across Upper
+Kell and the Abyss Stair gives way to it. Nothing had ever set that flag in a
+run before this one.
+
+**The Maku Tree will not do both beats in one visit.** The trade comes first
+by design, so the Rod and the level-3 blade are two conversations. This is
+correct behaviour, not a bug; any harness that talks to her once gets the Rod
+and thinks the road is shut.
+
+**`travel` may not be handed a target more than one screen away on the east
+coast or in the marsh.** It learns blocked edges by trying them, and on this
+map trying them means swimming off the edge. Measured three separate deaths.
+
+**Three overworld seams are not plannable and are named by hand in the route**
+— Sandbar Run's chasm (no hop in `findPath`), Sunken Reef's cave mouth sitting
+on the shortest path west, and Bog Causeway's southern lobe eastbound as well
+as westbound. Do not try to make `travel` clever about them from the route.
+
+**The chain tour is not survivable twice.** 36 of 44 quarter-hearts to walk it
+once, nothing on it heals, and the run reaches the Keep on six. Fighting the
+tour is worse, not better, measured two ways. The fix is a world change and
+it has not been made.

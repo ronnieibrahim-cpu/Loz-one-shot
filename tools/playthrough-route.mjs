@@ -2108,61 +2108,255 @@ export const ROUTE = [
   ['loot', 1200],
   ['dialogue', 900],
   ['wait', 240],
+
+  // ======================================================================
+  // OUT OF THE SHRINE, ROUND THE COASTWISE CHAIN, AND DOWN TO THE KEEP
+  // ======================================================================
+  //
+  // The arena is a dead end with one door, so the first step out of it is by
+  // hand — see the Sanctum's own exit above for why a `travel` issued from
+  // inside one oscillates until its budget is gone.
+  //
+  // THE WAY BACK THROUGH THE SHRINE IS THE WAY IT CAME, not the shorter line
+  // through the Bole Walk. Both reach the mouth; the Bole Walk arrives on 20
+  // of 44 quarter-hearts and this one on 42, because Rootbound Hall's barnacle
+  // is crossed rather than cleared and the three rooms with killable things in
+  // them pay for the crossing in dropped hearts. Measured both ways.
+  ['goto', 4, 6, 1200],
+  ['hold', ['down'], 60],
+  ['wait', 90],
+  ['travel', 4, 2, 6000],
+  ['travel', 5, 3, 6000],
+  ['travel', 4, 3, 6000],
+  ['travel', 3, 3, 6000],
+  ['fight', 3000, 1200],
+  ['loot', 600],
+  ['travel', 3, 4, 6000],
+  ['travel', 3, 5, 6000],
+  ['fight', 3000, 1200],
+  ['loot', 600],
+  ['travel', 3, 6, 6000],
+  ['fight', 3000, 1200],
+  ['loot', 600],
+  ['travel', 3, 7, 6000],
+  ['goto', 4, 6, 1200],
+  ['hold', ['down'], 90],
+  ['wait', 120],
+
+  // ---------------------------------------------------- THE COASTWISE CHAIN
+  //
+  // Twelve links, in stage order, and the order zig-zags the whole map on
+  // purpose: `houseNets` (off `0,4,8`), `0,4,8`, `0,5,8`, `0,5,7`, `0,8,9`,
+  // `0,9,8`, `0,9,5`, `0,5,5`, `0,1,9`, `0,4,9`, `houseNets` again, and
+  // `houseMaku` (off `0,4,7`). Fifty screens of walking, and the Rod that
+  // comes out of the far end is the Abyssal Keep's key — the Keep's gate reads
+  // `makuOpenedKeep`, which only the Maku Tree's second beat sets, and the
+  // Keep's own Colonnade is sealed behind a grate only the Rod retracts.
+  //
+  // FOUR RULES THIS LEG WAS BUILT OUT OF, each of them paid for once:
+  //
+  //   * TRADE FIRST, FIGHT SECOND, on a town screen. A `fight` leaves the
+  //     actor wherever the chase ended, and Sandpiper Row's fisherman wanders:
+  //     with a crab still alive the actor finished the chase on the far side
+  //     of him, and all four sides of the link came back "no path". Arriving
+  //     and trading immediately is reliable.
+  //   * THE TOUR IS WALKED, NOT FOUGHT. The first cut swung at everything it
+  //     met and reached the Keep on 4 of 44 quarter-hearts; crossing without
+  //     stopping reaches it on 6, because `dFight` roams a whole screen after
+  //     one crab and takes contact damage the whole time. `loot` still runs
+  //     after every hop: what the dungeons dropped on the way out is worth
+  //     picking up, and it costs nothing when there is nothing there.
+  //   * ONE SCREEN PER DIRECTIVE. `bfsScreens` models an edge between any two
+  //     adjacent screens that exist and learns the blocked ones by trying
+  //     them, which on this coast means swimming. A three-screen `travel` off
+  //     Coral Hollow walked west into the Reef Wall, off the map's edge, and
+  //     drowned; the same `travel` one screen at a time costs nothing.
+  //   * A SEAM THE PATHFINDER WILL NOT PLAN IS NAMED BY HAND. Three of them
+  //     on this tour: Sandbar Run's south edge is a chasm, and `findPath` has
+  //     no hop in it, so the gap is crossed by holding `down` at 4,5; Sunken
+  //     Reef's cave mouth sits in the middle of the row the shortest path
+  //     west uses, so both crossings of that screen are steered down onto
+  //     row 4 first; and Bog Causeway's southern lobe is a trap its own
+  //     comment in the D3 leg already describes, so the marsh is entered and
+  //     left through Sanctum Mouth's north seam at `0,1,7`.
+  ['travel', 5, 5, 4000], ['loot', 600],
+  ['travel', 5, 6, 4000], ['loot', 600],
+  ['travel', 5, 7, 4000], ['loot', 600],
+  ['travel', 4, 7, 4000], ['loot', 600],
+  ['travel', 4, 8, 4000], ['loot', 600],
+  // LINK 1 — Ossa the net-mender, indoors off Village Shore. Her door is at
+  // 3,5 and her house's own way out is the tile at 5,6, so stepping onto it
+  // IS the exit: an `exit` directive after it walks out of the village screen
+  // as well and lands the run one screen south of the link it wants next.
+  ['goto', 3, 5, 900],
+  ['wait', 90],
+  ['trade', 1, 1200],
+  ['goto', 5, 6, 600],
+  ['wait', 90],
+  // LINK 2 — Pell, on the shore outside her door.
+  ['trade', 2, 1200],
+  ['travel', 5, 8, 4000], ['loot', 600],
+  ['trade', 3, 1200],
+  ['travel', 5, 7, 4000],
+  ['trade', 4, 1200],
+  ['travel', 6, 7, 4000], ['loot', 600],
+  ['goto', 1, 4, 1500],
+  ['goto', 8, 4, 1500],
+  ['travel', 7, 7, 4000], ['loot', 600],
+  ['travel', 8, 7, 4000], ['loot', 600],
+  ['travel', 8, 8, 4000], ['loot', 600],
+  ['travel', 8, 9, 4000], ['loot', 600],
+  ['trade', 5, 1200],
+  ['travel', 9, 9, 4000], ['loot', 600],
+  // LINK 6 — Sennit, on Sandpiper Row. The crab on this screen is left alive
+  // until the deal is done; see the first rule above.
+  ['travel', 9, 8, 4000],
+  ['trade', 6, 1200],
+  ['loot', 600],
+  ['travel', 9, 7, 4000], ['loot', 600],
+  ['travel', 9, 6, 4000], ['loot', 600],
+  ['travel', 9, 5, 4000], ['loot', 600],
+  ['trade', 7, 1200],
+  // BACK WEST ALONG ROW 7, because rows 5 and 6 do not join the wood at all:
+  // Reef Wall is walled along its whole west edge and North Dunes is treelined
+  // along its whole north edge. The chasm across Sandbar Run's foot is the
+  // hand-named seam — walk onto row 5 and hold `down`, and the hop fires.
+  ['travel', 9, 6, 4000],
+  ['goto', 4, 5, 1500],
+  ['hold', ['down'], 70],
+  ['wait', 60],
+  ['loot', 600],
+  ['travel', 8, 7, 4000], ['loot', 600],
+  ['travel', 7, 7, 4000], ['loot', 600],
+  ['travel', 6, 7, 4000], ['loot', 600],
+  ['goto', 8, 4, 1500],
+  ['goto', 1, 4, 1500],
+  ['travel', 5, 7, 4000], ['loot', 600],
+  ['travel', 5, 6, 4000], ['loot', 600],
+  ['travel', 5, 5, 4000],
+  ['trade', 8, 1200],
+  ['loot', 600],
+  ['travel', 5, 6, 4000], ['loot', 600],
+  ['travel', 5, 7, 4000], ['loot', 600],
+  ['travel', 4, 7, 4000], ['loot', 600],
+  ['travel', 4, 8, 4000], ['loot', 600],
+  ['travel', 3, 8, 4000], ['loot', 600],
+  ['travel', 3, 7, 4000], ['loot', 600],
+  ['travel', 2, 7, 4000], ['loot', 600],
+  ['travel', 1, 7, 4000], ['loot', 600],
+  ['travel', 1, 8, 4000], ['loot', 600],
+  ['travel', 1, 9, 4000],
+  ['trade', 9, 1200],
+  ['loot', 600],
+  ['travel', 1, 8, 4000], ['loot', 600],
+  ['travel', 1, 7, 4000], ['loot', 600],
+  ['travel', 2, 7, 4000], ['loot', 600],
+  ['travel', 3, 7, 4000], ['loot', 600],
+  ['travel', 3, 8, 4000], ['loot', 600],
+  ['travel', 4, 8, 4000], ['loot', 600],
+  // LINK 10 — Teel, at the Fishing Stones, and the kettle comes back out of
+  // the chain here.
+  ['travel', 4, 9, 4000],
+  ['trade', 10, 1200],
+  ['loot', 600],
+  ['travel', 4, 8, 4000], ['loot', 600],
+  ['goto', 3, 5, 900],
+  ['wait', 90],
+  ['trade', 11, 1200],
+  ['goto', 5, 6, 600],
+  ['wait', 90],
+  ['travel', 4, 7, 4000], ['loot', 600],
+  ['goto', 4, 1, 900],
+  ['wait', 90],
+  // LINK 12 — THE MAKU TREE, AND SHE IS TWO CONVERSATIONS, NOT ONE. The first
+  // takes the Bell-Rope and gives the Resonance Rod. The second is a different
+  // beat on the same entity: at five Essences she grants the level-3 blade and
+  // sets `makuOpenedKeep`, which is the only thing in the game that opens the
+  // road down to the Abyssal Keep. `MakuTree.interact` will not run both in
+  // one visit — the first beat comes first, by design — so the run steps back
+  // from her, faces her again and talks a second time.
+  ['trade', 12, 2000],
+  ['dialogue', 600],
+  ['wait', 120],
+  ['goto', 4, 3, 900],
+  ['hold', ['up'], 20],
+  ['tap', 'a', 60],
+  ['dialogue', 1800],
+  ['wait', 300],
+  ['tap', 'a', 60],
+  ['dialogue', 1800],
+  ['wait', 300],
+  ['goto', 5, 6, 600],
+  ['wait', 90],
+  // ------------------------------------------------------------ TO THE KEEP
+  //
+  // North out of the village, west along the line this run already walked to
+  // the Cliffside Cistern, and then straight down the Kell: Upper Kell and the
+  // Abyss Stair both carry the keep seal across their whole width, and the run
+  // walks through both without stopping because the Maku Tree opened them a
+  // minute ago. That is the proof the story gate works — nothing else in the
+  // world sets that flag, and nothing before this had ever set it in a run.
+  ['travel', 4, 6, 4000], ['loot', 600],
+  ['travel', 4, 5, 4000], ['loot', 600],
+  ['travel', 4, 4, 4000], ['loot', 600],
+  ['travel', 3, 4, 4000], ['loot', 600],
+  ['travel', 2, 3, 4000], ['loot', 600],
+  ['travel', 2, 2, 4000], ['loot', 600],
+  ['travel', 2, 1, 4000], ['loot', 600],
+  ['travel', 1, 1, 4000], ['loot', 600],
+  ['travel', 1, 0, 4000], ['loot', 600],
+  // The Keep's arch is two tiles wide and both halves warp; the darknut on
+  // this screen is walked past, not fought.
+  ['goto', 4, 3, 1500],
+  ['hold', ['up'], 60],
+  ['wait', 120],
 ];
 
 /**
  * Where the run ends, and what that now means.
  *
- * IT REACHES FOUR ESSENCES. Tidewash Grotto, the Coral Spire, the Bogwater
- * Sanctum and the Cliffside Cistern, walked in order with nothing granted:
- * every Small Key from all four dungeons earned and spent, the Anchor, the
- * Lens, the Bombs, the Kelp-Soled Cleats and the Squall Bellows all taken out
- * of the chests that hold them, two Heart Containers completed out of pieces
- * found on the way, a miniboss beaten and four bosses beaten in real combat.
+ * IT REACHES THE ABYSSAL KEEP'S MOUTH, holding five Essences and the
+ * Resonance Rod. Tidewash Grotto, the Coral Spire, the Bogwater Sanctum, the
+ * Cliffside Cistern and the Drowned Wood Shrine, walked in order with nothing
+ * granted: every Small Key from all five earned and spent, the Anchor, the
+ * Lens, the Bombs, the Kelp-Soled Cleats, the Squall Bellows and the Reefseed
+ * all taken out of the chests that hold them, three Heart Containers completed
+ * out of pieces found on the way, two minibosses and five bosses beaten in
+ * real combat — and then the whole Coastwise Chain walked, all twelve links,
+ * and the road down to the Keep opened by the Maku Tree.
  *
- * WHAT THE D4 LEG ADDED THAT NO EARLIER LEG COULD CLAIM:
+ * WHAT THE CHAIN LEG ADDED THAT NO EARLIER LEG COULD CLAIM:
  *
- *   * A DUNGEON WAS LEFT ON FOOT. Every leg before this one ended in an arena
- *     and began again on the overworld; nothing had walked the Sanctum
- *     backwards. An arena is a dead end with one door, so a `travel` issued
- *     from inside one plans into the room it is already in and oscillates
- *     until its budget is gone — the way out is one directive by hand and
- *     then ordinary walking.
- *   * THE CLIFFS OF KELL COST A SECOND BOMB. The Deep Cut's east bank is a
- *     rockfall with a one-tile pocket behind it, and D4's door is past it.
- *   * THE BELLOWS WERE HELD RATHER THAN CARRIED. Six wheels stand where no
- *     hand reaches, each drowned at the sea its own room is played at; the
- *     same held breath that turns one is what takes the water off it. Three
- *     want MID, three want HIGH, and the Boss Key is behind the last two — so
- *     a run that reached Wyverna worked every one of them.
+ *   * THE COASTWISE CHAIN HAS BEEN PLAYED. `check-trade.mjs` proved the chain
+ *     is a chain and that its links can be talked to; nothing had ever walked
+ *     between them in a run that also had to survive the walk. Twelve links,
+ *     fifty screens, two of them indoors.
+ *   * THE ONE STORY GATE IN THE WORLD OPENS. `makuOpenedKeep` is set by the
+ *     Maku Tree's second beat and read by the keep seal across Upper Kell and
+ *     the Abyss Stair. Nothing had ever set that flag in a run, so the road
+ *     down to the Keep had never been walked at all.
+ *   * A TRADER IS TWO CONVERSATIONS. The Maku Tree hands over the Rod and the
+ *     level-3 blade on two separate visits, and the route talks to her twice
+ *     because `MakuTree.interact` runs the trade first by design.
  *
- * WHAT IS STILL NOT DRIVEN, so the next session does not have to find it: the
- * Drowned Wood Shrine and the Abyssal Keep, the Coastwise Chain, the Salt Pans
- * and the Keep's story gate, and Rootmaw and Nereth. Of those two fights only
- * Rootmaw and Nereth have ever been measured as winnable at all (5 in 10 and
- * 3 in 10 on `measure-boss-combat`'s own points) and neither has been beaten
- * on the seed this run uses.
+ * THE FINDING THIS LEG PAID FOR, AND IT IS THE NEXT SESSION'S FIRST PROBLEM:
+ * THE CHAIN TOUR COSTS THIRTY-SIX OF FORTY-FOUR QUARTER-HEARTS AND THERE IS
+ * NOTHING ON IT TO HEAL ON. The run leaves the Shrine on 42 and arrives at the
+ * Keep's door on 6 — a heart and a half. The damage is not a fight anywhere;
+ * it is two quarter-hearts of contact damage per screen crossed, forty-odd
+ * screens, with one fairy in the world (`0,11,3`, six screens off the tour and
+ * worth less than the detour costs) and the Tidewatch Shop's one heart already
+ * spent before D2. Three answers were measured and all three are worse:
+ * fighting every screen ends on 4, fighting briefly on every screen shoves the
+ * actor into doorways it did not mean to enter, and the short way back through
+ * the Shrine's Bole Walk starts the tour twenty-two quarter-hearts down.
+ * Nereth cannot be fought on six. Whatever fixes this is a WORLD change — a
+ * fairy or a shop on the tour, or a Heart Container the run can still reach —
+ * and it is out of this route file's scope.
  *
- * THE VERB THIS LEG BOUGHT, for the same reason `tide` and `soles` exist: a
- * route may not count button presses at an item whose effect is not a press.
- * `['bellows', tx, ty]` names THE WHEEL and holds the button until that wheel
- * is open — `needTurns` is 30 on one sill and 50 on another, and a route that
- * held for a number would be carrying a private copy of room data.
- *
- * THREE THINGS THIS LEG PAID FOR BY HAND, all of them the same shape — a verb
- * that is right in general and wrong in one room:
- *
- *   * `dFight` ROAMS, AND THE CISTERN FLOOR IS THIRTY TILES WIDE. A fight in
- *     that room shoves its push block off the row the puzzle needs it on, and
- *     the `goto` afterwards is a path into a tile the block is standing in —
- *     no path, no push, no key, and every directive after it playing out
- *     somewhere else while the trace looks fine. The block is pushed first.
- *   * `dFight` LOSES TO A DARKNUT, which is the crab of S115 one enemy along:
- *     it lines up on one axis and closes, and a darknut's shield covers
- *     exactly that. The Long Race is crossed rather than cleared.
- *   * A `travel` INTO A ROOM WHOSE ONLY EXIT IS A DOORWAY POCKET can leave
- *     the actor somewhere no path plans from. Cliff Walk is walked into the
- *     middle of before anything is fought there.
+ * THREE SEAMS ON THE TOUR THE PATHFINDER WILL NOT PLAN, all named by hand in
+ * the leg above: Sandbar Run's chasm, Sunken Reef's cave mouth sitting in the
+ * middle of the shortest path west, and Bog Causeway's southern lobe.
  *
  * A narrower `dTravel` gap remains, and is still out of scope: `bfsScreens`
  * plans every route from a wide room's OWN ANCHOR coordinates and models an
@@ -2174,8 +2368,9 @@ export const ROUTE = [
  */
 export const GOAL = {
   essences: [1, 2, 3, 4, 5],
-  // The room the run finishes in: Rootmaw's arena, with five Essences taken.
-  room: 'd5/0,3,1',
+  // The room the run finishes in: the Abyssal Keep's mouth, five Essences
+  // taken and the Resonance Rod in hand.
+  room: 'd6/0,3,7',
   needsVerb: null,
   keysNeeded: 14,
   keysObtainable: 14,
