@@ -120,6 +120,18 @@ extract from it:
 
 ## Measured and rejected
 
+- **OBJECTIVE 1 (wide-rooms) IS MET, S111.** D3 Eel Hall (`0,5,3`, 3x1), D4
+  The Cistern Floor (3x1), D5 The Shrine Ford (3x1), D6 Tideshade Hall (2x2).
+  D1 and D2 keep their 2x1s and are not owed one.
+- **OBJECTIVE 8 (feel-measure) CANNOT BE STARTED — human, S111: there is no
+  emulator capture available to these sessions.** `measured` means somebody
+  frame-stepped a reference; `check-feel.mjs` refuses the tag without one, and
+  relabelling to make a number go up would destroy the file permanently. Do
+  not re-open 8 without a capture in hand.
+- **A torrent may not stand in a room that does not declare a `cleatRoom`.**
+  `check-cleats.mjs` enforces it, and it is right to: a current nothing proves
+  a way past is a wall somebody forgot about.
+
 - **OBJECTIVE 7 (item-reuse) IS CLOSED.** All four single-use items met their
   amended done-conditions: Lens S105 (2 dungeons; its overworld half is void
   by `docs/ITEMS.md`), Reefseed S108, Bellows S109, Anchor S110. Do not

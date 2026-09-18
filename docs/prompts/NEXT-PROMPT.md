@@ -1,62 +1,50 @@
-# Next session — put a frame-stepped number in feel.js
+# Next session — ask what replaces the exhausted rotation
 
 ## Read first
-- `docs/prompts/STATE.md` — objective 8, the warning above the rotation, and
-  the file allowlist.
-- `docs/NEXT-SESSION.md`, the S110 entry only.
-- `docs/FEEL-SPEC.md`, the provenance table and the paragraph under it — what
-  each of the three words is allowed to mean.
-- `tools/check-feel.mjs`'s header — what a `measured` tag has to name before
-  the tool will accept it.
-- `docs/prompts/LEDGER.md`, "Measured and rejected", the first three entries —
-  objective 7 is closed and nothing in it is to be reopened.
+- `docs/prompts/STATE.md` — the whole file. It is short and it is the point.
+- `docs/NEXT-SESSION.md`, the S111 entry only.
+- `docs/prompts/LEDGER.md`, "Measured and rejected", the first three entries.
+- `docs/FEEL-SPEC.md`, the provenance table — what `measured` is allowed to
+  mean, if the answer to the question below turns out to be yes after all.
+- `tools/check-hearts.mjs`'s header, only if the human picks the hearts.
 
 ## Why this, now
-Objective 7 closed at S110 and the rotation advances to 8. Of 249 constants in
-`feel.js`, 0 are `measured`, 18 are `derived` and 231 are `guessed`. The
-done-condition is 40 `measured`. `check-feel.mjs` already refuses a `measured`
-tag that does not name what was frame-stepped, so the tag cannot be inflated
-by accident — only on purpose, and that would destroy the file permanently.
+Objective 1 met at S111 was the last item the rotation could reach. Seven of
+its eight are met and the eighth needs an emulator capture the human said at
+S111 does not exist. There is no next item. A session that opens this prompt
+and starts guessing at work is the failure mode the charter exists to stop.
 
 ## The task
-FIRST, put one question to the human and wait: **is a frame-stepped reference
-capture of Oracle of Seasons or Ages available to this session, and if so how
-is it reached?** Objective 8 cannot be started without one, and no substitute
-counts — an emulator is the whole of what `measured` means.
+Put ONE question to the human and wait: **the rotation is exhausted — what
+replaces it?** Offer the two standing defects by name, because they are the
+only candidates the repo already argues for:
 
-If the answer is no, that is the answer: change no tag, say so in one line,
-and ask whether the rotation should move to 1 (wide-rooms, 3 of 6 dungeons
-have a 2x2 or 3x1, done at 4).
+  1. `tools/playthrough-route.mjs` stops at `d2/1,3,1`. Nothing has played
+     this game past dungeon 2, and `check-playthrough.mjs` is the only tool
+     that proves the game is finishable. Driving the route through D3 is the
+     single largest open claim in the repo.
+  2. `check-hearts` has 2 failures: 23 heart pieces where the tool wants a
+     multiple of four, and D5 holds 1 heart piece where the design says 2.
 
-If the answer is yes: measure Link's walk first — `WALK_SPEED` in
-`src/data/feel.js` — because the largest block of `guessed` constants in the
-file are speeds and reaches stated in its units, and one real number at the
-root moves more than forty careful ones at the leaves. Retag only what was
-actually stepped, and write into each comment what was stepped and how.
+Change nothing until they answer. Whatever they choose, rewrite
+`docs/prompts/STATE.md`'s OBJECTIVE OF RECORD and its file allowlist to match
+before doing any of it, and log the session against the new objective.
 
 ## Done means
-- `node tools/check-feel.mjs` — every retagged constant names its reference.
-- `node tools/check-drift.mjs` reads a non-zero `measured` count, or the table
-  is unchanged and the session's one line says why.
-- `node tools/replay.mjs`, `node tools/check-playthrough.mjs`,
-  `node tools/test.mjs`, `node tools/check-anchor.mjs`,
-  `node tools/check-gates.mjs`, `node tools/check-motion.mjs`,
-  `node tools/check-camera.mjs`.
-- `npm run build`, with `dist/oracle-of-tides.html` committed.
-- A person reads the retagged comments and can repeat the measurement from
-  what is written there alone.
+- `docs/prompts/STATE.md` names an objective the human chose, with an
+  allowlist that fits it and a done-condition a tool can check.
+- `node tools/check-drift.mjs` — self-checks green.
+- If any game file changed: the checkers CLAUDE.md's table names for what was
+  touched, plus `node tools/check-playthrough.mjs`, `node tools/replay.mjs`,
+  `node tools/test.mjs`, and `npm run build` with `dist/` committed.
+- A person reads STATE.md and knows what the next five sessions are for.
 
 ## Out of scope
-- Changing a constant's VALUE. This objective is about where the numbers came
-  from, not what they are. A value change re-records every replay baseline —
-  see the trap in CLAUDE.md about a five-line change to the movement path.
-- Relabelling a `guessed` as `measured` without an emulator, or a `derived` as
-  `measured` because its ancestor is now measured. A derived value stays
-  derived.
-- A fourth anchor, Bellows, Lens or Reefseed fixture. Objective 7 is closed
-  and the LEDGER says so.
-- `check-hearts`' two standing failures (23 heart pieces; D5 holds 1, not 2),
-  and the outdoor wheels all paying the same gold rupee. Both predate this
-  objective and need a detour token.
-- The charm economy: S110 doubled the world's scrimshander blanks from 3 to 6.
-  Noted in `docs/NEXT-SESSION.md`, not this session's job.
+- Picking the next objective yourself. The charter reserves that call, and an
+  exhausted rotation is exactly the case it was reserved for.
+- Re-opening objective 8 without an emulator capture in hand, or relabelling
+  a `guessed` constant to make the count move.
+- A fifth wide room, or a fourth fixture for any of the six dungeon items.
+  Objectives 1 and 7 are both closed and the LEDGER says so.
+- Starting the hearts fix and the playthrough route in the same session.
+  Either one is a session; both is a mess.

@@ -29368,20 +29368,60 @@ function installDungeonsA() {
       },
       '0,5,3': {
         name: 'Eel Hall',
+        // 3x1, AND D3'S SET PIECE — the room the dungeon's whole idea is said
+        // in one sight line. The Kelp Locks (`0,4,2`, 2x1) is the floor route
+        // at its limit: eighteen tiles of seafloor in one breath, and
+        // check-cleats prints the margin. This is the same choice laid out
+        // the other way round. It declares its own `cleatRoom` and has to:
+        // `check-cleats.mjs` refuses a torrent standing in a room that does
+        // not claim it, on the grounds that a current nothing proves a way
+        // past is a wall somebody forgot about. All four clauses hold here —
+        // no route on foot, none on the surface, one on the floor, and one
+        // breath covers it.
+        //
+        // THE NAVE. Down the middle of the eastern twenty tiles runs a
+        // torrent flowing WEST, back the way you came. A colonnade runs along
+        // both sides of it, and the colonnade is cut through by two thick
+        // cross-walls. So the walk east is: gallery, down into the channel,
+        // under the cross-wall, up into the next gallery. On the surface the
+        // current is the wrong side of zero and you are carried home; on the
+        // floor nothing pushes you at all. Six tiles is the longest dive in
+        // it, which is a third of what the Locks ask — the point here is the
+        // SHAPE of the choice, not the air.
+        //
+        // The return leg is free, and that is the room's other half: step off
+        // the last ledge into the current and it takes you the whole length
+        // back to the door in one go. A torrent is a wall one way and a road
+        // the other.
+        //
+        // Picked for the same three reasons every widened room before it was:
+        // the cells it grows into (`6,3`, `7,3`) have no other neighbours and
+        // nothing borders them; its four doorways — north at x=4,5, the
+        // locked door at 2,4, west at rows 3 and 4, south at x=4,5 — are all
+        // in its western screen; and widening it changed no facing wall in
+        // any neighbour. Only column 9 of rows 3 and 4 opened, which was the
+        // blank east wall of a dead end.
+        size: [3, 1],
         map: [
-          '####..####',
-          '#U......U#',
-          '####L#####',
-          '.........#',
-          '.........#',
-          '#..1111..#',
-          '#........#',
-          '####..####',
+          '####..########################',
+          '#U......U##.q..#####.q..####.#',
+          '####L######....#####....####.#',
+          '..........WWtttttttttttttttt,#',
+          '..........WWtttttttttttttttt,#',
+          '#..1111..##....#####....####.#',
+          '#........##.q..#####.q..####.#',
+          '####..########################',
         ],
         entities: [
           ['urchin', 3, 3],
           ['crab', 6, 4],
+          ['anglerfry', 16, 3],
+          ['anglerfry', 25, 4],
+          ['barnacle', 13, 6],
+          ['barnacle', 22, 1],
+          ['chest', 28, 3, { pickup: 'rupee100' }],
         ],
+        cleatRoom: { from: [0, 3], to: [28, 4] },
       },
       '0,4,2': {
         name: 'The Kelp Locks',

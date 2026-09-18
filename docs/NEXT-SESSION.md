@@ -1,3 +1,44 @@
+## S111 — D3 gets its set piece: the Eel Hall widened to 3x1
+
+Objective 1 (wide-rooms) is MET: `check-drift` reads `2x2 1` and `3x1 3`, so
+D3, D4, D5 and D6 — 4 of 6 — each hold a room bigger than one screen.
+
+**Objective 8 (feel-measure) was opened and immediately closed by the human:
+there is no emulator capture available to these sessions.** `measured` means
+somebody frame-stepped a reference and nothing else counts, so 0 of 249
+constants can honestly change. The rotation went to 1 instead, on the human's
+instruction. Do not re-open 8 without a capture in hand.
+
+**Eel Hall (`d3 0,5,3`) is now 3x1** — thirty tiles, eight rows, one grid. It
+grows east into `6,3` and `7,3`, which had no neighbours and nothing bordering
+them; all four of its doorways stay in its western screen; the only wall that
+changed is column 9 of rows 3 and 4, which was the blank east wall of a dead
+end. Same three tests every widened room before it passed.
+
+**What the room says.** The Kelp Locks (`0,4,2`, 2x1) is the floor route at
+its limit — eighteen tiles in one breath. The Eel Hall is the same choice laid
+out the other way round: a torrent running WEST down the middle of a
+colonnade, with the colonnade cut through by two thick cross-walls. Going east
+you must drop into the current and walk under each wall on the seafloor;
+coming back you step into it and it carries you the whole length home. A
+torrent is a wall one way and a road the other, and six tiles is the longest
+dive in it — a third of what the Locks ask, because the point here is the
+shape of the choice and not the air.
+
+**`check-cleats.mjs` REFUSES A TORRENT IN A ROOM THAT DOES NOT CLAIM IT**, and
+that is worth knowing before you place one: a current nothing proves a way
+past is a wall somebody forgot about. The room was first written without a
+`cleatRoom` on the reasoning that the Locks already own that claim, and the
+tool was right and the reasoning was wrong. All four clauses hold.
+
+**THE ROTATION IS NOW EXHAUSTED and that is the standing question for the
+human.** 1 met S111, 2 S9/S74, 3 S75, 4 S59, 5 S63, 6 S89, 7 S110, and 8
+cannot start. Two standing defects are the obvious candidates for what comes
+next, both named in the prompts for several sessions and both still true:
+`check-hearts` has 2 failures (23 heart pieces; D5 holds 1, not 2), and
+`tools/playthrough-route.mjs` still stops at `d2/1,3,1`, which means NOTHING
+HAS PLAYED THIS GAME PAST DUNGEON 2.
+
 ## S110 — the Tidewright's Anchor goes out of doors: three tidal bars
 
 Objective 7 (item-reuse) had only the Anchor left. Three overworld screens
