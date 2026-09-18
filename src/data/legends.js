@@ -289,7 +289,16 @@ export function installLegends() {
   // the Shrine's vocabulary that is neither standable NOR plantable at any sea,
   // so it is what a grove is lined with to stop a stray seed growing a pillar
   // somewhere that would open the room from the wrong side.
-  registerLegend('dungeonWood', { '5': 'dSnag', 'k': 'dSnarl' }, 'dungeonWood');
+  //
+  // `Y` is the STANDING bole — `dBole` itself, the tile `5`/`dSnag` already
+  // resolves to below HIGH, given a character of its own so a room can put a
+  // drowned oak beside a live one and have them draw the same trunk until the
+  // flood covers one of them. That pair is the Shrine's Lens fork (the Hollow
+  // Three), and it is the Shrine's own material doing what `7`/`dLintel` does
+  // in the Keep. `Y` is `treeSand` in the OUTDOOR legend and in no dungeon
+  // one, so naming it here moves nothing outside this dungeon — the same
+  // argument every override above makes.
+  registerLegend('dungeonWood', { '5': 'dSnag', 'k': 'dSnarl', 'Y': 'dBole' }, 'dungeonWood');
   theme('dungeonSalt',    'dFloorSalt',    'dFloorSaltAlt',    'dWallSalt',    'dWallSaltX',    'dBlockSalt',    'dUrnSalt');
   theme('dungeonPalace',  'dFloorPalace',  'dFloorPalaceAlt',  'dWallPalace',  'dWallPalaceX',  'dBlockPalace',  'dUrnPalace');
   theme('dungeonAbyss',   'dFloorAbyss',   'dFloorAbyssAlt',   'dWallAbyss',   'dWallAbyssX',   'dBlockAbyss',   'dUrnAbyss');

@@ -311,13 +311,84 @@ export function installDungeonsB() {
           '...3333..#',
           '...3333..#',
           '#..3333..#',
-          '#........#',
+          '#......./#',
           '##########',
         ],
         entities: [
           ['jellyfish', 4, 3],
           ['keese', 2, 1],
         ],
+        warps: [
+          // Up into the Hollow Three. The cell is the only way in and the only
+          // way back out of it, so no wrong guess in there can strand anyone.
+          { x: 8, y: 6, to: { map: 'd5', floor: 0, rx: 6, ry: 4, px: 72, py: 104, dir: 'up' } },
+        ],
+      },
+
+      // ---------------------------------------------------- the hollow three
+      //
+      // THE SHRINE'S LENS FORK, and the second one outside the Coral Spire.
+      // The Keep's Two Arches asks which stretch of WALL floods open; this one
+      // asks which drowned OAK is hollow, which is the same verb read off the
+      // Shrine's own timber instead of the Keep's masonry — and it is three
+      // answers rather than two, so the odds no longer carry anyone.
+      //
+      // `Y` is `dBole`, a standing trunk at every sea. `5` is `dSnag`, which
+      // IS `dBole` until HIGH and is open water at it. At MID all three lanes
+      // are capped by the same trunk, the same tile and not a lookalike. One
+      // sea up, one of them has washed out and the Cleats carry you through
+      // it; the other two are still oak, and the climb back down the stairs is
+      // what being wrong costs.
+      //
+      // The room holds the sea at MID and refuses the conch. All three valves
+      // are INSIDE the lanes, past the one-way drops, so the water cannot be
+      // moved from the shelf where the choice is made.
+      '0,6,4': {
+        name: 'The Hollow Three',
+        map: [
+          '#../.....#',
+          '#YY#55#YY#',
+          '#..#..#..#',
+          '#..#..#..#',
+          '#./#./#./#',
+          '#"##"##"##',
+          '#..../...#',
+          '##########',
+        ],
+        tideForce: 1,
+        entities: [
+          ['valve', 2, 3],
+          ['valve', 5, 3],
+          ['valve', 8, 3],
+          ['pickup', 2, 0, { kind: 'rupee20' }],
+          ['pickup', 6, 0, { kind: 'rupee20' }],
+        ],
+        warps: [
+          // Back down to the Coppice, from the shelf and from either lane that
+          // turned out to be solid oak.
+          { x: 5, y: 6, to: { map: 'd5', floor: 0, rx: 5, ry: 4, px: 136, py: 104, dir: 'down' } },
+          { x: 2, y: 4, to: { map: 'd5', floor: 0, rx: 5, ry: 4, px: 136, py: 104, dir: 'down' } },
+          { x: 5, y: 4, to: { map: 'd5', floor: 0, rx: 5, ry: 4, px: 136, py: 104, dir: 'down' } },
+          { x: 8, y: 4, to: { map: 'd5', floor: 0, rx: 5, ry: 4, px: 136, py: 104, dir: 'down' } },
+          // And out of the loft above, once you are in it.
+          { x: 3, y: 0, to: { map: 'd5', floor: 0, rx: 5, ry: 4, px: 136, py: 104, dir: 'down' } },
+        ],
+        script: {
+          onEvent(game, name) {
+            if (name === 'valve') game.forceTideStep();
+          },
+        },
+        readable: [
+          [4, 6, 'Burnt into the shelf:\n"Three trunks drank.\nOnly one of them is empty."'],
+        ],
+        lensRoom: {
+          pin: 1, reveals: 2, decide: [4, 6],
+          branches: [
+            { name: 'the west trunk', land: [1, 4], probe: [1, 1], onward: [1, 0], escape: [2, 4] },
+            { name: 'the middle trunk', land: [4, 4], probe: [4, 1], onward: [4, 0], escape: [5, 4] },
+            { name: 'the east trunk', land: [7, 4], probe: [7, 1], onward: [7, 0], escape: [8, 4] },
+          ],
+        },
       },
       '0,4,4': {
         name: 'Sunken Bracken',

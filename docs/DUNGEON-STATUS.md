@@ -32,6 +32,23 @@ whatever a commit message elsewhere claims.
 | — | `d7` | Reef Palace | — | **FOLDED IN** | `84d14e5` |
 | — | `d8` | Abyssal Keep | — | **FOLDED IN** | `84d14e5` |
 
+### S104-S105 — D5 and D6 each gained one optional Lens fork
+
+Neither dungeon's completion checklist moves. The Brineglass Lens had two
+puzzles in the game, both inside the dungeon that hands it over, because
+`tools/check-lens.mjs` refused on sight to look at a fork anywhere else; that
+refusal is gone and the tool now models the player's real capabilities per
+dungeon instead. The two new rooms are both optional side chambers, hung off
+an existing room by a stair, off the critical path, holding rupees:
+
+| Room | Dungeon | The read |
+|---|---|---|
+| `d6 1,5,4` The Two Arches | Abyssal Keep, off the Mermaid Vault | two blank stretches of the Keep's own wall at MID; one is an open flooded arch at HIGH |
+| `d5 0,6,4` The Hollow Three | Drowned Wood Shrine, off the Coppice Cell | three drowned oaks at MID; one has washed hollow at HIGH |
+
+Both pin the sea and refuse the conch, and every valve is inside a lane past a
+one-way drop, so the water cannot be moved before the choice is made.
+
 ### ALL SIX MOUTHS WERE WIDENED IN S33 — and none of them is re-opened by it
 
 A person got stuck inside Tidewash Grotto because a dungeon mouth was one 16px

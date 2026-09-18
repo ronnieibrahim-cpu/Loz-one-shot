@@ -15820,3 +15820,29 @@ before committing. `check-lens.mjs` is 36/36, `check-drift` reads
 - `check-hearts.mjs` is red on `main` and was red before this session: "23 heart
   pieces leaves 3 that can never complete a container", "d5 holds 1 heart piece,
   not 2". Untouched here. Confirmed identical by stashing.
+
+---
+
+## S105 — the Lens's second fork, and item 7's Lens half is closed
+
+`d5 0,6,4`, The Hollow Three, off the Coppice Cell by a new stair. Three
+drowned oaks side by side; at MID all three are the same trunk, and one sea up
+one of them has washed hollow and the Cleats carry you through it. The Shrine's
+own timber doing what `7`/`dLintel` does in the Keep: `5`/`dSnag` IS `dBole`
+until HIGH and is open water at it, so a standing bole and a drowned one draw
+the same tile until the flood tells them apart. `Y` was given to `dBole` inside
+the `dungeonWood` legend for this — `Y` is `treeSand` outdoors and in no
+dungeon legend, the same argument the Abyss's own overrides make.
+
+Three answers rather than the Keep's two, deliberately: at two the odds carry a
+guesser half the time.
+
+`check-lens.mjs` 47/47. `check-drift` reads `lens ... dungeons: 2 of 5`, which
+meets rotation item 7's Lens half under S104's amendment (its overworld half is
+void — docs/ITEMS.md forbids the Lens as a region gate). The Anchor, Bellows
+and Reefseed are untouched and each still needs its own human call, so the
+objective as a whole is NOT done.
+
+Shot at both seas and looked at: at MID six identical trunks across the top,
+at HIGH the middle pair is water. A person cannot tell the lanes apart in the
+pinned shot, which is the only part of this a checker cannot assert.

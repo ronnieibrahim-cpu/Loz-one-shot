@@ -1,8 +1,9 @@
 OBJECTIVE OF RECORD: 7 item-reuse
 
-S104: human widened the allowlist for the LENS ONLY, and it is spent.
-Lens dungeon reuse 0 -> 1. Anchor/Bellows/Reefseed: unchanged, each
-still needs its own human call (LEDGER "item 7 ... has no task left").
+S105: the Lens half of item 7 is DONE (2 of 5 dungeons, overworld void
+by design). The widened allowlist is spent. Anchor/Bellows/Reefseed are
+unchanged and each still needs its own human call before item 7 can
+advance — see LEDGER, "item 7 ... has no task left".
 
 ROTATION (fixed, do not reorder):
   1 wide-rooms      — 3 of 6 dungeons have a 2x2 or 3x1
@@ -23,7 +24,7 @@ ROTATION (fixed, do not reorder):
                       >=2 later dungeons and >=3 overworld screens.
                       LENS AMENDMENT (S104, human): its overworld half
                       is void (ITEMS.md forbids it at region scope), so
-                      the Lens is done at >=2 dungeons. It is at 1.
+                      the Lens is done at >=2 dungeons. MET S105.
   8 feel-measure    — done when >=40 feel.js constants are tagged
                       `measured` against the emulator
 
@@ -55,3 +56,4 @@ DETOUR TOKENS: 1 (unspent — S104 was human-directed objective work)
 
 SESSION LOG: one row per session — `S## | objective|detour | one line`
 S104 | objective | Opened the Brineglass Lens up to the rest of the game. The prover had been refusing, on sight, to look at any Lens fork outside the Coral Spire — not because the game could not hold one, but because its model was a walker and by the third dungeon the player can swim. It now asks what the player actually holds in each dungeon, so every claim it makes about a later fork is stricter than the old ones, and the rule about when swimming starts lives in one place instead of two. The first fork outside the Spire is the Abyssal Keep's Two Arches: two blank stretches of the Keep's own wall, and one of them is water one tide up.
+S105 | objective | Gave the Brineglass Lens a second puzzle outside the dungeon that hands it over, in the Drowned Wood Shrine. Three drowned oaks in a row, the same trunk to look at while the water is held where it is, and one sea up one of them has washed hollow. That finishes the Lens's share of the current objective; the other three special items are still stuck behind decisions only a person can make.
