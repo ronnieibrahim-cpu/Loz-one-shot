@@ -15846,3 +15846,41 @@ objective as a whole is NOT done.
 Shot at both seas and looked at: at MID six identical trunks across the top,
 at HIGH the middle pair is water. A person cannot tell the lanes apart in the
 pinned shot, which is the only part of this a checker cannot assert.
+
+---
+
+## S106 — the Anchor's wall is the game, not the checker. Proved, with a tripwire
+
+The human picked the Anchor next, on the reasonable expectation that it was the
+Lens's fix again: `check-anchor.mjs`'s `late` filter was a hard `['d1','d2']`
+whitelist and its own note said "teach this tool to swim first". It has been
+taught — `capsForDungeonIndex`, the same function `dungeon-flood.mjs` and
+`check-lens.mjs` ask — and **D3+ still does not open.** The reason is not the
+model:
+
+An anchor gate needs a route that NO base level opens and one anchor placement
+does. The anchor pins a patch to a level the base could have been at anyway, so
+it only ever adds reach when no single base level is best for the whole route.
+For a swimmer one always is: **HIGH**. Every tide tile in the game that a
+swimmer can cross at any level can be crossed at HIGH — checked over the
+engine's own tile table, 24 tide tiles, zero exceptions. So a flood at base
+HIGH with no anchor at all already reaches everything an anchored flood could,
+and part 1 of every gate proof ("the conch alone does not cross it") can never
+hold from D3 on. On FOOT thirteen tide tiles close as the water rises, which is
+exactly why D1 and D2 can hold gates.
+
+That is now an ASSERTION, not a paragraph. `check-anchor.mjs` walks the tile
+table and fails if any tide tile shuts on a swimmer — the day somebody adds
+one, the tool goes red and tells the next session to re-open the filter.
+Verified to have teeth by running the same check with foot caps, where it names
+all thirteen. 17 assertions, was 15.
+
+**The one avenue left, and it needs a human call.** A gate in a later dungeon's
+PRE-ITEM half, where the player provably has no Cleats yet, would work — D3's
+own Cleats are found halfway through it. But it redefines what the tool means
+by "requires the Anchor", from "no base level crosses it" to "no base level
+crosses it YET", and a player who walks back afterwards swims across. That is
+a change to the claim, not to the model, so it was not made.
+
+`check-drift` still reads `anchor ... dungeons: 1 of 5`, and now that number is
+known to be the ceiling rather than suspected of being one.

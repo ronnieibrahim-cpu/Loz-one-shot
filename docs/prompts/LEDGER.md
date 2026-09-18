@@ -693,10 +693,28 @@ extract from it:
     would have asked for a `d3`/`d4` reefseed room — that room would fail
     `check-reefseed.mjs` outright, by design, not by bug.
   - **Anchor** (home D1): dungeon reuse is 1 of 5 (D2's Bone Cell, S90)
-    and is very likely ALSO at its ceiling under the current tool
-    (S96/S97): `check-anchor.mjs`'s `late` filter is an unconditional
-    `['d1','d2']` whitelist, not an index comparison, and its own header
-    says opening D3+ needs the swim/no-swim model relaxed first. Overworld
+    and **S106 PROVED it is at its ceiling, for a reason that is the game
+    and not the tool.** The filter was relaxed and the model taught to
+    swim, exactly as the tool's own header had been asking for since it
+    was written — and D3+ still did not open, because an anchor gate
+    needs a route no single base level opens and one anchor placement
+    does. The anchor pins a PATCH to a level the base could have been at
+    anyway, so it adds reach only when no one base is best for the whole
+    route. For a swimmer one always is: HIGH. `check-anchor.mjs` now
+    asserts that over the engine's own tile table — every tide tile a
+    swimmer can cross at any level can be crossed at HIGH — so flooding
+    at base HIGH with no anchor already reaches everything an anchored
+    flood could, and "the conch alone does not cross it" can never hold
+    from D3 on. On FOOT thirteen tide tiles close as the water rises,
+    which is why D1 and D2 hold gates at all. The assertion is a
+    TRIPWIRE, not a comment: add a tile that shuts on a swimmer and the
+    tool goes red and says to re-open the filter. Verified to have teeth
+    by running it with foot caps, where it names all thirteen.
+    The ONE avenue left is a gate in a later dungeon's pre-item half,
+    where the player provably has no Cleats yet — but that redefines
+    what this tool means by "requires the Anchor", from "no base level
+    crosses it" to "no base level crosses it YET", and that is a human
+    call, not a session's. Overworld
     screens is 0 of 3 and PROVEN blocked, not merely untried (S91): the
     one outdoor tile combination that could form a genuine two-level gate
     (`drownWall` at HIGH) was built as a real test room, and

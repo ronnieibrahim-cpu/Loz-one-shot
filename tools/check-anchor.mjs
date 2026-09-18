@@ -34,10 +34,29 @@
 //     a pit, a gap — and must land on a tile that is walkable. Both numbers
 //     come out of feel.js rather than being written down here, because a jump's
 //     reach is a function of WALK_SPEED and moves whenever that does.
-//   * NO SWIMMING. The Kelp-Soled Cleats are the D3 item, so in D1 deep water
-//     is a wall. A room in a later dungeon that declares an anchorGate would
-//     need this relaxed, and the assertion below about which dungeons are
-//     covered is what will catch that.
+//   * SWIMMING IS ASKED OF THE DUNGEON, NOT ASSUMED EITHER WAY. Until S106 the
+//     model was a walker everywhere, and the filter below refused any gate
+//     outside D1/D2 with the note "teach this tool to swim first". It has now
+//     been taught, via `capsForDungeonIndex` (tools/lib/collision.mjs) — the
+//     same function tools/lib/dungeon-flood.mjs and tools/check-lens.mjs ask,
+//     so none of the three can drift.
+//
+//     TEACHING IT TO SWIM DID NOT OPEN D3+, AND THE REASON IS THE GAME, NOT
+//     THIS FILE. An anchor gate needs a route the conch cannot open at ANY
+//     base level and one anchor placement can. The anchor pins a PATCH to a
+//     level while the base moves, so it can only ever hold part of the room
+//     at a level the base could have been at anyway — it adds reach only when
+//     no single base level is best for the whole route. For a swimmer there
+//     IS such a level, always: HIGH. Every tide tile in the game that a
+//     swimmer can cross at any level can be crossed at HIGH, so flooding at
+//     base HIGH with no anchor already reaches everything an anchored flood
+//     could, and "the conch alone does not cross it" can never hold. That is
+//     asserted below over the engine's own tile table rather than argued
+//     here, so the day somebody adds a tile that CLOSES on a swimmer as the
+//     water rises, this tool says so instead of staying quietly wrong.
+//
+//     On foot the picture is completely different — thirteen tide tiles close
+//     as the water rises — which is why D1 and D2 hold gates at all.
 //   * The patch is ANCHOR_RADIUS_TILES / ANCHOR_SHAPE, read from feel.js, so
 //     retuning the radius re-proves every gate instead of quietly breaking it.
 //   * The throw reach is derived from the arc constants and rounded DOWN to
@@ -50,13 +69,14 @@
 
 import { MAPS } from '../src/world/maps.js';
 import { getLegend } from '../src/world/room.js';
-import { F, getTileDef } from '../src/world/tileset.js';
+import { F, TILES, getTileDef } from '../src/world/tileset.js';
 import { installData } from '../src/data/index.js';
 import {
   ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, ANCHOR_THROW_SPEED,
   THROW_ARC_RISE, THROW_ARC_GRAVITY, JUMP_POWER, JUMP_GRAVITY, WALK_SPEED,
 } from '../src/data/feel.js';
-import { defWalkable, capsForMode, ROUTE_AVOID } from './lib/collision.mjs';
+import { defWalkable, capsForMode, capsForDungeonIndex, CLEATS_DUNGEON_INDEX,
+         ROUTE_AVOID } from './lib/collision.mjs';
 
 installData();
 
@@ -67,6 +87,13 @@ let passed = 0; const failures = [];
 function check(name, cond, detail) {
   if (cond) { passed++; console.log('  ok   ' + name); }
   else { failures.push(name + (detail ? ' — ' + detail : '')); console.log('  FAIL ' + name + (detail ? ' — ' + detail : '')); }
+}
+
+/** A named tile resolved through its own tide chain to the level `l`. */
+function defTide(name, l) {
+  let d = getTileDef(name);
+  for (let i = 0; i < 4 && d && d.tide; i++) d = getTileDef(d.tide[l]);
+  return d;
 }
 
 // --- the two reaches, both derived from constants rather than remembered ----
@@ -94,10 +121,11 @@ function defAt(legend, ch, level) {
 }
 
 /** Walkable on foot, with no swimming and nothing equipped. */
+let CAPS = capsForMode('foot');   // set per room, before that room is proved
 function walkableDef(d) {
   if (!d) return false;
   if (d.flags & F.STAIRS) return true;
-  return defWalkable(d, capsForMode('foot'), ROUTE_AVOID);
+  return defWalkable(d, CAPS, ROUTE_AVOID);
 }
 
 /** A hop passes over anything that is not a wall. */
@@ -197,6 +225,11 @@ for (const [mapId, m] of MAPS) {
       mapId, key, name: def.name || key,
       W: (sz[0] | 0) * 10, H: (sz[1] | 0) * 8,
       grid: def.map, legend: getLegend(def.legend || m.legend), noTide: !!def.noTide, def,
+      // The overworld is crossable on foot end to end, so it is proved as a
+      // walker; a dungeon is proved as whoever the player is by the time they
+      // are standing in it.
+      caps: m.dungeon ? capsForDungeonIndex(m.dungeon.index) : capsForMode('foot'),
+      index: m.dungeon ? (m.dungeon.index | 0) : null,
     };
     if (def.anchorGate) gates.push({ ...room, gate: def.anchorGate });
     if (def.anchorGauges) gauges.push({ ...room, g: def.anchorGauges });
@@ -204,16 +237,38 @@ for (const [mapId, m] of MAPS) {
 }
 
 check('at least one room declares an anchor gate', gates.length > 0, 'nothing to prove');
-// The model has no swimming in it, so it is only sound for a dungeon reached
-// before the Cleats, or for the overworld (also reachable and fully crossable
-// on foot before the Cleats). If a later dungeon declares a gate, this fires
-// rather than silently proving the wrong thing.
-const late = [...gates, ...gauges].filter(r => r.mapId !== 'overworld' && !['d1', 'd2'].includes(r.mapId));
-check('every declared anchor room is in a pre-Cleats dungeon or the overworld', late.length === 0,
-  late.map(r => `${r.mapId} ${r.key}`).join(', ') + ' — teach this tool to swim first');
+// THE CEILING, proved rather than asserted. See the header: an anchor gate is
+// only possible where no single base level is best for the whole route, and
+// for a swimmer HIGH always is. This walks the engine's own tile table and
+// says whether that is still true. It is the tripwire on the claim the filter
+// below rests on — if somebody adds a tide tile that a swimmer can cross at
+// some level but not at HIGH, this flips and the note stops being true.
+const shutsOnASwimmer = [];
+for (const name of TILES.keys()) {
+  const d0 = getTileDef(name);
+  if (!d0 || !d0.tide) continue;
+  const open = [0, 1, 2].map(l => defWalkable(defTide(name, l), capsForMode('swim'), ROUTE_AVOID));
+  if ((open[0] || open[1]) && !open[2]) shutsOnASwimmer.push(name);
+}
+check('no tide tile shuts on a swimmer as the water rises', shutsOnASwimmer.length === 0,
+  shutsOnASwimmer.join(', ') + ' — a gate in a swimming dungeon may now be possible; '
+  + 'see this file\'s header and re-open the filter below');
+console.log(`  note  HIGH is a swimmer's best base for every one of the game's `
+  + `tide tiles, so no anchor placement can add reach in a dungeon from D`
+  + `${CLEATS_DUNGEON_INDEX} on`);
+
+// Which rooms this tool can honestly prove. The overworld is crossed on foot;
+// a dungeon below the Cleats is too. From the Cleats on, the paragraph above
+// says an anchor gate cannot exist, so a declaration there is a room that does
+// not do what it claims rather than a tool that cannot see it.
+const late = [...gates, ...gauges].filter(r => r.index !== null && r.index >= CLEATS_DUNGEON_INDEX);
+check('no anchor room stands in a dungeon where the player can swim', late.length === 0,
+  late.map(r => `${r.mapId} ${r.key}`).join(', ')
+  + ` — from D${CLEATS_DUNGEON_INDEX} on, base HIGH already goes everywhere an anchor could`);
 
 // --- part 1: the gates ------------------------------------------------------
 for (const r of gates) {
+  CAPS = r.caps;
   const where = `${r.mapId} ${r.key} (${r.name})`;
   const conchOnly = flood(r, r.gate.from, null);
   check(`${where}: the conch alone does not cross it`, !reaches(conchOnly, r.gate.to),
@@ -242,6 +297,7 @@ for (const r of gates) {
 // check is what proves one patch cannot cover both gauges and hand the puzzle
 // back to the conch.
 for (const r of gauges) {
+  CAPS = r.caps;
   const where = `${r.mapId} ${r.key} (${r.name})`;
   const { a, b, aLevel, bLevel, door } = r.g;
   check(`${where}: the two gauges want different levels`, aLevel !== bLevel,
