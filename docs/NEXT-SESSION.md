@@ -1,3 +1,81 @@
+## S120 — the Abyssal Keep is played to Nereth's own door
+
+`check-playthrough.mjs` now drives a new game from the title screen to
+`d6/1,3,2`, the Keep Gate, with all four of the Abyssal Keep's Small Keys
+earned and all four of its locked doors opened. 35 assertions green. What is
+left in the game is the Boss Key, the Brinehulk that keeps it, and Nereth.
+
+### THREE THINGS NOTHING IN THE REPO HAD EVER DONE IN A RUN
+
+  * **A TORCH WAS LIT.** The Kilnshell is the game's only fire and it sat in a
+    chest in Reef Hollow, the cave off Sunken Reef at `0,6,7` — the one cave
+    mouth every earlier leg went out of its way to steer AROUND, because it
+    sits in the middle of the row any westward path picks. Nothing before the
+    Keep ever needed a flame, so nothing had opened that chest. The Black
+    Kiln's key is four torches, and without the shell that key does not exist
+    and the dungeon's fourth lock never opens. The fetch is now folded into the
+    chain's eastbound crossing of that screen, which costs four screens of
+    nothing because the run is already standing on the doorstep.
+  * **ARMOUR WAS RUNG.** A darknut is `shield: 'all'` and `dFight` cannot walk
+    round one, which is why "a shielded enemy" has been on the out-of-scope
+    list for five sessions. It did not need a cleverer swordsman: it needed the
+    Resonance Rod, which the run spent twelve trades getting, and which
+    `Enemy.hurt` already honours — "armour that is ringing is armour that is
+    not blocking". `['fight', n, p, { ring: true }]` presses the Rod when the
+    nearest thing is armoured and its lock is nearly out. The Bone Cell went
+    from unclearable in 4000 frames to cleared in 175.
+  * **THE DREDGE LINE CROSSED A HOLE.** New verb
+    `['dredge', x, y, face, until, maxF]`. `until` is `'fish'` (something came
+    up) or a pair of coordinates (the pull put me there).
+
+### TWO FRAMES OF TURN, NOT TEN — and it cost this session twice
+
+Both the Kilnshell and the Dredge Line are aimed by FACING, and the only way
+the actor has to set a facing is to hold a direction, which also WALKS. Ten
+frames is ten pixels and that is a whole tile boundary:
+
+  * at the Black Kiln the shell landed one tile past each torch and the flame's
+    half-tile reach fell two pixels short — four torches lit, no key, every
+    directive reporting success;
+  * on the Drowned Sill's east bank "face left" walked the player into the
+    shaft, eleven times, two quarter-hearts each, and the trace read as a cast
+    that would not take.
+
+`dDredge` now yields the item bit WITH the direction still held, the way
+`dBellows` always has, and the route's torch turns are two frames.
+
+### THE SEA GOES TO MID BEFORE FLOOR 0 IS TOUCHED
+
+The run walks down the Kell at LOW and floor 0 is drawn in `4`, a hole the sea
+fills. At LOW the Black Kiln's four corners are four open pits and the Drain
+Court's block has nowhere to go. Both rooms hold a Small Key, both failed
+silently, and the first thing that said so was a locked door two rooms later
+that would not open. The same shape bit the West Crypt: its sill is declared
+`at: 1`, so at LOW the wheel is drowned AND the room's own east doorway is a
+`0` tile that is not floor — the run could neither turn the wheel nor leave.
+
+### THE KEEP'S ORDER, WRITTEN DOWN
+
+Bone Cell (key 1, three bodies) -> Drain Court (key 2, block on a switch) ->
+Black Kiln (key 3, four torches) -> West Crypt (the wheel's fairy, and it is
+not optional: the run comes off floor 0's fights in the low twenties) ->
+Three Heights' lock -> Keep Lock's east door -> the Dredge Vault -> the Slack
+Water's lesson (a Piece of Heart) -> the Keep Stair -> the Drowned Stand at
+LOW -> Keep Crossing's EAST door first, because what is behind it is the
+fourth key and the north one is the way on -> the Drowned Sill at LOW, MID and
+LOW again -> Keep Crossing's north door -> the Keep Gate.
+
+### IT ARRIVES AT THE KEEP GATE ON THIRTEEN OF FORTY-FOUR
+
+That is the next session's first problem and it has the same shape as S118's.
+Floor 1's west and east wings are untouched and each holds something: the
+Shade Cell's heart, Tideshade Hall's miniboss and the Mermaid Vault's level-2
+Cleats behind it, the Two Arches' Lens fork, the Sunken Bar's Piece of Heart
+and rupee, and the Colonnade's Coilrope — which is behind a grate only the
+Resonance Rod retracts and is the one thing in the Keep that asks whether the
+player did the trade. None of them heals except the Shade Cell. Nereth takes
+four quarter-hearts a hit.
+
 ## S119 — the west coast gets a fairy, and the run reaches the Keep on 30 of 44
 
 The thing S118 found and could not fix is fixed, and it was a world gap rather

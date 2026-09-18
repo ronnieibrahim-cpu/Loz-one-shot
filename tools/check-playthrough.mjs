@@ -443,6 +443,31 @@ check('the road down the Kell opened, and the run walked into the Abyssal Keep',
     .every(r => a.rooms.includes(r)),
   `rooms ${['overworld/0,2,2', 'overworld/0,2,1', 'overworld/0,1,0', 'd6/0,3,7'].filter(r => !a.rooms.includes(r)).join(' ')} missing`);
 
+// THE ABYSSAL KEEP HAS BEEN PLAYED, as far as the Boss Key's door. Every part
+// of this is something nothing in the repo had ever done in a run:
+//
+//   * A TORCH WAS LIT. The Kilnshell is the only fire in the game and it sat
+//     in a cave on the Sunken Reef that no route had ever opened. Four torches
+//     round the Black Kiln's key are what finally wanted one.
+//   * ARMOUR WAS RUNG. A darknut is `shield: 'all'` and the swordsman cannot
+//     walk round one; the Resonance Rod opens it, which is the trade's payment
+//     spent on the thing the trade was for.
+//   * THE DREDGE LINE CROSSED A HOLE. Three shafts, at the seas each of them
+//     names — the Slack Water's lesson, the Drowned Stand at LOW, and the
+//     Drowned Sill's round trip at LOW, MID and LOW again for the fourth key.
+//
+// The four flags are the dungeon's own, so this cannot be satisfied by walking
+// the rooms: `d6_bone` is three bodies, `d6_drain` is a block on a switch,
+// `d6_kiln` is four flames, and four opened doors is four keys spent.
+const D6_FLAGS = ['d6_bone', 'd6_drain', 'd6_kiln'];
+check('THE ABYSSAL KEEP WAS PLAYED TO NERETH\'S OWN DOOR — its four keys earned, its four locks opened, three shafts crossed on the Dredge Line',
+  s.items.includes('dredge') && s.items.includes('kilnshell')
+    && D6_FLAGS.every(f => (s.flags || []).includes(f))
+    && a.rooms.includes('d6/1,4,3') && a.rooms.includes('d6/1,3,2'),
+  `dredge ${s.items.includes('dredge')}, kilnshell ${s.items.includes('kilnshell')}, `
+  + `flags missing ${D6_FLAGS.filter(f => !(s.flags || []).includes(f)).join(' ') || '(none)'}, `
+  + `rooms missing ${['d6/1,4,3', 'd6/1,3,2'].filter(r => !a.rooms.includes(r)).join(' ') || '(none)'}`);
+
 // AND IT ARRIVES WITH ENOUGH HEALTH TO FIGHT WHAT IS DOWN THERE. This is the
 // one number the chain leg could not assert when it landed: the tour costs
 // thirty-six of forty-four quarter-hearts and the world had nothing on it to
@@ -455,9 +480,14 @@ check('the road down the Kell opened, and the run walked into the Abyssal Keep',
 // HALF OF MAX, not a fixed count, because the cap is still growing: there are
 // pieces in the world this run has never been sent for, and a floor written as
 // `22` would quietly stop meaning "half" the day a fourth container lands.
-const arrival = a.roomHealth.filter(r => r.room === GOAL.room);
+// THE ARCH, NAMED, AND NOT `GOAL.room`. It was written as GOAL.room when the
+// arch WAS where the run stopped; the moment the route went through the door
+// the assertion silently started asking about a room two floors in, which is a
+// different and much harder question than the one the chain's long walk is
+// answerable for. The tour's cost is measured at the threshold.
+const arrival = a.roomHealth.filter(r => r.room === 'd6/0,3,7');
 const arrivedOn = arrival.length ? arrival[0].enterHearts : 0;
-check('the run arrives at the Abyssal Keep on at least half its hearts',
+check('the run arrives at the Abyssal Keep\'s arch on at least half its hearts',
   arrivedOn * 2 >= s.maxHearts,
   `arrived on ${arrivedOn} of ${s.maxHearts} quarter-hearts`);
 

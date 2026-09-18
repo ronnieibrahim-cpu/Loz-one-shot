@@ -2201,6 +2201,28 @@ export const ROUTE = [
   ['trade', 4, 1200],
   ['travel', 6, 7, 4000], ['loot', 600],
   ['goto', 1, 4, 1500],
+  // THE KILNSHELL, AND IT IS FETCHED HERE BECAUSE THE RUN IS ALREADY STANDING
+  // ON THE DOORSTEP. Sunken Reef's cave mouth at 4,2 is the tile this leg has
+  // always had to steer AROUND — it sits in the middle of the row every
+  // westward path picks — so the one thing the route did with this cave was
+  // avoid walking into it by accident. What is inside it is the game's only
+  // fire: a cockle you set down alight, and the only way anything in the world
+  // lights a torch. Nothing before the Abyssal Keep needed one, which is why
+  // no run had ever opened this chest; the Keep's Black Kiln is four torches
+  // round a Small Key, and without the shell that key does not exist and the
+  // dungeon's fourth lock never opens.
+  ['goto', 4, 4, 1500],
+  ['goto', 4, 3, 900],
+  ['hold', ['up'], 60],
+  ['wait', 120],
+  ['goto', 7, 6, 1200],
+  ['hold', ['up'], 24],
+  ['tap', 'a', 30],
+  ['dialogue', 600],
+  ['wait', 240],
+  ['goto', 5, 6, 900],
+  ['wait', 120],
+  ['goto', 4, 4, 1500],
   ['goto', 8, 4, 1500],
   ['travel', 7, 7, 4000], ['loot', 600],
   ['travel', 8, 7, 4000], ['loot', 600],
@@ -2316,6 +2338,200 @@ export const ROUTE = [
   ['goto', 4, 3, 1500],
   ['hold', ['up'], 60],
   ['wait', 120],
+
+  // ======================================================================
+  // THE ABYSSAL KEEP
+  // ======================================================================
+  //
+  // THE ROD GOES ON B AND STAYS THERE FOR THE WHOLE OF FLOOR 0. This dungeon
+  // is garrisoned — darknuts in five of its rooms — and a darknut is
+  // `shield: 'all'`, which the swordsman cannot walk round the way it walks
+  // round a crab. The game's own answer is the thing the run spent twelve
+  // trades getting: `Enemy.hurt` lets a hit through while `rodLock` is
+  // running, so every `fight` in the Keep is flagged `{ ring: true }` and the
+  // Rod is rung in the middle of it. Nothing is granted by that flag; it is
+  // one more button press, on the item the player is holding.
+  //
+  // AND THE SEA GOES TO MID BEFORE ANY OF IT. The run walks down the Kell at
+  // LOW and floor 0 is drawn in `4` — a hole the sea fills — so at LOW the
+  // Black Kiln's four corners are four open pits and the Drain Court's block
+  // has nowhere to be pushed. Both rooms hold a Small Key, both keys failed
+  // silently at LOW with every directive reporting success, and the locked
+  // door two rooms later was the first thing that said so.
+  ['equip', 'conch', 'B', 400],
+  ['tide', 1, 140, 900],
+  ['equip', 'rod', 'B', 400],
+
+  // KEY 1 — THE BONE CELL. Two stalfos and a darknut, and the key is in them.
+  // Keep Landing on the way is crossed, not cleared: its own reward is one
+  // heart and its keese cannot be caught, so a `fight` there burns two
+  // thousand frames to earn four quarter-hearts.
+  ['travel', 3, 6, 4000],
+  ['travel', 4, 6, 4000],
+  ['fight', 7000, 2500, { ring: true }],
+  ['loot', 900],
+
+  // KEY 2 — DRAIN COURT. Two switches and one block, which is the room's whole
+  // argument: the block goes on the far switch and the player stands on the
+  // near one. The beamos is a statue and is left alone.
+  ['travel', 3, 6, 4000],
+  ['travel', 3, 5, 4000],
+  ['travel', 4, 5, 4000],
+  ['fight', 3000, 900, { ring: true }],
+  ['goto', 2, 4, 900],
+  ['hold', ['up'], 180],
+  ['wait', 60],
+  ['goto', 7, 5, 900],
+  ['wait', 120],
+  ['loot', 900],
+
+  // KEY 3 — THE BLACK KILN, AND THE FIRST FIRE ANYTHING IN THIS GAME HAS LIT.
+  // Four torches at the room's four corners. The Kilnshell is set down on the
+  // tile the player is facing and is already alight when it lands, so each
+  // torch is one step: stand under it, turn, press, press again to take the
+  // shell back. THE TURN IS TWO FRAMES AND NOT TWELVE. A longer hold walks the
+  // player a tile further in, the shell then lands one tile past the torch,
+  // and the flame's reach — half a tile — falls two pixels short. Four torches
+  // lit and no key, with every directive reporting success, is what that looks
+  // like from the trace.
+  ['travel', 3, 5, 4000],
+  ['travel', 3, 4, 4000],
+  ['travel', 4, 4, 4000],
+  ['fight', 3000, 900, { ring: true }],
+  ['equip', 'kilnshell', 'B', 400],
+  ['goto', 2, 3, 900], ['hold', ['up'], 2],
+  ['use', 'kilnshell', 1, 40], ['use', 'kilnshell', 1, 40],
+  ['goto', 7, 3, 900], ['hold', ['up'], 2],
+  ['use', 'kilnshell', 1, 40], ['use', 'kilnshell', 1, 40],
+  ['goto', 2, 4, 900], ['hold', ['down'], 2],
+  ['use', 'kilnshell', 1, 40], ['use', 'kilnshell', 1, 40],
+  ['goto', 7, 4, 900], ['hold', ['down'], 2],
+  ['use', 'kilnshell', 1, 40], ['use', 'kilnshell', 1, 40],
+  ['wait', 180],
+  ['loot', 900],
+
+  // THE WEST CRYPT'S WHEEL, AND THE FAIRY BEHIND IT. Not optional in practice:
+  // the run comes off floor 0's fights in the low twenties and floor 1 opens
+  // with a shaft crossing it cannot fight its way out of. The wheel is the
+  // Keep's Bellows sill and it is worked at the sea the room is already at.
+  //
+  // THE SEA GOES TO MID FIRST, and this is not a detail. The crypt's sill is
+  // declared `at: 1` and the run walks into the Keep at LOW, so the wheel is
+  // drowned on arrival: `GustWheel.drowned` throws the turns away rather than
+  // banking them, the fairy is never released, and — the part that actually
+  // stopped the run — the crypt's own east doorway is a `0` tile that is not
+  // floor at LOW, so the room cannot be left either. One directive, and every
+  // directive after it addressed a room the player was not standing in.
+  ['travel', 3, 4, 4000],
+  ['equip', 'conch', 'B', 400],
+  ['tide', 1, 140, 900],
+  ['travel', 2, 4, 4000],
+  ['equip', 'bellows', 'A', 400],
+  ['goto', 5, 2, 1500],
+  ['bellows', 2, 2, 2500],
+  ['equip', 'sword', 'A', 400],
+  ['loot', 900],
+
+  // TWO LOCKS AND THE DREDGE LINE. Three Heights' door is in its own north
+  // wall; Keep Lock's is in its east one and the vault is behind it. Keep Lock
+  // is CROSSED AND NOT CLEARED — a darknut and a wizzrobe in one room cost
+  // twenty-four quarter-hearts to clear and the room holds nothing.
+  ['travel', 3, 4, 4000],
+  ['goto', 4, 3, 1200],
+  ['hold', ['up'], 24],
+  ['tap', 'a', 30],
+  ['dialogue', 300],
+  ['goto', 4, 1, 900],
+  ['exit', 'up', 600],
+  ['goto', 5, 3, 1500],
+  ['hold', ['right'], 24],
+  ['tap', 'a', 30],
+  ['dialogue', 300],
+  ['goto', 8, 3, 900],
+  ['exit', 'right', 600],
+  ['goto', 4, 4, 1200],
+  ['hold', ['up'], 24],
+  ['tap', 'a', 30],
+  ['dialogue', 600],
+  ['wait', 240],
+  ['loot', 600],
+
+  // THE SLACK WATER — the teaching room, and the run takes its lesson the way
+  // a player would. A flat pan with one silted ring in it and a bell pointing
+  // at the ring: drag the line over it on the dry crust and nothing comes up;
+  // put one step of sea over it and a Piece of Heart does. Nothing here is
+  // needed, which is the point of the room, but the piece is real.
+  //
+  // THE LINE GOES ON A AND THE CONCH KEEPS B for the rest of the dungeon.
+  // Every crossing left in the Keep is a question about where the water is,
+  // and a run that has to swap buttons to answer it will swap them wrong.
+  ['equip', 'dredge', 'A', 400],
+  ['equip', 'conch', 'B', 400],
+  ['travel', 5, 3, 4000],
+  ['tide', 1, 140, 600],
+  ['dredge', 4, 6, 'up', 'fish', 2400],
+  ['loot', 900],
+
+  // UP THE KEEP STAIR. The warp is the tile at 8,1 and `travel` cannot plan a
+  // floor change, so the stair is named by hand like every other one.
+  ['travel', 4, 3, 4000],
+  ['travel', 3, 3, 4000],
+  ['travel', 2, 3, 4000],
+  ['goto', 8, 1, 1500],
+  ['wait', 120],
+
+  // ---------------------------------------------------- THE DROWNED STAND
+  // CROSSING 1, AT LOW, and the first shaft anything in this game has thrown a
+  // line across. The shelf at 3..6,6 wades at LOW and is over your head above
+  // it, so the only sea you can brace at is the only sea the room is crossed
+  // at — put the water anywhere else and the cast is refused before it starts.
+  // The mooring is one tile inside the far bank, so the pull comes to rest on
+  // ground rather than in the hole.
+  ['travel', 3, 4, 4000],
+  ['tide', 0, 140, 900],
+  ['dredge', 5, 6, 'up', [5, 3], 2400],
+  ['wait', 60],
+  ['loot', 600],
+
+  // ---------------------------------------------------- KEY 4, ACROSS A HOLE
+  // Keep Crossing has two locked doors and the run arrives holding one key, so
+  // the east one is spent first: what is behind it is the fourth key, and the
+  // north one is the way on. Get that order wrong and the dungeon is over.
+  ['travel', 3, 3, 4000],
+  ['goto', 6, 5, 1500],
+  ['hold', ['right'], 24],
+  ['tap', 'a', 30],
+  ['dialogue', 300],
+  ['goto', 9, 5, 900],
+  ['exit', 'right', 600],
+
+  // THE DROWNED SILL — CROSSING 3, and the one that asks for both seas. The
+  // shelf is braced at LOW, so that is the sea the shaft is crossed at; the
+  // cache under the far side only gives up what the water is covering, so the
+  // sea has to come up a step to fish it; and the way home is the shelf again,
+  // so it has to go back down. Three tide states for one room, and the key is
+  // in the middle one.
+  ['tide', 0, 140, 900],
+  ['dredge', 2, 4, 'right', [5, 4], 2400],
+  ['wait', 60],
+  ['fight', 2500, 900, { ring: true }],
+  ['tide', 1, 140, 900],
+  ['dredge', 8, 4, 'up', 'fish', 2400],
+  ['loot', 900],
+  ['tide', 0, 140, 900],
+  ['dredge', 5, 4, 'left', [2, 4], 2400],
+  ['wait', 60],
+
+  // AND THE NORTH DOOR, with the key the sill gave up.
+  ['goto', 0, 5, 900],
+  ['exit', 'left', 600],
+  ['goto', 4, 3, 1500],
+  ['hold', ['up'], 24],
+  ['tap', 'a', 30],
+  ['dialogue', 300],
+  ['goto', 4, 1, 900],
+  ['exit', 'up', 600],
+  ['loot', 600],
 ];
 
 /**
@@ -2375,10 +2591,12 @@ export const ROUTE = [
  */
 export const GOAL = {
   essences: [1, 2, 3, 4, 5],
-  // The room the run finishes in: the Abyssal Keep's mouth, five Essences
-  // taken and the Resonance Rod in hand.
-  room: 'd6/0,3,7',
+  // The room the run finishes in: the Keep Gate, at the foot of Nereth's own
+  // stair — all four of the Abyssal Keep's Small Keys earned and all four of
+  // its locked doors opened, the Dredge Line taken out of its vault and three
+  // holes crossed with it. What is left is the Boss Key and the King.
+  room: 'd6/1,3,2',
   needsVerb: null,
-  keysNeeded: 14,
-  keysObtainable: 14,
+  keysNeeded: 18,
+  keysObtainable: 18,
 };

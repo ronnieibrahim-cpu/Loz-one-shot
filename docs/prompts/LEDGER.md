@@ -1030,6 +1030,26 @@ unwritten because it re-sweeps every recorded frame in the repo.
 Floor wrote this down and the Shrine Ford repeated it. Wide rooms are crossed,
 not cleared, until `dFight` learns a radius.
 
+## Settled at S120 — the Abyssal Keep plays to the Keep Gate
+
+**The Keep's first four keys and four locks are routed and proved.** Do not
+re-derive the order; it is written out in `docs/NEXT-SESSION.md` S120 and in
+the route file beside each step. Keep Crossing's EAST door is spent before its
+north one, always.
+
+**The answer to armour is the Resonance Rod, not a cleverer swordsman.** Five
+sessions of "teach `dFight` to beat a shielded enemy" were the wrong question.
+`['fight', n, p, { ring: true }]` is the answer and it is one button press.
+
+**Anything the actor aims by FACING is turned in two frames, not ten.** Holding
+a direction walks. This cost the Kilnshell and the Dredge Line one failure each.
+
+**Floor 0 of the Keep is played at MID.** At LOW its `4` tiles are open pits
+and two of its three keys cannot be won. The West Crypt cannot even be left.
+
+**The Kilnshell exists and is now collected.** Reef Hollow, off `0,6,7`. It is
+the only fire in the game and nothing had ever opened that chest.
+
 ## Settled at S119 — the chain's road has a heal on it
 
 **The chain tour is survivable and the number is asserted.** Shell Beach

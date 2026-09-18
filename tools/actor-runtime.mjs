@@ -1065,8 +1065,30 @@ export async function installRuntime() {
     };
   }
 
-  function* dFight(maxF, patience) {
+  function* dFight(maxF, patience, opts) {
     const g = window.__game;
+    // RING ARMOUR BEFORE SWINGING AT IT — `['fight', maxF, patience, { ring: true }]`.
+    //
+    // A `shield: 'front'` enemy can be walked round; a `shield: 'all'` one
+    // cannot, and the Abyssal Keep is full of darknuts standing on the keys
+    // its locked doors want. The swordsman's answer to armour used to be the
+    // approach axis and nothing else, so a room whose last live thing was
+    // armoured read as "unclearable" and the route carried on without the key.
+    //
+    // The game's own answer is the Resonance Rod. `Enemy.hurt` lets a hit
+    // through while `rodLock` is running — "armour that is ringing is armour
+    // that is not blocking" — so this is not a new capability handed to the
+    // actor, it is the item the player already went and traded twelve links
+    // for, used the way the item says to use it. It is opt-in per directive
+    // because ringing costs a frame the swordsman would otherwise spend
+    // closing, and most rooms in the game have nothing armoured in them.
+    //
+    // The route puts the Rod on B with its own `equip` directive first. This
+    // verb presses a button; it does not reach into `progress` and put an item
+    // in a slot, because a run that equips itself from inside a fight is a run
+    // that was handed something.
+    const RING = !!(opts && opts.ring);
+    let ringCool = 0;
     // How long to keep at it with nothing dying before giving the room up.
     // 420 frames was enough when enemies drifted; a shielded enemy on the
     // lattice turns to face you as a whole committed step rather than as a
@@ -1144,6 +1166,18 @@ export async function installRuntime() {
       for (const e of foes) { const d = p.distTo(e); if (d < bd) { bd = d; best = e; } }
       foe = best;
       const dx = best.cx - p.cx, dy = best.cy - p.cy;
+
+      // The ring, and it is spent on the frame it is worth spending on: the
+      // nearest thing is armoured, its lock has nearly run out, and it is
+      // close enough for the ring to reach it. ROD_LOCK_FRAMES is 90, so a
+      // ring landed at 20 remaining keeps the armour open continuously
+      // without pressing the button every frame.
+      if (ringCool > 0) ringCool--;
+      if (RING && (best.shield || best.metal) && (best.rodLock || 0) <= 20
+          && bd <= 40 && !ringCool && slotBit('rod')) {
+        ringCool = 24;
+        yield slotBit('rod'); f++; continue;
+      }
 
       /**
        * Approach on the axis that is not looking back at us.
@@ -2004,6 +2038,91 @@ export async function installRuntime() {
    * the player and moves him nowhere. Deriving it from the two live positions
    * means a shelf that moves cannot leave a hard-coded facing behind.
    */
+  /**
+   * CAST THE DREDGE LINE, AND KEEP CASTING UNTIL THE ROOM ANSWERS.
+   *
+   *   ['dredge', 5, 6, 'up', [5, 3], 1800]    brace at 5,6, face up, cast until
+   *                                           the line finds its mooring and
+   *                                           the pull has put the player on 5,3
+   *   ['dredge', 7, 3, 'up', 'fish', 1800]    brace at 7,3, face up, cast until
+   *                                           the drag turns something up
+   *
+   * WHY THE ROUTE NAMES THE TILE AND THE FACING RATHER THAN THE MOORING. The
+   * room data declares both — `dredgeRoom.moorings[i].from` and `.face` — but
+   * that declaration is read by `tools/check-dredge.mjs` and by NOTHING IN THE
+   * ENGINE, so it does not exist inside the page at all. An actor that wanted
+   * it would have to carry a second copy of the room table into the browser,
+   * and a second copy is the thing this repo has already paid for twice (see
+   * the collision-model rule in CLAUDE.md). So the route says where to stand
+   * and which way to look, the same way `goto` and `bellows` already do, and
+   * the room decides what that is worth.
+   *
+   * WHY IT REPEATS. One press is one throw, and a throw that comes home empty
+   * is a legitimate outcome of this item: the drag searches the tiles the
+   * weight went out over, far end first, and whether it finds anything depends
+   * on where the sea is and on nothing the actor can see. So the verb presses,
+   * waits for the line to come home (`Player.dredge` is the live one; it is
+   * cleared when the cast finishes), and presses again until the thing the
+   * route asked for has happened or the budget is gone.
+   *
+   * IT DOES NOT TOUCH THE SEA AND IT DOES NOT WALK ANYWHERE BUT TO ITS BRACE.
+   * Both are verbs already — `tide` and `goto` — and a crossing that is being
+   * attempted at the wrong water has to FAIL HERE, on the tile the route chose,
+   * rather than be quietly rescued. That is the whole argument of every
+   * crossing in the Abyssal Keep: the sea that lets you cast is not the sea
+   * that lets you fish.
+   */
+  function* dDredge(tx, ty, face, until, maxF) {
+    const g = window.__game;
+    const budget = maxF || 1800;
+    const b = slotBit('dredge');
+    if (!b) throw new Error('dredge: the Dredge Line is on no button');
+    const drops = () => g.entities.filter(e => e.isDrop && !e.dead && !e.remove).length;
+    const startDrops = drops();
+    const inFlight = () => {
+      const p = g.player;
+      return !!(p && p.dredge && !p.dredge.remove);
+    };
+    const here = () => {
+      const p = g.player;
+      return p ? Math.floor(p.cx / TILE) + ',' + Math.floor(p.cy / TILE) : '';
+    };
+    // `'fish'` is "something came up"; a pair of coordinates is "the pull put
+    // me over there". Naming the landing rather than "I am no longer braced"
+    // matters: the brace is left the moment the walk to it begins, so the
+    // weaker test is true before the first cast and the directive returns
+    // having thrown nothing.
+    const land = Array.isArray(until) ? until[0] + ',' + until[1] : null;
+    const done = () => (land ? here() === land : drops() > startDrops);
+    let f = 0;
+    for (let cast = 0; cast < 12 && f < budget; cast++) {
+      // Back on the brace. A crossing leaves the player somewhere else, so
+      // this is skipped the moment the room has answered.
+      if (done()) break;
+      for (const m of dGoto(tx, ty, 400)) { yield m; if (++f > budget) break; }
+      if (f > budget) break;
+      // TWO FRAMES OF TURN, AND THE BUTTON GOES OUT WITH THE DIRECTION STILL
+      // HELD. A brace is one tile wide with a shaft on the other side of it,
+      // and ten frames of "face left" is ten pixels of WALKING left — which on
+      // the Drowned Sill's east bank is a step into the hole. The player fell,
+      // lost two quarter-hearts, was put back, faced left again and fell again,
+      // eleven times, and the trace read as a cast that would not take.
+      // `dBellows` already holds the direction and the item bit together for
+      // the same reason; this is that.
+      for (let i = 0; i < 2 && f < budget; i++) { yield BIT[face] || 0; f++; }
+      yield b | (BIT[face] || 0); f++;
+      // Let it fly. The line is gone from `p.dredge` the moment it is home,
+      // and a pull that carried the player is already over by then.
+      for (let i = 0; i < 400 && f < budget; i++) {
+        yield 0; f++;
+        if (i > 8 && !inFlight()) break;
+      }
+      for (let i = 0; i < 20 && f < budget; i++) { yield 0; f++; }
+      if (done()) break;
+    }
+    yield* dDialogueClear(60);
+  }
+
   function* dBellows(tx, ty, maxF) {
     const g = window.__game;
     const budget = maxF || 1800;
@@ -2259,7 +2378,7 @@ export async function installRuntime() {
       else if (kind === 'tap') yield* dTap(a[0], a[1]);
       else if (kind === 'goto') yield* dGoto(a[0], a[1], a[2]);
       else if (kind === 'exit') yield* dExit(a[0], a[1]);
-      else if (kind === 'fight') yield* dFight(a[0], a[1]);
+      else if (kind === 'fight') yield* dFight(a[0], a[1], a[2]);
       else if (kind === 'dialogue') yield* dDialogue(a[0], a[1]);
       // Playthrough directives. Nothing in tools/replay-plans.mjs uses these;
       // they exist because a run that is given nothing has to press its way
@@ -2275,6 +2394,7 @@ export async function installRuntime() {
       else if (kind === 'anchor') yield* dAnchor(a[0], a[1], a[2]);
       else if (kind === 'unanchor') yield* dUnanchor(a[0]);
       else if (kind === 'bellows') yield* dBellows(a[0], a[1], a[2]);
+      else if (kind === 'dredge') yield* dDredge(a[0], a[1], a[2], a[3], a[4]);
       else if (kind === 'reefseed') yield* dReefseed(a[0], a[1], a[2]);
       else if (kind === 'trade') yield* dTrade(a[0], a[1]);
       else throw new Error('unknown replay directive: ' + kind);
