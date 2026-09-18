@@ -564,9 +564,11 @@ check('no unresolved sprites were drawn during the run',
 
 await mkdir(TAPE_DIR, { recursive: true });
 const tape = {
-  note: 'A new game driven to the Essences of Tidewash Grotto, the Coral Spire, '
-    + 'the Bogwater Sanctum and the Cliffside Cistern with no shortcuts. Recorded '
-    + 'by tools/check-playthrough.mjs; see its header for what "no shortcuts" means.',
+  note: 'A new game driven with no shortcuts through Tidewash Grotto, the Coral '
+    + 'Spire, the Bogwater Sanctum, the Cliffside Cistern and the Drowned Wood '
+    + 'Shrine, round the whole Coastwise Chain, and into the Abyssal Keep as far '
+    + 'as the Keep Gate. Recorded by tools/check-playthrough.mjs; see its header '
+    + 'for what "no shortcuts" means.',
   seed: SEED,
   frames: run.frames,
   state: run.state,
