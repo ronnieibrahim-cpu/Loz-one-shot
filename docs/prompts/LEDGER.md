@@ -120,6 +120,24 @@ extract from it:
 
 ## Measured and rejected
 
+- **The Reefseed's share of objective 7 is MET, and a sealed Reefseed pocket
+  belongs in the dungeon-strands baseline.** S108 landed D2's Whelk Hollow
+  (`1,5,5`), the optional early grove S107's filter change made lawful, so
+  `check-drift` reads `reefseed ... dungeons: 2 of 5, overworld screens: 3`.
+  Do not build a second early grove to "make sure" — the done-condition is a
+  number and it is met. Two things that were learned building it and should
+  not be re-derived: a THEMED grove needs its own bar and its own kelp, and
+  both come from the dungeon's OWN material by the Abyssal Keep's `dLintel`
+  argument, never from the Drowned Wood's `dSnag`/`dSnarl` (those drag the
+  Shrine's flagstones and a brown oak ramp into whatever room they land in);
+  and a grove whose far pocket has no second exit is 7 cells
+  `check-dungeon-strands` can never reach, because its flood does not model
+  cutting a snarl from a grown pillar. That is a baseline entry, the same as
+  the Abyssal Keep's grate strip, not a bug and not a reason to open a second
+  way into the pocket — opening one fails the prover's "the snarl is the only
+  way to the far side" clause.
+
+
 - **An enemy with hp <= the player's current `swordDamage()` can never show
   a `hurtFrame`** — ruled out for `gel`/`keese` specifically (both hp 1),
   and for any future enemy at sword level 1 with hp <= 2. `Entity.hurt` sets

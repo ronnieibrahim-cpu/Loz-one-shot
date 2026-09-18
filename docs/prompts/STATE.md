@@ -1,9 +1,9 @@
 OBJECTIVE OF RECORD: 7 item-reuse
 
-S107: Lens DONE (2 of 5). Anchor PROVED at its ceiling of 1 (the game,
-not the tool). REEFSEED UNBLOCKED — its ceiling was an artefact; the
-filter now allows an optional early room and no room exists yet. Only
-the Bellows still needs a human call.
+S108: Lens DONE (S105). REEFSEED DONE (2 of 5, 3 overworld) — D2's
+Whelk Hollow. Anchor PROVED at its ceiling of 1 (the game, not the
+tool). ONLY THE BELLOWS IS LEFT, and both it and any further Anchor
+work need a human call. Objective 7 cannot advance without one.
 
 ROTATION (fixed, do not reorder):
   1 wide-rooms      — 3 of 6 dungeons have a 2x2 or 3x1
@@ -25,6 +25,7 @@ ROTATION (fixed, do not reorder):
                       LENS AMENDMENT (S104, human): its overworld half
                       is void (ITEMS.md forbids it at region scope), so
                       the Lens is done at >=2 dungeons. MET S105.
+                      Reefseed MET S108 (D2's Whelk Hollow).
   8 feel-measure    — done when >=40 feel.js constants are tagged
                       `measured` against the emulator
 
@@ -46,15 +47,14 @@ FILE ALLOWLIST for the current objective (7 item-reuse):
   tools/check-lens.mjs, tools/lib/collision.mjs, tools/lib/dungeon-flood.mjs
     — ADDED S104, for the LENS ONLY; check-anchor/bellows/reefseed are not
     covered and each needs its own human call
+  tools/dungeon-strands-baseline.json — ADDED S108: a sealed grove pocket
+    is a baseline entry, never a second way in
 
 Note (keep): #2 done S9/S74. #3 done S75 (ART-BACKLOG.md). #4 done S59
 and #5 done S63 (both human decisions: no further hand-drawn idle/NPC
 art; wrong on any -> revert). #6 done S89 (120/120 audited).
-
 DETOUR TOKENS: 1 (unspent — S104 was human-directed objective work)
 
 SESSION LOG: one row per session — `S## | objective|detour | one line`
-S104 | objective | Opened the Brineglass Lens up to the rest of the game. The prover had been refusing, on sight, to look at any Lens fork outside the Coral Spire — not because the game could not hold one, but because its model was a walker and by the third dungeon the player can swim. It now asks what the player actually holds in each dungeon, so every claim it makes about a later fork is stricter than the old ones, and the rule about when swimming starts lives in one place instead of two. The first fork outside the Spire is the Abyssal Keep's Two Arches: two blank stretches of the Keep's own wall, and one of them is water one tide up.
-S105 | objective | Gave the Brineglass Lens a second puzzle outside the dungeon that hands it over, in the Drowned Wood Shrine. Three drowned oaks in a row, the same trunk to look at while the water is held where it is, and one sea up one of them has washed hollow. That finishes the Lens's share of the current objective; the other three special items are still stuck behind decisions only a person can make.
-S106 | objective | Took the Tidewright's Anchor next and found its wall is the game rather than the checker. Taught the prover to account for a player who can swim, which is what its own notes had been asking for, and the later dungeons still would not open: once you can swim, the highest tide is always the best one to be at, so holding one patch of the room at a different level can never open a way that sounding the conch could not. That is now something the tool proves every run instead of something we believed, and it goes red the day anyone adds a tile that breaks it.
 S107 | objective | Found that the Reefseed was never really stuck. The rule that kept it out of the earlier dungeons was guarding against a real danger — handing the player a puzzle before they own the thing that answers it — but it was written so broadly that it also banned the harmless version: an optional side room you come back for later. The game already does that with the last dungeon's item in three earlier dungeons. The rule now draws the line where it meant to. Nothing new is in the game yet; the Reefseed side room itself is the next job.
+S108 | objective | Built the Coral Spire a tide pool it cannot answer yet. A stair off the dungeon's dead-end cell drops into a flooded hollow with a bar of the Spire's own wall lying across the water and a snarl of kelp sealing a chest on the far side. A player of the second dungeon can see exactly what it wants and has nothing to do it with; three dungeons later they come back with the Reefseed, throw a stake while the sea has the bar under, drop the water to stand on what they grew, and cut. That is the Reefseed's share of the current objective finished. The bar and the kelp are both made of the Spire's own material rather than borrowed from the Drowned Wood, so nothing in the room looks like it came from another dungeon.

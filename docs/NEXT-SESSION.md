@@ -1,3 +1,43 @@
+## S108 — the Coral Spire has a Reefseed grove: the Whelk Hollow
+
+Objective 7 (item-reuse) asked for one optional Reefseed room below D5, the
+shape S107 unblocked. Built it in D2: `1,5,5` "The Whelk Hollow", hung by a
+stair off the Whelk Cell (`1,5,4`), which is the Spire's far-east cul-de-sac
+and already off the dungeon's route. Declared `optional: true`, pays out a
+50-rupee chest and nothing else. `check-drift` now reads
+`reefseed ... dungeons: 2 of 5`, which is the Reefseed's share of item 7 met.
+
+**The fixture is the First Stake's, copied rather than invented.** Bank at
+4,4, a drowned bar at 5,4, the stake at 6,4, kelp at 7,4, sumps lining the
+rest of the pool. One stake, thrown east at HIGH. It passed all ten per-room
+clauses plus both placement clauses on the first build, which is the argument
+for copying a proved fixture: nothing about clause 6 had to be negotiated.
+
+**Two new tiles, both by the Abyssal Keep's argument rather than the Shrine's.**
+`dCoralBar` is `['dWallCoral','dWallCoral','dWaterD']` — the Spire's OWN wall
+on a tide, so no new art and no square of the Drowned Wood's flagstones
+dragged into a reef hall (which is what placing `dSnag` would have done).
+`dSnarlCoral` is `dSnarl`'s art, flags, `underArt` and `cut` transform to the
+bit, in the `coral` palette — the Shrine's shared snarl is a brown oak ramp.
+Both are reached through a `registerLegend('dungeonCoral', ...)` override on
+`5` and `k`, the same per-legend move `dungeonAbyss` and `dungeonWood` make,
+so nothing outside D2 moved. Screenshot at LOW and at HIGH: the bar reads as
+the room's own masonry going under, and the kelp reads as a sea plant.
+
+**One baseline entry, and it is the Keep's grate strip again.** The sealed far
+pocket behind the kelp is 7 cells `check-dungeon-strands` cannot reach, because
+the dungeon flood does not model cutting a snarl from a grown pillar.
+Recorded in `tools/dungeon-strands-baseline.json` for exactly the reason the
+Colonnade of the Drowned's 4-cell strip is already in it. Note that D5's own
+groves are NOT in that baseline — their far sides happen to connect on to the
+next room — so a sealed pocket is the new half here, not the Reefseed itself.
+
+**Off-plan, not chased:** `tools/shoot-rooms.mjs`'s room spec is
+`mapId,floor,rx,ry`, and `d2,5,5,1` is silently a MISS rather than an error
+about argument order; the tool's own header warns about this exact mistake, so
+it is documentation working and nothing to fix. `check-hearts.mjs` is still red
+on its two pre-existing failures (23 heart pieces, D5 holds 1 not 2), untouched.
+
 ## S102 — a third outdoor Reefseed grove, and the palette question actually answered: it's a shore palette, not a `dunes` one
 
 NEXT-PROMPT.md asked for a third grove in a region other than `dunes`/

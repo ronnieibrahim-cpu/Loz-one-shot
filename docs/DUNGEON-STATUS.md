@@ -147,6 +147,30 @@ values needed re-sweeping against the real route (mechanical, not clever:
 `boot()`), plus two ordinary assembly bugs S40 had not yet hit. Nothing in
 S40's account of WHY each fix was needed changed; only the landing did.
 
+### D2 has a Reefseed grove now: the Whelk Hollow (S108)
+
+`1,5,5`, a new room hung by a stair off the Whelk Cell, which is the Spire's
+far-east cul-de-sac and is itself off the dungeon's route. It is declared
+`optional: true` and it pays out RUPEES and nothing else — no key, no boss key,
+no item, no essence — because the Reefseed is D5's item and a D2 room that
+stood in front of anything the Spire needs would deadlock the dungeon three
+dungeons early. That is the shape the Dredge Line already has in D1's Sunken
+Hall, D2's Tide Gallery and D3's Bog Hub: an alcove you come back for.
+
+The fixture is the Drowned Wood Shrine's First Stake, turned east and sealed:
+bank, drowned bar, stake, kelp in one row, the rest of the pool lined in sumps
+so no stray seed can open the far side from the wrong direction. The bar is the
+Spire's OWN coral wall on a tide (`dCoralBar`), not the Shrine's oak — the same
+argument the Abyssal Keep's `dLintel` makes — and the kelp is `dSnarlCoral` in
+the Spire's own second palette rather than the Shrine's brown oak ramp. Nothing
+about D2's key count, boss, route or economy changed. `tools/check-reefseed.mjs`
+proves all ten per-room clauses plus both placement clauses.
+
+The sealed far pocket is a new entry in `tools/dungeon-strands-baseline.json`,
+for the reason the Abyssal Keep's grate strip already is one: the dungeon flood
+does not model cutting a kelp snarl from a grown pillar, and `check-reefseed` is
+what proves that crossing.
+
 ### D2's Bone Cell now reuses the Anchor (S90)
 
 `0,2,6`, the small side room off Coral Landing that never sat on the

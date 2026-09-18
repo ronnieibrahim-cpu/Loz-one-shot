@@ -1319,13 +1319,16 @@ export function installDungeonsA() {
       },
       '1,5,4': {
         name: 'Whelk Cell',
+        // The stair in the south-east corner is a ONE-WAY trip in the sense
+        // that matters: nothing below it is on the Spire's route, so a player
+        // who never takes it loses nothing but rupees. See the Whelk Hollow.
         map: [
           '####..####',
           '####..####',
           '##......##',
           '##......##',
           '##......##',
-          '##..pp..##',
+          '##..pp./##',
           '##########',
           '##########',
         ],
@@ -1337,6 +1340,61 @@ export function installDungeonsA() {
           // dungeon needs it, which is exactly what a piece should cost:
           // a detour, not a key.
           ['pickup', 4, 4, { kind: 'heartPiece' }],
+        ],
+        warps: [
+          { x: 7, y: 5, to: { map: 'd2', floor: 1, rx: 5, ry: 5, px: 56, py: 104, dir: 'down' } },
+        ],
+      },
+      '1,5,5': {
+        name: 'The Whelk Hollow',
+        // A REEFSEED GROVE IN THE SECOND DUNGEON, and it is a return trip.
+        //
+        // The Reefseed is dungeon five's item, so nothing here can be on the
+        // Spire's route and nothing here may hand over a key, a boss key, an
+        // item or an essence — that shape is the deadlock the old blanket ban
+        // on early groves existed to prevent. This room is hung off the Whelk
+        // Cell, which is itself the Spire's far-east cul-de-sac, by a stair
+        // that goes nowhere else; and what is behind the kelp is rupees. A
+        // player of dungeon two walks in, finds a pool they cannot cross and a
+        // bar of their own wall lying across it, and comes back three dungeons
+        // later knowing what to do with it. The Dredge Line already does this
+        // in the Grotto, the Gallery and the Bog Hub.
+        //
+        // The fixture is the First Stake's, turned east and sealed: bank at
+        // 4,4, the Spire's drowned bar at 5,4, the stake at 6,4 and the kelp
+        // at 7,4, with the rest of the pool lined in sumps so no stray seed
+        // can grow a pillar anywhere that would open the far side from the
+        // wrong direction. Throw while the bar is under — HIGH is the only sea
+        // that clears it — and there is nowhere else to throw from, because
+        // the kelp is solid at every level and the far pocket is sealed until
+        // it is cut.
+        map: [
+          '##########',
+          '#.....##.#',
+          '#.....0#.#',
+          '#.....W#.#',
+          '#....5Wk.#',
+          '#.....W#.#',
+          '#./...##.#',
+          '##########',
+        ],
+        reefseedRoom: {
+          optional: true,
+          entry: [2, 6],
+          stakes: [
+            { at: [6, 4], from: [4, 4], face: 'right', sea: 2 },
+          ],
+          snarl: [7, 4], cutFrom: [6, 4],
+        },
+        entities: [
+          ['chest', 8, 3, { rupees: 50 }],
+          ['keese', 2, 2],
+        ],
+        readable: [
+          [4, 6, 'Scratched into the coral: "The bar goes under when the sea comes up. Nothing else here ever moves."'],
+        ],
+        warps: [
+          { x: 2, y: 6, to: { map: 'd2', floor: 1, rx: 5, ry: 4, px: 120, py: 72, dir: 'up' } },
         ],
       },
       '1,3,2': {

@@ -2593,6 +2593,28 @@ export function installCoreTiles() {
     // and never the rules, so check-reefseed proves the identical room.
     dSnarlAbyss: { art: ART.bush, pal: 'reef', flags: F.SOLID, underArt: 'dWaterD' },
 
+    // --- the Coral Spire --------------------------------------------------
+    //
+    // The Spire's own kelp and its own drowned bar, for the Reefseed grove in
+    // the Whelk Hollow. Both exist for the reason the Keep's pair above does:
+    // `dSnarl` is drawn in `treeoakdk`, a brown oak ramp built for the Drowned
+    // Wood, and a bush in that ramp standing in a reef hall read as a shrub
+    // somebody had carried in off the headland. `coral` is the Spire's own
+    // second palette — `dFloorCoralAlt` is already drawn in it — so the kelp
+    // sits in the register of the room around it. Flags, `underArt` and the
+    // `cut` transform are `dSnarl`'s to the bit: a theme may change the look
+    // and never the rules, so check-reefseed proves the identical room.
+    dSnarlCoral: { art: ART.bush, pal: 'coral', flags: F.SOLID, underArt: 'dWaterD' },
+
+    // And the bar is not borrowed at all, the way the Keep's lintel is not.
+    // The Shrine's `dSnag` is a drowned OAK over `dFloorWood`, so placing it
+    // here would have dragged a square of the Wood's flagstones into a reef
+    // hall on top of the palette; `drownWall` is an outdoor CLIFF. The Spire
+    // already owns the material the tide shape wants — its own coral wall —
+    // so a bar of it standing across the pool, covered at HIGH and at HIGH
+    // only, needed no new art and reads as the room's own masonry going under.
+    dCoralBar: { tide: ['dWallCoral', 'dWallCoral', 'dWaterD'] },
+
     // A silted cache: the ring a heavy thing leaves in the floor when it has
     // been lying there long enough to settle. Two palettes of ONE extracted
     // art, which is the whole trick — bleached on the dry pan, blue once the
@@ -2667,6 +2689,7 @@ export function installCoreTiles() {
     // a puzzle, it is a trap.
     dSnarl: { cut: 'dWaterS', fx: 'cut', sfx: 'cut', persist: true },
     dSnarlAbyss: { cut: 'dWaterS', fx: 'cut', sfx: 'cut', persist: true },
+    dSnarlCoral: { cut: 'dWaterS', fx: 'cut', sfx: 'cut', persist: true },
     seaSnarl: { cut: 'waterS', fx: 'cut', sfx: 'cut', persist: true },
     rock: { lift: 'grass', drop: 'common' },
     rockSand: { lift: 'sand', drop: 'common' },

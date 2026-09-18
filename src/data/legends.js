@@ -275,6 +275,18 @@ export function installLegends() {
   theme('dungeonGrotto',  'dFloorGrotto',  'dFloorGrottoAlt',  'dWallGrotto',  'dWallGrottoX',  'dBlockGrotto',  'dUrnGrotto');
   theme('dungeonCoral',   'dFloorCoral',   'dFloorCoralAlt',   'dWallCoral',   'dWallCoralX',   'dBlockCoral',   'dUrnCoral');
   theme('dungeonBog',     'dFloorBog',     'dFloorBogAlt',     'dWallBog',     'dWallBogX',     'dBlockBog',     'dUrnBog');
+  // The Coral Spire needs two tiles no other dungeon has, for the Reefseed
+  // grove in the Whelk Hollow, and every digit in the shared vocabulary is
+  // already spoken for. `5` (`channel`) is an OUTDOOR tile that no indoor room
+  // has ever placed, and the Drowned Wood Shrine already points it at its own
+  // drowned bole on its own legend — so pointing it at the Spire's drowned bar
+  // here moves nothing outside this one dungeon. It stays a DIGIT because it
+  // stays a tide tile, which is the rule the digits carry.
+  //
+  // `k` is the kelp snarl the grove is gated on, pointed at `dSnarlCoral` and
+  // NOT at the Shrine's shared `dSnarl` — the same argument the Keep's `k`
+  // makes, and for the same reason: the shared one is a brown oak ramp.
+  registerLegend('dungeonCoral', { '5': 'dCoralBar', 'k': 'dSnarlCoral' }, 'dungeonCoral');
   theme('dungeonCistern', 'dFloorCistern', 'dFloorCisternAlt', 'dWallCistern', 'dWallCisternX', 'dBlockCistern', 'dUrnCistern');
   theme('dungeonWood',    'dFloorWood',    'dFloorWoodAlt',    'dWallWood',    'dWallWoodX',    'dBlockWood',    'dUrnWood');
   // The Drowned Wood Shrine needs one tide tile no other dungeon has, and every
