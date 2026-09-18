@@ -1,3 +1,79 @@
+## S117b — the Coastwise Chain's verb, and what the tour costs
+
+Groundwork for the next session, not a finished leg. `['trade', N]` is in
+`tools/actor-runtime.mjs` and is proved through the first seven links of the
+chain in a scratch harness; nothing in `tools/playthrough-route.mjs` calls it
+yet, and the run still ends at `d5/0,3,1`.
+
+### `['trade', stage]` — what it is and why it names a stage
+
+A link is a two-sided conversation whose page count lives in `story.js`, whose
+handover fires on `dialogue.onClose` rather than on the button, and one of
+whose twelve links stops to hold an item over Link's head for
+`ITEM_PRESENT_FRAMES`. Mashing A for a number would be a private copy of all
+three. So the route names the STAGE and the verb talks until
+`progress.trade.stage` agrees.
+
+It finds the link by asking the entities which of them holds the live deal —
+`Trader.liveDeal` is the game's own arbitration of whose turn it is, and the
+only thing that knows the Maku Tree is a link at all (her kind is `makuTree`,
+not `trader`, which `check-trade.mjs`'s own header already had to write down).
+It does NOT walk to the screen: `travel` does that, and it has to stay that
+way, because a link the run cannot reach is the exact failure the chain's
+offline half exists to catch.
+
+### THE TOUR IS FIFTY SCREENS AND THERE IS NOTHING TO HEAL ON
+
+The twelve links, in stage order and by screen: `houseNets` (off `0,4,8`),
+`0,4,8`, `0,5,8`, `0,5,7`, `0,8,9`, `0,9,8`, `0,9,5`, `0,5,5`, `0,1,9`,
+`0,4,9`, `houseNets` again, `houseMaku` (off `0,4,7`). The order zig-zags the
+whole map on purpose and the route has to walk it. Measured on a run given
+D5's ending inventory and 44 of 44 quarter-hearts:
+
+- **Trade first, fight second.** A `fight` before the trade leaves the actor
+  wherever the chase ended, and in a town screen that is often on the wrong
+  side of a solid NPC. Arriving at a door and trading immediately is reliable;
+  the reverse order failed twice.
+- **A `travel` of one screen with a `fight` and a `loot` after it costs
+  nothing.** Hop by hop from `0,9,8` to `0,8,5` — four screens, four fights —
+  the run arrives on 44 of 44. The drops pay for the damage.
+- **A `travel` of three or more screens is where the run dies.** `0,9,8` to
+  `0,9,5` in one directive cost twenty quarter-hearts; the next one killed it.
+  Long `travel` is a walk through everything with no swing and no pickup.
+
+### REEF WALL HAS NO WEST DOOR, AND `travel` FINDS THAT OUT THE EXPENSIVE WAY
+
+`bfsScreens` models an edge between any two adjacent screens that EXIST and
+learns the blocked ones by trying them. `0,8,5` (Reef Wall) is walled on its
+entire west edge and `0,8,6` (North Dunes) is treelined along its entire
+north edge, so the east coast does not join the wood on rows 5 or 6 at all.
+A `travel` from Reef Wall to Wood Verge spends nine thousand frames
+discovering that, swims off the left edge of `0,9,6`, and drowns. The next
+session should name its own waypoints across that region rather than hand
+`travel` a target six screens away.
+
+### THE MAKU TREE IS WHERE THE THIRD BLADE COMES FROM
+
+`MakuTree`'s second beat wants FIVE Essences, sets `makuOpenedKeep` — which is
+the flag the Keep's gate reads and the only thing in the game that sets it —
+and hands over the level-3 sword. So the answer to `QUEUE.md`'s open question
+about `sword: 3` is that it is already in the world and it is on the way to
+the Keep's door, not a detour from it. The run reaches five Essences the
+moment Rootmaw dies, which is the same shape as the Noble Sword one dungeon
+earlier.
+
+### A WANDERING TOWNSPERSON CAN TRAP THE PATHFINDER
+
+Sandpiper Row is a town screen: two 3x3 houses and one row that crosses it.
+Its fisherman wanders, and a wandering 16px NPC that is not tile-aligned
+blocks TWO tiles of that row. The actor, chasing a crab, ended up overlapping
+the fisherman with every cardinal neighbour of its own tile solid, and every
+`findPath` from there returned null — so the trade verb reported "cannot get
+beside the link" for all four sides. `check-towns.mjs` asserts that no
+townsperson STARTS on the severing tile; nothing asserts that one cannot walk
+onto it. A real player slides out of the overlap and is not stuck, so this is
+a harness hazard rather than a soft lock — but it is worth an eye.
+
 ## S117 — the fifth dungeon is played, and the run now ends on five Essences
 
 `check-playthrough.mjs` drives a new game from the title screen to Rootmaw's

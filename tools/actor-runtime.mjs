@@ -2161,6 +2161,94 @@ export async function installRuntime() {
     yield* dDialogueClear(30);
   }
 
+  /**
+   * PASS THE COASTWISE CHAIN ALONG BY ONE LINK.
+   *
+   *   ['trade', 7]   talk to whoever in this room holds stage 7, until
+   *                  `progress.trade.stage` says 7
+   *
+   * THE FIFTH VERB IN THIS FILE THAT NAMES A STATE RATHER THAN A PRESS, and
+   * the chain is the case that most wants one: a link is a two-sided
+   * conversation whose page count lives in `src/data/story.js`, whose handover
+   * fires on `dialogue.onClose` rather than on the button, and one of whose
+   * twelve links stops to hold an item over Link's head for
+   * `ITEM_PRESENT_FRAMES`. A route that mashed A for a number would be
+   * carrying a private copy of all three, and would go quietly wrong the first
+   * time somebody wrote a trader a longer line.
+   *
+   * So the route names THE STAGE, and this talks until the chain's own counter
+   * agrees. It finds the trader by asking the ENTITIES which of them holds the
+   * live deal — `Trader.liveDeal` is the game's own arbitration of whose turn
+   * it is, and it is the only thing that knows the Maku Tree is a link at all
+   * (her entity kind is `makuTree`, not `trader`). A route that named a tile
+   * would be right until a trader moved; a route that named a name would have
+   * to know which of the two houses a link is standing in.
+   *
+   * WHAT IT DOES NOT DO: it does not walk to the SCREEN. `travel` does that,
+   * and it has to stay that way — a link whose screen the run cannot reach is
+   * the one failure this whole chain exists to make impossible (the Rod opens
+   * the Salt Pans, so a link inside the Pans would be a gate holding its own
+   * key), and it has to fail HERE, as "no trader in this room holds stage N",
+   * rather than be rescued by a verb that went and found one.
+   */
+  function* dTrade(stage, maxF) {
+    const g = window.__game;
+    const at = () => g.progress.trade.stage || 0;
+    if (at() >= stage) return;
+    const holder = g.entities.find(e => !e.remove && typeof e.liveDeal === 'function'
+      && (e.liveDeal(g) || {}).stage === stage);
+    if (!holder) {
+      const here = g.entities.filter(e => typeof e.liveDeal === 'function')
+        .map(e => `${Math.floor(e.cx / TILE)},${Math.floor(e.cy / TILE)}`).join(' ');
+      throw new Error(`trade: nobody in ${g.mapId} ${g.room && g.room.key} holds stage ${stage} `
+        + `(chain is at ${at()}, holding "${g.progress.trade.item}")`
+        + `; links in this room: ${here || '(none)'}`);
+    }
+    const tx = Math.floor(holder.cx / TILE), ty = Math.floor(holder.cy / TILE);
+    const p0 = g.player;
+    if (!p0) throw new Error('trade: no player');
+    // EVERY SIDE IS TRIED, AND ARRIVAL IS CHECKED. A path that PLANS is not a
+    // walk that lands: the village screens are full of solid NPCs and signs,
+    // and a `fight` before the trade can leave the actor on the far side of
+    // one. The first cut of this verb took the first side that planned, walked
+    // for nine hundred frames, ended three tiles short with a fisherman
+    // between it and the link, and reported "the trader would not deal" —
+    // which is a true sentence about the wrong problem.
+    const why = [];
+    let stand = null;
+    for (const [dx, dy] of [[0, -1], [0, 1], [-1, 0], [1, 0]]) {
+      const sx = tx + dx, sy = ty + dy;
+      const face = dx ? (dx > 0 ? 'left' : 'right') : (dy > 0 ? 'up' : 'down');
+      if (!standable(g, p0, sx, sy)) { why.push(`${sx},${sy}: not standable`); continue; }
+      if (!findPath(g, p0, playerTile(g.player), { tx: sx, ty: sy })) { why.push(`${sx},${sy}: no path`); continue; }
+      yield* dGoto(sx, sy, 900);
+      const at2 = playerTile(g.player);
+      if (at2.tx !== sx || at2.ty !== sy) { why.push(`${sx},${sy}: walk ended at ${at2.tx},${at2.ty}`); continue; }
+      stand = { sx, sy, face };
+      break;
+    }
+    if (!stand) {
+      throw new Error(`trade: cannot get beside the stage-${stage} link at ${tx},${ty} in `
+        + `${g.mapId} ${g.room && g.room.key} :: ${why.join(' | ')}`);
+    }
+    for (let i = 0; i < 8 && g.player.dir !== stand.face; i++) yield BIT[stand.face];
+    yield* dWait(2);
+    const budget = maxF || 900;
+    for (let f = 0; f < budget && at() < stage; f++) {
+      if (g.dialogue.active) { yield (f % 6 === 0) ? BIT.a : 0; continue; }
+      if (g.mode !== 'play' || (g.player && g.player.frozen > 0) || g.itemShow) { yield 0; continue; }
+      yield (f % 10 === 0) ? BIT.a : 0;
+    }
+    yield* dDialogueClear(120);
+    yield* dWait(4);
+    if (at() < stage) {
+      throw new Error(`trade: the stage-${stage} link would not deal. chain at ${at()}, `
+        + `holding "${g.progress.trade.item}", player `
+        + `${playerTile(g.player).tx},${playerTile(g.player).ty} facing ${g.player.dir}, `
+        + `essences ${g.progress.essences.length}`);
+    }
+  }
+
   function* runPlan(steps) {
     const g = window.__game;
     for (let si = 0; si < steps.length; si++) {
@@ -2188,6 +2276,7 @@ export async function installRuntime() {
       else if (kind === 'unanchor') yield* dUnanchor(a[0]);
       else if (kind === 'bellows') yield* dBellows(a[0], a[1], a[2]);
       else if (kind === 'reefseed') yield* dReefseed(a[0], a[1], a[2]);
+      else if (kind === 'trade') yield* dTrade(a[0], a[1]);
       else throw new Error('unknown replay directive: ' + kind);
       // A trace of where each directive left the player. Recording prints it;
       // it is how you find out that step 9 never reached the room step 10

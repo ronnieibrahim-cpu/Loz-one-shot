@@ -2,8 +2,8 @@
 
 ## Read first
 - `docs/prompts/STATE.md` — the whole file.
-- `docs/NEXT-SESSION.md`, the S117 entry only. It has the `reefseed` verb's
-  contract and the four things the D5 leg paid for by hand.
+- `docs/NEXT-SESSION.md`, the S117b entry only. It has the `trade` verb's
+  contract, the twelve links by screen, and what the tour costs.
 - `docs/prompts/LEDGER.md`'s "Settled at S117" section.
 - `tools/check-trade.mjs`'s header, for what the Coastwise Chain is and what
   order it has to be walked in.
@@ -11,7 +11,10 @@
 
 ## Why this, now
 The route reaches `d5/0,3,1` with five Essences of six, on 44 of 44
-quarter-hearts and no death. What is left is one dungeon, and it is the one
+quarter-hearts and no death. The Maku Tree's second beat is the hinge: at five
+Essences she sets `makuOpenedKeep`, which is the only thing in the game that
+opens the Keep's gate, and hands over the level-3 sword the Nereth fight is
+measured against. What is left is one dungeon, and it is the one
 that cannot be entered by walking: the Abyssal Keep's door is at overworld
 `0,1,0`, behind the Salt Pans, and the Keep's own Colonnade of the Drowned is
 sealed by a `dGrate` that only the Coastwise Chain's Resonance Rod retracts.
@@ -29,12 +32,14 @@ in `docs/prompts/QUEUE.md`.
 Then raise `GOAL.room` to `d6/0,3,7`, leave `GOAL.essences` at `[1,2,3,4,5]`,
 and set `GOAL.keysNeeded`/`keysObtainable` to what the run actually spends.
 
-Every trade in the Chain is a two-sided conversation with an NPC, and the
-actor has no directive for one. If that needs a new verb in
-`tools/actor-runtime.mjs`, name the STATE it reaches the way `tide`, `soles`,
-`bellows` and `reefseed` do — the object that changed hands, read back out of
-`progress` — never a count of button presses and never a frame count that is
-really a copy of `trade.js`.
+`['trade', stage]` ALREADY EXISTS in `tools/actor-runtime.mjs` and is proved
+through the first seven links in a scratch harness — nothing in the route
+calls it yet. It names the stage and talks until `progress.trade.stage`
+agrees, and it finds the link by asking the entities which of them holds the
+live deal. It does not walk to the screen, deliberately. Read the S117b entry
+before writing a directive: it has the twelve links by screen, the ordering
+rule that makes a town link reliable, and the measured reason a `travel` of
+three or more screens is where this run dies.
 
 ## Done means
 - `node tools/check-playthrough.mjs` green, ending in `d6/0,3,7`, with its own
