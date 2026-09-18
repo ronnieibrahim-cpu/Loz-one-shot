@@ -15778,3 +15778,45 @@ These are in HANDOFF in full. The short list, because each one cost a session:
   somewhere else again. `check-drift` reads `zol: walk,death`.
   `sprites-enemies.js` untouched, `check-rippers.mjs` still 17/17.
   `DETOUR TOKENS` remains 1, unspent, as of S30.
+
+---
+
+## S104 — the Lens's ceiling was a `filter`, not the game
+
+**What landed.** `tools/check-lens.mjs` no longer rejects every Lens fork
+outside D2 on sight. That single `rooms.filter(r => r.mapId !== 'd2')` was
+what held the Brineglass Lens at 0-of-5 dungeon reuse for eight sessions, and
+the LEDGER's own entry named it as such. It was replaced with the two claims it
+had been conflating: a fork must be inside a DUNGEON (docs/ITEMS.md's "the Lens
+is never a gate" is about region scope and is unchanged), and it must not stand
+before the dungeon that hands the Lens over (found from the map data, not
+written down). The reason the blanket refusal existed — the flood was a walker,
+and a fork in D3+ would be proved one-way against a player who by then owns the
+Cleats — was answered rather than dodged: the flood now takes the caps the
+player actually holds in that dungeon, so every assertion gets STRONGER in a
+later dungeon, not weaker.
+
+**The rule now lives in one place.** `capsForDungeonIndex` moved into
+`tools/lib/collision.mjs`; `tools/lib/dungeon-flood.mjs` calls it instead of
+its own inline `index >= 3`. Two private copies of "swimming starts at D3" was
+exactly the shape CLAUDE.md's own trap note warns about.
+
+**The first fork outside the Coral Spire.** `d6 1,5,4`, The Two Arches, off the
+Mermaid Vault by a new stair. Pinned to MID, where a `7`/`dLintel` arch and a
+plain `#` wall both draw `dWallAbyss` — the same tile, not a lookalike. One
+level up one of them is open water and the other is still stone, and the water
+is only a way through because the player is wearing the Cleats. Both valves are
+inside the chambers, past the one-way ledges, so the water cannot be moved
+before committing. `check-lens.mjs` is 36/36, `check-drift` reads
+`lens ... dungeons: 1 of 5`.
+
+**Found, not chased (no detour token spent).**
+- `tools/shoot-rooms.mjs --lens` produces a shot identical to the one without
+  it except for the B-button icon, in The Two Arches AND in both of D2's
+  shipped forks. So either the Lens overlay does not draw in a `tideForce`
+  room, or `--lens` does not actually pin `lensT` the way its own comment says.
+  Either way nothing has ever LOOKED at the Lens overlay in the one kind of
+  room it exists for. Worth a session.
+- `check-hearts.mjs` is red on `main` and was red before this session: "23 heart
+  pieces leaves 3 that can never complete a container", "d5 holds 1 heart piece,
+  not 2". Untouched here. Confirmed identical by stashing.

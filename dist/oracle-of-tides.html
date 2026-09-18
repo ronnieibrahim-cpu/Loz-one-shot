@@ -31194,13 +31194,84 @@ function installDungeonsB() {
           '##......##',
           '##......##',
           '##......##',
-          '##......##',
+          '##/.....##',
           '####.#####',
           '####.#####',
         ],
         entities: [
           ['chest', 4, 3, { big: true, item: 'cleats', level: 2 }],
         ],
+        warps: [
+          // Down to the Two Arches. The vault is the only way in and the only
+          // way back out of it, so the fork below can never strand anyone: a
+          // wrong guess there costs the climb back up these stairs.
+          { x: 2, y: 5, to: { map: 'd6', floor: 1, rx: 5, ry: 4, px: 72, py: 104, dir: 'down' } },
+        ],
+      },
+
+      // ---------------------------------------------------- the two arches
+      //
+      // THE KEEP'S LENS FORK, and the first one outside the Coral Spire. The
+      // Spire's two forks ask the player to read which SHAFT fills; this one
+      // asks which WALL opens, which is the same verb read off the one tile
+      // the Keep already teaches — `7`/`dLintel`, masonry that stands until
+      // the flood covers it, taught by the Sunken Bar two rooms away.
+      //
+      // At MID the two arches are a blank stretch of the Keep's own wall, and
+      // they are the same tile, not a lookalike: a `7` lintel and a plain `#`
+      // both draw `dWallAbyss`. One level up, one of them is open water and
+      // the other is still stone — and the water is only a way through
+      // because the player is wearing the Cleats by now, which is exactly the
+      // thing tools/check-lens.mjs could not ask before and can now.
+      //
+      // The room pins the tide to MID, so the conch cannot preview it; the
+      // only thing that moves the water is a valve, and both valves are
+      // INSIDE the chambers, past the one-way ledges. You choose first.
+      '1,5,4': {
+        name: 'The Two Arches',
+        map: [
+          '#....../.#',
+          '#7########',
+          '#..####..#',
+          '#..####..#',
+          '#./####/.#',
+          '#.<....>.#',
+          '##.../..##',
+          '##########',
+        ],
+        tideForce: 1,
+        entities: [
+          ['valve', 2, 2],
+          ['valve', 7, 2],
+          ['pickup', 3, 0, { kind: 'rupee20' }],
+          ['pickup', 5, 0, { kind: 'rupee20' }],
+        ],
+        warps: [
+          // The way back up, from the shelf you arrive on.
+          { x: 5, y: 6, to: { map: 'd6', floor: 1, rx: 4, ry: 4, px: 40, py: 88, dir: 'up' } },
+          // The climb out of each chamber. The wrong one is a walk, not a
+          // lock — the whole point of the fork is that being wrong costs you
+          // the trip and nothing else.
+          { x: 2, y: 4, to: { map: 'd6', floor: 1, rx: 4, ry: 4, px: 40, py: 88, dir: 'up' } },
+          { x: 7, y: 4, to: { map: 'd6', floor: 1, rx: 4, ry: 4, px: 40, py: 88, dir: 'up' } },
+          // And out of the gallery above, once you have got into it.
+          { x: 7, y: 0, to: { map: 'd6', floor: 1, rx: 4, ry: 4, px: 40, py: 88, dir: 'up' } },
+        ],
+        script: {
+          onEvent(game, name) {
+            if (name === 'valve') game.forceTideStep();
+          },
+        },
+        readable: [
+          [4, 6, 'Cut above the drop:\n"Both arches are shut.\nOnly one of them is stone."'],
+        ],
+        lensRoom: {
+          pin: 1, reveals: 2, decide: [4, 5],
+          branches: [
+            { name: 'the west arch', land: [1, 5], probe: [1, 1], onward: [1, 0], escape: [2, 4] },
+            { name: 'the east arch', land: [8, 5], probe: [8, 1], onward: [8, 0], escape: [7, 4] },
+          ],
+        },
       },
 
       // ---------------------------------------------------- the crossings

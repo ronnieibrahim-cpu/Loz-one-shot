@@ -130,3 +130,24 @@ export function everPassable(room, tx, ty, tide) {
   }
   return false;
 }
+
+/**
+ * WHEN THE PLAYER CAN SWIM, as a function of which dungeon a room is in.
+ *
+ * The Kelp-Soled Cleats are D3's item, so from D3 onward every reachability
+ * question inside a dungeon has to be asked of a swimmer, and before D3 it
+ * must not be. That rule lived inline in tools/lib/dungeon-flood.mjs and
+ * NOWHERE ELSE, which is why tools/check-lens.mjs could not ask it: rather
+ * than model a swimmer it refused, unconditionally, to look at any Lens fork
+ * outside D2 — and that refusal, not the game, is what held the Brineglass
+ * Lens at zero reuse for eight sessions.
+ *
+ * It lives here now for the same reason every other rule in this file does:
+ * a second private copy would not fail when the first one changed.
+ */
+export const CLEATS_DUNGEON_INDEX = 3;
+
+/** The `caps` a player actually holds inside the dungeon numbered `index`. */
+export function capsForDungeonIndex(index) {
+  return { jumping: false, swim: (index | 0) >= CLEATS_DUNGEON_INDEX, cutting: false };
+}

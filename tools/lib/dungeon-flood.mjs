@@ -20,7 +20,7 @@
 import { MAPS, getRoom } from '../../src/world/maps.js';
 import { F } from '../../src/world/tileset.js';
 import { DREDGE_RANGE } from '../../src/data/feel.js';
-import { tileWalkable, ROUTE_AVOID } from './collision.mjs';
+import { tileWalkable, ROUTE_AVOID, capsForDungeonIndex } from './collision.mjs';
 
 const SW = 10, SH = 8;
 const DREDGE_TILES = Math.floor(DREDGE_RANGE / 16);
@@ -90,8 +90,7 @@ export function floodDungeon(mapId) {
   // Passable if walkable at ANY tide level — the player controls the tide.
   // AND FROM D3 ONWARD THE PLAYER CAN SWIM (the Kelp-Soled Cleats). Off for
   // d1/d2, where the player provably does not have them yet.
-  const canSwim = (m.dungeon.index | 0) >= 3;
-  const CAPS = { jumping: false, swim: canSwim, cutting: false };
+  const CAPS = capsForDungeonIndex(m.dungeon.index);
   const walkableAt = (room, x, y, t) => {
     if (room.flagsAt(x, y, t) & F.STAIRS) return true;
     return tileWalkable(room, x, y, t, CAPS, ROUTE_AVOID);

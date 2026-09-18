@@ -751,6 +751,24 @@ extract from it:
   reconsidered given what is actually reachable. Flagged plainly at the
   top of S102's final message rather than guessed at.
 
+  **S104 — SETTLED for the Lens, by human direction.** The decision above was
+  put to the user, who chose "loosen one item's rule". The Lens's block was
+  the weakest of the four and the only one that was purely a checker's
+  refusal: `check-lens.mjs` filtered `r.mapId !== 'd2'` and failed on any
+  survivor, so a fork in a later dungeon was never modelled at all. The
+  refusal had a real reason — the flood was a walker, and a D3+ fork proved
+  one-way against a walker is not proved one-way against a player wearing the
+  Cleats — and that reason is now ANSWERED rather than asserted: the flood
+  takes `capsForDungeonIndex` (moved into `tools/lib/collision.mjs` so
+  `dungeon-flood.mjs` and this tool cannot drift apart), and every assertion
+  is therefore stronger in a later dungeon, not weaker. The first fork
+  outside the Coral Spire is `d6 1,5,4`, The Two Arches. The overworld half
+  is NOT unblocked and must not be: docs/ITEMS.md's "the Lens is never a
+  gate" is a statement about region scope, the tool now says so in its own
+  words, and item 7's `>=3 overworld screens` bar is unreachable for the Lens
+  BY DESIGN rather than by tooling. The Anchor, Bellows and Reefseed
+  paragraphs above are unchanged and still open.
+
 ---
 
 ## Doc rot found, not yet fixed

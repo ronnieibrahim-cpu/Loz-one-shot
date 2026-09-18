@@ -76,10 +76,24 @@
 //     and deep water are walls to a walker. `tryLedgeHop` fires only into the
 //     FACE of a ledge and carries up to LEDGE_MAX_SPAN. Both spans come out of
 //     feel.js rather than being written down here.
-//   * NO SWIMMING and NO ANCHOR. The Cleats are D3 and the Anchor cannot be
-//     thrown into a pinned room to any effect the pin does not already have.
-//     The assertion that every declared lensRoom is in D2 is what will catch a
-//     later dungeon that needs this relaxed.
+//   * SWIMMING IS ASKED OF THE DUNGEON, NOT ASSUMED EITHER WAY. Until S104
+//     this tool refused, unconditionally, to look at a Lens fork outside D2,
+//     because its flood was a walker and a fork in a later dungeon would be
+//     proved one-way against a player who by then owns the Kelp-Soled Cleats.
+//     The refusal was honest and it was also the whole ceiling: the Lens sat
+//     at zero reuse for eight sessions behind one `filter`. It now asks
+//     `capsForDungeonIndex` (tools/lib/collision.mjs) — the SAME function
+//     tools/lib/dungeon-flood.mjs asks, moved there rather than copied, so
+//     the two cannot drift — and floods every assertion below with the caps a
+//     player actually holds in that dungeon. Every claim gets STRONGER in a
+//     later dungeon, not weaker: a fork in D3+ must stay one-way against a
+//     swimmer, and its losing branch must still lose to one.
+//   * NO ANCHOR. The Anchor cannot be thrown into a pinned room to any effect
+//     the pin does not already have.
+//   * A fork is still refused OUTSIDE a dungeon, and refused in a dungeon
+//     numbered below the one that hands the Lens over — the player cannot
+//     read a lens they do not hold, and docs/ITEMS.md's "the Lens is never a
+//     gate" is a statement about region scope that stands.
 //   * The conch does not appear in the model at all, because assertion 1 has
 //     already established that the room refuses it.
 //
@@ -90,7 +104,7 @@ import { getLegend } from '../src/world/room.js';
 import { F, getTileDef } from '../src/world/tileset.js';
 import { installData } from '../src/data/index.js';
 import { LEDGE_MAX_SPAN, GAP_HOP_MAX_SPAN } from '../src/data/feel.js';
-import { defWalkable, capsForMode, ROUTE_AVOID } from './lib/collision.mjs';
+import { defWalkable, capsForMode, capsForDungeonIndex, ROUTE_AVOID } from './lib/collision.mjs';
 
 installData();
 
@@ -126,10 +140,10 @@ function nameAt(legend, ch, level) {
 }
 
 /** Walkable on foot, with no swimming and nothing equipped. */
-function walkableDef(d) {
+function walkableDef(d, caps) {
   if (!d) return false;
   if (d.flags & F.STAIRS) return true;
-  return defWalkable(d, capsForMode('foot'), ROUTE_AVOID);
+  return defWalkable(d, caps, ROUTE_AVOID);
 }
 
 /**
@@ -138,9 +152,9 @@ function walkableDef(d) {
  * reason this tool is so much simpler than check-anchor.mjs.
  */
 function flood(room, start, level) {
-  const { grid, legend, W, H } = room;
+  const { grid, legend, W, H, caps } = room;
   const at = (x, y) => (x < 0 || y < 0 || x >= W || y >= H ? null : defAt(legend, grid[y][x], level));
-  const walk = (x, y) => walkableDef(at(x, y));
+  const walk = (x, y) => walkableDef(at(x, y), caps);
 
   const seen = new Set(), q = [];
   const push = (x, y) => { const k = x + ',' + y; if (!seen.has(k)) { seen.add(k); q.push([x, y]); } };
@@ -196,6 +210,8 @@ for (const [mapId, m] of MAPS) {
       mapId, key, name: def.name || key,
       W: (sz[0] | 0) * 10, H: (sz[1] | 0) * 8,
       grid: def.map, legend: getLegend(def.legend || m.legend), def, L: def.lensRoom,
+      index: m.dungeon ? (m.dungeon.index | 0) : null,
+      caps: m.dungeon ? capsForDungeonIndex(m.dungeon.index) : capsForMode('foot'),
     });
   }
 }
@@ -203,12 +219,37 @@ for (const [mapId, m] of MAPS) {
 // A prover with nothing to prove passes vacuously and says nothing.
 check('at least one room declares a Lens fork', rooms.length > 0, 'nothing to prove');
 
-// The Lens is never a gate at region scope (docs/ITEMS.md), and this tool has
-// no swimming in it, so a declaration outside the Lens's own dungeon is either
-// a scope violation or a model the tool cannot honour. Either way, say so.
-const strays = rooms.filter(r => r.mapId !== 'd2');
-check('every declared Lens fork is inside the Lens\'s own dungeon', strays.length === 0,
-  strays.map(r => `${r.mapId} ${r.key}`).join(', ') + ' — the Lens is never a gate outside D2');
+// Where a fork may live. Two claims, and they are different claims — the old
+// single `mapId !== 'd2'` filter conflated them and so rejected every honest
+// later-dungeon fork along with the dishonest ones.
+//
+//   * NOT OUTSIDE A DUNGEON. docs/ITEMS.md: "The Lens is never a gate." That
+//     is a statement about REGION scope — an overworld screen the player must
+//     read the Lens to cross would gate the world on an informational item —
+//     and it is unchanged by anything below.
+//   * NOT BEFORE THE DUNGEON THAT HANDS IT OVER. A fork the player meets
+//     while holding no Lens is a coin flip, not a puzzle.
+const LENS_INDEX = (() => {
+  for (const [, m] of MAPS) if (m.dungeon && m.dungeon.item === 'lens') return m.dungeon.index | 0;
+  return 2;
+})();
+
+const outdoors = rooms.filter(r => r.index === null);
+check('every declared Lens fork is inside a dungeon', outdoors.length === 0,
+  outdoors.map(r => `${r.mapId} ${r.key}`).join(', ')
+  + ' — docs/ITEMS.md: the Lens is never a gate at region scope');
+
+const early = rooms.filter(r => r.index !== null && r.index < LENS_INDEX);
+check('no Lens fork stands before the dungeon that hands the Lens over', early.length === 0,
+  early.map(r => `${r.mapId} ${r.key}`).join(', ')
+  + ` — the Lens is D${LENS_INDEX}'s item, so a fork below that is a coin flip`);
+
+for (const r of rooms) {
+  if (r.index === null) continue;
+  console.log(`  note ${r.mapId} ${r.key}: proved against a player who `
+    + `${r.caps.swim ? 'HOLDS the Cleats — every claim below is asked of a swimmer'
+                     : 'cannot swim yet'}`);
+}
 
 // --- the proof --------------------------------------------------------------
 for (const r of rooms) {
