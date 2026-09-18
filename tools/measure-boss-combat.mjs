@@ -66,7 +66,7 @@ const FIGHTS = {
   d2: { boss: 'anemos', tide: HIGH, items: { sword: 1, conch: 1, anchor: 1, lens: 1, bombs: 1 } },
   // LOW, not MID: MID is the tide Gloomtide WANTS (1.7x speed against 0.65x
   // everywhere else). See the long note in check-bosses.mjs's own table.
-  d3: { boss: 'gloomtide', tide: LOW, items: { sword: 2, conch: 1, anchor: 1, lens: 1, bombs: 1, cleats: 1 } },
+  d3: { boss: 'gloomtide', tide: LOW, items: { sword: 1, conch: 1, anchor: 1, lens: 1, bombs: 1, cleats: 1 } },
   d4: { boss: 'wyverna', tide: LOW, items: { sword: 2, conch: 1, anchor: 1, lens: 1, bombs: 1, cleats: 1, bellows: 1 } },
   d5: { boss: 'rootmaw', tide: LOW, items: { sword: 2, conch: 1, anchor: 1, lens: 1, bombs: 1, reefseed: 1 } },
   d6: { boss: 'nereth', tide: MID, items: { sword: 3, conch: 1, anchor: 1, lens: 1, bombs: 1, cleats: 2, bellows: 1, reefseed: 1, rod: 1, dredge: 1 } },

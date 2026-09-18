@@ -1,3 +1,68 @@
+## S113 — Gloomtide softened, and the reason the fight still cannot be routed
+
+The human's call on S112's question was **make the boss weaker**. Done, and it
+is committed. But the sweep that was run to size the change found the thing
+that actually blocks the objective, and it is not the boss.
+
+### FIXED — every boss measurement from D3 on was taken at a sword the player cannot hold
+
+`tools/measure-boss-combat.mjs`'s `FIGHTS` table gave d3 `sword: 2`. The L2
+blade is in a cave behind `needEssences: 4` (src/data/caves.js) and D3 is the
+THIRD Essence, so a player arriving in order holds sword 1. d3's row now says
+`sword: 1`. **d4 and d5 still say `sword: 2` and d4 is also wrong** — at D4 the
+player holds three Essences, still one short of the cave. d5 is correct (four
+Essences, the cave is open). Fix d4's row before measuring that fight.
+
+### DONE — Gloomtide is weaker, on three counts
+
+  hp                36 -> 28   still above Gohmaraq's and Anemos's 24, so the
+                               curve still climbs
+  MID current      1.7 -> 1.25 0.72 * 1.7 put the boss FASTER than WALK_SPEED
+                               in its last phase — a chase that cannot be
+                               broken away from, a full heart per touch. At
+                               1.25 it still drags and still doubles its
+                               off-MID 0.65, but it can be outrun.
+  tide grab    420/360 -> 660/540   the fight is meant to be a contest for the
+                               conch, not a level the boss simply holds
+
+Contact damage stays 4. That is the pinned boss rung of `check-hearts`'s damage
+ladder, not this boss's own number to spend.
+
+### NOT FIXED, AND IT IS THE REAL BLOCKER — the measuring actor, not the boss
+
+The change above was sized by sweeping (hp, MID-multiplier) against five seeds
+at two tides — ten fights per configuration, same ten points every time:
+
+    hp 36 / 1.7  (baseline)   1 of 10
+    hp 28 / 1.25 (committed)  0 of 10
+    hp 24 / 0.85              3 of 10
+    hp 20 / 0.85              2 of 10
+    hp 20 / 1.1               1 of 10
+    hp 16 / 1.25              2 of 10
+    hp 14 / 1.25              6 of 10
+    hp 12 / 0.65              8 of 10
+
+**It is a cliff, not a slope.** Everything from 16 to 36 hp sits at 0-3 of 10
+and the ordering inside that band is noise — hp 28 measured WORSE than hp 36 on
+the same ten points. The reason is arithmetic, not tuning: the actor takes one
+contact hit about every 200 frames of fight whatever the boss is doing, at 4
+quarter-hearts a touch, so it dies around frame 1000. The only boss it beats
+reliably is one that dies before then, which at sword 1 is about 14 hp —
+**weaker than five of the eight minibosses in the same file.** No honest
+weakening of a third boss reaches that.
+
+So: the fight is now fairer for a person, and the route still cannot be driven
+through it. Softening the boss further is not the lever. The lever is one of
+  * `dBoss` learning to keep its distance between sword swings — the actor's
+    contact hits are blunders, not the boss cornering it. This is a harness
+    change and changes no design.
+  * the sword gate moving earlier, which the human already declined.
+Put the choice back to the human before spending another session tuning.
+
+### Unchanged and still true
+`tools/playthrough-route.mjs` still ends at `d2/1,3,1` with two Essences.
+Nothing in this session moved what the repo can claim about finishing the game.
+
 ## S112 — the Bogwater Sanctum could not be finished, three times over
 
 The human retired the exhausted rotation and chose a new objective of record:

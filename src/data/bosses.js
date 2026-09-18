@@ -379,7 +379,23 @@ export function installBosses() {
   // between attacks. Take the tide off MID and it wallows. It keeps shoving the
   // tide back to MID, so the fight is a tug of war over the conch.
   defineBoss('gloomtide', {
-    hp: 36, damage: 4, pal: 'bog', speed: 0.45, rate: 11,
+    // Softened in S113. Measured at the sword a player arriving IN ORDER
+    // actually holds — sword 1, because the L2 blade is behind
+    // `needEssences: 4` and this is only the third Essence. Every boss
+    // measurement from D3 on had been taken at sword 2.
+    //   hp 36 -> 28, still above Gohmaraq's and Anemos's 24 so the curve
+    //     still climbs, but eight fewer points of grinding at half a blade.
+    //   the MID current 1.7 -> 1.25, because 0.72 * 1.7 put the boss FASTER
+    //     than WALK_SPEED in its last phase: a chase the player cannot break
+    //     away from, landing a full heart of contact damage every touch.
+    //     At 1.25 it is still nearly twice its off-MID 0.65 and still drags,
+    //     but it can be outrun.
+    //   the tide grab 420/360 -> 660/540 frames, so the fight stays the
+    //     contest for the conch it was designed as rather than a level the
+    //     boss simply holds.
+    // Its contact damage stays 4: that is the pinned boss rung of the damage
+    // ladder in check-hearts, not this boss's own number to spend.
+    hp: 28, damage: 4, pal: 'bog', speed: 0.45, rate: 11,
     w: 32, h: 32, hb: { x: 4, y: 10, w: 24, h: 20 },
     frames: ['boss_gloomtide_0', 'boss_gloomtide_1', 'boss_gloomtide_2'],
     hurtFrame: 'boss_gloomtide_hurt',
@@ -417,7 +433,7 @@ export function installBosses() {
             }
           },
         });
-        if (timer(e, 'current', 420)) forceTide(e, g, MID);
+        if (timer(e, 'current', 660)) forceTide(e, g, MID);
       } },
       // It stops hiding. Faster, heavier, and it throws ink in every direction.
       { above: 0.00, ai(e, g) {
@@ -428,7 +444,7 @@ export function installBosses() {
           windUp(e, g, 14, (e2, g2) => shootRing(e2, g2, 8,
             { sprite: 'shot_ink', pal: 'shadow', speed: 1.4, damage: 3 }));
         }
-        if (timer(e, 'current', 360)) forceTide(e, g, MID);
+        if (timer(e, 'current', 540)) forceTide(e, g, MID);
       } },
     ],
   });
@@ -439,7 +455,7 @@ export function installBosses() {
     if (g.tide.level !== MID) return 0.65;
     driftWithTide(e, g, { perLevel: 0.1, dx: 1, dy: 0 });
     if (every(e, 30)) g.spawnEffect('foam', e.cx - 8, e.cy + 4);
-    return 1.7;
+    return 1.25;
   }
 
   // =========================================================================
