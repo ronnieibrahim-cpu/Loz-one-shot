@@ -66,8 +66,18 @@ const FIGHTS = {
   d2: { boss: 'anemos', tide: HIGH, items: { sword: 1, conch: 1, anchor: 1, lens: 1, bombs: 1 } },
   // LOW, not MID: MID is the tide Gloomtide WANTS (1.7x speed against 0.65x
   // everywhere else). See the long note in check-bosses.mjs's own table.
-  d3: { boss: 'gloomtide', tide: LOW, items: { sword: 1, conch: 1, anchor: 1, lens: 1, bombs: 1, cleats: 1 } },
-  d4: { boss: 'wyverna', tide: LOW, items: { sword: 2, conch: 1, anchor: 1, lens: 1, bombs: 1, cleats: 1, bellows: 1 } },
+  // `clearAdds`: this fight is the one in the roster whose plan is to bury you
+  // in summons, so the actor is told to cut them down — the same option the
+  // route carries for it. Every other row leaves it off and is measured
+  // exactly as it always was; see `dBoss`'s summons branch for the four fights
+  // that measured WORSE with it on.
+  d3: { boss: 'gloomtide', tide: LOW, opts: { clearAdds: true },
+        items: { sword: 1, conch: 1, anchor: 1, lens: 1, bombs: 1, cleats: 1 } },
+  // sword 1, not 2: at D4 the player holds three Essences and the L2 blade's
+  // cave wants four (`needEssences: 4`, src/data/caves.js). S113 caught the
+  // same error in d3's row and named this one; d5 and d6 are correct, because
+  // by then the cave is open.
+  d4: { boss: 'wyverna', tide: LOW, items: { sword: 1, conch: 1, anchor: 1, lens: 1, bombs: 1, cleats: 1, bellows: 1 } },
   d5: { boss: 'rootmaw', tide: LOW, items: { sword: 2, conch: 1, anchor: 1, lens: 1, bombs: 1, reefseed: 1 } },
   d6: { boss: 'nereth', tide: MID, items: { sword: 3, conch: 1, anchor: 1, lens: 1, bombs: 1, cleats: 2, bellows: 1, reefseed: 1, rod: 1, dredge: 1 } },
 };
@@ -195,7 +205,7 @@ await page.evaluate(([setup, steps]) => window.__rp.beginRecord(setup, steps), [
   enter: [dungeonId, fl, rx, ry, 72, 80, 'up'],
 }, [
   ['wait', 30],
-  ['boss', BUDGET],
+  ['boss', BUDGET, null, fight.opts || null],
   ['wait', 240],
 ]]);
 

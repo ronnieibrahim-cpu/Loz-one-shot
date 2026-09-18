@@ -1,51 +1,52 @@
-# Next session — teach the actor to stop touching bosses
+# Next session — route the run through Dungeon 3
 
 ## Read first
 - `docs/prompts/STATE.md` — the whole file.
-- `docs/NEXT-SESSION.md`, the S113 entry only. Its sweep table is the reason
-  this task is what it is, and re-deriving it costs a session.
-- `tools/actor-runtime.mjs`'s `dBoss` directive, all of it.
-- `tools/measure-boss-combat.mjs`'s `FIGHTS` table and its `--seed` note.
+- `docs/NEXT-SESSION.md`, the S114 entry only. It has the boss table and the
+  `clearAdds` / `tide` verb contracts; re-deriving them costs a session.
+- `docs/DUNGEON-STATUS.md`'s D3 row, for what the Bogwater Sanctum contains.
+- `tools/playthrough-route.mjs`'s tail — the D2 section and the `GOAL` block.
+- `tools/actor-runtime.mjs`'s `dBoss` header, for the directive's four arguments.
 
 ## Why this, now
-Gloomtide is already softened — hp 28, the MID current down to 1.25, the tide
-grab out to 660/540 — and the run still cannot be driven through it. The sweep
-in S113 measured eight boss configurations against the same ten fights and
-found a cliff, not a slope: everything from 16 to 36 hp wins 0-3 of 10, and
-hp 28 scored worse than hp 36 on identical points. The actor takes a contact
-hit roughly every 200 frames whatever the boss does, at four quarter-hearts
-each, so it dies near frame 1000. That is the actor, not the boss.
+The route ends at `d2/1,3,1` with two Essences of six, and the reason it
+stopped there was that nothing could get the harness through Gloomtide. That
+is closed: the fight measures 7 wins in 10 seeds at its own tide, up from 0.
+S112 already walked the Sanctum and fixed the three things that made it
+unfinishable. The dungeon and the boss are both ready; the route is not
+written.
 
 ## The task
-Make `dBoss` keep its distance. It currently closes and stays closed; the
-contact hits it takes are its own blunders, not the boss cornering it. Give it
-a retreat: after a swing connects, back off past the boss's body radius before
-approaching again, and do not approach at all while the boss is charging.
+Extend `tools/playthrough-route.mjs` from the Coral Spire's Essence to the
+Bogwater Sanctum's. Walk in, take its keys and its Cleats, reach the boss, and
+claim the third Essence. The boss step is
+`['boss', N, null, { clearAdds: true }]` — without the option the fight is the
+0-in-10 it used to be.
 
-Change `tools/actor-runtime.mjs` only. This changes no game data and no design.
+Put the sea at LOW before that fight with `['tide', 0, 140, 600]`, not with a
+counted `use`: MID is the current's own level and the boss is designed to be
+nearly twice as fast there.
 
-Then re-run the same ten fights for d3 — seeds 20260806, 31337, 777, 4242,
-99991 at `--tide=0` and `--tide=1` — and report the win count against S113's
-`hp 28 / 1.25  0 of 10`. Also fix d4's `sword: 2` to `sword: 1` in the `FIGHTS`
-table: at D4 the player holds three Essences and the L2 cave wants four.
+Then raise `GOAL.essences` to `[1, 2, 3]` and `GOAL.room` to the Sanctum's
+boss room, and re-record the tape with `node tools/check-playthrough.mjs
+--record`.
 
 ## Done means
-- `node tools/measure-boss-combat.mjs d3` wins a clear majority of those ten
-  fights, with the before/after counts written into `docs/NEXT-SESSION.md`.
-- `node tools/check-playthrough.mjs` and `node tools/replay.mjs` still green —
-  the committed route runs through `dBoss` twice and both fights will re-time.
-- `node tools/check-drift.mjs`, `node tools/test.mjs`, `node tools/check-bosses.mjs`.
+- `node tools/check-playthrough.mjs` green with three Essences taken, and its
+  own output naming the Sanctum's boss room as where the run now ends.
+- `node tools/check-drift.mjs`, `node tools/test.mjs`, `node tools/replay.mjs`,
+  `node tools/walk-dungeons.mjs`, `node tools/check-dungeon-strands.mjs`.
 - `npm run build` with `dist/oracle-of-tides.html` committed.
-- A person reads the two health tables side by side and sees the actor finish
-  the fight with hearts left rather than scraping in.
+- A person reads the trace and sees the run enter the Sanctum, come out with
+  the Cleats, and finish the fight with hearts left.
 
 ## Out of scope
-- Weakening Gloomtide any further. S113 measured that road to its end: the
-  only boss this actor beats reliably is a 14 hp one, weaker than five of the
-  minibosses in the same file.
-- Moving the L2 sword's `needEssences: 4` gate. The human declined it.
-- Extending `tools/playthrough-route.mjs` into D3. The fight has to be winnable
-  by the harness before the route through it is worth authoring.
+- Turning `clearAdds` on for any other fight. Measured across all six: it wins
+  one and loses four, and the four are in S114's entry with their numbers.
+- Retuning Gloomtide's health, speed or tide grab. S113 measured that road to
+  its end and this session showed the boss was never the variable.
+- Making the actor better at Anemos, Rootmaw or Nereth. They are at their
+  baselines and none of them blocks this route.
+- Converting the route's other counted conch presses to `tide`. Only do the
+  ones this extension needs; the rest are recorded against a passing tape.
 - `check-hearts`'s two failures, still not on the allowlist.
-- Re-recording a replay baseline to make a red run green before proving the new
-  behaviour is the behaviour you meant.

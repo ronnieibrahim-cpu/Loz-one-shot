@@ -332,6 +332,58 @@ export async function installRuntime() {
   }
 
   /**
+   * PUT THE TIDE AT A NAMED LEVEL.
+   *
+   *   ['tide', 1, 140, 600]   sound the conch until the sea is at MID,
+   *                          spending 140 frames settling after each press
+   *
+   * `use` counts BUTTON PRESSES, and that is the wrong unit for the tide.
+   * The conch steps LOW->MID->HIGH->LOW by exactly one, so "press it once"
+   * only lands where the route meant if the sea was where the route last saw
+   * it — and it is not always, because a boss can take the tide off the
+   * player (`forceTide`) and this verb's own escape branch can spend a press
+   * of its own. That is not hypothetical: a single extra press inside D1's
+   * boss fight left Shell Flats' conch one step further along than the route
+   * was written for, the walk to Outer Coral was asked for at HIGH instead of
+   * MID, the crossing the route depends on was underwater, and the actor
+   * wandered the dunes for six thousand frames and died — 60 directives after
+   * the fight that caused it, with nothing in between looking wrong.
+   *
+   * So the route says WHERE THE SEA SHOULD BE and this verb gets it there,
+   * asking the engine's own "would this press even take" signals
+   * (`Player.playConch`'s `conchTime` and `Tide.busy`) rather than guessing a
+   * gap, and waiting out the freeze the press itself causes rather than
+   * modelling its length. At most three presses are ever needed; the frame
+   * budget is the backstop for a sea that is pinned and cannot be moved, and
+   * the verb returns rather than throwing, so the directive after it reports
+   * the mismatch in the trace where it can be read.
+   */
+  function* dTide(level, gap, maxF) {
+    const g = window.__game;
+    const budget = maxF || 900;
+    // Each press is a press and a settle, EXACTLY as `use` spends them: a
+    // press followed by `gap` frames of nothing. That is not tidiness, it is
+    // what makes this verb a drop-in for the `use` it replaces — every frame
+    // this run spends is a frame the world moves in, so a verb that reached
+    // the same tide in fewer frames would leave every enemy after it standing
+    // somewhere else, and the route is recorded against where they stand. The
+    // first cut waited only for the freeze to lift and put the run in the
+    // wrong room eleven directives later, at full health, with the tide
+    // correct.
+    for (let f = 0; f < budget;) {
+      if (g.tide.level === level) return;
+      const p = g.player;
+      if (!p || g.mode !== 'play') { yield 0; f++; continue; }
+      if (p.frozen > 0 || g.tide.busy || p.conchTime !== 0) { yield 0; f++; continue; }
+      const b = slotBit('conch');
+      if (!b) { yield 0; f++; continue; }
+      yield b; f++;
+      const settle = gap == null ? 90 : gap;
+      for (let i = 0; i < settle && f < budget; i++) { yield 0; f++; }
+    }
+  }
+
+  /**
    * Title screen to the first frame of play, pressing real buttons.
    *
    * This is the half of "no developer shortcuts" that is easiest to lose. Every
@@ -1099,6 +1151,8 @@ export async function installRuntime() {
    * FIGHT A BOSS.
    *
    *   ['boss', 4000]      fight whatever boss is in this room until it dies
+   *   ['boss', 6000, 'clawcrab']              name a miniboss, which is not `g.boss`
+   *   ['boss', 9000, null, { clearAdds: true }]   also cut down what it summons
    *
    * Every boss in this game is built on one rule (`defineBoss`, src/game/enemy.js):
    * a shelled boss IGNORES EVERY HIT unless `weakOpen` is set, and each boss
@@ -1132,7 +1186,7 @@ export async function installRuntime() {
   // already closed are expensive to rediscover; it is NOT referenced by
   // tools/playthrough-route.mjs, because a route step that cannot reliably
   // finish is worse than one that is missing.
-  function* dBoss(maxF, type) {
+  function* dBoss(maxF, type, opts) {
     const g = window.__game;
     // A MINIBOSS IS NOT `g.boss`. `defineBoss` builds both, but a miniboss
     // clears `isBoss` in its init (src/data/bosses.js says why: `beaten` is
@@ -1273,6 +1327,13 @@ export async function installRuntime() {
     // fixes, and bypassing hazard avoidance while waiting out a shelled phase
     // would just eat free chip damage for nothing).
     let stallBest = Infinity, stallFrames = 0;
+    // Who was already standing in the arena when the fight began. Anything
+    // that turns up later is something the boss SUMMONED — see the summons
+    // branch in the loop below for why that distinction is the whole thing.
+    // Whether this fight wants its summons cleared, and who was already
+    // standing in the arena when it began — see the summons branch below.
+    const clearAdds = !!(opts && opts.clearAdds);
+    const wasHere = new Set(g.entities.filter(e => e.isEnemy));
     const STALL_FRAMES = 60;
     const safe = (m, retreat) => {
       if (target.spec.breakDeadlock) {
@@ -1378,6 +1439,101 @@ export async function installRuntime() {
       const backPerp = axisX ? (dy > 0 ? BIT.up : BIT.down) : (dx > 0 ? BIT.left : BIT.right);
       if (b.weakOpen) hasOpened = true;
       shutFrames = b.weakOpen ? 0 : shutFrames + 1;
+
+      /**
+       * KILL THE SUMMONS — WHEN THE FIGHT ASKS FOR IT.
+       *
+       * This verb treated every non-boss entity in the arena purely as
+       * something for `evade` to steer around, and against a boss whose whole
+       * plan is to shed minions that is not a fight plan, it is a losing one:
+       * measured on Gloomtide at the tide its own fight is designed for, TEN
+       * of the fourteen hits that killed the actor came from `gel`, one
+       * quarter-heart at a time, while exactly ONE came from the boss. The
+       * adds never stop arriving, they chase, and `evade` only ever buys a
+       * frame's grace from each — so the arena fills up and the chip damage
+       * arrives on a clock the boss's own tuning cannot touch. That is why
+       * S113's sweep of Gloomtide's health read as a cliff rather than a
+       * slope: every configuration from 16 to 36 hit points died to the same
+       * accumulating swarm, not to the boss.
+       *
+       * A person clears the add. But ONLY SOME FIGHTS WANT IT, and that was
+       * measured the expensive way before it was believed. Turned on for
+       * every boss this wins Gloomtide and loses four of the other five:
+       * Gohmaraq's phase 3 summons two shielded crabs and the actor stops
+       * fighting the boss (10 wins in 10 seeds to 2), Nereth's summons have
+       * three and six hit points against a blade that deals one (3 in 10 to
+       * 0), Anemos's jellyfish swim where the player cannot follow, and
+       * Rootmaw's spray punishes every frame not spent closing (12 in 20 to
+       * 8). Three of those four have a general test that catches them — cheap,
+       * unshielded, standable — and Rootmaw has none: his fight simply has no
+       * frames to spare. So the route names the fights that want it,
+       * `['boss', N, type, { clearAdds: true }]`, which is where this file
+       * already says a single fight's needs belong: readable in the route,
+       * not hidden in the verb.
+       *
+       * The tests below still decide WHICH summons, because "clear the adds"
+       * must not become "chase anything that moves":
+       *   - arrival time (`wasHere`) — what the boss produced during the
+       *     fight, not what the route already chose to walk past;
+       *   - `shield` — a shielded enemy has to be caught side-on, which
+       *     `dFight` above records as the most expensive kill in the game;
+       *   - `hp` against ADD_CHEAP — a gel dies to the swing you were going
+       *     to make anyway; a darknut does not;
+       *   - `passable` — asked of the engine's own `canOccupy` at the
+       *     summon's tile with the player's own caps, so a swimmer the player
+       *     cannot follow is left alone, and the Cleats can change that answer
+       *     later without this reading a terrain string.
+       * ADD_RANGE is deliberately short: this is for the summon about to land
+       * the next touch, not a hunting licence.
+       */
+      const ADD_RANGE = 16, ADD_CHEAP = 2;
+      const adds = !clearAdds ? [] : g.entities.filter(e => e.isEnemy && e !== b && !e.dead
+        && !e.dying && !e.dormant && !e.hidden && !e.remove && !wasHere.has(e)
+        && !e.shield && e.hp <= ADD_CHEAP
+        // AND STANDING SOMEWHERE THE PLAYER CAN FOLLOW. Anemos's own phase-1
+        // summons are jellyfish, and a jellyfish is `terrain: 'water'` — it
+        // swims where the player cannot walk, so "go and kill it" is a swing
+        // that never lands and an approach that never arrives, which is the
+        // same thing `dFight`'s patience counter exists to give up on. Asked
+        // of the engine's own `canOccupy` at the summon's tile, with the
+        // player's own caps, rather than by reading a terrain string: the
+        // Cleats change that answer mid-game and a string would not.
+        && passable(g, p, Math.floor(e.cx / TILE), Math.floor(e.cy / TILE)));
+      let add = null, addD = 1e9;
+      for (const e of adds) {
+        const gp = gapTo(p, e);
+        const d = Math.max(gp.gapX, gp.gapY);
+        if (d < addD) { addD = d; add = e; }
+      }
+      if (add && addD <= ADD_RANGE) {
+        const adx2 = add.cx - p.cx, ady2 = add.cy - p.cy;
+        const aAxisX = Math.abs(adx2) > Math.abs(ady2);
+        const aFace = aAxisX ? (adx2 > 0 ? BIT.right : BIT.left)
+                             : (ady2 > 0 ? BIT.down : BIT.up);
+        const aPerp = aAxisX ? ady2 : adx2;
+        // Same squaring-up the boss approach does: the sword box is long on
+        // one axis and 14px across the other, so a diagonal stop whiffs.
+        // Marked `retreat`, because relative to the BOSS that is what this is.
+        // Two things hang off it and both matter: `evade` keeps the boss in
+        // the avoid list while the actor is busy elsewhere, and the stall
+        // tracker stops counting — it measures "closing on the boss is not
+        // getting anywhere", and time spent deliberately not closing on the
+        // boss is not that. Measured while this branch was still running on
+        // every boss: left unmarked, Rootmaw's own deadlock breaker read each
+        // add cleared as a stalled approach, dropped the hazard swap as it is
+        // designed to, and walked the actor into his summons — 5 wins in 10
+        // seeds to 0. He does not opt in any more, but the interaction is
+        // general: any `breakDeadlock` boss that asks for `clearAdds` would
+        // meet it again.
+        if (Math.abs(aPerp) > 6) {
+          yield safe(aAxisX ? (ady2 < 0 ? BIT.up : BIT.down)
+                            : (adx2 < 0 ? BIT.left : BIT.right), true);
+          f++; continue;
+        }
+        yield safe(aFace, true); f++;
+        yield fence(aFace | sword()); f++;
+        continue;
+      }
 
       if (b.weakOpen) {
         // Invulnerability frames are the only free hits in this game. A touch
@@ -1508,6 +1664,13 @@ export async function installRuntime() {
         // In range and lined up: face it, swing, then get out before it closes.
         yield safe(toward); f++;
         yield fence(toward | sword()); f++;
+        // The fixed retreat stays exactly as it was — it is what Gohmaraq's
+        // fight is won on, and replacing it outright with the distance gate
+        // below cost that fight four wins in five seeds. The gate EXTENDS it:
+        // once these frames are spent, keep giving ground until the boss's
+        // body is genuinely behind us, which is the part that matters against
+        // something fast enough to still be touching you when the clock runs
+        // out.
         for (let i = 0; i < BACKOFF && f < budget; i++) { yield safe(backAlong | backPerp, true); f++; }
         continue;
       }
@@ -1761,7 +1924,8 @@ export async function installRuntime() {
       else if (kind === 'use') yield* dUse(a[0], a[1], a[2]);
       else if (kind === 'travel') yield* dTravel(a[0], a[1], a[2]);
       else if (kind === 'loot') yield* dLoot(a[0]);
-      else if (kind === 'boss') yield* dBoss(a[0], a[1]);
+      else if (kind === 'boss') yield* dBoss(a[0], a[1], a[2]);
+      else if (kind === 'tide') yield* dTide(a[0], a[1], a[2]);
       else if (kind === 'equip') yield* dEquip(a[0], a[1], a[2]);
       else if (kind === 'anchor') yield* dAnchor(a[0], a[1], a[2]);
       else if (kind === 'unanchor') yield* dUnanchor(a[0]);

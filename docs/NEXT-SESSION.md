@@ -1,3 +1,78 @@
+## S114 — the third boss can be beaten by the harness now, and the reason was never the boss
+
+S113 handed this session a diagnosis — "the actor takes a contact hit every
+200 frames whatever the boss does, so it dies near frame 1000" — and asked for
+a retreat. The retreat was built and measured and it is NOT what fixed this.
+Reading the damage log rather than the totals is what fixed it.
+
+### The measurement S113 did not take: WHO was landing the hits
+
+    seed 20260806, Gloomtide at its own design tide, 14 hits to a death
+      10 x  gel          1 quarter-heart each     <- the boss's summons
+       4 x  ink shot     2-3 quarter-hearts each
+       1 x  gloomtide    3 quarter-hearts
+
+**One hit in fourteen came from the boss.** Every configuration in S113's
+sweep died to the same accumulating swarm, which is exactly why it read as a
+cliff and not a slope, and why hp 28 measured worse than hp 36 on identical
+points: the boss's own health was never the variable.
+
+### What landed: `dBoss` clears what a boss summons, ON REQUEST
+
+    ['boss', N, type, { clearAdds: true }]
+
+Per-fight, because measured across all six it is a win on one and a loss on
+four. Tried on every boss it takes Gohmaraq from 10 wins in 10 seeds to 2
+(his phase 3 summons two shielded crabs and the actor stops fighting the
+boss), Nereth from 3 to 0 (3-hp and 6-hp summons against a 1-damage blade),
+and Rootmaw from 12 in 20 to 8 (his spray punishes every frame not spent
+closing). Three of those four have a general test that catches them and
+Rootmaw has none, so the ROUTE names the fights that want it — which is where
+`dBoss`'s own header already says a single fight's needs belong.
+
+Which summons, once a fight asks: arrived DURING the fight, unshielded,
+`hp <= 2`, and standing somewhere `canOccupy` says the player can follow.
+Each of those four clauses was written because leaving it out lost a fight.
+
+### The measured table, ten seeds per fight, before and after
+
+    d1 gohmaraq   10/10 -> 10/10        d4 wyverna    10/10 -> 10/10
+    d2 anemos      3/10 ->  3/10        d5 rootmaw     5/10 ->  5/10
+    d3 gloomtide   0/10 ->  7/10        d6 nereth      3/10 ->  3/10
+
+### The tide column S113 counted and should not have
+
+S113 swept d3 at `--tide=0` AND `--tide=1` and counted all twenty as one
+number. MID is the sanctum current's own level — it nearly doubles Gloomtide's
+speed, which is the whole point of the fight — so the MID column measures the
+fight handicapped into the boss's favour, not the fight. At MID the actor
+still loses 10 of 10 and that is the design working. The `FIGHTS` table has
+said `d3: tide: LOW` all along.
+
+### A NEW ROUTE VERB, and the 60-directive bug that bought it
+
+`['tide', level, settle, maxF]` — sound the conch until the sea is at a named
+level. `use` counts BUTTON PRESSES and that is the wrong unit: the conch steps
+by one, so "press it once" only lands where the route meant if the sea was
+where the route last saw it, and a boss can take the tide off the player.
+One extra press inside D1's boss fight left Shell Flats' conch one step along,
+asked for the Outer Coral crossing at HIGH instead of MID, and the actor
+wandered the dunes for six thousand frames and died — SIXTY DIRECTIVES after
+the fight that caused it, with nothing in between looking wrong. The verb
+spends its settle frames exactly as `use` does, because a verb that reached
+the same tide in fewer frames would leave every enemy after it standing
+somewhere else, and the route is recorded against where they stand.
+
+### Also fixed
+`measure-boss-combat.mjs`'s d4 row said `sword: 2`. At D4 the player holds
+three Essences and the L2 blade's cave wants four. It says `sword: 1` now,
+closing the error S113 found in d3's row and named here.
+
+### What is still open
+The route still ends at `d2/1,3,1` with two Essences. Nothing in this session
+extended it — what changed is that the fight waiting at the end of the next
+extension can now be won by the harness seven times in ten.
+
 ## S113 — Gloomtide softened, and the reason the fight still cannot be routed
 
 The human's call on S112's question was **make the boss weaker**. Done, and it

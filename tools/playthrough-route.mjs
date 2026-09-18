@@ -721,7 +721,13 @@ export const ROUTE = [
   // D1, so a plain `loot` reaches it; the urchin is stationary at LOW and
   // costs nothing to walk past.
   ['loot', 1200],
-  ['use', 'conch', 1, 140],
+  // NAMED, NOT COUNTED. Outer Coral is crossed at MID and the sea arrives here
+  // at whatever level D1's boss fight left it — which is not a constant: the
+  // boss takes the tide off the player and the actor can spend a conch press
+  // of its own escaping a lock. A counted press turned this into a HIGH-tide
+  // crossing that does not exist, sixty directives after the fight that moved
+  // it. `tide` says where the sea must be and gets it there.
+  ['tide', 1, 140, 600],
 
   // ------------------------------------------------------- overworld 0,11,4
   // Outer Coral, right beside the Spire Mouth — MID tide for this one.
