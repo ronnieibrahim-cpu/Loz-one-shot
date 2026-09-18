@@ -15884,3 +15884,33 @@ a change to the claim, not to the model, so it was not made.
 
 `check-drift` still reads `anchor ... dungeons: 1 of 5`, and now that number is
 known to be the ceiling rather than suspected of being one.
+
+---
+
+## S107 — the Reefseed's ceiling was never real. The Dredge Line already proves it
+
+`check-reefseed.mjs`'s `early` filter rejected a `reefseedRoom` in any dungeon
+below D5, and eight sessions took that as the item's structural ceiling: D6 is
+the only dungeon above D5, D6's slot is spent, therefore 1 is the maximum. The
+filter's reasoning is "the player cannot answer a room before they hold the
+item", which is true of the critical path and false of everything else.
+
+**The Dredge Line already does the forbidden thing, three times.** It is D6's
+item, and D1's Sunken Hall, D2's Tide Gallery and D3's Bog Hub all carry tiles
+only the Line answers — measured this session against the engine's own tile
+flags. That is why `check-drift` reads `dredge ... dungeons: 3 of 5` rather
+than 0 of 5. They are optional alcoves you come back for, which is what the
+Oracle games do constantly.
+
+So the clause now says what it meant. A Reefseed room below its own dungeon
+must declare `optional: true`, and must not be standing in front of a key, a
+boss key, the dungeon's item or its essence — the one shape that would deadlock
+a dungeon on an item two dungeons away. The home dungeon is found from the map
+data instead of the hardcoded `5`, so moving the Reefseed cannot silently
+invert the test. Both new clauses were run against injected rooms and both go
+red. 148 assertions, and the real ones are unchanged.
+
+**Nothing has walked through the door yet.** `check-drift` still reads
+`reefseed ... dungeons: 1 of 5`. The room is a real build — stakes at two seas
+thrown over a drowned bole, and D2's coral legend has no `dSnag` to throw over —
+and it is the next session's whole task.

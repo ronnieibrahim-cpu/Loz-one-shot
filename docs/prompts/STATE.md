@@ -1,9 +1,9 @@
 OBJECTIVE OF RECORD: 7 item-reuse
 
-S106: Lens half DONE (2 of 5). ANCHOR half PROVED at its ceiling of 1
-— the block is the game, not the tool (LEDGER, "S106 PROVED"). Bellows
-and Reefseed unchanged, each still needs its own human call. Item 7's
-bar is now unmeetable as written for 2 of the 4 items.
+S107: Lens DONE (2 of 5). Anchor PROVED at its ceiling of 1 (the game,
+not the tool). REEFSEED UNBLOCKED — its ceiling was an artefact; the
+filter now allows an optional early room and no room exists yet. Only
+the Bellows still needs a human call.
 
 ROTATION (fixed, do not reorder):
   1 wide-rooms      — 3 of 6 dungeons have a 2x2 or 3x1
@@ -37,8 +37,7 @@ FILE ALLOWLIST for the current objective (7 item-reuse):
     gated fixture needs outdoor tiles, and none existed. Region-palette
     variants only (`seaSnarl`, `drownWallSand`, `cliffSandTop`) — never
     an existing tile's own shape, flags or mechanics
-  docs/ITEMS.md — read-only reference for each item's three verbs; only
-    edit if a session finds the doc itself wrong
+  docs/ITEMS.md — read-only reference for each item's three verbs
   docs/DUNGEON-STATUS.md — read before touching a dungeon marked done;
     tick/update if a change affects its checklist
   dist/oracle-of-tides.html
@@ -58,3 +57,4 @@ SESSION LOG: one row per session — `S## | objective|detour | one line`
 S104 | objective | Opened the Brineglass Lens up to the rest of the game. The prover had been refusing, on sight, to look at any Lens fork outside the Coral Spire — not because the game could not hold one, but because its model was a walker and by the third dungeon the player can swim. It now asks what the player actually holds in each dungeon, so every claim it makes about a later fork is stricter than the old ones, and the rule about when swimming starts lives in one place instead of two. The first fork outside the Spire is the Abyssal Keep's Two Arches: two blank stretches of the Keep's own wall, and one of them is water one tide up.
 S105 | objective | Gave the Brineglass Lens a second puzzle outside the dungeon that hands it over, in the Drowned Wood Shrine. Three drowned oaks in a row, the same trunk to look at while the water is held where it is, and one sea up one of them has washed hollow. That finishes the Lens's share of the current objective; the other three special items are still stuck behind decisions only a person can make.
 S106 | objective | Took the Tidewright's Anchor next and found its wall is the game rather than the checker. Taught the prover to account for a player who can swim, which is what its own notes had been asking for, and the later dungeons still would not open: once you can swim, the highest tide is always the best one to be at, so holding one patch of the room at a different level can never open a way that sounding the conch could not. That is now something the tool proves every run instead of something we believed, and it goes red the day anyone adds a tile that breaks it.
+S107 | objective | Found that the Reefseed was never really stuck. The rule that kept it out of the earlier dungeons was guarding against a real danger — handing the player a puzzle before they own the thing that answers it — but it was written so broadly that it also banned the harmless version: an optional side room you come back for later. The game already does that with the last dungeon's item in three earlier dungeons. The rule now draws the line where it meant to. Nothing new is in the game yet; the Reefseed side room itself is the next job.

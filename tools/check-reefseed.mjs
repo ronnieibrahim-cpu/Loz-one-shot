@@ -405,21 +405,55 @@ console.log(`  a seed carries ${(REEFSEED_THROW_SPEED / FP).toFixed(2)} px/f, `
 
 check('at least one room declares a Reefseed room', rooms.length > 0, 'nothing to prove');
 
-// The Reefseed is dungeon five's item, so a Reefseed room in an earlier
-// dungeon is a room the player cannot answer. Same bug check-anchor's `late`
-// filter had before S91 and check-bellows's `early` filter had before S95:
-// `index` is derived as `(m.dungeon && m.dungeon.index) | 0`, so an OVERWORLD
-// room (no `m.dungeon` at all) always computes to 0, which this clause used
-// to read as "before the Reefseed" whatever the room actually needed. The
-// Reefseed is carried rather than held-and-aimed, but the same argument
-// applies: the player either has it by the time they reach an overworld room
-// or they do not, and nothing about being outdoors changes that. Excluded
-// explicitly rather than by patching the derived index, so a future dungeon
+// WHERE A REEFSEED ROOM MAY STAND, and this clause was wrong for eight
+// sessions in a way that mattered.
+//
+// It used to be a flat `r.index < 5`: no Reefseed room in any dungeon below
+// the fifth, on the reasoning that the player cannot answer a room before
+// they hold the item. That reasoning is right about the CRITICAL PATH and
+// wrong about everything else, and the difference is not academic — THE
+// DREDGE LINE ALREADY DOES THE THING THIS CLAUSE FORBIDS, three times over.
+// It is D6's item, and D1's Sunken Hall, D2's Tide Gallery and D3's Bog Hub
+// all carry tiles only the Line answers (S107 measured it; check-drift counts
+// them, which is why `dredge` reads 3 of 5 rather than 0 of 5). Those are
+// optional alcoves you come back for, which is what the Oracle games do
+// constantly and what makes an item worth still owning at the end.
+//
+// So the rule is not "not before the fifth dungeon", it is "not in front of
+// anything the dungeon needs". A room at or below the Reefseed's own dungeon
+// must say so with `optional: true`, and must not be the thing standing
+// between the player and a key, a boss key, the dungeon's own item or its
+// essence — the one shape that would deadlock a dungeon on an item that is
+// still two dungeons away.
+//
+// The home dungeon is found from the map data rather than written down, so
+// moving the Reefseed to another dungeon does not silently invert this test.
+// The OVERWORLD is excluded explicitly rather than by patching the derived
+// index (which computes to 0 with no `m.dungeon` at all), so a future dungeon
 // mistakenly reading index 0 still fails loudly.
 {
-  const early = rooms.filter(r => r.mapId !== 'overworld' && r.index < 5);
-  check('no Reefseed room comes before the Reefseed', early.length === 0,
-    early.map(r => `${r.mapId} ${r.key}`).join(', '));
+  let home = 5;
+  for (const [, m] of MAPS) if (m.dungeon && m.dungeon.item === 'reefseed') home = m.dungeon.index | 0;
+
+  const early = rooms.filter(r => r.mapId !== 'overworld' && r.index < home);
+  const unflagged = early.filter(r => !r.R.optional);
+  check('every Reefseed room before its own dungeon is declared optional',
+    unflagged.length === 0,
+    unflagged.map(r => `${r.mapId} ${r.key}`).join(', ')
+    + ` — the player reaches D${home} without the Reefseed, so a room below it `
+    + 'is a return trip or it is a deadlock; say which with `optional: true`');
+
+  const LOADBEARING = new Set(['key', 'bossKey', 'boss_key', 'item', 'essence', 'map', 'compass']);
+  const loadbearing = early.filter(r => r.R.optional && LOADBEARING.has(r.R.gives));
+  check('no optional Reefseed room is holding something the dungeon needs',
+    loadbearing.length === 0,
+    loadbearing.map(r => `${r.mapId} ${r.key} gives ${r.R.gives}`).join(', ')
+    + ' — that is not a return trip, that is a deadlock two dungeons early');
+
+  if (early.length) {
+    console.log(`  note  ${early.length} Reefseed room(s) stand below D${home} as optional `
+      + 'return trips — the same shape the Dredge Line already has in D1, D2 and D3');
+  }
 }
 
 // Every push block inside a declared room is one the room declares, and it is

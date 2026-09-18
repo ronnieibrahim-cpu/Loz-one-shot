@@ -682,8 +682,25 @@ extract from it:
   question S90-S98 had each answered separately for one item at a time
   without ever stating the total.** The picture, item by item:
   - **Reefseed** (home D5): overworld screens now 3 of the rotation's own
-    >=3 bar (S100-S102, above) — MET. Dungeon reuse is 1 of 5 (D6's Bole
-    Cistern, S96) and CANNOT go higher: `check-reefseed.mjs`'s own `early`
+    >=3 bar (S100-S102, above) — MET. **S107 OVERTURNED the dungeon half
+    of this paragraph: the ceiling of 1 was an artefact of the filter,
+    not a property of the game.** The clause forbade a `reefseedRoom` in
+    any dungeon below D5, reasoning that the player cannot answer a room
+    before they hold the item — which is true of the CRITICAL PATH and
+    false of everything else. The Dredge Line already does exactly what
+    that clause forbids, three times over: it is D6's item and D1's
+    Sunken Hall, D2's Tide Gallery and D3's Bog Hub all carry tiles only
+    the Line answers, which is why check-drift reads `dredge 3 of 5`
+    rather than 0. Those are optional alcoves you come back for. The
+    clause is now the rule it meant: a Reefseed room below its own
+    dungeon must declare `optional: true` and must not be standing in
+    front of a key, boss key, item or essence. The home index is derived
+    from the map data rather than the hardcoded `5` it used to be. Both
+    new clauses verified to go red against injected rooms. NO EARLY ROOM
+    EXISTS YET — the door is open and nothing has walked through it; the
+    fixture is a real build (stakes at two seas, a drowned bole, and D2's
+    coral legend has no `dSnag`) and is the next session's task. The
+    original text follows, and its `early` reading is superseded: `check-reefseed.mjs`'s own `early`
     filter (`r.mapId !== 'overworld' && r.index < 5`) rejects any
     `reefseedRoom` in a dungeon numbered below 5, on the stated reasoning
     that the player cannot hold an item before the dungeon that grants it
