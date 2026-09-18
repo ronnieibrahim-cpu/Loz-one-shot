@@ -1,3 +1,88 @@
+## S112 — the Bogwater Sanctum could not be finished, three times over
+
+The human retired the exhausted rotation and chose a new objective of record:
+**drive `tools/playthrough-route.mjs` past Dungeon 2**, one dungeon a session,
+to the sixth Essence. `docs/prompts/STATE.md` carries it.
+
+This session drove the actor through D3 by hand, room by room, with
+`tools/oneshot/probe-route.mjs`. It found FOUR things no tool in CLAUDE.md's
+table could see, because every one of them is a model that quietly disagrees
+with the game. Three are fixed and the run now reaches the door of D3's boss.
+
+### 1. FIXED — the Kelp-Soled Cleats were locked inside a room you needed them to enter
+
+`d3 0,3,3` (The Cistern Floor) ringed its item island with `dWaterD`: flat
+deep water at every tide, not a tide tile. There was no way onto the island
+without the Cleats standing on it. `walk-dungeons.mjs` never saw it because
+`capsForDungeonIndex` (tools/lib/collision.mjs) grants SWIM to every room of
+D3 — including the room that hands the Cleats over — so the flood walked in
+over the water it was meant to be proving you could not cross. **That grant is
+still there and is still wrong for every item room; it is the next thing to
+fix in that file.** The room now has a two-tile `dBasin` causeway from its own
+south door, walkable at all three seas; both ways onward are still deep.
+
+### 2. FIXED — the Cleats' own promise deadlocked at the mouth of a torrent
+
+"You will walk under the next water you meet" was kept only on the frame the
+player's CENTRE crossed into a deep tile (`groundFlags` is one point). A
+torrent is stronger than a swimmer by design (0.9 against 0.75), so at the
+mouth of a channel running against you the current shoves the centre back out
+every frame it gets there, the dive never starts, and the player stands on the
+lip for ever with the soles already drinking. The Bogwater Drain (`0,4,3`) is
+the ONLY way into the eastern half of the dungeon, so the Sanctum was
+unfinishable. The dive now fires when the hitbox TOUCHES deep water
+(`touchingDeep`, src/game/entity.js), and — this is the half that bites — the
+auto-surface in `updateBreath` had to move to the same test, or the player
+dives and surfaces once a frame for ever. One question, one rule.
+`replay.mjs`'s `d3-undertow` baseline was re-recorded: same claims, the floor
+half now starts sooner and ends 17px further west.
+
+### 3. FIXED — D3's third Small Key was behind a turret that cannot be killed
+
+`d3 0,5,4` (Eel Vault) paid its key out of `puzzle: { enemies: true }`, and
+held a `barnacle`: `hp: 999`, `shield: 'all'`, immobile. Nothing the player
+holds at that point touches it. So the key never dropped and the locked door
+at the head of the Eel Hall — and past it the Kelp Locks, the boss and the
+Essence — was sealed. It is a `crab` now. A sweep of every `enemies: true`
+room in the game found this was the only one; `bubble` is the other enemy
+that would do it.
+
+### 4. NOT FIXED, AND IT IS THE NEXT SESSION'S WHOLE TASK — Gloomtide cannot be
+beaten with the sword the player actually has
+
+`tools/measure-boss-combat.mjs` wins this fight in 720 frames for 13
+quarter-hearts — with `sword: 2` in its setup table. **The L2 sword is in a
+cave behind `needEssences: 4` (src/data/caves.js), so a player arriving in
+order at D3 holds sword 1.** Driven at sword 1 the actor ground Gloomtide from
+36 hp to 18 in EIGHTEEN THOUSAND frames and never closed it: the boss's
+`forceTide(MID)` on a 420-frame timer keeps pulling the sea back to the level
+that makes it fast, and it sheds gels and zols the whole time. The route can
+now be walked to the boss door and no further.
+
+The same table assumes `sword: 2` for d4, d5 and d6 as well, so **every boss
+measurement from D3 on was taken with a sword the player cannot yet hold.**
+That is a design question — boss HP, the sword gate, or the conch during the
+fight — and it is the human's call, not a session's.
+
+### Route notes worth keeping, all learned the expensive way
+
+- `dFight`'s second argument is PATIENCE IN FRAMES, not a kill count.
+  `['fight', 5000, 2]` gives up after two frames and the route sails on
+  without the key it needed. It cost this session three false negatives.
+- `travel` cannot enter a torrent room: it stands on the edge, walks at the
+  current, loses, and marks the direction blocked. Use `goto` to the room's
+  own niche and `exit` by hand.
+- `travel` through a room with enemies in it is expensive — it re-enters and
+  re-plans and walks into bodies. Crossing the Eel Hall's west screen with two
+  explicit `goto` waypoints along the wall cost ZERO damage; `travel` across
+  the same screen cost twenty-five quarter-hearts and killed the run.
+- `hold` is not room-scoped. A `['hold',['left'],900]` that leaves the Kelp
+  Locks keeps holding left through the Lock Gallery and into the bogmaw.
+- A locked door is opened with A (`Game.tileInteract`), never by walking into
+  it. Face it, then `['tap','a',40]`.
+- The actor's `use` verb presses the equipped slot, so a `['use','cleats',…]`
+  does nothing unless `['equip','cleats','B',400]` came first.
+
 ## S111 — D3 gets its set piece: the Eel Hall widened to 3x1
 
 Objective 1 (wide-rooms) is MET: `check-drift` reads `2x2 1` and `3x1 3`, so

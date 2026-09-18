@@ -1823,7 +1823,23 @@ export function installDungeonsA() {
           '##########',
         ],
         entities: [
-          ['barnacle', 4, 4],
+          // A CRAB, NOT A BARNACLE, AND THE KEY IS WHY. This room's Small Key —
+          // the third of three, and the one that opens the way to the Kelp
+          // Locks and everything past them — is paid out by `puzzle: { enemies:
+          // true }`, which holds until nothing in the room is alive. A barnacle
+          // is `hp: 999` with `shield: 'all'`: a turret bolted to the wall that
+          // the sword cannot touch and no item in the player's hands at this
+          // point can answer. So the key never dropped, the locked door at the
+          // head of the Eel Hall never opened, and HALF THE DUNGEON, ITS BOSS
+          // AND ITS ESSENCE SAT BEHIND IT. `walk-dungeons.mjs` counted the key
+          // as earned because it reads the room's reward, not whether the room
+          // can be cleared; the playthrough actor fought the barnacle for eight
+          // thousand frames and lost sixteen quarter-hearts to it.
+          //
+          // Barnacles stay everywhere they are scenery-with-a-hitbox — the Eel
+          // Hall still fields two. They may not stand in a room that has to be
+          // emptied.
+          ['crab', 4, 4],
           ['keese', 2, 2],
         ],
         puzzle: {
@@ -1840,6 +1856,24 @@ export function installDungeonsA() {
         // The item room. The chest stands on the only dry island in it, so the
         // first thing the Cleats are used for is getting off the rock you
         // opened them on.
+        //
+        // THE CAUSEWAY IS NOT DECORATION AND IT IS NOT A SOFTENING. Every tile
+        // ringing the island is `dWaterD` — flat deep water at every tide, not
+        // a tide tile — so until S112 there was NO WAY ONTO THE ISLAND without
+        // the Cleats that are standing on it, and the Cleats are what D3 hands
+        // over. The chest was unreachable from a real playthrough and nothing
+        // in CLAUDE.md's table could see it: `walk-dungeons.mjs` floods a
+        // dungeon with `capsForDungeonIndex`, which grants swim to every room
+        // of D3 including this one, so the flood walked in over the water it
+        // was supposed to be proving you could not cross. The playthrough
+        // actor found it in one directive. The two cells of `dBasin` below are
+        // dry at LOW, damp at MID and shallow at HIGH — walkable at all three,
+        // because an item room has to work at whichever sea arrives.
+        //
+        // The room's own sentence is unchanged: the causeway only reaches the
+        // door you came in by. Both ways ONWARD — west to the Undertow, east
+        // to the Bogwater Drain — are still two tiles of deep water, so the
+        // first thing the Cleats are used for is still getting off this rock.
         map: [
           '##########',
           '#WWWWWWWW#',
@@ -1847,7 +1881,7 @@ export function installDungeonsA() {
           '.WW....WW.',
           '.WW....WW.',
           '#WW....WW#',
-          '#WWWWWWWW#',
+          '#WWW22WWW#',
           '####..####',
         ],
         entities: [

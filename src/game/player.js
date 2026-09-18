@@ -13,7 +13,7 @@
 //   fx_slash_down/up/side  (the sword arc, drawn separately from Link)
 
 import {
-  Entity, moveEntity, canOccupy, groundFlags, groundTile, findSafeTile, DIR_VEC, DIRS,
+  Entity, moveEntity, canOccupy, groundFlags, groundTile, touchingDeep, findSafeTile, DIR_VEC, DIRS,
 } from './entity.js';
 import { F, transformFor } from '../world/tileset.js';
 import { TILE } from '../core/screen.js';
@@ -237,6 +237,37 @@ export class Player extends Entity {
     // Water currents push you while swimming. They do NOT push a walker on the
     // floor: weighted soles are what the Cleats are, and immunity to the
     // current is the whole trade sink mode offers for its pace.
+    // THE DIVE FIRES ON TOUCH, NOT ON THE MIDDLE, AND THE BOGWATER SANCTUM IS
+    // WHY. `toggleCleats` on dry land promises "you will walk under the next
+    // water you meet", and the dive above keeps that promise on the frame the
+    // player's CENTRE crosses into a deep tile — `groundFlags` is a single
+    // point. A torrent is stronger than a swimmer by design (TORRENT_PUSH 0.9
+    // against SWIM_SPEED 0.75), so at the mouth of a channel running against
+    // you the two rules deadlock: the player edges forward until the water
+    // takes him, the current shoves him back before his middle is ever over
+    // it, `inDeep` never goes true, and the dive he already asked for never
+    // starts. He stands on the lip of the Bogwater Drain holding a direction
+    // for ever with the soles already drinking. The playthrough actor sat
+    // there for nine hundred frames, and the Drain is the ONLY way into the
+    // eastern half of the dungeon, so the Sanctum was unfinishable.
+    //
+    // `check-cleats.mjs` could not see it. It asks whether the floor route
+    // EXISTS — no route on foot, none on the surface, one on the seafloor,
+    // one breath — which is all true here. Whether a player who has asked for
+    // the seafloor can actually GET down to it is a different question, and
+    // nothing asked it until something played the room.
+    //
+    // Touching the water is meeting it. Same sampling the mover already uses,
+    // so "the water I am standing in" and "the water I may step into" are
+    // decided by the same rule rather than by two that disagree at the edge.
+    if (!this.underwater && this.sinkT === 0 && this.cleatMode === 'sink'
+        && this._cleats > 0 && this.z <= 2 && touchingDeep(game, this)) {
+      this.sinkT = game.charm('pressureScar')
+        ? Math.max(1, Math.round(SINK_ENTER_FRAMES * PRESSURE_SCAR_FACTOR))
+        : SINK_ENTER_FRAMES;
+      this.sinkInto = true;
+      game.audio.sfx('dive');
+    }
     if (this.inDeep && !this.underwater && !game.charm('deadweight')) {
       const { tx, ty } = groundTile(game, this);
       const def = game.room.tile(tx, ty, game.tide);
@@ -1046,7 +1077,14 @@ export class Player extends Entity {
       game.spawnEffect('bubble', this.x, this.y - 2, { life: 30 });
     }
     // Left standing on dry ground by a falling tide: come back up on your own.
-    if (!this.inDeep) { this.surface(game, false); return; }
+    //
+    // TOUCHING, NOT CENTRED, for the same reason the dive above uses it: these
+    // two tests have to agree or they fight each other. With `inDeep` here, a
+    // player who dived at the lip of a channel — his box in the water, his
+    // middle not yet — surfaced on the very next frame, dived again because the
+    // soles were still drinking, and stood in the doorway of the Bogwater Drain
+    // splashing once a frame for ever. One question, one rule.
+    if (!touchingDeep(game, this)) { this.surface(game, false); return; }
     if (this._cleats >= 2) return;            // Mermaid Suit: unlimited
     if (game.charm('gillcarve')) return;      // and so is a Gillcarve
     this.breath--;

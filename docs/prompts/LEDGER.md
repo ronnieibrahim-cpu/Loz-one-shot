@@ -915,3 +915,24 @@ checked and why; see `docs/NEXT-SESSION.md` S60 for the full account.
   checkers. The boulder's actual passability still comes from `F.SOLID` +
   `liftLevel: 2` + the `dredge` tile action, as this entry originally said;
   only the "read by nothing" half of the claim was wrong.
+
+## Settled at S112 — proved by playing the Bogwater Sanctum
+
+- **A dungeon flood that grants a dungeon's own item to that dungeon's own
+  item room proves nothing about the item room.** `capsForDungeonIndex` gives
+  swim to every room of D3. The Cleats chest sat on an island ringed by flat
+  deep water and `walk-dungeons.mjs` was green about it for the life of the
+  project. Negation: do not trust a dungeon flood about the room that hands
+  the item over. Only the playthrough can answer that one.
+- **`check-cleats.mjs` asks whether the seafloor route exists, not whether a
+  player can get down to it.** All four of its clauses held on the Bogwater
+  Drain while the room could not be entered at all. Negation: an EXISTS proof
+  about a route is not a proof about the transition onto it.
+- **`puzzle: { enemies: true }` means every enemy, including the ones with no
+  answer.** A `barnacle` (hp 999, shield all) in such a room seals it for
+  ever, and the reward table reads as earned to every checker. Only `barnacle`
+  and `bubble` can do this; only the Eel Vault did.
+- **`tools/measure-boss-combat.mjs`'s setup table is not in-order play.** It
+  gives `sword: 2` from d3 on; the L2 sword is gated behind four Essences. Any
+  "measured to need N quarter-hearts" figure for d3 and later describes a
+  fight the player cannot bring. Not yet resolved — see NEXT-PROMPT.

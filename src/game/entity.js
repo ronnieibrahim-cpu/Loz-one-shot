@@ -300,6 +300,32 @@ export function groundFlags(game, e) {
   return room.flagsAt(tx, ty, game.tide);
 }
 
+/**
+ * Is any part of this entity's hitbox over deep water?
+ *
+ * `groundFlags` asks about ONE point — the hitbox's centre-bottom — which is
+ * the right question for "what am I standing in" and the wrong one for "have I
+ * met the water yet". The Kelp-Soled Cleats' dive needs the second: a player
+ * who has set the soles to drink is promised the floor of the next water he
+ * meets, and at the mouth of a torrent running against him he never gets his
+ * middle over it (see Player.updateWater). Samples the hitbox the same way
+ * `canOccupy` does, so the two never disagree about where the water starts.
+ */
+export function touchingDeep(game, e) {
+  const room = game.room;
+  if (!room) return false;
+  const r = e.rect();
+  const xs = sampleAxis(r.x, r.x + r.w - 1), ys = sampleAxis(r.y, r.y + r.h - 1);
+  for (const py of ys) {
+    for (const px of xs) {
+      const tx = Math.floor(px / TILE), ty = Math.floor(py / TILE);
+      if (!room.inBounds(tx, ty)) continue;
+      if (room.flagsAt(tx, ty, game.tide) & F.DEEP) return true;
+    }
+  }
+  return false;
+}
+
 export function groundTile(game, e) {
   const room = game.room;
   const px = Math.floor(e.x + e.hb.x + e.hb.w / 2);

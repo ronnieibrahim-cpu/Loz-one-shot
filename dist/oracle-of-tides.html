@@ -5872,6 +5872,32 @@ function groundFlags(game, e) {
   return room.flagsAt(tx, ty, game.tide);
 }
 
+/**
+ * Is any part of this entity's hitbox over deep water?
+ *
+ * `groundFlags` asks about ONE point — the hitbox's centre-bottom — which is
+ * the right question for "what am I standing in" and the wrong one for "have I
+ * met the water yet". The Kelp-Soled Cleats' dive needs the second: a player
+ * who has set the soles to drink is promised the floor of the next water he
+ * meets, and at the mouth of a torrent running against him he never gets his
+ * middle over it (see Player.updateWater). Samples the hitbox the same way
+ * `canOccupy` does, so the two never disagree about where the water starts.
+ */
+function touchingDeep(game, e) {
+  const room = game.room;
+  if (!room) return false;
+  const r = e.rect();
+  const xs = sampleAxis(r.x, r.x + r.w - 1), ys = sampleAxis(r.y, r.y + r.h - 1);
+  for (const py of ys) {
+    for (const px of xs) {
+      const tx = Math.floor(px / TILE), ty = Math.floor(py / TILE);
+      if (!room.inBounds(tx, ty)) continue;
+      if (room.flagsAt(tx, ty, game.tide) & F.DEEP) return true;
+    }
+  }
+  return false;
+}
+
 function groundTile(game, e) {
   const room = game.room;
   const px = Math.floor(e.x + e.hb.x + e.hb.w / 2);
@@ -5939,6 +5965,7 @@ __exports["Entity"] = Entity;
 __exports["moveEntity"] = moveEntity;
 __exports["canOccupy"] = canOccupy;
 __exports["groundFlags"] = groundFlags;
+__exports["touchingDeep"] = touchingDeep;
 __exports["groundTile"] = groundTile;
 __exports["tideAt"] = tideAt;
 __exports["standAt"] = standAt;
@@ -8092,7 +8119,7 @@ __define("game/player.js", function (__exports, __require) {
 //   link_hold_down/up/side (blade held out, walking with it)
 //   fx_slash_down/up/side  (the sword arc, drawn separately from Link)
 
-const { Entity, moveEntity, canOccupy, groundFlags, groundTile, findSafeTile, DIR_VEC, DIRS } = __require("game/entity.js");
+const { Entity, moveEntity, canOccupy, groundFlags, groundTile, touchingDeep, findSafeTile, DIR_VEC, DIRS } = __require("game/entity.js");
 const { F, transformFor } = __require("world/tileset.js");
 const { TILE } = __require("core/screen.js");
 const { sp, toPx } = __require("core/fixed.js");
@@ -8288,6 +8315,37 @@ class Player extends Entity {
     // Water currents push you while swimming. They do NOT push a walker on the
     // floor: weighted soles are what the Cleats are, and immunity to the
     // current is the whole trade sink mode offers for its pace.
+    // THE DIVE FIRES ON TOUCH, NOT ON THE MIDDLE, AND THE BOGWATER SANCTUM IS
+    // WHY. `toggleCleats` on dry land promises "you will walk under the next
+    // water you meet", and the dive above keeps that promise on the frame the
+    // player's CENTRE crosses into a deep tile — `groundFlags` is a single
+    // point. A torrent is stronger than a swimmer by design (TORRENT_PUSH 0.9
+    // against SWIM_SPEED 0.75), so at the mouth of a channel running against
+    // you the two rules deadlock: the player edges forward until the water
+    // takes him, the current shoves him back before his middle is ever over
+    // it, `inDeep` never goes true, and the dive he already asked for never
+    // starts. He stands on the lip of the Bogwater Drain holding a direction
+    // for ever with the soles already drinking. The playthrough actor sat
+    // there for nine hundred frames, and the Drain is the ONLY way into the
+    // eastern half of the dungeon, so the Sanctum was unfinishable.
+    //
+    // `check-cleats.mjs` could not see it. It asks whether the floor route
+    // EXISTS — no route on foot, none on the surface, one on the seafloor,
+    // one breath — which is all true here. Whether a player who has asked for
+    // the seafloor can actually GET down to it is a different question, and
+    // nothing asked it until something played the room.
+    //
+    // Touching the water is meeting it. Same sampling the mover already uses,
+    // so "the water I am standing in" and "the water I may step into" are
+    // decided by the same rule rather than by two that disagree at the edge.
+    if (!this.underwater && this.sinkT === 0 && this.cleatMode === 'sink'
+        && this._cleats > 0 && this.z <= 2 && touchingDeep(game, this)) {
+      this.sinkT = game.charm('pressureScar')
+        ? Math.max(1, Math.round(SINK_ENTER_FRAMES * PRESSURE_SCAR_FACTOR))
+        : SINK_ENTER_FRAMES;
+      this.sinkInto = true;
+      game.audio.sfx('dive');
+    }
     if (this.inDeep && !this.underwater && !game.charm('deadweight')) {
       const { tx, ty } = groundTile(game, this);
       const def = game.room.tile(tx, ty, game.tide);
@@ -9097,7 +9155,14 @@ class Player extends Entity {
       game.spawnEffect('bubble', this.x, this.y - 2, { life: 30 });
     }
     // Left standing on dry ground by a falling tide: come back up on your own.
-    if (!this.inDeep) { this.surface(game, false); return; }
+    //
+    // TOUCHING, NOT CENTRED, for the same reason the dive above uses it: these
+    // two tests have to agree or they fight each other. With `inDeep` here, a
+    // player who dived at the lip of a channel — his box in the water, his
+    // middle not yet — surfaced on the very next frame, dived again because the
+    // soles were still drinking, and stood in the doorway of the Bogwater Drain
+    // splashing once a frame for ever. One question, one rule.
+    if (!touchingDeep(game, this)) { this.surface(game, false); return; }
     if (this._cleats >= 2) return;            // Mermaid Suit: unlimited
     if (game.charm('gillcarve')) return;      // and so is a Gillcarve
     this.breath--;
@@ -29188,7 +29253,23 @@ function installDungeonsA() {
           '##########',
         ],
         entities: [
-          ['barnacle', 4, 4],
+          // A CRAB, NOT A BARNACLE, AND THE KEY IS WHY. This room's Small Key —
+          // the third of three, and the one that opens the way to the Kelp
+          // Locks and everything past them — is paid out by `puzzle: { enemies:
+          // true }`, which holds until nothing in the room is alive. A barnacle
+          // is `hp: 999` with `shield: 'all'`: a turret bolted to the wall that
+          // the sword cannot touch and no item in the player's hands at this
+          // point can answer. So the key never dropped, the locked door at the
+          // head of the Eel Hall never opened, and HALF THE DUNGEON, ITS BOSS
+          // AND ITS ESSENCE SAT BEHIND IT. `walk-dungeons.mjs` counted the key
+          // as earned because it reads the room's reward, not whether the room
+          // can be cleared; the playthrough actor fought the barnacle for eight
+          // thousand frames and lost sixteen quarter-hearts to it.
+          //
+          // Barnacles stay everywhere they are scenery-with-a-hitbox — the Eel
+          // Hall still fields two. They may not stand in a room that has to be
+          // emptied.
+          ['crab', 4, 4],
           ['keese', 2, 2],
         ],
         puzzle: {
@@ -29205,6 +29286,24 @@ function installDungeonsA() {
         // The item room. The chest stands on the only dry island in it, so the
         // first thing the Cleats are used for is getting off the rock you
         // opened them on.
+        //
+        // THE CAUSEWAY IS NOT DECORATION AND IT IS NOT A SOFTENING. Every tile
+        // ringing the island is `dWaterD` — flat deep water at every tide, not
+        // a tide tile — so until S112 there was NO WAY ONTO THE ISLAND without
+        // the Cleats that are standing on it, and the Cleats are what D3 hands
+        // over. The chest was unreachable from a real playthrough and nothing
+        // in CLAUDE.md's table could see it: `walk-dungeons.mjs` floods a
+        // dungeon with `capsForDungeonIndex`, which grants swim to every room
+        // of D3 including this one, so the flood walked in over the water it
+        // was supposed to be proving you could not cross. The playthrough
+        // actor found it in one directive. The two cells of `dBasin` below are
+        // dry at LOW, damp at MID and shallow at HIGH — walkable at all three,
+        // because an item room has to work at whichever sea arrives.
+        //
+        // The room's own sentence is unchanged: the causeway only reaches the
+        // door you came in by. Both ways ONWARD — west to the Undertow, east
+        // to the Bogwater Drain — are still two tiles of deep water, so the
+        // first thing the Cleats are used for is still getting off this rock.
         map: [
           '##########',
           '#WWWWWWWW#',
@@ -29212,7 +29311,7 @@ function installDungeonsA() {
           '.WW....WW.',
           '.WW....WW.',
           '#WW....WW#',
-          '#WWWWWWWW#',
+          '#WWW22WWW#',
           '####..####',
         ],
         entities: [
