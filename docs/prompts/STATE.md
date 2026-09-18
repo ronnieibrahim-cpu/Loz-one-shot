@@ -1,11 +1,11 @@
-OBJECTIVE OF RECORD: 9 playthrough-route — drive the run past Dungeon 2
+OBJECTIVE OF RECORD: 9 playthrough-route — drive the run past Dungeon 3
 
 The human retired the exhausted rotation at S112 and chose this in its place.
 Objectives 1-7 are met and 8 stays BLOCKED (no emulator capture). The new
 objective is the largest open claim in the repo: `check-playthrough.mjs` is
 the only tool that proves the game is finishable, and its route ends at
-`d2/1,3,1` with two Essences of six taken. Four dungeons, four bosses, the
-Coastwise Chain and the later overworld gates have never been played.
+`d3/0,3,1` with three Essences of six taken. Three dungeons, three bosses,
+the Coastwise Chain and the later overworld gates have never been played.
 
 DONE-CONDITION: `tools/playthrough-route.mjs` drives a new game to the sixth
 Essence and `node tools/check-playthrough.mjs` is green on it. Advance one
@@ -39,3 +39,4 @@ S111 | objective | Gave the Bogwater Sanctum its set piece. The Eel Hall is thir
 S112 | objective | Walked the Bogwater Sanctum for the first time and found it could not be finished: the Cleats were locked in the room you needed them to enter, the soles would not take you under at the mouth of a current, and the third key was behind a barnacle nothing can kill. All three are fixed. What stops the run now is the boss himself.
 S113 | objective | Made the third dungeon's boss easier to fight: it has less health, it no longer outruns you when it drags the sea to the level it likes, and it takes that level back less often. Found while sizing the change that the test robot dies to five careless touches no matter how weak the boss is, so the run still cannot be driven through the fight.
 S114 | objective | Made the third boss beatable by the test robot: it now cuts down the slimes he sheds instead of dodging them for ever, which is what was actually killing it — one hit in fourteen came from the boss himself. Seven wins in ten where there were none.
+S115 | objective | Played the third dungeon for the first time. A new game now walks from the title screen all the way to the Bogwater Sanctum's boss and comes out with three of the six Essences: it bombs its way into the marsh to reach the door, dives under all three of the Sanctum's currents in the new soles, and beats Gloomtide with hearts to spare.

@@ -936,3 +936,28 @@ checked and why; see `docs/NEXT-SESSION.md` S60 for the full account.
   gives `sword: 2` from d3 on; the L2 sword is gated behind four Essences. Any
   "measured to need N quarter-hearts" figure for d3 and later describes a
   fight the player cannot bring. Not yet resolved — see NEXT-PROMPT.
+- **The Bogwater Sanctum is PLAYED, not modelled (S115).** A new game reaches
+  Gloomtide's arena with three Essences, eight Small Keys earned and spent,
+  the Sunken Marsh opened with the Bombs and all three torrents crossed on
+  the seafloor. Settled with it: D3 is finishable in order; the Cleats'
+  floor mode works from a real playthrough, not just from `check-cleats`'s
+  EXISTS proof; and the Bombs answer an overworld region gate under a real
+  player.
+- **A route may not count presses at a TOGGLE, and `soles` is the second
+  proof of it.** `Player.surface` resets `cleatMode` to 'swim' every time the
+  player comes up, so "press the Cleats once per crossing" is right until the
+  first time it is wrong. Negation: `['use', item, n]` is only ever correct
+  for a verb with no state. Name the state — `tide`, `soles`.
+- **`toggleCleats` freezes the player for its own line of dialogue.** A
+  `hold` on the next frame is spent entirely inside the freeze, and the
+  symptom is an actor holding a direction at the mouth of a torrent for
+  three hundred frames without moving one pixel, with the soles reading
+  `sink` the whole time. Negation: "the mode is set" is not "the mode is
+  usable". `dSoles` answers the box before it returns.
+- **`dTravel` models an edge between any two adjacent rooms that exist.** It
+  learns the blocked ones by trying them, which is enough on a floor and is
+  not enough for three cases, all of them now paid for: it cannot change
+  FLOORS; it walks straight through a dungeon doorway if one is on its path
+  (Grotto Mouth, and sixty directives then play out inside D1 with the trace
+  looking fine); and it cannot see a DIAGONAL-ONLY link, which Bog Causeway
+  has. Negation: a `travel` call is not a substitute for knowing the map.

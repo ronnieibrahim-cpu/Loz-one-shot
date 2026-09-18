@@ -1,3 +1,104 @@
+## S115 — the third dungeon is played, and the run now ends on three Essences
+
+`check-playthrough.mjs` drives a new game from the title screen to
+Gloomtide's arena: Tidewash Grotto, the Coral Spire and the Bogwater
+Sanctum, in order, with nothing granted. 23 assertions, 63,117 frames, no
+death, ends on 28 of 32 quarter-hearts.
+
+### The two claims this leg added that no earlier leg could make
+
+    the run bombed its way into the Sunken Marsh
+    the run walked the seafloor under D3's three torrents
+
+The first is the bigger one. THE SANCTUM'S DOOR IS BEHIND A REGION GATE and
+nothing had ever driven one: D1 and D2 are both reached across open coast,
+so until this leg no run had answered an overworld screen with an ITEM
+rather than with a direction. Bog Causeway's east strip is walled off from
+the rest of its screen by a cliff column with one split boulder in it at
+(8,2) — `check-overworld`'s own `bombs` gate — and a `travel` call aimed
+west of there reroutes north through the bluffs and dies in the salt pans.
+The route equips the Bombs to B, drops one against the boulder, and puts
+the conch back on B before anything asks for the tide again.
+
+### The route out of D2 is four directives, and finding them took an hour
+
+`travel` cannot change floors and models an edge between any two adjacent
+rooms that EXIST, wall or no wall — it learns the blocked ones by trying
+them. From Anemos's arena that reroutes into Spire Ascent's phantom
+anchor/non-anchor edge and oscillates between two rooms until its budget is
+gone. What works is naming the two real legs: `travel 4,2` (Reefguard Hall,
+a genuine east edge from the Ascent's anchor cell) then `travel 4,3` (the
+First Fork), whose own warps drop into Upper Landing, which is the only
+room on floor 1 with a stair to floor 0.
+
+### The overworld crossing is nine screens and it was worth measuring twice
+
+Anemos leaves the run on 9 of 28; the arena's Heart Container refills it.
+The strand (row 8) costs 23 quarter-hearts and killed the run twice. Row 7
+costs 11 — Dune Crossing and Village Shore between them are twelve of the
+strand's twenty-three, and the village is free. The heal at the end is D3's
+own: the Drowned Nave's `puzzle.enemies` reward is a FAIRY, one room past
+the mouth, so the crossing only has to be survived rather than afforded.
+`travel` also walks straight through Tidewash Grotto's arch on its way west
+out of Grotto Mouth — sixty directives then play out inside D1 while the
+trace looks fine — so that screen is crossed by hand, below the door.
+
+### `['soles', 'sink'|'swim']` — a new route verb, and the settle is the verb
+
+The Cleats are a TOGGLE, so counting presses is the same mistake `tide`
+already fixed for the conch: `Player.surface` sets `cleatMode` back to
+'swim' every time the player comes up, so a route that presses once per
+crossing is right until the first time it is wrong. The verb reads
+`cleatMode` and presses only when it disagrees.
+
+THE PART THAT IS NOT OPTIONAL: `toggleCleats` freezes the player for the
+length of its own line of dialogue, and a `hold` issued on the next frame
+is spent entirely inside that freeze. The actor stood on the lip of the
+Undertow holding left for three hundred frames without moving one pixel,
+with the soles reading `sink` the whole time. That reads exactly like a
+collision bug and is not one. The verb now answers its own dialogue before
+returning, and then waits for `underwater` to match.
+
+### The trace says which foes, not just how many
+
+Two new columns: the player's layer (`sink/floor`, `swim/dry`) and the
+NAMES of the enemies still standing. "The room would not clear" is the
+commonest way a route stalls and a count never says whether what is left is
+a flier the swordsman cannot corner, a phased-out enemy that is not
+hittable at this sea at all, or a barnacle that was never killable. The Eel
+Vault cost 8,000 frames of `fight` before those columns existed and one run
+after they did.
+
+### FINDING: `dFight` still cannot kill a patrolling crab
+
+The Eel Vault's crab survived `['fight', 8000, 8000]` at full patience,
+untouched, having touched nothing. `dFight` flips its approach axis when
+the chosen one is shielded, which is the right rule and not enough: a crab
+patrols along x, so the flip sends the swordsman to the crab's row and it
+closes on x anyway once `perp <= LINED`. Sandpiper Row's crab taught this
+route the same lesson in S40 and was answered the same way — stand over the
+patrol line, face down, and swing, because a `shield: 'front'` check only
+compares a HORIZONTAL attack direction against a horizontal facing
+(`Entity.hurt`), so a vertical swing is unconditionally unblockable. That
+is now twice this has been paid for by hand. A `dFight` that preferred the
+axis PERPENDICULAR to a patrolling enemy's own movement would close both.
+
+### FINDING: Bog Causeway's west column joins its south lane by one diagonal
+
+(1,5) and (2,6) are the only pair; (1,6) and (2,5) are both cliff. It is
+crossable because this game's diagonals are not normalised, and it is
+invisible to any four-neighbour planner — `goto` simply reports no path.
+The screen is not stranded (its southern lane is reachable from Sunken
+Reeds below) so `check-strands` is right to pass it, but a lane whose only
+internal link is a corner is worth an eye on the art pass.
+
+### What is still open
+
+Everything after D3: the Cliffside Cistern, the Drowned Wood Shrine and the
+Abyssal Keep, the Coastwise Chain, the Salt Pans' Rod gate and the Keep's
+story gate, and Wyverna, Rootmaw and Nereth. D4 is the next extension and
+its boss is the one fight of the three that already measures 10 wins in 10.
+
 ## S114 — the third boss can be beaten by the harness now, and the reason was never the boss
 
 S113 handed this session a diagnosis — "the actor takes a contact hit every

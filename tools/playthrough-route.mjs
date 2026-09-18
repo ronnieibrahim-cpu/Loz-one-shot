@@ -988,62 +988,381 @@ export const ROUTE = [
   ['loot', 900],
   ['dialogue', 900],
   ['wait', 240],
+
+  // ===================================================================
+  // D3 — BOGWATER SANCTUM. Draft leg 1: out of the Spire and across to the
+  // Sanctum's mouth.
+  ['travel', 4, 2, 8000],
+  ['travel', 4, 3, 8000],
+  ['goto', 2, 4, 900],
+  ['wait', 90],
+  ['goto', 8, 2, 900],
+  ['wait', 60],
+  ['travel', 3, 7, 20000],
+  ['goto', 4, 7, 500],
+  ['wait', 60],
+  // West along the strand. Screen by screen rather than one `travel`: a single
+  // call across the map rerouted north through the salt pans and died there.
+  ['travel', 10, 6, 6000],
+  ['goto', 4, 5, 500],
+  ['exit', 'down', 400],
+  ['travel', 10, 8, 4000],
+  ['travel', 9, 8, 4000],
+  ['travel', 8, 8, 4000],
+
+  // Row 7 west from Grotto Mouth, not the strand — the strand's Dune Crossing
+  // and Village Shore cost twelve quarter-hearts between them.
+  ['travel', 8, 7, 6000],
+  ['fight', 8000, 8000],
+  ['loot', 1200],
+  ['travel', 7, 7, 6000],
+  ['fight', 8000, 8000],
+  ['loot', 1200],
+  ['travel', 6, 7, 6000],
+  ['fight', 8000, 8000],
+  ['loot', 1200],
+  ['travel', 5, 7, 6000],
+  ['travel', 4, 7, 6000],
+  ['travel', 3, 7, 6000],
+  ['fight', 8000, 8000],
+  ['loot', 1200],
+
+  // ------------------------------------------------- overworld 0,2,7
+  // THE MARSH IS BEHIND A CRACKED CLIFF, AND THIS IS WHERE THE BOMBS EARN
+  // THEIR PLACE IN THE RUN. Bog Causeway's east strip is walled off from the
+  // rest of the screen by a cliff column with one split boulder in it at
+  // (8,2); nothing walks round it, and every `travel` aimed west of here
+  // reroutes north through the bluffs and dies on the way. Stand east of the
+  // boulder, face it, and drop a bomb.
+  //
+  // THE BOMBS GO ON B AND THE CONCH COMES BACK TO B AFTERWARDS. `use` and
+  // `tide` both press the slot the item is actually in, so leaving the bombs
+  // equipped turns every later conch press into a bomb — and the tide is what
+  // crosses the rest of this screen.
+  ['travel', 2, 7, 6000],
+  ['equip', 'bombs', 'B', 400],
+  ['goto', 9, 2, 900],
+  ['hold', ['left'], 8],
+  ['use', 'bombs', 1, 60],
+  ['goto', 9, 4, 400],
+  ['wait', 180],
+  ['equip', 'conch', 'B', 400],
+
+  // The causeway's own sign says it wades only at LOW, and the sea is going
+  // to LOW anyway for the fight at the end of this dungeon — Gloomtide is
+  // nearly twice as fast at the current's own level.
+  ['tide', 0, 140, 900],
+
+  // ------------------------------------------------- overworld 0,1,8
+  // The Sanctum's mouth, by way of Sanctum Path. Both halves of the arch
+  // enter; the left one is the tile the door's own warp sits on.
+  ['travel', 1, 8, 8000],
+  ['goto', 4, 2, 800],
+  ['wait', 90],
+
+  // ---------------------------------------------------------------- d3 0,3,6
+  // The Drowned Nave. `puzzle.enemies: true` pays out a FAIRY, and it is the
+  // heal the whole crossing west was spent on: the run arrives here on
+  // whatever Anemos and nine screens of strand left it.
+  ['travel', 3, 6, 4000],
+  ['fight', 8000, 8000],
+  ['wait', 120],
+  ['dialogue', 400],
+  ['wait', 120],
+  ['loot', 1500],
+
+  // ---------------------------------------------------------------- d3 0,2,5
+  // Bog Hub, then the Map Cell for the Dungeon Map.
+  ['travel', 3, 5, 4000],
+  ['travel', 2, 5, 4000],
+  ['loot', 1200],
+
+  // ---------------------------------------------------------------- d3 0,4,5
+  // The Sluice Cell. Two blocks, two switches directly north of them: stand
+  // under each block and hold up. The key drops against the room's own north
+  // wall, where `dLoot`'s lean-north recovery has nothing to lean into.
+  ['travel', 4, 5, 4000],
+  ['goto', 2, 4, 900],
+  ['hold', ['up'], 40],
+  ['goto', 7, 4, 900],
+  ['hold', ['up'], 40],
+  ['dialogue', 300],
+  ['goto', 4, 2, 600],
+  ['hold', ['up'], 30],
+  ['loot', 900],
+
+  // ---------------------------------------------------------------- d3 0,3,4
+  // The Weir. Its locked door is in the room's own north wall and gates the
+  // stair to the item room, not the room's approach — the key is spent here
+  // and the two side cells either side of it are walked afterwards.
+  ['travel', 3, 4, 4000],
+  ['goto', 4, 3, 900],
+  ['hold', ['up'], 20],
+  ['tap', 'a', 30],
+
+  // ---------------------------------------------------------------- d3 0,2,4
+  // Silt Cell: the Chartstone.
+  ['travel', 2, 4, 4000],
+  ['goto', 4, 3, 600],
+  ['hold', ['up'], 6],
+  ['tap', 'a', 40],
+  ['dialogue', 400],
+  ['loot', 900],
+
+  // ---------------------------------------------------------------- d3 0,4,4
+  // Reed Cell: clear it for a Piece of Heart.
+  ['travel', 4, 4, 4000],
+  ['fight', 8000, 8000],
+  ['wait', 120],
+  ['dialogue', 400],
+  ['wait', 120],
+  ['loot', 1500],
+
+  // ---------------------------------------------------------------- d3 0,3,3
+  // THE CISTERN FLOOR, AND THE KELP-SOLED CLEATS. The island is ringed by
+  // flat deep water at every tide; the causeway from the south door is the
+  // only dry way onto it, and the way off it is the item in the chest.
+  ['travel', 3, 4, 4000],
+  ['goto', 4, 1, 900],
+  ['hold', ['up'], 30],
+  ['wait', 60],
+  ['goto', 4, 4, 900],
+  ['hold', ['up'], 6],
+  ['tap', 'a', 40],
+  ['dialogue', 600],
+  ['loot', 900],
+
+  // ---------------------------------------------------------------- d3 0,2,3
+  // THE UNDERTOW, ON THE SEAFLOOR. The soles go on B — the conch comes back
+  // to it before the boss — and are pressed once on dry land, which arms
+  // them: the next water the player steps into is entered by sinking rather
+  // than by swimming (`Player.updateTerrain`). On the surface this channel's
+  // current runs east and carries you back onto the island; on the floor
+  // nothing pushes at all, and the whole length fits in one breath.
+  ['equip', 'cleats', 'B', 400],
+  ['soles', 'sink', 240],
+  ['goto', 3, 3, 600],
+  ['hold', ['left'], 120],
+  ['soles', 'sink', 240],
+  ['hold', ['left'], 300],
+  ['wait', 90],
+
+  // ---------------------------------------------------------------- d3 0,1,3
+  // The Sunken Vestry, and the second Small Key: two more blocks onto two
+  // more switches. Coming up out of the channel puts the soles back on the
+  // surface by itself (`Player.surface`), so nothing has to unset them.
+  ['goto', 2, 4, 900],
+  ['hold', ['up'], 40],
+  ['goto', 7, 4, 900],
+  ['hold', ['up'], 40],
+  ['dialogue', 300],
+  ['goto', 4, 2, 600],
+  ['hold', ['up'], 30],
+  ['loot', 900],
+
+  // ---------------------------------------------------------------- d3 0,1,2
+  // The Drain Gallery. Its locked door stands in the middle of the room
+  // rather than in a wall, and the Boss Key is in the chest on the far side
+  // of it.
+  ['goto', 3, 1, 900],
+  ['hold', ['up'], 30],
+  ['wait', 60],
+  ['goto', 4, 4, 900],
+  ['hold', ['right'], 20],
+  ['tap', 'a', 30],
+  ['goto', 7, 4, 900],
+  ['hold', ['up'], 6],
+  ['tap', 'a', 40],
+  ['dialogue', 400],
+  ['loot', 900],
+
+  // ---------------------------------------------------------------- d3 0,2,3
+  // BACK EAST ALONG THE UNDERTOW, ON THE SURFACE, AND IT IS FREE. The channel
+  // runs east: step off the shelf into it without arming the soles and the
+  // current carries you the whole length back to the island. A torrent is a
+  // wall one way and a road the other, and this is the room saying so.
+  ['goto', 3, 6, 900],
+  ['hold', ['down'], 30],
+  ['wait', 60],
+  ['goto', 8, 3, 900],
+  ['hold', ['right'], 240],
+  ['wait', 90],
+
+  // ---------------------------------------------------------------- d3 0,3,3
+  // Across the island and out its east side.
+  ['goto', 5, 3, 900],
+  ['hold', ['right'], 180],
+  ['wait', 90],
+
+  // ---------------------------------------------------------------- d3 0,4,3
+  // THE BOGWATER DRAIN, AND THE CURRENT RUNS THE OTHER WAY. A player who
+  // learned "swim east" in the Undertow learns nothing here: this channel
+  // flows west, so the crossing east is another floor walk. The alcove under
+  // the channel holds a fairy and only opens off the seafloor.
+  ['soles', 'sink', 240],
+  ['hold', ['right'], 60],
+  ['goto', 4, 6, 900],
+  ['loot', 1200],
+  // Coming up into the alcove surfaced the soles, so they are armed again for
+  // the second half of the crossing.
+  ['soles', 'sink', 240],
+  ['hold', ['up'], 60],
+  ['hold', ['right'], 300],
+  ['wait', 90],
+
+  // ---------------------------------------------------------------- d3 0,5,4
+  // Eel Hall's west screen, and straight through it to the Eel Vault below.
+  // NOTHING IS FOUGHT IN THE HALL: it fields two barnacles, which are
+  // `hp: 999` turrets bolted to the wall, and a `fight` directive in a room
+  // holding one never returns.
+  ['goto', 4, 6, 900],
+  ['hold', ['down'], 30],
+  ['wait', 60],
+  ['fight', 3000, 1200],
+
+  // THE VAULT'S CRAB CANNOT BE KILLED BY `fight`, AND THE REASON IS THE SAME
+  // ONE SANDPIPER ROW'S CRAB TAUGHT THIS ROUTE. `dFight` lines up on one
+  // axis and closes; a crab patrols along x, which is the axis its
+  // `shield: 'front'` covers, and a `shield: 'front'` check only ever
+  // compares a HORIZONTAL attack direction against a horizontal facing
+  // (`Entity.hurt`), so a vertical swing is unconditionally unblockable and a
+  // horizontal one never lands. Eight thousand frames of `fight` left it
+  // standing and the key it is holding never dropped. Stand over its patrol
+  // line and swing down by hand.
+  // It patrols tiles 1 to 4 of its own row, so the swing is taken from the
+  // middle of that beat rather than from wherever `dFight` gave up.
+  ['goto', 3, 3, 900],
+  ['hold', ['down'], 3],
+  ['tap', 'a', 16], ['tap', 'a', 16], ['tap', 'a', 16], ['tap', 'a', 16],
+  ['tap', 'a', 16], ['tap', 'a', 16], ['tap', 'a', 16], ['tap', 'a', 16],
+  ['tap', 'a', 16], ['tap', 'a', 16], ['tap', 'a', 16], ['tap', 'a', 16],
+  ['goto', 2, 3, 600],
+  ['hold', ['down'], 3],
+  ['tap', 'a', 16], ['tap', 'a', 16], ['tap', 'a', 16], ['tap', 'a', 16],
+  ['tap', 'a', 16], ['tap', 'a', 16], ['tap', 'a', 16], ['tap', 'a', 16],
+  ['tap', 'a', 16], ['tap', 'a', 16], ['tap', 'a', 16], ['tap', 'a', 16],
+  ['wait', 120],
+  ['dialogue', 400],
+  ['wait', 120],
+  ['loot', 1500],
+
+  // ---------------------------------------------------------------- d3 0,5,3
+  // Back up into the Hall and through its locked door — the third key, and
+  // the way north into the Kelp Locks.
+  ['goto', 4, 1, 900],
+  ['hold', ['up'], 30],
+  ['wait', 60],
+  ['goto', 4, 3, 900],
+  ['hold', ['up'], 20],
+  ['tap', 'a', 30],
+  ['goto', 4, 1, 900],
+  ['hold', ['up'], 40],
+  ['wait', 90],
+
+  // ---------------------------------------------------------------- d3 0,4,2
+  // THE KELP LOCKS, AND THE ONLY ROOM IN THE DUNGEON WHERE THE BREATH NUMBER
+  // IS NOT DECORATIVE: eighteen tiles of seafloor in one dive with no shelf
+  // in the middle to come up on. Up the shaft, arm the soles, and walk the
+  // whole channel west against a current that would carry a swimmer back.
+  ['soles', 'sink', 240],
+  ['hold', ['up'], 90],
+  ['hold', ['left'], 440],
+  ['wait', 90],
+
+  // ---------------------------------------------------------------- d3 0,3,2
+  // The Lock Gallery, and the boss door in its north wall. THE SEA GOES TO
+  // LOW BEFORE THE DOOR IS OPENED, NOT AFTER: the arena is `noTide`, so it
+  // pins whatever level was carried in, and MID is the sanctum current's own
+  // level — Gloomtide is nearly twice as fast there and the fight is a loss
+  // in ten of ten seeds. Named rather than counted, because the walk here
+  // spent presses of its own.
+  ['tide', 0, 140, 600],
+  ['goto', 4, 3, 900],
+  ['hold', ['up'], 20],
+  ['tap', 'a', 30],
+  ['goto', 4, 1, 900],
+  ['hold', ['up'], 40],
+  ['wait', 90],
+
+  // ---------------------------------------------------------------- d3 0,3,1
+  // GLOOMTIDE, THE BOGWATER MAW. `clearAdds` is not optional here and it is
+  // not general: the boss sheds gels, and read hit by hit, ten of the
+  // fourteen hits that used to kill the actor came from the swarm and exactly
+  // one came from the boss. With the option the fight measures seven wins in
+  // ten seeds; without it, none. Measured across all six bosses it is a win
+  // on this one and a loss on four, so it is named per fight.
+  ['boss', 14000, null, { clearAdds: true }],
+  ['wait', 240],
+
+  // The Essence is not a `Pickup` and `dLoot` cannot see it at any budget —
+  // `Essence` collects on its own overlap check — so it is walked onto by
+  // hand, before the loot call that sweeps up the arena's Heart Container.
+  ['goto', 4, 3, 600],
+  ['dialogue', 900],
+  ['loot', 1200],
+  ['dialogue', 900],
+  ['wait', 240],
 ];
 
 /**
  * Where the run ends, and what that now means.
  *
- * IT REACHES TWO ESSENCES. This block used to stop at D1's — Gohmaraq killed,
- * the Essence taken, nothing past it driven. The run now walks out of Tidewash
- * Grotto, across the overworld (buying the one heart D1's own fight leaves no
- * margin for, see `docs/NEXT-SESSION.md` S40), into the Coral Spire, and out
- * the other side holding both: every Small Key from both dungeons spent, the
- * Lens, the Bombs, a completed Heart Container earned mid-route, and Anemos
- * beaten in real combat — see the comment on the Anemos fight above for the
- * current health margin and where it came from; `dBoss`'s own logic changed
- * in S50 (`b.spec.safeWhenOpen`, see `src/data/bosses.js`), so an older
- * "measured to need N quarter-hearts" figure here would describe a fight
- * that no longer happens. Re-measure with `measure-boss-combat.mjs d2` if a
- * fresh number is needed rather than trusting either the old or new one
- * without checking.
+ * IT REACHES THREE ESSENCES. Tidewash Grotto, the Coral Spire and the
+ * Bogwater Sanctum, walked in order with nothing granted: every Small Key
+ * from all three dungeons earned and spent, the Anchor, the Lens, the Bombs
+ * and the Kelp-Soled Cleats all taken out of the chests that hold them, two
+ * Heart Containers completed out of pieces found on the way, and three
+ * bosses beaten in real combat.
+ *
+ * WHAT THE D3 LEG ADDED THAT NO EARLIER LEG COULD CLAIM, because these are
+ * the assertions worth keeping:
+ *
+ *   * THE BOMBS ANSWER THE OVERWORLD. The Sunken Marsh sits behind a cracked
+ *     cliff on the Bog road (`check-overworld`'s own `bombs` gate), and the
+ *     Sanctum's door is inside it. Every dungeon before this one is reached
+ *     across open coast, so this is the first time the run has had to answer
+ *     a screen with an item rather than with a direction.
+ *   * THE CLEATS ARE USED AS AN ITEM RATHER THAN CARRIED AS A KEY. Three
+ *     torrents stand between the Sanctum's item room and its arena and all
+ *     three are walls on the surface. The route crosses each of them on the
+ *     seafloor, and takes the Undertow's eastward current back on the
+ *     surface for free, which is the room's own argument.
  *
  * WHAT IS STILL NOT DRIVEN, so the next session does not have to find it:
- * everything after D2. Four dungeons, the Coastwise Chain, the overworld's
- * later gates and four bosses are all unrouted, and none of the four has ever
- * been beaten by this actor in real combat on the seed this run uses — see
- * the sweep table above `safe` in tools/actor-runtime.mjs for exactly which,
- * and `tools/measure-boss-combat.mjs <d> --seed=N` for how to re-measure it.
- * D6's Nereth now comes very close in isolation (78 of 80 damage dealt,
- * `docs/NEXT-SESSION.md` S50) but is not routed here — D2 is still the end
- * of this file's own committed run.
+ * everything after D3. The Cliffside Cistern, the Drowned Wood Shrine and
+ * the Abyssal Keep, the Coastwise Chain, the Salt Pans and the Keep's story
+ * gate, and Wyverna, Rootmaw and Nereth. Of those three fights, only
+ * Rootmaw and Nereth have ever been measured as winnable at all (5 in 10 and
+ * 3 in 10 on `measure-boss-combat`'s own points) and none has been beaten on
+ * the seed this run uses — see the sweep table above `safe` in
+ * tools/actor-runtime.mjs, and `docs/NEXT-SESSION.md` for the D3 leg's own
+ * account of what it cost to get one boss from 0 in 10 to routable.
  *
- * THE `dTravel` NON-ANCHOR-CELL GAP (S47) IS NOW SPLICED IN, for both of the
- * two rooms that needed it — S48. Reefguard Hall's return leg (Bomb Vault
- * back into the Hall's own second cell, `1,5,2`) and Spire Ascent's exit leg
- * (its own second cell, `1,3,3`, out to Drowned Cell) both now use a single
- * `['travel', rx, ry, N]` call in place of the manual `goto`/`exit` pair they
- * used to need. Landing this shifted the route's total frame count (fewer
- * redundant positioning frames) and, because Anemos's attack timers are
- * absolute-`g.frame`-based, moved his fight's entry frame enough that the old
- * `wait: 220` needed re-sweeping against the real route — see the comment on
- * the Anemos fight below for the new value and how it was found.
+ * TWO VERBS THIS LEG BOUGHT, both for the same reason the `tide` verb exists:
+ * a route may not count button presses at a toggle. `['soles', 'sink'|'swim']`
+ * names the layer and gets there, and answers the soles' own line of dialogue
+ * on the way out — without that settle the actor stands on the lip of a
+ * torrent holding a direction for three hundred frames without moving, which
+ * reads exactly like a collision bug. And the trace now prints the player's
+ * layer and the NAMES of the foes still standing, because "the room would
+ * not clear" is the commonest way a route stalls and the count alone never
+ * says whether what is left is a flier, a phased-out enemy or a barnacle.
  *
- * A narrower version of the same `dTravel` gap remains, and is still out of
- * scope: `bfsScreens` plans every route from a wide room's OWN ANCHOR
- * coordinates, never the player's actual physical cell, so a `travel` call
- * FROM a wide room's anchor TO a target beyond its own non-anchor cell still
- * has to cross a phantom "edge" between the anchor and non-anchor cells that
- * does not correspond to any real wall — and that leg does not resolve.
- * Neither of D2's two legs needed this (both fixed instances are a single
- * real leg from an ordinary adjacent room straight onto the wide room's own
- * non-anchor cell), so it was not built or tested here. See
- * `docs/HANDOFF.md`'s hard-won-lessons entry on the S47 fix.
+ * A narrower `dTravel` gap remains, and is still out of scope: `bfsScreens`
+ * plans every route from a wide room's OWN ANCHOR coordinates and models an
+ * edge between any two adjacent rooms that exist, whether or not a wall
+ * stands between them. It learns blocked edges by trying them, which is
+ * enough on the overworld and inside a dungeon floor, but it cannot cross a
+ * floor (no `travel` call changes floors) and it cannot see a link that is
+ * DIAGONAL ONLY — Bog Causeway's west column meets its southern lane at one
+ * corner and nowhere else, and this route crosses that by hand.
  */
 export const GOAL = {
-  essences: [1, 2],
-  // The room the run finishes in: Anemos's arena, with both Essences taken.
-  room: 'd2/1,3,1',
+  essences: [1, 2, 3],
+  // The room the run finishes in: Gloomtide's arena, with three Essences
+  // taken.
+  room: 'd3/0,3,1',
   needsVerb: null,
-  keysNeeded: 5,
-  keysObtainable: 5,
+  keysNeeded: 8,
+  keysObtainable: 8,
 };

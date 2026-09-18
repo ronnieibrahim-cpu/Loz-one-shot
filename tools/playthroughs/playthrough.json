@@ -1,46 +1,51 @@
 {
  "note": "A new game driven to the Essences of Tidewash Grotto and the Coral Spire with no shortcuts. Recorded by tools/check-playthrough.mjs; see its header for what \"no shortcuts\" means.",
  "seed": 20260806,
- "frames": 48781,
+ "frames": 63117,
  "state": {
-  "frame": 48781,
-  "mapId": "d2",
-  "room": "1,3,1",
-  "floor": 1,
-  "x": 81,
-  "y": 17,
+  "frame": 63117,
+  "mapId": "d3",
+  "room": "0,3,1",
+  "floor": 0,
+  "x": 114,
+  "y": 41,
   "z": 0,
   "dir": "up",
   "playerId": 1,
-  "hearts": 24,
-  "maxHearts": 24,
-  "rupees": 71,
-  "kills": 36,
+  "hearts": 28,
+  "maxHearts": 32,
+  "rupees": 81,
+  "kills": 54,
   "deaths": 0,
   "keys": 0,
   "essences": [
    1,
-   2
+   2,
+   3
   ],
   "beaten": {
    "d1": true,
-   "d2": true
+   "d2": true,
+   "d3": true
   },
-  "heartPieces": 0,
+  "heartPieces": 1,
   "items": [
    "anchor",
    "bombs",
+   "cleats",
    "conch",
    "lens",
    "sword"
   ],
-  "dungeonMap": false,
-  "chartstone": false,
+  "dungeonMap": true,
+  "chartstone": true,
   "dungeonMaps": {
-   "d1": true
+   "d1": true,
+   "d3": true
   },
   "charts": {
-   "d1": true
+   "d1": true,
+   "d3": true
   },
   "flags": [
    "d1_035_puzzle",
@@ -54,24 +59,29 @@
    "d2_034_puzzle",
    "d2_036_puzzle",
    "d2_reefguard",
+   "d3_eel",
+   "d3_nave",
+   "d3_reed",
+   "d3_sluice",
+   "d3_vestry",
    "sawIntro"
   ],
-  "doorsChanged": 10,
-  "secretsSeen": 77,
-  "chestsOpened": 7,
-  "tide": 2,
+  "doorsChanged": 15,
+  "secretsSeen": 100,
+  "chestsOpened": 10,
+  "tide": 0,
   "probeLevels": null,
   "probePix": null,
   "mode": "play",
   "entities": 2,
   "enemies": 2,
-  "roomSeed": 3879795250,
-  "roomDraws": 108,
+  "roomSeed": 395109002,
+  "roomDraws": 78,
   "globalSeed": 781976111,
   "globalDraws": 0
  },
  "span": {
-  "roomChanges": 106,
+  "roomChanges": 156,
   "camMinX": 0,
   "camMaxX": 151,
   "camMinY": 0,
@@ -81,7 +91,7 @@
   "probeNames": ""
  },
  "audit": {
-  "minHearts": 3,
+  "minHearts": 2,
   "deaths": 0,
   "gained": [
    {
@@ -97,17 +107,22 @@
    {
     "id": "anchor",
     "level": 1,
-    "frame": 9568
+    "frame": 9615
    },
    {
     "id": "lens",
     "level": 1,
-    "frame": 40182
+    "frame": 34855
    },
    {
     "id": "bombs",
     "level": 1,
-    "frame": 43412
+    "frame": 38068
+   },
+   {
+    "id": "cleats",
+    "level": 1,
+    "frame": 53265
    }
   ],
   "modes": [
@@ -133,19 +148,31 @@
    "cutscene",
    "play",
    "cutscene",
+   "play",
+   "menu",
+   "play",
+   "menu",
+   "play",
+   "menu",
+   "play",
+   "cutscene",
    "play"
   ],
   "essenceFrames": [
    {
     "index": 1,
-    "frame": 21982
+    "frame": 22011
    },
    {
     "index": 2,
-    "frame": 47837
+    "frame": 42457
+   },
+   {
+    "index": 3,
+    "frame": 62294
    }
   ],
-  "maxHearts": 24,
+  "maxHearts": 32,
   "rooms": [
    "overworld/0,4,7",
    "overworld/0,3,7",
@@ -210,10 +237,31 @@
    "d2/1,2,3",
    "d2/1,2,2",
    "d2/1,2,1",
-   "d2/1,3,1"
+   "d2/1,3,1",
+   "overworld/0,2,7",
+   "overworld/0,1,7",
+   "overworld/0,1,8",
+   "d3/0,3,7",
+   "d3/0,3,6",
+   "d3/0,3,5",
+   "d3/0,2,5",
+   "d3/0,4,5",
+   "d3/0,3,4",
+   "d3/0,2,4",
+   "d3/0,4,4",
+   "d3/0,3,3",
+   "d3/0,2,3",
+   "d3/0,1,3",
+   "d3/0,1,2",
+   "d3/0,4,3",
+   "d3/0,5,3",
+   "d3/0,5,4",
+   "d3/0,4,2",
+   "d3/0,3,2",
+   "d3/0,3,1"
   ],
-  "blocksTouched": 12,
-  "blocksMoved": 2740,
+  "blocksTouched": 20,
+  "blocksMoved": 4573,
   "roomHealth": [
    {
     "room": "overworld/0,4,7",
@@ -312,1085 +360,1635 @@
     "damage": 2,
     "healing": 0,
     "exitHearts": 10,
-    "exitFrame": 3334
+    "exitFrame": 3369
    },
    {
     "room": "overworld/0,7,7",
-    "enterFrame": 3334,
+    "enterFrame": 3369,
     "enterHearts": 10,
-    "minHearts": 10,
+    "minHearts": 8,
     "maxHearts": 10,
-    "damage": 0,
+    "damage": 2,
     "healing": 0,
-    "exitHearts": 10,
-    "exitFrame": 3537
+    "exitHearts": 8,
+    "exitFrame": 3611
    },
    {
     "room": "overworld/0,8,7",
-    "enterFrame": 3537,
-    "enterHearts": 10,
-    "minHearts": 4,
-    "maxHearts": 10,
-    "damage": 6,
+    "enterFrame": 3611,
+    "enterHearts": 8,
+    "minHearts": 8,
+    "maxHearts": 8,
+    "damage": 0,
     "healing": 0,
-    "exitHearts": 4,
-    "exitFrame": 3783
+    "exitHearts": 8,
+    "exitFrame": 3761
    },
    {
     "room": "overworld/0,8,8",
-    "enterFrame": 3783,
-    "enterHearts": 4,
-    "minHearts": 4,
-    "maxHearts": 4,
+    "enterFrame": 3761,
+    "enterHearts": 8,
+    "minHearts": 8,
+    "maxHearts": 8,
     "damage": 0,
     "healing": 0,
-    "exitHearts": 4,
-    "exitFrame": 3847
+    "exitHearts": 8,
+    "exitFrame": 3825
    },
    {
     "room": "d1/0,3,7",
-    "enterFrame": 3847,
-    "enterHearts": 4,
-    "minHearts": 4,
-    "maxHearts": 4,
+    "enterFrame": 3825,
+    "enterHearts": 8,
+    "minHearts": 8,
+    "maxHearts": 8,
     "damage": 0,
     "healing": 0,
-    "exitHearts": 4,
-    "exitFrame": 4323
+    "exitHearts": 8,
+    "exitFrame": 4301
    },
    {
     "room": "d1/0,3,6",
-    "enterFrame": 4323,
-    "enterHearts": 4,
-    "minHearts": 3,
-    "maxHearts": 4,
-    "damage": 1,
+    "enterFrame": 4301,
+    "enterHearts": 8,
+    "minHearts": 6,
+    "maxHearts": 8,
+    "damage": 2,
     "healing": 0,
-    "exitHearts": 3,
-    "exitFrame": 4530
+    "exitHearts": 6,
+    "exitFrame": 4512
    },
    {
     "room": "d1/0,3,5",
-    "enterFrame": 4530,
-    "enterHearts": 3,
-    "minHearts": 3,
+    "enterFrame": 4512,
+    "enterHearts": 6,
+    "minHearts": 2,
     "maxHearts": 12,
-    "damage": 0,
-    "healing": 9,
+    "damage": 4,
+    "healing": 10,
     "exitHearts": 12,
-    "exitFrame": 5449
+    "exitFrame": 5511
    },
    {
     "room": "d1/0,2,5",
-    "enterFrame": 5449,
+    "enterFrame": 5511,
     "enterHearts": 12,
     "minHearts": 12,
     "maxHearts": 12,
     "damage": 0,
     "healing": 0,
     "exitHearts": 12,
-    "exitFrame": 5867
+    "exitFrame": 5895
    },
    {
     "room": "d1/0,3,5",
-    "enterFrame": 5867,
+    "enterFrame": 5895,
     "enterHearts": 12,
     "minHearts": 12,
     "maxHearts": 12,
     "damage": 0,
     "healing": 0,
     "exitHearts": 12,
-    "exitFrame": 6080
+    "exitFrame": 6108
    },
    {
     "room": "d1/0,4,5",
-    "enterFrame": 6080,
+    "enterFrame": 6108,
     "enterHearts": 12,
     "minHearts": 12,
     "maxHearts": 12,
     "damage": 0,
     "healing": 0,
     "exitHearts": 12,
-    "exitFrame": 6525
+    "exitFrame": 6556
    },
    {
     "room": "d1/0,3,5",
-    "enterFrame": 6525,
+    "enterFrame": 6556,
     "enterHearts": 12,
     "minHearts": 12,
     "maxHearts": 12,
     "damage": 0,
     "healing": 0,
     "exitHearts": 12,
-    "exitFrame": 6711
+    "exitFrame": 6742
    },
    {
     "room": "d1/0,3,4",
-    "enterFrame": 6711,
+    "enterFrame": 6742,
     "enterHearts": 12,
     "minHearts": 12,
     "maxHearts": 12,
     "damage": 0,
     "healing": 0,
     "exitHearts": 12,
-    "exitFrame": 6935
+    "exitFrame": 6966
    },
    {
     "room": "d1/0,2,4",
-    "enterFrame": 6935,
+    "enterFrame": 6966,
+    "enterHearts": 12,
+    "minHearts": 12,
+    "maxHearts": 12,
+    "damage": 0,
+    "healing": 0,
+    "exitHearts": 12,
+    "exitFrame": 7442
+   },
+   {
+    "room": "d1/0,3,4",
+    "enterFrame": 7442,
+    "enterHearts": 12,
+    "minHearts": 12,
+    "maxHearts": 12,
+    "damage": 0,
+    "healing": 0,
+    "exitHearts": 12,
+    "exitFrame": 7618
+   },
+   {
+    "room": "d1/0,4,4",
+    "enterFrame": 7618,
+    "enterHearts": 12,
+    "minHearts": 12,
+    "maxHearts": 12,
+    "damage": 0,
+    "healing": 0,
+    "exitHearts": 12,
+    "exitFrame": 8142
+   },
+   {
+    "room": "d1/0,3,4",
+    "enterFrame": 8142,
+    "enterHearts": 12,
+    "minHearts": 12,
+    "maxHearts": 12,
+    "damage": 0,
+    "healing": 0,
+    "exitHearts": 12,
+    "exitFrame": 8391
+   },
+   {
+    "room": "d1/0,3,3",
+    "enterFrame": 8391,
     "enterHearts": 12,
     "minHearts": 10,
     "maxHearts": 12,
     "damage": 2,
     "healing": 2,
     "exitHearts": 12,
-    "exitFrame": 7456
-   },
-   {
-    "room": "d1/0,3,4",
-    "enterFrame": 7456,
-    "enterHearts": 12,
-    "minHearts": 12,
-    "maxHearts": 12,
-    "damage": 0,
-    "healing": 0,
-    "exitHearts": 12,
-    "exitFrame": 7632
-   },
-   {
-    "room": "d1/0,4,4",
-    "enterFrame": 7632,
-    "enterHearts": 12,
-    "minHearts": 12,
-    "maxHearts": 12,
-    "damage": 0,
-    "healing": 0,
-    "exitHearts": 12,
-    "exitFrame": 8147
-   },
-   {
-    "room": "d1/0,3,4",
-    "enterFrame": 8147,
-    "enterHearts": 12,
-    "minHearts": 12,
-    "maxHearts": 12,
-    "damage": 0,
-    "healing": 0,
-    "exitHearts": 12,
-    "exitFrame": 8396
-   },
-   {
-    "room": "d1/0,3,3",
-    "enterFrame": 8396,
-    "enterHearts": 12,
-    "minHearts": 12,
-    "maxHearts": 12,
-    "damage": 0,
-    "healing": 0,
-    "exitHearts": 12,
-    "exitFrame": 9445
+    "exitFrame": 9492
    },
    {
     "room": "d1/0,3,2",
-    "enterFrame": 9445,
+    "enterFrame": 9492,
     "enterHearts": 12,
     "minHearts": 12,
     "maxHearts": 12,
     "damage": 0,
     "healing": 0,
     "exitHearts": 12,
-    "exitFrame": 9838
+    "exitFrame": 9885
    },
    {
     "room": "d1/0,4,2",
-    "enterFrame": 9838,
+    "enterFrame": 9885,
     "enterHearts": 12,
     "minHearts": 12,
     "maxHearts": 12,
     "damage": 0,
     "healing": 0,
     "exitHearts": 12,
-    "exitFrame": 10395
+    "exitFrame": 10442
    },
    {
     "room": "d1/0,5,2",
-    "enterFrame": 10395,
+    "enterFrame": 10442,
     "enterHearts": 12,
     "minHearts": 12,
     "maxHearts": 12,
     "damage": 0,
     "healing": 0,
     "exitHearts": 12,
-    "exitFrame": 10819
+    "exitFrame": 10866
    },
    {
     "room": "d1/0,5,1",
-    "enterFrame": 10819,
+    "enterFrame": 10866,
     "enterHearts": 12,
     "minHearts": 12,
     "maxHearts": 12,
     "damage": 0,
     "healing": 0,
     "exitHearts": 12,
-    "exitFrame": 11661
+    "exitFrame": 11708
    },
    {
     "room": "d1/0,4,1",
-    "enterFrame": 11661,
+    "enterFrame": 11708,
     "enterHearts": 12,
     "minHearts": 12,
     "maxHearts": 12,
     "damage": 0,
     "healing": 0,
     "exitHearts": 12,
-    "exitFrame": 12240
+    "exitFrame": 12287
    },
    {
     "room": "d1/0,5,1",
-    "enterFrame": 12240,
+    "enterFrame": 12287,
     "enterHearts": 12,
     "minHearts": 12,
     "maxHearts": 12,
     "damage": 0,
     "healing": 0,
     "exitHearts": 12,
-    "exitFrame": 12575
+    "exitFrame": 12622
    },
    {
     "room": "d1/0,5,2",
-    "enterFrame": 12575,
+    "enterFrame": 12622,
     "enterHearts": 12,
     "minHearts": 12,
     "maxHearts": 12,
     "damage": 0,
     "healing": 0,
     "exitHearts": 12,
-    "exitFrame": 13116
+    "exitFrame": 13163
    },
    {
     "room": "d1/0,5,3",
-    "enterFrame": 13116,
+    "enterFrame": 13163,
     "enterHearts": 12,
     "minHearts": 4,
     "maxHearts": 12,
     "damage": 8,
     "healing": 0,
     "exitHearts": 4,
-    "exitFrame": 14715
+    "exitFrame": 14762
    },
    {
     "room": "d1/0,4,3",
-    "enterFrame": 14715,
+    "enterFrame": 14762,
     "enterHearts": 4,
     "minHearts": 3,
     "maxHearts": 16,
     "damage": 1,
     "healing": 13,
     "exitHearts": 16,
-    "exitFrame": 16012
+    "exitFrame": 16059
    },
    {
     "room": "d1/0,3,4",
-    "enterFrame": 16012,
+    "enterFrame": 16059,
     "enterHearts": 16,
     "minHearts": 16,
     "maxHearts": 16,
     "damage": 0,
     "healing": 0,
     "exitHearts": 16,
-    "exitFrame": 16259
+    "exitFrame": 16306
    },
    {
     "room": "d1/0,3,3",
-    "enterFrame": 16259,
+    "enterFrame": 16306,
     "enterHearts": 16,
     "minHearts": 16,
     "maxHearts": 16,
     "damage": 0,
     "healing": 0,
     "exitHearts": 16,
-    "exitFrame": 16711
+    "exitFrame": 16758
    },
    {
     "room": "d1/0,3,2",
-    "enterFrame": 16711,
+    "enterFrame": 16758,
     "enterHearts": 16,
     "minHearts": 16,
     "maxHearts": 16,
     "damage": 0,
     "healing": 0,
     "exitHearts": 16,
-    "exitFrame": 16882
+    "exitFrame": 16929
    },
    {
     "room": "d1/0,2,2",
-    "enterFrame": 16882,
+    "enterFrame": 16929,
     "enterHearts": 16,
     "minHearts": 16,
     "maxHearts": 16,
     "damage": 0,
     "healing": 0,
     "exitHearts": 16,
-    "exitFrame": 17527
+    "exitFrame": 17574
    },
    {
     "room": "d1/0,1,2",
-    "enterFrame": 17527,
+    "enterFrame": 17574,
     "enterHearts": 16,
     "minHearts": 16,
     "maxHearts": 16,
     "damage": 0,
     "healing": 0,
     "exitHearts": 16,
-    "exitFrame": 17692
+    "exitFrame": 17739
    },
    {
     "room": "d1/0,1,1",
-    "enterFrame": 17692,
+    "enterFrame": 17739,
     "enterHearts": 16,
     "minHearts": 16,
     "maxHearts": 16,
     "damage": 0,
     "healing": 0,
     "exitHearts": 16,
-    "exitFrame": 19341
+    "exitFrame": 19391
    },
    {
     "room": "d1/0,2,1",
-    "enterFrame": 19341,
+    "enterFrame": 19391,
     "enterHearts": 16,
     "minHearts": 16,
     "maxHearts": 16,
     "damage": 0,
     "healing": 0,
     "exitHearts": 16,
-    "exitFrame": 19804
+    "exitFrame": 19857
    },
    {
     "room": "d1/0,3,3",
-    "enterFrame": 19804,
+    "enterFrame": 19857,
     "enterHearts": 16,
     "minHearts": 16,
     "maxHearts": 16,
     "damage": 0,
     "healing": 0,
     "exitHearts": 16,
-    "exitFrame": 20200
+    "exitFrame": 20253
    },
    {
     "room": "d1/0,3,2",
-    "enterFrame": 20200,
+    "enterFrame": 20253,
     "enterHearts": 16,
     "minHearts": 16,
     "maxHearts": 16,
     "damage": 0,
     "healing": 0,
     "exitHearts": 16,
-    "exitFrame": 20455
+    "exitFrame": 20508
    },
    {
     "room": "d1/0,3,1",
-    "enterFrame": 20455,
+    "enterFrame": 20508,
     "enterHearts": 16,
-    "minHearts": 4,
-    "maxHearts": 16,
-    "damage": 12,
-    "healing": 0,
-    "exitHearts": 4,
-    "exitFrame": 22680
+    "minHearts": 6,
+    "maxHearts": 20,
+    "damage": 10,
+    "healing": 14,
+    "exitHearts": 20,
+    "exitFrame": 22925
    },
    {
     "room": "d1/0,3,2",
-    "enterFrame": 22680,
-    "enterHearts": 4,
-    "minHearts": 4,
-    "maxHearts": 4,
+    "enterFrame": 22925,
+    "enterHearts": 20,
+    "minHearts": 20,
+    "maxHearts": 20,
     "damage": 0,
     "healing": 0,
-    "exitHearts": 4,
-    "exitFrame": 22852
+    "exitHearts": 20,
+    "exitFrame": 23088
    },
    {
     "room": "d1/0,3,3",
-    "enterFrame": 22852,
-    "enterHearts": 4,
-    "minHearts": 4,
-    "maxHearts": 4,
+    "enterFrame": 23088,
+    "enterHearts": 20,
+    "minHearts": 20,
+    "maxHearts": 20,
     "damage": 0,
     "healing": 0,
-    "exitHearts": 4,
-    "exitFrame": 22999
+    "exitHearts": 20,
+    "exitFrame": 23251
    },
    {
     "room": "d1/0,3,4",
-    "enterFrame": 22999,
-    "enterHearts": 4,
-    "minHearts": 4,
-    "maxHearts": 4,
+    "enterFrame": 23251,
+    "enterHearts": 20,
+    "minHearts": 20,
+    "maxHearts": 20,
     "damage": 0,
     "healing": 0,
-    "exitHearts": 4,
-    "exitFrame": 23146
+    "exitHearts": 20,
+    "exitFrame": 23414
    },
    {
     "room": "d1/0,3,5",
-    "enterFrame": 23146,
-    "enterHearts": 4,
-    "minHearts": 4,
-    "maxHearts": 4,
+    "enterFrame": 23414,
+    "enterHearts": 20,
+    "minHearts": 20,
+    "maxHearts": 20,
     "damage": 0,
     "healing": 0,
-    "exitHearts": 4,
-    "exitFrame": 23293
+    "exitHearts": 20,
+    "exitFrame": 23561
    },
    {
     "room": "d1/0,3,6",
-    "enterFrame": 23293,
-    "enterHearts": 4,
-    "minHearts": 3,
-    "maxHearts": 4,
-    "damage": 1,
+    "enterFrame": 23561,
+    "enterHearts": 20,
+    "minHearts": 20,
+    "maxHearts": 20,
+    "damage": 0,
     "healing": 0,
-    "exitHearts": 3,
-    "exitFrame": 23482
+    "exitHearts": 20,
+    "exitFrame": 23719
    },
    {
     "room": "d1/0,3,7",
-    "enterFrame": 23482,
-    "enterHearts": 3,
-    "minHearts": 3,
-    "maxHearts": 3,
+    "enterFrame": 23719,
+    "enterHearts": 20,
+    "minHearts": 20,
+    "maxHearts": 20,
     "damage": 0,
     "healing": 0,
-    "exitHearts": 3,
-    "exitFrame": 23617
+    "exitHearts": 20,
+    "exitFrame": 23856
    },
    {
     "room": "overworld/0,8,8",
-    "enterFrame": 23617,
-    "enterHearts": 3,
-    "minHearts": 3,
-    "maxHearts": 3,
+    "enterFrame": 23856,
+    "enterHearts": 20,
+    "minHearts": 20,
+    "maxHearts": 20,
     "damage": 0,
     "healing": 0,
-    "exitHearts": 3,
-    "exitFrame": 23781
+    "exitHearts": 20,
+    "exitFrame": 24020
    },
    {
     "room": "overworld/0,7,8",
-    "enterFrame": 23781,
-    "enterHearts": 3,
-    "minHearts": 3,
-    "maxHearts": 3,
+    "enterFrame": 24020,
+    "enterHearts": 20,
+    "minHearts": 20,
+    "maxHearts": 20,
     "damage": 0,
     "healing": 0,
-    "exitHearts": 3,
-    "exitFrame": 23997
+    "exitHearts": 20,
+    "exitFrame": 24236
    },
    {
     "room": "overworld/0,6,8",
-    "enterFrame": 23997,
-    "enterHearts": 3,
-    "minHearts": 3,
-    "maxHearts": 3,
+    "enterFrame": 24236,
+    "enterHearts": 20,
+    "minHearts": 20,
+    "maxHearts": 20,
     "damage": 0,
     "healing": 0,
-    "exitHearts": 3,
-    "exitFrame": 24184
+    "exitHearts": 20,
+    "exitFrame": 24423
    },
    {
     "room": "overworld/0,5,8",
-    "enterFrame": 24184,
-    "enterHearts": 3,
-    "minHearts": 3,
-    "maxHearts": 3,
+    "enterFrame": 24423,
+    "enterHearts": 20,
+    "minHearts": 20,
+    "maxHearts": 20,
     "damage": 0,
     "healing": 0,
-    "exitHearts": 3,
-    "exitFrame": 24312
+    "exitHearts": 20,
+    "exitFrame": 24551
    },
    {
     "room": "overworld/0,5,7",
-    "enterFrame": 24312,
-    "enterHearts": 3,
-    "minHearts": 3,
-    "maxHearts": 3,
+    "enterFrame": 24551,
+    "enterHearts": 20,
+    "minHearts": 20,
+    "maxHearts": 20,
     "damage": 0,
     "healing": 0,
-    "exitHearts": 3,
-    "exitFrame": 24414
+    "exitHearts": 20,
+    "exitFrame": 24653
    },
    {
     "room": "houseShop/0,0,0",
-    "enterFrame": 24414,
-    "enterHearts": 3,
-    "minHearts": 3,
-    "maxHearts": 7,
+    "enterFrame": 24653,
+    "enterHearts": 20,
+    "minHearts": 20,
+    "maxHearts": 20,
     "damage": 0,
-    "healing": 4,
-    "exitHearts": 7,
-    "exitFrame": 24704
+    "healing": 0,
+    "exitHearts": 20,
+    "exitFrame": 24943
    },
    {
     "room": "overworld/0,5,7",
-    "enterFrame": 24704,
-    "enterHearts": 7,
-    "minHearts": 7,
-    "maxHearts": 7,
+    "enterFrame": 24943,
+    "enterHearts": 20,
+    "minHearts": 20,
+    "maxHearts": 20,
     "damage": 0,
     "healing": 0,
-    "exitHearts": 7,
-    "exitFrame": 24773
+    "exitHearts": 20,
+    "exitFrame": 25012
    },
    {
     "room": "overworld/0,5,8",
-    "enterFrame": 24773,
-    "enterHearts": 7,
-    "minHearts": 7,
-    "maxHearts": 7,
+    "enterFrame": 25012,
+    "enterHearts": 20,
+    "minHearts": 20,
+    "maxHearts": 20,
     "damage": 0,
     "healing": 0,
-    "exitHearts": 7,
-    "exitFrame": 24985
+    "exitHearts": 20,
+    "exitFrame": 25224
    },
    {
     "room": "overworld/0,6,8",
-    "enterFrame": 24985,
-    "enterHearts": 7,
-    "minHearts": 7,
-    "maxHearts": 7,
+    "enterFrame": 25224,
+    "enterHearts": 20,
+    "minHearts": 20,
+    "maxHearts": 20,
     "damage": 0,
     "healing": 0,
-    "exitHearts": 7,
-    "exitFrame": 25172
-   },
-   {
-    "room": "overworld/0,7,8",
-    "enterFrame": 25172,
-    "enterHearts": 7,
-    "minHearts": 7,
-    "maxHearts": 7,
-    "damage": 0,
-    "healing": 0,
-    "exitHearts": 7,
+    "exitHearts": 20,
     "exitFrame": 25411
    },
    {
-    "room": "overworld/0,8,8",
+    "room": "overworld/0,7,8",
     "enterFrame": 25411,
-    "enterHearts": 7,
-    "minHearts": 7,
-    "maxHearts": 11,
+    "enterHearts": 20,
+    "minHearts": 20,
+    "maxHearts": 20,
     "damage": 0,
-    "healing": 4,
-    "exitHearts": 11,
-    "exitFrame": 27130
+    "healing": 0,
+    "exitHearts": 20,
+    "exitFrame": 25628
+   },
+   {
+    "room": "overworld/0,8,8",
+    "enterFrame": 25628,
+    "enterHearts": 20,
+    "minHearts": 20,
+    "maxHearts": 20,
+    "damage": 0,
+    "healing": 0,
+    "exitHearts": 20,
+    "exitFrame": 27170
    },
    {
     "room": "overworld/0,9,8",
-    "enterFrame": 27130,
-    "enterHearts": 11,
-    "minHearts": 5,
-    "maxHearts": 11,
-    "damage": 6,
+    "enterFrame": 27170,
+    "enterHearts": 20,
+    "minHearts": 16,
+    "maxHearts": 20,
+    "damage": 4,
     "healing": 0,
-    "exitHearts": 5,
-    "exitFrame": 27728
+    "exitHearts": 16,
+    "exitFrame": 27743
    },
    {
     "room": "overworld/0,10,8",
-    "enterFrame": 27728,
-    "enterHearts": 5,
-    "minHearts": 5,
-    "maxHearts": 5,
+    "enterFrame": 27743,
+    "enterHearts": 16,
+    "minHearts": 16,
+    "maxHearts": 16,
     "damage": 0,
     "healing": 0,
-    "exitHearts": 5,
-    "exitFrame": 27854
+    "exitHearts": 16,
+    "exitFrame": 27869
    },
    {
     "room": "overworld/0,10,7",
-    "enterFrame": 27854,
-    "enterHearts": 5,
-    "minHearts": 5,
-    "maxHearts": 5,
-    "damage": 0,
+    "enterFrame": 27869,
+    "enterHearts": 16,
+    "minHearts": 14,
+    "maxHearts": 16,
+    "damage": 2,
     "healing": 0,
-    "exitHearts": 5,
-    "exitFrame": 28011
+    "exitHearts": 14,
+    "exitFrame": 28061
    },
    {
     "room": "overworld/0,10,6",
-    "enterFrame": 28011,
-    "enterHearts": 5,
-    "minHearts": 5,
-    "maxHearts": 5,
+    "enterFrame": 28061,
+    "enterHearts": 14,
+    "minHearts": 14,
+    "maxHearts": 14,
     "damage": 0,
     "healing": 0,
-    "exitHearts": 5,
-    "exitFrame": 28203
+    "exitHearts": 14,
+    "exitFrame": 28253
    },
    {
     "room": "overworld/0,10,5",
-    "enterFrame": 28203,
-    "enterHearts": 5,
-    "minHearts": 5,
-    "maxHearts": 5,
+    "enterFrame": 28253,
+    "enterHearts": 14,
+    "minHearts": 14,
+    "maxHearts": 14,
     "damage": 0,
     "healing": 0,
-    "exitHearts": 5,
-    "exitFrame": 28340
+    "exitHearts": 14,
+    "exitFrame": 28390
    },
    {
     "room": "d2/0,3,7",
-    "enterFrame": 28340,
-    "enterHearts": 5,
-    "minHearts": 5,
-    "maxHearts": 5,
+    "enterFrame": 28390,
+    "enterHearts": 14,
+    "minHearts": 14,
+    "maxHearts": 14,
     "damage": 0,
     "healing": 0,
-    "exitHearts": 5,
-    "exitFrame": 28519
+    "exitHearts": 14,
+    "exitFrame": 28569
    },
    {
     "room": "d2/0,3,6",
-    "enterFrame": 28519,
-    "enterHearts": 5,
-    "minHearts": 5,
-    "maxHearts": 16,
+    "enterFrame": 28569,
+    "enterHearts": 14,
+    "minHearts": 14,
+    "maxHearts": 20,
     "damage": 0,
-    "healing": 11,
-    "exitHearts": 16,
-    "exitFrame": 29127
+    "healing": 6,
+    "exitHearts": 20,
+    "exitFrame": 29183
    },
    {
     "room": "d2/0,3,7",
-    "enterFrame": 29127,
-    "enterHearts": 16,
-    "minHearts": 16,
-    "maxHearts": 16,
+    "enterFrame": 29183,
+    "enterHearts": 20,
+    "minHearts": 20,
+    "maxHearts": 20,
     "damage": 0,
     "healing": 0,
-    "exitHearts": 16,
-    "exitFrame": 29266
+    "exitHearts": 20,
+    "exitFrame": 29322
    },
    {
     "room": "overworld/0,10,5",
-    "enterFrame": 29266,
-    "enterHearts": 16,
-    "minHearts": 16,
-    "maxHearts": 16,
+    "enterFrame": 29322,
+    "enterHearts": 20,
+    "minHearts": 20,
+    "maxHearts": 20,
     "damage": 0,
     "healing": 0,
-    "exitHearts": 16,
-    "exitFrame": 29497
+    "exitHearts": 20,
+    "exitFrame": 29553
    },
    {
     "room": "overworld/0,10,6",
-    "enterFrame": 29497,
-    "enterHearts": 16,
-    "minHearts": 16,
-    "maxHearts": 16,
+    "enterFrame": 29553,
+    "enterHearts": 20,
+    "minHearts": 20,
+    "maxHearts": 20,
     "damage": 0,
     "healing": 0,
-    "exitHearts": 16,
-    "exitFrame": 29702
+    "exitHearts": 20,
+    "exitFrame": 29758
    },
    {
     "room": "overworld/0,10,7",
-    "enterFrame": 29702,
-    "enterHearts": 16,
-    "minHearts": 16,
-    "maxHearts": 16,
-    "damage": 0,
+    "enterFrame": 29758,
+    "enterHearts": 20,
+    "minHearts": 18,
+    "maxHearts": 20,
+    "damage": 2,
     "healing": 0,
-    "exitHearts": 16,
-    "exitFrame": 35889
+    "exitHearts": 18,
+    "exitFrame": 30348
    },
    {
     "room": "overworld/0,10,8",
-    "enterFrame": 35889,
-    "enterHearts": 16,
-    "minHearts": 16,
-    "maxHearts": 16,
+    "enterFrame": 30348,
+    "enterHearts": 18,
+    "minHearts": 18,
+    "maxHearts": 18,
     "damage": 0,
     "healing": 0,
-    "exitHearts": 16,
-    "exitFrame": 36230
+    "exitHearts": 18,
+    "exitFrame": 30689
    },
    {
     "room": "overworld/0,11,8",
-    "enterFrame": 36230,
-    "enterHearts": 16,
-    "minHearts": 16,
-    "maxHearts": 16,
+    "enterFrame": 30689,
+    "enterHearts": 18,
+    "minHearts": 18,
+    "maxHearts": 18,
     "damage": 0,
     "healing": 0,
-    "exitHearts": 16,
-    "exitFrame": 36382
+    "exitHearts": 18,
+    "exitFrame": 30841
    },
    {
     "room": "overworld/0,11,7",
-    "enterFrame": 36382,
-    "enterHearts": 16,
-    "minHearts": 14,
-    "maxHearts": 16,
-    "damage": 2,
+    "enterFrame": 30841,
+    "enterHearts": 18,
+    "minHearts": 18,
+    "maxHearts": 18,
+    "damage": 0,
     "healing": 0,
-    "exitHearts": 14,
-    "exitFrame": 36614
+    "exitHearts": 18,
+    "exitFrame": 31039
    },
    {
     "room": "overworld/0,11,6",
-    "enterFrame": 36614,
-    "enterHearts": 14,
-    "minHearts": 14,
-    "maxHearts": 14,
+    "enterFrame": 31039,
+    "enterHearts": 18,
+    "minHearts": 18,
+    "maxHearts": 18,
     "damage": 0,
     "healing": 0,
-    "exitHearts": 14,
-    "exitFrame": 37022
+    "exitHearts": 18,
+    "exitFrame": 31447
    },
    {
     "room": "overworld/0,10,6",
-    "enterFrame": 37022,
-    "enterHearts": 14,
-    "minHearts": 14,
-    "maxHearts": 14,
+    "enterFrame": 31447,
+    "enterHearts": 18,
+    "minHearts": 18,
+    "maxHearts": 18,
     "damage": 0,
     "healing": 0,
-    "exitHearts": 14,
-    "exitFrame": 37204
+    "exitHearts": 18,
+    "exitFrame": 31629
    },
    {
     "room": "overworld/0,10,5",
-    "enterFrame": 37204,
-    "enterHearts": 14,
-    "minHearts": 14,
-    "maxHearts": 14,
+    "enterFrame": 31629,
+    "enterHearts": 18,
+    "minHearts": 18,
+    "maxHearts": 18,
     "damage": 0,
     "healing": 0,
-    "exitHearts": 14,
-    "exitFrame": 37322
+    "exitHearts": 18,
+    "exitFrame": 31747
    },
    {
     "room": "overworld/0,11,5",
-    "enterFrame": 37322,
-    "enterHearts": 14,
-    "minHearts": 12,
-    "maxHearts": 14,
+    "enterFrame": 31747,
+    "enterHearts": 18,
+    "minHearts": 16,
+    "maxHearts": 18,
     "damage": 2,
     "healing": 0,
-    "exitHearts": 12,
-    "exitFrame": 37539
+    "exitHearts": 16,
+    "exitFrame": 31964
    },
    {
     "room": "overworld/0,11,4",
-    "enterFrame": 37539,
-    "enterHearts": 12,
-    "minHearts": 12,
-    "maxHearts": 12,
-    "damage": 0,
-    "healing": 0,
-    "exitHearts": 12,
-    "exitFrame": 37883
-   },
-   {
-    "room": "overworld/0,10,4",
-    "enterFrame": 37883,
-    "enterHearts": 12,
-    "minHearts": 12,
-    "maxHearts": 12,
-    "damage": 0,
-    "healing": 0,
-    "exitHearts": 12,
-    "exitFrame": 38005
-   },
-   {
-    "room": "overworld/0,10,5",
-    "enterFrame": 38005,
-    "enterHearts": 12,
-    "minHearts": 12,
-    "maxHearts": 12,
-    "damage": 0,
-    "healing": 0,
-    "exitHearts": 12,
-    "exitFrame": 38070
-   },
-   {
-    "room": "d2/0,3,7",
-    "enterFrame": 38070,
-    "enterHearts": 12,
-    "minHearts": 12,
-    "maxHearts": 12,
-    "damage": 0,
-    "healing": 0,
-    "exitHearts": 12,
-    "exitFrame": 38249
-   },
-   {
-    "room": "d2/0,3,6",
-    "enterFrame": 38249,
-    "enterHearts": 12,
-    "minHearts": 12,
-    "maxHearts": 12,
-    "damage": 0,
-    "healing": 0,
-    "exitHearts": 12,
-    "exitFrame": 38395
-   },
-   {
-    "room": "d2/0,3,5",
-    "enterFrame": 38395,
-    "enterHearts": 12,
-    "minHearts": 12,
-    "maxHearts": 12,
-    "damage": 0,
-    "healing": 0,
-    "exitHearts": 12,
-    "exitFrame": 38551
-   },
-   {
-    "room": "d2/0,3,4",
-    "enterFrame": 38551,
-    "enterHearts": 12,
-    "minHearts": 4,
-    "maxHearts": 12,
-    "damage": 8,
-    "healing": 0,
-    "exitHearts": 4,
-    "exitFrame": 39242
-   },
-   {
-    "room": "d2/0,2,4",
-    "enterFrame": 39242,
-    "enterHearts": 4,
-    "minHearts": 4,
-    "maxHearts": 4,
-    "damage": 0,
-    "healing": 0,
-    "exitHearts": 4,
-    "exitFrame": 39442
-   },
-   {
-    "room": "d2/1,2,4",
-    "enterFrame": 39442,
-    "enterHearts": 4,
-    "minHearts": 4,
-    "maxHearts": 4,
-    "damage": 0,
-    "healing": 0,
-    "exitHearts": 4,
-    "exitFrame": 39529
-   },
-   {
-    "room": "d2/1,2,5",
-    "enterFrame": 39529,
-    "enterHearts": 4,
-    "minHearts": 4,
-    "maxHearts": 16,
-    "damage": 0,
-    "healing": 12,
-    "exitHearts": 16,
-    "exitFrame": 39736
-   },
-   {
-    "room": "d2/1,2,4",
-    "enterFrame": 39736,
+    "enterFrame": 31964,
     "enterHearts": 16,
     "minHearts": 16,
     "maxHearts": 16,
     "damage": 0,
     "healing": 0,
     "exitHearts": 16,
-    "exitFrame": 39875
+    "exitFrame": 32313
+   },
+   {
+    "room": "overworld/0,10,4",
+    "enterFrame": 32313,
+    "enterHearts": 16,
+    "minHearts": 16,
+    "maxHearts": 16,
+    "damage": 0,
+    "healing": 0,
+    "exitHearts": 16,
+    "exitFrame": 32458
+   },
+   {
+    "room": "overworld/0,10,5",
+    "enterFrame": 32458,
+    "enterHearts": 16,
+    "minHearts": 16,
+    "maxHearts": 16,
+    "damage": 0,
+    "healing": 0,
+    "exitHearts": 16,
+    "exitFrame": 32523
+   },
+   {
+    "room": "d2/0,3,7",
+    "enterFrame": 32523,
+    "enterHearts": 16,
+    "minHearts": 16,
+    "maxHearts": 16,
+    "damage": 0,
+    "healing": 0,
+    "exitHearts": 16,
+    "exitFrame": 32702
+   },
+   {
+    "room": "d2/0,3,6",
+    "enterFrame": 32702,
+    "enterHearts": 16,
+    "minHearts": 16,
+    "maxHearts": 16,
+    "damage": 0,
+    "healing": 0,
+    "exitHearts": 16,
+    "exitFrame": 32848
+   },
+   {
+    "room": "d2/0,3,5",
+    "enterFrame": 32848,
+    "enterHearts": 16,
+    "minHearts": 16,
+    "maxHearts": 16,
+    "damage": 0,
+    "healing": 0,
+    "exitHearts": 16,
+    "exitFrame": 33004
+   },
+   {
+    "room": "d2/0,3,4",
+    "enterFrame": 33004,
+    "enterHearts": 16,
+    "minHearts": 8,
+    "maxHearts": 16,
+    "damage": 8,
+    "healing": 0,
+    "exitHearts": 8,
+    "exitFrame": 33915
+   },
+   {
+    "room": "d2/0,2,4",
+    "enterFrame": 33915,
+    "enterHearts": 8,
+    "minHearts": 8,
+    "maxHearts": 8,
+    "damage": 0,
+    "healing": 0,
+    "exitHearts": 8,
+    "exitFrame": 34115
+   },
+   {
+    "room": "d2/1,2,4",
+    "enterFrame": 34115,
+    "enterHearts": 8,
+    "minHearts": 8,
+    "maxHearts": 8,
+    "damage": 0,
+    "healing": 0,
+    "exitHearts": 8,
+    "exitFrame": 34202
+   },
+   {
+    "room": "d2/1,2,5",
+    "enterFrame": 34202,
+    "enterHearts": 8,
+    "minHearts": 8,
+    "maxHearts": 20,
+    "damage": 0,
+    "healing": 12,
+    "exitHearts": 20,
+    "exitFrame": 34409
+   },
+   {
+    "room": "d2/1,2,4",
+    "enterFrame": 34409,
+    "enterHearts": 20,
+    "minHearts": 20,
+    "maxHearts": 20,
+    "damage": 0,
+    "healing": 0,
+    "exitHearts": 20,
+    "exitFrame": 34548
    },
    {
     "room": "d2/1,3,4",
-    "enterFrame": 39875,
-    "enterHearts": 16,
-    "minHearts": 15,
-    "maxHearts": 16,
+    "enterFrame": 34548,
+    "enterHearts": 20,
+    "minHearts": 19,
+    "maxHearts": 20,
     "damage": 1,
     "healing": 0,
-    "exitHearts": 15,
-    "exitFrame": 40087
+    "exitHearts": 19,
+    "exitFrame": 34760
    },
    {
     "room": "d2/1,4,4",
-    "enterFrame": 40087,
-    "enterHearts": 15,
-    "minHearts": 15,
-    "maxHearts": 15,
+    "enterFrame": 34760,
+    "enterHearts": 19,
+    "minHearts": 19,
+    "maxHearts": 19,
     "damage": 0,
     "healing": 0,
-    "exitHearts": 15,
-    "exitFrame": 40498
+    "exitHearts": 19,
+    "exitFrame": 35171
    },
    {
     "room": "d2/1,4,5",
-    "enterFrame": 40498,
+    "enterFrame": 35171,
+    "enterHearts": 19,
+    "minHearts": 19,
+    "maxHearts": 19,
+    "damage": 0,
+    "healing": 0,
+    "exitHearts": 19,
+    "exitFrame": 35304
+   },
+   {
+    "room": "d2/1,4,4",
+    "enterFrame": 35304,
+    "enterHearts": 19,
+    "minHearts": 15,
+    "maxHearts": 19,
+    "damage": 4,
+    "healing": 0,
+    "exitHearts": 15,
+    "exitFrame": 35623
+   },
+   {
+    "room": "d2/1,4,3",
+    "enterFrame": 35623,
     "enterHearts": 15,
     "minHearts": 15,
     "maxHearts": 15,
     "damage": 0,
     "healing": 0,
     "exitHearts": 15,
-    "exitFrame": 40631
-   },
-   {
-    "room": "d2/1,4,4",
-    "enterFrame": 40631,
-    "enterHearts": 15,
-    "minHearts": 11,
-    "maxHearts": 15,
-    "damage": 4,
-    "healing": 0,
-    "exitHearts": 11,
-    "exitFrame": 40950
-   },
-   {
-    "room": "d2/1,4,3",
-    "enterFrame": 40950,
-    "enterHearts": 11,
-    "minHearts": 11,
-    "maxHearts": 11,
-    "damage": 0,
-    "healing": 0,
-    "exitHearts": 11,
-    "exitFrame": 41256
+    "exitFrame": 35929
    },
    {
     "room": "d2/1,4,2",
-    "enterFrame": 41256,
-    "enterHearts": 11,
-    "minHearts": 7,
-    "maxHearts": 11,
-    "damage": 4,
+    "enterFrame": 35929,
+    "enterHearts": 15,
+    "minHearts": 13,
+    "maxHearts": 15,
+    "damage": 2,
     "healing": 0,
-    "exitHearts": 7,
-    "exitFrame": 43305
+    "exitHearts": 13,
+    "exitFrame": 37961
    },
    {
     "room": "d2/1,5,3",
-    "enterFrame": 43305,
-    "enterHearts": 7,
-    "minHearts": 7,
-    "maxHearts": 7,
+    "enterFrame": 37961,
+    "enterHearts": 13,
+    "minHearts": 13,
+    "maxHearts": 13,
     "damage": 0,
     "healing": 0,
-    "exitHearts": 7,
-    "exitFrame": 43655
+    "exitHearts": 13,
+    "exitFrame": 38311
    },
    {
     "room": "d2/1,5,4",
-    "enterFrame": 43655,
-    "enterHearts": 7,
-    "minHearts": 7,
-    "maxHearts": 20,
+    "enterFrame": 38311,
+    "enterHearts": 13,
+    "minHearts": 13,
+    "maxHearts": 24,
     "damage": 0,
-    "healing": 13,
-    "exitHearts": 20,
-    "exitFrame": 43895
+    "healing": 11,
+    "exitHearts": 24,
+    "exitFrame": 38551
    },
    {
     "room": "d2/1,5,3",
-    "enterFrame": 43895,
-    "enterHearts": 20,
-    "minHearts": 20,
-    "maxHearts": 20,
+    "enterFrame": 38551,
+    "enterHearts": 24,
+    "minHearts": 24,
+    "maxHearts": 24,
     "damage": 0,
     "healing": 0,
-    "exitHearts": 20,
-    "exitFrame": 44041
+    "exitHearts": 24,
+    "exitFrame": 38697
    },
    {
     "room": "d2/1,4,2",
-    "enterFrame": 44041,
-    "enterHearts": 20,
-    "minHearts": 20,
-    "maxHearts": 20,
+    "enterFrame": 38697,
+    "enterHearts": 24,
+    "minHearts": 24,
+    "maxHearts": 24,
     "damage": 0,
     "healing": 0,
-    "exitHearts": 20,
-    "exitFrame": 44341
+    "exitHearts": 24,
+    "exitFrame": 38997
    },
    {
     "room": "d2/1,3,2",
-    "enterFrame": 44341,
-    "enterHearts": 20,
-    "minHearts": 20,
-    "maxHearts": 20,
+    "enterFrame": 38997,
+    "enterHearts": 24,
+    "minHearts": 24,
+    "maxHearts": 24,
     "damage": 0,
     "healing": 0,
-    "exitHearts": 20,
-    "exitFrame": 44676
+    "exitHearts": 24,
+    "exitFrame": 39332
    },
    {
     "room": "d2/1,2,3",
-    "enterFrame": 44676,
-    "enterHearts": 20,
-    "minHearts": 20,
-    "maxHearts": 20,
+    "enterFrame": 39332,
+    "enterHearts": 24,
+    "minHearts": 24,
+    "maxHearts": 24,
     "damage": 0,
     "healing": 0,
-    "exitHearts": 20,
-    "exitFrame": 44823
+    "exitHearts": 24,
+    "exitFrame": 39479
    },
    {
     "room": "d2/1,2,2",
-    "enterFrame": 44823,
-    "enterHearts": 20,
-    "minHearts": 20,
-    "maxHearts": 20,
+    "enterFrame": 39479,
+    "enterHearts": 24,
+    "minHearts": 24,
+    "maxHearts": 24,
     "damage": 0,
     "healing": 0,
-    "exitHearts": 20,
-    "exitFrame": 45088
+    "exitHearts": 24,
+    "exitFrame": 39744
    },
    {
     "room": "d2/1,2,1",
-    "enterFrame": 45088,
-    "enterHearts": 20,
-    "minHearts": 17,
-    "maxHearts": 20,
+    "enterFrame": 39744,
+    "enterHearts": 24,
+    "minHearts": 21,
+    "maxHearts": 24,
     "damage": 3,
     "healing": 3,
-    "exitHearts": 20,
-    "exitFrame": 45564
+    "exitHearts": 24,
+    "exitFrame": 40220
    },
    {
     "room": "d2/1,2,2",
-    "enterFrame": 45564,
-    "enterHearts": 20,
-    "minHearts": 20,
-    "maxHearts": 20,
+    "enterFrame": 40220,
+    "enterHearts": 24,
+    "minHearts": 24,
+    "maxHearts": 24,
     "damage": 0,
     "healing": 0,
-    "exitHearts": 20,
-    "exitFrame": 45693
+    "exitHearts": 24,
+    "exitFrame": 40349
    },
    {
     "room": "d2/1,3,2",
-    "enterFrame": 45693,
-    "enterHearts": 20,
-    "minHearts": 20,
-    "maxHearts": 20,
+    "enterFrame": 40349,
+    "enterHearts": 24,
+    "minHearts": 24,
+    "maxHearts": 24,
     "damage": 0,
     "healing": 0,
-    "exitHearts": 20,
-    "exitFrame": 46118
+    "exitHearts": 24,
+    "exitFrame": 40774
    },
    {
     "room": "d2/1,3,1",
-    "enterFrame": 46118,
-    "enterHearts": 20,
-    "minHearts": 6,
-    "maxHearts": 24,
-    "damage": 14,
-    "healing": 18,
+    "enterFrame": 40774,
+    "enterHearts": 24,
+    "minHearts": 9,
+    "maxHearts": 28,
+    "damage": 15,
+    "healing": 19,
+    "exitHearts": 28,
+    "exitFrame": 43418
+   },
+   {
+    "room": "d2/1,3,2",
+    "enterFrame": 43418,
+    "enterHearts": 28,
+    "minHearts": 28,
+    "maxHearts": 28,
+    "damage": 0,
+    "healing": 0,
+    "exitHearts": 28,
+    "exitFrame": 43645
+   },
+   {
+    "room": "d2/1,4,2",
+    "enterFrame": 43645,
+    "enterHearts": 28,
+    "minHearts": 28,
+    "maxHearts": 28,
+    "damage": 0,
+    "healing": 0,
+    "exitHearts": 28,
+    "exitFrame": 43746
+   },
+   {
+    "room": "d2/1,4,3",
+    "enterFrame": 43746,
+    "enterHearts": 28,
+    "minHearts": 28,
+    "maxHearts": 28,
+    "damage": 0,
+    "healing": 0,
+    "exitHearts": 28,
+    "exitFrame": 43877
+   },
+   {
+    "room": "d2/1,2,4",
+    "enterFrame": 43877,
+    "enterHearts": 28,
+    "minHearts": 28,
+    "maxHearts": 28,
+    "damage": 0,
+    "healing": 0,
+    "exitHearts": 28,
+    "exitFrame": 44075
+   },
+   {
+    "room": "d2/0,2,4",
+    "enterFrame": 44075,
+    "enterHearts": 28,
+    "minHearts": 28,
+    "maxHearts": 28,
+    "damage": 0,
+    "healing": 0,
+    "exitHearts": 28,
+    "exitFrame": 44249
+   },
+   {
+    "room": "d2/0,3,4",
+    "enterFrame": 44249,
+    "enterHearts": 28,
+    "minHearts": 26,
+    "maxHearts": 28,
+    "damage": 2,
+    "healing": 0,
+    "exitHearts": 26,
+    "exitFrame": 44453
+   },
+   {
+    "room": "d2/0,3,5",
+    "enterFrame": 44453,
+    "enterHearts": 26,
+    "minHearts": 21,
+    "maxHearts": 26,
+    "damage": 5,
+    "healing": 0,
+    "exitHearts": 21,
+    "exitFrame": 44679
+   },
+   {
+    "room": "d2/0,3,6",
+    "enterFrame": 44679,
+    "enterHearts": 21,
+    "minHearts": 21,
+    "maxHearts": 21,
+    "damage": 0,
+    "healing": 0,
+    "exitHearts": 21,
+    "exitFrame": 44826
+   },
+   {
+    "room": "d2/0,3,7",
+    "enterFrame": 44826,
+    "enterHearts": 21,
+    "minHearts": 21,
+    "maxHearts": 21,
+    "damage": 0,
+    "healing": 0,
+    "exitHearts": 21,
+    "exitFrame": 44961
+   },
+   {
+    "room": "overworld/0,10,5",
+    "enterFrame": 44961,
+    "enterHearts": 21,
+    "minHearts": 21,
+    "maxHearts": 21,
+    "damage": 0,
+    "healing": 0,
+    "exitHearts": 21,
+    "exitFrame": 45193
+   },
+   {
+    "room": "overworld/0,10,6",
+    "enterFrame": 45193,
+    "enterHearts": 21,
+    "minHearts": 21,
+    "maxHearts": 21,
+    "damage": 0,
+    "healing": 0,
+    "exitHearts": 21,
+    "exitFrame": 45411
+   },
+   {
+    "room": "overworld/0,10,7",
+    "enterFrame": 45411,
+    "enterHearts": 21,
+    "minHearts": 21,
+    "maxHearts": 21,
+    "damage": 0,
+    "healing": 0,
+    "exitHearts": 21,
+    "exitFrame": 45580
+   },
+   {
+    "room": "overworld/0,10,8",
+    "enterFrame": 45580,
+    "enterHearts": 21,
+    "minHearts": 21,
+    "maxHearts": 21,
+    "damage": 0,
+    "healing": 0,
+    "exitHearts": 21,
+    "exitFrame": 45732
+   },
+   {
+    "room": "overworld/0,9,8",
+    "enterFrame": 45732,
+    "enterHearts": 21,
+    "minHearts": 19,
+    "maxHearts": 21,
+    "damage": 2,
+    "healing": 0,
+    "exitHearts": 19,
+    "exitFrame": 46105
+   },
+   {
+    "room": "overworld/0,8,8",
+    "enterFrame": 46105,
+    "enterHearts": 19,
+    "minHearts": 19,
+    "maxHearts": 19,
+    "damage": 0,
+    "healing": 0,
+    "exitHearts": 19,
+    "exitFrame": 46233
+   },
+   {
+    "room": "overworld/0,8,7",
+    "enterFrame": 46233,
+    "enterHearts": 19,
+    "minHearts": 19,
+    "maxHearts": 19,
+    "damage": 0,
+    "healing": 0,
+    "exitHearts": 19,
+    "exitFrame": 46616
+   },
+   {
+    "room": "overworld/0,7,7",
+    "enterFrame": 46616,
+    "enterHearts": 19,
+    "minHearts": 19,
+    "maxHearts": 19,
+    "damage": 0,
+    "healing": 0,
+    "exitHearts": 19,
+    "exitFrame": 46881
+   },
+   {
+    "room": "overworld/0,6,7",
+    "enterFrame": 46881,
+    "enterHearts": 19,
+    "minHearts": 17,
+    "maxHearts": 19,
+    "damage": 2,
+    "healing": 0,
+    "exitHearts": 17,
+    "exitFrame": 47229
+   },
+   {
+    "room": "overworld/0,5,7",
+    "enterFrame": 47229,
+    "enterHearts": 17,
+    "minHearts": 17,
+    "maxHearts": 17,
+    "damage": 0,
+    "healing": 0,
+    "exitHearts": 17,
+    "exitFrame": 47514
+   },
+   {
+    "room": "overworld/0,4,7",
+    "enterFrame": 47514,
+    "enterHearts": 17,
+    "minHearts": 17,
+    "maxHearts": 17,
+    "damage": 0,
+    "healing": 0,
+    "exitHearts": 17,
+    "exitFrame": 47737
+   },
+   {
+    "room": "overworld/0,3,7",
+    "enterFrame": 47737,
+    "enterHearts": 17,
+    "minHearts": 15,
+    "maxHearts": 17,
+    "damage": 2,
+    "healing": 0,
+    "exitHearts": 15,
+    "exitFrame": 48065
+   },
+   {
+    "room": "overworld/0,2,7",
+    "enterFrame": 48065,
+    "enterHearts": 15,
+    "minHearts": 15,
+    "maxHearts": 15,
+    "damage": 0,
+    "healing": 0,
+    "exitHearts": 15,
+    "exitFrame": 48986
+   },
+   {
+    "room": "overworld/0,1,7",
+    "enterFrame": 48986,
+    "enterHearts": 15,
+    "minHearts": 15,
+    "maxHearts": 15,
+    "damage": 0,
+    "healing": 0,
+    "exitHearts": 15,
+    "exitFrame": 49123
+   },
+   {
+    "room": "overworld/0,1,8",
+    "enterFrame": 49123,
+    "enterHearts": 15,
+    "minHearts": 15,
+    "maxHearts": 15,
+    "damage": 0,
+    "healing": 0,
+    "exitHearts": 15,
+    "exitFrame": 49212
+   },
+   {
+    "room": "d3/0,3,7",
+    "enterFrame": 49212,
+    "enterHearts": 15,
+    "minHearts": 15,
+    "maxHearts": 15,
+    "damage": 0,
+    "healing": 0,
+    "exitHearts": 15,
+    "exitFrame": 49421
+   },
+   {
+    "room": "d3/0,3,6",
+    "enterFrame": 49421,
+    "enterHearts": 15,
+    "minHearts": 15,
+    "maxHearts": 28,
+    "damage": 0,
+    "healing": 13,
+    "exitHearts": 28,
+    "exitFrame": 50067
+   },
+   {
+    "room": "d3/0,3,5",
+    "enterFrame": 50067,
+    "enterHearts": 28,
+    "minHearts": 28,
+    "maxHearts": 28,
+    "damage": 0,
+    "healing": 0,
+    "exitHearts": 28,
+    "exitFrame": 50206
+   },
+   {
+    "room": "d3/0,2,5",
+    "enterFrame": 50206,
+    "enterHearts": 28,
+    "minHearts": 28,
+    "maxHearts": 28,
+    "damage": 0,
+    "healing": 0,
+    "exitHearts": 28,
+    "exitFrame": 50466
+   },
+   {
+    "room": "d3/0,3,5",
+    "enterFrame": 50466,
+    "enterHearts": 28,
+    "minHearts": 28,
+    "maxHearts": 28,
+    "damage": 0,
+    "healing": 0,
+    "exitHearts": 28,
+    "exitFrame": 50642
+   },
+   {
+    "room": "d3/0,4,5",
+    "enterFrame": 50642,
+    "enterHearts": 28,
+    "minHearts": 27,
+    "maxHearts": 28,
+    "damage": 1,
+    "healing": 0,
+    "exitHearts": 27,
+    "exitFrame": 51139
+   },
+   {
+    "room": "d3/0,3,5",
+    "enterFrame": 51139,
+    "enterHearts": 27,
+    "minHearts": 27,
+    "maxHearts": 27,
+    "damage": 0,
+    "healing": 0,
+    "exitHearts": 27,
+    "exitFrame": 51287
+   },
+   {
+    "room": "d3/0,3,4",
+    "enterFrame": 51287,
+    "enterHearts": 27,
+    "minHearts": 27,
+    "maxHearts": 27,
+    "damage": 0,
+    "healing": 0,
+    "exitHearts": 27,
+    "exitFrame": 51521
+   },
+   {
+    "room": "d3/0,2,4",
+    "enterFrame": 51521,
+    "enterHearts": 27,
+    "minHearts": 27,
+    "maxHearts": 27,
+    "damage": 0,
+    "healing": 0,
+    "exitHearts": 27,
+    "exitFrame": 51908
+   },
+   {
+    "room": "d3/0,3,4",
+    "enterFrame": 51908,
+    "enterHearts": 27,
+    "minHearts": 27,
+    "maxHearts": 27,
+    "damage": 0,
+    "healing": 0,
+    "exitHearts": 27,
+    "exitFrame": 52084
+   },
+   {
+    "room": "d3/0,4,4",
+    "enterFrame": 52084,
+    "enterHearts": 27,
+    "minHearts": 27,
+    "maxHearts": 28,
+    "damage": 0,
+    "healing": 1,
+    "exitHearts": 28,
+    "exitFrame": 52976
+   },
+   {
+    "room": "d3/0,3,4",
+    "enterFrame": 52976,
+    "enterHearts": 28,
+    "minHearts": 28,
+    "maxHearts": 28,
+    "damage": 0,
+    "healing": 0,
+    "exitHearts": 28,
+    "exitFrame": 53157
+   },
+   {
+    "room": "d3/0,3,3",
+    "enterFrame": 53157,
+    "enterHearts": 28,
+    "minHearts": 28,
+    "maxHearts": 28,
+    "damage": 0,
+    "healing": 0,
+    "exitHearts": 28,
+    "exitFrame": 53612
+   },
+   {
+    "room": "d3/0,2,3",
+    "enterFrame": 53612,
+    "enterHearts": 28,
+    "minHearts": 28,
+    "maxHearts": 28,
+    "damage": 0,
+    "healing": 0,
+    "exitHearts": 28,
+    "exitFrame": 53915
+   },
+   {
+    "room": "d3/0,1,3",
+    "enterFrame": 53915,
+    "enterHearts": 28,
+    "minHearts": 28,
+    "maxHearts": 28,
+    "damage": 0,
+    "healing": 0,
+    "exitHearts": 28,
+    "exitFrame": 54467
+   },
+   {
+    "room": "d3/0,1,2",
+    "enterFrame": 54467,
+    "enterHearts": 28,
+    "minHearts": 26,
+    "maxHearts": 28,
+    "damage": 2,
+    "healing": 0,
+    "exitHearts": 26,
+    "exitFrame": 55041
+   },
+   {
+    "room": "d3/0,1,3",
+    "enterFrame": 55041,
+    "enterHearts": 26,
+    "minHearts": 26,
+    "maxHearts": 26,
+    "damage": 0,
+    "healing": 0,
+    "exitHearts": 26,
+    "exitFrame": 55251
+   },
+   {
+    "room": "d3/0,2,3",
+    "enterFrame": 55251,
+    "enterHearts": 26,
+    "minHearts": 26,
+    "maxHearts": 26,
+    "damage": 0,
+    "healing": 0,
+    "exitHearts": 26,
+    "exitFrame": 55373
+   },
+   {
+    "room": "d3/0,3,3",
+    "enterFrame": 55373,
+    "enterHearts": 26,
+    "minHearts": 26,
+    "maxHearts": 26,
+    "damage": 0,
+    "healing": 0,
+    "exitHearts": 26,
+    "exitFrame": 55700
+   },
+   {
+    "room": "d3/0,4,3",
+    "enterFrame": 55700,
+    "enterHearts": 26,
+    "minHearts": 26,
+    "maxHearts": 28,
+    "damage": 0,
+    "healing": 2,
+    "exitHearts": 28,
+    "exitFrame": 56313
+   },
+   {
+    "room": "d3/0,5,3",
+    "enterFrame": 56313,
+    "enterHearts": 28,
+    "minHearts": 24,
+    "maxHearts": 28,
+    "damage": 4,
+    "healing": 0,
     "exitHearts": 24,
-    "exitFrame": 48781
+    "exitFrame": 56700
+   },
+   {
+    "room": "d3/0,5,4",
+    "enterFrame": 56700,
+    "enterHearts": 24,
+    "minHearts": 24,
+    "maxHearts": 24,
+    "damage": 0,
+    "healing": 0,
+    "exitHearts": 24,
+    "exitFrame": 59738
+   },
+   {
+    "room": "d3/0,5,3",
+    "enterFrame": 59738,
+    "enterHearts": 24,
+    "minHearts": 22,
+    "maxHearts": 24,
+    "damage": 2,
+    "healing": 0,
+    "exitHearts": 22,
+    "exitFrame": 59989
+   },
+   {
+    "room": "d3/0,4,2",
+    "enterFrame": 59989,
+    "enterHearts": 22,
+    "minHearts": 22,
+    "maxHearts": 22,
+    "damage": 0,
+    "healing": 0,
+    "exitHearts": 22,
+    "exitFrame": 60573
+   },
+   {
+    "room": "d3/0,3,2",
+    "enterFrame": 60573,
+    "enterHearts": 22,
+    "minHearts": 22,
+    "maxHearts": 22,
+    "damage": 0,
+    "healing": 0,
+    "exitHearts": 22,
+    "exitFrame": 60880
+   },
+   {
+    "room": "d3/0,3,1",
+    "enterFrame": 60880,
+    "enterHearts": 22,
+    "minHearts": 9,
+    "maxHearts": 32,
+    "damage": 17,
+    "healing": 23,
+    "exitHearts": 28,
+    "exitFrame": 63117
    }
   ]
  },
@@ -2256,6 +2854,18 @@
    24
   ],
   [
+   6,
+   5
+  ],
+  [
+   2,
+   19
+  ],
+  [
+   0,
+   6
+  ],
+  [
    32,
    1
   ],
@@ -2264,12 +2874,8 @@
    140
   ],
   [
-   10,
-   8
-  ],
-  [
    8,
-   64
+   77
   ],
   [
    0,
@@ -2277,7 +2883,15 @@
   ],
   [
    8,
-   199
+   68
+  ],
+  [
+   10,
+   13
+  ],
+  [
+   8,
+   157
   ],
   [
    0,
@@ -2285,43 +2899,11 @@
   ],
   [
    8,
-   22
-  ],
-  [
-   10,
-   14
-  ],
-  [
-   8,
-   41
-  ],
-  [
-   10,
-   13
-  ],
-  [
-   8,
-   27
+   47
   ],
   [
    2,
-   13
-  ],
-  [
-   10,
-   6
-  ],
-  [
-   8,
-   2
-  ],
-  [
-   9,
-   7
-  ],
-  [
-   2,
-   97
+   99
   ],
   [
    0,
@@ -2369,7 +2951,7 @@
   ],
   [
    1,
-   109
+   96
   ],
   [
    9,
@@ -2377,7 +2959,7 @@
   ],
   [
    1,
-   46
+   63
   ],
   [
    0,
@@ -2413,31 +2995,55 @@
   ],
   [
    6,
-   2
+   21
   ],
   [
    4,
-   15
+   7
   ],
   [
    10,
+   12
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   10,
+   3
+  ],
+  [
+   6,
    5
   ],
   [
-   4,
-   2
-  ],
-  [
-   10,
-   1
-  ],
-  [
-   4,
-   1
-  ],
-  [
-   10,
+   2,
    6
+  ],
+  [
+   0,
+   1
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   0,
+   8
+  ],
+  [
+   4,
+   1
   ],
   [
    1,
@@ -2448,11 +3054,19 @@
    1
   ],
   [
-   6,
-   26
+   2,
+   23
   ],
   [
    4,
+   57
+  ],
+  [
+   1,
+   6
+  ],
+  [
+   2,
    1
   ],
   [
@@ -2460,7 +3074,7 @@
    1
   ],
   [
-   10,
+   9,
    26
   ],
   [
@@ -2468,12 +3082,16 @@
    24
   ],
   [
-   5,
-   3
+   10,
+   8
+  ],
+  [
+   8,
+   4
   ],
   [
    1,
-   53
+   30
   ],
   [
    0,
@@ -2481,7 +3099,7 @@
   ],
   [
    4,
-   32
+   30
   ],
   [
    2,
@@ -2705,23 +3323,11 @@
   ],
   [
    4,
-   22
-  ],
-  [
-   2,
-   14
-  ],
-  [
-   0,
-   6
-  ],
-  [
-   4,
-   16
+   38
   ],
   [
    1,
-   31
+   17
   ],
   [
    0,
@@ -2810,6 +3416,10 @@
   [
    5,
    26
+  ],
+  [
+   0,
+   3
   ],
   [
    10,
@@ -3001,39 +3611,23 @@
   ],
   [
    4,
-   43
-  ],
-  [
-   2,
-   7
-  ],
-  [
-   4,
-   6
-  ],
-  [
-   8,
-   1
-  ],
-  [
-   4,
-   4
-  ],
-  [
-   8,
-   1
+   9
   ],
   [
    16,
    1
   ],
   [
-   6,
-   26
+   10,
+   22
+  ],
+  [
+   2,
+   4
   ],
   [
    4,
-   25
+   17
   ],
   [
    1,
@@ -3041,23 +3635,7 @@
   ],
   [
    4,
-   12
-  ],
-  [
-   1,
-   1
-  ],
-  [
-   4,
-   1
-  ],
-  [
-   1,
-   1
-  ],
-  [
-   4,
-   2
+   7
   ],
   [
    1,
@@ -3073,79 +3651,7 @@
   ],
   [
    4,
-   19
-  ],
-  [
-   1,
-   2
-  ],
-  [
-   4,
-   2
-  ],
-  [
-   1,
-   1
-  ],
-  [
-   4,
-   2
-  ],
-  [
-   1,
-   1
-  ],
-  [
-   4,
-   1
-  ],
-  [
-   1,
-   1
-  ],
-  [
-   4,
-   2
-  ],
-  [
-   1,
-   1
-  ],
-  [
-   4,
-   1
-  ],
-  [
-   1,
-   2
-  ],
-  [
-   4,
-   2
-  ],
-  [
-   1,
-   1
-  ],
-  [
-   4,
-   1
-  ],
-  [
-   1,
-   1
-  ],
-  [
-   4,
-   2
-  ],
-  [
-   1,
-   1
-  ],
-  [
-   4,
-   2
+   54
   ],
   [
    1,
@@ -3189,6 +3695,30 @@
   ],
   [
    1,
+   2
+  ],
+  [
+   4,
+   1
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   4,
+   2
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   4,
+   2
+  ],
+  [
+   1,
    1
   ],
   [
@@ -3197,7 +3727,63 @@
   ],
   [
    1,
-   8
+   1
+  ],
+  [
+   4,
+   2
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   4,
+   1
+  ],
+  [
+   1,
+   2
+  ],
+  [
+   4,
+   2
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   4,
+   2
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   4,
+   1
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   4,
+   2
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   4,
+   1
+  ],
+  [
+   1,
+   3
   ],
   [
    16,
@@ -3209,7 +3795,23 @@
   ],
   [
    0,
-   2
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
   ],
   [
    16,
@@ -3221,11 +3823,11 @@
   ],
   [
    10,
-   11
+   7
   ],
   [
    8,
-   16
+   15
   ],
   [
    1,
@@ -3272,20 +3874,12 @@
    14
   ],
   [
-   8,
-   32
-  ],
-  [
-   2,
-   16
-  ],
-  [
    0,
    6
   ],
   [
    8,
-   37
+   69
   ],
   [
    0,
@@ -3300,8 +3894,16 @@
    4
   ],
   [
+   10,
+   7
+  ],
+  [
+   2,
+   9
+  ],
+  [
    8,
-   23
+   16
   ],
   [
    1,
@@ -3449,139 +4051,7 @@
   ],
   [
    10,
-   2
-  ],
-  [
-   8,
-   4
-  ],
-  [
-   10,
-   13
-  ],
-  [
-   2,
-   7
-  ],
-  [
-   1,
-   7
-  ],
-  [
-   4,
-   1
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   10,
-   26
-  ],
-  [
-   1,
-   2
-  ],
-  [
-   8,
-   50
-  ],
-  [
-   1,
-   1
-  ],
-  [
-   8,
-   1
-  ],
-  [
-   1,
-   1
-  ],
-  [
-   8,
-   1
-  ],
-  [
-   1,
-   1
-  ],
-  [
-   8,
-   1
-  ],
-  [
-   1,
-   1
-  ],
-  [
-   8,
-   1
-  ],
-  [
-   1,
-   1
-  ],
-  [
-   8,
-   1
-  ],
-  [
-   1,
-   1
-  ],
-  [
-   8,
-   1
-  ],
-  [
-   1,
-   1
-  ],
-  [
-   8,
-   1
-  ],
-  [
-   1,
-   1
-  ],
-  [
-   8,
-   68
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   6,
-   26
-  ],
-  [
-   1,
-   13
-  ],
-  [
-   8,
-   14
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   6,
-   2
-  ],
-  [
-   4,
-   4
-  ],
-  [
-   6,
-   15
+   21
   ],
   [
    2,
@@ -3589,11 +4059,191 @@
   ],
   [
    1,
+   10
+  ],
+  [
+   10,
+   1
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   10,
+   1
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   10,
+   1
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   10,
+   1
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   10,
+   1
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   10,
+   1
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   10,
+   1
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   10,
+   1
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   9,
+   1
+  ],
+  [
+   10,
    7
   ],
   [
-   8,
+   9,
+   3
+  ],
+  [
+   1,
+   2
+  ],
+  [
+   2,
+   17
+  ],
+  [
+   1,
    1
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   8,
+   24
+  ],
+  [
+   9,
+   2
+  ],
+  [
+   1,
+   6
+  ],
+  [
+   8,
+   14
+  ],
+  [
+   1,
+   2
+  ],
+  [
+   5,
+   2
+  ],
+  [
+   2,
+   12
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   10,
+   26
+  ],
+  [
+   8,
+   15
+  ],
+  [
+   1,
+   10
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   6,
+   21
+  ],
+  [
+   4,
+   5
+  ],
+  [
+   1,
+   28
+  ],
+  [
+   8,
+   9
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   6,
+   25
+  ],
+  [
+   4,
+   1
+  ],
+  [
+   8,
+   9
+  ],
+  [
+   1,
+   5
   ],
   [
    16,
@@ -3608,20 +4258,12 @@
    24
   ],
   [
-   9,
-   7
-  ],
-  [
-   1,
-   6
-  ],
-  [
    8,
-   16
+   13
   ],
   [
    1,
-   16
+   32
   ],
   [
    0,
@@ -3629,11 +4271,11 @@
   ],
   [
    4,
-   30
+   46
   ],
   [
    1,
-   30
+   46
   ],
   [
    16,
@@ -5368,6 +6010,10 @@
    26
   ],
   [
+   0,
+   3
+  ],
+  [
    4,
    29
   ],
@@ -5670,6 +6316,10 @@
   [
    5,
    26
+  ],
+  [
+   0,
+   3
   ],
   [
    10,
@@ -6485,287 +7135,371 @@
   ],
   [
    6,
-   37
-  ],
-  [
-   4,
-   3
-  ],
-  [
-   6,
-   1
-  ],
-  [
-   4,
-   5
-  ],
-  [
-   6,
-   1
+   29
   ],
   [
    4,
    1
-  ],
-  [
-   6,
-   1
-  ],
-  [
-   4,
-   1
-  ],
-  [
-   6,
-   1
-  ],
-  [
-   4,
-   1
-  ],
-  [
-   6,
-   12
-  ],
-  [
-   4,
-   1
-  ],
-  [
-   6,
-   15
-  ],
-  [
-   9,
-   12
-  ],
-  [
-   0,
-   324
-  ],
-  [
-   10,
-   5
   ],
   [
    8,
-   214
+   1
+  ],
+  [
+   24,
+   1
+  ],
+  [
+   5,
+   9
+  ],
+  [
+   6,
+   33
+  ],
+  [
+   9,
+   24
+  ],
+  [
+   0,
+   300
+  ],
+  [
+   2,
+   213
+  ],
+  [
+   0,
+   3
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   2,
+   33
+  ],
+  [
+   0,
+   24
+  ],
+  [
+   10,
+   104
+  ],
+  [
+   8,
+   5
+  ],
+  [
+   1,
+   7
+  ],
+  [
+   0,
+   3
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   1,
+   7
+  ],
+  [
+   0,
+   270
+  ],
+  [
+   2,
+   113
   ],
   [
    0,
    4
   ],
   [
-   16,
-   1
+   6,
+   12
   ],
   [
-   0,
-   5
+   4,
+   2
   ],
   [
-   16,
-   1
-  ],
-  [
-   0,
-   5
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   0,
-   5
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   0,
-   5
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   0,
-   5
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   0,
-   5
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   0,
-   5
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   0,
-   5
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   0,
-   5
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   0,
-   5
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   0,
-   5
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   0,
-   5
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   0,
-   5
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   0,
-   5
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   0,
-   5
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   0,
-   16
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   0,
-   5
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   0,
-   5
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   0,
-   5
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   0,
-   5
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   0,
-   5
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   0,
-   5
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   0,
-   5
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   0,
-   5
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   0,
-   5
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   0,
-   244
+   2,
+   32
   ],
   [
    8,
-   8
+   14
+  ],
+  [
+   2,
+   99
+  ],
+  [
+   0,
+   4
+  ],
+  [
+   6,
+   12
+  ],
+  [
+   4,
+   2
+  ],
+  [
+   2,
+   32
+  ],
+  [
+   8,
+   14
+  ],
+  [
+   2,
+   99
+  ],
+  [
+   0,
+   4
+  ],
+  [
+   6,
+   12
+  ],
+  [
+   4,
+   2
+  ],
+  [
+   2,
+   32
+  ],
+  [
+   8,
+   14
   ],
   [
    2,
@@ -6777,75 +7511,31 @@
   ],
   [
    2,
-   44
+   143
   ],
   [
-   8,
-   16
+   0,
+   4
   ],
   [
    2,
-   27
+   154
+  ],
+  [
+   0,
+   4
   ],
   [
    6,
-   5
+   12
   ],
   [
    4,
-   9
+   2
   ],
   [
    2,
-   67
-  ],
-  [
-   0,
-   4
-  ],
-  [
-   2,
-   143
-  ],
-  [
-   0,
-   4
-  ],
-  [
-   2,
-   143
-  ],
-  [
-   0,
-   4
-  ],
-  [
-   2,
-   143
-  ],
-  [
-   0,
-   4
-  ],
-  [
-   2,
-   16
-  ],
-  [
-   6,
-   6
-  ],
-  [
-   2,
-   163
-  ],
-  [
-   0,
-   4
-  ],
-  [
-   2,
-   109
+   97
   ],
   [
    0,
@@ -7037,99 +7727,11 @@
   ],
   [
    8,
-   54
-  ],
-  [
-   9,
-   7
-  ],
-  [
-   10,
-   3
-  ],
-  [
-   2,
-   4
-  ],
-  [
-   4,
-   6
-  ],
-  [
-   9,
-   4
-  ],
-  [
-   2,
-   4
-  ],
-  [
-   9,
-   1
-  ],
-  [
-   2,
-   1
-  ],
-  [
-   9,
-   1
-  ],
-  [
-   2,
-   1
-  ],
-  [
-   9,
-   1
-  ],
-  [
-   2,
-   1
-  ],
-  [
-   9,
-   1
-  ],
-  [
-   2,
-   1
-  ],
-  [
-   9,
-   1
-  ],
-  [
-   2,
-   1
-  ],
-  [
-   9,
-   1
-  ],
-  [
-   2,
-   1
-  ],
-  [
-   9,
-   1
-  ],
-  [
-   2,
-   1
-  ],
-  [
-   8,
-   38
-  ],
-  [
-   9,
-   5
+   112
   ],
   [
    1,
-   9
+   14
   ],
   [
    8,
@@ -7164,52 +7766,12 @@
    800
   ],
   [
-   8,
-   40
+   4,
+   13
   ],
   [
    1,
-   1
-  ],
-  [
-   8,
-   29
-  ],
-  [
-   1,
-   1
-  ],
-  [
-   8,
-   21
-  ],
-  [
-   1,
-   1
-  ],
-  [
-   8,
-   7
-  ],
-  [
-   1,
-   1
-  ],
-  [
-   8,
-   29
-  ],
-  [
-   1,
-   1
-  ],
-  [
-   8,
-   5
-  ],
-  [
-   1,
-   6
+   8
   ],
   [
    16,
@@ -7224,24 +7786,8 @@
    24
   ],
   [
-   9,
-   6
-  ],
-  [
-   1,
-   39
-  ],
-  [
-   0,
-   6
-  ],
-  [
-   2,
-   14
-  ],
-  [
    8,
-   79
+   88
   ],
   [
    0,
@@ -7253,7 +7799,7 @@
   ],
   [
    2,
-   14
+   13
   ],
   [
    8,
@@ -7445,19 +7991,15 @@
   ],
   [
    10,
-   8
+   7
   ],
   [
    8,
-   37
-  ],
-  [
-   10,
-   26
+   35
   ],
   [
    2,
-   11
+   16
   ],
   [
    8,
@@ -7481,7 +8023,15 @@
   ],
   [
    1,
-   153
+   61
+  ],
+  [
+   5,
+   8
+  ],
+  [
+   1,
+   119
   ],
   [
    0,
@@ -7497,7 +8047,7 @@
   ],
   [
    4,
-   7
+   9
   ],
   [
    1,
@@ -7505,15 +8055,15 @@
   ],
   [
    8,
-   10
+   8
   ],
   [
    9,
-   4
+   6
   ],
   [
    1,
-   64
+   62
   ],
   [
    0,
@@ -7565,7 +8115,7 @@
   ],
   [
    8,
-   57
+   51
   ],
   [
    1,
@@ -7573,23 +8123,23 @@
   ],
   [
    8,
-   29
+   17
   ],
   [
    1,
+   12
+  ],
+  [
+   8,
    1
   ],
   [
-   8,
-   8
-  ],
-  [
    1,
-   16
+   5
   ],
   [
    8,
-   18
+   20
   ],
   [
    16,
@@ -7601,11 +8151,11 @@
   ],
   [
    1,
-   26
+   25
   ],
   [
    4,
-   23
+   26
   ],
   [
    16,
@@ -7617,7 +8167,23 @@
   ],
   [
    0,
+   4
+  ],
+  [
+   16,
    1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
   ],
   [
    16,
@@ -7629,15 +8195,27 @@
   ],
   [
    6,
-   11
+   6
   ],
   [
    4,
-   8
+   2
   ],
   [
    1,
    30
+  ],
+  [
+   0,
+   6
+  ],
+  [
+   4,
+   16
+  ],
+  [
+   2,
+   14
   ],
   [
    0,
@@ -7649,7 +8227,7 @@
   ],
   [
    2,
-   30
+   16
   ],
   [
    0,
@@ -7657,7 +8235,7 @@
   ],
   [
    4,
-   48
+   49
   ],
   [
    2,
@@ -7817,22 +8395,6 @@
   ],
   [
    8,
-   2
-  ],
-  [
-   2,
-   1
-  ],
-  [
-   8,
-   2
-  ],
-  [
-   2,
-   2
-  ],
-  [
-   8,
    1
   ],
   [
@@ -7841,154 +8403,106 @@
   ],
   [
    8,
-   2
-  ],
-  [
-   2,
-   1
-  ],
-  [
-   8,
-   1
-  ],
-  [
-   2,
-   1
-  ],
-  [
-   8,
-   2
-  ],
-  [
-   2,
-   2
-  ],
-  [
-   8,
-   2
-  ],
-  [
-   2,
-   1
-  ],
-  [
-   8,
-   1
-  ],
-  [
-   2,
-   1
-  ],
-  [
-   8,
-   2
-  ],
-  [
-   2,
-   1
-  ],
-  [
-   8,
-   1
-  ],
-  [
-   2,
-   1
-  ],
-  [
-   8,
-   2
-  ],
-  [
-   2,
-   1
-  ],
-  [
-   8,
-   2
-  ],
-  [
-   2,
-   2
-  ],
-  [
-   8,
-   1
-  ],
-  [
-   2,
-   1
-  ],
-  [
-   8,
-   2
-  ],
-  [
-   2,
-   1
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   5,
-   26
-  ],
-  [
-   2,
-   4
-  ],
-  [
-   8,
-   2
-  ],
-  [
-   2,
-   25
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   5,
-   19
-  ],
-  [
-   4,
-   2
-  ],
-  [
-   5,
-   1
-  ],
-  [
-   4,
-   2
-  ],
-  [
-   5,
-   1
-  ],
-  [
-   4,
-   1
-  ],
-  [
-   8,
-   21
-  ],
-  [
-   5,
-   1
-  ],
-  [
-   9,
    3
   ],
   [
    2,
+   2
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   8,
+   2
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   8,
+   2
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   8,
+   2
+  ],
+  [
+   2,
+   2
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   8,
+   2
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   8,
+   2
+  ],
+  [
+   2,
+   2
+  ],
+  [
+   8,
+   2
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   8,
+   2
+  ],
+  [
+   2,
    1
   ],
   [
@@ -7996,1712 +8510,36 @@
    1
   ],
   [
-   9,
+   5,
    26
   ],
   [
-   4,
-   12
+   8,
+   24
   ],
   [
    2,
+   13
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   8,
    21
   ],
   [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
    9,
-   26
+   5
   ],
   [
-   4,
-   13
-  ],
-  [
    2,
-   13
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   9,
-   26
+   37
   ],
   [
    4,
-   13
-  ],
-  [
-   2,
-   13
+   11
   ],
   [
    16,
@@ -9713,55 +8551,51 @@
   ],
   [
    4,
-   13
+   56
   ],
   [
    2,
-   13
+   11
   ],
   [
-   16,
+   1,
    1
-  ],
-  [
-   9,
-   26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   13
   ],
   [
    16,
    1
   ],
   [
-   9,
+   6,
    26
-  ],
-  [
-   4,
-   13
-  ],
-  [
-   2,
-   1
   ],
   [
    0,
    24
   ],
   [
+   10,
+   6
+  ],
+  [
+   8,
+   10
+  ],
+  [
+   1,
+   46
+  ],
+  [
+   0,
+   6
+  ],
+  [
    4,
-   35
+   46
   ],
   [
    2,
-   124
+   123
   ],
   [
    0,
@@ -9857,19 +8691,11 @@
   ],
   [
    1,
-   67
-  ],
-  [
-   5,
-   22
-  ],
-  [
-   1,
-   39
+   96
   ],
   [
    4,
-   16
+   14
   ],
   [
    1,
@@ -10085,11 +8911,111 @@
   ],
   [
    8,
-   13
+   51
   ],
   [
    1,
-   17
+   1
+  ],
+  [
+   8,
+   2
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   8,
+   3
+  ],
+  [
+   1,
+   15
+  ],
+  [
+   4,
+   1
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   4,
+   2
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   4,
+   1
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   4,
+   1
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   4,
+   2
+  ],
+  [
+   1,
+   2
+  ],
+  [
+   4,
+   2
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   4,
+   2
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
   ],
   [
    4,
@@ -10113,6 +9039,38 @@
   ],
   [
    1,
+   2
+  ],
+  [
+   4,
+   5
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   4,
+   1
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   4,
+   2
+  ],
+  [
+   1,
+   2
+  ],
+  [
+   4,
+   4
+  ],
+  [
+   1,
    1
   ],
   [
@@ -10129,15 +9087,15 @@
   ],
   [
    1,
-   2
+   1
   ],
   [
    4,
-   2
+   4
   ],
   [
    1,
-   1
+   2
   ],
   [
    4,
@@ -10157,30 +9115,6 @@
   ],
   [
    4,
-   1
-  ],
-  [
-   1,
-   2
-  ],
-  [
-   4,
-   1
-  ],
-  [
-   1,
-   1
-  ],
-  [
-   4,
-   5
-  ],
-  [
-   1,
-   1
-  ],
-  [
-   4,
    2
   ],
   [
@@ -10206,6 +9140,38 @@
   [
    4,
    1
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   4,
+   2
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   4,
+   2
+  ],
+  [
+   1,
+   2
+  ],
+  [
+   4,
+   1
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   4,
+   2
   ],
   [
    1,
@@ -10224,56 +9190,12 @@
    24
   ],
   [
-   10,
-   2
-  ],
-  [
-   8,
-   34
-  ],
-  [
-   0,
-   5
-  ],
-  [
-   16,
+   6,
    1
-  ],
-  [
-   0,
-   5
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   0,
-   5
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   0,
-   5
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   8,
-   9
-  ],
-  [
-   0,
-   6
   ],
   [
    4,
-   134
+   107
   ],
   [
    0,
@@ -10285,7 +9207,155 @@
   ],
   [
    2,
-   78
+   1
+  ],
+  [
+   10,
+   3
+  ],
+  [
+   6,
+   1
+  ],
+  [
+   10,
+   1
+  ],
+  [
+   6,
+   3
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   4,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   4,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   4,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   4,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   4,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   4,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   4,
+   1
+  ],
+  [
+   10,
+   1
+  ],
+  [
+   4,
+   1
+  ],
+  [
+   10,
+   1
+  ],
+  [
+   4,
+   1
+  ],
+  [
+   10,
+   1
+  ],
+  [
+   4,
+   1
+  ],
+  [
+   10,
+   1
+  ],
+  [
+   4,
+   1
+  ],
+  [
+   10,
+   1
+  ],
+  [
+   4,
+   1
+  ],
+  [
+   10,
+   1
+  ],
+  [
+   4,
+   1
+  ],
+  [
+   10,
+   1
+  ],
+  [
+   4,
+   1
+  ],
+  [
+   10,
+   1
+  ],
+  [
+   4,
+   1
+  ],
+  [
+   10,
+   1
+  ],
+  [
+   4,
+   1
+  ],
+  [
+   2,
+   60
   ],
   [
    0,
@@ -10365,11 +9435,67 @@
   ],
   [
    8,
-   66
+   26
+  ],
+  [
+   5,
+   3
+  ],
+  [
+   10,
+   1
+  ],
+  [
+   5,
+   32
+  ],
+  [
+   10,
+   1
+  ],
+  [
+   5,
+   6
+  ],
+  [
+   10,
+   1
+  ],
+  [
+   5,
+   6
+  ],
+  [
+   10,
+   1
+  ],
+  [
+   5,
+   6
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   5,
+   5
+  ],
+  [
+   10,
+   13
+  ],
+  [
+   8,
+   75
+  ],
+  [
+   10,
+   5
   ],
   [
    2,
-   14
+   46
   ],
   [
    8,
@@ -10417,51 +9543,71 @@
   ],
   [
    4,
-   10
+   19
   ],
   [
    10,
-   14
+   34
   ],
   [
-   4,
-   67
-  ],
-  [
-   5,
-   5
-  ],
-  [
-   4,
-   15
-  ],
-  [
-   10,
-   4
+   8,
+   12
   ],
   [
    5,
    1
   ],
   [
-   4,
-   17
+   8,
+   1
   ],
   [
-   1,
-   9
+   4,
+   48
+  ],
+  [
+   10,
+   1
+  ],
+  [
+   4,
+   12
+  ],
+  [
+   10,
+   7
+  ],
+  [
+   4,
+   36
   ],
   [
    5,
-   13
+   3
   ],
   [
    4,
-   11
+   29
   ],
   [
    1,
-   56
+   20
+  ],
+  [
+   4,
+   2
+  ],
+  [
+   6,
+   7
+  ],
+  [
+   2,
+   7
+  ],
+  [
+   1,
+   55
   ],
   [
    16,
@@ -11229,11 +10375,11 @@
   ],
   [
    8,
-   154
+   115
   ],
   [
    2,
-   15
+   17
   ],
   [
    1,
@@ -11246,6 +10392,26 @@
   [
    6,
    26
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
   ],
   [
    0,
@@ -11276,12 +10442,24 @@
    24
   ],
   [
+   6,
+   11
+  ],
+  [
    4,
-   65
+   11
   ],
   [
    1,
    14
+  ],
+  [
+   4,
+   34
+  ],
+  [
+   1,
+   16
   ],
   [
    4,
@@ -12221,1070 +11399,790 @@
   ],
   [
    2,
-   15
-  ],
-  [
-   5,
-   5
-  ],
-  [
-   1,
-   2
-  ],
-  [
-   5,
-   1
-  ],
-  [
-   1,
-   3
-  ],
-  [
-   17,
-   1
-  ],
-  [
-   6,
-   7
-  ],
-  [
-   0,
-   3
-  ],
-  [
-   8,
-   11
-  ],
-  [
-   0,
-   9
-  ],
-  [
-   5,
-   1
-  ],
-  [
-   1,
-   1
-  ],
-  [
-   17,
-   1
-  ],
-  [
-   0,
-   16
-  ],
-  [
-   9,
-   1
-  ],
-  [
-   0,
-   6
-  ],
-  [
-   9,
-   4
-  ],
-  [
-   2,
-   3
-  ],
-  [
-   1,
-   3
-  ],
-  [
-   5,
-   2
-  ],
-  [
-   1,
-   4
-  ],
-  [
-   6,
-   3
-  ],
-  [
-   1,
-   1
-  ],
-  [
-   6,
-   2
-  ],
-  [
-   1,
-   1
-  ],
-  [
-   2,
-   1
-  ],
-  [
-   1,
-   1
-  ],
-  [
-   2,
-   2
-  ],
-  [
-   1,
-   1
-  ],
-  [
-   9,
-   8
-  ],
-  [
-   6,
-   1
-  ],
-  [
-   9,
-   5
-  ],
-  [
-   4,
-   2
-  ],
-  [
-   8,
-   1
-  ],
-  [
-   10,
-   1
-  ],
-  [
-   4,
-   1
-  ],
-  [
-   10,
-   1
-  ],
-  [
-   4,
-   1
-  ],
-  [
-   10,
-   1
-  ],
-  [
-   4,
-   1
-  ],
-  [
-   2,
-   5
-  ],
-  [
-   5,
-   1
-  ],
-  [
-   2,
-   6
-  ],
-  [
-   5,
-   16
-  ],
-  [
-   10,
-   1
-  ],
-  [
-   8,
-   2
-  ],
-  [
-   9,
-   4
-  ],
-  [
-   4,
-   9
-  ],
-  [
-   8,
-   1
-  ],
-  [
-   4,
-   1
-  ],
-  [
-   8,
-   2
-  ],
-  [
-   6,
-   1
-  ],
-  [
-   8,
-   4
-  ],
-  [
-   6,
-   1
-  ],
-  [
-   8,
-   2
-  ],
-  [
-   6,
-   1
-  ],
-  [
-   8,
-   3
-  ],
-  [
-   4,
-   1
-  ],
-  [
-   8,
-   1
-  ],
-  [
-   4,
-   1
-  ],
-  [
-   8,
-   2
-  ],
-  [
-   4,
-   1
-  ],
-  [
-   8,
-   2
-  ],
-  [
-   2,
-   2
-  ],
-  [
-   1,
-   1
-  ],
-  [
-   2,
-   4
-  ],
-  [
-   1,
-   1
-  ],
-  [
-   2,
-   2
-  ],
-  [
-   1,
-   6
-  ],
-  [
-   4,
-   8
-  ],
-  [
-   10,
-   5
-  ],
-  [
-   1,
-   2
-  ],
-  [
-   8,
-   1
-  ],
-  [
-   1,
-   1
-  ],
-  [
-   8,
-   1
-  ],
-  [
-   1,
-   1
-  ],
-  [
-   6,
-   1
-  ],
-  [
-   8,
-   1
-  ],
-  [
-   1,
-   1
-  ],
-  [
-   6,
-   1
-  ],
-  [
-   8,
-   1
-  ],
-  [
-   6,
-   1
-  ],
-  [
-   1,
-   1
-  ],
-  [
-   8,
-   1
-  ],
-  [
-   4,
-   2
-  ],
-  [
-   8,
-   1
-  ],
-  [
-   4,
-   2
-  ],
-  [
-   8,
-   1
-  ],
-  [
-   4,
-   1
-  ],
-  [
-   8,
-   1
-  ],
-  [
-   4,
-   2
-  ],
-  [
-   8,
-   1
-  ],
-  [
-   4,
-   2
-  ],
-  [
-   8,
-   1
-  ],
-  [
-   9,
-   17
-  ],
-  [
-   1,
-   1
-  ],
-  [
-   17,
-   1
-  ],
-  [
-   5,
-   2
-  ],
-  [
-   10,
-   14
-  ],
-  [
-   2,
-   6
-  ],
-  [
-   0,
-   5
-  ],
-  [
-   10,
-   3
-  ],
-  [
-   9,
-   5
-  ],
-  [
-   10,
-   6
-  ],
-  [
-   4,
-   1
-  ],
-  [
-   10,
-   1
-  ],
-  [
-   4,
-   2
-  ],
-  [
-   2,
-   3
-  ],
-  [
-   4,
-   5
-  ],
-  [
-   10,
-   1
-  ],
-  [
-   5,
-   7
-  ],
-  [
-   10,
-   1
-  ],
-  [
-   5,
-   1
-  ],
-  [
-   10,
-   1
-  ],
-  [
-   5,
-   11
-  ],
-  [
-   10,
-   1
-  ],
-  [
-   5,
-   4
-  ],
-  [
-   17,
-   1
-  ],
-  [
-   0,
-   3
-  ],
-  [
-   10,
-   7
-  ],
-  [
-   4,
-   20
-  ],
-  [
-   9,
-   14
-  ],
-  [
-   8,
-   1
-  ],
-  [
-   24,
-   1
-  ],
-  [
-   0,
-   30
-  ],
-  [
-   9,
    2
   ],
   [
    0,
-   4
-  ],
-  [
-   2,
-   9
-  ],
-  [
-   6,
-   14
-  ],
-  [
-   8,
-   2
-  ],
-  [
-   6,
-   1
-  ],
-  [
-   8,
-   2
-  ],
-  [
-   6,
-   1
-  ],
-  [
-   8,
-   2
-  ],
-  [
-   6,
-   1
-  ],
-  [
-   8,
-   1
-  ],
-  [
-   6,
-   1
-  ],
-  [
-   8,
-   2
-  ],
-  [
-   6,
-   1
-  ],
-  [
-   8,
-   2
-  ],
-  [
-   6,
-   1
-  ],
-  [
-   8,
-   1
-  ],
-  [
-   6,
-   1
-  ],
-  [
-   8,
-   2
-  ],
-  [
-   6,
-   1
-  ],
-  [
-   8,
-   2
-  ],
-  [
-   6,
-   1
-  ],
-  [
-   8,
-   2
-  ],
-  [
-   6,
-   2
-  ],
-  [
-   8,
-   2
-  ],
-  [
-   6,
-   1
-  ],
-  [
-   8,
-   1
-  ],
-  [
-   6,
-   1
-  ],
-  [
-   8,
-   1
-  ],
-  [
-   6,
-   1
-  ],
-  [
-   8,
-   3
-  ],
-  [
-   6,
-   1
-  ],
-  [
-   8,
-   1
-  ],
-  [
-   6,
-   1
-  ],
-  [
-   8,
-   1
-  ],
-  [
-   6,
-   1
-  ],
-  [
-   8,
-   1
-  ],
-  [
-   6,
-   1
-  ],
-  [
-   8,
-   1
-  ],
-  [
-   6,
-   1
-  ],
-  [
-   8,
-   1
-  ],
-  [
-   1,
-   1
-  ],
-  [
-   6,
-   1
-  ],
-  [
-   8,
-   1
-  ],
-  [
-   6,
-   1
-  ],
-  [
-   1,
-   1
-  ],
-  [
-   8,
-   1
-  ],
-  [
-   6,
-   2
-  ],
-  [
-   1,
-   1
-  ],
-  [
-   6,
-   1
-  ],
-  [
-   1,
-   1
-  ],
-  [
-   6,
-   1
-  ],
-  [
-   8,
-   1
-  ],
-  [
-   1,
-   1
-  ],
-  [
-   6,
-   2
-  ],
-  [
-   8,
-   1
-  ],
-  [
-   6,
-   1
-  ],
-  [
-   8,
-   1
-  ],
-  [
-   1,
-   1
-  ],
-  [
-   6,
-   1
-  ],
-  [
-   8,
-   1
-  ],
-  [
-   6,
-   1
-  ],
-  [
-   1,
-   1
-  ],
-  [
-   6,
-   1
-  ],
-  [
-   8,
-   1
-  ],
-  [
-   6,
-   1
-  ],
-  [
-   1,
-   1
-  ],
-  [
-   8,
-   1
-  ],
-  [
-   6,
-   1
-  ],
-  [
-   9,
-   15
-  ],
-  [
-   6,
-   1
-  ],
-  [
-   9,
-   1
-  ],
-  [
-   4,
-   7
-  ],
-  [
-   2,
-   4
-  ],
-  [
-   10,
-   1
-  ],
-  [
-   6,
-   1
-  ],
-  [
-   9,
-   2
-  ],
-  [
-   6,
-   1
-  ],
-  [
-   9,
-   1
-  ],
-  [
-   6,
-   4
-  ],
-  [
-   9,
-   7
-  ],
-  [
-   1,
-   1
-  ],
-  [
-   9,
-   1
-  ],
-  [
-   1,
-   3
-  ],
-  [
-   9,
-   3
-  ],
-  [
-   8,
-   1
-  ],
-  [
-   24,
-   1
-  ],
-  [
-   8,
-   1
-  ],
-  [
-   24,
-   1
-  ],
-  [
-   8,
-   1
-  ],
-  [
-   24,
-   1
-  ],
-  [
-   8,
-   1
-  ],
-  [
-   24,
-   1
-  ],
-  [
-   8,
-   1
-  ],
-  [
-   24,
-   1
-  ],
-  [
-   9,
-   3
-  ],
-  [
-   1,
-   1
-  ],
-  [
-   17,
-   1
-  ],
-  [
-   1,
-   1
-  ],
-  [
-   17,
-   1
-  ],
-  [
-   1,
-   1
-  ],
-  [
-   17,
-   1
-  ],
-  [
-   9,
-   20
-  ],
-  [
-   1,
-   1
-  ],
-  [
-   17,
-   1
-  ],
-  [
-   6,
-   30
-  ],
-  [
-   9,
-   17
-  ],
-  [
-   2,
-   3
-  ],
-  [
-   9,
-   1
-  ],
-  [
-   2,
-   1
-  ],
-  [
-   9,
-   1
-  ],
-  [
-   2,
-   1
-  ],
-  [
-   9,
-   1
-  ],
-  [
-   2,
-   1
-  ],
-  [
-   9,
-   2
-  ],
-  [
-   2,
-   2
-  ],
-  [
-   9,
-   1
-  ],
-  [
-   8,
-   2
-  ],
-  [
-   9,
-   5
-  ],
-  [
-   1,
-   2
-  ],
-  [
-   17,
-   1
-  ],
-  [
-   4,
-   30
-  ],
-  [
-   1,
-   1
-  ],
-  [
-   17,
-   1
-  ],
-  [
-   4,
-   16
-  ],
-  [
-   6,
-   1
-  ],
-  [
-   10,
-   2
-  ],
-  [
-   6,
-   1
-  ],
-  [
-   10,
-   1
-  ],
-  [
-   6,
-   1
-  ],
-  [
-   10,
-   1
-  ],
-  [
-   6,
-   1
-  ],
-  [
-   10,
-   1
-  ],
-  [
-   6,
-   1
-  ],
-  [
-   10,
-   1
-  ],
-  [
-   6,
-   1
-  ],
-  [
-   8,
-   1
-  ],
-  [
-   6,
-   1
-  ],
-  [
-   8,
-   1
-  ],
-  [
-   1,
    13
   ],
   [
+   1,
+   1
+  ],
+  [
+   17,
+   1
+  ],
+  [
+   10,
+   2
+  ],
+  [
+   6,
+   4
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   10,
+   7
+  ],
+  [
+   6,
+   1
+  ],
+  [
+   0,
+   3
+  ],
+  [
+   6,
+   1
+  ],
+  [
+   0,
+   7
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   17,
+   1
+  ],
+  [
+   0,
+   25
+  ],
+  [
+   9,
+   4
+  ],
+  [
+   0,
+   1
+  ],
+  [
+   1,
+   3
+  ],
+  [
+   6,
+   3
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   6,
+   1
+  ],
+  [
+   1,
+   9
+  ],
+  [
+   17,
+   1
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   17,
+   1
+  ],
+  [
+   1,
+   51
+  ],
+  [
+   9,
+   1
+  ],
+  [
+   1,
+   11
+  ],
+  [
+   4,
+   18
+  ],
+  [
+   6,
+   5
+  ],
+  [
+   4,
+   2
+  ],
+  [
+   6,
+   3
+  ],
+  [
+   4,
+   1
+  ],
+  [
+   6,
+   3
+  ],
+  [
+   4,
+   1
+  ],
+  [
+   6,
+   2
+  ],
+  [
+   4,
+   1
+  ],
+  [
+   6,
+   3
+  ],
+  [
+   4,
+   1
+  ],
+  [
+   6,
+   3
+  ],
+  [
+   4,
+   1
+  ],
+  [
+   6,
+   1
+  ],
+  [
+   8,
+   28
+  ],
+  [
+   4,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   4,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   4,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   4,
+   2
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   4,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   4,
+   2
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   4,
+   2
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   6,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   6,
+   1
+  ],
+  [
+   8,
+   2
+  ],
+  [
+   6,
+   2
+  ],
+  [
+   8,
+   2
+  ],
+  [
+   6,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   6,
+   1
+  ],
+  [
+   8,
+   2
+  ],
+  [
+   6,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   9,
+   18
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   17,
+   1
+  ],
+  [
+   10,
+   11
+  ],
+  [
+   0,
+   11
+  ],
+  [
+   10,
+   1
+  ],
+  [
+   2,
+   7
+  ],
+  [
+   9,
+   16
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   17,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   24,
+   1
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   17,
+   1
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   17,
+   1
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   17,
+   1
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   17,
+   1
+  ],
+  [
+   9,
+   1
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   17,
+   1
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   17,
+   1
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   17,
+   1
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   17,
+   1
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   17,
+   1
+  ],
+  [
+   1,
+   1
+  ],
+  [
    17,
    1
   ],
   [
    6,
+   30
+  ],
+  [
+   9,
+   22
+  ],
+  [
+   1,
+   2
+  ],
+  [
+   9,
+   1
+  ],
+  [
+   1,
+   7
+  ],
+  [
+   17,
+   1
+  ],
+  [
+   6,
+   30
+  ],
+  [
+   9,
+   15
+  ],
+  [
+   6,
+   23
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   6,
+   1
+  ],
+  [
+   8,
+   4
+  ],
+  [
+   6,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   6,
+   1
+  ],
+  [
+   8,
+   2
+  ],
+  [
+   6,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   6,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   6,
+   1
+  ],
+  [
+   8,
+   2
+  ],
+  [
+   6,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   6,
+   1
+  ],
+  [
+   8,
+   2
+  ],
+  [
+   6,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   6,
+   1
+  ],
+  [
+   8,
+   2
+  ],
+  [
+   6,
+   2
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   6,
+   1
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   6,
+   1
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   6,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   6,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   6,
+   1
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   6,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   6,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   6,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   6,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   6,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   6,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   6,
+   1
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   6,
+   1
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   6,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   6,
+   1
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   6,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   6,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   6,
+   1
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   6,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   6,
+   1
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   6,
+   1
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   9,
+   2
+  ],
+  [
+   6,
+   7
+  ],
+  [
+   9,
+   20
+  ],
+  [
+   6,
+   1
+  ],
+  [
+   9,
+   1
+  ],
+  [
+   6,
+   7
+  ],
+  [
+   9,
+   1
+  ],
+  [
+   6,
+   3
+  ],
+  [
+   9,
+   2
+  ],
+  [
+   6,
+   3
+  ],
+  [
+   9,
    22
   ],
   [
@@ -13292,32 +12190,40 @@
    1
   ],
   [
-   6,
+   17,
    1
+  ],
+  [
+   6,
+   30
   ],
   [
    1,
    1
   ],
   [
-   6,
+   17,
    1
+  ],
+  [
+   6,
+   30
+  ],
+  [
+   9,
+   17
   ],
   [
    1,
    1
   ],
   [
-   6,
+   17,
    1
   ],
   [
-   1,
-   1
-  ],
-  [
-   6,
-   1
+   4,
+   30
   ],
   [
    0,
@@ -13325,11 +12231,11 @@
   ],
   [
    10,
-   8
+   5
   ],
   [
    8,
-   4
+   31
   ],
   [
    1,
@@ -13337,7 +12243,7 @@
   ],
   [
    0,
-   3
+   2
   ],
   [
    16,
@@ -13545,39 +12451,47 @@
   ],
   [
    0,
-   5
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   0,
-   5
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   0,
-   5
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   0,
-   5
-  ],
-  [
-   16,
-   1
-  ],
-  [
-   0,
    3
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
   ],
   [
    16,
@@ -13605,42 +12519,426 @@
   ],
   [
    10,
-   183
+   159
   ],
   [
-   2,
-   15
+   8,
+   5
   ],
   [
    1,
+   27
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   12
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   264
+  ],
+  [
+   2,
+   113
+  ],
+  [
+   0,
+   4
+  ],
+  [
+   6,
+   12
+  ],
+  [
+   4,
+   2
+  ],
+  [
+   2,
+   32
+  ],
+  [
+   8,
+   30
+  ],
+  [
+   2,
+   32
+  ],
+  [
+   8,
+   32
+  ],
+  [
+   1,
+   14
+  ],
+  [
+   8,
+   16
+  ],
+  [
+   1,
+   16
+  ],
+  [
+   8,
+   37
+  ],
+  [
+   0,
+   4
+  ],
+  [
+   10,
+   7
+  ],
+  [
+   2,
+   90
+  ],
+  [
+   0,
+   4
+  ],
+  [
+   2,
+   84
+  ],
+  [
+   8,
+   21
+  ],
+  [
+   0,
+   94
+  ],
+  [
+   8,
+   63
+  ],
+  [
+   1,
+   41
+  ],
+  [
+   0,
+   64
+  ],
+  [
+   8,
+   132
+  ],
+  [
+   0,
+   4
+  ],
+  [
+   8,
+   62
+  ],
+  [
+   2,
+   53
+  ],
+  [
+   10,
+   10
+  ],
+  [
+   2,
+   75
+  ],
+  [
+   0,
+   4
+  ],
+  [
+   2,
+   122
+  ],
+  [
+   10,
    28
   ],
   [
+   2,
+   72
+  ],
+  [
+   0,
+   4
+  ],
+  [
+   2,
+   143
+  ],
+  [
+   0,
+   4
+  ],
+  [
+   2,
+   109
+  ],
+  [
+   0,
+   64
+  ],
+  [
+   4,
+   15
+  ],
+  [
+   2,
+   34
+  ],
+  [
+   4,
+   16
+  ],
+  [
+   2,
+   21
+  ],
+  [
+   10,
+   10
+  ],
+  [
+   8,
+   21
+  ],
+  [
+   2,
+   61
+  ],
+  [
+   0,
+   4
+  ],
+  [
+   9,
+   1
+  ],
+  [
+   8,
+   15
+  ],
+  [
+   2,
+   85
+  ],
+  [
+   4,
+   1
+  ],
+  [
    5,
-   19
+   34
+  ],
+  [
+   4,
+   15
+  ],
+  [
+   2,
+   63
   ],
   [
    0,
-   1
+   4
   ],
   [
-   16,
-   1
+   2,
+   165
   ],
   [
    0,
+   4
+  ],
+  [
+   5,
+   1
+  ],
+  [
+   4,
+   15
+  ],
+  [
+   2,
+   16
+  ],
+  [
+   4,
+   33
+  ],
+  [
+   2,
+   18
+  ],
+  [
+   4,
+   65
+  ],
+  [
+   0,
+   4
+  ],
+  [
+   4,
+   8
+  ],
+  [
+   1,
+   14
+  ],
+  [
+   4,
+   26
+  ],
+  [
+   5,
    5
   ],
   [
+   4,
+   33
+  ],
+  [
+   1,
+   16
+  ],
+  [
+   4,
+   32
+  ],
+  [
+   2,
+   78
+  ],
+  [
+   4,
+   64
+  ],
+  [
+   1,
+   46
+  ],
+  [
+   4,
+   47
+  ],
+  [
+   0,
+   4
+  ],
+  [
+   4,
+   40
+  ],
+  [
+   1,
+   84
+  ],
+  [
+   0,
+   4
+  ],
+  [
+   8,
+   51
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   8,
+   6
+  ],
+  [
+   1,
+   15
+  ],
+  [
+   4,
+   1
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   4,
+   2
+  ],
+  [
+   1,
+   1
+  ],
+  [
    16,
    1
   ],
   [
-   0,
-   5
+   10,
+   26
+  ],
+  [
+   1,
+   42
+  ],
+  [
+   4,
+   39
   ],
   [
    16,
+   1
+  ],
+  [
+   10,
+   15
+  ],
+  [
+   8,
+   9
+  ],
+  [
+   9,
+   2
+  ],
+  [
+   0,
+   3
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   8,
+   11
+  ],
+  [
+   5,
+   1
+  ],
+  [
+   8,
    1
   ],
   [
@@ -13648,12 +12946,4280 @@
    2
   ],
   [
+   2,
+   1
+  ],
+  [
+   5,
+   1
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   5,
+   1
+  ],
+  [
+   6,
+   4
+  ],
+  [
+   5,
+   1
+  ],
+  [
+   6,
+   1
+  ],
+  [
+   5,
+   1
+  ],
+  [
+   6,
+   1
+  ],
+  [
+   5,
+   1
+  ],
+  [
+   6,
+   1
+  ],
+  [
+   5,
+   1
+  ],
+  [
+   6,
+   1
+  ],
+  [
+   5,
+   1
+  ],
+  [
+   6,
+   1
+  ],
+  [
+   5,
+   1
+  ],
+  [
+   4,
+   23
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   0,
+   6
+  ],
+  [
+   4,
+   98
+  ],
+  [
+   0,
+   4
+  ],
+  [
+   4,
+   19
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   9,
+   26
+  ],
+  [
+   0,
+   3
+  ],
+  [
+   6,
+   8
+  ],
+  [
+   4,
+   7
+  ],
+  [
+   2,
+   16
+  ],
+  [
+   0,
+   6
+  ],
+  [
+   4,
+   174
+  ],
+  [
+   0,
+   4
+  ],
+  [
+   4,
+   44
+  ],
+  [
+   1,
+   7
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   1,
+   6
+  ],
+  [
+   8,
+   2
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   8,
+   2
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   5,
+   26
+  ],
+  [
+   0,
+   3
+  ],
+  [
+   10,
+   8
+  ],
+  [
+   8,
+   13
+  ],
+  [
+   2,
+   16
+  ],
+  [
+   0,
+   6
+  ],
+  [
+   4,
+   207
+  ],
+  [
+   0,
+   4
+  ],
+  [
+   4,
+   29
+  ],
+  [
+   1,
+   34
+  ],
+  [
+   4,
+   16
+  ],
+  [
+   1,
+   16
+  ],
+  [
+   4,
+   77
+  ],
+  [
+   6,
+   3
+  ],
+  [
+   2,
+   11
+  ],
+  [
+   4,
+   16
+  ],
+  [
+   2,
+   32
+  ],
+  [
+   4,
+   47
+  ],
+  [
+   0,
+   4
+  ],
+  [
+   10,
+   4
+  ],
+  [
+   2,
+   12
+  ],
+  [
+   4,
+   142
+  ],
+  [
+   1,
+   14
+  ],
+  [
+   4,
+   47
+  ],
+  [
+   0,
+   4
+  ],
+  [
+   4,
+   2
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   4,
+   1
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   4,
+   1
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   4,
+   15
+  ],
+  [
+   2,
+   15
+  ],
+  [
+   4,
+   26
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   9,
+   26
+  ],
+  [
+   6,
+   5
+  ],
+  [
+   4,
+   24
+  ],
+  [
+   2,
+   32
+  ],
+  [
+   4,
+   64
+  ],
+  [
+   1,
+   14
+  ],
+  [
+   4,
+   32
+  ],
+  [
+   1,
+   16
+  ],
+  [
+   4,
+   47
+  ],
+  [
+   0,
+   4
+  ],
+  [
+   64,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   0,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   0,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   0,
+   1
+  ],
+  [
+   32,
+   1
+  ],
+  [
+   0,
+   1
+  ],
+  [
+   64,
+   1
+  ],
+  [
+   0,
+   4
+  ],
+  [
+   9,
+   2
+  ],
+  [
+   1,
+   30
+  ],
+  [
+   4,
+   8
+  ],
+  [
+   32,
+   1
+  ],
+  [
+   0,
+   60
+  ],
+  [
+   10,
+   2
+  ],
+  [
+   2,
+   28
+  ],
+  [
+   0,
+   180
+  ],
+  [
+   64,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   0,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   0,
+   1
+  ],
+  [
+   32,
+   1
+  ],
+  [
+   0,
+   1
+  ],
+  [
+   64,
+   1
+  ],
+  [
+   0,
+   4
+  ],
+  [
+   32,
+   1
+  ],
+  [
+   0,
+   140
+  ],
+  [
+   32,
+   1
+  ],
+  [
+   0,
+   140
+  ],
+  [
+   1,
+   30
+  ],
+  [
+   4,
+   139
+  ],
+  [
+   2,
+   6
+  ],
+  [
+   6,
+   12
+  ],
+  [
+   4,
+   48
+  ],
+  [
+   2,
+   16
+  ],
+  [
+   4,
+   47
+  ],
+  [
+   0,
+   4
+  ],
+  [
+   4,
+   24
+  ],
+  [
+   2,
+   32
+  ],
+  [
+   4,
+   16
+  ],
+  [
+   2,
+   61
+  ],
+  [
+   0,
+   4
+  ],
+  [
+   2,
+   48
+  ],
+  [
+   4,
+   27
+  ],
+  [
+   0,
+   94
+  ],
+  [
+   9,
+   7
+  ],
+  [
+   1,
+   130
+  ],
+  [
+   0,
+   4
+  ],
+  [
+   4,
+   26
+  ],
+  [
+   1,
+   13
+  ],
+  [
+   9,
+   1
+  ],
+  [
+   8,
+   15
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   6,
+   26
+  ],
+  [
+   4,
+   21
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   4,
+   5
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   10,
+   26
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   264
+  ],
+  [
+   8,
+   33
+  ],
+  [
+   1,
+   32
+  ],
+  [
+   0,
+   6
+  ],
+  [
+   4,
+   30
+  ],
+  [
+   1,
+   48
+  ],
+  [
+   0,
+   6
+  ],
+  [
+   8,
+   14
+  ],
+  [
+   1,
+   58
+  ],
+  [
+   0,
+   4
+  ],
+  [
+   1,
+   20
+  ],
+  [
+   4,
+   46
+  ],
+  [
+   1,
+   16
+  ],
+  [
+   4,
+   53
+  ],
+  [
+   0,
+   4
+  ],
+  [
+   4,
+   71
+  ],
+  [
+   1,
+   17
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   1,
+   15
+  ],
+  [
+   0,
+   6
+  ],
+  [
+   8,
+   62
+  ],
+  [
+   2,
+   14
+  ],
+  [
+   8,
+   53
+  ],
+  [
+   0,
+   4
+  ],
+  [
+   8,
+   172
+  ],
+  [
+   0,
+   4
+  ],
+  [
+   10,
+   7
+  ],
+  [
+   2,
+   9
+  ],
+  [
+   8,
+   16
+  ],
+  [
+   1,
+   40
+  ],
+  [
+   10,
+   7
+  ],
+  [
+   8,
+   57
+  ],
+  [
+   2,
+   16
+  ],
+  [
+   8,
+   16
+  ],
+  [
+   1,
+   40
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   4
+  ],
+  [
+   6,
+   10
+  ],
+  [
+   4,
+   36
+  ],
+  [
+   1,
+   60
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   4,
+   16
+  ],
+  [
+   2,
+   31
+  ],
+  [
+   4,
+   120
+  ],
+  [
+   0,
+   4
+  ],
+  [
+   4,
+   55
+  ],
+  [
+   1,
+   89
+  ],
+  [
+   0,
+   4
+  ],
+  [
+   6,
+   10
+  ],
+  [
    4,
    6
   ],
   [
    1,
+   82
+  ],
+  [
+   16,
+   2
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   17
+  ],
+  [
+   6,
+   7
+  ],
+  [
+   4,
+   94
+  ],
+  [
+   0,
+   4
+  ],
+  [
+   4,
+   71
+  ],
+  [
+   1,
+   6
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   64
+  ],
+  [
+   10,
+   6
+  ],
+  [
+   8,
+   8
+  ],
+  [
+   1,
+   30
+  ],
+  [
+   4,
+   6
+  ],
+  [
+   0,
+   1
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   4,
+   8
+  ],
+  [
+   0,
+   6
+  ],
+  [
+   8,
+   46
+  ],
+  [
+   2,
+   14
+  ],
+  [
+   8,
    16
+  ],
+  [
+   2,
+   10
+  ],
+  [
+   10,
+   6
+  ],
+  [
+   8,
+   47
+  ],
+  [
+   0,
+   4
+  ],
+  [
+   8,
+   172
+  ],
+  [
+   0,
+   4
+  ],
+  [
+   1,
+   91
+  ],
+  [
+   8,
+   38
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   8,
+   4
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   8,
+   2
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   8,
+   2
+  ],
+  [
+   2,
+   2
+  ],
+  [
+   8,
+   4
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   8,
+   2
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   8,
+   3
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   8,
+   2
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   8,
+   5
+  ],
+  [
+   2,
+   2
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   8,
+   4
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   8,
+   2
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   8,
+   2
+  ],
+  [
+   2,
+   2
+  ],
+  [
+   8,
+   4
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   8,
+   2
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   8,
+   3
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   8,
+   2
+  ],
+  [
+   2,
+   2
+  ],
+  [
+   8,
+   6
+  ],
+  [
+   2,
+   2
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   8,
+   2
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   8,
+   4
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   8,
+   2
+  ],
+  [
+   2,
+   2
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   8,
+   4
+  ],
+  [
+   2,
+   2
+  ],
+  [
+   8,
+   4
+  ],
+  [
+   2,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   5,
+   26
+  ],
+  [
+   2,
+   3
+  ],
+  [
+   4,
+   1
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   4,
+   4
+  ],
+  [
+   2,
+   2
+  ],
+  [
+   4,
+   2
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   4,
+   2
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   4,
+   1
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   4,
+   4
+  ],
+  [
+   2,
+   2
+  ],
+  [
+   4,
+   2
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   4,
+   4
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   4,
+   2
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   9,
+   26
+  ],
+  [
+   2,
+   21
+  ],
+  [
+   4,
+   29
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   4,
+   3
+  ],
+  [
+   1,
+   4
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   5,
+   26
+  ],
+  [
+   0,
+   1
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   264
+  ],
+  [
+   10,
+   3
+  ],
+  [
+   8,
+   10
+  ],
+  [
+   2,
+   2
+  ],
+  [
+   0,
+   2
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   2,
+   14
+  ],
+  [
+   0,
+   6
+  ],
+  [
+   4,
+   46
+  ],
+  [
+   1,
+   30
+  ],
+  [
+   4,
+   53
+  ],
+  [
+   0,
+   4
+  ],
+  [
+   4,
+   71
+  ],
+  [
+   1,
+   78
+  ],
+  [
+   0,
+   60
+  ],
+  [
+   1,
+   53
+  ],
+  [
+   16,
+   2
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   3
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   4
+  ],
+  [
+   64,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   0,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   0,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   0,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   0,
+   1
+  ],
+  [
+   32,
+   1
+  ],
+  [
+   0,
+   1
+  ],
+  [
+   64,
+   1
+  ],
+  [
+   0,
+   112
+  ],
+  [
+   32,
+   1
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   6,
+   4
+  ],
+  [
+   4,
+   12
+  ],
+  [
+   1,
+   14
+  ],
+  [
+   4,
+   120
+  ],
+  [
+   32,
+   1
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   4,
+   300
+  ],
+  [
+   0,
+   90
+  ],
+  [
+   6,
+   1
+  ],
+  [
+   2,
+   13
+  ],
+  [
+   4,
+   80
+  ],
+  [
+   1,
+   40
+  ],
+  [
+   10,
+   6
+  ],
+  [
+   8,
+   40
+  ],
+  [
+   2,
+   16
+  ],
+  [
+   8,
+   32
+  ],
+  [
+   1,
+   40
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   4
+  ],
+  [
+   1,
+   4
+  ],
+  [
+   4,
+   46
+  ],
+  [
+   1,
+   30
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   4,
+   16
+  ],
+  [
+   1,
+   30
+  ],
+  [
+   0,
+   60
+  ],
+  [
+   8,
+   14
+  ],
+  [
+   1,
+   32
+  ],
+  [
+   5,
+   12
+  ],
+  [
+   1,
+   21
+  ],
+  [
+   8,
+   20
+  ],
+  [
+   16,
+   2
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   17
+  ],
+  [
+   8,
+   44
+  ],
+  [
+   1,
+   6
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   64
+  ],
+  [
+   10,
+   4
+  ],
+  [
+   8,
+   12
+  ],
+  [
+   1,
+   30
+  ],
+  [
+   4,
+   6
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   4,
+   8
+  ],
+  [
+   0,
+   6
+  ],
+  [
+   4,
+   16
+  ],
+  [
+   2,
+   30
+  ],
+  [
+   4,
+   38
+  ],
+  [
+   6,
+   17
+  ],
+  [
+   4,
+   28
+  ],
+  [
+   2,
+   62
+  ],
+  [
+   0,
+   60
+  ],
+  [
+   10,
+   7
+  ],
+  [
+   8,
+   7
+  ],
+  [
+   2,
+   16
+  ],
+  [
+   8,
+   48
+  ],
+  [
+   2,
+   8
+  ],
+  [
+   10,
+   8
+  ],
+  [
+   8,
+   8
+  ],
+  [
+   2,
+   16
+  ],
+  [
+   8,
+   240
+  ],
+  [
+   0,
+   90
+  ],
+  [
+   6,
+   3
+  ],
+  [
+   2,
+   13
+  ],
+  [
+   8,
+   30
+  ],
+  [
+   1,
+   14
+  ],
+  [
+   8,
+   180
+  ],
+  [
+   0,
+   90
+  ],
+  [
+   32,
+   1
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   8,
+   107
+  ],
+  [
+   2,
+   60
+  ],
+  [
+   32,
+   1
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   1,
+   60
+  ],
+  [
+   8,
+   300
+  ],
+  [
+   0,
+   90
+  ],
+  [
+   6,
+   34
+  ],
+  [
+   2,
+   12
+  ],
+  [
+   4,
+   32
+  ],
+  [
+   2,
+   62
+  ],
+  [
+   0,
+   60
+  ],
+  [
+   4,
+   34
+  ],
+  [
+   2,
+   6
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   4,
+   153
+  ],
+  [
+   2,
+   24
+  ],
+  [
+   4,
+   1
+  ],
+  [
+   2,
+   2
+  ],
+  [
+   4,
+   2
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   4,
+   2
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   4,
+   1
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   4,
+   1
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   4,
+   2
+  ],
+  [
+   2,
+   2
+  ],
+  [
+   4,
+   2
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   4,
+   2
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   4,
+   1
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   4,
+   2
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   4,
+   1
+  ],
+  [
+   2,
+   2
+  ],
+  [
+   4,
+   2
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   4,
+   2
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   4,
+   1
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   4,
+   2
+  ],
+  [
+   2,
+   2
+  ],
+  [
+   4,
+   1
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   4,
+   2
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   4,
+   2
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   9,
+   26
+  ],
+  [
+   4,
+   14
+  ],
+  [
+   2,
+   13
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   5,
+   26
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   8,
+   4
+  ],
+  [
+   2,
+   12
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   9,
+   26
+  ],
+  [
+   4,
+   3
+  ],
+  [
+   2,
+   13
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   5,
+   26
+  ],
+  [
+   2,
+   4
+  ],
+  [
+   8,
+   22
+  ],
+  [
+   2,
+   9
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   9,
+   26
+  ],
+  [
+   4,
+   27
+  ],
+  [
+   2,
+   13
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   5,
+   26
+  ],
+  [
+   8,
+   20
+  ],
+  [
+   2,
+   13
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   9,
+   26
+  ],
+  [
+   4,
+   18
+  ],
+  [
+   2,
+   13
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   5,
+   26
+  ],
+  [
+   8,
+   17
+  ],
+  [
+   2,
+   13
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   9,
+   26
+  ],
+  [
+   4,
+   16
+  ],
+  [
+   2,
+   13
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   5,
+   26
+  ],
+  [
+   8,
+   26
+  ],
+  [
+   2,
+   13
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   9,
+   26
+  ],
+  [
+   4,
+   27
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   4,
+   1
+  ],
+  [
+   2,
+   12
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   5,
+   26
+  ],
+  [
+   8,
+   19
+  ],
+  [
+   2,
+   13
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   9,
+   26
+  ],
+  [
+   4,
+   18
+  ],
+  [
+   2,
+   13
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   5,
+   26
+  ],
+  [
+   8,
+   17
+  ],
+  [
+   2,
+   13
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   9,
+   26
+  ],
+  [
+   4,
+   16
+  ],
+  [
+   2,
+   13
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   5,
+   26
+  ],
+  [
+   8,
+   26
+  ],
+  [
+   2,
+   13
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   9,
+   26
+  ],
+  [
+   4,
+   23
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   4,
+   5
+  ],
+  [
+   2,
+   12
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   5,
+   26
+  ],
+  [
+   8,
+   9
+  ],
+  [
+   2,
+   13
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   9,
+   26
+  ],
+  [
+   4,
+   5
+  ],
+  [
+   2,
+   13
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   5,
+   26
+  ],
+  [
+   2,
+   12
+  ],
+  [
+   8,
+   29
+  ],
+  [
+   2,
+   2
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   5,
+   26
+  ],
+  [
+   2,
+   9
+  ],
+  [
+   4,
+   1
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   4,
+   2
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   4,
+   1
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   9,
+   26
+  ],
+  [
+   4,
+   13
+  ],
+  [
+   2,
+   13
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   9,
+   26
+  ],
+  [
+   4,
+   14
+  ],
+  [
+   2,
+   13
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   5,
+   26
+  ],
+  [
+   8,
+   31
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   8,
+   15
+  ],
+  [
+   2,
+   12
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   9,
+   26
+  ],
+  [
+   4,
+   35
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   4,
+   19
+  ],
+  [
+   2,
+   12
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   5,
+   26
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   8,
+   2
+  ],
+  [
+   2,
+   12
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   5,
+   26
+  ],
+  [
+   8,
+   18
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   8,
+   21
+  ],
+  [
+   2,
+   2
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   8,
+   2
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   8,
+   2
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   8,
+   2
+  ],
+  [
+   2,
+   6
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   5,
+   26
+  ],
+  [
+   2,
+   4
+  ],
+  [
+   4,
+   2
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   4,
+   1
+  ],
+  [
+   2,
+   2
+  ],
+  [
+   4,
+   2
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   4,
+   2
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   4,
+   1
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   4,
+   2
+  ],
+  [
+   2,
+   2
+  ],
+  [
+   4,
+   1
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   9,
+   26
+  ],
+  [
+   4,
+   19
+  ],
+  [
+   2,
+   13
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   5,
+   26
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   8,
+   4
+  ],
+  [
+   2,
+   12
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   9,
+   26
+  ],
+  [
+   4,
+   3
+  ],
+  [
+   2,
+   13
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   5,
+   26
+  ],
+  [
+   2,
+   4
+  ],
+  [
+   8,
+   11
+  ],
+  [
+   10,
+   12
+  ],
+  [
+   8,
+   5
+  ],
+  [
+   2,
+   3
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   16
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   6
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   3
+  ],
+  [
+   16,
+   2
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   9
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   16
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   16
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   16
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   16
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   16
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   16
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   16
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   16
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   16
+  ],
+  [
+   5,
+   1
+  ],
+  [
+   4,
+   13
+  ],
+  [
+   2,
+   3
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   16
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   16
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   16
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   16
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   16
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   16
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   16
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   16
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   16
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   16
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   16
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   280
+  ],
+  [
+   10,
+   11
+  ],
+  [
+   8,
+   19
+  ],
+  [
+   1,
+   31
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   1,
+   15
+  ],
+  [
+   0,
+   6
+  ],
+  [
+   1,
+   30
+  ],
+  [
+   0,
+   60
+  ],
+  [
+   1,
+   59
+  ],
+  [
+   9,
+   15
+  ],
+  [
+   8,
+   13
+  ],
+  [
+   1,
+   20
+  ],
+  [
+   16,
+   2
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   17
+  ],
+  [
+   1,
+   63
+  ],
+  [
+   0,
+   90
+  ],
+  [
+   32,
+   1
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   1,
+   90
+  ],
+  [
+   4,
+   440
+  ],
+  [
+   0,
+   90
+  ],
+  [
+   6,
+   12
+  ],
+  [
+   4,
+   9
+  ],
+  [
+   1,
+   34
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   30
+  ],
+  [
+   1,
+   63
+  ],
+  [
+   0,
+   90
+  ],
+  [
+   9,
+   4
+  ],
+  [
+   1,
+   39
+  ],
+  [
+   17,
+   1
+  ],
+  [
+   6,
+   30
+  ],
+  [
+   9,
+   11
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   17,
+   1
+  ],
+  [
+   6,
+   30
+  ],
+  [
+   9,
+   11
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   17,
+   1
+  ],
+  [
+   6,
+   30
+  ],
+  [
+   9,
+   13
+  ],
+  [
+   6,
+   7
+  ],
+  [
+   9,
+   1
+  ],
+  [
+   6,
+   3
+  ],
+  [
+   9,
+   1
+  ],
+  [
+   6,
+   9
+  ],
+  [
+   9,
+   9
+  ],
+  [
+   1,
+   7
+  ],
+  [
+   17,
+   1
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   17,
+   1
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   17,
+   1
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   17,
+   1
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   17,
+   1
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   6,
+   20
+  ],
+  [
+   9,
+   12
+  ],
+  [
+   1,
+   2
+  ],
+  [
+   17,
+   1
+  ],
+  [
+   6,
+   30
+  ],
+  [
+   9,
+   11
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   17,
+   1
+  ],
+  [
+   6,
+   30
+  ],
+  [
+   9,
+   2
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   17,
+   1
+  ],
+  [
+   1,
+   1
+  ],
+  [
+   17,
+   1
+  ],
+  [
+   9,
+   18
+  ],
+  [
+   6,
+   5
+  ],
+  [
+   2,
+   12
+  ],
+  [
+   9,
+   21
+  ],
+  [
+   4,
+   3
+  ],
+  [
+   6,
+   1
+  ],
+  [
+   4,
+   1
+  ],
+  [
+   6,
+   15
+  ],
+  [
+   9,
+   13
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   24,
+   1
+  ],
+  [
+   4,
+   30
+  ],
+  [
+   9,
+   6
+  ],
+  [
+   1,
+   2
+  ],
+  [
+   2,
+   11
+  ],
+  [
+   6,
+   2
+  ],
+  [
+   8,
+   12
+  ],
+  [
+   24,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   24,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   24,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   24,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   24,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   24,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   24,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   24,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   24,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   24,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   24,
+   1
+  ],
+  [
+   5,
+   12
+  ],
+  [
+   8,
+   11
+  ],
+  [
+   24,
+   1
+  ],
+  [
+   5,
+   30
+  ],
+  [
+   10,
+   13
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   24,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   24,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   24,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   24,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   24,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   24,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   24,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   24,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   24,
+   1
+  ],
+  [
+   8,
+   33
+  ],
+  [
+   24,
+   1
+  ],
+  [
+   6,
+   30
+  ],
+  [
+   9,
+   10
+  ],
+  [
+   5,
+   9
+  ],
+  [
+   4,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   6,
+   12
+  ],
+  [
+   4,
+   3
+  ],
+  [
+   8,
+   2
+  ],
+  [
+   9,
+   6
+  ],
+  [
+   4,
+   8
+  ],
+  [
+   5,
+   12
+  ],
+  [
+   10,
+   10
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   24,
+   1
+  ],
+  [
+   5,
+   30
+  ],
+  [
+   10,
+   7
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   24,
+   1
+  ],
+  [
+   5,
+   30
+  ],
+  [
+   10,
+   5
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   18,
+   1
+  ],
+  [
+   5,
+   30
+  ],
+  [
+   10,
+   11
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   18,
+   1
+  ],
+  [
+   9,
+   8
+  ],
+  [
+   4,
+   22
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   18,
+   1
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   18,
+   1
+  ],
+  [
+   4,
+   22
+  ],
+  [
+   10,
+   2
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   18,
+   1
+  ],
+  [
+   5,
+   30
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   18,
+   1
+  ],
+  [
+   5,
+   16
+  ],
+  [
+   4,
+   14
+  ],
+  [
+   10,
+   1
+  ],
+  [
+   8,
+   1
+  ],
+  [
+   24,
+   1
+  ],
+  [
+   5,
+   14
+  ],
+  [
+   4,
+   16
+  ],
+  [
+   0,
+   240
+  ],
+  [
+   10,
+   4
+  ],
+  [
+   8,
+   46
+  ],
+  [
+   2,
+   216
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   2,
+   159
+  ],
+  [
+   10,
+   19
+  ],
+  [
+   2,
+   17
+  ],
+  [
+   0,
+   24
+  ],
+  [
+   8,
+   16
+  ],
+  [
+   1,
+   7
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   5
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   1,
+   7
   ],
   [
    0,

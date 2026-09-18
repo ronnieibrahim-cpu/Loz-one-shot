@@ -44,8 +44,8 @@
 // WHAT IT PROVES, in one run:
 //   * how far a new game gets with nothing handed to it
 //   * every item the run ends with was acquired during the run
-//   * Small Keys were earned and spent on locked doors, in both dungeons
-//   * two bosses were beaten in real combat, at a health budget that was
+//   * Small Keys were earned and spent on locked doors, in all three dungeons
+//   * three bosses were beaten in real combat, at a health budget that was
 //     MEASURED rather than assumed (Anemos alone needs a full 40
 //     quarter-hearts of survived damage against the current `dBoss` verb —
 //     see the comment on the Anemos fight in `tools/playthrough-route.mjs`)
@@ -68,11 +68,13 @@
 //   node tools/check-playthrough.mjs --trace    print the per-directive trace
 //   node tools/check-playthrough.mjs --headed   watch it in a real browser
 //
-// SCOPE. New game to D2's Essence — Tidewash Grotto and the Coral Spire, in
-// order, nothing granted. `GOAL` in `tools/playthrough-route.mjs` names
-// exactly where the run currently stops and what would need to change to
-// extend it: four dungeons, the Coastwise Chain and four bosses are still
-// unrouted past this point.
+// SCOPE. New game to D3's Essence — Tidewash Grotto, the Coral Spire and the
+// Bogwater Sanctum, in order, nothing granted. Three bosses beaten, eight
+// Small Keys earned and spent, the Sunken Marsh opened with the Bombs the
+// Coral Spire paid out, and all three of the Sanctum's torrents crossed on
+// the seafloor. `GOAL` in `tools/playthrough-route.mjs` names exactly where
+// the run currently stops: three dungeons, the Coastwise Chain and three
+// bosses are still unrouted past this point.
 
 import { createServer } from 'node:http';
 import { readFile, stat, mkdir, writeFile } from 'node:fs/promises';
@@ -289,7 +291,8 @@ if (TRACE) {
   for (const t of run.trace) {
     console.log(`  ${String(t.step).padStart(3)} ${t.kind.padEnd(9)} f${String(t.frame).padStart(6)} `
       + `${t.room.padEnd(12)} ${String(t.x).padStart(4)},${String(t.y).padStart(3)} `
-      + `hp ${t.hp} tide ${t.tide} foes ${t.foes} keys ${t.keys} doors ${t.doors}`);
+      + `hp ${t.hp} tide ${t.tide} foes ${t.foes} keys ${t.keys} doors ${t.doors} `
+      + `${t.soles}/${t.layer}${t.foeKinds ? ' [' + t.foeKinds + ']' : ''}`);
   }
   console.log('  -------------');
 }
@@ -327,10 +330,25 @@ check('the run gets as far as the route currently drives it (' + GOAL.room + ')'
 check(`the run earned all ${GOAL.keysObtainable} Small Keys and spent them on locked doors`,
   s.doorsChanged >= GOAL.keysObtainable && a.blocksMoved >= 4,
   `doors ${s.doorsChanged}, blocks moved ${a.blocksMoved}`);
-check('THE ESSENCES OF TIDEWASH GROTTO AND THE CORAL SPIRE ARE BOTH TAKEN',
+check('THE ESSENCES OF TIDEWASH GROTTO, THE CORAL SPIRE AND THE BOGWATER SANCTUM ARE ALL TAKEN',
   GOAL.essences.every(i => s.essences.includes(i)), `essences [${s.essences.join(',')}]`);
-check('both bosses were beaten in real combat, with nothing granted',
-  !!(s.beaten && s.beaten.d1 && s.beaten.d2), `beaten ${JSON.stringify(s.beaten || {})}`);
+check('all three bosses were beaten in real combat, with nothing granted',
+  !!(s.beaten && s.beaten.d1 && s.beaten.d2 && s.beaten.d3),
+  `beaten ${JSON.stringify(s.beaten || {})}`);
+// THE BOMBS OPENED A REGION, AND THAT IS A CLAIM NO EARLIER RUN COULD MAKE.
+// Every dungeon before this one is reached across open coast; the Sunken
+// Marsh is behind a cracked cliff on the Bog road, so the walk to the
+// Sanctum's door is the first time this run has had to answer the overworld
+// with an item rather than with a direction.
+check('the run bombed its way into the Sunken Marsh',
+  a.rooms.includes('overworld/0,1,8') && s.items.includes('bombs'),
+  `reached ${a.rooms.filter(r => r.startsWith('overworld/0,1')).join(' ') || '(no marsh screen)'}`);
+// THE CLEATS WERE USED AS AN ITEM, NOT CARRIED AS A KEY. Three torrents
+// stand between the Sanctum's item room and its boss, and every one of them
+// is a wall on the surface: a run that reached the arena went under them.
+check('the run walked the seafloor under D3\'s three torrents',
+  ['d3/0,2,3', 'd3/0,4,3', 'd3/0,4,2'].every(r => a.rooms.includes(r)),
+  `rooms ${['d3/0,2,3', 'd3/0,4,3', 'd3/0,4,2'].filter(r => !a.rooms.includes(r)).join(' ')} missing`);
 check('the run completed a second Heart Container mid-D2, on top of D1\'s own',
   s.maxHearts >= 20, `maxHearts ${s.maxHearts}`);
 

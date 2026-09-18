@@ -384,6 +384,69 @@ export async function installRuntime() {
   }
 
   /**
+   * PUT THE SOLES IN A NAMED MODE.
+   *
+   *   ['soles', 'sink', 240]    the Kelp-Soled Cleats are set to walk the
+   *                             seafloor, and the verb waits until they have
+   *   ['soles', 'swim', 240]    back to the surface
+   *
+   * The same lesson `tide` above is built on, one item along: `use` counts
+   * BUTTON PRESSES and the Cleats are a TOGGLE, so "press it once" only lands
+   * where the route meant if the soles were where the route last saw them —
+   * and they are not always, because `Player.updateTerrain` dives on its own
+   * the moment an armed sole touches deep water, and leaving a room can put
+   * the player back on the surface with the mode still set. A route that
+   * pressed once on the island and once again in the channel toggled itself
+   * back to swimming at the mouth of a current that is stronger than a
+   * swimmer by design (TORRENT_PUSH 0.9 against SWIM_SPEED 0.75), and the
+   * actor stood on the lip holding a direction with nothing to show for it.
+   *
+   * So the route says WHICH LAYER it wants and this verb gets there: it reads
+   * `cleatMode` and presses only when that disagrees, then spends the rest of
+   * its budget waiting for `underwater` to match — the dive itself takes
+   * SINK_ENTER_FRAMES and a `hold` issued during it is spent on the surface.
+   * It returns rather than throwing on a mode it cannot reach, so the
+   * directive after it reports the mismatch in the trace where it can be read.
+   */
+  function* dSoles(mode, maxF) {
+    const g = window.__game;
+    const want = mode === 'sink' ? 'sink' : 'swim';
+    const budget = maxF || 240;
+    let f = 0;
+    for (; f < budget; f++) {
+      const p = g.player;
+      if (!p || g.mode !== 'play' || p.frozen > 0) { yield 0; continue; }
+      if (p.cleatMode === want) break;
+      const b = slotBit('cleats');
+      if (!b) { yield 0; continue; }
+      yield b;
+    }
+    // THE PRESS IS FOLLOWED BY A SETTLE, AND WITHOUT IT THIS VERB DOES
+    // NOTHING. `toggleCleats` freezes the player for the length of its own
+    // line of dialogue, and a `hold` issued on the next frame is spent
+    // entirely inside that freeze: the actor stood on the lip of the Undertow
+    // holding left for three hundred frames without moving one pixel, with
+    // the soles reading `sink` the whole time, which reads exactly like a
+    // collision bug and is not one.
+    for (let i = 0; i < 180 && f < budget; i++, f++) {
+      const p = g.player;
+      if (p && g.mode === 'play' && p.frozen === 0 && !g.dialogue.active) break;
+      const d = dialogueMask(g, i);
+      yield d === null ? 0 : d;
+    }
+    // Out of the water there is nothing further to wait for — the dive
+    // happens on contact, which is the whole point of the arming press. In
+    // it, wait for the layer to actually change: the dive itself takes
+    // SINK_ENTER_FRAMES and anything held during it is spent on the surface.
+    for (; f < budget; f++) {
+      const p = g.player;
+      if (!p || !p.inDeep) return;
+      if (p.underwater === (want === 'sink')) return;
+      yield 0;
+    }
+  }
+
+  /**
    * Title screen to the first frame of play, pressing real buttons.
    *
    * This is the half of "no developer shortcuts" that is easiest to lose. Every
@@ -1926,6 +1989,7 @@ export async function installRuntime() {
       else if (kind === 'loot') yield* dLoot(a[0]);
       else if (kind === 'boss') yield* dBoss(a[0], a[1], a[2]);
       else if (kind === 'tide') yield* dTide(a[0], a[1], a[2]);
+      else if (kind === 'soles') yield* dSoles(a[0], a[1]);
       else if (kind === 'equip') yield* dEquip(a[0], a[1], a[2]);
       else if (kind === 'anchor') yield* dAnchor(a[0], a[1], a[2]);
       else if (kind === 'unanchor') yield* dUnanchor(a[0]);
@@ -1941,11 +2005,26 @@ export async function installRuntime() {
         x: p ? Math.round(p.x) : null, y: p ? Math.round(p.y) : null,
         hp: g.progress.hearts, tide: g.tide.level,
         foes: g.entities.filter(e => e.isEnemy && !e.dead).length,
+        // WHICH foes, not just how many. "The room would not clear" is the
+        // most common way a route stalls, and the count alone never says
+        // whether what is left is a flier the swordsman cannot corner, a
+        // phased-out enemy that is not hittable at this sea at all, or a
+        // barnacle that was never killable — three different fixes.
+        foeKinds: g.entities.filter(e => e.isEnemy && !e.dead)
+          .map(e => (e.kind || e.type || '?') + (e.phasedOut ? '(phased)' : '')).join('+'),
         // Keys and opened doors, because "the route silently continued without
         // the key it needed" is the failure mode this trace exists to catch and
         // it is invisible in a position.
         keys: g.progress.keys[g.mapId] || 0,
         doors: Object.keys(g.progress.doors).length,
+        // WHICH LAYER THE PLAYER IS ON. A route that crosses a torrent is
+        // driving a two-mode item, and "the actor held a direction and did
+        // not move" reads identically whether the soles are set wrong, the
+        // dive never started, or the current is simply winning — so the
+        // trace says which. It cost the D3 extension a long detour to find
+        // this out by elimination once.
+        soles: p ? (p.cleatMode || '-') : '-',
+        layer: p ? (p.underwater ? 'floor' : p.inDeep ? 'surface' : 'dry') : '-',
       });
     }
   }
