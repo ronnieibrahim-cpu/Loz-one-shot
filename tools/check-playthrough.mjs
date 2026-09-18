@@ -1,4 +1,4 @@
-// THE BEATABILITY TEST — a new game driven to two Essences in the real
+// THE BEATABILITY TEST — a new game driven to four Essences in the real
 // engine, headless, with no developer shortcuts of any kind.
 //
 // WHY IT EXISTS, and this is not hypothetical. Every other tool in this repo
@@ -68,13 +68,15 @@
 //   node tools/check-playthrough.mjs --trace    print the per-directive trace
 //   node tools/check-playthrough.mjs --headed   watch it in a real browser
 //
-// SCOPE. New game to D3's Essence — Tidewash Grotto, the Coral Spire and the
-// Bogwater Sanctum, in order, nothing granted. Three bosses beaten, eight
-// Small Keys earned and spent, the Sunken Marsh opened with the Bombs the
-// Coral Spire paid out, and all three of the Sanctum's torrents crossed on
-// the seafloor. `GOAL` in `tools/playthrough-route.mjs` names exactly where
-// the run currently stops: three dungeons, the Coastwise Chain and three
-// bosses are still unrouted past this point.
+// SCOPE. New game to D4's Essence — Tidewash Grotto, the Coral Spire, the
+// Bogwater Sanctum and the Cliffside Cistern, in order, nothing granted. Four
+// bosses and a miniboss beaten, eleven Small Keys earned and spent, the Sunken
+// Marsh and the Cliffs of Kell both opened with the Bombs the Coral Spire paid
+// out, all three of the Sanctum's torrents crossed on the seafloor, and all
+// six of the Cistern's drowned wheels turned with the Squall Bellows held.
+// `GOAL` in `tools/playthrough-route.mjs` names exactly where the run
+// currently stops: two dungeons, the Coastwise Chain and two bosses are still
+// unrouted past this point.
 
 import { createServer } from 'node:http';
 import { readFile, stat, mkdir, writeFile } from 'node:fs/promises';
@@ -265,7 +267,7 @@ const browser = await chromium.launch({ headless: !HEADED }).catch(async (err) =
   return chromium.launch({ headless: !HEADED, executablePath: fallback });
 });
 
-console.log(`playthrough: seed ${SEED}, ${ROUTE.length} directives, target: the Essences of Tidewash Grotto and the Coral Spire\n`);
+console.log(`playthrough: seed ${SEED}, ${ROUTE.length} directives, target: the Essences of the Grotto, the Spire, the Sanctum and the Cistern\n`);
 
 const page = await newPage(browser);
 await prepare(page, PORT);
@@ -330,11 +332,34 @@ check('the run gets as far as the route currently drives it (' + GOAL.room + ')'
 check(`the run earned all ${GOAL.keysObtainable} Small Keys and spent them on locked doors`,
   s.doorsChanged >= GOAL.keysObtainable && a.blocksMoved >= 4,
   `doors ${s.doorsChanged}, blocks moved ${a.blocksMoved}`);
-check('THE ESSENCES OF TIDEWASH GROTTO, THE CORAL SPIRE AND THE BOGWATER SANCTUM ARE ALL TAKEN',
+check('THE ESSENCES OF THE GROTTO, THE SPIRE, THE SANCTUM AND THE CISTERN ARE ALL TAKEN',
   GOAL.essences.every(i => s.essences.includes(i)), `essences [${s.essences.join(',')}]`);
-check('all three bosses were beaten in real combat, with nothing granted',
-  !!(s.beaten && s.beaten.d1 && s.beaten.d2 && s.beaten.d3),
+check('all four bosses were beaten in real combat, with nothing granted',
+  !!(s.beaten && s.beaten.d1 && s.beaten.d2 && s.beaten.d3 && s.beaten.d4),
   `beaten ${JSON.stringify(s.beaten || {})}`);
+// A DUNGEON WAS WALKED OUT OF. Every earlier leg ended in a boss room and the
+// next one began on the overworld, because the run had never had to leave a
+// dungeon on foot — the arena is a dead end with one door, and a `travel`
+// issued from inside it plans into the room it is already in. The Sanctum is
+// left the way it was entered, through its own mouth.
+check('the run walked out of the Bogwater Sanctum on its own feet',
+  a.rooms.includes('d3/0,3,7') && a.rooms.includes('overworld/0,1,7'),
+  `rooms ${['d3/0,3,7', 'overworld/0,1,7'].filter(r => !a.rooms.includes(r)).join(' ')} missing`);
+// THE CLIFFS OF KELL COST A SECOND BOMB. The Deep Cut's east bank is a
+// rockfall with a one-tile pocket behind it, and the Cistern's door is on the
+// far side of it — so the fourth dungeon, like the third, is reached by
+// answering a screen with an item rather than with a direction.
+check('the run bombed the Deep Cut open and crossed the Cliffs of Kell',
+  ['overworld/0,3,4', 'overworld/0,2,3', 'overworld/0,1,3'].every(r => a.rooms.includes(r)),
+  `rooms ${['overworld/0,3,4', 'overworld/0,2,3', 'overworld/0,1,3'].filter(r => !a.rooms.includes(r)).join(' ')} missing`);
+// THE BELLOWS WERE HELD, NOT CARRIED. Six wheels stand where no hand reaches
+// and each is drowned at the sea its own room is played at; the only thing
+// that takes the water off one is the gust that has to turn it. A run that
+// reached Wyverna turned all six, because the Boss Key is behind the last two.
+check('the run turned all six of the Cistern\'s drowned wheels',
+  s.items.includes('bellows')
+    && ['d4/0,1,3', 'd4/0,2,3', 'd4/0,2,2', 'd4/0,4,3', 'd4/0,4,2'].every(r => a.rooms.includes(r)),
+  `rooms ${['d4/0,1,3', 'd4/0,2,3', 'd4/0,2,2', 'd4/0,4,3', 'd4/0,4,2'].filter(r => !a.rooms.includes(r)).join(' ')} missing`);
 // THE BOMBS OPENED A REGION, AND THAT IS A CLAIM NO EARLIER RUN COULD MAKE.
 // Every dungeon before this one is reached across open coast; the Sunken
 // Marsh is behind a cracked cliff on the Bog road, so the walk to the
@@ -380,8 +405,8 @@ check('the run collected D1\'s Dungeon Map and Chartstone',
 check('the run opened chests', s.chestsOpened >= 1, `chests ${s.chestsOpened}`);
 check('the run killed things', s.kills >= 5, `kills ${s.kills}`);
 check('the run walked the overworld before each dungeon',
-  a.rooms.some(r => r.startsWith('overworld/')) && a.rooms.some(r => r.startsWith('d1/'))
-    && a.rooms.some(r => r.startsWith('d2/')),
+  a.rooms.some(r => r.startsWith('overworld/')) && ['d1/', 'd2/', 'd3/', 'd4/']
+    .every(d => a.rooms.some(r => r.startsWith(d))),
   a.rooms.slice(0, 4).join(' '));
 
 // --- 4. it was never soft-locked -------------------------------------------
@@ -425,9 +450,9 @@ check('no unresolved sprites were drawn during the run',
 
 await mkdir(TAPE_DIR, { recursive: true });
 const tape = {
-  note: 'A new game driven to the Essences of Tidewash Grotto and the Coral Spire '
-    + 'with no shortcuts. Recorded by tools/check-playthrough.mjs; see its header '
-    + 'for what "no shortcuts" means.',
+  note: 'A new game driven to the Essences of Tidewash Grotto, the Coral Spire, '
+    + 'the Bogwater Sanctum and the Cliffside Cistern with no shortcuts. Recorded '
+    + 'by tools/check-playthrough.mjs; see its header for what "no shortcuts" means.',
   seed: SEED,
   frames: run.frames,
   state: run.state,

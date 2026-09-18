@@ -961,3 +961,30 @@ checked and why; see `docs/NEXT-SESSION.md` S60 for the full account.
   (Grotto Mouth, and sixty directives then play out inside D1 with the trace
   looking fine); and it cannot see a DIAGONAL-ONLY link, which Bog Causeway
   has. Negation: a `travel` call is not a substitute for knowing the map.
+- **A `travel` cannot plan its way out of a room with one door.** Every
+  dungeon arena is such a room, and `bfsScreens` models an edge into the room
+  it is already standing in, so the call oscillates until its budget is gone.
+  Negation: leaving a dungeon is not entering it backwards. Step out of the
+  dead end by hand, then plan from a room that has somewhere else to be.
+- **A route may not hold a button for a number that lives in room data, and
+  `bellows` is the third proof of the same rule.** `needTurns` is 30 on one
+  sill and 50 on another. Negation: "hold for N frames" is a private copy of
+  the world. Name the thing that has to change — the wheel, and its own
+  `open`.
+- **A `fight` is a roam, and a roam moves scenery.** `dFight` crossed thirty
+  tiles of the Cistern Floor chasing a jellyfish and shoved the puzzle's push
+  block off the row it had to be on; the `goto` after it was a path into a
+  tile the block was standing in, which plans as null, and every directive
+  after that played out in the wrong room with the trace looking fine.
+  Negation: a coordinate written before a fight is not a coordinate after
+  one. Do the placement first, or re-derive it.
+- **`dFight` cannot kill a shielded enemy that patrols along the axis its
+  shield covers.** Sandpiper Row's crab (S40), the Eel Vault's (S115) and the
+  Long Race's darknut (S116) are the same failure three times: the verb lines
+  up on one axis and closes, and `Entity.hurt`'s `shield: 'front'` check only
+  ever compares a horizontal attack direction against a horizontal facing, so
+  a vertical swing is unconditionally unblockable and a horizontal one never
+  lands. Negation: "the room would not clear" is not a budget problem. A
+  `dFight` that preferred the axis PERPENDICULAR to such an enemy's own
+  facing would close all three; until then they are answered by hand or
+  walked past.

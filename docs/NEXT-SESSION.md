@@ -1,3 +1,78 @@
+## S116 — the fourth dungeon is played, and the run now ends on four Essences
+
+`check-playthrough.mjs` drives a new game from the title screen to Wyverna's
+arena: Tidewash Grotto, the Coral Spire, the Bogwater Sanctum and the
+Cliffside Cistern, in order, with nothing granted. 26 assertions, 89,810
+frames, no death, ends on 35 of 36 quarter-hearts.
+
+### `['bellows', tx, ty]` — the verb this leg bought
+
+The Bellows are the first item in the run whose button is HELD. A route that
+held for a frame count would be carrying a private copy of `needTurns`, which
+is 30 on one sill and 50 on another, so the verb names THE WHEEL and holds
+until that wheel's own `open` is true. It walks nowhere and it does not touch
+the sea: `goto` puts the player on the shelf and `tide` puts the water where
+the sill wants it, so a wheel that will not turn fails on the shelf, at the
+sea the route chose, instead of being quietly rescued.
+
+The facing is derived from the two live positions rather than named. All six
+of the Cistern's shelves put the wheel square on one of the player's axes and
+the tile between them is always a pit — a shelf is a place you can stand and
+not walk from, which is the whole shape of a sill — so holding the direction
+turns the player and moves him nowhere.
+
+### THE WAY OUT OF A DUNGEON IS NOT THE WAY IN RUN BACKWARDS
+
+Nothing in this repo had ever walked one. Every earlier leg ended in an arena
+and began again on the overworld. An arena is a dead end with one door, and
+`bfsScreens` models an edge between any two adjacent rooms that EXIST — so a
+`travel` issued from inside one plans north into the room it is already in and
+oscillates until its budget is gone. Step out by hand, then let `travel` plan
+from a room that has somewhere else to be. The Kelp Locks then need naming a
+second time, because they are left by a WARP and no `travel` call models a
+stair.
+
+### THE MARSH IS LEFT BY ITS NORTH DOOR, AND THE SOUTH ONE IS A TRAP
+
+Bog Causeway's southern lobe — the two rows below its tree line — meets the
+rest of the screen at exactly one column, x=1, and the player's own box does
+not fit in it: the tile below is barrier, so `canOccupy` refuses the cell and
+every path from those rows to the causeway's east gate comes back null. Held
+directions do not help; the actor walks to x=29 and stops. The way through is
+the screen ABOVE the Sanctum's door — Sanctum Mouth's north seam into 1,7, and
+1,7's east seam onto the causeway's own middle rows. Worth a look by eye: the
+south lobe may be art that promises a route it does not have.
+
+### FINDING: `dFight` roams, and a roam moves a push block
+
+The Cistern Floor is thirty tiles wide. A `fight` there crosses the whole of
+it chasing a jellyfish and shoves the puzzle's block off the row it has to be
+on; the `goto` afterwards is then a path INTO a tile the block is standing in,
+which plans as null. Nine hundred frames of standing still, the plate never
+held, the key never spawned, and every directive after it playing out in the
+wrong room while the trace looks fine. The block is pushed before anything is
+fought now. The general shape — a fight relocating scenery the next directive
+addresses by coordinate — will recur in D5 and D6.
+
+### FINDING: `dFight` loses to a darknut, which is S115's crab one enemy along
+
+The Long Race's darknut killed the first recording of this leg on the way
+home: eighteen quarter-hearts in five thousand frames, without the actor
+landing a hit. Same cause as Sandpiper Row's crab and the Eel Vault's — the
+verb lines up on one axis and closes, and a `shield: 'front'` check only ever
+compares a horizontal attack direction against a horizontal facing. That is
+now three enemies and three sessions. The room does not have to be cleared, so
+this leg walks its bottom row instead; a `dFight` that preferred the axis
+PERPENDICULAR to a shielded enemy's own facing would close all three.
+
+### FINDING: a doorway pocket can leave `goto` with nothing to plan from
+
+Cliff Walk's south doorway is one tile wide between two pits. A `fight` that
+ends with the actor standing in it leaves every subsequent `goto` planning
+from a cell whose only neighbour is the seam, and they all time out. Walking
+into the middle of the room before fighting fixes it, and the same guard is
+worth having wherever a room's door sits between hazards.
+
 ## S115 — the third dungeon is played, and the run now ends on three Essences
 
 `check-playthrough.mjs` drives a new game from the title screen to

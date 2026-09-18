@@ -4,8 +4,8 @@ The human retired the exhausted rotation at S112 and chose this in its place.
 Objectives 1-7 are met and 8 stays BLOCKED (no emulator capture). The new
 objective is the largest open claim in the repo: `check-playthrough.mjs` is
 the only tool that proves the game is finishable, and its route ends at
-`d3/0,3,1` with three Essences of six taken. Three dungeons, three bosses,
-the Coastwise Chain and the later overworld gates have never been played.
+`d4/0,3,1` with four Essences of six taken. Two dungeons, two bosses, the
+Coastwise Chain and the later overworld gates have never been played.
 
 DONE-CONDITION: `tools/playthrough-route.mjs` drives a new game to the sixth
 Essence and `node tools/check-playthrough.mjs` is green on it. Advance one
@@ -40,3 +40,4 @@ S112 | objective | Walked the Bogwater Sanctum for the first time and found it c
 S113 | objective | Made the third dungeon's boss easier to fight: it has less health, it no longer outruns you when it drags the sea to the level it likes, and it takes that level back less often. Found while sizing the change that the test robot dies to five careless touches no matter how weak the boss is, so the run still cannot be driven through the fight.
 S114 | objective | Made the third boss beatable by the test robot: it now cuts down the slimes he sheds instead of dodging them for ever, which is what was actually killing it — one hit in fourteen came from the boss himself. Seven wins in ten where there were none.
 S115 | objective | Played the third dungeon for the first time. A new game now walks from the title screen all the way to the Bogwater Sanctum's boss and comes out with three of the six Essences: it bombs its way into the marsh to reach the door, dives under all three of the Sanctum's currents in the new soles, and beats Gloomtide with hearts to spare.
+S116 | objective | Played the fourth dungeon for the first time. A new game now walks out of the Bogwater Sanctum on its own feet, crosses the marsh and the bluffs, bombs the rockfall that holds the Cliffs of Kell shut, and takes the Cliffside Cistern end to end: three keys, the Squall Bellows, all six drowned wheels turned by holding the breath against them, the Ironknight, and Wyverna beaten with the sea drained under her. Four of the six Essences.

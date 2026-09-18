@@ -1968,6 +1968,74 @@ export async function installRuntime() {
     }
   }
 
+  /**
+   * TURN A GUST WHEEL, BY BLOWING AT IT UNTIL IT IS OPEN.
+   *
+   *   ['bellows', 1, 1, 1800]   pump the Squall Bellows at the wheel on tile
+   *                             (1,1) until that wheel reports itself open
+   *
+   * THE THIRD VERB IN THIS FILE THAT REFUSES TO COUNT BUTTON PRESSES, and the
+   * first whose button is HELD rather than pressed. `tide` names a sea and
+   * `soles` names a layer for the same reason: a route that counts presses is
+   * right until the first time the world disagrees with what the route last
+   * saw. A wheel is worse than either, because there is no press to count at
+   * all — `GustWheel.onGust` takes one turn per frame the cone covers it, and
+   * `needTurns` is 30 on one sill and 50 on another. "Hold for N frames" would
+   * be a private copy of a number that lives in the room data, which is the
+   * mistake this repo has paid for in three other places.
+   *
+   * So the route names THE WHEEL, and this verb holds the button until that
+   * wheel's own `open` is true.
+   *
+   * WHAT IT DOES NOT DO, deliberately: it does not walk anywhere and it does
+   * not touch the sea. Both are already verbs — `goto` puts the player on the
+   * shelf, `tide` puts the water where the sill wants it — and a wheel that
+   * will not turn has to fail HERE, on the shelf, at the sea the route chose,
+   * rather than be quietly rescued by a verb that went and fetched a different
+   * one. A drowned wheel is exactly the room's argument (`GustWheel.drowned`
+   * throws the turns away rather than banking them), so this returning empty
+   * means "the sill was worked at the wrong sea", and the trace after it says
+   * which room and which level.
+   *
+   * The facing is derived rather than named. All six of the Cistern's shelves
+   * put the wheel square on one of the player's axes, and the tile between
+   * them is always a pit — the shelf is a place you can stand and not walk
+   * from, which is the whole shape of a sill — so holding the direction turns
+   * the player and moves him nowhere. Deriving it from the two live positions
+   * means a shelf that moves cannot leave a hard-coded facing behind.
+   */
+  function* dBellows(tx, ty, maxF) {
+    const g = window.__game;
+    const budget = maxF || 1800;
+    const wheel = () => g.entities.find(e => e.needTurns != null && !e.dead
+      && Math.floor(e.cx / TILE) === tx && Math.floor(e.cy / TILE) === ty);
+    const w = wheel();
+    if (!w) throw new Error(`bellows: no wheel stands on ${tx},${ty}`);
+    if (w.open) return;
+    const b = slotBit('bellows');
+    if (!b) throw new Error('bellows: the Squall Bellows are on no button');
+    for (let f = 0; f < budget; f++) {
+      const cur = wheel();
+      if (!cur || cur.open) break;
+      const p = g.player;
+      if (!p) return;
+      const dm = dialogueMask(g, f);
+      if (dm !== null) { yield dm; continue; }
+      const px = Math.floor(p.cx / TILE), py = Math.floor(p.cy / TILE);
+      let d = 0;
+      if (tx !== px) d = tx > px ? BIT.right : BIT.left;
+      else if (ty !== py) d = ty > py ? BIT.down : BIT.up;
+      // The direction holds the facing; the item bit holds the cone. The
+      // warmup is the only stretch in which the direction could carry the
+      // player anywhere, and on a shelf there is nowhere for it to carry him.
+      yield b | d;
+    }
+    // The wheel's payout talks: a door grinding open, a key falling. Leave the
+    // box cleared so the directive after this one is not spent on a frozen
+    // room.
+    yield* dDialogueClear(60);
+  }
+
   function* runPlan(steps) {
     const g = window.__game;
     for (let si = 0; si < steps.length; si++) {
@@ -1993,6 +2061,7 @@ export async function installRuntime() {
       else if (kind === 'equip') yield* dEquip(a[0], a[1], a[2]);
       else if (kind === 'anchor') yield* dAnchor(a[0], a[1], a[2]);
       else if (kind === 'unanchor') yield* dUnanchor(a[0]);
+      else if (kind === 'bellows') yield* dBellows(a[0], a[1], a[2]);
       else throw new Error('unknown replay directive: ' + kind);
       // A trace of where each directive left the player. Recording prints it;
       // it is how you find out that step 9 never reached the room step 10
