@@ -2262,19 +2262,32 @@ const rooms = {
   '0,0,9': {
     name: 'Bog Foot',
     legend: 'marsh', music: 'marsh',
+    // THE THIRD ANCHOR GATE OUT OF DOORS. The other two lay the bar on bare
+    // seafloor; the marsh has no bare seafloor, so this one is laid on a
+    // channel — water the whole time, shallow enough to wade at LOW and
+    // running too deep above it. It goes where the seafloor goes and it does
+    // not look like it, which is the point of doing the third one in a region
+    // with its own ground rather than a fourth one on sand.
     map: [
       '***1gggoTT',
       '*1*TgggggT',
       '*11!!!!.gg',
       '*1......gg',
       '*11.oo.1gg',
-      '*1******11',
-      '*1******1*',
+      '*1*******1',
+      '*1555$$$1*',
       '**********',
     ],
+    anchorGate: { from: [1, 6], to: [8, 6] },
     entities: [
       ['leever', 4, 2],
     ],
+    script: {
+      onEnter(game) {
+        if (game.progress.secrets.bogFootBlank) return;
+        game.spawnPickup(128, 96, 'blank', { grabDelay: 14, saveKey: 'bogFootBlank' });
+      },
+    },
   },
   '0,1,9': {
     name: 'Witchs Hollow',
@@ -2404,20 +2417,34 @@ const rooms = {
   '0,6,9': {
     name: 'Reef Pocket',
     legend: 'coast', music: 'overworld',
+    // THE SECOND ANCHOR GATE OUT OF DOORS, and it is Deep Bar's run backwards:
+    // you start on the far spit and the prize is on the near one, so the whole
+    // crossing happens with the shore in front of you rather than behind. The
+    // screen already carried a sign saying only the drained sea shows this
+    // floor, which is half the answer and the half that is not enough — the
+    // drained sea shows the floor and fills nothing, and the filled sea takes
+    // the floor away. The iron is what holds one of them still.
     map: [
       'TToggggoTT',
       'TggggggggT',
       'gg......gT',
       'gf.4444.gT',
       'gf1444411*',
-      '11******1*',
-      '*1******1*',
+      '1*******1*',
+      '*1$$$4441*',
       '**********',
     ],
+    anchorGate: { from: [8, 6], to: [1, 6] },
     entities: [
       ['pickup', 4, 4, { kind: 'rupee20' }],
       ['sign', 2, 2, { text: 'Only the drained sea shows this floor.' }],
     ],
+    script: {
+      onEnter(game) {
+        if (game.progress.secrets.reefPocketBlank) return;
+        game.spawnPickup(16, 96, 'blank', { grabDelay: 14, saveKey: 'reefPocketBlank' });
+      },
+    },
   },
   // ---- dunes -------------------------------------------------------------
   '0,7,9': {
@@ -2505,19 +2532,44 @@ const rooms = {
   '0,9,9': {
     name: 'Deep Bar',
     legend: 'dunes', music: 'overworld',
+    // THE FIRST ANCHOR GATE OUT OF DOORS. Every one before it stood in D1 or
+    // D2, and it could not stand anywhere else: from D3 the player swims and
+    // base HIGH already goes wherever an anchor could, which is the thing
+    // `tools/check-anchor.mjs` asserts over the tile table rather than
+    // remembers. Out of doors on foot the picture is D1's again, so this is
+    // D1's Iron Pipe carried outside — a run that is only dry at LOW beside a
+    // run that is only open above it, and the sea cannot be in two places.
+    //
+    // The bar out to the old spit: three tiles of seafloor, bare at LOW and
+    // under deep water above it, then three sinkholes, a drop at LOW and
+    // wading depth once the sea is in. Walk it at LOW and the holes stop you;
+    // wait for the sea and the seafloor is gone from under you. Pin the
+    // seafloor with the iron, then sound the conch, and for one crossing the
+    // bar is dry where it was dry and filled where it was empty.
+    //
+    // The spit's own link to the shore (`8,5`) is open sea now. It was a dead
+    // end before and it is the far side of the gate after, and the gate is
+    // not a gate while you can walk round the back of it.
     map: [
       'TToggggoTT',
       'Tgg....ggT',
       'gg.4444.gg',
       'gg.4444.gg',
       'gg144441gg',
-      '11******11',
-      '*1******1*',
+      '11*******1',
+      '*1444$$$1*',
       '**********',
     ],
+    anchorGate: { from: [1, 6], to: [8, 6] },
     entities: [
       ['urchin', 4, 3], ['octorokSea', 6, 4],
     ],
+    script: {
+      onEnter(game) {
+        if (game.progress.secrets.deepBarBlank) return;
+        game.spawnPickup(128, 96, 'blank', { grabDelay: 14, saveKey: 'deepBarBlank' });
+      },
+    },
   },
   '0,10,9': {
     name: 'Sunken Cove',

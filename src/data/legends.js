@@ -51,6 +51,7 @@ export function installLegends() {
     '0': 'tideGrass',  // meadow that floods at high tide
     '!': 'mudflat',
     '?': 'abyssHole',
+    '$': 'seaDrain',   // a sinkhole: a drop at low, wadeable at mid, deep above
     // Riptides: deep water that carries a swimmer. Sink mode ignores them.
     'N': 'riptideN', 'S': 'riptideS', 'E': 'riptideE', 'W': 'riptideW',
   });

@@ -120,6 +120,26 @@ extract from it:
 
 ## Measured and rejected
 
+- **OBJECTIVE 7 (item-reuse) IS CLOSED.** All four single-use items met their
+  amended done-conditions: Lens S105 (2 dungeons; its overworld half is void
+  by `docs/ITEMS.md`), Reefseed S108, Bellows S109, Anchor S110. Do not
+  reopen it and do not build a fourth fixture for any of them.
+- **The Anchor is DONE at 1 dungeon plus 3 overworld screens — a human
+  amendment, S110, the same shape as the Lens's at S104.** Its dungeon half
+  CANNOT move: from D3 on the player swims, base HIGH already reaches
+  anywhere an anchor could, and `check-anchor.mjs` fails any such declaration
+  by design over the engine's own tile table. D2 is the only dungeon in
+  between and it already holds the one. The three overworld screens are
+  `0,9,9` Deep Bar, `0,6,9` Reef Pocket and `0,0,9` Bog Foot.
+- **An outdoor anchor gate needs `seaDrain` and there is no way round it.**
+  Every other outdoor tide tile in the game is open on foot at LOW, so base
+  LOW answers any run of them and the conch always wins. `seaDrain` (`$`) is
+  `dDrain`'s outdoor twin — shut at LOW, wadeable at MID, deep above — and it
+  is the only outdoor tile with that shape. An outdoor bar must also put its
+  LOW-only run FIRST, beside where the player stands: the patch pins the
+  level the sea was at BEFORE the bite, so the far arrangement is
+  unanswerable however plausible it looks written down.
+
 - **The Bellows' share of objective 7 is MET, and every outdoor Bellows
   fixture is an `at: 2` fixture.** S109 landed three overworld wheels —
   `0,3,3` Cliff Face, `0,3,0` Rustfall, `0,0,3` Cistern Path — so

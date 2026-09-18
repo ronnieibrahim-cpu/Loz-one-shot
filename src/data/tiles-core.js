@@ -2084,6 +2084,30 @@ export function installCoreTiles() {
     tideGrass: { tide: ['grass', 'grass', 'waterS'] },
     mudflat: { tide: ['mud', 'waterS', 'waterD'] },
     abyssHole: { tide: ['waterD', 'waterAbyss', 'waterAbyss'] },
+    // A SINKHOLE IN THE SHORE — and it exists because without it no anchor
+    // gate can stand out of doors at all. An anchor gate needs a route no
+    // single base level opens, and every outdoor tide tile in the game is
+    // crossable at base LOW: run the tile table and `sandbar`, `tidePool`,
+    // `shoal`, `seafloor`, `channel`, `reefFlat`, `reefDeep`, `tideRock`,
+    // `tideGrass` and `mudflat` are open on foot at LOW to the last one. So
+    // LOW answered any outdoor run of them and the conch alone always won.
+    // Indoors `dDrain` is the tile that breaks that — shut at LOW, open one
+    // level up — and D1's two gates are built on it. This is its outdoor
+    // twin, tile for tile: a hole the sea has not filled yet, with nothing
+    // in it to climb; wading depth once the water comes in; over your head
+    // above that.
+    //
+    // No new art and no new mechanic. It is the CHASM's body and lip, which is
+    // the hole this game already draws out of doors, autotiled top edge and
+    // all — `dPit`'s lipped dark square was tried first and on open sand it
+    // read as three black windows in a row rather than as ground. The flags
+    // are `dDrain`'s, not the chasm's: a sinkhole is fallen into, not hopped,
+    // because a hole you may hop is not a barrier the sea has to fill.
+    sinkhole: {
+      art: ART.chasmBody, pal: 'pit', flags: F.PIT,
+      family: 'chasm', edgeArt: { up: 'chasmTop' },
+    },
+    seaDrain: { tide: ['sinkhole', 'waterS', 'waterD'] },
     // A race: wadeable at LOW, and a running current above it. Passability is
     // identical to `dWell` at every level, so a run of these can be dropped
     // into an authored room without changing where anything can go — the only

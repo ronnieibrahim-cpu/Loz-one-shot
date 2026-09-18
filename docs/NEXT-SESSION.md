@@ -1,3 +1,59 @@
+## S110 — the Tidewright's Anchor goes out of doors: three tidal bars
+
+Objective 7 (item-reuse) had only the Anchor left. Three overworld screens
+now declare an `anchorGate` — Deep Bar (`0,9,9`, dunes), Reef Pocket
+(`0,6,9`, coast/Tidewatch) and Bog Foot (`0,0,9`, marsh) — taking
+`check-drift` to `anchor ... dungeons: 1 of 5   overworld screens: 3`.
+
+**THE HUMAN CALL THE S109 PROMPT ASKED FOR WAS ANSWERED: YES, amend the
+Anchor the way the Lens was amended at S104.** Its dungeon half is capped at
+1 by the game's own rules — from D3 the player swims and base HIGH already
+reaches anywhere an anchor could, which `check-anchor.mjs` asserts over the
+engine's own tile table rather than remembering — and D2 is the only dungeon
+in between and already holds the one. So the Anchor is DONE at 1 dungeon plus
+3 overworld screens, objective 7 is closed, and the objective of record
+advances to 8 (feel-measure).
+
+**AN OUTDOOR ANCHOR GATE WAS IMPOSSIBLE UNTIL THIS SESSION, AND THE REASON IS
+ONE MISSING TILE.** An anchor gate needs a route no single base level opens.
+Run the tile table on foot and EVERY outdoor tide tile in the game — sandbar,
+tidePool, shoal, seafloor, channel, reefFlat, reefDeep, tideRock, tideGrass,
+mudflat — is open at LOW. So base LOW answered any outdoor run of them and
+"the conch alone does not cross it" could never hold. Indoors the tile that
+breaks that is `dDrain`: shut at LOW, open one level up, and BOTH of D1's
+gates are built on it. `seaDrain` (`$` in the base legend) is its outdoor
+twin, tile for tile.
+
+**The art was got wrong once and the fix is worth keeping.** `seaDrain`'s LOW
+state was first `dPit`'s lipped dark square in the `pit` palette; on open sand
+a run of three read as three black windows in a row, not as ground. It is the
+CHASM's body and lip now — the hole this game already draws out of doors,
+autotiled top edge and all — carrying `dDrain`'s flags rather than the
+chasm's, because a hole you may hop is not a barrier the sea has to fill.
+
+**THE FIXTURE, and every part of it is forced.** From the shore: three tiles
+of ground that is only open at LOW, then three sinkholes that are only open
+ABOVE it, then the far side. Three and not two because a hop clears two whole
+tiles (`check-anchor` derives that from `feel.js`, it is not written down).
+The LOW-only run must come FIRST, next to where you stand: the patch pins
+what the sea was doing BEFORE the bite, so you have to be standing at LOW to
+pin LOW, and at LOW you can only reach the near run. A bar with the sinkholes
+first cannot be solved at all — tried, and it is the one arrangement that
+looks identical on paper and is unanswerable in play.
+
+**The far spit's own link to the shore had to be cut in all three.** Each of
+these screens already carried a dead-end sandbar spit at `8,5`-`8,6` (or
+`1,5`-`1,6`); the gate is not a gate while you can walk round the back of it.
+
+Each bar ends on a scrimshander's blank rather than a gold rupee — S109's
+three wheels all paid the same gold rupee and the LEDGER already carries that
+as a complaint. **Worth a look next time somebody touches the charm economy:
+this doubles the world's blank supply from 3 to 6.**
+
+`check-strands` did not move: its flood is "ever passable on foot", and a
+sinkhole IS foot-passable at MID, so the bars and their far sides read as
+reached without a baseline entry. No strands-baseline change was needed.
+
 ## S109 — the Squall Bellows go out of doors: three coastal wheels
 
 Objective 7 (item-reuse) left the Bellows short on its overworld half only:
