@@ -1722,6 +1722,392 @@ export const ROUTE = [
   ['loot', 1200],
   ['dialogue', 900],
   ['wait', 240],
+
+  // ======================= OUT OF THE CISTERN AND ON TO THE SHRINE =========
+  //
+  // The second dungeon this run has walked out of, and it is the arena problem
+  // again: `travel` issued from a room with one door plans into the room it is
+  // already standing in. One directive by hand puts the run in the Cistern
+  // Gate, and from there ordinary walking works.
+  ['goto', 4, 6, 1200],
+  ['hold', ['down'], 60],
+  ['wait', 120],
+  ['travel', 3, 7, 24000],
+  ['goto', 4, 6, 1500],
+  ['hold', ['down'], 90],
+  ['wait', 180],
+
+  // ---- THE NOBLE SWORD, AND WHY THE RUN GOES BACK FOR IT ------------------
+  //
+  // The Bluff Grotto is where this run started: it took the Piece of Heart out
+  // of it in its first two minutes and walked past the big chest beside it,
+  // because that chest wants FOUR ESSENCES and the run had none. It has four
+  // now, and it is the first time in the game that sentence is true.
+  //
+  // This is not a souvenir. Rootmaw has 52 hit points and sheds gels and zols
+  // the whole way through the fight, and `measure-boss-combat` reads the same
+  // answer twice: at the level-1 blade the run is still cutting at him when it
+  // runs out of hearts — 44 of 52 taken, 28 quarter-hearts spent, dead — and
+  // the first recording of this leg died in his arena on four hearts for
+  // exactly that reason. The second blade is the difference between a fight
+  // that is too long and one that is not, and the walk back for it is six
+  // screens of open ground the run has already crossed twice.
+  ['travel', 3, 7, 30000],
+  ['goto', 3, 2, 1500],
+  ['wait', 90],
+  ['dialogue', 300],
+  ['goto', 7, 3, 900],
+  ['wait', 30],
+  ['hold', ['up'], 20],
+  ['tap', 'a', 60],
+  ['dialogue', 900],
+  ['loot', 1200],
+  ['dialogue', 900],
+  ['goto', 5, 6, 900],
+  ['wait', 120],
+  ['dialogue', 300],
+
+  // Out on the overworld again, and north-east across the wood to the Drowned
+  // Wood Shrine's arch at 5,4. `check-progression` puts this screen in round
+  // one, so nothing on the way is gated — the walk is open ground and the
+  // dungeon is the work.
+  ['travel', 5, 4, 40000],
+  ['goto', 4, 3, 1500],
+  ['hold', ['up'], 60],
+  ['wait', 180],
+
+  // ======================= THE DROWNED WOOD SHRINE =========================
+  //
+  // EVERY ROOM IN THIS DUNGEON IS FOUGHT ON THE FRAME IT IS ENTERED, and that
+  // is measured rather than tidy. The Shrine's cast is keese and tektites, and
+  // both of them CLOSE: walk in, stand still for two seconds and then fight,
+  // and Rootwater Landing costs three hearts; walk in and swing immediately
+  // and it costs nothing and is over in 132 frames. The first cut of this leg
+  // put a `wait` after every door and arrived at the boss on two hearts.
+  //
+  // THE SHRINE HAS NO FAIRY. D1's Sunken Hall heals to full, D2's does, D3's
+  // does; this dungeon has nothing but what its enemies drop and its two
+  // Pieces of Heart, which is why the route takes both of them and takes them
+  // BEFORE the locked door rather than after.
+  ['goto', 4, 1, 900],
+  ['hold', ['up'], 60],
+
+  // ---------------------------------------------------------------- d5 0,3,6
+  ['fight', 3000, 1200],
+  ['loot', 600],
+
+  // ---------------------------------------------------------------- d5 0,2,6
+  // The Silt Gallery, and the Dungeon Map.
+  ['travel', 2, 6, 6000],
+  ['fight', 3000, 1200],
+  ['goto', 4, 2, 1500],
+  ['loot', 900],
+
+  // ---------------------------------------------------------------- d5 0,4,6
+  // The Bracken Cell: clear it for Small Key 1.
+  ['travel', 4, 6, 8000],
+  ['fight', 8000, 2500],
+  ['dialogue', 400],
+  ['loot', 1500],
+
+  // ---------------------------------------------------------------- d5 0,2,5
+  // The Chartstone Nave.
+  ['travel', 2, 5, 8000],
+  ['fight', 4000, 1500],
+  ['goto', 4, 3, 1500],
+  ['wait', 30],
+  ['hold', ['up'], 20],
+  ['tap', 'a', 60],
+  ['dialogue', 600],
+  ['loot', 1200],
+  ['dialogue', 600],
+
+  // ---------------------------------------------------------------- d5 0,1,5
+  // The Drowned Cloister, and the third Piece of Heart. THE SEA HAS TO BE UP
+  // FOR IT: the piece sits in a one-tile well walled in by drown-wall on all
+  // four sides, which is masonry at LOW and at MID and open water at HIGH. So
+  // the conch is the whole room, and the swim back out is made before it is
+  // sounded again — raising the sea while standing in it strands the player in
+  // the water he swam to get there.
+  ['travel', 1, 5, 8000],
+  ['fight', 4000, 1500],
+  ['tide', 2, 140, 600],
+  ['goto', 3, 3, 1500],
+  ['loot', 1200],
+  ['goto', 7, 5, 1500],
+  ['tide', 1, 140, 600],
+
+  // ---------------------------------------------------------------- d5 0,4,5
+  // The Thicket Cell: the Gillcarve charm.
+  ['travel', 4, 5, 12000],
+  ['fight', 4000, 1500],
+  ['goto', 4, 3, 1500],
+  ['wait', 30],
+  ['hold', ['up'], 20],
+  ['tap', 'a', 60],
+  ['dialogue', 600],
+  ['loot', 1200],
+  ['dialogue', 600],
+
+  // ---------------------------------------------------------------- d5 0,5,5
+  // THE BOWER CELL, AND THE FIRST SQUALL BELLOWS SILL OUTSIDE THE CISTERN.
+  // A wheel boxed in on three sides with a pit on the fourth, a stand two
+  // tiles off across it, and a sump shaft the only way up to the stand —
+  // drowned at the same sea the wheel is, so the swim up is made in the water
+  // the cone then has to be aimed across. The fourth Piece of Heart falls out
+  // of it, and with it the run's third Heart Container: the refill is what
+  // pays for the groves, which are the half of this dungeon with no healing
+  // anywhere in them.
+  ['travel', 5, 5, 8000],
+  ['fight', 4000, 1500],
+  ['equip', 'bellows', 'A', 400],
+  ['goto', 4, 1, 2000],
+  ['bellows', 1, 1, 3000],
+  ['equip', 'sword', 'A', 400],
+  ['dialogue', 600],
+  ['loot', 1500],
+  ['dialogue', 600],
+
+  // ---------------------------------------------------------------- d5 0,3,5
+  // The Standing Grove: four drowned boles in the middle of the floor, which
+  // is where this dungeon teaches what a bole IS before anything depends on
+  // it, and lock 1 in the wall above them.
+  ['travel', 3, 5, 12000],
+  ['fight', 4000, 1500],
+  ['goto', 4, 3, 1500],
+  ['wait', 30],
+  ['hold', ['up'], 20],
+  ['tap', 'a', 60],
+  ['wait', 60],
+  ['goto', 4, 1, 900],
+  ['hold', ['up'], 60],
+
+  // ---------------------------------------------------------------- d5 0,3,4
+  // ROOTBOUND HALL IS CROSSED, NOT CLEARED, and that is measured. The barnacle
+  // in the middle of it is what `dFight` cannot finish: the verb keeps closing
+  // on a target it is not killing, and on the recording this leg was first
+  // made from it spent five thousand frames doing that and took forty
+  // quarter-hearts — a full Heart Container's worth, the one the Bower Cell
+  // had just paid for — without the room being needed at all. Nothing in here
+  // is on the way to anything; the east door is four tiles from the south one.
+  ['goto', 8, 4, 1500],
+  ['hold', ['right'], 90],
+
+  // ---------------------------------------------------------------- d5 0,4,4
+  // The Sunken Bracken: two blocks onto two plates for Small Key 2. Pushed
+  // BEFORE anything is fought, for the reason the Cistern Floor wrote down —
+  // a roaming `fight` shoves a block off the row the puzzle needs it on and
+  // every directive after it plans a path into the tile the block is now
+  // standing in.
+  ['fight', 5000, 1800],
+  ['loot', 600],
+  ['goto', 4, 1, 1500],
+  ['hold', ['left'], 120],
+  ['wait', 60],
+  ['goto', 5, 6, 1500],
+  ['hold', ['right'], 120],
+  ['wait', 60],
+  ['dialogue', 400],
+  ['goto', 4, 6, 1500],
+  ['loot', 1500],
+
+  // ---------------------------------------------------------------- d5 0,2,4
+  // The Warden's Sill: lock 2, in a one-tile corridor with no way round it at
+  // any sea. "Past this door the floor is a thing you bring with you."
+  ['travel', 2, 4, 12000],
+  ['fight', 5000, 1800],
+  ['loot', 600],
+  ['goto', 3, 3, 1500],
+  ['wait', 30],
+  ['hold', ['left'], 20],
+  ['tap', 'a', 60],
+  ['wait', 60],
+  ['goto', 0, 3, 900],
+  ['hold', ['left'], 60],
+
+  // ---------------------------------------------------------------- d5 0,1,4
+  // The Reefseed Vault.
+  ['goto', 4, 3, 1500],
+  ['wait', 30],
+  ['hold', ['up'], 20],
+  ['tap', 'a', 60],
+  ['dialogue', 600],
+  ['loot', 1200],
+  ['dialogue', 600],
+  ['goto', 4, 1, 900],
+  ['hold', ['up'], 60],
+
+  // ---------------------------------------------------------------- d5 0,1,3
+  // GROVE 1, THE FIRST STAKE, and the shape all five of them are:
+  //
+  //   sound the conch to HIGH, because the drowned bole between the bank and
+  //   the stake is only gone at HIGH and a seed thrown at it stops dead at its
+  //   foot; throw; sound the conch to LOW, because a coral pillar is ground at
+  //   LOW and nowhere else; climb out of the water onto what you threw, and
+  //   cut the snarl with the sword, which a swimmer cannot draw.
+  //
+  // Neither half can be bought at the other's sea. That is the dungeon.
+  ['equip', 'reefseed', 'A', 400],
+  ['tide', 2, 140, 600],
+  ['reefseed', 6, 4, 900],
+  ['tide', 0, 140, 600],
+  ['equip', 'sword', 'A', 400],
+  ['goto', 6, 4, 1500],
+  ['wait', 30],
+  ['hold', ['right'], 20],
+  ['tap', 'a', 60],
+  ['wait', 60],
+  ['goto', 8, 4, 1500],
+  ['hold', ['right'], 90],
+
+  // ---------------------------------------------------------------- d5 0,2,3
+  // GROVE 2, the Bole Walk — the same fixture turned through a right angle and
+  // pointed north, so the throw that opens it is the one aimed away from the
+  // door you came in by. Cleared first: this room is walked through three
+  // times and its tektite was taking a heart on each pass.
+  ['fight', 2500, 900],
+  ['loot', 600],
+  ['equip', 'reefseed', 'A', 400],
+  ['tide', 2, 140, 600],
+  ['reefseed', 4, 3, 900],
+  ['tide', 0, 140, 600],
+  ['equip', 'sword', 'A', 400],
+  ['goto', 4, 3, 1500],
+  ['wait', 30],
+  ['hold', ['up'], 20],
+  ['tap', 'a', 60],
+  ['wait', 60],
+  ['goto', 4, 1, 1500],
+  ['hold', ['up'], 90],
+
+  // ---------------------------------------------------------------- d5 0,2,2
+  // GROVE 3, the Sunken Nave, where the stake is not on the way to anywhere:
+  // the snarl is set in the wall of a cell holding Small Key 3, and the room
+  // can be walked straight through by anyone who never works out what the pool
+  // is for.
+  ['fight', 4000, 1500],
+  ['loot', 600],
+  ['equip', 'reefseed', 'A', 400],
+  ['tide', 2, 140, 600],
+  ['reefseed', 3, 4, 900],
+  ['tide', 0, 140, 600],
+  ['equip', 'sword', 'A', 400],
+  ['goto', 3, 4, 1500],
+  ['wait', 30],
+  ['hold', ['left'], 20],
+  ['tap', 'a', 60],
+  ['wait', 60],
+  ['goto', 1, 4, 1500],
+  ['wait', 30],
+  ['hold', ['down'], 20],
+  ['tap', 'a', 60],
+  ['dialogue', 600],
+  ['loot', 1200],
+  ['dialogue', 600],
+  ['goto', 4, 6, 2000],
+  ['hold', ['down'], 90],
+
+  // ---- back through the Bole Walk and east into the Grove Crossing
+  ['goto', 8, 4, 2000],
+  ['hold', ['right'], 90],
+
+  // ---------------------------------------------------------------- d5 0,3,3
+  // The Grove Crossing: lock 3, and it is opened from the WEST side, because
+  // the west side is the side the groves let you in on.
+  ['fight', 4000, 1500],
+  ['loot', 600],
+  ['goto', 1, 4, 1500],
+  ['wait', 30],
+  ['hold', ['right'], 20],
+  ['tap', 'a', 60],
+  ['wait', 60],
+  ['goto', 8, 2, 1500],
+  ['hold', ['right'], 90],
+
+  // ---------------------------------------------------------------- d5 0,4,3
+  // GROVE 4, the Long Ford, pointed south — the first with the bank on the far
+  // side of the pool from the door, so the throw is set up by walking round
+  // the water rather than by standing where you came in.
+  ['fight', 4000, 1500],
+  ['loot', 600],
+  ['equip', 'reefseed', 'A', 400],
+  ['tide', 2, 140, 600],
+  ['reefseed', 4, 3, 900],
+  ['tide', 0, 140, 600],
+  ['equip', 'sword', 'A', 400],
+  ['goto', 4, 3, 1500],
+  ['wait', 30],
+  ['hold', ['down'], 20],
+  ['tap', 'a', 60],
+  ['wait', 60],
+  ['goto', 8, 6, 1500],
+  ['hold', ['right'], 90],
+
+  // ---------------------------------------------------------------- d5 0,5,3
+  // Thornvine, the Shrine's miniboss, and the north arch it is holding shut.
+  ['boss', 14000, 'thornvine'],
+  ['wait', 120],
+  ['fight', 4000, 1500],
+  ['dialogue', 600],
+  ['loot', 900],
+  ['goto', 4, 2, 1500],
+  ['hold', ['up'], 90],
+
+  // ---------------------------------------------------------------- d5 0,4,2
+  // GROVE 5, THE SHRINE FORD, three screens wide, and the fixture built twice
+  // over because the snarl is out of range of any bank. The first stake is
+  // thrown at HIGH from dry ground; the second is thrown at LOW from the
+  // first, which means standing on something that did not exist when it was
+  // thrown and will not be there if the sea is let back up.
+  //
+  // NOTHING IS FOUGHT IN THIS ROOM. It is thirty tiles wide, and a `fight`
+  // here walks the whole of it after a keese — six thousand frames, both
+  // stakes' worth of harassment, and the first recording of this leg died in
+  // it with the Boss Key still in its chest.
+  ['equip', 'reefseed', 'A', 400],
+  ['tide', 2, 140, 600],
+  ['reefseed', 13, 4, 900],
+  ['tide', 0, 140, 600],
+  ['reefseed', 11, 4, 1200],
+  ['equip', 'sword', 'A', 400],
+  ['goto', 11, 4, 1500],
+  ['wait', 30],
+  ['hold', ['left'], 20],
+  ['tap', 'a', 60],
+  ['wait', 60],
+  ['goto', 4, 4, 2000],
+  ['wait', 30],
+  ['hold', ['up'], 20],
+  ['tap', 'a', 60],
+  ['dialogue', 600],
+  ['loot', 1200],
+  ['dialogue', 600],
+  ['goto', 0, 4, 1500],
+  ['hold', ['left'], 90],
+
+  // ---------------------------------------------------------------- d5 0,3,2
+  // Rootmaw Arch. THE SEA IS LEFT AT LOW THROUGH THE BOSS DOOR, and that is
+  // the fight: Rootmaw drinks and heals at HIGH and his roots are bared and
+  // soft at LOW, and the arena pins whatever level is carried into it.
+  ['fight', 4000, 1500],
+  ['goto', 4, 2, 1500],
+  ['wait', 30],
+  ['hold', ['up'], 24],
+  ['tap', 'a', 40],
+  ['dialogue', 400],
+  ['goto', 4, 1, 900],
+  ['hold', ['up'], 60],
+  ['wait', 120],
+
+  // ---------------------------------------------------------------- d5 0,3,1
+  // ROOTMAW, THE DROWNED WOOD, and the fifth Essence.
+  ['boss', 24000, null],
+  ['wait', 240],
+  ['goto', 4, 3, 900],
+  ['dialogue', 900],
+  ['loot', 1200],
+  ['dialogue', 900],
+  ['wait', 240],
 ];
 
 /**
@@ -1787,10 +2173,10 @@ export const ROUTE = [
  * DIAGONAL ONLY, and it cannot plan out of a room with one door.
  */
 export const GOAL = {
-  essences: [1, 2, 3, 4],
-  // The room the run finishes in: Wyverna's arena, with four Essences taken.
-  room: 'd4/0,3,1',
+  essences: [1, 2, 3, 4, 5],
+  // The room the run finishes in: Rootmaw's arena, with five Essences taken.
+  room: 'd5/0,3,1',
   needsVerb: null,
-  keysNeeded: 11,
-  keysObtainable: 11,
+  keysNeeded: 14,
+  keysObtainable: 14,
 };

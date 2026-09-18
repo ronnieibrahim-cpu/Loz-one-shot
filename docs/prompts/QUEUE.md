@@ -112,3 +112,28 @@ starting with `WALK_SPEED` and whatever derives from it.
 fine.** `measured` means someone actually frame-stepped a reference and
 wrote down the number — CLAUDE.md is explicit that inflating that word
 destroys the file's value permanently.
+
+---
+
+## 5. The Abyssal Keep, and the sixth Essence
+
+The other half of the task S117 split. Once the route stands in `d6/0,3,7`
+holding the Resonance Rod, the remaining work is the Keep itself: two floors,
+the Dredge Line out of its own chest, the Colonnade of the Drowned's `dGrate`
+retracted with the Rod, the Crossed Shafts, and Nereth.
+
+Known before anyone starts:
+
+- **Nereth has never been beaten on this run's seed.** `measure-boss-combat`
+  reads 3 wins in 10 on its own points, and those points assume `sword: 3` and
+  `cleats: 2`. The route currently earns `sword: 2`; where the third blade
+  comes from, and whether the run can hold it by then, is the first thing to
+  settle — the D5 leg found the same gap one tier down and answered it by
+  walking back to the Bluff Grotto.
+- **`travel` cannot change floors.** No directive in the actor models a stair,
+  so every floor change in the Keep is a `goto` onto the warp tile by hand,
+  the way the Kelp Locks already are.
+- **`nerethIntro` and `ending` both fire from `Game.claimEssence`.** S43 wired
+  them and `shoot-cutscene.mjs --ending` proves the chain; a run that takes the
+  sixth Essence will play them for real, and the trace has to be read for a
+  cutscene that hangs rather than assumed.

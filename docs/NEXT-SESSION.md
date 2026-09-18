@@ -1,3 +1,116 @@
+## S117 — the fifth dungeon is played, and the run now ends on five Essences
+
+`check-playthrough.mjs` drives a new game from the title screen to Rootmaw's
+arena: Tidewash Grotto, the Coral Spire, the Bogwater Sanctum, the Cliffside
+Cistern and the Drowned Wood Shrine, in order, with nothing granted.
+30 assertions, 122,800 frames, no death, ends on 44 of 44 quarter-hearts
+(eleven hearts — three Heart Containers out of pieces, two out of bosses).
+
+### `['reefseed', tx, ty]` — the verb this leg bought
+
+The fourth verb in `actor-runtime.mjs` that VERIFIES instead of predicting, and
+the only one whose mistakes are permanent. A seed is a throw, exactly as the
+Anchor is, and `REEFSEED_THROW_SPEED`, the arc and `REEFSEED_SETTLE_FRAMES`
+all live in `feel.js` — so "two tiles" is a consequence of four constants
+rather than a number the harness may hold.
+
+But `dAnchor` can afford to try every approach in turn, because an anchor that
+bites the wrong tile is recalled with one press. A PILLAR CANNOT BE TAKEN
+BACK, and a grove has exactly one square the stake may stand on, so a verb
+that flung seeds at candidates until one stuck would brick the room it was
+asked to open on the attempt before the one that worked. This one therefore
+picks its standing tile BEFORE it throws, and picks it out of the engine: the
+tile has to satisfy `standAt`, the target has to satisfy the game's own
+`Reefseed.canPlant`, and every tile between them has to be one the seed can
+fly over, asked of `room.solidAt` with the seed's own `{ jumping, swim }` caps
+— the same call `moveEntity` makes on the seed's behalf every frame of its
+flight. The throw is still verified afterwards, by reading the tile's own name
+back out of the room.
+
+It does not know which sea the throw wants, deliberately. That is `tide`'s job
+and the route's decision: a bole is open water at HIGH and oak below it, so a
+seed thrown at the wrong sea stops at the bole's foot. The verb refusing to
+fly is the room saying the sea is wrong, and a verb that fetched the right one
+would hide the whole of D5's argument.
+
+### THE SHRINE'S THIRD SMALL KEY DID NOT EXIST, AND NOTHING COULD SEE IT
+
+`Game.openChest` drops a `pickup` twelve pixels ABOVE the chest. That is the
+right place in every open room in the game. The Sunken Nave's key chest stood
+at `1,2` in a cell one tile wide with walls either side, whose only entrance is
+UP from the snarl at `2,4` — so the chest was between the player and its own
+payout, the key landed at `1,1`, and a chest that is solid to the player meant
+nothing in the game could reach it. Every tool was green: the room floods, the
+chest opens, the jingle plays, and the dungeon's third Small Key simply is not
+there. The chest moved to `1,5`, where the player stands at `1,4` to open it
+and the key falls on the square he is standing on.
+
+The reusable shape: **a chest whose payout lands behind it is a chest that pays
+nothing**, and it is invisible to every checker in the table, because they all
+ask whether the chest is reachable and none asks whether what comes out of it
+is. Any chest in a one-tile corridor has to be approached from the side its
+pickup lands on.
+
+### FACING IS MOVEMENT, AND AT HIGH THE THING YOU FACE IS WATER
+
+Every stake in the Shrine is thrown at HIGH, and at HIGH the square between the
+bank and the stake is open water. So the direction that turns the player toward
+the target is also the direction that walks him into it: six frames of `down`
+on the Long Ford's bank put him far enough in to be `inDeep`, and
+`ITEMS.reefseed.use` refuses from the water on the same grounds the Bellows do.
+The button was pressed, no seed left the pouch, and the only evidence was a
+tile that had not changed. The verb now stops pressing the frame the engine's
+own `dir` agrees, checks `inDeep`/`underwater` by name, and checks the pouch
+count so "the button did nothing" and "the seed landed somewhere else" are two
+different messages.
+
+### THE SHRINE HAS NO FAIRY, AND THAT IS THE WHOLE HEALTH BUDGET
+
+D1, D2 and D3 all heal to full somewhere inside them. D5 has nothing but what
+its enemies drop and its two Pieces of Heart, and the second of those is on a
+Squall Bellows sill — the first one built outside the Cistern. Both are taken
+BEFORE the first locked door, because the fourth piece completes the run's
+third Heart Container and the refill is what pays for the groves, which have no
+healing anywhere in them.
+
+Two measurements that fell out of that:
+
+- **Fight on the frame you walk in.** The Shrine's cast is keese and tektites
+  and both of them CLOSE. Rootwater Landing walked into and fought immediately
+  costs nothing and is over in 132 frames; walked into, stood in for two
+  seconds and then fought, it costs three hearts. The first cut of this leg put
+  a `wait` after every door and arrived at the boss on two hearts.
+- **`dFight` cannot finish a barnacle.** Rootbound Hall's barnacle is not a
+  fight the verb wins or loses, it is a fight it does not end: it keeps closing
+  on a target it is not killing. On the first recording of this leg that was
+  five thousand frames and forty quarter-hearts — the whole Heart Container the
+  Bower Cell had just paid for — in a room nothing needs. It is crossed now.
+  This is the third enemy in three sessions (`shield: 'front'` crab, darknut,
+  barnacle) that `dFight` answers by standing in front of it and losing.
+
+### ROOTMAW IS THE FIRST FIGHT THE LEVEL-1 BLADE CANNOT WIN
+
+`measure-boss-combat d5` has always assumed `sword: 2`, and the route was
+carrying `sword: 1`, and nobody had ever put the two side by side. At the first
+blade the fight reads: 44 of 52 hit points taken, 28 quarter-hearts spent,
+player dead — the run is still cutting at him when it runs out of hearts.
+
+The Noble Sword is in the Bluff Grotto, which is where this run STARTS: it
+takes the Piece of Heart out of that room in its first two minutes and walks
+past the big chest beside it, because that chest wants four Essences and the
+run has none. It has four the moment Wyverna dies, and it is the first time in
+the game that sentence is true. The route now walks the six screens back for
+it before crossing to the Shrine. That is the fix, and it is also the first
+time anything has proved the Noble Sword's own gate opens on schedule.
+
+### THE ROUTE IS STILL LOSING SIX QUARTER-HEARTS TO A THIRTY-TILE ROOM
+
+The Shrine Ford is not fought in — a `fight` there walks the whole width of it
+after a keese, which is the Cistern Floor's lesson repeated — so its keese and
+tektite harass the walk west to the Boss Key chest for free, six quarter-hearts
+of it. Bounded fighting inside a wide room is the general gap: `dFight` has no
+notion of "clear what is near me and stop".
+
 ## S116 — the fourth dungeon is played, and the run now ends on four Essences
 
 `check-playthrough.mjs` drives a new game from the title screen to Wyverna's

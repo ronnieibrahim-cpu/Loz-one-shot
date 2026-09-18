@@ -988,3 +988,44 @@ checked and why; see `docs/NEXT-SESSION.md` S60 for the full account.
   `dFight` that preferred the axis PERPENDICULAR to such an enemy's own
   facing would close all three; until then they are answered by hand or
   walked past.
+
+## Settled at S117 — proved by playing the Drowned Wood Shrine
+
+**The Shrine is finishable, end to end, by a run that was handed nothing.**
+`check-playthrough.mjs` walks it: three Small Keys earned and spent, the
+Reefseed out of its own chest, all five groves grown at HIGH and stood on at
+LOW, all five snarls cut, Thornvine beaten, the Boss Key out of the Shrine
+Ford's west chamber, and Rootmaw beaten in real combat. Do not re-prove any of
+it by hand.
+
+**The Reefseed's geometry holds in the engine, not just in the checker.**
+`check-reefseed.mjs` was written before the rooms were; this is the first time
+anything has THROWN one. Every stake in the dungeon lands on the square its
+room data names, from the standing tile the engine itself picks, at the sea the
+room argues for. The bole really does stop a seed below HIGH and really does
+let it through at HIGH.
+
+**The Noble Sword's gate opens on schedule.** The Bluff Grotto's big chest
+wants four Essences, and Wyverna's death is the first moment a player has them.
+The route now goes back for it, and the chest gives it up. That was never
+tested before and the item existed as a damage tier with no proven way to get
+it.
+
+**Rootmaw is not winnable with the level-1 blade** — 44 of 52 hit points taken,
+28 quarter-hearts spent, dead, twice measured. Do not retune the boss for it:
+the Noble Sword is the answer and it is in the world already.
+
+**A dungeon's health budget is decided by whether it has a fairy, not by its
+enemies.** D5 has none, so its two Pieces of Heart are load-bearing and have to
+be taken before the first locked door. This is the third dungeon where the
+route's health turned on one ordering decision; assume it will be the fourth.
+
+**`dFight` loses to a barnacle the way it loses to a shielded crab and a
+darknut** — it stands in front of the thing and keeps closing. Three enemies,
+three sessions. Rootbound Hall is crossed rather than cleared, and the general
+fix (prefer the axis perpendicular to a shielded enemy's facing) is still
+unwritten because it re-sweeps every recorded frame in the repo.
+
+**A `fight` inside a multi-screen room is a thirty-tile walk.** The Cistern
+Floor wrote this down and the Shrine Ford repeated it. Wide rooms are crossed,
+not cleared, until `dFight` learns a radius.

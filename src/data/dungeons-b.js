@@ -575,7 +575,17 @@ export function installDungeonsB() {
           snarl: [2, 4], cutFrom: [3, 4],
         },
         entities: [
-          ['chest', 1, 2, { pickup: 'key' }],
+          // THE CHEST FACES THE WAY YOU COME, and it has to. `Game.openChest`
+          // drops a `pickup` twelve pixels ABOVE the chest, which is the right
+          // place in every open room in the game and the wrong one here: the
+          // cell is one tile wide with walls either side, the only way into it
+          // is up from the snarl at 2,4, and a chest at 1,2 is solid, so the
+          // key landed at 1,1 with the chest between it and the player and
+          // nothing in the game could reach it. Nothing saw that — the room
+          // floods, the chest opens, the jingle plays, and the dungeon's third
+          // Small Key simply does not exist. At 1,5 the player stands at 1,4 to
+          // open it and the key falls on the square he is standing on.
+          ['chest', 1, 5, { pickup: 'key' }],
           ['jellyfish', 4, 4],
           ['keese', 6, 6],
         ],

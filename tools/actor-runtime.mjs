@@ -2036,6 +2036,131 @@ export async function installRuntime() {
     yield* dDialogueClear(60);
   }
 
+  /**
+   * DRIVE A CORAL STAKE — the verb the Drowned Wood Shrine is made of.
+   *
+   *   ['reefseed', tx, ty]   grow a coral pillar on tile (tx, ty)
+   *
+   * THE FOURTH VERB IN THIS FILE THAT VERIFIES INSTEAD OF PREDICTING, and the
+   * only one whose failures are PERMANENT. A seed is a throw, exactly as the
+   * Anchor is: `ITEMS.reefseed.use` spawns it moving in the player's facing
+   * direction on an arc, and where it stops is where the pillar comes up.
+   * REEFSEED_THROW_SPEED, the arc and REEFSEED_SETTLE_FRAMES all live in
+   * src/data/feel.js, so "two tiles" is a consequence of four constants rather
+   * than a number this file may hold.
+   *
+   * But `dAnchor` can afford to try every approach in turn, because an anchor
+   * that bites the wrong tile is recalled with one press. A PILLAR CANNOT BE
+   * TAKEN BACK. `Room.setTile` is permanent for as long as the room is loaded,
+   * and a grove has exactly one square the stake may stand on — so a verb that
+   * flung seeds at candidates until one stuck would brick the room it was
+   * asked to open, on the attempt before the one that worked.
+   *
+   * So this picks its standing tile BEFORE it throws anything, and it picks it
+   * out of the engine: the tile has to be one the player can stand on
+   * (`standAt`), the target has to be one a pillar may legally grow on
+   * (`Reefseed.canPlant`, the game's own guard, not a copy of it), and every
+   * tile between the two has to be one the seed can fly over — asked of
+   * `room.solidAt` with the seed's own `{ jumping, swim }` caps, which is the
+   * same call `moveEntity` makes on the seed's behalf every frame of its
+   * flight. Only then is the button pressed, and the throw is still VERIFIED
+   * afterwards by reading the tile's own name back out of the room.
+   *
+   * Nothing here knows which sea the throw wants. That is `tide`'s job and the
+   * route's decision, and it has to stay that way: a bole is open water at
+   * HIGH and oak below it, so a seed thrown at the wrong sea stops at the
+   * bole's foot instead of sailing over it. This verb refusing to fly is the
+   * room saying the sea is wrong, and a verb that went and fetched the right
+   * one would hide the whole of D5's argument.
+   */
+  function* dReefseed(tx, ty, maxF) {
+    const g = window.__game;
+    const room = () => g.room;
+    const isPillar = () => room().baseName(tx, ty) === 'coralPillar';
+    if (isPillar()) return;
+    const b = slotBit('reefseed');
+    if (!b) throw new Error('reefseed: the Reefseed is on no button');
+    if (g.progress.reefseeds <= 0) throw new Error('reefseed: the pouch is empty');
+    if (!items.Reefseed.canPlant(g, tx, ty)) {
+      throw new Error(`reefseed: a pillar may not grow on ${tx},${ty} in ${g.mapId} ${room().key}`);
+    }
+    // The seed's own traversal caps, taken from the options `Reefseed.update`
+    // hands `moveEntity`. A bole is SOLID and stops it; open water does not.
+    const SEED_CAPS = { jumping: true, swim: true };
+    const clearLine = (sx, sy, dx, dy, r) => {
+      for (let i = 1; i <= r; i++) {
+        const cx = (sx + dx * i) * TILE + 8, cy = (sy + dy * i) * TILE + 8;
+        if (room().solidAt(cx, cy, g.tide, SEED_CAPS)) return false;
+      }
+      return true;
+    };
+    const p0 = g.player;
+    if (!p0) throw new Error('reefseed: no player');
+    const why = [];
+    let chosen = null;
+    // Nearest first. A shorter throw is the one least likely to be turned by
+    // something between the two tiles, and a seed that falls short of the
+    // target is the failure this verb exists to make impossible.
+    for (const r of [2, 1, 3]) {
+      for (const [dname, dx, dy] of [['right', 1, 0], ['left', -1, 0], ['down', 0, 1], ['up', 0, -1]]) {
+        const sx = tx - dx * r, sy = ty - dy * r;
+        if (!standable(g, p0, sx, sy)) { why.push(`${sx},${sy} ${dname}: not standable`); continue; }
+        if (!clearLine(sx, sy, dx, dy, r)) { why.push(`${sx},${sy} ${dname}: line blocked`); continue; }
+        if (!findPath(g, p0, playerTile(p0), { tx: sx, ty: sy })) { why.push(`${sx},${sy} ${dname}: no path`); continue; }
+        chosen = { dname, sx, sy };
+        break;
+      }
+      if (chosen) break;
+    }
+    if (!chosen) {
+      const at = playerTile(g.player);
+      throw new Error(`reefseed: nowhere to throw ${tx},${ty} from. room ${g.mapId} ${room().key}`
+        + `, player ${at.tx},${at.ty}, tide ${g.tide.level}, seeds ${g.progress.reefseeds}`
+        + ` :: ${why.join(' | ')}`);
+    }
+    yield* dGoto(chosen.sx, chosen.sy, 600);
+    const at = playerTile(g.player);
+    if (at.tx !== chosen.sx || at.ty !== chosen.sy) {
+      throw new Error(`reefseed: the walk to ${chosen.sx},${chosen.sy} ended at ${at.tx},${at.ty}`);
+    }
+    // FACE THE TARGET IN AS FEW FRAMES AS THE ENGINE WILL TAKE, and this is
+    // not tidiness. Every stake in the Shrine is thrown at HIGH, and at HIGH
+    // the square between the bank and the stake is open water — so the
+    // direction that turns the player toward it is also the direction that
+    // walks him into it. Six frames of `down` on the Long Ford's bank put him
+    // far enough in to be `inDeep`, and `ITEMS.reefseed.use` refuses from the
+    // water: the button was pressed, no seed left the pouch, and the only
+    // evidence was a tile that had not changed. So the press stops the frame
+    // the engine's own `dir` agrees, and the refusal is checked for by name
+    // rather than inferred from the tile afterwards.
+    for (let i = 0; i < 8 && g.player.dir !== chosen.dname; i++) yield BIT[chosen.dname];
+    yield* dWait(2);
+    const pl = g.player;
+    if (pl.dir !== chosen.dname) {
+      throw new Error(`reefseed: would not face ${chosen.dname} (facing ${pl.dir})`);
+    }
+    if (pl.inDeep || pl.underwater) {
+      throw new Error(`reefseed: the sea took the bank at ${chosen.sx},${chosen.sy} — a stake `
+        + `is driven, not dropped, and ${g.mapId} ${room().key} is at tide ${g.tide.level}`);
+    }
+    const seedsBefore = g.progress.reefseeds;
+    yield b;
+    // Flight, settle and growth. The loop exits the frame the tile changes
+    // name, so none of those three numbers is spelled here.
+    for (let i = 0; i < (maxF || 400) && !isPillar(); i++) yield 0;
+    if (!isPillar() && g.progress.reefseeds === seedsBefore) {
+      throw new Error(`reefseed: the button did nothing at ${chosen.sx},${chosen.sy} — no seed `
+        + `left the pouch (${seedsBefore} in it). room ${g.mapId} ${room().key}, tide ${g.tide.level}`);
+    }
+    if (!isPillar()) {
+      throw new Error(`reefseed: no pillar on ${tx},${ty} after the throw from `
+        + `${chosen.sx},${chosen.sy} facing ${chosen.dname} — it is `
+        + `"${room().baseName(tx, ty)}". room ${g.mapId} ${room().key}, tide ${g.tide.level}`
+        + `, seeds left ${g.progress.reefseeds}`);
+    }
+    yield* dDialogueClear(30);
+  }
+
   function* runPlan(steps) {
     const g = window.__game;
     for (let si = 0; si < steps.length; si++) {
@@ -2062,6 +2187,7 @@ export async function installRuntime() {
       else if (kind === 'anchor') yield* dAnchor(a[0], a[1], a[2]);
       else if (kind === 'unanchor') yield* dUnanchor(a[0]);
       else if (kind === 'bellows') yield* dBellows(a[0], a[1], a[2]);
+      else if (kind === 'reefseed') yield* dReefseed(a[0], a[1], a[2]);
       else throw new Error('unknown replay directive: ' + kind);
       // A trace of where each directive left the player. Recording prints it;
       // it is how you find out that step 9 never reached the room step 10

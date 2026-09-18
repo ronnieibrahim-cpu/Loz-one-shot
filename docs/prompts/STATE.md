@@ -3,9 +3,9 @@ OBJECTIVE OF RECORD: 9 playthrough-route — drive the run past Dungeon 3
 The human retired the exhausted rotation at S112 and chose this in its place.
 Objectives 1-7 are met and 8 stays BLOCKED (no emulator capture). The new
 objective is the largest open claim in the repo: `check-playthrough.mjs` is
-the only tool that proves the game is finishable, and its route ends at
-`d4/0,3,1` with four Essences of six taken. Two dungeons, two bosses, the
-Coastwise Chain and the later overworld gates have never been played.
+the only tool that proves the game is finishable, and its route now ends at
+`d5/0,3,1` with five Essences of six taken. One dungeon, one boss, the
+Coastwise Chain and the Salt Pans' story gate have never been played.
 
 DONE-CONDITION: `tools/playthrough-route.mjs` drives a new game to the sixth
 Essence and `node tools/check-playthrough.mjs` is green on it. Advance one
@@ -41,3 +41,4 @@ S113 | objective | Made the third dungeon's boss easier to fight: it has less he
 S114 | objective | Made the third boss beatable by the test robot: it now cuts down the slimes he sheds instead of dodging them for ever, which is what was actually killing it — one hit in fourteen came from the boss himself. Seven wins in ten where there were none.
 S115 | objective | Played the third dungeon for the first time. A new game now walks from the title screen all the way to the Bogwater Sanctum's boss and comes out with three of the six Essences: it bombs its way into the marsh to reach the door, dives under all three of the Sanctum's currents in the new soles, and beats Gloomtide with hearts to spare.
 S116 | objective | Played the fourth dungeon for the first time. A new game now walks out of the Bogwater Sanctum on its own feet, crosses the marsh and the bluffs, bombs the rockfall that holds the Cliffs of Kell shut, and takes the Cliffside Cistern end to end: three keys, the Squall Bellows, all six drowned wheels turned by holding the breath against them, the Ironknight, and Wyverna beaten with the sea drained under her. Four of the six Essences.
+S117 | objective | Played the fifth dungeon for the first time. A new game now walks out of the Cliffside Cistern, goes back to the grotto it started in for the second sword — which the stone there only gives up at four Essences — crosses the wood to the Drowned Wood Shrine, and takes it end to end: three keys, the Reefseed, all five groves grown at high water and stood on at low, Thornvine, and Rootmaw. Found on the way that the Shrine's third key never existed: the chest holding it dropped it behind itself in a corridor one tile wide, and nothing in the game could reach it.

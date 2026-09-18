@@ -68,14 +68,17 @@
 //   node tools/check-playthrough.mjs --trace    print the per-directive trace
 //   node tools/check-playthrough.mjs --headed   watch it in a real browser
 //
-// SCOPE. New game to D4's Essence — Tidewash Grotto, the Coral Spire, the
-// Bogwater Sanctum and the Cliffside Cistern, in order, nothing granted. Four
-// bosses and a miniboss beaten, eleven Small Keys earned and spent, the Sunken
-// Marsh and the Cliffs of Kell both opened with the Bombs the Coral Spire paid
-// out, all three of the Sanctum's torrents crossed on the seafloor, and all
-// six of the Cistern's drowned wheels turned with the Squall Bellows held.
-// `GOAL` in `tools/playthrough-route.mjs` names exactly where the run
-// currently stops: two dungeons, the Coastwise Chain and two bosses are still
+// SCOPE. New game to D5's Essence — Tidewash Grotto, the Coral Spire, the
+// Bogwater Sanctum, the Cliffside Cistern and the Drowned Wood Shrine, in
+// order, nothing granted. Five bosses and two minibosses beaten, fourteen
+// Small Keys earned and spent, the Sunken Marsh and the Cliffs of Kell both
+// opened with the Bombs the Coral Spire paid out, all three of the Sanctum's
+// torrents crossed on the seafloor, all six of the Cistern's drowned wheels
+// turned with the Squall Bellows held, the Noble Sword fetched back out of the
+// grotto the run started in once it held four Essences, and all five of the
+// Shrine's groves grown at HIGH and stood on at LOW. `GOAL` in
+// `tools/playthrough-route.mjs` names exactly where the run currently stops:
+// the Abyssal Keep, the Coastwise Chain, Nereth and the Salt Pans are still
 // unrouted past this point.
 
 import { createServer } from 'node:http';
@@ -332,10 +335,10 @@ check('the run gets as far as the route currently drives it (' + GOAL.room + ')'
 check(`the run earned all ${GOAL.keysObtainable} Small Keys and spent them on locked doors`,
   s.doorsChanged >= GOAL.keysObtainable && a.blocksMoved >= 4,
   `doors ${s.doorsChanged}, blocks moved ${a.blocksMoved}`);
-check('THE ESSENCES OF THE GROTTO, THE SPIRE, THE SANCTUM AND THE CISTERN ARE ALL TAKEN',
+check('THE ESSENCES OF THE GROTTO, THE SPIRE, THE SANCTUM, THE CISTERN AND THE SHRINE ARE ALL TAKEN',
   GOAL.essences.every(i => s.essences.includes(i)), `essences [${s.essences.join(',')}]`);
-check('all four bosses were beaten in real combat, with nothing granted',
-  !!(s.beaten && s.beaten.d1 && s.beaten.d2 && s.beaten.d3 && s.beaten.d4),
+check('all five bosses were beaten in real combat, with nothing granted',
+  !!(s.beaten && s.beaten.d1 && s.beaten.d2 && s.beaten.d3 && s.beaten.d4 && s.beaten.d5),
   `beaten ${JSON.stringify(s.beaten || {})}`);
 // A DUNGEON WAS WALKED OUT OF. Every earlier leg ended in a boss room and the
 // next one began on the overworld, because the run had never had to leave a
@@ -376,6 +379,39 @@ check('the run walked the seafloor under D3\'s three torrents',
   `rooms ${['d3/0,2,3', 'd3/0,4,3', 'd3/0,4,2'].filter(r => !a.rooms.includes(r)).join(' ')} missing`);
 check('the run completed a second Heart Container mid-D2, on top of D1\'s own',
   s.maxHearts >= 20, `maxHearts ${s.maxHearts}`);
+// ---- what the Drowned Wood Shrine leg added -------------------------------
+//
+// THE CISTERN WAS WALKED OUT OF. The second dungeon this run has left on its
+// own feet, and the first one it left in order to walk the long way round to
+// something it had already passed.
+check('the run walked out of the Cliffside Cistern on its own feet',
+  a.rooms.includes('d4/0,3,7') && a.rooms.includes('overworld/0,1,3'),
+  `rooms ${['d4/0,3,7', 'overworld/0,1,3'].filter(r => !a.rooms.includes(r)).join(' ')} missing`);
+// THE NOBLE SWORD WAS TAKEN AT FOUR ESSENCES, in the room the run took its
+// very first Piece of Heart out of. The chest refuses below four, so a second
+// `sword` in the acquisition log is proof the run came back for it holding
+// them — and Rootmaw is why it had to.
+check('the run went back for the Noble Sword once it held four Essences',
+  a.gained.filter(g => g.id === 'sword').length >= 2
+    && a.rooms.filter(r => r.startsWith('cave1/')).length >= 1,
+  `sword grants ${a.gained.filter(g => g.id === 'sword').map(g => 'f' + g.frame).join(',')}`);
+// EVERY ONE OF THE SHRINE'S FIVE GROVES WAS GROWN AND CUT. A coral pillar is
+// thrown at HIGH, because the drowned bole between the bank and the stake is
+// only gone at HIGH; it is stood on at LOW, because a pillar is ground at LOW
+// and nowhere else; and the snarl beyond it only gives to a sword, which a
+// swimmer cannot draw. Five rooms, four orientations and one built twice over.
+check('the run grew a coral stake in all five of the Shrine\'s groves',
+  s.items.includes('reefseed')
+    && ['d5/0,1,3', 'd5/0,2,3', 'd5/0,2,2', 'd5/0,4,3', 'd5/0,4,2'].every(r => a.rooms.includes(r)),
+  `rooms ${['d5/0,1,3', 'd5/0,2,3', 'd5/0,2,2', 'd5/0,4,3', 'd5/0,4,2'].filter(r => !a.rooms.includes(r)).join(' ')} missing`);
+// THE SHRINE HAS NO FAIRY, and its two Pieces of Heart are the whole of its
+// healing. Both are behind something: the third is walled into a drown-wall
+// well that is only water at HIGH, and the fourth is on a Squall Bellows sill
+// — the first one built outside the Cistern. A run that reached Rootmaw took
+// both, because the third Heart Container is what pays for the groves.
+check('the run completed a third Heart Container inside the Shrine',
+  s.maxHearts >= 40 && a.rooms.includes('d5/0,1,5') && a.rooms.includes('d5/0,5,5'),
+  `maxHearts ${s.maxHearts}`);
 
 // --- 2. nothing was handed to it -------------------------------------------
 //
@@ -397,7 +433,7 @@ check('every item the run ends with was acquired during the run',
   s.items.every(id => a.gained.some(g => g.id === id)),
   `unaccounted: ${s.items.filter(id => !a.gained.some(g => g.id === id)).join(',')}`);
 
-// --- 3. both dungeons were actually played ---------------------------------
+// --- 3. the dungeons were actually played -----------------------------------
 
 check('the run collected D1\'s Dungeon Map and Chartstone',
   !!(s.dungeonMaps && s.dungeonMaps.d1) && !!(s.charts && s.charts.d1),
@@ -405,7 +441,7 @@ check('the run collected D1\'s Dungeon Map and Chartstone',
 check('the run opened chests', s.chestsOpened >= 1, `chests ${s.chestsOpened}`);
 check('the run killed things', s.kills >= 5, `kills ${s.kills}`);
 check('the run walked the overworld before each dungeon',
-  a.rooms.some(r => r.startsWith('overworld/')) && ['d1/', 'd2/', 'd3/', 'd4/']
+  a.rooms.some(r => r.startsWith('overworld/')) && ['d1/', 'd2/', 'd3/', 'd4/', 'd5/']
     .every(d => a.rooms.some(r => r.startsWith(d))),
   a.rooms.slice(0, 4).join(' '));
 
