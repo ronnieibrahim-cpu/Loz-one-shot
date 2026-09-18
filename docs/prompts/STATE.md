@@ -1,41 +1,36 @@
-OBJECTIVE OF RECORD: 8 feel-measure — AND IT CANNOT BE STARTED
+OBJECTIVE OF RECORD: 9 playthrough-route — drive the run past Dungeon 2
 
-S111: objective 1 is MET (D3's Eel Hall widened to 3x1, so 4 of 6 dungeons
-hold a room bigger than a screen). That was the last item the rotation could
-reach. THE ROTATION IS EXHAUSTED: 1 met S111, 2 S9/S74, 3 S75, 4 S59, 5 S63,
-6 S89, 7 S110, and 8 needs an emulator capture the human said at S111 is not
-available. The next session's first move is to put that to the human and let
-them choose what replaces the rotation. Do not re-open 8 without a capture.
+The human retired the exhausted rotation at S112 and chose this in its place.
+Objectives 1-7 are met and 8 stays BLOCKED (no emulator capture). The new
+objective is the largest open claim in the repo: `check-playthrough.mjs` is
+the only tool that proves the game is finishable, and its route ends at
+`d2/1,3,1` with two Essences of six taken. Four dungeons, four bosses, the
+Coastwise Chain and the later overworld gates have never been played.
 
-ROTATION (fixed, do not reorder):
-  1 wide-rooms      — MET S111. 4 of 6 dungeons hold a 2x2 or 3x1
-  2 art-provenance  — every sprite tagged, plus the contact sheets
-  3 boss-art        — per boss, a ripper path or a written reason
-  4 enemy-roster    — full frame set + a docs/ENEMIES.md spec per enemy
-  5 npc-detail      — a unique sprite and >=2 dialogue states per NPC
-  6 region-art      — 90 of ~90 overworld rooms audited with a verdict
-  7 item-reuse      — MET S110. See docs/prompts/LEDGER.md, "Measured and
-                      rejected", for the four amendments
-  8 feel-measure    — done when >=40 feel.js constants are tagged
-                      `measured` against the emulator. BLOCKED, see above
+DONE-CONDITION: `tools/playthrough-route.mjs` drives a new game to the sixth
+Essence and `node tools/check-playthrough.mjs` is green on it. Advance one
+dungeon per session; a session is `objective` if GOAL.essences grew.
 
-TWO STANDING DEFECTS, named for several sessions and still true. Neither is
-on any allowlist and neither may be started without the human saying so:
+ROTATION (retired S112, kept for the record):
+  1 wide-rooms MET S111 | 2 art-provenance S9/S74 | 3 boss-art S75
+  4 enemy-roster S59 | 5 npc-detail S63 | 6 region-art S89
+  7 item-reuse MET S110 | 8 feel-measure BLOCKED — needs an emulator capture
+
+ONE STANDING DEFECT, named for several sessions and still true. It is not on
+the allowlist and may not be started without the human saying so:
   * `check-hearts` has 2 failures — 23 heart pieces, and D5 holds 1 not 2.
-  * `tools/playthrough-route.mjs` stops at `d2/1,3,1`. NOTHING HAS PLAYED
-    THIS GAME PAST DUNGEON 2, which is the largest open claim in the repo.
 
-FILE ALLOWLIST for the current objective (8 feel-measure):
-  src/data/feel.js — the constants and their provenance comments. A
-    `measured` tag MUST name the reference it was frame-stepped from
-  docs/FEEL-SPEC.md — the written account of what each number means
+FILE ALLOWLIST for the current objective (9 playthrough-route):
+  tools/playthrough-route.mjs — the route data and its GOAL block
+  tools/check-playthrough.mjs — only its assertions about how far the run gets
+  tools/actor-runtime.mjs — only to add a movement verb the route needs
+  tools/measure-boss-combat.mjs — for re-measuring a fight's health budget
   dist/oracle-of-tides.html
   docs/NEXT-SESSION.md
   docs/prompts/LEDGER.md
+A game-side fix the route PROVES is broken is in scope only for the one file
+holding the fault, and only with the trace written into docs/NEXT-SESSION.md.
 
-Note (keep): #2 done S9/S74. #3 done S75 (ART-BACKLOG.md). #4 done S59
-and #5 done S63 (both human decisions). #6 done S89 (120/120 audited).
-#7 done S110. #1 done S111.
 DETOUR TOKENS: 1 (unspent)
 
 SESSION LOG: one row per session — `S## | objective|detour | one line`
