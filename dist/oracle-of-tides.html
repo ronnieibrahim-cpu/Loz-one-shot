@@ -23461,6 +23461,32 @@ const rooms = {
     ],
     entities: [
       ['crab', 4, 4], ['octorok', 2, 2],
+      // THE WEST COAST'S FAIRY, and it is here because the long walk is here.
+      //
+      // The world had exactly one fairy — Reef Edge, `0,11,3`, out on the far
+      // eastern reef — and the whole western half of the map, which is where
+      // the Coastwise Chain does its zig-zagging, had nothing at all. A run
+      // that walks the chain end to end leaves the Drowned Wood Shrine nearly
+      // full and reaches the Abyssal Keep's arch on a heart and a half: it is
+      // not a fight it loses anywhere, it is two quarter-hearts a screen for
+      // forty-odd screens with nothing anywhere on the road to put them back.
+      // This is the thing that puts them back.
+      //
+      // WHY THIS SCREEN. The chain crosses Shell Beach twice — out to the
+      // marsh links and home again — and the road to the Cliffs of Kell does
+      // not cross it at all, so the fairy is found by the player who is doing
+      // the walk that costs, and not handed to the one who is merely passing
+      // through the bluffs on the way to a dungeon.
+      //
+      // WHY THIS TILE. 8,2 is the sheltered pocket beside the rock at 7,2, off
+      // the beach's east edge and above the tide pool: you have to come up the
+      // east side and round the rock to be standing in it. A fairy in the
+      // middle of the sand would be a healing station on the main road; one in
+      // a corner you have to turn into is a place you go. It sits at 8,2 and
+      // not the tile above it because the tree line along the top of this
+      // screen is two tiles deep on screen and one in the data, and 8,1 is
+      // under its canopy — see check-ground.mjs's overhang sweep.
+      ['pickup', 8, 2, { kind: 'fairy' }],
     ],
   },
   // The village's waterfront: the net-mender's cottage, a paling fence and the

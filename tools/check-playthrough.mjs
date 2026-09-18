@@ -443,6 +443,24 @@ check('the road down the Kell opened, and the run walked into the Abyssal Keep',
     .every(r => a.rooms.includes(r)),
   `rooms ${['overworld/0,2,2', 'overworld/0,2,1', 'overworld/0,1,0', 'd6/0,3,7'].filter(r => !a.rooms.includes(r)).join(' ')} missing`);
 
+// AND IT ARRIVES WITH ENOUGH HEALTH TO FIGHT WHAT IS DOWN THERE. This is the
+// one number the chain leg could not assert when it landed: the tour costs
+// thirty-six of forty-four quarter-hearts and the world had nothing on it to
+// put them back, so the run stepped through the Keep's arch on six — a heart
+// and a half, against a boss that takes four a hit. Shell Beach's fairy is
+// what closed it, and the number is asserted rather than merely printed
+// because a heal a later session moves or spends earlier would otherwise go
+// back to being a printed column nobody reads until the boss leg fails.
+//
+// HALF OF MAX, not a fixed count, because the cap is still growing: there are
+// pieces in the world this run has never been sent for, and a floor written as
+// `22` would quietly stop meaning "half" the day a fourth container lands.
+const arrival = a.roomHealth.filter(r => r.room === GOAL.room);
+const arrivedOn = arrival.length ? arrival[0].enterHearts : 0;
+check('the run arrives at the Abyssal Keep on at least half its hearts',
+  arrivedOn * 2 >= s.maxHearts,
+  `arrived on ${arrivedOn} of ${s.maxHearts} quarter-hearts`);
+
 // --- 2. nothing was handed to it -------------------------------------------
 //
 // The strongest assertion in the file, and the one that makes every other one

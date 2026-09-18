@@ -2240,6 +2240,12 @@ export const ROUTE = [
   ['travel', 5, 7, 4000], ['loot', 600],
   ['travel', 4, 7, 4000], ['loot', 600],
   ['travel', 4, 8, 4000], ['loot', 600],
+  // SHELL BEACH IS WHERE THE TOUR IS PAID FOR. The screen's north-east pocket
+  // holds the west coast's fairy, and the `loot` after this hop is what takes
+  // it — a placed pickup is an ordinary drop as far as the sweep is concerned,
+  // so no directive of its own is needed and none should be added. What DOES
+  // matter is that the `loot` stays: without it the run walks past a full heal
+  // and arrives at the Keep on six of forty-four. Measured: 16 in, 40 out.
   ['travel', 3, 8, 4000], ['loot', 600],
   ['travel', 3, 7, 4000], ['loot', 600],
   ['travel', 2, 7, 4000], ['loot', 600],
@@ -2339,20 +2345,21 @@ export const ROUTE = [
  *     level-3 blade on two separate visits, and the route talks to her twice
  *     because `MakuTree.interact` runs the trade first by design.
  *
- * THE FINDING THIS LEG PAID FOR, AND IT IS THE NEXT SESSION'S FIRST PROBLEM:
- * THE CHAIN TOUR COSTS THIRTY-SIX OF FORTY-FOUR QUARTER-HEARTS AND THERE IS
- * NOTHING ON IT TO HEAL ON. The run leaves the Shrine on 42 and arrives at the
- * Keep's door on 6 — a heart and a half. The damage is not a fight anywhere;
- * it is two quarter-hearts of contact damage per screen crossed, forty-odd
- * screens, with one fairy in the world (`0,11,3`, six screens off the tour and
- * worth less than the detour costs) and the Tidewatch Shop's one heart already
- * spent before D2. Three answers were measured and all three are worse:
- * fighting every screen ends on 4, fighting briefly on every screen shoves the
- * actor into doorways it did not mean to enter, and the short way back through
- * the Shrine's Bole Walk starts the tour twenty-two quarter-hearts down.
- * Nereth cannot be fought on six. Whatever fixes this is a WORLD change — a
- * fairy or a shop on the tour, or a Heart Container the run can still reach —
- * and it is out of this route file's scope.
+ * THE TOUR USED TO COST THIRTY-SIX OF FORTY-FOUR QUARTER-HEARTS WITH NOTHING
+ * ON IT TO HEAL ON, AND THAT IS CLOSED. The damage is not a fight anywhere; it
+ * is two quarter-hearts of contact damage per screen crossed, forty-odd
+ * screens, and the run used to step through the Keep's arch on six — a heart
+ * and a half, against a boss that takes four a hit. Three route answers were
+ * measured and all three were worse: fighting every screen ends on 4, fighting
+ * briefly on every screen shoves the actor into doorways it did not mean to
+ * enter, and the short way back through the Shrine's Bole Walk starts the tour
+ * twenty-two quarter-hearts down. It was a WORLD gap, not a route gap: the
+ * world's only fairy was `0,11,3`, out on the far eastern reef, and the whole
+ * western half of the map — where the chain does its zig-zagging — had none.
+ * Shell Beach (`0,3,8`) now holds one, in the pocket behind the rock at 7,2,
+ * on a screen the chain crosses twice and the road to the Cliffs of Kell does
+ * not cross at all. The run arrives at the Keep on 30 of 44, and the arrival
+ * is asserted rather than printed. DO NOT DROP THE `loot` AFTER THE 3,8 HOP.
  *
  * THREE SEAMS ON THE TOUR THE PATHFINDER WILL NOT PLAN, all named by hand in
  * the leg above: Sandbar Run's chasm, Sunken Reef's cave mouth sitting in the

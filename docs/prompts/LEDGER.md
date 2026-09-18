@@ -1030,6 +1030,26 @@ unwritten because it re-sweeps every recorded frame in the repo.
 Floor wrote this down and the Shrine Ford repeated it. Wide rooms are crossed,
 not cleared, until `dFight` learns a radius.
 
+## Settled at S119 — the chain's road has a heal on it
+
+**The chain tour is survivable and the number is asserted.** Shell Beach
+(`0,3,8`) holds the west coast's fairy, in the pocket beside the rock at 7,2.
+The run arrives at the Abyssal Keep's arch on 30 of 44 quarter-hearts, and
+`check-playthrough.mjs` now fails if it arrives on less than half of max. Do
+not re-measure the tour's cost by hand and do not move that fairy.
+
+**The heal needs no route directive and depends on one that is already there.**
+A placed `pickup` sets `isDrop`, so `dLoot` collects it like any dropped heart.
+The `['loot', 600]` after the `3,8` hop is load-bearing.
+
+**The heal floor is half-of-max, deliberately, not 22.** The heart cap is still
+growing and a fixed number would stop meaning "half".
+
+**An overworld pickup needs BOTH `check-placement` and `check-ground`.** The
+first says the tile can be stood on; only the second knows a treeline is two
+tiles deep on screen and one in the data. 8,1 passed the first and failed the
+second.
+
 ## Settled at S118 — proved by playing the Coastwise Chain
 
 **The Coastwise Chain plays end to end in a real run.** All twelve links, in

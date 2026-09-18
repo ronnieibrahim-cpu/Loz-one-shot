@@ -1,3 +1,51 @@
+## S119 — the west coast gets a fairy, and the run reaches the Keep on 30 of 44
+
+The thing S118 found and could not fix is fixed, and it was a world gap rather
+than a route gap. Shell Beach (`0,3,8`) now has a fairy in the pocket beside
+the rock at 7,2. The run leaves the Drowned Wood Shrine, walks the whole
+Coastwise Chain, and steps through the Abyssal Keep's arch on 30 of 44
+quarter-hearts instead of 6. `check-playthrough.mjs` is 34 assertions green.
+
+### WHY SHELL BEACH AND NOT ANY OF THE OTHER FORTY SCREENS
+
+The world had exactly one fairy, `0,11,3` on the far eastern reef, and the
+whole western half of the map had none — which is the half the chain does its
+zig-zagging in. Shell Beach is the one screen that satisfies both halves of
+the brief at once: the chain crosses it TWICE (out to the marsh links at
+`0,1,9` and home again) and the road to the Cliffs of Kell does not cross it
+AT ALL, so the heal is found by the player doing the walk that costs and is
+not handed to the one merely passing through the bluffs on the way to D4.
+
+### 8,1 IS UNDER THE TREE LINE AND 8,2 IS NOT
+
+The first placement was 8,1 and `check-placement` passed it — the tile is
+grass, `canOccupy` says yes at every tide. `check-ground`'s overhang sweep is
+what caught it: the treeline along the top of that screen is two tiles deep on
+screen and one in the data, so a pickup at 8,1 would have been drawn behind the
+canopy. Moved one tile down. Both tools were needed and neither would have
+done.
+
+### NO ROUTE DIRECTIVE WAS ADDED, AND THAT IS THE POINT
+
+A placed `pickup` sets `isDrop`, so `dLoot` treats it exactly like a dropped
+heart and the `['loot', 600]` that already followed the `3,8` hop collects it
+with no help. The cost of that is a silent dependency: drop or move that one
+`loot` and the run goes back to arriving on six. It is written into the route
+beside the hop, in capitals.
+
+### THE ARRIVAL IS ASSERTED NOW, NOT PRINTED
+
+`check-playthrough.mjs` gained a 34th assertion — the run reaches `GOAL.room`
+on at least half of `maxHearts`. It is written as half-of-max rather than as
+`22` because the cap is still growing; there are pieces in the world this run
+has never been sent for, and a fixed floor would stop meaning "half" the day a
+fourth container lands.
+
+### STILL OPEN, UNCHANGED
+
+`check-hearts` still has its two standing failures (23 pieces; D5 holds one,
+not two). Nothing here touched the piece count.
+
 ## S118 — the Coastwise Chain is played, and the run reaches the Keep's door
 
 `check-playthrough.mjs` now drives a new game from the title screen to the
