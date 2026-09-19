@@ -760,6 +760,7 @@ export const ROUTE = [
   ['goto', 4, 2, 700],
   ['hold', ['up'], 3],
   ['wait', 10],
+
   ['goto', 1, 3, 700],
   ['exit', 'left', 300],
 
@@ -2583,6 +2584,32 @@ export const ROUTE = [
   // frame the room was entered on, and the run that saved six quarter-hearts
   // here arrived at the Crossed Shafts on three.
   ['loot', 600],
+
+  // AND THE FIRST CHARM THIS GAME HAS EVER WORN. The Gillcarve came out of the
+  // Drowned Wood Shrine and has sat in the satchel ever since, because nothing
+  // in this harness could open a case: the scrimshaw is a MENU page and the
+  // actor only knew how to drive the item page. Thirty charms exist, every one
+  // of them is read somewhere in `src/`, `check-charms.mjs` proves each
+  // in-engine — and no run had ever put one on.
+  //
+  // It goes in the HIGH case, which opened at four Essences, and HIGH is the
+  // sea the Crossed Shafts are entered at. It is worn for the rest of the game.
+  //
+  // WHY NOT THE BARNACLE SKIN, which is the charm this run actually wants —
+  // one free hit per ROOM, against a dungeon that costs three quarter-hearts a
+  // screen crossed. It is in a chest in the Coral Spire's Cistern Cell, one
+  // screen off the route behind a door the route's own switch puzzle already
+  // opens, and this file's comment there has said "(skipped, an optional
+  // charm)" for the whole life of the route. Fetching it was measured and it
+  // LOSES THE RUN, twice over: the two-screen detour shifts every frame
+  // downstream, which alone walked the stage-3 trader out from under the press
+  // (fixed in `dTrade` — a trader wanders, and the verb used to aim at where
+  // one WAS); and wearing it from D2 reshuffles every fight after it, because
+  // a free hit is a hit that does not knock you back and does not spend an
+  // invulnerability window, which cost Gloomtide — the fight S113 and S114 got
+  // to seven wins in ten. The charm is not the problem and neither is that
+  // fight; a hundred and seventy thousand frames of recorded route is.
+  ['charm', 'gillcarve', 'high', 600],
 
   // ================= THE CROSSED SHAFTS, AND THE BOSS KEY ==================
   // The only room in the Abyssal Keep that holds both crossings, and the room

@@ -1,9 +1,9 @@
 {
  "note": "A new game driven with no shortcuts through Tidewash Grotto, the Coral Spire, the Bogwater Sanctum, the Cliffside Cistern and the Drowned Wood Shrine, round the whole Coastwise Chain, and into the Abyssal Keep as far as the Keep Gate. Recorded by tools/check-playthrough.mjs; see its header for what \"no shortcuts\" means.",
  "seed": 20260806,
- "frames": 170138,
+ "frames": 170154,
  "state": {
-  "frame": 170138,
+  "frame": 170154,
   "mapId": "d6",
   "room": "1,3,1",
   "floor": 1,
@@ -35,6 +35,24 @@
    "d6": true
   },
   "heartPieces": 3,
+  "charmsOwned": [
+   "gillcarve"
+  ],
+  "charmCases": {
+   "low": [
+    null,
+    null
+   ],
+   "mid": [
+    null,
+    null
+   ],
+   "high": [
+    "gillcarve",
+    null
+   ]
+  },
+  "blanks": 0,
   "items": [
    "anchor",
    "bellows",
@@ -301,6 +319,8 @@
    "play",
    "menu",
    "play",
+   "menu",
+   "play",
    "cutscene",
    "play",
    "cutscene",
@@ -330,7 +350,7 @@
    },
    {
     "index": 6,
-    "frame": 167013
+    "frame": 167029
    }
   ],
   "maxHearts": 48,
@@ -4925,40 +4945,40 @@
     "damage": 6,
     "healing": 24,
     "exitHearts": 34,
-    "exitFrame": 158399
+    "exitFrame": 158415
    },
    {
     "room": "d6/1,4,2",
-    "enterFrame": 158399,
+    "enterFrame": 158415,
     "enterHearts": 34,
     "minHearts": 23,
     "maxHearts": 34,
     "damage": 11,
     "healing": 0,
     "exitHearts": 23,
-    "exitFrame": 163721
+    "exitFrame": 163737
    },
    {
     "room": "d6/1,3,2",
-    "enterFrame": 163721,
+    "enterFrame": 163737,
     "enterHearts": 23,
     "minHearts": 17,
     "maxHearts": 23,
     "damage": 6,
     "healing": 0,
     "exitHearts": 17,
-    "exitFrame": 164281
+    "exitFrame": 164297
    },
    {
     "room": "d6/1,3,1",
-    "enterFrame": 164281,
+    "enterFrame": 164297,
     "enterHearts": 17,
     "minHearts": 1,
     "maxHearts": 48,
     "damage": 17,
     "healing": 47,
     "exitHearts": 47,
-    "exitFrame": 170138
+    "exitFrame": 170154
    }
   ]
  },
@@ -38840,8 +38860,60 @@
    6
   ],
   [
+   64,
+   1
+  ],
+  [
+   128,
+   1
+  ],
+  [
+   0,
+   1
+  ],
+  [
+   128,
+   1
+  ],
+  [
+   0,
+   1
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   0,
+   1
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   0,
+   1
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   1
+  ],
+  [
+   64,
+   1
+  ],
+  [
+   0,
+   4
+  ],
+  [
    8,
-   14
+   12
   ],
   [
    5,
@@ -38861,15 +38933,15 @@
   ],
   [
    5,
-   2
+   1
   ],
   [
    10,
-   3
+   1
   ],
   [
    4,
-   1
+   2
   ],
   [
    10,
@@ -38877,11 +38949,15 @@
   ],
   [
    9,
-   4
+   1
+  ],
+  [
+   1,
+   2
   ],
   [
    8,
-   61
+   68
   ],
   [
    9,
@@ -38909,15 +38985,15 @@
   ],
   [
    8,
-   13
+   11
   ],
   [
    9,
-   1
+   3
   ],
   [
    1,
-   15
+   13
   ],
   [
    8,

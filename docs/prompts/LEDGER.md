@@ -1030,6 +1030,25 @@ unwritten because it re-sweeps every recorded frame in the repo.
 Floor wrote this down and the Shrine Ford repeated it. Wide rooms are crossed,
 not cleared, until `dFight` learns a radius.
 
+## Settled at S123 — the scrimshaw is drivable, and the trader is not
+
+**`['charm', id, slot, maxF]` exists and works.** It drives the menu the way a
+player does and verifies the case afterwards. The run wears the Gillcarve in
+the HIGH case. `check-playthrough` asserts a charm is worn; do not let that
+assertion go back to zero.
+
+**`dTrade` re-aims at a wandering trader.** It used to read the link's tile
+once and then press A at an empty square for nine hundred frames. Do not
+re-derive this; it is why the chain survives a frame shift at all.
+
+**THE BARNACLE SKIN CANNOT BE WORN FROM D2 WITHOUT RE-TUNING THE WHOLE ROUTE.**
+Measured: the run dies at Gloomtide. A free hit changes knockback, invuln
+windows and therefore every frame after it. The charm is right and the fight is
+right; the recorded route is 170k frames long. Budget a whole session.
+
+**The Colonnade round trip costs NINE quarter-hearts** entering on twenty-six,
+and the run's slack is one. Measured S123; do not re-measure by hand.
+
 ## Settled at S122 — the verification table is all green
 
 **EVERY CHECKER IN CLAUDE.md'S TABLE PASSES.** No red anywhere. Do not go

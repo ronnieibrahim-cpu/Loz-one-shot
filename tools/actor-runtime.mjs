@@ -119,6 +119,11 @@ export async function installRuntime() {
       // so "the boss is gone" is not the same fact (T38/T39).
       beaten: Object.assign({}, g.progress.beaten),
       heartPieces: g.progress.heartPieces,
+      // The scrimshaw, which nothing in the audit could see. A run that never
+      // opens a case fights the whole game with all three loadouts empty.
+      charmsOwned: Object.keys(g.progress.charms || {}).filter(k => g.progress.charms[k]).sort(),
+      charmCases: JSON.parse(JSON.stringify(g.progress.charmSlots || {})),
+      blanks: g.progress.blanks || 0,
       items: Object.keys(g.progress.items).filter(k => g.progress.items[k] > 0).sort(),
       // Persisted world state. A chest opened, a door unlocked and a buried
       // secret dug up all land in a different bucket from `items`, and every
@@ -1898,6 +1903,65 @@ export async function installRuntime() {
   }
 
   /**
+   * SLOTTING A CHARM — `['charm', id, slot, maxF]`.
+   *
+   * THE RUN FOUGHT THE WHOLE GAME WITH ALL THREE CASES EMPTY. Thirty charms
+   * exist, every one of them is read somewhere in `src/`, `check-charms.mjs`
+   * proves each in-engine — and nothing had ever put one in a case during a
+   * run, because the scrimshaw is a MENU and this file only knew how to drive
+   * the item page. The audit could not see it either: `state()` reported items
+   * and keys and hearts and never the cases.
+   *
+   * It is the same shape as `dEquip` below it and for the same reason: press
+   * the buttons a player presses. START opens the menu, SELECT walks the tab
+   * strip to the charm page, up/down pick which CASE (low/mid/high), left and
+   * right walk the pool of charms that fit it, and A slots the one under the
+   * cursor. Nothing here reaches into `progress` and writes a case — a run
+   * that slots itself a charm is a run that was handed one.
+   *
+   * THE CASE HAS TO BE OPEN. LOW and HIGH unlock on essence counts
+   * (`CHARM_LOW_ESSENCES`, `CHARM_HIGH_ESSENCES`); MID is open from the start.
+   * A shut case answers with `deny` and a flash, so this checks the result
+   * rather than trusting the press.
+   */
+  function* dCharm(id, slot, maxF) {
+    const g = window.__game;
+    const want = (slot || 'mid').toLowerCase();
+    const TAB = 2;
+    const inCase = () => {
+      const c = g.progress.charmSlots && g.progress.charmSlots[want];
+      return !!(c && c.indexOf(id) >= 0);
+    };
+    if (inCase()) return;
+    if (!g.progress.charms || !g.progress.charms[id]) {
+      throw new Error(`charm: ${id} is not owned`);
+    }
+    for (let i = 0; i < 60 && g.mode !== 'menu'; i++) yield (i % 8 === 0) ? BIT.start : 0;
+    if (g.mode !== 'menu') throw new Error('charm: the menu would not open');
+    const m = g.menu;
+    // SELECT walks the tab strip one step at a time and wraps, so this is a
+    // press-and-release per step rather than a hold.
+    for (let i = 0; i < 12 && m.tab !== TAB; i++) { yield BIT.select; yield 0; }
+    if (m.tab !== TAB) throw new Error('charm: could not reach the charm page');
+    // The case row. `caseRow` indexes CHARM_SLOTS, and down steps it forward.
+    const rowOf = { low: 0, mid: 1, high: 2 };
+    for (let i = 0; i < 6 && m.caseSlot !== want; i++) { yield BIT.down; yield 0; }
+    if (m.caseSlot !== want) throw new Error(`charm: could not reach the ${want} case`);
+    // And the charm inside the pool that case offers.
+    for (let f = 0; f < (maxF || 600); f++) {
+      const pool = m.pool || [];
+      const t = pool.indexOf(id);
+      if (t < 0) throw new Error(`charm: ${id} does not fit the ${want} case`);
+      if (m.poolCursor === t) { yield BIT.a; yield 0; break; }
+      yield BIT.right; yield 0;
+    }
+    for (let i = 0; i < 60 && g.mode === 'menu'; i++) yield (i % 8 === 0) ? BIT.start : 0;
+    yield* dWait(4);
+    if (!inCase()) throw new Error(`charm: ${id} is still not in the ${want} case`);
+    void rowOf;
+  }
+
+  /**
    * ANCHOR PLACEMENT — the verb that was missing, and the reason the
    * playthrough stopped inside D1 for the whole life of this harness.
    *
@@ -2323,9 +2387,26 @@ export async function installRuntime() {
         + `(chain is at ${at()}, holding "${g.progress.trade.item}")`
         + `; links in this room: ${here || '(none)'}`);
     }
-    const tx = Math.floor(holder.cx / TILE), ty = Math.floor(holder.cy / TILE);
     const p0 = g.player;
     if (!p0) throw new Error('trade: no player');
+    // A TRADER WANDERS, AND THIS VERB USED TO AIM AT WHERE ONE WAS. The link's
+    // tile was read ONCE, the actor walked to the square beside it and then
+    // pressed A at that square for nine hundred frames whether or not anybody
+    // was still standing there — and an `NPC` with a wander has usually moved
+    // by the time a walk across a village screen ends. It survived for a whole
+    // session only because the chain's fifty screens happened to line up: shift
+    // every frame downstream by a few hundred (S123 added one chest in D2) and
+    // the stage-3 link stepped aside, the press hit empty air, and the verb
+    // reported "the link would not deal", which is a true sentence about the
+    // wrong problem — the same shape its own comment already warns about one
+    // paragraph down.
+    //
+    // So the approach is re-aimed: up to ATTEMPTS passes, each one reading the
+    // holder's CURRENT tile, and the press loop gives up early the moment the
+    // holder is no longer next door rather than burning its whole budget.
+    const ATTEMPTS = 4;
+  for (let attempt = 0; attempt < ATTEMPTS && at() < stage; attempt++) {
+    const tx = Math.floor(holder.cx / TILE), ty = Math.floor(holder.cy / TILE);
     // EVERY SIDE IS TRIED, AND ARRIVAL IS CHECKED. A path that PLANS is not a
     // walk that lands: the village screens are full of solid NPCs and signs,
     // and a `fight` before the trade can leave the actor on the far side of
@@ -2347,19 +2428,31 @@ export async function installRuntime() {
       break;
     }
     if (!stand) {
+      if (attempt < ATTEMPTS - 1) { yield* dWait(30); continue; }
       throw new Error(`trade: cannot get beside the stage-${stage} link at ${tx},${ty} in `
         + `${g.mapId} ${g.room && g.room.key} :: ${why.join(' | ')}`);
     }
     for (let i = 0; i < 8 && g.player.dir !== stand.face; i++) yield BIT[stand.face];
     yield* dWait(2);
     const budget = maxF || 900;
+    // NEXT DOOR, ASKED OF THE LIVE POSITIONS. One tile of slack either way,
+    // because a wandering NPC is between tiles for most of its step.
+    const beside = () => {
+      const q = playerTile(g.player);
+      const hx = Math.floor(holder.cx / TILE), hy = Math.floor(holder.cy / TILE);
+      return Math.abs(hx - q.tx) + Math.abs(hy - q.ty) <= 2;
+    };
     for (let f = 0; f < budget && at() < stage; f++) {
       if (g.dialogue.active) { yield (f % 6 === 0) ? BIT.a : 0; continue; }
       if (g.mode !== 'play' || (g.player && g.player.frozen > 0) || g.itemShow) { yield 0; continue; }
+      // Walked off? Stop pressing and go round again rather than spending the
+      // rest of the budget on an empty square.
+      if (f > 60 && !beside()) break;
       yield (f % 10 === 0) ? BIT.a : 0;
     }
     yield* dDialogueClear(120);
     yield* dWait(4);
+  }
     if (at() < stage) {
       throw new Error(`trade: the stage-${stage} link would not deal. chain at ${at()}, `
         + `holding "${g.progress.trade.item}", player `
@@ -2391,6 +2484,7 @@ export async function installRuntime() {
       else if (kind === 'tide') yield* dTide(a[0], a[1], a[2]);
       else if (kind === 'soles') yield* dSoles(a[0], a[1]);
       else if (kind === 'equip') yield* dEquip(a[0], a[1], a[2]);
+      else if (kind === 'charm') yield* dCharm(a[0], a[1], a[2]);
       else if (kind === 'anchor') yield* dAnchor(a[0], a[1], a[2]);
       else if (kind === 'unanchor') yield* dUnanchor(a[0]);
       else if (kind === 'bellows') yield* dBellows(a[0], a[1], a[2]);

@@ -311,6 +311,7 @@ console.log(`  ran ${run.frames} frames, ${run.span.roomChanges} room changes, `
 console.log(`  items at the end: ${s.items.join(', ') || '(none)'}`);
 console.log(`  acquired: ${a.gained.map(g => `${g.id}@f${g.frame}`).join(', ') || '(nothing)'}`);
 console.log(`  hearts: ended ${s.hearts}/${s.maxHearts}, low-water mark ${a.minHearts}, deaths ${a.deaths}, heart pieces carried ${s.heartPieces}`);
+console.log(`  charms: owned ${(s.charmsOwned || []).join(', ') || '(none)'} | slotted ${JSON.stringify(s.charmCases || {})} | blanks ${s.blanks}`);
 console.log(`  essences: [${s.essences.join(', ')}]  keys spent on doors: ${s.doorsChanged}  chests: ${s.chestsOpened}\n`);
 
 printHealthTable(a.roomHealth, s.maxHearts);
@@ -503,6 +504,16 @@ check('THE GAME WAS FINISHED — the Sunken Bar crossed at flood, the Brinehulk 
 // repeating: the Brinehulk was declared as a full boss rather than a miniboss,
 // `beaten` is keyed off the MAP, and the first run ever to fight it claimed
 // the sixth Essence off its body with the King's door still locked.
+// AND A CHARM WAS WORN. Thirty charms exist, every one of them is read
+// somewhere in `src/`, and `check-charms.mjs` proves each of them in-engine —
+// but until S123 no RUN had ever put one in a case, because the scrimshaw is a
+// menu page and the actor only knew how to drive the item page. The audit
+// could not see it either; it reported items and keys and hearts and never the
+// cases, so "the run wears nothing" was invisible from both ends.
+check('A CHARM WAS WORN — the scrimshaw case is not empty at the end of the run',
+  Object.values(s.charmCases || {}).some(c => (c || []).some(x => x)),
+  `owned ${(s.charmsOwned || []).join(', ') || '(none)'}, cases ${JSON.stringify(s.charmCases)}`);
+
 check('THE SIXTH ESSENCE WAS CLAIMED IN NERETH\'S OWN HALL, and not off anything else',
   s.essences.includes(6) && a.rooms.includes('d6/1,3,1'),
   `essences ${JSON.stringify(s.essences)}`);

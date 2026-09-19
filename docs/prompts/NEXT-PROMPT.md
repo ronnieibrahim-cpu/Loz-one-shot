@@ -1,47 +1,48 @@
-# Next session — play floor 1 of the Abyssal Keep
+# Next session — wear the Barnacle Skin from the Coral Spire
 
 ## Read first
 - `docs/prompts/STATE.md` — the whole file.
-- `docs/prompts/QUEUE.md` item 0. It has every room, every trap and the exact
-  shape of each leg; the directives were authored and proved at S121.
-- `docs/prompts/LEDGER.md`'s "Settled at S121" and "Settled at S122" sections.
-- `docs/NEXT-SESSION.md`, the S121 entry only.
-- `tools/playthrough-route.mjs`'s Abyssal Keep leg.
+- `docs/NEXT-SESSION.md`, the S123 entry only. It has the measurements.
+- `docs/prompts/LEDGER.md`'s "Settled at S123" section.
+- `tools/playthrough-route.mjs`'s `d2 0,3,4` leg — the comment there names the
+  room this task is about and calls it optional.
+- `src/game/scrimshaw.js`'s roster, down to the MID case.
 
 ## Why this, now
-The game plays end to end and every checker is green, so nothing is broken.
-What is left is thin: the run's low-water mark is ONE quarter-heart, inside
-Nereth's fight, and five rooms of the last dungeon have never been played
-because the run cannot afford them. Both facts have the same cause and one fix.
+The run's deepest trough is ONE quarter-heart, inside Nereth's fight, and five
+rooms of the last dungeon are unplayable because of it. `barnacleSkin` is one
+free hit per room, it is a MID charm, and it is in a chest one screen off the
+route in the Coral Spire behind a door the route's own switch puzzle already
+opens. The harness can now both fetch it and wear it. What it costs is a
+re-tune: a free hit changes knockback and invulnerability windows, so every
+fight after the slot reshuffles, and the measured casualty is Gloomtide.
 
 ## The task
-Get floor 1's west and east wings into the run, in `tools/playthrough-route.mjs`.
-Take them in the order QUEUE.md item 0 gives and stop at the first one that
-cannot be paid for — the Colonnade of the Drowned is the cheapest and the most
-worth having, because the Coilrope behind its grate is the one thing in the
-Keep that asks whether the player did the coast trade. Widening the margin is
-the point, so measure what each wing costs the run with
-`node tools/check-playthrough.mjs --trace` before adding the next one. If a
-wing cannot be paid for at the health the Keep leaves, say which and by how
-much rather than putting another fairy in.
+Get the Barnacle Skin into the Cistern Cell detour and into the MID case, and
+re-tune `tools/playthrough-route.mjs` forward from there until
+`check-playthrough` is green again. Expect the work to be Gloomtide's fight in
+the Bogwater Sanctum and whatever follows it; the tools for that fight are
+`tools/measure-boss-combat.mjs d3` and the `clearAdds` option the route already
+passes it. Do not re-tune by adding health or by weakening anything — the
+charm makes the run STRONGER, so a leg that now fails is a leg whose timing
+moved, not one that got harder.
 
 ## Done means
-- `node tools/check-playthrough.mjs` green, still ending in `d6/1,3,1` with six
+- `node tools/check-playthrough.mjs` green, ending in `d6/1,3,1` with six
   Essences, and its deepest trough deeper than one quarter-heart.
-- A new assertion naming whichever wing rooms the run now visits.
+- `barnacleSkin` in the audit's `slotted` line under `mid`.
 - `node tools/check-drift.mjs`, `node tools/test.mjs`, `node tools/replay.mjs`,
-  `node tools/check-lens.mjs`, `node tools/check-bosses.mjs`,
-  `node tools/check-charms.mjs`, `node tools/check-hearts.mjs`,
-  `node tools/walk-dungeons.mjs`, `node tools/check-dungeon-strands.mjs`.
+  `node tools/check-trade.mjs`, `node tools/check-charms.mjs`,
+  `node tools/check-bosses.mjs`, `node tools/check-hearts.mjs`.
 - `npm run build` with `dist/oracle-of-tides.html` committed.
-- A person reads the room table and sees the Coilrope in the run's charms.
+- A person reads the room table and sees a bigger number at the bottom of it.
 
 ## Out of scope
-- Weakening Nereth, the Brinehulk, the tideshade or any enemy's contact damage.
-- A second fairy anywhere in the Keep. One was added at S121 and it is enough
-  to finish on; more is a tax on the fight rather than a fix for the route.
-- A 25th heart piece. The world has 24, which is exactly six containers, and a
-  25th puts the heart cap outside P9's window. Settled at S122.
-- Teaching `travel` to cross a floor or plan a warp. Every stair in the Keep is
-  named by hand and stays that way.
-- Re-measuring the coast trade, the Keep's floor 0, or the Crossed Shafts.
+- Floor 1 of the Abyssal Keep's wings. They cost nine quarter-hearts and the
+  run has one; come back to them once the margin is real.
+- Weakening Nereth, Gloomtide, the Brinehulk or any enemy's contact damage.
+- Another fairy, another heart piece, or any other way of adding health. The
+  point of this task is that the run takes less damage, not that it has more.
+- Making `dFight` or `dBoss` cleverer. A fight that regresses here regressed
+  because its timing moved.
+- Re-measuring the Colonnade round trip or the coast trade. Settled at S123.

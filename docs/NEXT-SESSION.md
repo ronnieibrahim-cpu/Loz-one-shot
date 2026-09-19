@@ -1,3 +1,79 @@
+## S123 — the run wears a charm, and the trader no longer has to stand still
+
+The objective was floor 1 of the Abyssal Keep. It is not in the run and the
+reason it is not is written up below; what came out of trying is bigger than
+the wing was going to be.
+
+### NO RUN HAD EVER WORN A CHARM
+
+Thirty charms exist. Every one of them is read somewhere in `src/`,
+`check-charms.mjs` proves each of them in-engine, and the whole system is the
+one that replaced rings. **Not one had ever been put in a case during a run**,
+for a hundred and seventy thousand frames, and it was invisible from both ends:
+the scrimshaw is a MENU PAGE and the actor only knew how to drive the item
+page, and the audit reported items and keys and hearts and never the cases.
+
+  * New directive: `['charm', id, slot, maxF]`. START, SELECT to the charm tab,
+    up/down for the case, left/right through the pool, A. It presses the
+    buttons a player presses and it verifies the case afterwards; nothing
+    reaches into `progress` and writes a slot.
+  * The audit prints `charms: owned … | slotted … | blanks …`.
+  * `check-playthrough` now asserts A CHARM WAS WORN.
+  * The run wears the Gillcarve in the HIGH case, slotted at the Keep Gate.
+
+### A TRADER WANDERS, AND `dTrade` AIMED AT WHERE ONE WAS
+
+`dTrade` read the link's tile ONCE, walked to the square beside it, and then
+pressed A at that square for nine hundred frames whether or not anybody was
+still standing there. An `NPC` with a wander has usually moved by the time a
+walk across a village screen ends. It survived a whole session only because the
+chain's fifty screens happened to line up — shift every frame downstream by a
+few hundred and the stage-3 link steps aside, the press hits empty air, and the
+verb reports "the link would not deal", which is a true sentence about the
+wrong problem. The approach is now re-aimed up to four times off the holder's
+CURRENT tile, and the press loop gives up the moment the holder is no longer
+next door instead of burning its budget on an empty square. **This fix is what
+let the chain survive the experiment below**, and it is worth having whatever
+happens to the rest of it.
+
+### THE BARNACLE SKIN IS THE CHARM THIS RUN WANTS AND IT CANNOT HAVE IT YET
+
+`barnacleSkin` is ONE FREE HIT PER ROOM, it is a MID charm, and the Abyssal
+Keep costs three quarter-hearts a screen crossed. It is in a chest in the Coral
+Spire's Cistern Cell — ONE SCREEN off the route, behind a door the route's own
+switch puzzle already opens — and `playthrough-route.mjs`'s own comment there
+has said "(skipped, an optional charm)" for the whole life of the file.
+
+Fetching it was measured and it loses the run, twice over and for two different
+reasons:
+
+  * **The detour alone shifts every frame downstream.** Two screens and a chest,
+    and the stage-3 trader walks out from under the press fifty screens later.
+    That one is now FIXED in `dTrade` and is no longer a reason.
+  * **Wearing it from D2 reshuffles every fight after it.** A free hit is a hit
+    that does not knock you back, does not spend an invulnerability window and
+    does not move the frame the next swing lands on. Gloomtide — the fight S113
+    and S114 worked to seven wins in ten — comes up a LOSS, and the run dies in
+    the Bogwater Sanctum. Slotting it late instead, at the Keep Gate, walked
+    the run out of the Keep Gate's south door on a path it had taken east a
+    hundred times, because sixteen frames of menu is enough to move a wizzrobe.
+
+**The charm is not the problem and neither is that fight. A hundred and seventy
+thousand frames of recorded route is.** This is the "a five-line change to the
+movement path is never a five-line change" rule from CLAUDE.md, at the scale
+the route has now reached, and it is going to be true of every future change to
+an early leg. Anyone picking this up should expect to re-tune from the slot
+forward, and should do it with the Keep's margin as the target: the trough is
+still ONE quarter-heart.
+
+### FLOOR 1'S WINGS, PRICED
+
+Measured this session, entering on twenty-six: the Colonnade round trip —
+Upper Keep to the Shade Cell to the Colonnade and back — costs NINE
+quarter-hearts and pays the Coilrope. Four of those nine are crossing the Shade
+Cell, three are crossing it back, two are the Colonnade's beamos. The run's
+whole slack is one. Nothing changed.
+
 ## S122 — the last two red checkers were both checkers, not the game
 
 `check-charms` and `check-hearts` are green. Neither fault was in the world;
