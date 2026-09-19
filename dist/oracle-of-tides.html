@@ -26777,7 +26777,19 @@ function installBosses() {
     frames: ['boss_brinehulk_0', 'boss_brinehulk_1', 'boss_brinehulk_2'],
     hurtFrame: 'boss_brinehulk_hurt',
     intro: 90, shell: true, terrain: 'any', drops: 'none',
-    init(e) { e._open = 0; },
+    // IT IS A MINIBOSS, AND NOTHING SAID SO UNTIL SOMETHING KILLED IT. The
+    // six-dungeon fold left the Brinehulk homeless and it was re-housed in the
+    // Crossed Shafts, two doors short of Nereth, keeping the Boss Key — but it
+    // was still declared the way a room's own boss is declared. `beaten` is
+    // keyed off the MAP (see the header note above `miniInit`), so the first
+    // run that ever fought it CLAIMED THE SIXTH ESSENCE off its body, in a
+    // room the King is not in, with his door still locked: the Abyssal Keep
+    // could be finished without meeting the thing the whole game is about.
+    // `tools/check-playthrough.mjs` is what found it — `essences: [6]` in the
+    // trace at `d6/1,4,2` — and nothing else in the repo could, because no
+    // model in the verification table fights anything.
+    init(e) { e._open = 0; miniInit(e); },
+    onDie: miniDie,
     onIntro(e, g) { unlockTide(g); },
     onPhase(e, g, i) {
       if (i === 2) { summon(g, e, 'beetle', 2); g.shake(SHAKE_BOSS_SLAM, SHAKE_BOSS_SLAM_FRAMES); }
@@ -31950,6 +31962,30 @@ function installDungeonsB() {
       // ---------------------------------------------------- the way out
       '1,3,2': {
         name: 'Keep Gate',
+        // THE LAST ROOM BEFORE THE KING, AND IT HOLDS THE KEEP'S SECOND FAIRY.
+        // Every other dungeon in the game has a fairy standing in it — D1 and
+        // D2 twice over — and this floor had none: six rooms of shaft
+        // crossings, an armoured colossus and then Nereth, with nothing on it
+        // to heal on at all. The Keep's only fairy is the West Crypt's, two
+        // floors and half a dungeon back, and it is spent long before here.
+        //
+        // The number, measured rather than guessed. The run steps into this
+        // room on thirteen of forty-four; the Crossed Shafts and the Brinehulk
+        // cost eleven; Nereth costs twenty-nine
+        // (`node tools/measure-boss-combat.mjs d6 --qh=32`, and he cannot be
+        // beaten at any other sea than MID). Thirteen against forty is not a
+        // margin, it is a wall — and every route answer was measured and worse
+        // (floor 1's two wings cost more than the floor pays back, and a trip
+        // back down the stair for the crypt's own fairy KILLED the run at the
+        // Three Heights, twice).
+        //
+        // It stands in the corner, off both the way in from the south and the
+        // way east to the shafts, so it is taken deliberately and not walked
+        // over — the same placement rule Shell Beach's fairy follows. Like
+        // every placed fairy in the game it comes back when the room is
+        // re-entered, which is what makes it a fairy ROOM rather than a
+        // pickup: the run drinks on the way to the Boss Key and again on the
+        // way back from it, and that is exactly how a player uses one.
         map: [
           '####..####',
           '#........#',
@@ -31962,6 +31998,7 @@ function installDungeonsB() {
         ],
         entities: [
           ['wizzrobe', 6, 5],
+          ['pickup', 1, 6, { kind: 'fairy' }],
         ],
       },
       '1,4,2': {

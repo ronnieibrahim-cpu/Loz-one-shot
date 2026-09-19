@@ -310,7 +310,7 @@ console.log(`  ran ${run.frames} frames, ${run.span.roomChanges} room changes, `
   + `${a.rooms.length} distinct rooms, ended in ${s.mapId}/${s.room} mode "${s.mode}"`);
 console.log(`  items at the end: ${s.items.join(', ') || '(none)'}`);
 console.log(`  acquired: ${a.gained.map(g => `${g.id}@f${g.frame}`).join(', ') || '(nothing)'}`);
-console.log(`  hearts: ended ${s.hearts}/${s.maxHearts}, low-water mark ${a.minHearts}, deaths ${a.deaths}`);
+console.log(`  hearts: ended ${s.hearts}/${s.maxHearts}, low-water mark ${a.minHearts}, deaths ${a.deaths}, heart pieces carried ${s.heartPieces}`);
 console.log(`  essences: [${s.essences.join(', ')}]  keys spent on doors: ${s.doorsChanged}  chests: ${s.chestsOpened}\n`);
 
 printHealthTable(a.roomHealth, s.maxHearts);
@@ -467,6 +467,45 @@ check('THE ABYSSAL KEEP WAS PLAYED TO NERETH\'S OWN DOOR — its four keys earne
   `dredge ${s.items.includes('dredge')}, kilnshell ${s.items.includes('kilnshell')}, `
   + `flags missing ${D6_FLAGS.filter(f => !(s.flags || []).includes(f)).join(' ') || '(none)'}, `
   + `rooms missing ${['d6/1,4,3', 'd6/1,3,2'].filter(r => !a.rooms.includes(r)).join(' ') || '(none)'}`);
+
+// AND THEN THE REST OF IT — the Sunken Bar, the Crossed Shafts, the Boss Key,
+// and the King. This is the assertion the whole verification table has been
+// short of since the project started: not "every room can be reached" or
+// "every item does its verb", but THE GAME CAN BE FINISHED, by playing it.
+//
+//   * THE KEEP'S THIRD CROSSING. The route has always taken the Drowned Stand
+//     and the Drowned Sill, which are both LOW. The Sunken Bar is the one that
+//     runs the fixture the other way — the bar is down at slack and up at
+//     flood, so the line only crosses at HIGH and the cache under the far
+//     shelf only gives up its Piece of Heart at MID. The room costs nothing
+//     and no run had ever been in it.
+//   * THE BOSS KEY, AND THE THING KEEPING IT. The Crossed Shafts is the only
+//     room in the dungeon holding both crossings, and the Brinehulk is
+//     armoured at the one sea the shelf can be crossed at. It is beaten by
+//     putting the water back up once you are across, which is the conch
+//     answering the last question the dungeon asks.
+//   * NERETH. Beaten in real combat, at MID, on the health the Keep actually
+//     leaves — no god mode, nothing granted, and the low-water mark of the
+//     whole run is one quarter-heart inside this fight.
+//   * THE SIXTH ESSENCE, WALKED INTO. A boss's death spawns the Essence and it
+//     is claimed by touching it; the five before this were all taken in a
+//     shooter and never in a run.
+check('THE GAME WAS FINISHED — the Sunken Bar crossed at flood, the Brinehulk beaten for the Boss Key, and NERETH KILLED IN REAL COMBAT',
+  a.rooms.includes('d6/1,2,3') && a.rooms.includes('d6/1,4,2')
+    && a.rooms.includes('d6/1,3,1') && !!(s.beaten || {}).d6,
+  `Sunken Bar ${a.rooms.includes('d6/1,2,3')}, Crossed Shafts ${a.rooms.includes('d6/1,4,2')}, `
+  + `throne room ${a.rooms.includes('d6/1,3,1')}, d6 beaten ${!!(s.beaten || {}).d6}`);
+
+// AND THE SIXTH ESSENCE IS IN HAND, which is a different fact from the boss
+// being dead and is the one the ending chains off. `GOAL.essences` already
+// covers the count; this names the last one, because "the boss died" was true
+// in the Crossed Shafts too, two rooms early, for a reason worth never
+// repeating: the Brinehulk was declared as a full boss rather than a miniboss,
+// `beaten` is keyed off the MAP, and the first run ever to fight it claimed
+// the sixth Essence off its body with the King's door still locked.
+check('THE SIXTH ESSENCE WAS CLAIMED IN NERETH\'S OWN HALL, and not off anything else',
+  s.essences.includes(6) && a.rooms.includes('d6/1,3,1'),
+  `essences ${JSON.stringify(s.essences)}`);
 
 // AND IT ARRIVES WITH ENOUGH HEALTH TO FIGHT WHAT IS DOWN THERE. This is the
 // one number the chain leg could not assert when it landed: the tour costs

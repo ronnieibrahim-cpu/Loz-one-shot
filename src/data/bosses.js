@@ -680,7 +680,19 @@ export function installBosses() {
     frames: ['boss_brinehulk_0', 'boss_brinehulk_1', 'boss_brinehulk_2'],
     hurtFrame: 'boss_brinehulk_hurt',
     intro: 90, shell: true, terrain: 'any', drops: 'none',
-    init(e) { e._open = 0; },
+    // IT IS A MINIBOSS, AND NOTHING SAID SO UNTIL SOMETHING KILLED IT. The
+    // six-dungeon fold left the Brinehulk homeless and it was re-housed in the
+    // Crossed Shafts, two doors short of Nereth, keeping the Boss Key — but it
+    // was still declared the way a room's own boss is declared. `beaten` is
+    // keyed off the MAP (see the header note above `miniInit`), so the first
+    // run that ever fought it CLAIMED THE SIXTH ESSENCE off its body, in a
+    // room the King is not in, with his door still locked: the Abyssal Keep
+    // could be finished without meeting the thing the whole game is about.
+    // `tools/check-playthrough.mjs` is what found it — `essences: [6]` in the
+    // trace at `d6/1,4,2` — and nothing else in the repo could, because no
+    // model in the verification table fights anything.
+    init(e) { e._open = 0; miniInit(e); },
+    onDie: miniDie,
     onIntro(e, g) { unlockTide(g); },
     onPhase(e, g, i) {
       if (i === 2) { summon(g, e, 'beetle', 2); g.shake(SHAKE_BOSS_SLAM, SHAKE_BOSS_SLAM_FRAMES); }

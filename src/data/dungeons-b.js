@@ -1630,6 +1630,30 @@ export function installDungeonsB() {
       // ---------------------------------------------------- the way out
       '1,3,2': {
         name: 'Keep Gate',
+        // THE LAST ROOM BEFORE THE KING, AND IT HOLDS THE KEEP'S SECOND FAIRY.
+        // Every other dungeon in the game has a fairy standing in it — D1 and
+        // D2 twice over — and this floor had none: six rooms of shaft
+        // crossings, an armoured colossus and then Nereth, with nothing on it
+        // to heal on at all. The Keep's only fairy is the West Crypt's, two
+        // floors and half a dungeon back, and it is spent long before here.
+        //
+        // The number, measured rather than guessed. The run steps into this
+        // room on thirteen of forty-four; the Crossed Shafts and the Brinehulk
+        // cost eleven; Nereth costs twenty-nine
+        // (`node tools/measure-boss-combat.mjs d6 --qh=32`, and he cannot be
+        // beaten at any other sea than MID). Thirteen against forty is not a
+        // margin, it is a wall — and every route answer was measured and worse
+        // (floor 1's two wings cost more than the floor pays back, and a trip
+        // back down the stair for the crypt's own fairy KILLED the run at the
+        // Three Heights, twice).
+        //
+        // It stands in the corner, off both the way in from the south and the
+        // way east to the shafts, so it is taken deliberately and not walked
+        // over — the same placement rule Shell Beach's fairy follows. Like
+        // every placed fairy in the game it comes back when the room is
+        // re-entered, which is what makes it a fairy ROOM rather than a
+        // pickup: the run drinks on the way to the Boss Key and again on the
+        // way back from it, and that is exactly how a player uses one.
         map: [
           '####..####',
           '#........#',
@@ -1642,6 +1666,7 @@ export function installDungeonsB() {
         ],
         entities: [
           ['wizzrobe', 6, 5],
+          ['pickup', 1, 6, { kind: 'fairy' }],
         ],
       },
       '1,4,2': {

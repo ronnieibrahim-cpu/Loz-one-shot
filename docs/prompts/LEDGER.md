@@ -1030,6 +1030,29 @@ unwritten because it re-sweeps every recorded frame in the repo.
 Floor wrote this down and the Shrine Ford repeated it. Wide rooms are crossed,
 not cleared, until `dFight` learns a radius.
 
+## Settled at S121 — the game plays to the end
+
+**THE GAME CAN BE FINISHED, AND IT HAS BEEN.** `check-playthrough.mjs` drives a
+new game to the sixth Essence and the ending, 37 assertions, nothing granted.
+Do not re-derive the Keep's floor-1 order; it is in the route beside each step.
+
+**The Brinehulk is a MINIBOSS.** It was declared as a full boss, so killing it
+marked the Keep beaten and claimed the sixth Essence two rooms short of Nereth.
+`init: miniInit, onDie: miniDie`. Never re-house a boss without those two lines.
+
+**Nereth is beaten at MID and at no other sea.** LOW and HIGH both kill the
+player. The throne room is `noTide`, so the conch is spent at the Keep Gate.
+
+**A PLACED PICKUP DOES NOT RESPAWN.** A room is built once and kept, entities
+and all. Never budget health on a second helping of the same fairy.
+
+**Floor 1's two wings are not affordable at the health the Keep leaves.** Both
+are authored and proved in isolation (QUEUE.md) and both killed the real run.
+Do not re-measure them by hand.
+
+**The Sunken Bar costs nothing** — twenty in, twenty out — and is the Keep's
+only HIGH crossing.
+
 ## Settled at S120 — the Abyssal Keep plays to the Keep Gate
 
 **The Keep's first four keys and four locks are routed and proved.** Do not

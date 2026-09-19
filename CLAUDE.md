@@ -176,12 +176,10 @@ they are also how a future session finds which sheet a tile came from.
   The cost was exactly as predicted — every replay wanted re-recording — which
   is the reusable part: **a five-line change to the movement path is never a
   five-line change**, because the recorded baselines are downstream of it.
-  What is still open is not the engine but the ROUTE: `tools/playthrough-route.mjs`
-  drives the actor, and the actor has no directive for placing the Tidewright's
-  Anchor, so `check-playthrough.mjs` stops partway through D1 at `d1/0,3,2` and
-  says so in its own output. That is a harness gap, not a game blocker — but
-  until it is closed, NOTHING HAS PLAYED THIS GAME TO THE END, and the rule
-  below still stands: every other tool proves a part.
+  **THE GAME HAS NOW BEEN PLAYED TO THE END** (S121): `check-playthrough.mjs`
+  drives a new game from the title screen to Nereth's death, the sixth Essence
+  and the ending. The rule below still stands — every other tool proves a part
+  — and it is now backed by a run rather than by an argument.
 - **A test that fails intermittently is a real bug, not load flakiness.** If a
   seeded, deterministic run varies, the non-determinism is in initialisation
   order. Find it. Never add a retry.
@@ -254,7 +252,7 @@ they are also how a future session finds which sheet a tile came from.
 | `node tools/check-torches.mjs` | Something in `src/` actually EMITS the `'fire'` tile action, and no torch-gated key is the only key on its floor — the shape that deadlocked D2 behind a flame nothing could make |
 | `node tools/check-bosses.mjs` | Every dungeon's declared boss actually spawns in its declared boss room, and its weak point OPENS at its design tide — so no boss is unkillable by construction, which no model in this table can see because none of them fights anything. Runs in GOD MODE and says so: it measures the fights, it does not yet claim them |
 | `node tools/check-respawn.mjs` | A DEATH puts the player back where the source games would put him, and costs him nothing but the hearts. `progress.respawn` was written once by `newProgress` and never again, so every death anywhere in the world — a boss room, a cave on the far rim, the seafloor of D6 — dumped the player outside the Maku Tree in Tidewatch Village with the whole map to walk again. Nothing in the table could see it: every other tool models a PART, none of them dies, and `check-playthrough` asserts that its run never died at all. Asserts in-engine that an overworld seam moves the point and a dungeon, cave or house takes it ONCE on the way in (so dying on D2's floor 1 puts you at D2's mouth, not in the room that killed you), that the point is inside its room and standable per `canOccupy`, that the sea comes back at the level the point was taken at, that items, keys, boss keys, maps, opened doors, opened chests, flags, Essences, rupees and heart containers all survive, and that the run is written to its slot. 16 of its 42 assertions go red with the recording disabled. Also that a death in a REAL BOSS FIGHT lets go of the boss handle (the HUD drew a bar for a ghost), does not mark the dungeon beaten, and leaves the boss standing to be fought again — and that a death takes whatever was ON TOP of the game with it: `respawn` sets `mode = 'play'` unconditionally, and a cutscene, a text box and its queue, a pending fade callback and the item and room banners all used to survive it and land on the room the player was put back in. And — the one thing 60 in-session assertions could not see — that a SAVE carries the point and a LOAD does not move it: `loadGame` enters the saved map with `mapId` unset, so `changedMap` was true and the point was restamped on the room the save was made in, and a player who saved four rooms into a dungeon respawned four rooms into it on every death for the rest of the run. 64 assertions; 6 go red with the teardown removed and 3 with the load guard removed |
-| `node tools/check-playthrough.mjs` | A new game, driven in the real engine with no items granted, no warps and no flags set from outside, gets as far through the world as the world allows — and the thing currently stopping it is still the thing that was stopping it |
+| `node tools/check-playthrough.mjs` | **THE GAME CAN BE FINISHED.** A new game, driven in the real engine with no items granted, no warps and no flags set from outside, plays from the title screen to the ending: all six dungeons in order, every Small Key earned and spent, the Coastwise Chain walked, six bosses and three minibosses beaten in real combat, Nereth killed and the sixth Essence claimed. S121. It is also the only tool that FIGHTS anything, which is how it found that the Brinehulk was declared as a full boss and was handing out the sixth Essence two rooms short of the throne room — the last dungeon could be finished without ever meeting the King, with every other tool in this table green |
 | `node tools/check-drift.mjs` | The standing session charter's own documents (`docs/prompts/CHARTER.md`) haven't decayed. Measures sized-room variety, per-item capability reuse, `feel.js` provenance tags, and overworld-room audit progress — the four numbers the charter's rotation objectives track — but does not judge any of them; it exits non-zero only if `docs/prompts/NEXT-PROMPT.md` or `docs/prompts/STATE.md` have grown past their own size caps or lost their required shape. A session run under the charter cannot end green without it |
 | `node tools/test.mjs` | Everything else |
 
@@ -263,7 +261,8 @@ They are faster than you are and they do not rationalise.
 
 **Every one of those tools proves a PART. `check-playthrough.mjs` is the only
 one that plays the game, and it is the only one that proves the game is
-finishable — no session ends green without it.** The rest are models, and a
+finishable — no session ends green without it. Since S121 it plays the whole
+game, end to end.** The rest are models, and a
 model does not fight a boss, spend a key or press a button — which is how
 seven hundred green assertions once described a world that could not be
 finished. On its first run the playthrough harness found that the world

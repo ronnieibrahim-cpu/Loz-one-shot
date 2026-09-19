@@ -2498,6 +2498,37 @@ export const ROUTE = [
   // the east one is spent first: what is behind it is the fourth key, and the
   // north one is the way on. Get that order wrong and the dungeon is over.
   ['travel', 3, 3, 4000],
+
+  // ---------------------------------------------------- THE SUNKEN BAR
+  // CROSSING 2, AT HIGH, and the one the Keep had never been made to play.
+  // The route has always taken the Drowned Stand and the Drowned Sill, which
+  // are both LOW crossings; this is the room that runs the fixture the other
+  // way round, and it holds the Keep's second Piece of Heart.
+  //
+  // THE BAR IS DOWN AT SLACK AND UP AT FLOOD, and everything in the room
+  // follows from that. The lintel at 6,4 is stone at LOW and at MID and open
+  // water at HIGH, so the sea has to come UP to get the line across; the
+  // cache under 2,1 and 3,1 is fished off a shelf that is over your head at
+  // HIGH, so the sea has to go back DOWN to collect it; and the way home is
+  // the lintel again. Three tide states, and neither half can be bought at
+  // the other's sea. The whole room costs NOTHING — measured: in on twenty,
+  // out on twenty.
+  ['travel', 2, 3, 4000],
+  ['goto', 7, 4, 1500],
+  ['tide', 2, 140, 900],
+  ['dredge', 7, 4, 'left', [4, 4], 2400],
+  ['wait', 60],
+  ['tide', 1, 140, 900],
+  ['dredge', 2, 2, 'up', 'fish', 2400],
+  ['loot', 900],
+  ['dredge', 3, 2, 'up', 'fish', 2400],
+  ['loot', 900],
+  ['tide', 2, 140, 900],
+  ['dredge', 4, 4, 'right', [7, 4], 2400],
+  ['wait', 60],
+  ['goto', 9, 3, 1500],
+  ['exit', 'right', 600],
+
   ['goto', 6, 5, 1500],
   ['hold', ['right'], 24],
   ['tap', 'a', 30],
@@ -2531,7 +2562,135 @@ export const ROUTE = [
   ['dialogue', 300],
   ['goto', 4, 1, 900],
   ['exit', 'up', 600],
+
+  // ---------------------------------------------------- THE KEEP GATE
+  // THE LAST FAIRY IN THE GAME, and the run drinks it on the way past. The
+  // Keep Gate is the room at the foot of Nereth's stair and it is the only
+  // thing to heal on above the West Crypt, two floors and half a dungeon
+  // back; the run steps into it on sixteen of forty-four with the Crossed
+  // Shafts and the King both still in front of it.
+  //
+  // IT IS TAKEN ONCE AND IT IS GONE. A room outlives the visit — the Keep Gate
+  // is built once and kept — so a pickup collected here does not come back
+  // when the run walks through again with the Boss Key, whatever a fresh-room
+  // reading of the data would suggest. Measured: sixteen in, twenty-four
+  // healed, nothing on the return.
+  //
+  // KILLING THE ROOM'S WIZZROBE TO SAVE THE RETURN TRIP'S SIX QUARTER-HEARTS
+  // WAS MEASURED AND IS WORSE — twice. The two extra fights cost more than the
+  // crossing does and, worse, they move every frame downstream of them: the
+  // Brinehulk's own arrival and the shafts' casts are all phase-locked to the
+  // frame the room was entered on, and the run that saved six quarter-hearts
+  // here arrived at the Crossed Shafts on three.
   ['loot', 600],
+
+  // ================= THE CROSSED SHAFTS, AND THE BOSS KEY ==================
+  // The only room in the Abyssal Keep that holds both crossings, and the room
+  // the whole dungeon has been teaching for. Two screens wide because it has
+  // to be: a lintel crossing and a shelf crossing are four tiles each and the
+  // islands between them are the room.
+  //
+  // IN AT HIGH OVER THE BAR, DOWN TO LOW ON THE SHELF. The `7` lintel at 5,2
+  // is stone below HIGH, so the first cast only happens at flood; the `3`
+  // shelf at 11,5 is braced only at slack, so the second only happens at ebb.
+  // The sea that gets you in is the sea that stops you going on, and there is
+  // no arrangement of the conch that holds both. The king's own inscription
+  // on the near island says so and it is the only one in the Keep that is
+  // signed.
+  ['equip', 'dredge', 'A', 400],
+  ['equip', 'conch', 'B', 400],
+  ['goto', 9, 4, 1500],
+  ['exit', 'right', 600],
+  ['tide', 2, 140, 900],
+  ['dredge', 4, 2, 'right', [7, 2], 2400],
+  ['wait', 60],
+  ['tide', 0, 140, 900],
+  ['dredge', 11, 5, 'right', [14, 5], 2400],
+  ['wait', 60],
+
+  // THE BRINEHULK, AND THE JOKE THE ROOM IS BUILT ON. Brine dissolves salt:
+  // the colossus is armoured at LOW and comes apart at HIGH — and LOW is the
+  // only sea the shelf lets you cross on, so you arrive at the one sea it
+  // cannot be hurt at. The answer is the conch, and it is the answer the
+  // dungeon has been asking for since its first room: put the water back up
+  // once you are standing on the far island, and the crust goes soft. Fought
+  // at LOW it simply cannot be hurt; fought at HIGH it dies in eight hundred
+  // frames for six quarter-hearts.
+  ['tide', 2, 140, 900],
+  ['equip', 'sword', 'A', 400],
+  ['boss', 12000, 'brinehulk'],
+  ['wait', 240],
+  ['loot', 1200],
+
+  // THE BOSS KEY. The chest on the far island, and the last locked thing in
+  // the game.
+  ['goto', 17, 4, 1500],
+  ['hold', ['up'], 24],
+  ['tap', 'a', 30],
+  ['dialogue', 600],
+  ['wait', 180],
+  ['loot', 600],
+
+  // AND BACK, which is the same two crossings in reverse and at the same two
+  // seas — every crossing in this dungeon carries a mooring on the near side
+  // as well, so nothing here is one-way.
+  ['equip', 'dredge', 'A', 400],
+  ['tide', 0, 140, 900],
+  ['dredge', 14, 5, 'left', [11, 5], 2400],
+  ['wait', 60],
+  ['tide', 2, 140, 900],
+  ['dredge', 7, 2, 'left', [4, 2], 2400],
+  ['wait', 60],
+  ['goto', 0, 4, 1500],
+  ['exit', 'left', 600],
+
+  // ================= NERETH, THE DROWNED KING ==============================
+
+  // THE GREAT LOCK. The boss door is in this room's own north wall and the
+  // Boss Key the Brinehulk was keeping is what opens it.
+  //
+  // THE SEA GOES TO MID BEFORE THE DOOR, and it is the only thing about this
+  // fight the route gets to choose. The throne room is `noTide`: it pins
+  // itself at whatever sea was carried through the door and Nereth's own
+  // phases pin it again after that, so the conch is spent here or not at all.
+  // Measured at all three (`tools/measure-boss-combat.mjs d6 --tide=N`): MID
+  // is won on twenty-nine quarter-hearts, LOW and HIGH both kill the player
+  // at thirty-two. At LOW he is a contact fight the swordsman cannot back out
+  // of; at HIGH he is nothing else at all.
+  ['equip', 'conch', 'B', 400],
+  ['tide', 1, 140, 900],
+  ['equip', 'sword', 'A', 400],
+  ['goto', 4, 3, 1500],
+  ['hold', ['up'], 24],
+  ['tap', 'a', 30],
+  ['dialogue', 600],
+  ['goto', 4, 1, 900],
+  ['exit', 'up', 900],
+
+  // AND THE KING. `nerethIntro` plays on the way in — the first cutscene in
+  // the game that has ever fired inside a real run rather than in a shooter —
+  // and then the fight is the fight. His shell is pinned by whichever level
+  // his current phase wants, which is why `dBoss` reaches for the conch when
+  // he locks: `tideEscape` on his spec returns the level doing the locking,
+  // and the next step of the cycle is always some other one.
+  ['dialogue', 1800],
+  ['boss', 20000, null],
+  ['wait', 300],
+  ['loot', 1200],
+
+  // THE SIXTH ESSENCE. It is not a drop and `loot` will not find it: a boss's
+  // death spawns an `essence` entity at the room's own 4,3 after a delay, and
+  // it is claimed by WALKING INTO IT. Nothing had ever had to do that in a run
+  // before — the five before this were all taken in a shooter.
+  ['wait', 240],
+  ['goto', 4, 3, 2400],
+  ['wait', 240],
+
+  // AND THE ENDING, which chains off the sixth claim (`Game.claimEssence`
+  // queues it — S43) and is the last thing in the game. The run sits through
+  // it the way a player does.
+  ['dialogue', 6000],
+  ['wait', 600],
 ];
 
 /**
@@ -2590,12 +2749,11 @@ export const ROUTE = [
  * DIAGONAL ONLY, and it cannot plan out of a room with one door.
  */
 export const GOAL = {
-  essences: [1, 2, 3, 4, 5],
-  // The room the run finishes in: the Keep Gate, at the foot of Nereth's own
-  // stair — all four of the Abyssal Keep's Small Keys earned and all four of
-  // its locked doors opened, the Dredge Line taken out of its vault and three
-  // holes crossed with it. What is left is the Boss Key and the King.
-  room: 'd6/1,3,2',
+  essences: [1, 2, 3, 4, 5, 6],
+  // The room the run finishes in: the throne room, with Nereth dead, the
+  // sixth Essence claimed and the ending playing. This is the end of the
+  // game.
+  room: 'd6/1,3,1',
   needsVerb: null,
   keysNeeded: 18,
   keysObtainable: 18,

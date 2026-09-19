@@ -1,3 +1,99 @@
+## S121 — the game is finished: Nereth is dead and the sixth Essence is claimed
+
+`check-playthrough.mjs` now drives a new game from the title screen to the
+ending cutscene. 37 assertions green. **Nothing in this repo had ever finished
+this game**, and the verification table's own note — "every one of those tools
+proves a PART" — can finally be answered.
+
+The run: `d6/1,3,1`, six Essences, 47 of 48 quarter-hearts at the end, zero
+deaths, 170138 frames, and the whole thing replays to the pixel.
+
+### THE BRINEHULK WAS HANDING OUT THE SIXTH ESSENCE
+
+The single worst thing found this session, and only a run could find it. The
+six-dungeon fold re-housed the Brinehulk in the Crossed Shafts (`d6/1,4,2`),
+two doors short of Nereth, keeping the Boss Key — but it was still DECLARED the
+way a room's own boss is declared, with no `miniInit`. `progress.beaten` is
+keyed off the MAP, so the first run that ever fought it marked the Abyssal Keep
+beaten and claimed the sixth Essence off its body, in a room the King is not
+in, with his door still locked. The trace said `essences: [6]` at `d6/1,4,2`.
+
+**The Abyssal Keep could be finished without meeting the thing the whole game
+is about.** `check-bosses` could not see it (it asks whether a dungeon's
+DECLARED boss spawns in its DECLARED boss room, and Nereth does); `walk-dungeons`
+could not see it; nothing else in the table fights anything. Fixed by giving
+the Brinehulk `init: miniInit` and `onDie: miniDie`, the same two lines every
+other miniboss in the game carries.
+
+### FLOOR 1 OF THE KEEP HAD NOTHING TO HEAL ON, AND EVERY OTHER DUNGEON DOES
+
+The run steps off the Keep Stair on twenty-seven of forty-four. What is left is
+six rooms of shaft crossings, an armoured colossus and Nereth, and Nereth costs
+twenty-nine (`node tools/measure-boss-combat.mjs d6 --qh=32`; he is won at MID
+and LOST at both LOW and HIGH, so the sea carried through the door is the only
+thing about that fight the route chooses). The Keep's only fairy is the West
+Crypt's, on floor 0, and it is spent long before.
+
+Every other dungeon in the game has a placed fairy standing in it — D1 and D2
+twice over. Floor 1 of the last one had none. The Keep Gate now holds one, in
+the corner at 1,6, off both the way in from the south and the way east to the
+shafts. Measured: sixteen in, twenty-four healed.
+
+**Three route answers were measured first and all three were worse**, which is
+why the fairy is a world change and not a grant:
+
+  * **Floor 1's two wings cost more than the floor pays back.** Both wings
+    played end to end in isolation for a net FOUR quarter-hearts (the Shade
+    Cell's heart and the tideshade's drops nearly cover them) — but "in
+    isolation" means "entered on twenty-seven". In the real run the Shade Cell's
+    darknut-and-wizzrobe clearing went to ZERO on twenty-six, and with the cell
+    crossed rather than cleared the tideshade killed the run on nineteen. The
+    legs themselves are authored and proved and are parked in
+    `docs/prompts/QUEUE.md`; they want a healthier run, not a better route.
+  * **Going back down the stair for the crypt's own fairy KILLS the run.** Three
+    screens each way at six quarter-hearts a screen, and `travel` cannot even
+    plan into the West Crypt from the Three Heights. Measured: dead at
+    `d6/0,3,4`, twice.
+  * **Killing the Keep Gate's wizzrobe to save the return trip's six
+    quarter-hearts is worse, twice over.** The two extra fights cost more than
+    the crossing, and they move every frame downstream: the run that saved six
+    here arrived at the Crossed Shafts on three.
+
+### A PLACED PICKUP DOES NOT COME BACK
+
+The fairy was routed on the assumption that it would respawn when the Keep Gate
+was re-entered with the Boss Key — every placed fairy is declared as a plain
+`pickup` with no save key, so a fresh-room reading of the data says it should.
+It does not: a ROOM OUTLIVES THE VISIT. It is built once and kept, entities and
+all, so a collected pickup is collected for good. Sixteen in, twenty-four
+healed, nothing on the return. Worth remembering before anyone sizes a health
+budget off a second helping.
+
+### WHAT ELSE PLAYED FOR THE FIRST TIME
+
+  * **The Sunken Bar** (`d6/1,2,3`), the Keep's HIGH crossing and the only one
+    of the three the route had never taken. The bar is down at slack and up at
+    flood: the line crosses at HIGH and the cache under the far shelf gives up
+    its Piece of Heart only at MID. **The whole room costs nothing** — measured
+    twenty in, twenty out.
+  * **The Crossed Shafts**, both crossings in one room, at the two seas that
+    cannot be held at once. In at HIGH over the lintel, down to LOW on the
+    shelf, and the Brinehulk armoured at exactly the sea you had to arrive on.
+    The answer is the conch: put the water back up once you are across and the
+    crust goes soft. Six quarter-hearts, eight hundred frames.
+  * **The Boss Key**, and **Nereth**, and **the ending cutscene**.
+  * **An Essence claimed by walking into it.** A boss's death spawns the
+    `essence` entity at the room's own 4,3 after a delay and it is taken by
+    TOUCHING it — `loot` does not find it, because it is not a drop. The five
+    before this were all taken in a shooter.
+
+### THE MARGIN IS ONE QUARTER-HEART
+
+The deepest trough of the entire run is 1 of 48, inside Nereth's fight. It is
+deterministic and it is asserted, but it is one quarter-heart, and anything
+that moves a frame upstream of the throne room can flip it. If a later session
+needs slack, floor 1's wings are where the unspent content is.
+
 ## S120 — the Abyssal Keep is played to Nereth's own door
 
 `check-playthrough.mjs` now drives a new game from the title screen to

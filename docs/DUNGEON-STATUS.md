@@ -17,6 +17,14 @@ So: **a dungeon is not done when it is authored, it is done when this table says
 so and names the commit.** If you cannot find the commit, the work is not done,
 whatever a commit message elsewhere claims.
 
+**THE GAME IS FINISHABLE, PROVED BY PLAYING IT (S121).** All six dungeons are
+built and all six are now played end to end in one unbroken run — title screen
+to the ending cutscene, nothing granted, no warp, no flag set from outside.
+`node tools/check-playthrough.mjs` is the proof and it is 37 assertions green.
+What is left in `d6` is not the dungeon: floor 1's west and east wings are
+authored and parked in `docs/prompts/QUEUE.md` because the run cannot afford
+the health, not because the rooms do not work.
+
 ---
 
 ## The board
@@ -28,7 +36,7 @@ whatever a commit message elsewhere claims.
 | 3 | `d3` | Bogwater Sanctum | Kelp-Soled Cleats | **DONE** | `a9eb63e` |
 | 4 | `d4` | Cliffside Cistern | Squall Bellows | **DONE** | `5fd7301` |
 | 5 | `d5` | Drowned Wood Shrine | Reefseed | **DONE** | `0db0eab` |
-| 6 | `d6` | Abyssal Keep | Dredge Line | **DONE** | `84d14e5` |
+| 6 | `d6` | Abyssal Keep | Dredge Line | **DONE, AND PLAYED TO THE END** | authored `84d14e5`; played to Nereth's death and the sixth Essence, `check-playthrough.mjs` 37/37, S121 |
 | — | `d7` | Reef Palace | — | **FOLDED IN** | `84d14e5` |
 | — | `d8` | Abyssal Keep | — | **FOLDED IN** | `84d14e5` |
 
