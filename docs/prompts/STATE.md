@@ -23,23 +23,23 @@ be gated on a downstream trough.
 ONE UNAUDITED THING, found at S124 and not chased: every placed pickup in the
 game has a 460-frame fuse counted while its room is on screen, so any placed
 fairy or heart sharing a room with a real fight is quietly unavailable.
-THE S130/S131 BLOCKER IS CLEARED (S132): the harness fights the route's arena
-now, and D3 and D6 are transcribed. D1, D2, D4, D5 and the nine minibosses are
-not, so they are still swept in a room no player is ever in.
+ALL SIX BOSSES ARE TRANSCRIBED (S135). The nine minibosses are not, so they
+are still swept in a room no player is ever in. Two bosses read badly in their
+real arena and nothing was changed about either: Wyverna 3 of 5 and Rootmaw
+2 of 5. Gloomtide is 2 of 5 and has been since S132.
 THE S133 FINDING IS ACTED ON (S134): Nereth wins 5 of 5 now, on a fairy behind
-his own boss door. The run meets him on 44 of 48 instead of 28. What is left of
-it is seed 3, which wins with 1.25 hearts and cannot be helped from the health
-side — 44 is the ceiling and the Keep has nothing further to pay out.
+his own boss door. He is met on 44 of 44 — a FULL bar (S135 corrected the 48) —
+so nothing more can come from the health side. What is left is seed 3's 1.25
+hearts, and that is in the fight.
 
-FILE ALLOWLIST for the current objective (transcribe the untranscribed arenas):
-  tools/measure-boss-combat.mjs — `ROUTE_ARENA` rows only
+FILE ALLOWLIST for the current objective (transcribe the miniboss arenas):
+  tools/measure-boss-combat.mjs — `MINIS` rows only
   docs/NEXT-SESSION.md
   docs/prompts/LEDGER.md
 
 DETOUR TOKENS: 1 (unspent)
 
 SESSION LOG: one row per session — `S## | objective|detour | one line`
-S117 | objective | Played the fifth dungeon for the first time. A new game now walks out of the Cliffside Cistern, goes back to the grotto it started in for the second sword — which the stone there only gives up at four Essences — crosses the wood to the Drowned Wood Shrine, and takes it end to end: three keys, the Reefseed, all five groves grown at high water and stood on at low, Thornvine, and Rootmaw. Found on the way that the Shrine's third key never existed: the chest holding it dropped it behind itself in a corridor one tile wide, and nothing in the game could reach it. Ended the session laying the groundwork for the next one: the robot can now hold a conversation with a trader, which is how the Coastwise Chain gets walked, and the first seven links of that chain have been passed in a test harness.
 S118 | objective | Played the Coastwise Chain for the first time. A new game now walks out of the Drowned Wood Shrine, passes all twelve of the coast's traders in order across fifty screens, comes out of the far end with the Resonance Rod, takes the third sword off the Maku Tree and the road she opens with it, and walks down the Kell into the Abyssal Keep. It arrives on a heart and a half: the tour costs thirty-six quarter-hearts and there is nothing anywhere on it to heal on, which is now the thing stopping the run.
 S119 | objective | Put a fairy on Shell Beach, the one screen the coast trade crosses twice and the road to the fourth dungeon never touches. The long walk round the coast used to end at the last dungeon's door on a heart and a half; it now ends there on seven and a half, and the test run fails outright if it ever arrives on less than half.
 S120 | objective | Played the sixth and last dungeon for the first time, as far as the final boss's own door. A new game now walks into the Abyssal Keep, wins all four of its keys and opens all four of its locked doors: it fetches the fire-shell out of a reef cave nothing had ever opened, lights the Kiln's four torches with it, rings a knight's armour with the trading rod so a sword will go through it, takes the Dredge Line out of its vault and throws it across three holes nothing walks. What is left in the whole game is the Boss Key and the King.
@@ -57,3 +57,4 @@ S131 | objective | Found that the test robot could lose a boss fight and report 
 S132 | objective | Made the practice fight the same fight as the real one. For two sessions a change to how Link backs off after a swing won the third dungeon's boss every time in practice and lost him in the real game, and nobody could say why. The practice fight used to start him in the middle of an empty room on made-up health; it now starts him in the doorway he really walks in through, on the health he really carries, after the pause he really takes — and it says the same thing the real run said, so the change stays out. Three explanations that had been offered for the gap were measured and are wrong: it is not his health, it is not the clock, and there was never a second monster in the room.
 S133 | objective | Measured the last fight in the game properly for the first time, and it is a coin flip. The practice rig now sets Nereth up the way the real run arrives at him — in his own doorway, on the 28 of 48 hearts the run carries, and wearing the charm the run is wearing, which no boss measurement in this project had ever done. Five tries: three wins, and every win finishes within two hearts of death. The real run does beat him, but it beats him the way these do — barely. Nothing was changed about the fight; that is a session's work, not the tail of one.
 S134 | objective | Gave the last fight in the game a margin. Nereth used to be a coin flip — three wins in five and never more than two hearts left — because the run climbed his stair on four hearts short of half a bar with nothing anywhere behind it to drink. There is a fairy in the antechamber at the foot of that stair now, on the far side of his own locked door, so it cannot be had until the Boss Key is spent and it is impossible to waste. He is beaten five times in five now, with six hearts standing in the real run. Found on the way that his fight costs the same no matter how much health you walk in on, which is why the answer was a fairy and not a change to the fight.
+S135 | objective | Measured all six boss fights the way the game is really played, for the first time. Four of them were being practised in the middle of an empty room on health nobody ever carries, and the difference is not small: the fourth boss, which the practice rig has called an easy win for the whole life of the project, is met on barely half a heart bar and is won three times in five. Found that the bar itself was recorded wrong for two of the six, including the last fight in the game — the King is met on a completely full bar, not four quarter-hearts short of one, so last session's fairy is doing everything a fairy can. Nothing about any fight was changed; this was the reading, and three of the six now read worse than they were being reported.

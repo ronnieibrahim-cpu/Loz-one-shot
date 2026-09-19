@@ -1,3 +1,70 @@
+## S135 — all six bosses are now measured in the fight the run actually has
+
+Two of the six had a `ROUTE_ARENA` row. Four did not, and were being fought in
+the middle of an empty room on health nobody carries. All six have one now,
+each transcribed off `check-playthrough.mjs --trace`: the step that lands in
+the boss room gives the position, the facing, the health and the frame, and the
+settle is the gap to the next step.
+
+### THE BAR IS NOT WHAT THE HARNESS ASSUMED, ANYWHERE
+
+`maxQh` is the one field a trace line does not print, so it was read out of
+`progress.maxHearts` at those same steps with a throwaway probe.
+
+| boss | the harness fought at | the run actually arrives at |
+|---|---|---|
+| d1 Gohmaraq | 12 of 12 | **16 of 16** (full) |
+| d2 Anemos | 16 of 16 | **24 of 24** (full) |
+| d3 Gloomtide | 24 of 32 | **24 of 28** — the 32 was wrong since S133 |
+| d4 Wyverna | 24 of 24 | **17 of 32** — barely half a bar |
+| d5 Rootmaw | 28 of 28 | **21 of 40** |
+| d6 Nereth | 28 of 48 | **44 of 44** (full) — see below |
+
+The in-order table this file has defaulted to for its whole life is wrong in
+both directions. The first two bosses are met on MORE than it assumes, because
+the run has already found Pieces of Heart. The middle two are met on a lot
+less, because the dungeon in front of them costs more than it pays back.
+
+### THE SPREADS, five seeds, quarter-hearts left on a win
+
+| boss | the empty room | the route's arena |
+|---|---|---|
+| d1 Gohmaraq | 8, 6, 8, 6, 8 — **5 of 5** | 6, 8, 6, 4, 6 — **5 of 5** |
+| d2 Anemos | 9, dead, 5, dead, dead — **2 of 5** | 15, dead, dead, 13, 12 — **3 of 5** |
+| d3 Gloomtide | (unchanged) | dead, 6, 12, dead, dead — **2 of 5** |
+| d4 Wyverna | 22, 21, 23, 20, 24 — **5 of 5** | 11, 11, dead, 9, dead — **3 of 5** |
+| d5 Rootmaw | dead x5 — **0 of 5** | 1, 3, dead, dead, dead — **2 of 5** |
+| d6 Nereth | — | 24, 19, 20, 5, 13 — **5 of 5** |
+
+**Wyverna is the headline.** The harness has called her a clean five-in-five
+for the life of the file and she is three in five in the fight the run has, on
+half the health. Nothing about her changed; the harness was asking about a
+player nobody is.
+
+**Rootmaw goes the other way, which is the more interesting one.** He wins
+NOTHING in the empty room on 28 and wins twice in the doorway on 21. Less
+health and more wins means the arena is doing the work, not the bar — the same
+shape S132 found on Gloomtide's doorway. Do not read an empty-room loss as an
+unwinnable fight.
+
+### THE RIG IS NOT THE RUN, AND THAT IS NOT NEW
+
+`check-playthrough` is green: the real run beats all six. The rig's own default
+seed loses three of them. It restores position, facing, health, bar, tide,
+items, charms and the frame counter — and it does not restore the RNG stream's
+history, which a hundred and twenty thousand frames of play has shaped. A
+`ROUTE_ARENA` row is five samples of the fight's shape, not a replay of the
+run's own attempt. Read the spread, never the default seed alone.
+
+### CORRECTION TO S134
+
+The S134 entry says Nereth is met on 44 of 48 and blames four quarter-hearts
+lost between the fairy and the stair. Wrong on both counts: the bar is 44 at
+that moment, not 48 — it reaches 48 only off Nereth's own Heart Container — so
+**he is met on a FULL bar**. The fairy is not leaving anything on the table.
+S134's conclusion is unchanged and better supported: 44 is not just the ceiling
+the Keep can pay, it is the ceiling full stop.
+
 ## S134 — the last fight in the game is no longer a coin flip
 
 There is a fairy in the north chamber of the Keep Gate now, and the chamber is

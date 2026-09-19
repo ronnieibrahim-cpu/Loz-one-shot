@@ -158,11 +158,39 @@ const MINIS = {
 // `--empty-arena` restores the old middle-of-the-room setup, so the two can be
 // put side by side.
 const ROUTE_ARENA = {
+  // Every row below is transcribed off `check-playthrough.mjs --trace`: the
+  // step that LANDS in the boss room gives `at`, `facing`, `qh` and `frame`,
+  // and `settle` is the gap to the next step — the frames the route spends
+  // standing in the doorway with the boss already awake. `maxQh` is the bar,
+  // not what is in it, and it is the one field a trace line does not print;
+  // it was read out of `progress.maxHearts` at those same steps (S135).
+  //
+  // d1 0,3,1, trace step 206 (`exit up`) at f21285: `65,101 hp 16/16 tide 0
+  // foes 1 [gohmaraq]`. The first boss in the game is met on a FULL bar, and
+  // 16 is four quarter-hearts more than `IN_ORDER_QH` assumes, because the run
+  // has already found four Pieces of Heart by then.
+  d1: { at: [65, 101], facing: 'up', qh: 16, maxQh: 16, settle: 90, frame: 21285 },
+  // d2 1,3,1, trace step 361 (`exit up`) at f41457: `64,101 hp 24/24 tide 2
+  // foes 1 [anemos]`. Also full, also 8 above the in-order count, and the
+  // settle is 306 frames because the route takes two `wait`s here, not one.
+  d2: { at: [64, 101], facing: 'up', qh: 24, maxQh: 24, settle: 306, frame: 41457 },
   // d3 0,3,1, trace step 553 (`wait 90`) at f60233: `65,112 hp 24 tide 0
   // foes 1 [gloomtide]`. The bar is 32 by then — three Heart Containers and
   // the pieces the Sanctum pays out — so 24 of 32 is a player at three
   // quarters, not the 20 of 20 this file was fighting at.
-  d3: { at: [65, 112], facing: 'up', qh: 24, maxQh: 32, settle: 90, frame: 60143 },
+  // CORRECTED AT S135: the bar is 28 here, not the 32 this row carried from
+  // S133. Read out of `progress.maxHearts` at the step itself rather than
+  // inferred from the Heart Containers the run had banked.
+  d3: { at: [65, 112], facing: 'up', qh: 24, maxQh: 28, settle: 90, frame: 60143 },
+  // d4 0,3,1, trace step 776 (`hold up` through the door) at f85158:
+  // `63,99 hp 17/32 tide 0 foes 1 [wyverna]`. SEVENTEEN OF THIRTY-TWO — the
+  // route meets the fourth boss on barely half a bar, and this file has been
+  // fighting her on 24 of 24.
+  d4: { at: [63, 99], facing: 'up', qh: 17, maxQh: 32, settle: 120, frame: 85158 },
+  // d5 0,3,1, trace step 1003 (`hold up` through the door) at f119421:
+  // `65,99 hp 21/40 tide 0 foes 1 [rootmaw]`. Twenty-one of forty, against a
+  // file that has been fighting Rootmaw on 28 of 28.
+  d5: { at: [65, 99], facing: 'up', qh: 21, maxQh: 40, settle: 120, frame: 119421 },
   // d6 1,3,1, trace step 1423 (the throne-room `dialogue`) at f166238:
   // `63,101 hp 44 tide 1 foes 1 [nereth]`. The settle is 24 frames, not a
   // `wait`: the route opens Nereth's own dialogue on the way in, and that is
@@ -180,7 +208,7 @@ const ROUTE_ARENA = {
   // case this fight is played at — and no measurement of Nereth had ever had
   // it on. A charm is not an item and `setup.items` cannot grant one; see the
   // stamp below.
-  d6: { at: [63, 101], facing: 'up', qh: 44, maxQh: 48, settle: 24, frame: 166214,
+  d6: { at: [63, 101], facing: 'up', qh: 44, maxQh: 44, settle: 24, frame: 166214,
         charms: { mid: 'coilrope', high: 'gillcarve' } },
 };
 

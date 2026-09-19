@@ -1030,6 +1030,42 @@ unwritten because it re-sweeps every recorded frame in the repo.
 Floor wrote this down and the Shrine Ford repeated it. Wide rooms are crossed,
 not cleared, until `dFight` learns a radius.
 
+## Settled at S135 — every boss has a route arena, and the bar was wrong everywhere
+
+**ALL SIX `ROUTE_ARENA` ROWS EXIST.** Transcribed off `check-playthrough.mjs
+--trace`: the step that lands in the boss room gives `at`, `facing`, `qh` and
+`frame`; `settle` is the gap to the next step. Do not re-derive them — re-read
+them off the trace if the route moves.
+
+**`maxQh` IS NOT INFERRABLE FROM THE HEART CONTAINERS THE RUN HAS BANKED**, and
+a trace line does not print it. It comes out of `progress.maxHearts` at the
+step. The banked-container arithmetic gave 32 for d3 where the truth is 28, and
+48 for d6 where the truth is 44. Both rows carried the wrong number.
+
+**THE IN-ORDER DEFAULT (`IN_ORDER_QH`) IS WRONG IN BOTH DIRECTIONS.** d1 16/16,
+d2 24/24, d3 24/28, d4 17/32, d5 21/40, d6 44/44. The first two bosses are met
+on MORE than in-order (Pieces of Heart), d4 and d5 on much less (the dungeon in
+front of them costs more than it pays back).
+
+**WYVERNA IS THREE IN FIVE, NOT FIVE IN FIVE.** Empty room at 24: 22, 21, 23,
+20, 24. Route arena at 17 of 32: 11, 11, dead, 9, dead. The clean sweep this
+file has reported for her whole life was a measurement of a player nobody is.
+
+**ROOTMAW WINS MORE ON LESS.** Empty room at 28: dead five times. Route arena
+at 21 of 40: 1, 3, dead, dead, dead. An empty-room loss is not evidence a fight
+is unwinnable; the arena does more than the bar. Same shape as S132's Gloomtide
+doorway.
+
+**NEGATED: a `ROUTE_ARENA` row is not a replay of the run's attempt.** It
+restores position, facing, health, bar, tide, items, charms and the frame
+counter, and it does NOT restore the RNG stream's history. `check-playthrough`
+is green — the real run beats all six — while the rig's default seed loses
+three. Read the five-seed spread, never the default seed alone.
+
+**CORRECTED: S134's "44 of 48".** The bar is 44 when Nereth is met; 48 is only
+reached off his own Heart Container. He is met FULL, so the Keep Gate fairy
+leaves nothing on the table and 44 is the ceiling full stop.
+
 ## Settled at S134 — the King's bill is flat, and the Keep now pays it
 
 **NERETH'S COST DOES NOT DEPEND ON THE PLAYER'S HEALTH.** Swept at 28/32/36/
