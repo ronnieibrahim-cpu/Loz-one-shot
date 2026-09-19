@@ -17,18 +17,19 @@ ROTATION (retired S112, kept for the record):
   7 item-reuse MET S110 | 8 feel-measure BLOCKED — needs an emulator capture
 
 NO STANDING DEFECTS. Nothing in CLAUDE.md's verification table is red, and the
-run's deepest trough is 2 of 48 in D1's Tide Gallery, which is the game being
-frightening on purpose rather than a margin problem.
+run's deepest trough is 3 of 48, in D1's Two Gauges, one room past the Clawcrab
+— see the S129 ledger for why the route cannot lift it and the game cannot
+be gated on a downstream trough.
 ONE UNAUDITED THING, found at S124 and not chased: every placed pickup in the
 game has a 460-frame fuse counted while its room is on screen, so any placed
 fairy or heart sharing a room with a real fight is quietly unavailable.
 
-FILE ALLOWLIST for the current objective (floor 1 of the Abyssal Keep):
-  tools/playthrough-route.mjs — the Keep leg and its GOAL block
+FILE ALLOWLIST for the current objective (the health economy of D1's east wing):
+  src/data/bosses.js — ONLY the `clawcrab` definition, and NOT its `damage`
+  src/data/dungeons-a.js — ONLY D1's Clawcrab Den (`0,5,3`) and Two Gauges
+  tools/playthrough-route.mjs — the D1 leg
   tools/check-playthrough.mjs — only its assertions about how far the run gets
-  tools/actor-runtime.mjs — only to add a movement verb the route needs
-  src/data/dungeons-b.js — ONLY if floor 1 proves a fault the route cannot
-    route round, and only with the trace written down
+  tools/measure-boss-combat.mjs — only to teach it a miniboss
   dist/oracle-of-tides.html
   docs/NEXT-SESSION.md
   docs/prompts/LEDGER.md
@@ -36,8 +37,6 @@ FILE ALLOWLIST for the current objective (floor 1 of the Abyssal Keep):
 DETOUR TOKENS: 1 (unspent)
 
 SESSION LOG: one row per session — `S## | objective|detour | one line`
-S111 | objective | Gave the Bogwater Sanctum its set piece. The Eel Hall is thirty tiles long now: a drowned colonnade with a current running down the middle the wrong way, so the walk out is made on the seafloor under two cross-walls and the walk back is made by stepping into the water and letting it carry you.
-S112 | objective | Walked the Bogwater Sanctum for the first time and found it could not be finished: the Cleats were locked in the room you needed them to enter, the soles would not take you under at the mouth of a current, and the third key was behind a barnacle nothing can kill. All three are fixed. What stops the run now is the boss himself.
 S113 | objective | Made the third dungeon's boss easier to fight: it has less health, it no longer outruns you when it drags the sea to the level it likes, and it takes that level back less often. Found while sizing the change that the test robot dies to five careless touches no matter how weak the boss is, so the run still cannot be driven through the fight.
 S114 | objective | Made the third boss beatable by the test robot: it now cuts down the slimes he sheds instead of dodging them for ever, which is what was actually killing it — one hit in fourteen came from the boss himself. Seven wins in ten where there were none.
 S115 | objective | Played the third dungeon for the first time. A new game now walks from the title screen all the way to the Bogwater Sanctum's boss and comes out with three of the six Essences: it bombs its way into the marsh to reach the door, dives under all three of the Sanctum's currents in the new soles, and beats Gloomtide with hearts to spare.
@@ -54,4 +53,4 @@ S125 | objective | Got the last dungeon's one optional room into the run. There 
 S126 | objective | Every room of the last dungeon has now been played. The flooded hall, the vault behind it with the better diving boots, and the riddle of the two arches had never been entered by anything; they are in the run now, and the shadow that guards them costs three quarter-hearts instead of the twenty-five it cost last session. Two things were wrong and only one of them was the fight: the test robot had been trying to kill the thing by blowing a conch at it, because the sword was not on a button and nothing anywhere says so out loud.
 S127 | objective | Made it impossible to send Link into a fight without his sword. He had been walking into two of them holding a conch instead — one found by accident last session after eight attempts at making the fight easier, the other found by this check within seconds of it existing. Eighty-six fights were checked by actually running them; those were the only two, and both are fixed.
 S128 | objective | Stopped Link paying the same toll twice. He walks through a room full of armoured knights on the way into the west wing and again on the way back out, and it was costing him three hearts; clearing it on the way in costs half a heart net, pays out the heart the room owes for clearing it, and leaves it empty for the walk home. The worst moment in the last dungeon went from a quarter of a heart and a half to nearly four hearts.
-
+S129 | objective | Read the first dungeon's bill for the first time. Eleven of its rooms cost nothing; three are the whole bill. Fixed the one that was a routing cost: Link used to walk past the room below the hub taking two hits and leaving what the crabs dropped on the floor, so the game's scariest moment — the first real fight, at a quarter of a heart from death — was really paid for two rooms earlier. He clears that room now and it pays for itself. Measured and wrote down why the crab miniboss above it cannot be helped the same way: he already walks in on a full heart bar, because that is as full as it goes there.

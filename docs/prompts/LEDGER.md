@@ -1030,6 +1030,28 @@ unwritten because it re-sweeps every recorded frame in the repo.
 Floor wrote this down and the Shrine Ford repeated it. Wide rooms are crossed,
 not cleared, until `dFight` learns a radius.
 
+## Settled at S129 — D1's bill, and what cannot be paid from the route
+
+**Eleven of D1's rooms cost nothing. Three are the whole bill.** The Drinking
+Floor (a routing cost, fixed — cleared, it pays for itself and the Sunken Hall
+is fought on 8 rather than 6), the Clawcrab Den (8 of 12, NOT a routing cost)
+and Gohmaraq (10 of 16, by design).
+
+**The Clawcrab Den cannot be improved from `playthrough-route.mjs`.** The run
+enters it on 12 of 12 — the cap — because the Sunken Hall's fairy heals to full
+and the Piece of Heart that raises the cap is behind the den's own door. NEGATED
+by measurement, all three identical at 8: reordering the wings, fighting at a
+different tide, and backing off from the doorway before engaging.
+
+**The Sunken Hall's own order is right and must not be flipped.** Taking the
+fairy before the fight was measured: the actor is killed crossing the room to
+the blocks with the zol and the crab still alive.
+
+**A single seed's trough downstream of a change is not a measurement.** Three
+directives changed in D1 moved the Abyssal Keep's trough from 13 to 8 a hundred
+and fifty thousand frames later, on one room's reroll, while total damage across
+all 412 rooms moved by seven. Never gate a session on a downstream trough.
+
 ## Settled at S128 — clearing beats crossing twice
 
 **The Shade Cell is cleared, not crossed.** Six damage, four back from its own

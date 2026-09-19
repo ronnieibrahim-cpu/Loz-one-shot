@@ -1,3 +1,79 @@
+## S129 — what the first dungeon costs, room by room
+
+Nobody had ever read D1's bill. Here it is, from `check-playthrough`'s own room
+table, as the run stood at the start of this session (12 quarter-hearts is a
+new game; the cap rises to 16 partway through):
+
+| room | in | out | min | what takes it |
+|---|---|---|---|---|
+| overworld 0,6,7 Reef Hollow mouth | 12 | 10 | 10 | the octorok on the door, cleared |
+| overworld 0,7,7 Sandpiper Row | 10 | 8 | 8 | crossed |
+| d1/0,3,7 Grotto Mouth | 8 | 8 | 8 | nothing |
+| d1/0,3,6 Drinking Floor | 8 | 6 | 6 | two crabs and a keese, WALKED PAST |
+| d1/0,3,5 Sunken Hall | 6 | 12 | **2** | a zol and a crab, then the fairy |
+| d1/0,2,5 · 0,4,5 · 0,3,4 · 0,2,4 · 0,4,4 | 12 | 12 | 12 | nothing |
+| d1/0,3,3 Locked Stair | 12 | 12 | 10 | two zols, pay their own way |
+| d1/0,3,2 · 0,4,2 · 0,5,2 · 0,5,1 · 0,4,1 | 12 | 12 | 12 | nothing |
+| d1/0,5,3 Clawcrab Den | 12 | 4 | **4** | the miniboss, 8 of 12 |
+| d1/0,4,3 Two Gauges | 4 | 16 | **3** | a keese, then the fourth Piece of Heart |
+| the whole west wing | 16 | 16 | 16 | nothing |
+| d1/0,3,1 Gohmaraq | 16 | 20 | 6 | the boss |
+
+Eleven of D1's rooms cost nothing at all. **Three rooms are the whole bill**,
+and they are three different kinds of problem.
+
+### THE SUNKEN HALL WAS A ROUTING COST, AND IT IS FIXED
+
+The game's deepest trough was 2 of 48, and it was not the Tide Gallery, which
+costs nothing — it was the Sunken Hall, the room after it, and the reason was
+entirely upstream. The run reached the dungeon's first fight having spent half
+a new game getting there: two on the Reef Hollow's octorok, two on Sandpiper
+Row, and two **walking past** the Drinking Floor.
+
+That last one was free money left on the floor. The Drinking Floor's three
+enemies were given `drops: 'good'` some sessions ago BECAUSE that room was
+measured costing six quarter-hearts — and then nothing ever collected the
+answer, because the route walked through rather than clearing. Cleared, the
+room pays for itself exactly: **in on 8, out on 8**. The Sunken Hall is now
+fought on 8 instead of 6 and troughs at **5 instead of 2**.
+
+This is S128's lesson one dungeon earlier. A room outlives the visit, D1's
+spine is crossed six times, and clearing beats crossing.
+
+### THE CLAWCRAB DEN IS NOT A ROUTING COST, AND CANNOT BE FIXED FROM THE ROUTE
+
+Eight of twelve, and the obvious reading is "the run arrives too thin". It does
+not. **It arrives on 12 of 12 — the cap.** The Sunken Hall's fairy heals to
+full and the fourth Piece of Heart, the one that raises the cap to 16, is in
+the room on the far side of the Clawcrab's own door. There is no larger number
+to walk in on, so no reordering, no tide, no backing off from the doorway
+changes anything; all three were tried and all three measured identically.
+
+Two things about that fight are worth the next session's time, and neither is
+reachable from `playthrough-route.mjs`:
+
+- It is the only fight in D1 that costs health and returns none. Its `rich`
+  table is **one roll at 28% heart / 10% fairy** — so whether the run leaves
+  the den on 4 or on 8 is a coin flip, and `d1/0,4,3`'s trough of 3 is that
+  coin landing wrong.
+- The stretch `d1/0,3,2` through `d1/0,4,3` is 5270 frames with no heal
+  available anywhere in it. It is the longest such stretch in the dungeon and
+  the Clawcrab sits in the middle of it.
+
+### AND THE THING THAT MAKES ALL OF THIS HARD TO MEASURE
+
+Changing three directives in D1 moved the Abyssal Keep's trough from 13 to 8,
+a hundred and fifty thousand frames later. Nothing about the Keep changed; one
+room in its Boss Key wing (`d6/1,4,5`) rolled 9 damage instead of 3. Across the
+whole 412-room run the total damage moved by **seven quarter-hearts**, and the
+room order and count are identical.
+
+**A single seed's trough in a room downstream of a change is not a measurement
+and must not be used as a gate.** The prompt for this session asked for the
+Keep's trough to stay at 13 or better while also asking for a change in D1, and
+those two clauses cannot both be held by anything. The Keep is out of scope and
+was left alone.
+
 ## S128b — the guide checker was short the same heart piece
 
 `tools/check-guide.mjs` has been red for as long as the Bower Cell has existed,

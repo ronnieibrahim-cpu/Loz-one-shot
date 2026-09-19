@@ -139,16 +139,23 @@ export const ROUTE = [
 
   // ---------------------------------------------------------------- d1 0,3,6
   // The Drinking Floor, waded at LOW. Two crabs and a keese, and the route
-  // WALKS PAST THEM. Nothing in this room gates anything — no key, no puzzle,
-  // no door — and a crab is `shield: 'front'`, so the actor's one verb (line
-  // up, swing, stand still for the swing) trades two damage for nothing until
-  // one of them happens to turn. Stood and brawled here it spent all three
-  // hearts of a new game before the dungeon's only heal, and whether it
-  // survived came down to which way the crabs were facing. A player walks
-  // through a room with nothing in it; so does this.
+  // CLEARS THEM. It used to walk past, on a measurement taken before these
+  // three enemies were given `drops: 'good'` — the room's own comment in
+  // src/data/dungeons-a.js says that bump was made BECAUSE the first fight in
+  // the game was costing six quarter-hearts with only `common`'s 16% heart
+  // chance to answer it. Nothing ever collected the answer: walking past took
+  // the damage and left the drops on the floor, and the run reached the
+  // Sunken Hall's fight — the deepest trough in the whole game — on 6 of 12.
+  //
+  // Cleared, the room pays for itself. It costs what it costs and hands the
+  // same back: in on 8, out on 8, and the Sunken Hall is fought on 8 rather
+  // than 6, troughing at 5 instead of 2. This is S128's lesson one dungeon
+  // earlier — A ROOM OUTLIVES THE VISIT, so a room cleared on the way in is
+  // still clear on the walk out, and D1's spine is crossed six times.
   ['travel', 3, 6, 2000],
+  ['fight', 1800],
   ['dialogue', 200],
-  ['loot', 500],
+  ['loot', 700],
 
   // ---------------------------------------------------------------- d1 0,3,5
   // The Sunken Hall, the hub. A zol and a crab, then a push-block puzzle: two
