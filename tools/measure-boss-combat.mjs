@@ -16,6 +16,11 @@
 // fight without changing what it measures.
 //
 // Usage: node tools/measure-boss-combat.mjs [dungeonId] [--god] [--budget=N]
+//   Where a fight has a row in `ROUTE_ARENA` below, it is set up the way the
+//   ROUTE arrives at it — the doorway, the hearts the route carries, and the
+//   route's own settle — because a harness that fights a different fight from
+//   the run cannot decide anything about the run. `--empty-arena` restores the
+//   old middle-of-the-room setup, and `--settle=N` overrides the settle.
 //   --god       god mode (unlimited health) instead of the real 3-heart
 //               fight — use this to ask "does more health/time help?"
 //               separately from "does the player survive?". Answered once
@@ -72,9 +77,13 @@ const FIGHTS = {
   // exactly as it always was; see `dBoss`'s summons branch for the four fights
   // that measured WORSE with it on.
   // `openRetreat` is deliberately NOT here, so this row keeps matching the
-  // route's. Pass `--open-retreat` to ask what it does: 16/20-dead/5/8/19
-  // becomes 10/14/7/14/8, five wins in five. The route still does not carry
-  // it — see the note on its own D3 boss step for why it loses the real run.
+  // route's. Pass `--open-retreat` to ask what it does. In the EMPTY arena
+  // (`--empty-arena`) it looks like a clean win: 16/dead/5/8/19 becomes
+  // 10/14/7/14/8, five in five. IN THE ROUTE'S ARENA, which is what this row
+  // now sets up, it does not: 2 wins in 5 becomes 3 in 5, and seed 1 flips
+  // from a win to a death. That is the same verdict the real run gave at S131,
+  // arrived at in one fight's frames instead of the whole run's, which is what
+  // this harness was rebuilt for.
   d3: { boss: 'gloomtide', tide: LOW, opts: { clearAdds: true },
         items: { sword: 1, conch: 1, anchor: 1, lens: 1, bombs: 1, cleats: 1 } },
   // sword 1, not 2: at D4 the player holds three Essences and the L2 blade's
@@ -105,6 +114,55 @@ const FIGHTS = {
 const MINIS = {
   clawcrab: { dungeon: 'd1', room: '0,5,3', flag: 'd1_clawcrab', tide: MID, qh: 12,
               items: { sword: 1, conch: 1, anchor: 1 } },
+};
+
+// THE FIGHT THE ROUTE ACTUALLY PLAYS.
+//
+// Everything above sets up a fight of this harness's own devising: the player
+// in the middle of the room, on the in-order heart count, thirty frames after
+// the room was built. The route's fight is a different one, and S131 spent
+// itself proving that the difference is big enough to reverse a result —
+// `openRetreat` wins Gloomtide five times in five here and loses him in the
+// run.
+//
+// These rows are READ OFF THE ROUTE'S OWN TRACE (`node
+// tools/check-playthrough.mjs --trace`, the directive immediately before the
+// `boss` one), so they are a transcription, not a guess. Each records the
+// state the route is in at the instant its boss step begins:
+//
+//   at        where the player is standing — the DOORWAY, not the middle
+//   facing    the direction he walked in on
+//   qh        the hearts he actually carries, which is not the in-order count
+//   maxQh     his bar, which is not the same as what is in it
+//   settle    frames the room ran before the boss step — the route's own
+//             `wait`, during which the boss is already moving and summoning
+//
+//   frame     the CLOCK the route arrives on. Every animation phase in the
+//             game is derived from `g.frame`, and this harness used to start
+//             every fight at frame 0 — a phase no player is ever in.
+//             MEASURED AND NEGATED: stamping the route's frame on the room
+//             changes nothing. All ten runs of the five-seed sweep came out
+//             bit-identical with it and without it. It is kept because it is
+//             one more thing that no longer has to be argued about, and
+//             because a future fight may not be so indifferent — but the
+//             clock is NOT what makes this harness's fight different from the
+//             run's, and that was worth a session finding out.
+//
+// ONE THING THIS STILL CANNOT REPRODUCE, and it is stated here rather than
+// hidden: the route arrives having DRAWN sixty thousand frames' worth of the
+// global RNG stream. The per-room stream is derived from the seed and the room
+// (src/core/rng.js), so that half does match; the global one does not, short
+// of replaying the whole run. A sweep here is a sweep of the route's ARENA and
+// its CLOCK, not of its RNG history.
+//
+// `--empty-arena` restores the old middle-of-the-room setup, so the two can be
+// put side by side.
+const ROUTE_ARENA = {
+  // d3 0,3,1, trace step 553 (`wait 90`) at f60233: `65,112 hp 24 tide 0
+  // foes 1 [gloomtide]`. The bar is 32 by then — three Heart Containers and
+  // the pieces the Sanctum pays out — so 24 of 32 is a player at three
+  // quarters, not the 20 of 20 this file was fighting at.
+  d3: { at: [65, 112], facing: 'up', qh: 24, maxQh: 32, settle: 90, frame: 60143 },
 };
 
 const args = process.argv.slice(2);
@@ -164,12 +222,31 @@ const qhArg = args.find(a => a.startsWith('--qh='));
 // question "is it winnable played correctly?" gets asked separately from "is it
 // winnable at the design tide?".
 const tideArg = args.find(a => a.startsWith('--tide='));
-const QH = qhArg ? Number(qhArg.slice('--qh='.length))
-  : mini ? mini.qh : (IN_ORDER_QH[dungeonId] || 12);
 const fight = mini
   ? { boss: MINI, tide: mini.tide, items: mini.items }
   : FIGHTS[dungeonId];
 if (!fight) { console.error(`unknown dungeon '${dungeonId}' — one of ${Object.keys(FIGHTS).join(', ')}`); process.exit(1); }
+// The route's own arena, for the fights that have a row above. On by default
+// where one exists, because the route's fight is the fight that matters and a
+// harness that quietly fights a different one is what cost S131 its result.
+// `--empty-arena` asks the old question instead. A miniboss, an explicit
+// `--at=` or `--qh=` opts out of the part it names.
+const emptyArena = args.includes('--empty-arena');
+const route = (!mini && !emptyArena) ? (ROUTE_ARENA[dungeonId] || null) : null;
+const QH = qhArg ? Number(qhArg.slice('--qh='.length))
+  : mini ? mini.qh : route ? route.qh : (IN_ORDER_QH[dungeonId] || 12);
+// The BAR, which is not what is in it. `hearts` above is what the route
+// carries; this is what the route could carry, and the two are only the same
+// in a harness that invented both. A fairy or a heart drop mid-fight heals up
+// to this, so a fight measured with the bar set to the carried count is a
+// fight in which nothing can ever heal — which is not the route's fight.
+const MAXQH = route && !qhArg ? route.maxQh : QH;
+// Frames the arena runs before the actor engages. The route's is its own
+// `wait` after walking through the door, and the boss is awake for all of it.
+const settleArg = args.find(a => a.startsWith('--settle='));
+const SETTLE = settleArg ? Number(settleArg.slice('--settle='.length))
+  : route ? route.settle : 30;
+
 let bossOpts = fight.opts || null;
 if (breakContactFlag) bossOpts = { ...(bossOpts || {}), breakContact: true };
 if (openRetreatFlag) bossOpts = { ...(bossOpts || {}), openRetreat: true };
@@ -266,22 +343,41 @@ console.log(`${dungeonId.toUpperCase()} ${info.name}: ${fight.boss} at ${arena},
   + (mini ? '  (MINIBOSS — ground truth is the room flag `' + mini.flag + '`)' : ''));
 console.log(godMode
   ? `GOD MODE — unlimited health, budget ${BUDGET} frames, seed ${SEED} — asks "does more time/health help?", not "is this fair"\n`
-  : `REAL COMBAT — no god mode, ${QH / 4} hearts (${QH} quarter-hearts`
-    + `${qhArg ? '' : ', the in-order count for ' + dungeonId.toUpperCase()}), `
-    + `budget ${BUDGET} frames, seed ${SEED}\n`);
+  : `REAL COMBAT — no god mode, ${QH / 4} of ${MAXQH / 4} hearts (${QH} of ${MAXQH} quarter-hearts`
+    + `${qhArg ? '' : route ? ", the route's own count" : ', the in-order count for ' + dungeonId.toUpperCase()}), `
+    + `budget ${BUDGET} frames, seed ${SEED}`);
+console.log(route
+  ? `ARENA: the route's — enters at ${route.at[0]},${route.at[1]} facing ${route.facing}, `
+    + `${SETTLE} frames of settle before the actor engages. `
+    + `(--empty-arena for the old middle-of-the-room setup.)\n`
+  : `ARENA: ${AT ? AT[0] + ',' + AT[1] : '72,80'}, ${SETTLE} frames of settle`
+    + `${emptyArena && ROUTE_ARENA[dungeonId] ? '  — --empty-arena: NOT the fight the route plays' : ''}\n`);
 
 await page.evaluate(([setup, steps]) => window.__rp.beginRecord(setup, steps), [{
   seed: SEED, godMode, items: fight.items, equipA: 'sword', equipB: 'conch',
-  maxHearts: QH, hearts: QH, tide: tideArg ? Number(tideArg.slice('--tide='.length)) : fight.tide,
-  enter: [dungeonId, fl, rx, ry, AT ? AT[0] : 72, AT ? AT[1] : 80, 'up'],
+  maxHearts: MAXQH, hearts: QH, tide: tideArg ? Number(tideArg.slice('--tide='.length)) : fight.tide,
+  enter: [dungeonId, fl, rx, ry,
+    AT ? AT[0] : route ? route.at[0] : 72,
+    AT ? AT[1] : route ? route.at[1] : 80,
+    route && !AT ? route.facing : 'up'],
 }, [
-  ['wait', 30],
+  ['wait', SETTLE],
   ['boss', BUDGET, MINI, bossOpts],
   ['wait', 240],
 ]]);
 
+// Stamp the route's clock on the room. `boot` zeroes `g.frame` deliberately —
+// a replay must not depend on how long the page took to load — but the route
+// is not at frame zero when it walks through that door, and every animation
+// phase in the game is derived from this counter.
+if (route && route.frame) {
+  await page.evaluate(f => { window.__game.frame = f; }, route.frame);
+}
+
 let done = false, err = null, guard = 0;
 let lastHp = null, lastQh = null;
+let rosterAtStart = null, startedAt = null;
+let peakFoes = 0;
 const timeline = [];
 while (!done && guard++ < Math.ceil(BUDGET / 20) + 400) {
   let r;
@@ -313,13 +409,28 @@ while (!done && guard++ < Math.ceil(BUDGET / 20) + 400) {
         ? !!(g.progress && g.progress.flags && g.progress.flags[miniFlag])
         : !!(g.progress && g.progress.beaten && g.progress.beaten[id]),
       qh: g.progress ? g.progress.hearts : null, frame: g.frame,
+      // WHO ELSE IS IN THE ROOM. The claim that cost S131 its result was that
+      // the route's arena "still has a zol in it" and this one does not; the
+      // only way that stops being an argument is for the harness to say out
+      // loud what it is fighting, every run.
+      foes: g.entities.filter(e => e.isEnemy && !e.dead && !e.remove).map(e => e.type).sort(),
+      px: g.player ? Math.round(g.player.cx) : null, py: g.player ? Math.round(g.player.cy) : null,
     };
   }, [dungeonId, MINI, mini ? mini.flag : null]);
+  if (rosterAtStart === null && m.frame >= (route && route.frame ? route.frame : 0) + SETTLE) {
+    rosterAtStart = m.foes; startedAt = [m.px, m.py, m.frame, m.qh];
+  }
   if (m.hp !== lastHp || m.qh !== lastQh) { timeline.push(m); lastHp = m.hp; lastQh = m.qh; }
+  if (m.foes.length > peakFoes) peakFoes = m.foes.length;
   if (m.beaten) { timeline.push(m); break; }
   if (m.qh === 0 || m.dead) break;
 }
 
+if (rosterAtStart) {
+  console.log(`the arena the actor engages, at frame ${startedAt[2]}: `
+    + `player ${startedAt[0]},${startedAt[1]} on ${startedAt[3]} quarter-hearts, `
+    + `in the room [${rosterAtStart.join(', ')}]\n`);
+}
 console.log('timeline (boss.hp / player quarter-hearts, on change):');
 for (const t of timeline) console.log(`  f=${t.frame}  boss.hp=${t.hp}  dead=${t.dead}  player.qh=${t.qh}`);
 if (err) console.log(`\ndid not finish: ${err}`);
@@ -341,6 +452,8 @@ console.log(`boss damage dealt: ${startHp != null && lastSeenHp != null ? startH
 console.log(`player damage taken: ${dmgLog.reduce((s, d) => s + d.lost, 0)} quarter-hearts, in ${dmgLog.length} hits`
   + ` (${dmgLog.filter(d => d.isProjectile).length} projectile, ${dmgLog.filter(d => !d.isProjectile).length} contact)`);
 console.log(`frames: ${final.frame}`);
+console.log(`most foes alive at once during the fight: ${peakFoes}`
+  + ` (the arena started with ${rosterAtStart ? rosterAtStart.length : '?'})`);
 if (won) console.log(`player finished on ${final.qh} of ${QH} quarter-hearts`);
 if (errs.length) console.log('page errors: ' + errs.slice(0, 3).join(' | '));
 

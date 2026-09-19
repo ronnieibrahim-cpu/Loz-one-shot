@@ -1305,9 +1305,19 @@ export const ROUTE = [
   // drifts into the arena's east wall, where the post-swing retreat slides
   // along the bricks instead of opening a gap. Retreating toward open floor
   // instead gives 7, 8, 10, 14, 14 — five wins in five, spread halved, death
-  // gone. In THIS run it loses the fight outright. The arena the harness
-  // fights in is empty; the one the route arrives in still has a zol in it,
-  // and that is enough to make them different fights. See the S131 ledger.
+  // gone. In THIS run it loses the fight outright.
+  //
+  // S132 CLOSED THAT GAP AND THE ANSWER STANDS. The harness now sets this
+  // fight up the way the route arrives at it — in the south doorway at
+  // 65,112, on the 24 of 32 quarter-hearts the route carries, after the
+  // route's own 90-frame wait — and swept that way `openRetreat` gives 3 wins
+  // in 5 against 2, and flips one seed from a win to a DEATH. It is not the
+  // clean improvement the empty room made it look. It stays off.
+  // (The old note here said the route's arena "still has a zol in it". It
+  // does not: the room holds Gloomtide alone when the fight starts. The zol
+  // is one of his own summons and it arrives during the fight. What actually
+  // makes the two fights different is measured — the doorway and the settle,
+  // not the roster, not the health and not the clock. See the S132 ledger.)
   ['boss', 14000, null, { clearAdds: true }],
   ['wait', 240],
 

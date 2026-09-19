@@ -1030,6 +1030,44 @@ unwritten because it re-sweeps every recorded frame in the repo.
 Floor wrote this down and the Shrine Ford repeated it. Wide rooms are crossed,
 not cleared, until `dFight` learns a radius.
 
+## Settled at S132 — the harness now fights the route's arena, and the answer holds
+
+**`openRetreat` STAYS OFF ON D3, and it is now a measurement rather than a
+single run's word.** `measure-boss-combat.mjs` sets a fight up the way the
+ROUTE arrives at it where a `ROUTE_ARENA` row exists — for D3, the south
+doorway at 65,112, the 24 of 32 quarter-hearts the route carries, and the
+route's own 90-frame wait — transcribed off `check-playthrough --trace`, not
+guessed. Five seeds, in that arena:
+
+| | 20260806 | 1 | 2 | 3 | 4 |
+|---|---|---|---|---|---|
+| plain | DEAD | 6 | 12 | DEAD | DEAD |
+| `--open-retreat` | 2 | **DEAD** | 8 | DEAD | 6 |
+
+2 wins in 5 becomes 3 in 5, and seed 1 flips from a win to a death. Against
+the empty arena's 3-in-5 → 5-in-5 that is a different verdict, and it is the
+same one the real run gave at S131 — reached in one fight's frames.
+
+**THE S131 EXPLANATION WAS WRONG, and the right one is smaller and sharper.**
+There is no zol in the route's arena when the fight starts: the room holds
+Gloomtide alone (`entities: [['gloomtide', 4, 2]]`, and the harness now prints
+its roster every run). The zol is one of his own summons, and peak foes
+reaches 4 during the fight in both setups. Ablated on seed 20260806, which is
+the seed that flips:
+
+- **the doorway and the settle together are the whole difference.** Revert
+  either one alone (`--at=72,80`, or `--settle=30`) and the death is a win.
+- **health is not it.** `--qh=20`, the old in-order count, still dies.
+- **the clock is not it, and this one is a real negation.** The route arrives
+  at frame ~60143 and this harness at ~0, and every animation phase in the
+  game is derived from that counter. Stamping the route's frame on the room
+  changes NOTHING: all ten runs of the sweep are bit-identical with it and
+  without it. Kept in the tool anyway, so it never has to be argued again.
+
+What is left unmatched is the global RNG stream's history — the per-room
+stream is derived from seed and room and does match. That is the honest
+remaining gap and it is written in the tool's own header.
+
 ## Settled at S131 — the boss verb could lose a fight and report a win
 
 **A LOST BOSS FIGHT USED TO READ AS A WON ONE, in every fight in the game.**

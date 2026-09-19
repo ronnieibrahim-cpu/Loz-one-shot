@@ -1,3 +1,54 @@
+## S132 — the practice fight is the real fight now, and it says the same thing
+
+The last two sessions turned on a disagreement: a change to how Link backs off
+after a swing won the third dungeon's boss five times out of five in the
+practice harness, and lost him in the real game. Nobody could say why, so
+nobody could trust either number.
+
+### WHAT WAS ACTUALLY DIFFERENT
+
+The practice fight used to drop Link in the middle of an empty boss room on
+whatever health the tester typed, one second after the room was built. The
+real game walks him in through the south door, on 24 of his 32 quarter-hearts,
+and stands there for a second and a half while the boss is already awake and
+moving. The harness now sets up the second of those, read straight off the
+real run's own trace rather than guessed. It also prints, every run, exactly
+what is in the room with him.
+
+Ablated on the seed that flips (20260806):
+
+- **the doorway and the wait together are the whole difference.** Put him back
+  in the middle of the room, OR cut the wait back to where it was, and the
+  death is a win again. Either one alone is enough.
+- **health is not it.** Fought at the old 20 quarter-hearts he still dies.
+- **the clock is not it.** The real run reaches that door about sixty thousand
+  frames in, and every animation in the game is timed off that counter. Giving
+  the practice fight the same clock changes NOTHING — all ten runs of the
+  sweep came out identical to the frame. That is worth knowing and it is
+  written into the tool so it never gets tried again.
+- **there was never a zol in the room.** The S131 note said there was; the
+  room holds the boss alone. The zol is one of the boss's own summons and it
+  turns up during the fight, in both setups.
+
+### THE ANSWER
+
+Five seeds, the real fight:
+
+| | 20260806 | 1 | 2 | 3 | 4 |
+|---|---|---|---|---|---|
+| as it ships | DEAD | 6 | 12 | DEAD | DEAD |
+| with the change | 2 | **DEAD** | 8 | DEAD | 6 |
+
+Two wins in five becomes three in five, and one seed goes the other way. In
+the empty room the same change read as three-in-five to five-in-five. So the
+change is not the clean win it looked like, the real run was right, and it
+stays out of the game — which is where it already was. Nothing about how the
+game plays changed this session.
+
+The one thing still not reproduced is the luck: the real run arrives having
+drawn sixty thousand frames of random numbers, and the practice fight starts
+fresh. Room-by-room randomness does match, because the game derives that from
+the room. That gap is stated in the tool's own header rather than glossed.
 ## S130 — the miniboss out-shoots its own boss, and the run cannot absorb the fix
 
 Two facts, one landed and one that could not be.

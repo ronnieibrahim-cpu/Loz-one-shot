@@ -23,16 +23,16 @@ be gated on a downstream trough.
 ONE UNAUDITED THING, found at S124 and not chased: every placed pickup in the
 game has a 460-frame fuse counted while its room is on screen, so any placed
 fairy or heart sharing a room with a real fight is quietly unavailable.
-THE NAMED BLOCKER (S130, sharpened at S131): the run is one sample, and the
-five-seed harness that was supposed to answer that fights an EMPTY arena while
-the route's still holds a zol. They are different fights, measured. The next
-objective is a harness that fights the route's arena.
+THE S130/S131 BLOCKER IS CLEARED (S132): the harness fights the route's arena
+now — doorway, carried health, the route's own settle — and it gives the same
+verdict the real run gave. D3 is transcribed; the other five bosses and the
+nine minibosses are not, so every one of them is still swept in a room no
+player is ever in.
 
-FILE ALLOWLIST for the current objective (measure a boss fight as the ROUTE
-plays it, not as an empty room):
-  tools/measure-boss-combat.mjs — the arena setup
-  tools/actor-runtime.mjs — `dBoss` only
-  tools/playthrough-route.mjs — the D3 boss leg
+FILE ALLOWLIST for the current objective (transcribe the remaining bosses'
+arenas, D6/Nereth first):
+  tools/measure-boss-combat.mjs — `ROUTE_ARENA` rows only
+  tools/playthrough-route.mjs — boss-leg comments only
   dist/oracle-of-tides.html
   docs/NEXT-SESSION.md
   docs/prompts/LEDGER.md
@@ -57,3 +57,4 @@ S128 | objective | Stopped Link paying the same toll twice. He walks through a r
 S129 | objective | Read the first dungeon's bill for the first time. Eleven of its rooms cost nothing; three are the whole bill. Fixed the one that was a routing cost: Link used to walk past the room below the hub taking two hits and leaving what the crabs dropped on the floor, so the game's scariest moment — the first real fight, at a quarter of a heart from death — was really paid for two rooms earlier. He clears that room now and it pays for itself. Measured and wrote down why the crab miniboss above it cannot be helped the same way: he already walks in on a full heart bar, because that is as full as it goes there.
 S130 | objective | Found out why the first dungeon's crab miniboss is the hardest thing in it: it throws rocks faster than the dungeon's actual boss does, on half the health and no shell, and the test robot dies to it every single time — not sometimes, every time, because there is nothing random in that fight at all. The three-line fix turns every loss into a win. It is written down and NOT in the game, because putting it in re-rolls a boss fight two dungeons later and the run dies there instead. The real problem is now named: the whole game is tested by one lucky run.
 S131 | objective | Found that the test robot could lose a boss fight and report a win. When Link dies, the game puts him back at the dungeon's front door on a full heart bar and clears the room behind him — and the robot, which decides a boss is dead by looking round the room for it, saw an empty room and called it a victory. It then walked the rest of the game without the Essence, and the first thing that noticed was a missing item an hour and a half later in a different dungeon. Every boss fight in the game has had that hole for its whole life. Also read the third dungeon's boss properly for the first time: the fight swings between five quarter-hearts and death depending on nothing but whether the end of it drifts into the arena's east wall, where Link's retreat slides along the bricks instead of getting away. The fix for that is measured, written down and deliberately not switched on, because it loses the real run — which turns out to be the sharpest thing found all session: the practice arena is empty and the real one still has a zol in it.
+S132 | objective | Made the practice fight the same fight as the real one. For two sessions a change to how Link backs off after a swing won the third dungeon's boss every time in practice and lost him in the real game, and nobody could say why. The practice fight used to start him in the middle of an empty room on made-up health; it now starts him in the doorway he really walks in through, on the health he really carries, after the pause he really takes — and it says the same thing the real run said, so the change stays out. Three explanations that had been offered for the gap were measured and are wrong: it is not his health, it is not the clock, and there was never a second monster in the room.
