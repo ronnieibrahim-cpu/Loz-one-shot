@@ -111,9 +111,60 @@ const FIGHTS = {
 //
 // `room` is the arena, `qh` is what the ROUTE actually walks in holding, which
 // for the Clawcrab is the cap — see the S129 ledger.
+//
+// S136: EVERY ROW BELOW NOW CARRIES ITS ROUTE ARENA TOO. `at`, `facing`, `qh`,
+// `maxQh`, `settle` and `frame` mean exactly what they mean in `ROUTE_ARENA`,
+// and a mini row that has an `at` IS its own route arena — see the `route`
+// binding further down. Each is transcribed off `check-playthrough.mjs
+// --trace`: the step that lands in the arena gives the frame, the step
+// immediately before the `boss` directive gives the position and the health,
+// and `settle` is the gap between the two. `items` was read out of
+// `progress.items` at that same step rather than copied off the dungeon's
+// boss row, because a miniboss is fought BEFORE its dungeon is finished and
+// the two sets are not the same — the Reefguard has the Lens and no bombs.
 const MINIS = {
+  // d1 0,5,3, arena entered at step 132 (`exit down`) f13940, boss at f14081.
+  // The Clawcrab is met on a FULL bar and that is as full as it goes there.
   clawcrab: { dungeon: 'd1', room: '0,5,3', flag: 'd1_clawcrab', tide: MID, qh: 12,
-              items: { sword: 1, conch: 1, anchor: 1 } },
+              items: { sword: 1, conch: 1, anchor: 1 },
+              at: [65, 3], facing: 'down', maxQh: 12, settle: 141, frame: 13940 },
+  // d2 1,4,2, step 308 (`hold up` through the door) f36606: `17,103 hp 15/20
+  // tide 1 [reefguard+urchin]`. The boss directive begins the same frame, so
+  // the settle is 0 — the route walks in and swings.
+  reefguard: { dungeon: 'd2', room: '1,4,2', flag: 'd2_reefguard', tide: MID, qh: 15,
+               items: { sword: 1, conch: 1, anchor: 1, lens: 1 },
+               at: [17, 103], facing: 'up', maxQh: 20, settle: 0, frame: 36606 },
+  // d4 0,5,3, step 692 (`hold up`) f76801, boss at f76921: `47,95 hp 26/32
+  // tide 2 [ironknight+keese]`. There is a keese in the room with him.
+  ironknight: { dungeon: 'd4', room: '0,5,3', flag: 'd4_ironknight', tide: HIGH, qh: 26,
+                items: { sword: 1, conch: 1, anchor: 1, lens: 1, bombs: 1, cleats: 1, bellows: 1 },
+                at: [47, 95], facing: 'up', maxQh: 32, settle: 0, frame: 76801 },
+  // d5 0,5,3, step 968 (`hold up`) f116879: `45,95 hp 27/40 tide 0
+  // [thornvine]`. Straight in, no settle.
+  thornvine: { dungeon: 'd5', room: '0,5,3', flag: 'd5_thornvine', tide: LOW, qh: 27,
+               items: { sword: 2, conch: 1, anchor: 1, lens: 1, bombs: 1, cleats: 1,
+                        bellows: 1, reefseed: 1 },
+               at: [45, 95], facing: 'up', maxQh: 40, settle: 0, frame: 116879 },
+  // d6 1,4,5, step 1272 (`travel`) f152861: `11,48 hp 26/44 tide 0
+  // [tideshade]`. NO CHARMS — the route does not put one on until step 1326,
+  // two rooms later, so this is the last fight in the game fought bare.
+  tideshade: { dungeon: 'd6', room: '1,4,5', flag: 'd6_tideshade', tide: LOW, qh: 26,
+               items: { sword: 3, conch: 1, anchor: 1, lens: 1, bombs: 1, cleats: 1,
+                        bellows: 1, reefseed: 1, kilnshell: 1, rod: 1, dredge: 1 },
+               opts: { breakContact: true },
+               at: [11, 48], facing: 'right', maxQh: 44, settle: 0, frame: 152861 },
+  // d6 1,4,2, step 1390 (`equip`) f163176: `227,97 hp 25/44 tide 2
+  // [brinehulk+beamos+keese]`. THE ONE ROW WHOSE FRAME IS NOT A ROOM ENTRY:
+  // the Crossed Shafts are entered thousands of frames earlier and both
+  // crossings are made with the colossus already awake, so the frame is the
+  // instant the boss directive begins and the settle is nominal. He is fought
+  // on the FAR ISLAND at HIGH, which is the only sea he can be hurt at, with
+  // a beamos and a keese still in the room, and both charms on.
+  brinehulk: { dungeon: 'd6', room: '1,4,2', flag: 'd6_brinehulk', tide: HIGH, qh: 25,
+               items: { sword: 3, conch: 1, anchor: 1, lens: 1, bombs: 1, cleats: 2,
+                        bellows: 1, reefseed: 1, kilnshell: 1, rod: 1, dredge: 1 },
+               charms: { mid: 'coilrope', high: 'gillcarve' },
+               at: [227, 97], facing: 'right', maxQh: 44, settle: 30, frame: 163176 },
 };
 
 // THE FIGHT THE ROUTE ACTUALLY PLAYS.
@@ -270,7 +321,7 @@ const qhArg = args.find(a => a.startsWith('--qh='));
 // winnable at the design tide?".
 const tideArg = args.find(a => a.startsWith('--tide='));
 const fight = mini
-  ? { boss: MINI, tide: mini.tide, items: mini.items }
+  ? { boss: MINI, tide: mini.tide, items: mini.items, opts: mini.opts || null }
   : FIGHTS[dungeonId];
 if (!fight) { console.error(`unknown dungeon '${dungeonId}' — one of ${Object.keys(FIGHTS).join(', ')}`); process.exit(1); }
 // The route's own arena, for the fights that have a row above. On by default
@@ -279,9 +330,14 @@ if (!fight) { console.error(`unknown dungeon '${dungeonId}' — one of ${Object.
 // `--empty-arena` asks the old question instead. A miniboss, an explicit
 // `--at=` or `--qh=` opts out of the part it names.
 const emptyArena = args.includes('--empty-arena');
-const route = (!mini && !emptyArena) ? (ROUTE_ARENA[dungeonId] || null) : null;
+// A mini row that carries an `at` is its own route arena, so the two kinds of
+// fight are set up by one code path and cannot drift apart (S136). A mini
+// without one falls back to the middle of the room, the way all of them did.
+const route = emptyArena ? null
+  : mini ? (mini.at ? mini : null)
+  : (ROUTE_ARENA[dungeonId] || null);
 const QH = qhArg ? Number(qhArg.slice('--qh='.length))
-  : mini ? mini.qh : route ? route.qh : (IN_ORDER_QH[dungeonId] || 12);
+  : route ? route.qh : mini ? mini.qh : (IN_ORDER_QH[dungeonId] || 12);
 // The BAR, which is not what is in it. `hearts` above is what the route
 // carries; this is what the route could carry, and the two are only the same
 // in a harness that invented both. A fairy or a heart drop mid-fight heals up

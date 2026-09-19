@@ -1030,6 +1030,38 @@ unwritten because it re-sweeps every recorded frame in the repo.
 Floor wrote this down and the Shrine Ford repeated it. Wide rooms are crossed,
 not cleared, until `dFight` learns a radius.
 
+## Settled at S136 — the minibosses have arenas, and two readings reverse
+
+**ALL SIX MINIBOSS ROWS CARRY THEIR ROUTE ARENA.** A `MINIS` row with an `at`
+IS its route arena — one `route` binding serves both tables, so a fix to one
+kind of fight cannot miss the other. Transcribed off the trace the same way
+the boss rows were.
+
+**`items` FOR A MINIBOSS IS NOT ITS DUNGEON'S BOSS KIT.** A miniboss is fought
+before its dungeon is finished. Read it out of `progress.items` at the step.
+The Reefguard has the Lens and no bombs.
+
+**THE REEFGUARD IS NOT LETHAL.** Empty room at 16: dead five times in five.
+Its own doorway at 15 of 20: five wins in five, 13 left each time. The old
+reading was a measurement of a fight nobody has.
+
+**THE TIDESHADE COSTS TWELVE QUARTER-HEARTS, NOT ZERO.** The empty room never
+let the fight start. It is also the last fight in the game fought with no charm
+on — the route does not put one on until two rooms later.
+
+**THE BRINEHULK LOSES FOUR IN FIVE IN HIS OWN ARENA**, and the empty room
+landed ZERO damage on him in every seed, so nothing had ever measured him at
+all. Far island, flood, a beamos and a keese still in the room, both charms on.
+The real run beats him. Widest instance of the S135 gap in the game.
+
+**THE CLAWCRAB LOSES IN BOTH ARENAS.** S130's finding is unchanged and the
+arena was never the explanation.
+
+**KNOWN LIMIT: the rig cannot score a miniboss off its room flag.** The
+route's `boss` directive names one target and does not clear the room, so a
+dead miniboss with a live urchin beside it reports "still alive after 18000
+frames". Score off `boss damage dealt` until someone changes the win condition.
+
 ## Settled at S135 — every boss has a route arena, and the bar was wrong everywhere
 
 **ALL SIX `ROUTE_ARENA` ROWS EXIST.** Transcribed off `check-playthrough.mjs

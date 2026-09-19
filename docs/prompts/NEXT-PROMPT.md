@@ -1,47 +1,43 @@
-# Next session — transcribe the miniboss arenas
+# Next session — score a miniboss by its room flag
 
 ## Read first
 - `docs/prompts/STATE.md` — the whole file.
-- `docs/prompts/LEDGER.md`'s "Settled at S135" and "Settled at S132" sections.
-- `docs/NEXT-SESSION.md`, the S135 entry only.
-- `tools/measure-boss-combat.mjs`'s `MINIS` table and the `ROUTE_ARENA` table
-  above it — the six rows there are the worked examples.
-- `node tools/check-playthrough.mjs --trace`, every `boss` and `fight` step
-  that is not one of the six dungeon bosses.
+- `docs/prompts/LEDGER.md`'s "Settled at S136" and "Settled at S135" sections.
+- `docs/NEXT-SESSION.md`, the S136 entry only.
+- `tools/measure-boss-combat.mjs`'s `MINIS` table and the comment above it,
+  and the block that decides a fight's outcome.
 
 ## Why this, now
-All six bosses are transcribed and three of them read worse in the route's
-arena than the harness had been claiming — Wyverna went from five in five to
-three. `MINIS` has exactly one row, the Clawcrab, and every other miniboss in
-the game is still fought in the middle of an empty room on an invented heart
-count. The Clawcrab is the one the project already knows is the hardest thing
-in D1; nobody has looked at the rest.
+Every fight in the game is now set up the way the run arrives at it, and the
+miniboss half of that cannot be scored. The rig's ground truth for a miniboss
+is the room's own puzzle flag, and the route's `boss` directive names one
+target and does not clear the room — so a dead Reefguard with a live urchin
+beside it reports "still alive after 18000 frames". S136's six miniboss spreads
+had to be read off `boss damage dealt` by hand. That is a fine number and it is
+not a result the tool states.
 
 ## The task
-Give every miniboss the route fights a `MINIS` row carrying the same fields the
-`ROUTE_ARENA` rows carry: `at`, `facing`, `qh`, `maxQh`, `settle` and `frame`,
-each transcribed off the trace step that lands in its room, plus `charms` where
-the route is wearing one. `maxQh` is not printed by the trace and is not
-inferrable — read it out of `progress.maxHearts` with a throwaway probe and
-revert the probe. Then sweep each at the five seeds `20260806 1 2 3 4` and
-record the win rate and the quarter-hearts left on a win, before and after.
+Make `tools/measure-boss-combat.mjs` decide a miniboss fight correctly: the
+named target being dead is a WIN, whatever else is still standing, and the room
+flag is reported alongside rather than instead. Say in the summary which of the
+two happened, so a fight that kills its miniboss and leaves the room uncleared
+is legible as exactly that. Then re-run the six minibosses at the five seeds
+`20260806 1 2 3 4`, in both arenas, and confirm the tool now prints by itself
+the table S136 had to assemble by hand.
 
 ## Done means
-- One row per miniboss, each with a comment naming its trace step.
-- A before/after five-seed table per miniboss in `docs/NEXT-SESSION.md`, and a
-  plain sentence saying which ones read worse than the harness claimed.
+- The six spreads, printed by the tool, matching S136's table in
+  `docs/NEXT-SESSION.md`, with any disagreement explained.
+- `node tools/check-bosses.mjs` green — it shares this file's fight table.
 - `node tools/check-playthrough.mjs` green, ending in `d6/1,3,1` with six
   Essences and no deaths.
-- `node tools/check-bosses.mjs`, `node tools/check-drift.mjs`,
-  `node tools/test.mjs`, `node tools/replay.mjs`.
+- `node tools/check-drift.mjs`, `node tools/test.mjs`, `node tools/replay.mjs`.
 - `npm run build` with `dist/oracle-of-tides.html` committed.
 
 ## Out of scope
-- Changing any fight, any enemy's damage, any boss option. This session reads.
-  A fight that reads badly is a finding for `docs/NEXT-SESSION.md`.
-- The six dungeon bosses. They were settled at S135 and re-sweeping them is
-  not this.
-- Any route change. The trace is the input here, not the output.
-- Reading the rig's default seed as the run's own attempt. It does not restore
-  the RNG stream's history; only the five-seed spread means anything.
+- Changing any fight, enemy damage, boss hp or boss option. This is scoring.
+- The Brinehulk's one-in-five and the Clawcrab's nought-in-five. They are real
+  readings and they are the session after the scoring works.
+- Any route change. The trace is the input, not the output.
+- Re-transcribing the twelve arena rows. They are settled at S135 and S136.
 - The 460-frame pickup fuse, still unaudited outside the Abyssal Keep.

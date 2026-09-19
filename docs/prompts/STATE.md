@@ -23,25 +23,24 @@ be gated on a downstream trough.
 ONE UNAUDITED THING, found at S124 and not chased: every placed pickup in the
 game has a 460-frame fuse counted while its room is on screen, so any placed
 fairy or heart sharing a room with a real fight is quietly unavailable.
-ALL SIX BOSSES ARE TRANSCRIBED (S135). The nine minibosses are not, so they
-are still swept in a room no player is ever in. Two bosses read badly in their
-real arena and nothing was changed about either: Wyverna 3 of 5 and Rootmaw
-2 of 5. Gloomtide is 2 of 5 and has been since S132.
+EVERY FIGHT IN THE GAME IS TRANSCRIBED (S135 bosses, S136 minibosses) and
+nothing was changed about any of them. Reading worse than reported: Wyverna
+3 of 5, Rootmaw 2 of 5, Gloomtide 2 of 5, the Brinehulk 1 of 5, the Clawcrab
+0 of 5. The rig cannot score a miniboss off its room flag — see the S136
+ledger.
 THE S133 FINDING IS ACTED ON (S134): Nereth wins 5 of 5 now, on a fairy behind
 his own boss door. He is met on 44 of 44 — a FULL bar (S135 corrected the 48) —
 so nothing more can come from the health side. What is left is seed 3's 1.25
 hearts, and that is in the fight.
 
-FILE ALLOWLIST for the current objective (transcribe the miniboss arenas):
-  tools/measure-boss-combat.mjs — `MINIS` rows only
+FILE ALLOWLIST for the current objective (score a miniboss by its room flag):
+  tools/measure-boss-combat.mjs
   docs/NEXT-SESSION.md
   docs/prompts/LEDGER.md
 
 DETOUR TOKENS: 1 (unspent)
 
 SESSION LOG: one row per session — `S## | objective|detour | one line`
-S118 | objective | Played the Coastwise Chain for the first time. A new game now walks out of the Drowned Wood Shrine, passes all twelve of the coast's traders in order across fifty screens, comes out of the far end with the Resonance Rod, takes the third sword off the Maku Tree and the road she opens with it, and walks down the Kell into the Abyssal Keep. It arrives on a heart and a half: the tour costs thirty-six quarter-hearts and there is nothing anywhere on it to heal on, which is now the thing stopping the run.
-S119 | objective | Put a fairy on Shell Beach, the one screen the coast trade crosses twice and the road to the fourth dungeon never touches. The long walk round the coast used to end at the last dungeon's door on a heart and a half; it now ends there on seven and a half, and the test run fails outright if it ever arrives on less than half.
 S120 | objective | Played the sixth and last dungeon for the first time, as far as the final boss's own door. A new game now walks into the Abyssal Keep, wins all four of its keys and opens all four of its locked doors: it fetches the fire-shell out of a reef cave nothing had ever opened, lights the Kiln's four torches with it, rings a knight's armour with the trading rod so a sword will go through it, takes the Dredge Line out of its vault and throws it across three holes nothing walks. What is left in the whole game is the Boss Key and the King.
 S121 | objective | Played the whole game from the title screen to the end. A new game now walks into the Abyssal Keep, crosses the Sunken Bar at flood, takes the Crossed Shafts at both seas, beats the Brinehulk for the Boss Key and kills Nereth in real combat on the health the Keep actually leaves, and the sixth Essence and the ending follow. Found on the way that the Brinehulk was handing out that Essence itself, two rooms short of the throne room, so the last dungeon could be finished without ever meeting the King; and that floor 1 of the Keep was the only dungeon floor in the game with nothing on it to heal on.
 S122 | objective | Closed the last two red checks in the project, and neither of them was a fault in the game. The charm that is supposed to let you breathe on the seafloor was reported broken for several sessions; it works, and the test was standing on dry sand while pretending to be underwater. And the world was reported to be one Piece of Heart short of a whole number of hearts; it is not — the counter simply could not see the one the Drowned Wood Shrine pays out of its drowned wheel. Adding the piece the last prompt asked for would have broken a different check.
@@ -58,3 +57,4 @@ S132 | objective | Made the practice fight the same fight as the real one. For t
 S133 | objective | Measured the last fight in the game properly for the first time, and it is a coin flip. The practice rig now sets Nereth up the way the real run arrives at him — in his own doorway, on the 28 of 48 hearts the run carries, and wearing the charm the run is wearing, which no boss measurement in this project had ever done. Five tries: three wins, and every win finishes within two hearts of death. The real run does beat him, but it beats him the way these do — barely. Nothing was changed about the fight; that is a session's work, not the tail of one.
 S134 | objective | Gave the last fight in the game a margin. Nereth used to be a coin flip — three wins in five and never more than two hearts left — because the run climbed his stair on four hearts short of half a bar with nothing anywhere behind it to drink. There is a fairy in the antechamber at the foot of that stair now, on the far side of his own locked door, so it cannot be had until the Boss Key is spent and it is impossible to waste. He is beaten five times in five now, with six hearts standing in the real run. Found on the way that his fight costs the same no matter how much health you walk in on, which is why the answer was a fairy and not a change to the fight.
 S135 | objective | Measured all six boss fights the way the game is really played, for the first time. Four of them were being practised in the middle of an empty room on health nobody ever carries, and the difference is not small: the fourth boss, which the practice rig has called an easy win for the whole life of the project, is met on barely half a heart bar and is won three times in five. Found that the bar itself was recorded wrong for two of the six, including the last fight in the game — the King is met on a completely full bar, not four quarter-hearts short of one, so last session's fairy is doing everything a fairy can. Nothing about any fight was changed; this was the reading, and three of the six now read worse than they were being reported.
+S136 | objective | Measured the six lesser bosses the same way, and two of the readings turn over completely. The thing guarding the second key in the game has been reported as killing you every single time; met the way it is really met, it loses five times in five. The shadow in the last dungeon was being reported as free and actually costs three hearts, and it is the last fight in the game you take with nothing on your charm case. And the salt colossus had never been measured at all — the old practice setup could not land a single blow on it in any attempt — which is why nobody had noticed it is the hardest fight in the game to practise. Nothing about any of them was changed.

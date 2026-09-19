@@ -1,3 +1,57 @@
+## S136 — the six minibosses are measured in their own arenas too
+
+`MINIS` had one row, the Clawcrab, and no arena at all. All six minibosses the
+route fights now carry the same fields a `ROUTE_ARENA` row carries, transcribed
+off `check-playthrough.mjs --trace`, and a mini row with an `at` IS its route
+arena — one code path sets up both kinds of fight now, so they cannot drift
+apart.
+
+`items` was read out of `progress.items` at the step rather than copied off the
+dungeon's boss row, and the two are genuinely different: **the Reefguard is
+fought with the Lens and no bombs**, which is not the D2 boss's kit.
+
+### THE SPREADS, five seeds
+
+`x0/18` means the actor never landed a hit at all — not a loss, a fight it
+could not start. A number is quarter-hearts left with the miniboss dead.
+
+| miniboss | the empty room | its own arena |
+|---|---|---|
+| Clawcrab (d1) | dead x5 | dead x5 |
+| Reefguard (d2) | **dead x5** | **13, 13, 13, 13, 13 — 5 of 5** |
+| Ironknight (d4) | 24, 18, x0, x0, x0 | 25, x0, 26, 17, 20 — 4 of 5 |
+| Thornvine (d5) | 24, 27, 21, 24, 21 | 27, 24, 27, 27, 27 |
+| Tideshade (d6) | 26, 26, 26, 26, 26 | **14 x5** |
+| Brinehulk (d6) | x0 x5 | **dead, dead, dead, 12, dead — 1 of 5** |
+
+**The Reefguard is the reversal.** The empty room killed the actor five times
+in five and it wins five in five in its own doorway on less health. The second
+Small Key in the game has been reported as lethal for the life of this file.
+
+**The Tideshade is twelve quarter-hearts, not zero.** The empty room never let
+the fight start properly and reported it free. Three hearts is what it really
+costs, and the route pays it on 26 of 44 with no charm on — it is the last
+fight in the game fought bare.
+
+**The Brinehulk loses four in five in his own arena**, and the empty room could
+not land a single hit on him in any seed, so nothing had ever measured him. He
+is fought on the far island at flood with a beamos and a keese still in the
+room and both charms on. The real run beats him; this is the same gap S135
+named, and it is the widest instance of it in the game.
+
+**The Clawcrab dies in both**, which is S130's finding unchanged: nothing in
+that fight is random and the actor loses it every time, while the route wins
+it. The arena was never the explanation.
+
+### WHAT COULD NOT BE SCORED, AND WHY
+
+The rig's ground truth for a miniboss is the room's own puzzle flag, and the
+route's `boss` directive names one target and does not clear the room — so a
+fight that kills its miniboss while an urchin is still alive reports "still
+alive after 18000 frames". The scores above are read off `boss damage dealt`
+instead. Fixing the win condition is a change to the rig, not a reading, and
+it was left alone.
+
 ## S135 — all six bosses are now measured in the fight the run actually has
 
 Two of the six had a `ROUTE_ARENA` row. Four did not, and were being fought in
