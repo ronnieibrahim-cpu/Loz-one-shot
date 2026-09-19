@@ -163,6 +163,21 @@ const ROUTE_ARENA = {
   // the pieces the Sanctum pays out — so 24 of 32 is a player at three
   // quarters, not the 20 of 20 this file was fighting at.
   d3: { at: [65, 112], facing: 'up', qh: 24, maxQh: 32, settle: 90, frame: 60143 },
+  // d6 1,3,1, trace step 1421 (the throne-room `dialogue`) at f165907:
+  // `65,101 hp 28 tide 1 foes 1 [nereth]`. The bar is 48 by the end of the
+  // run, and 28 of 48 is not the 32 of 32 this file was fighting the last
+  // boss in the game at — it is a player at LESS than the in-order count on a
+  // bar half as full again. The settle is 24 frames, not a `wait`: the route
+  // opens Nereth's own dialogue on the way in, and that is what the arena
+  // runs for before the fight starts.
+  //
+  // `charms` is why this row needed a field the D3 one did not. The route
+  // reaches this fight WEARING one — `coilrope` in the MID case, which is the
+  // case this fight is played at — and no measurement of Nereth had ever had
+  // it on. A charm is not an item and `setup.items` cannot grant one; see the
+  // stamp below.
+  d6: { at: [65, 101], facing: 'up', qh: 28, maxQh: 48, settle: 24, frame: 165883,
+        charms: { mid: 'coilrope', high: 'gillcarve' } },
 };
 
 const args = process.argv.slice(2);
@@ -372,6 +387,28 @@ await page.evaluate(([setup, steps]) => window.__rp.beginRecord(setup, steps), [
 // phase in the game is derived from this counter.
 if (route && route.frame) {
   await page.evaluate(f => { window.__game.frame = f; }, route.frame);
+}
+// Put the route's charms on. `setup.items` cannot: a charm lives in
+// `progress.charms` and a slotted one in `progress.charmSlots`, and neither is
+// an item id. The run has worn one since S123 and no boss measurement ever
+// had, which made every sweep in this file a fight the route does not play.
+if (route && route.charms) {
+  const slotted = await page.evaluate(async (want) => {
+    const s = await import('/src/game/scrimshaw.js');
+    const p = window.__game.progress;
+    for (const slot of Object.keys(want)) {
+      // The cases open on the ESSENCE count (`openCharmCases`), and this
+      // harness boots a new game that holds none. The route is holding five
+      // by the time it reaches a `ROUTE_ARENA` fight, so its cases are open —
+      // open them here rather than silently failing to slot, which is what
+      // happened to the HIGH case on the first run of this row.
+      if (p.charmOpen) p.charmOpen[slot] = true;
+      s.giveCharm(p, want[slot]);
+      s.slotCharm(p, slot, 0, want[slot]);
+    }
+    return JSON.parse(JSON.stringify(p.charmSlots));
+  }, route.charms);
+  console.log(`charms worn, as the route wears them: ${JSON.stringify(slotted)}`);
 }
 
 let done = false, err = null, guard = 0;

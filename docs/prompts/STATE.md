@@ -24,15 +24,16 @@ ONE UNAUDITED THING, found at S124 and not chased: every placed pickup in the
 game has a 460-frame fuse counted while its room is on screen, so any placed
 fairy or heart sharing a room with a real fight is quietly unavailable.
 THE S130/S131 BLOCKER IS CLEARED (S132): the harness fights the route's arena
-now — doorway, carried health, the route's own settle — and it gives the same
-verdict the real run gave. D3 is transcribed; the other five bosses and the
-nine minibosses are not, so every one of them is still swept in a room no
-player is ever in.
+now, and D3 and D6 are transcribed. D1, D2, D4, D5 and the nine minibosses are
+not, so they are still swept in a room no player is ever in.
+THE NAMED FINDING (S133, not acted on): Nereth wins 3 of 5 and never by more
+than two hearts. The end of the game is a coin flip. It is a session's work,
+not the tail of one, and S124's charm negation is the first thing to read.
 
-FILE ALLOWLIST for the current objective (transcribe the remaining bosses'
-arenas, D6/Nereth first):
+FILE ALLOWLIST for the current objective (give the last fight a margin):
   tools/measure-boss-combat.mjs — `ROUTE_ARENA` rows only
-  tools/playthrough-route.mjs — boss-leg comments only
+  tools/playthrough-route.mjs — the D6 boss leg
+  src/data/dungeons-b.js — the Abyssal Keep's rooms only
   dist/oracle-of-tides.html
   docs/NEXT-SESSION.md
   docs/prompts/LEDGER.md
@@ -40,8 +41,6 @@ arenas, D6/Nereth first):
 DETOUR TOKENS: 1 (unspent)
 
 SESSION LOG: one row per session — `S## | objective|detour | one line`
-S115 | objective | Played the third dungeon for the first time. A new game now walks from the title screen all the way to the Bogwater Sanctum's boss and comes out with three of the six Essences: it bombs its way into the marsh to reach the door, dives under all three of the Sanctum's currents in the new soles, and beats Gloomtide with hearts to spare.
-S116 | objective | Played the fourth dungeon for the first time. A new game now walks out of the Bogwater Sanctum on its own feet, crosses the marsh and the bluffs, bombs the rockfall that holds the Cliffs of Kell shut, and takes the Cliffside Cistern end to end: three keys, the Squall Bellows, all six drowned wheels turned by holding the breath against them, the Ironknight, and Wyverna beaten with the sea drained under her. Four of the six Essences.
 S117 | objective | Played the fifth dungeon for the first time. A new game now walks out of the Cliffside Cistern, goes back to the grotto it started in for the second sword — which the stone there only gives up at four Essences — crosses the wood to the Drowned Wood Shrine, and takes it end to end: three keys, the Reefseed, all five groves grown at high water and stood on at low, Thornvine, and Rootmaw. Found on the way that the Shrine's third key never existed: the chest holding it dropped it behind itself in a corridor one tile wide, and nothing in the game could reach it. Ended the session laying the groundwork for the next one: the robot can now hold a conversation with a trader, which is how the Coastwise Chain gets walked, and the first seven links of that chain have been passed in a test harness.
 S118 | objective | Played the Coastwise Chain for the first time. A new game now walks out of the Drowned Wood Shrine, passes all twelve of the coast's traders in order across fifty screens, comes out of the far end with the Resonance Rod, takes the third sword off the Maku Tree and the road she opens with it, and walks down the Kell into the Abyssal Keep. It arrives on a heart and a half: the tour costs thirty-six quarter-hearts and there is nothing anywhere on it to heal on, which is now the thing stopping the run.
 S119 | objective | Put a fairy on Shell Beach, the one screen the coast trade crosses twice and the road to the fourth dungeon never touches. The long walk round the coast used to end at the last dungeon's door on a heart and a half; it now ends there on seven and a half, and the test run fails outright if it ever arrives on less than half.
@@ -58,3 +57,4 @@ S129 | objective | Read the first dungeon's bill for the first time. Eleven of i
 S130 | objective | Found out why the first dungeon's crab miniboss is the hardest thing in it: it throws rocks faster than the dungeon's actual boss does, on half the health and no shell, and the test robot dies to it every single time — not sometimes, every time, because there is nothing random in that fight at all. The three-line fix turns every loss into a win. It is written down and NOT in the game, because putting it in re-rolls a boss fight two dungeons later and the run dies there instead. The real problem is now named: the whole game is tested by one lucky run.
 S131 | objective | Found that the test robot could lose a boss fight and report a win. When Link dies, the game puts him back at the dungeon's front door on a full heart bar and clears the room behind him — and the robot, which decides a boss is dead by looking round the room for it, saw an empty room and called it a victory. It then walked the rest of the game without the Essence, and the first thing that noticed was a missing item an hour and a half later in a different dungeon. Every boss fight in the game has had that hole for its whole life. Also read the third dungeon's boss properly for the first time: the fight swings between five quarter-hearts and death depending on nothing but whether the end of it drifts into the arena's east wall, where Link's retreat slides along the bricks instead of getting away. The fix for that is measured, written down and deliberately not switched on, because it loses the real run — which turns out to be the sharpest thing found all session: the practice arena is empty and the real one still has a zol in it.
 S132 | objective | Made the practice fight the same fight as the real one. For two sessions a change to how Link backs off after a swing won the third dungeon's boss every time in practice and lost him in the real game, and nobody could say why. The practice fight used to start him in the middle of an empty room on made-up health; it now starts him in the doorway he really walks in through, on the health he really carries, after the pause he really takes — and it says the same thing the real run said, so the change stays out. Three explanations that had been offered for the gap were measured and are wrong: it is not his health, it is not the clock, and there was never a second monster in the room.
+S133 | objective | Measured the last fight in the game properly for the first time, and it is a coin flip. The practice rig now sets Nereth up the way the real run arrives at him — in his own doorway, on the 28 of 48 hearts the run carries, and wearing the charm the run is wearing, which no boss measurement in this project had ever done. Five tries: three wins, and every win finishes within two hearts of death. The real run does beat him, but it beats him the way these do — barely. Nothing was changed about the fight; that is a session's work, not the tail of one.

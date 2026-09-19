@@ -1030,6 +1030,40 @@ unwritten because it re-sweeps every recorded frame in the repo.
 Floor wrote this down and the Shrine Ford repeated it. Wide rooms are crossed,
 not cleared, until `dFight` learns a radius.
 
+## Settled at S133 — Nereth measured in his own arena, and he is a coin flip
+
+**THE LAST FIGHT IN THE GAME WINS 3 OF 5 AND NEVER BY MORE THAN TWO HEARTS.**
+`measure-boss-combat.mjs` has a `ROUTE_ARENA` row for `d6` now, transcribed
+off the route's trace step 1421: the throne-room doorway at 65,101, 28 of 48
+quarter-hearts, 24 frames of settle (Nereth's own greeting, not a `wait`),
+frame 165883. Five seeds, quarter-hearts remaining on a win:
+
+| | 20260806 | 1 | 2 | 3 | 4 |
+|---|---|---|---|---|---|
+| route's arena, 28/48 | 8 | 3 | 4 | DEAD | DEAD |
+| empty room, 32/32 | 7 | 6 | DEAD | DEAD | DEAD |
+
+The real run does win it — the playthrough is green and its low-water mark for
+the whole game is 3 — but it wins it the way these seeds do. **Not acted on**,
+and that is a scope decision, not a verdict: the fix is a session's work and
+the health budget has been the subject of four of them (S119, S124, S125,
+S128). See the S124 negation before reaching for a charm.
+
+**A CHARM IS NOT AN ITEM, and no boss measurement in this project had ever
+worn one.** `setup.items` reaches `progress.giveItem` and a charm lives in
+`progress.charms`/`charmSlots`. The route has worn one since S123. A
+`ROUTE_ARENA` row can now name them and the rig slots them after boot.
+
+**The cases open on the ESSENCE count**, so slotting into a freshly-booted
+game silently fails for any case the player has not earned — the HIGH charm
+was dropped exactly that way on this row's first run, with no error. The rig
+opens the named cases first.
+
+**NEGATED: the doorway is not a general penalty.** D3's doorway start is half
+of what makes that fight harder; Nereth's costs nothing, because his room is
+wide. The old empty-room setup was losing him MORE often than the route's on
+MORE health. Each arena has to be transcribed; none of it generalises.
+
 ## Settled at S132 — the harness now fights the route's arena, and the answer holds
 
 **`openRetreat` STAYS OFF ON D3, and it is now a measurement rather than a

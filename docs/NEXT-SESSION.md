@@ -1,3 +1,45 @@
+## S133 — the last fight in the game is a coin flip, measured properly for the first time
+
+The practice rig can now set the final fight up the way the real run arrives
+at it: in the throne room doorway at 65,101, on the 28 of 48 quarter-hearts
+the run actually carries there, after the 24 frames Nereth's own greeting
+takes — and, for the first time in the project, **wearing the charm the run is
+wearing**. A charm is not an item, so no boss measurement had ever had one on,
+although the run has worn one since S123.
+
+### THE SPREAD
+
+Nereth, five seeds. The right-hand column is what is left in the heart bar.
+
+| seed | the real fight (28 of 48) | the old empty room (32 of 32) |
+|---|---|---|
+| 20260806 | won, 8 left | won, 7 left |
+| 1 | won, 3 left | won, 6 left |
+| 2 | won, 4 left | **died** |
+| 3 | **died** | **died** |
+| 4 | **died** | **died** |
+
+**Three wins in five, and every win finishes within two hearts of death.** The
+best result in the sweep leaves two hearts. The real run does win it — its
+low-water mark for the whole game is 3 — but it wins it the way these seeds
+win it, which is to say barely and not reliably.
+
+That answers the question the last prompt asked. The end of the game does not
+have a margin; it has a coin flip. Nothing was done about it this session,
+deliberately: the rig was built to stop sessions arguing about numbers, and
+the first thing it produced is a number worth arguing about with a whole
+session rather than the tail of one.
+
+### TWO SMALLER THINGS, BOTH ON THE RECORD NOW
+
+- **The charm cases open on Essences, not on visits.** Slotting a charm into a
+  freshly-booted game silently fails for any case the player has not earned,
+  and the first run of this row lost the HIGH charm exactly that way without
+  saying so. The rig opens the cases the row names before slotting.
+- **The real fight is slightly KINDER than the practice one**, which is the
+  opposite of what D3 found. Nereth's room is wide, and starting in the
+  doorway costs nothing there; the old setup was simply fighting him on more
+  health than the run has and still losing three of five.
 ## S132 — the practice fight is the real fight now, and it says the same thing
 
 The last two sessions turned on a disagreement: a change to how Link backs off

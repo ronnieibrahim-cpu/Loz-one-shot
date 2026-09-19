@@ -1,49 +1,47 @@
-# Next session — transcribe Nereth's arena from the route
+# Next session — give the last fight a margin
 
 ## Read first
 - `docs/prompts/STATE.md` — the whole file.
-- `docs/prompts/LEDGER.md`'s "Settled at S132" section.
-- `docs/NEXT-SESSION.md`, the S132 entry only.
-- `tools/measure-boss-combat.mjs`'s `ROUTE_ARENA` table and its `enter:` setup.
-- `tools/playthrough-route.mjs`'s D6 boss leg.
+- `docs/prompts/LEDGER.md`'s "Settled at S133" and "Settled at S124" sections.
+- `docs/NEXT-SESSION.md`, the S133 entry only.
+- `tools/measure-boss-combat.mjs`'s `ROUTE_ARENA` `d6` row.
+- `tools/playthrough-route.mjs`'s D6 boss leg and the two steps above it.
 
 ## Why this, now
-S132 gave `measure-boss-combat.mjs` a `ROUTE_ARENA` row for D3 — the doorway,
-the carried health, the route's own settle — and the harness's verdict stopped
-disagreeing with the run's. Every other fight in the tool still starts in the
-middle of an empty room on a made-up heart count, which is the setup that
-produced two sessions of contradiction. Nereth is the one that matters most:
-he is the end of the game and he has the thinnest margin in it.
+S133 measured Nereth the way the route arrives at him — his own doorway, the
+28 of 48 quarter-hearts the run carries, the charm the run wears — and he
+wins 3 of 5, never by more than two hearts. The real run beats him the same
+way: barely. Every earlier session that tried to widen a margin did it by
+guessing, and S124 is the one that found the obvious answer makes things
+worse. Now the measurement exists, so the fix can be chosen by sweeping it.
 
 ## The task
-Add a `ROUTE_ARENA` row for `d6`, transcribed off `node
-tools/check-playthrough.mjs --trace` — the directive immediately before the
-final `['boss', 20000, null]`. Take its `x,y`, its `hp`, the run's `maxHearts`,
-and the length of the preceding `wait`, exactly as the D3 row's comment does.
-Then sweep Nereth at five seeds in that arena, plain, and print the roster line
-the tool now emits. Add rows for `d1`, `d2`, `d4` and `d5` the same way if the
-D6 row lands cleanly and there is room left in the session.
+Raise Nereth's win rate above 4 of 5 with a margin of at least four hearts,
+by changing WHAT THE KEEP PAYS OUT on the way to his door — a placed heart or
+fairy in a room the route already crosses, in `src/data/dungeons-b.js`. Sweep
+each candidate at the same five seeds with `node tools/measure-boss-combat.mjs
+d6 --qh=N`, raising `qh` to what that pickup would actually buy, BEFORE
+placing anything. Place one, update the `d6` `ROUTE_ARENA` row's `qh` from the
+new trace, and re-sweep in the real arena.
 
 ## Done means
-- Nereth's five-seed spread in `docs/NEXT-SESSION.md`, in the route's own
-  arena, next to the empty-arena numbers the tool's header already carries.
-- The roster line quoted for D6, so what is in that room is on the record.
+- The before-and-after five-seed spread in `docs/NEXT-SESSION.md`, in the
+  route's own arena, with the remaining quarter-hearts on every win.
 - `node tools/check-playthrough.mjs` green, ending in `d6/1,3,1` with six
   Essences and no deaths.
-- `node tools/check-bosses.mjs`, `node tools/check-drift.mjs`,
-  `node tools/test.mjs`, `node tools/replay.mjs`.
+- `node tools/check-hearts.mjs`, `node tools/check-placement.mjs`,
+  `node tools/check-ground.mjs`, `node tools/walk-dungeons.mjs`,
+  `node tools/check-dungeon-strands.mjs` — a placed pickup touches all five.
+- `node tools/check-drift.mjs`, `node tools/test.mjs`, `node tools/replay.mjs`.
 - `npm run build` with `dist/oracle-of-tides.html` committed.
-- A person reads the spread and can say whether the last fight in the game has
-  a margin or a coin flip.
+- A person reads the spread and sees the end of the game stop being a coin flip.
 
 ## Out of scope
-- Changing any `dBoss` option on any fight. `openRetreat` is settled twice over
-  now; do not re-open it, on D3 or anywhere else.
-- Adding health, moving a fairy, or touching any enemy's contact `damage`.
-  `check-hearts` asserts the ladder and the budget is not the fault.
-- The Clawcrab patch. Still waiting on a run that can absorb it, and a
-  `ROUTE_ARENA` row for a miniboss is a different table.
-- Chasing the unmatched RNG history. It is stated in the tool's header as the
-  remaining gap and closing it means replaying the whole run.
-- Re-measuring the clock. Stamping the route's frame on the arena was swept at
-  ten runs and changed nothing.
+- Any `dBoss` option, on any fight. `openRetreat` is settled twice over.
+- Any charm. S124 measured the one-free-hit charm making every fight WORSE,
+  and the case slots are already full at MID and HIGH.
+- Any enemy's or boss's contact `damage`, or Nereth's own hp. `check-hearts`
+  asserts the damage ladder and the fight is not the thing to soften.
+- Transcribing `ROUTE_ARENA` rows for D1, D2, D4, D5 or the minibosses. They
+  are worth doing and they are not this.
+- The 460-frame pickup fuse. It is a real finding from S124 and it waits.
