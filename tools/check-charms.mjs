@@ -562,27 +562,56 @@ section('HIGH case');
 await park({ map: 'overworld', rx: 4, ry: 7, tx: 4, ty: 4, tide: 2, items: { cleats: 1 } });
 
 // Gillcarve — breath never runs out.
+//
+// IT HAS TO BE RUN IN REAL DEEP WATER, AND IT HAS TO BE RUN IN ONE GO. This
+// check used to park on the Dunes at 4,7 — dry sand at every sea — and then
+// SET `player.inDeep` by hand, which is a checker answering a question the
+// engine already answers. `updateBreath` does not read that flag: it asks
+// `touchingDeep(game, this)`, the same query the dive itself uses, one
+// question one rule. So the first line of the loop surfaced the player,
+// `surface()` zeroed the breath, and BOTH halves read zero — the charmed one
+// included. `plain=0 charmed=0` looked like a broken charm for several
+// sessions and the charm was never broken: two lines down, `updateBreath`
+// returns early on `game.charm('gillcarve')` exactly as it says it does.
+//
+// AND THE PARK CANNOT BE A SEPARATE CALL, because this file does not take the
+// clock: the game is still running its own loop between two `page.evaluate`s.
+// A player stood in open water is a player the engine is entitled to wash back
+// to dry land, and it did — parked at 64,48 and read back at 32,16, on the
+// only tile a wash could have put him. Everything below happens inside ONE
+// evaluation, so there is no frame between standing in the water and asking
+// about the breath.
+//
+// `overworld 6,7` is open water at HIGH — 23 deep tiles — and 4,3 is in the
+// middle of them, so the player is touching deep on every side rather than
+// balanced on a lip.
+const DIVE = `
+  const g = window.__game;
+  g.enterMap('overworld', 0, 6, 7, 64, 48, 'down', { instant: true });
+  g.tide.setLevel(2, { instant: true });
+  g.player.x = 64; g.player.y = 48; g.player.z = 0;
+  g.player._cleats = 1; g.player.underwater = true; g.player.breath = 100;
+  for (let i = 0; i < 30; i++) g.player.updateBreath(g);
+  const out = { breath: g.player.breath, under: g.player.underwater };
+  g.player.underwater = false;
+  return out;
+`;
 await nocharms();
-r = await read(() => {
-  const g = window.__game;
-  g.player.underwater = true; g.player.inDeep = true;
-  g.player.breath = 100; g.player._cleats = 1;
-  for (let i = 0; i < 30; i++) g.player.updateBreath(g);
-  return { plain: g.player.breath };
-});
-const plainBreath = r.plain;
+r = await page.evaluate(new Function(DIVE));
+const plainBreath = r.breath;
+const plainStayedUnder = r.under;
 await charm('gillcarve');
-r = await read(() => {
-  const g = window.__game;
-  g.player.underwater = true; g.player.inDeep = true;
-  g.player.breath = 100; g.player._cleats = 1;
-  for (let i = 0; i < 30; i++) g.player.updateBreath(g);
-  const held = g.player.breath;
-  g.player.underwater = false; g.player.inDeep = false;
-  return { held };
-});
-check('the Gillcarve stops the breath draining', plainBreath < 100 && r.held === 100,
-  `plain=${plainBreath} charmed=${r.held}`);
+r = await page.evaluate(new Function(DIVE));
+// THE PLAIN HALF HAS TO STILL BE UNDER WATER WHEN IT IS READ, or "the breath
+// went down" cannot be told apart from "the player surfaced and it was zeroed"
+// — which is the exact confusion this check shipped with. Thirty frames of
+// breath is thirty frames, so the plain number is named rather than bounded.
+check('the Gillcarve stops the breath draining',
+  plainStayedUnder && plainBreath === 70 && r.under && r.breath === 100,
+  `plain=${plainBreath} (under=${plainStayedUnder}) charmed=${r.breath}`);
+
+// Back to the dry parking space the rest of the HIGH case is written against.
+await park({ map: 'overworld', rx: 4, ry: 7, tx: 4, ty: 4, tide: 2, items: { cleats: 1 } });
 
 // Riptide Fin — faster in deep water.
 await nocharms();

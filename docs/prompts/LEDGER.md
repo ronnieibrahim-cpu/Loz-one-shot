@@ -1030,6 +1030,26 @@ unwritten because it re-sweeps every recorded frame in the repo.
 Floor wrote this down and the Shrine Ford repeated it. Wide rooms are crossed,
 not cleared, until `dFight` learns a radius.
 
+## Settled at S122 — the verification table is all green
+
+**EVERY CHECKER IN CLAUDE.md'S TABLE PASSES.** No red anywhere. Do not go
+looking for the two `check-hearts` failures or the `check-charms` one; they
+are gone and neither was ever in the game.
+
+**The Gillcarve was never broken.** The check stood on dry sand and set
+`player.inDeep` by hand; `updateBreath` asks `touchingDeep` and does not read
+that flag. A checker that sets a flag the engine does not read measures nothing.
+
+**`check-charms` does not take the clock.** The game's own loop runs between
+two `page.evaluate`s, so a player parked in open water is washed back to dry
+land before the next call. Anything that has to be read while standing
+somewhere the engine would not leave you happens in ONE evaluation.
+
+**The world holds 24 heart pieces, which is exactly 6 containers.** The fourth
+route to a piece is a drowned wheel's `gives`, and D5's Bower Cell is the one
+that uses it. NEVER add a 25th: the cap would leave P9's window from the other
+side.
+
 ## Settled at S121 — the game plays to the end
 
 **THE GAME CAN BE FINISHED, AND IT HAS BEEN.** `check-playthrough.mjs` drives a

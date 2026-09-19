@@ -43,10 +43,27 @@ function check(ok, label) {
 // 1. Heart pieces, counted from the data the game actually loads.
 // ---------------------------------------------------------------------------
 //
-// A piece reaches the player by one of three routes, and all three are counted
-// here because all three have been used in the world already: an entity placed
-// in the room's `entities`, a `buried` item under a diggable tile, and a
-// `puzzle.reward.spawn` that drops one when a room is solved.
+// A piece reaches the player by one of FOUR routes, and all four are counted
+// here because all four have been used in the world already: an entity placed
+// in the room's `entities`, a `buried` item under a diggable tile, a
+// `puzzle.reward.spawn` that drops one when a room is solved, and a DROWNED
+// WHEEL whose `gives` says so.
+//
+// THE FOURTH ONE WAS MISSING AND IT COST TWO STANDING FAILURES FOR SEVERAL
+// SESSIONS. The Drowned Wood Shrine's Bower Cell pays its Piece of Heart out
+// of a `bellowsRoom` fixture — `gives: 'heartPiece'` — and the pickup itself
+// is created by the room's own `script`, which no scan of the data can see.
+// So the world held 24 pieces and this file counted 23, and reported BOTH that
+// three pieces could never complete a container AND that D5 holds one piece
+// rather than two. Those were never two defects; they were one undercount,
+// twice. Nothing in the world needed a piece adding — and adding one would
+// have been the expensive kind of wrong, because 25 pieces puts the heart cap
+// outside P9's window from the other side.
+//
+// It is counted off `gives`, which is the FIXTURE'S OWN DECLARATION, and not
+// off the script that delivers it: the declaration is data every other tool
+// here already reads (`check-bellows.mjs` proves the wheel), and a scan of
+// script bodies would be a parser pretending to be a checker.
 
 const pieces = [];
 
@@ -73,6 +90,18 @@ for (const [mapId, map] of MAPS) {
     }
     if (room.puzzle && room.puzzle.reward) {
       scanSpawnList(room.puzzle.reward.spawn, where, 'puzzle reward');
+    }
+    // A drowned wheel's payout. `bellowsRoom` is one fixture or a list of
+    // them, and the piece lands on the tile the player has to STAND on to
+    // work the wheel — which is where the room's script puts it, and is the
+    // tile whose reachability is worth asserting anyway.
+    const sills = room.bellowsRoom
+      ? (Array.isArray(room.bellowsRoom) ? room.bellowsRoom : [room.bellowsRoom])
+      : [];
+    for (const sill of sills) {
+      if (sill && sill.gives === 'heartPiece' && Array.isArray(sill.stand)) {
+        pieces.push({ where, how: 'drowned wheel', x: sill.stand[0], y: sill.stand[1] });
+      }
     }
   }
 }

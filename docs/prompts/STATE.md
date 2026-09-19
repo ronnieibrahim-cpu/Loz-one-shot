@@ -16,16 +16,18 @@ ROTATION (retired S112, kept for the record):
   4 enemy-roster S59 | 5 npc-detail S63 | 6 region-art S89
   7 item-reuse MET S110 | 8 feel-measure BLOCKED — needs an emulator capture
 
-THREE STANDING DEFECTS, none of them introduced this session, none on the
-allowlist, none to be started without the human saying so:
-  * `check-hearts` has 2 failures — 23 heart pieces, and D5 holds 1 not 2.
-  * `check-charms` has 1 — the Gillcarve does not stop the breath draining.
+ONE STANDING DEFECT. The other two were closed at S122 and neither was in the
+game — both were undercounts in the checker itself.
   * The run's low-water mark is ONE quarter-heart, inside Nereth's fight.
+    `docs/prompts/QUEUE.md` item 0 is the cheapest way to widen it.
+NOTHING IN CLAUDE.md'S VERIFICATION TABLE IS RED.
 
-FILE ALLOWLIST for the current objective (the standing defects, if named):
-  tools/check-hearts.mjs, tools/check-charms.mjs — reading only
-  src/data/dungeons-a.js — ONLY the D5 heart piece the checker names
-  src/game/items.js — ONLY the Gillcarve's own breath hook
+FILE ALLOWLIST for the current objective (floor 1 of the Abyssal Keep):
+  tools/playthrough-route.mjs — the Keep leg and its GOAL block
+  tools/check-playthrough.mjs — only its assertions about how far the run gets
+  tools/actor-runtime.mjs — only to add a movement verb the route needs
+  src/data/dungeons-b.js — ONLY if floor 1 proves a fault the route cannot
+    route round, and only with the trace written down
   dist/oracle-of-tides.html
   docs/NEXT-SESSION.md
   docs/prompts/LEDGER.md
@@ -44,4 +46,5 @@ S118 | objective | Played the Coastwise Chain for the first time. A new game now
 S119 | objective | Put a fairy on Shell Beach, the one screen the coast trade crosses twice and the road to the fourth dungeon never touches. The long walk round the coast used to end at the last dungeon's door on a heart and a half; it now ends there on seven and a half, and the test run fails outright if it ever arrives on less than half.
 S120 | objective | Played the sixth and last dungeon for the first time, as far as the final boss's own door. A new game now walks into the Abyssal Keep, wins all four of its keys and opens all four of its locked doors: it fetches the fire-shell out of a reef cave nothing had ever opened, lights the Kiln's four torches with it, rings a knight's armour with the trading rod so a sword will go through it, takes the Dredge Line out of its vault and throws it across three holes nothing walks. What is left in the whole game is the Boss Key and the King.
 S121 | objective | Played the whole game from the title screen to the end. A new game now walks into the Abyssal Keep, crosses the Sunken Bar at flood, takes the Crossed Shafts at both seas, beats the Brinehulk for the Boss Key and kills Nereth in real combat on the health the Keep actually leaves, and the sixth Essence and the ending follow. Found on the way that the Brinehulk was handing out that Essence itself, two rooms short of the throne room, so the last dungeon could be finished without ever meeting the King; and that floor 1 of the Keep was the only dungeon floor in the game with nothing on it to heal on.
+S122 | objective | Closed the last two red checks in the project, and neither of them was a fault in the game. The charm that is supposed to let you breathe on the seafloor was reported broken for several sessions; it works, and the test was standing on dry sand while pretending to be underwater. And the world was reported to be one Piece of Heart short of a whole number of hearts; it is not — the counter simply could not see the one the Drowned Wood Shrine pays out of its drowned wheel. Adding the piece the last prompt asked for would have broken a different check.
 

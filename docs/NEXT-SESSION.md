@@ -1,3 +1,63 @@
+## S122 — the last two red checkers were both checkers, not the game
+
+`check-charms` and `check-hearts` are green. Neither fault was in the world;
+both were in the tool, and both had been reported honestly for several sessions
+as if they were the game's.
+
+### THE GILLCARVE WAS NEVER BROKEN
+
+`check-charms` reported `plain=0 charmed=0` — "the breath drains with the charm
+on AND off". The charm works and always has: `Player.updateBreath` returns
+early on `game.charm('gillcarve')`, two lines below the Mermaid Suit's own
+early return.
+
+The check parked on the Dunes at `overworld 4,7` — dry sand at every sea — and
+then set `player.inDeep = true` BY HAND. `updateBreath` does not read that flag.
+It asks `touchingDeep(game, this)`, the same query the dive itself uses, so the
+first line of the loop surfaced the player and `surface()` zeroed the breath.
+Both halves read zero, the charmed one included. **A checker that sets a flag
+the engine does not read is a checker measuring nothing**, which is the rule
+CLAUDE.md already states for collision and is just as true for terrain.
+
+The fix is to stand in real deep water — `overworld 6,7` is 23 deep tiles at
+HIGH — and it turned up a second trap on the way:
+
+**THIS FILE DOES NOT TAKE THE CLOCK.** Unlike the replay harness, `check-charms`
+lets the game run its own loop between two `page.evaluate`s. A player stood in
+open water is a player the engine is entitled to wash back to dry land, and it
+did: parked at 64,48, read back at 32,16. The dive and the reading now happen
+inside ONE evaluation, so there is no frame in between.
+
+The plain half now asserts `breath === 70` and `underwater === true` rather than
+`breath < 100`. Thirty frames of breath is thirty frames, and "it went down" was
+indistinguishable from "he surfaced and it was zeroed" — which is the exact
+confusion the check shipped with.
+
+### THE WORLD WAS NEVER SHORT A HEART PIECE
+
+`check-hearts` reported two failures — 23 pieces leaving 3 that can never
+complete a container, and D5 holding 1 piece rather than 2. **Those were never
+two defects. They were one undercount, reported twice.**
+
+A piece reaches the player by four routes and the scan knew three: a placed
+entity, a `buried` item, and a `puzzle.reward.spawn`. The fourth is a DROWNED
+WHEEL. The Drowned Wood Shrine's Bower Cell pays its Piece of Heart out of a
+`bellowsRoom` fixture — `gives: 'heartPiece'` — and the pickup itself is created
+by the room's own `script`, which no scan of the data can see. The world holds
+24 pieces; the tool counted 23.
+
+It is now counted off `gives`, the fixture's own declaration, and not off the
+script that delivers it — the declaration is data `check-bellows.mjs` already
+reads, and a scan of script bodies would be a parser pretending to be a checker.
+24 pieces is exactly 6 containers and the cap lands at 16, inside P9's window.
+
+**ADDING A PIECE WOULD HAVE BEEN THE EXPENSIVE KIND OF WRONG.** S121's own next
+prompt said in as many words "the checker is right; the world is short a piece"
+and named the file to put it in. It was a hypothesis, it was wrong, and a 25th
+piece would have pushed the heart cap out of the window from the other side —
+turning one green checker red to make another green. Read the counter before
+feeding it.
+
 ## S121 — the game is finished: Nereth is dead and the sixth Essence is claimed
 
 `check-playthrough.mjs` now drives a new game from the title screen to the
