@@ -1,9 +1,9 @@
 {
  "note": "A new game driven with no shortcuts through Tidewash Grotto, the Coral Spire, the Bogwater Sanctum, the Cliffside Cistern and the Drowned Wood Shrine, round the whole Coastwise Chain, and into the Abyssal Keep as far as the Keep Gate. Recorded by tools/check-playthrough.mjs; see its header for what \"no shortcuts\" means.",
  "seed": 20260806,
- "frames": 172036,
+ "frames": 172057,
  "state": {
-  "frame": 172036,
+  "frame": 172057,
   "mapId": "d6",
   "room": "1,3,1",
   "floor": 1,
@@ -356,6 +356,10 @@
    "play",
    "menu",
    "play",
+   "menu",
+   "play",
+   "menu",
+   "play",
    "cutscene",
    "play",
    "cutscene",
@@ -385,7 +389,7 @@
    },
    {
     "index": 6,
-    "frame": 168878
+    "frame": 168899
    }
   ],
   "maxHearts": 48,
@@ -5051,62 +5055,62 @@
     "damage": 0,
     "healing": 0,
     "exitHearts": 8,
-    "exitFrame": 161348
+    "exitFrame": 161366
    },
    {
     "room": "d6/1,3,3",
-    "enterFrame": 161348,
+    "enterFrame": 161366,
     "enterHearts": 8,
     "minHearts": 5,
     "maxHearts": 8,
     "damage": 3,
     "healing": 0,
     "exitHearts": 5,
-    "exitFrame": 161648
+    "exitFrame": 161666
    },
    {
     "room": "d6/1,3,2",
-    "enterFrame": 161648,
+    "enterFrame": 161666,
     "enterHearts": 5,
     "minHearts": 5,
     "maxHearts": 29,
     "damage": 3,
     "healing": 24,
     "exitHearts": 26,
-    "exitFrame": 161962
+    "exitFrame": 161980
    },
    {
     "room": "d6/1,4,2",
-    "enterFrame": 161962,
+    "enterFrame": 161980,
     "enterHearts": 26,
     "minHearts": 14,
     "maxHearts": 38,
     "damage": 15,
     "healing": 24,
     "exitHearts": 35,
-    "exitFrame": 165513
+    "exitFrame": 165531
    },
    {
     "room": "d6/1,3,2",
-    "enterFrame": 165513,
+    "enterFrame": 165531,
     "enterHearts": 35,
     "minHearts": 29,
     "maxHearts": 35,
     "damage": 6,
     "healing": 0,
     "exitHearts": 29,
-    "exitFrame": 166128
+    "exitFrame": 166149
    },
    {
     "room": "d6/1,3,1",
-    "enterFrame": 166128,
+    "enterFrame": 166149,
     "enterHearts": 29,
     "minHearts": 9,
     "maxHearts": 48,
     "damage": 20,
     "healing": 39,
     "exitHearts": 48,
-    "exitFrame": 172036
+    "exitFrame": 172057
    }
   ]
  },
@@ -39224,6 +39228,54 @@
    113
   ],
   [
+   64,
+   1
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   1
+  ],
+  [
+   64,
+   1
+  ],
+  [
+   0,
+   4
+  ],
+  [
+   64,
+   1
+  ],
+  [
+   2,
+   1
+  ],
+  [
+   0,
+   1
+  ],
+  [
+   16,
+   1
+  ],
+  [
+   0,
+   1
+  ],
+  [
+   64,
+   1
+  ],
+  [
+   0,
+   4
+  ],
+  [
    32,
    1
   ],
@@ -40265,15 +40317,19 @@
   ],
   [
    4,
-   21
+   27
   ],
   [
    6,
-   26
+   25
+  ],
+  [
+   2,
+   1
   ],
   [
    4,
-   21
+   17
   ],
   [
    2,
@@ -40317,7 +40373,7 @@
   ],
   [
    6,
-   9
+   10
   ],
   [
    4,

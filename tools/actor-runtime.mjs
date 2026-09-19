@@ -92,7 +92,30 @@ export async function installRuntime() {
     if (p.equipB === id) return BIT.b;
     return 0;
   };
-  const swordBit = () => slotBit('sword') || BIT.b;
+  /**
+   * THE SWORD'S BUTTON, AND IT REFUSES RATHER THAN GUESSES.
+   *
+   * This was `slotBit('sword') || BIT.b` — a guess dressed as a fallback, and
+   * it cost S126 eight full runs. With the sword in neither slot, B is
+   * whatever the last puzzle left there; in the Abyssal Keep that is the conch,
+   * so the swordsman walked into the only miniboss arena on the floor and spent
+   * the fight BLOWING A CONCH AT A SHADOW. Every directive reported success.
+   * The fight read as unwinnable and was rebalanced eight times before anybody
+   * noticed the actor was unarmed.
+   *
+   * There is no safe default here. A button that is not the sword is not a
+   * worse sword, it is a different item — the conch moves the sea, the bombs
+   * spend themselves, the Reefseed plants. So this throws, and it names the
+   * room, which is the one piece of information a route author needs.
+   */
+  const swordBit = (why) => {
+    const b = slotBit('sword');
+    if (b) return b;
+    const g = window.__game;
+    throw new Error(`${why || 'fight'}: THE SWORD IS ON NEITHER BUTTON in `
+      + `${g.mapId} ${g.room && g.room.key} (A=${g.progress.equipA}, `
+      + `B=${g.progress.equipB}) — put it back with ['equip', 'sword', 'A']`);
+  };
 
   // ------------------------------------------------------------------ state
 
@@ -1098,6 +1121,10 @@ export async function installRuntime() {
     // in a slot, because a run that equips itself from inside a fight is a run
     // that was handed something.
     const RING = !!(opts && opts.ring);
+    // ASKED UP FRONT, not at the first swing. A `fight` that finds an empty
+    // room never reaches the swing and would pass while still being unarmed —
+    // and the next one that does find something is the one that dies.
+    swordBit('fight');
     let ringCool = 0;
     // How long to keep at it with nothing dying before giving the room up.
     // 420 frames was enough when enemies drifted; a shielded enemy on the
@@ -1241,7 +1268,7 @@ export async function installRuntime() {
         // while it retreated against a wall that was not there.
         // A person swings at something standing on top of them. So: if the
         // retreat is actually blocked, face it and swing instead.
-        if (!room2) { yield safeF(BIT[face]); f++; yield swordBit(); f++; continue; }
+        if (!room2) { yield safeF(BIT[face]); f++; yield swordBit('fight'); f++; continue; }
         yield room2; f++; continue;
       }
       // In the window: face, swing, then back off diagonally until the enemy
@@ -1249,7 +1276,7 @@ export async function installRuntime() {
       const backAlong = axisX ? (dx < 0 ? BIT.right : BIT.left) : (dy < 0 ? BIT.down : BIT.up);
       const backPerp = axisX ? (dy < 0 ? BIT.down : BIT.up) : (dx < 0 ? BIT.right : BIT.left);
       yield safeF(BIT[face]); f++;
-      yield swordBit(); f++;
+      yield swordBit('fight'); f++;
       for (let i = 0; i < BACKOFF; i++) { yield safeF(backAlong | backPerp, true); f++; }
     }
   }
@@ -1310,7 +1337,8 @@ export async function installRuntime() {
     for (let i = 0; i < 300 && !find(); i++) yield 0;
     let target = find();
     if (!target) throw new Error('boss: nothing to fight in ' + g.mapId + ' ' + (g.room && g.room.key));
-    const sword = () => slotBit('sword') || BIT.b;
+    const sword = () => swordBit('boss');
+    sword();                                 // up front, for the reason dFight gives
     // The same numbers dFight uses, for the same reasons: strike from the near
     // band, then break contact. A boss does contact damage like anything else,
     // and the first cut of this verb held the stick toward the boss while the

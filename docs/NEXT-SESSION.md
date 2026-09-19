@@ -1,3 +1,49 @@
+## S127 — the swordsman cannot be sent out unarmed any more
+
+`dFight` and `dBoss` used to press `slotBit('sword') || BIT.b`. With the sword
+in neither slot that is a GUESS DRESSED AS A FALLBACK: B is whatever the last
+puzzle left there, and in the Abyssal Keep that is the conch. They refuse now,
+up front, naming the room and both buttons.
+
+**Eighty-six `fight` and `boss` directives were audited by running them. TWO
+were being thrown bare-handed**, both in the Abyssal Keep, both downstream of
+the Slack Water's lesson — which leaves the Dredge Line on A and the conch on B
+for the rest of the dungeon, and nothing put the sword back:
+
+  * **Tideshade Hall** (`d6/1,4,5`), found by accident at S126 after eight full
+    runs spent "rebalancing" a fight the actor was attending with a seashell;
+  * **The Drowned Sill** (`d6/1,4,3`), the siren on the far bank of the third
+    shaft. Found by this check, on its first run, in seven seconds. It had been
+    unarmed since the leg was written.
+
+### WHY THERE IS NO SAFE DEFAULT
+
+A button that is not the sword is not a worse sword, it is a DIFFERENT ITEM.
+The conch moves the sea, the bombs spend themselves, the Reefseed plants, the
+Bellows holds. Falling back to B does not degrade the fight; it performs an
+unrelated action once per swing and reports success, which is the worst of the
+three possible outcomes — worse than throwing, and worse than doing nothing.
+
+**The check is asked UP FRONT and not at the first swing.** A `fight` that
+finds an empty room never reaches a swing, so a swing-time check would pass
+while still being unarmed, and the next directive — the one that does find
+something — is the one that dies. That is exactly the shape of both faults
+above: the directive before each of them passed.
+
+### THE KEEP IS STILL THIN BEFORE ITS FIRST FAIRY
+
+Worth writing down because it is the next thing to go wrong. The run now dips
+to FIVE quarter-hearts in Keep Crossing, one room short of the Keep Gate's
+fairy, and everything after that is comfortable — 26 out of the gate, 35 out of
+the Crossed Shafts, into the throne room on 29 and a trough of 9 in the fight.
+The whole game's deepest trough is still 2 of 48 in D1's Tide Gallery.
+
+The five is floor 1's west wing: the Shade Cell is CROSSED and not cleared, and
+crossing it twice cost ten quarter-hearts this run against six the last one.
+**A room outlives the visit** — it is built once and kept — so clearing it once
+would leave it clear for the walk back AND pay the heart its puzzle owes, which
+is the obvious place to look if that five ever becomes a zero.
+
 ## S126 — every room of the Abyssal Keep has now been played
 
 Floor 1's east wing is in the run. Tideshade Hall, the Mermaid Vault and the

@@ -2668,7 +2668,16 @@ export const ROUTE = [
   ['tide', 0, 140, 900],
   ['dredge', 2, 4, 'right', [5, 4], 2400],
   ['wait', 60],
+  // THE SIREN ON THE FAR BANK, AND THE SWORD IS PUT BACK FIRST. This fight has
+  // been thrown bare-handed since the leg was written: the Slack Water leaves
+  // the Dredge Line on A and the conch on B, and `dBoss`/`dFight` used to fall
+  // back to B when the sword was in neither slot — so the swordsman came round
+  // the corner and blew a conch at her. It is caught now rather than guessed,
+  // and the line goes back on A afterwards because the cache and the way home
+  // both want it.
+  ['equip', 'sword', 'A', 400],
   ['fight', 2500, 900, { ring: true }],
+  ['equip', 'dredge', 'A', 400],
   ['tide', 1, 140, 900],
   ['dredge', 8, 4, 'up', 'fish', 2400],
   ['loot', 900],

@@ -1030,6 +1030,20 @@ unwritten because it re-sweeps every recorded frame in the repo.
 Floor wrote this down and the Shrine Ford repeated it. Wide rooms are crossed,
 not cleared, until `dFight` learns a radius.
 
+## Settled at S127 — no fight is thrown bare-handed
+
+**`dFight` and `dBoss` REFUSE when the sword is on neither button.** There is no
+safe default: a button that is not the sword is a different item, so a fallback
+performs an unrelated action once per swing and reports success. Checked up
+front, not at the first swing — an empty room would pass a swing-time check.
+
+**All 86 fight/boss directives were audited by running them; two were unarmed**
+— Tideshade Hall and the Drowned Sill's siren, both downstream of the Slack
+Water leaving the Dredge Line on A. Both fixed. Do not re-audit.
+
+**A ROOM OUTLIVES THE VISIT.** Built once and kept, entities and all. A room
+cleared stays clear for the walk back, and a pickup collected does not return.
+
 ## Settled at S126 — the whole Abyssal Keep is played
 
 **EVERY ROOM OF THE KEEP IS IN THE RUN.** Both floors, both wings, all three

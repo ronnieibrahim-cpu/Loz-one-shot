@@ -1,45 +1,46 @@
-# Next session — find every fight the route arms wrong
+# Next session — clear the Shade Cell instead of crossing it twice
 
 ## Read first
 - `docs/prompts/STATE.md` — the whole file.
-- `docs/prompts/LEDGER.md`'s "Settled at S126" section.
-- `docs/NEXT-SESSION.md`, the S126 entry only.
-- `tools/actor-runtime.mjs`'s `dFight` and `dBoss`, at `slotBit('sword')`.
+- `docs/prompts/LEDGER.md`'s "Settled at S127" and "Settled at S126" sections.
+- `docs/NEXT-SESSION.md`, the S127 entry only.
+- `tools/playthrough-route.mjs`'s Colonnade leg, and the comment in it that
+  says the cell is crossed and not cleared.
+- `src/data/dungeons-b.js`, the Shade Cell (`1,2,5`).
 
 ## Why this, now
-S126 cost eight full runs to a fault nothing in the repo could report: the
-route had left the Dredge Line on A, the sword was in neither slot, and
-`dBoss`'s `slotBit('sword') || BIT.b` fell through to B — so the swordsman
-fought a miniboss by blowing a conch at it, and every directive reported
-success. That room was found by accident. There are nineteen other `fight` and
-`boss` directives in the route and nothing has ever asked what any of them is
-holding.
+The run dips to FIVE quarter-hearts in Keep Crossing, one room short of the
+Keep Gate's fairy, and everything after that is comfortable. The five is the
+west wing: the Shade Cell is crossed twice and never cleared, which cost ten
+quarter-hearts this run against six the last one, and the room's own puzzle is
+sitting on a heart nobody collects. A room outlives the visit, so clearing it
+once leaves it clear for the walk back.
 
 ## The task
-Make an unarmed fight impossible to ship. Two halves, in this order.
-1. In `tools/actor-runtime.mjs`, make `dFight` and `dBoss` REFUSE rather than
-   fall back: if the sword is on neither button when the verb starts, throw,
-   naming the room. `BIT.b` as a default is a guess dressed as a fallback.
-2. Run `node tools/check-playthrough.mjs` and fix every route step the refusal
-   catches, by putting the sword back on A where it belongs. Expect the frame
-   shift to move things downstream; a fight that regresses regressed because
-   its timing moved, not because it got harder.
+Clear the Shade Cell on the way in and see what it costs. It is a darknut, a
+wizzrobe and a keese; the Rod is already on B for the Colonnade's grate, so the
+ring is available, and `['fight', N, P, { ring: true }]` is the directive.
+**Issue the fight TWICE with a wait between** — a wizzrobe spends part of its
+cycle `hidden`, the swordsman's foe list drops a hidden enemy, and a fight
+whose last live thing blinks out returns reporting a clear room, so the puzzle
+never fires and the heart never spawns. If the clear costs more than the two
+crossings it replaces, say so with the numbers and leave the route alone.
 
 ## Done means
 - `node tools/check-playthrough.mjs` green, ending in `d6/1,3,1` with six
-  Essences and its deepest trough still outside the Abyssal Keep.
-- Every fight the refusal caught named in `docs/NEXT-SESSION.md`, with how many
-  there were. Zero is a real and reportable answer.
+  Essences, and the run's lowest point inside the Abyssal Keep ABOVE five.
+- The number the clear actually cost, in `docs/NEXT-SESSION.md`. "It cost more"
+  is a real and reportable answer.
 - `node tools/check-drift.mjs`, `node tools/test.mjs`, `node tools/replay.mjs`,
-  `node tools/check-bosses.mjs`, `node tools/check-items.mjs`.
+  `node tools/check-bosses.mjs`, `node tools/check-hearts.mjs`,
+  `node tools/check-charms.mjs`.
 - `npm run build` with `dist/oracle-of-tides.html` committed.
-- A person reads the commit and learns how many fights were being thrown
-  bare-handed.
+- A person reads the room table and sees a bigger number in Keep Crossing.
 
 ## Out of scope
-- Turning `breakContact` on for any fight other than the tideshade. It loses
-  Anemos. Settled at S126.
-- Weakening any enemy or boss. Nothing is too strong; the swordsman was unarmed.
-- Another fairy, heart or heart piece anywhere.
-- Backing the swordsman off a submerged boss. Tried at S126 and it never fires.
+- Another fairy, heart or heart piece anywhere. The Keep has two heals.
+- Weakening the darknut, the wizzrobe or any contact damage.
+- Turning `breakContact` on for anything but the tideshade. It loses Anemos.
+- Re-auditing the fight directives for an unarmed sword. All 86 were run at
+  S127 and the verbs refuse now.
 - Auditing the 460-frame fuse on every placed pickup. Written down, not this.
