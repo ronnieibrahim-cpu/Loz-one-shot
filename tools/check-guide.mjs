@@ -199,6 +199,23 @@ function findHeartPieces() {
           }
         }
       }
+      // AND THE FOURTH ROUTE, a drowned wheel's payout. `check-hearts.mjs`
+      // was short of this one too and reported the same undercount twice over
+      // for several sessions (S122). The Drowned Wood Shrine's Bower Cell pays
+      // its Piece of Heart out of a `bellowsRoom` fixture — `gives:
+      // 'heartPiece'` — and the pickup itself is created by the room's own
+      // `script`, which no scan of the data can see. Counted off `gives`, the
+      // FIXTURE'S OWN DECLARATION, and not off the script that delivers it.
+      //
+      // docs/GUIDE.md has said 24 all along and it was right; this file
+      // counted 23, so the check that exists to stop the guide drifting from
+      // the data was itself the thing that had drifted.
+      const sills = def.bellowsRoom
+        ? (Array.isArray(def.bellowsRoom) ? def.bellowsRoom : [def.bellowsRoom])
+        : [];
+      for (const sill of sills) {
+        if (sill && sill.gives === 'heartPiece') found.push(`${mapId}/${key}`);
+      }
     }
   }
   return found;

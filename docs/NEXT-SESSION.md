@@ -1,3 +1,18 @@
+## S128b — the guide checker was short the same heart piece
+
+`tools/check-guide.mjs` has been red for as long as the Bower Cell has existed,
+and nobody ran it because it is not in CLAUDE.md's verification table. It fails
+on exactly the fault S122 fixed in `check-hearts.mjs`: it knew three of the
+four routes a Piece of Heart can reach the player by and missed the fourth, a
+drowned wheel's `gives`.
+
+**`docs/GUIDE.md` has said 24 all along and it was right.** The tool that
+exists to stop the guide drifting from the data was itself the thing that had
+drifted — and it said so by accusing the guide of an extra heart piece.
+
+Counted off `gives`, the fixture's own declaration, same as `check-hearts`.
+Every checker in the repo now passes, in and out of the table.
+
 ## S128 — clearing a room once is cheaper than crossing it twice
 
 The Shade Cell is cleared on the way into the west wing now. The numbers, which
