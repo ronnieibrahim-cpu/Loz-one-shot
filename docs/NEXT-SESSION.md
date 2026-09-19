@@ -1,3 +1,66 @@
+## S130 — the miniboss out-shoots its own boss, and the run cannot absorb the fix
+
+Two facts, one landed and one that could not be.
+
+### THE MEASUREMENT (landed)
+
+`tools/measure-boss-combat.mjs` can take a miniboss now: `--mini=clawcrab`.
+It needed its own table rather than a row in `FIGHTS`, for two reasons that
+will apply to the other eight minibosses too:
+
+- a miniboss is not `g.boss` — `init` clears `isBoss`, so the target has to be
+  found by name in `g.entities` the way `dBoss` finds it;
+- `progress.beaten` is keyed off the MAP and a miniboss never sets it, so the
+  ground truth for a win is the arena's own `puzzle.flag` — the same fact that
+  pays out the Piece of Heart.
+
+Also `--at=x,y`. The default entry, 72,80, is the middle of a ONE-SCREEN room,
+and the Clawcrab Den is the one 2x1 room in the game — 72,80 drops the player
+at its far west end with the length of the hall to walk into the fire, which
+is not the fight the route plays. The route comes in through the north door.
+Both are worth measuring and they are different fights.
+
+### THE ANSWER, AND IT IS NOT WHAT THE PROMPT GUESSED
+
+| | from the middle | from the route's door |
+|---|---|---|
+| Clawcrab, as it ships | **dead, 12 qh, 5 of 5 seeds** | **dead, 12 qh, 3 of 3 seeds** |
+| Clawcrab, `snip` 130→190 | won on 8, 4 qh, 5 of 5 | won, 9 qh, 3 of 3 |
+
+**Nothing in this fight is random.** Five seeds gave byte-identical results —
+same hits, same frames, same outcome — because the crab is timer-driven and
+`spread` fires at fixed angles. The "coin flip" the last prompt described is
+only in the drop roll afterwards; the fight itself is a deterministic loss.
+
+**And it is almost all projectiles. Zero contact hits from the middle, one
+from the door.** The claw, the charge and the patrol are all fine.
+
+**THE MINIBOSS WAS FIRING FASTER THAN THE BOSS IT REHEARSES.** Gohmaraq —
+same dungeon, same claw, 24 hp behind a shell that has to open, fought on
+sixteen quarter-hearts — slams 3 wide at 170 frames, then 5 at 130, then 5 at
+105. The Clawcrab has half the health, NO shell, and is fought on twelve, and
+it was firing 3 at 130 and 5 at 100. Faster at every phase, on less health,
+earlier in the game. Measured side by side in the same harness: **Gohmaraq
+costs the actor 4 quarter-hearts and it wins; the Clawcrab costs it 12 and it
+dies.** The rehearsal is harder than the performance.
+
+### WHY IT IS NOT IN THE GAME
+
+Because the run cannot absorb it. With `snip` at 190 the D1 leg is fine, and
+then a hundred and twenty thousand frames later **Gloomtide, D3's boss, goes
+from 12 damage to 24** — the fight two whole sessions were spent making
+winnable — and the route desyncs in the overworld past it and dies at the
+Keep. Nothing about D3 changed. It is the same reshuffle S129 saw in the Keep,
+one order of magnitude larger.
+
+So the change is reverted and the measurement is committed. **The blocker is
+not the Clawcrab. It is that the playthrough is ONE SAMPLE**, and a correct
+fix to the first dungeon's miniboss re-rolls the third dungeon's boss. Until a
+boss fight in the run has more margin than a single seed's luck, no combat
+tuning anywhere can land, however well measured.
+
+The patch is three lines and it is written out above; it is not lost.
+
 ## S129 — what the first dungeon costs, room by room
 
 Nobody had ever read D1's bill. Here it is, from `check-playthrough`'s own room

@@ -82,10 +82,47 @@ const FIGHTS = {
   d6: { boss: 'nereth', tide: MID, items: { sword: 3, conch: 1, anchor: 1, lens: 1, bombs: 1, cleats: 2, bellows: 1, reefseed: 1, rod: 1, dredge: 1 } },
 };
 
+// The minibosses, which `FIGHTS` cannot hold because A MINIBOSS IS NOT
+// `g.boss`. `defineBoss` builds both, but a miniboss's `init` clears `isBoss`
+// (src/data/bosses.js says why: `progress.beaten` is keyed off the MAP, so a
+// miniboss counted as a boss would mark its whole dungeon beaten). Two things
+// follow, and both are why this needed its own table rather than a row in the
+// one above:
+//
+//   - the target has to be NAMED — `['boss', N, 'clawcrab']` — because
+//     `g.boss` is null in a miniboss arena;
+//   - `progress.beaten` is never set, so it is NOT the ground truth for a win.
+//     The fact to assert is the room's own puzzle flag: a `puzzle:
+//     { enemies: true }` room sets its `flag` when the last enemy in it dies,
+//     and that is what pays out the Piece of Heart.
+//
+// `room` is the arena, `qh` is what the ROUTE actually walks in holding, which
+// for the Clawcrab is the cap — see the S129 ledger.
+const MINIS = {
+  clawcrab: { dungeon: 'd1', room: '0,5,3', flag: 'd1_clawcrab', tide: MID, qh: 12,
+              items: { sword: 1, conch: 1, anchor: 1 } },
+};
+
 const args = process.argv.slice(2);
 const seedArg = args.find(a => a.startsWith('--seed='));
 const SEED = seedArg ? Number(seedArg.slice('--seed='.length)) : DEFAULT_SEED;
-const dungeonId = args.find(a => !a.startsWith('--')) || 'd1';
+// Where in the arena the fight starts. The default, 72,80, is the middle of a
+// ONE-SCREEN room — and the Clawcrab Den is the one 2x1 room in the game, so
+// 72,80 drops the player at its far west end and the whole fight is walked the
+// length of the hall into the fire. The route arrives through the north door
+// instead, and those are different fights: measured at S130, the same Clawcrab
+// change read as a rout from 72,80 and as noise from the door. `--at=x,y` is
+// how the second question gets asked.
+const atArg = args.find(a => a.startsWith('--at='));
+const AT = atArg ? atArg.slice('--at='.length).split(',').map(Number) : null;
+const miniArg = args.find(a => a.startsWith('--mini='));
+const MINI = miniArg ? miniArg.slice('--mini='.length) : null;
+if (MINI && !MINIS[MINI]) {
+  console.error(`unknown miniboss '${MINI}' — one of ${Object.keys(MINIS).join(', ')}`);
+  process.exit(1);
+}
+const mini = MINI ? MINIS[MINI] : null;
+const dungeonId = mini ? mini.dungeon : (args.find(a => !a.startsWith('--')) || 'd1');
 const godMode = args.includes('--god');
 // Turn off the actor's hazard-avoidance (`safe` in dBoss) and fight with the
 // verb exactly as it was before it existed. Kept so the trade that shipped it
@@ -112,8 +149,11 @@ const qhArg = args.find(a => a.startsWith('--qh='));
 // question "is it winnable played correctly?" gets asked separately from "is it
 // winnable at the design tide?".
 const tideArg = args.find(a => a.startsWith('--tide='));
-const QH = qhArg ? Number(qhArg.slice('--qh='.length)) : (IN_ORDER_QH[dungeonId] || 12);
-const fight = FIGHTS[dungeonId];
+const QH = qhArg ? Number(qhArg.slice('--qh='.length))
+  : mini ? mini.qh : (IN_ORDER_QH[dungeonId] || 12);
+const fight = mini
+  ? { boss: MINI, tide: mini.tide, items: mini.items }
+  : FIGHTS[dungeonId];
 if (!fight) { console.error(`unknown dungeon '${dungeonId}' — one of ${Object.keys(FIGHTS).join(', ')}`); process.exit(1); }
 
 const MIME = {
@@ -190,9 +230,11 @@ const info = await page.evaluate(async (id) => {
   const d = dungeons().find(x => x.id === id);
   return { room: d.dungeon.bossRoom, name: d.name };
 }, dungeonId);
-const [fl, rx, ry] = info.room.split(',').map(Number);
+const arena = mini ? mini.room : info.room;
+const [fl, rx, ry] = arena.split(',').map(Number);
 
-console.log(`${dungeonId.toUpperCase()} ${info.name}: ${fight.boss} at ${info.room}, tide ${fight.tide}`);
+console.log(`${dungeonId.toUpperCase()} ${info.name}: ${fight.boss} at ${arena}, tide ${fight.tide}`
+  + (mini ? '  (MINIBOSS — ground truth is the room flag `' + mini.flag + '`)' : ''));
 console.log(godMode
   ? `GOD MODE — unlimited health, budget ${BUDGET} frames, seed ${SEED} — asks "does more time/health help?", not "is this fair"\n`
   : `REAL COMBAT — no god mode, ${QH / 4} hearts (${QH} quarter-hearts`
@@ -202,10 +244,10 @@ console.log(godMode
 await page.evaluate(([setup, steps]) => window.__rp.beginRecord(setup, steps), [{
   seed: SEED, godMode, items: fight.items, equipA: 'sword', equipB: 'conch',
   maxHearts: QH, hearts: QH, tide: tideArg ? Number(tideArg.slice('--tide='.length)) : fight.tide,
-  enter: [dungeonId, fl, rx, ry, 72, 80, 'up'],
+  enter: [dungeonId, fl, rx, ry, AT ? AT[0] : 72, AT ? AT[1] : 80, 'up'],
 }, [
   ['wait', 30],
-  ['boss', BUDGET, null, fight.opts || null],
+  ['boss', BUDGET, MINI, fight.opts || null],
   ['wait', 240],
 ]]);
 
@@ -218,8 +260,13 @@ while (!done && guard++ < Math.ceil(BUDGET / 20) + 400) {
   catch (e) { err = String(e.message || e).replace(/^page\.evaluate: /, '').split('\n')[0]; break; }
   done = r.done;
   if (r.error) { err = String(r.error); break; }
-  const m = await page.evaluate((id) => {
-    const g = window.__game; const b = g.boss;
+  const m = await page.evaluate(([id, miniName, miniFlag]) => {
+    const g = window.__game;
+    // A miniboss is not `g.boss` (null in its arena), so find it by name in
+    // the room's own entity list — the same list `dBoss` targets.
+    const b = miniName
+      ? g.entities.find(e => e.type === miniName && !e.dead && !e.remove)
+      : g.boss;
     return {
       hp: b ? b.hp : null, dead: b ? b.dead : null,
       // GROUND TRUTH, and the whole reason this line exists. `g.boss` goes NULL
@@ -230,10 +277,15 @@ while (!done && guard++ < Math.ceil(BUDGET / 20) + 400) {
       // enemy is gone" was wrongly read as a victory; here it was wrongly read
       // as a failure. Either way the fix is the same and T38 already said it:
       // assert the positive fact, and `progress.beaten` is that fact.
-      beaten: !!(g.progress && g.progress.beaten && g.progress.beaten[id]),
+      // `progress.beaten` is keyed off the MAP and a miniboss never sets it,
+      // so a miniboss's win is its room's `puzzle.flag` instead — the same
+      // fact that pays out the Piece of Heart.
+      beaten: miniFlag
+        ? !!(g.progress && g.progress.flags && g.progress.flags[miniFlag])
+        : !!(g.progress && g.progress.beaten && g.progress.beaten[id]),
       qh: g.progress ? g.progress.hearts : null, frame: g.frame,
     };
-  }, dungeonId);
+  }, [dungeonId, MINI, mini ? mini.flag : null]);
   if (m.hp !== lastHp || m.qh !== lastQh) { timeline.push(m); lastHp = m.hp; lastQh = m.qh; }
   if (m.beaten) { timeline.push(m); break; }
   if (m.qh === 0 || m.dead) break;

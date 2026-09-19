@@ -1030,6 +1030,32 @@ unwritten because it re-sweeps every recorded frame in the repo.
 Floor wrote this down and the Shrine Ford repeated it. Wide rooms are crossed,
 not cleared, until `dFight` learns a radius.
 
+## Settled at S130 — the Clawcrab is broken, and the run cannot take the fix
+
+**Nothing in the Clawcrab fight is random.** Five seeds, byte-identical: same
+hits, same frames, same outcome. Do not sweep seeds on it again.
+
+**It is a deterministic loss at 12 quarter-hearts, from both entry points**, and
+it is almost all projectiles — zero contact hits from the middle of the arena,
+one from the route's door.
+
+**The miniboss fires faster than the boss it rehearses.** Gohmaraq slams 3 at
+170 / 5 at 130 / 5 at 105 with 24 hp behind a shell, fought on sixteen. The
+Clawcrab does 3 at 130 / 5 at 100 with 14 hp and no shell, fought on twelve.
+Measured in one harness: Gohmaraq costs the actor 4 and it wins; the Clawcrab
+costs it 12 and it dies. `snip` 130→190 turns 0 of 5 into 5 of 5.
+
+**NEGATED, and this is the blocker: the fix cannot land.** With it in, D3's
+Gloomtide goes from 12 damage to 24 a hundred and twenty thousand frames later
+and the route desyncs and dies. Nothing about D3 changed. **The playthrough is
+ONE SAMPLE, and no combat tuning anywhere can land until a boss fight in it has
+more margin than a single seed's luck.** This is S129's downstream-reroll
+lesson at ten times the size.
+
+**`tools/measure-boss-combat.mjs` takes a miniboss now** (`--mini=`), and an
+entry point (`--at=x,y`), because 72,80 is the middle of a one-screen room and
+the den is 2x1.
+
 ## Settled at S129 — D1's bill, and what cannot be paid from the route
 
 **Eleven of D1's rooms cost nothing. Three are the whole bill.** The Drinking

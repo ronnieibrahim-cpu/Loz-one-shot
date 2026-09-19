@@ -24,12 +24,12 @@ ONE UNAUDITED THING, found at S124 and not chased: every placed pickup in the
 game has a 460-frame fuse counted while its room is on screen, so any placed
 fairy or heart sharing a room with a real fight is quietly unavailable.
 
-FILE ALLOWLIST for the current objective (the health economy of D1's east wing):
-  src/data/bosses.js — ONLY the `clawcrab` definition, and NOT its `damage`
-  src/data/dungeons-a.js — ONLY D1's Clawcrab Den (`0,5,3`) and Two Gauges
-  tools/playthrough-route.mjs — the D1 leg
-  tools/check-playthrough.mjs — only its assertions about how far the run gets
-  tools/measure-boss-combat.mjs — only to teach it a miniboss
+FILE ALLOWLIST for the current objective (margin in the run's boss fights):
+  tools/playthrough-route.mjs — the D3 and D6 boss legs
+  tools/actor-runtime.mjs — `dBoss` only
+  tools/measure-boss-combat.mjs
+  src/data/bosses.js — ONLY `clawcrab`'s `snip` rate, and only once the run
+    can absorb it; NEVER a `damage`, which is a rung of the ladder
   dist/oracle-of-tides.html
   docs/NEXT-SESSION.md
   docs/prompts/LEDGER.md
@@ -37,8 +37,6 @@ FILE ALLOWLIST for the current objective (the health economy of D1's east wing):
 DETOUR TOKENS: 1 (unspent)
 
 SESSION LOG: one row per session — `S## | objective|detour | one line`
-S113 | objective | Made the third dungeon's boss easier to fight: it has less health, it no longer outruns you when it drags the sea to the level it likes, and it takes that level back less often. Found while sizing the change that the test robot dies to five careless touches no matter how weak the boss is, so the run still cannot be driven through the fight.
-S114 | objective | Made the third boss beatable by the test robot: it now cuts down the slimes he sheds instead of dodging them for ever, which is what was actually killing it — one hit in fourteen came from the boss himself. Seven wins in ten where there were none.
 S115 | objective | Played the third dungeon for the first time. A new game now walks from the title screen all the way to the Bogwater Sanctum's boss and comes out with three of the six Essences: it bombs its way into the marsh to reach the door, dives under all three of the Sanctum's currents in the new soles, and beats Gloomtide with hearts to spare.
 S116 | objective | Played the fourth dungeon for the first time. A new game now walks out of the Bogwater Sanctum on its own feet, crosses the marsh and the bluffs, bombs the rockfall that holds the Cliffs of Kell shut, and takes the Cliffside Cistern end to end: three keys, the Squall Bellows, all six drowned wheels turned by holding the breath against them, the Ironknight, and Wyverna beaten with the sea drained under her. Four of the six Essences.
 S117 | objective | Played the fifth dungeon for the first time. A new game now walks out of the Cliffside Cistern, goes back to the grotto it started in for the second sword — which the stone there only gives up at four Essences — crosses the wood to the Drowned Wood Shrine, and takes it end to end: three keys, the Reefseed, all five groves grown at high water and stood on at low, Thornvine, and Rootmaw. Found on the way that the Shrine's third key never existed: the chest holding it dropped it behind itself in a corridor one tile wide, and nothing in the game could reach it. Ended the session laying the groundwork for the next one: the robot can now hold a conversation with a trader, which is how the Coastwise Chain gets walked, and the first seven links of that chain have been passed in a test harness.
@@ -54,3 +52,4 @@ S126 | objective | Every room of the last dungeon has now been played. The flood
 S127 | objective | Made it impossible to send Link into a fight without his sword. He had been walking into two of them holding a conch instead — one found by accident last session after eight attempts at making the fight easier, the other found by this check within seconds of it existing. Eighty-six fights were checked by actually running them; those were the only two, and both are fixed.
 S128 | objective | Stopped Link paying the same toll twice. He walks through a room full of armoured knights on the way into the west wing and again on the way back out, and it was costing him three hearts; clearing it on the way in costs half a heart net, pays out the heart the room owes for clearing it, and leaves it empty for the walk home. The worst moment in the last dungeon went from a quarter of a heart and a half to nearly four hearts.
 S129 | objective | Read the first dungeon's bill for the first time. Eleven of its rooms cost nothing; three are the whole bill. Fixed the one that was a routing cost: Link used to walk past the room below the hub taking two hits and leaving what the crabs dropped on the floor, so the game's scariest moment — the first real fight, at a quarter of a heart from death — was really paid for two rooms earlier. He clears that room now and it pays for itself. Measured and wrote down why the crab miniboss above it cannot be helped the same way: he already walks in on a full heart bar, because that is as full as it goes there.
+S130 | objective | Found out why the first dungeon's crab miniboss is the hardest thing in it: it throws rocks faster than the dungeon's actual boss does, on half the health and no shell, and the test robot dies to it every single time — not sometimes, every time, because there is nothing random in that fight at all. The three-line fix turns every loss into a win. It is written down and NOT in the game, because putting it in re-rolls a boss fight two dungeons later and the run dies there instead. The real problem is now named: the whole game is tested by one lucky run.
