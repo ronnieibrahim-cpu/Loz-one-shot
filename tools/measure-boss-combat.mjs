@@ -71,6 +71,10 @@ const FIGHTS = {
   // route carries for it. Every other row leaves it off and is measured
   // exactly as it always was; see `dBoss`'s summons branch for the four fights
   // that measured WORSE with it on.
+  // `openRetreat` is deliberately NOT here, so this row keeps matching the
+  // route's. Pass `--open-retreat` to ask what it does: 16/20-dead/5/8/19
+  // becomes 10/14/7/14/8, five wins in five. The route still does not carry
+  // it — see the note on its own D3 boss step for why it loses the real run.
   d3: { boss: 'gloomtide', tide: LOW, opts: { clearAdds: true },
         items: { sword: 1, conch: 1, anchor: 1, lens: 1, bombs: 1, cleats: 1 } },
   // sword 1, not 2: at D4 the player holds three Essences and the L2 blade's
@@ -129,6 +133,17 @@ const godMode = args.includes('--god');
 // — D1 unwinnable to won on every seed, D2/D3/D5 the other way — stays a thing
 // anyone can re-measure rather than a paragraph in a handoff doc.
 const noEvade = args.includes('--no-evade');
+// Turn `dBoss`'s contact-chain guard on for this fight, on top of whatever the
+// row above already carries. The guard is opt-in PER FIGHT (see `breakContact`
+// in tools/actor-runtime.mjs for the measured reason), and until this flag
+// existed the only way to ask "would this fight be steadier with it?" was to
+// edit the route and run a hundred and seventy thousand frames — which is how
+// S130 ended up unable to tell a real improvement from a downstream reshuffle.
+// Asking it here costs one fight's frames and re-rolls nothing.
+const breakContactFlag = args.includes('--break-contact');
+// The same, for `dBoss`'s open-floor retreat. Same reason: ask the question in
+// one fight's worth of frames instead of the whole run's.
+const openRetreatFlag = args.includes('--open-retreat');
 const budgetArg = args.find(a => a.startsWith('--budget='));
 const BUDGET = budgetArg ? Number(budgetArg.slice('--budget='.length)) : 18000;
 
@@ -155,6 +170,9 @@ const fight = mini
   ? { boss: MINI, tide: mini.tide, items: mini.items }
   : FIGHTS[dungeonId];
 if (!fight) { console.error(`unknown dungeon '${dungeonId}' — one of ${Object.keys(FIGHTS).join(', ')}`); process.exit(1); }
+let bossOpts = fight.opts || null;
+if (breakContactFlag) bossOpts = { ...(bossOpts || {}), breakContact: true };
+if (openRetreatFlag) bossOpts = { ...(bossOpts || {}), openRetreat: true };
 
 const MIME = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
@@ -219,6 +237,17 @@ await page.evaluate(async () => {
         isProjectile: !!(source && source.isProjectile), src: source ? source.type : null,
         dist: b ? Math.round(Math.abs(b.cx - this.cx) + Math.abs(b.cy - this.cy)) : null,
         weakOpen: b ? !!b.weakOpen : null, stun: b ? b.stun : null, charging: b ? !!b.charging : null,
+        // WHERE THE PLAYER WAS STANDING, and how much room it had left to give.
+        // `dist` alone cannot tell a hit taken in the open from one taken with
+        // the back against a wall, and those are different faults with
+        // different fixes: the first is the approach closing too far, the
+        // second is `dBoss`'s post-swing retreat being silently fenced to
+        // nothing. `edge` is the smallest gap to any of the four room edges,
+        // in the same terms `dBoss`'s own `fence` uses (it strips a direction
+        // at 12), so a run of hits at edge<=12 IS the retreat being refused.
+        px: Math.round(this.cx), py: Math.round(this.cy),
+        edge: game.room ? Math.round(Math.min(
+          this.x, this.y, game.room.pw - 16 - this.x, game.room.ph - 16 - this.y)) : null,
       });
     }
     return r;
@@ -247,7 +276,7 @@ await page.evaluate(([setup, steps]) => window.__rp.beginRecord(setup, steps), [
   enter: [dungeonId, fl, rx, ry, AT ? AT[0] : 72, AT ? AT[1] : 80, 'up'],
 }, [
   ['wait', 30],
-  ['boss', BUDGET, MINI, fight.opts || null],
+  ['boss', BUDGET, MINI, bossOpts],
   ['wait', 240],
 ]]);
 

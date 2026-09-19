@@ -1297,6 +1297,17 @@ export const ROUTE = [
   // one came from the boss. With the option the fight measures seven wins in
   // ten seeds; without it, none. Measured across all six bosses it is a win
   // on this one and a loss on four, so it is named per fight.
+  // `openRetreat` IS NOT ON HERE, AND THAT IS A MEASUREMENT, NOT AN OVERSIGHT.
+  // Swept at five seeds on the health a player arriving in order holds,
+  // Gloomtide costs 5, 8, 16, 19 and a DEATH — and every 4-quarter-heart hit
+  // in that sweep lands 13-14px from a room edge, 52-55 frames apart, which
+  // is the invuln window exactly. It is one fight asking whether the endgame
+  // drifts into the arena's east wall, where the post-swing retreat slides
+  // along the bricks instead of opening a gap. Retreating toward open floor
+  // instead gives 7, 8, 10, 14, 14 — five wins in five, spread halved, death
+  // gone. In THIS run it loses the fight outright. The arena the harness
+  // fights in is empty; the one the route arrives in still has a zol in it,
+  // and that is enough to make them different fights. See the S131 ledger.
   ['boss', 14000, null, { clearAdds: true }],
   ['wait', 240],
 

@@ -23,13 +23,16 @@ be gated on a downstream trough.
 ONE UNAUDITED THING, found at S124 and not chased: every placed pickup in the
 game has a 460-frame fuse counted while its room is on screen, so any placed
 fairy or heart sharing a room with a real fight is quietly unavailable.
+THE NAMED BLOCKER (S130, sharpened at S131): the run is one sample, and the
+five-seed harness that was supposed to answer that fights an EMPTY arena while
+the route's still holds a zol. They are different fights, measured. The next
+objective is a harness that fights the route's arena.
 
-FILE ALLOWLIST for the current objective (margin in the run's boss fights):
-  tools/playthrough-route.mjs — the D3 and D6 boss legs
+FILE ALLOWLIST for the current objective (measure a boss fight as the ROUTE
+plays it, not as an empty room):
+  tools/measure-boss-combat.mjs — the arena setup
   tools/actor-runtime.mjs — `dBoss` only
-  tools/measure-boss-combat.mjs
-  src/data/bosses.js — ONLY `clawcrab`'s `snip` rate, and only once the run
-    can absorb it; NEVER a `damage`, which is a rung of the ladder
+  tools/playthrough-route.mjs — the D3 boss leg
   dist/oracle-of-tides.html
   docs/NEXT-SESSION.md
   docs/prompts/LEDGER.md
@@ -53,3 +56,4 @@ S127 | objective | Made it impossible to send Link into a fight without his swor
 S128 | objective | Stopped Link paying the same toll twice. He walks through a room full of armoured knights on the way into the west wing and again on the way back out, and it was costing him three hearts; clearing it on the way in costs half a heart net, pays out the heart the room owes for clearing it, and leaves it empty for the walk home. The worst moment in the last dungeon went from a quarter of a heart and a half to nearly four hearts.
 S129 | objective | Read the first dungeon's bill for the first time. Eleven of its rooms cost nothing; three are the whole bill. Fixed the one that was a routing cost: Link used to walk past the room below the hub taking two hits and leaving what the crabs dropped on the floor, so the game's scariest moment — the first real fight, at a quarter of a heart from death — was really paid for two rooms earlier. He clears that room now and it pays for itself. Measured and wrote down why the crab miniboss above it cannot be helped the same way: he already walks in on a full heart bar, because that is as full as it goes there.
 S130 | objective | Found out why the first dungeon's crab miniboss is the hardest thing in it: it throws rocks faster than the dungeon's actual boss does, on half the health and no shell, and the test robot dies to it every single time — not sometimes, every time, because there is nothing random in that fight at all. The three-line fix turns every loss into a win. It is written down and NOT in the game, because putting it in re-rolls a boss fight two dungeons later and the run dies there instead. The real problem is now named: the whole game is tested by one lucky run.
+S131 | objective | Found that the test robot could lose a boss fight and report a win. When Link dies, the game puts him back at the dungeon's front door on a full heart bar and clears the room behind him — and the robot, which decides a boss is dead by looking round the room for it, saw an empty room and called it a victory. It then walked the rest of the game without the Essence, and the first thing that noticed was a missing item an hour and a half later in a different dungeon. Every boss fight in the game has had that hole for its whole life. Also read the third dungeon's boss properly for the first time: the fight swings between five quarter-hearts and death depending on nothing but whether the end of it drifts into the arena's east wall, where Link's retreat slides along the bricks instead of getting away. The fix for that is measured, written down and deliberately not switched on, because it loses the real run — which turns out to be the sharpest thing found all session: the practice arena is empty and the real one still has a zol in it.

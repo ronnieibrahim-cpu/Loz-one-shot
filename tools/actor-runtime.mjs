@@ -1337,6 +1337,38 @@ export async function installRuntime() {
     for (let i = 0; i < 300 && !find(); i++) yield 0;
     let target = find();
     if (!target) throw new Error('boss: nothing to fight in ' + g.mapId + ' ' + (g.room && g.room.key));
+    /**
+     * A LOST FIGHT MUST NOT READ AS A WON ONE.
+     *
+     * This verb's only exit is `!find()` — no boss in the room means the boss
+     * is dead. That is true right up until the player DIES, and then it is the
+     * exact opposite of true: `progress.respawn` puts him at the dungeon's
+     * MOUTH on a full heart bar, the arena's entities go with the room, and
+     * the very next iteration finds nothing to fight and returns cleanly. The
+     * route walks on without the Essence, and the first thing that notices is
+     * a missing item ninety thousand frames later, in another dungeon.
+     *
+     * Found exactly that way, and it cost this session the diagnosis: a change
+     * that won Gloomtide five times out of five in `measure-boss-combat` lost
+     * him in the real run, and the trace said `boss ... d3 0,3,7 hp 28` — the
+     * Sanctum's mouth, full health — with no error at all. The harness catches
+     * a death because it watches the heart count itself; this verb did not.
+     *
+     * So the arena is recorded on the way in and checked on the way out. It
+     * catches the death, and it catches the other shape of the same fault this
+     * file already knows about — walking out of a door the `fence` missed,
+     * which is why the verb once "won" six fights without landing a hit. A
+     * real win never leaves the room: the Essence and the Heart Container both
+     * drop where the boss stood.
+     */
+    const arenaMap = g.mapId, arenaKey = g.room ? g.room.key : null;
+    const inArena = () => g.mapId === arenaMap && (g.room ? g.room.key : null) === arenaKey;
+    const leftArena = () => {
+      throw new Error(`boss: left the arena — ${arenaMap} ${arenaKey} -> ${g.mapId} `
+        + `${g.room ? g.room.key : '-'} on ${g.progress ? g.progress.hearts : '?'} quarter-hearts. `
+        + `A death respawns at the dungeon mouth on a full bar and empties the arena, `
+        + `which reads from in here exactly like a kill.`);
+    };
     const sword = () => swordBit('boss');
     sword();                                 // up front, for the reason dFight gives
     // The same numbers dFight uses, for the same reasons: strike from the near
@@ -1472,6 +1504,10 @@ export async function installRuntime() {
     // and it is named per fight for the same reason `clearAdds` is, measured
     // the same expensive way. See the guard itself, below.
     const breakContact = !!(opts && opts.breakContact);
+    // RETREAT TOWARD OPEN FLOOR AFTER A SWING — `['boss', N, type,
+    // { openRetreat: true }]`, named per fight for the same measured reason
+    // `clearAdds` and `breakContact` are. See the guard itself, below.
+    const openRetreat = !!(opts && opts.openRetreat);
     const wasHere = new Set(g.entities.filter(e => e.isEnemy));
     const STALL_FRAMES = 60;
     const safe = (m, retreat) => {
@@ -1558,7 +1594,7 @@ export async function installRuntime() {
     const budget = maxF || 16000;
     for (let f = 0; f < budget;) {
       const b = target = find();
-      if (!b || b.dead) return;
+      if (!b || b.dead) { if (!inArena()) leftArena(); return; }
       bvel = { vx: prevBX == null ? 0 : b.cx - prevBX, vy: prevBY == null ? 0 : b.cy - prevBY };
       prevBX = b.cx; prevBY = b.cy;
       const p = g.player;
@@ -1882,7 +1918,74 @@ export async function installRuntime() {
         // body is genuinely behind us, which is the part that matters against
         // something fast enough to still be touching you when the clock runs
         // out.
-        for (let i = 0; i < BACKOFF && f < budget; i++) { yield safe(backAlong | backPerp, true); f++; }
+        for (let i = 0; i < BACKOFF && f < budget; i++) {
+          // CORNERED: STOP RETREATING INTO THE WALL AND SWING. This is the
+          // same trap `dFight` above closed for ordinary enemies, left open
+          // here for the whole life of this verb, and it is where D3's
+          // variance actually lived.
+          //
+          // The retreat assumes it can always give ground. Against a room
+          // edge it cannot: `fence` strips the one direction that would open
+          // the gap, and what is left is the PERPENDICULAR — which slides
+          // along the wall without putting a single pixel between the player
+          // and a boss that is still walking in. So the actor spends all
+          // BACKOFF frames beside a chasing boss, taking a contact hit every
+          // PLAYER_INVULN_FRAMES, and swinging at nothing.
+          //
+          // Measured on Gloomtide at 20 quarter-hearts, five seeds: EVERY
+          // 4-quarter-heart contact hit in the sweep landed at 13-14px from
+          // a room edge (px 138-139 in a 160px arena), 52-55 frames apart —
+          // the invuln window, exactly — and the two seeds that never reached
+          // that wall took no contact damage at all. That is the entire
+          // spread: 5 / 8 / 16 / 19 / dead was not five different fights, it
+          // was one fight asking whether the endgame happened to drift east.
+          //
+          // TWO THINGS WERE TRIED HERE AND BOTH ARE NEGATED — keep them
+          // written down, they are the cheap-looking answers.
+          //
+          // (1) `dFight`'s own fix — bail out of the retreat and swing —
+          // costs Gloomtide four of the five seeds outright (one win, four
+          // deaths, contact hits up from 2 to 4-8). `dFight` trades a swing
+          // for a touch from an ordinary enemy at 1-2 quarter-hearts; a boss
+          // touch here is 4, and the trade inverts.
+          //
+          // (2) Testing `fence` for the cornering fires on NONE of these
+          // hits: at every one of them the player is at x=130 against a
+          // fence that strips at 132. The fence is not what holds him. The
+          // arena's own east wall is, two pixels further out, and
+          // `moveEntity` refuses the move.
+          //
+          // What is left is the perpendicular, and the perpendicular is
+          // chosen below purely off the boss's cross-axis offset, with no
+          // idea that one of the two ways is further into the corner. So:
+          // ONCE THE RETREAT HAS STOPPED MOVING THE PLAYER, SPEND THE REST OF
+          // IT HEADING FOR OPEN FLOOR. `backPerp` slides along the wall the
+          // actor is pinned against; the arena's own middle is the way out of
+          // the corner, and it is a direction this verb already reaches for
+          // when it has nothing better to do (see the shelled branch below).
+          //
+          // IT IS OPT-IN PER FIGHT, like `clearAdds` and `breakContact` above
+          // and for the same measured reason. On Gloomtide it is the whole
+          // fault: 5/8/16/19/dead becomes 7/8/10/14/14, five wins in five,
+          // the spread halved and the death gone. On NERETH it is a real
+          // loss — 2 wins and a death at 32 quarter-hearts becomes three
+          // deaths. His throne room is wide, he is rarely the one doing the
+          // cornering, and out there the boss-aware perpendicular is the
+          // better of the two.
+          //
+          // Gating it on "has the retreat stopped moving the player" instead,
+          // so one rule could serve both, was tried and is NEGATED: it gives
+          // D3 its death back (14/dead/5/8/6) AND still loses Nereth a seed.
+          // The signal fires inside his fight too, and a rule that has to be
+          // true in one arena and false in another is a per-fight fact
+          // wearing a general test. So the route names the fights that want
+          // it, which is where this file already says a single fight's needs
+          // belong: readable in the route, not hidden in the verb.
+          const perpNow = !openRetreat ? backPerp : (axisX
+            ? (p.cy < (g.room ? g.room.ph : 144) / 2 ? BIT.down : BIT.up)
+            : (p.cx < (g.room ? g.room.pw : 160) / 2 ? BIT.right : BIT.left));
+          yield safe(backAlong | perpNow, true); f++;
+        }
         continue;
       }
       // Shelled: nothing to hit. Keep off it and wait out the tell — unless

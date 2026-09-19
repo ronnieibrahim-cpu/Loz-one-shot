@@ -1030,6 +1030,44 @@ unwritten because it re-sweeps every recorded frame in the repo.
 Floor wrote this down and the Shrine Ford repeated it. Wide rooms are crossed,
 not cleared, until `dFight` learns a radius.
 
+## Settled at S131 — the boss verb could lose a fight and report a win
+
+**A LOST BOSS FIGHT USED TO READ AS A WON ONE, in every fight in the game.**
+`dBoss`'s only exit was "no boss in the room". A player DEATH respawns at the
+dungeon mouth on a full bar and takes the arena's entities with the room, so
+the verb returned cleanly and the route walked on without the Essence — the
+first thing to notice being a missing item ninety thousand frames later, in
+another dungeon. FIXED: the arena is recorded on the way in and checked on the
+way out. Costs a winning run nothing.
+
+**Gloomtide's whole spread was ONE WALL.** Five seeds at 20 quarter-hearts:
+16 / DEAD / 5 / 8 / 19. Every 4-quarter-heart contact hit in the sweep landed
+13-14px from a room edge, 52-55 frames apart — `PLAYER_INVULN_FRAMES` exactly.
+The post-swing retreat's along-component is refused by the wall and the
+perpendicular slides along the bricks without opening a gap. `openRetreat`
+(head for the arena's middle) gives 10 / 14 / 7 / 14 / 8 — five in five.
+
+**NEGATED, three ways round.** `dFight`'s bail-out-and-swing fix costs 4 of 5
+seeds (a boss touch is 4 quarter-hearts, not 1-2). Testing `fence` fires on
+none of these hits — the player is at x=130 against a fence that strips at
+132; it is the arena's wall holding him, not the fence. Gating on "the retreat
+has stopped moving the player", so one rule could serve every boss, gives D3
+its death back AND still loses Nereth a seed.
+
+**NEGATED, and this is the one that matters: `openRetreat` is not in the
+route.** It is a clear loss on Nereth (2 wins and a death at 32 becomes three
+deaths), so it is opt-in per fight like `clearAdds` and `breakContact` — and
+switching it on for D3 LOSES THE REAL RUN while winning 5 of 5 in the harness
+at MORE health than the route carries. **The harness's arena is empty and the
+route's still has a zol in it, and that is enough to make them different
+fights.** A five-seed sweep of an isolated fight beats one sample and is still
+not the same fight. The successor to "the playthrough is one sample" is a
+harness that fights the route's arena.
+
+**`measure-boss-combat.mjs` logs position and edge distance per hit now**, and
+takes `--break-contact` and `--open-retreat` so a `dBoss` option can be swept
+in one fight's frames instead of the whole run's.
+
 ## Settled at S130 — the Clawcrab is broken, and the run cannot take the fix
 
 **Nothing in the Clawcrab fight is random.** Five seeds, byte-identical: same

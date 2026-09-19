@@ -17567,3 +17567,89 @@ red. 148 assertions, and the real ones are unchanged.
 `reefseed ... dungeons: 1 of 5`. The room is a real build — stakes at two seas
 thrown over a drowned bole, and D2's coral legend has no `dSnag` to throw over —
 and it is the next session's whole task.
+
+## S131 — the boss verb could lose a fight and report a win
+
+Three things: a spread, a fix that cannot land, and the fault that hid it.
+
+### THE SPREAD (the thing the prompt asked for)
+
+Gloomtide, five seeds, 20 quarter-hearts, `tools/measure-boss-combat.mjs`:
+
+| | seed 20260806 | 1 | 2 | 3 | 4 |
+|---|---|---|---|---|---|
+| before | 16 | **DEAD** | 5 | 8 | 19 |
+| `--open-retreat` | 10 | 14 | 7 | 14 | 8 |
+
+Before: 3 wins in 5, spread 5-20. After: 5 in 5, spread 7-14. The prompt's
+rule said a wide spread means the fault is in `dBoss`, and it was.
+
+### WHERE THE VARIANCE ACTUALLY LIVED: ONE WALL
+
+`measure-boss-combat.mjs` logs the player's own position and its distance to
+the nearest room edge on every hit now. **Every 4-quarter-heart contact hit in
+the whole sweep landed 13-14px from an edge** (px 138-139 in a 160px arena),
+52-55 frames apart — `PLAYER_INVULN_FRAMES`, exactly. The two clean seeds
+never reached that wall and took no contact damage at all. It was not five
+fights; it was one fight asking whether the endgame drifted east.
+
+`dBoss`'s post-swing retreat is `backAlong | backPerp`. Against the east wall
+`backAlong` is refused by the room and what is left is the perpendicular,
+which slides ALONG the bricks without opening a single pixel of gap while a
+chasing boss keeps touching. `openRetreat` heads for the arena's middle
+instead.
+
+Two cheaper answers were tried and are NEGATED:
+- `dFight`'s own fix (bail out of the retreat and swing) costs 4 of 5 seeds.
+  `dFight` trades a swing for a 1-2 quarter-heart touch; a boss touch is 4.
+- Testing `fence` for the cornering fires on NONE of these hits. At every one
+  the player is at x=130 against a fence that strips at 132. The fence is not
+  what holds him — the arena's own wall is, two pixels further out.
+- Gating it on "the retreat has stopped moving the player", so one rule could
+  serve every boss, gives D3 its death back AND still loses Nereth a seed.
+
+### WHY IT IS NOT IN THE ROUTE
+
+Swept on all six bosses, `openRetreat` is a clear win on Gloomtide and a clear
+loss on NERETH (2 wins and a death at 32 quarter-hearts becomes three deaths);
+his throne room is wide and he is rarely the one cornering. So it is opt-in
+per fight, like `clearAdds` and `breakContact`. And then **switching it on for
+D3 loses the real run** — while winning 5 of 5 in the harness at MORE health
+than the route carries.
+
+That is the finding worth keeping: **the harness's arena is empty and the
+route's still has a zol in it, and that is enough to make them different
+fights.** A five-seed sweep of an isolated fight is a much better measurement
+than one sample, and it is still not the same fight.
+
+### THE FAULT THAT HID ALL OF IT, AND IS NOW FIXED
+
+The first run with `openRetreat` on did not fail at the boss. It failed
+ninety thousand frames later, in another dungeon, with `equip: bellows is not
+in the item list`.
+
+`dBoss`'s only exit is "no boss in the room, so the boss is dead". That is
+true right up until the PLAYER dies — and then `progress.respawn` puts him at
+the dungeon MOUTH on a full heart bar, the arena's entities go with the room,
+and the next iteration finds nothing to fight and **returns cleanly**. The
+trace read `boss ... d3 0,3,7 hp 28` and raised nothing. Every boss fight in
+this project has had that hole for its whole life; `measure-boss-combat`
+never showed it because it watches the heart count itself.
+
+`dBoss` now records the arena on the way in and checks it on the way out. The
+same run now stops at the boss step and says so. It also closes the other
+shape of the same fault this file already knew about — walking out of a door
+the `fence` missed, which is why the verb once "won" six fights without
+landing a hit. A real win never leaves the room: the Essence and the Heart
+Container both drop where the boss stood.
+
+Costs a winning run nothing: `check-playthrough` is 40 of 40 and the tape
+still replays to the pixel.
+
+### FOR NEXT SESSION
+
+The lever is measured, landed and one word away in the route. What it needs is
+a harness that fights the fight the ROUTE fights — same arena contents, same
+entry — rather than an empty room. That is the honest successor to "the
+playthrough is one sample", and it is now a specific, small piece of work
+rather than a complaint.
