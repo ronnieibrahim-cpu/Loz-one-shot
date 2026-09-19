@@ -1030,6 +1030,32 @@ unwritten because it re-sweeps every recorded frame in the repo.
 Floor wrote this down and the Shrine Ford repeated it. Wide rooms are crossed,
 not cleared, until `dFight` learns a radius.
 
+## Settled at S124 — the King's fight has a margin
+
+**The run enters Nereth's hall on 35 of 44 and bottoms out at 3.** The deepest
+trough in the game is 2/48 in D1, where it belongs. Do not re-derive this.
+
+**The Crossed Shafts' far island holds a fairy, past the chest.** It is the
+only place in the Keep a heal can go and still be spent. Do not move it.
+
+**A PLACED PICKUP HAS A 460-FRAME FUSE.** `PICKUP_LIFE_FRAMES`, counted while
+its room is on screen. Anything placed in a room with a real fight in it needs
+an explicit `life` or it is gone before the fight ends. Unaudited everywhere
+else in the game.
+
+**NEVER give the Brinehulk `drops: 'rich'`.** It is the only miniboss paying
+nothing and that is now deliberate: a drop table is rolled off the RNG, and
+turning one on moved every roll after it and lost Nereth sixteen times running.
+
+**The Barnacle Skin must not be worn into a fight.** A free hit takes no
+hitstop and no knockback, so the swordsman is not shoved clear — strictly worse
+than being hit against anything that keeps coming. Measured on Gloomtide and on
+Nereth. Worn only for the walking it nets four quarter-hearts, because the Keep
+Gate's fairy throws the rest away against the cap. Not worth a re-tune.
+
+**`['charm', id, slot, maxF, 'off']` takes a charm out.** Same button as
+putting one in.
+
 ## Settled at S123 — the scrimshaw is drivable, and the trader is not
 
 **`['charm', id, slot, maxF]` exists and works.** It drives the menu the way a

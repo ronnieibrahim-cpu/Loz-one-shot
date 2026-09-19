@@ -1924,15 +1924,22 @@ export async function installRuntime() {
    * A shut case answers with `deny` and a flash, so this checks the result
    * rather than trusting the press.
    */
-  function* dCharm(id, slot, maxF) {
+  function* dCharm(id, slot, maxF, mode) {
     const g = window.__game;
     const want = (slot || 'mid').toLowerCase();
+    // TAKING ONE OFF IS THE SAME BUTTON. `Menu.updateCharms` treats A on a
+    // charm already in the case as "take it out" — "at 160x144 a second one
+    // would need a legend nobody reads" — so `['charm', id, slot, maxF,
+    // 'off']` is the same walk to the same cursor and the same press, with
+    // the goal inverted. The route needs it because the Barnacle Skin is worn
+    // for the walking and must not be worn into a fight.
+    const off = mode === 'off';
     const TAB = 2;
     const inCase = () => {
       const c = g.progress.charmSlots && g.progress.charmSlots[want];
       return !!(c && c.indexOf(id) >= 0);
     };
-    if (inCase()) return;
+    if (inCase() !== off) return;
     if (!g.progress.charms || !g.progress.charms[id]) {
       throw new Error(`charm: ${id} is not owned`);
     }
@@ -1957,7 +1964,9 @@ export async function installRuntime() {
     }
     for (let i = 0; i < 60 && g.mode === 'menu'; i++) yield (i % 8 === 0) ? BIT.start : 0;
     yield* dWait(4);
-    if (!inCase()) throw new Error(`charm: ${id} is still not in the ${want} case`);
+    if (inCase() === off) {
+      throw new Error(`charm: ${id} is still ${off ? 'in' : 'not in'} the ${want} case`);
+    }
     void rowOf;
   }
 
@@ -2484,7 +2493,7 @@ export async function installRuntime() {
       else if (kind === 'tide') yield* dTide(a[0], a[1], a[2]);
       else if (kind === 'soles') yield* dSoles(a[0], a[1]);
       else if (kind === 'equip') yield* dEquip(a[0], a[1], a[2]);
-      else if (kind === 'charm') yield* dCharm(a[0], a[1], a[2]);
+      else if (kind === 'charm') yield* dCharm(a[0], a[1], a[2], a[3]);
       else if (kind === 'anchor') yield* dAnchor(a[0], a[1], a[2]);
       else if (kind === 'unanchor') yield* dUnanchor(a[0]);
       else if (kind === 'bellows') yield* dBellows(a[0], a[1], a[2]);

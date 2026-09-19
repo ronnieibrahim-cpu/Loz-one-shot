@@ -2144,6 +2144,7 @@ export const ROUTE = [
   ['hold', ['down'], 90],
   ['wait', 120],
 
+
   // ---------------------------------------------------- THE COASTWISE CHAIN
   //
   // Twelve links, in stage order, and the order zig-zags the whole map on
@@ -2657,6 +2658,12 @@ export const ROUTE = [
   ['dialogue', 600],
   ['wait', 180],
   ['loot', 600],
+
+  // THE COLOSSUS'S HOARD, drunk here and not at the door. Seventeen
+  // quarter-hearts of the Keep Gate's fairy were spent getting to this island
+  // and the fight on it; what is left would not pay for the King.
+  ['goto', 15, 2, 1500],
+  ['loot', 1200],
 
   // AND BACK, which is the same two crossings in reverse and at the same two
   // seas — every crossing in this dungeon carries a mooring on the near side

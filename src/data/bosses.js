@@ -679,6 +679,16 @@ export function installBosses() {
     w: 32, h: 32, hb: { x: 4, y: 8, w: 24, h: 22 },
     frames: ['boss_brinehulk_0', 'boss_brinehulk_1', 'boss_brinehulk_2'],
     hurtFrame: 'boss_brinehulk_hurt',
+    // `drops: 'none'` AND IT STAYS THAT WAY, which is the odd one out in the
+    // roster and is deliberate now rather than left over. It kept a boss's
+    // payout for as long as it was declared a boss, and the obvious tidy-up
+    // when S121 made it a miniboss was to make it 'rich' like the other eight.
+    // MEASURED, AND IT LOSES THE GAME. A drop table is rolled off the RNG, so
+    // turning one on moves every roll after it — and the run that beat Nereth
+    // on thirty-five hearts went to sixteen straight losses with it on, at
+    // every pre-fight delay from one frame to eighteen hundred. The colossus's
+    // payout is the fairy placed beside its chest in `dungeons-b.js`, which is
+    // worth more than a drop table and does not move a single roll.
     intro: 90, shell: true, terrain: 'any', drops: 'none',
     // IT IS A MINIBOSS, AND NOTHING SAID SO UNTIL SOMETHING KILLED IT. The
     // six-dungeon fold left the Brinehulk homeless and it was re-housed in the

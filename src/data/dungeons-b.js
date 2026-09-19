@@ -1703,6 +1703,32 @@ export function installDungeonsB() {
         },
         entities: [
           ['chest', 17, 3, { pickup: 'bossKey' }],
+          // THE COLOSSUS'S HOARD, and the last thing to heal on in the game.
+          // The far island is the only place a heal can go and still be
+          // SPENT: the Keep Gate's fairy is drunk on the way out here and
+          // seventeen quarter-hearts of it go on the two crossings and the
+          // Brinehulk before the throne room is even opened. Measured, the
+          // run used to walk through Nereth's door on seventeen of
+          // forty-eight against a fight that costs twenty-nine
+          // (`tools/measure-boss-combat.mjs d6 --qh=32`) — it won, and it won
+          // by ONE quarter-heart, which is not a margin, it is a coin. Every
+          // change made upstream of it this session flipped that coin: a
+          // charm slotted, a chest opened two dungeons back, sixteen frames
+          // of menu. A final boss whose fight is decided by what the route
+          // did in the Coral Spire is not a fight, and no amount of routing
+          // fixes it from outside.
+          //
+          // It sits past the chest rather than beside the landing, so it is
+          // taken on the way back with the Boss Key and not on the way in.
+          //
+          // `life` IS NOT DECORATION HERE. A placed pickup fades after
+          // PICKUP_LIFE_FRAMES of its room being on screen — 460 frames, which
+          // is fine for a fairy you walk up to and useless for one you have to
+          // fight a colossus in front of. The Brinehulk takes thousands, and
+          // the first cut of this sat there, timed out during the fight, and
+          // left the route looting an empty island. A fairy the colossus is
+          // guarding does not swim off while you are busy with it.
+          ['pickup', 15, 1, { kind: 'fairy', life: 1e9 }],
           // The Brinehulk keeps the Boss Key, and where it stands is the joke
           // the room is built on. Brine dissolves salt: it is ARMOURED AT LOW
           // and comes apart at HIGH — and LOW is the only sea the shelf lets

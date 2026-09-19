@@ -1,3 +1,78 @@
+## S124 — the King's fight has a margin now, and it came from a fairy in a hoard
+
+The run walks into Nereth's hall on THIRTY-FIVE of forty-four and its lowest
+point in the fight is three. It used to walk in on seventeen and bottom out at
+one. The deepest trough in the whole game is no longer in the Abyssal Keep at
+all: it is 2 of 48, in D1's Tide Gallery, where the game is supposed to be
+frightening.
+
+### ONE QUARTER-HEART WAS NEVER A MARGIN, IT WAS A COIN
+
+Every single change tried this session flipped Nereth's fight from a win to a
+loss, and none of them touched him:
+
+  * a charm slotted two dungeons earlier;
+  * a chest opened in the Coral Spire;
+  * sixteen frames of menu at the Keep Gate;
+  * `drops: 'rich'` on the Brinehulk.
+
+That is not six unlucky runs. A fight entered on seventeen against a fight that
+measures twenty-nine (`tools/measure-boss-combat.mjs d6 --qh=32`) is decided by
+which frame you walk through the door on, and **a final boss whose outcome is
+decided by what the route did in the second dungeon is not a fight.** No amount
+of routing fixes that from outside; the room needed the health.
+
+### THE COLOSSUS'S HOARD
+
+The Crossed Shafts' far island now holds a fairy, past the Boss Key chest so it
+is taken on the way BACK rather than on the way in. It is the only place in the
+Keep a heal can go and still be spent: the Keep Gate's own fairy is drunk on
+the way out to the shafts and seventeen quarter-hearts of it go on the two
+crossings and the Brinehulk before the throne room is opened at all. Measured:
+into the shafts on 34, out on 41, into the hall on 35.
+
+**`life` IS NOT DECORATION ON A PLACED PICKUP.** The first cut of this had the
+fairy fade before it could be collected. A placed pickup gets
+`PICKUP_LIFE_FRAMES` — 460 — of its room being on screen, which is fine for
+something you walk up to and useless for something you have to fight a colossus
+in front of. The Brinehulk takes thousands of frames. It is placed with an
+explicit `life` now. **Every other placed fairy and pickup in the game has the
+same 460-frame fuse**, and any of them that shares a room with a real fight is
+quietly unavailable; nobody has audited that.
+
+### THE BARNACLE SKIN IS A TRAP IN A FIGHT, AND THAT IS THE CHARM'S OWN DESIGN
+
+The session's task was to wear `barnacleSkin` — one free hit per room — from
+the Coral Spire. It is now measured and the answer is no, for a reason that is
+about the charm and not about the route:
+
+**A free hit takes no hitstop AND NO KNOCKBACK.** `Player.takeDamage` returns
+early with an invulnerability window and nothing else, so the swordsman comes
+out of the hit standing exactly where he was instead of being shoved clear —
+and against something that does contact damage and keeps coming, staying put is
+strictly worse than being hit. Worn from the chest it loses Gloomtide on every
+pre-fight delay tried (90/120/150/180/210/240); worn into the throne room it
+loses Nereth on all fifteen tried (1 through 1800).
+
+Worn only for the WALKING — slotted at the head of the Coastwise Chain and
+taken off again at the Keep Gate, which the `charm` directive can now do —
+it works and it is still not worth it: it banks thirteen quarter-hearts by the
+Keep Gate, and the Keep Gate's fairy immediately throws nine of them away
+against the cap. Net four. **The gains arrive before the heal and the heal is
+what wastes them**, which is the same shape as the West Crypt's fairy at S121.
+
+`['charm', id, slot, maxF, 'off']` takes one out — the same button, because
+`Menu.updateCharms` treats A on a slotted charm as removal. Kept; the next
+person to try this will need it.
+
+### AND THE BRINEHULK'S DROPS STAY `none`
+
+It is the only miniboss in the roster that pays nothing, and making it `rich`
+like the other eight is the obvious tidy-up. It loses the game: a drop table is
+rolled off the RNG, so turning one on moves every roll after it, and sixteen
+straight losses at Nereth came out of one word. The comment in `bosses.js` now
+says so, so nobody tidies it again.
+
 ## S123 — the run wears a charm, and the trader no longer has to stand still
 
 The objective was floor 1 of the Abyssal Keep. It is not in the run and the

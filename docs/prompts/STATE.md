@@ -16,13 +16,14 @@ ROTATION (retired S112, kept for the record):
   4 enemy-roster S59 | 5 npc-detail S63 | 6 region-art S89
   7 item-reuse MET S110 | 8 feel-measure BLOCKED — needs an emulator capture
 
-ONE STANDING DEFECT. The other two were closed at S122 and neither was in the
-game — both were undercounts in the checker itself.
-  * The run's low-water mark is ONE quarter-heart, inside Nereth's fight.
-    `docs/prompts/QUEUE.md` item 0 is the cheapest way to widen it.
-NOTHING IN CLAUDE.md'S VERIFICATION TABLE IS RED.
+NO STANDING DEFECTS. Nothing in CLAUDE.md's verification table is red, and the
+run's deepest trough is 2 of 48 in D1's Tide Gallery, which is the game being
+frightening on purpose rather than a margin problem.
+ONE UNAUDITED THING, found at S124 and not chased: every placed pickup in the
+game has a 460-frame fuse counted while its room is on screen, so any placed
+fairy or heart sharing a room with a real fight is quietly unavailable.
 
-FILE ALLOWLIST for the current objective (the Barnacle Skin, and the re-tune):
+FILE ALLOWLIST for the current objective (floor 1 of the Abyssal Keep):
   tools/playthrough-route.mjs — the Keep leg and its GOAL block
   tools/check-playthrough.mjs — only its assertions about how far the run gets
   tools/actor-runtime.mjs — only to add a movement verb the route needs
@@ -48,4 +49,5 @@ S120 | objective | Played the sixth and last dungeon for the first time, as far 
 S121 | objective | Played the whole game from the title screen to the end. A new game now walks into the Abyssal Keep, crosses the Sunken Bar at flood, takes the Crossed Shafts at both seas, beats the Brinehulk for the Boss Key and kills Nereth in real combat on the health the Keep actually leaves, and the sixth Essence and the ending follow. Found on the way that the Brinehulk was handing out that Essence itself, two rooms short of the throne room, so the last dungeon could be finished without ever meeting the King; and that floor 1 of the Keep was the only dungeon floor in the game with nothing on it to heal on.
 S122 | objective | Closed the last two red checks in the project, and neither of them was a fault in the game. The charm that is supposed to let you breathe on the seafloor was reported broken for several sessions; it works, and the test was standing on dry sand while pretending to be underwater. And the world was reported to be one Piece of Heart short of a whole number of hearts; it is not — the counter simply could not see the one the Drowned Wood Shrine pays out of its drowned wheel. Adding the piece the last prompt asked for would have broken a different check.
 S123 | objective | Taught the test robot to wear a charm — thirty of them exist, the whole system is proved piece by piece, and no run had ever put one on in a hundred and seventy thousand frames. The run now wears one. Also fixed a real fault found on the way: the robot used to walk up to a trader, and then keep talking to the patch of ground the trader had been standing on, so the coast trade only ever worked because the timing happened to line up. Could not get the charm this run actually wants — one free hit in every room — because picking it up changes every fight that follows and loses the third boss; that is written up with the measurements for whoever takes it next.
+S124 | objective | Gave the final fight some room to breathe. Link used to walk in on four hearts against a boss that takes one a hit, and win by a quarter of a heart — which is not winning, it is luck: every single thing changed anywhere earlier in the game turned that win into a death. The salt colossus that guards the Boss Key now has a fairy in its hoard, taken on the way back out, and Link goes through the throne room door on nine hearts. Found and wrote down why the obvious health fix — the charm that soaks one hit per room — actually makes every fight worse rather than better.
 
