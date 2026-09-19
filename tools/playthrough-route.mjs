@@ -2577,14 +2577,31 @@ export const ROUTE = [
   // ring is radial — no facing, no aim — so it is one press from the floor
   // below the alcove.
   //
-  // THE SHADE CELL IS CROSSED AND NOT CLEARED, and that is a measured retreat
-  // rather than a preference. Clearing it pays a heart; the room is a darknut
-  // and a wizzrobe, and at the health the run steps onto this floor with, the
-  // clearing went to ZERO twice in the real run while costing six in isolation
-  // at twenty-seven. A four-quarter-heart reward is not worth a fight whose
-  // variance is the whole margin. The wing costs NINE either way.
+  // THE SHADE CELL IS CLEARED ON THE WAY IN, and that is worth more than it
+  // looks. The wing crosses this room TWICE and it is a darknut, a wizzrobe
+  // and a keese; crossing it cost ten quarter-hearts on the run that measured
+  // it, against a clearing that pays the room's own puzzle heart. And A ROOM
+  // OUTLIVES THE VISIT — it is built once and kept, entities and all — so the
+  // room cleared on the way in is still clear on the way back.
+  //
+  // THE FIGHT IS ISSUED TWICE, and this is not belt and braces. A wizzrobe
+  // spends part of its cycle `hidden`, and the swordsman's own foe list drops
+  // a hidden enemy — so a fight whose last live thing blinks out returns
+  // reporting a clear room, the puzzle never fires, and the heart never
+  // spawns. The second pass catches it.
+  //
+  // THE ROD IS ALREADY ON B FOR THE COLONNADE'S GRATE, so the ring that opens
+  // the darknut's armour costs nothing extra: `Enemy.hurt` lets a hit through
+  // while `rodLock` is running, which is the trade's payment spent twice in
+  // the same wing.
   ['travel', 2, 5, 4000],
+  ['equip', 'sword', 'A', 400],
   ['equip', 'rod', 'B', 400],
+  ['fight', 4000, 1200, { ring: true }],
+  ['wait', 90],
+  ['fight', 4000, 1200, { ring: true }],
+  ['wait', 120],
+  ['loot', 900],
   ['travel', 2, 4, 4000],
   ['goto', 4, 5, 1500],
   ['use', 'rod', 1, 60],
@@ -2594,6 +2611,9 @@ export const ROUTE = [
   ['dialogue', 600],
   ['wait', 120],
   ['loot', 600],
+  // The Dredge Line goes back on A: the three shaft crossings below expect to
+  // find it there, and the wing borrowed the button for the Shade Cell.
+  ['equip', 'dredge', 'A', 400],
   // AND IT GOES ON, in the MID case, which has two slots by now. The Coilrope
   // adds a tile to every cast and the Keep has four shafts left to throw a
   // line across; a charm that makes the item longer is the Keep rewarding the

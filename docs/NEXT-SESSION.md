@@ -1,3 +1,45 @@
+## S128 — clearing a room once is cheaper than crossing it twice
+
+The Shade Cell is cleared on the way into the west wing now. The numbers, which
+are the whole point:
+
+| | crossed twice (S127) | cleared once (now) |
+|---|---|---|
+| the cell, in | 23 | 23 |
+| the cell, out | 16 | 21 |
+| the walk back through it | −3 | **0** |
+| the wing, all in | −12 | **−2** |
+| lowest point in the Keep before its first fairy | **5** | **15** |
+| into the throne room on | 29 | **34** |
+| trough in Nereth's fight | 9 | **13** |
+
+Six quarter-hearts of damage, four back from the room's own puzzle heart, and
+the return crossing free. **A ROOM OUTLIVES THE VISIT** — it is built once and
+kept, entities and all — so a room cleared on the way in is still clear on the
+way back, and the wing stops paying a darknut toll twice.
+
+This is the same fact that made the Keep Gate's fairy a one-shot at S121 (a
+pickup collected does not come back) read the other way round, and it is worth
+holding on to in both directions: **anything the run does to a room, it does
+once and keeps**.
+
+### THE SWORD CHECK EARNED ITS KEEP IMMEDIATELY
+
+The first run of this change died on `fight: THE SWORD IS ON NEITHER BUTTON in
+d6 1,2,5 (A=dredge, B=rod)`. That is a THIRD unarmed fight — it did not exist
+until this session created it, and it would have shipped as another six-hearts
+room that read as "the Shade Cell is too expensive to clear", which is exactly
+the false conclusion S125 drew about the tideshade. One session after the check
+landed, it has already stopped the same mistake being made for a third time.
+
+### WHAT IS LEFT IN THE KEEP
+
+Nothing structural. Every room is played, both wings, all four crossings, both
+fairies, the Coilrope, the level-2 Cleats, the Lens fork, the Boss Key and the
+King. The run's lowest point in the whole dungeon is 13, inside the final
+fight, and the game's lowest is still 2 of 48 in D1's Tide Gallery — which is
+the first dungeon being frightening on purpose.
+
 ## S127 — the swordsman cannot be sent out unarmed any more
 
 `dFight` and `dBoss` used to press `slotBit('sword') || BIT.b`. With the sword

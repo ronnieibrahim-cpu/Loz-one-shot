@@ -1030,6 +1030,20 @@ unwritten because it re-sweeps every recorded frame in the repo.
 Floor wrote this down and the Shrine Ford repeated it. Wide rooms are crossed,
 not cleared, until `dFight` learns a radius.
 
+## Settled at S128 — clearing beats crossing twice
+
+**The Shade Cell is cleared, not crossed.** Six damage, four back from its own
+puzzle heart, and the return crossing free because A ROOM OUTLIVES THE VISIT.
+The west wing went from −12 to −2 and the Keep's lowest point from 5 to 15.
+
+**Anything the run does to a room, it does once and keeps.** Cleared stays
+clear; collected stays collected. True in both directions, and both have now
+cost a session.
+
+**The run enters Nereth's hall on 34 and troughs at 13.** The Abyssal Keep is
+finished: every room, both wings, all four crossings, both fairies, the
+Coilrope, the level-2 Cleats, the Lens fork, the Boss Key and the King.
+
 ## Settled at S127 — no fight is thrown bare-handed
 
 **`dFight` and `dBoss` REFUSE when the sword is on neither button.** There is no
