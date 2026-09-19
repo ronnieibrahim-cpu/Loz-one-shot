@@ -2482,6 +2482,93 @@ export const ROUTE = [
   ['goto', 8, 1, 1500],
   ['wait', 120],
 
+  // ------------------------------------------------------- THE EAST WING
+  // TIDESHADE HALL, FOUGHT AT LOW, and the only 2x2 miniboss arena in the
+  // game. The hall is drawn in tide tiles from wall to wall and the shade
+  // phases with the water, so the sea brought through the door picks which
+  // fight this is: at LOW the floor is dry, the shade's ring is six shots
+  // rather than eight, and the swordsman is not swimming while it casts. Its
+  // north door opens on the kill and nothing else opens it.
+  //
+  // `breakContact` IS WHY THIS ROOM IS IN THE RUN AT ALL. The shade chases at
+  // 0.95 px/f and takes three quarter-hearts a touch, and the swordsman's
+  // standing rule — spend an invulnerability window closing, because free hits
+  // are the only free thing in this game — inverts against it: the window is
+  // spent closing, the shade is still touching when it runs out, and the next
+  // touch lands on the frame the last one stopped protecting. A losing fight
+  // is seven contact hits at 46-frame intervals, which is one mistake repeated
+  // rather than seven. Measured across eight entry phases, the option takes
+  // the worst case from three quarter-hearts left to twelve, and the fight
+  // from unaffordable to routine.
+  // THE SWORD GOES BACK ON A FIRST, and this one cost the fight eight times
+  // over before it was spotted. The Slack Water's lesson leaves the Dredge
+  // Line on A and the conch on B for the rest of floor 0 — and `dBoss` presses
+  // `slotBit('sword')`, which is NOT A SLOT when the sword is in neither, so
+  // it falls back to B and the swordsman fights a miniboss by blowing a conch
+  // at it. Every directive reports success; the shade simply never takes a
+  // hit. The same trap is waiting in every fight the route enters straight off
+  // a leg that re-equipped for a puzzle.
+  ['equip', 'sword', 'A', 400],
+  ['tide', 0, 140, 900],
+  ['travel', 4, 5, 4000],
+  ['boss', 9000, 'tideshade', { breakContact: true }],
+  ['wait', 180],
+  ['loot', 1200],
+
+  // THE MERMAID VAULT, through the door the kill opened: the level-2 Cleats,
+  // which are unlimited breath on the seafloor.
+  ['goto', 4, 1, 1500],
+  ['exit', 'up', 600],
+  ['goto', 4, 4, 1500],
+  ['hold', ['up'], 24],
+  ['tap', 'a', 30],
+  ['dialogue', 600],
+  ['wait', 180],
+  ['loot', 600],
+
+  // THE TWO ARCHES — the Keep's Lens fork, and the first one in the game that
+  // is answered by a WALL rather than by a shaft. The vault's own stair is the
+  // only way in, which is what makes the fork safe: a wrong guess costs the
+  // climb back up and nothing else.
+  //
+  // THE WEST ARCH IS THE ONE. Both read as the Keep's own wall at the pinned
+  // MID and they are the same tile to look at; the west is a `7` lintel, which
+  // is masonry below HIGH and open water above it, and the east is plain stone
+  // that never opens. The valve is inside the chamber, past the one-way ledge,
+  // so the choice is made before it can be checked — which is the whole room.
+  //
+  // THE HOP LANDS AT 1,5 AND THE CLIMB IS UP COLUMN 1, not column 2: the
+  // chamber's escape warp sits at 2,4, and a path that squares the corner
+  // walks onto it and is put back in the vault with the valve still unturned.
+  ['goto', 2, 5, 1500],
+  ['wait', 120],
+  ['equip', 'lens', 'B', 400],
+  ['goto', 4, 5, 1500],
+  ['use', 'lens', 1, 90],
+  ['hold', ['left'], 40],
+  ['wait', 60],
+  ['goto', 1, 4, 1200],
+  ['goto', 1, 2, 1200],
+  ['hold', ['right'], 24],
+  ['tap', 'a', 30],
+  ['wait', 240],
+  ['goto', 1, 1, 1200],
+  ['goto', 1, 0, 1200],
+  ['goto', 3, 0, 1200],
+  ['goto', 5, 0, 1200],
+  ['loot', 600],
+  ['goto', 7, 0, 1200],
+  ['wait', 180],
+  ['equip', 'conch', 'B', 400],
+
+  // Back down the vault's stair, out through the hall, and west. The Dredge
+  // Line goes back on A on the way, because the three shaft crossings below
+  // expect to find it there.
+  ['goto', 4, 6, 1200],
+  ['exit', 'down', 600],
+  ['travel', 3, 5, 4000],
+  ['equip', 'dredge', 'A', 400],
+
   // ---------------------------------------------- THE COLONNADE OF THE DROWNED
   // THE ONE THING IN THE ABYSSAL KEEP THAT ASKS WHETHER THE PLAYER WENT AND
   // DID THE TRADE. The Coilrope is in an alcove behind a GRATE, a grate is

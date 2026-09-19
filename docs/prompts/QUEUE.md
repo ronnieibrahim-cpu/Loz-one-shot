@@ -9,28 +9,6 @@ a done-condition, and scope explicitly.
 
 ---
 
-## 0. The Abyssal Keep's east wing, played
-
-The west half landed at S125 — the Colonnade's Coilrope is won and worn. What
-is left is the east wing, and it is blocked on HEALTH, not on routing. The
-directives were authored and proved at S121 and are in the route's history;
-the traps are:
-
-  * **Tideshade Hall** (`d6/1,4,5`) — the only 2x2 miniboss arena in the game,
-    fought at LOW so the shade is dry and its ring is six shots not eight. Its
-    north door opens on the kill and nothing else opens it. It costs about
-    twenty-five quarter-hearts and the run reaches this floor on twenty-seven.
-  * **The Mermaid Vault** (`d6/1,4,4`) — the level-2 Cleats, behind that door.
-  * **The Two Arches** (`d6/1,5,4`) — the Keep's Lens fork, and the first one
-    in the game answered by a WALL rather than a shaft. The WEST arch is the
-    `7` lintel; the east is plain stone. The ledge hop lands at 1,5 and the
-    climb is up column 1, NOT column 2 — the chamber's escape warp is at 2,4
-    and squaring the corner puts you back in the vault with the valve unturned.
-
-Measured at S125 in both orders: east first dies on twenty-six, east second
-dies on nineteen. It wants about ten more quarter-hearts arriving on floor 1,
-or a cheaper answer to the tideshade than the swordsman currently has.
-
 ---
 
 ## 1. Wide rooms, continued

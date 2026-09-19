@@ -1030,6 +1030,27 @@ unwritten because it re-sweeps every recorded frame in the repo.
 Floor wrote this down and the Shrine Ford repeated it. Wide rooms are crossed,
 not cleared, until `dFight` learns a radius.
 
+## Settled at S126 — the whole Abyssal Keep is played
+
+**EVERY ROOM OF THE KEEP IS IN THE RUN.** Both floors, both wings, all three
+shaft crossings, the Colonnade, the Crossed Shafts and the throne room. 40
+assertions. Do not re-derive any of it.
+
+**`dBoss` PRESSES `slotBit('sword')` AND FALLS BACK TO B.** With the sword in
+neither slot that is the conch, so the actor fights by blowing a conch and
+every directive reports success. Put the sword on A before any fight the route
+enters off a leg that re-equipped for a puzzle. This cost eight full runs.
+
+**`['boss', N, type, { breakContact: true }]`** buys one invulnerability window
+of unconditional separation after a touch in contact range. It wins the
+tideshade and LOSES ANEMOS, so it is named per fight like `clearAdds`.
+
+**A contact chain at PLAYER_INVULN_FRAMES intervals is one mistake repeated.**
+Seven hits 46 frames apart is not seven mistakes.
+
+**Backing off a SUBMERGED boss does not fix the tideshade.** It does its damage
+on the surface, chasing. Tried and removed.
+
 ## Settled at S125 — the Colonnade is played, the east wing is not
 
 **THE COILROPE IS WON AND WORN IN A RUN.** The Keep's grate answers to the Rod

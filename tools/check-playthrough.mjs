@@ -510,6 +510,22 @@ check('THE GAME WAS FINISHED — the Sunken Bar crossed at flood, the Brinehulk 
 // menu page and the actor only knew how to drive the item page. The audit
 // could not see it either; it reported items and keys and hearts and never the
 // cases, so "the run wears nothing" was invisible from both ends.
+// FLOOR 1'S EAST WING, which was unplayable for as long as the route existed.
+// The tideshade guards it, it is the only 2x2 miniboss arena in the game, and
+// the fight cost about twenty-five quarter-hearts against a run that reaches
+// this floor on twenty-seven — measured in both wing orders at S125, and fatal
+// in both. It costs THREE now, and the two things behind it are in the run:
+// the Mermaid Vault's level-2 Cleats (unlimited breath on the seafloor) and
+// the Two Arches, the Keep's Lens fork and the first one in the game answered
+// by a WALL rather than by a shaft.
+check('FLOOR 1\'S EAST WING WAS PLAYED — the tideshade beaten, the level-2 Cleats taken, the Lens fork read',
+  a.rooms.includes('d6/1,4,5') && a.rooms.includes('d6/1,4,4')
+    && a.rooms.includes('d6/1,5,4') && (s.flags || []).includes('d6_tideshade')
+    && s.itemLevels && s.itemLevels.cleats >= 2,
+  `hall ${a.rooms.includes('d6/1,4,5')}, vault ${a.rooms.includes('d6/1,4,4')}, `
+  + `arches ${a.rooms.includes('d6/1,5,4')}, flag ${(s.flags || []).includes('d6_tideshade')}, `
+  + `cleats ${s.itemLevels && s.itemLevels.cleats}`);
+
 // THE COLONNADE OF THE DROWNED, which is the one room in the Abyssal Keep that
 // asks whether the player went and did the coast trade. The Coilrope sits in an
 // alcove behind a GRATE; a grate is metal, and the only thing in the game that

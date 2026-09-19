@@ -1,48 +1,45 @@
-# Next session — make the tideshade affordable
+# Next session — find every fight the route arms wrong
 
 ## Read first
 - `docs/prompts/STATE.md` — the whole file.
-- `docs/prompts/QUEUE.md` item 0 — the east wing, and what it costs.
-- `docs/prompts/LEDGER.md`'s "Settled at S125" and "Settled at S124" sections.
-- `docs/NEXT-SESSION.md`, the S125 entry only.
-- `src/data/bosses.js`'s `tideshade`, and `tools/actor-runtime.mjs`'s `dBoss`.
+- `docs/prompts/LEDGER.md`'s "Settled at S126" section.
+- `docs/NEXT-SESSION.md`, the S126 entry only.
+- `tools/actor-runtime.mjs`'s `dFight` and `dBoss`, at `slotBit('sword')`.
 
 ## Why this, now
-Three rooms of the last dungeon have never been played and exactly one thing
-stands in front of them: the tideshade costs about twenty-five quarter-hearts
-and the run reaches floor 1 of the Abyssal Keep on twenty-seven. Measured in
-both wing orders at S125 — it kills the run on twenty-six and on nineteen. The
-Keep's health is not the problem any more; the fight is. Behind it are the
-level-2 Cleats and the Keep's Lens fork, both unplayed.
+S126 cost eight full runs to a fault nothing in the repo could report: the
+route had left the Dredge Line on A, the sword was in neither slot, and
+`dBoss`'s `slotBit('sword') || BIT.b` fell through to B — so the swordsman
+fought a miniboss by blowing a conch at it, and every directive reported
+success. That room was found by accident. There are nineteen other `fight` and
+`boss` directives in the route and nothing has ever asked what any of them is
+holding.
 
 ## The task
-Find out WHY the tideshade costs twenty-five and make it cost less, in that
-order. `node tools/measure-boss-combat.mjs d6 --qh=27` will not reach it (that
-table fights Nereth), so measure it the way S113 and S114 measured Gloomtide:
-read the damage hit by hit and find out what is actually landing. The two
-candidates named by its own definition are the ink spread it casts every 120
-frames and the submerge cycle in its second phase, which the swordsman may be
-swinging at while it is down. If the answer is the VERB, fix `dBoss`; if the
-answer is the FIGHT, `src/data/bosses.js`'s `tideshade` is the one file to
-touch, and say in the commit which it was.
+Make an unarmed fight impossible to ship. Two halves, in this order.
+1. In `tools/actor-runtime.mjs`, make `dFight` and `dBoss` REFUSE rather than
+   fall back: if the sword is on neither button when the verb starts, throw,
+   naming the room. `BIT.b` as a default is a guess dressed as a fallback.
+2. Run `node tools/check-playthrough.mjs` and fix every route step the refusal
+   catches, by putting the sword back on A where it belongs. Expect the frame
+   shift to move things downstream; a fight that regresses regressed because
+   its timing moved, not because it got harder.
 
 ## Done means
-- The tideshade beaten at 27 quarter-hearts or fewer, measured and stated.
-- If it is beaten, the east wing added to `tools/playthrough-route.mjs` and
-  `node tools/check-playthrough.mjs` green, ending in `d6/1,3,1` with six
-  Essences and `cleats` at level 2 in the audit.
-- If it is NOT beaten, the measurement written into `docs/NEXT-SESSION.md`
-  with the hit-by-hit numbers, and nothing else changed.
+- `node tools/check-playthrough.mjs` green, ending in `d6/1,3,1` with six
+  Essences and its deepest trough still outside the Abyssal Keep.
+- Every fight the refusal caught named in `docs/NEXT-SESSION.md`, with how many
+  there were. Zero is a real and reportable answer.
 - `node tools/check-drift.mjs`, `node tools/test.mjs`, `node tools/replay.mjs`,
-  `node tools/check-bosses.mjs`, `node tools/check-lens.mjs`,
-  `node tools/check-cleats.mjs`, `node tools/check-charms.mjs`.
+  `node tools/check-bosses.mjs`, `node tools/check-items.mjs`.
 - `npm run build` with `dist/oracle-of-tides.html` committed.
-- A person reads the room table and sees Tideshade Hall in it.
+- A person reads the commit and learns how many fights were being thrown
+  bare-handed.
 
 ## Out of scope
-- Another fairy, another heart, another heart piece, anywhere. The Keep has two
-  heals and that is settled; this task is about what the fight costs.
-- The Barnacle Skin. Measured twice and it is not worth a re-tune.
-- Giving the Brinehulk `drops: 'rich'`. It loses the game. Settled at S124.
-- Weakening Nereth or the Brinehulk. Neither is in the way.
+- Turning `breakContact` on for any fight other than the tideshade. It loses
+  Anemos. Settled at S126.
+- Weakening any enemy or boss. Nothing is too strong; the swordsman was unarmed.
+- Another fairy, heart or heart piece anywhere.
+- Backing the swordsman off a submerged boss. Tried at S126 and it never fires.
 - Auditing the 460-frame fuse on every placed pickup. Written down, not this.

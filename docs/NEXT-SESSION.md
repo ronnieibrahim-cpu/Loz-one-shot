@@ -1,3 +1,62 @@
+## S126 — every room of the Abyssal Keep has now been played
+
+Floor 1's east wing is in the run. Tideshade Hall, the Mermaid Vault and the
+Two Arches had never been entered by anything; they are three of the 182 rooms
+the playthrough now visits, and the fight that guarded them costs THREE
+quarter-hearts instead of the twenty-five S125 measured. 40 assertions green.
+
+What the wing adds to the run: the only 2x2 miniboss arena in the game beaten
+at the sea its room is designed for; the **level-2 Cleats**, which are
+unlimited breath on the seafloor; and the Keep's **Lens fork**, the first one
+in the game answered by a WALL rather than by a shaft.
+
+### TWO THINGS WERE WRONG AND ONLY ONE OF THEM WAS THE FIGHT
+
+**THE SWORDSMAN WAS FIGHTING A MINIBOSS BY BLOWING A CONCH AT IT.** This is the
+one that cost the session eight full runs. The Slack Water's lesson leaves the
+Dredge Line on A and the conch on B for the rest of floor 0, and the east wing
+opens straight off that leg — and `dBoss` presses `slotBit('sword')`, which is
+NOT A SLOT when the sword is in neither, so it falls through to B. Every
+directive reported success. The shade simply never took a hit, the run died,
+and eight sweeps of the entry phase all read as "this fight is unwinnable".
+
+It is not unique to this room. **Any fight the route enters straight off a leg
+that re-equipped for a puzzle has the same trap waiting in it**, and there is
+nothing in the harness that would say so: `dBoss` has no opinion about whether
+the button it is pressing is a weapon.
+
+**AND THE FIGHT ITSELF: a contact chain is one mistake, not seven.** New option
+`['boss', N, type, { breakContact: true }]`. The verb's standing rule is that
+invulnerability frames are the only free hits in this game, so a window is
+spent closing — and against a boss that CHASES, that inverts: the window is
+spent closing, the boss is still touching when it runs out, and the next touch
+lands on the frame the last one stopped protecting. A losing tideshade fight is
+SEVEN contact hits at 46-frame intervals, and 46 is `PLAYER_INVULN_FRAMES`.
+
+A touch that lands in contact range now buys one window of unconditional
+separation. Swept across eight entry phases it takes the worst case from three
+quarter-hearts left to twelve.
+
+**IT IS OPT-IN PER FIGHT, and that was measured the expensive way.** Turned on
+everywhere it loses Anemos, who is slow, ranged and shelled: against a boss you
+have to stand next to and wait out, a window spent walking away is a window not
+spent on the eye. Same shape as `clearAdds`, same conclusion — the route names
+the fights that want it.
+
+### WHAT DID NOT WORK, so nobody repeats it
+
+A guard that backed the swordsman off a SUBMERGED boss — `hidden`, `harmless`,
+`invuln: 9999`, which is what `submerge` parks an entity as — was written first
+on the theory that the verb was standing inside a shade it could not hit. It
+never fires in this fight: the shade does its damage on the surface, chasing.
+The theory is still sound for some other boss and the code is not there.
+
+### THE KEEP IS COMPLETE
+
+Every room of the Abyssal Keep — both floors, both wings, all three shaft
+crossings, the Colonnade, the Crossed Shafts and the throne room — is in the
+run. The deepest trough in the game stays 2 of 48, in D1's Tide Gallery.
+
 ## S125 — the coast trade and the last dungeon finally meet
 
 The Colonnade of the Drowned is in the run. The Coilrope is won and worn, which

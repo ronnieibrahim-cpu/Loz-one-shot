@@ -22,6 +22,7 @@ export async function installRuntime() {
   const items = await import('/src/game/items.js');
   const prog = await import('/src/game/progress.js');
   const rngMod = await import('/src/core/rng.js');
+  const feel = await import('/src/data/feel.js');
   const screen = await import('/src/core/screen.js');
   // The map registry, so the travel planner can ask whether a screen exists
   // rather than guessing from a room-key string. `hasRoom` resolves a
@@ -125,6 +126,10 @@ export async function installRuntime() {
       charmCases: JSON.parse(JSON.stringify(g.progress.charmSlots || {})),
       blanks: g.progress.blanks || 0,
       items: Object.keys(g.progress.items).filter(k => g.progress.items[k] > 0).sort(),
+      // THE LEVEL, NOT JUST THE NAME. An upgrade — the Noble Sword, the
+      // level-2 Cleats — leaves the item list identical, so a run that never
+      // found one looks exactly like a run that did.
+      itemLevels: Object.assign({}, g.progress.items),
       // Persisted world state. A chest opened, a door unlocked and a buried
       // secret dug up all land in a different bucket from `items`, and every
       // one of them is a thing a drifting run would get wrong.
@@ -1435,6 +1440,10 @@ export async function installRuntime() {
     // Whether this fight wants its summons cleared, and who was already
     // standing in the arena when it began — see the summons branch below.
     const clearAdds = !!(opts && opts.clearAdds);
+    // BREAK CONTACT AFTER A TOUCH — `['boss', N, type, { breakContact: true }]`,
+    // and it is named per fight for the same reason `clearAdds` is, measured
+    // the same expensive way. See the guard itself, below.
+    const breakContact = !!(opts && opts.breakContact);
     const wasHere = new Set(g.entities.filter(e => e.isEnemy));
     const STALL_FRAMES = 60;
     const safe = (m, retreat) => {
@@ -1495,6 +1504,13 @@ export async function installRuntime() {
      */
     const tideEscapeSpec = target.spec.tideEscape;
     let shutFrames = 0;
+    // The contact-chain guard, above. PLAYER_INVULN is read off the engine
+    // rather than written down here, for the reason CLAUDE.md gives about
+    // every other timing constant: it lives in `feel.js` and a feel session
+    // that has never heard of this harness is entitled to retune it.
+    const PLAYER_INVULN = feel.PLAYER_INVULN_FRAMES;
+    let lastHearts = g.progress ? g.progress.hearts : 0;
+    let breakUntil = -1;
     // Whether this boss has ever been seen open. A boss that has never once
     // opened has not necessarily locked — it may simply not have reached its
     // first attack yet, and every boss's first cycle includes a shut stretch
@@ -1634,6 +1650,71 @@ export async function installRuntime() {
         }
         yield safe(aFace, true); f++;
         yield fence(aFace | sword()); f++;
+        continue;
+      }
+
+      /**
+       * A CONTACT CHAIN, AND GETTING OUT OF ONE.
+       *
+       * "Invulnerability frames are the only free hits in this game" is the
+       * rule the whole approach below is built on, and against a boss that
+       * CHASES it inverts: the window gets spent closing, the boss is still
+       * touching when it runs out, and the next touch lands on the very frame
+       * the last one stopped protecting. Measured on the tideshade — which
+       * chases at 0.95 px/f and does three quarter-hearts a touch — a losing
+       * fight is SEVEN contact hits at 52-frame intervals, and 52 is
+       * PLAYER_INVULN_FRAMES. It is not seven mistakes; it is one mistake,
+       * repeated for as long as the health lasts.
+       *
+       * So a touch that lands while the boss is in contact range buys ONE
+       * window of unconditional separation before the verb is allowed to
+       * close again. A player does this without thinking about it.
+       *
+       * IT IS OPT-IN PER FIGHT, like `clearAdds` above and for the same
+       * measured reason. Turned on everywhere it wins the tideshade — a sweep
+       * of entry phases goes from a worst case of 3 quarter-hearts left to a
+       * worst case of 12, and from losing the run to winning eight of eight —
+       * and it LOSES ANEMOS, who is slow, ranged and shelled: against a boss
+       * you have to stand next to and wait out, a window spent walking away is
+       * a window not spent on the eye. The route names the fights that want
+       * it, which is where this file already says a single fight's needs
+       * belong: readable in the route, not hidden in the verb.
+       */
+      if (breakContact && g.progress && g.progress.hearts < lastHearts && nearContact(p, b)) {
+        breakUntil = f + PLAYER_INVULN;
+      }
+      if (g.progress) lastHearts = g.progress.hearts;
+      if (f < breakUntil) {
+        yield safe(backAlong | backPerp, true); f++;
+        continue;
+      }
+
+      /**
+       * A SUBMERGED BOSS IS NOT A TARGET, AND STANDING IN ONE IS THE MOST
+       * EXPENSIVE THING THIS VERB DOES.
+       *
+       * `submerge` (src/data/bosses.js) parks an entity `hidden`, `harmless`
+       * and on `invuln: 9999`. Nothing in this loop looked at any of those:
+       * `weakOpen` is true for a shell-less boss for its whole life, so the
+       * verb kept closing, kept swinging at something with nine thousand
+       * frames of invulnerability, and PARKED THE PLAYER INSIDE ITS BOX — and
+       * the moment it surfaced, `harmless` went false and contact damage
+       * started landing once every PLAYER_INVULN_FRAMES, for ever.
+       *
+       * That is not a theory. Measured on the tideshade at the sea its own
+       * room is fought at: the losing entries in a phase sweep are SEVEN
+       * contact hits at 52-frame intervals — the invuln window, exactly — and
+       * the winning ones are three. Same fight, same health, same seed; the
+       * only difference is whether the swordsman happened to be standing in
+       * the shade when it came back up. Nereth submerges too, and Thalassor
+       * goes back into the reef.
+       *
+       * So a hidden target is treated the way a locked one already is: break
+       * contact, keep off its axis, and wait for it. This is what a player
+       * does, and it is the only move available — there is nothing to hit.
+       */
+      if (b.hidden || b.invuln > 900) {
+        yield safe(backAlong | backPerp, true); f++;
         continue;
       }
 
