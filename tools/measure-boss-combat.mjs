@@ -163,20 +163,24 @@ const ROUTE_ARENA = {
   // the pieces the Sanctum pays out — so 24 of 32 is a player at three
   // quarters, not the 20 of 20 this file was fighting at.
   d3: { at: [65, 112], facing: 'up', qh: 24, maxQh: 32, settle: 90, frame: 60143 },
-  // d6 1,3,1, trace step 1421 (the throne-room `dialogue`) at f165907:
-  // `65,101 hp 28 tide 1 foes 1 [nereth]`. The bar is 48 by the end of the
-  // run, and 28 of 48 is not the 32 of 32 this file was fighting the last
-  // boss in the game at — it is a player at LESS than the in-order count on a
-  // bar half as full again. The settle is 24 frames, not a `wait`: the route
-  // opens Nereth's own dialogue on the way in, and that is what the arena
-  // runs for before the fight starts.
+  // d6 1,3,1, trace step 1423 (the throne-room `dialogue`) at f166238:
+  // `63,101 hp 44 tide 1 foes 1 [nereth]`. The settle is 24 frames, not a
+  // `wait`: the route opens Nereth's own dialogue on the way in, and that is
+  // what the arena runs for before the fight starts.
+  //
+  // 44 of 48, NOT the 28 this row was transcribed at in S133. The Keep Gate's
+  // north chamber holds a fairy now (S134) and it is behind the boss door, so
+  // the run drinks it between the lock and the stair — which is the whole of
+  // the difference between a King who wins three of five and one who loses
+  // five of five. 48 is the cap and there is nothing past this room to heal
+  // on, so this row is as high as the Keep can ever set it.
   //
   // `charms` is why this row needed a field the D3 one did not. The route
   // reaches this fight WEARING one — `coilrope` in the MID case, which is the
   // case this fight is played at — and no measurement of Nereth had ever had
   // it on. A charm is not an item and `setup.items` cannot grant one; see the
   // stamp below.
-  d6: { at: [65, 101], facing: 'up', qh: 28, maxQh: 48, settle: 24, frame: 165883,
+  d6: { at: [63, 101], facing: 'up', qh: 44, maxQh: 48, settle: 24, frame: 166214,
         charms: { mid: 'coilrope', high: 'gillcarve' } },
 };
 

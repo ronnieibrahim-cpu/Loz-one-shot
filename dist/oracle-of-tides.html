@@ -31991,11 +31991,14 @@ function installDungeonsB() {
         //
         // It stands in the corner, off both the way in from the south and the
         // way east to the shafts, so it is taken deliberately and not walked
-        // over — the same placement rule Shell Beach's fairy follows. Like
-        // every placed fairy in the game it comes back when the room is
-        // re-entered, which is what makes it a fairy ROOM rather than a
-        // pickup: the run drinks on the way to the Boss Key and again on the
-        // way back from it, and that is exactly how a player uses one.
+        // over — the same placement rule Shell Beach's fairy follows.
+        //
+        // IT IS TAKEN ONCE AND IT IS GONE. This comment used to claim the
+        // opposite — that a placed fairy comes back when the room is re-entered
+        // — and the route file has said the measured thing since S120: a room
+        // outlives the visit, so a pickup collected here is not there when the
+        // Boss Key comes back through. That is what the north chamber's fairy
+        // below is for.
         map: [
           '####..####',
           '#........#',
@@ -32009,6 +32012,27 @@ function installDungeonsB() {
         entities: [
           ['wizzrobe', 6, 5],
           ['pickup', 1, 6, { kind: 'fairy' }],
+          // THE STAIRHEAD FAIRY, AND IT IS BEHIND THE BOSS DOOR ON PURPOSE.
+          // The fairy above stands in the south half of this room and is drunk
+          // on the way OUT to the Crossed Shafts; it is gone by the time the
+          // Boss Key comes back through, and the run used to climb Nereth's
+          // stair on twenty-eight of forty-eight against a King who costs up
+          // to thirty-nine. Three seeds in five died on him and no win had
+          // more than two hearts left in it.
+          //
+          // This one is in the north chamber, which is on the far side of the
+          // `B` at 4,2 — so nothing can reach it until the Boss Key is spent,
+          // which is exactly the moment the heal is worth anything. It is the
+          // last room in the game and there is nowhere further down the line
+          // to put one: with it, the King is met on forty-eight of forty-eight,
+          // the cap, and that is the most the Keep can ever pay out.
+          //
+          // `life` is not decoration. A pickup burns PICKUP_LIFE_FRAMES of its
+          // room being on screen whether or not anybody can reach it, and this
+          // room is on screen for the whole of the outbound visit — the fairy
+          // above, the scrimshaw case and the walk east — so without it this
+          // one is dust before the door it stands behind is ever unlocked.
+          ['pickup', 1, 1, { kind: 'fairy', life: 1e9 }],
         ],
       },
       '1,4,2': {

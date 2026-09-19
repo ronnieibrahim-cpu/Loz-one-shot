@@ -2885,6 +2885,14 @@ export const ROUTE = [
   ['hold', ['up'], 24],
   ['tap', 'a', 30],
   ['dialogue', 600],
+
+  // THE STAIRHEAD FAIRY, drunk between the lock and the stair. The north
+  // chamber of this room is sealed by the `B` that was just opened, so this is
+  // the first moment in the run it can be walked into at all — and the last
+  // one in the game where a heal is worth anything. The run climbs the stair
+  // on forty-eight of forty-eight instead of twenty-eight.
+  ['goto', 1, 1, 900],
+  ['wait', 60],
   ['goto', 4, 1, 900],
   ['exit', 'up', 900],
 

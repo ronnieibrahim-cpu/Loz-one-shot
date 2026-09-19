@@ -1030,6 +1030,37 @@ unwritten because it re-sweeps every recorded frame in the repo.
 Floor wrote this down and the Shrine Ford repeated it. Wide rooms are crossed,
 not cleared, until `dFight` learns a radius.
 
+## Settled at S134 — the King's bill is flat, and the Keep now pays it
+
+**NERETH'S COST DOES NOT DEPEND ON THE PLAYER'S HEALTH.** Swept at 28/32/36/
+40/44/48 carried, five seeds each, in the route's own arena: every seed spends
+exactly the same number of quarter-hearts at every starting health. Seed 3
+costs 39 at 28 carried and 39 at 48. The fight is a fixed price, not a
+difficulty curve, which is why a pickup answers it and no `dBoss` option,
+damage number or hp value had to be touched. Do not re-derive this.
+
+**THE KEEP GATE'S NORTH CHAMBER HOLDS A FAIRY, BEHIND THE BOSS DOOR.**
+`['pickup', 1, 1, { kind: 'fairy', life: 1e9 }]` in `d6/1,3,2`. It is sealed by
+the `B` at 4,2, so nothing reaches it until the Boss Key is spent — the last
+moment in the game a heal is worth anything. The route drinks it between the
+lock and the stair. **The `life` is load-bearing**: the room is on screen for
+the whole outbound visit and a 460-frame fuse runs whether or not anything can
+reach the pickup.
+
+**THE LAST FIGHT WINS FIVE OF FIVE NOW**, at 44 of 48 carried: 24, 19, 20, 5,
+13 quarter-hearts left. Was 8, 3, 4, dead, dead at 28. The real run has the
+throne room at in 44, min 24, out 48.
+
+**44 IS THE CEILING AND 48 IS NOT REACHABLE.** The bar caps at 48 and four
+quarter-hearts go between the fairy and the stair. There is no room past this
+one to put a heal in. Any further margin on the last fight has to come out of
+the fight, not out of the health — and seed 3's 1.25 hearts is what is left of
+the problem.
+
+**NEGATED: the Keep Gate fairy does not come back.** A room outlives the visit.
+The room data claimed otherwise in a comment for the whole life of the project
+while the route file recorded the measurement; the comment is fixed.
+
 ## Settled at S133 — Nereth measured in his own arena, and he is a coin flip
 
 **THE LAST FIGHT IN THE GAME WINS 3 OF 5 AND NEVER BY MORE THAN TWO HEARTS.**

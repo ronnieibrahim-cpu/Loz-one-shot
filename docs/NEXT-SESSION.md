@@ -1,3 +1,69 @@
+## S134 — the last fight in the game is no longer a coin flip
+
+There is a fairy in the north chamber of the Keep Gate now, and the chamber is
+behind Nereth's own boss door. It cannot be reached until the Boss Key is
+spent, which is the one moment in the game a heal is still worth anything, and
+the run drinks it between the lock and the stair. The King used to be met on
+28 of 48 quarter-hearts. He is met on 44 now.
+
+### THE SWEEP THAT CHOSE IT
+
+Before anything was placed, the route's own arena was swept for what health
+alone buys, five seeds each, by raising the `ROUTE_ARENA` `d6` row's `qh`.
+Quarter-hearts left on a win:
+
+| carried | 20260806 | 1 | 2 | 3 | 4 |
+|---|---|---|---|---|---|
+| 28 (S133, as shipped) | 8 | 3 | 4 | **died** | **died** |
+| 32 | 12 | 7 | 8 | **died** | 1 |
+| 36 | 16 | 11 | 12 | **died** | 5 |
+| 40 | 20 | 15 | 16 | 1 | 9 |
+| 44 | 24 | 19 | 20 | 5 | 13 |
+| 48 | 28 | 23 | 24 | 9 | 17 |
+
+**Nereth's bill is flat in the player's health.** Every seed costs the same
+number of quarter-hearts whatever it walks in on — seed 3 costs 39 at 28
+carried and 39 at 48 — so the fight is not a fight that goes worse when the bar
+is low. It is a fixed price the run either can or cannot afford. That is why a
+pickup answers it and nothing about the fight needed touching.
+
+### BEFORE AND AFTER, in the route's own arena
+
+| seed | S133, at 28 of 48 | now, at 44 of 48 |
+|---|---|---|
+| 20260806 | won, 8 left | won, **24** left |
+| 1 | won, 3 left | won, **19** left |
+| 2 | won, 4 left | won, **20** left |
+| 3 | **died** | won, **5** left |
+| 4 | **died** | won, **13** left |
+
+Three of five to **five of five**, mean margin 16.2 quarter-hearts — just over
+four hearts. The real run agrees: `check-playthrough` has the throne room at
+`in 44, min 24, out 48`, so Nereth costs 20 and leaves six hearts standing.
+
+### WHAT IT DOES NOT DO
+
+**Seed 3 still only has 1.25 hearts left.** The prompt asked for four hearts of
+margin on every seed and that is not reachable from the Keep's side: the bar
+caps at 48, seed 3's bill is 39, and the run cannot even arrive on 48 — it
+arrives on 44 because four quarter-hearts go between the fairy and the stair.
+Every quarter-heart the Abyssal Keep can pay out is now being paid out. Whatever
+is left in seed 3 is in the fight, not in the health, and the fight was out of
+scope by name.
+
+### THE PART THAT IS NOT DATA
+
+A placed pickup burns its 460-frame fuse while its room is on screen whether or
+not anything can reach it, and the Keep Gate is on screen for the whole
+outbound visit — the south fairy, the scrimshaw case and the walk east. Without
+an explicit `life` this fairy is dust before the door it stands behind is ever
+unlocked. It has one. This is the S124 finding biting for the first time in a
+place it mattered, and it is still unaudited everywhere else in the game.
+
+Also corrected: the Keep Gate's own comment in the room data claimed its fairy
+"comes back when the room is re-entered". It does not — the route file measured
+that at S120 and said so — and the two have disagreed in writing ever since.
+
 ## S133 — the last fight in the game is a coin flip, measured properly for the first time
 
 The practice rig can now set the final fight up the way the real run arrives

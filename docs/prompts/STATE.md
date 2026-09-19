@@ -26,15 +26,13 @@ fairy or heart sharing a room with a real fight is quietly unavailable.
 THE S130/S131 BLOCKER IS CLEARED (S132): the harness fights the route's arena
 now, and D3 and D6 are transcribed. D1, D2, D4, D5 and the nine minibosses are
 not, so they are still swept in a room no player is ever in.
-THE NAMED FINDING (S133, not acted on): Nereth wins 3 of 5 and never by more
-than two hearts. The end of the game is a coin flip. It is a session's work,
-not the tail of one, and S124's charm negation is the first thing to read.
+THE S133 FINDING IS ACTED ON (S134): Nereth wins 5 of 5 now, on a fairy behind
+his own boss door. The run meets him on 44 of 48 instead of 28. What is left of
+it is seed 3, which wins with 1.25 hearts and cannot be helped from the health
+side — 44 is the ceiling and the Keep has nothing further to pay out.
 
-FILE ALLOWLIST for the current objective (give the last fight a margin):
+FILE ALLOWLIST for the current objective (transcribe the untranscribed arenas):
   tools/measure-boss-combat.mjs — `ROUTE_ARENA` rows only
-  tools/playthrough-route.mjs — the D6 boss leg
-  src/data/dungeons-b.js — the Abyssal Keep's rooms only
-  dist/oracle-of-tides.html
   docs/NEXT-SESSION.md
   docs/prompts/LEDGER.md
 
@@ -58,3 +56,4 @@ S130 | objective | Found out why the first dungeon's crab miniboss is the hardes
 S131 | objective | Found that the test robot could lose a boss fight and report a win. When Link dies, the game puts him back at the dungeon's front door on a full heart bar and clears the room behind him — and the robot, which decides a boss is dead by looking round the room for it, saw an empty room and called it a victory. It then walked the rest of the game without the Essence, and the first thing that noticed was a missing item an hour and a half later in a different dungeon. Every boss fight in the game has had that hole for its whole life. Also read the third dungeon's boss properly for the first time: the fight swings between five quarter-hearts and death depending on nothing but whether the end of it drifts into the arena's east wall, where Link's retreat slides along the bricks instead of getting away. The fix for that is measured, written down and deliberately not switched on, because it loses the real run — which turns out to be the sharpest thing found all session: the practice arena is empty and the real one still has a zol in it.
 S132 | objective | Made the practice fight the same fight as the real one. For two sessions a change to how Link backs off after a swing won the third dungeon's boss every time in practice and lost him in the real game, and nobody could say why. The practice fight used to start him in the middle of an empty room on made-up health; it now starts him in the doorway he really walks in through, on the health he really carries, after the pause he really takes — and it says the same thing the real run said, so the change stays out. Three explanations that had been offered for the gap were measured and are wrong: it is not his health, it is not the clock, and there was never a second monster in the room.
 S133 | objective | Measured the last fight in the game properly for the first time, and it is a coin flip. The practice rig now sets Nereth up the way the real run arrives at him — in his own doorway, on the 28 of 48 hearts the run carries, and wearing the charm the run is wearing, which no boss measurement in this project had ever done. Five tries: three wins, and every win finishes within two hearts of death. The real run does beat him, but it beats him the way these do — barely. Nothing was changed about the fight; that is a session's work, not the tail of one.
+S134 | objective | Gave the last fight in the game a margin. Nereth used to be a coin flip — three wins in five and never more than two hearts left — because the run climbed his stair on four hearts short of half a bar with nothing anywhere behind it to drink. There is a fairy in the antechamber at the foot of that stair now, on the far side of his own locked door, so it cannot be had until the Boss Key is spent and it is impossible to waste. He is beaten five times in five now, with six hearts standing in the real run. Found on the way that his fight costs the same no matter how much health you walk in on, which is why the answer was a fairy and not a change to the fight.
