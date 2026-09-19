@@ -1,47 +1,48 @@
-# Next session — play floor 1 of the Abyssal Keep
+# Next session — make the tideshade affordable
 
 ## Read first
 - `docs/prompts/STATE.md` — the whole file.
-- `docs/prompts/QUEUE.md` item 0. Every room, every trap, and the shape of
-  each leg; the directives were authored and proved at S121.
-- `docs/prompts/LEDGER.md`'s "Settled at S124" section.
-- `docs/NEXT-SESSION.md`, the S124 entry only.
-- `tools/playthrough-route.mjs`'s Abyssal Keep leg.
+- `docs/prompts/QUEUE.md` item 0 — the east wing, and what it costs.
+- `docs/prompts/LEDGER.md`'s "Settled at S125" and "Settled at S124" sections.
+- `docs/NEXT-SESSION.md`, the S125 entry only.
+- `src/data/bosses.js`'s `tideshade`, and `tools/actor-runtime.mjs`'s `dBoss`.
 
 ## Why this, now
-The margin is real again: the run enters Nereth's hall on 35 of 44 and bottoms
-out at 3, and nothing in the verification table is red. Five rooms of the last
-dungeon have still never been played, and they were parked at S121 for one
-reason — the run could not afford them. It can now afford some of them. The
-Colonnade of the Drowned is the one to have: the Coilrope behind its grate is
-the only thing in the Keep that asks whether the player did the coast trade.
+Three rooms of the last dungeon have never been played and exactly one thing
+stands in front of them: the tideshade costs about twenty-five quarter-hearts
+and the run reaches floor 1 of the Abyssal Keep on twenty-seven. Measured in
+both wing orders at S125 — it kills the run on twenty-six and on nineteen. The
+Keep's health is not the problem any more; the fight is. Behind it are the
+level-2 Cleats and the Keep's Lens fork, both unplayed.
 
 ## The task
-Add floor 1's west wing to `tools/playthrough-route.mjs` — the Shade Cell
-crossed, the Colonnade's grate rung with the Resonance Rod, the Coilrope taken,
-and back. It was measured at NINE quarter-hearts entering on twenty-six. Run
-`node tools/check-playthrough.mjs --trace` and read what it actually costs
-before deciding whether the east wing fits as well; the east wing opens with a
-miniboss and is the more expensive half. Expect the frame shift to move things
-downstream: a fight that regresses regressed because its timing moved, not
-because it got harder.
+Find out WHY the tideshade costs twenty-five and make it cost less, in that
+order. `node tools/measure-boss-combat.mjs d6 --qh=27` will not reach it (that
+table fights Nereth), so measure it the way S113 and S114 measured Gloomtide:
+read the damage hit by hit and find out what is actually landing. The two
+candidates named by its own definition are the ink spread it casts every 120
+frames and the submerge cycle in its second phase, which the swordsman may be
+swinging at while it is down. If the answer is the VERB, fix `dBoss`; if the
+answer is the FIGHT, `src/data/bosses.js`'s `tideshade` is the one file to
+touch, and say in the commit which it was.
 
 ## Done means
-- `node tools/check-playthrough.mjs` green, ending in `d6/1,3,1` with six
-  Essences, its deepest trough still outside the Abyssal Keep.
-- `coilrope` in the audit's charms line, and a new assertion naming the
-  Colonnade.
+- The tideshade beaten at 27 quarter-hearts or fewer, measured and stated.
+- If it is beaten, the east wing added to `tools/playthrough-route.mjs` and
+  `node tools/check-playthrough.mjs` green, ending in `d6/1,3,1` with six
+  Essences and `cleats` at level 2 in the audit.
+- If it is NOT beaten, the measurement written into `docs/NEXT-SESSION.md`
+  with the hit-by-hit numbers, and nothing else changed.
 - `node tools/check-drift.mjs`, `node tools/test.mjs`, `node tools/replay.mjs`,
-  `node tools/check-charms.mjs`, `node tools/check-dredge.mjs`,
-  `node tools/check-bosses.mjs`, `node tools/walk-dungeons.mjs`,
-  `node tools/check-dungeon-strands.mjs`.
+  `node tools/check-bosses.mjs`, `node tools/check-lens.mjs`,
+  `node tools/check-cleats.mjs`, `node tools/check-charms.mjs`.
 - `npm run build` with `dist/oracle-of-tides.html` committed.
-- A person reads the room table and sees the Colonnade in it.
+- A person reads the room table and sees Tideshade Hall in it.
 
 ## Out of scope
-- The Barnacle Skin. Measured at S123 and S124 and it is not worth a re-tune.
+- Another fairy, another heart, another heart piece, anywhere. The Keep has two
+  heals and that is settled; this task is about what the fight costs.
+- The Barnacle Skin. Measured twice and it is not worth a re-tune.
 - Giving the Brinehulk `drops: 'rich'`. It loses the game. Settled at S124.
-- Another fairy, another heart piece, or moving the two the Keep already has.
-- Weakening Nereth, the Brinehulk, the tideshade or any contact damage.
-- Auditing the 460-frame fuse on every placed pickup in the game. It is written
-  down in STATE.md; it is not this task.
+- Weakening Nereth or the Brinehulk. Neither is in the way.
+- Auditing the 460-frame fuse on every placed pickup. Written down, not this.

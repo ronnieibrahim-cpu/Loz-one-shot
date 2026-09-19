@@ -9,37 +9,27 @@ a done-condition, and scope explicitly.
 
 ---
 
-## 0. Floor 1 of the Abyssal Keep, played
+## 0. The Abyssal Keep's east wing, played
 
-Authored, proved in isolation, and PARKED because the run cannot afford it.
-The exact directives are in `docs/NEXT-SESSION.md` S121 and in the scratch
-plans it names; both wings play end to end for a net four quarter-hearts when
-entered on twenty-seven, and both killed the real run when entered on
-twenty-six and nineteen.
-
-What is in there and has still never been played in a run:
+The west half landed at S125 — the Colonnade's Coilrope is won and worn. What
+is left is the east wing, and it is blocked on HEALTH, not on routing. The
+directives were authored and proved at S121 and are in the route's history;
+the traps are:
 
   * **Tideshade Hall** (`d6/1,4,5`) — the only 2x2 miniboss arena in the game,
     fought at LOW so the shade is dry and its ring is six shots not eight. Its
-    north door opens on the kill.
+    north door opens on the kill and nothing else opens it. It costs about
+    twenty-five quarter-hearts and the run reaches this floor on twenty-seven.
   * **The Mermaid Vault** (`d6/1,4,4`) — the level-2 Cleats, behind that door.
   * **The Two Arches** (`d6/1,5,4`) — the Keep's Lens fork, and the first one
     in the game answered by a WALL rather than a shaft. The WEST arch is the
     `7` lintel; the east is plain stone. The ledge hop lands at 1,5 and the
     climb is up column 1, NOT column 2 — the chamber's escape warp is at 2,4
     and squaring the corner puts you back in the vault with the valve unturned.
-  * **The Shade Cell** (`d6/1,2,5`) — a cleared-room puzzle paying a heart,
-    with a darknut in the way. Issue the fight TWICE: a wizzrobe spends part of
-    its cycle `hidden` and the swordsman's foe list drops a hidden enemy, so a
-    fight whose last live thing blinks out returns reporting a clear room.
-  * **The Colonnade of the Drowned** (`d6/1,2,4`) — the Coilrope, behind the
-    grate only the Resonance Rod retracts. The one thing in the Keep that asks
-    whether the player went and did the coast trade. **This one is cheap** and
-    is the most worth rescuing.
 
-The blocker is health, not routing. Anything that widens the Keep's margin —
-the run's own low-water mark in Nereth's fight is ONE quarter-heart — makes
-this leg affordable.
+Measured at S125 in both orders: east first dies on twenty-six, east second
+dies on nineteen. It wants about ten more quarter-hearts arriving on floor 1,
+or a cheaper answer to the tideshade than the swordsman currently has.
 
 ---
 

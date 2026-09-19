@@ -2482,6 +2482,40 @@ export const ROUTE = [
   ['goto', 8, 1, 1500],
   ['wait', 120],
 
+  // ---------------------------------------------- THE COLONNADE OF THE DROWNED
+  // THE ONE THING IN THE ABYSSAL KEEP THAT ASKS WHETHER THE PLAYER WENT AND
+  // DID THE TRADE. The Coilrope is in an alcove behind a GRATE, a grate is
+  // metal, and the only thing in the game that retracts metal is the Resonance
+  // Rod the Maku Tree pays out for twelve links of the Coastwise Chain. The
+  // ring is radial — no facing, no aim — so it is one press from the floor
+  // below the alcove.
+  //
+  // THE SHADE CELL IS CROSSED AND NOT CLEARED, and that is a measured retreat
+  // rather than a preference. Clearing it pays a heart; the room is a darknut
+  // and a wizzrobe, and at the health the run steps onto this floor with, the
+  // clearing went to ZERO twice in the real run while costing six in isolation
+  // at twenty-seven. A four-quarter-heart reward is not worth a fight whose
+  // variance is the whole margin. The wing costs NINE either way.
+  ['travel', 2, 5, 4000],
+  ['equip', 'rod', 'B', 400],
+  ['travel', 2, 4, 4000],
+  ['goto', 4, 5, 1500],
+  ['use', 'rod', 1, 60],
+  ['goto', 4, 3, 1500],
+  ['hold', ['up'], 24],
+  ['tap', 'a', 30],
+  ['dialogue', 600],
+  ['wait', 120],
+  ['loot', 600],
+  // AND IT GOES ON, in the MID case, which has two slots by now. The Coilrope
+  // adds a tile to every cast and the Keep has four shafts left to throw a
+  // line across; a charm that makes the item longer is the Keep rewarding the
+  // player for having gone the long way round the coast.
+  ['charm', 'coilrope', 'mid', 600],
+  ['equip', 'conch', 'B', 400],
+  ['travel', 2, 5, 4000],
+  ['travel', 3, 5, 4000],
+
   // ---------------------------------------------------- THE DROWNED STAND
   // CROSSING 1, AT LOW, and the first shaft anything in this game has thrown a
   // line across. The shelf at 3..6,6 wades at LOW and is over your head above
@@ -2677,6 +2711,15 @@ export const ROUTE = [
   ['wait', 60],
   ['goto', 0, 4, 1500],
   ['exit', 'left', 600],
+
+  // STEP CLEAR OF THE DOOR BEFORE DOING ANYTHING ELSE. `Game.doorwayPull`
+  // reaches a tile either side of a doorway (that is what `check-exits.mjs`
+  // asserts, both ways), and sounding the conch here takes a hundred and forty
+  // frames during which the player drifts. Land on the east doorway's own tile
+  // and the pull puts you straight back into the Crossed Shafts — which is
+  // what happened, with the next directive addressing a room the player was no
+  // longer standing in.
+  ['goto', 6, 5, 1200],
 
   // ================= NERETH, THE DROWNED KING ==============================
 

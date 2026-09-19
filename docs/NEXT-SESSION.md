@@ -1,3 +1,56 @@
+## S125 — the coast trade and the last dungeon finally meet
+
+The Colonnade of the Drowned is in the run. The Coilrope is won and worn, which
+means the Abyssal Keep's one optional room — the one that asks whether the
+player went and did the twelve-link coast trade — has been answered in a real
+playthrough for the first time. 39 assertions green.
+
+The grate is metal; the only thing in the game that retracts metal is the
+Resonance Rod the Maku Tree pays out at the end of the chain. `check-trade.mjs`
+has always proved that the Rod retracts this particular grate, and
+`check-charms.mjs` has always proved the Coilrope lengthens the Dredge Line.
+Nothing had ever done both, in order, in one run.
+
+The Coilrope goes into the MID case (two slots by six Essences), so the four
+shafts the Keep has left are thrown with the longer line.
+
+### THE EAST WING CANNOT BE PAID FOR, MEASURED BOTH WAYS ROUND
+
+Tideshade Hall, the Mermaid Vault's level-2 Cleats and the Two Arches' Lens
+fork are still unplayed and the reason is the miniboss at the front of them.
+The run steps onto floor 1 on twenty-seven quarter-hearts.
+
+  * **West wing first, east second** — the tideshade is entered on nineteen and
+    kills the run.
+  * **East wing first, west second** — entered on twenty-six, and it kills the
+    run there too.
+
+The fight costs about twenty-five. It is not a routing problem and it is not a
+sea problem (LOW is already the cheapest of the three: dry floor, and a
+six-shot ring instead of eight). The wing needs the run to arrive on the floor
+with about ten more quarter-hearts than the Keep's floor 0 leaves it, and
+nothing on the way pays that.
+
+The west wing, by contrast, costs SIX in the real run — cheaper than the nine
+it measured in isolation, because the Shade Cell is crossed rather than
+cleared. The run still walks into Nereth's hall on twenty-eight and bottoms out
+at eight; the deepest trough in the game stays 2 of 48 in D1's Tide Gallery.
+
+### A DOORWAY PULLS FROM A TILE AWAY, AND A CONCH TAKES 140 FRAMES
+
+The wing's frame shift turned up a live trap in the route's own Keep Gate leg.
+After coming back west out of the Crossed Shafts the route sounds the conch to
+MID before opening the boss door — and `Game.doorwayPull` reaches a tile either
+side of a doorway, which is exactly what `check-exits.mjs` asserts, both ways.
+The player drifts during those 140 frames, and landing on the east doorway's
+own tile puts him straight back into the Crossed Shafts, with every following
+directive addressing a room he is not standing in. The route now steps clear of
+the door before it does anything else.
+
+This one had been sitting in the leg since S121 and only fired when something
+upstream moved. It is worth assuming that every `tide` directive standing near
+a doorway has the same bug waiting in it.
+
 ## S124 — the King's fight has a margin now, and it came from a fairy in a hoard
 
 The run walks into Nereth's hall on THIRTY-FIVE of forty-four and its lowest

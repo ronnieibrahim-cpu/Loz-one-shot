@@ -1030,6 +1030,24 @@ unwritten because it re-sweeps every recorded frame in the repo.
 Floor wrote this down and the Shrine Ford repeated it. Wide rooms are crossed,
 not cleared, until `dFight` learns a radius.
 
+## Settled at S125 — the Colonnade is played, the east wing is not
+
+**THE COILROPE IS WON AND WORN IN A RUN.** The Keep's grate answers to the Rod
+the coast trade pays out, and `check-playthrough` asserts it. The west wing
+costs SIX quarter-hearts in the real run, with the Shade Cell CROSSED and not
+cleared. Do not re-measure it.
+
+**THE EAST WING CANNOT BE PAID FOR, measured in both orders.** The tideshade
+costs about twenty-five and the run reaches floor 1 on twenty-seven; entered
+first it dies on twenty-six, entered second on nineteen. LOW is already the
+cheapest sea for it. It needs about ten more quarter-hearts arriving on the
+floor, and nothing on the way pays that.
+
+**A DOORWAY PULLS FROM A TILE AWAY AND A CONCH TAKES 140 FRAMES.** Any `tide`
+directive left standing near a doorway will eventually walk the player through
+it. The Keep Gate's leg now steps clear of the door first. Assume the same bug
+is waiting in every other one.
+
 ## Settled at S124 — the King's fight has a margin
 
 **The run enters Nereth's hall on 35 of 44 and bottoms out at 3.** The deepest

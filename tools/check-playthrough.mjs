@@ -510,6 +510,19 @@ check('THE GAME WAS FINISHED — the Sunken Bar crossed at flood, the Brinehulk 
 // menu page and the actor only knew how to drive the item page. The audit
 // could not see it either; it reported items and keys and hearts and never the
 // cases, so "the run wears nothing" was invisible from both ends.
+// THE COLONNADE OF THE DROWNED, which is the one room in the Abyssal Keep that
+// asks whether the player went and did the coast trade. The Coilrope sits in an
+// alcove behind a GRATE; a grate is metal, and the only thing in the game that
+// retracts metal is the Resonance Rod the Maku Tree pays out for twelve links
+// of the Coastwise Chain. So this assertion is not really about a charm — it is
+// the trade and the last dungeon meeting each other, which nothing had ever
+// made happen in a run.
+check('THE COILROPE WAS WON AND WORN — the Keep\'s grate answered to the Rod the trade paid out',
+  a.rooms.includes('d6/1,2,4') && (s.charmsOwned || []).includes('coilrope')
+    && ((s.charmCases || {}).mid || []).includes('coilrope'),
+  `Colonnade ${a.rooms.includes('d6/1,2,4')}, owned ${(s.charmsOwned || []).join(', ')}, `
+  + `mid ${JSON.stringify((s.charmCases || {}).mid)}`);
+
 check('A CHARM WAS WORN — the scrimshaw case is not empty at the end of the run',
   Object.values(s.charmCases || {}).some(c => (c || []).some(x => x)),
   `owned ${(s.charmsOwned || []).join(', ') || '(none)'}, cases ${JSON.stringify(s.charmCases)}`);
