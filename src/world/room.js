@@ -316,12 +316,22 @@ export class Room {
         const r = this.ringArt(d, x, y, tide);
         if (r) return r;
       }
+      const onRing = x === 0 || y === 0 || x === this.tw - 1 || y === this.th - 1;
       // AN OPENED DOOR IN THE RING IS A GAP IN THE WALL, not the old door
       // frame: the ring's jambs already frame it, so it draws as this room's
       // own floor.
-      if (d.name === 'dDoorOpen' && (x === 0 || y === 0 || x === this.tw - 1 || y === this.th - 1)) {
+      if (d.name === 'dDoorOpen' && onRing) {
         const floor = this.legend['.'];
         if (floor && getTileDef(floor)) return floor;
+      }
+      // A SHUT DOOR IN THE RING is the source's door for that wall: the
+      // keyhole or the portcullis drawn facing into this room.
+      if (onRing && (d.flags & F.DOOR)) {
+        const w = getTileDef(this.legend['#']);
+        const R = w && w.ring;
+        const side = y === 0 ? 'N' : y === this.th - 1 ? 'S' : x === 0 ? 'W' : 'E';
+        const kind = d.name === 'dDoorLocked' ? 'lock' : d.name === 'dDoorClosed' ? 'shut' : null;
+        if (R && kind && R[kind + side]) return R[kind + side];
       }
     }
     if (d.edgeArt || d.edgePairs) {
@@ -362,7 +372,13 @@ export class Room {
     if (top && right) return R.TR;
     if (bot && left) return R.BL;
     if (bot && right) return R.BR;
-    const wall = (nx, ny) => this.inBounds(nx, ny) && this.tile(nx, ny, tide).ring === R;
+    // A SHUT door counts as wall: the source runs its wall straight up to a
+    // key door with no jamb. Once it opens it is a gap, and the jambs come.
+    const wall = (nx, ny) => {
+      if (!this.inBounds(nx, ny)) return false;
+      const n = this.tile(nx, ny, tide);
+      return n.ring === R || ((n.flags & F.DOOR) && n.name !== 'dDoorOpen');
+    };
     if (top || bot) {
       const k = top ? 'N' : 'S';
       if (!wall(x + 1, y)) return R['j' + k + 'W'] || R[k];

@@ -2436,16 +2436,21 @@ export function installCoreTiles() {
     // backgrounds sheet (rip-dungeon-themes.py, `g*`), so the Grotto is built
     // the way a Seasons dungeon is: one room's worth of masonry, used
     // everywhere. The ring only draws in a room built at Oracle size; see
-    // `Room.ringArt`. The alt floor is the same scale pattern in the game's
-    // `deep` blues, for the patches the tide leaves soaked: grey flagstone
-    // read as a different dungeon's floor.
+    // `Room.ringArt`. The alt floor — the patches the tide leaves damp —
+    // is that dungeon's own second floor, the inset slab. Grey flagstone read
+    // as a different dungeon's floor, and the game's `deep` blues read as a
+    // pool you could not stand in.
     dFloorGrotto: { art: ART.gFloor, pal: 'gFloor' },
-    dFloorGrottoAlt: { art: ART.gFloor, pal: 'deep' },
+    dFloorGrottoAlt: { art: ART.gFloorAlt, pal: 'gFloorAlt' },
     dWallGrotto: { art: ART.gRingN, pal: 'gRingN', flags: F.SOLID, ring: {
       TL: 'gRingTL', TR: 'gRingTR', BL: 'gRingBL', BR: 'gRingBR',
       N: 'gRingN', S: 'gRingS', W: 'gRingW', E: 'gRingE',
       jNW: 'gJambNW', jNE: 'gJambNE', jSW: 'gJambSW', jSE: 'gJambSE',
       jWN: 'gJambWN', jWS: 'gJambWS', jEN: 'gJambEN', jES: 'gJambES',
+      // A shut door in the ring draws the Seasons door for its wall. The boss
+      // door keeps its own art: no Seasons sheet here has one to cut.
+      lockN: 'gKeyN', lockS: 'gKeyS', lockE: 'gKeyE', lockW: 'gKeyW',
+      shutN: 'gShutN', shutS: 'gShutS', shutE: 'gShutE', shutW: 'gShutW',
     } },
     dWallGrottoX: { art: ART.dWallCracked, pal: 'gRingN', flags: F.SOLID | F.BOMBABLE },
     dBlockGrotto: { art: ART.gBlock, pal: 'gBlock', flags: F.SOLID },
@@ -2472,6 +2477,14 @@ export function installCoreTiles() {
     gJambWS: { art: ART.gJambWS, pal: 'gJambWS', flags: F.SOLID },
     gJambEN: { art: ART.gJambEN, pal: 'gJambEN', flags: F.SOLID },
     gJambES: { art: ART.gJambES, pal: 'gJambES', flags: F.SOLID },
+    gKeyN: { art: ART.gKeyN, pal: 'gKeyN', flags: F.SOLID | F.DOOR },
+    gKeyS: { art: ART.gKeyS, pal: 'gKeyS', flags: F.SOLID | F.DOOR },
+    gKeyE: { art: ART.gKeyE, pal: 'gKeyE', flags: F.SOLID | F.DOOR },
+    gKeyW: { art: ART.gKeyW, pal: 'gKeyW', flags: F.SOLID | F.DOOR },
+    gShutN: { art: ART.gShutN, pal: 'gShutN', flags: F.SOLID | F.DOOR },
+    gShutS: { art: ART.gShutS, pal: 'gShutS', flags: F.SOLID | F.DOOR },
+    gShutE: { art: ART.gShutE, pal: 'gShutE', flags: F.SOLID | F.DOOR },
+    gShutW: { art: ART.gShutW, pal: 'gShutW', flags: F.SOLID | F.DOOR },
 
     // d2 Coral Spire — blue flagstone under coral-pink masonry.
     dFloorCoral: { art: ART.reefFloor, pal: 'reefFloor' },

@@ -174,7 +174,27 @@ PICKS = [
     # in the contact sheet) — so the mirror is the source's own art.
     ('gJambWN',  1680,  637, 'west wall ends, doorway below it', {'flip': True}),
     ('gJambWS',  1680,  669, 'west wall ends, doorway above it', {'flip': True}),
+    # THE DOORS IN THE RING. A Seasons key door is its own tile in each of
+    # the four walls — the keyhole is drawn the right way up for the wall it
+    # is in — and it sits straight in the run with no jambs beside it. The
+    # four are from four rooms of the same dungeon. The shutter is the
+    # portcullis panel with its teeth into the room; the dungeon has it in a
+    # north wall and a south wall only, and the east and west ones are the
+    # north one TURNED, which is how the cartridge stores a door for a side
+    # wall: the same drawing, rotated a quarter.
+    ('gKeyN',    2018,  557, 'key door in a north wall'),
+    ('gKeyS',    2018,  540, 'key door in a south wall'),
+    ('gKeyE',    2644,  621, 'key door in an east wall'),
+    ('gKeyW',    2661,  621, 'key door in a west wall'),
+    ('gShutN',   1568,  203, 'shutter in a north wall, teeth into the room'),
+    ('gShutS',   2709,  363, 'shutter in a south wall, teeth into the room'),
+    ('gShutE',   1568,  203, 'shutter in an east wall', {'rot': 90}),
+    ('gShutW',   1568,  203, 'shutter in a west wall', {'rot': -90}),
     ('gFloor',   2211,  750, 'the blue scale-pattern floor'),
+    # The same dungeon's second floor, x105 on the sheet: the scale pattern
+    # with an inset slab. The Grotto draws its damp patches and worn floor
+    # with it, so they read as floor and not as water.
+    ('gFloorAlt', 2114,   42, 'the scale floor with an inset slab'),
     ('gPot',     2195,  750, 'the Seasons pot, on its own floor'),
     ('gBlock',   2243,  798, 'the raised magenta block'),
 ]
@@ -290,6 +310,23 @@ def flipped(pick):
     return len(pick) == 5 and isinstance(pick[4], dict) and pick[4].get('flip')
 
 
+def rotation(pick):
+    """Quarter turns clockwise to apply (90 or -90), or 0."""
+    return pick[4].get('rot', 0) if len(pick) == 5 and isinstance(pick[4], dict) else 0
+
+
+def transform(pick, block):
+    """Apply a pick's mirror and quarter turn to a 16x16 block of pixels."""
+    if flipped(pick):
+        block = [row[::-1] for row in block]
+    r = rotation(pick)
+    if r == 90:       # clockwise: new[y][x] = old[15-x][y]
+        block = [[block[15 - x][y] for x in range(16)] for y in range(16)]
+    elif r == -90:    # anticlockwise: new[y][x] = old[x][15-y]
+        block = [[block[x][15 - y] for x in range(16)] for y in range(16)]
+    return block
+
+
 def hexc(c):
     return '#%02x%02x%02x' % c
 
@@ -307,10 +344,7 @@ def contact_sheet(images, path):
     for i, pick in enumerate(PICKS):
         name, x, y, note, sheet = unpack(pick)
         im = images[sheet]
-        blk = read(im, x, y)
-        if flipped(pick):
-            blk = [row[::-1] for row in blk]
-        grid, keep = quantise(blk)
+        grid, keep = quantise(transform(pick, read(im, x, y)))
         q = Image.new('RGB', (16, 16))
         for yy in range(16):
             for xx in range(16):
@@ -337,10 +371,11 @@ def main():
     arts, pals, lossy = [], [], []
     for pick in PICKS:
         name, x, y, note, sheet = unpack(pick)
-        block = read(images[sheet], x, y)
+        block = transform(pick, read(images[sheet], x, y))
         if flipped(pick):
-            block = [row[::-1] for row in block]
             note += ' (mirrored)'
+        if rotation(pick):
+            note += ' (turned %+d)' % rotation(pick)
         before = len({p for row in block for p in row})
         grid, keep = quantise(block)
         if name in KEY_BACKGROUND:
