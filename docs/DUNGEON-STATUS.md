@@ -27,6 +27,13 @@ the health, not because the rooms do not work.
 
 ---
 
+**S137: D1 IS REBUILT AT ORACLE ROOM SIZE** (15x11 rooms, Seasons wall ring and
+doors, key doors in the ring) — commits `91cc5c7` and `50d8419`. D2-D6 are
+still 10x8 and are rebuilt one per session under objective 10 in
+`docs/prompts/STATE.md`. A dungeon rebuilt at Oracle size is not "done" until
+its map declares `cell: [15, 11]`, it has its own Seasons kit, and
+`check-playthrough.mjs` is green through it.
+
 ## The board
 
 | D | Map | Name | Item | Status | Where it landed |

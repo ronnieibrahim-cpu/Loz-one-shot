@@ -1,42 +1,29 @@
-OBJECTIVE OF RECORD: 9 playthrough-route — MET AT S121. AWAITING THE HUMAN.
+OBJECTIVE OF RECORD: 10 oracle-rooms — rebuild every dungeon at Oracle room size.
 
-The human retired the exhausted rotation at S112 and chose this in its place.
-It is now MET: `tools/playthrough-route.mjs` drives a new game from the title
-screen to the sixth Essence and the ending, and `node tools/check-playthrough.mjs`
-is green on it — 37 assertions, nothing granted, no warp, no flag set from
-outside. The largest open claim in the repo is closed. Objectives 1-7 are met,
-8 stays BLOCKED (no emulator capture), and 9 is met, so THERE IS NO NEXT
-ROTATION ITEM. A session run before the human names one should do the next
-prompt below and nothing else.
+Named by the human at S137, replacing the "awaiting the human" state S121 left.
+Every dungeon room becomes a 15x11 Oracle room with a one-tile wall ring, a
+scrolling camera, one-tile doors in the middle of each wall and key doors in
+the ring between two rooms, drawn from ONE Seasons dungeon's own kit (ring,
+jambs, doors, floors, block, pot) cut by tools/rip-dungeon-themes.py. Same
+room count per dungeon; puzzles deepened, never made obscure. The engine,
+every checker and the route learned Oracle cells at S137 (map `cell: [15, 11]`,
+`cellTiles`), and D1 Tidewash Grotto is rebuilt and played to THE END.
 
-DONE-CONDITION (met S121): the run reaches the sixth Essence, green.
+DONE-CONDITION: all six dungeons declare `cell: [15, 11]`, each with its own
+Seasons kit, and `node tools/check-playthrough.mjs` is green end to end.
+PROGRESS: D1 done (S137). D2 Coral Spire is next, then D3..D6 in order.
 
 ROTATION (retired S112, kept for the record):
   1 wide-rooms MET S111 | 2 art-provenance S9/S74 | 3 boss-art S75
   4 enemy-roster S59 | 5 npc-detail S63 | 6 region-art S89
-  7 item-reuse MET S110 | 8 feel-measure BLOCKED — needs an emulator capture
+  7 item-reuse MET S110 | 8 feel-measure BLOCKED | 9 playthrough-route MET S121
 
-NO STANDING DEFECTS. Nothing in CLAUDE.md's verification table is red, and the
-run's deepest trough is 3 of 48, in D1's Two Gauges, one room past the Clawcrab
-— see the S129 ledger for why the route cannot lift it and the game cannot
-be gated on a downstream trough.
-ONE UNAUDITED THING, found at S124 and not chased: every placed pickup in the
-game has a 460-frame fuse counted while its room is on screen, so any placed
-fairy or heart sharing a room with a real fight is quietly unavailable.
-EVERY FIGHT IN THE GAME IS TRANSCRIBED (S135 bosses, S136 minibosses) and
-nothing was changed about any of them. Reading worse than reported: Wyverna
-3 of 5, Rootmaw 2 of 5, Gloomtide 2 of 5, the Brinehulk 1 of 5, the Clawcrab
-0 of 5. The rig cannot score a miniboss off its room flag — see the S136
-ledger.
-THE S133 FINDING IS ACTED ON (S134): Nereth wins 5 of 5 now, on a fairy behind
-his own boss door. He is met on 44 of 44 — a FULL bar (S135 corrected the 48) —
-so nothing more can come from the health side. What is left is seed 3's 1.25
-hearts, and that is in the fight.
-
-FILE ALLOWLIST for the current objective (score a miniboss by its room flag):
-  tools/measure-boss-combat.mjs
-  docs/NEXT-SESSION.md
-  docs/prompts/LEDGER.md
+FILE ALLOWLIST for the current objective (rebuild D2 at Oracle size):
+  src/data/dungeons-a.js (the d2 block), src/data/tiles-core.js,
+  src/data/legends.js, src/data/tiles-dungeon-themes.js (regenerated only),
+  tools/rip-dungeon-themes.py, tools/playthrough-route.mjs,
+  tools/replay-plans.mjs + tools/replays/d2-*.json, tools/measure-boss-combat.mjs,
+  any checker that still assumes 10x8, docs/*.md, dist/oracle-of-tides.html
 
 DETOUR TOKENS: 1 (unspent)
 
@@ -58,3 +45,4 @@ S133 | objective | Measured the last fight in the game properly for the first ti
 S134 | objective | Gave the last fight in the game a margin. Nereth used to be a coin flip — three wins in five and never more than two hearts left — because the run climbed his stair on four hearts short of half a bar with nothing anywhere behind it to drink. There is a fairy in the antechamber at the foot of that stair now, on the far side of his own locked door, so it cannot be had until the Boss Key is spent and it is impossible to waste. He is beaten five times in five now, with six hearts standing in the real run. Found on the way that his fight costs the same no matter how much health you walk in on, which is why the answer was a fairy and not a change to the fight.
 S135 | objective | Measured all six boss fights the way the game is really played, for the first time. Four of them were being practised in the middle of an empty room on health nobody ever carries, and the difference is not small: the fourth boss, which the practice rig has called an easy win for the whole life of the project, is met on barely half a heart bar and is won three times in five. Found that the bar itself was recorded wrong for two of the six, including the last fight in the game — the King is met on a completely full bar, not four quarter-hearts short of one, so last session's fairy is doing everything a fairy can. Nothing about any fight was changed; this was the reading, and three of the six now read worse than they were being reported.
 S136 | objective | Measured the six lesser bosses the same way, and two of the readings turn over completely. The thing guarding the second key in the game has been reported as killing you every single time; met the way it is really met, it loses five times in five. The shadow in the last dungeon was being reported as free and actually costs three hearts, and it is the last fight in the game you take with nothing on your charm case. And the salt colossus had never been measured at all — the old practice setup could not land a single blow on it in any attempt — which is why nobody had noticed it is the hardest fight in the game to practise. Nothing about any of them was changed.
+S137 | objective | The human named the next objective: rebuild the dungeons at real Oracle room size. The first dungeon is done — every room is a full scrolling 15x11 Oracle room with the Seasons wall ring, doorways and key doors cut from one Seasons dungeon, and its last anchor gate needs the Anchor thrown, recalled and thrown again. The crab miniboss and Gohmaraq were made fair for a first dungeon, and the whole game still plays to the end. Also fixed: text spacing, a black Oracle text box, the wrong floor under pots and under drained water in every themed dungeon, and the game resuming in the throne room after THE END.

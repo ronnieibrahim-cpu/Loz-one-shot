@@ -1,3 +1,47 @@
+## S137 — the first dungeon is rebuilt at Oracle room size
+
+The human named a new objective (see STATE.md): every dungeon at real Oracle
+room size, each with one Seasons dungeon's kit, same room counts, deeper but
+never obscure puzzles. Also asked for, and approved: a black Oracle text box,
+a fair first miniboss, and broad bug fixing.
+
+### What landed
+- Engine: map `cell: [15, 11]`, `cellTiles`, `Room.ringArt` (corners, runs,
+  jambs, oriented key doors and shutters), `Game.openDoorAt`/`seamPartner`,
+  opened ring doors draw as floor, Essence spawns mid-arena in Oracle rooms,
+  `tools/shoot-rooms.mjs --whole` for whole-room shots, `tools/try-room.mjs`
+  to run route directives in one room in seconds.
+- D1 Tidewash Grotto rebuilt: 24 rooms, same graph, key doors and boss door
+  in the ring, the Long Sluice a two-throw anchor gate. Kit cut from the blue
+  Seasons dungeon on the backgrounds sheet's True Colors half, rooms on a
+  241x177 pitch from 1456,26 (`g*` picks in rip-dungeon-themes.py).
+- Clawcrab and Gohmaraq tuned (LEDGER S137 has the numbers).
+- Bugs: glyph left-bearing spacing; wrong floor under pots and drained tide
+  tiles in every themed dungeon; held-item icon ignored the camera; the game
+  resumed after THE END.
+- check-playthrough: 41/41, ends on THE END, six Essences, no deaths.
+
+### How to rebuild the next dungeon (the recipe D1 used)
+1. Find a Seasons dungeon for the theme. `scan.py`-style search: rooms sit on
+   a 241x177 pitch; find each origin by minimising distinct 16px tiles in a
+   240x176 window (±10px). Contact-sheet the rooms and pick one plain room
+   for corners/runs, others for jambs and doors.
+2. Add `x*` picks to tools/rip-dungeon-themes.py (`{'flip': True}` mirrors,
+   `{'rot': 90}` turns), re-run it, look at `--sheet`.
+3. Point the theme's wall tiledef `ring` at them, floor/alt/block/pot too;
+   check-tilesets insists the six roles stay visually distinct.
+4. Rewrite the map block at 15x11 with `cell: [15, 11]` and `scroll` left on.
+5. Run validate, walk-dungeons, check-dungeon-strands, the dungeon's item
+   prover, solve-switches, check-placement, check-exits, check-bosses.
+6. Re-route the playthrough section; use try-room for each room; re-record
+   the dungeon's replays; update measure-boss-combat's arena rows.
+
+### Open
+- D2..D6 still 10x8 (D2 next — NEXT-PROMPT.md).
+- The interior shutter in the Two Gauges (not in the ring) keeps the old art.
+- No boss-door cut exists on any sheet in the repo; `dDoorBoss` keeps its art.
+- The route's D1 Weeping Wall charm is still unvisited, as before.
+
 ## S136 — the six minibosses are measured in their own arenas too
 
 `MINIS` had one row, the Clawcrab, and no arena at all. All six minibosses the

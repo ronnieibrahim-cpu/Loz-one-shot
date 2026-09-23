@@ -447,6 +447,24 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **A room's size is the MAP's, not 10x8 (S137).** Six tools computed a
+  room's width as `sw * 10` and every one of them quietly stopped at column
+  10 of a 15-wide Oracle room: validate reported 288 "problems", the anchor
+  prover called a crossable gate uncrossable, walk-dungeons lost three rooms.
+  Call `cellTiles(map)`. A tool that hard-codes the screen is wrong for any
+  map with a `cell`.
+- **A door in an Oracle ring is ONE door in two rooms (S137).** Opening one
+  side and not the other leaves the player walking through the gap into a
+  locked tile, and charges a second key for the same door. Both the engine
+  (`Game.openDoorAt`) and the flood (`partnerOf`) open the partner.
+- **Changing a boss's hp re-rolls the fight, not just shortens it (S137).**
+  Phase thresholds are fractions of hp; Gohmaraq at 20 hp instead of 24 went
+  from 11 of 13 seeds to 0 of 13 in its route arena. Tune damage, not hp.
+- **A reshuffle upstream shows up as a death downstream (S137).** Rebuilding
+  D1 moved the run 12,000 frames later into D2, and a barnacle the route had
+  been passing on timing luck killed it. When the run dies somewhere you did
+  not touch, look for a step that only ever worked on timing.
+
 - **A DEAD ENEMY IS NOT DEAD UNTIL THE ANIMATION ENDS, AND EVERYTHING THAT
   ASKS "IS THIS STILL A THREAT" HAS TO SAY SO.** `Enemy.die` defers
   `Entity.die` behind an `ENEMY_DEATH_FRAMES` stall for anything with a

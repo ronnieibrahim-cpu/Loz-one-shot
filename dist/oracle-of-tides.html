@@ -1066,6 +1066,10 @@ const ESSENCE_FREEZE_FRAMES = 150;
 /** f — how long the game-over screen holds before it accepts a button. guessed. */
 const GAMEOVER_WAIT_FRAMES = 100;
 
+/** f — how long THE END holds before a button takes it back to the title, so
+ *  the A that closed the ending's last line cannot also skip the card. guessed. */
+const THE_END_HOLD_FRAMES = 90;
+
 // THE LOW-HEALTH PULSE.
 //
 // The game had no low-health warning at all — the one piece of feedback in
@@ -1989,6 +1993,7 @@ __exports["PEGASUS_FRAMES"] = PEGASUS_FRAMES;
 __exports["ITEM_PRESENT_FRAMES"] = ITEM_PRESENT_FRAMES;
 __exports["ESSENCE_FREEZE_FRAMES"] = ESSENCE_FREEZE_FRAMES;
 __exports["GAMEOVER_WAIT_FRAMES"] = GAMEOVER_WAIT_FRAMES;
+__exports["THE_END_HOLD_FRAMES"] = THE_END_HOLD_FRAMES;
 __exports["LOW_HEART_THRESHOLD"] = LOW_HEART_THRESHOLD;
 __exports["LOW_HEART_EVERY"] = LOW_HEART_EVERY;
 __exports["TEXT_SPEED"] = TEXT_SPEED;
@@ -3302,10 +3307,20 @@ function decode(ch) {
   const hex = GLYPHS[ch] || GLYPHS['?'];
   const rows = new Uint8Array(8);
   for (let i = 0; i < 8; i++) rows[i] = parseInt(hex.substr(i * 2, 2), 16);
-  let ink = 0;
-  for (const r of rows) for (let b = 0; b < 8; b++) if (r & (0x80 >> b)) ink = Math.max(ink, b + 1);
-  const w = ch === ' ' ? SPACE_ADVANCE : Math.max(2, ink) + 1;
-  d = { rows, w };
+  // The ink's extent on BOTH sides. The advance used to be measured from
+  // column 0, so a glyph drawn off-centre in its cell — `i`, `.`, `!`, `l`,
+  // `:`, most of the narrow ones — carried its blank left columns into the
+  // line as extra space: "dec ide", "K ing", "awake ." in every text box in
+  // the game. `lead` is trimmed at the draw site instead, so every pair of
+  // letters sits exactly one blank column apart, which is how the GBC font
+  // reads.
+  let ink = 0, lead = 8;
+  for (const r of rows) for (let b = 0; b < 8; b++) {
+    if (r & (0x80 >> b)) { ink = Math.max(ink, b + 1); lead = Math.min(lead, b); }
+  }
+  if (ink === 0) lead = 0;
+  const w = ch === ' ' ? SPACE_ADVANCE : Math.max(1, ink - lead) + 1;
+  d = { rows, w, lead };
   decoded.set(ch, d);
   return d;
 }
@@ -3355,16 +3370,18 @@ function drawText(ctx, s, x, y, color = '#181c18', shadow = null) {
     let cx = x;
     for (const ch of s) {
       const i = indexOf.get(ch) ?? indexOf.get('?');
-      ctx.drawImage(sa, i * 8, 0, 8, 8, (cx | 0) + 1, (y | 0) + 1, 8, 8);
-      cx += decode(ch).w;
+      const d = decode(ch);
+      ctx.drawImage(sa, i * 8 + d.lead, 0, 8 - d.lead, 8, (cx | 0) + 1, (y | 0) + 1, 8 - d.lead, 8);
+      cx += d.w;
     }
   }
   const a = atlas(color).canvas;
   let cx = x;
   for (const ch of s) {
     const i = indexOf.get(ch) ?? indexOf.get('?');
-    ctx.drawImage(a, i * 8, 0, 8, 8, cx | 0, y | 0, 8, 8);
-    cx += decode(ch).w;
+    const d = decode(ch);
+    ctx.drawImage(a, i * 8 + d.lead, 0, 8 - d.lead, 8, cx | 0, y | 0, 8 - d.lead, 8);
+    cx += d.w;
   }
   return cx - x;
 }
@@ -3634,6 +3651,14 @@ function registerTiles(defs) {
       openFlag: def.openFlag || null,
       openTo: def.openTo || null,
       openDeny: def.openDeny || null,
+      // THE ORACLE WALL RING. A wall tile in a dungeon built at Oracle room
+      // size (`cell: [15, 11]` on its map) draws the outer ring of every room
+      // from this set of pieces — four corners, four runs and the jambs that
+      // finish a run beside a doorway — chosen by where the cell sits on the
+      // ring, not by any neighbour's family. See `Room.ringArt`. Draw-time
+      // only; the tile's flags are the wall's. Named here for the same reason
+      // as every field above.
+      ring: def.ring || null,
     });
   }
 }
@@ -4128,6 +4153,22 @@ function normaliseSize(size, where = 'room') {
   return [sw, sh];
 }
 
+/**
+ * Tiles per map cell for a map: `[10, 8]` (one Game Boy screen) unless the
+ * map declares `cell`. Only one other size is legal, the Oracle dungeon room,
+ * for the same reason `ROOM_SIZES` is closed: the camera, the transition and
+ * every checker's seam arithmetic were sized against these and nothing else.
+ */
+const CELL_SIZES = ['10x8', '15x11'];
+function cellTiles(mapDef) {
+  const c = mapDef && mapDef.cell;
+  if (!c) return [ROOM_W, ROOM_H];
+  if (!CELL_SIZES.includes(`${c[0]}x${c[1]}`)) {
+    throw new Error(`${mapDef.id}: illegal cell ${c[0]}x${c[1]} (allowed: ${CELL_SIZES.join(', ')})`);
+  }
+  return [c[0], c[1]];
+}
+
 /** Register a char->tile legend. `base` names another legend to inherit from. */
 function registerLegend(name, mapping, base) {
   const parent = base ? (LEGENDS.get(base) || {}) : {};
@@ -4152,13 +4193,22 @@ class Room {
     }
     const legend = getLegend(def.legend || (mapDef && mapDef.legend));
     this.legend = legend;
+    this._floorSub = Room.floorSubFor(legend);
 
     // Size in screens, and the four derived extents everything else asks for.
     // A room with no `size` is 1x1 and every one of these is the old constant,
     // which is how an existing grid parses byte-identically.
     const [sw, sh] = normaliseSize(def.size, `${this.mapId}/${key}`);
     this.sw = sw; this.sh = sh;
-    this.tw = sw * ROOM_W; this.th = sh * ROOM_H;      // tiles
+    // TILES PER MAP CELL, which is the map's and not the room's. The overworld
+    // and every map that says nothing is the Game Boy screen, 10x8. A map
+    // declaring `cell: [15, 11]` is an ORACLE DUNGEON: one cell of its map is
+    // one 15x11 room with a one-tile wall ring, bigger than the screen, and
+    // the camera scrolls inside it — which is how Seasons and Ages build every
+    // dungeon room they have, and what a 10x8 room cannot look like.
+    const [cw, ch] = cellTiles(mapDef);
+    this.cw = cw; this.ch = ch;
+    this.tw = sw * cw; this.th = sh * ch;              // tiles
     this.pw = this.tw * TILE; this.ph = this.th * TILE; // pixels
 
     // Base grid of tile *names* as authored (may be virtual tide tiles).
@@ -4268,7 +4318,34 @@ class Room {
   /** Concrete tile definition at the given tide level or field. */
   tile(tx, ty, tide) {
     if (!this.inBounds(tx, ty)) return getTileDef('void');
-    return resolveTile(this.baseName(tx, ty), this.levelAt(tide, tx, ty));
+    const d = resolveTile(this.baseName(tx, ty), this.levelAt(tide, tx, ty));
+    const s = this._floorSub;
+    return s && s[d.name] ? s[d.name] : d;
+  }
+
+  /**
+   * THE DUNGEON'S OWN FLOOR, wherever a shared tile names the generic one.
+   *
+   * The tide tiles (`1`, `2`, `4`...) are shared by every dungeon, and their
+   * dry states are the generic `dFloor` and `dFloorWet` — so in every themed
+   * dungeon the water went out and left a square of somebody else's floor:
+   * brown brick in the Grotto, grey flagstone in the Keep, 1,200-odd cell-
+   * states across the six. A theme names its floor as `.` and its worn floor
+   * as `,`, so the substitution is read straight off the legend and needs no
+   * per-dungeon copy of every tide tile. Both sides carry no flags, which is
+   * what makes this a picture change and nothing else — asserted here, so a
+   * floor that ever gains one cannot be swapped in silently.
+   */
+  static floorSubFor(legend) {
+    const pairs = [['dFloor', legend['.']], ['dFloorWet', legend[',']], ['dFloorCrack', legend[',']]];
+    let sub = null;
+    for (const [from, to] of pairs) {
+      if (!to || to === from) continue;
+      const a = getTileDef(from), b = getTileDef(to);
+      if (!a || !b || b.name !== to || a.flags !== b.flags) continue;
+      (sub = sub || {})[from] = b;
+    }
+    return sub;
   }
 
   flagsAt(tx, ty, tide) { return this.tile(tx, ty, tide).flags; }
@@ -4319,6 +4396,29 @@ class Room {
    * screen; see `tileEdgeArt`.
    */
   artAt(d, x, y, tide) {
+    if (this.cw === 15) {
+      if (d.ring) {
+        const r = this.ringArt(d, x, y, tide);
+        if (r) return r;
+      }
+      const onRing = x === 0 || y === 0 || x === this.tw - 1 || y === this.th - 1;
+      // AN OPENED DOOR IN THE RING IS A GAP IN THE WALL, not the old door
+      // frame: the ring's jambs already frame it, so it draws as this room's
+      // own floor.
+      if (d.name === 'dDoorOpen' && onRing) {
+        const floor = this.legend['.'];
+        if (floor && getTileDef(floor)) return floor;
+      }
+      // A SHUT DOOR IN THE RING is the source's door for that wall: the
+      // keyhole or the portcullis drawn facing into this room.
+      if (onRing && (d.flags & F.DOOR)) {
+        const w = getTileDef(this.legend['#']);
+        const R = w && w.ring;
+        const side = y === 0 ? 'N' : y === this.th - 1 ? 'S' : x === 0 ? 'W' : 'E';
+        const kind = d.name === 'dDoorLocked' ? 'lock' : d.name === 'dDoorClosed' ? 'shut' : null;
+        if (R && kind && R[kind + side]) return R[kind + side];
+      }
+    }
     if (d.edgeArt || d.edgePairs) {
       const edge = tileEdgeArt(d, (dir) => {
         const nx = x + (dir === 'left' ? -1 : dir === 'right' ? 1 : 0);
@@ -4334,6 +4434,46 @@ class Room {
       if (edge) return edge;
     }
     return tileVariant(d, this.key, x, y);
+  }
+
+  /**
+   * The piece of an Oracle wall ring to draw at (x, y), or null when the cell
+   * is not on the room's outer ring.
+   *
+   * POSITION, NOT NEIGHBOURHOOD. The ring is the room's frame: its corners are
+   * where the room's corners are, whatever tiles surround them, so asking the
+   * neighbours (the way `edgeArt` does) would find wall on both sides of a
+   * corner and draw a run. The only neighbour question is along the ring
+   * itself — is the next cell of the ring still wall — because that is where
+   * a run stops and a jamb finishes it beside a doorway. A bombable crack, a
+   * shutter or an open floor tile in the ring all count as the doorway: the
+   * wall visibly ends at each side of it, the way the source frames a door.
+   */
+  ringArt(d, x, y, tide) {
+    const R = d.ring, W = this.tw - 1, H = this.th - 1;
+    const top = y === 0, bot = y === H, left = x === 0, right = x === W;
+    if (!(top || bot || left || right)) return null;
+    if (top && left) return R.TL;
+    if (top && right) return R.TR;
+    if (bot && left) return R.BL;
+    if (bot && right) return R.BR;
+    // A SHUT door counts as wall: the source runs its wall straight up to a
+    // key door with no jamb. Once it opens it is a gap, and the jambs come.
+    const wall = (nx, ny) => {
+      if (!this.inBounds(nx, ny)) return false;
+      const n = this.tile(nx, ny, tide);
+      return n.ring === R || ((n.flags & F.DOOR) && n.name !== 'dDoorOpen');
+    };
+    if (top || bot) {
+      const k = top ? 'N' : 'S';
+      if (!wall(x + 1, y)) return R['j' + k + 'W'] || R[k];
+      if (!wall(x - 1, y)) return R['j' + k + 'E'] || R[k];
+      return R[k];
+    }
+    const k = left ? 'W' : 'E';
+    if (!wall(x, y + 1)) return R['j' + k + 'N'] || R[k];
+    if (!wall(x, y - 1)) return R['j' + k + 'S'] || R[k];
+    return R[k];
   }
 
   /**
@@ -4587,13 +4727,13 @@ class Room {
    * the declaration cannot be describing this place.
    */
   underGround(d, x, y, tide) {
-    const declared = getTileDef(d.underArt);
+    const declared = (this._floorSub && this._floorSub[d.underArt]) || getTileDef(d.underArt);
     let cand = null, agree = 0, disagree = false;
     for (const [dx, dy] of [[0, 1], [0, -1], [-1, 0], [1, 0]]) {
       const nx = x + dx, ny = y + dy;
       if (nx < 0 || ny < 0 || nx >= this.tw || ny >= this.th) continue;
       const n = this.tile(nx, ny, tide);
-      if (n.name === d.underArt) return declared;
+      if (n.name === d.underArt || n === declared) return declared;
       if (n.underArt || n.over || n.anim || n.quad || n.big) continue;
       if (n.flags & (F.VOID | F.SOLID | F.WARP)) continue;
       // A DISAGREEMENT NO LONGER SHORT-CIRCUITS. It used to return `declared`
@@ -4858,6 +4998,8 @@ class Room {
 __exports["LEGENDS"] = LEGENDS;
 __exports["ROOM_SIZES"] = ROOM_SIZES;
 __exports["normaliseSize"] = normaliseSize;
+__exports["CELL_SIZES"] = CELL_SIZES;
+__exports["cellTiles"] = cellTiles;
 __exports["registerLegend"] = registerLegend;
 __exports["getLegend"] = getLegend;
 __exports["Room"] = Room;
@@ -4895,7 +5037,7 @@ __define("world/maps.js", function (__exports, __require) {
 //     },
 //   }
 
-const { Room, normaliseSize } = __require("world/room.js");
+const { Room, normaliseSize, cellTiles } = __require("world/room.js");
 
 const MAPS = new Map();
 
@@ -4909,6 +5051,10 @@ function registerMap(def) {
   // overworld is a grid of screens with a scroll transition on every seam, and
   // a multi-screen overworld room would mean two different meanings for "the
   // next screen along". So it is refused, loudly, rather than documented.
+  if (def.cell) {
+    if (kind === 'overworld') throw new Error(`${def.id}: the overworld's cell is the screen`);
+    cellTiles(def);
+  }
   for (const [key, r] of Object.entries(def.rooms || {})) {
     if (!r || !r.size) continue;
     if (kind === 'overworld') {
@@ -4928,6 +5074,8 @@ function registerMap(def) {
     dark: !!def.dark,
     scroll: def.scroll !== false,
     dungeon: def.dungeon || null,
+    // Tiles per map cell. Absent means the 10x8 screen; see `cellTiles`.
+    cell: def.cell || null,
     roomDefs: def.rooms || {},
     _rooms: new Map(),
   };
@@ -4936,6 +5084,13 @@ function registerMap(def) {
 }
 
 function getMap(id) { return MAPS.get(id) || null; }
+
+/** Pixel span of one map cell: the room grid the seams are counted on. */
+function cellPixels(mapOrId) {
+  const m = typeof mapOrId === 'string' ? MAPS.get(mapOrId) : mapOrId;
+  const [cw, ch] = cellTiles(m);
+  return [cw * 16, ch * 16];
+}
 
 function roomKey(floor, x, y) { return `${floor | 0},${x | 0},${y | 0}`; }
 
@@ -5062,7 +5217,8 @@ function validateMaps() {
           }
         }
       }
-      const wantRows = 8 * sh, wantCols = 10 * sw;
+      const [cw, ch] = cellTiles(m);
+      const wantRows = ch * sh, wantCols = cw * sw;
       const rows = def.map || [];
       if (rows.length !== wantRows) {
         problems.push(`${m.id}/${key}: map has ${rows.length} rows, expected ${wantRows}`
@@ -5090,6 +5246,7 @@ function validateMaps() {
 __exports["MAPS"] = MAPS;
 __exports["registerMap"] = registerMap;
 __exports["getMap"] = getMap;
+__exports["cellPixels"] = cellPixels;
 __exports["roomKey"] = roomKey;
 __exports["roomKeyAt"] = roomKeyAt;
 __exports["getRoom"] = getRoom;
@@ -11276,30 +11433,47 @@ class Dialogue {
       ? this.choices.options.length * LINE_H + 2 : 0;
     const h = BOX_H + extra;
     const y = this.top ? HUD_H + 4 : SCREEN_H - h - 5;
-    drawBox(ctx, BOX_X, y, BOX_W, h);
+    drawTextBox(ctx, BOX_X, y, BOX_W, h);
 
     const shown = this.currentText.slice(0, Math.floor(this.chars));
     const lines = shown.split('\n');
     for (let i = 0; i < lines.length; i++) {
-      drawText(ctx, lines[i], BOX_X + PAD, y + PAD + i * LINE_H, '#181c18');
+      drawText(ctx, lines[i], BOX_X + PAD, y + PAD + i * LINE_H, TEXT_INK);
     }
 
     if (this.choices && this.chars >= this.pageLen) {
       const oy = y + PAD + LINES * LINE_H - 2;
       this.choices.options.forEach((opt, i) => {
         const ly = oy + i * LINE_H;
-        drawText(ctx, opt, BOX_X + PAD + 10, ly, '#181c18');
+        drawText(ctx, opt, BOX_X + PAD + 10, ly, TEXT_INK);
         if (i === this.choices.index) {
-          drawText(ctx, '\x02', BOX_X + PAD + 2, ly, '#181c18');
+          drawText(ctx, '\x02', BOX_X + PAD + 2, ly, TEXT_INK);
         }
       });
     } else if (this.chars >= this.pageLen) {
       // blinking "more" arrow
       if ((this.game.frame >> 3) % 2 === 0) {
-        drawText(ctx, '\x02', BOX_X + BOX_W - 11, y + h - 10, '#505850');
+        drawText(ctx, '\x02', BOX_X + BOX_W - 11, y + h - 10, TEXT_ARROW);
       }
     }
   }
+}
+
+// THE ORACLE TEXT BOX: white letters on a black box, the way Seasons, Ages
+// and Link's Awakening all set their speech. This game drew dark text on a
+// white card for its whole life, which reads as a different series.
+const TEXT_INK = '#f8f8f8';
+const TEXT_ARROW = '#f86848';
+
+/** The in-game speech box: black fill, one-pixel grey rim, clipped corners. */
+function drawTextBox(ctx, x, y, w, h) {
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = '#585858';
+  ctx.fillRect(x + 1, y, w - 2, 1);
+  ctx.fillRect(x + 1, y + h - 1, w - 2, 1);
+  ctx.fillRect(x, y + 1, 1, h - 2);
+  ctx.fillRect(x + w - 1, y + 1, 1, h - 2);
 }
 
 /** A Game Boy style text panel: light fill, dark border, rounded corners. */
@@ -11333,6 +11507,7 @@ __exports["TEXTS"] = TEXTS;
 __exports["registerTexts"] = registerTexts;
 __exports["getText"] = getText;
 __exports["Dialogue"] = Dialogue;
+__exports["drawTextBox"] = drawTextBox;
 __exports["drawBox"] = drawBox;
 __exports["drawPanel"] = drawPanel;
 });
@@ -13615,7 +13790,7 @@ const { Title } = __require("game/title.js");
 const { runCutscene, CUTSCENES } = __require("game/cutscene.js");
 const { Stream, seedGlobal, roomStream, noise1, rng: rngGlobal } = __require("core/rng.js");
 const { sp } = __require("core/fixed.js");
-const { ROOM_TRANSITION_FRAMES, ROOM_EXIT_MARGIN, FADE_RATE, BANNER_FRAMES, SHAKE_LARGE, SHAKE_LARGE_FRAMES, BOSS_ESSENCE_DELAY_FRAMES, HITSTOP_HIT_FRAMES, HITSTOP_HURT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES, LOW_HEART_THRESHOLD, LOW_HEART_EVERY, BOSS_MUSIC_RESUME_FRAMES, ITEM_PRESENT_FRAMES, ESSENCE_FREEZE_FRAMES, GAMEOVER_WAIT_FRAMES, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, DOORWAY_PULL_REACH_TILES, DOORWAY_PULL_SPEED, LENS_FADE_FRAMES, LENS_GHOST_ALPHA, LENS_TINT_ALPHA, LENS_PHASE_ALPHA, LENS_SHIMMER_FRAMES, REEFSEED_CAPACITY, COIN_SWAP_DELAY_FRAMES, BOTTLE_CAPACITY, CARVE_TIDE_TURNS, QUARTERMASTER_BONUS, CHANDLER_FACTOR, LANTERN_RADIUS, GULLS_TALLY_FACTOR, CARVE_PRICE, PICKUP_LIFE_FRAMES, WRECK_GLIMMER_PERIOD, WRECK_GLIMMER_ON, WRECK_GLIMMER_ALPHA, CAM_DEADZONE_W, CAM_DEADZONE_H } = __require("data/feel.js");
+const { ROOM_TRANSITION_FRAMES, ROOM_EXIT_MARGIN, FADE_RATE, BANNER_FRAMES, SHAKE_LARGE, SHAKE_LARGE_FRAMES, BOSS_ESSENCE_DELAY_FRAMES, HITSTOP_HIT_FRAMES, HITSTOP_HURT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES, LOW_HEART_THRESHOLD, LOW_HEART_EVERY, BOSS_MUSIC_RESUME_FRAMES, ITEM_PRESENT_FRAMES, ESSENCE_FREEZE_FRAMES, GAMEOVER_WAIT_FRAMES, THE_END_HOLD_FRAMES, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE, DOORWAY_PULL_REACH_TILES, DOORWAY_PULL_SPEED, LENS_FADE_FRAMES, LENS_GHOST_ALPHA, LENS_TINT_ALPHA, LENS_PHASE_ALPHA, LENS_SHIMMER_FRAMES, REEFSEED_CAPACITY, COIN_SWAP_DELAY_FRAMES, BOTTLE_CAPACITY, CARVE_TIDE_TURNS, QUARTERMASTER_BONUS, CHANDLER_FACTOR, LANTERN_RADIUS, GULLS_TALLY_FACTOR, CARVE_PRICE, PICKUP_LIFE_FRAMES, WRECK_GLIMMER_PERIOD, WRECK_GLIMMER_ON, WRECK_GLIMMER_ALPHA, CAM_DEADZONE_W, CAM_DEADZONE_H } = __require("data/feel.js");
 
 class Game {
   constructor(screen, input) {
@@ -13911,6 +14086,49 @@ class Game {
     this.progress.doors[`${this.mapId}:${this.room.key}:${tx},${ty}`] = tileName;
   }
 
+  /**
+   * Open a door, and — in a room built at Oracle size — the same door seen
+   * from the other side of the seam.
+   *
+   * An Oracle door is a gap in the wall ring, and a key door is ONE door that
+   * both rooms draw: a `L` on this room's north ring and a `L` on the south
+   * ring of the room above, at the same column. Opening only this side would
+   * leave the player walking through the gap into a locked tile on arrival,
+   * and would charge a second key for the same door from the far side.
+   * `seamPartner` finds that tile from the map's own cell arithmetic.
+   */
+  openDoorAt(tx, ty) {
+    this.room.setTile(tx, ty, 'dDoorOpen');
+    this.persistTile(tx, ty, 'dDoorOpen');
+    const q = this.seamPartner(this.room, tx, ty);
+    if (!q) return;
+    const t = q.room.baseName(q.x, q.y);
+    if (!getTileDef(t) || !(getTileDef(t).flags & F.DOOR)) return;
+    q.room.setTile(q.x, q.y, 'dDoorOpen');
+    this.progress.doors[`${this.mapId}:${q.room.key}:${q.x},${q.y}`] = 'dDoorOpen';
+  }
+
+  /** The tile on the far side of a ring cell's seam, or null. */
+  seamPartner(room, tx, ty) {
+    if (!room || room.cw !== 15) return null;
+    const cw = room.cw, ch = room.ch;
+    const gx = room.rx * cw + tx, gy = room.ry * ch + ty;
+    let cx, cy;
+    if (ty === 0) { cx = Math.floor(gx / cw); cy = room.ry - 1; }
+    else if (ty === room.th - 1) { cx = Math.floor(gx / cw); cy = room.ry + room.sh; }
+    else if (tx === 0) { cx = room.rx - 1; cy = Math.floor(gy / ch); }
+    else if (tx === room.tw - 1) { cx = room.rx + room.sw; cy = Math.floor(gy / ch); }
+    else return null;
+    const other = getRoom(this.mapId, room.floor, cx, cy);
+    if (!other) return null;
+    const ox = ty === 0 || ty === room.th - 1 ? gx - other.rx * cw
+      : tx === 0 ? other.tw - 1 : 0;
+    const oy = tx === 0 || tx === room.tw - 1 ? gy - other.ry * ch
+      : ty === 0 ? other.th - 1 : 0;
+    if (!other.inBounds(ox, oy)) return null;
+    return { room: other, x: ox, y: oy };
+  }
+
   // ------------------------------------------------------------ transitions
 
   /** Walk off the edge into the neighbouring room. */
@@ -13943,7 +14161,7 @@ class Game {
     // exactly as it always was.
     const room = this.room;
     const sub = (v, span, n) => Math.max(0, Math.min(n - 1, Math.floor(v / span)));
-    const sx = sub(p.cx, VIEW_W, room.sw), sy = sub(p.cy, VIEW_H, room.sh);
+    const sx = sub(p.cx, room.cw * TILE, room.sw), sy = sub(p.cy, room.ch * TILE, room.sh);
     let nx, ny;
     if (dir === 'right') { nx = room.rx + room.sw; ny = room.ry + sy; }
     else if (dir === 'left') { nx = room.rx - 1; ny = room.ry + sy; }
@@ -13998,8 +14216,11 @@ class Game {
    */
   entryPos(dir, p, next) {
     const cur = this.room;
-    const gx = cur.rx * VIEW_W + p.x, gy = cur.ry * VIEW_H + p.y;
-    const rawX = gx - next.rx * VIEW_W, rawY = gy - next.ry * VIEW_H;
+    // One map cell is one screen on the overworld and one Oracle room in a
+    // dungeon built at that size; both rooms are on the same map.
+    const CW = cur.cw * TILE, CH = cur.ch * TILE;
+    const gx = cur.rx * CW + p.x, gy = cur.ry * CH + p.y;
+    const rawX = gx - next.rx * CW, rawY = gy - next.ry * CH;
     // Clamped only where the neighbour is strictly the smaller room, so an
     // equal-sized pair — every transition in the game today — takes the raw
     // value through untouched and no existing replay can move.
@@ -14196,8 +14417,7 @@ class Game {
     const def = resolveTile(name, this.tide.levelAt(tx, ty, room));
     if (name === 'dDoorLocked') {
       if (useKey(this.progress, this.mapId)) {
-        room.setTile(tx, ty, 'dDoorOpen');
-        this.persistTile(tx, ty, 'dDoorOpen');
+        this.openDoorAt(tx, ty);
         this.audio.sfx('unlock');
         this.say('The lock falls away.');
       } else {
@@ -14208,8 +14428,7 @@ class Game {
     }
     if (name === 'dDoorBoss') {
       if (this.progress.bossKeys[this.mapId]) {
-        room.setTile(tx, ty, 'dDoorOpen');
-        this.persistTile(tx, ty, 'dDoorOpen');
+        this.openDoorAt(tx, ty);
         this.audio.sfx('unlock');
       } else {
         this.audio.sfx('deny');
@@ -14440,7 +14659,12 @@ class Game {
     if (d && d.essence != null) {
       this.frameLater(BOSS_ESSENCE_DELAY_FRAMES, () => {
         this.audio.jingle('bossClear');
-        spawnEntity(this, 'essence', 4, 3, { index: d.index });
+        // The middle of the arena: tile 4,3 in a Game Boy screen, 7,4 in an
+        // Oracle room. It was 4,3 everywhere, which in a 15x11 room is up in
+        // the north-west corner.
+        const ex = room.cw === 15 ? Math.floor(room.tw / 2) : 4;
+        const ey = room.cw === 15 ? 4 : 3;
+        spawnEntity(this, 'essence', ex, ey, { index: d.index });
       });
     }
     // The boss track was stopped, so nothing would resume once the jingle ends.
@@ -14495,10 +14719,7 @@ class Game {
     if (!reward) return;
     const room = this.room;
     if (reward.openDoors) {
-      for (const [tx, ty] of reward.openDoors) {
-        room.setTile(tx, ty, 'dDoorOpen');
-        this.persistTile(tx, ty, 'dDoorOpen');
-      }
+      for (const [tx, ty] of reward.openDoors) this.openDoorAt(tx, ty);
     }
     if (reward.tiles) {
       for (const [tx, ty, name] of reward.tiles) {
@@ -14781,6 +15002,19 @@ class Game {
     return true;
   }
 
+  /**
+   * THE END, held. The run is saved with `finishedGame` set — the flag the
+   * ending's last step writes — and the world stops: nothing summoned in the
+   * throne room gets another frame. A button after a short hold goes back to
+   * the title screen, where the save is waiting.
+   */
+  enterTheEnd() {
+    this.mode = 'theend';
+    this.endTime = 0;
+    this.dialogue.active = false;
+    this.save();
+  }
+
   startGaleWarp() {
     const spots = [{ name: 'Tidewatch Village', map: 'overworld', floor: 0, rx: 4, ry: 7, px: 72, py: 64 }];
     for (const m of MAPS.values()) {
@@ -14938,10 +15172,23 @@ class Game {
 
     switch (this.mode) {
       case 'title': this.title.update(); return;
+      case 'theend':
+        this.endTime++;
+        if (this.endTime > THE_END_HOLD_FRAMES
+          && (this.input.pressed('a') || this.input.pressed('start'))) {
+          this.mode = 'title';
+          this.title.reset();
+          this.audio.play('title');
+        }
+        return;
       case 'cutscene':
         this.dialogue.update();
         if (this.cutscene) {
           const done = this.cutscene.update();
+          if (done && this._theEnd) {
+            this._theEnd = false; this.cutscene = null; this.enterTheEnd();
+            return;
+          }
           if (done) {
             this.cutscene = null; this.mode = 'play'; this.updateMusic();
             const next = this._pendingCutscene; this._pendingCutscene = null;
@@ -15248,6 +15495,14 @@ class Game {
   draw() {
     const ctx = this.ctx;
     if (this.mode === 'title') { this.title.draw(ctx); return; }
+    if (this.mode === 'theend') {
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, SCREEN_W, SCREEN_H);
+      drawTextCentered(ctx, 'The Legend of Zelda', SCREEN_W / 2, 48, '#f8f8f8');
+      drawTextCentered(ctx, 'Oracle of Tides', SCREEN_W / 2, 60, '#f8f8f8');
+      drawTextCentered(ctx, 'THE END', SCREEN_W / 2, 84, '#f8d850');
+      return;
+    }
 
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, SCREEN_W, SCREEN_H);
@@ -15325,7 +15580,7 @@ class Game {
     if (this.player && this.player.lensT > 0) this.drawLensGhost(ctx, ox, oy);
     if (this.debug && this.tide.overrides.length) this.drawAnchorField(ctx, ox, oy);
     if (room.dark && !flag(this.progress, 'lantern')) this.drawDarkness(ctx, ox, oy);
-    if (this.itemShow) this.drawItemShow(ctx);
+    if (this.itemShow) this.drawItemShow(ctx, ox, oy);
   }
 
   /**
@@ -15437,14 +15692,18 @@ class Game {
     ctx.fillRect(0, HUD_H, VIEW_W, VIEW_H);
   }
 
-  drawItemShow(ctx) {
+  drawItemShow(ctx, ox, oy) {
     const p = this.player;
     if (!p) return;
     const s = this.itemShow;
+    // Through the scene's own offset, which carries the camera: in a room
+    // bigger than the screen the prize used to float wherever Link would have
+    // been had the view never scrolled.
+    const x = ox + p.x, y = oy + p.y - 16;
     // A trade item carries its own sprite and its own palette; an inventory
     // item is looked up. Both are held in the same place, over Link's head.
-    if (s.sprite) { sprites.draw(ctx, s.sprite, p.x, HUD_H + p.y - 16); return; }
-    sprites.draw(ctx, itemIcon(s.id, s.lv), p.x, HUD_H + p.y - 16,
+    if (s.sprite) { sprites.draw(ctx, s.sprite, x, y); return; }
+    sprites.draw(ctx, itemIcon(s.id, s.lv), x, y,
       { pal: ITEMS[s.id] && ITEMS[s.id].pal });
   }
 
@@ -17970,25 +18229,6 @@ const DUNGEON_THEME_ART = {
     1000101111010001
     1111111111111111`,
 
-  // x135 blue brick in courses — tiles in both axes — oracle-seasons-dungeon-backgrounds.png @ 242,203
-  brickWallBlue: `
-    3333333333333333
-    2100000000000001
-    2000010110111100
-    2000101101122110
-    2001011011222110
-    2010110112221110
-    2101101122211101
-    3333333333333333
-    3333333333333333
-    0000000121000000
-    1011110020000101
-    0112211020001011
-    1122211020010110
-    1222111020101101
-    2221110121011011
-    3333333333333333`,
-
   // x266 rose-bevelled block grid — oracle-seasons-dungeon-backgrounds.png @ 17,58
   coralWall: `
     2222222222222222
@@ -18217,6 +18457,538 @@ const DUNGEON_THEME_ART = {
     ...33211111233..
     .....3333333....`,
 
+  // ring corner, north-west — oracle-seasons-dungeon-backgrounds.png @ 2179,734
+  gRingTL: `
+    0000000000000000
+    0132111110011001
+    0333212222222222
+    0122222202200222
+    0112321110011000
+    0122232111111111
+    0122123212111111
+    0121112321211222
+    0122011233333332
+    0022011233323322
+    0022011233332222
+    0120111132333232
+    0120111132233323
+    0022011232233333
+    0022012132222333
+    0120111222323333`,
+
+  // ring run, north wall — oracle-seasons-dungeon-backgrounds.png @ 2195,734
+  gRingN: `
+    0000000000000000
+    1001100110011001
+    2222222222222222
+    0220022202200222
+    1001100010011000
+    1111111111111111
+    1211111112111111
+    2121122221211222
+    3333333333333333
+    2222222222222222
+    2232223222322232
+    3222232232222322
+    2323332323233323
+    3333323233333232
+    3333333333333333
+    3333333333333333`,
+
+  // ring corner, north-east — oracle-seasons-dungeon-backgrounds.png @ 2403,734
+  gRingTR: `
+    0000000000000000
+    1001100111112310
+    2222222222123330
+    2220022022222210
+    0001100111232110
+    1111111112322210
+    1111112123212210
+    2221121232111210
+    2333333321102210
+    2233233321102200
+    2222333321102200
+    2323332311110210
+    3233322311110210
+    3333322321102200
+    3332222312102200
+    3333232221110210`,
+
+  // ring run, west wall — oracle-seasons-dungeon-backgrounds.png @ 2179,750
+  gRingW: `
+    0122011232223233
+    0022011232322333
+    0022011232233233
+    0120111132223333
+    0120111132223333
+    0022011232322333
+    0022012132223333
+    0120111232232333
+    0122011232223233
+    0022011232322333
+    0022011232233233
+    0120111132223333
+    0120111132223333
+    0022011232322333
+    0022012132223333
+    0120111232232333`,
+
+  // ring run, east wall — oracle-seasons-dungeon-backgrounds.png @ 2403,750
+  gRingE: `
+    3323222321102210
+    3332232321102200
+    3323322321102200
+    3333222311110210
+    3333222311110210
+    3332232321102200
+    3333222312102200
+    3332322321110210
+    3323222321102210
+    3332232321102200
+    3323322321102200
+    3333222311110210
+    3333222311110210
+    3332232321102200
+    3333222312102200
+    3332322321110210`,
+
+  // ring corner, south-west — oracle-seasons-dungeon-backgrounds.png @ 2179,894
+  gRingBL: `
+    0120111222323333
+    0022012132222333
+    0022011232233333
+    0120111132233323
+    0120111132333232
+    0022011233332222
+    0022011233323322
+    0122011233333332
+    0121112321211222
+    0122123212111111
+    0122232111111111
+    0112321110011000
+    0122222202200222
+    0333212222222222
+    0132111110011001
+    0000000000000000`,
+
+  // ring run, south wall — oracle-seasons-dungeon-backgrounds.png @ 2195,894
+  gRingS: `
+    3333333333333333
+    3333333333333333
+    3333323233333232
+    2323332323233323
+    3222232232222322
+    2232223222322232
+    2222222222222222
+    3333333333333333
+    2121122221211222
+    1211111112111111
+    1111111111111111
+    1001100010011000
+    0220022202200222
+    2222222222222222
+    1001100110011001
+    0000000000000000`,
+
+  // ring corner, south-east — oracle-seasons-dungeon-backgrounds.png @ 2403,894
+  gRingBR: `
+    3333232221110210
+    3332222312102200
+    3333322321102200
+    3233322311110210
+    2323332311110210
+    2222333321102200
+    2233233321102200
+    2333333321102210
+    2221121232111210
+    1111112123212210
+    1111111112322210
+    0001100111232110
+    2220022022222210
+    2222222222123330
+    1001100111112310
+    0000000000000000`,
+
+  // north wall ends, doorway to its east — oracle-seasons-dungeon-backgrounds.png @ 2243,734
+  gJambNW: `
+    0012111232223233
+    0012111232322333
+    0112112232233233
+    1112011232223333
+    2220002232223333
+    1111000232322333
+    1212100032223333
+    2222220032232333
+    3333333301232333
+    2222222210123333
+    2232223221022233
+    3222232232202333
+    2323332322320233
+    3333323232332233
+    3333333333333323
+    3333333333333333`,
+
+  // north wall ends, doorway to its west — oracle-seasons-dungeon-backgrounds.png @ 2275,734
+  gJambNE: `
+    3323222321112100
+    3332232321112100
+    3323322322112110
+    3333222321102111
+    3333222322000222
+    3332232320001111
+    3333222300012121
+    3332322300222222
+    3332321033333333
+    3333210122222222
+    3322201223222322
+    3332022322322223
+    3320232232333232
+    3322332323233333
+    3233333333333333
+    3333333333333333`,
+
+  // south wall ends, doorway to its east — oracle-seasons-dungeon-backgrounds.png @ 1536,717
+  gJambSW: `
+    3333333333333333
+    3333333333333323
+    3333323232332233
+    2323332322320233
+    3222232232202333
+    2232223221022233
+    2222222210123333
+    3333333301232333
+    2222220032232333
+    1212100032223333
+    1111000232322333
+    2220002232223333
+    1112011232223333
+    0112112232233233
+    0012111232322333
+    0012111232223233`,
+
+  // south wall ends, doorway to its west — oracle-seasons-dungeon-backgrounds.png @ 1600,717
+  gJambSE: `
+    3333333333333333
+    3233333333333333
+    3322332323233333
+    3320232232333232
+    3332022322322223
+    3322201223222322
+    3333210122222222
+    3332321033333333
+    3332322300222222
+    3333222300012121
+    3332232320001111
+    3333222322000222
+    3333222321102111
+    3323322322112110
+    3332232321112100
+    3323222321112100`,
+
+  // east wall ends, doorway below it — oracle-seasons-dungeon-backgrounds.png @ 1680,637
+  gJambEN: `
+    3323222321112100
+    3332232321112100
+    3323322322112110
+    3333222321102111
+    3333222322000222
+    3332232320001111
+    3333222300012121
+    3332322300222222
+    3332321033333333
+    3333210122222222
+    3322201223222322
+    3332022322322223
+    3320232232333232
+    3322332323233333
+    3233333333333333
+    3333333333333333`,
+
+  // east wall ends, doorway above it — oracle-seasons-dungeon-backgrounds.png @ 1680,669
+  gJambES: `
+    3333333333333333
+    3233333333333333
+    3322332323233333
+    3320232232333232
+    3332022322322223
+    3322201223222322
+    3333210122222222
+    3332321033333333
+    3332322300222222
+    3333222300012121
+    3332232320001111
+    3333222322000222
+    3333222321102111
+    3323322322112110
+    3332232321112100
+    3323222321112100`,
+
+  // west wall ends, doorway below it (mirrored) — oracle-seasons-dungeon-backgrounds.png @ 1680,637
+  gJambWN: `
+    0012111232223233
+    0012111232322333
+    0112112232233233
+    1112011232223333
+    2220002232223333
+    1111000232322333
+    1212100032223333
+    2222220032232333
+    3333333301232333
+    2222222210123333
+    2232223221022233
+    3222232232202333
+    2323332322320233
+    3333323232332233
+    3333333333333323
+    3333333333333333`,
+
+  // west wall ends, doorway above it (mirrored) — oracle-seasons-dungeon-backgrounds.png @ 1680,669
+  gJambWS: `
+    3333333333333333
+    3333333333333323
+    3333323232332233
+    2323332322320233
+    3222232232202333
+    2232223221022233
+    2222222210123333
+    3333333301232333
+    2222220032232333
+    1212100032223333
+    1111000232322333
+    2220002232223333
+    1112011232223333
+    0112112232233233
+    0012111232322333
+    0012111232223233`,
+
+  // key door in a north wall — oracle-seasons-dungeon-backgrounds.png @ 2018,557
+  gKeyN: `
+    3000000000000003
+    3000000000000003
+    3000000000000003
+    3111111111111113
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3122220000222213
+    3122203333022213
+    3122203333022213
+    3122200330022213
+    3122220330222213
+    3122220330222213
+    3122220000222213
+    3333333333333333`,
+
+  // key door in a south wall — oracle-seasons-dungeon-backgrounds.png @ 2018,540
+  gKeyS: `
+    3333333333333333
+    3122220000222213
+    3122220330222213
+    3122220330222213
+    3122200330022213
+    3122203333022213
+    3122203333022213
+    3122220000222213
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3111111111111113
+    3000000000000003
+    3000000000000003
+    3000000000000003`,
+
+  // key door in an east wall — oracle-seasons-dungeon-backgrounds.png @ 2644,621
+  gKeyE: `
+    3333333333333333
+    3111111111111000
+    3222222222221000
+    3222222222221000
+    3222222222221000
+    3222000222221000
+    3000033022221000
+    3033333022221000
+    3033333022221000
+    3000033022221000
+    3222000222221000
+    3222222222221000
+    3222222222221000
+    3222222222221000
+    3111111111111000
+    3333333333333333`,
+
+  // key door in a west wall — oracle-seasons-dungeon-backgrounds.png @ 2661,621
+  gKeyW: `
+    3333333333333333
+    0001111111111113
+    0001222222222223
+    0001222222222223
+    0001222222222223
+    0001222220002223
+    0001222203300003
+    0001222203333303
+    0001222203333303
+    0001222203300003
+    0001222220002223
+    0001222222222223
+    0001222222222223
+    0001222222222223
+    0001111111111113
+    3333333333333333`,
+
+  // shutter in a north wall, teeth into the room — oracle-seasons-dungeon-backgrounds.png @ 1568,203
+  gShutN: `
+    3000000000000003
+    3000000000000003
+    3000000000000003
+    3111111111111113
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3122332222332213
+    3123003223003213
+    3130110330110313
+    3101111001111013
+    3111331111331113
+    3113333113333113
+    3333333333333333`,
+
+  // shutter in a south wall, teeth into the room — oracle-seasons-dungeon-backgrounds.png @ 2709,363
+  gShutS: `
+    3333333333333333
+    3113333113333113
+    3111331111331113
+    3101111001111013
+    3130110330110313
+    3123003223003213
+    3122332222332213
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3111111111111113
+    3000000000000003
+    3000000000000003
+    3000000000000003`,
+
+  // shutter in an east wall (turned +90) — oracle-seasons-dungeon-backgrounds.png @ 1568,203
+  gShutE: `
+    3333333333333333
+    3111111111111000
+    3110322222221000
+    3311032222221000
+    3331103222221000
+    3331103222221000
+    3311032222221000
+    3110322222221000
+    3110322222221000
+    3311032222221000
+    3331103222221000
+    3331103222221000
+    3311032222221000
+    3110322222221000
+    3111111111111000
+    3333333333333333`,
+
+  // shutter in a west wall (turned -90) — oracle-seasons-dungeon-backgrounds.png @ 1568,203
+  gShutW: `
+    3333333333333333
+    0001111111111113
+    0001222222230113
+    0001222222301133
+    0001222223011333
+    0001222223011333
+    0001222222301133
+    0001222222230113
+    0001222222230113
+    0001222222301133
+    0001222223011333
+    0001222223011333
+    0001222222301133
+    0001222222230113
+    0001111111111113
+    3333333333333333`,
+
+  // the blue scale-pattern floor — oracle-seasons-dungeon-backgrounds.png @ 2211,750
+  gFloor: `
+    0011111120010021
+    0111111212000210
+    1111112011222200
+    1111120011111200
+    1111120011111200
+    1122220011111120
+    1200021001111112
+    2001002100111111
+    1111110012001002
+    2111111001200021
+    0211111100222211
+    0021111110211111
+    1021111100211111
+    0022221102111111
+    0120002121111110
+    1200100211111100`,
+
+  // the scale floor with an inset slab — oracle-seasons-dungeon-backgrounds.png @ 2114,42
+  gFloorAlt: `
+    0000000000000000
+    0011111101111100
+    0110011101001110
+    0101111101111110
+    0111111000011110
+    0111110011001110
+    0111100111100000
+    0011001001100000
+    0000001011100110
+    0011101111001010
+    0100100110010110
+    0101110000101110
+    0111111001111110
+    0111111001111110
+    0011110000111100
+    0000000000000000`,
+
+  // the Seasons pot, on its own floor — oracle-seasons-dungeon-backgrounds.png @ 2195,750
+  gPot: `
+    ......33333.....
+    .....3000003....
+    ....300222003...
+    ...33023332033..
+    ..3230233320323.
+    ..3230033300323.
+    .322320000023223
+    .322232000232223
+    .322223333322223
+    .332220000022233
+    .323222000222323
+    .320332222233023
+    ..3000333330003.
+    ..3200000000023.
+    ...33200000233..
+    .....3333333....`,
+
+  // the raised magenta block — oracle-seasons-dungeon-backgrounds.png @ 2243,798
+  gBlock: `
+    2222222222222222
+    2001111111111112
+    2110111111111222
+    2111000000002222
+    2111011111102222
+    2111010000102222
+    2111010000102222
+    2111010000102222
+    2111010000102222
+    2111011111102222
+    2111000000002222
+    2111222222212222
+    2112222222221222
+    2122222222222122
+    2222222222222212
+    2222222222222222`,
+
 };
 
 // The four colours each tile has on the cartridge, lightest first. These ARE
@@ -18231,7 +19003,6 @@ const DUNGEON_THEME_PALETTES = {
   forgeFloor: ['#f7bb4d', '#b76b33', '#b76b33', '#b76b33'],
   panelFloor: ['#f2b74d', '#dd9342', '#dd9342', '#dd9342'],
   gildFloor: ['#b0a030', '#585000', '#585000', '#585000'],
-  brickWallBlue: ['#d2edf7', '#40b9dd', '#29749d', '#000000'],
   coralWall: ['#fbd1fb', '#b17399', '#000000', '#000000'],
   knurlWall: ['#f8f888', '#90a028', '#484028', '#000000'],
   emberWall: ['#f2b74d', '#dd9342', '#8a2e21', '#000000'],
@@ -18244,6 +19015,34 @@ const DUNGEON_THEME_PALETTES = {
   vaultBlock: ['#78a0b0', '#283060', '#000000', '#000000'],
   lionHead: ['#fdeec7', '#dbb969', '#856b2b', '#000000'],
   urn: ['#abcfe6', '#f7bb4d', '#b76b33', '#000000'],
+  gRingTL: ['#98e8f8', '#7090b0', '#485880', '#000000'],
+  gRingN: ['#98e8f8', '#7090b0', '#485880', '#000000'],
+  gRingTR: ['#98e8f8', '#7090b0', '#485880', '#000000'],
+  gRingW: ['#98e8f8', '#7090b0', '#485880', '#000000'],
+  gRingE: ['#98e8f8', '#7090b0', '#485880', '#000000'],
+  gRingBL: ['#98e8f8', '#7090b0', '#485880', '#000000'],
+  gRingS: ['#98e8f8', '#7090b0', '#485880', '#000000'],
+  gRingBR: ['#98e8f8', '#7090b0', '#485880', '#000000'],
+  gJambNW: ['#98e8f8', '#7090b0', '#485880', '#000000'],
+  gJambNE: ['#98e8f8', '#7090b0', '#485880', '#000000'],
+  gJambSW: ['#98e8f8', '#7090b0', '#485880', '#000000'],
+  gJambSE: ['#98e8f8', '#7090b0', '#485880', '#000000'],
+  gJambEN: ['#98e8f8', '#7090b0', '#485880', '#000000'],
+  gJambES: ['#98e8f8', '#7090b0', '#485880', '#000000'],
+  gJambWN: ['#98e8f8', '#7090b0', '#485880', '#000000'],
+  gJambWS: ['#98e8f8', '#7090b0', '#485880', '#000000'],
+  gKeyN: ['#f8f888', '#b0a030', '#585000', '#000000'],
+  gKeyS: ['#f8f888', '#b0a030', '#585000', '#000000'],
+  gKeyE: ['#f8f888', '#b0a030', '#585000', '#000000'],
+  gKeyW: ['#f8f888', '#b0a030', '#585000', '#000000'],
+  gShutN: ['#f8f888', '#b0a030', '#585000', '#000000'],
+  gShutS: ['#f8f888', '#b0a030', '#585000', '#000000'],
+  gShutE: ['#f8f888', '#b0a030', '#585000', '#000000'],
+  gShutW: ['#f8f888', '#b0a030', '#585000', '#000000'],
+  gFloor: ['#7090c0', '#5070a0', '#305080', '#305080'],
+  gFloorAlt: ['#5070a0', '#305080', '#305080', '#305080'],
+  gPot: ['#f8a800', '#7090c0', '#884800', '#000000'],
+  gBlock: ['#f878f8', '#802868', '#000000', '#000000'],
 };
 
 function installDungeonThemePalettes() {
@@ -19759,6 +20558,9 @@ const HAND_ART = {
 // the pixels are replaced; every tile keeps the palette its definition below
 // binds, so the palette-swap variants and the region colour schemes are
 // untouched. Regenerate with `python3 tools/rip-terrain.py`.
+// The dungeon themes, by the suffix every one of their tiles carries.
+const THEME_NAMES = ['Grotto', 'Coral', 'Bog', 'Cistern', 'Wood', 'Salt', 'Palace', 'Abyss'];
+
 const ART = { ...HAND_ART, ...TERRAIN_ART, ...DUNGEON_THEME_ART, ...TOWN_ART };
 
 // --------------------------------------------------------------------------
@@ -20686,13 +21488,60 @@ function installCoreTiles() {
     // extracted one, that is a deliberate swap into a colour the game already
     // uses, so a theme never invents a hue the rest of the world does not have.
 
-    // d1 Tidewash Grotto — pale sea-cave flagstone, hatched walls.
-    dFloorGrotto: { art: ART.paleFloor, pal: 'paleFloor' },
-    dFloorGrottoAlt: { art: ART.paleFloor, pal: 'stonef' },
-    dWallGrotto: { art: ART.brickWallBlue, pal: 'brickWallBlue', flags: F.SOLID },
-    dWallGrottoX: { art: ART.dWallCracked, pal: 'brickWallBlue', flags: F.SOLID | F.BOMBABLE },
-    dBlockGrotto: { art: ART.vaultBlock, pal: 'vaultBlock', flags: F.SOLID },
+    // d1 Tidewash Grotto — ONE SEASONS DUNGEON'S KIT, whole. Floor, wall
+    // ring, block and pot are all cut from the same blue dungeon on the
+    // backgrounds sheet (rip-dungeon-themes.py, `g*`), so the Grotto is built
+    // the way a Seasons dungeon is: one room's worth of masonry, used
+    // everywhere. The ring only draws in a room built at Oracle size; see
+    // `Room.ringArt`. The alt floor — the patches the tide leaves damp —
+    // is that dungeon's own second floor, the inset slab. Grey flagstone read
+    // as a different dungeon's floor, and the game's `deep` blues read as a
+    // pool you could not stand in.
+    dFloorGrotto: { art: ART.gFloor, pal: 'gFloor' },
+    dFloorGrottoAlt: { art: ART.gFloorAlt, pal: 'gFloorAlt' },
+    dWallGrotto: { art: ART.gRingN, pal: 'gRingN', flags: F.SOLID, ring: {
+      TL: 'gRingTL', TR: 'gRingTR', BL: 'gRingBL', BR: 'gRingBR',
+      N: 'gRingN', S: 'gRingS', W: 'gRingW', E: 'gRingE',
+      jNW: 'gJambNW', jNE: 'gJambNE', jSW: 'gJambSW', jSE: 'gJambSE',
+      jWN: 'gJambWN', jWS: 'gJambWS', jEN: 'gJambEN', jES: 'gJambES',
+      // A shut door in the ring draws the Seasons door for its wall. The boss
+      // door keeps its own art: no Seasons sheet here has one to cut.
+      lockN: 'gKeyN', lockS: 'gKeyS', lockE: 'gKeyE', lockW: 'gKeyW',
+      shutN: 'gShutN', shutS: 'gShutS', shutE: 'gShutE', shutW: 'gShutW',
+    } },
+    dWallGrottoX: { art: ART.dWallCracked, pal: 'gRingN', flags: F.SOLID | F.BOMBABLE },
+    dBlockGrotto: { art: ART.gBlock, pal: 'gBlock', flags: F.SOLID },
     dUrnGrotto: { art: ART.urn, pal: 'urn', flags: F.SOLID, underArt: 'dFloorGrotto' },
+    // THE WAY OUT OF AN ORACLE ROOM is a gap in the wall ring you walk down
+    // through, the way the source leaves every dungeon: floor, carrying the
+    // warp. The ring draws its jambs either side of it (`Room.ringArt`).
+    dExitGrotto: { art: ART.gFloor, pal: 'gFloor', flags: F.WARP },
+    // The ring's pieces, as tiles, so `palFor` finds each one's own palette.
+    // Never placed by a legend: `Room.ringArt` names them.
+    gRingTL: { art: ART.gRingTL, pal: 'gRingTL', flags: F.SOLID },
+    gRingTR: { art: ART.gRingTR, pal: 'gRingTR', flags: F.SOLID },
+    gRingBL: { art: ART.gRingBL, pal: 'gRingBL', flags: F.SOLID },
+    gRingBR: { art: ART.gRingBR, pal: 'gRingBR', flags: F.SOLID },
+    gRingN: { art: ART.gRingN, pal: 'gRingN', flags: F.SOLID },
+    gRingS: { art: ART.gRingS, pal: 'gRingS', flags: F.SOLID },
+    gRingW: { art: ART.gRingW, pal: 'gRingW', flags: F.SOLID },
+    gRingE: { art: ART.gRingE, pal: 'gRingE', flags: F.SOLID },
+    gJambNW: { art: ART.gJambNW, pal: 'gJambNW', flags: F.SOLID },
+    gJambNE: { art: ART.gJambNE, pal: 'gJambNE', flags: F.SOLID },
+    gJambSW: { art: ART.gJambSW, pal: 'gJambSW', flags: F.SOLID },
+    gJambSE: { art: ART.gJambSE, pal: 'gJambSE', flags: F.SOLID },
+    gJambWN: { art: ART.gJambWN, pal: 'gJambWN', flags: F.SOLID },
+    gJambWS: { art: ART.gJambWS, pal: 'gJambWS', flags: F.SOLID },
+    gJambEN: { art: ART.gJambEN, pal: 'gJambEN', flags: F.SOLID },
+    gJambES: { art: ART.gJambES, pal: 'gJambES', flags: F.SOLID },
+    gKeyN: { art: ART.gKeyN, pal: 'gKeyN', flags: F.SOLID | F.DOOR },
+    gKeyS: { art: ART.gKeyS, pal: 'gKeyS', flags: F.SOLID | F.DOOR },
+    gKeyE: { art: ART.gKeyE, pal: 'gKeyE', flags: F.SOLID | F.DOOR },
+    gKeyW: { art: ART.gKeyW, pal: 'gKeyW', flags: F.SOLID | F.DOOR },
+    gShutN: { art: ART.gShutN, pal: 'gShutN', flags: F.SOLID | F.DOOR },
+    gShutS: { art: ART.gShutS, pal: 'gShutS', flags: F.SOLID | F.DOOR },
+    gShutE: { art: ART.gShutE, pal: 'gShutE', flags: F.SOLID | F.DOOR },
+    gShutW: { art: ART.gShutW, pal: 'gShutW', flags: F.SOLID | F.DOOR },
 
     // d2 Coral Spire — blue flagstone under coral-pink masonry.
     dFloorCoral: { art: ART.reefFloor, pal: 'reefFloor' },
@@ -20926,6 +21775,18 @@ function installCoreTiles() {
     // answer wants to be a shade of blue, reach for a whole tile instead.
     dLintel: { tide: ['dWallAbyss', 'dWallAbyss', 'dWaterD'] },
   };
+  // A POT PER THEME. The shared `pot` names `dFloor` as the ground it stands
+  // on and the ground it leaves behind, so in every themed dungeon a pot drew
+  // a square of the generic brick floor under itself and left one behind when
+  // it was lifted — 21 rooms across six dungeons, invisible to every checker
+  // because the flags were right. Each theme's `p` is its own pot now, on its
+  // own floor. The Grotto's is the Seasons pot out of its own kit.
+  for (const T of THEME_NAMES) {
+    TILE_DEFS['dPot' + T] = {
+      art: T === 'Grotto' ? ART.gPot : ART.pot, pal: T === 'Grotto' ? 'gPot' : 'pot',
+      flags: F.SOLID | F.ROCK, underArt: 'dFloor' + T, liftSprite: 'o_pot',
+    };
+  }
   installGroundFringes(TILE_DEFS);
   registerTiles(TILE_DEFS);
   // After the tiledefs, so a block cell can never be shadowed by one of them.
@@ -20976,6 +21837,7 @@ function installCoreTiles() {
     rock: { lift: 'grass', drop: 'common' },
     rockSand: { lift: 'sand', drop: 'common' },
     pot: { lift: 'dFloor', drop: 'common' },
+    ...Object.fromEntries(THEME_NAMES.map(T => ['dPot' + T, { lift: 'dFloor' + T, drop: 'common' }])),
     sign: { cut: 'sign' },
     dWallCracked: { bomb: 'dFloor', fx: 'boom', persist: true, sfx: 'break' },
     cliffCracked: { bomb: 'sand', fx: 'boom', persist: true, sfx: 'break' },
@@ -21290,11 +22152,16 @@ function installLegends() {
   //
   // Tiles and palettes come from tools/rip-dungeon-themes.py, off the Seasons
   // dungeon map. See src/data/tiles-dungeon-themes.js.
+  // `p` is the theme's own pot, named after its floor (`dPotGrotto` stands
+  // on `dFloorGrotto`); see the pot loop in tiles-core.js.
   const theme = (name, floor, alt, wall, cracked, block, urn) => registerLegend(name, {
     '.': floor, ',': alt, '#': wall, 'X': cracked, '=': block, 'U': urn,
+    'p': floor.replace('dFloor', 'dPot'),
   }, 'dungeon');
 
   theme('dungeonGrotto',  'dFloorGrotto',  'dFloorGrottoAlt',  'dWallGrotto',  'dWallGrottoX',  'dBlockGrotto',  'dUrnGrotto');
+  // The Grotto is built at Oracle size, and its way out is a gap in the ring.
+  registerLegend('dungeonGrotto', { 'C': 'dExitGrotto' }, 'dungeonGrotto');
   theme('dungeonCoral',   'dFloorCoral',   'dFloorCoralAlt',   'dWallCoral',   'dWallCoralX',   'dBlockCoral',   'dUrnCoral');
   theme('dungeonBog',     'dFloorBog',     'dFloorBogAlt',     'dWallBog',     'dWallBogX',     'dBlockBog',     'dUrnBog');
   // The Coral Spire needs two tiles no other dungeon has, for the Reefseed
@@ -23596,10 +24463,10 @@ const rooms = {
       'TToggggoTT',
     ],
     warps: [
-      { x: 4, y: 2, to: { map: 'd1', floor: 0, rx: 3, ry: 7, px: 72, py: 96 } },
+      { x: 4, y: 2, to: { map: 'd1', floor: 0, rx: 3, ry: 7, px: 112, py: 144 } },
       // Both halves of the arch enter. A two-tile-wide door whose
       // right half is scenery is a door the player bumps into.
-      { x: 5, y: 2, to: { map: 'd1', floor: 0, rx: 3, ry: 7, px: 72, py: 96 } },
+      { x: 5, y: 2, to: { map: 'd1', floor: 0, rx: 3, ry: 7, px: 112, py: 144 } },
     ],
     entities: [
       ['sign', 2, 3, { text: 'TIDEWASH GROTTO\nDrain it, then walk it.' }],
@@ -26320,8 +27187,17 @@ function installBosses() {
   // has to come down to attack, and while it is buried in the floor the eye is
   // exposed — that window is the only way in. Draining the grotto (LOW tide)
   // dries the shell out and holds the window open twice as long.
+  // THE FIRST BOSS IN THE GAME, AND IT WAS A COIN FLIP. Measured in its
+  // Oracle-size arena from the route's own doorway on a full sixteen, it won
+  // seven seeds in thirteen and never finished above two hearts, and five of
+  // every six hits it landed were the slam's rock spray. The spray's rocks
+  // and the last phase's bubbles now take a quarter heart, not a half, and a
+  // touch of the claw three quarters, not a whole (S137). NOT the slam's
+  // rhythm: the
+  // slam is also what opens the eye, and slowing it was measured and lost
+  // thirteen seeds in thirteen — fewer windows is a longer fight.
   defineBoss('gohmaraq', {
-    hp: 24, damage: 4, pal: 'enemyr', speed: 0.55, rate: 9,
+    hp: 24, damage: 3, pal: 'enemyr', speed: 0.55, rate: 9,
     w: 32, h: 32, hb: { x: 3, y: 10, w: 26, h: 20 },
     frames: ['boss_gohmaraq_0', 'boss_gohmaraq_1', 'boss_gohmaraq_2'],
     hurtFrame: 'boss_gohmaraq_hurt',
@@ -26354,7 +27230,7 @@ function installBosses() {
         patrol(e, g, { axis: 'x', speed: 1.0 });
         if (timer(e, 'slam', 105)) gohmaraqSlam(e, g, 5, 70);
         if (timer(e, 'spray', 210)) {
-          shootRing(e, g, 8, { sprite: 'shot_bubble', pal: 'water', speed: 1.2, damage: 2 });
+          shootRing(e, g, 8, { sprite: 'shot_bubble', pal: 'water', speed: 1.2, damage: 1 });
         }
       } },
     ],
@@ -26366,7 +27242,7 @@ function installBosses() {
     windUp(e, g, 22, (e2, g2) => {
       g2.shake(SHAKE_BOSS_SLAM, SHAKE_BOSS_SLAM_FRAMES);
       g2.audio.sfx('explode');
-      spread(e2, g2, shots, 70, { sprite: 'shot_rock', speed: 1.5, damage: 2 });
+      spread(e2, g2, shots, 70, { sprite: 'shot_rock', speed: 1.5, damage: 1 });
       open(e2, g2, g2.tide.level === LOW ? openFor * 2 : openFor);
     });
   }
@@ -27220,7 +28096,13 @@ function installBosses() {
       { above: 0.50, ai(e, g) {
         runPending(e, g);
         patrol(e, g, { axis: 'x', speed: g.tide.level === LOW ? 1.0 : 0.7 });
-        if (timer(e, 'snip', 130)) {
+        // SLOWER THAN THE BOSS IT REHEARSES. It used to throw 3 rocks every
+        // 130 frames and 5 every 100 — faster at every phase than Gohmaraq
+        // (170/130/105), on half the health, no shell, earlier in the game,
+        // so the first real fight in the game was the hardest thing in its
+        // dungeon: measured in tools/measure-boss-combat.mjs it killed the
+        // actor every time, from the door and from the middle (S130).
+        if (timer(e, 'snip', 190)) {
           windUp(e, g, 16, (e2, g2) => spread(e2, g2, 3, 50,
             { sprite: 'shot_rock', speed: 1.5, damage: 2 }));
         }
@@ -27229,7 +28111,7 @@ function installBosses() {
         runPending(e, g);
         charge(e, g, { speed: 2.0, tell: 16, range: 120, shake: true, tol: 14,
           idle: (e2, g2) => patrol(e2, g2, { axis: 'x', speed: g2.tide.level === LOW ? 1.2 : 0.9 }) });
-        if (timer(e, 'snip', 100)) {
+        if (timer(e, 'snip', 150)) {
           windUp(e, g, 14, (e2, g2) => spread(e2, g2, 5, 70,
             { sprite: 'shot_rock', speed: 1.6, damage: 2 }));
         }
@@ -27502,7 +28384,11 @@ __define("data/dungeons-a.js", function (__exports, __require) {
 //
 // Locked doors sit inside rooms rather than on the seam between two, because
 // the engine places an arriving player just past the room edge: a locked tile
-// on a seam would drop them inside solid stone from the far side.
+// on a seam would drop them inside solid stone from the far side. THE ONE
+// EXCEPTION IS A DUNGEON BUILT AT ORACLE SIZE (`cell: [15, 11]`), where a door
+// is a gap in the wall ring and a key door is one door seen from both rooms:
+// the tile either side of the seam opens together (`Game.openDoorAt`), so the
+// far side is never stone.
 //
 // A PUSH BLOCK MOVES EXACTLY ONE TILE, EVER. `PushBlock` takes `once: true` by
 // default and sets `moved` when its single slide lands, so a block placed two
@@ -27590,10 +28476,15 @@ function installDungeonsA() {
     kind: 'dungeon',
     name: 'Tidewash Grotto',
     w: 8, h: 8, floors: 1,
+    // AN ORACLE DUNGEON. Every room is 15x11 with a one-tile wall ring and the
+    // camera scrolls inside it, the way every dungeon room in Seasons and Ages
+    // is built; see `cellTiles` in world/room.js. Doors are one tile wide and
+    // sit in the ring, and a key door is ONE door seen from two rooms — the
+    // two `L`s either side of a seam open together (`Game.openDoorAt`).
+    cell: [15, 11],
     legend: 'dungeonGrotto',
     music: 'dungeon',
     tint: 'cave',
-    scroll: false,
     dungeon: {
       index: 1,
       item: 'anchor', itemLevel: 1,
@@ -27608,103 +28499,105 @@ function installDungeonsA() {
       '0,3,7': {
         name: 'Grotto Mouth',
         map: [
-          '####..####',
-          '#........#',
-          '#.p....p.#',
-          '#........#',
-          '#..1..1..#',
-          '#..1..1..#',
-          '#........#',
-          '####CC####',
+          '#######.#######',
+          '#.............#',
+          '#.p.........p.#',
+          '#.............#',
+          '#...11...11...#',
+          '#...11...11...#',
+          '#.............#',
+          '#..U.......U..#',
+          '#.............#',
+          '#.............#',
+          '#######C#######',
         ],
         warps: [
-          // BOTH HALVES WARP. A two-tile arch whose right half is
-          // scenery is a door the player bumps into — the same rule
-          // the dungeon portals outside have carried since they landed.
-          { x: 4, y: 7, to: { map: 'overworld', floor: 0, rx: 8, ry: 8, px: 64, py: 32, dir: 'down' } },
-          { x: 5, y: 7, to: { map: 'overworld', floor: 0, rx: 8, ry: 8, px: 64, py: 32, dir: 'down' } },
+          { x: 7, y: 10, to: { map: 'overworld', floor: 0, rx: 8, ry: 8, px: 64, py: 32, dir: 'down' } },
         ],
         readable: [
-          [2, 3, 'Carved by the door: "The sea keeps this floor. Take it back."'],
+          [3, 7, 'Carved by the door: "The sea keeps this floor. Take it back."'],
         ],
       },
       '0,3,6': {
         name: 'The Drinking Floor',
-        // The first lesson, and it is one press long: the whole middle of the
-        // room is well, four rows of it, so there is no walking round and no
-        // hopping it either. Sound the conch to LOW and the wells are ankle
-        // deep. Nothing here needs anything the player does not already have.
+        // The first lesson, and it is one press long: five rows of well from
+        // wall to wall, too wide to hop and no way round. Sound the conch to
+        // LOW and the wells are ankle deep. The west door opens straight into
+        // the wells, on purpose — the Bone Cell is on the far side of the
+        // same lesson.
         map: [
-          '####..####',
-          '#........#',
-          '#33333333#',
-          '.33333333#',
-          '.33333333#',
-          '#33333333#',
-          '#........#',
-          '####..####',
+          '#######.#######',
+          '#.............#',
+          '#.............#',
+          '#3333333333333#',
+          '#3333333333333#',
+          '.3333333333333#',
+          '#3333333333333#',
+          '#3333333333333#',
+          '#.............#',
+          '#............U#',
+          '#######.#######',
         ],
-        // Drop odds bumped from the roster's default `common` to `good` on all
-        // three — see FEEL-SPEC.md's health-economy instrumentation entry. This
-        // is the first fight in the game, and the playthrough harness measured
-        // it costing 6 quarter-hearts (1.5 of the 3 hearts a new game starts
-        // with) with only `common`'s 16% heart chance to answer it — the
-        // single worst spike the instrumented run found. The room itself is
-        // unchanged; only what these three specific enemies drop.
         entities: [
-          ['crab', 2, 1, { drops: 'good' }],
-          ['crab', 6, 6, { drops: 'good' }],
-          ['keese', 4, 1, { drops: 'good' }],
+          ['crab', 3, 1, { drops: 'good' }],
+          ['crab', 11, 9, { drops: 'good' }],
+          ['keese', 7, 2, { drops: 'good' }],
         ],
         readable: [
-          [7, 6, 'A rusted plate: "Shut the sluice, and the grotto drinks."'],
+          [13, 9, 'A rusted plate: "Shut the sluice, and the grotto drinks."'],
         ],
       },
       '0,2,6': {
         name: 'Bone Cell',
         map: [
-          '##########',
-          '#........#',
-          '#..2222..#',
-          '#..2222...',
-          '#..2222...',
-          '#..2222..#',
-          '#........#',
-          '##########',
+          '###############',
+          '#.............#',
+          '#.............#',
+          '#....22222....#',
+          '#....22222....#',
+          '#....22222.....',
+          '#....22222....#',
+          '#....22222....#',
+          '#.............#',
+          '#.U...........#',
+          '###############',
         ],
         entities: [
-          ['pickup', 4, 3, { kind: 'blank' }],
-          ['keese', 2, 1],
+          ['pickup', 7, 5, { kind: 'blank' }],
+          ['keese', 3, 2],
         ],
         readable: [
-          [7, 1, 'Scratched deep: "The carver in Tidewatch wants bone, not gold."'],
+          [2, 9, 'Scratched deep: "The carver in Tidewatch wants bone, not gold."'],
         ],
       },
       '0,3,5': {
         name: 'Sunken Hall',
         map: [
-          '####..####',
-          '#..q..q..#',
-          '#........#',
-          '..11..11..',
-          '..11..11..',
-          '#........#',
-          '#..q..q..#',
-          '####..####',
+          '#######.#######',
+          '#..q.......q..#',
+          '#.............#',
+          '#.............#',
+          '#...11...11...#',
+          '....11...11....',
+          '#...11...11...#',
+          '#.............#',
+          '#.............#',
+          '#..q.......q..#',
+          '#######.#######',
         ],
         entities: [
-          ['zol', 4, 2],
-          ['crab', 2, 5],
-          ['switch', 1, 2],
-          ['switch', 8, 2],
-          ['block', 1, 3],
-          ['block', 8, 3],
+          ['zol', 7, 3],
+          ['crab', 3, 7],
+          ['switch', 2, 3],
+          ['switch', 12, 3],
+          ['block', 2, 4],
+          ['block', 12, 4],
         ],
         puzzle: {
           switches: 'all',
           flag: 'd1_035_puzzle',
           reward: {
-            spawn: [['pickup', 4, 3, { kind: 'fairy' }]],
+            spawn: [['pickup', 7, 6, { kind: 'fairy' }]],
             say: 'A light comes up out of the water.',
           },
         },
@@ -27712,89 +28605,96 @@ function installDungeonsA() {
       '0,2,5': {
         name: 'Map Alcove',
         map: [
-          '##########',
-          '##########',
-          '##......##',
-          '##.....2..',
-          '##.....2..',
-          '##......##',
-          '##########',
-          '##########',
+          '###############',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '#......=......#',
+          '#.....=.....22.',
+          '#......=......#',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '###############',
         ],
         entities: [
-          ['pickup', 4, 3, { kind: 'dungeonMap' }],
-          ['keese', 3, 2],
+          ['pickup', 7, 5, { kind: 'dungeonMap' }],
+          ['keese', 4, 3],
         ],
       },
       '0,4,5': {
         name: 'Chartstone Alcove',
         map: [
-          '##########',
-          '##########',
-          '##......##',
-          '.........#',
-          '.........#',
-          '##......##',
-          '##########',
-          '##########',
+          '###############',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '#.............#',
+          '..............#',
+          '#.............#',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '###############',
         ],
         entities: [
-          ['chest', 5, 3, { pickup: 'chartstone' }],
-          ['keese', 7, 4],
+          ['chest', 7, 5, { pickup: 'chartstone' }],
+          ['keese', 10, 6],
         ],
       },
       '0,3,4': {
         name: 'Tide Gallery',
+        // The dungeon's crossroads — every route in and out of the Crab Pit,
+        // the Switch Room and the stair passes through it, so a real run meets
+        // these two several times over, and they drop `good` for that reason
+        // (FEEL-SPEC.md's health-economy entry). The north door is the first
+        // key door in the game.
         map: [
-          '####..####',
-          '#........#',
-          '####L#####',
-          '..........',
-          '..........',
-          '#.331133.#',
-          '#.33..33.#',
-          '####..####',
+          '#######L#######',
+          '#.............#',
+          '#.............#',
+          '#..33.....33..#',
+          '#..33.....33..#',
+          '...............',
+          '#..33.....33..#',
+          '#..33.....33..#',
+          '#.....111.....#',
+          '#.....1.1.....#',
+          '#######.#######',
         ],
-        // This is the dungeon's crossroads — every route in and out of the
-        // Crab Pit, the Switch Room and the Locked Stair passes through it, so
-        // a real run (and the instrumented playthrough) meets these two
-        // several times over. The instrumented run took contact damage here
-        // on every pass and never once found a heal in it, six quarter-hearts
-        // total across the run with nothing to answer it — see FEEL-SPEC.md.
-        // Bumped from `common` to `good`, same reasoning as the Drinking
-        // Floor's.
         entities: [
-          ['tektite', 4, 3, { drops: 'good' }],
-          ['crab', 2, 4, { drops: 'good' }],
+          ['tektite', 7, 3, { drops: 'good' }],
+          ['crab', 3, 5, { drops: 'good' }],
         ],
       },
       '0,2,4': {
         name: 'Crab Pit',
         map: [
-          '##########',
-          '##########',
-          '##......##',
-          '##.1111...',
-          '##.1111...',
-          '##......##',
-          '##########',
-          '##########',
+          '###############',
+          '#.............#',
+          '#.............#',
+          '#...1111111...#',
+          '#...1111111...#',
+          '#...1111111....',
+          '#...1111111...#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '###############',
         ],
         entities: [
-          ['crab', 3, 2],
-          ['crab', 6, 4],
-          ['crab', 4, 3],
+          ['crab', 4, 2],
+          ['crab', 10, 7],
+          ['crab', 7, 4],
         ],
         puzzle: {
           enemies: true,
           flag: 'd1_crabpit',
           reward: {
-            // (4,3), not (4,2): a dropped pickup pops about five pixels up and
-            // never comes back down, so it comes to rest straddling the tile
-            // ABOVE the one it was spawned on. Spawned on the top row of the
-            // basin it would settle against the wall above and be a Small Key
-            // the player can only just touch. See docs/HANDOFF.md.
-            spawn: [['pickup', 4, 3, { kind: 'key' }]],
+            // A dropped pickup pops about five pixels up and comes to rest
+            // straddling the tile ABOVE the one it was spawned on, so it is
+            // spawned a row low. See docs/HANDOFF.md.
+            spawn: [['pickup', 7, 6, { kind: 'key' }]],
             say: 'Something clatters onto the wet stone.',
           },
         },
@@ -27802,39 +28702,33 @@ function installDungeonsA() {
       '0,4,4': {
         name: 'Switch Room',
         map: [
-          '##########',
-          '##########',
-          '##......##',
-          '...=..=.##',
-          '........##',
-          '##......##',
-          '##########',
-          '##########',
+          '###############',
+          '#.............#',
+          '#..=.=...=.=..#',
+          '#..=.=...=.=..#',
+          '#.............#',
+          '..............#',
+          '#.............#',
+          '#...=.....=...#',
+          '#.............#',
+          '#.............#',
+          '###############',
         ],
         entities: [
-          ['switch', 2, 2],
-          ['switch', 7, 2],
-          ['block', 2, 3],
-          ['block', 7, 3],
+          ['switch', 4, 3],
+          ['switch', 10, 3],
+          ['block', 4, 4],
+          ['block', 10, 4],
         ],
         puzzle: {
           switches: 'all',
           flag: 'd1_switches',
-          // The heart alongside the key is a deliberate, GUARANTEED heal, not
-          // a drop-table roll — see FEEL-SPEC.md's health-economy entry. The
-          // instrumented playthrough found this is the last room before a
-          // long stretch with no heal source of any kind (the Tide Gallery's
-          // third pass, the Locked Stair's fight, and the walk to the
-          // Sluicegate), and a probabilistic drop is not provable against a
-          // single deterministic seed the way a fixed placement is: raising
-          // `common` to `good` on the rooms upstream of here still depends on
-          // the room's own RNG stream actually rolling a heart, and on this
-          // seed the pass that mattered most did not. This is the one heal in
-          // the whole dungeon that a run can rely on rather than hope for.
+          // The heart alongside the key is a deliberate, GUARANTEED heal —
+          // see FEEL-SPEC.md's health-economy entry.
           reward: {
             spawn: [
-              ['pickup', 4, 4, { kind: 'key' }],
-              ['pickup', 5, 4, { kind: 'heart' }],
+              ['pickup', 7, 7, { kind: 'key' }],
+              ['pickup', 8, 7, { kind: 'heart' }],
             ],
             say: 'A catch releases somewhere below.',
           },
@@ -27842,517 +28736,395 @@ function installDungeonsA() {
       },
       '0,3,3': {
         name: 'The Locked Stair',
+        // Both return staircases come up here, in the south-east corner: the
+        // east wing's from the Two Gauges and the west wing's from the Boss
+        // Key vault. They land on floor rather than on a stair, because both
+        // are one-way — see the note at the head of this dungeon.
         map: [
-          '####..####',
-          '#........#',
-          '####L#####',
-          '.........#',
-          '.........#',
-          '#..q..q..#',
-          '#..,,,,..#',
-          '####..####',
+          '#######L#######',
+          '#.............#',
+          '#..q.......q..#',
+          '#.............#',
+          '#.............#',
+          '..............#',
+          '#.............#',
+          '#..q..,,,..q..#',
+          '#.....,,,.....#',
+          '#.............#',
+          '#######L#######',
         ],
-        // The last fight before the Anchor, and the instrumented run reached
-        // it on a single heart with nothing behind it: past here there is no
-        // combat and no heal until the Anchor's own gates, which need a
-        // placement verb this project's playthrough actor does not have yet
-        // (see playthrough-route.mjs's GOAL). Bumped from `common` to `good`
-        // as the last chance the dungeon gets to hand back some margin before
-        // that stretch — see FEEL-SPEC.md.
         entities: [
-          ['zol', 2, 4, { drops: 'good' }],
-          // 6,4 rather than the 6,6 check-placement.mjs offered. Both are legal floor;
-          // 6,6 is behind the post row, and this room's encounter is TWO ZOLS IN THE
-          // OPEN — put one behind the posts and the fight becomes a chase around
-          // furniture. The checker's suggestion is a starting point and says so.
-          ['zol', 6, 4, { drops: 'good' }],
+          ['zol', 4, 4, { drops: 'good' }],
+          ['zol', 10, 4, { drops: 'good' }],
         ],
       },
       '0,2,3': {
         name: 'Weeping Wall',
-        // The first charm in the world that is not shop stock. Split Fang is a
-        // MID charm on purpose: one essence in, the MID case is the only one
-        // the scrimshander has cut, so a LOW or HIGH charm placed here would be
-        // a reward the player could not switch on for two more dungeons. See
-        // docs/NEXT-SESSION.md — charm PLACEMENT is a P8 job and this is it.
         map: [
-          '##########',
-          '#........#',
-          '#..3333..#',
-          '#..3..3...',
-          '#..3..3...',
-          '#..3333..#',
-          '#........#',
-          '##########',
+          '###############',
+          '#.............#',
+          '#....33333....#',
+          '#....3...3....#',
+          '#....3...3....#',
+          '#....3...3.....',
+          '#....3...3....#',
+          '#....33333....#',
+          '#.............#',
+          '#.............#',
+          '###############',
         ],
         entities: [
-          ['chest', 4, 3, { charm: 'splitFang' }],
-          ['keese', 2, 1],
-          ['zol', 7, 6],
+          ['chest', 7, 4, { charm: 'splitFang' }],
+          ['keese', 3, 2],
+          ['zol', 11, 8],
         ],
         puzzle: {
           enemies: true,
           flag: 'd1_023_puzzle',
           reward: {
-            spawn: [['pickup', 4, 6, { kind: 'rupee20' }]],
+            spawn: [['pickup', 7, 9, { kind: 'rupee20' }]],
             say: 'Loose stone shifts, and something rolls out.',
           },
         },
       },
 
-      // ---- the middle: the Anchor, and the door it does not open -----------
       '0,3,2': {
         name: 'The Sluicegate',
+        // The Anchor, and the boss door above it: you see where you are going
+        // the moment you have the thing that gets you there.
         map: [
-          '####..####',
-          '#........#',
-          '####B#####',
-          '..........',
-          '..........',
-          '#..1111..#',
-          '#..1111..#',
-          '####..####',
+          '#######B#######',
+          '#.............#',
+          '#.............#',
+          '#..U.......U..#',
+          '#.............#',
+          '...............',
+          '#....11111....#',
+          '#....11111....#',
+          '#....11111....#',
+          '#.............#',
+          '#######L#######',
         ],
         entities: [
-          ['chest', 4, 4, { big: true, item: 'anchor', level: 1 }],
+          ['chest', 7, 3, { big: true, item: 'anchor', level: 1 }],
         ],
         readable: [
-          [2, 3, 'The sluicegate plate: "Iron remembers. Sink it where you want the sea to stay."'],
+          [3, 3, 'The sluicegate plate: "Iron remembers. Sink it where you want the sea to stay."'],
         ],
       },
 
-      // ---- east wing -------------------------------------------------------
+      // ---- the three gates. Each band runs wall to wall, so the only way
+      // across is through it. See the gate primitive above.
       '0,4,2': {
         name: 'The Iron Pipe',
-        // Gate, wells near. See the primitive at the top of the dungeon.
+        // Wells near, drains far: sound LOW, stand on the last dry column,
+        // sink the iron two tiles into the wells, conch to MID, walk.
         map: [
-          '##########',
-          '##########',
-          '##########',
-          '.3333444..',
-          '.3333444..',
-          '##########',
-          '##########',
-          '##########',
+          '###############',
+          '#....33334444.#',
+          '#....33334444.#',
+          '#....33334444.#',
+          '#....33334444.#',
+          '.....33334444..',
+          '#....33334444.#',
+          '#....33334444.#',
+          '#....33334444.#',
+          '#....33334444.#',
+          '###############',
         ],
-        anchorGate: { from: [0, 3], to: [9, 3] },
+        anchorGate: { from: [0, 5], to: [14, 5] },
       },
       '0,5,2': {
         name: 'The Drowned Chamber',
-        // Not a gate — a fight the tide is a weapon in. The pool is drain, so
-        // at MID it is shallow water the anglerfry hunt in and at LOW it is a
-        // floor of holes: an aquatic enemy out of water flops and dies
-        // (ENEMY_BEACHED_FRAMES), and `tideOnly` puts it to sleep before that.
-        // The dry ring round the edge is what keeps the room honest — the fight
-        // is optional and the crossing never depends on the iron.
         map: [
-          '####..####',
-          '#........#',
-          '#.444444.#',
-          '..444444.#',
-          '..444444.#',
-          '#.444444.#',
-          '#........#',
-          '####..####',
+          '#######.#######',
+          '#.............#',
+          '#..444444444..#',
+          '#..444444444..#',
+          '#..444444444..#',
+          '...444444444..#',
+          '#..444444444..#',
+          '#..444444444..#',
+          '#.............#',
+          '#.............#',
+          '#######.#######',
         ],
         entities: [
-          ['anglerfry', 3, 3],
-          ['anglerfry', 6, 4],
-          ['crab', 1, 6],
+          ['anglerfry', 5, 4],
+          ['anglerfry', 10, 5],
+          ['crab', 2, 9],
         ],
       },
       '0,5,1': {
         name: 'The Long Race',
-        // Gate, wells near, entered from the east and crossed westward.
+        // Wells near again, but you come at them from the east and up the far
+        // side of a row of blocks: the south door lets you in below the bands
+        // and the race is walked back west along its middle.
         map: [
-          '##########',
-          '##########',
-          '##########',
-          '..4443333.',
-          '..4443333.',
-          '#########.',
-          '####......',
-          '####..####',
+          '###############',
+          '#.44443333....#',
+          '#.44443333....#',
+          '#.44443333....#',
+          '#.44443333....#',
+          '..44443333....#',
+          '#.44443333....#',
+          '#=========....#',
+          '#.............#',
+          '#.............#',
+          '#######.#######',
         ],
-        anchorGate: { from: [9, 3], to: [0, 3] },
+        anchorGate: { from: [7, 9], to: [0, 5] },
       },
       '0,4,1': {
         name: 'The Keyvault',
         map: [
-          '##########',
-          '#........#',
-          '#.11..11.#',
-          '#.11..11..',
-          '#.11..11..',
-          '#.11..11.#',
-          '#........#',
-          '##########',
+          '###############',
+          '#.............#',
+          '#..11.....11..#',
+          '#..11.....11..#',
+          '#.............#',
+          '#..............',
+          '#.............#',
+          '#..11.....11..#',
+          '#..11.....11..#',
+          '#.............#',
+          '###############',
         ],
         entities: [
-          ['chest', 4, 2, { pickup: 'key' }],
-          ['keese', 7, 1],
+          ['chest', 7, 5, { pickup: 'key' }],
+          ['keese', 11, 1],
         ],
       },
       '0,5,3': {
-        // THE ONE MULTI-SCREEN ROOM IN THE GAME, and the worked example for
-        // P8's remaining five dungeons. It is 2x1: eight rows of TWENTY
-        // characters, one grid, not two screens laid side by side. It owns map
-        // cells 5,3 and 6,3, so nothing else may be keyed to 6,3.
-        //
-        // WHY THIS ROOM AND NOT ANOTHER.
-        //
-        //   * It is the dungeon's set piece. The P8 amendment says the large
-        //     rooms land on set pieces and most rooms stay one screen; a
-        //     miniboss arena is the clearest thing in D1 that a 10-tile room
-        //     was cramping. The Clawcrab now sits at the far end and the walk
-        //     to it is the fight starting.
-        //   * It is NOT an anchor gate. All three of D1's gates and both of its
-        //     gauge rooms are proved impassable-without-the-iron by
-        //     `tools/check-anchor.mjs`, and re-proving one of those at a new
-        //     width is a second job, not this one.
-        //   * Converting it creates no new seam with anything. The cell it
-        //     grows into, 6,3, has no neighbours: 7,3, 6,2 and 6,4 are all
-        //     empty. Its own three doorways — north at x=4,5 into the Drowned
-        //     Chamber, west at rows 3 and 4 into the Two Gauges, and the locked
-        //     door at 2,3 — are all in the western screen and are untouched, so
-        //     every facing wall in every neighbour is the wall it always was.
-        //
-        // The pinch at columns 9-10 on rows 1 and 6 is what keeps it reading as
-        // one den with two lobes rather than as one twenty-tile box.
-        //
-        // THE LOCKED DOOR AT 2,3 IS THE ONLY WAY BETWEEN THE DEN AND THE WEST
-        // ANTECHAMBER, and columns 0-1 of rows 2 and 5 are wall to make that
-        // true. It was not true before — row 2 ran clear from column 1, so a
-        // player standing in the antechamber could step up, round the door and
-        // straight on, and key 3 bought nothing. That was so in the original
-        // 10-wide room too; the widening did not cause it, it only made someone
-        // walk the room and notice. Nothing in the toolchain catches a lock
-        // with a way round it: `walk-dungeons.mjs` spends a key on any lock it
-        // can reach and then asks only whether every room is reachable, so a
-        // bypassable lock reads as a lock that got opened. If you add a locked
-        // door anywhere, wall the four tiles round it yourself.
-        //
-        // The door is load-bearing in one direction that matters: `0,4,3`, the
-        // gauge room with the Piece of Heart, is entered ONLY through it.
-        //
-        // THE SCENERY IN THE EAST LOBE IS THE POINT OF THE `M`/`U` WIRING.
-        //
-        // `U` is `dUrnGrotto` and `M` is `dLionHead`, both extracted by
-        // `tools/rip-dungeon-themes.py` in P7.5 and both unreachable from any
-        // room grid until now — they had tiledefs and a comment saying "for P8
-        // to place" and no legend character, so the art shipped in the build
-        // with nothing able to name it. These four tiles are the first use.
-        //
-        // Placed the way the source places them: masks set INTO the far wall,
-        // urns standing against it. Both are SOLID, and they are seated in the
-        // outer row of the lobe where nothing routes through — a solid tile in
-        // the middle of this room would narrow the arena the widening bought.
-        //
-        // THE FLOOR IS STILL DELIBERATELY PLAIN, AND `,` IS NOT AVAILABLE HERE.
-        //
-        // Twenty tiles of one floor tile is the failure mode a wide room
-        // invites, and the obvious answer is the theme's own variant — `,`,
-        // `dFloorGrottoAlt`, extracted by `tools/rip-dungeon-themes.py` in the
-        // same P7.5 pass that gave this dungeon its walls and floor. It was
-        // laid in as a scoured track under the claw, screenshotted, and taken
-        // straight back out: `dFloorGrottoAlt` and `dFloorWet` — the MID form
-        // of the `dBasin` tide tile this room is dotted with — carry the SAME
-        // PALETTE, `stonef`. So the decoration read as standing water, in a
-        // room whose four real damp patches are the only thing on the floor
-        // that is supposed to. A floor variant that lies about the tide is
-        // worse than a bare floor.
-        //
-        // This is a property of three of the eight themes, not of this room:
-        // Grotto, Cistern and Salt all have an Alt floor in `stonef`. In those
-        // dungeons `,` is a wet-looking tile and must be treated as one. Coral,
-        // Bog, Wood, Palace and Abyss are clear and can use it freely.
         name: 'Clawcrab Den',
         size: [2, 1],
         map: [
-          '####..#######M##M###',
-          '#........##.U....U.#',
-          '##2....2....2....2.#',
-          '..L................#',
-          '..#................#',
-          '##2....2....2....2.#',
-          '#........##........#',
-          '####################',
+          '#######.######################',
+          '#............................#',
+          '#...2.....2.....2.....2......#',
+          '#............................#',
+          '#......U................U....#',
+          'L............................#',
+          '#......U................U....#',
+          '#............................#',
+          '#...2.....2.....2.....2......#',
+          '#............................#',
+          '##############################',
         ],
         entities: [
-          ['clawcrab', 14, 3],
+          ['clawcrab', 20, 5],
         ],
         puzzle: {
           enemies: true,
           flag: 'd1_clawcrab',
-          // The Clawcrab is D1's miniboss and until P9 it paid out a sentence
-          // and nothing else — the only fight in the dungeon that cost health
-          // and returned none of it. The Piece of Heart is what it owes.
-          //
-          // (14, 4) and not (14, 3): a dropped pickup pops about five pixels
-          // up and settles straddling the tile ABOVE the one it spawned on, so
-          // this comes to rest mid-arena where the claw died. Same lesson as
-          // the Crab Pit's key — see docs/HANDOFF.md.
           reward: {
-            spawn: [['pickup', 14, 4, { kind: 'heartPiece' }]],
+            spawn: [['pickup', 20, 6, { kind: 'heartPiece' }]],
             say: 'The claw stops moving. The way west is quiet.',
           },
         },
       },
       '0,4,3': {
         name: 'The Two Gauges',
-        // Anchor room, and the one that fits in a room this size without a
-        // corridor: the door reads two wells five tiles apart and wants one
-        // drained and the other drowned. The held patch is five across, so it
-        // cannot cover both — one gauge is the base and the other is under the
-        // iron, whichever way round the player works it out.
+        // A door that opens only while one well reads drained and the other
+        // drowned. Eight tiles apart and the held patch is five across, so one
+        // is the sea and the other is under the iron.
         map: [
-          '##########',
-          '#........#',
-          '#.3....3.#',
-          '#.........',
-          '#.........',
-          '####D#####',
-          '#....../.#',
-          '##########',
+          '###############',
+          '#.............#',
+          '#..3.......3..#',
+          '#.............#',
+          '#.............#',
+          '#.............L',
+          '#.............#',
+          '#######D#######',
+          '#.............#',
+          '#.U.........//#',
+          '###############',
         ],
         entities: [
-          ['keese', 6, 1],
-          // Sealed in behind the door the gauges open, and visible from the
-          // moment the player walks in, which is what makes the door worth
-          // solving rather than worth ignoring.
-          ['pickup', 2, 6, { kind: 'heartPiece' }],
+          ['keese', 10, 4],
+          ['pickup', 3, 8, { kind: 'heartPiece' }],
         ],
         warps: [
-          { x: 7, y: 6, to: { map: 'd1', floor: 0, rx: 3, ry: 4, px: 64, py: 48, dir: 'down' } },
+          { x: 12, y: 9, to: { map: 'd1', floor: 0, rx: 3, ry: 3, px: 192, py: 128, dir: 'down' } },
+          { x: 13, y: 9, to: { map: 'd1', floor: 0, rx: 3, ry: 3, px: 192, py: 128, dir: 'down' } },
         ],
         readable: [
-          [4, 4, 'Two marks over the door: one well empty, one well full.'],
+          [7, 6, 'Two marks over the door: one well empty, one well full.'],
         ],
         puzzle: {
-          condition: (g, r) => g.tide.levelAt(2, 2, r) === 0 && g.tide.levelAt(7, 2, r) === 2,
+          condition: (g, r) => g.tide.levelAt(3, 2, r) === 0 && g.tide.levelAt(11, 2, r) === 2,
           flag: 'd1_gauges_east',
           reward: {
-            openDoors: [[4, 5]],
+            openDoors: [[7, 7]],
             say: 'Both marks read at once. The door gives.',
           },
         },
-        anchorGauges: { a: [2, 2], aLevel: 0, b: [7, 2], bLevel: 2, door: [4, 5] },
+        anchorGauges: { a: [3, 2], aLevel: 0, b: [11, 2], bLevel: 2, door: [7, 7], from: [7, 5] },
       },
 
-      // ---- west wing -------------------------------------------------------
       '0,2,2': {
         name: 'The Long Sluice',
-        // Gate, DRAINS near: the mirror sequence. Sound MID, sink the iron in
-        // the drain so it keeps its water, then conch to LOW so the well ahead
-        // empties. Entered from the east.
+        // THE GRADUATION, and the one gate here that ONE iron cannot cross.
+        // From the east: four drains, five wells, three drains. Hold the near
+        // drains at MID and walk out onto the wells at LOW; then CALL THE IRON
+        // BACK and sink it again in the wells you are standing in, and sound
+        // MID for the far drains. The first two gates teach the throw; this
+        // one teaches that the iron comes back and can be thrown again.
+        // `placements: 2` makes check-anchor prove exactly that: not with the
+        // conch, not with one throw, and with two.
         map: [
-          '##########',
-          '##########',
-          '##########',
-          '..3334444.',
-          '..3334444.',
-          '##########',
-          '##########',
-          '##########',
+          '###############',
+          '#444333334444.#',
+          '#444333334444.#',
+          '#444333334444.#',
+          '#444333334444.#',
+          '.444333334444..',
+          '#444333334444.#',
+          '#444333334444.#',
+          '#444333334444.#',
+          '#444333334444.#',
+          '###############',
         ],
-        anchorGate: { from: [9, 3], to: [0, 3] },
+        anchorGate: { from: [14, 5], to: [0, 5], placements: 2 },
       },
       '0,1,2': {
         name: 'Cistern Turn',
         map: [
-          '####..####',
-          '#........#',
-          '#..2222..#',
-          '#..2222...',
-          '#..2222...',
-          '#..2222..#',
-          '#........#',
-          '####..####',
+          '#######.#######',
+          '#.............#',
+          '#.............#',
+          '#....22222....#',
+          '#....22222....#',
+          '#....22222.....',
+          '#....22222....#',
+          '#....22222....#',
+          '#.............#',
+          '#.............#',
+          '#######.#######',
         ],
         entities: [
-          ['zol', 2, 1],
-          ['crab', 6, 6],
+          ['zol', 3, 2],
+          ['crab', 11, 8],
         ],
       },
       '0,1,3': {
         name: 'Weeping Cistern',
+        // Three plates and two blocks: the blocks hold two, and the third is
+        // where you stand.
         map: [
-          '####..####',
-          '#........#',
-          '#..1111..#',
-          '#..1111..#',
-          '#..1111..#',
-          '#........#',
-          '#........#',
-          '##########',
+          '#######.#######',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '#....11111....#',
+          '#....11111....#',
+          '#....11111....#',
+          '#.............#',
+          '#.............#',
+          '###############',
         ],
         entities: [
-          ['crab', 4, 6],
-          ['switch', 1, 1],
-          ['switch', 8, 1],
-          ['block', 1, 2],
-          ['block', 8, 2],
+          ['crab', 7, 9],
+          ['switch', 3, 2],
+          ['switch', 11, 2],
+          ['switch', 7, 8],
+          ['block', 3, 3],
+          ['block', 11, 3],
         ],
         puzzle: {
           switches: 'all',
           flag: 'd1_013_puzzle',
           reward: {
-            spawn: [['pickup', 4, 6, { kind: 'rupee20' }]],
+            spawn: [['pickup', 7, 3, { kind: 'rupee20' }]],
             say: 'A catch lets go under the floor.',
           },
         },
       },
       '0,1,1': {
         name: 'The Drip Vault',
-        // The second pair of gauges, stacked instead of side by side — five
-        // rows apart, which the patch cannot span either.
         map: [
-          '##########',
-          '#...3....#',
-          '#........#',
-          '#.......D.',
-          '#........#',
-          '#..pp....#',
-          '#...3....#',
-          '####..####',
+          '###############',
+          '#.............#',
+          '#......3......#',
+          '#.............#',
+          '#.............#',
+          '#.............D',
+          '#.............#',
+          '#.............#',
+          '#......3......#',
+          '#..pp.........#',
+          '#######.#######',
         ],
         entities: [
-          ['keese', 2, 2],
+          ['keese', 3, 3],
         ],
         readable: [
-          [7, 4, 'Two marks beside the door: the upper well empty, the lower full.'],
+          [12, 4, 'Two marks beside the door: the upper well empty, the lower full.'],
         ],
         puzzle: {
-          condition: (g, r) => g.tide.levelAt(4, 1, r) === 0 && g.tide.levelAt(4, 6, r) === 2,
+          condition: (g, r) => g.tide.levelAt(7, 2, r) === 0 && g.tide.levelAt(7, 8, r) === 2,
           flag: 'd1_gauges_west',
           reward: {
-            openDoors: [[8, 3]],
+            openDoors: [[14, 5]],
             say: 'Both marks read at once. The door gives.',
           },
         },
-        anchorGauges: { a: [4, 1], aLevel: 0, b: [4, 6], bLevel: 2, door: [8, 3] },
+        anchorGauges: { a: [7, 2], aLevel: 0, b: [7, 8], bLevel: 2, door: [14, 5], from: [7, 9] },
       },
       '0,2,1': {
         name: 'Bosskey Vault',
         map: [
-          '##########',
-          '#..pp....#',
-          '#........#',
-          '.........#',
-          '.........#',
-          '#..../...#',
-          '#........#',
-          '##########',
+          '###############',
+          '#..pp.........#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          'D.............#',
+          '#.............#',
+          '#.........//..#',
+          '#.............#',
+          '#.............#',
+          '###############',
         ],
         entities: [
-          ['chest', 4, 3, { pickup: 'bossKey' }],
-          ['keese', 7, 6],
+          ['chest', 7, 4, { pickup: 'bossKey' }],
+          ['keese', 11, 8],
         ],
         warps: [
-          { x: 5, y: 5, to: { map: 'd1', floor: 0, rx: 3, ry: 3, px: 64, py: 64, dir: 'down' } },
+          { x: 10, y: 7, to: { map: 'd1', floor: 0, rx: 3, ry: 3, px: 192, py: 128, dir: 'down' } },
+          { x: 11, y: 7, to: { map: 'd1', floor: 0, rx: 3, ry: 3, px: 192, py: 128, dir: 'down' } },
         ],
       },
       '0,3,1': {
         name: 'Gohmaraq, the Tidewash Claw',
-        // A boss room that KEEPS the mechanic instead of switching it off. The
-        // conch is still suppressed — `noTide` — so the arena is whatever it
-        // was when you walked in, and the only thing that moves it is a
-        // Bottled Tide, or the boss itself: Gohmaraq calls unlockTide on its
-        // intro and hands the conch back for the length of the fight. The floor
-        // is basin, which is walkable at all three levels, because a locked
-        // room has to work at whichever one the player brought.
         map: [
-          '##########',
-          '#..2222..#',
-          '#..2222..#',
-          '#..2222..#',
-          '#..2222..#',
-          '#..2222..#',
-          '#........#',
-          '####..####',
+          '###############',
+          '#.............#',
+          '#...2222222...#',
+          '#...2222222...#',
+          '#...2222222...#',
+          '#...2222222...#',
+          '#...2222222...#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '#######B#######',
         ],
         noTide: true,
         entities: [
-          ['gohmaraq', 4, 2],
+          ['gohmaraq', 7, 3],
         ],
         script: {
           onEvent(game, name) {
-            if (name === 'bossDead') game.spawnPickup(80, 40, 'heartContainer', { grabDelay: 30 });
+            if (name === 'bossDead') game.spawnPickup(112, 120, 'heartContainer', { grabDelay: 30 });
           },
         },
       },
     },
   });
 
-  // --- Dungeon 2: Coral Spire ----------------------------------------------
-  //
-  // TIDE THEME: COMMIT-BLIND BECOMES PLAN-FIRST. The spire is a tower of dry
-  // shafts, and a dry shaft tells you nothing. When the sea comes in, one of
-  // them is water you can wade, one is water over your head, and one is still
-  // a hole. You cannot tell them apart by looking down them, and by the time
-  // the water arrives you have already chosen which one you are standing over.
-  // The Brineglass Lens is the only thing in the game that draws the room as
-  // it WILL be, and this dungeon is where you are taught to look before you
-  // commit rather than after.
-  //
-  // THE FORK PRIMITIVE, stated once because two rooms are built out of it.
-  // Written up a column, from the shelf the player decides on:
-  //
-  //     .          the way on          <- reachable only after the water moves
-  //     4          the shaft, 2 tiles
-  //     4
-  //     .          the alcove floor    <- where the ledge drops you
-  //     /          a stair back out    <- the cost of being wrong
-  //     "          the ledge           <- ONE WAY. There is no climbing back.
-  //     .          the shelf           <- the decision, and the Lens is read here
-  //
-  //   `4` dDrain   an open shaft at LOW, wading depth at MID
-  //   `0` dSump    an open shaft at LOW, over your head at MID
-  //   `O` dPit     an open shaft at every level, for ever
-  //
-  // AT LOW ALL THREE ARE THE SAME TILE. Not three tiles that resemble each
-  // other — dDrain's LOW form and dSump's LOW form ARE `dPit`, the same art in
-  // the same palette, which is why tools/check-lens.mjs can prove the room
-  // instead of asserting it. One level up they are three different answers.
-  //
-  // THE ROOM PINS THE TIDE, and that is the load-bearing half of the design.
-  // `tideForce: 0` sets the room to LOW on entry and REFUSES the conch, so the
-  // player cannot sound their way to MID, look, and sound their way back. The
-  // only thing that moves the water in here is the coral sluice at the bottom
-  // of each alcove — and by the time you can put a hand on one, you have
-  // already taken a ledge you cannot climb back up. Take the wrong shaft and
-  // the stair beside you puts you back down the spire with the walk to do
-  // again. check-lens.mjs asserts the pin, both the one-way-ness and the
-  // no-way-across, that the room answers nothing at the level it is pinned to,
-  // that exactly the right branches pay off one level up, and that every
-  // branch draws THE SAME TILE where the player is standing when they choose.
-  //
-  // Neither shaft is one tile deep, and that is not decoration: a gap hop
-  // clears exactly one JUMPABLE tile (GAP_HOP_MAX_SPAN), and while a dungeon
-  // pit is not JUMPABLE at all, deep water is not either — two tiles is the
-  // width at which no future retuning of the hop can open a fork by accident.
-  //
-  // WHY EVERY FORK IS ONE SCREEN. A large room was considered for these and
-  // rejected on purpose. The whole of the choice is that all of the branches
-  // are in front of you and none of them can be told apart; a fork spread
-  // across two screens would need the Lens because half of it was off camera,
-  // which is the right requirement for the wrong reason. The two large rooms
-  // in this dungeon are the miniboss arena and the spire's inner stair, where
-  // size is the point and nothing is being hidden.
-  //
-  // Intended route (24 rooms; the Lens is room 14 of 24):
-  //   3,7 mouth -> 3,6 landing -> 2,6 bone cell (a blank) -> 3,5 gallery
-  //   -> 2,5 Dungeon Map -> 4,5 torches (Small Key 1) -> 3,4 rising chamber
-  //   -> 3,3 Barnacle Skin (the charm) -> 2,4 stair coil [locked, key 1]
-  //   -> 1F: 2,4 landing -> 2,5 anemone cell -> 3,4 concourse
-  //   -> 4,4 THE BRINEGLASS LENS -> 4,5 glass cell (phased, learn to look)
-  //   -> 4,3 [FORK 1] -> 4,2 Reefguard (miniboss, Small Key 2)
-  //   -> 5,3 Bombs -> 5,4 whelk cell -> 3,2 spire ascent (boss door)
-  //   -> [locked, key 2] 2,3 drowned cell -> 2,2 [FORK 2] -> 2,1 Boss Key
-  //   -> boss door -> 3,1 Anemos
-  //
-  // Every room after the Lens is behind a fork or needs the Lens in its own
-  // right, with one stated exception: 3,1 is the boss room.
   registerMap({
     id: 'd2',
     kind: 'dungeon',
@@ -32474,6 +33246,11 @@ const CUTSCENES = {
     { text: 'Thalassia keeps its shape.\nThe pier goes back where the pier goes.\nThe Maku Tree sleeps.', frames: 260 },
     { text: 'The Legend of Zelda\nOracle of Tides\n\nTHE END', frames: 320 },
     { flag: 'finishedGame' },
+    // THE GAME DOES NOT RESUME AFTER THE END. It used to: the scene let go,
+    // the mode went back to 'play', and Link stood in the throne room again
+    // with whatever Nereth had summoned still swinging at him. The source
+    // games hold THE END until a button, and then it is the title screen.
+    { do: (g) => { g._theEnd = true; } },
   ],
 
   // ---- the trading sidequest ----------------------------------------------

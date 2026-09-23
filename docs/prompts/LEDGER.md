@@ -916,6 +916,39 @@ checked and why; see `docs/NEXT-SESSION.md` S60 for the full account.
   `liftLevel: 2` + the `dredge` tile action, as this entry originally said;
   only the "read by nothing" half of the claim was wrong.
 
+## Settled at S137 — dungeons are built at Oracle room size now
+
+- A map may declare `cell: [15, 11]`; its rooms are Oracle rooms (one-tile
+  wall ring, camera scrolls). `cellTiles(map)` in src/world/room.js is the
+  only place the size lives. Every tool that computed a room's width as
+  `sw * 10` was wrong for such a map: validateMaps, dungeon-flood,
+  walk-dungeons (twice), check-anchor, check-wide-rooms, check-bosses. All
+  fixed; a new tool must call `cellTiles`.
+- The ring is drawn by POSITION (`Room.ringArt`), not by `edgeArt`: a corner
+  has wall on both sides, so a neighbour rule draws it as a run. Shut doors
+  count as wall (no jamb), open ones as a gap (jambs).
+- A key, boss or shutter door in the ring is one door seen from two rooms.
+  `Game.openDoorAt` opens the partner across the seam and spends one key;
+  `dungeon-flood` pushes the partner free. Both from the same seam arithmetic.
+- The Long Sluice (d1 0,2,2) needs TWO anchor placements; `anchorGate
+  { placements: 2 }` makes check-anchor prove one is not enough and two are.
+- Gohmaraq: slowing his slams LOSES (13 of 13 dead) — the slam opens the
+  eye, so fewer slams is a longer fight. Halving rock and bubble damage and
+  contact 4 -> 3 took the route arena from 7/13 to 11/13 and the real run
+  wins. 20 hp instead of 24 reshuffles phase thresholds into 0/13. Do not
+  retry either.
+- The Clawcrab at snip 190/150 (was 130/100) wins 5 of 5 from the door on
+  6 of 12 — the S130 fix, landed with the run re-routed around it.
+- The route arrives in D2's Rising Chamber 12,000 frames later than it used
+  to; the barnacle's absolute 96-frame cycle killed it. It now goes up the
+  east side. Timing-luck steps like that one are the fragile part of the run.
+- Pots and drained tide tiles in every themed dungeon drew the generic
+  `dFloor`/`dFloorWet`; `Room.floorSubFor` substitutes the legend's own `.`
+  and `,` (flags asserted equal). A themed alt floor must not look like water.
+- After THE END the game used to resume in the throne room; it now holds a
+  `theend` mode and returns to the title on a button (check-playthrough
+  asserts it).
+
 ## Settled at S112 — proved by playing the Bogwater Sanctum
 
 - **A dungeon flood that grants a dungeon's own item to that dungeon's own
