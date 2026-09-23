@@ -67,6 +67,7 @@ DG = os.path.join(ROOT, 'assets/sheets/oracle-seasons-dungeon-backgrounds.png')
 # reads as bone rather than violet, which is how the mistake presents.
 SHEETS = {
     'ruins': os.path.join(ROOT, 'assets/sheets/oracle-seasons-dungeon-ancient-ruins.png'),
+    'crypt': os.path.join(ROOT, 'assets/sheets/oracle-seasons-dungeon-explorers-crypt.png'),
 }
 OUT = os.path.join(ROOT, 'src/data/tiles-dungeon-themes.js')
 
@@ -195,6 +196,46 @@ PICKS = [
     # with an inset slab. The Grotto draws its damp patches and worn floor
     # with it, so they read as floor and not as water.
     ('gFloorAlt', 2114,   42, 'the scale floor with an inset slab'),
+
+    # ---- THE ORACLE ROOM KIT: the Coral Spire's ----------------------------
+    #
+    # Cut from the Explorer's Crypt sheet's True Colors half — the pink
+    # dungeon, and the one whose walls are the Spire's colour. The crypt draws
+    # its side walls TWO tiles thick (pink outer stone, then the bevel), so
+    # its rooms' rings sit one column in: the entrance room's ring runs
+    # x=1713..1905, y=532..692. Only the bevel is cut; the outer stone is
+    # outside the room. The south jambs are from the room directly above the
+    # entrance, whose south door is the entrance's north door. THERE ARE NO
+    # SIDE JAMBS: the only side doorway near here is a key door in a partition
+    # wall, which the source runs its wall straight up to — so a side opening
+    # in the Spire is framed by plain runs (`Room.ringArt` falls back to them).
+    ('cRingTL',  1713,  532, 'ring corner, north-west', 'crypt'),
+    ('cRingN',   1729,  532, 'ring run, north wall', 'crypt'),
+    ('cRingTR',  1905,  532, 'ring corner, north-east', 'crypt'),
+    ('cRingW',   1713,  548, 'ring run, west wall', 'crypt'),
+    ('cRingE',   1905,  548, 'ring run, east wall', 'crypt'),
+    ('cRingBL',  1713,  692, 'ring corner, south-west', 'crypt'),
+    ('cRingS',   1729,  692, 'ring run, south wall', 'crypt'),
+    ('cRingBR',  1905,  692, 'ring corner, south-east', 'crypt'),
+    ('cJambNW',  1793,  532, 'north wall ends, doorway to its east', 'crypt'),
+    ('cJambNE',  1825,  532, 'north wall ends, doorway to its west', 'crypt'),
+    ('cJambSW',  1793,  515, 'south wall ends, doorway to its east', 'crypt'),
+    ('cJambSE',  1825,  515, 'south wall ends, doorway to its west', 'crypt'),
+    # The crypt's solid masonry: the flat pink stone its sheet shows wherever
+    # there is no room — outside the ring and in every notch of an irregular
+    # room. The Spire's thick interior walls are drawn with it.
+    ('cFill',    1697,  548, 'the flat pink stone of solid masonry', 'crypt'),
+    ('cFloor',   1777,  548, 'the violet swirl floor', 'crypt'),
+    ('cFloorAlt', 1729, 548, 'the blue tile panel floor', 'crypt'),
+    ('cBlock',   1729,  404, 'the gold-framed raised block', 'crypt'),
+    ('cPot',     1857,  500, 'the crypt urn, on its own floor', 'crypt'),
+    # THE WAY OUT: the entrance room's two pillars standing in the south wall
+    # with the lit step between them. The gold-and-green arch roofed over
+    # them in the source is six to eight colours a tile and would not survive
+    # four, so it is left on the sheet; the pillars and the step are clean.
+    ('cArchC1',  1793,  692, 'entrance arch pillar, west', 'crypt'),
+    ('cArchC2',  1809,  692, 'entrance arch, the lit way out', 'crypt'),
+    ('cArchC3',  1825,  692, 'entrance arch pillar, east', 'crypt'),
     ('gPot',     2195,  750, 'the Seasons pot, on its own floor'),
     ('gBlock',   2243,  798, 'the raised magenta block'),
 ]
@@ -215,7 +256,7 @@ PICKS = [
 #
 # ONLY FOR OBJECTS. Keying a floor or a wall would eat the tile, because the
 # border-connected run IS the tile.
-KEY_BACKGROUND = {'urn', 'gPot'}
+KEY_BACKGROUND = {'urn', 'gPot', 'cPot'}
 
 
 def lum(c):

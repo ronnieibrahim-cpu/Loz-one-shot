@@ -933,6 +933,17 @@ export class Game {
     const d = this.map && this.map.dungeon;
     this.shake(SHAKE_LARGE, SHAKE_LARGE_FRAMES);
     this.audio.stop();
+    // THE BOSS TAKES ITS COURT WITH IT. Whatever it summoned — Gohmaraq's
+    // crabs, Nereth's knights — used to outlive it, and went on fighting a
+    // player standing in a won room waiting for the Essence: the test run
+    // died to two crabs after beating the first boss, and walked through
+    // THE END with a darknut still swinging. In the source games the room
+    // goes quiet when the boss falls.
+    for (const x of this.entities) {
+      if (x === e || !x.isEnemy || x.dead || x.remove) continue;
+      this.spawnEffect('puff', x.cx - 8, x.cy - 8);
+      x.remove = true;
+    }
     // Boss death opens the way to the essence.
     const room = this.room;
     if (d && d.essence != null) {

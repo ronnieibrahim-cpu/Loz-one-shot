@@ -377,7 +377,7 @@ export class Room {
     const wall = (nx, ny) => {
       if (!this.inBounds(nx, ny)) return false;
       const n = this.tile(nx, ny, tide);
-      return n.ring === R || ((n.flags & F.DOOR) && n.name !== 'dDoorOpen');
+      return n.ring === R || n.ringWall || ((n.flags & F.DOOR) && n.name !== 'dDoorOpen');
     };
     if (top || bot) {
       const k = top ? 'N' : 'S';

@@ -400,8 +400,11 @@ export const ROUTE = [
   ['wait', 90],
 
   // ---------------------------------------------------------------- d1 0,3,1
-  // GOHMARAQ, THE TIDEWASH CLAW.
-  ['boss', 9000],
+  // GOHMARAQ, THE TIDEWASH CLAW. `openRetreat`: in his Oracle-size arena the
+  // plain fight won 8 of 46 entry waits swept in the real run (20..200); with
+  // the open-floor retreat every wait from 52 to 180 wins, on the same four
+  // quarter-hearts — the fight stops depending on the frame it starts on.
+  ['boss', 9000, null, { openRetreat: true }],
   ['wait', 300],
   // WALK ONTO THE ESSENCE BY HAND — `dLoot` cannot collect it: `Essence` has
   // no `isDrop`. It appears in the middle of the arena, tile 7,4.
@@ -519,7 +522,7 @@ export const ROUTE = [
   // (`addHeartPiece`, `src/game/progress.js`) — which is the difference
   // between entering Anemos's fight able to win it and not.
   ['travel', 3, 7, 1500],
-  ['goto', 4, 7, 500],
+  ['goto', 7, 10, 500],
   ['wait', 60],
 
   // ------------------------------------------------------- overworld 0,10,6
@@ -566,258 +569,162 @@ export const ROUTE = [
   ['goto', 4, 2, 600],
   ['wait', 60],
 
+  // ================================================================= D2
+  // THE CORAL SPIRE, REBUILT AT ORACLE SIZE (S137): 15x11 rooms, the key
+  // doors in the wall ring, Reefguard Hall and Spire Ascent two rooms long.
+  //
   // ---------------------------------------------------------------- d2 0,3,4
-  // Rising Chamber. The switch pair — block (2,5) onto switch (1,5), block
-  // (7,6) onto switch (8,6) — opens the door to Cistern Cell (skipped, an
-  // optional charm) and spawns the Small Key that answers Stair Coil's own
-  // locked door, below. THE BARNACLE AT (4,6) IS A FIXED HAZARD, NOT AN
-  // ENEMY (`hp: 999, shield: 'all'`) — it is never fought, only endured, and
-  // it fires on an absolute 96-frame cycle (`every(e, 96)`) that this run's
-  // own frame count happens to line up against favourably at the `wait`
-  // below. THE KEY PICKUP MISSES OVERLAP BY ONE PIXEL AT ITS TILE-ALIGNED
-  // REST POSITION — `dLoot`'s own "stand one tile north" retry does not
-  // land close enough either, so it is grabbed by an explicit `goto` to its
-  // exact tile followed by a one-frame nudge (`hold up`) rather than by
-  // `loot`.
+  // Rising Chamber. Push each block outward onto its plate: the shutter in
+  // the north wall lifts and the floor-0 Small Key drops north of the drain
+  // band. THE BARNACLE AT 7,8 IS A FIXED HAZARD, never fought — so the key
+  // is fetched up the east side, clear of it. Then the key opens the west
+  // wall's key door, which is the Stair Coil's.
   ['travel', 3, 4, 1500],
-  ['goto', 3, 5, 400],
+  ['goto', 3, 8, 400],
   ['hold', ['left'], 40],
-  ['goto', 6, 6, 500],
+  ['goto', 11, 8, 500],
   ['hold', ['right'], 40],
   ['dialogue', 300],
   ['wait', 60],
-  // UP THE EAST SIDE, AWAY FROM THE BARNACLE. The straight path to the key
-  // from the east plate runs along row 6 past the barnacle at 4,6 and up
-  // beside it, and whether that costs nothing or everything depended on where
-  // its absolute 96-frame cycle happened to be: when the Grotto was rebuilt
-  // the run arrived here 12,000 frames later and died pinned against it.
-  ['goto', 6, 2, 700],
-  ['goto', 4, 2, 300],
+  ['goto', 12, 3, 700],
+  ['goto', 7, 3, 400],
   ['hold', ['up'], 3],
   ['wait', 10],
-
-  ['goto', 1, 3, 700],
+  ['goto', 1, 5, 700],
+  ['hold', ['left'], 20],
+  ['tap', 'a', 30],
+  ['dialogue', 300],
   ['exit', 'left', 300],
 
   // ---------------------------------------------------------------- d2 0,2,4
-  // Stair Coil. The Small Key's whole job: its locked door gates only the
-  // stairs beyond it, not the room's own entrance — `travel` already reaches
-  // here without the key, and only the crossing past this point needs it.
-  ['goto', 6, 3, 500],
-  ['hold', ['left'], 20],
-  ['tap', 'a', 30],
-  ['goto', 2, 2, 900],
+  // Stair Coil: up the stair to floor 1.
+  ['goto', 3, 3, 900],
 
   // ---------------------------------------------------------------- d2 1,2,4
-  // Upper Landing, onto floor 1. Anemone Cell's fairy is grabbed now, on the
-  // way past, because nothing later in the route comes back this way to
-  // collect it.
+  // Upper Landing, and Anemone Cell's fairy on the way past.
   ['travel', 2, 5, 1200],
   ['loot', 900],
 
   // ---------------------------------------------------------------- d2 1,4,4
-  // Sealed Cell. The big chest holds the Lens; approached from the tile
-  // beside it (2,1) rather than the well below it, which is deep at MID/HIGH.
+  // Sealed Cell: the Lens, in the big chest in the north-west corner,
+  // opened from above.
   ['travel', 4, 4, 1500],
-  ['goto', 1, 1, 500],
-  ['hold', ['right'], 20],
+  ['goto', 2, 1, 500],
+  ['hold', ['down'], 6],
   ['tap', 'a', 40],
   ['dialogue', 400],
   ['loot', 600],
 
   // ---------------------------------------------------------------- d2 1,4,5
-  // Glass Cell, one room south of Sealed Cell — the second Piece of Heart.
-  // Its keese are phase-2 (only a threat at HIGH tide, per `updatePhaseShift`
-  // in `src/game/game.js`); off HIGH they are harmless and need no fight.
+  // Glass Cell, the second Piece of Heart; its keese only bite at HIGH.
   ['travel', 4, 5, 1200],
   ['loot', 900],
 
   // ---------------------------------------------------------------- d2 1,4,3
-  // The First Fork. Never equip the Lens to a button carrying the sword or
-  // conch — a scripted route that already knows a fork's own answer never
-  // needs to press the Lens button at all, and equipping it onto B or A
-  // silently displaces whatever was there, turning every later "swing"
-  // directive into a Lens press that lands no damage. The west shaft fills:
-  // hop the one-way ledge (`hold left`, an auto-hop mechanic that carries
-  // the actor across on its own), reach the valve, `tap a` fires
-  // `TideValve.interact` -> `game.forceTideStep()` (this room's `tideForce:
-  // 0` pin refuses the conch, so the sluice is the only way to move its
-  // water), then climb the now-wadeable shaft into Reefguard Hall.
+  // The First Fork. The route already knows the answer and never presses
+  // the Lens. Hop the west ledge from the shelf, turn the pocket's valve
+  // (the room refuses the conch; the valve is the only thing that moves its
+  // water), and climb the flooded shaft into Reefguard Hall.
   ['travel', 4, 3, 1200],
-  ['goto', 3, 5, 500],
+  ['goto', 5, 6, 500],
   ['hold', ['left'], 60],
-  ['goto', 1, 6, 500],
-  ['hold', ['right'], 10],
+  ['goto', 2, 6, 500],
+  ['hold', ['down'], 10],
   ['tap', 'a', 40],
-  ['hold', ['up'], 90],
-  ['goto', 1, 0, 500],
-  ['hold', ['up'], 40],
+  ['goto', 3, 4, 400],
+  ['hold', ['up'], 120],
 
   // ---------------------------------------------------------------- d2 1,4,2
-  // Reefguard Hall — `size: [2, 1]`, so `travel` cannot path to its own
-  // second cell (a real, general gap: `dTravel`'s cross-room BFS never
-  // models an edge for a multi-cell room's non-anchor cell). The miniboss
-  // for the second Small Key: `['boss', N, 'reefguard']` names the target
-  // because a miniboss clears `isBoss` in its own `init` (`beaten` is keyed
-  // off the map, and a miniboss counted as a boss would mark the whole
-  // dungeon beaten on arrival). `puzzle.enemies: true` also wants the urchin
-  // dead, and it sits on a well that is only walkable at LOW — sound the
-  // conch down first. The reward key sits flush against the room's own
-  // north wall, where `dLoot`'s usual "lean north" recovery presses into
-  // solid wall and gains nothing; approached from below instead.
+  // Reefguard Hall, two rooms long: the miniboss for the second Small Key,
+  // then the urchin that stands between the room and its puzzle flag.
   ['boss', 6000, 'reefguard'],
   ['dialogue', 300],
   ['use', 'conch', 2, 140],
-  ['goto', 14, 4, 500],
+  ['goto', 20, 5, 700],
   ['fight', 1500],
   ['dialogue', 300],
-  ['goto', 4, 3, 500],
+  ['goto', 7, 5, 700],
   ['hold', ['up'], 30],
   ['loot', 700],
 
   // ---------------------------------------------------------------- d2 1,5,3
-  // Bomb Vault and Whelk Cell. Still reached by hand (goto/exit, not
-  // `travel`) in THIS direction — `bfsScreens` always plans from the wide
-  // room's own ANCHOR coordinates, so a `travel` call issued from here would
-  // have to cross the same phantom anchor/non-anchor "edge" the S47 fix does
-  // not resolve (see the GOAL comment's note on the narrower gap that
-  // remains). The RETURN trip below, entering Reefguard Hall's own second
-  // cell directly from Bomb Vault, is the one S47's fix does cover — see
-  // that comment. The chest holds the Bombs; Whelk Cell's own Piece of Heart
-  // is the FOURTH one this run collects (two overworld, Glass Cell, this
-  // one) — the Heart Container completes here, refilling to full and
-  // raising the cap.
-  ['goto', 14, 7, 900],
+  // Down the far end's south door to the Bomb Vault, and the Whelk Cell's
+  // Piece of Heart below it.
+  ['goto', 22, 9, 900],
   ['exit', 'down', 400],
-  ['goto', 2, 3, 500],
-  ['hold', ['down'], 6],
+  // FROM THE SIDE. Opened from above, Link leans into the chest until his
+  // feet read inside its tile, and every path planned from there fails.
+  ['goto', 6, 4, 500],
+  ['hold', ['right'], 6],
   ['tap', 'a', 40],
   ['dialogue', 400],
   ['loot', 600],
   ['travel', 5, 4, 1200],
   ['loot', 900],
 
-  // Back to Reefguard Hall's anchor cell. `dTravel`'s non-anchor-cell fix
-  // (S47) lets a single `travel` call reach the room's own second cell
-  // (1,5,2) directly from Bomb Vault, replacing the manual `goto`/`exit`
-  // pair this used to need — `travel` from there reaches Spire Ascent fine,
-  // since that IS an edge from the room's own registered cell.
+  // Back up through Reefguard Hall to Spire Ascent.
   ['travel', 5, 3, 900],
   ['travel', 5, 2, 1200],
-  ['goto', 4, 4, 900],
-  ['travel', 3, 2, 1200],
+  ['goto', 1, 5, 1200],
+  ['exit', 'left', 400],
 
   // ---------------------------------------------------------------- d2 1,3,2
-  // Spire Ascent — `size: [1, 2]`. Its locked door (the second Small Key)
-  // sits at local row 11 of the room's own second cell (`1,3,3`), gating
-  // only the crossing to Drowned Cell, not the room's own approach — reached
-  // by walking down from the anchor cell (ordinary internal movement, not a
-  // `dTravel` matter) and unlocking it. Leaving to Drowned Cell used to need
-  // a manual `goto`/`exit` pair for the same reason Reefguard Hall's return
-  // leg did (S47's non-anchor-cell fix); `['travel', 2, 3, N]` now covers it
-  // in one call — S48.
-  ['goto', 4, 6, 900],
-  ['goto', 2, 11, 500],
+  // Spire Ascent, two rooms tall: the second key opens the key door low in
+  // its west wall, and on to the Drowned Cell.
+  ['goto', 1, 16, 1200],
   ['hold', ['left'], 20],
   ['tap', 'a', 30],
+  ['dialogue', 300],
   ['travel', 2, 3, 900],
 
   // ---------------------------------------------------------------- d2 1,2,2
-  // The Sounding Fork, the west throat — the same primitive as the First
-  // Fork, one branch further. THE LEDGE HOP OVERSHOOTS IF HELD TOO LONG: an
-  // early cut of this route held `up` through the hop and straight on into
-  // the throat's own interior, which is a `dPit` at this room's pinned LOW
-  // and cost several quarter-hearts a crossing in a fall-and-reset loop
-  // before it was cut back to just enough to clear the ledge, landing at the
-  // shelf (`lensRoom.branches[west].land`) rather than riding the hop's own
-  // momentum past it.
+  // The Sounding Fork, the west throat: hop the ledge, turn the valve, wade
+  // up. DO NOT HOLD PAST THE HOP — the throat above the pocket is a pit at
+  // the pinned LOW until the valve is turned.
   ['travel', 2, 2, 1200],
-  ['goto', 4, 6, 500],
-  ['goto', 1, 6, 500],
+  ['goto', 3, 7, 500],
   ['hold', ['up'], 20],
-  ['goto', 1, 4, 400],
-  ['goto', 1, 3, 400],
+  ['goto', 3, 5, 400],
   ['hold', ['right'], 10],
   ['tap', 'a', 40],
-  ['goto', 1, 1, 400],
-  ['goto', 1, 0, 500],
-  ['hold', ['up'], 40],
+  ['goto', 3, 1, 500],
+  ['exit', 'up', 400],
 
   // ---------------------------------------------------------------- d2 1,2,1
-  // Bosskey Cell. The chest.
-  ['goto', 4, 1, 500],
+  // The Boss Key.
+  ['goto', 7, 1, 500],
   ['hold', ['down'], 6],
   ['tap', 'a', 40],
   ['dialogue', 400],
   ['loot', 600],
 
-  // Back down through the Sounding Fork — the west throat is still flooded
-  // (the valve's own `open` flag persists; `TideValve.update` restores the
-  // water level to match on this fresh room entry, the fix this dungeon's
-  // own fork rooms needed and now carry) — and onto the west stair, which
-  // warps directly into Spire Ascent's LOWER cell rather than back through
-  // Bosskey Cell's own one exit.
-  ['goto', 1, 7, 500],
+  // Back down the flooded west throat and onto its pocket's stair, which
+  // comes up in Spire Ascent's lower room.
+  ['goto', 3, 9, 500],
   ['exit', 'down', 400],
-  ['goto', 1, 1, 500],
-  ['goto', 2, 4, 500],
+  ['goto', 3, 4, 500],
+  ['goto', 4, 4, 500],
 
   // ---------------------------------------------------------------- d2 1,3,2
-  // Spire Ascent's lower cell, up through to the boss door. Sound the conch
-  // to HIGH before opening it — Anemos's own weak window scales with the
-  // tide it is fought at (`anemosFeed`, `src/data/bosses.js`:
-  // `[40, 80, 160][tide.level]` frames open in every 250), and HIGH is the
-  // best it gets.
-  ['goto', 4, 3, 1500],
+  // Up to the boss door in Spire Ascent's north wall. HIGH is Anemos's
+  // widest window (`anemosFeed`: [40, 80, 160][tide] frames open in 250).
+  ['goto', 7, 1, 1500],
   ['hold', ['up'], 24],
   ['tap', 'a', 30],
+  ['dialogue', 300],
   ['use', 'conch', 1, 140],
-  ['goto', 4, 1, 500],
   ['exit', 'up', 400],
   ['wait', 90],
 
   // ---------------------------------------------------------------- d2 1,3,1
-  // ANEMOS, THE CROWNED COLUMN. THE FIGHT'S OWN OUTCOME IS SENSITIVE TO THE
-  // EXACT FRAME THE ROOM IS ENTERED AT, because Anemos's attack timers
-  // (`timer(e, 'feed', 250)`, `timer(e, 'ring', 170)`, etc.) are
-  // absolute-frame-based rather than relative to when the fight starts.
-  // RE-SWEPT TWICE NOW, for two different reasons, and the `wait` below
-  // reflects the second sweep:
-  //   S48: splicing the fixed `dTravel` into Reefguard Hall's return leg
-  //     shifted this room's entry by several hundred frames. The OLD
-  //     `wait: 220` still happened to pass, but a 1-frame sweep of 195-235
-  //     found it sitting on an isolated single-frame win, not a plateau —
-  //     replaced with `wait: 212`, the middle of a 7-frame stable band
-  //     (207-213).
-  //   S50: `dBoss` itself changed (`b.spec.safeWhenOpen`, see
-  //     `tools/actor-runtime.mjs` and `src/data/bosses.js`'s `anemos`
-  //     entry) — a boss-AI change moves a frame-phase tune exactly the same
-  //     way a route change does, and `check-playthrough.mjs` confirmed it:
-  //     `wait: 212` still passed but left only 2 of 20 quarter-hearts, a
-  //     much thinner margin than S48 measured for it. A fresh 1-frame sweep
-  //     of 205-230 against the new `dBoss` behaviour found an 8-frame
-  //     unbroken winning streak at 213-220 (no losses anywhere in it, unlike
-  //     the choppy frames on both sides); `wait: 216` is the middle of that
-  //     streak and also has the best margin within it (14 of 24
-  //     quarter-hearts).
-  // Per CLAUDE.md: "a five-line change to the movement path is never a
-  // five-line change" — the same is true of a change to the combat verb
-  // every boss fight shares. If anything upstream of this fight, OR
-  // `dBoss`'s own logic, ever changes again, re-sweep the same way
-  // (`beginPlaythrough` with the real `ROUTE` prefix, never an isolated
-  // `boot()`) rather than trusting a single pass.
+  // ANEMOS, THE CROWNED COLUMN. His timers run off the absolute frame, so
+  // the entry frame matters; this wait is re-swept whenever anything
+  // upstream moves (see LEDGER S48/S50 for the method).
   ['wait', 216],
   ['boss', 9000],
   ['wait', 200],
-
-  // THE ESSENCE PICKUP HAS NO `isDrop` — IT IS NOT A `Pickup` AND `dLoot`
-  // CANNOT SEE IT, AT ANY BUDGET. `Essence` (`src/game/objects.js`) collects
-  // by its own `overlaps(game.player)` check, so the only way the actor
-  // reaches it is to walk onto its exact tile by hand, before any `loot`
-  // call (a `loot` first, aimed at the bonus Heart Container `onBossDefeated`
-  // also drops, happens to still work by leaving the actor near enough
-  // afterward — but essence-first is the order that does not depend on it).
-  ['goto', 4, 3, 400],
+  // The Essence has no `isDrop`; walk onto it, mid-arena at 7,4.
+  ['goto', 7, 4, 400],
   ['dialogue', 900],
   ['loot', 900],
   ['dialogue', 900],
@@ -828,12 +735,12 @@ export const ROUTE = [
   // Sanctum's mouth.
   ['travel', 4, 2, 8000],
   ['travel', 4, 3, 8000],
-  ['goto', 2, 4, 900],
+  ['goto', 2, 5, 900],
   ['wait', 90],
-  ['goto', 8, 2, 900],
+  ['goto', 12, 2, 900],
   ['wait', 60],
   ['travel', 3, 7, 20000],
-  ['goto', 4, 7, 500],
+  ['goto', 7, 10, 500],
   ['wait', 60],
   // West along the strand. Screen by screen rather than one `travel`: a single
   // call across the map rerouted north through the salt pans and died there.
@@ -1116,7 +1023,10 @@ export const ROUTE = [
   ['tap', 'a', 30],
   ['goto', 4, 1, 900],
   ['hold', ['up'], 40],
-  ['wait', 90],
+  // Re-swept at S137 after D2's rebuild moved the entry frame: +50..+70 on
+  // the old 90 all win (hp left 14-16), +0..+40 and +80 lose; 150 sits in
+  // the middle of that window.
+  ['wait', 150],
 
   // ---------------------------------------------------------------- d3 0,3,1
   // GLOOMTIDE, THE BOGWATER MAW. `clearAdds` is not optional here and it is

@@ -1,3 +1,32 @@
+## S138 — the Coral Spire is rebuilt at Oracle room size
+
+### What landed
+- D2 Coral Spire at `cell: [15, 11]`: 25 rooms, both floors, same graph,
+  key doors and boss door in the ring, the Explorer's Crypt kit (`c*` picks;
+  see LEDGER S138 for the coordinates and why there are no side jambs).
+- Reefguard spawn moved mid-hall; Whelk Hollow column shortened for the
+  reefseed parity; jellyfish placed in their basins.
+- A boss's death clears the rest of the room's enemies with a puff.
+- Route re-routed through D2 (Reefguard Hall left by its west door with
+  `goto` + `exit`; the Sounding Fork's throat taken with `exit up`);
+  Gloomtide's wait re-swept to 150. `d2-fork-wrong` replay rewritten for the
+  new First Fork and re-recorded. measure-boss-combat's rows all re-read
+  from the new trace (every clock downstream moved).
+- check-dredge crashed on an undefined variable in the 15x11 fix; fixed.
+- Green: every checker in the CLAUDE.md table that the brief names, plus
+  test.mjs 83/83, replay 51/51, check-respawn 64/64, check-gates, check-trade,
+  check-build, and check-playthrough 41/41 to THE END with no deaths.
+
+### Open
+- D2 was ported faithfully; no room was deepened yet. The natural candidate
+  is the Glass Cell (d2 1,4,5) and the Whelk Cell (1,5,4): both are now big
+  empty 13x9 floors holding a Piece of Heart lying in the open beside keese
+  phased to HIGH. The Lens's own combat verb (a phased enemy is hittable
+  only while the Lens is up) would make the piece a reward for clearing a
+  pinned room with the Lens — optional, so the Lens is still never a gate.
+  It needs a prover (check-lens) and a route that swings with the Lens held.
+- D3..D6 still 10x8 (D3 next — NEXT-PROMPT.md).
+
 ## S137 — the first dungeon is rebuilt at Oracle room size
 
 The human named a new objective (see STATE.md): every dungeon at real Oracle

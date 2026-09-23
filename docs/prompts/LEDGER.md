@@ -916,6 +916,39 @@ checked and why; see `docs/NEXT-SESSION.md` S60 for the full account.
   `liftLevel: 2` + the `dredge` tile action, as this entry originally said;
   only the "read by nothing" half of the claim was wrong.
 
+## Settled at S138 — the Coral Spire is an Oracle dungeon
+
+- D2 is `cell: [15, 11]` with the Explorer's Crypt kit (`c*` picks in
+  tools/rip-dungeon-themes.py, from the True Colors entrance room whose ring
+  runs x=1713..1905, y=532..692). The crypt draws its side walls two tiles
+  thick; only the bevel is cut. It has NO side jambs — a side opening is
+  framed by plain runs. Its thick interior walls are the crypt's own flat
+  pink masonry (`cFill`), which is how the sheet draws solid stone; it is
+  not a missing tile. `ringWall` on a tiledef makes `Room.ringArt` treat an
+  interior wall as ring.
+- Same 25 rooms, same graph, same Lens forks (proved by check-lens), same
+  key count. The Whelk Hollow's water column is shorter than the 10x8 one:
+  the full-height column broke check-reefseed's two-tile-throw parity at LOW.
+- The Reefguard spawns at (12,5), mid-hall. Its old corner spawn pinned the
+  actor in the south-west corner. From the route's doorway it wins 13 of 13
+  seeds, every one on 9 of 20 quarter-hearts (the fight is deterministic).
+- Anemos from the route's doorway (112,150 on 24 of 24, settle 306): 8 of 13
+  seeds. The actor's record against him was 4-5 of 36 before; not retuned.
+- A boss's death removes every other enemy in the room with a puff
+  (`Game.onBossDefeated`). Gohmaraq's crabs killed the run AFTER he died.
+- Gohmaraq's contact damage stays 4: the S137 note above saying "contact
+  4 -> 3" is superseded — 3 violates check-hearts' damage ladder (boss rung
+  is 4). Only the rock spray and bubbles were halved.
+- Gloomtide's route `wait` is 150 (was 90): swept +0..+90 over the old one
+  against the real route prefix; +50..+70 all win, +80 loses.
+- Route directive lessons: at a room transition use `exit`, not `hold` —
+  a `hold` ends mid-scroll and the next `goto` runs from a stale position.
+  A two-room hall is left by `goto` to its door tile then `exit`, not
+  `travel` (travel refused the west door of Reefguard Hall).
+- measure-boss-combat: the route arena is the DEFAULT for any row with
+  `at`. `--at=route` parses as NaN and silently drops the actor at the
+  west door — every seed then dies identically, which is the tell.
+
 ## Settled at S137 — dungeons are built at Oracle room size now
 
 - A map may declare `cell: [15, 11]`; its rooms are Oracle rooms (one-tile

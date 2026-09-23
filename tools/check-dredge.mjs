@@ -320,7 +320,7 @@ for (const [mapId, m] of MAPS) {
     rooms.push({
       mapId, key, name: def.name || key,
       index: (m.dungeon && m.dungeon.index) | 0,
-      W: (sz[0] | 0) * 10, H: (sz[1] | 0) * 8,
+      W: (sz[0] | 0) * (m.cell ? m.cell[0] : 10), H: (sz[1] | 0) * (m.cell ? m.cell[1] : 8),
       grid: def.map, legend: getLegend(def.legend || m.legend),
       def, R: def.dredgeRoom,
     });
@@ -367,8 +367,8 @@ if (HOME) {
   for (const [key, def] of Object.entries(HOME.roomDefs || {})) {
     const legend = getLegend(def.legend || HOME.legend);
     const sz = def.size || [1, 1];
-    for (let y = 0; y < (sz[1] | 0) * 8; y++) {
-      for (let x = 0; x < (sz[0] | 0) * 10; x++) {
+    for (let y = 0; y < (sz[1] | 0) * (HOME.cell ? HOME.cell[1] : 8); y++) {
+      for (let x = 0; x < (sz[0] | 0) * (HOME.cell ? HOME.cell[0] : 10); x++) {
         const nm = legend[def.map[y][x]];
         if (!LEVELS.some(l => (defOf(nm, l).flags & F.SNAG))) continue;
         if (!declared.has(`${key}:${x},${y}`)) strays.push(`${key} ${x},${y} (${nm})`);

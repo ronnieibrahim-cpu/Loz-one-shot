@@ -205,6 +205,9 @@ export function registerTiles(defs) {
       // only; the tile's flags are the wall's. Named here for the same reason
       // as every field above.
       ring: def.ring || null,
+      // A tile that stands IN the ring and is wall to it — a pillar beside a
+      // way out — so the runs either side do not draw jambs against it.
+      ringWall: !!def.ringWall,
     });
   }
 }

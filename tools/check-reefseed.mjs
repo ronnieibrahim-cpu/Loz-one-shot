@@ -393,7 +393,7 @@ for (const [mapId, m] of MAPS) {
       mapId, key, name: def.name || key,
       index: (m.dungeon && m.dungeon.index) | 0,
       item: m.dungeon && m.dungeon.item,
-      W: (sz[0] | 0) * 10, H: (sz[1] | 0) * 8,
+      W: (sz[0] | 0) * (m.cell ? m.cell[0] : 10), H: (sz[1] | 0) * (m.cell ? m.cell[1] : 8),
       grid: def.map, legend: getLegend(def.legend || m.legend),
       def, R: def.reefseedRoom,
     });

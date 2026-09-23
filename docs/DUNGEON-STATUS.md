@@ -28,7 +28,8 @@ the health, not because the rooms do not work.
 ---
 
 **S137: D1 IS REBUILT AT ORACLE ROOM SIZE** (15x11 rooms, Seasons wall ring and
-doors, key doors in the ring) — commits `91cc5c7` and `50d8419`. D2-D6 are
+doors, key doors in the ring) — commits `91cc5c7` and `50d8419`. **S138: D2 is
+rebuilt too**, with the Explorer's Crypt kit. D3-D6 are
 still 10x8 and are rebuilt one per session under objective 10 in
 `docs/prompts/STATE.md`. A dungeon rebuilt at Oracle size is not "done" until
 its map declares `cell: [15, 11]`, it has its own Seasons kit, and
@@ -38,8 +39,8 @@ its map declares `cell: [15, 11]`, it has its own Seasons kit, and
 
 | D | Map | Name | Item | Status | Where it landed |
 |---|---|---|---|---|---|
-| 1 | `d1` | Tidewash Grotto | Tidewright's Anchor | **DONE** | `d655d1f`, merged to `main` |
-| 2 | `d2` | Coral Spire | Brineglass Lens | **DONE, AND PLAYED** | authored `0a3776f`; played end to end, `check-playthrough.mjs` 21/21, S41 |
+| 1 | `d1` | Tidewash Grotto | Tidewright's Anchor | **DONE; ORACLE SIZE** | `d655d1f`; rebuilt at 15x11 S137 (`91cc5c7`) |
+| 2 | `d2` | Coral Spire | Brineglass Lens | **DONE, AND PLAYED; ORACLE SIZE** | authored `0a3776f`; played end to end S41; rebuilt at 15x11 S138 |
 | 3 | `d3` | Bogwater Sanctum | Kelp-Soled Cleats | **DONE** | `a9eb63e` |
 | 4 | `d4` | Cliffside Cistern | Squall Bellows | **DONE** | `5fd7301` |
 | 5 | `d5` | Drowned Wood Shrine | Reefseed | **DONE** | `0db0eab` |

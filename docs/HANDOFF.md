@@ -465,6 +465,16 @@ BEFORE checking a file out for isolation, not after.**
   been passing on timing luck killed it. When the run dies somewhere you did
   not touch, look for a step that only ever worked on timing.
 
+- **At a room transition, a route step must be `exit`, not `hold` (S138).**
+  A `hold` can end mid-scroll; the next `goto` then plans from where Link
+  was before the scroll and gives up in six frames, and the step after that
+  walks him straight back out of the room. The trace shows it as a room
+  key that flips back.
+- **Every seed dying identically is a harness fault, not a fight (S138).**
+  `measure-boss-combat.mjs --at=route` parses to NaN and drops the actor at
+  the west door; the route arena is already the default. A real fight
+  varies with the seed.
+
 - **A DEAD ENEMY IS NOT DEAD UNTIL THE ANIMATION ENDS, AND EVERYTHING THAT
   ASKS "IS THIS STILL A THREAT" HAS TO SAY SO.** `Enemy.die` defers
   `Entity.die` behind an `ENEMY_DEATH_FRAMES` stall for anything with a

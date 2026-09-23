@@ -230,7 +230,7 @@ for (const [mapId, m] of MAPS) {
     const sz = def.size || [1, 1];
     rooms.push({
       mapId, key, name: def.name || key, kind: m.kind,
-      W: (sz[0] | 0) * 10, H: (sz[1] | 0) * 8,
+      W: (sz[0] | 0) * (m.cell ? m.cell[0] : 10), H: (sz[1] | 0) * (m.cell ? m.cell[1] : 8),
       grid: def.map, legend: getLegend(def.legend || m.legend),
       noTide: !!def.noTide, def, C: def.cleatRoom,
     });

@@ -227,13 +227,13 @@ export function installBosses() {
   // Oracle-size arena from the route's own doorway on a full sixteen, it won
   // seven seeds in thirteen and never finished above two hearts, and five of
   // every six hits it landed were the slam's rock spray. The spray's rocks
-  // and the last phase's bubbles now take a quarter heart, not a half, and a
-  // touch of the claw three quarters, not a whole (S137). NOT the slam's
-  // rhythm: the
+  // and the last phase's bubbles now take a quarter heart, not a half (S137).
+  // His claw stays a full heart: that is the boss rung of the damage ladder
+  // (tools/check-hearts.mjs). NOT the slam's rhythm: the
   // slam is also what opens the eye, and slowing it was measured and lost
   // thirteen seeds in thirteen — fewer windows is a longer fight.
   defineBoss('gohmaraq', {
-    hp: 24, damage: 3, pal: 'enemyr', speed: 0.55, rate: 9,
+    hp: 24, damage: 4, pal: 'enemyr', speed: 0.55, rate: 9,
     w: 32, h: 32, hb: { x: 3, y: 10, w: 26, h: 20 },
     frames: ['boss_gohmaraq_0', 'boss_gohmaraq_1', 'boss_gohmaraq_2'],
     hurtFrame: 'boss_gohmaraq_hurt',

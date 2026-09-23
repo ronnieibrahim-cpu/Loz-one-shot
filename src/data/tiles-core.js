@@ -2486,12 +2486,42 @@ export function installCoreTiles() {
     gShutE: { art: ART.gShutE, pal: 'gShutE', flags: F.SOLID | F.DOOR },
     gShutW: { art: ART.gShutW, pal: 'gShutW', flags: F.SOLID | F.DOOR },
 
-    // d2 Coral Spire — blue flagstone under coral-pink masonry.
-    dFloorCoral: { art: ART.reefFloor, pal: 'reefFloor' },
-    dFloorCoralAlt: { art: ART.reefFloor, pal: 'coral' },
-    dWallCoral: { art: ART.coralWall, pal: 'coralWall', flags: F.SOLID },
-    dWallCoralX: { art: ART.dWallCracked, pal: 'coral', flags: F.SOLID | F.BOMBABLE },
-    dBlockCoral: { art: ART.vaultBlock, pal: 'coral', flags: F.SOLID },
+    // d2 Coral Spire.
+    // S137: THE CORAL SPIRE IS AN ORACLE DUNGEON, and its kit is the pink
+    // Explorer's Crypt's, whole (`c*` picks in rip-dungeon-themes.py): the
+    // swirl floor, the blue tile panels for its worn floor, the gold-framed
+    // raised block, the crypt urn, and the wall ring. The crypt has no side
+    // doorway jambs to cut, so a side opening is framed by plain runs; its
+    // doors are the Seasons key doors and shutters the Grotto uses.
+    dFloorCoral: { art: ART.cFloor, pal: 'cFloor' },
+    dFloorCoralAlt: { art: ART.cFloorAlt, pal: 'cFloorAlt' },
+    dWallCoral: { art: ART.cFill, pal: 'cFill', flags: F.SOLID, ring: {
+      TL: 'cRingTL', TR: 'cRingTR', BL: 'cRingBL', BR: 'cRingBR',
+      N: 'cRingN', S: 'cRingS', W: 'cRingW', E: 'cRingE',
+      jNW: 'cJambNW', jNE: 'cJambNE', jSW: 'cJambSW', jSE: 'cJambSE',
+      lockN: 'gKeyN', lockS: 'gKeyS', lockE: 'gKeyE', lockW: 'gKeyW',
+      shutN: 'gShutN', shutS: 'gShutS', shutE: 'gShutE', shutW: 'gShutW',
+    } },
+    dWallCoralX: { art: ART.dWallCracked, pal: 'cRingN', flags: F.SOLID | F.BOMBABLE },
+    dBlockCoral: { art: ART.cBlock, pal: 'cBlock', flags: F.SOLID },
+    // The way out: the crypt entrance's two pillars in the south wall with
+    // the lit step between them. The pillars are wall to the ring either
+    // side of them (`ringWall`), so no jamb is drawn against a pillar.
+    dExitCoral: { art: ART.cArchC2, pal: 'cArchC2', flags: F.WARP },
+    dPillarCoralW: { art: ART.cArchC1, pal: 'cArchC1', flags: F.SOLID, ringWall: true },
+    dPillarCoralE: { art: ART.cArchC3, pal: 'cArchC3', flags: F.SOLID, ringWall: true },
+    cRingTL: { art: ART.cRingTL, pal: 'cRingTL', flags: F.SOLID },
+    cRingTR: { art: ART.cRingTR, pal: 'cRingTR', flags: F.SOLID },
+    cRingBL: { art: ART.cRingBL, pal: 'cRingBL', flags: F.SOLID },
+    cRingBR: { art: ART.cRingBR, pal: 'cRingBR', flags: F.SOLID },
+    cRingN: { art: ART.cRingN, pal: 'cRingN', flags: F.SOLID },
+    cRingS: { art: ART.cRingS, pal: 'cRingS', flags: F.SOLID },
+    cRingW: { art: ART.cRingW, pal: 'cRingW', flags: F.SOLID },
+    cRingE: { art: ART.cRingE, pal: 'cRingE', flags: F.SOLID },
+    cJambNW: { art: ART.cJambNW, pal: 'cJambNW', flags: F.SOLID },
+    cJambNE: { art: ART.cJambNE, pal: 'cJambNE', flags: F.SOLID },
+    cJambSW: { art: ART.cJambSW, pal: 'cJambSW', flags: F.SOLID },
+    cJambSE: { art: ART.cJambSE, pal: 'cJambSE', flags: F.SOLID },
     dUrnCoral: { art: ART.urn, pal: 'urn', flags: F.SOLID, underArt: 'dFloorCoral' },
 
     // d3 Bogwater Sanctum — a gold lattice sunk into swamp-green stone.
@@ -2726,7 +2756,8 @@ export function installCoreTiles() {
   // own floor. The Grotto's is the Seasons pot out of its own kit.
   for (const T of THEME_NAMES) {
     TILE_DEFS['dPot' + T] = {
-      art: T === 'Grotto' ? ART.gPot : ART.pot, pal: T === 'Grotto' ? 'gPot' : 'pot',
+      art: T === 'Grotto' ? ART.gPot : T === 'Coral' ? ART.cPot : ART.pot,
+      pal: T === 'Grotto' ? 'gPot' : T === 'Coral' ? 'cPot' : 'pot',
       flags: F.SOLID | F.ROCK, underArt: 'dFloor' + T, liftSprite: 'o_pot',
     };
   }

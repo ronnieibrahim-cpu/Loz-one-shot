@@ -67,7 +67,9 @@ const LOW = 0, MID = 1, HIGH = 2;
 // Same fights and design tide as check-bosses.mjs's FIGHTS table (kept in
 // sync by hand — see that file's own comment for why each tide is right).
 const FIGHTS = {
-  d1: { boss: 'gohmaraq', tide: LOW, items: { sword: 1, conch: 1, anchor: 1 } },
+  // `openRetreat`, as the route carries it since S137 (see the route's own
+  // note at the Gohmaraq step).
+  d1: { boss: 'gohmaraq', tide: LOW, opts: { openRetreat: true }, items: { sword: 1, conch: 1, anchor: 1 } },
   d2: { boss: 'anemos', tide: HIGH, items: { sword: 1, conch: 1, anchor: 1, lens: 1, bombs: 1 } },
   // LOW, not MID: MID is the tide Gloomtide WANTS (1.7x speed against 0.65x
   // everywhere else). See the long note in check-bosses.mjs's own table.
@@ -123,6 +125,9 @@ const FIGHTS = {
 // boss row, because a miniboss is fought BEFORE its dungeon is finished and
 // the two sets are not the same — the Reefguard has the Lens and no bombs.
 const MINIS = {
+  // RE-READ AT S137, after D2's rebuild at Oracle size. The FIELDS are the
+  // current trace; the step numbers and frames quoted in the comments below
+  // are the ones each row was first transcribed from, kept for the story.
   // d1 0,5,3, arena entered at step 132 (`exit down`) f13940, boss at f14081.
   // The Clawcrab is met on a FULL bar and that is as full as it goes there.
   clawcrab: { dungeon: 'd1', room: '0,5,3', flag: 'd1_clawcrab', tide: MID, qh: 12,
@@ -131,28 +136,28 @@ const MINIS = {
   // d2 1,4,2, step 308 (`hold up` through the door) f36606: `17,103 hp 15/20
   // tide 1 [reefguard+urchin]`. The boss directive begins the same frame, so
   // the settle is 0 — the route walks in and swings.
-  reefguard: { dungeon: 'd2', room: '1,4,2', flag: 'd2_reefguard', tide: MID, qh: 15,
+  reefguard: { dungeon: 'd2', room: '1,4,2', flag: 'd2_reefguard', tide: MID, qh: 20,
                items: { sword: 1, conch: 1, anchor: 1, lens: 1 },
-               at: [17, 103], facing: 'up', maxQh: 20, settle: 0, frame: 36606 },
+               at: [47, 153], facing: 'up', maxQh: 20, settle: 0, frame: 49244 },
   // d4 0,5,3, step 692 (`hold up`) f76801, boss at f76921: `47,95 hp 26/32
   // tide 2 [ironknight+keese]`. There is a keese in the room with him.
-  ironknight: { dungeon: 'd4', room: '0,5,3', flag: 'd4_ironknight', tide: HIGH, qh: 26,
+  ironknight: { dungeon: 'd4', room: '0,5,3', flag: 'd4_ironknight', tide: HIGH, qh: 27,
                 items: { sword: 1, conch: 1, anchor: 1, lens: 1, bombs: 1, cleats: 1, bellows: 1 },
-                at: [47, 95], facing: 'up', maxQh: 32, settle: 0, frame: 76801 },
+                at: [47, 95], facing: 'up', maxQh: 32, settle: 0, frame: 90781 },
   // d5 0,5,3, step 968 (`hold up`) f116879: `45,95 hp 27/40 tide 0
   // [thornvine]`. Straight in, no settle.
-  thornvine: { dungeon: 'd5', room: '0,5,3', flag: 'd5_thornvine', tide: LOW, qh: 27,
+  thornvine: { dungeon: 'd5', room: '0,5,3', flag: 'd5_thornvine', tide: LOW, qh: 28,
                items: { sword: 2, conch: 1, anchor: 1, lens: 1, bombs: 1, cleats: 1,
                         bellows: 1, reefseed: 1 },
-               at: [45, 95], facing: 'up', maxQh: 40, settle: 0, frame: 116879 },
+               at: [45, 95], facing: 'up', maxQh: 40, settle: 0, frame: 130792 },
   // d6 1,4,5, step 1272 (`travel`) f152861: `11,48 hp 26/44 tide 0
   // [tideshade]`. NO CHARMS — the route does not put one on until step 1326,
   // two rooms later, so this is the last fight in the game fought bare.
-  tideshade: { dungeon: 'd6', room: '1,4,5', flag: 'd6_tideshade', tide: LOW, qh: 26,
+  tideshade: { dungeon: 'd6', room: '1,4,5', flag: 'd6_tideshade', tide: LOW, qh: 29,
                items: { sword: 3, conch: 1, anchor: 1, lens: 1, bombs: 1, cleats: 1,
                         bellows: 1, reefseed: 1, kilnshell: 1, rod: 1, dredge: 1 },
                opts: { breakContact: true },
-               at: [11, 48], facing: 'right', maxQh: 44, settle: 0, frame: 152861 },
+               at: [11, 48], facing: 'right', maxQh: 44, settle: 0, frame: 166772 },
   // d6 1,4,2, step 1390 (`equip`) f163176: `227,97 hp 25/44 tide 2
   // [brinehulk+beamos+keese]`. THE ONE ROW WHOSE FRAME IS NOT A ROOM ENTRY:
   // the Crossed Shafts are entered thousands of frames earlier and both
@@ -160,11 +165,11 @@ const MINIS = {
   // instant the boss directive begins and the settle is nominal. He is fought
   // on the FAR ISLAND at HIGH, which is the only sea he can be hurt at, with
   // a beamos and a keese still in the room, and both charms on.
-  brinehulk: { dungeon: 'd6', room: '1,4,2', flag: 'd6_brinehulk', tide: HIGH, qh: 25,
+  brinehulk: { dungeon: 'd6', room: '1,4,2', flag: 'd6_brinehulk', tide: HIGH, qh: 36,
                items: { sword: 3, conch: 1, anchor: 1, lens: 1, bombs: 1, cleats: 2,
                         bellows: 1, reefseed: 1, kilnshell: 1, rod: 1, dredge: 1 },
                charms: { mid: 'coilrope', high: 'gillcarve' },
-               at: [227, 97], facing: 'right', maxQh: 44, settle: 30, frame: 163176 },
+               at: [227, 97], facing: 'right', maxQh: 44, settle: 30, frame: 176895 },
 };
 
 // THE FIGHT THE ROUTE ACTUALLY PLAYS.
@@ -225,10 +230,14 @@ const ROUTE_ARENA = {
   // through the boss door in the south wall at step 201, f26522: `113,150 hp
   // 16/16 tide 0 [gohmaraq]`, and waits 90.
   d1: { at: [113, 150], facing: 'up', qh: 16, maxQh: 16, settle: 90, frame: 26522 },
+  // S137: D2 IS AN ORACLE DUNGEON NOW. Walked in through the boss door at
+  // step 353, f55424: `112,150 hp 24/24 tide 2 [anemos]`, then 90 + 216.
+  // The rows below it were re-read from the same trace (every clock moved);
+  // d3's settle is 150 now, re-swept (see the route).
   // d2 1,3,1, trace step 361 (`exit up`) at f41457: `64,101 hp 24/24 tide 2
   // foes 1 [anemos]`. Also full, also 8 above the in-order count, and the
   // settle is 306 frames because the route takes two `wait`s here, not one.
-  d2: { at: [64, 101], facing: 'up', qh: 24, maxQh: 24, settle: 306, frame: 41457 },
+  d2: { at: [112, 150], facing: 'up', qh: 24, maxQh: 24, settle: 306, frame: 55424 },
   // d3 0,3,1, trace step 553 (`wait 90`) at f60233: `65,112 hp 24 tide 0
   // foes 1 [gloomtide]`. The bar is 32 by then — three Heart Containers and
   // the pieces the Sanctum pays out — so 24 of 32 is a player at three
@@ -236,16 +245,16 @@ const ROUTE_ARENA = {
   // CORRECTED AT S135: the bar is 28 here, not the 32 this row carried from
   // S133. Read out of `progress.maxHearts` at the step itself rather than
   // inferred from the Heart Containers the run had banked.
-  d3: { at: [65, 112], facing: 'up', qh: 24, maxQh: 28, settle: 90, frame: 60143 },
+  d3: { at: [65, 112], facing: 'up', qh: 24, maxQh: 28, settle: 150, frame: 74089 },
   // d4 0,3,1, trace step 776 (`hold up` through the door) at f85158:
   // `63,99 hp 17/32 tide 0 foes 1 [wyverna]`. SEVENTEEN OF THIRTY-TWO — the
   // route meets the fourth boss on barely half a bar, and this file has been
   // fighting her on 24 of 24.
-  d4: { at: [63, 99], facing: 'up', qh: 17, maxQh: 32, settle: 120, frame: 85158 },
+  d4: { at: [63, 99], facing: 'up', qh: 18, maxQh: 32, settle: 120, frame: 99138 },
   // d5 0,3,1, trace step 1003 (`hold up` through the door) at f119421:
   // `65,99 hp 21/40 tide 0 foes 1 [rootmaw]`. Twenty-one of forty, against a
   // file that has been fighting Rootmaw on 28 of 28.
-  d5: { at: [65, 99], facing: 'up', qh: 21, maxQh: 40, settle: 120, frame: 119421 },
+  d5: { at: [65, 99], facing: 'up', qh: 22, maxQh: 40, settle: 120, frame: 133334 },
   // d6 1,3,1, trace step 1423 (the throne-room `dialogue`) at f166238:
   // `63,101 hp 44 tide 1 foes 1 [nereth]`. The settle is 24 frames, not a
   // `wait`: the route opens Nereth's own dialogue on the way in, and that is
@@ -263,7 +272,7 @@ const ROUTE_ARENA = {
   // case this fight is played at — and no measurement of Nereth had ever had
   // it on. A charm is not an item and `setup.items` cannot grant one; see the
   // stamp below.
-  d6: { at: [63, 101], facing: 'up', qh: 44, maxQh: 44, settle: 24, frame: 166214,
+  d6: { at: [63, 101], facing: 'up', qh: 44, maxQh: 44, settle: 24, frame: 179934,
         charms: { mid: 'coilrope', high: 'gillcarve' } },
 };
 

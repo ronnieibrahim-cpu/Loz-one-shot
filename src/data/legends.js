@@ -293,6 +293,9 @@ export function installLegends() {
   // NOT at the Shrine's shared `dSnarl` — the same argument the Keep's `k`
   // makes, and for the same reason: the shared one is a brown oak ramp.
   registerLegend('dungeonCoral', { '5': 'dCoralBar', 'k': 'dSnarlCoral' }, 'dungeonCoral');
+  // The Spire is built at Oracle size (S137): its way out is the crypt's lit
+  // step between two pillars in the south wall, `(C)`.
+  registerLegend('dungeonCoral', { 'C': 'dExitCoral', '(': 'dPillarCoralW', ')': 'dPillarCoralE' }, 'dungeonCoral');
   theme('dungeonCistern', 'dFloorCistern', 'dFloorCisternAlt', 'dWallCistern', 'dWallCisternX', 'dBlockCistern', 'dUrnCistern');
   theme('dungeonWood',    'dFloorWood',    'dFloorWoodAlt',    'dWallWood',    'dWallWoodX',    'dBlockWood',    'dUrnWood');
   // The Drowned Wood Shrine needs one tide tile no other dungeon has, and every

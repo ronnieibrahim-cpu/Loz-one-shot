@@ -306,27 +306,30 @@ export const PLANS = {
       maxHearts: 12,
       hearts: 12,
       tide: 1,
-      enter: ['d2', 1, 4, 3, 64, 112, 'up'],
-      probes: [[1, 2], [8, 2]],
+      enter: ['d2', 1, 4, 3, 112, 152, 'up'],
+      probes: [[3, 2], [11, 2]],
     },
     steps: [
       ['wait', 30],
-      // Up the entry corridor onto the shelf, then east along it.
-      ['goto', 6, 5, 300],
+      // Up the entry corridor onto the shelf, then east along it (S137: the
+      // room is a 15x11 Oracle cell; the shelf is row 6).
+      ['goto', 9, 6, 300],
       ['wait', 20],
       // Into the face of the `>` ledge. One way; the shelf is gone after this.
       ['hold', ['right'], 60],
       ['wait', 30],
-      // Down to the sluice and face it.
-      ['goto', 8, 6, 200],
-      ['hold', ['left'], 8],
+      // Up beside the sluice and face it.
+      ['goto', 12, 6, 200],
+      ['hold', ['down'], 8],
       ['tap', 'a', 120],
       ['wait', 60],
-      // North into the shaft. It is still a hole; the actor stops at its lip.
+      // Into the shaft. It is still a hole: the actor drops, loses two
+      // quarter-hearts, and is put back at its lip.
+      ['goto', 11, 5, 200],
       ['hold', ['up'], 80],
       ['wait', 30],
       // The stair beside the alcove: the walk back, and the only way out.
-      ['goto', 7, 4, 200],
+      ['goto', 12, 5, 200],
       ['wait', 60],
     ],
     assert: { roomChanges: 1 },
