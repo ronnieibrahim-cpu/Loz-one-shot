@@ -335,6 +335,46 @@ for (const r of rooms) {
   }
 }
 
+// --- the other verb: a room that is cleared through the Lens ----------------
+//
+//   lensHunt: true    (on a room with `tideForce` and an `enemies` puzzle)
+//
+// The Lens's COMBAT verb (docs/ITEMS.md): an enemy authored `phase: n` is only
+// in the room at tide n, and a sword reaches it at any other tide only while
+// the Lens is up. A room that pins its sea away from every one of its phased
+// enemies can therefore be cleared by nothing else. What that must never do is
+// gate: the Lens is never the way through. So the claims are about the room's
+// shape, and tools/check-items.mjs proves the same room in the engine, both
+// ways (no blade reaches without the Lens; the reward pays out with it).
+const hunts = [];
+for (const [mapId, m] of MAPS) {
+  for (const [key, def] of Object.entries(m.roomDefs || {})) {
+    if (def.lensHunt) hunts.push({ mapId, key, def, index: m.dungeon ? (m.dungeon.index | 0) : null });
+  }
+}
+for (const h of hunts) {
+  const where = `${h.mapId} ${h.key} (${h.def.name || h.key}) [lensHunt]`;
+  const pin = h.def.tideForce;
+  const foes = (h.def.entities || []).filter(e => e[3] && e[3].phase != null);
+  const pz = h.def.puzzle || {};
+  const reward = (pz.reward && pz.reward.spawn) || [];
+  check(`${where}: the room pins its sea`, pin != null, 'no tideForce — the conch could just summon them');
+  check(`${where}: it has phased enemies to hunt`, foes.length > 0, 'nothing phased in the room');
+  check(`${where}: none of them is ever in the room at the pinned sea`,
+    foes.every(e => e[3].phase !== pin),
+    foes.filter(e => e[3].phase === pin).map(e => `${e[0]}@${e[1]},${e[2]}`).join(', '));
+  check(`${where}: its puzzle is "clear the room", with a reward`,
+    pz.enemies === true && reward.length > 0, JSON.stringify(pz));
+  check(`${where}: the reward is optional — no key, no door, no item that gates`,
+    reward.every(sp => sp[0] === 'pickup' && sp[3] && sp[3].kind !== 'key' && sp[3].kind !== 'bossKey')
+      && !pz.door && !pz.open && !pz.opens,
+    'the Lens is never a gate (docs/ITEMS.md)');
+  check(`${where}: it stands in or after the dungeon that hands the Lens over`,
+    h.index !== null && h.index >= LENS_INDEX, `index ${h.index}`);
+  console.log(`       ${foes.length} phased at ${[...new Set(foes.map(e => LEVEL_NAME[e[3].phase]))].join('/')}, `
+    + `sea pinned at ${LEVEL_NAME[pin]}; pays ${reward.map(sp => sp[3].kind).join(', ')}`);
+}
+
 console.log(`\n=== ${passed} passed, ${failures.length} failed ===`);
 for (const f of failures) console.log('  ' + f);
 process.exit(failures.length ? 1 : 0);

@@ -113,13 +113,27 @@ const ids = named.length ? named : await page.evaluate(async () => {
   const m = await import('./src/game/cutscene.js');
   return Object.keys(m.CUTSCENES);
 });
+// A scene that MOVES THE SEA is played again from each other level, as
+// `id@level`. A `tide` beat waits for its sweep to finish, and the sweep did
+// not advance under a cutscene: the ending's `{ tide: 1 }` froze the game on
+// its last scene for anyone who killed Nereth at LOW or HIGH, and every run of
+// this harness started it at MID, where the beat changes nothing (S138).
+if (!named.length) {
+  const seaMovers = await page.evaluate(async () => {
+    const m = await import('./src/game/cutscene.js');
+    return Object.entries(m.CUTSCENES).filter(([, v]) => Array.isArray(v) && v.some(s => s.tide != null)).map(([k]) => k);
+  });
+  for (const id of seaMovers) ids.push(id + '@0', id + '@2');
+}
 
 const report = [];
 let failed = 0;
 for (const id of ids) {
-  const run = await page.evaluate(async ({ id, READ_CPS, CAP_FRAMES }) => {
+  const run = await page.evaluate(async ({ id: tag, READ_CPS, CAP_FRAMES }) => {
     const g = window.__game;
+    const [id, lv] = tag.split('@');
     g.mode = 'play'; g.cutscene = null;
+    g.tide.setLevel(lv != null ? Number(lv) : 1, { instant: true });
     if (!g.startCutscene(id, { data: { index: 1 } })) return { err: 'no such cutscene' };
     const timeline = [];
     // MEASURED IN GAME FRAMES, NOT rAF CALLBACKS. The fixed-step loop can tick

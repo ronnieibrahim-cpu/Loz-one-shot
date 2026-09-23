@@ -1114,26 +1114,46 @@ export function installDungeonsA() {
       },
       '1,4,5': {
         name: 'Glass Cell',
+        // THE LENS'S OTHER HALF, next door to the chest it comes out of. Three
+        // keese live here at HIGH and only at HIGH, and the room pins its sea
+        // at LOW and refuses the conch — so on the conch alone the room is
+        // empty and the Piece of Heart never comes out of the floor. Held up,
+        // the Lens draws what lives at the other tide as a ghost and lets a
+        // sword connect with it (`Game.updatePhaseShift`); it still cannot
+        // bite you. Optional, so the Lens is never a gate: the room is a room
+        // you walk into and out of either way. tools/check-lens.mjs proves
+        // both halves in the engine (`lensHunt`).
         map: [
           '#######.#######',
           '#.............#',
+          '#..=.......=..#',
           '#.............#',
           '#.............#',
           '#.............#',
           '#.............#',
           '#.............#',
-          '#.............#',
-          '#.U...........#',
-          '#.............#',
+          '#..=.......=..#',
+          '#.U.........U.#',
           '###############',
         ],
+        tideForce: 0,
+        lensHunt: true,
         entities: [
-          ['keese', 4, 5, { phase: 2 }],
-          ['keese', 10, 6, { phase: 2 }],
-          ['pickup', 7, 4, { kind: 'heartPiece' }],
+          ['keese', 4, 4, { phase: 2 }],
+          ['keese', 10, 5, { phase: 2 }],
+          ['keese', 7, 7, { phase: 2 }],
         ],
+        puzzle: {
+          enemies: true,
+          flag: 'd2_glass_puzzle',
+          reward: {
+            spawn: [['pickup', 7, 5, { kind: 'heartPiece' }]],
+            say: 'The last wingbeat stops, and something\nsettles out of the salt.',
+          },
+        },
         readable: [
-          [2, 8, 'Nothing here. The salt on the floor says otherwise.'],
+          [2, 9, 'Wingbeats in an empty room, and the sea\nwill not come in to show you what beats them.'],
+          [12, 9, 'What lives at the other tide, the glass\nshows. What the glass shows, a blade finds.'],
         ],
       },
       '1,4,3': {

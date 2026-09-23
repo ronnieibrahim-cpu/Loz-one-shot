@@ -802,6 +802,26 @@ export async function installRuntime() {
   }
 
   /**
+   * PLAY THE ENDING OUT: `['ending', maxF]`.
+   *
+   * The ending is a cutscene of text beats with silent stretches between
+   * them, and a `dialogue` directive returns in the first silent stretch it
+   * meets — so the route used to close on `dialogue` + `wait` and reach THE
+   * END only when those happened to straddle the beats. Moving any frame
+   * upstream (S138: one Lens fight in D2) left the ending parked on a page
+   * nobody turned. This does what a player does: turn each page as it comes
+   * and otherwise wait, until the game is holding its THE END card.
+   */
+  function* dEnding(maxF) {
+    const g = window.__game;
+    for (let f = 0; f < (maxF || 6000); f++) {
+      if (g.mode === 'theend') return;
+      yield (g.dialogue.active && f % 6 === 0) ? BIT.a : 0;
+    }
+    throw new Error(`ending: no THE END after ${maxF || 6000} frames (mode ${g.mode})`);
+  }
+
+  /**
    * Close on the nearest live enemy and swing at it.
    *
    * The naive version — walk at it, press B — loses. Contact damage lands the
@@ -1121,6 +1141,21 @@ export async function installRuntime() {
     // in a slot, because a run that equips itself from inside a fight is a run
     // that was handed something.
     const RING = !!(opts && opts.ring);
+    // FIGHT WITH THE LENS UP — `['fight', maxF, patience, { lens: true }]`.
+    //
+    // A phased enemy (`phase: n`) is only in the room while the sea is at n.
+    // At any other level it is hidden and nothing can hit it — unless the
+    // Brineglass Lens is held, which draws it as a ghost and lets a sword
+    // connect (`Game.updatePhaseShift`). The Glass Cell pins its sea where its
+    // keese are not, so this is the only way to clear it. The Lens's button is
+    // held on every frame the fight yields, and a phased enemy counts as a foe
+    // even while it is still hidden, or the fight would see an empty room on
+    // its first frame, before the Lens has faded up.
+    const LENS = opts && opts.lens ? slotBit('lens') : 0;
+    if (opts && opts.lens && !LENS) {
+      throw new Error(`fight: { lens: true } but the Lens is on neither button in `
+        + `${g.mapId} ${g.room && g.room.key} — put it on B with ['equip', 'lens', 'B']`);
+    }
     // ASKED UP FRONT, not at the first swing. A `fight` that finds an empty
     // room never reaches the swing and would pass while still being unarmed —
     // and the next one that does find something is the one that dies.
@@ -1192,7 +1227,7 @@ export async function installRuntime() {
       // bought its own killer sixteen wasted frames in the middle of a fight,
       // and the Tide Gallery's went from cleared to a death.
       const foes = g.entities.filter(e => e.isEnemy && !e.dead && !e.dying
-        && !e.dormant && !e.hidden);
+        && !e.dormant && (!e.hidden || (LENS && e.phasedOut)));
       if (!foes.length) return;
       // Some enemies sit in water the player cannot follow them into. Killing
       // nothing for a long stretch means this is one of those, not that the
@@ -1213,7 +1248,7 @@ export async function installRuntime() {
       if (RING && (best.shield || best.metal) && (best.rodLock || 0) <= 20
           && bd <= 40 && !ringCool && slotBit('rod')) {
         ringCool = 24;
-        yield slotBit('rod'); f++; continue;
+        yield slotBit('rod') | LENS; f++; continue;
       }
 
       /**
@@ -1249,11 +1284,11 @@ export async function installRuntime() {
       if (Math.abs(perp) > LINED) {
         // Off the enemy's row or column: the sword box is narrow, so line up
         // before closing or the swing goes past it.
-        yield safeF(axisX ? (dy < 0 ? BIT.up : BIT.down) : (dx < 0 ? BIT.left : BIT.right));
+        yield safeF(axisX ? (dy < 0 ? BIT.up : BIT.down) : (dx < 0 ? BIT.left : BIT.right)) | LENS;
         f++; continue;
       }
       const dist = Math.abs(along);
-      if (dist > FAR) { yield safeF(BIT[face]); f++; continue; }
+      if (dist > FAR) { yield safeF(BIT[face]) | LENS; f++; continue; }
       if (dist < NEAR) {
         const away = axisX ? (dx < 0 ? BIT.right : BIT.left) : (dy < 0 ? BIT.down : BIT.up);
         const room2 = safeF(away);
@@ -1268,16 +1303,16 @@ export async function installRuntime() {
         // while it retreated against a wall that was not there.
         // A person swings at something standing on top of them. So: if the
         // retreat is actually blocked, face it and swing instead.
-        if (!room2) { yield safeF(BIT[face]); f++; yield swordBit('fight'); f++; continue; }
-        yield room2; f++; continue;
+        if (!room2) { yield safeF(BIT[face]) | LENS; f++; yield swordBit('fight') | LENS; f++; continue; }
+        yield room2 | LENS; f++; continue;
       }
       // In the window: face, swing, then back off diagonally until the enemy
       // has to come and find us again.
       const backAlong = axisX ? (dx < 0 ? BIT.right : BIT.left) : (dy < 0 ? BIT.down : BIT.up);
       const backPerp = axisX ? (dy < 0 ? BIT.down : BIT.up) : (dx < 0 ? BIT.right : BIT.left);
-      yield safeF(BIT[face]); f++;
-      yield swordBit('fight'); f++;
-      for (let i = 0; i < BACKOFF; i++) { yield safeF(backAlong | backPerp, true); f++; }
+      yield safeF(BIT[face]) | LENS; f++;
+      yield swordBit('fight') | LENS; f++;
+      for (let i = 0; i < BACKOFF; i++) { yield safeF(backAlong | backPerp, true) | LENS; f++; }
     }
   }
 
@@ -2712,6 +2747,7 @@ export async function installRuntime() {
       else if (kind === 'dredge') yield* dDredge(a[0], a[1], a[2], a[3], a[4]);
       else if (kind === 'reefseed') yield* dReefseed(a[0], a[1], a[2]);
       else if (kind === 'trade') yield* dTrade(a[0], a[1]);
+      else if (kind === 'ending') yield* dEnding(a[0]);
       else throw new Error('unknown replay directive: ' + kind);
       // A trace of where each directive left the player. Recording prints it;
       // it is how you find out that step 9 never reached the room step 10

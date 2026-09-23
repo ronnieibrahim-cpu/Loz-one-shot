@@ -101,6 +101,7 @@ export class Game {
     this.boss = null;
     this.shakeAmp = 0; this.shakeTime = 0;
     this.hitstop = 0;
+    this._enteringRoom = false;   // setRoom: the room's own tide pin is not a room event
     this.fadeAmount = 0; this.fadeDir = 0; this.fadeThen = null; this.fadeWhite = false;
     this.transition = null;
     this.bannerText = null; this.bannerTime = 0;
@@ -235,7 +236,16 @@ export class Game {
     this.rng = roomStream(this.progress.seed, this.mapId, r.key);
     r.visited = true;
     this.progress.secrets['seen:' + this.mapId + ':' + r.key] = true;
+    // A room that pins the sea moves it on the way in, and that change used
+    // to fire the tide room-event AT THE NEW ROOM WHILE THE OLD ROOM'S
+    // ENTITIES WERE STILL LOADED: its script heard a tide turn nobody made,
+    // and its puzzle was judged against a roster it does not have — an
+    // enemies-clear puzzle read "no enemies" and paid out on the doorstep
+    // (the Glass Cell's Piece of Heart, S138). The puzzle is checked below,
+    // once the room's own entities exist; the entry itself is not an event.
+    this._enteringRoom = true;
     this.tide.applyRoomRules(r);
+    this._enteringRoom = false;
     // Barnacle Skin is "one free hit per room", so the shell regrows exactly
     // here and nowhere else. Doing it on tide change instead would make it a
     // charm about the conch, which is a different charm.
@@ -829,7 +839,7 @@ export class Game {
 
   roomEvent(name, data) {
     const room = this.room;
-    if (!room) return;
+    if (!room || this._enteringRoom) return;
     if (room.def.script && room.def.script.onEvent) room.def.script.onEvent(this, name, data);
     this.checkPuzzle();
   }
@@ -1473,6 +1483,13 @@ export class Game {
         return;
       case 'cutscene':
         this.dialogue.update();
+        // THE SEA KEEPS MOVING UNDER A CUTSCENE. A `tide` beat starts a sweep
+        // and then waits for it to finish (`stepDone`), and the sweep only
+        // advanced in play mode — so a beat that actually moved the water
+        // waited for ever. The ending's `{ tide: 1 }` froze the game on the
+        // last scene for anyone who killed Nereth at LOW or HIGH (S138); the
+        // test run only ever got through because it happened to win at MID.
+        this.tide.update();
         if (this.cutscene) {
           const done = this.cutscene.update();
           if (done && this._theEnd) {

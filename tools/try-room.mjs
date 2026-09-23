@@ -44,6 +44,6 @@ for (let i = 0; i < 4000; i++) {
   try { r = await page.evaluate(n => window.__rp.pump(n), 50); } catch (e) { err = e.message.split('\n')[0]; break; }
   if (r.done || r.error) { if (r.error) err = r.error; break; }
 }
-const st = await page.evaluate(() => { const g = window.__game, p = g.player; return { room: g.mapId + ' ' + (g.room && g.room.key), x: p && p.x, y: p && p.y, hp: g.progress.hearts, max: g.progress.maxHearts, pc: g.progress.heartPieces, tide: g.tide.level, mode: g.mode, frozen: p && p.frozen, dlg: g.dialogue.active, show: !!g.itemShow, items: Object.keys(g.progress.items).join('+'), A: g.progress.equipA, B: g.progress.equipB, ents: g.entities.filter(e => !e.isEffect).map(e => (e.type || e.kind || e.constructor.name) + '@' + Math.round(e.x) + ',' + Math.round(e.y)).join(' ') }; });
+const st = await page.evaluate(() => { const g = window.__game, p = g.player; return { room: g.mapId + ' ' + (g.room && g.room.key), x: p && p.x, y: p && p.y, hp: g.progress.hearts, max: g.progress.maxHearts, pc: g.progress.heartPieces, tide: g.tide.level, mode: g.mode, frozen: p && p.frozen, dlg: g.dialogue.active, show: !!g.itemShow, items: Object.keys(g.progress.items).join('+'), A: g.progress.equipA, B: g.progress.equipB, ents: g.entities.filter(e => !e.isEffect).map(e => (e.type || e.kind || e.constructor.name) + (e.kind && e.type ? ":" + e.kind : "") + '@' + Math.round(e.x) + ',' + Math.round(e.y)).join(' ') }; });
 console.log(JSON.stringify(st), err ? 'ERR ' + err : '');
 await browser.close(); server.close();

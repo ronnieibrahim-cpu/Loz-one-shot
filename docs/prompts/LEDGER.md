@@ -945,6 +945,14 @@ checked and why; see `docs/NEXT-SESSION.md` S60 for the full account.
   a `hold` ends mid-scroll and the next `goto` runs from a stale position.
   A two-room hall is left by `goto` to its door tile then `exit`, not
   `travel` (travel refused the west door of Reefguard Hall).
+- The Glass Cell (d2 1,4,5) is a `lensHunt` room: keese phased to HIGH, sea
+  pinned at LOW, the Piece of Heart the reward for clearing it. Proved by
+  check-lens (static) and check-items (in-engine, both ways).
+- `Game.setRoom` suppresses room events while `applyRoomRules` moves the sea
+  on entry; the tide sweep advances in cutscene mode (the ending froze at
+  LOW/HIGH). Both were real player-facing bugs.
+- Route: wisp cleared before coast trade stage 8; Nereth's entry wait 95
+  (swept 20..140: 70+ win, 80..110 best); the run ends on `['ending']`.
 - measure-boss-combat: the route arena is the DEFAULT for any row with
   `at`. `--at=route` parses as NaN and silently drops the actor at the
   west door — every seed then dies identically, which is the tell.

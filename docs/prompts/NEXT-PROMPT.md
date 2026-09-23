@@ -31,8 +31,8 @@ will need re-sweeping: it is a frame-phase fight (see the route comment).
 
 Deepen one or two rooms with a second use of the Cleats, proved both ways by
 `tools/check-cleats.mjs`, with a readable hint in the room. Nothing obscure.
-S138 did not get to D2's deepening; if D3 goes quickly, that is the other
-candidate (see NEXT-SESSION S138, "Open").
+S138 deepened D2's Glass Cell with the Lens's combat verb; read how it is
+proved (check-lens `lensHunt`, check-items) before writing D3's.
 
 ## Done means
 - `node tools/validate.mjs`, `walk-dungeons.mjs`, `check-dungeon-strands.mjs`,

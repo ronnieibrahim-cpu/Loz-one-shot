@@ -303,6 +303,44 @@ r = await read(() => {
 check('the Lens reveals a phased enemy', !r.hidden && r.alpha > 0, `hidden=${r.hidden} alpha=${r.alpha}`);
 check('the Lens makes a phased enemy hittable', r.hurt === true, 'the sword still missed');
 check('a revealed enemy still cannot hurt you', r.harmless === true);
+await hold([]); await step(20);
+
+// THE SAME VERB AS A ROOM: the Glass Cell (d2 1,4,5, S138). Its keese live at
+// HIGH, the room pins the sea at LOW and refuses the conch, and its Piece of
+// Heart is the reward for clearing it — so on the conch alone it cannot be
+// had, and with the Lens it can. Walked in at MID, the way the route arrives,
+// because a pin that moves the sea on entry once paid the reward out on the
+// doorstep (the tide room-event fired before the room's keese existed).
+// `park` wipes the room and sets the sea AFTER entering, which is exactly
+// the order that hides this; so park next door and walk in for real.
+await park({ map: 'd2', floor: 1, rx: 4, ry: 4, tx: 7, ty: 9, dir: 'down', tide: 1,
+  items: { lens: 1, sword: 1, conch: 1 }, equipA: 'sword', equipB: 'lens' });
+await page.evaluate(() => window.__game.enterMap('d2', 1, 4, 5, 112, 20, 'down', { instant: true }));
+await step(4);
+const glass = () => read(() => {
+  const g = window.__game;
+  const keese = g.entities.filter(e => e.isEnemy && !e.dead);
+  return {
+    key: g.room.key, level: g.tide.level, conch: g.tide.blockedReason(),
+    keese: keese.length, phased: keese.filter(e => e.phasedOut).length,
+    piece: g.entities.some(e => e.kind === 'heartPiece'),
+    hurt: keese.map(e => e.hurt(g, 99, 'down', 0)).some(Boolean),
+  };
+});
+r = await glass();
+check('the Glass Cell pins its sea at LOW', r.key === '1,4,5' && r.level === 0, `room ${r.key}, level ${r.level}`);
+check('the Glass Cell refuses the conch', r.conch === 'forced', `blocked: ${r.conch}`);
+check('the Glass Cell pays nothing on the way in', !r.piece && r.keese === 3 && r.phased === 3,
+  `piece ${r.piece}, ${r.keese} keese, ${r.phased} phased`);
+check('without the Lens no blade reaches its keese', r.hurt === false, 'a keese took the hit');
+await hold(['b']); await step(20);
+r = await glass();
+check('with the Lens up the blade reaches them', r.hurt === true, 'every keese still missed');
+await step(90);
+r = await glass();
+check('cleared with the Lens, the Glass Cell pays out its Piece of Heart', r.keese === 0 && r.piece,
+  `${r.keese} keese left, piece ${r.piece}`);
+await hold([]); await step(4);
 
 // ===========================================================================
 section('Kelp-Soled Cleats');

@@ -17,14 +17,45 @@
   test.mjs 83/83, replay 51/51, check-respawn 64/64, check-gates, check-trade,
   check-build, and check-playthrough 41/41 to THE END with no deaths.
 
+### Deepened: the Glass Cell (d2 1,4,5), the Lens's combat verb as a room
+- Next door to the Lens's chest. Three keese live at HIGH only; the room
+  pins the sea at LOW (`tideForce: 0`) so the conch cannot summon them, and
+  its Piece of Heart is the reward for clearing it (`puzzle.enemies`). Held
+  up, the Lens makes them hittable (`Game.updatePhaseShift`). Optional, so
+  the Lens is still never a gate. Two signs say so in plain words.
+- Proved: check-lens's new `lensHunt` section (static: pinned away from
+  every phased foe, clear-the-room puzzle, reward optional, after D2), and
+  check-items walks into the room for real both ways (no blade reaches
+  without the Lens; the Piece pays out with it).
+- The robot: `['fight', n, p, { lens: true }]` holds the Lens's button on
+  every frame and counts phased foes as foes.
+
+### Two real bugs found on the way
+- ENTERING A ROOM THAT PINS THE SEA FIRED THE TIDE ROOM-EVENT BEFORE THE
+  ROOM'S ENTITIES EXISTED: the new room's script heard a tide turn nobody
+  made and its puzzle was judged against no enemies — a clear-the-room
+  reward paid out on the doorstep. `Game.setRoom` now marks the entry and
+  `roomEvent` ignores it; the puzzle is checked after the spawn. Only the
+  Glass Cell had that shape today.
+- THE ENDING FROZE FOR ANYONE WHO KILLED NERETH AT LOW OR HIGH. Its
+  `{ tide: 1 }` beat waits for the sweep, and the sea did not move in
+  cutscene mode. The tide now updates under a cutscene. watch-cutscenes
+  now plays every sea-moving scene from all three levels (`ending@0`,
+  `ending@2`). The run found it because the Glass Cell moved Nereth's
+  fight onto a different clock and he died at LOW.
+
+### Route consequences
+- Coast trade stage 8 (overworld 0,5,5): a wisp at the trader's feet now
+  shares its timing with the press loop; the route clears it first
+  (`fight 900`) at no cost.
+- Nereth's entry wait (the stairhead fairy's `wait`) re-swept: 60 -> 95.
+- The route ends on the new `['ending', maxF]` directive: turn each page as
+  it comes until the game holds THE END, instead of `dialogue` + `wait`.
+
 ### Open
-- D2 was ported faithfully; no room was deepened yet. The natural candidate
-  is the Glass Cell (d2 1,4,5) and the Whelk Cell (1,5,4): both are now big
-  empty 13x9 floors holding a Piece of Heart lying in the open beside keese
-  phased to HIGH. The Lens's own combat verb (a phased enemy is hittable
-  only while the Lens is up) would make the piece a reward for clearing a
-  pinned room with the Lens — optional, so the Lens is still never a gate.
-  It needs a prover (check-lens) and a route that swings with the Lens held.
+- The Whelk Cell (d2 1,5,4) has the same shape the Glass Cell had — a Piece
+  lying in the open beside a keese phased to HIGH. Left as it was: it is the
+  Reefseed grove's back room and its Piece is part of that grove's reward.
 - D3..D6 still 10x8 (D3 next — NEXT-PROMPT.md).
 
 ## S137 — the first dungeon is rebuilt at Oracle room size

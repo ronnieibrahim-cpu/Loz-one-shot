@@ -470,6 +470,14 @@ BEFORE checking a file out for isolation, not after.**
   was before the scroll and gives up in six frames, and the step after that
   walks him straight back out of the room. The trace shows it as a room
   key that flips back.
+- **A room's own tide pin is not a tide event (S138).** `applyRoomRules`
+  moves the sea during `setRoom`, before the room's entities spawn; anything
+  that reacts to a tide change (scripts, puzzles) must not see it. A
+  clear-the-room puzzle read an empty entity list and paid out on entry.
+- **A scripted beat that waits on the world needs the world to run (S138).**
+  The ending's `{ tide: 1 }` waited on a sweep that only advanced in play
+  mode. It worked for 90 sessions because the test run always killed Nereth
+  at MID. When a checker only ever plays one state, it proves one state.
 - **Every seed dying identically is a harness fault, not a fight (S138).**
   `measure-boss-combat.mjs --at=route` parses to NaN and drops the actor at
   the west door; the route arena is already the default. A real fight

@@ -616,9 +616,16 @@ export const ROUTE = [
   ['loot', 600],
 
   // ---------------------------------------------------------------- d2 1,4,5
-  // Glass Cell, the second Piece of Heart; its keese only bite at HIGH.
+  // Glass Cell, the second Piece of Heart (S138): its keese live at HIGH,
+  // the room pins the sea at LOW, and the Piece is the reward for clearing
+  // it — so they are hunted with the Lens held up, the item from the chest
+  // next door. The conch goes back on B for everything after.
   ['travel', 4, 5, 1200],
+  ['equip', 'lens', 'B'],
+  ['fight', 2400, 900, { lens: true }],
+  ['dialogue', 300],
   ['loot', 900],
+  ['equip', 'conch', 'B'],
 
   // ---------------------------------------------------------------- d2 1,4,3
   // The First Fork. The route already knows the answer and never presses
@@ -2024,6 +2031,11 @@ export const ROUTE = [
   ['travel', 5, 7, 4000], ['loot', 600],
   ['travel', 5, 6, 4000], ['loot', 600],
   ['travel', 5, 5, 4000],
+  // Clear the wisp first (S138). It hangs at the trader's feet ringing the
+  // square with shots, and on a clock a few hundred frames later than the
+  // one this was routed on, the press loop never got a word in. Cut down
+  // from the side it costs nothing.
+  ['fight', 900],
   ['trade', 8, 1200],
   ['loot', 600],
   ['travel', 5, 6, 4000], ['loot', 600],
@@ -2636,8 +2648,11 @@ export const ROUTE = [
   // the first moment in the run it can be walked into at all — and the last
   // one in the game where a heal is worth anything. The run climbs the stair
   // on forty-eight of forty-eight instead of twenty-eight.
+  // The wait is also the King's entry clock. Re-swept at S138 when the Glass
+  // Cell's Lens fight moved every frame after it: 20..60 lose, 70..140 all
+  // win, 80..110 leave the most standing; 95 is the middle of that.
   ['goto', 1, 1, 900],
-  ['wait', 60],
+  ['wait', 95],
   ['goto', 4, 1, 900],
   ['exit', 'up', 900],
 
@@ -2662,9 +2677,11 @@ export const ROUTE = [
 
   // AND THE ENDING, which chains off the sixth claim (`Game.claimEssence`
   // queues it — S43) and is the last thing in the game. The run sits through
-  // it the way a player does.
-  ['dialogue', 6000],
-  ['wait', 600],
+  // it the way a player does: every page turned as it comes, until the game
+  // holds its THE END card (S138 — `dialogue` + `wait` only ever got there on
+  // timing).
+  ['ending', 8000],
+  ['wait', 120],
 ];
 
 /**
