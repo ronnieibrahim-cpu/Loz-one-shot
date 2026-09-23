@@ -127,7 +127,7 @@ const MINIS = {
   // The Clawcrab is met on a FULL bar and that is as full as it goes there.
   clawcrab: { dungeon: 'd1', room: '0,5,3', flag: 'd1_clawcrab', tide: MID, qh: 12,
               items: { sword: 1, conch: 1, anchor: 1 },
-              at: [65, 3], facing: 'down', maxQh: 12, settle: 141, frame: 13940 },
+              at: [112, 8], facing: 'down', maxQh: 12, settle: 141, frame: 13940 },
   // d2 1,4,2, step 308 (`hold up` through the door) f36606: `17,103 hp 15/20
   // tide 1 [reefguard+urchin]`. The boss directive begins the same frame, so
   // the settle is 0 — the route walks in and swings.
@@ -220,7 +220,11 @@ const ROUTE_ARENA = {
   // foes 1 [gohmaraq]`. The first boss in the game is met on a FULL bar, and
   // 16 is four quarter-hearts more than `IN_ORDER_QH` assumes, because the run
   // has already found four Pieces of Heart by then.
-  d1: { at: [65, 101], facing: 'up', qh: 16, maxQh: 16, settle: 90, frame: 21285 },
+  //
+  // S137: D1 IS AN ORACLE DUNGEON NOW (15x11 rooms). The route walks in
+  // through the boss door in the south wall at step 201, f26522: `113,150 hp
+  // 16/16 tide 0 [gohmaraq]`, and waits 90.
+  d1: { at: [113, 150], facing: 'up', qh: 16, maxQh: 16, settle: 90, frame: 26522 },
   // d2 1,3,1, trace step 361 (`exit up`) at f41457: `64,101 hp 24/24 tide 2
   // foes 1 [anemos]`. Also full, also 8 above the in-order count, and the
   // settle is 306 frames because the route takes two `wait`s here, not one.

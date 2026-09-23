@@ -299,6 +299,11 @@ const CUTSCENES = {
     { text: 'Thalassia keeps its shape.\nThe pier goes back where the pier goes.\nThe Maku Tree sleeps.', frames: 260 },
     { text: 'The Legend of Zelda\nOracle of Tides\n\nTHE END', frames: 320 },
     { flag: 'finishedGame' },
+    // THE GAME DOES NOT RESUME AFTER THE END. It used to: the scene let go,
+    // the mode went back to 'play', and Link stood in the throne room again
+    // with whatever Nereth had summoned still swinging at him. The source
+    // games hold THE END until a button, and then it is the title screen.
+    { do: (g) => { g._theEnd = true; } },
   ],
 
   // ---- the trading sidequest ----------------------------------------------

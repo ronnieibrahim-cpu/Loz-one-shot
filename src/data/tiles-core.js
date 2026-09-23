@@ -1501,6 +1501,9 @@ const HAND_ART = {
 // the pixels are replaced; every tile keeps the palette its definition below
 // binds, so the palette-swap variants and the region colour schemes are
 // untouched. Regenerate with `python3 tools/rip-terrain.py`.
+// The dungeon themes, by the suffix every one of their tiles carries.
+const THEME_NAMES = ['Grotto', 'Coral', 'Bog', 'Cistern', 'Wood', 'Salt', 'Palace', 'Abyss'];
+
 const ART = { ...HAND_ART, ...TERRAIN_ART, ...DUNGEON_THEME_ART, ...TOWN_ART };
 
 // --------------------------------------------------------------------------
@@ -2428,13 +2431,47 @@ export function installCoreTiles() {
     // extracted one, that is a deliberate swap into a colour the game already
     // uses, so a theme never invents a hue the rest of the world does not have.
 
-    // d1 Tidewash Grotto — pale sea-cave flagstone, hatched walls.
-    dFloorGrotto: { art: ART.paleFloor, pal: 'paleFloor' },
-    dFloorGrottoAlt: { art: ART.paleFloor, pal: 'stonef' },
-    dWallGrotto: { art: ART.brickWallBlue, pal: 'brickWallBlue', flags: F.SOLID },
-    dWallGrottoX: { art: ART.dWallCracked, pal: 'brickWallBlue', flags: F.SOLID | F.BOMBABLE },
-    dBlockGrotto: { art: ART.vaultBlock, pal: 'vaultBlock', flags: F.SOLID },
+    // d1 Tidewash Grotto — ONE SEASONS DUNGEON'S KIT, whole. Floor, wall
+    // ring, block and pot are all cut from the same blue dungeon on the
+    // backgrounds sheet (rip-dungeon-themes.py, `g*`), so the Grotto is built
+    // the way a Seasons dungeon is: one room's worth of masonry, used
+    // everywhere. The ring only draws in a room built at Oracle size; see
+    // `Room.ringArt`. The alt floor is the same scale pattern in the game's
+    // `deep` blues, for the patches the tide leaves soaked: grey flagstone
+    // read as a different dungeon's floor.
+    dFloorGrotto: { art: ART.gFloor, pal: 'gFloor' },
+    dFloorGrottoAlt: { art: ART.gFloor, pal: 'deep' },
+    dWallGrotto: { art: ART.gRingN, pal: 'gRingN', flags: F.SOLID, ring: {
+      TL: 'gRingTL', TR: 'gRingTR', BL: 'gRingBL', BR: 'gRingBR',
+      N: 'gRingN', S: 'gRingS', W: 'gRingW', E: 'gRingE',
+      jNW: 'gJambNW', jNE: 'gJambNE', jSW: 'gJambSW', jSE: 'gJambSE',
+      jWN: 'gJambWN', jWS: 'gJambWS', jEN: 'gJambEN', jES: 'gJambES',
+    } },
+    dWallGrottoX: { art: ART.dWallCracked, pal: 'gRingN', flags: F.SOLID | F.BOMBABLE },
+    dBlockGrotto: { art: ART.gBlock, pal: 'gBlock', flags: F.SOLID },
     dUrnGrotto: { art: ART.urn, pal: 'urn', flags: F.SOLID, underArt: 'dFloorGrotto' },
+    // THE WAY OUT OF AN ORACLE ROOM is a gap in the wall ring you walk down
+    // through, the way the source leaves every dungeon: floor, carrying the
+    // warp. The ring draws its jambs either side of it (`Room.ringArt`).
+    dExitGrotto: { art: ART.gFloor, pal: 'gFloor', flags: F.WARP },
+    // The ring's pieces, as tiles, so `palFor` finds each one's own palette.
+    // Never placed by a legend: `Room.ringArt` names them.
+    gRingTL: { art: ART.gRingTL, pal: 'gRingTL', flags: F.SOLID },
+    gRingTR: { art: ART.gRingTR, pal: 'gRingTR', flags: F.SOLID },
+    gRingBL: { art: ART.gRingBL, pal: 'gRingBL', flags: F.SOLID },
+    gRingBR: { art: ART.gRingBR, pal: 'gRingBR', flags: F.SOLID },
+    gRingN: { art: ART.gRingN, pal: 'gRingN', flags: F.SOLID },
+    gRingS: { art: ART.gRingS, pal: 'gRingS', flags: F.SOLID },
+    gRingW: { art: ART.gRingW, pal: 'gRingW', flags: F.SOLID },
+    gRingE: { art: ART.gRingE, pal: 'gRingE', flags: F.SOLID },
+    gJambNW: { art: ART.gJambNW, pal: 'gJambNW', flags: F.SOLID },
+    gJambNE: { art: ART.gJambNE, pal: 'gJambNE', flags: F.SOLID },
+    gJambSW: { art: ART.gJambSW, pal: 'gJambSW', flags: F.SOLID },
+    gJambSE: { art: ART.gJambSE, pal: 'gJambSE', flags: F.SOLID },
+    gJambWN: { art: ART.gJambWN, pal: 'gJambWN', flags: F.SOLID },
+    gJambWS: { art: ART.gJambWS, pal: 'gJambWS', flags: F.SOLID },
+    gJambEN: { art: ART.gJambEN, pal: 'gJambEN', flags: F.SOLID },
+    gJambES: { art: ART.gJambES, pal: 'gJambES', flags: F.SOLID },
 
     // d2 Coral Spire — blue flagstone under coral-pink masonry.
     dFloorCoral: { art: ART.reefFloor, pal: 'reefFloor' },
@@ -2668,6 +2705,18 @@ export function installCoreTiles() {
     // answer wants to be a shade of blue, reach for a whole tile instead.
     dLintel: { tide: ['dWallAbyss', 'dWallAbyss', 'dWaterD'] },
   };
+  // A POT PER THEME. The shared `pot` names `dFloor` as the ground it stands
+  // on and the ground it leaves behind, so in every themed dungeon a pot drew
+  // a square of the generic brick floor under itself and left one behind when
+  // it was lifted — 21 rooms across six dungeons, invisible to every checker
+  // because the flags were right. Each theme's `p` is its own pot now, on its
+  // own floor. The Grotto's is the Seasons pot out of its own kit.
+  for (const T of THEME_NAMES) {
+    TILE_DEFS['dPot' + T] = {
+      art: T === 'Grotto' ? ART.gPot : ART.pot, pal: T === 'Grotto' ? 'gPot' : 'pot',
+      flags: F.SOLID | F.ROCK, underArt: 'dFloor' + T, liftSprite: 'o_pot',
+    };
+  }
   installGroundFringes(TILE_DEFS);
   registerTiles(TILE_DEFS);
   // After the tiledefs, so a block cell can never be shadowed by one of them.
@@ -2718,6 +2767,7 @@ export function installCoreTiles() {
     rock: { lift: 'grass', drop: 'common' },
     rockSand: { lift: 'sand', drop: 'common' },
     pot: { lift: 'dFloor', drop: 'common' },
+    ...Object.fromEntries(THEME_NAMES.map(T => ['dPot' + T, { lift: 'dFloor' + T, drop: 'common' }])),
     sign: { cut: 'sign' },
     dWallCracked: { bomb: 'dFloor', fx: 'boom', persist: true, sfx: 'break' },
     cliffCracked: { bomb: 'sand', fx: 'boom', persist: true, sfx: 'break' },

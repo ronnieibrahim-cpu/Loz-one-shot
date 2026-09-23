@@ -28,7 +28,7 @@
 //     },
 //   }
 
-import { Room, normaliseSize } from './room.js';
+import { Room, normaliseSize, cellTiles } from './room.js';
 
 export const MAPS = new Map();
 
@@ -42,6 +42,10 @@ export function registerMap(def) {
   // overworld is a grid of screens with a scroll transition on every seam, and
   // a multi-screen overworld room would mean two different meanings for "the
   // next screen along". So it is refused, loudly, rather than documented.
+  if (def.cell) {
+    if (kind === 'overworld') throw new Error(`${def.id}: the overworld's cell is the screen`);
+    cellTiles(def);
+  }
   for (const [key, r] of Object.entries(def.rooms || {})) {
     if (!r || !r.size) continue;
     if (kind === 'overworld') {
@@ -61,6 +65,8 @@ export function registerMap(def) {
     dark: !!def.dark,
     scroll: def.scroll !== false,
     dungeon: def.dungeon || null,
+    // Tiles per map cell. Absent means the 10x8 screen; see `cellTiles`.
+    cell: def.cell || null,
     roomDefs: def.rooms || {},
     _rooms: new Map(),
   };
@@ -69,6 +75,13 @@ export function registerMap(def) {
 }
 
 export function getMap(id) { return MAPS.get(id) || null; }
+
+/** Pixel span of one map cell: the room grid the seams are counted on. */
+export function cellPixels(mapOrId) {
+  const m = typeof mapOrId === 'string' ? MAPS.get(mapOrId) : mapOrId;
+  const [cw, ch] = cellTiles(m);
+  return [cw * 16, ch * 16];
+}
 
 export function roomKey(floor, x, y) { return `${floor | 0},${x | 0},${y | 0}`; }
 
@@ -195,7 +208,8 @@ export function validateMaps() {
           }
         }
       }
-      const wantRows = 8 * sh, wantCols = 10 * sw;
+      const [cw, ch] = cellTiles(m);
+      const wantRows = ch * sh, wantCols = cw * sw;
       const rows = def.map || [];
       if (rows.length !== wantRows) {
         problems.push(`${m.id}/${key}: map has ${rows.length} rows, expected ${wantRows}`

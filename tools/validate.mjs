@@ -166,9 +166,6 @@ for (const [name, d] of TILES) {
 // note that the art was looked at and rejected, with what was seen.
 {
   const UNUSED_ART = {
-    hatchWall: 'a VERTICAL run. Rendered four-wide as a top course and 4x4 as a '
-      + 'fill (tools/shots/wallruns.png): it reads as pale vertical striping both '
-      + 'ways, like railings, never like masonry. No tiledef on purpose.',
     forgeWall: 'a horizontal run, and it does read as a barrel-vaulted top '
       + 'course over a floor — but "the top row of a room is a different tile" '
       + 'is a dungeon-wide authoring convention, not a tile, and no dungeon has '
@@ -198,6 +195,8 @@ for (const [name, d] of TILES) {
   for (const [, d] of TILES) {
     if (d.tide) for (const t of d.tide) reachable.add(t);
     if (d.underArt) reachable.add(d.underArt);
+    // An Oracle wall ring's pieces are named by `Room.ringArt`, not a grid.
+    if (d.ring) for (const t of Object.values(d.ring)) reachable.add(t);
   }
   for (const [, rules] of TRANSFORMS) {
     for (const [k, v] of Object.entries(rules)) {
@@ -229,6 +228,7 @@ for (const [name, d] of TILES) {
   for (const [, d] of TILES) {
     if (d.variants) for (const t of d.variants) reachable.add(t);
     if (d.edgeArt) for (const t of Object.values(d.edgeArt)) reachable.add(t);
+    if (d.ring) for (const t of Object.values(d.ring)) reachable.add(t);
     // A ground fringe is reached through `edgePairs` — a map of a neighbour's
     // MATERIAL to that pair's 12 mask keys (see installGroundFringes in
     // tiles-core.js). Without this the 204 fringe tiles all read as unreachable

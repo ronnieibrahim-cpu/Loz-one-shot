@@ -197,6 +197,14 @@ export function registerTiles(defs) {
       openFlag: def.openFlag || null,
       openTo: def.openTo || null,
       openDeny: def.openDeny || null,
+      // THE ORACLE WALL RING. A wall tile in a dungeon built at Oracle room
+      // size (`cell: [15, 11]` on its map) draws the outer ring of every room
+      // from this set of pieces — four corners, four runs and the jambs that
+      // finish a run beside a doorway — chosen by where the cell sits on the
+      // ring, not by any neighbour's family. See `Room.ringArt`. Draw-time
+      // only; the tile's flags are the wall's. Named here for the same reason
+      // as every field above.
+      ring: def.ring || null,
     });
   }
 }

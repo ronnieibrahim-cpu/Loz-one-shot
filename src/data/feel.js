@@ -547,6 +547,10 @@ export const ESSENCE_FREEZE_FRAMES = 150;
 /** f — how long the game-over screen holds before it accepts a button. guessed. */
 export const GAMEOVER_WAIT_FRAMES = 100;
 
+/** f — how long THE END holds before a button takes it back to the title, so
+ *  the A that closed the ending's last line cannot also skip the card. guessed. */
+export const THE_END_HOLD_FRAMES = 90;
+
 // THE LOW-HEALTH PULSE.
 //
 // The game had no low-health warning at all — the one piece of feedback in

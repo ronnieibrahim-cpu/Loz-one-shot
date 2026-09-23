@@ -148,7 +148,7 @@ function inPatch(x, y, patch) {
  * `openTiles` names tiles to treat as walkable whatever they are — the door a
  * puzzle has just opened.
  */
-function flood(room, start, patch, openTiles = new Set()) {
+function flood(room, start, patch, openTiles = new Set(), states = null) {
   const { grid, legend, noTide, W, H } = room;
   const levelAt = (x, y, base) => (inPatch(x, y, patch) ? patch.level : base);
   const walk = (x, y, base) => {
@@ -166,7 +166,8 @@ function flood(room, start, patch, openTiles = new Set()) {
     if (seen.has(k)) return;
     seen.add(k); q.push([x, y, base]);
   };
-  for (const b of LEVELS) if (walk(start[0], start[1], b)) push(start[0], start[1], b);
+  if (states) { for (const [x, y, b] of states) if (walk(x, y, b)) push(x, y, b); }
+  else for (const b of LEVELS) if (walk(start[0], start[1], b)) push(start[0], start[1], b);
   while (q.length) {
     const [x, y, base] = q.pop();
     // Sounding the conch: only where the ground under you survives it. A room
@@ -213,6 +214,16 @@ function placements(room, seen) {
   return out;
 }
 
+/** One placement per distinct (bite, level, stand, base) — the rest repeat it. */
+function uniq(ps) {
+  const seen = new Set(), out = [];
+  for (const p of ps) {
+    const k = `${p.tx},${p.ty},${p.level},${p.fromX},${p.fromY},${p.fromBase}`;
+    if (!seen.has(k)) { seen.add(k); out.push(p); }
+  }
+  return out;
+}
+
 // --- collect the declared rooms --------------------------------------------
 const gates = [], gauges = [];
 for (const [mapId, m] of MAPS) {
@@ -223,7 +234,8 @@ for (const [mapId, m] of MAPS) {
     const sz = def.size || [1, 1];
     const room = {
       mapId, key, name: def.name || key,
-      W: (sz[0] | 0) * 10, H: (sz[1] | 0) * 8,
+      // Tiles per map cell are the map's: 10x8, or 15x11 for an Oracle room.
+      W: (sz[0] | 0) * (m.cell ? m.cell[0] : 10), H: (sz[1] | 0) * (m.cell ? m.cell[1] : 8),
       grid: def.map, legend: getLegend(def.legend || m.legend), noTide: !!def.noTide, def,
       // The overworld is crossable on foot end to end, so it is proved as a
       // walker; a dungeon is proved as whoever the player is by the time they
@@ -274,12 +286,46 @@ for (const r of gates) {
   check(`${where}: the conch alone does not cross it`, !reaches(conchOnly, r.gate.to),
     `reached ${r.gate.to} from ${r.gate.from} with no anchor`);
 
+  const want = r.gate.placements || 1;
   let solved = null;
-  for (const p of placements(r, conchOnly)) {
+  for (const p of uniq(placements(r, conchOnly))) {
     if (reaches(flood(r, r.gate.from, p), r.gate.to)) { solved = p; break; }
   }
-  check(`${where}: one anchor placement crosses it`, !!solved,
-    'no reachable bite tile at any level opens a route');
+  if (want === 1) {
+    check(`${where}: one anchor placement crosses it`, !!solved,
+      'no reachable bite tile at any level opens a route');
+  } else {
+    check(`${where}: ONE anchor placement does not cross it`, !solved,
+      solved ? `bite ${solved.tx},${solved.ty} at ${solved.level} crosses it — the second throw is not needed` : '');
+    // TWO PLACEMENTS: throw, walk, CALL THE IRON BACK, throw again. The recall
+    // is legal only where the ground under the player survives the patch
+    // going away — the same rule the conch obeys — and the second bite takes
+    // the level of the sea at that moment, which with the iron in hand is the
+    // base.
+    let two = null;
+    for (const p1 of uniq(placements(r, conchOnly))) {
+      const s1 = flood(r, r.gate.from, p1);
+      const loose = [];
+      for (const k of s1) {
+        const [x, y, b] = k.split(',').map(Number);
+        if (walkableDef(defAt(r.legend, r.grid[y][x], b))) loose.push([x, y, b]);
+      }
+      if (!loose.length) continue;
+      const free = flood(r, null, null, new Set(), loose);
+      for (const p2 of uniq(placements(r, free))) {
+        const s2 = flood(r, null, p2, new Set(), [[p2.fromX, p2.fromY, p2.fromBase]]);
+        if (reaches(s2, r.gate.to)) { two = [p1, p2]; break; }
+      }
+      if (two) break;
+    }
+    check(`${where}: two anchor placements cross it`, !!two, 'no throw, recall and second throw opens a route');
+    if (two) {
+      console.log(`       solution: bite ${two[0].tx},${two[0].ty} at ${['LOW', 'MID', 'HIGH'][two[0].level]}, `
+        + `recall, bite ${two[1].tx},${two[1].ty} at ${['LOW', 'MID', 'HIGH'][two[1].level]} `
+        + `from ${two[1].fromX},${two[1].fromY}`);
+    }
+    solved = null;
+  }
   if (solved) {
     console.log(`       solution: stand ${solved.fromX},${solved.fromY} at `
       + `${['LOW', 'MID', 'HIGH'][solved.fromBase]}, bite ${solved.tx},${solved.ty}, then sound the conch`);

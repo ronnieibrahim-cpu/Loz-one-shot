@@ -18,11 +18,11 @@
 // already does, for its own reasons.
 
 import { MAPS, getRoom } from '../../src/world/maps.js';
+import { cellTiles } from '../../src/world/room.js';
 import { F } from '../../src/world/tileset.js';
 import { DREDGE_RANGE } from '../../src/data/feel.js';
 import { tileWalkable, ROUTE_AVOID, capsForDungeonIndex } from './collision.mjs';
 
-const SW = 10, SH = 8;
 const DREDGE_TILES = Math.floor(DREDGE_RANGE / 16);
 
 // A room declares one sill or a list of them; normalise before reading.
@@ -55,6 +55,8 @@ function sillsOf(def) {
  */
 export function floodDungeon(mapId) {
   const m = MAPS.get(mapId);
+  // Tiles per map cell: the screen, or an Oracle room. The engine's own rule.
+  const [SW, SH] = cellTiles(m);
 
   // The dungeon that hands the Dredge Line over, found rather than written
   // down, so a future consolidation moving it needs no edit here.
@@ -79,6 +81,20 @@ export function floodDungeon(mapId) {
     if (!nrk) return null;
     const N = dims.get(nrk);
     return [nrk, gx - N.rx * SW, gy - N.ry * SH];
+  };
+
+  // THE OTHER SIDE OF A DOOR IN AN ORACLE WALL RING. A key door there is one
+  // door drawn by both rooms (`Game.openDoorAt`), so opening it — by a key, a
+  // puzzle or anything else — opens the tile across the seam too, for free.
+  // Null anywhere but a ring cell of an Oracle-size room.
+  const partnerOf = (rk, x, y) => {
+    if (SW !== 15) return null;
+    const D = dims.get(rk);
+    let ox = x, oy = y;
+    if (y === 0) oy = -1; else if (y === D.H - 1) oy = D.H;
+    else if (x === 0) ox = -1; else if (x === D.W - 1) ox = D.W;
+    else return null;
+    return stepOut(rk, ox, oy);
   };
 
   const ROOMS = new Map();
@@ -130,6 +146,12 @@ export function floodDungeon(mapId) {
       const [sx0, sy0] = def.reefseedRoom.snarl;
       puzzleDoors.add(`${rk}:${sx0},${sy0}`);
     }
+  }
+  for (const k of [...puzzleDoors]) {
+    const [rk0, xy0] = k.split(':');
+    const [x0, y0] = xy0.split(',').map(Number);
+    const p0 = partnerOf(rk0, x0, y0);
+    if (p0) puzzleDoors.add(`${p0[0]}:${p0[1]},${p0[2]}`);
   }
   const isLock = (room, x, y) => room.baseName(x, y) === 'dDoorLocked';
   const isBossDoor = (room, x, y) => room.baseName(x, y) === 'dDoorBoss';
@@ -240,7 +262,7 @@ export function floodDungeon(mapId) {
         const out = stepOut(rk, nx, ny);
         if (!out) continue;
         const [nk, tx, ty] = out;
-        if (passable(ROOMS.get(nk), tx, ty)) push(nk, tx, ty);
+        if (passable(ROOMS.get(nk), tx, ty) || puzzleDoors.has(`${nk}:${tx},${ty}`)) push(nk, tx, ty);
       }
     }
     for (const l of lockedSeen) {
@@ -252,6 +274,8 @@ export function floodDungeon(mapId) {
       if (seen.has(rk + ':' + x + ',' + y)) continue;
       if (!isBoss) keys--;
       push(rk, x, y);
+      const pr = partnerOf(rk, x, y);
+      if (pr) { const pd = ROOMS.get(pr[0]); if (isLock(pd, pr[1], pr[2]) || isBossDoor(pd, pr[1], pr[2])) push(pr[0], pr[1], pr[2]); }
       lockedSeen.delete(l);
       progress = true;
       break;

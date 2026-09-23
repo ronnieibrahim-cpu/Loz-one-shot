@@ -48,14 +48,14 @@
 
 import { installData } from '../src/data/index.js';
 import { MAPS, getRoom, roomKeyAt } from '../src/world/maps.js';
-import { normaliseSize } from '../src/world/room.js';
+import { normaliseSize, cellTiles } from '../src/world/room.js';
 import { everPassable } from './lib/collision.mjs';
 import { TIDE_COUNT } from '../src/game/tide.js';
 
 const VERBOSE = process.argv.includes('--verbose');
 installData();
 
-const ROOM_W = 10, ROOM_H = 8;      // tiles per screen; Room derives tw/th from these
+// Tiles per map cell, per map: the screen, or an Oracle room (`cellTiles`).
 const problems = [];
 let sized = 0, seamsChecked = 0;
 
@@ -89,6 +89,7 @@ for (const m of MAPS.values()) {
     if (sw === 1 && sh === 1) continue;      // 1 and 2 below still apply, but see note
     sized++;
     const where = `${m.id}/${key} (${sw}x${sh})`;
+    const [ROOM_W, ROOM_H] = cellTiles(m);
 
     // --- 2. it fits on the map ---------------------------------------------
     if (x + sw > m.w || y + sh > m.h) {

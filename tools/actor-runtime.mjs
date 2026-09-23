@@ -2736,6 +2736,9 @@ export async function installRuntime() {
         // it is invisible in a position.
         keys: g.progress.keys[g.mapId] || 0,
         doors: Object.keys(g.progress.doors).length,
+        // The bar and the pieces toward the next heart: "hp 6" alone cannot
+        // say whether a Piece of Heart was picked up or walked past.
+        maxHp: g.progress.maxHearts, pieces: g.progress.heartPieces,
         // WHICH LAYER THE PLAYER IS ON. A route that crosses a torrent is
         // driving a two-mode item, and "the actor held a direction and did
         // not move" reads identically whether the soles are set wrong, the

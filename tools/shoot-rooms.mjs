@@ -30,7 +30,7 @@
 import { chromium } from 'playwright';
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
-import { mkdirSync, existsSync } from 'node:fs';
+import { mkdirSync, existsSync, writeFileSync } from 'node:fs';
 import { extname, join, resolve } from 'node:path';
 
 const ROOT = resolve(import.meta.dirname, '..');
@@ -65,6 +65,12 @@ const faceDir = (args.find(a => a.startsWith('--dir=')) || '=down').split('=')[1
 const vw = Number((args.find(a => a.startsWith('--vw=')) || '=480').split('=')[1]);
 const vh = Number((args.find(a => a.startsWith('--vh=')) || '=432').split('=')[1]);
 const dpr = Number((args.find(a => a.startsWith('--dpr=')) || '=1').split('=')[1]);
+// --whole draws the WHOLE ROOM, not the camera's window onto it. A dungeon
+// built at Oracle size is 240x176 and the screen is 160x128, so a normal shot
+// shows two thirds of a room at best and never its wall ring all the way
+// round — which is the thing an Oracle room is judged by. Drawn through the
+// game's own `drawScene` into a room-sized canvas, entities and all, at 2x.
+const whole = args.includes('--whole');
 const specs = args.filter(a => !a.startsWith('--'));
 const ROOMS = specs.length ? specs : [
   'overworld,4,7',                    // Tidewatch Village — plain grass
@@ -188,7 +194,26 @@ for (const spec of ROOMS) {
     misses.push(spec);
     continue;
   }
-  await page.locator('canvas').screenshot({ path: join(shotDir, name) });
+  if (whole) {
+    const url = await page.evaluate(() => {
+      const g = window.__game, r = g.room;
+      const c = document.createElement('canvas');
+      c.width = r.pw; c.height = r.ph;
+      const ctx = c.getContext('2d');
+      ctx.imageSmoothingEnabled = false;
+      g.drawScene(ctx, 0, 0);
+      const out = document.createElement('canvas');
+      out.width = r.pw * 2; out.height = r.ph * 2;
+      const o = out.getContext('2d');
+      o.imageSmoothingEnabled = false;
+      o.drawImage(c, 0, 0, out.width, out.height);
+      return out.toDataURL('image/png');
+    });
+    writeFileSync(join(shotDir, name.replace('.png', '-whole.png')),
+      Buffer.from(url.split(',')[1], 'base64'));
+  } else {
+    await page.locator('canvas').screenshot({ path: join(shotDir, name) });
+  }
   if (showBellows) await page.keyboard.up('KeyZ');
   console.log(`  ok   ${spec.padEnd(16)} ${got.name} cam=${got.cam} -> ${name}`);
 }

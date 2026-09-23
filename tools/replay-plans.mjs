@@ -240,7 +240,11 @@ export const PLANS = {
   // -------------------------------------------------------------------------
   'd1-sluicegate': {
     note: 'The Iron Pipe: freeze the wells at LOW, raise the sea to MID, and walk '
-      + 'a corridor no setting of the conch crosses',
+      + 'a pipe no setting of the conch crosses',
+    // REBUILT AT ORACLE SIZE (S137). The pipe is a 15x11 room whose two bands
+    // run wall to wall; Link starts on the last dry column before the wells
+    // (4,5), the iron bites at 6,5 and the patch covers x=4..8, and the probes
+    // read a well inside it (6,5) against a drain outside it (10,5).
     setup: {
       seed: 20260806,
       playerName: 'LINK',
@@ -248,8 +252,8 @@ export const PLANS = {
       equipB: 'anchor',
       equipA: 'conch',
       tide: 0,
-      enter: ['d1', 0, 4, 2, 0, 48, 'right'],
-      probes: [[2, 3], [7, 3]],
+      enter: ['d1', 0, 4, 2, 64, 80, 'right'],
+      probes: [[6, 5], [10, 5]],
     },
     steps: [
       ['wait', 30],
@@ -259,10 +263,9 @@ export const PLANS = {
       // Conch: LOW -> MID. Everything the iron is not holding fills up.
       ['tap', 'a', 120],
       ['wait', 40],
-      // Straight down the pipe. 130 frames at 1px/f is eight tiles and change,
-      // which clears the drains and stops short of the seam — arriving in the
-      // next room would end the run in a room this plan says nothing about.
-      ['hold', ['right'], 130],
+      // Straight down the pipe: 145 frames at 1px/f clears the drains and
+      // stops on the dry column before the east door.
+      ['hold', ['right'], 145],
       ['wait', 40],
     ],
   },
@@ -608,138 +611,84 @@ export const PLANS = {
   // pre-P8 recording — nothing about movement changed, but the world did.
   // -------------------------------------------------------------------------
   'd1-descent': {
-    note: 'Tidewash Grotto: entrance to the north-half door — fighting through, '
-      + 'the Dungeon Map, the first Small Key spent on a locked door, and a full tide cycle',
+    note: 'Tidewash Grotto: entrance to the Locked Stair — fighting through, the '
+      + 'Dungeon Map and the Chartstone, the Crab Pit key spent on the first key door, '
+      + 'and a full tide cycle',
+    // REBUILT AT ORACLE SIZE (S137): 15x11 rooms, doors in the middle of each
+    // wall, and the first key door in the Tide Gallery's north wall.
     setup: {
       seed: 20260806,
       playerName: 'LINK',
       items: { sword: 1, conch: 1, shield: 1 },
       equipB: 'sword',
       equipA: 'conch',
-      // Five hearts, not the three a real run starts on. The recorder's
-      // swordsman lines up on one axis, swings, and stands still for the length
-      // of the swing; against enemies that walk the 8px lattice and commit to a
-      // whole step it eats about 60% more contact damage than it did against
-      // the old floating drift, and on three hearts it dies in the Crab Pit.
-      // A human reads a committed step and steps out of it — that is the point
-      // of the lattice — but the actor cannot, and this replay exists to prove
-      // the engine is deterministic, not to prove the game is beatable on three
-      // hearts. Do not read the headroom as a difficulty statement.
-      //
-      // TWENTY BECAME THIRTY when the Locked Stair got its second zol back. That
-      // room has always been written as "two zols"; one of them was standing
-      // INSIDE a dungeon post and could not move, so for the life of the project
-      // the encounter was one zol and a decoration. check-placement.mjs found it
-      // and freeing it is correct — and it cost this actor the run, because it
-      // fights by lining up and standing still. Same reason as the paragraph
-      // above, one more time: the headroom is the recorder's handicap, not the
-      // room's difficulty.
       maxHearts: 30,
       hearts: 30,
       tide: 1,
-      enter: ['d1', 0, 3, 7, 64, 96, 'up'],
+      enter: ['d1', 0, 3, 7, 112, 144, 'up'],
     },
     steps: [
       ['wait', 20],
-      // 3,7 the mouth. Take the sea down to LOW before going anywhere: the room
-      // north of here is a floor of wells and there is no walking round it. The
-      // conch cycles UP and wraps, so MID -> HIGH -> LOW is two presses, and
-      // both are made from dry stone in the middle of the room rather than from
-      // one of the two pools, which HIGH would turn into deep water underfoot.
-      ['goto', 4, 6, 400],
+      ['goto', 7, 6, 400],
       ['tap', 'a', 120],
       ['tap', 'a', 120],
       ['dialogue', 200],
-      ['goto', 4, 1, 400],
+      ['goto', 7, 1, 400],
       ['exit', 'up', 400],
-      // 3,6 The Drinking Floor, waded at LOW. Two crabs and a keese.
+      // The Drinking Floor, waded at LOW.
       ['fight', 1400],
       ['dialogue', 200],
-      ['goto', 4, 1, 800],
+      ['goto', 7, 1, 800],
       ['exit', 'up', 400],
-      // 3,5 the hub. A zol, a crab, and a switch puzzle left unsolved — the
-      // actor has no push verb, and a puzzle that stays unsolved is a room whose
-      // reward must NOT appear, which is worth asserting too.
+      // The Sunken Hall.
       ['fight', 1400],
       ['dialogue', 200],
-      // West wing: the Dungeon Map is a loose pickup, so walking over it is
-      // enough. A keese is in there and gets left alive on purpose — an enemy
-      // still running when the room is left is a room whose stream has to be
-      // rebuilt correctly when it is re-entered.
-      ['goto', 1, 3, 400],
+      ['goto', 1, 5, 400],
       ['exit', 'left', 400],
-      ['goto', 4, 3, 500],
+      // The Map Alcove: the map lies in a pocket of blocks, open to the east.
+      ['fight', 900],
+      ['goto', 8, 5, 500],
+      ['goto', 7, 5, 200],
       ['dialogue', 200],
-      ['fight', 900],
       ['wait', 40],
-      ['goto', 8, 3, 400],
+      ['goto', 13, 5, 400],
       ['exit', 'right', 400],
-      // East wing: the Chartstone. It needs an A press with the player stood
-      // square below the chest and facing up. Unlike the Compass this replaced,
-      // the tile the pickup pops onto is floor, so it is actually collectable —
-      // the pre-P8 room dropped it onto a pot and lost it, which is the content
-      // bug written up in docs/HANDOFF.md and fixed by re-authoring the room.
-      ['fight', 900],
-      ['goto', 8, 3, 500],
+      ['goto', 13, 5, 500],
       ['exit', 'right', 400],
+      // The Chartstone Alcove, opened from the south.
       ['fight', 900],
-      ['goto', 5, 4, 500],
+      ['goto', 7, 6, 500],
       ['hold', ['up'], 24],
       ['tap', 'a', 30],
       ['dialogue', 300],
-      ['goto', 5, 2, 300],
-      ['wait', 60],
-      ['goto', 1, 3, 400],
+      ['goto', 1, 5, 400],
       ['exit', 'left', 400],
-      // Back up the spine into 3,4. The hub respawns its pair every time it is
-      // re-entered, so it gets cleared every time too.
-      ['fight', 1400],
-      ['goto', 4, 1, 600],
+      ['goto', 7, 1, 600],
       ['exit', 'up', 400],
+      // The Tide Gallery, then west to the Crab Pit.
       ['fight', 1200],
       ['dialogue', 200],
-      // West into the crab room. Clearing it is the puzzle, and the reward is
-      // the first Small Key.
-      ['goto', 1, 3, 400],
+      ['goto', 1, 5, 400],
       ['exit', 'left', 400],
       ['fight', 1800],
       ['dialogue', 300],
-      // Sweep the reward tile VERTICALLY rather than stopping on it.
-      //
-      // A dropped pickup pops upward and stays up: `PICKUP_POP_SPEED` against
-      // `PICKUP_GRAVITY` over `PICKUP_SETTLE_FRAMES` nets about five pixels of
-      // rise and nothing brings it back down, so a key spawned at tile (4,3)
-      // comes to rest straddling the tile above. Standing on (4,3) leaves a
-      // one-pixel overlap with its rect — and one pixel is close enough to miss.
-      // Missing it loses the Small Key silently: the locked door two rooms
-      // later never opens, and every directive after it is addressed to a room
-      // the player never reached, while the recording stays perfectly valid.
-      // Walking up through the tile and back cannot miss it.
-      ['goto', 4, 3, 400],
-      ['goto', 4, 2, 200],
-      ['goto', 4, 3, 200],
+      ['goto', 7, 6, 400],
+      ['goto', 7, 5, 200],
       ['wait', 60],
-      ['goto', 8, 3, 400],
+      ['goto', 13, 5, 400],
       ['exit', 'right', 400],
-      // Spend it on the door in the middle of 3,4's north wall.
-      ['fight', 900],
-      ['goto', 4, 3, 500],
-      // Walk into the door until it stops you, rather than a computed number of
-      // frames of `up`. The door is solid until it is unlocked, so holding long
-      // enough pins the player flush against it from wherever `goto` happened
-      // to leave him — six frames put him a pixel or two short whenever the
-      // approach ended a pixel or two low, and the A press then found nothing.
+      // The key on the Gallery's north door, and through.
+      ['goto', 7, 1, 500],
       ['hold', ['up'], 24],
       ['tap', 'a', 30],
       ['dialogue', 300],
-      ['goto', 4, 1, 500],
       ['exit', 'up', 400],
-      // 3,3, and the Anchor is through the door in this room's north wall.
       ['fight', 1800],
       ['dialogue', 200],
       ['wait', 60],
     ],
   },
+
 
   // -------------------------------------------------------------------------
   // Clawcrab Den, walked end to end: the multi-screen room proof.
@@ -773,8 +722,10 @@ export const PLANS = {
   // the camera, not about the fight being survivable on three.
   // -------------------------------------------------------------------------
   'd1-clawcrab-den-wide': {
-    note: 'Clawcrab Den (2x1): east across the internal screen seam to the far wall '
-      + 'and back, one transition, camera to both clamps',
+    note: 'Clawcrab Den (2x1, 30x11 at Oracle size): east to the far wall and down, '
+      + 'then back to the north-west corner — one transition, camera to every clamp',
+    // AT ORACLE SIZE (S137) the den is thirty tiles by eleven, so the camera
+    // has both axes to travel: 320px east and 48px south.
     setup: {
       seed: 20260806,
       playerName: 'LINK',
@@ -785,30 +736,24 @@ export const PLANS = {
       hearts: 20,
       tide: 1,
       // Starting in the NEIGHBOUR, so the one transition in the run is a real
-      // room boundary being crossed rather than a `setup.enter`.
-      //
-      // The Drowned Chamber to the NORTH, not the Two Gauges to the west: the
-      // west way in is through a Small Key door, and this run carries no key.
-      // That door used to be walkable round, which is how the route was written
-      // the first time; sealing it is the other half of this change.
-      enter: ['d1', 0, 5, 2, 72, 96, 'down'],
+      // room boundary: the Drowned Chamber's south door. The west way in is a
+      // key door, and this run carries no key.
+      enter: ['d1', 0, 5, 2, 112, 128, 'down'],
     },
     steps: [
       ['wait', 20],
-      ['goto', 4, 6, 400],
+      ['goto', 7, 9, 400],
       ['exit', 'down', 300],
       ['wait', 30],
-      // East to the far wall of the second screen. Tile 18 puts Link's centre
-      // at 296, which is past the deadzone's right edge with the camera already
-      // at 160, so the clamp is reached rather than approached.
-      ['goto', 18, 3, 900],
+      // East to the far wall, low: the camera clamps at 320,48.
+      ['goto', 28, 9, 1200],
       ['wait', 60],
-      // Back west along row 1, which is walled at x=0 — so the walk ends
-      // against stone with the camera home, instead of stepping out of the room
-      // and firing a second transition.
-      ['goto', 1, 1, 900],
+      // Back to the north-west corner, walled on both sides, so the walk
+      // ends against stone with the camera home.
+      ['goto', 1, 1, 1200],
       ['wait', 60],
     ],
-    assert: { roomChanges: 1, camMaxX: 160, camEndX: 0, camMaxY: 0 },
+    assert: { roomChanges: 1, camMaxX: 320, camEndX: 0, camMaxY: 48 },
   },
+
 };

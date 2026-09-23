@@ -68,6 +68,22 @@ export function normaliseSize(size, where = 'room') {
   return [sw, sh];
 }
 
+/**
+ * Tiles per map cell for a map: `[10, 8]` (one Game Boy screen) unless the
+ * map declares `cell`. Only one other size is legal, the Oracle dungeon room,
+ * for the same reason `ROOM_SIZES` is closed: the camera, the transition and
+ * every checker's seam arithmetic were sized against these and nothing else.
+ */
+export const CELL_SIZES = ['10x8', '15x11'];
+export function cellTiles(mapDef) {
+  const c = mapDef && mapDef.cell;
+  if (!c) return [ROOM_W, ROOM_H];
+  if (!CELL_SIZES.includes(`${c[0]}x${c[1]}`)) {
+    throw new Error(`${mapDef.id}: illegal cell ${c[0]}x${c[1]} (allowed: ${CELL_SIZES.join(', ')})`);
+  }
+  return [c[0], c[1]];
+}
+
 /** Register a char->tile legend. `base` names another legend to inherit from. */
 export function registerLegend(name, mapping, base) {
   const parent = base ? (LEGENDS.get(base) || {}) : {};
@@ -92,13 +108,22 @@ export class Room {
     }
     const legend = getLegend(def.legend || (mapDef && mapDef.legend));
     this.legend = legend;
+    this._floorSub = Room.floorSubFor(legend);
 
     // Size in screens, and the four derived extents everything else asks for.
     // A room with no `size` is 1x1 and every one of these is the old constant,
     // which is how an existing grid parses byte-identically.
     const [sw, sh] = normaliseSize(def.size, `${this.mapId}/${key}`);
     this.sw = sw; this.sh = sh;
-    this.tw = sw * ROOM_W; this.th = sh * ROOM_H;      // tiles
+    // TILES PER MAP CELL, which is the map's and not the room's. The overworld
+    // and every map that says nothing is the Game Boy screen, 10x8. A map
+    // declaring `cell: [15, 11]` is an ORACLE DUNGEON: one cell of its map is
+    // one 15x11 room with a one-tile wall ring, bigger than the screen, and
+    // the camera scrolls inside it — which is how Seasons and Ages build every
+    // dungeon room they have, and what a 10x8 room cannot look like.
+    const [cw, ch] = cellTiles(mapDef);
+    this.cw = cw; this.ch = ch;
+    this.tw = sw * cw; this.th = sh * ch;              // tiles
     this.pw = this.tw * TILE; this.ph = this.th * TILE; // pixels
 
     // Base grid of tile *names* as authored (may be virtual tide tiles).
@@ -208,7 +233,34 @@ export class Room {
   /** Concrete tile definition at the given tide level or field. */
   tile(tx, ty, tide) {
     if (!this.inBounds(tx, ty)) return getTileDef('void');
-    return resolveTile(this.baseName(tx, ty), this.levelAt(tide, tx, ty));
+    const d = resolveTile(this.baseName(tx, ty), this.levelAt(tide, tx, ty));
+    const s = this._floorSub;
+    return s && s[d.name] ? s[d.name] : d;
+  }
+
+  /**
+   * THE DUNGEON'S OWN FLOOR, wherever a shared tile names the generic one.
+   *
+   * The tide tiles (`1`, `2`, `4`...) are shared by every dungeon, and their
+   * dry states are the generic `dFloor` and `dFloorWet` — so in every themed
+   * dungeon the water went out and left a square of somebody else's floor:
+   * brown brick in the Grotto, grey flagstone in the Keep, 1,200-odd cell-
+   * states across the six. A theme names its floor as `.` and its worn floor
+   * as `,`, so the substitution is read straight off the legend and needs no
+   * per-dungeon copy of every tide tile. Both sides carry no flags, which is
+   * what makes this a picture change and nothing else — asserted here, so a
+   * floor that ever gains one cannot be swapped in silently.
+   */
+  static floorSubFor(legend) {
+    const pairs = [['dFloor', legend['.']], ['dFloorWet', legend[',']], ['dFloorCrack', legend[',']]];
+    let sub = null;
+    for (const [from, to] of pairs) {
+      if (!to || to === from) continue;
+      const a = getTileDef(from), b = getTileDef(to);
+      if (!a || !b || b.name !== to || a.flags !== b.flags) continue;
+      (sub = sub || {})[from] = b;
+    }
+    return sub;
   }
 
   flagsAt(tx, ty, tide) { return this.tile(tx, ty, tide).flags; }
@@ -259,6 +311,19 @@ export class Room {
    * screen; see `tileEdgeArt`.
    */
   artAt(d, x, y, tide) {
+    if (this.cw === 15) {
+      if (d.ring) {
+        const r = this.ringArt(d, x, y, tide);
+        if (r) return r;
+      }
+      // AN OPENED DOOR IN THE RING IS A GAP IN THE WALL, not the old door
+      // frame: the ring's jambs already frame it, so it draws as this room's
+      // own floor.
+      if (d.name === 'dDoorOpen' && (x === 0 || y === 0 || x === this.tw - 1 || y === this.th - 1)) {
+        const floor = this.legend['.'];
+        if (floor && getTileDef(floor)) return floor;
+      }
+    }
     if (d.edgeArt || d.edgePairs) {
       const edge = tileEdgeArt(d, (dir) => {
         const nx = x + (dir === 'left' ? -1 : dir === 'right' ? 1 : 0);
@@ -274,6 +339,40 @@ export class Room {
       if (edge) return edge;
     }
     return tileVariant(d, this.key, x, y);
+  }
+
+  /**
+   * The piece of an Oracle wall ring to draw at (x, y), or null when the cell
+   * is not on the room's outer ring.
+   *
+   * POSITION, NOT NEIGHBOURHOOD. The ring is the room's frame: its corners are
+   * where the room's corners are, whatever tiles surround them, so asking the
+   * neighbours (the way `edgeArt` does) would find wall on both sides of a
+   * corner and draw a run. The only neighbour question is along the ring
+   * itself — is the next cell of the ring still wall — because that is where
+   * a run stops and a jamb finishes it beside a doorway. A bombable crack, a
+   * shutter or an open floor tile in the ring all count as the doorway: the
+   * wall visibly ends at each side of it, the way the source frames a door.
+   */
+  ringArt(d, x, y, tide) {
+    const R = d.ring, W = this.tw - 1, H = this.th - 1;
+    const top = y === 0, bot = y === H, left = x === 0, right = x === W;
+    if (!(top || bot || left || right)) return null;
+    if (top && left) return R.TL;
+    if (top && right) return R.TR;
+    if (bot && left) return R.BL;
+    if (bot && right) return R.BR;
+    const wall = (nx, ny) => this.inBounds(nx, ny) && this.tile(nx, ny, tide).ring === R;
+    if (top || bot) {
+      const k = top ? 'N' : 'S';
+      if (!wall(x + 1, y)) return R['j' + k + 'W'] || R[k];
+      if (!wall(x - 1, y)) return R['j' + k + 'E'] || R[k];
+      return R[k];
+    }
+    const k = left ? 'W' : 'E';
+    if (!wall(x, y + 1)) return R['j' + k + 'N'] || R[k];
+    if (!wall(x, y - 1)) return R['j' + k + 'S'] || R[k];
+    return R[k];
   }
 
   /**
@@ -527,13 +626,13 @@ export class Room {
    * the declaration cannot be describing this place.
    */
   underGround(d, x, y, tide) {
-    const declared = getTileDef(d.underArt);
+    const declared = (this._floorSub && this._floorSub[d.underArt]) || getTileDef(d.underArt);
     let cand = null, agree = 0, disagree = false;
     for (const [dx, dy] of [[0, 1], [0, -1], [-1, 0], [1, 0]]) {
       const nx = x + dx, ny = y + dy;
       if (nx < 0 || ny < 0 || nx >= this.tw || ny >= this.th) continue;
       const n = this.tile(nx, ny, tide);
-      if (n.name === d.underArt) return declared;
+      if (n.name === d.underArt || n === declared) return declared;
       if (n.underArt || n.over || n.anim || n.quad || n.big) continue;
       if (n.flags & (F.VOID | F.SOLID | F.WARP)) continue;
       // A DISAGREEMENT NO LONGER SHORT-CIRCUITS. It used to return `declared`

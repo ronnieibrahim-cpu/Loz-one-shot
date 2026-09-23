@@ -1,6 +1,6 @@
 {
  "name": "d1-sluicegate",
- "note": "The Iron Pipe: freeze the wells at LOW, raise the sea to MID, and walk a corridor no setting of the conch crosses",
+ "note": "The Iron Pipe: freeze the wells at LOW, raise the sea to MID, and walk a pipe no setting of the conch crosses",
  "engine": 1,
  "setup": {
   "seed": 20260806,
@@ -19,18 +19,18 @@
    0,
    4,
    2,
-   0,
-   48,
+   64,
+   80,
    "right"
   ],
   "probes": [
    [
-    2,
-    3
+    6,
+    5
    ],
    [
-    7,
-    3
+    10,
+    5
    ]
   ]
  },
@@ -38,11 +38,11 @@
  "span": {
   "roomChanges": 0,
   "camMinX": 0,
-  "camMaxX": 0,
+  "camMaxX": 69,
   "camMinY": 0,
-  "camMaxY": 0,
-  "camEndX": 0,
-  "camEndY": 0,
+  "camMaxY": 24,
+  "camEndX": 69,
+  "camEndY": 24,
   "probeNames": "dWell|dDrain"
  },
  "buttons": [
@@ -55,7 +55,7 @@
   "start",
   "select"
  ],
- "frames": 462,
+ "frames": 477,
  "input": [
   [
    0,
@@ -79,7 +79,7 @@
   ],
   [
    8,
-   130
+   145
   ],
   [
    0,
@@ -90,8 +90,8 @@
  "trail": [
   {
    "f": 60,
-   "x": 0,
-   "y": 48,
+   "x": 64,
+   "y": 80,
    "hp": 12,
    "e": 2,
    "d": 0,
@@ -107,8 +107,8 @@
   },
   {
    "f": 120,
-   "x": 0,
-   "y": 48,
+   "x": 64,
+   "y": 80,
    "hp": 12,
    "e": 1,
    "d": 0,
@@ -124,8 +124,8 @@
   },
   {
    "f": 180,
-   "x": 0,
-   "y": 48,
+   "x": 64,
+   "y": 80,
    "hp": 12,
    "e": 2,
    "d": 0,
@@ -141,8 +141,8 @@
   },
   {
    "f": 240,
-   "x": 0,
-   "y": 48,
+   "x": 64,
+   "y": 80,
    "hp": 12,
    "e": 1,
    "d": 0,
@@ -158,8 +158,8 @@
   },
   {
    "f": 300,
-   "x": 8,
-   "y": 48,
+   "x": 72,
+   "y": 80,
    "hp": 12,
    "e": 1,
    "d": 0,
@@ -175,8 +175,8 @@
   },
   {
    "f": 360,
-   "x": 59,
-   "y": 48,
+   "x": 123,
+   "y": 80,
    "hp": 12,
    "e": 2,
    "d": 0,
@@ -192,8 +192,8 @@
   },
   {
    "f": 420,
-   "x": 111,
-   "y": 48,
+   "x": 175,
+   "y": 80,
    "hp": 12,
    "e": 2,
    "d": 0,
@@ -209,12 +209,12 @@
   }
  ],
  "expect": {
-  "frame": 462,
+  "frame": 477,
   "mapId": "d1",
   "room": "0,4,2",
   "floor": 0,
-  "x": 112,
-  "y": 48,
+  "x": 189,
+  "y": 80,
   "z": 0,
   "dir": "right",
   "playerId": 1,
@@ -227,14 +227,38 @@
   "essences": [],
   "beaten": {},
   "heartPieces": 0,
+  "charmsOwned": [],
+  "charmCases": {
+   "low": [
+    null,
+    null
+   ],
+   "mid": [
+    null,
+    null
+   ],
+   "high": [
+    null,
+    null
+   ]
+  },
+  "blanks": 0,
   "items": [
    "anchor",
    "conch",
    "shield",
    "sword"
   ],
+  "itemLevels": {
+   "sword": 1,
+   "conch": 1,
+   "shield": 1,
+   "anchor": 1
+  },
   "dungeonMap": false,
   "chartstone": false,
+  "dungeonMaps": {},
+  "charts": {},
   "flags": [],
   "doorsChanged": 0,
   "secretsSeen": 2,

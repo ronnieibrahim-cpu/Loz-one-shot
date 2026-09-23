@@ -277,6 +277,27 @@ console.log(`playthrough: seed ${SEED}, ${ROUTE.length} directives, target: the 
 
 const page = await newPage(browser);
 await prepare(page, PORT);
+// THE LAST THIRTY HITS, for the failure trace. "Left the arena on 16" says
+// the run died and nothing about what killed it; the fight is the question.
+// Reads Player.takeDamage from outside, the way measure-boss-combat does, and
+// changes nothing about what it measures.
+if (TRACE) {
+  await page.evaluate(async () => {
+    const mod = await import('/src/game/player.js');
+    const orig = mod.Player.prototype.takeDamage;
+    window.__hits = [];
+    mod.Player.prototype.takeDamage = function (game, amount, source, o) {
+      const before = game.progress.hearts;
+      const r = orig.call(this, game, amount, source, o);
+      if (game.progress.hearts !== before) {
+        window.__hits.push(`f${game.frame} ${game.mapId} ${game.room && game.room.key} -${before - game.progress.hearts}`
+          + ` ${source && source.isProjectile ? 'shot' : (source && source.type) || '?'} at ${Math.round(this.x)},${Math.round(this.y)}`);
+        if (window.__hits.length > 30) window.__hits.shift();
+      }
+      return r;
+    };
+  });
+}
 await page.evaluate(steps => window.__rp.beginPlaythrough(steps), ROUTE);
 // A directive that throws inside the page loses the whole trace with it, and
 // the trace is the only thing that says WHERE the run stopped being the run.
@@ -289,7 +310,13 @@ try {
   console.log('  --- trace up to the throw ---');
   for (const x of (t || [])) {
     console.log(`  ${String(x.step).padStart(3)} ${x.kind.padEnd(9)} f${String(x.frame).padStart(6)} `
-      + `${x.room}  ${x.x},${x.y} hp ${x.hp} tide ${x.tide} foes ${x.foes} keys ${x.keys}`);
+      + `${x.room}  ${x.x},${x.y} hp ${x.hp}/${x.maxHp} pc ${x.pieces} tide ${x.tide} foes ${x.foes} keys ${x.keys}`
+      + `${x.foeKinds ? ' [' + x.foeKinds + ']' : ''}`);
+  }
+  if (TRACE) {
+    const hits = await page.evaluate(() => window.__hits || []).catch(() => []);
+    console.log('  --- the last hits taken ---');
+    for (const h of hits) console.log('  ' + h);
   }
   throw e;
 }
@@ -299,7 +326,7 @@ if (TRACE) {
   for (const t of run.trace) {
     console.log(`  ${String(t.step).padStart(3)} ${t.kind.padEnd(9)} f${String(t.frame).padStart(6)} `
       + `${t.room.padEnd(12)} ${String(t.x).padStart(4)},${String(t.y).padStart(3)} `
-      + `hp ${t.hp} tide ${t.tide} foes ${t.foes} keys ${t.keys} doors ${t.doors} `
+      + `hp ${t.hp}/${t.maxHp} pc ${t.pieces} tide ${t.tide} foes ${t.foes} keys ${t.keys} doors ${t.doors} `
       + `${t.soles}/${t.layer}${t.foeKinds ? ' [' + t.foeKinds + ']' : ''}`);
   }
   console.log('  -------------');
@@ -542,6 +569,13 @@ check('THE COILROPE WAS WON AND WORN — the Keep\'s grate answered to the Rod t
 check('A CHARM WAS WORN — the scrimshaw case is not empty at the end of the run',
   Object.values(s.charmCases || {}).some(c => (c || []).some(x => x)),
   `owned ${(s.charmsOwned || []).join(', ') || '(none)'}, cases ${JSON.stringify(s.charmCases)}`);
+
+// AND THE GAME ENDS. The ending used to let go into 'play' with the throne
+// room still running — Link stood there while whatever Nereth had summoned
+// kept swinging, and the run's last six hundred frames cost it half its
+// hearts after THE END. It holds on its card now (S137).
+check('THE GAME ENDS ON "THE END" — the ending holds its card instead of handing the throne room back',
+  s.mode === 'theend', `ended in mode "${s.mode}"`);
 
 check('THE SIXTH ESSENCE WAS CLAIMED IN NERETH\'S OWN HALL, and not off anything else',
   s.essences.includes(6) && a.rooms.includes('d6/1,3,1'),

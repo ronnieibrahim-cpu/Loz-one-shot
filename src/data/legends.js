@@ -269,11 +269,16 @@ export function installLegends() {
   //
   // Tiles and palettes come from tools/rip-dungeon-themes.py, off the Seasons
   // dungeon map. See src/data/tiles-dungeon-themes.js.
+  // `p` is the theme's own pot, named after its floor (`dPotGrotto` stands
+  // on `dFloorGrotto`); see the pot loop in tiles-core.js.
   const theme = (name, floor, alt, wall, cracked, block, urn) => registerLegend(name, {
     '.': floor, ',': alt, '#': wall, 'X': cracked, '=': block, 'U': urn,
+    'p': floor.replace('dFloor', 'dPot'),
   }, 'dungeon');
 
   theme('dungeonGrotto',  'dFloorGrotto',  'dFloorGrottoAlt',  'dWallGrotto',  'dWallGrottoX',  'dBlockGrotto',  'dUrnGrotto');
+  // The Grotto is built at Oracle size, and its way out is a gap in the ring.
+  registerLegend('dungeonGrotto', { 'C': 'dExitGrotto' }, 'dungeonGrotto');
   theme('dungeonCoral',   'dFloorCoral',   'dFloorCoralAlt',   'dWallCoral',   'dWallCoralX',   'dBlockCoral',   'dUrnCoral');
   theme('dungeonBog',     'dFloorBog',     'dFloorBogAlt',     'dWallBog',     'dWallBogX',     'dBlockBog',     'dUrnBog');
   // The Coral Spire needs two tiles no other dungeon has, for the Reefseed

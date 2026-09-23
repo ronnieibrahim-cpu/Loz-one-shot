@@ -108,7 +108,6 @@ PICKS = [
     #
     # What does tile in both axes is bevelled block grids and brick courses.
     # Every wall used by a theme is one of those.
-    ('brickWallBlue', 242,  203, 'x135 blue brick in courses — tiles in both axes'),
     ('coralWall',      17,   58, 'x266 rose-bevelled block grid'),
     ('knurlWall',    2002, 1708, 'x236 knurled gold-and-olive masonry'),
     ('emberWall',     499, 1274, 'x209 brown brick in courses'),
@@ -137,6 +136,47 @@ PICKS = [
     ('vaultBlock',   2066, 1467, 'x324 deeply bevelled block — also tiles as a wall'),
     ('lionHead',      129,  412, 'x10 a gilded lion mask'),
     ('urn',           900,   42, 'x80 a wide-bellied urn'),
+
+    # ---- THE ORACLE ROOM KIT: the Tidewash Grotto's ---------------------------
+    #
+    # An Oracle dungeon room is 15x11 with a one-tile wall ring, and the ring is
+    # not a fill: it is eight directional pieces — four corners and four runs —
+    # plus the two jambs that finish a run beside a doorway. Every piece below
+    # is cut from ONE room of ONE Seasons dungeon (the blue one on the True
+    # Colors half of the backgrounds sheet, rooms on a 241x177 pitch from
+    # 1456,26), so the corners meet the runs they were drawn to meet. The room
+    # is the one at 2179,734: four walls, one doorway north, pots down both
+    # sides — the plainest room in the dungeon, which is why it is the kit.
+    #
+    # The kit's floor, pot, block and stair come from the same room, so the
+    # Grotto stops being a dungeon whose walls and floor were picked from two
+    # different cartridges' rooms.
+    ('gRingTL',  2179,  734, 'ring corner, north-west'),
+    ('gRingN',   2195,  734, 'ring run, north wall'),
+    ('gRingTR',  2403,  734, 'ring corner, north-east'),
+    ('gRingW',   2179,  750, 'ring run, west wall'),
+    ('gRingE',   2403,  750, 'ring run, east wall'),
+    ('gRingBL',  2179,  894, 'ring corner, south-west'),
+    ('gRingS',   2195,  894, 'ring run, south wall'),
+    ('gRingBR',  2403,  894, 'ring corner, south-east'),
+    # The north run's two jambs, from the same room's doorway at column 5.
+    ('gJambNW',  2243,  734, 'north wall ends, doorway to its east'),
+    ('gJambNE',  2275,  734, 'north wall ends, doorway to its west'),
+    # The south and east jambs are not in the kit room — it has one door — so
+    # they come from its neighbour at 1456,557, which has a doorway in each.
+    ('gJambSW',  1536,  717, 'south wall ends, doorway to its east'),
+    ('gJambSE',  1600,  717, 'south wall ends, doorway to its west'),
+    ('gJambEN',  1680,  637, 'east wall ends, doorway below it'),
+    ('gJambES',  1680,  669, 'east wall ends, doorway above it'),
+    # THE WEST JAMBS ARE THE EAST ONES MIRRORED. No room on the sheet has a
+    # clean west doorway, and the ring is drawn left-right symmetric — the
+    # west run is the east run flipped pixel for pixel (compare gRingW/gRingE
+    # in the contact sheet) — so the mirror is the source's own art.
+    ('gJambWN',  1680,  637, 'west wall ends, doorway below it', {'flip': True}),
+    ('gJambWS',  1680,  669, 'west wall ends, doorway above it', {'flip': True}),
+    ('gFloor',   2211,  750, 'the blue scale-pattern floor'),
+    ('gPot',     2195,  750, 'the Seasons pot, on its own floor'),
+    ('gBlock',   2243,  798, 'the raised magenta block'),
 ]
 
 # Picks that are an OBJECT standing on a floor, not a floor or a wall.
@@ -155,7 +195,7 @@ PICKS = [
 #
 # ONLY FOR OBJECTS. Keying a floor or a wall would eat the tile, because the
 # border-connected run IS the tile.
-KEY_BACKGROUND = {'urn'}
+KEY_BACKGROUND = {'urn', 'gPot'}
 
 
 def lum(c):
@@ -236,10 +276,18 @@ def key_background(grid):
 
 
 def unpack(pick):
-    """(name, x, y, note) or (name, x, y, note, sheet) -> (name, x, y, note, path)."""
+    """(name, x, y, note[, sheet | {sheet, flip}]) -> (name, x, y, note, path)."""
     if len(pick) == 5:
-        return pick[0], pick[1], pick[2], pick[3], SHEETS[pick[4]]
+        o = pick[4]
+        if isinstance(o, dict):
+            return pick[0], pick[1], pick[2], pick[3], SHEETS[o['sheet']] if 'sheet' in o else DG
+        return pick[0], pick[1], pick[2], pick[3], SHEETS[o]
     return pick[0], pick[1], pick[2], pick[3], DG
+
+
+def flipped(pick):
+    """Is this pick the source mirrored left-right."""
+    return len(pick) == 5 and isinstance(pick[4], dict) and pick[4].get('flip')
 
 
 def hexc(c):
@@ -259,7 +307,10 @@ def contact_sheet(images, path):
     for i, pick in enumerate(PICKS):
         name, x, y, note, sheet = unpack(pick)
         im = images[sheet]
-        grid, keep = quantise(read(im, x, y))
+        blk = read(im, x, y)
+        if flipped(pick):
+            blk = [row[::-1] for row in blk]
+        grid, keep = quantise(blk)
         q = Image.new('RGB', (16, 16))
         for yy in range(16):
             for xx in range(16):
@@ -287,6 +338,9 @@ def main():
     for pick in PICKS:
         name, x, y, note, sheet = unpack(pick)
         block = read(images[sheet], x, y)
+        if flipped(pick):
+            block = [row[::-1] for row in block]
+            note += ' (mirrored)'
         before = len({p for row in block for p in row})
         grid, keep = quantise(block)
         if name in KEY_BACKGROUND:

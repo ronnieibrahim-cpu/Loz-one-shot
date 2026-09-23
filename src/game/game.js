@@ -61,7 +61,7 @@ import {
   HITSTOP_HIT_FRAMES, HITSTOP_HURT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES,
   LOW_HEART_THRESHOLD, LOW_HEART_EVERY,
   BOSS_MUSIC_RESUME_FRAMES, ITEM_PRESENT_FRAMES, ESSENCE_FREEZE_FRAMES,
-  GAMEOVER_WAIT_FRAMES, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE,
+  GAMEOVER_WAIT_FRAMES, THE_END_HOLD_FRAMES, ANCHOR_RADIUS_TILES, ANCHOR_SHAPE,
   DOORWAY_PULL_REACH_TILES, DOORWAY_PULL_SPEED,
   LENS_FADE_FRAMES, LENS_GHOST_ALPHA, LENS_TINT_ALPHA, LENS_PHASE_ALPHA,
   LENS_SHIMMER_FRAMES, REEFSEED_CAPACITY, COIN_SWAP_DELAY_FRAMES, BOTTLE_CAPACITY,
@@ -365,6 +365,49 @@ export class Game {
     this.progress.doors[`${this.mapId}:${this.room.key}:${tx},${ty}`] = tileName;
   }
 
+  /**
+   * Open a door, and — in a room built at Oracle size — the same door seen
+   * from the other side of the seam.
+   *
+   * An Oracle door is a gap in the wall ring, and a key door is ONE door that
+   * both rooms draw: a `L` on this room's north ring and a `L` on the south
+   * ring of the room above, at the same column. Opening only this side would
+   * leave the player walking through the gap into a locked tile on arrival,
+   * and would charge a second key for the same door from the far side.
+   * `seamPartner` finds that tile from the map's own cell arithmetic.
+   */
+  openDoorAt(tx, ty) {
+    this.room.setTile(tx, ty, 'dDoorOpen');
+    this.persistTile(tx, ty, 'dDoorOpen');
+    const q = this.seamPartner(this.room, tx, ty);
+    if (!q) return;
+    const t = q.room.baseName(q.x, q.y);
+    if (!getTileDef(t) || !(getTileDef(t).flags & F.DOOR)) return;
+    q.room.setTile(q.x, q.y, 'dDoorOpen');
+    this.progress.doors[`${this.mapId}:${q.room.key}:${q.x},${q.y}`] = 'dDoorOpen';
+  }
+
+  /** The tile on the far side of a ring cell's seam, or null. */
+  seamPartner(room, tx, ty) {
+    if (!room || room.cw !== 15) return null;
+    const cw = room.cw, ch = room.ch;
+    const gx = room.rx * cw + tx, gy = room.ry * ch + ty;
+    let cx, cy;
+    if (ty === 0) { cx = Math.floor(gx / cw); cy = room.ry - 1; }
+    else if (ty === room.th - 1) { cx = Math.floor(gx / cw); cy = room.ry + room.sh; }
+    else if (tx === 0) { cx = room.rx - 1; cy = Math.floor(gy / ch); }
+    else if (tx === room.tw - 1) { cx = room.rx + room.sw; cy = Math.floor(gy / ch); }
+    else return null;
+    const other = getRoom(this.mapId, room.floor, cx, cy);
+    if (!other) return null;
+    const ox = ty === 0 || ty === room.th - 1 ? gx - other.rx * cw
+      : tx === 0 ? other.tw - 1 : 0;
+    const oy = tx === 0 || tx === room.tw - 1 ? gy - other.ry * ch
+      : ty === 0 ? other.th - 1 : 0;
+    if (!other.inBounds(ox, oy)) return null;
+    return { room: other, x: ox, y: oy };
+  }
+
   // ------------------------------------------------------------ transitions
 
   /** Walk off the edge into the neighbouring room. */
@@ -397,7 +440,7 @@ export class Game {
     // exactly as it always was.
     const room = this.room;
     const sub = (v, span, n) => Math.max(0, Math.min(n - 1, Math.floor(v / span)));
-    const sx = sub(p.cx, VIEW_W, room.sw), sy = sub(p.cy, VIEW_H, room.sh);
+    const sx = sub(p.cx, room.cw * TILE, room.sw), sy = sub(p.cy, room.ch * TILE, room.sh);
     let nx, ny;
     if (dir === 'right') { nx = room.rx + room.sw; ny = room.ry + sy; }
     else if (dir === 'left') { nx = room.rx - 1; ny = room.ry + sy; }
@@ -452,8 +495,11 @@ export class Game {
    */
   entryPos(dir, p, next) {
     const cur = this.room;
-    const gx = cur.rx * VIEW_W + p.x, gy = cur.ry * VIEW_H + p.y;
-    const rawX = gx - next.rx * VIEW_W, rawY = gy - next.ry * VIEW_H;
+    // One map cell is one screen on the overworld and one Oracle room in a
+    // dungeon built at that size; both rooms are on the same map.
+    const CW = cur.cw * TILE, CH = cur.ch * TILE;
+    const gx = cur.rx * CW + p.x, gy = cur.ry * CH + p.y;
+    const rawX = gx - next.rx * CW, rawY = gy - next.ry * CH;
     // Clamped only where the neighbour is strictly the smaller room, so an
     // equal-sized pair — every transition in the game today — takes the raw
     // value through untouched and no existing replay can move.
@@ -650,8 +696,7 @@ export class Game {
     const def = resolveTile(name, this.tide.levelAt(tx, ty, room));
     if (name === 'dDoorLocked') {
       if (useKey(this.progress, this.mapId)) {
-        room.setTile(tx, ty, 'dDoorOpen');
-        this.persistTile(tx, ty, 'dDoorOpen');
+        this.openDoorAt(tx, ty);
         this.audio.sfx('unlock');
         this.say('The lock falls away.');
       } else {
@@ -662,8 +707,7 @@ export class Game {
     }
     if (name === 'dDoorBoss') {
       if (this.progress.bossKeys[this.mapId]) {
-        room.setTile(tx, ty, 'dDoorOpen');
-        this.persistTile(tx, ty, 'dDoorOpen');
+        this.openDoorAt(tx, ty);
         this.audio.sfx('unlock');
       } else {
         this.audio.sfx('deny');
@@ -894,7 +938,12 @@ export class Game {
     if (d && d.essence != null) {
       this.frameLater(BOSS_ESSENCE_DELAY_FRAMES, () => {
         this.audio.jingle('bossClear');
-        spawnEntity(this, 'essence', 4, 3, { index: d.index });
+        // The middle of the arena: tile 4,3 in a Game Boy screen, 7,4 in an
+        // Oracle room. It was 4,3 everywhere, which in a 15x11 room is up in
+        // the north-west corner.
+        const ex = room.cw === 15 ? Math.floor(room.tw / 2) : 4;
+        const ey = room.cw === 15 ? 4 : 3;
+        spawnEntity(this, 'essence', ex, ey, { index: d.index });
       });
     }
     // The boss track was stopped, so nothing would resume once the jingle ends.
@@ -949,10 +998,7 @@ export class Game {
     if (!reward) return;
     const room = this.room;
     if (reward.openDoors) {
-      for (const [tx, ty] of reward.openDoors) {
-        room.setTile(tx, ty, 'dDoorOpen');
-        this.persistTile(tx, ty, 'dDoorOpen');
-      }
+      for (const [tx, ty] of reward.openDoors) this.openDoorAt(tx, ty);
     }
     if (reward.tiles) {
       for (const [tx, ty, name] of reward.tiles) {
@@ -1235,6 +1281,19 @@ export class Game {
     return true;
   }
 
+  /**
+   * THE END, held. The run is saved with `finishedGame` set — the flag the
+   * ending's last step writes — and the world stops: nothing summoned in the
+   * throne room gets another frame. A button after a short hold goes back to
+   * the title screen, where the save is waiting.
+   */
+  enterTheEnd() {
+    this.mode = 'theend';
+    this.endTime = 0;
+    this.dialogue.active = false;
+    this.save();
+  }
+
   startGaleWarp() {
     const spots = [{ name: 'Tidewatch Village', map: 'overworld', floor: 0, rx: 4, ry: 7, px: 72, py: 64 }];
     for (const m of MAPS.values()) {
@@ -1392,10 +1451,23 @@ export class Game {
 
     switch (this.mode) {
       case 'title': this.title.update(); return;
+      case 'theend':
+        this.endTime++;
+        if (this.endTime > THE_END_HOLD_FRAMES
+          && (this.input.pressed('a') || this.input.pressed('start'))) {
+          this.mode = 'title';
+          this.title.reset();
+          this.audio.play('title');
+        }
+        return;
       case 'cutscene':
         this.dialogue.update();
         if (this.cutscene) {
           const done = this.cutscene.update();
+          if (done && this._theEnd) {
+            this._theEnd = false; this.cutscene = null; this.enterTheEnd();
+            return;
+          }
           if (done) {
             this.cutscene = null; this.mode = 'play'; this.updateMusic();
             const next = this._pendingCutscene; this._pendingCutscene = null;
@@ -1702,6 +1774,14 @@ export class Game {
   draw() {
     const ctx = this.ctx;
     if (this.mode === 'title') { this.title.draw(ctx); return; }
+    if (this.mode === 'theend') {
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, SCREEN_W, SCREEN_H);
+      drawTextCentered(ctx, 'The Legend of Zelda', SCREEN_W / 2, 48, '#f8f8f8');
+      drawTextCentered(ctx, 'Oracle of Tides', SCREEN_W / 2, 60, '#f8f8f8');
+      drawTextCentered(ctx, 'THE END', SCREEN_W / 2, 84, '#f8d850');
+      return;
+    }
 
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, SCREEN_W, SCREEN_H);
@@ -1779,7 +1859,7 @@ export class Game {
     if (this.player && this.player.lensT > 0) this.drawLensGhost(ctx, ox, oy);
     if (this.debug && this.tide.overrides.length) this.drawAnchorField(ctx, ox, oy);
     if (room.dark && !flag(this.progress, 'lantern')) this.drawDarkness(ctx, ox, oy);
-    if (this.itemShow) this.drawItemShow(ctx);
+    if (this.itemShow) this.drawItemShow(ctx, ox, oy);
   }
 
   /**
@@ -1891,14 +1971,18 @@ export class Game {
     ctx.fillRect(0, HUD_H, VIEW_W, VIEW_H);
   }
 
-  drawItemShow(ctx) {
+  drawItemShow(ctx, ox, oy) {
     const p = this.player;
     if (!p) return;
     const s = this.itemShow;
+    // Through the scene's own offset, which carries the camera: in a room
+    // bigger than the screen the prize used to float wherever Link would have
+    // been had the view never scrolled.
+    const x = ox + p.x, y = oy + p.y - 16;
     // A trade item carries its own sprite and its own palette; an inventory
     // item is looked up. Both are held in the same place, over Link's head.
-    if (s.sprite) { sprites.draw(ctx, s.sprite, p.x, HUD_H + p.y - 16); return; }
-    sprites.draw(ctx, itemIcon(s.id, s.lv), p.x, HUD_H + p.y - 16,
+    if (s.sprite) { sprites.draw(ctx, s.sprite, x, y); return; }
+    sprites.draw(ctx, itemIcon(s.id, s.lv), x, y,
       { pal: ITEMS[s.id] && ITEMS[s.id].pal });
   }
 

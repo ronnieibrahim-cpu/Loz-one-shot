@@ -232,7 +232,8 @@ const locked = await page.evaluate((ids) => {
     for (const [key, def] of Object.entries(m.roomDefs || {})) {
       if (!def.noTide) continue;
       const sz = def.size || [1, 1];
-      const W = (sz[0] | 0) * 10, H = (sz[1] | 0) * 8;
+      const [CW, CH] = m.cell || [10, 8];
+      const W = (sz[0] | 0) * CW, H = (sz[1] | 0) * CH;
       const [f0, rx0, ry0] = key.split(',').map(Number);
       const room = getRoom(mapId, f0, rx0, ry0);
       for (const t of [0, 1, 2]) {
@@ -246,6 +247,13 @@ const locked = await page.evaluate((ids) => {
         for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
           const border = x === 0 || y === 0 || x === W - 1 || y === H - 1;
           if (border && walk(room, x, y, t)) { const k = x + ',' + y; if (!seen.has(k)) { seen.add(k); q.push([x, y]); } }
+          // A door in an Oracle wall ring is a way in too, shut or not: the
+          // player arrives on the tile inside it once it is open.
+          if (border && (room.flagsAt(x, y, t) & F.DOOR)) {
+            const ix = x === 0 ? 1 : x === W - 1 ? W - 2 : x, iy = y === 0 ? 1 : y === H - 1 ? H - 2 : y;
+            const k = ix + ',' + iy;
+            if (walk(room, ix, iy, t) && !seen.has(k)) { seen.add(k); q.push([ix, iy]); }
+          }
         }
         while (q.length) {
           const [x, y] = q.pop();
@@ -298,9 +306,24 @@ const leaky = await page.evaluate((ids) => {
     const m = window.__MAPS.get(mapId);
     for (const [key, def] of Object.entries(m.roomDefs || {})) {
       const sz = def.size || [1, 1];
-      const W = (sz[0] | 0) * 10, H = (sz[1] | 0) * 8;
+      const [CW, CH] = m.cell || [10, 8];
+      const W = (sz[0] | 0) * CW, H = (sz[1] | 0) * CH;
       const [f0, rx0, ry0] = key.split(',').map(Number);
       const room = getRoom(mapId, f0, rx0, ry0);
+      // A DOOR IN AN ORACLE WALL RING separates two ROOMS, not two halves of
+      // one, so the local claim is different: it must be the only way through
+      // its stretch of the ring — no other cell of that wall, within the same
+      // map cell's span, walkable at any tide. Whether the far room is
+      // reachable some other way round is the key-counting flood's question.
+      const ringSole = (x, y) => {
+        const top = y === 0, bot = y === H - 1, left = x === 0, right = x === W - 1;
+        if (!(top || bot || left || right) || CW !== 15) return null;
+        const cells = [];
+        if (top || bot) { const c0 = Math.floor(x / CW) * CW; for (let i = c0; i < c0 + CW; i++) cells.push([i, y]); }
+        else { const c0 = Math.floor(y / CH) * CH; for (let j = c0; j < c0 + CH; j++) cells.push([x, j]); }
+        return cells.every(([cx, cy]) => (cx === x && cy === y)
+          || [0, 1, 2].every(t => !walk(room, cx, cy, t)));
+      };
       // Does the door at (x,y) cut its two neighbours along (ax,ay) apart?
       const cuts = (x, y, ax, ay, t) => {
         const a = [x - ax, y - ay], b = [x + ax, y + ay];
@@ -324,7 +347,9 @@ const leaky = await page.evaluate((ids) => {
         const name = room.baseName(x, y);
         if (name !== 'dDoorLocked' && name !== 'dDoorBoss') continue;
         total++;
-        const held = [[1, 0], [0, 1]].some(([ax, ay]) => [0, 1, 2].every(t => cuts(x, y, ax, ay, t)));
+        const ring = ringSole(x, y);
+        const held = ring !== null ? ring
+          : [[1, 0], [0, 1]].some(([ax, ay]) => [0, 1, 2].every(t => cuts(x, y, ax, ay, t)));
         if (!held) out.push(`${mapId} ${key} (${def.name || ''}) door at ${x},${y}`);
       }
     }

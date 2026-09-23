@@ -139,8 +139,12 @@ for (const f of FIGHTS) {
   const info = await page.evaluate(async (id) => {
     const { dungeons } = await import('/src/world/maps.js');
     const d = dungeons().find(x => x.id === id);
+    // Where the Essence appears: the middle of the arena, which is 4,3 in a
+    // Game Boy screen and 7,4 in an Oracle room (Game.onBossDefeated).
+    const oracle = !!(d.cell && d.cell[0] === 15);
     return { room: d.dungeon.bossRoom, index: d.dungeon.index, name: d.name,
-             essence: d.dungeon.essence };
+             essence: d.dungeon.essence, ex: oracle ? 7 : 4, ey: oracle ? 4 : 3,
+             px: oracle ? 112 : 72, py: oracle ? 120 : 80 };
   }, f.id);
   const [fl, rx, ry] = info.room.split(',').map(Number);
   console.log(`--- ${f.id.toUpperCase()} ${info.name}: ${f.boss} at ${info.room} (tide ${f.tide}: ${f.why})`);
@@ -149,13 +153,13 @@ for (const f of FIGHTS) {
   await page.evaluate(([setup, steps]) => window.__rp.beginRecord(setup, steps), [{
     seed: SEED, godMode: true, items: f.items, equipA: 'sword', equipB: 'conch',
     maxHearts: 12, hearts: 12, tide: f.tide,
-    enter: [f.id, fl, rx, ry, 72, 80, 'up'],
+    enter: [f.id, fl, rx, ry, info.px, info.py, 'up'],
   }, [
     ['wait', 30],
     ['boss', 9000],
     // The Essence arrives on a delay after the death, then is walked onto.
     ['wait', 240],
-    ['goto', 4, 3, 900],
+    ['goto', info.ex, info.ey, 900],
     ['dialogue', 900],
     ['wait', 60],
   ]]);

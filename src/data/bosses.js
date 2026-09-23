@@ -223,8 +223,17 @@ export function installBosses() {
   // has to come down to attack, and while it is buried in the floor the eye is
   // exposed — that window is the only way in. Draining the grotto (LOW tide)
   // dries the shell out and holds the window open twice as long.
+  // THE FIRST BOSS IN THE GAME, AND IT WAS A COIN FLIP. Measured in its
+  // Oracle-size arena from the route's own doorway on a full sixteen, it won
+  // seven seeds in thirteen and never finished above two hearts, and five of
+  // every six hits it landed were the slam's rock spray. The spray's rocks
+  // and the last phase's bubbles now take a quarter heart, not a half, and a
+  // touch of the claw three quarters, not a whole (S137). NOT the slam's
+  // rhythm: the
+  // slam is also what opens the eye, and slowing it was measured and lost
+  // thirteen seeds in thirteen — fewer windows is a longer fight.
   defineBoss('gohmaraq', {
-    hp: 24, damage: 4, pal: 'enemyr', speed: 0.55, rate: 9,
+    hp: 24, damage: 3, pal: 'enemyr', speed: 0.55, rate: 9,
     w: 32, h: 32, hb: { x: 3, y: 10, w: 26, h: 20 },
     frames: ['boss_gohmaraq_0', 'boss_gohmaraq_1', 'boss_gohmaraq_2'],
     hurtFrame: 'boss_gohmaraq_hurt',
@@ -257,7 +266,7 @@ export function installBosses() {
         patrol(e, g, { axis: 'x', speed: 1.0 });
         if (timer(e, 'slam', 105)) gohmaraqSlam(e, g, 5, 70);
         if (timer(e, 'spray', 210)) {
-          shootRing(e, g, 8, { sprite: 'shot_bubble', pal: 'water', speed: 1.2, damage: 2 });
+          shootRing(e, g, 8, { sprite: 'shot_bubble', pal: 'water', speed: 1.2, damage: 1 });
         }
       } },
     ],
@@ -269,7 +278,7 @@ export function installBosses() {
     windUp(e, g, 22, (e2, g2) => {
       g2.shake(SHAKE_BOSS_SLAM, SHAKE_BOSS_SLAM_FRAMES);
       g2.audio.sfx('explode');
-      spread(e2, g2, shots, 70, { sprite: 'shot_rock', speed: 1.5, damage: 2 });
+      spread(e2, g2, shots, 70, { sprite: 'shot_rock', speed: 1.5, damage: 1 });
       open(e2, g2, g2.tide.level === LOW ? openFor * 2 : openFor);
     });
   }
@@ -1123,7 +1132,13 @@ export function installBosses() {
       { above: 0.50, ai(e, g) {
         runPending(e, g);
         patrol(e, g, { axis: 'x', speed: g.tide.level === LOW ? 1.0 : 0.7 });
-        if (timer(e, 'snip', 130)) {
+        // SLOWER THAN THE BOSS IT REHEARSES. It used to throw 3 rocks every
+        // 130 frames and 5 every 100 — faster at every phase than Gohmaraq
+        // (170/130/105), on half the health, no shell, earlier in the game,
+        // so the first real fight in the game was the hardest thing in its
+        // dungeon: measured in tools/measure-boss-combat.mjs it killed the
+        // actor every time, from the door and from the middle (S130).
+        if (timer(e, 'snip', 190)) {
           windUp(e, g, 16, (e2, g2) => spread(e2, g2, 3, 50,
             { sprite: 'shot_rock', speed: 1.5, damage: 2 }));
         }
@@ -1132,7 +1147,7 @@ export function installBosses() {
         runPending(e, g);
         charge(e, g, { speed: 2.0, tell: 16, range: 120, shake: true, tol: 14,
           idle: (e2, g2) => patrol(e2, g2, { axis: 'x', speed: g2.tide.level === LOW ? 1.2 : 0.9 }) });
-        if (timer(e, 'snip', 100)) {
+        if (timer(e, 'snip', 150)) {
           windUp(e, g, 14, (e2, g2) => spread(e2, g2, 5, 70,
             { sprite: 'shot_rock', speed: 1.6, damage: 2 }));
         }
