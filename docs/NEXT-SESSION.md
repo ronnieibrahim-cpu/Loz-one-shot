@@ -1,3 +1,42 @@
+## S139 — the Bogwater Sanctum is rebuilt at Oracle room size
+
+### What landed
+- D3 at `cell: [15, 11]`: 22 rooms, same graph, same Cleats rooms, same
+  item placement. Key doors in the ring (Weir/Cistern, Vestry/Drain Gallery,
+  Eel Hall/Kelp Locks), boss door in the Lock Gallery's north wall.
+- Kit: the Poison Moth's Lair (`b*` picks, rooms on 241x177 from 1216,10),
+  including the sheet's own door key at 2273,1430 (17px pitch): key doors,
+  shutters and the Oracle skull BOSS DOOR — the first boss-door art in the
+  game (`ring.bossN`; the boss room's side draws the south shutter). `U` is
+  the Lair's gold eye statue. `knurlWall` pick removed (nothing drew it).
+- `ring.faces` (Bog only): interior wall masses draw the ring's faces toward
+  floor and water (`Room.faceArt`). D1/D2 unchanged on purpose.
+- DEEPENED: the Kelp Locks is a one-way flume that needs BOTH layers in one
+  crossing — ride the surface round, sink at the last gate (3 tiles against
+  you). Floor alone is 37 tiles, a breath is 31. check-cleats has a new
+  `cleatRoom.layers` claim (`floodLayers`: layer change in the water;
+  surfacing inside a torrent is not a free breath). Sign on the landing.
+- Bogmaw Hall's east door is a shutter opened by a latching plate in the
+  Lock Gallery (`d3_shortcut`). Before, Bogmaw Hall let a player skip the
+  whole east wing. The Locks being one way, the walk home uses it.
+- Drain Gallery's pit-drains became wells (the robot fell in them looting).
+- Gloomtide's phase 1-2 ink spit 2 -> 1 (the S137 Gohmaraq precedent):
+  13 seeds from the route doorway, 10 wins either way, mean margin 9 -> 14.
+- Route: Bogmaw is fought for the first time (on the way east from the Boss
+  Key, `openRetreat` — 1/13 without, 13/13 with), the Vestry Roof piece is
+  taken, the Drain's shelf fairy is taken, Gloomtide `wait` 165 (150..180
+  win), the Essence is at 7,4 and the Heart Container is now actually
+  collected. check-playthrough 41/41 to THE END, no deaths.
+- `d3-undertow` replay re-recorded. measure-boss-combat: d3 row re-read, new
+  `bogmaw` mini row.
+
+### Open
+- Torrent tiles have no direction in their art; a current is invisible
+  until touched. Oracle draws current streaks. Would help every Cleats room.
+- The Kelp Locks' middle is a big block of flat Lair masonry. It is how the
+  Lair draws solid mass, but a person should look at it.
+- D4..D6 still 10x8 (D4 next — NEXT-PROMPT.md).
+
 ## S138 — the Coral Spire is rebuilt at Oracle room size
 
 ### What landed

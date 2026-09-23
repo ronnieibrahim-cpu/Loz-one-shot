@@ -447,6 +447,19 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **A Seasons sheet's rooms may start one pixel below where the pitch says.**
+  The Poison Moth's Lair sits on the 241x177 pitch from 1216,10, not 1216,9:
+  the ripper's green grid line is at y=1248. Every first cut came out with a
+  green stripe along its top. Find the grid line by counting all-green rows
+  before trusting an origin (S139).
+- **Blocks move once.** `PushBlock.once` defaults true, as in Oracle. A switch
+  puzzle designed as "one step sideways, then up" is unsolvable, and
+  solve-switches says so in one line (S139).
+- **Claiming an Essence freezes the player for the pose.** A `loot` issued in
+  that freeze stands still, and the S139 run left Gloomtide's Heart Container
+  on the floor — a whole heart short for the rest of the game, which read as
+  "the fourth dungeon is too hard". Walk onto the Essence's own tile, wait
+  the freeze out, then loot.
 - **A room's size is the MAP's, not 10x8 (S137).** Six tools computed a
   room's width as `sw * 10` and every one of them quietly stopped at column
   10 of a 15-wide Oracle room: validate reported 288 "problems", the anchor

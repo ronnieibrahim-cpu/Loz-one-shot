@@ -11,18 +11,21 @@ every checker and the route learned Oracle cells at S137 (map `cell: [15, 11]`,
 
 DONE-CONDITION: all six dungeons declare `cell: [15, 11]`, each with its own
 Seasons kit, and `node tools/check-playthrough.mjs` is green end to end.
-PROGRESS: D1 done (S137). D2 done (S138). D3 Bogwater Sanctum is next, then D4..D6.
+PROGRESS: D1 done (S137). D2 done (S138). D3 done (S139). D4 Cliffside Cistern
+is next, then D5, D6. S139: the human allows MORE rooms in a dungeon when
+that is what makes its puzzles engaging; not required.
 
 ROTATION (retired S112, kept for the record):
   1 wide-rooms MET S111 | 2 art-provenance S9/S74 | 3 boss-art S75
   4 enemy-roster S59 | 5 npc-detail S63 | 6 region-art S89
   7 item-reuse MET S110 | 8 feel-measure BLOCKED | 9 playthrough-route MET S121
 
-FILE ALLOWLIST for the current objective (rebuild D3 at Oracle size):
-  src/data/dungeons-a.js (the d3 block), src/data/tiles-core.js,
+FILE ALLOWLIST for the current objective (rebuild D4 at Oracle size):
+  src/data/dungeons-a.js (the d4 block), src/data/overworld.js (d4's arrival), src/data/tiles-core.js,
   src/data/legends.js, src/data/tiles-dungeon-themes.js (regenerated only),
   tools/rip-dungeon-themes.py, tools/playthrough-route.mjs,
-  tools/replay-plans.mjs + tools/replays/d3-*.json, tools/measure-boss-combat.mjs,
+  tools/replay-plans.mjs + tools/replays/d4-*.json, src/data/bosses.js (d4's
+  bosses, measured first), src/world/room.js, tools/measure-boss-combat.mjs,
   any checker that still assumes 10x8, docs/*.md, dist/oracle-of-tides.html
 
 DETOUR TOKENS: 1 (unspent)
@@ -47,3 +50,4 @@ S135 | objective | Measured all six boss fights the way the game is really playe
 S136 | objective | Measured the six lesser bosses the same way, and two of the readings turn over completely. The thing guarding the second key in the game has been reported as killing you every single time; met the way it is really met, it loses five times in five. The shadow in the last dungeon was being reported as free and actually costs three hearts, and it is the last fight in the game you take with nothing on your charm case. And the salt colossus had never been measured at all — the old practice setup could not land a single blow on it in any attempt — which is why nobody had noticed it is the hardest fight in the game to practise. Nothing about any of them was changed.
 S137 | objective | The human named the next objective: rebuild the dungeons at real Oracle room size. The first dungeon is done — every room is a full scrolling 15x11 Oracle room with the Seasons wall ring, doorways and key doors cut from one Seasons dungeon, and its last anchor gate needs the Anchor thrown, recalled and thrown again. The crab miniboss and Gohmaraq were made fair for a first dungeon, and the whole game still plays to the end. Also fixed: text spacing, a black Oracle text box, the wrong floor under pots and under drained water in every themed dungeon, and the game resuming in the throne room after THE END.
 S138 | objective | The second dungeon, the Coral Spire, is rebuilt at real Oracle room size in the pink-and-violet look of the Seasons Explorer's Crypt, with its locked doors, its miniboss and its boss where they were, and the whole game still plays to the end. The miniboss now starts in the middle of its long hall instead of pinning Link in a corner, and a boss's summoned helpers now vanish when the boss dies instead of fighting on. The room next to the Lens now hides its Piece of Heart behind bats that only the Lens lets you hit. Fixed two real freezes on the way: a room could hand out its prize the moment you walked in, and the ending hung for good if the final boss died at low or high tide.
+S139 | objective | The third dungeon, the Bogwater Sanctum, is rebuilt at real Oracle room size in the blue slate and olive floor of the Seasons Poison Moth's Lair, with that dungeon's own key doors and the game's first proper Oracle boss door. The Kelp Locks now want both of the Cleats' layers in one crossing: ride the current round, sink for the last stretch. The miniboss's hall no longer lets you skip half the dungeon, the boss's ink spit hurts less in the bigger room, and the test robot now fights the miniboss and actually picks up the boss's Heart Container. The whole game still plays to the end.

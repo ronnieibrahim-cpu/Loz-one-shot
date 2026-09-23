@@ -916,6 +916,29 @@ checked and why; see `docs/NEXT-SESSION.md` S60 for the full account.
   `liftLevel: 2` + the `dredge` tile action, as this entry originally said;
   only the "read by nothing" half of the claim was wrong.
 
+## Settled at S139 — the Bogwater Sanctum is an Oracle dungeon
+
+- D3 is `cell: [15, 11]` with the Poison Moth's Lair kit. The Lair's rooms
+  start at y=10+177j (the green grid line is at 9+177j); x=1216+241i.
+- The Lair frames open doorways with plain runs, no jambs. Its door key strip
+  (2273..2324 x 1430..1481) has N/W key doors, N/S/E/W shutters and a north
+  boss door; S and E key doors are the N and W ones flipped (`vflip`/`flip`).
+- `ring.faces` draws interior walls with the ring's faces. Bog only; D1 and
+  D2's flat interior fills were approved looks and are untouched.
+- Blocks move once (`PushBlock.once`); Vestry's blocks go one tile sideways.
+- The Kelp Locks: `cleatRoom.layers` — floor alone 37 tiles > 31-tile breath,
+  both layers 3-tile dive. Surfacing in a torrent is modelled as no breath.
+- Bogmaw Hall -> Lock Gallery is a plate-opened shortcut (`d3_shortcut`).
+- Gloomtide spit 1 qh (phase 1-2); ring burst stays 3; contact 4 (ladder).
+  13 seeds: 10 wins before and after, mean margin 9 -> 14 qh.
+- Bogmaw from the route door: 1/13 bare, 1/13 `breakContact`, 13/13
+  `openRetreat`. The route uses `openRetreat`.
+- Gloomtide route `wait` 165: settles 150..180 win in the harness at the
+  route seed; 140 and 190 lose. It is a frame-phase fight; re-sweep if the
+  arrival frame moves.
+- The Essence in an Oracle boss room is at 7,4; `goto 7,4`, wait the freeze,
+  then loot — or the Heart Container is left behind.
+
 ## Settled at S138 — the Coral Spire is an Oracle dungeon
 
 - D2 is `cell: [15, 11]` with the Explorer's Crypt kit (`c*` picks in
