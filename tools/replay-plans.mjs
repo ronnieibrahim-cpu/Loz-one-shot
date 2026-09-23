@@ -357,7 +357,9 @@ export const PLANS = {
       maxHearts: 12,
       hearts: 12,
       tide: 1,
-      enter: ['d3', 0, 2, 3, 144, 56, 'left'],
+      // S139: the Undertow is an Oracle room, 15x11, and its east bank is
+      // column 13 with the door at row 5.
+      enter: ['d3', 0, 2, 3, 208, 80, 'left'],
     },
     steps: [
       ['wait', 30],
@@ -371,7 +373,7 @@ export const PLANS = {
       ['tap', 'b', 40],
       ['wait', 40],
       // The same press, the same channel, and now nothing is pushing back.
-      ['hold', ['left'], 300],
+      ['hold', ['left'], 420],
       ['wait', 40],
     ],
     // One room change in the whole run, and it is the west door of the

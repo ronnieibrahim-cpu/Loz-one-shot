@@ -281,6 +281,9 @@ export function installLegends() {
   registerLegend('dungeonGrotto', { 'C': 'dExitGrotto' }, 'dungeonGrotto');
   theme('dungeonCoral',   'dFloorCoral',   'dFloorCoralAlt',   'dWallCoral',   'dWallCoralX',   'dBlockCoral',   'dUrnCoral');
   theme('dungeonBog',     'dFloorBog',     'dFloorBogAlt',     'dWallBog',     'dWallBogX',     'dBlockBog',     'dUrnBog');
+  // The Sanctum is built at Oracle size (S139): its way out is the Moth's
+  // Lair's lit step between two green pillars in the south wall, `(C)`.
+  registerLegend('dungeonBog', { 'C': 'dExitBog', '(': 'dPillarBogW', ')': 'dPillarBogE' }, 'dungeonBog');
   // The Coral Spire needs two tiles no other dungeon has, for the Reefseed
   // grove in the Whelk Hollow, and every digit in the shared vocabulary is
   // already spoken for. `5` (`channel`) is an OUTDOOR tile that no indoor room

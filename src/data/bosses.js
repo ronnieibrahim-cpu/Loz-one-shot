@@ -423,7 +423,7 @@ export function installBosses() {
         chase(e, g, { speed: 0.42 * cur });
         if (timer(e, 'spit', 120)) {
           windUp(e, g, 16, (e2, g2) => spread(e2, g2, 3, 45,
-            { sprite: 'shot_ink', pal: 'shadow', speed: 1.5, damage: 2 }));
+            { sprite: 'shot_ink', pal: 'shadow', speed: 1.5, damage: 1 }));
         }
       } },
       // Sinks and resurfaces beside you, shedding a gel each time it comes up.
@@ -436,7 +436,7 @@ export function installBosses() {
             chase(e2, g2, { speed: 0.5 * cur });
             if (every(e2, 96)) {
               windUp(e2, g2, 16, (e3, g3) => {
-                spread(e3, g3, 5, 60, { sprite: 'shot_ink', pal: 'shadow', speed: 1.6, damage: 2 });
+                spread(e3, g3, 5, 60, { sprite: 'shot_ink', pal: 'shadow', speed: 1.6, damage: 1 });
                 if (g3.rng.chance(0.6)) summon(g3, e3, 'gel', 1);
               });
             }

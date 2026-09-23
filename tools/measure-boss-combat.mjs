@@ -139,6 +139,15 @@ const MINIS = {
   reefguard: { dungeon: 'd2', room: '1,4,2', flag: 'd2_reefguard', tide: MID, qh: 20,
                items: { sword: 1, conch: 1, anchor: 1, lens: 1 },
                at: [47, 153], facing: 'up', maxQh: 20, settle: 0, frame: 49244 },
+  // d3 0,2,2, step 477 (`travel` in by the west door) f72075: `7,79 hp
+  // 21/28 tide 0 [bogmaw]`, and the boss step begins at once. S139: THE
+  // ROUTE FIGHTS BOGMAW FOR THE FIRST TIME — the Kelp Locks are one way now
+  // and the walk home comes back through this hall, so it is fought on the
+  // way east from the Boss Key rather than skipped.
+  bogmaw: { dungeon: 'd3', room: '0,2,2', flag: 'd3_bogmaw', tide: LOW, qh: 21,
+            items: { sword: 1, conch: 1, anchor: 1, lens: 1, bombs: 1, cleats: 1 },
+            opts: { openRetreat: true },
+            at: [7, 79], facing: 'right', maxQh: 28, settle: 0, frame: 72075 },
   // d4 0,5,3, step 692 (`hold up`) f76801, boss at f76921: `47,95 hp 26/32
   // tide 2 [ironknight+keese]`. There is a keese in the room with him.
   ironknight: { dungeon: 'd4', room: '0,5,3', flag: 'd4_ironknight', tide: HIGH, qh: 27,
@@ -245,7 +254,10 @@ const ROUTE_ARENA = {
   // CORRECTED AT S135: the bar is 28 here, not the 32 this row carried from
   // S133. Read out of `progress.maxHearts` at the step itself rather than
   // inferred from the Heart Containers the run had banked.
-  d3: { at: [65, 112], facing: 'up', qh: 24, maxQh: 28, settle: 150, frame: 74089 },
+  // S139: D3 IS AN ORACLE DUNGEON NOW. Walked in through the boss door in
+  // the Lock Gallery's north wall; the trace's `wait 150` (step 546) lands at
+  // f78723: `111,160 hp 23/28 tide 0 [gloomtide]`.
+  d3: { at: [111, 160], facing: 'up', qh: 24, maxQh: 28, settle: 165, frame: 78848 },
   // d4 0,3,1, trace step 776 (`hold up` through the door) at f85158:
   // `63,99 hp 17/32 tide 0 foes 1 [wyverna]`. SEVENTEEN OF THIRTY-TWO — the
   // route meets the fourth boss on barely half a bar, and this file has been

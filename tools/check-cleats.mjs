@@ -47,6 +47,18 @@
 //      surfaces you the moment you are not in deep water, so a route's cost is
 //      its longest deep RUN, not its total length.
 //
+// AND, for a room declaring `cleatRoom: { from, to, layers: true }` — a room
+// built to need BOTH layers in one crossing — clauses 3 and 4 turn over:
+//
+//   3'. NOT ON THE FLOOR ALONE. Sink mode, coming up only where there is dry
+//       land to come up on, cannot get there inside one breath.
+//   4'. BOTH LAYERS, YES. A body that may change layer at any deep tile —
+//       surface to floor or floor to surface, which the Cleats' button does in
+//       the water — gets there with every dive inside one breath.
+//
+// That is the Kelp Locks: the current carries a swimmer round to a last gate
+// that runs against him, and the floor route is longer than the air.
+//
 // THE MODEL, and where its edges are
 //
 //   * A state is a tile; the level is a parameter, and every claim is made at
@@ -209,6 +221,76 @@ function flood(room, start, level, mode, maxRun = Infinity) {
 }
 
 /**
+ * Reachability for a body that may change layer in the water: the Cleats'
+ * button turns a swimmer into a walker on the floor, and a walker back into a
+ * swimmer, on any deep tile. A state is a tile, a layer ('s' surface, 'f'
+ * floor, 'd' dry land) and, on the floor, the dive so far. Currents apply on
+ * the surface only; a dive is capped at `maxRun` tiles and ends the moment
+ * the body comes up, on land or in the water. Hops are the flood's above.
+ */
+function floodLayers(room, start, level, maxRun) {
+  const { grid, legend, W, H } = room;
+  const at = (x, y) => (x < 0 || y < 0 || x >= W || y >= H ? null : defAt(legend, grid[y][x], level));
+  const tiles = new Set();
+  const seen = new Set();
+  const q = [];
+  const push = (x, y, layer, run) => {
+    if (run > maxRun) return;
+    const k = x + ',' + y + ',' + layer + ',' + run;
+    if (seen.has(k)) return;
+    seen.add(k); tiles.add(x + ',' + y); q.push([x, y, layer, run]);
+  };
+  // Stepping onto a tile in a given layer: dry land ends any dive; deep water
+  // is entered on the surface or on the floor, whichever the soles are set to.
+  const enter = (x, y, layer, run) => {
+    const d = at(x, y);
+    if (!isDeep(d)) {
+      if (occupiable(d, 'foot') || occupiable(d, 'swim')) push(x, y, 'd', 0);
+      return;
+    }
+    if (layer !== 'f' && occupiable(d, 'swim')) push(x, y, 's', 0);
+    if (layer !== 's' && occupiable(d, 'sink')) push(x, y, 'f', (layer === 'f' ? run : 0) + 1);
+  };
+  enter(start[0], start[1], 'd', 0);
+  while (q.length) {
+    const [x, y, layer, run] = q.pop();
+    const here = at(x, y);
+    // The button, in the water.
+    if (layer === 's') push(x, y, 'f', 1);
+    // Coming up in a torrent is not a breath taken where you stand: the
+    // current has you before the soles lift. Only still water lets a walker
+    // surface in place and go back down.
+    if (layer === 'f' && !(Math.abs(pushOf(here, 'swim')[0]) + Math.abs(pushOf(here, 'swim')[1]) >= SWIM_PXF)) {
+      push(x, y, 's', 0);
+    }
+    const [px, py] = layer === 's' ? pushOf(here, 'swim') : [0, 0];
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      if (layer === 's' && ((dx && Math.sign(px) === -Math.sign(dx) && Math.abs(px) >= SWIM_PXF)
+        || (dy && Math.sign(py) === -Math.sign(dy) && Math.abs(py) >= SWIM_PXF))) continue;
+      const nx = x + dx, ny = y + dy;
+      const nd = at(nx, ny);
+      // From dry land the next water is met in either layer; in the water the
+      // layer you are in carries on.
+      if (layer === 'd') { enter(nx, ny, 's', 0); enter(nx, ny, 'f', 0); }
+      else enter(nx, ny, layer, run);
+      if (nd && (occupiable(nd, 'swim') || occupiable(nd, 'sink'))) continue;
+      if (layer !== 'd') continue;
+      for (let n = 1; n <= HOP_TILES; n++) {
+        let clear = true;
+        for (let i = 1; i <= n; i++) {
+          const d = at(x + dx * i, y + dy * i);
+          if (!d || (d.flags & (F.VOID | F.SOLID))) { clear = false; break; }
+        }
+        if (!clear) break;
+        const lx = x + dx * (n + 1), ly = y + dy * (n + 1);
+        if (walkableDef(at(lx, ly))) push(lx, ly, 'd', 0);
+      }
+    }
+  }
+  return tiles;
+}
+
+/**
  * The shortest air the room can be crossed on: the smallest single-dive length
  * that still gets `to` from `from`. Walked upward from zero rather than solved,
  * because a room is a hundred and sixty tiles and the answer is always small.
@@ -273,6 +355,29 @@ for (const r of rooms) {
   const swum = reaches('swim');
   check(`${where}: the surface route does not get there`, swum.length === 0,
     'swimming reaches it at ' + swum.map(l => LEVEL_NAME[l]).join('/') + ' — the current is not a barrier');
+
+  if (r.C.layers) {
+    // The floor alone, coming up only on dry land: longer than the air.
+    const floorOnly = LEVELS.filter(l => flood(r, from, l, 'sink', BREATH_TILES).has(to.join(',')));
+    let need = Infinity;
+    for (const l of LEVELS) need = Math.min(need, minDive(r, from, to, l, 'sink'));
+    check(`${where}: the seafloor alone does not get there in one breath`, floorOnly.length === 0,
+      'a floor walk reaches it at ' + floorOnly.map(l => LEVEL_NAME[l]).join('/')
+      + ' — the room does not need the surface');
+    const both = LEVELS.filter(l => floodLayers(r, from, l, BREATH_TILES).has(to.join(',')));
+    check(`${where}: riding the surface and sinking in the water does`, both.length > 0,
+      'no route even changing layer in the water — the room is impossible, not layered');
+    if (both.length) {
+      let dive = BREATH_TILES;
+      for (let L = 0; L <= BREATH_TILES; L++) {
+        if (both.some(l => floodLayers(r, from, l, L).has(to.join(',')))) { dive = L; break; }
+      }
+      console.log(`       floor alone needs a ${need === Infinity ? 'never-ending' : need + '-tile'} dive `
+        + `(a breath is ${BREATH_TILES}); with both layers the longest dive is ${dive} tiles, `
+        + `at ${both.map(l => LEVEL_NAME[l]).join('/')}`);
+    }
+    continue;
+  }
 
   const sunk = reaches('sink');
   check(`${where}: the seafloor route does`, sunk.length > 0,

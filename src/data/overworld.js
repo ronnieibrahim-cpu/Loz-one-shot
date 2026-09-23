@@ -2026,10 +2026,10 @@ const rooms = {
       'TTggggggTT',
     ],
     warps: [
-      { x: 4, y: 2, to: { map: 'd3', floor: 0, rx: 3, ry: 7, px: 72, py: 96 } },
+      { x: 4, y: 2, to: { map: 'd3', floor: 0, rx: 3, ry: 7, px: 112, py: 144 } },
       // Both halves of the arch enter. A two-tile-wide door whose
       // right half is scenery is a door the player bumps into.
-      { x: 5, y: 2, to: { map: 'd3', floor: 0, rx: 3, ry: 7, px: 72, py: 96 } },
+      { x: 5, y: 2, to: { map: 'd3', floor: 0, rx: 3, ry: 7, px: 112, py: 144 } },
     ],
     entities: [
       ['sign', 2, 3, { text: 'BOGWATER SANCTUM\nThe current runs at one height only.' }],

@@ -1471,10 +1471,31 @@ export function installDungeonsA() {
     kind: 'dungeon',
     name: 'Bogwater Sanctum',
     w: 8, h: 8, floors: 1,
+    // AN ORACLE DUNGEON (S139), built like the Grotto and the Spire: 15x11
+    // rooms with a wall ring, a scrolling camera, one-tile doors, and key,
+    // shutter and boss doors in the ring between two rooms. The kit is the
+    // Poison Moth's Lair's (`b*` picks in tools/rip-dungeon-themes.py).
+    //
+    // THE SANCTUM'S SENTENCE: the water has two floors. Both torrent rooms
+    // run TOWARD the Cistern Floor, so each wing is walked out along the
+    // seafloor and ridden home on the surface. The Kelp Locks ask for both
+    // layers in one crossing — ride the current as far as it carries, then
+    // sink for the stretch it will not.
+    //
+    // The route (22 rooms, one floor, the Cleats at room 11):
+    //   3,7 mouth -> 3,6 Nave (fairy) -> 4,6 charm -> 3,5 Hub -> 2,5 map
+    //   -> 4,5 Sluice Cell (Small Key 1) -> 3,4 Weir: 2,4 Chartstone,
+    //   4,4 Piece of Heart, and the key door north -> 3,3 THE CLEATS.
+    //   West wing: 2,3 Undertow (floor out) -> 1,3 Vestry (Small Key 2)
+    //   -> 1,2 Drain Gallery (key door; Boss Key) -> 2,2 Bogmaw -> 2,1 Piece.
+    //   East wing: 4,3 Drain (floor out) -> 5,3 Eel Hall -> 5,4 Eel Vault
+    //   (Small Key 3) -> the Hall's key door north -> 4,2 Kelp Locks (ride,
+    //   then sink) -> 3,2 Lock Gallery: its plate opens the shortcut west to
+    //   Bogmaw Hall, and the boss door is in its north wall -> 3,1 Gloomtide.
+    cell: [15, 11],
     legend: 'dungeonBog',
     music: 'dungeon',
     tint: 'cave',
-    scroll: false,
     dungeon: {
       index: 3,
       item: 'cleats', itemLevel: 1,
@@ -1487,48 +1508,52 @@ export function installDungeonsA() {
     rooms: {
       '0,3,7': {
         name: 'Sanctum Mouth',
+        // The Lair's own entrance hall: gold eye statues down both sides and
+        // the lit step between two green pillars in the south wall.
         map: [
-          '##M#..#M##',
-          '#U......U#',
-          '#........#',
-          '#..2..2..#',
-          '#..2..2..#',
-          '#........#',
-          '#........#',
-          '####CC####',
+          '#######.#######',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '#...22...22...#',
+          '#...22...22...#',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '#.............#',
+          '######(C)######',
         ],
         warps: [
-          // BOTH HALVES WARP. A two-tile arch whose right half is
-          // scenery is a door the player bumps into — the same rule
-          // the dungeon portals outside have carried since they landed.
-          { x: 4, y: 7, to: { map: 'overworld', floor: 0, rx: 1, ry: 8, px: 64, py: 32, dir: 'down' } },
-          { x: 5, y: 7, to: { map: 'overworld', floor: 0, rx: 1, ry: 8, px: 64, py: 32, dir: 'down' } },
+          { x: 7, y: 10, to: { map: 'overworld', floor: 0, rx: 1, ry: 8, px: 64, py: 32, dir: 'down' } },
         ],
         readable: [
-          [2, 2, 'Bog script: "The water has two floors. Only one of them drowns you."'],
+          [2, 7, 'Bog script: "The water has two floors.\nOnly one of them drowns you."'],
         ],
       },
       '0,3,6': {
         name: 'Drowned Nave',
         map: [
-          '####..####',
-          '#........#',
-          '#.111111.#',
-          '#.111111..',
-          '#.111111..',
-          '#.111111.#',
-          '#........#',
-          '####..####',
+          '#######.#######',
+          '#.............#',
+          '#.............#',
+          '#...1111111...#',
+          '#...1111111...#',
+          '#...1111111....',
+          '#...1111111...#',
+          '#...1111111...#',
+          '#.............#',
+          '#.............#',
+          '#######.#######',
         ],
         entities: [
-          ['jellyfish', 4, 3],
-          ['crab', 2, 5],
+          ['jellyfish', 7, 5],
+          ['crab', 3, 8],
         ],
         puzzle: {
           enemies: true,
           flag: 'd3_nave',
           reward: {
-            spawn: [['pickup', 4, 1, { kind: 'fairy' }]],
+            spawn: [['pickup', 7, 1, { kind: 'fairy' }]],
             say: 'The bog lets something go.',
           },
         },
@@ -1536,14 +1561,17 @@ export function installDungeonsA() {
       '0,4,6': {
         name: 'Bell Cell',
         map: [
-          '##########',
-          '#U......U#',
-          '#........#',
-          '.........#',
-          '.........#',
-          '#.,,,,,,.#',
-          '#........#',
-          '##########',
+          '###############',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '#....,,,,,....#',
+          '.....,,,,,....#',
+          '#....,,,,,....#',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '###############',
         ],
         entities: [
           // A LOW charm, and the first one in the game that could be placed.
@@ -1551,128 +1579,149 @@ export function installDungeonsA() {
           // Coral Spire with the second, so this dungeon is the first place a
           // LOW charm is a reward rather than a locked box. It is also the beat
           // that tells them the case exists.
-          ['chest', 4, 2, { charm: 'wreckersEye' }],
-          ['pickup', 6, 4, { kind: 'blank' }],
-          ['keese', 6, 2],
+          ['chest', 7, 5, { charm: 'wreckersEye' }],
+          ['pickup', 12, 5, { kind: 'blank' }],
+          ['keese', 10, 3],
         ],
       },
       '0,3,5': {
         name: 'Bog Hub',
         map: [
-          '####..####',
-          '#..q..q..#',
-          '#.111111.#',
-          '..111111..',
-          '..111111..',
-          '#.111111.#',
-          '#..q..q..#',
-          '####..####',
+          '#######.#######',
+          '#.............#',
+          '#.111.....111.#',
+          '#.111.....111.#',
+          '#.111.....111.#',
+          '...............',
+          '#.111.....111.#',
+          '#.111.....111.#',
+          '#.111.....111.#',
+          '#.............#',
+          '#######.#######',
         ],
         entities: [
-          ['jellyfish', 4, 4],
-          ['urchin', 2, 2],
+          ['jellyfish', 3, 3],
+          ['urchin', 7, 2],
         ],
       },
       '0,2,5': {
         name: 'Map Cell',
         map: [
-          '##########',
-          '#U......U#',
-          '#........#',
-          '#.........',
-          '#.........',
-          '#..pp....#',
-          '#........#',
-          '##########',
+          '###############',
+          '#.............#',
+          '#.p.........p.#',
+          '#.............#',
+          '#.............#',
+          '#..............',
+          '#.............#',
+          '#.............#',
+          '#.p.........p.#',
+          '#.............#',
+          '###############',
         ],
         entities: [
-          ['pickup', 4, 3, { kind: 'dungeonMap' }],
-          ['urchin', 6, 2],
+          ['pickup', 7, 5, { kind: 'dungeonMap' }],
+          ['urchin', 10, 3],
         ],
       },
       '0,4,5': {
         name: 'Sluice Cell',
         map: [
-          '##########',
-          '#U......U#',
-          '#........#',
-          '.........#',
-          '.........#',
-          '#........#',
-          '#..,,,,..#',
-          '##########',
+          '###############',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '..............#',
+          '#.............#',
+          '#.............#',
+          '#....,,,,,....#',
+          '#.............#',
+          '###############',
         ],
         entities: [
-          ['switch', 2, 2],
-          ['switch', 7, 2],
-          ['block', 2, 3],
-          ['block', 7, 3],
-          ['keese', 4, 4],
+          ['switch', 3, 2],
+          ['switch', 11, 2],
+          ['block', 3, 3],
+          ['block', 11, 3],
+          ['keese', 7, 6],
         ],
         puzzle: {
           switches: 'all',
           flag: 'd3_sluice',
           reward: {
-            spawn: [['pickup', 4, 1, { kind: 'key' }]],
+            spawn: [['pickup', 7, 2, { kind: 'key' }]],
             say: 'A grate lifts somewhere below the floor.',
           },
         },
       },
       '0,3,4': {
         name: 'The Weir',
+        // Its key door is in the north wall and gates the Cistern Floor, not
+        // the room: the Chartstone and the Piece of Heart either side of it
+        // are walked with the key still in hand.
         map: [
-          '####..####',
-          '#........#',
-          '####L#####',
-          '..........',
-          '..........',
-          '#.111111.#',
-          '#........#',
-          '####..####',
+          '#######L#######',
+          '#.............#',
+          '#..U.......U..#',
+          '#.............#',
+          '#.............#',
+          '...............',
+          '#.............#',
+          '#.11111111111.#',
+          '#.............#',
+          '#.............#',
+          '#######.#######',
         ],
         entities: [
-          ['crab', 2, 4],
-          ['urchin', 7, 3],
+          ['crab', 3, 6],
+          ['urchin', 11, 4],
         ],
       },
       '0,2,4': {
         name: 'Silt Cell',
         map: [
-          '##########',
-          '#U......U#',
-          '#........#',
-          '#.........',
-          '#.........',
-          '#..3333..#',
-          '#........#',
-          '##########',
+          '###############',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '#.............#',
+          '#..............',
+          '#....3333.....#',
+          '#....3333.....#',
+          '#.U.........U.#',
+          '#.............#',
+          '###############',
         ],
         entities: [
-          ['chest', 4, 2, { pickup: 'chartstone' }],
-          ['urchin', 6, 4],
+          ['chest', 7, 3, { pickup: 'chartstone' }],
+          ['urchin', 11, 6],
         ],
       },
       '0,4,4': {
         name: 'Reed Cell',
         map: [
-          '##########',
-          '#U......U#',
-          '#..3333..#',
-          '...3333...',
-          '...3333...',
-          '#..3333..#',
-          '#........#',
-          '##########',
+          '###############',
+          '#.............#',
+          '#...3333333...#',
+          '#...3333333...#',
+          '#...3333333...#',
+          '....3333333...#',
+          '#...3333333...#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '###############',
         ],
         entities: [
-          ['jellyfish', 3, 2],
-          ['crab', 7, 6],
+          ['jellyfish', 7, 4],
+          ['crab', 11, 8],
         ],
         puzzle: {
           enemies: true,
           flag: 'd3_reed',
           reward: {
-            spawn: [['pickup', 4, 6, { kind: 'heartPiece' }]],
+            spawn: [['pickup', 7, 8, { kind: 'heartPiece' }]],
             say: 'The reeds part over something round and bright.',
           },
         },
@@ -1680,40 +1729,39 @@ export function installDungeonsA() {
       '0,5,4': {
         name: 'Eel Vault',
         map: [
-          '####..####',
-          '#U......U#',
-          '#........#',
-          '#........#',
-          '#........#',
-          '#..,,,,..#',
-          '#........#',
-          '##########',
+          '#######.#######',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '#....,,,,,....#',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '###############',
         ],
         entities: [
-          // A CRAB, NOT A BARNACLE, AND THE KEY IS WHY. This room's Small Key —
-          // the third of three, and the one that opens the way to the Kelp
-          // Locks and everything past them — is paid out by `puzzle: { enemies:
-          // true }`, which holds until nothing in the room is alive. A barnacle
-          // is `hp: 999` with `shield: 'all'`: a turret bolted to the wall that
-          // the sword cannot touch and no item in the player's hands at this
-          // point can answer. So the key never dropped, the locked door at the
-          // head of the Eel Hall never opened, and HALF THE DUNGEON, ITS BOSS
-          // AND ITS ESSENCE SAT BEHIND IT. `walk-dungeons.mjs` counted the key
-          // as earned because it reads the room's reward, not whether the room
-          // can be cleared; the playthrough actor fought the barnacle for eight
-          // thousand frames and lost sixteen quarter-hearts to it.
+          // A CRAB, NOT A BARNACLE, AND THE KEY IS WHY. This room's Small Key
+          // is paid out by `puzzle: { enemies: true }`, which holds until
+          // nothing in the room is alive. A barnacle is `hp: 999` with
+          // `shield: 'all'`: a turret bolted to the wall that the sword cannot
+          // touch and no item in the player's hands at this point can answer.
+          // So the key never dropped and half the dungeon sat behind it, while
+          // `walk-dungeons.mjs` counted the key as earned because it reads the
+          // room's reward, not whether the room can be cleared.
           //
           // Barnacles stay everywhere they are scenery-with-a-hitbox — the Eel
           // Hall still fields two. They may not stand in a room that has to be
           // emptied.
-          ['crab', 4, 4],
-          ['keese', 2, 2],
+          ['crab', 7, 5],
+          ['keese', 3, 4],
         ],
         puzzle: {
           enemies: true,
           flag: 'd3_eel',
           reward: {
-            spawn: [['pickup', 4, 2, { kind: 'key' }]],
+            spawn: [['pickup', 7, 3, { kind: 'key' }]],
             say: 'Something drops out of the weed.',
           },
         },
@@ -1725,79 +1773,83 @@ export function installDungeonsA() {
         // opened them on.
         //
         // THE CAUSEWAY IS NOT DECORATION AND IT IS NOT A SOFTENING. Every tile
-        // ringing the island is `dWaterD` — flat deep water at every tide, not
-        // a tide tile — so until S112 there was NO WAY ONTO THE ISLAND without
-        // the Cleats that are standing on it, and the Cleats are what D3 hands
-        // over. The chest was unreachable from a real playthrough and nothing
-        // in CLAUDE.md's table could see it: `walk-dungeons.mjs` floods a
-        // dungeon with `capsForDungeonIndex`, which grants swim to every room
-        // of D3 including this one, so the flood walked in over the water it
-        // was supposed to be proving you could not cross. The playthrough
-        // actor found it in one directive. The two cells of `dBasin` below are
-        // dry at LOW, damp at MID and shallow at HIGH — walkable at all three,
-        // because an item room has to work at whichever sea arrives.
-        //
-        // The room's own sentence is unchanged: the causeway only reaches the
-        // door you came in by. Both ways ONWARD — west to the Undertow, east
-        // to the Bogwater Drain — are still two tiles of deep water, so the
-        // first thing the Cleats are used for is still getting off this rock.
+        // ringing the island is `dWaterD` — flat deep water at every tide — so
+        // without it there is NO WAY ONTO THE ISLAND without the Cleats that
+        // are standing on it. `walk-dungeons.mjs` cannot see that: it floods
+        // D3 with swim granted to every room, including this one. The
+        // causeway's `dBasin` is dry at LOW, damp at MID and shallow at HIGH —
+        // walkable at all three, because an item room has to work at whichever
+        // sea arrives. It reaches only the door you came in by: both ways
+        // ONWARD — west to the Undertow, east to the Bogwater Drain — are deep
+        // water.
         map: [
-          '##########',
-          '#WWWWWWWW#',
-          '#WW....WW#',
-          '.WW....WW.',
-          '.WW....WW.',
-          '#WW....WW#',
-          '#WWW22WWW#',
-          '####..####',
+          '###############',
+          '#WWWWWWWWWWWWW#',
+          '#WWWWWWWWWWWWW#',
+          '#WWWW.....WWWW#',
+          '#WWWW.....WWWW#',
+          '.WWWW.....WWWW.',
+          '#WWWW.....WWWW#',
+          '#WWWWWW2WWWWWW#',
+          '#WWWWWW2WWWWWW#',
+          '#WWWWWW2WWWWWW#',
+          '#######L#######',
         ],
         entities: [
-          ['chest', 4, 3, { big: true, item: 'cleats', level: 1 }],
+          ['chest', 7, 4, { big: true, item: 'cleats', level: 1 }],
         ],
       },
       '0,2,3': {
         name: 'The Undertow',
-        // Torrent room 1. The channel runs east, back toward the shelf you
-        // arrived on, and the way out is at its head. Bare on purpose: a niche
-        // in the wall of a torrent room is somewhere to stand, and somewhere to
-        // stand is somewhere the current is not.
+        // Torrent room 1. The whole floor of the room runs east, back toward
+        // the island you came from; a bank down each side is where the doors
+        // are. On the surface the current carries you home. Out, it is a
+        // walk along the bottom.
         map: [
-          '##########',
-          '###M##M###',
-          '##########',
-          '.TTTTTTTT.',
-          '.TTTTTTTT.',
-          '##########',
-          '###M##M###',
-          '##########',
+          '###############',
+          '#.TTTTTTTTTTT.#',
+          '#.TTTTTTTTTTT.#',
+          '#.TTTTTTTTTTT.#',
+          '#.TTTTTTTTTTT.#',
+          '..TTTTTTTTTTT..',
+          '#.TTTTTTTTTTT.#',
+          '#.TTTTTTTTTTT.#',
+          '#.TTTTTTTTTTT.#',
+          '#.TTTTTTTTTTT.#',
+          '###############',
         ],
-        cleatRoom: { from: [9, 3], to: [0, 3] },
+        cleatRoom: { from: [14, 5], to: [0, 5] },
         readable: [],
       },
       '0,1,3': {
         name: 'Sunken Vestry',
+        // Two blocks, two plates, and each block is pushed sideways toward the
+        // middle of the room rather than up, the way the Sluice Cell's are.
         map: [
-          '###..#####',
-          '#U......U#',
-          '#........#',
-          '#.........',
-          '#.........',
-          '#..1111..#',
-          '#........#',
-          '####..####',
+          '#######L#######',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '#....11111....#',
+          '#....11111.....',
+          '#....11111....#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '#######.#######',
         ],
         entities: [
-          ['switch', 2, 2],
-          ['switch', 7, 2],
-          ['block', 2, 3],
-          ['block', 7, 3],
-          ['urchin', 4, 4],
+          ['switch', 4, 2],
+          ['switch', 10, 2],
+          ['block', 3, 2],
+          ['block', 11, 2],
+          ['urchin', 7, 8],
         ],
         puzzle: {
           switches: 'all',
           flag: 'd3_vestry',
           reward: {
-            spawn: [['pickup', 4, 1, { kind: 'key' }]],
+            spawn: [['pickup', 7, 2, { kind: 'key' }]],
             say: 'Stone settles into stone.',
           },
         },
@@ -1805,34 +1857,45 @@ export function installDungeonsA() {
       '0,1,4': {
         name: 'Silt Vault',
         map: [
-          '####..####',
-          '#U......U#',
-          '#........#',
-          '#..3333..#',
-          '#..3333..#',
-          '#........#',
-          '#........#',
-          '##########',
+          '#######.#######',
+          '#.............#',
+          '#.............#',
+          '#....33333....#',
+          '#....33333....#',
+          '#.............#',
+          '#.p.........p.#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '###############',
         ],
         entities: [
-          ['pickup', 4, 5, { kind: 'rupee20' }],
-          ['keese', 6, 2],
+          ['pickup', 7, 7, { kind: 'rupee20' }],
+          ['keese', 10, 2],
         ],
       },
       '0,2,2': {
         name: 'Bogmaw Hall',
+        // The east door is a shutter, and it is the Lock Gallery's to open:
+        // the plate beside it on the far side lets a player who came the long
+        // way round through the Kelp Locks walk back this way. Without it this
+        // hall was a way to the boss door that skipped the Eel Hall, the Eel
+        // Vault's key and the Locks — the whole east wing.
         map: [
-          '####..####',
-          '#........#',
-          '#..,,,,..#',
-          '..........',
-          '..........',
-          '#..,,,,..#',
-          '#........#',
-          '##########',
+          '#######.#######',
+          '#.............#',
+          '#.............#',
+          '#...,,,,,,,...#',
+          '#.............#',
+          '..............D',
+          '#.............#',
+          '#...,,,,,,,...#',
+          '#.............#',
+          '#.............#',
+          '###############',
         ],
         entities: [
-          ['bogmaw', 4, 3],
+          ['bogmaw', 7, 5],
         ],
         puzzle: {
           enemies: true,
@@ -1842,162 +1905,193 @@ export function installDungeonsA() {
       },
       '0,1,2': {
         name: 'Drain Gallery',
+        // The Boss Key stands inside a ring of wells — wading water at LOW and
+        // over your head above it. The ring is open to the south.
         map: [
-          '##########',
-          '#U...#...#',
-          '#....#...#',
-          '#....#....',
-          '#....L....',
-          '#....#...#',
-          '#....#..U#',
-          '###..#####',
+          '###############',
+          '#.............#',
+          '#.............#',
+          '#...3333333...#',
+          '#...3.....3...#',
+          '#...3.....3....',
+          '#...3.....3...#',
+          '#...33...33...#',
+          '#.............#',
+          '#.............#',
+          '#######L#######',
         ],
         entities: [
-          ['chest', 7, 3, { pickup: 'bossKey' }],
-          // A KEESE, NOT A JELLYFISH. There is no water in this room at any tide, so
-          // the jellyfish that stood here could never move: `terrainOk` keeps an
-          // aquatic enemy on wet tiles and there were none to be on. It was
-          // scenery with a hitbox. d3 fields five keese already and a flier is
-          // what a dry stone gallery wants. See tools/check-placement.mjs.
-          ['keese', 2, 5],
+          ['chest', 7, 4, { pickup: 'bossKey' }],
+          // A KEESE, NOT A JELLYFISH. A jellyfish is kept on wet tiles by
+          // `terrainOk`, and at LOW there are none here to be on: it was
+          // scenery with a hitbox. See tools/check-placement.mjs.
+          ['keese', 2, 8],
         ],
       },
       '0,2,1': {
         name: 'Vestry Roof',
         map: [
-          '##########',
-          '#U......U#',
-          '#........#',
-          '#..,,,,..#',
-          '#..,,,,..#',
-          '#........#',
-          '#........#',
-          '####..####',
+          '###############',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '#....,,,,,....#',
+          '#....,,,,,....#',
+          '#....,,,,,....#',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '#######.#######',
         ],
         entities: [
-          ['pickup', 4, 4, { kind: 'heartPiece' }],
-          ['keese', 6, 2],
+          ['pickup', 7, 5, { kind: 'heartPiece' }],
+          ['keese', 10, 3],
         ],
       },
       '0,4,3': {
         name: 'The Bogwater Drain',
         // Torrent room 2, and the current runs the other way — a player who
-        // learned "swim east" in the Undertow learns nothing here. The alcove
-        // under the channel is the other half of the trade: it opens off the
-        // seafloor and the surface never sees it, so the slow layer is the one
-        // that finds things. Nothing in it is required, which is the point of
-        // putting it there.
+        // learned "swim east" in the Undertow learns nothing here. Two shelves
+        // stand out of the channel, top and bottom, and neither touches a
+        // bank: somewhere to come up for air and a fairy, not a way across.
         map: [
-          '##########',
-          '###M##M###',
-          '##########',
-          '.tttttttt.',
-          '.tttttttt.',
-          '####..####',
-          '###....###',
-          '##########',
+          '###############',
+          '#.ttt.....ttt.#',
+          '#.ttt..p..ttt.#',
+          '#.ttttttttttt.#',
+          '#.ttttttttttt.#',
+          '..ttttttttttt..',
+          '#.ttttttttttt.#',
+          '#.ttttttttttt.#',
+          '#.ttt.....ttt.#',
+          '#.ttt..U..ttt.#',
+          '###############',
         ],
-        cleatRoom: { from: [0, 3], to: [9, 3] },
+        cleatRoom: { from: [0, 5], to: [14, 5] },
         entities: [
-          ['pickup', 4, 6, { kind: 'fairy' }],
+          ['pickup', 7, 8, { kind: 'fairy' }],
         ],
       },
       '0,5,3': {
         name: 'Eel Hall',
         // 3x1, AND D3'S SET PIECE — the room the dungeon's whole idea is said
-        // in one sight line. The Kelp Locks (`0,4,2`, 2x1) is the floor route
-        // at its limit: eighteen tiles of seafloor in one breath, and
-        // check-cleats prints the margin. This is the same choice laid out
-        // the other way round. It declares its own `cleatRoom` and has to:
-        // `check-cleats.mjs` refuses a torrent standing in a room that does
-        // not claim it, on the grounds that a current nothing proves a way
-        // past is a wall somebody forgot about. All four clauses hold here —
-        // no route on foot, none on the surface, one on the floor, and one
-        // breath covers it.
+        // in one sight line. Its western screen is a plain hall with three
+        // doors: the Drain behind you, the Eel Vault below and the key door
+        // north to the Kelp Locks.
         //
-        // THE NAVE. Down the middle of the eastern twenty tiles runs a
-        // torrent flowing WEST, back the way you came. A colonnade runs along
-        // both sides of it, and the colonnade is cut through by two thick
+        // THE NAVE. Down the middle of the eastern thirty tiles runs a torrent
+        // flowing WEST, back the way you came. A colonnade runs along both
+        // sides of it, and the colonnade is cut through by two thick
         // cross-walls. So the walk east is: gallery, down into the channel,
         // under the cross-wall, up into the next gallery. On the surface the
         // current is the wrong side of zero and you are carried home; on the
-        // floor nothing pushes you at all. Six tiles is the longest dive in
-        // it, which is a third of what the Locks ask — the point here is the
-        // SHAPE of the choice, not the air.
+        // floor nothing pushes you at all.
         //
         // The return leg is free, and that is the room's other half: step off
-        // the last ledge into the current and it takes you the whole length
-        // back to the door in one go. A torrent is a wall one way and a road
-        // the other.
-        //
-        // Picked for the same three reasons every widened room before it was:
-        // the cells it grows into (`6,3`, `7,3`) have no other neighbours and
-        // nothing borders them; its four doorways — north at x=4,5, the
-        // locked door at 2,4, west at rows 3 and 4, south at x=4,5 — are all
-        // in its western screen; and widening it changed no facing wall in
-        // any neighbour. Only column 9 of rows 3 and 4 opened, which was the
-        // blank east wall of a dead end.
+        // the last gallery into the current and it takes you the whole length
+        // back to the hall in one go. A torrent is a wall one way and a road
+        // the other. `check-cleats.mjs` refuses a torrent standing in a room
+        // that does not claim it, so the room declares its own `cleatRoom`.
         size: [3, 1],
         map: [
-          '####..########################',
-          '#U......U##.q..#####.q..####.#',
-          '####L######....#####....####.#',
-          '..........WWtttttttttttttttt,#',
-          '..........WWtttttttttttttttt,#',
-          '#..1111..##....#####....####.#',
-          '#........##.q..#####.q..####.#',
-          '####..########################',
+          '#######L#####################################',
+          '#...................###........###..........#',
+          '#.U.......U.........###........###..........#',
+          '#...................###........###..........#',
+          '#............ttttttttttttttttttttttttttttt..#',
+          '.............ttttttttttttttttttttttttttttt..#',
+          '#............ttttttttttttttttttttttttttttt..#',
+          '#...................###........###..........#',
+          '#.U.......U.........###........###..........#',
+          '#...................###........###..........#',
+          '#######.#####################################',
         ],
         entities: [
-          ['urchin', 3, 3],
-          ['crab', 6, 4],
-          ['anglerfry', 16, 3],
-          ['anglerfry', 25, 4],
-          ['barnacle', 13, 6],
-          ['barnacle', 22, 1],
-          ['chest', 28, 3, { pickup: 'rupee100' }],
+          ['urchin', 5, 3],
+          ['crab', 6, 8],
+          ['anglerfry', 17, 5],
+          ['anglerfry', 28, 4],
+          ['barnacle', 26, 9],
+          ['barnacle', 37, 1],
+          ['chest', 43, 5, { pickup: 'rupee100' }],
         ],
-        cleatRoom: { from: [0, 3], to: [28, 4] },
+        cleatRoom: { from: [0, 5], to: [43, 5] },
+        readable: [
+          [10, 2, 'Scratched into the statue: "The eels swim\nhome with the current. The eel-catcher walks\nout under it."'],
+        ],
       },
       '0,4,2': {
         name: 'The Kelp Locks',
-        // 2x1 — TWENTY tiles of channel, and the only room in the dungeon where
-        // the breath number is not decorative. One dive, eighteen tiles of
-        // seafloor, no shelf in the middle to come up on. check-cleats.mjs
-        // prints the margin every run.
+        // 2x1, AND THE ONE ROOM IN THE SANCTUM THAT WANTS BOTH LAYERS IN ONE
+        // CROSSING. The south door lets you into a flume that runs north up
+        // the east wall, west the whole length of the north wall, and turns
+        // down to the landing at the west door — where its last three tiles
+        // run AGAINST you.
         //
-        // Picked for the same three reasons d1 0,5,3 and d2 1,3,2 were: the
-        // cells it grows into have no other neighbours, its doorways are all in
-        // its eastern screen, and widening it changed no facing wall anywhere.
+        //   On the surface the current carries a swimmer round the lock in a
+        //   few seconds and throws him back at the last gate.
+        //   On the floor the whole flume is thirty-six tiles, and a breath is
+        //   thirty-one: walked from the door, the air runs out in the top lane.
+        //
+        // So the answer is to ride it and sink at the gate — change layer in
+        // the water, which the Cleats let you do at any moment. The sign on
+        // the landing says so, and a player who dives at the door anyway is
+        // brought up by his own air and carried to the gate regardless: the
+        // lesson costs a quarter heart, never a dead end.
+        //
+        // One way. Nothing carries you back, and the floor is as long going
+        // home: the Lock Gallery's plate opens the shortcut west instead.
+        // Proved by `check-cleats.mjs`'s `layers` clauses.
         size: [2, 1],
         map: [
-          '####################',
-          '###M##M######M##M###',
-          '####################',
-          '.TTTTTTTTTTTTTTTTTT#',
-          '.TTTTTTTTTTTTTTTTTT#',
-          '##############..####',
-          '###M##M#######..####',
-          '##############..####',
+          '##############################',
+          '#ttttttttttttttttttttttttttt##',
+          '#A#########################A##',
+          '#A#########################A##',
+          '#A#########################A##',
+          '....#######################A##',
+          '#...#######################A##',
+          '#...#######################A##',
+          '####################U......A##',
+          '####################.......A##',
+          '######################L#######',
         ],
-        cleatRoom: { from: [14, 7], to: [0, 3] },
+        cleatRoom: { from: [22, 9], to: [0, 5], layers: true },
+        readable: [
+          [20, 8, 'A plate on the lock wall: "The lock carries a\nswimmer round to its last gate, and no further.\nThe floor goes on where the water will not."'],
+        ],
       },
       '0,3,2': {
         name: 'The Lock Gallery',
+        // The boss door is in the north wall. The west door is the shortcut:
+        // shut until the plate beside it is stood on, and only this side of
+        // it has the plate.
         map: [
-          '####..####',
-          '#........#',
-          '####B#####',
-          '..........',
-          '..........',
-          '#..,,,,..#',
-          '#........#',
-          '##########',
+          '#######B#######',
+          '#.............#',
+          '#..U.......U..#',
+          '#.............#',
+          '#.............#',
+          'D..............',
+          '#.............#',
+          '#.............#',
+          '#..U.......U..#',
+          '#.............#',
+          '###############',
         ],
         entities: [
-          ['crab', 2, 4],
-          ['urchin', 7, 4],
+          ['switch', 2, 5, { hold: false }],
+          ['crab', 9, 7],
+          ['urchin', 10, 3],
         ],
+        puzzle: {
+          switches: 'all',
+          flag: 'd3_shortcut',
+          reward: {
+            openDoors: [[0, 5]],
+            say: 'The west gate grinds open.',
+          },
+        },
       },
       '0,3,1': {
         name: 'Gloomtide, the Bogwater Maw',
@@ -2005,22 +2099,25 @@ export function installDungeonsA() {
         // level was brought in, and the floor is basin, which is walkable at
         // all three because a locked room has to work at whichever one arrives.
         map: [
-          '##########',
-          '#..2222..#',
-          '#..2222..#',
-          '#..2222..#',
-          '#..2222..#',
-          '#..2222..#',
-          '#........#',
-          '####..####',
+          '###############',
+          '#.............#',
+          '#.............#',
+          '#...2222222...#',
+          '#...2222222...#',
+          '#...2222222...#',
+          '#...2222222...#',
+          '#...2222222...#',
+          '#.............#',
+          '#.............#',
+          '#######B#######',
         ],
         noTide: true,
         entities: [
-          ['gloomtide', 4, 2],
+          ['gloomtide', 7, 3],
         ],
         script: {
           onEvent(game, name) {
-            if (name === 'bossDead') game.spawnPickup(80, 40, 'heartContainer', { grabDelay: 30 });
+            if (name === 'bossDead') game.spawnPickup(112, 56, 'heartContainer', { grabDelay: 30 });
           },
         },
       },

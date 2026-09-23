@@ -4403,6 +4403,10 @@ class Room {
       if (d.ring) {
         const r = this.ringArt(d, x, y, tide);
         if (r) return r;
+        if (d.ring.faces) {
+          const f = this.faceArt(d, x, y, tide);
+          if (f) return f;
+        }
       }
       const onRing = x === 0 || y === 0 || x === this.tw - 1 || y === this.th - 1;
       // AN OPENED DOOR IN THE RING IS A GAP IN THE WALL, not the old door
@@ -4418,7 +4422,8 @@ class Room {
         const w = getTileDef(this.legend['#']);
         const R = w && w.ring;
         const side = y === 0 ? 'N' : y === this.th - 1 ? 'S' : x === 0 ? 'W' : 'E';
-        const kind = d.name === 'dDoorLocked' ? 'lock' : d.name === 'dDoorClosed' ? 'shut' : null;
+        const kind = d.name === 'dDoorLocked' ? 'lock' : d.name === 'dDoorClosed' ? 'shut'
+          : d.name === 'dDoorBoss' ? 'boss' : null;
         if (R && kind && R[kind + side]) return R[kind + side];
       }
     }
@@ -4477,6 +4482,38 @@ class Room {
     if (!wall(x, y + 1)) return R['j' + k + 'N'] || R[k];
     if (!wall(x, y - 1)) return R['j' + k + 'S'] || R[k];
     return R[k];
+  }
+
+  /**
+   * The piece of wall to draw for a cell of an INTERIOR wall mass, in a
+   * dungeon whose ring declares `faces` — or null to draw its fill.
+   *
+   * The Poison Moth's Lair draws a thick wall inside a room exactly as it
+   * draws the room's own frame: a bevelled slate face toward every floor it
+   * borders, and the flat masonry only where no floor can see it. So a wall
+   * cell with floor below it is drawn as the ring's north run, floor above as
+   * the south run, and so on; a cell with wall on all four sides but floor on
+   * one diagonal is an inside corner, which is the ring's own corner piece.
+   * Water counts as floor: anything that is not the wall is something the
+   * wall has a face toward.
+   */
+  faceArt(d, x, y, tide) {
+    const R = d.ring;
+    const wall = (nx, ny) => {
+      if (!this.inBounds(nx, ny)) return true;
+      const n = this.tile(nx, ny, tide);
+      return n.ring === R || n.ringWall || !!(n.flags & F.DOOR);
+    };
+    const n = wall(x, y - 1), s = wall(x, y + 1), w = wall(x - 1, y), e = wall(x + 1, y);
+    if (!s) return R.N;
+    if (!n) return R.S;
+    if (!e) return R.W;
+    if (!w) return R.E;
+    if (!wall(x + 1, y + 1)) return R.TL;
+    if (!wall(x - 1, y + 1)) return R.TR;
+    if (!wall(x + 1, y - 1)) return R.BL;
+    if (!wall(x - 1, y - 1)) return R.BR;
+    return null;
   }
 
   /**
@@ -18279,25 +18316,6 @@ const DUNGEON_THEME_ART = {
     2222222222222212
     2222222222222222`,
 
-  // x236 knurled gold-and-olive masonry — oracle-seasons-dungeon-backgrounds.png @ 2002,1708
-  knurlWall: `
-    1012333113333101
-    0123001331001310
-    0230012210011130
-    1310110022211131
-    1300200001121231
-    3121300000013322
-    3002310111123213
-    3013222111233123
-    3012102232113123
-    3012011323123223
-    3122013213123223
-    3201213113223223
-    3110123112232323
-    1311132111322231
-    0131232212323310
-    1013333333332101`,
-
   // x209 brown brick in courses — oracle-seasons-dungeon-backgrounds.png @ 499,1274
   emberWall: `
     0010100000101000
@@ -19362,6 +19380,500 @@ const DUNGEON_THEME_ART = {
     0000000000000000
     0000000000000000`,
 
+  // ring corner, north-west — oracle-seasons-dungeon-backgrounds.png @ 1698,1249
+  bRingTL: `
+    0000000010001001
+    0011100110011001
+    0112212111122111
+    0122321221222212
+    0123332222221222
+    0012333222122221
+    0021233310100110
+    0112223321121111
+    1112210133222222
+    0011221133322222
+    0012221123332222
+    1122120122333222
+    0122220222233322
+    0012211122223332
+    0011220122222333
+    1112221222222233`,
+
+  // ring run, north wall — oracle-seasons-dungeon-backgrounds.png @ 1714,1249
+  bRingN: `
+    1000100110001001
+    1001100110011001
+    1112211111122111
+    2122221221222212
+    2222122222221222
+    2212222122122221
+    1010011010100110
+    2112111121121111
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2222322222223222
+    2222122222221222
+    2222222222222222
+    2222222222222222
+    3333333333333333`,
+
+  // ring corner, north-east — oracle-seasons-dungeon-backgrounds.png @ 1922,1249
+  bRingTR: `
+    1001000100000000
+    1001100110011100
+    1112211112122110
+    2122221221232210
+    2221222222333210
+    1222212223332100
+    0110010133321200
+    1111211233222110
+    2222223310122111
+    2222233311221100
+    2222333211222100
+    2223332210212211
+    2233322220222210
+    2333222211122100
+    3332222210221100
+    3322222221222111`,
+
+  // ring run, west wall — oracle-seasons-dungeon-backgrounds.png @ 1698,1265
+  bRingW: `
+    1112210122222223
+    0011221122222223
+    0012221122222223
+    1122120122231223
+    0122220222222223
+    0012211122222223
+    0011220122222223
+    1112221222222223
+    1112210122222223
+    0011221122222223
+    0012221122222223
+    1122120122231223
+    0122220222222223
+    0012211122222223
+    0011220122222223
+    1112221222222223`,
+
+  // ring run, east wall — oracle-seasons-dungeon-backgrounds.png @ 1922,1265
+  bRingE: `
+    3222222210122111
+    3222222211221100
+    3222222211222100
+    3221322210212211
+    3222222220222210
+    3222222211122100
+    3222222210221100
+    3222222221222111
+    3222222210122111
+    3222222211221100
+    3222222211222100
+    3221322210212211
+    3222222220222210
+    3222222211122100
+    3222222210221100
+    3222222221222111`,
+
+  // ring corner, south-west — oracle-seasons-dungeon-backgrounds.png @ 1698,1409
+  bRingBL: `
+    1112221222222233
+    0011220122222333
+    0012211122223332
+    0122220222233322
+    1122120122333222
+    0012221123332222
+    0011221133322222
+    1112210133222222
+    0112223321121111
+    0021233310100110
+    0012333222122221
+    0123332222221222
+    0122321221222212
+    0112212111122111
+    0011100110011001
+    0000000010001001`,
+
+  // ring run, south wall — oracle-seasons-dungeon-backgrounds.png @ 1714,1409
+  bRingS: `
+    3333333333333333
+    2222222222222222
+    2222222222222222
+    2222122222221222
+    2222322222223222
+    2222222222222222
+    2222222222222222
+    2222222222222222
+    2112111121121111
+    1010011010100110
+    2212222122122221
+    2222122222221222
+    2122221221222212
+    1112211111122111
+    1001100110011001
+    1000100110001001`,
+
+  // ring corner, south-east — oracle-seasons-dungeon-backgrounds.png @ 1922,1409
+  bRingBR: `
+    3322222221222111
+    3332222210221100
+    2333222211122100
+    2233322220222210
+    2223332210212211
+    2222333211222100
+    2222233311221100
+    2222223310122111
+    1111211233222110
+    0110010133321200
+    1222212223332100
+    2221222222333210
+    2122221221232210
+    1112211112122110
+    1001100110011100
+    1001000100000000`,
+
+  // the flat blue of solid masonry — oracle-seasons-dungeon-backgrounds.png @ 1216,364
+  bFill: `
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000`,
+
+  // the olive swirl floor — oracle-seasons-dungeon-backgrounds.png @ 1762,1265
+  bFloor: `
+    1000010000010100
+    0010011111110110
+    0110100000010010
+    0000100111011000
+    1001101000001111
+    1111001001100110
+    0010000000000100
+    0010100110010101
+    0010110010110100
+    0010110000100100
+    0110000000001111
+    1111100110011001
+    0000110000110000
+    0110011111100110
+    0010010000100100
+    1001010000110001`,
+
+  // the darker octagon floor, from the entrance hall — oracle-seasons-dungeon-backgrounds.png @ 1553,1426
+  bFloorAlt: `
+    0001000000001000
+    0010011111100100
+    0100100000010010
+    1001011111101001
+    0010111111110100
+    0101101111011010
+    0101111111111010
+    0101111111111010
+    0101111111111010
+    0101111111111010
+    0101101111011010
+    0010111111110100
+    1001011111101001
+    0100100000010010
+    0010011111100100
+    0001000000001000`,
+
+  // the raised magenta block — oracle-seasons-dungeon-backgrounds.png @ 2019,782
+  bBlock: `
+    2222222222222222
+    2001111111111112
+    2110111111111222
+    2111000000002222
+    2111011111102222
+    2111010000102222
+    2111010000102222
+    2111010000102222
+    2111010000102222
+    2111011111102222
+    2111000000002222
+    2111222222212222
+    2112222222221222
+    2122222222222122
+    2222222222222212
+    2222222222222222`,
+
+  // the purple pot, on its own floor — oracle-seasons-dungeon-backgrounds.png @ 1505,1297
+  bPot: `
+    ......33333.....
+    .....3111113....
+    ....311222113...
+    ...33123332133..
+    ..3231233321323.
+    ..3231133311323.
+    .322321111123223
+    .322232111232223
+    .322223333322223
+    .332221111122233
+    .323222111222323
+    .321332222233123
+    ..3111333331113.
+    ..3211111111123.
+    ...33211111233..
+    .....3333333....`,
+
+  // the gold eye statue of the entrance hall — oracle-seasons-dungeon-backgrounds.png @ 1537,1442
+  bStatue: `
+    2..2........2..2
+    .01321101112310.
+    .11210011111211.
+    .21210011111212.
+    ...2112222112...
+    2.211233332112.2
+    .21133100133112.
+    .01231000013210.
+    .21231000013212.
+    2331231001321332
+    .23322333322332.
+    .03332233223330.
+    .13331133113331.
+    .01333333333310.
+    ..100010010001..
+    ................`,
+
+  // key door in a north wall — oracle-seasons-dungeon-backgrounds.png @ 2273,1464
+  bKeyN: `
+    3000000000000003
+    3000000000000003
+    3000000000000003
+    3111111111111113
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3122220000222213
+    3122203333022213
+    3122203333022213
+    3122200330022213
+    3122220330222213
+    3122220330222213
+    3122220000222213
+    3333333333333333`,
+
+  // key door in a south wall (turned over) — oracle-seasons-dungeon-backgrounds.png @ 2273,1464
+  bKeyS: `
+    3333333333333333
+    3122220000222213
+    3122220330222213
+    3122220330222213
+    3122200330022213
+    3122203333022213
+    3122203333022213
+    3122220000222213
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3111111111111113
+    3000000000000003
+    3000000000000003
+    3000000000000003`,
+
+  // key door in a west wall — oracle-seasons-dungeon-backgrounds.png @ 2307,1464
+  bKeyW: `
+    3333333333333333
+    0001111111111113
+    0001222222222223
+    0001222222222223
+    0001222222222223
+    0001222220002223
+    0001222203300003
+    0001222203333303
+    0001222203333303
+    0001222203300003
+    0001222220002223
+    0001222222222223
+    0001222222222223
+    0001222222222223
+    0001111111111113
+    3333333333333333`,
+
+  // key door in an east wall (mirrored) — oracle-seasons-dungeon-backgrounds.png @ 2307,1464
+  bKeyE: `
+    3333333333333333
+    3111111111111000
+    3222222222221000
+    3222222222221000
+    3222222222221000
+    3222000222221000
+    3000033022221000
+    3033333022221000
+    3033333022221000
+    3000033022221000
+    3222000222221000
+    3222222222221000
+    3222222222221000
+    3222222222221000
+    3111111111111000
+    3333333333333333`,
+
+  // shutter in a north wall, teeth into the room — oracle-seasons-dungeon-backgrounds.png @ 2273,1430
+  bShutN: `
+    3000000000000003
+    3000000000000003
+    3000000000000003
+    3111111111111113
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3122332222332213
+    3123003223003213
+    3130110330110313
+    3101111001111013
+    3111331111331113
+    3113333113333113
+    3333333333333333`,
+
+  // shutter in a south wall, teeth into the room — oracle-seasons-dungeon-backgrounds.png @ 2273,1447
+  bShutS: `
+    3333333333333333
+    3113333113333113
+    3111331111331113
+    3101111001111013
+    3130110330110313
+    3123003223003213
+    3122332222332213
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3122222222222213
+    3111111111111113
+    3000000000000003
+    3000000000000003
+    3000000000000003`,
+
+  // shutter in a west wall, teeth into the room — oracle-seasons-dungeon-backgrounds.png @ 2307,1430
+  bShutW: `
+    3333333333333333
+    0001111111111113
+    0001222222230113
+    0001222222301133
+    0001222223011333
+    0001222223011333
+    0001222222301133
+    0001222222230113
+    0001222222230113
+    0001222222301133
+    0001222223011333
+    0001222223011333
+    0001222222301133
+    0001222222230113
+    0001111111111113
+    3333333333333333`,
+
+  // shutter in an east wall, teeth into the room — oracle-seasons-dungeon-backgrounds.png @ 2307,1447
+  bShutE: `
+    3333333333333333
+    3111111111111000
+    3110322222221000
+    3311032222221000
+    3331103222221000
+    3331103222221000
+    3311032222221000
+    3110322222221000
+    3110322222221000
+    3311032222221000
+    3331103222221000
+    3331103222221000
+    3311032222221000
+    3110322222221000
+    3111111111111000
+    3333333333333333`,
+
+  // boss door in a north wall — oracle-seasons-dungeon-backgrounds.png @ 2307,1481
+  bBossN: `
+    3000000000000003
+    3300000000000033
+    3030000000000303
+    3003133333313003
+    3100300000030013
+    3310100000010133
+    3131001331001313
+    3123003333003213
+    3123003333003213
+    3123003333003213
+    3123100330013213
+    3130010330100313
+    3130330330330313
+    3133231001323313
+    3122223113222213
+    3333333333333333`,
+
+  // entrance pillar, west — oracle-seasons-dungeon-backgrounds.png @ 1553,1586
+  bArch1: `
+    3321222222221233
+    3221222222221223
+    3221222222221223
+    3221222222221223
+    3221111111111223
+    3233333333333323
+    3332222222222333
+    3321111111111233
+    3211111111111123
+    3111000000001113
+    3110000000000113
+    3100000000000013
+    3100000000000013
+    3100000000000013
+    0000000000000000
+    0000000000000000`,
+
+  // entrance, the lit way out — oracle-seasons-dungeon-backgrounds.png @ 1569,1586
+  bArch2: `
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000
+    0000000000000000`,
+
+  // entrance pillar, east — oracle-seasons-dungeon-backgrounds.png @ 1585,1586
+  bArch3: `
+    3321222222221233
+    3221222222221223
+    3221222222221223
+    3221222222221223
+    3221111111111223
+    3233333333333323
+    3332222222222333
+    3321111111111233
+    3211111111111123
+    3111000000001113
+    3110000000000113
+    3100000000000013
+    3100000000000013
+    3100000000000013
+    0000000000000000
+    0000000000000000`,
+
   // the Seasons pot, on its own floor — oracle-seasons-dungeon-backgrounds.png @ 2195,750
   gPot: `
     ......33333.....
@@ -19415,7 +19927,6 @@ const DUNGEON_THEME_PALETTES = {
   panelFloor: ['#f2b74d', '#dd9342', '#dd9342', '#dd9342'],
   gildFloor: ['#b0a030', '#585000', '#585000', '#585000'],
   coralWall: ['#fbd1fb', '#b17399', '#000000', '#000000'],
-  knurlWall: ['#f8f888', '#90a028', '#484028', '#000000'],
   emberWall: ['#f2b74d', '#dd9342', '#8a2e21', '#000000'],
   cryptWall: ['#7090c0', '#5070a0', '#305080', '#000000'],
   studWall: ['#abcfe6', '#85b2cf', '#856b2b', '#000000'],
@@ -19472,6 +19983,32 @@ const DUNGEON_THEME_PALETTES = {
   cArchC1: ['#9080a0', '#706080', '#483858', '#000000'],
   cArchC2: ['#f8f888', '#f8f888', '#f8f888', '#f8f888'],
   cArchC3: ['#9080a0', '#706080', '#483858', '#000000'],
+  bRingTL: ['#88b0e0', '#6880c8', '#404880', '#000000'],
+  bRingN: ['#88b0e0', '#6880c8', '#404880', '#000000'],
+  bRingTR: ['#88b0e0', '#6880c8', '#404880', '#000000'],
+  bRingW: ['#88b0e0', '#6880c8', '#404880', '#000000'],
+  bRingE: ['#88b0e0', '#6880c8', '#404880', '#000000'],
+  bRingBL: ['#88b0e0', '#6880c8', '#404880', '#000000'],
+  bRingS: ['#88b0e0', '#6880c8', '#404880', '#000000'],
+  bRingBR: ['#88b0e0', '#6880c8', '#404880', '#000000'],
+  bFill: ['#88b0e0', '#88b0e0', '#88b0e0', '#88b0e0'],
+  bFloor: ['#b0c050', '#788808', '#788808', '#788808'],
+  bFloorAlt: ['#b0c050', '#788808', '#788808', '#788808'],
+  bBlock: ['#a85890', '#782058', '#000000', '#000000'],
+  bPot: ['#b0c050', '#8060a8', '#583878', '#000000'],
+  bStatue: ['#f8f888', '#d08838', '#904828', '#000000'],
+  bKeyN: ['#f8f888', '#d08838', '#904828', '#000000'],
+  bKeyS: ['#f8f888', '#d08838', '#904828', '#000000'],
+  bKeyW: ['#f8f888', '#d08838', '#904828', '#000000'],
+  bKeyE: ['#f8f888', '#d08838', '#904828', '#000000'],
+  bShutN: ['#f8f888', '#d08838', '#904828', '#000000'],
+  bShutS: ['#f8f888', '#d08838', '#904828', '#000000'],
+  bShutW: ['#f8f888', '#d08838', '#904828', '#000000'],
+  bShutE: ['#f8f888', '#d08838', '#904828', '#000000'],
+  bBossN: ['#f8f888', '#d08838', '#904828', '#000000'],
+  bArch1: ['#b0c050', '#788808', '#405018', '#000000'],
+  bArch2: ['#f8f888', '#f8f888', '#f8f888', '#f8f888'],
+  bArch3: ['#b0c050', '#788808', '#405018', '#000000'],
   gPot: ['#f8a800', '#7090c0', '#884800', '#000000'],
   gBlock: ['#f878f8', '#802868', '#000000', '#000000'],
 };
@@ -22012,13 +22549,55 @@ function installCoreTiles() {
     cJambSE: { art: ART.cJambSE, pal: 'cJambSE', flags: F.SOLID },
     dUrnCoral: { art: ART.urn, pal: 'urn', flags: F.SOLID, underArt: 'dFloorCoral' },
 
-    // d3 Bogwater Sanctum — a gold lattice sunk into swamp-green stone.
-    dFloorBog: { art: ART.gildFloor, pal: 'gildFloor' },
-    dFloorBogAlt: { art: ART.gildFloor, pal: 'bog' },
-    dWallBog: { art: ART.knurlWall, pal: 'knurlWall', flags: F.SOLID },
-    dWallBogX: { art: ART.dWallCracked, pal: 'knurlWall', flags: F.SOLID | F.BOMBABLE },
-    dBlockBog: { art: ART.cryptBlock, pal: 'bog', flags: F.SOLID },
-    dUrnBog: { art: ART.urn, pal: 'urn', flags: F.SOLID, underArt: 'dFloorBog' },
+    // d3 Bogwater Sanctum.
+    // S139: THE BOGWATER SANCTUM IS AN ORACLE DUNGEON, and its kit is the
+    // Poison Moth's Lair's, whole (`b*` picks in rip-dungeon-themes.py): the
+    // olive swirl floor and the entrance hall's darker octagon floor, blue
+    // slate walls, the magenta block, the purple pot, the gold eye statue,
+    // and the Lair's own key doors, shutters and boss door from the door key
+    // the ripper laid out beside the map. Like the Crypt, the Lair frames an
+    // open doorway with plain runs, so there are no jambs.
+    dFloorBog: { art: ART.bFloor, pal: 'bFloor' },
+    dFloorBogAlt: { art: ART.bFloorAlt, pal: 'bFloorAlt' },
+    dWallBog: { art: ART.bFill, pal: 'bFill', flags: F.SOLID, ring: {
+      TL: 'bRingTL', TR: 'bRingTR', BL: 'bRingBL', BR: 'bRingBR',
+      N: 'bRingN', S: 'bRingS', W: 'bRingW', E: 'bRingE',
+      lockN: 'bKeyN', lockS: 'bKeyS', lockE: 'bKeyE', lockW: 'bKeyW',
+      shutN: 'bShutN', shutS: 'bShutS', shutE: 'bShutE', shutW: 'bShutW',
+      // Inside the boss's own room the door behind you reads as the shutter
+      // it is in the source, not as the skull you saw from outside.
+      bossN: 'bBossN', bossS: 'bShutS',
+      // A thick wall inside a room has the ring's faces toward its floor, the
+      // way the Lair draws its corridors (`Room.faceArt`).
+      faces: true,
+    } },
+    dWallBogX: { art: ART.dWallCracked, pal: 'bRingN', flags: F.SOLID | F.BOMBABLE },
+    dBlockBog: { art: ART.bBlock, pal: 'bBlock', flags: F.SOLID },
+    // The gold eye statue that lines the Lair's entrance hall stands where the
+    // other dungeons put an urn.
+    dUrnBog: { art: ART.bStatue, pal: 'bStatue', flags: F.SOLID, underArt: 'dFloorBog' },
+    // The way out: the entrance hall's two green pillars in the south wall
+    // with the lit step between them, wall to the ring either side.
+    dExitBog: { art: ART.bArch2, pal: 'bArch2', flags: F.WARP },
+    dPillarBogW: { art: ART.bArch1, pal: 'bArch1', flags: F.SOLID, ringWall: true },
+    dPillarBogE: { art: ART.bArch3, pal: 'bArch3', flags: F.SOLID, ringWall: true },
+    bRingTL: { art: ART.bRingTL, pal: 'bRingTL', flags: F.SOLID },
+    bRingTR: { art: ART.bRingTR, pal: 'bRingTR', flags: F.SOLID },
+    bRingBL: { art: ART.bRingBL, pal: 'bRingBL', flags: F.SOLID },
+    bRingBR: { art: ART.bRingBR, pal: 'bRingBR', flags: F.SOLID },
+    bRingN: { art: ART.bRingN, pal: 'bRingN', flags: F.SOLID },
+    bRingS: { art: ART.bRingS, pal: 'bRingS', flags: F.SOLID },
+    bRingW: { art: ART.bRingW, pal: 'bRingW', flags: F.SOLID },
+    bRingE: { art: ART.bRingE, pal: 'bRingE', flags: F.SOLID },
+    bKeyN: { art: ART.bKeyN, pal: 'bKeyN', flags: F.SOLID | F.DOOR },
+    bKeyS: { art: ART.bKeyS, pal: 'bKeyS', flags: F.SOLID | F.DOOR },
+    bKeyE: { art: ART.bKeyE, pal: 'bKeyE', flags: F.SOLID | F.DOOR },
+    bKeyW: { art: ART.bKeyW, pal: 'bKeyW', flags: F.SOLID | F.DOOR },
+    bShutN: { art: ART.bShutN, pal: 'bShutN', flags: F.SOLID | F.DOOR },
+    bShutS: { art: ART.bShutS, pal: 'bShutS', flags: F.SOLID | F.DOOR },
+    bShutE: { art: ART.bShutE, pal: 'bShutE', flags: F.SOLID | F.DOOR },
+    bShutW: { art: ART.bShutW, pal: 'bShutW', flags: F.SOLID | F.DOOR },
+    bBossN: { art: ART.bBossN, pal: 'bBossN', flags: F.SOLID | F.DOOR },
 
     // d4 Cliffside Cistern — sunken tan panels, cold studded walls.
     dFloorCistern: { art: ART.panelFloor, pal: 'panelFloor' },
@@ -22244,8 +22823,8 @@ function installCoreTiles() {
   // own floor. The Grotto's is the Seasons pot out of its own kit.
   for (const T of THEME_NAMES) {
     TILE_DEFS['dPot' + T] = {
-      art: T === 'Grotto' ? ART.gPot : T === 'Coral' ? ART.cPot : ART.pot,
-      pal: T === 'Grotto' ? 'gPot' : T === 'Coral' ? 'cPot' : 'pot',
+      art: T === 'Grotto' ? ART.gPot : T === 'Coral' ? ART.cPot : T === 'Bog' ? ART.bPot : ART.pot,
+      pal: T === 'Grotto' ? 'gPot' : T === 'Coral' ? 'cPot' : T === 'Bog' ? 'bPot' : 'pot',
       flags: F.SOLID | F.ROCK, underArt: 'dFloor' + T, liftSprite: 'o_pot',
     };
   }
@@ -22626,6 +23205,9 @@ function installLegends() {
   registerLegend('dungeonGrotto', { 'C': 'dExitGrotto' }, 'dungeonGrotto');
   theme('dungeonCoral',   'dFloorCoral',   'dFloorCoralAlt',   'dWallCoral',   'dWallCoralX',   'dBlockCoral',   'dUrnCoral');
   theme('dungeonBog',     'dFloorBog',     'dFloorBogAlt',     'dWallBog',     'dWallBogX',     'dBlockBog',     'dUrnBog');
+  // The Sanctum is built at Oracle size (S139): its way out is the Moth's
+  // Lair's lit step between two green pillars in the south wall, `(C)`.
+  registerLegend('dungeonBog', { 'C': 'dExitBog', '(': 'dPillarBogW', ')': 'dPillarBogE' }, 'dungeonBog');
   // The Coral Spire needs two tiles no other dungeon has, for the Reefseed
   // grove in the Whelk Hollow, and every digit in the shared vocabulary is
   // already spoken for. `5` (`channel`) is an OUTDOOR tile that no indoor room
@@ -24750,10 +25332,10 @@ const rooms = {
       'TTggggggTT',
     ],
     warps: [
-      { x: 4, y: 2, to: { map: 'd3', floor: 0, rx: 3, ry: 7, px: 72, py: 96 } },
+      { x: 4, y: 2, to: { map: 'd3', floor: 0, rx: 3, ry: 7, px: 112, py: 144 } },
       // Both halves of the arch enter. A two-tile-wide door whose
       // right half is scenery is a door the player bumps into.
-      { x: 5, y: 2, to: { map: 'd3', floor: 0, rx: 3, ry: 7, px: 72, py: 96 } },
+      { x: 5, y: 2, to: { map: 'd3', floor: 0, rx: 3, ry: 7, px: 112, py: 144 } },
     ],
     entities: [
       ['sign', 2, 3, { text: 'BOGWATER SANCTUM\nThe current runs at one height only.' }],
@@ -27852,7 +28434,7 @@ function installBosses() {
         chase(e, g, { speed: 0.42 * cur });
         if (timer(e, 'spit', 120)) {
           windUp(e, g, 16, (e2, g2) => spread(e2, g2, 3, 45,
-            { sprite: 'shot_ink', pal: 'shadow', speed: 1.5, damage: 2 }));
+            { sprite: 'shot_ink', pal: 'shadow', speed: 1.5, damage: 1 }));
         }
       } },
       // Sinks and resurfaces beside you, shedding a gel each time it comes up.
@@ -27865,7 +28447,7 @@ function installBosses() {
             chase(e2, g2, { speed: 0.5 * cur });
             if (every(e2, 96)) {
               windUp(e2, g2, 16, (e3, g3) => {
-                spread(e3, g3, 5, 60, { sprite: 'shot_ink', pal: 'shadow', speed: 1.6, damage: 2 });
+                spread(e3, g3, 5, 60, { sprite: 'shot_ink', pal: 'shadow', speed: 1.6, damage: 1 });
                 if (g3.rng.chance(0.6)) summon(g3, e3, 'gel', 1);
               });
             }
@@ -30312,10 +30894,31 @@ function installDungeonsA() {
     kind: 'dungeon',
     name: 'Bogwater Sanctum',
     w: 8, h: 8, floors: 1,
+    // AN ORACLE DUNGEON (S139), built like the Grotto and the Spire: 15x11
+    // rooms with a wall ring, a scrolling camera, one-tile doors, and key,
+    // shutter and boss doors in the ring between two rooms. The kit is the
+    // Poison Moth's Lair's (`b*` picks in tools/rip-dungeon-themes.py).
+    //
+    // THE SANCTUM'S SENTENCE: the water has two floors. Both torrent rooms
+    // run TOWARD the Cistern Floor, so each wing is walked out along the
+    // seafloor and ridden home on the surface. The Kelp Locks ask for both
+    // layers in one crossing — ride the current as far as it carries, then
+    // sink for the stretch it will not.
+    //
+    // The route (22 rooms, one floor, the Cleats at room 11):
+    //   3,7 mouth -> 3,6 Nave (fairy) -> 4,6 charm -> 3,5 Hub -> 2,5 map
+    //   -> 4,5 Sluice Cell (Small Key 1) -> 3,4 Weir: 2,4 Chartstone,
+    //   4,4 Piece of Heart, and the key door north -> 3,3 THE CLEATS.
+    //   West wing: 2,3 Undertow (floor out) -> 1,3 Vestry (Small Key 2)
+    //   -> 1,2 Drain Gallery (key door; Boss Key) -> 2,2 Bogmaw -> 2,1 Piece.
+    //   East wing: 4,3 Drain (floor out) -> 5,3 Eel Hall -> 5,4 Eel Vault
+    //   (Small Key 3) -> the Hall's key door north -> 4,2 Kelp Locks (ride,
+    //   then sink) -> 3,2 Lock Gallery: its plate opens the shortcut west to
+    //   Bogmaw Hall, and the boss door is in its north wall -> 3,1 Gloomtide.
+    cell: [15, 11],
     legend: 'dungeonBog',
     music: 'dungeon',
     tint: 'cave',
-    scroll: false,
     dungeon: {
       index: 3,
       item: 'cleats', itemLevel: 1,
@@ -30328,48 +30931,52 @@ function installDungeonsA() {
     rooms: {
       '0,3,7': {
         name: 'Sanctum Mouth',
+        // The Lair's own entrance hall: gold eye statues down both sides and
+        // the lit step between two green pillars in the south wall.
         map: [
-          '##M#..#M##',
-          '#U......U#',
-          '#........#',
-          '#..2..2..#',
-          '#..2..2..#',
-          '#........#',
-          '#........#',
-          '####CC####',
+          '#######.#######',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '#...22...22...#',
+          '#...22...22...#',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '#.............#',
+          '######(C)######',
         ],
         warps: [
-          // BOTH HALVES WARP. A two-tile arch whose right half is
-          // scenery is a door the player bumps into — the same rule
-          // the dungeon portals outside have carried since they landed.
-          { x: 4, y: 7, to: { map: 'overworld', floor: 0, rx: 1, ry: 8, px: 64, py: 32, dir: 'down' } },
-          { x: 5, y: 7, to: { map: 'overworld', floor: 0, rx: 1, ry: 8, px: 64, py: 32, dir: 'down' } },
+          { x: 7, y: 10, to: { map: 'overworld', floor: 0, rx: 1, ry: 8, px: 64, py: 32, dir: 'down' } },
         ],
         readable: [
-          [2, 2, 'Bog script: "The water has two floors. Only one of them drowns you."'],
+          [2, 7, 'Bog script: "The water has two floors.\nOnly one of them drowns you."'],
         ],
       },
       '0,3,6': {
         name: 'Drowned Nave',
         map: [
-          '####..####',
-          '#........#',
-          '#.111111.#',
-          '#.111111..',
-          '#.111111..',
-          '#.111111.#',
-          '#........#',
-          '####..####',
+          '#######.#######',
+          '#.............#',
+          '#.............#',
+          '#...1111111...#',
+          '#...1111111...#',
+          '#...1111111....',
+          '#...1111111...#',
+          '#...1111111...#',
+          '#.............#',
+          '#.............#',
+          '#######.#######',
         ],
         entities: [
-          ['jellyfish', 4, 3],
-          ['crab', 2, 5],
+          ['jellyfish', 7, 5],
+          ['crab', 3, 8],
         ],
         puzzle: {
           enemies: true,
           flag: 'd3_nave',
           reward: {
-            spawn: [['pickup', 4, 1, { kind: 'fairy' }]],
+            spawn: [['pickup', 7, 1, { kind: 'fairy' }]],
             say: 'The bog lets something go.',
           },
         },
@@ -30377,14 +30984,17 @@ function installDungeonsA() {
       '0,4,6': {
         name: 'Bell Cell',
         map: [
-          '##########',
-          '#U......U#',
-          '#........#',
-          '.........#',
-          '.........#',
-          '#.,,,,,,.#',
-          '#........#',
-          '##########',
+          '###############',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '#....,,,,,....#',
+          '.....,,,,,....#',
+          '#....,,,,,....#',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '###############',
         ],
         entities: [
           // A LOW charm, and the first one in the game that could be placed.
@@ -30392,128 +31002,149 @@ function installDungeonsA() {
           // Coral Spire with the second, so this dungeon is the first place a
           // LOW charm is a reward rather than a locked box. It is also the beat
           // that tells them the case exists.
-          ['chest', 4, 2, { charm: 'wreckersEye' }],
-          ['pickup', 6, 4, { kind: 'blank' }],
-          ['keese', 6, 2],
+          ['chest', 7, 5, { charm: 'wreckersEye' }],
+          ['pickup', 12, 5, { kind: 'blank' }],
+          ['keese', 10, 3],
         ],
       },
       '0,3,5': {
         name: 'Bog Hub',
         map: [
-          '####..####',
-          '#..q..q..#',
-          '#.111111.#',
-          '..111111..',
-          '..111111..',
-          '#.111111.#',
-          '#..q..q..#',
-          '####..####',
+          '#######.#######',
+          '#.............#',
+          '#.111.....111.#',
+          '#.111.....111.#',
+          '#.111.....111.#',
+          '...............',
+          '#.111.....111.#',
+          '#.111.....111.#',
+          '#.111.....111.#',
+          '#.............#',
+          '#######.#######',
         ],
         entities: [
-          ['jellyfish', 4, 4],
-          ['urchin', 2, 2],
+          ['jellyfish', 3, 3],
+          ['urchin', 7, 2],
         ],
       },
       '0,2,5': {
         name: 'Map Cell',
         map: [
-          '##########',
-          '#U......U#',
-          '#........#',
-          '#.........',
-          '#.........',
-          '#..pp....#',
-          '#........#',
-          '##########',
+          '###############',
+          '#.............#',
+          '#.p.........p.#',
+          '#.............#',
+          '#.............#',
+          '#..............',
+          '#.............#',
+          '#.............#',
+          '#.p.........p.#',
+          '#.............#',
+          '###############',
         ],
         entities: [
-          ['pickup', 4, 3, { kind: 'dungeonMap' }],
-          ['urchin', 6, 2],
+          ['pickup', 7, 5, { kind: 'dungeonMap' }],
+          ['urchin', 10, 3],
         ],
       },
       '0,4,5': {
         name: 'Sluice Cell',
         map: [
-          '##########',
-          '#U......U#',
-          '#........#',
-          '.........#',
-          '.........#',
-          '#........#',
-          '#..,,,,..#',
-          '##########',
+          '###############',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '..............#',
+          '#.............#',
+          '#.............#',
+          '#....,,,,,....#',
+          '#.............#',
+          '###############',
         ],
         entities: [
-          ['switch', 2, 2],
-          ['switch', 7, 2],
-          ['block', 2, 3],
-          ['block', 7, 3],
-          ['keese', 4, 4],
+          ['switch', 3, 2],
+          ['switch', 11, 2],
+          ['block', 3, 3],
+          ['block', 11, 3],
+          ['keese', 7, 6],
         ],
         puzzle: {
           switches: 'all',
           flag: 'd3_sluice',
           reward: {
-            spawn: [['pickup', 4, 1, { kind: 'key' }]],
+            spawn: [['pickup', 7, 2, { kind: 'key' }]],
             say: 'A grate lifts somewhere below the floor.',
           },
         },
       },
       '0,3,4': {
         name: 'The Weir',
+        // Its key door is in the north wall and gates the Cistern Floor, not
+        // the room: the Chartstone and the Piece of Heart either side of it
+        // are walked with the key still in hand.
         map: [
-          '####..####',
-          '#........#',
-          '####L#####',
-          '..........',
-          '..........',
-          '#.111111.#',
-          '#........#',
-          '####..####',
+          '#######L#######',
+          '#.............#',
+          '#..U.......U..#',
+          '#.............#',
+          '#.............#',
+          '...............',
+          '#.............#',
+          '#.11111111111.#',
+          '#.............#',
+          '#.............#',
+          '#######.#######',
         ],
         entities: [
-          ['crab', 2, 4],
-          ['urchin', 7, 3],
+          ['crab', 3, 6],
+          ['urchin', 11, 4],
         ],
       },
       '0,2,4': {
         name: 'Silt Cell',
         map: [
-          '##########',
-          '#U......U#',
-          '#........#',
-          '#.........',
-          '#.........',
-          '#..3333..#',
-          '#........#',
-          '##########',
+          '###############',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '#.............#',
+          '#..............',
+          '#....3333.....#',
+          '#....3333.....#',
+          '#.U.........U.#',
+          '#.............#',
+          '###############',
         ],
         entities: [
-          ['chest', 4, 2, { pickup: 'chartstone' }],
-          ['urchin', 6, 4],
+          ['chest', 7, 3, { pickup: 'chartstone' }],
+          ['urchin', 11, 6],
         ],
       },
       '0,4,4': {
         name: 'Reed Cell',
         map: [
-          '##########',
-          '#U......U#',
-          '#..3333..#',
-          '...3333...',
-          '...3333...',
-          '#..3333..#',
-          '#........#',
-          '##########',
+          '###############',
+          '#.............#',
+          '#...3333333...#',
+          '#...3333333...#',
+          '#...3333333...#',
+          '....3333333...#',
+          '#...3333333...#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '###############',
         ],
         entities: [
-          ['jellyfish', 3, 2],
-          ['crab', 7, 6],
+          ['jellyfish', 7, 4],
+          ['crab', 11, 8],
         ],
         puzzle: {
           enemies: true,
           flag: 'd3_reed',
           reward: {
-            spawn: [['pickup', 4, 6, { kind: 'heartPiece' }]],
+            spawn: [['pickup', 7, 8, { kind: 'heartPiece' }]],
             say: 'The reeds part over something round and bright.',
           },
         },
@@ -30521,40 +31152,39 @@ function installDungeonsA() {
       '0,5,4': {
         name: 'Eel Vault',
         map: [
-          '####..####',
-          '#U......U#',
-          '#........#',
-          '#........#',
-          '#........#',
-          '#..,,,,..#',
-          '#........#',
-          '##########',
+          '#######.#######',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '#....,,,,,....#',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '###############',
         ],
         entities: [
-          // A CRAB, NOT A BARNACLE, AND THE KEY IS WHY. This room's Small Key —
-          // the third of three, and the one that opens the way to the Kelp
-          // Locks and everything past them — is paid out by `puzzle: { enemies:
-          // true }`, which holds until nothing in the room is alive. A barnacle
-          // is `hp: 999` with `shield: 'all'`: a turret bolted to the wall that
-          // the sword cannot touch and no item in the player's hands at this
-          // point can answer. So the key never dropped, the locked door at the
-          // head of the Eel Hall never opened, and HALF THE DUNGEON, ITS BOSS
-          // AND ITS ESSENCE SAT BEHIND IT. `walk-dungeons.mjs` counted the key
-          // as earned because it reads the room's reward, not whether the room
-          // can be cleared; the playthrough actor fought the barnacle for eight
-          // thousand frames and lost sixteen quarter-hearts to it.
+          // A CRAB, NOT A BARNACLE, AND THE KEY IS WHY. This room's Small Key
+          // is paid out by `puzzle: { enemies: true }`, which holds until
+          // nothing in the room is alive. A barnacle is `hp: 999` with
+          // `shield: 'all'`: a turret bolted to the wall that the sword cannot
+          // touch and no item in the player's hands at this point can answer.
+          // So the key never dropped and half the dungeon sat behind it, while
+          // `walk-dungeons.mjs` counted the key as earned because it reads the
+          // room's reward, not whether the room can be cleared.
           //
           // Barnacles stay everywhere they are scenery-with-a-hitbox — the Eel
           // Hall still fields two. They may not stand in a room that has to be
           // emptied.
-          ['crab', 4, 4],
-          ['keese', 2, 2],
+          ['crab', 7, 5],
+          ['keese', 3, 4],
         ],
         puzzle: {
           enemies: true,
           flag: 'd3_eel',
           reward: {
-            spawn: [['pickup', 4, 2, { kind: 'key' }]],
+            spawn: [['pickup', 7, 3, { kind: 'key' }]],
             say: 'Something drops out of the weed.',
           },
         },
@@ -30566,79 +31196,83 @@ function installDungeonsA() {
         // opened them on.
         //
         // THE CAUSEWAY IS NOT DECORATION AND IT IS NOT A SOFTENING. Every tile
-        // ringing the island is `dWaterD` — flat deep water at every tide, not
-        // a tide tile — so until S112 there was NO WAY ONTO THE ISLAND without
-        // the Cleats that are standing on it, and the Cleats are what D3 hands
-        // over. The chest was unreachable from a real playthrough and nothing
-        // in CLAUDE.md's table could see it: `walk-dungeons.mjs` floods a
-        // dungeon with `capsForDungeonIndex`, which grants swim to every room
-        // of D3 including this one, so the flood walked in over the water it
-        // was supposed to be proving you could not cross. The playthrough
-        // actor found it in one directive. The two cells of `dBasin` below are
-        // dry at LOW, damp at MID and shallow at HIGH — walkable at all three,
-        // because an item room has to work at whichever sea arrives.
-        //
-        // The room's own sentence is unchanged: the causeway only reaches the
-        // door you came in by. Both ways ONWARD — west to the Undertow, east
-        // to the Bogwater Drain — are still two tiles of deep water, so the
-        // first thing the Cleats are used for is still getting off this rock.
+        // ringing the island is `dWaterD` — flat deep water at every tide — so
+        // without it there is NO WAY ONTO THE ISLAND without the Cleats that
+        // are standing on it. `walk-dungeons.mjs` cannot see that: it floods
+        // D3 with swim granted to every room, including this one. The
+        // causeway's `dBasin` is dry at LOW, damp at MID and shallow at HIGH —
+        // walkable at all three, because an item room has to work at whichever
+        // sea arrives. It reaches only the door you came in by: both ways
+        // ONWARD — west to the Undertow, east to the Bogwater Drain — are deep
+        // water.
         map: [
-          '##########',
-          '#WWWWWWWW#',
-          '#WW....WW#',
-          '.WW....WW.',
-          '.WW....WW.',
-          '#WW....WW#',
-          '#WWW22WWW#',
-          '####..####',
+          '###############',
+          '#WWWWWWWWWWWWW#',
+          '#WWWWWWWWWWWWW#',
+          '#WWWW.....WWWW#',
+          '#WWWW.....WWWW#',
+          '.WWWW.....WWWW.',
+          '#WWWW.....WWWW#',
+          '#WWWWWW2WWWWWW#',
+          '#WWWWWW2WWWWWW#',
+          '#WWWWWW2WWWWWW#',
+          '#######L#######',
         ],
         entities: [
-          ['chest', 4, 3, { big: true, item: 'cleats', level: 1 }],
+          ['chest', 7, 4, { big: true, item: 'cleats', level: 1 }],
         ],
       },
       '0,2,3': {
         name: 'The Undertow',
-        // Torrent room 1. The channel runs east, back toward the shelf you
-        // arrived on, and the way out is at its head. Bare on purpose: a niche
-        // in the wall of a torrent room is somewhere to stand, and somewhere to
-        // stand is somewhere the current is not.
+        // Torrent room 1. The whole floor of the room runs east, back toward
+        // the island you came from; a bank down each side is where the doors
+        // are. On the surface the current carries you home. Out, it is a
+        // walk along the bottom.
         map: [
-          '##########',
-          '###M##M###',
-          '##########',
-          '.TTTTTTTT.',
-          '.TTTTTTTT.',
-          '##########',
-          '###M##M###',
-          '##########',
+          '###############',
+          '#.TTTTTTTTTTT.#',
+          '#.TTTTTTTTTTT.#',
+          '#.TTTTTTTTTTT.#',
+          '#.TTTTTTTTTTT.#',
+          '..TTTTTTTTTTT..',
+          '#.TTTTTTTTTTT.#',
+          '#.TTTTTTTTTTT.#',
+          '#.TTTTTTTTTTT.#',
+          '#.TTTTTTTTTTT.#',
+          '###############',
         ],
-        cleatRoom: { from: [9, 3], to: [0, 3] },
+        cleatRoom: { from: [14, 5], to: [0, 5] },
         readable: [],
       },
       '0,1,3': {
         name: 'Sunken Vestry',
+        // Two blocks, two plates, and each block is pushed sideways toward the
+        // middle of the room rather than up, the way the Sluice Cell's are.
         map: [
-          '###..#####',
-          '#U......U#',
-          '#........#',
-          '#.........',
-          '#.........',
-          '#..1111..#',
-          '#........#',
-          '####..####',
+          '#######L#######',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '#....11111....#',
+          '#....11111.....',
+          '#....11111....#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '#######.#######',
         ],
         entities: [
-          ['switch', 2, 2],
-          ['switch', 7, 2],
-          ['block', 2, 3],
-          ['block', 7, 3],
-          ['urchin', 4, 4],
+          ['switch', 4, 2],
+          ['switch', 10, 2],
+          ['block', 3, 2],
+          ['block', 11, 2],
+          ['urchin', 7, 8],
         ],
         puzzle: {
           switches: 'all',
           flag: 'd3_vestry',
           reward: {
-            spawn: [['pickup', 4, 1, { kind: 'key' }]],
+            spawn: [['pickup', 7, 2, { kind: 'key' }]],
             say: 'Stone settles into stone.',
           },
         },
@@ -30646,34 +31280,45 @@ function installDungeonsA() {
       '0,1,4': {
         name: 'Silt Vault',
         map: [
-          '####..####',
-          '#U......U#',
-          '#........#',
-          '#..3333..#',
-          '#..3333..#',
-          '#........#',
-          '#........#',
-          '##########',
+          '#######.#######',
+          '#.............#',
+          '#.............#',
+          '#....33333....#',
+          '#....33333....#',
+          '#.............#',
+          '#.p.........p.#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '###############',
         ],
         entities: [
-          ['pickup', 4, 5, { kind: 'rupee20' }],
-          ['keese', 6, 2],
+          ['pickup', 7, 7, { kind: 'rupee20' }],
+          ['keese', 10, 2],
         ],
       },
       '0,2,2': {
         name: 'Bogmaw Hall',
+        // The east door is a shutter, and it is the Lock Gallery's to open:
+        // the plate beside it on the far side lets a player who came the long
+        // way round through the Kelp Locks walk back this way. Without it this
+        // hall was a way to the boss door that skipped the Eel Hall, the Eel
+        // Vault's key and the Locks — the whole east wing.
         map: [
-          '####..####',
-          '#........#',
-          '#..,,,,..#',
-          '..........',
-          '..........',
-          '#..,,,,..#',
-          '#........#',
-          '##########',
+          '#######.#######',
+          '#.............#',
+          '#.............#',
+          '#...,,,,,,,...#',
+          '#.............#',
+          '..............D',
+          '#.............#',
+          '#...,,,,,,,...#',
+          '#.............#',
+          '#.............#',
+          '###############',
         ],
         entities: [
-          ['bogmaw', 4, 3],
+          ['bogmaw', 7, 5],
         ],
         puzzle: {
           enemies: true,
@@ -30683,162 +31328,193 @@ function installDungeonsA() {
       },
       '0,1,2': {
         name: 'Drain Gallery',
+        // The Boss Key stands inside a ring of wells — wading water at LOW and
+        // over your head above it. The ring is open to the south.
         map: [
-          '##########',
-          '#U...#...#',
-          '#....#...#',
-          '#....#....',
-          '#....L....',
-          '#....#...#',
-          '#....#..U#',
-          '###..#####',
+          '###############',
+          '#.............#',
+          '#.............#',
+          '#...3333333...#',
+          '#...3.....3...#',
+          '#...3.....3....',
+          '#...3.....3...#',
+          '#...33...33...#',
+          '#.............#',
+          '#.............#',
+          '#######L#######',
         ],
         entities: [
-          ['chest', 7, 3, { pickup: 'bossKey' }],
-          // A KEESE, NOT A JELLYFISH. There is no water in this room at any tide, so
-          // the jellyfish that stood here could never move: `terrainOk` keeps an
-          // aquatic enemy on wet tiles and there were none to be on. It was
-          // scenery with a hitbox. d3 fields five keese already and a flier is
-          // what a dry stone gallery wants. See tools/check-placement.mjs.
-          ['keese', 2, 5],
+          ['chest', 7, 4, { pickup: 'bossKey' }],
+          // A KEESE, NOT A JELLYFISH. A jellyfish is kept on wet tiles by
+          // `terrainOk`, and at LOW there are none here to be on: it was
+          // scenery with a hitbox. See tools/check-placement.mjs.
+          ['keese', 2, 8],
         ],
       },
       '0,2,1': {
         name: 'Vestry Roof',
         map: [
-          '##########',
-          '#U......U#',
-          '#........#',
-          '#..,,,,..#',
-          '#..,,,,..#',
-          '#........#',
-          '#........#',
-          '####..####',
+          '###############',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '#....,,,,,....#',
+          '#....,,,,,....#',
+          '#....,,,,,....#',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '#######.#######',
         ],
         entities: [
-          ['pickup', 4, 4, { kind: 'heartPiece' }],
-          ['keese', 6, 2],
+          ['pickup', 7, 5, { kind: 'heartPiece' }],
+          ['keese', 10, 3],
         ],
       },
       '0,4,3': {
         name: 'The Bogwater Drain',
         // Torrent room 2, and the current runs the other way — a player who
-        // learned "swim east" in the Undertow learns nothing here. The alcove
-        // under the channel is the other half of the trade: it opens off the
-        // seafloor and the surface never sees it, so the slow layer is the one
-        // that finds things. Nothing in it is required, which is the point of
-        // putting it there.
+        // learned "swim east" in the Undertow learns nothing here. Two shelves
+        // stand out of the channel, top and bottom, and neither touches a
+        // bank: somewhere to come up for air and a fairy, not a way across.
         map: [
-          '##########',
-          '###M##M###',
-          '##########',
-          '.tttttttt.',
-          '.tttttttt.',
-          '####..####',
-          '###....###',
-          '##########',
+          '###############',
+          '#.ttt.....ttt.#',
+          '#.ttt..p..ttt.#',
+          '#.ttttttttttt.#',
+          '#.ttttttttttt.#',
+          '..ttttttttttt..',
+          '#.ttttttttttt.#',
+          '#.ttttttttttt.#',
+          '#.ttt.....ttt.#',
+          '#.ttt..U..ttt.#',
+          '###############',
         ],
-        cleatRoom: { from: [0, 3], to: [9, 3] },
+        cleatRoom: { from: [0, 5], to: [14, 5] },
         entities: [
-          ['pickup', 4, 6, { kind: 'fairy' }],
+          ['pickup', 7, 8, { kind: 'fairy' }],
         ],
       },
       '0,5,3': {
         name: 'Eel Hall',
         // 3x1, AND D3'S SET PIECE — the room the dungeon's whole idea is said
-        // in one sight line. The Kelp Locks (`0,4,2`, 2x1) is the floor route
-        // at its limit: eighteen tiles of seafloor in one breath, and
-        // check-cleats prints the margin. This is the same choice laid out
-        // the other way round. It declares its own `cleatRoom` and has to:
-        // `check-cleats.mjs` refuses a torrent standing in a room that does
-        // not claim it, on the grounds that a current nothing proves a way
-        // past is a wall somebody forgot about. All four clauses hold here —
-        // no route on foot, none on the surface, one on the floor, and one
-        // breath covers it.
+        // in one sight line. Its western screen is a plain hall with three
+        // doors: the Drain behind you, the Eel Vault below and the key door
+        // north to the Kelp Locks.
         //
-        // THE NAVE. Down the middle of the eastern twenty tiles runs a
-        // torrent flowing WEST, back the way you came. A colonnade runs along
-        // both sides of it, and the colonnade is cut through by two thick
+        // THE NAVE. Down the middle of the eastern thirty tiles runs a torrent
+        // flowing WEST, back the way you came. A colonnade runs along both
+        // sides of it, and the colonnade is cut through by two thick
         // cross-walls. So the walk east is: gallery, down into the channel,
         // under the cross-wall, up into the next gallery. On the surface the
         // current is the wrong side of zero and you are carried home; on the
-        // floor nothing pushes you at all. Six tiles is the longest dive in
-        // it, which is a third of what the Locks ask — the point here is the
-        // SHAPE of the choice, not the air.
+        // floor nothing pushes you at all.
         //
         // The return leg is free, and that is the room's other half: step off
-        // the last ledge into the current and it takes you the whole length
-        // back to the door in one go. A torrent is a wall one way and a road
-        // the other.
-        //
-        // Picked for the same three reasons every widened room before it was:
-        // the cells it grows into (`6,3`, `7,3`) have no other neighbours and
-        // nothing borders them; its four doorways — north at x=4,5, the
-        // locked door at 2,4, west at rows 3 and 4, south at x=4,5 — are all
-        // in its western screen; and widening it changed no facing wall in
-        // any neighbour. Only column 9 of rows 3 and 4 opened, which was the
-        // blank east wall of a dead end.
+        // the last gallery into the current and it takes you the whole length
+        // back to the hall in one go. A torrent is a wall one way and a road
+        // the other. `check-cleats.mjs` refuses a torrent standing in a room
+        // that does not claim it, so the room declares its own `cleatRoom`.
         size: [3, 1],
         map: [
-          '####..########################',
-          '#U......U##.q..#####.q..####.#',
-          '####L######....#####....####.#',
-          '..........WWtttttttttttttttt,#',
-          '..........WWtttttttttttttttt,#',
-          '#..1111..##....#####....####.#',
-          '#........##.q..#####.q..####.#',
-          '####..########################',
+          '#######L#####################################',
+          '#...................###........###..........#',
+          '#.U.......U.........###........###..........#',
+          '#...................###........###..........#',
+          '#............ttttttttttttttttttttttttttttt..#',
+          '.............ttttttttttttttttttttttttttttt..#',
+          '#............ttttttttttttttttttttttttttttt..#',
+          '#...................###........###..........#',
+          '#.U.......U.........###........###..........#',
+          '#...................###........###..........#',
+          '#######.#####################################',
         ],
         entities: [
-          ['urchin', 3, 3],
-          ['crab', 6, 4],
-          ['anglerfry', 16, 3],
-          ['anglerfry', 25, 4],
-          ['barnacle', 13, 6],
-          ['barnacle', 22, 1],
-          ['chest', 28, 3, { pickup: 'rupee100' }],
+          ['urchin', 5, 3],
+          ['crab', 6, 8],
+          ['anglerfry', 17, 5],
+          ['anglerfry', 28, 4],
+          ['barnacle', 26, 9],
+          ['barnacle', 37, 1],
+          ['chest', 43, 5, { pickup: 'rupee100' }],
         ],
-        cleatRoom: { from: [0, 3], to: [28, 4] },
+        cleatRoom: { from: [0, 5], to: [43, 5] },
+        readable: [
+          [10, 2, 'Scratched into the statue: "The eels swim\nhome with the current. The eel-catcher walks\nout under it."'],
+        ],
       },
       '0,4,2': {
         name: 'The Kelp Locks',
-        // 2x1 — TWENTY tiles of channel, and the only room in the dungeon where
-        // the breath number is not decorative. One dive, eighteen tiles of
-        // seafloor, no shelf in the middle to come up on. check-cleats.mjs
-        // prints the margin every run.
+        // 2x1, AND THE ONE ROOM IN THE SANCTUM THAT WANTS BOTH LAYERS IN ONE
+        // CROSSING. The south door lets you into a flume that runs north up
+        // the east wall, west the whole length of the north wall, and turns
+        // down to the landing at the west door — where its last three tiles
+        // run AGAINST you.
         //
-        // Picked for the same three reasons d1 0,5,3 and d2 1,3,2 were: the
-        // cells it grows into have no other neighbours, its doorways are all in
-        // its eastern screen, and widening it changed no facing wall anywhere.
+        //   On the surface the current carries a swimmer round the lock in a
+        //   few seconds and throws him back at the last gate.
+        //   On the floor the whole flume is thirty-six tiles, and a breath is
+        //   thirty-one: walked from the door, the air runs out in the top lane.
+        //
+        // So the answer is to ride it and sink at the gate — change layer in
+        // the water, which the Cleats let you do at any moment. The sign on
+        // the landing says so, and a player who dives at the door anyway is
+        // brought up by his own air and carried to the gate regardless: the
+        // lesson costs a quarter heart, never a dead end.
+        //
+        // One way. Nothing carries you back, and the floor is as long going
+        // home: the Lock Gallery's plate opens the shortcut west instead.
+        // Proved by `check-cleats.mjs`'s `layers` clauses.
         size: [2, 1],
         map: [
-          '####################',
-          '###M##M######M##M###',
-          '####################',
-          '.TTTTTTTTTTTTTTTTTT#',
-          '.TTTTTTTTTTTTTTTTTT#',
-          '##############..####',
-          '###M##M#######..####',
-          '##############..####',
+          '##############################',
+          '#ttttttttttttttttttttttttttt##',
+          '#A#########################A##',
+          '#A#########################A##',
+          '#A#########################A##',
+          '....#######################A##',
+          '#...#######################A##',
+          '#...#######################A##',
+          '####################U......A##',
+          '####################.......A##',
+          '######################L#######',
         ],
-        cleatRoom: { from: [14, 7], to: [0, 3] },
+        cleatRoom: { from: [22, 9], to: [0, 5], layers: true },
+        readable: [
+          [20, 8, 'A plate on the lock wall: "The lock carries a\nswimmer round to its last gate, and no further.\nThe floor goes on where the water will not."'],
+        ],
       },
       '0,3,2': {
         name: 'The Lock Gallery',
+        // The boss door is in the north wall. The west door is the shortcut:
+        // shut until the plate beside it is stood on, and only this side of
+        // it has the plate.
         map: [
-          '####..####',
-          '#........#',
-          '####B#####',
-          '..........',
-          '..........',
-          '#..,,,,..#',
-          '#........#',
-          '##########',
+          '#######B#######',
+          '#.............#',
+          '#..U.......U..#',
+          '#.............#',
+          '#.............#',
+          'D..............',
+          '#.............#',
+          '#.............#',
+          '#..U.......U..#',
+          '#.............#',
+          '###############',
         ],
         entities: [
-          ['crab', 2, 4],
-          ['urchin', 7, 4],
+          ['switch', 2, 5, { hold: false }],
+          ['crab', 9, 7],
+          ['urchin', 10, 3],
         ],
+        puzzle: {
+          switches: 'all',
+          flag: 'd3_shortcut',
+          reward: {
+            openDoors: [[0, 5]],
+            say: 'The west gate grinds open.',
+          },
+        },
       },
       '0,3,1': {
         name: 'Gloomtide, the Bogwater Maw',
@@ -30846,22 +31522,25 @@ function installDungeonsA() {
         // level was brought in, and the floor is basin, which is walkable at
         // all three because a locked room has to work at whichever one arrives.
         map: [
-          '##########',
-          '#..2222..#',
-          '#..2222..#',
-          '#..2222..#',
-          '#..2222..#',
-          '#..2222..#',
-          '#........#',
-          '####..####',
+          '###############',
+          '#.............#',
+          '#.............#',
+          '#...2222222...#',
+          '#...2222222...#',
+          '#...2222222...#',
+          '#...2222222...#',
+          '#...2222222...#',
+          '#.............#',
+          '#.............#',
+          '#######B#######',
         ],
         noTide: true,
         entities: [
-          ['gloomtide', 4, 2],
+          ['gloomtide', 7, 3],
         ],
         script: {
           onEvent(game, name) {
-            if (name === 'bossDead') game.spawnPickup(80, 40, 'heartContainer', { grabDelay: 30 });
+            if (name === 'bossDead') game.spawnPickup(112, 56, 'heartContainer', { grabDelay: 30 });
           },
         },
       },

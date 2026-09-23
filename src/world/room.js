@@ -315,6 +315,10 @@ export class Room {
       if (d.ring) {
         const r = this.ringArt(d, x, y, tide);
         if (r) return r;
+        if (d.ring.faces) {
+          const f = this.faceArt(d, x, y, tide);
+          if (f) return f;
+        }
       }
       const onRing = x === 0 || y === 0 || x === this.tw - 1 || y === this.th - 1;
       // AN OPENED DOOR IN THE RING IS A GAP IN THE WALL, not the old door
@@ -330,7 +334,8 @@ export class Room {
         const w = getTileDef(this.legend['#']);
         const R = w && w.ring;
         const side = y === 0 ? 'N' : y === this.th - 1 ? 'S' : x === 0 ? 'W' : 'E';
-        const kind = d.name === 'dDoorLocked' ? 'lock' : d.name === 'dDoorClosed' ? 'shut' : null;
+        const kind = d.name === 'dDoorLocked' ? 'lock' : d.name === 'dDoorClosed' ? 'shut'
+          : d.name === 'dDoorBoss' ? 'boss' : null;
         if (R && kind && R[kind + side]) return R[kind + side];
       }
     }
@@ -389,6 +394,38 @@ export class Room {
     if (!wall(x, y + 1)) return R['j' + k + 'N'] || R[k];
     if (!wall(x, y - 1)) return R['j' + k + 'S'] || R[k];
     return R[k];
+  }
+
+  /**
+   * The piece of wall to draw for a cell of an INTERIOR wall mass, in a
+   * dungeon whose ring declares `faces` — or null to draw its fill.
+   *
+   * The Poison Moth's Lair draws a thick wall inside a room exactly as it
+   * draws the room's own frame: a bevelled slate face toward every floor it
+   * borders, and the flat masonry only where no floor can see it. So a wall
+   * cell with floor below it is drawn as the ring's north run, floor above as
+   * the south run, and so on; a cell with wall on all four sides but floor on
+   * one diagonal is an inside corner, which is the ring's own corner piece.
+   * Water counts as floor: anything that is not the wall is something the
+   * wall has a face toward.
+   */
+  faceArt(d, x, y, tide) {
+    const R = d.ring;
+    const wall = (nx, ny) => {
+      if (!this.inBounds(nx, ny)) return true;
+      const n = this.tile(nx, ny, tide);
+      return n.ring === R || n.ringWall || !!(n.flags & F.DOOR);
+    };
+    const n = wall(x, y - 1), s = wall(x, y + 1), w = wall(x - 1, y), e = wall(x + 1, y);
+    if (!s) return R.N;
+    if (!n) return R.S;
+    if (!e) return R.W;
+    if (!w) return R.E;
+    if (!wall(x + 1, y + 1)) return R.TL;
+    if (!wall(x - 1, y + 1)) return R.TR;
+    if (!wall(x + 1, y - 1)) return R.BL;
+    if (!wall(x - 1, y - 1)) return R.BR;
+    return null;
   }
 
   /**

@@ -2524,13 +2524,55 @@ export function installCoreTiles() {
     cJambSE: { art: ART.cJambSE, pal: 'cJambSE', flags: F.SOLID },
     dUrnCoral: { art: ART.urn, pal: 'urn', flags: F.SOLID, underArt: 'dFloorCoral' },
 
-    // d3 Bogwater Sanctum — a gold lattice sunk into swamp-green stone.
-    dFloorBog: { art: ART.gildFloor, pal: 'gildFloor' },
-    dFloorBogAlt: { art: ART.gildFloor, pal: 'bog' },
-    dWallBog: { art: ART.knurlWall, pal: 'knurlWall', flags: F.SOLID },
-    dWallBogX: { art: ART.dWallCracked, pal: 'knurlWall', flags: F.SOLID | F.BOMBABLE },
-    dBlockBog: { art: ART.cryptBlock, pal: 'bog', flags: F.SOLID },
-    dUrnBog: { art: ART.urn, pal: 'urn', flags: F.SOLID, underArt: 'dFloorBog' },
+    // d3 Bogwater Sanctum.
+    // S139: THE BOGWATER SANCTUM IS AN ORACLE DUNGEON, and its kit is the
+    // Poison Moth's Lair's, whole (`b*` picks in rip-dungeon-themes.py): the
+    // olive swirl floor and the entrance hall's darker octagon floor, blue
+    // slate walls, the magenta block, the purple pot, the gold eye statue,
+    // and the Lair's own key doors, shutters and boss door from the door key
+    // the ripper laid out beside the map. Like the Crypt, the Lair frames an
+    // open doorway with plain runs, so there are no jambs.
+    dFloorBog: { art: ART.bFloor, pal: 'bFloor' },
+    dFloorBogAlt: { art: ART.bFloorAlt, pal: 'bFloorAlt' },
+    dWallBog: { art: ART.bFill, pal: 'bFill', flags: F.SOLID, ring: {
+      TL: 'bRingTL', TR: 'bRingTR', BL: 'bRingBL', BR: 'bRingBR',
+      N: 'bRingN', S: 'bRingS', W: 'bRingW', E: 'bRingE',
+      lockN: 'bKeyN', lockS: 'bKeyS', lockE: 'bKeyE', lockW: 'bKeyW',
+      shutN: 'bShutN', shutS: 'bShutS', shutE: 'bShutE', shutW: 'bShutW',
+      // Inside the boss's own room the door behind you reads as the shutter
+      // it is in the source, not as the skull you saw from outside.
+      bossN: 'bBossN', bossS: 'bShutS',
+      // A thick wall inside a room has the ring's faces toward its floor, the
+      // way the Lair draws its corridors (`Room.faceArt`).
+      faces: true,
+    } },
+    dWallBogX: { art: ART.dWallCracked, pal: 'bRingN', flags: F.SOLID | F.BOMBABLE },
+    dBlockBog: { art: ART.bBlock, pal: 'bBlock', flags: F.SOLID },
+    // The gold eye statue that lines the Lair's entrance hall stands where the
+    // other dungeons put an urn.
+    dUrnBog: { art: ART.bStatue, pal: 'bStatue', flags: F.SOLID, underArt: 'dFloorBog' },
+    // The way out: the entrance hall's two green pillars in the south wall
+    // with the lit step between them, wall to the ring either side.
+    dExitBog: { art: ART.bArch2, pal: 'bArch2', flags: F.WARP },
+    dPillarBogW: { art: ART.bArch1, pal: 'bArch1', flags: F.SOLID, ringWall: true },
+    dPillarBogE: { art: ART.bArch3, pal: 'bArch3', flags: F.SOLID, ringWall: true },
+    bRingTL: { art: ART.bRingTL, pal: 'bRingTL', flags: F.SOLID },
+    bRingTR: { art: ART.bRingTR, pal: 'bRingTR', flags: F.SOLID },
+    bRingBL: { art: ART.bRingBL, pal: 'bRingBL', flags: F.SOLID },
+    bRingBR: { art: ART.bRingBR, pal: 'bRingBR', flags: F.SOLID },
+    bRingN: { art: ART.bRingN, pal: 'bRingN', flags: F.SOLID },
+    bRingS: { art: ART.bRingS, pal: 'bRingS', flags: F.SOLID },
+    bRingW: { art: ART.bRingW, pal: 'bRingW', flags: F.SOLID },
+    bRingE: { art: ART.bRingE, pal: 'bRingE', flags: F.SOLID },
+    bKeyN: { art: ART.bKeyN, pal: 'bKeyN', flags: F.SOLID | F.DOOR },
+    bKeyS: { art: ART.bKeyS, pal: 'bKeyS', flags: F.SOLID | F.DOOR },
+    bKeyE: { art: ART.bKeyE, pal: 'bKeyE', flags: F.SOLID | F.DOOR },
+    bKeyW: { art: ART.bKeyW, pal: 'bKeyW', flags: F.SOLID | F.DOOR },
+    bShutN: { art: ART.bShutN, pal: 'bShutN', flags: F.SOLID | F.DOOR },
+    bShutS: { art: ART.bShutS, pal: 'bShutS', flags: F.SOLID | F.DOOR },
+    bShutE: { art: ART.bShutE, pal: 'bShutE', flags: F.SOLID | F.DOOR },
+    bShutW: { art: ART.bShutW, pal: 'bShutW', flags: F.SOLID | F.DOOR },
+    bBossN: { art: ART.bBossN, pal: 'bBossN', flags: F.SOLID | F.DOOR },
 
     // d4 Cliffside Cistern — sunken tan panels, cold studded walls.
     dFloorCistern: { art: ART.panelFloor, pal: 'panelFloor' },
@@ -2756,8 +2798,8 @@ export function installCoreTiles() {
   // own floor. The Grotto's is the Seasons pot out of its own kit.
   for (const T of THEME_NAMES) {
     TILE_DEFS['dPot' + T] = {
-      art: T === 'Grotto' ? ART.gPot : T === 'Coral' ? ART.cPot : ART.pot,
-      pal: T === 'Grotto' ? 'gPot' : T === 'Coral' ? 'cPot' : 'pot',
+      art: T === 'Grotto' ? ART.gPot : T === 'Coral' ? ART.cPot : T === 'Bog' ? ART.bPot : ART.pot,
+      pal: T === 'Grotto' ? 'gPot' : T === 'Coral' ? 'cPot' : T === 'Bog' ? 'bPot' : 'pot',
       flags: F.SOLID | F.ROCK, underArt: 'dFloor' + T, liftSprite: 'o_pot',
     };
   }

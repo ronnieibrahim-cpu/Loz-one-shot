@@ -809,9 +809,10 @@ export const ROUTE = [
   ['wait', 90],
 
   // ---------------------------------------------------------------- d3 0,3,6
-  // The Drowned Nave. `puzzle.enemies: true` pays out a FAIRY, and it is the
-  // heal the whole crossing west was spent on: the run arrives here on
-  // whatever Anemos and nine screens of strand left it.
+  // THE SANCTUM IS AN ORACLE DUNGEON (S139): every room is 15x11, doors are
+  // one tile in the middle of each wall, and a key door is in the wall
+  // between two rooms. The Drowned Nave's `puzzle.enemies: true` pays out a
+  // FAIRY, and it is the heal the whole crossing west was spent on.
   ['travel', 3, 6, 4000],
   ['fight', 8000, 8000],
   ['wait', 120],
@@ -826,32 +827,31 @@ export const ROUTE = [
   ['loot', 1200],
 
   // ---------------------------------------------------------------- d3 0,4,5
-  // The Sluice Cell. Two blocks, two switches directly north of them: stand
-  // under each block and hold up. The key drops against the room's own north
-  // wall, where `dLoot`'s lean-north recovery has nothing to lean into.
+  // The Sluice Cell. Two blocks, each one tile under its plate: stand under
+  // each block and hold up. The key drops at the north wall between them.
   ['travel', 4, 5, 4000],
-  ['goto', 2, 4, 900],
+  ['goto', 3, 4, 900],
   ['hold', ['up'], 40],
-  ['goto', 7, 4, 900],
+  ['goto', 11, 4, 900],
   ['hold', ['up'], 40],
   ['dialogue', 300],
-  ['goto', 4, 2, 600],
+  ['goto', 7, 3, 600],
   ['hold', ['up'], 30],
   ['loot', 900],
 
   // ---------------------------------------------------------------- d3 0,3,4
-  // The Weir. Its locked door is in the room's own north wall and gates the
-  // stair to the item room, not the room's approach — the key is spent here
-  // and the two side cells either side of it are walked afterwards.
+  // The Weir. Its key door is in its north wall and gates the Cistern Floor,
+  // not the room — the key is spent here and the two side cells either side
+  // of it are walked afterwards.
   ['travel', 3, 4, 4000],
-  ['goto', 4, 3, 900],
+  ['goto', 7, 1, 900],
   ['hold', ['up'], 20],
   ['tap', 'a', 30],
 
   // ---------------------------------------------------------------- d3 0,2,4
   // Silt Cell: the Chartstone.
   ['travel', 2, 4, 4000],
-  ['goto', 4, 3, 600],
+  ['goto', 7, 4, 600],
   ['hold', ['up'], 6],
   ['tap', 'a', 40],
   ['dialogue', 400],
@@ -868,102 +868,123 @@ export const ROUTE = [
 
   // ---------------------------------------------------------------- d3 0,3,3
   // THE CISTERN FLOOR, AND THE KELP-SOLED CLEATS. The island is ringed by
-  // flat deep water at every tide; the causeway from the south door is the
-  // only dry way onto it, and the way off it is the item in the chest.
+  // flat deep water at every tide; the causeway from the key door is the only
+  // dry way onto it, and the way off it is the item in the chest.
   ['travel', 3, 4, 4000],
-  ['goto', 4, 1, 900],
-  ['hold', ['up'], 30],
+  ['goto', 7, 1, 900],
+  ['hold', ['up'], 40],
   ['wait', 60],
-  ['goto', 4, 4, 900],
+  ['goto', 7, 5, 900],
   ['hold', ['up'], 6],
   ['tap', 'a', 40],
   ['dialogue', 600],
   ['loot', 900],
 
   // ---------------------------------------------------------------- d3 0,2,3
-  // THE UNDERTOW, ON THE SEAFLOOR. The soles go on B — the conch comes back
-  // to it before the boss — and are pressed once on dry land, which arms
-  // them: the next water the player steps into is entered by sinking rather
-  // than by swimming (`Player.updateTerrain`). On the surface this channel's
-  // current runs east and carries you back onto the island; on the floor
-  // nothing pushes at all, and the whole length fits in one breath.
+  // WEST, ON THE SEAFLOOR. The soles go on B — the conch comes back to it
+  // before the boss — and are pressed once on dry land, which arms them: the
+  // next water the player steps into is entered by sinking rather than by
+  // swimming (`Player.updateTerrain`). Off the island and under the Cistern's
+  // west water, then the whole Undertow along its bottom: on the surface its
+  // current runs east and carries you back onto the island. Coming up on a
+  // bank surfaces the soles by themselves, so they are armed again there.
   ['equip', 'cleats', 'B', 400],
+  ['goto', 5, 5, 600],
   ['soles', 'sink', 240],
-  ['goto', 3, 3, 600],
-  ['hold', ['left'], 120],
+  ['hold', ['left'], 200],
+  ['wait', 60],
   ['soles', 'sink', 240],
-  ['hold', ['left'], 300],
+  ['hold', ['left'], 420],
   ['wait', 90],
 
   // ---------------------------------------------------------------- d3 0,1,3
-  // The Sunken Vestry, and the second Small Key: two more blocks onto two
-  // more switches. Coming up out of the channel puts the soles back on the
-  // surface by itself (`Player.surface`), so nothing has to unset them.
-  ['goto', 2, 4, 900],
-  ['hold', ['up'], 40],
-  ['goto', 7, 4, 900],
-  ['hold', ['up'], 40],
+  // The Sunken Vestry, and the second Small Key: each block goes one tile
+  // sideways toward the middle, onto its plate.
+  ['goto', 12, 2, 900],
+  ['hold', ['left'], 40],
+  ['goto', 2, 2, 900],
+  ['hold', ['right'], 40],
   ['dialogue', 300],
-  ['goto', 4, 2, 600],
+  ['goto', 7, 3, 600],
   ['hold', ['up'], 30],
   ['loot', 900],
 
   // ---------------------------------------------------------------- d3 0,1,2
-  // The Drain Gallery. Its locked door stands in the middle of the room
-  // rather than in a wall, and the Boss Key is in the chest on the far side
-  // of it.
-  ['goto', 3, 1, 900],
-  ['hold', ['up'], 30],
-  ['wait', 60],
-  ['goto', 4, 4, 900],
-  ['hold', ['right'], 20],
+  // The Drain Gallery, through the key door in the Vestry's north wall. The
+  // Boss Key stands in a ring of drains, open to the south.
+  ['goto', 7, 1, 900],
+  ['hold', ['up'], 20],
   ['tap', 'a', 30],
-  ['goto', 7, 4, 900],
+  ['hold', ['up'], 60],
+  ['wait', 60],
+  ['goto', 7, 5, 900],
   ['hold', ['up'], 6],
   ['tap', 'a', 40],
   ['dialogue', 400],
   ['loot', 900],
 
+  // ---------------------------------------------------------------- d3 0,2,2
+  // BOGMAW HALL, east of the Boss Key, and the miniboss is fought now, on
+  // the health the west wing leaves, rather than on the way out after
+  // Gloomtide: the Kelp Locks are one way, so the walk home comes back
+  // through this hall by the Lock Gallery's shortcut, and meeting Bogmaw
+  // there on what the boss left killed the run. Then the Piece of Heart on
+  // the Vestry Roof above it. `openRetreat` is measured, not guessed: from
+  // this doorway without it the actor is pinned in the north-west corner and
+  // loses 12 seeds in 13; with it, 13 in 13 (S139,
+  // `measure-boss-combat.mjs d3 --mini=bogmaw`).
+  ['travel', 2, 2, 4000],
+  ['boss', 9000, 'bogmaw', { openRetreat: true }],
+  ['wait', 120],
+  ['dialogue', 400],
+  ['loot', 1500],
+  ['travel', 2, 1, 4000],
+  ['loot', 1500],
+  ['travel', 2, 2, 4000],
+  ['travel', 1, 2, 4000],
+
   // ---------------------------------------------------------------- d3 0,2,3
-  // BACK EAST ALONG THE UNDERTOW, ON THE SURFACE, AND IT IS FREE. The channel
-  // runs east: step off the shelf into it without arming the soles and the
-  // current carries you the whole length back to the island. A torrent is a
-  // wall one way and a road the other, and this is the room saying so.
-  ['goto', 3, 6, 900],
-  ['hold', ['down'], 30],
+  // BACK EAST ALONG THE UNDERTOW, ON THE SURFACE, AND IT IS FREE. The soles
+  // came up on the Vestry's bank, so the player swims: step off the bank into
+  // the current and it carries you the whole length back to the island. A
+  // torrent is a wall one way and a road the other.
+  ['travel', 1, 3, 4000],
+  ['travel', 2, 3, 4000],
+  ['hold', ['right'], 300],
   ['wait', 60],
-  ['goto', 8, 3, 900],
-  ['hold', ['right'], 240],
-  ['wait', 90],
 
   // ---------------------------------------------------------------- d3 0,3,3
-  // Across the island and out its east side.
-  ['goto', 5, 3, 900],
-  ['hold', ['right'], 180],
-  ['wait', 90],
+  // Across the Cistern's west water to the island, and off its east side on
+  // the floor: the Bogwater Drain runs west, so the crossing east is another
+  // walk along the bottom.
+  ['hold', ['right'], 120],
+  ['goto', 9, 5, 900],
+  ['soles', 'sink', 240],
+  ['hold', ['right'], 200],
+  ['wait', 60],
 
   // ---------------------------------------------------------------- d3 0,4,3
-  // THE BOGWATER DRAIN, AND THE CURRENT RUNS THE OTHER WAY. A player who
-  // learned "swim east" in the Undertow learns nothing here: this channel
-  // flows west, so the crossing east is another floor walk. The alcove under
-  // the channel holds a fairy and only opens off the seafloor.
+  // Along the Drain's floor by way of its bottom shelf, which holds a fairy:
+  // the west wing and Bogmaw are paid for here, before the Eel Vault and the
+  // boss. Coming up on the shelf surfaces the soles, so they are armed again
+  // for the rest of the crossing.
   ['soles', 'sink', 240],
+  ['hold', ['down', 'right'], 90],
   ['hold', ['right'], 60],
-  ['goto', 4, 6, 900],
-  ['loot', 1200],
-  // Coming up into the alcove surfaced the soles, so they are armed again for
-  // the second half of the crossing.
+  ['wait', 30],
   ['soles', 'sink', 240],
-  ['hold', ['up'], 60],
+  ['hold', ['up', 'right'], 80],
   ['hold', ['right'], 300],
-  ['wait', 90],
+  ['goto', 13, 5, 200],
+  ['exit', 'right', 200],
+  ['wait', 60],
 
   // ---------------------------------------------------------------- d3 0,5,4
-  // Eel Hall's west screen, and straight through it to the Eel Vault below.
-  // NOTHING IS FOUGHT IN THE HALL: it fields two barnacles, which are
+  // Eel Hall's west screen, and straight through its south door to the Eel
+  // Vault. NOTHING IS FOUGHT IN THE HALL: it fields two barnacles, which are
   // `hp: 999` turrets bolted to the wall, and a `fight` directive in a room
   // holding one never returns.
-  ['goto', 4, 6, 900],
+  ['goto', 7, 9, 900],
   ['hold', ['down'], 30],
   ['wait', 60],
   ['fight', 3000, 1200],
@@ -974,102 +995,83 @@ export const ROUTE = [
   // `shield: 'front'` covers, and a `shield: 'front'` check only ever
   // compares a HORIZONTAL attack direction against a horizontal facing
   // (`Entity.hurt`), so a vertical swing is unconditionally unblockable and a
-  // horizontal one never lands. Eight thousand frames of `fight` left it
-  // standing and the key it is holding never dropped. Stand over its patrol
-  // line and swing down by hand.
-  // It patrols tiles 1 to 4 of its own row, so the swing is taken from the
-  // middle of that beat rather than from wherever `dFight` gave up.
-  ['goto', 3, 3, 900],
+  // horizontal one never lands. Stand over its patrol line and swing down.
+  ['goto', 7, 4, 900],
   ['hold', ['down'], 3],
   ['tap', 'a', 16], ['tap', 'a', 16], ['tap', 'a', 16], ['tap', 'a', 16],
   ['tap', 'a', 16], ['tap', 'a', 16], ['tap', 'a', 16], ['tap', 'a', 16],
   ['tap', 'a', 16], ['tap', 'a', 16], ['tap', 'a', 16], ['tap', 'a', 16],
-  ['goto', 2, 3, 600],
-  ['hold', ['down'], 3],
-  ['tap', 'a', 16], ['tap', 'a', 16], ['tap', 'a', 16], ['tap', 'a', 16],
-  ['tap', 'a', 16], ['tap', 'a', 16], ['tap', 'a', 16], ['tap', 'a', 16],
-  ['tap', 'a', 16], ['tap', 'a', 16], ['tap', 'a', 16], ['tap', 'a', 16],
+  ['fight', 3000, 1200],
   ['wait', 120],
   ['dialogue', 400],
   ['wait', 120],
   ['loot', 1500],
 
   // ---------------------------------------------------------------- d3 0,5,3
-  // Back up into the Hall and through its locked door — the third key, and
-  // the way north into the Kelp Locks.
-  ['goto', 4, 1, 900],
+  // Back up into the Hall and through the key door in its north wall — the
+  // third key, and the way into the Kelp Locks.
+  ['goto', 7, 1, 900],
   ['hold', ['up'], 30],
   ['wait', 60],
-  ['goto', 4, 3, 900],
+  ['goto', 7, 1, 900],
   ['hold', ['up'], 20],
   ['tap', 'a', 30],
-  ['goto', 4, 1, 900],
-  ['hold', ['up'], 40],
+  ['hold', ['up'], 60],
   ['wait', 90],
 
   // ---------------------------------------------------------------- d3 0,4,2
-  // THE KELP LOCKS, AND THE ONLY ROOM IN THE DUNGEON WHERE THE BREATH NUMBER
-  // IS NOT DECORATIVE: eighteen tiles of seafloor in one dive with no shelf
-  // in the middle to come up on. Up the shaft, arm the soles, and walk the
-  // whole channel west against a current that would carry a swimmer back.
+  // THE KELP LOCKS, AND BOTH LAYERS IN ONE CROSSING. On the surface: into the
+  // east lane, up it on the current, left into the top lane and west on the
+  // current to the last gate, which runs against you. There, sink — in the
+  // water — and walk the last three tiles down to the landing at the west
+  // door. The whole flume on the floor is longer than a breath.
+  ['goto', 26, 9, 900],
+  ['hold', ['right'], 40],
+  ['hold', ['up', 'right'], 200],
+  ['hold', ['left'], 260],
   ['soles', 'sink', 240],
-  ['hold', ['up'], 90],
-  ['hold', ['left'], 440],
+  ['hold', ['down'], 110],
+  ['goto', 1, 5, 400],
+  ['exit', 'left', 300],
   ['wait', 90],
 
   // ---------------------------------------------------------------- d3 0,3,2
-  // The Lock Gallery, and the boss door in its north wall. THE SEA GOES TO
+  // The Lock Gallery. The plate beside its west door opens the shortcut back
+  // to Bogmaw Hall, and the boss door is in its north wall. THE SEA GOES TO
   // LOW BEFORE THE DOOR IS OPENED, NOT AFTER: the arena is `noTide`, so it
   // pins whatever level was carried in, and MID is the sanctum current's own
-  // level — Gloomtide is nearly twice as fast there and the fight is a loss
-  // in ten of ten seeds. Named rather than counted, because the walk here
-  // spent presses of its own.
+  // level — Gloomtide is nearly twice as fast there.
+  ['goto', 2, 5, 900],
+  ['dialogue', 300],
+  ['equip', 'conch', 'B', 400],
   ['tide', 0, 140, 600],
-  ['goto', 4, 3, 900],
+  ['goto', 7, 1, 900],
   ['hold', ['up'], 20],
   ['tap', 'a', 30],
-  ['goto', 4, 1, 900],
   ['hold', ['up'], 40],
-  // Re-swept at S137 after D2's rebuild moved the entry frame: +50..+70 on
-  // the old 90 all win (hp left 14-16), +0..+40 and +80 lose; 150 sits in
-  // the middle of that window.
-  ['wait', 150],
+  // Re-swept at S139 in the Oracle arena, with the ink spit at a quarter
+  // heart: settles 150..180 all win from this doorway (17-19 quarter-hearts
+  // left), 140 and 190 lose. 165 sits in the middle of that window.
+  ['wait', 165],
 
   // ---------------------------------------------------------------- d3 0,3,1
   // GLOOMTIDE, THE BOGWATER MAW. `clearAdds` is not optional here and it is
   // not general: the boss sheds gels, and read hit by hit, ten of the
   // fourteen hits that used to kill the actor came from the swarm and exactly
-  // one came from the boss. With the option the fight measures seven wins in
-  // ten seeds; without it, none. Measured across all six bosses it is a win
-  // on this one and a loss on four, so it is named per fight.
-  // `openRetreat` IS NOT ON HERE, AND THAT IS A MEASUREMENT, NOT AN OVERSIGHT.
-  // Swept at five seeds on the health a player arriving in order holds,
-  // Gloomtide costs 5, 8, 16, 19 and a DEATH — and every 4-quarter-heart hit
-  // in that sweep lands 13-14px from a room edge, 52-55 frames apart, which
-  // is the invuln window exactly. It is one fight asking whether the endgame
-  // drifts into the arena's east wall, where the post-swing retreat slides
-  // along the bricks instead of opening a gap. Retreating toward open floor
-  // instead gives 7, 8, 10, 14, 14 — five wins in five, spread halved, death
-  // gone. In THIS run it loses the fight outright.
-  //
-  // S132 CLOSED THAT GAP AND THE ANSWER STANDS. The harness now sets this
-  // fight up the way the route arrives at it — in the south doorway at
-  // 65,112, on the 24 of 32 quarter-hearts the route carries, after the
-  // route's own 90-frame wait — and swept that way `openRetreat` gives 3 wins
-  // in 5 against 2, and flips one seed from a win to a DEATH. It is not the
-  // clean improvement the empty room made it look. It stays off.
-  // (The old note here said the route's arena "still has a zol in it". It
-  // does not: the room holds Gloomtide alone when the fight starts. The zol
-  // is one of his own summons and it arrives during the fight. What actually
-  // makes the two fights different is measured — the doorway and the settle,
-  // not the roster, not the health and not the clock. See the S132 ledger.)
+  // one came from the boss. `openRetreat` stays off: measured in S131-S132
+  // from the route's own doorway, it flips a seed from a win to a death.
   ['boss', 14000, null, { clearAdds: true }],
   ['wait', 240],
 
   // The Essence is not a `Pickup` and `dLoot` cannot see it at any budget —
   // `Essence` collects on its own overlap check — so it is walked onto by
   // hand, before the loot call that sweeps up the arena's Heart Container.
-  ['goto', 4, 3, 600],
+  // It stands at 7,4 in the Oracle arena, and claiming it freezes the player
+  // for the pose: a loot issued inside the freeze stands still, and the
+  // Container, a tile above, was left in the room.
+  ['goto', 7, 4, 600],
+  ['dialogue', 900],
+  ['wait', 240],
   ['dialogue', 900],
   ['loot', 1200],
   ['dialogue', 900],
@@ -1079,32 +1081,23 @@ export const ROUTE = [
   // OUT OF THE SANCTUM, AND NORTH TO THE CLIFFSIDE CISTERN
   // ======================================================================
   //
-  // THE WAY OUT OF A DUNGEON IS NOT THE WAY IN RUN BACKWARDS, and this is the
-  // first leg that has had to walk one. `travel` plans from the room graph and
-  // learns blocked edges by trying them, which is enough anywhere the rooms it
-  // is choosing between are all real — and the arena is not: Gloomtide's room
-  // is a dead end with one door, so a `travel` issued from inside it plans
-  // north into the room it is already in and oscillates until its budget is
-  // gone. Step out of the arena by hand, then let `travel` plan from the Lock
-  // Gallery, which has somewhere else to be.
-  ['goto', 4, 6, 900],
+  // Step out of the arena by hand — a `travel` issued inside a dead end with
+  // one door plans north into the room it is already in — then west through
+  // the shortcut the plate opened, into the hall where Bogmaw was beaten.
+  // The Kelp Locks are one way.
+  ['goto', 7, 9, 900],
   ['hold', ['down'], 60],
   ['wait', 90],
-
-  // THE KELP LOCKS ARE LEFT BY A WARP, NOT BY A SEAM. `travel` cannot change
-  // floors and does not model a stair, so the legs are named one at a time:
-  // east into the Locks, down its own shaft into Eel Hall, and from there the
-  // rest of the Sanctum is an ordinary walk back through doors this run has
-  // already unlocked.
-  ['travel', 4, 2, 6000],
-  ['travel', 5, 3, 8000],
-  ['travel', 4, 3, 8000],
-  ['travel', 3, 3, 6000],
+  ['travel', 2, 2, 6000],
+  ['travel', 1, 2, 6000],
+  ['travel', 1, 3, 6000],
+  ['travel', 2, 3, 6000],
+  ['travel', 3, 3, 8000],
   ['travel', 3, 4, 6000],
   ['travel', 3, 5, 6000],
   ['travel', 3, 6, 6000],
   ['travel', 3, 7, 6000],
-  ['goto', 4, 6, 900],
+  ['goto', 7, 9, 900],
   ['hold', ['down'], 90],
   ['wait', 120],
 

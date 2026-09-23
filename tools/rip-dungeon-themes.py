@@ -68,6 +68,7 @@ DG = os.path.join(ROOT, 'assets/sheets/oracle-seasons-dungeon-backgrounds.png')
 SHEETS = {
     'ruins': os.path.join(ROOT, 'assets/sheets/oracle-seasons-dungeon-ancient-ruins.png'),
     'crypt': os.path.join(ROOT, 'assets/sheets/oracle-seasons-dungeon-explorers-crypt.png'),
+    'moth': os.path.join(ROOT, 'assets/sheets/oracle-seasons-dungeon-poison-moths-lair.png'),
 }
 OUT = os.path.join(ROOT, 'src/data/tiles-dungeon-themes.js')
 
@@ -110,7 +111,6 @@ PICKS = [
     # What does tile in both axes is bevelled block grids and brick courses.
     # Every wall used by a theme is one of those.
     ('coralWall',      17,   58, 'x266 rose-bevelled block grid'),
-    ('knurlWall',    2002, 1708, 'x236 knurled gold-and-olive masonry'),
     ('emberWall',     499, 1274, 'x209 brown brick in courses'),
     ('cryptWall',    2114,  428, 'x22 violet masonry with pale capstones'),
     ('studWall',      225,  396, 'x16 blue-grey wall banded with gold studs'),
@@ -236,6 +236,54 @@ PICKS = [
     ('cArchC1',  1793,  692, 'entrance arch pillar, west', 'crypt'),
     ('cArchC2',  1809,  692, 'entrance arch, the lit way out', 'crypt'),
     ('cArchC3',  1825,  692, 'entrance arch pillar, east', 'crypt'),
+
+    # ---- THE ORACLE ROOM KIT: the Bogwater Sanctum's -----------------------
+    #
+    # Cut from the Poison Moth's Lair sheet's True Colors half: blue slate
+    # walls over an olive floor, which is the Sanctum's bog. Rooms sit on the
+    # 241x177 pitch from 1216,10. The ring is the plain room at 1698,1249 (a
+    # full 15x11 with a shutter in its east wall). The Lair frames every
+    # doorway with plain runs — its open doors are a gap in the ring, with no
+    # jambs — so there are none to cut, exactly as in the Explorer's Crypt.
+    #
+    # THE DOORS ARE THE SHEET'S OWN DOOR KEY, the strip of loose tiles the
+    # ripper laid out at 2273,1430 on a 17px pitch: shutters, key doors and the
+    # Oracle boss door, each drawn for the wall it stands in (the lit edge is
+    # the side away from the room). The sheet draws a key door for a north and
+    # a west wall only; the south and east ones are those two turned over,
+    # which is how the cartridge stores a door for the opposite wall.
+    ('bRingTL',  1698,  1249, 'ring corner, north-west', 'moth'),
+    ('bRingN',   1714,  1249, 'ring run, north wall', 'moth'),
+    ('bRingTR',  1922,  1249, 'ring corner, north-east', 'moth'),
+    ('bRingW',   1698,  1265, 'ring run, west wall', 'moth'),
+    ('bRingE',   1922,  1265, 'ring run, east wall', 'moth'),
+    ('bRingBL',  1698,  1409, 'ring corner, south-west', 'moth'),
+    ('bRingS',   1714,  1409, 'ring run, south wall', 'moth'),
+    ('bRingBR',  1922,  1409, 'ring corner, south-east', 'moth'),
+    # The Lair's solid masonry: the flat slate-blue it shows wherever there is
+    # no room. The Sanctum's thick interior walls are drawn with it.
+    ('bFill',    1216,   364, 'the flat blue of solid masonry', 'moth'),
+    ('bFloor',   1762,  1265, 'the olive swirl floor', 'moth'),
+    ('bFloorAlt', 1553,  1426, 'the darker octagon floor, from the entrance hall', 'moth'),
+    ('bBlock',   2019,   782, 'the raised magenta block', 'moth'),
+    ('bPot',     1505,  1297, 'the purple pot, on its own floor', 'moth'),
+    ('bStatue',  1537,  1442, 'the gold eye statue of the entrance hall', 'moth'),
+    ('bKeyN',    2273, 1464, 'key door in a north wall', 'moth'),
+    ('bKeyS',    2273, 1464, 'key door in a south wall', {'sheet': 'moth', 'vflip': True}),
+    ('bKeyW',    2307, 1464, 'key door in a west wall', 'moth'),
+    ('bKeyE',    2307, 1464, 'key door in an east wall', {'sheet': 'moth', 'flip': True}),
+    ('bShutN',   2273, 1430, 'shutter in a north wall, teeth into the room', 'moth'),
+    ('bShutS',   2273, 1447, 'shutter in a south wall, teeth into the room', 'moth'),
+    ('bShutW',   2307, 1430, 'shutter in a west wall, teeth into the room', 'moth'),
+    ('bShutE',   2307, 1447, 'shutter in an east wall, teeth into the room', 'moth'),
+    # THE BOSS DOOR. The golden horned skull the Oracle games hang over the
+    # door to a boss, drawn for a north wall.
+    ('bBossN',   2307, 1481, 'boss door in a north wall', 'moth'),
+    # THE WAY OUT: the entrance hall's two green pillars in the south wall with
+    # the lit step between them.
+    ('bArch1',   1553,  1586, 'entrance pillar, west', 'moth'),
+    ('bArch2',   1569,  1586, 'entrance, the lit way out', 'moth'),
+    ('bArch3',   1585,  1586, 'entrance pillar, east', 'moth'),
     ('gPot',     2195,  750, 'the Seasons pot, on its own floor'),
     ('gBlock',   2243,  798, 'the raised magenta block'),
 ]
@@ -256,7 +304,7 @@ PICKS = [
 #
 # ONLY FOR OBJECTS. Keying a floor or a wall would eat the tile, because the
 # border-connected run IS the tile.
-KEY_BACKGROUND = {'urn', 'gPot', 'cPot'}
+KEY_BACKGROUND = {'urn', 'gPot', 'cPot', 'bPot', 'bStatue'}
 
 
 def lum(c):
@@ -351,6 +399,11 @@ def flipped(pick):
     return len(pick) == 5 and isinstance(pick[4], dict) and pick[4].get('flip')
 
 
+def vflipped(pick):
+    """Is this pick the source turned upside down."""
+    return len(pick) == 5 and isinstance(pick[4], dict) and pick[4].get('vflip')
+
+
 def rotation(pick):
     """Quarter turns clockwise to apply (90 or -90), or 0."""
     return pick[4].get('rot', 0) if len(pick) == 5 and isinstance(pick[4], dict) else 0
@@ -360,6 +413,8 @@ def transform(pick, block):
     """Apply a pick's mirror and quarter turn to a 16x16 block of pixels."""
     if flipped(pick):
         block = [row[::-1] for row in block]
+    if vflipped(pick):
+        block = block[::-1]
     r = rotation(pick)
     if r == 90:       # clockwise: new[y][x] = old[15-x][y]
         block = [[block[15 - x][y] for x in range(16)] for y in range(16)]
@@ -415,6 +470,8 @@ def main():
         block = transform(pick, read(images[sheet], x, y))
         if flipped(pick):
             note += ' (mirrored)'
+        if vflipped(pick):
+            note += ' (turned over)'
         if rotation(pick):
             note += ' (turned %+d)' % rotation(pick)
         before = len({p for row in block for p in row})
