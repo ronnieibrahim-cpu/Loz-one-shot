@@ -158,30 +158,47 @@ export class Dialogue {
       ? this.choices.options.length * LINE_H + 2 : 0;
     const h = BOX_H + extra;
     const y = this.top ? HUD_H + 4 : SCREEN_H - h - 5;
-    drawBox(ctx, BOX_X, y, BOX_W, h);
+    drawTextBox(ctx, BOX_X, y, BOX_W, h);
 
     const shown = this.currentText.slice(0, Math.floor(this.chars));
     const lines = shown.split('\n');
     for (let i = 0; i < lines.length; i++) {
-      drawText(ctx, lines[i], BOX_X + PAD, y + PAD + i * LINE_H, '#181c18');
+      drawText(ctx, lines[i], BOX_X + PAD, y + PAD + i * LINE_H, TEXT_INK);
     }
 
     if (this.choices && this.chars >= this.pageLen) {
       const oy = y + PAD + LINES * LINE_H - 2;
       this.choices.options.forEach((opt, i) => {
         const ly = oy + i * LINE_H;
-        drawText(ctx, opt, BOX_X + PAD + 10, ly, '#181c18');
+        drawText(ctx, opt, BOX_X + PAD + 10, ly, TEXT_INK);
         if (i === this.choices.index) {
-          drawText(ctx, '\x02', BOX_X + PAD + 2, ly, '#181c18');
+          drawText(ctx, '\x02', BOX_X + PAD + 2, ly, TEXT_INK);
         }
       });
     } else if (this.chars >= this.pageLen) {
       // blinking "more" arrow
       if ((this.game.frame >> 3) % 2 === 0) {
-        drawText(ctx, '\x02', BOX_X + BOX_W - 11, y + h - 10, '#505850');
+        drawText(ctx, '\x02', BOX_X + BOX_W - 11, y + h - 10, TEXT_ARROW);
       }
     }
   }
+}
+
+// THE ORACLE TEXT BOX: white letters on a black box, the way Seasons, Ages
+// and Link's Awakening all set their speech. This game drew dark text on a
+// white card for its whole life, which reads as a different series.
+const TEXT_INK = '#f8f8f8';
+const TEXT_ARROW = '#f86848';
+
+/** The in-game speech box: black fill, one-pixel grey rim, clipped corners. */
+export function drawTextBox(ctx, x, y, w, h) {
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = '#585858';
+  ctx.fillRect(x + 1, y, w - 2, 1);
+  ctx.fillRect(x + 1, y + h - 1, w - 2, 1);
+  ctx.fillRect(x, y + 1, 1, h - 2);
+  ctx.fillRect(x + w - 1, y + 1, 1, h - 2);
 }
 
 /** A Game Boy style text panel: light fill, dark border, rounded corners. */

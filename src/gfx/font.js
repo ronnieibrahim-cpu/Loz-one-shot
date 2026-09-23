@@ -78,10 +78,20 @@ function decode(ch) {
   const hex = GLYPHS[ch] || GLYPHS['?'];
   const rows = new Uint8Array(8);
   for (let i = 0; i < 8; i++) rows[i] = parseInt(hex.substr(i * 2, 2), 16);
-  let ink = 0;
-  for (const r of rows) for (let b = 0; b < 8; b++) if (r & (0x80 >> b)) ink = Math.max(ink, b + 1);
-  const w = ch === ' ' ? SPACE_ADVANCE : Math.max(2, ink) + 1;
-  d = { rows, w };
+  // The ink's extent on BOTH sides. The advance used to be measured from
+  // column 0, so a glyph drawn off-centre in its cell — `i`, `.`, `!`, `l`,
+  // `:`, most of the narrow ones — carried its blank left columns into the
+  // line as extra space: "dec ide", "K ing", "awake ." in every text box in
+  // the game. `lead` is trimmed at the draw site instead, so every pair of
+  // letters sits exactly one blank column apart, which is how the GBC font
+  // reads.
+  let ink = 0, lead = 8;
+  for (const r of rows) for (let b = 0; b < 8; b++) {
+    if (r & (0x80 >> b)) { ink = Math.max(ink, b + 1); lead = Math.min(lead, b); }
+  }
+  if (ink === 0) lead = 0;
+  const w = ch === ' ' ? SPACE_ADVANCE : Math.max(1, ink - lead) + 1;
+  d = { rows, w, lead };
   decoded.set(ch, d);
   return d;
 }
@@ -131,16 +141,18 @@ export function drawText(ctx, s, x, y, color = '#181c18', shadow = null) {
     let cx = x;
     for (const ch of s) {
       const i = indexOf.get(ch) ?? indexOf.get('?');
-      ctx.drawImage(sa, i * 8, 0, 8, 8, (cx | 0) + 1, (y | 0) + 1, 8, 8);
-      cx += decode(ch).w;
+      const d = decode(ch);
+      ctx.drawImage(sa, i * 8 + d.lead, 0, 8 - d.lead, 8, (cx | 0) + 1, (y | 0) + 1, 8 - d.lead, 8);
+      cx += d.w;
     }
   }
   const a = atlas(color).canvas;
   let cx = x;
   for (const ch of s) {
     const i = indexOf.get(ch) ?? indexOf.get('?');
-    ctx.drawImage(a, i * 8, 0, 8, 8, cx | 0, y | 0, 8, 8);
-    cx += decode(ch).w;
+    const d = decode(ch);
+    ctx.drawImage(a, i * 8 + d.lead, 0, 8 - d.lead, 8, cx | 0, y | 0, 8 - d.lead, 8);
+    cx += d.w;
   }
   return cx - x;
 }

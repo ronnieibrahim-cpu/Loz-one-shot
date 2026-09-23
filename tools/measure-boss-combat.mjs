@@ -502,7 +502,7 @@ if (route && route.charms) {
 let done = false, err = null, guard = 0;
 let lastHp = null, lastQh = null;
 let rosterAtStart = null, startedAt = null;
-let peakFoes = 0;
+let peakFoes = 0, died = false;
 const timeline = [];
 while (!done && guard++ < Math.ceil(BUDGET / 20) + 400) {
   let r;
@@ -514,11 +514,26 @@ while (!done && guard++ < Math.ceil(BUDGET / 20) + 400) {
     const g = window.__game;
     // A miniboss is not `g.boss` (null in its arena), so find it by name in
     // the room's own entity list — the same list `dBoss` targets.
-    const b = miniName
+    const live = miniName
       ? g.entities.find(e => e.type === miniName && !e.dead && !e.remove)
-      : g.boss;
+      : null;
+    // THE NAMED TARGET, HELD BY REFERENCE (S137). A miniboss's win is the
+    // miniboss dying, whatever else is still standing: the route's `boss`
+    // directive names one target and does not clear the room, so the room's
+    // puzzle flag (below) cannot be the verdict — a dead Reefguard beside a
+    // live urchin read as "still alive after 18000 frames" for the whole of
+    // S136. The find above loses the entity the frame it dies, so the first
+    // one seen is kept and asked directly. A death rebuilds the room with
+    // fresh entities and leaves this one alive at its last hp, so a respawn
+    // can never read as a kill here — the fault S131 found in the route.
+    if (miniName && live && !window.__miniRef) window.__miniRef = live;
+    const ref = miniName ? window.__miniRef : null;
+    const b = miniName ? (ref && !ref.dead && !ref.remove ? ref : null) : g.boss;
+    const killed = !!(ref && (ref.dead || ref.remove || ref.hp <= 0));
     return {
-      hp: b ? b.hp : null, dead: b ? b.dead : null,
+      hp: b ? b.hp : (killed ? 0 : null), dead: b ? b.dead : (killed ? true : null),
+      killed, deaths: g.progress ? g.progress.deaths : 0,
+      roomFlag: miniFlag ? !!(g.progress && g.progress.flags && g.progress.flags[miniFlag]) : null,
       // GROUND TRUTH, and the whole reason this line exists. `g.boss` goes NULL
       // once the entity is removed, so `b.dead` reads null on a KILL and the
       // outcome fell through to "still alive after N frames (never finished)".
@@ -530,8 +545,10 @@ while (!done && guard++ < Math.ceil(BUDGET / 20) + 400) {
       // `progress.beaten` is keyed off the MAP and a miniboss never sets it,
       // so a miniboss's win is its room's `puzzle.flag` instead — the same
       // fact that pays out the Piece of Heart.
+      // For a miniboss this is now the KILL; the flag rides alongside as
+      // `roomFlag` and the summary says which of the two happened.
       beaten: miniFlag
-        ? !!(g.progress && g.progress.flags && g.progress.flags[miniFlag])
+        ? killed
         : !!(g.progress && g.progress.beaten && g.progress.beaten[id]),
       qh: g.progress ? g.progress.hearts : null, frame: g.frame,
       // WHO ELSE IS IN THE ROOM. The claim that cost S131 its result was that
@@ -547,7 +564,32 @@ while (!done && guard++ < Math.ceil(BUDGET / 20) + 400) {
   }
   if (m.hp !== lastHp || m.qh !== lastQh) { timeline.push(m); lastHp = m.hp; lastQh = m.qh; }
   if (m.foes.length > peakFoes) peakFoes = m.foes.length;
-  if (m.beaten) { timeline.push(m); break; }
+  if (m.deaths > 0) { died = true; timeline.push(m); break; }
+  if (m.beaten) {
+    timeline.push(m);
+    // A miniboss's room flag pays out when the LAST enemy dies, which may be
+    // some frames after the named one. Keep pumping briefly so a fight that
+    // does clear the room is reported as having done so, rather than racing
+    // the flag; stop early the moment it lands.
+    //
+    // And the fight is not over the frame the target dies: a projectile it
+    // threw is still in the air. Tideshade's last shot lands seven frames
+    // after its death on every seed — three quarter-hearts the old loop,
+    // which ran on until the flag, counted and a stop-at-the-kill would not.
+    // So both kinds of fight run 60 more frames and the health is read after.
+    for (let k = 0; k < (mini ? 30 : 3); k++) {
+      const r2 = await page.evaluate(n => window.__rp.pump(n), 20);
+      const s2 = await page.evaluate(fl => ({
+        f: fl ? !!window.__game.progress.flags[fl] : false,
+        qh: window.__game.progress.hearts, deaths: window.__game.progress.deaths,
+        frame: window.__game.frame }), mini ? mini.flag : null);
+      if (s2.deaths > 0) { died = true; break; }
+      if (s2.f) m.roomFlag = true;
+      if (k >= 2) { m.qh = s2.qh; m.frame = s2.frame; }
+      if ((k >= 2 && (!mini || m.roomFlag)) || r2.done) break;
+    }
+    break;
+  }
   if (m.qh === 0 || m.dead) break;
 }
 
@@ -566,13 +608,17 @@ for (const d of dmgLog) console.log('  ' + JSON.stringify(d));
 
 const final = timeline[timeline.length - 1] || {};
 const startHp = timeline[0] ? timeline[0].hp : null;
-const won = !!(final.beaten || final.dead);
+const won = !died && !!(final.beaten || final.dead);
 // The last hp anyone actually saw. A killed boss's entity is gone by the final
 // sample, so reading `final.hp` alone printed "? of 44" for a flawless win.
 const lastSeenHp = won ? 0 : [...timeline].reverse().find(t => t.hp != null)?.hp;
 console.log('\n=== SUMMARY ===');
-console.log(`outcome: ${won ? 'BOSS DIED — the actor won this fight'
-  : final.qh === 0 ? 'PLAYER DIED' : `still alive after ${BUDGET} frames (never finished)`}`);
+console.log(`outcome: ${won ? (mini ? 'MINIBOSS DIED — the actor won this fight' : 'BOSS DIED — the actor won this fight')
+  : died || final.qh === 0 ? 'PLAYER DIED' : `still alive after ${BUDGET} frames (never finished)`}`);
+// Which of the two a miniboss fight did, said out loud: the named target dying
+// is the win, and the room flag is the room — only the second pays the piece.
+if (mini) console.log(`room flag \`${mini.flag}\`: ${final.roomFlag ? 'SET — the room was cleared too'
+  : won ? 'NOT set — the miniboss died and something else in the room is still alive' : 'not set'}`);
 console.log(`boss damage dealt: ${startHp != null && lastSeenHp != null ? startHp - lastSeenHp : '?'} of ${startHp}`);
 console.log(`player damage taken: ${dmgLog.reduce((s, d) => s + d.lost, 0)} quarter-hearts, in ${dmgLog.length} hits`
   + ` (${dmgLog.filter(d => d.isProjectile).length} projectile, ${dmgLog.filter(d => !d.isProjectile).length} contact)`);
@@ -580,6 +626,11 @@ console.log(`frames: ${final.frame}`);
 console.log(`most foes alive at once during the fight: ${peakFoes}`
   + ` (the arena started with ${rosterAtStart ? rosterAtStart.length : '?'})`);
 if (won) console.log(`player finished on ${final.qh} of ${QH} quarter-hearts`);
+// One line per run, so a five-seed sweep can be read without assembling it
+// by hand the way S136 had to.
+console.log(`RESULT ${MINI || dungeonId} seed=${SEED} ${route ? 'arena=route' : 'arena=empty'} `
+  + `${won ? 'WIN qh=' + final.qh : died || final.qh === 0 ? 'DEAD' : 'UNFINISHED'}`
+  + `${mini ? ' flag=' + (final.roomFlag ? 1 : 0) : ''} dealt=${startHp != null && lastSeenHp != null ? startHp - lastSeenHp : '?'}/${startHp}`);
 if (errs.length) console.log('page errors: ' + errs.slice(0, 3).join(' | '));
 
 await browser.close(); server.close();
