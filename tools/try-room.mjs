@@ -1,4 +1,20 @@
-// Scratch: run a few route directives in one room and report state.
+// Run a handful of route directives in ONE room and print where they left
+// the player. NOT a checker — it asserts nothing.
+//
+// The full playthrough is the only proof the game can be finished, and it is
+// also three minutes and a hundred and eighty thousand frames long, so when a
+// route step goes wrong in one room the question "does THIS work here" wants
+// an answer in five seconds, not three minutes. This is that: the same
+// `tools/actor-runtime.mjs` directives the route uses, the same `setup` shape
+// replays and measure-boss-combat use, one room.
+//
+//   node tools/try-room.mjs '{"setup":{"seed":20260806,"items":{"sword":1,
+//     "conch":1,"anchor":1},"equipA":"anchor","equipB":"conch","maxHearts":12,
+//     "hearts":12,"tide":0,"enter":["d1",0,4,3,217,81,"left"]},
+//     "steps":[["anchor",4,4,1600],["use","conch",2,140],["goto",3,8,600]]}'
+//
+// S137 found the Two Gauges' Piece of Heart this way — reachable, and the
+// drop sweep giving up on it one pixel short.
 import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
 import { extname, join, normalize, resolve, dirname } from 'node:path';
@@ -15,7 +31,8 @@ const server = createServer(async (req, res) => {
 });
 const PORT = 30000 + Math.floor(Math.random() * 20000);
 await new Promise(r => server.listen(PORT, r));
-const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
+const browser = await chromium.launch().catch(() =>
+  chromium.launch({ executablePath: process.env.CHROMIUM_PATH || '/opt/pw-browsers/chromium' }));
 const page = await browser.newPage();
 page.on('pageerror', e => console.log('PAGEERROR', e.message));
 await page.goto(`http://localhost:${PORT}/index.html?seed=20260806`);
