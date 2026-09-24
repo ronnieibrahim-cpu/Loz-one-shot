@@ -746,6 +746,13 @@ const ENEMY_INVULN_FRAMES = 24;
 /** f — how long an ordinary enemy flickers after a hit. guessed. */
 const ENEMY_FLICKER_FRAMES = 24;
 
+/** f — how many frames each beat of an enemy's hit flash lasts: its own
+ *  colours for this many, the `hitflash` palette for this many, and so on
+ *  for the whole flicker. guessed; the same two-frame beat the old on/off
+ *  blink used, so the rhythm is unchanged and only what shows on the "off"
+ *  beat is new. */
+const ENEMY_HIT_FLASH_BEAT = 2;
+
 /** f — how long an ordinary enemy with a `spec.deathFrame` lingers showing it
  *  before removal. guessed, following BOSS_DEATH_FRAMES's own comment as a
  *  reference point: a boss gets 72 frames of death throes plus periodic
@@ -1935,6 +1942,7 @@ __exports["PLAYER_KNOCK_DIST"] = PLAYER_KNOCK_DIST;
 __exports["PLAYER_KNOCK_FRAMES"] = PLAYER_KNOCK_FRAMES;
 __exports["ENEMY_INVULN_FRAMES"] = ENEMY_INVULN_FRAMES;
 __exports["ENEMY_FLICKER_FRAMES"] = ENEMY_FLICKER_FRAMES;
+__exports["ENEMY_HIT_FLASH_BEAT"] = ENEMY_HIT_FLASH_BEAT;
 __exports["ENEMY_DEATH_FRAMES"] = ENEMY_DEATH_FRAMES;
 __exports["ENEMY_ATTACK_FRAMES"] = ENEMY_ATTACK_FRAMES;
 __exports["ENEMY_KNOCK_FRAMES"] = ENEMY_KNOCK_FRAMES;
@@ -2904,6 +2912,12 @@ const PALETTES = {
   enemyy:  ['#f8e890', '#d8b040', '#907018', '#281c08'],   // wasp/electric
   slime:   ['#b8f8d8', '#58d090', '#207850', '#082818'],
   shadow:  ['#8878a8', '#584870', '#302848', '#0a0818'],
+  // THE HIT FLASH. The Oracles show a struck enemy by swapping its colours
+  // for a few frames rather than hiding it, so every enemy and boss is drawn
+  // in this on alternate beats of its flicker (Entity.draw). White, the enemy
+  // sheet's own tan and red, and black: all four come off the True Colors
+  // half of oracle-seasons-enemies.png. Which slot takes which is guessed.
+  hitflash: ['#ffffff', '#ffd68c', '#ff0829', '#000000'],
 
   // A HOLE IN THE GROUND, NOT A HOLE IN THE SCREEN. `chasm` drew `dPit`'s art
   // in the `abyss` palette, whose darkest tone is #0a0c1c, and `dPit`'s art is
@@ -5809,7 +5823,7 @@ const { TILE } = __require("core/screen.js");
 const { sprites } = __require("gfx/art.js");
 const { FP_ONE, sp, toPx } = __require("core/fixed.js");
 const { F } = __require("world/tileset.js");
-const { ENEMY_INVULN_FRAMES, ENEMY_FLICKER_FRAMES, ENEMY_KNOCK_FRAMES, KNOCK_DEFAULT, HITSTOP_HIT_FRAMES } = __require("data/feel.js");
+const { ENEMY_INVULN_FRAMES, ENEMY_FLICKER_FRAMES, ENEMY_KNOCK_FRAMES, KNOCK_DEFAULT, HITSTOP_HIT_FRAMES, ENEMY_HIT_FLASH_BEAT } = __require("data/feel.js");
 
 const ENTITY_TYPES = new Map();
 
@@ -5955,11 +5969,18 @@ class Entity {
   update(game) { }
 
   draw(ctx, game, ox, oy) {
-    if (this.flicker > 0 && (this.flicker >> 1) % 2 === 0) return;
+    // A struck enemy FLASHES, the way the Oracles draw it: on the off beat it
+    // is drawn in `hitflash` instead of being hidden, so it never leaves the
+    // screen while it is being hit. Anything else still blinks out.
+    let pal = this.pal;
+    if (this.flicker > 0 && Math.floor(this.flicker / ENEMY_HIT_FLASH_BEAT) % 2 === 0) {
+      if (!this.isEnemy) return;
+      pal = 'hitflash';
+    }
     const name = this.spriteName ? this.spriteName(game) : this.sprite;
     if (!name) return;
     sprites.draw(ctx, name, ox + this.x, oy + this.y - this.z, {
-      pal: this.pal, flipX: this.flipX, alpha: this.alpha,
+      pal, flipX: this.flipX, alpha: this.alpha,
     });
   }
 

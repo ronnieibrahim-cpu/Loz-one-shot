@@ -227,6 +227,13 @@ export const ENEMY_INVULN_FRAMES = 24;
 /** f — how long an ordinary enemy flickers after a hit. guessed. */
 export const ENEMY_FLICKER_FRAMES = 24;
 
+/** f — how many frames each beat of an enemy's hit flash lasts: its own
+ *  colours for this many, the `hitflash` palette for this many, and so on
+ *  for the whole flicker. guessed; the same two-frame beat the old on/off
+ *  blink used, so the rhythm is unchanged and only what shows on the "off"
+ *  beat is new. */
+export const ENEMY_HIT_FLASH_BEAT = 2;
+
 /** f — how long an ordinary enemy with a `spec.deathFrame` lingers showing it
  *  before removal. guessed, following BOSS_DEATH_FRAMES's own comment as a
  *  reference point: a boss gets 72 frames of death throes plus periodic

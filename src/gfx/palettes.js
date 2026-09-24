@@ -73,6 +73,12 @@ export const PALETTES = {
   enemyy:  ['#f8e890', '#d8b040', '#907018', '#281c08'],   // wasp/electric
   slime:   ['#b8f8d8', '#58d090', '#207850', '#082818'],
   shadow:  ['#8878a8', '#584870', '#302848', '#0a0818'],
+  // THE HIT FLASH. The Oracles show a struck enemy by swapping its colours
+  // for a few frames rather than hiding it, so every enemy and boss is drawn
+  // in this on alternate beats of its flicker (Entity.draw). White, the enemy
+  // sheet's own tan and red, and black: all four come off the True Colors
+  // half of oracle-seasons-enemies.png. Which slot takes which is guessed.
+  hitflash: ['#ffffff', '#ffd68c', '#ff0829', '#000000'],
 
   // A HOLE IN THE GROUND, NOT A HOLE IN THE SCREEN. `chasm` drew `dPit`'s art
   // in the `abyss` palette, whose darkest tone is #0a0c1c, and `dPit`'s art is

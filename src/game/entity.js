@@ -21,7 +21,7 @@ import { FP_ONE, sp, toPx } from '../core/fixed.js';
 import { F } from '../world/tileset.js';
 import {
   ENEMY_INVULN_FRAMES, ENEMY_FLICKER_FRAMES, ENEMY_KNOCK_FRAMES, KNOCK_DEFAULT,
-  HITSTOP_HIT_FRAMES,
+  HITSTOP_HIT_FRAMES, ENEMY_HIT_FLASH_BEAT,
 } from '../data/feel.js';
 
 export const ENTITY_TYPES = new Map();
@@ -168,11 +168,18 @@ export class Entity {
   update(game) { }
 
   draw(ctx, game, ox, oy) {
-    if (this.flicker > 0 && (this.flicker >> 1) % 2 === 0) return;
+    // A struck enemy FLASHES, the way the Oracles draw it: on the off beat it
+    // is drawn in `hitflash` instead of being hidden, so it never leaves the
+    // screen while it is being hit. Anything else still blinks out.
+    let pal = this.pal;
+    if (this.flicker > 0 && Math.floor(this.flicker / ENEMY_HIT_FLASH_BEAT) % 2 === 0) {
+      if (!this.isEnemy) return;
+      pal = 'hitflash';
+    }
     const name = this.spriteName ? this.spriteName(game) : this.sprite;
     if (!name) return;
     sprites.draw(ctx, name, ox + this.x, oy + this.y - this.z, {
-      pal: this.pal, flipX: this.flipX, alpha: this.alpha,
+      pal, flipX: this.flipX, alpha: this.alpha,
     });
   }
 
