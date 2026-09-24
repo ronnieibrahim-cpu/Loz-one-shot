@@ -5,6 +5,7 @@ must name the file and the frame). Not shipped in the build.
 
 | File | What it is | Frame-exact? |
 |---|---|---|
+| `frames/*.png` | Clean still screens cut from the TAS by `tools/grab-footage-frames.py` (median of each 4x4 block, colours clustered back to the screen's palette): the file select (video frame 17691), the save prompt (6725), the item page (4570) and the developer card (6760). Read by `tools/rip-screens.py`. | — |
 | `seasons-tas-rooster-adventure.mp4` | Oracle of Seasons (Japanese cartridge), a tool-assisted speedrun using the "Rooster Adventure" glitch, supplied by the human at S146. 5:05, 17 MB. | Yes: 59.73 fps (the GBC's own rate, one video frame per game frame) at 640x576, exactly 4x the 160x144 screen. Scale with `flags=neighbor` to get the real pixels back. |
 
 A TAS plays frame-perfect inputs and cuts actions short on purpose, so

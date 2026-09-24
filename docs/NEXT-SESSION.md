@@ -18,6 +18,33 @@
 - The route re-played end to end: check-playthrough 42/42, never died, low
   water 1 qh (see below). Replays re-recorded, 51/51.
 
+### Then, on the human's word: the start screens, the menus, the buildings
+- TITLE: the Seasons opening as the footage plays it — a pale developer card
+  (ours: fan-game credits), a 21-frame fade to white, 22 frames of white, and
+  the logo cut in (TITLE_FADE_FRAMES / TITLE_WHITE_FRAMES measured). The logo
+  is the Seasons title sheet's own (tools/rip-screens.py): SEASONS lifted out
+  of the plaque and TIDES set in (E and S are the plaque's own letters; T, I
+  and D drawn to its serif), the Rod's orb taken out and the Moon Conch drawn
+  in its vines, the copyright line removed. Any press on card or logo goes to
+  the file select: the actor's one press still gets there, so the run from
+  the title is not a frame longer.
+- FILE SELECT, ERASE and the SAVE tab use the Seasons bark frame, banner,
+  plaques and red-seed cursor, cut out of the footage
+  (tools/grab-footage-frames.py -> assets/footage/frames/, needs
+  `pip install imageio-ffmpeg numpy`; rip-screens reads the PNGs). The save
+  prompt has Seasons' three choices (keep playing / save / save and quit),
+  cursor on the middle one.
+- PAUSE MENU: the Seasons item page — white page, olive block frame, the
+  strip naming the item under the cursor, a corner-bracket cursor. Our five
+  pages keep their names on a plate let into the top of the frame.
+- BUILDINGS: the shop and both houses are Horon Village's, off the spring map
+  (rip-terrain SP_TOWN). The Subrosian shop had no front row at all — the
+  missing facade and door. The shop's signed row is two stacked tiles (the
+  Maku trick); check-ground now skips a SOLID stacked layer. bHouseShut is the
+  green house with a window where the door was (Horon has no shut door).
+- NOT DONE: house INTERIORS are still the grey stone room. No sheet or
+  footage in the repo shows a Seasons house inside — ask the human for one.
+
 ### Route and actor changes it took (tools/)
 - dBoss backs STRAIGHT off now (`retreatMask`); `{ diagRetreat: true }`
   restores the diagonal per fight (the Brinehulk wants it). dFight kept

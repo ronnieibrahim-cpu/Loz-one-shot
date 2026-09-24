@@ -24,6 +24,8 @@ regenerate byte-identical output.
 | `custom-oracle-style-overworld.png` | fan-made, Oracle style | community edit | not yet used — overworld tiles |
 | `oracle-seasons-hud-gear.png` | Oracle of Seasons | Mister Mike | `tools/rip-hud.py` -> `src/data/sprites-hud.js` |
 | `oracle-seasons-maku-tree.png` | Oracle of Seasons | Mister Mike | `tools/rip-maku.py` -> `src/data/tiles-maku.js` — the Maku grove screen and her face |
+| `oracle-seasons-title-screen.gif` | Oracle of Seasons | Tails585 | `tools/rip-screens.py` -> `src/data/screens-seasons.js` — the logo screen (TIDES set in its plaque, the orb swapped for the Moon Conch at run time) and PRESS START |
+| `oracle-seasons-overworld-spring.png` (Horon Village) | Oracle of Seasons | Mister Mike | `tools/rip-terrain.py` — the shop and the houses of the town kit (S147) |
 | `oracle-ages-overworld.png` | Oracle of Ages | Mister Mike | `tools/rip-terrain.py` -> `src/data/tiles-terrain.js` — shallow water, bank edges, and the four current tiles (bottom-left loose-tile strip) |
 
 All obtained via spriters-resource.com. Most sheets carry two halves: "GBC LCD

@@ -18,6 +18,18 @@ import { MAPS, getMap, hasRoom, getRoom, roomKeyAt } from '../world/maps.js';
 import { TIDE_NAMES, TIDE_COUNT } from './tide.js';
 import { tradeName, tradeIcon } from '../data/trade.js';
 import { MENU_DESC_DWELL, MENU_DESC_HOLD } from '../data/feel.js';
+import { drawScreen, screenImage } from '../gfx/screens.js';
+
+// THE SEASONS INVENTORY PAGE (tools/rip-screens.py, off the footage): a white
+// page in a frame of olive blocks, a divider, and a strip under it where the
+// source names the item under the cursor. Everything below draws dark on
+// that white, in the page's own ink.
+const PAGE = { x: 8, y: 24, w: 144, h: 88 };   // the white page
+const STRIP_Y = 126;                             // the line in the strip
+const INK = '#202020';                           // body text
+const BLUE = '#285088';                          // the strip's ink, off the page
+const DIM = '#98a0a0';                           // what is not there yet
+const CURSOR = '#285088';
 
 /**
  * The pixel width a description is wrapped to, per panel. Exported because
@@ -27,7 +39,7 @@ import { MENU_DESC_DWELL, MENU_DESC_HOLD } from '../data/feel.js';
  * number is a checker that stops describing the game the moment the panel
  * moves.
  */
-export const DESC_WRAP_W = { item: SCREEN_W - 22, charm: SCREEN_W - 20 };
+export const DESC_WRAP_W = { item: SCREEN_W - 28, charm: SCREEN_W - 28 };
 
 // The Chartstone's pips, LOW to HIGH. Sand, shallow, deep — the same three
 // tones the water itself is drawn in, so the mark needs no key to read.
@@ -208,7 +220,7 @@ export class Menu {
     this.cursor = 0;
     this.caseRow = 1;        // index into CASE_ROWS; starts on MID, the one you own
     this.poolCursor = 0;
-    this.saveCursor = 0;
+    this.saveCursor = 1;
     this.message = '';
     this.messageTime = 0;
     this.descKey = '';
@@ -402,9 +414,12 @@ export class Menu {
   updateSave() {
     const g = this.game, i = g.input;
     if (i.pressed('b')) { this.tab = 0; g.audio.sfx('cursor'); return; }
-    if (i.pressed('up') || i.pressed('down')) { this.saveCursor = 1 - this.saveCursor; g.audio.sfx('cursor'); }
+    if (i.pressed('up')) { this.saveCursor = (this.saveCursor + 2) % 3; g.audio.sfx('cursor'); }
+    if (i.pressed('down')) { this.saveCursor = (this.saveCursor + 1) % 3; g.audio.sfx('cursor'); }
     if (i.pressed('a')) {
       if (this.saveCursor === 0) {
+        this.close();
+      } else if (this.saveCursor === 1) {
         const ok = g.save();
         g.audio.sfx(ok ? 'confirm' : 'deny');
         this.flash(ok ? 'Saved.' : 'Could not save.');
@@ -422,66 +437,70 @@ export class Menu {
   // ------------------------------------------------------------------- draw
 
   draw(ctx) {
-    const g = this.game;
-    ctx.fillStyle = '#080c10';
-    ctx.fillRect(0, HUD_H, VIEW_W, VIEW_H);
+    if (this.tab === 4) { this.drawSave(ctx); return; }
+    // The page, from under the HUD down: the HUD above it is the game's own.
+    const inv = screenImage('inventory');
+    ctx.drawImage(inv.canvas, 0, HUD_H, SCREEN_W, SCREEN_H - HUD_H, 0, HUD_H, SCREEN_W, SCREEN_H - HUD_H);
 
-    // tab strip
-    const tw = Math.floor(SCREEN_W / TABS.length);
-    for (let i = 0; i < TABS.length; i++) {
-      const on = i === this.tab;
-      ctx.fillStyle = on ? '#586878' : '#182028';
-      ctx.fillRect(i * tw, HUD_H + 1, tw - 1, 11);
-      drawTextCentered(ctx, TABS[i], i * tw + tw / 2, HUD_H + 3, on ? '#f8f8e8' : '#687888');
-    }
+    // Which page this is, on a white plate let into the top of the frame.
+    // Seasons turns its pages with SELECT and names none of them; this game
+    // has five, and a page nobody can name is a page nobody finds again.
+    const label = TABS[this.tab];
+    const lw = textWidth(label) + 8;
+    ctx.fillStyle = '#f8f8f8';
+    ctx.fillRect(Math.round(SCREEN_W / 2 - lw / 2), HUD_H, lw, 8);
+    drawTextCentered(ctx, label, SCREEN_W / 2, HUD_H, BLUE);
 
-    if (this.tab === 0) this.drawItems(ctx);
-    else if (this.tab === 1) this.drawMap(ctx);
-    else if (this.tab === 2) this.drawCharms(ctx);
-    else if (this.tab === 3) this.drawQuest(ctx);
-    else this.drawSave(ctx);
+    let strip = null;
+    if (this.tab === 0) strip = this.drawItems(ctx);
+    else if (this.tab === 1) strip = this.drawMap(ctx);
+    else if (this.tab === 2) strip = this.drawCharms(ctx);
+    else strip = this.drawQuest(ctx);
 
-    if (this.messageTime > 0) {
-      drawTextCentered(ctx, this.message, SCREEN_W / 2, SCREEN_H - 12, '#a8f0f8');
-    } else {
-      drawTextCentered(ctx, 'SELECT: tab   START: close', SCREEN_W / 2, SCREEN_H - 11, '#485868');
+    const line = this.messageTime > 0 ? this.message : strip;
+    if (line) drawTextCentered(ctx, line, SCREEN_W / 2, STRIP_Y, BLUE);
+    else drawTextCentered(ctx, 'SELECT: page  START: close', SCREEN_W / 2, STRIP_Y, DIM);
+  }
+
+  /** A bracket at each corner of a cell, the way Seasons marks its cursor. */
+  drawCursor(ctx, x, y, w, h) {
+    ctx.fillStyle = CURSOR;
+    for (const [cx, cy, dx, dy] of [[x, y, 1, 1], [x + w - 1, y, -1, 1], [x, y + h - 1, 1, -1], [x + w - 1, y + h - 1, -1, -1]]) {
+      ctx.fillRect(Math.min(cx, cx + dx * 2), cy, 3, 1);
+      ctx.fillRect(cx, Math.min(cy, cy + dy * 2), 1, 3);
     }
   }
 
   drawItems(ctx) {
     const g = this.game, p = g.progress;
     const list = this.items;
-    const x0 = 8, y0 = HUD_H + 17, cw = 29, ch = 22;
+    const x0 = PAGE.x + 4, y0 = PAGE.y + 3, cw = 28, ch = 20;
     list.forEach((it, i) => {
       const cx = x0 + (i % COLS) * cw, cy = y0 + Math.floor(i / COLS) * ch;
-      const sel = i === this.cursor;
-      ctx.fillStyle = sel ? '#586878' : '#182028';
-      ctx.fillRect(cx, cy, cw - 3, ch - 3);
-      sprites.draw(ctx, itemIcon(it.id, it.level), cx + 3, cy + 1, { pal: it.def.pal });
-      if (p.equipB === it.id) drawText(ctx, 'B', cx + cw - 9, cy + 10, '#a8f0f8');
-      if (p.equipA === it.id) drawText(ctx, 'A', cx + cw - 9, cy + 1, '#f8e890');
+      sprites.draw(ctx, itemIcon(it.id, it.level), cx + 2, cy + 2, { pal: it.def.pal });
+      if (p.equipB === it.id) drawText(ctx, 'B', cx + 19, cy + 10, BLUE);
+      if (p.equipA === it.id) drawText(ctx, 'A', cx + 19, cy + 1, '#c01830');
+      if (i === this.cursor) this.drawCursor(ctx, cx, cy, cw - 2, ch);
     });
     const sel = list[this.cursor];
-    const infoY = SCREEN_H - 38;
-    drawPanel(ctx, 4, infoY, SCREEN_W - 8, 24);
-    if (sel) {
-      drawText(ctx, itemName(sel.id, sel.level), 8, infoY + 3, '#f8f8e8');
-      const w = this.descWindow(sel.def.desc, DESC_WRAP_W.item);
-      drawText(ctx, w.lines[0] || '', 8, infoY + 13, '#a8b0a0');
-      if (w.more) this.drawScrollMark(ctx, SCREEN_W - 12, infoY + 13, w);
-    } else {
-      drawText(ctx, 'No items yet.', 8, infoY + 3, '#a8b0a0');
+    if (!sel) {
+      drawText(ctx, 'No items yet.', PAGE.x + 6, PAGE.y + 6, DIM);
+      return null;
     }
+    const w = this.descWindow(sel.def.desc, DESC_WRAP_W.item);
+    drawText(ctx, w.lines[0] || '', PAGE.x + 4, PAGE.y + PAGE.h - 10, INK);
+    if (w.more) this.drawScrollMark(ctx, PAGE.x + PAGE.w - 6, PAGE.y + PAGE.h - 10, w);
+    return itemName(sel.id, sel.level);
   }
 
   /** Two different screens that used to be one loop. See each one's own note. */
   drawMap(ctx) {
     const g = this.game;
     const m = g.map;
-    if (!m) return;
-    drawTextCentered(ctx, m.name, SCREEN_W / 2, HUD_H + 15, '#f8f8e8');
+    if (!m) return null;
     if (m.kind === 'dungeon') this.drawDungeonMap(ctx, m);
     else this.drawWorldMap(ctx, m);
+    return m.name;
   }
 
   /**
@@ -494,7 +513,7 @@ export class Menu {
     const g = this.game;
     const tw = 10, th = 8;
     const W = m.w * tw, H = m.h * th;
-    const ox = Math.round((SCREEN_W - W) / 2), oy = HUD_H + 28;
+    const ox = Math.round((SCREEN_W - W) / 2), oy = PAGE.y + Math.max(2, Math.round((PAGE.h - H) / 2));
 
     // A frame, so the sea reads as ending at a coast rather than at the edge
     // of the drawing.
@@ -550,11 +569,12 @@ export class Menu {
 
     // The key, only once there is something on the map to key.
     if (Object.keys(g.progress.secrets).some(k => k.startsWith('seen:' + m.id + ':'))) {
+      // In the strip's right-hand end, under the page: the map fills the page.
       ctx.fillStyle = '#101820';
-      ctx.fillRect(5, SCREEN_H - 25, 3, 3);
+      ctx.fillRect(PAGE.x + PAGE.w - 32, STRIP_Y + 2, 3, 3);
       ctx.fillStyle = '#f0c048';
-      ctx.fillRect(6, SCREEN_H - 24, 1, 1);
-      drawText(ctx, 'RUIN', 11, SCREEN_H - 26, '#a8b0a0');
+      ctx.fillRect(PAGE.x + PAGE.w - 31, STRIP_Y + 3, 1, 1);
+      drawText(ctx, 'RUIN', PAGE.x + PAGE.w - 26, STRIP_Y, DIM);
     }
   }
 
@@ -568,7 +588,7 @@ export class Menu {
     const floor = this.mapFloor || 0;
     const cell = 10;
     const gw = m.w * cell, gh = m.h * cell;
-    const ox = Math.round((SCREEN_W - gw) / 2), oy = HUD_H + 28;
+    const ox = Math.round((SCREEN_W - gw) / 2), oy = PAGE.y + 11;
 
     // A MULTI-SCREEN ROOM IS ONE CELL SPANNING SEVERAL, as the source's dungeon
     // maps draw them. The grid is walked cell by cell, but a cell that is
@@ -589,7 +609,7 @@ export class Menu {
         const seen = g.progress.secrets['seen:' + m.id + ':' + floor + ',' + x + ',' + y];
         if (!seen && !haveMap) continue;
         const here = g.room && g.room.rx === x && g.room.ry === y && g.room.floor === floor;
-        ctx.fillStyle = here ? '#f8f8e8' : (seen ? '#58b0e0' : '#304858');
+        ctx.fillStyle = here ? '#e04858' : (seen ? '#58b0e0' : '#b8c8d0');
         ctx.fillRect(ox + x * cell, oy + y * cell, sw * cell - 1, sh * cell - 1);
 
         // THE CHARTSTONE. A room is marked with one pip per tide level that
@@ -608,15 +628,15 @@ export class Menu {
       }
     }
     if (isDungeon) {
-      drawText(ctx, 'FLOOR ' + (floor + 1) + '/' + m.floors, 6, SCREEN_H - 24, '#a8b0a0');
-      if (!haveMap) drawText(ctx, 'No map found', 6, SCREEN_H - 34, '#e04858');
+      drawText(ctx, 'FLOOR ' + (floor + 1) + '/' + m.floors, PAGE.x + 2, PAGE.y + 1, INK);
+      if (!haveMap) drawText(ctx, 'NO MAP', PAGE.x + 2, PAGE.y + PAGE.h - 9, '#c01830');
       if (haveChart) {
         // The key, in the same stacking order as the pips.
-        let kx = SCREEN_W - 46;
+        let kx = PAGE.x + PAGE.w - 40;
         for (let lv = 2; lv >= 0; lv--) {
           ctx.fillStyle = TIDE_PIP[lv];
-          ctx.fillRect(kx, SCREEN_H - 24, 2, 2);
-          drawText(ctx, TIDE_NAMES[lv][0], kx + 4, SCREEN_H - 26, '#a8b0a0');
+          ctx.fillRect(kx, PAGE.y + 3, 2, 2);
+          drawText(ctx, TIDE_NAMES[lv][0], kx + 4, PAGE.y + 1, INK);
           kx += 13;
         }
       }
@@ -625,27 +645,25 @@ export class Menu {
 
   drawQuest(ctx) {
     const g = this.game, p = g.progress;
-    let y = HUD_H + 16;
-    drawText(ctx, 'ESSENCES OF THE TIDE', 6, y, '#a8f0f8'); y += 11;
+    const x = PAGE.x + 4;
+    let y = PAGE.y + 3;
+    drawText(ctx, 'ESSENCES OF THE TIDE', x, y, BLUE); y += 10;
     for (let i = 1; i <= essenceCount(); i++) {
       const got = p.essences.includes(i);
-      sprites.draw(ctx, 'p_essence' + i + (got ? '_0' : '_dim'), 6 + (i - 1) * 18, y, { pal: got ? 'essence' + i : 'uidark' });
+      sprites.draw(ctx, 'p_essence' + i + (got ? '_0' : '_dim'), x + (i - 1) * 18, y, { pal: got ? 'essence' + i : 'uidark' });
     }
-    y += 20;
+    y += 19;
     drawText(ctx, `Hearts ${Math.ceil(p.hearts / HEART_UNITS)}/${Math.ceil(p.maxHearts / HEART_UNITS)}`
-      + `   Pieces ${p.heartPieces}/4`, 6, y, '#f8f8e8');
-    y += 11;
-    drawText(ctx, `Rupees ${p.rupees}   Deaths ${p.deaths}`, 6, y, '#f8f8e8');
-    y += 13;
-    drawText(ctx, 'SCRIMSHAW ' + ownedCharms(p).length + '/' + CHARM_COUNT, 6, y, '#a8f0f8');
+      + `   Pieces ${p.heartPieces}/4`, x, y, INK);
+    y += 10;
+    drawText(ctx, `Rupees ${p.rupees}   Deaths ${p.deaths}`, x, y, INK);
+    y += 12;
+    drawText(ctx, 'SCRIMSHAW ' + ownedCharms(p).length + '/' + CHARM_COUNT, x, y, BLUE);
     y += 10;
     drawText(ctx, `Blanks ${p.blanks || 0}`
       + (p.carve ? `   Carving: ${p.carve.turns} tide${p.carve.turns === 1 ? '' : 's'}` : ''),
-      6, y, '#f8f8e8');
-    // Tighter than the gaps above it: this is the last block on a 144-pixel
-    // screen and the footer sits at SCREEN_H - 11, so a 16-pixel icon on a
-    // 13-pixel step overlaps 'SELECT: tab'.
-    y += 9;
+      x, y, INK);
+    y += 11;
 
     // The Coastwise Chain. This screen is the ONLY place the player can look up
     // what they are carrying — a trade item is not in the item grid, because it
@@ -653,15 +671,15 @@ export class Menu {
     // The line is drawn only once the chain has started, so a new game's quest
     // screen does not advertise a quest nobody has met yet.
     if (p.trade && p.trade.stage) {
-      drawText(ctx, 'COASTWISE CHAIN', 6, y, '#a8f0f8');
-      y += 10;
       if (p.trade.item) {
-        sprites.draw(ctx, tradeIcon(p.trade.item), 4, y - 4);
-        drawText(ctx, tradeName(p.trade.item), 22, y, '#f8f8e8');
+        sprites.draw(ctx, tradeIcon(p.trade.item), x, y - 4);
+        drawText(ctx, tradeName(p.trade.item), x + 18, y, INK);
       } else {
-        drawText(ctx, 'Nothing left to carry.', 6, y, '#687888');
+        drawText(ctx, 'Nothing left to carry.', x, y, DIM);
       }
+      return 'COASTWISE CHAIN';
     }
+    return null;
   }
 
   // ------------------------------------------------------------ scrimshaw
@@ -676,7 +694,8 @@ export class Menu {
     const g = this.game, p = g.progress;
     const live = g.scrim.liveSlots;
     const size = caseSize(p);
-    let y = HUD_H + 16;
+    const x = PAGE.x + 2;
+    let y = PAGE.y + 4;
 
     for (let r = 0; r < CASE_ROWS.length; r++) {
       const slot = CASE_ROWS[r];
@@ -684,60 +703,71 @@ export class Menu {
       const on = live.has(slot) && slotOpen(p, slot);
       const here = r === this.caseRow;
 
-      if (on) { ctx.fillStyle = '#203848'; ctx.fillRect(2, y - 2, SCREEN_W - 4, 13); }
-      if (here) { ctx.fillStyle = '#f8f8e8'; ctx.fillRect(2, y - 2, 1, 13); }
+      if (on) { ctx.fillStyle = '#d8e8f0'; ctx.fillRect(x, y - 2, PAGE.w - 4, 12); }
+      if (here) { ctx.fillStyle = CURSOR; ctx.fillRect(x, y - 2, 1, 12); }
 
       // The tide pip, the same three tones the water itself is drawn in, so
       // the row needs no key to read as a tide level.
       ctx.fillStyle = TIDE_PIP[lv];
-      ctx.fillRect(6, y + 1, 5, 5);
-      drawText(ctx, TIDE_NAMES[lv], 14, y, on ? '#f8f8e8' : '#687888');
+      ctx.fillRect(x + 4, y + 1, 5, 5);
+      drawText(ctx, TIDE_NAMES[lv], x + 12, y, on ? INK : DIM);
 
       if (!slotOpen(p, slot)) {
-        drawText(ctx, 'shut', 48, y, '#485868');
+        drawText(ctx, 'shut', x + 46, y, DIM);
       } else {
         for (let i = 0; i < size; i++) {
           const id = p.charmSlots[slot][i];
-          const cx = 48 + i * 13;
+          const cx = x + 46 + i * 13;
           if (id) sprites.draw(ctx, 'i_charm', cx, y - 1, { pal: CHARMS[id].color });
-          else { ctx.strokeStyle = '#485868'; ctx.strokeRect(cx + 0.5, y - 0.5, 9, 9); }
+          else { ctx.strokeStyle = DIM; ctx.strokeRect(cx + 0.5, y - 0.5, 9, 9); }
         }
       }
-      y += 14;
+      y += 12;
     }
 
     // The pool: everything owned that fits the highlighted case.
     const pool = this.pool;
-    y += 3;
-    drawText(ctx, this.caseSlot.toUpperCase() + ' CASE  ' + pool.length + ' fit', 6, y, '#a8f0f8');
+    y += 2;
+    drawText(ctx, this.caseSlot.toUpperCase() + ' CASE  ' + pool.length + ' fit', x + 2, y, BLUE);
     y += 10;
     if (!pool.length) {
-      drawText(ctx, 'Nothing carved for this case.', 6, y, '#a8b0a0');
-      return;
+      drawText(ctx, 'Nothing carved yet.', x + 2, y, DIM);
+      return null;
     }
     const inCase = equippedIn(p, this.caseSlot);
     pool.forEach((id, i) => {
-      const cx = 6 + i * 12;
-      if (cx > SCREEN_W - 12) return;
+      const cx = x + 2 + i * 12;
+      if (cx > PAGE.x + PAGE.w - 12) return;
       sprites.draw(ctx, 'i_charm', cx, y, { pal: CHARMS[id].color });
-      if (inCase.includes(id)) { ctx.fillStyle = '#48c868'; ctx.fillRect(cx, y - 2, 9, 1); }
-      if (i === this.poolCursor) { ctx.fillStyle = '#f8f8e8'; ctx.fillRect(cx, y + 10, 9, 1); }
+      if (inCase.includes(id)) { ctx.fillStyle = '#28a048'; ctx.fillRect(cx, y - 2, 9, 1); }
+      if (i === this.poolCursor) { ctx.fillStyle = CURSOR; ctx.fillRect(cx, y + 10, 9, 1); }
     });
-    y += 14;
+    y += 13;
     const sel = CHARMS[pool[this.poolCursor]];
-    if (!sel) return;
-    drawText(ctx, sel.name, 6, y, '#f8f8e8');
+    if (!sel) return null;
     const w = this.descWindow(sel.desc, DESC_WRAP_W.charm);
-    drawText(ctx, w.lines[0] || '', 6, y + 9, '#a8b0a0');
-    if (w.more) this.drawScrollMark(ctx, SCREEN_W - 11, y + 9, w);
+    drawText(ctx, w.lines[0] || '', x + 2, y, INK);
+    if (w.more) this.drawScrollMark(ctx, PAGE.x + PAGE.w - 6, y, w);
+    return sel.name;
   }
 
+  /**
+   * THE SEASONS SAVE PROMPT, off the footage: the bark frame, a banner, and
+   * three plaques — go on without saving, save and go on, save and stop —
+   * with the cursor on the middle one, where Seasons puts it.
+   */
   drawSave(ctx) {
-    const opts = ['Save game', 'Save and quit to title'];
-    let y = HUD_H + 34;
+    drawScreen(ctx, 'saveScreen');
+    drawTextCentered(ctx, 'SAVE', SCREEN_W / 2, 10, '#000000');
+    const opts = ['KEEP PLAYING', 'SAVE', 'SAVE AND QUIT'];
     for (let i = 0; i < opts.length; i++) {
-      drawText(ctx, (i === this.saveCursor ? '\x02 ' : '  ') + opts[i], 20, y + i * 14, '#f8f8e8');
+      const y = 58 + i * 24;
+      drawScreen(ctx, 'savePlaque', 32, y);
+      drawText(ctx, opts[i], 46, y + 4, '#000000');
+      if (i === this.saveCursor) drawScreen(ctx, 'seedCursor', 33, y + 1);
     }
-    drawText(ctx, 'Slot ' + (this.game.slot + 1), 20, y + 34, '#a8b0a0');
+    if (this.messageTime > 0) drawTextCentered(ctx, this.message, SCREEN_W / 2, 130, '#f8f8f8');
+    else drawTextCentered(ctx, 'FILE ' + (this.game.slot + 1), SCREEN_W / 2, 130, '#b0a080');
   }
+
 }

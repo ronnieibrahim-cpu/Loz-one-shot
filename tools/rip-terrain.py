@@ -609,31 +609,26 @@ BIGPROPS = [
 # — a rank is per cell, and the same green would land on a different index in
 # every cell of the same roof.
 TOWN_PALETTES = {
-    'sbRoofBlue':  ['#f8f8b0', '#1860f8', '#001888', '#000000'],
-    # The shop's front row carries the SHOP plate, and the plate's yellow and
-    # the wall's white trim cannot both be index 0. The plate wins: it is the
-    # one tile in the kit that says what the building IS, and what it costs is
-    # ten pixels of edge highlight per side cell going yellow instead of cream.
-    'sbShopFront': ['#f0f838', '#1860f8', '#001888', '#000000'],
-    'sbRoofGreen': ['#f0f838', '#08c850', '#086018', '#000000'],
-    'sbRoofRed':   ['#f8d088', '#e80818', '#680828', '#000000'],
     'sbWood':      ['#f0f838', '#c08820', '#704820', '#000000'],
     'sbTimber':    ['#f8e878', '#b86038', '#783828', '#000000'],
+    # Horon Village's own ramps, read off the spring map (S147). The Subrosia
+    # tileset's houses are the same drawings in Subrosia's colours, and its
+    # shop has no front at all — the signed row IS its bottom — which is the
+    # missing facade and door a person noticed.
+    'hRoofBlue':   ['#f8f8c0', '#20b0f8', '#0058b8', '#000000'],
+    'hRoofGreen':  ['#f8f870', '#70e010', '#308800', '#000000'],
+    'hRoofRed':    ['#f8d088', '#e80818', '#680828', '#000000'],
+    'hWood':       ['#f8f870', '#c08018', '#603800', '#000000'],
 }
 
-BLUE, SIGN = 'sbRoofBlue', 'sbShopFront'
-GRN, RED = 'sbRoofGreen', 'sbRoofRed'
 WOOD, TIMBER = 'sbWood', 'sbTimber'
+HBLUE, HGRN, HRED, HWOOD = 'hRoofBlue', 'hRoofGreen', 'hRoofRed', 'hWood'
 
-# Colours that turn up in a cell without belonging to its palette. Every one is
-# a handful of pixels of one ramp bleeding into a cell drawn in the other —
-# the SHOP plate's gold shading crossing into the wall cells beside it, and the
-# ground's tufts around the stump. Stated per palette rather than merged by
-# nearest luminance, so the choice is a decision somebody made and not an
-# arithmetic accident.
-TOWN_MERGE = {
-    SIGN: {'#f8f8b0': 0, '#c08820': 0, '#704820': 3},
-}
+# Colours that turn up in a cell without belonging to its palette. Stated per
+# palette rather than merged by nearest luminance, so the choice is a decision
+# somebody made and not an arithmetic accident. (The Subrosian SHOP plate's
+# merge lived here until S147 replaced its building.)
+TOWN_MERGE = {}
 
 # name, w, h, note, cells. A cell is (col, row, palette) on the tileset.
 #
@@ -644,30 +639,6 @@ TOWN_MERGE = {
 # testing colour equality is what keeps the roof's yellow trim, which on the
 # green house is the same yellow as the dirt behind it.
 TOWN = [
-    ('bShop', 3, 3, 'blue shop: roof, and the signed front', ['#f0f838'], [
-        [(4, 7, BLUE), (5, 7, BLUE), (6, 7, BLUE)],
-        [(4, 8, BLUE), (5, 8, BLUE), (6, 8, BLUE)],
-        [(4, 9, SIGN), (5, 9, SIGN), (6, 9, SIGN)],
-    ]),
-    ('bHouseGreen', 3, 3, 'green-roofed house: window, doorway, window', ['#f0f838'], [
-        [(7, 7, GRN), (8, 7, GRN), (9, 7, GRN)],
-        [(7, 8, GRN), (8, 8, GRN), (9, 8, GRN)],
-        [(9, 9, WOOD), (8, 9, WOOD), (9, 9, WOOD)],
-    ]),
-    ('bHouseRed', 3, 3, 'red-roofed house: window, doorway, window', ['#f8d088'], [
-        [(10, 7, RED), (11, 7, RED), (12, 7, RED)],
-        [(10, 8, RED), (11, 8, RED), (12, 8, RED)],
-        [(9, 9, WOOD), (8, 9, WOOD), (9, 9, WOOD)],
-    ]),
-    # The same house with the sheet's CLOSED door in the middle instead of its
-    # open one. A town needs more buildings than it has interiors, and a
-    # shuttered door is how the source says so — the affordance is the art,
-    # which is why this is a different building and not a flag on the last one.
-    ('bHouseShut', 3, 3, 'green-roofed house, door shut', ['#f0f838'], [
-        [(7, 7, GRN), (8, 7, GRN), (9, 7, GRN)],
-        [(7, 8, GRN), (8, 8, GRN), (9, 8, GRN)],
-        [(9, 9, WOOD), (7, 9, WOOD), (9, 9, WOOD)],
-    ]),
     ('bWell', 2, 2, 'stone well', ['#c08820'], [
         [(13, 8, WOOD), (14, 8, WOOD)],
         [(13, 9, WOOD), (14, 9, WOOD)],
@@ -684,6 +655,70 @@ TOWN = [
     ('bCrate', 1, 1, 'a crate and a chest', ['#c08820'], [[(11, 9, WOOD)]]),
     ('bCrates', 1, 1, 'stacked crates', ['#c08820'], [[(12, 9, WOOD)]]),
 ]
+
+
+# THE HOUSES AND THE SHOP, off Horon Village on the Seasons spring map (S147).
+# That sheet is a stitched MAP of 160x128 screens with one-pixel rules between
+# them, so a cell is addressed as (screen x, screen y, tile x, tile y) and sits
+# at x = 1 + 161*sx + 16*tx, y = 1 + 129*sy + 16*ty. Every building there is
+# opaque to its edge — no ground to flood out.
+#
+# A cell names its palette, or a PAIR (top, under) where the Game Boy gave its
+# two 8-pixel halves two palettes: the shop's signed row is the blue roof's
+# eaves above and the timber SHOP plate below, seven colours in one cell. Such
+# a cell is cut into two stacked tiles, exactly as tools/rip-maku.py does the
+# Maku grove: the under layer takes the pixels in the under palette, the top
+# layer everything else (black belongs to the top). Nothing is re-coloured.
+#
+# `bHouseShut` is the one AUTHORED composite: Horon has no shut door to take,
+# so it is the green house with its left window drawn where the door is — a
+# house you can see has no way in. Every pixel of it is still Horon's.
+SP_TOWN = [
+    ('bShop', 3, 3, 'Horon shop: blue roof and chimney, the SHOP plate, window / doorway / window', [
+        [((6, 14, 4, 2), HBLUE), ((6, 14, 5, 2), HWOOD), ((6, 14, 6, 2), HBLUE)],
+        [((6, 14, 4, 3), (HWOOD, HBLUE)), ((6, 14, 5, 3), (HWOOD, HBLUE)), ((6, 14, 6, 3), (HWOOD, HBLUE))],
+        [((6, 14, 4, 4), HWOOD), ((6, 14, 5, 4), HWOOD), ((6, 14, 6, 4), HWOOD)],
+    ]),
+    ('bHouseGreen', 3, 3, 'Horon green house: window, doorway, window', [
+        [((8, 14, 4, 2), HGRN), ((8, 14, 5, 2), HGRN), ((8, 14, 6, 2), HGRN)],
+        [((8, 14, 4, 3), HGRN), ((8, 14, 5, 3), HGRN), ((8, 14, 6, 3), HGRN)],
+        [((8, 14, 4, 4), HWOOD), ((8, 14, 5, 4), HWOOD), ((8, 14, 6, 4), HWOOD)],
+    ]),
+    ('bHouseRed', 3, 3, 'Horon red house: chimney, window, doorway, window', [
+        [((9, 15, 2, 1), HRED), ((9, 15, 3, 1), HWOOD), ((9, 15, 4, 1), HRED)],
+        [((9, 15, 2, 2), HRED), ((9, 15, 3, 2), HRED), ((9, 15, 4, 2), HRED)],
+        [((9, 15, 2, 3), HWOOD), ((9, 15, 3, 3), HWOOD), ((9, 15, 4, 3), HWOOD)],
+    ]),
+    ('bHouseShut', 3, 3, 'Horon green house with no door: window, window, window', [
+        [((8, 14, 4, 2), HGRN), ((8, 14, 5, 2), HGRN), ((8, 14, 6, 2), HGRN)],
+        [((8, 14, 4, 3), HGRN), ((8, 14, 5, 3), HGRN), ((8, 14, 6, 3), HGRN)],
+        [((8, 14, 4, 4), HWOOD), ((8, 14, 4, 4), HWOOD), ((8, 14, 6, 4), HWOOD)],
+    ]),
+]
+
+
+def quantise_sp_cell(im, src, pal):
+    """One opaque Horon cell -> (top grid, under grid or None)."""
+    sx, sy, tx, ty = src
+    x0, y0 = 1 + 161 * sx + 16 * tx, 1 + 129 * sy + 16 * ty
+    top, under = (pal, None) if isinstance(pal, str) else pal
+    rgb = lambda c: tuple(int(c[i:i + 2], 16) for i in (1, 3, 5))
+    tidx = {rgb(c): str(n) for n, c in enumerate(TOWN_PALETTES[top])}
+    uidx = {rgb(c): str(n) for n, c in enumerate(TOWN_PALETTES[under])} if under else {}
+    tg, ug = [], []
+    for y in range(16):
+        tl, ul = '', ''
+        for x in range(16):
+            p = im.getpixel((x0 + x, y0 + y))
+            if p in tidx:
+                tl += tidx[p]; ul += '.'
+            elif p in uidx:
+                tl += '.'; ul += uidx[p]
+            else:
+                raise SystemExit('rip-terrain: colour #%02x%02x%02x at %s is in neither %s nor %s'
+                                 % (p + (src, top, under)))
+        tg.append(tl); ug.append(ul)
+    return tg, (ug if under else None), top, under
 
 
 def lum(c):
@@ -1328,6 +1363,18 @@ def main():
                                 'cell (%d,%d) — tileset c%d,r%d' % (cx, cy, sc, sr),
                                 grids[cy][cx], pal))
         town.append((name, w, h, note, cells, townart))
+    im = sheets.get(SP)
+    if im is None:
+        im = sheets[SP] = Image.open(SP).convert('RGB')
+    for k, (name, w, h, note, cells) in enumerate(SP_TOWN):
+        townart = []
+        for cy in range(h):
+            for cx in range(w):
+                src, pal = cells[cy][cx]
+                tg, ug, top, under = quantise_sp_cell(im, src, pal)
+                cnote = 'cell (%d,%d) — spring map screen %d,%d tile %d,%d' % ((cx, cy) + src)
+                townart.append(('%s_%d_%d' % (name, cx, cy), cnote, tg, top, ug, under))
+        town.insert(k, (name, w, h, note, cells, townart))
 
     for name, path, x, y, w, h, bg, flood, topSlots, botSlots, note in BIGPROPS:
         im = sheets.get(path)
@@ -1393,7 +1440,8 @@ def main():
         '// ---- the town kit -------------------------------------------------------',
         '//',
         '// A BUILDING IS NOT A TILE. Each entry below is one object several cells',
-        '// across, extracted whole off the Subrosia tileset and reassembled by the',
+        '// across, extracted whole (the buildings off Horon Village on the spring',
+        '// map, the rest off the Subrosia tileset) and reassembled by the',
         '// block machinery in src/world/tileset.js: a room grid draws the building as',
         '// a rectangle of one legend character and the loader resolves each cell to',
         '// the art here. Nine loose tiles an author has to arrange by hand would be',
@@ -1411,12 +1459,18 @@ def main():
     lines.append('')
     lines.append('export const TOWN_ART = {')
     for name, w, h, note, cells, townart in town:
-        for art, cnote, grid, pal in townart:
+        for art, cnote, grid, pal, *under in townart:
             lines.append('  // %s %s' % (name, cnote))
             lines.append('  %s: `' % art)
             lines.extend('    ' + r for r in grid[:-1])
             lines.append('    ' + grid[-1] + '`,')
             lines.append('')
+            if under and under[0]:
+                lines.append('  // %s %s, the under layer' % (name, cnote))
+                lines.append('  %s_u: `' % art)
+                lines.extend('    ' + r for r in under[0][:-1])
+                lines.append('    ' + under[0][-1] + '`,')
+                lines.append('')
     lines.append('};')
     lines.append('')
     lines += [
@@ -1433,7 +1487,11 @@ def main():
         for cy in range(h):
             row = []
             for cx in range(w):
-                row.append("['%s', '%s']" % (townart[i][0], townart[i][3]))
+                t = townart[i]
+                if len(t) > 4 and t[4]:
+                    row.append("['%s', '%s', '%s_u', '%s']" % (t[0], t[3], t[0], t[5]))
+                else:
+                    row.append("['%s', '%s']" % (t[0], t[3]))
                 i += 1
             lines.append('    [%s],' % ', '.join(row))
         lines.append('  ] },')
@@ -1442,10 +1500,10 @@ def main():
 
     with open(OUT, 'w') as f:
         f.write('\n'.join(lines))
-    ncells = sum(b[1] * b[2] for b in TOWN)
+    ncells = sum(b[1] * b[2] for b in TOWN) + sum(b[1] * b[2] for b in SP_TOWN)
     print('emitted %d terrain tiles (%d ground, %d shoreline rim, %d props) and '
           '%d town blocks (%d cells, %d palettes) -> %s'
-          % (len(arts), len(PICKS) + len(TRANSFORMS), 24, len(PROPS), len(TOWN), ncells,
+          % (len(arts), len(PICKS) + len(TRANSFORMS), 24, len(PROPS), len(TOWN) + len(SP_TOWN), ncells,
              len(TOWN_PALETTES), OUT))
     for name, n in dropped:
         print('  note: %s had %d colours on the sheet, merged down to 4' % (name, n))

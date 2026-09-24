@@ -80,6 +80,13 @@ for (const [mapId, m] of MAPS) {
         // water is drawn over it afterwards — so a wet declaration always looks
         // absent and would report every snarl in the Drowned Wood.
         if (getTileDef(d.underArt).flags & F.WET) continue;
+        // A STACKED LAYER IS NOT GROUND. A two-palette cell of a building (the
+        // shop's signed row, S147) is drawn as two tiles, and the one beneath
+        // is the building's own roof, pinned with `underExact` and as solid as
+        // the cell above it. Nothing about it is a floor the screen could
+        // lack; the ground this rule is about is what shows THROUGH a prop.
+        const under = getTileDef(d.underArt);
+        if (d.underExact && (under.flags & F.SOLID)) continue;
         const u = room.underGround(d, x, y, tide);
         if (u.flags & F.WET) continue;
         if (pals.has(u.pal)) continue;

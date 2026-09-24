@@ -1587,13 +1587,19 @@ function installTownBlocks() {
       for (let y = 0; y < b.h; y++) {
         const row = [];
         for (let x = 0; x < b.w; x++) {
-          const [art, pal] = b.cells[y][x];
+          const [art, pal, uArt, uPal] = b.cells[y][x];
           const isDoor = !!door && door[0] === x && door[1] === y;
           // `bShop_1_2` on grass, `bShopSand_1_2` on sand — same art, and the
           // tile named first is the art's own name so nothing has to alias it.
           const tile = suffix ? `${name}${suffix}_${x}_${y}` : art;
+          // A TWO-PALETTE CELL (the shop's signed row: roof eaves over the
+          // SHOP plate) is two stacked tiles, the Maku grove's trick: the
+          // under layer is its own tiledef and `underExact` pins it, so the
+          // renderer does not go looking for a ground to put there instead.
+          if (uArt) defs[uArt] = { art: ART[uArt], pal: uPal, flags: F.SOLID };
           defs[tile] = {
-            art: ART[art], pal, underArt: ground,
+            art: ART[art], pal, underArt: uArt || ground,
+            ...(uArt ? { underExact: true } : {}),
             flags: isDoor ? F.SOLID | F.WARP : F.SOLID,
             ...(isDoor ? { mask: 0 } : {}),
           };

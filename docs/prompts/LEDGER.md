@@ -933,6 +933,14 @@ checked and why; see `docs/NEXT-SESSION.md` S60 for the full account.
   What moved it was never the fights' numbers, it was the actor: a turn in
   place is a step, a slow shot can be outwalked, a straight retreat now
   beats a diagonal one. The per-room fixes are in NEXT-SESSION S147.
+- SCREENS FROM FOOTAGE WORK: a 4x h264 frame, taken as the median of each
+  4x4 block's inner 2x2 and clustered back to <=32 colours, is a clean GBC
+  screen (file select 20 colours, save 21, item page 14). Lettering on wood
+  is lifted by filling from the same row; on a flat panel, by repainting the
+  face colour inside the rim.
+- THE SUBROSIA TILESET'S HOUSES ARE HORON'S DRAWINGS IN SUBROSIA'S COLOURS,
+  and its shop has no front row. Horon's own are on the spring map at
+  screens (6,14) shop, (8,14) green, (9,15) red — 3x3, opaque, no ground.
 - DO NOT switch `dFight`'s retreat to straight: tried, it re-rolled D1 and
   lost the Anchor chest before the dungeon.
 

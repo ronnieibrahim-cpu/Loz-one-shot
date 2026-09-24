@@ -469,6 +469,26 @@ export const TIDE_SWEEP_FRAMES = 23;
 /** x — fade opacity change per frame; a full fade is 1/FADE_RATE frames. guessed. */
 export const FADE_RATE = 0.09;
 
+/** f — how long the opening card holds before it fades, if nothing is
+ *  pressed. guessed: the footage's run skips the card at its first chance
+ *  (video frames 6744-6803 are 60 frames of it), so its natural length is
+ *  not in the video. */
+export const TITLE_CARD_FRAMES = 180;
+
+/** f — the card's fade to white. measured: 21 frames. reference:
+ *  assets/footage/seasons-tas-rooster-adventure.mp4, whole-screen brightness rising from
+ *  video frame 6804 to full white at 6825. */
+export const TITLE_FADE_FRAMES = 21;
+
+/** f — the beat of plain white before the logo cuts in. measured: 22
+ *  frames. reference: assets/footage/seasons-tas-rooster-adventure.mp4, white from video
+ *  frame 6826 to 6847; the logo is on the screen at 6848, with no fade in. */
+export const TITLE_WHITE_FRAMES = 22;
+
+/** f — each half of PRESS START's blink. guessed: the run leaves the logo
+ *  seventeen frames after it appears, before one full blink. */
+export const TITLE_PRESS_BLINK = 16;
+
 /** f — how long an area-name banner stays up. guessed. */
 export const BANNER_FRAMES = 120;
 
