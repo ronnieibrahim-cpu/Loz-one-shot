@@ -93,7 +93,7 @@ export const REQUIRED_SPRITES = {
     'o_chest', 'o_chest_open', 'o_chestbig', 'o_chestbig_open',
     'o_sign', 'o_block', 'o_switch_up', 'o_switch_down',
     'o_torch', 'o_torch_lit0', 'o_torch_lit1',
-    'o_raft', 'o_valve', 'o_valve_open', 'o_pot', 'rock16', 'o_coralbud',
+    'o_raft', 'o_valve', 'o_valve_open', 'o_valve_turn', 'o_pot', 'rock16', 'o_coralbud',
   ],
 
   shots: ['shot', 'shot_rock', 'shot_bubble', 'shot_beam', 'shot_spear', 'shot_orb', 'shot_ink'],

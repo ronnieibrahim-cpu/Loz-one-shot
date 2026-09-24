@@ -514,7 +514,14 @@ is its only transform — so the sprite is telling the player something false ab
 which of their items to reach for. Wants a kelp/weed frame off the sheets rather
 than a recolour.
 
-## A DROWNED WHEEL LOOKS EXACTLY LIKE A WORKING ONE (P8/D4)
+## A DROWNED WHEEL LOOKS EXACTLY LIKE A WORKING ONE (P8/D4) — ADDRESSED S146
+
+`GustWheel.draw` paints a drowned wheel in the `deep` palette (its body
+takes the water's colour; rim and slot show through), off the same
+`drowned()` test the gust asks. A wheel under wind alternates `o_valve`
+and `o_valve_turn`, so it visibly turns. Point 2 below (something at the
+cone's mouth) is still open. The original entry follows.
+
 
 The Cliffside Cistern is built on paddle wheels that jam under deep water and
 turn in shallow. The mechanic is proved, the rooms are proved, and **the wheel
@@ -561,7 +568,15 @@ What it wants, in the order it should be tried:
 
 Blocked on nothing but the drawing.
 
-## A CURRENT IS INVISIBLE (P8/D3) — the highest-value entry in this file
+## A CURRENT IS INVISIBLE (P8/D3) — ADDRESSED S146
+
+Torrents and riptides now draw the Ages current tile, extracted by
+`tools/rip-terrain.py` from the loose-tile strip at the bottom-left of
+`oracle-ages-overworld.png` (x 90..141, y 2852..2903; one row per direction,
+four frames each). The dashes travel the way the water runs, at about the
+speed it pushes (`TORRENT_ANIM_RATE`/`RIPTIDE_ANIM_RATE`, feel.js). Still
+wanted: a person reading the Undertow cold. The original entry follows.
+
 
 The Bogwater Sanctum is built on torrents: deep water that runs harder than a
 swimmer can, so the surface route fails and the seafloor route works. The

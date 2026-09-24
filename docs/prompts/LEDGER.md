@@ -929,6 +929,12 @@ checked and why; see `docs/NEXT-SESSION.md` S60 for the full account.
   `rodLock` and a blow lands.
 - A hurt frame does not move replay or the playthrough: it only changes
   which sprite draws during the flicker window.
+- ENEMIES FLASH, THEY DO NOT BLINK OUT (human's call, S146): the off beat
+  of an enemy's flicker draws in `hitflash` (white, and the enemy sheet's
+  own tan and red). Link keeps the on/off blink. The three hazards stay
+  unkillable (human's call).
+- (b) pass 1 closed: the Ages current tile for every torrent and riptide;
+  a drowned wheel in `deep`; a turning wheel alternates two frames.
 
 ## Settled at S145 — Rootmaw's margin, from the route and the robot
 

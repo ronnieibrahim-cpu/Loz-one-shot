@@ -31,8 +31,10 @@ What this tool deliberately does NOT do:
     (`grassDark`, `saltFlat`, `iceFloor`, `rockFloorRust`, ...) keep working and
     the game's colour scheme does not shift under the extracted enemy sprites.
     The four source colours are emitted alongside as `*_SRC` for reference.
-  * It does not extract animated tiles. The sheets are static maps and hold no
-    second frame, so water stays hand-drawn.
+  * It extracts only one animated tile, the Ages current, because that is the
+    one the sheets were read for. The Ages sheet's bottom-left strip holds
+    loose animated tiles with every frame; the rest of the water there has
+    not been compared against what the game draws yet.
 
 Source sheets are Nintendo's artwork (dungeon backgrounds) and a fan-made
 Oracle-style tileset; see `assets/sheets/README.md` for ripper credit.
@@ -199,6 +201,31 @@ PICKS = [
     # real crop that could not be trusted without the same rework.
     ('bankEdgeS',     AG, 545, 1226, 'shore bank, water below — rim on top, earth below'),
     ('bankCornerSE',  AG,  97, 1226, 'shore bank outer corner, water down and right'),
+    # A CURRENT, FROM THE SOURCE. Ages draws moving water as its own animated
+    # tile: plain water with pairs of pale dashes that step two pixels per
+    # frame in the direction the water runs, four frames, looping. The sheet's
+    # loose-tile strip at its bottom-left holds all four directions, each row
+    # labelled with an arrow. They are the one animated tile these sheets DO
+    # hold every frame of, so nothing here is shifted or derived. Two colours
+    # only: the dashes land on 0 and the water on 1, the same two slots
+    # `waterD0` draws its body and its highlights in, so under `deep` they
+    # read as the same water, moving.
+    ('currentS0',   AG,   90, 2852, 'current running down, frame 1 of 4'),
+    ('currentS1',   AG,  107, 2852, 'current running down, frame 2 of 4'),
+    ('currentS2',   AG,  124, 2852, 'current running down, frame 3 of 4'),
+    ('currentS3',   AG,  141, 2852, 'current running down, frame 4 of 4'),
+    ('currentW0',   AG,   90, 2869, 'current running left, frame 1 of 4'),
+    ('currentW1',   AG,  107, 2869, 'current running left, frame 2 of 4'),
+    ('currentW2',   AG,  124, 2869, 'current running left, frame 3 of 4'),
+    ('currentW3',   AG,  141, 2869, 'current running left, frame 4 of 4'),
+    ('currentN0',   AG,   90, 2886, 'current running up, frame 1 of 4'),
+    ('currentN1',   AG,  107, 2886, 'current running up, frame 2 of 4'),
+    ('currentN2',   AG,  124, 2886, 'current running up, frame 3 of 4'),
+    ('currentN3',   AG,  141, 2886, 'current running up, frame 4 of 4'),
+    ('currentE0',   AG,   90, 2903, 'current running right, frame 1 of 4'),
+    ('currentE1',   AG,  107, 2903, 'current running right, frame 2 of 4'),
+    ('currentE2',   AG,  124, 2903, 'current running right, frame 3 of 4'),
+    ('currentE3',   AG,  141, 2903, 'current running right, frame 4 of 4'),
 ]
 
 # Explicit dropped-colour overrides for specific PICKS, keyed by name — see

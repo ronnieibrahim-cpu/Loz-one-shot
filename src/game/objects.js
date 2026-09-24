@@ -18,7 +18,7 @@ import {
   PICKUP_GRAB_DELAY, FAIRY_DRIFT_TURN, FAIRY_DRIFT_X, FAIRY_DRIFT_Y, FAIRY_FLAP_FRAMES,
   NPC_WANDER_PERIOD, NPC_WANDER_SPEED,
   ESSENCE_SPARKLE_EVERY, ESSENCE_SPARKLE_SPREAD,
-  BELLOWS_PUSH, BELLOWS_RAFT_SCALE, BELLOWS_WHEEL_COAST, BELL_CHIME_FRAMES,
+  BELLOWS_PUSH, BELLOWS_RAFT_SCALE, BELLOWS_WHEEL_COAST, BELL_CHIME_FRAMES, WHEEL_SPIN_BEAT,
   CARVE_PRICE, CHARM_CASE_MAX, CHARM_LOW_ESSENCES, CHARM_HIGH_ESSENCES,
   CHARM_CASE_ESSENCES,
 } from '../data/feel.js';
@@ -1283,7 +1283,28 @@ export class GustWheel extends TideValve {
   /** Nothing reaches this by hand — that is the point of putting it here. */
   interactByHand(game) { game.say('The wheel is too far to reach. Something must blow it.'); }
 
-  spriteName() { return this.open ? 'o_valve_open' : 'o_valve'; }
+  /** Turning while the wind is on it, so a wheel that moves looks it. */
+  spriteName() {
+    if (this.open) return 'o_valve_open';
+    if (this.coast > 0 && Math.floor(this.spin / WHEEL_SPIN_BEAT) % 2) return 'o_valve_turn';
+    return 'o_valve';
+  }
+
+  /**
+   * A DROWNED WHEEL IS DRAWN UNDER THE WATER. Same picture, in the water's
+   * own `deep` blues: its body takes the water's colour and only the dark
+   * rim and slot show through, the way a thing on the bottom reads through
+   * the surface. It is the answer to "my cone is not reaching" versus "the
+   * water is still too deep here" (docs/ART-BACKLOG.md), read off the same
+   * `drowned` test the gust itself asks, so the picture cannot disagree
+   * with what the wheel will do.
+   */
+  draw(ctx, game, ox, oy) {
+    const dry = this.pal;
+    if (this.drowned(game)) this.pal = 'deep';
+    super.draw(ctx, game, ox, oy);
+    this.pal = dry;
+  }
 }
 defineEntity('wheel', (x, y, o) => new GustWheel(x, y, o));
 

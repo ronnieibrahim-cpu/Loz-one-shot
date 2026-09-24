@@ -23,6 +23,7 @@ regenerate byte-identical output.
 | `oracle-seasons-dungeon-poison-moths-lair.png` | Oracle of Seasons | Mister Mike | not yet used — per-dungeon rooms |
 | `custom-oracle-style-overworld.png` | fan-made, Oracle style | community edit | not yet used — overworld tiles |
 | `oracle-seasons-hud-gear.png` | Oracle of Seasons | Mister Mike | `tools/rip-hud.py` -> `src/data/sprites-hud.js` |
+| `oracle-ages-overworld.png` | Oracle of Ages | Mister Mike | `tools/rip-terrain.py` -> `src/data/tiles-terrain.js` — shallow water, bank edges, and the four current tiles (bottom-left loose-tile strip) |
 
 All obtained via spriters-resource.com. Most sheets carry two halves: "GBC LCD
 Colors" simulates the handheld screen, "True Colors" is the raw palette. The

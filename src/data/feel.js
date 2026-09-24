@@ -1002,6 +1002,20 @@ export const SINK_SPEED = 160;
  *  against the new ratio instead of quietly passing. */
 export const TORRENT_PUSH = 0.9;
 
+/** f — frames each step of a current tile's animation holds. derived: the
+ *  Ages current tile moves its dashes 2 px per step, so 2 / this is the speed
+ *  the water is SEEN to run, and it is chosen to match the speed it pushes —
+ *  2 / 2 = 1 px/f against TORRENT_PUSH's 0.9, 2 / 4 = 0.5 px/f against a
+ *  riptide's 0.55. A player reads how hard the water pulls off how fast the
+ *  foam goes by. */
+export const TORRENT_ANIM_RATE = 2;
+/** f — how long a gust wheel holds each quarter-turn while the wind is on it
+ *  (it alternates o_valve and o_valve_turn). guessed; fast enough to read as
+ *  spinning, slow enough that the two poses are both seen. */
+export const WHEEL_SPIN_BEAT = 4;
+/** f — the same for an ordinary riptide. derived; see TORRENT_ANIM_RATE. */
+export const RIPTIDE_ANIM_RATE = 4;
+
 /** f — the descent when sink mode is entered over deep water, and the ascent
  *  when it is left. Control is suspended for the whole of it. guessed. */
 export const SINK_ENTER_FRAMES = 18;

@@ -1,49 +1,47 @@
-# Next session — make torrents and drowned wheels readable
+# Next session — the water, from the source's frames
 
 ## Read first
-- `docs/prompts/STATE.md` — objective 11 polish, area (b) legible, pass 1.
-- `docs/prompts/QUEUE.md`'s "POLISH ROTATION", stub (b).
-- `docs/ART-BACKLOG.md`: "A CURRENT IS INVISIBLE" and "A DROWNED WHEEL
-  LOOKS EXACTLY LIKE A WORKING ONE" — both entries in full.
+- `docs/prompts/STATE.md` — objective 11 polish, area (c) fidelity, pass 1.
+- `docs/prompts/QUEUE.md`'s "POLISH ROTATION", stub (c).
 - `docs/ART-DIRECTION.md`, and `docs/briefs/AGENTS.md` section J.
+- `tools/rip-terrain.py`'s header, the `waterS0` PICK and the S146
+  current-tile PICKs (the same strip this task reads).
 - `docs/NEXT-SESSION.md`, the S146 entry only.
 
 ## Why this, now
-Area (a) pass 1 closed at S146: all 22 enemies flinch and die. Next in
-the rotation is (b). The Bogwater Sanctum's torrents draw the same pixels
-as still water (only `animRate` differs, 13 against 4) and say nothing
-about direction; the Cliffside Cistern's wheels draw one sprite whether
-they turn or are drowned. Both mechanics are proved; neither is visible.
+(a) and (b) had their first pass at S146. The water the game draws on
+nearly every screen — `waterD0/1/2`, `openSea`, the `foam*` edges — is
+hand-drawn, and rip-terrain's note that the sheets hold "no second
+phase" of water is wrong: `oracle-ages-overworld.png`'s loose-tile strip
+(bottom-left, from y 2852, 17 px pitch, 4 frames a row) holds the
+source's animated water with every frame. S146 took the currents from it.
 
 ## The task
-Two fixes, in this order.
-1. Torrents: directional foam. A travelling surface streak drawn over
-   every `dTorrentE/W/N/S` tile (`src/data/tiles-core.js`), offset along
-   its push vector, in the water's own palette — NOT a different blue.
-   Look for foam/current art on the sheets first (the effects sheet and
-   the overworld sheets); draw to match only if none. It must survive
-   the tide-variant machinery and the `animCells` path in `room.js`.
-2. Wheels: a drowned sprite. `GustWheel.drowned` (`src/game/objects.js`)
-   is already computed every frame; give it a second sprite (weeded or
-   pale, the way the source games draw a submerged object) and return it
-   from `spriteName()` while drowned.
-Target: a person shown the Undertow (d3,0,2,3) and d4,0,1,3 at MID and
-HIGH says which water moves, which way, and which wheel will turn.
+Replace the hand-drawn deep water with the strip's own frames.
+1. Run `python3 tools/rip-terrain.py` once; confirm byte-identical.
+2. Crop and name every row of the strip's first two blocks (x 0..160):
+   which is deep water, which shallow, which foam/shore, which whirlpool.
+3. Add the deep-water row as `waterD0..3` PICKs; bind the `deep` tiles in
+   `src/data/tiles-core.js` (`waterD`, `openSea`, the riptides' still
+   neighbours) to the four frames in order, keeping `pal: 'deep'`.
+4. If the strip's shallow water is a better four-frame set than the
+   shifted `waterS0`, do the same for `waterS`, and drop the SHIFT
+   transforms. Correct the ripper's "no second phase" notes.
+Target: no hand-drawn water tile left where the strip has one.
 
 ## Done means
-- `node tools/shoot-rooms.mjs --tide=1 --px=80 d3,0,2,3` and the two
-  d4,0,1,3 commands in ART-BACKLOG, before and after, sent to the human.
-- `node tools/check-ground.mjs`, `node tools/check-cleats.mjs`,
-  `node tools/check-bellows.mjs`, `node tools/test.mjs` green.
-- `node tools/replay.mjs` green, or re-recorded only for the frames the
-  overlay changes, with the reason in the commit.
+- `node tools/check-rippers.mjs`, `node tools/check-ground.mjs`,
+  `node tools/test.mjs` green.
+- `node tools/replay.mjs` green, or re-recorded only for the water
+  pixels, with the reason in the commit.
 - `node tools/check-playthrough.mjs` green to THE END.
 - `node tools/check-drift.mjs` OK; `npm run build` with `dist/` committed.
+- Shots of a sea screen, a lake screen and a dungeon pool at LOW, MID
+  and HIGH, before and after, sent to the human.
 
 ## Out of scope
-- The Lens's three blues, the tide gauge fixture, the Keep's mooring
-  ring: pass 2 of (b).
-- Making MID and HIGH water different colours (ART-BACKLOG forbids it).
-- Enemy placement — (a) pass 2, next time round.
-- The palette flash on hit noted at S146 — that is (d) feel.
-- Any change to how a torrent pushes or when a wheel jams.
+- The Maku Tree and Great Fairy — pass 2 of (c).
+- The item icons: surveyed S36-38 and settled.
+- Changing what water DOES (depth, flags, which tide floods what).
+- A different blue for any water (ART-DIRECTION).
+- The keese's weak hit flash noted at S146 — (b) pass 2.

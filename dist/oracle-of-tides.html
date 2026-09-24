@@ -1521,6 +1521,20 @@ const SINK_SPEED = 160;
  *  against the new ratio instead of quietly passing. */
 const TORRENT_PUSH = 0.9;
 
+/** f — frames each step of a current tile's animation holds. derived: the
+ *  Ages current tile moves its dashes 2 px per step, so 2 / this is the speed
+ *  the water is SEEN to run, and it is chosen to match the speed it pushes —
+ *  2 / 2 = 1 px/f against TORRENT_PUSH's 0.9, 2 / 4 = 0.5 px/f against a
+ *  riptide's 0.55. A player reads how hard the water pulls off how fast the
+ *  foam goes by. */
+const TORRENT_ANIM_RATE = 2;
+/** f — how long a gust wheel holds each quarter-turn while the wind is on it
+ *  (it alternates o_valve and o_valve_turn). guessed; fast enough to read as
+ *  spinning, slow enough that the two poses are both seen. */
+const WHEEL_SPIN_BEAT = 4;
+/** f — the same for an ordinary riptide. derived; see TORRENT_ANIM_RATE. */
+const RIPTIDE_ANIM_RATE = 4;
+
 /** f — the descent when sink mode is entered over deep water, and the ascent
  *  when it is left. Control is suspended for the whole of it. guessed. */
 const SINK_ENTER_FRAMES = 18;
@@ -2083,6 +2097,9 @@ __exports["LENS_PHASE_ALPHA"] = LENS_PHASE_ALPHA;
 __exports["LENS_SHIMMER_FRAMES"] = LENS_SHIMMER_FRAMES;
 __exports["SINK_SPEED"] = SINK_SPEED;
 __exports["TORRENT_PUSH"] = TORRENT_PUSH;
+__exports["TORRENT_ANIM_RATE"] = TORRENT_ANIM_RATE;
+__exports["WHEEL_SPIN_BEAT"] = WHEEL_SPIN_BEAT;
+__exports["RIPTIDE_ANIM_RATE"] = RIPTIDE_ANIM_RATE;
 __exports["SINK_ENTER_FRAMES"] = SINK_ENTER_FRAMES;
 __exports["CLEATS_BREATH_FRAMES"] = CLEATS_BREATH_FRAMES;
 __exports["CLEATS_BREATH_WARN_FRAMES"] = CLEATS_BREATH_WARN_FRAMES;
@@ -9811,7 +9828,7 @@ const { drawText } = __require("gfx/font.js");
 const { addRupees, heal, addBombs, addReefseeds, addBottles, addKey, giveItem, addHeartContainer, addHeartPiece, HEART_UNITS, setFlag, flag } = __require("game/progress.js");
 const { itemName, itemIcon, ITEMS } = __require("game/items.js");
 const { CHARMS, giveCharm, openCharmCases } = __require("game/scrimshaw.js");
-const { PICKUP_LIFE_FRAMES, PICKUP_POP_SPEED, PICKUP_GRAVITY, PICKUP_SETTLE_FRAMES, PICKUP_GRAB_DELAY, FAIRY_DRIFT_TURN, FAIRY_DRIFT_X, FAIRY_DRIFT_Y, FAIRY_FLAP_FRAMES, NPC_WANDER_PERIOD, NPC_WANDER_SPEED, ESSENCE_SPARKLE_EVERY, ESSENCE_SPARKLE_SPREAD, BELLOWS_PUSH, BELLOWS_RAFT_SCALE, BELLOWS_WHEEL_COAST, BELL_CHIME_FRAMES, CARVE_PRICE, CHARM_CASE_MAX, CHARM_LOW_ESSENCES, CHARM_HIGH_ESSENCES, CHARM_CASE_ESSENCES } = __require("data/feel.js");
+const { PICKUP_LIFE_FRAMES, PICKUP_POP_SPEED, PICKUP_GRAVITY, PICKUP_SETTLE_FRAMES, PICKUP_GRAB_DELAY, FAIRY_DRIFT_TURN, FAIRY_DRIFT_X, FAIRY_DRIFT_Y, FAIRY_FLAP_FRAMES, NPC_WANDER_PERIOD, NPC_WANDER_SPEED, ESSENCE_SPARKLE_EVERY, ESSENCE_SPARKLE_SPREAD, BELLOWS_PUSH, BELLOWS_RAFT_SCALE, BELLOWS_WHEEL_COAST, BELL_CHIME_FRAMES, WHEEL_SPIN_BEAT, CARVE_PRICE, CHARM_CASE_MAX, CHARM_LOW_ESSENCES, CHARM_HIGH_ESSENCES, CHARM_CASE_ESSENCES } = __require("data/feel.js");
 
 // --------------------------------------------------------------------------
 // Pickups
@@ -11073,7 +11090,28 @@ class GustWheel extends TideValve {
   /** Nothing reaches this by hand — that is the point of putting it here. */
   interactByHand(game) { game.say('The wheel is too far to reach. Something must blow it.'); }
 
-  spriteName() { return this.open ? 'o_valve_open' : 'o_valve'; }
+  /** Turning while the wind is on it, so a wheel that moves looks it. */
+  spriteName() {
+    if (this.open) return 'o_valve_open';
+    if (this.coast > 0 && Math.floor(this.spin / WHEEL_SPIN_BEAT) % 2) return 'o_valve_turn';
+    return 'o_valve';
+  }
+
+  /**
+   * A DROWNED WHEEL IS DRAWN UNDER THE WATER. Same picture, in the water's
+   * own `deep` blues: its body takes the water's colour and only the dark
+   * rim and slot show through, the way a thing on the bottom reads through
+   * the surface. It is the answer to "my cone is not reaching" versus "the
+   * water is still too deep here" (docs/ART-BACKLOG.md), read off the same
+   * `drowned` test the gust itself asks, so the picture cannot disagree
+   * with what the wheel will do.
+   */
+  draw(ctx, game, ox, oy) {
+    const dry = this.pal;
+    if (this.drowned(game)) this.pal = 'deep';
+    super.draw(ctx, game, ox, oy);
+    this.pal = dry;
+  }
 }
 defineEntity('wheel', (x, y, o) => new GustWheel(x, y, o));
 
@@ -16221,6 +16259,310 @@ const TERRAIN_ART = {
     3210012311222233
     3210012311222233`,
 
+  // current running down, frame 1 of 4 — oracle-ages-overworld.png @ 90,2852
+  currentS0: `
+    1001110010011100
+    1111001111110011
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1001110010011100
+    1111001111110011
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111`,
+
+  // current running down, frame 2 of 4 — oracle-ages-overworld.png @ 107,2852
+  currentS1: `
+    1111111111111111
+    1111111111111111
+    0011100100111001
+    1100111111001111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    0011100100111001
+    1100111111001111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111`,
+
+  // current running down, frame 3 of 4 — oracle-ages-overworld.png @ 124,2852
+  currentS2: `
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1001110010011100
+    1111001111110011
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1001110010011100
+    1111001111110011
+    1111111111111111
+    1111111111111111`,
+
+  // current running down, frame 4 of 4 — oracle-ages-overworld.png @ 141,2852
+  currentS3: `
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    0011100100111001
+    1100111111001111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    0011100100111001
+    1100111111001111`,
+
+  // current running left, frame 1 of 4 — oracle-ages-overworld.png @ 90,2869
+  currentW0: `
+    1111111111111111
+    1111111011111110
+    1111111011111110
+    1111111111111111
+    1111110111111101
+    1111110111111101
+    1111111011111110
+    1111111011111110
+    1111111111111111
+    1111111011111110
+    1111111011111110
+    1111111111111111
+    1111110111111101
+    1111110111111101
+    1111111011111110
+    1111111011111110`,
+
+  // current running left, frame 2 of 4 — oracle-ages-overworld.png @ 107,2869
+  currentW1: `
+    1111101111111011
+    1111101111111011
+    1111011111110111
+    1111011111110111
+    1111111111111111
+    1111101111111011
+    1111101111111011
+    1111111111111111
+    1111101111111011
+    1111101111111011
+    1111011111110111
+    1111011111110111
+    1111111111111111
+    1111101111111011
+    1111101111111011
+    1111111111111111`,
+
+  // current running left, frame 3 of 4 — oracle-ages-overworld.png @ 124,2869
+  currentW2: `
+    1111111111111111
+    1110111111101111
+    1110111111101111
+    1111111111111111
+    1101111111011111
+    1101111111011111
+    1110111111101111
+    1110111111101111
+    1111111111111111
+    1110111111101111
+    1110111111101111
+    1111111111111111
+    1101111111011111
+    1101111111011111
+    1110111111101111
+    1110111111101111`,
+
+  // current running left, frame 4 of 4 — oracle-ages-overworld.png @ 141,2869
+  currentW3: `
+    1011111110111111
+    1011111110111111
+    0111111101111111
+    0111111101111111
+    1111111111111111
+    1011111110111111
+    1011111110111111
+    1111111111111111
+    1011111110111111
+    1011111110111111
+    0111111101111111
+    0111111101111111
+    1111111111111111
+    1011111110111111
+    1011111110111111
+    1111111111111111`,
+
+  // current running up, frame 1 of 4 — oracle-ages-overworld.png @ 90,2886
+  currentN0: `
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111001111110011
+    1001110010011100
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111001111110011
+    1001110010011100`,
+
+  // current running up, frame 2 of 4 — oracle-ages-overworld.png @ 107,2886
+  currentN1: `
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1100111111001111
+    0011100100111001
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1100111111001111
+    0011100100111001
+    1111111111111111
+    1111111111111111`,
+
+  // current running up, frame 3 of 4 — oracle-ages-overworld.png @ 124,2886
+  currentN2: `
+    1111111111111111
+    1111111111111111
+    1111001111110011
+    1001110010011100
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111001111110011
+    1001110010011100
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111`,
+
+  // current running up, frame 4 of 4 — oracle-ages-overworld.png @ 141,2886
+  currentN3: `
+    1100111111001111
+    0011100100111001
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1100111111001111
+    0011100100111001
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111
+    1111111111111111`,
+
+  // current running right, frame 1 of 4 — oracle-ages-overworld.png @ 90,2903
+  currentE0: `
+    0111111101111111
+    0111111101111111
+    1011111110111111
+    1011111110111111
+    1111111111111111
+    0111111101111111
+    0111111101111111
+    1111111111111111
+    0111111101111111
+    0111111101111111
+    1011111110111111
+    1011111110111111
+    1111111111111111
+    0111111101111111
+    0111111101111111
+    1111111111111111`,
+
+  // current running right, frame 2 of 4 — oracle-ages-overworld.png @ 107,2903
+  currentE1: `
+    1111111111111111
+    1101111111011111
+    1101111111011111
+    1111111111111111
+    1110111111101111
+    1110111111101111
+    1101111111011111
+    1101111111011111
+    1111111111111111
+    1101111111011111
+    1101111111011111
+    1111111111111111
+    1110111111101111
+    1110111111101111
+    1101111111011111
+    1101111111011111`,
+
+  // current running right, frame 3 of 4 — oracle-ages-overworld.png @ 124,2903
+  currentE2: `
+    1111011111110111
+    1111011111110111
+    1111101111111011
+    1111101111111011
+    1111111111111111
+    1111011111110111
+    1111011111110111
+    1111111111111111
+    1111011111110111
+    1111011111110111
+    1111101111111011
+    1111101111111011
+    1111111111111111
+    1111011111110111
+    1111011111110111
+    1111111111111111`,
+
+  // current running right, frame 4 of 4 — oracle-ages-overworld.png @ 141,2903
+  currentE3: `
+    1111111111111111
+    1111110111111101
+    1111110111111101
+    1111111111111111
+    1111111011111110
+    1111111011111110
+    1111110111111101
+    1111110111111101
+    1111111111111111
+    1111110111111101
+    1111110111111101
+    1111111111111111
+    1111111011111110
+    1111111011111110
+    1111110111111101
+    1111110111111101`,
+
   // shore bank, water below — rim on top, earth below, rotated 180° from bankEdgeS — oracle-ages-overworld.png @ 545,1226
   bankEdgeN: `
     3333333333333333
@@ -17060,6 +17402,22 @@ const TERRAIN_SRC_PALETTES = {
   caveMouth: ['#c08820', '#704820', '#086018', '#000000'],
   bankEdgeS: ['#f8f8c0', '#805000', '#0050b0', '#000000'],
   bankCornerSE: ['#f8f8c0', '#20b0f8', '#0050b0', '#000000'],
+  currentS0: ['#f8f8c0', '#20b0f8'],
+  currentS1: ['#f8f8c0', '#20b0f8'],
+  currentS2: ['#f8f8c0', '#20b0f8'],
+  currentS3: ['#f8f8c0', '#20b0f8'],
+  currentW0: ['#f8f8c0', '#20b0f8'],
+  currentW1: ['#f8f8c0', '#20b0f8'],
+  currentW2: ['#f8f8c0', '#20b0f8'],
+  currentW3: ['#f8f8c0', '#20b0f8'],
+  currentN0: ['#f8f8c0', '#20b0f8'],
+  currentN1: ['#f8f8c0', '#20b0f8'],
+  currentN2: ['#f8f8c0', '#20b0f8'],
+  currentN3: ['#f8f8c0', '#20b0f8'],
+  currentE0: ['#f8f8c0', '#20b0f8'],
+  currentE1: ['#f8f8c0', '#20b0f8'],
+  currentE2: ['#f8f8c0', '#20b0f8'],
+  currentE3: ['#f8f8c0', '#20b0f8'],
   bankEdgeN: ['#f8f8c0', '#805000', '#0050b0', '#000000'],
   bankEdgeE: ['#f8f8c0', '#805000', '#0050b0', '#000000'],
   bankEdgeW: ['#f8f8c0', '#805000', '#0050b0', '#000000'],
@@ -21777,7 +22135,7 @@ const { registerTiles, registerBlocks, F, declareAnimArt, registerTransforms } =
 const { TERRAIN_ART, TOWN_ART, TOWN_PALETTES, TOWN_BLOCKS } = __require("data/tiles-terrain.js");
 const { registerPalettes, PALETTES } = __require("gfx/palettes.js");
 const { DUNGEON_THEME_ART, installDungeonThemePalettes } = __require("data/tiles-dungeon-themes.js");
-const { TORRENT_PUSH } = __require("data/feel.js");
+const { TORRENT_PUSH, TORRENT_ANIM_RATE, RIPTIDE_ANIM_RATE } = __require("data/feel.js");
 
 const HAND_ART = {
   // ---- ground -------------------------------------------------------------
@@ -23779,14 +24137,16 @@ function installCoreTiles() {
     // mode is not touched by it, which is the trade the Kelp-Soled Cleats
     // exist to offer. See docs/ITEMS.md.
     //
-    // No new art: a riptide is `waterD` running its own animation faster, in
-    // the same palette. The source games signal a current by how the water
-    // moves, not by a different blue, and inventing a "current tile" drawing
-    // would be exactly the hand-drawn drift ART-DIRECTION warns about.
-    riptideN: { art: ART.waterD0, pal: 'deep', flags: F.DEEP, push: [0, -0.55], anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 6 },
-    riptideS: { art: ART.waterD0, pal: 'deep', flags: F.DEEP, push: [0, 0.55], anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 6 },
-    riptideE: { art: ART.waterD0, pal: 'deep', flags: F.DEEP, push: [0.55, 0], anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 6 },
-    riptideW: { art: ART.waterD0, pal: 'deep', flags: F.DEEP, push: [-0.55, 0], anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 6 },
+    // Drawn with the source's own current tile (Ages, extracted in
+    // tools/rip-terrain.py): the same water in the same `deep` palette, with
+    // pale dashes that travel the way it runs. The source games signal a
+    // current by how the water MOVES, not by a different blue — and they do
+    // it with this tile. Running `waterD` faster, which is what stood here
+    // before, turned out to say nothing a player could read (ART-BACKLOG).
+    riptideN: { art: ART.currentN0, pal: 'deep', flags: F.DEEP, push: [0, -0.55], anim: ['currentN0', 'currentN1', 'currentN2', 'currentN3'], animRate: RIPTIDE_ANIM_RATE },
+    riptideS: { art: ART.currentS0, pal: 'deep', flags: F.DEEP, push: [0, 0.55], anim: ['currentS0', 'currentS1', 'currentS2', 'currentS3'], animRate: RIPTIDE_ANIM_RATE },
+    riptideE: { art: ART.currentE0, pal: 'deep', flags: F.DEEP, push: [0.55, 0], anim: ['currentE0', 'currentE1', 'currentE2', 'currentE3'], animRate: RIPTIDE_ANIM_RATE },
+    riptideW: { art: ART.currentW0, pal: 'deep', flags: F.DEEP, push: [-0.55, 0], anim: ['currentW0', 'currentW1', 'currentW2', 'currentW3'], animRate: RIPTIDE_ANIM_RATE },
 
     // A TORRENT. The same water, running harder: `TORRENT_PUSH` is strictly
     // greater than a swimmer's own speed, so nobody on the surface makes
@@ -23797,13 +24157,12 @@ function installCoreTiles() {
     // An ordinary riptide is deliberately weaker than swimming and stays that
     // way; it is a tax, and this is a wall.
     //
-    // No new art, for the same reason the riptides have none: the source games
-    // signal a current by how the water moves, not by a different blue. The
-    // faster `animRate` is the tell, and it is the only one.
-    dTorrentN: { art: ART.waterD0, pal: 'deep', flags: F.DEEP, push: [0, -TORRENT_PUSH], anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 4 },
-    dTorrentS: { art: ART.waterD0, pal: 'deep', flags: F.DEEP, push: [0, TORRENT_PUSH], anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 4 },
-    dTorrentE: { art: ART.waterD0, pal: 'deep', flags: F.DEEP, push: [TORRENT_PUSH, 0], anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 4 },
-    dTorrentW: { art: ART.waterD0, pal: 'deep', flags: F.DEEP, push: [-TORRENT_PUSH, 0], anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 4 },
+    // The riptides' current tile, stepping twice as fast: how quickly the
+    // dashes go by is how hard the water pulls (feel.js, TORRENT_ANIM_RATE).
+    dTorrentN: { art: ART.currentN0, pal: 'deep', flags: F.DEEP, push: [0, -TORRENT_PUSH], anim: ['currentN0', 'currentN1', 'currentN2', 'currentN3'], animRate: TORRENT_ANIM_RATE },
+    dTorrentS: { art: ART.currentS0, pal: 'deep', flags: F.DEEP, push: [0, TORRENT_PUSH], anim: ['currentS0', 'currentS1', 'currentS2', 'currentS3'], animRate: TORRENT_ANIM_RATE },
+    dTorrentE: { art: ART.currentE0, pal: 'deep', flags: F.DEEP, push: [TORRENT_PUSH, 0], anim: ['currentE0', 'currentE1', 'currentE2', 'currentE3'], animRate: TORRENT_ANIM_RATE },
+    dTorrentW: { art: ART.currentW0, pal: 'deep', flags: F.DEEP, push: [-TORRENT_PUSH, 0], anim: ['currentW0', 'currentW1', 'currentW2', 'currentW3'], animRate: TORRENT_ANIM_RATE },
 
     // --- TIDE TILES: the heart of the game -------------------------------
     // A tide tile resolves to a different concrete tile per tide level.
@@ -42795,6 +43154,28 @@ const OBJECT_ART = {
     ...3111111113...
     ....33111133....
     ......3333......
+    ................`,
+
+  // The same wheel a quarter-turn on: o_valve turned about its centre, so
+  // the slot stands upright. Alternating the two while wind is on it is what
+  // makes a wheel that is TURNING look different from one that is not.
+  // derived — o_valve rotated 90 degrees, no new pixels.
+  o_valve_turn: `
+    ................
+    .....333333.....
+    ....31111113....
+    ...3111111113...
+    ..311111111113..
+    ..311133331113..
+    .31113.33.31113.
+    .31113.33.31113.
+    .31113.33.31113.
+    .31113.33.31113.
+    ..311133331113..
+    ..311111111113..
+    ...3111111113...
+    ....31111113....
+    .....333333.....
     ................`,
 
   // ---- clay pot and a liftable boulder -----------------------------------

@@ -13,6 +13,17 @@
 - check-playthrough 42/42, never died; replay 51/51 unchanged (hurt
   frames only draw during the flicker, and nothing baselined sits there).
 
+### Then, on the human's word, in the same session
+- A struck enemy or boss FLASHES (the `hitflash` palette on the off beat
+  of its flicker, `Entity.draw`) instead of blinking out. Link still
+  blinks. The human chose this over keeping both.
+- (b) legible pass 1, done early at the human's request: torrents and
+  riptides draw the Ages current tile (rip-terrain.py, 16 frames); a
+  drowned gust wheel draws in `deep`, and a turning one alternates
+  `o_valve`/`o_valve_turn`. Shots: tools/shoot-rooms.mjs on d3,0,2,3 and
+  d4,0,1,3 at tide 1 and 2, with and without --bellows.
+- The human: leave bubble/beamos/barnacle unkillable.
+
 ### Noticed for later areas (not chased)
 - (d) feel: the source games show a hit as a PALETTE FLASH, not a pose;
   this engine blinks the sprite out instead. The flinch frames are ours;
@@ -23,8 +34,12 @@
 - (h)/(g): at sword level 1 every hp-2 enemy dies in one hit, so nine
   of the 22 never flinch from a plain swing — only the chain, a held
   blade or a burn show it. Fine, but worth a person's eye.
-- Design question for the human (not asked yet): should the three
-  unkillable hazards ever die (e.g. to the Rod plus a blow)?
+- (c) fidelity: `oracle-ages-overworld.png`'s bottom-left strip holds
+  LOOSE ANIMATED TILES with every frame: shallow and deep water, sea
+  foam, a whirlpool, waterfalls. rip-terrain's note that the sheets hold
+  "no second phase" of water is wrong; waterD0/1/2 are hand-drawn.
+- (b) pass 2: the keese's hit flash barely shows (its body is all index
+  3, which `hitflash` keeps black).
 
 ## S145 — Rootmaw's margin, from the route and the robot
 

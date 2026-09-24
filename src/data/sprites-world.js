@@ -901,6 +901,28 @@ export const OBJECT_ART = {
     ......3333......
     ................`,
 
+  // The same wheel a quarter-turn on: o_valve turned about its centre, so
+  // the slot stands upright. Alternating the two while wind is on it is what
+  // makes a wheel that is TURNING look different from one that is not.
+  // derived — o_valve rotated 90 degrees, no new pixels.
+  o_valve_turn: `
+    ................
+    .....333333.....
+    ....31111113....
+    ...3111111113...
+    ..311111111113..
+    ..311133331113..
+    .31113.33.31113.
+    .31113.33.31113.
+    .31113.33.31113.
+    .31113.33.31113.
+    ..311133331113..
+    ..311111111113..
+    ...3111111113...
+    ....31111113....
+    .....333333.....
+    ................`,
+
   // ---- clay pot and a liftable boulder -----------------------------------
   // drawn — original to this game, no source sheet has anything like it (assets/sheets/README.md).
   o_pot: `

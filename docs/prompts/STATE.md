@@ -19,17 +19,17 @@ the area whose turn it is and nothing else; its stub is in QUEUE.md.
   h fairness  — the thinnest fight to 11/13 (next: the Brinehulk, 10/13).
   i play pass — a person's play notes, fixed in order; no notes, no pass.
 DONE when every area has had two passes with nothing left in its stub.
-Rotation position: next is (b) legible, pass 1. (a) pass 1 done S146.
+Rotation position: next is (c) fidelity, pass 1. (a) and (b) pass 1 done S146.
 
 RETIRED ROTATION: 1 wide-rooms MET S111 | 2 art-provenance S9/S74 |
   3 boss-art S75 | 4 enemy-roster S59 | 5 npc-detail S63 | 6 region-art S89 |
   7 item-reuse MET S110 | 8 feel-measure BLOCKED | 9 playthrough-route MET
   S121 | 10 oracle-rooms MET S143 (all six dungeons at Oracle size)
 
-FILE ALLOWLIST for (b) legible: src/data/tiles-core.js (torrent/wheel
-  tiledefs), src/data/sprites-world.js, src/game/objects.js (GustWheel draw
-  only), src/game/effects.js, src/world/room.js (drawAnim only), src/data/
-  feel.js, tools/shoot-rooms.mjs, tools/*-baseline.json, docs/*.md,
+FILE ALLOWLIST for (c) fidelity: tools/rip-*.py and the generated files
+  they emit (via the ripper only), src/data/sprites-*.js, src/data/sprite-
+  manifest.js, src/data/tiles-core.js (art bindings only), src/gfx/
+  palettes.js, assets/sheets/README.md, tools/*-baseline.json, docs/*.md,
   dist/oracle-of-tides.html
 
 DETOUR TOKENS: 1 (unspent)
@@ -56,4 +56,4 @@ S142 | objective | The last dungeon, the Abyssal Keep, is rebuilt at real Oracle
 S143 | objective | Grew the last two small dungeons, and with that every dungeon is now full Oracle size and grown. The Cliffside Cistern is 36 screens: its new required wing has a wind-wheel you can only reach at high tide but can only turn once you lower the sea while standing next to it. The Bogwater Sanctum is 32 screens: its new required wing has floor switches lying at the bottom of deep pools — swimming over them does nothing, only walking the bottom in the Cleats presses them. Five more charms are hidden in optional rooms. The whole game still plays to the end.
 S144 | objective | Re-measured the nine boss fights the last session's dungeon growth moved, thirteen tries each. Only one had got worse: the third dungeon's boss, because a crab in the hall before it bit Link on the way past and again on the way back. The run now kills the crab on the way in and arrives at the boss with the health it used to have. The King is now won first time from the room at the foot of his stair: every lost fight was one of his summoned knights pinning Link against a wall while the robot kept walking into the bricks, and it now walks out into the room instead — 12 wins in 13 on the real run, up from 8. No fight was changed.
 S145 | objective | Gave the fifth dungeon's boss, Rootmaw, a real margin. Every lost fight was the same: the slimes he summons parked between Link and him, and the test robot walked round them for ages instead of pushing through while it was still flashing from a hit. It now pushes through, for this fight only, and the run keeps eight more quarter-hearts on the way (round a barnacle, off a pit edge twice). Practice: 13 wins in 13, up from 8. The real run wins every variation, with more left. The fight itself was not changed.
-S146 | objective | Every one of the 22 enemies now flinches when hit and has a pose when it dies. Three came straight off the original sheet (the urchin's cover knocked off, the jellyfish crackling, the barnacle clenching shut); the rest were drawn a few pixels off each enemy's own walking frame. Five of them can't be seen yet by design: the two one-hit enemies die before they can flinch, and the three unkillable hazards never die. The whole game still plays to the end.
+S146 | objective | Every one of the 22 enemies now flinches when hit and has a pose when it dies, three of them straight off the original sheet. Then, on the human's word: a hit enemy now flashes its colours the way the Oracles do instead of vanishing every other beat; fast water now uses Oracle of Ages' own current tile, so you can see it running and which way; and a drowned water wheel is drawn sunk under the water, while one catching the wind visibly turns. The whole game still plays to the end.

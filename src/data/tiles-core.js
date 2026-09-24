@@ -10,7 +10,7 @@ import { registerTiles, registerBlocks, F, declareAnimArt, registerTransforms } 
 import { TERRAIN_ART, TOWN_ART, TOWN_PALETTES, TOWN_BLOCKS } from './tiles-terrain.js';
 import { registerPalettes, PALETTES } from '../gfx/palettes.js';
 import { DUNGEON_THEME_ART, installDungeonThemePalettes } from './tiles-dungeon-themes.js';
-import { TORRENT_PUSH } from './feel.js';
+import { TORRENT_PUSH, TORRENT_ANIM_RATE, RIPTIDE_ANIM_RATE } from './feel.js';
 
 const HAND_ART = {
   // ---- ground -------------------------------------------------------------
@@ -2012,14 +2012,16 @@ export function installCoreTiles() {
     // mode is not touched by it, which is the trade the Kelp-Soled Cleats
     // exist to offer. See docs/ITEMS.md.
     //
-    // No new art: a riptide is `waterD` running its own animation faster, in
-    // the same palette. The source games signal a current by how the water
-    // moves, not by a different blue, and inventing a "current tile" drawing
-    // would be exactly the hand-drawn drift ART-DIRECTION warns about.
-    riptideN: { art: ART.waterD0, pal: 'deep', flags: F.DEEP, push: [0, -0.55], anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 6 },
-    riptideS: { art: ART.waterD0, pal: 'deep', flags: F.DEEP, push: [0, 0.55], anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 6 },
-    riptideE: { art: ART.waterD0, pal: 'deep', flags: F.DEEP, push: [0.55, 0], anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 6 },
-    riptideW: { art: ART.waterD0, pal: 'deep', flags: F.DEEP, push: [-0.55, 0], anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 6 },
+    // Drawn with the source's own current tile (Ages, extracted in
+    // tools/rip-terrain.py): the same water in the same `deep` palette, with
+    // pale dashes that travel the way it runs. The source games signal a
+    // current by how the water MOVES, not by a different blue — and they do
+    // it with this tile. Running `waterD` faster, which is what stood here
+    // before, turned out to say nothing a player could read (ART-BACKLOG).
+    riptideN: { art: ART.currentN0, pal: 'deep', flags: F.DEEP, push: [0, -0.55], anim: ['currentN0', 'currentN1', 'currentN2', 'currentN3'], animRate: RIPTIDE_ANIM_RATE },
+    riptideS: { art: ART.currentS0, pal: 'deep', flags: F.DEEP, push: [0, 0.55], anim: ['currentS0', 'currentS1', 'currentS2', 'currentS3'], animRate: RIPTIDE_ANIM_RATE },
+    riptideE: { art: ART.currentE0, pal: 'deep', flags: F.DEEP, push: [0.55, 0], anim: ['currentE0', 'currentE1', 'currentE2', 'currentE3'], animRate: RIPTIDE_ANIM_RATE },
+    riptideW: { art: ART.currentW0, pal: 'deep', flags: F.DEEP, push: [-0.55, 0], anim: ['currentW0', 'currentW1', 'currentW2', 'currentW3'], animRate: RIPTIDE_ANIM_RATE },
 
     // A TORRENT. The same water, running harder: `TORRENT_PUSH` is strictly
     // greater than a swimmer's own speed, so nobody on the surface makes
@@ -2030,13 +2032,12 @@ export function installCoreTiles() {
     // An ordinary riptide is deliberately weaker than swimming and stays that
     // way; it is a tax, and this is a wall.
     //
-    // No new art, for the same reason the riptides have none: the source games
-    // signal a current by how the water moves, not by a different blue. The
-    // faster `animRate` is the tell, and it is the only one.
-    dTorrentN: { art: ART.waterD0, pal: 'deep', flags: F.DEEP, push: [0, -TORRENT_PUSH], anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 4 },
-    dTorrentS: { art: ART.waterD0, pal: 'deep', flags: F.DEEP, push: [0, TORRENT_PUSH], anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 4 },
-    dTorrentE: { art: ART.waterD0, pal: 'deep', flags: F.DEEP, push: [TORRENT_PUSH, 0], anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 4 },
-    dTorrentW: { art: ART.waterD0, pal: 'deep', flags: F.DEEP, push: [-TORRENT_PUSH, 0], anim: ['waterD0', 'waterD1', 'waterD2', 'waterD1'], animRate: 4 },
+    // The riptides' current tile, stepping twice as fast: how quickly the
+    // dashes go by is how hard the water pulls (feel.js, TORRENT_ANIM_RATE).
+    dTorrentN: { art: ART.currentN0, pal: 'deep', flags: F.DEEP, push: [0, -TORRENT_PUSH], anim: ['currentN0', 'currentN1', 'currentN2', 'currentN3'], animRate: TORRENT_ANIM_RATE },
+    dTorrentS: { art: ART.currentS0, pal: 'deep', flags: F.DEEP, push: [0, TORRENT_PUSH], anim: ['currentS0', 'currentS1', 'currentS2', 'currentS3'], animRate: TORRENT_ANIM_RATE },
+    dTorrentE: { art: ART.currentE0, pal: 'deep', flags: F.DEEP, push: [TORRENT_PUSH, 0], anim: ['currentE0', 'currentE1', 'currentE2', 'currentE3'], animRate: TORRENT_ANIM_RATE },
+    dTorrentW: { art: ART.currentW0, pal: 'deep', flags: F.DEEP, push: [-TORRENT_PUSH, 0], anim: ['currentW0', 'currentW1', 'currentW2', 'currentW3'], animRate: TORRENT_ANIM_RATE },
 
     // --- TIDE TILES: the heart of the game -------------------------------
     // A tide tile resolves to a different concrete tile per tide level.
