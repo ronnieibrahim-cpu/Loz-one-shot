@@ -81,7 +81,7 @@ export class Projectile extends Entity {
         if (!this.overlaps(e)) continue;
         const dir = Math.abs(this.vx) > Math.abs(this.vy)
           ? (this.vx < 0 ? 'left' : 'right') : (this.vy < 0 ? 'up' : 'down');
-        if (e.hurt(game, this.damage, dir, KNOCK_PROJECTILE) && !this.pierce) { this.expire(game); return; }
+        if (e.hurt(game, this.damage, dir, KNOCK_PROJECTILE, this) && !this.pierce) { this.expire(game); return; }
       }
     } else if (this.damage > 0 && game.player && !game.player.invincible) {
       if (this.touchesPlayer(game.player)) {

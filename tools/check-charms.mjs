@@ -449,7 +449,7 @@ const knockDist = async () => {
     // knock rounds to nothing whatever the charm says.
     g.player.takeDamage(g, 1, { cx: 64 + 40, cy: 72, isProjectile: false });
   });
-  return await read(() => Math.abs(window.__game.player.knockX));
+  return await read(() => Math.abs(window.__game.player.knockX) * window.__game.player.knockTime);
 };
 const plainKnock = await knockDist();
 await charm('ballastHeart');

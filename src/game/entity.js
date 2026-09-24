@@ -20,7 +20,7 @@ import { sprites } from '../gfx/art.js';
 import { FP_ONE, sp, toPx } from '../core/fixed.js';
 import { F } from '../world/tileset.js';
 import {
-  ENEMY_INVULN_FRAMES, ENEMY_FLICKER_FRAMES, ENEMY_KNOCK_FRAMES, KNOCK_DEFAULT,
+  ENEMY_INVULN_FRAMES, ENEMY_HIT_TIERS, ENEMY_KNOCK_SPEED, KNOCK_DEFAULT,
   HITSTOP_HIT_FRAMES, ENEMY_HIT_FLASH_BEAT,
 } from '../data/feel.js';
 
@@ -52,6 +52,31 @@ export function dirTo(a, b) {
 }
 
 let nextId = 1;
+
+/** How long a hit of `knock` pixels leaves an ordinary enemy invulnerable. */
+export function hitInvulnFrames(knock) {
+  if (!knock) return ENEMY_INVULN_FRAMES;
+  for (const [px, f] of ENEMY_HIT_TIERS) if (knock <= px) return f;
+  return ENEMY_HIT_TIERS[ENEMY_HIT_TIERS.length - 1][1];
+}
+
+/**
+ * The per-frame step, in sp/f, of a knockback at `speed`: away from `from`'s
+ * middle when there is one, snapped to one of 32 angles as the cartridge's
+ * angles are; else along `dir`. Null if there is no direction at all.
+ */
+export function knockVector(e, dir, from, speed) {
+  if (from) {
+    const dx = e.cx - from.cx, dy = e.cy - from.cy;
+    if (dx || dy) {
+      const a = Math.round(Math.atan2(dy, dx) / (Math.PI / 16)) * (Math.PI / 16);
+      return [Math.round(Math.cos(a) * speed), Math.round(Math.sin(a) * speed)];
+    }
+  }
+  const v = dir && DIR_VEC[dir];
+  if (!v) return null;
+  return [v[0] * speed, v[1] * speed];
+}
 
 export class Entity {
   constructor(x, y, opts = {}) {
@@ -121,28 +146,25 @@ export class Entity {
   }
 
   /**
-   * Take damage. `dir` is the direction the hit came *from* the attacker's
-   * view, and `knock` is a DISTANCE IN PIXELS, not a speed. It comes from data
-   * and from call sites that pass a bare number, and is converted to the
-   * engine's subpixel step here.
+   * Take damage. `knock` is a DISTANCE IN PIXELS, not a speed; the target is
+   * thrown it at ENEMY_KNOCK_SPEED (2 px a frame, the cartridge's) and stops
+   * early if something stops it. `from`, when given, is what struck it — the
+   * throw goes straight away from its middle, as Seasons' does, on the nearest
+   * of the cartridge's 32 angles. Without one it goes along `dir`, the
+   * direction the hit travelled.
    *
-   * Knockback is a scripted displacement, the way the GB Zeldas do it: the
-   * target travels `knock` pixels over ENEMY_KNOCK_FRAMES frames at a constant
-   * speed and stops. It used to be an impulse that decayed by 0.82 a frame,
-   * which made the distance a function of the initial speed and put a strong
-   * hit and a weak hit in unrelated places. See docs/FEEL-SPEC.md.
+   * How long the target is then invulnerable (and flashing) follows the hit's
+   * strength: ENEMY_HIT_TIERS.
    */
-  hurt(game, dmg, dir, knock = KNOCK_DEFAULT) {
+  hurt(game, dmg, dir, knock = KNOCK_DEFAULT, from = null) {
     if (this.invuln > 0 || this.dead) return false;
     this.hp -= dmg;
-    this.invuln = ENEMY_INVULN_FRAMES;
-    this.flicker = ENEMY_FLICKER_FRAMES;
-    if (knock && dir) {
-      const [dx, dy] = DIR_VEC[dir] || [0, 0];
-      // sp/f: the whole distance divided across the whole window, once.
-      const per = sp(knock) / ENEMY_KNOCK_FRAMES;
-      this.knockX = Math.round(dx * per); this.knockY = Math.round(dy * per);
-      this.knockTime = ENEMY_KNOCK_FRAMES;
+    this.invuln = hitInvulnFrames(knock);
+    this.flicker = this.invuln;
+    const v = knockVector(this, dir, from, ENEMY_KNOCK_SPEED);
+    if (knock && v) {
+      this.knockX = v[0]; this.knockY = v[1];
+      this.knockTime = Math.max(1, Math.round(knock / (ENEMY_KNOCK_SPEED / 256)));
     }
     // The freeze goes on the hit CONNECTING, not on the sword specifically:
     // this is the one funnel every damage source in the game passes through,

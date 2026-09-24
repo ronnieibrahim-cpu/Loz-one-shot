@@ -238,10 +238,11 @@ export const SWORD_HOLD_DELAY = 2;
  *  rate-limits it, so this is damage per enemy-invuln period, not per frame. */
 export const SWORD_HOLD_DAMAGE = 1;
 
-/** px — knockback dealt by the extended blade. guessed; weaker than
- *  KNOCK_SWORD so a held blade shoves rather than launches. A distance, like
- *  every other KNOCK_* — see the note above them. */
-export const KNOCK_HOLD = 9;
+/** px — knockback dealt by the extended blade. derived: ENEMY_HIT_TIERS' low
+ *  hit (objectCollisionTable ENEMYCOLLISION_STANDARD_ENEMY, column
+ *  ITEMCOLLISION_SWORD_HELD = COLLISIONEFFECT_SWORD_LOW_KNOCKBACK). A
+ *  distance, like every other KNOCK_* — see the note above them. */
+export const KNOCK_HOLD = 16;
 
 /** f — how long after a clink off a wall the blade may clink again. guessed;
  *  without it the sfx retriggers every frame you lean on the wall. */
@@ -251,8 +252,12 @@ export const SWORD_CLINK_COOLDOWN = 20;
 // Damage, invulnerability and knockback
 // ---------------------------------------------------------------------------
 
-/** f — invulnerability after Link takes a hit. guessed. */
-export const PLAYER_INVULN_FRAMES = 46;
+/** f — invulnerability after Link takes a hit from an enemy. derived from the
+ *  cartridge: oracles-disasm code/collisionEffects.s, applyDamageToLink's
+ *  @damageTypeTable, LINKDMG_04 (COLLISIONEFFECT_DAMAGE_LINK, what an
+ *  ordinary enemy's body and shot do to Link): invincibilityCounter $22.
+ *  It agrees with the 33-frame flash measured below: the flash IS the window. */
+export const PLAYER_INVULN_FRAMES = 34;
 
 /** f — how long Link flashes after a hit. measured: 33 frames, from the frame
  *  the heart drains to the last red frame. reference: assets/footage/seasons-tas-rooster-adventure.mp4,
@@ -275,28 +280,50 @@ export const PLAYER_HURT_FLASH_BEAT = 4;
  *  ordinary hit because the player has just been teleported. guessed. */
 export const PLAYER_RECOVER_INVULN_FRAMES = 60;
 
-/** f — how long Link is shoved and unable to act after a hit. guessed. */
-export const PLAYER_HURT_FRAMES = 12;
+/** f — how long Link is shoved and cannot walk after a hit. derived: equal to
+ *  PLAYER_KNOCK_FRAMES, because the cartridge's normal state skips Link's
+ *  own movement for exactly as long as knockbackCounter runs
+ *  (object_code/common/specialObjects/link.s, linkState01 @notInAir). */
+export const PLAYER_HURT_FRAMES = 15;
 
-/** px — how far Link is shoved by a hit, in total. guessed.
- *  A GB Zelda's knockback is a scripted displacement, not a physics impulse:
- *  a fixed distance over a fixed frame count, at a constant speed, so it always
- *  ends the same distance from the thing that hit you and you can plan around
- *  it. This number and PLAYER_KNOCK_FRAMES are the whole of it. Chosen to match
- *  the total travel of the exponential decay it replaces (3.2 px/f decaying by
- *  0.84 over 12 frames covers ~17.6px), so the change is a change of shape
- *  rather than of reach. See docs/FEEL-SPEC.md. */
-export const PLAYER_KNOCK_DIST = 18;
+/** f — how long that shove takes. derived from the cartridge:
+ *  oracles-disasm code/collisionEffects.s, applyDamageToLink's
+ *  @damageTypeTable, LINKDMG_04: knockbackCounter $0f, taken down one a
+ *  frame by linkUpdateKnockback (object_code/common/specialObjects/link.s). */
+export const PLAYER_KNOCK_FRAMES = 15;
 
-/** f — how long that shove takes. guessed; kept equal to PLAYER_HURT_FRAMES so
- *  Link regains control on the frame he stops sliding. */
-export const PLAYER_KNOCK_FRAMES = 12;
+/** sp/f — how fast that shove moves him: 18.75 px in all. A GB Zelda's
+ *  knockback is a scripted displacement, not a physics impulse — a fixed
+ *  speed for a fixed frame count, so it always ends the same distance from
+ *  the thing that hit you (it was a guessed 18 px over 12 frames). derived
+ *  from the cartridge:
+ *  linkUpdateKnockback moves Link at SPEED_140 (1.25 px/f;
+ *  constants/common/objectSpeeds.s, SPEED_100 = 1 px/f). */
+export const PLAYER_KNOCK_SPEED = 320;
 
-/** f — invulnerability after an ordinary enemy takes a hit. guessed. */
-export const ENEMY_INVULN_FRAMES = 24;
+/** f — invulnerability after an ordinary enemy takes a hit that names no tier
+ *  in ENEMY_HIT_TIERS (no knockback, or an item of ours). derived from the
+ *  cartridge: oracles-disasm code/collisionEffects.s, applyDamageToEnemyOrPart's
+ *  @damageTypeTable, ENEMYDMG_04 (an L2 sword's hit): invincibilityCounter $15. */
+export const ENEMY_INVULN_FRAMES = 21;
 
-/** f — how long an ordinary enemy flickers after a hit. guessed. */
-export const ENEMY_FLICKER_FRAMES = 24;
+/** [px, f] — the cartridge's three strengths of hit on an ordinary enemy: how
+ *  far it is thrown and how long it is then invulnerable. Low 16 px / 16 f
+ *  (the L1 sword, the held blade), normal 22 px / 21 f (the L2 and L3 sword,
+ *  seeds, thrown things), high 30 px / 26 f (the spin, a bomb). A hit of some
+ *  other distance takes the invulnerability of the first tier at least as far.
+ *  derived from the cartridge: oracles-disasm code/collisionEffects.s,
+ *  applyDamageToEnemyOrPart's @damageTypeTable, ENEMYDMG_00/04/08
+ *  (invincibilityCounter $10/$15/$1a, knockbackCounter $08/$0b/$0f) times
+ *  ENEMY_KNOCK_SPEED; which item gets which is data/seasons/
+ *  objectCollisionTable.s, ENEMYCOLLISION_STANDARD_ENEMY. */
+export const ENEMY_HIT_TIERS = [[16, 16], [22, 21], [30, 26]];
+
+/** f — how long an ordinary enemy flashes after a hit. derived: the cartridge
+ *  flashes an enemy for exactly as long as its invincibilityCounter runs, so
+ *  the flash is whatever ENEMY_HIT_TIERS / ENEMY_INVULN_FRAMES gave the hit;
+ *  this is the value when nothing else names one. */
+export const ENEMY_FLICKER_FRAMES = ENEMY_INVULN_FRAMES;
 
 /** f — how many frames each beat of an enemy's hit flash lasts: the
  *  `hitflash` palette for this many, its own colours for this many, and so on
@@ -324,45 +351,56 @@ export const ENEMY_DEATH_FRAMES = 16;
  *  `Entity.hurt()`'s own hitstop already uses. */
 export const ENEMY_ATTACK_FRAMES = 16;
 
-/** f — how long an ordinary enemy is shoved after a hit. guessed. Together with
- *  the KNOCK_* distances below this is the fixed frame count half of the
- *  fixed-distance-over-fixed-frames rule; nothing decays.
+/** sp/f — how fast an ordinary enemy is thrown by a hit: 2 px/f, for as many
+ *  frames as the hit's KNOCK_* distance takes, straight AWAY from whatever hit
+ *  it (not along Link's facing), and cut short the frame it stops moving.
+ *  derived from the cartridge: oracles-disasm object_code/common/enemies/
+ *  commonCode.s, ecom_updateKnockback_common ("Speed is 200 or 300 based on
+ *  knockback duration"; SPEED_200 for every ordinary hit, and "Enemy stopped
+ *  moving; stop knockback early"); the angle is code/collisionEffects.s
+ *  @handleCollision, Link's position to the enemy's, flipped.
  *
- *  Worth knowing when tuning it: contact damage does not care that an enemy is
- *  mid-knockback, so these are frames the enemy is travelling away and can
- *  still hurt you. The exponential decay this replaces covered most of its
- *  distance in the first two frames, so shortening this is the lever that
- *  restores that snap. Trying 5 instead of 8 changed nothing measurable in
- *  either committed replay, so it is left where it was. */
-export const ENEMY_KNOCK_FRAMES = 8;
-
+ *  Worth knowing: contact damage does not care that an enemy is
+ *  mid-knockback, in the cartridge or here. */
+export const ENEMY_KNOCK_SPEED = 512;
 // The KNOCK_* values below are DISTANCES IN PIXELS, not speeds. A hit shoves
-// its target KNOCK_x pixels over ENEMY_KNOCK_FRAMES frames at a constant
-// speed. They were speeds until P4; the numbers are the total travel the old
-// exponential decay produced from the old speeds, so a sword still throws an
-// enemy about as far as it used to, in a straight predictable line instead of
-// an asymptote. All guessed.
+// its target KNOCK_x pixels at ENEMY_KNOCK_SPEED, so each is an even number:
+// the cartridge counts knockback in frames at 2 px a frame. Where Seasons has
+// the same kind of hit the distance is its tier from ENEMY_HIT_TIERS.
 
-/** px — default knockback dealt when a hit does not name its own. guessed. */
-export const KNOCK_DEFAULT = 13;
+/** px — default knockback dealt when a hit does not name its own. derived:
+ *  ENEMY_HIT_TIERS' normal hit, what most of Seasons' items deal. */
+export const KNOCK_DEFAULT = 22;
 
-/** px — knockback dealt by a sword swing. guessed. */
-export const KNOCK_SWORD = 18;
+/** px — knockback dealt by a swing of the L1 sword. derived: ENEMY_HIT_TIERS'
+ *  low hit (objectCollisionTable ENEMYCOLLISION_STANDARD_ENEMY, column
+ *  ITEMCOLLISION_L1_SWORD = COLLISIONEFFECT_SWORD_LOW_KNOCKBACK). */
+export const KNOCK_SWORD = 16;
 
-/** px — knockback dealt by a spin attack. guessed. */
-export const KNOCK_SPIN = 22;
+/** px — knockback dealt by a swing of the L2 sword or better. derived:
+ *  ENEMY_HIT_TIERS' normal hit (columns ITEMCOLLISION_L2/L3_SWORD =
+ *  COLLISIONEFFECT_SWORD). */
+export const KNOCK_SWORD_L2 = 22;
 
-/** px — knockback dealt by a projectile. guessed. */
-export const KNOCK_PROJECTILE = 13;
+/** px — knockback dealt by a spin attack. derived: ENEMY_HIT_TIERS' high hit
+ *  (column ITEMCOLLISION_SWORDSPIN = COLLISIONEFFECT_SWORD_HIGH_KNOCKBACK). */
+export const KNOCK_SPIN = 30;
 
-/** px — knockback dealt by an explosion. guessed. */
-export const KNOCK_EXPLOSION = 9;
+/** px — knockback dealt by a projectile. derived: ENEMY_HIT_TIERS' normal hit
+ *  (the sword beam's and the seeds' columns). */
+export const KNOCK_PROJECTILE = 22;
 
-/** px — knockback dealt by a thrown or dropped object. guessed. */
-export const KNOCK_THROWN = 9;
+/** px — knockback dealt by an explosion. derived: ENEMY_HIT_TIERS' high hit
+ *  (column ITEMCOLLISION_BOMB). */
+export const KNOCK_EXPLOSION = 30;
 
-/** px — knockback dealt by a stunning tool. guessed. */
-export const KNOCK_TOOL = 5;
+/** px — knockback dealt by a thrown or dropped object. derived:
+ *  ENEMY_HIT_TIERS' normal hit (column ITEMCOLLISION_THROWN_OBJECT). */
+export const KNOCK_THROWN = 22;
+
+/** px — knockback dealt by a stunning tool. guessed (our items); 6 rather
+ *  than 5 since the S150 knockback moves in 2 px frames. */
+export const KNOCK_TOOL = 6;
 
 /** f — invulnerability after a boss takes a hit. guessed; shorter than an
  *  ordinary enemy's so a boss can be combo'd. */

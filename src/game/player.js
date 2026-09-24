@@ -29,8 +29,8 @@ import {
   SPIN_FRAMES, SWORD_REACH, SWORD_GAP, SPIN_BOX,
   SWORD_HOLD_DELAY, SWORD_HOLD_DAMAGE, SWORD_CLINK_COOLDOWN, KNOCK_HOLD,
   PLAYER_INVULN_FRAMES, PLAYER_FLICKER_FRAMES, PLAYER_HURT_FLASH_BEAT, PLAYER_RECOVER_INVULN_FRAMES,
-  PLAYER_HURT_FRAMES, PLAYER_KNOCK_DIST, PLAYER_KNOCK_FRAMES,
-  KNOCK_SWORD, KNOCK_SPIN, HAZARD_DAMAGE, PIT_DAMAGE, WASH_DAMAGE,
+  PLAYER_HURT_FRAMES, PLAYER_KNOCK_SPEED, PLAYER_KNOCK_FRAMES,
+  KNOCK_SWORD, KNOCK_SWORD_L2, KNOCK_SPIN, HAZARD_DAMAGE, PIT_DAMAGE, WASH_DAMAGE,
   JUMP_GRAVITY, LAND_SETTLE_RATE,
   LEDGE_MAX_SPAN, LEDGE_HOP_FRAMES, LEDGE_HOP_HEIGHT, LEDGE_PROBE_REACH,
   GAP_HOP_MAX_SPAN,
@@ -742,7 +742,7 @@ export class Player extends Entity {
     for (const e of game.entities) {
       if (!e.isEnemy || e.dead || e.dormant || e.hidden) continue;
       if (!rectOverlap(box, enemyHurtRect(e))) continue;
-      e.hurt(game, SWORD_HOLD_DAMAGE, this.dir, KNOCK_HOLD);
+      e.hurt(game, SWORD_HOLD_DAMAGE, this.dir, KNOCK_HOLD, this);
     }
     // Walking a held blade through undergrowth cuts it, as it does in Seasons.
     game.checkTileAction(box, 'cut');
@@ -791,7 +791,8 @@ export class Player extends Entity {
       if (!e.isEnemy || e.dead || this.swingHit.has(e.id)) continue;
       if (rectOverlap(box, enemyHurtRect(e))) {
         this.swingHit.add(e.id);
-        e.hurt(game, this.swordHit(game), this.dir, this.swordKnock(game, KNOCK_SWORD));
+        e.hurt(game, this.swordHit(game), this.dir,
+          this.swordKnock(game, this.swordLevel >= 2 ? KNOCK_SWORD_L2 : KNOCK_SWORD), this);
       }
     }
     // Bushes and grass are cut by the blade at full reach, as the cartridge
@@ -865,7 +866,7 @@ export class Player extends Entity {
       if (!e.isEnemy || e.dead || this.spinHit.has(e.id)) continue;
       if (rectOverlap(box, enemyHurtRect(e))) {
         this.spinHit.add(e.id);
-        e.hurt(game, this.swordHit(game) + 1, this.dir, this.swordKnock(game, KNOCK_SPIN));
+        e.hurt(game, this.swordHit(game) + 1, this.dir, this.swordKnock(game, KNOCK_SPIN), this);
       }
     }
     game.checkTileAction(box, 'cut');
@@ -1271,12 +1272,13 @@ export class Player extends Entity {
     if (!o.noKnockDir && source && !this.underwater) {
       const dx = this.cx - source.cx, dy = this.cy - source.cy;
       const d = Math.hypot(dx, dy) || 1;
-      // sp/f: the whole distance divided across the whole window, once.
-      const dist = game.charm('ballastHeart') ? PLAYER_KNOCK_DIST / 2 : PLAYER_KNOCK_DIST;
-      const per = sp(dist) / PLAYER_KNOCK_FRAMES;
+      // The cartridge's shove: a fixed speed for a fixed count of frames.
+      // The Ballast Heart halves the count, as Seasons' Steadfast Ring halves
+      // knockbackCounter — half the distance at the same speed.
+      const per = PLAYER_KNOCK_SPEED;
       this.knockX = Math.round(dx / d * per);
       this.knockY = Math.round(dy / d * per);
-      this.knockTime = PLAYER_KNOCK_FRAMES;
+      this.knockTime = game.charm('ballastHeart') ? PLAYER_KNOCK_FRAMES >> 1 : PLAYER_KNOCK_FRAMES;
     } else {
       this.knockX = 0; this.knockY = 0; this.knockTime = 0;
     }

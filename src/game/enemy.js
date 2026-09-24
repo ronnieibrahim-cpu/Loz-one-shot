@@ -51,7 +51,7 @@ import {
   ENEMY_ORBIT_SPEED, ENEMY_ORBIT_RADIUS,
   ENEMY_SUBMERGE_DOWN_FRAMES, ENEMY_SUBMERGE_UP_FRAMES,
   ENEMY_SURFACE_MIN_DIST, ENEMY_SURFACE_DIST_SPAN, ENEMY_ALIGN_TOLERANCE,
-  ENEMY_KNOCK_FRAMES, ENEMY_SHOT_SPEED, ENEMY_SHOT_LIFE, ENEMY_DEATH_FRAMES,
+  ENEMY_SHOT_SPEED, ENEMY_SHOT_LIFE, ENEMY_DEATH_FRAMES,
   ENEMY_ATTACK_FRAMES,
   RING_SHOT_SPEED, RING_SHOT_LIFE,
   BOSS_INTRO_FRAMES, BOSS_INVULN_FRAMES, BOSS_PHASE_INVULN_FRAMES,
@@ -268,7 +268,10 @@ export class Enemy extends Entity {
     // last frame of it puts the enemy back on.
     if (this.knockTime > 0) {
       this.knockTime--;
-      moveEntity(game, this, this.knockX, this.knockY);
+      const hit = moveEntity(game, this, this.knockX, this.knockY);
+      // Stopped dead against something: the throw ends here, as the
+      // cartridge's does (ecom_updateKnockback_common).
+      if ((hit.hitX || !this.knockX) && (hit.hitY || !this.knockY)) this.knockTime = 0;
       if (this.knockTime === 0) {
         this.step = null; this.stepping = false;
         realign(this, game);
@@ -288,16 +291,16 @@ export class Enemy extends Entity {
     }
   }
 
-  hurt(game, dmg, dir, knock) {
+  hurt(game, dmg, dir, knock, from) {
     // A creature flopping on the bank cannot raise its shield and cannot take
     // a hit lightly. This is the Dredge Line's combat verb, and it is the
     // whole answer to an aquatic enemy you could otherwise never corner.
     if (this.dredged > 0) {
-      return super.hurt(game, Math.round(dmg * DREDGE_FLOP_DAMAGE_SCALE), dir, knock);
+      return super.hurt(game, Math.round(dmg * DREDGE_FLOP_DAMAGE_SCALE), dir, knock, from);
     }
     // Rung. Armour that is ringing is armour that is not blocking — locking a
     // darknut rigid would be a stun, and a stun is not an answer to armour.
-    if (this.rodLock > 0) return super.hurt(game, dmg, dir, knock);
+    if (this.rodLock > 0) return super.hurt(game, dmg, dir, knock, from);
     if (this.shield && dir) {
       // A shielded enemy blocks hits arriving at its facing side.
       const opposite = { up: 'down', down: 'up', left: 'right', right: 'left' };
@@ -309,7 +312,7 @@ export class Enemy extends Entity {
       if (this.shield === 'all') { game.audio.sfx('block'); return false; }
     }
     if (this.spec.onHurt) this.spec.onHurt(this, game, dmg);
-    return super.hurt(game, dmg, dir, knock);
+    return super.hurt(game, dmg, dir, knock, from);
   }
 
   /**

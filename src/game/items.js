@@ -377,7 +377,7 @@ export class ThrownObject extends Entity {
     if (r.hitX || r.hitY) { this.shatter(game); return; }
     for (const e of game.entities) {
       if (e.isEnemy && !e.dead && this.overlaps(e)) {
-        e.hurt(game, this.power, null, KNOCK_THROWN);
+        e.hurt(game, this.power, null, KNOCK_THROWN, this);
         this.shatter(game);
         return;
       }

@@ -105,7 +105,7 @@ export class Explosion extends Entity {
       game.shake(SHAKE_MEDIUM, SHAKE_MEDIUM_FRAMES);
       for (const e of game.entities) {
         if (e === this || e.dead) continue;
-        if (e.isEnemy && this.overlaps(e)) e.hurt(game, this.power, null, KNOCK_EXPLOSION);
+        if (e.isEnemy && this.overlaps(e)) e.hurt(game, this.power, null, KNOCK_EXPLOSION, this);
         if (e.bombable && this.overlaps(e) && e.onBombed) e.onBombed(game);
       }
       if (game.player && this.overlaps(game.player)) {
