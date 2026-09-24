@@ -3,7 +3,7 @@
 (Same working session as S140/S141.)
 
 ### What landed
-- D6 at `cell: [15, 11]`: 29 rooms, 34 screens, same graph on both floors,
+- D6 at `cell: [15, 11]`: 29 rooms, 34 screens (then grown, below), same graph on both floors,
   same item placement. Every Dredge Line crossing and cache is the 10x8
   fixture set whole into a bigger room at a fixed offset (Drowned Stand 3,1;
   Sunken Bar 3,1; Drowned Sill 3,0; Crossed Shafts 5,1; Slack Water 3,1;
@@ -42,12 +42,49 @@
   on the old 5-wide island). Every loss is the robot pinned against the
   island's north wall by beetles; the real run wins. Not retuned.
 
+### Grown to 47 screens (second commit of S142)
+- REQUIRED EAST WING, floor 0, past the Slack Water (its east wall opened):
+  - `0,6,3` The Draw: the first real crossing (LOW, `dWell` brace at 8,8,
+    post 12,8, return post 7,8) and a MID cache on the far bank.
+  - `0,7,2` The Tally Hall, size [1,2]: LOW up to an island, HIGH over the
+    lintel at 9,10 to the far bank, MID silt (a blank); a return for each.
+  - `0,6,2` The Hauling Pit: the Small Key on a pillar behind a lintel,
+    HAULED home at HIGH; a MID silt nook; a plate opens its south shutter
+    into the Draw's near bank (flag `d6_hauling`).
+  - Keep Lock's west door (to the Keep Stair) is now a key door; keys 19/19.
+  - NEW CHECKER CLAUSE: `dredgeRoom.hauls` in check-dredge (H1-H4: a pickup
+    is there, nobody walks to it, a cast from footing at the sea passes over
+    it, no other sea's does). NEW ROUTE MODE: `['dredge', x, y, face,
+    'haul']` in actor-runtime (done when a drop is taken).
+  - Keep Lock's wizzrobe is a stalfos: the robot could not kill it and now
+    crosses the room a fourth time. The Tally Hall's far bank holds no
+    enemies: the robot's `fight` chased them into the shaft.
+  - NEVER `loot` in the Hauling Pit before the key is home: the sweep walks
+    at the key on its pillar and falls in.
+- OPTIONAL, not routed, each proved by check-dredge and tried in-engine
+  with try-room:
+  - `0,6,4` The Angler Stews (off the Draw's south door): four deep pools of
+    anglerfry; the line lands them; clearing spawns a chest (Kelp Braid).
+  - `0,7,4` The Silt Terraces, size [1,2]: LOW crossing down to a lower
+    terrace, MID silt (a blank), chest (Pressure Scar).
+  - `1,0,5` The Long Sounding, size [2,1], off the Shade Cell's opened west
+    wall: LOW, HIGH, LOW crossings in a row westward, each with a return;
+    chest (Hagstone).
+  - `1,0,4` The Offering Pit: a rupee100 hauled at HIGH, a MID silt nook.
+  - `1,1,4` The Undertow Cell: anglerfry pools and a darknut; clearing opens
+    its north shutter.
+  - `1,0,3` The Deep Choir, size [2,1]: crossed at MID ONLY, braced on a
+    `dDrain` (pit at LOW, wading at MID, deep at HIGH) — a new use of a tile
+    the Keep already had; HIGH silt behind a lintel (rupee100); chest (Neap
+    Charm).
+- check-playthrough 41/41, 219517 frames; Link now meets the Tideshade on
+  36/44 (was 21). Over 13 seeds: Nereth 12/13, Tideshade 13/13 (27 qh
+  left), Brinehulk 9/13 — unchanged.
+
 ### Open
-- D6 is 34 screens; the ladder wants >=46. Planned wings: floor 0 east past
-  the Slack Water (a 2x1 hall at 0,6,3-0,7,3, rooms 0,7,2 and 0,7,1);
-  floor 1 west (1,1,3-1,1,5) and east (1,5,3). Each must be a dredge room
-  proved by check-dredge. Heart Pieces must stay 24 in total.
-- Then grow D3 (>=32), D4 (>=36), D5 (>=40).
+- Grow D5 (>=40, is 27), D4 (>=36, is 27), D3 (>=32, is 25), in that order.
+- The optional rooms are not in the route; a human play of them is the
+  proof that the Stews' pull-and-flop fight feels right.
 - Brinehulk's 9/13 is the robot's; watch it if the island changes again.
 
 ## S141 — the Drowned Wood Shrine is rebuilt at Oracle room size

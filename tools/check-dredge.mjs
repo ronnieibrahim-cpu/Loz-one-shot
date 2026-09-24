@@ -46,6 +46,7 @@
 //     moorings: [{ post:[x,y], from:[x,y], land:[x,y], face, sea, entry? }, ...],
 //     returns:  [{ post:[x,y], from:[x,y], land:[x,y], face, sea, entry? }, ...],
 //     caches:   [{ at:[x,y],   from:[x,y], face, sea }, ...],
+//     hauls:    [{ at:[x,y],   from:[x,y], face, sea }, ...],   // a pickup fetched across a shaft
 //     teaches: true,                                  // optional, see R1
 //     opens: [[x,y], ...], gives: 'key',              // optional
 //   }
@@ -576,6 +577,63 @@ for (const r of rooms) {
     }
   }
 
+  // --- the hauls ----------------------------------------------------------
+  //
+  // THE LINE BRINGS HOME WHAT IT CATCHES. `DredgeLine.update` hooks any drop
+  // its weight overlaps and hauls it back to the player's feet — so a key left
+  // on a pillar in a shaft is a key the line can fetch and the player cannot
+  // walk to. The Hauling Pit (S142) is the room that asks it. The claims are a
+  // cache's, without the silt: the thing is really there (H1), nobody walks to
+  // it (H2), a cast from footing at the declared sea passes over it (H3), and
+  // no other sea's cast from anywhere the player can stand does (H4). The weight
+  // catches by overlap rather than by tile, so this models it as "the cast's
+  // path crosses the tile", which the route then confirms in-engine.
+  const hauls = r.R.hauls || [];
+  for (let i = 0; i < hauls.length; i++) {
+    const H = hauls[i];
+    const tag = `${where} haul ${i + 1}`;
+    const A = H.at.join(',');
+    // H1. something is placed there.
+    {
+      const has = (r.def.entities || []).some(e => e[0] === 'pickup' && e[1] === H.at[0] && e[2] === H.at[1]);
+      check(`${tag}: a pickup sits at ${A}`, has, 'nothing there — the line comes home empty');
+    }
+    // H2. and nobody walks to it.
+    {
+      const got = LEVELS.filter(l => near(l).has(A));
+      check(`${tag}: ${A} cannot be walked or swum to at any sea`, got.length === 0,
+        'reachable at ' + got.map(l => LEVEL_NAME[l]).join('/') + ' — the line is decoration');
+    }
+    // H3. and a cast from footing at the declared sea passes over it.
+    {
+      const d = board.def(H.from[0], H.from[1], H.sea);
+      check(`${tag}: ${H.from.join(',')} is footing at ${LEVEL_NAME[H.sea]}`, canCastFrom(d),
+        `${d ? d.name : 'nothing'} — a line cannot be cast from the water`);
+      check(`${tag}: and it can be got to at ${LEVEL_NAME[H.sea]}`, near(H.sea).has(H.from.join(',')),
+        'nothing reaches ' + H.from.join(','));
+      const c = cast(board, H.from[0], H.from[1], H.face, H.sea);
+      check(`${tag}: and the cast passes over ${A}`, c.path.some(p => p[0] === H.at[0] && p[1] === H.at[1]),
+        c.blocked ? 'it stops on ' + c.blocked.join(',') + ' (' + board.name(c.blocked[0], c.blocked[1]) + ')' : 'it never gets there');
+    }
+    // H4. AND NO OTHER SEA WILL DO.
+    for (let ri = 0; ri < REACHES.length; ri++) {
+      const answers = new Set();
+      for (const l of LEVELS) {
+        for (const k of near(l)) {
+          const [x, y] = k.split(',').map(Number);
+          if (!canCastFrom(board.def(x, y, l))) continue;
+          for (const dir of Object.keys(DIR_VEC)) {
+            const c = cast(board, x, y, dir, l, REACHES[ri]);
+            if (c.path.some(p => p[0] === H.at[0] && p[1] === H.at[1])) answers.add(l);
+          }
+        }
+      }
+      check(`${tag}: and no other sea reaches it (${REACH_NAME[ri]})`,
+        answers.size === 1 && answers.has(H.sea),
+        'reachable at ' + [...answers].map(l => LEVEL_NAME[l]).join('/') + ' — the declared sea is ' + LEVEL_NAME[H.sea]);
+    }
+  }
+
   // --- per room -----------------------------------------------------------
 
   // R1. the room needs two seas.
@@ -594,7 +652,7 @@ for (const r of rooms) {
       keys.length === 0 && !(r.R.opens || []).length && !r.R.gives,
       'it pays out ' + (r.R.gives || keys.map(k => k[2]).join(',') || 'a door'));
   } else {
-    const seas = new Set([...moorings.map(m => m.sea), ...caches.map(c => c.sea)]);
+    const seas = new Set([...moorings.map(m => m.sea), ...caches.map(c => c.sea), ...hauls.map(h => h.sea)]);
     check(`${where}: no fixed tide answers the room`, seas.size >= 2,
       'everything in it is done at ' + [...seas].map(l => LEVEL_NAME[l]).join('/'));
   }

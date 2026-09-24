@@ -46,7 +46,7 @@ its map declares `cell: [15, 11]`, it has its own Seasons kit, and
 | 3 | `d3` | Bogwater Sanctum | Kelp-Soled Cleats | **DONE, AND PLAYED; ORACLE SIZE** | `a9eb63e`; rebuilt at 15x11 S139 (`08a4e74`) |
 | 4 | `d4` | Cliffside Cistern | Squall Bellows | **DONE, AND PLAYED; ORACLE SIZE** | `5fd7301`; rebuilt at 15x11 S140 (`4d61f0e`) |
 | 5 | `d5` | Drowned Wood Shrine | Reefseed | **DONE, AND PLAYED; ORACLE SIZE** | `0db0eab`; rebuilt at 15x11 S141 (`ef1b1ea`) |
-| 6 | `d6` | Abyssal Keep | Dredge Line | **DONE, AND PLAYED TO THE END; ORACLE SIZE** | authored `84d14e5`; played to the end S121; rebuilt at 15x11 S142 |
+| 6 | `d6` | Abyssal Keep | Dredge Line | **DONE, AND PLAYED TO THE END; ORACLE SIZE** | authored `84d14e5`; played to the end S121; rebuilt at 15x11 and grown to 47 screens S142 |
 | — | `d7` | Reef Palace | — | **FOLDED IN** | `84d14e5` |
 | — | `d8` | Abyssal Keep | — | **FOLDED IN** | `84d14e5` |
 

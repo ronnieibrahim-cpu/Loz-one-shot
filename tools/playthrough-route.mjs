@@ -2195,11 +2195,69 @@ export const ROUTE = [
   ['dredge', 7, 7, 'up', 'fish', 2400],
   ['loot', 900],
 
-  // UP THE KEEP STAIR. The warp is the tile at 8,1 and `travel` cannot plan a
-  // floor change, so the stair is named by hand like every other one.
+  // ------------------------------------------------ THE EAST WING (S142)
+  // THE LINE'S EXAMINATION, and the Small Key for the stair is at the end of
+  // it. The Draw is the first real crossing (brace on the shelf at LOW) and
+  // its cache at MID; the Tally Hall is three seas in one tall room — LOW up
+  // to the island, HIGH over the drowned bar, MID for the silt; the Hauling
+  // Pit's key sits on a pillar behind a bar and comes home on the line at
+  // HIGH. Its plate opens the south door straight back into the Draw.
+  ['travel', 6, 3, 4000],
+  ['equip', 'sword', 'A', 400],
+  ['fight', 3000, 2000],
+  ['loot', 900],
+  ['equip', 'dredge', 'A', 400],
+  ['tide', 0, 140, 900],
+  ['dredge', 8, 8, 'right', [11, 8], 2400],
+  ['wait', 60],
+  ['tide', 1, 140, 900],
+  ['dredge', 12, 2, 'up', 'fish', 2400],
+  ['loot', 900],
+  ['goto', 13, 5, 1500],
+  ['exit', 'right', 600],
+  ['equip', 'sword', 'A', 400],
+  ['fight', 3000, 2000],
+  ['loot', 900],
+  ['equip', 'dredge', 'A', 400],
+  ['tide', 0, 140, 900],
+  ['dredge', 7, 16, 'up', [7, 13], 2400],
+  ['wait', 60],
+  ['tide', 2, 140, 900],
+  ['dredge', 9, 12, 'up', [9, 9], 2400],
+  ['wait', 60],
+  ['tide', 1, 140, 900],
+  ['dredge', 11, 3, 'up', 'fish', 2400],
+  ['loot', 900],
+  ['goto', 1, 5, 1500],
+  ['exit', 'left', 600],
+  // NO SWEEP HERE until the key is home: the sweep walks at every drop in
+  // the room, and the key on the pillar is a drop with a shaft round it.
+  ['equip', 'sword', 'A', 400],
+  ['fight', 3000, 2000],
+  ['equip', 'dredge', 'A', 400],
+  ['dredge', 3, 8, 'up', 'fish', 2400],
+  ['tide', 2, 140, 900],
+  ['dredge', 7, 6, 'up', 'haul', 2400],
+  ['wait', 60],
+  ['loot', 900],
+  ['tide', 1, 140, 900],
+  ['goto', 12, 8, 900],
+  ['wait', 90],
+  ['goto', 7, 9, 900],
+  ['exit', 'down', 600],
+  ['travel', 5, 3, 4000],
+
+  // UP THE KEEP STAIR, through Keep Lock's west door with the Hauling Pit's
+  // key. The warp is the tile at 12,2 and `travel` cannot plan a floor
+  // change, so the stair is named by hand like every other one.
   ['travel', 4, 3, 4000],
   ['travel', 3, 3, 4000],
-  ['travel', 2, 3, 4000],
+  ['goto', 1, 5, 1500],
+  ['hold', ['left'], 24],
+  ['tap', 'a', 30],
+  ['dialogue', 300],
+  ['goto', 1, 5, 900],
+  ['exit', 'left', 600],
   ['goto', 12, 2, 1500],
   ['wait', 120],
 
@@ -2687,6 +2745,6 @@ export const GOAL = {
   // game.
   room: 'd6/1,3,0',
   needsVerb: null,
-  keysNeeded: 18,
-  keysObtainable: 18,
+  keysNeeded: 19,
+  keysObtainable: 19,
 };

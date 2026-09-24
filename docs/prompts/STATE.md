@@ -8,7 +8,7 @@ jambs, doors, floors, block, pot) cut by tools/rip-dungeon-themes.py.
 Puzzles deepened, never made obscure. S141 (the human): dungeons GROW, as
 the Oracle games' do, and new rooms get less creative restraint. Size
 ladder in screens (today in brackets): D1 25 [25], D2 27 [27], D3 >=32 [25],
-D4 >=36 [27], D5 >=40 [27], D6 >=46 [34]. New rooms are new ideas with the
+D4 >=36 [27], D5 >=40 [27], D6 >=46 [47]. New rooms are new ideas with the
 dungeon's item and tide theme, each proved by its item's checker. The engine,
 every checker and the route learned Oracle cells at S137 (map `cell: [15, 11]`,
 `cellTiles`), and D1 Tidewash Grotto is rebuilt and played to THE END.
@@ -17,16 +17,16 @@ DONE-CONDITION: all six dungeons declare `cell: [15, 11]`, each with its own
 Seasons kit, each meets its size ladder, and `node tools/check-playthrough.mjs`
 is green end to end.
 PROGRESS: D1 done (S137). D2 done (S138). D3 done (S139). D4 done (S140).
-D5 done (S141). D6 done (S142). All six are Oracle size. Next: grow D6, then
-D3, D4, D5 to the ladder (their Oracle rebuilds are done, their size is not).
+D5 done (S141). D6 done and grown (S142). All six are Oracle size. Next: grow
+D5, D4, D3 to the ladder (their Oracle rebuilds are done, their size is not).
 
 ROTATION (retired S112, kept for the record):
   1 wide-rooms MET S111 | 2 art-provenance S9/S74 | 3 boss-art S75
   4 enemy-roster S59 | 5 npc-detail S63 | 6 region-art S89
   7 item-reuse MET S110 | 8 feel-measure BLOCKED | 9 playthrough-route MET S121
 
-FILE ALLOWLIST for the current objective (rebuild and grow D6):
-  src/data/dungeons-b.js (the d6 block), src/data/overworld.js (d6's arrival), src/data/tiles-core.js,
+FILE ALLOWLIST for the current objective (grow D5, D4, D3):
+  src/data/dungeons-a.js + dungeons-b.js (the d3-d5 blocks), src/data/tiles-core.js,
   src/data/legends.js, src/data/tiles-dungeon-themes.js (regenerated only),
   tools/rip-dungeon-themes.py, tools/playthrough-route.mjs,
   tools/replay-plans.mjs + tools/replays/d6-*.json, src/data/bosses.js (d6's
@@ -57,4 +57,4 @@ S138 | objective | The second dungeon, the Coral Spire, is rebuilt at real Oracl
 S139 | objective | The third dungeon, the Bogwater Sanctum, is rebuilt at real Oracle room size in the blue slate and olive floor of the Seasons Poison Moth's Lair, with that dungeon's own key doors and the game's first proper Oracle boss door. The Kelp Locks now want both of the Cleats' layers in one crossing: ride the current round, sink for the last stretch. The miniboss's hall no longer lets you skip half the dungeon, the boss's ink spit hurts less in the bigger room, and the test robot now fights the miniboss and actually picks up the boss's Heart Container. The whole game still plays to the end.
 S140 | objective | The fourth dungeon, the Cliffside Cistern, is rebuilt at real Oracle room size in the grey stone and green floor of the Seasons Dancing Dragon Dungeon, with that dungeon's own locked doors, shutters and horned boss door. The Long Race now has two wind-wheels, and the second is behind the first at a different tide. A plate beside the Boss Key's room opens a shortcut to the boss door. Fixed: pumping the Bellows used to let Link walk for a moment, straight into the pit in front of every wheel, and a Piece of Heart that had popped into a wall. The whole game still plays to the end.
 S141 | objective | The fifth dungeon, the Drowned Wood Shrine, is rebuilt at real Oracle room size in the brown stone and gold floor of the Seasons Ancient Ruins, with that dungeon's own doors. Every seed grove works exactly as before in the bigger rooms. Fixed: the salt colossus in the last dungeon used to leave its beetles behind when it died, and they could knock Link into a pit. The whole game still plays to the end, and the last boss is now met on a full health bar.
-S142 | objective | The last dungeon, the Abyssal Keep, is rebuilt at real Oracle room size in the dark stone of the Seasons Sword & Shield Maze, with its own locked doors and boss door. Nereth's stair now has an antechamber with the fairy and the boss door, and the throne-room door shuts behind you until the King is dead. The salt colossus has the whole east side of its room to fight on. All six dungeons are now Oracle size, and the whole game still plays to the end.
+S142 | objective | The last dungeon, the Abyssal Keep, is rebuilt at real Oracle room size in the dark stone of the Seasons Sword & Shield Maze, with its own locked doors and boss door. Nereth's stair now has an antechamber with the fairy and the boss door, and the throne-room door shuts behind you until the King is dead. The salt colossus has the whole east side of its room to fight on. Then the Keep grew to 47 screens, the biggest dungeon in the game: a new wing where you must fish the stair key off a pillar, and six optional rooms with four charms. All six dungeons are now Oracle size, and the whole game still plays to the end.

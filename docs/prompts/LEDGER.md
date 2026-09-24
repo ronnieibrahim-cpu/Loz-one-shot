@@ -927,6 +927,10 @@ checked and why; see `docs/NEXT-SESSION.md` S60 for the full account.
   holds the fairy and the boss door.
 - Nothing places the generic dungeon mouth any more; it is deleted.
 - Nereth 12/13, Tideshade 13/13, Brinehulk 9/13 over 13 route seeds.
+- The Keep is 38 rooms, 47 screens. A required east wing examines the
+  line before the stair (key in the Hauling Pit, hauled at HIGH); six
+  optional rooms hold four charms. The line HAULS: `dredgeRoom.hauls` is
+  proved by check-dredge. A `dDrain` brace makes a MID-only crossing.
 
 ## Settled at S141 — the Drowned Wood Shrine is an Oracle dungeon
 

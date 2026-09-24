@@ -2366,6 +2366,8 @@ export async function installRuntime() {
    *                                           the pull has put the player on 5,3
    *   ['dredge', 7, 3, 'up', 'fish', 1800]    brace at 7,3, face up, cast until
    *                                           the drag turns something up
+   *   ['dredge', 7, 6, 'up', 'haul', 1800]    ...until the line has brought a
+   *                                           drop home and it has been taken
    *
    * WHY THE ROUTE NAMES THE TILE AND THE FACING RATHER THAN THE MOORING. The
    * room data declares both — `dredgeRoom.moorings[i].from` and `.face` — but
@@ -2413,7 +2415,10 @@ export async function installRuntime() {
     // weaker test is true before the first cast and the directive returns
     // having thrown nothing.
     const land = Array.isArray(until) ? until[0] + ',' + until[1] : null;
-    const done = () => (land ? here() === land : drops() > startDrops);
+    // `'haul'` is the Hauling Pit's: the thing was on the floor all along, so
+    // the count goes DOWN when the line brings it home and it is picked up.
+    const done = () => (land ? here() === land
+      : until === 'haul' ? drops() < startDrops : drops() > startDrops);
     let f = 0;
     for (let cast = 0; cast < 12 && f < budget; cast++) {
       // Back on the brace. A crossing leaves the player somewhere else, so

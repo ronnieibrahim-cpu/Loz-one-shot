@@ -895,12 +895,21 @@ export function installDungeonsB() {
   // middle of their walls; check-dredge, check-reefseed, check-bellows and
   // check-lens prove them as before.
   //
-  // Intended route (29 rooms, two floors, the Dredge Line at room 13):
+  // GROWN AT S142 to 38 rooms, 47 screens, the largest dungeon in the game,
+  // the way the Oracle games grow theirs: a required east wing on floor 0
+  // (the Draw, the Tally Hall, the Hauling Pit — the line examined before the
+  // stair), and optional rooms on both floors (the Angler Stews and the Silt
+  // Terraces below; the Long Sounding, the Offering Pit, the Undertow Cell
+  // and the Deep Choir above), four charms among them.
+  //
+  // Intended route (the Dredge Line at room 13):
   //   3,7 entrance -> 3,6 landing -> 2,6 Dungeon Map / 4,6 Small Key 1
   //   -> 3,5 Drowned Hall (hub) -> 2,5 Chartstone -> 4,5 Small Key 2
   //   -> 3,4 Three Heights (key door north) -> 2,4 wheel / 4,4 Small Key 3
   //   -> 3,3 Keep Lock (key door east) -> 4,3 DREDGE LINE -> 5,3 the Slack
-  //   Water -> 2,3 stair up
+  //   Water -> 6,3 the Draw -> 7,2 the Tally Hall -> 6,2 the Hauling Pit
+  //   (Small Key, and a plate back into the Draw) -> 3,3 Keep Lock (key
+  //   door west) -> 2,3 stair up
   //   -> 1F 3,5 Upper Keep -> 2,5 -> 2,4 the Coilrope
   //      -> 4,5 Tideshade (miniboss) -> 4,4 the Mermaid Suit
   //      -> 3,4 the Drowned Stand -> 3,3 Keep Crossing
@@ -1212,7 +1221,7 @@ export function installDungeonsB() {
           '#.............#',
           '#....#...#....#',
           '#.............#',
-          '..............L',
+          'L.............L',
           '#.............#',
           '#....#...#....#',
           '#.............#',
@@ -1221,7 +1230,7 @@ export function installDungeonsB() {
         ],
         entities: [
           ['darknut', 4, 5],
-          ['wizzrobe', 10, 8],
+          ['stalfos', 10, 8],
         ],
       },
       '0,2,3': {
@@ -1232,7 +1241,7 @@ export function installDungeonsB() {
           '#.........../.#',
           '#.............#',
           '#.............#',
-          '#..............',
+          '#.............L',
           '#.............#',
           '#.............#',
           '#.U.........U.#',
@@ -1318,7 +1327,7 @@ export function installDungeonsB() {
           '####........###',
           '####.111111.###',
           '####.111111.###',
-          '.....116111.###',
+          '.....116111....',
           '####.111111.###',
           '####........###',
           '###############',
@@ -1339,6 +1348,248 @@ export function installDungeonsB() {
         ],
         readable: [
           [4, 2, 'A dredger\'s tally, half scoured away: "Dry pan,\ndry line. We only ever worked it with the water\nin."'],
+        ],
+      },
+
+      // ---------------------------------------------------- the east wing (S142)
+      //
+      // THE DREDGE LINE'S EXAMINATION, between the teaching pan and the stair.
+      // The Slack Water teaches the floor; these three teach the line: the
+      // Draw is the first real crossing and its way home, the Tally Hall asks
+      // for three seas in one tall room, and the Hauling Pit hands the Small
+      // Key for the stair over only to a player who has learned that the line
+      // brings home what it catches. The key opens Keep Lock's west door, and
+      // a plate in the Hauling Pit opens the short way back into the Draw.
+      '0,6,3': {
+        name: 'The Draw',
+        // CROSSING 0: the Drowned Stand's fixture, the first time the player
+        // needs it. The shelf at 8,8 is `dWell` — wading at LOW, over your head
+        // above — and the only footing the far post can be reached from; the
+        // post at 7,8 is the way home and stops a longer line from the bank.
+        map: [
+          '#######D#######',
+          '#.......#OO.6.#',
+          '#.......#OO.1.#',
+          '#.p.....#OO...#',
+          '#.......#OO...#',
+          '........#OO....',
+          '#.......#OO...#',
+          '#.......#OO...#',
+          '#......q3OO.q.#',
+          '#........OO...#',
+          '#######.#######',
+        ],
+        buried: [[12, 1, 'rupee20']],
+        dredgeRoom: {
+          entry: [0, 5],
+          moorings: [
+            { post: [12, 8], from: [8, 8], land: [11, 8], face: 'right', sea: 0 },
+          ],
+          returns: [
+            { post: [7, 8], from: [11, 8], land: [8, 8], face: 'left', sea: 0 },
+          ],
+          caches: [
+            { at: [12, 1], from: [12, 2], face: 'up', sea: 1 },
+          ],
+        },
+        entities: [
+          ['stalfos', 3, 6],
+          ['stalfos', 5, 2],
+        ],
+        readable: [
+          [6, 9, 'Scratched by the shaft: "The shelf holds your\nheels at slack water and at no other."'],
+        ],
+      },
+      '0,7,2': {
+        name: 'The Tally Hall',
+        // THREE SEAS, ONE ROOM, two screens tall. Up from the door's bank to the
+        // island at LOW off the shelf at 7,16; up from the island to the far
+        // bank at HIGH, once the flood has drowned the bar at 9,10; and on the
+        // far bank a silted ring fished from a shelf that is over your head at
+        // HIGH, so the sea comes back down to MID for it. The way out is west
+        // off the far bank, and every crossing has its way home.
+        size: [1, 2],
+        map: [
+          '###############',
+          '#.............#',
+          '#..........6..#',
+          '#..........1..#',
+          '#.............#',
+          '..............#',
+          '#.............#',
+          '#.............#',
+          '#........q....#',
+          '#.............#',
+          '#OOOO7OOO7OOOO#',
+          '#OOOOOOOOOOOOO#',
+          '#OOOO..q..OOOO#',
+          '#OOOOq....OOOO#',
+          '#OOOOOOOOOOOOO#',
+          '#OOOOOOOOOOOOO#',
+          '.......3......#',
+          '#......q......#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '###############',
+        ],
+        buried: [[11, 2, 'blank']],
+        dredgeRoom: {
+          entry: [0, 16],
+          moorings: [
+            { post: [7, 12], from: [7, 16], land: [7, 13], face: 'up', sea: 0 },
+            { post: [9, 8], from: [9, 12], land: [9, 9], face: 'up', sea: 2, entry: [7, 13] },
+          ],
+          returns: [
+            { post: [7, 17], from: [7, 13], land: [7, 16], face: 'down', sea: 0 },
+            { post: [5, 13], from: [5, 9], land: [5, 12], face: 'down', sea: 2, entry: [7, 13] },
+          ],
+          caches: [
+            { at: [11, 2], from: [11, 3], face: 'up', sea: 1 },
+          ],
+        },
+        entities: [
+          ['stalfos', 3, 19],
+          ['stalfos', 11, 18],
+        ],
+        readable: [
+          [2, 18, 'A tally cut in the wall, three marks:\n"Slack for the shelf. Flood for the bar. Half\nwater for the floor."'],
+        ],
+      },
+      '0,6,2': {
+        name: 'The Hauling Pit',
+        // THE LINE BRINGS HOME WHAT IT CATCHES. The Small Key is on a pillar
+        // in the shaft, and the bar at 7,4 stands between it and the only bank
+        // near enough — so it comes home at HIGH and at no other sea. The silt
+        // in the nook at 3,7 can only be fished from the shelf in front of it,
+        // which is over your head at HIGH: MID for the floor, HIGH for the key.
+        // The plate opens the south door into the Draw's near bank, so the key
+        // does not have to be carried back over three shafts.
+        map: [
+          '###############',
+          '#####OOOOO#####',
+          '#####OO.OO#####',
+          '#####OOOOO#####',
+          '#####OO7OO#####',
+          '#....OOOOO.....',
+          '#..#..........#',
+          '#.#6#.........#',
+          '#..1..........#',
+          '#..#..........#',
+          '#######D#######',
+        ],
+        buried: [[3, 7, 'rupee20']],
+        dredgeRoom: {
+          entry: [14, 5],
+          hauls: [
+            { at: [7, 2], from: [7, 6], face: 'up', sea: 2 },
+          ],
+          caches: [
+            { at: [3, 7], from: [3, 8], face: 'up', sea: 1 },
+          ],
+        },
+        entities: [
+          ['pickup', 7, 2, { kind: 'key' }],
+          ['switch', 12, 8, { hold: false }],
+          ['stalfos', 10, 8],
+        ],
+        puzzle: {
+          switches: 'all',
+          flag: 'd6_hauling',
+          reward: {
+            openDoors: [[7, 10]],
+            say: 'The south door grinds open.',
+          },
+        },
+        readable: [
+          [12, 6, 'Carved over the shaft: "What the line\ncatches, it brings home."'],
+        ],
+      },
+
+      '0,6,4': {
+        name: 'The Angler Stews',
+        // THE LINE'S OTHER HALF, and the only fight in the Keep built for it.
+        // Four deep pools, an anglerfry in each, and a sword cannot reach the
+        // middle of a pool three tiles wide. The line can: it lands what it
+        // catches on the bank, where it flops helpless and takes double. The
+        // chest appears when the pools are empty. Off the Draw's near bank.
+        map: [
+          '#######.#######',
+          '#.............#',
+          '#.WWW.....WWW.#',
+          '#.WWW.....WWW.#',
+          '#.............#',
+          '#..............',
+          '#.............#',
+          '#.WWW.....WWW.#',
+          '#.WWW.....WWW.#',
+          '#.............#',
+          '###############',
+        ],
+        entities: [
+          ['anglerfry', 3, 2],
+          ['anglerfry', 11, 3],
+          ['anglerfry', 3, 8],
+          ['anglerfry', 11, 7],
+        ],
+        puzzle: {
+          enemies: true,
+          flag: 'd6_stews',
+          reward: { spawn: [['chest', 7, 5, { charm: 'kelpBraid' }]], say: 'The pools go still.' },
+        },
+        readable: [
+          [7, 1, 'A fishwife\'s board: "They will not come out\nfor a blade. They come out for a line."'],
+        ],
+      },
+      '0,7,4': {
+        name: 'The Silt Terraces',
+        // Two screens tall and a step down the middle: brace on the shelf at
+        // 7,8 at LOW and the line takes you to the lower terrace; the silt in
+        // the nook at 12,14 gives up a blank to a line cast off the shelf in
+        // front of it at MID; and the chest is the terrace's own. The way home
+        // is the post at 7,7, at LOW again.
+        size: [1, 2],
+        map: [
+          '###############',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '#.............#',
+          '..............#',
+          '#.............#',
+          '#......q......#',
+          '#......3......#',
+          '#OOOOOOOOOOOOO#',
+          '#OOOOOOOOOOOOO#',
+          '#.............#',
+          '#......q......#',
+          '#...........#.#',
+          '#..........#6##',
+          '#...........1.#',
+          '#...........#.#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '###############',
+        ],
+        buried: [[12, 14, 'blank']],
+        dredgeRoom: {
+          entry: [0, 5],
+          moorings: [
+            { post: [7, 12], from: [7, 8], land: [7, 11], face: 'down', sea: 0 },
+          ],
+          returns: [
+            { post: [7, 7], from: [7, 11], land: [7, 8], face: 'up', sea: 0 },
+          ],
+          caches: [
+            { at: [12, 14], from: [12, 15], face: 'up', sea: 1 },
+          ],
+        },
+        entities: [
+          ['chest', 2, 19, { charm: 'pressureScar' }],
+          ['stalfos', 5, 17],
+          ['keese', 10, 4],
         ],
       },
 
@@ -1373,7 +1624,7 @@ export function installDungeonsB() {
           '#.............#',
           '#...M.....M...#',
           '#.............#',
-          '#..............',
+          '...............',
           '#.............#',
           '#...M.....M...#',
           '#.............#',
@@ -1417,6 +1668,158 @@ export function installDungeonsB() {
         ],
         readable: [
           [11, 5, 'A chandler\'s note nailed to the column: "More\nrope is more room. It is not more sea."'],
+        ],
+      },
+      // ---------------------------------------------------- the west wing (S142)
+      // Off the Shade Cell, and nothing in it is needed: the Keep's deepest
+      // optional run. Three shafts in a row at three seas, a pit that pays out
+      // what the line can reach over a bar, a flooded cell of anglerfry, and a
+      // choir hall whose shelf is a hole at slack water and wades only at
+      // half tide.
+      '1,0,5': {
+        name: 'The Long Sounding',
+        // THREE SHAFTS, WEST FROM THE DOOR. LOW off the shelf at 23,5 to the
+        // first island; HIGH from its west side over the bar at 16,7; LOW
+        // again off the second island's shelf at 12,5 to the far bank. Every
+        // one has its way home, and a player who raises the sea to cross the
+        // second shaft has to remember to lower it for the third.
+        size: [2, 1],
+        map: [
+          '#######.######################',
+          '#.........OO....OO...OO##....#',
+          '#.........OO....OO...OO##....#',
+          '#.........OO....7O.q.OO##....#',
+          '#.........OO....OO...OO......#',
+          '#.......q.OO3q..OO#q.OO3q.....',
+          '#.........OO....OO...OO......#',
+          '#.........OO..q.7O...OO##....#',
+          '#.........OO....OO...OO##....#',
+          '#.........OO....OO...OO##....#',
+          '##############################',
+        ],
+        dredgeRoom: {
+          entry: [29, 5],
+          moorings: [
+            { post: [19, 5], from: [23, 5], land: [20, 5], face: 'left', sea: 0 },
+            { post: [14, 7], from: [18, 7], land: [15, 7], face: 'left', sea: 2, entry: [20, 5] },
+            { post: [8, 5], from: [12, 5], land: [9, 5], face: 'left', sea: 0, entry: [15, 7] },
+          ],
+          returns: [
+            { post: [24, 5], from: [20, 5], land: [23, 5], face: 'right', sea: 0 },
+            { post: [19, 3], from: [15, 3], land: [18, 3], face: 'right', sea: 2, entry: [20, 5] },
+            { post: [13, 5], from: [9, 5], land: [12, 5], face: 'right', sea: 0, entry: [15, 7] },
+          ],
+        },
+        entities: [
+          ['chest', 3, 5, { charm: 'hagstone' }],
+          ['stalfos', 26, 2],
+          ['darknut', 4, 8],
+        ],
+        readable: [
+          [27, 8, 'A sounding line knotted to the wall:\n"Slack, flood, slack. Count them before you\ngo."'],
+        ],
+      },
+      '1,0,4': {
+        name: 'The Offering Pit',
+        // What the Hauling Pit taught, with nothing at stake: a purse on a
+        // pillar behind a bar, fetched at HIGH; and a silt nook in the corner
+        // fished at MID off the shelf in front of it.
+        map: [
+          '###############',
+          '#.OOOOOOOOOOO.#',
+          '#.OOOOOOOOOOO.#',
+          '#.OOOOO.OOOOO.#',
+          '#.OOOOOOOOOOO.#',
+          '#.OOOOO7OOOOO..',
+          '#.OOOOOOOOOOO.#',
+          '#..1..........#',
+          '#.#6#.........#',
+          '#..#..........#',
+          '#######.#######',
+        ],
+        buried: [[3, 8, 'rupee20']],
+        dredgeRoom: {
+          entry: [7, 10],
+          hauls: [
+            { at: [7, 3], from: [7, 7], face: 'up', sea: 2 },
+          ],
+          caches: [
+            { at: [3, 8], from: [3, 7], face: 'down', sea: 1 },
+          ],
+        },
+        entities: [
+          ['pickup', 7, 3, { kind: 'rupee100' }],
+          ['keese', 11, 8],
+        ],
+      },
+      '1,1,4': {
+        name: 'The Undertow Cell',
+        // The Angler Stews upstairs, with a knight in the middle of it. The
+        // north door opens when the room is empty.
+        map: [
+          '#######D#######',
+          '#.............#',
+          '#.WWW.....WWW.#',
+          '#.WWW.....WWW.#',
+          '#.............#',
+          '..............#',
+          '#.............#',
+          '#.WWW.....WWW.#',
+          '#.WWW.....WWW.#',
+          '#.............#',
+          '###############',
+        ],
+        entities: [
+          ['anglerfry', 3, 2],
+          ['anglerfry', 11, 8],
+          ['darknut', 7, 5],
+        ],
+        puzzle: {
+          enemies: true,
+          flag: 'd6_undertow',
+          reward: { openDoors: [[7, 0]], say: 'The north door grinds open.' },
+        },
+      },
+      '1,0,3': {
+        name: 'The Deep Choir',
+        // THE SHELF THAT IS A HOLE AT SLACK WATER. The only footing that
+        // reaches the far post is the drain at 18,5 — a pit at LOW, wading at
+        // MID, over your head at HIGH — so this shaft is crossed at MID and at
+        // no other sea. On the far side the silt at 7,2 is behind a bar, and
+        // only comes up at HIGH.
+        size: [2, 1],
+        map: [
+          '##############################',
+          '#.OOOOOOOOOOO...OO...........#',
+          '#.OOOOO6OOOOO...OO...U.....U.#',
+          '#.OOOOO7OOOOO...OO...........#',
+          '#.OOOOOOOOOOO...OO...........#',
+          '#.............q.OO4q.........#',
+          '#...............OO...........#',
+          '#...............OO...........#',
+          '#.U.........U...OO...U.....U.#',
+          '#...............OO...........#',
+          '######################D#######',
+        ],
+        buried: [[7, 2, 'rupee100']],
+        dredgeRoom: {
+          entry: [22, 9],
+          moorings: [
+            { post: [14, 5], from: [18, 5], land: [15, 5], face: 'left', sea: 1 },
+          ],
+          returns: [
+            { post: [19, 5], from: [15, 5], land: [18, 5], face: 'right', sea: 1 },
+          ],
+          caches: [
+            { at: [7, 2], from: [7, 5], face: 'up', sea: 2 },
+          ],
+        },
+        entities: [
+          ['chest', 7, 8, { charm: 'neapCharm' }],
+          ['darknut', 24, 6],
+        ],
+        readable: [
+          [20, 7, 'Cut under the choir stalls: "Sing at half\nwater. At slack the floor is gone, and at\nflood it is over your head."'],
         ],
       },
       '1,4,5': {
