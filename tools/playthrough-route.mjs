@@ -1165,6 +1165,10 @@ export const ROUTE = [
   // ======================================================================
   // THE CLIFFSIDE CISTERN
   // ======================================================================
+  //
+  // Rebuilt at Oracle room size (S140): every door is in the middle of its
+  // wall, key and boss doors are in the ring, and every coordinate below is a
+  // tile of a 15x11 room.
 
   // ---------------------------------------------------------------- d4 0,3,7
   // Cistern Head, and north into the dungeon.
@@ -1179,96 +1183,81 @@ export const ROUTE = [
   ['loot', 1200],
 
   // ---------------------------------------------------------------- d4 0,3,5
-  // The Weir, and the first lock. The sump band across the middle of it is the
-  // dungeon teaching its own vocabulary before anything is riding on it: four
-  // squares with no floor at LOW and over your head at MID. The door is in the
-  // wall above them, so it is answered on foot at whatever sea you walked in
-  // with.
+  // The Weir, and the first lock. The sump squares in it are the dungeon
+  // teaching its own vocabulary before anything is riding on it: no floor at
+  // LOW and over your head at MID. Its key door is in the north wall and is
+  // the short way into the Barnacle Cell and on to the Cistern Floor.
   ['travel', 3, 5, 4000],
   ['fight', 3000, 1200],
-  ['goto', 4, 3, 900],
+  ['goto', 7, 1, 900],
   ['hold', ['up'], 20],
   ['tap', 'a', 30],
-  ['goto', 4, 1, 900],
   ['hold', ['up'], 40],
-  ['wait', 90],
+  ['wait', 60],
 
   // ---------------------------------------------------------------- d4 0,4,4
   // THE CISTERN FLOOR, AND THE SECOND KEY. Three screens of water with a plate
   // at each end: the block holds the western one and you have to be standing
-  // on the eastern one, twenty tiles away. NOTHING IS FOUGHT UNTIL THE SEA IS
-  // DOWN — at LOW the whole floor drains to walkable sand, and the difference
-  // between walking that crossing and swimming it is five quarter-hearts of
-  // jellyfish measured either way.
+  // on the eastern one, forty tiles away. NOTHING IS FOUGHT UNTIL THE SEA IS
+  // DOWN — at LOW both wells are wading water rather than a swim.
   ['travel', 4, 4, 5000],
   ['tide', 0, 140, 600],
-  // THE BLOCK IS PUSHED BEFORE ANYTHING IS FOUGHT, and that order is the
-  // whole of this room working. A `fight` is a roam: the swordsman crosses
-  // thirty tiles chasing a jellyfish and shoves the block off its own row on
-  // the way, and after that `goto 5,1` is a path to a tile the block is
-  // standing in — no path, nine hundred frames of standing still, the plate
-  // never held, the key never spawned, and every directive after it playing
-  // out in the wrong room while the trace looks fine. Pushed first, the plate
-  // is down before the fight starts.
-  ['goto', 10, 1, 1200],
-  ['goto', 5, 1, 900],
+  // THE BLOCK IS PUSHED BEFORE ANYTHING IS FOUGHT: a `fight` is a roam, and
+  // the swordsman chasing a keese shoves the block off its own row on the way.
+  ['goto', 4, 2, 900],
   ['hold', ['left'], 60],
   ['fight', 6000, 1500],
-  ['goto', 16, 6, 1500],
+  ['goto', 41, 8, 2500],
   ['wait', 60],
   ['dialogue', 400],
+  // The key drops on the island in the middle, twenty tiles back: walked to
+  // first, because a loot sweep gives up on a drop it cannot reach in 200.
+  ['goto', 22, 6, 1500],
   ['loot', 1500],
 
   // ---------------------------------------------------------------- d4 0,2,4
   // Back west through the Barnacle Cell — nothing is fought in it, because its
-  // barnacle is an `hp: 999` turret bolted to the wall and a `fight` in a room
-  // holding one never returns — and into the Winch Room for the second lock.
-  // The stalfos behind that door took eight quarter-hearts off the first cut
-  // of this leg while the actor stood at the keyhole; it is killed first now.
+  // barnacle is an `hp: 999` turret and a `fight` in a room holding one never
+  // returns — and into the Winch Room for the second lock, in its west wall.
   ['travel', 3, 4, 6000],
   ['travel', 2, 4, 4000],
   ['fight', 5000, 1500],
-  ['goto', 3, 3, 900],
+  ['goto', 1, 5, 900],
   ['hold', ['left'], 20],
   ['tap', 'a', 30],
-  ['goto', 1, 3, 900],
   ['hold', ['left'], 40],
   ['wait', 90],
 
   // ---------------------------------------------------------------- d4 0,1,4
   // The Bellows Vault. One big chest, no enemies, and the Squall Bellows.
-  ['goto', 4, 3, 600],
-  ['hold', ['up'], 6],
+  ['goto', 8, 5, 600],
+  ['hold', ['left'], 6],
   ['tap', 'a', 40],
   ['dialogue', 600],
   ['wait', 120],
   ['dialogue', 600],
-  ['goto', 4, 1, 900],
-  ['hold', ['up'], 40],
-  ['wait', 90],
+  ['travel', 1, 3, 4000],
 
   // ---------------------------------------------------------------- d4 0,1,3
   // SILL 1 — THE SQUALL LOFT, WORKED AT MID, and the first time in this run
-  // that an item is used by being HELD. The wheel is at the top of a shaft in
-  // the west wall with a pit trench between it and anywhere a hand reaches;
-  // the shelf you pump from is two squares of floor you swim up to, and the
-  // sump under it is a hole at LOW and deep water at MID, so the sea that lets
-  // you stand there is the same sea that drowns the wheel.
+  // that an item is used by being HELD. The wheel is at the end of a shaft in
+  // the north-west corner with a pit trench between it and anywhere a hand
+  // reaches; the shelf you pump from is two squares of floor you swim up to,
+  // and the sump under it is a hole at LOW and deep water at MID, so the sea
+  // that lets you stand there is the same sea that drowns the wheel.
   //
   // THE BELLOWS GO ON A AND THE SWORD COMES BACK AFTERWARDS. The conch keeps
-  // B for the whole of this dungeon — six sills, and every one of them is a
+  // B for the whole of this dungeon — seven sills, and every one of them is a
   // question about where the water is — so the held item takes the sword's
   // button, and every room with something to kill in it is cleared before the
   // swap rather than after.
   ['fight', 3000, 1200],
   ['tide', 1, 140, 600],
   ['equip', 'bellows', 'A', 400],
-  ['goto', 4, 1, 900],
+  ['goto', 4, 1, 1200],
   ['bellows', 1, 1, 2500],
   ['equip', 'sword', 'A', 400],
-  ['goto', 7, 3, 900],
-  ['hold', ['right'], 90],
-  ['wait', 90],
+  ['travel', 2, 3, 4000],
 
   // ---------------------------------------------------------------- d4 0,2,3
   // SILL 2 — THE DROWNED SILL, WORKED AT HIGH, and a player who has just
@@ -1279,12 +1268,10 @@ export const ROUTE = [
   ['fight', 4000, 1500],
   ['tide', 2, 140, 600],
   ['equip', 'bellows', 'A', 400],
-  ['goto', 5, 6, 900],
-  ['bellows', 8, 6, 3000],
+  ['goto', 10, 9, 1200],
+  ['bellows', 13, 9, 3000],
   ['equip', 'sword', 'A', 400],
-  ['goto', 4, 2, 900],
-  ['hold', ['up'], 60],
-  ['wait', 90],
+  ['travel', 2, 2, 4000],
 
   // ---------------------------------------------------------------- d4 0,2,2
   // SILL 3 — THE CISTERN GAUGE, a sump shelf again and back at MID. What it
@@ -1294,86 +1281,77 @@ export const ROUTE = [
   ['fight', 4000, 1500],
   ['tide', 1, 140, 600],
   ['equip', 'bellows', 'A', 400],
-  ['goto', 4, 3, 900],
-  ['bellows', 1, 3, 3000],
+  ['goto', 4, 5, 1200],
+  ['bellows', 1, 5, 3000],
+  // The key pops up off the shelf a few pixels, clear of a player standing
+  // still, and a sweep issued inside its grab delay gives up on it.
+  ['wait', 30],
   ['loot', 1500],
+  ['dialogue', 400],
   ['equip', 'sword', 'A', 400],
 
   // ---------------------------------------------------------------- d4 0,2,1
   // THE WEST OVERLOOK, AND IT IS THE HEALTH BUDGET FOR THE REST OF THE
   // DUNGEON. Its pickup is a FAIRY and it is one screen off the path, taken
-  // here rather than later because this is the low-water mark of the run: the
-  // three sills and the walk to them cost fourteen quarter-hearts, and
-  // everything after it — a miniboss, two more sills and Wyverna — is walked
-  // from full.
-  ['goto', 4, 1, 900],
-  ['hold', ['up'], 50],
-  ['wait', 90],
+  // here rather than later because this is the low-water mark of the run.
+  ['travel', 2, 1, 4000],
   ['fight', 3000, 1200],
   ['loot', 1200],
-  ['goto', 4, 6, 900],
-  ['hold', ['down'], 50],
-  ['wait', 90],
-  ['goto', 4, 6, 900],
-  ['hold', ['down'], 50],
-  ['wait', 90],
+  ['travel', 2, 2, 4000],
+  ['travel', 2, 3, 4000],
+  ['travel', 3, 3, 4000],
+  ['fight', 3000, 1200],
+  ['travel', 4, 3, 4000],
 
   // ---------------------------------------------------------------- d4 0,4,3
-  // SILL 4 — THE LONG RACE, a drown-wall shelf turned on its end: the wheel is
-  // at the top of the shaft and the stand is under it, so the gust goes UP.
+  // SILLS 4a AND 4b — THE LONG RACE, and the second wheel is behind the
+  // first. The west wheel is a sump shelf worked at MID; it opens the shutter
+  // into the east vault, where the second wheel is at the top of a shaft
+  // behind drown-wall and wants HIGH. So the room is worked twice, in order,
+  // and the conch is sounded between.
   //
-  // THE DARKNUT IN THIS ROOM IS NOT FOUGHT, and that is a measurement rather
-  // than a preference. `dFight` loses to it: it lines up on one axis and
-  // closes, the darknut's shield covers exactly that, and the first cut of
-  // this leg died here taking three quarter-hearts a hit, ten hits, without
-  // landing one. It does not have to be fought — at HIGH the shelf is behind
-  // four squares of deep water and a darknut does not swim, so the cone is
-  // pumped from a square it cannot reach, and the walk out along the bottom
-  // row is over before it arrives.
-  ['goto', 8, 3, 900],
-  ['hold', ['right'], 90],
-  ['wait', 90],
+  // THE DARKNUT IN THE VAULT IS NOT FOUGHT, and that is a measurement rather
+  // than a preference: `dFight` lines up on one axis and closes, and the
+  // darknut's shield covers exactly that. At HIGH the east stand is behind
+  // deep water a darknut does not swim, so the cone is pumped from a square
+  // it cannot reach.
   ['fight', 3000, 1200],
-  ['goto', 8, 6, 900],
-  ['hold', ['right'], 90],
-  ['wait', 90],
-  ['tide', 2, 140, 600],
+  ['tide', 1, 140, 600],
   ['equip', 'bellows', 'A', 400],
-  ['goto', 2, 4, 1200],
-  ['bellows', 2, 1, 3000],
+  ['goto', 4, 1, 1200],
+  ['bellows', 1, 1, 3000],
+  ['tide', 2, 140, 600],
+  ['goto', 10, 5, 2000],
+  ['bellows', 10, 2, 3000],
   ['equip', 'sword', 'A', 400],
-  ['goto', 5, 6, 1200],
-  ['hold', ['right'], 140],
-  ['wait', 120],
+  ['goto', 13, 5, 1200],
+  ['exit', 'right', 300],
+  ['wait', 90],
 
   // ---------------------------------------------------------------- d4 0,5,3
   // THE IRONKNIGHT GALLERY. The miniboss is not `g.boss` — a miniboss clears
   // `isBoss` so that beating it cannot mark the whole dungeon beaten — so it
   // is named to the fight verb rather than found by it. Fought at HIGH, where
-  // the drown-wall pair in the middle of the room is simply gone and there is
+  // the drown-wall block in the middle of the room is simply gone and there is
   // nothing for it to charge around.
   ['boss', 14000, 'ironknight'],
   ['wait', 120],
   ['fight', 4000, 1500],
   ['dialogue', 600],
-  ['goto', 4, 2, 900],
-  ['hold', ['up'], 60],
-  ['wait', 120],
+  ['travel', 5, 2, 4000],
 
   // ---------------------------------------------------------------- d4 0,5,2
-  // Cliff Walk, and the third lock. Walk into the middle of the room before
-  // fighting: a doorway on this screen is a one-tile pocket between two pits,
-  // and a path out of one fails to plan at all while a keese is standing over
-  // the only square that leaves it.
-  ['goto', 4, 5, 1200],
+  // Cliff Walk, and the third lock, in its west wall. Every walk here goes
+  // by the middle of the room: the row between the pit pairs is the only
+  // line with a tile of floor either side of it, and a path that cuts a pit's
+  // corner drops the walker in it.
+  ['goto', 7, 5, 900],
   ['fight', 4000, 1500],
-  ['goto', 2, 6, 1500],
-  ['wait', 30],
+  ['goto', 7, 5, 900],
+  ['goto', 1, 5, 900],
   ['hold', ['left'], 20],
   ['tap', 'a', 60],
-  ['wait', 60],
-  ['goto', 0, 6, 900],
-  ['hold', ['left'], 60],
+  ['hold', ['left'], 40],
   ['wait', 90],
 
   // ---------------------------------------------------------------- d4 0,4,2
@@ -1381,110 +1359,66 @@ export const ROUTE = [
   // the Boss Key behind both. The west wheel is a sump shelf and wants MID;
   // the east wheel is a drown-wall shelf and wants HIGH. You cannot hold two
   // seas, so the run works one side, swims back down to the floor, sounds the
-  // conch, and works the other — which is this dungeon's whole idea said out
-  // loud in one room. The key lands in the middle rather than on either shelf,
-  // so whichever wheel was turned second has to be swum away from to collect
-  // it.
+  // conch, and works the other. The key lands in the middle rather than on
+  // either shelf.
   ['fight', 6000, 2000],
   ['tide', 1, 140, 600],
   ['equip', 'bellows', 'A', 400],
-  ['goto', 1, 4, 1200],
-  ['bellows', 1, 1, 3000],
-  ['goto', 4, 6, 1200],
+  ['goto', 3, 4, 1200],
+  ['bellows', 3, 1, 3000],
+  ['goto', 5, 7, 1200],
   ['tide', 2, 140, 600],
-  ['goto', 8, 4, 1200],
-  ['bellows', 8, 1, 3000],
-  ['goto', 4, 6, 1200],
+  ['goto', 11, 4, 1200],
+  ['bellows', 11, 1, 3000],
+  ['goto', 9, 7, 1200],
   ['wait', 60],
   ['dialogue', 600],
-  ['goto', 4, 4, 1200],
   ['loot', 1500],
   ['equip', 'sword', 'A', 400],
 
   // ---------------------------------------------------------------- d4 0,4,1
   // The East Overlook: a rupee and D4's second Piece of Heart, in the corner
   // furthest from the door.
-  ['goto', 4, 1, 1200],
-  ['hold', ['up'], 60],
-  ['wait', 120],
-  ['goto', 4, 4, 1200],
+  ['travel', 4, 1, 4000],
   ['fight', 5000, 1800],
   ['loot', 1500],
-  ['goto', 4, 6, 1200],
-  ['hold', ['down'], 60],
-  ['wait', 120],
+  ['travel', 4, 2, 4000],
 
-  // ------------------------------------------- d4, back west to the boss door
-  // Six screens back the way the Boss Key was won, and every one of them has
-  // restocked. The fights are named per room rather than left to the walk,
-  // because the first cut of this leg walked it without them and died in the
-  // Sluices with the key in its pocket.
-  ['goto', 4, 6, 1200],
-  ['fight', 5000, 1800],
-  ['goto', 8, 6, 1200],
-  ['hold', ['right'], 90],
-  ['wait', 120],
-  ['goto', 4, 5, 1200],
-  ['fight', 4000, 1500],
-  ['goto', 4, 5, 1200],
-  ['hold', ['down'], 60],
-  ['wait', 120],
-  ['goto', 4, 6, 1500],
-  ['fight', 6000, 2000],
+  // ------------------------------------------- d4, the shortcut to the boss door
+  // Back into the Crossed Sluices and onto the plate beside its west door,
+  // which opens the shutter straight into the Cistern Gate: the one-way
+  // shortcut home, and the reason nothing east of here is walked twice.
   ['goto', 1, 6, 1500],
-  ['hold', ['left'], 90],
-  ['wait', 120],
-  // THE LONG RACE IS CROSSED, NOT CLEARED, AND IT IS THE ONE ROOM IN THE
-  // DUNGEON THAT IS. Its darknut beats `dFight` outright — the verb lines up
-  // on one axis and closes, a darknut's shield covers exactly that, and the
-  // first recording of this leg died right here on the way home, eighteen
-  // quarter-hearts to nothing in five thousand frames without landing a hit.
-  // Nothing in this room is needed on the way back; the bottom row runs the
-  // whole width of it and the walk is over before the darknut arrives.
-  ['goto', 1, 6, 1500],
-  ['hold', ['left'], 90],
-  ['wait', 120],
-  ['goto', 4, 3, 1500],
-  ['fight', 4000, 1500],
-  ['goto', 1, 3, 1500],
-  ['hold', ['left'], 90],
-  ['wait', 120],
-  ['goto', 4, 3, 1200],
-  ['fight', 5000, 1800],
-  ['goto', 4, 2, 1200],
-  ['hold', ['up'], 60],
-  ['wait', 120],
-  ['goto', 4, 5, 1500],
-  ['fight', 4000, 1500],
-  ['goto', 8, 5, 1500],
-  ['goto', 8, 3, 900],
-  ['hold', ['right'], 90],
-  ['wait', 120],
+  ['dialogue', 400],
+  ['goto', 1, 5, 600],
+  ['exit', 'left', 300],
+  ['wait', 60],
 
   // ---------------------------------------------------------------- d4 0,3,2
   // The Cistern Gate. THE SEA GOES TO LOW BEFORE THE BOSS DOOR IS OPENED, NOT
   // AFTER, and it is the whole fight: Wyverna's altitude, her speed and how
   // much of her can be reached are all read off the water. Drained, she is on
-  // the cistern floor and permanently open, and the fight measures 2,349
-  // frames and six quarter-hearts. Walked in at MID she wins — twenty-four
-  // thousand frames, the actor dead, the boss on 2 of 44.
+  // the cistern floor and permanently open.
   ['fight', 4000, 1500],
   ['tide', 0, 140, 600],
-  ['goto', 4, 3, 900],
+  ['goto', 7, 1, 900],
   ['hold', ['up'], 24],
   ['tap', 'a', 40],
   ['dialogue', 400],
-  ['goto', 4, 1, 900],
   ['hold', ['up'], 60],
   ['wait', 120],
 
   // ---------------------------------------------------------------- d4 0,3,1
   // WYVERNA, THE SEA WYVERN, and the fourth Essence. `clearAdds` is left off:
-  // she sheds keese in her last phase and they are not what kills anyone here,
-  // which is the same thing measured the other way round on Gloomtide.
+  // she sheds keese in her last phase and they are not what kills anyone here.
+  // The Essence stands at 7,4 in an Oracle arena: walk onto it and wait out
+  // the pose, or the loot that follows stands still and the Heart Container
+  // is left in the room.
   ['boss', 24000, null],
   ['wait', 240],
-  ['goto', 4, 3, 600],
+  ['goto', 7, 4, 600],
+  ['dialogue', 900],
+  ['wait', 240],
   ['dialogue', 900],
   ['loot', 1200],
   ['dialogue', 900],
@@ -1492,18 +1426,25 @@ export const ROUTE = [
 
   // ======================= OUT OF THE CISTERN AND ON TO THE SHRINE =========
   //
-  // The second dungeon this run has walked out of, and it is the arena problem
-  // again: `travel` issued from a room with one door plans into the room it is
-  // already standing in. One directive by hand puts the run in the Cistern
-  // Gate, and from there ordinary walking works.
-  ['goto', 4, 6, 1200],
+  // Step out of the arena by hand — a `travel` issued inside a dead end with
+  // one door plans into the room it is already in — then walk out.
+  // The way out is named room by room, down the west side: the planner's own
+  // choice ran through the Barnacle Cell, whose turret cannot be killed.
+  ['goto', 7, 9, 900],
   ['hold', ['down'], 60],
   ['wait', 120],
-  ['travel', 3, 7, 24000],
-  ['goto', 4, 6, 1500],
+  ['travel', 2, 2, 4000],
+  ['travel', 2, 3, 4000],
+  ['travel', 1, 3, 4000],
+  ['travel', 1, 4, 4000],
+  ['travel', 2, 4, 4000],
+  ['travel', 2, 5, 4000],
+  ['travel', 2, 6, 4000],
+  ['travel', 3, 6, 4000],
+  ['travel', 3, 7, 4000],
+  ['goto', 7, 9, 1500],
   ['hold', ['down'], 90],
   ['wait', 180],
-
   // ---- THE NOBLE SWORD, AND WHY THE RUN GOES BACK FOR IT ------------------
   //
   // The Bluff Grotto is where this run started: it took the Piece of Heart out

@@ -1,3 +1,50 @@
+## S140 — the Cliffside Cistern is rebuilt at Oracle room size
+
+### What landed
+- D4 at `cell: [15, 11]`: 24 rooms, same graph, same item placement, every
+  sill still proved by check-bellows. Key doors in the ring (Weir/Barnacle
+  Cell, Winch Room/Bellows Vault, Cliff Walk/Crossed Sluices), boss door in
+  the Cistern Gate's north wall, sill shutters in the ring too.
+- Kit: the Dancing Dragon Dungeon (`x*` picks, rooms on 241x177 from 1456,1;
+  rows after each gap are offset: 718.., 1789..). Grey bevel, green floor,
+  grey paving (alt), magenta block, brown pot, blue owl statue (`U`), and the
+  sheet's own door key at 2297,2147 (17px pitch): shutters for all four
+  walls; key doors and the boss door only for side walls, so N/S key doors
+  and `bossN` are those turned a quarter (`rot`). The Dragon DOES draw N/S
+  jambs (cut); side doorways are plain gaps. The pink squares on the sheet
+  are ripper markers. `ring.faces` is on (the Dragon wraps its bevel round
+  rock). `panelFloor` pick removed (nothing drew it).
+- `9` in the Cistern is `dDrownCistern` (its own stone going under), not the
+  outdoor `drownWall` cliff it drew for its whole life.
+- An interior shut door in a `faces` wall draws the ring's door art
+  (`Room.artAt`): E/W by which half of the room it is in, N/S likewise.
+- DEEPENED: the Long Race holds two sills in order. The west wheel (sump,
+  MID) opens the shutter into the east vault; the east wheel (drown-wall,
+  HIGH) opens the way on. check-bellows has a new `after` clause (claim 8):
+  the second stand is unreachable at every sea while the first door is shut,
+  and ring doors are proved "sole cell of the ring" like walk-dungeons does.
+  Plates with hints in the Squall Loft, Drowned Sill, Long Race, Sluices.
+- The Crossed Sluices' west door is a one-way shutter to the Cistern Gate,
+  opened by a plate on the Sluices side (`d4_shortcut`, the D3 precedent):
+  the walk from the Boss Key to the boss is one room, not five.
+- BUG FIXED: pumping the Bellows planted Link's sprite at once but not his
+  feet until the cone opened (14 frames), so pressing toward the wheel on
+  every sill's shelf walked him into its pit trench. He is planted from the
+  first frame now (`Player.updateMovement`).
+- East Overlook's Piece of Heart moved 1,1 -> 1,3: it popped up into the
+  ring wall and could not be picked up.
+- Route re-routed room by room; ends THE END, six Essences, no deaths,
+  52/52 (same as before). Wyverna met on 29 of 32 (was 17), 13/13 seeds win;
+  Ironknight 13/13. No boss retuned. `d4-drowned-sill` re-recorded.
+
+### Open
+- Push blocks draw the generic `o_block` sprite in every themed dungeon, not
+  the theme's block (`xBlock`, `bBlock`...). Small, cross-dungeon.
+- measure-boss-combat's d5/d6 rows (ROUTE_ARENA and MINIS) carry frames from
+  before this session; D4 now runs ~11k frames longer. Re-read each as its
+  dungeon is rebuilt.
+- D5, D6 still 10x8 (D5 next — NEXT-PROMPT.md).
+
 ## S139 — the Bogwater Sanctum is rebuilt at Oracle room size
 
 ### What landed

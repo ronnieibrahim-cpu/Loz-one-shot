@@ -47,7 +47,17 @@
 //   7. THE WHEEL BUYS SOMETHING. Every tile in `opens` is a shut door in the
 //      grid, and it separates its room at all three tide levels — the same
 //      claim walk-dungeons.mjs makes of a locked door, for the same reason: a
-//      door with a way round it is a fixture, not a lock.
+//      door with a way round it is a fixture, not a lock. A door in an Oracle
+//      room's WALL RING separates two rooms rather than two halves of one, so
+//      there the claim is walk-dungeons.mjs's ring claim: it is the only cell
+//      of its stretch of the ring that anything can pass, at any level.
+//   8. AND A SILL THAT COMES AFTER ANOTHER ONE REALLY DOES. A sill may declare
+//      `after: [[x,y],...]`: shut doors an earlier sill in the same room
+//      opens. Every claim above is then made with those doors OPEN (the
+//      generous direction for the unreachability claims), and this one is
+//      made with them SHUT: the stand is unreachable at every level. Without
+//      it `after` would be a comment; with it, the second wheel provably
+//      cannot be worked until the first one has been (the Long Race, S140).
 //
 // And globally: every `wheel` entity in the game stands on the tile its room
 // declares, every declared Bellows room is in the dungeon that hands the
@@ -157,9 +167,10 @@ function occupiable(d, mode) {
 const canPumpFrom = (d) => walkableDef(d);
 
 /** Every tile reachable in one room at one level in one mode, from every way in. */
-function flood(room, level, mode) {
+function flood(room, level, mode, open = room.open) {
   const { grid, legend, W, H } = room;
-  const at = (x, y) => (x < 0 || y < 0 || x >= W || y >= H ? null : defAt(legend, grid[y][x], level));
+  const at = (x, y) => (x < 0 || y < 0 || x >= W || y >= H ? null
+    : open && open.has(x + ',' + y) ? getTileDef('dDoorOpen') : defAt(legend, grid[y][x], level));
   const ok = (x, y) => occupiable(at(x, y), mode);
   const seen = new Set(), q = [];
   const push = (x, y) => { const k = x + ',' + y; if (!seen.has(k)) { seen.add(k); q.push([x, y]); } };
@@ -197,10 +208,27 @@ function flood(room, level, mode) {
 }
 
 /** Everywhere the player can get to at this level, in any mode they own. */
-function reachable(room, level) {
+function reachable(room, level, open = room.open) {
   const out = new Set();
-  for (const mode of MODES) for (const k of flood(room, level, mode)) out.add(k);
+  for (const mode of MODES) for (const k of flood(room, level, mode, open)) out.add(k);
   return out;
+}
+
+/**
+ * Is the ring door at (x,y) the only passable cell of its stretch of the
+ * ring, at every level and in every mode? walk-dungeons.mjs's `ringSole`,
+ * with the Cleats' swim counted, because a moat in the ring is not a wall
+ * to the player of this dungeon. Null when (x,y) is not on an Oracle ring.
+ */
+function ringSole(room, x, y) {
+  const { grid, legend, W, H, CW, CH } = room;
+  const top = y === 0, bot = y === H - 1, left = x === 0, right = x === W - 1;
+  if (CW !== 15 || !(top || bot || left || right)) return null;
+  const cells = [];
+  if (top || bot) { const c0 = Math.floor(x / CW) * CW; for (let i = c0; i < c0 + CW; i++) cells.push([i, y]); }
+  else { const c0 = Math.floor(y / CH) * CH; for (let j = c0; j < c0 + CH; j++) cells.push([x, j]); }
+  return cells.every(([cx, cy]) => (cx === x && cy === y)
+    || LEVELS.every(t => MODES.every(md => !occupiable(defAt(legend, grid[cy][cx], t), md))));
 }
 
 /** Does the door at (x,y) cut its two neighbours apart on some axis, at every level? */
@@ -249,7 +277,9 @@ for (const [mapId, m] of MAPS) {
         index: (m.dungeon && m.dungeon.index) | 0,
         item: m.dungeon && m.dungeon.item,
         W: (sz[0] | 0) * (m.cell ? m.cell[0] : 10), H: (sz[1] | 0) * (m.cell ? m.cell[1] : 8),
+        CW: m.cell ? m.cell[0] : 10, CH: m.cell ? m.cell[1] : 8,
         grid: def.map, legend: getLegend(def.legend || m.legend),
+        open: new Set((B.after || []).map(p => p.join(','))),
         def, B,
       });
     }
@@ -393,8 +423,22 @@ for (const r of rooms) {
     const name = r.legend[r.grid[y][x]];
     check(`${where}: the door at ${x},${y} is shut`, name === 'dDoorClosed',
       `it is ${name} — the wheel opens a tile that is not a shut door`);
-    check(`${where}: the door at ${x},${y} separates the room`, doorSeparates(r, x, y),
-      'there is a way round it at some tide level');
+    const ring = ringSole(r, x, y);
+    check(`${where}: the door at ${x},${y} separates the room`, ring !== null ? ring : doorSeparates(r, x, y),
+      ring !== null ? 'another cell of its stretch of the wall ring can be passed'
+        : 'there is a way round it at some tide level');
+  }
+
+  // 8. a sill that comes after another is shut out until that one is done
+  if (r.B.after) {
+    const shut = new Set();
+    const sealed = LEVELS.filter(l => reachable(r, l, shut).has(S));
+    const known = r.B.after.every(([x, y]) => sills(r.def).some(o => o !== r.B
+      && (o.opens || []).some(([ox, oy]) => ox === x && oy === y)));
+    check(`${where}: every door it comes after is opened by another sill here`, known,
+      `after ${JSON.stringify(r.B.after)} names a door no other wheel in the room opens`);
+    check(`${where}: the stand is sealed until then, at every sea`, sealed.length === 0,
+      'reachable with the earlier door shut at ' + sealed.map(l => LEVEL_NAME[l]).join('/'));
   }
 
   if (VERBOSE) {

@@ -338,6 +338,24 @@ export class Room {
           : d.name === 'dDoorBoss' ? 'boss' : null;
         if (R && kind && R[kind + side]) return R[kind + side];
       }
+      // A SHUT DOOR IN A FACED INTERIOR WALL is the same source door, drawn
+      // as if the wall were the far wall of the half of the room it faces:
+      // in a wall running north-south it is an east-wall door when it stands
+      // in the room's west half (seen from the west), and so on. Only where
+      // the ring declares `faces` — the flat interior walls of D1 and D2 are
+      // an approved look and keep their own door.
+      if (!onRing && (d.flags & F.DOOR)) {
+        const w = getTileDef(this.legend['#']);
+        const R = w && w.ring;
+        const kind = d.name === 'dDoorLocked' ? 'lock' : d.name === 'dDoorClosed' ? 'shut'
+          : d.name === 'dDoorBoss' ? 'boss' : null;
+        if (R && R.faces && kind) {
+          const solid = (nx, ny) => this.inBounds(nx, ny) && !!(this.tile(nx, ny, tide).flags & F.SOLID);
+          const upright = solid(x, y - 1) && solid(x, y + 1);
+          const side = upright ? (x < this.tw / 2 ? 'E' : 'W') : (y < this.th / 2 ? 'S' : 'N');
+          if (R[kind + side]) return R[kind + side];
+        }
+      }
     }
     if (d.edgeArt || d.edgePairs) {
       const edge = tileEdgeArt(d, (dir) => {

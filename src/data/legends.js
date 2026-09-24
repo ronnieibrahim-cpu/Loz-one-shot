@@ -300,6 +300,11 @@ export function installLegends() {
   // step between two pillars in the south wall, `(C)`.
   registerLegend('dungeonCoral', { 'C': 'dExitCoral', '(': 'dPillarCoralW', ')': 'dPillarCoralE' }, 'dungeonCoral');
   theme('dungeonCistern', 'dFloorCistern', 'dFloorCisternAlt', 'dWallCistern', 'dWallCisternX', 'dBlockCistern', 'dUrnCistern');
+  // The Cistern is built at Oracle size (S140): its way out is the Dancing
+  // Dragon's lit step between two green pillars in the south wall, `(C)`.
+  registerLegend('dungeonCistern', {
+    'C': 'dExitCistern', '(': 'dPillarCisternW', ')': 'dPillarCisternE', '9': 'dDrownCistern',
+  }, 'dungeonCistern');
   theme('dungeonWood',    'dFloorWood',    'dFloorWoodAlt',    'dWallWood',    'dWallWoodX',    'dBlockWood',    'dUrnWood');
   // The Drowned Wood Shrine needs one tide tile no other dungeon has, and every
   // digit in the shared vocabulary is already spoken for. `5` (`channel`) is an

@@ -585,7 +585,7 @@ export const PLANS = {
       // purpose: this run must leave by the door it opened and by nothing else.
       ['hold', ['down'], 100],
       ['wait', 20],
-      ['goto', 7, 3, 300],
+      ['goto', 13, 5, 300],
       ['hold', ['right'], 120],
       ['wait', 40],
     ],

@@ -2574,13 +2574,58 @@ export function installCoreTiles() {
     bShutW: { art: ART.bShutW, pal: 'bShutW', flags: F.SOLID | F.DOOR },
     bBossN: { art: ART.bBossN, pal: 'bBossN', flags: F.SOLID | F.DOOR },
 
-    // d4 Cliffside Cistern — sunken tan panels, cold studded walls.
-    dFloorCistern: { art: ART.panelFloor, pal: 'panelFloor' },
-    dFloorCisternAlt: { art: ART.panelFloor, pal: 'stonef' },
-    dWallCistern: { art: ART.studWall, pal: 'stonef', flags: F.SOLID },
-    dWallCisternX: { art: ART.dWallCracked, pal: 'stonef', flags: F.SOLID | F.BOMBABLE },
-    dBlockCistern: { art: ART.vaultBlock, pal: 'vaultBlock', flags: F.SOLID },
-    dUrnCistern: { art: ART.urn, pal: 'urn', flags: F.SOLID, underArt: 'dFloorCistern' },
+    // d4 Cliffside Cistern.
+    // S140: THE CLIFFSIDE CISTERN IS AN ORACLE DUNGEON, and its kit is the
+    // Dancing Dragon Dungeon's, whole (`x*` picks in rip-dungeon-themes.py):
+    // grey bevelled stone round the green swirl floor, the grey paving for its
+    // worn floor, the magenta block, the brown pot, the blue owl statue, and
+    // the Dragon's own key doors, shutters and boss door from the door key the
+    // ripper laid out beside the map. The Dragon draws jambs where a north or
+    // south doorway cuts the bevel; its side doorways are plain gaps.
+    dFloorCistern: { art: ART.xFloor, pal: 'xFloor' },
+    dFloorCisternAlt: { art: ART.xFloorAlt, pal: 'xFloorAlt' },
+    dWallCistern: { art: ART.xFill, pal: 'xFill', flags: F.SOLID, ring: {
+      TL: 'xRingTL', TR: 'xRingTR', BL: 'xRingBL', BR: 'xRingBR',
+      N: 'xRingN', S: 'xRingS', W: 'xRingW', E: 'xRingE',
+      jNW: 'xJambNW', jNE: 'xJambNE', jSW: 'xJambSW', jSE: 'xJambSE',
+      lockN: 'xKeyN', lockS: 'xKeyS', lockE: 'xKeyE', lockW: 'xKeyW',
+      shutN: 'xShutN', shutS: 'xShutS', shutE: 'xShutE', shutW: 'xShutW',
+      bossN: 'xBossN', bossS: 'xShutS',
+      // The Dragon wraps its bevel round every block of rock that cuts into a
+      // room, so a thick wall inside one draws the ring's faces (`Room.faceArt`).
+      faces: true,
+    } },
+    dWallCisternX: { art: ART.dWallCracked, pal: 'xRingN', flags: F.SOLID | F.BOMBABLE },
+    dBlockCistern: { art: ART.xBlock, pal: 'xBlock', flags: F.SOLID },
+    // The blue owl statue that flanks the Dragon's entrance stands where the
+    // other dungeons put an urn.
+    dUrnCistern: { art: ART.xStatue, pal: 'xStatue', flags: F.SOLID, underArt: 'dFloorCistern' },
+    // The way out: the entrance hall's two green pillars in the south wall
+    // with the lit step between them, wall to the ring either side.
+    dExitCistern: { art: ART.xArch2, pal: 'xArch2', flags: F.WARP },
+    dPillarCisternW: { art: ART.xArch1, pal: 'xArch1', flags: F.SOLID, ringWall: true },
+    dPillarCisternE: { art: ART.xArch3, pal: 'xArch3', flags: F.SOLID, ringWall: true },
+    xRingTL: { art: ART.xRingTL, pal: 'xRingTL', flags: F.SOLID },
+    xRingTR: { art: ART.xRingTR, pal: 'xRingTR', flags: F.SOLID },
+    xRingBL: { art: ART.xRingBL, pal: 'xRingBL', flags: F.SOLID },
+    xRingBR: { art: ART.xRingBR, pal: 'xRingBR', flags: F.SOLID },
+    xRingN: { art: ART.xRingN, pal: 'xRingN', flags: F.SOLID },
+    xRingS: { art: ART.xRingS, pal: 'xRingS', flags: F.SOLID },
+    xRingW: { art: ART.xRingW, pal: 'xRingW', flags: F.SOLID },
+    xRingE: { art: ART.xRingE, pal: 'xRingE', flags: F.SOLID },
+    xJambNW: { art: ART.xJambNW, pal: 'xJambNW', flags: F.SOLID },
+    xJambNE: { art: ART.xJambNE, pal: 'xJambNE', flags: F.SOLID },
+    xJambSW: { art: ART.xJambSW, pal: 'xJambSW', flags: F.SOLID },
+    xJambSE: { art: ART.xJambSE, pal: 'xJambSE', flags: F.SOLID },
+    xKeyN: { art: ART.xKeyN, pal: 'xKeyN', flags: F.SOLID | F.DOOR },
+    xKeyS: { art: ART.xKeyS, pal: 'xKeyS', flags: F.SOLID | F.DOOR },
+    xKeyE: { art: ART.xKeyE, pal: 'xKeyE', flags: F.SOLID | F.DOOR },
+    xKeyW: { art: ART.xKeyW, pal: 'xKeyW', flags: F.SOLID | F.DOOR },
+    xShutN: { art: ART.xShutN, pal: 'xShutN', flags: F.SOLID | F.DOOR },
+    xShutS: { art: ART.xShutS, pal: 'xShutS', flags: F.SOLID | F.DOOR },
+    xShutE: { art: ART.xShutE, pal: 'xShutE', flags: F.SOLID | F.DOOR },
+    xShutW: { art: ART.xShutW, pal: 'xShutW', flags: F.SOLID | F.DOOR },
+    xBossN: { art: ART.xBossN, pal: 'xBossN', flags: F.SOLID | F.DOOR },
 
     // d5 Drowned Wood Shrine — amber lozenge floor under brown brick walls.
     // The floor was `brickFloor` and the wall `emberWall`, and both are brick
@@ -2761,6 +2806,12 @@ export function installCoreTiles() {
     // only, needed no new art and reads as the room's own masonry going under.
     dCoralBar: { tide: ['dWallCoral', 'dWallCoral', 'dWaterD'] },
 
+    // The Cistern's drown-wall is its own grey stone going under, not the
+    // outdoor `drownWall` cliff it drew for its whole life at 10x8: the same
+    // argument as the Spire's bar and the Keep's lintel. Stone at LOW and MID,
+    // deep at HIGH, and the flags of `drownWall` to the bit in every state.
+    dDrownCistern: { tide: ['dWallCistern', 'dWallCistern', 'dWaterD'] },
+
     // A silted cache: the ring a heavy thing leaves in the floor when it has
     // been lying there long enough to settle. Two palettes of ONE extracted
     // art, which is the whole trick — bleached on the dry pan, blue once the
@@ -2798,8 +2849,10 @@ export function installCoreTiles() {
   // own floor. The Grotto's is the Seasons pot out of its own kit.
   for (const T of THEME_NAMES) {
     TILE_DEFS['dPot' + T] = {
-      art: T === 'Grotto' ? ART.gPot : T === 'Coral' ? ART.cPot : T === 'Bog' ? ART.bPot : ART.pot,
-      pal: T === 'Grotto' ? 'gPot' : T === 'Coral' ? 'cPot' : T === 'Bog' ? 'bPot' : 'pot',
+      art: T === 'Grotto' ? ART.gPot : T === 'Coral' ? ART.cPot : T === 'Bog' ? ART.bPot
+        : T === 'Cistern' ? ART.xPot : ART.pot,
+      pal: T === 'Grotto' ? 'gPot' : T === 'Coral' ? 'cPot' : T === 'Bog' ? 'bPot'
+        : T === 'Cistern' ? 'xPot' : 'pot',
       flags: F.SOLID | F.ROCK, underArt: 'dFloor' + T, liftSprite: 'o_pot',
     };
   }

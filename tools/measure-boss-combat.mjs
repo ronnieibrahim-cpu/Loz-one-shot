@@ -150,9 +150,12 @@ const MINIS = {
             at: [7, 79], facing: 'right', maxQh: 28, settle: 0, frame: 72075 },
   // d4 0,5,3, step 692 (`hold up`) f76801, boss at f76921: `47,95 hp 26/32
   // tide 2 [ironknight+keese]`. There is a keese in the room with him.
-  ironknight: { dungeon: 'd4', room: '0,5,3', flag: 'd4_ironknight', tide: HIGH, qh: 27,
+  // S140, after D4's rebuild at Oracle size: step 683 (`exit right` from the
+  // Long Race) f105042: `7,81 hp 29/32 tide 2 [ironknight+keese]`, then
+  // `wait 90`. He is met through the west door of a 30x11 gallery now.
+  ironknight: { dungeon: 'd4', room: '0,5,3', flag: 'd4_ironknight', tide: HIGH, qh: 29,
                 items: { sword: 1, conch: 1, anchor: 1, lens: 1, bombs: 1, cleats: 1, bellows: 1 },
-                at: [47, 95], facing: 'up', maxQh: 32, settle: 0, frame: 90781 },
+                at: [7, 81], facing: 'right', maxQh: 32, settle: 90, frame: 105042 },
   // d5 0,5,3, step 968 (`hold up`) f116879: `45,95 hp 27/40 tide 0
   // [thornvine]`. Straight in, no settle.
   thornvine: { dungeon: 'd5', room: '0,5,3', flag: 'd5_thornvine', tide: LOW, qh: 28,
@@ -262,7 +265,12 @@ const ROUTE_ARENA = {
   // `63,99 hp 17/32 tide 0 foes 1 [wyverna]`. SEVENTEEN OF THIRTY-TWO — the
   // route meets the fourth boss on barely half a bar, and this file has been
   // fighting her on 24 of 24.
-  d4: { at: [63, 99], facing: 'up', qh: 18, maxQh: 32, settle: 120, frame: 99138 },
+  // S140: D4 IS AN ORACLE DUNGEON NOW. Walked in through the boss door in
+  // the Cistern Gate's north wall at step 727 (`hold up`), f110730: `113,149
+  // hp 29/32 tide 0 [wyverna]`, then `wait 120`. The Crossed Sluices' plate
+  // opens a shortcut straight to the Gate, so the walk to her no longer goes
+  // five rooms round by the Long Race — and she is met on 29 of 32, not 17.
+  d4: { at: [113, 149], facing: 'up', qh: 29, maxQh: 32, settle: 120, frame: 110730 },
   // d5 0,3,1, trace step 1003 (`hold up` through the door) at f119421:
   // `65,99 hp 21/40 tide 0 foes 1 [rootmaw]`. Twenty-one of forty, against a
   // file that has been fighting Rootmaw on 28 of 28.

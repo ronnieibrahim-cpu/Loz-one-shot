@@ -916,6 +916,32 @@ checked and why; see `docs/NEXT-SESSION.md` S60 for the full account.
   `liftLevel: 2` + the `dredge` tile action, as this entry originally said;
   only the "read by nothing" half of the claim was wrong.
 
+## Settled at S140 — the Cliffside Cistern is an Oracle dungeon
+
+- D4 is `cell: [15, 11]` with the Dancing Dragon Dungeon kit (`x*` picks).
+  Its rooms start at x=1456+241i; rows at y=1,178,355,532, then 718+177j,
+  then 1789,1966. The plain ring room is 2179,1603.
+- The Dragon draws N/S doorway jambs (cut) and no side jambs. Its door key
+  (2297,2147, 17px pitch) has shutters for all four walls, key doors and the
+  boss door for side walls only; N/S are the side ones turned (`rot`).
+  The pink squares either side of doorways on that sheet are ripper markers.
+- `9` in the Cistern is `dDrownCistern`, flags equal to `drownWall`'s.
+- An interior shut door in a `faces` wall draws ring door art (Room.artAt).
+- check-bellows: `after` (a sill behind another sill's door) and ring doors
+  proved by the ring-sole claim. Both go red when the vault shutter is
+  removed from the Long Race.
+- The Bellows plant Link's feet from the first wind-up frame. Before, the
+  cone's 14-frame wind-up let him walk, and every sill's pit is in front.
+- Crossed Sluices -> Cistern Gate is a plate-opened one-way shortcut
+  (`d4_shortcut`).
+- Route: Wyverna from the route door 13/13 seeds win (qh left 11..36);
+  Ironknight 13/13. Old record 3/5 on 17 qh (S135). Nothing retuned.
+- A pickup placed on row 1 of an Oracle room pops into the ring and cannot
+  be collected. Put pickups on row 2 or lower.
+- `dLoot` gives a drop 200 frames of walking: a key forty tiles away is
+  walked to with `goto` first. A drop inside its grab delay gets 12 frames
+  of patience: `wait 30` first.
+
 ## Settled at S139 — the Bogwater Sanctum is an Oracle dungeon
 
 - D3 is `cell: [15, 11]` with the Poison Moth's Lair kit. The Lair's rooms

@@ -448,7 +448,14 @@ export class Player extends Entity {
     // Pumping costs you your feet. You may still turn — aiming a sustained
     // gust you cannot re-point would be a puzzle about pre-positioning rather
     // than about the gust — but you go nowhere while it blows.
-    if (this.bellowsOpen) { this.animT++; return; }
+    //
+    // FROM THE FIRST FRAME OF THE WIND-UP, not from the cone opening. The
+    // sprite has always planted him the moment he starts pumping (`link_push_`
+    // while `bellowsT > 0`), and the mover did not: for BELLOWS_WARMUP_FRAMES a
+    // player who pressed the button while still holding toward the wheel
+    // walked on, and every sill in the Cistern has its pit trench directly in
+    // that direction. The shelf was a trap for the one input it asks for.
+    if (this.bellowsOpen || this.bellowsT > 0) { this.animT++; return; }
 
     // A hop in progress owns the controls until it lands.
     if (this.ledgeHop) { this.updateLedgeHop(game); this.animT++; return; }

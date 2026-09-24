@@ -69,6 +69,7 @@ SHEETS = {
     'ruins': os.path.join(ROOT, 'assets/sheets/oracle-seasons-dungeon-ancient-ruins.png'),
     'crypt': os.path.join(ROOT, 'assets/sheets/oracle-seasons-dungeon-explorers-crypt.png'),
     'moth': os.path.join(ROOT, 'assets/sheets/oracle-seasons-dungeon-poison-moths-lair.png'),
+    'dragon': os.path.join(ROOT, 'assets/sheets/oracle-seasons-dungeon-dancing-dragon.png'),
 }
 OUT = os.path.join(ROOT, 'src/data/tiles-dungeon-themes.js')
 
@@ -90,7 +91,8 @@ PICKS = [
     # that is not part of the art — it is different pixels, so it is a different
     # tile, and it dedupes to itself perfectly. ALWAYS look at the contact sheet
     # before trusting a pick. The Salt Pan Vault uses `paleFloor` instead.
-    ('panelFloor',  740, 1499, 'x65 tan floor in four sunken panels'),
+    # (`panelFloor`, the tan four-panel floor at 740,1499, was the Cistern's
+    # until S140 gave it the Dancing Dragon's kit; nothing else drew it.)
     ('gildFloor',  2725,  444, 'x19 olive floor under a gold lattice'),
 
     # ---- walls -------------------------------------------------------------
@@ -284,6 +286,62 @@ PICKS = [
     ('bArch1',   1553,  1586, 'entrance pillar, west', 'moth'),
     ('bArch2',   1569,  1586, 'entrance, the lit way out', 'moth'),
     ('bArch3',   1585,  1586, 'entrance pillar, east', 'moth'),
+
+    # ---- THE ORACLE ROOM KIT: the Cliffside Cistern's ----------------------
+    #
+    # Cut from the Dancing Dragon Dungeon sheet's True Colors half: grey
+    # bevelled stone round a green floor, and the dungeon of the Seasons set
+    # with the most standing water in it, which is the Cistern's. Rooms sit on
+    # the 241x177 pitch from 1456,1 (the rows after the first gap are offset:
+    # 718, 895, ... and 1789, 1966). The ring is the plain room at 2179,1603.
+    # Unlike the Lair and the Crypt, the Dragon DOES draw jambs either side of
+    # a north or south doorway — the bevel turning into the gap — cut from the
+    # same plain room (north) and the room at 1938,355 (south). A side doorway
+    # is a plain gap between runs, so there are no side jambs to cut.
+    #
+    # The pink squares either side of many doorways on this sheet are the
+    # ripper's own markers, not cartridge art; nothing is cut from them.
+    #
+    # THE DOORS ARE THE SHEET'S OWN DOOR KEY, the strip of loose tiles laid out
+    # at 2297,2147 on a 17px pitch. It draws the shutters for all four walls,
+    # but its key doors only for the side walls and its boss door only for a
+    # side wall: the north and south ones are those turned a quarter, which is
+    # how the cartridge stores a door for another wall.
+    ('xRingTL',  2179,  1603, 'ring corner, north-west', 'dragon'),
+    ('xRingN',   2195,  1603, 'ring run, north wall', 'dragon'),
+    ('xRingTR',  2403,  1603, 'ring corner, north-east', 'dragon'),
+    ('xRingW',   2179,  1619, 'ring run, west wall', 'dragon'),
+    ('xRingE',   2403,  1619, 'ring run, east wall', 'dragon'),
+    ('xRingBL',  2179,  1763, 'ring corner, south-west', 'dragon'),
+    ('xRingS',   2195,  1763, 'ring run, south wall', 'dragon'),
+    ('xRingBR',  2403,  1763, 'ring corner, south-east', 'dragon'),
+    ('xJambNW',  2243,  1603, 'north wall ends, doorway to its east', 'dragon'),
+    ('xJambNE',  2275,  1603, 'north wall ends, doorway to its west', 'dragon'),
+    ('xJambSW',  1970,   515, 'south wall ends, doorway to its east', 'dragon'),
+    ('xJambSE',  2002,   515, 'south wall ends, doorway to its west', 'dragon'),
+    # The Dragon's solid masonry: the flat grey it shows wherever a room is
+    # cut short by rock. The Cistern's thick interior walls are drawn with it.
+    ('xFill',    2355,   387, 'the flat grey of solid masonry', 'dragon'),
+    ('xFloor',   2195,  1619, 'the green swirl floor', 'dragon'),
+    ('xFloorAlt', 2275, 1667, 'the grey paving', 'dragon'),
+    ('xBlock',   2243,  1651, 'the raised magenta block', 'dragon'),
+    ('xPot',     2034,   242, 'the brown pot, on its own floor', 'dragon'),
+    ('xStatue',  2018,   644, 'the blue owl statue of the entrance hall', 'dragon'),
+    ('xKeyN',    2331, 2215, 'key door in a north wall', {'sheet': 'dragon', 'rot': 90}),
+    ('xKeyS',    2297, 2215, 'key door in a south wall', {'sheet': 'dragon', 'rot': 90}),
+    ('xKeyW',    2331, 2215, 'key door in a west wall', 'dragon'),
+    ('xKeyE',    2297, 2215, 'key door in an east wall', 'dragon'),
+    ('xShutN',   2297, 2147, 'shutter in a north wall, teeth into the room', 'dragon'),
+    ('xShutS',   2297, 2164, 'shutter in a south wall, teeth into the room', 'dragon'),
+    ('xShutW',   2331, 2147, 'shutter in a west wall, teeth into the room', 'dragon'),
+    ('xShutE',   2331, 2164, 'shutter in an east wall, teeth into the room', 'dragon'),
+    # THE BOSS DOOR, the horned skull, drawn on the sheet for a side wall.
+    ('xBossN',   2331, 2232, 'boss door in a north wall', {'sheet': 'dragon', 'rot': -90}),
+    # THE WAY OUT: the entrance hall's two green pillars in the south wall
+    # with the lit step between them.
+    ('xArch1',   2034,   692, 'entrance pillar, west', 'dragon'),
+    ('xArch2',   2050,   692, 'entrance, the lit way out', 'dragon'),
+    ('xArch3',   2066,   692, 'entrance pillar, east', 'dragon'),
     ('gPot',     2195,  750, 'the Seasons pot, on its own floor'),
     ('gBlock',   2243,  798, 'the raised magenta block'),
 ]
@@ -304,7 +362,7 @@ PICKS = [
 #
 # ONLY FOR OBJECTS. Keying a floor or a wall would eat the tile, because the
 # border-connected run IS the tile.
-KEY_BACKGROUND = {'urn', 'gPot', 'cPot', 'bPot', 'bStatue'}
+KEY_BACKGROUND = {'urn', 'gPot', 'cPot', 'bPot', 'bStatue', 'xPot', 'xStatue'}
 
 
 def lum(c):

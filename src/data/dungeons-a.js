@@ -2168,24 +2168,33 @@ export function installDungeonsA() {
   //
   // Proved by tools/check-bellows.mjs, which was written before these rooms.
   //
+  // AN ORACLE DUNGEON (S140), built like the first three: 15x11 rooms with a
+  // wall ring, a scrolling camera, one-tile doors, and key, shutter and boss
+  // doors in the ring between two rooms. The kit is the Dancing Dragon
+  // Dungeon's (`x*` picks in tools/rip-dungeon-themes.py) — grey stone, green
+  // floor, and more standing water than any other dungeon in Seasons.
+  //
   // Intended route (24 rooms, one floor, the Bellows at room 12):
   //   3,7 entrance -> 3,6 landing -> 2,6 Dungeon Map / 4,6 Small Key 1
-  //   -> 3,5 the Weir (lock 1) -> 2,5 Chartstone / 4,5 rungs / 5,5 charm
-  //   -> 4,4 the Cistern Floor (Small Key 2) -> 3,4 -> 2,4 winch (lock 2)
+  //   -> 3,5 the Weir: 2,5 Chartstone, 4,5 rungs (Piece of Heart at HIGH),
+  //      5,5 charm -> 4,4 the Cistern Floor (Small Key 2) -> 3,4 -> 2,4 winch
+  //      (the key door west). The Weir's own key door north is a shortcut back
+  //      into 3,4, and either key opens either door first.
   //   -> 1,4 BELLOWS -> 1,3 Squall Loft (sill 1) -> 2,3 Drowned Sill (sill 2)
   //   -> 2,2 Cistern Gauge (sill 3, Small Key 3) -> back east:
-  //      3,3 -> 4,3 the Long Race (sill 4) -> 5,3 Ironknight (miniboss)
-  //   -> 5,2 Cliff Walk (lock 3) -> 4,2 the Crossed Sluices (sills 5 and 6,
-  //      Boss Key) -> 2,2 -> 3,2 boss door -> 3,1 Wyverna
+  //      3,3 -> 4,3 the Long Race (sills 4a and 4b, one behind the other)
+  //   -> 5,3 Ironknight (miniboss) -> 5,2 Cliff Walk (key door west)
+  //   -> 4,2 the Crossed Sluices (sills 5 and 6, Boss Key) -> 4,1 overlook
+  //   -> back round by 2,2 -> 3,2 boss door north -> 3,1 Wyverna
   registerMap({
     id: 'd4',
     kind: 'dungeon',
     name: 'Cliffside Cistern',
     w: 8, h: 8, floors: 1,
+    cell: [15, 11],
     legend: 'dungeonCistern',
     music: 'dungeon2',
     tint: 'cave',
-    scroll: false,
     dungeon: {
       index: 4,
       item: 'bellows', itemLevel: 1,
@@ -2199,269 +2208,290 @@ export function installDungeonsA() {
       // ---------------------------------------------------- the way in
       '0,3,7': {
         name: 'Cistern Head',
+        // The Dragon's own entrance hall: blue owl statues down both sides and
+        // the lit step between two green pillars in the south wall.
         map: [
-          '####..####',
-          '#U......U#',
-          '#........#',
-          '#..2222..#',
-          '#..2222..#',
-          '#........#',
-          '#........#',
-          '####CC####',
+          '#######.#######',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '#....22222....#',
+          '#....22222....#',
+          '#....22222....#',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '######(C)######',
         ],
         warps: [
-          // BOTH HALVES WARP. A two-tile arch whose right half is
-          // scenery is a door the player bumps into — the same rule
-          // the dungeon portals outside have carried since they landed.
-          { x: 4, y: 7, to: { map: 'overworld', floor: 0, rx: 1, ry: 3, px: 64, py: 32, dir: 'down' } },
-          { x: 5, y: 7, to: { map: 'overworld', floor: 0, rx: 1, ry: 3, px: 64, py: 32, dir: 'down' } },
+          { x: 7, y: 10, to: { map: 'overworld', floor: 0, rx: 1, ry: 3, px: 64, py: 32, dir: 'down' } },
         ],
         readable: [
-          [2, 3, 'Chiselled deep: "This cistern is worked from the far bank. Nothing here is meant to be reached."'],
+          [2, 8, 'Chiselled deep: "This cistern is worked from\nthe far bank. Nothing here is meant to be\nreached."'],
         ],
       },
       '0,3,6': {
         name: 'Rainwater Landing',
+        // Four drown-wall pillars: stone at LOW and MID, gone under at HIGH.
         map: [
-          '####..####',
-          '#........#',
-          '#.9....9.#',
-          '..........',
-          '..........',
-          '#.9....9.#',
-          '#........#',
-          '####..####',
+          '#######.#######',
+          '#.............#',
+          '#..9.......9..#',
+          '#.............#',
+          '#.............#',
+          '...............',
+          '#.............#',
+          '#.............#',
+          '#..9.......9..#',
+          '#.............#',
+          '#######.#######',
         ],
         entities: [
-          ['keese', 6, 2],
-          ['tektite', 3, 5],
+          ['keese', 10, 3],
+          ['tektite', 4, 7],
         ],
       },
       '0,2,6': {
         name: 'Overflow Sluice',
         map: [
-          '####..####',
-          '#U......U#',
-          '#........#',
-          '#..1111...',
-          '#..1111...',
-          '#........#',
-          '#........#',
-          '##########',
+          '#######.#######',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '#....11111....#',
+          '#....11111.....',
+          '#....11111....#',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '###############',
         ],
         entities: [
-          ['pickup', 4, 2, { kind: 'dungeonMap' }],
-          ['keese', 7, 5],
+          ['pickup', 7, 2, { kind: 'dungeonMap' }],
+          ['keese', 11, 7],
         ],
       },
       '0,4,6': {
         name: 'Cracked Basin',
         map: [
-          '####..####',
-          '#........#',
-          '#..2222..#',
-          '...2222..#',
-          '...2222..#',
-          '#..2222..#',
-          '#........#',
-          '##########',
+          '#######.#######',
+          '#.............#',
+          '#.............#',
+          '#...2222222...#',
+          '#...2222222...#',
+          '....2222222...#',
+          '#...2222222...#',
+          '#...2222222...#',
+          '#.............#',
+          '#.............#',
+          '###############',
         ],
         entities: [
-          ['stalfos', 2, 1],
-          ['tektite', 7, 4],
-          ['keese', 6, 1],
+          ['stalfos', 3, 2],
+          ['tektite', 11, 5],
+          ['keese', 10, 1],
         ],
         puzzle: {
           enemies: true,
           flag: 'd4_basin',
           reward: {
-            spawn: [['pickup', 4, 6, { kind: 'key' }]],
+            spawn: [['pickup', 7, 8, { kind: 'key' }]],
             say: 'Something falls out of the cracked basin.',
           },
         },
       },
       '0,3,5': {
         name: 'The Weir',
-        // The sump band, taught before it is ever load-bearing: at LOW these
-        // four squares have no floor at all and at MID they are over your head.
-        // The tiles above and below the lock are plain floor on purpose —
-        // walk-dungeons asserts a locked door separates its room at all three
-        // levels, and a door standing on a pit cannot be shown to separate
-        // anything at LOW.
+        // The sump, taught before it is ever load-bearing: at LOW these squares
+        // have no floor at all, and at MID they are over your head. Its key
+        // door north is the short way back into the Barnacle Cell.
         map: [
-          '####..####',
-          '#........#',
-          '####L#####',
-          '..00..00..',
-          '..00..00..',
-          '#........#',
-          '#........#',
-          '####..####',
+          '#######L#######',
+          '#.............#',
+          '#.............#',
+          '#..00.....00..#',
+          '#..00.....00..#',
+          '...............',
+          '#..00.....00..#',
+          '#..00.....00..#',
+          '#.U...........#',
+          '#.............#',
+          '#######.#######',
         ],
         entities: [
-          ['tektite', 4, 5],
-          ['keese', 2, 1],
+          ['tektite', 7, 7],
+          ['keese', 3, 1],
         ],
         readable: [
-          [1, 6, 'Cut into the weir: "At low water the sluices have no floor. Mind your feet."'],
+          [2, 8, 'Cut into the weir: "At low water the sumps\nhave no floor. Mind your feet."'],
         ],
       },
       '0,2,5': {
         name: 'Drowned Stair',
         map: [
-          '####..####',
-          '#U......U#',
-          '#........#',
-          '#..3333...',
-          '#..3333...',
-          '#........#',
-          '#........#',
-          '####..####',
+          '#######.#######',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '#....33333....#',
+          '#....33333.....',
+          '#....33333....#',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '#######.#######',
         ],
         entities: [
-          ['chest', 4, 2, { pickup: 'chartstone' }],
-          ['urchin', 4, 4],
+          ['chest', 7, 2, { pickup: 'chartstone' }],
+          ['urchin', 7, 5],
         ],
       },
       '0,4,5': {
         name: 'Rung Gallery',
         // A drown-wall box with one square of floor inside it. At LOW and MID
-        // it is four walls; at HIGH it is four squares of deep water and the
-        // Cleats swim you in over the top. The teaching room for every sill in
-        // the second half, and it costs nothing to fail.
+        // it is four walls; at HIGH it is deep water and the Cleats swim you in
+        // over the top. The teaching room for every sill in the second half,
+        // and it costs nothing to fail.
         map: [
-          '####..####',
-          '#........#',
-          '#.999....#',
-          '..9.9.....',
-          '..999.....',
-          '#........#',
-          '#.11.....#',
-          '####..####',
+          '#######.#######',
+          '#.............#',
+          '#.............#',
+          '#.......999...#',
+          '#.......9.9...#',
+          '........999....',
+          '#.............#',
+          '#..11.........#',
+          '#..11.........#',
+          '#.............#',
+          '#######.#######',
         ],
         entities: [
-          ['pickup', 3, 3, { kind: 'heartPiece' }],
-          ['tektite', 6, 2],
-          ['keese', 7, 5],
+          ['pickup', 9, 4, { kind: 'heartPiece' }],
+          ['tektite', 4, 3],
+          ['keese', 12, 8],
         ],
       },
       '0,5,5': {
         name: 'Cliffside Cell',
         map: [
-          '####..####',
-          '#U......U#',
-          '#........#',
-          '.........#',
-          '.........#',
-          '#..,,,,..#',
-          '#........#',
-          '##########',
+          '#######.#######',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '#.............#',
+          '..............#',
+          '#....,,,,,....#',
+          '#....,,,,,....#',
+          '#.U.........U.#',
+          '#.............#',
+          '###############',
         ],
         entities: [
-          ['chest', 4, 2, { charm: 'bosunsWhistle' }],
-          ['stalfos', 7, 4],
+          ['chest', 7, 3, { charm: 'bosunsWhistle' }],
+          ['stalfos', 11, 5],
         ],
       },
       '0,4,4': {
         name: 'The Cistern Floor',
-        // Three screens wide now — it owns 5,4 and 6,4 as well as its own, so
-        // nothing else may be keyed there. The whole floor is `3` — wading at
-        // LOW, swimming above it — so more room is literally more sea to
-        // cross, which is the argument for making it the bigger one twice.
-        // Grown east (S3, `docs/prompts/STATE.md`): 6,4 had nothing in it —
-        // Ironknight Gallery only reaches as far as 6,3, one row north — so
-        // the old east wall (col 19) opened into a dry ledge beyond the far
-        // switch, giving the swim a landing on the far side the way the west
-        // door already gives one on the near side, instead of ending flush on
-        // a wall the moment the plate is reached.
+        // Three screens wide: it owns 5,4 and 6,4 as well as its own, so
+        // nothing else may be keyed there. Two wells run the height of it —
+        // wading at LOW, swimming above — with an island between them, so
+        // more room is literally more sea to cross.
         size: [3, 1],
         map: [
-          '##############################',
-          '#............................#',
-          '#..33333333333333..3333333...#',
-          '...33333333333333..3333333...#',
-          '...33333333333333..3333333...#',
-          '#..33333333333333..3333333...#',
-          '#............................#',
-          '####..########..##############',
+          '#############################################',
+          '#........33333333333.....33333333333........#',
+          '#........33333333333.....33333333333........#',
+          '#........33333333333.....33333333333........#',
+          '#........33333333333.....33333333333........#',
+          '.........33333333333.....33333333333........#',
+          '#........33333333333.....33333333333........#',
+          '#........33333333333.....33333333333........#',
+          '#........33333333333.....33333333333........#',
+          '#........33333333333.....33333333333........#',
+          '#######.##############.######################',
         ],
         entities: [
-          // Two plates and one block, at opposite ends of twenty tiles: the
-          // block holds the west plate and you have to be standing on the east
-          // one. The dungeon's own idea, rehearsed before the item that makes
-          // it — you cannot be in two places, so something else has to hold.
-          ['switch', 3, 1],
-          ['switch', 16, 6],
-          ['block', 4, 1],
-          ['jellyfish', 8, 3],
-          ['urchin', 12, 4],
-          ['keese', 3, 6],
+          // Two plates and one block, at opposite ends of the hall: the block
+          // holds the west plate and you have to be standing on the east one.
+          // The dungeon's own idea, rehearsed before the item that makes it —
+          // you cannot be in two places, so something else has to hold.
+          ['switch', 2, 2],
+          ['switch', 41, 8],
+          ['block', 3, 2],
+          ['jellyfish', 14, 4],
+          ['urchin', 30, 6],
+          ['keese', 22, 2],
         ],
         puzzle: {
           switches: 'all',
           flag: 'd4_floor',
           reward: {
-            spawn: [['pickup', 10, 6, { kind: 'key' }]],
-            say: 'A grating opens under the far wall.',
+            spawn: [['pickup', 22, 5, { kind: 'key' }]],
+            say: 'A grating opens in the middle of the floor.',
           },
         },
       },
       '0,3,4': {
         name: 'Barnacle Cell',
         map: [
-          '##########',
-          '#U......U#',
-          '#..1111..#',
-          '..1111111.',
-          '..1111111.',
-          '#..1111..#',
-          '#........#',
-          '####..####',
+          '###############',
+          '#.............#',
+          '#.U.........U.#',
+          '#...1111111...#',
+          '#..111111111..#',
+          '...111111111...',
+          '#..111111111..#',
+          '#...1111111...#',
+          '#.............#',
+          '#.............#',
+          '#######L#######',
         ],
         entities: [
-          ['barnacle', 4, 3],
-          ['crab', 7, 5],
-          ['keese', 2, 1],
+          ['barnacle', 7, 5],
+          ['crab', 11, 8],
+          ['keese', 3, 1],
         ],
       },
       '0,2,4': {
         name: 'Winch Room',
         map: [
-          // The lock sits in a one-tile corridor with its pocket sealed on both
-          // sides. The first cut of this room left the column at x=1 running
-          // from the pot shelf down to the floor, so the door had a way round
-          // it and bought nothing — exactly D1's Clawcrab Den bug, caught here
-          // by walk-dungeons' door check rather than by a person walking it.
-          '##########',
-          '#.pp.....#',
-          '###......#',
-          '..L.......',
-          '###.......',
-          '#........#',
-          '#........#',
-          '####..####',
+          '###############',
+          '#.pp.......pp.#',
+          '#.U...........#',
+          '#.............#',
+          '#....,,,,,....#',
+          'L....,,,,,.....',
+          '#....,,,,,....#',
+          '#.............#',
+          '#.............#',
+          '#.p.........p.#',
+          '#######.#######',
         ],
         entities: [
-          ['stalfos', 6, 4],
+          ['stalfos', 9, 7],
         ],
         readable: [
-          [5, 5, 'A winch plate, bolted shut: "The wheels are set where no hand goes. Bring wind."'],
+          [2, 2, 'A winch plate, bolted shut: "The wheels are\nset where no hand goes. Bring wind."'],
         ],
       },
       '0,1,4': {
         name: 'Bellows Vault',
         map: [
-          '####..####',
-          '#U......U#',
-          '#........#',
-          '#.........',
-          '#........#',
-          '#..2222..#',
-          '#........#',
-          '##########',
+          '#######.#######',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '#....,,,,,....#',
+          '#....,,,,,....L',
+          '#....,,,,,....#',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '###############',
         ],
         entities: [
-          ['chest', 4, 2, { big: true, item: 'bellows', level: 1 }],
+          ['chest', 7, 5, { big: true, item: 'bellows', level: 1 }],
         ],
       },
 
@@ -2469,33 +2499,39 @@ export function installDungeonsA() {
       '0,1,3': {
         name: 'Squall Loft',
         // SILL 1, a sump shelf, worked at MID. The first one, and it is the
-        // shape at its plainest: a shaft in the west wall with the wheel at the
-        // top of it, a pit trench you cannot cross, and a two-square ledge on
-        // the far side of a sump that is a hole at LOW.
+        // shape at its plainest: a shaft in the north-west corner with the
+        // wheel at the end of it, a pit trench you cannot cross, and a
+        // two-square ledge on the far side of a sump that is a hole at LOW.
         //
         // Stand on 4,1 — the landing at 4,2 has a wall between it and the wheel
         // and the cone does not blow through stone, so even the first sill asks
         // you to take one step before you pump.
         map: [
-          '##########',
-          '#3OO.#...#',
-          '####.#...#',
-          '####0#..D.',
-          '#...0....#',
-          '#........#',
-          '#........#',
-          '####..####',
+          '###############',
+          '#3OO.##########',
+          '####.##.......#',
+          '####0##.......#',
+          '#...0.........#',
+          '#.............D',
+          '#.............#',
+          '#.....U...U...#',
+          '#.............#',
+          '#.............#',
+          '#######.#######',
         ],
         bellowsRoom: {
-          wheel: [1, 1], stand: [4, 1], face: 'left', at: 1, opens: [[8, 3]],
+          wheel: [1, 1], stand: [4, 1], face: 'left', at: 1, opens: [[14, 5]],
         },
         entities: [
           ['wheel', 1, 1, { needTurns: 30 }],
-          ['keese', 7, 5],
+          ['keese', 11, 8],
+        ],
+        readable: [
+          [6, 7, 'A plate on the loft: "The wheel turns in the\nwind, and never under water. Take the water\noff it and blow."'],
         ],
         script: {
           onEvent(game, name, data) {
-            if (name === 'valve' && data && data.open) game.applyReward({ openDoors: [[8, 3]] });
+            if (name === 'valve' && data && data.open) game.applyReward({ openDoors: [[14, 5]] });
           },
         },
       },
@@ -2507,26 +2543,32 @@ export function installDungeonsA() {
         // on the third; the sea has to be up for you to get in, and the cone is
         // what takes it back off the wheel.
         map: [
-          '####..####',
-          '####D#####',
-          '#........#',
-          '..........',
-          '#.......##',
-          '#...#9####',
-          '#...9.OO1#',
-          '##########',
+          '#######D#######',
+          '#.............#',
+          '#..U.......U..#',
+          '#.............#',
+          '#.............#',
+          'D..............',
+          '#.............#',
+          '#............##',
+          '#........#9####',
+          '#........9.OO1#',
+          '###############',
         ],
         bellowsRoom: {
-          wheel: [8, 6], stand: [5, 6], face: 'right', at: 2, opens: [[4, 1]],
+          wheel: [13, 9], stand: [10, 9], face: 'right', at: 2, opens: [[7, 0]],
         },
         entities: [
-          ['wheel', 8, 6, { needTurns: 40 }],
-          ['tektite', 3, 3],
-          ['keese', 7, 2],
+          ['wheel', 13, 9, { needTurns: 40 }],
+          ['tektite', 4, 7],
+          ['keese', 11, 3],
+        ],
+        readable: [
+          [3, 2, 'Scratched under the sill: "This wheel stands\nin the sluice, and the sluice is only over\nits head at high water."'],
         ],
         script: {
           onEvent(game, name, data) {
-            if (name === 'valve' && data && data.open) game.applyReward({ openDoors: [[4, 1]] });
+            if (name === 'valve' && data && data.open) game.applyReward({ openDoors: [[7, 0]] });
           },
         },
       },
@@ -2535,25 +2577,28 @@ export function installDungeonsA() {
         // SILL 3, a sump shelf again, and the variation is the approach: the
         // shelf is at the end of a flooded gallery you swim DOWN rather than a
         // ledge you swim UP to, and what it pays out is a key rather than a
-        // door. The two dry squares at 6,3 and beyond are close enough to see
-        // the wheel from and too far to blow it — the reach is three.
+        // door. The dry square at 5,4 is close enough to see the wheel from
+        // and too far to blow it — the reach is three.
         map: [
-          '####..####',
-          '#........#',
-          '#####....#',
-          '#3OO.0....',
-          '#####0....',
-          '#........#',
-          '#........#',
-          '####..####',
+          '#######.#######',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '#####.........#',
+          '#3OO.0.........',
+          '#####0........#',
+          '#.......3333..#',
+          '#.......3333..#',
+          '#.............#',
+          '#######D#######',
         ],
         bellowsRoom: {
-          wheel: [1, 3], stand: [4, 3], face: 'left', at: 1, gives: 'key',
+          wheel: [1, 5], stand: [4, 5], face: 'left', at: 1, gives: 'key',
         },
         entities: [
-          ['wheel', 1, 3, { needTurns: 40 }],
-          ['jellyfish', 5, 4],
-          ['keese', 6, 6],
+          ['wheel', 1, 5, { needTurns: 40 }],
+          ['jellyfish', 10, 8],
+          ['keese', 11, 2],
         ],
         script: {
           // A SCRIPT-SPAWNED PICKUP EXISTS ONLY IN THE FRAME IT WAS RELEASED
@@ -2566,109 +2611,137 @@ export function installDungeonsA() {
           // released and never picked up.
           onEnter(game) {
             if (game.progress.flags.d4GaugeWheel && !game.progress.secrets.d4GaugeKey) {
-              game.spawnPickup(64, 48, 'key', { grabDelay: 14, saveKey: 'd4GaugeKey' });
+              game.spawnPickup(64, 80, 'key', { grabDelay: 14, saveKey: 'd4GaugeKey' });
             }
           },
           onEvent(game, name, data) {
             if (name !== 'valve' || !data || !data.open) return;
             game.progress.flags.d4GaugeWheel = true;
             if (game.progress.secrets.d4GaugeKey) return;
-            game.spawnPickup(64, 48, 'key', { grabDelay: 14, saveKey: 'd4GaugeKey' });
+            game.spawnPickup(64, 80, 'key', { grabDelay: 14, saveKey: 'd4GaugeKey' });
           },
         },
       },
       '0,2,1': {
         name: 'West Overlook',
         map: [
-          '##########',
-          '#U......U#',
-          '#........#',
-          '#..3333..#',
-          '#..3333..#',
-          '#........#',
-          '#........#',
-          '####..####',
+          '###############',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '#....33333....#',
+          '#....33333....#',
+          '#....33333....#',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '#######.#######',
         ],
         entities: [
-          ['pickup', 4, 2, { kind: 'fairy' }],
-          ['keese', 7, 5],
+          ['pickup', 7, 2, { kind: 'fairy' }],
+          ['keese', 11, 7],
         ],
       },
       '0,3,3': {
         name: 'Winding Stair',
         map: [
-          '##########',
-          '#........#',
-          '#..2222..#',
-          '..2....2.#',
-          '#........#',
-          '#..1111..#',
-          '#.........',
-          '##########',
+          '###############',
+          '#.............#',
+          '#..22222222...#',
+          '#..2......2...#',
+          '#..2..U...2...#',
+          '...............',
+          '#.............#',
+          '#...1111111...#',
+          '#...1111111...#',
+          '#.............#',
+          '###############',
         ],
         entities: [
-          ['tektite', 3, 4],
-          ['keese', 6, 1],
+          ['tektite', 5, 3],
+          ['keese', 11, 8],
         ],
       },
       '0,4,3': {
         name: 'The Long Race',
-        // SILL 4, a drown-wall shelf turned on its end: the wheel is at the top
-        // of the shaft and the stand is under it, so the gust goes UP. The
-        // shelf is a single square with drown-wall on three sides — at HIGH you
-        // swim up into it from the corridor, at anything else it is a hole in
-        // the masonry you can see and not enter.
+        // SILLS 4a AND 4b, AND THE SECOND ONE IS BEHIND THE FIRST. The west
+        // wheel is a sump shelf worked at MID, and what it opens is not the way
+        // on: it is the shutter into the east vault, where the second wheel
+        // stands at the top of a shaft behind drown-wall and wants HIGH. So the
+        // room is worked twice, in order, at two seas — the dungeon's whole
+        // idea said twice in a row, and the plate by the door says so.
+        //
+        // The east wheel's stand cannot be reached at any sea while the vault
+        // is shut (`after`), which check-bellows.mjs proves along with every
+        // other sill clause, for each wheel.
         map: [
-          '##########',
-          '##1##....#',
-          '##O##....#',
-          '##O##....#',
-          '#9.9#....#',
-          '##9##....#',
-          '........D.',
-          '##########',
+          '###############',
+          '#3OO.##########',
+          '####.#####1####',
+          '####0#####O####',
+          '#...0..#.#O#..#',
+          '.......#.#.#..D',
+          '#......#..9...#',
+          '#......D......#',
+          '#......#......#',
+          '#.U....#......#',
+          '###############',
         ],
-        bellowsRoom: {
-          wheel: [2, 1], stand: [2, 4], face: 'up', at: 2, opens: [[8, 6]],
-        },
+        bellowsRoom: [
+          { wheel: [1, 1], stand: [4, 1], face: 'left', at: 1, opens: [[7, 7]] },
+          { wheel: [10, 2], stand: [10, 5], face: 'up', at: 2, opens: [[14, 5]], after: [[7, 7]] },
+        ],
         entities: [
-          ['wheel', 2, 1, { needTurns: 50 }],
-          ['darknut', 6, 3],
-          ['keese', 7, 1],
+          ['wheel', 1, 1, { needTurns: 40 }],
+          ['wheel', 10, 2, { needTurns: 50 }],
+          // The darknut guards the vault, not the hall: at HIGH its stand is
+          // behind deep water a darknut cannot cross, so the second wheel is
+          // pumped from a square it cannot reach — the old room's premise.
+          ['darknut', 12, 8],
+          ['keese', 3, 7],
+        ],
+        readable: [
+          [2, 9, 'A plate by the race: "Two wheels, and the second\nis behind the first. They will not turn at the\nsame sea."'],
         ],
         script: {
           onEvent(game, name, data) {
-            if (name === 'valve' && data && data.open) game.applyReward({ openDoors: [[8, 6]] });
+            if (name !== 'valve' || !data || !data.open) return;
+            // Each wheel opens its own door: the west one the vault, the east
+            // one the way on.
+            game.applyReward({ openDoors: [data.x >= 16 * 8 ? [14, 5] : [7, 7]] });
           },
         },
       },
       '0,5,3': {
         name: 'Ironknight Gallery',
         // The miniboss, at room 17 of 24. Two screens wide because the
-        // Ironknight charges in straight lines and a 10-tile room gives it
-        // nowhere to do that. The drown-wall pair in the middle is cover at LOW
-        // and MID and simply gone at HIGH, which is the only decision the fight
-        // offers and is worth having.
+        // Ironknight charges in straight lines and a narrow room gives it
+        // nowhere to do that. The drown-wall block in the middle is cover at
+        // LOW and MID and simply gone at HIGH, which is the only decision the
+        // fight offers and is worth having.
         size: [2, 1],
         map: [
-          '####..##############',
-          '####D###############',
-          '#.U............U...#',
-          '#..................#',
-          '#........99........#',
-          '#........99........#',
-          '...................#',
-          '####################',
+          '#######D######################',
+          '#............................#',
+          '#.U........................U.#',
+          '#............................#',
+          '#.............99.............#',
+          'D.............99.............#',
+          '#.............99.............#',
+          '#............................#',
+          '#.U........................U.#',
+          '#............................#',
+          '##############################',
         ],
         entities: [
-          ['ironknight', 12, 3],
-          ['keese', 4, 5],
+          ['ironknight', 20, 5],
+          ['keese', 5, 8],
         ],
         puzzle: {
           enemies: true,
           flag: 'd4_ironknight',
           reward: {
-            openDoors: [[4, 1]],
+            openDoors: [[7, 0]],
             say: 'The armour folds up. Something grinds open above.',
           },
         },
@@ -2680,19 +2753,22 @@ export function installDungeonsA() {
         // Bellows are a weapon. Nothing here is required — a keese blown into a
         // pit is a keese you did not have to hit.
         map: [
-          '##########',
-          '#........#',
-          '#.OO..OO.#',
-          '#.OO..OO.#',
-          '#........#',
-          '#........#',
-          '.L.......#',
-          '####..####',
+          '###############',
+          '#.............#',
+          '#..OO.....OO..#',
+          '#..OO.....OO..#',
+          '#.............#',
+          'L.............#',
+          '#.............#',
+          '#..OO.....OO..#',
+          '#..OO.....OO..#',
+          '#.............#',
+          '#######D#######',
         ],
         entities: [
           ['keese', 3, 1],
-          ['keese', 6, 1],
-          ['keese', 4, 4],
+          ['keese', 11, 1],
+          ['keese', 7, 5],
         ],
       },
       '0,4,2': {
@@ -2702,24 +2778,46 @@ export function installDungeonsA() {
         // wheel is a drown-wall shelf and wants HIGH. You cannot hold two seas,
         // so you work one side, walk out, sound the conch, and work the other —
         // which is the dungeon's whole idea said out loud in one room.
+        //
+        // THE WEST DOOR IS THE SHORTCUT HOME, and it is this room's to open:
+        // the plate beside it on this side lets a player holding the Boss Key
+        // walk straight into the Cistern Gate instead of five rooms back round
+        // by the Long Race. Only this side has the plate, so it cannot be used
+        // to reach the Boss Key early — the Bogwater Sanctum's Lock Gallery
+        // precedent (S139).
         map: [
-          '####..####',
-          '#3#....#1#',
-          '#O#....#O#',
-          '#O#....#O#',
-          '#.#....#.#',
-          '#0#....#9#',
-          '#.........',
-          '##########',
+          '#######.#######',
+          '###3#.....#1###',
+          '###O#.....#O###',
+          '###O#.....#O###',
+          '###.#.....#.###',
+          'D.#0#.....#9..L',
+          '#.............#',
+          '#.............#',
+          '#.............#',
+          '#.U.........U.#',
+          '###############',
         ],
         bellowsRoom: [
-          { wheel: [1, 1], stand: [1, 4], face: 'up', at: 1 },
-          { wheel: [8, 1], stand: [8, 4], face: 'up', at: 2, gives: 'bossKey' },
+          { wheel: [3, 1], stand: [3, 4], face: 'up', at: 1 },
+          { wheel: [11, 1], stand: [11, 4], face: 'up', at: 2, gives: 'bossKey' },
         ],
         entities: [
-          ['wheel', 1, 1, { needTurns: 40 }],
-          ['wheel', 8, 1, { needTurns: 40 }],
-          ['stalfos', 5, 3],
+          ['wheel', 3, 1, { needTurns: 40 }],
+          ['wheel', 11, 1, { needTurns: 40 }],
+          ['switch', 1, 6, { hold: false }],
+          ['stalfos', 7, 7],
+        ],
+        puzzle: {
+          switches: 'all',
+          flag: 'd4_shortcut',
+          reward: {
+            openDoors: [[0, 5]],
+            say: 'The west gate grinds open.',
+          },
+        },
+        readable: [
+          [2, 9, 'Carved over both sluices: "The west one\ndrinks at middle water. The east one only\ndrowns at the top of the tide."'],
         ],
         script: {
           // Put the Boss Key back if it was released and never collected — see
@@ -2727,7 +2825,7 @@ export function installDungeonsA() {
           // wrong ends the dungeon.
           onEnter(game) {
             if (game.progress.flags.d4Sluices && !game.progress.secrets.d4BossKey) {
-              game.spawnPickup(64, 64, 'bossKey', { grabDelay: 14, saveKey: 'd4BossKey' });
+              game.spawnPickup(112, 112, 'bossKey', { grabDelay: 14, saveKey: 'd4BossKey' });
             }
           },
           onEvent(game, name, data) {
@@ -2739,66 +2837,80 @@ export function installDungeonsA() {
             if (wheels.length !== 2 || !wheels.every(w => w.open)) return;
             game.progress.flags.d4Sluices = true;
             if (game.progress.secrets.d4BossKey) return;
-            game.spawnPickup(64, 64, 'bossKey', { grabDelay: 14, saveKey: 'd4BossKey' });
+            game.spawnPickup(112, 112, 'bossKey', { grabDelay: 14, saveKey: 'd4BossKey' });
           },
         },
       },
       '0,4,1': {
         name: 'East Overlook',
         map: [
-          '##########',
-          '#U......U#',
-          '#........#',
-          '#..1111..#',
-          '#..1111..#',
-          '#........#',
-          '#........#',
-          '####..####',
+          '###############',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '#....11111....#',
+          '#....11111....#',
+          '#....11111....#',
+          '#.............#',
+          '#.U.........U.#',
+          '#.............#',
+          '#######.#######',
         ],
         entities: [
-          ['pickup', 4, 2, { kind: 'rupee20' }],
-          ['stalfos', 6, 5],
+          ['pickup', 7, 2, { kind: 'rupee20' }],
+          ['stalfos', 11, 7],
           // D4's second Piece of Heart, in the corner of the overlook furthest
           // from the door — a room you climb to for the view and leave by the
           // way you came.
-          ['pickup', 2, 6, { kind: 'heartPiece' }],
+          ['pickup', 1, 3, { kind: 'heartPiece' }],
         ],
       },
       '0,3,2': {
         name: 'Cistern Gate',
+        // The east door is a shutter, and it is the Crossed Sluices' to open:
+        // see the plate beside it on the far side.
         map: [
-          '####..####',
-          '#........#',
-          '####B#####',
-          '.........#',
-          '.........#',
-          '#........#',
-          '#........#',
-          '##########',
+          '#######B#######',
+          '#.............#',
+          '#..U.......U..#',
+          '#.............#',
+          '#.............#',
+          '..............D',
+          '#.............#',
+          '#.............#',
+          '#..U.......U..#',
+          '#.............#',
+          '###############',
         ],
         entities: [
-          ['tektite', 6, 4],
+          ['tektite', 10, 6],
         ],
       },
       '0,3,1': {
         name: 'Wyverna, the Sea Wyvern',
+        // The boss keeps the mechanic: she flies at the height of the sea, and
+        // `noTide` pins the arena at whatever level was brought in. The floor
+        // is basin, walkable at all three.
         map: [
-          '##########',
-          '#........#',
-          '#........#',
-          '.....>....',
-          '.....>....',
-          '#....>...#',
-          '#........#',
-          '####..####',
+          '###############',
+          '#.............#',
+          '#.............#',
+          '#...2222222...#',
+          '#...2222222...#',
+          '#...2222222...#',
+          '#...2222222...#',
+          '#...2222222...#',
+          '#.............#',
+          '#.............#',
+          '#######B#######',
         ],
         noTide: true,
         entities: [
-          ['wyverna', 4, 2],
+          ['wyverna', 7, 3],
         ],
         script: {
           onEvent(game, name) {
-            if (name === 'bossDead') game.spawnPickup(80, 40, 'heartContainer', { grabDelay: 30 });
+            if (name === 'bossDead') game.spawnPickup(112, 56, 'heartContainer', { grabDelay: 30 });
           },
         },
       },

@@ -3923,6 +3923,24 @@ red on six separate assertions at once. `window.__game.frame` is the frame
 counter — there is no `tick` or `frameCount`, and a check that reads a field
 which does not exist passes forever.
 
+### The Cistern at Oracle size (S140), and the three things it cost
+
+- **A held item's wind-up is not a free step.** The Bellows drew Link planted
+  (`link_push_`) from the first frame of pumping but let him walk until the
+  cone opened fourteen frames later — and every sill's pit trench is in the
+  direction you face to pump. The replay actor paid two quarter-hearts at
+  each of seven wheels for it, which is how it was found. Planted from frame
+  one now; turning is still free.
+- **A pickup on row 1 of an Oracle room is inside the wall.** Drops pop a few
+  pixels up and stay there; on the top row of floor that is into the ring,
+  and nothing can collect it. Row 2 or lower.
+- **A route change of one dungeon moves every fight after it.** D4 at Oracle
+  size is ~11k frames longer, and the first working route through it tripped
+  in D6 on a wizzrobe that had been killed on time before. The fix was to
+  make D4 cheaper (a shortcut, a planned exit), not to touch D6: the run
+  arrived at D5 and D6 with less health than it used to, and that was the
+  whole difference.
+
 ### Scrimshaw (P7), and the three things it cost
 
 **A pickup that opens a text box freezes the fight that dropped it.** The blank
