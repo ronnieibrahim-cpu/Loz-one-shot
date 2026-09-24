@@ -59,6 +59,23 @@
 // That is the Kelp Locks: the current carries a swimmer round to a last gate
 // that runs against him, and the floor route is longer than the air.
 //
+// AND, for a room declaring `sunkPlates: [[x,y], ...]` (S143) — a floor plate
+// at the bottom of deep water, which `FloorSwitch.sunk` lets only a body
+// walking the seafloor press:
+//
+//   S1. A PLATE IS THERE. A `switch` entity stands on every declared tile.
+//   S2. AND IT IS ON THE BOTTOM AT EVERY SEA. The tile is deep at all three
+//       levels, so no conch press lets a wader stand on it: the floor is the
+//       only way to press it, whatever the sea does.
+//   S3. AND THE FLOOR GETS THERE ON ONE BREATH, from some way into the room,
+//       at some level.
+//
+// And globally: every plate in the game that stands on water deep at EVERY
+// level is declared, so a plate cannot go quietly out of reach of everything
+// but the Cleats in a room that never said it was about them. (A plate on a
+// tide tile — the Two Weights' well square — is waded onto at some sea, and
+// that is an ordinary plate at that sea.)
+//
 // THE MODEL, and where its edges are
 //
 //   * A state is a tile; the level is a parameter, and every claim is made at
@@ -403,6 +420,51 @@ for (const r of rooms) {
         + `swim ${flood(r, from, l, 'swim').size}, sink ${flood(r, from, l, 'sink').size}`);
     }
   }
+}
+
+// --- sunken plates ----------------------------------------------------------
+{
+  const undeclared = [];
+  for (const [mapId, m] of MAPS) {
+    for (const [key, def] of Object.entries(m.roomDefs || {})) {
+      const legend = getLegend(def.legend || m.legend);
+      const sz = def.size || [1, 1];
+      // A shut or locked door in the ring is a way in once it opens — both of
+      // the Sounding wing's rooms are entered by a shutter — so the border is
+      // read with every door as floor.
+      const DOORS = new Set(['dDoorClosed', 'dDoorLocked', 'dDoorBoss']);
+      const floorCh = Object.keys(legend).find(c => legend[c] === legend['.']) || '.';
+      const room = {
+        W: (sz[0] | 0) * (m.cell ? m.cell[0] : 10), H: (sz[1] | 0) * (m.cell ? m.cell[1] : 8),
+        grid: def.map.map(row => [...row].map(c => DOORS.has(legend[c]) ? floorCh : c).join('')), legend,
+      };
+      const declared = new Set((def.sunkPlates || []).map(p => p.join(',')));
+      const plates = new Set((def.entities || []).filter(e => e[0] === 'switch').map(e => e[1] + ',' + e[2]));
+      for (const k of plates) {
+        const [x, y] = k.split(',').map(Number);
+        const ch = def.map[y] && def.map[y][x];
+        if (LEVELS.every(l => isDeep(defAt(legend, ch, l))) && !declared.has(k)) undeclared.push(`${mapId} ${key} @${k}`);
+      }
+      const where = `${mapId} ${key} (${def.name || key})`;
+      for (const p of def.sunkPlates || []) {
+        const k = p.join(',');
+        check(`${where}: a plate stands on ${k}`, plates.has(k), 'no switch entity there');
+        const ch = def.map[p[1]][p[0]];
+        const shallow = LEVELS.filter(l => !isDeep(defAt(legend, ch, l)));
+        check(`${where}: the plate at ${k} is on the bottom at every sea`, shallow.length === 0,
+          'not deep at ' + shallow.map(l => LEVEL_NAME[l]).join('/') + ' — a wader stands on it');
+        const starts = [];
+        for (let yy = 0; yy < room.H; yy++) for (let xx = 0; xx < room.W; xx++) {
+          if ((xx === 0 || yy === 0 || xx === room.W - 1 || yy === room.H - 1)
+            && LEVELS.some(l => occupiable(defAt(legend, room.grid[yy][xx], l), 'foot'))) starts.push([xx, yy]);
+        }
+        const got = LEVELS.filter(l => starts.some(st => flood(room, st, l, 'sink', BREATH_TILES).has(k)));
+        check(`${where}: the floor reaches the plate at ${k} on one breath`, got.length > 0,
+          'sink mode cannot get there inside ' + BREATH_TILES + ' tiles of seafloor');
+      }
+    }
+  }
+  check('every plate on deep water is declared a sunken plate', undeclared.length === 0, undeclared.join(', '));
 }
 
 console.log(`\n=== ${passed} passed, ${failures.length} failed ===`);

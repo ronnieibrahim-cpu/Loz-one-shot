@@ -98,6 +98,10 @@ for (const r of rooms) {
     if (g.dialogue) g.dialogue.active = false;
     g.mode = 'play';
     g.player.invuln = 1e5;
+    // One player walks every room: a floor-walker left over from a sunken
+    // plate in the last room would still be on the bottom in this one.
+    g.player.cleatMode = 'swim'; g.player.underwater = false; g.player.sinkInto = false; g.player.sinkT = 0;
+    g.player.inDeep = false;
     const room = g.room;
     const obj = await import('/src/game/objects.js');
     const ent = await import('/src/game/entity.js');
@@ -160,21 +164,40 @@ for (const r of rooms) {
       if (!ent.canOccupy(g, g.player, ox * 16, oy * 16, { jumping: false, swim: false, cutting: false })) {
         notStandable.push(`${ox},${oy} behind block ${bx},${by}`);
       }
-      g.tryPushBlock(bx, by, dir[0], dir[1]);
+      // A block will not go into deep water, so a push onto a tide square is
+      // made at a sea where the square is not deep (the Two Weights, S143):
+      // the arrival sea first, then each level in turn, as a player would.
+      const base = g.tide.level;
+      for (const lv of [base, 0, 1, 2]) {
+        if (lv !== g.tide.level) g.tide.setLevel(lv, { instant: true });
+        if (g.tryPushBlock(bx, by, dir[0], dir[1])) break;
+      }
       await new Promise(r2 => { const s = g.frame; const t = () => (g.frame - s >= 30 ? r2() : requestAnimationFrame(t)); t(); });
     }
+    // A sea changed under a parked harness player says "the tide swept you
+    // back", and a text box freezes every entity — plates included.
+    if (g.dialogue) g.dialogue.active = false;
     // Park the player on any switch still unpressed — with fewer blocks than
     // switches, standing on the last one is the intended solution.
     const open = g.entities.filter(e => e instanceof obj.FloorSwitch && !e.pressed);
     if (open.length) { g.player.x = open[0].x; g.player.y = open[0].y; }
+    // A plate under deep water is on the bottom (`FloorSwitch.sunk`, S143):
+    // the player stands on it the only way it can be stood on, walking the
+    // seafloor. check-cleats.mjs proves the floor gets there on one breath.
+    if (open.length && open[0].sunk && open[0].sunk(g)) {
+      g.player.cleatMode = 'sink'; g.player.underwater = true; g.player.sinkInto = true; g.player.breath = 1e6;
+    }
     await new Promise(r2 => { const s = g.frame; const t = () => (g.frame - s >= 40 ? r2() : requestAnimationFrame(t)); t(); });
     g.checkPuzzle();
     g.tide.clearOverrides();
     return { done: !!room._puzzleDone, blocks: blocks.length, switches: switches.length,
              open: g.entities.filter(e => e instanceof obj.FloorSwitch && !e.pressed).length,
+             detail: 'sea ' + g.tide.level + '; open ' + g.entities.filter(e => e instanceof obj.FloorSwitch && !e.pressed)
+               .map(e => Math.floor(e.cx / 16) + ',' + Math.floor(e.cy / 16)).join(' ') + '; blocks '
+               + blocks.map(e => Math.floor(e.cx / 16) + ',' + Math.floor(e.cy / 16)).join(' '),
              notStandable };
   }, { mapId: r.mapId, f, rx, ry });
-  if (!res.done) bad.push(`${r.mapId} ${r.key} ${r.name}: ${res.blocks} blocks, ${res.switches} switches, ${res.open} still open`);
+  if (!res.done) bad.push(`${r.mapId} ${r.key} ${r.name}: ${res.blocks} blocks, ${res.switches} switches, ${res.open} still open (${res.detail})`);
   for (const n of res.notStandable || []) bad.push(`${r.mapId} ${r.key} ${r.name}: nothing to push from at ${n}`);
 }
 

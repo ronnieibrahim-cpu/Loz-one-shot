@@ -1,39 +1,26 @@
-OBJECTIVE OF RECORD: 10 oracle-rooms — rebuild every dungeon at Oracle room size.
+OBJECTIVE OF RECORD: none — 10 oracle-rooms MET S143; awaiting the human.
 
-Named by the human at S137, replacing the "awaiting the human" state S121 left.
-Every dungeon room becomes a 15x11 Oracle room with a one-tile wall ring, a
-scrolling camera, one-tile doors in the middle of each wall and key doors in
-the ring between two rooms, drawn from ONE Seasons dungeon's own kit (ring,
-jambs, doors, floors, block, pot) cut by tools/rip-dungeon-themes.py.
-Puzzles deepened, never made obscure. S141 (the human): dungeons GROW, as
-the Oracle games' do, and new rooms get less creative restraint. Size
-ladder in screens (today in brackets): D1 25 [25], D2 27 [27], D3 >=32 [25],
-D4 >=36 [36], D5 >=40 [40], D6 >=46 [47]. New rooms are new ideas with the
-dungeon's item and tide theme, each proved by its item's checker. The engine,
-every checker and the route learned Oracle cells at S137 (map `cell: [15, 11]`,
-`cellTiles`), and D1 Tidewash Grotto is rebuilt and played to THE END.
-
-DONE-CONDITION: all six dungeons declare `cell: [15, 11]`, each with its own
-Seasons kit, each meets its size ladder, and `node tools/check-playthrough.mjs`
-is green end to end.
-PROGRESS: D1 done (S137). D2 done (S138). D3 done (S139). D4 done (S140).
-D5 done (S141). D6 and D5 done and grown (S142). All six are Oracle size. D4
-grown to 36 (S143). Next: grow D3 to the ladder (>=32).
+10 oracle-rooms (named S137): every dungeon at 15x11 Oracle room size in ONE
+Seasons dungeon's kit, grown to a size ladder (S141). Final sizes in screens:
+D1 25, D2 27, D3 32, D4 36, D5 40, D6 47. MET S143: all six declare
+`cell: [15, 11]` with their own kit, all meet the ladder, and
+check-playthrough is green end to end with no deaths. Each grown dungeon has
+a required wing that asks for its item a new way (D3 sunken plates, D4 the
+Ebb Cell, D5 a block over a pillar, D6 the hauled key) and charms in its
+optional rooms. NEXT-PROMPT.md holds the proposed follow-up (the boss
+margins S143's growth moved); the human decides the next objective.
 
 ROTATION (retired S112, kept for the record):
   1 wide-rooms MET S111 | 2 art-provenance S9/S74 | 3 boss-art S75
   4 enemy-roster S59 | 5 npc-detail S63 | 6 region-art S89
   7 item-reuse MET S110 | 8 feel-measure BLOCKED | 9 playthrough-route MET S121
+  10 oracle-rooms MET S143
 
-FILE ALLOWLIST for the current objective (grow D4, D3):
-  src/data/dungeons-a.js + dungeons-b.js (the d3-d5 blocks), src/data/tiles-core.js,
-  tools/check-bellows.mjs, tools/check-cleats.mjs, tools/check-playthrough.mjs,
-  src/data/legends.js, src/data/tiles-dungeon-themes.js (regenerated only),
-  tools/rip-dungeon-themes.py, tools/playthrough-route.mjs,
-  tools/replay-plans.mjs + tools/replays/d6-*.json, src/data/bosses.js (d6's
-  bosses, measured first), src/world/room.js, tools/measure-boss-combat.mjs,
-  tools/check-dredge.mjs, tools/check-items.mjs, tools/dungeon-strands-baseline.json,
-  any checker that still assumes 10x8, docs/*.md, dist/oracle-of-tides.html
+FILE ALLOWLIST for the proposed follow-up (boss margins after S143):
+  src/data/bosses.js (measured first), tools/measure-boss-combat.mjs,
+  tools/playthrough-route.mjs, tools/check-playthrough.mjs,
+  src/data/dungeons-a.js + dungeons-b.js (arena rooms only), docs/*.md,
+  dist/oracle-of-tides.html
 
 DETOUR TOKENS: 1 (unspent)
 
@@ -57,4 +44,4 @@ S139 | objective | The third dungeon, the Bogwater Sanctum, is rebuilt at real O
 S140 | objective | The fourth dungeon, the Cliffside Cistern, is rebuilt at real Oracle room size in the grey stone and green floor of the Seasons Dancing Dragon Dungeon, with that dungeon's own locked doors, shutters and horned boss door. The Long Race now has two wind-wheels, and the second is behind the first at a different tide. A plate beside the Boss Key's room opens a shortcut to the boss door. Fixed: pumping the Bellows used to let Link walk for a moment, straight into the pit in front of every wheel, and a Piece of Heart that had popped into a wall. The whole game still plays to the end.
 S141 | objective | The fifth dungeon, the Drowned Wood Shrine, is rebuilt at real Oracle room size in the brown stone and gold floor of the Seasons Ancient Ruins, with that dungeon's own doors. Every seed grove works exactly as before in the bigger rooms. Fixed: the salt colossus in the last dungeon used to leave its beetles behind when it died, and they could knock Link into a pit. The whole game still plays to the end, and the last boss is now met on a full health bar.
 S142 | objective | The last dungeon, the Abyssal Keep, is rebuilt at real Oracle room size in the dark stone of the Seasons Sword & Shield Maze, with its own locked doors and boss door. Nereth's stair now has an antechamber with the fairy and the boss door, and the throne-room door shuts behind you until the King is dead. The salt colossus has the whole east side of its room to fight on. Then the Keep grew to 47 screens, the biggest dungeon in the game: a new wing where you must fish the stair key off a pillar, and six optional rooms with four charms. The Shrine grew to 40: the first room where a block crosses a seed pillar, and eight optional rooms with five charms; seeds now grow back. All six dungeons are now Oracle size, and the whole game still plays to the end.
-S143 | objective | The fourth dungeon, the Cliffside Cistern, grew to 36 screens. A new required wing off the first wind-wheel room holds the key to the Long Race, and it asks the dungeon's question a new way: the wheel in the Ebb Cell is under too much water for the Bellows at high tide, and you can only get into its cell at high tide, so you swim in and lower the sea while standing inside — the walls rise round you — and then blow. Three optional rooms each hide a charm behind a wind-wheel. The whole game still plays to the end.
+S143 | objective | Grew the last two small dungeons, and with that every dungeon is now full Oracle size and grown. The Cliffside Cistern is 36 screens: its new required wing has a wind-wheel you can only reach at high tide but can only turn once you lower the sea while standing next to it. The Bogwater Sanctum is 32 screens: its new required wing has floor switches lying at the bottom of deep pools — swimming over them does nothing, only walking the bottom in the Cleats presses them. Five more charms are hidden in optional rooms. The whole game still plays to the end.

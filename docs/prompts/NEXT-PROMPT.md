@@ -1,45 +1,44 @@
-# Next session — grow the Cliffside Cistern to 36 screens
+# Next session — re-measure the bosses S143's growth moved
 
 ## Read first
-- `docs/prompts/STATE.md` — the whole file.
-- `docs/prompts/LEDGER.md`'s "Settled at S142", "Settled at S141" and
-  "Settled at S137" sections.
-- `docs/NEXT-SESSION.md`, the S142 entry (how the Keep and the Shrine were
-  grown: a required wing that asks for the item a new way before a door the
-  route needs, optional rooms with charms) and S140 (D4 at Oracle size).
-- `docs/HANDOFF.md`'s first five hard-won lessons (S142).
-- `src/data/dungeons-a.js`: the `d4` block and its header comment.
-- `tools/check-bellows.mjs`'s header: what a wheel, a stand and a sill
-  must prove.
+- `docs/prompts/STATE.md` — the whole file (objective 10 is MET; the human
+  names the next one, and this task stands until they do).
+- `docs/prompts/LEDGER.md`'s "Settled at S143", "Settled at S135" and
+  "Settled at S136" sections.
+- `docs/NEXT-SESSION.md`, the S143 entry and the S135 entry.
+- `docs/HANDOFF.md`'s first seven hard-won lessons.
+- `tools/measure-boss-combat.mjs`'s header: how a route arena is set up.
 
 ## Why this, now
-All six dungeons are Oracle size (S137-S142); the Keep is 47 screens and
-the Shrine 40. S141 the human asked for dungeons that GROW the way the
-Oracle games' do, with less creative restraint. STATE.md's ladder: D3 >=32,
-D4 >=36. D4 is 27.
+S143 grew D4 and D3, and the run now reaches every later fight on a
+different random stream. Gloomtide was won with 8 of 28 quarter-hearts left
+(17-19 at S139). The King needed TWO walk-rounds of the Stairhead to be won
+(S142 needed one). A route that only works on a re-roll is the fragile part
+of the run, and nobody has measured these fights since the growth.
 
 ## The task
-Grow `d4` Cliffside Cistern to at least 36 screens with rooms built on
-the Squall Bellows and the Cistern's tide theme (the sea in two states at
-one instant).
-Follow S142's shape: a REQUIRED wing that asks for the item in a new way
-before a door the route needs, and optional rooms with real rewards
-(unplaced charms: saltEtched, beachcomber, dryKindling, gullsTally,
-chandlersEye, quartermaster, potHauler, drownedLantern, brineSkin,
-ballastLung, wrackbone, fishermansRegret, deadweight, seawolfsTooth).
-Each Bellows room declares `bellowsRoom` so `check-bellows.mjs` proves it.
-Heart Pieces stay 24 in total. Then D3 (>=32).
+Re-measure, over 13 seeds from each route door (never `--at=route`), every
+boss and miniboss the S143 growth moved: Gloomtide and Bogmaw (D3), Wyverna
+and the Ironknight (D4), Rootmaw and Thornvine (D5), the Tideshade, the
+Brinehulk and Nereth (D6). Record the table in LEDGER. If any reads worse
+than its S135/S136/S142 number, find why and fix it from the route (entry
+wait, a heal on the way, a planned exit) before touching the fight; retune
+a fight only with 13 seeds either side and damage, not hp. The target is
+the King won from the Stairhead without the double walk-round in
+`tools/playthrough-route.mjs`.
 
 ## Done means
-- `validate`, `walk-dungeons`, `check-dungeon-strands`, `check-bellows`,
-  `solve-switches`, `check-lens`, `check-placement`, `check-ground`,
-  `check-exits`, `check-hearts`, `check-items` green; `replay` and
-  `test.mjs` green.
+- `node tools/measure-boss-combat.mjs` rows for all nine fights, 13 seeds.
 - `node tools/check-playthrough.mjs` green to THE END with no deaths.
+- `replay`, `test.mjs`, `check-bosses`, `check-respawn` green.
 - `check-drift` OK; `npm run build` with `dist/` committed.
-- STATE.md's ladder brackets updated.
+- A person plays the Ebb Cell and the Two Weights once and says whether
+  the sign in each makes the answer clear.
 
 ## Out of scope
-- Re-kitting any dungeon; push-block art; torrent direction art; the pause
-  menu's look. Re-balancing a boss beyond what a changed arena forces
-  (measure over 13 seeds first; NEVER pass `--at=route`).
+- Adding rooms to any dungeon; every dungeon is at its ladder size.
+- The Bellows' "shove light enemies into pits" verb, which does nothing
+  today (written up in NEXT-SESSION S143) — its own session.
+- Push-block theme art; torrent direction art; the pause menu's look.
+- Changing a boss's hp (phase thresholds re-roll the fight — S137).
+- Routing the optional rooms; they are proved by their item checkers.

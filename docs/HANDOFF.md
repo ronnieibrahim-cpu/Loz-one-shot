@@ -453,6 +453,10 @@ BEFORE checking a file out for isolation, not after.**
   floods cannot see "was already standing there when the sea changed". A
   divider wall across a [1,2] room must not sit on the seam row (row 10/11):
   check-wide-rooms reads that as two rooms wearing one key.
+- **A harness that changes the sea under a parked player gets a text box
+  ("The tide swept you back!"), and a text box freezes every entity —
+  plates included.** solve-switches read two solvable rooms as unsolvable
+  for it (S143). Dismiss the box before waiting on a plate.
 - **A small-key chest pops the key out as a drop.** Open it, `wait 30`, then
   `loot`, or the run leaves with the key still hovering over the chest.
 

@@ -1,4 +1,4 @@
-## S143 — the Cliffside Cistern grows to 36 screens
+## S143 — the Cliffside Cistern grows to 36 screens, the Bogwater Sanctum to 32
 
 ### What landed (first commit of S143)
 - REQUIRED WEST WING, the Spillway, off the Squall Loft's opened west wall;
@@ -36,8 +36,46 @@
   back TWICE: zero and one walk-rounds lose on this stream, two and three
   win. check-playthrough 41/41, no deaths.
 
+### The Sanctum grown to 32 screens (second commit of S143)
+- ENGINE: A PLATE UNDER DEEP WATER IS ON THE BOTTOM (`FloorSwitch.sunk`,
+  src/game/objects.js). On a tile deep at the plate's own level (through the
+  field), only a player who is `underwater` (Cleats floor mode) presses it,
+  and no enemy does; blocks still do. No plate in the game stood on deep
+  water before (scanned), so nothing earlier changed.
+- REQUIRED EAST WING off the Eel Vault's opened east wall (the Vault's
+  clearing opens the shutter now instead of dropping the key):
+  - `0,6,4` The Sounding Pool [2,1]: one latching plate in the middle of a
+    `W` pool; it opens the south ring shutter.
+  - `0,6,5` The Two Weights [2,1]: a held plate on a single `3` well square
+    (block pushed onto it at LOW, where the well is shallow; a block will not
+    enter deep water) and a held plate on the bottom of a `W` pool (Link, on
+    the floor). The key drops when both hold; it opens the Eel Hall's north
+    door. Keys in D3 are still 3 doors / 3 keys.
+- NEW CHECKER CLAUSE: check-cleats `sunkPlates` (S1 a plate is there, S2 the
+  tile is deep at every sea, S3 the floor reaches it on one breath from a
+  way in, doors counted open), and globally every plate on water deep at
+  every level must be declared. check-items proves the rule in-engine (a
+  swimmer over the Sounding Pool's plate does not press it; a floor-walker
+  does). solve-switches parks a floor-walker on a sunken plate, tries a
+  block push at each sea when the arrival sea refuses it, resets the
+  player's Cleats state per room and dismisses the harness's "tide swept you
+  back" box (a text box freezes every plate). check-placement skips declared
+  sunken plates.
+- OPTIONAL: `0,1,5` Sluice Bed off the Map Cell's west wall (a latching plate
+  at the head of a south torrent; alcove chest: Ballast Lung) and `0,5,6`
+  Current Garden [2,1] off the Bell Cell's east wall (a west-running floor
+  with a chest island two screens out: Deadweight). Both cleatRooms; both
+  tried in-engine with try-room.
+- Route: Eel Vault cleared -> east into the Sounding Pool (fight, sink onto
+  the plate) -> south shutter -> Two Weights (conch to LOW, push the block
+  west, Cleats back on B, sink onto the pool plate, loot the key) -> back to
+  the Vault and on through the Eel Hall's key door. Gloomtide won with 8 of
+  28 quarter-hearts left (was 17-19 at S139's sweep of the entry wait).
+  check-playthrough 42/42 to THE END, no deaths.
+
 ### Open
-- Grow D3 (>=32, is 25) — NEXT-PROMPT.md.
+- Objective 10's done-condition is met: every dungeon at Oracle size with
+  its own kit and at its ladder size. The human names the next objective.
 - OFF-PLAN: the Bellows' combat verb "pushes light enemies into pits" is
   claimed in ITEMS.md and the Cliff Walk's comment, and does nothing: the
   gust moves ground enemies through `moveEntity`, which refuses pits by

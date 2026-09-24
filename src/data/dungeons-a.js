@@ -1482,7 +1482,18 @@ export function installDungeonsA() {
     // layers in one crossing — ride the current as far as it carries, then
     // sink for the stretch it will not.
     //
-    // The route (22 rooms, one floor, the Cleats at room 11):
+    // GROWN TO 32 SCREENS (S143). A required east wing, the Sounding wing
+    // (the Sounding Pool, the Two Weights), off the Eel Vault's east wall,
+    // holds the key the Eel Hall's north door wants — the Vault's clearing now
+    // opens the wing instead. It asks for the floor mode a new way: A PLATE
+    // UNDER DEEP WATER IS ON THE BOTTOM, and only Link walking the seafloor
+    // presses it (`FloorSwitch.sunk`; proved by check-cleats' sunkPlates
+    // clause). Two optional rooms want the Cleats before they are owned: the
+    // Sluice Bed off the Map Cell (a plate at the head of a torrent: Ballast
+    // Lung) and the Current Garden off the Bell Cell (Deadweight).
+    //
+    // The route (22 rooms before S143, one floor, the Cleats at room 11; the
+    // Sounding wing comes between the Eel Vault and the Eel Hall's key door):
     //   3,7 mouth -> 3,6 Nave (fairy) -> 4,6 charm -> 3,5 Hub -> 2,5 map
     //   -> 4,5 Sluice Cell (Small Key 1) -> 3,4 Weir: 2,4 Chartstone,
     //   4,4 Piece of Heart, and the key door north -> 3,3 THE CLEATS.
@@ -1566,7 +1577,7 @@ export function installDungeonsA() {
           '#.U.........U.#',
           '#.............#',
           '#....,,,,,....#',
-          '.....,,,,,....#',
+          '.....,,,,,.....',
           '#....,,,,,....#',
           '#.............#',
           '#.U.........U.#',
@@ -1612,7 +1623,7 @@ export function installDungeonsA() {
           '#.p.........p.#',
           '#.............#',
           '#.............#',
-          '#..............',
+          '...............',
           '#.............#',
           '#.............#',
           '#.p.........p.#',
@@ -1734,7 +1745,7 @@ export function installDungeonsA() {
           '#.U.........U.#',
           '#.............#',
           '#.............#',
-          '#.............#',
+          '#.............D',
           '#....,,,,,....#',
           '#.............#',
           '#.U.........U.#',
@@ -1760,9 +1771,11 @@ export function installDungeonsA() {
         puzzle: {
           enemies: true,
           flag: 'd3_eel',
+          // Since S143 the clearing opens the Sounding wing, and the Small Key
+          // the Eel Hall's north door wants is in the Two Weights.
           reward: {
-            spawn: [['pickup', 7, 3, { kind: 'key' }]],
-            say: 'Something drops out of the weed.',
+            openDoors: [[14, 5]],
+            say: 'A gate grinds open in the east wall.',
           },
         },
       },
@@ -2092,6 +2105,147 @@ export function installDungeonsA() {
             say: 'The west gate grinds open.',
           },
         },
+      },
+      // ------------------------------------------ the sounding wing (S143)
+      //
+      // THE SOUNDING WING, REQUIRED, off the Eel Vault's east wall: the Vault's
+      // clearing opens it now instead of paying out a key, and the key the
+      // Eel Hall's north door wants is in here. The Cleats' floor mode, asked
+      // a new way: A PLATE UNDER DEEP WATER IS ON THE BOTTOM
+      // (`FloorSwitch.sunk`). A swimmer floats over it and nothing happens;
+      // only a body walking the seafloor presses it. The water has two floors,
+      // and this is the first thing that cares which one you are on.
+      '0,6,4': {
+        name: 'The Sounding Pool',
+        // The rule, taught alone: one plate in the middle of a deep pool. It
+        // stays down once pressed and opens the way on.
+        size: [2, 1],
+        map: [
+          '##############################',
+          '#............................#',
+          '#..U.....WWWWWWWWWWWW....U...#',
+          '#........WWWWWWWWWWWW........#',
+          '#........WWWWWWWWWWWW........#',
+          'D........WWWWWWWWWWWW........#',
+          '#........WWWWWWWWWWWW........#',
+          '#........WWWWWWWWWWWW........#',
+          '#..U.....WWWWWWWWWWWW....U...#',
+          '#............................#',
+          '######################D#######',
+        ],
+        sunkPlates: [[14, 5]],
+        entities: [
+          ['switch', 14, 5, { hold: false }],
+          ['jellyfish', 11, 3],
+          ['crab', 24, 7],
+        ],
+        puzzle: {
+          switches: 'all',
+          flag: 'd3_sounding',
+          reward: { openDoors: [[22, 10]], say: 'Something heavy shifts in the south wall.' },
+        },
+        readable: [
+          [3, 2, 'Bog script on the statue: "The plate is on the\nbottom. The swimmer floats over it and the\nwater keeps its secret."'],
+        ],
+      },
+      '0,6,5': {
+        name: 'The Two Weights',
+        // Two plates that must be held at once. The west one is a single well
+        // square — shallow at LOW, deep above — and a block will not go into
+        // deep water, so the block is pushed onto it at LOW. The east one is
+        // at the bottom of a pool deep at every sea, and only Link walking the
+        // floor presses it. One of each weight; the key falls when both hold.
+        size: [2, 1],
+        map: [
+          '######################D#######',
+          '#............................#',
+          '#..U........U................#',
+          '#............................#',
+          '#...............WWWWWWWWWWW..#',
+          '#.....3.........WWWWWWWWWWW..#',
+          '#...............WWWWWWWWWWW..#',
+          '#...............WWWWWWWWWWW..#',
+          '#..U........U...WWWWWWWWWWW..#',
+          '#............................#',
+          '##############################',
+        ],
+        sunkPlates: [[21, 6]],
+        entities: [
+          ['switch', 6, 5],
+          ['block', 7, 5],
+          ['switch', 21, 6],
+          ['jellyfish', 25, 8],
+        ],
+        puzzle: {
+          switches: 'all',
+          flag: 'd3_weights',
+          reward: {
+            spawn: [['pickup', 11, 3, { kind: 'key' }]],
+            say: 'Both plates hold. A key rattles loose.',
+          },
+        },
+        readable: [
+          [3, 2, 'Scratched by the well: "A stone will not go into\ndeep water. The other plate lies where only\nthe floor-walker goes."'],
+        ],
+      },
+
+      // ---------------------------------------------- optional rooms (S143)
+      '0,1,5': {
+        name: 'Sluice Bed',
+        // Optional, off the Map Cell's west wall, and it wants the Cleats the
+        // first time it is seen. A plate at the head of a channel that runs
+        // south harder than anyone swims: a swimmer is put back out of the
+        // mouth, a floor-walker goes up the bed and stands on it.
+        map: [
+          '###############',
+          '#,,,##VVV#....#',
+          '#,,,##VVV#....#',
+          '#,,,##VVV#..U.#',
+          '##D###VVV#....#',
+          '#....#VVV#.....',
+          '#....#VVV#....#',
+          '#.U..#VVV#....#',
+          '#....#VVV#....#',
+          '#.............#',
+          '###############',
+        ],
+        cleatRoom: { from: [14, 5], to: [7, 1] },
+        sunkPlates: [[7, 1]],
+        entities: [
+          ['switch', 7, 1, { hold: false }],
+          ['chest', 2, 2, { charm: 'ballastLung' }],
+          ['urchin', 11, 7],
+        ],
+        puzzle: {
+          switches: 'all',
+          flag: 'd3_sluicebed',
+          reward: { openDoors: [[2, 4]], say: 'A grate lifts in the west wall.' },
+        },
+      },
+      '0,5,6': {
+        name: 'Current Garden',
+        // Optional, off the Bell Cell's east wall. The whole floor runs west,
+        // back at the door, and the chest is on an island two screens out:
+        // swum, the current hands you back; walked on the bottom, nothing does.
+        size: [2, 1],
+        map: [
+          '##############################',
+          '#...ttttttttttttttttttttttttt#',
+          '#.U.ttttt#ttttt#ttttttttttttt#',
+          '#...ttttttttttttttttttttttttt#',
+          '#...tttttttttttttttttt...tttt#',
+          '....tttttttttttttttttt...tttt#',
+          '#...tttttttttttttttttt...tttt#',
+          '#...ttttttttttttttttttttttttt#',
+          '#.U.ttttt#ttttt#ttttttttttttt#',
+          '#...ttttttttttttttttttttttttt#',
+          '##############################',
+        ],
+        cleatRoom: { from: [0, 5], to: [22, 5] },
+        entities: [
+          ['chest', 23, 5, { charm: 'deadweight' }],
+          ['keese', 2, 3],
+        ],
       },
       '0,3,1': {
         name: 'Gloomtide, the Bogwater Maw',

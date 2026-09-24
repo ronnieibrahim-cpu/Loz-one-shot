@@ -177,7 +177,7 @@ currents, and blind.
 |---|---|
 | Movement | Swim the surface, or walk the seafloor — two route layers per deep room |
 | Combat | Sink mode takes **no knockback** and ignores currents, so a current-swept room can be walked through under fire; the cost is that you cannot draw the sword until you surface |
-| Puzzle | Carry heavy objects along the floor, under barriers that only block the surface |
+| Puzzle | Carry heavy objects along the floor, under barriers that only block the surface; and **press what lies on the bottom** — a plate under deep water is on the seafloor, and a swimmer floats over it (the Sanctum's Sounding wing, S143) |
 
 **Level 2 is the Mermaid Suit**: unlimited breath in sink mode, and underwater
 block pushing.
@@ -211,8 +211,10 @@ moment you walk into it, it closes.
 - **Overworld use** — the Cliffs of Kell rafts: the raft only moves upwind of
   the gust, so the crossing is aimed rather than boarded.
 - **Dungeon use** — Cliffside Cistern, its own dungeon: the cistern's wheels are
-  the lock, and the held cone is how water is kept off a floor switch long
-  enough to press it with a block.
+  the lock. Since S143 the Ebb Cell asks for the conch to be sounded from the
+  stand itself: the cell is only reached at the flood, the wheel is too deep
+  for one level of cone there, so the sea is let out around you and then you
+  blow.
 
 ---
 

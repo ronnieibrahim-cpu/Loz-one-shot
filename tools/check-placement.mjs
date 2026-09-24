@@ -95,7 +95,11 @@ const report = await page.evaluate(async () => {
       // entity is reported as standing in. Entity-on-entity is a real fault
       // and is reported below, but it has to be between PLACED entities.
       g.enterMap(map.id, f, rx, ry, -999, -999, 'down', { instant: true });
-      const placed = g.entities.filter(e => e !== g.player && !e.remove);
+      // A sunken plate (S143) stands on deep water by design: it is on the
+      // bottom, and check-cleats.mjs proves the floor reaches it.
+      const sunk = new Set((def.sunkPlates || []).map(p => p.join(',')));
+      const placed = g.entities.filter(e => e !== g.player && !e.remove
+        && !(e.constructor.name === 'FloorSwitch' && sunk.has(Math.floor(e.cx / 16) + ',' + Math.floor(e.cy / 16))));
       for (const e of placed) {
         checked++;
         const stuck = [];

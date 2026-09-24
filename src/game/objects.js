@@ -953,11 +953,27 @@ export class FloorSwitch extends Entity {
     this.noPlant = true;
   }
 
+  /**
+   * A PLATE UNDER DEEP WATER IS ON THE BOTTOM (S143). A swimmer floats over it
+   * and a swimming thing never reaches it; only a body walking the seafloor —
+   * the Cleats' floor mode — or something heavy resting on it presses it. The
+   * level asked is the one at the plate's own tile, through the field.
+   */
+  sunk(game) {
+    const room = game.room;
+    if (!room) return false;
+    const tx = Math.floor(this.cx / TILE), ty = Math.floor(this.cy / TILE);
+    return !!(room.flagsAt(tx, ty, game.tide) & F.DEEP);
+  }
+
   update(game) {
     let on = false;
-    if (game.player && this.overlaps(game.player) && game.player.z <= 4) on = true;
+    const sunk = this.sunk(game);
+    const p = game.player;
+    if (p && this.overlaps(p) && p.z <= 4 && (!sunk || p.underwater)) on = true;
     for (const e of game.entities) {
       if (e === this || e.isEffect || e.isDrop) continue;
+      if (sunk && e.isEnemy) continue;
       if ((e.solid || e.isEnemy) && this.overlaps(e)) { on = true; break; }
     }
     if (!this.hold && this.pressed) on = true;

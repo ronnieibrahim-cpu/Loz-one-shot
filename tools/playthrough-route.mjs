@@ -1007,6 +1007,46 @@ export const ROUTE = [
   ['wait', 120],
   ['loot', 1500],
 
+  // ------------------------------------------- d3 0,6,4 and 0,6,5 (S143)
+  // THE SOUNDING WING. Clearing the Vault opens its east wall, and the third
+  // key is two rooms in. A PLATE UNDER DEEP WATER IS ON THE BOTTOM: floating
+  // over it does nothing, and the soles are armed on the bank so the pool is
+  // walked on its floor. The Sounding Pool's plate latches and opens the
+  // shutter south; the Two Weights want a block on the well square (pushed at
+  // LOW, where the well is shallow) and Link on the sunken plate at once.
+  ['goto', 13, 5, 900],
+  ['exit', 'right', 300],
+  ['wait', 60],
+  ['fight', 3000, 1200],
+  ['goto', 8, 5, 900],
+  ['soles', 'sink', 240],
+  ['goto', 14, 5, 900],
+  ['wait', 20],
+  ['dialogue', 300],
+  ['goto', 8, 5, 900],
+  ['goto', 22, 9, 1500],
+  ['exit', 'down', 300],
+  ['wait', 60],
+  ['equip', 'conch', 'B', 400],
+  ['tide', 0, 140, 600],
+  ['goto', 8, 5, 1500],
+  ['hold', ['left'], 40],
+  ['equip', 'cleats', 'B', 400],
+  ['goto', 15, 6, 1500],
+  ['soles', 'sink', 240],
+  ['goto', 21, 6, 900],
+  ['wait', 20],
+  ['dialogue', 300],
+  ['goto', 15, 6, 900],
+  ['goto', 11, 3, 1500],
+  ['loot', 600],
+  ['goto', 22, 1, 1500],
+  ['exit', 'up', 300],
+  ['wait', 60],
+  ['goto', 1, 5, 1500],
+  ['exit', 'left', 300],
+  ['wait', 60],
+
   // ---------------------------------------------------------------- d3 0,5,3
   // Back up into the Hall and through the key door in its north wall — the
   // third key, and the way into the Kelp Locks.

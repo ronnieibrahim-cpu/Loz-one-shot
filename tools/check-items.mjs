@@ -403,6 +403,31 @@ r = await page.evaluate(() => {
 check('L1 cannot push a block on the seafloor', r.l1 === 0, `pushT=${r.l1}`);
 check('the Mermaid Suit can', r.l2 > 0, `pushT=${r.l2}`);
 
+// A PLATE UNDER DEEP WATER IS ON THE BOTTOM (S143): the Sounding Pool's plate
+// stands in the middle of a pool deep at every sea. Floating over it does
+// nothing; walking the floor onto it presses it.
+await park({ map: 'd3', rx: 6, ry: 4, tx: 14, ty: 5, dir: 'down', tide: 1, items: { cleats: 1 }, equipB: 'cleats' });
+r = await page.evaluate(async () => {
+  const g = window.__game;
+  const p = g.player;
+  // `park` clears the room, so the plate is put back where the room has it.
+  const { FloorSwitch } = await import('/src/game/objects.js');
+  const plate = new FloorSwitch(14 * 16, 5 * 16, { hold: false });
+  g.addEntity(plate);
+  const room = g.mapId + ' ' + (g.room && g.room.key);
+  const run = (mode) => {
+    p.x = 14 * 16; p.y = 5 * 16;
+    p.cleatMode = mode; p.underwater = (mode === 'sink'); p.breath = 100000;
+    window.__hold([]);
+    for (let i = 0; i < 20; i++) g.update();
+    return plate.pressed;
+  };
+  return { there: room === 'd3 0,6,4' && plate.sunk(g), room, swim: run('swim'), sink: run('sink') };
+});
+check('the Sounding Pool\'s plate is on the bottom', r.there, 'not sunk, in ' + r.room);
+check('a swimmer floating over a sunken plate does not press it', r.swim === false, 'pressed from the surface');
+check('...and walking the floor onto it does', r.sink === true, 'the floor-walker did not press it');
+
 // ===========================================================================
 section('Squall Bellows');
 

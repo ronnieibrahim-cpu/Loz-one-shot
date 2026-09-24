@@ -73,7 +73,7 @@
 // Shrine, in order, nothing granted. Five bosses and two minibosses beaten,
 // fourteen Small Keys earned and spent, the Sunken Marsh and the Cliffs of
 // Kell both opened with the Bombs the Coral Spire paid out, all three of the
-// Sanctum's torrents crossed on the seafloor, all six of the Cistern's drowned
+// Sanctum's torrents crossed on the seafloor, every one of the Cistern's drowned
 // wheels turned with the Squall Bellows held, the Noble Sword fetched back out
 // of the grotto the run started in once it held four Essences, all five of the
 // Shrine's groves grown at HIGH and stood on at LOW — and then the whole
@@ -409,6 +409,12 @@ check('the run bombed its way into the Sunken Marsh',
 check('the run walked the seafloor under D3\'s three torrents',
   ['d3/0,2,3', 'd3/0,4,3', 'd3/0,4,2'].every(r => a.rooms.includes(r)),
   `rooms ${['d3/0,2,3', 'd3/0,4,3', 'd3/0,4,2'].filter(r => !a.rooms.includes(r)).join(' ')} missing`);
+// AND IT PRESSED WHAT LIES ON THE BOTTOM (S143). The Kelp Locks' key is in the
+// Two Weights, behind the Sounding Pool: two plates under deep water that only
+// a floor-walker presses. A run that reached the Locks walked both rooms.
+check('the run pressed the Sounding wing\'s sunken plates',
+  ['d3/0,6,4', 'd3/0,6,5', 'd3/0,4,2'].every(r => a.rooms.includes(r)),
+  `rooms ${['d3/0,6,4', 'd3/0,6,5'].filter(r => !a.rooms.includes(r)).join(' ')} missing`);
 check('the run completed a second Heart Container mid-D2, on top of D1\'s own',
   s.maxHearts >= 20, `maxHearts ${s.maxHearts}`);
 // ---- what the Drowned Wood Shrine leg added -------------------------------

@@ -916,7 +916,7 @@ checked and why; see `docs/NEXT-SESSION.md` S60 for the full account.
   `liftLevel: 2` + the `dredge` tile action, as this entry originally said;
   only the "read by nothing" half of the claim was wrong.
 
-## Settled at S143 — the Cistern grows to 36 screens
+## Settled at S143 — the Cistern grows to 36 screens, the Sanctum to 32
 
 - D4 is 30 rooms, 36 screens. The Spillway (Spill Gate, Ebb Cell, Spill
   Vault) is required: its key opens the Long Race's west key door.
@@ -926,6 +926,13 @@ checked and why; see `docs/NEXT-SESSION.md` S60 for the full account.
 - Charms placed: saltEtched (Siphon Stair), gullsTally (Gull Roost),
   seawolfsTooth (Wind Gallery).
 - The Nereth re-roll is two walk-rounds of the Stairhead on this stream.
+- D3 is 26 rooms, 32 screens. The Sounding wing (Sounding Pool, Two
+  Weights) is required: its key opens the Eel Hall's north door; the Eel
+  Vault's clearing opens the wing.
+- A plate on deep water is on the bottom: only the Cleats' floor mode (or a
+  block) presses it. check-cleats `sunkPlates`; check-items in-engine.
+- Charms placed: ballastLung (Sluice Bed), deadweight (Current Garden).
+- Objective 10 (oracle-rooms) MET at S143.
 
 ## Settled at S142 — the Abyssal Keep is an Oracle dungeon
 
