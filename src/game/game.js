@@ -56,7 +56,7 @@ import { runCutscene, CUTSCENES } from './cutscene.js';
 import { Stream, seedGlobal, roomStream, noise1, rng as rngGlobal } from '../core/rng.js';
 import { sp } from '../core/fixed.js';
 import {
-  ROOM_TRANSITION_FRAMES, ROOM_EXIT_MARGIN, FADE_RATE, BANNER_FRAMES,
+  ROOM_TRANSITION_FRAMES_H, ROOM_TRANSITION_FRAMES_V, ROOM_EXIT_MARGIN, FADE_RATE, BANNER_FRAMES,
   SHAKE_LARGE, SHAKE_LARGE_FRAMES, BOSS_ESSENCE_DELAY_FRAMES,
   HITSTOP_HIT_FRAMES, HITSTOP_HURT_FRAMES, HITSTOP_BOSS_DEATH_FRAMES,
   LOW_HEART_THRESHOLD, LOW_HEART_EVERY,
@@ -521,10 +521,18 @@ export class Game {
     return { x, y: next.ph - 16 };
   }
 
+  /** A scroll's length depends on its axis: Seasons moves the view 4 px a
+   *  frame either way, so a 160 px sideways slide takes longer than a 128 px
+   *  vertical one. See ROOM_TRANSITION_FRAMES_H/_V in feel.js. */
+  transitionFrames(dir) {
+    return dir === 'left' || dir === 'right' ? ROOM_TRANSITION_FRAMES_H : ROOM_TRANSITION_FRAMES_V;
+  }
+
   updateTransition() {
     const t = this.transition;
     t.t++;
-    const k = t.t / ROOM_TRANSITION_FRAMES;
+    const n = this.transitionFrames(t.dir);
+    const k = t.t / n;
     const p = this.player;
     // Ease the player across the seam while the view slides. The whole slide
     // runs in subpixels: the incoming player sits at a negative x for a third
@@ -539,7 +547,7 @@ export class Game {
     p.fx = t.startFx + Math.round((endFx - t.startFx) * k);
     p.fy = t.startFy + Math.round((endFy - t.startFy) * k);
     p.animT++;
-    if (t.t >= ROOM_TRANSITION_FRAMES) {
+    if (t.t >= n) {
       this.setRoom(this.room.floor, t.nx, t.ny);
       p.x = t.endPos.x; p.y = t.endPos.y;
       p.lastSafe.x = p.x; p.lastSafe.y = p.y;
@@ -1968,7 +1976,7 @@ export class Game {
 
   drawTransition(ctx, ox, oy) {
     const t = this.transition;
-    const k = t.t / ROOM_TRANSITION_FRAMES;
+    const k = t.t / this.transitionFrames(t.dir);
     const d = { right: [-1, 0], left: [1, 0], down: [0, -1], up: [0, 1] }[t.dir];
     const sx = Math.round(d[0] * VIEW_W * k), sy = Math.round(d[1] * VIEW_H * k);
     ctx.drawImage(this.roomSnapshot.canvas, ox + sx, oy + sy);

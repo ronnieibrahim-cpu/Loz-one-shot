@@ -48,12 +48,17 @@ y=2903) against the current `waterS0`, by eye on screen; the strip's surf
 (y=2937) and waterfalls (y=2920) against the hand-drawn `foam*`. Extract
 through a ripper; check-rippers green.
 
-**(d) feel.** Walk, sword (three verbs), knockback, hit-stop, pickup and
-chest timing, text speed, door and room-scroll timing, against FEEL-SPEC.md
-and a person's hands. `measured` is BLOCKED without an emulator capture —
-ask the human for one at the start of the session; without it, changes are
-`derived`/`guessed` and every one goes to a person to play. replay.mjs will
-move: re-record deliberately, never to make a test pass.
+**(d) feel.** Pass 1 done at S147 against the Seasons TAS
+(assets/footage/): walk 1.5 px/f, diagonals normalised, room scrolls 40/32,
+red hit flash on a 4-frame beat for 33 frames with no shake and no freeze,
+enemy flash beat 4, camera 1 px/f. Pass 2 needs NEW footage, because this
+run cannot show them: a full sword swing and spin (the TAS cancels every
+swing), text at the DEFAULT message speed, knockback distance, a pit fall
+and a feather jump on foot. Ask the human for an ordinary (non-TAS) Seasons
+or Ages recording. Also from S147's readings, each a look the human should
+choose first: fade to WHITE (Seasons) instead of black, the door-warp shape
+(instant white, 16 f hold, ~20 f in), stairs ~27 f each way, and the chest's
+36-frame delay before its text.
 
 **(e) music.** List every place the game can be (six regions, the village,
 six dungeons, caves, houses, every boss, title, ending) against the track it

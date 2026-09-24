@@ -431,7 +431,7 @@ export async function installRuntime() {
    * the player back on the surface with the mode still set. A route that
    * pressed once on the island and once again in the channel toggled itself
    * back to swimming at the mouth of a current that is stronger than a
-   * swimmer by design (TORRENT_PUSH 0.9 against SWIM_SPEED 0.75), and the
+   * swimmer by design (TORRENT_PUSH 1.35 against SWIM_SPEED 1.125), and the
    * actor stood on the lip holding a direction with nothing to show for it.
    *
    * So the route says WHICH LAYER it wants and this verb gets there: it reads
@@ -557,6 +557,17 @@ export async function installRuntime() {
       const t = { tx: Math.floor(best.cx / TILE), ty: Math.floor(best.cy / TILE) };
       if (!passable(g, p, t.tx, t.ty)) { yield 0; spent++; continue; }
       for (const m of dGoto(t.tx, t.ty, 200)) { yield m; spent++; if (spent > budget) break; }
+      // A FAIRY DRIFTS. The tile its centre was on when the walk began is
+      // not where it is when the walk ends; at 1.5 px/f (S147) the actor
+      // reached the Anemone Cell's fairy's old tile just as it drifted a tile
+      // and a half east, gave up on it, and walked into the Spire's
+      // miniboss on half a heart. Close the last stretch on the fairy
+      // itself.
+      if (best.kind === 'fairy') {
+        for (let i = 0; i < 180 && g.entities.includes(best) && !best.dead && !best.remove; i++) {
+          yield steer(g.player, Math.round(best.x), Math.round(best.y)); spent++;
+        }
+      }
       // A puzzle-reward pickup (the Crab Pit's key, the Sunken Hall's fairy)
       // pops a few pixels above the tile it logically spawned on and stays
       // there — see the `pickup, 4, 3` comment in dungeons-a.js: "a dropped
@@ -838,12 +849,12 @@ export async function installRuntime() {
    * from the moment the button goes down: the rooted frames cost nothing, and
    * the retreat starts on the first frame it can.
    *
-   * That retreat is DIAGONAL, and it has to be. Since P3 the engine does not
-   * normalise diagonals — both axes get the full step — so backing off on two
-   * axes breaks contact roughly sqrt(2) times faster than backing off on one.
-   * A cardinal retreat at the current walk speed does not clear the crab room:
-   * the swordsman dies in it. This is the actor learning the same lesson the
-   * source games teach a player in their first dungeon.
+   * That retreat is DIAGONAL. It was chosen when the engine did not normalise
+   * diagonals and backing off on two axes broke contact sqrt(2) times faster;
+   * since S147 a diagonal is the same speed as a straight line (measured from
+   * Seasons), and `dBoss` backs straight off instead (`retreatMask`). This
+   * verb kept the diagonal because the whole route up to D1's boss was
+   * measured green with it and a straight retreat re-rolled it.
    */
   /**
    * The gap between two entities' real boxes, per axis. Asks the entities' own
@@ -894,9 +905,24 @@ export async function installRuntime() {
   // Half-width of the player's own box, near enough: `Player.hb` is 10x7, and
   // a miss by less than this is not a miss.
   const HIT_R = 10;
-  // WALK_SPEED (src/data/feel.js) is 1 px/f and diagonal is not normalised
-  // (CLAUDE.md), so a diagonal candidate really does move 1 on each axis.
-  const WALK = 1;
+  // Link's one-frame step in px, straight and diagonal, from feel.js: since
+  // S147 walking is 1.5 px/f and a diagonal splits that across both axes, as
+  // Seasons does. Read from the engine's constants rather than written down,
+  // so the model cannot drift from the mover.
+  const WALK = feel.WALK_SPEED / 256;
+  const WALK_D = Math.max(1, Math.round(feel.WALK_SPEED * feel.DIAGONAL_FACTOR)) / 256;
+  const stepOf = (cx, cy) => (cx && cy ? WALK_D : WALK);
+  // WHICH WAY TO GIVE GROUND. A retreat used to be diagonal because a
+  // diagonal was sqrt(2) faster; since S147 it is not — a diagonal gives up
+  // only WALK_D along the axis that matters, a straight step all of WALK.
+  // `__RETREAT_MODE` ('diag'|'along') exists so the two can be compared.
+  // A fight that was won on the old diagonal can ask for it back with
+  // `{ diagRetreat: true }`; `dBoss` sets this for the length of the fight.
+  let bossDiagRetreat = false;
+  const retreatMask = (along, perp) => {
+    const mode = globalThis.__RETREAT_MODE || (bossDiagRetreat ? 'diag' : 'along');
+    return mode === 'along' ? along : (along | perp);
+  };
   const DIRS8 = [
     [0, 0, 0],
     [BIT.right, 1, 0], [BIT.left, -1, 0], [BIT.down, 0, 1], [BIT.up, 0, -1],
@@ -1051,8 +1077,9 @@ export async function installRuntime() {
     const fence = opts.fence || ((x) => x);
     const list = hazards(g, opts.except, opts.shotsOnly);
     if (!list.length) return m;
-    const mvx = ((m & BIT.right) ? WALK : 0) - ((m & BIT.left) ? WALK : 0);
-    const mvy = ((m & BIT.down) ? WALK : 0) - ((m & BIT.up) ? WALK : 0);
+    const ux = ((m & BIT.right) ? 1 : 0) - ((m & BIT.left) ? 1 : 0);
+    const uy = ((m & BIT.down) ? 1 : 0) - ((m & BIT.up) ? 1 : 0);
+    const mvx = ux * stepOf(ux, uy), mvy = uy * stepOf(ux, uy);
     const base = moveCost(g, mvx, mvy, list);
     // Nothing the directive did not already account for is about to hit us:
     // hand back exactly what it asked for. This is the branch almost every
@@ -1090,6 +1117,12 @@ export async function installRuntime() {
       // thing it was standing next to ate eight quarter-hearts. A fight can
       // afford to wait a hazard out; a walk cannot.
       if (cm === 0 && opts.noStay) continue;
+      // NOR IS WALKING BACKWARDS. At 1.5 px/f (S147) a walker can keep pace
+      // with a slow shot coming the other way, so "back off" dodged it for as
+      // long as the shot lived and the next one after it: the D2 barnacle's
+      // corridor held the actor walking in place for five hundred frames. A
+      // walk sidesteps or takes the hit; it never reverses along its own line.
+      if (opts.noStay && ((ux && cx === -ux) || (uy && cy === -uy))) continue;
       if (fence(cm) !== cm) continue;
       if ((bvx || bvy) && cm !== m && (cx * bvx + cy * bvy) > 0) continue;
       // A swap that trades a dodged shot for a free hit from the thing
@@ -1097,11 +1130,11 @@ export async function installRuntime() {
       // dodged. Only alternatives are vetoed — `m` itself is never touched
       // here, the same as every other filter in this loop.
       if (noBody && cm !== m) {
-        const px = noBody.pr.x + cx * WALK, py = noBody.pr.y + cy * WALK;
+        const px = noBody.pr.x + cx * stepOf(cx, cy), py = noBody.pr.y + cy * stepOf(cx, cy);
         const t = noBody.tr;
         if (px < t.x + t.w && t.x < px + noBody.pr.w && py < t.y + t.h && t.y < py + noBody.pr.h) continue;
       }
-      const c = moveCost(g, cx * WALK, cy * WALK, list);
+      const c = moveCost(g, cx * stepOf(cx, cy), cy * stepOf(cx, cy), list);
       const keep = cm === m ? 2 : ((cm & m) ? 1 : 0);
       if (c < bestC - 1e-6 || (c < bestC + 1e-6 && c < base && keep > bestKeep)) {
         bestC = c; bestM = cm; bestKeep = keep;
@@ -1406,6 +1439,7 @@ export async function installRuntime() {
     };
     const sword = () => swordBit('boss');
     sword();                                 // up front, for the reason dFight gives
+    bossDiagRetreat = !!(opts && opts.diagRetreat);
     // The same numbers dFight uses, for the same reasons: strike from the near
     // band, then break contact. A boss does contact damage like anything else,
     // and the first cut of this verb held the stick toward the boss while the
@@ -1837,7 +1871,7 @@ export async function installRuntime() {
           yield fence(m); f++;
           continue;
         }
-        yield safe(backAlong | backPerp, true); f++;
+        yield safe(retreatMask(backAlong, backPerp), true); f++;
         continue;
       }
 
@@ -1866,7 +1900,7 @@ export async function installRuntime() {
        * does, and it is the only move available — there is nothing to hit.
        */
       if (b.hidden || b.invuln > 900) {
-        yield safe(backAlong | backPerp, true); f++;
+        yield safe(retreatMask(backAlong, backPerp), true); f++;
         continue;
       }
 
@@ -1968,7 +2002,7 @@ export async function installRuntime() {
           const axisX2 = Math.abs(dx2) > Math.abs(dy2);
           const backAlong2 = axisX2 ? (dx2 > 0 ? BIT.left : BIT.right) : (dy2 > 0 ? BIT.up : BIT.down);
           const backPerp2 = axisX2 ? (dy2 > 0 ? BIT.up : BIT.down) : (dx2 > 0 ? BIT.left : BIT.right);
-          yield safe(backAlong2 | backPerp2, true); f++;
+          yield safe(retreatMask(backAlong2, backPerp2), true); f++;
           continue;
         }
         // No invuln banked: close the distance and take the shot. Retreating
@@ -2080,7 +2114,7 @@ export async function installRuntime() {
           const perpNow = !openRetreat ? backPerp : (axisX
             ? (p.cy < (g.room ? g.room.ph : 144) / 2 ? BIT.down : BIT.up)
             : (p.cx < (g.room ? g.room.pw : 160) / 2 ? BIT.right : BIT.left));
-          yield safe(backAlong | perpNow, true); f++;
+          yield safe(retreatMask(backAlong, perpNow), true); f++;
         }
         continue;
       }
@@ -2138,7 +2172,7 @@ export async function installRuntime() {
           continue;
         }
       }
-      if (adx + ady < 72) { yield safe(backAlong | backPerp, true); f++; continue; }
+      if (adx + ady < 72) { yield safe(retreatMask(backAlong, backPerp), true); f++; continue; }
       const room = g.room;
       const ox = (room ? room.pw : 160) / 2 - p.cx, oy = (room ? room.ph : 144) / 2 - p.cy;
       if (Math.abs(ox) > 12 || Math.abs(oy) > 12) {
@@ -2495,8 +2529,12 @@ export async function installRuntime() {
       // eleven times, and the trace read as a cast that would not take.
       // `dBellows` already holds the direction and the item bit together for
       // the same reason; this is that.
-      for (let i = 0; i < 2 && f < budget; i++) { yield BIT[face] || 0; f++; }
-      yield b | (BIT[face] || 0); f++;
+      // One frame to face, and the cast itself with the stick released: a
+      // turn is a step, and at 1.5 px/f (S147) the two steps this used to
+      // take walked the Draw's brace stand over the lip of its pit, twelve
+      // times, a quarter-heart pair each.
+      yield BIT[face] || 0; f++;
+      yield b; f++;
       // Let it fly. The line is gone from `p.dredge` the moment it is home,
       // and a pull that carried the player is already over by then.
       for (let i = 0; i < 400 && f < budget; i++) {
@@ -2612,7 +2650,7 @@ export async function installRuntime() {
         if (!standable(g, p0, sx, sy)) { why.push(`${sx},${sy} ${dname}: not standable`); continue; }
         if (!clearLine(sx, sy, dx, dy, r)) { why.push(`${sx},${sy} ${dname}: line blocked`); continue; }
         if (!findPath(g, p0, playerTile(p0), { tx: sx, ty: sy })) { why.push(`${sx},${sy} ${dname}: no path`); continue; }
-        chosen = { dname, sx, sy };
+        chosen = { dname, sx, sy, dx, dy };
         break;
       }
       if (chosen) break;
@@ -2622,6 +2660,15 @@ export async function installRuntime() {
       throw new Error(`reefseed: nowhere to throw ${tx},${ty} from. room ${g.mapId} ${room().key}`
         + `, player ${at.tx},${at.ty}, tide ${g.tide.level}, seeds ${g.progress.reefseeds}`
         + ` :: ${why.join(' | ')}`);
+    }
+    // ARRIVE ALREADY FACING THE THROW. Turning on the spot is a step: at
+    // 1.5 px/f (S147) the two pixels it moves were enough to put the Knotted
+    // Pool's bank-edge stand into the drowned bole below it at HIGH. So the
+    // walk comes in from the tile behind the stand, along the throw line,
+    // whenever that tile can be stood on and reached.
+    const bx = chosen.sx - chosen.dx, by = chosen.sy - chosen.dy;
+    if (standable(g, g.player, bx, by) && findPath(g, g.player, playerTile(g.player), { tx: bx, ty: by })) {
+      yield* dGoto(bx, by, 600);
     }
     yield* dGoto(chosen.sx, chosen.sy, 600);
     const at = playerTile(g.player);
@@ -2741,6 +2788,12 @@ export async function installRuntime() {
     for (const [dx, dy] of [[0, -1], [0, 1], [-1, 0], [1, 0]]) {
       const sx = tx + dx, sy = ty + dy;
       const face = dx ? (dx > 0 ? 'left' : 'right') : (dy > 0 ? 'up' : 'down');
+      // A stand off the edge of the screen is on the NEXT screen: a trader
+      // wandering on the bottom row sent the walk to it straight through the
+      // seam, and the A presses that followed spoke to nobody (S147).
+      if (sx < 0 || sy < 0 || sx >= g.room.pw / TILE || sy >= g.room.ph / TILE) {
+        why.push(`${sx},${sy}: off the screen`); continue;
+      }
       if (!standable(g, p0, sx, sy)) { why.push(`${sx},${sy}: not standable`); continue; }
       if (!findPath(g, p0, playerTile(g.player), { tx: sx, ty: sy })) { why.push(`${sx},${sy}: no path`); continue; }
       yield* dGoto(sx, sy, 900);

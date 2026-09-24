@@ -916,6 +916,26 @@ checked and why; see `docs/NEXT-SESSION.md` S60 for the full account.
   `liftLevel: 2` + the `dredge` tile action, as this entry originally said;
   only the "read by nothing" half of the claim was wrong.
 
+## Settled at S147 — Seasons' timing, measured
+
+- ONE FOOTAGE FILE, TEN MEASUREMENTS. Walk 1.5 px/f (steps 1,2); a diagonal
+  is 1.5 overall, NOT faster (the old CLAUDE.md rule was never measured and
+  was wrong); scroll 40 f sideways / 32 f vertical; Link's hit flash is RED,
+  4 f on / 4 off, 33 f, no shake, no world freeze; enemies flash on the same
+  4-frame beat; the big-room camera follows at 1 px/f from about the middle.
+  Frame numbers: feel.js comments and assets/footage/README.md.
+- THIS FOOTAGE CANNOT GIVE: sword length (every swing cancelled), text speed
+  (message speed 5 of 5), knockback distance (always steering), pit fall and
+  feather jump (the cucco carries Link over every gap — 2262-2290, 8836-8916,
+  9350-9460 are FLIGHTS, not walks; do not measure speed there). Do not look
+  again in this file; ask for new footage.
+- THE ROUTE AT 1.5 px/f: 42/42, never died, low water 1 qh (Clawcrab den).
+  What moved it was never the fights' numbers, it was the actor: a turn in
+  place is a step, a slow shot can be outwalked, a straight retreat now
+  beats a diagonal one. The per-room fixes are in NEXT-SESSION S147.
+- DO NOT switch `dFight`'s retreat to straight: tried, it re-rolled D1 and
+  lost the Anchor chest before the dungeon.
+
 ## Settled at S146 — every enemy has a hurt frame and a death pose
 
 - 22/22 `hurtFrame`, 22/22 `deathFrame` (check-drift). Sheet re-audited

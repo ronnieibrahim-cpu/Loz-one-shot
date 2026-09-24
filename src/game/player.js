@@ -22,13 +22,13 @@ import { sprites } from '../gfx/art.js';
 import { hasItem, itemLevel, HEART_UNITS } from './progress.js';
 import { useEquipped, ITEMS, ThrownObject } from './items.js';
 import {
-  WALK_SPEED, SWIM_SPEED, BOOST_SPEED, SHIELD_SPEED, SLOW_FACTOR,
+  WALK_SPEED, DIAGONAL_FACTOR, SWIM_SPEED, BOOST_SPEED, SHIELD_SPEED, SLOW_FACTOR,
   SHALLOW_FACTOR, CARRY_FACTOR, SPIN_DRIFT_SPEED, SWORD_HOLD_SPEED,
   SWING_FRAMES, SWING_HIT_START, SWING_HIT_END, BLADE_REACH_PX, BLADE_TUCK_PX,
   SWING_RECOVER_FRAMES, CHARGE_FRAMES, CHARGE_SPARKLE_EVERY,
   SPIN_FRAMES, SWORD_REACH, SWORD_SPAN, SWORD_GAP, SPIN_BOX,
   SWORD_HOLD_DELAY, SWORD_HOLD_DAMAGE, SWORD_CLINK_COOLDOWN, KNOCK_HOLD,
-  PLAYER_INVULN_FRAMES, PLAYER_FLICKER_FRAMES, PLAYER_RECOVER_INVULN_FRAMES,
+  PLAYER_INVULN_FRAMES, PLAYER_FLICKER_FRAMES, PLAYER_HURT_FLASH_BEAT, PLAYER_RECOVER_INVULN_FRAMES,
   PLAYER_HURT_FRAMES, PLAYER_KNOCK_DIST, PLAYER_KNOCK_FRAMES,
   KNOCK_SWORD, KNOCK_SPIN, HAZARD_DAMAGE, PIT_DAMAGE, WASH_DAMAGE,
   JUMP_GRAVITY, LAND_SETTLE_RATE,
@@ -42,7 +42,7 @@ import {
   CLEATS_BREATH_WARN_FRAMES, SINK_BUBBLE_EVERY, SINK_DROWN_DAMAGE,
   CONTEXT_REACH, LIFT_REACH, LIFT_STRENGTH, THROW_SPEED, CARRY_HEIGHT,
   ROD_RING_FRAMES,
-  SHAKE_SMALL, SHAKE_SMALL_FRAMES, CHARGE_SPARKLE_SPREAD, WADE_FOAM_EVERY,
+  CHARGE_SPARKLE_SPREAD, WADE_FOAM_EVERY,
   PUSH_PROBE_REACH,
   RIPTIDE_FIN_FACTOR, DEADWEIGHT_FACTOR, KELP_BRAID_FACTOR, SPLIT_FANG_SPAN,
   SEAWOLF_KNOCK_FACTOR, HAGSTONE_CHANCE, STRANDWALKER_EVERY,
@@ -241,8 +241,8 @@ export class Player extends Entity {
     // WHY. `toggleCleats` on dry land promises "you will walk under the next
     // water you meet", and the dive above keeps that promise on the frame the
     // player's CENTRE crosses into a deep tile — `groundFlags` is a single
-    // point. A torrent is stronger than a swimmer by design (TORRENT_PUSH 0.9
-    // against SWIM_SPEED 0.75), so at the mouth of a channel running against
+    // point. A torrent is stronger than a swimmer by design (TORRENT_PUSH 1.35
+    // against SWIM_SPEED 1.125), so at the mouth of a channel running against
     // you the two rules deadlock: the player edges forward until the water
     // takes him, the current shoves him back before his middle is ever over
     // it, `inDeep` never goes true, and the dive he already asked for never
@@ -440,10 +440,11 @@ export class Player extends Entity {
     if (game.charm('deadweight')) mult *= DEADWEIGHT_FACTOR;
     if (mult !== 1) speed = Math.max(1, Math.round(speed * mult));
 
-    // DIAGONALS ARE NOT NORMALISED. `dx` and `dy` stay at ±1 and both axes get
-    // the full step, so holding two directions moves sqrt(2) times as far as
-    // holding one. That is deliberate and it is a signature of the source
-    // games; see docs/FEEL-SPEC.md.
+    // A DIAGONAL IS THE SAME SPEED AS A STRAIGHT LINE. Seasons splits its
+    // 1.5 px/f across both axes when two directions are held (measured, see
+    // DIAGONAL_FACTOR in feel.js and docs/FEEL-SPEC.md). Rounded once, after
+    // the terrain product, so it too lands on a whole subpixel.
+    if (dx && dy) speed = Math.max(1, Math.round(speed * DIAGONAL_FACTOR));
 
     // Pumping costs you your feet. You may still turn — aiming a sustained
     // gust you cannot re-point would be a puzzle about pre-positioning rather
@@ -1247,7 +1248,8 @@ export class Player extends Entity {
     this.holding = false; this.holdT = 0;
     if (this.carrying) this.dropCarried(game);
     game.audio.sfx('linkHurt');
-    game.shake(SHAKE_SMALL, SHAKE_SMALL_FRAMES);
+    // No screen shake: Seasons holds the view dead still when Link is hit
+    // (measured, see PLAYER_HURT_FLASH_BEAT). The red flash is the whole tell.
     if (p.hearts <= 0) game.onPlayerDied();
     return true;
   }
@@ -1347,9 +1349,15 @@ export class Player extends Entity {
   }
 
   draw(ctx, game, ox, oy) {
-    if (this.flicker > 0 && (this.flicker >> 1) % 2 === 0) return;
     const p = game.progress;
-    const pal = (this.inDeep || this.underwater) ? 'linkswim' : (game.linkPal || 'link');
+    let pal = (this.inDeep || this.underwater) ? 'linkswim' : (game.linkPal || 'link');
+    // STRUCK, HE FLASHES RED; he never leaves the screen. Seasons swaps his
+    // colours for the hit palette on alternate PLAYER_HURT_FLASH_BEAT-frame
+    // beats, starting red on the frame the hit lands (measured).
+    if (this.flicker > 0
+      && Math.floor((PLAYER_FLICKER_FRAMES - this.flicker) / PLAYER_HURT_FLASH_BEAT) % 2 === 0) {
+      pal = 'linkhurt';
+    }
     const name = this.spriteName(game);
 
     // Wading and swimming hide the lower part of the sprite behind the water line.

@@ -56,6 +56,11 @@ export const PALETTES = {
   link:    ['#ffd68c', '#10ad42', '#0b7a2e', '#000000'],   // skin / tunic / dark tunic / outline
   linkblue:['#f8e0b8', '#68a8e0', '#284878', '#181410'],
   linkred: ['#f8e0b8', '#e87058', '#983020', '#181410'],
+  // Link struck: the hit-flash family on his own slots. Seasons draws him red
+  // with a tan face and a black outline on alternate beats (S147, from the
+  // footage at video frames 15523 and 9779). Colours are `hitflash`'s; which
+  // slot takes which is guessed from how the frames read.
+  linkhurt:['#ffd68c', '#ff0829', '#ff0829', '#000000'],
   linkswim:['#f8e0b8', '#68c058', '#2868b8', '#181410'],
   zelda:   ['#f8e0b8', '#f0d060', '#d05878', '#201820'],
   farore:  ['#e8f8d8', '#78d888', '#2c8058', '#10281c'],

@@ -367,10 +367,10 @@ export const ROUTE = [
   ['exit', 'right', 300],
 
   // ---------------------------------------------------------------- d1 0,2,1
-  // The Boss Key, opened from the north, and the stair home.
+  // The Boss Key, opened from the north, and the stair home. The keese is
+  // left alone: at 1.5 px/f (S147) chasing it carried Link onto the stair at
+  // 10,7 mid-fight, home without the key.
   ['equip', 'sword', 'A', 400],
-  ['fight', 900],
-  ['loot', 400],
   ['goto', 7, 3, 600],
   ['hold', ['down'], 6],
   ['tap', 'a', 40],
@@ -489,7 +489,11 @@ export const ROUTE = [
   ['exit', 'right', 400],
   ['goto', 1, 5, 500],
   ['goto', 6, 0, 800],
-  ['hold', ['down'], 30],
+  // 30 px down either way: 30 frames at 1 px/f before S147, 20 at 1.5. The
+  // wait puts the crab under the blade when it arrives; swept 10..90 at
+  // S147, 40 is the one that kills it without a touch.
+  ['wait', 40],
+  ['hold', ['down'], 20],
   ['tap', 'a', 40],
   ['tap', 'a', 40],
   ['tap', 'a', 40],
@@ -531,9 +535,12 @@ export const ROUTE = [
   // this gap reliably (it read the edge as blocked and rerouted through East
   // Dunes' leever instead, which is not survivable at this point in the
   // run); a plain `goto` to the gap tile and a manual `exit` cross it every
-  // time.
+  // time. The goto stops two rows short of the gap, in column 5 clear of the
+  // sign: at 1.5 px/f (S147) arriving on 4,5 fired the hop on the way in,
+  // the goto chased its own target back across the seam, and `exit` then
+  // walked straight through Tidepools without its fight.
   ['travel', 10, 6, 3000],
-  ['goto', 4, 5, 500],
+  ['goto', 5, 3, 500],
   ['exit', 'down', 400],
 
   // ------------------------------------------------------- overworld 0,10,7
@@ -933,7 +940,12 @@ export const ROUTE = [
   // this doorway without it the actor is pinned in the north-west corner and
   // loses 12 seeds in 13; with it, 13 in 13 (S139,
   // `measure-boss-combat.mjs d3 --mini=bogmaw`).
+  // S147: at 1.5 px/f the fight pinned him IN the west doorway itself and
+  // lost from full health; two steps into the room first, and it is won
+  // without a touch (the step was swept: right, right+down, right+up, 4,4).
   ['travel', 2, 2, 4000],
+  ['hold', ['right'], 12],
+  ['hold', ['down'], 12],
   ['boss', 9000, 'bogmaw', { openRetreat: true }],
   ['wait', 120],
   ['dialogue', 400],
@@ -2115,7 +2127,15 @@ export const ROUTE = [
   ['travel', 9, 9, 4000], ['loot', 600],
   // LINK 6 — Sennit, on Sandpiper Row. The crab on this screen is left alive
   // until the deal is done; see the first rule above.
+  // Up the east side of Deep Bar's opening: Sennit stands on 4,6, the very
+  // tile the middle of it lands on, and arriving inside him (S147) wedged Link
+  // until the corner nudge walked him back out of the screen.
+  // Then give the wandering fisher time to leave 4,5, the one stand above
+  // Sennit: with it taken, the only way round him is along the screen's
+  // bottom row, and the same nudge walks Link off it (swept 30..240, S147).
+  ['goto', 6, 1, 600],
   ['travel', 9, 8, 4000],
+  ['wait', 120],
   ['trade', 6, 1200],
   ['loot', 600],
   ['travel', 9, 7, 4000], ['loot', 600],
@@ -2420,6 +2440,10 @@ export const ROUTE = [
   // the room, and the key on the pillar is a drop with a shaft round it.
   ['equip', 'sword', 'A', 400],
   ['fight', 3000, 2000],
+  // Down off row 5 before walking west: its middle five tiles are the shaft,
+  // `goto` plans over them as floor, and a fight that ends at the east door
+  // (as it does at 1.5 px/f, S147) walked the line's stand straight into it.
+  ['goto', 11, 7, 600],
   ['equip', 'dredge', 'A', 400],
   ['dredge', 3, 8, 'up', 'fish', 2400],
   ['tide', 2, 140, 900],
@@ -2761,7 +2785,10 @@ export const ROUTE = [
   // frames for six quarter-hearts.
   ['tide', 2, 140, 900],
   ['equip', 'sword', 'A', 400],
-  ['boss', 12000, 'brinehulk', { openRetreat: true }],
+  // S147: at 1.5 px/f the straight retreat every other fight now uses loses
+  // this one from 39 of 48; the old diagonal wins it on 26, open-floor
+  // retreat or not (swept over six option sets).
+  ['boss', 12000, 'brinehulk', { diagRetreat: true }],
   ['wait', 240],
 
   // THE BOSS KEY. The chest on the far island, and the last locked thing in
@@ -2855,7 +2882,9 @@ export const ROUTE = [
   // he locks: `tideEscape` on his spec returns the level doing the locking,
   // and the next step of the cycle is always some other one.
   ['dialogue', 1800],
-  ['boss', 20000, null, { breakPin: true }],
+  // S147, at 1.5 px/f: `breakPin` alone won on 6 of 48; with
+  // `breakContact` as well he is beaten on 28 (swept over four option sets).
+  ['boss', 20000, null, { breakPin: true, breakContact: true }],
   ['wait', 300],
   ['loot', 1200],
 

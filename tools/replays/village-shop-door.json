@@ -45,7 +45,7 @@
   "start",
   "select"
  ],
- "frames": 255,
+ "frames": 273,
  "input": [
   [
    0,
@@ -65,7 +65,7 @@
   ],
   [
    2,
-   38
+   56
   ],
   [
    0,
@@ -76,17 +76,17 @@
  "trail": [
   {
    "f": 60,
-   "x": 64,
-   "y": 67,
+   "x": 72,
+   "y": 96,
    "hp": 12,
-   "e": 2,
+   "e": 6,
    "d": 0,
-   "r": "0,5,7"
+   "r": "0,0,0"
   },
   {
    "f": 120,
    "x": 72,
-   "y": 58,
+   "y": 24,
    "hp": 12,
    "e": 6,
    "d": 0,
@@ -95,7 +95,7 @@
   {
    "f": 180,
    "x": 79,
-   "y": 84,
+   "y": 65,
    "hp": 12,
    "e": 6,
    "d": 0,
@@ -112,7 +112,7 @@
   }
  ],
  "expect": {
-  "frame": 255,
+  "frame": 273,
   "mapId": "overworld",
   "room": "0,5,7",
   "floor": 0,
@@ -130,12 +130,34 @@
   "essences": [],
   "beaten": {},
   "heartPieces": 0,
+  "charmsOwned": [],
+  "charmCases": {
+   "low": [
+    null,
+    null
+   ],
+   "mid": [
+    null,
+    null
+   ],
+   "high": [
+    null,
+    null
+   ]
+  },
+  "blanks": 0,
   "items": [
    "conch",
    "sword"
   ],
+  "itemLevels": {
+   "sword": 1,
+   "conch": 1
+  },
   "dungeonMap": false,
   "chartstone": false,
+  "dungeonMaps": {},
+  "charts": {},
   "flags": [],
   "doorsChanged": 0,
   "secretsSeen": 3,

@@ -36,14 +36,14 @@
  },
  "assert": null,
  "span": {
-  "roomChanges": 0,
+  "roomChanges": 1,
   "camMinX": 0,
-  "camMaxX": 69,
+  "camMaxX": 80,
   "camMinY": 0,
   "camMaxY": 24,
-  "camEndX": 69,
+  "camEndX": 0,
   "camEndY": 24,
-  "probeNames": "dWell|dDrain"
+  "probeNames": "dDrain|dDrain"
  },
  "buttons": [
   "up",
@@ -158,7 +158,7 @@
   },
   {
    "f": 300,
-   "x": 72,
+   "x": 75,
    "y": 80,
    "hp": 12,
    "e": 1,
@@ -175,7 +175,7 @@
   },
   {
    "f": 360,
-   "x": 123,
+   "x": 152,
    "y": 80,
    "hp": 12,
    "e": 2,
@@ -192,10 +192,10 @@
   },
   {
    "f": 420,
-   "x": 175,
+   "x": 227,
    "y": 80,
    "hp": 12,
-   "e": 2,
+   "e": 1,
    "d": 0,
    "r": "0,4,2",
    "pl": [
@@ -211,9 +211,9 @@
  "expect": {
   "frame": 477,
   "mapId": "d1",
-  "room": "0,4,2",
+  "room": "0,5,2",
   "floor": 0,
-  "x": 189,
+  "x": -3,
   "y": 80,
   "z": 0,
   "dir": "right",
@@ -261,11 +261,11 @@
   "charts": {},
   "flags": [],
   "doorsChanged": 0,
-  "secretsSeen": 2,
+  "secretsSeen": 3,
   "chestsOpened": 0,
   "tide": 1,
   "probeLevels": [
-   0,
+   1,
    1
   ],
   "probePix": [
@@ -273,10 +273,10 @@
    532203013
   ],
   "mode": "play",
-  "entities": 2,
-  "enemies": 0,
-  "roomSeed": 3274780612,
-  "roomDraws": 0,
+  "entities": 3,
+  "enemies": 3,
+  "roomSeed": 3929453661,
+  "roomDraws": 48,
   "globalSeed": 781976111,
   "globalDraws": 0
  }

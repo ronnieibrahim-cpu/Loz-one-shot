@@ -58,9 +58,11 @@ derived integer pixel position. Rendering reads the integer. Do not reintroduce
 float positions; do not use `| 0` to floor a coordinate (it truncates toward
 zero and misrounds across x=0, which happens on every room transition).
 
-**Diagonal movement is not normalised.** Full speed on both axes. Diagonal is
-faster than cardinal. This is deliberate and it is a signature of the source
-games.
+**A diagonal is the same speed as a straight line.** Seasons splits Link's
+1.5 px/f across both axes when two directions are held (`DIAGONAL_FACTOR`,
+measured from the frame-exact footage at S147). This rule used to say the
+opposite — "diagonal is faster, a signature of the source games" — and nobody
+had looked; the footage settled it, and the human chose the footage.
 
 **A checker may never define its own collision, passability or push logic; it
 calls the engine's.** `Room.solidAt`/`tileDefSolid` (src/world/room.js,

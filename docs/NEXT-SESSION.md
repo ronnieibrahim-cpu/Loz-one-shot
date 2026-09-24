@@ -1,3 +1,52 @@
+## S147 — the game now moves at Seasons' speed (polish (d) feel, pass 1)
+
+### What landed
+- Measured from assets/footage/seasons-tas-rooster-adventure.mp4 (frame
+  numbers in feel.js and the footage README): WALK_SPEED 384 (1.5 px/f),
+  DIAGONAL_FACTOR 1/sqrt2, ROOM_TRANSITION_FRAMES_H 40 / _V 32,
+  PLAYER_FLICKER_FRAMES 33, PLAYER_HURT_FLASH_BEAT 4, ENEMY_HIT_FLASH_BEAT
+  4, HITSTOP_HURT_FRAMES 0, CAM_MAX_SPEED 1, CAM_DEADZONE_H 8. check-feel:
+  10 measured. The human approved the three big ones (walk, diagonals, red
+  flash + no shake) from side-by-side pictures.
+- Link struck draws in `linkhurt` (palettes.js) on alternate 4-frame beats
+  instead of blinking out; `takeDamage` no longer shakes the screen.
+- Derived to keep what they preserve: swim/shield/hold 288, boost 768,
+  doorway pull 192, exit margin 2, JUMP 768/63 (reach and apex unchanged),
+  TORRENT_PUSH 1.35 (still beats the swimmer). CAM_DEADZONE_W 8 (guessed).
+- CLAUDE.md's diagonal rule and FEEL-SPEC's Diagonals section rewritten:
+  the old claim was never measured and was wrong.
+- The route re-played end to end: check-playthrough 42/42, never died, low
+  water 1 qh (see below). Replays re-recorded, 51/51.
+
+### Route and actor changes it took (tools/)
+- dBoss backs STRAIGHT off now (`retreatMask`); `{ diagRetreat: true }`
+  restores the diagonal per fight (the Brinehulk wants it). dFight kept
+  its diagonal: switching it re-rolled D1 and lost the anchor.
+- evade: a walker (`noStay`) never reverses along its own line — at 1.5
+  it could keep pace with the D2 barnacle's shot and walked in place.
+- dLoot chases a FAIRY's live position for the last stretch.
+- dReefseed arrives from the tile behind its stand, already facing; dDredge
+  faces with one frame and casts with the stick released (turning is a step
+  now big enough to drop you off a bank).
+- dTrade refuses a stand off the screen's edge.
+- Route: D1 0,2,1 leaves its keese; Feather Gap goto 5,3; Sandpiper crab
+  wait 40 + hold 20; Bogmaw two steps in first; Deep Bar -> Sennit via 6,1
+  and wait 120; the Hauling Pit goto 11,7 before the line; Nereth
+  `breakPin + breakContact` (28/48 left, was 6).
+
+### Noticed, not chased
+- The corner nudge in `moveEntity` can walk Link off a screen when he
+  presses diagonally into a solid NPC beside an exit (Sennit, Sandpiper
+  Row). Route avoids it; the engine still does it.
+- `findPath` plans across pits as floor (Hauling Pit row 5). Routed round.
+- check-playthrough's low-water mark is 1 qh: the Clawcrab's den, d1 0,5,3
+  (12 -> 1). The run also enters D1 on 4 qh and leaves 0,3,6 on 2. (h)
+  should look at D1 first: faster walking made its opening harder for the
+  robot, and a person should say whether it is harder for them.
+- The footage README lists what pass 2 needs (sword, text, knockback, pit,
+  jump) and four looks for the human (white fades, door flash, stairs,
+  chest text delay).
+
 ## S146 — every enemy flinches and dies (polish (a), pass 1)
 
 ### What landed

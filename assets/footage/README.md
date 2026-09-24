@@ -19,3 +19,52 @@ First reading (S146), by comparing consecutive frames of the playfield:
 a room-to-room scroll moves 4 px/frame — 40 frames left/right (160 px),
 32 frames up/down (128 px). Seen at video frames 77, 1389, 2505, 3072
 (horizontal) and 1864, 2057, 2267, 2665, 2820 (vertical).
+
+## S147 readings
+
+Decoding: `ffmpeg -i <mp4> -vf scale=160:144:flags=area -f rawvideo -pix_fmt
+rgb24 frames.raw` gives 18233 frames of 160x144 (area-averaging the 4x4
+blocks is cleaner than `neighbor` against the h264 noise). Useful per-frame
+series, all cheap in numpy: Link's green tunic bbox (g > r+40 and g > b+20,
+below the HUD), the whole-screen shift between consecutive frames (best
+integer offset, per axis), the HUD's red heart pixels, and mean brightness
+(fades). "Frame N" below is a 0-based index into that decode.
+
+APPLIED (tagged `measured` in src/data/feel.js):
+
+| What | Reading | Frames |
+|---|---|---|
+| Walk, straight | 1.5 px/f, steps alternate 1,2 | 9912-9960 (left, 72 px/48 f), 3835-3853 and 7090-7108 (up) |
+| Walk, diagonal | ~1.04 px/f per axis = 1.5 overall | 1227-1297 (72/72 in 70), 1154-1190 (38/38 in 36) |
+| Room scroll | 4 px/f: 40 f sideways, 32 f up/down | 77-116, 1864-1895 (+ the S146 list) |
+| Link hit flash | red 4 f / normal 4 f, 33 f in all, starts red | 2758-2790, 9771-9803, 15516-15548 |
+| Link hit, screen | no shake: whole-frame shift 0 | same three hits |
+| Link hit, world | no freeze: the enemy beside him animates on | 15513-15521 |
+| Enemy hit flash | the same 4 f beat, red/tan/black | 4104-4114 |
+| Big-room camera | follows at 1 px/f while Link walks 1.5; starts when his middle passes the playfield's middle (+~4 px) | 3853-3879 (up), 5781-5814 (left) |
+
+The hit palette is the same for Link and enemies: black outline, red
+(~#e80000) body, tan (~#f8c850) light — frames 15523, 9779, 4105.
+
+READ BUT NOT APPLIED:
+
+- Sword swing: NOT MEASURABLE here. The run re-presses B about every four
+  frames (e.g. 1960-1990, 8120-8132, 9770-9850), so a full swing never
+  completes. What is visible: each swing shows its diagonal pose for about
+  one frame, then the straight pose.
+- Text speed: NOT MEASURABLE here. The run set message speed to 5 of 5
+  (file-select screen, frames 6930 and 17700); lines appear whole, two frames
+  per step (6675-6690, 12504-12551).
+- Chest: the lid opens at 8133, the item appears at 8136 and rises 11 px
+  over ~29 frames (y 59 -> 48, slowing: 2,1,1,0,1 then 1 px per 4 f), and
+  the text box opens at 8169 — 36 frames after the lid. This game shows the
+  text at once; a later session could add the delay.
+- Fades: Seasons fades to WHITE, not black. Stairs: out over ~27 f
+  (5688-5715), white held, back in over ~27 f (5746-5773). A door into a
+  building or cave: an instant cut to white, 16 f of white, then ~20 f back
+  in (3659-3695, 8598-8629, 14170-14199). The item menu: 10 f each way
+  (1744-1754). Drowning: ~24 f out (4469-4493). None applied: it changes a
+  look (white) and a pace nobody has asked for yet.
+- Knockback distance: not isolable — the run is steering through every hit.
+- Pit fall, feather jump: none on foot in the run (the cucco carries Link
+  over every gap: 2262-2290, 8836-8916, 9350-9460 are flights, NOT walks).

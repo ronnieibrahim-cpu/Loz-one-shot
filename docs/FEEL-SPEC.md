@@ -39,7 +39,12 @@ Every export in `feel.js` carries a unit and one of three tags.
 | `derived` | Computed from another constant in this file. The comment names its ancestor. A derived value is only as good as what it derives from. |
 | `guessed` | Somebody typed a plausible number and it shipped. |
 
-**Nothing in `feel.js` is currently `measured`. Not one value.**
+**Ten values in `feel.js` are `measured` (S147)**, all from one frame-exact
+recording of Oracle of Seasons, `assets/footage/seasons-tas-rooster-adventure.mp4`
+(59.73 fps, 4x, one video frame = one game frame). Each names the video frames
+it was counted on; `assets/footage/README.md` has every reading, including the
+ones that were taken and NOT applied, and how to decode the video. See "What the
+footage settled" below.
 
 Most numbers in it were carried over unchanged from the code as it stood before
 the file existed. Those are guesses that happened to feel acceptable to whoever
@@ -153,35 +158,33 @@ deliberate, and it is why every export carries a unit.
 
 ## Diagonals
 
-**Diagonal movement is not normalised.** Full speed on both axes: pressing two
-directions is `sqrt(2)` times faster than pressing one. That asymmetry is
-deliberate and it is a signature of the source games — it is why cutting a
-corner across a room in Seasons feels quicker than walking the two edges, and
-why players who grew up on those games route diagonally without thinking about
-it. Removing it makes movement "correct" and makes it feel like a different
-game.
+**A diagonal is the same speed as a straight line** (S147, measured). Holding
+two directions splits Link's speed across both axes: `DIAGONAL_FACTOR` is
+1/sqrt(2), so 384 sp/f straight becomes 272 sp/f on each axis. The footage
+shows it plainly — Link walking diagonally on foot at video frames 1227-1297
+covers 72 px across and 72 down in 70 frames, 1.03 px/f an axis, where the
+same Link walks 1.5 px/f in a straight line.
 
-**The engine does this as of P3.** `DIAGONAL_FACTOR` is gone from `feel.js` and
-there is deliberately no constant in its place — a scale factor sitting there
-at `1` is an invitation to tune it back to something. `updateMovement` leaves
-`dx` and `dy` at ±1 and hands the full per-axis step to both.
+From P3 until S147 this section said the opposite: that diagonals were NOT
+normalised, that the asymmetry was "a signature of the source games", and that
+removing it would "make the game feel like something else". None of that was
+ever measured. It was the most confident claim in this file and it was wrong,
+which is the whole argument for the `measured` tag. The human was shown the
+footage beside the game and chose the footage.
 
-Two things fell out of it that are worth knowing:
-
-- Cardinal movement got 26% slower (1.35 → 1.0 px/f) while **diagonal movement
-  got slightly faster** (1.35 → 1.41 px/f). A player who routes diagonally
-  barely notices the change; one who only presses one direction at a time
-  feels the game get harder. The recording actor in `tools/replay.mjs` is the
-  second kind, and it started dying in the D1 crab room until it was taught to
-  disengage diagonally. That is the source games' lesson arriving on schedule.
-- Diagonal is now the fast way to travel, which is a real balance lever nobody
-  has pulled yet. Nothing in the world is tuned around it.
-
----
+What changed with it: the playthrough actor's retreats were diagonal because a
+diagonal used to be sqrt(2) faster; a straight step now gives more ground, so
+`dBoss` backs straight off (`retreatMask`), and a fight that was won on the old
+diagonal can ask for it back with `{ diagRetreat: true }` (the Brinehulk does).
 
 ## Two numbers that were wrong on purpose, and how P3 resolved them
 
 ### `WALK_SPEED` and `ROOM_EXIT_MARGIN`
+
+> **Superseded at S147.** The footage measured Seasons' walk at 1.5 px/f and
+> `WALK_SPEED` is 384; the power-of-two argument below was a constraint of this
+> engine, not of the source game, and it lost to a measurement. Kept for the
+> history of why the margin exists.
 
 **Was:** 1.35 px/f and a 3px margin. 1.35 is not representable as a clean
 subpixel step, so the player could never land on a tile boundary, and
@@ -223,6 +226,39 @@ comment carries the formula. **If you change `WALK_SPEED` again, re-derive
 them in the same commit.**
 
 ---
+
+## What the footage settled (S147)
+
+| Constant | Now | Was | Counted on |
+|---|---|---|---|
+| `WALK_SPEED` | 384 sp/f (1.5 px/f) | 256 | 9912-9960: 72 px in 48 f, steps 1,2,1,2 |
+| `DIAGONAL_FACTOR` | 1/sqrt(2) | none (not normalised) | 1227-1297, 1154-1190 |
+| `ROOM_TRANSITION_FRAMES_H` | 40 f | 34 | 77-116; 1389, 2505, 3072 |
+| `ROOM_TRANSITION_FRAMES_V` | 32 f | 34 | 1864-1895; 2057, 2267, 2665, 2820 |
+| `PLAYER_FLICKER_FRAMES` | 33 f | 46 | 2758-2790, 9771-9803, 15516-15548 |
+| `PLAYER_HURT_FLASH_BEAT` | 4 f, RED | 2 f, blink out | the same three hits |
+| `ENEMY_HIT_FLASH_BEAT` | 4 f | 2 | 4104-4114 |
+| `HITSTOP_HURT_FRAMES` | 0 | 6 | 15513-15521 |
+| `CAM_MAX_SPEED` | 1 px/f | 2 | 3853-3879, 5781-5814 |
+| `CAM_DEADZONE_H` | 8 px | 64 | onset at 3853 |
+
+And one thing that is not a number: **Seasons does not shake the screen when
+Link is hit.** The whole-frame shift is 0 on every frame of all three hits.
+`Player.takeDamage` no longer calls `game.shake`.
+
+Derived from those in the same change, to keep what they preserve:
+`SWIM_SPEED`/`SHIELD_SPEED`/`SWORD_HOLD_SPEED` 288 (three quarters of the
+walk), `BOOST_SPEED` 768, `DOORWAY_PULL_SPEED` 192, `ROOM_EXIT_MARGIN` 2,
+`JUMP_POWER` 768 and `JUMP_GRAVITY` 63 (the gap-hop's 2.3-tile reach and its
+18.3 px apex unchanged), `TORRENT_PUSH` 1.35 (still 1.2x the swimmer, so
+`check-cleats` still finds every torrent unswimmable). `CAM_DEADZONE_W` went
+to 8 by analogy and stays `guessed`.
+
+NOT measured, because the footage cannot show them honestly: the sword swing
+(the run cancels every swing after about four frames), text speed (the run set
+messages to the fastest of five speeds), knockback distance (the run is always
+steering during it), and invulnerability as distinct from the flash. The
+readings are in `assets/footage/README.md`.
 
 ## Knockback: a distance and a frame count
 
@@ -436,6 +472,11 @@ these are settled, the honest tag is still `guessed`, with a comment saying who
 played it and what they chose.
 
 ## The camera's three constants, and why they can never move a 1x1 room
+
+> **S147:** `CAM_MAX_SPEED` (1) and `CAM_DEADZONE_H` (8) are now measured and
+> `CAM_DEADZONE_W` is 8 by analogy: Seasons keeps Link centred and follows at
+> one pixel a frame, so a walking Link pulls ahead of the middle. The paragraphs
+> below describe the old guessed values and the mechanism, which is unchanged.
 
 `CAM_DEADZONE_W = 96`, `CAM_DEADZONE_H = 64` and `CAM_MAX_SPEED = 2` arrived
 with P7.6 and all three are **`guessed`**, in the strongest sense the word has

@@ -826,11 +826,11 @@ const main = async () => {
     `progress.frames advanced ${stop.playAdvanced} over ${stop.held} frozen frames`);
   check('the freeze counts itself down', stop.left === stop.armedIs - stop.held,
     `${stop.armedIs} - ${stop.held} should leave ${stop.armedIs - stop.held}, left ${stop.left}`);
-  // A hit on the player must weigh more than a hit on an enemy, and a boss
-  // dying more than either. If that ordering ever inverts, the three weights
-  // have stopped being three weights.
-  check('the three freezes are ordered lightest to heaviest',
-    stop.want < stop.hurtHz && stop.hurtHz < stop.bossHz,
+  // A boss dying weighs more than a landed hit. A hit ON Link freezes
+  // nothing at all: Seasons keeps the world running when he is struck
+  // (HITSTOP_HURT_FRAMES, measured at S147), and the red flash is the tell.
+  check('a boss dying freezes longest; a hit on Link freezes nothing',
+    stop.want < stop.bossHz && stop.hurtHz === 0,
     `hit ${stop.want}, hurt ${stop.hurtHz}, boss death ${stop.bossHz}`);
 
   // --- music engine: vibrato, echo, arpeggio (S6) --------------------------

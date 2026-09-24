@@ -19,17 +19,16 @@ the area whose turn it is and nothing else; its stub is in QUEUE.md.
   h fairness  — the thinnest fight to 11/13 (next: the Brinehulk, 10/13).
   i play pass — a person's play notes, fixed in order; no notes, no pass.
 DONE when every area has had two passes with nothing left in its stub.
-Rotation position: next is (d) feel, pass 1. (a), (b), (c) pass 1 done S146.
+Rotation position: next is (e) music, pass 1. (a)-(c) pass 1 done S146, (d) S147.
 
 RETIRED ROTATION: 1 wide-rooms MET S111 | 2 art-provenance S9/S74 |
   3 boss-art S75 | 4 enemy-roster S59 | 5 npc-detail S63 | 6 region-art S89 |
   7 item-reuse MET S110 | 8 feel-measure BLOCKED | 9 playthrough-route MET
   S121 | 10 oracle-rooms MET S143 (all six dungeons at Oracle size)
 
-FILE ALLOWLIST for (d) feel: src/data/feel.js, docs/FEEL-SPEC.md,
-  tools/replays/*.json, tools/playthrough-route.mjs (only if a measured
-  number moves the run), tools/*-baseline.json, docs/*.md,
-  dist/oracle-of-tides.html
+FILE ALLOWLIST for (e) music: src/data/audio.js, src/core/audio.js,
+  the `music:` fields of src/data/overworld.js and src/data/dungeons-*.js,
+  tools/audio-render-baseline.json, docs/*.md, dist/oracle-of-tides.html
 
 DETOUR TOKENS: 1 (unspent)
 
@@ -56,3 +55,4 @@ S143 | objective | Grew the last two small dungeons, and with that every dungeon
 S144 | objective | Re-measured the nine boss fights the last session's dungeon growth moved, thirteen tries each. Only one had got worse: the third dungeon's boss, because a crab in the hall before it bit Link on the way past and again on the way back. The run now kills the crab on the way in and arrives at the boss with the health it used to have. The King is now won first time from the room at the foot of his stair: every lost fight was one of his summoned knights pinning Link against a wall while the robot kept walking into the bricks, and it now walks out into the room instead — 12 wins in 13 on the real run, up from 8. No fight was changed.
 S145 | objective | Gave the fifth dungeon's boss, Rootmaw, a real margin. Every lost fight was the same: the slimes he summons parked between Link and him, and the test robot walked round them for ages instead of pushing through while it was still flashing from a hit. It now pushes through, for this fight only, and the run keeps eight more quarter-hearts on the way (round a barnacle, off a pit edge twice). Practice: 13 wins in 13, up from 8. The real run wins every variation, with more left. The fight itself was not changed.
 S146 | objective | Every one of the 22 enemies now flinches when hit and has a pose when it dies, three of them straight off the original sheet. Then, on the human's word: a hit enemy flashes its colours the way the Oracles do instead of vanishing; fast water uses Oracle of Ages' own current tile, so you can see it run and which way; a drowned water wheel is drawn sunk while one catching the wind visibly turns; every lake, river, pool and the open sea now uses Ages' own animated water; and the Maku Tree's room is now the Seasons Maku grove itself, cut straight off the original screen. The whole game still plays to the end.
+S147 | objective | Link now moves at Oracle of Seasons' own speed, measured frame by frame from a recording of the real game: he walks half again faster, going diagonally is no longer a shortcut (the original never had one), rooms slide past at the original's pace, and when he is hit he flashes red the way Seasons draws it instead of vanishing, with no screen shake and no pause. Ten timing numbers are now measured rather than guessed, where there were none. The whole game still plays to the end, after re-teaching the test robot a dozen places where the faster walk tripped it up.

@@ -17,13 +17,14 @@
 //                 it derives from.
 //       guessed   somebody typed a plausible number and it shipped.
 //
-//   * NOTHING IN THIS FILE IS `measured`. Every value below was carried over
-//     from the code as it stood before this file existed, which means every
-//     one of them is a guess that happened to feel acceptable to whoever
-//     wrote it. They are labelled honestly. Do not upgrade a `guessed` to a
+//   * `measured` values came from ONE reference: a frame-exact recording of
+//     Oracle of Seasons, assets/footage/seasons-tas-rooster-adventure.mp4
+//     (59.73 fps, 4x scale, one video frame = one game frame; S147). Each one
+//     names the video frames that were counted. Everything else is still a
+//     guess that happened to feel acceptable. Do not upgrade a `guessed` to a
 //     `measured` because the game feels fine — that word means a reference
-//     was frame-stepped, and until someone does that, the engine has no
-//     ground truth and we should keep saying so.
+//     was frame-stepped. Readings that were taken and NOT applied are in
+//     assets/footage/README.md.
 //
 // Units used below:
 //   sp/f    SUBPIXELS per frame at 60 Hz. 256 sp = 1 px; positions are 8.8
@@ -46,22 +47,26 @@
 // Player movement
 // ---------------------------------------------------------------------------
 
-/** sp/f — Link's ground speed. derived from the 8.8 grid and the 16px tile.
+/** sp/f — Link's ground speed, straight along one axis. measured: 1.5 px/f.
+ *  reference: assets/footage/seasons-tas-rooster-adventure.mp4, Link walking left on flat
+ *  ground with a still camera, video frames 9912-9960 — 72 px in 48 frames,
+ *  stepping 1,2,1,2 px, which is exactly what 384 sp/f does on the 8.8 grid.
+ *  The same 1,2 rhythm walking up at frames 3835-3853 and 7090-7108.
  *
- *  256 sp/f is exactly 1 px/f, so a tile takes exactly 16 frames to cross and
- *  the player lands on every tile boundary he passes. That is the property the
- *  old 1.35 px/f did not have, and ROOM_EXIT_MARGIN was three pixels wide to
- *  paper over it.
- *
- *  The choice is not free-form. A speed must be exactly representable in 8.8
- *  AND divide 16px evenly, which means 4096/s must be a whole number of frames
- *  with s a whole number of subpixels — so s has to divide 4096, i.e. be a
- *  power of two. Between 128 sp/f (a crawl) and 512 sp/f (the Pegasus dash),
- *  256 is the only candidate left. It is `derived`, not `measured`: nobody has
- *  frame-stepped a reference. It is worth noting anyway that 1 px/f walking and
- *  2 px/f dashing is the granularity the GB Zeldas are built on, so this is at
- *  least the right shape. */
-export const WALK_SPEED = 256;
+ *  It used to be 256 (1 px/f), chosen because it divides the 16px tile; the
+ *  source game does not care about that, and at 1.5 px/f Link was a third
+ *  slower than Seasons everywhere. A tile now takes 10.7 frames and Link does
+ *  not land on every tile boundary, which is why ROOM_EXIT_MARGIN is 2. */
+export const WALK_SPEED = 384;
+
+/** x — per-axis speed while two directions are held. measured: a diagonal is
+ *  NOT faster than a straight line in Seasons; the same 1.5 px/f is split
+ *  across both axes. reference: assets/footage/seasons-tas-rooster-adventure.mp4, Link
+ *  walking diagonally on foot, video frames 1227-1297 (72 px across and 72
+ *  down in 70 frames, 1.03 px/f per axis) and 1154-1190 (38 and 38 in 36,
+ *  1.06). 1/sqrt(2) of 1.5 is 1.06. This project said the opposite from P3
+ *  until S147, on the strength of nobody having looked. */
+export const DIAGONAL_FACTOR = Math.SQRT1_2;
 
 /**
  * tiles — how far to either side of a doorway the doorway pull reaches.
@@ -87,25 +92,24 @@ export const DOORWAY_PULL_REACH_TILES = 1;
 
 /** sp/f — how fast the doorway pull slides you along the wall. derived: half
  *  WALK_SPEED, so the slide reads as being drawn in rather than as the stick
- *  being taken off you, and a full tile of it takes 16 frames. */
-export const DOORWAY_PULL_SPEED = 128;
+ *  being taken off you. */
+export const DOORWAY_PULL_SPEED = 192;
 
 /** sp/f — surface swimming. derived: three quarters of WALK_SPEED, the same
  *  ratio the old guessed pair (0.95 / 1.35) had, snapped to the grid. */
-export const SWIM_SPEED = 192;
+export const SWIM_SPEED = 288;
 
-/** sp/f — under the Pegasus Seed. derived: exactly twice WALK_SPEED, so the
- *  dash covers a tile in 8 frames. */
-export const BOOST_SPEED = 512;
+/** sp/f — under the Pegasus Seed. derived: exactly twice WALK_SPEED. */
+export const BOOST_SPEED = 768;
 
 /** sp/f — walking with the shield raised. derived: three quarters of
  *  WALK_SPEED. */
-export const SHIELD_SPEED = 192;
+export const SHIELD_SPEED = 288;
 
 /** sp/f — walking with the sword held out. derived: kept equal to
  *  SHIELD_SPEED, because both are "you are committed to something and cannot
  *  move at full pace". guessed insofar as its ancestor is. */
-export const SWORD_HOLD_SPEED = 192;
+export const SWORD_HOLD_SPEED = 288;
 
 /** x — multiplier on F.SLOW terrain (sand, deep grass). guessed. */
 export const SLOW_FACTOR = 0.6;
@@ -196,9 +200,22 @@ export const SWORD_CLINK_COOLDOWN = 20;
 /** f — invulnerability after Link takes a hit. guessed. */
 export const PLAYER_INVULN_FRAMES = 46;
 
-/** f — how long Link flickers after a hit. guessed; kept equal to the invuln
- *  window so the flicker reads as "you cannot be hit right now". */
-export const PLAYER_FLICKER_FRAMES = 46;
+/** f — how long Link flashes after a hit. measured: 33 frames, from the frame
+ *  the heart drains to the last red frame. reference: assets/footage/seasons-tas-rooster-adventure.mp4,
+ *  video frames 2758-2790, 9771-9803 and 15516-15548 (three separate
+ *  hits, identical).
+ *  PLAYER_INVULN_FRAMES above is NOT the same thing and was not measured —
+ *  the footage shows the flash, not when he can next be hurt. */
+export const PLAYER_FLICKER_FRAMES = 33;
+
+/** f — how many frames each beat of Link's hit flash lasts: red for this
+ *  many, his own colours for this many. measured: 4. reference: assets/footage/seasons-tas-rooster-adventure.mp4,
+ *  video frames 15516-15548 — red 15516-18, normal 19-22, red 23-26, normal
+ *  27-30, red 31-34 and so on; the same beat at 9771-9803. Seasons draws him
+ *  RED (the `hitflash` family), it does not blink him out, and it does not
+ *  shake the screen when he is hit (the whole-screen shift is 0 on every
+ *  frame of all three hits in the video: 2758, 9771, 15516). */
+export const PLAYER_HURT_FLASH_BEAT = 4;
 
 /** f — invulnerability after a pit fall or a wash-out, which is longer than an
  *  ordinary hit because the player has just been teleported. guessed. */
@@ -227,12 +244,13 @@ export const ENEMY_INVULN_FRAMES = 24;
 /** f — how long an ordinary enemy flickers after a hit. guessed. */
 export const ENEMY_FLICKER_FRAMES = 24;
 
-/** f — how many frames each beat of an enemy's hit flash lasts: its own
- *  colours for this many, the `hitflash` palette for this many, and so on
- *  for the whole flicker. guessed; the same two-frame beat the old on/off
- *  blink used, so the rhythm is unchanged and only what shows on the "off"
- *  beat is new. */
-export const ENEMY_HIT_FLASH_BEAT = 2;
+/** f — how many frames each beat of an enemy's hit flash lasts: the
+ *  `hitflash` palette for this many, its own colours for this many, and so on
+ *  for the whole flicker. measured: 4, the same beat as Link's. reference:
+ *  assets/footage/seasons-tas-rooster-adventure.mp4, a Hardhat-style blue enemy struck
+ *  at video frame 4104 — red 4104-4106, blue 4107-4110, red 4111-4114. It
+ *  was 2. */
+export const ENEMY_HIT_FLASH_BEAT = 4;
 
 /** f — how long an ordinary enemy with a `spec.deathFrame` lingers showing it
  *  before removal. guessed, following BOSS_DEATH_FRAMES's own comment as a
@@ -345,8 +363,10 @@ export const KILNSHELL_BURN_DAMAGE = 1;
 //   reach  = 2 * power / gravity * WALK_SPEED
 //   apex   = power^2 / (2 * gravity)
 //
-// 2*512/28 = 36.6 frames aloft, 36.6 px of ground covered (2.3 tiles), apex
-// 18.3 px. The old pair covered 36.9 px and peaked at 17.8 px.
+// 2*768/63 = 24.4 frames aloft at 1.5 px/f, 36.6 px of ground covered (2.3
+// tiles), apex 768^2/126 = 18.3 px. S147 raised WALK_SPEED from 1 to 1.5 px/f
+// (measured) and re-derived both so the reach and the apex did not move: power
+// x1.5 and gravity x2.25 keep the apex and cut the airtime by a third.
 //
 // ROC'S FEATHER IS GONE. Nothing launches a free-standing jump any more: the
 // hop is base moveset and fires by walking into a gap or a ledge, along a
@@ -356,12 +376,12 @@ export const KILNSHELL_BURN_DAMAGE = 1;
 // longer describe an item anyone can be missing.
 
 /** sp/f — upward velocity of a hop. derived from WALK_SPEED and JUMP_GRAVITY
- *  to preserve a 2.3-tile reach; 2 px/f exactly. */
-export const JUMP_POWER = 512;
+ *  to preserve a 2.3-tile reach; 3 px/f exactly. */
+export const JUMP_POWER = 768;
 
 /** sp/f^2 — downward acceleration during a jump. derived: chosen with
  *  JUMP_POWER so that reach and apex both survive the new WALK_SPEED. */
-export const JUMP_GRAVITY = 28;
+export const JUMP_GRAVITY = 63;
 
 /** sp/f — rate `z` bleeds back to the ground when not jumping. guessed. */
 export const LAND_SETTLE_RATE = 128;
@@ -386,44 +406,58 @@ export const PUSH_PROBE_REACH = 10;
 // Room transitions and screen effects
 // ---------------------------------------------------------------------------
 
-/** f — length of a scrolling room-to-room transition. guessed. */
-export const ROOM_TRANSITION_FRAMES = 34;
+/** f — length of a scrolling room-to-room transition going LEFT or RIGHT.
+ *  measured: 40 frames, the view moving exactly 4 px every frame for 160 px.
+ *  reference: assets/footage/seasons-tas-rooster-adventure.mp4, whole-screen shift
+ *  between consecutive frames, video frames 77-116; the same at 1389, 2505,
+ *  3072. It was 34 for both axes before S147. */
+export const ROOM_TRANSITION_FRAMES_H = 40;
+
+/** f — the same going UP or DOWN. measured: 32 frames, 4 px a frame for the
+ *  128 px playfield. reference: assets/footage/seasons-tas-rooster-adventure.mp4,
+ *  video frames 1864-1895; the same at 2057, 2267, 2665, 2820. */
+export const ROOM_TRANSITION_FRAMES_V = 32;
 
 /** px — how close to the room edge the player's hitbox must be for an exit to
- *  fire. derived from WALK_SPEED. At 256 sp/f the player advances exactly one
- *  pixel per frame and stops flush against the last legal column, so the exit
- *  test can be a one-pixel band at the edge. It used to be three, which was not
- *  a tuning choice but a workaround for a walk speed that could step over the
- *  boundary without ever landing on it. */
-export const ROOM_EXIT_MARGIN = 1;
+ *  fire. derived from WALK_SPEED: at 384 sp/f the player's steps are 1 or 2
+ *  pixels, so the band is as wide as the widest step and the exit fires on
+ *  the first frame the edge is within one step, whichever step lands there.
+ *  It was 1 while walking was exactly 1 px/f. */
+export const ROOM_EXIT_MARGIN = 2;
 
 // THE CAMERA, inside a multi-screen dungeon room only.
 //
-// All three are `guessed`, in the strongest sense of the word: no reference has
-// been frame-stepped for any of them, and until P7.6 there was no camera at all
-// to have an opinion about. `KeyI` draws the deadzone box in game so they can be
-// settled by play — the same argument that got the anchor radius its debug key.
+// S147 stepped Seasons' own big dungeon rooms: its view sits centred on Link
+// and follows him at ONE pixel a frame, slower than he walks, so on a long walk
+// he pulls ahead of the middle and the view catches up when he stops. Two of
+// the three are measured from that; the width is by analogy. `KeyI` still
+// draws the deadzone box in game.
 //
 // None of them can affect a 1x1 room. The camera clamps to [0, room.pw-VIEW_W]
 // and that range is empty on one screen, so retuning these three numbers cannot
 // move a pixel in any room the game currently has.
 
-/** px — width of the box Link moves inside without the view following. guessed.
- *  96 of the 160-pixel view, so the camera gives way once he is within two
- *  tiles of a screen edge. Wider than the height because horizontal motion is
- *  what a 2x1 room is for and a narrow box there reads as the view chasing him. */
-export const CAM_DEADZONE_W = 96;
+/** px — width of the box Link moves inside without the view following.
+ *  guessed, by analogy with CAM_DEADZONE_H: the footage shows a sideways
+ *  follow already under way (video frames 5781-5814) but never the frame it
+ *  began. It was 96, which let him walk to within two tiles of the edge
+ *  before the view moved at all — nothing like Seasons. */
+export const CAM_DEADZONE_W = 8;
 
-/** px — height of that box. guessed. 64 of the 128-pixel view: two tiles of
- *  slack above and below, which is about where a vertical scroll starts to be
- *  worth having rather than a twitch. */
-export const CAM_DEADZONE_H = 64;
+/** px — height of that box. measured, to a pixel or two: the view starts to
+ *  follow on the frame Link's middle is about 4 px past the middle of the
+ *  playfield. reference: assets/footage/seasons-tas-rooster-adventure.mp4, Link walking
+ *  up the tall entrance room of the first dungeon — still view to video frame
+ *  3852, following from 3853 with his sprite top at screen y 76. It was 64. */
+export const CAM_DEADZONE_H = 8;
 
-/** px/f — the fastest the camera may travel. guessed. Two pixels a frame is
- *  twice WALK_SPEED, so it never lags a walking player and the deadzone rule is
- *  exact during ordinary movement; it exists only to stop a knockback, a ledge
- *  hop landing or a warp from snapping the view across the room in one frame. */
-export const CAM_MAX_SPEED = 2;
+/** px/f — the fastest the camera may travel. measured: 1. reference:
+ *  assets/footage/seasons-tas-rooster-adventure.mp4, whole-screen shift between frames
+ *  while Link walks at 1.5 px/f: exactly 1 px every frame at video frames
+ *  3853-3879 (up) and 5781-5814 (left), Link's own screen position drifting
+ *  0.5 px/f the whole time. So the view LAGS a walking Link, on purpose. It
+ *  was 2. */
+export const CAM_MAX_SPEED = 1;
 
 /** f — length of the tide's wave-front wipe across the screen. guessed.
  *  Was 44 while game.js stepped the sweep twice per frame, so the wipe really
@@ -455,10 +489,13 @@ export const BANNER_FRAMES = 120;
  *  wants to read as weight in the swing, not as a hitch. */
 export const HITSTOP_HIT_FRAMES = 3;
 
-/** f — freeze when something lands a hit on the player. guessed. Longer than
- *  the one above: taking damage is rare and is meant to be felt, and the
- *  knockback that follows reads harder out of a longer hold. */
-export const HITSTOP_HURT_FRAMES = 6;
+/** f — freeze when something lands a hit on the player. measured: 0 —
+ *  Seasons does not stop the world when Link is hit. reference: assets/footage/seasons-tas-rooster-adventure.mp4,
+ *  the hit at video frame 15516: the river enemy beside him keeps its
+ *  two-frame animation (its tiles change on 15513, 15515, 15517, 15519
+ *  without a gap) and Link's own sprite moves on every frame from 15516 to
+ *  15521. It was 6. */
+export const HITSTOP_HURT_FRAMES = 0;
 
 /** f — freeze on the killing blow to a boss, before the death animation.
  *  guessed. Long enough to be a beat rather than a hitch, and it lands under
@@ -993,14 +1030,16 @@ export const SINK_SPEED = 160;
 
 /** px/f — a Bogwater torrent, the current the Sanctum is built out of.
  *  derived, and the derivation is the whole point: it is strictly GREATER than
- *  SWIM_SPEED (192 sp/f = 0.75 px/f), so a swimmer pressing into it nets
+ *  SWIM_SPEED (288 sp/f = 1.125 px/f since S147), so a swimmer pressing into it nets
  *  backwards and can never make headway, while a walker on the floor is not
  *  touched by a current at all. An ordinary riptide is 0.55 px/f — less than a
  *  swimmer's own speed — so it is a tax on the surface route and not a barrier,
  *  which is why D3 needed a second, stronger current rather than reusing it.
  *  Retune SWIM_SPEED and tools/check-cleats.mjs re-proves every torrent room
- *  against the new ratio instead of quietly passing. */
-export const TORRENT_PUSH = 0.9;
+ *  against the new ratio instead of quietly passing. S147 did exactly that:
+ *  walking went to 1.5 px/f (measured), swimming followed it to 1.125, and
+ *  this rose from 0.9 by the same factor of 1.5 to stay 1.2x the swimmer. */
+export const TORRENT_PUSH = 1.35;
 
 /** f — frames each step of a current tile's animation holds. derived: the
  *  Ages current tile moves its dashes 2 px per step, so 2 / this is the speed
