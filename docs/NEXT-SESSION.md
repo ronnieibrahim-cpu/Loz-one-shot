@@ -1,3 +1,35 @@
+## S144 — the bosses S143 moved, re-measured; the King without a re-roll
+
+### What landed
+- Nine fights measured over 13 seeds each in their route arenas; the table
+  is in LEDGER "Settled at S144". Every `ROUTE_ARENA`/`MINIS` row re-read
+  off the S144 trace (Gloomtide 24/28, Ironknight and Wyverna 23/32,
+  Brinehulk 45/48).
+- Gloomtide was the one fight worse than before (8/13 on 20/28). The four
+  lost quarter-hearts were the Eel Hall crab, passed twice. The route now
+  kills it on the way in (goto 6,7, face down, six swings): 11/13 on 24/28,
+  and the real run wins with 11 left (was 8).
+- The King: every loss, in the rig and in the real run, is a darknut
+  pinning Link against the south wall while `evade` steps him into it.
+  New opt-in `breakPin` on `dBoss` (tools/actor-runtime.mjs): after a
+  touch from a non-boss enemy in contact range, one invuln window walking
+  toward the middle of the room, not through `evade`. Real stream sampled
+  at 0..12 Stairhead walk-rounds: 12/13 with it, 8/13 without. The route's
+  walk-rounds are removed; the King is won from the Stairhead first time.
+  `measure-boss-combat --break-pin` asks it of any fight.
+- tools/actor-runtime.mjs was not on STATE's allowlist; it is the only
+  way to change what the robot does in a fight, and the change is opt-in
+  (no other fight's frames move: check-playthrough 42/42, no deaths).
+
+### Open
+- OFF-PLAN: `evade` is wall-blind for every fight, not just the King's.
+  Asking the room in `moveCost` is the real fix and re-rolls every fight in
+  the game; measure all fifteen before and after if anyone does it.
+- Rootmaw is the thinnest fight left (8/13 on 28/40, unchanged since S141).
+- Still open from S143: the Bellows' "shove light enemies into pits" verb
+  does nothing; a person has not yet played the Ebb Cell or the Two
+  Weights to say whether their signs make the answer clear.
+
 ## S143 — the Cliffside Cistern grows to 36 screens, the Bogwater Sanctum to 32
 
 ### What landed (first commit of S143)

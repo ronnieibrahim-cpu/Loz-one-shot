@@ -1,44 +1,42 @@
-# Next session — re-measure the bosses S143's growth moved
+# Next session — give Rootmaw a margin from the route
 
 ## Read first
-- `docs/prompts/STATE.md` — the whole file (objective 10 is MET; the human
-  names the next one, and this task stands until they do).
-- `docs/prompts/LEDGER.md`'s "Settled at S143", "Settled at S135" and
-  "Settled at S136" sections.
-- `docs/NEXT-SESSION.md`, the S143 entry and the S135 entry.
-- `docs/HANDOFF.md`'s first seven hard-won lessons.
+- `docs/prompts/STATE.md` — the whole file (no objective of record; the
+  human names the next one, and this task stands until they do).
+- `docs/prompts/LEDGER.md`'s "Settled at S144" and "Settled at S141".
+- `docs/NEXT-SESSION.md`, the S144 entry and the S141 entry.
+- `docs/HANDOFF.md`'s first four hard-won lessons.
 - `tools/measure-boss-combat.mjs`'s header: how a route arena is set up.
 
 ## Why this, now
-S143 grew D4 and D3, and the run now reaches every later fight on a
-different random stream. Gloomtide was won with 8 of 28 quarter-hearts left
-(17-19 at S139). The King needed TWO walk-rounds of the Stairhead to be won
-(S142 needed one). A route that only works on a re-roll is the fragile part
-of the run, and nobody has measured these fights since the growth.
+Rootmaw (D5's boss) is the thinnest fight in the game: 8 of 13 seeds from
+his route door on 28 of 40 quarter-hearts, unchanged since S141, and the
+wins end on 2..16. Every other boss is 10/13 or better. The real run wins
+him, but on its own stream, the way the King was won before S144.
 
 ## The task
-Re-measure, over 13 seeds from each route door (never `--at=route`), every
-boss and miniboss the S143 growth moved: Gloomtide and Bogmaw (D3), Wyverna
-and the Ironknight (D4), Rootmaw and Thornvine (D5), the Tideshade, the
-Brinehulk and Nereth (D6). Record the table in LEDGER. If any reads worse
-than its S135/S136/S142 number, find why and fix it from the route (entry
-wait, a heal on the way, a planned exit) before touching the fight; retune
-a fight only with 13 seeds either side and damage, not hp. The target is
-the King won from the Stairhead without the double walk-round in
-`tools/playthrough-route.mjs`.
+Measure Rootmaw's thirteen seeds and read the losses hit by hit
+(`tools/measure-boss-combat.mjs d5 --seed=N`). Sample the real stream too,
+by re-rolling the fight without changing it (walk-rounds of Rootmaw Arch
+before the boss door, run with `tools/route-prefix.mjs`). Fix from the
+route first: a heal on the way through the Drowned Wood Shrine, a planned
+kill of something that bites twice, or an opt-in fight option in
+`tools/actor-runtime.mjs` if the losses are the robot's play. Retune the
+fight in `src/data/bosses.js` only with 13 seeds either side, and damage,
+not hp. Target: 11 of 13 in the rig and on the real stream.
 
 ## Done means
-- `node tools/measure-boss-combat.mjs` rows for all nine fights, 13 seeds.
+- `node tools/measure-boss-combat.mjs d5` over 13 seeds, before and after,
+  in LEDGER; real-stream samples before and after.
 - `node tools/check-playthrough.mjs` green to THE END with no deaths.
 - `replay`, `test.mjs`, `check-bosses`, `check-respawn` green.
 - `check-drift` OK; `npm run build` with `dist/` committed.
-- A person plays the Ebb Cell and the Two Weights once and says whether
-  the sign in each makes the answer clear.
+- A person plays Rootmaw once and says whether the fight felt fair.
 
 ## Out of scope
+- Making `evade` ask the room whether a step is possible (S144 names it);
+  it re-rolls every fight in the game and is its own session.
+- The Bellows' "shove light enemies into pits" verb (NEXT-SESSION S143).
 - Adding rooms to any dungeon; every dungeon is at its ladder size.
-- The Bellows' "shove light enemies into pits" verb, which does nothing
-  today (written up in NEXT-SESSION S143) — its own session.
-- Push-block theme art; torrent direction art; the pause menu's look.
 - Changing a boss's hp (phase thresholds re-roll the fight — S137).
-- Routing the optional rooms; they are proved by their item checkers.
+- Re-measuring the other eight fights; S144 did, and none read worse.

@@ -916,6 +916,42 @@ checked and why; see `docs/NEXT-SESSION.md` S60 for the full account.
   `liftLevel: 2` + the `dredge` tile action, as this entry originally said;
   only the "read by nothing" half of the claim was wrong.
 
+## Settled at S144 — the fights S143 moved, re-measured; the King without a re-roll
+
+Thirteen seeds each (the default and 1..12), every row in its route arena,
+arrival health re-read off the S144 trace:
+
+| fight | arrives | S144 | before | left when won |
+|---|---|---|---|---|
+| Bogmaw | 21/28 | 13/13 | 13/13 S139 | 8..19 |
+| Gloomtide | 24/28 | 11/13 | 10/13 S139 | 1..19 |
+| Ironknight | 23/32 | 13/13 | 13/13 S140 | 8..17 |
+| Wyverna | 23/32 | 13/13 | 13/13 S140 | 5..36 |
+| Thornvine | 30/40 | 13/13 | 13/13 S141 | 27..30 |
+| Rootmaw | 28/40 | 8/13 | 8/13 S141 | 2..16 |
+| Tideshade | 36/44 | 13/13 | 13/13 S142 | 27 |
+| Brinehulk | 45/48 | 10/13 | 9/13 S142 | 18..48 |
+| Nereth | 48/48 | 11/13 rig, 12/13 real | 12/13 S142 | 9..33 |
+
+- Gloomtide read 8/13 on 20/28 before the fix. The four quarter-hearts were
+  the Eel Hall crab, bitten past twice. The route kills it on the way in
+  (it dies to the fourth downward swing); arrival is 24/28 again.
+- The entry wait is not a lever for Gloomtide: settles 80..240 read 8..13
+  of 13 with no shape. A reshuffle, not a fix.
+- NERETH'S LOSSES ARE ONE SHAPE: a summoned darknut walks Link into the
+  south wall and lands ten touches on the invuln clock. `evade` scores a
+  direction by where the box would be and never asks the room, so it steps
+  him into the bricks. `breakPin` (actor-runtime, opt-in) walks toward the
+  middle of the room, not through `evade`, for one invuln window after a
+  touch from a non-boss enemy. Real stream, 0..12 walk-rounds: 12/13 with
+  it, 8/13 without. The route's two Stairhead walk-rounds are gone.
+- NEGATED for Nereth: `breakContact` (10/13 with or without `breakPin`);
+  "walk directly away from the pin" (points into the wall; 11/13).
+- The rig reads Nereth kinder than the real stream (12/13 vs 8/13 before
+  `breakPin`). The same loss shape in both; sample the real stream by
+  walk-rounds when the two disagree.
+- Nothing about any fight was changed.
+
 ## Settled at S143 — the Cistern grows to 36 screens, the Sanctum to 32
 
 - D4 is 30 rooms, 36 screens. The Spillway (Spill Gate, Ebb Cell, Spill

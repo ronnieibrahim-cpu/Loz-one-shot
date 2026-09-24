@@ -984,6 +984,17 @@ export const ROUTE = [
   // Vault. NOTHING IS FOUGHT IN THE HALL: it fields two barnacles, which are
   // `hp: 999` turrets bolted to the wall, and a `fight` directive in a room
   // holding one never returns.
+  //
+  // EXCEPT THE CRAB, WHICH IS KILLED ON THE WAY IN (S144). It patrols row 8
+  // between the west door and the south one, and the run walks past it twice
+  // — down to the Vault and back up from the Sounding wing — and it bit
+  // both times: four of the eight quarter-hearts spent between the Drain's
+  // fairy and Gloomtide. Clearing beats crossing twice (S128). Stand over its
+  // patrol line and swing down, the Vault crab's way. It dies on the fourth.
+  ['goto', 6, 7, 900],
+  ['hold', ['down'], 3],
+  ['tap', 'a', 16], ['tap', 'a', 16], ['tap', 'a', 16], ['tap', 'a', 16],
+  ['tap', 'a', 16], ['tap', 'a', 16],
   ['goto', 7, 9, 900],
   ['hold', ['down'], 30],
   ['wait', 60],
@@ -2795,22 +2806,13 @@ export const ROUTE = [
   // from the old doorway; re-read it if the fight turns).
   ['goto', 2, 5, 900],
   ['loot', 900],
-  // ONE STEP BACK OUT AND IN AGAIN, and it is a re-roll, said plainly. The
-  // King is won twelve times in thirteen from this doorway (S142's thirteen
-  // seeds), and S142's Shrine rooms moved this run onto the thirteenth: the
-  // first four hits land identically and a pixel of drift decides it. No
-  // wait before the door changes anything — the fight's clock starts on
-  // entry — but a room walked through does. A player who lost would try
-  // again; the run is allowed the same. S143's Spillway moved the stream
-  // again: none and one walk-round both lose, two win (and three).
-  ['goto', 7, 9, 900],
-  ['exit', 'down', 600],
-  ['goto', 7, 1, 900],
-  ['exit', 'up', 600],
-  ['goto', 7, 9, 900],
-  ['exit', 'down', 600],
-  ['goto', 7, 1, 900],
-  ['exit', 'up', 600],
+  // NO RE-ROLL ANY MORE (S144). S142 and S143 walked out of this room and
+  // back in, once and then twice, to move the run's stream off a losing
+  // King. Every loss read hit by hit was one shape: a summoned darknut walks
+  // Link into the south wall and lands ten touches on the invuln clock
+  // while `evade` steps him into the bricks. `breakPin` (below) walks out of
+  // that; sampled on the real stream at 0..12 walk-rounds, the King is won
+  // 12 of 13 with it and 8 of 13 without.
   ['wait', 95],
   ['goto', 7, 1, 900],
   ['hold', ['up'], 24],
@@ -2825,7 +2827,7 @@ export const ROUTE = [
   // he locks: `tideEscape` on his spec returns the level doing the locking,
   // and the next step of the cycle is always some other one.
   ['dialogue', 1800],
-  ['boss', 20000, null],
+  ['boss', 20000, null, { breakPin: true }],
   ['wait', 300],
   ['loot', 1200],
 

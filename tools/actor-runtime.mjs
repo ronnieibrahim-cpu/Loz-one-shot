@@ -1543,6 +1543,10 @@ export async function installRuntime() {
     // { openRetreat: true }]`, named per fight for the same measured reason
     // `clearAdds` and `breakContact` are. See the guard itself, below.
     const openRetreat = !!(opts && opts.openRetreat);
+    // BREAK A PIN BY A SUMMON — `['boss', N, type, { breakPin: true }]`. The
+    // contact-chain guard above, for a touch that came from something other
+    // than the boss. See the guard itself, below.
+    const breakPin = !!(opts && opts.breakPin);
     const wasHere = new Set(g.entities.filter(e => e.isEnemy));
     const STALL_FRAMES = 60;
     const safe = (m, retreat) => {
@@ -1610,6 +1614,9 @@ export async function installRuntime() {
     const PLAYER_INVULN = feel.PLAYER_INVULN_FRAMES;
     let lastHearts = g.progress ? g.progress.hearts : 0;
     let breakUntil = -1;
+    // The enemy a `breakPin` window is walking away from, or null when the
+    // window (if any) is the boss's own `breakContact` one.
+    let pinnedBy = null;
     // Whether this boss has ever been seen open. A boss that has never once
     // opened has not necessarily locked — it may simply not have reached its
     // first attack yet, and every boss's first cycle includes a shut stretch
@@ -1780,10 +1787,53 @@ export async function installRuntime() {
        * belong: readable in the route, not hidden in the verb.
        */
       if (breakContact && g.progress && g.progress.hearts < lastHearts && nearContact(p, b)) {
-        breakUntil = f + PLAYER_INVULN;
+        breakUntil = f + PLAYER_INVULN; pinnedBy = null;
+      }
+      /**
+       * A PIN BY A SUMMON, AND GETTING OUT OF ONE (S144).
+       *
+       * The same chain, from something the guard above never looks at.
+       * Nereth summons darknuts: shielded, six hit points, so `clearAdds`
+       * rightly leaves them alone, and nothing else in this verb steers AWAY
+       * from an add — `evade` only refuses to step INTO one. Every loss of
+       * the King measured at S144, in this harness and in the real run
+       * alike, is one shape: a darknut walks Link into the south wall and
+       * lands ten or eleven touches at 52-frame intervals, the invuln window
+       * exactly, while the verb keeps lining up on a boss it cannot reach.
+       * So a touch that lands with a non-boss enemy in contact range buys
+       * one window of walking directly away from THAT enemy — both axes, so
+       * against a wall the other axis slides along it.
+       *
+       * Opt-in per fight, like `breakContact`, and for the same reason: it
+       * was measured on the one fight that names it and on nothing else.
+       */
+      if (breakPin && g.progress && g.progress.hearts < lastHearts) {
+        const pin = g.entities.find(e => e.isEnemy && e !== b && !e.dead && !e.dying
+          && !e.hidden && !e.remove && nearContact(p, e));
+        if (pin) { breakUntil = f + PLAYER_INVULN; pinnedBy = pin; }
       }
       if (g.progress) lastHearts = g.progress.hearts;
       if (f < breakUntil) {
+        if (pinnedBy && !pinnedBy.dead && !pinnedBy.remove) {
+          // TOWARD THE MIDDLE OF THE ROOM, not "away from the pin". A pin is
+          // a wall on one side and the enemy on the other, so "away" points
+          // into the bricks — the enemy is nearly level with Link, and the
+          // side it is on is the only open one. The invuln window that just
+          // opened is exactly what makes walking past it free, which is what
+          // a player does with it.
+          const midX = g.room.pw / 2 - p.cx, midY = g.room.ph / 2 - p.cy;
+          const m = (Math.abs(midX) > 8 ? (midX > 0 ? BIT.right : BIT.left) : 0)
+            | (Math.abs(midY) > 8 ? (midY > 0 ? BIT.down : BIT.up) : 0);
+          // NOT through `safe`. `evade` scores a direction by where the
+          // player's box WOULD be and never asks the room whether it can get
+          // there, so pressed into a wall with the pin on the open side, "into
+          // the wall" is the farthest-from-danger answer, every frame, and
+          // that is exactly how the pin held: Link walked left into the
+          // bricks for four hundred frames with the whole room above him.
+          // `fence` still keeps the walk inside the arena.
+          yield fence(m); f++;
+          continue;
+        }
         yield safe(backAlong | backPerp, true); f++;
         continue;
       }

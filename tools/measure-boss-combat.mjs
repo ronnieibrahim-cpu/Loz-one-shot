@@ -94,7 +94,9 @@ const FIGHTS = {
   // by then the cave is open.
   d4: { boss: 'wyverna', tide: LOW, items: { sword: 1, conch: 1, anchor: 1, lens: 1, bombs: 1, cleats: 1, bellows: 1 } },
   d5: { boss: 'rootmaw', tide: LOW, items: { sword: 2, conch: 1, anchor: 1, lens: 1, bombs: 1, reefseed: 1 } },
-  d6: { boss: 'nereth', tide: MID, items: { sword: 3, conch: 1, anchor: 1, lens: 1, bombs: 1, cleats: 2, bellows: 1, reefseed: 1, rod: 1, dredge: 1 } },
+  // `breakPin`, as the route carries it since S144: 12 of 13 on the real
+  // stream with it, 8 of 13 without. This rig reads 11 and 12 of 13.
+  d6: { boss: 'nereth', tide: MID, opts: { breakPin: true }, items: { sword: 3, conch: 1, anchor: 1, lens: 1, bombs: 1, cleats: 2, bellows: 1, reefseed: 1, rod: 1, dredge: 1 } },
 };
 
 // The minibosses, which `FIGHTS` cannot hold because A MINIBOSS IS NOT
@@ -153,25 +155,28 @@ const MINIS = {
   // S140, after D4's rebuild at Oracle size: step 683 (`exit right` from the
   // Long Race) f105042: `7,81 hp 29/32 tide 2 [ironknight+keese]`, then
   // `wait 90`. He is met through the west door of a 30x11 gallery now.
-  ironknight: { dungeon: 'd4', room: '0,5,3', flag: 'd4_ironknight', tide: HIGH, qh: 29,
+  // S144, after the Spillway (S143): step 743 f112720, `7,79 hp 23/32`.
+  ironknight: { dungeon: 'd4', room: '0,5,3', flag: 'd4_ironknight', tide: HIGH, qh: 23,
                 items: { sword: 1, conch: 1, anchor: 1, lens: 1, bombs: 1, cleats: 1, bellows: 1 },
-                at: [7, 81], facing: 'right', maxQh: 32, settle: 90, frame: 105042 },
+                at: [7, 79], facing: 'right', maxQh: 32, settle: 90, frame: 113587 },
   // S140, after D5's rebuild at Oracle size: step 927 (`hold right` in
   // through the west door of his room) f147504: `34,81 hp 30/40 tide 0
   // [thornvine]`. Straight in, no settle. S142, after the Shrine's west
   // wing: step 979 f152463, `38,81 hp 30/40`.
+  // S144: step 1047 f160937, `38,81 hp 30/40`.
   thornvine: { dungeon: 'd5', room: '0,5,3', flag: 'd5_thornvine', tide: LOW, qh: 30,
                items: { sword: 2, conch: 1, anchor: 1, lens: 1, bombs: 1, cleats: 1,
                         bellows: 1, reefseed: 1 },
-               at: [38, 81], facing: 'right', maxQh: 40, settle: 0, frame: 152463 },
+               at: [38, 81], facing: 'right', maxQh: 40, settle: 0, frame: 160937 },
   // d6 1,4,5, S142 at Oracle size: step 1294 (`travel`) f198171: `7,79 hp
   // 36/44 tide 0 [tideshade]`, after the east wing. NO CHARMS — the route does not put one on until step 1326,
   // two rooms later, so this is the last fight in the game fought bare.
-  tideshade: { dungeon: 'd6', room: '1,4,5', flag: 'd6_tideshade', tide: LOW, qh: 35,
+  // S144: step 1414 f211618, `7,79 hp 36/44`.
+  tideshade: { dungeon: 'd6', room: '1,4,5', flag: 'd6_tideshade', tide: LOW, qh: 36,
                items: { sword: 3, conch: 1, anchor: 1, lens: 1, bombs: 1, cleats: 1,
                         bellows: 1, reefseed: 1, kilnshell: 1, rod: 1, dredge: 1 },
                opts: { breakContact: true },
-               at: [7, 79], facing: 'right', maxQh: 44, settle: 0, frame: 203784 },
+               at: [7, 79], facing: 'right', maxQh: 44, settle: 0, frame: 211618 },
   // d6 1,4,2, step 1390 (`equip`) f163176: `227,97 hp 25/44 tide 2
   // [brinehulk+beamos+keese]`. THE ONE ROW WHOSE FRAME IS NOT A ROOM ENTRY:
   // the Crossed Shafts are entered thousands of frames earlier and both
@@ -181,11 +186,12 @@ const MINIS = {
   // a beamos and a keese still in the room, and both charms on.
   // S142, the Keep at Oracle size with the far island widened: step 1364
   // (`tide` up, on the landing) f209346: `305,95 hp 46/48 tide 2`.
-  brinehulk: { dungeon: 'd6', room: '1,4,2', flag: 'd6_brinehulk', tide: HIGH, qh: 48,
+  // S144: step 1532 (`equip`) f222672, `305,95 hp 45/48 tide 2`.
+  brinehulk: { dungeon: 'd6', room: '1,4,2', flag: 'd6_brinehulk', tide: HIGH, qh: 45,
                items: { sword: 3, conch: 1, anchor: 1, lens: 1, bombs: 1, cleats: 2,
                         bellows: 1, reefseed: 1, kilnshell: 1, rod: 1, dredge: 1 },
                charms: { mid: 'coilrope', high: 'gillcarve' },
-               at: [305, 95], facing: 'right', maxQh: 48, settle: 8, frame: 214906 },
+               at: [305, 95], facing: 'right', maxQh: 48, settle: 8, frame: 222672 },
 };
 
 // THE FIGHT THE ROUTE ACTUALLY PLAYS.
@@ -264,7 +270,11 @@ const ROUTE_ARENA = {
   // S139: D3 IS AN ORACLE DUNGEON NOW. Walked in through the boss door in
   // the Lock Gallery's north wall; the trace's `wait 150` (step 546) lands at
   // f78723: `111,160 hp 23/28 tide 0 [gloomtide]`.
-  d3: { at: [111, 160], facing: 'up', qh: 24, maxQh: 28, settle: 165, frame: 78848 },
+  // S144, after the Sounding wing (S143): `111,160 hp 20/28` — four
+  // quarter-hearts fewer, all of them the Eel Hall crab, crossed twice. The
+  // route kills it on the way in now: the `wait` at step 593 ends f83797,
+  // `111,160 hp 24/28`.
+  d3: { at: [111, 160], facing: 'up', qh: 24, maxQh: 28, settle: 165, frame: 83632 },
   // d4 0,3,1, trace step 776 (`hold up` through the door) at f85158:
   // `63,99 hp 17/32 tide 0 foes 1 [wyverna]`. SEVENTEEN OF THIRTY-TWO — the
   // route meets the fourth boss on barely half a bar, and this file has been
@@ -274,7 +284,8 @@ const ROUTE_ARENA = {
   // hp 29/32 tide 0 [wyverna]`, then `wait 120`. The Crossed Sluices' plate
   // opens a shortcut straight to the Gate, so the walk to her no longer goes
   // five rooms round by the Long Race — and she is met on 29 of 32, not 17.
-  d4: { at: [113, 149], facing: 'up', qh: 29, maxQh: 32, settle: 120, frame: 110730 },
+  // S144, after the Spillway (S143): step 796 f119395, `113,149 hp 23/32`.
+  d4: { at: [113, 149], facing: 'up', qh: 23, maxQh: 32, settle: 120, frame: 119275 },
   // d5 0,3,1, trace step 1003 (`hold up` through the door) at f119421:
   // `65,99 hp 21/40 tide 0 foes 1 [rootmaw]`. Twenty-one of forty, against a
   // file that has been fighting Rootmaw on 28 of 28.
@@ -282,7 +293,8 @@ const ROUTE_ARENA = {
   // Rootmaw Arch's north wall at step 961 (`hold up`), f150199: `113,149 hp
   // 28/40 tide 0 [rootmaw]`, then `wait 120`.
   // S142, after the Shrine grew: step 1013 f155154, `113,149 hp 28/40`.
-  d5: { at: [113, 149], facing: 'up', qh: 28, maxQh: 40, settle: 120, frame: 155154 },
+  // S144: step 1082 f163748, `113,149 hp 28/40`.
+  d5: { at: [113, 149], facing: 'up', qh: 28, maxQh: 40, settle: 120, frame: 163628 },
   // d6 1,3,1, trace step 1423 (the throne-room `dialogue`) at f166238:
   // `63,101 hp 44 tide 1 foes 1 [nereth]`. The settle is 24 frames, not a
   // `wait`: the route opens Nereth's own dialogue on the way in, and that is
@@ -305,7 +317,8 @@ const ROUTE_ARENA = {
   // step 1445 (`exit up`) f214007, `111,150 hp 48/48 tide 1 [nereth]` (with the
   // east wing in the route).
   // After the Shrine grew (S142): step 1501 f219836.
-  d6: { at: [111, 150], facing: 'up', qh: 48, maxQh: 48, settle: 24, frame: 219836,
+  // S144: step 1566 (`dialogue`) f227271.
+  d6: { at: [111, 150], facing: 'up', qh: 48, maxQh: 48, settle: 24, frame: 227247,
         charms: { mid: 'coilrope', high: 'gillcarve' } },
 };
 
@@ -346,6 +359,9 @@ const breakContactFlag = args.includes('--break-contact');
 // The same, for `dBoss`'s open-floor retreat. Same reason: ask the question in
 // one fight's worth of frames instead of the whole run's.
 const openRetreatFlag = args.includes('--open-retreat');
+// And for `dBoss`'s pin guard (S144): walk away from a summon that just landed
+// a touch.
+const breakPinFlag = args.includes('--break-pin');
 const budgetArg = args.find(a => a.startsWith('--budget='));
 const BUDGET = budgetArg ? Number(budgetArg.slice('--budget='.length)) : 18000;
 
@@ -399,6 +415,7 @@ const SETTLE = settleArg ? Number(settleArg.slice('--settle='.length))
 let bossOpts = fight.opts || null;
 if (breakContactFlag) bossOpts = { ...(bossOpts || {}), breakContact: true };
 if (openRetreatFlag) bossOpts = { ...(bossOpts || {}), openRetreat: true };
+if (breakPinFlag) bossOpts = { ...(bossOpts || {}), breakPin: true };
 
 const MIME = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',

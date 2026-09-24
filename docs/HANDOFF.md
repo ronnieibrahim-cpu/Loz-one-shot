@@ -447,6 +447,16 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **The robot's dodge (`evade`) does not know walls exist (S144).** It
+  scores each direction by where Link's box would end up, never whether he
+  can get there, so with a wall on one side and an enemy on the other it
+  walks him into the wall for as long as the enemy likes. That was every
+  loss of the King. Fixed opt-in for his fight only (`breakPin`); making
+  `evade` ask the room would re-roll every fight in the game.
+- **The practice rig and the real run can disagree about the same fight
+  (S144).** Nereth read 12/13 in the rig and 8/13 on the real stream. To
+  sample the real stream, vary something that re-rolls the fight without
+  changing it — walk-rounds of the room before — and run the route.
 - **A sill can ask for the conch to be sounded FROM the stand (S143).** Every
   earlier sill was one sea; the Ebb Cell is entered at HIGH and worked at LOW,
   and check-bellows needed its own clause (`enter`) because its per-level
