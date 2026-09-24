@@ -30,7 +30,8 @@ the health, not because the rooms do not work.
 **S137: D1 IS REBUILT AT ORACLE ROOM SIZE** (15x11 rooms, Seasons wall ring and
 doors, key doors in the ring) — commits `91cc5c7` and `50d8419`. **S138: D2 is
 rebuilt too**, with the Explorer's Crypt kit. **S139: D3**, with the Poison
-Moth's Lair kit (`08a4e74`). D4-D6 are
+Moth's Lair kit (`08a4e74`). **S140: D4**, with the Dancing Dragon kit
+(`4d61f0e`). D5-D6 are
 still 10x8 and are rebuilt one per session under objective 10 in
 `docs/prompts/STATE.md`. A dungeon rebuilt at Oracle size is not "done" until
 its map declares `cell: [15, 11]`, it has its own Seasons kit, and
@@ -43,7 +44,7 @@ its map declares `cell: [15, 11]`, it has its own Seasons kit, and
 | 1 | `d1` | Tidewash Grotto | Tidewright's Anchor | **DONE; ORACLE SIZE** | `d655d1f`; rebuilt at 15x11 S137 (`91cc5c7`) |
 | 2 | `d2` | Coral Spire | Brineglass Lens | **DONE, AND PLAYED; ORACLE SIZE** | authored `0a3776f`; played end to end S41; rebuilt at 15x11 S138 |
 | 3 | `d3` | Bogwater Sanctum | Kelp-Soled Cleats | **DONE, AND PLAYED; ORACLE SIZE** | `a9eb63e`; rebuilt at 15x11 S139 (`08a4e74`) |
-| 4 | `d4` | Cliffside Cistern | Squall Bellows | **DONE** | `5fd7301` |
+| 4 | `d4` | Cliffside Cistern | Squall Bellows | **DONE, AND PLAYED; ORACLE SIZE** | `5fd7301`; rebuilt at 15x11 S140 (`4d61f0e`) |
 | 5 | `d5` | Drowned Wood Shrine | Reefseed | **DONE** | `0db0eab` |
 | 6 | `d6` | Abyssal Keep | Dredge Line | **DONE, AND PLAYED TO THE END** | authored `84d14e5`; played to Nereth's death and the sixth Essence, `check-playthrough.mjs` 37/37, S121 |
 | — | `d7` | Reef Palace | — | **FOLDED IN** | `84d14e5` |
