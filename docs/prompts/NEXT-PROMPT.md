@@ -11,15 +11,15 @@
 ## Why this, now
 Areas (a)-(c) had a first pass at S146. `feel.js` has 0 of ~250
 constants `measured`, because no reference footage was ever in hand. The
-human has now given one: an Oracle of Ages playthrough,
-https://youtu.be/ZE5K58TFzlI. At S146 the environment's network policy
-refused youtube.com (proxy 403); the human was told how to allow it.
+human has given two: https://youtu.be/ZE5K58TFzlI (Oracle of Ages) and
+https://youtu.be/yvZT2PNtnho. At S146 bare youtube.com was allowed but
+www.youtube.com and *.googlevideo.com were still refused (proxy 403).
 
 ## The task
 1. Fetch the footage: `pip install yt-dlp`, then download at the highest
    frame rate offered (`-F` lists formats; prefer 60 fps). If the host is
-   still refused, ask the human to allow `youtube.com` and
-   `googlevideo.com`, or to drop the file in the repo, and stop there.
+   still refused, ask the human to allow `*.youtube.com` and
+   `*.googlevideo.com`, or to drop the file in the repo, and stop there.
 2. Extract frames with `ffmpeg` (install if missing) around: plain
    walking, a sword swing, a spin, Link taking a hit (knockback distance
    and frames, invuln blink), an enemy taking a hit (flash beats — check

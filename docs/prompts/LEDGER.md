@@ -933,6 +933,11 @@ checked and why; see `docs/NEXT-SESSION.md` S60 for the full account.
   of an enemy's flicker draws in `hitflash` (white, and the enemy sheet's
   own tan and red). Link keeps the on/off blink. The three hazards stay
   unkillable (human's call).
+- THE MAKU GROVE IS EXTRACTED (rip-maku.py). A GBC screen carries a
+  palette per 8x8, so a 16x16 cell can hold 9 colours; the grove's 11
+  colours split cleanly into grass / bark / face ramps, so each cell is
+  two stacked tiles (`underExact`) and the face is a sprite. Reuse this
+  for any other whole-screen Seasons picture.
 - AGES' LOOSE-TILE STRIP (oracle-ages-overworld.png, x 1..160, y
   2852..2971, 17 px pitch, fifth cell of each row a swatch = the map's
   placeholder colour for that tile): y2852 flowers, y2869 lake/river water

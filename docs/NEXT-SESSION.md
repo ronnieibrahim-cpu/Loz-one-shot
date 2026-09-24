@@ -28,9 +28,20 @@
   strip's own frames (rows y=2869 and y=2886, identified by the map's
   placeholder swatches). Hand-drawn waterD0..2 removed. replay re-recorded
   for d5-overthrow and tide-steps-split: probe pixels on water only.
-- The human sent Ages footage for (d): https://youtu.be/ZE5K58TFzlI.
-  youtube.com is refused by the environment's network policy (403); the
-  human was told to allow it. NEXT-PROMPT carries the plan.
+- (c) pass 2 done early too: `houseMaku` is the Seasons Maku grove,
+  extracted whole by the new tools/rip-maku.py (-> src/data/tiles-maku.js,
+  in check-rippers). Each cell is a bark layer over its own grass layer
+  (new tiledef field `underExact`: Room.underGround returns the named
+  under-tile instead of guessing from neighbours); her face is a 64x48
+  sprite `MakuTree` draws at `faceAt`. She stands at 4,3; the exit is the
+  bottom edge (4,7)/(5,7). Route: talk from 4,4, leave at 5,7. The sheet
+  holds ~40 more expressions — a talking face is a later pass.
+- There is NO Great Fairy in this game; QUEUE's (c) stub was wrong.
+- The human sent Ages footage for (d): https://youtu.be/ZE5K58TFzlI and
+  a second video, https://youtu.be/yvZT2PNtnho (not yet seen).
+  After the human allowed `youtube.com`, bare youtube.com passes but
+  www.youtube.com and *.googlevideo.com are still refused (proxy 403);
+  the human was asked to allow the subdomains. NEXT-PROMPT has the plan.
 
 ### Noticed for later areas (not chased)
 - (d) feel: the source games show a hit as a PALETTE FLASH, not a pose;

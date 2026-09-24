@@ -39,9 +39,9 @@ the room now reads without being swept out of it once.
 S146 (deep water and the open sea from Ages' strip). Was: the WATER — `waterD0/1/2`, `openSea`, the `foam*` edges are
 hand-drawn, and `oracle-ages-overworld.png`'s bottom-left strip holds the
 source's own animated water with every frame (the current tiles came from
-the same strip at S146). Pass 2: the Maku Tree and Great Fairy, drawn 16x16
-beside a whole `oracle-seasons-maku-tree.png` and the fairies sheet (use
-`expectedSize`, as `link_hold_*` does). The item icons were surveyed S36-38
+the same strip at S146). The Maku grove was extracted S146 (rip-maku.py); still wanted: her other
+expressions (the sheet has ~40) as a talking face. There is no Great Fairy
+in this game. The item icons were surveyed S36-38
 and are SETTLED (ART-BACKLOG): the gear grid's other cells are Oracle items
 this game does not have. Also pass 2: Ages' shallow pool water (strip row
 y=2903) against the current `waterS0`, by eye on screen; the strip's surf
