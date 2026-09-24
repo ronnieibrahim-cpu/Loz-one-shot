@@ -916,6 +916,47 @@ checked and why; see `docs/NEXT-SESSION.md` S60 for the full account.
   `liftLevel: 2` + the `dredge` tile action, as this entry originally said;
   only the "read by nothing" half of the claim was wrong.
 
+## Settled at S145 — Rootmaw's margin, from the route and the robot
+
+Thirteen seeds each (the default and 1..12) in Rootmaw's route arena:
+
+| setup | arrives | wins | left when won |
+|---|---|---|---|
+| S144 route, no option (before) | 28/40 | 8/13 | 2..16 |
+| `clearAdds` | 28/40 | 7/13 | 1..19 |
+| `breakPin` | 28/40 | 4/13 | 3..17 |
+| `pushThrough` | 28/40 | 12/13 | 1..15 |
+| no option, more health | 36/40 | 10/13 | — |
+| no option, full bar | 40/40 | 10/13 | 7..28 |
+| `pushThrough` (after) | 36/40 | 13/13 | 1..23 |
+
+Real stream (the route itself), the arena settle varied 60..240 by 15:
+13/13 before (28/40, left 4..19), 13/13 after (36/40, left 9..27).
+
+- EVERY LOSS WAS ONE SHAPE: a summoned zol and its two gels chase Link and
+  settle in the lane to the boss, and `safe`/`evade` steers round them on a
+  fresh invuln window for a thousand frames, never closing, while seeds and
+  slime take the bar. Losses died on 24..48 of 52 dealt. Health alone
+  cannot fix a stall: a full bar is still 10/13.
+- `pushThrough` (actor-runtime, opt-in, `dBoss`): while invuln is banked,
+  the approach goes through `fence`, not `safe`. Only Rootmaw names it.
+- The route arrives on 36/40, not 28: Rootbound Hall is re-crossed by its
+  top row (the barnacle bit twice on row 5, 4 qh); the Bole Walk's return
+  steps down to row 6 before turning east (it cut the corner into the sump
+  at 9,4, a pit at LOW, 2 qh); the Sunken Nave is not cleared (the fight
+  chased its jellyfish between two sumps and fell in, 2 qh). The Shrine
+  Ford's tektite still bites once (2 qh).
+- NEGATED, the fight's own damage, 13 seeds each at 28/40: contact 4->3
+  8/13; spears 3->2 8/13; slow seed ring 2->1 8/13; contact and walking
+  spears together 9/13 (10/13 at 36 and 40). Damage delays a stall; it
+  does not end one. Nothing in `bosses.js` changed.
+- NEGATED: `clearAdds` with a longer reach (ADD_RANGE 28 and 40: 0/13).
+- ROOTMAW'S FIGHT CANNOT BE RE-ROLLED FROM OUTSIDE HIS ROOM. `roomStream` is
+  hash(save seed, map, room): walk-rounds through the Shrine Ford and waits
+  there of 1..240 frames gave the identical fight every time. The arena's
+  own settle is what varies it. (The King's walk-rounds varied his arrival,
+  not his stream.)
+
 ## Settled at S144 — the fights S143 moved, re-measured; the King without a re-roll
 
 Thirteen seeds each (the default and 1..12), every row in its route arena,

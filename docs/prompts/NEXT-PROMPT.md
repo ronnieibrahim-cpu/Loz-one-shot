@@ -1,42 +1,44 @@
-# Next session — give Rootmaw a margin from the route
+# Next session — give the Brinehulk a margin
 
 ## Read first
 - `docs/prompts/STATE.md` — the whole file (no objective of record; the
   human names the next one, and this task stands until they do).
-- `docs/prompts/LEDGER.md`'s "Settled at S144" and "Settled at S141".
-- `docs/NEXT-SESSION.md`, the S144 entry and the S141 entry.
+- `docs/prompts/LEDGER.md`'s "Settled at S145" and "Settled at S144".
+- `docs/NEXT-SESSION.md`, the S145 entry and the S144 entry.
 - `docs/HANDOFF.md`'s first four hard-won lessons.
-- `tools/measure-boss-combat.mjs`'s header: how a route arena is set up.
+- `tools/measure-boss-combat.mjs`'s `MINIS.brinehulk` row and its header.
 
 ## Why this, now
-Rootmaw (D5's boss) is the thinnest fight in the game: 8 of 13 seeds from
-his route door on 28 of 40 quarter-hearts, unchanged since S141, and the
-wins end on 2..16. Every other boss is 10/13 or better. The real run wins
-him, but on its own stream, the way the King was won before S144.
+The Brinehulk (the salt colossus in the Abyssal Keep, guarding the Boss
+Key) is the thinnest fight measured: 10 of 13 seeds at S144 on 45/48.
+Every other boss and miniboss now reads 11/13 or better; Rootmaw went from
+8/13 to 13/13 at S145 with one opt-in robot habit and a better route.
 
 ## The task
-Measure Rootmaw's thirteen seeds and read the losses hit by hit
-(`tools/measure-boss-combat.mjs d5 --seed=N`). Sample the real stream too,
-by re-rolling the fight without changing it (walk-rounds of Rootmaw Arch
-before the boss door, run with `tools/route-prefix.mjs`). Fix from the
-route first: a heal on the way through the Drowned Wood Shrine, a planned
-kill of something that bites twice, or an opt-in fight option in
-`tools/actor-runtime.mjs` if the losses are the robot's play. Retune the
-fight in `src/data/bosses.js` only with 13 seeds either side, and damage,
-not hp. Target: 11 of 13 in the rig and on the real stream.
+Measure the Brinehulk over thirteen seeds
+(`node tools/measure-boss-combat.mjs --mini=brinehulk --seed=N`, the
+default and 1..12) and read every loss hit by hit. First ask how long a
+losing fight goes without dealing damage: a stall is the robot's play, not
+health (S145). Try the existing opt-ins first (`--break-pin`,
+`--break-contact`, `--open-retreat`, `--clear-adds`, `--push-through`).
+Sample the real stream by the arena's own settle, not walk-rounds (a
+fight is seeded by its room). Fix from the route first; retune
+`src/data/bosses.js` only with 13 seeds either side, by damage, not hp.
+Target: 11 of 13 in the rig, and the real run wins every settle sampled.
 
 ## Done means
-- `node tools/measure-boss-combat.mjs d5` over 13 seeds, before and after,
-  in LEDGER; real-stream samples before and after.
+- The 13-seed table before and after in LEDGER; real-stream settles too.
 - `node tools/check-playthrough.mjs` green to THE END with no deaths.
-- `replay`, `test.mjs`, `check-bosses`, `check-respawn` green.
-- `check-drift` OK; `npm run build` with `dist/` committed.
-- A person plays Rootmaw once and says whether the fight felt fair.
+- `node tools/replay.mjs`, `node tools/test.mjs`,
+  `node tools/check-bosses.mjs`, `node tools/check-respawn.mjs` green.
+- `node tools/check-drift.mjs` OK; `npm run build` with `dist/` committed.
+- A person plays the Brinehulk once and says whether it felt fair.
 
 ## Out of scope
-- Making `evade` ask the room whether a step is possible (S144 names it);
-  it re-rolls every fight in the game and is its own session.
-- The Bellows' "shove light enemies into pits" verb (NEXT-SESSION S143).
-- Adding rooms to any dungeon; every dungeon is at its ladder size.
-- Changing a boss's hp (phase thresholds re-roll the fight — S137).
-- Re-measuring the other eight fights; S144 did, and none read worse.
+- Making `evade` ask the room whether a step is possible (S144); it
+  re-rolls every fight in the game and is its own session.
+- Fixing the robot's `goto` cutting corners over pits (S145 Open); a
+  route waypoint is the fix inside this task.
+- Changing any boss's hp (phase thresholds re-roll the fight — S137).
+- Re-measuring Rootmaw or the King; both settled at S145 and S144.
+- The Brinehulk's `drops: 'none'` (bosses.js says why it stays).

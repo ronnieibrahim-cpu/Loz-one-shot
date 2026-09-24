@@ -93,7 +93,9 @@ const FIGHTS = {
   // same error in d3's row and named this one; d5 and d6 are correct, because
   // by then the cave is open.
   d4: { boss: 'wyverna', tide: LOW, items: { sword: 1, conch: 1, anchor: 1, lens: 1, bombs: 1, cleats: 1, bellows: 1 } },
-  d5: { boss: 'rootmaw', tide: LOW, items: { sword: 2, conch: 1, anchor: 1, lens: 1, bombs: 1, reefseed: 1 } },
+  // `pushThrough`, as the route carries it since S145: 12 of 13 with it at
+  // 28/40 and 8 without; see the option in tools/actor-runtime.mjs.
+  d5: { boss: 'rootmaw', tide: LOW, opts: { pushThrough: true }, items: { sword: 2, conch: 1, anchor: 1, lens: 1, bombs: 1, reefseed: 1 } },
   // `breakPin`, as the route carries it since S144: 12 of 13 on the real
   // stream with it, 8 of 13 without. This rig reads 11 and 12 of 13.
   d6: { boss: 'nereth', tide: MID, opts: { breakPin: true }, items: { sword: 3, conch: 1, anchor: 1, lens: 1, bombs: 1, cleats: 2, bellows: 1, reefseed: 1, rod: 1, dredge: 1 } },
@@ -294,7 +296,9 @@ const ROUTE_ARENA = {
   // 28/40 tide 0 [rootmaw]`, then `wait 120`.
   // S142, after the Shrine grew: step 1013 f155154, `113,149 hp 28/40`.
   // S144: step 1082 f163748, `113,149 hp 28/40`.
-  d5: { at: [113, 149], facing: 'up', qh: 28, maxQh: 40, settle: 120, frame: 163628 },
+  // S145, round the Rootbound barnacle and the Bole Walk's sump and past the
+  // Sunken Nave's jellyfish: step 1086 (`hold up`) f163304, `113,149 hp 36/40`.
+  d5: { at: [113, 149], facing: 'up', qh: 36, maxQh: 40, settle: 120, frame: 163304 },
   // d6 1,3,1, trace step 1423 (the throne-room `dialogue`) at f166238:
   // `63,101 hp 44 tide 1 foes 1 [nereth]`. The settle is 24 frames, not a
   // `wait`: the route opens Nereth's own dialogue on the way in, and that is
@@ -362,6 +366,10 @@ const openRetreatFlag = args.includes('--open-retreat');
 // And for `dBoss`'s pin guard (S144): walk away from a summon that just landed
 // a touch.
 const breakPinFlag = args.includes('--break-pin');
+// And for `dBoss`'s summons branch, which cuts down a cheap add in reach, and
+// for its push through the adds on a fresh invuln window (S145).
+const clearAddsFlag = args.includes('--clear-adds');
+const pushThroughFlag = args.includes('--push-through');
 const budgetArg = args.find(a => a.startsWith('--budget='));
 const BUDGET = budgetArg ? Number(budgetArg.slice('--budget='.length)) : 18000;
 
@@ -416,6 +424,8 @@ let bossOpts = fight.opts || null;
 if (breakContactFlag) bossOpts = { ...(bossOpts || {}), breakContact: true };
 if (openRetreatFlag) bossOpts = { ...(bossOpts || {}), openRetreat: true };
 if (breakPinFlag) bossOpts = { ...(bossOpts || {}), breakPin: true };
+if (clearAddsFlag) bossOpts = { ...(bossOpts || {}), clearAdds: true };
+if (pushThroughFlag) bossOpts = { ...(bossOpts || {}), pushThrough: true };
 
 const MIME = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',

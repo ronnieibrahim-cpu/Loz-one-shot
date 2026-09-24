@@ -1708,6 +1708,15 @@ export const ROUTE = [
   // ---------------------------------------------------------------- d5 0,2,4
   // The Warden's Sill: the second key door, in its west wall. "Past this door
   // the floor is a thing you bring with you."
+  //
+  // BACK THROUGH ROOTBOUND HALL BY ITS TOP ROW (S145). The straight line from
+  // door to door is row 5, and row 5 runs through the barnacle: it bit twice
+  // on the way past, four of the ten quarter-hearts the run spent between the
+  // Bracken and Rootmaw's door. The wall row is clear of it by four tiles.
+  ['travel', 3, 4, 12000],
+  ['goto', 13, 1, 1500],
+  ['goto', 1, 1, 1500],
+  ['goto', 1, 5, 1500],
   ['travel', 2, 4, 12000],
   ['fight', 5000, 1800],
   ['loot', 600],
@@ -1777,7 +1786,12 @@ export const ROUTE = [
   // the snarl is set in the wall of a cell holding Small Key 3, and the room
   // can be walked straight through by anyone who never works out what the pool
   // is for.
-  ['fight', 4000, 1500],
+  //
+  // NOT CLEARED (S145). Its jellyfish swims the channel between the two sumps
+  // at 3,3 and 3,7, which are pits at LOW, and chasing it there dropped Link
+  // into one: two quarter-hearts and a respawn. At HIGH, where the stake is
+  // thrown, it is under the sea and out of the way, and the keese never comes
+  // down to the bank.
   ['loot', 600],
   ['equip', 'reefseed', 'A', 400],
   ['tide', 2, 140, 600],
@@ -1863,6 +1877,12 @@ export const ROUTE = [
   // ---- back through the Bole Walk and east through the third key door, which
   // is in its east wall: the Grove Crossing is opened from the side the
   // groves let you in on.
+  //
+  // Down off the stake and one row clear of the sump before turning east
+  // (S145). Straight from the stake to the door cuts the corner over the pit
+  // at 9,4, which is open at LOW: it cost two quarter-hearts and a respawn.
+  ['goto', 8, 6, 2000],
+  ['goto', 13, 6, 2000],
   ['goto', 13, 5, 2000],
   ['wait', 30],
   ['hold', ['right'], 20],
@@ -1957,7 +1977,12 @@ export const ROUTE = [
   // ---------------------------------------------------------------- d5 0,3,1
   // ROOTMAW, THE DROWNED WOOD, and the fifth Essence, which stands at 7,4 in
   // an Oracle arena: walk onto it and wait out the pose before the loot.
-  ['boss', 24000, null],
+  //
+  // `pushThrough` (S145): every lost Rootmaw read hit by hit was one shape —
+  // a zol and its two gels parked between Link and the boss while the verb
+  // steered round them on a fresh invuln window it could have walked through.
+  // Rig, 13 seeds from this door: 8 wins without it, 13 with.
+  ['boss', 24000, null, { pushThrough: true }],
   ['wait', 240],
   ['goto', 7, 4, 900],
   ['dialogue', 900],

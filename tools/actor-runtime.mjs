@@ -1547,6 +1547,9 @@ export async function installRuntime() {
     // contact-chain guard above, for a touch that came from something other
     // than the boss. See the guard itself, below.
     const breakPin = !!(opts && opts.breakPin);
+    // PUSH THROUGH ON INVULN — `['boss', N, type, { pushThrough: true }]`.
+    // See the banked-invuln approach below.
+    const pushThrough = !!(opts && opts.pushThrough);
     const wasHere = new Set(g.entities.filter(e => e.isEnemy));
     const STALL_FRAMES = 60;
     const safe = (m, retreat) => {
@@ -1885,7 +1888,15 @@ export async function installRuntime() {
           const dx2 = b.cx - p.cx, dy2 = b.cy - p.cy;
           const ax2 = Math.abs(dx2), ay2 = Math.abs(dy2);
           const toward2 = towardDiag(dx2, dy2);
-          if (ax2 + ay2 > NEAR + 6) { yield safe(toward2); f++; continue; }
+          // PUSH THROUGH (S145, opt-in per fight like the options above). The
+          // window just paid for is contact immunity from EVERYTHING, adds
+          // included, but `safe` still steers round them as if it were not.
+          // Rootmaw's zol and its two gels chase Link and settle in the lane
+          // to the boss, and every lost Rootmaw was the verb circling them
+          // for a thousand frames, never closing, while seeds and slime took
+          // the bar down. A player walks through a gel while he is flashing.
+          // Rig, 13 seeds: 8 wins without it, 12 with, on the same health.
+          if (ax2 + ay2 > NEAR + 6) { yield (pushThrough ? fence(toward2) : safe(toward2)); f++; continue; }
           const faceOnly = ax2 >= ay2 ? (dx2 > 0 ? BIT.right : BIT.left) : (dy2 > 0 ? BIT.down : BIT.up);
           yield safe(faceOnly); f++;
           yield fence(faceOnly | sword()); f++;

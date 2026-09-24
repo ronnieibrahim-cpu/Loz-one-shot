@@ -1,3 +1,32 @@
+## S145 — Rootmaw's margin, from the route and the robot
+
+### What landed
+- Rootmaw from his door, 13 seeds: 8/13 on 28/40 before, 13/13 on 36/40
+  after (left 1..23). Real stream, arena settle 60..240: 13/13 both before
+  and after; the floor went from 4 to 9 of 40. Table in LEDGER S145.
+- Every loss was a zol and two gels parked between Link and the boss, and
+  the robot steering round them on invuln it could have walked through.
+  New opt-in `pushThrough` on `dBoss` (tools/actor-runtime.mjs): with invuln
+  banked, the approach ignores add hazards. Route and rig carry it for
+  Rootmaw only; `measure-boss-combat --push-through` asks it of any fight.
+  `--clear-adds` added alongside.
+- Route through the Drowned Wood Shrine saves 8 of the 10 quarter-hearts it
+  spent after the Bracken: Rootbound Hall crossed by its top row (barnacle),
+  a waypoint off the Bole Walk's sump, the Sunken Nave not cleared (its
+  jellyfish drew the fight into a sump). `ROUTE_ARENA.d5` re-read: step
+  1086 f163304, 36/40.
+- The fight itself was not changed; three damage trims measured and
+  negated (LEDGER).
+- check-playthrough 42/42, the run never died.
+
+### Open
+- The Shrine Ford's tektite bites once during the snarl cut (2 qh).
+- The robot's `goto` cuts corners over open pits (the Bole Walk sump). A
+  route waypoint fixes this one; the planner is not fixed.
+- Seed 7 wins on 1 quarter-heart in the rig: thin, not lost.
+- Brinehulk (10/13) is now the thinnest fight measured at S144.
+- A person has not yet played Rootmaw to say whether it feels fair.
+
 ## S144 — the bosses S143 moved, re-measured; the King without a re-roll
 
 ### What landed

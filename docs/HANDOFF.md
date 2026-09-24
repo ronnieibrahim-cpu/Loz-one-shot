@@ -447,6 +447,15 @@ BEFORE checking a file out for isolation, not after.**
 
 ## Hard-won lessons — do not rediscover these
 
+- **A boss's fight is seeded by its ROOM, not by the run (S145).** The room
+  stream is a hash of the save seed, the map and the room key. Walk-rounds
+  and waits outside Rootmaw's arena gave the same fight to the pixel; only
+  his own arena's settle varied it. The King's walk-rounds worked because
+  they changed how he was arrived at, not his dice.
+- **Health cannot fix a stall (S145).** Rootmaw on a full bar was still
+  10/13: the losses were the robot circling adds for a thousand frames
+  without landing a blow. Read how long a losing fight goes without dealing
+  damage before reaching for a heal or a damage trim.
 - **The robot's dodge (`evade`) does not know walls exist (S144).** It
   scores each direction by where Link's box would end up, never whether he
   can get there, so with a wall on one side and an enemy on the other it

@@ -8,8 +8,8 @@ check-playthrough is green end to end with no deaths. Each grown dungeon has
 a required wing that asks for its item a new way (D3 sunken plates, D4 the
 Ebb Cell, D5 a block over a pillar, D6 the hauled key) and charms in its
 optional rooms. S144 re-measured the fights S143 moved (LEDGER S144).
-NEXT-PROMPT.md holds a proposed follow-up (Rootmaw, the thinnest fight
-left); the human decides the next objective.
+NEXT-PROMPT.md holds a proposed follow-up (the Brinehulk, the thinnest
+fight left after S145); the human decides the next objective.
 
 ROTATION (retired S112, kept for the record):
   1 wide-rooms MET S111 | 2 art-provenance S9/S74 | 3 boss-art S75
@@ -17,11 +17,11 @@ ROTATION (retired S112, kept for the record):
   7 item-reuse MET S110 | 8 feel-measure BLOCKED | 9 playthrough-route MET S121
   10 oracle-rooms MET S143
 
-FILE ALLOWLIST for the proposed follow-up (Rootmaw's margin):
+FILE ALLOWLIST for the proposed follow-up (the Brinehulk's margin):
   src/data/bosses.js (measured first), tools/measure-boss-combat.mjs,
   tools/playthrough-route.mjs, tools/check-playthrough.mjs,
   tools/actor-runtime.mjs (opt-in fight options only),
-  src/data/dungeons-b.js (D5 rooms only), docs/*.md,
+  src/data/dungeons-b.js (D6 rooms only), docs/*.md,
   dist/oracle-of-tides.html
 
 DETOUR TOKENS: 1 (unspent)
@@ -48,3 +48,4 @@ S141 | objective | The fifth dungeon, the Drowned Wood Shrine, is rebuilt at rea
 S142 | objective | The last dungeon, the Abyssal Keep, is rebuilt at real Oracle room size in the dark stone of the Seasons Sword & Shield Maze, with its own locked doors and boss door. Nereth's stair now has an antechamber with the fairy and the boss door, and the throne-room door shuts behind you until the King is dead. The salt colossus has the whole east side of its room to fight on. Then the Keep grew to 47 screens, the biggest dungeon in the game: a new wing where you must fish the stair key off a pillar, and six optional rooms with four charms. The Shrine grew to 40: the first room where a block crosses a seed pillar, and eight optional rooms with five charms; seeds now grow back. All six dungeons are now Oracle size, and the whole game still plays to the end.
 S143 | objective | Grew the last two small dungeons, and with that every dungeon is now full Oracle size and grown. The Cliffside Cistern is 36 screens: its new required wing has a wind-wheel you can only reach at high tide but can only turn once you lower the sea while standing next to it. The Bogwater Sanctum is 32 screens: its new required wing has floor switches lying at the bottom of deep pools — swimming over them does nothing, only walking the bottom in the Cleats presses them. Five more charms are hidden in optional rooms. The whole game still plays to the end.
 S144 | objective | Re-measured the nine boss fights the last session's dungeon growth moved, thirteen tries each. Only one had got worse: the third dungeon's boss, because a crab in the hall before it bit Link on the way past and again on the way back. The run now kills the crab on the way in and arrives at the boss with the health it used to have. The King is now won first time from the room at the foot of his stair: every lost fight was one of his summoned knights pinning Link against a wall while the robot kept walking into the bricks, and it now walks out into the room instead — 12 wins in 13 on the real run, up from 8. No fight was changed.
+S145 | objective | Gave the fifth dungeon's boss, Rootmaw, a real margin. Every lost fight was the same: the slimes he summons parked between Link and him, and the test robot walked round them for ages instead of pushing through while it was still flashing from a hit. It now pushes through, for this fight only, and the run keeps eight more quarter-hearts on the way (round a barnacle, off a pit edge twice). Practice: 13 wins in 13, up from 8. The real run wins every variation, with more left. The fight itself was not changed.
