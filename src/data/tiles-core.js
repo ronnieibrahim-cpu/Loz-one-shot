@@ -10,6 +10,7 @@ import { registerTiles, registerBlocks, F, declareAnimArt, registerTransforms } 
 import { TERRAIN_ART, TOWN_ART, TOWN_PALETTES, TOWN_BLOCKS } from './tiles-terrain.js';
 import { registerPalettes, PALETTES } from '../gfx/palettes.js';
 import { DUNGEON_THEME_ART, installDungeonThemePalettes } from './tiles-dungeon-themes.js';
+import { MAKU_PALETTES, MAKU_TILE_ART, MAKU_GROVE } from './tiles-maku.js';
 import { TORRENT_PUSH, TORRENT_ANIM_RATE, RIPTIDE_ANIM_RATE } from './feel.js';
 
 const HAND_ART = {
@@ -1457,7 +1458,7 @@ const HAND_ART = {
 // The dungeon themes, by the suffix every one of their tiles carries.
 const THEME_NAMES = ['Grotto', 'Coral', 'Bog', 'Cistern', 'Wood', 'Salt', 'Palace', 'Abyss'];
 
-const ART = { ...HAND_ART, ...TERRAIN_ART, ...DUNGEON_THEME_ART, ...TOWN_ART };
+const ART = { ...HAND_ART, ...TERRAIN_ART, ...DUNGEON_THEME_ART, ...TOWN_ART, ...MAKU_TILE_ART };
 
 // --------------------------------------------------------------------------
 // THE DUNGEON MOUTH, TWO TILES WIDE.
@@ -1718,6 +1719,45 @@ function fringeCell(carrier, intruder, dirs) {
 }
 
 /** Build every fringe tile and hang `material`/`edgePairs` on the ground defs. */
+// THE MAKU GROVE, one screen of the Seasons original (tools/rip-maku.py). A
+// cell is its bark layer drawn over its own grass layer, both cut off the same
+// panel, so `underExact` pins the grass instead of letting the renderer guess
+// a ground from the neighbours. What each cell DOES is decided here: the ring
+// of trees and the trunk are solid, the clearing is not, and the two middle
+// cells of the open bottom edge are the way out.
+const MAKU_SOLID = [
+  'SSSSSSSSSS',
+  'SSSSSSSSSS',
+  'S.SSSSS..S',
+  'S....S...S',  // 4,3 is where she stands: her own body is the wall there
+  'SS......SS',
+  'SS......SS',
+  'SS......SS',
+  'SSS.WW.SSS',
+];
+function installMakuGrove() {
+  registerPalettes(MAKU_PALETTES);
+  const defs = {}, tiles = [];
+  for (let y = 0; y < MAKU_GROVE.length; y++) {
+    const row = [];
+    for (let x = 0; x < MAKU_GROVE[y].length; x++) {
+      const [art, base] = MAKU_GROVE[y][x];
+      const m = MAKU_SOLID[y][x];
+      const flags = m === 'S' ? F.SOLID : m === 'W' ? F.WARP : 0;
+      const tile = 'makuGrove_' + x + '_' + y;
+      if (base) defs[base] = { art: ART[base], pal: 'makuGrass', flags };
+      defs[tile] = base
+        ? { art: ART[art], pal: 'makuBark', underArt: base, underExact: true, flags }
+        : { art: ART[art], pal: art.startsWith('makuB') ? 'makuBark' : 'makuGrass', flags };
+      row.push(tile);
+    }
+    tiles.push(row);
+  }
+  registerTiles(defs);
+  registerBlocks({ makuGrove: { w: tiles[0].length, h: tiles.length, tiles } });
+  return defs;
+}
+
 function installGroundFringes(defs) {
   const pals = {}, tiles = {};
   for (const [name, mat] of Object.entries(GROUND_MATERIAL)) {
@@ -2882,6 +2922,7 @@ export function installCoreTiles() {
   // After the tiledefs, so a block cell can never be shadowed by one of them.
   const townDefs = installTownBlocks();
   Object.assign(TILE_DEFS, townDefs);
+  Object.assign(TILE_DEFS, installMakuGrove());
   Object.assign(TILE_DEFS, installDungeonPortals());
 
   // Rooms draw a tile by its *tile* name, but the art above is keyed by art

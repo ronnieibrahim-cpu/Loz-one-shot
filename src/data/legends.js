@@ -375,6 +375,8 @@ export function installLegends() {
     'T': 'driftTangleDk',
   });
 
+  // The Maku Tree's grove: one extracted Seasons screen, placed whole.
+  registerLegend('makuGrove', { 'M': 'block:makuGrove' });
   registerLegend('house', {
     ' ': 'void',
     '.': 'dFloor', '#': 'dWall', 'p': 'pot', '/': 'dStairs',

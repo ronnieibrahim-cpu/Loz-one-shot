@@ -100,7 +100,7 @@ export const REQUIRED_SPRITES = {
 
   npcs: [
     'npc_villager', 'npc_villager2', 'npc_fisher', 'npc_child', 'npc_elder',
-    'npc_shopkeeper', 'npc_farore_0', 'npc_farore_1', 'npc_maku', 'npc_zelda',
+    'npc_shopkeeper', 'npc_farore_0', 'npc_farore_1', 'npc_maku', 'maku_face', 'npc_zelda',
     'npc_nereth',
   ],
 
@@ -128,6 +128,10 @@ export const REQUIRED_SPRITES = {
     ...seq('darknut_d', 2), ...seq('darknut_s', 2), 'darknut_hurt', 'darknut_death', 'darknut_atk',
     ...seq('wizzrobe_', 2), 'wizzrobe_hurt', 'wizzrobe_death', 'wizzrobe_atk', ...seq('anglerfry_', 2), 'anglerfry_hurt', 'anglerfry_death', 'anglerfry_atk', ...seq('barnacle_', 2), 'barnacle_atk',
     ...seq('jellyfish_', 2), 'jellyfish_death', ...seq('siren_', 2), 'siren_hurt', 'siren_death', ...seq('pincer_', 2), 'pincer_hurt', 'pincer_death',
+    // S146: the flinch and death frames every enemy gained.
+    'crab_hurt', 'zol_hurt', 'gel_hurt', 'keese_hurt', 'leever_hurt', 'tektite_hurt',
+    'urchin_hurt', 'jellyfish_hurt', 'barnacle_hurt', 'barnacle_death',
+    'bubble_hurt', 'bubble_death', 'beamos_hurt', 'beamos_death',
   ],
 
   // ---- pack: sprites-bosses.js -----------------------------------------
@@ -164,6 +168,7 @@ export function expectedSize(name) {
   if (REQUIRED_SPRITES.fxBig.includes(name)) return [32, 32];
   if (name.startsWith('boss_')) return name.endsWith('_48') ? [48, 48] : [32, 32];
   if (name.startsWith('mini_')) return [24, 24];
+  if (name === 'maku_face') return [64, 48];  // the eyes, nose and leaf over the trunk
   if (name === 'o_raft') return [16, 16];      // drawn twice, mirrored, to make 32
   if (name === 'i_chain' || name === 'i_hookhead') return [8, 8];
   if (name.startsWith('shot')) return [8, 8];

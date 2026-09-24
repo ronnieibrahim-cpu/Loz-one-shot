@@ -2689,18 +2689,21 @@ function installHouses() {
     kind: 'interior',
     name: 'The Maku Tree',
     w: 1, h: 1, floors: 1,
-    legend: 'house', music: 'village', tint: 'cave', scroll: false,
+    // THE SEASONS GROVE, WHOLE. The room is one extracted screen of the
+    // original Maku Tree's clearing (tools/rip-maku.py), placed as a single
+    // block; the cave tint that suited a stone room is gone with the room.
+    legend: 'makuGrove', music: 'village', scroll: false,
     rooms: {
       '0,0,0': {
         map: [
-          '##########',
-          '#........#',
-          '#........#',
-          '#........#',
-          '#........#',
-          '#........#',
-          '#....o...#',
-          '##########',
+          'MMMMMMMMMM',
+          'MMMMMMMMMM',
+          'MMMMMMMMMM',
+          'MMMMMMMMMM',
+          'MMMMMMMMMM',
+          'MMMMMMMMMM',
+          'MMMMMMMMMM',
+          'MMMMMMMMMM',
         ],
         entities: [
           // THE MAKU TREE HAS TWO BEATS, and they came from two branches that
@@ -2722,8 +2725,11 @@ function installHouses() {
           // the world becomes uncompletable while check-trade.mjs stays green —
           // which is the exact shape of failure CLAUDE.md warns that a model
           // cannot see and only check-playthrough.mjs can.
-          ['makuTree', 4, 2, {
-            sprite: 'npc_maku', waiting: 'makuWait', after: 'makuAfter',
+          // She stands at the foot of her own trunk, where Link can face her
+          // from the clearing, and draws her face up on the bark.
+          ['makuTree', 4, 3, {
+            sprite: null, face: 'maku_face', faceAt: [48, 0],
+            waiting: 'makuWait', after: 'makuAfter',
             deals: [{
               stage: 12, wants: 'bellrope', item: 'rod', level: 1,
               text: 'makuTree', flag: 'gotRod',
@@ -2736,7 +2742,11 @@ function installHouses() {
         ],
         // The hollow is at 4,1 in the tree line at the top of the square. It is drawn
         // with `treeHollow`, not the cave arch — see the town legend.
-        warps: [{ x: 5, y: 6, to: { map: 'overworld', floor: 0, rx: 4, ry: 7, px: 64, py: 40, dir: 'down' } }],
+        // The way out is the open bottom edge of the clearing, as in Seasons.
+        warps: [
+          { x: 4, y: 7, to: { map: 'overworld', floor: 0, rx: 4, ry: 7, px: 64, py: 40, dir: 'down' } },
+          { x: 5, y: 7, to: { map: 'overworld', floor: 0, rx: 4, ry: 7, px: 64, py: 40, dir: 'down' } },
+        ],
       },
     },
   });

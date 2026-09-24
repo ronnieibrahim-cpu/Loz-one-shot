@@ -49,6 +49,7 @@ const RIPPERS = [
   ['rip-enemies.py',         'src/data/sprites-enemies.js'],
   ['rip-hud.py',             'src/data/sprites-hud.js'],
   ['rip-fairies.py',         'src/data/sprites-fairies.js'],
+  ['rip-maku.py',            'src/data/tiles-maku.js'],
   ['rip-terrain.py',         'src/data/tiles-terrain.js'],
   ['rip-dungeon-themes.py',  'src/data/tiles-dungeon-themes.js'],
 ];

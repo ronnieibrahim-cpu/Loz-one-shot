@@ -746,6 +746,18 @@ export class MakuTree extends Trader {
     this.sceneNeed = o.sceneNeed || 0;
     this.sceneFlag = o.sceneFlag || null;
     this.sceneAfter = o.sceneAfter || null;
+    this.face = o.face || null;
+    this.faceAt = o.faceAt || [0, 0];
+  }
+
+  /**
+   * The grove's tree has no body to draw — the trunk is the room — only its
+   * face, a sprite over the bark at `faceAt` (room pixels), which is how the
+   * cartridge draws it too. A MakuTree without `face` draws as any NPC.
+   */
+  draw(ctx, game, ox, oy) {
+    if (!this.face) return super.draw(ctx, game, ox, oy);
+    sprites.draw(ctx, this.face, ox + this.faceAt[0], oy + this.faceAt[1], {});
   }
 
   /** Is the second beat owed right now? */

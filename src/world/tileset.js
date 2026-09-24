@@ -112,6 +112,11 @@ export function registerTiles(defs) {
       art: def.art,
       // Tiles with transparency (trees, bushes, rocks) name a tile to draw beneath.
       underArt: def.underArt || null,
+      // `underArt` names EXACTLY the tile to draw beneath, rather than a
+      // ground to be re-derived from the neighbours (Room.underGround). For a
+      // picture cut into stacked layers — the Maku grove — where the layer
+      // underneath is part of the same artwork and not the region's ground.
+      underExact: !!def.underExact,
       pal: def.pal || 'stone',
       flags: def.flags || 0,
       mask: def.mask == null ? 15 : def.mask,

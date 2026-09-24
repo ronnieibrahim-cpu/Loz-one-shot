@@ -698,6 +698,7 @@ export class Room {
    */
   underGround(d, x, y, tide) {
     const declared = (this._floorSub && this._floorSub[d.underArt]) || getTileDef(d.underArt);
+    if (d.underExact) return declared;
     let cand = null, agree = 0, disagree = false;
     for (const [dx, dy] of [[0, 1], [0, -1], [-1, 0], [1, 0]]) {
       const nx = x + dx, ny = y + dy;

@@ -2194,7 +2194,10 @@ export const ROUTE = [
   ['trade', 12, 2000],
   ['dialogue', 600],
   ['wait', 120],
-  ['goto', 4, 3, 900],
+  // She stands at the foot of her trunk (4,3) since the grove became the
+  // Seasons screen, so she is faced from the clearing below, and the way out
+  // is the grove's open bottom edge rather than a door mat.
+  ['goto', 4, 4, 900],
   ['hold', ['up'], 20],
   ['tap', 'a', 60],
   ['dialogue', 1800],
@@ -2202,7 +2205,7 @@ export const ROUTE = [
   ['tap', 'a', 60],
   ['dialogue', 1800],
   ['wait', 300],
-  ['goto', 5, 6, 600],
+  ['goto', 5, 7, 600],
   ['wait', 90],
   // ------------------------------------------------------------ TO THE KEEP
   //
