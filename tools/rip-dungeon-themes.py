@@ -82,8 +82,8 @@ PICKS = [
     ('paleFloor',  1986,   42, 'x1244 pale mottled flagstone, the commonest floor on the map'),
     ('reefFloor',   659,   42, 'x201 pale blue flagstone with a scored ring'),
     ('abyssFloor',   81, 2799, 'x1038 dark tiling, studded — the deepest floors'),
-    ('brickFloor',  547, 1434, 'x223 red brick laid in courses, cracked through'),
-    ('forgeFloor',  579,  621, 'x8 amber lozenge tiling'),
+    # (`brickFloor` 547,1434 and `forgeFloor` 579,621 were the Drowned Wood
+    # Shrine's until S140 gave it the Ancient Ruins' kit; nothing else drew them.)
     # A pale panelled flagstone was wanted here and there is no clean copy of
     # one: BOTH instances on the map (693,2352 and 2148,2352) carry a stripe of
     # the room frame bled into the right edge. On a stitched map a tile touching
@@ -113,7 +113,8 @@ PICKS = [
     # What does tile in both axes is bevelled block grids and brick courses.
     # Every wall used by a theme is one of those.
     ('coralWall',      17,   58, 'x266 rose-bevelled block grid'),
-    ('emberWall',     499, 1274, 'x209 brown brick in courses'),
+    # (`emberWall` 499,1274, brown brick in courses, was the Shrine's wall
+    # until S140.)
     ('cryptWall',    2114,  428, 'x22 violet masonry with pale capstones'),
     ('studWall',      225,  396, 'x16 blue-grey wall banded with gold studs'),
     # DIRECTIONAL. A horizontal run, for the top course of a room. Never a fill.
@@ -342,6 +343,54 @@ PICKS = [
     ('xArch1',   2034,   692, 'entrance pillar, west', 'dragon'),
     ('xArch2',   2050,   692, 'entrance, the lit way out', 'dragon'),
     ('xArch3',   2066,   692, 'entrance pillar, east', 'dragon'),
+
+    # ---- THE ORACLE ROOM KIT: the Drowned Wood Shrine's --------------------
+    #
+    # Cut from the Ancient Ruins sheet's True Colors half: brown bevelled
+    # stone round the gold hex floor — the Shrine's drowned timber and its
+    # amber floor, in the source's own hand. Rooms sit on the 241x177 pitch
+    # from 1216,364 (the row after each gap is offset: 1267.., 1807..). The
+    # ring is the plain room at 1939,1621. The Ruins draw jambs either side of
+    # a north doorway (the entrance hall at 1698,2338) and a south one (the
+    # room at 1698,1807); a side doorway is a plain gap. Its solid masonry is
+    # the flat tan it shows wherever rock cuts into a room.
+    #
+    # THE DOORS ARE THE SHEET'S OWN DOOR KEY at 2196,2519 on a 17px pitch:
+    # shutters for all four walls, and a key door and the boss door drawn for
+    # a NORTH wall only — the other walls' key doors are that one turned over
+    # or turned a quarter.
+    ('rRingTL',  1939,  1621, 'ring corner, north-west', 'ruins'),
+    ('rRingN',   1955,  1621, 'ring run, north wall', 'ruins'),
+    ('rRingTR',  2163,  1621, 'ring corner, north-east', 'ruins'),
+    ('rRingW',   1939,  1637, 'ring run, west wall', 'ruins'),
+    ('rRingE',   2163,  1637, 'ring run, east wall', 'ruins'),
+    ('rRingBL',  1939,  1781, 'ring corner, south-west', 'ruins'),
+    ('rRingS',   1955,  1781, 'ring run, south wall', 'ruins'),
+    ('rRingBR',  2163,  1781, 'ring corner, south-east', 'ruins'),
+    ('rJambNW',  1794,  2338, 'north wall ends, doorway to its east', 'ruins'),
+    ('rJambNE',  1826,  2338, 'north wall ends, doorway to its west', 'ruins'),
+    ('rJambSW',  1794,  1967, 'south wall ends, doorway to its east', 'ruins'),
+    ('rJambSE',  1826,  1967, 'south wall ends, doorway to its west', 'ruins'),
+    ('rFill',    1922,  1855, 'the flat tan of solid masonry', 'ruins'),
+    ('rFloor',   1955,  1637, 'the gold hex floor', 'ruins'),
+    ('rFloorAlt', 1746, 2370, 'the sunken four-pane floor of the entrance hall', 'ruins'),
+    ('rBlock',   2003,  1669, 'the raised red block', 'ruins'),
+    ('rPot',     1296,  2482, 'the brown pot, on its own floor', 'ruins'),
+    ('rStatue',  1762,  2386, 'the purple eye statue of the entrance hall', 'ruins'),
+    ('rKeyN',    2196, 2553, 'key door in a north wall', 'ruins'),
+    ('rKeyS',    2196, 2553, 'key door in a south wall', {'sheet': 'ruins', 'vflip': True}),
+    ('rKeyW',    2196, 2553, 'key door in a west wall', {'sheet': 'ruins', 'rot': -90}),
+    ('rKeyE',    2196, 2553, 'key door in an east wall', {'sheet': 'ruins', 'rot': 90}),
+    ('rShutN',   2196, 2519, 'shutter in a north wall, teeth into the room', 'ruins'),
+    ('rShutS',   2196, 2536, 'shutter in a south wall, teeth into the room', 'ruins'),
+    ('rShutW',   2230, 2519, 'shutter in a west wall, teeth into the room', 'ruins'),
+    ('rShutE',   2230, 2536, 'shutter in an east wall, teeth into the room', 'ruins'),
+    ('rBossN',   2230, 2553, 'boss door in a north wall', 'ruins'),
+    # THE WAY OUT: the entrance hall's two green pillars in the south wall
+    # with the lit step between them.
+    ('rArch1',   1794,  2498, 'entrance pillar, west', 'ruins'),
+    ('rArch2',   1810,  2498, 'entrance, the lit way out', 'ruins'),
+    ('rArch3',   1826,  2498, 'entrance pillar, east', 'ruins'),
     ('gPot',     2195,  750, 'the Seasons pot, on its own floor'),
     ('gBlock',   2243,  798, 'the raised magenta block'),
 ]
@@ -362,7 +411,7 @@ PICKS = [
 #
 # ONLY FOR OBJECTS. Keying a floor or a wall would eat the tile, because the
 # border-connected run IS the tile.
-KEY_BACKGROUND = {'urn', 'gPot', 'cPot', 'bPot', 'bStatue', 'xPot', 'xStatue'}
+KEY_BACKGROUND = {'urn', 'gPot', 'cPot', 'bPot', 'bStatue', 'xPot', 'xStatue', 'rPot', 'rStatue'}
 
 
 def lum(c):

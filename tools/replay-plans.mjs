@@ -453,8 +453,8 @@ export const PLANS = {
       maxHearts: 12,
       hearts: 12,
       tide: 1,
-      enter: ['d5', 0, 1, 3, 72, 72, 'right'],
-      probes: [[6, 4], [7, 4]],
+      enter: ['d5', 0, 1, 3, 152, 88, 'right'],
+      probes: [[11, 5], [12, 5]],
     },
     steps: [
       ['wait', 30],
@@ -465,7 +465,7 @@ export const PLANS = {
       // enemies are sealed on the far side of the snarl. That is also why the
       // sword is not on B: the Reefseed is, because a replay's equipment is
       // fixed in its setup.
-      ['goto', 4, 4, 400],
+      ['goto', 9, 5, 400],
       ['hold', ['right'], 60],
       ['wait', 20],
       // MID -> HIGH. The conch runs 2 -> 0 -> 1 -> 2, so this is one press.
@@ -480,7 +480,7 @@ export const PLANS = {
       // again, so the way to it is round the north rather than straight at it.
       ['tap', 'a', 100],
       ['wait', 30],
-      ['goto', 5, 3, 400],
+      ['goto', 10, 4, 400],
       ['wait', 20],
       // East into the pool — deep at every sea, which is why it is a pool and
       // not a puddle — and then south, out of the water onto what he threw.

@@ -1,3 +1,40 @@
+## S141 — the Drowned Wood Shrine is rebuilt at Oracle room size
+
+(Same working session as S140; the human asked for the charter to keep going.)
+
+### What landed
+- D5 at `cell: [15, 11]`: 26 rooms, same graph, same item placement. Every
+  grove is the 10x8 fixture (bank, bole, stake, snarl, same spacing) set into
+  a bigger room; check-reefseed 163/163, check-lens 53/53 (the Hollow Three is
+  the 10x8 fork set into rock, offset 2,1), check-bellows for the Bower Cell.
+  Key doors in the ring (Standing Grove/Rootbound Hall, Warden's Sill/Reefseed
+  Vault, Bole Walk/Grove Crossing), boss door in Rootmaw Arch's north wall,
+  Thornvine's arch a ring shutter into the Shrine Ford.
+- The Long Ford's grove is turned so both side doors sit mid-wall: the bank
+  is still across the pool from the door, the snarl is in a wall across the
+  room, and the way on is a south hall and an east passage.
+- Kit: the Ancient Ruins (`r*` picks; rooms on 241x177 from 1216,364, rows
+  offset after each gap: 1267.., 1807..). Brown bevel, gold hex floor, the
+  entrance hall's four-pane floor (alt), red block, brown pot, purple eye
+  statue (`U`), N and S jambs (S from the room at 1698,1807), and the door
+  key at 2196,2519: shutters for all walls, key door and boss door for a
+  north wall only (others turned). `ring.faces` on. `brickFloor`,
+  `forgeFloor`, `emberWall` picks removed (nothing drew them). `9` is
+  `dDrownWood`. The drowned oaks (`5`/`Y`) stay the extracted oak.
+- BUG FIXED: a miniboss's summons now vanish when it dies (`miniDie`, via
+  `summon`'s new `summonedBy`). Only the Brinehulk summons; its beetles used
+  to charge Link into the Crossed Shafts' pit after the fight, which the run
+  survived only by timing.
+- Route: D5 re-routed; the Crossed Shafts no longer sweeps for drops before
+  the Boss Key chest (a sweep walked into the pit). check-playthrough to THE
+  END, 52/52. Rootmaw from the new doorway 8/13 (was 2/5), Thornvine 13/13.
+  `d5-overthrow` re-recorded.
+
+### Open
+- measure-boss-combat's d6 rows (ROUTE_ARENA.d6, tideshade, brinehulk) carry
+  frames from before S140; D4 and D5 now run ~18k frames longer to D6.
+- D6 still 10x8 (NEXT-PROMPT.md).
+
 ## S140 — the Cliffside Cistern is rebuilt at Oracle room size
 
 ### What landed

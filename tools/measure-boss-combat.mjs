@@ -156,12 +156,13 @@ const MINIS = {
   ironknight: { dungeon: 'd4', room: '0,5,3', flag: 'd4_ironknight', tide: HIGH, qh: 29,
                 items: { sword: 1, conch: 1, anchor: 1, lens: 1, bombs: 1, cleats: 1, bellows: 1 },
                 at: [7, 81], facing: 'right', maxQh: 32, settle: 90, frame: 105042 },
-  // d5 0,5,3, step 968 (`hold up`) f116879: `45,95 hp 27/40 tide 0
+  // S140, after D5's rebuild at Oracle size: step 927 (`hold right` in
+  // through the west door of his room) f147504: `34,81 hp 30/40 tide 0
   // [thornvine]`. Straight in, no settle.
-  thornvine: { dungeon: 'd5', room: '0,5,3', flag: 'd5_thornvine', tide: LOW, qh: 28,
+  thornvine: { dungeon: 'd5', room: '0,5,3', flag: 'd5_thornvine', tide: LOW, qh: 30,
                items: { sword: 2, conch: 1, anchor: 1, lens: 1, bombs: 1, cleats: 1,
                         bellows: 1, reefseed: 1 },
-               at: [45, 95], facing: 'up', maxQh: 40, settle: 0, frame: 130792 },
+               at: [34, 81], facing: 'right', maxQh: 40, settle: 0, frame: 147504 },
   // d6 1,4,5, step 1272 (`travel`) f152861: `11,48 hp 26/44 tide 0
   // [tideshade]`. NO CHARMS — the route does not put one on until step 1326,
   // two rooms later, so this is the last fight in the game fought bare.
@@ -274,7 +275,10 @@ const ROUTE_ARENA = {
   // d5 0,3,1, trace step 1003 (`hold up` through the door) at f119421:
   // `65,99 hp 21/40 tide 0 foes 1 [rootmaw]`. Twenty-one of forty, against a
   // file that has been fighting Rootmaw on 28 of 28.
-  d5: { at: [65, 99], facing: 'up', qh: 22, maxQh: 40, settle: 120, frame: 133334 },
+  // S140: D5 IS AN ORACLE DUNGEON NOW. Walked in through the boss door in
+  // Rootmaw Arch's north wall at step 961 (`hold up`), f150199: `113,149 hp
+  // 28/40 tide 0 [rootmaw]`, then `wait 120`.
+  d5: { at: [113, 149], facing: 'up', qh: 28, maxQh: 40, settle: 120, frame: 150199 },
   // d6 1,3,1, trace step 1423 (the throne-room `dialogue`) at f166238:
   // `63,101 hp 44 tide 1 foes 1 [nereth]`. The settle is 24 frames, not a
   // `wait`: the route opens Nereth's own dialogue on the way in, and that is

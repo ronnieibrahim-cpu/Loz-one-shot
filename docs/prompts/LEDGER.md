@@ -916,6 +916,26 @@ checked and why; see `docs/NEXT-SESSION.md` S60 for the full account.
   `liftLevel: 2` + the `dredge` tile action, as this entry originally said;
   only the "read by nothing" half of the claim was wrong.
 
+## Settled at S141 — the Drowned Wood Shrine is an Oracle dungeon
+
+- D5 is `cell: [15, 11]` with the Ancient Ruins kit (`r*` picks). Rooms at
+  x=1216+241i; rows y=364,541,727,904,1081, then 1267+177j, then 1807+177j.
+  The plain ring room is 1939,1621; S jambs from 1698,1807.
+- The Ruins' door key (2196,2519, 17px) has shutters for all four walls and
+  a key door and boss door for a north wall only.
+- Every grove kept its 10x8 fixture spacing; only the Long Ford was turned,
+  so both side doors sit mid-wall. The Hollow Three is the 10x8 fork set
+  into rock at offset 2,1. A reefseedRoom `entry` on a ring shutter must be
+  the tile inside it: the flood cannot start on a shut door.
+- A miniboss's summons die with it (`miniDie`/`summonedBy`); only the
+  Brinehulk summons. Its beetles knocked the run into the Crossed Shafts'
+  pit once D4/D5 moved the fight's clock.
+- The route does not sweep for drops between the Brinehulk and the Boss
+  Key chest: a sweep walked into the pit, and a fall there respawns Link on
+  the shelf on the wrong side of it.
+- Rootmaw from the route door 8/13 (was 2/5 at S135); Thornvine 13/13.
+  Nothing retuned.
+
 ## Settled at S140 — the Cliffside Cistern is an Oracle dungeon
 
 - D4 is `cell: [15, 11]` with the Dancing Dragon Dungeon kit (`x*` picks).

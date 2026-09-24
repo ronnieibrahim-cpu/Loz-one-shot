@@ -3940,6 +3940,11 @@ which does not exist passes forever.
   make D4 cheaper (a shortcut, a planned exit), not to touch D6: the run
   arrived at D5 and D6 with less health than it used to, and that was the
   whole difference.
+- **A miniboss left its summons behind.** The rule that a dying boss takes
+  the room with it (`Game.onBossDefeated`) was never extended to minibosses,
+  and the Brinehulk's beetles, alive after it on an island ringed by a pit,
+  charged Link in once D5's rebuild moved the fight's clock. `miniDie` now
+  removes what that miniboss summoned (`summonedBy`), and nothing else.
 
 ### Scrimshaw (P7), and the three things it cost
 

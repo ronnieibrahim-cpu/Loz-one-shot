@@ -174,7 +174,9 @@ function summon(g, e, type, n = 1) {
     const x = Math.max(24, Math.min(g.room.pw - 40, e.cx + Math.cos(a) * 36));
     const y = Math.max(24, Math.min(g.room.ph - 40, e.cy + Math.sin(a) * 36));
     g.spawnEffect('puff', x - 8, y - 8);
-    spawnEntity(g, type, x / TILE, y / TILE, {});
+    const add = spawnEntity(g, type, x / TILE, y / TILE, {});
+    // Who called it, so a miniboss can take its own court with it (miniDie).
+    if (add) add.summonedBy = e;
   }
 }
 
@@ -210,7 +212,19 @@ function surface(e) {
 }
 
 /** Minibosses share this tail: restore the area music the boss track stopped. */
-function miniDie(e, g) { g.frameLater(60, () => g.updateMusic()); }
+function miniDie(e, g) {
+  g.frameLater(60, () => g.updateMusic());
+  // A MINIBOSS TAKES WHAT IT SUMMONED WITH IT, the way a dungeon's boss takes
+  // its whole room (`Game.onBossDefeated`) — and only that: the room's own
+  // cast stays, because a miniboss's room is a room you walk on through. The
+  // Brinehulk's beetles used to outlive it on an island ringed by a pit and
+  // charge the player into the pit after the fight was won (S140).
+  for (const x of g.entities) {
+    if (x.summonedBy !== e || x.dead || x.remove) continue;
+    g.spawnEffect('puff', x.cx - 8, x.cy - 8);
+    x.remove = true;
+  }
+}
 
 /** See the header note — a miniboss must not mark its dungeon beaten. */
 function miniInit(e) { e.isBoss = false; }

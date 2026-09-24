@@ -12,7 +12,7 @@ every checker and the route learned Oracle cells at S137 (map `cell: [15, 11]`,
 DONE-CONDITION: all six dungeons declare `cell: [15, 11]`, each with its own
 Seasons kit, and `node tools/check-playthrough.mjs` is green end to end.
 PROGRESS: D1 done (S137). D2 done (S138). D3 done (S139). D4 done (S140).
-D5 Drowned Wood Shrine is next, then D6. S139: the human allows MORE rooms in
+D5 done (S141). D6 Abyssal Keep is next and last. S139: the human allows MORE rooms in
 a dungeon when that is what makes its puzzles engaging; not required.
 
 ROTATION (retired S112, kept for the record):
@@ -20,13 +20,13 @@ ROTATION (retired S112, kept for the record):
   4 enemy-roster S59 | 5 npc-detail S63 | 6 region-art S89
   7 item-reuse MET S110 | 8 feel-measure BLOCKED | 9 playthrough-route MET S121
 
-FILE ALLOWLIST for the current objective (rebuild D5 at Oracle size):
-  src/data/dungeons-b.js (the d5 block), src/data/overworld.js (d5's arrival), src/data/tiles-core.js,
+FILE ALLOWLIST for the current objective (rebuild D6 at Oracle size):
+  src/data/dungeons-b.js (the d6 block), src/data/overworld.js (d6's arrival), src/data/tiles-core.js,
   src/data/legends.js, src/data/tiles-dungeon-themes.js (regenerated only),
   tools/rip-dungeon-themes.py, tools/playthrough-route.mjs,
-  tools/replay-plans.mjs + tools/replays/d5-*.json, src/data/bosses.js (d5's
+  tools/replay-plans.mjs + tools/replays/d6-*.json, src/data/bosses.js (d6's
   bosses, measured first), src/world/room.js, tools/measure-boss-combat.mjs,
-  tools/check-reefseed.mjs, tools/dungeon-strands-baseline.json,
+  tools/check-dredge.mjs, tools/check-items.mjs, tools/dungeon-strands-baseline.json,
   any checker that still assumes 10x8, docs/*.md, dist/oracle-of-tides.html
 
 DETOUR TOKENS: 1 (unspent)
@@ -53,3 +53,4 @@ S137 | objective | The human named the next objective: rebuild the dungeons at r
 S138 | objective | The second dungeon, the Coral Spire, is rebuilt at real Oracle room size in the pink-and-violet look of the Seasons Explorer's Crypt, with its locked doors, its miniboss and its boss where they were, and the whole game still plays to the end. The miniboss now starts in the middle of its long hall instead of pinning Link in a corner, and a boss's summoned helpers now vanish when the boss dies instead of fighting on. The room next to the Lens now hides its Piece of Heart behind bats that only the Lens lets you hit. Fixed two real freezes on the way: a room could hand out its prize the moment you walked in, and the ending hung for good if the final boss died at low or high tide.
 S139 | objective | The third dungeon, the Bogwater Sanctum, is rebuilt at real Oracle room size in the blue slate and olive floor of the Seasons Poison Moth's Lair, with that dungeon's own key doors and the game's first proper Oracle boss door. The Kelp Locks now want both of the Cleats' layers in one crossing: ride the current round, sink for the last stretch. The miniboss's hall no longer lets you skip half the dungeon, the boss's ink spit hurts less in the bigger room, and the test robot now fights the miniboss and actually picks up the boss's Heart Container. The whole game still plays to the end.
 S140 | objective | The fourth dungeon, the Cliffside Cistern, is rebuilt at real Oracle room size in the grey stone and green floor of the Seasons Dancing Dragon Dungeon, with that dungeon's own locked doors, shutters and horned boss door. The Long Race now has two wind-wheels, and the second is behind the first at a different tide. A plate beside the Boss Key's room opens a shortcut to the boss door. Fixed: pumping the Bellows used to let Link walk for a moment, straight into the pit in front of every wheel, and a Piece of Heart that had popped into a wall. The whole game still plays to the end.
+S141 | objective | The fifth dungeon, the Drowned Wood Shrine, is rebuilt at real Oracle room size in the brown stone and gold floor of the Seasons Ancient Ruins, with that dungeon's own doors. Every seed grove works exactly as before in the bigger rooms. Fixed: the salt colossus in the last dungeon used to leave its beetles behind when it died, and they could knock Link into a pit. The whole game still plays to the end, and the last boss is now met on a full health bar.

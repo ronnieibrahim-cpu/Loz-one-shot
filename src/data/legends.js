@@ -328,6 +328,11 @@ export function installLegends() {
   // one, so naming it here moves nothing outside this dungeon — the same
   // argument every override above makes.
   registerLegend('dungeonWood', { '5': 'dSnag', 'k': 'dSnarl', 'Y': 'dBole' }, 'dungeonWood');
+  // The Shrine is built at Oracle size (S140): its way out is the Ancient
+  // Ruins' lit step between two pillars in the south wall, `(C)`.
+  registerLegend('dungeonWood', {
+    'C': 'dExitWood', '(': 'dPillarWoodW', ')': 'dPillarWoodE', '9': 'dDrownWood',
+  }, 'dungeonWood');
   theme('dungeonSalt',    'dFloorSalt',    'dFloorSaltAlt',    'dWallSalt',    'dWallSaltX',    'dBlockSalt',    'dUrnSalt');
   theme('dungeonPalace',  'dFloorPalace',  'dFloorPalaceAlt',  'dWallPalace',  'dWallPalaceX',  'dBlockPalace',  'dUrnPalace');
   theme('dungeonAbyss',   'dFloorAbyss',   'dFloorAbyssAlt',   'dWallAbyss',   'dWallAbyssX',   'dBlockAbyss',   'dUrnAbyss');

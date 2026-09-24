@@ -2627,17 +2627,58 @@ export function installCoreTiles() {
     xShutW: { art: ART.xShutW, pal: 'xShutW', flags: F.SOLID | F.DOOR },
     xBossN: { art: ART.xBossN, pal: 'xBossN', flags: F.SOLID | F.DOOR },
 
-    // d5 Drowned Wood Shrine — amber lozenge floor under brown brick walls.
-    // The floor was `brickFloor` and the wall `emberWall`, and both are brick
-    // COURSES: the room came out as one continuous texture with no visible
-    // line between what you can walk on and what you cannot. A theme has to
-    // keep floor and wall legible before it is allowed to be atmospheric.
-    dFloorWood: { art: ART.forgeFloor, pal: 'forgeFloor' },
-    dFloorWoodAlt: { art: ART.brickFloor, pal: 'brickFloor' },
-    dWallWood: { art: ART.emberWall, pal: 'emberWall', flags: F.SOLID },
-    dWallWoodX: { art: ART.dWallCracked, pal: 'emberWall', flags: F.SOLID | F.BOMBABLE },
-    dBlockWood: { art: ART.cryptBlock, pal: 'wood', flags: F.SOLID },
-    dUrnWood: { art: ART.urn, pal: 'urn', flags: F.SOLID, underArt: 'dFloorWood' },
+    // d5 Drowned Wood Shrine.
+    // S140: THE DROWNED WOOD SHRINE IS AN ORACLE DUNGEON, and its kit is the
+    // Ancient Ruins', whole (`r*` picks in rip-dungeon-themes.py): brown
+    // bevelled stone round the gold hex floor, the entrance hall's sunken
+    // four-pane floor for its worn floor, the red block, the brown pot, the
+    // purple eye statue, and the Ruins' own key doors, shutters and boss door
+    // from the door key the ripper laid out beside the map. The Ruins draw
+    // jambs where a north or south doorway cuts the bevel.
+    dFloorWood: { art: ART.rFloor, pal: 'rFloor' },
+    dFloorWoodAlt: { art: ART.rFloorAlt, pal: 'rFloorAlt' },
+    dWallWood: { art: ART.rFill, pal: 'rFill', flags: F.SOLID, ring: {
+      TL: 'rRingTL', TR: 'rRingTR', BL: 'rRingBL', BR: 'rRingBR',
+      N: 'rRingN', S: 'rRingS', W: 'rRingW', E: 'rRingE',
+      jNW: 'rJambNW', jNE: 'rJambNE', jSW: 'rJambSW', jSE: 'rJambSE',
+      lockN: 'rKeyN', lockS: 'rKeyS', lockE: 'rKeyE', lockW: 'rKeyW',
+      shutN: 'rShutN', shutS: 'rShutS', shutE: 'rShutE', shutW: 'rShutW',
+      bossN: 'rBossN', bossS: 'rShutS',
+      // The Ruins wrap their bevel round every block of rock that cuts into a
+      // room, so a thick wall inside one draws the ring's faces.
+      faces: true,
+    } },
+    dWallWoodX: { art: ART.dWallCracked, pal: 'rRingN', flags: F.SOLID | F.BOMBABLE },
+    dBlockWood: { art: ART.rBlock, pal: 'rBlock', flags: F.SOLID },
+    // The purple eye statue that lines the Ruins' entrance hall stands where
+    // the other dungeons put an urn.
+    dUrnWood: { art: ART.rStatue, pal: 'rStatue', flags: F.SOLID, underArt: 'dFloorWood' },
+    // The way out: the entrance hall's two pillars in the south wall with
+    // the lit step between them, wall to the ring either side.
+    dExitWood: { art: ART.rArch2, pal: 'rArch2', flags: F.WARP },
+    dPillarWoodW: { art: ART.rArch1, pal: 'rArch1', flags: F.SOLID, ringWall: true },
+    dPillarWoodE: { art: ART.rArch3, pal: 'rArch3', flags: F.SOLID, ringWall: true },
+    rRingTL: { art: ART.rRingTL, pal: 'rRingTL', flags: F.SOLID },
+    rRingTR: { art: ART.rRingTR, pal: 'rRingTR', flags: F.SOLID },
+    rRingBL: { art: ART.rRingBL, pal: 'rRingBL', flags: F.SOLID },
+    rRingBR: { art: ART.rRingBR, pal: 'rRingBR', flags: F.SOLID },
+    rRingN: { art: ART.rRingN, pal: 'rRingN', flags: F.SOLID },
+    rRingS: { art: ART.rRingS, pal: 'rRingS', flags: F.SOLID },
+    rRingW: { art: ART.rRingW, pal: 'rRingW', flags: F.SOLID },
+    rRingE: { art: ART.rRingE, pal: 'rRingE', flags: F.SOLID },
+    rJambNW: { art: ART.rJambNW, pal: 'rJambNW', flags: F.SOLID },
+    rJambNE: { art: ART.rJambNE, pal: 'rJambNE', flags: F.SOLID },
+    rJambSW: { art: ART.rJambSW, pal: 'rJambSW', flags: F.SOLID },
+    rJambSE: { art: ART.rJambSE, pal: 'rJambSE', flags: F.SOLID },
+    rKeyN: { art: ART.rKeyN, pal: 'rKeyN', flags: F.SOLID | F.DOOR },
+    rKeyS: { art: ART.rKeyS, pal: 'rKeyS', flags: F.SOLID | F.DOOR },
+    rKeyE: { art: ART.rKeyE, pal: 'rKeyE', flags: F.SOLID | F.DOOR },
+    rKeyW: { art: ART.rKeyW, pal: 'rKeyW', flags: F.SOLID | F.DOOR },
+    rShutN: { art: ART.rShutN, pal: 'rShutN', flags: F.SOLID | F.DOOR },
+    rShutS: { art: ART.rShutS, pal: 'rShutS', flags: F.SOLID | F.DOOR },
+    rShutE: { art: ART.rShutE, pal: 'rShutE', flags: F.SOLID | F.DOOR },
+    rShutW: { art: ART.rShutW, pal: 'rShutW', flags: F.SOLID | F.DOOR },
+    rBossN: { art: ART.rBossN, pal: 'rBossN', flags: F.SOLID | F.DOOR },
 
     // d6 Salt Pan Vault — the ruin rosette bleached out to salt and bone.
     //
@@ -2811,6 +2852,8 @@ export function installCoreTiles() {
     // argument as the Spire's bar and the Keep's lintel. Stone at LOW and MID,
     // deep at HIGH, and the flags of `drownWall` to the bit in every state.
     dDrownCistern: { tide: ['dWallCistern', 'dWallCistern', 'dWaterD'] },
+    // And the Shrine's, for the same reason: its own stone, not a cliff.
+    dDrownWood: { tide: ['dWallWood', 'dWallWood', 'dWaterD'] },
 
     // A silted cache: the ring a heavy thing leaves in the floor when it has
     // been lying there long enough to settle. Two palettes of ONE extracted
@@ -2850,9 +2893,9 @@ export function installCoreTiles() {
   for (const T of THEME_NAMES) {
     TILE_DEFS['dPot' + T] = {
       art: T === 'Grotto' ? ART.gPot : T === 'Coral' ? ART.cPot : T === 'Bog' ? ART.bPot
-        : T === 'Cistern' ? ART.xPot : ART.pot,
+        : T === 'Cistern' ? ART.xPot : T === 'Wood' ? ART.rPot : ART.pot,
       pal: T === 'Grotto' ? 'gPot' : T === 'Coral' ? 'cPot' : T === 'Bog' ? 'bPot'
-        : T === 'Cistern' ? 'xPot' : 'pot',
+        : T === 'Cistern' ? 'xPot' : T === 'Wood' ? 'rPot' : 'pot',
       flags: F.SOLID | F.ROCK, underArt: 'dFloor' + T, liftSprite: 'o_pot',
     };
   }

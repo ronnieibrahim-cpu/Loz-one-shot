@@ -1486,18 +1486,19 @@ export const ROUTE = [
 
   // ======================= THE DROWNED WOOD SHRINE =========================
   //
+  // Rebuilt at Oracle room size (S140): every coordinate below is a tile of a
+  // 15x11 room, and every door is in the middle of its wall.
+  //
   // EVERY ROOM IN THIS DUNGEON IS FOUGHT ON THE FRAME IT IS ENTERED, and that
   // is measured rather than tidy. The Shrine's cast is keese and tektites, and
   // both of them CLOSE: walk in, stand still for two seconds and then fight,
   // and Rootwater Landing costs three hearts; walk in and swing immediately
-  // and it costs nothing and is over in 132 frames. The first cut of this leg
-  // put a `wait` after every door and arrived at the boss on two hearts.
+  // and it costs nothing.
   //
-  // THE SHRINE HAS NO FAIRY. D1's Sunken Hall heals to full, D2's does, D3's
-  // does; this dungeon has nothing but what its enemies drop and its two
-  // Pieces of Heart, which is why the route takes both of them and takes them
-  // BEFORE the locked door rather than after.
-  ['goto', 4, 1, 900],
+  // THE SHRINE HAS NO FAIRY. This dungeon has nothing but what its enemies
+  // drop and its two Pieces of Heart, which is why the route takes both of
+  // them and takes them BEFORE the locked door rather than after.
+  ['goto', 7, 1, 900],
   ['hold', ['up'], 60],
 
   // ---------------------------------------------------------------- d5 0,3,6
@@ -1508,7 +1509,7 @@ export const ROUTE = [
   // The Silt Gallery, and the Dungeon Map.
   ['travel', 2, 6, 6000],
   ['fight', 3000, 1200],
-  ['goto', 4, 2, 1500],
+  ['goto', 7, 2, 1500],
   ['loot', 900],
 
   // ---------------------------------------------------------------- d5 0,4,6
@@ -1516,13 +1517,14 @@ export const ROUTE = [
   ['travel', 4, 6, 8000],
   ['fight', 8000, 2500],
   ['dialogue', 400],
+  ['goto', 7, 8, 1500],
   ['loot', 1500],
 
   // ---------------------------------------------------------------- d5 0,2,5
   // The Chartstone Nave.
   ['travel', 2, 5, 8000],
   ['fight', 4000, 1500],
-  ['goto', 4, 3, 1500],
+  ['goto', 7, 3, 1500],
   ['wait', 30],
   ['hold', ['up'], 20],
   ['tap', 'a', 60],
@@ -1540,16 +1542,16 @@ export const ROUTE = [
   ['travel', 1, 5, 8000],
   ['fight', 4000, 1500],
   ['tide', 2, 140, 600],
-  ['goto', 3, 3, 1500],
+  ['goto', 7, 4, 1500],
   ['loot', 1200],
-  ['goto', 7, 5, 1500],
+  ['goto', 11, 5, 1500],
   ['tide', 1, 140, 600],
 
   // ---------------------------------------------------------------- d5 0,4,5
   // The Thicket Cell: the Gillcarve charm.
   ['travel', 4, 5, 12000],
   ['fight', 4000, 1500],
-  ['goto', 4, 3, 1500],
+  ['goto', 7, 4, 1500],
   ['wait', 30],
   ['hold', ['up'], 20],
   ['tap', 'a', 60],
@@ -1559,13 +1561,11 @@ export const ROUTE = [
 
   // ---------------------------------------------------------------- d5 0,5,5
   // THE BOWER CELL, AND THE FIRST SQUALL BELLOWS SILL OUTSIDE THE CISTERN.
-  // A wheel boxed in on three sides with a pit on the fourth, a stand two
-  // tiles off across it, and a sump shaft the only way up to the stand —
-  // drowned at the same sea the wheel is, so the swim up is made in the water
-  // the cone then has to be aimed across. The fourth Piece of Heart falls out
-  // of it, and with it the run's third Heart Container: the refill is what
-  // pays for the groves, which are the half of this dungeon with no healing
-  // anywhere in them.
+  // A wheel boxed in on three sides with a pit on the fourth, a stand across
+  // it, and a sump shaft the only way up to the stand — drowned at the same
+  // sea the wheel is. The fourth Piece of Heart falls into the shaft below the
+  // stand, and with it the run's third Heart Container: the refill is what
+  // pays for the groves, the half of this dungeon with no healing in it.
   ['travel', 5, 5, 8000],
   ['fight', 4000, 1500],
   ['equip', 'bellows', 'A', 400],
@@ -1573,77 +1573,68 @@ export const ROUTE = [
   ['bellows', 1, 1, 3000],
   ['equip', 'sword', 'A', 400],
   ['dialogue', 600],
+  ['wait', 30],
   ['loot', 1500],
   ['dialogue', 600],
 
   // ---------------------------------------------------------------- d5 0,3,5
-  // The Standing Grove: four drowned boles in the middle of the floor, which
-  // is where this dungeon teaches what a bole IS before anything depends on
-  // it, and lock 1 in the wall above them.
+  // The Standing Grove: four pairs of drowned boles in the middle of the
+  // floor, which is where this dungeon teaches what a bole IS before anything
+  // depends on it, and the first key door in its north wall.
   ['travel', 3, 5, 12000],
   ['fight', 4000, 1500],
-  ['goto', 4, 3, 1500],
+  ['goto', 7, 1, 1500],
   ['wait', 30],
   ['hold', ['up'], 20],
   ['tap', 'a', 60],
   ['wait', 60],
-  ['goto', 4, 1, 900],
   ['hold', ['up'], 60],
 
   // ---------------------------------------------------------------- d5 0,3,4
   // ROOTBOUND HALL IS CROSSED, NOT CLEARED, and that is measured. The barnacle
   // in the middle of it is what `dFight` cannot finish: the verb keeps closing
-  // on a target it is not killing, and on the recording this leg was first
-  // made from it spent five thousand frames doing that and took forty
-  // quarter-hearts — a full Heart Container's worth, the one the Bower Cell
-  // had just paid for — without the room being needed at all. Nothing in here
-  // is on the way to anything; the east door is four tiles from the south one.
-  ['goto', 8, 4, 1500],
+  // on a target it is not killing. Nothing in here is on the way to anything.
+  ['goto', 13, 5, 1500],
   ['hold', ['right'], 90],
 
   // ---------------------------------------------------------------- d5 0,4,4
   // The Sunken Bracken: two blocks onto two plates for Small Key 2. Pushed
-  // BEFORE anything is fought, for the reason the Cistern Floor wrote down —
-  // a roaming `fight` shoves a block off the row the puzzle needs it on and
-  // every directive after it plans a path into the tile the block is now
-  // standing in.
+  // BEFORE the key is looted and after the room is cleared from the door.
   ['fight', 5000, 1800],
   ['loot', 600],
   ['goto', 4, 1, 1500],
   ['hold', ['left'], 120],
   ['wait', 60],
-  ['goto', 5, 6, 1500],
+  ['goto', 10, 9, 1500],
   ['hold', ['right'], 120],
   ['wait', 60],
   ['dialogue', 400],
-  ['goto', 4, 6, 1500],
+  ['goto', 7, 9, 1500],
   ['loot', 1500],
 
   // ---------------------------------------------------------------- d5 0,2,4
-  // The Warden's Sill: lock 2, in a one-tile corridor with no way round it at
-  // any sea. "Past this door the floor is a thing you bring with you."
+  // The Warden's Sill: the second key door, in its west wall. "Past this door
+  // the floor is a thing you bring with you."
   ['travel', 2, 4, 12000],
   ['fight', 5000, 1800],
   ['loot', 600],
-  ['goto', 3, 3, 1500],
+  ['goto', 1, 5, 1500],
   ['wait', 30],
   ['hold', ['left'], 20],
   ['tap', 'a', 60],
   ['wait', 60],
-  ['goto', 0, 3, 900],
   ['hold', ['left'], 60],
 
   // ---------------------------------------------------------------- d5 0,1,4
   // The Reefseed Vault.
-  ['goto', 4, 3, 1500],
+  ['goto', 8, 5, 1500],
   ['wait', 30],
-  ['hold', ['up'], 20],
+  ['hold', ['left'], 6],
   ['tap', 'a', 60],
   ['dialogue', 600],
   ['loot', 1200],
   ['dialogue', 600],
-  ['goto', 4, 1, 900],
-  ['hold', ['up'], 60],
+  ['travel', 1, 3, 4000],
 
   // ---------------------------------------------------------------- d5 0,1,3
   // GROVE 1, THE FIRST STAKE, and the shape all five of them are:
@@ -1657,35 +1648,35 @@ export const ROUTE = [
   // Neither half can be bought at the other's sea. That is the dungeon.
   ['equip', 'reefseed', 'A', 400],
   ['tide', 2, 140, 600],
-  ['reefseed', 6, 4, 900],
+  ['reefseed', 11, 5, 900],
   ['tide', 0, 140, 600],
   ['equip', 'sword', 'A', 400],
-  ['goto', 6, 4, 1500],
+  ['goto', 11, 5, 1500],
   ['wait', 30],
   ['hold', ['right'], 20],
   ['tap', 'a', 60],
   ['wait', 60],
-  ['goto', 8, 4, 1500],
+  ['goto', 13, 5, 1500],
   ['hold', ['right'], 90],
 
   // ---------------------------------------------------------------- d5 0,2,3
   // GROVE 2, the Bole Walk — the same fixture turned through a right angle and
   // pointed north, so the throw that opens it is the one aimed away from the
   // door you came in by. Cleared first: this room is walked through three
-  // times and its tektite was taking a heart on each pass.
+  // times.
   ['fight', 2500, 900],
   ['loot', 600],
   ['equip', 'reefseed', 'A', 400],
   ['tide', 2, 140, 600],
-  ['reefseed', 4, 3, 900],
+  ['reefseed', 7, 4, 900],
   ['tide', 0, 140, 600],
   ['equip', 'sword', 'A', 400],
-  ['goto', 4, 3, 1500],
+  ['goto', 7, 4, 1500],
   ['wait', 30],
   ['hold', ['up'], 20],
   ['tap', 'a', 60],
   ['wait', 60],
-  ['goto', 4, 1, 1500],
+  ['goto', 7, 1, 1500],
   ['hold', ['up'], 90],
 
   // ---------------------------------------------------------------- d5 0,2,2
@@ -1697,58 +1688,59 @@ export const ROUTE = [
   ['loot', 600],
   ['equip', 'reefseed', 'A', 400],
   ['tide', 2, 140, 600],
-  ['reefseed', 3, 4, 900],
+  ['reefseed', 3, 5, 900],
   ['tide', 0, 140, 600],
   ['equip', 'sword', 'A', 400],
-  ['goto', 3, 4, 1500],
+  ['goto', 3, 5, 1500],
   ['wait', 30],
   ['hold', ['left'], 20],
   ['tap', 'a', 60],
   ['wait', 60],
-  ['goto', 1, 4, 1500],
+  ['goto', 1, 5, 1500],
   ['wait', 30],
   ['hold', ['down'], 20],
   ['tap', 'a', 60],
   ['dialogue', 600],
   ['loot', 1200],
   ['dialogue', 600],
-  ['goto', 4, 6, 2000],
+  ['goto', 7, 9, 2000],
   ['hold', ['down'], 90],
 
-  // ---- back through the Bole Walk and east into the Grove Crossing
-  ['goto', 8, 4, 2000],
-  ['hold', ['right'], 90],
-
-  // ---------------------------------------------------------------- d5 0,3,3
-  // The Grove Crossing: lock 3, and it is opened from the WEST side, because
-  // the west side is the side the groves let you in on.
-  ['fight', 4000, 1500],
-  ['loot', 600],
-  ['goto', 1, 4, 1500],
+  // ---- back through the Bole Walk and east through the third key door, which
+  // is in its east wall: the Grove Crossing is opened from the side the
+  // groves let you in on.
+  ['goto', 13, 5, 2000],
   ['wait', 30],
   ['hold', ['right'], 20],
   ['tap', 'a', 60],
   ['wait', 60],
-  ['goto', 8, 2, 1500],
+  ['hold', ['right'], 60],
+
+  // ---------------------------------------------------------------- d5 0,3,3
+  // The Grove Crossing.
+  ['fight', 4000, 1500],
+  ['loot', 600],
+  ['goto', 13, 5, 1500],
   ['hold', ['right'], 90],
 
   // ---------------------------------------------------------------- d5 0,4,3
-  // GROVE 4, the Long Ford, pointed south — the first with the bank on the far
-  // side of the pool from the door, so the throw is set up by walking round
-  // the water rather than by standing where you came in.
+  // GROVE 4, the Long Ford, pointed south — the bank is on the far side of the
+  // pool from the door, so the throw is set up by walking round the water
+  // rather than by standing where you came in. The snarl is in the wall across
+  // the room, and the way on is the south hall and the east passage.
   ['fight', 4000, 1500],
   ['loot', 600],
   ['equip', 'reefseed', 'A', 400],
   ['tide', 2, 140, 600],
-  ['reefseed', 4, 3, 900],
+  ['reefseed', 7, 5, 900],
   ['tide', 0, 140, 600],
   ['equip', 'sword', 'A', 400],
-  ['goto', 4, 3, 1500],
+  ['goto', 7, 5, 1500],
   ['wait', 30],
   ['hold', ['down'], 20],
   ['tap', 'a', 60],
   ['wait', 60],
-  ['goto', 8, 6, 1500],
+  ['goto', 13, 5, 2000],
   ['hold', ['right'], 90],
 
   // ---------------------------------------------------------------- d5 0,5,3
@@ -1758,7 +1750,7 @@ export const ROUTE = [
   ['fight', 4000, 1500],
   ['dialogue', 600],
   ['loot', 900],
-  ['goto', 4, 2, 1500],
+  ['goto', 7, 1, 1500],
   ['hold', ['up'], 90],
 
   // ---------------------------------------------------------------- d5 0,4,2
@@ -1768,29 +1760,27 @@ export const ROUTE = [
   // first, which means standing on something that did not exist when it was
   // thrown and will not be there if the sea is let back up.
   //
-  // NOTHING IS FOUGHT IN THIS ROOM. It is thirty tiles wide, and a `fight`
-  // here walks the whole of it after a keese — six thousand frames, both
-  // stakes' worth of harassment, and the first recording of this leg died in
-  // it with the Boss Key still in its chest.
+  // NOTHING IS FOUGHT IN THIS ROOM: a `fight` here walks the whole of it
+  // after a keese.
   ['equip', 'reefseed', 'A', 400],
   ['tide', 2, 140, 600],
-  ['reefseed', 13, 4, 900],
+  ['reefseed', 21, 5, 900],
   ['tide', 0, 140, 600],
-  ['reefseed', 11, 4, 1200],
+  ['reefseed', 19, 5, 1200],
   ['equip', 'sword', 'A', 400],
-  ['goto', 11, 4, 1500],
+  ['goto', 19, 5, 1500],
   ['wait', 30],
   ['hold', ['left'], 20],
   ['tap', 'a', 60],
   ['wait', 60],
-  ['goto', 4, 4, 2000],
+  ['goto', 12, 5, 2000],
   ['wait', 30],
   ['hold', ['up'], 20],
   ['tap', 'a', 60],
   ['dialogue', 600],
   ['loot', 1200],
   ['dialogue', 600],
-  ['goto', 0, 4, 1500],
+  ['goto', 1, 5, 1500],
   ['hold', ['left'], 90],
 
   // ---------------------------------------------------------------- d5 0,3,2
@@ -1798,20 +1788,22 @@ export const ROUTE = [
   // the fight: Rootmaw drinks and heals at HIGH and his roots are bared and
   // soft at LOW, and the arena pins whatever level is carried into it.
   ['fight', 4000, 1500],
-  ['goto', 4, 2, 1500],
+  ['goto', 7, 1, 1500],
   ['wait', 30],
   ['hold', ['up'], 24],
   ['tap', 'a', 40],
   ['dialogue', 400],
-  ['goto', 4, 1, 900],
   ['hold', ['up'], 60],
   ['wait', 120],
 
   // ---------------------------------------------------------------- d5 0,3,1
-  // ROOTMAW, THE DROWNED WOOD, and the fifth Essence.
+  // ROOTMAW, THE DROWNED WOOD, and the fifth Essence, which stands at 7,4 in
+  // an Oracle arena: walk onto it and wait out the pose before the loot.
   ['boss', 24000, null],
   ['wait', 240],
-  ['goto', 4, 3, 900],
+  ['goto', 7, 4, 900],
+  ['dialogue', 900],
+  ['wait', 240],
   ['dialogue', 900],
   ['loot', 1200],
   ['dialogue', 900],
@@ -1822,24 +1814,24 @@ export const ROUTE = [
   // ======================================================================
   //
   // The arena is a dead end with one door, so the first step out of it is by
-  // hand — see the Sanctum's own exit above for why a `travel` issued from
-  // inside one oscillates until its budget is gone.
-  //
-  // THE WAY BACK THROUGH THE SHRINE IS THE WAY IT CAME, not the shorter line
-  // through the Bole Walk. Both reach the mouth; the Bole Walk arrives on 20
-  // of 44 quarter-hearts and this one on 42, because Rootbound Hall's barnacle
-  // is crossed rather than cleared and the three rooms with killable things in
-  // them pay for the crossing in dropped hearts. Measured both ways.
-  ['goto', 4, 6, 1200],
+  // hand. The sea goes to LOW before anything else: every stake the run grew
+  // is ground at LOW and a wall at MID, and the way home crosses three of
+  // them.
+  ['goto', 7, 9, 1200],
   ['hold', ['down'], 60],
   ['wait', 90],
+  ['tide', 0, 140, 600],
   ['travel', 4, 2, 6000],
   ['travel', 5, 3, 6000],
   ['travel', 4, 3, 6000],
   ['travel', 3, 3, 6000],
   ['fight', 3000, 1200],
   ['loot', 600],
-  ['travel', 3, 4, 6000],
+  ['travel', 2, 3, 6000],
+  ['travel', 1, 3, 6000],
+  ['travel', 1, 4, 6000],
+  ['travel', 2, 4, 6000],
+  ['travel', 2, 5, 6000],
   ['travel', 3, 5, 6000],
   ['fight', 3000, 1200],
   ['loot', 600],
@@ -1847,10 +1839,9 @@ export const ROUTE = [
   ['fight', 3000, 1200],
   ['loot', 600],
   ['travel', 3, 7, 6000],
-  ['goto', 4, 6, 1200],
+  ['goto', 7, 9, 1200],
   ['hold', ['down'], 90],
   ['wait', 120],
-
 
   // ---------------------------------------------------- THE COASTWISE CHAIN
   //
@@ -2517,10 +2508,14 @@ export const ROUTE = [
   ['equip', 'sword', 'A', 400],
   ['boss', 12000, 'brinehulk'],
   ['wait', 240],
-  ['loot', 1200],
 
   // THE BOSS KEY. The chest on the far island, and the last locked thing in
-  // the game.
+  // the game. NO SWEEP FOR DROPS BEFORE IT: the fight scatters them up to the
+  // pit column at the island's west edge, a sweep walks into the pit after
+  // one, and a fall there puts Link back on the SHELF, the near side of the
+  // pits, with no line cast and the chest out of reach (S140, after D5's
+  // rebuild moved the fight's clock). The loot after the chest picks up what
+  // is on the island.
   ['goto', 17, 4, 1500],
   ['hold', ['up'], 24],
   ['tap', 'a', 30],
