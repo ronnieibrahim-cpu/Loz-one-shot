@@ -4,7 +4,10 @@ import { Entity, moveEntity, canOccupy, defineEntity, DIR_VEC } from './entity.j
 import { TILE } from '../core/screen.js';
 import { sp, toPx } from '../core/fixed.js';
 import { F } from '../world/tileset.js';
-import { PROJECTILE_LIFE, PROJECTILE_SPEED, PROJECTILE_Z, KNOCK_PROJECTILE } from '../data/feel.js';
+import {
+  PROJECTILE_LIFE, PROJECTILE_SPEED, PROJECTILE_Z, KNOCK_PROJECTILE,
+  ENEMY_SHOT_RADIUS, LINK_HURT_RADIUS,
+} from '../data/feel.js';
 
 export class Projectile extends Entity {
   constructor(x, y, o = {}) {
@@ -32,6 +35,16 @@ export class Projectile extends Entity {
     this.onImpact = o.onImpact || null;
     this.hitFx = o.hitFx || 'spark';
     this.z = o.z || PROJECTILE_Z;
+    // How big the shot is to LINK: a box this far either way of the middle
+    // of the sprite as drawn, against his own 12x12 — the cartridge's rule.
+    this.radius = o.radius || ENEMY_SHOT_RADIUS;
+  }
+
+  /** True if this enemy shot is touching Link's collision area. */
+  touchesPlayer(pl) {
+    const r = this.radius, lr = LINK_HURT_RADIUS;
+    const sx = this.cx, sy = this.cy - this.z;
+    return Math.abs(sx - pl.cx) < r + lr && Math.abs(sy - pl.cy) < r + lr;
   }
 
   update(game) {
@@ -71,7 +84,7 @@ export class Projectile extends Entity {
         if (e.hurt(game, this.damage, dir, KNOCK_PROJECTILE) && !this.pierce) { this.expire(game); return; }
       }
     } else if (this.damage > 0 && game.player && !game.player.invincible) {
-      if (this.overlaps(game.player)) {
+      if (this.touchesPlayer(game.player)) {
         game.player.takeDamage(game, this.damage, this);
         if (!this.pierce) { this.expire(game); return; }
       }

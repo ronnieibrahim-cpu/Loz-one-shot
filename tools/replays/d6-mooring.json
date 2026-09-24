@@ -339,10 +339,10 @@
    2462445811
   ],
   "mode": "play",
-  "entities": 3,
+  "entities": 2,
   "enemies": 2,
   "roomSeed": 3704288027,
-  "roomDraws": 401,
+  "roomDraws": 402,
   "globalSeed": 781976111,
   "globalDraws": 0
  }

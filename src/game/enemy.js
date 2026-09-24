@@ -1076,6 +1076,7 @@ export function shoot(e, g, o = {}) {
     at: o.aim === false ? null : (o.aim ? g.player : null),
     life: o.life || ENEMY_SHOT_LIFE,
     w: o.w, h: o.h,
+    radius: o.radius,
     overWater: o.overWater,
     bounces: o.bounces,
   });

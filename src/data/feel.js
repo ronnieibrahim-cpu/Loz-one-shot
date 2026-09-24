@@ -186,6 +186,29 @@ export const SWORD_ARC = {
  *  an enemy's own `hb` stays its footprint for walls and floors. */
 export const ENEMY_HURT_RADIUS = 6;
 
+/** px — radius of LINK'S OWN collision area, centred on his sprite: a 12x12
+ *  box. An enemy touching Link hurts him when this box and the enemy's
+ *  (ENEMY_HURT_RADIUS, or its spec's `hurtBox`) overlap — the same test,
+ *  centre to centre with the two radii summed, that the cartridge makes.
+ *  Link's `hb` stays his feet for walls and floors. derived from the
+ *  cartridge: oracles-disasm object_code/common/specialObjects/link.s,
+ *  linkState00 ("Set collisionRadiusY,X" = $06, $06), tested in
+ *  code/collisionEffects.s enemyCheckCollisions (@checkHitLink) through
+ *  code/bank0.s checkObjectsCollidedFromVariables. */
+export const LINK_HURT_RADIUS = 6;
+
+/** px — radius of an enemy's shot as it meets Link: a 4x4 box on the middle
+ *  of the shot, against his LINK_HURT_RADIUS box. derived from the cartridge:
+ *  oracles-disasm data/seasons/partData.s, PART_OCTOROK_PROJECTILE ($18),
+ *  PART_ZORA_FIRE, PART_ENEMY_ARROW and PART_STALFOS_BONE all $22 (radius
+ *  2 by 2). A shot may declare its own (`radius` on `shoot`). */
+export const ENEMY_SHOT_RADIUS = 2;
+
+/** px — radius of a beamos's beam, the one shot here the cartridge makes
+ *  bigger. derived: oracles-disasm data/seasons/partData.s, PART_BEAM ($29),
+ *  $33. */
+export const BEAM_SHOT_RADIUS = 3;
+
 /** f — how long the sword button must be held before a spin is charged. guessed. */
 export const CHARGE_FRAMES = 42;
 

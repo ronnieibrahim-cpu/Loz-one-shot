@@ -10,7 +10,7 @@ import {
 import { spawnEntity } from '../game/entity.js';
 import { F } from '../world/tileset.js';
 import { TILE } from '../core/screen.js';
-import { ENEMY_GRID_STEP, ENEMY_ATTACK_FRAMES } from './feel.js';
+import { ENEMY_GRID_STEP, ENEMY_ATTACK_FRAMES, BEAM_SHOT_RADIUS } from './feel.js';
 
 export function installEnemies() {
   // --- Octorok: wanders and spits rocks along its facing axis -------------
@@ -138,6 +138,10 @@ export function installEnemies() {
     deathFrame: 'gel_death',
     w: 16, h: 16,
     hb: { x: 5, y: 8, w: 6, h: 7 },
+    // The cartridge's gel is 2x2 either way of its middle (oracles-disasm
+    // data/seasons/enemyData.s, ENEMY_GEL -> extraEnemyData row 0x06), set
+    // on the middle of the blob as the sheet draws it in this cell.
+    hurtBox: { x: 4, y: 5, w: 4, h: 4 },
     terrain: 'any',
     drops: 'none',
     ai(e, g) { chase(e, g, { speed: 0.42 }); },
@@ -161,6 +165,10 @@ export function installEnemies() {
     // naturally as "about to move", the same telegraph grammar.
     attackFrame: 'keese_0',
     hb: { x: 3, y: 4, w: 10, h: 8 },
+    // The cartridge's keese is 4 tall and 6 wide either way of its middle
+    // (oracles-disasm data/seasons/enemyData.s, ENEMY_KEESE -> extraEnemyData
+    // row 0x07): a wide, shallow target, wings and all.
+    hurtBox: { x: 2, y: 4, w: 12, h: 8 },
     z: 8,
     drops: 'common',
     ai(e, g) {
@@ -239,7 +247,7 @@ export function installEnemies() {
       // probe placing the player diagonally off-axis, which still took a
       // hit before this fix. See docs/prompts/LEDGER.md.
       if (every(e, 44) && aligned(e, g, 14) && distToPlayer(e, g) < 80) {
-        shoot(e, g, { sprite: 'shot_beam', pal: 'enemyr', speed: 2.0, damage: 2 });
+        shoot(e, g, { sprite: 'shot_beam', pal: 'enemyr', speed: 2.0, damage: 2, radius: BEAM_SHOT_RADIUS });
       }
     },
   });
