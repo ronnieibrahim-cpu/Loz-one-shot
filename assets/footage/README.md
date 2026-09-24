@@ -69,3 +69,31 @@ READ BUT NOT APPLIED:
 - Knockback distance: not isolable — the run is steering through every hit.
 - Pit fall, feather jump: none on foot in the run (the cucco carries Link
   over every gap: 2262-2290, 8836-8916, 9350-9460 are flights, NOT walks).
+
+## S148 — the overworld theme, transcribed
+
+`src/data/audio.js` `TRACKS.overworld` is Seasons' Holodrum theme read off
+`seasons-tas-rooster-adventure.mp4`'s own soundtrack (mono, 32 kHz via
+imageio-ffmpeg). How, so it can be repeated or corrected:
+
+- **Where it plays.** Chroma self-similarity finds one 96-row loop playing
+  six times, in three pairs of two back-to-back plays: starting at audio
+  seconds 34.656, 47.514 (frames ~2070-2840), 150.684, 163.543 (~9000-9770)
+  and 260.814, 273.678 (~15576-16344). Spectral cross-correlation lines them
+  up to 5 ms. The second play of each pair is cut off by a doorway from
+  row 59 on, so rows 59-95 are the median of the three first plays only.
+- **Tempo.** Onset autocorrelation: 0.134 s a step = 8 frames. The bass
+  hits on steps 0-3, 6 and 9 of every 12, so a bar is 12 steps = 96 frames:
+  four beats of three (a triplet lilt). The loop is 8 bars = 768 frames.
+- **Notes.** A median spectrum across the plays (which drops every sound
+  effect, since none repeats at the same place in the music) at half-step
+  resolution (4 frames, a 2048-sample window), with harmonics of stronger
+  peaks removed, then read by eye off piano-roll renders where the table
+  was ambiguous. The quick runs up to the long notes (A4 B4 C5 D5) are one
+  and a half steps each, which is why the track's row is 4 frames.
+- **What is approximate.** The bass wobbles up to half a semitone either
+  side of its note in the recording (vibrato or the channel's coarse
+  tuning), so each bass note is the chord tone nearest the measurement.
+  Four of the 96 steps (16, 17, 63, 65) match the recording worse than the
+  rest (pitch-class similarity under 0.7; the mean is well above it): two
+  sit under a sword sound in most plays, two are a fast upward flourish.

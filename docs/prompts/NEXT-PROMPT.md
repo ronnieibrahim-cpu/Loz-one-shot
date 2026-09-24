@@ -38,5 +38,6 @@ Target: no dungeon shares a track with another dungeon.
 - Feel timing (area d): S147's readings wait for new footage.
 - White fades, the door flash and the chest text delay (a look, and (d)).
 - Changing any room's layout, enemy or item to fit a track.
-- Porting an Oracle melody note for note: the tracks are ours (Goal 2).
+- The overworld track: since S148 it IS Seasons' Holodrum theme, transcribed
+  from the footage at the human's request. Leave it; other tracks stay ours.
 - The actor and the route, unless a sound change moves the run.

@@ -216,79 +216,88 @@ const TRACKS = {
     order: ['A', 'B', 'A', 'C'],
   },
 
+  // Oracle of Seasons' own Holodrum overworld theme, transcribed (S148) from
+  // assets/footage/seasons-tas-rooster-adventure.mp4. The overworld plays it six
+  // times in that video; the six plays were lined up to the sample, their
+  // spectra took the median (which removes the sword, the enemies and every
+  // other sound effect), and each note was read off at a resolution of four
+  // frames. assets/footage/README.md records the method and the frames.
+  //
+  // What the recording says about it: a loop of 768 frames (12.86 s), eight
+  // bars of four beats with three eighths to the beat -- the lilt is triplet,
+  // not straight -- so one bar is 96 frames and one row here is 4 frames
+  // (half an eighth), which is fine enough to hold the quick runs up to each
+  // held note (A4 B4 C5 D5) that sit between the eighths. Two pulse voices,
+  // a melody and a harmony that mostly moves with it, over a bouncing bass on
+  // beats 1, 3 and 4 of each bar. No drums: the original has none here.
+  //
+  // What is approximate: the bass. On the cartridge it wobbles by up to half
+  // a semitone either side of its note, so each bass note here is the chord
+  // tone nearest what was measured. Where the original stacks a third tone
+  // under the two pulses (bars 1, 2, 3 and 7) the inner line was kept and the
+  // doubled note dropped -- three melodic channels cannot hold four notes.
   overworld: {
-    bpm: 132, rowsPerBeat: 4, loop: true,
+    // 149.32 bpm x 6 rows a beat = one row every 4 frames at 59.73 fps.
+    bpm: 149.32, rowsPerBeat: 6, loop: true,
     cfg: {
-      // The lead is written in sixteenths with a held note at the end of
-      // almost every phrase; vibrato reaches only those, which is where an
-      // overworld tune wants it and nowhere else.
-      p1: { duty: 0.5, vol: 0.17, decay: 0.12, vibrato: {} },
-      p2: { duty: 0.25, vol: 0.11, decay: 0.16 },
-      wav: { vol: 0.22, decay: 0.08 },
-      noi: { vol: 0.12 },
+      p1: { duty: 0.5, vol: 0.16, decay: 0.3, vibrato: {} },
+      p2: { duty: 0.25, vol: 0.11, decay: 0.3 },
+      wav: { vol: 0.24, decay: 0.12 },
     },
     patterns: {
-      // Intro: stepping outside. An ascending call over an arpeggiated tonic
-      // chord on the wave channel, answered by a scalar fall, with the kit
-      // held back until the last beat so the loop arrives on a full kick.
-      I: {
-        p1: 'C5 .  .  .  E5 .  .  .  G5 -  -  -  -  -  -  .  A5 .  G5 .  E5 .  D5 .  C5 -  -  -  -  -  -  .',
-        p2: 'E4 .  .  .  G4 .  .  .  C5 -  -  -  -  -  -  .  F4 .  E4 .  C4 .  B3 .  A3 -  -  -  -  -  -  .',
-        wav: 'C2+E2+G2 -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  F1+A1+C2 -  -  -  -  -  -  -  G1 -  -  -  G1 -  -  -',
-        noi: 'c  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  x  .  h  .  s  .  h  h',
+      // The pickup: the G the tune opens on, heard once before bar 1 (the loop
+      // carries its own copy at the end of bar 8).
+
+      P: {
+        p1: 'G4  -   -   -   -   -',
+        p2: 'B3  -   .   .   .   .',
+        wav: 'G2  -   .   .   .   .',
       },
+      // Bars 1-8, one pattern a bar, 24 rows each.
+
       A: {
-        p1: 'G4 .  C5 .  E5 .  C5 .  D5 .  G4 .  B4 .  .  .  A4 .  C5 .  F5 .  C5 .  E5 -  -  .  .  .  .  .',
-        p2: 'C4 .  .  .  G3 .  .  .  B3 .  .  .  G3 .  .  .  A3 .  .  .  F3 .  .  .  C4 .  .  .  G3 .  .  .',
-        wav: 'C3 -  -  -  C3 -  -  -  G2 -  -  -  G2 -  -  -  F2 -  -  -  F2 -  -  -  C3 -  -  -  G2 -  -  -',
-        noi: 'x  .  h  .  s  .  h  .  x  .  h  .  s  .  h  h  x  .  h  .  s  .  h  .  x  .  h  h  s  .  h  .',
+        p1: 'D4  -   -   -   -   -   -   -   .   .   G4  -   -   -   A4  B4  -   C5  D5  -   -   -   -   G4',
+        p2: 'C4  -   B3  -   A3  -   B3  -   -   C4  B3  -   -   -   C4  D4  -   E4  F4  -   -   -   .   .',
+        wav: 'G2  -   G2  -   F2  -   G2  -   .   .   .   .   G2  -   .   .   .   .   F2  -   .   .   .   .',
       },
       B: {
-        p1: 'E5 .  G5 .  A5 -  -  .  G5 .  E5 .  D5 -  -  .  C5 .  E5 .  G5 -  -  .  A5 -  -  -  -  -  -  .',
-        p2: 'C4 .  E4 .  F4 .  .  .  E4 .  C4 .  B3 .  .  .  A3 .  C4 .  E4 .  .  .  F4 -  -  -  -  -  -  .',
-        wav: 'A2 -  -  -  A2 -  -  -  E3 -  -  -  E3 -  -  -  F2 -  -  -  F2 -  -  -  G2 -  -  -  G2 -  -  -',
-        noi: 'x  .  h  .  s  .  h  .  x  .  h  .  s  .  h  h  x  .  h  .  s  .  h  .  x  h  h  .  s  .  h  h',
+        p1: 'G4  -   A4  B4  -   C5  D5  -   -   -   D5  -   -   -   D#5 -   F5  -   G5  -   -   -   D#4 -',
+        p2: 'C4  -   C4  -   A#3 -   C4  -   .   .   .   .   F4  -   G4  -   A4  -   A#4 -   -   -   .   .',
+        wav: 'F2  -   F2  -   D#2 -   F2  -   .   .   .   .   F2  -   .   .   .   .   D#2 -   .   .   .   .',
       },
       C: {
-        p1: 'F5 .  E5 .  D5 .  C5 .  B4 .  C5 .  D5 -  -  .  G4 .  B4 .  D5 .  G5 .  E5 -  -  -  -  -  -  .',
-        p2: 'A3 .  C4 .  B3 .  A3 .  G3 .  A3 .  B3 .  .  .  D4 .  G3 .  B3 .  D4 .  C4 -  -  -  -  -  -  .',
-        wav: 'D3 -  -  -  D3 -  -  -  G2 -  -  -  G2 -  -  -  C3 -  -  -  C3 -  -  -  G2 -  -  -  C3 -  -  -',
-        noi: 'x  .  h  .  s  .  h  .  x  .  h  h  s  .  h  .  x  .  h  .  s  .  h  .  x  .  s  .  x  h  h  h',
+        p1: 'D#4 -   F4  G4  -   A4  A#4 -   -   -   G5  -   -   -   F5  -   D#5 -   F5  -   -   -   D#5 -',
+        p2: 'A#3 -   A#3 -   A3  -   A#3 -   .   .   A#4 -   -   -   A4  -   G4  -   A#4 -   -   -   F4  -',
+        wav: 'D#2 -   D#2 -   D2  -   D#2 -   .   .   .   .   D#2 -   .   .   .   .   A#2 -   .   .   .   .',
       },
-      // A "call to adventure" flourish: original pitches and harmonisation,
-      // but the fanfare GESTURE (a repeated call, a leap up, a scalar run to
-      // a held high tonic) is the genre's own — this is a nod, not a
-      // transcription of any Oracle or Zelda cue. See HANDOFF for why the
-      // literal Hyrule theme itself is not reproduced here.
       D: {
-        p1: 'C5 .  C5 .  C5 .  G5 .  E5 .  D5 .  C5 -  -  .  G4 .  C5 .  E5 .  G5 .  C6 -  -  -  -  -  -  .',
-        p2: 'E4 .  E4 .  E4 .  E5 .  C4 .  B3 .  A3 -  -  .  E3 .  G3 .  C4 .  E4 .  G4 -  -  -  -  -  -  .',
-        wav: 'C2 -  -  -  C2 -  -  -  F2 -  -  -  G2 -  -  -  C2 -  -  -  G1 -  -  -  C2 -  -  -  -  -  -  .',
-        noi: 'x  .  .  .  x  .  .  .  x  .  h  .  s  .  h  h  x  .  h  .  s  .  h  .  c  .  .  .  .  .  .  .',
+        p1: 'D5  -   -   -   D#4 -   F4  -   -   -   F4  -   D5  -   D#5 -   D5  -   C5  -   -   -   -   D5',
+        p2: 'F4  -   -   -   .   .   .   .   .   .   .   .   F4  -   D#4 -   F4  -   D#4 -   -   -   -   D4',
+        wav: 'A#2 -   A#2 -   G#2 -   A#2 -   .   .   .   .   A#2 -   .   .   .   .   G#2 -   .   .   .   .',
       },
-      // E hands the tune to the WAVE channel and parks both pulses on a held
-      // chord above it, so for two bars the melody arrives from underneath —
-      // the one texture A-D never have, since the wave channel is a bass
-      // ostinato in every one of them.
       E: {
-        p1: 'E5 -  -  -  -  -  -  -  D5 -  -  -  -  -  -  -  C5 -  -  -  -  -  -  -  D5 -  -  -  -  -  -  -',
-        p2: 'C4 -  -  -  -  -  -  -  B3 -  -  -  -  -  -  -  A3 -  -  -  -  -  -  -  B3 -  -  -  -  -  -  -',
-        wav: 'C3 .  E3 .  G3 .  E3 .  D3 .  G2 .  B2 .  D3 .  C3 .  A2 .  F2 .  A2 .  G2 .  B2 .  D3 -  -  .',
-        noi: 'x  .  .  h  .  .  s  .  x  .  .  h  .  .  s  .  x  .  .  h  .  .  s  .  x  .  s  .  .  .  h  h',
+        p1: 'D#5 -   -   -   -   -   -   .   .   .   .   .   D5  -   -   C5  -   -   A#4 -   -   -   -   C5',
+        p2: 'D#4 -   -   D#4 -   F4  -   G4  .   .   .   G4  F4  -   -   -   -   D#4 D4  -   -   -   -   C4',
+        wav: 'G#2 -   G#2 -   G#2 -   G#2 -   .   .   .   .   G#2 -   G#2 -   G#2 -   G2  -   .   .   .   .',
       },
-      // F is A's opening contour moved down a third through the same scale,
-      // which lands it in the relative minor: the same walk, the colour gone
-      // out of it. It sits immediately before D so the fanfare arrives out
-      // of the minor rather than out of more of the major.
       F: {
-        p1: 'E4 .  A4 .  C5 .  A4 .  B4 .  E4 .  G4 .  .  .  F4 .  A4 .  D5 .  A4 .  C5 -  -  .  .  .  .  .',
-        p2: 'A3 .  .  .  E3 .  .  .  G3 .  .  .  E3 .  .  .  F3 .  .  .  D3 .  .  .  A3 .  .  .  E3 .  .  .',
-        wav: 'A2 -  -  -  A2 -  -  -  E2 -  -  -  E2 -  -  -  D2 -  -  -  D2 -  -  -  A2 -  -  -  E2 -  -  -',
-        noi: 'x  .  h  .  s  .  h  .  x  .  h  .  s  .  h  h  x  .  h  .  s  .  h  .  x  .  s  .  x  .  s  h',
+        p1: 'D5  -   -   -   -   -   B4  D5  F5  G5  .   .   C5  -   -   A#4 -   -   A4  -   -   -   -   B4',
+        p2: 'D4  -   -   -   -   -   D4  -   .   .   .   .   D4  -   -   .   .   .   C#4 -   -   -   .   .',
+        wav: 'G2  -   G2  -   F2  -   G2  -   .   .   .   .   G2  -   G2  -   G2  -   A2  -   .   .   .   .',
+      },
+      G: {
+        p1: 'C#5 -   -   -   -   -   -   -   .   .   .   .   E5  -   -   -   -   -   D5  -   -   -   -   -',
+        p2: 'E4  -   -   -   -   D4  E4  -   -   -   -   F4  .   .   A4  B4  -   C5  A4  -   -   -   -   -',
+        wav: 'A2  -   A2  -   A2  -   A2  -   .   .   .   .   A2  -   A2  -   A2  -   D3  -   .   .   .   .',
+      },
+      H: {
+        p1: 'E5  -   -   -   -   -   -   -   -   -   -   -   B4  -   .   C#5 -   -   G4  -   -   -   -   -',
+        p2: 'C4  -   -   -   -   -   D4  -   -   -   -   -   F#4 -   .   .   .   .   B3  -   .   .   .   .',
+        wav: 'G3  -   -   -   -   -   A3  -   -   -   -   -   E3  -   .   F#3 -   -   G2  -   .   .   .   .',
       },
     },
-    intro: ['I'],
-    order: ['A', 'A', 'B', 'C', 'E', 'F', 'D'],
+    intro: ['P'],
+    order: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'],
   },
 
   village: {

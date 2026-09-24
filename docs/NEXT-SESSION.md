@@ -1,3 +1,16 @@
+## S148 — the overworld plays Seasons' own overworld theme
+
+At the human's request the overworld track is now Oracle of Seasons' Holodrum
+theme, transcribed from the footage (method, loop positions and what is
+approximate: `assets/footage/README.md`, "S148"). Eight bars of four
+three-step beats, 4-frame rows (`rowsPerBeat: 6`, `bpm: 149.32`), a pickup
+intro. Only `TRACKS.overworld` and its line in
+`tools/audio-render-baseline.json` changed. The earlier original overworld
+tune is gone (it is in git history, pre-S148). The rule that tracks are
+ours still stands for every other track. Also new: `docs/prompts/GUIDE-PROMPT.md`,
+a ready-to-paste prompt for a separate session to write an illustrated,
+phone-friendly walkthrough (the human cannot get past the first dungeon).
+
 ## S147 — the game now moves at Seasons' speed (polish (d) feel, pass 1)
 
 ### What landed
