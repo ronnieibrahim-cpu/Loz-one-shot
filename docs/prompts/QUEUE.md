@@ -11,6 +11,49 @@ a done-condition, and scope explicitly.
 
 ---
 
+## POLISH ROTATION (objective 11, named by the human after S145)
+
+One area per session, in order a..f, then round again (STATE.md). Each stub
+below is expanded into NEXT-PROMPT.md when its turn comes: verify every
+number here against the current tree first, name a target, scope it.
+
+**(a) enemies.** Pass 1 — art: every one of the 22 enemies shows a hurt
+flash and a death pose (drift's table: 10 have hurt, 19 have death). Extract
+from `oracle-seasons-enemies.png` through `rip-enemies.py`; draw to match
+only what no sheet holds. Idle/attack stay where ENEMIES.md scoped them (13
+never stand still). Pass 2 — placement: a table of every dungeon room's
+enemies against its ENEMIES.md role (one tide consequence each, no room of
+three of a kind by accident, no enemy parked on a pit edge or a doorway);
+fix the worst, check-placement/ground/playthrough green.
+
+**(b) feel.** Walk, sword (three verbs), knockback, hit-stop, pickup and
+chest timing, text speed, door and room-scroll timing, against FEEL-SPEC.md
+and a person's hands. `measured` is BLOCKED without an emulator capture —
+ask the human for one at the start of the session; without it, changes are
+`derived`/`guessed` and every one goes to a person to play. replay.mjs will
+move: re-record deliberately, never to make a test pass.
+
+**(c) music.** List every place the game can be (six regions, the village,
+six dungeons, caves, houses, every boss, title, ending) against the track it
+plays; find shared or missing tracks; write the missing ones in the Game Boy
+register (check-music's frequency and channel rules). Each track loops
+without a seam. check-sfx: every verb makes a sound. A person listens.
+
+**(d) side content.** Count what exists (heart pieces, charms, the Coastwise
+Chain, optional rooms, secret caves) per region; find the regions with
+nothing to find. Design at least one ORIGINAL mini-game (tide-themed, not a
+port of an Oracle game) and one side quest — PROPOSE BOTH TO THE HUMAN
+BEFORE BUILDING. Every new reward is proved by check-items/check-hearts.
+
+**(e) fairness.** The thinnest fight left (the Brinehulk, 10/13 at S144),
+by the S145 method: read the losses, route and opt-in robot habits first,
+damage only with 13 seeds either side.
+
+**(f) play pass.** The human plays a stretch and writes notes; the session
+fixes them in order. If there are no notes, ask for them — do not invent a
+pass.
+
+
 ## 1. Wide rooms, continued
 
 **The `dTravel` non-anchor-cell gap is fixed (S47)** — `tools/actor-runtime.mjs`

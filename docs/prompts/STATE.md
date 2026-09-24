@@ -1,33 +1,41 @@
-OBJECTIVE OF RECORD: none — 10 oracle-rooms MET S143; awaiting the human.
+OBJECTIVE OF RECORD: 11 polish — named by the human after S145.
 
-10 oracle-rooms (named S137): every dungeon at 15x11 Oracle room size in ONE
-Seasons dungeon's kit, grown to a size ladder (S141). Final sizes in screens:
-D1 25, D2 27, D3 32, D4 36, D5 40, D6 47. MET S143: all six declare
-`cell: [15, 11]` with their own kit, all meet the ladder, and
-check-playthrough is green end to end with no deaths. Each grown dungeon has
-a required wing that asks for its item a new way (D3 sunken plates, D4 the
-Ebb Cell, D5 a block over a pillar, D6 the hauled key) and charms in its
-optional rooms. S144 re-measured the fights S143 moved (LEDGER S144).
-NEXT-PROMPT.md holds a proposed follow-up (the Brinehulk, the thinnest
-fight left after S145); the human decides the next objective.
+11 polish: the game plays to the end; make every part of it feel finished.
+Six areas, ONE PER SESSION, in this order, then round again. A session works
+the area whose turn it is and nothing else; the area's stub is in QUEUE.md.
+  a enemies   — art and placement. Pass: drift's "complete animation set"
+                count up (extract before drawing); every enemy's rooms read
+                against its ENEMIES.md role; check-placement/ground green.
+  b feel      — sword, walk, knockback, hit-stop, pickups, text, doors,
+                against FEEL-SPEC.md. `measured` stays BLOCKED (no capture);
+                changes are `derived`/`guessed` and go to a person to play.
+  c music     — every region, dungeon, boss and cave has a track that fits
+                it and loops cleanly; sfx cover every verb. check-music,
+                check-sfx, check-audio-render green; a person listens.
+  d side      — side quests, optional items, heart pieces, charms, and at
+                least one ORIGINAL mini-game. Propose any new quest or game
+                to the human BEFORE building it (a design change).
+  e fairness  — the thinnest fight in LEDGER S144/S145 to 11/13 (next up:
+                the Brinehulk, 10/13), the S145 method.
+  f play pass — a person's play notes, fixed in order; no notes, no pass.
+DONE when every area has had two passes with nothing left in its stub.
+Rotation position: next is (a) enemies, pass 1.
 
-ROTATION (retired S112, kept for the record):
-  1 wide-rooms MET S111 | 2 art-provenance S9/S74 | 3 boss-art S75
-  4 enemy-roster S59 | 5 npc-detail S63 | 6 region-art S89
-  7 item-reuse MET S110 | 8 feel-measure BLOCKED | 9 playthrough-route MET S121
-  10 oracle-rooms MET S143
+RETIRED ROTATION: 1 wide-rooms MET S111 | 2 art-provenance S9/S74 |
+  3 boss-art S75 | 4 enemy-roster S59 | 5 npc-detail S63 | 6 region-art S89 |
+  7 item-reuse MET S110 | 8 feel-measure BLOCKED | 9 playthrough-route MET
+  S121 | 10 oracle-rooms MET S143 (all six dungeons at Oracle size)
 
-FILE ALLOWLIST for the proposed follow-up (the Brinehulk's margin):
-  src/data/bosses.js (measured first), tools/measure-boss-combat.mjs,
-  tools/playthrough-route.mjs, tools/check-playthrough.mjs,
-  tools/actor-runtime.mjs (opt-in fight options only),
-  src/data/dungeons-b.js (D6 rooms only), docs/*.md,
+FILE ALLOWLIST for (a) enemies: src/data/enemies.js, src/data/sprites-enemies*.js
+  (generated ones via their ripper only), tools/rip-enemies.py,
+  src/data/sprite-manifest.js, src/data/dungeons-a.js, src/data/dungeons-b.js,
+  src/data/overworld.js, src/data/caves.js (entity lists only),
+  tools/playthrough-route.mjs, tools/*-baseline.json, docs/*.md,
   dist/oracle-of-tides.html
 
 DETOUR TOKENS: 1 (unspent)
 
 SESSION LOG: one row per session — `S## | objective|detour | one line`
-S124 | objective | Gave the final fight some room to breathe. Link used to walk in on four hearts against a boss that takes one a hit, and win by a quarter of a heart — which is not winning, it is luck: every single thing changed anywhere earlier in the game turned that win into a death. The salt colossus that guards the Boss Key now has a fairy in its hoard, taken on the way back out, and Link goes through the throne room door on nine hearts. Found and wrote down why the obvious health fix — the charm that soaks one hit per room — actually makes every fight worse rather than better.
 S125 | objective | Got the last dungeon's one optional room into the run. There is a grate in the Abyssal Keep with a bone charm behind it, and the only thing in the game that opens a grate is the rod you get for walking the whole coast trade — so that room is the game asking whether you did it. Nobody had ever answered it in a real playthrough. Link now picks the charm up and wears it for the rest of the game. The other wing of that floor still cannot be afforded: the shadow that guards it costs more than Link has when he gets there, whichever order the two wings are done in, and that is now measured both ways round rather than guessed.
 S126 | objective | Every room of the last dungeon has now been played. The flooded hall, the vault behind it with the better diving boots, and the riddle of the two arches had never been entered by anything; they are in the run now, and the shadow that guards them costs three quarter-hearts instead of the twenty-five it cost last session. Two things were wrong and only one of them was the fight: the test robot had been trying to kill the thing by blowing a conch at it, because the sword was not on a button and nothing anywhere says so out loud.
 S127 | objective | Made it impossible to send Link into a fight without his sword. He had been walking into two of them holding a conch instead — one found by accident last session after eight attempts at making the fight easier, the other found by this check within seconds of it existing. Eighty-six fights were checked by actually running them; those were the only two, and both are fixed.

@@ -1,44 +1,43 @@
-# Next session — give the Brinehulk a margin
+# Next session — every enemy flinches and dies properly
 
 ## Read first
-- `docs/prompts/STATE.md` — the whole file (no objective of record; the
-  human names the next one, and this task stands until they do).
-- `docs/prompts/LEDGER.md`'s "Settled at S145" and "Settled at S144".
-- `docs/NEXT-SESSION.md`, the S145 entry and the S144 entry.
-- `docs/HANDOFF.md`'s first four hard-won lessons.
-- `tools/measure-boss-combat.mjs`'s `MINIS.brinehulk` row and its header.
+- `docs/prompts/STATE.md` — objective 11 polish, area (a) enemies, pass 1.
+- `docs/prompts/QUEUE.md`'s "POLISH ROTATION" — this area and the five after.
+- `docs/ENEMIES.md`'s "Idle states" section, and `docs/ART-DIRECTION.md`.
+- `docs/briefs/AGENTS.md` section J (the extraction workflow).
+- `docs/NEXT-SESSION.md`, the S145 entry only.
 
 ## Why this, now
-The Brinehulk (the salt colossus in the Abyssal Keep, guarding the Boss
-Key) is the thinnest fight measured: 10 of 13 seeds at S144 on 45/48.
-Every other boss and miniboss now reads 11/13 or better; Rootmaw went from
-8/13 to 13/13 at S145 with one opt-in robot habit and a better route.
+The game plays to the end and every fight has a margin; the human has
+named polish as the objective, one area per session. Enemies go first:
+`check-drift` shows 10 of 22 with a hurt frame and 19 of 22 with a death
+pose, so most of the cast does not react when hit, and three vanish when
+they die.
 
 ## The task
-Measure the Brinehulk over thirteen seeds
-(`node tools/measure-boss-combat.mjs --mini=brinehulk --seed=N`, the
-default and 1..12) and read every loss hit by hit. First ask how long a
-losing fight goes without dealing damage: a stall is the robot's play, not
-health (S145). Try the existing opt-ins first (`--break-pin`,
-`--break-contact`, `--open-retreat`, `--clear-adds`, `--push-through`).
-Sample the real stream by the arena's own settle, not walk-rounds (a
-fight is seeded by its room). Fix from the route first; retune
-`src/data/bosses.js` only with 13 seeds either side, by damage, not hp.
-Target: 11 of 13 in the rig, and the real run wins every settle sampled.
+Give all 22 enemies a hurt frame (`hurtFrame`) and a death pose
+(`deathFrame`) in `src/data/enemies.js`. First run `tools/rip-enemies.py`
+once and confirm it reproduces `src/data/sprites-enemies.js` byte for byte.
+Then, for each missing frame, look in `assets/sheets/oracle-seasons-
+enemies.png` and extract it by adding it to the ripper's coordinate map and
+re-emitting. Only where no sheet holds it, draw it to match (CLAUDE.md's art
+rules: three colours plus outline, `_s` faces right). Tag each frame's
+provenance. Idle and attack frames stay where ENEMIES.md scoped them.
+Target: drift reads 22 of 22 for hurt and 22 of 22 for death.
 
 ## Done means
-- The 13-seed table before and after in LEDGER; real-stream settles too.
+- `node tools/check-drift.mjs`: hurt and death present for all 22; OK.
+- `node tools/check-rippers.mjs` green; `node tools/test.mjs` green.
+- `node tools/replay.mjs` green, or re-recorded only for the frames that
+  changed, with the reason in the commit.
 - `node tools/check-playthrough.mjs` green to THE END with no deaths.
-- `node tools/replay.mjs`, `node tools/test.mjs`,
-  `node tools/check-bosses.mjs`, `node tools/check-respawn.mjs` green.
-- `node tools/check-drift.mjs` OK; `npm run build` with `dist/` committed.
-- A person plays the Brinehulk once and says whether it felt fair.
+- `npm run build` with `dist/` committed.
+- A screenshot sheet of every new frame beside its walk frame, sent to the
+  human; a person says whether each one reads as the same creature.
 
 ## Out of scope
-- Making `evade` ask the room whether a step is possible (S144); it
-  re-rolls every fight in the game and is its own session.
-- Fixing the robot's `goto` cutting corners over pits (S145 Open); a
-  route waypoint is the fix inside this task.
-- Changing any boss's hp (phase thresholds re-roll the fight — S137).
-- Re-measuring Rootmaw or the King; both settled at S145 and S144.
-- The Brinehulk's `drops: 'none'` (bosses.js says why it stays).
+- Enemy placement in rooms — that is pass 2 of this area, next time round.
+- Idle or attack frames for the 13 enemies that never stand still.
+- Feel, music, side content, fairness: their turns come (QUEUE.md b..f).
+- Boss art (settled S75) and any change to what an enemy does.
+- Hand-drawing anything the enemies sheet already has.
