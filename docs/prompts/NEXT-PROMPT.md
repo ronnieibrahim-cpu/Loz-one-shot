@@ -11,15 +11,21 @@
 ## Why this, now
 Areas (a)-(c) had a first pass at S146. `feel.js` has 0 of ~250
 constants `measured`, because no reference footage was ever in hand. The
-human has given two: https://youtu.be/ZE5K58TFzlI (Oracle of Ages) and
-https://youtu.be/yvZT2PNtnho. At S146 bare youtube.com was allowed but
-www.youtube.com and *.googlevideo.com were still refused (proxy 403).
+human has given two YouTube links: https://youtu.be/ZE5K58TFzlI (Ages
+footage) and https://youtu.be/yvZT2PNtnho (Nintendo Life's review, 842 s
+— edited, narrated, fine for a look, poor for frame counts). YouTube
+itself cannot be fetched from this server: with the domains allowed it
+answers "sign in to confirm you're not a bot" and serves no video,
+thumbnails or captions (S146, yt-dlp, every player client tried).
 
 ## The task
-1. Fetch the footage: `pip install yt-dlp`, then download at the highest
-   frame rate offered (`-F` lists formats; prefer 60 fps). If the host is
-   still refused, ask the human to allow `*.youtube.com` and
-   `*.googlevideo.com`, or to drop the file in the repo, and stop there.
+1. Get the footage as a FILE, not a link. First look for one: in the
+   repo (`git ls-files | grep -iE '\.(mp4|mkv|webm|mov)$'`, and
+   `assets/footage/`), then in the human's Google Drive through the
+   Drive connector (search "Oracle" / "Ages" / video files; download
+   with its download tool). Prefer raw 60 fps gameplay over the review.
+   If no file exists, ask the human for one and stop there — do not
+   retry YouTube, and do not ask for their YouTube cookies.
 2. Extract frames with `ffmpeg` (install if missing) around: plain
    walking, a sword swing, a spin, Link taking a hit (knockback distance
    and frames, invuln blink), an enemy taking a hit (flash beats — check
@@ -47,3 +53,5 @@ Target: at least ten constants honestly `measured`.
 - Changing what any item or enemy does.
 - The shallow-water swap noted at S146 — (c) pass 2.
 - Upgrading `derived` to `measured` without a frame count.
+- Committing the video itself: keep it out of git (add it to .gitignore);
+  commit only the numbers and the frames you cite, if small.

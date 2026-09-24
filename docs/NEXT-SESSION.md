@@ -39,9 +39,11 @@
 - There is NO Great Fairy in this game; QUEUE's (c) stub was wrong.
 - The human sent Ages footage for (d): https://youtu.be/ZE5K58TFzlI and
   a second video, https://youtu.be/yvZT2PNtnho (not yet seen).
-  After the human allowed `youtube.com`, bare youtube.com passes but
-  www.youtube.com and *.googlevideo.com are still refused (proxy 403);
-  the human was asked to allow the subdomains. NEXT-PROMPT has the plan.
+  With the domains allowed, YouTube still refuses this server ("sign in
+  to confirm you're not a bot"): no video, storyboard or captions, and
+  i.ytimg.com is refused by the proxy. Metadata only: yvZT2PNtnho is
+  Nintendo Life's review (842 s). Footage must arrive as a file (repo or
+  Google Drive). NEXT-PROMPT has the plan.
 
 ### Noticed for later areas (not chased)
 - (d) feel: the source games show a hit as a PALETTE FLASH, not a pose;
