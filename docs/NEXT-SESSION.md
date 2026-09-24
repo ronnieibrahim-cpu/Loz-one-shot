@@ -44,6 +44,10 @@
   i.ytimg.com is refused by the proxy. Metadata only: yvZT2PNtnho is
   Nintendo Life's review (842 s). Footage must arrive as a file (repo or
   Google Drive). NEXT-PROMPT has the plan.
+- The human then uploaded a Seasons TAS as an mp4; it is committed at
+  assets/footage/ (17 MB) because a new session cannot see chat uploads.
+  59.73 fps, exact 4x: frame-exact. First reading in its README: room
+  scroll 40 f horizontal / 32 f vertical at 4 px/f (we use 34 for both).
 
 ### Noticed for later areas (not chased)
 - (d) feel: the source games show a hit as a PALETTE FLASH, not a pose;
