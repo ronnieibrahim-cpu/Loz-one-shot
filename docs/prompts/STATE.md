@@ -4,16 +4,21 @@ Named by the human at S137, replacing the "awaiting the human" state S121 left.
 Every dungeon room becomes a 15x11 Oracle room with a one-tile wall ring, a
 scrolling camera, one-tile doors in the middle of each wall and key doors in
 the ring between two rooms, drawn from ONE Seasons dungeon's own kit (ring,
-jambs, doors, floors, block, pot) cut by tools/rip-dungeon-themes.py. Same
-room count per dungeon; puzzles deepened, never made obscure. The engine,
+jambs, doors, floors, block, pot) cut by tools/rip-dungeon-themes.py.
+Puzzles deepened, never made obscure. S141 (the human): dungeons GROW, as
+the Oracle games' do, and new rooms get less creative restraint. Size
+ladder in screens (today in brackets): D1 25 [25], D2 27 [27], D3 >=32 [25],
+D4 >=36 [27], D5 >=40 [27], D6 >=46 [33]. New rooms are new ideas with the
+dungeon's item and tide theme, each proved by its item's checker. The engine,
 every checker and the route learned Oracle cells at S137 (map `cell: [15, 11]`,
 `cellTiles`), and D1 Tidewash Grotto is rebuilt and played to THE END.
 
 DONE-CONDITION: all six dungeons declare `cell: [15, 11]`, each with its own
-Seasons kit, and `node tools/check-playthrough.mjs` is green end to end.
+Seasons kit, each meets its size ladder, and `node tools/check-playthrough.mjs`
+is green end to end.
 PROGRESS: D1 done (S137). D2 done (S138). D3 done (S139). D4 done (S140).
-D5 done (S141). D6 Abyssal Keep is next and last. S139: the human allows MORE rooms in
-a dungeon when that is what makes its puzzles engaging; not required.
+D5 done (S141). Next: D6 at Oracle size AND grown to the ladder; then grow
+D3, D4, D5 to theirs (their Oracle rebuilds are done, their size is not).
 
 ROTATION (retired S112, kept for the record):
   1 wide-rooms MET S111 | 2 art-provenance S9/S74 | 3 boss-art S75

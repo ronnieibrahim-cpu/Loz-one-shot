@@ -12,8 +12,9 @@
 The human asked for every dungeon at real Oracle room size (15x11, wall ring,
 scrolling camera, one-tile doors, key doors in the ring). D1 to D5 are
 rebuilt and played to THE END. D6 is the last, still ten-by-eight rooms, on
-two floors, and the objective's done-condition is met when it is rebuilt.
-The human allows more rooms when that makes the puzzles better.
+two floors. S141 the human asked for dungeons that GROW the way the Oracle
+games' do, with less creative restraint: D6 is the largest, >=46 screens
+(33 today). See STATE.md's ladder.
 
 ## The task
 Rebuild `d6` Abyssal Keep at `cell: [15, 11]`, keeping its room graph on both
@@ -36,9 +37,10 @@ re-read `ROUTE_ARENA.d6` and the `tideshade` and `brinehulk` rows in
 `tools/measure-boss-combat.mjs` from the new trace (all three are stale by
 ~18k frames since S140-S141).
 
-Deepen one or two rooms with a second use of the Dredge Line, proved both
-ways by `tools/check-dredge.mjs`, with a readable hint in the room. Nothing
-obscure.
+Grow it to at least 46 screens: new rooms and wings built on the Dredge
+Line and the Keep's tide theme (the line crosses what the sea uncovers, the
+floor gives up what the sea covers), each proved both ways by
+`tools/check-dredge.mjs`, with readable hints. Bold, never obscure.
 
 ## Done means
 - `node tools/validate.mjs`, `walk-dungeons.mjs`, `check-dungeon-strands.mjs`,
